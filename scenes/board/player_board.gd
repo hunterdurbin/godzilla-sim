@@ -10,6 +10,8 @@ signal zone_card_dropped(zone_index: int, card: Control)
 
 @export var player_id: int = 0
 @export var is_mirrored: bool = false  # True for player 2 (top of screen)
+@export var zone_h_gap: float = 4.0
+@export var zone_v_gap: float = 4.0
 
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
@@ -26,30 +28,24 @@ var player_label: Label
 
 func _ready() -> void:
 	_setup_references()
+	_apply_spacing()
 
 
 func _setup_references() -> void:
-	# Mirror row order for player 2: back row on top, front row on bottom
-	# so front row faces toward the center of the board
+	# Mirror for player 2: swap row order AND reverse children within each row
+	# This creates a 180° rotated appearance matching the physical playmat
 	if is_mirrored:
 		var rows := $Rows
 		rows.move_child($Rows/BackRow, 0)
+		_reverse_container($Rows/FrontRow)
+		_reverse_container($Rows/BackRow)
+		_reverse_container($Rows/FrontRow/LeftInfo)
 
-	# Zone slots across two rows
+	# Zone slots (find by name so layout wrappers don't matter)
 	zone_slots.resize(8)
 
-	# Back row: zones 1-5
-	for i in range(1, 6):
-		var slot := get_node_or_null("Rows/BackRow/Zone%d" % i) as Slot
-		if slot:
-			slot.zone_number = i
-			slot.slot_type = "battle_zone"
-			slot.player_id = player_id
-			zone_slots[i - 1] = slot
-
-	# Front row: zones 6-8
-	for i in range(6, 9):
-		var slot := get_node_or_null("Rows/FrontRow/Zone%d" % i) as Slot
+	for i in range(1, 9):
+		var slot := find_child("Zone%d" % i, true, false) as Slot
 		if slot:
 			slot.zone_number = i
 			slot.slot_type = "battle_zone"
@@ -58,7 +54,7 @@ func _setup_references() -> void:
 
 	# Strategy slots
 	for i in range(1, 3):
-		var slot := get_node_or_null("Rows/FrontRow/StrategyArea/Strategy%d" % i) as Slot
+		var slot := find_child("Strategy%d" % i, true, false) as Slot
 		if slot:
 			slot.zone_number = 0
 			slot.slot_type = "strategy_zone"
@@ -66,11 +62,11 @@ func _setup_references() -> void:
 			strategy_slots.append(slot)
 
 	# Info nodes
-	monster_display = get_node_or_null("Rows/BackRow/MonsterInfo/MonsterDisplay") as Label
-	deck_count_label = get_node_or_null("Rows/FrontRow/DeckInfo/DeckCount") as Label
-	discard_count_label = get_node_or_null("Rows/BackRow/DiscardInfo/DiscardCount") as Label
-	rage_label = get_node_or_null("Rows/FrontRow/RageDisplay/RageLabel") as Label
-	player_label = get_node_or_null("Rows/BackRow/MonsterInfo/PlayerLabel") as Label
+	monster_display = find_child("MonsterDisplay", true, false) as Label
+	deck_count_label = find_child("DeckCount", true, false) as Label
+	discard_count_label = find_child("DiscardCount", true, false) as Label
+	rage_label = find_child("RageLabel", true, false) as Label
+	player_label = find_child("PlayerLabel", true, false) as Label
 
 	if player_label:
 		player_label.text = "Player %d" % (player_id + 1)
@@ -192,6 +188,19 @@ func clear_highlights() -> void:
 	for slot in strategy_slots:
 		if slot:
 			slot.set_highlighted(false)
+
+
+func _apply_spacing() -> void:
+	$Rows.add_theme_constant_override("separation", int(zone_v_gap))
+	$Rows/FrontRow.add_theme_constant_override("separation", int(zone_h_gap))
+	$Rows/BackRow.add_theme_constant_override("separation", int(zone_h_gap))
+
+
+
+func _reverse_container(container: Node) -> void:
+	var count := container.get_child_count()
+	for i in range(count - 1):
+		container.move_child(container.get_child(count - 1), i)
 
 
 func _create_card(data: Dictionary) -> Control:

@@ -19,46 +19,55 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 2
+theme_override_constants/separation = 4
 
 [node name="FrontRow" type="HBoxContainer" parent="Rows"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 2
+theme_override_constants/separation = 4
 
-[node name="StrategyArea" type="VBoxContainer" parent="Rows/FrontRow"]
+[node name="LeftInfo" type="HBoxContainer" parent="Rows/FrontRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+theme_override_constants/separation = 2
+
+[node name="StrategyArea" type="VBoxContainer" parent="Rows/FrontRow/LeftInfo"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
 theme_override_constants/separation = 1
 
-[node name="StratLabel" type="Label" parent="Rows/FrontRow/StrategyArea"]
+[node name="StratLabel" type="Label" parent="Rows/FrontRow/LeftInfo/StrategyArea"]
 layout_mode = 2
 text = "Strategy"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 
-[node name="Strategy1" parent="Rows/FrontRow/StrategyArea" instance=ExtResource("2_slot")]
+[node name="Strategy1" parent="Rows/FrontRow/LeftInfo/StrategyArea" instance=ExtResource("2_slot")]
 layout_mode = 2
 size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 0)
 
-[node name="Strategy2" parent="Rows/FrontRow/StrategyArea" instance=ExtResource("2_slot")]
+[node name="Strategy2" parent="Rows/FrontRow/LeftInfo/StrategyArea" instance=ExtResource("2_slot")]
 layout_mode = 2
 size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 0)
 
-[node name="RageDisplay" type="VBoxContainer" parent="Rows/FrontRow"]
+[node name="RageDisplay" type="VBoxContainer" parent="Rows/FrontRow/LeftInfo"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
-[node name="RageTitle" type="Label" parent="Rows/FrontRow/RageDisplay"]
+[node name="RageTitle" type="Label" parent="Rows/FrontRow/LeftInfo/RageDisplay"]
 layout_mode = 2
 text = "Rage Zone"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(1, 0.3, 0.2, 1)
 
-[node name="RageLabel" type="Label" parent="Rows/FrontRow/RageDisplay"]
+[node name="RageLabel" type="Label" parent="Rows/FrontRow/LeftInfo/RageDisplay"]
 layout_mode = 2
 size_flags_vertical = 3
 text = "0"
@@ -88,6 +97,7 @@ custom_minimum_size = Vector2(0, 0)
 [node name="DeckInfo" type="VBoxContainer" parent="Rows/FrontRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="DeckTitle" type="Label" parent="Rows/FrontRow/DeckInfo"]
 layout_mode = 2
@@ -107,11 +117,12 @@ theme_override_colors/font_color = Color(0.7, 0.8, 1.0, 1)
 [node name="BackRow" type="HBoxContainer" parent="Rows"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 2
+theme_override_constants/separation = 4
 
 [node name="MonsterInfo" type="VBoxContainer" parent="Rows/BackRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="PlayerLabel" type="Label" parent="Rows/BackRow/MonsterInfo"]
 layout_mode = 2
@@ -169,6 +180,7 @@ custom_minimum_size = Vector2(0, 0)
 [node name="DiscardInfo" type="VBoxContainer" parent="Rows/BackRow"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 
 [node name="DiscardTitle" type="Label" parent="Rows/BackRow/DiscardInfo"]
 layout_mode = 2

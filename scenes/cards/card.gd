@@ -30,6 +30,7 @@ var drag_enabled: bool = true
 var tween: Tween
 var _pre_hover_z_index: int = 0
 var _pre_hover_position: Vector2 = Vector2.ZERO
+var _hover_active: bool = false
 
 
 func _ready() -> void:
@@ -80,8 +81,10 @@ func _gui_input(event: InputEvent) -> void:
 
 func _on_mouse_entered() -> void:
 	if not is_dragging:
-		_pre_hover_z_index = z_index
-		_pre_hover_position = position
+		if not _hover_active:
+			_pre_hover_z_index = z_index
+			_pre_hover_position = position
+		_hover_active = true
 		z_index = 50
 		_animate_hover(true)
 
@@ -105,6 +108,7 @@ func _animate_hover(entering: bool) -> void:
 	else:
 		tween.tween_property(self, "scale", original_scale, scale_duration)
 		tween.tween_property(self, "position", _pre_hover_position, scale_duration)
+		tween.chain().tween_callback(func(): _hover_active = false)
 
 
 func _scale_card(target_scale: float) -> void:
@@ -147,6 +151,8 @@ func return_to_position(target_pos: Vector2, duration: float = 0.3) -> void:
 
 	is_dragging = false
 	z_index = 0
+	_hover_active = false
+	_pre_hover_position = target_pos
 
 	tween = create_tween()
 	tween.set_ease(Tween.EASE_OUT)

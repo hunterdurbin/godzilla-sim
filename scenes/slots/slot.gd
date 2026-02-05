@@ -1,7 +1,11 @@
 extends Control
 class_name Slot
 
-## A slot that can hold a single Card, with zone metadata for the TCG board
+## A slot that can hold a single Card, with zone metadata for the TCG board.
+## The visual area (Background) maintains the card aspect ratio (5:7) within
+## whatever space the parent container allocates.
+
+const CARD_RATIO := 5.0 / 7.0  # width / height
 
 # Signals
 signal card_placed(card: Control)
@@ -26,12 +30,37 @@ var held_card: Control = null
 var is_highlighted: bool = false
 var is_occupied: bool = false
 var has_monster_marker: bool = false
+var _content_rect: Rect2 = Rect2()
 
 
 func _ready() -> void:
+	_update_content_rect()
 	_update_visual_state()
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_update_content_rect()
+		_update_visual_state()
+
+
+func _update_content_rect() -> void:
+	var w := size.x
+	var h := size.y
+	if h <= 0 or w <= 0:
+		_content_rect = Rect2(0, 0, w, h)
+		return
+
+	var target_w := h * CARD_RATIO
+	if target_w <= w:
+		# Height is the constraint — center horizontally
+		_content_rect = Rect2((w - target_w) / 2.0, 0, target_w, h)
+	else:
+		# Width is the constraint — center vertically
+		var target_h := w / CARD_RATIO
+		_content_rect = Rect2(0, (h - target_h) / 2.0, w, target_h)
 
 
 func is_empty() -> bool:
@@ -65,9 +94,9 @@ func place_card(card: Control, animate: bool = true) -> bool:
 	held_card = card
 	is_occupied = true
 
-	# Scale card to fit within this slot (with 4px padding)
+	# Scale card to fit within the content rect (with 4px padding)
 	var padding := 4.0
-	var available := size - Vector2(padding * 2, padding * 2)
+	var available := _content_rect.size - Vector2(padding * 2, padding * 2)
 	var card_base_size: Vector2 = card.size if card.size.x > 0 else Vector2(150, 210)
 	var scale_factor: float = minf(available.x / card_base_size.x, available.y / card_base_size.y)
 	scale_factor = minf(scale_factor, 1.0)  # Never scale up
@@ -75,8 +104,7 @@ func place_card(card: Control, animate: bool = true) -> bool:
 	if "original_scale" in card:
 		card.original_scale = card.scale
 
-	var scaled_size: Vector2 = card_base_size * scale_factor
-	var target_pos: Vector2 = (size - scaled_size) / 2.0
+	var target_pos: Vector2 = _center_card_pos(card_base_size, scale_factor, card.pivot_offset)
 
 	if animate and card.has_method("return_to_position"):
 		card.return_to_position(target_pos, snap_duration)
@@ -94,6 +122,13 @@ func place_card(card: Control, animate: bool = true) -> bool:
 	card_placed.emit(card)
 
 	return true
+
+
+func _center_card_pos(card_base_size: Vector2, scale_factor: float, pivot: Vector2) -> Vector2:
+	var scaled_size := card_base_size * scale_factor
+	var center_pos := _content_rect.position + (_content_rect.size - scaled_size) / 2.0
+	# Account for pivot offset: scaling around pivot shifts the visual position
+	return center_pos - pivot * (1.0 - scale_factor)
 
 
 func remove_card(destroy: bool = false) -> Control:
@@ -149,6 +184,10 @@ func _update_visual_state() -> void:
 	if not background:
 		return
 
+	# Position background to the content rect (card aspect ratio area)
+	background.position = _content_rect.position
+	background.size = _content_rect.size
+
 	var target_color: Color
 	if has_monster_marker:
 		target_color = Color(0.8, 0.5, 0.1, 0.7)  # Orange for monster position
@@ -176,14 +215,18 @@ func _update_visual_state() -> void:
 	style.corner_radius_bottom_right = 8
 
 	if has_node("Label"):
+		var lbl: Label = $Label
+		# Center label within the content rect
+		lbl.position = _content_rect.position
+		lbl.size = _content_rect.size
 		if has_monster_marker and not is_occupied:
-			$Label.text = "MONSTER"
-			$Label.visible = true
+			lbl.text = "MONSTER"
+			lbl.visible = true
 		elif zone_number > 0 and not is_occupied:
-			$Label.text = "Z%d" % zone_number
-			$Label.visible = true
+			lbl.text = "Z%d" % zone_number
+			lbl.visible = true
 		else:
-			$Label.visible = not is_occupied
+			lbl.visible = not is_occupied
 
 
 func _on_mouse_entered() -> void:
@@ -218,7 +261,7 @@ func _on_card_drag_ended() -> void:
 		_update_visual_state()
 		card_removed.emit(card)
 	else:
-		var target_pos = size / 2.0 - (card.size * card.scale) / 2.0
+		var target_pos = _center_card_pos(card.size, card.scale.x, card.pivot_offset)
 		if card.has_method("return_to_position"):
 			card.return_to_position(target_pos, snap_duration)
 		else:

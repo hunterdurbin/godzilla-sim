@@ -33,7 +33,7 @@ var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var waiting_for_card_select: bool = false
 var waiting_for_zone_select: bool = false
-var selected_hand_index: int = -1
+var selected_card_id: String = ""
 
 
 func _ready() -> void:
@@ -249,35 +249,48 @@ func _enter_card_selection(prompt_text: String, valid_indices: Array[int]) -> vo
 	btn_pass.text = "Cancel"
 
 	# Enable selection mode on the active player's hand
+	# Translate player.hand indices to managed_cards indices (may differ if reordered)
 	var board := _get_active_player_board()
 	if board and board.hand_manager:
-		board.hand_manager.enter_selection_mode(valid_indices)
+		var visual_indices := _hand_indices_to_visual(valid_indices, board)
+		board.hand_manager.enter_selection_mode(visual_indices)
 		if not board.hand_manager.card_selected.is_connected(_on_hand_card_selected):
 			board.hand_manager.card_selected.connect(_on_hand_card_selected)
 
 
-func _on_hand_card_selected(_card: Control, index: int) -> void:
+func _on_hand_card_selected(card: Control, _visual_index: int) -> void:
 	if not waiting_for_card_select:
 		return
 
-	selected_hand_index = index
+	# Store the card's unique ID so we can resolve the hand index at submit time
+	selected_card_id = card.card_data.get("id", "") if "card_data" in card else ""
+	if selected_card_id.is_empty():
+		return
 
 	match pending_action:
 		CardEnums.ActionType.PLAY_BATTLE:
 			# Now need to select a zone
 			_enter_zone_selection()
 		CardEnums.ActionType.PLAY_STRATEGY:
+			var idx := _find_hand_index_by_id(selected_card_id)
 			_cancel_selection()
-			turn_manager.submit_action(CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": index})
+			if idx >= 0:
+				turn_manager.submit_action(CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": idx})
 		CardEnums.ActionType.GAIN_RAGE:
+			var idx := _find_hand_index_by_id(selected_card_id)
 			_cancel_selection()
-			turn_manager.submit_action(CardEnums.ActionType.GAIN_RAGE, {"hand_index": index})
+			if idx >= 0:
+				turn_manager.submit_action(CardEnums.ActionType.GAIN_RAGE, {"hand_index": idx})
 		CardEnums.ActionType.PLAY_MONSTER:
+			var idx := _find_hand_index_by_id(selected_card_id)
 			_cancel_selection()
-			turn_manager.submit_action(CardEnums.ActionType.PLAY_MONSTER, {"hand_index": index})
+			if idx >= 0:
+				turn_manager.submit_action(CardEnums.ActionType.PLAY_MONSTER, {"hand_index": idx})
 		CardEnums.ActionType.INVADE:
+			var idx := _find_hand_index_by_id(selected_card_id)
 			_cancel_selection()
-			turn_manager.submit_action(CardEnums.ActionType.INVADE, {"hand_index": index})
+			if idx >= 0:
+				turn_manager.submit_action(CardEnums.ActionType.INVADE, {"hand_index": idx})
 
 
 func _enter_zone_selection() -> void:
@@ -333,18 +346,20 @@ func _input(event: InputEvent) -> void:
 			var slot: Slot = board.zone_slots[i]
 			var rect := Rect2(slot.global_position, slot.size)
 			if rect.has_point(mouse_pos) and slot.is_empty() and slot.is_highlighted:
+				var hand_idx: int = _find_hand_index_by_id(selected_card_id)
 				_cancel_selection()
-				turn_manager.submit_action(CardEnums.ActionType.PLAY_BATTLE, {
-					"hand_index": selected_hand_index,
-					"zone_index": i
-				})
+				if hand_idx >= 0:
+					turn_manager.submit_action(CardEnums.ActionType.PLAY_BATTLE, {
+						"hand_index": hand_idx,
+						"zone_index": i
+					})
 				return
 
 
 func _cancel_selection() -> void:
 	waiting_for_card_select = false
 	waiting_for_zone_select = false
-	selected_hand_index = -1
+	selected_card_id = ""
 	card_select_prompt.visible = false
 	btn_pass.text = "Pass"
 
@@ -411,3 +426,26 @@ func _get_active_player_board() -> Control:
 		return player1_board
 	else:
 		return player2_board
+
+
+## Translate player.hand indices to managed_cards indices by matching card IDs
+func _hand_indices_to_visual(hand_indices: Array[int], board: Control) -> Array[int]:
+	var player := turn_manager.game_state.get_current_player()
+	var visual: Array[int] = []
+	var cards: Array[Control] = board.hand_manager.get_cards()
+	for hand_idx in hand_indices:
+		var card_id: String = player.hand[hand_idx].get("id", "")
+		for j in range(cards.size()):
+			if "card_data" in cards[j] and cards[j].card_data.get("id") == card_id:
+				visual.append(j)
+				break
+	return visual
+
+
+## Find a card's index in player.hand by its unique ID
+func _find_hand_index_by_id(card_id: String) -> int:
+	var player := turn_manager.game_state.get_current_player()
+	for i in range(player.hand.size()):
+		if player.hand[i].get("id") == card_id:
+			return i
+	return -1

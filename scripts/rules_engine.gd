@@ -83,11 +83,11 @@ func get_playable_strategy_cards(player: PlayerState) -> Array[int]:
 
 
 func get_discardable_cards_for_invade(player: PlayerState) -> Array[int]:
-	## Returns hand indices of cards that can be discarded for invasion
+	## Returns hand indices of monster cards that can be discarded for invasion
 	var indices: Array[int] = []
 	for i in range(player.hand.size()):
 		var card: Dictionary = player.hand[i]
-		if card.get("invasion_icon", 0) > 0:
+		if card.get("card_type") == CardEnums.CardType.MONSTER and card.get("invasion_icon", 0) > 0:
 			indices.append(i)
 	return indices
 
@@ -196,6 +196,6 @@ func _can_invade(player: PlayerState) -> bool:
 	if player.has_invaded_this_turn:
 		return false
 	for card in player.hand:
-		if card.get("invasion_icon", 0) > 0:
+		if card.get("card_type") == CardEnums.CardType.MONSTER and card.get("invasion_icon", 0) > 0:
 			return true
 	return false
