@@ -7,6 +7,7 @@ class_name CardManager
 signal card_added(card: Control)
 signal card_removed(card: Control)
 signal cards_reordered()
+signal card_selected(card: Control, index: int)
 
 # Enums
 enum LayoutMode {
@@ -42,6 +43,8 @@ var card_target_positions: Dictionary = {}  # Maps card to its target position
 var card_target_rotations: Dictionary = {}  # Maps card to its target rotation
 var dragged_card: Control = null  # Currently dragged card
 var dragged_card_original_index: int = -1  # Original index of dragged card
+var selection_mode: bool = false  # When true, clicking selects instead of dragging
+var selectable_indices: Array[int] = []  # Which card indices are selectable
 
 
 func _ready() -> void:
@@ -371,3 +374,41 @@ func _calculate_insertion_index(card: Control) -> int:
 
 	# If we didn't insert before any card, insert at the end
 	return other_cards.size()
+
+
+## Enable selection mode - clicking a card emits card_selected instead of dragging
+func enter_selection_mode(valid_indices: Array[int] = []) -> void:
+	selection_mode = true
+	selectable_indices = valid_indices
+	for i in range(managed_cards.size()):
+		var card = managed_cards[i]
+		var is_valid = valid_indices.is_empty() or i in valid_indices
+		if card.has_method("set_face_down"):
+			pass  # Don't change face state
+		if "is_selectable" in card:
+			card.is_selectable = is_valid
+		if "drag_enabled" in card:
+			card.drag_enabled = false
+		if card.has_signal("card_clicked") and not card.card_clicked.is_connected(_on_card_clicked):
+			card.card_clicked.connect(_on_card_clicked)
+
+
+## Disable selection mode - restore normal drag behavior
+func exit_selection_mode() -> void:
+	selection_mode = false
+	selectable_indices = []
+	for card in managed_cards:
+		if "is_selectable" in card:
+			card.is_selectable = false
+		if "drag_enabled" in card:
+			card.drag_enabled = true
+		if card.has_signal("card_clicked") and card.card_clicked.is_connected(_on_card_clicked):
+			card.card_clicked.disconnect(_on_card_clicked)
+
+
+func _on_card_clicked(card: Control) -> void:
+	if not selection_mode:
+		return
+	var index = managed_cards.find(card)
+	if index >= 0:
+		card_selected.emit(card, index)

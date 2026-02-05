@@ -20,6 +20,32 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="CardBack" type="Panel" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BackLabel" type="Label" parent="CardBack"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -30.0
+offset_top = -11.5
+offset_right = 30.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "TCG"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="CardContent" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
@@ -27,24 +53,55 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-offset_left = 10.0
-offset_top = 10.0
-offset_right = -10.0
-offset_bottom = -10.0
+offset_left = 6.0
+offset_top = 4.0
+offset_right = -6.0
+offset_bottom = -4.0
 
-[node name="Title" type="Label" parent="CardContent"]
+[node name="HeaderRow" type="HBoxContainer" parent="CardContent"]
 layout_mode = 2
+
+[node name="Title" type="Label" parent="CardContent/HeaderRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Card Name"
-horizontal_alignment = 1
+text_overrun_behavior = 3
+
+[node name="RankLabel" type="Label" parent="CardContent/HeaderRow"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 2
 
 [node name="Artwork" type="ColorRect" parent="CardContent"]
-custom_minimum_size = Vector2(0, 100)
+custom_minimum_size = Vector2(0, 70)
 layout_mode = 2
 size_flags_vertical = 3
 color = Color(0.4, 0.4, 0.6, 1)
+
+[node name="TypeLabel" type="Label" parent="CardContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 10
+text = ""
+
+[node name="StatsRow" type="HBoxContainer" parent="CardContent"]
+layout_mode = 2
+
+[node name="CounterLabel" type="Label" parent="CardContent/StatsRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+text = ""
+
+[node name="InvasionLabel" type="Label" parent="CardContent/StatsRow"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = ""
+horizontal_alignment = 2
 
 [node name="Description" type="Label" parent="CardContent"]
 layout_mode = 2
 size_flags_vertical = 3
 text = "Card description goes here."
 autowrap_mode = 3
+text_overrun_behavior = 3
+theme_override_font_sizes/font_size = 10

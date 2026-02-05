@@ -11,9 +11,13 @@ config_version=5
 [application]
 
 config/name="example_tcg_game"
-run/main_scene="res://scenes/Main.tscn"
+run/main_scene="res://scenes/board/GameBoard.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[autoload]
+
+CardData="*res://data/card_data.gd"
 
 [physics]
 
