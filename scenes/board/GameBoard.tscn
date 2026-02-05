@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scenes/board/game_board.gd" id="1_gb"]
 [ext_resource type="PackedScene" path="res://scenes/board/PlayerBoard.tscn" id="2_pb"]
+[ext_resource type="Script" path="res://scenes/managers/card_manager.gd" id="3_cm"]
 
 [node name="GameBoard" type="Control"]
 layout_mode = 3
@@ -19,7 +20,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.12, 0.15, 1)
+color = Color(0.1, 0.04, 0.03, 1)
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -28,9 +29,10 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 0
 
 [node name="TopHUD" type="HBoxContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_constants/separation = 20
 
@@ -38,102 +40,119 @@ theme_override_constants/separation = 20
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Turn 1 - Player 1"
-theme_override_font_sizes/font_size = 16
+theme_override_font_sizes/font_size = 14
 
 [node name="PhaseLabel" type="Label" parent="VBoxContainer/TopHUD"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Start Phase"
-horizontal_alignment = 2
-theme_override_font_sizes/font_size = 16
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 14
 
-[node name="BoardArea" type="VBoxContainer" parent="VBoxContainer"]
+[node name="CardSelectPromptTop" type="Label" parent="VBoxContainer/TopHUD"]
 layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 4
+size_flags_horizontal = 3
+text = ""
+horizontal_alignment = 2
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 1, 0.5, 1)
 
-[node name="Player2Board" parent="VBoxContainer/BoardArea" instance=ExtResource("2_pb")]
+[node name="Player2HandSpace" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+
+[node name="Player2Board" parent="VBoxContainer" instance=ExtResource("2_pb")]
 layout_mode = 2
 size_flags_vertical = 3
 player_id = 1
 is_mirrored = true
 
-[node name="Divider" type="ColorRect" parent="VBoxContainer/BoardArea"]
-custom_minimum_size = Vector2(0, 3)
+[node name="Divider" type="ColorRect" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 2)
 layout_mode = 2
-color = Color(0.4, 0.4, 0.5, 1)
+color = Color(0.5, 0.5, 0.6, 0.8)
 
-[node name="Player1Board" parent="VBoxContainer/BoardArea" instance=ExtResource("2_pb")]
+[node name="Player1Board" parent="VBoxContainer" instance=ExtResource("2_pb")]
 layout_mode = 2
 size_flags_vertical = 3
 player_id = 0
 
+[node name="Player1HandSpace" type="Control" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
 [node name="BottomHUD" type="HBoxContainer" parent="VBoxContainer"]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="ActionPanel" type="HBoxContainer" parent="VBoxContainer/BottomHUD"]
+[node name="LogPanel" type="PanelContainer" parent="VBoxContainer/BottomHUD"]
+custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
-alignment = 1
-
-[node name="PlayBattle" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel"]
-custom_minimum_size = Vector2(100, 40)
-layout_mode = 2
-text = "Play Battle"
-
-[node name="PlayStrategy" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel"]
-custom_minimum_size = Vector2(100, 40)
-layout_mode = 2
-text = "Strategy"
-
-[node name="GainRage" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel"]
-custom_minimum_size = Vector2(100, 40)
-layout_mode = 2
-text = "Gain Rage"
-
-[node name="PlayMonster" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel"]
-custom_minimum_size = Vector2(100, 40)
-layout_mode = 2
-text = "Play Monster"
-
-[node name="Invade" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel"]
-custom_minimum_size = Vector2(100, 40)
-layout_mode = 2
-text = "Invade"
-
-[node name="Pass" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel"]
-custom_minimum_size = Vector2(80, 40)
-layout_mode = 2
-text = "Pass"
-
-[node name="LogPanel" type="PanelContainer" parent="VBoxContainer/BottomHUD"]
-custom_minimum_size = Vector2(350, 0)
-layout_mode = 2
 
 [node name="LogOutput" type="RichTextLabel" parent="VBoxContainer/BottomHUD/LogPanel"]
 layout_mode = 2
 text = "Game Log:
 "
 scroll_following = true
+theme_override_font_sizes/normal_font_size = 11
 
-[node name="CardSelectPrompt" type="Label" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -200.0
-offset_top = 10.0
-offset_right = 200.0
-offset_bottom = 40.0
-grow_horizontal = 2
-text = "Select a card..."
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 18
-theme_override_colors/font_color = Color(1, 1, 0.5, 1)
+[node name="ActionPanel" type="VBoxContainer" parent="VBoxContainer/BottomHUD"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Row1" type="HBoxContainer" parent="VBoxContainer/BottomHUD/ActionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 2
+
+[node name="PlayBattle" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row1"]
+custom_minimum_size = Vector2(90, 32)
+layout_mode = 2
+text = "Play Battle"
+
+[node name="PlayStrategy" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row1"]
+custom_minimum_size = Vector2(80, 32)
+layout_mode = 2
+text = "Strategy"
+
+[node name="GainRage" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row1"]
+custom_minimum_size = Vector2(80, 32)
+layout_mode = 2
+text = "Gain Rage"
+
+[node name="Row2" type="HBoxContainer" parent="VBoxContainer/BottomHUD/ActionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 2
+
+[node name="PlayMonster" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row2"]
+custom_minimum_size = Vector2(90, 32)
+layout_mode = 2
+text = "Play Monster"
+
+[node name="Invade" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row2"]
+custom_minimum_size = Vector2(80, 32)
+layout_mode = 2
+text = "Invade"
+
+[node name="Pass" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row2"]
+custom_minimum_size = Vector2(80, 32)
+layout_mode = 2
+text = "Pass"
+
+[node name="Player1Hand" type="Node2D" parent="."]
+script = ExtResource("3_cm")
+layout_mode = 3
+max_cards = 15
+card_spacing = 120.0
+
+[node name="Player2Hand" type="Node2D" parent="."]
+script = ExtResource("3_cm")
+layout_mode = 3
+max_cards = 15
+card_spacing = 120.0
 
 [node name="EndGamePanel" type="PanelContainer" parent="."]
 visible = false
@@ -144,9 +163,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -200.0
-offset_top = -80.0
+offset_top = -60.0
 offset_right = 200.0
-offset_bottom = 80.0
+offset_bottom = 60.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -155,4 +174,4 @@ layout_mode = 2
 text = "Game Over!"
 horizontal_alignment = 1
 vertical_alignment = 1
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 22

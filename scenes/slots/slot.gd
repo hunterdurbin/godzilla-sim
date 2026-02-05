@@ -65,14 +65,24 @@ func place_card(card: Control, animate: bool = true) -> bool:
 	held_card = card
 	is_occupied = true
 
-	var target_pos = size / 2.0 - (card.size * card.scale) / 2.0
+	# Scale card to fit within this slot (with 4px padding)
+	var padding := 4.0
+	var available := size - Vector2(padding * 2, padding * 2)
+	var card_base_size: Vector2 = card.size if card.size.x > 0 else Vector2(150, 210)
+	var scale_factor: float = minf(available.x / card_base_size.x, available.y / card_base_size.y)
+	scale_factor = minf(scale_factor, 1.0)  # Never scale up
+	card.scale = Vector2(scale_factor, scale_factor)
+	if "original_scale" in card:
+		card.original_scale = card.scale
+
+	var scaled_size: Vector2 = card_base_size * scale_factor
+	var target_pos: Vector2 = (size - scaled_size) / 2.0
 
 	if animate and card.has_method("return_to_position"):
 		card.return_to_position(target_pos, snap_duration)
 	else:
 		card.position = target_pos
 
-	card.scale = Vector2.ONE
 	card.z_index = 0
 
 	if card.has_signal("drag_started"):

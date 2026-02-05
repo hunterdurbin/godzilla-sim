@@ -11,6 +11,7 @@ signal card_clicked(card: Control)
 @export var card_name: String = "Card Name"
 @export var card_description: String = "Card description goes here."
 @export var hover_scale: float = 1.15
+@export var hover_lift: float = 40.0
 @export var scale_duration: float = 0.2
 
 # Card data
@@ -27,6 +28,8 @@ var drag_enabled: bool = true
 
 # Tween reference
 var tween: Tween
+var _pre_hover_z_index: int = 0
+var _pre_hover_position: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
@@ -77,12 +80,31 @@ func _gui_input(event: InputEvent) -> void:
 
 func _on_mouse_entered() -> void:
 	if not is_dragging:
-		_scale_card(hover_scale)
+		_pre_hover_z_index = z_index
+		_pre_hover_position = position
+		z_index = 50
+		_animate_hover(true)
 
 
 func _on_mouse_exited() -> void:
 	if not is_dragging:
-		_scale_card(1.0)
+		z_index = _pre_hover_z_index
+		_animate_hover(false)
+
+
+func _animate_hover(entering: bool) -> void:
+	if tween:
+		tween.kill()
+	tween = create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_CUBIC)
+	tween.set_parallel(true)
+	if entering:
+		tween.tween_property(self, "scale", original_scale * hover_scale, scale_duration)
+		tween.tween_property(self, "position", _pre_hover_position + Vector2(0, -hover_lift), scale_duration)
+	else:
+		tween.tween_property(self, "scale", original_scale, scale_duration)
+		tween.tween_property(self, "position", _pre_hover_position, scale_duration)
 
 
 func _scale_card(target_scale: float) -> void:

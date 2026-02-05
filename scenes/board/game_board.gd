@@ -6,22 +6,28 @@ var turn_manager: TurnManager
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
 # UI references
-@onready var player1_board: Control = $VBoxContainer/BoardArea/Player1Board
-@onready var player2_board: Control = $VBoxContainer/BoardArea/Player2Board
+@onready var player1_board: Control = $VBoxContainer/Player1Board
+@onready var player2_board: Control = $VBoxContainer/Player2Board
 @onready var action_panel: Control = $VBoxContainer/BottomHUD/ActionPanel
 @onready var phase_label: Label = $VBoxContainer/TopHUD/PhaseLabel
 @onready var turn_label: Label = $VBoxContainer/TopHUD/TurnLabel
 @onready var log_output: RichTextLabel = $VBoxContainer/BottomHUD/LogPanel/LogOutput
 @onready var end_game_panel: Control = $EndGamePanel
-@onready var card_select_prompt: Label = $CardSelectPrompt
+@onready var card_select_prompt: Label = $VBoxContainer/TopHUD/CardSelectPromptTop
+
+# Hand references
+@onready var player1_hand: Node2D = $Player1Hand
+@onready var player2_hand: Node2D = $Player2Hand
+@onready var player1_hand_space: Control = $VBoxContainer/Player1HandSpace
+@onready var player2_hand_space: Control = $VBoxContainer/Player2HandSpace
 
 # Action buttons
-@onready var btn_play_battle: Button = $VBoxContainer/BottomHUD/ActionPanel/PlayBattle
-@onready var btn_play_strategy: Button = $VBoxContainer/BottomHUD/ActionPanel/PlayStrategy
-@onready var btn_gain_rage: Button = $VBoxContainer/BottomHUD/ActionPanel/GainRage
-@onready var btn_play_monster: Button = $VBoxContainer/BottomHUD/ActionPanel/PlayMonster
-@onready var btn_invade: Button = $VBoxContainer/BottomHUD/ActionPanel/Invade
-@onready var btn_pass: Button = $VBoxContainer/BottomHUD/ActionPanel/Pass
+@onready var btn_play_battle: Button = $VBoxContainer/BottomHUD/ActionPanel/Row1/PlayBattle
+@onready var btn_play_strategy: Button = $VBoxContainer/BottomHUD/ActionPanel/Row1/PlayStrategy
+@onready var btn_gain_rage: Button = $VBoxContainer/BottomHUD/ActionPanel/Row1/GainRage
+@onready var btn_play_monster: Button = $VBoxContainer/BottomHUD/ActionPanel/Row2/PlayMonster
+@onready var btn_invade: Button = $VBoxContainer/BottomHUD/ActionPanel/Row2/Invade
+@onready var btn_pass: Button = $VBoxContainer/BottomHUD/ActionPanel/Row2/Pass
 
 # State tracking
 var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
@@ -34,6 +40,10 @@ func _ready() -> void:
 	# Initialize the turn manager
 	turn_manager = TurnManager.new()
 	turn_manager.setup(CardData)
+
+	# Wire hand CardManagers to PlayerBoards
+	player1_board.hand_manager = player1_hand
+	player2_board.hand_manager = player2_hand
 
 	# Connect turn manager signals
 	turn_manager.phase_started.connect(_on_phase_started)
@@ -62,6 +72,9 @@ func _ready() -> void:
 	end_game_panel.visible = false
 	card_select_prompt.visible = false
 
+	# Position hands over hand spaces (deferred so layout is resolved)
+	call_deferred("_position_hands")
+
 	# Initial board sync
 	_sync_boards()
 
@@ -71,6 +84,22 @@ func _ready() -> void:
 
 func _start_game() -> void:
 	turn_manager.start_game()
+
+
+func _position_hands() -> void:
+	# Player 1 hand: left side, vertically centered in hand space
+	if player1_hand_space and player1_hand:
+		var rect := player1_hand_space.get_global_rect()
+		player1_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y + rect.size.y / 2.0)
+	# Player 2 (opponent) hand: left side, mostly off-screen at top edge
+	if player2_hand_space and player2_hand:
+		var rect := player2_hand_space.get_global_rect()
+		player2_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y - 160.0)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		call_deferred("_position_hands")
 
 
 # --- Signal handlers from TurnManager ---
@@ -278,12 +307,12 @@ func _enter_zone_selection() -> void:
 					slot.hover_started.connect(_on_zone_hover_clicked.bind(i))
 
 
-func _on_zone_slot_clicked(_card: Control, zone_index: int) -> void:
+func _on_zone_slot_clicked(_card: Control, _zone_index: int) -> void:
 	# This shouldn't normally fire during selection mode
 	pass
 
 
-func _on_zone_hover_clicked(zone_index: int) -> void:
+func _on_zone_hover_clicked(_zone_index: int) -> void:
 	if not waiting_for_zone_select:
 		return
 	# Use input detection instead
@@ -345,6 +374,8 @@ func _sync_boards() -> void:
 		player1_board.sync_to_state(state.players[0])
 	if player2_board:
 		player2_board.sync_to_state(state.players[1])
+	# Reposition hands in case layout shifted
+	call_deferred("_position_hands")
 
 
 func _update_hand_visibility(active_player_id: int) -> void:
