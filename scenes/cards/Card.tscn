@@ -1,0 +1,50 @@
+[gd_scene load_steps=2 format=3 uid="uid://cw8yxj3qmvh0c"]
+
+[ext_resource type="Script" path="res://scenes/cards/card.gd" id="1_abc123"]
+
+[node name="Card" type="Control"]
+custom_minimum_size = Vector2(150, 210)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 150.0
+offset_bottom = 210.0
+pivot_offset = Vector2(75, 105)
+mouse_filter = 0
+script = ExtResource("1_abc123")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CardContent" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+
+[node name="Title" type="Label" parent="CardContent"]
+layout_mode = 2
+text = "Card Name"
+horizontal_alignment = 1
+
+[node name="Artwork" type="ColorRect" parent="CardContent"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+size_flags_vertical = 3
+color = Color(0.4, 0.4, 0.6, 1)
+
+[node name="Description" type="Label" parent="CardContent"]
+layout_mode = 2
+size_flags_vertical = 3
+text = "Card description goes here."
+autowrap_mode = 3

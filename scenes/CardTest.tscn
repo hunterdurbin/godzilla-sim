@@ -1,0 +1,51 @@
+[gd_scene load_steps=2 format=3 uid="uid://bx9yxj3qmvh1d"]
+
+[ext_resource type="PackedScene" uid="uid://cw8yxj3qmvh0c" path="res://scenes/cards/Card.tscn" id="1_card"]
+
+[node name="CardTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.2, 0.3, 0.25, 1)
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 20.0
+offset_bottom = 46.0
+grow_horizontal = 2
+text = "Hover to scale • Click and drag to move cards"
+horizontal_alignment = 1
+
+[node name="Card1" parent="." instance=ExtResource("1_card")]
+layout_mode = 1
+offset_left = 100.0
+offset_top = 100.0
+offset_right = 250.0
+offset_bottom = 310.0
+
+[node name="Card2" parent="." instance=ExtResource("1_card")]
+layout_mode = 1
+offset_left = 300.0
+offset_top = 100.0
+offset_right = 450.0
+offset_bottom = 310.0
+
+[node name="Card3" parent="." instance=ExtResource("1_card")]
+layout_mode = 1
+offset_left = 500.0
+offset_top = 100.0
+offset_right = 650.0
+offset_bottom = 310.0
