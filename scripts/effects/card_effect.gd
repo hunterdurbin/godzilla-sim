@@ -92,3 +92,22 @@ func is_base_strategy() -> bool:
 	## Return true if this is a <Base> strategy card (not discarded at start phase;
 	## destroyed when any monster invades into zones 6-8).
 	return false
+
+
+# --- Column utilities ---
+
+static func get_opponent_column_zones(zone_idx: int) -> Array[int]:
+	## Get the opponent's zone indices in the same column as the given zone.
+	## Accounts for 180° board mirroring between players.
+	## Columns: 1=[1], 2=[2], 3=[3,8], 4=[4,7], 5=[5,6]
+	## Cross-board: your column 1 faces opponent's column 5, etc.
+	match zone_idx:
+		0: return [4, 5]   # zone 1 → opponent zones 5, 6
+		1: return [3, 6]   # zone 2 → opponent zones 4, 7
+		2: return [2, 7]   # zone 3 → opponent zones 3, 8
+		3: return [1]      # zone 4 → opponent zone 2
+		4: return [0]      # zone 5 → opponent zone 1
+		5: return [0]      # zone 6 → opponent zone 1
+		6: return [1]      # zone 7 → opponent zone 2
+		7: return [2, 7]   # zone 8 → opponent zones 3, 8
+	return []

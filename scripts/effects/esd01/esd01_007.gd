@@ -17,20 +17,8 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func _destroy_opponent_column(ctx: EffectContext, zone_idx: int) -> void:
-	## Destroy all opponent battle cards in the given zone and the mirrored zone.
-	## Zone layout: zones 1-5 (back row), zones 6-8 (front row)
-	## Column pairs: 1&6, 2&7, 3&8, 4 (solo), 5 (solo)
 	var opponent := ctx.opponent
-	var zones_to_check: Array[int] = [zone_idx]
-
-	# Add paired zone in same column
-	if zone_idx < 5:  # Back row zones 0-4 (zones 1-5)
-		var front_pair: int = zone_idx + 5  # Maps to zones 6-8 (indices 5-7)
-		if front_pair < 8:
-			zones_to_check.append(front_pair)
-	elif zone_idx >= 5:  # Front row zones 5-7 (zones 6-8)
-		var back_pair: int = zone_idx - 5  # Maps to zones 1-3 (indices 0-2)
-		zones_to_check.append(back_pair)
+	var zones_to_check: Array[int] = get_opponent_column_zones(zone_idx)
 
 	var destroyed_any := false
 	for zi in zones_to_check:

@@ -13,14 +13,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 func _destroy_opponent_column(ctx: EffectContext, zone_idx: int) -> void:
 	var opponent := ctx.opponent
-	var zones_to_check: Array[int] = [zone_idx]
-
-	# Add paired zone in same column
-	# Column pairs: 1&6 (idx 0&5), 2&7 (idx 1&6), 3&8 (idx 2&7), 4 solo, 5 solo
-	if zone_idx < 5 and zone_idx + 5 < 8:
-		zones_to_check.append(zone_idx + 5)
-	elif zone_idx >= 5:
-		zones_to_check.append(zone_idx - 5)
+	var zones_to_check: Array[int] = get_opponent_column_zones(zone_idx)
 
 	var destroyed_any := false
 	for zi in zones_to_check:
