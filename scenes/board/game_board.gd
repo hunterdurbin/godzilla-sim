@@ -35,6 +35,11 @@ var waiting_for_card_select: bool = false
 var waiting_for_zone_select: bool = false
 var selected_card_id: String = ""
 
+# Drag-to-zone state
+var _drag_card: Control = null
+var _drag_valid_zones: Array[int] = []
+var _drag_action: CardEnums.ActionType = CardEnums.ActionType.PASS
+
 
 func _ready() -> void:
 	# Initialize the turn manager
@@ -67,6 +72,12 @@ func _ready() -> void:
 	btn_play_monster.pressed.connect(_on_play_monster_pressed)
 	btn_invade.pressed.connect(_on_invade_pressed)
 	btn_pass.pressed.connect(_on_pass_pressed)
+
+	# Connect hand drag signals for drag-to-zone
+	player1_hand.hand_card_drag_started.connect(_on_hand_drag_started)
+	player1_hand.hand_card_drag_ended.connect(_on_hand_drag_ended)
+	player2_hand.hand_card_drag_started.connect(_on_hand_drag_started)
+	player2_hand.hand_card_drag_ended.connect(_on_hand_drag_ended)
 
 	# Hide end game panel and card select prompt
 	end_game_panel.visible = false
@@ -449,3 +460,78 @@ func _find_hand_index_by_id(card_id: String) -> int:
 		if player.hand[i].get("id") == card_id:
 			return i
 	return -1
+
+
+# --- Drag-to-zone ---
+
+func _on_hand_drag_started(card: Control) -> void:
+	# Don't interfere if already in a selection flow
+	if waiting_for_card_select or waiting_for_zone_select:
+		return
+
+	var card_data: Dictionary = card.card_data if "card_data" in card else {}
+	if card_data.is_empty():
+		return
+
+	var state := turn_manager.game_state
+	var player := state.get_current_player()
+	var opponent := state.get_opponent_of_current()
+	var rules := turn_manager.rules_engine
+	var board := _get_active_player_board()
+	if not board:
+		return
+
+	# Make sure this card's hand belongs to the active player
+	if board.hand_manager != card.get_parent():
+		return
+
+	var card_type = card_data.get("card_type", -1)
+	_drag_card = card
+	_drag_valid_zones = []
+	_drag_action = CardEnums.ActionType.PASS
+
+	if card_type == CardEnums.CardType.BATTLE:
+		var card_id: String = card_data.get("id", "")
+		var hand_idx := _find_hand_index_by_id(card_id)
+		if hand_idx >= 0 and hand_idx in rules.get_playable_battle_cards(player, opponent):
+			_drag_valid_zones = rules.get_valid_zones_for_battle_card(player, opponent)
+			_drag_action = CardEnums.ActionType.PLAY_BATTLE
+
+	if not _drag_valid_zones.is_empty():
+		board.highlight_valid_zones(_drag_valid_zones)
+
+
+func _on_hand_drag_ended(card: Control) -> void:
+	var board := _get_active_player_board()
+
+	# Clean up highlights
+	if board:
+		board.clear_highlights()
+
+	if _drag_card != card or _drag_valid_zones.is_empty():
+		_drag_card = null
+		_drag_valid_zones = []
+		return
+
+	# Check if card was dropped on a valid zone
+	var mouse_pos := get_global_mouse_position()
+	if board:
+		for i in _drag_valid_zones:
+			var slot: Slot = board.zone_slots[i]
+			var rect := Rect2(slot.global_position, slot.size)
+			if rect.has_point(mouse_pos) and slot.is_empty():
+				var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
+				var hand_idx := _find_hand_index_by_id(card_id)
+				if hand_idx >= 0:
+					# Tell CardManager we handled the drop
+					board.hand_manager.drop_handled = true
+					_drag_card = null
+					_drag_valid_zones = []
+					turn_manager.submit_action(_drag_action, {
+						"hand_index": hand_idx,
+						"zone_index": i
+					})
+					return
+
+	_drag_card = null
+	_drag_valid_zones = []

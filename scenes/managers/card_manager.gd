@@ -8,6 +8,8 @@ signal card_added(card: Control)
 signal card_removed(card: Control)
 signal cards_reordered()
 signal card_selected(card: Control, index: int)
+signal hand_card_drag_started(card: Control)
+signal hand_card_drag_ended(card: Control)
 
 # Enums
 enum LayoutMode {
@@ -43,6 +45,7 @@ var card_target_positions: Dictionary = {}  # Maps card to its target position
 var card_target_rotations: Dictionary = {}  # Maps card to its target rotation
 var dragged_card: Control = null  # Currently dragged card
 var dragged_card_original_index: int = -1  # Original index of dragged card
+var drop_handled: bool = false  # Set by external listeners to prevent reordering
 var selection_mode: bool = false  # When true, clicking selects instead of dragging
 var selectable_indices: Array[int] = []  # Which card indices are selectable
 
@@ -302,10 +305,19 @@ func _on_card_drag_started(card: Control) -> void:
 		dragged_card = card
 		dragged_card_original_index = managed_cards.find(card)
 		card.z_index = 100
+		hand_card_drag_started.emit(card)
 
 
 func _on_card_drag_ended(card: Control) -> void:
 	if card not in managed_cards:
+		return
+
+	# Let external listeners handle the drop first (e.g. dropping on a zone)
+	drop_handled = false
+	hand_card_drag_ended.emit(card)
+	if drop_handled:
+		dragged_card = null
+		dragged_card_original_index = -1
 		return
 
 	# Calculate the new index based on card's current position

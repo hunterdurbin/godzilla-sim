@@ -90,13 +90,16 @@ func _sync_zones(state: PlayerState) -> void:
 		# Skip the monster's zone — monster card is managed by _sync_monster
 		if (state.monster_zone - 1) == i:
 			slot.set_monster_marker(true)
+			# Remove any battle card visual so the monster card can be placed by _sync_monster
+			if slot.has_card() and slot.get_card() != monster_card:
+				slot.remove_card(true)
 			continue
 
 		slot.set_monster_marker(false)
 		var zone_data: Dictionary = state.zones[i]
 
 		# Update card in slot
-		if zone_data.is_empty() and slot.has_card():
+		if zone_data.is_empty() and slot.has_card() and slot.get_card() != monster_card:
 			slot.remove_card(true)
 		elif not zone_data.is_empty() and not slot.has_card():
 			var card := _create_card(zone_data)

@@ -13,6 +13,7 @@ signal card_clicked(card: Control)
 @export var card_name: String = "Card Name"
 @export var card_description: String = "Card description goes here."
 @export var hover_scale: float = 1.15
+@export var hover_scale_in_slot: float = 1.5
 @export var hover_lift: float = 40.0
 @export var scale_duration: float = 0.2
 
@@ -97,6 +98,10 @@ func _on_mouse_exited() -> void:
 		_animate_hover(false)
 
 
+func _is_in_slot() -> bool:
+	return get_parent() is Slot
+
+
 func _animate_hover(entering: bool) -> void:
 	if tween:
 		tween.kill()
@@ -104,12 +109,16 @@ func _animate_hover(entering: bool) -> void:
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_CUBIC)
 	tween.set_parallel(true)
+	var in_slot := _is_in_slot()
 	if entering:
-		tween.tween_property(self, "scale", original_scale * hover_scale, scale_duration)
-		tween.tween_property(self, "position", _pre_hover_position + Vector2(0, -hover_lift), scale_duration)
+		var target_hover_scale := hover_scale_in_slot if in_slot else hover_scale
+		tween.tween_property(self, "scale", original_scale * target_hover_scale, scale_duration)
+		if not in_slot:
+			tween.tween_property(self, "position", _pre_hover_position + Vector2(0, -hover_lift), scale_duration)
 	else:
 		tween.tween_property(self, "scale", original_scale, scale_duration)
-		tween.tween_property(self, "position", _pre_hover_position, scale_duration)
+		if not in_slot:
+			tween.tween_property(self, "position", _pre_hover_position, scale_duration)
 		tween.chain().tween_callback(func(): _hover_active = false)
 
 
