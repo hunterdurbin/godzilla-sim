@@ -15,17 +15,17 @@ run/main_scene="res://scenes/ui/MainMenu.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[autoload]
+
+CardData="*res://data/card_data.gd"
+ArtworkDownloader="*res://scripts/artwork_downloader.gd"
+DecklistManager="*res://data/decklist_manager.gd"
+
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
-
-[autoload]
-
-CardData="*res://data/card_data.gd"
-DecklistManager="*res://data/decklist_manager.gd"
-ArtworkDownloader="*res://scripts/artwork_downloader.gd"
 
 [physics]
 
