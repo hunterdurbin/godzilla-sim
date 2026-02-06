@@ -221,6 +221,17 @@ func _apply_spacing() -> void:
 
 
 
+func toggle_mirrored() -> void:
+	is_mirrored = !is_mirrored
+	if is_mirrored:
+		$Rows.move_child($Rows/BackRow, 0)
+	else:
+		$Rows.move_child($Rows/FrontRow, 0)
+	_reverse_container($Rows/FrontRow)
+	_reverse_container($Rows/BackRow)
+	_reverse_container($Rows/FrontRow/LeftInfo)
+
+
 func _reverse_container(container: Node) -> void:
 	var count := container.get_child_count()
 	for i in range(count - 1):

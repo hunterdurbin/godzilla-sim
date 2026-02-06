@@ -60,6 +60,9 @@ func _ready() -> void:
 	player1_board.hand_manager = player1_hand
 	player2_board.hand_manager = player2_hand
 
+	# Rearrange layout for client so local player sees their board at bottom
+	_arrange_for_local_player()
+
 	if not is_multiplayer_game or NetworkManager.is_host():
 		# Host / solo: create and run TurnManager
 		turn_manager = TurnManager.new()
@@ -120,15 +123,53 @@ func _start_game() -> void:
 	turn_manager.start_game()
 
 
+func _arrange_for_local_player() -> void:
+	if local_player_id != 1:
+		return
+
+	var vbox := $VBoxContainer
+
+	# Swap hand spaces and boards: local (P2) to bottom, opponent (P1) to top
+	vbox.move_child(player2_hand_space, 5)
+	vbox.move_child(player1_hand_space, 1)
+	vbox.move_child(player1_board, 2)
+	vbox.move_child(player2_board, 4)
+
+	# Swap hand space sizes (opponent=small, local=large)
+	player1_hand_space.custom_minimum_size.y = 30
+	player2_hand_space.custom_minimum_size.y = 100
+
+	# Toggle mirroring (P1 now at top needs mirroring, P2 at bottom doesn't)
+	player1_board.toggle_mirrored()
+	player2_board.toggle_mirrored()
+
+
 func _position_hands() -> void:
-	# Player 1 hand: left side, vertically centered in hand space
-	if player1_hand_space and player1_hand:
-		var rect := player1_hand_space.get_global_rect()
-		player1_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y + rect.size.y / 2.0)
-	# Player 2 (opponent) hand: left side, mostly off-screen at top edge
-	if player2_hand_space and player2_hand:
-		var rect := player2_hand_space.get_global_rect()
-		player2_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y - 160.0)
+	var local_hand: Node2D
+	var local_space: Control
+	var opponent_hand: Node2D
+	var opponent_space: Control
+
+	if local_player_id == 0:
+		local_hand = player1_hand
+		local_space = player1_hand_space
+		opponent_hand = player2_hand
+		opponent_space = player2_hand_space
+	else:
+		local_hand = player2_hand
+		local_space = player2_hand_space
+		opponent_hand = player1_hand
+		opponent_space = player1_hand_space
+
+	# Local player hand: visible, centered in hand space
+	if local_space and local_hand:
+		var rect := local_space.get_global_rect()
+		local_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y + rect.size.y / 2.0)
+
+	# Opponent hand: mostly off-screen at top edge
+	if opponent_space and opponent_hand:
+		var rect := opponent_space.get_global_rect()
+		opponent_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y - 160.0)
 
 
 func _notification(what: int) -> void:
