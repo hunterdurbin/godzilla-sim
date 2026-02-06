@@ -245,6 +245,10 @@ func _on_invade_pressed() -> void:
 
 
 func _on_pass_pressed() -> void:
+	if waiting_for_card_select or waiting_for_zone_select:
+		_cancel_selection()
+		_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
+		return
 	_cancel_selection()
 	turn_manager.submit_action(CardEnums.ActionType.PASS)
 
