@@ -56,3 +56,10 @@ layout_mode = 2
 size_flags_horizontal = 4
 text = "Solo v Self"
 theme_override_font_sizes/font_size = 22
+
+[node name="LanButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "LAN Multiplayer"
+theme_override_font_sizes/font_size = 22

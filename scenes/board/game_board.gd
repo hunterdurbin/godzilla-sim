@@ -1,9 +1,20 @@
 extends Control
 
 ## Main game controller. Orchestrates the UI, TurnManager, and both PlayerBoards.
+## In multiplayer, the host runs TurnManager and broadcasts state to the client.
+## The client receives state via RPC and sends actions back to the host.
 
-var turn_manager: TurnManager
+var turn_manager: TurnManager  # Only exists on host/solo
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
+
+# Multiplayer state
+var is_multiplayer_game: bool = false
+var local_player_id: int = 0  # 0 for host/solo, 1 for client
+
+# Client-side state (populated from host RPCs)
+var _client_players: Array[PlayerState] = []
+var _client_current_player_id: int = 0
+var _client_playable: Dictionary = {}  # Playable card/zone indices from host
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/Player1Board
@@ -42,28 +53,35 @@ var _drag_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 
 
 func _ready() -> void:
-	# Initialize the turn manager
-	turn_manager = TurnManager.new()
-	turn_manager.setup(CardData)
+	is_multiplayer_game = NetworkManager.is_multiplayer()
+	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game else 0
 
 	# Wire hand CardManagers to PlayerBoards
 	player1_board.hand_manager = player1_hand
 	player2_board.hand_manager = player2_hand
 
-	# Connect turn manager signals
-	turn_manager.phase_started.connect(_on_phase_started)
-	turn_manager.phase_ended.connect(_on_phase_ended)
-	turn_manager.awaiting_player_action.connect(_on_awaiting_action)
-	turn_manager.turn_started.connect(_on_turn_started)
-	turn_manager.game_ended.connect(_on_game_ended)
-	turn_manager.log_message.connect(_on_log_message)
+	if not is_multiplayer_game or NetworkManager.is_host():
+		# Host / solo: create and run TurnManager
+		turn_manager = TurnManager.new()
+		turn_manager.setup(CardData)
 
-	# Connect action handler signals for visual feedback
-	turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
-	turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
-	turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
-	turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
-	turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
+		# Connect turn manager signals
+		turn_manager.phase_started.connect(_on_phase_started)
+		turn_manager.phase_ended.connect(_on_phase_ended)
+		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
+		turn_manager.turn_started.connect(_on_turn_started)
+		turn_manager.game_ended.connect(_on_game_ended)
+		turn_manager.log_message.connect(_on_log_message)
+
+		# Connect action handler signals for visual feedback
+		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
+		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
+		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
+		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
+		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
+	else:
+		# Client: initialize empty client state, wait for host RPCs
+		_client_players = [PlayerState.new(0), PlayerState.new(1)]
 
 	# Connect buttons
 	btn_play_battle.pressed.connect(_on_play_battle_pressed)
@@ -79,6 +97,10 @@ func _ready() -> void:
 	player2_hand.hand_card_drag_started.connect(_on_hand_drag_started)
 	player2_hand.hand_card_drag_ended.connect(_on_hand_drag_ended)
 
+	# Listen for disconnects in multiplayer
+	if is_multiplayer_game:
+		NetworkManager.player_disconnected.connect(_on_opponent_disconnected)
+
 	# Hide end game panel and card select prompt
 	end_game_panel.visible = false
 	card_select_prompt.visible = false
@@ -86,11 +108,12 @@ func _ready() -> void:
 	# Position hands over hand spaces (deferred so layout is resolved)
 	call_deferred("_position_hands")
 
-	# Initial board sync
-	_sync_boards()
-
-	# Start the game (deferred to let scene tree finish setup)
-	call_deferred("_start_game")
+	# Initial board sync and start (host/solo only)
+	if turn_manager:
+		_sync_boards()
+		call_deferred("_start_game")
+	else:
+		_disable_all_buttons()
 
 
 func _start_game() -> void:
@@ -113,28 +136,82 @@ func _notification(what: int) -> void:
 		call_deferred("_position_hands")
 
 
-# --- Signal handlers from TurnManager ---
+# --- State access helpers (work for both host and client) ---
+
+func _get_current_pid() -> int:
+	if turn_manager:
+		return turn_manager.game_state.current_player_id
+	return _client_current_player_id
+
+
+func _get_player_state(pid: int) -> PlayerState:
+	if turn_manager:
+		return turn_manager.game_state.players[pid]
+	return _client_players[pid]
+
+
+func _get_current_player() -> PlayerState:
+	return _get_player_state(_get_current_pid())
+
+
+func _get_opponent_player() -> PlayerState:
+	return _get_player_state(1 - _get_current_pid())
+
+
+# --- Action submission (routes to TurnManager or RPC) ---
+
+func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> void:
+	if not is_multiplayer_game or NetworkManager.is_host():
+		turn_manager.submit_action(action, params)
+	else:
+		var params_json := JSON.stringify(params) if not params.is_empty() else ""
+		_rpc_submit_action.rpc_id(1, int(action), params_json)
+
+
+# --- Signal handlers from TurnManager (host/solo only) ---
 
 func _on_phase_started(phase: CardEnums.GamePhase) -> void:
 	phase_label.text = CardEnums.phase_to_string(phase)
 	_sync_boards()
+	_broadcast_state()
 
 
 func _on_phase_ended(_phase: CardEnums.GamePhase) -> void:
 	_sync_boards()
+	_broadcast_state()
 
 
 func _on_turn_started(player_id: int) -> void:
 	turn_label.text = "Turn %d - Player %d" % [turn_manager.game_state.turn_number, player_id + 1]
-
-	# Show/hide hands based on whose turn it is
 	_update_hand_visibility(player_id)
 	_sync_boards()
+	_broadcast_state()
 
 
 func _on_awaiting_action(valid_actions: Array) -> void:
 	_sync_boards()
-	_update_action_buttons(valid_actions)
+
+	if is_multiplayer_game:
+		_broadcast_state()
+		var active_id := turn_manager.game_state.current_player_id
+
+		# Compute playable indices for the active player
+		var playable := _compute_playable_data()
+		var actions_json := JSON.stringify(valid_actions)
+		var playable_json := JSON.stringify(playable)
+
+		if active_id == local_player_id:
+			# Host's turn
+			_client_playable = playable
+			_update_action_buttons(valid_actions)
+		else:
+			# Client's turn — send context, disable host buttons
+			_disable_all_buttons()
+			for peer_id in NetworkManager.peer_player_map:
+				if NetworkManager.peer_player_map[peer_id] == active_id:
+					_rpc_receive_action_context.rpc_id(peer_id, actions_json, playable_json)
+	else:
+		_update_action_buttons(valid_actions)
 
 
 func _on_game_ended(winner_id: int, reason: String) -> void:
@@ -143,33 +220,40 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	if win_label:
 		win_label.text = "Player %d Wins!\n%s" % [winner_id + 1, reason]
 	_disable_all_buttons()
+	if is_multiplayer_game and NetworkManager.is_host():
+		_rpc_receive_game_ended.rpc(winner_id, reason)
 
 
 func _on_log_message(text: String) -> void:
 	if log_output:
 		log_output.append_text(text + "\n")
-		# Auto-scroll to bottom
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
+	if is_multiplayer_game and NetworkManager.is_host():
+		_rpc_receive_log.rpc(text)
 
 
 # --- Action handler visual feedback ---
 
 func _on_battle_card_played(_player_id: int, _card: Dictionary, _zone_index: int) -> void:
 	_sync_boards()
+	_broadcast_state()
 
 
 func _on_monster_advanced(_player_id: int, _from_zone: int, _to_zone: int) -> void:
 	_sync_boards()
+	_broadcast_state()
 
 
 func _on_battle_card_crushed(player_id: int, zone_index: int, card: Dictionary) -> void:
 	_on_log_message("Battle card '%s' crushed in P%d Zone %d!" % [card.get("name", "?"), player_id + 1, zone_index + 1])
 	_sync_boards()
+	_broadcast_state()
 
 
 func _on_counter_succeeded(player_id: int, total_cp: int, threat: int) -> void:
 	_on_log_message("Counter SUCCESS! P%d CP %d >= Threat %d" % [player_id + 1, total_cp, threat])
 	_sync_boards()
+	_broadcast_state()
 
 
 func _on_counter_failed(player_id: int, total_cp: int, threat: int) -> void:
@@ -179,12 +263,15 @@ func _on_counter_failed(player_id: int, total_cp: int, threat: int) -> void:
 # --- Button handlers ---
 
 func _on_play_battle_pressed() -> void:
-	var state := turn_manager.game_state
-	var player := state.get_current_player()
-	var opponent := state.get_opponent_of_current()
-	var rules := turn_manager.rules_engine
+	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+		return
 
-	var playable := rules.get_playable_battle_cards(player, opponent)
+	var playable: Array[int] = []
+	if turn_manager:
+		var state := turn_manager.game_state
+		playable = turn_manager.rules_engine.get_playable_battle_cards(state.get_current_player(), state.get_opponent_of_current())
+	else:
+		playable.assign(_client_playable.get("battle_cards", []))
 	if playable.is_empty():
 		return
 
@@ -193,11 +280,14 @@ func _on_play_battle_pressed() -> void:
 
 
 func _on_play_strategy_pressed() -> void:
-	var state := turn_manager.game_state
-	var player := state.get_current_player()
-	var rules := turn_manager.rules_engine
+	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+		return
 
-	var playable := rules.get_playable_strategy_cards(player)
+	var playable: Array[int] = []
+	if turn_manager:
+		playable = turn_manager.rules_engine.get_playable_strategy_cards(turn_manager.game_state.get_current_player())
+	else:
+		playable.assign(_client_playable.get("strategy_cards", []))
 	if playable.is_empty():
 		return
 
@@ -206,24 +296,30 @@ func _on_play_strategy_pressed() -> void:
 
 
 func _on_gain_rage_pressed() -> void:
-	var state := turn_manager.game_state
-	var player := state.get_current_player()
-	var rules := turn_manager.rules_engine
+	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+		return
 
-	var discardable := rules.get_monster_cards_for_rage(player)
-	if discardable.is_empty():
+	var playable: Array[int] = []
+	if turn_manager:
+		playable = turn_manager.rules_engine.get_monster_cards_for_rage(turn_manager.game_state.get_current_player())
+	else:
+		playable.assign(_client_playable.get("rage_cards", []))
+	if playable.is_empty():
 		return
 
 	pending_action = CardEnums.ActionType.GAIN_RAGE
-	_enter_card_selection("Select a MONSTER card to discard for Rage:", discardable)
+	_enter_card_selection("Select a MONSTER card to discard for Rage:", playable)
 
 
 func _on_play_monster_pressed() -> void:
-	var state := turn_manager.game_state
-	var player := state.get_current_player()
-	var rules := turn_manager.rules_engine
+	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+		return
 
-	var playable := rules.get_playable_monsters(player)
+	var playable: Array[int] = []
+	if turn_manager:
+		playable = turn_manager.rules_engine.get_playable_monsters(turn_manager.game_state.get_current_player())
+	else:
+		playable.assign(_client_playable.get("monster_cards", []))
 	if playable.is_empty():
 		return
 
@@ -232,25 +328,31 @@ func _on_play_monster_pressed() -> void:
 
 
 func _on_invade_pressed() -> void:
-	var state := turn_manager.game_state
-	var player := state.get_current_player()
-	var rules := turn_manager.rules_engine
+	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+		return
 
-	var discardable := rules.get_discardable_cards_for_invade(player)
-	if discardable.is_empty():
+	var playable: Array[int] = []
+	if turn_manager:
+		playable = turn_manager.rules_engine.get_discardable_cards_for_invade(turn_manager.game_state.get_current_player())
+	else:
+		playable.assign(_client_playable.get("invade_cards", []))
+	if playable.is_empty():
 		return
 
 	pending_action = CardEnums.ActionType.INVADE
-	_enter_card_selection("Select a card to discard for Invasion:", discardable)
+	_enter_card_selection("Select a card to discard for Invasion:", playable)
 
 
 func _on_pass_pressed() -> void:
 	if waiting_for_card_select or waiting_for_zone_select:
 		_cancel_selection()
-		_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
+		if turn_manager:
+			_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
+		else:
+			_update_action_buttons(_client_playable.get("valid_actions", []))
 		return
 	_cancel_selection()
-	turn_manager.submit_action(CardEnums.ActionType.PASS)
+	_submit_action(CardEnums.ActionType.PASS)
 
 
 # --- Card selection flow ---
@@ -263,8 +365,6 @@ func _enter_card_selection(prompt_text: String, valid_indices: Array[int]) -> vo
 	btn_pass.disabled = false
 	btn_pass.text = "Cancel"
 
-	# Enable selection mode on the active player's hand
-	# Translate player.hand indices to managed_cards indices (may differ if reordered)
 	var board := _get_active_player_board()
 	if board and board.hand_manager:
 		var visual_indices := _hand_indices_to_visual(valid_indices, board)
@@ -277,35 +377,33 @@ func _on_hand_card_selected(card: Control, _visual_index: int) -> void:
 	if not waiting_for_card_select:
 		return
 
-	# Store the card's unique ID so we can resolve the hand index at submit time
 	selected_card_id = card.card_data.get("id", "") if "card_data" in card else ""
 	if selected_card_id.is_empty():
 		return
 
 	match pending_action:
 		CardEnums.ActionType.PLAY_BATTLE:
-			# Now need to select a zone
 			_enter_zone_selection()
 		CardEnums.ActionType.PLAY_STRATEGY:
 			var idx := _find_hand_index_by_id(selected_card_id)
 			_cancel_selection()
 			if idx >= 0:
-				turn_manager.submit_action(CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": idx})
+				_submit_action(CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": idx})
 		CardEnums.ActionType.GAIN_RAGE:
 			var idx := _find_hand_index_by_id(selected_card_id)
 			_cancel_selection()
 			if idx >= 0:
-				turn_manager.submit_action(CardEnums.ActionType.GAIN_RAGE, {"hand_index": idx})
+				_submit_action(CardEnums.ActionType.GAIN_RAGE, {"hand_index": idx})
 		CardEnums.ActionType.PLAY_MONSTER:
 			var idx := _find_hand_index_by_id(selected_card_id)
 			_cancel_selection()
 			if idx >= 0:
-				turn_manager.submit_action(CardEnums.ActionType.PLAY_MONSTER, {"hand_index": idx})
+				_submit_action(CardEnums.ActionType.PLAY_MONSTER, {"hand_index": idx})
 		CardEnums.ActionType.INVADE:
 			var idx := _find_hand_index_by_id(selected_card_id)
 			_cancel_selection()
 			if idx >= 0:
-				turn_manager.submit_action(CardEnums.ActionType.INVADE, {"hand_index": idx})
+				_submit_action(CardEnums.ActionType.INVADE, {"hand_index": idx})
 
 
 func _enter_zone_selection() -> void:
@@ -313,13 +411,13 @@ func _enter_zone_selection() -> void:
 	waiting_for_zone_select = true
 	card_select_prompt.text = "Select a ZONE to place the battle card:"
 
-	var state := turn_manager.game_state
-	var player := state.get_current_player()
-	var opponent := state.get_opponent_of_current()
-	var rules := turn_manager.rules_engine
-	var valid_zones := rules.get_valid_zones_for_battle_card(player, opponent)
+	var valid_zones: Array[int] = []
+	if turn_manager:
+		var state := turn_manager.game_state
+		valid_zones = turn_manager.rules_engine.get_valid_zones_for_battle_card(state.get_current_player(), state.get_opponent_of_current())
+	else:
+		valid_zones.assign(_client_playable.get("battle_zones", []))
 
-	# Highlight valid zones and connect click signals
 	var board := _get_active_player_board()
 	if board:
 		board.hand_manager.exit_selection_mode()
@@ -330,20 +428,17 @@ func _enter_zone_selection() -> void:
 				slot.accept_cards = true
 				if not slot.card_placed.is_connected(_on_zone_slot_clicked):
 					slot.card_placed.connect(_on_zone_slot_clicked.bind(i))
-				# Use mouse_entered for click detection on empty slots
 				if not slot.hover_started.is_connected(_on_zone_hover_clicked):
 					slot.hover_started.connect(_on_zone_hover_clicked.bind(i))
 
 
 func _on_zone_slot_clicked(_card: Control, _zone_index: int) -> void:
-	# This shouldn't normally fire during selection mode
 	pass
 
 
 func _on_zone_hover_clicked(_zone_index: int) -> void:
 	if not waiting_for_zone_select:
 		return
-	# Use input detection instead
 	pass
 
 
@@ -364,7 +459,7 @@ func _input(event: InputEvent) -> void:
 				var hand_idx: int = _find_hand_index_by_id(selected_card_id)
 				_cancel_selection()
 				if hand_idx >= 0:
-					turn_manager.submit_action(CardEnums.ActionType.PLAY_BATTLE, {
+					_submit_action(CardEnums.ActionType.PLAY_BATTLE, {
 						"hand_index": hand_idx,
 						"zone_index": i
 					})
@@ -378,7 +473,6 @@ func _cancel_selection() -> void:
 	card_select_prompt.visible = false
 	btn_pass.text = "Pass"
 
-	# Exit selection mode on both boards
 	for board in [player1_board, player2_board]:
 		if board and board.hand_manager:
 			board.hand_manager.exit_selection_mode()
@@ -386,7 +480,6 @@ func _cancel_selection() -> void:
 				board.hand_manager.card_selected.disconnect(_on_hand_card_selected)
 		if board:
 			board.clear_highlights()
-			# Disconnect zone signals
 			for slot in board.zone_slots:
 				if slot.card_placed.is_connected(_on_zone_slot_clicked):
 					slot.card_placed.disconnect(_on_zone_slot_clicked)
@@ -397,23 +490,33 @@ func _cancel_selection() -> void:
 # --- UI helpers ---
 
 func _sync_boards() -> void:
-	if not turn_manager or not turn_manager.game_state:
-		return
-	var state := turn_manager.game_state
-	if player1_board:
-		player1_board.sync_to_state(state.players[0])
-	if player2_board:
-		player2_board.sync_to_state(state.players[1])
-	# Reposition hands in case layout shifted
+	if turn_manager and turn_manager.game_state:
+		var state := turn_manager.game_state
+		if player1_board:
+			player1_board.sync_to_state(state.players[0])
+		if player2_board:
+			player2_board.sync_to_state(state.players[1])
+	elif not _client_players.is_empty():
+		if player1_board:
+			player1_board.sync_to_state(_client_players[0])
+		if player2_board:
+			player2_board.sync_to_state(_client_players[1])
 	call_deferred("_position_hands")
 
 
 func _update_hand_visibility(active_player_id: int) -> void:
-	# Active player sees their hand face-up; opponent's hand is face-down
-	if player1_board:
-		player1_board.set_hand_face_down(active_player_id != 0)
-	if player2_board:
-		player2_board.set_hand_face_down(active_player_id != 1)
+	if is_multiplayer_game:
+		# Multiplayer: local player always face-up, opponent always face-down
+		if player1_board:
+			player1_board.set_hand_face_down(local_player_id != 0)
+		if player2_board:
+			player2_board.set_hand_face_down(local_player_id != 1)
+	else:
+		# Solo: active player face-up, opponent face-down
+		if player1_board:
+			player1_board.set_hand_face_down(active_player_id != 0)
+		if player2_board:
+			player2_board.set_hand_face_down(active_player_id != 1)
 
 
 func _update_action_buttons(valid_actions: Array) -> void:
@@ -436,7 +539,7 @@ func _disable_all_buttons() -> void:
 
 
 func _get_active_player_board() -> Control:
-	var active_id: int = turn_manager.game_state.current_player_id
+	var active_id: int = _get_current_pid()
 	if active_id == 0:
 		return player1_board
 	else:
@@ -445,10 +548,12 @@ func _get_active_player_board() -> Control:
 
 ## Translate player.hand indices to managed_cards indices by matching card IDs
 func _hand_indices_to_visual(hand_indices: Array[int], board: Control) -> Array[int]:
-	var player := turn_manager.game_state.get_current_player()
+	var player := _get_current_player()
 	var visual: Array[int] = []
 	var cards: Array[Control] = board.hand_manager.get_cards()
 	for hand_idx in hand_indices:
+		if hand_idx >= player.hand.size():
+			continue
 		var card_id: String = player.hand[hand_idx].get("id", "")
 		for j in range(cards.size()):
 			if "card_data" in cards[j] and cards[j].card_data.get("id") == card_id:
@@ -459,7 +564,7 @@ func _hand_indices_to_visual(hand_indices: Array[int], board: Control) -> Array[
 
 ## Find a card's index in player.hand by its unique ID
 func _find_hand_index_by_id(card_id: String) -> int:
-	var player := turn_manager.game_state.get_current_player()
+	var player := _get_current_player()
 	for i in range(player.hand.size()):
 		if player.hand[i].get("id") == card_id:
 			return i
@@ -469,23 +574,20 @@ func _find_hand_index_by_id(card_id: String) -> int:
 # --- Drag-to-zone ---
 
 func _on_hand_drag_started(card: Control) -> void:
-	# Don't interfere if already in a selection flow
 	if waiting_for_card_select or waiting_for_zone_select:
+		return
+	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
 		return
 
 	var card_data: Dictionary = card.card_data if "card_data" in card else {}
 	if card_data.is_empty():
 		return
 
-	var state := turn_manager.game_state
-	var player := state.get_current_player()
-	var opponent := state.get_opponent_of_current()
-	var rules := turn_manager.rules_engine
+	var player := _get_current_player()
 	var board := _get_active_player_board()
 	if not board:
 		return
 
-	# Make sure this card's hand belongs to the active player
 	if board.hand_manager != card.get_parent():
 		return
 
@@ -497,9 +599,19 @@ func _on_hand_drag_started(card: Control) -> void:
 	if card_type == CardEnums.CardType.BATTLE:
 		var card_id: String = card_data.get("id", "")
 		var hand_idx := _find_hand_index_by_id(card_id)
-		if hand_idx >= 0 and hand_idx in rules.get_playable_battle_cards(player, opponent):
-			_drag_valid_zones = rules.get_valid_zones_for_battle_card(player, opponent)
-			_drag_action = CardEnums.ActionType.PLAY_BATTLE
+		if hand_idx >= 0:
+			var playable_battle: Array[int] = []
+			var valid_zones: Array[int] = []
+			if turn_manager:
+				var opponent := turn_manager.game_state.get_opponent_of_current()
+				playable_battle = turn_manager.rules_engine.get_playable_battle_cards(player, opponent)
+				valid_zones = turn_manager.rules_engine.get_valid_zones_for_battle_card(player, opponent)
+			else:
+				playable_battle.assign(_client_playable.get("battle_cards", []))
+				valid_zones.assign(_client_playable.get("battle_zones", []))
+			if hand_idx in playable_battle:
+				_drag_valid_zones = valid_zones
+				_drag_action = CardEnums.ActionType.PLAY_BATTLE
 
 	if not _drag_valid_zones.is_empty():
 		board.highlight_valid_zones(_drag_valid_zones)
@@ -508,7 +620,6 @@ func _on_hand_drag_started(card: Control) -> void:
 func _on_hand_drag_ended(card: Control) -> void:
 	var board := _get_active_player_board()
 
-	# Clean up highlights
 	if board:
 		board.clear_highlights()
 
@@ -517,7 +628,6 @@ func _on_hand_drag_ended(card: Control) -> void:
 		_drag_valid_zones = []
 		return
 
-	# Check if card was dropped on a valid zone
 	var mouse_pos := get_global_mouse_position()
 	if board:
 		for i in _drag_valid_zones:
@@ -527,11 +637,10 @@ func _on_hand_drag_ended(card: Control) -> void:
 				var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
 				var hand_idx := _find_hand_index_by_id(card_id)
 				if hand_idx >= 0:
-					# Tell CardManager we handled the drop
 					board.hand_manager.drop_handled = true
 					_drag_card = null
 					_drag_valid_zones = []
-					turn_manager.submit_action(_drag_action, {
+					_submit_action(_drag_action, {
 						"hand_index": hand_idx,
 						"zone_index": i
 					})
@@ -539,3 +648,210 @@ func _on_hand_drag_ended(card: Control) -> void:
 
 	_drag_card = null
 	_drag_valid_zones = []
+
+
+# --- Multiplayer: State broadcast (host -> client) ---
+
+func _broadcast_state() -> void:
+	if not is_multiplayer_game or not NetworkManager.is_host():
+		return
+	if not turn_manager or not turn_manager.game_state:
+		return
+
+	for peer_id in NetworkManager.peer_player_map:
+		if peer_id == 1:
+			continue  # Don't send to self (server peer ID is 1)
+		var viewer_id: int = NetworkManager.peer_player_map[peer_id]
+		var state_json := _serialize_game_state(viewer_id)
+		_rpc_receive_state.rpc_id(peer_id, state_json)
+
+
+func _serialize_game_state(viewer_id: int) -> String:
+	var gs := turn_manager.game_state
+	var data := {
+		"current_player_id": gs.current_player_id,
+		"current_phase": int(gs.current_phase),
+		"turn_number": gs.turn_number,
+		"is_game_over": turn_manager.is_game_over,
+		"players": []
+	}
+	for i in range(2):
+		var pd := _serialize_player_state(gs.players[i])
+		if i != viewer_id:
+			# Strip hand data for opponent — only send count
+			pd.erase("hand")
+		data["players"].append(pd)
+	return JSON.stringify(data)
+
+
+func _serialize_player_state(ps: PlayerState) -> Dictionary:
+	return {
+		"player_id": ps.player_id,
+		"monster_zone": ps.monster_zone,
+		"rage": ps.rage,
+		"current_monster": ps.current_monster,
+		"zones": ps.zones.duplicate(true),
+		"strategy_zones": ps.strategy_zones.duplicate(true),
+		"hand": ps.hand.duplicate(true),
+		"hand_count": ps.hand.size(),
+		"main_deck_count": ps.main_deck.size(),
+		"discard_pile_count": ps.discard_pile.size(),
+		"has_invaded_this_turn": ps.has_invaded_this_turn,
+		"burst_monster": ps.burst_monster,
+		"pre_burst_monster": ps.pre_burst_monster,
+	}
+
+
+func _compute_playable_data() -> Dictionary:
+	var gs := turn_manager.game_state
+	var player := gs.get_current_player()
+	var opponent := gs.get_opponent_of_current()
+	var rules := turn_manager.rules_engine
+	return {
+		"valid_actions": rules.get_valid_actions(gs),
+		"battle_cards": rules.get_playable_battle_cards(player, opponent),
+		"battle_zones": rules.get_valid_zones_for_battle_card(player, opponent),
+		"strategy_cards": rules.get_playable_strategy_cards(player),
+		"monster_cards": rules.get_playable_monsters(player),
+		"rage_cards": rules.get_monster_cards_for_rage(player),
+		"invade_cards": rules.get_discardable_cards_for_invade(player),
+	}
+
+
+# --- Multiplayer RPCs ---
+
+## Client -> Host: submit an action
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_submit_action(action_type: int, params_json: String) -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+
+	var sender_id := multiplayer.get_remote_sender_id()
+	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
+	if sender_player_id != turn_manager.game_state.current_player_id:
+		return  # Not their turn
+
+	var action: CardEnums.ActionType = action_type as CardEnums.ActionType
+	var params: Dictionary = {}
+	if not params_json.is_empty():
+		params = JSON.parse_string(params_json)
+		# JSON parses ints as floats — convert known fields
+		if params.has("hand_index"):
+			params["hand_index"] = int(params["hand_index"])
+		if params.has("zone_index"):
+			params["zone_index"] = int(params["zone_index"])
+
+	turn_manager.submit_action(action, params)
+
+
+## Host -> Client: full game state update
+@rpc("authority", "call_remote", "reliable")
+func _rpc_receive_state(state_json: String) -> void:
+	var data: Dictionary = JSON.parse_string(state_json)
+	if data.is_empty():
+		return
+
+	_client_current_player_id = int(data["current_player_id"])
+
+	# Reconstruct PlayerState objects
+	var players_data: Array = data["players"]
+	for i in range(2):
+		var pd: Dictionary = players_data[i]
+		_client_players[i] = _dict_to_player_state(pd, i == local_player_id)
+
+	# Update UI
+	phase_label.text = CardEnums.phase_to_string(int(data["current_phase"]) as CardEnums.GamePhase)
+	turn_label.text = "Turn %d - Player %d" % [int(data["turn_number"]), int(data["current_player_id"]) + 1]
+	_update_hand_visibility(_client_current_player_id)
+	_sync_boards()
+
+
+## Host -> Client: valid actions and playable indices
+@rpc("authority", "call_remote", "reliable")
+func _rpc_receive_action_context(actions_json: String, playable_json: String) -> void:
+	var actions: Array = JSON.parse_string(actions_json)
+	_client_playable = JSON.parse_string(playable_json)
+	# Store valid_actions in playable for _on_pass_pressed cancel path
+	_client_playable["valid_actions"] = actions
+	# Convert float arrays to int arrays
+	for key in _client_playable:
+		if _client_playable[key] is Array:
+			var arr: Array = _client_playable[key]
+			for j in range(arr.size()):
+				if arr[j] is float:
+					arr[j] = int(arr[j])
+	_update_action_buttons(actions)
+
+
+## Host -> Client: log message
+@rpc("authority", "call_remote", "reliable")
+func _rpc_receive_log(text: String) -> void:
+	if log_output:
+		log_output.append_text(text + "\n")
+		log_output.scroll_to_line(log_output.get_line_count() - 1)
+
+
+## Host -> Client: game over
+@rpc("authority", "call_remote", "reliable")
+func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
+	end_game_panel.visible = true
+	var win_label: Label = end_game_panel.get_node_or_null("WinLabel")
+	if win_label:
+		win_label.text = "Player %d Wins!\n%s" % [winner_id + 1, reason]
+	_disable_all_buttons()
+
+
+# --- Multiplayer: State deserialization (client) ---
+
+func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
+	var ps := PlayerState.new(int(data["player_id"]))
+	ps.monster_zone = int(data["monster_zone"])
+	ps.rage = int(data["rage"])
+	ps.current_monster = data.get("current_monster", {})
+	ps.has_invaded_this_turn = data.get("has_invaded_this_turn", false)
+	ps.burst_monster = data.get("burst_monster", {})
+	ps.pre_burst_monster = data.get("pre_burst_monster", {})
+
+	# Zones
+	var zones_data: Array = data.get("zones", [])
+	for i in range(mini(zones_data.size(), 8)):
+		ps.zones[i] = zones_data[i]
+
+	# Strategy zones
+	var sz_data: Array = data.get("strategy_zones", [])
+	for i in range(mini(sz_data.size(), 2)):
+		ps.strategy_zones[i] = sz_data[i]
+
+	# Hand: full data for local player, face-down placeholders for opponent
+	if is_local and data.has("hand"):
+		ps.hand.assign(data["hand"])
+	else:
+		var count: int = int(data.get("hand_count", 0))
+		ps.hand.clear()
+		for j in range(count):
+			ps.hand.append({"face_down": true, "id": "opponent_%d" % j})
+
+	# Deck/discard: only counts needed for display labels
+	var deck_count: int = int(data.get("main_deck_count", 0))
+	ps.main_deck.resize(deck_count)
+	for j in range(deck_count):
+		ps.main_deck[j] = {}
+
+	var discard_count: int = int(data.get("discard_pile_count", 0))
+	ps.discard_pile.resize(discard_count)
+	for j in range(discard_count):
+		ps.discard_pile[j] = {}
+
+	return ps
+
+
+# --- Multiplayer: Disconnect handling ---
+
+func _on_opponent_disconnected(_peer_id: int) -> void:
+	_disable_all_buttons()
+	end_game_panel.visible = true
+	var win_label: Label = end_game_panel.get_node_or_null("WinLabel")
+	if win_label:
+		win_label.text = "Opponent disconnected."
+	# The EndGamePanel should have a way to return to menu.
+	# If it has a button, it will handle it. Otherwise we add a timer.
