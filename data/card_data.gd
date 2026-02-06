@@ -2926,6 +2926,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 8000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/esd01/esd01_002.gd",
 		"description": "<When Invading> Search your deck for up to 1 rank Ⅲ card named 「Godzilla(2023)」 with <Burst> , reveal it, add it to your hand, then shuffle your deck. (If you invaded 2 zones, activate this effect 2 times)"
 	},
 	{
@@ -2938,6 +2939,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 23000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/esd01/esd01_003.gd",
 		"description": "If this card has 2 or more <Rage> , this card gains +5000 threat level."
 	},
 	{
@@ -2950,6 +2952,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 38000,
 		"invasion_icon": 2,
+		"effect_script": "res://scripts/effects/esd01/esd01_004.gd",
 		"description": "<When Invading> If this card has 2 or more <Rage> , your opponent discards cards until they have 2 cards remaining in their hand."
 	},
 	{
@@ -2962,6 +2965,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 12000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/esd01/esd01_005.gd",
 		"description": "<Burst1> (You can play this card from rank I. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> Your opponent discards cards until they have 4 cards remaining in their hand."
 	},
 	{
@@ -2974,7 +2978,8 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 23000,
 		"invasion_icon": 1,
-		"description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> <Destroy> 1 of your opponent’s rank 4 or lower battle cards."
+		"effect_script": "res://scripts/effects/esd01/esd01_006.gd",
+		"description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> <Destroy> 1 of your opponent's rank 4 or lower battle cards."
 	},
 	{
 		"id": "ESD01-007",
@@ -2986,7 +2991,8 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 38000,
 		"invasion_icon": 2,
-		"description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> <Destroy> all of your opponent’s battle cards in the same column as this card."
+		"effect_script": "res://scripts/effects/esd01/esd01_007.gd",
+		"description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> <Destroy> all of your opponent's battle cards in the same column as this card."
 	},
 	{
 		"id": "ESD01-008",
@@ -3010,6 +3016,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BOAT],
 		"counter_power": 2000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/esd01/esd01_009.gd",
 		"description": "<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)"
 	},
 	{
@@ -3022,6 +3029,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.CITY],
 		"counter_power": 0,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/esd01/esd01_010.gd",
 		"description": "If your monster card has 2 or more <Rage> , your other battle card in zone 8 gains +5000 counter power.\n<Awakening6> Your other battle card in zone 8 gains +5000 counter power. (Active if your monster card is in zone 6 or beyond.)"
 	},
 	{
@@ -3034,6 +3042,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"counter_power": 3000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/esd01/esd01_011.gd",
 		"description": "<Enter> If your monster card has 2 or more <Rage> , reduce your opponent's <Rage> by 1.\nWhen this card is <Destroy> , place this card on the bottom of your deck instead."
 	},
 	{
@@ -3046,6 +3055,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"counter_power": 7000,
 		"invasion_icon": 2,
+		"effect_script": "res://scripts/effects/esd01/esd01_012.gd",
 		"description": "<Your Turn> When you play a monster card, you may move this card to an unoccupied zone.\nIf this card is in zone 8, this card gains +3000 counter power.\nWhen this card is <Destroy> , place this card on the bottom of your deck instead."
 	},
 	{
@@ -3055,6 +3065,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"rank": 4,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/esd01/esd01_013.gd",
 		"description": "<Your Turn> Whenever your monster card's <Rage> is increased, <Destroy> 1 of your opponent's rank 6 or lower battle cards."
 	},
 	{
@@ -3064,6 +3075,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"rank": 6,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/esd01/esd01_014.gd",
 		"description": "If your monster card has 2 or more <Rage> , search your deck for up to 1 battle card named 「Godzilla(2023)」, play it, then shuffle your deck."
 	},
 	{
@@ -3073,6 +3085,7 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"rank": 7,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/esd01/esd01_015.gd",
 		"description": "Your opponent discards cards until they have 2 cards remaining in their hand."
 	},
 	{
@@ -3082,7 +3095,8 @@ var ESD01_CARDS: Array[Dictionary] = [
 		"rank": 1,
 		"color": CardEnums.CardColor.WHITE,
 		"invasion_icon": 1,
-		"description": "<Destroy> all of your opponent’s battle cards in the same column as your monster card."
+		"effect_script": "res://scripts/effects/esd01/esd01_016.gd",
+		"description": "<Destroy> all of your opponent's battle cards in the same column as your monster card."
 	},
 ]
 

@@ -19,6 +19,7 @@ signal card_clicked(card: Control)
 
 # Card data
 var card_data: Dictionary = {}
+var card_effect: RefCounted = null  # CardEffect instance loaded from effect_script
 var is_face_down: bool = false
 var is_selectable: bool = false
 
@@ -137,6 +138,12 @@ func set_card_data_dict(data: Dictionary) -> void:
 	card_data = data
 	card_name = data.get("name", "Unknown")
 	card_description = data.get("description", "")
+	# Load effect script if specified
+	var script_path: String = data.get("effect_script", "")
+	if not script_path.is_empty() and ResourceLoader.exists(script_path):
+		var effect_script: GDScript = load(script_path)
+		if effect_script:
+			card_effect = effect_script.new()
 	if is_node_ready():
 		_update_display()
 

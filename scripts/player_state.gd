@@ -21,6 +21,8 @@ var zones: Array = []  # 8 entries, each {} (empty) or a battle card dict
 var strategy_zones: Array = []  # Up to 2 entries, each {} or a strategy card dict
 var has_invaded_this_turn: bool = false
 var strategy_zone_turn_placed: Array[int] = [0, 0]  # Turn number when each was placed
+var burst_monster: Dictionary = {}  # The Burst-played monster (empty if none active)
+var pre_burst_monster: Dictionary = {}  # Monster that was active before Burst play
 
 
 func _init(id: int = 0) -> void:

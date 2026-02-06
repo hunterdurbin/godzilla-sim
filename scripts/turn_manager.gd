@@ -15,6 +15,7 @@ signal log_message(text: String)
 var game_state: GameState
 var rules_engine: RulesEngine
 var action_handler: ActionHandler
+var effect_handler: EffectHandler
 var is_game_over: bool = false
 
 
@@ -22,6 +23,10 @@ func setup(card_data_node: Node) -> void:
 	game_state = GameState.new()
 	rules_engine = RulesEngine.new()
 	action_handler = ActionHandler.new()
+	effect_handler = EffectHandler.new()
+	effect_handler.setup(game_state)
+	action_handler.effect_handler = effect_handler
+	rules_engine.effect_handler = effect_handler
 
 	var use_custom_deck := DecklistManager.selected_deck_name != ""
 
@@ -87,6 +92,7 @@ func _execute_start_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.START
 	phase_started.emit(CardEnums.GamePhase.START)
+	effect_handler.trigger_phase_start(CardEnums.GamePhase.START)
 
 	var player := game_state.get_current_player()
 	var opponent := game_state.get_opponent_of_current()
@@ -97,6 +103,7 @@ func _execute_start_phase() -> void:
 
 	log_message.emit("Hand size: %d" % player.hand.size())
 
+	effect_handler.trigger_phase_end(CardEnums.GamePhase.START)
 	phase_ended.emit(CardEnums.GamePhase.START)
 	_begin_main_phase()
 
@@ -107,6 +114,7 @@ func _begin_main_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.MAIN
 	phase_started.emit(CardEnums.GamePhase.MAIN)
+	effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
 
 	log_message.emit("Main Phase: Choose your actions")
 
@@ -127,12 +135,13 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 
 	if action == CardEnums.ActionType.PASS:
 		log_message.emit("Player %d passes." % (game_state.current_player_id + 1))
+		effect_handler.trigger_phase_end(CardEnums.GamePhase.MAIN)
 		phase_ended.emit(CardEnums.GamePhase.MAIN)
 		_begin_counter_phase()
 		return
 
-	# Execute the action
-	action_handler.execute(action, params, game_state)
+	# Execute the action (may await player choices from effects)
+	await action_handler.execute(action, params, game_state)
 
 	# Log the action
 	match action:
@@ -166,6 +175,7 @@ func _begin_counter_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.COUNTER
 	phase_started.emit(CardEnums.GamePhase.COUNTER)
+	effect_handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 
 	var player := game_state.get_current_player()
 	var opponent := game_state.get_opponent_of_current()
@@ -179,6 +189,7 @@ func _begin_counter_phase() -> void:
 	if is_game_over:
 		return
 
+	effect_handler.trigger_phase_end(CardEnums.GamePhase.COUNTER)
 	phase_ended.emit(CardEnums.GamePhase.COUNTER)
 	_begin_end_phase()
 
@@ -189,6 +200,7 @@ func _begin_end_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.END
 	phase_started.emit(CardEnums.GamePhase.END)
+	effect_handler.trigger_phase_start(CardEnums.GamePhase.END)
 
 	var player := game_state.get_current_player()
 	log_message.emit("End Phase: Monster at zone %d" % player.monster_zone)
@@ -206,6 +218,7 @@ func _begin_end_phase() -> void:
 
 	log_message.emit("Hand refilled to %d cards" % player.hand.size())
 
+	effect_handler.trigger_phase_end(CardEnums.GamePhase.END)
 	phase_ended.emit(CardEnums.GamePhase.END)
 	turn_ended.emit(game_state.current_player_id)
 

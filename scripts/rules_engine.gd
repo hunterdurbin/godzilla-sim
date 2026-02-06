@@ -3,6 +3,8 @@ extends RefCounted
 
 ## Pure validation logic for the Godzilla TCG. No side effects.
 
+var effect_handler: EffectHandler
+
 
 func get_valid_actions(state: GameState) -> Array:
 	var actions: Array = [CardEnums.ActionType.PASS]
@@ -101,7 +103,8 @@ func get_monster_cards_for_rage(player: PlayerState) -> Array[int]:
 
 
 func get_playable_monsters(player: PlayerState) -> Array[int]:
-	## Returns hand indices of monster cards that can be played onto the invading monster
+	## Returns hand indices of monster cards that can be played onto the invading monster.
+	## Includes Burst monsters: a card with Burst N can be played when current monster is rank N.
 	var indices: Array[int] = []
 	var cur_rank: int = player.current_monster.get("rank", 0)
 	var cur_traits: Array = []
@@ -112,9 +115,14 @@ func get_playable_monsters(player: PlayerState) -> Array[int]:
 		var card: Dictionary = player.hand[i]
 		if card.get("card_type") != CardEnums.CardType.MONSTER:
 			continue
-		if card.get("rank") != cur_rank:
+		if not card.get("trait") in cur_traits:
 			continue
-		if card.get("trait") in cur_traits:
+		# Normal play: same rank
+		if card.get("rank") == cur_rank:
+			indices.append(i)
+			continue
+		# Burst play: card's burst rank matches current monster rank
+		if _has_burst_for_rank(card, cur_rank):
 			indices.append(i)
 	return indices
 
@@ -186,9 +194,23 @@ func _can_play_any_monster(player: PlayerState) -> bool:
 	for card in player.hand:
 		if card.get("card_type") != CardEnums.CardType.MONSTER:
 			continue
-		if card.get("rank") == cur_rank and card.get("trait") in cur_traits:
+		if not card.get("trait") in cur_traits:
+			continue
+		if card.get("rank") == cur_rank:
+			return true
+		if _has_burst_for_rank(card, cur_rank):
 			return true
 	return false
+
+
+func _has_burst_for_rank(card: Dictionary, target_rank: int) -> bool:
+	## Check if a card has a Burst effect that allows playing from the given rank.
+	if not effect_handler:
+		return false
+	var effect := effect_handler.get_effect(card)
+	if not effect:
+		return false
+	return effect.get_burst_rank() == target_rank
 
 
 func _can_invade(player: PlayerState) -> bool:
