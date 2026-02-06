@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/main_menu.gd" id="1_mm"]
+[ext_resource type="PackedScene" path="res://scenes/ui/DeckSelect.tscn" id="2_ds"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -30,7 +31,7 @@ grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
-theme_override_constants/separation = 40
+theme_override_constants/separation = 30
 
 [node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -45,6 +46,9 @@ text = "Trading Card Game"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.7, 0.6, 0.5, 1)
+
+[node name="DeckSelect" parent="CenterContainer/VBoxContainer" instance=ExtResource("2_ds")]
+layout_mode = 2
 
 [node name="StartButton" type="Button" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)

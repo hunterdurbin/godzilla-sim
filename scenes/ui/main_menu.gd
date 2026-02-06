@@ -1,10 +1,21 @@
 extends Control
 
 @onready var start_button: Button = $CenterContainer/VBoxContainer/StartButton
+@onready var deck_select: PanelContainer = $CenterContainer/VBoxContainer/DeckSelect
 
 
 func _ready() -> void:
 	start_button.pressed.connect(_on_start_pressed)
+	start_button.disabled = true
+	deck_select.deck_selected.connect(_on_deck_selected)
+	# DeckSelect's _ready fires before ours, so it may have already selected a deck
+	if not deck_select.current_selection.is_empty():
+		_on_deck_selected(deck_select.current_selection)
+
+
+func _on_deck_selected(deck_name: String) -> void:
+	DecklistManager.select_deck(deck_name)
+	start_button.disabled = false
 	start_button.grab_focus()
 
 

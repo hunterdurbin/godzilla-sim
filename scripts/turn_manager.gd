@@ -23,16 +23,26 @@ func setup(card_data_node: Node) -> void:
 	rules_engine = RulesEngine.new()
 	action_handler = ActionHandler.new()
 
-	# Set up Player 1 (ESD01 - Godzilla Minus One)
+	var use_custom_deck := DecklistManager.selected_deck_name != ""
+
+	# Set up Player 1
 	var p1 := game_state.players[0]
-	p1.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
-	p1.main_deck = card_data_node.get_main_deck(0)
+	if use_custom_deck:
+		p1.monster_deck = DecklistManager.selected_monster_deck.duplicate(true)
+		p1.main_deck = DecklistManager.build_main_deck_for_player(0)
+	else:
+		p1.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
+		p1.main_deck = card_data_node.get_main_deck(0)
 	p1.main_deck.shuffle()
 
-	# Set up Player 2 (ESD01 - Godzilla Minus One)
+	# Set up Player 2
 	var p2 := game_state.players[1]
-	p2.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
-	p2.main_deck = card_data_node.get_main_deck(1)
+	if use_custom_deck:
+		p2.monster_deck = DecklistManager.selected_monster_deck.duplicate(true)
+		p2.main_deck = DecklistManager.build_main_deck_for_player(1)
+	else:
+		p2.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
+		p2.main_deck = card_data_node.get_main_deck(1)
 	p2.main_deck.shuffle()
 
 	# Place Rank I monsters as invading monsters at zone 1
