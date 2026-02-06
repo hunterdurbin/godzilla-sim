@@ -19,7 +19,8 @@ var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 var zone_slots: Array[Slot] = []
 var strategy_slots: Array[Slot] = []
 var hand_manager: CardManager  # Set externally by GameBoard
-var monster_display: Label
+var monster_card: Control
+var monster_card_zone: int = -1  # Zone index (0-7) where monster card is currently placed
 var deck_count_label: Label
 var discard_count_label: Label
 var rage_label: Label
@@ -62,7 +63,6 @@ func _setup_references() -> void:
 			strategy_slots.append(slot)
 
 	# Info nodes
-	monster_display = find_child("MonsterDisplay", true, false) as Label
 	deck_count_label = find_child("DeckCount", true, false) as Label
 	discard_count_label = find_child("DiscardCount", true, false) as Label
 	rage_label = find_child("RageLabel", true, false) as Label
@@ -86,10 +86,14 @@ func _sync_zones(state: PlayerState) -> void:
 		var slot := zone_slots[i]
 		if not slot:
 			continue
-		var zone_data: Dictionary = state.zones[i]
 
-		# Update monster marker
-		slot.set_monster_marker((state.monster_zone - 1) == i)
+		# Skip the monster's zone — monster card is managed by _sync_monster
+		if (state.monster_zone - 1) == i:
+			slot.set_monster_marker(true)
+			continue
+
+		slot.set_monster_marker(false)
+		var zone_data: Dictionary = state.zones[i]
 
 		# Update card in slot
 		if zone_data.is_empty() and slot.has_card():
@@ -120,13 +124,30 @@ func _sync_strategy_zones(state: PlayerState) -> void:
 
 
 func _sync_monster(state: PlayerState) -> void:
-	if monster_display:
-		var m: Dictionary = state.current_monster
-		var threat: int = state.get_threat_level()
-		var rank_str: String = CardEnums.rank_to_roman(m.get("rank", 1))
-		monster_display.text = "%s [%s]\nTL: %d  Zone: %d" % [
-			m.get("name", "???"), rank_str, threat, state.monster_zone
-		]
+	var m: Dictionary = state.current_monster
+	var target_zone: int = state.monster_zone - 1  # 0-indexed
+
+	if not m.is_empty():
+		# Create card if it doesn't exist yet
+		if not monster_card:
+			monster_card = _create_card(m)
+			monster_card.drag_enabled = false
+		elif monster_card.has_method("set_card_data_dict"):
+			monster_card.set_card_data_dict(m)
+
+		# Move to the correct zone slot if zone changed
+		if target_zone != monster_card_zone:
+			# Remove from old slot
+			if monster_card_zone >= 0 and monster_card_zone < zone_slots.size():
+				var old_slot := zone_slots[monster_card_zone]
+				if old_slot and old_slot.has_card() and old_slot.get_card() == monster_card:
+					old_slot.remove_card(false)
+			# Place in new slot
+			if target_zone >= 0 and target_zone < zone_slots.size():
+				var new_slot := zone_slots[target_zone]
+				if new_slot:
+					new_slot.place_card(monster_card, false)
+			monster_card_zone = target_zone
 
 	if rage_label:
 		rage_label.text = "%d" % state.rage

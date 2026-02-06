@@ -24,6 +24,7 @@ window/stretch/mode="canvas_items"
 [autoload]
 
 CardData="*res://data/card_data.gd"
+ArtworkDownloader="*res://scripts/artwork_downloader.gd"
 
 [physics]
 

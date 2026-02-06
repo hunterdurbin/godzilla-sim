@@ -44,6 +44,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_update_content_rect()
 		_update_visual_state()
+		_refit_held_card()
 
 
 func _update_content_rect() -> void:
@@ -94,17 +95,17 @@ func place_card(card: Control, animate: bool = true) -> bool:
 	held_card = card
 	is_occupied = true
 
-	# Scale card to fit within the content rect (with 4px padding)
+	# Resize card to fill the content rect so children reflow via anchors
 	var padding := 4.0
-	var available := _content_rect.size - Vector2(padding * 2, padding * 2)
-	var card_base_size: Vector2 = card.size if card.size.x > 0 else Vector2(150, 210)
-	var scale_factor: float = minf(available.x / card_base_size.x, available.y / card_base_size.y)
-	scale_factor = minf(scale_factor, 1.0)  # Never scale up
-	card.scale = Vector2(scale_factor, scale_factor)
+	var target_size := _content_rect.size - Vector2(padding * 2, padding * 2)
+	card.custom_minimum_size = Vector2.ZERO
+	card.size = target_size
+	card.pivot_offset = target_size / 2.0
+	card.scale = Vector2.ONE
 	if "original_scale" in card:
-		card.original_scale = card.scale
+		card.original_scale = Vector2.ONE
 
-	var target_pos: Vector2 = _center_card_pos(card_base_size, scale_factor, card.pivot_offset)
+	var target_pos := _content_rect.position + Vector2(padding, padding)
 
 	if animate and card.has_method("return_to_position"):
 		card.return_to_position(target_pos, snap_duration)
@@ -124,11 +125,15 @@ func place_card(card: Control, animate: bool = true) -> bool:
 	return true
 
 
-func _center_card_pos(card_base_size: Vector2, scale_factor: float, pivot: Vector2) -> Vector2:
-	var scaled_size := card_base_size * scale_factor
-	var center_pos := _content_rect.position + (_content_rect.size - scaled_size) / 2.0
-	# Account for pivot offset: scaling around pivot shifts the visual position
-	return center_pos - pivot * (1.0 - scale_factor)
+func _refit_held_card() -> void:
+	if not held_card:
+		return
+	var padding := 4.0
+	var target_size := _content_rect.size - Vector2(padding * 2, padding * 2)
+	held_card.custom_minimum_size = Vector2.ZERO
+	held_card.size = target_size
+	held_card.pivot_offset = target_size / 2.0
+	held_card.position = _content_rect.position + Vector2(padding, padding)
 
 
 func remove_card(destroy: bool = false) -> Control:
@@ -261,7 +266,8 @@ func _on_card_drag_ended() -> void:
 		_update_visual_state()
 		card_removed.emit(card)
 	else:
-		var target_pos = _center_card_pos(card.size, card.scale.x, card.pivot_offset)
+		var padding := 4.0
+		var target_pos := _content_rect.position + Vector2(padding, padding)
 		if card.has_method("return_to_position"):
 			card.return_to_position(target_pos, snap_duration)
 		else:

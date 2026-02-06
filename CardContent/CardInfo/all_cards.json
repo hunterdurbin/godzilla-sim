@@ -1,0 +1,4598 @@
+{
+  "total": 277,
+  "source": "https://api.godzillatcg.com/cards",
+  "cards": [
+    {
+      "id": 32,
+      "card_number": "EBP01-001",
+      "name": "Godzilla(1954)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "5000",
+      "burst": null,
+      "description": "At the beginning of your counter phase, send the top card of your deck to your discard pile.\nIf it is a monster card, increase this card's <Rage> by 1."
+    },
+    {
+      "id": 33,
+      "card_number": "EBP01-002",
+      "name": "Godzilla(1954)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "13000",
+      "burst": null,
+      "description": "<Burst1> (You can play this card from rank I. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<When Invading> Send the top card of your deck to your discard pile. If it is a monster card, <Destroy> 1 of your opponent’s rank 5 or lower battle cards."
+    },
+    {
+      "id": 34,
+      "card_number": "EBP01-003",
+      "name": "Godzilla(1954)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "Whenever this card's <Rage> is increased, send the top card of your deck to your discard pile. If it is a monster card, <Destroy> 1 of your opponent’s rank 6 or lower battle cards."
+    },
+    {
+      "id": 35,
+      "card_number": "EBP01-004",
+      "name": "Godzilla(1954)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "34000",
+      "burst": null,
+      "description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\nWhen this card reaches zone 8, <Destroy> all battle cards in each player's zones."
+    },
+    {
+      "id": 36,
+      "card_number": "EBP01-005",
+      "name": "Godzilla(1955)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "37000",
+      "burst": null,
+      "description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> Your opponent discards cards until they have 4 cards remaining in their hand."
+    },
+    {
+      "id": 37,
+      "card_number": "EBP01-006",
+      "name": "Godzilla(1974)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "<Opponent’s Turn> At the beginning of the counter phase, <Destroy> all of your opponent’s rank 5 or lower battle cards in the same column as this card."
+    },
+    {
+      "id": 38,
+      "card_number": "EBP01-007",
+      "name": "Godzilla(1975)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "34000",
+      "burst": null,
+      "description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<When Invading> When this card <Destroy> your battle cards, reduce your opponent's <Rage> by 2."
+    },
+    {
+      "id": 39,
+      "card_number": "EBP01-008",
+      "name": "Godzilla(2004)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "22000",
+      "burst": null,
+      "description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> Advance your opponent’s monster card by 1 zone."
+    },
+    {
+      "id": 40,
+      "card_number": "EBP01-009",
+      "name": "Godzilla(2023)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "22000",
+      "burst": null,
+      "description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<When Invading> If this card has 2 or more <Rage> , <Destroy> 1 of your opponent’s rank 6 or lower battle cards."
+    },
+    {
+      "id": 41,
+      "card_number": "EBP01-010",
+      "name": "Godzilla(2023)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "37000",
+      "burst": null,
+      "description": "Whenever this card's <Rage> is increased, <Destroy> all of your opponent’s battle cards in the same column as this card.\n<Opponent’s Turn> At the beginning of the counter phase, if this card has 3 or more <Rage> , <Destroy> all of your opponent’s battle cards in the same column as this card."
+    },
+    {
+      "id": 42,
+      "card_number": "EBP01-011",
+      "name": "Godzilla(Fest Godzilla)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "Fest"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "4000",
+      "burst": null,
+      "description": "When this card advances into the same column as your opponent’s monster card, advance your opponent’s monster card by 1 zone."
+    },
+    {
+      "id": 43,
+      "card_number": "EBP01-012",
+      "name": "Godzilla(Fest Godzilla)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "Fest"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "13000",
+      "burst": null,
+      "description": "At the beginning of your end phase, if this card invaded this turn, advance your opponent’s monster card by 1 zone."
+    },
+    {
+      "id": 44,
+      "card_number": "EBP01-013",
+      "name": "Godzilla(Fest Godzilla)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "Fest"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "19000",
+      "burst": null,
+      "description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> If you have 4 or more battle cards in your zones, reduce your opponent’s <Rage> by 1."
+    },
+    {
+      "id": 45,
+      "card_number": "EBP01-014",
+      "name": "Godzilla(Fest Godzilla)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "Fest"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "34000",
+      "burst": null,
+      "description": "<Opponent’s Turn> <Awakening4> If you have 2 or more battle cards in your zones, all of your opponent’s rank 5 or lower battle cards cannot engage with this card. (Their counter power is not included in the total counter power during the counter phase.)"
+    },
+    {
+      "id": 46,
+      "card_number": "EBP01-015",
+      "name": "Godzilla(Fest Godzilla)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "Fest"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "28000",
+      "burst": null,
+      "description": "<Your Turn> <Enter> Reveal the top 5 cards of your deck and send them to your discard pile. For each monster card revealed this way, increase this card's <Rage> by 1. If a card with <Step2> is revealed this way, this card advances to zone 6."
+    },
+    {
+      "id": 47,
+      "card_number": "EBP01-016",
+      "name": "Ebirah(2004)",
+      "type": "Battle",
+      "rank": "1",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Ebirah",
+        "Final Wars"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0"
+    },
+    {
+      "id": 48,
+      "card_number": "EBP01-017",
+      "name": "Kumonga(2004)",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Kumonga",
+        "Final Wars"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "If this card is in zone 8, this card gains +3000 counter power."
+    },
+    {
+      "id": 49,
+      "card_number": "EBP01-018",
+      "name": "Mechagodzilla(1974)",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)"
+    },
+    {
+      "id": 50,
+      "card_number": "EBP01-019",
+      "name": "Kamacuras(1967)",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Kamacuras"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Awakening6> <Enter> If this card was played from your hand, search your deck for up to 2 <《Kamacuras》> battle cards, play them, then shuffle your deck. (Active if your monster card is in zone 6 or beyond.)"
+    },
+    {
+      "id": 51,
+      "card_number": "EBP01-020",
+      "name": "Anguirus(1968)",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Anguirus"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "If this card is in zone 8, whenever your monster card invades, you may reduce its <Rage> by 1 to search your deck for up to 1 monster card with <Burst> , reveal it, add it to your hand, then shuffle your deck."
+    },
+    {
+      "id": 52,
+      "card_number": "EBP01-021",
+      "name": "Rodan(1968)",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Rodan"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Enter> If this card is in the same column as your opponent’s monster card, look at the top 2 cards of your deck, put any number on top of your deck in any order, and send the rest to your discard pile."
+    },
+    {
+      "id": 53,
+      "card_number": "EBP01-022",
+      "name": "Titanosaurus",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Titanosaurus"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "<Your Turn> Whenever your monster card's <Rage> is increased, you may move 1 of your other battle cards in your zones to an unoccupied zone."
+    },
+    {
+      "id": 54,
+      "card_number": "EBP01-023",
+      "name": "Mechagodzilla(1975)",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "If your monster card has 2 or more <Rage> , this card gains +3000 counter power."
+    },
+    {
+      "id": 55,
+      "card_number": "EBP01-024",
+      "name": "Minilla(2004)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Minilla",
+        "Final Wars"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Enter> Reduce your opponent's <Rage> by 1."
+    },
+    {
+      "id": 56,
+      "card_number": "EBP01-025",
+      "name": "King Caesar(1974)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "King Caesar"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "If this card is in a zone adjacent to your monster card, this card gains +3000 counter power."
+    },
+    {
+      "id": 57,
+      "card_number": "EBP01-026",
+      "name": "Jet Jaguar(2023)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Jet Jaguar",
+        "Mech",
+        "Fest"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "7000",
+      "threat_level": "0",
+      "description": "At the beginning of your counter phase, you may place 1 card with both <《Gigan》> and <《Fest》> from your discard pile under this card.\nIf there is a card under this card, this card gains +5000 counter power."
+    },
+    {
+      "id": 58,
+      "card_number": "EBP01-027",
+      "name": "Hedorah(1971)",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Hedorah"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "7000",
+      "threat_level": "0",
+      "description": "When playing this card from your hand, you can reduce its rank by 1 for each battle card in your zones. (After being played this card is rank 8)"
+    },
+    {
+      "id": 59,
+      "card_number": "EBP01-028",
+      "name": "Godzilla vs. Mechagodzilla",
+      "type": "Strategy",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Opponent’s Turn> All of your opponent’s rank 3 or lower battle cards cannot engage with your monster card. (Their counter power is not included in the total during the counter phase.)"
+    },
+    {
+      "id": 60,
+      "card_number": "EBP01-029",
+      "name": "Unthinkable Destruction",
+      "type": "Strategy",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Choose 1 of your opponent’s zones. <Destroy> all of your opponent’s rank 5 or lower battle cards in that zone and zones adjacent to it."
+    },
+    {
+      "id": 61,
+      "card_number": "EBP01-030",
+      "name": "Godzilla Landing",
+      "type": "Strategy",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Advance the opponent’s monster card by 1 zone."
+    },
+    {
+      "id": 62,
+      "card_number": "EBP01-031",
+      "name": "Space Beam",
+      "type": "Strategy",
+      "rank": "5",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "If your monster card has 2 or more <Rage> , your opponent discards cards until they have 2 cards remaining in their hand."
+    },
+    {
+      "id": 63,
+      "card_number": "EBP01-032",
+      "name": "Heat Ray Charge",
+      "type": "Strategy",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "Draw 2 cards."
+    },
+    {
+      "id": 64,
+      "card_number": "EBP01-033",
+      "name": "Final Showdown",
+      "type": "Strategy",
+      "rank": "8",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "You can play this card from your hand with its rank reduced by 1 for each zone your monster card invaded this turn.\n<Destroy> all battle cards of both players."
+    },
+    {
+      "id": 65,
+      "card_number": "EBP01-034",
+      "name": "Godzilla(1989)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "13000",
+      "burst": null,
+      "description": "<Enter> Select 1 rank 4 or lower battle card with <Evolution> from your discard pile and play it in a zone adjacent to this card."
+    },
+    {
+      "id": 66,
+      "card_number": "EBP01-035",
+      "name": "Godzilla(1989)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "<Enter> Evolve all of your rank 4 or lower battle cards with <Evolution> in zones adjacent to this card."
+    },
+    {
+      "id": 67,
+      "card_number": "EBP01-036",
+      "name": "Godzilla(1992)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "36000",
+      "burst": null,
+      "description": "<Enter> Evolve all of your battle cards with <Evolution> in zones adjacent to this card."
+    },
+    {
+      "id": 68,
+      "card_number": "EBP01-037",
+      "name": "Godzilla(1995)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "22000",
+      "burst": null,
+      "description": "Whenever this card advances, you may discard 1 strategy card from your hand to increase its <Rage> by 1."
+    },
+    {
+      "id": 69,
+      "card_number": "EBP01-038",
+      "name": "Godzilla(1995)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "34000",
+      "burst": null,
+      "description": "<Opponent’s Turn> <Awakening6> This card cannot be countered by 50,000 or lower counter power, instead, it only moves as though it were countered. (Do not play the next monster card from your monster deck.) (Active if this card is in zone 6 or beyond, and the opponent’s total counter power is 50,000 or lower.)"
+    },
+    {
+      "id": 70,
+      "card_number": "EBP01-039",
+      "name": "Godzilla(1999)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "15000",
+      "burst": null,
+      "description": "<When Invading> Discard 1 monster card from your hand： <Destroy> all of your opponent’s rank 5 or lower battle cards in zones 1-5."
+    },
+    {
+      "id": 71,
+      "card_number": "EBP01-040",
+      "name": "Godzilla(1999)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "33000",
+      "burst": null,
+      "description": "<Enter> <Destroy> 1 of your opponent’s rank 7 or lower battle cards.\n<When Invading> If you have 5 or more monster cards in your discard pile, increase this card's <Rage> by 1."
+    },
+    {
+      "id": 72,
+      "card_number": "EBP01-041",
+      "name": "Godzilla(2000)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "5000",
+      "burst": null,
+      "description": "<When Invading> <Destroy> 1 of your opponent’s rank 4 or lower battle cards."
+    },
+    {
+      "id": 73,
+      "card_number": "EBP01-042",
+      "name": "Godzilla(2000)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "18000",
+      "burst": null,
+      "description": "<Enter> If you have 5 or more monster cards in your discard pile, you may discard 1 card from your hand to reduce your opponent's <Rage> by 1.\nIf you have 5 or more monster cards in your discard pile, this card gains +10,000 threat level."
+    },
+    {
+      "id": 74,
+      "card_number": "EBP01-043",
+      "name": "Godzilla(2000)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "36000",
+      "burst": null,
+      "description": "<Awakening4> When you successfully counter your opponent’s monster card, if you have 5 or more monster cards in your discard pile, <Destroy> all of your opponent’s rank 6 or lower battle cards. (Active if this card is in zone 4 or beyond.)"
+    },
+    {
+      "id": 75,
+      "card_number": "EBP01-044",
+      "name": "Mothra(egg)(1992)",
+      "type": "Battle",
+      "rank": "1",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "0",
+      "threat_level": "0",
+      "description": "<Evolution5> <《Mothra》> (At the beginning of your main phase, you may play a rank 5 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)"
+    },
+    {
+      "id": 76,
+      "card_number": "EBP01-045",
+      "name": "Meganula",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Meganula"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "<Enter> If this card is in the same column as your opponent’s monster card and you have 2 or more battle cards in your zones, reduce your opponent's <Rage> by 1."
+    },
+    {
+      "id": 77,
+      "card_number": "EBP01-046",
+      "name": "MBT-MB92",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "You may have any number of this card in your deck.\n<Awakening6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)"
+    },
+    {
+      "id": 78,
+      "card_number": "EBP01-047",
+      "name": "Orga",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Orga"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Enter> Draw 1 card, then discard 1 card."
+    },
+    {
+      "id": 79,
+      "card_number": "EBP01-048",
+      "name": "Biollante Rose Form",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Biollante"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Evolution7> <《Biollante》> (At the beginning of your main phase, you may play a rank 7 or lower battle card with <《Biollante》> from your deck by placing it on top of this card.)"
+    },
+    {
+      "id": 80,
+      "card_number": "EBP01-049",
+      "name": "Destoroyah Aggregate Form",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Destoroyah"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Evolution6> <《Destoroyah》> (At the beginning of your main phase, you may play a rank 6 or lower <《Destoroyah》> battle card from your deck by placing it on top of this card.)"
+    },
+    {
+      "id": 81,
+      "card_number": "EBP01-050",
+      "name": "Mothra(larva)(1992)",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Evolution7> <《Mothra》> (At the beginning of your main phase, you may play a rank 7 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)"
+    },
+    {
+      "id": 82,
+      "card_number": "EBP01-051",
+      "name": "Orga Phase II",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Orga"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "If you have 5 or more monster cards in your discard pile, this card gains +3000 counter power."
+    },
+    {
+      "id": 83,
+      "card_number": "EBP01-052",
+      "name": "Megaguirus",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Megaguirus"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Awakening4> If this card is in zones 1-5 and you have 5 or more monster cards in your discard pile, this card cannot be <Destroy> by your opponent's effects. (Active if your monster card is in zone 4 or beyond.)"
+    },
+    {
+      "id": 84,
+      "card_number": "EBP01-053",
+      "name": "Rodan(1993)",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Rodan"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0"
+    },
+    {
+      "id": 85,
+      "card_number": "EBP01-054",
+      "name": "Destoroyah Flying Form",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Destoroyah"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "<Evolution8> <《Destoroyah》> (At the beginning of your main phase, you may play a rank 8 or lower <《Destoroyah》> battle card from your deck by placing it on top of this card.)\n<Enter> If this card was played through evolution, draw 2 cards, then discard 2 cards."
+    },
+    {
+      "id": 86,
+      "card_number": "EBP01-055",
+      "name": "Battra(imago)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Battra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Enter> Draw 1 card, then discard 1 card."
+    },
+    {
+      "id": 87,
+      "card_number": "EBP01-056",
+      "name": "Super X2",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Super-X",
+        "Weapon"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "If this card is in the same column as your opponent’s monster card, this card gains +3000 counter power for each of your opponent's <Rage> ."
+    },
+    {
+      "id": 88,
+      "card_number": "EBP01-057",
+      "name": "Mothra(imago)(1992)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Enter> Choose 2 battle cards in your zones, you may swap their positions.\nYour rank 5 or lower battle cards in zones adjacent to this card gain +3000 counter power."
+    },
+    {
+      "id": 89,
+      "card_number": "EBP01-058",
+      "name": "Biollante Plant Beast Form",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Biollante"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "6000",
+      "threat_level": "0",
+      "description": "If you have a <《Biollante》> card with <Evolution> in your discard pile, you can play this from your hand with its rank reduced by 2. (After being played, this card is rank 7.)\n<Enter> Return all cards in your discard pile to your deck then shuffle."
+    },
+    {
+      "id": 90,
+      "card_number": "EBP01-059",
+      "name": "Fire Rodan",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Rodan"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "6000",
+      "threat_level": "0",
+      "description": "When this card is discarded from your hand by your opponent's effect, and their monster card is in zones 4-8, you may play this card. (Regardless of what zone your opponent's monster card is occupying.)\nIf this card is in zone 8, this card gains +3000 counter power."
+    },
+    {
+      "id": 91,
+      "card_number": "EBP01-060",
+      "name": "Destoroyah Perfect Form",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Destoroyah"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "10000",
+      "threat_level": "0",
+      "description": "<Enter> If this card was played through evolution, choose up to 1 strategy card named 「Godzilla vs. Destoroyah」in your discard pile.\nIf you have 1 or fewer strategy cards in play, play and activate the chosen card. (Regardless of rank.)"
+    },
+    {
+      "id": 92,
+      "card_number": "EBP01-061",
+      "name": "Scale Attack",
+      "type": "Strategy",
+      "rank": "1",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "If your opponent has 5 or more <Rage> , reduce their <Rage> by 3."
+    },
+    {
+      "id": 93,
+      "card_number": "EBP01-062",
+      "name": "Godzilla vs. Destoroyah",
+      "type": "Strategy",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "<Your Turn> If you have a <《Destoroyah》> battle card in your zones, increase your total counter power by +10,000."
+    },
+    {
+      "id": 94,
+      "card_number": "EBP01-063",
+      "name": "Guardians Awaken",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "Evolve all of your rank 4 or lower battle cards with <Evolution> ."
+    },
+    {
+      "id": 95,
+      "card_number": "EBP01-064",
+      "name": "Godzilla vs. Megaguirus",
+      "type": "Strategy",
+      "rank": "5",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Choose one of the following:\n・ <Destroy> 1 of your opponent’s rank 4 or lower battle cards.\n・If you have 4 or more battle cards in your zones, choose 1 of your opponent’s zones and <Destroy> all battle cards in that zone and zones adjacent to it."
+    },
+    {
+      "id": 96,
+      "card_number": "EBP01-065",
+      "name": "Godzilla vs. Destoroyah",
+      "type": "Strategy",
+      "rank": "6",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Destroy> all of your opponent’s battle cards in zones 1-5."
+    },
+    {
+      "id": 97,
+      "card_number": "EBP01-066",
+      "name": "Godzilla vs. Biollante",
+      "type": "Strategy",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "When this card is discarded from your hand by your opponent's effect, increase your monster card’s <Rage> by 2.\n<Opponent’s Turn> Your monster card cannot be countered by 40,000 or lower counter power. Instead, it only moves as though it were countered. (Do not play the next monster card from your monster deck.)"
+    },
+    {
+      "id": 98,
+      "card_number": "EBP01-067",
+      "name": "Gorosaurus",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Gorosaurus"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)"
+    },
+    {
+      "id": 99,
+      "card_number": "EBP01-068",
+      "name": "Manda(1968)",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Manda"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "If this card is in a zone adjacent to your monster card, this card gains +3000 counter power."
+    },
+    {
+      "id": 100,
+      "card_number": "EBP01-069",
+      "name": "Varan",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Varan"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Awakening6> <Enter> Draw 2 cards, then discard 2 cards. (Active if your monster card is in zone 6 or beyond.)"
+    },
+    {
+      "id": 101,
+      "card_number": "EBP01-070",
+      "name": "Baragon(1968)",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Baragon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "<Enter> Look at the top card of your deck. You may send it to your discard pile or place it back on top of your deck."
+    },
+    {
+      "id": 102,
+      "card_number": "EBP01-071",
+      "name": "Giant Condor",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Giant Condor"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "If this card is in the same column as your opponent’s monster card, this card gains +5000 counter power.\nWhen your opponent's <Rage> is increased, <Destroy> this card."
+    },
+    {
+      "id": 103,
+      "card_number": "EBP01-072",
+      "name": "Gigan(2022)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Gigan",
+        "Weapon",
+        "Fest"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Enter> If this card is in the same column as your opponent’s monster card, send the top card of your deck to your discard pile. If it is a battle card, move your opponent’s monster card with 50,000 or lower threat level backward by 1 zone."
+    },
+    {
+      "id": 104,
+      "card_number": "EBP01-073",
+      "name": "Godzilla Against Mechagodzilla",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Godzilla",
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "10000",
+      "threat_level": "0",
+      "description": "This card cannot be played if you have 7 or fewer monster cards in your discard pile.\nWhen your monster card invades, if there are no monster cards under this card, you may place 1 monster card from your discard pile under this card to set your opponent’s <Rage> to 0."
+    },
+    {
+      "id": 105,
+      "card_number": "EBP01-074",
+      "name": "King Ghidorah(2024)",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "King Ghidorah",
+        "Fest"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "8000",
+      "threat_level": "0",
+      "description": "If you have a card named 「Gravity Beam」 in play, this card gains +20,000 counter power."
+    },
+    {
+      "id": 106,
+      "card_number": "EBP01-075",
+      "name": "Godzilla, King of the Monsters",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "This card gains +3000 counter power for each of your monster card's <Rage> .\nIf your monster card has 3 or more <Rage> , and this card is in zones 1-5, this card cannot be <Destroy> by your opponent’s effects.\n<Awakening8> You can play this card with its rank reduced by 4. (Active if your monster card is in zone 8. After being played, this card is rank 8.)"
+    },
+    {
+      "id": 107,
+      "card_number": "EBP01-076",
+      "name": "Destroy All Monsters",
+      "type": "Strategy",
+      "rank": "2",
+      "colors": [
+        "white"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "When your monster card invades this turn, <Destroy> 1 of your opponent’s battle cards."
+    },
+    {
+      "id": 108,
+      "card_number": "EBP01-077",
+      "name": "Oxygen Destroyer",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "white"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "If your opponent has 2 or fewer <Rage> , move your opponent's monster card as though it were countered. (Do not play the next monster card from your monster deck.)"
+    },
+    {
+      "id": 109,
+      "card_number": "EBP01-078",
+      "name": "Godzilla Attacks",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "white"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "Advance your monster card to zone 6."
+    },
+    {
+      "id": 110,
+      "card_number": "EBP01-079",
+      "name": "Gravity Beam",
+      "type": "Strategy",
+      "rank": "5",
+      "colors": [
+        "white"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "Your opponent discards cards until they have 3 cards remaining in their hand."
+    },
+    {
+      "id": 111,
+      "card_number": "EBP01-080",
+      "name": "Godzilla and its son on Monster Island",
+      "type": "Strategy",
+      "rank": "6",
+      "colors": [
+        "white"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "If your opponent has a strategy card in play, you can play this from your hand with its rank reduced by 2.\nWhile this card is in the strategy zone, your rank 5 or lower battle cards in zones 1-5 cannot be <Destroy> by your opponent’s effects."
+    },
+    {
+      "id": 112,
+      "card_number": "EBP02-001",
+      "name": "Giant Unknown Creature",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "4000",
+      "burst": null,
+      "description": "<Opponent’s Turn> At the beginning of the counter phase, you may discard 1 strategy card from your hand to increase this card's <Rage> by 1."
+    },
+    {
+      "id": 113,
+      "card_number": "EBP02-002",
+      "name": "Godzilla(2016) 2nd Form",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "2nd Form"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "11000",
+      "burst": null,
+      "description": "If you have 1 or more strategy cards in play, this card gains +5000 threat level."
+    },
+    {
+      "id": 114,
+      "card_number": "EBP02-003",
+      "name": "Godzilla(2016) 2nd Form",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "2nd Form"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "12000",
+      "burst": null,
+      "description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> If there is a card named “Giant Unknown Creature” under this card, you may discard 1 strategy card from your hand to advance this card by 1 zone."
+    },
+    {
+      "id": 115,
+      "card_number": "EBP02-004",
+      "name": "Godzilla(2016) 3rd Form",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "3rd Form"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "22000",
+      "burst": null,
+      "description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> If there is a <《2nd Form》> card under this card, <Destroy> 1 of your opponent's rank 6 or lower battle cards for each strategy card in your strategy zone."
+    },
+    {
+      "id": 116,
+      "card_number": "EBP02-005",
+      "name": "Godzilla(2016) 3rd Form",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "3rd Form"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "<Your Turn> <Awakening6> Whenever this card's <Rage> is increased, if you have a strategy card in play, your opponent discards cards until they have 3 cards remaining in their hand."
+    },
+    {
+      "id": 117,
+      "card_number": "EBP02-006",
+      "name": "Godzilla(2016) 4th Form",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "4th Form"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "33000",
+      "burst": null,
+      "description": "<When Invading> If there is a card with <《3rd Form》> under this card, <Destroy> all of your opponent's rank 6 or lower battle cards.\nIf there is a <《4th Form》> card under this card, this card gains +10,000 threat level for each strategy card in your strategy zone."
+    },
+    {
+      "id": 118,
+      "card_number": "EBP02-007",
+      "name": "Godzilla(2016) 4th Form",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "4th Form"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "36000",
+      "burst": null,
+      "description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> You may discard 1 strategy card from your hand. If you do, reveal the top 5 cards of your deck, add 1 monster card from among them to your hand, then send the rest to your discard pile."
+    },
+    {
+      "id": 119,
+      "card_number": "EBP02-007++A",
+      "name": "Godzilla(2016) 4th Form",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "4th Form"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "36000",
+      "burst": null,
+      "description": "<Burst3>\n<Enter> You may discard 1 strategy card from your hand. If you do, reveal the top 5 cards of your deck, add 1 monster card from among them to your hand, then send the rest to your discard pile."
+    },
+    {
+      "id": 120,
+      "card_number": "EBP02-008",
+      "name": "Godzilla(1969)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "24000",
+      "burst": null,
+      "description": "<Burst4> (You can play this card from rank Ⅳ. If you do, send this card to your discard pile at the beginning of your next end phase.)\nWhenever this card's <Rage> is increased, <Destroy> all of your opponent's rank 6 or lower battle cards in the zone with the same number as the zone this card occupies."
+    },
+    {
+      "id": 121,
+      "card_number": "EBP02-009",
+      "name": "Godzilla(2023)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "35000",
+      "burst": null,
+      "description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\nWhen this card is discarded by the effect of Burst, return this card from your discard pile to your hand.\n<When Invading> Your opponent discards cards until they have 3 cards remaining in their hand."
+    },
+    {
+      "id": 122,
+      "card_number": "EBP02-010",
+      "name": "King Caesar(2004)",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Final Wars"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "<Enter> Move 1 of your other battle cards in your zones to an unoccupied zone."
+    },
+    {
+      "id": 123,
+      "card_number": "EBP02-011",
+      "name": "Gabara",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Gabara"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "If your monster card has 2 or more <Rage> , this card gains +3000 counter power."
+    },
+    {
+      "id": 124,
+      "card_number": "EBP02-012",
+      "name": "Godzilla(2016) Frozen",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "4th Form"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "0",
+      "threat_level": "0",
+      "description": "If this card is in zone 8, whenever your strategy cards would be discarded from the strategy zone, you may place them under this card instead.\n<Awakening4> At the beginning of your main phase, if there are 2 or more cards under this card, counter your opponent's monster card."
+    },
+    {
+      "id": 125,
+      "card_number": "EBP02-013",
+      "name": "Minilla(1969)",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Minilla"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Enter> If your monster card has 2 or more <Rage> , advance your monster card to zone 5."
+    },
+    {
+      "id": 126,
+      "card_number": "EBP02-014",
+      "name": "Cabinet Helicopter",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Mech"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Enter> Send the top card of your deck to your discard pile. If it is a monster card, advance your monster card to zone 6."
+    },
+    {
+      "id": 127,
+      "card_number": "EBP02-015",
+      "name": "Rodan(2004)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Rodan",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "If this card is in a zone with the same number as the zone that your opponent's monster card occupies, this card gains +3000 counter power."
+    },
+    {
+      "id": 128,
+      "card_number": "EBP02-016",
+      "name": "Anguirus(2004)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Anguirus",
+        "Final Wars"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "7000",
+      "threat_level": "0",
+      "description": "If this card is in the same column as the opponent's monster card, this card gains +5000 counter power."
+    },
+    {
+      "id": 129,
+      "card_number": "EBP02-017",
+      "name": "Operation Taba",
+      "type": "Strategy",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Your Turn> If you have 4 or more battle cards in your zones, increase your total counter power by 5000."
+    },
+    {
+      "id": 130,
+      "card_number": "EBP02-018",
+      "name": "Despair",
+      "type": "Strategy",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "If your monster card has 2 or more <Rage> , <Destroy> 1 of your opponent's battle cards that is occupying a zone at or before the zone your monster card currently occupies. (If your monster card is in Zone 4, you can select battle cards in your opponent's zone 1, 2, 3, or 4.)"
+    },
+    {
+      "id": 131,
+      "card_number": "EBP02-019",
+      "name": "There is no danger of the creature coming ashore.",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Move 1 battle card in your zones to an unoccupied zone. If your monster card invaded this turn, advance your monster card by 1 zone."
+    },
+    {
+      "id": 132,
+      "card_number": "EBP02-020",
+      "name": "Operation Yashiori -Conductorless train bombers-",
+      "type": "Strategy",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "If you have 5 or more strategy cards in your discard pile, create “Conductorless train bombers” tokens in each of your unoccupied zones. (Tokens are prepared separately from your main deck.)"
+    },
+    {
+      "id": 133,
+      "card_number": "EBP02-021",
+      "name": "Godzilla(1993)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "25000",
+      "burst": null,
+      "description": "All of your rank 5 or lower battle cards in zones adjacent to this card gain +3000 counter power."
+    },
+    {
+      "id": 134,
+      "card_number": "EBP02-022",
+      "name": "Godzilla(1994)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "36000",
+      "burst": null,
+      "description": "<When Invading> If you discarded a blue battle card for this card's invade action, you may play that battle card from your discard pile."
+    },
+    {
+      "id": 135,
+      "card_number": "EBP02-023",
+      "name": "Godzilla(1999)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "34000",
+      "burst": null,
+      "description": "<Enter> If you have 5 or more monster cards in your discard pile, 1 of your opponent's monster cards with 50,000 or less threat level retreats back by 1 zone.\nIf you have 10 or more monster cards in your discard pile, this card gains +10,000 threat level."
+    },
+    {
+      "id": 136,
+      "card_number": "EBP02-024",
+      "name": "Biollante Rose Form",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Biollante"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "6000",
+      "burst": null,
+      "description": "If this card is in your monster deck, at the start of the game it will be played in Zone 5.\nThis card cannot advance nor invade."
+    },
+    {
+      "id": 137,
+      "card_number": "EBP02-025",
+      "name": "Biollante Rose Form",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Biollante"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "11000",
+      "burst": null,
+      "description": "This card cannot advance nor invade.\n<Enter> Play 1 “Tentacles” token in a zone adjacent to this card. (Tokens are prepared separately from your main deck.)"
+    },
+    {
+      "id": 138,
+      "card_number": "EBP02-026",
+      "name": "Biollante Plant Beast Form",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Biollante"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "22000",
+      "burst": null,
+      "description": "<Enter> If you have a strategy card in play, choose 1 of your opponent's zones. <Destroy> all of your opponent's rank 5 or lower battle cards in that zone and zones adjacent to it."
+    },
+    {
+      "id": 139,
+      "card_number": "EBP02-027",
+      "name": "Biollante Plant Beast Form",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Biollante"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "<Opponent’s Turn> <Awakening6> If your opponent has a strategy card in play, this card cannot be countered by 40,000 or lower counter power. Instead, it only moves as though it were countered. (Do not play the next Monster Card from your monster deck.)"
+    },
+    {
+      "id": 140,
+      "card_number": "EBP02-028",
+      "name": "Biollante Plant Beast Form",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Biollante"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "32000",
+      "burst": null,
+      "description": "<Enter> Play as many rank 4 or lower battle cards with <Evolution> from your discard pile to each of this card's adjacent zones. (You must play as many as possible and you may play the battle cards in zones already occupied by other battle cards. Maximum of 3 cards.)"
+    },
+    {
+      "id": 141,
+      "card_number": "EBP02-029",
+      "name": "Biollante Plant Beast Form",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Biollante"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "55000",
+      "burst": null,
+      "description": "<Opponent’s Turn> At the beginning of the counter phase, for the rest of the turn, double the counter power of all of your opponent's battle cards in the same column as this card. (Refer to those battle card's counter power at the ability resolution timing.)"
+    },
+    {
+      "id": 142,
+      "card_number": "EBP02-030",
+      "name": "Baby Godzilla",
+      "type": "Battle",
+      "rank": "1",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Baby Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "0",
+      "threat_level": "0",
+      "description": "<Evolution5> <《Little Godzilla》> (At the beginning of your main phase, you may play a rank 5 or lower <《Little Godzilla》> battle card from your deck by placing it on top of this card.)"
+    },
+    {
+      "id": 143,
+      "card_number": "EBP02-031",
+      "name": "MBT-MB92 modified",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "You may have any number of this card in your deck.\nIf the number of other rank 5 or lower battle cards in your zones is 2 or more, this card gains +3000 counter power."
+    },
+    {
+      "id": 144,
+      "card_number": "EBP02-032",
+      "name": "Biollante Rose Form",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Biollante"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Evolution7> <《Biollante》> (At the beginning of your main phase, you may play a rank 7 or lower <《Biollante》> battle card from your deck by placing it on top of this card.)"
+    },
+    {
+      "id": 145,
+      "card_number": "EBP02-033",
+      "name": "Little Godzilla",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Little Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)"
+    },
+    {
+      "id": 146,
+      "card_number": "EBP02-034",
+      "name": "Super X3",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Super X",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "If this card is in zone 8, this card gains +3000 counter power."
+    },
+    {
+      "id": 147,
+      "card_number": "EBP02-035",
+      "name": "Biollante Plant Beast Form",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Biollante"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Enter> If you have 2 or more cards with ⁅《ビオランテ＠》⁆ in your discard pile, return all cards in your opponent's discard pile to their deck then shuffle.\n<Enter> Play 2 “Tentacles” tokens in zones adjacent to this card. (Tokens are prepared separately from your main deck.)"
+    },
+    {
+      "id": 148,
+      "card_number": "EBP02-036",
+      "name": "Godzilla(1994)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "6000",
+      "threat_level": "0",
+      "description": "At the beginning of your end phase, if this card is in a zone adjacent to your monster card, 1 of your opponent's monster cards with 40,000 or less threat level retreats back by 1 zone."
+    },
+    {
+      "id": 149,
+      "card_number": "EBP02-037",
+      "name": "Destoroyah Perfect Form",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Destoroyah"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "9000",
+      "threat_level": "0",
+      "description": "<Enter> Draw 2 cards, then discard 2 cards."
+    },
+    {
+      "id": 150,
+      "card_number": "EBP02-038",
+      "name": "Godzilla 2000: Millennium",
+      "type": "Strategy",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Choose one of the following:\n\n・ <Destroy> 1 of your opponent's rank 5 or lower battle cards.\n・If you have 10 or more monster cards in your discard pile, <Destroy> 1 of your opponent's battle cards in zone 8."
+    },
+    {
+      "id": 151,
+      "card_number": "EBP02-039",
+      "name": "Lake Ashi Monster",
+      "type": "Strategy",
+      "rank": "5",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Your Turn> You can play battle cards with <《Biollante》> from your hand with their rank reduced by 3. (They return to their original rank after being played.)"
+    },
+    {
+      "id": 152,
+      "card_number": "EBP02-040",
+      "name": "Interception Operation",
+      "type": "Strategy",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "If you have 5 or more <《Weapon》> battle cards with “MB” in their name in your zones, discard your hand and draw 5 cards."
+    },
+    {
+      "id": 153,
+      "card_number": "EBP02-041",
+      "name": "Gigan(1972)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Gigan",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "5000",
+      "burst": null,
+      "description": "Each of your battle cards in zones adjacent to this card gain +1000 counter power."
+    },
+    {
+      "id": 154,
+      "card_number": "EBP02-042",
+      "name": "Gigan(1972)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Gigan",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "11000",
+      "burst": null,
+      "description": "<Enter> You may discard a card with <《King Ghidorah》> or <《Megalon》> from your hand to reduce your opponent's <Rage> by 2.\nAt the beginning of your end phase, if your opponent's monster card is in zone 1–5, increase this card's <Rage> by 1."
+    },
+    {
+      "id": 155,
+      "card_number": "EBP02-043",
+      "name": "Gigan(2004)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Gigan",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "18000",
+      "burst": null,
+      "description": "Each of your battle cards in zones adjacent to this card gain +1000 counter power for each card under this card."
+    },
+    {
+      "id": 156,
+      "card_number": "EBP02-044",
+      "name": "Modified Gigan",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Gigan",
+        "Weapon"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "32000",
+      "burst": null,
+      "description": "<When Invading> If your opponent's monster card is in zones 6–8, reduce their <Rage> by 2.\nAt the beginning of your end phase, if your opponent's monster card is in zones 1–5, increase this card's <Rage> by 2."
+    },
+    {
+      "id": 157,
+      "card_number": "EBP02-045",
+      "name": "King Ghidorah(1964)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "11000",
+      "burst": null,
+      "description": "This card gains +3000 threat level for each rank of your opponent's monster."
+    },
+    {
+      "id": 158,
+      "card_number": "EBP02-046",
+      "name": "King Ghidorah(1965)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "<Enter> Place all cards with the same name as this card from your discard pile under this card.\nThis card gains +3000 threat level for each card with the same name under this card."
+    },
+    {
+      "id": 159,
+      "card_number": "EBP02-047",
+      "name": "King Ghidorah(1991)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "5000",
+      "burst": null,
+      "description": "Whenever this card advances, send the top card of your deck to your discard pile."
+    },
+    {
+      "id": 160,
+      "card_number": "EBP02-048",
+      "name": "King Ghidorah(1991)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "11000",
+      "burst": null,
+      "description": "<Enter> Send the top 3 cards of your deck to your discard pile.\n<When Invading> <Destroy> 3 of your opponent's rank 4 or lower battle cards."
+    },
+    {
+      "id": 161,
+      "card_number": "EBP02-049",
+      "name": "King Ghidorah(1991)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "21000",
+      "burst": null,
+      "description": "<Enter> If there are 3 or more cards under this card, choose one of the following:\n・ <Destroy> 3 of your opponent's rank 5 or lower battle cards.\n・Your opponent discards cards until they have 3 cards remaining in their hand.\n・Send the top 3 cards of your deck to your discard pile."
+    },
+    {
+      "id": 162,
+      "card_number": "EBP02-050",
+      "name": "Mecha-King Ghidorah",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah",
+        "23rd century"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "34000",
+      "burst": null,
+      "description": "<Enter> If there are 5 or more cards under this card, choose one of the following:\n・ <Destroy> 3 of your opponent's rank 6 or lower battle cards.\n・Your opponent discards cards until they have 2 cards remaining in their hand.\n・Increase this card's <Rage> by 3."
+    },
+    {
+      "id": 163,
+      "card_number": "EBP02-051",
+      "name": "Mecha-King Ghidorah",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah",
+        "23rd century"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "37000",
+      "burst": null,
+      "description": "If there are 5 or more cards under this card, this card gains +3000 threat level for each of your opponent's unoccupied zones."
+    },
+    {
+      "id": 164,
+      "card_number": "EBP02-052",
+      "name": "SpaceGodzilla Flying Form",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "SpaceGodzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "5000",
+      "burst": null,
+      "description": "<When Invading> You may discard 1 card from your hand, if you do, play 1 “Crystals” token. (Tokens are prepared separately from your deck.)"
+    },
+    {
+      "id": 165,
+      "card_number": "EBP02-053",
+      "name": "SpaceGodzilla",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "SpaceGodzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "12000",
+      "burst": null,
+      "description": "<When Invading> Play 1 “Crystals” token. (Tokens are prepared separately from your deck.)\nIf there is a “Crystals” in your zones, this card gains +5000 threat level."
+    },
+    {
+      "id": 166,
+      "card_number": "EBP02-054",
+      "name": "SpaceGodzilla",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "SpaceGodzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "20000",
+      "burst": null,
+      "description": "<Enter> Play 2 “Crystals” tokens. (Tokens are prepared separately from your deck.)\nWhenever this card's <Rage> is increased, <Destroy> 1 of your opponent's rank 5 or lower battle cards for each “Crystals” in your zones."
+    },
+    {
+      "id": 167,
+      "card_number": "EBP02-055",
+      "name": "SpaceGodzilla",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "SpaceGodzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "<Awakening4> If there are 3 or more “Crystals” in your zones, your opponent cannot play battle cards in zones in the same column as this card. (Does not destroy cards already there.)"
+    },
+    {
+      "id": 168,
+      "card_number": "EBP02-056",
+      "name": "SpaceGodzilla",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "SpaceGodzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "32000",
+      "burst": null,
+      "description": "If you have 3 or more “Crystals” in your zones, this card gains +20,000 threat level.\n<Your Turn> When this card advances during the end phase, it advances 1 additional zone for each “Crystals” in your zones."
+    },
+    {
+      "id": 169,
+      "card_number": "EBP02-057",
+      "name": "SpaceGodzilla Flying Form",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "SpaceGodzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "35000",
+      "burst": null,
+      "description": "<Enter> Move 1 of your opponent's battle cards in the same column as this card to an unoccupied zone.\nWhenever this card's <Rage> is increased, play 2 “Crystals” tokens. (Tokens are prepared separately from your deck.)"
+    },
+    {
+      "id": 170,
+      "card_number": "EBP02-058",
+      "name": "Dorat",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Dorat"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "<Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)"
+    },
+    {
+      "id": 171,
+      "card_number": "EBP02-059",
+      "name": "Godzillasaurus",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Godzillasaurus"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Revenge> You may discard 1 card from your hand, if you do, return 1 battle card named “Godzilla(1991)” from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)"
+    },
+    {
+      "id": 172,
+      "card_number": "EBP02-060",
+      "name": "Gigan(2004)",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Gigan",
+        "Weapon",
+        "Final Wars"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "If this card is in the same column as your opponent's monster card, this card gains +3000 counter power.\n<Revenge> If your opponent's monster card is in zones 1–5, you may return this card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)"
+    },
+    {
+      "id": 173,
+      "card_number": "EBP02-061",
+      "name": "Godzilla(1972)",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "If this card is in zone 8, this card gains +3000 counter power."
+    },
+    {
+      "id": 174,
+      "card_number": "EBP02-062",
+      "name": "SpaceGodzilla",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "SpaceGodzilla"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Revenge> Return up to 1 <《SpaceGodzilla》> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)"
+    },
+    {
+      "id": 175,
+      "card_number": "EBP02-063",
+      "name": "Megalon",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Megalon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0"
+    },
+    {
+      "id": 176,
+      "card_number": "EBP02-064",
+      "name": "Gigan(1972)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Gigan",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "If there is a card with <《King Ghidorah》> or <《Megalon》> in your zones, this card gains +3000 counter power.\n<Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster movement.)"
+    },
+    {
+      "id": 177,
+      "card_number": "EBP02-065",
+      "name": "Godzilla(1991)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Awakening6> If there are 3 or more cards under your monster card, this card gains +5000 counter power. If there are 5 or more, this card gains an additional +5000 counter power."
+    },
+    {
+      "id": 178,
+      "card_number": "EBP02-066",
+      "name": "King Ghidorah(1964)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "8000",
+      "threat_level": "0",
+      "description": "<Awakening6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)"
+    },
+    {
+      "id": 179,
+      "card_number": "EBP02-067",
+      "name": "M.O.G.U.E.R.A.",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Moguera",
+        "Weapon"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "10000",
+      "threat_level": "0",
+      "description": "If your opponent has a <《Godzilla》> card in their zones, this card gains +5000 counter power."
+    },
+    {
+      "id": 180,
+      "card_number": "EBP02-068",
+      "name": "Mecha-King Ghidorah",
+      "type": "Battle",
+      "rank": "23",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah",
+        "23rd century"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "7000",
+      "threat_level": "0",
+      "description": "You can play this card from your hand with its rank reduced by 2 for each non-rank 23 <《King Ghidorah》> card in your discard pile. (This card's rank returns to 23 after being played.)\nIf this card is in the same column as your opponent's monster card, they cannot invade, and this card gains +3000 counter power."
+    },
+    {
+      "id": 181,
+      "card_number": "EBP02-069",
+      "name": "Godzilla vs. SpaceGodzilla",
+      "type": "Strategy",
+      "rank": "1",
+      "colors": [
+        "green"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Choose 2 of your opponent's battle cards in their zones and swap their positions."
+    },
+    {
+      "id": 182,
+      "card_number": "EBP02-070",
+      "name": "Godzilla vs. SpaceGodzilla",
+      "type": "Strategy",
+      "rank": "3",
+      "colors": [
+        "green"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "<Opponent’s Turn> Your opponent cannot play strategy cards. (Does not destroy cards already in play.)\n<Opponent’s Turn> At the beginning of the main phase, your opponent may discard cards until they have 5 cards remaining in their hand. If they discard at least 1 card, <Destroy> this card."
+    },
+    {
+      "id": 183,
+      "card_number": "EBP02-071",
+      "name": "Godzilla vs. King Ghidorah",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Choose one of the following:\n・ <Destroy> 3 of your opponent's rank 4 or lower battle cards.\n・ <Awakening6> <Destroy> 2 of your opponent's rank 6 or lower battle cards.\n・ <Awakening8> <Destroy> 1 of your opponent's battle cards."
+    },
+    {
+      "id": 184,
+      "card_number": "EBP02-072",
+      "name": "God of Destruction's Counterattack",
+      "type": "Strategy",
+      "rank": "5",
+      "colors": [
+        "green"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Your Turn> If you have 3 or more “Crystals” in your zones, your total counter power is increased by 20,000."
+    },
+    {
+      "id": 185,
+      "card_number": "EBP02-073",
+      "name": "Bloody Chainsaw",
+      "type": "Strategy",
+      "rank": "6",
+      "colors": [
+        "green"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Your Turn> Whenever you play a battle card, <Destroy> all of your opponent's rank 6 or lower battle cards in the same column as that battle card."
+    },
+    {
+      "id": 186,
+      "card_number": "EBP02-074",
+      "name": "Bite Attack",
+      "type": "Strategy",
+      "rank": "7",
+      "colors": [
+        "green"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Increase your monster card's <Rage> by 1 for each rank of your opponent's monster."
+    },
+    {
+      "id": 187,
+      "card_number": "EBP02-075",
+      "name": "Chibi Mothra",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Chibi Godzilla Raids Again",
+        "Mothra"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Enter> If a card named “Chibi Mechagodzilla” is in your zones, reduce your opponent's <Rage> by 1."
+    },
+    {
+      "id": 188,
+      "card_number": "EBP02-076",
+      "name": "Chibi Mechagodzilla",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Chibi Godzilla Raids Again",
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "If this card is in a zone adjacent to your monster card, this card gains +3000 counter power."
+    },
+    {
+      "id": 189,
+      "card_number": "EBP02-077",
+      "name": "Chibi Godzilla",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Chibi Godzilla Raids Again",
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "At the beginning of your main phase, send the top 2 cards of your deck to your discard pile.\nIf a <《Godzilla》> card was sent to your discard pile this way, <Destroy> this card and play a “Chibi Godzilla 2nd Form” token. (Tokens are prepared separately from your deck.)"
+    },
+    {
+      "id": 190,
+      "card_number": "EBP02-078",
+      "name": "Mothra(imago)(2003)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "7000",
+      "threat_level": "0",
+      "description": "<Enter> If this card is in the same column as your opponent's monster card, reveal the top 2 cards of your deck. Add all rank 5 or lower battle cards among them to your hand and send the rest into your discard pile."
+    },
+    {
+      "id": 191,
+      "card_number": "EBP02-079",
+      "name": "Destructive Impulse",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "white"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Perform the following action based on how many zones your monster card advanced through invasion this turn:\n\n0 - <Destroy> all of your opponent's rank 2 or lower battle cards.\n1 - <Destroy> all of your opponent's rank 4 or lower battle cards.\n2 - <Destroy> all of your opponent's rank 6 or lower battle cards."
+    },
+    {
+      "id": 192,
+      "card_number": "EBP02-080",
+      "name": "Joint Struggle",
+      "type": "Strategy",
+      "rank": "6",
+      "colors": [
+        "white"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Reveal the top 2 cards of your deck. If they differ in at least 1 trait, add them to your hand; otherwise, send them to the discard pile. (Example if one is <《Mech》> and the other is <《Mechagodzilla》> and <《Mech》> , you may add them to your hand.)"
+    },
+    {
+      "id": 193,
+      "card_number": "EBP02-T01",
+      "name": "Conductorless Train Bombers",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Token",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Enter> Reduce your opponent's <Rage> by 1.\n(Tokens cannot be added to the deck. They are banished when removed from zones.)"
+    },
+    {
+      "id": 194,
+      "card_number": "EBP02-T02",
+      "name": "Tentacles",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Token",
+        "Biollante"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "(Tokens cannot be added to the deck. They are banished when removed from zones.)"
+    },
+    {
+      "id": 195,
+      "card_number": "EBP02-T03",
+      "name": "Crystals",
+      "type": "Battle",
+      "rank": "1",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Token",
+        "Crystal"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "0",
+      "threat_level": "0",
+      "description": "All of your <《SpaceGodzilla》> monster cards in your zones gain +1000 threat level.\n(Tokens cannot be added to the deck. They are banished when removed from zones.)"
+    },
+    {
+      "id": 196,
+      "card_number": "EBP02-T04",
+      "name": "Chibi Godzilla 2nd Form",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Token",
+        "Chibi Godzilla Raids Again",
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "10000",
+      "threat_level": "0",
+      "description": "At the beginning of your end phase, <Destroy> this card and play 1 battle card named “Chibi Godzilla” from your discard pile.\n(Tokens cannot be added to the deck. They are banished when removed from zones.)"
+    },
+    {
+      "id": 198,
+      "card_number": "EBP03-001",
+      "name": "Godzilla(2001)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "4000",
+      "burst": null,
+      "description": "<Awakening4> At the beginning of your end phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, this card advances 1 zone.\n<Awakening6> This card gains +5000 threat level."
+    },
+    {
+      "id": 199,
+      "card_number": "EBP03-002",
+      "name": "Godzilla(2001)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "14000",
+      "burst": null,
+      "description": "<Opponent’s Turn> <Awakening4> At the beginning of the counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 1.\n<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 2."
+    },
+    {
+      "id": 200,
+      "card_number": "EBP03-003",
+      "name": "Godzilla(2001)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "22000",
+      "burst": null,
+      "description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 2, then <Destroy> all of your opponent’s rank 6 or lower battle cards. (Active if this card is in zone 8.)"
+    },
+    {
+      "id": 201,
+      "card_number": "EBP03-004",
+      "name": "Godzilla(2001)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "35000",
+      "burst": null,
+      "description": "When this card invades, you may send the top card of your deck to your discard pile instead of discarding a card from your hand.\n<Opponent’s Turn> <Awakening4> This card’s <Rage> cannot be reduced by your opponent’s effects. (Active if this is in zone 4 or beyond.)"
+    },
+    {
+      "id": 202,
+      "card_number": "EBP03-005",
+      "name": "Godzilla(2001)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "36000",
+      "burst": null,
+      "description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 3, then <Destroy> all of your opponent’s rank 7 or lower battle cards. (Active if this card is in zone 8.)"
+    },
+    {
+      "id": 203,
+      "card_number": "EBP03-006",
+      "name": "Multi-purpose Fighting System-3",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "red",
+        "blue"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "5000",
+      "burst": null,
+      "description": "<Resonance> Red/Blue\n・Monster cards in your deck must have <《Weapon》> or <《Mech》> .\n・Battle cards in your deck must have <《Weapon》> or <《Mech》> .\n(You can mix red, blue, and white, but your monster deck and main deck must satisfy the above.)"
+    },
+    {
+      "id": 204,
+      "card_number": "EBP03-007",
+      "name": "Multi-purpose Fighting System-3",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "red",
+        "blue"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "12000",
+      "burst": null,
+      "description": "<When Invading> Reveal from the top of your deck a number of cards equal to the rank of your opponent’s monster card. Add 1 red or blue battle card among them to your hand, then send the rest to your discard pile."
+    },
+    {
+      "id": 205,
+      "card_number": "EBP03-008",
+      "name": "Multi-purpose Fighting System-3",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red",
+        "blue"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "21000",
+      "burst": null,
+      "description": "<Enter> If there is a blue battle card in your zones, <Destroy> 1 of your opponent’s rank 5 or lower battle cards.\n<Opponent’s Turn> At the beginning of the counter phase, if there is a red battle card in your zones, <Destroy> 1 of your opponent’s rank 5 or lower battle cards in the same column as this card."
+    },
+    {
+      "id": 206,
+      "card_number": "EBP03-009",
+      "name": "Multi-purpose Fighting System-3",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red",
+        "blue"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "37000",
+      "burst": null,
+      "description": "<Enter> Choose 1 of your opponent’s zones in the same column as this card, then <Destroy> all of your opponent’s rank 6 or lower battle cards in that zone and zones adjacent to it."
+    },
+    {
+      "id": 207,
+      "card_number": "EBP03-010",
+      "name": "Multi-purpose Fighting System-3",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red",
+        "blue"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "22000",
+      "burst": null,
+      "description": "<Enter> If there are 2 or more battle cards in your zones, your opponent discards cards until they have 4 cards remaining in their hand. If a battle card is discarded this way, increase this card’s <Rage> by 1."
+    },
+    {
+      "id": 208,
+      "card_number": "EBP03-011",
+      "name": "Multi-purpose Fighting System-3",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red",
+        "blue"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "33000",
+      "burst": null,
+      "description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> Reveal from the top of your deck a number of cards equal to the rank of your opponent’s monster card. Add up to 1 red battle card and up to 1 blue battle card among them to your hand, then send the rest to your discard pile."
+    },
+    {
+      "id": 209,
+      "card_number": "EBP03-012",
+      "name": "Godzilla(1993)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "12000",
+      "burst": null,
+      "description": "<Enter> If you have 1 or fewer strategy cards in play, you may place up to 1 blue rank 6 or lower strategy card from your hand into your strategy zone and activate it."
+    },
+    {
+      "id": 210,
+      "card_number": "EBP03-013",
+      "name": "Godzilla(1995)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "50000",
+      "burst": null,
+      "description": "<Enter> For the rest of the game, you have 3 strategy card zones. (It remains 3 even if this leaves play.)\n<Opponent’s Turn> At the beginning of the counter phase, if there are no cards in your strategy zones, you lose the game."
+    },
+    {
+      "id": 211,
+      "card_number": "EBP03-014",
+      "name": "Godzilla(2002)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "5000",
+      "burst": null,
+      "description": "At the beginning of your end phase, you may discard 1 battle card from your hand. If you do, draw 1 card."
+    },
+    {
+      "id": 212,
+      "card_number": "EBP03-015",
+      "name": "Godzilla(2002)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "9000",
+      "burst": null,
+      "description": "Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by 1."
+    },
+    {
+      "id": 213,
+      "card_number": "EBP03-016",
+      "name": "Godzilla(2003)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "17000",
+      "burst": null,
+      "description": "Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by 1. If your opponent’s <Rage> is 0, increase this card’s <Rage> by 1 instead."
+    },
+    {
+      "id": 214,
+      "card_number": "EBP03-017",
+      "name": "Godzilla(2003)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "29000",
+      "burst": null,
+      "description": "Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by 1. If your opponent’s <Rage> is 0, increase this card’s <Rage> by 1 instead.\n<Enter> You may discard 1 battle card from your hand. If you do, <Destroy> 1 of your opponent’s rank 6 or lower battle cards."
+    },
+    {
+      "id": 215,
+      "card_number": "EBP03-018",
+      "name": "Mothra(imago)(1996)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "blue",
+        "green"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "5000",
+      "burst": null,
+      "description": "<Resonance> Blue/Green\n・Monster cards in your deck must have <《Mothra》> .\n・Your deck must contain at least 10 strategy cards.\n(You can mix blue, green, and white, but your monster deck and main deck must satisfy the above.)"
+    },
+    {
+      "id": 216,
+      "card_number": "EBP03-019",
+      "name": "Mothra(larva)(1996)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "blue",
+        "green"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "14000",
+      "burst": null,
+      "description": "When you successfully counter your opponent’s monster card, if you have a card with <Base> in play, increase this card’s <Rage> by 2."
+    },
+    {
+      "id": 217,
+      "card_number": "EBP03-020",
+      "name": "Mothra Leo",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue",
+        "green"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "When you successfully counter your opponent’s monster card, if you have a card with <Base> in play, <Destroy> 1 opponent’s rank 7 or lower battle card."
+    },
+    {
+      "id": 218,
+      "card_number": "EBP03-021",
+      "name": "Rainbow Mothra",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue",
+        "green"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "22000",
+      "burst": null,
+      "description": "<Enter> Return 1 strategy card with <Base> from your discard pile to your hand."
+    },
+    {
+      "id": 219,
+      "card_number": "EBP03-022",
+      "name": "Aqua Mothra",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue",
+        "green"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "34000",
+      "burst": null,
+      "description": "If you have a card with <Base> in play, this card gains +10,000 threat level."
+    },
+    {
+      "id": 220,
+      "card_number": "EBP03-023",
+      "name": "Armor Mothra",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue",
+        "green"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "31000",
+      "burst": null,
+      "description": "<Enter> Evolve all of your <《Mothra》> battle cards with <Evolution> .\nWhen you successfully counter your opponent’s monster card, if you have a card with <Base> in play, retreat your opponent’s monster card back to zone 1."
+    },
+    {
+      "id": 221,
+      "card_number": "EBP03-024",
+      "name": "Baragon(2001)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "green",
+        "red"
+      ],
+      "traits": [
+        "Baragon",
+        "Sacred Guardian Beasts"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "5000",
+      "burst": null,
+      "description": "<Resonance> Green/Red\n・Monster cards in your deck must have ⁅《護国聖獣》＠⁆ .\n・Battle cards in your deck must be Rank 5 or higher.\n(You can mix green, red, and white, but your monster deck and main deck must satisfy the above.)"
+    },
+    {
+      "id": 222,
+      "card_number": "EBP03-025",
+      "name": "Mothra(imago)(2001)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "green",
+        "red"
+      ],
+      "traits": [
+        "Mothra",
+        "Sacred Guardian Beasts"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "11000",
+      "burst": null,
+      "description": "<Your Turn> Reduce the rank of all battle cards in your opponent’s zones by 1.\n<Enter> You may place 1 monster card from your discard pile under this card. If you do, advance your opponent’s monster card to zone 5."
+    },
+    {
+      "id": 223,
+      "card_number": "EBP03-026",
+      "name": "Mothra(imago)(2001)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "green",
+        "red"
+      ],
+      "traits": [
+        "Mothra",
+        "Sacred Guardian Beasts"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "19000",
+      "burst": null,
+      "description": "<Your Turn> If there are 3 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 2.\n<Enter> You may place 2 monster cards from your discard pile under this card. If you do, reduce your opponent’s <Rage> by 1."
+    },
+    {
+      "id": 224,
+      "card_number": "EBP03-027",
+      "name": "Ghidorah(2001)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "green",
+        "red"
+      ],
+      "traits": [
+        "Ghidorah",
+        "Sacred Guardian Beasts"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "<Your Turn> If there are 3 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 2.\n<When Invading> If there are 5 or more cards under this card, your opponent discards cards until they have 4 cards remaining in their hand."
+    },
+    {
+      "id": 225,
+      "card_number": "EBP03-028",
+      "name": "Thousand-Year Dragon King Ghidorah",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "green",
+        "red"
+      ],
+      "traits": [
+        "King Ghidorah",
+        "Sacred Guardian Beasts"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "32000",
+      "burst": null,
+      "description": "<Your Turn> If there are 5 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 3.\n<Opponent’s Turn> At the beginning of the counter phase, you may place 3 monster cards from your discard pile under this card. If you do, <Destroy> all rank 5 or lower battle cards in your opponent’s zones 1–5."
+    },
+    {
+      "id": 226,
+      "card_number": "EBP03-029",
+      "name": "Thousand-Year Dragon King Ghidorah",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "green",
+        "red"
+      ],
+      "traits": [
+        "King Ghidorah",
+        "Sacred Guardian Beasts"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "35000",
+      "burst": null,
+      "description": "<Your Turn> If there are 5 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 3.\n<When Invading> If there are 7 or more cards under this card, choose one:\n・ <Destroy> all battle cards of both players.\n・Each player discards cards until they have 2 cards remaining in their hand.\n・Reduce each player’s monster card’s <Rage> by 2."
+    },
+    {
+      "id": 227,
+      "card_number": "EBP03-030",
+      "name": "SHIRASAGI : AC-3",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "0",
+      "threat_level": "0",
+      "description": "Your <《Mechagodzilla》> battle cards in your zone 8 gain +3000 counter power.\n<Enter> You may move 1 other battle card in your zones to an unoccupied zone."
+    },
+    {
+      "id": 228,
+      "card_number": "EBP03-031",
+      "name": "MBT-MB90",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "You may have any number of this card in your deck.\n<Enter> Look at the top card of your deck. You may send it to your discard pile or place it back on top of your deck."
+    },
+    {
+      "id": 229,
+      "card_number": "EBP03-032",
+      "name": "Mechagodzilla(1974)",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "At the beginning of your counter phase, if this card is in a zone adjacent to your monster card, you may discard all the cards in your hand. If you do, for the rest of the turn, this card gains +1000 counter power for each card discarded this way."
+    },
+    {
+      "id": 230,
+      "card_number": "EBP03-033",
+      "name": "Mechagodzilla(1975)",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Enter> You may discard 1 rank 5 or higher battle card from your hand. If you do, search your deck for up to 1 card named “Space Beam”, reveal it, add it to your hand, then shuffle your deck."
+    },
+    {
+      "id": 231,
+      "card_number": "EBP03-034",
+      "name": "Jet Jaguar(1973)",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Jet Jaguar",
+        "Mech"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "<Enter> You may discard 1 strategy card from your hand. If you do, reduce your opponent’s <Rage> by 1."
+    },
+    {
+      "id": 232,
+      "card_number": "EBP03-035",
+      "name": "Satsuma",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Weapon"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Enter> If this card is in the same column as your opponent’s monster card, you may discard 1 strategy card from your hand. If you do, advance your monster card to zone 6."
+    },
+    {
+      "id": 233,
+      "card_number": "EBP03-036",
+      "name": "Moguera",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Moguera",
+        "Weapon"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "<Enter> If this card was played from your hand and is in zone 8, search your deck for up to 1 ⁅《モゲラ》＠⁆ battle card, play it, then shuffle your deck."
+    },
+    {
+      "id": 234,
+      "card_number": "EBP03-037",
+      "name": "Godzilla(2001)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Awakening8> <Enter> Increase your monster card’s <Rage> by 1.\n<Awakening8> This card gains +5000 counter power."
+    },
+    {
+      "id": 235,
+      "card_number": "EBP03-038",
+      "name": "Multi-purpose Fighting System-3",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "8000",
+      "threat_level": "0",
+      "description": "At the beginning of your counter phase, if your opponent has 2 or more <Rage> , <Destroy> all of your battle cards in zones adjacent to this card."
+    },
+    {
+      "id": 236,
+      "card_number": "EBP03-039",
+      "name": "Godzilla(2016) 4th Form",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla",
+        "4th Form"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "Whenever your card is sent from a strategy zone to the discard pile, draw 1 card. (Also triggers when a strategy card is destroyed)\nIf there are 5 or more strategy cards in your discard pile, this card gains +5000 counter power."
+    },
+    {
+      "id": 237,
+      "card_number": "EBP03-040",
+      "name": "Mechagodzilla(1975)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "6000",
+      "threat_level": "0",
+      "description": "At the beginning of your counter phase, you may move this card to an unoccupied zone.\nIf this is in the same column as your opponent’s monster card, this card gains +3000 counter power."
+    },
+    {
+      "id": 238,
+      "card_number": "EBP03-041",
+      "name": "Godzilla(2023)",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "11000",
+      "threat_level": "0",
+      "description": "<Enter> If this is in the same column as your opponent’s monster card and your monster card has 2 or more <Rage> , reduce your opponent’s <Rage> by 2.\nWhen this card would be <Destroy> , put this card on the bottom of your deck instead."
+    },
+    {
+      "id": 239,
+      "card_number": "EBP03-042",
+      "name": "Ghogo",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Ghogo"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "When your monster card invades, if this is in zone 8, you may put this card under one of your <《Mothra》> battle cards with <Evolution> . If you do, evolve that <《Mothra》> battle card."
+    },
+    {
+      "id": 240,
+      "card_number": "EBP03-043",
+      "name": "Star Falcon",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Awakening4> At the beginning of your counter phase, you may place this card under a card named “Land Moguera” in your zones. If you do, search your deck for up to 1 ⁅《モゲラ》＠⁆ battle card, play it on top of the card named “Land Moguera” you chose for this effect, then shuffle your deck. (Active if your monster card is in zone 4 or beyond.)"
+    },
+    {
+      "id": 241,
+      "card_number": "EBP03-044",
+      "name": "Mothra(larva)(1992)",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Evolution7> <《Mothra》> (At the beginning of your main phase, you may play a rank 7 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)"
+    },
+    {
+      "id": 242,
+      "card_number": "EBP03-045",
+      "name": "Mothra(larva)(2003)",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "If this card is in a zone adjacent to your monster card, this card gains +3000 counter power."
+    },
+    {
+      "id": 243,
+      "card_number": "EBP03-046",
+      "name": "Land Moguera",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Awakening4> <Enter> If “Star Falcon” is in your zones, choose one:\n・ <Destroy> 1 of your opponent’s strategy cards.\n・Reduce your opponent’s <Rage> by 1."
+    },
+    {
+      "id": 244,
+      "card_number": "EBP03-047",
+      "name": "Garuda",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Weapon"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "At the beginning of your counter phase, if this card is in the same column as your opponent’s monster card, you may discard 1 battle card with <《Weapon》> or <《Mech》> from your hand. If you do, search your deck for up to 1 battle card named “Super Mechagodzilla”, play it on top of this card, then shuffle your deck."
+    },
+    {
+      "id": 245,
+      "card_number": "EBP03-048",
+      "name": "Mechagodzilla(1993)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "4000",
+      "threat_level": "0",
+      "description": "<Enter> If there are 2 or more other battle cards in your zones, reduce your opponent’s <Rage> by 1."
+    },
+    {
+      "id": 246,
+      "card_number": "EBP03-049",
+      "name": "Godzilla(2002)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Enter> If this card is in zone 8, draw 2 cards, then discard 2 cards."
+    },
+    {
+      "id": 247,
+      "card_number": "EBP03-050",
+      "name": "Rainbow Mothra",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "6000",
+      "threat_level": "0",
+      "description": "<Enter> If you have a card with <Base> in play, an opponent’s monster card with 20,000 or less threat level retreats backward by 1 zone.\n<Evolution8> <《Mothra》> (At the beginning of your main phase, you may play a rank 8 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)"
+    },
+    {
+      "id": 248,
+      "card_number": "EBP03-051",
+      "name": "Godzilla Jr.",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla Jr."
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "6000",
+      "threat_level": "0",
+      "description": "If you would play this card on top of your <《Little Godzilla》> battle card, you may play this from your hand with its rank reduced by 2. (After being played, this card is rank 7.)\nThis card gains +5000 counter power for each card under it."
+    },
+    {
+      "id": 249,
+      "card_number": "EBP03-052",
+      "name": "M.O.G.U.E.R.A.",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Moguera",
+        "Weapon"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "7000",
+      "threat_level": "0",
+      "description": "When this card would be <Destroy> by an opponent’s effect, add all cards under this card to your hand.\n<Awakening6> <Enter> If there are no cards under this card, search your deck for up to 1 card named “Land Moguera” and up to 1 card named “Star Falcon”, place them under this card, then shuffle your deck."
+    },
+    {
+      "id": 250,
+      "card_number": "EBP03-053",
+      "name": "Super Mechagodzilla",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "8000",
+      "threat_level": "0",
+      "description": "While your opponent’s <Rage> is 0, this card cannot be <Destroy> by opponent’s effects.\nIf this card is in the same column as your opponent’s monster card, this card gains +3000 counter power for each of your opponent’s <Rage> ."
+    },
+    {
+      "id": 251,
+      "card_number": "EBP03-054",
+      "name": "Eternal Mothra",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "10000",
+      "threat_level": "0",
+      "description": "<Enter> If this card is in zone 8 and you have a card with <Base> in play, an opponent’s monster card with 60,000 or less threat level retreats backward by 1 zone."
+    },
+    {
+      "id": 252,
+      "card_number": "EBP03-055",
+      "name": "Primitive Mothra",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Enter> You may put up to 1 <《Mothra》> battle card from your discard pile on top of your deck."
+    },
+    {
+      "id": 253,
+      "card_number": "EBP03-056",
+      "name": "Manda(2004)",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Manda",
+        "Final Wars"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "If this card is in the same column as your opponent’s monster card, this card gains +3000 counter power."
+    },
+    {
+      "id": 254,
+      "card_number": "EBP03-057",
+      "name": "Desghidorah",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Desghidorah"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Enter> If your opponent has 3 or more unoccupied zones, <Destroy> 1 of your opponent’s strategy cards.\nIf your opponent has no strategy cards in play, this card gains +3000 counter power."
+    },
+    {
+      "id": 255,
+      "card_number": "EBP03-058",
+      "name": "Zilla",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Zilla",
+        "Final Wars"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "At the beginning of your end phase, move this card to an adjacent zone horizontal to the zone this card currently occupies. Then, if this card is in a zone adjacent to your monster card, <Destroy> this card.."
+    },
+    {
+      "id": 256,
+      "card_number": "EBP03-059",
+      "name": "Cretaceous King Ghidorah(1998)",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)"
+    },
+    {
+      "id": 257,
+      "card_number": "EBP03-060",
+      "name": "Mothra(imago)(1961)",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Revenge> Reduce your opponent’s <Rage> by 1. (Activates when destroyed by a card effect or monster card movement.)"
+    },
+    {
+      "id": 258,
+      "card_number": "EBP03-061",
+      "name": "Dagahra",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Dagahra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "When you discard this card from your hand for your monster card’s invasion, you may play this card from your discard pile.\n<Awakening6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)"
+    },
+    {
+      "id": 259,
+      "card_number": "EBP03-062",
+      "name": "Baragon(2001)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Baragon",
+        "Sacred Guardian Beasts"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "When your opponent’s monster card invades, <Destroy> this card.\n<Revenge> Return up to 1 ⁅《護国聖獣》＠⁆ monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)"
+    },
+    {
+      "id": 260,
+      "card_number": "EBP03-063",
+      "name": "King Ghidorah(1998)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "6000",
+      "threat_level": "0",
+      "description": "<Your Turn> <Awakening4> When your monster card is played, you may play this card from your discard pile. (Active if your monster card is in zone 4 or beyond.)"
+    },
+    {
+      "id": 261,
+      "card_number": "EBP03-064",
+      "name": "Mothra(imago)(2001)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "Mothra",
+        "Sacred Guardian Beasts"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "6000",
+      "threat_level": "0",
+      "description": "<Enter> If an opponent's battle card was <Destroy> this turn, you may place 1 battle card from your discard pile under this card.\n<Awakening4> If there is a card under this card, this card gains +3000 counter power.\n<Awakening6> If there is a card under this card, this card gains an additional +3000 counter power."
+    },
+    {
+      "id": 262,
+      "card_number": "EBP03-065",
+      "name": "King Ghidorah(1998)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "7000",
+      "threat_level": "0",
+      "description": "If there are 5 or more cards under your monster card, this card gains +3000 counter power."
+    },
+    {
+      "id": 263,
+      "card_number": "EBP03-066",
+      "name": "Thousand-Year Dragon King Ghidorah",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "green"
+      ],
+      "traits": [
+        "King Ghidorah",
+        "Sacred Guardian Beasts"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "9000",
+      "threat_level": "0",
+      "description": "If your opponent has 2 or more strategy cards in play, you may play this card from your hand with its rank reduced by 2. (After being played, this card is rank 8.)\n<Enter> <Destroy> 1 of your opponent’s strategy cards."
+    },
+    {
+      "id": 264,
+      "card_number": "EBP03-067",
+      "name": "Monster X",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "white"
+      ],
+      "traits": [
+        "Monster X",
+        "Final Wars"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "X",
+      "threat_level": "0",
+      "description": "<Your Turn> When this card is discarded from your hand, if there are 2 or more colors among battle cards in your zones, play this card and <Destroy> up to 1 of your opponent’s lowest ranked battle cards in their zones.\nThis card’s counter power X is equal to 3000 multiplied by the number of different colors among other battle cards in your zones. (White also counts as a color.)"
+    },
+    {
+      "id": 265,
+      "card_number": "EBP03-068",
+      "name": "Godzilla Flies",
+      "type": "Strategy",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "<Your Turn> Your monster card cannot invade.\nMove your rank III or higher monster card in zone 3 vertically to zone 8. (Your battle cards in zones 4–7 will not be <Destroy> by this movement.)"
+    },
+    {
+      "id": 266,
+      "card_number": "EBP03-069",
+      "name": "Space Beam",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Your opponent discards cards until they have 4 cards remaining in their hand. Then, if there is a <《Mechagodzilla》> card in your zone 8, <Destroy> all opponent’s rank 5 or lower battle cards."
+    },
+    {
+      "id": 267,
+      "card_number": "EBP03-070",
+      "name": "Mechagodzilla Hangar",
+      "type": "Strategy",
+      "rank": "5",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Base> When any monster card invades into zones 6–8, <Destroy> this card. (Cards with Base are not sent to the discard pile at the start phase.)\n<Your Turn> At the beginning of your counter phase, search your deck for up to 1 battle card with <《Weapon》> or <《Mech》> , reveal it, add it to your hand, then shuffle your deck."
+    },
+    {
+      "id": 268,
+      "card_number": "EBP03-071",
+      "name": "Godzilla's Skeleton",
+      "type": "Strategy",
+      "rank": "8",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "When counting monster cards in your discard pile, treat this card as a monster card as well.\nLook at the top 4 cards of your deck, put any number of them on top of your deck in any order, send the rest to your discard pile, then draw 2 cards."
+    },
+    {
+      "id": 269,
+      "card_number": "EBP03-072",
+      "name": "Petit Railgun",
+      "type": "Strategy",
+      "rank": "1",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "[Destroy] all of your opponent's battle cards in the same column as your monster card."
+    },
+    {
+      "id": 270,
+      "card_number": "EBP03-073",
+      "name": "All-Weapon Attack",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "Reveal the top 3 cards of your deck and send them to your discard pile; <Destroy> all of your opponent’s battle cards in zones whose numbers match the ranks of the revealed cards, if your opponent's monster card occupies 1 of those zones, your opponent’s monster card retreats backward by 1 zone."
+    },
+    {
+      "id": 271,
+      "card_number": "EBP03-074",
+      "name": "A Journey of 130 Million Years",
+      "type": "Strategy",
+      "rank": "6",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "If your monster card is rank III or lower, play 1 monster card from your monster deck that shares a trait with it, whose its rank is 1 higher than your monster card's current rank. (This play does not increase <Rage> .)"
+    },
+    {
+      "id": 272,
+      "card_number": "EBP03-075",
+      "name": "Yakusugi",
+      "type": "Strategy",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Base> When any monster card invades into zones 6–8, <Destroy> this card. (Cards with Base are not sent to the discard pile at the start phase.)\n<Your Turn> At the beginning of your counter phase, evolve 1 of your rank 4 or lower battle cards with <Evolution> ."
+    },
+    {
+      "id": 273,
+      "card_number": "EBP03-076",
+      "name": "The Battle at Fukuoka Tower",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Base> When any monster card invades into zones 6–8, <Destroy> this card. (Cards with Base are not sent to the discard pile at the start phase.)\n<Opponent’s Turn> For each monster or battle card in your zones 1, 5, and 8, your monster card gains +5000 threat level."
+    },
+    {
+      "id": 274,
+      "card_number": "EBP03-077",
+      "name": "Rebirth of Mothra 3",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "green"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "Choose one:\n・Return 1 rank II or lower monster card from your discard pile to your hand.\n・If there are 5 or more cards under your monster card, return 1 monster card from your discard pile to your hand."
+    },
+    {
+      "id": 275,
+      "card_number": "EBP03-078",
+      "name": "Megalon and Gigan:Villain Tag Team",
+      "type": "Strategy",
+      "rank": "5",
+      "colors": [
+        "green"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "If there are 3 or more battle cards in your opponent’s zones, <Destroy> 1 battle card from the rightmost and 1 from the leftmost position from among them (from your perspective)."
+    },
+    {
+      "id": 276,
+      "card_number": "EBP03-079",
+      "name": "Godzilla Captured!",
+      "type": "Strategy",
+      "rank": "7",
+      "colors": [
+        "green"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Set your opponent’s <Rage> to 0."
+    },
+    {
+      "id": 277,
+      "card_number": "EBP03-080",
+      "name": "Odo Island",
+      "type": "Strategy",
+      "rank": "6",
+      "colors": [
+        "white"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Base> When any monster card invades into zones 6–8, <Destroy> this card. (Cards with Base are not sent to the discard pile at the start phase.)\n<Your Turn> At the beginning of your counter phase, you may play up to 1 <《Godzilla》> battle card from your hand."
+    },
+    {
+      "id": 197,
+      "card_number": "EPR-005",
+      "name": "Godzilla's Bite",
+      "type": "Strategy",
+      "rank": "1",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Destroy> all of your opponent's battle cards in the same column as your monster card."
+    },
+    {
+      "id": 1,
+      "card_number": "ESD01-001",
+      "name": "Godzilla(2023)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "6000",
+      "burst": null
+    },
+    {
+      "id": 2,
+      "card_number": "ESD01-002",
+      "name": "Godzilla(2023)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "8000",
+      "burst": null,
+      "description": "<When Invading> Search your deck for up to 1 rank Ⅲ card named 「Godzilla(2023)」 with <Burst> , reveal it, add it to your hand, then shuffle your deck. (If you invaded 2 zones, activate this effect 2 times)"
+    },
+    {
+      "id": 3,
+      "card_number": "ESD01-003",
+      "name": "Godzilla(2023)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "If this card has 2 or more <Rage> , this card gains +5000 threat level."
+    },
+    {
+      "id": 4,
+      "card_number": "ESD01-004",
+      "name": "Godzilla(2023)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "38000",
+      "burst": null,
+      "description": "<When Invading> If this card has 2 or more <Rage> , your opponent discards cards until they have 2 cards remaining in their hand."
+    },
+    {
+      "id": 5,
+      "card_number": "ESD01-005",
+      "name": "Godzilla(2023)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "12000",
+      "burst": null,
+      "description": "<Burst1> (You can play this card from rank I. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> Your opponent discards cards until they have 4 cards remaining in their hand."
+    },
+    {
+      "id": 6,
+      "card_number": "ESD01-006",
+      "name": "Godzilla(2023)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "23000",
+      "burst": null,
+      "description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> <Destroy> 1 of your opponent’s rank 4 or lower battle cards."
+    },
+    {
+      "id": 7,
+      "card_number": "ESD01-007",
+      "name": "Godzilla(2023)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "38000",
+      "burst": null,
+      "description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> <Destroy> all of your opponent’s battle cards in the same column as this card."
+    },
+    {
+      "id": 8,
+      "card_number": "ESD01-008",
+      "name": "Shinseimaru",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Boat"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "(Battle cards in your hand can be played if their rank is equal to or lower than the number in the zone where the opponent's monster card is.)"
+    },
+    {
+      "id": 9,
+      "card_number": "ESD01-009",
+      "name": "Reinforcements",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Boat"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)"
+    },
+    {
+      "id": 10,
+      "card_number": "ESD01-010",
+      "name": "City of Tokyo",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "City"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "0",
+      "threat_level": "0",
+      "description": "If your monster card has 2 or more <Rage> , your other battle card in zone 8 gains +5000 counter power.\n<Awakening6> Your other battle card in zone 8 gains +5000 counter power. (Active if your monster card is in zone 6 or beyond.)"
+    },
+    {
+      "id": 11,
+      "card_number": "ESD01-011",
+      "name": "Godzilla(2023)",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Enter> If your monster card has 2 or more <Rage> , reduce your opponent's <Rage> by 1.\nWhen this card is <Destroy> , place this card on the bottom of your deck instead."
+    },
+    {
+      "id": 12,
+      "card_number": "ESD01-012",
+      "name": "Godzilla(2023)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "red"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "7000",
+      "threat_level": "0",
+      "description": "<Your Turn> When you play a monster card, you may move this card to an unoccupied zone.\nIf this card is in zone 8, this card gains +3000 counter power.\nWhen this card is <Destroy> , place this card on the bottom of your deck instead."
+    },
+    {
+      "id": 13,
+      "card_number": "ESD01-013",
+      "name": "Ginza Annihilated",
+      "type": "Strategy",
+      "rank": "4",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Your Turn> Whenever your monster card's <Rage> is increased, <Destroy> 1 of your opponent's rank 6 or lower battle cards."
+    },
+    {
+      "id": 14,
+      "card_number": "ESD01-014",
+      "name": "Godzilla Emerges",
+      "type": "Strategy",
+      "rank": "6",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "If your monster card has 2 or more <Rage> , search your deck for up to 1 battle card named 「Godzilla(2023)」, play it, then shuffle your deck."
+    },
+    {
+      "id": 15,
+      "card_number": "ESD01-015",
+      "name": "Operation Wadatsumi",
+      "type": "Strategy",
+      "rank": "7",
+      "colors": [
+        "red"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Your opponent discards cards until they have 2 cards remaining in their hand."
+    },
+    {
+      "id": 16,
+      "card_number": "ESD01-016",
+      "name": "Heat Ray",
+      "type": "Strategy",
+      "rank": "1",
+      "colors": [
+        "white"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "<Destroy> all of your opponent’s battle cards in the same column as your monster card."
+    },
+    {
+      "id": 17,
+      "card_number": "ESD02-001",
+      "name": "Godzilla(1984)",
+      "type": "Monster",
+      "rank": "1",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "6000",
+      "burst": null
+    },
+    {
+      "id": 18,
+      "card_number": "ESD02-002",
+      "name": "Godzilla(1989)",
+      "type": "Monster",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 2,
+      "threat_level": "15000",
+      "burst": null,
+      "description": "<Enter> <Destroy> 1 of your opponent's rank 4 or lower battle cards."
+    },
+    {
+      "id": 19,
+      "card_number": "ESD02-003",
+      "name": "Godzilla(1992)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "18000",
+      "burst": null,
+      "description": "<Enter> :Play 2 rank 4 or lower battle cards with <Evolution> from your discard pile in zones adjacent to this card.\n(For example, if this card is in zone 7, the adjacent zones are 4, 6, and 8.)"
+    },
+    {
+      "id": 20,
+      "card_number": "ESD02-004",
+      "name": "Godzilla(1994)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "35000",
+      "burst": null,
+      "description": "<When Invading> Discard 1 battle card from your hand： <Destroy> all of your opponent's battle cards with a rank equal to or lower than the discarded card’s rank."
+    },
+    {
+      "id": 21,
+      "card_number": "ESD02-005",
+      "name": "Godzilla(1993)",
+      "type": "Monster",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "20000",
+      "burst": null,
+      "description": "<When Invading> Reduce your opponent’s <Rage> by 1. (If you invaded 2 zones, activate this effect 2 times.)"
+    },
+    {
+      "id": 22,
+      "card_number": "ESD02-006",
+      "name": "Godzilla(1995)",
+      "type": "Monster",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Godzilla"
+      ],
+      "invasion_icon_value": 1,
+      "threat_level": "36000",
+      "burst": null,
+      "description": "For each strategy card your opponent has in play, this card gains +5000 threat level."
+    },
+    {
+      "id": 23,
+      "card_number": "ESD02-007",
+      "name": "Mothra(larva)(1992)",
+      "type": "Battle",
+      "rank": "2",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "1000",
+      "threat_level": "0",
+      "description": "<Evolution5> <《Mothra》> At the beginning of your main phase, you may search your deck for a rank 5 or lower <《Mothra》> battle card and play it by stacking it on top of this card. Search for 「Mothra(imago)(1992)」 rank 5 counter power 5000 and you may place it on top of this card)"
+    },
+    {
+      "id": 24,
+      "card_number": "ESD02-008",
+      "name": "Battra(larva)",
+      "type": "Battle",
+      "rank": "3",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Battra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "2000",
+      "threat_level": "0",
+      "description": "<Evolution6> <《Battra》> (At the beginning of your main phase, you may search your deck for a rank 6 or lower <《Battra》> battle card and play it by stacking it on top of this card. Search for 「Battra(imago)」 rank 6 counter power 5000 and you may place it on top of this card.)"
+    },
+    {
+      "id": 25,
+      "card_number": "ESD02-009",
+      "name": "Super-X",
+      "type": "Battle",
+      "rank": "4",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Super-X",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "3000",
+      "threat_level": "0",
+      "description": "<Awakening4> <Enter> If this card is in zone 8, reduce your opponent’s <Rage> by 1. (Active if your monster card is in zone 4 or beyond and this card was played in zone 8.)"
+    },
+    {
+      "id": 26,
+      "card_number": "ESD02-010",
+      "name": "Mothra(imago)(1992)",
+      "type": "Battle",
+      "rank": "5",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mothra"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Enter> If this card was played through evolution, draw 1 card."
+    },
+    {
+      "id": 27,
+      "card_number": "ESD02-011",
+      "name": "Battra(imago)",
+      "type": "Battle",
+      "rank": "6",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Battra"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "<Awakening6> This card gains ＋3000 counter power. (Active if your monster card is in zone 6 or beyond.)"
+    },
+    {
+      "id": 28,
+      "card_number": "ESD02-012",
+      "name": "Mechagodzilla(1993)",
+      "type": "Battle",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Mechagodzilla",
+        "Weapon"
+      ],
+      "invasion_icon_value": 1,
+      "counter_power": "5000",
+      "threat_level": "0",
+      "description": "If your opponent’s monster card is rank IV or higher, this card gains +5000 counter power.\nIf this card is in the same column as your opponent’s monster card, this card gains +3000 counter power.\n(If both conditions are met, this card gains +8000 counter power.)"
+    },
+    {
+      "id": 29,
+      "card_number": "ESD02-013",
+      "name": "Destoroyah Perfect Form",
+      "type": "Battle",
+      "rank": "8",
+      "colors": [
+        "blue"
+      ],
+      "traits": [
+        "Destoroyah"
+      ],
+      "invasion_icon_value": 2,
+      "counter_power": "13000",
+      "threat_level": "0"
+    },
+    {
+      "id": 30,
+      "card_number": "ESD02-014",
+      "name": "The Legend of Infant Island",
+      "type": "Strategy",
+      "rank": "5",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 2,
+      "description": "Evolve 1 of your battle cards with <Evolution> ."
+    },
+    {
+      "id": 31,
+      "card_number": "ESD02-015",
+      "name": "Burning Godzilla's Rampage",
+      "type": "Strategy",
+      "rank": "7",
+      "colors": [
+        "blue"
+      ],
+      "traits": [],
+      "invasion_icon_value": 1,
+      "description": "Choose 1 of your opponent’s zones. <Destroy> all of your opponent’s battle cards in that zone and zones adjacent to it.\n(For example, if a card is in zone 7, the adjacent zones are 4, 6, and 8.)"
+    }
+  ]
+}

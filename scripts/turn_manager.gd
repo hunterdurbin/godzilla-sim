@@ -23,15 +23,15 @@ func setup(card_data_node: Node) -> void:
 	rules_engine = RulesEngine.new()
 	action_handler = ActionHandler.new()
 
-	# Set up Player 1 (KAIJU)
+	# Set up Player 1 (ESD01 - Godzilla Minus One)
 	var p1 := game_state.players[0]
-	p1.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.KAIJU)
+	p1.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
 	p1.main_deck = card_data_node.get_main_deck(0)
 	p1.main_deck.shuffle()
 
-	# Set up Player 2 (MECHA)
+	# Set up Player 2 (ESD01 - Godzilla Minus One)
 	var p2 := game_state.players[1]
-	p2.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.MECHA)
+	p2.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
 	p2.main_deck = card_data_node.get_main_deck(1)
 	p2.main_deck.shuffle()
 

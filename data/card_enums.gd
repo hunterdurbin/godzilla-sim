@@ -5,7 +5,7 @@ enum CardType { MONSTER, BATTLE, STRATEGY }
 
 enum CardColor { RED, BLUE, WHITE, GREEN }
 
-enum CardTrait { KAIJU, MECHA, ALIEN, MUTANT }
+enum CardTrait { KAIJU, MECHA, ALIEN, MUTANT, GODZILLA }
 
 enum GamePhase { START, MAIN, COUNTER, END }
 
@@ -36,6 +36,7 @@ static func trait_to_string(t: CardTrait) -> String:
 		CardTrait.MECHA: return "Mecha"
 		CardTrait.ALIEN: return "Alien"
 		CardTrait.MUTANT: return "Mutant"
+		CardTrait.GODZILLA: return "Godzilla"
 		_: return "Unknown"
 
 

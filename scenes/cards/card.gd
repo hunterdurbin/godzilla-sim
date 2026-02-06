@@ -1,6 +1,8 @@
 extends Control
 
-## Card node with hover scaling, drag functionality, and TCG card data display
+## Card node with hover scaling, drag functionality, and TCG card image display
+
+const ARTWORK_BASE_PATH := "res://CardContent/Artwork"
 
 # Signals
 signal drag_started()
@@ -167,74 +169,28 @@ func _update_display() -> void:
 		return
 
 	var card_back = get_node_or_null("CardBack")
-	var card_content = get_node_or_null("CardContent")
+	var card_image = get_node_or_null("CardImage")
 
 	if is_face_down:
 		if card_back:
 			card_back.visible = true
-		if card_content:
-			card_content.visible = false
+		if card_image:
+			card_image.visible = false
 		return
 
 	if card_back:
 		card_back.visible = false
-	if card_content:
-		card_content.visible = true
+	if card_image:
+		card_image.visible = true
 
-	# Title
-	var title_label = get_node_or_null("CardContent/HeaderRow/Title")
-	if not title_label:
-		title_label = get_node_or_null("CardContent/Title")
-	if title_label:
-		title_label.text = card_name
-
-	# Rank label
-	var rank_label = get_node_or_null("CardContent/HeaderRow/RankLabel")
-	if rank_label and not card_data.is_empty():
-		var card_type = card_data.get("card_type", -1)
-		var rank = card_data.get("rank", 0)
-		if card_type == CardEnums.CardType.MONSTER:
-			rank_label.text = CardEnums.rank_to_roman(rank)
-		else:
-			rank_label.text = str(rank)
-
-	# Artwork color based on card color
-	var artwork = get_node_or_null("CardContent/Artwork")
-	if artwork and not card_data.is_empty():
-		var color_enum = card_data.get("color", CardEnums.CardColor.WHITE)
-		artwork.color = CardEnums.color_to_godot_color(color_enum)
-
-	# Stats row
-	var counter_label = get_node_or_null("CardContent/StatsRow/CounterLabel")
-	if counter_label and not card_data.is_empty():
-		var card_type = card_data.get("card_type", -1)
-		match card_type:
-			CardEnums.CardType.MONSTER:
-				counter_label.text = "TL: %d" % card_data.get("threat_level", 0)
-			CardEnums.CardType.BATTLE:
-				counter_label.text = "CP: %d" % card_data.get("counter_power", 0)
-			CardEnums.CardType.STRATEGY:
-				counter_label.text = "Strategy"
-
-	var invasion_label = get_node_or_null("CardContent/StatsRow/InvasionLabel")
-	if invasion_label and not card_data.is_empty():
-		var inv_icon = card_data.get("invasion_icon", 0)
-		if inv_icon > 0:
-			invasion_label.text = "Inv: %d" % inv_icon
-		else:
-			invasion_label.text = ""
-
-	# Type label
-	var type_label = get_node_or_null("CardContent/TypeLabel")
-	if type_label and not card_data.is_empty():
-		var card_type = card_data.get("card_type", -1)
-		var trait_val = card_data.get("trait", -1)
-		type_label.text = "%s - %s" % [
-			CardEnums.type_to_string(card_type),
-			CardEnums.trait_to_string(trait_val)
-		]
-
-	# Description
-	var desc = get_node_or_null("CardContent/Description")
-	if desc:
-		desc.text = card_description
+	if card_image and not card_data.is_empty():
+		var card_number: String = card_data.get("card_number", "")
+		if card_number.is_empty():
+			return
+		var set_number := card_number.split("-")[0]
+		var image_path := ARTWORK_BASE_PATH.path_join(set_number).path_join("%s.png" % card_number)
+		var abs_path := ProjectSettings.globalize_path(image_path)
+		if FileAccess.file_exists(image_path):
+			var image := Image.load_from_file(abs_path)
+			if image:
+				card_image.texture = ImageTexture.create_from_image(image)
