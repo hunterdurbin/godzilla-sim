@@ -184,7 +184,7 @@ func _update_display() -> void:
 		card_image.visible = true
 
 	if card_image and not card_data.is_empty():
-		var card_number: String = card_data.get("card_number", "")
+		var card_number := _resolve_card_number()
 		if card_number.is_empty():
 			return
 		var set_number := card_number.split("-")[0]
@@ -193,4 +193,30 @@ func _update_display() -> void:
 		if FileAccess.file_exists(image_path):
 			var image := Image.load_from_file(abs_path)
 			if image:
+				if _is_strategy_card():
+					image.rotate_90(CLOCKWISE)
 				card_image.texture = ImageTexture.create_from_image(image)
+
+
+func _is_strategy_card() -> bool:
+	var card_type = card_data.get("card_type", -1)
+	if card_type == CardEnums.CardType.STRATEGY:
+		return true
+	var type_str: String = card_data.get("type", "")
+	return type_str.to_lower() == "strategy"
+
+
+## Resolve the card number from card_data, checking card_number then id.
+## Strips deck/copy suffixes like "ESD01-008_0_1" -> "ESD01-008".
+func _resolve_card_number() -> String:
+	var card_number: String = card_data.get("card_number", "")
+	if not card_number.is_empty():
+		return card_number
+	var id: String = card_data.get("id", "")
+	if id.is_empty():
+		return ""
+	# Strip deck/copy suffix: "ESD01-008_0_1" -> "ESD01-008"
+	var underscore_pos := id.find("_")
+	if underscore_pos != -1:
+		id = id.substr(0, underscore_pos)
+	return id
