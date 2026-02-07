@@ -45,6 +45,12 @@ var _client_playable: Dictionary = {}  # Playable card/zone indices from host
 @onready var deck_search_prompt: Label = $DeckSearchOverlay/DeckSearchPanel/VBox/PromptLabel
 @onready var deck_search_grid: GridContainer = $DeckSearchOverlay/DeckSearchPanel/VBox/ScrollContainer/CardGrid
 @onready var deck_search_skip: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/SkipButton
+@onready var deck_search_show_all: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ShowAllToggle
+
+# Stored deck search data for toggling between matching/all
+var _deck_search_matching: Array[Dictionary] = []
+var _deck_search_all: Array[Dictionary] = []
+var _deck_search_matching_ids: Dictionary = {}  # card id -> true, for highlighting
 
 # State tracking
 var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
@@ -119,8 +125,9 @@ func _ready() -> void:
 	if is_multiplayer_game:
 		NetworkManager.player_disconnected.connect(_on_opponent_disconnected)
 
-	# Connect deck search skip button
+	# Connect deck search buttons
 	deck_search_skip.pressed.connect(_on_deck_search_skip)
+	deck_search_show_all.toggled.connect(_on_deck_search_show_all_toggled)
 
 	# Hide overlays and prompts
 	end_game_panel.visible = false
@@ -717,34 +724,60 @@ func _on_hand_drag_ended(card: Control) -> void:
 
 # --- Deck search UI ---
 
-func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], prompt: String) -> void:
+func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
 		# Forward to the remote client who needs to make the choice
-		var cards_json := JSON.stringify(matching_cards)
+		var matching_json := JSON.stringify(matching_cards)
+		var all_json := JSON.stringify(all_cards)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
-				_rpc_deck_search_requested.rpc_id(peer_id, cards_json, prompt)
+				_rpc_deck_search_requested.rpc_id(peer_id, matching_json, all_json, prompt)
 		return
-	_show_deck_search(matching_cards, prompt)
+	_show_deck_search(matching_cards, all_cards, prompt)
 
 
-func _show_deck_search(cards: Array[Dictionary], prompt: String) -> void:
-	# Clear any previous cards from the grid
-	for child in deck_search_grid.get_children():
-		child.queue_free()
+func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String) -> void:
+	# Store data for toggling
+	_deck_search_matching = matching
+	_deck_search_all = all_cards
+	_deck_search_matching_ids.clear()
+	for card_data in matching:
+		_deck_search_matching_ids[card_data.get("id", "")] = true
 
 	deck_search_prompt.text = prompt
+	deck_search_show_all.set_pressed_no_signal(false)
 	deck_search_overlay.visible = true
 
-	# Populate grid with selectable card instances
+	_populate_deck_search_grid(matching, true)
+
+
+func _populate_deck_search_grid(cards: Array[Dictionary], all_selectable: bool) -> void:
+	# Clear any previous cards from the grid
+	for child in deck_search_grid.get_children():
+		if child.card_clicked.is_connected(_on_deck_search_card_clicked):
+			child.card_clicked.disconnect(_on_deck_search_card_clicked)
+		child.queue_free()
+
+	# Populate grid with card instances
 	for card_data in cards:
 		var card: Control = card_scene.instantiate()
 		if card.has_method("set_card_data_dict"):
 			card.set_card_data_dict(card_data)
-		card.is_selectable = true
 		card.drag_enabled = false
-		card.card_clicked.connect(_on_deck_search_card_clicked)
+		var is_match: bool = all_selectable or _deck_search_matching_ids.has(card_data.get("id", ""))
+		card.is_selectable = is_match
+		if is_match:
+			card.card_clicked.connect(_on_deck_search_card_clicked)
+		else:
+			card.modulate = Color(0.5, 0.5, 0.5, 0.7)
 		deck_search_grid.add_child(card)
+
+
+func _on_deck_search_show_all_toggled(show_all: bool) -> void:
+	if show_all:
+		_populate_deck_search_grid(_deck_search_all, false)
+	else:
+		_populate_deck_search_grid(_deck_search_matching, true)
 
 
 func _on_deck_search_card_clicked(card: Control) -> void:
@@ -764,6 +797,9 @@ func _hide_deck_search() -> void:
 		if child.card_clicked.is_connected(_on_deck_search_card_clicked):
 			child.card_clicked.disconnect(_on_deck_search_card_clicked)
 		child.queue_free()
+	_deck_search_matching.clear()
+	_deck_search_all.clear()
+	_deck_search_matching_ids.clear()
 
 
 func _resolve_deck_search_local(selected: Dictionary) -> void:
@@ -917,12 +953,16 @@ func _rpc_receive_log(text: String) -> void:
 
 ## Host -> Client: deck search request (player must choose a card)
 @rpc("authority", "call_remote", "reliable")
-func _rpc_deck_search_requested(cards_json: String, prompt: String) -> void:
-	var cards: Array = JSON.parse_string(cards_json)
-	var typed_cards: Array[Dictionary] = []
-	for c in cards:
-		typed_cards.append(c)
-	_show_deck_search(typed_cards, prompt)
+func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt: String) -> void:
+	var matching: Array = JSON.parse_string(matching_json)
+	var all_cards: Array = JSON.parse_string(all_json)
+	var typed_matching: Array[Dictionary] = []
+	for c in matching:
+		typed_matching.append(c)
+	var typed_all: Array[Dictionary] = []
+	for c in all_cards:
+		typed_all.append(c)
+	_show_deck_search(typed_matching, typed_all, prompt)
 
 
 ## Client -> Host: deck search resolved (player chose a card or skipped)

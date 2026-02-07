@@ -188,6 +188,11 @@ text = "Search your deck:"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 16
 
+[node name="ShowAllToggle" type="CheckButton" parent="DeckSearchOverlay/DeckSearchPanel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Show entire deck"
+
 [node name="ScrollContainer" type="ScrollContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox"]
 layout_mode = 2
 size_flags_vertical = 3

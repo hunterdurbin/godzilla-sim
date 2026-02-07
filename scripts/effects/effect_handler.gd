@@ -15,7 +15,7 @@ signal _hand_discard_resolved()
 ## Emitted when a player must choose a card from their deck during a search effect.
 ## Connect from presentation layer to show a deck search selection UI.
 ## Call resolve_deck_search() with the chosen card when done.
-signal deck_search_requested(player_id: int, matching_cards: Array[Dictionary], prompt: String)
+signal deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String)
 
 ## Emitted internally after resolve_deck_search() stores the selection.
 signal _deck_search_resolved()
@@ -262,7 +262,7 @@ func search_deck(player_id: int, filter: Callable, prompt: String) -> Dictionary
 
 	var selected: Dictionary = {}
 	if deck_search_requested.get_connections().size() > 0:
-		deck_search_requested.emit(player_id, matching, prompt)
+		deck_search_requested.emit(player_id, matching, player.main_deck.duplicate(), prompt)
 		await _deck_search_resolved
 		selected = _deck_search_result
 	else:
