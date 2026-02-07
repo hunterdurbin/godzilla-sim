@@ -112,17 +112,20 @@ func get_playable_monsters(player: PlayerState) -> Array[int]:
 	if player.current_monster.has("trait"):
 		cur_traits.append(player.current_monster.get("trait"))
 
+	if player.has_played_monster_this_turn:
+		return indices
+
 	for i in range(player.hand.size()):
 		var card: Dictionary = player.hand[i]
 		if card.get("card_type") != CardEnums.CardType.MONSTER:
 			continue
 		if not card.get("trait") in cur_traits:
 			continue
-		# Normal play: same rank (limited to 1 per turn)
-		if card.get("rank") == cur_rank and not player.has_played_monster_this_turn:
+		# Normal play: same rank
+		if card.get("rank") == cur_rank:
 			indices.append(i)
 			continue
-		# Burst play: card's burst rank matches current monster rank (no per-turn limit)
+		# Burst play: card's burst rank matches current monster rank
 		if _has_burst_for_rank(card, cur_rank):
 			indices.append(i)
 	return indices
@@ -192,12 +195,15 @@ func _can_play_any_monster(player: PlayerState) -> bool:
 	if player.current_monster.has("trait"):
 		cur_traits.append(player.current_monster.get("trait"))
 
+	if player.has_played_monster_this_turn:
+		return false
+
 	for card in player.hand:
 		if card.get("card_type") != CardEnums.CardType.MONSTER:
 			continue
 		if not card.get("trait") in cur_traits:
 			continue
-		if card.get("rank") == cur_rank and not player.has_played_monster_this_turn:
+		if card.get("rank") == cur_rank:
 			return true
 		if _has_burst_for_rank(card, cur_rank):
 			return true
