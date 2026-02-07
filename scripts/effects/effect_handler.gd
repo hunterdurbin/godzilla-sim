@@ -207,11 +207,17 @@ func _trigger_phase_on_all_cards(player_id: int, phase: CardEnums.GamePhase, is_
 func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster: Dictionary) -> void:
 	## Trigger on_monster_played on all active cards for this player.
 	var player := game_state.players[player_id]
+	var triggered_ids: Array[String] = []
 
 	# Battle cards in zones (top card only)
+	# Track triggered IDs because effects can move cards to new zones during iteration.
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
+			var card_id: String = zone_card.get("id", "")
+			if card_id in triggered_ids:
+				continue
+			triggered_ids.append(card_id)
 			var ze := get_effect(zone_card)
 			if ze:
 				await ze.on_monster_played(_build_context(player_id, zone_card), old_monster, new_monster)
