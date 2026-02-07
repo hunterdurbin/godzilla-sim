@@ -20,9 +20,18 @@ signal deck_search_requested(player_id: int, matching_cards: Array[Dictionary], 
 ## Emitted internally after resolve_deck_search() stores the selection.
 signal _deck_search_resolved()
 
+## Emitted when a player must choose a target zone on the opponent's board.
+## Connect from presentation layer to show zone highlighting UI.
+## Call resolve_zone_target() with the chosen zone index when done.
+signal zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String)
+
+## Emitted internally after resolve_zone_target() stores the selection.
+signal _zone_target_resolved()
+
 var game_state: GameState
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
 var _deck_search_result: Dictionary = {}
+var _zone_target_result: int = -1
 
 
 func setup(p_game_state: GameState) -> void:
@@ -288,6 +297,75 @@ func resolve_deck_search(selected_card: Dictionary) -> void:
 	## Called by the presentation layer after the player selects a card from the search.
 	_deck_search_result = selected_card
 	_deck_search_resolved.emit()
+
+
+func select_zone_target(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String) -> int:
+	## Ask a player to choose one of the valid zones on the target player's board.
+	## Returns the chosen zone index, or -1 if no valid zones or signal not connected.
+	if valid_zones.is_empty():
+		return -1
+
+	if zone_target_requested.get_connections().size() > 0:
+		zone_target_requested.emit(player_id, target_player_id, valid_zones, prompt)
+		await _zone_target_resolved
+		return _zone_target_result
+	else:
+		# Fallback: auto-pick first valid zone
+		return valid_zones[0]
+
+
+func resolve_zone_target(zone_index: int) -> void:
+	## Called by the presentation layer after the player selects a target zone.
+	_zone_target_result = zone_index
+	_zone_target_resolved.emit()
+
+
+func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, prompt: String) -> Dictionary:
+	## Let a player choose one of the target player's battle cards matching filter to destroy.
+	## filter receives (card_data: Dictionary) -> bool for each zone's top card.
+	## Returns the destroyed card data, or empty dict if nothing was destroyed.
+	var valid_zones: Array[int] = []
+	for i in range(8):
+		var zone_card := target.get_zone_top_card(i)
+		if not zone_card.is_empty() and filter.call(zone_card):
+			valid_zones.append(i)
+
+	if valid_zones.is_empty():
+		return {}
+
+	var chosen: int = await select_zone_target(player_id, target.player_id, valid_zones, prompt)
+	if chosen < 0:
+		return {}
+
+	var zone_card := target.get_zone_top_card(chosen)
+	if zone_card.is_empty():
+		return {}
+
+	var stack: Array = target.clear_zone(chosen)
+	target.discard_pile.append_array(stack)
+	target.zones_changed.emit()
+	target.discard_changed.emit()
+	trigger_revenge(target.player_id, zone_card)
+	return zone_card
+
+
+func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dictionary]:
+	## Destroy all occupied zones in the given list on the target player's board.
+	## Returns an array of the destroyed top cards. Triggers revenge on each.
+	var destroyed: Array[Dictionary] = []
+	for zi in zone_indices:
+		if zi < 0 or zi >= 8 or target.is_zone_empty(zi):
+			continue
+		var top_card := target.get_zone_top_card(zi)
+		var stack: Array = target.clear_zone(zi)
+		target.discard_pile.append_array(stack)
+		trigger_revenge(target.player_id, top_card)
+		destroyed.append(top_card)
+
+	if not destroyed.is_empty():
+		target.zones_changed.emit()
+		target.discard_changed.emit()
+	return destroyed
 
 
 # --- Modifier queries ---

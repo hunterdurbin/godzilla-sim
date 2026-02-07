@@ -101,6 +101,12 @@ var _discard_selected_cards: Array[Control] = []
 # Action blocking — prevents input while an action is being processed
 var _action_pending: bool = false
 
+# Zone target selection state (for effects that let the player pick an opponent zone)
+var _zone_target_selecting: bool = false
+var _zone_target_player_id: int = -1  # Who is choosing
+var _zone_target_board_pid: int = -1  # Whose board the zones are on
+var _zone_target_valid_zones: Array[int] = []
+
 # Drag-to-zone state
 var _drag_card: Control = null
 var _drag_valid_zones: Array[int] = []
@@ -143,6 +149,7 @@ func _ready() -> void:
 		# Connect effect handler signals for player choice UIs
 		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
+		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
 
 		# Connect player state signals so mid-effect changes (e.g. search_deck adding
 		# a card to hand) trigger visual updates immediately
@@ -1153,6 +1160,68 @@ func _force_cleanup_discard_selection() -> void:
 	_update_hand_visibility(_get_current_pid())
 
 
+# --- Zone target selection UI ---
+
+func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String) -> void:
+	if is_multiplayer_game and player_id != local_player_id:
+		# Forward to the remote client who needs to make the choice
+		var zones_json := JSON.stringify(valid_zones)
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				_rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt)
+		return
+	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt)
+
+
+func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String) -> void:
+	_zone_target_selecting = true
+	_zone_target_player_id = player_id
+	_zone_target_board_pid = target_player_id
+	_zone_target_valid_zones = valid_zones
+
+	_disable_all_buttons()
+	card_select_prompt.text = prompt
+	card_select_prompt.visible = true
+	btn_pass.visible = false
+
+	# Highlight valid zones on the target player's board
+	var board: Control = player1_board if target_player_id == 0 else player2_board
+	board.highlight_valid_zones(valid_zones)
+	for i in range(board.zone_slots.size()):
+		var slot: Slot = board.zone_slots[i]
+		if slot and i in valid_zones:
+			slot.in_selection_mode = true
+			if not slot.slot_clicked.is_connected(_on_zone_target_slot_clicked):
+				slot.slot_clicked.connect(_on_zone_target_slot_clicked)
+
+
+func _on_zone_target_slot_clicked(zone_num: int, _pid: int) -> void:
+	if not _zone_target_selecting:
+		return
+	var zone_idx: int = zone_num - 1
+	if zone_idx not in _zone_target_valid_zones:
+		return
+
+	# Clean up UI
+	var board: Control = player1_board if _zone_target_board_pid == 0 else player2_board
+	board.clear_highlights()
+	for i in range(board.zone_slots.size()):
+		var slot: Slot = board.zone_slots[i]
+		if slot:
+			slot.in_selection_mode = false
+			if slot.slot_clicked.is_connected(_on_zone_target_slot_clicked):
+				slot.slot_clicked.disconnect(_on_zone_target_slot_clicked)
+
+	_zone_target_selecting = false
+	card_select_prompt.visible = false
+
+	if is_multiplayer_game and not NetworkManager.is_host():
+		# Client sends choice to host
+		_rpc_zone_target_resolved.rpc_id(1, zone_idx)
+	else:
+		turn_manager.action_handler.effect_handler.resolve_zone_target(zone_idx)
+
+
 # --- Discard view UI ---
 
 func _on_discard_clicked(pid: int) -> void:
@@ -1275,7 +1344,7 @@ func _hide_monster_deck_view() -> void:
 # --- Zone stack view UI ---
 
 func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
-	if waiting_for_card_select or waiting_for_zone_select:
+	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting:
 		return
 	var player := _get_player_state(pid)
 	var zone_idx: int = zone_num - 1
@@ -1682,6 +1751,26 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 	var sender_id := multiplayer.get_remote_sender_id()
 	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
 	turn_manager.action_handler.effect_handler.resolve_hand_discard(sender_player_id, hand_indices)
+
+
+## Host -> Client: zone target request (player must choose a zone)
+@rpc("authority", "call_remote", "reliable")
+func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String) -> void:
+	if NetworkManager.is_host():
+		return
+	var parsed: Array = JSON.parse_string(zones_json)
+	var valid_zones: Array[int] = []
+	for v in parsed:
+		valid_zones.append(int(v))
+	_show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt)
+
+
+## Client -> Host: zone target resolved (player chose a zone)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_zone_target_resolved(zone_index: int) -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	turn_manager.action_handler.effect_handler.resolve_zone_target(zone_index)
 
 
 ## Host -> Client: game over
