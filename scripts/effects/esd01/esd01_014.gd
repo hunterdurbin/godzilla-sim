@@ -26,7 +26,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if not selected.is_empty():
 		# Play it to the first empty zone
 		var target_zone: int = empty_zones[0]
-		player.zones[target_zone] = selected
+		player.push_zone_card(target_zone, selected)
 		player.zones_changed.emit()
 		# Trigger enter on the newly played card
 		await ctx.effect_handler.trigger_enter(player.player_id, selected)

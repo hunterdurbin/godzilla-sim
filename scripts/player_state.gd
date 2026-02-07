@@ -17,11 +17,12 @@ var rage: int = 0
 var main_deck: Array[Dictionary] = []
 var hand: Array[Dictionary] = []
 var discard_pile: Array[Dictionary] = []
-var zones: Array = []  # 8 entries, each {} (empty) or a battle card dict
+var zones: Array = []  # 8 entries, each an Array of Dictionaries (card stack, index 0 = top)
 var strategy_zones: Array = []  # Up to 2 entries, each {} or a strategy card dict
 var has_invaded_this_turn: bool = false
 var has_played_monster_this_turn: bool = false
 var strategy_zone_turn_placed: Array[int] = [0, 0]  # Turn number when each was placed
+var monster_stack: Array[Dictionary] = []  # Monsters stacked under current_monster (index 0 = directly below top)
 var burst_monster: Dictionary = {}  # The Burst-played monster (empty if none active)
 var pre_burst_monster: Dictionary = {}  # Monster that was active before Burst play
 
@@ -30,10 +31,36 @@ func _init(id: int = 0) -> void:
 	player_id = id
 	zones.resize(8)
 	for i in range(8):
-		zones[i] = {}
+		zones[i] = []
 	strategy_zones.resize(2)
 	strategy_zones[0] = {}
 	strategy_zones[1] = {}
+
+
+# --- Zone stack helpers ---
+
+func is_zone_empty(i: int) -> bool:
+	return zones[i].is_empty()
+
+
+func get_zone_top_card(i: int) -> Dictionary:
+	if zones[i].is_empty():
+		return {}
+	return zones[i][0]
+
+
+func get_zone_stack(i: int) -> Array:
+	return zones[i]
+
+
+func push_zone_card(i: int, card: Dictionary) -> void:
+	zones[i].push_front(card)
+
+
+func clear_zone(i: int) -> Array:
+	var stack: Array = zones[i].duplicate()
+	zones[i] = []
+	return stack
 
 
 func get_threat_level() -> int:
@@ -42,9 +69,10 @@ func get_threat_level() -> int:
 
 func get_total_counter_power() -> int:
 	var total: int = 0
-	for zone_card in zones:
-		if not zone_card.is_empty():
-			total += zone_card.get("counter_power", 0)
+	for i in range(8):
+		var top_card := get_zone_top_card(i)
+		if not top_card.is_empty():
+			total += top_card.get("counter_power", 0)
 	return total
 
 
@@ -71,8 +99,8 @@ func draw_up_to(target_count: int) -> Array[Dictionary]:
 
 
 func has_empty_zone() -> bool:
-	for zone_card in zones:
-		if zone_card.is_empty():
+	for i in range(8):
+		if is_zone_empty(i):
 			return true
 	return false
 
@@ -80,7 +108,7 @@ func has_empty_zone() -> bool:
 func get_empty_zone_indices() -> Array[int]:
 	var indices: Array[int] = []
 	for i in range(8):
-		if zones[i].is_empty():
+		if is_zone_empty(i):
 			indices.append(i)
 	return indices
 

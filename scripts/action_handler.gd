@@ -72,6 +72,9 @@ func execute_end_phase(state: GameState) -> void:
 		var burst_card: Dictionary = player.burst_monster
 		player.discard_pile.append(burst_card)
 		player.current_monster = player.pre_burst_monster
+		# Pop the pre-burst monster off the stack (it was pushed when burst was played)
+		if not player.monster_stack.is_empty():
+			player.monster_stack.pop_front()
 		player.burst_monster = {}
 		player.pre_burst_monster = {}
 		player.monster_changed.emit()
@@ -124,6 +127,8 @@ func resolve_counter(state: GameState) -> void:
 		for m in opponent.monster_deck:
 			if m.get("rank") == next_rank and m.get("trait") == cur_trait:
 				var old_monster: Dictionary = opponent.current_monster
+				if not old_monster.is_empty():
+					opponent.monster_stack.push_front(old_monster)
 				opponent.current_monster = m
 				opponent.rage = 0
 				opponent.rage_changed.emit(0)
@@ -170,15 +175,14 @@ func _check_crush_for_player(state: GameState, player_id: int) -> void:
 	# So we check if THIS player's monster is in a zone that has THIS player's battle card.
 	var monster_zone_idx: int = player.monster_zone - 1  # 0-indexed
 	if monster_zone_idx >= 0 and monster_zone_idx < 8:
-		if not player.zones[monster_zone_idx].is_empty():
-			var crushed: Dictionary = player.zones[monster_zone_idx]
-			player.zones[monster_zone_idx] = {}
-			player.discard_pile.append(crushed)
-			battle_card_crushed.emit(player_id, monster_zone_idx, crushed)
+		if not player.is_zone_empty(monster_zone_idx):
+			var crushed_stack: Array = player.clear_zone(monster_zone_idx)
+			player.discard_pile.append_array(crushed_stack)
+			battle_card_crushed.emit(player_id, monster_zone_idx, crushed_stack[0])
 			player.zones_changed.emit()
 			player.discard_changed.emit()
 			if effect_handler:
-				effect_handler.trigger_crush(player_id, crushed)
+				effect_handler.trigger_crush(player_id, crushed_stack[0])
 
 	# Also check if the opponent's monster is in a zone with the opponent's battle card
 	# (This is handled when we call this for both players)
@@ -205,7 +209,7 @@ func _get_retreat_zone(current_zone: int) -> int:
 func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
 	var card: Dictionary = player.hand.pop_at(hand_index)
-	player.zones[zone_index] = card
+	player.push_zone_card(zone_index, card)
 	battle_card_played.emit(player.player_id, card, zone_index)
 	player.hand_changed.emit()
 	player.zones_changed.emit()
@@ -253,6 +257,10 @@ func _play_monster(hand_index: int, state: GameState) -> void:
 		player.pre_burst_monster = old_monster
 		player.burst_monster = card
 
+	# Push old monster onto the stack (both normal and burst)
+	if not old_monster.is_empty():
+		player.monster_stack.push_front(old_monster)
+
 	player.has_played_monster_this_turn = true
 
 	player.current_monster = card
@@ -282,7 +290,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 		if player.monster_zone >= 8:
 			# Check invasion victory
 			var opponent := state.get_opponent_of_current()
-			if opponent.zones[7].is_empty():  # Zone 8 = index 7
+			if opponent.is_zone_empty(7):  # Zone 8 = index 7
 				var old_zone: int = player.monster_zone
 				player.monster_zone = 9  # Past zone 8
 				monster_advanced.emit(player.player_id, old_zone, player.monster_zone)

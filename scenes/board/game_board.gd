@@ -63,6 +63,25 @@ var _deck_search_matching_ids: Dictionary = {}  # card id -> true, for highlight
 # Stored discard view data for stacked toggle
 var _discard_view_cards: Array[Dictionary] = []
 
+# Monster deck view UI references
+@onready var monster_deck_view_overlay: Control = $MonsterDeckViewOverlay
+@onready var monster_deck_view_title: Label = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/TitleLabel
+@onready var monster_deck_view_grid: GridContainer = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/ScrollContainer/CardGrid
+@onready var monster_deck_view_close: Button = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/CloseButton
+@onready var monster_deck_view_stacked: CheckButton = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/StackedToggle
+
+# Stored monster deck view data for stacked toggle
+var _monster_deck_view_cards: Array[Dictionary] = []
+
+# Zone stack view UI references
+@onready var zone_stack_view_overlay: Control = $ZoneStackViewOverlay
+@onready var zone_stack_view_title: Label = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/TitleLabel
+@onready var zone_stack_view_grid: GridContainer = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/ScrollContainer/CardGrid
+@onready var zone_stack_view_close: Button = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/CloseButton
+
+# Stored zone stack view data
+var _zone_stack_view_cards: Array[Dictionary] = []
+
 # State tracking
 var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var waiting_for_card_select: bool = false
@@ -149,11 +168,24 @@ func _ready() -> void:
 	discard_view_close.pressed.connect(_hide_discard_view)
 	discard_view_stacked.toggled.connect(_on_discard_view_stacked_toggled)
 
+	# Connect monster deck view
+	player1_board.monster_deck_clicked.connect(_on_monster_deck_clicked)
+	player2_board.monster_deck_clicked.connect(_on_monster_deck_clicked)
+	monster_deck_view_close.pressed.connect(_hide_monster_deck_view)
+	monster_deck_view_stacked.toggled.connect(_on_monster_deck_view_stacked_toggled)
+
+	# Connect zone stack view
+	player1_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
+	player2_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
+	zone_stack_view_close.pressed.connect(_hide_zone_stack_view)
+
 	# Hide overlays and prompts
 	end_game_panel.visible = false
 	card_select_prompt.visible = false
 	deck_search_overlay.visible = false
 	discard_view_overlay.visible = false
+	monster_deck_view_overlay.visible = false
+	zone_stack_view_overlay.visible = false
 
 	# Position hands over hand spaces (deferred so layout is resolved)
 	call_deferred("_position_hands")
@@ -528,9 +560,6 @@ func _enter_zone_selection() -> void:
 				if not slot.hover_started.is_connected(_on_zone_hover_clicked):
 					slot.hover_started.connect(_on_zone_hover_clicked.bind(i))
 
-
-func _on_zone_slot_clicked(_card: Control, _zone_index: int) -> void:
-	pass
 
 
 func _on_zone_hover_clicked(_zone_index: int) -> void:
@@ -1009,6 +1038,113 @@ func _hide_discard_view() -> void:
 	_discard_view_cards.clear()
 
 
+# --- Monster deck view UI ---
+
+func _on_monster_deck_clicked(pid: int) -> void:
+	# Only allow viewing your own monster deck
+	if is_multiplayer_game and pid != local_player_id:
+		return
+	var player := _get_player_state(pid)
+	_monster_deck_view_cards = player.monster_deck.duplicate(true)
+	var title := "Monster Deck (%d)" % _monster_deck_view_cards.size()
+	monster_deck_view_title.text = title
+	monster_deck_view_stacked.set_pressed_no_signal(false)
+	monster_deck_view_overlay.visible = true
+	_refresh_monster_deck_view_grid()
+
+
+func _refresh_monster_deck_view_grid() -> void:
+	var stacked := monster_deck_view_stacked.button_pressed
+
+	for child in monster_deck_view_grid.get_children():
+		child.queue_free()
+
+	if _monster_deck_view_cards.is_empty():
+		var empty_label := Label.new()
+		empty_label.text = "No cards remaining in monster deck."
+		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		monster_deck_view_grid.add_child(empty_label)
+		return
+
+	if stacked:
+		var groups := _group_cards(_monster_deck_view_cards)
+		for group in groups:
+			var card: Control = card_scene.instantiate()
+			if card.has_method("set_card_data_dict"):
+				card.set_card_data_dict(group["card_data"])
+			card.is_selectable = false
+			card.drag_enabled = false
+			monster_deck_view_grid.add_child(card)
+			_add_count_badge(card, group["count"])
+	else:
+		for card_data in _monster_deck_view_cards:
+			var card: Control = card_scene.instantiate()
+			if card.has_method("set_card_data_dict"):
+				card.set_card_data_dict(card_data)
+			card.is_selectable = false
+			card.drag_enabled = false
+			monster_deck_view_grid.add_child(card)
+
+
+func _on_monster_deck_view_stacked_toggled(_value: bool) -> void:
+	_refresh_monster_deck_view_grid()
+
+
+func _hide_monster_deck_view() -> void:
+	monster_deck_view_overlay.visible = false
+	for child in monster_deck_view_grid.get_children():
+		child.queue_free()
+	_monster_deck_view_cards.clear()
+
+
+# --- Zone stack view UI ---
+
+func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
+	if waiting_for_card_select or waiting_for_zone_select:
+		return
+	var player := _get_player_state(pid)
+	var zone_idx: int = zone_num - 1
+	if zone_idx < 0 or zone_idx >= 8:
+		return
+	var stack: Array = player.get_zone_stack(zone_idx)
+	# Include the monster card if this is the monster's zone
+	var has_monster: bool = not player.current_monster.is_empty() and (player.monster_zone - 1) == zone_idx
+	if stack.is_empty() and not has_monster:
+		return
+	_zone_stack_view_cards.clear()
+	if has_monster:
+		_zone_stack_view_cards.append(player.current_monster)
+		for m in player.monster_stack:
+			_zone_stack_view_cards.append(m)
+	for card_data in stack:
+		_zone_stack_view_cards.append(card_data)
+	var total: int = _zone_stack_view_cards.size()
+	zone_stack_view_title.text = "Zone %d (%d card%s)" % [zone_num, total, "" if total == 1 else "s"]
+	zone_stack_view_overlay.visible = true
+	_refresh_zone_stack_view_grid()
+
+
+func _refresh_zone_stack_view_grid() -> void:
+	for child in zone_stack_view_grid.get_children():
+		child.queue_free()
+
+	for i in range(_zone_stack_view_cards.size()):
+		var card_data: Dictionary = _zone_stack_view_cards[i]
+		var card: Control = card_scene.instantiate()
+		if card.has_method("set_card_data_dict"):
+			card.set_card_data_dict(card_data)
+		card.is_selectable = false
+		card.drag_enabled = false
+		zone_stack_view_grid.add_child(card)
+
+
+func _hide_zone_stack_view() -> void:
+	zone_stack_view_overlay.visible = false
+	for child in zone_stack_view_grid.get_children():
+		child.queue_free()
+	_zone_stack_view_cards.clear()
+
+
 # --- Card grid helpers ---
 
 func _get_card_template_id(card_data: Dictionary) -> String:
@@ -1099,8 +1235,9 @@ func _serialize_game_state(viewer_id: int) -> String:
 	for i in range(2):
 		var pd := _serialize_player_state(gs.players[i])
 		if i != viewer_id:
-			# Strip hand data for opponent — only send count
+			# Strip hand and monster deck data for opponent — only send counts
 			pd.erase("hand")
+			pd.erase("monster_deck")
 		data["players"].append(pd)
 	return JSON.stringify(data)
 
@@ -1120,8 +1257,10 @@ func _serialize_player_state(ps: PlayerState) -> Dictionary:
 		"discard_pile_count": ps.discard_pile.size(),
 		"has_invaded_this_turn": ps.has_invaded_this_turn,
 		"has_played_monster_this_turn": ps.has_played_monster_this_turn,
+		"monster_stack": ps.monster_stack.duplicate(true),
 		"burst_monster": ps.burst_monster,
 		"pre_burst_monster": ps.pre_burst_monster,
+		"monster_deck": ps.monster_deck.duplicate(true),
 	}
 
 
@@ -1260,6 +1399,8 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 	ps.current_monster = data.get("current_monster", {})
 	ps.has_invaded_this_turn = data.get("has_invaded_this_turn", false)
 	ps.has_played_monster_this_turn = data.get("has_played_monster_this_turn", false)
+	for m in data.get("monster_stack", []):
+		ps.monster_stack.append(m)
 	ps.burst_monster = data.get("burst_monster", {})
 	ps.pre_burst_monster = data.get("pre_burst_monster", {})
 
@@ -1281,6 +1422,10 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 		ps.hand.clear()
 		for j in range(count):
 			ps.hand.append({"face_down": true, "id": "opponent_%d" % j})
+
+	# Monster deck: full data for local player, empty for opponent
+	if is_local and data.has("monster_deck"):
+		ps.monster_deck.assign(data["monster_deck"])
 
 	# Deck/discard: only counts needed for display labels
 	var deck_count: int = int(data.get("main_deck_count", 0))

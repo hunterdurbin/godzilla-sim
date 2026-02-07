@@ -8,6 +8,8 @@ extends Control
 
 signal zone_card_dropped(zone_index: int, card: Control)
 signal discard_clicked(player_id: int)
+signal monster_deck_clicked(player_id: int)
+signal zone_slot_clicked(zone_number: int, player_id: int)
 
 @export var player_id: int = 0
 @export var is_mirrored: bool = false  # True for player 2 (top of screen)
@@ -27,6 +29,8 @@ var discard_count_label: Label
 var rage_label: Label
 var rage_display: Control
 var discard_display: Control
+var monster_info_display: Control
+var monster_deck_count_label: Label
 var player_label: Label
 
 
@@ -54,6 +58,7 @@ func _setup_references() -> void:
 			slot.zone_number = i
 			slot.slot_type = "battle_zone"
 			slot.player_id = player_id
+			slot.slot_clicked.connect(_on_zone_slot_clicked)
 			zone_slots[i - 1] = slot
 
 	# Strategy slots (landscape orientation, larger)
@@ -77,6 +82,8 @@ func _setup_references() -> void:
 	rage_label = find_child("RageLabel", true, false) as Label
 	rage_display = find_child("RageDisplay", true, false) as Control
 	discard_display = find_child("DiscardInfo", true, false) as Control
+	monster_info_display = find_child("MonsterInfo", true, false) as Control
+	monster_deck_count_label = find_child("MonsterDeckCount", true, false) as Label
 	player_label = find_child("PlayerLabel", true, false) as Label
 
 	if player_label:
@@ -86,6 +93,11 @@ func _setup_references() -> void:
 	if discard_display:
 		discard_display.mouse_filter = Control.MOUSE_FILTER_STOP
 		discard_display.gui_input.connect(_on_discard_gui_input)
+
+	# Make monster info area clickable
+	if monster_info_display:
+		monster_info_display.mouse_filter = Control.MOUSE_FILTER_STOP
+		monster_info_display.gui_input.connect(_on_monster_info_gui_input)
 
 
 ## Sync the entire board display to match a PlayerState
@@ -112,7 +124,8 @@ func _sync_zones(state: PlayerState) -> void:
 			continue
 
 		slot.set_monster_marker(false)
-		var zone_data: Dictionary = state.zones[i]
+		var zone_data: Dictionary = state.get_zone_top_card(i)
+		var stack_size: int = state.get_zone_stack(i).size()
 
 		# Update card in slot
 		if zone_data.is_empty() and slot.has_card() and slot.get_card() != monster_card:
@@ -121,10 +134,13 @@ func _sync_zones(state: PlayerState) -> void:
 			var card := _create_card(zone_data)
 			card.drag_enabled = false
 			slot.place_card(card, false)
+			if stack_size > 1:
+				_add_stack_badge(card, stack_size)
 		elif not zone_data.is_empty() and slot.has_card():
 			var card := slot.get_card()
 			if card.has_method("set_card_data_dict"):
 				card.set_card_data_dict(zone_data)
+			_update_stack_badge(card, stack_size)
 
 
 func _sync_strategy_zones(state: PlayerState) -> void:
@@ -205,6 +221,8 @@ func _sync_info(state: PlayerState) -> void:
 		deck_count_label.text = "%d" % state.main_deck.size()
 	if discard_count_label:
 		discard_count_label.text = "%d" % state.discard_pile.size()
+	if monster_deck_count_label:
+		monster_deck_count_label.text = "Deck: %d" % state.monster_deck.size()
 
 
 func set_hand_face_down(face_down: bool) -> void:
@@ -283,8 +301,43 @@ func _on_discard_gui_input(event: InputEvent) -> void:
 		discard_clicked.emit(player_id)
 
 
+func _on_monster_info_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		monster_deck_clicked.emit(player_id)
+
+
+func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
+	zone_slot_clicked.emit(zone_num, pid)
+
+
 func _create_card(data: Dictionary) -> Control:
 	var card: Control = card_scene.instantiate()
 	if card.has_method("set_card_data_dict"):
 		card.set_card_data_dict(data)
 	return card
+
+
+func _add_stack_badge(card: Control, count: int) -> void:
+	if count <= 1:
+		return
+	var badge := Label.new()
+	badge.name = "StackBadge"
+	badge.text = "x%d" % count
+	badge.add_theme_font_size_override("font_size", 14)
+	badge.add_theme_color_override("font_color", Color.YELLOW)
+	badge.add_theme_color_override("font_outline_color", Color.BLACK)
+	badge.add_theme_constant_override("outline_size", 3)
+	badge.position = Vector2(4, 4)
+	card.add_child(badge)
+
+
+func _update_stack_badge(card: Control, count: int) -> void:
+	var badge := card.get_node_or_null("StackBadge")
+	if count <= 1:
+		if badge:
+			badge.queue_free()
+	else:
+		if not badge:
+			_add_stack_badge(card, count)
+		else:
+			badge.text = "x%d" % count

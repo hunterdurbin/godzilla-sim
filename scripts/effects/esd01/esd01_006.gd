@@ -14,12 +14,12 @@ func on_enter(ctx: EffectContext) -> void:
 	# Destroy 1 of opponent's rank 4 or lower battle cards
 	var opponent := ctx.opponent
 	for i in range(8):
-		var zone_card: Dictionary = opponent.zones[i]
+		var zone_card := opponent.get_zone_top_card(i)
 		if not zone_card.is_empty() and zone_card.get("rank", 0) <= 4:
-			opponent.zones[i] = {}
-			opponent.discard_pile.append(zone_card)
+			var stack: Array = opponent.clear_zone(i)
+			opponent.discard_pile.append_array(stack)
 			opponent.zones_changed.emit()
 			opponent.discard_changed.emit()
-			# Trigger revenge on the destroyed card
+			# Trigger revenge on the destroyed card (top card)
 			ctx.effect_handler.trigger_revenge(opponent.player_id, zone_card)
 			return

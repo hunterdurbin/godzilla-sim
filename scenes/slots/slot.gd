@@ -12,6 +12,7 @@ signal card_placed(card: Control)
 signal card_removed(card: Control)
 signal hover_started()
 signal hover_ended()
+signal slot_clicked(zone_number: int, player_id: int)
 
 # Export variables
 @export var slot_color: Color = Color(0.2, 0.2, 0.3, 0.5)
@@ -39,6 +40,7 @@ func _ready() -> void:
 	_update_visual_state()
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
+	gui_input.connect(_on_gui_input)
 
 
 func _notification(what: int) -> void:
@@ -100,6 +102,8 @@ func place_card(card: Control, animate: bool = true) -> bool:
 	_fit_card_in_slot(card, animate)
 
 	card.z_index = 0
+	# Let clicks pass through the card to reach the slot's gui_input
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
 
 	if card.has_signal("drag_started"):
 		card.drag_started.connect(_on_card_drag_started)
@@ -284,3 +288,9 @@ func _on_card_drag_ended() -> void:
 			card.return_to_position(target_pos, snap_duration)
 		else:
 			card.position = target_pos
+
+
+func _on_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if held_card != null and zone_number > 0:
+			slot_clicked.emit(zone_number, player_id)

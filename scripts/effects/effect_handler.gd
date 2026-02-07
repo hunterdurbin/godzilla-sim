@@ -103,8 +103,9 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 	# Monster card
 	_trigger_rage_on_card(player_id, player.current_monster, old_rage, new_rage)
 
-	# Battle cards in zones
-	for zone_card in player.zones:
+	# Battle cards in zones (top card only — stacked cards are inactive per 12.7.3)
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
 			_trigger_rage_on_card(player_id, zone_card, old_rage, new_rage)
 
@@ -129,8 +130,9 @@ func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> vo
 	if effect:
 		effect.on_monster_advance(_build_context(player_id, player.current_monster), from_zone, to_zone)
 
-	# Battle cards in zones
-	for zone_card in player.zones:
+	# Battle cards in zones (top card only)
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
 			var ze := get_effect(zone_card)
 			if ze:
@@ -167,8 +169,9 @@ func _trigger_phase_on_all_cards(player_id: int, phase: CardEnums.GamePhase, is_
 		else:
 			me.on_phase_end(_build_context(player_id, player.current_monster), phase)
 
-	# Battle cards in zones
-	for zone_card in player.zones:
+	# Battle cards in zones (top card only)
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
 			var ze := get_effect(zone_card)
 			if ze:
@@ -192,8 +195,9 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 	## Trigger on_monster_played on all active cards for this player.
 	var player := game_state.players[player_id]
 
-	# Battle cards in zones
-	for zone_card in player.zones:
+	# Battle cards in zones (top card only)
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
 			var ze := get_effect(zone_card)
 			if ze:
@@ -292,7 +296,8 @@ func get_counter_power_modifier(player_id: int) -> int:
 	## Get total counter power modifier from all active battle card effects.
 	var player := game_state.players[player_id]
 	var total: int = 0
-	for zone_card in player.zones:
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
 			var effect := get_effect(zone_card)
 			if effect:
@@ -317,7 +322,7 @@ func get_cards_that_can_engage(player_id: int) -> Array[int]:
 	var player := game_state.players[player_id]
 	var engageable: Array[int] = []
 	for i in range(8):
-		var zone_card: Dictionary = player.zones[i]
+		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
 			var effect := get_effect(zone_card)
 			if effect:

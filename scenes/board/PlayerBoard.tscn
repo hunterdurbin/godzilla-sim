@@ -139,6 +139,13 @@ horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 9
 
+[node name="MonsterDeckCount" type="Label" parent="Rows/BackRow/MonsterInfo"]
+layout_mode = 2
+text = "Deck: 0"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.6, 0.9, 0.6, 1)
+
 [node name="Zone1" parent="Rows/BackRow" instance=ExtResource("2_slot")]
 layout_mode = 2
 size_flags_horizontal = 3

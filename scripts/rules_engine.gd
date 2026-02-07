@@ -52,7 +52,7 @@ func get_valid_zones_for_battle_card(player: PlayerState, opponent: PlayerState)
 	## Zone must be empty and not occupied by own invading monster
 	var valid: Array[int] = []
 	for i in range(8):
-		if player.zones[i].is_empty() and (player.monster_zone - 1) != i:
+		if player.is_zone_empty(i) and (player.monster_zone - 1) != i:
 			valid.append(i)
 	return valid
 
@@ -64,7 +64,7 @@ func can_play_battle_card_at_zone(card: Dictionary, zone_index: int, player: Pla
 		return false
 	if zone_index < 0 or zone_index >= 8:
 		return false
-	if not player.zones[zone_index].is_empty():
+	if not player.is_zone_empty(zone_index):
 		return false
 	if (player.monster_zone - 1) == zone_index:
 		return false
@@ -139,7 +139,7 @@ func check_win_condition(state: GameState) -> int:
 		if state.players[i].monster_zone > 8:
 			# Check if opponent's zone 8 is empty (invasion victory)
 			var opponent := state.players[1 - i]
-			if opponent.zones[7].is_empty():  # Zone 8 = index 7
+			if opponent.is_zone_empty(7):  # Zone 8 = index 7
 				return i
 	return -1
 

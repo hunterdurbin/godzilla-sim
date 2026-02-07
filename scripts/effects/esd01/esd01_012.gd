@@ -19,10 +19,10 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 	# Move to an unoccupied zone (pick the first available empty zone)
 	var empty_zones := ctx.owner.get_empty_zone_indices()
 	if not empty_zones.is_empty():
-		# Move the card
+		# Move the entire stack to the target zone
 		var target_zone: int = empty_zones[0]
-		ctx.owner.zones[target_zone] = ctx.owner.zones[current_zone_idx]
-		ctx.owner.zones[current_zone_idx] = {}
+		var stack: Array = ctx.owner.clear_zone(current_zone_idx)
+		ctx.owner.zones[target_zone] = stack
 		ctx.owner.zones_changed.emit()
 
 
@@ -44,7 +44,7 @@ func on_crush(ctx: EffectContext) -> void:
 func _find_zone_of_card(ctx: EffectContext) -> int:
 	var card_id: String = ctx.card_data.get("id", "")
 	for i in range(8):
-		if ctx.owner.zones[i].get("id", "") == card_id:
+		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
 			return i
 	return -1
 

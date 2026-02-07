@@ -17,11 +17,11 @@ func _destroy_opponent_column(ctx: EffectContext, zone_idx: int) -> void:
 
 	var destroyed_any := false
 	for zi in zones_to_check:
-		if zi >= 0 and zi < 8 and not opponent.zones[zi].is_empty():
-			var card: Dictionary = opponent.zones[zi]
-			opponent.zones[zi] = {}
-			opponent.discard_pile.append(card)
-			ctx.effect_handler.trigger_revenge(opponent.player_id, card)
+		if zi >= 0 and zi < 8 and not opponent.is_zone_empty(zi):
+			var top_card := opponent.get_zone_top_card(zi)
+			var stack: Array = opponent.clear_zone(zi)
+			opponent.discard_pile.append_array(stack)
+			ctx.effect_handler.trigger_revenge(opponent.player_id, top_card)
 			destroyed_any = true
 
 	if destroyed_any:
