@@ -19,6 +19,7 @@ signal hover_ended()
 @export var occupied_color: Color = Color(0.2, 0.4, 0.3, 0.5)
 @export var snap_duration: float = 0.3
 @export var accept_cards: bool = true
+@export var landscape: bool = false  # When true, uses 7:5 (landscape) aspect ratio
 
 # Zone metadata
 @export var zone_number: int = 0  # 1-8 for battle zones, 0 for other
@@ -54,13 +55,14 @@ func _update_content_rect() -> void:
 		_content_rect = Rect2(0, 0, w, h)
 		return
 
-	var target_w := h * CARD_RATIO
+	var ratio := (1.0 / CARD_RATIO) if landscape else CARD_RATIO
+	var target_w := h * ratio
 	if target_w <= w:
 		# Height is the constraint — center horizontally
 		_content_rect = Rect2((w - target_w) / 2.0, 0, target_w, h)
 	else:
 		# Width is the constraint — center vertically
-		var target_h := w / CARD_RATIO
+		var target_h := w / ratio
 		_content_rect = Rect2(0, (h - target_h) / 2.0, w, target_h)
 
 
@@ -95,22 +97,7 @@ func place_card(card: Control, animate: bool = true) -> bool:
 	held_card = card
 	is_occupied = true
 
-	# Resize card to fill the content rect so children reflow via anchors
-	var padding := 4.0
-	var target_size := _content_rect.size - Vector2(padding * 2, padding * 2)
-	card.custom_minimum_size = Vector2.ZERO
-	card.size = target_size
-	card.pivot_offset = target_size / 2.0
-	card.scale = Vector2.ONE
-	if "original_scale" in card:
-		card.original_scale = Vector2.ONE
-
-	var target_pos := _content_rect.position + Vector2(padding, padding)
-
-	if animate and card.has_method("return_to_position"):
-		card.return_to_position(target_pos, snap_duration)
-	else:
-		card.position = target_pos
+	_fit_card_in_slot(card, animate)
 
 	card.z_index = 0
 
@@ -126,14 +113,38 @@ func place_card(card: Control, animate: bool = true) -> bool:
 
 
 func _refit_held_card() -> void:
-	if not held_card:
-		return
+	if held_card:
+		_fit_card_in_slot(held_card, false)
+
+
+func _fit_card_in_slot(card: Control, animate: bool) -> void:
 	var padding := 4.0
-	var target_size := _content_rect.size - Vector2(padding * 2, padding * 2)
-	held_card.custom_minimum_size = Vector2.ZERO
-	held_card.size = target_size
-	held_card.pivot_offset = target_size / 2.0
-	held_card.position = _content_rect.position + Vector2(padding, padding)
+	var available := _content_rect.size - Vector2(padding * 2, padding * 2)
+	if landscape:
+		# Portrait card rotated 90° CW to appear sideways in landscape slot
+		var card_h := minf(available.x, available.y * 7.0 / 5.0)
+		var card_w := card_h * CARD_RATIO  # 5:7 portrait ratio
+		var target_size := Vector2(card_w, card_h)
+		card.custom_minimum_size = Vector2.ZERO
+		card.size = target_size
+		card.pivot_offset = target_size / 2.0
+		card.scale = Vector2.ONE
+		card.set("original_scale", Vector2.ONE)
+		card.rotation = deg_to_rad(-90)
+		var center := _content_rect.position + _content_rect.size / 2.0
+		card.position = center - target_size / 2.0
+	else:
+		card.custom_minimum_size = Vector2.ZERO
+		card.size = available
+		card.pivot_offset = available / 2.0
+		card.scale = Vector2.ONE
+		card.set("original_scale", Vector2.ONE)
+		card.rotation = 0.0
+		var target_pos := _content_rect.position + Vector2(padding, padding)
+		if animate and card.has_method("return_to_position"):
+			card.return_to_position(target_pos, snap_duration)
+		else:
+			card.position = target_pos
 
 
 func remove_card(destroy: bool = false) -> Control:
@@ -149,6 +160,7 @@ func remove_card(destroy: bool = false) -> Control:
 
 	held_card = null
 	is_occupied = false
+	card.rotation = 0.0
 
 	if destroy:
 		card.queue_free()

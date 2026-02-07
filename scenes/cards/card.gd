@@ -22,6 +22,7 @@ var card_data: Dictionary = {}
 var card_effect: RefCounted = null  # CardEffect instance loaded from effect_script
 var is_face_down: bool = false
 var is_selectable: bool = false
+var in_landscape_slot: bool = false
 
 # Drag state
 var is_dragging: bool = false

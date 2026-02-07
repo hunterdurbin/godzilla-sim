@@ -56,14 +56,20 @@ func _setup_references() -> void:
 			slot.player_id = player_id
 			zone_slots[i - 1] = slot
 
-	# Strategy slots
+	# Strategy slots (landscape orientation, larger)
 	for i in range(1, 3):
 		var slot := find_child("Strategy%d" % i, true, false) as Slot
 		if slot:
 			slot.zone_number = 0
 			slot.slot_type = "strategy_zone"
 			slot.player_id = player_id
+			slot.landscape = true
 			strategy_slots.append(slot)
+
+	# Give strategy area more width within LeftInfo for landscape slots
+	var strategy_area := find_child("StrategyArea", true, false) as Control
+	if strategy_area:
+		strategy_area.size_flags_stretch_ratio = 2.5
 
 	# Info nodes
 	deck_count_label = find_child("DeckCount", true, false) as Label
