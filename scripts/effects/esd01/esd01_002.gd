@@ -7,7 +7,7 @@ extends CardEffect
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	_search_for_burst_godzilla(ctx)
+	await _search_for_burst_godzilla(ctx)
 
 
 func _search_for_burst_godzilla(ctx: EffectContext) -> void:
