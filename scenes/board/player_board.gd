@@ -108,6 +108,12 @@ func _setup_references() -> void:
 		monster_info_display.mouse_filter = Control.MOUSE_FILTER_STOP
 		monster_info_display.gui_input.connect(_on_monster_info_gui_input)
 
+	# Add borders to clickable info areas
+	var deck_display := find_child("DeckInfo", true, false) as Control
+	for area in [deck_display, discard_display, monster_info_display]:
+		if area:
+			_add_border(area)
+
 
 ## Sync the entire board display to match a PlayerState
 func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = []) -> void:
@@ -393,3 +399,14 @@ func _update_modifier_badge(card: Control, modifier: int) -> void:
 	var prefix := "+" if modifier > 0 else ""
 	badge.text = "%s%d" % [prefix, modifier]
 	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
+
+
+func _add_border(control: Control) -> void:
+	control.draw.connect(_draw_border.bind(control))
+	control.resized.connect(control.queue_redraw)
+	control.queue_redraw()
+
+
+func _draw_border(control: Control) -> void:
+	var rect := Rect2(Vector2.ZERO, control.size)
+	control.draw_rect(rect, Color(0.45, 0.45, 0.55, 0.9), false, 2.0)
