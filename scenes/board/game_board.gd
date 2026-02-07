@@ -92,6 +92,12 @@ var waiting_for_card_select: bool = false
 var waiting_for_zone_select: bool = false
 var selected_card_id: String = ""
 
+# Hand discard selection state
+var _discard_selecting: bool = false
+var _discard_player_id: int = -1
+var _discard_count: int = 0
+var _discard_selected_cards: Array[Control] = []
+
 # Drag-to-zone state
 var _drag_card: Control = null
 var _drag_valid_zones: Array[int] = []
@@ -133,6 +139,7 @@ func _ready() -> void:
 
 		# Connect effect handler signals for player choice UIs
 		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
+		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
 
 		# Connect player state signals so mid-effect changes (e.g. search_deck adding
 		# a card to hand) trigger visual updates immediately
@@ -492,6 +499,9 @@ func _on_invade_pressed() -> void:
 
 
 func _on_pass_pressed() -> void:
+	if _discard_selecting and _discard_selected_cards.size() == _discard_count:
+		_confirm_hand_discard()
+		return
 	if waiting_for_card_select or waiting_for_zone_select:
 		_cancel_selection()
 		if turn_manager:
@@ -1002,6 +1012,108 @@ func _hide_deck_search() -> void:
 	_deck_search_matching_ids.clear()
 
 
+# --- Hand discard selection UI ---
+
+func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
+	if is_multiplayer_game and player_id != local_player_id:
+		# Forward to the remote client who needs to make the choice
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				_rpc_hand_discard_requested.rpc_id(peer_id, discard_count)
+		return
+	_show_hand_discard_selection(player_id, discard_count)
+
+
+func _show_hand_discard_selection(player_id: int, discard_count: int) -> void:
+	_discard_selecting = true
+	_discard_player_id = player_id
+	_discard_count = discard_count
+	_discard_selected_cards.clear()
+
+	# Flip target player's hand face-up so they can see their cards
+	var board: Control = player1_board if player_id == 0 else player2_board
+	board.set_hand_face_down(false)
+
+	var hand_mgr: CardManager = player1_hand if player_id == 0 else player2_hand
+	# Make all cards selectable
+	var all_indices: Array[int] = []
+	for i in range(hand_mgr.managed_cards.size()):
+		all_indices.append(i)
+	hand_mgr.enter_selection_mode(all_indices)
+	if not hand_mgr.card_selected.is_connected(_on_discard_card_selected):
+		hand_mgr.card_selected.connect(_on_discard_card_selected)
+
+	_disable_all_buttons()
+	card_select_prompt.text = "Select %d card%s to discard:" % [discard_count, "" if discard_count == 1 else "s"]
+	card_select_prompt.visible = true
+	btn_pass.visible = false
+
+
+func _on_discard_card_selected(card: Control, _index: int) -> void:
+	if not _discard_selecting:
+		return
+
+	# Toggle selection: if already selected, deselect; otherwise select
+	if card in _discard_selected_cards:
+		_discard_selected_cards.erase(card)
+		card.modulate = Color.WHITE
+	else:
+		if _discard_selected_cards.size() < _discard_count:
+			_discard_selected_cards.append(card)
+			card.modulate = Color(1.0, 0.5, 0.5, 1.0)
+
+	# Update prompt and confirm button
+	var remaining: int = _discard_count - _discard_selected_cards.size()
+	if remaining > 0:
+		card_select_prompt.text = "Select %d more card%s to discard:" % [remaining, "" if remaining == 1 else "s"]
+		btn_pass.visible = false
+	else:
+		card_select_prompt.text = "Press Confirm to discard selected cards"
+		btn_pass.text = "Confirm"
+		btn_pass.visible = true
+		btn_pass.disabled = false
+
+
+func _confirm_hand_discard() -> void:
+	var hand_mgr: CardManager = player1_hand if _discard_player_id == 0 else player2_hand
+
+	# Build hand indices from selected cards
+	var hand_indices: Array[int] = []
+	var player := _get_player_state(_discard_player_id)
+	for card in _discard_selected_cards:
+		if "card_data" in card:
+			var card_id: String = card.card_data.get("id", "")
+			for i in range(player.hand.size()):
+				if player.hand[i].get("id", "") == card_id and i not in hand_indices:
+					hand_indices.append(i)
+					break
+
+	# Reset visual state
+	for card in _discard_selected_cards:
+		card.modulate = Color.WHITE
+	_discard_selected_cards.clear()
+	_discard_selecting = false
+
+	hand_mgr.exit_selection_mode()
+	if hand_mgr.card_selected.is_connected(_on_discard_card_selected):
+		hand_mgr.card_selected.disconnect(_on_discard_card_selected)
+	card_select_prompt.visible = false
+	btn_pass.text = "Pass"
+	btn_pass.visible = true
+
+	# Restore hand visibility
+	_update_hand_visibility(_get_current_pid())
+
+	if is_multiplayer_game and _discard_player_id != local_player_id:
+		return
+	if is_multiplayer_game and not NetworkManager.is_host():
+		# Client sends choice to host
+		var indices_json := JSON.stringify(hand_indices)
+		_rpc_hand_discard_resolved.rpc_id(1, indices_json)
+	else:
+		turn_manager.action_handler.effect_handler.resolve_hand_discard(_discard_player_id, hand_indices)
+
+
 # --- Discard view UI ---
 
 func _on_discard_clicked(pid: int) -> void:
@@ -1501,6 +1613,26 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 		if selected == null:
 			selected = {}
 	turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
+
+
+## Host -> Client: hand discard request (player must choose cards to discard)
+@rpc("authority", "call_remote", "reliable")
+func _rpc_hand_discard_requested(discard_count: int) -> void:
+	_show_hand_discard_selection(local_player_id, discard_count)
+
+
+## Client -> Host: hand discard resolved (player chose cards)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_hand_discard_resolved(indices_json: String) -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	var parsed: Array = JSON.parse_string(indices_json)
+	var hand_indices: Array[int] = []
+	for v in parsed:
+		hand_indices.append(int(v))
+	var sender_id := multiplayer.get_remote_sender_id()
+	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
+	turn_manager.action_handler.effect_handler.resolve_hand_discard(sender_player_id, hand_indices)
 
 
 ## Host -> Client: game over
