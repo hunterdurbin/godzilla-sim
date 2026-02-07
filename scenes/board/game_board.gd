@@ -708,8 +708,38 @@ func _on_hand_drag_started(card: Control) -> void:
 				_drag_valid_zones = valid_zones
 				_drag_action = CardEnums.ActionType.PLAY_BATTLE
 
+	elif card_type == CardEnums.CardType.MONSTER:
+		var card_id: String = card_data.get("id", "")
+		var hand_idx := _find_hand_index_by_id(card_id)
+		if hand_idx >= 0:
+			var playable_monsters: Array[int] = []
+			if turn_manager:
+				playable_monsters = turn_manager.rules_engine.get_playable_monsters(player)
+			else:
+				playable_monsters.assign(_client_playable.get("monster_cards", []))
+			if hand_idx in playable_monsters:
+				# Highlight the monster's current zone as the drop target
+				var monster_zone_idx: int = player.monster_zone - 1
+				if monster_zone_idx >= 0 and monster_zone_idx < 8:
+					_drag_valid_zones = [monster_zone_idx]
+					_drag_action = CardEnums.ActionType.PLAY_MONSTER
+
+	elif card_type == CardEnums.CardType.STRATEGY:
+		var card_id: String = card_data.get("id", "")
+		var hand_idx := _find_hand_index_by_id(card_id)
+		if hand_idx >= 0:
+			var playable_strategy: Array[int] = []
+			if turn_manager:
+				playable_strategy = turn_manager.rules_engine.get_playable_strategy_cards(player)
+			else:
+				playable_strategy.assign(_client_playable.get("strategy_cards", []))
+			if hand_idx in playable_strategy:
+				_drag_action = CardEnums.ActionType.PLAY_STRATEGY
+
 	if not _drag_valid_zones.is_empty():
 		board.highlight_valid_zones(_drag_valid_zones)
+	elif _drag_action == CardEnums.ActionType.PLAY_STRATEGY:
+		board.highlight_strategy_zones()
 
 
 func _on_hand_drag_ended(card: Control) -> void:
@@ -718,28 +748,49 @@ func _on_hand_drag_ended(card: Control) -> void:
 	if board:
 		board.clear_highlights()
 
-	if _drag_card != card or _drag_valid_zones.is_empty():
+	var has_drag_target := not _drag_valid_zones.is_empty() or _drag_action == CardEnums.ActionType.PLAY_STRATEGY
+	if _drag_card != card or not has_drag_target:
 		_drag_card = null
 		_drag_valid_zones = []
 		return
 
 	var mouse_pos := get_global_mouse_position()
 	if board:
-		for i in _drag_valid_zones:
-			var slot: Slot = board.zone_slots[i]
-			var rect := Rect2(slot.global_position, slot.size)
-			if rect.has_point(mouse_pos) and slot.is_empty():
-				var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
-				var hand_idx := _find_hand_index_by_id(card_id)
-				if hand_idx >= 0:
-					board.hand_manager.drop_handled = true
-					_drag_card = null
-					_drag_valid_zones = []
-					_submit_action(_drag_action, {
-						"hand_index": hand_idx,
-						"zone_index": i
-					})
-					return
+		# Strategy cards target strategy slots (auto-placed, no zone_index needed)
+		if _drag_action == CardEnums.ActionType.PLAY_STRATEGY:
+			for slot in board.strategy_slots:
+				if slot and not slot.has_card():
+					var rect := Rect2(slot.global_position, slot.size)
+					if rect.has_point(mouse_pos):
+						var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
+						var hand_idx := _find_hand_index_by_id(card_id)
+						if hand_idx >= 0:
+							board.hand_manager.drop_handled = true
+							_drag_card = null
+							_drag_valid_zones = []
+							_submit_action(CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": hand_idx})
+							return
+		else:
+			for i in _drag_valid_zones:
+				var slot: Slot = board.zone_slots[i]
+				var rect := Rect2(slot.global_position, slot.size)
+				var is_valid_target: bool = false
+				if _drag_action == CardEnums.ActionType.PLAY_MONSTER:
+					is_valid_target = rect.has_point(mouse_pos)
+				else:
+					is_valid_target = rect.has_point(mouse_pos) and slot.is_empty()
+				if is_valid_target:
+					var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
+					var hand_idx := _find_hand_index_by_id(card_id)
+					if hand_idx >= 0:
+						board.hand_manager.drop_handled = true
+						_drag_card = null
+						_drag_valid_zones = []
+						var params := {"hand_index": hand_idx}
+						if _drag_action != CardEnums.ActionType.PLAY_MONSTER:
+							params["zone_index"] = i
+						_submit_action(_drag_action, params)
+						return
 
 	_drag_card = null
 	_drag_valid_zones = []
@@ -1005,6 +1056,7 @@ func _serialize_player_state(ps: PlayerState) -> Dictionary:
 		"discard_pile": ps.discard_pile.duplicate(true),
 		"discard_pile_count": ps.discard_pile.size(),
 		"has_invaded_this_turn": ps.has_invaded_this_turn,
+		"has_played_monster_this_turn": ps.has_played_monster_this_turn,
 		"burst_monster": ps.burst_monster,
 		"pre_burst_monster": ps.pre_burst_monster,
 	}
@@ -1144,6 +1196,7 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 	ps.rage = int(data["rage"])
 	ps.current_monster = data.get("current_monster", {})
 	ps.has_invaded_this_turn = data.get("has_invaded_this_turn", false)
+	ps.has_played_monster_this_turn = data.get("has_played_monster_this_turn", false)
 	ps.burst_monster = data.get("burst_monster", {})
 	ps.pre_burst_monster = data.get("pre_burst_monster", {})
 

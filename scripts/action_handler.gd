@@ -59,8 +59,9 @@ func execute_start_phase(state: GameState) -> void:
 	player.rage = 0
 	player.rage_changed.emit(0)
 
-	# Reset invasion flag
+	# Reset per-turn flags
 	player.has_invaded_this_turn = false
+	player.has_played_monster_this_turn = false
 
 
 func execute_end_phase(state: GameState) -> void:
@@ -251,6 +252,8 @@ func _play_monster(hand_index: int, state: GameState) -> void:
 	if is_burst_play:
 		player.pre_burst_monster = old_monster
 		player.burst_monster = card
+	else:
+		player.has_played_monster_this_turn = true
 
 	player.current_monster = card
 	player.rage += 1

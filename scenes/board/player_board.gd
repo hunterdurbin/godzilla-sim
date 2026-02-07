@@ -212,6 +212,12 @@ func highlight_valid_zones(valid_zone_indices: Array[int]) -> void:
 			zone_slots[i].set_highlighted(i in valid_zone_indices)
 
 
+func highlight_strategy_zones() -> void:
+	for slot in strategy_slots:
+		if slot and not slot.has_card():
+			slot.set_highlighted(true)
+
+
 func clear_highlights() -> void:
 	for slot in zone_slots:
 		if slot:
