@@ -91,6 +91,12 @@ func _ready() -> void:
 
 		# Connect effect handler signals for player choice UIs
 		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
+
+		# Connect player state signals so mid-effect changes (e.g. search_deck adding
+		# a card to hand) trigger visual updates immediately
+		for player in turn_manager.game_state.players:
+			player.hand_changed.connect(_on_state_changed)
+			player.zones_changed.connect(_on_state_changed)
 	else:
 		# Client: initialize empty client state, wait for host RPCs
 		_client_players = [PlayerState.new(0), PlayerState.new(1)]
@@ -276,6 +282,11 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	_disable_all_buttons()
 	if is_multiplayer_game and NetworkManager.is_host():
 		_rpc_receive_game_ended.rpc(winner_id, reason)
+
+
+func _on_state_changed() -> void:
+	_sync_boards()
+	_broadcast_state()
 
 
 func _on_log_message(text: String) -> void:
