@@ -69,6 +69,12 @@ func get_counter_power_modifier(_ctx: EffectContext) -> int:
 	return 0
 
 
+func get_field_cp_modifiers(_ctx: EffectContext) -> Dictionary:
+	## Return {zone_index: cp_bonus} for bonuses this card grants to OTHER zones.
+	## Called on all active battle cards during counter power calculation.
+	return {}
+
+
 func get_threat_level_modifier(_ctx: EffectContext) -> int:
 	## Return additional threat level for this monster card (e.g., conditional TL boosts).
 	return 0
@@ -81,6 +87,11 @@ func can_engage(_ctx: EffectContext) -> bool:
 
 
 # --- Property methods (override to declare card mechanics) ---
+
+func get_effect_categories() -> Array[CardEnums.EffectCategory]:
+	## Return the categories of effects on this card (10.2).
+	## Cards may have multiple effects spanning different categories.
+	return []
 
 func get_burst_rank() -> int:
 	## Return the burst rank (1-4) if this card has Burst. Return -1 for no burst.

@@ -11,6 +11,8 @@ enum GamePhase { START, MAIN, COUNTER, END }
 
 enum ActionType { PLAY_BATTLE, PLAY_STRATEGY, GAIN_RAGE, PLAY_MONSTER, INVADE, PASS }
 
+enum EffectCategory { ONE_SHOT, CONTINUOUS, REPLACEMENT }
+
 
 static func rank_to_roman(rank: int) -> String:
 	match rank:

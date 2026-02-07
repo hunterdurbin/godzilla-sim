@@ -429,7 +429,12 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 			if effect:
 				var ctx := _build_context(player_id, zone_card)
 				if effect.can_engage(ctx):
-					modifiers[i] = effect.get_counter_power_modifier(ctx)
+					modifiers[i] += effect.get_counter_power_modifier(ctx)
+				# Collect field modifiers (bonuses this card grants to other zones)
+				var field_mods: Dictionary = effect.get_field_cp_modifiers(ctx)
+				for zone_idx in field_mods:
+					if zone_idx >= 0 and zone_idx < 8:
+						modifiers[zone_idx] += field_mods[zone_idx]
 	return modifiers
 
 

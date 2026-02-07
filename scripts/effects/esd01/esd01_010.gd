@@ -5,20 +5,42 @@ extends CardEffect
 ## gains +5000 counter power.
 ## <Awakening6> Your other battle card in zone 8 gains +5000 counter power.
 ## (Active if your monster card is in zone 6 or beyond.)
-##
-## NOTE: This card gives a bonus to OTHER cards in zone 8, not to itself.
-## The modifier is applied via get_counter_power_modifier on the zone 8 card check.
-## Since the effect system evaluates each card independently, this effect is handled
-## by checking if a "City of Tokyo" is active when calculating zone 8 card CP.
-## For now, this is implemented as a self-modifier that the EffectHandler can query.
 
 
-func get_counter_power_modifier(ctx: EffectContext) -> int:
-	# This card itself has 0 CP. The bonus goes to OTHER cards in zone 8.
-	# We handle this by checking zone 8 cards and looking for City of Tokyo presence.
-	# This requires the zone 8 card's effect to check for City of Tokyo.
-	# For simplicity, we return 0 for self - the zone 8 bonus is complex to implement
-	# without a "field effect" system. Marking as TODO for future enhancement.
-	#
-	# TODO: Implement field-effect system where cards can grant bonuses to other cards.
+func get_effect_categories() -> Array[CardEnums.EffectCategory]:
+	return [CardEnums.EffectCategory.CONTINUOUS]
+
+
+func get_counter_power_modifier(_ctx: EffectContext) -> int:
 	return 0
+
+
+func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
+	# "other" — don't boost zone 8 if this card itself is in zone 8
+	if _find_zone_of_card(ctx) == 7:
+		return {}
+
+	# Only applies if there's a battle card in zone 8
+	var zone8_card := ctx.owner.get_zone_top_card(7)
+	if zone8_card.is_empty() or zone8_card.get("card_type") != CardEnums.CardType.BATTLE:
+		return {}
+
+	var bonus := 0
+	# Base: +5000 if rage >= 2
+	if ctx.owner.rage >= 2:
+		bonus += 5000
+	# Awakening6: +5000 if monster in zone 6+
+	if ctx.owner.monster_zone >= 6:
+		bonus += 5000
+
+	if bonus == 0:
+		return {}
+	return {7: bonus}
+
+
+func _find_zone_of_card(ctx: EffectContext) -> int:
+	var card_id: String = ctx.card_data.get("id", "")
+	for i in range(8):
+		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
+			return i
+	return -1
