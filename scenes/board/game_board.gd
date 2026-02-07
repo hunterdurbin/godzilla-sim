@@ -47,6 +47,12 @@ var _client_playable: Dictionary = {}  # Playable card/zone indices from host
 @onready var deck_search_skip: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/SkipButton
 @onready var deck_search_show_all: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ShowAllToggle
 
+# Discard view UI references
+@onready var discard_view_overlay: Control = $DiscardViewOverlay
+@onready var discard_view_title: Label = $DiscardViewOverlay/DiscardViewPanel/VBox/TitleLabel
+@onready var discard_view_grid: GridContainer = $DiscardViewOverlay/DiscardViewPanel/VBox/ScrollContainer/CardGrid
+@onready var discard_view_close: Button = $DiscardViewOverlay/DiscardViewPanel/VBox/CloseButton
+
 # Stored deck search data for toggling between matching/all
 var _deck_search_matching: Array[Dictionary] = []
 var _deck_search_all: Array[Dictionary] = []
@@ -129,10 +135,16 @@ func _ready() -> void:
 	deck_search_skip.pressed.connect(_on_deck_search_skip)
 	deck_search_show_all.toggled.connect(_on_deck_search_show_all_toggled)
 
+	# Connect discard view
+	player1_board.discard_clicked.connect(_on_discard_clicked)
+	player2_board.discard_clicked.connect(_on_discard_clicked)
+	discard_view_close.pressed.connect(_hide_discard_view)
+
 	# Hide overlays and prompts
 	end_game_panel.visible = false
 	card_select_prompt.visible = false
 	deck_search_overlay.visible = false
+	discard_view_overlay.visible = false
 
 	# Position hands over hand spaces (deferred so layout is resolved)
 	call_deferred("_position_hands")
@@ -802,6 +814,43 @@ func _hide_deck_search() -> void:
 	_deck_search_matching_ids.clear()
 
 
+# --- Discard view UI ---
+
+func _on_discard_clicked(pid: int) -> void:
+	var player := _get_player_state(pid)
+	var title := "Player %d Discard Pile (%d)" % [pid + 1, player.discard_pile.size()]
+	_show_discard_view(player.discard_pile, title)
+
+
+func _show_discard_view(cards: Array[Dictionary], title: String) -> void:
+	for child in discard_view_grid.get_children():
+		child.queue_free()
+
+	discard_view_title.text = title
+	discard_view_overlay.visible = true
+
+	if cards.is_empty():
+		var empty_label := Label.new()
+		empty_label.text = "No cards in discard pile."
+		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		discard_view_grid.add_child(empty_label)
+		return
+
+	for card_data in cards:
+		var card: Control = card_scene.instantiate()
+		if card.has_method("set_card_data_dict"):
+			card.set_card_data_dict(card_data)
+		card.is_selectable = false
+		card.drag_enabled = false
+		discard_view_grid.add_child(card)
+
+
+func _hide_discard_view() -> void:
+	discard_view_overlay.visible = false
+	for child in discard_view_grid.get_children():
+		child.queue_free()
+
+
 func _resolve_deck_search_local(selected: Dictionary) -> void:
 	if is_multiplayer_game and not NetworkManager.is_host():
 		# Client sends selection back to host
@@ -855,6 +904,7 @@ func _serialize_player_state(ps: PlayerState) -> Dictionary:
 		"hand": ps.hand.duplicate(true),
 		"hand_count": ps.hand.size(),
 		"main_deck_count": ps.main_deck.size(),
+		"discard_pile": ps.discard_pile.duplicate(true),
 		"discard_pile_count": ps.discard_pile.size(),
 		"has_invaded_this_turn": ps.has_invaded_this_turn,
 		"burst_monster": ps.burst_monster,
@@ -1024,10 +1074,13 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 	for j in range(deck_count):
 		ps.main_deck[j] = {}
 
-	var discard_count: int = int(data.get("discard_pile_count", 0))
-	ps.discard_pile.resize(discard_count)
-	for j in range(discard_count):
-		ps.discard_pile[j] = {}
+	if data.has("discard_pile"):
+		ps.discard_pile.assign(data["discard_pile"])
+	else:
+		var discard_count: int = int(data.get("discard_pile_count", 0))
+		ps.discard_pile.resize(discard_count)
+		for j in range(discard_count):
+			ps.discard_pile[j] = {}
 
 	return ps
 

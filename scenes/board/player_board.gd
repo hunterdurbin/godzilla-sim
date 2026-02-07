@@ -7,6 +7,7 @@ extends Control
 ## HandArea (CardManager) is managed by the parent GameBoard, not this scene.
 
 signal zone_card_dropped(zone_index: int, card: Control)
+signal discard_clicked(player_id: int)
 
 @export var player_id: int = 0
 @export var is_mirrored: bool = false  # True for player 2 (top of screen)
@@ -70,6 +71,12 @@ func _setup_references() -> void:
 
 	if player_label:
 		player_label.text = "Player %d" % (player_id + 1)
+
+	# Make discard area clickable
+	var discard_info := find_child("DiscardInfo", true, false) as Control
+	if discard_info:
+		discard_info.mouse_filter = Control.MOUSE_FILTER_STOP
+		discard_info.gui_input.connect(_on_discard_gui_input)
 
 
 ## Sync the entire board display to match a PlayerState
@@ -236,6 +243,11 @@ func _reverse_container(container: Node) -> void:
 	var count := container.get_child_count()
 	for i in range(count - 1):
 		container.move_child(container.get_child(count - 1), i)
+
+
+func _on_discard_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		discard_clicked.emit(player_id)
 
 
 func _create_card(data: Dictionary) -> Control:
