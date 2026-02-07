@@ -164,9 +164,9 @@ func _ready() -> void:
 	player2_hand.hand_card_drag_started.connect(_on_hand_drag_started)
 	player2_hand.hand_card_drag_ended.connect(_on_hand_drag_ended)
 
-	# Connect hand right-click for card zoom
-	player1_hand.hand_card_right_clicked.connect(_on_hand_card_right_clicked)
-	player2_hand.hand_card_right_clicked.connect(_on_hand_card_right_clicked)
+	# Connect hand right-click for card zoom (bind player_id to filter opponent's hand)
+	player1_hand.hand_card_right_clicked.connect(_on_hand_card_right_clicked.bind(0))
+	player2_hand.hand_card_right_clicked.connect(_on_hand_card_right_clicked.bind(1))
 
 	# Listen for disconnects in multiplayer
 	if is_multiplayer_game:
@@ -1310,7 +1310,9 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 	_show_card_zoom(card_data)
 
 
-func _on_hand_card_right_clicked(card: Control) -> void:
+func _on_hand_card_right_clicked(card: Control, hand_player_id: int) -> void:
+	if hand_player_id != local_player_id:
+		return
 	if "card_data" in card and not card.card_data.is_empty():
 		_show_card_zoom(card.card_data)
 
@@ -1353,12 +1355,12 @@ func _show_card_zoom(card_data: Dictionary) -> void:
 
 
 func _on_overlay_background_clicked(event: InputEvent, hide_func: Callable) -> void:
-	if event is InputEventMouseButton and event.pressed:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		hide_func.call()
 
 
 func _on_card_zoom_overlay_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_hide_card_zoom()
 
 

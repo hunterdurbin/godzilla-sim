@@ -109,9 +109,7 @@ func get_playable_monsters(player: PlayerState) -> Array[int]:
 	## Normal (same-rank) plays are limited to 1 per turn; burst plays are exempt.
 	var indices: Array[int] = []
 	var cur_rank: int = player.current_monster.get("rank", 0)
-	var cur_traits: Array = []
-	if player.current_monster.has("trait"):
-		cur_traits.append(player.current_monster.get("trait"))
+	var cur_traits: Array = player.current_monster.get("traits", [])
 
 	if player.has_played_monster_this_turn:
 		return indices
@@ -120,7 +118,7 @@ func get_playable_monsters(player: PlayerState) -> Array[int]:
 		var card: Dictionary = player.hand[i]
 		if card.get("card_type") != CardEnums.CardType.MONSTER:
 			continue
-		if not card.get("trait") in cur_traits:
+		if not _traits_overlap(card.get("traits", []), cur_traits):
 			continue
 		# Normal play: same rank
 		if card.get("rank") == cur_rank:
@@ -151,12 +149,10 @@ func check_counter(player: PlayerState, opponent: PlayerState) -> bool:
 func can_opponent_rank_up(opponent: PlayerState) -> bool:
 	## Check if the opponent can find a valid rank-up monster from their monster deck
 	var next_rank: int = opponent.current_monster.get("rank", 1) + 1
-	var cur_traits: Array = []
-	if opponent.current_monster.has("trait"):
-		cur_traits.append(opponent.current_monster.get("trait"))
+	var cur_traits: Array = opponent.current_monster.get("traits", [])
 
 	for m in opponent.monster_deck:
-		if m.get("rank") == next_rank and m.get("trait") in cur_traits:
+		if m.get("rank") == next_rank and _traits_overlap(m.get("traits", []), cur_traits):
 			return true
 	return false
 
@@ -193,9 +189,7 @@ func _has_monster_in_hand(player: PlayerState) -> bool:
 
 func _can_play_any_monster(player: PlayerState) -> bool:
 	var cur_rank: int = player.current_monster.get("rank", 0)
-	var cur_traits: Array = []
-	if player.current_monster.has("trait"):
-		cur_traits.append(player.current_monster.get("trait"))
+	var cur_traits: Array = player.current_monster.get("traits", [])
 
 	if player.has_played_monster_this_turn:
 		return false
@@ -203,7 +197,7 @@ func _can_play_any_monster(player: PlayerState) -> bool:
 	for card in player.hand:
 		if card.get("card_type") != CardEnums.CardType.MONSTER:
 			continue
-		if not card.get("trait") in cur_traits:
+		if not _traits_overlap(card.get("traits", []), cur_traits):
 			continue
 		if card.get("rank") == cur_rank:
 			return true
@@ -220,6 +214,13 @@ func _has_burst_for_rank(card: Dictionary, target_rank: int) -> bool:
 	if not effect:
 		return false
 	return effect.get_burst_rank() == target_rank
+
+
+func _traits_overlap(traits_a: Array, traits_b: Array) -> bool:
+	for t in traits_a:
+		if t in traits_b:
+			return true
+	return false
 
 
 func _can_invade(player: PlayerState) -> bool:

@@ -121,11 +121,11 @@ func resolve_counter(state: GameState) -> void:
 
 		# Opponent must rank up their monster
 		var next_rank: int = opponent.current_monster.get("rank", 1) + 1
-		var cur_trait = opponent.current_monster.get("trait")
+		var cur_traits: Array = opponent.current_monster.get("traits", [])
 		var found_next: bool = false
 
 		for m in opponent.monster_deck:
-			if m.get("rank") == next_rank and m.get("trait") == cur_trait:
+			if m.get("rank") == next_rank and _traits_overlap(m.get("traits", []), cur_traits):
 				var old_monster: Dictionary = opponent.current_monster
 				if not old_monster.is_empty():
 					opponent.monster_stack.push_front(old_monster)
@@ -202,6 +202,13 @@ func _get_retreat_zone(current_zone: int) -> int:
 		7: return 4
 		8: return 3
 	return current_zone
+
+
+func _traits_overlap(traits_a: Array, traits_b: Array) -> bool:
+	for t in traits_a:
+		if t in traits_b:
+			return true
+	return false
 
 
 # --- Private action implementations ---
