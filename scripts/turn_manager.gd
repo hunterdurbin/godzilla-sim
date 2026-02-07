@@ -17,6 +17,7 @@ var rules_engine: RulesEngine
 var action_handler: ActionHandler
 var effect_handler: EffectHandler
 var is_game_over: bool = false
+var _processing_action: bool = false
 
 
 func setup(card_data_node: Node) -> void:
@@ -130,13 +131,15 @@ func _prompt_player_actions() -> void:
 
 
 func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> void:
-	if is_game_over:
+	if is_game_over or _processing_action:
 		return
+	_processing_action = true
 
 	if action == CardEnums.ActionType.PASS:
 		log_message.emit("Player %d passes." % (game_state.current_player_id + 1))
 		effect_handler.trigger_phase_end(CardEnums.GamePhase.MAIN)
 		phase_ended.emit(CardEnums.GamePhase.MAIN)
+		_processing_action = false
 		_begin_counter_phase()
 		return
 
@@ -155,6 +158,8 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 			log_message.emit("Played a monster card (rage now %d)" % game_state.get_current_player().rage)
 		CardEnums.ActionType.INVADE:
 			log_message.emit("Invaded! Monster now at zone %d" % game_state.get_current_player().monster_zone)
+
+	_processing_action = false
 
 	# Check for win condition after each action
 	if is_game_over:

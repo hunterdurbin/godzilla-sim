@@ -98,6 +98,9 @@ var _discard_player_id: int = -1
 var _discard_count: int = 0
 var _discard_selected_cards: Array[Control] = []
 
+# Action blocking — prevents input while an action is being processed
+var _action_pending: bool = false
+
 # Drag-to-zone state
 var _drag_card: Control = null
 var _drag_valid_zones: Array[int] = []
@@ -311,6 +314,8 @@ func _get_opponent_player() -> PlayerState:
 # --- Action submission (routes to TurnManager or RPC) ---
 
 func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> void:
+	_action_pending = true
+	_disable_all_buttons()
 	if not is_multiplayer_game or NetworkManager.is_host():
 		turn_manager.submit_action(action, params)
 	else:
@@ -333,12 +338,13 @@ func _on_phase_ended(_phase: CardEnums.GamePhase) -> void:
 
 func _on_turn_started(player_id: int) -> void:
 	turn_label.text = "Turn %d - Player %d" % [turn_manager.game_state.turn_number, player_id + 1]
-	_update_hand_visibility(player_id)
 	_sync_boards()
+	_update_hand_visibility(player_id)
 	_broadcast_state()
 
 
 func _on_awaiting_action(valid_actions: Array) -> void:
+	_action_pending = false
 	_sync_boards()
 
 	if is_multiplayer_game:
@@ -365,6 +371,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 
 
 func _on_game_ended(winner_id: int, reason: String) -> void:
+	_action_pending = false
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("WinLabel")
 	if win_label:
@@ -376,6 +383,8 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 
 func _on_state_changed() -> void:
 	_sync_boards()
+	if not _discard_selecting:
+		_update_hand_visibility(_get_current_pid())
 	_broadcast_state()
 
 
@@ -647,16 +656,20 @@ func _cancel_selection() -> void:
 # --- UI helpers ---
 
 func _sync_boards() -> void:
+	# Skip syncing the discarding player's board during discard selection
+	# to avoid rebuilding the hand and invalidating selected card references
+	var skip_p1 := _discard_selecting and _discard_player_id == 0
+	var skip_p2 := _discard_selecting and _discard_player_id == 1
 	if turn_manager and turn_manager.game_state:
 		var state := turn_manager.game_state
-		if player1_board:
+		if player1_board and not skip_p1:
 			player1_board.sync_to_state(state.players[0])
-		if player2_board:
+		if player2_board and not skip_p2:
 			player2_board.sync_to_state(state.players[1])
 	elif not _client_players.is_empty():
-		if player1_board:
+		if player1_board and not skip_p1:
 			player1_board.sync_to_state(_client_players[0])
-		if player2_board:
+		if player2_board and not skip_p2:
 			player2_board.sync_to_state(_client_players[1])
 	call_deferred("_position_hands")
 
@@ -683,7 +696,9 @@ func _update_action_buttons(valid_actions: Array) -> void:
 	btn_play_monster.disabled = CardEnums.ActionType.PLAY_MONSTER not in valid_actions
 	btn_invade.disabled = CardEnums.ActionType.INVADE not in valid_actions
 	btn_pass.disabled = false
+	btn_pass.visible = true
 	btn_pass.text = "Pass"
+	card_select_prompt.visible = false
 
 
 func _disable_all_buttons() -> void:
@@ -731,6 +746,8 @@ func _find_hand_index_by_id(card_id: String) -> int:
 # --- Drag-to-zone ---
 
 func _on_hand_drag_started(card: Control) -> void:
+	if _action_pending:
+		return
 	if waiting_for_card_select or waiting_for_zone_select:
 		return
 	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
@@ -1112,6 +1129,28 @@ func _confirm_hand_discard() -> void:
 		_rpc_hand_discard_resolved.rpc_id(1, indices_json)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_hand_discard(_discard_player_id, hand_indices)
+
+
+func _force_cleanup_discard_selection() -> void:
+	## Emergency cleanup of discard selection state (e.g. when receiving new action context).
+	for card in _discard_selected_cards:
+		if is_instance_valid(card):
+			card.modulate = Color.WHITE
+	_discard_selected_cards.clear()
+	_discard_selecting = false
+	_discard_player_id = -1
+	_discard_count = 0
+
+	for hand_mgr in [player1_hand, player2_hand]:
+		hand_mgr.exit_selection_mode()
+		if hand_mgr.card_selected.is_connected(_on_discard_card_selected):
+			hand_mgr.card_selected.disconnect(_on_discard_card_selected)
+
+	card_select_prompt.visible = false
+	btn_pass.text = "Pass"
+	btn_pass.visible = true
+
+	_update_hand_visibility(_get_current_pid())
 
 
 # --- Discard view UI ---
@@ -1561,13 +1600,19 @@ func _rpc_receive_state(state_json: String) -> void:
 	# Update UI
 	phase_label.text = CardEnums.phase_to_string(int(data["current_phase"]) as CardEnums.GamePhase)
 	turn_label.text = "Turn %d - Player %d" % [int(data["turn_number"]), int(data["current_player_id"]) + 1]
-	_update_hand_visibility(_client_current_player_id)
 	_sync_boards()
+	_update_hand_visibility(_client_current_player_id)
 
 
 ## Host -> Client: valid actions and playable indices
 @rpc("authority", "call_remote", "reliable")
 func _rpc_receive_action_context(actions_json: String, playable_json: String) -> void:
+	_action_pending = false
+	# Clean up any stale discard/selection state before enabling action buttons
+	if _discard_selecting:
+		_force_cleanup_discard_selection()
+	_cancel_selection()
+
 	var actions: Array = JSON.parse_string(actions_json)
 	_client_playable = JSON.parse_string(playable_json)
 	# Store valid_actions in playable for _on_pass_pressed cancel path
@@ -1620,6 +1665,8 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 ## Host -> Client: hand discard request (player must choose cards to discard)
 @rpc("authority", "call_remote", "reliable")
 func _rpc_hand_discard_requested(discard_count: int) -> void:
+	if NetworkManager.is_host():
+		return  # Safety: this RPC is only for clients
 	_show_hand_discard_selection(local_player_id, discard_count)
 
 
@@ -1640,6 +1687,7 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 ## Host -> Client: game over
 @rpc("authority", "call_remote", "reliable")
 func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
+	_action_pending = false
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("WinLabel")
 	if win_label:
