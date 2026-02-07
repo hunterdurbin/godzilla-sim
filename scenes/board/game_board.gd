@@ -1245,19 +1245,29 @@ func _finish_zone_target(zone_idx: int) -> void:
 
 
 func _on_effect_zone_highlighted(pid: int, zone_index: int) -> void:
-	var board: Control = player1_board if pid == 0 else player2_board
-	if zone_index >= 0 and zone_index < board.zone_slots.size():
-		var slot: Slot = board.zone_slots[zone_index]
-		if slot and slot.held_card:
-			slot.held_card.modulate = Color(1.2, 1.2, 0.6, 1.0)
+	if is_multiplayer_game and pid != local_player_id:
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == pid:
+				_rpc_effect_zone_highlighted.rpc_id(peer_id, pid, zone_index)
+		return
+	_apply_zone_highlight(pid, zone_index, true)
 
 
 func _on_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
+	if is_multiplayer_game and pid != local_player_id:
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == pid:
+				_rpc_effect_zone_unhighlighted.rpc_id(peer_id, pid, zone_index)
+		return
+	_apply_zone_highlight(pid, zone_index, false)
+
+
+func _apply_zone_highlight(pid: int, zone_index: int, highlighted: bool) -> void:
 	var board: Control = player1_board if pid == 0 else player2_board
 	if zone_index >= 0 and zone_index < board.zone_slots.size():
 		var slot: Slot = board.zone_slots[zone_index]
 		if slot and slot.held_card:
-			slot.held_card.modulate = Color.WHITE
+			slot.held_card.modulate = Color(1.2, 1.2, 0.6, 1.0) if highlighted else Color.WHITE
 
 
 # --- Discard view UI ---
@@ -1809,6 +1819,22 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	turn_manager.action_handler.effect_handler.resolve_zone_target(zone_index)
+
+
+## Host -> Client: highlight a zone card during effect resolution
+@rpc("authority", "call_remote", "reliable")
+func _rpc_effect_zone_highlighted(pid: int, zone_index: int) -> void:
+	if NetworkManager.is_host():
+		return
+	_apply_zone_highlight(pid, zone_index, true)
+
+
+## Host -> Client: unhighlight a zone card after effect resolution
+@rpc("authority", "call_remote", "reliable")
+func _rpc_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
+	if NetworkManager.is_host():
+		return
+	_apply_zone_highlight(pid, zone_index, false)
 
 
 ## Host -> Client: game over
