@@ -23,7 +23,7 @@ enum LayoutMode {
 # Export variables
 @export var layout_mode: LayoutMode = LayoutMode.HAND_ARC
 @export var card_spacing: float = 20.0
-@export var max_cards: int = 10
+@export var max_cards: int = 0  # 0 = unlimited
 @export var auto_arrange: bool = true
 @export_range(0.0, 1.0) var arrange_duration: float = 0.3
 @export var max_width: float = 0.0  # Maximum total width for card layout (0 = unlimited)
@@ -63,7 +63,7 @@ func _ready() -> void:
 
 ## Add a card to the manager
 func add_card(card: Control, animate: bool = true) -> void:
-	if managed_cards.size() >= max_cards:
+	if max_cards > 0 and managed_cards.size() >= max_cards:
 		push_warning("CardManager: Maximum cards reached (%d)" % max_cards)
 		return
 
@@ -150,11 +150,18 @@ func get_card_at(index: int) -> Control:
 
 ## Check if manager is full
 func is_full() -> bool:
-	return managed_cards.size() >= max_cards
+	return max_cards > 0 and managed_cards.size() >= max_cards
 
 
 ## Arrange all cards according to current layout mode
 func arrange_cards(animate: bool = true) -> void:
+	# Sync scene tree child order to match managed_cards order.
+	# Godot uses tree order as a tiebreaker for Control picking,
+	# so this must stay in sync with z_index for correct hover targets.
+	for i in range(managed_cards.size()):
+		if managed_cards[i].get_index() != i:
+			move_child(managed_cards[i], i)
+
 	match layout_mode:
 		LayoutMode.HAND_ARC:
 			_arrange_hand_arc(animate)
@@ -217,10 +224,7 @@ func _arrange_hand_arc(animate: bool) -> void:
 		var target_pos = Vector2(x, y)
 		var target_rotation = 0.0  # Keep cards upright (no rotation)
 
-		# Set z_index so cards can overlap naturally (left cards behind right cards)
-		card.z_index = i
-
-		_move_card_to_position(card, target_pos, target_rotation, animate)
+		_move_card_to_position(card, target_pos, target_rotation, animate, i)
 
 
 func _arrange_grid(animate: bool) -> void:
@@ -242,9 +246,7 @@ func _arrange_grid(animate: bool) -> void:
 			start_y + row * grid_row_spacing
 		)
 
-		card.z_index = i  # Maintain reading order
-
-		_move_card_to_position(card, target_pos, 0.0, animate)
+		_move_card_to_position(card, target_pos, 0.0, animate, i)
 
 
 func _arrange_stack(animate: bool) -> void:
@@ -252,8 +254,7 @@ func _arrange_stack(animate: bool) -> void:
 		var card = managed_cards[i]
 		# Slight offset for stacked appearance
 		var target_pos = Vector2(i * 2, i * 2)
-		card.z_index = i
-		_move_card_to_position(card, target_pos, 0.0, animate)
+		_move_card_to_position(card, target_pos, 0.0, animate, i)
 
 
 func _arrange_horizontal(animate: bool) -> void:
@@ -275,8 +276,7 @@ func _arrange_horizontal(animate: bool) -> void:
 	for i in range(count):
 		var card = managed_cards[i]
 		var target_pos = Vector2(start_x + i * effective_spacing, 0)
-		card.z_index = i
-		_move_card_to_position(card, target_pos, 0.0, animate)
+		_move_card_to_position(card, target_pos, 0.0, animate, i)
 
 
 func _arrange_vertical(animate: bool) -> void:
@@ -290,14 +290,18 @@ func _arrange_vertical(animate: bool) -> void:
 	for i in range(count):
 		var card = managed_cards[i]
 		var target_pos = Vector2(0, start_y + i * card_spacing)
-		card.z_index = i
-		_move_card_to_position(card, target_pos, 0.0, animate)
+		_move_card_to_position(card, target_pos, 0.0, animate, i)
 
 
-func _move_card_to_position(card: Control, target_pos: Vector2, target_rotation: float, animate: bool) -> void:
+func _move_card_to_position(card: Control, target_pos: Vector2, target_rotation: float, animate: bool, target_z: int = -1) -> void:
 	# Store the target position and rotation for this card
 	card_target_positions[card] = target_pos
 	card_target_rotations[card] = target_rotation
+
+	# Set z_index immediately so input routing matches visual stacking order
+	# during the animation (not deferred via tween callback)
+	if target_z >= 0:
+		card.z_index = target_z
 
 	if animate and arrange_duration > 0:
 		# Use the card's built-in return_to_position if available

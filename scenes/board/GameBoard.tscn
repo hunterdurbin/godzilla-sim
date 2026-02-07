@@ -145,13 +145,11 @@ text = "Pass"
 [node name="Player1Hand" type="Node2D" parent="."]
 script = ExtResource("3_cm")
 layout_mode = 3
-max_cards = 15
 card_spacing = 120.0
 
 [node name="Player2Hand" type="Node2D" parent="."]
 script = ExtResource("3_cm")
 layout_mode = 3
-max_cards = 15
 card_spacing = 120.0
 
 [node name="DeckSearchOverlay" type="ColorRect" parent="."]

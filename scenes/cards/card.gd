@@ -69,6 +69,7 @@ func _gui_input(event: InputEvent) -> void:
 					return
 				# Stop dragging
 				is_dragging = false
+				_hover_active = false
 				z_index = 0
 				drag_ended.emit()
 
@@ -87,14 +88,18 @@ func _on_mouse_entered() -> void:
 	if not is_dragging:
 		if not _hover_active:
 			_pre_hover_z_index = z_index
-			_pre_hover_position = position
+			# Only capture current position if no tween is running;
+			# if a tween is active, _pre_hover_position already holds
+			# the correct target set by return_to_position.
+			if not tween or not tween.is_running():
+				_pre_hover_position = position
 		_hover_active = true
 		z_index = 50
 		_animate_hover(true)
 
 
 func _on_mouse_exited() -> void:
-	if not is_dragging:
+	if not is_dragging and _hover_active:
 		z_index = _pre_hover_z_index
 		_animate_hover(false)
 
@@ -168,7 +173,6 @@ func return_to_position(target_pos: Vector2, duration: float = 0.3) -> void:
 		tween.kill()
 
 	is_dragging = false
-	z_index = 0
 	_hover_active = false
 	_pre_hover_position = target_pos
 
