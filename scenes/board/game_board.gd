@@ -15,6 +15,9 @@ var local_player_id: int = 0  # 0 for host/solo, 1 for client
 var _client_players: Array[PlayerState] = []
 var _client_current_player_id: int = 0
 var _client_playable: Dictionary = {}  # Playable card/zone indices from host
+var _client_cp_modifiers: Array = [0, 0]
+var _client_threat_modifiers: Array = [0, 0]
+var _client_zone_cp_mods: Array = [[], []]
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/Player1Board
@@ -675,15 +678,24 @@ func _sync_boards() -> void:
 	var skip_p2 := _discard_selecting and _discard_player_id == 1
 	if turn_manager and turn_manager.game_state:
 		var state := turn_manager.game_state
+		var eh := turn_manager.effect_handler
+		var zone_cp_0: Array = eh.get_zone_cp_modifiers(0) if eh else []
+		var zone_cp_1: Array = eh.get_zone_cp_modifiers(1) if eh else []
+		var cp_mod_0: int = 0
+		var cp_mod_1: int = 0
+		for v in zone_cp_0: cp_mod_0 += v
+		for v in zone_cp_1: cp_mod_1 += v
+		var threat_mod_0: int = eh.get_threat_level_modifier(0) if eh else 0
+		var threat_mod_1: int = eh.get_threat_level_modifier(1) if eh else 0
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(state.players[0])
+			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0)
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(state.players[1])
+			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1)
 	elif not _client_players.is_empty():
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(_client_players[0])
+			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0])
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(_client_players[1])
+			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1])
 	call_deferred("_position_hands")
 
 
@@ -1618,12 +1630,22 @@ func _broadcast_state() -> void:
 
 func _serialize_game_state(viewer_id: int) -> String:
 	var gs := turn_manager.game_state
+	var eh := turn_manager.effect_handler
+	var zone_cp_0: Array = eh.get_zone_cp_modifiers(0) if eh else []
+	var zone_cp_1: Array = eh.get_zone_cp_modifiers(1) if eh else []
+	var cp_total_0: int = 0
+	var cp_total_1: int = 0
+	for v in zone_cp_0: cp_total_0 += v
+	for v in zone_cp_1: cp_total_1 += v
 	var data := {
 		"current_player_id": gs.current_player_id,
 		"current_phase": int(gs.current_phase),
 		"turn_number": gs.turn_number,
 		"is_game_over": turn_manager.is_game_over,
-		"players": []
+		"players": [],
+		"cp_modifiers": [cp_total_0, cp_total_1],
+		"threat_modifiers": [eh.get_threat_level_modifier(0) if eh else 0, eh.get_threat_level_modifier(1) if eh else 0],
+		"zone_cp_modifiers": [zone_cp_0, zone_cp_1],
 	}
 	for i in range(2):
 		var pd := _serialize_player_state(gs.players[i])
@@ -1707,6 +1729,22 @@ func _rpc_receive_state(state_json: String) -> void:
 		return
 
 	_client_current_player_id = int(data["current_player_id"])
+
+	# Extract effect modifiers
+	if data.has("cp_modifiers"):
+		_client_cp_modifiers = data["cp_modifiers"]
+		for j in range(_client_cp_modifiers.size()):
+			_client_cp_modifiers[j] = int(_client_cp_modifiers[j])
+	if data.has("threat_modifiers"):
+		_client_threat_modifiers = data["threat_modifiers"]
+		for j in range(_client_threat_modifiers.size()):
+			_client_threat_modifiers[j] = int(_client_threat_modifiers[j])
+	if data.has("zone_cp_modifiers"):
+		_client_zone_cp_mods = data["zone_cp_modifiers"]
+		for i in range(_client_zone_cp_mods.size()):
+			var arr: Array = _client_zone_cp_mods[i]
+			for j in range(arr.size()):
+				arr[j] = int(arr[j])
 
 	# Reconstruct PlayerState objects
 	var players_data: Array = data["players"]

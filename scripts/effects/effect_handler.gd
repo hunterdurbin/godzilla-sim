@@ -409,8 +409,19 @@ func return_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
 
 func get_counter_power_modifier(player_id: int) -> int:
 	## Get total counter power modifier from all active battle card effects.
-	var player := game_state.players[player_id]
 	var total: int = 0
+	var per_zone := get_zone_cp_modifiers(player_id)
+	for mod in per_zone:
+		total += mod
+	return total
+
+
+func get_zone_cp_modifiers(player_id: int) -> Array[int]:
+	## Get per-zone counter power modifiers from battle card effects.
+	var player := game_state.players[player_id]
+	var modifiers: Array[int] = []
+	modifiers.resize(8)
+	modifiers.fill(0)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
@@ -418,8 +429,8 @@ func get_counter_power_modifier(player_id: int) -> int:
 			if effect:
 				var ctx := _build_context(player_id, zone_card)
 				if effect.can_engage(ctx):
-					total += effect.get_counter_power_modifier(ctx)
-	return total
+					modifiers[i] = effect.get_counter_power_modifier(ctx)
+	return modifiers
 
 
 func get_threat_level_modifier(player_id: int) -> int:
