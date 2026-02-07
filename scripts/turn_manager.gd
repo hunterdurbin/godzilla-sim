@@ -99,6 +99,7 @@ func _execute_start_phase() -> void:
 	game_state.current_phase = CardEnums.GamePhase.START
 	phase_started.emit(CardEnums.GamePhase.START)
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.START)
+	await action_handler.resolve_check_timing(game_state)  # 7.2.1
 
 	var player := game_state.get_current_player()
 	var opponent := game_state.get_opponent_of_current()
@@ -109,6 +110,7 @@ func _execute_start_phase() -> void:
 
 	log_message.emit("Hand size: %d" % player.hand.size())
 
+	await action_handler.resolve_check_timing(game_state)  # 7.2.5
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.START)
 	phase_ended.emit(CardEnums.GamePhase.START)
 	_begin_main_phase()
@@ -121,6 +123,7 @@ func _begin_main_phase() -> void:
 	game_state.current_phase = CardEnums.GamePhase.MAIN
 	phase_started.emit(CardEnums.GamePhase.MAIN)
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
+	await action_handler.resolve_check_timing(game_state)  # 7.3.1
 
 	log_message.emit("Main Phase: Choose your actions")
 
@@ -152,6 +155,7 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 
 	# Execute the action (may await player choices from effects)
 	await action_handler.execute(action, params, game_state)
+	await action_handler.resolve_check_timing(game_state)  # 10.4.4.1
 
 	# Log the action
 	match action:
@@ -188,6 +192,7 @@ func _begin_counter_phase() -> void:
 	game_state.current_phase = CardEnums.GamePhase.COUNTER
 	phase_started.emit(CardEnums.GamePhase.COUNTER)
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await action_handler.resolve_check_timing(game_state)  # 7.4.1
 
 	var player := game_state.get_current_player()
 	var opponent := game_state.get_opponent_of_current()
@@ -201,6 +206,7 @@ func _begin_counter_phase() -> void:
 	if is_game_over:
 		return
 
+	await action_handler.resolve_check_timing(game_state)  # 7.4.4
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.COUNTER)
 	phase_ended.emit(CardEnums.GamePhase.COUNTER)
 	_begin_end_phase()
@@ -213,11 +219,14 @@ func _begin_end_phase() -> void:
 	game_state.current_phase = CardEnums.GamePhase.END
 	phase_started.emit(CardEnums.GamePhase.END)
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.END)
+	await action_handler.resolve_check_timing(game_state)  # 7.5.1
 
 	var player := game_state.get_current_player()
 	log_message.emit("End Phase: Monster at zone %d" % player.monster_zone)
 
-	await action_handler.execute_end_phase(game_state)
+	# Burst discard, then advance (7.5.2)
+	action_handler.execute_end_phase_burst_discard(game_state)
+	await action_handler.execute_end_phase_advance(game_state)
 
 	# Check win from end-phase advance
 	if is_game_over:
@@ -228,7 +237,13 @@ func _begin_end_phase() -> void:
 		_on_game_over(winner, "Victory through invasion!")
 		return
 
+	await action_handler.resolve_check_timing(game_state)  # 7.5.3
+
+	# Draw up to 5 cards (7.5.4)
+	action_handler.execute_end_phase_draw(game_state)
 	log_message.emit("Hand refilled to %d cards" % player.hand.size())
+
+	await action_handler.resolve_check_timing(game_state)  # 7.5.5
 
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.END)
 	phase_ended.emit(CardEnums.GamePhase.END)

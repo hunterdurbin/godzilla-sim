@@ -64,10 +64,9 @@ func execute_start_phase(state: GameState) -> void:
 	player.has_played_monster_this_turn = false
 
 
-func execute_end_phase(state: GameState) -> void:
+func execute_end_phase_burst_discard(state: GameState) -> void:
+	## Discard Burst monster at beginning of end phase and restore previous monster.
 	var player := state.get_current_player()
-
-	# Discard Burst monster at beginning of end phase and restore previous monster
 	if not player.burst_monster.is_empty():
 		var burst_card: Dictionary = player.burst_monster
 		player.discard_pile.append(burst_card)
@@ -80,7 +79,10 @@ func execute_end_phase(state: GameState) -> void:
 		player.monster_changed.emit()
 		player.discard_changed.emit()
 
-	# Advance monster if in zone <= 7
+
+func execute_end_phase_advance(state: GameState) -> void:
+	## Advance monster (7.5.2) and check crush rule.
+	var player := state.get_current_player()
 	if player.monster_zone <= 7:
 		var old_zone: int = player.monster_zone
 		player.monster_zone += 1
@@ -88,11 +90,12 @@ func execute_end_phase(state: GameState) -> void:
 		player.monster_changed.emit()
 		if effect_handler:
 			await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
-
-		# Check crush rule after advancing
 		await check_crush_rule(state)
 
-	# Draw up to 5 cards
+
+func execute_end_phase_draw(state: GameState) -> void:
+	## Draw up to 5 cards (7.5.4).
+	var player := state.get_current_player()
 	var drawn := player.draw_up_to(5)
 	if drawn.size() > 0:
 		cards_drawn.emit(player.player_id, drawn.size())
@@ -146,10 +149,24 @@ func resolve_counter(state: GameState) -> void:
 		counter_failed.emit(player.player_id, total_cp, threat)
 
 
+func resolve_check_timing(state: GameState) -> void:
+	## Resolve non-interrupt rule actions at a check timing (10.4.3).
+	## Per 10.4.3.1: resolve all rule actions simultaneously, repeat until none remain.
+	var changed := true
+	while changed:
+		changed = false
+		for pid in range(2):
+			if _resolve_illegal_cards(state.players[pid]):
+				changed = true
+			if _resolve_overloaded_cards(state.players[pid]):
+				changed = true
+
+
 func check_crush_rule(state: GameState) -> void:
-	## If any invading monster shares a zone with a battle card, destroy that battle card
-	for i in range(2):
-		await _check_crush_for_player(state, i)
+	## Interrupt type rule action (11.3): destroy battle cards sharing a zone with a monster.
+	## Per 11.1.2.1.1: turn player's interrupt rule actions resolve first.
+	await _check_crush_for_player(state, state.current_player_id)
+	await _check_crush_for_player(state, 1 - state.current_player_id)
 
 
 func _check_crush_for_player(state: GameState, player_id: int) -> void:
@@ -186,6 +203,48 @@ func _check_crush_for_player(state: GameState, player_id: int) -> void:
 
 	# Also check if the opponent's monster is in a zone with the opponent's battle card
 	# (This is handled when we call this for both players)
+
+
+func _resolve_illegal_cards(player: PlayerState) -> bool:
+	## Rule 11.4 - Illegal Cards (non-interrupt rule action).
+	## Strategy cards in zones that are not stacked under a battle/monster card → discard.
+	## Non-strategy cards in strategy zones → discard.
+	var changed := false
+
+	# Check zones: strategy cards not stacked under another card are illegal
+	for i in range(8):
+		if player.is_zone_empty(i):
+			continue
+		var top_card := player.get_zone_top_card(i)
+		if top_card.get("card_type") == CardEnums.CardType.STRATEGY:
+			var stack: Array = player.clear_zone(i)
+			player.discard_pile.append_array(stack)
+			changed = true
+
+	# Check strategy zones: non-strategy cards are illegal
+	for i in range(2):
+		if player.strategy_zones[i].is_empty():
+			continue
+		if player.strategy_zones[i].get("card_type") != CardEnums.CardType.STRATEGY:
+			player.discard_pile.append(player.strategy_zones[i])
+			player.strategy_zones[i] = {}
+			changed = true
+
+	if changed:
+		player.zones_changed.emit()
+		player.strategy_zones_changed.emit()
+		player.discard_changed.emit()
+	return changed
+
+
+func _resolve_overloaded_cards(player: PlayerState) -> bool:
+	## Rule 11.5 - Overloaded Cards (non-interrupt rule action).
+	## If any zone has multiple battle cards not in a stack, or any strategy zone has
+	## multiple strategy cards, keep the last placed and destroy the rest.
+	## In practice: our zones use stacks (single Array per zone) and strategy zones hold
+	## single cards, so this can only occur if a card effect places cards irregularly.
+	## Currently a no-op safety check for future expansion.
+	return false
 
 
 func _get_retreat_zone(current_zone: int) -> int:
