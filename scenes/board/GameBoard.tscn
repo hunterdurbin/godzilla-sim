@@ -188,10 +188,18 @@ text = "Search your deck:"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 16
 
-[node name="ShowAllToggle" type="CheckButton" parent="DeckSearchOverlay/DeckSearchPanel/VBox"]
+[node name="ToggleRow" type="HBoxContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox"]
 layout_mode = 2
-size_flags_horizontal = 4
+alignment = 2
+theme_override_constants/separation = 20
+
+[node name="ShowAllToggle" type="CheckButton" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow"]
+layout_mode = 2
 text = "Show entire deck"
+
+[node name="StackedToggle" type="CheckButton" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow"]
+layout_mode = 2
+text = "Stacked"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox"]
 layout_mode = 2
@@ -244,6 +252,11 @@ layout_mode = 2
 text = "Discard Pile"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 16
+
+[node name="StackedToggle" type="CheckButton" parent="DiscardViewOverlay/DiscardViewPanel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Stacked"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="DiscardViewOverlay/DiscardViewPanel/VBox"]
 layout_mode = 2

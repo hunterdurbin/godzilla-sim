@@ -45,18 +45,23 @@ var _client_playable: Dictionary = {}  # Playable card/zone indices from host
 @onready var deck_search_prompt: Label = $DeckSearchOverlay/DeckSearchPanel/VBox/PromptLabel
 @onready var deck_search_grid: GridContainer = $DeckSearchOverlay/DeckSearchPanel/VBox/ScrollContainer/CardGrid
 @onready var deck_search_skip: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/SkipButton
-@onready var deck_search_show_all: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ShowAllToggle
+@onready var deck_search_show_all: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ShowAllToggle
+@onready var deck_search_stacked: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/StackedToggle
 
 # Discard view UI references
 @onready var discard_view_overlay: Control = $DiscardViewOverlay
 @onready var discard_view_title: Label = $DiscardViewOverlay/DiscardViewPanel/VBox/TitleLabel
 @onready var discard_view_grid: GridContainer = $DiscardViewOverlay/DiscardViewPanel/VBox/ScrollContainer/CardGrid
 @onready var discard_view_close: Button = $DiscardViewOverlay/DiscardViewPanel/VBox/CloseButton
+@onready var discard_view_stacked: CheckButton = $DiscardViewOverlay/DiscardViewPanel/VBox/StackedToggle
 
-# Stored deck search data for toggling between matching/all
+# Stored deck search data for toggling between matching/all/stacked
 var _deck_search_matching: Array[Dictionary] = []
 var _deck_search_all: Array[Dictionary] = []
 var _deck_search_matching_ids: Dictionary = {}  # card id -> true, for highlighting
+
+# Stored discard view data for stacked toggle
+var _discard_view_cards: Array[Dictionary] = []
 
 # State tracking
 var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
@@ -133,12 +138,14 @@ func _ready() -> void:
 
 	# Connect deck search buttons
 	deck_search_skip.pressed.connect(_on_deck_search_skip)
-	deck_search_show_all.toggled.connect(_on_deck_search_show_all_toggled)
+	deck_search_show_all.toggled.connect(_on_deck_search_toggled)
+	deck_search_stacked.toggled.connect(_on_deck_search_toggled)
 
 	# Connect discard view
 	player1_board.discard_clicked.connect(_on_discard_clicked)
 	player2_board.discard_clicked.connect(_on_discard_clicked)
 	discard_view_close.pressed.connect(_hide_discard_view)
+	discard_view_stacked.toggled.connect(_on_discard_view_stacked_toggled)
 
 	# Hide overlays and prompts
 	end_game_panel.visible = false
@@ -758,38 +765,55 @@ func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary]
 
 	deck_search_prompt.text = prompt
 	deck_search_show_all.set_pressed_no_signal(false)
+	deck_search_stacked.set_pressed_no_signal(false)
 	deck_search_overlay.visible = true
 
-	_populate_deck_search_grid(matching, true)
+	_refresh_deck_search_grid()
 
 
-func _populate_deck_search_grid(cards: Array[Dictionary], all_selectable: bool) -> void:
-	# Clear any previous cards from the grid
-	for child in deck_search_grid.get_children():
-		if child.card_clicked.is_connected(_on_deck_search_card_clicked):
-			child.card_clicked.disconnect(_on_deck_search_card_clicked)
-		child.queue_free()
+func _refresh_deck_search_grid() -> void:
+	var show_all := deck_search_show_all.button_pressed
+	var stacked := deck_search_stacked.button_pressed
+	var cards: Array[Dictionary] = _deck_search_all if show_all else _deck_search_matching
+	var all_selectable: bool = not show_all
 
-	# Populate grid with card instances
-	for card_data in cards:
-		var card: Control = card_scene.instantiate()
-		if card.has_method("set_card_data_dict"):
-			card.set_card_data_dict(card_data)
-		card.drag_enabled = false
-		var is_match: bool = all_selectable or _deck_search_matching_ids.has(card_data.get("id", ""))
-		card.is_selectable = is_match
-		if is_match:
-			card.card_clicked.connect(_on_deck_search_card_clicked)
-		else:
-			card.modulate = Color(0.5, 0.5, 0.5, 0.7)
-		deck_search_grid.add_child(card)
+	# Clear previous cards
+	_clear_grid(deck_search_grid, _on_deck_search_card_clicked)
 
-
-func _on_deck_search_show_all_toggled(show_all: bool) -> void:
-	if show_all:
-		_populate_deck_search_grid(_deck_search_all, false)
+	if stacked:
+		var groups := _group_cards(cards)
+		for group in groups:
+			var card_data: Dictionary = group["card_data"]
+			var count: int = group["count"]
+			var card: Control = card_scene.instantiate()
+			if card.has_method("set_card_data_dict"):
+				card.set_card_data_dict(card_data)
+			card.drag_enabled = false
+			var is_match: bool = all_selectable or group["has_match"]
+			card.is_selectable = is_match
+			if is_match:
+				card.card_clicked.connect(_on_deck_search_card_clicked)
+			else:
+				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
+			deck_search_grid.add_child(card)
+			_add_count_badge(card, count)
 	else:
-		_populate_deck_search_grid(_deck_search_matching, true)
+		for card_data in cards:
+			var card: Control = card_scene.instantiate()
+			if card.has_method("set_card_data_dict"):
+				card.set_card_data_dict(card_data)
+			card.drag_enabled = false
+			var is_match: bool = all_selectable or _deck_search_matching_ids.has(card_data.get("id", ""))
+			card.is_selectable = is_match
+			if is_match:
+				card.card_clicked.connect(_on_deck_search_card_clicked)
+			else:
+				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
+			deck_search_grid.add_child(card)
+
+
+func _on_deck_search_toggled(_value: bool) -> void:
+	_refresh_deck_search_grid()
 
 
 func _on_deck_search_card_clicked(card: Control) -> void:
@@ -805,10 +829,7 @@ func _on_deck_search_skip() -> void:
 
 func _hide_deck_search() -> void:
 	deck_search_overlay.visible = false
-	for child in deck_search_grid.get_children():
-		if child.card_clicked.is_connected(_on_deck_search_card_clicked):
-			child.card_clicked.disconnect(_on_deck_search_card_clicked)
-		child.queue_free()
+	_clear_grid(deck_search_grid, _on_deck_search_card_clicked)
 	_deck_search_matching.clear()
 	_deck_search_all.clear()
 	_deck_search_matching_ids.clear()
@@ -818,36 +839,109 @@ func _hide_deck_search() -> void:
 
 func _on_discard_clicked(pid: int) -> void:
 	var player := _get_player_state(pid)
-	var title := "Player %d Discard Pile (%d)" % [pid + 1, player.discard_pile.size()]
-	_show_discard_view(player.discard_pile, title)
+	_discard_view_cards = player.discard_pile.duplicate(true)
+	var title := "Player %d Discard Pile (%d)" % [pid + 1, _discard_view_cards.size()]
+	discard_view_title.text = title
+	discard_view_stacked.set_pressed_no_signal(false)
+	discard_view_overlay.visible = true
+	_refresh_discard_view_grid()
 
 
-func _show_discard_view(cards: Array[Dictionary], title: String) -> void:
+func _refresh_discard_view_grid() -> void:
+	var stacked := discard_view_stacked.button_pressed
+
 	for child in discard_view_grid.get_children():
 		child.queue_free()
 
-	discard_view_title.text = title
-	discard_view_overlay.visible = true
-
-	if cards.is_empty():
+	if _discard_view_cards.is_empty():
 		var empty_label := Label.new()
 		empty_label.text = "No cards in discard pile."
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		discard_view_grid.add_child(empty_label)
 		return
 
-	for card_data in cards:
-		var card: Control = card_scene.instantiate()
-		if card.has_method("set_card_data_dict"):
-			card.set_card_data_dict(card_data)
-		card.is_selectable = false
-		card.drag_enabled = false
-		discard_view_grid.add_child(card)
+	if stacked:
+		var groups := _group_cards(_discard_view_cards)
+		for group in groups:
+			var card: Control = card_scene.instantiate()
+			if card.has_method("set_card_data_dict"):
+				card.set_card_data_dict(group["card_data"])
+			card.is_selectable = false
+			card.drag_enabled = false
+			discard_view_grid.add_child(card)
+			_add_count_badge(card, group["count"])
+	else:
+		for card_data in _discard_view_cards:
+			var card: Control = card_scene.instantiate()
+			if card.has_method("set_card_data_dict"):
+				card.set_card_data_dict(card_data)
+			card.is_selectable = false
+			card.drag_enabled = false
+			discard_view_grid.add_child(card)
+
+
+func _on_discard_view_stacked_toggled(_value: bool) -> void:
+	_refresh_discard_view_grid()
 
 
 func _hide_discard_view() -> void:
 	discard_view_overlay.visible = false
 	for child in discard_view_grid.get_children():
+		child.queue_free()
+	_discard_view_cards.clear()
+
+
+# --- Card grid helpers ---
+
+func _get_card_template_id(card_data: Dictionary) -> String:
+	## Extract the template card number from an instance ID.
+	## Instance IDs: "EBP01-001_1_0" -> "EBP01-001", Monster IDs: "EBP01-001" -> "EBP01-001"
+	var id: String = card_data.get("id", "")
+	var parts := id.split("_")
+	return parts[0] if not parts.is_empty() else id
+
+
+func _group_cards(cards: Array[Dictionary]) -> Array[Dictionary]:
+	## Group cards by template ID. Returns Array of {card_data, count, has_match}.
+	var groups: Dictionary = {}  # template_id -> {card_data, count, has_match}
+	var order: Array[String] = []  # Preserve first-seen order
+	for card_data in cards:
+		var tid := _get_card_template_id(card_data)
+		if groups.has(tid):
+			groups[tid]["count"] += 1
+			if _deck_search_matching_ids.has(card_data.get("id", "")):
+				groups[tid]["has_match"] = true
+		else:
+			groups[tid] = {
+				"card_data": card_data,
+				"count": 1,
+				"has_match": _deck_search_matching_ids.has(card_data.get("id", "")),
+			}
+			order.append(tid)
+
+	var result: Array[Dictionary] = []
+	for tid in order:
+		result.append(groups[tid])
+	return result
+
+
+func _add_count_badge(card: Control, count: int) -> void:
+	if count <= 1:
+		return
+	var badge := Label.new()
+	badge.text = "x%d" % count
+	badge.add_theme_font_size_override("font_size", 16)
+	badge.add_theme_color_override("font_color", Color.WHITE)
+	badge.add_theme_color_override("font_outline_color", Color.BLACK)
+	badge.add_theme_constant_override("outline_size", 4)
+	badge.position = Vector2(4, 4)
+	card.add_child(badge)
+
+
+func _clear_grid(grid: GridContainer, click_handler: Callable) -> void:
+	for child in grid.get_children():
+		if "card_clicked" in child and child.card_clicked.is_connected(click_handler):
+			child.card_clicked.disconnect(click_handler)
 		child.queue_free()
 
 
