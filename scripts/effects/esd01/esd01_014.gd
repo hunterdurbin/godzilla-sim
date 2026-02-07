@@ -12,21 +12,21 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	var player := ctx.owner
-	# Search deck for a battle card named "Godzilla(2023)"
-	for i in range(player.main_deck.size()):
-		var card: Dictionary = player.main_deck[i]
-		if card.get("name", "") == "Godzilla(2023)" \
-				and card.get("card_type") == CardEnums.CardType.BATTLE:
-			# Found one — play it to an empty zone
-			var empty_zones := player.get_empty_zone_indices()
-			if empty_zones.is_empty():
-				return
-			player.main_deck.remove_at(i)
-			var target_zone: int = empty_zones[0]
-			player.zones[target_zone] = card
-			player.main_deck.shuffle()
-			player.zones_changed.emit()
-			player.deck_changed.emit()
-			# Trigger enter on the newly played card
-			ctx.effect_handler.trigger_enter(player.player_id, card)
-			return
+	var empty_zones := player.get_empty_zone_indices()
+	if empty_zones.is_empty():
+		return
+
+	var selected := await ctx.effect_handler.search_deck(
+		player.player_id,
+		func(card: Dictionary) -> bool:
+			return card.get("name", "") == "Godzilla(2023)" \
+				and card.get("card_type") == CardEnums.CardType.BATTLE,
+		"Search for a Godzilla(2023) battle card to play"
+	)
+	if not selected.is_empty():
+		# Play it to the first empty zone
+		var target_zone: int = empty_zones[0]
+		player.zones[target_zone] = selected
+		player.zones_changed.emit()
+		# Trigger enter on the newly played card
+		await ctx.effect_handler.trigger_enter(player.player_id, selected)

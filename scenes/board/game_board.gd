@@ -40,6 +40,12 @@ var _client_playable: Dictionary = {}  # Playable card/zone indices from host
 @onready var btn_invade: Button = $VBoxContainer/BottomHUD/ActionPanel/Row2/Invade
 @onready var btn_pass: Button = $VBoxContainer/BottomHUD/ActionPanel/Row2/Pass
 
+# Deck search UI references
+@onready var deck_search_overlay: Control = $DeckSearchOverlay
+@onready var deck_search_prompt: Label = $DeckSearchOverlay/DeckSearchPanel/VBox/PromptLabel
+@onready var deck_search_grid: GridContainer = $DeckSearchOverlay/DeckSearchPanel/VBox/ScrollContainer/CardGrid
+@onready var deck_search_skip: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/SkipButton
+
 # State tracking
 var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var waiting_for_card_select: bool = false
@@ -82,6 +88,9 @@ func _ready() -> void:
 		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
 		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
+
+		# Connect effect handler signals for player choice UIs
+		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
 	else:
 		# Client: initialize empty client state, wait for host RPCs
 		_client_players = [PlayerState.new(0), PlayerState.new(1)]
@@ -104,9 +113,13 @@ func _ready() -> void:
 	if is_multiplayer_game:
 		NetworkManager.player_disconnected.connect(_on_opponent_disconnected)
 
-	# Hide end game panel and card select prompt
+	# Connect deck search skip button
+	deck_search_skip.pressed.connect(_on_deck_search_skip)
+
+	# Hide overlays and prompts
 	end_game_panel.visible = false
 	card_select_prompt.visible = false
+	deck_search_overlay.visible = false
 
 	# Position hands over hand spaces (deferred so layout is resolved)
 	call_deferred("_position_hands")
@@ -691,6 +704,65 @@ func _on_hand_drag_ended(card: Control) -> void:
 	_drag_valid_zones = []
 
 
+# --- Deck search UI ---
+
+func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], prompt: String) -> void:
+	if is_multiplayer_game and player_id != local_player_id:
+		# Forward to the remote client who needs to make the choice
+		var cards_json := JSON.stringify(matching_cards)
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				_rpc_deck_search_requested.rpc_id(peer_id, cards_json, prompt)
+		return
+	_show_deck_search(matching_cards, prompt)
+
+
+func _show_deck_search(cards: Array[Dictionary], prompt: String) -> void:
+	# Clear any previous cards from the grid
+	for child in deck_search_grid.get_children():
+		child.queue_free()
+
+	deck_search_prompt.text = prompt
+	deck_search_overlay.visible = true
+
+	# Populate grid with selectable card instances
+	for card_data in cards:
+		var card: Control = card_scene.instantiate()
+		if card.has_method("set_card_data_dict"):
+			card.set_card_data_dict(card_data)
+		card.is_selectable = true
+		card.drag_enabled = false
+		card.card_clicked.connect(_on_deck_search_card_clicked)
+		deck_search_grid.add_child(card)
+
+
+func _on_deck_search_card_clicked(card: Control) -> void:
+	var selected: Dictionary = card.card_data if "card_data" in card else {}
+	_hide_deck_search()
+	_resolve_deck_search_local(selected)
+
+
+func _on_deck_search_skip() -> void:
+	_hide_deck_search()
+	_resolve_deck_search_local({})
+
+
+func _hide_deck_search() -> void:
+	deck_search_overlay.visible = false
+	for child in deck_search_grid.get_children():
+		if child.card_clicked.is_connected(_on_deck_search_card_clicked):
+			child.card_clicked.disconnect(_on_deck_search_card_clicked)
+		child.queue_free()
+
+
+func _resolve_deck_search_local(selected: Dictionary) -> void:
+	if is_multiplayer_game and not NetworkManager.is_host():
+		# Client sends selection back to host
+		_rpc_deck_search_resolved.rpc_id(1, JSON.stringify(selected))
+	else:
+		turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
+
+
 # --- Multiplayer: State broadcast (host -> client) ---
 
 func _broadcast_state() -> void:
@@ -830,6 +902,29 @@ func _rpc_receive_log(text: String) -> void:
 	if log_output:
 		log_output.append_text(text + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
+
+
+## Host -> Client: deck search request (player must choose a card)
+@rpc("authority", "call_remote", "reliable")
+func _rpc_deck_search_requested(cards_json: String, prompt: String) -> void:
+	var cards: Array = JSON.parse_string(cards_json)
+	var typed_cards: Array[Dictionary] = []
+	for c in cards:
+		typed_cards.append(c)
+	_show_deck_search(typed_cards, prompt)
+
+
+## Client -> Host: deck search resolved (player chose a card or skipped)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_deck_search_resolved(selected_json: String) -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	var selected: Dictionary = {}
+	if not selected_json.is_empty():
+		selected = JSON.parse_string(selected_json)
+		if selected == null:
+			selected = {}
+	turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
 
 
 ## Host -> Client: game over

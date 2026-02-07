@@ -12,8 +12,17 @@ signal hand_discard_requested(player_id: int, discard_count: int)
 ## Emitted internally after resolve_hand_discard() processes the selection.
 signal _hand_discard_resolved()
 
+## Emitted when a player must choose a card from their deck during a search effect.
+## Connect from presentation layer to show a deck search selection UI.
+## Call resolve_deck_search() with the chosen card when done.
+signal deck_search_requested(player_id: int, matching_cards: Array[Dictionary], prompt: String)
+
+## Emitted internally after resolve_deck_search() stores the selection.
+signal _deck_search_resolved()
+
 var game_state: GameState
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
+var _deck_search_result: Dictionary = {}
 
 
 func setup(p_game_state: GameState) -> void:
@@ -236,6 +245,45 @@ func resolve_hand_discard(player_id: int, hand_indices: Array[int]) -> void:
 	player.hand_changed.emit()
 	player.discard_changed.emit()
 	_hand_discard_resolved.emit()
+
+
+func search_deck(player_id: int, filter: Callable, prompt: String) -> Dictionary:
+	## Search a player's deck for cards matching filter. Shows UI for player choice.
+	## Returns the selected card (already removed from deck, deck shuffled).
+	## Returns empty dict if no matches found or player skips.
+	var player := game_state.players[player_id]
+	var matching: Array[Dictionary] = []
+	for card in player.main_deck:
+		if filter.call(card):
+			matching.append(card)
+
+	if matching.is_empty():
+		return {}
+
+	var selected: Dictionary = {}
+	if deck_search_requested.get_connections().size() > 0:
+		deck_search_requested.emit(player_id, matching, prompt)
+		await _deck_search_resolved
+		selected = _deck_search_result
+	else:
+		# Fallback: auto-pick first match
+		selected = matching[0]
+
+	if not selected.is_empty():
+		var card_id: String = selected.get("id", "")
+		for i in range(player.main_deck.size()):
+			if player.main_deck[i].get("id") == card_id:
+				player.main_deck.remove_at(i)
+				break
+	player.main_deck.shuffle()
+	player.deck_changed.emit()
+	return selected
+
+
+func resolve_deck_search(selected_card: Dictionary) -> void:
+	## Called by the presentation layer after the player selects a card from the search.
+	_deck_search_result = selected_card
+	_deck_search_resolved.emit()
 
 
 # --- Modifier queries ---

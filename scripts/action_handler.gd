@@ -107,10 +107,11 @@ func resolve_counter(state: GameState) -> void:
 	if total_cp >= threat:
 		counter_succeeded.emit(player.player_id, total_cp, threat)
 
-		# If opponent's monster is in zone 6, 7, or 8 -> retreat one zone
-		if opponent.monster_zone >= 6:
+		# Retreat monster to its retreat zone
+		var retreat_zone: int = _get_retreat_zone(opponent.monster_zone)
+		if retreat_zone != opponent.monster_zone:
 			var old_zone: int = opponent.monster_zone
-			opponent.monster_zone -= 1
+			opponent.monster_zone = retreat_zone
 			monster_advanced.emit(opponent.player_id, old_zone, opponent.monster_zone)
 			opponent.monster_changed.emit()
 
@@ -180,6 +181,22 @@ func _check_crush_for_player(state: GameState, player_id: int) -> void:
 
 	# Also check if the opponent's monster is in a zone with the opponent's battle card
 	# (This is handled when we call this for both players)
+
+
+func _get_retreat_zone(current_zone: int) -> int:
+	## Get the zone a monster retreats to when countered.
+	## Back row (1-5): retreat to previous back row zone.
+	## Front row (6-8): retreat to same-column back row zone.
+	match current_zone:
+		1: return 1
+		2: return 1
+		3: return 2
+		4: return 3
+		5: return 4
+		6: return 5
+		7: return 4
+		8: return 3
+	return current_zone
 
 
 # --- Private action implementations ---

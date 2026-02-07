@@ -12,18 +12,16 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 
 func _search_for_burst_godzilla(ctx: EffectContext) -> void:
 	var player := ctx.owner
-	# Search deck for a rank 3 Godzilla(2023) monster with Burst
-	for i in range(player.main_deck.size()):
-		var card: Dictionary = player.main_deck[i]
-		if card.get("name", "") == "Godzilla(2023)" \
-				and card.get("rank", 0) == 3 \
-				and card.get("card_type") == CardEnums.CardType.MONSTER:
-			# Check if it has Burst by checking the effect script
+	var selected := await ctx.effect_handler.search_deck(
+		player.player_id,
+		func(card: Dictionary) -> bool:
+			if card.get("name", "") != "Godzilla(2023)": return false
+			if card.get("rank", 0) != 3: return false
+			if card.get("card_type") != CardEnums.CardType.MONSTER: return false
 			var effect := ctx.effect_handler.get_effect(card)
-			if effect and effect.get_burst_rank() >= 0:
-				player.main_deck.remove_at(i)
-				player.hand.append(card)
-				player.main_deck.shuffle()
-				player.hand_changed.emit()
-				player.deck_changed.emit()
-				return
+			return effect != null and effect.get_burst_rank() >= 0,
+		"Search for a Rank III Godzilla(2023) with Burst"
+	)
+	if not selected.is_empty():
+		player.hand.append(selected)
+		player.hand_changed.emit()
