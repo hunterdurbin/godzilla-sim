@@ -34,6 +34,8 @@ var discard_display: Control
 var monster_info_display: Control
 var monster_deck_count_label: Label
 var player_label: Label
+var cp_label: Label
+var threat_label: Label
 
 
 func _ready() -> void:
@@ -89,6 +91,9 @@ func _setup_references() -> void:
 	monster_info_display = find_child("MonsterInfo", true, false) as Control
 	monster_deck_count_label = find_child("MonsterDeckCount", true, false) as Label
 	player_label = find_child("PlayerLabel", true, false) as Label
+
+	cp_label = find_child("CPLabel", true, false) as Label
+	threat_label = find_child("ThreatLabel", true, false) as Label
 
 	if player_label:
 		player_label.text = "Player %d" % (player_id + 1)
@@ -227,6 +232,10 @@ func _sync_info(state: PlayerState) -> void:
 		discard_count_label.text = "%d" % state.discard_pile.size()
 	if monster_deck_count_label:
 		monster_deck_count_label.text = "Deck: %d" % state.monster_deck.size()
+	if cp_label:
+		cp_label.text = "%d" % state.get_total_counter_power()
+	if threat_label:
+		threat_label.text = "%d" % state.get_threat_level()
 
 
 func set_hand_face_down(face_down: bool) -> void:

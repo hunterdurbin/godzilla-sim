@@ -76,6 +76,41 @@ vertical_alignment = 1
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
 
+[node name="StatsDisplay" type="VBoxContainer" parent="Rows/FrontRow/LeftInfo"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CPTitle" type="Label" parent="Rows/FrontRow/LeftInfo/StatsDisplay"]
+layout_mode = 2
+text = "CP"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(0.3, 0.7, 1.0, 1)
+
+[node name="CPLabel" type="Label" parent="Rows/FrontRow/LeftInfo/StatsDisplay"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.4, 0.8, 1.0, 1)
+
+[node name="ThreatTitle" type="Label" parent="Rows/FrontRow/LeftInfo/StatsDisplay"]
+layout_mode = 2
+text = "Threat"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 9
+theme_override_colors/font_color = Color(1.0, 0.5, 0.2, 1)
+
+[node name="ThreatLabel" type="Label" parent="Rows/FrontRow/LeftInfo/StatsDisplay"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1.0, 0.6, 0.3, 1)
+
 [node name="Zone8" parent="Rows/FrontRow" instance=ExtResource("2_slot")]
 layout_mode = 2
 size_flags_horizontal = 3
