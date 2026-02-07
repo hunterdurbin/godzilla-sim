@@ -43,6 +43,11 @@ func _ready() -> void:
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
 	gui_input.connect(_on_gui_input)
+	# Ensure slot children don't block mouse events from reaching this Control
+	if has_node("Background"):
+		$Background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if has_node("Label"):
+		$Label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
 func _notification(what: int) -> void:
@@ -104,8 +109,8 @@ func place_card(card: Control, animate: bool = true) -> bool:
 	_fit_card_in_slot(card, animate)
 
 	card.z_index = 0
-	# Let clicks pass through the card to reach the slot's gui_input
-	card.mouse_filter = Control.MOUSE_FILTER_PASS
+	# Make card and all children transparent to mouse so slot handles all input
+	_set_mouse_filter_recursive(card, Control.MOUSE_FILTER_IGNORE)
 
 	if card.has_signal("drag_started"):
 		card.drag_started.connect(_on_card_drag_started)
@@ -171,6 +176,7 @@ func remove_card(destroy: bool = false) -> Control:
 	if destroy:
 		card.queue_free()
 	else:
+		_set_mouse_filter_recursive(card, Control.MOUSE_FILTER_STOP)
 		remove_child(card)
 
 	_update_visual_state()
@@ -298,3 +304,10 @@ func _on_gui_input(event: InputEvent) -> void:
 			slot_clicked.emit(zone_number, player_id)
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
 			slot_right_clicked.emit(zone_number, player_id)
+
+
+func _set_mouse_filter_recursive(node: Control, filter: MouseFilter) -> void:
+	node.mouse_filter = filter
+	for child in node.get_children():
+		if child is Control:
+			_set_mouse_filter_recursive(child, filter)
