@@ -25,6 +25,7 @@ var monster_card_zone: int = -1  # Zone index (0-7) where monster card is curren
 var deck_count_label: Label
 var discard_count_label: Label
 var rage_label: Label
+var rage_display: Control
 var player_label: Label
 
 
@@ -67,6 +68,7 @@ func _setup_references() -> void:
 	deck_count_label = find_child("DeckCount", true, false) as Label
 	discard_count_label = find_child("DiscardCount", true, false) as Label
 	rage_label = find_child("RageLabel", true, false) as Label
+	rage_display = find_child("RageDisplay", true, false) as Control
 	player_label = find_child("PlayerLabel", true, false) as Label
 
 	if player_label:
@@ -218,6 +220,14 @@ func highlight_strategy_zones() -> void:
 			slot.set_highlighted(true)
 
 
+func highlight_rage_zone(highlight: bool) -> void:
+	if rage_display:
+		if highlight:
+			rage_display.modulate = Color(1.2, 1.5, 1.2, 1.0)
+		else:
+			rage_display.modulate = Color.WHITE
+
+
 func clear_highlights() -> void:
 	for slot in zone_slots:
 		if slot:
@@ -225,6 +235,7 @@ func clear_highlights() -> void:
 	for slot in strategy_slots:
 		if slot:
 			slot.set_highlighted(false)
+	highlight_rage_zone(false)
 
 
 func _apply_spacing() -> void:

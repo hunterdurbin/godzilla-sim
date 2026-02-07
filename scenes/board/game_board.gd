@@ -73,6 +73,7 @@ var selected_card_id: String = ""
 var _drag_card: Control = null
 var _drag_valid_zones: Array[int] = []
 var _drag_action: CardEnums.ActionType = CardEnums.ActionType.PASS
+var _drag_can_rage: bool = false
 
 
 func _ready() -> void:
@@ -690,6 +691,7 @@ func _on_hand_drag_started(card: Control) -> void:
 	_drag_card = card
 	_drag_valid_zones = []
 	_drag_action = CardEnums.ActionType.PASS
+	_drag_can_rage = false
 
 	if card_type == CardEnums.CardType.BATTLE:
 		var card_id: String = card_data.get("id", "")
@@ -712,17 +714,25 @@ func _on_hand_drag_started(card: Control) -> void:
 		var card_id: String = card_data.get("id", "")
 		var hand_idx := _find_hand_index_by_id(card_id)
 		if hand_idx >= 0:
+			# Check if this monster can be played onto the current monster
 			var playable_monsters: Array[int] = []
 			if turn_manager:
 				playable_monsters = turn_manager.rules_engine.get_playable_monsters(player)
 			else:
 				playable_monsters.assign(_client_playable.get("monster_cards", []))
 			if hand_idx in playable_monsters:
-				# Highlight the monster's current zone as the drop target
 				var monster_zone_idx: int = player.monster_zone - 1
 				if monster_zone_idx >= 0 and monster_zone_idx < 8:
 					_drag_valid_zones = [monster_zone_idx]
 					_drag_action = CardEnums.ActionType.PLAY_MONSTER
+			# Any monster card can also be discarded for rage
+			var rage_cards: Array[int] = []
+			if turn_manager:
+				rage_cards = turn_manager.rules_engine.get_monster_cards_for_rage(player)
+			else:
+				rage_cards.assign(_client_playable.get("rage_cards", []))
+			if hand_idx in rage_cards:
+				_drag_can_rage = true
 
 	elif card_type == CardEnums.CardType.STRATEGY:
 		var card_id: String = card_data.get("id", "")
@@ -738,8 +748,10 @@ func _on_hand_drag_started(card: Control) -> void:
 
 	if not _drag_valid_zones.is_empty():
 		board.highlight_valid_zones(_drag_valid_zones)
-	elif _drag_action == CardEnums.ActionType.PLAY_STRATEGY:
+	if _drag_action == CardEnums.ActionType.PLAY_STRATEGY:
 		board.highlight_strategy_zones()
+	if _drag_can_rage:
+		board.highlight_rage_zone(true)
 
 
 func _on_hand_drag_ended(card: Control) -> void:
@@ -748,14 +760,29 @@ func _on_hand_drag_ended(card: Control) -> void:
 	if board:
 		board.clear_highlights()
 
-	var has_drag_target := not _drag_valid_zones.is_empty() or _drag_action == CardEnums.ActionType.PLAY_STRATEGY
+	var has_drag_target := not _drag_valid_zones.is_empty() or _drag_action == CardEnums.ActionType.PLAY_STRATEGY or _drag_can_rage
 	if _drag_card != card or not has_drag_target:
 		_drag_card = null
 		_drag_valid_zones = []
+		_drag_can_rage = false
 		return
 
 	var mouse_pos := get_global_mouse_position()
 	if board:
+		# Check rage zone drop (monster cards discarded for rage)
+		if _drag_can_rage and board.rage_display:
+			var rage_rect := Rect2(board.rage_display.global_position, board.rage_display.size)
+			if rage_rect.has_point(mouse_pos):
+				var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
+				var hand_idx := _find_hand_index_by_id(card_id)
+				if hand_idx >= 0:
+					board.hand_manager.drop_handled = true
+					_drag_card = null
+					_drag_valid_zones = []
+					_drag_can_rage = false
+					_submit_action(CardEnums.ActionType.GAIN_RAGE, {"hand_index": hand_idx})
+					return
+
 		# Strategy cards target strategy slots (auto-placed, no zone_index needed)
 		if _drag_action == CardEnums.ActionType.PLAY_STRATEGY:
 			for slot in board.strategy_slots:
@@ -794,6 +821,7 @@ func _on_hand_drag_ended(card: Control) -> void:
 
 	_drag_card = null
 	_drag_valid_zones = []
+	_drag_can_rage = false
 
 
 # --- Deck search UI ---
