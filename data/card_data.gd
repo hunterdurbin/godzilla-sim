@@ -2909,7 +2909,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 15000,
 		"invasion_icon": 2,
-		"description": "<Enter> <Destroy> 1 of your opponent's rank 4 or lower battle cards."
+		"description": "<Enter> <Destroy> 1 of your opponent's rank 4 or lower battle cards.",
+		"effect_script": "res://scripts/effects/esd02/esd02_002.gd"
 	},
 	{
 		"id": "ESD02-003",
@@ -2920,7 +2921,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 18000,
 		"invasion_icon": 1,
-		"description": "<Enter> :Play 2 rank 4 or lower battle cards with <Evolution> from your discard pile in zones adjacent to this card.\n(For example, if this card is in zone 7, the adjacent zones are 4, 6, and 8.)"
+		"description": "<Enter> :Play 2 rank 4 or lower battle cards with <Evolution> from your discard pile in zones adjacent to this card.\n(For example, if this card is in zone 7, the adjacent zones are 4, 6, and 8.)",
+		"effect_script": "res://scripts/effects/esd02/esd02_003.gd"
 	},
 	{
 		"id": "ESD02-004",
@@ -2931,7 +2933,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 35000,
 		"invasion_icon": 1,
-		"description": "<When Invading> Discard 1 battle card from your hand： <Destroy> all of your opponent's battle cards with a rank equal to or lower than the discarded card’s rank."
+		"description": "<When Invading> Discard 1 battle card from your hand： <Destroy> all of your opponent's battle cards with a rank equal to or lower than the discarded card's rank.",
+		"effect_script": "res://scripts/effects/esd02/esd02_004.gd"
 	},
 	{
 		"id": "ESD02-005",
@@ -2942,7 +2945,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 20000,
 		"invasion_icon": 1,
-		"description": "<When Invading> Reduce your opponent’s <Rage> by 1. (If you invaded 2 zones, activate this effect 2 times.)"
+		"description": "<When Invading> Reduce your opponent's <Rage> by 1. (If you invaded 2 zones, activate this effect 2 times.)",
+		"effect_script": "res://scripts/effects/esd02/esd02_005.gd"
 	},
 	{
 		"id": "ESD02-006",
@@ -2953,7 +2957,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 36000,
 		"invasion_icon": 1,
-		"description": "For each strategy card your opponent has in play, this card gains +5000 threat level."
+		"description": "For each strategy card your opponent has in play, this card gains +5000 threat level.",
+		"effect_script": "res://scripts/effects/esd02/esd02_006.gd"
 	},
 	{
 		"id": "ESD02-007",
@@ -2964,7 +2969,10 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MOTHRA],
 		"counter_power": 1000,
 		"invasion_icon": 1,
-		"description": "<Evolution5> <《Mothra》> At the beginning of your main phase, you may search your deck for a rank 5 or lower <《Mothra》> battle card and play it by stacking it on top of this card. Search for 「Mothra(imago)(1992)」 rank 5 counter power 5000 and you may place it on top of this card)"
+		"description": "<Evolution5> <《Mothra》> At the beginning of your main phase, you may search your deck for a rank 5 or lower <《Mothra》> battle card and play it by stacking it on top of this card. Search for 「Mothra(imago)(1992)」 rank 5 counter power 5000 and you may place it on top of this card)",
+		"effect_script": "res://scripts/effects/esd02/esd02_007.gd",
+		"evolution_rank": 5,
+		"evolution_trait": CardEnums.CardTrait.MOTHRA
 	},
 	{
 		"id": "ESD02-008",
@@ -2975,7 +2983,10 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BATTRA],
 		"counter_power": 2000,
 		"invasion_icon": 1,
-		"description": "<Evolution6> <《Battra》> (At the beginning of your main phase, you may search your deck for a rank 6 or lower <《Battra》> battle card and play it by stacking it on top of this card. Search for 「Battra(imago)」 rank 6 counter power 5000 and you may place it on top of this card.)"
+		"description": "<Evolution6> <《Battra》> (At the beginning of your main phase, you may search your deck for a rank 6 or lower <《Battra》> battle card and play it by stacking it on top of this card. Search for 「Battra(imago)」 rank 6 counter power 5000 and you may place it on top of this card.)",
+		"effect_script": "res://scripts/effects/esd02/esd02_008.gd",
+		"evolution_rank": 6,
+		"evolution_trait": CardEnums.CardTrait.BATTRA
 	},
 	{
 		"id": "ESD02-009",
@@ -2986,7 +2997,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.SUPER_X, CardEnums.CardTrait.WEAPON],
 		"counter_power": 3000,
 		"invasion_icon": 1,
-		"description": "<Awakening4> <Enter> If this card is in zone 8, reduce your opponent’s <Rage> by 1. (Active if your monster card is in zone 4 or beyond and this card was played in zone 8.)"
+		"description": "<Awakening4> <Enter> If this card is in zone 8, reduce your opponent's <Rage> by 1. (Active if your monster card is in zone 4 or beyond and this card was played in zone 8.)",
+		"effect_script": "res://scripts/effects/esd02/esd02_009.gd"
 	},
 	{
 		"id": "ESD02-010",
@@ -2997,7 +3009,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MOTHRA],
 		"counter_power": 5000,
 		"invasion_icon": 2,
-		"description": "<Enter> If this card was played through evolution, draw 1 card."
+		"description": "<Enter> If this card was played through evolution, draw 1 card.",
+		"effect_script": "res://scripts/effects/esd02/esd02_010.gd"
 	},
 	{
 		"id": "ESD02-011",
@@ -3008,7 +3021,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BATTRA],
 		"counter_power": 5000,
 		"invasion_icon": 1,
-		"description": "<Awakening6> This card gains ＋3000 counter power. (Active if your monster card is in zone 6 or beyond.)"
+		"description": "<Awakening6> This card gains ＋3000 counter power. (Active if your monster card is in zone 6 or beyond.)",
+		"effect_script": "res://scripts/effects/esd02/esd02_011.gd"
 	},
 	{
 		"id": "ESD02-012",
@@ -3019,7 +3033,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MECHAGODZILLA, CardEnums.CardTrait.WEAPON],
 		"counter_power": 5000,
 		"invasion_icon": 1,
-		"description": "If your opponent’s monster card is rank IV or higher, this card gains +5000 counter power.\nIf this card is in the same column as your opponent’s monster card, this card gains +3000 counter power.\n(If both conditions are met, this card gains +8000 counter power.)"
+		"description": "If your opponent's monster card is rank IV or higher, this card gains +5000 counter power.\nIf this card is in the same column as your opponent's monster card, this card gains +3000 counter power.\n(If both conditions are met, this card gains +8000 counter power.)",
+		"effect_script": "res://scripts/effects/esd02/esd02_012.gd"
 	},
 	{
 		"id": "ESD02-013",
@@ -3038,7 +3053,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"rank": 5,
 		"color": CardEnums.CardColor.BLUE,
 		"invasion_icon": 2,
-		"description": "Evolve 1 of your battle cards with <Evolution> ."
+		"description": "Evolve 1 of your battle cards with <Evolution> .",
+		"effect_script": "res://scripts/effects/esd02/esd02_014.gd"
 	},
 	{
 		"id": "ESD02-015",
@@ -3047,7 +3063,8 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"rank": 7,
 		"color": CardEnums.CardColor.BLUE,
 		"invasion_icon": 1,
-		"description": "Choose 1 of your opponent’s zones. <Destroy> all of your opponent’s battle cards in that zone and zones adjacent to it.\n(For example, if a card is in zone 7, the adjacent zones are 4, 6, and 8.)"
+		"description": "Choose 1 of your opponent's zones. <Destroy> all of your opponent's battle cards in that zone and zones adjacent to it.\n(For example, if a card is in zone 7, the adjacent zones are 4, 6, and 8.)",
+		"effect_script": "res://scripts/effects/esd02/esd02_015.gd"
 	},
 ]
 

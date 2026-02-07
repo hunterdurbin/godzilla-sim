@@ -101,6 +101,11 @@ var _discard_player_id: int = -1
 var _discard_count: int = 0
 var _discard_selected_cards: Array[Control] = []
 
+# Hand card selection state (single-select for effects like ESD02-004)
+var _hand_card_selecting: bool = false
+var _hand_card_player_id: int = -1
+var _hand_card_allow_skip: bool = false
+
 # Action blocking — prevents input while an action is being processed
 var _action_pending: bool = false
 
@@ -154,6 +159,7 @@ func _ready() -> void:
 		# Connect effect handler signals for player choice UIs
 		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
+		turn_manager.action_handler.effect_handler.hand_card_selection_requested.connect(_on_hand_card_selection_requested)
 		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
 		turn_manager.action_handler.effect_handler.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
 		turn_manager.action_handler.effect_handler.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
@@ -522,6 +528,9 @@ func _on_invade_pressed() -> void:
 
 
 func _on_pass_pressed() -> void:
+	if _hand_card_selecting and _hand_card_allow_skip:
+		_skip_hand_card_selection()
+		return
 	if _zone_target_selecting and _zone_target_allow_skip:
 		_skip_zone_target()
 		return
@@ -1267,6 +1276,93 @@ func _force_cleanup_discard_selection() -> void:
 	_update_hand_visibility(_get_current_pid())
 
 
+# --- Hand card selection UI (single-select for effects) ---
+
+func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool) -> void:
+	if is_multiplayer_game and player_id != local_player_id:
+		# Forward to the remote client who needs to make the choice
+		var indices_json := JSON.stringify(valid_indices)
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				_rpc_hand_card_selection_requested.rpc_id(peer_id, indices_json, prompt, allow_skip)
+		return
+	_show_hand_card_selection(player_id, valid_indices, prompt, allow_skip)
+
+
+func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool) -> void:
+	_hand_card_selecting = true
+	_hand_card_player_id = player_id
+	_hand_card_allow_skip = allow_skip
+
+	# Flip target player's hand face-up so they can see their cards
+	var board: Control = player1_board if player_id == 0 else player2_board
+	board.set_hand_face_down(false)
+
+	var hand_mgr: CardManager = player1_hand if player_id == 0 else player2_hand
+	hand_mgr.enter_selection_mode(valid_indices)
+	if not hand_mgr.card_selected.is_connected(_on_hand_card_clicked):
+		hand_mgr.card_selected.connect(_on_hand_card_clicked)
+
+	_disable_all_buttons()
+	card_select_prompt.text = prompt
+	card_select_prompt.visible = true
+
+	if allow_skip:
+		btn_pass.text = "Skip"
+		btn_pass.visible = true
+		btn_pass.disabled = false
+	else:
+		btn_pass.visible = false
+
+
+func _on_hand_card_clicked(card: Control, _index: int) -> void:
+	if not _hand_card_selecting:
+		return
+
+	# Single-select: find the hand index and resolve immediately
+	var hand_mgr: CardManager = player1_hand if _hand_card_player_id == 0 else player2_hand
+	var player := _get_player_state(_hand_card_player_id)
+	var hand_index: int = -1
+	if "card_data" in card:
+		var card_id: String = card.card_data.get("id", "")
+		for i in range(player.hand.size()):
+			if player.hand[i].get("id", "") == card_id:
+				hand_index = i
+				break
+
+	_cleanup_hand_card_selection(hand_mgr)
+
+	if is_multiplayer_game and _hand_card_player_id != local_player_id:
+		return
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_rpc_hand_card_selection_resolved.rpc_id(1, hand_index)
+	else:
+		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
+
+
+func _skip_hand_card_selection() -> void:
+	var hand_mgr: CardManager = player1_hand if _hand_card_player_id == 0 else player2_hand
+	_cleanup_hand_card_selection(hand_mgr)
+
+	if is_multiplayer_game and _hand_card_player_id != local_player_id:
+		return
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_rpc_hand_card_selection_resolved.rpc_id(1, -1)
+	else:
+		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(-1)
+
+
+func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
+	_hand_card_selecting = false
+	hand_mgr.exit_selection_mode()
+	if hand_mgr.card_selected.is_connected(_on_hand_card_clicked):
+		hand_mgr.card_selected.disconnect(_on_hand_card_clicked)
+	card_select_prompt.visible = false
+	btn_pass.text = "Pass"
+	btn_pass.visible = true
+	_update_hand_visibility(_get_current_pid())
+
+
 # --- Zone target selection UI ---
 
 func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> void:
@@ -1904,6 +2000,26 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 		if selected == null:
 			selected = {}
 	turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
+
+
+## Host -> Client: hand card selection request (player must choose a card from hand)
+@rpc("authority", "call_remote", "reliable")
+func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool) -> void:
+	if NetworkManager.is_host():
+		return
+	var parsed: Array = JSON.parse_string(indices_json)
+	var valid_indices: Array[int] = []
+	for v in parsed:
+		valid_indices.append(int(v))
+	_show_hand_card_selection(local_player_id, valid_indices, prompt, allow_skip)
+
+
+## Client -> Host: hand card selection resolved
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
 
 
 ## Host -> Client: hand discard request (player must choose cards to discard)

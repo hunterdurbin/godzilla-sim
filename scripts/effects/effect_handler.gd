@@ -20,6 +20,14 @@ signal deck_search_requested(player_id: int, matching_cards: Array[Dictionary], 
 ## Emitted internally after resolve_deck_search() stores the selection.
 signal _deck_search_resolved()
 
+## Emitted when a player must choose a specific card from their hand.
+## Connect from presentation layer to show hand selection UI.
+## Call resolve_hand_card_selection() with the chosen hand index when done.
+signal hand_card_selection_requested(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool)
+
+## Emitted internally after resolve_hand_card_selection() stores the selection.
+signal _hand_card_selection_resolved()
+
 ## Emitted when a player must choose a target zone on a player's board.
 ## Connect from presentation layer to show zone highlighting UI.
 ## Call resolve_zone_target() with the chosen zone index when done.
@@ -36,6 +44,7 @@ var game_state: GameState
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
 var _deck_search_result: Dictionary = {}
 var _zone_target_result: int = -1
+var _hand_card_selection_result: int = -1
 
 
 func setup(p_game_state: GameState) -> void:
@@ -332,6 +341,116 @@ func resolve_zone_target(zone_index: int) -> void:
 	## Called by the presentation layer after the player selects a target zone.
 	_zone_target_result = zone_index
 	_zone_target_resolved.emit()
+
+
+func search_discard(player_id: int, filter: Callable, prompt: String) -> Dictionary:
+	## Search a player's discard pile for cards matching filter. Shows UI for player choice.
+	## Returns the selected card (already removed from discard pile).
+	## Returns empty dict if no matches found or player skips.
+	var player := game_state.players[player_id]
+	var matching: Array[Dictionary] = []
+	for card in player.discard_pile:
+		if filter.call(card):
+			matching.append(card)
+
+	if matching.is_empty():
+		return {}
+
+	var selected: Dictionary = {}
+	if deck_search_requested.get_connections().size() > 0:
+		deck_search_requested.emit(player_id, matching, player.discard_pile.duplicate(), prompt)
+		await _deck_search_resolved
+		selected = _deck_search_result
+	else:
+		# Fallback: auto-pick first match
+		selected = matching[0]
+
+	if not selected.is_empty():
+		# Look up the original card from discard pile by ID
+		var card_id: String = selected.get("id", "")
+		for i in range(player.discard_pile.size()):
+			if player.discard_pile[i].get("id") == card_id:
+				selected = player.discard_pile[i]
+				player.discard_pile.remove_at(i)
+				break
+	player.discard_changed.emit()
+	return selected
+
+
+func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_skip: bool = false) -> Dictionary:
+	## Ask a player to choose a card from their hand matching filter.
+	## The selected card is removed from hand and added to discard pile.
+	## Returns the selected card, or empty dict if no valid cards or player skips.
+	var player := game_state.players[player_id]
+	var valid_indices: Array[int] = []
+	for i in range(player.hand.size()):
+		if filter.call(player.hand[i]):
+			valid_indices.append(i)
+
+	if valid_indices.is_empty():
+		return {}
+
+	var chosen_index: int = -1
+	if hand_card_selection_requested.get_connections().size() > 0:
+		hand_card_selection_requested.emit(player_id, valid_indices, prompt, allow_skip)
+		await _hand_card_selection_resolved
+		chosen_index = _hand_card_selection_result
+	else:
+		# Fallback: auto-pick first valid
+		chosen_index = valid_indices[0]
+
+	if chosen_index < 0 or chosen_index >= player.hand.size():
+		return {}
+
+	var card: Dictionary = player.hand.pop_at(chosen_index)
+	player.discard_pile.append(card)
+	player.hand_changed.emit()
+	player.discard_changed.emit()
+	return card
+
+
+func resolve_hand_card_selection(hand_index: int) -> void:
+	## Called by the presentation layer after the player selects a card from hand.
+	_hand_card_selection_result = hand_index
+	_hand_card_selection_resolved.emit()
+
+
+func perform_evolution(player_id: int, zone_idx: int) -> bool:
+	## Perform Evolution on the battle card in the given zone.
+	## Reads evolution_rank and evolution_trait from the zone's top card,
+	## searches deck for a matching battle card, and stacks it on top.
+	## Returns true if evolution occurred.
+	var player := game_state.players[player_id]
+	var zone_card := player.get_zone_top_card(zone_idx)
+	if zone_card.is_empty():
+		return false
+
+	var evo_rank: int = zone_card.get("evolution_rank", -1)
+	var evo_trait: int = zone_card.get("evolution_trait", -1)
+	if evo_rank < 0 or evo_trait < 0:
+		return false
+
+	var selected := await search_deck(
+		player_id,
+		func(card: Dictionary) -> bool:
+			if card.get("card_type") != CardEnums.CardType.BATTLE:
+				return false
+			if card.get("rank", 0) > evo_rank:
+				return false
+			var traits: Array = card.get("traits", [])
+			return evo_trait in traits,
+		"Search for a rank %d or lower battle card to evolve into:" % evo_rank
+	)
+
+	if selected.is_empty():
+		return false
+
+	# Mark as played through evolution for enter effects (e.g. ESD02-010)
+	selected["played_through_evolution"] = true
+	player.push_zone_card(zone_idx, selected)
+	player.zones_changed.emit()
+	await trigger_enter(player_id, selected)
+	return true
 
 
 func highlight_zone_card(player_id: int, zone_index: int) -> void:

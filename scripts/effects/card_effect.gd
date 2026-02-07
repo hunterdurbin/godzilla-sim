@@ -107,6 +107,22 @@ func is_base_strategy() -> bool:
 
 # --- Column utilities ---
 
+static func get_adjacent_zones(zone_idx: int) -> Array[int]:
+	## Get zones adjacent to the given zone index (0-indexed).
+	## Back row: [1][2][3][4][5], Front row: [6][7][8]
+	## Columns: 3+8, 4+7, 5+6
+	match zone_idx:
+		0: return [1]           # zone 1 → zone 2
+		1: return [0, 2]        # zone 2 → zones 1, 3
+		2: return [1, 3, 7]     # zone 3 → zones 2, 4, 8
+		3: return [2, 4, 6]     # zone 4 → zones 3, 5, 7
+		4: return [3, 5]        # zone 5 → zones 4, 6
+		5: return [4, 6]        # zone 6 → zones 5, 7
+		6: return [3, 5, 7]     # zone 7 → zones 4, 6, 8
+		7: return [2, 6]        # zone 8 → zones 3, 7
+	return []
+
+
 static func get_opponent_column_zones(zone_idx: int) -> Array[int]:
 	## Get the opponent's zone indices in the same column as the given zone.
 	## Accounts for 180° board mirroring between players.
