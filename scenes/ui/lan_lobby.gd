@@ -10,6 +10,10 @@ extends Control
 @onready var start_button: Button = $CenterContainer/VBoxContainer/StartButton
 @onready var back_button: Button = $CenterContainer/VBoxContainer/BackButton
 
+var _host_deck_ready: bool = false
+var _client_deck_received: bool = false
+var _client_deck_name: String = ""
+
 
 func _ready() -> void:
 	host_button.pressed.connect(_on_host_pressed)
@@ -21,6 +25,8 @@ func _ready() -> void:
 	NetworkManager.player_connected.connect(_on_player_connected)
 	NetworkManager.player_disconnected.connect(_on_player_disconnected)
 	NetworkManager.connection_failed.connect(_on_connection_failed)
+
+	DecklistManager.clear_selections()
 
 	start_button.visible = false
 	status_label.text = ""
@@ -42,6 +48,10 @@ func _on_host_pressed() -> void:
 	ip_edit.editable = false
 	join_port_edit.editable = false
 	port_edit.editable = false
+
+	# Register the already-selected deck now that we know we're the host
+	if not deck_select.current_selection.is_empty():
+		_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_select.current_selection)
 
 	var local_ip := _get_local_ip()
 	status_label.text = "Hosting on %s:%d\nWaiting for opponent..." % [local_ip, port]
@@ -72,12 +82,19 @@ func _on_player_connected(_peer_id: int) -> void:
 		status_label.text = "Opponent connected! Select a deck and press Start."
 		_update_start_button()
 	else:
-		status_label.text = "Connected! Waiting for host to start..."
+		deck_select.set_header("SELECT YOUR DECK")
+		# If the client already has a deck selected, send it now
+		if not deck_select.current_selection.is_empty():
+			_on_deck_selected(deck_select.current_selection)
+		else:
+			status_label.text = "Connected! Select a deck."
 
 
 func _on_player_disconnected(_peer_id: int) -> void:
 	status_label.text = "Opponent disconnected."
 	start_button.visible = false
+	_client_deck_received = false
+	_client_deck_name = ""
 
 
 func _on_connection_failed() -> void:
@@ -90,9 +107,25 @@ func _on_connection_failed() -> void:
 
 
 func _on_deck_selected(deck_name: String) -> void:
-	if not deck_name.is_empty():
-		DecklistManager.select_deck(deck_name)
-	_update_start_button()
+	if deck_name.is_empty():
+		return
+
+	if NetworkManager.is_host():
+		# Host selects as player 0
+		_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_name)
+		_update_start_button()
+	else:
+		# Client selects and sends deck data to host
+		var data := DecklistManager.load_decklist(deck_name)
+		if data.is_empty():
+			return
+		var payload := JSON.stringify({
+			"deck_name": deck_name,
+			"monster": data["monster"],
+			"main": data["main"],
+		})
+		_rpc_send_deck_data.rpc_id(1, payload)
+		status_label.text = "Deck \"%s\" sent to host. Waiting for host to start..." % deck_name
 
 
 func _on_start_pressed() -> void:
@@ -110,10 +143,27 @@ func _update_start_button() -> void:
 	if not NetworkManager.is_host():
 		start_button.visible = false
 		return
-	var has_deck: bool = not deck_select.current_selection.is_empty()
-	var can_start: bool = NetworkManager.opponent_connected and has_deck
+	var can_start: bool = NetworkManager.opponent_connected and _host_deck_ready and _client_deck_received
 	start_button.visible = can_start
 	start_button.disabled = not can_start
+	if can_start:
+		status_label.text = "Opponent selected: \"%s\"\nReady to start!" % _client_deck_name
+
+
+## Client sends their deck data to host
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_send_deck_data(payload_json: String) -> void:
+	if not NetworkManager.is_host():
+		return
+	var data: Dictionary = JSON.parse_string(payload_json)
+	if data.is_empty():
+		return
+	_client_deck_name = data.get("deck_name", "Unknown")
+	var monster_entries: Array = data.get("monster", [])
+	var main_entries: Array = data.get("main", [])
+	DecklistManager.set_player_deck_from_entries(1, _client_deck_name, monster_entries, main_entries)
+	_client_deck_received = true
+	_update_start_button()
 
 
 func _get_local_ip() -> String:

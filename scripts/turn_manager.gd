@@ -30,27 +30,16 @@ func setup(card_data_node: Node) -> void:
 	action_handler.effect_handler = effect_handler
 	rules_engine.effect_handler = effect_handler
 
-	var use_custom_deck := DecklistManager.selected_deck_name != ""
-
-	# Set up Player 1
-	var p1 := game_state.players[0]
-	if use_custom_deck:
-		p1.monster_deck = DecklistManager.selected_monster_deck.duplicate(true)
-		p1.main_deck = DecklistManager.build_main_deck_for_player(0)
-	else:
-		p1.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
-		p1.main_deck = card_data_node.get_main_deck(0)
-	p1.main_deck.shuffle()
-
-	# Set up Player 2
-	var p2 := game_state.players[1]
-	if use_custom_deck:
-		p2.monster_deck = DecklistManager.selected_monster_deck.duplicate(true)
-		p2.main_deck = DecklistManager.build_main_deck_for_player(1)
-	else:
-		p2.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
-		p2.main_deck = card_data_node.get_main_deck(1)
-	p2.main_deck.shuffle()
+	# Set up each player's deck (per-player selection or fallback)
+	for i in range(2):
+		var player := game_state.players[i]
+		if DecklistManager.has_player_deck(i):
+			player.monster_deck = DecklistManager.get_player_monster_deck(i).duplicate(true)
+			player.main_deck = DecklistManager.build_main_deck_for_player(i)
+		else:
+			player.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
+			player.main_deck = card_data_node.get_main_deck(i)
+		player.main_deck.shuffle()
 
 	# Place Rank I monsters as invading monsters at zone 1
 	for player in game_state.players:

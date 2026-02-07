@@ -4,9 +4,9 @@ extends Node
 const DECKLIST_DIR := "user://decklists/"
 const DECK_EXTENSION := ".deck"
 
-var selected_deck_name: String = ""
-var selected_monster_deck: Array[Dictionary] = []
-var _selected_main_entries: Array = [] # Array of {"quantity": int, "card_number": String}
+## Per-player deck selections. Index 0 = player 0, index 1 = player 1.
+## Each entry is either null or {"deck_name": String, "monster_deck": Array, "main_entries": Array}
+var _player_decks: Array = [null, null]
 
 const LINE_DELIMITER_MONSTER_DECK := '[Monster Deck]'
 const LINE_DELIMITER_MAIN_DECK := '[Main Deck]'
@@ -44,19 +44,48 @@ func load_decklist(deck_name: String) -> Dictionary:
 	return _parse_decklist(content)
 
 
-func select_deck(deck_name: String) -> bool:
+func select_deck_for_player(player_id: int, deck_name: String) -> bool:
 	var data := load_decklist(deck_name)
 	if data.is_empty():
 		return false
-	selected_deck_name = deck_name
-	selected_monster_deck = _build_monster_deck(data["monster"])
-	_selected_main_entries = data["main"]
+	_player_decks[player_id] = {
+		"deck_name": deck_name,
+		"monster_deck": _build_monster_deck(data["monster"]),
+		"main_entries": data["main"],
+	}
 	return true
 
 
+func set_player_deck_from_entries(player_id: int, deck_name: String, monster_entries: Array, main_entries: Array) -> void:
+	_player_decks[player_id] = {
+		"deck_name": deck_name,
+		"monster_deck": _build_monster_deck(monster_entries),
+		"main_entries": main_entries,
+	}
+
+
+func has_player_deck(player_id: int) -> bool:
+	return _player_decks[player_id] != null
+
+
+func get_player_deck_name(player_id: int) -> String:
+	if _player_decks[player_id] == null:
+		return ""
+	return _player_decks[player_id]["deck_name"]
+
+
+func get_player_monster_deck(player_id: int) -> Array[Dictionary]:
+	if _player_decks[player_id] == null:
+		return []
+	return _player_decks[player_id]["monster_deck"]
+
+
 func build_main_deck_for_player(deck_id: int) -> Array[Dictionary]:
+	var entries: Array = []
+	if _player_decks[deck_id] != null:
+		entries = _player_decks[deck_id]["main_entries"]
 	var deck: Array[Dictionary] = []
-	for entry in _selected_main_entries:
+	for entry in entries:
 		var template: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
 		if template.is_empty():
 			push_warning("DecklistManager: card not found in registry: %s" % entry["card_number"])
@@ -66,6 +95,10 @@ func build_main_deck_for_player(deck_id: int) -> Array[Dictionary]:
 			card["id"] = "%s_%d_%d" % [entry["card_number"], deck_id, i]
 			deck.append(card)
 	return deck
+
+
+func clear_selections() -> void:
+	_player_decks = [null, null]
 
 
 func get_decklist_preview(deck_name: String) -> String:
@@ -123,10 +156,9 @@ func delete_decklist(deck_name: String) -> bool:
 	if not FileAccess.file_exists(path):
 		return false
 	DirAccess.remove_absolute(path)
-	if selected_deck_name == deck_name:
-		selected_deck_name = ""
-		selected_monster_deck.clear()
-		_selected_main_entries.clear()
+	for i in range(2):
+		if _player_decks[i] != null and _player_decks[i]["deck_name"] == deck_name:
+			_player_decks[i] = null
 	return true
 
 

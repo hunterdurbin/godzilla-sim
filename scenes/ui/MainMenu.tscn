@@ -31,7 +31,7 @@ grow_vertical = 2
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
 layout_mode = 2
-theme_override_constants/separation = 30
+theme_override_constants/separation = 20
 
 [node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
@@ -47,8 +47,17 @@ horizontal_alignment = 1
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.7, 0.6, 0.5, 1)
 
-[node name="DeckSelect" parent="CenterContainer/VBoxContainer" instance=ExtResource("2_ds")]
+[node name="DeckRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="DeckSelectP1" parent="CenterContainer/VBoxContainer/DeckRow" instance=ExtResource("2_ds")]
+layout_mode = 2
+custom_minimum_size = Vector2(400, 280)
+
+[node name="DeckSelectP2" parent="CenterContainer/VBoxContainer/DeckRow" instance=ExtResource("2_ds")]
+layout_mode = 2
+custom_minimum_size = Vector2(400, 280)
 
 [node name="StartButton" type="Button" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)

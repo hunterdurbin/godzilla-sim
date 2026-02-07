@@ -3,6 +3,7 @@ extends PanelContainer
 
 signal deck_selected(deck_name: String)
 
+@onready var header_label: Label = $MarginContainer/VBoxContainer/Header
 @onready var deck_list: ItemList = $MarginContainer/VBoxContainer/Content/DeckList
 @onready var deck_preview: RichTextLabel = $MarginContainer/VBoxContainer/Content/DeckPreview
 @onready var import_button: Button = $MarginContainer/VBoxContainer/ButtonBar/ImportButton
@@ -89,6 +90,11 @@ func _on_import_confirmed() -> void:
 			deck_list.select(i)
 			_on_deck_item_selected(i)
 			break
+
+
+func set_header(text: String) -> void:
+	if header_label:
+		header_label.text = text
 
 
 func _setup_style() -> void:
