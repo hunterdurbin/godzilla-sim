@@ -37,7 +37,8 @@ func get_valid_actions(state: GameState) -> Array:
 func get_playable_battle_cards(player: PlayerState, opponent: PlayerState) -> Array[int]:
 	## Returns hand indices of battle cards that can be played
 	var indices: Array[int] = []
-	if not player.has_empty_zone():
+	var valid_zones := get_valid_zones_for_battle_card(player, opponent)
+	if valid_zones.is_empty():
 		return indices
 	for i in range(player.hand.size()):
 		var card: Dictionary = player.hand[i]
@@ -47,12 +48,12 @@ func get_playable_battle_cards(player: PlayerState, opponent: PlayerState) -> Ar
 	return indices
 
 
-func get_valid_zones_for_battle_card(player: PlayerState, opponent: PlayerState) -> Array[int]:
+func get_valid_zones_for_battle_card(player: PlayerState, _opponent: PlayerState) -> Array[int]:
 	## Returns zone indices (0-7) where a battle card can be placed
-	## Zone must be empty and not occupied by own invading monster
+	## Zone must not be occupied by own invading monster (can overload occupied zones per rule 11.5)
 	var valid: Array[int] = []
 	for i in range(8):
-		if player.is_zone_empty(i) and (player.monster_zone - 1) != i:
+		if (player.monster_zone - 1) != i:
 			valid.append(i)
 	return valid
 
@@ -63,8 +64,6 @@ func can_play_battle_card_at_zone(card: Dictionary, zone_index: int, player: Pla
 	if card.get("rank", 99) > opponent.monster_zone:
 		return false
 	if zone_index < 0 or zone_index >= 8:
-		return false
-	if not player.is_zone_empty(zone_index):
 		return false
 	if (player.monster_zone - 1) == zone_index:
 		return false
@@ -165,7 +164,8 @@ func can_opponent_rank_up(opponent: PlayerState) -> bool:
 # --- Private helpers ---
 
 func _can_play_any_battle_card(player: PlayerState, opponent: PlayerState) -> bool:
-	if not player.has_empty_zone():
+	var valid_zones := get_valid_zones_for_battle_card(player, opponent)
+	if valid_zones.is_empty():
 		return false
 	for card in player.hand:
 		if card.get("card_type") == CardEnums.CardType.BATTLE:

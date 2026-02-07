@@ -209,6 +209,16 @@ func _get_retreat_zone(current_zone: int) -> int:
 func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
 	var card: Dictionary = player.hand.pop_at(hand_index)
+
+	# Rule 11.5 - Overloaded Cards: if zone is occupied, destroy existing cards
+	if not player.is_zone_empty(zone_index):
+		var destroyed_stack: Array = player.clear_zone(zone_index)
+		var top_card: Dictionary = destroyed_stack[0]
+		player.discard_pile.append_array(destroyed_stack)
+		player.discard_changed.emit()
+		if effect_handler:
+			effect_handler.trigger_revenge(player.player_id, top_card)
+
 	player.push_zone_card(zone_index, card)
 	battle_card_played.emit(player.player_id, card, zone_index)
 	player.hand_changed.emit()

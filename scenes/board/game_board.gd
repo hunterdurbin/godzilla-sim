@@ -570,6 +570,7 @@ func _enter_zone_selection() -> void:
 		for i in range(board.zone_slots.size()):
 			var slot: Slot = board.zone_slots[i]
 			if i in valid_zones:
+				slot.in_selection_mode = true
 				slot.accept_cards = true
 				if not slot.card_placed.is_connected(_on_zone_slot_clicked):
 					slot.card_placed.connect(_on_zone_slot_clicked.bind(i))
@@ -597,7 +598,7 @@ func _input(event: InputEvent) -> void:
 		for i in range(board.zone_slots.size()):
 			var slot: Slot = board.zone_slots[i]
 			var rect := Rect2(slot.global_position, slot.size)
-			if rect.has_point(mouse_pos) and slot.is_empty() and slot.is_highlighted:
+			if rect.has_point(mouse_pos) and slot.is_highlighted:
 				var hand_idx: int = _find_hand_index_by_id(selected_card_id)
 				_cancel_selection()
 				if hand_idx >= 0:
@@ -623,6 +624,7 @@ func _cancel_selection() -> void:
 		if board:
 			board.clear_highlights()
 			for slot in board.zone_slots:
+				slot.in_selection_mode = false
 				if slot.card_placed.is_connected(_on_zone_slot_clicked):
 					slot.card_placed.disconnect(_on_zone_slot_clicked)
 				if slot.hover_started.is_connected(_on_zone_hover_clicked):
@@ -881,10 +883,7 @@ func _on_hand_drag_ended(card: Control) -> void:
 				var slot: Slot = board.zone_slots[i]
 				var rect := Rect2(slot.global_position, slot.size)
 				var is_valid_target: bool = false
-				if _drag_action == CardEnums.ActionType.PLAY_MONSTER:
-					is_valid_target = rect.has_point(mouse_pos)
-				else:
-					is_valid_target = rect.has_point(mouse_pos) and slot.is_empty()
+				is_valid_target = rect.has_point(mouse_pos)
 				if is_valid_target:
 					var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
 					var hand_idx := _find_hand_index_by_id(card_id)
@@ -1215,11 +1214,23 @@ func _show_card_zoom(card_data: Dictionary) -> void:
 	card.mouse_filter = Control.MOUSE_FILTER_PASS
 	var is_strategy: bool = card_data.get("card_type") == CardEnums.CardType.STRATEGY
 	if is_strategy:
-		# Landscape: portrait card rotated -90° to appear sideways
-		card.custom_minimum_size = Vector2(300, 420)
-		card_zoom_container.add_child(card)
-		card.pivot_offset = card.size / 2.0
+		# Strategy card: portrait 300x420 rotated -90° to appear as landscape 420x300.
+		# Use a wrapper sized to the landscape dimensions so CenterContainer centers correctly.
+		var portrait_size := Vector2(300, 420)
+		var wrapper := Control.new()
+		wrapper.custom_minimum_size = Vector2(portrait_size.y, portrait_size.x)  # 420x300
+		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_zoom_container.add_child(wrapper)
+		card.custom_minimum_size = Vector2.ZERO
+		card.size = portrait_size
+		card.pivot_offset = portrait_size / 2.0
 		card.rotation = deg_to_rad(-90)
+		# Center the portrait card within the landscape wrapper
+		card.position = Vector2(
+			(wrapper.custom_minimum_size.x - portrait_size.x) / 2.0,
+			(wrapper.custom_minimum_size.y - portrait_size.y) / 2.0
+		)
+		wrapper.add_child(card)
 	else:
 		card.custom_minimum_size = Vector2(300, 420)
 		card_zoom_container.add_child(card)

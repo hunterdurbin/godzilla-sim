@@ -33,6 +33,7 @@ var held_card: Control = null
 var is_highlighted: bool = false
 var is_occupied: bool = false
 var has_monster_marker: bool = false
+var in_selection_mode: bool = false  # When true, allows highlighting even if occupied
 var _content_rect: Rect2 = Rect2()
 
 
@@ -252,7 +253,7 @@ func _update_visual_state() -> void:
 
 
 func _on_mouse_entered() -> void:
-	if is_empty() and accept_cards:
+	if accept_cards and (is_empty() or in_selection_mode):
 		set_highlighted(true)
 
 
