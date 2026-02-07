@@ -10,6 +10,8 @@ signal zone_card_dropped(zone_index: int, card: Control)
 signal discard_clicked(player_id: int)
 signal monster_deck_clicked(player_id: int)
 signal zone_slot_clicked(zone_number: int, player_id: int)
+signal zone_slot_right_clicked(zone_number: int, player_id: int)
+signal strategy_slot_right_clicked(strategy_index: int, player_id: int)
 
 @export var player_id: int = 0
 @export var is_mirrored: bool = false  # True for player 2 (top of screen)
@@ -59,6 +61,7 @@ func _setup_references() -> void:
 			slot.slot_type = "battle_zone"
 			slot.player_id = player_id
 			slot.slot_clicked.connect(_on_zone_slot_clicked)
+			slot.slot_right_clicked.connect(_on_zone_slot_right_clicked)
 			zone_slots[i - 1] = slot
 
 	# Strategy slots (landscape orientation, larger)
@@ -69,6 +72,7 @@ func _setup_references() -> void:
 			slot.slot_type = "strategy_zone"
 			slot.player_id = player_id
 			slot.landscape = true
+			slot.slot_right_clicked.connect(_on_strategy_slot_right_clicked.bind(i - 1))
 			strategy_slots.append(slot)
 
 	# Give strategy area more width within LeftInfo for landscape slots
@@ -308,6 +312,14 @@ func _on_monster_info_gui_input(event: InputEvent) -> void:
 
 func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
 	zone_slot_clicked.emit(zone_num, pid)
+
+
+func _on_zone_slot_right_clicked(zone_num: int, pid: int) -> void:
+	zone_slot_right_clicked.emit(zone_num, pid)
+
+
+func _on_strategy_slot_right_clicked(_zone_num: int, _pid: int, strategy_idx: int) -> void:
+	strategy_slot_right_clicked.emit(strategy_idx, player_id)
 
 
 func _create_card(data: Dictionary) -> Control:

@@ -10,6 +10,7 @@ signal cards_reordered()
 signal card_selected(card: Control, index: int)
 signal hand_card_drag_started(card: Control)
 signal hand_card_drag_ended(card: Control)
+signal hand_card_right_clicked(card: Control)
 
 # Enums
 enum LayoutMode {
@@ -188,6 +189,8 @@ func _register_card(card: Control) -> void:
 			card.drag_ended.connect(_on_card_drag_ended.bind(card))
 		if card.has_signal("drag_started"):
 			card.drag_started.connect(_on_card_drag_started.bind(card))
+		if card.has_signal("card_right_clicked"):
+			card.card_right_clicked.connect(_on_card_right_clicked)
 
 
 func _arrange_hand_arc(animate: bool) -> void:
@@ -443,6 +446,10 @@ func exit_selection_mode() -> void:
 			card.drag_enabled = true
 		if card.has_signal("card_clicked") and card.card_clicked.is_connected(_on_card_clicked):
 			card.card_clicked.disconnect(_on_card_clicked)
+
+
+func _on_card_right_clicked(card: Control) -> void:
+	hand_card_right_clicked.emit(card)
 
 
 func _on_card_clicked(card: Control) -> void:

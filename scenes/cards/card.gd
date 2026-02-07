@@ -8,6 +8,7 @@ const ARTWORK_BASE_PATH := "res://CardContent/Artwork"
 signal drag_started()
 signal drag_ended()
 signal card_clicked(card: Control)
+signal card_right_clicked(card: Control)
 
 # Card properties
 @export var card_name: String = "Card Name"
@@ -53,6 +54,9 @@ func _ready() -> void:
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			card_right_clicked.emit(self)
+			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				if is_selectable:

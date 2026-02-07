@@ -79,6 +79,10 @@ var _monster_deck_view_cards: Array[Dictionary] = []
 @onready var zone_stack_view_grid: GridContainer = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/ScrollContainer/CardGrid
 @onready var zone_stack_view_close: Button = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/CloseButton
 
+# Card zoom overlay
+@onready var card_zoom_overlay: Control = $CardZoomOverlay
+@onready var card_zoom_container: CenterContainer = $CardZoomOverlay/CardContainer
+
 # Stored zone stack view data
 var _zone_stack_view_cards: Array[Dictionary] = []
 
@@ -153,6 +157,10 @@ func _ready() -> void:
 	player2_hand.hand_card_drag_started.connect(_on_hand_drag_started)
 	player2_hand.hand_card_drag_ended.connect(_on_hand_drag_ended)
 
+	# Connect hand right-click for card zoom
+	player1_hand.hand_card_right_clicked.connect(_on_hand_card_right_clicked)
+	player2_hand.hand_card_right_clicked.connect(_on_hand_card_right_clicked)
+
 	# Listen for disconnects in multiplayer
 	if is_multiplayer_game:
 		NetworkManager.player_disconnected.connect(_on_opponent_disconnected)
@@ -179,6 +187,13 @@ func _ready() -> void:
 	player2_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
 	zone_stack_view_close.pressed.connect(_hide_zone_stack_view)
 
+	# Connect card zoom (right-click)
+	player1_board.zone_slot_right_clicked.connect(_on_zone_slot_right_clicked)
+	player2_board.zone_slot_right_clicked.connect(_on_zone_slot_right_clicked)
+	player1_board.strategy_slot_right_clicked.connect(_on_strategy_slot_right_clicked)
+	player2_board.strategy_slot_right_clicked.connect(_on_strategy_slot_right_clicked)
+	card_zoom_overlay.gui_input.connect(_on_card_zoom_overlay_input)
+
 	# Hide overlays and prompts
 	end_game_panel.visible = false
 	card_select_prompt.visible = false
@@ -186,6 +201,7 @@ func _ready() -> void:
 	discard_view_overlay.visible = false
 	monster_deck_view_overlay.visible = false
 	zone_stack_view_overlay.visible = false
+	card_zoom_overlay.visible = false
 
 	# Position hands over hand spaces (deferred so layout is resolved)
 	call_deferred("_position_hands")
@@ -936,6 +952,7 @@ func _refresh_deck_search_grid() -> void:
 			if card.has_method("set_card_data_dict"):
 				card.set_card_data_dict(card_data)
 			card.drag_enabled = false
+			_set_gallery_hover(card)
 			var is_match: bool = all_selectable or group["has_match"]
 			card.is_selectable = is_match
 			if is_match:
@@ -950,6 +967,7 @@ func _refresh_deck_search_grid() -> void:
 			if card.has_method("set_card_data_dict"):
 				card.set_card_data_dict(card_data)
 			card.drag_enabled = false
+			_set_gallery_hover(card)
 			var is_match: bool = all_selectable or _deck_search_matching_ids.has(card_data.get("id", ""))
 			card.is_selectable = is_match
 			if is_match:
@@ -1015,6 +1033,7 @@ func _refresh_discard_view_grid() -> void:
 				card.set_card_data_dict(group["card_data"])
 			card.is_selectable = false
 			card.drag_enabled = false
+			_set_gallery_hover(card)
 			discard_view_grid.add_child(card)
 			_add_count_badge(card, group["count"])
 	else:
@@ -1024,6 +1043,7 @@ func _refresh_discard_view_grid() -> void:
 				card.set_card_data_dict(card_data)
 			card.is_selectable = false
 			card.drag_enabled = false
+			_set_gallery_hover(card)
 			discard_view_grid.add_child(card)
 
 
@@ -1074,6 +1094,7 @@ func _refresh_monster_deck_view_grid() -> void:
 				card.set_card_data_dict(group["card_data"])
 			card.is_selectable = false
 			card.drag_enabled = false
+			_set_gallery_hover(card)
 			monster_deck_view_grid.add_child(card)
 			_add_count_badge(card, group["count"])
 	else:
@@ -1083,6 +1104,7 @@ func _refresh_monster_deck_view_grid() -> void:
 				card.set_card_data_dict(card_data)
 			card.is_selectable = false
 			card.drag_enabled = false
+			_set_gallery_hover(card)
 			monster_deck_view_grid.add_child(card)
 
 
@@ -1135,6 +1157,7 @@ func _refresh_zone_stack_view_grid() -> void:
 			card.set_card_data_dict(card_data)
 		card.is_selectable = false
 		card.drag_enabled = false
+		_set_gallery_hover(card)
 		zone_stack_view_grid.add_child(card)
 
 
@@ -1145,7 +1168,88 @@ func _hide_zone_stack_view() -> void:
 	_zone_stack_view_cards.clear()
 
 
+# --- Card zoom (right-click) UI ---
+
+func _on_zone_slot_right_clicked(zone_num: int, pid: int) -> void:
+	var player := _get_player_state(pid)
+	var zone_idx: int = zone_num - 1
+	if zone_idx < 0 or zone_idx >= 8:
+		return
+	# Show the monster card if this is the monster's zone, otherwise the top battle card
+	var card_data: Dictionary = {}
+	if not player.current_monster.is_empty() and (player.monster_zone - 1) == zone_idx:
+		card_data = player.current_monster
+	elif not player.is_zone_empty(zone_idx):
+		card_data = player.get_zone_top_card(zone_idx)
+	if card_data.is_empty():
+		return
+	_show_card_zoom(card_data)
+
+
+func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
+	var player := _get_player_state(pid)
+	if strategy_idx < 0 or strategy_idx >= player.strategy_zones.size():
+		return
+	var card_data: Dictionary = player.strategy_zones[strategy_idx]
+	if card_data.is_empty():
+		return
+	_show_card_zoom(card_data)
+
+
+func _on_hand_card_right_clicked(card: Control) -> void:
+	if "card_data" in card and not card.card_data.is_empty():
+		_show_card_zoom(card.card_data)
+
+
+func _show_card_zoom(card_data: Dictionary) -> void:
+	# Clear any existing zoomed card
+	for child in card_zoom_container.get_children():
+		child.queue_free()
+	var card: Control = card_scene.instantiate()
+	if card.has_method("set_card_data_dict"):
+		card.set_card_data_dict(card_data)
+	card.is_selectable = false
+	card.drag_enabled = false
+	card.hover_scale = 1.0
+	card.hover_lift = 0.0
+	card.mouse_filter = Control.MOUSE_FILTER_PASS
+	var is_strategy: bool = card_data.get("card_type") == CardEnums.CardType.STRATEGY
+	if is_strategy:
+		# Landscape: portrait card rotated -90° to appear sideways
+		card.custom_minimum_size = Vector2(300, 420)
+		card_zoom_container.add_child(card)
+		card.pivot_offset = card.size / 2.0
+		card.rotation = deg_to_rad(-90)
+	else:
+		card.custom_minimum_size = Vector2(300, 420)
+		card_zoom_container.add_child(card)
+	card_zoom_overlay.visible = true
+
+
+func _on_card_zoom_overlay_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		_hide_card_zoom()
+
+
+func _hide_card_zoom() -> void:
+	card_zoom_overlay.visible = false
+	for child in card_zoom_container.get_children():
+		child.queue_free()
+
+
 # --- Card grid helpers ---
+
+func _set_gallery_hover(card: Control) -> void:
+	card.hover_scale = 1.05
+	card.hover_lift = 0.0
+	card.gui_input.connect(_on_gallery_card_input.bind(card))
+
+
+func _on_gallery_card_input(event: InputEvent, card: Control) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		if "card_data" in card and not card.card_data.is_empty():
+			_show_card_zoom(card.card_data)
+
 
 func _get_card_template_id(card_data: Dictionary) -> String:
 	## Extract the template card number from an instance ID.

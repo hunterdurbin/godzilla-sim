@@ -13,6 +13,7 @@ signal card_removed(card: Control)
 signal hover_started()
 signal hover_ended()
 signal slot_clicked(zone_number: int, player_id: int)
+signal slot_right_clicked(zone_number: int, player_id: int)
 
 # Export variables
 @export var slot_color: Color = Color(0.2, 0.2, 0.3, 0.5)
@@ -291,6 +292,8 @@ func _on_card_drag_ended() -> void:
 
 
 func _on_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		if held_card != null and zone_number > 0:
+	if event is InputEventMouseButton and event.pressed and held_card != null:
+		if event.button_index == MOUSE_BUTTON_LEFT and zone_number > 0:
 			slot_clicked.emit(zone_number, player_id)
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			slot_right_clicked.emit(zone_number, player_id)

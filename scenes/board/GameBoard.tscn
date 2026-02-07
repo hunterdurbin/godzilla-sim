@@ -383,6 +383,25 @@ layout_mode = 2
 size_flags_horizontal = 4
 text = "Close"
 
+[node name="CardZoomOverlay" type="ColorRect" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="CardContainer" type="CenterContainer" parent="CardZoomOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
 [node name="EndGamePanel" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 1
