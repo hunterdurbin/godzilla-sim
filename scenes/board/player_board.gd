@@ -26,6 +26,7 @@ var deck_count_label: Label
 var discard_count_label: Label
 var rage_label: Label
 var rage_display: Control
+var discard_display: Control
 var player_label: Label
 
 
@@ -69,16 +70,16 @@ func _setup_references() -> void:
 	discard_count_label = find_child("DiscardCount", true, false) as Label
 	rage_label = find_child("RageLabel", true, false) as Label
 	rage_display = find_child("RageDisplay", true, false) as Control
+	discard_display = find_child("DiscardInfo", true, false) as Control
 	player_label = find_child("PlayerLabel", true, false) as Label
 
 	if player_label:
 		player_label.text = "Player %d" % (player_id + 1)
 
 	# Make discard area clickable
-	var discard_info := find_child("DiscardInfo", true, false) as Control
-	if discard_info:
-		discard_info.mouse_filter = Control.MOUSE_FILTER_STOP
-		discard_info.gui_input.connect(_on_discard_gui_input)
+	if discard_display:
+		discard_display.mouse_filter = Control.MOUSE_FILTER_STOP
+		discard_display.gui_input.connect(_on_discard_gui_input)
 
 
 ## Sync the entire board display to match a PlayerState
@@ -228,6 +229,14 @@ func highlight_rage_zone(highlight: bool) -> void:
 			rage_display.modulate = Color.WHITE
 
 
+func highlight_discard_zone(highlight: bool) -> void:
+	if discard_display:
+		if highlight:
+			discard_display.modulate = Color(1.2, 1.5, 1.2, 1.0)
+		else:
+			discard_display.modulate = Color.WHITE
+
+
 func clear_highlights() -> void:
 	for slot in zone_slots:
 		if slot:
@@ -236,6 +245,7 @@ func clear_highlights() -> void:
 		if slot:
 			slot.set_highlighted(false)
 	highlight_rage_zone(false)
+	highlight_discard_zone(false)
 
 
 func _apply_spacing() -> void:

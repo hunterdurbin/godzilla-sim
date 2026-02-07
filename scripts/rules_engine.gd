@@ -87,6 +87,8 @@ func get_playable_strategy_cards(player: PlayerState) -> Array[int]:
 func get_discardable_cards_for_invade(player: PlayerState) -> Array[int]:
 	## Returns hand indices of cards that can be discarded for invasion
 	var indices: Array[int] = []
+	if player.has_invaded_this_turn:
+		return indices
 	for i in range(player.hand.size()):
 		if player.hand[i].get("invasion_icon", 0) > 0:
 			indices.append(i)

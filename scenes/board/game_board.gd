@@ -74,6 +74,7 @@ var _drag_card: Control = null
 var _drag_valid_zones: Array[int] = []
 var _drag_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var _drag_can_rage: bool = false
+var _drag_can_invade: bool = false
 
 
 func _ready() -> void:
@@ -692,6 +693,7 @@ func _on_hand_drag_started(card: Control) -> void:
 	_drag_valid_zones = []
 	_drag_action = CardEnums.ActionType.PASS
 	_drag_can_rage = false
+	_drag_can_invade = false
 
 	if card_type == CardEnums.CardType.BATTLE:
 		var card_id: String = card_data.get("id", "")
@@ -746,12 +748,27 @@ func _on_hand_drag_started(card: Control) -> void:
 			if hand_idx in playable_strategy:
 				_drag_action = CardEnums.ActionType.PLAY_STRATEGY
 
+	# Any card with invasion_icon > 0 can be discarded for invasion
+	if card_data.get("invasion_icon", 0) > 0:
+		var card_id: String = card_data.get("id", "")
+		var hand_idx := _find_hand_index_by_id(card_id)
+		if hand_idx >= 0:
+			var invade_cards: Array[int] = []
+			if turn_manager:
+				invade_cards = turn_manager.rules_engine.get_discardable_cards_for_invade(player)
+			else:
+				invade_cards.assign(_client_playable.get("invade_cards", []))
+			if hand_idx in invade_cards:
+				_drag_can_invade = true
+
 	if not _drag_valid_zones.is_empty():
 		board.highlight_valid_zones(_drag_valid_zones)
 	if _drag_action == CardEnums.ActionType.PLAY_STRATEGY:
 		board.highlight_strategy_zones()
 	if _drag_can_rage:
 		board.highlight_rage_zone(true)
+	if _drag_can_invade:
+		board.highlight_discard_zone(true)
 
 
 func _on_hand_drag_ended(card: Control) -> void:
@@ -760,11 +777,12 @@ func _on_hand_drag_ended(card: Control) -> void:
 	if board:
 		board.clear_highlights()
 
-	var has_drag_target := not _drag_valid_zones.is_empty() or _drag_action == CardEnums.ActionType.PLAY_STRATEGY or _drag_can_rage
+	var has_drag_target := not _drag_valid_zones.is_empty() or _drag_action == CardEnums.ActionType.PLAY_STRATEGY or _drag_can_rage or _drag_can_invade
 	if _drag_card != card or not has_drag_target:
 		_drag_card = null
 		_drag_valid_zones = []
 		_drag_can_rage = false
+		_drag_can_invade = false
 		return
 
 	var mouse_pos := get_global_mouse_position()
@@ -780,7 +798,23 @@ func _on_hand_drag_ended(card: Control) -> void:
 					_drag_card = null
 					_drag_valid_zones = []
 					_drag_can_rage = false
+					_drag_can_invade = false
 					_submit_action(CardEnums.ActionType.GAIN_RAGE, {"hand_index": hand_idx})
+					return
+
+		# Check discard zone drop (cards with invasion_icon discarded for invasion)
+		if _drag_can_invade and board.discard_display:
+			var discard_rect := Rect2(board.discard_display.global_position, board.discard_display.size)
+			if discard_rect.has_point(mouse_pos):
+				var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
+				var hand_idx := _find_hand_index_by_id(card_id)
+				if hand_idx >= 0:
+					board.hand_manager.drop_handled = true
+					_drag_card = null
+					_drag_valid_zones = []
+					_drag_can_rage = false
+					_drag_can_invade = false
+					_submit_action(CardEnums.ActionType.INVADE, {"hand_index": hand_idx})
 					return
 
 		# Strategy cards target strategy slots (auto-placed, no zone_index needed)
@@ -822,6 +856,7 @@ func _on_hand_drag_ended(card: Control) -> void:
 	_drag_card = null
 	_drag_valid_zones = []
 	_drag_can_rage = false
+	_drag_can_invade = false
 
 
 # --- Deck search UI ---
