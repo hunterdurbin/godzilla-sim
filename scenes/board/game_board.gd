@@ -174,18 +174,21 @@ func _ready() -> void:
 	player1_board.discard_clicked.connect(_on_discard_clicked)
 	player2_board.discard_clicked.connect(_on_discard_clicked)
 	discard_view_close.pressed.connect(_hide_discard_view)
+	discard_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_discard_view))
 	discard_view_stacked.toggled.connect(_on_discard_view_stacked_toggled)
 
 	# Connect monster deck view
 	player1_board.monster_deck_clicked.connect(_on_monster_deck_clicked)
 	player2_board.monster_deck_clicked.connect(_on_monster_deck_clicked)
 	monster_deck_view_close.pressed.connect(_hide_monster_deck_view)
+	monster_deck_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_monster_deck_view))
 	monster_deck_view_stacked.toggled.connect(_on_monster_deck_view_stacked_toggled)
 
 	# Connect zone stack view
 	player1_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
 	player2_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
 	zone_stack_view_close.pressed.connect(_hide_zone_stack_view)
+	zone_stack_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_zone_stack_view))
 
 	# Connect card zoom (right-click)
 	player1_board.zone_slot_right_clicked.connect(_on_zone_slot_right_clicked)
@@ -1235,6 +1238,11 @@ func _show_card_zoom(card_data: Dictionary) -> void:
 		card.custom_minimum_size = Vector2(300, 420)
 		card_zoom_container.add_child(card)
 	card_zoom_overlay.visible = true
+
+
+func _on_overlay_background_clicked(event: InputEvent, hide_func: Callable) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		hide_func.call()
 
 
 func _on_card_zoom_overlay_input(event: InputEvent) -> void:
