@@ -24,50 +24,45 @@ theme_override_constants/separation = 4
 [node name="FrontRow" type="HBoxContainer" parent="Rows"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 4
+theme_override_constants/separation = 20
 
-[node name="LeftInfo" type="HBoxContainer" parent="Rows/FrontRow"]
+[node name="StrategyArea" type="VBoxContainer" parent="Rows/FrontRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-size_flags_stretch_ratio = 3.0
-theme_override_constants/separation = 2
-
-[node name="StrategyArea" type="VBoxContainer" parent="Rows/FrontRow/LeftInfo"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+size_flags_stretch_ratio = 1.5
 theme_override_constants/separation = 1
 
-[node name="StratLabel" type="Label" parent="Rows/FrontRow/LeftInfo/StrategyArea"]
+[node name="StratLabel" type="Label" parent="Rows/FrontRow/StrategyArea"]
 layout_mode = 2
 text = "Strategy"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 
-[node name="Strategy1" parent="Rows/FrontRow/LeftInfo/StrategyArea" instance=ExtResource("2_slot")]
+[node name="Strategy1" parent="Rows/FrontRow/StrategyArea" instance=ExtResource("2_slot")]
 layout_mode = 2
 size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 0)
 
-[node name="Strategy2" parent="Rows/FrontRow/LeftInfo/StrategyArea" instance=ExtResource("2_slot")]
+[node name="Strategy2" parent="Rows/FrontRow/StrategyArea" instance=ExtResource("2_slot")]
 layout_mode = 2
 size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 0)
 
-[node name="RageDisplay" type="VBoxContainer" parent="Rows/FrontRow/LeftInfo"]
+[node name="RageDisplay" type="VBoxContainer" parent="Rows/FrontRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
 
-[node name="RageTitle" type="Label" parent="Rows/FrontRow/LeftInfo/RageDisplay"]
+[node name="RageTitle" type="Label" parent="Rows/FrontRow/RageDisplay"]
 layout_mode = 2
 text = "Rage Zone"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(1, 0.3, 0.2, 1)
 
-[node name="RageLabel" type="Label" parent="Rows/FrontRow/LeftInfo/RageDisplay"]
+[node name="RageLabel" type="Label" parent="Rows/FrontRow/RageDisplay"]
 layout_mode = 2
 size_flags_vertical = 3
 text = "0"
@@ -76,19 +71,20 @@ vertical_alignment = 1
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
 
-[node name="StatsDisplay" type="VBoxContainer" parent="Rows/FrontRow/LeftInfo"]
+[node name="StatsDisplay" type="VBoxContainer" parent="Rows/FrontRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
 
-[node name="CPTitle" type="Label" parent="Rows/FrontRow/LeftInfo/StatsDisplay"]
+[node name="CPTitle" type="Label" parent="Rows/FrontRow/StatsDisplay"]
 layout_mode = 2
 text = "CP"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(0.3, 0.7, 1.0, 1)
 
-[node name="CPLabel" type="Label" parent="Rows/FrontRow/LeftInfo/StatsDisplay"]
+[node name="CPLabel" type="Label" parent="Rows/FrontRow/StatsDisplay"]
 layout_mode = 2
 text = "0"
 horizontal_alignment = 1
@@ -96,14 +92,14 @@ vertical_alignment = 1
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.4, 0.8, 1.0, 1)
 
-[node name="ThreatTitle" type="Label" parent="Rows/FrontRow/LeftInfo/StatsDisplay"]
+[node name="ThreatTitle" type="Label" parent="Rows/FrontRow/StatsDisplay"]
 layout_mode = 2
 text = "Threat"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(1.0, 0.5, 0.2, 1)
 
-[node name="ThreatLabel" type="Label" parent="Rows/FrontRow/LeftInfo/StatsDisplay"]
+[node name="ThreatLabel" type="Label" parent="Rows/FrontRow/StatsDisplay"]
 layout_mode = 2
 text = "0"
 horizontal_alignment = 1
@@ -133,6 +129,9 @@ custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
+custom_minimum_size = Vector2(0, 0)
+clip_contents = true
 
 [node name="DeckTitle" type="Label" parent="Rows/FrontRow/DeckInfo"]
 layout_mode = 2
@@ -152,12 +151,15 @@ theme_override_colors/font_color = Color(0.7, 0.8, 1.0, 1)
 [node name="BackRow" type="HBoxContainer" parent="Rows"]
 layout_mode = 2
 size_flags_vertical = 3
-theme_override_constants/separation = 4
+theme_override_constants/separation = 20
 
 [node name="MonsterInfo" type="VBoxContainer" parent="Rows/BackRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
+custom_minimum_size = Vector2(0, 0)
+clip_contents = true
 
 [node name="PlayerLabel" type="Label" parent="Rows/BackRow/MonsterInfo"]
 layout_mode = 2
@@ -215,6 +217,9 @@ custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+size_flags_stretch_ratio = 0.5
+custom_minimum_size = Vector2(0, 0)
+clip_contents = true
 
 [node name="DiscardTitle" type="Label" parent="Rows/BackRow/DiscardInfo"]
 layout_mode = 2

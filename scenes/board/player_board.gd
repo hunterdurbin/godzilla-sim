@@ -15,7 +15,7 @@ signal strategy_slot_right_clicked(strategy_index: int, player_id: int)
 
 @export var player_id: int = 0
 @export var is_mirrored: bool = false  # True for player 2 (top of screen)
-@export var zone_h_gap: float = 4.0
+@export var zone_h_gap: float = 20.0
 @export var zone_v_gap: float = 4.0
 
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
@@ -51,7 +51,6 @@ func _setup_references() -> void:
 		rows.move_child($Rows/BackRow, 0)
 		_reverse_container($Rows/FrontRow)
 		_reverse_container($Rows/BackRow)
-		_reverse_container($Rows/FrontRow/LeftInfo)
 
 	# Zone slots (find by name so layout wrappers don't matter)
 	zone_slots.resize(8)
@@ -76,11 +75,6 @@ func _setup_references() -> void:
 			slot.landscape = true
 			slot.slot_right_clicked.connect(_on_strategy_slot_right_clicked.bind(i - 1))
 			strategy_slots.append(slot)
-
-	# Give strategy area more width within LeftInfo for landscape slots
-	var strategy_area := find_child("StrategyArea", true, false) as Control
-	if strategy_area:
-		strategy_area.size_flags_stretch_ratio = 2.5
 
 	# Info nodes
 	deck_count_label = find_child("DeckCount", true, false) as Label
@@ -313,7 +307,6 @@ func toggle_mirrored() -> void:
 		$Rows.move_child($Rows/FrontRow, 0)
 	_reverse_container($Rows/FrontRow)
 	_reverse_container($Rows/BackRow)
-	_reverse_container($Rows/FrontRow/LeftInfo)
 
 
 func _reverse_container(container: Node) -> void:
