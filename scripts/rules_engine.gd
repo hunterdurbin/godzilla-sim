@@ -106,7 +106,7 @@ func get_monster_cards_for_rage(player: PlayerState) -> Array[int]:
 func get_playable_monsters(player: PlayerState) -> Array[int]:
 	## Returns hand indices of monster cards that can be played onto the invading monster.
 	## Includes Burst monsters: a card with Burst N can be played when current monster is rank N.
-	## Normal (same-rank) plays are limited to 1 per turn; burst plays are exempt.
+	## Limited to 1 monster play per turn (including burst).
 	var indices: Array[int] = []
 	var cur_rank: int = player.current_monster.get("rank", 0)
 	var cur_traits: Array = player.current_monster.get("traits", [])

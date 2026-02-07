@@ -12,23 +12,8 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func on_revenge(ctx: EffectContext) -> void:
-	_return_to_deck_bottom(ctx)
+	ctx.effect_handler.return_to_deck_bottom(ctx.owner, ctx.card_data)
 
 
 func on_crush(ctx: EffectContext) -> void:
-	_return_to_deck_bottom(ctx)
-
-
-func _return_to_deck_bottom(ctx: EffectContext) -> void:
-	## Instead of going to discard, move this card to the bottom of the deck.
-	## The card has already been placed in discard by the game logic, so we need to
-	## remove it from discard and put it at the bottom of the deck.
-	var player := ctx.owner
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(player.discard_pile.size() - 1, -1, -1):
-		if player.discard_pile[i].get("id", "") == card_id:
-			var card: Dictionary = player.discard_pile.pop_at(i)
-			player.main_deck.append(card)
-			player.deck_changed.emit()
-			player.discard_changed.emit()
-			return
+	ctx.effect_handler.return_to_deck_bottom(ctx.owner, ctx.card_data)

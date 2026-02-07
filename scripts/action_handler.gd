@@ -26,7 +26,7 @@ func execute(action: CardEnums.ActionType, params: Dictionary, state: GameState)
 		CardEnums.ActionType.PLAY_STRATEGY:
 			await _play_strategy_card(params["hand_index"], state)
 		CardEnums.ActionType.GAIN_RAGE:
-			_gain_rage(params["hand_index"], state)
+			await _gain_rage(params["hand_index"], state)
 		CardEnums.ActionType.PLAY_MONSTER:
 			await _play_monster(params["hand_index"], state)
 		CardEnums.ActionType.INVADE:
@@ -87,10 +87,10 @@ func execute_end_phase(state: GameState) -> void:
 		monster_advanced.emit(player.player_id, old_zone, player.monster_zone)
 		player.monster_changed.emit()
 		if effect_handler:
-			effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
+			await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
 
 		# Check crush rule after advancing
-		check_crush_rule(state)
+		await check_crush_rule(state)
 
 	# Draw up to 5 cards
 	var drawn := player.draw_up_to(5)
@@ -149,7 +149,7 @@ func resolve_counter(state: GameState) -> void:
 func check_crush_rule(state: GameState) -> void:
 	## If any invading monster shares a zone with a battle card, destroy that battle card
 	for i in range(2):
-		_check_crush_for_player(state, i)
+		await _check_crush_for_player(state, i)
 
 
 func _check_crush_for_player(state: GameState, player_id: int) -> void:
@@ -182,7 +182,7 @@ func _check_crush_for_player(state: GameState, player_id: int) -> void:
 			player.zones_changed.emit()
 			player.discard_changed.emit()
 			if effect_handler:
-				effect_handler.trigger_crush(player_id, crushed_stack[0])
+				await effect_handler.trigger_crush(player_id, crushed_stack[0])
 
 	# Also check if the opponent's monster is in a zone with the opponent's battle card
 	# (This is handled when we call this for both players)
@@ -224,7 +224,7 @@ func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> vo
 		player.discard_pile.append_array(destroyed_stack)
 		player.discard_changed.emit()
 		if effect_handler:
-			effect_handler.trigger_revenge(player.player_id, top_card)
+			await effect_handler.trigger_revenge(player.player_id, top_card)
 
 	player.push_zone_card(zone_index, card)
 	battle_card_played.emit(player.player_id, card, zone_index)
@@ -259,7 +259,7 @@ func _gain_rage(hand_index: int, state: GameState) -> void:
 	player.rage_changed.emit(player.rage)
 	player.discard_changed.emit()
 	if effect_handler:
-		effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
+		await effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
 
 
 func _play_monster(hand_index: int, state: GameState) -> void:
@@ -289,8 +289,8 @@ func _play_monster(hand_index: int, state: GameState) -> void:
 	player.rage_changed.emit(player.rage)
 	if effect_handler:
 		await effect_handler.trigger_enter(player.player_id, card)
-		effect_handler.trigger_monster_played(player.player_id, old_monster, card)
-		effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
+		await effect_handler.trigger_monster_played(player.player_id, old_monster, card)
+		await effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
 
 
 func _invade(hand_index: int, state: GameState) -> void:
@@ -314,7 +314,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 				player.monster_changed.emit()
 				if effect_handler:
 					await effect_handler.trigger_when_invading(player.player_id, old_zone, player.monster_zone)
-					effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
+					await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
 				state.game_over.emit(player.player_id, "Victory through invasion!")
 				return
 			else:
@@ -326,9 +326,9 @@ func _invade(hand_index: int, state: GameState) -> void:
 			monster_advanced.emit(player.player_id, old_zone, player.monster_zone)
 			if effect_handler:
 				await effect_handler.trigger_when_invading(player.player_id, old_zone, player.monster_zone)
-				effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
+				await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
 			# Check crush rule at each step
-			check_crush_rule(state)
+			await check_crush_rule(state)
 
 	player.hand_changed.emit()
 	player.monster_changed.emit()

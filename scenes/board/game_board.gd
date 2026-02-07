@@ -101,11 +101,12 @@ var _discard_selected_cards: Array[Control] = []
 # Action blocking — prevents input while an action is being processed
 var _action_pending: bool = false
 
-# Zone target selection state (for effects that let the player pick an opponent zone)
+# Zone target selection state (for effects that let the player pick a zone)
 var _zone_target_selecting: bool = false
 var _zone_target_player_id: int = -1  # Who is choosing
 var _zone_target_board_pid: int = -1  # Whose board the zones are on
 var _zone_target_valid_zones: Array[int] = []
+var _zone_target_allow_skip: bool = false
 
 # Drag-to-zone state
 var _drag_card: Control = null
@@ -150,6 +151,8 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
 		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
+		turn_manager.action_handler.effect_handler.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
+		turn_manager.action_handler.effect_handler.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
 
 		# Connect player state signals so mid-effect changes (e.g. search_deck adding
 		# a card to hand) trigger visual updates immediately
@@ -515,6 +518,9 @@ func _on_invade_pressed() -> void:
 
 
 func _on_pass_pressed() -> void:
+	if _zone_target_selecting and _zone_target_allow_skip:
+		_skip_zone_target()
+		return
 	if _discard_selecting and _discard_selected_cards.size() == _discard_count:
 		_confirm_hand_discard()
 		return
@@ -1162,27 +1168,34 @@ func _force_cleanup_discard_selection() -> void:
 
 # --- Zone target selection UI ---
 
-func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String) -> void:
+func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
 		# Forward to the remote client who needs to make the choice
 		var zones_json := JSON.stringify(valid_zones)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
-				_rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt)
+				_rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt, allow_skip)
 		return
-	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt)
+	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt, allow_skip)
 
 
-func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String) -> void:
+func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false) -> void:
 	_zone_target_selecting = true
 	_zone_target_player_id = player_id
 	_zone_target_board_pid = target_player_id
 	_zone_target_valid_zones = valid_zones
+	_zone_target_allow_skip = allow_skip
 
 	_disable_all_buttons()
 	card_select_prompt.text = prompt
 	card_select_prompt.visible = true
-	btn_pass.visible = false
+
+	if allow_skip:
+		btn_pass.text = "Skip"
+		btn_pass.visible = true
+		btn_pass.disabled = false
+	else:
+		btn_pass.visible = false
 
 	# Highlight valid zones on the target player's board
 	var board: Control = player1_board if target_player_id == 0 else player2_board
@@ -1201,7 +1214,14 @@ func _on_zone_target_slot_clicked(zone_num: int, _pid: int) -> void:
 	var zone_idx: int = zone_num - 1
 	if zone_idx not in _zone_target_valid_zones:
 		return
+	_finish_zone_target(zone_idx)
 
+
+func _skip_zone_target() -> void:
+	_finish_zone_target(-1)
+
+
+func _finish_zone_target(zone_idx: int) -> void:
 	# Clean up UI
 	var board: Control = player1_board if _zone_target_board_pid == 0 else player2_board
 	board.clear_highlights()
@@ -1213,13 +1233,31 @@ func _on_zone_target_slot_clicked(zone_num: int, _pid: int) -> void:
 				slot.slot_clicked.disconnect(_on_zone_target_slot_clicked)
 
 	_zone_target_selecting = false
+	_zone_target_allow_skip = false
 	card_select_prompt.visible = false
+	btn_pass.text = "Pass"
+	btn_pass.visible = true
 
 	if is_multiplayer_game and not NetworkManager.is_host():
-		# Client sends choice to host
 		_rpc_zone_target_resolved.rpc_id(1, zone_idx)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_zone_target(zone_idx)
+
+
+func _on_effect_zone_highlighted(pid: int, zone_index: int) -> void:
+	var board: Control = player1_board if pid == 0 else player2_board
+	if zone_index >= 0 and zone_index < board.zone_slots.size():
+		var slot: Slot = board.zone_slots[zone_index]
+		if slot and slot.held_card:
+			slot.held_card.modulate = Color(1.2, 1.2, 0.6, 1.0)
+
+
+func _on_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
+	var board: Control = player1_board if pid == 0 else player2_board
+	if zone_index >= 0 and zone_index < board.zone_slots.size():
+		var slot: Slot = board.zone_slots[zone_index]
+		if slot and slot.held_card:
+			slot.held_card.modulate = Color.WHITE
 
 
 # --- Discard view UI ---
@@ -1755,14 +1793,14 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 
 ## Host -> Client: zone target request (player must choose a zone)
 @rpc("authority", "call_remote", "reliable")
-func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String) -> void:
+func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool) -> void:
 	if NetworkManager.is_host():
 		return
 	var parsed: Array = JSON.parse_string(zones_json)
 	var valid_zones: Array[int] = []
 	for v in parsed:
 		valid_zones.append(int(v))
-	_show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt)
+	_show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt, allow_skip)
 
 
 ## Client -> Host: zone target resolved (player chose a zone)

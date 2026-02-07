@@ -24,8 +24,18 @@ func on_enter(ctx: EffectContext) -> void:
 		"Search for a Godzilla(2023) battle card to play"
 	)
 	if not selected.is_empty():
-		# Play it to the first empty zone
-		var target_zone: int = empty_zones[0]
+		# Re-fetch empty zones in case state changed during search
+		empty_zones = player.get_empty_zone_indices()
+		if empty_zones.is_empty():
+			return
+
+		# Let the player choose which zone to play the card in
+		var target_zone: int = await ctx.effect_handler.select_zone_target(
+			player.player_id, player.player_id, empty_zones,
+			"Choose a zone to play the searched card:")
+		if target_zone < 0:
+			return
+
 		player.push_zone_card(target_zone, selected)
 		player.zones_changed.emit()
 		# Trigger enter on the newly played card

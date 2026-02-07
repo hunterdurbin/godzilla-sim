@@ -16,14 +16,27 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 	if current_zone_idx < 0:
 		return
 
-	# Move to an unoccupied zone (pick the first available empty zone)
 	var empty_zones := ctx.owner.get_empty_zone_indices()
-	if not empty_zones.is_empty():
-		# Move the entire stack to the target zone
-		var target_zone: int = empty_zones[0]
-		var stack: Array = ctx.owner.clear_zone(current_zone_idx)
-		ctx.owner.zones[target_zone] = stack
-		ctx.owner.zones_changed.emit()
+	if empty_zones.is_empty():
+		return
+
+	# Highlight this card to show its effect is being resolved
+	ctx.effect_handler.highlight_zone_card(ctx.owner.player_id, current_zone_idx)
+
+	# Let the player choose which empty zone to move to (may skip)
+	var chosen: int = await ctx.effect_handler.select_zone_target(
+		ctx.owner.player_id, ctx.owner.player_id, empty_zones,
+		"Choose an empty zone to move this card to:", true)
+
+	ctx.effect_handler.unhighlight_zone_card(ctx.owner.player_id, current_zone_idx)
+
+	if chosen < 0:
+		return
+
+	# Move the entire stack to the chosen zone
+	var stack: Array = ctx.owner.clear_zone(current_zone_idx)
+	ctx.owner.zones[chosen] = stack
+	ctx.owner.zones_changed.emit()
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
@@ -34,11 +47,11 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 
 
 func on_revenge(ctx: EffectContext) -> void:
-	_return_to_deck_bottom(ctx)
+	ctx.effect_handler.return_to_deck_bottom(ctx.owner, ctx.card_data)
 
 
 func on_crush(ctx: EffectContext) -> void:
-	_return_to_deck_bottom(ctx)
+	ctx.effect_handler.return_to_deck_bottom(ctx.owner, ctx.card_data)
 
 
 func _find_zone_of_card(ctx: EffectContext) -> int:
@@ -47,15 +60,3 @@ func _find_zone_of_card(ctx: EffectContext) -> int:
 		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
 			return i
 	return -1
-
-
-func _return_to_deck_bottom(ctx: EffectContext) -> void:
-	var player := ctx.owner
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(player.discard_pile.size() - 1, -1, -1):
-		if player.discard_pile[i].get("id", "") == card_id:
-			var card: Dictionary = player.discard_pile.pop_at(i)
-			player.main_deck.append(card)
-			player.deck_changed.emit()
-			player.discard_changed.emit()
-			return

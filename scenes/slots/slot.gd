@@ -299,10 +299,11 @@ func _on_card_drag_ended() -> void:
 
 
 func _on_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and held_card != null:
+	if event is InputEventMouseButton and event.pressed:
 		if event.button_index == MOUSE_BUTTON_LEFT and zone_number > 0:
-			slot_clicked.emit(zone_number, player_id)
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			if held_card != null or in_selection_mode:
+				slot_clicked.emit(zone_number, player_id)
+		elif event.button_index == MOUSE_BUTTON_RIGHT and held_card != null:
 			slot_right_clicked.emit(zone_number, player_id)
 
 

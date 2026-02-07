@@ -18,6 +18,7 @@ var action_handler: ActionHandler
 var effect_handler: EffectHandler
 var is_game_over: bool = false
 var _processing_action: bool = false
+var _waiting_for_input: bool = false
 
 
 func setup(card_data_node: Node) -> void:
@@ -67,6 +68,10 @@ func setup(card_data_node: Node) -> void:
 	# Connect game over signal
 	game_state.game_over.connect(_on_game_over)
 
+	# Recheck valid actions when hand changes during main phase
+	for player in game_state.players:
+		player.hand_changed.connect(_on_hand_changed)
+
 	game_started.emit()
 
 
@@ -84,7 +89,7 @@ func _begin_turn(player_id: int) -> void:
 	log_message.emit("--- Turn %d: Player %d ---" % [game_state.turn_number, player_id + 1])
 	turn_started.emit(player_id)
 
-	_execute_start_phase()
+	await _execute_start_phase()
 
 
 func _execute_start_phase() -> void:
@@ -93,7 +98,7 @@ func _execute_start_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.START
 	phase_started.emit(CardEnums.GamePhase.START)
-	effect_handler.trigger_phase_start(CardEnums.GamePhase.START)
+	await effect_handler.trigger_phase_start(CardEnums.GamePhase.START)
 
 	var player := game_state.get_current_player()
 	var opponent := game_state.get_opponent_of_current()
@@ -104,7 +109,7 @@ func _execute_start_phase() -> void:
 
 	log_message.emit("Hand size: %d" % player.hand.size())
 
-	effect_handler.trigger_phase_end(CardEnums.GamePhase.START)
+	await effect_handler.trigger_phase_end(CardEnums.GamePhase.START)
 	phase_ended.emit(CardEnums.GamePhase.START)
 	_begin_main_phase()
 
@@ -115,7 +120,7 @@ func _begin_main_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.MAIN
 	phase_started.emit(CardEnums.GamePhase.MAIN)
-	effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
+	await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
 
 	log_message.emit("Main Phase: Choose your actions")
 
@@ -126,6 +131,7 @@ func _prompt_player_actions() -> void:
 	if is_game_over:
 		return
 
+	_waiting_for_input = true
 	var valid_actions := rules_engine.get_valid_actions(game_state)
 	awaiting_player_action.emit(valid_actions)
 
@@ -133,11 +139,12 @@ func _prompt_player_actions() -> void:
 func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> void:
 	if is_game_over or _processing_action:
 		return
+	_waiting_for_input = false
 	_processing_action = true
 
 	if action == CardEnums.ActionType.PASS:
 		log_message.emit("Player %d passes." % (game_state.current_player_id + 1))
-		effect_handler.trigger_phase_end(CardEnums.GamePhase.MAIN)
+		await effect_handler.trigger_phase_end(CardEnums.GamePhase.MAIN)
 		phase_ended.emit(CardEnums.GamePhase.MAIN)
 		_processing_action = false
 		_begin_counter_phase()
@@ -180,7 +187,7 @@ func _begin_counter_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.COUNTER
 	phase_started.emit(CardEnums.GamePhase.COUNTER)
-	effect_handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await effect_handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 
 	var player := game_state.get_current_player()
 	var opponent := game_state.get_opponent_of_current()
@@ -194,7 +201,7 @@ func _begin_counter_phase() -> void:
 	if is_game_over:
 		return
 
-	effect_handler.trigger_phase_end(CardEnums.GamePhase.COUNTER)
+	await effect_handler.trigger_phase_end(CardEnums.GamePhase.COUNTER)
 	phase_ended.emit(CardEnums.GamePhase.COUNTER)
 	_begin_end_phase()
 
@@ -205,12 +212,12 @@ func _begin_end_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.END
 	phase_started.emit(CardEnums.GamePhase.END)
-	effect_handler.trigger_phase_start(CardEnums.GamePhase.END)
+	await effect_handler.trigger_phase_start(CardEnums.GamePhase.END)
 
 	var player := game_state.get_current_player()
 	log_message.emit("End Phase: Monster at zone %d" % player.monster_zone)
 
-	action_handler.execute_end_phase(game_state)
+	await action_handler.execute_end_phase(game_state)
 
 	# Check win from end-phase advance
 	if is_game_over:
@@ -223,12 +230,17 @@ func _begin_end_phase() -> void:
 
 	log_message.emit("Hand refilled to %d cards" % player.hand.size())
 
-	effect_handler.trigger_phase_end(CardEnums.GamePhase.END)
+	await effect_handler.trigger_phase_end(CardEnums.GamePhase.END)
 	phase_ended.emit(CardEnums.GamePhase.END)
 	turn_ended.emit(game_state.current_player_id)
 
 	# Switch turns
 	_begin_turn(1 - game_state.current_player_id)
+
+
+func _on_hand_changed() -> void:
+	if _waiting_for_input and not _processing_action:
+		_prompt_player_actions()
 
 
 func _on_game_over(winner_id: int, reason: String) -> void:
