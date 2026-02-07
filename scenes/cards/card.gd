@@ -27,6 +27,7 @@ var in_landscape_slot: bool = false
 
 # Drag state
 var is_dragging: bool = false
+var is_snap_previewing: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
 var original_position: Vector2 = Vector2.ZERO
 var original_scale: Vector2 = Vector2.ONE
@@ -74,11 +75,14 @@ func _gui_input(event: InputEvent) -> void:
 					return
 				# Stop dragging
 				is_dragging = false
+				is_snap_previewing = false
 				_hover_active = false
 				z_index = 0
 				drag_ended.emit()
 
 	elif event is InputEventMouseMotion and is_dragging:
+		if is_snap_previewing:
+			return
 		var new_position = get_global_mouse_position() - drag_offset
 		var viewport_size = get_viewport_rect().size
 		var card_size = size * scale
@@ -187,6 +191,25 @@ func return_to_position(target_pos: Vector2, duration: float = 0.3) -> void:
 	tween.set_parallel(true)
 	tween.tween_property(self, "position", target_pos, duration)
 	tween.tween_property(self, "scale", original_scale, duration)
+
+
+func start_snap_preview(target_pos: Vector2, target_scale: Vector2) -> void:
+	is_snap_previewing = true
+	if tween:
+		tween.kill()
+	tween = create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_CUBIC)
+	tween.set_parallel(true)
+	tween.tween_property(self, "global_position", target_pos, 0.15)
+	tween.tween_property(self, "scale", target_scale, 0.15)
+
+
+func end_snap_preview() -> void:
+	is_snap_previewing = false
+	if tween:
+		tween.kill()
+	scale = original_scale
 
 
 func _update_display() -> void:

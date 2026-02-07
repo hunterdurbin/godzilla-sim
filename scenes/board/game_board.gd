@@ -117,6 +117,7 @@ var _drag_valid_zones: Array[int] = []
 var _drag_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var _drag_can_rage: bool = false
 var _drag_can_invade: bool = false
+var _snap_preview_slot = null  # Slot or Control currently being snap-previewed
 
 
 func _ready() -> void:
@@ -623,6 +624,91 @@ func _on_zone_hover_clicked(_zone_index: int) -> void:
 	pass
 
 
+func _process(_delta: float) -> void:
+	if not _drag_card or not _drag_card.is_dragging:
+		if _snap_preview_slot:
+			_end_snap_preview()
+		return
+	_update_snap_preview()
+
+
+func _update_snap_preview() -> void:
+	var board := _get_active_player_board()
+	if not board:
+		return
+
+	var mouse_pos := get_global_mouse_position()
+	var hovered_slot = null  # Slot or Control
+
+	# Check zone slots
+	for i in _drag_valid_zones:
+		if i < 0 or i >= board.zone_slots.size():
+			continue
+		var slot: Slot = board.zone_slots[i]
+		if slot and Rect2(slot.global_position, slot.size).has_point(mouse_pos):
+			hovered_slot = slot
+			break
+
+	# Check strategy slots
+	if not hovered_slot and _drag_action == CardEnums.ActionType.PLAY_STRATEGY:
+		for slot in board.strategy_slots:
+			if slot and not slot.has_card() and Rect2(slot.global_position, slot.size).has_point(mouse_pos):
+				hovered_slot = slot
+				break
+
+	# Check rage zone
+	if not hovered_slot and _drag_can_rage and board.rage_display:
+		if Rect2(board.rage_display.global_position, board.rage_display.size).has_point(mouse_pos):
+			hovered_slot = board.rage_display
+
+	# Check discard zone
+	if not hovered_slot and _drag_can_invade and board.discard_display:
+		if Rect2(board.discard_display.global_position, board.discard_display.size).has_point(mouse_pos):
+			hovered_slot = board.discard_display
+
+	if hovered_slot == _snap_preview_slot:
+		return  # No change
+
+	if _snap_preview_slot and hovered_slot != _snap_preview_slot:
+		_end_snap_preview()
+
+	if hovered_slot:
+		_start_snap_preview(hovered_slot)
+
+
+func _start_snap_preview(target) -> void:
+	_snap_preview_slot = target
+
+	# Compute snap position and scale based on target type
+	var target_rect: Rect2
+	if target is Slot:
+		# Use the slot's content rect (card aspect ratio area) for precise positioning
+		var content_rect: Rect2 = target._content_rect
+		target_rect = Rect2(target.global_position + content_rect.position, content_rect.size)
+	else:
+		# For non-slot targets (rage/discard display), use the full control rect
+		target_rect = Rect2(target.global_position, target.size)
+
+	# Calculate scale to fit card in the target area (maintain aspect ratio)
+	var card_size: Vector2 = _drag_card.size  # Base card size (150x210)
+	var scale_x := target_rect.size.x / card_size.x
+	var scale_y := target_rect.size.y / card_size.y
+	var fit_scale := minf(scale_x, scale_y)
+	var target_scale := Vector2(fit_scale, fit_scale)
+
+	# Position: center the scaled card within the target rect
+	var scaled_size := card_size * fit_scale
+	var target_pos := target_rect.position + (target_rect.size - scaled_size) / 2.0
+
+	_drag_card.start_snap_preview(target_pos, target_scale)
+
+
+func _end_snap_preview() -> void:
+	_snap_preview_slot = null
+	if _drag_card and _drag_card.is_snap_previewing:
+		_drag_card.end_snap_preview()
+
+
 func _input(event: InputEvent) -> void:
 	if not waiting_for_zone_select:
 		return
@@ -796,6 +882,7 @@ func _on_hand_drag_started(card: Control) -> void:
 	_drag_action = CardEnums.ActionType.PASS
 	_drag_can_rage = false
 	_drag_can_invade = false
+	_snap_preview_slot = null
 
 	if card_type == CardEnums.CardType.BATTLE:
 		var card_id: String = card_data.get("id", "")
@@ -874,6 +961,8 @@ func _on_hand_drag_started(card: Control) -> void:
 
 
 func _on_hand_drag_ended(card: Control) -> void:
+	_end_snap_preview()
+
 	var board := _get_active_player_board()
 
 	if board:
