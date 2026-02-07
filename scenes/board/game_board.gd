@@ -210,11 +210,15 @@ func _position_hands() -> void:
 	if local_space and local_hand:
 		var rect := local_space.get_global_rect()
 		local_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y + rect.size.y / 2.0)
+		local_hand.max_width = rect.size.x * 0.65
+		local_hand.arrange_cards(false)
 
 	# Opponent hand: mostly off-screen at top edge
 	if opponent_space and opponent_hand:
 		var rect := opponent_space.get_global_rect()
 		opponent_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y - 160.0)
+		opponent_hand.max_width = rect.size.x * 0.65
+		opponent_hand.arrange_cards(false)
 
 
 func _notification(what: int) -> void:

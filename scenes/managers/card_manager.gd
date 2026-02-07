@@ -26,6 +26,7 @@ enum LayoutMode {
 @export var max_cards: int = 10
 @export var auto_arrange: bool = true
 @export_range(0.0, 1.0) var arrange_duration: float = 0.3
+@export var max_width: float = 0.0  # Maximum total width for card layout (0 = unlimited)
 
 # Hand arc specific settings
 @export_group("Hand Arc Settings")
@@ -187,8 +188,21 @@ func _arrange_hand_arc(animate: bool) -> void:
 	if count == 0:
 		return
 
-	var angle_step = arc_angle / max(1, count - 1) if count > 1 else 0
-	var start_angle = -arc_angle / 2.0
+	# Clamp arc angle so total width stays within max_width
+	var effective_angle = arc_angle
+	if max_width > 0 and count > 1:
+		# The rightmost card x = sin(half_angle) * arc_radius
+		# Total width ≈ 2 * sin(half_angle) * arc_radius + card_width
+		var card_width: float = 150.0
+		if not managed_cards.is_empty() and managed_cards[0].size.x > 0:
+			card_width = managed_cards[0].size.x * managed_cards[0].scale.x
+		var available = max_width - card_width
+		if available > 0:
+			var max_half_angle = rad_to_deg(asin(clampf(available / (2.0 * arc_radius), 0.0, 1.0)))
+			effective_angle = minf(arc_angle, max_half_angle * 2.0)
+
+	var angle_step = effective_angle / max(1, count - 1) if count > 1 else 0
+	var start_angle = -effective_angle / 2.0
 
 	for i in range(count):
 		var card = managed_cards[i]
@@ -197,7 +211,8 @@ func _arrange_hand_arc(animate: bool) -> void:
 
 		# Calculate position on arc
 		var x = sin(angle_rad) * arc_radius
-		var y = -cos(angle_rad) * arc_radius + arc_radius - vertical_offset * abs(angle / (arc_angle / 2.0))
+		var half_angle = effective_angle / 2.0 if effective_angle > 0 else 1.0
+		var y = -cos(angle_rad) * arc_radius + arc_radius - vertical_offset * abs(angle / half_angle)
 
 		var target_pos = Vector2(x, y)
 		var target_rotation = 0.0  # Keep cards upright (no rotation)
@@ -246,12 +261,20 @@ func _arrange_horizontal(animate: bool) -> void:
 	if count == 0:
 		return
 
-	var total_width = (count - 1) * card_spacing
+	var effective_spacing = card_spacing
+	if max_width > 0 and count > 1:
+		var card_width: float = 150.0
+		if not managed_cards.is_empty() and managed_cards[0].size.x > 0:
+			card_width = managed_cards[0].size.x * managed_cards[0].scale.x
+		var max_spacing = (max_width - card_width) / (count - 1)
+		effective_spacing = minf(card_spacing, max_spacing)
+
+	var total_width = (count - 1) * effective_spacing
 	var start_x = -total_width / 2.0
 
 	for i in range(count):
 		var card = managed_cards[i]
-		var target_pos = Vector2(start_x + i * card_spacing, 0)
+		var target_pos = Vector2(start_x + i * effective_spacing, 0)
 		card.z_index = i
 		_move_card_to_position(card, target_pos, 0.0, animate)
 
