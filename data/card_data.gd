@@ -86,7 +86,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 5000,
 		"invasion_icon": 1,
-		"description": "At the beginning of your counter phase, send the top card of your deck to your discard pile.\nIf it is a monster card, increase this card's <Rage> by 1."
+		"description": "At the beginning of your counter phase, send the top card of your deck to your discard pile.\nIf it is a monster card, increase this card's <Rage> by 1.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_001.gd"
 	},
 	{
 		"id": "EBP01-002",
@@ -97,7 +98,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 13000,
 		"invasion_icon": 1,
-		"description": "<Burst1> (You can play this card from rank I. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<When Invading> Send the top card of your deck to your discard pile. If it is a monster card, <Destroy> 1 of your opponent’s rank 5 or lower battle cards."
+		"description": "<Burst1> (You can play this card from rank I. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<When Invading> Send the top card of your deck to your discard pile. If it is a monster card, <Destroy> 1 of your opponent's rank 5 or lower battle cards.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_002.gd"
 	},
 	{
 		"id": "EBP01-003",
@@ -108,7 +110,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 23000,
 		"invasion_icon": 1,
-		"description": "Whenever this card's <Rage> is increased, send the top card of your deck to your discard pile. If it is a monster card, <Destroy> 1 of your opponent’s rank 6 or lower battle cards."
+		"description": "Whenever this card's <Rage> is increased, send the top card of your deck to your discard pile. If it is a monster card, <Destroy> 1 of your opponent's rank 6 or lower battle cards.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_003.gd"
 	},
 	{
 		"id": "EBP01-004",
@@ -119,7 +122,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 34000,
 		"invasion_icon": 1,
-		"description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\nWhen this card reaches zone 8, <Destroy> all battle cards in each player's zones."
+		"description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\nWhen this card reaches zone 8, <Destroy> all battle cards in each player's zones.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_004.gd"
 	},
 	{
 		"id": "EBP01-005",
@@ -130,7 +134,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 37000,
 		"invasion_icon": 1,
-		"description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> Your opponent discards cards until they have 4 cards remaining in their hand."
+		"description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> Your opponent discards cards until they have 4 cards remaining in their hand.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_005.gd"
 	},
 	{
 		"id": "EBP01-006",
@@ -141,7 +146,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 23000,
 		"invasion_icon": 2,
-		"description": "<Opponent’s Turn> At the beginning of the counter phase, <Destroy> all of your opponent’s rank 5 or lower battle cards in the same column as this card."
+		"description": "<Opponent's Turn> At the beginning of the counter phase, <Destroy> all of your opponent's rank 5 or lower battle cards in the same column as this card.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_006.gd"
 	},
 	{
 		"id": "EBP01-007",
@@ -152,7 +158,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 34000,
 		"invasion_icon": 1,
-		"description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<When Invading> When this card <Destroy> your battle cards, reduce your opponent's <Rage> by 2."
+		"description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<When Invading> When this card <Destroy> your battle cards, reduce your opponent's <Rage> by 2.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_007.gd"
 	},
 	{
 		"id": "EBP01-008",
@@ -163,7 +170,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 22000,
 		"invasion_icon": 2,
-		"description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> Advance your opponent’s monster card by 1 zone."
+		"description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> Advance your opponent's monster card by 1 zone.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_008.gd"
 	},
 	{
 		"id": "EBP01-009",
@@ -174,7 +182,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 22000,
 		"invasion_icon": 1,
-		"description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<When Invading> If this card has 2 or more <Rage> , <Destroy> 1 of your opponent’s rank 6 or lower battle cards."
+		"description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<When Invading> If this card has 2 or more <Rage> , <Destroy> 1 of your opponent's rank 6 or lower battle cards.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_009.gd"
 	},
 	{
 		"id": "EBP01-010",
@@ -185,7 +194,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 37000,
 		"invasion_icon": 2,
-		"description": "Whenever this card's <Rage> is increased, <Destroy> all of your opponent’s battle cards in the same column as this card.\n<Opponent’s Turn> At the beginning of the counter phase, if this card has 3 or more <Rage> , <Destroy> all of your opponent’s battle cards in the same column as this card."
+		"description": "Whenever this card's <Rage> is increased, <Destroy> all of your opponent's battle cards in the same column as this card.\n<Opponent's Turn> At the beginning of the counter phase, if this card has 3 or more <Rage> , <Destroy> all of your opponent's battle cards in the same column as this card.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_010.gd"
 	},
 	{
 		"id": "EBP01-011",
@@ -196,7 +206,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.FEST],
 		"threat_level": 4000,
 		"invasion_icon": 1,
-		"description": "When this card advances into the same column as your opponent’s monster card, advance your opponent’s monster card by 1 zone."
+		"description": "When this card advances into the same column as your opponent's monster card, advance your opponent's monster card by 1 zone.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_011.gd"
 	},
 	{
 		"id": "EBP01-012",
@@ -207,7 +218,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.FEST],
 		"threat_level": 13000,
 		"invasion_icon": 1,
-		"description": "At the beginning of your end phase, if this card invaded this turn, advance your opponent’s monster card by 1 zone."
+		"description": "At the beginning of your end phase, if this card invaded this turn, advance your opponent's monster card by 1 zone.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_012.gd"
 	},
 	{
 		"id": "EBP01-013",
@@ -218,7 +230,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.FEST],
 		"threat_level": 19000,
 		"invasion_icon": 1,
-		"description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> If you have 4 or more battle cards in your zones, reduce your opponent’s <Rage> by 1."
+		"description": "<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> If you have 4 or more battle cards in your zones, reduce your opponent's <Rage> by 1.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_013.gd"
 	},
 	{
 		"id": "EBP01-014",
@@ -229,7 +242,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.FEST],
 		"threat_level": 34000,
 		"invasion_icon": 1,
-		"description": "<Opponent’s Turn> <Awakening4> If you have 2 or more battle cards in your zones, all of your opponent’s rank 5 or lower battle cards cannot engage with this card. (Their counter power is not included in the total counter power during the counter phase.)"
+		"description": "<Opponent's Turn> <Awakening4> If you have 2 or more battle cards in your zones, all of your opponent's rank 5 or lower battle cards cannot engage with this card. (Their counter power is not included in the total counter power during the counter phase.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_014.gd"
 	},
 	{
 		"id": "EBP01-015",
@@ -240,7 +254,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.FEST],
 		"threat_level": 28000,
 		"invasion_icon": 1,
-		"description": "<Your Turn> <Enter> Reveal the top 5 cards of your deck and send them to your discard pile. For each monster card revealed this way, increase this card's <Rage> by 1. If a card with <Step2> is revealed this way, this card advances to zone 6."
+		"description": "<Your Turn> <Enter> Reveal the top 5 cards of your deck and send them to your discard pile. For each monster card revealed this way, increase this card's <Rage> by 1. If a card with <Step2> is revealed this way, this card advances to zone 6.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_015.gd"
 	},
 	{
 		"id": "EBP01-016",
@@ -261,7 +276,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.KUMONGA, CardEnums.CardTrait.FINAL_WARS],
 		"counter_power": 1000,
 		"invasion_icon": 1,
-		"description": "If this card is in zone 8, this card gains +3000 counter power."
+		"description": "If this card is in zone 8, this card gains +3000 counter power.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_017.gd"
 	},
 	{
 		"id": "EBP01-018",
@@ -272,7 +288,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MECHAGODZILLA, CardEnums.CardTrait.WEAPON],
 		"counter_power": 1000,
 		"invasion_icon": 1,
-		"description": "<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)"
+		"description": "<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_018.gd"
 	},
 	{
 		"id": "EBP01-019",
@@ -283,7 +300,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.KAMACURAS],
 		"counter_power": 2000,
 		"invasion_icon": 1,
-		"description": "<Awakening6> <Enter> If this card was played from your hand, search your deck for up to 2 <《Kamacuras》> battle cards, play them, then shuffle your deck. (Active if your monster card is in zone 6 or beyond.)"
+		"description": "<Awakening6> <Enter> If this card was played from your hand, search your deck for up to 2 <《Kamacuras》> battle cards, play them, then shuffle your deck. (Active if your monster card is in zone 6 or beyond.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_019.gd"
 	},
 	{
 		"id": "EBP01-020",
@@ -294,7 +312,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.ANGUIRUS],
 		"counter_power": 2000,
 		"invasion_icon": 1,
-		"description": "If this card is in zone 8, whenever your monster card invades, you may reduce its <Rage> by 1 to search your deck for up to 1 monster card with <Burst> , reveal it, add it to your hand, then shuffle your deck."
+		"description": "If this card is in zone 8, whenever your monster card invades, you may reduce its <Rage> by 1 to search your deck for up to 1 monster card with <Burst> , reveal it, add it to your hand, then shuffle your deck.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_020.gd"
 	},
 	{
 		"id": "EBP01-021",
@@ -305,7 +324,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.RODAN],
 		"counter_power": 3000,
 		"invasion_icon": 1,
-		"description": "<Enter> If this card is in the same column as your opponent’s monster card, look at the top 2 cards of your deck, put any number on top of your deck in any order, and send the rest to your discard pile."
+		"description": "<Enter> If this card is in the same column as your opponent's monster card, look at the top 2 cards of your deck, put any number on top of your deck in any order, and send the rest to your discard pile.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_021.gd"
 	},
 	{
 		"id": "EBP01-022",
@@ -316,7 +336,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.TITANOSAURUS],
 		"counter_power": 4000,
 		"invasion_icon": 1,
-		"description": "<Your Turn> Whenever your monster card's <Rage> is increased, you may move 1 of your other battle cards in your zones to an unoccupied zone."
+		"description": "<Your Turn> Whenever your monster card's <Rage> is increased, you may move 1 of your other battle cards in your zones to an unoccupied zone.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_022.gd"
 	},
 	{
 		"id": "EBP01-023",
@@ -327,7 +348,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MECHAGODZILLA, CardEnums.CardTrait.WEAPON],
 		"counter_power": 4000,
 		"invasion_icon": 1,
-		"description": "If your monster card has 2 or more <Rage> , this card gains +3000 counter power."
+		"description": "If your monster card has 2 or more <Rage> , this card gains +3000 counter power.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_023.gd"
 	},
 	{
 		"id": "EBP01-024",
@@ -338,7 +360,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MINILLA, CardEnums.CardTrait.FINAL_WARS],
 		"counter_power": 2000,
 		"invasion_icon": 1,
-		"description": "<Enter> Reduce your opponent's <Rage> by 1."
+		"description": "<Enter> Reduce your opponent's <Rage> by 1.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_024.gd"
 	},
 	{
 		"id": "EBP01-025",
@@ -349,7 +372,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.KING_CAESAR],
 		"counter_power": 4000,
 		"invasion_icon": 1,
-		"description": "If this card is in a zone adjacent to your monster card, this card gains +3000 counter power."
+		"description": "If this card is in a zone adjacent to your monster card, this card gains +3000 counter power.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_025.gd"
 	},
 	{
 		"id": "EBP01-026",
@@ -360,7 +384,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.JET_JAGUAR, CardEnums.CardTrait.MECH, CardEnums.CardTrait.FEST],
 		"counter_power": 7000,
 		"invasion_icon": 2,
-		"description": "At the beginning of your counter phase, you may place 1 card with both <《Gigan》> and <《Fest》> from your discard pile under this card.\nIf there is a card under this card, this card gains +5000 counter power."
+		"description": "At the beginning of your counter phase, you may place 1 card with both <《Gigan》> and <《Fest》> from your discard pile under this card.\nIf there is a card under this card, this card gains +5000 counter power.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_026.gd"
 	},
 	{
 		"id": "EBP01-027",
@@ -371,7 +396,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.HEDORAH],
 		"counter_power": 7000,
 		"invasion_icon": 2,
-		"description": "When playing this card from your hand, you can reduce its rank by 1 for each battle card in your zones. (After being played this card is rank 8)"
+		"description": "When playing this card from your hand, you can reduce its rank by 1 for each battle card in your zones. (After being played this card is rank 8)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_027.gd"
 	},
 	{
 		"id": "EBP01-028",
@@ -380,7 +406,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 2,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 1,
-		"description": "<Opponent’s Turn> All of your opponent’s rank 3 or lower battle cards cannot engage with your monster card. (Their counter power is not included in the total during the counter phase.)"
+		"description": "<Opponent's Turn> All of your opponent's rank 3 or lower battle cards cannot engage with your monster card. (Their counter power is not included in the total during the counter phase.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_028.gd"
 	},
 	{
 		"id": "EBP01-029",
@@ -389,7 +416,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 3,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 1,
-		"description": "Choose 1 of your opponent’s zones. <Destroy> all of your opponent’s rank 5 or lower battle cards in that zone and zones adjacent to it."
+		"description": "Choose 1 of your opponent's zones. <Destroy> all of your opponent's rank 5 or lower battle cards in that zone and zones adjacent to it.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_029.gd"
 	},
 	{
 		"id": "EBP01-030",
@@ -398,7 +426,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 3,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 1,
-		"description": "Advance the opponent’s monster card by 1 zone."
+		"description": "Advance the opponent's monster card by 1 zone.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_030.gd"
 	},
 	{
 		"id": "EBP01-031",
@@ -407,7 +436,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 5,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 2,
-		"description": "If your monster card has 2 or more <Rage> , your opponent discards cards until they have 2 cards remaining in their hand."
+		"description": "If your monster card has 2 or more <Rage> , your opponent discards cards until they have 2 cards remaining in their hand.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_031.gd"
 	},
 	{
 		"id": "EBP01-032",
@@ -416,7 +446,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 6,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 2,
-		"description": "Draw 2 cards."
+		"description": "Draw 2 cards.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_032.gd"
 	},
 	{
 		"id": "EBP01-033",
@@ -425,7 +456,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 8,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 1,
-		"description": "You can play this card from your hand with its rank reduced by 1 for each zone your monster card invaded this turn.\n<Destroy> all battle cards of both players."
+		"description": "You can play this card from your hand with its rank reduced by 1 for each zone your monster card invaded this turn.\n<Destroy> all battle cards of both players.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_033.gd"
 	},
 	{
 		"id": "EBP01-034",
@@ -436,7 +468,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 13000,
 		"invasion_icon": 1,
-		"description": "<Enter> Select 1 rank 4 or lower battle card with <Evolution> from your discard pile and play it in a zone adjacent to this card."
+		"description": "<Enter> Select 1 rank 4 or lower battle card with <Evolution> from your discard pile and play it in a zone adjacent to this card.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_034.gd"
 	},
 	{
 		"id": "EBP01-035",
@@ -447,7 +480,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 23000,
 		"invasion_icon": 1,
-		"description": "<Enter> Evolve all of your rank 4 or lower battle cards with <Evolution> in zones adjacent to this card."
+		"description": "<Enter> Evolve all of your rank 4 or lower battle cards with <Evolution> in zones adjacent to this card.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_035.gd"
 	},
 	{
 		"id": "EBP01-036",
@@ -458,7 +492,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 36000,
 		"invasion_icon": 1,
-		"description": "<Enter> Evolve all of your battle cards with <Evolution> in zones adjacent to this card."
+		"description": "<Enter> Evolve all of your battle cards with <Evolution> in zones adjacent to this card.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_036.gd"
 	},
 	{
 		"id": "EBP01-037",
@@ -469,7 +504,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 22000,
 		"invasion_icon": 1,
-		"description": "Whenever this card advances, you may discard 1 strategy card from your hand to increase its <Rage> by 1."
+		"description": "Whenever this card advances, you may discard 1 strategy card from your hand to increase its <Rage> by 1.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_037.gd"
 	},
 	{
 		"id": "EBP01-038",
@@ -480,7 +516,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 34000,
 		"invasion_icon": 1,
-		"description": "<Opponent’s Turn> <Awakening6> This card cannot be countered by 50,000 or lower counter power, instead, it only moves as though it were countered. (Do not play the next monster card from your monster deck.) (Active if this card is in zone 6 or beyond, and the opponent’s total counter power is 50,000 or lower.)"
+		"description": "<Opponent's Turn> <Awakening6> This card cannot be countered by 50,000 or lower counter power, instead, it only moves as though it were countered. (Do not play the next monster card from your monster deck.) (Active if this card is in zone 6 or beyond, and the opponent's total counter power is 50,000 or lower.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_038.gd"
 	},
 	{
 		"id": "EBP01-039",
@@ -491,7 +528,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 15000,
 		"invasion_icon": 2,
-		"description": "<When Invading> Discard 1 monster card from your hand： <Destroy> all of your opponent’s rank 5 or lower battle cards in zones 1-5."
+		"description": "<When Invading> Discard 1 monster card from your hand： <Destroy> all of your opponent's rank 5 or lower battle cards in zones 1-5.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_039.gd"
 	},
 	{
 		"id": "EBP01-040",
@@ -502,7 +540,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 33000,
 		"invasion_icon": 2,
-		"description": "<Enter> <Destroy> 1 of your opponent’s rank 7 or lower battle cards.\n<When Invading> If you have 5 or more monster cards in your discard pile, increase this card's <Rage> by 1."
+		"description": "<Enter> <Destroy> 1 of your opponent's rank 7 or lower battle cards.\n<When Invading> If you have 5 or more monster cards in your discard pile, increase this card's <Rage> by 1.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_040.gd"
 	},
 	{
 		"id": "EBP01-041",
@@ -513,7 +552,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 5000,
 		"invasion_icon": 1,
-		"description": "<When Invading> <Destroy> 1 of your opponent’s rank 4 or lower battle cards."
+		"description": "<When Invading> <Destroy> 1 of your opponent's rank 4 or lower battle cards.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_041.gd"
 	},
 	{
 		"id": "EBP01-042",
@@ -524,7 +564,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 18000,
 		"invasion_icon": 1,
-		"description": "<Enter> If you have 5 or more monster cards in your discard pile, you may discard 1 card from your hand to reduce your opponent's <Rage> by 1.\nIf you have 5 or more monster cards in your discard pile, this card gains +10,000 threat level."
+		"description": "<Enter> If you have 5 or more monster cards in your discard pile, you may discard 1 card from your hand to reduce your opponent's <Rage> by 1.\nIf you have 5 or more monster cards in your discard pile, this card gains +10,000 threat level.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_042.gd"
 	},
 	{
 		"id": "EBP01-043",
@@ -535,7 +576,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 36000,
 		"invasion_icon": 1,
-		"description": "<Awakening4> When you successfully counter your opponent’s monster card, if you have 5 or more monster cards in your discard pile, <Destroy> all of your opponent’s rank 6 or lower battle cards. (Active if this card is in zone 4 or beyond.)"
+		"description": "<Awakening4> When you successfully counter your opponent's monster card, if you have 5 or more monster cards in your discard pile, <Destroy> all of your opponent's rank 6 or lower battle cards. (Active if this card is in zone 4 or beyond.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_043.gd"
 	},
 	{
 		"id": "EBP01-044",
@@ -546,7 +588,10 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MOTHRA],
 		"counter_power": 0,
 		"invasion_icon": 1,
-		"description": "<Evolution5> <《Mothra》> (At the beginning of your main phase, you may play a rank 5 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)"
+		"description": "<Evolution5> <《Mothra》> (At the beginning of your main phase, you may play a rank 5 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)",
+		"evolution_rank": 5,
+		"evolution_trait": CardEnums.CardTrait.MOTHRA,
+		"effect_script": "res://scripts/effects/ebp01/ebp01_044.gd"
 	},
 	{
 		"id": "EBP01-045",
@@ -557,7 +602,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MEGANULA],
 		"counter_power": 1000,
 		"invasion_icon": 1,
-		"description": "<Enter> If this card is in the same column as your opponent’s monster card and you have 2 or more battle cards in your zones, reduce your opponent's <Rage> by 1."
+		"description": "<Enter> If this card is in the same column as your opponent's monster card and you have 2 or more battle cards in your zones, reduce your opponent's <Rage> by 1.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_045.gd"
 	},
 	{
 		"id": "EBP01-046",
@@ -568,7 +614,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.WEAPON],
 		"counter_power": 1000,
 		"invasion_icon": 1,
-		"description": "You may have any number of this card in your deck.\n<Awakening6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)"
+		"description": "You may have any number of this card in your deck.\n<Awakening6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_046.gd"
 	},
 	{
 		"id": "EBP01-047",
@@ -579,7 +626,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.ORGA],
 		"counter_power": 2000,
 		"invasion_icon": 1,
-		"description": "<Enter> Draw 1 card, then discard 1 card."
+		"description": "<Enter> Draw 1 card, then discard 1 card.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_047.gd"
 	},
 	{
 		"id": "EBP01-048",
@@ -590,7 +638,10 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BIOLLANTE],
 		"counter_power": 2000,
 		"invasion_icon": 1,
-		"description": "<Evolution7> <《Biollante》> (At the beginning of your main phase, you may play a rank 7 or lower battle card with <《Biollante》> from your deck by placing it on top of this card.)"
+		"description": "<Evolution7> <《Biollante》> (At the beginning of your main phase, you may play a rank 7 or lower battle card with <《Biollante》> from your deck by placing it on top of this card.)",
+		"evolution_rank": 7,
+		"evolution_trait": CardEnums.CardTrait.BIOLLANTE,
+		"effect_script": "res://scripts/effects/ebp01/ebp01_048.gd"
 	},
 	{
 		"id": "EBP01-049",
@@ -601,7 +652,10 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.DESTOROYAH],
 		"counter_power": 3000,
 		"invasion_icon": 1,
-		"description": "<Evolution6> <《Destoroyah》> (At the beginning of your main phase, you may play a rank 6 or lower <《Destoroyah》> battle card from your deck by placing it on top of this card.)"
+		"description": "<Evolution6> <《Destoroyah》> (At the beginning of your main phase, you may play a rank 6 or lower <《Destoroyah》> battle card from your deck by placing it on top of this card.)",
+		"evolution_rank": 6,
+		"evolution_trait": CardEnums.CardTrait.DESTOROYAH,
+		"effect_script": "res://scripts/effects/ebp01/ebp01_049.gd"
 	},
 	{
 		"id": "EBP01-050",
@@ -612,7 +666,10 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MOTHRA],
 		"counter_power": 3000,
 		"invasion_icon": 1,
-		"description": "<Evolution7> <《Mothra》> (At the beginning of your main phase, you may play a rank 7 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)"
+		"description": "<Evolution7> <《Mothra》> (At the beginning of your main phase, you may play a rank 7 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)",
+		"evolution_rank": 7,
+		"evolution_trait": CardEnums.CardTrait.MOTHRA,
+		"effect_script": "res://scripts/effects/ebp01/ebp01_050.gd"
 	},
 	{
 		"id": "EBP01-051",
@@ -623,7 +680,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.ORGA],
 		"counter_power": 3000,
 		"invasion_icon": 1,
-		"description": "If you have 5 or more monster cards in your discard pile, this card gains +3000 counter power."
+		"description": "If you have 5 or more monster cards in your discard pile, this card gains +3000 counter power.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_051.gd"
 	},
 	{
 		"id": "EBP01-052",
@@ -634,7 +692,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MEGAGUIRUS],
 		"counter_power": 3000,
 		"invasion_icon": 2,
-		"description": "<Awakening4> If this card is in zones 1-5 and you have 5 or more monster cards in your discard pile, this card cannot be <Destroy> by your opponent's effects. (Active if your monster card is in zone 4 or beyond.)"
+		"description": "<Awakening4> If this card is in zones 1-5 and you have 5 or more monster cards in your discard pile, this card cannot be <Destroy> by your opponent's effects. (Active if your monster card is in zone 4 or beyond.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_052.gd"
 	},
 	{
 		"id": "EBP01-053",
@@ -655,7 +714,10 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.DESTOROYAH],
 		"counter_power": 4000,
 		"invasion_icon": 1,
-		"description": "<Evolution8> <《Destoroyah》> (At the beginning of your main phase, you may play a rank 8 or lower <《Destoroyah》> battle card from your deck by placing it on top of this card.)\n<Enter> If this card was played through evolution, draw 2 cards, then discard 2 cards."
+		"description": "<Evolution8> <《Destoroyah》> (At the beginning of your main phase, you may play a rank 8 or lower <《Destoroyah》> battle card from your deck by placing it on top of this card.)\n<Enter> If this card was played through evolution, draw 2 cards, then discard 2 cards.",
+		"evolution_rank": 8,
+		"evolution_trait": CardEnums.CardTrait.DESTOROYAH,
+		"effect_script": "res://scripts/effects/ebp01/ebp01_054.gd"
 	},
 	{
 		"id": "EBP01-055",
@@ -666,7 +728,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BATTRA],
 		"counter_power": 5000,
 		"invasion_icon": 1,
-		"description": "<Enter> Draw 1 card, then discard 1 card."
+		"description": "<Enter> Draw 1 card, then discard 1 card.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_055.gd"
 	},
 	{
 		"id": "EBP01-056",
@@ -677,7 +740,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.SUPER_X, CardEnums.CardTrait.WEAPON],
 		"counter_power": 5000,
 		"invasion_icon": 2,
-		"description": "If this card is in the same column as your opponent’s monster card, this card gains +3000 counter power for each of your opponent's <Rage> ."
+		"description": "If this card is in the same column as your opponent's monster card, this card gains +3000 counter power for each of your opponent's <Rage> .",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_056.gd"
 	},
 	{
 		"id": "EBP01-057",
@@ -688,7 +752,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MOTHRA],
 		"counter_power": 5000,
 		"invasion_icon": 2,
-		"description": "<Enter> Choose 2 battle cards in your zones, you may swap their positions.\nYour rank 5 or lower battle cards in zones adjacent to this card gain +3000 counter power."
+		"description": "<Enter> Choose 2 battle cards in your zones, you may swap their positions.\nYour rank 5 or lower battle cards in zones adjacent to this card gain +3000 counter power.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_057.gd"
 	},
 	{
 		"id": "EBP01-058",
@@ -699,7 +764,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BIOLLANTE],
 		"counter_power": 6000,
 		"invasion_icon": 1,
-		"description": "If you have a <《Biollante》> card with <Evolution> in your discard pile, you can play this from your hand with its rank reduced by 2. (After being played, this card is rank 7.)\n<Enter> Return all cards in your discard pile to your deck then shuffle."
+		"description": "If you have a <《Biollante》> card with <Evolution> in your discard pile, you can play this from your hand with its rank reduced by 2. (After being played, this card is rank 7.)\n<Enter> Return all cards in your discard pile to your deck then shuffle.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_058.gd"
 	},
 	{
 		"id": "EBP01-059",
@@ -710,7 +776,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.RODAN],
 		"counter_power": 6000,
 		"invasion_icon": 1,
-		"description": "When this card is discarded from your hand by your opponent's effect, and their monster card is in zones 4-8, you may play this card. (Regardless of what zone your opponent's monster card is occupying.)\nIf this card is in zone 8, this card gains +3000 counter power."
+		"description": "When this card is discarded from your hand by your opponent's effect, and their monster card is in zones 4-8, you may play this card. (Regardless of what zone your opponent's monster card is occupying.)\nIf this card is in zone 8, this card gains +3000 counter power.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_059.gd"
 	},
 	{
 		"id": "EBP01-060",
@@ -721,7 +788,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.DESTOROYAH],
 		"counter_power": 10000,
 		"invasion_icon": 1,
-		"description": "<Enter> If this card was played through evolution, choose up to 1 strategy card named 「Godzilla vs. Destoroyah」in your discard pile.\nIf you have 1 or fewer strategy cards in play, play and activate the chosen card. (Regardless of rank.)"
+		"description": "<Enter> If this card was played through evolution, choose up to 1 strategy card named 「Godzilla vs. Destoroyah」in your discard pile.\nIf you have 1 or fewer strategy cards in play, play and activate the chosen card. (Regardless of rank.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_060.gd"
 	},
 	{
 		"id": "EBP01-061",
@@ -730,7 +798,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 1,
 		"color": CardEnums.CardColor.BLUE,
 		"invasion_icon": 1,
-		"description": "If your opponent has 5 or more <Rage> , reduce their <Rage> by 3."
+		"description": "If your opponent has 5 or more <Rage> , reduce their <Rage> by 3.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_061.gd"
 	},
 	{
 		"id": "EBP01-062",
@@ -739,7 +808,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 3,
 		"color": CardEnums.CardColor.BLUE,
 		"invasion_icon": 2,
-		"description": "<Your Turn> If you have a <《Destoroyah》> battle card in your zones, increase your total counter power by +10,000."
+		"description": "<Your Turn> If you have a <《Destoroyah》> battle card in your zones, increase your total counter power by +10,000.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_062.gd"
 	},
 	{
 		"id": "EBP01-063",
@@ -748,7 +818,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 4,
 		"color": CardEnums.CardColor.BLUE,
 		"invasion_icon": 2,
-		"description": "Evolve all of your rank 4 or lower battle cards with <Evolution> ."
+		"description": "Evolve all of your rank 4 or lower battle cards with <Evolution> .",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_063.gd"
 	},
 	{
 		"id": "EBP01-064",
@@ -757,7 +828,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 5,
 		"color": CardEnums.CardColor.BLUE,
 		"invasion_icon": 1,
-		"description": "Choose one of the following:\n・ <Destroy> 1 of your opponent’s rank 4 or lower battle cards.\n・If you have 4 or more battle cards in your zones, choose 1 of your opponent’s zones and <Destroy> all battle cards in that zone and zones adjacent to it."
+		"description": "Choose one of the following:\n・ <Destroy> 1 of your opponent's rank 4 or lower battle cards.\n・If you have 4 or more battle cards in your zones, choose 1 of your opponent's zones and <Destroy> all battle cards in that zone and zones adjacent to it.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_064.gd"
 	},
 	{
 		"id": "EBP01-065",
@@ -766,7 +838,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 6,
 		"color": CardEnums.CardColor.BLUE,
 		"invasion_icon": 1,
-		"description": "<Destroy> all of your opponent’s battle cards in zones 1-5."
+		"description": "<Destroy> all of your opponent's battle cards in zones 1-5.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_065.gd"
 	},
 	{
 		"id": "EBP01-066",
@@ -775,7 +848,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 7,
 		"color": CardEnums.CardColor.BLUE,
 		"invasion_icon": 1,
-		"description": "When this card is discarded from your hand by your opponent's effect, increase your monster card’s <Rage> by 2.\n<Opponent’s Turn> Your monster card cannot be countered by 40,000 or lower counter power. Instead, it only moves as though it were countered. (Do not play the next monster card from your monster deck.)"
+		"description": "When this card is discarded from your hand by your opponent's effect, increase your monster card's <Rage> by 2.\n<Opponent's Turn> Your monster card cannot be countered by 40,000 or lower counter power. Instead, it only moves as though it were countered. (Do not play the next monster card from your monster deck.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_066.gd"
 	},
 	{
 		"id": "EBP01-067",
@@ -786,7 +860,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GOROSAURUS],
 		"counter_power": 1000,
 		"invasion_icon": 2,
-		"description": "<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)"
+		"description": "<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_067.gd"
 	},
 	{
 		"id": "EBP01-068",
@@ -797,7 +872,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MANDA],
 		"counter_power": 1000,
 		"invasion_icon": 1,
-		"description": "If this card is in a zone adjacent to your monster card, this card gains +3000 counter power."
+		"description": "If this card is in a zone adjacent to your monster card, this card gains +3000 counter power.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_068.gd"
 	},
 	{
 		"id": "EBP01-069",
@@ -808,7 +884,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.VARAN],
 		"counter_power": 3000,
 		"invasion_icon": 1,
-		"description": "<Awakening6> <Enter> Draw 2 cards, then discard 2 cards. (Active if your monster card is in zone 6 or beyond.)"
+		"description": "<Awakening6> <Enter> Draw 2 cards, then discard 2 cards. (Active if your monster card is in zone 6 or beyond.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_069.gd"
 	},
 	{
 		"id": "EBP01-070",
@@ -819,7 +896,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BARAGON],
 		"counter_power": 4000,
 		"invasion_icon": 1,
-		"description": "<Enter> Look at the top card of your deck. You may send it to your discard pile or place it back on top of your deck."
+		"description": "<Enter> Look at the top card of your deck. You may send it to your discard pile or place it back on top of your deck.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_070.gd"
 	},
 	{
 		"id": "EBP01-071",
@@ -830,7 +908,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GIANT_CONDOR],
 		"counter_power": 5000,
 		"invasion_icon": 1,
-		"description": "If this card is in the same column as your opponent’s monster card, this card gains +5000 counter power.\nWhen your opponent's <Rage> is increased, <Destroy> this card."
+		"description": "If this card is in the same column as your opponent's monster card, this card gains +5000 counter power.\nWhen your opponent's <Rage> is increased, <Destroy> this card.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_071.gd"
 	},
 	{
 		"id": "EBP01-072",
@@ -841,7 +920,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GIGAN, CardEnums.CardTrait.WEAPON, CardEnums.CardTrait.FEST],
 		"counter_power": 5000,
 		"invasion_icon": 1,
-		"description": "<Enter> If this card is in the same column as your opponent’s monster card, send the top card of your deck to your discard pile. If it is a battle card, move your opponent’s monster card with 50,000 or lower threat level backward by 1 zone."
+		"description": "<Enter> If this card is in the same column as your opponent's monster card, send the top card of your deck to your discard pile. If it is a battle card, move your opponent's monster card with 50,000 or lower threat level backward by 1 zone.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_072.gd"
 	},
 	{
 		"id": "EBP01-073",
@@ -852,7 +932,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.MECHAGODZILLA, CardEnums.CardTrait.WEAPON],
 		"counter_power": 10000,
 		"invasion_icon": 2,
-		"description": "This card cannot be played if you have 7 or fewer monster cards in your discard pile.\nWhen your monster card invades, if there are no monster cards under this card, you may place 1 monster card from your discard pile under this card to set your opponent’s <Rage> to 0."
+		"description": "This card cannot be played if you have 7 or fewer monster cards in your discard pile.\nWhen your monster card invades, if there are no monster cards under this card, you may place 1 monster card from your discard pile under this card to set your opponent's <Rage> to 0.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_073.gd"
 	},
 	{
 		"id": "EBP01-074",
@@ -863,7 +944,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.KING_GHIDORAH, CardEnums.CardTrait.FEST],
 		"counter_power": 8000,
 		"invasion_icon": 1,
-		"description": "If you have a card named 「Gravity Beam」 in play, this card gains +20,000 counter power."
+		"description": "If you have a card named 「Gravity Beam」 in play, this card gains +20,000 counter power.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_074.gd"
 	},
 	{
 		"id": "EBP01-075",
@@ -874,7 +956,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"counter_power": 5000,
 		"invasion_icon": 2,
-		"description": "This card gains +3000 counter power for each of your monster card's <Rage> .\nIf your monster card has 3 or more <Rage> , and this card is in zones 1-5, this card cannot be <Destroy> by your opponent’s effects.\n<Awakening8> You can play this card with its rank reduced by 4. (Active if your monster card is in zone 8. After being played, this card is rank 8.)"
+		"description": "This card gains +3000 counter power for each of your monster card's <Rage> .\nIf your monster card has 3 or more <Rage> , and this card is in zones 1-5, this card cannot be <Destroy> by your opponent's effects.\n<Awakening8> You can play this card with its rank reduced by 4. (Active if your monster card is in zone 8. After being played, this card is rank 8.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_075.gd"
 	},
 	{
 		"id": "EBP01-076",
@@ -883,7 +966,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 2,
 		"color": CardEnums.CardColor.WHITE,
 		"invasion_icon": 1,
-		"description": "When your monster card invades this turn, <Destroy> 1 of your opponent’s battle cards."
+		"description": "When your monster card invades this turn, <Destroy> 1 of your opponent's battle cards.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_076.gd"
 	},
 	{
 		"id": "EBP01-077",
@@ -892,7 +976,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 4,
 		"color": CardEnums.CardColor.WHITE,
 		"invasion_icon": 1,
-		"description": "If your opponent has 2 or fewer <Rage> , move your opponent's monster card as though it were countered. (Do not play the next monster card from your monster deck.)"
+		"description": "If your opponent has 2 or fewer <Rage> , move your opponent's monster card as though it were countered. (Do not play the next monster card from your monster deck.)",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_077.gd"
 	},
 	{
 		"id": "EBP01-078",
@@ -901,7 +986,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 4,
 		"color": CardEnums.CardColor.WHITE,
 		"invasion_icon": 2,
-		"description": "Advance your monster card to zone 6."
+		"description": "Advance your monster card to zone 6.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_078.gd"
 	},
 	{
 		"id": "EBP01-079",
@@ -910,7 +996,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 5,
 		"color": CardEnums.CardColor.WHITE,
 		"invasion_icon": 2,
-		"description": "Your opponent discards cards until they have 3 cards remaining in their hand."
+		"description": "Your opponent discards cards until they have 3 cards remaining in their hand.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_079.gd"
 	},
 	{
 		"id": "EBP01-080",
@@ -919,7 +1006,8 @@ var EBP01_CARDS: Array[Dictionary] = [
 		"rank": 6,
 		"color": CardEnums.CardColor.WHITE,
 		"invasion_icon": 1,
-		"description": "If your opponent has a strategy card in play, you can play this from your hand with its rank reduced by 2.\nWhile this card is in the strategy zone, your rank 5 or lower battle cards in zones 1-5 cannot be <Destroy> by your opponent’s effects."
+		"description": "If your opponent has a strategy card in play, you can play this from your hand with its rank reduced by 2.\nWhile this card is in the strategy zone, your rank 5 or lower battle cards in zones 1-5 cannot be <Destroy> by your opponent's effects.",
+		"effect_script": "res://scripts/effects/ebp01/ebp01_080.gd"
 	},
 ]
 
