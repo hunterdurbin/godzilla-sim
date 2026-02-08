@@ -1255,7 +1255,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 2,
 		"effect_script": "res://scripts/effects/ebp02/ebp02_020.gd",
-		"description": "If you have 5 or more strategy cards in your discard pile, create "Conductorless train bombers" tokens in each of your unoccupied zones. (Tokens are prepared separately from your main deck.)"
+		"description": "If you have 5 or more strategy cards in your discard pile, create “Conductorless train bombers” tokens in each of your unoccupied zones. (Tokens are prepared separately from your main deck.)"
 	},
 	{
 		"id": "EBP02-021",
