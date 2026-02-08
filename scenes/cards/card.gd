@@ -2,7 +2,7 @@ extends Control
 
 ## Card node with hover scaling, drag functionality, and TCG card image display
 
-const ARTWORK_BASE_PATH := "res://CardContent/Artwork"
+const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 
 # Signals
 signal drag_started()

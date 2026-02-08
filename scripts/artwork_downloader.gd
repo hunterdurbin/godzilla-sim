@@ -7,7 +7,7 @@ signal progress_updated(current: int, total: int, card_number: String)
 
 const API_BASE := "http://api.godzillatcg.com"
 const CARDS_JSON_PATH := "res://CardContent/CardInfo/all_cards.json"
-const ARTWORK_BASE_PATH := "res://CardContent/Artwork"
+const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 
 var _cards: Array = []
 var _current_index: int = 0
@@ -28,8 +28,6 @@ func _ready() -> void:
 	_http_media = HTTPRequest.new()
 	_http_media.request_completed.connect(_on_media_request_completed)
 	add_child(_http_media)
-
-	start_download()
 
 
 func start_download() -> void:
