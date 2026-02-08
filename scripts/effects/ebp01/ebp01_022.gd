@@ -11,7 +11,7 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	if new_rage <= old_rage:
 		return
 
-	var my_zone := _find_zone_of_card(ctx)
+	var my_zone := find_zone_of_card(ctx)
 	if my_zone < 0:
 		return
 
@@ -53,11 +53,3 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	var stack: Array = ctx.owner.clear_zone(source)
 	ctx.owner.zones[dest] = stack
 	ctx.owner.zones_changed.emit()
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

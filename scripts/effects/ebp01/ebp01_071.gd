@@ -7,7 +7,7 @@ extends CardEffect
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	var zone_idx := _find_zone_of_card(ctx)
+	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return 0
 	var opp_columns := get_opponent_column_zones(zone_idx)
@@ -27,11 +27,3 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	# For now, we approximate: if owner's rage hasn't changed but opponent's has,
 	# we can't detect it here. This is a system limitation.
 	pass
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

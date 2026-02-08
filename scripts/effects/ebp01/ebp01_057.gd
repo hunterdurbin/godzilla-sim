@@ -35,7 +35,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
-	var zone_idx := _find_zone_of_card(ctx)
+	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return {}
 
@@ -48,11 +48,3 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 			mods[adj_zi] = 3000
 
 	return mods
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

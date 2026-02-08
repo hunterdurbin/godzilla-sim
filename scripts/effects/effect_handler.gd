@@ -415,6 +415,21 @@ func resolve_hand_card_selection(hand_index: int) -> void:
 	_hand_card_selection_resolved.emit()
 
 
+func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: Array[Dictionary], prompt: String) -> Dictionary:
+	## Present a set of revealed cards to the player and let them choose one.
+	## Uses the deck_search UI but does NOT modify the deck or shuffle.
+	## Returns the chosen card, or empty dict if no options or no UI connected.
+	if options.is_empty():
+		return {}
+
+	if deck_search_requested.get_connections().size() > 0:
+		deck_search_requested.emit(player_id, options, all_visible, prompt)
+		await _deck_search_resolved
+		return _deck_search_result
+	else:
+		return options[0]
+
+
 func perform_evolution(player_id: int, zone_idx: int) -> bool:
 	## Perform Evolution on the battle card in the given zone.
 	## Reads evolution_rank and evolution_trait from the zone's top card,
@@ -554,6 +569,16 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 				for zone_idx in field_mods:
 					if zone_idx >= 0 and zone_idx < 8:
 						modifiers[zone_idx] += field_mods[zone_idx]
+
+	# Monster card field CP modifiers (e.g. EBP02-021, 041, 043)
+	var monster_effect := get_effect(player.current_monster)
+	if monster_effect:
+		var monster_ctx := _build_context(player_id, player.current_monster)
+		var monster_field_mods: Dictionary = monster_effect.get_field_cp_modifiers(monster_ctx)
+		for zone_idx in monster_field_mods:
+			if zone_idx >= 0 and zone_idx < 8:
+				modifiers[zone_idx] += monster_field_mods[zone_idx]
+
 	return modifiers
 
 

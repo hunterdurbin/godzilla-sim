@@ -14,7 +14,7 @@ func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> v
 	if ctx.game_state.current_phase != CardEnums.GamePhase.MAIN:
 		return
 
-	var zone_idx := _find_zone_of_card(ctx)
+	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return
 
@@ -41,11 +41,3 @@ func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> v
 	# Set opponent's rage to 0
 	ctx.opponent.rage = 0
 	ctx.opponent.rage_changed.emit(0)
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

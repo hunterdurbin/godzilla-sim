@@ -18,7 +18,7 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 		bonus += 5000
 
 	# +3000 if in the same column as opponent's monster
-	var my_zone := _find_zone_of_card(ctx)
+	var my_zone := find_zone_of_card(ctx)
 	if my_zone >= 0:
 		var opp_monster_idx: int = ctx.opponent.monster_zone - 1
 		if opp_monster_idx >= 0:
@@ -27,11 +27,3 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 				bonus += 3000
 
 	return bonus
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

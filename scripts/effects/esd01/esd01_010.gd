@@ -17,7 +17,7 @@ func get_counter_power_modifier(_ctx: EffectContext) -> int:
 
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	# "other" — don't boost zone 8 if this card itself is in zone 8
-	if _find_zone_of_card(ctx) == 7:
+	if find_zone_of_card(ctx) == 7:
 		return {}
 
 	# Only applies if there's a battle card in zone 8
@@ -36,11 +36,3 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	if bonus == 0:
 		return {}
 	return {7: bonus}
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

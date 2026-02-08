@@ -7,7 +7,7 @@ extends CardEffect
 
 
 func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	if _find_zone_of_card(ctx) != 7:
+	if find_zone_of_card(ctx) != 7:
 		return
 	# Only during invasion (main phase)
 	if ctx.game_state.current_phase != CardEnums.GamePhase.MAIN:
@@ -31,11 +31,3 @@ func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> v
 	if not selected.is_empty():
 		ctx.owner.hand.append(selected)
 		ctx.owner.hand_changed.emit()
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

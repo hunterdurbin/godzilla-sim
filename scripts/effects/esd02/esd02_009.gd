@@ -11,17 +11,9 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	# Must be in zone 8 (index 7)
-	if _find_zone_of_card(ctx) != 7:
+	if find_zone_of_card(ctx) != 7:
 		return
 
 	if ctx.opponent.rage > 0:
 		ctx.opponent.rage -= 1
 		ctx.opponent.rage_changed.emit(ctx.opponent.rage)
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

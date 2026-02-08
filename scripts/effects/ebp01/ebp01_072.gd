@@ -7,7 +7,7 @@ extends CardEffect
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var zone_idx := _find_zone_of_card(ctx)
+	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return
 
@@ -28,11 +28,3 @@ func on_enter(ctx: EffectContext) -> void:
 		if opponent_tl <= 50000 and ctx.opponent.monster_zone > 1:
 			ctx.opponent.monster_zone -= 1
 			ctx.opponent.monster_changed.emit()
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

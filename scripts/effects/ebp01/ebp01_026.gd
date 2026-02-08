@@ -12,7 +12,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
 		return
 
-	var zone_idx := _find_zone_of_card(ctx)
+	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return
 
@@ -32,18 +32,10 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	var zone_idx := _find_zone_of_card(ctx)
+	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return 0
 	# Check if there's a card under this card (stack size > 1)
 	if ctx.owner.get_zone_stack(zone_idx).size() > 1:
 		return 5000
 	return 0
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

@@ -12,7 +12,7 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 		return
 
 	# Find which zone this card is in
-	var current_zone_idx: int = _find_zone_of_card(ctx)
+	var current_zone_idx: int = find_zone_of_card(ctx)
 	if current_zone_idx < 0:
 		return
 
@@ -41,7 +41,7 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	# +3000 CP if in zone 8 (index 7)
-	if _find_zone_of_card(ctx) == 7:
+	if find_zone_of_card(ctx) == 7:
 		return 3000
 	return 0
 
@@ -52,11 +52,3 @@ func on_revenge(ctx: EffectContext) -> void:
 
 func on_crush(ctx: EffectContext) -> void:
 	ctx.effect_handler.return_to_deck_bottom(ctx.owner, ctx.card_data)
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1

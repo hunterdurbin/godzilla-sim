@@ -15,18 +15,10 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 func _is_protected(ctx: EffectContext) -> bool:
 	if ctx.owner.monster_zone < 4:
 		return false
-	var zone_idx := _find_zone_of_card(ctx)
+	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0 or zone_idx > 4:
 		return false
 	return _count_monsters_in_discard(ctx.owner) >= 5
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1
 
 
 func _count_monsters_in_discard(player: PlayerState) -> int:

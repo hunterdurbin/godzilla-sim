@@ -105,6 +105,18 @@ func is_base_strategy() -> bool:
 	return false
 
 
+# --- Zone utilities ---
+
+func find_zone_of_card(ctx: EffectContext) -> int:
+	## Find which zone (0-indexed) this card occupies on the owner's board.
+	## Returns -1 if not found in any zone.
+	var card_id: String = ctx.card_data.get("id", "")
+	for i in range(8):
+		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
+			return i
+	return -1
+
+
 # --- Column utilities ---
 
 static func get_adjacent_zones(zone_idx: int) -> Array[int]:

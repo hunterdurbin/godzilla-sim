@@ -1,0 +1,17 @@
+extends CardEffect
+
+## EBP02-076: Chibi Mechagodzilla - Battle Rank 5 (White)
+## If this card is in a zone adjacent to your monster card,
+## this card gains +3000 counter power.
+
+
+func get_counter_power_modifier(ctx: EffectContext) -> int:
+	var zone_idx := find_zone_of_card(ctx)
+	if zone_idx < 0:
+		return 0
+
+	var monster_zone_idx: int = ctx.owner.monster_zone - 1
+	var adjacent := get_adjacent_zones(monster_zone_idx)
+	if zone_idx in adjacent:
+		return 3000
+	return 0

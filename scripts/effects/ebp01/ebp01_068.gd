@@ -6,7 +6,7 @@ extends CardEffect
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	var zone_idx := _find_zone_of_card(ctx)
+	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return 0
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
@@ -14,11 +14,3 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 	if zone_idx in adjacent:
 		return 3000
 	return 0
-
-
-func _find_zone_of_card(ctx: EffectContext) -> int:
-	var card_id: String = ctx.card_data.get("id", "")
-	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == card_id:
-			return i
-	return -1
