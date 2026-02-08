@@ -7,3 +7,4 @@
 
 # Export builds
 /build/
+.vscode/settings.json
