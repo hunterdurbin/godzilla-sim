@@ -1166,7 +1166,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.FOURTH_FORM],
 		"counter_power": 0,
 		"invasion_icon": 1,
-		"description": "If this card is in zone 8, whenever your strategy cards would be discarded from the strategy zone, you may place them under this card instead.\n<Awakening4> At the beginning of your main phase, if there are 2 or more cards under this card, counter your opponent's monster card."
+		"description": "If this card is in zone 8, whenever your strategy cards would be discarded from the strategy zone, you may place them under this card instead.\n<Awakening4> At the beginning of your main phase, if there are 2 or more cards under this card, counter your opponent's monster card.",
+		"effect_script": "res://scripts/effects/ebp02/ebp02_012.gd"
 	},
 	{
 		"id": "EBP02-013",
@@ -1223,7 +1224,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"rank": 2,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 1,
-		"description": "<Your Turn> If you have 4 or more battle cards in your zones, increase your total counter power by 5000."
+		"description": "<Your Turn> If you have 4 or more battle cards in your zones, increase your total counter power by 5000.",
+		"effect_script": "res://scripts/effects/ebp02/ebp02_017.gd"
 	},
 	{
 		"id": "EBP02-018",
@@ -1252,7 +1254,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"rank": 6,
 		"color": CardEnums.CardColor.RED,
 		"invasion_icon": 2,
-		"description": "If you have 5 or more strategy cards in your discard pile, create “Conductorless train bombers” tokens in each of your unoccupied zones. (Tokens are prepared separately from your main deck.)"
+		"effect_script": "res://scripts/effects/ebp02/ebp02_020.gd",
+		"description": "If you have 5 or more strategy cards in your discard pile, create "Conductorless train bombers" tokens in each of your unoccupied zones. (Tokens are prepared separately from your main deck.)"
 	},
 	{
 		"id": "EBP02-021",
@@ -1275,7 +1278,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"threat_level": 36000,
 		"invasion_icon": 1,
-		"description": "<When Invading> If you discarded a blue battle card for this card's invade action, you may play that battle card from your discard pile."
+		"description": "<When Invading> If you discarded a blue battle card for this card's invade action, you may play that battle card from your discard pile.",
+		"effect_script": "res://scripts/effects/ebp02/ebp02_022.gd"
 	},
 	{
 		"id": "EBP02-023",
@@ -1309,6 +1313,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BIOLLANTE],
 		"threat_level": 11000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_025.gd",
 		"description": "This card cannot advance nor invade.\n<Enter> Play 1 “Tentacles” token in a zone adjacent to this card. (Tokens are prepared separately from your main deck.)"
 	},
 	{
@@ -1469,7 +1474,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"rank": 5,
 		"color": CardEnums.CardColor.BLUE,
 		"invasion_icon": 1,
-		"description": "<Your Turn> You can play battle cards with <《Biollante》> from your hand with their rank reduced by 3. (They return to their original rank after being played.)"
+		"description": "<Your Turn> You can play battle cards with <《Biollante》> from your hand with their rank reduced by 3. (They return to their original rank after being played.)",
+		"effect_script": "res://scripts/effects/ebp02/ebp02_039.gd"
 	},
 	{
 		"id": "EBP02-040",
@@ -1622,6 +1628,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.SPACEGODZILLA],
 		"threat_level": 5000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_052.gd",
 		"description": "<When Invading> You may discard 1 card from your hand, if you do, play 1 “Crystals” token. (Tokens are prepared separately from your deck.)"
 	},
 	{
@@ -1633,6 +1640,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.SPACEGODZILLA],
 		"threat_level": 12000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_053.gd",
 		"description": "<When Invading> Play 1 “Crystals” token. (Tokens are prepared separately from your deck.)\nIf there is a “Crystals” in your zones, this card gains +5000 threat level."
 	},
 	{
@@ -1644,6 +1652,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.SPACEGODZILLA],
 		"threat_level": 20000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_054.gd",
 		"description": "<Enter> Play 2 “Crystals” tokens. (Tokens are prepared separately from your deck.)\nWhenever this card's <Rage> is increased, <Destroy> 1 of your opponent's rank 5 or lower battle cards for each “Crystals” in your zones."
 	},
 	{
@@ -1655,6 +1664,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.SPACEGODZILLA],
 		"threat_level": 23000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_055.gd",
 		"description": "<Awakening4> If there are 3 or more “Crystals” in your zones, your opponent cannot play battle cards in zones in the same column as this card. (Does not destroy cards already there.)"
 	},
 	{
@@ -1666,6 +1676,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.SPACEGODZILLA],
 		"threat_level": 32000,
 		"invasion_icon": 2,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_056.gd",
 		"description": "If you have 3 or more “Crystals” in your zones, this card gains +20,000 threat level.\n<Your Turn> When this card advances during the end phase, it advances 1 additional zone for each “Crystals” in your zones."
 	},
 	{
@@ -1807,7 +1818,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.KING_GHIDORAH, CardEnums.CardTrait.TWENTY_THIRD_CENTURY],
 		"counter_power": 7000,
 		"invasion_icon": 1,
-		"description": "You can play this card from your hand with its rank reduced by 2 for each non-rank 23 <《King Ghidorah》> card in your discard pile. (This card's rank returns to 23 after being played.)\nIf this card is in the same column as your opponent's monster card, they cannot invade, and this card gains +3000 counter power."
+		"description": "You can play this card from your hand with its rank reduced by 2 for each non-rank 23 <《King Ghidorah》> card in your discard pile. (This card's rank returns to 23 after being played.)\nIf this card is in the same column as your opponent's monster card, they cannot invade, and this card gains +3000 counter power.",
+		"effect_script": "res://scripts/effects/ebp02/ebp02_068.gd"
 	},
 	{
 		"id": "EBP02-069",
@@ -1845,6 +1857,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"rank": 5,
 		"color": CardEnums.CardColor.GREEN,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_072.gd",
 		"description": "<Your Turn> If you have 3 or more “Crystals” in your zones, your total counter power is increased by 20,000."
 	},
 	{
@@ -1854,7 +1867,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"rank": 6,
 		"color": CardEnums.CardColor.GREEN,
 		"invasion_icon": 1,
-		"description": "<Your Turn> Whenever you play a battle card, <Destroy> all of your opponent's rank 6 or lower battle cards in the same column as that battle card."
+		"description": "<Your Turn> Whenever you play a battle card, <Destroy> all of your opponent's rank 6 or lower battle cards in the same column as that battle card.",
+		"effect_script": "res://scripts/effects/ebp02/ebp02_073.gd"
 	},
 	{
 		"id": "EBP02-074",
@@ -1899,6 +1913,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.CHIBI_GODZILLA_RAIDS_AGAIN, CardEnums.CardTrait.GODZILLA],
 		"counter_power": 5000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_077.gd",
 		"description": "At the beginning of your main phase, send the top 2 cards of your deck to your discard pile.\nIf a <《Godzilla》> card was sent to your discard pile this way, <Destroy> this card and play a “Chibi Godzilla 2nd Form” token. (Tokens are prepared separately from your deck.)"
 	},
 	{
@@ -1942,6 +1957,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.TOKEN, CardEnums.CardTrait.WEAPON],
 		"counter_power": 2000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_t01.gd",
 		"description": "<Enter> Reduce your opponent's <Rage> by 1.\n(Tokens cannot be added to the deck. They are banished when removed from zones.)"
 	},
 	{
@@ -1964,6 +1980,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.TOKEN, CardEnums.CardTrait.CRYSTAL],
 		"counter_power": 0,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_t03.gd",
 		"description": "All of your <《SpaceGodzilla》> monster cards in your zones gain +1000 threat level.\n(Tokens cannot be added to the deck. They are banished when removed from zones.)"
 	},
 	{
@@ -1975,6 +1992,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.TOKEN, CardEnums.CardTrait.CHIBI_GODZILLA_RAIDS_AGAIN, CardEnums.CardTrait.GODZILLA],
 		"counter_power": 10000,
 		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_t04.gd",
 		"description": "At the beginning of your end phase, <Destroy> this card and play 1 battle card named “Chibi Godzilla” from your discard pile.\n(Tokens cannot be added to the deck. They are banished when removed from zones.)"
 	},
 ]

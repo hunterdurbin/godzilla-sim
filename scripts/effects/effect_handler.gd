@@ -239,6 +239,28 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 				await se.on_monster_played(_build_context(player_id, sz_card), old_monster, new_monster)
 
 
+func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_index: int) -> void:
+	## Trigger on_battle_card_played on all active cards for this player.
+	## Called after a battle card is placed in a zone and its enter effect resolves.
+	var player := game_state.players[player_id]
+
+	# Strategy cards (e.g. EBP02-073 Bloody Chainsaw)
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var se := get_effect(sz_card)
+			if se:
+				await se.on_battle_card_played(_build_context(player_id, sz_card), zone_index)
+
+	# Battle cards in zones (top card only, skip the card that was just played)
+	var played_id: String = card_data.get("id", "")
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty() and zone_card.get("id", "") != played_id:
+			var ze := get_effect(zone_card)
+			if ze:
+				await ze.on_battle_card_played(_build_context(player_id, zone_card), zone_index)
+
+
 # --- Player choice helpers ---
 
 func discard_hand_to(player_id: int, target_count: int) -> void:
@@ -478,6 +500,14 @@ func unhighlight_zone_card(player_id: int, zone_index: int) -> void:
 	effect_zone_unhighlighted.emit(player_id, zone_index)
 
 
+static func banish_or_discard(player: PlayerState, stack: Array) -> void:
+	## Route cards to banishment (tokens) or discard pile (non-tokens).
+	## Tokens are removed from the game entirely; non-tokens go to discard pile.
+	for card in stack:
+		if not PlayerState.is_token(card):
+			player.discard_pile.append(card)
+
+
 func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, prompt: String) -> Dictionary:
 	## Let a player choose one of the target player's battle cards matching filter to destroy.
 	## filter receives (card_data: Dictionary) -> bool for each zone's top card.
@@ -500,7 +530,7 @@ func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, 
 		return {}
 
 	var stack: Array = target.clear_zone(chosen)
-	target.discard_pile.append_array(stack)
+	banish_or_discard(target, stack)
 	target.zones_changed.emit()
 	target.discard_changed.emit()
 	await trigger_revenge(target.player_id, zone_card)
@@ -516,7 +546,7 @@ func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dicti
 			continue
 		var top_card := target.get_zone_top_card(zi)
 		var stack: Array = target.clear_zone(zi)
-		target.discard_pile.append_array(stack)
+		banish_or_discard(target, stack)
 		await trigger_revenge(target.player_id, top_card)
 		destroyed.append(top_card)
 
@@ -524,6 +554,48 @@ func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dicti
 		target.zones_changed.emit()
 		target.discard_changed.emit()
 	return destroyed
+
+
+func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int) -> bool:
+	## Create a token from CardData template and place it in the given zone.
+	## Handles overload if zone is occupied. Returns true if token was placed.
+	var token_data: Dictionary = CardData.get_card_by_id(token_id)
+	if token_data.is_empty():
+		push_warning("EffectHandler: Token not found: %s" % token_id)
+		return false
+
+	# Make a copy so each token instance is independent
+	token_data = token_data.duplicate()
+
+	if not player.is_zone_empty(zone_index):
+		var destroyed_stack: Array = player.clear_zone(zone_index)
+		var top_card: Dictionary = destroyed_stack[0]
+		banish_or_discard(player, destroyed_stack)
+		player.discard_changed.emit()
+		await trigger_revenge(player.player_id, top_card)
+
+	player.push_zone_card(zone_index, token_data)
+	player.zones_changed.emit()
+	await trigger_enter(player.player_id, token_data)
+	return true
+
+
+func create_tokens_in_empty_zones(player: PlayerState, token_id: String, count: int) -> int:
+	## Let the player select empty zones to place up to count tokens.
+	## Returns the number of tokens actually placed.
+	var placed: int = 0
+	for _i in range(count):
+		var empty := player.get_empty_zone_indices()
+		if empty.is_empty():
+			break
+		var chosen: int = await select_zone_target(
+			player.player_id, player.player_id, empty,
+			"Choose an empty zone for a token (%d remaining):" % (count - placed))
+		if chosen < 0:
+			break
+		if await create_token_in_zone(player, token_id, chosen):
+			placed += 1
+	return placed
 
 
 func return_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
@@ -542,11 +614,20 @@ func return_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
 # --- Modifier queries ---
 
 func get_counter_power_modifier(player_id: int) -> int:
-	## Get total counter power modifier from all active battle card effects.
+	## Get total counter power modifier from all active effects (zones + strategies).
 	var total: int = 0
 	var per_zone := get_zone_cp_modifiers(player_id)
 	for mod in per_zone:
 		total += mod
+
+	# Strategy card flat CP modifiers (e.g. EBP02-017)
+	var player := game_state.players[player_id]
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var effect := get_effect(sz_card)
+			if effect:
+				total += effect.get_counter_power_modifier(_build_context(player_id, sz_card))
+
 	return total
 
 
@@ -583,12 +664,66 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 
 
 func get_threat_level_modifier(player_id: int) -> int:
-	## Get threat level modifier from the current monster's effect.
+	## Get threat level modifier from all active effects (monster, zones, strategies).
+	var total: int = 0
 	var player := game_state.players[player_id]
-	var effect := get_effect(player.current_monster)
-	if effect:
-		return effect.get_threat_level_modifier(_build_context(player_id, player.current_monster))
-	return 0
+
+	# Monster card
+	var me := get_effect(player.current_monster)
+	if me:
+		total += me.get_threat_level_modifier(_build_context(player_id, player.current_monster))
+
+	# Battle cards in zones (e.g. Crystal tokens grant +1000 TL)
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze:
+				total += ze.get_threat_level_modifier(_build_context(player_id, zone_card))
+
+	# Strategy cards
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var se := get_effect(sz_card)
+			if se:
+				total += se.get_threat_level_modifier(_build_context(player_id, sz_card))
+
+	return total
+
+
+func get_play_rank_modifier(player_id: int, card: Dictionary) -> int:
+	## Get total play rank modifier for a card being played from hand.
+	## Checks the card's own effect (self-modifier) and active strategy cards.
+	var total: int = 0
+	var player := game_state.players[player_id]
+
+	# Check the card's own effect (self-modifier, e.g. EBP02-068)
+	var card_effect := get_effect(card)
+	if card_effect:
+		total += card_effect.get_play_rank_modifier_for_card(_build_context(player_id, card), card)
+
+	# Check active strategy cards (e.g. EBP02-039)
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var effect := get_effect(sz_card)
+			if effect:
+				total += effect.get_play_rank_modifier_for_card(_build_context(player_id, sz_card), card)
+
+	return total
+
+
+func is_invasion_blocked(defender_player_id: int) -> bool:
+	## Check if any of the defender's battle cards prevent the opponent from invading.
+	var player := game_state.players[defender_player_id]
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var effect := get_effect(zone_card)
+			if effect:
+				var ctx := _build_context(defender_player_id, zone_card)
+				if effect.prevents_opponent_invasion(ctx):
+					return true
+	return false
 
 
 func get_cards_that_can_engage(player_id: int) -> Array[int]:
@@ -606,3 +741,40 @@ func get_cards_that_can_engage(player_id: int) -> Array[int]:
 			else:
 				engageable.append(i)
 	return engageable
+
+
+func get_opponent_blocked_zones(blocker_player_id: int) -> Array[int]:
+	## Collect all opponent zone indices that the blocker's cards prevent placement in.
+	## Queries monster card for get_blocked_opponent_zones().
+	var player := game_state.players[blocker_player_id]
+	var blocked: Array[int] = []
+
+	# Monster card
+	var me := get_effect(player.current_monster)
+	if me:
+		var monster_blocked: Array[int] = me.get_blocked_opponent_zones(_build_context(blocker_player_id, player.current_monster))
+		for z in monster_blocked:
+			if z not in blocked:
+				blocked.append(z)
+
+	# Zone cards
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze:
+				var zone_blocked: Array[int] = ze.get_blocked_opponent_zones(_build_context(blocker_player_id, zone_card))
+				for z in zone_blocked:
+					if z not in blocked:
+						blocked.append(z)
+
+	return blocked
+
+
+func get_extra_end_phase_advance(player_id: int) -> int:
+	## Get extra end phase advance zones from the current monster's effect.
+	var player := game_state.players[player_id]
+	var effect := get_effect(player.current_monster)
+	if effect:
+		return effect.get_extra_end_phase_advance(_build_context(player_id, player.current_monster))
+	return 0

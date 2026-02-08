@@ -4,7 +4,6 @@ extends CardEffect
 ## <Enter> If you have 2 or more cards with <Biollante> in your discard pile, return all
 ## cards in your opponent's discard pile to their deck then shuffle.
 ## <Enter> Play 2 "Tentacles" tokens in zones adjacent to this card.
-## [TODO: Token creation not yet supported - Tentacles tokens deferred]
 
 
 func on_enter(ctx: EffectContext) -> void:
@@ -23,3 +22,16 @@ func on_enter(ctx: EffectContext) -> void:
 			ctx.opponent.main_deck.shuffle()
 			ctx.opponent.deck_changed.emit()
 			ctx.opponent.discard_changed.emit()
+
+	# Play 2 Tentacles tokens in adjacent zones
+	var zone_idx := find_zone_of_card(ctx)
+	if zone_idx < 0:
+		return
+	var adjacent := get_adjacent_zones(zone_idx)
+	var placed: int = 0
+	for adj_zi in adjacent:
+		if placed >= 2:
+			break
+		if ctx.owner.is_zone_empty(adj_zi):
+			await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T02", adj_zi)
+			placed += 1

@@ -25,6 +25,7 @@ var strategy_zone_turn_placed: Array[int] = [0, 0]  # Turn number when each was 
 var monster_stack: Array[Dictionary] = []  # Monsters stacked under current_monster (index 0 = directly below top)
 var burst_monster: Dictionary = {}  # The Burst-played monster (empty if none active)
 var pre_burst_monster: Dictionary = {}  # Monster that was active before Burst play
+var last_invasion_card: Dictionary = {}  # Card discarded for the most recent invade action
 
 
 func _init(id: int = 0) -> void:
@@ -131,10 +132,31 @@ func get_monster_rank() -> int:
 	return current_monster.get("rank", 1)
 
 
+static func is_token(card: Dictionary) -> bool:
+	## Returns true if the card is a token (has the TOKEN trait).
+	var traits: Array = card.get("traits", [])
+	return CardEnums.CardTrait.TOKEN in traits
+
+
+func count_zone_tokens_by_id(token_id: String) -> int:
+	## Count how many zones have a token with the given ID as top card.
+	var count: int = 0
+	for i in range(8):
+		var top := get_zone_top_card(i)
+		if not top.is_empty() and is_token(top) and top.get("id", "") == token_id:
+			count += 1
+	return count
+
+
 func _reshuffle_discard() -> void:
 	if discard_pile.is_empty():
 		return
-	main_deck.append_array(discard_pile)
+	# Safety: filter out any tokens that leaked into discard
+	var non_tokens: Array[Dictionary] = []
+	for card in discard_pile:
+		if not is_token(card):
+			non_tokens.append(card)
+	main_deck.append_array(non_tokens)
 	discard_pile.clear()
 	main_deck.shuffle()
 	deck_changed.emit()

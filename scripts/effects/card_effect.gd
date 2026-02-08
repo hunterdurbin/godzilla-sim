@@ -61,6 +61,12 @@ func on_monster_played(_ctx: EffectContext, _old_monster: Dictionary, _new_monst
 	pass
 
 
+func on_battle_card_played(_ctx: EffectContext, _zone_index: int) -> void:
+	## Called on active strategy/zone cards when the owner plays a battle card.
+	## zone_index is the zone (0-indexed) where the battle card was placed.
+	pass
+
+
 # --- Modifier methods (override to alter stats) ---
 
 func get_counter_power_modifier(_ctx: EffectContext) -> int:
@@ -84,6 +90,29 @@ func can_engage(_ctx: EffectContext) -> bool:
 	## Return false if this card "cannot engage" with the monster.
 	## Its counter power won't be included in the total.
 	return true
+
+
+func get_play_rank_modifier_for_card(_ctx: EffectContext, _target_card: Dictionary) -> int:
+	## Return rank reduction (negative) for target_card when being played from hand.
+	## Called on the card itself (self-modifier) and on active strategy cards.
+	return 0
+
+
+func prevents_opponent_invasion(_ctx: EffectContext) -> bool:
+	## Return true if this card's presence prevents the opponent from invading.
+	return false
+
+
+func get_blocked_opponent_zones(_ctx: EffectContext) -> Array[int]:
+	## Return opponent zone indices where the opponent cannot play battle cards.
+	## Used by cards like SpaceGodzilla R3 (EBP02-055) for column blocking.
+	return []
+
+
+func get_extra_end_phase_advance(_ctx: EffectContext) -> int:
+	## Return extra zones to advance during end phase advance.
+	## Used by SpaceGodzilla R4 (EBP02-056) for Crystal-based extra advance.
+	return 0
 
 
 # --- Property methods (override to declare card mechanics) ---

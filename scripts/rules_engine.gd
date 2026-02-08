@@ -29,7 +29,9 @@ func get_valid_actions(state: GameState) -> Array:
 
 	# Can invade? (has any card to discard with invasion_icon > 0, hasn't invaded this turn)
 	if _can_invade(player):
-		actions.append(CardEnums.ActionType.INVADE)
+		# Check if opponent's cards block invasion (e.g. EBP02-068 column lock)
+		if not effect_handler or not effect_handler.is_invasion_blocked(opponent.player_id):
+			actions.append(CardEnums.ActionType.INVADE)
 
 	return actions
 
@@ -43,17 +45,24 @@ func get_playable_battle_cards(player: PlayerState, opponent: PlayerState) -> Ar
 	for i in range(player.hand.size()):
 		var card: Dictionary = player.hand[i]
 		if card.get("card_type") == CardEnums.CardType.BATTLE:
-			if card.get("rank", 99) <= opponent.monster_zone:
+			var effective_rank: int = card.get("rank", 99)
+			if effect_handler:
+				effective_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
+			if effective_rank <= opponent.monster_zone:
 				indices.append(i)
 	return indices
 
 
-func get_valid_zones_for_battle_card(player: PlayerState, _opponent: PlayerState) -> Array[int]:
+func get_valid_zones_for_battle_card(player: PlayerState, opponent: PlayerState) -> Array[int]:
 	## Returns zone indices (0-7) where a battle card can be placed
 	## Zone must not be occupied by own invading monster (can overload occupied zones per rule 11.5)
+	## Also excludes zones blocked by opponent's card effects (e.g. EBP02-055)
 	var valid: Array[int] = []
+	var blocked: Array[int] = []
+	if effect_handler:
+		blocked = effect_handler.get_opponent_blocked_zones(opponent.player_id)
 	for i in range(8):
-		if (player.monster_zone - 1) != i:
+		if (player.monster_zone - 1) != i and i not in blocked:
 			valid.append(i)
 	return valid
 
@@ -61,12 +70,19 @@ func get_valid_zones_for_battle_card(player: PlayerState, _opponent: PlayerState
 func can_play_battle_card_at_zone(card: Dictionary, zone_index: int, player: PlayerState, opponent: PlayerState) -> bool:
 	if card.get("card_type") != CardEnums.CardType.BATTLE:
 		return false
-	if card.get("rank", 99) > opponent.monster_zone:
+	var effective_rank: int = card.get("rank", 99)
+	if effect_handler:
+		effective_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
+	if effective_rank > opponent.monster_zone:
 		return false
 	if zone_index < 0 or zone_index >= 8:
 		return false
 	if (player.monster_zone - 1) == zone_index:
 		return false
+	if effect_handler:
+		var blocked: Array[int] = effect_handler.get_opponent_blocked_zones(opponent.player_id)
+		if zone_index in blocked:
+			return false
 	return true
 
 
@@ -165,7 +181,10 @@ func _can_play_any_battle_card(player: PlayerState, opponent: PlayerState) -> bo
 		return false
 	for card in player.hand:
 		if card.get("card_type") == CardEnums.CardType.BATTLE:
-			if card.get("rank", 99) <= opponent.monster_zone:
+			var effective_rank: int = card.get("rank", 99)
+			if effect_handler:
+				effective_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
+			if effective_rank <= opponent.monster_zone:
 				return true
 	return false
 

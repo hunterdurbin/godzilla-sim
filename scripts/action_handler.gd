@@ -82,8 +82,15 @@ func execute_end_phase_burst_discard(state: GameState) -> void:
 
 func execute_end_phase_advance(state: GameState) -> void:
 	## Advance monster (7.5.2) and check crush rule.
+	## Extra advance from effects (e.g. EBP02-056 SpaceGodzilla R4) adds additional zones.
 	var player := state.get_current_player()
-	if player.monster_zone <= 7:
+	var extra: int = 0
+	if effect_handler:
+		extra = effect_handler.get_extra_end_phase_advance(player.player_id)
+	var total_advance: int = 1 + extra
+	for _step in range(total_advance):
+		if player.monster_zone > 7:
+			break
 		var old_zone: int = player.monster_zone
 		player.monster_zone += 1
 		monster_advanced.emit(player.player_id, old_zone, player.monster_zone)
@@ -194,7 +201,7 @@ func _check_crush_for_player(state: GameState, player_id: int) -> void:
 	if monster_zone_idx >= 0 and monster_zone_idx < 8:
 		if not player.is_zone_empty(monster_zone_idx):
 			var crushed_stack: Array = player.clear_zone(monster_zone_idx)
-			player.discard_pile.append_array(crushed_stack)
+			EffectHandler.banish_or_discard(player, crushed_stack)
 			battle_card_crushed.emit(player_id, monster_zone_idx, crushed_stack[0])
 			player.zones_changed.emit()
 			player.discard_changed.emit()
@@ -218,7 +225,7 @@ func _resolve_illegal_cards(player: PlayerState) -> bool:
 		var top_card := player.get_zone_top_card(i)
 		if top_card.get("card_type") == CardEnums.CardType.STRATEGY:
 			var stack: Array = player.clear_zone(i)
-			player.discard_pile.append_array(stack)
+			EffectHandler.banish_or_discard(player, stack)
 			changed = true
 
 	# Check strategy zones: non-strategy cards are illegal
@@ -226,7 +233,7 @@ func _resolve_illegal_cards(player: PlayerState) -> bool:
 		if player.strategy_zones[i].is_empty():
 			continue
 		if player.strategy_zones[i].get("card_type") != CardEnums.CardType.STRATEGY:
-			player.discard_pile.append(player.strategy_zones[i])
+			EffectHandler.banish_or_discard(player, [player.strategy_zones[i]])
 			player.strategy_zones[i] = {}
 			changed = true
 
@@ -280,7 +287,7 @@ func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> vo
 	if not player.is_zone_empty(zone_index):
 		var destroyed_stack: Array = player.clear_zone(zone_index)
 		var top_card: Dictionary = destroyed_stack[0]
-		player.discard_pile.append_array(destroyed_stack)
+		EffectHandler.banish_or_discard(player, destroyed_stack)
 		player.discard_changed.emit()
 		if effect_handler:
 			await effect_handler.trigger_revenge(player.player_id, top_card)
@@ -291,6 +298,7 @@ func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> vo
 	player.zones_changed.emit()
 	if effect_handler:
 		await effect_handler.trigger_enter(player.player_id, card)
+		await effect_handler.trigger_battle_card_played(player.player_id, card, zone_index)
 
 
 func _play_strategy_card(hand_index: int, state: GameState) -> void:
@@ -358,6 +366,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 	var advance_amount: int = card.get("invasion_icon", 0)
 	player.discard_pile.append(card)
 	player.has_invaded_this_turn = true
+	player.last_invasion_card = card
 
 	card_discarded.emit(player.player_id, card)
 

@@ -4,7 +4,6 @@ extends CardEffect
 ## <Enter> Move 1 of your opponent's battle cards in the same column as this card
 ## to an unoccupied zone.
 ## Whenever this card's <Rage> is increased, play 2 "Crystals" tokens.
-## [TODO: Token creation (Crystals) not yet supported - rage trigger deferred]
 
 
 func on_enter(ctx: EffectContext) -> void:
@@ -40,3 +39,10 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.opponent.zones[source] = []
 	ctx.opponent.zones[dest] = stack
 	ctx.opponent.zones_changed.emit()
+
+
+func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
+	# Only trigger when rage increases
+	if new_rage <= old_rage:
+		return
+	await ctx.effect_handler.create_tokens_in_empty_zones(ctx.owner, "EBP02-T03", 2)
