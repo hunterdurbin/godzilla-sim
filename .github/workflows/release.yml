@@ -15,10 +15,18 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.6
-      env:
-        HOME: /root
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          if [ -d "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ]; then
+            ln -sf /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          fi
+          echo "Templates at HOME:" && ls "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" || true
+          echo "Templates at /root:" && ls "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" || true
+          echo "Find all export templates:" && find / -path "*/export_templates/${GODOT_VERSION}.stable" -type d 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/windows
@@ -37,10 +45,18 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.6
-      env:
-        HOME: /root
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          if [ -d "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ]; then
+            ln -sf /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          fi
+          echo "Templates at HOME:" && ls "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" || true
+          echo "Templates at /root:" && ls "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" || true
+          echo "Find all export templates:" && find / -path "*/export_templates/${GODOT_VERSION}.stable" -type d 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/linux
@@ -59,10 +75,18 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.6
-      env:
-        HOME: /root
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          if [ -d "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ]; then
+            ln -sf /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          fi
+          echo "Templates at HOME:" && ls "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" || true
+          echo "Templates at /root:" && ls "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" || true
+          echo "Find all export templates:" && find / -path "*/export_templates/${GODOT_VERSION}.stable" -type d 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/macos
@@ -86,10 +110,18 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.6
-      env:
-        HOME: /root
     steps:
       - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          if [ -d "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ]; then
+            ln -sf /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+          fi
+          echo "Templates at HOME:" && ls "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" || true
+          echo "Templates at /root:" && ls "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" || true
+          echo "Find all export templates:" && find / -path "*/export_templates/${GODOT_VERSION}.stable" -type d 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/web
