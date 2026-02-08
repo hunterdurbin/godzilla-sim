@@ -20,8 +20,9 @@ jobs:
 
       - name: Setup export templates
         run: |
-          mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable
-          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ || true
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          cp /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
+          cp /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/windows
@@ -45,8 +46,9 @@ jobs:
 
       - name: Setup export templates
         run: |
-          mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable
-          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ || true
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          cp /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
+          cp /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/linux
@@ -70,8 +72,9 @@ jobs:
 
       - name: Setup export templates
         run: |
-          mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable
-          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ || true
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          cp /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
+          cp /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/macos
@@ -100,8 +103,9 @@ jobs:
 
       - name: Setup export templates
         run: |
-          mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable
-          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ || true
+          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          cp /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
+          cp /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/web
