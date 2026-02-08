@@ -15,14 +15,10 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.6
+      env:
+        HOME: /root
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup export templates
-        run: |
-          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
-          cp /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
-          cp /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/windows
@@ -41,14 +37,10 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.6
+      env:
+        HOME: /root
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup export templates
-        run: |
-          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
-          cp /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
-          cp /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/linux
@@ -67,14 +59,10 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.6
+      env:
+        HOME: /root
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup export templates
-        run: |
-          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
-          cp /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
-          cp /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/macos
@@ -98,14 +86,10 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: barichello/godot-ci:4.6
+      env:
+        HOME: /root
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup export templates
-        run: |
-          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
-          cp /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
-          cp /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" 2>/dev/null || true
 
       - name: Create build directory
         run: mkdir -p build/web
