@@ -4,3 +4,6 @@
 
 # Card Artwork
 /CardContent/Artwork/*
+
+# Export builds
+/build/

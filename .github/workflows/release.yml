@@ -1,0 +1,146 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  GODOT_VERSION: "4.6"
+  PROJECT_NAME: "godzilla_tcg_sim"
+
+jobs:
+  export-windows:
+    name: Windows Export
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ || true
+
+      - name: Create build directory
+        run: mkdir -p build/windows
+
+      - name: Export Windows
+        run: godot --headless --export-release "Windows Desktop" build/windows/${PROJECT_NAME}.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: build/windows/
+
+  export-linux:
+    name: Linux Export
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ || true
+
+      - name: Create build directory
+        run: mkdir -p build/linux
+
+      - name: Export Linux
+        run: godot --headless --export-release "Linux" build/linux/${PROJECT_NAME}.x86_64
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: build/linux/
+
+  export-macos:
+    name: macOS Export
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ || true
+
+      - name: Create build directory
+        run: mkdir -p build/macos
+
+      - name: Export macOS
+        run: godot --headless --export-release "macOS" build/macos/${PROJECT_NAME}.app
+
+      - name: Zip macOS app
+        run: |
+          cd build/macos
+          zip -r ${PROJECT_NAME}-macos.zip ${PROJECT_NAME}.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: build/macos/*.zip
+
+  export-web:
+    name: Web Export
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -p /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mv /root/.local/share/godot/templates/${GODOT_VERSION}.stable/* /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ || true
+
+      - name: Create build directory
+        run: mkdir -p build/web
+
+      - name: Export Web
+        run: godot --headless --export-release "Web" build/web/index.html
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web
+          path: build/web/
+
+  create-release:
+    name: Create Release
+    needs: [export-windows, export-linux, export-macos, export-web]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Zip platform builds
+        run: |
+          cd windows && zip -r ../${PROJECT_NAME}-windows.zip . && cd ..
+          cd linux && zip -r ../${PROJECT_NAME}-linux.zip . && cd ..
+          cd web && zip -r ../${PROJECT_NAME}-web.zip . && cd ..
+        env:
+          PROJECT_NAME: godzilla_tcg_sim
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            godzilla_tcg_sim-windows.zip
+            godzilla_tcg_sim-linux.zip
+            macos/godzilla_tcg_sim-macos.zip
+            godzilla_tcg_sim-web.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
