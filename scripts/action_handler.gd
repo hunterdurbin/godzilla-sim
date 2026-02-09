@@ -265,11 +265,18 @@ func play_monster_from_effect(state: GameState, player_id: int, monster_card: Di
 
 
 func resolve_check_timing(state: GameState) -> void:
-	## Resolve non-interrupt rule actions at a check timing (10.4.3).
-	## Per 10.4.3.1: resolve all rule actions simultaneously, repeat until none remain.
+	## Resolve all rule actions at a check timing (10.4.3, 11.1.2).
+	## Per 11.1.2.1: interrupt rule actions (crush) resolve first.
+	## Per 10.4.3.1: repeat until no more rule actions remain.
 	var changed := true
 	while changed:
 		changed = false
+		# Interrupt rule actions first (11.1.2.1): crush rule (11.3)
+		if await _check_crush_for_player(state, state.current_player_id):
+			changed = true
+		if await _check_crush_for_player(state, 1 - state.current_player_id):
+			changed = true
+		# Non-interrupt rule actions
 		for pid in range(2):
 			if _resolve_illegal_cards(state.players[pid]):
 				changed = true
@@ -284,27 +291,12 @@ func check_crush_rule(state: GameState) -> void:
 	await _check_crush_for_player(state, 1 - state.current_player_id)
 
 
-func _check_crush_for_player(state: GameState, player_id: int) -> void:
+func _check_crush_for_player(state: GameState, player_id: int) -> bool:
+	## Check if this player's monster shares a zone with a battle card. Returns true if crushed.
 	var player := state.players[player_id]
-	var opponent := state.players[1 - player_id]
 
-	# Check if opponent's monster is in a zone that has this player's battle card
-	# The opponent's monster_zone is 1-8. We need to check if the zone (from this player's
-	# perspective) is occupied. The zones are mirrored: opponent's zone 8 faces player's zone 8.
-	# According to rules 4.4.5.4, zones in the same column:
-	# player zone 3,8 <-> opponent zone 3,8
-	# So when the opponent advances through zones 1-8, they're on THEIR side.
-	# The crush rule (11.3) says: if a battle card is in the same zone as any invading monster.
-	# A player's battle cards are in their own zones. The invading monster occupies a zone number.
-	# The monster is conceptually on the field moving through zones.
-	# For simplicity: the monster at zone N can crush battle cards at zone index N-1 of the
-	# opponent (since the monster is invading towards the opponent).
-
-	# Actually re-reading the rules: monsters and battle cards occupy the SAME player's zones.
-	# The monster starts at zone 1 and advances towards zone 8, which are all the monster's
-	# owner's zones. Battle cards are placed in the SAME player's zones to defend.
-	# The crush rule: if a battle card is in the same zone as any invading monster, destroy it.
-	# So we check if THIS player's monster is in a zone that has THIS player's battle card.
+	# Monsters and battle cards occupy the SAME player's zones.
+	# The crush rule (11.3): if a battle card is in the same zone as the monster, destroy it.
 	var monster_zone_idx: int = player.monster_zone - 1  # 0-indexed
 	if monster_zone_idx >= 0 and monster_zone_idx < 8:
 		if not player.is_zone_empty(monster_zone_idx):
@@ -315,9 +307,8 @@ func _check_crush_for_player(state: GameState, player_id: int) -> void:
 			player.discard_changed.emit()
 			if effect_handler:
 				await effect_handler.trigger_crush(player_id, crushed_stack[0])
-
-	# Also check if the opponent's monster is in a zone with the opponent's battle card
-	# (This is handled when we call this for both players)
+			return true
+	return false
 
 
 func _resolve_illegal_cards(player: PlayerState) -> bool:
