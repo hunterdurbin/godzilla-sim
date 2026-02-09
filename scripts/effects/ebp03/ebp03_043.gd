@@ -6,6 +6,10 @@ extends CardEffect
 ## Moguera battle card, play it on top of the "Land Moguera" you chose, then shuffle.
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return

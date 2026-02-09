@@ -5,6 +5,10 @@ extends CardEffect
 ## opponent's rank 5 or lower battle cards in the same column as this card.
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return

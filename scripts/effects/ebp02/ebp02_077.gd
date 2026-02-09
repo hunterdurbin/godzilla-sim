@@ -6,6 +6,10 @@ extends CardEffect
 ## this way, <Destroy> this card and play a "Chibi Godzilla 2nd Form" token.
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.MAIN, "own_turn": true}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.MAIN:
 		return

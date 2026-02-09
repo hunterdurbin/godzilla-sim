@@ -6,6 +6,10 @@ extends CardEffect
 ## <Enter> If this card was played through evolution, draw 2 cards, then discard 2 cards.
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.MAIN, "own_turn": true}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.MAIN:
 		return

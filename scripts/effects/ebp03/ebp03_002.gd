@@ -4,6 +4,10 @@ extends CardEffect
 # <Awakening8> Your counter start: discard R5+ battle for +2 rage.
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.COUNTER}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return

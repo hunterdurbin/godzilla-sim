@@ -3,6 +3,10 @@ extends CardEffect
 # At the beginning of your end phase, you may discard 1 battle card from hand. If you do, draw 1.
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.END, "own_turn": true}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.END:
 		return

@@ -5,6 +5,10 @@ extends CardEffect
 ## advance your opponent's monster card by 1 zone.
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.END, "own_turn": true}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.END:
 		return

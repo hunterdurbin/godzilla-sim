@@ -17,6 +17,10 @@ func can_intercept_strategy_discard(ctx: EffectContext) -> bool:
 	return zone_idx == 7
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.MAIN, "own_turn": true}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.MAIN:
 		return

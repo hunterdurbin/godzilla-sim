@@ -341,9 +341,23 @@ func trigger_phase_end(phase: CardEnums.GamePhase) -> void:
 	await _resolve_standby_entries(entries)
 
 
+func _passes_phase_filter(effect: CardEffect, player_id: int, phase: CardEnums.GamePhase) -> bool:
+	## Check if an effect's phase start filter matches the given phase and turn ownership.
+	var filter: Dictionary = effect.get_phase_start_filter()
+	if filter.is_empty():
+		return true
+	if filter.has("phase") and filter.phase != phase:
+		return false
+	if filter.has("own_turn"):
+		var is_own_turn: bool = (game_state.current_player_id == player_id)
+		if filter.own_turn != is_own_turn:
+			return false
+	return true
+
+
 func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start: bool) -> Array:
 	## Collect standby entries for phase triggers from all active cards of a player.
-	## Only includes cards whose effect script actually overrides on_phase_start/end.
+	## Only includes cards whose effect script overrides the method AND passes the phase filter.
 	var entries: Array = []
 	var player := game_state.players[player_id]
 	var method_name: String = "on_phase_start" if is_start else "on_phase_end"
@@ -351,26 +365,29 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 	# Monster card
 	if has_trigger(player.current_monster, method_name):
 		var me := get_effect(player.current_monster)
-		var ctx := _build_context(player_id, player.current_monster)
-		var method: Callable = me.on_phase_start if is_start else me.on_phase_end
-		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": method.bind(ctx, phase)})
+		if not is_start or _passes_phase_filter(me, player_id, phase):
+			var ctx := _build_context(player_id, player.current_monster)
+			var method: Callable = me.on_phase_start if is_start else me.on_phase_end
+			entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": method.bind(ctx, phase)})
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty() and has_trigger(zone_card, method_name):
 			var ze := get_effect(zone_card)
-			var ctx := _build_context(player_id, zone_card)
-			var method: Callable = ze.on_phase_start if is_start else ze.on_phase_end
-			entries.append({"player_id": player_id, "card_data": zone_card, "callback": method.bind(ctx, phase)})
+			if not is_start or _passes_phase_filter(ze, player_id, phase):
+				var ctx := _build_context(player_id, zone_card)
+				var method: Callable = ze.on_phase_start if is_start else ze.on_phase_end
+				entries.append({"player_id": player_id, "card_data": zone_card, "callback": method.bind(ctx, phase)})
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, method_name):
 			var se := get_effect(sz_card)
-			var ctx := _build_context(player_id, sz_card)
-			var method: Callable = se.on_phase_start if is_start else se.on_phase_end
-			entries.append({"player_id": player_id, "card_data": sz_card, "callback": method.bind(ctx, phase)})
+			if not is_start or _passes_phase_filter(se, player_id, phase):
+				var ctx := _build_context(player_id, sz_card)
+				var method: Callable = se.on_phase_start if is_start else se.on_phase_end
+				entries.append({"player_id": player_id, "card_data": sz_card, "callback": method.bind(ctx, phase)})
 
 	return entries
 

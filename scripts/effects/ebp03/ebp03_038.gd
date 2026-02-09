@@ -3,6 +3,10 @@ extends CardEffect
 # Counter start: if opponent has 2+ rage, Destroy all your battle cards adjacent to this.
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return

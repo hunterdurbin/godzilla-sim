@@ -20,6 +20,10 @@ func get_opponent_field_rank_modifier(ctx: EffectContext) -> int:
 	return -3
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return

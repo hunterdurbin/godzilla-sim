@@ -5,6 +5,10 @@ extends CardEffect
 ## for a rank 5 or lower <Mothra> battle card and play it by stacking it on top of this card.
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.MAIN, "own_turn": true}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.MAIN:
 		return

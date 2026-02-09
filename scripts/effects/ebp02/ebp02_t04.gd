@@ -6,6 +6,10 @@ extends CardEffect
 ## (Tokens cannot be added to the deck. They are banished when removed from zones.)
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.END, "own_turn": true}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.END:
 		return

@@ -50,6 +50,15 @@ func on_monster_advance(_ctx: EffectContext, _from_zone: int, _to_zone: int) -> 
 	pass
 
 
+func get_phase_start_filter() -> Dictionary:
+	## Override to declare when on_phase_start should enter standby.
+	## Supported keys:
+	##   "phase": CardEnums.GamePhase — only enters standby for this phase
+	##   "own_turn": bool — true = own turn only, false = opponent's turn only
+	## Return {} to always enter standby (default, backward compatible).
+	return {}
+
+
 func on_phase_start(_ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	## Called at the beginning of each phase on all active cards.
 	## Covers "At the beginning of your counter/main/end phase" triggers.

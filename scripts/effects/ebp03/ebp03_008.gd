@@ -13,6 +13,10 @@ func on_enter(ctx: EffectContext) -> void:
 		"Destroy 1 opponent rank 5 or lower battle card:")
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return

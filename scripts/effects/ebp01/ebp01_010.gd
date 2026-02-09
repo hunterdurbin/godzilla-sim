@@ -15,6 +15,10 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	await ctx.effect_handler.destroy_zones(ctx.opponent, column_zones)
 
 
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
