@@ -309,15 +309,15 @@ func _position_hands() -> void:
 	# Local player hand: visible, centered in hand space
 	if local_space and local_hand:
 		var rect := local_space.get_global_rect()
-		local_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y + rect.size.y / 2.0)
-		local_hand.max_width = rect.size.x * 0.65
+		local_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.35, rect.position.y + rect.size.y / 2.0)
+		local_hand.max_width = rect.size.x * 0.95
 		local_hand.arrange_cards(false)
 
 	# Opponent hand: mostly off-screen at top edge
 	if opponent_space and opponent_hand:
 		var rect := opponent_space.get_global_rect()
-		opponent_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y - 195.0)
-		opponent_hand.max_width = rect.size.x * 0.65
+		opponent_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.35, rect.position.y - 195.0)
+		opponent_hand.max_width = rect.size.x * 0.95
 		opponent_hand.arrange_cards(false)
 
 
