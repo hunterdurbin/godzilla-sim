@@ -120,6 +120,7 @@ var _zone_target_allow_skip: bool = false
 # Drag-to-zone state
 var _drag_card: Control = null
 var _drag_valid_zones: Array[int] = []
+var _zone_select_valid: Array[int] = []
 var _drag_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var _drag_can_rage: bool = false
 var _drag_can_invade: bool = false
@@ -616,7 +617,14 @@ func _enter_zone_selection() -> void:
 		else:
 			valid_zones = turn_manager.rules_engine.get_valid_zones_for_battle_card(player, opponent)
 	else:
-		valid_zones.assign(_client_playable.get("battle_zones", []))
+		var card_id: String = _selected_card_data.get("id", "")
+		var zones_data = _client_playable.get("battle_zones", {})
+		if zones_data is Dictionary:
+			valid_zones.assign(zones_data.get(card_id, []))
+		else:
+			valid_zones.assign(zones_data)
+
+	_zone_select_valid = valid_zones
 
 	var board := _get_active_player_board()
 	if board:
@@ -735,10 +743,10 @@ func _input(event: InputEvent) -> void:
 			return
 
 		var mouse_pos := get_global_mouse_position()
-		for i in range(board.zone_slots.size()):
+		for i in _zone_select_valid:
 			var slot: Slot = board.zone_slots[i]
 			var rect := Rect2(slot.global_position, slot.size)
-			if rect.has_point(mouse_pos) and slot.is_highlighted:
+			if rect.has_point(mouse_pos):
 				var hand_idx: int = _find_hand_index_by_id(selected_card_id)
 				_cancel_selection()
 				if hand_idx >= 0:
@@ -754,6 +762,7 @@ func _cancel_selection() -> void:
 	waiting_for_zone_select = false
 	selected_card_id = ""
 	_selected_card_data = {}
+	_zone_select_valid = []
 	card_select_prompt.visible = false
 	btn_pass.text = "Pass"
 
@@ -913,7 +922,11 @@ func _on_hand_drag_started(card: Control) -> void:
 				valid_zones = turn_manager.rules_engine.get_valid_zones_for_card(card_data, player, opponent)
 			else:
 				playable_battle.assign(_client_playable.get("battle_cards", []))
-				valid_zones.assign(_client_playable.get("battle_zones", []))
+				var zones_data = _client_playable.get("battle_zones", {})
+				if zones_data is Dictionary:
+					valid_zones.assign(zones_data.get(card_id, []))
+				else:
+					valid_zones.assign(zones_data)
 			if hand_idx in playable_battle:
 				_drag_valid_zones = valid_zones
 				_drag_action = CardEnums.ActionType.PLAY_BATTLE
@@ -1877,10 +1890,17 @@ func _compute_playable_data() -> Dictionary:
 	var player := gs.get_current_player()
 	var opponent := gs.get_opponent_of_current()
 	var rules := turn_manager.rules_engine
+	var playable_battle := rules.get_playable_battle_cards(player, opponent)
+	var battle_zones_per_card: Dictionary = {}
+	for idx in playable_battle:
+		var card: Dictionary = player.hand[idx]
+		var card_id: String = card.get("id", "")
+		if not card_id.is_empty():
+			battle_zones_per_card[card_id] = rules.get_valid_zones_for_card(card, player, opponent)
 	return {
 		"valid_actions": rules.get_valid_actions(gs),
-		"battle_cards": rules.get_playable_battle_cards(player, opponent),
-		"battle_zones": rules.get_valid_zones_for_battle_card(player, opponent),
+		"battle_cards": playable_battle,
+		"battle_zones": battle_zones_per_card,
 		"strategy_cards": rules.get_playable_strategy_cards(player),
 		"monster_cards": rules.get_playable_monsters(player),
 		"rage_cards": rules.get_monster_cards_for_rage(player),

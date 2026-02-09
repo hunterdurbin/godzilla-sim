@@ -904,7 +904,16 @@ func get_play_rank_modifier(player_id: int, card: Dictionary) -> int:
 	# Check the card's own effect (self-modifier, e.g. EBP02-068)
 	var card_effect := get_effect(card)
 	if card_effect:
-		total += card_effect.get_play_rank_modifier_for_card(_build_context(player_id, card), card)
+		var ctx := _build_context(player_id, card)
+		# If the card uses zone stacking, its rank modifier is zone-specific
+		# and handled by get_zone_play_rank_modifier instead of here.
+		var uses_stacking := false
+		for zi in range(8):
+			if card_effect.stacks_on_play(ctx, zi):
+				uses_stacking = true
+				break
+		if not uses_stacking:
+			total += card_effect.get_play_rank_modifier_for_card(ctx, card)
 
 	# Check active strategy cards (e.g. EBP02-039)
 	for sz_card in player.strategy_zones:
@@ -928,9 +937,15 @@ func should_stack_on_play(player_id: int, card: Dictionary, zone_index: int) -> 
 func get_zone_play_rank_modifier(player_id: int, card: Dictionary, zone_index: int) -> int:
 	## Get zone-specific rank modifier for a card being played into a specific zone.
 	var effect := get_effect(card)
-	if effect:
-		return effect.get_zone_play_rank_modifier(_build_context(player_id, card), zone_index)
-	return 0
+	if not effect:
+		return 0
+	var ctx := _build_context(player_id, card)
+	var zone_mod: int = effect.get_zone_play_rank_modifier(ctx, zone_index)
+	# If the card stacks at this zone but no zone-specific modifier was returned,
+	# fall back to the card's global self-modifier (handles stale script caches).
+	if zone_mod == 0 and effect.stacks_on_play(ctx, zone_index):
+		zone_mod = effect.get_play_rank_modifier_for_card(ctx, card)
+	return zone_mod
 
 
 func is_invasion_blocked(defender_player_id: int) -> bool:
