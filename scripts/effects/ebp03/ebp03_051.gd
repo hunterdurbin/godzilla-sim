@@ -15,6 +15,11 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 	return 0
 
 
+func stacks_on_play(ctx: EffectContext, zone_index: int) -> bool:
+	var top := ctx.owner.get_zone_top_card(zone_index)
+	return not top.is_empty() and CardEnums.CardTrait.LITTLE_GODZILLA in top.get("traits", [])
+
+
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:

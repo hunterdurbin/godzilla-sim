@@ -147,6 +147,12 @@ func get_play_rank_modifier_for_card(_ctx: EffectContext, _target_card: Dictiona
 	return 0
 
 
+func stacks_on_play(_ctx: EffectContext, _zone_index: int) -> bool:
+	## Return true if this card should stack on top of the existing card in the zone
+	## instead of destroying it (overload). Used for cards like Godzilla Jr.
+	return false
+
+
 func prevents_opponent_invasion(_ctx: EffectContext) -> bool:
 	## Return true if this card's presence prevents the opponent from invading.
 	return false
