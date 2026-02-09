@@ -20,8 +20,8 @@ var _client_threat_modifiers: Array = [0, 0]
 var _client_zone_cp_mods: Array = [[], []]
 
 # UI references
-@onready var player1_board: Control = $VBoxContainer/Player1Board
-@onready var player2_board: Control = $VBoxContainer/Player2Board
+@onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
+@onready var player2_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player2Board
 @onready var action_panel: Control = $VBoxContainer/BottomHUD/ActionPanel
 @onready var phase_label: Label = $VBoxContainer/TopHUD/PhaseLabel
 @onready var turn_label: Label = $VBoxContainer/TopHUD/TurnLabel
@@ -32,8 +32,8 @@ var _client_zone_cp_mods: Array = [[], []]
 # Hand references
 @onready var player1_hand: Node2D = $Player1Hand
 @onready var player2_hand: Node2D = $Player2Hand
-@onready var player1_hand_space: Control = $VBoxContainer/Player1HandSpace
-@onready var player2_hand_space: Control = $VBoxContainer/Player2HandSpace
+@onready var player1_hand_space: Control = $VBoxContainer/BoardArea/BoardColumn/Player1HandSpace
+@onready var player2_hand_space: Control = $VBoxContainer/BoardArea/BoardColumn/Player2HandSpace
 
 # Action buttons
 @onready var btn_play_battle: Button = $VBoxContainer/BottomHUD/ActionPanel/Row1/PlayBattle
