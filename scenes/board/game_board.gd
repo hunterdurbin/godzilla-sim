@@ -94,6 +94,7 @@ var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var waiting_for_card_select: bool = false
 var waiting_for_zone_select: bool = false
 var selected_card_id: String = ""
+var _selected_card_data: Dictionary = {}  # Card data dict for the selected card
 
 # Hand discard selection state
 var _discard_selecting: bool = false
@@ -570,7 +571,8 @@ func _on_hand_card_selected(card: Control, _visual_index: int) -> void:
 	if not waiting_for_card_select:
 		return
 
-	selected_card_id = card.card_data.get("id", "") if "card_data" in card else ""
+	_selected_card_data = card.card_data if "card_data" in card else {}
+	selected_card_id = _selected_card_data.get("id", "")
 	if selected_card_id.is_empty():
 		return
 
@@ -607,7 +609,12 @@ func _enter_zone_selection() -> void:
 	var valid_zones: Array[int] = []
 	if turn_manager:
 		var state := turn_manager.game_state
-		valid_zones = turn_manager.rules_engine.get_valid_zones_for_battle_card(state.get_current_player(), state.get_opponent_of_current())
+		var player := state.get_current_player()
+		var opponent := state.get_opponent_of_current()
+		if not _selected_card_data.is_empty():
+			valid_zones = turn_manager.rules_engine.get_valid_zones_for_card(_selected_card_data, player, opponent)
+		else:
+			valid_zones = turn_manager.rules_engine.get_valid_zones_for_battle_card(player, opponent)
 	else:
 		valid_zones.assign(_client_playable.get("battle_zones", []))
 
@@ -746,6 +753,7 @@ func _cancel_selection() -> void:
 	waiting_for_card_select = false
 	waiting_for_zone_select = false
 	selected_card_id = ""
+	_selected_card_data = {}
 	card_select_prompt.visible = false
 	btn_pass.text = "Pass"
 
@@ -902,7 +910,7 @@ func _on_hand_drag_started(card: Control) -> void:
 			if turn_manager:
 				var opponent := turn_manager.game_state.get_opponent_of_current()
 				playable_battle = turn_manager.rules_engine.get_playable_battle_cards(player, opponent)
-				valid_zones = turn_manager.rules_engine.get_valid_zones_for_battle_card(player, opponent)
+				valid_zones = turn_manager.rules_engine.get_valid_zones_for_card(card_data, player, opponent)
 			else:
 				playable_battle.assign(_client_playable.get("battle_cards", []))
 				valid_zones.assign(_client_playable.get("battle_zones", []))

@@ -45,11 +45,18 @@ func get_playable_battle_cards(player: PlayerState, opponent: PlayerState) -> Ar
 	for i in range(player.hand.size()):
 		var card: Dictionary = player.hand[i]
 		if card.get("card_type") == CardEnums.CardType.BATTLE:
-			var effective_rank: int = card.get("rank", 99)
+			var base_rank: int = card.get("rank", 99)
 			if effect_handler:
-				effective_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
-			if effective_rank <= opponent.monster_zone:
+				base_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
+			if base_rank <= opponent.monster_zone:
 				indices.append(i)
+			elif effect_handler:
+				# Check if any zone provides enough rank reduction
+				for zi in valid_zones:
+					var zone_mod: int = effect_handler.get_zone_play_rank_modifier(player.player_id, card, zi)
+					if zone_mod != 0 and base_rank + zone_mod <= opponent.monster_zone:
+						indices.append(i)
+						break
 	return indices
 
 
@@ -67,12 +74,22 @@ func get_valid_zones_for_battle_card(player: PlayerState, opponent: PlayerState)
 	return valid
 
 
+func get_valid_zones_for_card(card: Dictionary, player: PlayerState, opponent: PlayerState) -> Array[int]:
+	## Returns zone indices where a specific battle card can be played (rank-aware).
+	var valid: Array[int] = []
+	for zi in get_valid_zones_for_battle_card(player, opponent):
+		if can_play_battle_card_at_zone(card, zi, player, opponent):
+			valid.append(zi)
+	return valid
+
+
 func can_play_battle_card_at_zone(card: Dictionary, zone_index: int, player: PlayerState, opponent: PlayerState) -> bool:
 	if card.get("card_type") != CardEnums.CardType.BATTLE:
 		return false
 	var effective_rank: int = card.get("rank", 99)
 	if effect_handler:
 		effective_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
+		effective_rank += effect_handler.get_zone_play_rank_modifier(player.player_id, card, zone_index)
 	if effective_rank > opponent.monster_zone:
 		return false
 	if zone_index < 0 or zone_index >= 8:
@@ -184,11 +201,16 @@ func _can_play_any_battle_card(player: PlayerState, opponent: PlayerState) -> bo
 		return false
 	for card in player.hand:
 		if card.get("card_type") == CardEnums.CardType.BATTLE:
-			var effective_rank: int = card.get("rank", 99)
+			var base_rank: int = card.get("rank", 99)
 			if effect_handler:
-				effective_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
-			if effective_rank <= opponent.monster_zone:
+				base_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
+			if base_rank <= opponent.monster_zone:
 				return true
+			elif effect_handler:
+				for zi in valid_zones:
+					var zone_mod: int = effect_handler.get_zone_play_rank_modifier(player.player_id, card, zi)
+					if zone_mod != 0 and base_rank + zone_mod <= opponent.monster_zone:
+						return true
 	return false
 
 

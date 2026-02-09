@@ -153,6 +153,12 @@ func stacks_on_play(_ctx: EffectContext, _zone_index: int) -> bool:
 	return false
 
 
+func get_zone_play_rank_modifier(_ctx: EffectContext, _zone_index: int) -> int:
+	## Return additional rank reduction (negative) when playing this card in a specific zone.
+	## Unlike get_play_rank_modifier_for_card which applies globally, this is zone-specific.
+	return 0
+
+
 func prevents_opponent_invasion(_ctx: EffectContext) -> bool:
 	## Return true if this card's presence prevents the opponent from invading.
 	return false

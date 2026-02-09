@@ -925,6 +925,14 @@ func should_stack_on_play(player_id: int, card: Dictionary, zone_index: int) -> 
 	return false
 
 
+func get_zone_play_rank_modifier(player_id: int, card: Dictionary, zone_index: int) -> int:
+	## Get zone-specific rank modifier for a card being played into a specific zone.
+	var effect := get_effect(card)
+	if effect:
+		return effect.get_zone_play_rank_modifier(_build_context(player_id, card), zone_index)
+	return 0
+
+
 func is_invasion_blocked(defender_player_id: int) -> bool:
 	## Check if any of the defender's battle cards prevent the opponent from invading.
 	var player := game_state.players[defender_player_id]
