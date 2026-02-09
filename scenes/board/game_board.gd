@@ -769,6 +769,7 @@ func _input(event: InputEvent) -> void:
 			if rect.has_point(mouse_pos):
 				var hand_idx: int = _find_hand_index_by_id(selected_card_id)
 				_cancel_selection()
+				get_viewport().set_input_as_handled()
 				if hand_idx >= 0:
 					_submit_action(CardEnums.ActionType.PLAY_BATTLE, {
 						"hand_index": hand_idx,
