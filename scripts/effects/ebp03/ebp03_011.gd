@@ -28,7 +28,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Pick up to 1 red battle card
 	var red_options: Array[Dictionary] = []
 	for card in revealed:
-		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("color") == CardEnums.CardColor.RED:
+		if card.get("card_type") == CardEnums.CardType.BATTLE and CardEnums.CardColor.RED in card.get("colors", []):
 			red_options.append(card)
 	if not red_options.is_empty():
 		var red_chosen := await ctx.effect_handler.select_from_cards(
@@ -40,7 +40,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Pick up to 1 blue battle card
 	var blue_options: Array[Dictionary] = []
 	for card in revealed:
-		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("color") == CardEnums.CardColor.BLUE:
+		if card.get("card_type") == CardEnums.CardType.BATTLE and CardEnums.CardColor.BLUE in card.get("colors", []):
 			if card.get("id", "") not in chosen_ids:
 				blue_options.append(card)
 	if not blue_options.is_empty():

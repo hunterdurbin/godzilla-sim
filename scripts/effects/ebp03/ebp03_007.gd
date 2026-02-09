@@ -23,8 +23,8 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	var valid: Array[Dictionary] = []
 	for card in revealed:
 		if card.get("card_type") == CardEnums.CardType.BATTLE:
-			var color = card.get("color")
-			if color == CardEnums.CardColor.RED or color == CardEnums.CardColor.BLUE:
+			var card_colors: Array = card.get("colors", [])
+			if CardEnums.CardColor.RED in card_colors or CardEnums.CardColor.BLUE in card_colors:
 				valid.append(card)
 
 	var chosen: Dictionary = {}

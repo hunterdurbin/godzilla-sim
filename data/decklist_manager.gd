@@ -101,6 +101,124 @@ func clear_selections() -> void:
 	_player_decks = [null, null]
 
 
+func validate_decklist(deck_name: String) -> Array[String]:
+	## Returns an array of error strings. Empty array = valid deck.
+	var data := load_decklist(deck_name)
+	if data.is_empty():
+		return ["Could not load decklist."]
+
+	var errors: Array[String] = []
+	var card_number_counts: Dictionary = {}  # card_number (stripped of +) -> total count
+
+	# --- Monster Deck ---
+	var monster_total := 0
+	var monster_ranks_found: Dictionary = {}  # rank -> true
+	var allowed_colors: Array[int] = [CardEnums.CardColor.WHITE]  # White always allowed
+
+	for entry in data["monster"]:
+		var cn: String = entry["card_number"]
+		var base_cn: String = cn.trim_suffix("+")
+		var qty: int = entry["quantity"]
+		monster_total += qty
+		card_number_counts[base_cn] = card_number_counts.get(base_cn, 0) + qty
+
+		var template: Dictionary = CardData.CARD_TEMPLATES.get(cn, {})
+		if template.is_empty():
+			errors.append("Unknown card: %s" % cn)
+			continue
+
+		if template.get("card_type") != CardEnums.CardType.MONSTER:
+			errors.append("%s is not a monster card" % cn)
+			continue
+
+		if CardEnums.CardTrait.TOKEN in template.get("traits", []):
+			errors.append("%s has Token trait (not allowed in decks)" % cn)
+
+		var rank: int = template.get("rank", 0)
+		for _i in range(qty):
+			if rank in monster_ranks_found:
+				errors.append("Duplicate monster rank %d" % rank)
+			else:
+				monster_ranks_found[rank] = true
+
+		if rank == 1:
+			for c: int in template.get("colors", []):
+				if c not in allowed_colors:
+					allowed_colors.append(c)
+
+	if monster_total != 4:
+		errors.append("Monster deck must have exactly 4 cards (has %d)" % monster_total)
+
+	for r in [1, 2, 3, 4]:
+		if r not in monster_ranks_found:
+			errors.append("Monster deck missing rank %d" % r)
+
+	# Color check for monster deck cards (second pass, now that allowed_colors is known)
+	if allowed_colors.size() > 1:  # More than just WHITE
+		for entry in data["monster"]:
+			var template: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
+			if template.is_empty():
+				continue
+			var card_colors: Array = template.get("colors", [])
+			var has_allowed := false
+			for c in card_colors:
+				if c in allowed_colors:
+					has_allowed = true
+					break
+			if not has_allowed:
+				errors.append("%s [%s] color doesn't match monster deck" % [
+					template.get("name", entry["card_number"]), entry["card_number"]])
+
+	# --- Main Deck ---
+	var main_total := 0
+	var invasion2_count := 0
+
+	for entry in data["main"]:
+		var cn: String = entry["card_number"]
+		var base_cn: String = cn.trim_suffix("+")
+		var qty: int = entry["quantity"]
+		main_total += qty
+		card_number_counts[base_cn] = card_number_counts.get(base_cn, 0) + qty
+
+		var template: Dictionary = CardData.CARD_TEMPLATES.get(cn, {})
+		if template.is_empty():
+			errors.append("Unknown card: %s" % cn)
+			continue
+
+		if CardEnums.CardTrait.TOKEN in template.get("traits", []):
+			errors.append("%s has Token trait (not allowed in decks)" % cn)
+
+		if template.get("invasion_icon", 0) >= 2:
+			invasion2_count += qty
+
+		# Color check: card must have at least one allowed color
+		if allowed_colors.size() > 1:  # More than just WHITE
+			var card_colors: Array = template.get("colors", [])
+			var has_allowed := false
+			for c in card_colors:
+				if c in allowed_colors:
+					has_allowed = true
+					break
+			if not has_allowed:
+				var card_name: String = template.get("name", cn)
+				errors.append("%s [%s] color doesn't match monster deck" % [card_name, cn])
+
+	if main_total != 50:
+		errors.append("Main deck must have exactly 50 cards (has %d)" % main_total)
+
+	if invasion2_count > 10:
+		errors.append("Main deck has %d Step-2 cards (max 10)" % invasion2_count)
+
+	# --- Cross-deck copy limit ---
+	for cn in card_number_counts:
+		if card_number_counts[cn] > 4:
+			var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(cn, {})
+			if not tmpl.get("unlimited_copies", false):
+				errors.append("Card %s has %d copies (max 4)" % [cn, card_number_counts[cn]])
+
+	return errors
+
+
 func get_decklist_preview(deck_name: String) -> String:
 	var data := load_decklist(deck_name)
 	if data.is_empty():
@@ -129,6 +247,13 @@ func get_decklist_preview(deck_name: String) -> String:
 		text += "  %dx %s [%s] %s\n" % [entry["quantity"], card_name, entry["card_number"], card_type_str]
 		total += entry["quantity"]
 	text += "\nTotal: %d cards" % total
+
+	# Append validation errors if any
+	var errors := validate_decklist(deck_name)
+	if not errors.is_empty():
+		text += "\n\n[color=red][b]Invalid Deck[/b][/color]\n"
+		for err in errors:
+			text += "[color=red]- %s[/color]\n" % err
 
 	return text
 

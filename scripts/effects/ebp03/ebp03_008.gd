@@ -39,6 +39,6 @@ func _has_color_battle_in_zones(ctx: EffectContext, color: CardEnums.CardColor) 
 	for i in range(8):
 		var card := ctx.owner.get_zone_top_card(i)
 		if not card.is_empty() and card.get("card_type") == CardEnums.CardType.BATTLE:
-			if card.get("color") == color:
+			if color in card.get("colors", []):
 				return true
 	return false

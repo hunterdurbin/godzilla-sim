@@ -21,7 +21,7 @@ func on_enter(ctx: EffectContext) -> void:
 	for i in range(ctx.owner.hand.size()):
 		var card: Dictionary = ctx.owner.hand[i]
 		if card.get("card_type") == CardEnums.CardType.STRATEGY \
-			and card.get("color") == CardEnums.CardColor.BLUE \
+			and CardEnums.CardColor.BLUE in card.get("colors", []) \
 			and card.get("rank", 0) <= 6:
 			valid_indices.append(i)
 
@@ -31,7 +31,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card): return card.get("card_type") == CardEnums.CardType.STRATEGY \
-			and card.get("color") == CardEnums.CardColor.BLUE \
+			and CardEnums.CardColor.BLUE in card.get("colors", []) \
 			and card.get("rank", 0) <= 6,
 		"Place a blue rank 6 or lower strategy card (or skip):",
 		true

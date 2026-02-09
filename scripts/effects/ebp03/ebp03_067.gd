@@ -45,9 +45,9 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 			continue
 		var zone_card := ctx.owner.get_zone_top_card(i)
 		if not zone_card.is_empty() and zone_card.get("card_type") == CardEnums.CardType.BATTLE:
-			var color: int = zone_card.get("color", -1)
-			if color >= 0 and color not in colors:
-				colors.append(color)
+			for c: int in zone_card.get("colors", []):
+				if c not in colors:
+					colors.append(c)
 	return 3000 * colors.size()
 
 
@@ -56,7 +56,7 @@ func _count_zone_colors(ctx: EffectContext) -> int:
 	for i in range(8):
 		var zone_card := ctx.owner.get_zone_top_card(i)
 		if not zone_card.is_empty() and zone_card.get("card_type") == CardEnums.CardType.BATTLE:
-			var color: int = zone_card.get("color", -1)
-			if color >= 0 and color not in colors:
-				colors.append(color)
+			for c: int in zone_card.get("colors", []):
+				if c not in colors:
+					colors.append(c)
 	return colors.size()
