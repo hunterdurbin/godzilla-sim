@@ -55,6 +55,7 @@ signal effect_card_unhighlighted(player_id: int, card_id: String)
 var game_state: GameState
 var action_handler  # ActionHandler reference (set by TurnManager)
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
+var _trigger_cache: Dictionary = {}  # script_path -> Dictionary of method_name -> bool
 var _deck_search_result: Dictionary = {}
 var _zone_target_result: int = -1
 var _hand_card_selection_result: int = -1
@@ -94,6 +95,36 @@ func get_effect(card_data: Dictionary) -> CardEffect:
 	return effect
 
 
+func has_trigger(card_data: Dictionary, method_name: String) -> bool:
+	## Check if a card's effect script actually overrides the given trigger method.
+	## Returns false if no effect or the base CardEffect method is not overridden.
+	var script_path: String = card_data.get("effect_script", "")
+	if script_path.is_empty():
+		return false
+
+	if _trigger_cache.has(script_path):
+		var methods: Dictionary = _trigger_cache[script_path]
+		if methods.has(method_name):
+			return methods[method_name]
+
+	var effect := get_effect(card_data)
+	if effect == null:
+		return false
+
+	var script: Script = effect.get_script()
+	if script == null:
+		return false
+
+	# Build the full method set for this script (cache all at once)
+	if not _trigger_cache.has(script_path):
+		var methods_set: Dictionary = {}
+		for m in script.get_script_method_list():
+			methods_set[m.name] = true
+		_trigger_cache[script_path] = methods_set
+
+	return _trigger_cache[script_path].get(method_name, false)
+
+
 func _build_context(owner_id: int, card_data: Dictionary) -> EffectContext:
 	return EffectContext.create(game_state, owner_id, card_data, self)
 
@@ -122,6 +153,57 @@ func _unhighlight_active_effect() -> void:
 		var card_id: String = _active_effect_card.get("id", "")
 		if not card_id.is_empty():
 			effect_card_unhighlighted.emit(_active_effect_player_id, card_id)
+
+
+func _resolve_standby_entries(entries: Array) -> void:
+	## Resolve collected standby automatic abilities per rules 10.4.3 ordering.
+	## entries: Array of { "player_id": int, "card_data": Dictionary, "callback": Callable }
+	## Turn player's abilities resolve first (10.4.3.2), then non-turn player's (10.4.3.3).
+	## Within each player, if multiple abilities are in standby, the player chooses
+	## the resolution order (10.6.3.1). Rule actions checked before each ability (10.4.3.1).
+	if entries.is_empty():
+		return
+
+	var turn_pid: int = game_state.current_player_id
+
+	# Separate by player: turn player first, non-turn player second (10.4.3.2-10.4.3.3)
+	var turn_entries: Array = []
+	var non_turn_entries: Array = []
+	for entry in entries:
+		if entry.player_id == turn_pid:
+			turn_entries.append(entry)
+		else:
+			non_turn_entries.append(entry)
+
+	# Resolve turn player's abilities first (10.4.3.2), then non-turn player's (10.4.3.3)
+	await _resolve_player_standby(turn_pid, turn_entries)
+	await _resolve_player_standby(1 - turn_pid, non_turn_entries)
+
+
+func _resolve_player_standby(player_id: int, entries: Array) -> void:
+	## Resolve one player's standby abilities, letting them choose order if multiple (10.6.3.1).
+	## Playing is compulsory — cannot choose to skip (10.6.3.1).
+	while not entries.is_empty():
+		# Check rule actions before each ability (10.4.3.1)
+		if action_handler:
+			action_handler.resolve_check_timing(game_state)
+
+		var entry: Dictionary
+		if entries.size() == 1:
+			entry = entries.pop_back()
+		else:
+			# Multiple abilities in standby — player chooses order (10.6.3.1)
+			var options: Array[String] = []
+			for e in entries:
+				options.append(e.card_data.get("name", "Unknown"))
+			var chosen: int = await select_choice(player_id, options, "Choose which ability to resolve:")
+			if chosen < 0 or chosen >= entries.size():
+				chosen = 0
+			entry = entries.pop_at(chosen)
+
+		_set_active_effect(entry.player_id, entry.card_data)
+		await entry.callback.call()
+		_clear_active_effect()
 
 
 # --- Trigger dispatchers ---
@@ -183,115 +265,120 @@ func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
 
 func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 	## Trigger rage changed on all active cards for this player (monster + zones + strategies).
+	## Collects all applicable effects, then resolves with rule action checks between each.
+	var entries: Array = []
 	var player := game_state.players[player_id]
 
 	# Monster card
-	await _trigger_rage_on_card(player_id, player.current_monster, old_rage, new_rage)
+	if has_trigger(player.current_monster, "on_rage_changed"):
+		var me := get_effect(player.current_monster)
+		var ctx := _build_context(player_id, player.current_monster)
+		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_rage_changed.bind(ctx, old_rage, new_rage)})
 
 	# Battle cards in zones (top card only — stacked cards are inactive per 12.7.3)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty():
-			await _trigger_rage_on_card(player_id, zone_card, old_rage, new_rage)
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_rage_changed"):
+			var ze := get_effect(zone_card)
+			var ctx := _build_context(player_id, zone_card)
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_rage_changed.bind(ctx, old_rage, new_rage)})
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty():
-			await _trigger_rage_on_card(player_id, sz_card, old_rage, new_rage)
+		if not sz_card.is_empty() and has_trigger(sz_card, "on_rage_changed"):
+			var se := get_effect(sz_card)
+			var ctx := _build_context(player_id, sz_card)
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_rage_changed.bind(ctx, old_rage, new_rage)})
 
-
-func _trigger_rage_on_card(player_id: int, card_data: Dictionary, old_rage: int, new_rage: int) -> void:
-	var effect := get_effect(card_data)
-	if effect:
-		_set_active_effect(player_id, card_data)
-		await effect.on_rage_changed(_build_context(player_id, card_data), old_rage, new_rage)
-		_clear_active_effect()
+	await _resolve_standby_entries(entries)
 
 
 func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> void:
 	## Trigger monster advance on all active cards for this player.
+	## Collects all applicable effects, then resolves with rule action checks between each.
+	var entries: Array = []
 	var player := game_state.players[player_id]
 
 	# Monster card itself
-	var effect := get_effect(player.current_monster)
-	if effect:
-		_set_active_effect(player_id, player.current_monster)
-		await effect.on_monster_advance(_build_context(player_id, player.current_monster), from_zone, to_zone)
-		_clear_active_effect()
+	if has_trigger(player.current_monster, "on_monster_advance"):
+		var me := get_effect(player.current_monster)
+		var ctx := _build_context(player_id, player.current_monster)
+		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_monster_advance.bind(ctx, from_zone, to_zone)})
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty():
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_monster_advance"):
 			var ze := get_effect(zone_card)
-			if ze:
-				_set_active_effect(player_id, zone_card)
-				await ze.on_monster_advance(_build_context(player_id, zone_card), from_zone, to_zone)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, zone_card)
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_monster_advance.bind(ctx, from_zone, to_zone)})
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty():
+		if not sz_card.is_empty() and has_trigger(sz_card, "on_monster_advance"):
 			var se := get_effect(sz_card)
-			if se:
-				_set_active_effect(player_id, sz_card)
-				await se.on_monster_advance(_build_context(player_id, sz_card), from_zone, to_zone)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, sz_card)
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_monster_advance.bind(ctx, from_zone, to_zone)})
+
+	await _resolve_standby_entries(entries)
 
 
 func trigger_phase_start(phase: CardEnums.GamePhase) -> void:
 	## Trigger phase start on all active cards for both players.
+	## Per 10.4.3.2-10.4.3.3: turn player's abilities resolve first.
+	var entries: Array = []
 	for player_id in range(2):
-		await _trigger_phase_on_all_cards(player_id, phase, true)
+		entries.append_array(_collect_phase_entries(player_id, phase, true))
+	await _resolve_standby_entries(entries)
 
 
 func trigger_phase_end(phase: CardEnums.GamePhase) -> void:
 	## Trigger phase end on all active cards for both players.
+	## Per 10.4.3.2-10.4.3.3: turn player's abilities resolve first.
+	var entries: Array = []
 	for player_id in range(2):
-		await _trigger_phase_on_all_cards(player_id, phase, false)
+		entries.append_array(_collect_phase_entries(player_id, phase, false))
+	await _resolve_standby_entries(entries)
 
 
-func _trigger_phase_on_all_cards(player_id: int, phase: CardEnums.GamePhase, is_start: bool) -> void:
+func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start: bool) -> Array:
+	## Collect standby entries for phase triggers from all active cards of a player.
+	## Only includes cards whose effect script actually overrides on_phase_start/end.
+	var entries: Array = []
 	var player := game_state.players[player_id]
+	var method_name: String = "on_phase_start" if is_start else "on_phase_end"
 
 	# Monster card
-	var me := get_effect(player.current_monster)
-	if me:
-		_set_active_effect(player_id, player.current_monster)
-		if is_start:
-			await me.on_phase_start(_build_context(player_id, player.current_monster), phase)
-		else:
-			await me.on_phase_end(_build_context(player_id, player.current_monster), phase)
-		_clear_active_effect()
+	if has_trigger(player.current_monster, method_name):
+		var me := get_effect(player.current_monster)
+		var ctx := _build_context(player_id, player.current_monster)
+		var method: Callable = me.on_phase_start if is_start else me.on_phase_end
+		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": method.bind(ctx, phase)})
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty():
+		if not zone_card.is_empty() and has_trigger(zone_card, method_name):
 			var ze := get_effect(zone_card)
-			if ze:
-				_set_active_effect(player_id, zone_card)
-				if is_start:
-					await ze.on_phase_start(_build_context(player_id, zone_card), phase)
-				else:
-					await ze.on_phase_end(_build_context(player_id, zone_card), phase)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, zone_card)
+			var method: Callable = ze.on_phase_start if is_start else ze.on_phase_end
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": method.bind(ctx, phase)})
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty():
+		if not sz_card.is_empty() and has_trigger(sz_card, method_name):
 			var se := get_effect(sz_card)
-			if se:
-				_set_active_effect(player_id, sz_card)
-				if is_start:
-					await se.on_phase_start(_build_context(player_id, sz_card), phase)
-				else:
-					await se.on_phase_end(_build_context(player_id, sz_card), phase)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, sz_card)
+			var method: Callable = se.on_phase_start if is_start else se.on_phase_end
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": method.bind(ctx, phase)})
+
+	return entries
 
 
 func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster: Dictionary) -> void:
 	## Trigger on_monster_played on all active cards for this player.
+	## Collects all applicable effects, then resolves with rule action checks between each.
+	var entries: Array = []
 	var player := game_state.players[player_id]
 	var triggered_ids: Array[String] = []
 
@@ -299,27 +386,26 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 	# Track triggered IDs because effects can move cards to new zones during iteration.
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty():
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_monster_played"):
 			var card_id: String = zone_card.get("id", "")
 			if card_id in triggered_ids:
 				continue
 			triggered_ids.append(card_id)
 			var ze := get_effect(zone_card)
-			if ze:
-				_set_active_effect(player_id, zone_card)
-				await ze.on_monster_played(_build_context(player_id, zone_card), old_monster, new_monster)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, zone_card)
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_monster_played.bind(ctx, old_monster, new_monster)})
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty():
+		if not sz_card.is_empty() and has_trigger(sz_card, "on_monster_played"):
 			var se := get_effect(sz_card)
-			if se:
-				_set_active_effect(player_id, sz_card)
-				await se.on_monster_played(_build_context(player_id, sz_card), old_monster, new_monster)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, sz_card)
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_monster_played.bind(ctx, old_monster, new_monster)})
+
+	await _resolve_standby_entries(entries)
 
 	# Check discard pile for cards that can play from discard on monster played
+	# (Resolved after all standby abilities, as a secondary check)
 	var discard_copy: Array[Dictionary] = player.discard_pile.duplicate()
 	for discard_card in discard_copy:
 		var de := get_effect(discard_card)
@@ -334,153 +420,150 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_index: int) -> void:
 	## Trigger on_battle_card_played on all active cards for this player.
 	## Called after a battle card is placed in a zone and its enter effect resolves.
+	## Collects all applicable effects, then resolves with rule action checks between each.
+	var entries: Array = []
 	var player := game_state.players[player_id]
+	var played_id: String = card_data.get("id", "")
 
 	# Strategy cards (e.g. EBP02-073 Bloody Chainsaw)
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty():
+		if not sz_card.is_empty() and has_trigger(sz_card, "on_battle_card_played"):
 			var se := get_effect(sz_card)
-			if se:
-				_set_active_effect(player_id, sz_card)
-				await se.on_battle_card_played(_build_context(player_id, sz_card), zone_index)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, sz_card)
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_battle_card_played.bind(ctx, zone_index)})
 
 	# Battle cards in zones (top card only, skip the card that was just played)
-	var played_id: String = card_data.get("id", "")
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty() and zone_card.get("id", "") != played_id:
+		if not zone_card.is_empty() and zone_card.get("id", "") != played_id and has_trigger(zone_card, "on_battle_card_played"):
 			var ze := get_effect(zone_card)
-			if ze:
-				_set_active_effect(player_id, zone_card)
-				await ze.on_battle_card_played(_build_context(player_id, zone_card), zone_index)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, zone_card)
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_battle_card_played.bind(ctx, zone_index)})
+
+	await _resolve_standby_entries(entries)
 
 
 func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
 	## Trigger on ALL active cards when a card is discarded from the owner's hand.
+	## Collects all applicable effects, then resolves with rule action checks between each.
+	var entries: Array = []
 	var player := game_state.players[player_id]
 
 	# Monster card
-	var me := get_effect(player.current_monster)
-	if me:
-		_set_active_effect(player_id, player.current_monster)
-		await me.on_hand_card_discarded(_build_context(player_id, player.current_monster), card_data)
-		_clear_active_effect()
+	if has_trigger(player.current_monster, "on_hand_card_discarded"):
+		var me := get_effect(player.current_monster)
+		var ctx := _build_context(player_id, player.current_monster)
+		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_hand_card_discarded.bind(ctx, card_data)})
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty():
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_hand_card_discarded"):
 			var ze := get_effect(zone_card)
-			if ze:
-				_set_active_effect(player_id, zone_card)
-				await ze.on_hand_card_discarded(_build_context(player_id, zone_card), card_data)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, zone_card)
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_hand_card_discarded.bind(ctx, card_data)})
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty():
+		if not sz_card.is_empty() and has_trigger(sz_card, "on_hand_card_discarded"):
 			var se := get_effect(sz_card)
-			if se:
-				_set_active_effect(player_id, sz_card)
-				await se.on_hand_card_discarded(_build_context(player_id, sz_card), card_data)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, sz_card)
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_hand_card_discarded.bind(ctx, card_data)})
+
+	await _resolve_standby_entries(entries)
 
 
 func trigger_counter_success(defender_player_id: int) -> void:
 	## Trigger on ALL active cards for the defender when counter succeeds (CP >= threat).
+	## Collects all applicable effects, then resolves with rule action checks between each.
+	var entries: Array = []
 	var player := game_state.players[defender_player_id]
 
 	# Monster card
-	var me := get_effect(player.current_monster)
-	if me:
-		_set_active_effect(defender_player_id, player.current_monster)
-		await me.on_counter_success(_build_context(defender_player_id, player.current_monster))
-		_clear_active_effect()
+	if has_trigger(player.current_monster, "on_counter_success"):
+		var me := get_effect(player.current_monster)
+		var ctx := _build_context(defender_player_id, player.current_monster)
+		entries.append({"player_id": defender_player_id, "card_data": player.current_monster, "callback": me.on_counter_success.bind(ctx)})
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty():
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_counter_success"):
 			var ze := get_effect(zone_card)
-			if ze:
-				_set_active_effect(defender_player_id, zone_card)
-				await ze.on_counter_success(_build_context(defender_player_id, zone_card))
-				_clear_active_effect()
+			var ctx := _build_context(defender_player_id, zone_card)
+			entries.append({"player_id": defender_player_id, "card_data": zone_card, "callback": ze.on_counter_success.bind(ctx)})
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty():
+		if not sz_card.is_empty() and has_trigger(sz_card, "on_counter_success"):
 			var se := get_effect(sz_card)
-			if se:
-				_set_active_effect(defender_player_id, sz_card)
-				await se.on_counter_success(_build_context(defender_player_id, sz_card))
-				_clear_active_effect()
+			var ctx := _build_context(defender_player_id, sz_card)
+			entries.append({"player_id": defender_player_id, "card_data": sz_card, "callback": se.on_counter_success.bind(ctx)})
+
+	await _resolve_standby_entries(entries)
 
 
 func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> void:
 	## Trigger on ALL active cards when a strategy card is sent from strategy zone to discard.
+	## Collects all applicable effects, then resolves with rule action checks between each.
+	var entries: Array = []
 	var player := game_state.players[player_id]
+	var discarded_id: String = strategy_card.get("id", "")
 
 	# Monster card
-	var me := get_effect(player.current_monster)
-	if me:
-		_set_active_effect(player_id, player.current_monster)
-		await me.on_strategy_discarded(_build_context(player_id, player.current_monster), strategy_card)
-		_clear_active_effect()
+	if has_trigger(player.current_monster, "on_strategy_discarded"):
+		var me := get_effect(player.current_monster)
+		var ctx := _build_context(player_id, player.current_monster)
+		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_strategy_discarded.bind(ctx, strategy_card)})
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty():
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_strategy_discarded"):
 			var ze := get_effect(zone_card)
-			if ze:
-				_set_active_effect(player_id, zone_card)
-				await ze.on_strategy_discarded(_build_context(player_id, zone_card), strategy_card)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, zone_card)
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_strategy_discarded.bind(ctx, strategy_card)})
 
 	# Strategy cards (skip the card being discarded)
-	var discarded_id: String = strategy_card.get("id", "")
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty() and sz_card.get("id", "") != discarded_id:
+		if not sz_card.is_empty() and sz_card.get("id", "") != discarded_id and has_trigger(sz_card, "on_strategy_discarded"):
 			var se := get_effect(sz_card)
-			if se:
-				_set_active_effect(player_id, sz_card)
-				await se.on_strategy_discarded(_build_context(player_id, sz_card), strategy_card)
-				_clear_active_effect()
+			var ctx := _build_context(player_id, sz_card)
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_strategy_discarded.bind(ctx, strategy_card)})
+
+	await _resolve_standby_entries(entries)
 
 
 func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone: int) -> void:
 	## Trigger on ALL active cards for BOTH players when a monster invades.
+	## Per 10.4.3.2-10.4.3.3: turn player's abilities resolve first.
+	## Collects all applicable effects, then resolves with rule action checks between each.
+	var entries: Array = []
 	for pid in range(2):
 		var player := game_state.players[pid]
 
 		# Monster card
-		var me := get_effect(player.current_monster)
-		if me:
-			_set_active_effect(pid, player.current_monster)
-			await me.on_invasion_observed(_build_context(pid, player.current_monster), invading_player_id, from_zone, to_zone)
-			_clear_active_effect()
+		if has_trigger(player.current_monster, "on_invasion_observed"):
+			var me := get_effect(player.current_monster)
+			var ctx := _build_context(pid, player.current_monster)
+			entries.append({"player_id": pid, "card_data": player.current_monster, "callback": me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
 
 		# Battle cards in zones (top card only)
 		for i in range(8):
 			var zone_card := player.get_zone_top_card(i)
-			if not zone_card.is_empty():
+			if not zone_card.is_empty() and has_trigger(zone_card, "on_invasion_observed"):
 				var ze := get_effect(zone_card)
-				if ze:
-					_set_active_effect(pid, zone_card)
-					await ze.on_invasion_observed(_build_context(pid, zone_card), invading_player_id, from_zone, to_zone)
-					_clear_active_effect()
+				var ctx := _build_context(pid, zone_card)
+				entries.append({"player_id": pid, "card_data": zone_card, "callback": ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
 
 		# Strategy cards
 		for sz_card in player.strategy_zones:
-			if not sz_card.is_empty():
+			if not sz_card.is_empty() and has_trigger(sz_card, "on_invasion_observed"):
 				var se := get_effect(sz_card)
-				if se:
-					_set_active_effect(pid, sz_card)
-					await se.on_invasion_observed(_build_context(pid, sz_card), invading_player_id, from_zone, to_zone)
-					_clear_active_effect()
+				var ctx := _build_context(pid, sz_card)
+				entries.append({"player_id": pid, "card_data": sz_card, "callback": se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+
+	await _resolve_standby_entries(entries)
 
 
 # --- Player choice helpers ---

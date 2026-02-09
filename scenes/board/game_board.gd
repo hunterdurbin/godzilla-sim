@@ -119,6 +119,12 @@ var _zone_target_board_pid: int = -1  # Whose board the zones are on
 var _zone_target_valid_zones: Array[int] = []
 var _zone_target_allow_skip: bool = false
 
+# Standby choice selection state (for choosing ability resolution order)
+var _choice_selecting: bool = false
+var _choice_player_id: int = -1
+var _choice_buttons: Array[Button] = []
+var _choice_container: VBoxContainer = null
+
 # Drag-to-zone state
 var _drag_card: Control = null
 var _drag_valid_zones: Array[int] = []
@@ -170,6 +176,7 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
 		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
 		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
+		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
 
 		# Connect player state signals so mid-effect changes (e.g. search_deck adding
 		# a card to hand) trigger visual updates immediately
@@ -1486,6 +1493,67 @@ func _finish_zone_target(zone_idx: int) -> void:
 		turn_manager.action_handler.effect_handler.resolve_zone_target(zone_idx)
 
 
+# --- Standby ability order choice UI ---
+
+func _on_choice_requested(player_id: int, options: Array[String], prompt: String) -> void:
+	if is_multiplayer_game and player_id != local_player_id:
+		var options_json := JSON.stringify(options)
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				_rpc_choice_requested.rpc_id(peer_id, options_json, prompt)
+		return
+	_show_choice_selection(player_id, options, prompt)
+
+
+func _show_choice_selection(player_id: int, options: Array[String], prompt: String) -> void:
+	_choice_selecting = true
+	_choice_player_id = player_id
+
+	_disable_all_buttons()
+	# Hide the normal action button rows so only choice buttons show
+	action_panel.get_node("Row1").visible = false
+	action_panel.get_node("Row2").visible = false
+	card_select_prompt.text = prompt
+	card_select_prompt.visible = true
+
+	# Create a container for choice buttons inside the action panel
+	_choice_container = VBoxContainer.new()
+	_choice_container.name = "ChoiceContainer"
+	action_panel.add_child(_choice_container)
+
+	for i in range(options.size()):
+		var btn := Button.new()
+		btn.text = options[i]
+		btn.pressed.connect(_on_choice_button_pressed.bind(i))
+		_choice_container.add_child(btn)
+		_choice_buttons.append(btn)
+
+
+func _on_choice_button_pressed(index: int) -> void:
+	if not _choice_selecting:
+		return
+	_cleanup_choice_selection()
+
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_rpc_choice_resolved.rpc_id(1, index)
+	else:
+		turn_manager.action_handler.effect_handler.resolve_choice(index)
+
+
+func _cleanup_choice_selection() -> void:
+	_choice_selecting = false
+	_choice_buttons.clear()
+	if _choice_container:
+		_choice_container.queue_free()
+		_choice_container = null
+	card_select_prompt.visible = false
+	# Restore normal action button rows
+	action_panel.get_node("Row1").visible = true
+	action_panel.get_node("Row2").visible = true
+	btn_pass.text = "Pass"
+	btn_pass.visible = true
+
+
 func _on_effect_zone_highlighted(pid: int, zone_index: int) -> void:
 	if is_multiplayer_game and pid != local_player_id:
 		for peer_id in NetworkManager.peer_player_map:
@@ -2145,6 +2213,26 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	turn_manager.action_handler.effect_handler.resolve_zone_target(zone_index)
+
+
+## Host -> Client: choice request (player must choose ability order)
+@rpc("authority", "call_remote", "reliable")
+func _rpc_choice_requested(options_json: String, prompt: String) -> void:
+	if NetworkManager.is_host():
+		return
+	var parsed: Array = JSON.parse_string(options_json)
+	var options: Array[String] = []
+	for v in parsed:
+		options.append(str(v))
+	_show_choice_selection(local_player_id, options, prompt)
+
+
+## Client -> Host: choice resolved (player chose an option)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_choice_resolved(index: int) -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	turn_manager.action_handler.effect_handler.resolve_choice(index)
 
 
 ## Host -> Client: highlight a zone card during effect resolution
