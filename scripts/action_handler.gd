@@ -194,8 +194,9 @@ func resolve_counter(state: GameState) -> void:
 				found_next = true
 				monster_countered.emit(opponent.player_id, old_monster, m)
 				opponent.monster_changed.emit()
-				# Check crush rule after monster change (zone doesn't change here
-				# but the monster is now different)
+				# Trigger enter effect on the new monster
+				if effect_handler:
+					await effect_handler.trigger_enter(opponent.player_id, m)
 				break
 
 		if not found_next:
@@ -236,6 +237,9 @@ func force_counter(state: GameState, counter_player_id: int) -> void:
 			found_next = true
 			monster_countered.emit(opponent_id, old_monster, m)
 			opponent.monster_changed.emit()
+			# Trigger enter effect on the new monster
+			if effect_handler:
+				await effect_handler.trigger_enter(opponent_id, m)
 			break
 
 	if not found_next:

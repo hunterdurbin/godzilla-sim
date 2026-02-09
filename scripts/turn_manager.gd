@@ -191,7 +191,7 @@ func _begin_counter_phase() -> void:
 
 	log_message.emit("Counter Phase: CP %d vs Threat %d" % [total_cp, threat])
 
-	action_handler.resolve_counter(game_state)
+	await action_handler.resolve_counter(game_state)
 
 	if is_game_over:
 		return

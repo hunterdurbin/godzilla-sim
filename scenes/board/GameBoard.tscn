@@ -199,6 +199,14 @@ text = "Show entire deck"
 layout_mode = 2
 text = "Stacked"
 
+[node name="Spacer" type="Control" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ViewBoardButton" type="Button" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow"]
+layout_mode = 2
+text = "View Board"
+
 [node name="ScrollContainer" type="ScrollContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -423,3 +431,20 @@ text = "Game Over!"
 horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 22
+
+[node name="ShowCardsButton" type="Button" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -80.0
+offset_top = -50.0
+offset_right = 80.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Show Cards"
+theme_override_font_sizes/font_size = 16

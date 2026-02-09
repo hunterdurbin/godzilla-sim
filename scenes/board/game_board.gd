@@ -50,6 +50,8 @@ var _client_zone_cp_mods: Array = [[], []]
 @onready var deck_search_skip: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/SkipButton
 @onready var deck_search_show_all: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ShowAllToggle
 @onready var deck_search_stacked: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/StackedToggle
+@onready var deck_search_view_board: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ViewBoardButton
+@onready var show_cards_button: Button = $ShowCardsButton
 
 # Discard view UI references
 @onready var discard_view_overlay: Control = $DiscardViewOverlay
@@ -157,6 +159,7 @@ func _ready() -> void:
 		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
 		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
+		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
 
 		# Connect effect handler signals for player choice UIs
 		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
@@ -203,6 +206,8 @@ func _ready() -> void:
 	deck_search_skip.pressed.connect(_on_deck_search_skip)
 	deck_search_show_all.toggled.connect(_on_deck_search_toggled)
 	deck_search_stacked.toggled.connect(_on_deck_search_toggled)
+	deck_search_view_board.pressed.connect(_on_deck_search_view_board)
+	show_cards_button.pressed.connect(_on_show_cards_pressed)
 
 	# Connect discard view
 	player1_board.discard_clicked.connect(_on_discard_clicked)
@@ -235,6 +240,7 @@ func _ready() -> void:
 	end_game_panel.visible = false
 	card_select_prompt.visible = false
 	deck_search_overlay.visible = false
+	show_cards_button.visible = false
 	discard_view_overlay.visible = false
 	monster_deck_view_overlay.visible = false
 	zone_stack_view_overlay.visible = false
@@ -446,6 +452,11 @@ func _on_counter_succeeded(player_id: int, total_cp: int, threat: int) -> void:
 
 func _on_counter_failed(player_id: int, total_cp: int, threat: int) -> void:
 	_on_log_message("Counter failed. P%d CP %d < Threat %d" % [player_id + 1, total_cp, threat])
+
+
+func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
+	_sync_boards()
+	_broadcast_state()
 
 
 # --- Button handlers ---
@@ -1156,6 +1167,16 @@ func _on_deck_search_toggled(_value: bool) -> void:
 	_refresh_deck_search_grid()
 
 
+func _on_deck_search_view_board() -> void:
+	deck_search_overlay.visible = false
+	show_cards_button.visible = true
+
+
+func _on_show_cards_pressed() -> void:
+	show_cards_button.visible = false
+	deck_search_overlay.visible = true
+
+
 func _on_deck_search_card_clicked(card: Control) -> void:
 	var selected: Dictionary = card.card_data if "card_data" in card else {}
 	_hide_deck_search()
@@ -1169,6 +1190,7 @@ func _on_deck_search_skip() -> void:
 
 func _hide_deck_search() -> void:
 	deck_search_overlay.visible = false
+	show_cards_button.visible = false
 	_clear_grid(deck_search_grid, _on_deck_search_card_clicked)
 	_deck_search_matching.clear()
 	_deck_search_all.clear()
