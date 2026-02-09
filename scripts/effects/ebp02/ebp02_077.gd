@@ -17,18 +17,12 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		return
 
 	# Mill top 2 cards
+	var milled_cards: Array[Dictionary] = ctx.owner.mill_cards(2)
 	var found_godzilla: bool = false
-	for _i in range(2):
-		if ctx.owner.main_deck.is_empty():
-			break
-		var milled: Dictionary = ctx.owner.main_deck.pop_front()
-		ctx.owner.discard_pile.append(milled)
-		var traits: Array = milled.get("traits", [])
-		if CardEnums.CardTrait.GODZILLA in traits:
+	for card in milled_cards:
+		if CardEnums.CardTrait.GODZILLA in card.get("traits", []):
 			found_godzilla = true
-
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
+			break
 
 	if not found_godzilla:
 		return

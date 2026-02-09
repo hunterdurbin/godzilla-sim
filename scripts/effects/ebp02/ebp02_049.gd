@@ -60,12 +60,4 @@ func on_enter(ctx: EffectContext) -> void:
 		1:
 			await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 3)
 		2:
-			var milled: int = 0
-			for _i in range(3):
-				if ctx.owner.main_deck.is_empty():
-					break
-				ctx.owner.discard_pile.append(ctx.owner.main_deck.pop_front())
-				milled += 1
-			if milled > 0:
-				ctx.owner.deck_changed.emit()
-				ctx.owner.discard_changed.emit()
+			ctx.owner.mill_cards(3)

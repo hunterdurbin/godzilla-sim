@@ -10,11 +10,11 @@ extends CardEffect
 func on_enter(ctx: EffectContext) -> void:
 	# Check Awakening8 first (strongest)
 	if ctx.owner.monster_zone >= 8:
-		var chosen: int = await ctx.effect_handler.select_zone_target(
-			ctx.owner.player_id, ctx.opponent.player_id, _get_occupied(ctx.opponent),
-			"Destroy any battle card (Awakening8)? Skip for other options:", true)
-		if chosen >= 0:
-			await ctx.effect_handler.destroy_zones(ctx.opponent, [chosen])
+		var destroyed: Dictionary = await ctx.effect_handler.destroy_zone_target(
+			ctx.owner.player_id, ctx.opponent,
+			func(_card: Dictionary) -> bool: return true,
+			"Destroy any battle card (Awakening8)? Skip for other options:")
+		if not destroyed.is_empty():
 			return
 
 	# Check Awakening6 (medium)
@@ -42,11 +42,3 @@ func on_enter(ctx: EffectContext) -> void:
 			ctx.owner.player_id, ctx.opponent,
 			func(card: Dictionary) -> bool: return card.get("rank", 0) <= 4,
 			"Choose an opponent's rank 4 or lower battle card to destroy:")
-
-
-func _get_occupied(player: PlayerState) -> Array[int]:
-	var result: Array[int] = []
-	for i in range(8):
-		if not player.is_zone_empty(i):
-			result.append(i)
-	return result

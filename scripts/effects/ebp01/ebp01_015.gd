@@ -10,21 +10,14 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
 		return
 
+	var milled: Array[Dictionary] = ctx.owner.mill_cards(5)
 	var monster_count: int = 0
 	var has_step2: bool = false
-
-	for _i in range(5):
-		if ctx.owner.main_deck.is_empty():
-			break
-		var card: Dictionary = ctx.owner.main_deck.pop_front()
-		ctx.owner.discard_pile.append(card)
+	for card in milled:
 		if card.get("card_type") == CardEnums.CardType.MONSTER:
 			monster_count += 1
 		if card.get("invasion_icon", 0) >= 2:
 			has_step2 = true
-
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
 
 	if monster_count > 0:
 		ctx.owner.rage += monster_count

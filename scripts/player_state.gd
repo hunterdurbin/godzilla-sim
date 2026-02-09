@@ -116,6 +116,29 @@ func get_empty_zone_indices() -> Array[int]:
 	return indices
 
 
+func get_occupied_zone_indices() -> Array[int]:
+	var indices: Array[int] = []
+	for i in range(8):
+		if not is_zone_empty(i):
+			indices.append(i)
+	return indices
+
+
+func mill_cards(count: int) -> Array[Dictionary]:
+	## Send top N cards from deck to discard pile. Returns the milled cards.
+	var milled: Array[Dictionary] = []
+	for _i in range(count):
+		if main_deck.is_empty():
+			break
+		var card: Dictionary = main_deck.pop_front()
+		discard_pile.append(card)
+		milled.append(card)
+	if not milled.is_empty():
+		deck_changed.emit()
+		discard_changed.emit()
+	return milled
+
+
 func has_empty_strategy_zone() -> bool:
 	for sz in strategy_zones:
 		if sz.is_empty():
