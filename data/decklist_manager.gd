@@ -114,6 +114,7 @@ func validate_decklist(deck_name: String) -> Array[String]:
 	var monster_total := 0
 	var monster_ranks_found: Dictionary = {}  # rank -> true
 	var allowed_colors: Array[int] = [CardEnums.CardColor.WHITE]  # White always allowed
+	var resonance: Dictionary = {}  # Resonance requirements from rank 1 monster
 
 	for entry in data["monster"]:
 		var cn: String = entry["card_number"]
@@ -145,6 +146,7 @@ func validate_decklist(deck_name: String) -> Array[String]:
 			for c: int in template.get("colors", []):
 				if c not in allowed_colors:
 					allowed_colors.append(c)
+			resonance = template.get("resonance", {})
 
 	if monster_total != 4:
 		errors.append("Monster deck must have exactly 4 cards (has %d)" % monster_total)
@@ -215,6 +217,92 @@ func validate_decklist(deck_name: String) -> Array[String]:
 			var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(cn, {})
 			if not tmpl.get("unlimited_copies", false):
 				errors.append("Card %s has %d copies (max 4)" % [cn, card_number_counts[cn]])
+
+	# --- Resonance requirements ---
+	if not resonance.is_empty():
+		var req_monster_traits: Array = resonance.get("required_monster_traits", [])
+		var req_battle_traits: Array = resonance.get("required_battle_traits", [])
+		var min_battle_rank: int = resonance.get("min_battle_rank", 0)
+		var min_strategy_count: int = resonance.get("min_strategy_count", 0)
+
+		# Check monster deck traits
+		if not req_monster_traits.is_empty():
+			for entry in data["monster"]:
+				var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
+				if tmpl.is_empty():
+					continue
+				var traits: Array = tmpl.get("traits", [])
+				var has_required := false
+				for t in req_monster_traits:
+					if t in traits:
+						has_required = true
+						break
+				if not has_required:
+					var trait_names: Array[String] = []
+					for t in req_monster_traits:
+						trait_names.append(CardEnums.trait_to_string(t))
+					errors.append("%s [%s] missing required trait (%s)" % [
+						tmpl.get("name", entry["card_number"]),
+						entry["card_number"],
+						" or ".join(trait_names)])
+
+		# Check main deck cards
+		var strategy_count := 0
+		for entry in data["main"]:
+			var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
+			if tmpl.is_empty():
+				continue
+			var card_type: int = tmpl.get("card_type", -1)
+			var traits: Array = tmpl.get("traits", [])
+
+			if card_type == CardEnums.CardType.STRATEGY:
+				strategy_count += entry["quantity"]
+
+			# All cards in main deck must have at least one required trait
+			if not req_monster_traits.is_empty():
+				var has_required := false
+				for t in req_monster_traits:
+					if t in traits:
+						has_required = true
+						break
+				if not has_required:
+					var trait_names: Array[String] = []
+					for t in req_monster_traits:
+						trait_names.append(CardEnums.trait_to_string(t))
+					errors.append("%s [%s] missing required trait (%s)" % [
+						tmpl.get("name", entry["card_number"]),
+						entry["card_number"],
+						" or ".join(trait_names)])
+
+			# Battle cards must have required traits
+			if card_type == CardEnums.CardType.BATTLE and not req_battle_traits.is_empty():
+				var has_required := false
+				for t in req_battle_traits:
+					if t in traits:
+						has_required = true
+						break
+				if not has_required:
+					var trait_names: Array[String] = []
+					for t in req_battle_traits:
+						trait_names.append(CardEnums.trait_to_string(t))
+					errors.append("%s [%s] missing required trait (%s)" % [
+						tmpl.get("name", entry["card_number"]),
+						entry["card_number"],
+						" or ".join(trait_names)])
+
+			# Battle cards must meet minimum rank
+			if card_type == CardEnums.CardType.BATTLE and min_battle_rank > 0:
+				if tmpl.get("rank", 0) < min_battle_rank:
+					errors.append("%s [%s] rank %d is below minimum %d" % [
+						tmpl.get("name", entry["card_number"]),
+						entry["card_number"],
+						tmpl.get("rank", 0),
+						min_battle_rank])
+
+		# Minimum strategy card count
+		if min_strategy_count > 0 and strategy_count < min_strategy_count:
+			errors.append("Deck needs at least %d strategy cards (has %d)" % [
+				min_strategy_count, strategy_count])
 
 	return errors
 

@@ -2076,6 +2076,10 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MECHAGODZILLA, CardEnums.CardTrait.WEAPON],
 		"threat_level": 5000,
 		"invasion_icon": 1,
+		"resonance": {
+			"required_monster_traits": [CardEnums.CardTrait.WEAPON, CardEnums.CardTrait.MECH],
+			"required_battle_traits": [CardEnums.CardTrait.WEAPON, CardEnums.CardTrait.MECH],
+		},
 		"description": "<Resonance> Red/Blue\n・Monster cards in your deck must have <《Weapon》> or <《Mech》> .\n・Battle cards in your deck must have <《Weapon》> or <《Mech》> .\n(You can mix red, blue, and white, but your monster deck and main deck must satisfy the above.)"
 	},
 	{
@@ -2219,6 +2223,10 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MOTHRA],
 		"threat_level": 5000,
 		"invasion_icon": 1,
+		"resonance": {
+			"required_monster_traits": [CardEnums.CardTrait.MOTHRA],
+			"min_strategy_count": 10,
+		},
 		"description": "<Resonance> Blue/Green\n・Monster cards in your deck must have <《Mothra》> .\n・Your deck must contain at least 10 strategy cards.\n(You can mix blue, green, and white, but your monster deck and main deck must satisfy the above.)"
 	},
 	{
@@ -2290,6 +2298,10 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BARAGON, CardEnums.CardTrait.SACRED_GUARDIAN_BEASTS],
 		"threat_level": 5000,
 		"invasion_icon": 1,
+		"resonance": {
+			"required_monster_traits": [CardEnums.CardTrait.SACRED_GUARDIAN_BEASTS],
+			"min_battle_rank": 5,
+		},
 		"description": "<Resonance> Green/Red\n・Monster cards in your deck must have <《Sacred Guardian Beasts》> .\n・Battle cards in your deck must be Rank 5 or higher.\n(You can mix green, red, and white, but your monster deck and main deck must satisfy the above.)"
 	},
 	{
