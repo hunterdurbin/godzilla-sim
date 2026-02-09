@@ -48,6 +48,10 @@ signal _choice_resolved()
 signal effect_zone_highlighted(player_id: int, zone_index: int)
 signal effect_zone_unhighlighted(player_id: int, zone_index: int)
 
+## Emitted to highlight/unhighlight the source card while awaiting a player decision.
+signal effect_card_highlighted(player_id: int, card_id: String)
+signal effect_card_unhighlighted(player_id: int, card_id: String)
+
 var game_state: GameState
 var action_handler  # ActionHandler reference (set by TurnManager)
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
@@ -55,6 +59,10 @@ var _deck_search_result: Dictionary = {}
 var _zone_target_result: int = -1
 var _hand_card_selection_result: int = -1
 var _choice_result: int = -1
+
+# Tracks which card's effect is currently executing (for decision highlighting)
+var _active_effect_player_id: int = -1
+var _active_effect_card: Dictionary = {}
 
 
 func setup(p_game_state: GameState) -> void:
@@ -90,13 +98,41 @@ func _build_context(owner_id: int, card_data: Dictionary) -> EffectContext:
 	return EffectContext.create(game_state, owner_id, card_data, self)
 
 
+# --- Active effect tracking (for decision highlighting) ---
+
+func _set_active_effect(player_id: int, card_data: Dictionary) -> void:
+	_active_effect_player_id = player_id
+	_active_effect_card = card_data
+
+
+func _clear_active_effect() -> void:
+	_active_effect_player_id = -1
+	_active_effect_card = {}
+
+
+func _highlight_active_effect() -> void:
+	if _active_effect_player_id >= 0:
+		var card_id: String = _active_effect_card.get("id", "")
+		if not card_id.is_empty():
+			effect_card_highlighted.emit(_active_effect_player_id, card_id)
+
+
+func _unhighlight_active_effect() -> void:
+	if _active_effect_player_id >= 0:
+		var card_id: String = _active_effect_card.get("id", "")
+		if not card_id.is_empty():
+			effect_card_unhighlighted.emit(_active_effect_player_id, card_id)
+
+
 # --- Trigger dispatchers ---
 
 func trigger_enter(player_id: int, card_data: Dictionary) -> void:
 	## Trigger <Enter> effect on the card that just entered play.
 	var effect := get_effect(card_data)
 	if effect:
+		_set_active_effect(player_id, card_data)
 		await effect.on_enter(_build_context(player_id, card_data))
+		_clear_active_effect()
 
 
 func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void:
@@ -104,35 +140,45 @@ func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void
 	var player := game_state.players[player_id]
 	var effect := get_effect(player.current_monster)
 	if effect:
+		_set_active_effect(player_id, player.current_monster)
 		await effect.on_when_invading(_build_context(player_id, player.current_monster), from_zone, to_zone)
+		_clear_active_effect()
 
 
 func trigger_crush(player_id: int, card_data: Dictionary) -> void:
 	## Trigger crush effect on a card being destroyed by the crush rule.
 	var effect := get_effect(card_data)
 	if effect:
+		_set_active_effect(player_id, card_data)
 		await effect.on_crush(_build_context(player_id, card_data))
+		_clear_active_effect()
 
 
 func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 	## Trigger <Revenge> on a card being destroyed by an effect.
 	var effect := get_effect(card_data)
 	if effect:
+		_set_active_effect(player_id, card_data)
 		await effect.on_revenge(_build_context(player_id, card_data))
+		_clear_active_effect()
 
 
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 	## Trigger discard-from-hand effect on the card being discarded.
 	var effect := get_effect(card_data)
 	if effect:
+		_set_active_effect(player_id, card_data)
 		await effect.on_discard_from_hand(_build_context(player_id, card_data))
+		_clear_active_effect()
 
 
 func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
 	## Trigger on_burst_discard on the Burst monster being discarded at end of turn.
 	var effect := get_effect(card_data)
 	if effect:
+		_set_active_effect(player_id, card_data)
 		await effect.on_burst_discard(_build_context(player_id, card_data))
+		_clear_active_effect()
 
 
 func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
@@ -157,7 +203,9 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 func _trigger_rage_on_card(player_id: int, card_data: Dictionary, old_rage: int, new_rage: int) -> void:
 	var effect := get_effect(card_data)
 	if effect:
+		_set_active_effect(player_id, card_data)
 		await effect.on_rage_changed(_build_context(player_id, card_data), old_rage, new_rage)
+		_clear_active_effect()
 
 
 func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> void:
@@ -167,7 +215,9 @@ func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> vo
 	# Monster card itself
 	var effect := get_effect(player.current_monster)
 	if effect:
+		_set_active_effect(player_id, player.current_monster)
 		await effect.on_monster_advance(_build_context(player_id, player.current_monster), from_zone, to_zone)
+		_clear_active_effect()
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
@@ -175,14 +225,18 @@ func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> vo
 		if not zone_card.is_empty():
 			var ze := get_effect(zone_card)
 			if ze:
+				_set_active_effect(player_id, zone_card)
 				await ze.on_monster_advance(_build_context(player_id, zone_card), from_zone, to_zone)
+				_clear_active_effect()
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty():
 			var se := get_effect(sz_card)
 			if se:
+				_set_active_effect(player_id, sz_card)
 				await se.on_monster_advance(_build_context(player_id, sz_card), from_zone, to_zone)
+				_clear_active_effect()
 
 
 func trigger_phase_start(phase: CardEnums.GamePhase) -> void:
@@ -203,10 +257,12 @@ func _trigger_phase_on_all_cards(player_id: int, phase: CardEnums.GamePhase, is_
 	# Monster card
 	var me := get_effect(player.current_monster)
 	if me:
+		_set_active_effect(player_id, player.current_monster)
 		if is_start:
 			await me.on_phase_start(_build_context(player_id, player.current_monster), phase)
 		else:
 			await me.on_phase_end(_build_context(player_id, player.current_monster), phase)
+		_clear_active_effect()
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
@@ -214,20 +270,24 @@ func _trigger_phase_on_all_cards(player_id: int, phase: CardEnums.GamePhase, is_
 		if not zone_card.is_empty():
 			var ze := get_effect(zone_card)
 			if ze:
+				_set_active_effect(player_id, zone_card)
 				if is_start:
 					await ze.on_phase_start(_build_context(player_id, zone_card), phase)
 				else:
 					await ze.on_phase_end(_build_context(player_id, zone_card), phase)
+				_clear_active_effect()
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty():
 			var se := get_effect(sz_card)
 			if se:
+				_set_active_effect(player_id, sz_card)
 				if is_start:
 					await se.on_phase_start(_build_context(player_id, sz_card), phase)
 				else:
 					await se.on_phase_end(_build_context(player_id, sz_card), phase)
+				_clear_active_effect()
 
 
 func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster: Dictionary) -> void:
@@ -246,14 +306,18 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 			triggered_ids.append(card_id)
 			var ze := get_effect(zone_card)
 			if ze:
+				_set_active_effect(player_id, zone_card)
 				await ze.on_monster_played(_build_context(player_id, zone_card), old_monster, new_monster)
+				_clear_active_effect()
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty():
 			var se := get_effect(sz_card)
 			if se:
+				_set_active_effect(player_id, sz_card)
 				await se.on_monster_played(_build_context(player_id, sz_card), old_monster, new_monster)
+				_clear_active_effect()
 
 	# Check discard pile for cards that can play from discard on monster played
 	var discard_copy: Array[Dictionary] = player.discard_pile.duplicate()
@@ -262,7 +326,9 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 		if de:
 			var ctx := _build_context(player_id, discard_card)
 			if de.can_play_from_discard_on_monster_played(ctx):
+				_set_active_effect(player_id, discard_card)
 				await play_from_discard(player_id, discard_card)
+				_clear_active_effect()
 
 
 func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_index: int) -> void:
@@ -275,7 +341,9 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 		if not sz_card.is_empty():
 			var se := get_effect(sz_card)
 			if se:
+				_set_active_effect(player_id, sz_card)
 				await se.on_battle_card_played(_build_context(player_id, sz_card), zone_index)
+				_clear_active_effect()
 
 	# Battle cards in zones (top card only, skip the card that was just played)
 	var played_id: String = card_data.get("id", "")
@@ -284,7 +352,9 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 		if not zone_card.is_empty() and zone_card.get("id", "") != played_id:
 			var ze := get_effect(zone_card)
 			if ze:
+				_set_active_effect(player_id, zone_card)
 				await ze.on_battle_card_played(_build_context(player_id, zone_card), zone_index)
+				_clear_active_effect()
 
 
 func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
@@ -294,7 +364,9 @@ func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
 	# Monster card
 	var me := get_effect(player.current_monster)
 	if me:
+		_set_active_effect(player_id, player.current_monster)
 		await me.on_hand_card_discarded(_build_context(player_id, player.current_monster), card_data)
+		_clear_active_effect()
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
@@ -302,14 +374,18 @@ func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
 		if not zone_card.is_empty():
 			var ze := get_effect(zone_card)
 			if ze:
+				_set_active_effect(player_id, zone_card)
 				await ze.on_hand_card_discarded(_build_context(player_id, zone_card), card_data)
+				_clear_active_effect()
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty():
 			var se := get_effect(sz_card)
 			if se:
+				_set_active_effect(player_id, sz_card)
 				await se.on_hand_card_discarded(_build_context(player_id, sz_card), card_data)
+				_clear_active_effect()
 
 
 func trigger_counter_success(defender_player_id: int) -> void:
@@ -319,7 +395,9 @@ func trigger_counter_success(defender_player_id: int) -> void:
 	# Monster card
 	var me := get_effect(player.current_monster)
 	if me:
+		_set_active_effect(defender_player_id, player.current_monster)
 		await me.on_counter_success(_build_context(defender_player_id, player.current_monster))
+		_clear_active_effect()
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
@@ -327,14 +405,18 @@ func trigger_counter_success(defender_player_id: int) -> void:
 		if not zone_card.is_empty():
 			var ze := get_effect(zone_card)
 			if ze:
+				_set_active_effect(defender_player_id, zone_card)
 				await ze.on_counter_success(_build_context(defender_player_id, zone_card))
+				_clear_active_effect()
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty():
 			var se := get_effect(sz_card)
 			if se:
+				_set_active_effect(defender_player_id, sz_card)
 				await se.on_counter_success(_build_context(defender_player_id, sz_card))
+				_clear_active_effect()
 
 
 func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> void:
@@ -344,7 +426,9 @@ func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> vo
 	# Monster card
 	var me := get_effect(player.current_monster)
 	if me:
+		_set_active_effect(player_id, player.current_monster)
 		await me.on_strategy_discarded(_build_context(player_id, player.current_monster), strategy_card)
+		_clear_active_effect()
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
@@ -352,7 +436,9 @@ func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> vo
 		if not zone_card.is_empty():
 			var ze := get_effect(zone_card)
 			if ze:
+				_set_active_effect(player_id, zone_card)
 				await ze.on_strategy_discarded(_build_context(player_id, zone_card), strategy_card)
+				_clear_active_effect()
 
 	# Strategy cards (skip the card being discarded)
 	var discarded_id: String = strategy_card.get("id", "")
@@ -360,7 +446,9 @@ func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> vo
 		if not sz_card.is_empty() and sz_card.get("id", "") != discarded_id:
 			var se := get_effect(sz_card)
 			if se:
+				_set_active_effect(player_id, sz_card)
 				await se.on_strategy_discarded(_build_context(player_id, sz_card), strategy_card)
+				_clear_active_effect()
 
 
 func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone: int) -> void:
@@ -371,7 +459,9 @@ func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone:
 		# Monster card
 		var me := get_effect(player.current_monster)
 		if me:
+			_set_active_effect(pid, player.current_monster)
 			await me.on_invasion_observed(_build_context(pid, player.current_monster), invading_player_id, from_zone, to_zone)
+			_clear_active_effect()
 
 		# Battle cards in zones (top card only)
 		for i in range(8):
@@ -379,14 +469,18 @@ func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone:
 			if not zone_card.is_empty():
 				var ze := get_effect(zone_card)
 				if ze:
+					_set_active_effect(pid, zone_card)
 					await ze.on_invasion_observed(_build_context(pid, zone_card), invading_player_id, from_zone, to_zone)
+					_clear_active_effect()
 
 		# Strategy cards
 		for sz_card in player.strategy_zones:
 			if not sz_card.is_empty():
 				var se := get_effect(sz_card)
 				if se:
+					_set_active_effect(pid, sz_card)
 					await se.on_invasion_observed(_build_context(pid, sz_card), invading_player_id, from_zone, to_zone)
+					_clear_active_effect()
 
 
 # --- Player choice helpers ---
@@ -401,8 +495,10 @@ func discard_hand_to(player_id: int, target_count: int) -> void:
 		return
 
 	if hand_discard_requested.get_connections().size() > 0:
+		_highlight_active_effect()
 		hand_discard_requested.emit(player_id, to_discard)
 		await _hand_discard_resolved
+		_unhighlight_active_effect()
 	else:
 		# Fallback: discard from back of hand
 		var discarded_cards: Array[Dictionary] = []
@@ -455,8 +551,10 @@ func search_deck(player_id: int, filter: Callable, prompt: String) -> Dictionary
 
 	var selected: Dictionary = {}
 	if deck_search_requested.get_connections().size() > 0:
+		_highlight_active_effect()
 		deck_search_requested.emit(player_id, matching, player.main_deck.duplicate(), prompt)
 		await _deck_search_resolved
+		_unhighlight_active_effect()
 		selected = _deck_search_result
 	else:
 		# Fallback: auto-pick first match
@@ -490,8 +588,10 @@ func select_zone_target(player_id: int, target_player_id: int, valid_zones: Arra
 		return -1
 
 	if zone_target_requested.get_connections().size() > 0:
+		_highlight_active_effect()
 		zone_target_requested.emit(player_id, target_player_id, valid_zones, prompt, allow_skip)
 		await _zone_target_resolved
+		_unhighlight_active_effect()
 		return _zone_target_result
 	else:
 		# Fallback: auto-pick first valid zone
@@ -519,8 +619,10 @@ func search_discard(player_id: int, filter: Callable, prompt: String) -> Diction
 
 	var selected: Dictionary = {}
 	if deck_search_requested.get_connections().size() > 0:
+		_highlight_active_effect()
 		deck_search_requested.emit(player_id, matching, player.discard_pile.duplicate(), prompt)
 		await _deck_search_resolved
+		_unhighlight_active_effect()
 		selected = _deck_search_result
 	else:
 		# Fallback: auto-pick first match
@@ -553,8 +655,10 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 
 	var chosen_index: int = -1
 	if hand_card_selection_requested.get_connections().size() > 0:
+		_highlight_active_effect()
 		hand_card_selection_requested.emit(player_id, valid_indices, prompt, allow_skip)
 		await _hand_card_selection_resolved
+		_unhighlight_active_effect()
 		chosen_index = _hand_card_selection_result
 	else:
 		# Fallback: auto-pick first valid
@@ -585,8 +689,10 @@ func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: 
 		return {}
 
 	if deck_search_requested.get_connections().size() > 0:
+		_highlight_active_effect()
 		deck_search_requested.emit(player_id, options, all_visible, prompt)
 		await _deck_search_resolved
+		_unhighlight_active_effect()
 		return _deck_search_result
 	else:
 		return options[0]
@@ -599,8 +705,10 @@ func select_choice(player_id: int, options: Array[String], prompt: String) -> in
 		return -1
 
 	if choice_requested.get_connections().size() > 0:
+		_highlight_active_effect()
 		choice_requested.emit(player_id, options, prompt)
 		await _choice_resolved
+		_unhighlight_active_effect()
 		return _choice_result
 	else:
 		# Fallback: auto-pick first option

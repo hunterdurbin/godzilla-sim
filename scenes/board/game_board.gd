@@ -165,6 +165,8 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
 		turn_manager.action_handler.effect_handler.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
 		turn_manager.action_handler.effect_handler.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
+		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
+		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
 
 		# Connect player state signals so mid-effect changes (e.g. search_deck adding
 		# a card to hand) trigger visual updates immediately
@@ -1488,6 +1490,37 @@ func _apply_zone_highlight(pid: int, zone_index: int, highlighted: bool) -> void
 			slot.held_card.modulate = Color(1.2, 1.2, 0.6, 1.0) if highlighted else Color.WHITE
 
 
+# --- Effect source card highlighting ---
+
+func _on_effect_card_highlighted(pid: int, card_id: String) -> void:
+	if is_multiplayer_game:
+		for peer_id in NetworkManager.peer_player_map:
+			_rpc_effect_card_highlighted.rpc_id(peer_id, pid, card_id)
+	_apply_card_highlight(pid, card_id, true)
+
+
+func _on_effect_card_unhighlighted(pid: int, card_id: String) -> void:
+	if is_multiplayer_game:
+		for peer_id in NetworkManager.peer_player_map:
+			_rpc_effect_card_unhighlighted.rpc_id(peer_id, pid, card_id)
+	_apply_card_highlight(pid, card_id, false)
+
+
+func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void:
+	var board: Control = player1_board if pid == 0 else player2_board
+	var color := Color(1.2, 1.2, 0.6, 1.0) if highlighted else Color.WHITE
+	# Check zone slots (battle cards)
+	for slot in board.zone_slots:
+		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == card_id:
+			slot.held_card.modulate = color
+			return
+	# Check strategy slots
+	for slot in board.strategy_slots:
+		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == card_id:
+			slot.held_card.modulate = color
+			return
+
+
 # --- Discard view UI ---
 
 func _on_discard_clicked(pid: int) -> void:
@@ -2106,6 +2139,22 @@ func _rpc_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
 	if NetworkManager.is_host():
 		return
 	_apply_zone_highlight(pid, zone_index, false)
+
+
+## Host -> Client: highlight the source card of an active effect
+@rpc("authority", "call_remote", "reliable")
+func _rpc_effect_card_highlighted(pid: int, card_id: String) -> void:
+	if NetworkManager.is_host():
+		return
+	_apply_card_highlight(pid, card_id, true)
+
+
+## Host -> Client: unhighlight the source card after effect resolves
+@rpc("authority", "call_remote", "reliable")
+func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
+	if NetworkManager.is_host():
+		return
+	_apply_card_highlight(pid, card_id, false)
 
 
 ## Host -> Client: game over
