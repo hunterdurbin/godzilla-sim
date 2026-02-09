@@ -151,6 +151,22 @@ func _unhighlight_active_effect() -> void:
 			effect_card_unhighlighted.emit(_active_effect_player_id, card_id)
 
 
+func _get_card_location_label(player_id: int, card_data: Dictionary) -> String:
+	## Return a display label like "Card Name (Zone 3)" for standby choice prompts.
+	var player := game_state.players[player_id]
+	var card_id: String = card_data.get("id", "")
+	var card_name: String = card_data.get("name", "Unknown")
+	if player.current_monster.get("id", "") == card_id:
+		return card_name + " (Monster)"
+	for i in range(8):
+		if player.get_zone_top_card(i).get("id", "") == card_id:
+			return card_name + " (Zone %d)" % (i + 1)
+	for i in range(player.strategy_zones.size()):
+		if not player.strategy_zones[i].is_empty() and player.strategy_zones[i].get("id", "") == card_id:
+			return card_name + " (Strategy %d)" % (i + 1)
+	return card_name
+
+
 func _resolve_standby_entries(entries: Array) -> void:
 	## Resolve collected standby automatic abilities per rules 10.4.3 ordering.
 	## entries: Array of { "player_id": int, "card_data": Dictionary, "callback": Callable }
@@ -191,7 +207,7 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 			# Multiple abilities in standby — player chooses order (10.6.3.1)
 			var options: Array[String] = []
 			for e in entries:
-				options.append(e.card_data.get("name", "Unknown"))
+				options.append(_get_card_location_label(e.player_id, e.card_data))
 			var chosen: int = await select_choice(player_id, options, "Choose which ability to resolve:")
 			if chosen < 0 or chosen >= entries.size():
 				chosen = 0
