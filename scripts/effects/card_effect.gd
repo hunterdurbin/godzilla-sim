@@ -230,6 +230,12 @@ func prevents_own_invasion(_ctx: EffectContext) -> bool:
 	return false
 
 
+func can_replace_invasion_cost(_ctx: EffectContext) -> bool:
+	## Return true if this monster can replace the invasion cost (hand discard)
+	## with an alternative (e.g. milling from deck).
+	return false
+
+
 # --- Property methods (override to declare card mechanics) ---
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

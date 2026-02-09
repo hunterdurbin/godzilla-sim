@@ -2548,7 +2548,8 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"invasion_icon": 2,
 		"evolution_rank": 7,
 		"evolution_trait": CardEnums.CardTrait.MOTHRA,
-		"description": "<Evolution7> <《Mothra》> (At the beginning of your main phase, you may play a rank 7 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)"
+		"description": "<Evolution7> <《Mothra》> (At the beginning of your main phase, you may play a rank 7 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)",
+		"effect_script": "res://scripts/effects/ebp03/ebp03_044.gd"
 	},
 	{
 		"id": "EBP03-045",
@@ -2975,7 +2976,8 @@ var EPR_CARDS: Array[Dictionary] = [
 		"rank": 1,
 		"colors": [CardEnums.CardColor.RED],
 		"invasion_icon": 1,
-		"description": "<Destroy> all of your opponent's battle cards in the same column as your monster card."
+		"description": "<Destroy> all of your opponent's battle cards in the same column as your monster card.",
+		"effect_script": "res://scripts/effects/epr/epr_005.gd"
 	},
 ]
 

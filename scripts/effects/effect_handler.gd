@@ -1043,6 +1043,16 @@ func is_own_invasion_blocked(player_id: int) -> bool:
 	return false
 
 
+func can_replace_invasion_cost(player_id: int) -> bool:
+	## Check if the current monster can replace the invasion hand-discard cost
+	## with an alternative (e.g. milling from deck).
+	var player := game_state.players[player_id]
+	var effect := get_effect(player.current_monster)
+	if effect:
+		return effect.can_replace_invasion_cost(_build_context(player_id, player.current_monster))
+	return false
+
+
 func get_counter_immunity_threshold(player_id: int) -> int:
 	## Get the counter immunity threshold from the player's current monster.
 	## If defender's CP <= this value, monster retreats without rank up.

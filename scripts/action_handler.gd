@@ -474,20 +474,34 @@ func _invade(hand_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
 	var card: Dictionary = player.hand.pop_at(hand_index)
 	var advance_amount: int = card.get("invasion_icon", 0)
-	player.discard_pile.append(card)
 	player.has_invaded_this_turn = true
 	player.last_invasion_card = card
 	var start_zone: int = player.monster_zone
 
-	card_discarded.emit(player.player_id, card)
+	# Check for invasion cost replacement (e.g. EBP03-004: mill from deck instead)
+	var replaced_cost := false
+	if effect_handler and effect_handler.can_replace_invasion_cost(player.player_id):
+		var choice: int = await effect_handler.select_choice(
+			player.player_id,
+			["Send top deck card to discard", "Discard from hand"] as Array[String],
+			"Choose invasion cost method:"
+		)
+		if choice == 0 and not player.main_deck.is_empty():
+			# Mill from deck; return invasion card to hand
+			player.hand.insert(hand_index, card)
+			player.mill_cards(1)
+			replaced_cost = true
 
-	# Check if discarded card plays itself from discard (e.g. EBP03-061 Dagahra)
-	if effect_handler:
-		var discard_effect := effect_handler.get_effect(card)
-		if discard_effect:
-			var ctx := EffectContext.create(state, player.player_id, card, effect_handler)
-			if discard_effect.on_discarded_for_invasion(ctx):
-				await effect_handler.play_from_discard(player.player_id, card)
+	if not replaced_cost:
+		player.discard_pile.append(card)
+		card_discarded.emit(player.player_id, card)
+		# Check if discarded card plays itself from discard (e.g. EBP03-061 Dagahra)
+		if effect_handler:
+			var discard_effect := effect_handler.get_effect(card)
+			if discard_effect:
+				var ctx := EffectContext.create(state, player.player_id, card, effect_handler)
+				if discard_effect.on_discarded_for_invasion(ctx):
+					await effect_handler.play_from_discard(player.player_id, card)
 
 	# Advance step by step (checking crush at each zone)
 	for _step in range(advance_amount):
