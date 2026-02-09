@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scenes/board/player_board.gd" id="1_pb"]
 [ext_resource type="PackedScene" path="res://scenes/slots/Slot.tscn" id="2_slot"]
+[ext_resource type="Texture2D" uid="uid://dpmgaoxs3mejc" path="res://CardContent/Assets/Board/zones.svg" id="3_bg"]
 
 [node name="PlayerBoard" type="Control"]
 layout_mode = 3
@@ -12,57 +13,68 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_pb")
 
-[node name="Rows" type="VBoxContainer" parent="."]
+[node name="LayoutContainer" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 0
+
+[node name="Background" type="TextureRect" parent="LayoutContainer"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 4
+mouse_filter = 2
+texture = ExtResource("3_bg")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="FrontRow" type="HBoxContainer" parent="Rows"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 20
-
-[node name="StrategyArea" type="VBoxContainer" parent="Rows/FrontRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-size_flags_stretch_ratio = 1.5
-theme_override_constants/separation = 1
-
-[node name="StratLabel" type="Label" parent="Rows/FrontRow/StrategyArea"]
-layout_mode = 2
-text = "Strategy"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 9
-
-[node name="Strategy1" parent="Rows/FrontRow/StrategyArea" instance=ExtResource("2_slot")]
-layout_mode = 2
-size_flags_vertical = 3
+[node name="Strategy1" parent="LayoutContainer" instance=ExtResource("2_slot")]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.065
+anchor_top = 0.204
+anchor_right = 0.2153
+anchor_bottom = 0.3908
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
 
-[node name="Strategy2" parent="Rows/FrontRow/StrategyArea" instance=ExtResource("2_slot")]
-layout_mode = 2
-size_flags_vertical = 3
+[node name="Strategy2" parent="LayoutContainer" instance=ExtResource("2_slot")]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.065
+anchor_top = 0.4103
+anchor_right = 0.2153
+anchor_bottom = 0.5969
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
 
-[node name="RageDisplay" type="VBoxContainer" parent="Rows/FrontRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-size_flags_stretch_ratio = 0.5
+[node name="RageDisplay" type="VBoxContainer" parent="LayoutContainer"]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.2336
+anchor_top = 0.2048
+anchor_right = 0.4246
+anchor_bottom = 0.5963
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 
-[node name="RageTitle" type="Label" parent="Rows/FrontRow/RageDisplay"]
+[node name="RageTitle" type="Label" parent="LayoutContainer/RageDisplay"]
 layout_mode = 2
 text = "Rage Zone"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(1, 0.3, 0.2, 1)
 
-[node name="RageLabel" type="Label" parent="Rows/FrontRow/RageDisplay"]
+[node name="RageLabel" type="Label" parent="LayoutContainer/RageDisplay"]
 layout_mode = 2
 size_flags_vertical = 3
 text = "0"
@@ -71,20 +83,26 @@ vertical_alignment = 1
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
 
-[node name="StatsDisplay" type="VBoxContainer" parent="Rows/FrontRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-size_flags_stretch_ratio = 0.5
+[node name="StatsDisplay" type="VBoxContainer" parent="LayoutContainer"]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.22
+anchor_bottom = 0.19
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 
-[node name="CPTitle" type="Label" parent="Rows/FrontRow/StatsDisplay"]
+[node name="CPTitle" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
 text = "CP"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(0.3, 0.7, 1.0, 1)
 
-[node name="CPLabel" type="Label" parent="Rows/FrontRow/StatsDisplay"]
+[node name="CPLabel" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
 text = "0"
 horizontal_alignment = 1
@@ -92,14 +110,14 @@ vertical_alignment = 1
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.4, 0.8, 1.0, 1)
 
-[node name="ThreatTitle" type="Label" parent="Rows/FrontRow/StatsDisplay"]
+[node name="ThreatTitle" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
 text = "Threat"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(1.0, 0.5, 0.2, 1)
 
-[node name="ThreatLabel" type="Label" parent="Rows/FrontRow/StatsDisplay"]
+[node name="ThreatLabel" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
 text = "0"
 horizontal_alignment = 1
@@ -107,39 +125,65 @@ vertical_alignment = 1
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(1.0, 0.6, 0.3, 1)
 
-[node name="Zone8" parent="Rows/FrontRow" instance=ExtResource("2_slot")]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+[node name="Zone8" parent="LayoutContainer" instance=ExtResource("2_slot")]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.443
+anchor_top = 0.2041
+anchor_right = 0.5519
+anchor_bottom = 0.4618
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone7" parent="Rows/FrontRow" instance=ExtResource("2_slot")]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+[node name="Zone7" parent="LayoutContainer" instance=ExtResource("2_slot")]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.5834
+anchor_top = 0.3029
+anchor_right = 0.6924
+anchor_bottom = 0.5606
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone6" parent="Rows/FrontRow" instance=ExtResource("2_slot")]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+[node name="Zone6" parent="LayoutContainer" instance=ExtResource("2_slot")]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.7213
+anchor_top = 0.3029
+anchor_right = 0.8301
+anchor_bottom = 0.5606
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
 
-[node name="DeckInfo" type="VBoxContainer" parent="Rows/FrontRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-size_flags_stretch_ratio = 0.5
-custom_minimum_size = Vector2(0, 0)
+[node name="DeckInfo" type="VBoxContainer" parent="LayoutContainer"]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.8668
+anchor_top = 0.3031
+anchor_right = 0.9756
+anchor_bottom = 0.5607
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 clip_contents = true
 
-[node name="DeckTitle" type="Label" parent="Rows/FrontRow/DeckInfo"]
+[node name="DeckTitle" type="Label" parent="LayoutContainer/DeckInfo"]
 layout_mode = 2
 text = "Deck"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 
-[node name="DeckCount" type="Label" parent="Rows/FrontRow/DeckInfo"]
+[node name="DeckCount" type="Label" parent="LayoutContainer/DeckInfo"]
 layout_mode = 2
 size_flags_vertical = 3
 text = "50"
@@ -148,27 +192,27 @@ vertical_alignment = 1
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.7, 0.8, 1.0, 1)
 
-[node name="BackRow" type="HBoxContainer" parent="Rows"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 20
-
-[node name="MonsterInfo" type="VBoxContainer" parent="Rows/BackRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-size_flags_stretch_ratio = 0.5
-custom_minimum_size = Vector2(0, 0)
+[node name="MonsterInfo" type="VBoxContainer" parent="LayoutContainer"]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.0237
+anchor_top = 0.6889
+anchor_right = 0.1325
+anchor_bottom = 0.9466
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 clip_contents = true
 
-[node name="PlayerLabel" type="Label" parent="Rows/BackRow/MonsterInfo"]
+[node name="PlayerLabel" type="Label" parent="LayoutContainer/MonsterInfo"]
 layout_mode = 2
 text = "Player 1"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 10
 theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
 
-[node name="MonsterTitle" type="Label" parent="Rows/BackRow/MonsterInfo"]
+[node name="MonsterTitle" type="Label" parent="LayoutContainer/MonsterInfo"]
 layout_mode = 2
 size_flags_vertical = 3
 text = "Monster"
@@ -176,58 +220,98 @@ horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 9
 
-[node name="MonsterDeckCount" type="Label" parent="Rows/BackRow/MonsterInfo"]
+[node name="MonsterDeckCount" type="Label" parent="LayoutContainer/MonsterInfo"]
 layout_mode = 2
 text = "Deck: 0"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 10
 theme_override_colors/font_color = Color(0.6, 0.9, 0.6, 1)
 
-[node name="Zone1" parent="Rows/BackRow" instance=ExtResource("2_slot")]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+[node name="Zone1" parent="LayoutContainer" instance=ExtResource("2_slot")]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.153
+anchor_top = 0.6889
+anchor_right = 0.2618
+anchor_bottom = 0.9466
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone2" parent="Rows/BackRow" instance=ExtResource("2_slot")]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+[node name="Zone2" parent="LayoutContainer" instance=ExtResource("2_slot")]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.3038
+anchor_top = 0.6911
+anchor_right = 0.4127
+anchor_bottom = 0.9487
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone3" parent="Rows/BackRow" instance=ExtResource("2_slot")]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+[node name="Zone3" parent="LayoutContainer" instance=ExtResource("2_slot")]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.443
+anchor_top = 0.6911
+anchor_right = 0.5519
+anchor_bottom = 0.9487
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone4" parent="Rows/BackRow" instance=ExtResource("2_slot")]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+[node name="Zone4" parent="LayoutContainer" instance=ExtResource("2_slot")]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.5821
+anchor_top = 0.6903
+anchor_right = 0.691
+anchor_bottom = 0.948
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone5" parent="Rows/BackRow" instance=ExtResource("2_slot")]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+[node name="Zone5" parent="LayoutContainer" instance=ExtResource("2_slot")]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.7213
+anchor_top = 0.6903
+anchor_right = 0.8301
+anchor_bottom = 0.948
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
 
-[node name="DiscardInfo" type="VBoxContainer" parent="Rows/BackRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-size_flags_stretch_ratio = 0.5
-custom_minimum_size = Vector2(0, 0)
+[node name="DiscardInfo" type="VBoxContainer" parent="LayoutContainer"]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.8668
+anchor_top = 0.6863
+anchor_right = 0.9756
+anchor_bottom = 0.944
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 clip_contents = true
 
-[node name="DiscardTitle" type="Label" parent="Rows/BackRow/DiscardInfo"]
+[node name="DiscardTitle" type="Label" parent="LayoutContainer/DiscardInfo"]
 layout_mode = 2
 text = "Discard"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 
-[node name="DiscardCount" type="Label" parent="Rows/BackRow/DiscardInfo"]
+[node name="DiscardCount" type="Label" parent="LayoutContainer/DiscardInfo"]
 layout_mode = 2
 size_flags_vertical = 3
 text = "0"

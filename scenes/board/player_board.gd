@@ -1,10 +1,9 @@
 extends Control
 
 ## Visual representation of one player's side of the board.
-## Two-row layout matching the official playmat:
-##   Front row: Strategy Zones | Rage Zone | Zone 8 | Zone 7 | Zone 6 | Deck
-##   Back row:  Monster Info   | Zone 1 | Zone 2 | Zone 3 | Zone 4 | Zone 5 | Discard
-## HandArea (CardManager) is managed by the parent GameBoard, not this scene.
+## Uses zones.svg as the background with anchor-based positioning matching the SVG layout.
+## The LayoutContainer maintains the SVG's 1728:1008 aspect ratio within the available space.
+## Mirroring for Player 2 flips all child anchors and the background texture.
 
 signal zone_card_dropped(zone_index: int, card: Control)
 signal discard_clicked(player_id: int)
@@ -15,10 +14,12 @@ signal strategy_slot_right_clicked(strategy_index: int, player_id: int)
 
 @export var player_id: int = 0
 @export var is_mirrored: bool = false  # True for player 2 (top of screen)
-@export var zone_h_gap: float = 20.0
-@export var zone_v_gap: float = 4.0
 
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
+
+# SVG viewBox dimensions for aspect ratio calculation
+const SVG_W := 1728.0
+const SVG_H := 1008.0
 
 # Node references (set in _ready)
 var zone_slots: Array[Slot] = []
@@ -40,19 +41,37 @@ var threat_label: Label
 
 func _ready() -> void:
 	_setup_references()
-	_apply_spacing()
+	resized.connect(_update_layout)
+	_update_layout()
+
+
+func _update_layout() -> void:
+	var board_size := size
+	if board_size.x <= 0 or board_size.y <= 0:
+		return
+	var svg_ratio := SVG_W / SVG_H
+	var board_ratio := board_size.x / board_size.y
+	var content_size: Vector2
+	if board_ratio > svg_ratio:
+		# Board is wider than SVG - fit to height
+		content_size = Vector2(board_size.y * svg_ratio, board_size.y)
+	else:
+		# Board is taller than SVG - fit to width
+		content_size = Vector2(board_size.x, board_size.x / svg_ratio)
+	var content_offset := (board_size - content_size) / 2.0
+	var lc := $LayoutContainer
+	lc.offset_left = content_offset.x
+	lc.offset_top = content_offset.y
+	lc.offset_right = content_offset.x + content_size.x
+	lc.offset_bottom = content_offset.y + content_size.y
 
 
 func _setup_references() -> void:
-	# Mirror for player 2: swap row order AND reverse children within each row
-	# This creates a 180° rotated appearance matching the physical playmat
+	# Mirror for player 2: flip all child anchors and background
 	if is_mirrored:
-		var rows := $Rows
-		rows.move_child($Rows/BackRow, 0)
-		_reverse_container($Rows/FrontRow)
-		_reverse_container($Rows/BackRow)
+		_apply_mirror()
 
-	# Zone slots (find by name so layout wrappers don't matter)
+	# Zone slots (find by name so layout doesn't matter)
 	zone_slots.resize(8)
 
 	for i in range(1, 9):
@@ -65,7 +84,7 @@ func _setup_references() -> void:
 			slot.slot_right_clicked.connect(_on_zone_slot_right_clicked)
 			zone_slots[i - 1] = slot
 
-	# Strategy slots (landscape orientation, larger)
+	# Strategy slots (landscape orientation)
 	for i in range(1, 3):
 		var slot := find_child("Strategy%d" % i, true, false) as Slot
 		if slot:
@@ -292,27 +311,46 @@ func clear_highlights() -> void:
 	highlight_discard_zone(false)
 
 
-func _apply_spacing() -> void:
-	$Rows.add_theme_constant_override("separation", int(zone_v_gap))
-	$Rows/FrontRow.add_theme_constant_override("separation", int(zone_h_gap))
-	$Rows/BackRow.add_theme_constant_override("separation", int(zone_h_gap))
+func _apply_mirror() -> void:
+	var bg := $LayoutContainer/Background as TextureRect
+	if bg:
+		bg.flip_h = true
+		bg.flip_v = true
+	for child in $LayoutContainer.get_children():
+		if child is TextureRect:
+			continue
+		if child is Control:
+			_flip_node_anchors(child)
 
+
+func _flip_node_anchors(node: Control) -> void:
+	var l := node.anchor_left
+	var t := node.anchor_top
+	var r := node.anchor_right
+	var b := node.anchor_bottom
+	# Set the larger values first to avoid clamping
+	node.anchor_right = 1.0 - l
+	node.anchor_bottom = 1.0 - t
+	node.anchor_left = 1.0 - r
+	node.anchor_top = 1.0 - b
+	node.offset_left = 0
+	node.offset_top = 0
+	node.offset_right = 0
+	node.offset_bottom = 0
 
 
 func toggle_mirrored() -> void:
 	is_mirrored = !is_mirrored
-	if is_mirrored:
-		$Rows.move_child($Rows/BackRow, 0)
-	else:
-		$Rows.move_child($Rows/FrontRow, 0)
-	_reverse_container($Rows/FrontRow)
-	_reverse_container($Rows/BackRow)
-
-
-func _reverse_container(container: Node) -> void:
-	var count := container.get_child_count()
-	for i in range(count - 1):
-		container.move_child(container.get_child(count - 1), i)
+	# Flip all child anchors (flipping twice = identity, so this toggles)
+	for child in $LayoutContainer.get_children():
+		if child is TextureRect:
+			continue
+		if child is Control:
+			_flip_node_anchors(child)
+	var bg := $LayoutContainer/Background as TextureRect
+	if bg:
+		bg.flip_h = is_mirrored
+		bg.flip_v = is_mirrored
 
 
 func _on_discard_gui_input(event: InputEvent) -> void:
