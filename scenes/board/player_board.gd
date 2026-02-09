@@ -235,6 +235,8 @@ func _sync_hand(state: PlayerState) -> void:
 		hand_manager.clear_cards(true)
 		for card_data in state.hand:
 			var card := _create_card(card_data)
+			if is_mirrored:
+				card.invert_hover = true
 			hand_manager.add_card(card, false)
 		hand_manager.arrange_cards(true)
 

@@ -16,6 +16,7 @@ signal card_right_clicked(card: Control)
 @export var hover_scale: float = 1.15
 @export var hover_scale_in_slot: float = 1.5
 @export var hover_lift: float = 40.0
+@export var invert_hover: bool = false  # When true, hover moves card down instead of up
 @export var scale_duration: float = 0.2
 
 # Card data
@@ -129,7 +130,8 @@ func _animate_hover(entering: bool) -> void:
 		var target_hover_scale := hover_scale_in_slot if in_slot else hover_scale
 		tween.tween_property(self, "scale", original_scale * target_hover_scale, scale_duration)
 		if not in_slot:
-			tween.tween_property(self, "position", _pre_hover_position + Vector2(0, -hover_lift), scale_duration)
+			var lift_dir := 1.0 if invert_hover else -1.0
+			tween.tween_property(self, "position", _pre_hover_position + Vector2(0, lift_dir * hover_lift), scale_duration)
 	else:
 		tween.tween_property(self, "scale", original_scale, scale_duration)
 		if not in_slot:
