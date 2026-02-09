@@ -8,8 +8,8 @@ const DECK_EXTENSION := ".deck"
 ## Each entry is either null or {"deck_name": String, "monster_deck": Array, "main_entries": Array}
 var _player_decks: Array = [null, null]
 
-const LINE_DELIMITER_MONSTER_DECK := '[Monster Deck]'
-const LINE_DELIMITER_MAIN_DECK := '[Main Deck]'
+const LINE_DELIMITER_MONSTER_DECK := '[monster deck]'
+const LINE_DELIMITER_MAIN_DECK := '[main deck]'
 
 func _ready() -> void:
 	DirAccess.make_dir_recursive_absolute(DECKLIST_DIR)
@@ -108,13 +108,13 @@ func validate_decklist(deck_name: String) -> Array[String]:
 		return ["Could not load decklist."]
 
 	var errors: Array[String] = []
-	var card_number_counts: Dictionary = {}  # card_number (stripped of +) -> total count
+	var card_number_counts: Dictionary = {} # card_number (stripped of +) -> total count
 
 	# --- Monster Deck ---
 	var monster_total := 0
-	var monster_ranks_found: Dictionary = {}  # rank -> true
-	var allowed_colors: Array[int] = [CardEnums.CardColor.WHITE]  # White always allowed
-	var resonance: Dictionary = {}  # Resonance requirements from rank 1 monster
+	var monster_ranks_found: Dictionary = {} # rank -> true
+	var allowed_colors: Array[int] = [CardEnums.CardColor.WHITE] # White always allowed
+	var resonance: Dictionary = {} # Resonance requirements from rank 1 monster
 
 	for entry in data["monster"]:
 		var cn: String = entry["card_number"]
@@ -156,7 +156,7 @@ func validate_decklist(deck_name: String) -> Array[String]:
 			errors.append("Monster deck missing rank %d" % r)
 
 	# Color check for monster deck cards (second pass, now that allowed_colors is known)
-	if allowed_colors.size() > 1:  # More than just WHITE
+	if allowed_colors.size() > 1: # More than just WHITE
 		for entry in data["monster"]:
 			var template: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
 			if template.is_empty():
@@ -194,7 +194,7 @@ func validate_decklist(deck_name: String) -> Array[String]:
 			invasion2_count += qty
 
 		# Color check: card must have at least one allowed color
-		if allowed_colors.size() > 1:  # More than just WHITE
+		if allowed_colors.size() > 1: # More than just WHITE
 			var card_colors: Array = template.get("colors", [])
 			var has_allowed := false
 			for c in card_colors:
@@ -385,10 +385,11 @@ func _parse_decklist(content: String) -> Dictionary:
 		line = line.strip_edges()
 		if line.is_empty() or line.begins_with("#"):
 			continue
-		if line == LINE_DELIMITER_MONSTER_DECK:
+		var line_lower := line.to_lower()
+		if line_lower == LINE_DELIMITER_MONSTER_DECK or line_lower == "monster deck:":
 			current_section = "monster"
 			continue
-		if line == LINE_DELIMITER_MAIN_DECK:
+		if line_lower == LINE_DELIMITER_MAIN_DECK or line_lower == "main deck:":
 			current_section = "main"
 			continue
 		if current_section.is_empty():
@@ -397,7 +398,7 @@ func _parse_decklist(content: String) -> Dictionary:
 		var parts := line.split(" ", false)
 		if parts.size() >= 2:
 			var qty := int(parts[0])
-			var card_number := parts[1].strip_edges()
+			var card_number := parts[1].strip_edges().to_upper()
 			if qty > 0 and not card_number.is_empty():
 				result[current_section].append({"quantity": qty, "card_number": card_number})
 
