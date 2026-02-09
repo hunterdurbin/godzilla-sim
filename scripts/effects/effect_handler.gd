@@ -102,25 +102,21 @@ func has_trigger(card_data: Dictionary, method_name: String) -> bool:
 	if script_path.is_empty():
 		return false
 
-	if _trigger_cache.has(script_path):
-		var methods: Dictionary = _trigger_cache[script_path]
-		if methods.has(method_name):
-			return methods[method_name]
-
-	var effect := get_effect(card_data)
-	if effect == null:
-		return false
-
-	var script: Script = effect.get_script()
-	if script == null:
-		return false
-
-	# Build the full method set for this script (cache all at once)
 	if not _trigger_cache.has(script_path):
-		var methods_set: Dictionary = {}
+		var effect := get_effect(card_data)
+		if effect == null:
+			return false
+		var script: Script = effect.get_script()
+		if script == null:
+			return false
+		# Build override cache from source code. get_script_method_list() includes
+		# inherited methods from the base CardEffect, so check the script's own
+		# source to detect actual overrides.
+		var source: String = script.source_code
+		var overrides: Dictionary = {}
 		for m in script.get_script_method_list():
-			methods_set[m.name] = true
-		_trigger_cache[script_path] = methods_set
+			overrides[m.name] = source.find("func " + m.name + "(") >= 0
+		_trigger_cache[script_path] = overrides
 
 	return _trigger_cache[script_path].get(method_name, false)
 
