@@ -27,7 +27,7 @@ grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("3_bg")
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 0
 
 [node name="Strategy1" parent="LayoutContainer" instance=ExtResource("2_slot")]
 layout_mode = 1

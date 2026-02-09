@@ -40,30 +40,33 @@ var threat_label: Label
 
 
 func _ready() -> void:
+	clip_contents = true
 	_setup_references()
 	resized.connect(_update_layout)
 	_update_layout()
 
 
 func _update_layout() -> void:
-	var board_size := size
-	if board_size.x <= 0 or board_size.y <= 0:
-		return
-	var svg_ratio := SVG_W / SVG_H
-	var board_ratio := board_size.x / board_size.y
-	var content_size: Vector2
-	if board_ratio > svg_ratio:
-		# Board is wider than SVG - fit to height
-		content_size = Vector2(board_size.y * svg_ratio, board_size.y)
+	# Crop into the zone content area of the SVG, removing empty top/bottom space.
+	# Non-mirrored: content at ~0.20-0.95 in SVG space (top is empty).
+	# Mirrored: content at ~0.05-0.80 in SVG space (bottom is empty after flip).
+	var content_top: float
+	var content_bottom: float
+	if is_mirrored:
+		content_top = 0.03
+		content_bottom = 0.82
 	else:
-		# Board is taller than SVG - fit to width
-		content_size = Vector2(board_size.x, board_size.x / svg_ratio)
-	var content_offset := (board_size - content_size) / 2.0
+		content_top = 0.18
+		content_bottom = 0.97
+
+	var content_span := content_bottom - content_top
+	var lc_height := size.y / content_span
+
 	var lc := $LayoutContainer
-	lc.offset_left = content_offset.x
-	lc.offset_top = content_offset.y
-	lc.offset_right = content_offset.x + content_size.x
-	lc.offset_bottom = content_offset.y + content_size.y
+	lc.offset_left = 0
+	lc.offset_top = -content_top * lc_height
+	lc.offset_right = size.x
+	lc.offset_bottom = lc.offset_top + lc_height
 
 
 func _setup_references() -> void:

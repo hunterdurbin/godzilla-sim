@@ -4,17 +4,17 @@ extends Control
 ## In multiplayer, the host runs TurnManager and broadcasts state to the client.
 ## The client receives state via RPC and sends actions back to the host.
 
-var turn_manager: TurnManager  # Only exists on host/solo
+var turn_manager: TurnManager # Only exists on host/solo
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
 # Multiplayer state
 var is_multiplayer_game: bool = false
-var local_player_id: int = 0  # 0 for host/solo, 1 for client
+var local_player_id: int = 0 # 0 for host/solo, 1 for client
 
 # Client-side state (populated from host RPCs)
 var _client_players: Array[PlayerState] = []
 var _client_current_player_id: int = 0
-var _client_playable: Dictionary = {}  # Playable card/zone indices from host
+var _client_playable: Dictionary = {} # Playable card/zone indices from host
 var _client_cp_modifiers: Array = [0, 0]
 var _client_threat_modifiers: Array = [0, 0]
 var _client_zone_cp_mods: Array = [[], []]
@@ -63,7 +63,7 @@ var _client_zone_cp_mods: Array = [[], []]
 # Stored deck search data for toggling between matching/all/stacked
 var _deck_search_matching: Array[Dictionary] = []
 var _deck_search_all: Array[Dictionary] = []
-var _deck_search_matching_ids: Dictionary = {}  # card id -> true, for highlighting
+var _deck_search_matching_ids: Dictionary = {} # card id -> true, for highlighting
 
 # Stored discard view data for stacked toggle
 var _discard_view_cards: Array[Dictionary] = []
@@ -96,7 +96,7 @@ var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var waiting_for_card_select: bool = false
 var waiting_for_zone_select: bool = false
 var selected_card_id: String = ""
-var _selected_card_data: Dictionary = {}  # Card data dict for the selected card
+var _selected_card_data: Dictionary = {} # Card data dict for the selected card
 
 # Hand discard selection state
 var _discard_selecting: bool = false
@@ -114,8 +114,8 @@ var _action_pending: bool = false
 
 # Zone target selection state (for effects that let the player pick a zone)
 var _zone_target_selecting: bool = false
-var _zone_target_player_id: int = -1  # Who is choosing
-var _zone_target_board_pid: int = -1  # Whose board the zones are on
+var _zone_target_player_id: int = -1 # Who is choosing
+var _zone_target_board_pid: int = -1 # Whose board the zones are on
 var _zone_target_valid_zones: Array[int] = []
 var _zone_target_allow_skip: bool = false
 
@@ -132,7 +132,7 @@ var _zone_select_valid: Array[int] = []
 var _drag_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var _drag_can_rage: bool = false
 var _drag_can_invade: bool = false
-var _snap_preview_slot = null  # Slot or Control currently being snap-previewed
+var _snap_preview_slot = null # Slot or Control currently being snap-previewed
 
 
 func _ready() -> void:
@@ -316,7 +316,7 @@ func _position_hands() -> void:
 	# Opponent hand: mostly off-screen at top edge
 	if opponent_space and opponent_hand:
 		var rect := opponent_space.get_global_rect()
-		opponent_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y - 160.0)
+		opponent_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.3, rect.position.y - 195.0)
 		opponent_hand.max_width = rect.size.x * 0.65
 		opponent_hand.arrange_cards(false)
 
@@ -661,7 +661,6 @@ func _enter_zone_selection() -> void:
 					slot.hover_started.connect(_on_zone_hover_clicked.bind(i))
 
 
-
 func _on_zone_hover_clicked(_zone_index: int) -> void:
 	if not waiting_for_zone_select:
 		return
@@ -682,7 +681,7 @@ func _update_snap_preview() -> void:
 		return
 
 	var mouse_pos := get_global_mouse_position()
-	var hovered_slot = null  # Slot or Control
+	var hovered_slot = null # Slot or Control
 
 	# Check zone slots
 	for i in _drag_valid_zones:
@@ -711,7 +710,7 @@ func _update_snap_preview() -> void:
 			hovered_slot = board.discard_display
 
 	if hovered_slot == _snap_preview_slot:
-		return  # No change
+		return # No change
 
 	if _snap_preview_slot and hovered_slot != _snap_preview_slot:
 		_end_snap_preview()
@@ -734,7 +733,7 @@ func _start_snap_preview(target) -> void:
 		target_rect = Rect2(target.global_position, target.size)
 
 	# Calculate scale to fit card in the target area (maintain aspect ratio)
-	var card_size: Vector2 = _drag_card.size  # Base card size (150x210)
+	var card_size: Vector2 = _drag_card.size # Base card size (150x210)
 	var scale_x := target_rect.size.x / card_size.x
 	var scale_y := target_rect.size.y / card_size.y
 	var fit_scale := minf(scale_x, scale_y)
@@ -1833,7 +1832,7 @@ func _show_card_zoom(card_data: Dictionary) -> void:
 		# Use a wrapper sized to the landscape dimensions so CenterContainer centers correctly.
 		var portrait_size := Vector2(300, 420)
 		var wrapper := Control.new()
-		wrapper.custom_minimum_size = Vector2(portrait_size.y, portrait_size.x)  # 420x300
+		wrapper.custom_minimum_size = Vector2(portrait_size.y, portrait_size.x) # 420x300
 		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card_zoom_container.add_child(wrapper)
 		card.custom_minimum_size = Vector2.ZERO
@@ -1892,8 +1891,8 @@ func _get_card_template_id(card_data: Dictionary) -> String:
 
 func _group_cards(cards: Array[Dictionary]) -> Array[Dictionary]:
 	## Group cards by template ID. Returns Array of {card_data, count, has_match}.
-	var groups: Dictionary = {}  # template_id -> {card_data, count, has_match}
-	var order: Array[String] = []  # Preserve first-seen order
+	var groups: Dictionary = {} # template_id -> {card_data, count, has_match}
+	var order: Array[String] = [] # Preserve first-seen order
 	for card_data in cards:
 		var tid := _get_card_template_id(card_data)
 		if groups.has(tid):
@@ -1952,7 +1951,7 @@ func _broadcast_state() -> void:
 
 	for peer_id in NetworkManager.peer_player_map:
 		if peer_id == 1:
-			continue  # Don't send to self (server peer ID is 1)
+			continue # Don't send to self (server peer ID is 1)
 		var viewer_id: int = NetworkManager.peer_player_map[peer_id]
 		var state_json := _serialize_game_state(viewer_id)
 		_rpc_receive_state.rpc_id(peer_id, state_json)
@@ -2043,7 +2042,7 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 	var sender_id := multiplayer.get_remote_sender_id()
 	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
 	if sender_player_id != turn_manager.game_state.current_player_id:
-		return  # Not their turn
+		return # Not their turn
 
 	var action: CardEnums.ActionType = action_type as CardEnums.ActionType
 	var params: Dictionary = {}
@@ -2178,7 +2177,7 @@ func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func _rpc_hand_discard_requested(discard_count: int) -> void:
 	if NetworkManager.is_host():
-		return  # Safety: this RPC is only for clients
+		return # Safety: this RPC is only for clients
 	_show_hand_discard_selection(local_player_id, discard_count)
 
 
