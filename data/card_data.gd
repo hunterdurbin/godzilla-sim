@@ -1377,6 +1377,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"counter_power": 0,
 		"invasion_icon": 1,
 		"description": "<Evolution5> <《Little Godzilla》> (At the beginning of your main phase, you may play a rank 5 or lower <《Little Godzilla》> battle card from your deck by placing it on top of this card.)",
+		"evolution_rank": 5,
+		"evolution_trait": CardEnums.CardTrait.LITTLE_GODZILLA,
 		"effect_script": "res://scripts/effects/ebp02/ebp02_030.gd"
 	},
 	{
@@ -1402,6 +1404,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"counter_power": 3000,
 		"invasion_icon": 1,
 		"description": "<Evolution7> <《Biollante》> (At the beginning of your main phase, you may play a rank 7 or lower <《Biollante》> battle card from your deck by placing it on top of this card.)",
+		"evolution_rank": 7,
+		"evolution_trait": CardEnums.CardTrait.BIOLLANTE,
 		"effect_script": "res://scripts/effects/ebp02/ebp02_032.gd"
 	},
 	{
