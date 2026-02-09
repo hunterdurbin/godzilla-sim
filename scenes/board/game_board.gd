@@ -25,7 +25,7 @@ var _client_zone_cp_mods: Array = [[], []]
 @onready var action_panel: Control = $VBoxContainer/BottomHUD/ActionPanel
 @onready var phase_label: Label = $VBoxContainer/TopHUD/PhaseLabel
 @onready var turn_label: Label = $VBoxContainer/TopHUD/TurnLabel
-@onready var log_output: RichTextLabel = $VBoxContainer/BottomHUD/LogPanel/LogOutput
+@onready var log_output: RichTextLabel = $LogPanel/LogOutput
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var card_select_prompt: Label = $VBoxContainer/TopHUD/CardSelectPromptTop
 
