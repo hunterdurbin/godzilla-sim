@@ -91,6 +91,9 @@ func get_playable_strategy_cards(player: PlayerState) -> Array[int]:
 	var indices: Array[int] = []
 	if not player.has_empty_strategy_zone():
 		return indices
+	# Check if opponent blocks strategy plays (e.g. EBP02-070)
+	if effect_handler and effect_handler.are_opponent_strategy_plays_blocked(player.player_id):
+		return indices
 	for i in range(player.hand.size()):
 		var card: Dictionary = player.hand[i]
 		if card.get("card_type") == CardEnums.CardType.STRATEGY:
@@ -192,6 +195,9 @@ func _can_play_any_battle_card(player: PlayerState, opponent: PlayerState) -> bo
 func _can_play_any_strategy_card(player: PlayerState) -> bool:
 	if not player.has_empty_strategy_zone():
 		return false
+	# Check if opponent blocks strategy plays (e.g. EBP02-070)
+	if effect_handler and effect_handler.are_opponent_strategy_plays_blocked(player.player_id):
+		return false
 	for card in player.hand:
 		if card.get("card_type") == CardEnums.CardType.STRATEGY:
 			if card.get("rank", 99) <= player.monster_zone:
@@ -244,6 +250,9 @@ func _traits_overlap(traits_a: Array, traits_b: Array) -> bool:
 
 func _can_invade(player: PlayerState) -> bool:
 	if player.has_invaded_this_turn:
+		return false
+	# Check if monster prevents its own invasion (e.g. Biollante Rose Form)
+	if effect_handler and effect_handler.is_own_invasion_blocked(player.player_id):
 		return false
 	for card in player.hand:
 		if card.get("invasion_icon", 0) > 0:

@@ -3,7 +3,14 @@ extends CardEffect
 ## EBP02-025: Biollante Rose Form - Monster Rank 2 (Blue)
 ## This card cannot advance nor invade.
 ## <Enter> Play 1 "Tentacles" token in a zone adjacent to this card.
-## TODO: "cannot advance nor invade" mechanic not yet implemented in engine
+
+
+func can_monster_advance(_ctx: EffectContext) -> bool:
+	return false
+
+
+func can_monster_invade(_ctx: EffectContext) -> bool:
+	return false
 
 
 func on_enter(ctx: EffectContext) -> void:

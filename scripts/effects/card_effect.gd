@@ -103,6 +103,37 @@ func prevents_opponent_invasion(_ctx: EffectContext) -> bool:
 	return false
 
 
+func can_monster_advance(_ctx: EffectContext) -> bool:
+	## Return false if this monster cannot advance during end phase.
+	## Used by cards like Biollante Rose Form (EBP02-024, 025).
+	return true
+
+
+func can_monster_invade(_ctx: EffectContext) -> bool:
+	## Return false if this monster's owner cannot invade.
+	## Used by cards like Biollante Rose Form (EBP02-024, 025).
+	return true
+
+
+func get_counter_immunity_threshold(_ctx: EffectContext) -> int:
+	## Return a CP threshold below which this monster cannot be countered.
+	## If defender's total CP <= threshold, monster retreats but does NOT rank up.
+	## Return 0 for no immunity. Used by EBP02-027.
+	return 0
+
+
+func get_opponent_zone_cp_modifiers(_ctx: EffectContext) -> Dictionary:
+	## Return {zone_index: cp_bonus} for bonuses this card grants to the OPPONENT's zones.
+	## Used by EBP02-029 to double opponent's CP in the same column.
+	return {}
+
+
+func blocks_opponent_strategy_plays(_ctx: EffectContext) -> bool:
+	## Return true if this card prevents the opponent from playing strategy cards.
+	## Used by EBP02-070.
+	return false
+
+
 func get_blocked_opponent_zones(_ctx: EffectContext) -> Array[int]:
 	## Return opponent zone indices where the opponent cannot play battle cards.
 	## Used by cards like SpaceGodzilla R3 (EBP02-055) for column blocking.

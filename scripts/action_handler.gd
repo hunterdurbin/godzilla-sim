@@ -15,6 +15,7 @@ signal cards_drawn(player_id: int, count: int)
 signal strategy_cleared(player_id: int, cards: Array)
 signal counter_failed(player_id: int, total_cp: int, threat: int)
 signal counter_succeeded(player_id: int, total_cp: int, threat: int)
+signal counter_immunity_triggered(player_id: int, total_cp: int, threshold: int)
 
 var effect_handler: EffectHandler
 
@@ -84,6 +85,11 @@ func execute_end_phase_advance(state: GameState) -> void:
 	## Advance monster (7.5.2) and check crush rule.
 	## Extra advance from effects (e.g. EBP02-056 SpaceGodzilla R4) adds additional zones.
 	var player := state.get_current_player()
+
+	# Check if monster is blocked from advancing (e.g. Biollante Rose Form)
+	if effect_handler and effect_handler.is_monster_advance_blocked(player.player_id):
+		return
+
 	var extra: int = 0
 	if effect_handler:
 		extra = effect_handler.get_extra_end_phase_advance(player.player_id)
@@ -118,7 +124,22 @@ func resolve_counter(state: GameState) -> void:
 		total_cp += effect_handler.get_counter_power_modifier(player.player_id)
 		threat += effect_handler.get_threat_level_modifier(opponent.player_id)
 
-	if total_cp >= threat:
+	# Check counter immunity (e.g. EBP02-027: CP <= threshold → retreat without rank up)
+	var immunity_threshold: int = 0
+	if effect_handler:
+		immunity_threshold = effect_handler.get_counter_immunity_threshold(opponent.player_id)
+
+	if immunity_threshold > 0 and total_cp <= immunity_threshold:
+		# Counter is immune — monster retreats but does NOT rank up
+		counter_immunity_triggered.emit(player.player_id, total_cp, immunity_threshold)
+
+		var retreat_zone: int = _get_retreat_zone(opponent.monster_zone)
+		if retreat_zone != opponent.monster_zone:
+			var old_zone: int = opponent.monster_zone
+			opponent.monster_zone = retreat_zone
+			monster_advanced.emit(opponent.player_id, old_zone, opponent.monster_zone)
+			opponent.monster_changed.emit()
+	elif total_cp >= threat:
 		counter_succeeded.emit(player.player_id, total_cp, threat)
 
 		# Retreat monster to its retreat zone

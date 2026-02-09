@@ -47,7 +47,7 @@ func setup(card_data_node: Node) -> void:
 			if m.get("rank") == 1:
 				player.current_monster = m
 				break
-		player.monster_zone = 1
+		player.monster_zone = player.current_monster.get("start_zone", 1)
 		player.rage = 0
 
 	# Draw 5 cards each

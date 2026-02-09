@@ -660,6 +660,16 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 			if zone_idx >= 0 and zone_idx < 8:
 				modifiers[zone_idx] += monster_field_mods[zone_idx]
 
+	# Opponent's monster CP modifiers that affect this player's zones (e.g. EBP02-029 CP doubling)
+	var opponent_id: int = 1 - player_id
+	var opp_monster_effect := get_effect(game_state.players[opponent_id].current_monster)
+	if opp_monster_effect:
+		var opp_ctx := _build_context(opponent_id, game_state.players[opponent_id].current_monster)
+		var opp_mods: Dictionary = opp_monster_effect.get_opponent_zone_cp_modifiers(opp_ctx)
+		for zone_idx in opp_mods:
+			if zone_idx >= 0 and zone_idx < 8:
+				modifiers[zone_idx] += opp_mods[zone_idx]
+
 	return modifiers
 
 
@@ -778,3 +788,57 @@ func get_extra_end_phase_advance(player_id: int) -> int:
 	if effect:
 		return effect.get_extra_end_phase_advance(_build_context(player_id, player.current_monster))
 	return 0
+
+
+func is_monster_advance_blocked(player_id: int) -> bool:
+	## Check if the player's current monster cannot advance (e.g. Biollante Rose Form).
+	var player := game_state.players[player_id]
+	var effect := get_effect(player.current_monster)
+	if effect:
+		return not effect.can_monster_advance(_build_context(player_id, player.current_monster))
+	return false
+
+
+func is_own_invasion_blocked(player_id: int) -> bool:
+	## Check if the player's current monster prevents its owner from invading.
+	var player := game_state.players[player_id]
+	var effect := get_effect(player.current_monster)
+	if effect:
+		return not effect.can_monster_invade(_build_context(player_id, player.current_monster))
+	return false
+
+
+func get_counter_immunity_threshold(player_id: int) -> int:
+	## Get the counter immunity threshold from the player's current monster.
+	## If defender's CP <= this value, monster retreats without rank up.
+	var player := game_state.players[player_id]
+	var effect := get_effect(player.current_monster)
+	if effect:
+		return effect.get_counter_immunity_threshold(_build_context(player_id, player.current_monster))
+	return 0
+
+
+func are_opponent_strategy_plays_blocked(player_id: int) -> bool:
+	## Check if the opponent of the given player has cards that block strategy plays.
+	## player_id is the player trying to play a strategy card.
+	var opponent_id: int = 1 - player_id
+	var opponent := game_state.players[opponent_id]
+
+	# Check opponent's strategy cards
+	for sz_card in opponent.strategy_zones:
+		if not sz_card.is_empty():
+			var effect := get_effect(sz_card)
+			if effect:
+				if effect.blocks_opponent_strategy_plays(_build_context(opponent_id, sz_card)):
+					return true
+
+	# Check opponent's zone cards
+	for i in range(8):
+		var zone_card := opponent.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze:
+				if ze.blocks_opponent_strategy_plays(_build_context(opponent_id, zone_card)):
+					return true
+
+	return false

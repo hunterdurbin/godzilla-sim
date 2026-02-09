@@ -1302,6 +1302,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BIOLLANTE],
 		"threat_level": 6000,
 		"invasion_icon": 1,
+		"start_zone": 5,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_024.gd",
 		"description": "If this card is in your monster deck, at the start of the game it will be played in Zone 5.\nThis card cannot advance nor invade."
 	},
 	{
@@ -1337,7 +1339,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BIOLLANTE],
 		"threat_level": 23000,
 		"invasion_icon": 1,
-		"description": "<Opponent’s Turn> <Awakening6> If your opponent has a strategy card in play, this card cannot be countered by 40,000 or lower counter power. Instead, it only moves as though it were countered. (Do not play the next Monster Card from your monster deck.)"
+		"effect_script": "res://scripts/effects/ebp02/ebp02_027.gd",
+		"description": "<Opponent's Turn> <Awakening6> If your opponent has a strategy card in play, this card cannot be countered by 40,000 or lower counter power. Instead, it only moves as though it were countered. (Do not play the next Monster Card from your monster deck.)"
 	},
 	{
 		"id": "EBP02-028",
@@ -1348,6 +1351,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BIOLLANTE],
 		"threat_level": 32000,
 		"invasion_icon": 2,
+		"effect_script": "res://scripts/effects/ebp02/ebp02_028.gd",
 		"description": "<Enter> Play as many rank 4 or lower battle cards with <Evolution> from your discard pile to each of this card's adjacent zones. (You must play as many as possible and you may play the battle cards in zones already occupied by other battle cards. Maximum of 3 cards.)"
 	},
 	{
@@ -1359,7 +1363,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BIOLLANTE],
 		"threat_level": 55000,
 		"invasion_icon": 1,
-		"description": "<Opponent’s Turn> At the beginning of the counter phase, for the rest of the turn, double the counter power of all of your opponent's battle cards in the same column as this card. (Refer to those battle card's counter power at the ability resolution timing.)"
+		"effect_script": "res://scripts/effects/ebp02/ebp02_029.gd",
+		"description": "<Opponent's Turn> At the beginning of the counter phase, for the rest of the turn, double the counter power of all of your opponent's battle cards in the same column as this card. (Refer to those battle card's counter power at the ability resolution timing.)"
 	},
 	{
 		"id": "EBP02-030",
@@ -1838,7 +1843,8 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"rank": 3,
 		"color": CardEnums.CardColor.GREEN,
 		"invasion_icon": 2,
-		"description": "<Opponent’s Turn> Your opponent cannot play strategy cards. (Does not destroy cards already in play.)\n<Opponent’s Turn> At the beginning of the main phase, your opponent may discard cards until they have 5 cards remaining in their hand. If they discard at least 1 card, <Destroy> this card."
+		"effect_script": "res://scripts/effects/ebp02/ebp02_070.gd",
+		"description": "<Opponent's Turn> Your opponent cannot play strategy cards. (Does not destroy cards already in play.)\n<Opponent's Turn> At the beginning of the main phase, your opponent may discard cards until they have 5 cards remaining in their hand. If they discard at least 1 card, <Destroy> this card."
 	},
 	{
 		"id": "EBP02-071",
