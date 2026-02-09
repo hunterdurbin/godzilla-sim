@@ -307,6 +307,46 @@ func validate_decklist(deck_name: String) -> Array[String]:
 	return errors
 
 
+func get_decklist_warnings(deck_name: String) -> Array[String]:
+	## Returns an array of warning strings. These are not hard errors but may
+	## indicate deckbuilding issues (e.g. no valid rank-up path when countered).
+	var data := load_decklist(deck_name)
+	if data.is_empty():
+		return []
+
+	var warnings: Array[String] = []
+
+	# Build rank -> card data mapping for monster deck
+	var rank_cards: Dictionary = {} # rank -> Dictionary (card template)
+	for entry in data["monster"]:
+		var template: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
+		if template.is_empty():
+			continue
+		var rank: int = template.get("rank", 0)
+		rank_cards[rank] = template
+
+	# Check trait overlap between consecutive ranks (rank-up path)
+	for r in [1, 2, 3]:
+		if r not in rank_cards or (r + 1) not in rank_cards:
+			continue
+		var current: Dictionary = rank_cards[r]
+		var next: Dictionary = rank_cards[r + 1]
+		var current_traits: Array = current.get("traits", [])
+		var next_traits: Array = next.get("traits", [])
+		var shared := false
+		for t in current_traits:
+			if t in next_traits:
+				shared = true
+				break
+		if not shared:
+			var current_name: String = current.get("name", "Rank %d" % r)
+			var next_name: String = next.get("name", "Rank %d" % (r + 1))
+			warnings.append("%s (rank %d) shares no traits with %s (rank %d) — can't rank up when countered" % [
+				current_name, r, next_name, r + 1])
+
+	return warnings
+
+
 func get_decklist_preview(deck_name: String) -> String:
 	var data := load_decklist(deck_name)
 	if data.is_empty():
@@ -342,6 +382,13 @@ func get_decklist_preview(deck_name: String) -> String:
 		text += "\n\n[color=red][b]Invalid Deck[/b][/color]\n"
 		for err in errors:
 			text += "[color=red]- %s[/color]\n" % err
+
+	# Append warnings if any
+	var warnings := get_decklist_warnings(deck_name)
+	if not warnings.is_empty():
+		text += "\n\n[color=yellow][b]Warnings[/b][/color]\n"
+		for warn in warnings:
+			text += "[color=yellow]- %s[/color]\n" % warn
 
 	return text
 
