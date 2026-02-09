@@ -26,6 +26,7 @@ var monster_stack: Array[Dictionary] = []  # Monsters stacked under current_mons
 var burst_monster: Dictionary = {}  # The Burst-played monster (empty if none active)
 var pre_burst_monster: Dictionary = {}  # Monster that was active before Burst play
 var last_invasion_card: Dictionary = {}  # Card discarded for the most recent invade action
+var invasion_zones_crossed: int = 0  # Zones actually crossed during invasion this turn
 
 
 func _init(id: int = 0) -> void:

@@ -32,6 +32,12 @@ func on_discard_from_hand(_ctx: EffectContext) -> void:
 	pass
 
 
+func on_burst_discard(_ctx: EffectContext) -> void:
+	## Called when this card is discarded by the Burst mechanic at end of turn.
+	## The card is already in the discard pile when this triggers.
+	pass
+
+
 func on_rage_changed(_ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	## Called on active cards when the owner's rage changes.
 	## Covers "Whenever this card's <Rage> is increased" and similar triggers.
@@ -131,6 +137,13 @@ func get_opponent_zone_cp_modifiers(_ctx: EffectContext) -> Dictionary:
 func blocks_opponent_strategy_plays(_ctx: EffectContext) -> bool:
 	## Return true if this card prevents the opponent from playing strategy cards.
 	## Used by EBP02-070.
+	return false
+
+
+func can_intercept_strategy_discard(_ctx: EffectContext) -> bool:
+	## Return true if this card can intercept strategy discards during start phase.
+	## Intercepted strategies are placed under this card instead of going to discard.
+	## Used by EBP02-012.
 	return false
 
 

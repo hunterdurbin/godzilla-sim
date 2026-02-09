@@ -27,6 +27,7 @@ func setup(card_data_node: Node) -> void:
 	action_handler = ActionHandler.new()
 	effect_handler = EffectHandler.new()
 	effect_handler.setup(game_state)
+	effect_handler.action_handler = action_handler
 	action_handler.effect_handler = effect_handler
 	rules_engine.effect_handler = effect_handler
 
@@ -214,7 +215,7 @@ func _begin_end_phase() -> void:
 	log_message.emit("End Phase: Monster at zone %d" % player.monster_zone)
 
 	# Burst discard, then advance (7.5.2)
-	action_handler.execute_end_phase_burst_discard(game_state)
+	await action_handler.execute_end_phase_burst_discard(game_state)
 	await action_handler.execute_end_phase_advance(game_state)
 
 	# Check win from end-phase advance

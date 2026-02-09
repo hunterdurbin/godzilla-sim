@@ -6,17 +6,15 @@ extends CardEffect
 ## 0 - <Destroy> all of your opponent's rank 2 or lower battle cards.
 ## 1 - <Destroy> all of your opponent's rank 4 or lower battle cards.
 ## 2 - <Destroy> all of your opponent's rank 6 or lower battle cards.
-## NOTE: Exact invasion zone tracking needs game_state.invasion_zones_crossed.
-## For now, uses has_invaded_this_turn as a basic check (0 vs 1+).
 
 
 func on_enter(ctx: EffectContext) -> void:
-	# Determine max rank to destroy based on invasion distance
-	# TODO: Track exact invasion zone count in GameState for full 0/1/2 distinction.
-	# Currently has_invaded_this_turn is boolean, so we can only distinguish 0 vs 1+.
-	var max_rank: int = 2  # Default: 0 zones invaded
-	if ctx.owner.has_invaded_this_turn:
-		max_rank = 4  # At least 1 zone
+	var zones_crossed: int = ctx.owner.invasion_zones_crossed
+	var max_rank: int = 2  # 0 zones
+	if zones_crossed >= 2:
+		max_rank = 6
+	elif zones_crossed >= 1:
+		max_rank = 4
 
 	var zones_to_destroy: Array[int] = []
 	for i in range(8):

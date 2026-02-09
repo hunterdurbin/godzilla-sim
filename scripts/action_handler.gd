@@ -44,17 +44,30 @@ func execute_start_phase(state: GameState) -> void:
 	cards_drawn.emit(player.player_id, draw_count)
 
 	# Clear strategy cards placed before this turn
+	# Check if any zone card can intercept the discard (e.g. EBP02-012 in zone 8)
+	var intercept_zone: int = -1
+	if effect_handler:
+		intercept_zone = effect_handler.get_strategy_discard_interceptor(player.player_id)
+
 	var cleared: Array = []
 	for i in range(2):
 		if not player.strategy_zones[i].is_empty():
 			if player.strategy_zone_turn_placed[i] < state.turn_number:
-				cleared.append(player.strategy_zones[i])
-				player.discard_pile.append(player.strategy_zones[i])
+				var strategy_card: Dictionary = player.strategy_zones[i]
 				player.strategy_zones[i] = {}
+				if intercept_zone >= 0:
+					# Stack under the intercepting card instead of discarding
+					player.zones[intercept_zone].append(strategy_card)
+				else:
+					player.discard_pile.append(strategy_card)
+				cleared.append(strategy_card)
 	if cleared.size() > 0:
 		strategy_cleared.emit(player.player_id, cleared)
 		player.strategy_zones_changed.emit()
-		player.discard_changed.emit()
+		if intercept_zone >= 0:
+			player.zones_changed.emit()
+		else:
+			player.discard_changed.emit()
 
 	# Reset rage to 0
 	player.rage = 0
@@ -63,6 +76,7 @@ func execute_start_phase(state: GameState) -> void:
 	# Reset per-turn flags
 	player.has_invaded_this_turn = false
 	player.has_played_monster_this_turn = false
+	player.invasion_zones_crossed = 0
 
 
 func execute_end_phase_burst_discard(state: GameState) -> void:
@@ -79,6 +93,8 @@ func execute_end_phase_burst_discard(state: GameState) -> void:
 		player.pre_burst_monster = {}
 		player.monster_changed.emit()
 		player.discard_changed.emit()
+		if effect_handler:
+			await effect_handler.trigger_burst_discard(player.player_id, burst_card)
 
 
 func execute_end_phase_advance(state: GameState) -> void:
@@ -175,6 +191,43 @@ func resolve_counter(state: GameState) -> void:
 			state.game_over.emit(player.player_id, "Victory through countering!")
 	else:
 		counter_failed.emit(player.player_id, total_cp, threat)
+
+
+func force_counter(state: GameState, counter_player_id: int) -> void:
+	## Force a successful counter on the specified player's opponent's monster.
+	## The opponent's monster retreats and ranks up (or opponent loses if can't rank up).
+	## Used by EBP02-012 Godzilla(2016) Frozen.
+	var opponent_id: int = 1 - counter_player_id
+	var opponent := state.players[opponent_id]
+
+	# Retreat monster to its retreat zone
+	var retreat_zone: int = _get_retreat_zone(opponent.monster_zone)
+	if retreat_zone != opponent.monster_zone:
+		var old_zone: int = opponent.monster_zone
+		opponent.monster_zone = retreat_zone
+		monster_advanced.emit(opponent_id, old_zone, opponent.monster_zone)
+		opponent.monster_changed.emit()
+
+	# Opponent must rank up their monster
+	var next_rank: int = opponent.current_monster.get("rank", 1) + 1
+	var cur_traits: Array = opponent.current_monster.get("traits", [])
+	var found_next: bool = false
+
+	for m in opponent.monster_deck:
+		if m.get("rank") == next_rank and _traits_overlap(m.get("traits", []), cur_traits):
+			var old_monster: Dictionary = opponent.current_monster
+			if not old_monster.is_empty():
+				opponent.monster_stack.push_front(old_monster)
+			opponent.current_monster = m
+			opponent.rage = 0
+			opponent.rage_changed.emit(0)
+			found_next = true
+			monster_countered.emit(opponent_id, old_monster, m)
+			opponent.monster_changed.emit()
+			break
+
+	if not found_next:
+		state.game_over.emit(counter_player_id, "Victory through countering!")
 
 
 func resolve_check_timing(state: GameState) -> void:
@@ -388,6 +441,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 	player.discard_pile.append(card)
 	player.has_invaded_this_turn = true
 	player.last_invasion_card = card
+	var start_zone: int = player.monster_zone
 
 	card_discarded.emit(player.player_id, card)
 
@@ -404,6 +458,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 				if effect_handler:
 					await effect_handler.trigger_when_invading(player.player_id, old_zone, player.monster_zone)
 					await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
+				player.invasion_zones_crossed = player.monster_zone - start_zone
 				state.game_over.emit(player.player_id, "Victory through invasion!")
 				return
 			else:
@@ -419,6 +474,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 			# Check crush rule at each step
 			await check_crush_rule(state)
 
+	player.invasion_zones_crossed = player.monster_zone - start_zone
 	player.hand_changed.emit()
 	player.monster_changed.emit()
 	player.discard_changed.emit()

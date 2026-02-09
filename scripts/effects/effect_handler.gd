@@ -36,15 +36,25 @@ signal zone_target_requested(player_id: int, target_player_id: int, valid_zones:
 ## Emitted internally after resolve_zone_target() stores the selection.
 signal _zone_target_resolved()
 
+## Emitted when a player must choose from multiple text options (e.g. "Choose one").
+## Connect from presentation layer to show a choice dialog.
+## Call resolve_choice() with the chosen index when done.
+signal choice_requested(player_id: int, options: Array[String], prompt: String)
+
+## Emitted internally after resolve_choice() stores the selection.
+signal _choice_resolved()
+
 ## Emitted to highlight/unhighlight a zone card during effect resolution.
 signal effect_zone_highlighted(player_id: int, zone_index: int)
 signal effect_zone_unhighlighted(player_id: int, zone_index: int)
 
 var game_state: GameState
+var action_handler  # ActionHandler reference (set by TurnManager)
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
 var _deck_search_result: Dictionary = {}
 var _zone_target_result: int = -1
 var _hand_card_selection_result: int = -1
+var _choice_result: int = -1
 
 
 func setup(p_game_state: GameState) -> void:
@@ -116,6 +126,13 @@ func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 	var effect := get_effect(card_data)
 	if effect:
 		await effect.on_discard_from_hand(_build_context(player_id, card_data))
+
+
+func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
+	## Trigger on_burst_discard on the Burst monster being discarded at end of turn.
+	var effect := get_effect(card_data)
+	if effect:
+		await effect.on_burst_discard(_build_context(player_id, card_data))
 
 
 func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
@@ -450,6 +467,27 @@ func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: 
 		return _deck_search_result
 	else:
 		return options[0]
+
+
+func select_choice(player_id: int, options: Array[String], prompt: String) -> int:
+	## Present multiple text options to the player and let them choose one.
+	## Returns the chosen index (0-based), or 0 as fallback if no UI connected.
+	if options.is_empty():
+		return -1
+
+	if choice_requested.get_connections().size() > 0:
+		choice_requested.emit(player_id, options, prompt)
+		await _choice_resolved
+		return _choice_result
+	else:
+		# Fallback: auto-pick first option
+		return 0
+
+
+func resolve_choice(index: int) -> void:
+	## Called by the presentation layer after the player selects a choice option.
+	_choice_result = index
+	_choice_resolved.emit()
 
 
 func perform_evolution(player_id: int, zone_idx: int) -> bool:
@@ -842,3 +880,23 @@ func are_opponent_strategy_plays_blocked(player_id: int) -> bool:
 					return true
 
 	return false
+
+
+func force_counter(player_id: int) -> void:
+	## Force a successful counter of the opponent's monster.
+	## Used by EBP02-012 Godzilla(2016) Frozen.
+	if action_handler:
+		action_handler.force_counter(game_state, player_id)
+
+
+func get_strategy_discard_interceptor(player_id: int) -> int:
+	## Check if any zone card can intercept strategy discards (e.g. EBP02-012 in zone 8).
+	## Returns the zone index (0-indexed) of the intercepting card, or -1 if none.
+	var player := game_state.players[player_id]
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var effect := get_effect(zone_card)
+			if effect and effect.can_intercept_strategy_discard(_build_context(player_id, zone_card)):
+				return i
+	return -1

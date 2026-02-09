@@ -11,40 +11,52 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.monster_stack.size() < 5:
 		return
 
-	# Check if there are R6- cards to destroy
+	# Build available options
+	var options: Array[String] = []
+	var option_ids: Array[int] = []
+
+	# Option 0: Destroy 3 R6- battle cards
 	var has_r6_targets: bool = false
 	for i in range(8):
 		var top := ctx.opponent.get_zone_top_card(i)
 		if not top.is_empty() and top.get("rank", 0) <= 6:
 			has_r6_targets = true
 			break
-
 	if has_r6_targets:
-		var zones_with_targets: Array[int] = []
-		for i in range(8):
-			var top := ctx.opponent.get_zone_top_card(i)
-			if not top.is_empty() and top.get("rank", 0) <= 6:
-				zones_with_targets.append(i)
-		if not zones_with_targets.is_empty():
-			var chosen: int = await ctx.effect_handler.select_zone_target(
-				ctx.owner.player_id, ctx.opponent.player_id, zones_with_targets,
-				"Destroy rank 6 or lower cards (skip for other options):", true)
-			if chosen >= 0:
-				await ctx.effect_handler.destroy_zones(ctx.opponent, [chosen])
-				for _i in range(2):
-					await ctx.effect_handler.destroy_zone_target(
-						ctx.owner.player_id, ctx.opponent,
-						func(card: Dictionary) -> bool: return card.get("rank", 0) <= 6,
-						"Choose another rank 6 or lower battle card to destroy:")
-				return
+		options.append("Destroy 3 of opponent's rank 6 or lower battle cards")
+		option_ids.append(0)
 
-	# Option 2: discard to 2
+	# Option 1: Opponent discards to 2
 	if ctx.opponent.hand.size() > 2:
-		await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 2)
-		return
+		options.append("Opponent discards to 2 cards in hand")
+		option_ids.append(1)
 
-	# Option 3: +3 rage
-	var old_rage: int = ctx.owner.rage
-	ctx.owner.rage += 3
-	ctx.owner.rage_changed.emit(ctx.owner.rage)
-	await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+	# Option 2: +3 rage (always available)
+	options.append("Increase Rage by 3")
+	option_ids.append(2)
+
+	var chosen_id: int
+	if options.size() == 1:
+		chosen_id = option_ids[0]
+	else:
+		var chosen_idx: int = await ctx.effect_handler.select_choice(
+			ctx.owner.player_id, options, "Choose one:")
+		if chosen_idx < 0 or chosen_idx >= option_ids.size():
+			chosen_id = option_ids[0]
+		else:
+			chosen_id = option_ids[chosen_idx]
+
+	match chosen_id:
+		0:
+			for _i in range(3):
+				await ctx.effect_handler.destroy_zone_target(
+					ctx.owner.player_id, ctx.opponent,
+					func(card: Dictionary) -> bool: return card.get("rank", 0) <= 6,
+					"Choose a rank 6 or lower battle card to destroy:")
+		1:
+			await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 2)
+		2:
+			var old_rage: int = ctx.owner.rage
+			ctx.owner.rage += 3
+			ctx.owner.rage_changed.emit(ctx.owner.rage)
+			await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)

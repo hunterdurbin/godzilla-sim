@@ -11,50 +11,61 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.monster_stack.size() < 3:
 		return
 
-	# Offer choices via zone target — use the 3 options as "zones" hack
-	# Instead, let's determine which options are viable and offer the strongest first
+	# Build available options
+	var options: Array[String] = []
+	var option_ids: Array[int] = []
 
-	# Check if there are R5- cards to destroy
+	# Option 0: Destroy 3 R5- battle cards
 	var has_r5_targets: bool = false
 	for i in range(8):
 		var top := ctx.opponent.get_zone_top_card(i)
 		if not top.is_empty() and top.get("rank", 0) <= 5:
 			has_r5_targets = true
 			break
-
-	# Try destroy 3 R5- first (most impactful)
 	if has_r5_targets:
-		var zones_with_targets: Array[int] = []
-		for i in range(8):
-			var top := ctx.opponent.get_zone_top_card(i)
-			if not top.is_empty() and top.get("rank", 0) <= 5:
-				zones_with_targets.append(i)
-		if not zones_with_targets.is_empty():
-			var chosen: int = await ctx.effect_handler.select_zone_target(
-				ctx.owner.player_id, ctx.opponent.player_id, zones_with_targets,
-				"Destroy rank 5 or lower cards (skip for other options):", true)
-			if chosen >= 0:
-				# Destroy chosen + up to 2 more
-				await ctx.effect_handler.destroy_zones(ctx.opponent, [chosen])
-				for _i in range(2):
-					await ctx.effect_handler.destroy_zone_target(
-						ctx.owner.player_id, ctx.opponent,
-						func(card: Dictionary) -> bool: return card.get("rank", 0) <= 5,
-						"Choose another rank 5 or lower battle card to destroy:")
-				return
+		options.append("Destroy 3 of opponent's rank 5 or lower battle cards")
+		option_ids.append(0)
 
-	# Option 2: discard to 3 (offer if opponent has 4+ cards)
+	# Option 1: Opponent discards to 3
 	if ctx.opponent.hand.size() > 3:
-		await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 3)
+		options.append("Opponent discards to 3 cards in hand")
+		option_ids.append(1)
+
+	# Option 2: Mill 3 from own deck
+	if not ctx.owner.main_deck.is_empty():
+		options.append("Send top 3 cards of your deck to discard")
+		option_ids.append(2)
+
+	if options.is_empty():
 		return
 
-	# Option 3: mill 3
-	var milled: int = 0
-	for _i in range(3):
-		if ctx.owner.main_deck.is_empty():
-			break
-		ctx.owner.discard_pile.append(ctx.owner.main_deck.pop_front())
-		milled += 1
-	if milled > 0:
-		ctx.owner.deck_changed.emit()
-		ctx.owner.discard_changed.emit()
+	var chosen_id: int
+	if options.size() == 1:
+		chosen_id = option_ids[0]
+	else:
+		var chosen_idx: int = await ctx.effect_handler.select_choice(
+			ctx.owner.player_id, options, "Choose one:")
+		if chosen_idx < 0 or chosen_idx >= option_ids.size():
+			chosen_id = option_ids[0]
+		else:
+			chosen_id = option_ids[chosen_idx]
+
+	match chosen_id:
+		0:
+			for _i in range(3):
+				await ctx.effect_handler.destroy_zone_target(
+					ctx.owner.player_id, ctx.opponent,
+					func(card: Dictionary) -> bool: return card.get("rank", 0) <= 5,
+					"Choose a rank 5 or lower battle card to destroy:")
+		1:
+			await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 3)
+		2:
+			var milled: int = 0
+			for _i in range(3):
+				if ctx.owner.main_deck.is_empty():
+					break
+				ctx.owner.discard_pile.append(ctx.owner.main_deck.pop_front())
+				milled += 1
+			if milled > 0:
+				ctx.owner.deck_changed.emit()
+				ctx.owner.discard_changed.emit()

@@ -11,6 +11,12 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS, CardEnums.EffectCategory.REPLACEMENT]
 
 
+func can_intercept_strategy_discard(ctx: EffectContext) -> bool:
+	# Only intercepts if this card is in zone 8 (index 7)
+	var zone_idx := find_zone_of_card(ctx)
+	return zone_idx == 7
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.MAIN:
 		return
@@ -28,13 +34,5 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var stack_size: int = ctx.owner.get_zone_stack(zone_idx).size()
 	if stack_size < 3:  # 1 (self) + 2 (under)
 		return
-	# TODO: Trigger a forced counter on opponent's monster card.
-	# Requires calling into ActionHandler.resolve_counter() or adding a
-	# counter_requested signal on EffectHandler for the ActionHandler to connect to.
-	pass
-
-
-# TODO: Implement replacement effect for strategy card discard interception.
-# When strategy cards would be discarded from the strategy zone during start phase,
-# if this card is in zone 8, the player may place them under this card instead.
-# Needs a hook in ActionHandler.execute_start_phase() to check for this card.
+	# Force counter the opponent's monster
+	await ctx.effect_handler.force_counter(ctx.owner.player_id)
