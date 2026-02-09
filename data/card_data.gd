@@ -2515,7 +2515,7 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.WEAPON],
 		"counter_power": 2000,
 		"invasion_icon": 1,
-		"description": "<Awakening4> At the beginning of your counter phase, you may place this card under a card named "Land Moguera" in your zones. If you do, search your deck for up to 1 ⁅《モゲラ》＠⁆ battle card, play it on top of the card named "Land Moguera" you chose for this effect, then shuffle your deck. (Active if your monster card is in zone 4 or beyond.)",
+		"description": "<Awakening4> At the beginning of your counter phase, you may place this card under a card named \"Land Moguera\" in your zones. If you do, search your deck for up to 1 Moguera battle card, play it on top of the card named \"Land Moguera\" you chose for this effect, then shuffle your deck. (Active if your monster card is in zone 4 or beyond.)",
 		"effect_script": "res://scripts/effects/ebp03/ebp03_043.gd"
 	},
 	{
@@ -2626,7 +2626,7 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.MOGUERA, CardEnums.CardTrait.WEAPON],
 		"counter_power": 7000,
 		"invasion_icon": 2,
-		"description": "When this card would be <Destroy> by an opponent's effect, add all cards under this card to your hand.\n<Awakening6> <Enter> If there are no cards under this card, search your deck for up to 1 card named "Land Moguera" and up to 1 card named "Star Falcon", place them under this card, then shuffle your deck.",
+		"description": "When this card would be <Destroy> by an opponent's effect, add all cards under this card to your hand.\n<Awakening6> <Enter> If there are no cards under this card, search your deck for up to 1 card named \"Land Moguera\" and up to 1 card named \"Star Falcon\", place them under this card, then shuffle your deck.",
 		"effect_script": "res://scripts/effects/ebp03/ebp03_052.gd"
 	},
 	{
