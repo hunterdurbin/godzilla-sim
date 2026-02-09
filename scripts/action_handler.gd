@@ -68,6 +68,10 @@ func execute_start_phase(state: GameState) -> void:
 			player.zones_changed.emit()
 		else:
 			player.discard_changed.emit()
+		# Trigger strategy discarded for each cleared strategy (only non-intercepted)
+		if effect_handler and intercept_zone < 0:
+			for strategy_card in cleared:
+				await effect_handler.trigger_strategy_discarded(player.player_id, strategy_card)
 
 	# Reset rage to 0
 	player.rage = 0
@@ -77,6 +81,10 @@ func execute_start_phase(state: GameState) -> void:
 	player.has_invaded_this_turn = false
 	player.has_played_monster_this_turn = false
 	player.invasion_zones_crossed = 0
+
+	# Clear destroyed-this-turn tracking for both players
+	for p in state.players:
+		p.cards_destroyed_this_turn.clear()
 
 
 func execute_end_phase_burst_discard(state: GameState) -> void:
@@ -158,6 +166,10 @@ func resolve_counter(state: GameState) -> void:
 	elif total_cp >= threat:
 		counter_succeeded.emit(player.player_id, total_cp, threat)
 
+		# Trigger counter success effects before retreat/rank-up
+		if effect_handler:
+			await effect_handler.trigger_counter_success(player.player_id)
+
 		# Retreat monster to its retreat zone
 		var retreat_zone: int = _get_retreat_zone(opponent.monster_zone)
 		if retreat_zone != opponent.monster_zone:
@@ -228,6 +240,24 @@ func force_counter(state: GameState, counter_player_id: int) -> void:
 
 	if not found_next:
 		state.game_over.emit(counter_player_id, "Victory through countering!")
+
+
+func play_monster_from_effect(state: GameState, player_id: int, monster_card: Dictionary) -> void:
+	## Play a monster card from the monster deck without rage increase.
+	## Used by strategy effects like EBP03-074 (A Journey of 130 Million Years).
+	var player := state.players[player_id]
+	var old_monster: Dictionary = player.current_monster
+
+	# Push old monster onto the stack
+	if not old_monster.is_empty():
+		player.monster_stack.push_front(old_monster)
+
+	player.current_monster = monster_card
+	monster_played.emit(player_id, old_monster, monster_card)
+	player.monster_changed.emit()
+	if effect_handler:
+		await effect_handler.trigger_enter(player_id, monster_card)
+		await effect_handler.trigger_monster_played(player_id, old_monster, monster_card)
 
 
 func resolve_check_timing(state: GameState) -> void:
@@ -400,6 +430,7 @@ func _gain_rage(hand_index: int, state: GameState) -> void:
 	player.rage_changed.emit(player.rage)
 	player.discard_changed.emit()
 	if effect_handler:
+		await effect_handler.trigger_hand_card_discarded(player.player_id, card)
 		await effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
 
 
@@ -445,6 +476,14 @@ func _invade(hand_index: int, state: GameState) -> void:
 
 	card_discarded.emit(player.player_id, card)
 
+	# Check if discarded card plays itself from discard (e.g. EBP03-061 Dagahra)
+	if effect_handler:
+		var discard_effect := effect_handler.get_effect(card)
+		if discard_effect:
+			var ctx := EffectContext.create(state, player.player_id, card, effect_handler)
+			if discard_effect.on_discarded_for_invasion(ctx):
+				await effect_handler.play_from_discard(player.player_id, card)
+
 	# Advance step by step (checking crush at each zone)
 	for _step in range(advance_amount):
 		if player.monster_zone >= 8:
@@ -458,6 +497,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 				if effect_handler:
 					await effect_handler.trigger_when_invading(player.player_id, old_zone, player.monster_zone)
 					await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
+					await effect_handler.trigger_invasion_observed(player.player_id, old_zone, player.monster_zone)
 				player.invasion_zones_crossed = player.monster_zone - start_zone
 				state.game_over.emit(player.player_id, "Victory through invasion!")
 				return
@@ -471,6 +511,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 			if effect_handler:
 				await effect_handler.trigger_when_invading(player.player_id, old_zone, player.monster_zone)
 				await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
+				await effect_handler.trigger_invasion_observed(player.player_id, old_zone, player.monster_zone)
 			# Check crush rule at each step
 			await check_crush_rule(state)
 

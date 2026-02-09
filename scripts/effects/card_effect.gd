@@ -73,6 +73,49 @@ func on_battle_card_played(_ctx: EffectContext, _zone_index: int) -> void:
 	pass
 
 
+func on_hand_card_discarded(_ctx: EffectContext, _discarded_card: Dictionary) -> void:
+	## Called on ALL active cards when ANY card is discarded from the owner's hand.
+	## Covers "Whenever you discard a battle card from hand" triggers.
+	pass
+
+
+func on_counter_success(_ctx: EffectContext) -> void:
+	## Called on active cards when the defender successfully counters (CP >= threat).
+	## Covers "When you counter the opponent's monster" triggers.
+	pass
+
+
+func on_strategy_discarded(_ctx: EffectContext, _strategy_card: Dictionary) -> void:
+	## Called on active cards when a strategy card is sent from a strategy zone to discard.
+	## Covers "When a strategy card is sent to discard" triggers.
+	pass
+
+
+func on_invasion_observed(_ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
+	## Called on ALL active cards for BOTH players when a monster invades.
+	## Covers battle card reactions to invasion events (not the monster's own on_when_invading).
+	pass
+
+
+func on_discarded_for_invasion(_ctx: EffectContext) -> bool:
+	## Called on a card after it is discarded for invasion cost.
+	## Return true if this card plays itself from the discard pile.
+	return false
+
+
+# --- Replacement/prevention methods ---
+
+func on_would_be_destroyed(_ctx: EffectContext) -> bool:
+	## Called when this card would be destroyed. Return true to replace the destruction
+	## (e.g., move to deck bottom instead). Returning true skips the normal destroy + revenge.
+	return false
+
+
+func can_be_destroyed(_ctx: EffectContext) -> bool:
+	## Return false if this card cannot be destroyed by effects (conditional protection).
+	return true
+
+
 # --- Modifier methods (override to alter stats) ---
 
 func get_counter_power_modifier(_ctx: EffectContext) -> int:
@@ -157,6 +200,22 @@ func get_extra_end_phase_advance(_ctx: EffectContext) -> int:
 	## Return extra zones to advance during end phase advance.
 	## Used by SpaceGodzilla R4 (EBP02-056) for Crystal-based extra advance.
 	return 0
+
+
+func get_opponent_field_rank_modifier(_ctx: EffectContext) -> int:
+	## Return rank reduction (negative) for battle cards already in opponent's zones.
+	## Different from get_play_rank_modifier_for_card which only affects cards being played.
+	return 0
+
+
+func can_play_from_discard_on_monster_played(_ctx: EffectContext) -> bool:
+	## Return true if this card (in the discard pile) can play itself when a monster is played.
+	return false
+
+
+func prevents_own_invasion(_ctx: EffectContext) -> bool:
+	## Return true if this card prevents its own controller from invading.
+	return false
 
 
 # --- Property methods (override to declare card mechanics) ---

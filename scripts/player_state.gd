@@ -27,6 +27,7 @@ var burst_monster: Dictionary = {}  # The Burst-played monster (empty if none ac
 var pre_burst_monster: Dictionary = {}  # Monster that was active before Burst play
 var last_invasion_card: Dictionary = {}  # Card discarded for the most recent invade action
 var invasion_zones_crossed: int = 0  # Zones actually crossed during invasion this turn
+var cards_destroyed_this_turn: Array[Dictionary] = []  # Cards destroyed on this player's board this turn
 
 
 func _init(id: int = 0) -> void:

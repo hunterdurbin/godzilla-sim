@@ -255,6 +255,15 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 			if se:
 				await se.on_monster_played(_build_context(player_id, sz_card), old_monster, new_monster)
 
+	# Check discard pile for cards that can play from discard on monster played
+	var discard_copy: Array[Dictionary] = player.discard_pile.duplicate()
+	for discard_card in discard_copy:
+		var de := get_effect(discard_card)
+		if de:
+			var ctx := _build_context(player_id, discard_card)
+			if de.can_play_from_discard_on_monster_played(ctx):
+				await play_from_discard(player_id, discard_card)
+
 
 func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_index: int) -> void:
 	## Trigger on_battle_card_played on all active cards for this player.
@@ -278,6 +287,108 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 				await ze.on_battle_card_played(_build_context(player_id, zone_card), zone_index)
 
 
+func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
+	## Trigger on ALL active cards when a card is discarded from the owner's hand.
+	var player := game_state.players[player_id]
+
+	# Monster card
+	var me := get_effect(player.current_monster)
+	if me:
+		await me.on_hand_card_discarded(_build_context(player_id, player.current_monster), card_data)
+
+	# Battle cards in zones (top card only)
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze:
+				await ze.on_hand_card_discarded(_build_context(player_id, zone_card), card_data)
+
+	# Strategy cards
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var se := get_effect(sz_card)
+			if se:
+				await se.on_hand_card_discarded(_build_context(player_id, sz_card), card_data)
+
+
+func trigger_counter_success(defender_player_id: int) -> void:
+	## Trigger on ALL active cards for the defender when counter succeeds (CP >= threat).
+	var player := game_state.players[defender_player_id]
+
+	# Monster card
+	var me := get_effect(player.current_monster)
+	if me:
+		await me.on_counter_success(_build_context(defender_player_id, player.current_monster))
+
+	# Battle cards in zones (top card only)
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze:
+				await ze.on_counter_success(_build_context(defender_player_id, zone_card))
+
+	# Strategy cards
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var se := get_effect(sz_card)
+			if se:
+				await se.on_counter_success(_build_context(defender_player_id, sz_card))
+
+
+func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> void:
+	## Trigger on ALL active cards when a strategy card is sent from strategy zone to discard.
+	var player := game_state.players[player_id]
+
+	# Monster card
+	var me := get_effect(player.current_monster)
+	if me:
+		await me.on_strategy_discarded(_build_context(player_id, player.current_monster), strategy_card)
+
+	# Battle cards in zones (top card only)
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze:
+				await ze.on_strategy_discarded(_build_context(player_id, zone_card), strategy_card)
+
+	# Strategy cards (skip the card being discarded)
+	var discarded_id: String = strategy_card.get("id", "")
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty() and sz_card.get("id", "") != discarded_id:
+			var se := get_effect(sz_card)
+			if se:
+				await se.on_strategy_discarded(_build_context(player_id, sz_card), strategy_card)
+
+
+func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone: int) -> void:
+	## Trigger on ALL active cards for BOTH players when a monster invades.
+	for pid in range(2):
+		var player := game_state.players[pid]
+
+		# Monster card
+		var me := get_effect(player.current_monster)
+		if me:
+			await me.on_invasion_observed(_build_context(pid, player.current_monster), invading_player_id, from_zone, to_zone)
+
+		# Battle cards in zones (top card only)
+		for i in range(8):
+			var zone_card := player.get_zone_top_card(i)
+			if not zone_card.is_empty():
+				var ze := get_effect(zone_card)
+				if ze:
+					await ze.on_invasion_observed(_build_context(pid, zone_card), invading_player_id, from_zone, to_zone)
+
+		# Strategy cards
+		for sz_card in player.strategy_zones:
+			if not sz_card.is_empty():
+				var se := get_effect(sz_card)
+				if se:
+					await se.on_invasion_observed(_build_context(pid, sz_card), invading_player_id, from_zone, to_zone)
+
+
 # --- Player choice helpers ---
 
 func discard_hand_to(player_id: int, target_count: int) -> void:
@@ -294,27 +405,38 @@ func discard_hand_to(player_id: int, target_count: int) -> void:
 		await _hand_discard_resolved
 	else:
 		# Fallback: discard from back of hand
+		var discarded_cards: Array[Dictionary] = []
 		for i in range(to_discard):
 			if player.hand.is_empty():
 				break
-			player.discard_pile.append(player.hand.pop_back())
+			var card: Dictionary = player.hand.pop_back()
+			player.discard_pile.append(card)
+			discarded_cards.append(card)
 		player.hand_changed.emit()
 		player.discard_changed.emit()
+		for card in discarded_cards:
+			await trigger_hand_card_discarded(player_id, card)
 
 
 func resolve_hand_discard(player_id: int, hand_indices: Array[int]) -> void:
 	## Called by the presentation layer after the player selects cards to discard.
 	## hand_indices are the indices in the player's hand to discard (sorted descending internally).
 	var player := game_state.players[player_id]
+	var discarded_cards: Array[Dictionary] = []
 	# Sort descending so removing doesn't shift indices
 	var sorted_indices := hand_indices.duplicate()
 	sorted_indices.sort()
 	sorted_indices.reverse()
 	for idx in sorted_indices:
 		if idx >= 0 and idx < player.hand.size():
-			player.discard_pile.append(player.hand.pop_at(idx))
+			var card: Dictionary = player.hand.pop_at(idx)
+			player.discard_pile.append(card)
+			discarded_cards.append(card)
 	player.hand_changed.emit()
 	player.discard_changed.emit()
+	# Trigger hand card discarded for each card (after all are removed)
+	for card in discarded_cards:
+		await trigger_hand_card_discarded(player_id, card)
 	_hand_discard_resolved.emit()
 
 
@@ -445,6 +567,7 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 	player.discard_pile.append(card)
 	player.hand_changed.emit()
 	player.discard_changed.emit()
+	await trigger_hand_card_discarded(player_id, card)
 	return card
 
 
@@ -549,11 +672,15 @@ static func banish_or_discard(player: PlayerState, stack: Array) -> void:
 func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, prompt: String) -> Dictionary:
 	## Let a player choose one of the target player's battle cards matching filter to destroy.
 	## filter receives (card_data: Dictionary) -> bool for each zone's top card.
+	## Respects can_be_destroyed and on_would_be_destroyed replacement effects.
 	## Returns the destroyed card data, or empty dict if nothing was destroyed.
 	var valid_zones: Array[int] = []
 	for i in range(8):
 		var zone_card := target.get_zone_top_card(i)
 		if not zone_card.is_empty() and filter.call(zone_card):
+			# Check destroy prevention
+			if not _can_destroy_card(target, zone_card):
+				continue
 			valid_zones.append(i)
 
 	if valid_zones.is_empty():
@@ -567,31 +694,60 @@ func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, 
 	if zone_card.is_empty():
 		return {}
 
-	var stack: Array = target.clear_zone(chosen)
-	banish_or_discard(target, stack)
-	target.zones_changed.emit()
-	target.discard_changed.emit()
-	await trigger_revenge(target.player_id, zone_card)
-	return zone_card
+	return await _execute_destroy_zone(target, chosen, zone_card)
 
 
 func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dictionary]:
 	## Destroy all occupied zones in the given list on the target player's board.
+	## Respects can_be_destroyed and on_would_be_destroyed replacement effects.
 	## Returns an array of the destroyed top cards. Triggers revenge on each.
 	var destroyed: Array[Dictionary] = []
 	for zi in zone_indices:
 		if zi < 0 or zi >= 8 or target.is_zone_empty(zi):
 			continue
 		var top_card := target.get_zone_top_card(zi)
-		var stack: Array = target.clear_zone(zi)
-		banish_or_discard(target, stack)
-		await trigger_revenge(target.player_id, top_card)
-		destroyed.append(top_card)
+		if not _can_destroy_card(target, top_card):
+			continue
+		var result: Dictionary = await _execute_destroy_zone(target, zi, top_card)
+		if not result.is_empty():
+			destroyed.append(result)
 
 	if not destroyed.is_empty():
 		target.zones_changed.emit()
 		target.discard_changed.emit()
 	return destroyed
+
+
+func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
+	## Check if a card can be destroyed (respects destroy prevention effects).
+	var effect := get_effect(card_data)
+	if effect and not effect.can_be_destroyed(_build_context(target.player_id, card_data)):
+		return false
+	return true
+
+
+func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Dictionary) -> Dictionary:
+	## Execute destruction of a single zone, handling replacement effects.
+	## Returns the destroyed/replaced card, or empty dict on failure.
+	var effect := get_effect(top_card)
+	if effect and effect.on_would_be_destroyed(_build_context(target.player_id, top_card)):
+		# Replacement: move to deck bottom instead of discard (skip revenge)
+		var replaced_stack: Array = target.clear_zone(zone_idx)
+		if replaced_stack.size() > 1:
+			banish_or_discard(target, replaced_stack.slice(1))
+		target.main_deck.append(top_card)
+		target.zones_changed.emit()
+		target.deck_changed.emit()
+		target.discard_changed.emit()
+		return top_card
+
+	var stack: Array = target.clear_zone(zone_idx)
+	banish_or_discard(target, stack)
+	target.zones_changed.emit()
+	target.discard_changed.emit()
+	target.cards_destroyed_this_turn.append(top_card)
+	await trigger_revenge(target.player_id, top_card)
+	return top_card
 
 
 func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int) -> bool:
@@ -838,11 +994,20 @@ func is_monster_advance_blocked(player_id: int) -> bool:
 
 
 func is_own_invasion_blocked(player_id: int) -> bool:
-	## Check if the player's current monster prevents its owner from invading.
+	## Check if the player's current monster or strategy cards prevent invasion.
 	var player := game_state.players[player_id]
 	var effect := get_effect(player.current_monster)
 	if effect:
-		return not effect.can_monster_invade(_build_context(player_id, player.current_monster))
+		if not effect.can_monster_invade(_build_context(player_id, player.current_monster)):
+			return true
+
+	# Check strategy cards for prevents_own_invasion
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var se := get_effect(sz_card)
+			if se and se.prevents_own_invasion(_build_context(player_id, sz_card)):
+				return true
+
 	return false
 
 
@@ -900,3 +1065,80 @@ func get_strategy_discard_interceptor(player_id: int) -> int:
 			if effect and effect.can_intercept_strategy_discard(_build_context(player_id, zone_card)):
 				return i
 	return -1
+
+
+func get_opponent_field_rank_modifier(player_id: int) -> int:
+	## Get the field rank reduction applied to opponent's in-play battle cards.
+	## Queries the player's current monster effect.
+	var player := game_state.players[player_id]
+	var effect := get_effect(player.current_monster)
+	if effect:
+		return effect.get_opponent_field_rank_modifier(_build_context(player_id, player.current_monster))
+	return 0
+
+
+func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> int:
+	## Get the effective rank of an in-play battle card, accounting for opponent field rank modifiers.
+	var base_rank: int = card_data.get("rank", 0)
+	var opponent_id: int = 1 - owner_player_id
+	var modifier: int = get_opponent_field_rank_modifier(opponent_id)
+	return maxi(1, base_rank + modifier)
+
+
+# --- Helpers for card placement and movement ---
+
+func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1) -> void:
+	## Remove a card from the discard pile and play it into a zone.
+	## If zone_idx is -1, the player selects an available zone.
+	var player := game_state.players[player_id]
+
+	# Remove from discard
+	var card_id: String = card_data.get("id", "")
+	for i in range(player.discard_pile.size() - 1, -1, -1):
+		if player.discard_pile[i].get("id", "") == card_id:
+			player.discard_pile.remove_at(i)
+			break
+	player.discard_changed.emit()
+
+	# Select zone if not specified
+	if zone_idx < 0:
+		var valid_zones: Array[int] = []
+		for i in range(8):
+			if i != player.monster_zone - 1:  # Can't play in own monster zone
+				valid_zones.append(i)
+		zone_idx = await select_zone_target(player_id, player_id, valid_zones, "Choose a zone to play from discard:")
+		if zone_idx < 0:
+			# Can't skip — put back in discard as fallback
+			player.discard_pile.append(card_data)
+			player.discard_changed.emit()
+			return
+
+	# Handle overload if zone occupied
+	if not player.is_zone_empty(zone_idx):
+		var destroyed_stack: Array = player.clear_zone(zone_idx)
+		var top_card: Dictionary = destroyed_stack[0]
+		banish_or_discard(player, destroyed_stack)
+		player.discard_changed.emit()
+		await trigger_revenge(player.player_id, top_card)
+
+	player.push_zone_card(zone_idx, card_data)
+	player.zones_changed.emit()
+	await trigger_enter(player_id, card_data)
+
+
+func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int) -> void:
+	## Place a card under the top card of a zone (into the zone stack below the top).
+	if zone_idx < 0 or zone_idx >= 8:
+		return
+	player.zones[zone_idx].append(card)
+	player.zones_changed.emit()
+
+
+func get_cards_under_top(player: PlayerState, zone_idx: int) -> Array:
+	## Return the zone stack excluding the top card (cards stacked under).
+	if zone_idx < 0 or zone_idx >= 8:
+		return []
+	var stack: Array = player.zones[zone_idx]
+	if stack.size() <= 1:
+		return []
+	return stack.slice(1)
