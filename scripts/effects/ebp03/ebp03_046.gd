@@ -33,17 +33,20 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	# Build choice options
-	var options: Array[Dictionary] = []
+	var options: Array[String] = []
+	var option_ids: Array[String] = []
 	if can_destroy_strategy:
-		options.append({"id": "destroy", "name": "Destroy 1 opponent strategy", "card_type": -1})
+		options.append("Destroy 1 opponent strategy")
+		option_ids.append("destroy")
 	if can_reduce_rage:
-		options.append({"id": "rage", "name": "Reduce opponent rage by 1", "card_type": -1})
+		options.append("Reduce opponent rage by 1")
+		option_ids.append("rage")
 
-	var chosen := await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, options, options,
-		"Choose an effect:")
+	var chosen_idx := await ctx.effect_handler.select_choice(
+		ctx.owner.player_id, options, "Choose an effect:")
+	var chosen_id: String = option_ids[chosen_idx] if chosen_idx >= 0 and chosen_idx < option_ids.size() else ""
 
-	if chosen.get("id") == "destroy":
+	if chosen_id == "destroy":
 		# Destroy 1 opponent strategy
 		var valid_strat: Array[int] = []
 		for i in range(ctx.opponent.strategy_zones.size()):
@@ -56,7 +59,7 @@ func on_enter(ctx: EffectContext) -> void:
 			EffectHandler.banish_or_discard(ctx.opponent, [strat_card])
 			ctx.opponent.strategy_zones_changed.emit()
 			ctx.opponent.discard_changed.emit()
-	elif chosen.get("id") == "rage":
+	elif chosen_id == "rage":
 		var old_rage := ctx.opponent.rage
 		ctx.opponent.rage -= 1
 		ctx.opponent.rage_changed.emit(ctx.opponent.rage)

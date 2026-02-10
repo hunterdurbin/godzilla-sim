@@ -24,27 +24,30 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	# Build options
-	var options: Array[Dictionary] = []
+	var options: Array[String] = []
+	var option_ids: Array[String] = []
 	if has_low_rank_monster:
-		options.append({"id": "low_rank", "name": "Return R2 or lower monster", "card_type": -1})
+		options.append("Return R2 or lower monster")
+		option_ids.append("low_rank")
 	if has_five_under and has_any_monster:
-		options.append({"id": "any_monster", "name": "Return any monster (5+ under)", "card_type": -1})
+		options.append("Return any monster (5+ under)")
+		option_ids.append("any_monster")
 
 	if options.size() == 1:
 		# Only one valid option
-		if options[0].get("id") == "low_rank":
+		if option_ids[0] == "low_rank":
 			await _return_low_rank_monster(ctx)
 		else:
 			await _return_any_monster(ctx)
 		return
 
-	var chosen := await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, options, options,
-		"Choose an effect:")
+	var chosen_idx := await ctx.effect_handler.select_choice(
+		ctx.owner.player_id, options, "Choose an effect:")
+	var chosen_id: String = option_ids[chosen_idx] if chosen_idx >= 0 and chosen_idx < option_ids.size() else ""
 
-	if chosen.get("id") == "low_rank":
+	if chosen_id == "low_rank":
 		await _return_low_rank_monster(ctx)
-	elif chosen.get("id") == "any_monster":
+	elif chosen_id == "any_monster":
 		await _return_any_monster(ctx)
 
 
