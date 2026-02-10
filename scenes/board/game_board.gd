@@ -1877,11 +1877,11 @@ func _show_card_zoom(card_data: Dictionary) -> void:
 	card.mouse_filter = Control.MOUSE_FILTER_PASS
 	var is_strategy: bool = card_data.get("card_type") == CardEnums.CardType.STRATEGY
 	if is_strategy:
-		# Strategy card: portrait 300x420 rotated -90° to appear as landscape 420x300.
+		# Strategy card: portrait 405x567 rotated -90° to appear as landscape 567x405.
 		# Use a wrapper sized to the landscape dimensions so CenterContainer centers correctly.
-		var portrait_size := Vector2(300, 420)
+		var portrait_size := Vector2(405, 567)
 		var wrapper := Control.new()
-		wrapper.custom_minimum_size = Vector2(portrait_size.y, portrait_size.x) # 420x300
+		wrapper.custom_minimum_size = Vector2(portrait_size.y, portrait_size.x) # 567x405
 		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		card_zoom_container.add_child(wrapper)
 		card.custom_minimum_size = Vector2.ZERO
@@ -1895,7 +1895,7 @@ func _show_card_zoom(card_data: Dictionary) -> void:
 		)
 		wrapper.add_child(card)
 	else:
-		card.custom_minimum_size = Vector2(300, 420)
+		card.custom_minimum_size = Vector2(405, 567)
 		card_zoom_container.add_child(card)
 	card_zoom_overlay.visible = true
 
