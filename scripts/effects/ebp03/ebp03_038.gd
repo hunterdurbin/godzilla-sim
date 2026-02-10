@@ -4,14 +4,14 @@ extends CardEffect
 
 
 func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
+	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
 
 
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
-		return  # Opponent's turn (when defending)
+	if ctx.game_state.current_player_id != ctx.owner.player_id:
+		return  # Own turn only
 	if ctx.opponent.rage < 2:
 		return
 
