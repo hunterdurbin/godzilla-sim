@@ -156,6 +156,13 @@ func _ready() -> void:
 		turn_manager = TurnManager.new()
 		turn_manager.setup(CardData)
 
+		# Apply monster color gradient to board backgrounds
+		for i in range(turn_manager.game_state.players.size()):
+			var player: PlayerState = turn_manager.game_state.players[i]
+			var board = player1_board if i == 0 else player2_board
+			if not player.current_monster.is_empty():
+				board.apply_monster_gradient(player.current_monster)
+
 		# Connect turn manager signals
 		turn_manager.phase_started.connect(_on_phase_started)
 		turn_manager.phase_ended.connect(_on_phase_ended)

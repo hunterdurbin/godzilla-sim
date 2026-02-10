@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scenes/board/player_board.gd" id="1_pb"]
 [ext_resource type="PackedScene" path="res://scenes/slots/Slot.tscn" id="2_slot"]
 [ext_resource type="Texture2D" uid="uid://dpmgaoxs3mejc" path="res://CardContent/Assets/Board/zones.svg" id="3_bg"]
+[ext_resource type="Texture2D" path="res://CardContent/Assets/Board/default_board.png" id="4_board_bg"]
 
 [node name="PlayerBoard" type="Control"]
 layout_mode = 3
@@ -12,6 +13,28 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_pb")
+
+[node name="BoardBg" type="TextureRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("4_board_bg")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="GradientOverlay" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0)
 
 [node name="LayoutContainer" type="Control" parent="."]
 layout_mode = 1
@@ -28,6 +51,7 @@ mouse_filter = 2
 texture = ExtResource("3_bg")
 expand_mode = 1
 stretch_mode = 0
+self_modulate = Color(1, 1, 1, 0.3)
 
 [node name="Strategy1" parent="LayoutContainer" instance=ExtResource("2_slot")]
 layout_mode = 1
@@ -54,6 +78,19 @@ offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
+
+[node name="RageBg" type="Panel" parent="LayoutContainer"]
+layout_mode = 1
+anchors_preset = 0
+anchor_left = 0.2336
+anchor_top = 0.2048
+anchor_right = 0.4246
+anchor_bottom = 0.5963
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+mouse_filter = 2
 
 [node name="RageDisplay" type="VBoxContainer" parent="LayoutContainer"]
 layout_mode = 1

@@ -18,9 +18,9 @@ signal slot_hover_preview(card_data: Dictionary)
 signal slot_hover_preview_cleared()
 
 # Export variables
-@export var slot_color: Color = Color(0.2, 0.2, 0.3, 0.5)
-@export var highlight_color: Color = Color(0.3, 0.5, 0.8, 0.7)
-@export var occupied_color: Color = Color(0.2, 0.4, 0.3, 0.5)
+@export var slot_color: Color = Color(0.2, 0.2, 0.3, 0.0)
+@export var highlight_color: Color = Color(0.3, 0.5, 0.8, 0.4)
+@export var occupied_color: Color = Color(0.2, 0.4, 0.3, 0.0)
 @export var snap_duration: float = 0.3
 @export var accept_cards: bool = true
 @export var landscape: bool = false  # When true, uses 7:5 (landscape) aspect ratio
@@ -221,7 +221,7 @@ func _update_visual_state() -> void:
 
 	var target_color: Color
 	if has_monster_marker:
-		target_color = Color(0.8, 0.5, 0.1, 0.7)  # Orange for monster position
+		target_color = Color(0.8, 0.5, 0.1, 0.4)  # Orange for monster position
 	elif is_occupied:
 		target_color = occupied_color
 	elif is_highlighted:
@@ -235,11 +235,11 @@ func _update_visual_state() -> void:
 		background.add_theme_stylebox_override("panel", style)
 
 	style.bg_color = target_color
-	style.border_color = Color(1, 1, 1, 0.3)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
+	style.border_color = Color(1, 1, 1, 0.4)
+	style.border_width_left = 3
+	style.border_width_right = 3
+	style.border_width_top = 3
+	style.border_width_bottom = 3
 	style.corner_radius_top_left = 8
 	style.corner_radius_top_right = 8
 	style.corner_radius_bottom_left = 8

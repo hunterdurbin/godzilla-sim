@@ -109,6 +109,7 @@ func _setup_references() -> void:
 	discard_count_label = find_child("DiscardCount", true, false) as Label
 	rage_label = find_child("RageLabel", true, false) as Label
 	rage_display = find_child("RageDisplay", true, false) as Control
+	_style_rage_bg()
 	discard_display = find_child("DiscardInfo", true, false) as Control
 	monster_info_display = find_child("MonsterInfo", true, false) as Control
 	monster_deck_count_label = find_child("MonsterDeckCount", true, false) as Label
@@ -135,6 +136,44 @@ func _setup_references() -> void:
 	for area in [deck_display, discard_display, monster_info_display]:
 		if area:
 			_add_border(area)
+
+
+## Apply a gradient tint to the board background based on the rank 1 monster's colors.
+## Call once during initial board setup.
+func apply_monster_gradient(monster_data: Dictionary) -> void:
+	var overlay := $GradientOverlay as ColorRect
+	if not overlay:
+		return
+	var colors: Array = monster_data.get("colors", [])
+	if colors.is_empty():
+		return
+	var gradient := GradientTexture2D.new()
+	var grad := Gradient.new()
+	if colors.size() == 1:
+		var c: Color = CardEnums.color_to_godot_color(colors[0])
+		c.a = 0.15
+		grad.colors = PackedColorArray([c, Color(c.r, c.g, c.b, 0.0)])
+	else:
+		var c1: Color = CardEnums.color_to_godot_color(colors[0])
+		var c2: Color = CardEnums.color_to_godot_color(colors[1])
+		c1.a = 0.15
+		c2.a = 0.15
+		grad.colors = PackedColorArray([c1, c2])
+	grad.offsets = PackedFloat32Array([0.0, 1.0])
+	gradient.gradient = grad
+	gradient.width = 256
+	gradient.height = 256
+	gradient.fill_from = Vector2(0.0, 0.0)
+	gradient.fill_to = Vector2(1.0, 1.0)
+	# Use a TextureRect instead of ColorRect for gradient support
+	var tex_rect := TextureRect.new()
+	tex_rect.texture = gradient
+	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tex_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(tex_rect)
+	overlay.color = Color(0, 0, 0, 0)  # Keep parent transparent
 
 
 ## Sync the entire board display to match a PlayerState
@@ -295,6 +334,17 @@ func highlight_strategy_zones() -> void:
 			slot.set_highlighted(true)
 
 
+func _style_rage_bg() -> void:
+	var rage_bg := find_child("RageBg", true, false) as Panel
+	if rage_bg:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.2, 0.2, 0.3, 0.0)
+		style.border_color = Color(1, 1, 1, 0.0)
+		style.set_border_width_all(0)
+		style.set_corner_radius_all(0)
+		rage_bg.add_theme_stylebox_override("panel", style)
+
+
 func highlight_rage_zone(highlight: bool) -> void:
 	if rage_display:
 		if highlight:
@@ -327,6 +377,10 @@ func _apply_mirror() -> void:
 	if bg:
 		bg.flip_h = true
 		bg.flip_v = true
+	var board_bg := $BoardBg as TextureRect
+	if board_bg:
+		board_bg.flip_h = true
+		board_bg.flip_v = true
 	for child in $LayoutContainer.get_children():
 		if child is TextureRect:
 			continue
@@ -362,6 +416,10 @@ func toggle_mirrored() -> void:
 	if bg:
 		bg.flip_h = is_mirrored
 		bg.flip_v = is_mirrored
+	var board_bg := $BoardBg as TextureRect
+	if board_bg:
+		board_bg.flip_h = is_mirrored
+		board_bg.flip_v = is_mirrored
 	# Recalculate LayoutContainer crop for the new mirrored state
 	_update_layout()
 
