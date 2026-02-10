@@ -24,6 +24,14 @@ func on_enter(ctx: EffectContext) -> void:
 		revealed.append(ctx.owner.main_deck.pop_front())
 	ctx.owner.deck_changed.emit()
 
+	if revealed.is_empty():
+		return
+
+	# Show revealed cards to the player
+	await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, revealed, revealed,
+		"Revealed from deck (select any to confirm):")
+
 	var added_to_hand: bool = false
 	var added_to_discard: bool = false
 

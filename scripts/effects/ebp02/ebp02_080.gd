@@ -20,6 +20,11 @@ func on_enter(ctx: EffectContext) -> void:
 			ctx.owner.discard_changed.emit()
 		return
 
+	# Show revealed cards to the player
+	await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, revealed, revealed,
+		"Revealed from deck (select any to confirm):")
+
 	# Check if they differ in at least 1 trait
 	var traits_a: Array = revealed[0].get("traits", [])
 	var traits_b: Array = revealed[1].get("traits", [])

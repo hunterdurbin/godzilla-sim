@@ -10,10 +10,28 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
 		return
 
-	var milled: Array[Dictionary] = ctx.owner.mill_cards(5)
+	var revealed: Array[Dictionary] = []
+	for _i in range(5):
+		if ctx.owner.main_deck.is_empty():
+			break
+		revealed.append(ctx.owner.main_deck.pop_front())
+	ctx.owner.deck_changed.emit()
+
+	if revealed.is_empty():
+		return
+
+	# Show revealed cards to the player
+	await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, revealed, revealed,
+		"Revealed from deck (select any to confirm):")
+
+	# Send all revealed to discard
+	ctx.owner.discard_pile.append_array(revealed)
+	ctx.owner.discard_changed.emit()
+
 	var monster_count: int = 0
 	var has_step2: bool = false
-	for card in milled:
+	for card in revealed:
 		if card.get("card_type") == CardEnums.CardType.MONSTER:
 			monster_count += 1
 		if card.get("invasion_icon", 0) >= 2:

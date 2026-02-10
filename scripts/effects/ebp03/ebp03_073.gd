@@ -16,6 +16,13 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.deck_changed.emit()
 		return
 
+	ctx.owner.deck_changed.emit()
+
+	# Show revealed cards to the player
+	await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, revealed, revealed,
+		"Revealed from deck (select any to confirm):")
+
 	# Send all revealed to discard
 	var matching_ranks: Array[int] = []
 	for card in revealed:
@@ -23,7 +30,6 @@ func on_enter(ctx: EffectContext) -> void:
 		var rank: int = card.get("rank", 0)
 		if rank >= 1 and rank <= 8 and rank not in matching_ranks:
 			matching_ranks.append(rank)
-	ctx.owner.deck_changed.emit()
 	ctx.owner.discard_changed.emit()
 
 	# Destroy opponent battle cards in zones matching revealed ranks
