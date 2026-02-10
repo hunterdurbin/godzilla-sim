@@ -90,6 +90,7 @@ var _monster_deck_view_cards: Array[Dictionary] = []
 
 # Card hover preview
 var _preview_container: Control
+var _preview_bg: Panel
 var _preview_card: Control
 
 # Stored zone stack view data
@@ -247,6 +248,12 @@ func _ready() -> void:
 	player2_board.strategy_slot_right_clicked.connect(_on_strategy_slot_right_clicked)
 	card_zoom_overlay.gui_input.connect(_on_card_zoom_overlay_input)
 
+	# Enable BBCode on log for hoverable card links (no underline)
+	log_output.bbcode_enabled = true
+	log_output.meta_underlined = false
+	log_output.meta_hover_started.connect(_on_log_meta_hover_started)
+	log_output.meta_hover_ended.connect(_on_log_meta_hover_ended)
+
 	# Hide overlays and prompts
 	end_game_panel.visible = false
 	card_select_prompt.visible = false
@@ -266,6 +273,17 @@ func _ready() -> void:
 	_preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_preview_container.visible = false
 	add_child(_preview_container)
+
+	_preview_bg = Panel.new()
+	_preview_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.0, 0.0, 0.0, 0.4)
+	bg_style.corner_radius_top_left = 8
+	bg_style.corner_radius_top_right = 8
+	bg_style.corner_radius_bottom_left = 8
+	bg_style.corner_radius_bottom_right = 8
+	_preview_bg.add_theme_stylebox_override("panel", bg_style)
+	_preview_container.add_child(_preview_bg)
 
 	_preview_card = card_scene.instantiate()
 	_preview_card.drag_enabled = false
@@ -1907,8 +1925,12 @@ func _show_card_preview(data: Dictionary) -> void:
 	if card_h > container_size.y:
 		card_h = container_size.y
 		card_w = card_h * card_ratio
+	var card_pos := Vector2((container_size.x - card_w) / 2.0, (container_size.y - card_h) / 2.0)
+	var padding := 6.0
+	_preview_bg.position = card_pos - Vector2(padding, padding)
+	_preview_bg.size = Vector2(card_w, card_h) + Vector2(padding * 2, padding * 2)
 	_preview_card.size = Vector2(card_w, card_h)
-	_preview_card.position = Vector2((container_size.x - card_w) / 2.0, (container_size.y - card_h) / 2.0)
+	_preview_card.position = card_pos
 	_preview_card.pivot_offset = Vector2(card_w, card_h) / 2.0
 	_preview_card.scale = Vector2.ONE
 	_preview_card.rotation = 0.0
@@ -1917,6 +1939,17 @@ func _show_card_preview(data: Dictionary) -> void:
 
 func _hide_card_preview() -> void:
 	_preview_container.visible = false
+
+
+func _on_log_meta_hover_started(meta: Variant) -> void:
+	var card_id: String = str(meta)
+	var data: Dictionary = CardData.get_card_by_id(card_id)
+	if not data.is_empty():
+		_show_card_preview(data)
+
+
+func _on_log_meta_hover_ended(_meta: Variant) -> void:
+	_hide_card_preview()
 
 
 func _set_mouse_filter_ignore_recursive(node: Control) -> void:
