@@ -362,6 +362,8 @@ func toggle_mirrored() -> void:
 	if bg:
 		bg.flip_h = is_mirrored
 		bg.flip_v = is_mirrored
+	# Recalculate LayoutContainer crop for the new mirrored state
+	_update_layout()
 
 
 func _on_discard_gui_input(event: InputEvent) -> void:

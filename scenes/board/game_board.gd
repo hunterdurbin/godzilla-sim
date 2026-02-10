@@ -316,17 +316,17 @@ func _arrange_for_local_player() -> void:
 	if local_player_id != 1:
 		return
 
-	var vbox := $VBoxContainer
+	var board_column := $VBoxContainer/BoardArea/BoardColumn
 
 	# Swap hand spaces and boards: local (P2) to bottom, opponent (P1) to top
-	vbox.move_child(player2_hand_space, 5)
-	vbox.move_child(player1_hand_space, 1)
-	vbox.move_child(player1_board, 2)
-	vbox.move_child(player2_board, 4)
-
-	# Swap hand space sizes (opponent=small, local=large)
-	player1_hand_space.custom_minimum_size.y = 30
-	player2_hand_space.custom_minimum_size.y = 100
+	# Default order: P2HandSpace(0), P2Board(1), Divider(2), P1Board(3), P1HandSpace(4)
+	# Target order:  P1HandSpace(0), P1Board(1), Divider(2), P2Board(3), P2HandSpace(4)
+	var divider := board_column.get_node("Divider")
+	board_column.move_child(player1_hand_space, 0)
+	board_column.move_child(player1_board, 1)
+	board_column.move_child(divider, 2)
+	board_column.move_child(player2_board, 3)
+	board_column.move_child(player2_hand_space, 4)
 
 	# Toggle mirroring (P1 now at top needs mirroring, P2 at bottom doesn't)
 	player1_board.toggle_mirrored()
