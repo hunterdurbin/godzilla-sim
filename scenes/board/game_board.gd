@@ -88,6 +88,10 @@ var _monster_deck_view_cards: Array[Dictionary] = []
 @onready var card_zoom_overlay: Control = $CardZoomOverlay
 @onready var card_zoom_container: CenterContainer = $CardZoomOverlay/CardContainer
 
+# Card hover preview
+var _preview_container: Control
+var _preview_card: Control
+
 # Stored zone stack view data
 var _zone_stack_view_cards: Array[Dictionary] = []
 
@@ -252,6 +256,28 @@ func _ready() -> void:
 	monster_deck_view_overlay.visible = false
 	zone_stack_view_overlay.visible = false
 	card_zoom_overlay.visible = false
+
+	# Card hover preview panel (right side of screen)
+	_preview_container = Control.new()
+	_preview_container.anchor_left = 0.75
+	_preview_container.anchor_right = 0.995
+	_preview_container.anchor_top = 0.05
+	_preview_container.anchor_bottom = 0.75
+	_preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_preview_container.visible = false
+	add_child(_preview_container)
+
+	_preview_card = card_scene.instantiate()
+	_preview_card.drag_enabled = false
+	_preview_card.hover_scale = 1.0
+	_preview_card.hover_lift = 0.0
+	_preview_container.add_child(_preview_card)
+	_set_mouse_filter_ignore_recursive(_preview_card)
+
+	player1_board.card_preview_requested.connect(_show_card_preview)
+	player2_board.card_preview_requested.connect(_show_card_preview)
+	player1_board.card_preview_cleared.connect(_hide_card_preview)
+	player2_board.card_preview_cleared.connect(_hide_card_preview)
 
 	# Position hands over hand spaces (deferred so layout is resolved)
 	call_deferred("_position_hands")
@@ -1865,6 +1891,39 @@ func _hide_card_zoom() -> void:
 	card_zoom_overlay.visible = false
 	for child in card_zoom_container.get_children():
 		child.queue_free()
+
+
+# --- Card hover preview ---
+
+func _show_card_preview(data: Dictionary) -> void:
+	if data.is_empty():
+		return
+	_preview_card.set_card_data_dict(data)
+	# Fit card (5:7 aspect) inside container while preserving ratio
+	var container_size := _preview_container.size
+	var card_ratio := 5.0 / 7.0
+	var card_w := container_size.x
+	var card_h := card_w / card_ratio
+	if card_h > container_size.y:
+		card_h = container_size.y
+		card_w = card_h * card_ratio
+	_preview_card.size = Vector2(card_w, card_h)
+	_preview_card.position = Vector2((container_size.x - card_w) / 2.0, (container_size.y - card_h) / 2.0)
+	_preview_card.pivot_offset = Vector2(card_w, card_h) / 2.0
+	_preview_card.scale = Vector2.ONE
+	_preview_card.rotation = 0.0
+	_preview_container.visible = true
+
+
+func _hide_card_preview() -> void:
+	_preview_container.visible = false
+
+
+func _set_mouse_filter_ignore_recursive(node: Control) -> void:
+	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in node.get_children():
+		if child is Control:
+			_set_mouse_filter_ignore_recursive(child)
 
 
 # --- Card grid helpers ---

@@ -14,6 +14,8 @@ signal hover_started()
 signal hover_ended()
 signal slot_clicked(zone_number: int, player_id: int)
 signal slot_right_clicked(zone_number: int, player_id: int)
+signal slot_hover_preview(card_data: Dictionary)
+signal slot_hover_preview_cleared()
 
 # Export variables
 @export var slot_color: Color = Color(0.2, 0.2, 0.3, 0.5)
@@ -259,11 +261,15 @@ func _update_visual_state() -> void:
 
 
 func _on_mouse_entered() -> void:
+	if held_card and "card_data" in held_card and not held_card.card_data.is_empty():
+		if not held_card.get("is_face_down"):
+			slot_hover_preview.emit(held_card.card_data)
 	if accept_cards and (is_empty() or in_selection_mode):
 		set_highlighted(true)
 
 
 func _on_mouse_exited() -> void:
+	slot_hover_preview_cleared.emit()
 	set_highlighted(false)
 
 

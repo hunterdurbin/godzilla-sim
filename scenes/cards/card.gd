@@ -9,6 +9,8 @@ signal drag_started()
 signal drag_ended()
 signal card_clicked(card: Control)
 signal card_right_clicked(card: Control)
+signal card_hover_started(card_ctrl: Control)
+signal card_hover_ended(card_ctrl: Control)
 
 # Card properties
 @export var card_name: String = "Card Name"
@@ -106,9 +108,12 @@ func _on_mouse_entered() -> void:
 		_hover_active = true
 		z_index = 50
 		_animate_hover(true)
+	if not is_face_down and not card_data.is_empty():
+		card_hover_started.emit(self)
 
 
 func _on_mouse_exited() -> void:
+	card_hover_ended.emit(self)
 	if not is_dragging and _hover_active:
 		z_index = _pre_hover_z_index
 		_animate_hover(false)

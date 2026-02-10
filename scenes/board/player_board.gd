@@ -11,6 +11,8 @@ signal monster_deck_clicked(player_id: int)
 signal zone_slot_clicked(zone_number: int, player_id: int)
 signal zone_slot_right_clicked(zone_number: int, player_id: int)
 signal strategy_slot_right_clicked(strategy_index: int, player_id: int)
+signal card_preview_requested(data: Dictionary)
+signal card_preview_cleared()
 
 @export var player_id: int = 0
 @export var is_mirrored: bool = false  # True for player 2 (top of screen)
@@ -85,6 +87,8 @@ func _setup_references() -> void:
 			slot.player_id = player_id
 			slot.slot_clicked.connect(_on_zone_slot_clicked)
 			slot.slot_right_clicked.connect(_on_zone_slot_right_clicked)
+			slot.slot_hover_preview.connect(_on_slot_hover_preview)
+			slot.slot_hover_preview_cleared.connect(_on_slot_hover_cleared)
 			zone_slots[i - 1] = slot
 
 	# Strategy slots (landscape orientation)
@@ -96,6 +100,8 @@ func _setup_references() -> void:
 			slot.player_id = player_id
 			slot.landscape = true
 			slot.slot_right_clicked.connect(_on_strategy_slot_right_clicked.bind(i - 1))
+			slot.slot_hover_preview.connect(_on_slot_hover_preview)
+			slot.slot_hover_preview_cleared.connect(_on_slot_hover_cleared)
 			strategy_slots.append(slot)
 
 	# Info nodes
@@ -384,7 +390,28 @@ func _create_card(data: Dictionary) -> Control:
 	var card: Control = card_scene.instantiate()
 	if card.has_method("set_card_data_dict"):
 		card.set_card_data_dict(data)
+	if card.has_signal("card_hover_started"):
+		card.card_hover_started.connect(_on_card_hover_started)
+	if card.has_signal("card_hover_ended"):
+		card.card_hover_ended.connect(_on_card_hover_ended)
 	return card
+
+
+func _on_slot_hover_preview(data: Dictionary) -> void:
+	card_preview_requested.emit(data)
+
+
+func _on_slot_hover_cleared() -> void:
+	card_preview_cleared.emit()
+
+
+func _on_card_hover_started(card_ctrl: Control) -> void:
+	if "card_data" in card_ctrl and not card_ctrl.card_data.is_empty():
+		card_preview_requested.emit(card_ctrl.card_data)
+
+
+func _on_card_hover_ended(_card_ctrl: Control) -> void:
+	card_preview_cleared.emit()
 
 
 func _add_stack_badge(card: Control, count: int) -> void:
