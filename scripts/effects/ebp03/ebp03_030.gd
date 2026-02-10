@@ -17,7 +17,7 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var my_id := ctx.card_data.get("id", "")
+	var my_id: String = ctx.card_data.get("id", "")
 	var occupied: Array[int] = []
 	for i in range(8):
 		var top := ctx.owner.get_zone_top_card(i)

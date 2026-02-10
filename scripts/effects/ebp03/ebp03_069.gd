@@ -11,7 +11,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if zone8_card.is_empty():
 		return
 
-	var has_mechagodzilla := CardEnums.CardTrait.MECHAGODZILLA in zone8_card.get("traits", [])
+	var has_mechagodzilla: bool = CardEnums.CardTrait.MECHAGODZILLA in zone8_card.get("traits", [])
 	if not has_mechagodzilla:
 		# Also check monster card if it's in zone 8
 		if ctx.owner.monster_zone == 8:

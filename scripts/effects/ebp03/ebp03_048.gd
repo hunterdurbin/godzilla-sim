@@ -4,7 +4,7 @@ extends CardEffect
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var my_id := ctx.card_data.get("id", "")
+	var my_id: String = ctx.card_data.get("id", "")
 	var other_battle_count := 0
 	for i in range(8):
 		var card := ctx.owner.get_zone_top_card(i)
