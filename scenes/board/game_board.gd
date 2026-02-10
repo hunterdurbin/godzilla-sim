@@ -1851,9 +1851,7 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 	_show_card_zoom(card_data)
 
 
-func _on_hand_card_right_clicked(card: Control, hand_player_id: int) -> void:
-	if hand_player_id != local_player_id:
-		return
+func _on_hand_card_right_clicked(card: Control, _hand_player_id: int) -> void:
 	if "card_data" in card and not card.card_data.is_empty():
 		_show_card_zoom(card.card_data)
 

@@ -59,14 +59,15 @@ func _ready() -> void:
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-			card_right_clicked.emit(self)
+			if not is_face_down:
+				card_right_clicked.emit(self)
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				if is_selectable:
 					card_clicked.emit(self)
 					return
-				if not drag_enabled:
+				if not drag_enabled or is_face_down:
 					return
 				# Start dragging
 				is_dragging = true

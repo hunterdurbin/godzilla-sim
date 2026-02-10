@@ -310,7 +310,8 @@ func _on_gui_input(event: InputEvent) -> void:
 			if held_card != null or in_selection_mode:
 				slot_clicked.emit(zone_number, player_id)
 		elif event.button_index == MOUSE_BUTTON_RIGHT and held_card != null:
-			slot_right_clicked.emit(zone_number, player_id)
+			if not held_card.get("is_face_down"):
+				slot_right_clicked.emit(zone_number, player_id)
 
 
 func _set_mouse_filter_recursive(node: Control, filter: MouseFilter) -> void:
