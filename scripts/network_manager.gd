@@ -5,7 +5,7 @@ extends Node
 ## Registered as an autoload singleton. Contains no game logic —
 ## just connection lifecycle, player assignment, and session state.
 
-enum Mode { SOLO, HOST, CLIENT, ONLINE_HOST, ONLINE_CLIENT }
+enum Mode {SOLO, HOST, CLIENT, ONLINE_HOST, ONLINE_CLIENT}
 
 signal player_connected(peer_id: int)
 signal player_disconnected(peer_id: int)
@@ -14,14 +14,17 @@ signal game_starting()
 
 const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 2
-const NORAY_HOST: String = "tomfol.io"
+const NORAY_HOST: String = "godzillatcg.com"
 const NORAY_PORT: int = 8890
 
 var mode: Mode = Mode.SOLO
 var local_player_id: int = -1
-var peer_player_map: Dictionary = {}  # {peer_id: player_id}
+var peer_player_map: Dictionary = {} # {peer_id: player_id}
 var opponent_connected: bool = false
 var noray_connected: bool = false
+var _noray_host_oid: String = ""
+var _noray_nat_attempted: bool = false
+var _noray_connecting: bool = false
 
 
 func host_game(port: int = DEFAULT_PORT) -> Error:
@@ -36,7 +39,7 @@ func host_game(port: int = DEFAULT_PORT) -> Error:
 
 	mode = Mode.HOST
 	local_player_id = 0
-	peer_player_map[1] = 0  # Server's own peer ID is always 1
+	peer_player_map[1] = 0 # Server's own peer ID is always 1
 	return OK
 
 
@@ -91,9 +94,13 @@ func join_online(host_oid: String, host: String = NORAY_HOST, port: int = NORAY_
 	if err != OK:
 		return err
 
-	# Listen for Noray connection signals
-	Noray.on_connect_nat.connect(_on_noray_client_connect)
-	Noray.on_connect_relay.connect(_on_noray_client_connect)
+	_noray_host_oid = host_oid
+	_noray_nat_attempted = false
+	_noray_connecting = false
+
+	# NAT and relay use separate handlers so relay isn't blocked by NAT timeout
+	Noray.on_connect_nat.connect(_on_noray_client_nat)
+	Noray.on_connect_relay.connect(_on_noray_client_relay)
 
 	# Try NAT punchthrough first
 	err = Noray.connect_nat(host_oid)
@@ -113,10 +120,10 @@ func disconnect_game() -> void:
 			Noray.on_connect_nat.disconnect(_on_noray_host_connect)
 		if Noray.on_connect_relay.is_connected(_on_noray_host_connect):
 			Noray.on_connect_relay.disconnect(_on_noray_host_connect)
-		if Noray.on_connect_nat.is_connected(_on_noray_client_connect):
-			Noray.on_connect_nat.disconnect(_on_noray_client_connect)
-		if Noray.on_connect_relay.is_connected(_on_noray_client_connect):
-			Noray.on_connect_relay.disconnect(_on_noray_client_connect)
+		if Noray.on_connect_nat.is_connected(_on_noray_client_nat):
+			Noray.on_connect_nat.disconnect(_on_noray_client_nat)
+		if Noray.on_connect_relay.is_connected(_on_noray_client_relay):
+			Noray.on_connect_relay.disconnect(_on_noray_client_relay)
 		Noray.disconnect_from_host()
 		noray_connected = false
 
@@ -168,8 +175,26 @@ func start_lan_game() -> void:
 
 # --- Noray helpers ---
 
+func _resolve_hostname(host: String) -> String:
+	# Try Godot's built-in resolver first
+	var resolved := IP.resolve_hostname(host, IP.TYPE_IPV4)
+	if resolved != "":
+		return resolved
+	# Fallback: use system dig command (Godot's resolver fails on some macOS configs)
+	var output: Array = []
+	var exit_code := OS.execute("dig", ["+short", host, "A"], output)
+	if exit_code == OK and output.size() > 0:
+		var lines: String = output[0].strip_edges()
+		if lines != "":
+			return lines.split("\n")[0].strip_edges()
+	return ""
+
+
 func _connect_noray(host: String, port: int) -> Error:
-	var err := await Noray.connect_to_host(host, port)
+	var resolved: String = _resolve_hostname(host)
+	if resolved == "":
+		return ERR_CANT_RESOLVE
+	var err := await Noray.connect_to_host(resolved, port)
 	if err != OK:
 		return err
 
@@ -193,9 +218,13 @@ func _on_noray_host_connect(address: String, port: int) -> void:
 	await PacketHandshake.over_enet_peer(peer, address, port)
 
 
-## Client-side: when Noray resolves the host's address, do UDP handshake then
-## create ENet client.
-func _on_noray_client_connect(address: String, port: int) -> void:
+## Client-side NAT: handshake with peer, fall back to relay on failure.
+func _on_noray_client_nat(address: String, port: int) -> void:
+	if _noray_connecting or _noray_nat_attempted:
+		return
+	_noray_connecting = true
+	_noray_nat_attempted = true
+
 	var udp := PacketPeerUDP.new()
 	udp.bind(Noray.local_port)
 	udp.set_dest_address(address, port)
@@ -204,13 +233,26 @@ func _on_noray_client_connect(address: String, port: int) -> void:
 	udp.close()
 
 	if err != OK and err != ERR_BUSY:
-		connection_failed.emit()
+		_noray_connecting = false
+		Noray.connect_relay(_noray_host_oid)
 		return
 
-	# Create ENet client using the Noray-assigned local port
+	_create_client_peer(address, port)
+
+
+## Client-side relay: connect through the Noray relay server.
+func _on_noray_client_relay(address: String, port: int) -> void:
+	if _noray_connecting:
+		return
+	_noray_connecting = true
+	_create_client_peer(address, port)
+
+
+func _create_client_peer(address: String, port: int) -> void:
 	var peer := ENetMultiplayerPeer.new()
-	err = peer.create_client(address, port, 0, 0, 0, Noray.local_port)
+	var err := peer.create_client(address, port, 0, 0, 0, Noray.local_port)
 	if err != OK:
+		_noray_connecting = false
 		connection_failed.emit()
 		return
 
@@ -240,7 +282,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 func _on_connected_to_server() -> void:
 	opponent_connected = true
-	player_connected.emit(1)  # Server peer ID
+	player_connected.emit(1) # Server peer ID
 
 
 func _on_connection_failed() -> void:

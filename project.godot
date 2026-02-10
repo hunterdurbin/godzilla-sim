@@ -20,15 +20,19 @@ config/icon="res://icon.svg"
 CardData="*res://data/card_data.gd"
 ArtworkDownloader="*res://scripts/artwork_downloader.gd"
 DecklistManager="*res://data/decklist_manager.gd"
+Noray="*uid://gu4bv4tgms3x"
+PacketHandshake="*uid://tt3j25a05n7c"
 NetworkManager="*res://scripts/network_manager.gd"
-Noray="*res://addons/netfox.noray/noray.gd"
-PacketHandshake="*res://addons/netfox.noray/packet-handshake.gd"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/netfox.internals/plugin.cfg", "res://addons/netfox.noray/plugin.cfg")
 
 [physics]
 
@@ -40,7 +44,3 @@ rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
-
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/netfox.internals/plugin.cfg", "res://addons/netfox.noray/plugin.cfg")
