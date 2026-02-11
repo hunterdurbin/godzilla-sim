@@ -1235,6 +1235,8 @@ func _load_deck(deck_name: String) -> void:
 		return
 	_monster_entries = data["monster"].duplicate(true)
 	_main_entries = data["main"].duplicate(true)
+	_sort_monster_entries()
+	_sort_main_entries()
 	_current_deck_name = deck_name
 	deck_name_edit.text = deck_name
 	_has_unsaved_changes = false
@@ -1299,6 +1301,8 @@ func _import_from_clipboard() -> void:
 		return
 	_monster_entries = data["monster"]
 	_main_entries = data["main"]
+	_sort_monster_entries()
+	_sort_main_entries()
 	_has_unsaved_changes = true
 	_showing_monster_tab = true
 	_refresh_deck_display()
