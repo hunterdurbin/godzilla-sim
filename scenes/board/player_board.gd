@@ -32,6 +32,7 @@ var monster_card_zone: int = -1  # Zone index (0-7) where monster card is curren
 var deck_count_label: Label
 var discard_count_label: Label
 var rage_label: Label
+var rage_threat_label: Label
 var rage_display: Control
 var discard_display: Control
 var monster_info_display: Control
@@ -108,6 +109,7 @@ func _setup_references() -> void:
 	deck_count_label = find_child("DeckCount", true, false) as Label
 	discard_count_label = find_child("DiscardCount", true, false) as Label
 	rage_label = find_child("RageLabel", true, false) as Label
+	rage_threat_label = find_child("RageThreatLabel", true, false) as Label
 	rage_display = find_child("RageDisplay", true, false) as Control
 	_style_rage_bg()
 	discard_display = find_child("DiscardInfo", true, false) as Control
@@ -267,6 +269,9 @@ func _sync_monster(state: PlayerState, threat_mod: int = 0) -> void:
 
 	if rage_label:
 		rage_label.text = "%d" % state.rage
+	if rage_threat_label:
+		var threat_bonus: int = state.rage * 5000
+		rage_threat_label.text = "(+%d)" % threat_bonus
 
 
 func _sync_hand(state: PlayerState) -> void:
