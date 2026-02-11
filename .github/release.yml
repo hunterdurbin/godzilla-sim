@@ -1,0 +1,17 @@
+changelog:
+  categories:
+    - title: New Features
+      labels:
+        - enhancement
+        - feature
+    - title: Bug Fixes
+      labels:
+        - bug
+        - fix
+    - title: Card Effects
+      labels:
+        - effects
+        - cards
+    - title: Other Changes
+      labels:
+        - "*"
