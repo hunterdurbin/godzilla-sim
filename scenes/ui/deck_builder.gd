@@ -453,11 +453,13 @@ func _build_pool_card_list() -> void:
 	_all_pool_cards.clear()
 	for card_id in CardData.CARD_TEMPLATES:
 		var card: Dictionary = CardData.CARD_TEMPLATES[card_id]
-		var traits: Array = card.get("traits", [])
-		if CardEnums.CardTrait.TOKEN in traits:
-			continue
 		_all_pool_cards.append(card)
 	_all_pool_cards.sort_custom(_sort_by_id)
+
+
+static func _is_token(card_data: Dictionary) -> bool:
+	var traits: Array = card_data.get("traits", [])
+	return CardEnums.CardTrait.TOKEN in traits
 
 
 func _apply_filters() -> void:
@@ -554,6 +556,8 @@ func _update_pool_badge(card_id: String) -> void:
 		var card_node: Control = wrapper.get_child(0)
 		if card_node.card_data.get("id", "") != card_id:
 			continue
+		if _is_token(card_node.card_data):
+			break
 		# Remove old badge if present
 		for child in wrapper.get_children():
 			if child is Label:
@@ -608,13 +612,18 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 
 	# Quantity badge
 	if is_pool:
-		var count := _get_card_count_in_deck(card_data.get("id", ""))
-		var max_copies := _get_max_copies(card_data)
-		if count > 0:
-			var badge := _create_badge("%d/%d" % [count, max_copies])
+		if _is_token(card_data):
+			card_node.modulate = Color(0.5, 0.5, 0.5, 0.7)
+			var badge := _create_badge("Token")
 			wrapper.add_child(badge)
-			if count >= max_copies:
-				card_node.modulate = Color(0.5, 0.5, 0.5, 0.7)
+		else:
+			var count := _get_card_count_in_deck(card_data.get("id", ""))
+			var max_copies := _get_max_copies(card_data)
+			if count > 0:
+				var badge := _create_badge("%d/%d" % [count, max_copies])
+				wrapper.add_child(badge)
+				if count >= max_copies:
+					card_node.modulate = Color(0.5, 0.5, 0.5, 0.7)
 	else:
 		var card_id: String = card_data.get("id", "")
 		var is_monster_type: bool = card_data.get("card_type", -1) == CardEnums.CardType.MONSTER
@@ -763,6 +772,9 @@ func _clear_grid(grid: GridContainer) -> void:
 func _on_pool_card_clicked(card_node: Control) -> void:
 	var card_data: Dictionary = card_node.card_data
 	var card_id: String = card_data.get("id", "")
+
+	if _is_token(card_data):
+		return
 
 	if _showing_monster_tab:
 		if card_data.get("card_type", -1) != CardEnums.CardType.MONSTER:
