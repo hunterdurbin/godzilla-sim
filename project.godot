@@ -14,7 +14,7 @@ config/name="unofficial_godzilla_tcg"
 config/version="0.1.0"
 run/main_scene="res://scenes/ui/LoadingScreen.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
-config/icon="res://icon.svg"
+config/icon="res://CardContent/Assets/Icons/game_icon.png"
 
 [autoload]
 
