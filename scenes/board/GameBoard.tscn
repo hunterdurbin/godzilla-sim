@@ -200,15 +200,13 @@ color = Color(0, 0, 0, 0.6)
 
 [node name="DeckSearchPanel" type="PanelContainer" parent="DeckSearchOverlay" unique_id=660930292]
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = -1
 anchor_left = 0.5
-anchor_top = 0.5
+anchor_top = 0.125
 anchor_right = 0.5
-anchor_bottom = 0.5
+anchor_bottom = 0.875
 offset_left = -350.0
-offset_top = -200.0
 offset_right = 350.0
-offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -273,15 +271,13 @@ color = Color(0, 0, 0, 0.6)
 
 [node name="DiscardViewPanel" type="PanelContainer" parent="DiscardViewOverlay" unique_id=73043265]
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = -1
 anchor_left = 0.5
-anchor_top = 0.5
+anchor_top = 0.125
 anchor_right = 0.5
-anchor_bottom = 0.5
+anchor_bottom = 0.875
 offset_left = -350.0
-offset_top = -200.0
 offset_right = 350.0
-offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -330,15 +326,13 @@ color = Color(0, 0, 0, 0.6)
 
 [node name="MonsterDeckViewPanel" type="PanelContainer" parent="MonsterDeckViewOverlay" unique_id=317633118]
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = -1
 anchor_left = 0.5
-anchor_top = 0.5
+anchor_top = 0.125
 anchor_right = 0.5
-anchor_bottom = 0.5
+anchor_bottom = 0.875
 offset_left = -350.0
-offset_top = -200.0
 offset_right = 350.0
-offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -387,15 +381,13 @@ color = Color(0, 0, 0, 0.6)
 
 [node name="ZoneStackViewPanel" type="PanelContainer" parent="ZoneStackViewOverlay" unique_id=299704508]
 layout_mode = 1
-anchors_preset = 8
+anchors_preset = -1
 anchor_left = 0.5
-anchor_top = 0.5
+anchor_top = 0.125
 anchor_right = 0.5
-anchor_bottom = 0.5
+anchor_bottom = 0.875
 offset_left = -350.0
-offset_top = -200.0
 offset_right = 350.0
-offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
 
