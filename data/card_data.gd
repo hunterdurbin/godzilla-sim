@@ -2665,7 +2665,7 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.GREEN],
-		"traits": [CardEnums.CardTrait.MOTHRA],
+		"traits": [CardEnums.CardTrait.KING_GHIDORAH],
 		"counter_power": 3000,
 		"invasion_icon": 1,
 		"effect_script": "res://scripts/effects/ebp03/ebp03_059.gd",
