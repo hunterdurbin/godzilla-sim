@@ -1304,8 +1304,8 @@ func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary]
 		_deck_search_matching_ids[card_data.get("id", "")] = true
 
 	deck_search_prompt.text = prompt
-	deck_search_show_all.set_pressed_no_signal(false)
-	deck_search_stacked.set_pressed_no_signal(false)
+	deck_search_show_all.set_pressed_no_signal(matching.is_empty())
+	deck_search_stacked.set_pressed_no_signal(true)
 	deck_search_overlay.visible = true
 
 	_refresh_deck_search_grid()
@@ -1383,8 +1383,8 @@ func _hide_deck_search() -> void:
 	deck_search_overlay.visible = false
 	show_cards_button.visible = false
 	_clear_grid(deck_search_grid, _on_deck_search_card_clicked)
-	_deck_search_matching.clear()
-	_deck_search_all.clear()
+	_deck_search_matching = []
+	_deck_search_all = []
 	_deck_search_matching_ids.clear()
 
 
@@ -1802,7 +1802,7 @@ func _on_discard_clicked(pid: int) -> void:
 	_discard_view_cards = player.discard_pile.duplicate(true)
 	var title := "Player %d Discard Pile (%d)" % [pid + 1, _discard_view_cards.size()]
 	discard_view_title.text = title
-	discard_view_stacked.set_pressed_no_signal(false)
+	discard_view_stacked.set_pressed_no_signal(true)
 	discard_view_overlay.visible = true
 	_refresh_discard_view_grid()
 

@@ -27,11 +27,9 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 			if CardEnums.CardColor.RED in card_colors or CardEnums.CardColor.BLUE in card_colors:
 				valid.append(card)
 
-	var chosen: Dictionary = {}
-	if not valid.is_empty():
-		chosen = await ctx.effect_handler.select_from_cards(
-			ctx.owner.player_id, valid, revealed,
-			"Choose 1 red or blue battle card to add to hand:")
+	var chosen: Dictionary = await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, valid, revealed,
+		"Choose 1 red or blue battle card to add to hand:")
 
 	# Add chosen to hand, discard rest
 	for card in revealed:

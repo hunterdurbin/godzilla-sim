@@ -30,12 +30,11 @@ func on_enter(ctx: EffectContext) -> void:
 	for card in revealed:
 		if card.get("card_type") == CardEnums.CardType.BATTLE and CardEnums.CardColor.RED in card.get("colors", []):
 			red_options.append(card)
-	if not red_options.is_empty():
-		var red_chosen := await ctx.effect_handler.select_from_cards(
-			ctx.owner.player_id, red_options, revealed,
-			"Choose up to 1 red battle card to add to hand (or skip):")
-		if not red_chosen.is_empty():
-			chosen_ids.append(red_chosen.get("id", ""))
+	var red_chosen := await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, red_options, revealed,
+		"Choose up to 1 red battle card to add to hand (or skip):")
+	if not red_chosen.is_empty():
+		chosen_ids.append(red_chosen.get("id", ""))
 
 	# Pick up to 1 blue battle card
 	var blue_options: Array[Dictionary] = []
@@ -43,12 +42,11 @@ func on_enter(ctx: EffectContext) -> void:
 		if card.get("card_type") == CardEnums.CardType.BATTLE and CardEnums.CardColor.BLUE in card.get("colors", []):
 			if card.get("id", "") not in chosen_ids:
 				blue_options.append(card)
-	if not blue_options.is_empty():
-		var blue_chosen := await ctx.effect_handler.select_from_cards(
-			ctx.owner.player_id, blue_options, revealed,
-			"Choose up to 1 blue battle card to add to hand (or skip):")
-		if not blue_chosen.is_empty():
-			chosen_ids.append(blue_chosen.get("id", ""))
+	var blue_chosen := await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, blue_options, revealed,
+		"Choose up to 1 blue battle card to add to hand (or skip):")
+	if not blue_chosen.is_empty():
+		chosen_ids.append(blue_chosen.get("id", ""))
 
 	# Add chosen to hand, discard rest
 	for card in revealed:

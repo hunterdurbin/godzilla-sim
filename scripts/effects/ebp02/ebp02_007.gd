@@ -38,19 +38,18 @@ func on_enter(ctx: EffectContext) -> void:
 		else:
 			rest.append(card)
 
-	if not monsters.is_empty():
-		var chosen: Dictionary = await ctx.effect_handler.select_from_cards(
-			ctx.owner.player_id, monsters, revealed,
-			"Choose a monster card to add to your hand:")
+	var chosen: Dictionary = await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, monsters, revealed,
+		"Choose a monster card to add to your hand:")
 
-		if not chosen.is_empty():
-			var card_id: String = chosen.get("id", "")
-			for i in range(monsters.size()):
-				if monsters[i].get("id", "") == card_id:
-					ctx.owner.hand.append(monsters[i])
-					monsters.remove_at(i)
-					break
-			ctx.owner.hand_changed.emit()
+	if not chosen.is_empty():
+		var card_id: String = chosen.get("id", "")
+		for i in range(monsters.size()):
+			if monsters[i].get("id", "") == card_id:
+				ctx.owner.hand.append(monsters[i])
+				monsters.remove_at(i)
+				break
+		ctx.owner.hand_changed.emit()
 
 	rest.append_array(monsters)
 	ctx.owner.discard_pile.append_array(rest)

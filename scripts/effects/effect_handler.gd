@@ -797,9 +797,6 @@ func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: 
 	## Present a set of revealed cards to the player and let them choose one.
 	## Uses the deck_search UI but does NOT modify the deck or shuffle.
 	## Returns the chosen card, or empty dict if no options or no UI connected.
-	if options.is_empty():
-		return {}
-
 	if deck_search_requested.get_connections().size() > 0:
 		_highlight_active_effect()
 		deck_search_requested.emit(player_id, options, all_visible, prompt)
@@ -807,7 +804,7 @@ func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: 
 		_unhighlight_active_effect()
 		return _deck_search_result
 	else:
-		return options[0]
+		return options[0] if not options.is_empty() else {}
 
 
 func select_choice(player_id: int, options: Array[String], prompt: String) -> int:
