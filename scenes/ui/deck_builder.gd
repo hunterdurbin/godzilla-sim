@@ -577,7 +577,7 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 	wrapper.gui_input.connect(click_handler)
 
 	# Card preview on hover
-	wrapper.mouse_entered.connect(func(): _show_preview(card_data))
+	wrapper.mouse_entered.connect(func(): _show_preview(card_data, is_pool))
 	wrapper.mouse_exited.connect(_hide_preview)
 
 	# Quantity badge
@@ -662,7 +662,11 @@ func _create_badge(text: String) -> Label:
 # Preview
 # ============================================================
 
-func _show_preview(card_data: Dictionary) -> void:
+var _preview_is_strategy: bool = false
+
+
+func _show_preview(card_data: Dictionary, _from_pool: bool) -> void:
+	_preview_is_strategy = card_data.get("card_type", -1) == CardEnums.CardType.STRATEGY
 	_preview_card.set_card_data_dict(card_data)
 	_preview_card.visible = true
 	_position_preview()
@@ -673,22 +677,33 @@ func _position_preview() -> void:
 		return
 	var vp: Vector2 = get_viewport_rect().size
 	var target_w: float = vp.x / 3.0
-	var s: float = target_w / CARD_SIZE.x
-	# Don't let the card exceed viewport height
-	if CARD_SIZE.y * s > vp.y:
-		s = vp.y / CARD_SIZE.y
-	_preview_card.scale = Vector2(s, s)
-	# Card has pivot_offset (75, 105) — scaling around pivot shifts visual position
-	# Compensate so visual top-left aligns with position
-	var pivot := Vector2(75, 105)
-	var offset: Vector2 = pivot * (1.0 - s)
-	var card_h: float = CARD_SIZE.y * s
-	_preview_card.position.x = -offset.x
-	_preview_card.position.y = vp.y - card_h - offset.y
+	# Pivot is center of 150x210 card
+	# Godot transform: screen(L) = pos + pivot + R(s*(L - pivot))
+	# Visual bounding box edges derived from corner transforms:
+
+	if _preview_is_strategy:
+		# Rotated -90: visual width = 210*s, visual height = 150*s
+		var s: float = target_w / CARD_SIZE.y
+		if CARD_SIZE.x * s > vp.y:
+			s = vp.y / CARD_SIZE.x
+		_preview_card.scale = Vector2(s, s)
+		_preview_card.rotation = -PI / 2.0
+		_preview_card.position.x = 105.0 * s - 75.0
+		_preview_card.position.y = 75.0 * s - 105.0
+	else:
+		# No rotation: visual width = 150*s, visual height = 210*s
+		var s: float = target_w / CARD_SIZE.x
+		if CARD_SIZE.y * s > vp.y:
+			s = vp.y / CARD_SIZE.y
+		_preview_card.scale = Vector2(s, s)
+		_preview_card.rotation = 0.0
+		_preview_card.position.x = 75.0 * s - 75.0
+		_preview_card.position.y = 105.0 * s - 105.0
 
 
 func _hide_preview() -> void:
 	_preview_card.visible = false
+	_preview_card.rotation = 0.0
 
 
 # ============================================================
