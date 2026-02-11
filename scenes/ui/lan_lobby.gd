@@ -147,7 +147,7 @@ func _on_deck_selected(deck_name: String) -> void:
 			"monster": data["monster"],
 			"main": data["main"],
 		})
-		_rpc_send_deck_data.rpc_id(1, payload)
+		_rpc_send_deck_data.rpc_id(NetworkManager.host_peer_id, payload)
 		status_label.text = "Deck \"%s\" sent to host. Waiting for host to start..." % deck_name
 
 
