@@ -793,6 +793,7 @@ func _add_to_main_deck(card_id: String) -> void:
 			entry["quantity"] += 1
 			return
 	_main_entries.append({"card_number": card_id, "quantity": 1})
+	_sort_main_entries()
 
 
 func _remove_from_monster_deck(card_id: String) -> void:
@@ -852,6 +853,22 @@ func _move_monster_to_monster(card_id: String) -> void:
 	if not displaced_id.is_empty():
 		_update_pool_badge(displaced_id)
 	_update_deck_stats()
+
+
+func _sort_main_entries() -> void:
+	_main_entries.sort_custom(func(a, b):
+		var ta: Dictionary = CardData.CARD_TEMPLATES.get(a["card_number"], {})
+		var tb: Dictionary = CardData.CARD_TEMPLATES.get(b["card_number"], {})
+		var type_a: int = ta.get("card_type", 0)
+		var type_b: int = tb.get("card_type", 0)
+		if type_a != type_b:
+			return type_a < type_b
+		var rank_a: int = ta.get("rank", 0)
+		var rank_b: int = tb.get("rank", 0)
+		if rank_a != rank_b:
+			return rank_a < rank_b
+		return a["card_number"] < b["card_number"]
+	)
 
 
 func _sort_monster_entries() -> void:
