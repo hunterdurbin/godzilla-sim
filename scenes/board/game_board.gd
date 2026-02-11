@@ -1305,7 +1305,7 @@ func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary]
 
 	deck_search_prompt.text = prompt
 	deck_search_show_all.set_pressed_no_signal(false)
-	deck_search_stacked.set_pressed_no_signal(false)
+	deck_search_stacked.set_pressed_no_signal(true)
 	deck_search_overlay.visible = true
 
 	_refresh_deck_search_grid()
@@ -1802,7 +1802,7 @@ func _on_discard_clicked(pid: int) -> void:
 	_discard_view_cards = player.discard_pile.duplicate(true)
 	var title := "Player %d Discard Pile (%d)" % [pid + 1, _discard_view_cards.size()]
 	discard_view_title.text = title
-	discard_view_stacked.set_pressed_no_signal(false)
+	discard_view_stacked.set_pressed_no_signal(true)
 	discard_view_overlay.visible = true
 	_refresh_discard_view_grid()
 
