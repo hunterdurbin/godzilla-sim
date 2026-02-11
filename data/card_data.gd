@@ -11,8 +11,6 @@ func _ready() -> void:
 
 func _build_card_templates() -> void:
 	# Index all cards by their ID
-	for card in KAIJU_MONSTERS + MECHA_MONSTERS:
-		CARD_TEMPLATES[card["id"]] = card.duplicate()
 	for card in EBP01_CARDS:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
 	for card in EBP02_CARDS:
@@ -26,54 +24,6 @@ func _build_card_templates() -> void:
 	for card in ESD02_CARDS:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
 
-
-# --- Placeholder Monster Decks (not from official card data) ---
-
-var KAIJU_MONSTERS: Array[Dictionary] = [
-	{
-		"id": "godzilla_1", "name": "Godzilla", "card_type": CardEnums.CardType.MONSTER,
-		"rank": 1, "colors": [CardEnums.CardColor.RED], "traits": [CardEnums.CardTrait.KAIJU],
-		"threat_level": 10000, "invasion_icon": 0, "description": "King of the Monsters awakens."
-	},
-	{
-		"id": "godzilla_2", "name": "Godzilla - Evolved", "card_type": CardEnums.CardType.MONSTER,
-		"rank": 2, "colors": [CardEnums.CardColor.RED], "traits": [CardEnums.CardTrait.KAIJU],
-		"threat_level": 15000, "invasion_icon": 0, "description": "Power grows with rage."
-	},
-	{
-		"id": "godzilla_3", "name": "Godzilla - Awakened", "card_type": CardEnums.CardType.MONSTER,
-		"rank": 3, "colors": [CardEnums.CardColor.RED], "traits": [CardEnums.CardTrait.KAIJU],
-		"threat_level": 20000, "invasion_icon": 0, "description": "Atomic breath charges."
-	},
-	{
-		"id": "godzilla_4", "name": "Godzilla - Final Form", "card_type": CardEnums.CardType.MONSTER,
-		"rank": 4, "colors": [CardEnums.CardColor.RED], "traits": [CardEnums.CardTrait.KAIJU],
-		"threat_level": 30000, "invasion_icon": 0, "description": "Unstoppable force of nature."
-	},
-]
-
-var MECHA_MONSTERS: Array[Dictionary] = [
-	{
-		"id": "mechagodzilla_1", "name": "Mechagodzilla", "card_type": CardEnums.CardType.MONSTER,
-		"rank": 1, "colors": [CardEnums.CardColor.BLUE], "traits": [CardEnums.CardTrait.MECHA],
-		"threat_level": 10000, "invasion_icon": 0, "description": "Mechanical titan awakens."
-	},
-	{
-		"id": "mechagodzilla_2", "name": "Mechagodzilla Mk-II", "card_type": CardEnums.CardType.MONSTER,
-		"rank": 2, "colors": [CardEnums.CardColor.BLUE], "traits": [CardEnums.CardTrait.MECHA],
-		"threat_level": 15000, "invasion_icon": 0, "description": "Upgraded armaments online."
-	},
-	{
-		"id": "mechagodzilla_3", "name": "Mechagodzilla Mk-III", "card_type": CardEnums.CardType.MONSTER,
-		"rank": 3, "colors": [CardEnums.CardColor.BLUE], "traits": [CardEnums.CardTrait.MECHA],
-		"threat_level": 20000, "invasion_icon": 0, "description": "Plasma cannons armed."
-	},
-	{
-		"id": "mechagodzilla_4", "name": "Mechagodzilla - Apex", "card_type": CardEnums.CardType.MONSTER,
-		"rank": 4, "colors": [CardEnums.CardColor.BLUE], "traits": [CardEnums.CardTrait.MECHA],
-		"threat_level": 30000, "invasion_icon": 0, "description": "Ultimate weapon deployed."
-	},
-]
 
 # --- EBP01: Booster Pack 01 ---
 var EBP01_CARDS: Array[Dictionary] = [
@@ -1096,18 +1046,6 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"threat_level": 36000,
 		"invasion_icon": 1,
 		"description": "<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)\n<Enter> You may discard 1 strategy card from your hand. If you do, reveal the top 5 cards of your deck, add 1 monster card from among them to your hand, then send the rest to your discard pile.",
-		"effect_script": "res://scripts/effects/ebp02/ebp02_007.gd"
-	},
-	{
-		"id": "EBP02-007++A",
-		"name": "Godzilla(2016) 4th Form",
-		"card_type": CardEnums.CardType.MONSTER,
-		"rank": 4,
-		"colors": [CardEnums.CardColor.RED],
-		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.FOURTH_FORM],
-		"threat_level": 36000,
-		"invasion_icon": 1,
-		"description": "<Burst3>\n<Enter> You may discard 1 strategy card from your hand. If you do, reveal the top 5 cards of your deck, add 1 monster card from among them to your hand, then send the rest to your discard pile.",
 		"effect_script": "res://scripts/effects/ebp02/ebp02_007.gd"
 	},
 	{
@@ -3350,21 +3288,15 @@ var ESD02_CARDS: Array[Dictionary] = [
 # --- Deck Building ---
 
 func get_monster_deck(trait_type: CardEnums.CardTrait) -> Array[Dictionary]:
-	match trait_type:
-		CardEnums.CardTrait.KAIJU:
-			return KAIJU_MONSTERS.duplicate(true)
-		CardEnums.CardTrait.MECHA:
-			return MECHA_MONSTERS.duplicate(true)
-		_:
-			# Search official set cards for monster deck of given trait
-			var monsters: Array[Dictionary] = []
-			for id in CARD_TEMPLATES:
-				var card = CARD_TEMPLATES[id]
-				if card.get("card_type") == CardEnums.CardType.MONSTER and trait_type in card.get("traits", []):
-					monsters.append(card.duplicate())
-			if monsters.is_empty():
-				push_error("CardData: No monster deck for trait %s" % trait_type)
-			return monsters
+	# Search official set cards for monster deck of given trait
+	var monsters: Array[Dictionary] = []
+	for id in CARD_TEMPLATES:
+		var card = CARD_TEMPLATES[id]
+		if card.get("card_type") == CardEnums.CardType.MONSTER and trait_type in card.get("traits", []):
+			monsters.append(card.duplicate())
+	if monsters.is_empty():
+		push_error("CardData: No monster deck for trait %s" % trait_type)
+	return monsters
 
 
 func get_main_deck(deck_id: int) -> Array[Dictionary]:
