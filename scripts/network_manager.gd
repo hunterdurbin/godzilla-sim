@@ -18,7 +18,7 @@ const MAX_PLAYERS: int = 2
 const VERSION_TIMEOUT: float = 5.0
 var GAME_VERSION: String = ProjectSettings.get_setting("application/config/version", "unknown")
 const RELAY_HOST: String = "godzillatcg.com"
-const RELAY_PORT: int = 9090
+const RELAY_PORT: int = 12090
 const WS_CONNECT_TIMEOUT: float = 10.0
 
 var mode: Mode = Mode.SOLO
