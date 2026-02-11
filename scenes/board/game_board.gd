@@ -18,6 +18,7 @@ var _client_playable: Dictionary = {} # Playable card/zone indices from host
 var _client_cp_modifiers: Array = [0, 0]
 var _client_threat_modifiers: Array = [0, 0]
 var _client_zone_cp_mods: Array = [[], []]
+var _client_gradients_applied: bool = false
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -2184,6 +2185,14 @@ func _rpc_receive_state(state_json: String) -> void:
 	for i in range(2):
 		var pd: Dictionary = players_data[i]
 		_client_players[i] = _dict_to_player_state(pd, i == local_player_id)
+
+	# Apply monster color gradient on first state receive
+	if not _client_gradients_applied:
+		_client_gradients_applied = true
+		for i in range(2):
+			var board = player1_board if i == 0 else player2_board
+			if not _client_players[i].current_monster.is_empty():
+				board.apply_monster_gradient(_client_players[i].current_monster)
 
 	# Update UI
 	phase_label.text = CardEnums.phase_to_string(int(data["current_phase"]) as CardEnums.GamePhase)
