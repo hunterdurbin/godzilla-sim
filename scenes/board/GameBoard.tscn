@@ -263,7 +263,7 @@ alignment = 2
 
 [node name="ShowAllToggle" type="CheckButton" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow" unique_id=1561789456]
 layout_mode = 2
-text = "Show entire deck"
+text = "Show All"
 
 [node name="StackedToggle" type="CheckButton" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow" unique_id=838319594]
 layout_mode = 2
