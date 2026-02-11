@@ -101,7 +101,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.25
 
-[node name="BottomSpacer" type="Control" parent="VBoxContainer"]
+[node name="BottomSpacer" type="Control" parent="VBoxContainer" unique_id=546166432]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
 
@@ -160,7 +160,7 @@ custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 text = "Pass"
 
-[node name="BugReportButton" type="Button" parent="."]
+[node name="BugReportButton" type="Button" parent="." unique_id=1953231602]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -173,7 +173,7 @@ grow_horizontal = 0
 theme_override_font_sizes/font_size = 11
 text = "Report Bug"
 
-[node name="ConcedeButton" type="Button" parent="."]
+[node name="ConcedeButton" type="Button" parent="." unique_id=557982215]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -186,7 +186,7 @@ grow_horizontal = 0
 theme_override_font_sizes/font_size = 11
 text = "Concede"
 
-[node name="MainMenuButton" type="Button" parent="."]
+[node name="MainMenuButton" type="Button" parent="." unique_id=1269705989]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0

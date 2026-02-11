@@ -52,10 +52,11 @@ signal effect_zone_unhighlighted(player_id: int, zone_index: int)
 signal effect_card_highlighted(player_id: int, card_id: String)
 signal effect_card_unhighlighted(player_id: int, card_id: String)
 
+const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
+
 var game_state: GameState
 var action_handler  # ActionHandler reference (set by TurnManager)
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
-var _trigger_cache: Dictionary = {}  # script_path -> Dictionary of method_name -> bool
 var _deck_search_result: Dictionary = {}
 var _zone_target_result: int = -1
 var _hand_card_selection_result: int = -1
@@ -97,28 +98,14 @@ func get_effect(card_data: Dictionary) -> CardEffect:
 
 func has_trigger(card_data: Dictionary, method_name: String) -> bool:
 	## Check if a card's effect script actually overrides the given trigger method.
-	## Returns false if no effect or the base CardEffect method is not overridden.
+	## Uses a pre-generated trigger map (source_code is stripped in export builds,
+	## so runtime introspection cannot detect overrides reliably).
+	## Regenerate the map: bash scripts/effects/generate_trigger_map.sh
 	var script_path: String = card_data.get("effect_script", "")
 	if script_path.is_empty():
 		return false
-
-	if not _trigger_cache.has(script_path):
-		var effect := get_effect(card_data)
-		if effect == null:
-			return false
-		var script: Script = effect.get_script()
-		if script == null:
-			return false
-		# Build override cache from source code. get_script_method_list() includes
-		# inherited methods from the base CardEffect, so check the script's own
-		# source to detect actual overrides.
-		var source: String = script.source_code
-		var overrides: Dictionary = {}
-		for m in script.get_script_method_list():
-			overrides[m.name] = source.find("func " + m.name + "(") >= 0
-		_trigger_cache[script_path] = overrides
-
-	return _trigger_cache[script_path].get(method_name, false)
+	var triggers: Array = _TriggerMap.TRIGGERS.get(script_path, [])
+	return method_name in triggers
 
 
 func _build_context(owner_id: int, card_data: Dictionary) -> EffectContext:

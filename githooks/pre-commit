@@ -1,0 +1,10 @@
+#!/bin/bash
+# Regenerate the trigger map if any effect scripts were modified.
+
+TRIGGER_MAP="scripts/effects/trigger_map.gd"
+
+# Check if any staged files are effect scripts or the base CardEffect class
+if git diff --cached --name-only | grep -qE '^scripts/effects/'; then
+	bash scripts/effects/generate_trigger_map.sh
+	git add "$TRIGGER_MAP"
+fi
