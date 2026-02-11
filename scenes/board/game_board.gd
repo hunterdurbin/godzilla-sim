@@ -30,6 +30,8 @@ var _client_gradients_applied: bool = false
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var card_select_prompt: Label = $VBoxContainer/TopHUD/CardSelectPromptTop
 @onready var btn_bug_report: Button = $BugReportButton
+@onready var btn_concede: Button = $ConcedeButton
+@onready var btn_main_menu: Button = $MainMenuButton
 
 # Hand references
 @onready var player1_hand: Node2D = $Player1Hand
@@ -209,6 +211,8 @@ func _ready() -> void:
 	btn_invade.pressed.connect(_on_invade_pressed)
 	btn_pass.pressed.connect(_on_pass_pressed)
 	btn_bug_report.pressed.connect(_on_bug_report_pressed)
+	btn_concede.pressed.connect(_on_concede_pressed)
+	btn_main_menu.pressed.connect(_on_main_menu_pressed)
 
 	# Connect hand drag signals for drag-to-zone
 	player1_hand.hand_card_drag_started.connect(_on_hand_drag_started)
@@ -616,6 +620,34 @@ func _build_bug_report_body() -> String:
 		lines.append("</details>")
 
 	return "\n".join(lines)
+
+
+# --- Concede / Main Menu ---
+
+func _on_concede_pressed() -> void:
+	var loser_id := local_player_id
+	var winner_id := 1 - loser_id
+	var reason := "Player %d conceded" % (loser_id + 1)
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_rpc_concede.rpc_id(1)
+	elif turn_manager:
+		turn_manager._on_game_over(winner_id, reason)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_concede() -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	var loser_id := 1 if sender_id != 1 else 0
+	var winner_id := 1 - loser_id
+	turn_manager._on_game_over(winner_id, "Player %d conceded" % (loser_id + 1))
+
+
+func _on_main_menu_pressed() -> void:
+	if is_multiplayer_game:
+		NetworkManager.disconnect_game()
+	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
 
 
 # --- Button handlers ---
