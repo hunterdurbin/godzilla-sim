@@ -50,9 +50,12 @@ func execute_start_phase(state: GameState) -> void:
 		intercept_zone = effect_handler.get_strategy_discard_interceptor(player.player_id)
 
 	var cleared: Array = []
-	for i in range(2):
+	for i in range(player.strategy_zones.size()):
 		if not player.strategy_zones[i].is_empty():
 			if player.strategy_zone_turn_placed[i] < state.turn_number:
+				# Base strategies are exempt from start phase discard (12.9.2 / 7.2.3)
+				if effect_handler and effect_handler.is_base_strategy(player.strategy_zones[i]):
+					continue
 				var strategy_card: Dictionary = player.strategy_zones[i]
 				player.strategy_zones[i] = {}
 				if intercept_zone >= 0:

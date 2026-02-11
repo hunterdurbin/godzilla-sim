@@ -1352,6 +1352,15 @@ func get_opponent_field_rank_modifier(player_id: int) -> int:
 	return 0
 
 
+func is_base_strategy(card_data: Dictionary) -> bool:
+	## Check if a strategy card has the <Base> keyword (12.9).
+	## Base strategies are exempt from the Start Phase discard rule (7.2.3).
+	var effect := get_effect(card_data)
+	if effect:
+		return effect.is_base_strategy()
+	return false
+
+
 func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> int:
 	## Get the effective rank of an in-play battle card, accounting for opponent field rank modifiers.
 	var base_rank: int = card_data.get("rank", 0)
