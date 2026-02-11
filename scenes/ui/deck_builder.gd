@@ -28,6 +28,7 @@ var deck_scroll: ScrollContainer
 var search_edit: LineEdit
 var type_buttons: Array[Button] = []
 var color_buttons: Array[Button] = []
+var invasion_buttons: Array[Button] = []
 var sort_option: OptionButton
 
 # --- Right panel: pool section ---
@@ -52,6 +53,7 @@ var _filtered_pool_cards: Array[Dictionary] = []
 var _search_text: String = ""
 var _type_filter: int = -1  # -1 = all
 var _color_filters: Array[int] = []
+var _invasion_filter: int = -1  # -1 = all, 1 = step 1, 2 = step 2
 var _sort_mode: int = 0  # 0=ID, 1=Name, 2=Rank, 3=Type
 
 var _pending_action: Callable
@@ -325,6 +327,23 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 	# Separator
 	hbox.add_child(VSeparator.new())
 
+	# Invasion icon filter buttons
+	var invasion_box := HBoxContainer.new()
+	invasion_box.add_theme_constant_override("separation", 2)
+	hbox.add_child(invasion_box)
+
+	var inv_names := ["Step 1", "Step 2"]
+	for i in range(inv_names.size()):
+		var btn := Button.new()
+		btn.text = inv_names[i]
+		btn.toggle_mode = true
+		btn.add_theme_font_size_override("font_size", 12)
+		invasion_box.add_child(btn)
+		invasion_buttons.append(btn)
+
+	# Separator
+	hbox.add_child(VSeparator.new())
+
 	# Sort
 	sort_option = OptionButton.new()
 	sort_option.add_item("Sort: ID", 0)
@@ -417,6 +436,8 @@ func _connect_signals() -> void:
 		type_buttons[i].pressed.connect(_on_type_button_pressed.bind(i))
 	for i in range(color_buttons.size()):
 		color_buttons[i].pressed.connect(_on_color_button_pressed.bind(i))
+	for i in range(invasion_buttons.size()):
+		invasion_buttons[i].pressed.connect(_on_invasion_button_pressed.bind(i))
 	sort_option.item_selected.connect(_on_sort_changed)
 
 	# Dialogs
@@ -461,6 +482,11 @@ func _card_matches_filters(card: Dictionary) -> bool:
 				has_match = true
 				break
 		if not has_match:
+			return false
+
+	# Invasion icon filter
+	if _invasion_filter > 0:
+		if card.get("invasion_icon", 0) != _invasion_filter:
 			return false
 
 	# Text search
@@ -1147,6 +1173,20 @@ func _on_color_button_pressed(_index: int) -> void:
 	for i in range(color_buttons.size()):
 		if color_buttons[i].button_pressed:
 			_color_filters.append(color_values[i])
+	_apply_filters()
+	_refresh_pool_display()
+
+
+func _on_invasion_button_pressed(index: int) -> void:
+	# Radio-style: only one can be active, pressing active one deselects
+	var step := index + 1  # 0 → step 1, 1 → step 2
+	if _invasion_filter == step:
+		_invasion_filter = -1
+		invasion_buttons[index].button_pressed = false
+	else:
+		_invasion_filter = step
+		for i in range(invasion_buttons.size()):
+			invasion_buttons[i].button_pressed = (i == index)
 	_apply_filters()
 	_refresh_pool_display()
 
