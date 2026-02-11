@@ -74,6 +74,11 @@ func _handle_control(msg: String) -> void:
 		"J":
 			if not _other_connected:
 				_other_connected = true
+				# Must transition to CONNECTED before emitting peer_connected.
+				# SceneMultiplayer's _admit_peer emits connected_to_server synchronously
+				# during this signal, and rpcp() rejects RPCs unless status is CONNECTED.
+				if _connection_status == CONNECTION_CONNECTING:
+					_connection_status = CONNECTION_CONNECTED
 				emit_signal("peer_connected", _other_peer_id)
 		"L":
 			if _other_connected:
