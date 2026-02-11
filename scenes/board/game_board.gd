@@ -1383,8 +1383,8 @@ func _hide_deck_search() -> void:
 	deck_search_overlay.visible = false
 	show_cards_button.visible = false
 	_clear_grid(deck_search_grid, _on_deck_search_card_clicked)
-	_deck_search_matching.clear()
-	_deck_search_all.clear()
+	_deck_search_matching = []
+	_deck_search_all = []
 	_deck_search_matching_ids.clear()
 
 
