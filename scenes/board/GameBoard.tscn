@@ -150,6 +150,19 @@ custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 text = "Pass"
 
+[node name="BugReportButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -100.0
+offset_top = 25.0
+offset_right = -5.0
+offset_bottom = 30.0
+grow_horizontal = 0
+theme_override_font_sizes/font_size = 11
+text = "Report Bug"
+
 [node name="LogPanel" type="PanelContainer" parent="." unique_id=1472588009]
 layout_mode = 1
 anchors_preset = -1

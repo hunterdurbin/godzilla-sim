@@ -15,7 +15,7 @@ signal card_preview_requested(data: Dictionary)
 signal card_preview_cleared()
 
 @export var player_id: int = 0
-@export var is_mirrored: bool = false  # True for player 2 (top of screen)
+@export var is_mirrored: bool = false # True for player 2 (top of screen)
 
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
@@ -26,9 +26,9 @@ const SVG_H := 1008.0
 # Node references (set in _ready)
 var zone_slots: Array[Slot] = []
 var strategy_slots: Array[Slot] = []
-var hand_manager: CardManager  # Set externally by GameBoard
+var hand_manager: CardManager # Set externally by GameBoard
 var monster_card: Control
-var monster_card_zone: int = -1  # Zone index (0-7) where monster card is currently placed
+var monster_card_zone: int = -1 # Zone index (0-7) where monster card is currently placed
 var deck_count_label: Label
 var discard_count_label: Label
 var rage_label: Label
@@ -67,7 +67,7 @@ func _update_layout() -> void:
 
 	var lc := $LayoutContainer
 	lc.offset_left = 0
-	lc.offset_top = -content_top * lc_height
+	lc.offset_top = - content_top * lc_height
 	lc.offset_right = size.x
 	lc.offset_bottom = lc.offset_top + lc_height
 
@@ -175,7 +175,7 @@ func apply_monster_gradient(monster_data: Dictionary) -> void:
 	tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tex_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.add_child(tex_rect)
-	overlay.color = Color(0, 0, 0, 0)  # Keep parent transparent
+	overlay.color = Color(0, 0, 0, 0) # Keep parent transparent
 
 
 ## Sync the entire board display to match a PlayerState
@@ -273,7 +273,7 @@ func _redistribute_strategy_slots(count: int) -> void:
 
 func _sync_monster(state: PlayerState, threat_mod: int = 0) -> void:
 	var m: Dictionary = state.current_monster
-	var target_zone: int = state.monster_zone - 1  # 0-indexed
+	var target_zone: int = state.monster_zone - 1 # 0-indexed
 
 	if not m.is_empty():
 		# Create card if it doesn't exist yet

@@ -29,6 +29,7 @@ var _client_gradients_applied: bool = false
 @onready var log_output: RichTextLabel = $LogPanel/LogOutput
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var card_select_prompt: Label = $VBoxContainer/TopHUD/CardSelectPromptTop
+@onready var btn_bug_report: Button = $BugReportButton
 
 # Hand references
 @onready var player1_hand: Node2D = $Player1Hand
@@ -207,6 +208,7 @@ func _ready() -> void:
 	btn_play_monster.pressed.connect(_on_play_monster_pressed)
 	btn_invade.pressed.connect(_on_invade_pressed)
 	btn_pass.pressed.connect(_on_pass_pressed)
+	btn_bug_report.pressed.connect(_on_bug_report_pressed)
 
 	# Connect hand drag signals for drag-to-zone
 	player1_hand.hand_card_drag_started.connect(_on_hand_drag_started)
@@ -516,6 +518,106 @@ func _on_counter_failed(player_id: int, total_cp: int, threat: int) -> void:
 func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
 	_sync_boards()
 	_broadcast_state()
+
+
+# --- Bug report ---
+
+func _on_bug_report_pressed() -> void:
+	var body := _build_bug_report_body()
+	var url := "https://github.com/hunterdurbin/godzilla-sim/issues/new?labels=bug&title=Bug+Report&body=" + body.uri_encode()
+	OS.shell_open(url)
+
+
+func _build_bug_report_body() -> String:
+	var lines: PackedStringArray = []
+
+	lines.append("## Description")
+	lines.append("<!-- Describe the bug -->")
+	lines.append("")
+	lines.append("## Steps to Reproduce")
+	lines.append("1. ")
+	lines.append("")
+	lines.append("## Expected Behavior")
+	lines.append("<!-- What should have happened -->")
+	lines.append("")
+	lines.append("## Actual Behavior")
+	lines.append("<!-- What actually happened -->")
+	lines.append("")
+	lines.append("## Screenshots")
+	lines.append("<!-- Drag and drop screenshots here -->")
+	lines.append("")
+
+	# Game state
+	lines.append("## Game State")
+	var phase_names := ["Start", "Main", "Counter", "End"]
+	var current_pid := _get_current_pid()
+	var phase_idx := 0
+	if turn_manager:
+		lines.append("- **Turn:** %d" % turn_manager.game_state.turn_number)
+		phase_idx = turn_manager.game_state.current_phase
+	else:
+		lines.append("- **Turn:** (client)")
+		phase_idx = 0
+	var phase_name: String = phase_names[phase_idx] if phase_idx < phase_names.size() else str(phase_idx)
+	lines.append("- **Phase:** %s" % phase_name)
+	lines.append("- **Current Player:** P%d" % (current_pid + 1))
+	lines.append("")
+
+	for pid in range(2):
+		var ps: PlayerState = _get_player_state(pid)
+		lines.append("### Player %d" % (pid + 1))
+		var monster_name: String = ps.current_monster.get("name", "None") if not ps.current_monster.is_empty() else "None"
+		lines.append("- **Monster:** %s (Zone %d)" % [monster_name, ps.monster_zone])
+		lines.append("- **Rage:** %d" % ps.rage)
+		lines.append("- **Counter Power:** %d" % ps.get_total_counter_power())
+		lines.append("- **Threat Level:** %d" % ps.get_threat_level())
+		lines.append("- **Deck:** %d cards" % ps.main_deck.size())
+		lines.append("- **Discard:** %d cards" % ps.discard_pile.size())
+		lines.append("- **Hand:** %d cards" % ps.hand.size())
+
+		# Battle zones (only occupied)
+		var occupied: Array[String] = []
+		for zi in range(8):
+			if not ps.is_zone_empty(zi):
+				var top_card: Dictionary = ps.get_zone_top_card(zi)
+				var stack_size: int = ps.get_zone_stack(zi).size()
+				var entry := "Zone %d: %s" % [zi + 1, top_card.get("name", "?")]
+				if stack_size > 1:
+					entry += " (+%d under)" % (stack_size - 1)
+				occupied.append(entry)
+		if occupied.size() > 0:
+			lines.append("- **Battle Zones:** %s" % ", ".join(occupied))
+		else:
+			lines.append("- **Battle Zones:** (empty)")
+
+		# Strategy zones
+		var strategies: Array[String] = []
+		for si in range(ps.strategy_zones.size()):
+			var strat: Dictionary = ps.strategy_zones[si]
+			if not strat.is_empty():
+				strategies.append("Slot %d: %s" % [si + 1, strat.get("name", "?")])
+		if strategies.size() > 0:
+			lines.append("- **Strategy Zones:** %s" % ", ".join(strategies))
+		else:
+			lines.append("- **Strategy Zones:** (empty)")
+		lines.append("")
+
+	# Game log (last 50 lines)
+	if log_output and log_output.text.length() > 0:
+		lines.append("<details>")
+		lines.append("<summary>Game Log (last 50 lines)</summary>")
+		lines.append("")
+		lines.append("```")
+		var log_text: String = log_output.get_parsed_text()
+		var log_lines := log_text.split("\n")
+		var start_idx := maxi(0, log_lines.size() - 50)
+		for i in range(start_idx, log_lines.size()):
+			lines.append(log_lines[i])
+		lines.append("```")
+		lines.append("")
+		lines.append("</details>")
+
+	return "\n".join(lines)
 
 
 # --- Button handlers ---
