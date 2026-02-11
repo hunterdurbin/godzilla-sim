@@ -928,6 +928,10 @@ func _get_main_deck_total() -> int:
 
 func _get_step2_count() -> int:
 	var count := 0
+	for entry in _monster_entries:
+		var t: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
+		if t.get("invasion_icon", 0) >= 2:
+			count += entry["quantity"]
 	for entry in _main_entries:
 		var t: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
 		if t.get("invasion_icon", 0) >= 2:
