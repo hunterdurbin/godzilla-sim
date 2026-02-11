@@ -117,6 +117,7 @@ func _begin_main_phase() -> void:
 
 	log_message.emit("Main Phase: Choose your actions")
 
+	_processing_action = false
 	_prompt_player_actions()
 
 
@@ -139,7 +140,8 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 		log_message.emit("Player %d passes." % (game_state.current_player_id + 1))
 		await effect_handler.trigger_phase_end(CardEnums.GamePhase.MAIN)
 		phase_ended.emit(CardEnums.GamePhase.MAIN)
-		_processing_action = false
+		# Keep _processing_action = true through automated phases (COUNTER → END → START)
+		# to block any submit_action calls until the next MAIN phase is ready for input.
 		_begin_counter_phase()
 		return
 

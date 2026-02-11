@@ -50,9 +50,12 @@ func execute_start_phase(state: GameState) -> void:
 		intercept_zone = effect_handler.get_strategy_discard_interceptor(player.player_id)
 
 	var cleared: Array = []
-	for i in range(2):
+	for i in range(player.strategy_zones.size()):
 		if not player.strategy_zones[i].is_empty():
 			if player.strategy_zone_turn_placed[i] < state.turn_number:
+				# Base strategies are exempt from start phase discard (12.9.2 / 7.2.3)
+				if effect_handler and effect_handler.is_base_strategy(player.strategy_zones[i]):
+					continue
 				var strategy_card: Dictionary = player.strategy_zones[i]
 				player.strategy_zones[i] = {}
 				if intercept_zone >= 0:
@@ -526,6 +529,8 @@ func _invade(hand_index: int, state: GameState) -> void:
 				await effect_handler.trigger_when_invading(player.player_id, old_zone, player.monster_zone)
 				await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
 				await effect_handler.trigger_invasion_observed(player.player_id, old_zone, player.monster_zone)
+				# Destroy <Base> strategies when monster invades into zones 6-8 (12.9.2)
+				await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone)
 			# Check crush rule at each step
 			await check_crush_rule(state)
 

@@ -198,7 +198,7 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 	while not entries.is_empty():
 		# Check rule actions before each ability (10.4.3.1)
 		if action_handler:
-			action_handler.resolve_check_timing(game_state)
+			await action_handler.resolve_check_timing(game_state)
 
 		var entry: Dictionary
 		if entries.size() == 1:
@@ -1337,6 +1337,36 @@ func get_opponent_field_rank_modifier(player_id: int) -> int:
 	if effect:
 		return effect.get_opponent_field_rank_modifier(_build_context(player_id, player.current_monster))
 	return 0
+
+
+func is_base_strategy(card_data: Dictionary) -> bool:
+	## Check if a strategy card has the <Base> keyword (12.9).
+	## Base strategies are exempt from the Start Phase discard rule (7.2.3).
+	var effect := get_effect(card_data)
+	if effect:
+		return effect.is_base_strategy()
+	return false
+
+
+func destroy_base_strategies_on_invasion(to_zone: int) -> void:
+	## Destroy all <Base> strategy cards when any monster invades into zones 6-8 (12.9.2).
+	## Checks both players' strategy zones. Triggers strategy_discarded for each.
+	if to_zone < 6:
+		return
+	for pid in range(2):
+		var player := game_state.players[pid]
+		var destroyed: Array[Dictionary] = []
+		for i in range(player.strategy_zones.size() - 1, -1, -1):
+			if not player.strategy_zones[i].is_empty() and is_base_strategy(player.strategy_zones[i]):
+				var card: Dictionary = player.strategy_zones[i]
+				player.strategy_zones[i] = {}
+				banish_or_discard(player, [card])
+				destroyed.append(card)
+		if not destroyed.is_empty():
+			player.strategy_zones_changed.emit()
+			player.discard_changed.emit()
+			for card in destroyed:
+				await trigger_strategy_discarded(pid, card)
 
 
 func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> int:
