@@ -1304,7 +1304,7 @@ func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary]
 		_deck_search_matching_ids[card_data.get("id", "")] = true
 
 	deck_search_prompt.text = prompt
-	deck_search_show_all.set_pressed_no_signal(false)
+	deck_search_show_all.set_pressed_no_signal(matching.is_empty())
 	deck_search_stacked.set_pressed_no_signal(true)
 	deck_search_overlay.visible = true
 
