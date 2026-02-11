@@ -1,7 +1,22 @@
 extends CardEffect
 # Rainbow Mothra (Battle R7)
 # <Enter> If Base in play, opponent monster with TL <= 20000 retreats 1 zone.
-# (Also has Evolution8 Mothra — handled by card data fields.)
+# <Evolution8> <Mothra>
+
+
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.MAIN, "own_turn": true}
+
+
+func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
+	if phase != CardEnums.GamePhase.MAIN:
+		return
+	if ctx.game_state.current_player_id != ctx.owner.player_id:
+		return
+	var zone_idx := find_zone_of_card(ctx)
+	if zone_idx < 0:
+		return
+	await ctx.effect_handler.perform_evolution(ctx.owner.player_id, zone_idx)
 
 
 func on_enter(ctx: EffectContext) -> void:
