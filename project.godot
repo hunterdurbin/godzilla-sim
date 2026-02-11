@@ -10,7 +10,8 @@ config_version=5
 
 [application]
 
-config/name="example_tcg_game"
+config/name="unofficial_godzilla_tcg"
+config/version="0.0.5"
 run/main_scene="res://scenes/ui/LoadingScreen.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"

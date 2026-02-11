@@ -13,6 +13,7 @@ extends Control
 var _host_deck_ready: bool = false
 var _client_deck_received: bool = false
 var _client_deck_name: String = ""
+var _version_mismatch_shown: bool = false
 
 
 func _ready() -> void:
@@ -25,6 +26,7 @@ func _ready() -> void:
 	NetworkManager.player_connected.connect(_on_player_connected)
 	NetworkManager.player_disconnected.connect(_on_player_disconnected)
 	NetworkManager.connection_failed.connect(_on_connection_failed)
+	NetworkManager.version_mismatch.connect(_on_version_mismatch)
 
 	DecklistManager.clear_selections()
 
@@ -91,7 +93,17 @@ func _on_player_connected(_peer_id: int) -> void:
 
 
 func _on_player_disconnected(_peer_id: int) -> void:
-	status_label.text = "Opponent disconnected."
+	if _version_mismatch_shown:
+		return
+	if not NetworkManager.version_verified:
+		status_label.text = "Opponent has a different version (you: v%s)." % NetworkManager.GAME_VERSION
+	else:
+		status_label.text = "Opponent disconnected."
+	host_button.disabled = false
+	join_button.disabled = false
+	ip_edit.editable = true
+	join_port_edit.editable = true
+	port_edit.editable = true
 	start_button.visible = false
 	_client_deck_received = false
 	_client_deck_name = ""
@@ -104,6 +116,17 @@ func _on_connection_failed() -> void:
 	ip_edit.editable = true
 	join_port_edit.editable = true
 	port_edit.editable = true
+
+
+func _on_version_mismatch(local_version: String, remote_version: String) -> void:
+	_version_mismatch_shown = true
+	status_label.text = "Version mismatch! You: v%s, Opponent: v%s" % [local_version, remote_version]
+	host_button.disabled = false
+	join_button.disabled = false
+	ip_edit.editable = true
+	join_port_edit.editable = true
+	port_edit.editable = true
+	start_button.visible = false
 
 
 func _on_deck_selected(deck_name: String) -> void:
@@ -143,7 +166,7 @@ func _update_start_button() -> void:
 	if not NetworkManager.is_host():
 		start_button.visible = false
 		return
-	var can_start: bool = NetworkManager.opponent_connected and _host_deck_ready and _client_deck_received
+	var can_start: bool = NetworkManager.opponent_connected and NetworkManager.version_verified and _host_deck_ready and _client_deck_received
 	start_button.visible = can_start
 	start_button.disabled = not can_start
 	if can_start:

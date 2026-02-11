@@ -11,9 +11,12 @@ signal player_connected(peer_id: int)
 signal player_disconnected(peer_id: int)
 signal connection_failed()
 signal game_starting()
+signal version_mismatch(local_version: String, remote_version: String)
 
 const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 2
+const VERSION_TIMEOUT: float = 5.0
+var GAME_VERSION: String = ProjectSettings.get_setting("application/config/version", "unknown")
 const NORAY_HOST: String = "godzillatcg.com"
 const NORAY_PORT: int = 8890
 
@@ -21,6 +24,7 @@ var mode: Mode = Mode.SOLO
 var local_player_id: int = -1
 var peer_player_map: Dictionary = {} # {peer_id: player_id}
 var opponent_connected: bool = false
+var version_verified: bool = false
 var noray_connected: bool = false
 var _noray_host_oid: String = ""
 var _noray_nat_attempted: bool = false
@@ -147,6 +151,7 @@ func disconnect_game() -> void:
 	local_player_id = -1
 	peer_player_map.clear()
 	opponent_connected = false
+	version_verified = false
 
 
 func is_multiplayer() -> bool:
@@ -269,7 +274,9 @@ func _on_peer_connected(peer_id: int) -> void:
 	peer_player_map[peer_id] = 1
 	opponent_connected = true
 	_rpc_assign_player.rpc_id(peer_id, 1)
+	_rpc_exchange_version.rpc_id(peer_id, GAME_VERSION)
 	player_connected.emit(peer_id)
+	_start_version_timeout()
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
@@ -282,7 +289,9 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 func _on_connected_to_server() -> void:
 	opponent_connected = true
+	_rpc_exchange_version.rpc_id(1, GAME_VERSION)
 	player_connected.emit(1) # Server peer ID
+	_start_version_timeout()
 
 
 func _on_connection_failed() -> void:
@@ -307,3 +316,19 @@ func _rpc_assign_player(pid: int) -> void:
 func _rpc_start_game() -> void:
 	# Client receives signal to start the game
 	get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+
+
+func _start_version_timeout() -> void:
+	await get_tree().create_timer(VERSION_TIMEOUT).timeout
+	if not version_verified and opponent_connected:
+		version_mismatch.emit(GAME_VERSION, "unknown")
+		disconnect_game()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_exchange_version(remote_version: String) -> void:
+	if remote_version != GAME_VERSION:
+		version_mismatch.emit(GAME_VERSION, remote_version)
+		disconnect_game()
+		return
+	version_verified = true
