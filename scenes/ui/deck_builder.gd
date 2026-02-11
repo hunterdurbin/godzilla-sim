@@ -58,9 +58,16 @@ var _pending_action: Callable
 
 # --- Preview ---
 var _preview_card: Control
+var _search_timer: Timer
 
 
 func _ready() -> void:
+	_search_timer = Timer.new()
+	_search_timer.one_shot = true
+	_search_timer.wait_time = 0.25
+	_search_timer.timeout.connect(_on_search_debounce)
+	add_child(_search_timer)
+
 	_build_ui()
 	_connect_signals()
 	_build_pool_card_list()
@@ -1073,6 +1080,10 @@ func _on_main_tab_pressed() -> void:
 
 func _on_search_changed(new_text: String) -> void:
 	_search_text = new_text.strip_edges().to_lower()
+	_search_timer.start()
+
+
+func _on_search_debounce() -> void:
 	_apply_filters()
 	_refresh_pool_display()
 
