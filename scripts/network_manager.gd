@@ -92,24 +92,20 @@ func host_online(host: String = NORAY_HOST, port: int = NORAY_PORT) -> Error:
 
 
 ## Connect to a host by their game code (OID) via the Noray relay server.
-## The client skips register_host/register_remote to avoid conflicting with
-## the host's registration (which causes disconnects on same-network NAT).
-## Goes straight to relay instead of attempting NAT punchthrough.
+## Registers with Noray (needed for relay), then goes straight to relay
+## without attempting NAT punchthrough (which fails on same-network due to
+## NAT hairpinning and can disrupt the host's connection).
 func join_online(host_oid: String, host: String = NORAY_HOST, port: int = NORAY_PORT) -> Error:
-	var resolved := _resolve_hostname(host)
-	if resolved == "":
-		return ERR_CANT_RESOLVE
-
-	var err := await Noray.connect_to_host(resolved, port)
+	var err := await _connect_noray(host, port)
 	if err != OK:
 		return err
 
-	noray_connected = true
 	_noray_host_oid = host_oid
 	_noray_connecting = false
 
 	Noray.on_connect_relay.connect(_on_noray_client_relay)
 
+	# Skip NAT punchthrough — go straight to relay to avoid hairpin issues
 	err = Noray.connect_relay(host_oid)
 	if err != OK:
 		Noray.disconnect_from_host()
