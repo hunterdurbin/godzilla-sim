@@ -34,6 +34,15 @@ To run the game:
 
 Alternatively, you can right-click (or Control-click) the app and select **Open** from the context menu, then click **Open** in the dialog.
 
+### Linux
+
+The downloaded binary may not have execute permission. To fix this, open a terminal and run:
+
+```bash
+chmod +x ./UnofficialGodzillaSim.x86_64
+./UnofficialGodzillaSim.x86_64
+```
+
 ## Development
 
 **Engine:** Godot 4.6
