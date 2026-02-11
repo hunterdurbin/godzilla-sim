@@ -101,51 +101,61 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.25
 
-[node name="BottomHUD" type="HBoxContainer" parent="VBoxContainer" unique_id=1344342744]
+[node name="BottomSpacer" type="Control" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-theme_override_constants/separation = 10
 
-[node name="ActionPanel" type="VBoxContainer" parent="VBoxContainer/BottomHUD" unique_id=1501732832]
-layout_mode = 2
+[node name="ActionPanel" type="VBoxContainer" parent="." unique_id=1501732832]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -270.0
+offset_top = -78.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 0
+grow_vertical = 0
 theme_override_constants/separation = 4
 
-[node name="Row1" type="HBoxContainer" parent="VBoxContainer/BottomHUD/ActionPanel" unique_id=446663055]
+[node name="Row1" type="HBoxContainer" parent="ActionPanel" unique_id=446663055]
 layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 2
 
-[node name="PlayBattle" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row1" unique_id=333804987]
+[node name="PlayBattle" type="Button" parent="ActionPanel/Row1" unique_id=333804987]
 custom_minimum_size = Vector2(90, 32)
 layout_mode = 2
 text = "Play Battle"
 
-[node name="PlayStrategy" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row1" unique_id=1911445261]
+[node name="PlayStrategy" type="Button" parent="ActionPanel/Row1" unique_id=1911445261]
 custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 text = "Strategy"
 
-[node name="GainRage" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row1" unique_id=29021022]
+[node name="GainRage" type="Button" parent="ActionPanel/Row1" unique_id=29021022]
 custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 text = "Gain Rage"
 
-[node name="Row2" type="HBoxContainer" parent="VBoxContainer/BottomHUD/ActionPanel" unique_id=456935864]
+[node name="Row2" type="HBoxContainer" parent="ActionPanel" unique_id=456935864]
 layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 2
 
-[node name="PlayMonster" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row2" unique_id=2125688442]
+[node name="PlayMonster" type="Button" parent="ActionPanel/Row2" unique_id=2125688442]
 custom_minimum_size = Vector2(90, 32)
 layout_mode = 2
 text = "Play Monster"
 
-[node name="Invade" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row2" unique_id=118193794]
+[node name="Invade" type="Button" parent="ActionPanel/Row2" unique_id=118193794]
 custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 text = "Invade"
 
-[node name="Pass" type="Button" parent="VBoxContainer/BottomHUD/ActionPanel/Row2" unique_id=1976192979]
+[node name="Pass" type="Button" parent="ActionPanel/Row2" unique_id=1976192979]
 custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 text = "Pass"

@@ -23,7 +23,7 @@ var _client_gradients_applied: bool = false
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
 @onready var player2_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player2Board
-@onready var action_panel: Control = $VBoxContainer/BottomHUD/ActionPanel
+@onready var action_panel: Control = $ActionPanel
 @onready var phase_label: Label = $VBoxContainer/TopHUD/PhaseLabel
 @onready var turn_label: Label = $VBoxContainer/TopHUD/TurnLabel
 @onready var log_output: RichTextLabel = $LogPanel/LogOutput
@@ -38,12 +38,12 @@ var _client_gradients_applied: bool = false
 @onready var player2_hand_space: Control = $VBoxContainer/BoardArea/BoardColumn/Player2HandSpace
 
 # Action buttons
-@onready var btn_play_battle: Button = $VBoxContainer/BottomHUD/ActionPanel/Row1/PlayBattle
-@onready var btn_play_strategy: Button = $VBoxContainer/BottomHUD/ActionPanel/Row1/PlayStrategy
-@onready var btn_gain_rage: Button = $VBoxContainer/BottomHUD/ActionPanel/Row1/GainRage
-@onready var btn_play_monster: Button = $VBoxContainer/BottomHUD/ActionPanel/Row2/PlayMonster
-@onready var btn_invade: Button = $VBoxContainer/BottomHUD/ActionPanel/Row2/Invade
-@onready var btn_pass: Button = $VBoxContainer/BottomHUD/ActionPanel/Row2/Pass
+@onready var btn_play_battle: Button = $ActionPanel/Row1/PlayBattle
+@onready var btn_play_strategy: Button = $ActionPanel/Row1/PlayStrategy
+@onready var btn_gain_rage: Button = $ActionPanel/Row1/GainRage
+@onready var btn_play_monster: Button = $ActionPanel/Row2/PlayMonster
+@onready var btn_invade: Button = $ActionPanel/Row2/Invade
+@onready var btn_pass: Button = $ActionPanel/Row2/Pass
 
 # Deck search UI references
 @onready var deck_search_overlay: Control = $DeckSearchOverlay
