@@ -549,18 +549,16 @@ func _build_bug_report_body() -> String:
 
 	# Game state
 	lines.append("## Game State")
-	var phase_names := ["Start", "Main", "Counter", "End"]
-	var current_pid := _get_current_pid()
-	var phase_idx := 0
-	if turn_manager:
-		lines.append("- **Turn:** %d" % turn_manager.game_state.turn_number)
-		phase_idx = turn_manager.game_state.current_phase
-	else:
-		lines.append("- **Turn:** (client)")
-		phase_idx = 0
-	var phase_name: String = phase_names[phase_idx] if phase_idx < phase_names.size() else str(phase_idx)
-	lines.append("- **Phase:** %s" % phase_name)
-	lines.append("- **Current Player:** P%d" % (current_pid + 1))
+	var mode_names := {
+		NetworkManager.Mode.SOLO: "Solo",
+		NetworkManager.Mode.HOST: "LAN (Host)",
+		NetworkManager.Mode.CLIENT: "LAN (Client)",
+		NetworkManager.Mode.ONLINE_HOST: "Online (Host)",
+		NetworkManager.Mode.ONLINE_CLIENT: "Online (Client)",
+	}
+	lines.append("- **Mode:** %s" % mode_names.get(NetworkManager.mode, "Unknown"))
+	lines.append("- **Turn:** %s" % turn_label.text)
+	lines.append("- **Phase:** %s" % phase_label.text)
 	lines.append("")
 
 	for pid in range(2):
