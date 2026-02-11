@@ -23,8 +23,6 @@ boot_splash/show_image=false
 CardData="*res://data/card_data.gd"
 ArtworkDownloader="*res://scripts/artwork_downloader.gd"
 DecklistManager="*res://data/decklist_manager.gd"
-Noray="*uid://gu4bv4tgms3x"
-PacketHandshake="*uid://tt3j25a05n7c"
 NetworkManager="*res://scripts/network_manager.gd"
 
 [display]
@@ -35,7 +33,7 @@ window/stretch/mode="canvas_items"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/netfox.internals/plugin.cfg", "res://addons/netfox.noray/plugin.cfg")
+enabled=PackedStringArray()
 
 [physics]
 

@@ -415,7 +415,7 @@ func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> vo
 		turn_manager.submit_action(action, params)
 	else:
 		var params_json := JSON.stringify(params) if not params.is_empty() else ""
-		_rpc_submit_action.rpc_id(1, int(action), params_json)
+		_rpc_submit_action.rpc_id(NetworkManager.host_peer_id, int(action), params_json)
 
 
 # --- Signal handlers from TurnManager (host/solo only) ---
@@ -629,7 +629,7 @@ func _on_concede_pressed() -> void:
 	var winner_id := 1 - loser_id
 	var reason := "Player %d conceded" % (loser_id + 1)
 	if is_multiplayer_game and not NetworkManager.is_host():
-		_rpc_concede.rpc_id(1)
+		_rpc_concede.rpc_id(NetworkManager.host_peer_id)
 	elif turn_manager:
 		turn_manager._on_game_over(winner_id, reason)
 
@@ -1485,7 +1485,7 @@ func _confirm_hand_discard() -> void:
 	if is_multiplayer_game and not NetworkManager.is_host():
 		# Client sends choice to host
 		var indices_json := JSON.stringify(hand_indices)
-		_rpc_hand_discard_resolved.rpc_id(1, indices_json)
+		_rpc_hand_discard_resolved.rpc_id(NetworkManager.host_peer_id, indices_json)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_hand_discard(_discard_player_id, hand_indices)
 
@@ -1571,7 +1571,7 @@ func _on_hand_card_clicked(card: Control, _index: int) -> void:
 	if is_multiplayer_game and _hand_card_player_id != local_player_id:
 		return
 	if is_multiplayer_game and not NetworkManager.is_host():
-		_rpc_hand_card_selection_resolved.rpc_id(1, hand_index)
+		_rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, hand_index)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
 
@@ -1583,7 +1583,7 @@ func _skip_hand_card_selection() -> void:
 	if is_multiplayer_game and _hand_card_player_id != local_player_id:
 		return
 	if is_multiplayer_game and not NetworkManager.is_host():
-		_rpc_hand_card_selection_resolved.rpc_id(1, -1)
+		_rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, -1)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(-1)
 
@@ -1672,7 +1672,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 	btn_pass.visible = true
 
 	if is_multiplayer_game and not NetworkManager.is_host():
-		_rpc_zone_target_resolved.rpc_id(1, zone_idx)
+		_rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_idx)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_zone_target(zone_idx)
 
@@ -1719,7 +1719,7 @@ func _on_choice_button_pressed(index: int) -> void:
 	_cleanup_choice_selection()
 
 	if is_multiplayer_game and not NetworkManager.is_host():
-		_rpc_choice_resolved.rpc_id(1, index)
+		_rpc_choice_resolved.rpc_id(NetworkManager.host_peer_id, index)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_choice(index)
 
@@ -2216,7 +2216,7 @@ func _clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 func _resolve_deck_search_local(selected: Dictionary) -> void:
 	if is_multiplayer_game and not NetworkManager.is_host():
 		# Client sends selection back to host
-		_rpc_deck_search_resolved.rpc_id(1, JSON.stringify(selected))
+		_rpc_deck_search_resolved.rpc_id(NetworkManager.host_peer_id, JSON.stringify(selected))
 	else:
 		turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
 
@@ -2338,7 +2338,7 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 
 
 ## Host -> Client: full game state update
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_state(state_json: String) -> void:
 	var data: Dictionary = JSON.parse_string(state_json)
 	if data.is_empty():
@@ -2384,7 +2384,7 @@ func _rpc_receive_state(state_json: String) -> void:
 
 
 ## Host -> Client: valid actions and playable indices
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_action_context(actions_json: String, playable_json: String) -> void:
 	_action_pending = false
 	# Clean up any stale discard/selection state before enabling action buttons
@@ -2407,7 +2407,7 @@ func _rpc_receive_action_context(actions_json: String, playable_json: String) ->
 
 
 ## Host -> Client: log message
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_log(text: String) -> void:
 	if log_output:
 		log_output.append_text(text + "\n")
@@ -2415,7 +2415,7 @@ func _rpc_receive_log(text: String) -> void:
 
 
 ## Host -> Client: deck search request (player must choose a card)
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt: String) -> void:
 	var matching: Array = JSON.parse_string(matching_json)
 	var all_cards: Array = JSON.parse_string(all_json)
@@ -2442,7 +2442,7 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 
 
 ## Host -> Client: hand card selection request (player must choose a card from hand)
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool) -> void:
 	if NetworkManager.is_host():
 		return
@@ -2462,7 +2462,7 @@ func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 
 
 ## Host -> Client: hand discard request (player must choose cards to discard)
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_hand_discard_requested(discard_count: int) -> void:
 	if NetworkManager.is_host():
 		return # Safety: this RPC is only for clients
@@ -2484,7 +2484,7 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 
 
 ## Host -> Client: zone target request (player must choose a zone)
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool) -> void:
 	if NetworkManager.is_host():
 		return
@@ -2504,7 +2504,7 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 
 
 ## Host -> Client: choice request (player must choose ability order)
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_choice_requested(options_json: String, prompt: String) -> void:
 	if NetworkManager.is_host():
 		return
@@ -2524,7 +2524,7 @@ func _rpc_choice_resolved(index: int) -> void:
 
 
 ## Host -> Client: highlight a zone card during effect resolution
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_effect_zone_highlighted(pid: int, zone_index: int) -> void:
 	if NetworkManager.is_host():
 		return
@@ -2532,7 +2532,7 @@ func _rpc_effect_zone_highlighted(pid: int, zone_index: int) -> void:
 
 
 ## Host -> Client: unhighlight a zone card after effect resolution
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
 	if NetworkManager.is_host():
 		return
@@ -2540,7 +2540,7 @@ func _rpc_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
 
 
 ## Host -> Client: highlight the source card of an active effect
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_effect_card_highlighted(pid: int, card_id: String) -> void:
 	if NetworkManager.is_host():
 		return
@@ -2548,7 +2548,7 @@ func _rpc_effect_card_highlighted(pid: int, card_id: String) -> void:
 
 
 ## Host -> Client: unhighlight the source card after effect resolves
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 	if NetworkManager.is_host():
 		return
@@ -2556,7 +2556,7 @@ func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 
 
 ## Host -> Client: game over
-@rpc("authority", "call_remote", "reliable")
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	_action_pending = false
 	end_game_panel.visible = true
