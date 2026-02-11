@@ -149,7 +149,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	# Deck list
 	deck_list = ItemList.new()
 	deck_list.custom_minimum_size.y = 120
-	deck_list.auto_height = true
+	deck_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(deck_list)
 
 	# Save / Load / Delete
