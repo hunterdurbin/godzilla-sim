@@ -51,7 +51,7 @@ func _on_host_pressed() -> void:
 		code_edit.editable = true
 		return
 
-	code_label.text = Noray.oid
+	code_label.text = NetworkManager.get_game_code()
 	copy_button.visible = true
 
 	# Register the already-selected deck now that we know we're the host
@@ -84,7 +84,7 @@ func _on_join_pressed() -> void:
 
 
 func _on_copy_pressed() -> void:
-	DisplayServer.clipboard_set(Noray.oid)
+	DisplayServer.clipboard_set(NetworkManager.get_game_code())
 	copy_button.text = "Copied!"
 	await get_tree().create_timer(1.5).timeout
 	copy_button.text = "Copy"

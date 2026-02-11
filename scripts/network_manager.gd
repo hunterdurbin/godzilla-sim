@@ -17,6 +17,7 @@ const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 2
 const VERSION_TIMEOUT: float = 5.0
 var GAME_VERSION: String = ProjectSettings.get_setting("application/config/version", "unknown")
+const LAN_CONNECT_TIMEOUT: float = 2.0
 const NORAY_HOST: String = "godzillatcg.com"
 const NORAY_PORT: int = 8890
 
@@ -91,22 +92,42 @@ func host_online(host: String = NORAY_HOST, port: int = NORAY_PORT) -> Error:
 	return OK
 
 
-## Connect to a host by their game code (OID) via the Noray relay server.
-## Registers with Noray (needed for relay), then goes straight to relay
-## without attempting NAT punchthrough (which fails on same-network due to
-## NAT hairpinning and can disrupt the host's connection).
-func join_online(host_oid: String, host: String = NORAY_HOST, port: int = NORAY_PORT) -> Error:
+## Connect to a host by their game code via Noray relay server.
+## The game code may be a composite "OID|IP:PORT" — if so, tries a direct
+## LAN connection first (2s timeout). Falls back to Noray relay on failure.
+func join_online(game_code: String, host: String = NORAY_HOST, port: int = NORAY_PORT) -> Error:
+	var oid := game_code
+	var lan_ip := ""
+	var lan_port := -1
+
+	# Parse composite code: "OID|IP:PORT" or just "OID"
+	if game_code.contains("|"):
+		var parts := game_code.split("|", true, 1)
+		oid = parts[0]
+		var lan_parts := parts[1].rsplit(":", true, 1)
+		if lan_parts.size() == 2 and lan_parts[1].is_valid_int():
+			lan_ip = lan_parts[0]
+			lan_port = int(lan_parts[1])
+
+	# Try LAN first if we have LAN info
+	if not lan_ip.is_empty() and lan_port > 0:
+		var lan_err := await _try_lan_connect(lan_ip, lan_port)
+		if lan_err == OK:
+			mode = Mode.ONLINE_CLIENT
+			return OK
+
+	# LAN failed or no LAN info — proceed with Noray relay
 	var err := await _connect_noray(host, port)
 	if err != OK:
 		return err
 
-	_noray_host_oid = host_oid
+	_noray_host_oid = oid
 	_noray_connecting = false
 
 	Noray.on_connect_relay.connect(_on_noray_client_relay)
 
 	# Skip NAT punchthrough — go straight to relay to avoid hairpin issues
-	err = Noray.connect_relay(host_oid)
+	err = Noray.connect_relay(oid)
 	if err != OK:
 		Noray.disconnect_from_host()
 		noray_connected = false
@@ -167,6 +188,17 @@ func is_local_player_turn(current_player_id: int) -> bool:
 	return current_player_id == local_player_id
 
 
+## Returns a composite game code: "{OID}|{LAN_IP}:{PORT}" when LAN info
+## is available, otherwise just the OID. The client parses this to try
+## a direct LAN connection before falling back to Noray relay.
+func get_game_code() -> String:
+	var code := Noray.oid
+	var local_ip := _get_local_ip()
+	if not local_ip.is_empty() and Noray.local_port > 0:
+		code += "|%s:%d" % [local_ip, Noray.local_port]
+	return code
+
+
 func get_local_player_id() -> int:
 	return local_player_id
 
@@ -194,6 +226,22 @@ func _resolve_hostname(host: String) -> String:
 	return ""
 
 
+## Returns the first RFC1918 private IP address found on this machine.
+## Covers all private ranges: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16.
+func _get_local_ip() -> String:
+	for addr in IP.get_local_addresses():
+		if addr.begins_with("192.168.") or addr.begins_with("10."):
+			return addr
+		# 172.16.0.0/12 = 172.16.x.x through 172.31.x.x
+		if addr.begins_with("172."):
+			var parts := addr.split(".")
+			if parts.size() >= 2:
+				var second := parts[1].to_int()
+				if second >= 16 and second <= 31:
+					return addr
+	return ""
+
+
 func _connect_noray(host: String, port: int) -> Error:
 	var resolved: String = _resolve_hostname(host)
 	if resolved == "":
@@ -212,6 +260,49 @@ func _connect_noray(host: String, port: int) -> Error:
 
 	noray_connected = true
 	return OK
+
+
+## Attempt a direct LAN connection with a short timeout.
+## Uses isolated signal handlers so a failed attempt doesn't cascade to the UI.
+## Returns OK on success, ERR_TIMEOUT on failure.
+func _try_lan_connect(ip: String, port: int) -> Error:
+	var peer := ENetMultiplayerPeer.new()
+	var err := peer.create_client(ip, port)
+	if err != OK:
+		return err
+
+	multiplayer.multiplayer_peer = peer
+
+	var connected := false
+	var failed := false
+	var on_connected := func(): connected = true
+	var on_failed := func(): failed = true
+
+	multiplayer.connected_to_server.connect(on_connected)
+	multiplayer.connection_failed.connect(on_failed)
+
+	var elapsed := 0.0
+	while elapsed < LAN_CONNECT_TIMEOUT and not connected and not failed:
+		await get_tree().create_timer(0.1).timeout
+		elapsed += 0.1
+
+	if multiplayer.connected_to_server.is_connected(on_connected):
+		multiplayer.connected_to_server.disconnect(on_connected)
+	if multiplayer.connection_failed.is_connected(on_failed):
+		multiplayer.connection_failed.disconnect(on_failed)
+
+	if connected:
+		# LAN connection succeeded — wire up the real signal handlers
+		multiplayer.connected_to_server.connect(_on_connected_to_server)
+		multiplayer.connection_failed.connect(_on_connection_failed)
+		multiplayer.server_disconnected.connect(_on_server_disconnected)
+		_on_connected_to_server()
+		return OK
+
+	# LAN failed — clean up
+	peer.close()
+	multiplayer.multiplayer_peer = null
+	return ERR_TIMEOUT
 
 
 ## Host-side: when a player connects via Noray, perform the ENet handshake.
