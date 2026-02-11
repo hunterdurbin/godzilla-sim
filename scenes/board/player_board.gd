@@ -521,7 +521,11 @@ func _add_stack_badge(card: Control, count: int) -> void:
 	badge.add_theme_color_override("font_color", Color.YELLOW)
 	badge.add_theme_color_override("font_outline_color", Color.BLACK)
 	badge.add_theme_constant_override("outline_size", 3)
-	badge.position = Vector2(4, 4)
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	badge.offset_left = -40
+	badge.offset_right = -4
+	badge.offset_top = 4
 	card.add_child(badge)
 
 

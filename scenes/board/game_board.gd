@@ -2080,7 +2080,7 @@ func _show_strategy_preview() -> void:
 	)
 	_preview_card.size = Vector2(card_w, card_h)
 	_preview_card.pivot_offset = Vector2(card_w, card_h) / 2.0
-	_preview_card.rotation = -PI / 2.0
+	_preview_card.rotation = - PI / 2.0
 	_preview_card.scale = Vector2.ONE
 	_preview_card.position = card_pos + Vector2((visual_w - card_w) / 2.0, (visual_h - card_h) / 2.0)
 	var padding := 6.0
@@ -2163,10 +2163,14 @@ func _add_count_badge(card: Control, count: int) -> void:
 	var badge := Label.new()
 	badge.text = "x%d" % count
 	badge.add_theme_font_size_override("font_size", 16)
-	badge.add_theme_color_override("font_color", Color.WHITE)
+	badge.add_theme_color_override("font_color", Color.YELLOW)
 	badge.add_theme_color_override("font_outline_color", Color.BLACK)
 	badge.add_theme_constant_override("outline_size", 4)
-	badge.position = Vector2(4, 4)
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	badge.offset_left = -40
+	badge.offset_right = -4
+	badge.offset_top = 10
 	card.add_child(badge)
 
 
