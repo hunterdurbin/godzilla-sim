@@ -2025,6 +2025,19 @@ func _show_card_preview(data: Dictionary) -> void:
 	if data.is_empty():
 		return
 	_preview_card.set_card_data_dict(data)
+	var is_strategy: bool = data.get("card_type", -1) == CardEnums.CardType.STRATEGY
+	if is_strategy:
+		_show_strategy_preview()
+	else:
+		_show_normal_preview()
+
+
+func _show_normal_preview() -> void:
+	# Position container at top-right for normal cards
+	_preview_container.anchor_left = 0.75
+	_preview_container.anchor_right = 0.995
+	_preview_container.anchor_top = 0.05
+	_preview_container.anchor_bottom = 0.75
 	# Fit card (5:7 aspect) inside container while preserving ratio
 	var container_size := _preview_container.size
 	var card_ratio := 5.0 / 7.0
@@ -2042,6 +2055,39 @@ func _show_card_preview(data: Dictionary) -> void:
 	_preview_card.pivot_offset = Vector2(card_w, card_h) / 2.0
 	_preview_card.scale = Vector2.ONE
 	_preview_card.rotation = 0.0
+	_preview_container.visible = true
+
+
+func _show_strategy_preview() -> void:
+	# Position container at right edge, between opponent board and player hand
+	_preview_container.anchor_left = 0.6
+	_preview_container.anchor_right = 1.0
+	_preview_container.anchor_top = 0.47
+	_preview_container.anchor_bottom = 0.88
+	var container_size := _preview_container.size
+	var card_ratio := 5.0 / 7.0
+	# When rotated 90 CCW, visual width = card_h and visual height = card_w
+	# Fit so the rotated card fills the container
+	var visual_h := container_size.y
+	var card_w := visual_h # un-rotated height becomes visual height
+	var card_h := card_w / card_ratio # un-rotated width becomes visual width
+	if card_h > container_size.x:
+		card_h = container_size.x
+		card_w = card_h * card_ratio
+		visual_h = card_w
+	var visual_w := card_h
+	var card_pos := Vector2(
+		container_size.x - visual_w,
+		(container_size.y - visual_h) / 2.0
+	)
+	_preview_card.size = Vector2(card_w, card_h)
+	_preview_card.pivot_offset = Vector2(card_w, card_h) / 2.0
+	_preview_card.rotation = -PI / 2.0
+	_preview_card.scale = Vector2.ONE
+	_preview_card.position = card_pos + Vector2((visual_w - card_w) / 2.0, (visual_h - card_h) / 2.0)
+	var padding := 6.0
+	_preview_bg.position = card_pos - Vector2(padding, padding)
+	_preview_bg.size = Vector2(visual_w, visual_h) + Vector2(padding * 2, padding * 2)
 	_preview_container.visible = true
 
 
