@@ -259,8 +259,9 @@ func get_burst_rank() -> int:
 
 
 func is_base_strategy() -> bool:
-	## Return true if this is a <Base> strategy card.
-	## Base strategies are exempt from the Start Phase discard rule (12.9.2 / 7.2.3).
+	## Return true if this is a <Base> strategy card (12.9).
+	## Base strategies are exempt from the Start Phase discard rule (7.2.3),
+	## and are destroyed when any monster invades into zones 6-8 (12.9.2).
 	return false
 
 

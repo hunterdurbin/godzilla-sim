@@ -529,6 +529,8 @@ func _invade(hand_index: int, state: GameState) -> void:
 				await effect_handler.trigger_when_invading(player.player_id, old_zone, player.monster_zone)
 				await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
 				await effect_handler.trigger_invasion_observed(player.player_id, old_zone, player.monster_zone)
+				# Destroy <Base> strategies when monster invades into zones 6-8 (12.9.2)
+				await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone)
 			# Check crush rule at each step
 			await check_crush_rule(state)
 

@@ -1361,6 +1361,27 @@ func is_base_strategy(card_data: Dictionary) -> bool:
 	return false
 
 
+func destroy_base_strategies_on_invasion(to_zone: int) -> void:
+	## Destroy all <Base> strategy cards when any monster invades into zones 6-8 (12.9.2).
+	## Checks both players' strategy zones. Triggers strategy_discarded for each.
+	if to_zone < 6:
+		return
+	for pid in range(2):
+		var player := game_state.players[pid]
+		var destroyed: Array[Dictionary] = []
+		for i in range(player.strategy_zones.size() - 1, -1, -1):
+			if not player.strategy_zones[i].is_empty() and is_base_strategy(player.strategy_zones[i]):
+				var card: Dictionary = player.strategy_zones[i]
+				player.strategy_zones[i] = {}
+				banish_or_discard(player, [card])
+				destroyed.append(card)
+		if not destroyed.is_empty():
+			player.strategy_zones_changed.emit()
+			player.discard_changed.emit()
+			for card in destroyed:
+				await trigger_strategy_discarded(pid, card)
+
+
 func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> int:
 	## Get the effective rank of an in-play battle card, accounting for opponent field rank modifiers.
 	var base_rank: int = card_data.get("rank", 0)
