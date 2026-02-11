@@ -26,18 +26,17 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	var idx_to_destroy: int = valid_strat[0]
-	if valid_strat.size() > 1:
-		var strat_options: Array[Dictionary] = []
+	var strat_options: Array[Dictionary] = []
+	for si in valid_strat:
+		strat_options.append(ctx.opponent.strategy_zones[si])
+	var chosen := await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, strat_options, strat_options,
+		"Choose an opponent strategy to Destroy:")
+	if not chosen.is_empty():
 		for si in valid_strat:
-			strat_options.append(ctx.opponent.strategy_zones[si])
-		var chosen := await ctx.effect_handler.select_from_cards(
-			ctx.owner.player_id, strat_options, strat_options,
-			"Choose an opponent strategy to Destroy:")
-		if not chosen.is_empty():
-			for si in valid_strat:
-				if ctx.opponent.strategy_zones[si].get("id") == chosen.get("id"):
-					idx_to_destroy = si
-					break
+			if ctx.opponent.strategy_zones[si].get("id") == chosen.get("id"):
+				idx_to_destroy = si
+				break
 
 	var strat_card: Dictionary = ctx.opponent.strategy_zones[idx_to_destroy]
 	ctx.opponent.strategy_zones[idx_to_destroy] = {}
