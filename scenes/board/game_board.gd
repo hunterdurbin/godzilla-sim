@@ -2403,9 +2403,12 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 	for i in range(mini(zones_data.size(), 8)):
 		ps.zones[i] = zones_data[i]
 
-	# Strategy zones
+	# Strategy zones (may be 2 or 3)
 	var sz_data: Array = data.get("strategy_zones", [])
-	for i in range(mini(sz_data.size(), 2)):
+	if sz_data.size() > ps.strategy_zones.size():
+		ps.strategy_zones.resize(sz_data.size())
+		ps.strategy_zone_turn_placed.resize(sz_data.size())
+	for i in range(sz_data.size()):
 		ps.strategy_zones[i] = sz_data[i]
 
 	# Hand: full data for local player, face-down placeholders for opponent

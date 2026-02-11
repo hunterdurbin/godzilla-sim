@@ -93,7 +93,7 @@ func _setup_references() -> void:
 			zone_slots[i - 1] = slot
 
 	# Strategy slots (landscape orientation)
-	for i in range(1, 3):
+	for i in range(1, 4):
 		var slot := find_child("Strategy%d" % i, true, false) as Slot
 		if slot:
 			slot.zone_number = 0
@@ -225,7 +225,13 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = []) -> void:
 
 
 func _sync_strategy_zones(state: PlayerState) -> void:
-	for i in range(mini(strategy_slots.size(), 2)):
+	var zone_count: int = state.strategy_zones.size()
+
+	# Show/hide and reposition slots when 3rd strategy zone is added
+	if zone_count >= 3 and strategy_slots.size() >= 3 and not strategy_slots[2].visible:
+		_redistribute_strategy_slots(zone_count)
+
+	for i in range(mini(strategy_slots.size(), zone_count)):
 		var slot := strategy_slots[i]
 		if not slot:
 			continue
@@ -237,6 +243,32 @@ func _sync_strategy_zones(state: PlayerState) -> void:
 			var card := _create_card(sz_data)
 			card.drag_enabled = false
 			slot.place_card(card, false)
+
+
+func _redistribute_strategy_slots(count: int) -> void:
+	if count < 3 or strategy_slots.size() < 3:
+		return
+	# Redistribute 3 strategy slots within the original 2-slot vertical space
+	var top_start := 0.204
+	var bottom_end := 0.5969
+	var gap := 0.01
+	var zone_height := (bottom_end - top_start - gap * (count - 1)) / count
+	for i in range(count):
+		var slot := strategy_slots[i]
+		var a_top := top_start + i * (zone_height + gap)
+		var a_bottom := a_top + zone_height
+		if is_mirrored:
+			var flipped_top := 1.0 - a_bottom
+			var flipped_bottom := 1.0 - a_top
+			a_top = flipped_top
+			a_bottom = flipped_bottom
+		slot.custom_minimum_size = Vector2.ZERO
+		# Set larger anchor first to avoid clamping
+		slot.anchor_bottom = a_bottom
+		slot.anchor_top = a_top
+		slot.offset_top = 0
+		slot.offset_bottom = 0
+		slot.visible = true
 
 
 func _sync_monster(state: PlayerState, threat_mod: int = 0) -> void:
