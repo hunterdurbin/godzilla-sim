@@ -35,17 +35,10 @@ theme_override_constants/separation = 20
 
 [node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "GODZILLA CARD GAME"
+text = "Unofficial Godzilla tcg sim"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(0.9, 0.3, 0.1, 1)
-
-[node name="Subtitle" type="Label" parent="CenterContainer/VBoxContainer"]
-layout_mode = 2
-text = "Trading Card Game"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 20
-theme_override_colors/font_color = Color(0.7, 0.6, 0.5, 1)
 
 [node name="DeckRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
