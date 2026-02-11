@@ -3,6 +3,7 @@ extends Control
 @onready var start_button: Button = $CenterContainer/VBoxContainer/StartButton
 @onready var lan_button: Button = $CenterContainer/VBoxContainer/LanButton
 @onready var online_button: Button = $CenterContainer/VBoxContainer/OnlineButton
+@onready var deck_builder_button: Button = $CenterContainer/VBoxContainer/DeckBuilderButton
 @onready var deck_select_p1: PanelContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP1
 @onready var deck_select_p2: PanelContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP2
 
@@ -15,6 +16,7 @@ func _ready() -> void:
 	start_button.disabled = true
 	lan_button.pressed.connect(_on_lan_pressed)
 	online_button.pressed.connect(_on_online_pressed)
+	deck_builder_button.pressed.connect(_on_deck_builder_pressed)
 
 	DecklistManager.clear_selections()
 
@@ -58,3 +60,7 @@ func _on_lan_pressed() -> void:
 
 func _on_online_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/OnlineLobby.tscn")
+
+
+func _on_deck_builder_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/ui/DeckBuilder.tscn")
