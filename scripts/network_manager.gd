@@ -1,7 +1,7 @@
 extends Node
 
 ## Manages multiplayer connections using ENetMultiplayerPeer (LAN) or
-## WebSocketMultiplayerPeer (Online via relay server).
+## RelayMultiplayerPeer (Online via WebSocket relay server).
 ## Registered as an autoload singleton. Contains no game logic —
 ## just connection lifecycle, player assignment, and session state.
 
@@ -23,7 +23,7 @@ const WS_CONNECT_TIMEOUT: float = 10.0
 
 var mode: Mode = Mode.SOLO
 var local_player_id: int = -1
-var host_peer_id: int = 1 ## Peer 1 for LAN (server), peer 2 for relay
+var host_peer_id: int = 1 ## Always peer 1 (server) for both LAN and relay
 var peer_player_map: Dictionary = {} # {peer_id: player_id}
 var opponent_connected: bool = false
 var version_verified: bool = false
@@ -71,53 +71,66 @@ func join_game(ip: String, port: int = DEFAULT_PORT) -> Error:
 ## returns the room code to share with the opponent.
 func host_online() -> Error:
 	_room_code = _generate_room_code()
-	var ws_peer := WebSocketMultiplayerPeer.new()
+	var relay_peer := RelayMultiplayerPeer.new()
 	var url := "ws://%s:%d/%s" % [RELAY_HOST, RELAY_PORT, _room_code]
-	var err := ws_peer.create_client(url)
+	var err := relay_peer.connect_as_host(url)
 	if err != OK:
 		return err
 
-	multiplayer.multiplayer_peer = ws_peer
+	multiplayer.multiplayer_peer = relay_peer
 
-	# Wait for relay to assign our peer ID
-	err = await _wait_for_ws_connection()
-	if err != OK:
-		multiplayer.multiplayer_peer = null
-		return err
-
-	host_peer_id = multiplayer.get_unique_id()
+	# Connect signals before waiting so we don't miss peer_connected
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 
+	# Wait for WebSocket to open (host becomes CONNECTED immediately)
+	err = await _wait_for_relay_connection(relay_peer)
+	if err != OK:
+		multiplayer.multiplayer_peer = null
+		if multiplayer.peer_connected.is_connected(_on_peer_connected):
+			multiplayer.peer_connected.disconnect(_on_peer_connected)
+		if multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+			multiplayer.peer_disconnected.disconnect(_on_peer_disconnected)
+		return err
+
 	mode = Mode.ONLINE_HOST
+	host_peer_id = 1
 	local_player_id = 0
-	peer_player_map[multiplayer.get_unique_id()] = 0
+	peer_player_map[1] = 0 # Host is player 0
 	return OK
 
 
 ## Connect to a host's room via the relay server using their room code.
 func join_online(game_code: String) -> Error:
 	_room_code = game_code
-	var ws_peer := WebSocketMultiplayerPeer.new()
+	var relay_peer := RelayMultiplayerPeer.new()
 	var url := "ws://%s:%d/%s" % [RELAY_HOST, RELAY_PORT, game_code]
-	var err := ws_peer.create_client(url)
+	var err := relay_peer.connect_as_client(url)
 	if err != OK:
 		return err
 
-	multiplayer.multiplayer_peer = ws_peer
+	multiplayer.multiplayer_peer = relay_peer
 
-	# Wait for relay to assign our peer ID
-	err = await _wait_for_ws_connection()
-	if err != OK:
-		multiplayer.multiplayer_peer = null
-		return err
-
-	# In relay mode, peer_connected fires when we learn about the host
-	multiplayer.peer_connected.connect(_on_relay_client_peer_found)
+	# Connect signals before waiting — connected_to_server fires when the relay
+	# peer transitions to CONNECTED (after the relay confirms the host is present).
+	multiplayer.connected_to_server.connect(_on_connected_to_server)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
+	# Wait for relay connection + host discovery
+	err = await _wait_for_relay_connection(relay_peer)
+	if err != OK:
+		multiplayer.multiplayer_peer = null
+		if multiplayer.connected_to_server.is_connected(_on_connected_to_server):
+			multiplayer.connected_to_server.disconnect(_on_connected_to_server)
+		if multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+			multiplayer.peer_disconnected.disconnect(_on_peer_disconnected)
+		if multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+			multiplayer.server_disconnected.disconnect(_on_server_disconnected)
+		return err
+
 	mode = Mode.ONLINE_CLIENT
+	host_peer_id = 1
 	return OK
 
 
@@ -137,9 +150,6 @@ func disconnect_game() -> void:
 		multiplayer.connection_failed.disconnect(_on_connection_failed)
 	if multiplayer.server_disconnected.is_connected(_on_server_disconnected):
 		multiplayer.server_disconnected.disconnect(_on_server_disconnected)
-	if multiplayer.peer_connected.is_connected(_on_relay_client_peer_found):
-		multiplayer.peer_connected.disconnect(_on_relay_client_peer_found)
-
 	mode = Mode.SOLO
 	host_peer_id = 1
 	local_player_id = -1
@@ -188,28 +198,20 @@ func _generate_room_code() -> String:
 	return code
 
 
-## Waits for the WebSocket connection to be established (relay assigns peer ID).
-## Returns OK on success, ERR_TIMEOUT on failure.
-func _wait_for_ws_connection() -> Error:
-	var connected := false
-	var failed := false
-	var on_connected := func(): connected = true
-	var on_failed := func(): failed = true
-
-	multiplayer.connected_to_server.connect(on_connected)
-	multiplayer.connection_failed.connect(on_failed)
-
+## Waits for the RelayMultiplayerPeer to reach CONNECTION_CONNECTED.
+## For the host, this happens when the WebSocket opens.
+## For the client, this happens when the relay confirms the host is present.
+func _wait_for_relay_connection(relay_peer: RelayMultiplayerPeer) -> Error:
 	var elapsed := 0.0
-	while elapsed < WS_CONNECT_TIMEOUT and not connected and not failed:
+	while elapsed < WS_CONNECT_TIMEOUT:
+		var status := relay_peer.get_connection_status()
+		if status == MultiplayerPeer.CONNECTION_CONNECTED:
+			return OK
+		if status == MultiplayerPeer.CONNECTION_DISCONNECTED:
+			return ERR_CANT_CONNECT
 		await get_tree().create_timer(0.1).timeout
 		elapsed += 0.1
-
-	if multiplayer.connected_to_server.is_connected(on_connected):
-		multiplayer.connected_to_server.disconnect(on_connected)
-	if multiplayer.connection_failed.is_connected(on_failed):
-		multiplayer.connection_failed.disconnect(on_failed)
-
-	return OK if connected else ERR_TIMEOUT
+	return ERR_TIMEOUT
 
 
 # --- Host callbacks ---
@@ -233,20 +235,11 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 # --- Client callbacks ---
 
-## LAN client: connected directly to the host (server = peer 1).
+## Client connected to the host (peer 1) — used for both LAN and relay.
 func _on_connected_to_server() -> void:
 	opponent_connected = true
 	_rpc_exchange_version.rpc_id(host_peer_id, GAME_VERSION)
 	player_connected.emit(host_peer_id)
-	_start_version_timeout()
-
-
-## Relay client: discovered the host via peer_connected signal.
-func _on_relay_client_peer_found(peer_id: int) -> void:
-	host_peer_id = peer_id
-	opponent_connected = true
-	_rpc_exchange_version.rpc_id(peer_id, GAME_VERSION)
-	player_connected.emit(peer_id)
 	_start_version_timeout()
 
 
