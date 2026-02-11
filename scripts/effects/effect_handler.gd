@@ -173,6 +173,9 @@ func _resolve_standby_entries(entries: Array) -> void:
 	## Turn player's abilities resolve first (10.4.3.2), then non-turn player's (10.4.3.3).
 	## Within each player, if multiple abilities are in standby, the player chooses
 	## the resolution order (10.6.3.1). Rule actions checked before each ability (10.4.3.1).
+	print("[Standby] %d total entries collected" % entries.size())
+	for e in entries:
+		print("  -> Player %d: %s" % [e.player_id, e.card_data.get("name", "?")])
 	if entries.is_empty():
 		return
 
@@ -187,6 +190,8 @@ func _resolve_standby_entries(entries: Array) -> void:
 		else:
 			non_turn_entries.append(entry)
 
+	print("[Standby] Turn player %d: %d entries, Non-turn: %d entries" % [turn_pid, turn_entries.size(), non_turn_entries.size()])
+
 	# Resolve turn player's abilities first (10.4.3.2), then non-turn player's (10.4.3.3)
 	await _resolve_player_standby(turn_pid, turn_entries)
 	await _resolve_player_standby(1 - turn_pid, non_turn_entries)
@@ -195,26 +200,34 @@ func _resolve_standby_entries(entries: Array) -> void:
 func _resolve_player_standby(player_id: int, entries: Array) -> void:
 	## Resolve one player's standby abilities, letting them choose order if multiple (10.6.3.1).
 	## Playing is compulsory — cannot choose to skip (10.6.3.1).
+	print("[PlayerStandby] Player %d: %d entries to resolve" % [player_id, entries.size()])
 	while not entries.is_empty():
 		# Check rule actions before each ability (10.4.3.1)
 		if action_handler:
-			action_handler.resolve_check_timing(game_state)
+			print("[PlayerStandby] Running resolve_check_timing...")
+			await action_handler.resolve_check_timing(game_state)
+			print("[PlayerStandby] resolve_check_timing done, %d entries remain" % entries.size())
 
 		var entry: Dictionary
 		if entries.size() == 1:
 			entry = entries.pop_back()
+			print("[PlayerStandby] Single entry: %s" % entry.card_data.get("name", "?"))
 		else:
 			# Multiple abilities in standby — player chooses order (10.6.3.1)
 			var options: Array[String] = []
 			for e in entries:
 				options.append(_get_card_location_label(e.player_id, e.card_data))
+			print("[PlayerStandby] Multiple entries, requesting choice: %s" % [options])
 			var chosen: int = await select_choice(player_id, options, "Choose which ability to resolve:")
+			print("[PlayerStandby] Choice result: %d" % chosen)
 			if chosen < 0 or chosen >= entries.size():
 				chosen = 0
 			entry = entries.pop_at(chosen)
 
 		_set_active_effect(entry.player_id, entry.card_data)
+		print("[PlayerStandby] Calling callback for: %s" % entry.card_data.get("name", "?"))
 		await entry.callback.call()
+		print("[PlayerStandby] Callback complete for: %s" % entry.card_data.get("name", "?"))
 		_clear_active_effect()
 
 
