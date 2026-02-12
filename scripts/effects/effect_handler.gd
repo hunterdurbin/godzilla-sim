@@ -52,6 +52,9 @@ signal effect_zone_unhighlighted(player_id: int, zone_index: int)
 signal effect_card_highlighted(player_id: int, card_id: String)
 signal effect_card_unhighlighted(player_id: int, card_id: String)
 
+## Emitted to send a message to the game log.
+signal log_message(text: String)
+
 const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
 
 var game_state: GameState
@@ -846,6 +849,21 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 
 	if selected.is_empty():
 		return false
+
+	# Log the evolution
+	var from_id: String = zone_card.get("id", "")
+	var from_num := from_id.substr(0, from_id.find("_")) if from_id.find("_") != -1 else from_id
+	var to_id: String = selected.get("id", "")
+	var to_num := to_id.substr(0, to_id.find("_")) if to_id.find("_") != -1 else to_id
+	var from_link := "[url=%s][%s][/url]" % [from_num, from_num] if not from_num.is_empty() else "?"
+	var to_link := "[url=%s][%s][/url]" % [to_num, to_num] if not to_num.is_empty() else "?"
+	var evo_icon_path := "res://CardContent/Assets/effectIcons/evolutions/Evolution%d.png" % evo_rank
+	var evo_prefix: String
+	if ResourceLoader.exists(evo_icon_path):
+		evo_prefix = "[img=40]%s[/img]" % evo_icon_path
+	else:
+		evo_prefix = "Evolution %d:" % evo_rank
+	log_message.emit("Zone %d: %s %s => %s" % [zone_idx + 1, evo_prefix, from_link, to_link])
 
 	# Mark as played through evolution for enter effects (e.g. ESD02-010)
 	selected["played_through_evolution"] = true
