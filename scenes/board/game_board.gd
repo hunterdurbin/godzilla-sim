@@ -193,6 +193,7 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
 		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
+		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 
 		# Connect player state signals so mid-effect changes (e.g. search_deck adding
 		# a card to hand) trigger visual updates immediately
