@@ -27,6 +27,7 @@ var _client_gradients_applied: bool = false
 @onready var phase_label: Label = $VBoxContainer/TopHUD/PhaseLabel
 @onready var turn_label: Label = $VBoxContainer/TopHUD/TurnLabel
 @onready var log_output: RichTextLabel = $LogPanel/LogOutput
+var _log_lines: PackedStringArray = []
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var card_select_prompt: Label = $VBoxContainer/TopHUD/CardSelectPromptTop
 @onready var btn_bug_report: Button = $BugReportButton
@@ -485,6 +486,7 @@ func _on_state_changed() -> void:
 
 
 func _on_log_message(text: String) -> void:
+	_log_lines.append(text)
 	if log_output:
 		log_output.append_text(text + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
@@ -606,16 +608,14 @@ func _build_bug_report_body() -> String:
 		lines.append("")
 
 	# Game log (last 50 lines)
-	if log_output and log_output.text.length() > 0:
+	if _log_lines.size() > 0:
 		lines.append("<details>")
 		lines.append("<summary>Game Log (last 50 lines)</summary>")
 		lines.append("")
 		lines.append("```")
-		var log_text: String = log_output.get_parsed_text()
-		var log_lines := log_text.split("\n")
-		var start_idx := maxi(0, log_lines.size() - 50)
-		for i in range(start_idx, log_lines.size()):
-			lines.append(log_lines[i])
+		var start_idx := maxi(0, _log_lines.size() - 50)
+		for i in range(start_idx, _log_lines.size()):
+			lines.append(GameLog.to_plain_text(_log_lines[i]))
 		lines.append("```")
 		lines.append("")
 		lines.append("</details>")
