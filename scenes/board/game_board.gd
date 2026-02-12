@@ -505,19 +505,19 @@ func _on_monster_advanced(_player_id: int, _from_zone: int, _to_zone: int) -> vo
 
 
 func _on_battle_card_crushed(player_id: int, zone_index: int, card: Dictionary) -> void:
-	_on_log_message("Battle card '%s' crushed in P%d Zone %d!" % [card.get("name", "?"), player_id + 1, zone_index + 1])
+	_on_log_message(GameLog.battle_card_crushed(card.get("name", "?"), player_id, zone_index))
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_counter_succeeded(player_id: int, total_cp: int, threat: int) -> void:
-	_on_log_message("Counter SUCCESS! P%d CP %d >= Threat %d" % [player_id + 1, total_cp, threat])
+	_on_log_message(GameLog.counter_succeeded(player_id, total_cp, threat))
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_counter_failed(player_id: int, total_cp: int, threat: int) -> void:
-	_on_log_message("Counter failed. P%d CP %d < Threat %d" % [player_id + 1, total_cp, threat])
+	_on_log_message(GameLog.counter_failed(player_id, total_cp, threat))
 
 
 func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
