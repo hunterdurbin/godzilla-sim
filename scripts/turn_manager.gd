@@ -166,7 +166,12 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 		CardEnums.ActionType.GAIN_RAGE:
 			log_message.emit(GameLog.gained_rage(player_name, game_state.get_current_player().rage, card_id))
 		CardEnums.ActionType.PLAY_MONSTER:
-			log_message.emit(GameLog.played_monster(player_name, card_id, game_state.get_current_player().rage))
+			if not player.burst_monster.is_empty():
+				var effect := effect_handler.get_effect(player.burst_monster)
+				var burst_rank: int = effect.get_burst_rank() if effect else -1
+				log_message.emit(GameLog.burst_played(player_name, card_id, burst_rank, player.rage))
+			else:
+				log_message.emit(GameLog.played_monster(player_name, card_id, player.rage))
 		CardEnums.ActionType.INVADE:
 			log_message.emit(GameLog.invaded(player_name, game_state.get_current_player().monster_zone, card_id))
 

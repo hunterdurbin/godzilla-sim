@@ -83,6 +83,17 @@ static func game_over(winner_id: int, reason: String) -> String:
 
 # --- Effects ---
 
+static func burst_played(player_name: String, card_id: String, burst_rank: int, rage: int) -> String:
+	var burst_icon_path := "res://CardContent/Assets/effectIcons/bursts/Burst%d.png" % burst_rank
+	var burst_prefix: String
+	if ResourceLoader.exists(burst_icon_path):
+		burst_prefix = "[img=40]%s[/img]" % burst_icon_path
+	else:
+		burst_prefix = "Burst %d:" % burst_rank
+	var rage_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	return "%s: %s %s %s x%d" % [player_name, burst_prefix, card_link(card_id), rage_icon, rage]
+
+
 static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: String, to_id: String) -> String:
 	var evo_icon_path := "res://CardContent/Assets/effectIcons/evolutions/Evolution%d.png" % evo_rank
 	var evo_prefix: String
@@ -117,6 +128,9 @@ static func to_plain_text(bbcode: String) -> String:
 	# Replace evolution icon images with text: [img=40]...Evolution7.png[/img] -> Evolution 7:
 	regex.compile("\\[img=\\d+\\][^\\[]*Evolution(\\d+)\\.png\\[/img\\]")
 	text = regex.sub(text, "Evolution $1:", true)
+	# Replace burst icon images with text: [img=40]...Burst3.png[/img] -> Burst 3:
+	regex.compile("\\[img=\\d+\\][^\\[]*Burst(\\d+)\\.png\\[/img\\]")
+	text = regex.sub(text, "Burst $1:", true)
 	# Replace rage icon with text: [img=40]...Rage.png[/img] -> Rage
 	regex.compile("\\[img=\\d+\\][^\\[]*Rage\\.png\\[/img\\]")
 	text = regex.sub(text, "Rage", true)
