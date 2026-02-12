@@ -206,6 +206,7 @@ anchor_top = 0.25
 anchor_right = 0.2
 anchor_bottom = 0.75
 offset_left = 10.0
+offset_right = 50.0
 
 [node name="LogOutput" type="RichTextLabel" parent="LogPanel" unique_id=1596132669]
 layout_mode = 2
