@@ -51,7 +51,8 @@ static func played_strategy(player_name: String, card_id: String) -> String:
 
 
 static func gained_rage(player_name: String, rage: int, card_id: String) -> String:
-	return "%s: Gained rage (now %d) (discarded %s)" % [player_name, rage, card_link(card_id)]
+	var rage_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	return "%s: %s x%d (discarded: %s)" % [player_name, rage_icon, rage, card_link(card_id)]
 
 
 static func played_monster(player_name: String, card_id: String, rage: int) -> String:
@@ -112,10 +113,13 @@ static func to_plain_text(bbcode: String) -> String:
 	## Convert BBCode log text to plain text for bug reports.
 	## Replaces [img] tags with text equivalents and strips remaining BBCode.
 	var text := bbcode
-	# Replace evolution icon images with text: [img=40]...Evolution7.png[/img] -> Evolution 7:
 	var regex := RegEx.new()
+	# Replace evolution icon images with text: [img=40]...Evolution7.png[/img] -> Evolution 7:
 	regex.compile("\\[img=\\d+\\][^\\[]*Evolution(\\d+)\\.png\\[/img\\]")
 	text = regex.sub(text, "Evolution $1:", true)
+	# Replace rage icon with text: [img=40]...Rage.png[/img] -> Rage
+	regex.compile("\\[img=\\d+\\][^\\[]*Rage\\.png\\[/img\\]")
+	text = regex.sub(text, "Rage", true)
 	# Strip any remaining [img] tags
 	regex.compile("\\[img[^\\]]*\\][^\\[]*\\[/img\\]")
 	text = regex.sub(text, "", true)
