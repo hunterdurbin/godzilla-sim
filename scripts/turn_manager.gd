@@ -76,7 +76,7 @@ func _begin_turn(player_id: int) -> void:
 	game_state.current_player_id = player_id
 	game_state.turn_number += 1
 
-	log_message.emit("--- Turn %d: Player %d ---" % [game_state.turn_number, player_id + 1])
+	log_message.emit(GameLog.turn_start(game_state.turn_number, player_id))
 	turn_started.emit(player_id)
 
 	await _execute_start_phase()
@@ -94,11 +94,11 @@ func _execute_start_phase() -> void:
 	var player := game_state.get_current_player()
 	var opponent := game_state.get_opponent_of_current()
 
-	log_message.emit("Start Phase: Drawing %d card(s)" % opponent.get_monster_rank())
+	log_message.emit(GameLog.start_phase_draw(opponent.get_monster_rank()))
 
 	action_handler.execute_start_phase(game_state)
 
-	log_message.emit("Hand size: %d" % player.hand.size())
+	log_message.emit(GameLog.hand_size(player.hand.size()))
 
 	await action_handler.resolve_check_timing(game_state) # 7.2.5
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.START)
@@ -115,7 +115,7 @@ func _begin_main_phase() -> void:
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
 	await action_handler.resolve_check_timing(game_state) # 7.3.1
 
-	log_message.emit("Main Phase: Choose your actions")
+	log_message.emit(GameLog.main_phase())
 
 	_processing_action = false
 	_prompt_player_actions()
@@ -137,7 +137,7 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 	_processing_action = true
 
 	if action == CardEnums.ActionType.PASS:
-		log_message.emit("Player %d passes." % (game_state.current_player_id + 1))
+		log_message.emit(GameLog.player_pass(game_state.current_player_id))
 		await effect_handler.trigger_phase_end(CardEnums.GamePhase.MAIN)
 		phase_ended.emit(CardEnums.GamePhase.MAIN)
 		# Keep _processing_action = true through automated phases (COUNTER → END → START)
@@ -149,30 +149,26 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 	var player := game_state.get_current_player()
 	var player_name := "Player %d" % (game_state.current_player_id + 1)
 	var hand_index: int = params.get("hand_index", -1)
-	var card_number: String = ""
+	var card_id: String = ""
 	if hand_index >= 0 and hand_index < player.hand.size():
-		var card_id: String = player.hand[hand_index].get("id", "")
-		# Strip deck/copy suffix: "EBP01-001_0_1" -> "EBP01-001"
-		var underscore_pos := card_id.find("_")
-		card_number = card_id.substr(0, underscore_pos) if underscore_pos != -1 else card_id
+		card_id = player.hand[hand_index].get("id", "")
 
 	# Execute the action (may await player choices from effects)
 	await action_handler.execute(action, params, game_state)
 	await action_handler.resolve_check_timing(game_state) # 10.4.4.1
 
 	# Log the action
-	var card_link := "[url=%s][%s][/url]" % [card_number, card_number] if not card_number.is_empty() else ""
 	match action:
 		CardEnums.ActionType.PLAY_BATTLE:
-			log_message.emit("%s: Played %s to Zone %d" % [player_name, card_link, params.get("zone_index", 0) + 1])
+			log_message.emit(GameLog.played_battle(player_name, card_id, params.get("zone_index", 0)))
 		CardEnums.ActionType.PLAY_STRATEGY:
-			log_message.emit("%s: Played %s to Strategy Zone" % [player_name, card_link])
+			log_message.emit(GameLog.played_strategy(player_name, card_id))
 		CardEnums.ActionType.GAIN_RAGE:
-			log_message.emit("%s: Gained rage (now %d) (discarded %s)" % [player_name, game_state.get_current_player().rage, card_link])
+			log_message.emit(GameLog.gained_rage(player_name, game_state.get_current_player().rage, card_id))
 		CardEnums.ActionType.PLAY_MONSTER:
-			log_message.emit("%s: Played %s as Monster (rage now %d)" % [player_name, card_link, game_state.get_current_player().rage])
+			log_message.emit(GameLog.played_monster(player_name, card_id, game_state.get_current_player().rage))
 		CardEnums.ActionType.INVADE:
-			log_message.emit("%s: Invaded! Monster now at zone %d (discarded %s)" % [player_name, game_state.get_current_player().monster_zone, card_link])
+			log_message.emit(GameLog.invaded(player_name, game_state.get_current_player().monster_zone, card_id))
 
 	_processing_action = false
 
@@ -203,7 +199,7 @@ func _begin_counter_phase() -> void:
 	var total_cp: int = player.get_total_counter_power()
 	var threat: int = opponent.get_threat_level()
 
-	log_message.emit("Counter Phase: CP %d vs Threat %d" % [total_cp, threat])
+	log_message.emit(GameLog.counter_phase(total_cp, threat))
 
 	await action_handler.resolve_counter(game_state)
 
@@ -226,7 +222,7 @@ func _begin_end_phase() -> void:
 	await action_handler.resolve_check_timing(game_state) # 7.5.1
 
 	var player := game_state.get_current_player()
-	log_message.emit("End Phase: Monster at zone %d" % player.monster_zone)
+	log_message.emit(GameLog.end_phase(player.monster_zone))
 
 	# Burst discard, then advance (7.5.2)
 	await action_handler.execute_end_phase_burst_discard(game_state)
@@ -245,7 +241,7 @@ func _begin_end_phase() -> void:
 
 	# Draw up to 5 cards (7.5.4)
 	action_handler.execute_end_phase_draw(game_state)
-	log_message.emit("Hand refilled to %d cards" % player.hand.size())
+	log_message.emit(GameLog.hand_refilled(player.hand.size()))
 
 	await action_handler.resolve_check_timing(game_state) # 7.5.5
 
@@ -266,5 +262,5 @@ func _on_game_over(winner_id: int, reason: String) -> void:
 	if is_game_over:
 		return
 	is_game_over = true
-	log_message.emit("GAME OVER! Player %d wins: %s" % [winner_id + 1, reason])
+	log_message.emit(GameLog.game_over(winner_id, reason))
 	game_ended.emit(winner_id, reason)
