@@ -104,3 +104,22 @@ static func counter_succeeded(player_id: int, total_cp: int, threat: int) -> Str
 
 static func counter_failed(player_id: int, total_cp: int, threat: int) -> String:
 	return "Counter failed. P%d CP %d < Threat %d" % [player_id + 1, total_cp, threat]
+
+
+# --- Utilities ---
+
+static func to_plain_text(bbcode: String) -> String:
+	## Convert BBCode log text to plain text for bug reports.
+	## Replaces [img] tags with text equivalents and strips remaining BBCode.
+	var text := bbcode
+	# Replace evolution icon images with text: [img=40]...Evolution7.png[/img] -> Evolution 7:
+	var regex := RegEx.new()
+	regex.compile("\\[img=\\d+\\][^\\[]*Evolution(\\d+)\\.png\\[/img\\]")
+	text = regex.sub(text, "Evolution $1:", true)
+	# Strip any remaining [img] tags
+	regex.compile("\\[img[^\\]]*\\][^\\[]*\\[/img\\]")
+	text = regex.sub(text, "", true)
+	# Strip [url=...]...[/url] keeping inner text
+	regex.compile("\\[url=[^\\]]*\\](.*?)\\[/url\\]")
+	text = regex.sub(text, "$1", true)
+	return text
