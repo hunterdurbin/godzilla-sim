@@ -863,7 +863,7 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 		evo_prefix = "[img=40]%s[/img]" % evo_icon_path
 	else:
 		evo_prefix = "Evolution %d:" % evo_rank
-	log_message.emit("Zone %d: %s %s => %s" % [zone_idx + 1, evo_prefix, from_link, to_link])
+	log_message.emit("Player %d Zone %d: %s %s => %s" % [player_id + 1, zone_idx + 1, evo_prefix, from_link, to_link])
 
 	# Mark as played through evolution for enter effects (e.g. ESD02-010)
 	selected["played_through_evolution"] = true
