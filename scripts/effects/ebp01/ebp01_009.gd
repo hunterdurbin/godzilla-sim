@@ -4,7 +4,7 @@ extends CardEffect
 ## <Burst2> <When Invading> If this card has 2 or more <Rage>, <Destroy> 1 of your
 ## opponent's rank 6 or lower battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
