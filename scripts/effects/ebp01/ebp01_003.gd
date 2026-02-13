@@ -5,7 +5,7 @@ extends CardEffect
 ## discard pile. If it is a monster card, <Destroy> 1 of your opponent's rank 6 or lower
 ## battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
