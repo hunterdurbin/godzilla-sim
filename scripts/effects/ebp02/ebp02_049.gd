@@ -67,4 +67,11 @@ func on_enter(ctx: EffectContext) -> void:
 		1:
 			await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 3)
 		2:
-			ctx.owner.mill_cards(3)
+			var milled: Array[Dictionary] = ctx.owner.mill_cards(3)
+			if not milled.is_empty():
+				ctx.effect_handler.log_message.emit(
+					GameLog.effect_milled_cards(ctx.owner.player_id, ctx.card_data.get("id", ""), milled)
+				)
+				await ctx.effect_handler.select_from_cards(
+					ctx.owner.player_id, milled, milled,
+					"Sent to discard pile:")

@@ -13,7 +13,14 @@ extends CardEffect
 
 
 func on_enter(ctx: EffectContext) -> void:
-	ctx.owner.mill_cards(3)
+	var milled: Array[Dictionary] = ctx.owner.mill_cards(3)
+	if not milled.is_empty():
+		ctx.effect_handler.log_message.emit(
+			GameLog.effect_milled_cards(ctx.owner.player_id, ctx.card_data.get("id", ""), milled)
+		)
+		await ctx.effect_handler.select_from_cards(
+			ctx.owner.player_id, milled, milled,
+			"Sent to discard pile:")
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

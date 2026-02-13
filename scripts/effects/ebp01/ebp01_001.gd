@@ -28,6 +28,9 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	ctx.owner.discard_pile.append(card)
 	ctx.owner.deck_changed.emit()
 	ctx.owner.discard_changed.emit()
+	ctx.effect_handler.log_message.emit(
+		GameLog.effect_milled_card(ctx.owner.player_id, ctx.card_data.get("id", ""), card.get("id", ""))
+	)
 
 	var revealed: Array[Dictionary] = [card]
 	await ctx.effect_handler.select_from_cards(

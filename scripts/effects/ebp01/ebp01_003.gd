@@ -23,6 +23,14 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	ctx.owner.discard_pile.append(card)
 	ctx.owner.deck_changed.emit()
 	ctx.owner.discard_changed.emit()
+	ctx.effect_handler.log_message.emit(
+		GameLog.effect_milled_card(ctx.owner.player_id, ctx.card_data.get("id", ""), card.get("id", ""))
+	)
+
+	var revealed: Array[Dictionary] = [card]
+	await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, revealed, revealed,
+		"Sent to discard pile:")
 
 	if card.get("card_type") == CardEnums.CardType.MONSTER:
 		await ctx.effect_handler.destroy_zone_target(

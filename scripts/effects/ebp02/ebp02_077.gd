@@ -29,6 +29,13 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	# Mill top 2 cards
 	var milled_cards: Array[Dictionary] = ctx.owner.mill_cards(2)
+	if not milled_cards.is_empty():
+		ctx.effect_handler.log_message.emit(
+			GameLog.effect_milled_cards(ctx.owner.player_id, ctx.card_data.get("id", ""), milled_cards)
+		)
+		await ctx.effect_handler.select_from_cards(
+			ctx.owner.player_id, milled_cards, milled_cards,
+			"Sent to discard pile:")
 	var found_godzilla: bool = false
 	for card in milled_cards:
 		if CardEnums.CardTrait.GODZILLA in card.get("traits", []):
