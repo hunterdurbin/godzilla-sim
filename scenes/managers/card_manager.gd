@@ -50,6 +50,7 @@ var dragged_card_original_index: int = -1  # Original index of dragged card
 var drop_handled: bool = false  # Set by external listeners to prevent reordering
 var selection_mode: bool = false  # When true, clicking selects instead of dragging
 var selectable_indices: Array[int] = []  # Which card indices are selectable
+var _drag_preview_index: int = -1  # Where the dragged card would be inserted
 
 
 func _ready() -> void:
@@ -60,6 +61,15 @@ func _ready() -> void:
 
 	if auto_arrange:
 		arrange_cards()
+
+
+func _process(_delta: float) -> void:
+	if not dragged_card or not is_instance_valid(dragged_card):
+		return
+	var new_index := _calculate_insertion_index(dragged_card)
+	if new_index != _drag_preview_index:
+		_drag_preview_index = new_index
+		_arrange_with_drag_gap(new_index)
 
 
 ## Add a card to the manager
@@ -230,6 +240,72 @@ func _arrange_hand_arc(animate: bool) -> void:
 		_move_card_to_position(card, target_pos, target_rotation, animate, i)
 
 
+## Compute slot positions for a given count using the current layout mode
+func _compute_slot_positions(count: int) -> Array[Vector2]:
+	var positions: Array[Vector2] = []
+	if count == 0:
+		return positions
+	match layout_mode:
+		LayoutMode.HAND_ARC:
+			var effective_angle = arc_angle
+			if max_width > 0 and count > 1:
+				var card_width: float = 150.0
+				if not managed_cards.is_empty() and managed_cards[0].size.x > 0:
+					card_width = managed_cards[0].size.x * managed_cards[0].scale.x
+				var available = max_width - card_width
+				if available > 0:
+					var max_half_angle = rad_to_deg(asin(clampf(available / (2.0 * arc_radius), 0.0, 1.0)))
+					effective_angle = minf(arc_angle, max_half_angle * 2.0)
+			var angle_step = effective_angle / max(1, count - 1) if count > 1 else 0
+			var start_angle = -effective_angle / 2.0
+			for i in range(count):
+				var angle = start_angle + (angle_step * i)
+				var angle_rad = deg_to_rad(angle)
+				var x = sin(angle_rad) * arc_radius
+				var half_angle = effective_angle / 2.0 if effective_angle > 0 else 1.0
+				var y = -cos(angle_rad) * arc_radius + arc_radius - vertical_offset * abs(angle / half_angle)
+				positions.append(Vector2(x, y))
+		LayoutMode.HORIZONTAL:
+			var effective_spacing = card_spacing
+			if max_width > 0 and count > 1:
+				var card_width: float = 150.0
+				if not managed_cards.is_empty() and managed_cards[0].size.x > 0:
+					card_width = managed_cards[0].size.x * managed_cards[0].scale.x
+				var max_spacing = (max_width - card_width) / (count - 1)
+				effective_spacing = minf(card_spacing, max_spacing)
+			var total_width = (count - 1) * effective_spacing
+			var start_x = -total_width / 2.0
+			for i in range(count):
+				positions.append(Vector2(start_x + i * effective_spacing, 0))
+		_:
+			# Fallback: horizontal with card_spacing
+			var total_width = (count - 1) * card_spacing
+			var start_x = -total_width / 2.0
+			for i in range(count):
+				positions.append(Vector2(start_x + i * card_spacing, 0))
+	return positions
+
+
+## Arrange non-dragged cards with a gap at gap_index to preview reorder
+func _arrange_with_drag_gap(gap_index: int) -> void:
+	var total_count := managed_cards.size()
+	if total_count <= 1:
+		return
+
+	var positions := _compute_slot_positions(total_count)
+
+	# Assign non-dragged cards to slot positions, skipping the gap
+	var slot := 0
+	for i in range(total_count):
+		var card := managed_cards[i]
+		if card == dragged_card:
+			continue
+		if slot == gap_index:
+			slot += 1
+		_move_card_to_position(card, positions[slot], 0.0, true, slot)
+		slot += 1
+
+
 func _arrange_grid(animate: bool) -> void:
 	var count = managed_cards.size()
 	if count == 0:
@@ -330,6 +406,7 @@ func _move_card_to_position(card: Control, target_pos: Vector2, target_rotation:
 ## Signal handlers
 
 func _on_card_drag_started(card: Control) -> void:
+	_drag_preview_index = -1
 	# Store dragging state
 	if card in managed_cards:
 		dragged_card = card
@@ -341,6 +418,8 @@ func _on_card_drag_started(card: Control) -> void:
 func _on_card_drag_ended(card: Control) -> void:
 	if card not in managed_cards:
 		return
+
+	_drag_preview_index = -1
 
 	# Let external listeners handle the drop first (e.g. dropping on a zone)
 	drop_handled = false
