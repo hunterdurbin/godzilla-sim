@@ -288,6 +288,14 @@ func _ready() -> void:
 	zone_stack_view_overlay.visible = false
 	card_zoom_overlay.visible = false
 
+	# Ensure overlays render above hand cards (which have incrementing z_index)
+	card_zoom_overlay.z_index = 100
+	deck_search_overlay.z_index = 100
+	discard_view_overlay.z_index = 100
+	monster_deck_view_overlay.z_index = 100
+	zone_stack_view_overlay.z_index = 100
+	end_game_panel.z_index = 100
+
 	# Card hover preview panel (right side of screen)
 	_preview_container = Control.new()
 	_preview_container.anchor_left = 0.75
@@ -295,6 +303,7 @@ func _ready() -> void:
 	_preview_container.anchor_top = 0.05
 	_preview_container.anchor_bottom = 0.75
 	_preview_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_preview_container.z_index = 100
 	_preview_container.visible = false
 	add_child(_preview_container)
 
