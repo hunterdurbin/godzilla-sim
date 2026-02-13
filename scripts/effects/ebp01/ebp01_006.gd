@@ -4,7 +4,7 @@ extends CardEffect
 ## <Opponent's Turn> At the beginning of the counter phase, <Destroy> all of your
 ## opponent's rank 5 or lower battle cards in the same column as this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
