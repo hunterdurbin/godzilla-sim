@@ -5,7 +5,7 @@ extends CardEffect
 ## up to 2 <Kamacuras> battle cards, play them, then shuffle your deck.
 ## (Active if your monster card is in zone 6 or beyond.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
