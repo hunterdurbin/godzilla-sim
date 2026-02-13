@@ -199,6 +199,13 @@ var _highlighted_card: Control = null # Card with selection highlight border
 # Turn tracker sub-phase index
 var _current_sub_phase: int = 0
 
+# Turn tracker transition queue (delays between phase changes)
+const PHASE_TRANSITION_DELAY: float = 0.1
+var _tracker_queue: Array[Dictionary] = []
+var _tracker_draining: bool = false
+var _tracker_last_phase: int = -1
+var _tracker_last_player: int = -1
+
 # Hand expand toggle
 var _hand_expanded: bool = false
 var _hand_tween: Tween = null
@@ -523,6 +530,33 @@ func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> vo
 
 
 func _update_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: int = 0) -> void:
+	var phase_int := int(phase)
+	# Collapse: if last queued entry has same player+phase, just update its sub_phase
+	if _tracker_queue.size() > 0:
+		var last := _tracker_queue[_tracker_queue.size() - 1]
+		if last.player_id == player_id and last.phase == phase_int:
+			last.sub_phase = sub_phase
+			return
+	_tracker_queue.append({"player_id": player_id, "phase": phase_int, "sub_phase": sub_phase})
+	if not _tracker_draining:
+		_drain_tracker_queue()
+
+
+func _drain_tracker_queue() -> void:
+	_tracker_draining = true
+	while _tracker_queue.size() > 0:
+		var entry := _tracker_queue[0]
+		_tracker_queue.remove_at(0)
+		var phase_changed: bool = _tracker_last_phase >= 0 and (entry.phase != _tracker_last_phase or entry.player_id != _tracker_last_player)
+		_tracker_last_phase = entry.phase
+		_tracker_last_player = entry.player_id
+		if phase_changed:
+			await get_tree().create_timer(PHASE_TRANSITION_DELAY).timeout
+		_apply_turn_tracker(entry.player_id, entry.phase as CardEnums.GamePhase, entry.sub_phase)
+	_tracker_draining = false
+
+
+func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: int = 0) -> void:
 	var active_color := Color(1.0, 0.9, 0.3, 1.0) # Gold for active phase/sub
 	var inactive_color := Color(0.4, 0.4, 0.5, 1.0) # Dim for inactive phases
 	var inactive_sub_color := Color(0.35, 0.35, 0.4, 1.0) # Dimmer for inactive sub-phases
