@@ -4,7 +4,7 @@ extends CardEffect
 ## <Burst1> <When Invading> Send the top card of your deck to your discard pile.
 ## If it is a monster card, <Destroy> 1 of your opponent's rank 5 or lower battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
