@@ -12,11 +12,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
-func on_invasion_observed(ctx: EffectContext, invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
-	# Only when owner's monster invades
-	if invading_player_id != ctx.owner.player_id:
-		return
+func get_invasion_observed_filter() -> Dictionary:
+	return {"own_turn": true}
 
+
+func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
 	# Must be in zone 8 (index 7)
 	var my_zone: int = find_zone_of_card(ctx)
 	if my_zone != 7:
