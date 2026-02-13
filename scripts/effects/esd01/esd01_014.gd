@@ -4,8 +4,6 @@ extends CardEffect
 ## If your monster card has 2 or more <Rage>, search your deck for up to 1 battle card
 ## named Godzilla(2023), play it, then shuffle your deck.
 ##
-## NOTE: This is a strategy card with an immediate effect when played (on_enter).
-##
 ## Tested: No
 ## Known issues: None
 ## Edge cases: None
