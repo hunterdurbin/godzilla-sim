@@ -16,11 +16,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
-func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	# Only during invasion (main phase)
-	if ctx.game_state.current_phase != CardEnums.GamePhase.MAIN:
-		return
+func get_invasion_observed_filter() -> Dictionary:
+	return {"own_turn": true}
 
+
+func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return

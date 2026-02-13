@@ -158,6 +158,13 @@ func can_engage(_ctx: EffectContext) -> bool:
 	return true
 
 
+func get_engagement_restriction(_ctx: EffectContext) -> int:
+	## Return the max rank of opponent battle cards that cannot engage with this monster.
+	## -1 means no restriction. E.g., 5 means opponent's rank 5 and lower cannot engage.
+	## Queried on the attacker's monster during counter phase.
+	return -1
+
+
 func get_play_rank_modifier_for_card(_ctx: EffectContext, _target_card: Dictionary) -> int:
 	## Return rank reduction (negative) for target_card when being played from hand.
 	## Called on the card itself (self-modifier) and on active strategy cards.

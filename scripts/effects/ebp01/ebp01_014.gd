@@ -5,9 +5,6 @@ extends CardEffect
 ## all of your opponent's rank 5 or lower battle cards cannot engage with this card.
 ## (Their counter power is not included in the total during the counter phase.)
 ##
-## NOTE: This effect modifies opponent's battle card engagement. The get_engagement_restriction
-## method returns the max rank of cards that cannot engage, for the system to query.
-##
 ## Tested: No
 ## Known issues: None
 ## Edge cases: None
@@ -20,13 +17,10 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 
 
-func get_threat_level_modifier(ctx: EffectContext) -> int:
-	# Implemented as a threat modifier workaround: if conditions are met,
-	# opponent's R5 or lower cards' CP shouldn't count.
-	# The proper implementation requires system-level engagement filtering.
-	# For now, this is a marker — the effect_handler should check
-	# the monster's engagement restrictions during counter resolution.
-	return 0
+func get_engagement_restriction(ctx: EffectContext) -> int:
+	if _should_restrict(ctx):
+		return 5
+	return -1
 
 
 func _should_restrict(ctx: EffectContext) -> bool:

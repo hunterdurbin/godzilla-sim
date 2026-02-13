@@ -163,6 +163,8 @@ func resolve_counter(state: GameState) -> void:
 	if effect_handler:
 		total_cp += effect_handler.get_counter_power_modifier(player.player_id)
 		threat += effect_handler.get_threat_level_modifier(opponent.player_id)
+		# Subtract base CP of cards restricted from engaging by opponent's monster
+		total_cp -= effect_handler.get_engagement_restricted_cp(player.player_id)
 
 	# Check counter immunity (e.g. EBP02-027: CP <= threshold → retreat without rank up)
 	var immunity_threshold: int = 0

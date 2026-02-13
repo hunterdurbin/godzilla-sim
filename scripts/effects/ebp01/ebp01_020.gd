@@ -13,13 +13,23 @@ extends CardEffect
 ## Implementation notes: None
 
 
-func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
+func get_invasion_observed_filter() -> Dictionary:
+	return {"own_turn": true}
+
+
+func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
 	if find_zone_of_card(ctx) != 7:
 		return
-	# Only during invasion (main phase)
-	if ctx.game_state.current_phase != CardEnums.GamePhase.MAIN:
-		return
 	if ctx.owner.rage <= 0:
+		return
+
+	# "you may" — ask the player
+	var choice: int = await ctx.effect_handler.select_choice(
+		ctx.owner.player_id,
+		["Yes", "No"],
+		"Reduce Rage by 1 to search deck for a monster with Burst?"
+	)
+	if choice != 0:
 		return
 
 	# Cost: reduce rage by 1

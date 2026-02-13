@@ -5,10 +5,6 @@ extends CardEffect
 ## with your monster card. (Their counter power is not included in the total during
 ## the counter phase.)
 ##
-## NOTE: This is a continuous strategy effect. The engagement restriction requires
-## system-level filtering in the counter phase. The effect_handler should check
-## active strategy cards for engagement restrictions.
-##
 ## Tested: No
 ## Known issues: None
 ## Edge cases: None
@@ -19,3 +15,10 @@ extends CardEffect
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
+
+
+func get_engagement_restriction(ctx: EffectContext) -> int:
+	# Opponent's turn only
+	if ctx.game_state.current_player_id == ctx.owner.player_id:
+		return -1
+	return 3

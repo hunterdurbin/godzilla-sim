@@ -3,9 +3,6 @@ extends CardEffect
 ## EBP01-076: Destroy All Monsters - Strategy Rank 2 (White)
 ## When your monster card invades this turn, <Destroy> 1 of your opponent's battle cards.
 ##
-## NOTE: This is a persistent strategy effect that triggers on invasion during the turn
-## it was played. Implemented via on_monster_advance during main phase.
-##
 ## Tested: No
 ## Known issues: None
 ## Edge cases: None
@@ -14,13 +11,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
-func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	# Only during invasion (main phase)
-	if ctx.game_state.current_phase != CardEnums.GamePhase.MAIN:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
+func get_invasion_observed_filter() -> Dictionary:
+	return {"own_turn": true}
 
+
+func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,
 		func(_card: Dictionary) -> bool: return true,

@@ -1159,13 +1159,24 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 	var modifiers: Array[int] = []
 	modifiers.resize(8)
 	modifiers.fill(0)
+
+	# Get engagement restrictions from opponent's monster
+	var opponent_id: int = 1 - player_id
+	var max_restricted_rank: int = get_engagement_restriction(opponent_id)
+
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
 			var effect := get_effect(zone_card)
 			if effect:
 				var ctx := _build_context(player_id, zone_card)
-				if effect.can_engage(ctx):
+				var can_card_engage := effect.can_engage(ctx)
+				# Check engagement restriction from opponent's monster
+				if can_card_engage and max_restricted_rank >= 0:
+					var card_rank: int = zone_card.get("rank", 0)
+					if card_rank > 0 and card_rank <= max_restricted_rank:
+						can_card_engage = false
+				if can_card_engage:
 					modifiers[i] += effect.get_counter_power_modifier(ctx)
 				# Collect field modifiers (bonuses this card grants to other zones)
 				var field_mods: Dictionary = effect.get_field_cp_modifiers(ctx)
@@ -1183,7 +1194,6 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 				modifiers[zone_idx] += monster_field_mods[zone_idx]
 
 	# Opponent's monster CP modifiers that affect this player's zones (e.g. EBP02-029 CP doubling)
-	var opponent_id: int = 1 - player_id
 	var opp_monster_effect := get_effect(game_state.players[opponent_id].current_monster)
 	if opp_monster_effect:
 		var opp_ctx := _build_context(opponent_id, game_state.players[opponent_id].current_monster)
@@ -1290,14 +1300,66 @@ func is_invasion_blocked(defender_player_id: int) -> bool:
 	return false
 
 
+func get_engagement_restriction(attacker_player_id: int) -> int:
+	## Get the engagement restriction from the attacker's monster and strategy effects.
+	## Returns the max rank of opponent battle cards that cannot engage (-1 = no restriction).
+	## If multiple sources restrict, the highest restriction wins.
+	var player := game_state.players[attacker_player_id]
+	var max_rank: int = -1
+
+	# Monster card
+	var me := get_effect(player.current_monster)
+	if me:
+		var r: int = me.get_engagement_restriction(_build_context(attacker_player_id, player.current_monster))
+		if r > max_rank:
+			max_rank = r
+
+	# Strategy cards
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var se := get_effect(sz_card)
+			if se:
+				var r: int = se.get_engagement_restriction(_build_context(attacker_player_id, sz_card))
+				if r > max_rank:
+					max_rank = r
+
+	return max_rank
+
+
+func get_engagement_restricted_cp(defender_player_id: int) -> int:
+	## Get the total base CP of the defender's cards that are restricted from engaging
+	## by the attacker's monster effect. This amount should be subtracted from total CP.
+	var attacker_id: int = 1 - defender_player_id
+	var max_restricted_rank: int = get_engagement_restriction(attacker_id)
+	if max_restricted_rank < 0:
+		return 0
+	var total_restricted: int = 0
+	var defender := game_state.players[defender_player_id]
+	for i in range(8):
+		var zone_card := defender.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var card_rank: int = zone_card.get("rank", 0)
+			if card_rank > 0 and card_rank <= max_restricted_rank:
+				total_restricted += zone_card.get("counter_power", 0)
+	return total_restricted
+
+
 func get_cards_that_can_engage(player_id: int) -> Array[int]:
-	## Return zone indices of battle cards that can engage (not blocked by "cannot engage" effects).
+	## Return zone indices of battle cards that can engage (not blocked by "cannot engage" effects
+	## or engagement restrictions from the opponent's monster).
 	## Used during counter phase to filter out restricted cards.
 	var player := game_state.players[player_id]
+	var opponent_id: int = 1 - player_id
+	var max_restricted_rank: int = get_engagement_restriction(opponent_id)
 	var engageable: Array[int] = []
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
+			# Check engagement restriction from opponent's monster
+			if max_restricted_rank >= 0:
+				var card_rank: int = zone_card.get("rank", 0)
+				if card_rank > 0 and card_rank <= max_restricted_rank:
+					continue
 			var effect := get_effect(zone_card)
 			if effect:
 				if effect.can_engage(_build_context(player_id, zone_card)):
