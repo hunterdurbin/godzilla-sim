@@ -30,15 +30,23 @@ func on_enter(ctx: EffectContext) -> void:
 			ctx.opponent.deck_changed.emit()
 			ctx.opponent.discard_changed.emit()
 
-	# Play 2 Tentacles tokens in adjacent zones
+	# Play 2 Tentacles tokens in adjacent zones (player chooses)
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return
 	var adjacent := get_adjacent_zones(zone_idx)
 	var placed: int = 0
-	for adj_zi in adjacent:
-		if placed >= 2:
+	for _i in range(2):
+		var empty_adjacent: Array[int] = []
+		for adj_zi in adjacent:
+			if ctx.owner.is_zone_empty(adj_zi):
+				empty_adjacent.append(adj_zi)
+		if empty_adjacent.is_empty():
 			break
-		if ctx.owner.is_zone_empty(adj_zi):
-			await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T02", adj_zi)
-			placed += 1
+		var chosen: int = await ctx.effect_handler.select_zone_target(
+			ctx.owner.player_id, ctx.owner.player_id, empty_adjacent,
+			"Choose a zone for Tentacles token (%d remaining):" % (2 - placed))
+		if chosen < 0:
+			break
+		await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T02", chosen)
+		placed += 1
