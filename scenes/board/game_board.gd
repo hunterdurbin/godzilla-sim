@@ -571,10 +571,10 @@ func _on_sub_phase_changed(sub_index: int) -> void:
 func _on_turn_started(player_id: int) -> void:
 	turn_label.text = "Turn %d - %s" % [turn_manager.game_state.turn_number, turn_manager.game_state.player_names[player_id]]
 	_current_sub_phase = 0
-	_update_turn_tracker(player_id, turn_manager.game_state.current_phase, _current_sub_phase)
 	_sync_boards()
 	_update_hand_visibility(player_id)
-	_broadcast_state()
+	# Don't broadcast here — current_phase is still END from the previous turn.
+	# The subsequent phase_started(START) signal handles the broadcast with correct state.
 
 
 func _on_awaiting_action(valid_actions: Array) -> void:
