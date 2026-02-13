@@ -241,7 +241,8 @@ func trigger_crush(player_id: int, card_data: Dictionary) -> void:
 func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 	## Trigger <Revenge> on a card being destroyed by an effect.
 	var effect := get_effect(card_data)
-	if effect:
+	if effect and has_trigger(card_data, "on_revenge"):
+		log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
 		_set_active_effect(player_id, card_data)
 		await effect.on_revenge(_build_context(player_id, card_data))
 		_clear_active_effect()

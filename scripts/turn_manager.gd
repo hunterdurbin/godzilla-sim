@@ -151,10 +151,14 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 	var hand_index: int = params.get("hand_index", -1)
 	var card_id: String = ""
 	var is_base_strategy: bool = false
+	var has_enter: bool = false
+	var is_step2: bool = false
 	if hand_index >= 0 and hand_index < player.hand.size():
 		var card: Dictionary = player.hand[hand_index]
 		card_id = card.get("id", "")
 		is_base_strategy = card.get("is_base", false)
+		has_enter = effect_handler.has_trigger(card, "on_enter")
+		is_step2 = card.get("invasion_icon", 0) >= 2
 
 	# Execute the action (may await player choices from effects)
 	await action_handler.execute(action, params, game_state)
@@ -163,7 +167,7 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 	# Log the action
 	match action:
 		CardEnums.ActionType.PLAY_BATTLE:
-			log_message.emit(GameLog.played_battle(player_name, card_id, params.get("zone_index", 0)))
+			log_message.emit(GameLog.played_battle(player_name, card_id, params.get("zone_index", 0), has_enter))
 		CardEnums.ActionType.PLAY_STRATEGY:
 			log_message.emit(GameLog.played_strategy(player_name, card_id, is_base_strategy))
 		CardEnums.ActionType.GAIN_RAGE:
@@ -176,7 +180,7 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 			else:
 				log_message.emit(GameLog.played_monster(player_name, card_id, player.rage))
 		CardEnums.ActionType.INVADE:
-			log_message.emit(GameLog.invaded(player_name, game_state.get_current_player().monster_zone, card_id))
+			log_message.emit(GameLog.invaded(player_name, game_state.get_current_player().monster_zone, card_id, is_step2))
 
 	_processing_action = false
 

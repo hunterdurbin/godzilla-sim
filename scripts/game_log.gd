@@ -11,11 +11,19 @@ static func _strip_card_id(raw_id: String) -> String:
 
 
 static func card_link(raw_id: String) -> String:
-	## Build a BBCode URL link for a card ID.
+	## Build a BBCode URL link for a card ID. Displays the card name if found.
 	var card_number := _strip_card_id(raw_id)
 	if card_number.is_empty():
 		return ""
-	return "[url=%s][%s][/url]" % [card_number, card_number]
+	var card_data: Node = Engine.get_main_loop().root.get_node_or_null("CardData")
+	var label := card_number
+	if card_data:
+		var template: Dictionary = card_data.get_card_by_id(card_number)
+		if not template.is_empty():
+			label = template.get("name", card_number)
+	if label.length() > 18:
+		label = label.left(15) + "..."
+	return "[url=%s][%s][/url]" % [card_number, label]
 
 
 # --- Turn structure ---
@@ -42,7 +50,10 @@ static func player_pass(player_id: int) -> String:
 
 # --- Player actions ---
 
-static func played_battle(player_name: String, card_id: String, zone: int) -> String:
+static func played_battle(player_name: String, card_id: String, zone: int, has_enter: bool = false) -> String:
+	if has_enter:
+		var enter_icon := "[img=20]res://CardContent/Assets/effectIcons/others/Enter.png[/img]"
+		return "%s: %s %s to Zone %d" % [player_name, enter_icon, card_link(card_id), zone + 1]
 	return "%s: Played %s to Zone %d" % [player_name, card_link(card_id), zone + 1]
 
 
@@ -54,7 +65,7 @@ static func played_strategy(player_name: String, card_id: String, is_base: bool 
 
 
 static func gained_rage(player_name: String, rage: int, card_id: String) -> String:
-	var rage_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
 	return "%s: %s x%d (discarded: %s)" % [player_name, rage_icon, rage, card_link(card_id)]
 
 
@@ -62,7 +73,10 @@ static func played_monster(player_name: String, card_id: String, rage: int) -> S
 	return "%s: Played %s as Monster (rage now %d)" % [player_name, card_link(card_id), rage]
 
 
-static func invaded(player_name: String, zone: int, card_id: String) -> String:
+static func invaded(player_name: String, zone: int, card_id: String, is_step2: bool = false) -> String:
+	if is_step2:
+		var step2_icon := "[img=20]res://CardContent/Assets/effectIcons/others/Step2.png[/img]"
+		return "%s: %s Monster now at zone %d (discarded %s)" % [player_name, step2_icon, zone, card_link(card_id)]
 	return "%s: Invaded! Monster now at zone %d (discarded %s)" % [player_name, zone, card_link(card_id)]
 
 
@@ -93,8 +107,23 @@ static func burst_played(player_name: String, card_id: String, burst_rank: int, 
 		burst_prefix = "[img=40]%s[/img]" % burst_icon_path
 	else:
 		burst_prefix = "Burst %d:" % burst_rank
-	var rage_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
 	return "%s: %s %s %s x%d" % [player_name, burst_prefix, card_link(card_id), rage_icon, rage]
+
+
+static func revenge_triggered(player_id: int, card_id: String) -> String:
+	var revenge_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Revenge.png[/img]"
+	return "P%d: %s %s" % [player_id + 1, revenge_icon, card_link(card_id)]
+
+
+static func awakening_triggered(player_id: int, card_id: String, awakening_level: int) -> String:
+	var awk_icon_path := "res://CardContent/Assets/effectIcons/awakenings/Awakening%d.png" % awakening_level
+	var awk_prefix: String
+	if ResourceLoader.exists(awk_icon_path):
+		awk_prefix = "[img=40]%s[/img]" % awk_icon_path
+	else:
+		awk_prefix = "Awakening %d:" % awakening_level
+	return "Player %d: %s %s" % [player_id + 1, awk_prefix, card_link(card_id)]
 
 
 static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: String, to_id: String) -> String:
@@ -109,8 +138,9 @@ static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: Str
 
 # --- Board events ---
 
-static func battle_card_crushed(card_name: String, player_id: int, zone_index: int) -> String:
-	return "Battle card '%s' crushed in P%d Zone %d!" % [card_name, player_id + 1, zone_index + 1]
+static func battle_card_crushed(card_id: String, player_id: int, zone_index: int) -> String:
+	var destroy_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Destroy.png[/img]"
+	return "%s P%d Zone %d: %s crushed!" % [destroy_icon, player_id + 1, zone_index + 1, card_link(card_id)]
 
 
 static func counter_succeeded(player_id: int, total_cp: int, threat: int) -> String:
@@ -134,10 +164,20 @@ static func to_plain_text(bbcode: String) -> String:
 	# Replace burst icon images with text: [img=40]...Burst3.png[/img] -> Burst 3:
 	regex.compile("\\[img=\\d+\\][^\\[]*Burst(\\d+)\\.png\\[/img\\]")
 	text = regex.sub(text, "Burst $1:", true)
-	# Replace base icon with text: [img=40]...Base.png[/img] -> Base
+	# Replace awakening icon images with text: [img=40]...Awakening6.png[/img] -> Awakening 6:
+	regex.compile("\\[img=\\d+\\][^\\[]*Awakening(\\d+)\\.png\\[/img\\]")
+	text = regex.sub(text, "Awakening $1:", true)
+	# Replace named icons with text equivalents
+	regex.compile("\\[img=\\d+\\][^\\[]*Enter\\.png\\[/img\\]")
+	text = regex.sub(text, "Enter:", true)
+	regex.compile("\\[img=\\d+\\][^\\[]*Destroy\\.png\\[/img\\]")
+	text = regex.sub(text, "Destroy:", true)
+	regex.compile("\\[img=\\d+\\][^\\[]*Revenge\\.png\\[/img\\]")
+	text = regex.sub(text, "Revenge:", true)
+	regex.compile("\\[img=\\d+\\][^\\[]*Step2\\.png\\[/img\\]")
+	text = regex.sub(text, "Step2:", true)
 	regex.compile("\\[img=\\d+\\][^\\[]*Base\\.png\\[/img\\]")
 	text = regex.sub(text, "Base", true)
-	# Replace rage icon with text: [img=40]...Rage.png[/img] -> Rage
 	regex.compile("\\[img=\\d+\\][^\\[]*Rage\\.png\\[/img\\]")
 	text = regex.sub(text, "Rage", true)
 	# Strip any remaining [img] tags
