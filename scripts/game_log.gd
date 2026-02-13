@@ -4,6 +4,10 @@ class_name GameLog
 ## All methods are static and return formatted BBCode strings.
 
 
+static func _bold(text: String) -> String:
+	return "[b]%s[/b]" % text
+
+
 static func _strip_card_id(raw_id: String) -> String:
 	## Strip deck/copy suffix: "EBP01-001_0_1" -> "EBP01-001"
 	var underscore_pos := raw_id.find("_")
@@ -45,53 +49,57 @@ static func main_phase() -> String:
 
 
 static func player_pass(player_id: int) -> String:
-	return "Player %d passes." % (player_id + 1)
+	return "%s passes." % _bold("Player %d" % (player_id + 1))
 
 
 # --- Player actions ---
 
 static func played_battle(player_name: String, card_id: String, zone: int, has_enter: bool = false) -> String:
+	var name := _bold(player_name)
 	if has_enter:
 		var enter_icon := "[img=20]res://CardContent/Assets/effectIcons/others/Enter.png[/img]"
-		return "%s: %s %s to Zone %d" % [player_name, enter_icon, card_link(card_id), zone + 1]
-	return "%s: Played %s to Zone %d" % [player_name, card_link(card_id), zone + 1]
+		return "%s: %s %s to Zone %d" % [name, enter_icon, card_link(card_id), zone + 1]
+	return "%s: Played %s to Zone %d" % [name, card_link(card_id), zone + 1]
 
 
 static func played_strategy(player_name: String, card_id: String, is_base: bool = false) -> String:
+	var name := _bold(player_name)
 	if is_base:
 		var base_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Base.png[/img]"
-		return "%s: %s Played %s to Strategy Zone" % [player_name, base_icon, card_link(card_id)]
-	return "%s: Played %s to Strategy Zone" % [player_name, card_link(card_id)]
+		return "%s: %s Played %s to Strategy Zone" % [name, base_icon, card_link(card_id)]
+	return "%s: Played %s to Strategy Zone" % [name, card_link(card_id)]
 
 
 static func gained_rage(player_name: String, rage: int, card_id: String) -> String:
 	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
-	return "%s: %s x%d (discarded: %s)" % [player_name, rage_icon, rage, card_link(card_id)]
+	return "%s: %s x%d (discarded: %s)" % [_bold(player_name), rage_icon, rage, card_link(card_id)]
 
 
 static func played_monster(player_name: String, card_id: String, rage: int) -> String:
-	return "%s: Played %s as Monster (rage now %d)" % [player_name, card_link(card_id), rage]
+	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	return "%s: Played %s as Monster (%s x%d)" % [_bold(player_name), card_link(card_id), rage_icon, rage]
 
 
 static func invaded(player_name: String, zone: int, card_id: String, is_step2: bool = false) -> String:
+	var name := _bold(player_name)
 	if is_step2:
 		var step2_icon := "[img=20]res://CardContent/Assets/effectIcons/others/Step2.png[/img]"
-		return "%s: %s Monster now at zone %d (discarded %s)" % [player_name, step2_icon, zone, card_link(card_id)]
-	return "%s: Invaded! Monster now at zone %d (discarded %s)" % [player_name, zone, card_link(card_id)]
+		return "%s: %s Monster now at zone %d (discarded %s)" % [name, step2_icon, zone, card_link(card_id)]
+	return "%s: Invaded! Monster now at zone %d (discarded %s)" % [name, zone, card_link(card_id)]
 
 
 # --- Counter & end phase ---
 
-static func counter_phase(cp: int, threat: int) -> String:
-	return "Counter Phase: CP %d vs Threat %d" % [cp, threat]
+static func counter_phase(player_name: String, cp: int, threat: int) -> String:
+	return "%s: Counter Phase: CP %d vs Threat %d" % [_bold(player_name), cp, threat]
 
 
-static func end_phase(zone: int) -> String:
-	return "End Phase: Monster at zone %d" % zone
+static func end_phase(player_name: String, zone: int) -> String:
+	return "%s: End Phase: Monster at zone %d" % [_bold(player_name), zone]
 
 
-static func hand_refilled(count: int) -> String:
-	return "Hand refilled to %d cards" % count
+static func hand_refilled(player_name: String, count: int) -> String:
+	return "%s: Hand refilled to %d cards" % [_bold(player_name), count]
 
 
 static func game_over(winner_id: int, reason: String) -> String:
@@ -108,12 +116,12 @@ static func burst_played(player_name: String, card_id: String, burst_rank: int, 
 	else:
 		burst_prefix = "Burst %d:" % burst_rank
 	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
-	return "%s: %s %s %s x%d" % [player_name, burst_prefix, card_link(card_id), rage_icon, rage]
+	return "%s: %s %s %s x%d" % [_bold(player_name), burst_prefix, card_link(card_id), rage_icon, rage]
 
 
 static func revenge_triggered(player_id: int, card_id: String) -> String:
 	var revenge_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Revenge.png[/img]"
-	return "P%d: %s %s" % [player_id + 1, revenge_icon, card_link(card_id)]
+	return "%s: %s %s" % [_bold("P%d" % (player_id + 1)), revenge_icon, card_link(card_id)]
 
 
 static func awakening_triggered(player_id: int, card_id: String, awakening_level: int) -> String:
@@ -123,7 +131,7 @@ static func awakening_triggered(player_id: int, card_id: String, awakening_level
 		awk_prefix = "[img=40]%s[/img]" % awk_icon_path
 	else:
 		awk_prefix = "Awakening %d:" % awakening_level
-	return "Player %d: %s %s" % [player_id + 1, awk_prefix, card_link(card_id)]
+	return "%s: %s %s" % [_bold("Player %d" % (player_id + 1)), awk_prefix, card_link(card_id)]
 
 
 static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: String, to_id: String) -> String:
@@ -133,22 +141,22 @@ static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: Str
 		evo_prefix = "[img=40]%s[/img]" % evo_icon_path
 	else:
 		evo_prefix = "Evolution %d:" % evo_rank
-	return "Player %d Zone %d: %s %s => %s" % [player_id + 1, zone_idx + 1, evo_prefix, card_link(from_id), card_link(to_id)]
+	return "%s Zone %d: %s %s => %s" % [_bold("Player %d" % (player_id + 1)), zone_idx + 1, evo_prefix, card_link(from_id), card_link(to_id)]
 
 
 # --- Board events ---
 
 static func battle_card_crushed(card_id: String, player_id: int, zone_index: int) -> String:
 	var destroy_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Destroy.png[/img]"
-	return "%s P%d Zone %d: %s crushed!" % [destroy_icon, player_id + 1, zone_index + 1, card_link(card_id)]
+	return "%s %s Zone %d: %s crushed!" % [destroy_icon, _bold("P%d" % (player_id + 1)), zone_index + 1, card_link(card_id)]
 
 
 static func counter_succeeded(player_id: int, total_cp: int, threat: int) -> String:
-	return "Counter SUCCESS! P%d CP %d >= Threat %d" % [player_id + 1, total_cp, threat]
+	return "Counter SUCCESS! %s CP %d >= Threat %d" % [_bold("P%d" % (player_id + 1)), total_cp, threat]
 
 
 static func counter_failed(player_id: int, total_cp: int, threat: int) -> String:
-	return "Counter failed. P%d CP %d < Threat %d" % [player_id + 1, total_cp, threat]
+	return "Counter failed. %s CP %d < Threat %d" % [_bold("P%d" % (player_id + 1)), total_cp, threat]
 
 
 # --- Utilities ---
@@ -185,5 +193,8 @@ static func to_plain_text(bbcode: String) -> String:
 	text = regex.sub(text, "", true)
 	# Strip [url=...]...[/url] keeping inner text
 	regex.compile("\\[url=[^\\]]*\\](.*?)\\[/url\\]")
+	text = regex.sub(text, "$1", true)
+	# Strip [b]...[/b] keeping inner text
+	regex.compile("\\[b\\](.*?)\\[/b\\]")
 	text = regex.sub(text, "$1", true)
 	return text

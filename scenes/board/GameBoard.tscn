@@ -211,6 +211,7 @@ offset_right = 50.0
 [node name="LogOutput" type="RichTextLabel" parent="LogPanel" unique_id=1596132669]
 layout_mode = 2
 theme_override_font_sizes/normal_font_size = 11
+theme_override_font_sizes/bold_font_size = 11
 text = "Game Log:
 "
 scroll_following = true
