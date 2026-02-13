@@ -220,6 +220,32 @@ func end_snap_preview() -> void:
 	scale = original_scale
 
 
+func set_highlight(enabled: bool) -> void:
+	var overlay := get_node_or_null("HighlightOverlay") as Panel
+	if enabled:
+		if not overlay:
+			overlay = Panel.new()
+			overlay.name = "HighlightOverlay"
+			overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			var style := StyleBoxFlat.new()
+			style.bg_color = Color(0, 0, 0, 0)
+			style.border_width_left = 3
+			style.border_width_top = 3
+			style.border_width_right = 3
+			style.border_width_bottom = 3
+			style.border_color = Color(1.0, 0.85, 0.2, 1.0)
+			style.corner_radius_top_left = 6
+			style.corner_radius_top_right = 6
+			style.corner_radius_bottom_right = 6
+			style.corner_radius_bottom_left = 6
+			overlay.add_theme_stylebox_override("panel", style)
+			add_child(overlay)
+		overlay.visible = true
+	elif overlay:
+		overlay.queue_free()
+
+
 func _update_display() -> void:
 	if not is_node_ready():
 		return

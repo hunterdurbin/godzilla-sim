@@ -514,3 +514,19 @@ grow_horizontal = 0
 grow_vertical = 2
 theme_override_font_sizes/font_size = 16
 text = "Show Cards"
+
+[node name="HandToggleButton" type="Button" parent="." unique_id=1847291033]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -50.0
+offset_top = -50.0
+offset_right = -320.0
+offset_bottom = -10.0
+grow_horizontal = 0
+grow_vertical = 0
+theme_override_font_sizes/font_size = 20
+text = "▲"

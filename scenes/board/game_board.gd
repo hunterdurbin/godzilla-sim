@@ -57,6 +57,7 @@ var _log_lines: PackedStringArray = []
 @onready var deck_search_stacked: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/StackedToggle
 @onready var deck_search_view_board: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ViewBoardButton
 @onready var show_cards_button: Button = $ShowCardsButton
+@onready var hand_toggle_button: Button = $HandToggleButton
 
 # Discard view UI references
 @onready var discard_view_overlay: Control = $DiscardViewOverlay
@@ -143,6 +144,12 @@ var _drag_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var _drag_can_rage: bool = false
 var _drag_can_invade: bool = false
 var _snap_preview_slot = null # Slot or Control currently being snap-previewed
+var _highlighted_card: Control = null # Card with selection highlight border
+
+# Hand expand toggle
+var _hand_expanded: bool = false
+var _hand_tween: Tween = null
+const HAND_EXPAND_OFFSET: float = 160.0
 
 
 func _ready() -> void:
@@ -236,6 +243,7 @@ func _ready() -> void:
 	deck_search_stacked.toggled.connect(_on_deck_search_toggled)
 	deck_search_view_board.pressed.connect(_on_deck_search_view_board)
 	show_cards_button.pressed.connect(_on_show_cards_pressed)
+	hand_toggle_button.pressed.connect(_on_hand_toggle_pressed)
 
 	# Connect discard view
 	player1_board.discard_clicked.connect(_on_discard_clicked)
@@ -369,7 +377,8 @@ func _position_hands() -> void:
 	# Local player hand: visible, centered in hand space
 	if local_space and local_hand:
 		var rect := local_space.get_global_rect()
-		local_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.35, rect.position.y + rect.size.y / 2.0)
+		var y_offset := -HAND_EXPAND_OFFSET if _hand_expanded else 0.0
+		local_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.35, rect.position.y + rect.size.y / 2.0 + y_offset)
 		local_hand.max_width = rect.size.x * 0.95
 		local_hand.arrange_cards(false)
 
@@ -745,12 +754,14 @@ func _on_pass_pressed() -> void:
 		_confirm_hand_discard()
 		return
 	if waiting_for_card_select or waiting_for_zone_select:
+		_clear_card_highlight()
 		_cancel_selection()
 		if turn_manager:
 			_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
 		else:
 			_update_action_buttons(_client_playable.get("valid_actions", []))
 		return
+	_clear_card_highlight()
 	_cancel_selection()
 	_submit_action(CardEnums.ActionType.PASS)
 
@@ -782,6 +793,8 @@ func _on_hand_card_selected(card: Control, _visual_index: int) -> void:
 	if selected_card_id.is_empty():
 		return
 
+	_set_card_highlight(card)
+
 	match pending_action:
 		CardEnums.ActionType.PLAY_BATTLE:
 			_enter_zone_selection()
@@ -811,6 +824,7 @@ func _enter_zone_selection() -> void:
 	waiting_for_card_select = false
 	waiting_for_zone_select = true
 	card_select_prompt.text = "Select a ZONE to place the battle card:"
+	_temporarily_collapse_hand()
 
 	var valid_zones: Array[int] = []
 	if turn_manager:
@@ -970,6 +984,7 @@ func _cancel_selection() -> void:
 	_zone_select_valid = []
 	card_select_prompt.visible = false
 	btn_pass.text = "Pass"
+	_restore_expanded_hand()
 
 	for board in [player1_board, player2_board]:
 		if board and board.hand_manager:
@@ -1194,9 +1209,12 @@ func _on_hand_drag_started(card: Control) -> void:
 	if _drag_can_invade:
 		board.highlight_discard_zone(true)
 
+	_temporarily_collapse_hand()
+
 
 func _on_hand_drag_ended(card: Control) -> void:
 	_end_snap_preview()
+	_restore_expanded_hand()
 
 	var board := _get_active_player_board()
 
@@ -1362,6 +1380,67 @@ func _on_deck_search_toggled(_value: bool) -> void:
 func _on_deck_search_view_board() -> void:
 	deck_search_overlay.visible = false
 	show_cards_button.visible = true
+
+
+func _on_hand_toggle_pressed() -> void:
+	_hand_expanded = not _hand_expanded
+	hand_toggle_button.text = "\u25bc" if _hand_expanded else "\u25b2"
+
+	# Determine which hand is the local player's
+	var local_hand: Node2D = player1_hand if local_player_id == 0 else player2_hand
+	var local_space: Control = player1_hand_space if local_player_id == 0 else player2_hand_space
+	if not local_space or not local_hand:
+		return
+
+	var rect := local_space.get_global_rect()
+	var y_offset := -HAND_EXPAND_OFFSET if _hand_expanded else 0.0
+	var target_y := rect.position.y + rect.size.y / 2.0 + y_offset
+
+	_tween_hand_to(local_hand, target_y)
+
+
+func _temporarily_collapse_hand() -> void:
+	if not _hand_expanded:
+		return
+	var local_hand: Node2D = player1_hand if local_player_id == 0 else player2_hand
+	var local_space: Control = player1_hand_space if local_player_id == 0 else player2_hand_space
+	if not local_space or not local_hand:
+		return
+	var rect := local_space.get_global_rect()
+	_tween_hand_to(local_hand, rect.position.y + rect.size.y / 2.0)
+
+
+func _restore_expanded_hand() -> void:
+	if not _hand_expanded:
+		return
+	var local_hand: Node2D = player1_hand if local_player_id == 0 else player2_hand
+	var local_space: Control = player1_hand_space if local_player_id == 0 else player2_hand_space
+	if not local_space or not local_hand:
+		return
+	var rect := local_space.get_global_rect()
+	_tween_hand_to(local_hand, rect.position.y + rect.size.y / 2.0 - HAND_EXPAND_OFFSET)
+
+
+func _tween_hand_to(hand: Node2D, target_y: float) -> void:
+	if _hand_tween and _hand_tween.is_valid():
+		_hand_tween.kill()
+	_hand_tween = create_tween()
+	_hand_tween.set_ease(Tween.EASE_OUT)
+	_hand_tween.set_trans(Tween.TRANS_CUBIC)
+	_hand_tween.tween_property(hand, "global_position:y", target_y, 0.2)
+
+
+func _set_card_highlight(card: Control) -> void:
+	_clear_card_highlight()
+	if card and card.has_method("set_highlight"):
+		card.set_highlight(true)
+		_highlighted_card = card
+
+
+func _clear_card_highlight() -> void:
+	if _highlighted_card and is_instance_valid(_highlighted_card) and _highlighted_card.has_method("set_highlight"):
+		_highlighted_card.set_highlight(false)
+	_highlighted_card = null
 
 
 func _on_show_cards_pressed() -> void:
@@ -2391,6 +2470,7 @@ func _rpc_receive_action_context(actions_json: String, playable_json: String) ->
 	# Clean up any stale discard/selection state before enabling action buttons
 	if _discard_selecting:
 		_force_cleanup_discard_selection()
+	_clear_card_highlight()
 	_cancel_selection()
 
 	var actions: Array = JSON.parse_string(actions_json)
