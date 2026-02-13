@@ -150,8 +150,11 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 	var player_name := "Player %d" % (game_state.current_player_id + 1)
 	var hand_index: int = params.get("hand_index", -1)
 	var card_id: String = ""
+	var is_base_strategy: bool = false
 	if hand_index >= 0 and hand_index < player.hand.size():
-		card_id = player.hand[hand_index].get("id", "")
+		var card: Dictionary = player.hand[hand_index]
+		card_id = card.get("id", "")
+		is_base_strategy = card.get("is_base", false)
 
 	# Execute the action (may await player choices from effects)
 	await action_handler.execute(action, params, game_state)
@@ -162,7 +165,7 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 		CardEnums.ActionType.PLAY_BATTLE:
 			log_message.emit(GameLog.played_battle(player_name, card_id, params.get("zone_index", 0)))
 		CardEnums.ActionType.PLAY_STRATEGY:
-			log_message.emit(GameLog.played_strategy(player_name, card_id))
+			log_message.emit(GameLog.played_strategy(player_name, card_id, is_base_strategy))
 		CardEnums.ActionType.GAIN_RAGE:
 			log_message.emit(GameLog.gained_rage(player_name, game_state.get_current_player().rage, card_id))
 		CardEnums.ActionType.PLAY_MONSTER:
