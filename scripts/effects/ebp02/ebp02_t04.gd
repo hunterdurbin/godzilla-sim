@@ -4,6 +4,13 @@ extends CardEffect
 ## At the beginning of your end phase, <Destroy> this card and play 1 battle card
 ## named "Chibi Godzilla" from your discard pile.
 ## (Tokens cannot be added to the deck. They are banished when removed from zones.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

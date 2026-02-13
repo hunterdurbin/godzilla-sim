@@ -4,6 +4,13 @@ extends CardEffect
 ## <Your Turn> When you play a monster card, you may move this card to an unoccupied zone.
 ## If this card is in zone 8, this card gains +3000 counter power.
 ## When this card is <Destroy>, place this card on the bottom of your deck instead.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monster: Dictionary) -> void:

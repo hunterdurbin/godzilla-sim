@@ -4,6 +4,13 @@ extends CardEffect
 ## <Awakening4> If there are 3 or more "Crystals" in your zones, your opponent
 ## cannot play battle cards in zones in the same column as this card.
 ## (Does not destroy cards already there.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_blocked_opponent_zones(ctx: EffectContext) -> Array[int]:

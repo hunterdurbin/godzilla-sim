@@ -4,6 +4,13 @@ extends CardEffect
 ## <Your Turn> <Enter> Reveal the top 5 cards of your deck and send them to your discard pile.
 ## For each monster card revealed this way, increase this card's <Rage> by 1.
 ## If a card with <Step2> (invasion_icon >= 2) is revealed this way, this card advances to zone 6.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

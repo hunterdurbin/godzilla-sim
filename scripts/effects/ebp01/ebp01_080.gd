@@ -9,6 +9,13 @@ extends CardEffect
 ## NOTE: Rank reduction and destruction protection require system-level support.
 ## This effect declares the protection conditions. The rank reduction mechanic
 ## requires rules engine changes.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

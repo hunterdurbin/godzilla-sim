@@ -4,6 +4,13 @@ extends CardEffect
 ## You may have any number of this card in your deck.
 ## If the number of other rank 5 or lower battle cards in your zones is 2 or more,
 ## this card gains +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

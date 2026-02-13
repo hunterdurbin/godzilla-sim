@@ -2,6 +2,13 @@ extends CardEffect
 # Mechagodzilla Hangar (Strategy R5)
 # <Base>
 # <Your Turn> Counter start: search deck for 1 Weapon/Mech battle card, add to hand.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func is_base_strategy() -> bool:

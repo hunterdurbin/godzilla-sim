@@ -2,6 +2,13 @@ extends CardEffect
 # Zilla (Battle R4)
 # End phase start: move to an adjacent horizontal zone.
 # Then if adjacent to your monster, Destroy this card.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

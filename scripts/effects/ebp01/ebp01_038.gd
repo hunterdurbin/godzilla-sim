@@ -7,6 +7,13 @@ extends CardEffect
 ##
 ## NOTE: Counter protection mechanics require changes to the resolve_counter logic
 ## in ActionHandler. This effect declares the intent but needs system support.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

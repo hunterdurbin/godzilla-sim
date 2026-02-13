@@ -3,6 +3,13 @@ extends CardEffect
 ## ESD02-005: Godzilla(1993) - Monster Rank 3
 ## <When Invading> Reduce your opponent's <Rage> by 1.
 ## (If you invaded 2 zones, activate this effect 2 times.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

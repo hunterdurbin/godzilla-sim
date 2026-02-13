@@ -5,6 +5,13 @@ extends CardEffect
 ## this card gains +3000 counter power.
 ## <Revenge> If your opponent's monster card is in zones 1-5, you may return this card
 ## from your discard pile to your hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

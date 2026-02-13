@@ -2,6 +2,13 @@ extends CardEffect
 # The Battle at Fukuoka Tower (Strategy R4)
 # <Base>
 # <Opponent's Turn> +5000 TL for each monster or battle card in your zones 1, 5, and 8.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func is_base_strategy() -> bool:

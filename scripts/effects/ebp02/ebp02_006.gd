@@ -5,6 +5,13 @@ extends CardEffect
 ## <Destroy> all of your opponent's rank 6 or lower battle cards.
 ## If there is a <4th Form> card under this card, this card gains +10,000 threat level
 ## for each strategy card in your strategy zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

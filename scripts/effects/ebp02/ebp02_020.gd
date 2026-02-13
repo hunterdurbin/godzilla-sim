@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-020: Operation Yashiori -Conductorless train bombers- - Strategy Rank 6 (Red)
 ## <Enter> If you have 5 or more strategy cards in your discard pile, create
 ## "Conductorless Train Bombers" tokens in each of your unoccupied zones.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

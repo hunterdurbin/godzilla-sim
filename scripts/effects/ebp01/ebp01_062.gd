@@ -6,6 +6,13 @@ extends CardEffect
 ##
 ## NOTE: This is a persistent strategy card effect. The CP bonus is implemented
 ## as a field modifier that applies to all zones proportionally.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

@@ -5,6 +5,13 @@ extends CardEffect
 ## - <Destroy> 3 of your opponent's rank 5 or lower battle cards.
 ## - Your opponent discards cards until they have 3 cards remaining in their hand.
 ## - Send the top 3 cards of your deck to your discard pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

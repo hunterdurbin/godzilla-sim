@@ -4,6 +4,13 @@ extends CardEffect
 ## <Enter> Place all cards with the same name as this card from your discard pile under
 ## this card.
 ## This card gains +3000 threat level for each card with the same name under this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

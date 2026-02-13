@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-051: Mecha-King Ghidorah - Monster Rank 4 (Green)
 ## If there are 5 or more cards under this card, this card gains +3000 threat level
 ## for each of your opponent's unoccupied zones.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:

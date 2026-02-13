@@ -4,6 +4,13 @@ extends CardEffect
 ## While your opponent's Rage is 0, this card cannot be Destroyed by opponent's effects.
 ## If this card is in the same column as your opponent's monster card, this card gains
 ## +3000 counter power for each of your opponent's Rage.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

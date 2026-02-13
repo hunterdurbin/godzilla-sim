@@ -4,6 +4,13 @@ extends CardEffect
 ## <Burst4>
 ## Whenever this card's <Rage> is increased, <Destroy> all of your opponent's rank 6 or
 ## lower battle cards in the zone with the same number as the zone this card occupies.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

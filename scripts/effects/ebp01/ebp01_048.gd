@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-048: Biollante Rose Form - Battle Rank 3 (Blue)
 ## <Evolution7> <Biollante> At the beginning of your main phase, you may play a rank 7
 ## or lower <Biollante> battle card from your deck by placing it on top of this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

@@ -2,6 +2,13 @@ extends CardEffect
 # Godzilla(2001) R4
 # <Burst3>
 # <Awakening8> Your counter start: discard R5+ battle for +3 rage, then Destroy all opponent R7-.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_burst_rank() -> int:

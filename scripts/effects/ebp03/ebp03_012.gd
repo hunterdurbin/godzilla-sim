@@ -1,6 +1,13 @@
 extends CardEffect
 # Godzilla(1993) R2
 # <Enter> If you have 1 or fewer strategy cards in play, place up to 1 blue R6- strategy from hand.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

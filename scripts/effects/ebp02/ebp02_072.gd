@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-072: God of Destruction's Counterattack - Strategy Rank 5 (Green)
 ## <Your Turn> If you have 3 or more "Crystals" in your zones, your total
 ## counter power is increased by 20,000.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

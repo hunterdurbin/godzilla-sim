@@ -4,6 +4,13 @@ extends CardEffect
 ## Your opponent discards cards until they have 2 cards remaining in their hand.
 ##
 ## NOTE: This is a strategy card with an immediate effect when played (on_enter).
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

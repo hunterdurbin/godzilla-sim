@@ -2,6 +2,13 @@ extends CardEffect
 # Yakusugi (Strategy R3)
 # <Base>
 # <Your Turn> Counter start: evolve 1 of your R4 or lower battle cards with Evolution.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func is_base_strategy() -> bool:

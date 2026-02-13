@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP02-067: M.O.G.U.E.R.A. - Battle Rank 8 (Green)
 ## If your opponent has a <Godzilla> card in their zones, this card gains +5000 CP.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

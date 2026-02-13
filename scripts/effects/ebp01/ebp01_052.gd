@@ -6,6 +6,13 @@ extends CardEffect
 ##
 ## NOTE: Destruction protection requires system-level support in destroy_zone_target
 ## and destroy_zones. This effect declares the protection conditions.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

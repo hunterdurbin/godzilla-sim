@@ -7,6 +7,13 @@ extends CardEffect
 ##
 ## NOTE: This effect modifies opponent's battle card engagement. The get_engagement_restriction
 ## method returns the max rank of cards that cannot engage, for the system to query.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

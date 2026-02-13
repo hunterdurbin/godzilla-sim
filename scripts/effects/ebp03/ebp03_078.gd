@@ -1,6 +1,13 @@
 extends CardEffect
 # Megalon and Gigan: Villain Tag Team (Strategy R5)
 # If opponent has 3+ battle cards in zones, Destroy leftmost and rightmost.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

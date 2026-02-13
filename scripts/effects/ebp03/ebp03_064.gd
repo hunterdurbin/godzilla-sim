@@ -5,6 +5,13 @@ extends CardEffect
 ## card from your discard pile under this card.
 ## <Awakening4> If there is a card under this card, this card gains +3000 counter power.
 ## <Awakening6> If there is a card under this card, this card gains an additional +3000 CP.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

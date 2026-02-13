@@ -6,6 +6,13 @@ extends CardEffect
 ## 0 - <Destroy> all of your opponent's rank 2 or lower battle cards.
 ## 1 - <Destroy> all of your opponent's rank 4 or lower battle cards.
 ## 2 - <Destroy> all of your opponent's rank 6 or lower battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

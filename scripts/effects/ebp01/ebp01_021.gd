@@ -4,6 +4,13 @@ extends CardEffect
 ## <Enter> If this card is in the same column as your opponent's monster card, look at
 ## the top 2 cards of your deck, put any number on top of your deck in any order,
 ## and send the rest to your discard pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

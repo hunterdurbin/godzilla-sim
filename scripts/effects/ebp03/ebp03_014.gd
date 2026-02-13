@@ -1,6 +1,13 @@
 extends CardEffect
 # Godzilla(2002) R1
 # At the beginning of your end phase, you may discard 1 battle card from hand. If you do, draw 1.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

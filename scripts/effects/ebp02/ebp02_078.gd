@@ -4,6 +4,13 @@ extends CardEffect
 ## <Enter> If this card is in the same column as your opponent's monster card,
 ## reveal the top 2 cards of your deck. Add all rank 5 or lower battle cards among
 ## them to your hand and send the rest into your discard pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

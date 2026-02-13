@@ -5,6 +5,13 @@ extends CardEffect
 ## to reduce your opponent's <Rage> by 2.
 ## At the beginning of your end phase, if your opponent's monster card is in zone 1-5,
 ## increase this card's <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

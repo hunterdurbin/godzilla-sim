@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-073: Bloody Chainsaw - Strategy Rank 6 (Green)
 ## <Your Turn> Whenever you play a battle card, <Destroy> all of your opponent's
 ## rank 6 or lower battle cards in the same column as that battle card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

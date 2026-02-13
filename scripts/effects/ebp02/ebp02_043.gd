@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-043: Gigan(2004) - Monster Rank 3 (Green)
 ## Each of your battle cards in zones adjacent to this card gain +1000 counter power
 ## for each card under this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:

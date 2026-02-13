@@ -5,6 +5,13 @@ extends CardEffect
 ## <Enter> You may discard 1 strategy card from your hand. If you do, reveal the top 5
 ## cards of your deck, add 1 monster card from among them to your hand, then send the
 ## rest to your discard pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

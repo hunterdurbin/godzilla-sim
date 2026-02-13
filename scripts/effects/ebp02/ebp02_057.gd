@@ -4,6 +4,13 @@ extends CardEffect
 ## <Enter> Move 1 of your opponent's battle cards in the same column as this card
 ## to an unoccupied zone.
 ## Whenever this card's <Rage> is increased, play 2 "Crystals" tokens.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -4,6 +4,13 @@ extends CardEffect
 ## Whenever this card's <Rage> is increased, send the top card of your deck to your
 ## discard pile. If it is a monster card, <Destroy> 1 of your opponent's rank 6 or lower
 ## battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:

@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-011: Godzilla(Fest Godzilla) - Monster Rank 1
 ## When this card advances into the same column as your opponent's monster card,
 ## advance your opponent's monster card by 1 zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_monster_advance(ctx: EffectContext, _from_zone: int, to_zone: int) -> void:

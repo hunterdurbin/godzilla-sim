@@ -2,6 +2,13 @@ extends CardEffect
 # Thousand-Year Dragon King Ghidorah (Battle R8)
 # If opponent has 2+ strategy cards, play with rank reduced by 2 (self-modifier).
 # <Enter> Destroy 1 opponent strategy card.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary) -> int:

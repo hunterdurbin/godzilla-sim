@@ -3,6 +3,13 @@ extends CardEffect
 ## ESD02-011: Battra(imago) - Battle Rank 6
 ## <Awakening6> This card gains +3000 counter power.
 ## (Active if your monster card is in zone 6 or beyond.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP03-039: Godzilla(2016) 4th Form - Battle Rank 7 (Red)
 ## Whenever your card is sent from a strategy zone to the discard pile, draw 1 card.
 ## If there are 5 or more strategy cards in your discard pile, this card gains +5000 CP.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

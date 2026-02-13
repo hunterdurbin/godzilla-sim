@@ -8,6 +8,13 @@ extends CardEffect
 ## NOTE: This is a continuous strategy effect. The engagement restriction requires
 ## system-level filtering in the counter phase. The effect_handler should check
 ## active strategy cards for engagement restrictions.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

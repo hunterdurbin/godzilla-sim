@@ -5,6 +5,13 @@ extends CardEffect
 ## - <Destroy> 1 of your opponent's rank 5 or lower battle cards.
 ## - If you have 10 or more monster cards in your discard pile,
 ##   <Destroy> 1 of your opponent's battle cards in zone 8.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

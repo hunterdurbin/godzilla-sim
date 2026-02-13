@@ -5,6 +5,13 @@ extends CardEffect
 ##
 ## NOTE: This is a persistent strategy effect that triggers on invasion during the turn
 ## it was played. Implemented via on_monster_advance during main phase.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

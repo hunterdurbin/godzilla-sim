@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-056: Super X2 - Battle Rank 6 (Blue)
 ## If this card is in the same column as your opponent's monster card, this card gains
 ## +3000 counter power for each of your opponent's <Rage>.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

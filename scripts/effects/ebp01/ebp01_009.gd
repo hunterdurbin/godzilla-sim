@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-009: Godzilla(2023) - Monster Rank 3 (Burst II)
 ## <Burst2> <When Invading> If this card has 2 or more <Rage>, <Destroy> 1 of your
 ## opponent's rank 6 or lower battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

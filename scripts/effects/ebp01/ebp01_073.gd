@@ -7,6 +7,13 @@ extends CardEffect
 ## opponent's <Rage> to 0.
 ##
 ## NOTE: The play restriction requires rules engine support.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

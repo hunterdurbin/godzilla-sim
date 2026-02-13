@@ -2,6 +2,13 @@ extends CardEffect
 
 ## ESD02-002: Godzilla(1989) - Monster Rank 2
 ## <Enter> <Destroy> 1 of your opponent's rank 4 or lower battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

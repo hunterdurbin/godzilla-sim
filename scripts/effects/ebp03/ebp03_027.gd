@@ -5,6 +5,13 @@ extends CardEffect
 ## battle cards in your opponent's zones by 2.
 ## <When Invading> If there are 5 or more cards under this card, your opponent discards
 ## cards until they have 4 cards remaining in their hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-018: Despair - Strategy Rank 3 (Red)
 ## If your monster card has 2 or more <Rage>, <Destroy> 1 of your opponent's battle cards
 ## that is occupying a zone at or before the zone your monster card currently occupies.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -2,6 +2,13 @@ extends CardEffect
 # Mechagodzilla(1975) (Battle R7)
 # Counter start: may move this card to an unoccupied zone.
 # If same column as opponent monster, +3000 CP.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

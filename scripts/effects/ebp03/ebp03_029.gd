@@ -7,6 +7,13 @@ extends CardEffect
 ## - Destroy all battle cards of both players.
 ## - Each player discards cards until they have 2 cards remaining in their hand.
 ## - Reduce each player's monster card's Rage by 2.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

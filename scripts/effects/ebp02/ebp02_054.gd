@@ -4,6 +4,13 @@ extends CardEffect
 ## <Enter> Play 2 "Crystals" tokens.
 ## Whenever this card's <Rage> is increased, <Destroy> 1 of your opponent's
 ## rank 5 or lower battle cards for each "Crystals" in your zones.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

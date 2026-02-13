@@ -3,6 +3,13 @@ extends CardEffect
 # <Awakening4> <Enter> If "Star Falcon" is in your zones, choose:
 # - Destroy 1 opponent strategy card, OR
 # - Reduce opponent rage by 1.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

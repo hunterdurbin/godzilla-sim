@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP01-004: Godzilla(1954) - Monster Rank 4 (Burst III)
 ## <Burst3> When this card reaches zone 8, <Destroy> all battle cards in each player's zones.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-051: Orga Phase II - Battle Rank 4 (Blue)
 ## If you have 5 or more monster cards in your discard pile, this card gains
 ## +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

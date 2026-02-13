@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP03-062: Baragon(2001) - Battle Rank 6 (Green)
 ## When your opponent's monster card invades, Destroy this card.
 ## <Revenge> Return up to 1 Sacred Guardian Beast monster card from your discard pile to your hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_invasion_observed(ctx: EffectContext, invading_player_id: int, _from_zone: int, _to_zone: int) -> void:

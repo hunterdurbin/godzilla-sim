@@ -1,6 +1,13 @@
 extends CardEffect
 # Multi-purpose Fighting System-3 (Battle R6)
 # Counter start: if opponent has 2+ rage, Destroy all your battle cards adjacent to this.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

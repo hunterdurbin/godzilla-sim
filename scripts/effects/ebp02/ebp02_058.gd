@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-058: Dorat - Battle Rank 2 (Green)
 ## <Revenge> Return up to 1 <King Ghidorah> monster card from your discard pile
 ## to your hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_revenge(ctx: EffectContext) -> void:

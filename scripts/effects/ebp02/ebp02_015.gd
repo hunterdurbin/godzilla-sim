@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-015: Rodan(2004) - Battle Rank 6 (Red)
 ## If this card is in a zone with the same number as the zone that your opponent's
 ## monster card occupies, this card gains +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

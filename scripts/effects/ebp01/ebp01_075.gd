@@ -9,6 +9,13 @@ extends CardEffect
 ##
 ## NOTE: Destruction protection and rank reduction require system-level support.
 ## The CP modifier is fully implemented.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

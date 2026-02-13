@@ -4,6 +4,13 @@ extends CardEffect
 ## <Enter> If you have 2 or more cards with <Biollante> in your discard pile, return all
 ## cards in your opponent's discard pile to their deck then shuffle.
 ## <Enter> Play 2 "Tentacles" tokens in zones adjacent to this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

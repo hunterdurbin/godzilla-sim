@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-022: Titanosaurus - Battle Rank 5
 ## <Your Turn> Whenever your monster card's <Rage> is increased, you may move 1 of your
 ## other battle cards in your zones to an unoccupied zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:

@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-022: Godzilla(1994) - Monster Rank 4 (Blue)
 ## <When Invading> If you discarded a blue battle card for this card's invade action,
 ## you may play that battle card from your discard pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

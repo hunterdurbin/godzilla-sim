@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-012: Godzilla(Fest Godzilla) - Monster Rank 2
 ## At the beginning of your end phase, if this card invaded this turn,
 ## advance your opponent's monster card by 1 zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

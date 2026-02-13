@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-001: Giant Unknown Creature - Monster Rank 1 (Red)
 ## <Opponent's Turn> At the beginning of the counter phase, you may discard 1 strategy
 ## card from your hand to increase this card's <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

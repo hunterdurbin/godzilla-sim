@@ -5,6 +5,13 @@ extends CardEffect
 ## this card gains +3000 counter power.
 ## <Revenge> Return up to 1 <King Ghidorah> monster card from your discard pile
 ## to your hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

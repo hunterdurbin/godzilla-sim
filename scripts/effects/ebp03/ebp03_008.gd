@@ -2,6 +2,13 @@ extends CardEffect
 # Multi-purpose Fighting System-3 R3
 # <Enter> If blue battle card in your zones, Destroy 1 opponent R5-.
 # <Opponent's Turn> Counter start: if red battle in your zones, Destroy 1 opponent R5- in same column.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

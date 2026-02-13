@@ -2,6 +2,13 @@ extends CardEffect
 # Garuda (Battle R5)
 # Counter start: if same column as opponent monster, discard 1 Weapon/Mech from hand,
 # search deck for "Super Mechagodzilla", play on top of this card.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

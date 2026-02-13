@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-080: Joint Struggle - Strategy Rank 6 (White)
 ## Reveal the top 2 cards of your deck. If they differ in at least 1 trait,
 ## add them to your hand; otherwise, send them to the discard pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

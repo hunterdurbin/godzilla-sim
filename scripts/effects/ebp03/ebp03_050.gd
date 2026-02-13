@@ -2,6 +2,13 @@ extends CardEffect
 # Rainbow Mothra (Battle R7)
 # <Enter> If Base in play, opponent monster with TL <= 20000 retreats 1 zone.
 # <Evolution8> <Mothra>
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

@@ -1,6 +1,13 @@
 extends CardEffect
 # MBT-MB90 (Battle R3)
 # <Enter> Look at the top card of your deck. You may send it to discard or put back on top.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

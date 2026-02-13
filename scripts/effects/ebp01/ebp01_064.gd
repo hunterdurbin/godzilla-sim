@@ -5,6 +5,13 @@ extends CardEffect
 ## - <Destroy> 1 of your opponent's rank 4 or lower battle cards.
 ## - If you have 4 or more battle cards in your zones, choose 1 of your opponent's
 ##   zones and <Destroy> all battle cards in that zone and zones adjacent to it.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

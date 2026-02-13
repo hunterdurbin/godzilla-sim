@@ -4,6 +4,13 @@ extends CardEffect
 ## If this card is in your monster deck, at the start of the game it will be played in Zone 5.
 ## This card cannot advance nor invade.
 ## (Start zone handled via "start_zone": 5 in card_data.gd)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func can_monster_advance(_ctx: EffectContext) -> bool:

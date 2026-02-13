@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-059: Godzillasaurus - Battle Rank 3 (Green)
 ## <Revenge> You may discard 1 card from your hand, if you do, return 1 battle card
 ## named "Godzilla(1991)" from your discard pile to your hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_revenge(ctx: EffectContext) -> void:

@@ -1,6 +1,13 @@
 extends CardEffect
 # Mechagodzilla(1993) (Battle R6)
 # <Enter> If 2+ other battle cards in your zones, reduce opponent rage by 1.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

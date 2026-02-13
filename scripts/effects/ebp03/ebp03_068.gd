@@ -4,6 +4,13 @@ extends CardEffect
 ## <Your Turn> Your monster card cannot invade.
 ## Move your rank III or higher monster card in zone 3 vertically to zone 8.
 ## (Your battle cards in zones 4-7 will not be Destroyed by this movement.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

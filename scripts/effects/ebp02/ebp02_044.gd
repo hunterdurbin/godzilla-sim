@@ -4,6 +4,13 @@ extends CardEffect
 ## <When Invading> If your opponent's monster card is in zones 6-8, reduce their <Rage> by 2.
 ## At the beginning of your end phase, if your opponent's monster card is in zones 1-5,
 ## increase this card's <Rage> by 2.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

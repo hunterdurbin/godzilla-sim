@@ -1,6 +1,13 @@
 extends CardEffect
 # Godzilla(2002) (Battle R6)
 # <Enter> If in zone 8, draw 2 cards then discard 2 cards.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -1,6 +1,13 @@
 extends CardEffect
 # Aqua Mothra R4
 # If you have a card with <Base> in play, +10000 threat level.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:

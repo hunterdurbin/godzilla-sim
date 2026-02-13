@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP03-042: Ghogo - Battle Rank 2 (Blue)
 ## When your monster card invades, if this is in zone 8, you may put this card under one
 ## of your Mothra battle cards with Evolution. If you do, evolve that Mothra battle card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_invasion_observed(ctx: EffectContext, invading_player_id: int, _from_zone: int, _to_zone: int) -> void:

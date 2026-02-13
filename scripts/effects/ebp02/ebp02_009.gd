@@ -5,6 +5,13 @@ extends CardEffect
 ## When this card is discarded by the effect of Burst, return this card from your
 ## discard pile to your hand.
 ## <When Invading> Your opponent discards cards until they have 3 cards remaining.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

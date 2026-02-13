@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP01-005: Godzilla(1955) - Monster Rank 4 (Burst III)
 ## <Burst3> <Enter> Your opponent discards cards until they have 4 cards remaining in their hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

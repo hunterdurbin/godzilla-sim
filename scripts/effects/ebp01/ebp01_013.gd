@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-013: Godzilla(Fest Godzilla) - Monster Rank 3 (Burst II)
 ## <Burst2> <Enter> If you have 4 or more battle cards in your zones,
 ## reduce your opponent's <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP02-037: Destoroyah Perfect Form - Battle Rank 8 (Blue)
 ## <Enter> Draw 2 cards, then discard 2 cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -1,6 +1,13 @@
 extends CardEffect
 # Moguera (Battle R6)
 # <Enter> If played from hand and in zone 8, search deck for 1 Moguera battle card, play it.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -4,6 +4,13 @@ extends CardEffect
 ## At the beginning of your main phase, send the top 2 cards of your deck
 ## to your discard pile. If a <Godzilla> card was sent to your discard pile
 ## this way, <Destroy> this card and play a "Chibi Godzilla 2nd Form" token.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

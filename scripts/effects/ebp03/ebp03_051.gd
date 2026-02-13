@@ -2,6 +2,13 @@ extends CardEffect
 # Godzilla Jr. (Battle R7)
 # If played on top of Little Godzilla, rank reduced by 2 (self-modifier).
 # +5000 CP per card under this card.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func stacks_on_play(ctx: EffectContext, zone_index: int) -> bool:

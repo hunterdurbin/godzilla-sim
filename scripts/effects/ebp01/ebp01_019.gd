@@ -4,6 +4,13 @@ extends CardEffect
 ## <Awakening6> <Enter> If this card was played from your hand, search your deck for
 ## up to 2 <Kamacuras> battle cards, play them, then shuffle your deck.
 ## (Active if your monster card is in zone 6 or beyond.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

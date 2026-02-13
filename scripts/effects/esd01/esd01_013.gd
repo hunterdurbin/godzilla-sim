@@ -3,6 +3,13 @@ extends CardEffect
 ## ESD01-013: Ginza Annihilated - Strategy Rank 4
 ## <Your Turn> Whenever your monster card's <Rage> is increased,
 ## <Destroy> 1 of your opponent's rank 6 or lower battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:

@@ -1,6 +1,13 @@
 extends CardEffect
 # Cretaceous King Ghidorah(1998) (Battle R5)
 # <Revenge> Return up to 1 King Ghidorah monster card from discard to hand.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_revenge(ctx: EffectContext) -> void:

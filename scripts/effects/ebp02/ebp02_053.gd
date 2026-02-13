@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-053: SpaceGodzilla - Monster Rank 2 (Green)
 ## <When Invading> Play 1 "Crystals" token.
 ## If there is a "Crystals" in your zones, this card gains +5000 threat level.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

@@ -1,6 +1,13 @@
 extends CardEffect
 # Godzilla Captured! (Strategy R7)
 # Set opponent's rage to 0.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

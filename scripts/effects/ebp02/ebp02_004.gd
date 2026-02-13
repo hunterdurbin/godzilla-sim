@@ -4,6 +4,13 @@ extends CardEffect
 ## <Burst2>
 ## <Enter> If there is a <2nd Form> card under this card, <Destroy> 1 of your opponent's
 ## rank 6 or lower battle cards for each strategy card in your strategy zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

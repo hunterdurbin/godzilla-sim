@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-014: Cabinet Helicopter - Battle Rank 6 (Red)
 ## <Enter> Send the top card of your deck to your discard pile.
 ## If it is a monster card, advance your monster card to zone 6.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

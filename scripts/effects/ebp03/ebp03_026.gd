@@ -5,6 +5,13 @@ extends CardEffect
 ## battle cards in your opponent's zones by 2.
 ## <Enter> You may place 2 monster cards from your discard pile under this card.
 ## If you do, reduce your opponent's Rage by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

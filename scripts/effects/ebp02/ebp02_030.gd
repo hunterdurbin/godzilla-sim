@@ -4,6 +4,13 @@ extends CardEffect
 ## <Evolution5> <Little Godzilla> At the beginning of your main phase, you may play
 ## a rank 5 or lower <Little Godzilla> battle card from your deck by placing it on
 ## top of this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

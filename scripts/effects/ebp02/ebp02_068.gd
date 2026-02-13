@@ -6,6 +6,13 @@ extends CardEffect
 ## (This card's rank returns to 23 after being played.)
 ## If this card is in the same column as your opponent's monster card,
 ## they cannot invade, and this card gains +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

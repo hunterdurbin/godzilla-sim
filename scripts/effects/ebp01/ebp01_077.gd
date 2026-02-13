@@ -5,6 +5,13 @@ extends CardEffect
 ## it were countered. (Do not play the next monster card from your monster deck.)
 ##
 ## "As though it were countered" means retreat to the retreat zone without ranking up.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

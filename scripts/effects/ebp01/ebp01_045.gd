@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-045: Meganula - Battle Rank 2 (Blue)
 ## <Enter> If this card is in the same column as your opponent's monster card and you
 ## have 2 or more battle cards in your zones, reduce your opponent's <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

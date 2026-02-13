@@ -5,6 +5,13 @@ extends CardEffect
 ## 1 card from your hand to reduce your opponent's <Rage> by 1.
 ## If you have 5 or more monster cards in your discard pile, this card gains
 ## +10,000 threat level.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

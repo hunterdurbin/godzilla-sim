@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP01-079: Gravity Beam - Strategy Rank 5 (White)
 ## Your opponent discards cards until they have 3 cards remaining in their hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -2,6 +2,13 @@ extends CardEffect
 # Desghidorah (Battle R4)
 # <Enter> If opponent has 3+ empty zones, Destroy 1 opponent strategy.
 # If opponent has no strategy cards in play, +3000 CP.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

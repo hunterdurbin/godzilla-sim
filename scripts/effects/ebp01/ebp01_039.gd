@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-039: Godzilla(1999) - Monster Rank 2 (Blue)
 ## <When Invading> Discard 1 monster card from your hand: <Destroy> all of your
 ## opponent's rank 5 or lower battle cards in zones 1-5.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

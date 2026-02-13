@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-001: Godzilla(1954) - Monster Rank 1
 ## At the beginning of your counter phase, send the top card of your deck to your discard pile.
 ## If it is a monster card, increase this card's <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

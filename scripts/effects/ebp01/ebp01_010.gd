@@ -5,6 +5,13 @@ extends CardEffect
 ## in the same column as this card.
 ## <Opponent's Turn> At the beginning of the counter phase, if this card has 3 or more <Rage>,
 ## <Destroy> all of your opponent's battle cards in the same column as this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:

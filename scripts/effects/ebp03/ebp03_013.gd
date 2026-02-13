@@ -5,6 +5,13 @@ extends CardEffect
 ## (It remains 3 even if this leaves play.)
 ## <Opponent's Turn> At the beginning of the counter phase, if there are no cards in
 ## your strategy zones, you lose the game.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

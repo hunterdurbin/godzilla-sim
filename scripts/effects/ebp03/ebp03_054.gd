@@ -1,6 +1,13 @@
 extends CardEffect
 # Eternal Mothra (Battle R8)
 # <Enter> If in zone 8 and Base in play, opponent monster with TL <= 60000 retreats 1.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

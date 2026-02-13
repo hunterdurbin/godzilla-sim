@@ -5,6 +5,13 @@ extends CardEffect
 ## named Godzilla(2023), play it, then shuffle your deck.
 ##
 ## NOTE: This is a strategy card with an immediate effect when played (on_enter).
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

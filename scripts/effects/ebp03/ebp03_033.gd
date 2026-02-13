@@ -1,6 +1,13 @@
 extends CardEffect
 # Mechagodzilla(1975) (Battle R5)
 # <Enter> Discard 1 R5+ battle card from hand, search deck for "Space Beam", add to hand.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

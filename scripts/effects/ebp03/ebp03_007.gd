@@ -2,6 +2,13 @@ extends CardEffect
 # Multi-purpose Fighting System-3 R2
 # <When Invading> Reveal N cards from top of deck (N = opponent monster rank),
 # add 1 red or blue battle card to hand, discard rest.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-006: Godzilla(1974) - Monster Rank 3
 ## <Opponent's Turn> At the beginning of the counter phase, <Destroy> all of your
 ## opponent's rank 5 or lower battle cards in the same column as this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

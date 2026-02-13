@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP01-074: King Ghidorah(2024) - Battle Rank 8 (White)
 ## If you have a card named "Gravity Beam" in play, this card gains +20,000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

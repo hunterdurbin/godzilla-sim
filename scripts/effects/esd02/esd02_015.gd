@@ -4,6 +4,13 @@ extends CardEffect
 ## Choose 1 of your opponent's zones. <Destroy> all of your opponent's battle cards
 ## in that zone and zones adjacent to it.
 ## (For example, if a card is in zone 7, the adjacent zones are 4, 6, and 8.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

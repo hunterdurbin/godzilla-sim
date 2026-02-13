@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP01-041: Godzilla(2000) - Monster Rank 1 (Blue)
 ## <When Invading> <Destroy> 1 of your opponent's rank 4 or lower battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

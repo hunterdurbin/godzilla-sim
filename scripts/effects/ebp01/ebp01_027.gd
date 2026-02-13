@@ -6,6 +6,13 @@ extends CardEffect
 ##
 ## NOTE: The rank reduction when playing is a declarative mechanic that requires
 ## rules engine support. The effect script provides the calculation for the system to query.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

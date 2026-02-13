@@ -3,6 +3,13 @@ extends CardEffect
 ## ESD01-011: Godzilla(2023) - Battle Rank 5
 ## <Enter> If your monster card has 2 or more <Rage>, reduce your opponent's <Rage> by 1.
 ## When this card is <Destroy>, place this card on the bottom of your deck instead.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

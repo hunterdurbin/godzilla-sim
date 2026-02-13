@@ -1,6 +1,13 @@
 extends CardEffect
 # Multi-purpose Fighting System-3 R4
 # <Enter> Choose 1 opponent zone in same column, Destroy all opponent R6- in that zone + adjacent.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

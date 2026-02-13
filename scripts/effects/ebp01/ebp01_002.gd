@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-002: Godzilla(1954) - Monster Rank 2 (Burst I)
 ## <Burst1> <When Invading> Send the top card of your deck to your discard pile.
 ## If it is a monster card, <Destroy> 1 of your opponent's rank 5 or lower battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

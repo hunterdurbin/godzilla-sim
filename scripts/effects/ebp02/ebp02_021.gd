@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-021: Godzilla(1993) - Monster Rank 3 (Blue)
 ## All of your rank 5 or lower battle cards in zones adjacent to this card
 ## gain +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:

@@ -4,6 +4,13 @@ extends CardEffect
 ## If this card is in the same column as your opponent's monster card, this card gains
 ## +5000 counter power.
 ## When your opponent's <Rage> is increased, <Destroy> this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

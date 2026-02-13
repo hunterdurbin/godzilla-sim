@@ -7,6 +7,13 @@ extends CardEffect
 ##
 ## NOTE: The discard-from-hand play trigger requires system support to interrupt
 ## the discard and play the card instead. The CP modifier is fully implemented.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

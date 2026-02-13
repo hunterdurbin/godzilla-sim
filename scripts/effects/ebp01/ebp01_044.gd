@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-044: Mothra(egg)(1992) - Battle Rank 1 (Blue)
 ## <Evolution5> <Mothra> At the beginning of your main phase, you may play a rank 5
 ## or lower <Mothra> battle card from your deck by placing it on top of this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

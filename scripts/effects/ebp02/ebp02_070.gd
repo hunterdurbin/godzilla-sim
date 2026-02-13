@@ -6,6 +6,13 @@ extends CardEffect
 ## <Opponent's Turn> At the beginning of the main phase, your opponent may discard
 ## cards until they have 5 cards remaining in their hand. If they discard at least
 ## 1 card, <Destroy> this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

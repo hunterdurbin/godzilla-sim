@@ -2,6 +2,13 @@ extends CardEffect
 # Godzilla(2001) R2
 # <Opponent's Turn> <Awakening4> Counter start: discard R5+ battle for +1 rage.
 # <Awakening8> Your counter start: discard R5+ battle for +2 rage.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

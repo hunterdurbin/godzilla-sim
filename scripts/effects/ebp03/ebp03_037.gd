@@ -2,6 +2,13 @@ extends CardEffect
 # Godzilla(2001) (Battle R6)
 # <Awakening8> <Enter> +1 rage.
 # <Awakening8> +5000 CP.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

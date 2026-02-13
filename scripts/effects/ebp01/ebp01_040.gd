@@ -4,6 +4,13 @@ extends CardEffect
 ## <Enter> <Destroy> 1 of your opponent's rank 7 or lower battle cards.
 ## <When Invading> If you have 5 or more monster cards in your discard pile,
 ## increase this card's <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

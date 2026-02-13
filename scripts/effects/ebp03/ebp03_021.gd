@@ -1,6 +1,13 @@
 extends CardEffect
 # Rainbow Mothra R3
 # <Enter> Return 1 strategy card with <Base> from your discard pile to your hand.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

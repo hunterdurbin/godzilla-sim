@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP01-065: Godzilla vs. Destoroyah - Strategy Rank 6 (Blue)
 ## <Destroy> all of your opponent's battle cards in zones 1-5.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

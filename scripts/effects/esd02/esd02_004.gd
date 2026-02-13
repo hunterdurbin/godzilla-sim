@@ -4,6 +4,13 @@ extends CardEffect
 ## <When Invading> Discard 1 battle card from your hand:
 ## <Destroy> all of your opponent's battle cards with a rank equal to or lower
 ## than the discarded card's rank.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

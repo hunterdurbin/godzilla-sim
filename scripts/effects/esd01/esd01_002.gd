@@ -4,6 +4,13 @@ extends CardEffect
 ## <When Invading> Search your deck for up to 1 rank III card named Godzilla(2023)
 ## with <Burst>, reveal it, add it to your hand, then shuffle your deck.
 ## (If you invaded 2 zones, activate this effect 2 times)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

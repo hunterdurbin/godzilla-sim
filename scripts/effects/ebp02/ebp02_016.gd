@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-016: Anguirus(2004) - Battle Rank 7 (Red)
 ## If this card is in the same column as the opponent's monster card,
 ## this card gains +5000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

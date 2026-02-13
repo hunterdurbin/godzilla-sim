@@ -5,6 +5,13 @@ extends CardEffect
 ## this card cannot be countered by 40,000 or lower counter power. Instead, it
 ## only moves as though it were countered. (Do not play the next Monster Card
 ## from your monster deck.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

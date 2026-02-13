@@ -6,6 +6,13 @@ extends CardEffect
 ## lowest ranked battle cards.
 ## This card's counter power X = 3000 * number of different colors among other battle
 ## cards in your zones.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_discard_from_hand(ctx: EffectContext) -> void:

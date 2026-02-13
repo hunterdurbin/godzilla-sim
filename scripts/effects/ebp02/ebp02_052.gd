@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-052: SpaceGodzilla Flying Form - Monster Rank 1 (Green)
 ## <When Invading> You may discard 1 card from your hand, if you do,
 ## play 1 "Crystals" token.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

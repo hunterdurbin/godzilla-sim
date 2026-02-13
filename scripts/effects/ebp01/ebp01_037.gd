@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-037: Godzilla(1995) - Monster Rank 3 (Blue)
 ## Whenever this card advances, you may discard 1 strategy card from your hand
 ## to increase its <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

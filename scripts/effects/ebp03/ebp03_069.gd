@@ -1,6 +1,13 @@
 extends CardEffect
 # Space Beam (Strategy R4)
 # Opponent discards to 4. If Mechagodzilla in your zone 8, Destroy all opponent R5-.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

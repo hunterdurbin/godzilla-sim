@@ -4,6 +4,13 @@ extends CardEffect
 ## <Enter> If this card was played through evolution, choose up to 1 strategy card
 ## named "Godzilla vs. Destoroyah" in your discard pile.
 ## If you have 1 or fewer strategy cards in play, play and activate the chosen card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

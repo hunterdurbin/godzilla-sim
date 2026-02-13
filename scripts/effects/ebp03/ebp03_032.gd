@@ -1,6 +1,13 @@
 extends CardEffect
 # Mechagodzilla(1974) (Battle R4)
 # Counter phase start: if adjacent to monster, may discard all hand for +1000 CP per card.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 var _bonus_cp: int = 0
 

@@ -7,6 +7,13 @@ extends CardEffect
 ## power. Instead, it only moves as though it were countered.
 ##
 ## NOTE: Counter protection mechanics require changes to resolve_counter in ActionHandler.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_discard_from_hand(ctx: EffectContext) -> void:

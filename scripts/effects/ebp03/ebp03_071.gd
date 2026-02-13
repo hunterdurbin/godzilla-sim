@@ -6,6 +6,13 @@ extends CardEffect
 ## send the rest to your discard pile, then draw 2 cards.
 ##
 ## Note: "counts_as_monster_in_discard" flag is set in card_data.gd.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

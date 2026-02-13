@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP02-010: King Caesar(2004) - Battle Rank 2 (Red)
 ## <Enter> Move 1 of your other battle cards in your zones to an unoccupied zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

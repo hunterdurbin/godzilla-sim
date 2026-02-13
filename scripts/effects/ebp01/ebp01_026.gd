@@ -4,6 +4,13 @@ extends CardEffect
 ## At the beginning of your counter phase, you may place 1 card with both <Gigan>
 ## and <Fest> from your discard pile under this card.
 ## If there is a card under this card, this card gains +5000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

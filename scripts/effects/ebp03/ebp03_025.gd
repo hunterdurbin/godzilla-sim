@@ -4,6 +4,13 @@ extends CardEffect
 ## <Your Turn> Reduce the rank of all battle cards in your opponent's zones by 1.
 ## <Enter> You may place 1 monster card from your discard pile under this card.
 ## If you do, advance your opponent's monster card to zone 5.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

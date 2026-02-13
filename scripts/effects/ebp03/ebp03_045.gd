@@ -1,6 +1,13 @@
 extends CardEffect
 # Mothra(larva)(2003) (Battle R4)
 # If adjacent to your monster card, +3000 CP.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

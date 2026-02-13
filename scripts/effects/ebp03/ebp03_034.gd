@@ -1,6 +1,13 @@
 extends CardEffect
 # Jet Jaguar(1973) (Battle R5)
 # <Enter> Discard 1 strategy card from hand, reduce opponent rage by 1.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

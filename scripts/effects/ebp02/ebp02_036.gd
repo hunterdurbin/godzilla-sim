@@ -4,6 +4,13 @@ extends CardEffect
 ## At the beginning of your end phase, if this card is in a zone adjacent to your
 ## monster card, 1 of your opponent's monster cards with 40,000 or less threat level
 ## retreats back by 1 zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

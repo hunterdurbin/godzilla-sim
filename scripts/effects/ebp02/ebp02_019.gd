@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-019: There is no danger of the creature coming ashore. - Strategy Rank 4 (Red)
 ## Move 1 battle card in your zones to an unoccupied zone.
 ## If your monster card invaded this turn, advance your monster card by 1 zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

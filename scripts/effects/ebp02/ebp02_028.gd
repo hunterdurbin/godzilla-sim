@@ -5,6 +5,13 @@ extends CardEffect
 ## discard pile to each of this card's adjacent zones. (You must play as many as
 ## possible and you may play the battle cards in zones already occupied by other
 ## battle cards. Maximum of 3 cards.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

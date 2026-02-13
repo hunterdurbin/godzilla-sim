@@ -5,6 +5,13 @@ extends CardEffect
 ## - <Destroy> 3 of your opponent's rank 4 or lower battle cards.
 ## - <Awakening6> <Destroy> 2 of your opponent's rank 6 or lower battle cards.
 ## - <Awakening8> <Destroy> 1 of your opponent's battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

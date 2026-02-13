@@ -2,6 +2,13 @@ extends CardEffect
 # Godzilla(2001) R1
 # <Awakening4> At the beginning of your end phase, discard 1 R5+ battle card to advance 1 zone.
 # <Awakening6> +5000 threat level.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

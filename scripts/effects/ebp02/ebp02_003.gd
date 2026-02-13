@@ -4,6 +4,13 @@ extends CardEffect
 ## <Burst3>
 ## <Enter> If there is a card named "Giant Unknown Creature" under this card,
 ## you may discard 1 strategy card from your hand to advance this card by 1 zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

@@ -3,6 +3,13 @@ extends CardEffect
 ## ESD02-008: Battra(larva) - Battle Rank 3
 ## <Evolution6> <Battra> At the beginning of your main phase, you may search your deck
 ## for a rank 6 or lower <Battra> battle card and play it by stacking it on top of this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

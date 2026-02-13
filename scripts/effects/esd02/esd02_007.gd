@@ -3,6 +3,13 @@ extends CardEffect
 ## ESD02-007: Mothra(larva)(1992) - Battle Rank 2
 ## <Evolution5> <Mothra> At the beginning of your main phase, you may search your deck
 ## for a rank 5 or lower <Mothra> battle card and play it by stacking it on top of this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

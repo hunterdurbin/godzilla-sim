@@ -3,6 +3,13 @@ extends CardEffect
 # Reveal top 3 of deck, send to discard.
 # Destroy all opponent battle cards in zones whose numbers match the revealed ranks.
 # If opponent monster is in a matching zone, retreat 1.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

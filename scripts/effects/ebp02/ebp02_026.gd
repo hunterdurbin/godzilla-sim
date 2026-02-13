@@ -4,6 +4,13 @@ extends CardEffect
 ## <Enter> If you have a strategy card in play, choose 1 of your opponent's zones.
 ## <Destroy> all of your opponent's rank 5 or lower battle cards in that zone and
 ## zones adjacent to it.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

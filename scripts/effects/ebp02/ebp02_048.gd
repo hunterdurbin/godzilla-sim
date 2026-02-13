@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-048: King Ghidorah(1991) - Monster Rank 2 (Green)
 ## <Enter> Send the top 3 cards of your deck to your discard pile.
 ## <When Invading> <Destroy> 3 of your opponent's rank 4 or lower battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

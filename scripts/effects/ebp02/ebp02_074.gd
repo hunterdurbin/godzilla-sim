@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP02-074: Bite Attack - Strategy Rank 7 (Green)
 ## Increase your monster card's <Rage> by 1 for each rank of your opponent's monster.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

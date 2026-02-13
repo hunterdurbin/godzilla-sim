@@ -4,6 +4,13 @@ extends CardEffect
 ## <Evolution8> <Destoroyah> At the beginning of your main phase, you may play a rank 8
 ## or lower <Destoroyah> battle card from your deck by placing it on top of this card.
 ## <Enter> If this card was played through evolution, draw 2 cards, then discard 2 cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_phase_start_filter() -> Dictionary:

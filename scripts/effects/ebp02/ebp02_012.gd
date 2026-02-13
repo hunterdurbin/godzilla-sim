@@ -5,6 +5,13 @@ extends CardEffect
 ## the strategy zone, you may place them under this card instead.
 ## <Awakening4> At the beginning of your main phase, if there are 2 or more cards
 ## under this card, counter your opponent's monster card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

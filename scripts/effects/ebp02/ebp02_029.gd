@@ -4,6 +4,13 @@ extends CardEffect
 ## <Opponent's Turn> At the beginning of the counter phase, for the rest of the turn,
 ## double the counter power of all of your opponent's battle cards in the same column
 ## as this card. (Refer to those battle card's counter power at the ability resolution timing.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

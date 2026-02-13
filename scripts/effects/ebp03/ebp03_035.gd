@@ -1,6 +1,13 @@
 extends CardEffect
 # Satsuma (Battle R5)
 # <Enter> If same column as opponent monster, discard 1 strategy from hand, advance own monster to zone 6.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

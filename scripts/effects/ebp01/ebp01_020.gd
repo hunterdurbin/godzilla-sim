@@ -4,6 +4,13 @@ extends CardEffect
 ## If this card is in zone 8, whenever your monster card invades, you may reduce its
 ## <Rage> by 1 to search your deck for up to 1 monster card with <Burst>, reveal it,
 ## add it to your hand, then shuffle your deck.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

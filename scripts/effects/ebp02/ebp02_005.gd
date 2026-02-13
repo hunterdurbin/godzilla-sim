@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-005: Godzilla(2016) 3rd Form - Monster Rank 3 (Red)
 ## <Your Turn> <Awakening6> Whenever this card's <Rage> is increased, if you have a
 ## strategy card in play, your opponent discards cards until they have 3 cards remaining.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:

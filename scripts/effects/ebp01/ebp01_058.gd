@@ -7,6 +7,13 @@ extends CardEffect
 ##
 ## NOTE: The rank reduction mechanic requires rules engine support.
 ## The enter effect is fully implemented.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -4,6 +4,13 @@ extends CardEffect
 ## <Enter> If this card is in the same column as your opponent's monster card, send the
 ## top card of your deck to your discard pile. If it is a battle card, move your opponent's
 ## monster card with 50,000 or lower threat level backward by 1 zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

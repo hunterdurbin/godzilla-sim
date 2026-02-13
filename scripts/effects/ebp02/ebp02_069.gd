@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP02-069: Godzilla vs. SpaceGodzilla - Strategy Rank 1 (Green)
 ## Choose 2 of your opponent's battle cards in their zones and swap their positions.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

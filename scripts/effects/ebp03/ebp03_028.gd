@@ -6,6 +6,13 @@ extends CardEffect
 ## <Opponent's Turn> At the beginning of the counter phase, you may place 3 monster cards
 ## from your discard pile under this card. If you do, Destroy all rank 5 or lower battle
 ## cards in your opponent's zones 1-5.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

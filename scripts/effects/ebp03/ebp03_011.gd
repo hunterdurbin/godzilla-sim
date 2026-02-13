@@ -2,6 +2,13 @@ extends CardEffect
 # Multi-purpose Fighting System-3 R4
 # <Burst3>
 # <Enter> Reveal N cards (N = opponent monster rank), add up to 1 red + 1 blue battle card, discard rest.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_burst_rank() -> int:

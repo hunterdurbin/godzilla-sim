@@ -4,6 +4,13 @@ extends CardEffect
 ## <Destroy> all of your opponent's battle cards in the same column as your monster card.
 ##
 ## NOTE: This is a strategy card with an immediate effect when played (on_enter).
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -5,6 +5,13 @@ extends CardEffect
 ## - <Destroy> 3 of your opponent's rank 6 or lower battle cards.
 ## - Your opponent discards cards until they have 2 cards remaining in their hand.
 ## - Increase this card's <Rage> by 3.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-034: Godzilla(1989) - Monster Rank 2 (Blue)
 ## <Enter> Select 1 rank 4 or lower battle card with <Evolution> from your discard pile
 ## and play it in a zone adjacent to this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

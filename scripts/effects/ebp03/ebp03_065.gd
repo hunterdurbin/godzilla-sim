@@ -1,6 +1,13 @@
 extends CardEffect
 # King Ghidorah(1998) (Battle R7)
 # If 5+ cards under your monster card, +3000 CP.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

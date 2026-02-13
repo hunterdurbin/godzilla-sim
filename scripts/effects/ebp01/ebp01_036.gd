@@ -2,6 +2,13 @@ extends CardEffect
 
 ## EBP01-036: Godzilla(1992) - Monster Rank 4 (Blue)
 ## <Enter> Evolve all of your battle cards with <Evolution> in zones adjacent to this card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

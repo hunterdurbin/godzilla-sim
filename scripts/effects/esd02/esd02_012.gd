@@ -4,6 +4,13 @@ extends CardEffect
 ## If your opponent's monster card is rank IV or higher, this card gains +5000 counter power.
 ## If this card is in the same column as your opponent's monster card, this card gains +3000 counter power.
 ## (If both conditions are met, this card gains +8000 counter power.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

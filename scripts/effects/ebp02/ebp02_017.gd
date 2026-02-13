@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-017: Operation Taba - Strategy Rank 2 (Red)
 ## <Your Turn> If you have 4 or more battle cards in your zones,
 ## increase your total counter power by 5000.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

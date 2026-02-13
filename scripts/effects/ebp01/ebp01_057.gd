@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-057: Mothra(imago)(1992) - Battle Rank 7 (Blue)
 ## <Enter> Choose 2 battle cards in your zones, you may swap their positions.
 ## Your rank 5 or lower battle cards in zones adjacent to this card gain +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

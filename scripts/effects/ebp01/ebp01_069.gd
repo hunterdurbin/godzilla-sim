@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-069: Varan - Battle Rank 4 (White)
 ## <Awakening6> <Enter> Draw 2 cards, then discard 2 cards.
 ## (Active if your monster card is in zone 6 or beyond.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -6,6 +6,13 @@ extends CardEffect
 ## <Awakening6> <Enter> If there are no cards under this card, search your deck for up
 ## to 1 card named "Land Moguera" and up to 1 card named "Star Falcon", place them under
 ## this card, then shuffle your deck.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_would_be_destroyed(ctx: EffectContext) -> bool:

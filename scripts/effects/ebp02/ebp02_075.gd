@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP02-075: Chibi Mothra - Battle Rank 3 (White)
 ## <Enter> If a card named "Chibi Mechagodzilla" is in your zones,
 ## reduce your opponent's <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

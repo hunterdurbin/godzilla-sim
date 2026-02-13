@@ -3,6 +3,13 @@ extends CardEffect
 # Choose one:
 # - Return 1 R2 or lower monster card from discard to hand.
 # - If 5+ cards under your monster, return 1 monster card from discard to hand.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

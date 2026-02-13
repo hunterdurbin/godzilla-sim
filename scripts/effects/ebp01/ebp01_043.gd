@@ -3,6 +3,13 @@ extends CardEffect
 # <Awakening4> When you successfully counter your opponent's monster card, if you have
 # 5 or more monster cards in your discard pile, <Destroy> all of your opponent's
 # rank 6 or lower battle cards. (Active if this is in zone 4 or beyond.)
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_counter_success(ctx: EffectContext) -> void:

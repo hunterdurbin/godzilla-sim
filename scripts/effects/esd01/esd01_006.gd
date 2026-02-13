@@ -4,6 +4,13 @@ extends CardEffect
 ## <Burst2> You can play this card from rank II. If you do, send this card to your
 ## discard pile at the beginning of your next end phase.
 ## <Enter> <Destroy> 1 of your opponent's rank 4 or lower battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_burst_rank() -> int:

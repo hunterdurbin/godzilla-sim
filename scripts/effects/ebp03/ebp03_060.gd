@@ -1,6 +1,13 @@
 extends CardEffect
 # Mothra(imago)(1961) (Battle R5)
 # <Revenge> Reduce opponent rage by 1.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_revenge(ctx: EffectContext) -> void:

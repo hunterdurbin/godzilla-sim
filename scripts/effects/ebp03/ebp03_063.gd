@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP03-063: King Ghidorah(1998) - Battle Rank 6 (Green)
 ## <Your Turn> <Awakening4> When your monster card is played, you may play this card
 ## from your discard pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func can_play_from_discard_on_monster_played(ctx: EffectContext) -> bool:

@@ -1,6 +1,13 @@
 extends CardEffect
 # Petit Railgun (Strategy R1)
 # Destroy all opponent battle cards in same column as your monster.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

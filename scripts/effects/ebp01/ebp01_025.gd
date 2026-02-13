@@ -3,6 +3,13 @@ extends CardEffect
 ## EBP01-025: King Caesar(1974) - Battle Rank 6
 ## If this card is in a zone adjacent to your monster card, this card gains
 ## +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

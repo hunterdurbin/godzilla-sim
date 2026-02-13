@@ -4,6 +4,13 @@ extends CardEffect
 ## If your monster card is rank III or lower, play 1 monster card from your monster deck
 ## that shares a trait with it, whose rank is 1 higher than your monster card's current rank.
 ## (This play does not increase Rage.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_enter(ctx: EffectContext) -> void:

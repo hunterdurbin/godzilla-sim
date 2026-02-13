@@ -2,6 +2,13 @@ extends CardEffect
 # SHIRASAGI : AC-3 (Battle R2)
 # Your Mechagodzilla battle cards in zone 8 get +3000 CP.
 # <Enter> Move 1 other battle card in your zones to an unoccupied zone.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:

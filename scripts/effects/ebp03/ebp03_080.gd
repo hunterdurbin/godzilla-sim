@@ -2,6 +2,13 @@ extends CardEffect
 # Odo Island (Strategy R6)
 # <Base>
 # <Your Turn> Counter start: play up to 1 Godzilla battle card from hand.
+#
+# Tested: No
+# Known issues: None
+# Edge cases: None
+# Rules: None
+# Interactions: None
+# Implementation notes: None
 
 
 func is_base_strategy() -> bool:

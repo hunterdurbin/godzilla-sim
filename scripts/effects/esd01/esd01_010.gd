@@ -5,6 +5,13 @@ extends CardEffect
 ## gains +5000 counter power.
 ## <Awakening6> Your other battle card in zone 8 gains +5000 counter power.
 ## (Active if your monster card is in zone 6 or beyond.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
