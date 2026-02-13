@@ -1214,7 +1214,6 @@ func _on_hand_drag_started(card: Control) -> void:
 
 func _on_hand_drag_ended(card: Control) -> void:
 	_end_snap_preview()
-	_restore_expanded_hand()
 
 	var board := _get_active_player_board()
 
@@ -1227,6 +1226,7 @@ func _on_hand_drag_ended(card: Control) -> void:
 		_drag_valid_zones = []
 		_drag_can_rage = false
 		_drag_can_invade = false
+		_restore_expanded_hand()
 		return
 
 	var mouse_pos := get_global_mouse_position()
@@ -1298,6 +1298,7 @@ func _on_hand_drag_ended(card: Control) -> void:
 	_drag_valid_zones = []
 	_drag_can_rage = false
 	_drag_can_invade = false
+	_restore_expanded_hand()
 
 
 # --- Deck search UI ---
