@@ -46,7 +46,10 @@ static func played_battle(player_name: String, card_id: String, zone: int) -> St
 	return "%s: Played %s to Zone %d" % [player_name, card_link(card_id), zone + 1]
 
 
-static func played_strategy(player_name: String, card_id: String) -> String:
+static func played_strategy(player_name: String, card_id: String, is_base: bool = false) -> String:
+	if is_base:
+		var base_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Base.png[/img]"
+		return "%s: %s Played %s to Strategy Zone" % [player_name, base_icon, card_link(card_id)]
 	return "%s: Played %s to Strategy Zone" % [player_name, card_link(card_id)]
 
 
@@ -131,6 +134,9 @@ static func to_plain_text(bbcode: String) -> String:
 	# Replace burst icon images with text: [img=40]...Burst3.png[/img] -> Burst 3:
 	regex.compile("\\[img=\\d+\\][^\\[]*Burst(\\d+)\\.png\\[/img\\]")
 	text = regex.sub(text, "Burst $1:", true)
+	# Replace base icon with text: [img=40]...Base.png[/img] -> Base
+	regex.compile("\\[img=\\d+\\][^\\[]*Base\\.png\\[/img\\]")
+	text = regex.sub(text, "Base", true)
 	# Replace rage icon with text: [img=40]...Rage.png[/img] -> Rage
 	regex.compile("\\[img=\\d+\\][^\\[]*Rage\\.png\\[/img\\]")
 	text = regex.sub(text, "Rage", true)
