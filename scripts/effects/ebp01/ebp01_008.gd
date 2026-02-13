@@ -3,9 +3,10 @@ extends CardEffect
 ## EBP01-008: Godzilla(2004) - Monster Rank 3 (Burst II)
 ## <Burst2> <Enter> Advance your opponent's monster card by 1 zone.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
-## Edge cases: None
+## Edge cases: 
+##   Opponent monster already in zone 8 => Opponent does not advance (works)
 ## Rules: None
 ## Interactions: None
 ## Implementation notes: None
