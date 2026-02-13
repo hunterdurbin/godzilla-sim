@@ -310,30 +310,71 @@ func _sync_hand(state: PlayerState) -> void:
 	if not hand_manager:
 		return
 
-	var current_count: int = hand_manager.get_card_count()
-	var target_count: int = state.hand.size()
+	var current_cards := hand_manager.get_cards()
 
-	if current_count != target_count or _hand_data_mismatch(state):
-		hand_manager.clear_cards(true)
-		for card_data in state.hand:
-			var card := _create_card(card_data)
-			if is_mirrored:
-				card.invert_hover = true
-			hand_manager.add_card(card, false)
-		hand_manager.arrange_cards(true)
+	# Same set of cards (ignoring visual order) — nothing to do
+	if _hand_set_matches(current_cards, state.hand):
+		return
+
+	# Diff: match visual cards against state cards by ID (handling duplicates)
+	var state_pool: Array[Dictionary] = state.hand.duplicate()
+	var cards_to_remove: Array[Control] = []
+
+	for card in current_cards:
+		var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
+		var found_idx := -1
+		for j in range(state_pool.size()):
+			if state_pool[j].get("id", "") == card_id:
+				found_idx = j
+				break
+		if found_idx >= 0:
+			state_pool.remove_at(found_idx)
+		else:
+			cards_to_remove.append(card)
+
+	# Suppress intermediate rearrangements
+	var was_auto := hand_manager.auto_arrange
+	hand_manager.auto_arrange = false
+
+	for card in cards_to_remove:
+		hand_manager.remove_card(card, false)
+		card.queue_free()
+
+	# state_pool now contains only newly drawn cards
+	var new_card_count := state_pool.size()
+	for card_data in state_pool:
+		var card := _create_card(card_data)
+		if is_mirrored:
+			card.invert_hover = true
+		hand_manager.add_card(card, false)
+
+	# Pre-position new cards at their target slots so they appear at the end
+	# instead of flying in from (0,0)
+	if new_card_count > 0:
+		var total := hand_manager.get_card_count()
+		var positions := hand_manager._compute_slot_positions(total)
+		var cards := hand_manager.get_cards()
+		for k in range(new_card_count):
+			var idx := total - new_card_count + k
+			if idx >= 0 and idx < positions.size():
+				cards[idx].position = positions[idx]
+
+	hand_manager.auto_arrange = was_auto
+	hand_manager.arrange_cards(true)
 
 
-func _hand_data_mismatch(state: PlayerState) -> bool:
-	if not hand_manager:
+func _hand_set_matches(visual_cards: Array[Control], state_hand: Array) -> bool:
+	if visual_cards.size() != state_hand.size():
 		return false
-	var cards := hand_manager.get_cards()
-	if cards.size() != state.hand.size():
-		return true
-	for i in range(cards.size()):
-		if "card_data" in cards[i]:
-			if cards[i].card_data.get("id") != state.hand[i].get("id"):
-				return true
-	return false
+	var visual_counts := {}
+	for card in visual_cards:
+		var id: String = card.card_data.get("id", "") if "card_data" in card else ""
+		visual_counts[id] = visual_counts.get(id, 0) + 1
+	var state_counts := {}
+	for cd in state_hand:
+		var id: String = cd.get("id", "")
+		state_counts[id] = state_counts.get(id, 0) + 1
+	return visual_counts == state_counts
 
 
 func _sync_info(state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0) -> void:
