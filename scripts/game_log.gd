@@ -27,7 +27,7 @@ static func card_link(raw_id: String) -> String:
 			label = template.get("name", card_number)
 	if label.length() > 18:
 		label = label.left(15) + "..."
-	return "[url=%s][%s][/url]" % [card_number, label]
+	return "[url=%s]❰%s❱[/url]" % [card_number, label]
 
 
 # --- Turn structure ---
