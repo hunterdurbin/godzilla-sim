@@ -144,6 +144,13 @@ static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: Str
 	return "%s Zone %d: %s %s => %s" % [_bold("Player %d" % (player_id + 1)), zone_idx + 1, evo_prefix, card_link(from_id), card_link(to_id)]
 
 
+# --- Specific card effects ---
+
+static func effect_gained_rage_from_mill(player_id: int, effect_source_id: String, rage: int, milled_id: String) -> String:
+	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	return "%s %s: %s x%d (milled monster: %s)" % [_bold("P%d" % (player_id + 1)), card_link(effect_source_id), rage_icon, rage, card_link(milled_id)]
+
+
 # --- Board events ---
 
 static func battle_card_crushed(card_id: String, player_id: int, zone_index: int) -> String:

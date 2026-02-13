@@ -4,7 +4,7 @@ extends CardEffect
 ## At the beginning of your counter phase, send the top card of your deck to your discard pile.
 ## If it is a monster card, increase this card's <Rage> by 1.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -29,6 +29,14 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	ctx.owner.deck_changed.emit()
 	ctx.owner.discard_changed.emit()
 
+	var revealed: Array[Dictionary] = [card]
+	await ctx.effect_handler.select_from_cards(
+		ctx.owner.player_id, revealed, revealed,
+		"Sent to discard pile:")
+
 	if card.get("card_type") == CardEnums.CardType.MONSTER:
 		ctx.owner.rage += 1
 		ctx.owner.rage_changed.emit(ctx.owner.rage)
+		ctx.effect_handler.log_message.emit(
+			GameLog.effect_gained_rage_from_mill(ctx.owner.player_id, ctx.card_data.get("id", ""), ctx.owner.rage, card.get("id", ""))
+		)
