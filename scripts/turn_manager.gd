@@ -211,7 +211,8 @@ func _begin_counter_phase() -> void:
 	var total_cp: int = player.get_total_counter_power()
 	var threat: int = opponent.get_threat_level()
 
-	log_message.emit(GameLog.counter_phase(total_cp, threat))
+	var player_name := "Player %d" % (game_state.current_player_id + 1)
+	log_message.emit(GameLog.counter_phase(player_name, total_cp, threat))
 
 	await action_handler.resolve_counter(game_state)
 
@@ -234,7 +235,8 @@ func _begin_end_phase() -> void:
 	await action_handler.resolve_check_timing(game_state) # 7.5.1
 
 	var player := game_state.get_current_player()
-	log_message.emit(GameLog.end_phase(player.monster_zone))
+	var player_name := "Player %d" % (game_state.current_player_id + 1)
+	log_message.emit(GameLog.end_phase(player_name, player.monster_zone))
 
 	# Burst discard, then advance (7.5.2)
 	await action_handler.execute_end_phase_burst_discard(game_state)
@@ -253,7 +255,7 @@ func _begin_end_phase() -> void:
 
 	# Draw up to 5 cards (7.5.4)
 	action_handler.execute_end_phase_draw(game_state)
-	log_message.emit(GameLog.hand_refilled(player.hand.size()))
+	log_message.emit(GameLog.hand_refilled(player_name, player.hand.size()))
 
 	await action_handler.resolve_check_timing(game_state) # 7.5.5
 
