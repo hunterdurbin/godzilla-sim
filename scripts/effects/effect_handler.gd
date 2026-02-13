@@ -229,6 +229,17 @@ func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void
 		_clear_active_effect()
 
 
+func collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
+	## Collect <When Invading> entry for deferred resolution after movement completes.
+	var entries: Array = []
+	var player := game_state.players[player_id]
+	if has_trigger(player.current_monster, "on_when_invading"):
+		var effect := get_effect(player.current_monster)
+		var ctx := _build_context(player_id, player.current_monster)
+		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": effect.on_when_invading.bind(ctx, from_zone, to_zone)})
+	return entries
+
+
 func trigger_crush(player_id: int, card_data: Dictionary) -> void:
 	## Trigger crush effect on a card being destroyed by the crush rule.
 	var effect := get_effect(card_data)
@@ -324,6 +335,32 @@ func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> vo
 			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_monster_advance.bind(ctx, from_zone, to_zone)})
 
 	await _resolve_standby_entries(entries)
+
+
+func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
+	## Collect monster advance entries for deferred resolution after movement completes.
+	var entries: Array = []
+	var player := game_state.players[player_id]
+
+	if has_trigger(player.current_monster, "on_monster_advance"):
+		var me := get_effect(player.current_monster)
+		var ctx := _build_context(player_id, player.current_monster)
+		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_monster_advance.bind(ctx, from_zone, to_zone)})
+
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_monster_advance"):
+			var ze := get_effect(zone_card)
+			var ctx := _build_context(player_id, zone_card)
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_monster_advance.bind(ctx, from_zone, to_zone)})
+
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty() and has_trigger(sz_card, "on_monster_advance"):
+			var se := get_effect(sz_card)
+			var ctx := _build_context(player_id, sz_card)
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_monster_advance.bind(ctx, from_zone, to_zone)})
+
+	return entries
 
 
 func trigger_phase_start(phase: CardEnums.GamePhase) -> void:
@@ -584,6 +621,58 @@ func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone:
 				entries.append({"player_id": pid, "card_data": sz_card, "callback": se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
 
 	await _resolve_standby_entries(entries)
+
+
+func collect_invasion_observed_entries(invading_player_id: int, from_zone: int, to_zone: int) -> Array:
+	## Collect invasion observed entries for deferred resolution after movement completes.
+	var entries: Array = []
+	for pid in range(2):
+		var player := game_state.players[pid]
+
+		if has_trigger(player.current_monster, "on_invasion_observed"):
+			var me := get_effect(player.current_monster)
+			var ctx := _build_context(pid, player.current_monster)
+			entries.append({"player_id": pid, "card_data": player.current_monster, "callback": me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+
+		for i in range(8):
+			var zone_card := player.get_zone_top_card(i)
+			if not zone_card.is_empty() and has_trigger(zone_card, "on_invasion_observed"):
+				var ze := get_effect(zone_card)
+				var ctx := _build_context(pid, zone_card)
+				entries.append({"player_id": pid, "card_data": zone_card, "callback": ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+
+		for sz_card in player.strategy_zones:
+			if not sz_card.is_empty() and has_trigger(sz_card, "on_invasion_observed"):
+				var se := get_effect(sz_card)
+				var ctx := _build_context(pid, sz_card)
+				entries.append({"player_id": pid, "card_data": sz_card, "callback": se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+
+	return entries
+
+
+# --- Deferred movement resolution ---
+
+func is_card_still_active(player_id: int, card_data: Dictionary) -> bool:
+	## Check if a card is still in an active position (monster, zone top, or strategy zone).
+	var player := game_state.players[player_id]
+	if is_same(card_data, player.current_monster):
+		return true
+	for i in range(8):
+		if is_same(player.get_zone_top_card(i), card_data):
+			return true
+	for sz_card in player.strategy_zones:
+		if is_same(sz_card, card_data):
+			return true
+	return false
+
+
+func resolve_deferred_entries(entries: Array) -> void:
+	## Filter entries for cards still in play after movement, then resolve via standby pattern.
+	var active_entries: Array = []
+	for entry in entries:
+		if is_card_still_active(entry.player_id, entry.card_data):
+			active_entries.append(entry)
+	await _resolve_standby_entries(active_entries)
 
 
 # --- Player choice helpers ---

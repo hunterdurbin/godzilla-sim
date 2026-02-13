@@ -117,6 +117,8 @@ func execute_end_phase_burst_discard(state: GameState) -> void:
 func execute_end_phase_advance(state: GameState) -> void:
 	## Advance monster (7.5.2) and check crush rule.
 	## Extra advance from effects (e.g. EBP02-056 SpaceGodzilla R4) adds additional zones.
+	## Movement fully resolves before triggered abilities activate; cards crushed during
+	## movement are filtered out of the standby queue.
 	var player := state.get_current_player()
 
 	# Check if monster is blocked from advancing (e.g. Biollante Rose Form)
@@ -127,6 +129,7 @@ func execute_end_phase_advance(state: GameState) -> void:
 	if effect_handler:
 		extra = effect_handler.get_extra_end_phase_advance(player.player_id)
 	var total_advance: int = 1 + extra
+	var deferred_entries: Array = []
 	for _step in range(total_advance):
 		if player.monster_zone > 7:
 			break
@@ -135,8 +138,12 @@ func execute_end_phase_advance(state: GameState) -> void:
 		monster_advanced.emit(player.player_id, old_zone, player.monster_zone)
 		player.monster_changed.emit()
 		if effect_handler:
-			await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
+			deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
 		await check_crush_rule(state)
+
+	# Resolve deferred effects after all movement completes
+	if effect_handler and not deferred_entries.is_empty():
+		await effect_handler.resolve_deferred_entries(deferred_entries)
 
 
 func execute_end_phase_draw(state: GameState) -> void:
@@ -507,7 +514,11 @@ func _invade(hand_index: int, state: GameState) -> void:
 				if discard_effect.on_discarded_for_invasion(ctx):
 					await effect_handler.play_from_discard(player.player_id, card)
 
-	# Advance step by step (checking crush at each zone)
+	# Advance step by step, collecting effect entries for deferred resolution.
+	# Movement fully resolves before triggered abilities activate; cards removed
+	# during movement (crush, base strategy destruction) are filtered from the queue.
+	var deferred_entries: Array = []
+	var is_victory := false
 	for _step in range(advance_amount):
 		if player.monster_zone >= 8:
 			# Check invasion victory
@@ -518,12 +529,11 @@ func _invade(hand_index: int, state: GameState) -> void:
 				monster_advanced.emit(player.player_id, old_zone, player.monster_zone)
 				player.monster_changed.emit()
 				if effect_handler:
-					await effect_handler.trigger_when_invading(player.player_id, old_zone, player.monster_zone)
-					await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
-					await effect_handler.trigger_invasion_observed(player.player_id, old_zone, player.monster_zone)
-				player.invasion_zones_crossed = player.monster_zone - start_zone
-				state.game_over.emit(player.player_id, "Victory through invasion!")
-				return
+					deferred_entries.append_array(effect_handler.collect_when_invading_entries(player.player_id, old_zone, player.monster_zone))
+					deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
+					deferred_entries.append_array(effect_handler.collect_invasion_observed_entries(player.player_id, old_zone, player.monster_zone))
+				is_victory = true
+				break
 			else:
 				# Opponent's zone 8 has a battle card, can't advance further
 				break
@@ -532,15 +542,24 @@ func _invade(hand_index: int, state: GameState) -> void:
 			player.monster_zone += 1
 			monster_advanced.emit(player.player_id, old_zone, player.monster_zone)
 			if effect_handler:
-				await effect_handler.trigger_when_invading(player.player_id, old_zone, player.monster_zone)
-				await effect_handler.trigger_monster_advance(player.player_id, old_zone, player.monster_zone)
-				await effect_handler.trigger_invasion_observed(player.player_id, old_zone, player.monster_zone)
+				deferred_entries.append_array(effect_handler.collect_when_invading_entries(player.player_id, old_zone, player.monster_zone))
+				deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
+				deferred_entries.append_array(effect_handler.collect_invasion_observed_entries(player.player_id, old_zone, player.monster_zone))
 				# Destroy <Base> strategies when monster invades into zones 6-8 (12.9.2)
 				await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone)
 			# Check crush rule at each step
 			await check_crush_rule(state)
 
 	player.invasion_zones_crossed = player.monster_zone - start_zone
+
+	# Resolve deferred effects after all movement completes
+	if effect_handler and not deferred_entries.is_empty():
+		await effect_handler.resolve_deferred_entries(deferred_entries)
+
+	if is_victory:
+		state.game_over.emit(player.player_id, "Victory through invasion!")
+		return
+
 	player.hand_changed.emit()
 	player.monster_changed.emit()
 	player.discard_changed.emit()
