@@ -15,8 +15,8 @@ func on_enter(ctx: EffectContext) -> void:
 	if zone_idx != 7:  # zone 8 = index 7
 		return
 
-	# Check if played from hand (not through evolution or other means)
-	if ctx.card_data.get("played_through_evolution", false):
+	# Only from hand (not through evolution, search, or other effects)
+	if ctx.card_data.get("played_from_effect", false):
 		return
 
 	var found := await ctx.effect_handler.search_deck(
@@ -57,5 +57,6 @@ func on_enter(ctx: EffectContext) -> void:
 			return
 		ctx.owner.push_zone_card(dest, found)
 
+	found["played_from_effect"] = true
 	ctx.owner.zones_changed.emit()
 	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found)

@@ -16,8 +16,8 @@ extends CardEffect
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.monster_zone < 6:
 		return
-	# Only from hand (not through evolution or other effects)
-	if ctx.card_data.get("played_through_evolution", false):
+	# Only from hand (not through evolution, search, or other effects)
+	if ctx.card_data.get("played_from_effect", false):
 		return
 
 	for _i in range(2):
@@ -47,6 +47,7 @@ func on_enter(ctx: EffectContext) -> void:
 		if target_zone < 0:
 			break
 
+		selected["played_from_effect"] = true
 		ctx.owner.push_zone_card(target_zone, selected)
 		ctx.owner.zones_changed.emit()
 		await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected)

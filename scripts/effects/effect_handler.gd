@@ -967,6 +967,7 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 
 	# Mark as played through evolution for enter effects (e.g. ESD02-010)
 	selected["played_through_evolution"] = true
+	selected["played_from_effect"] = true
 	player.push_zone_card(zone_idx, selected)
 	player.zones_changed.emit()
 	await trigger_enter(player_id, selected)
