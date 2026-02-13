@@ -507,7 +507,7 @@ func _on_monster_advanced(_player_id: int, _from_zone: int, _to_zone: int) -> vo
 
 
 func _on_battle_card_crushed(player_id: int, zone_index: int, card: Dictionary) -> void:
-	_on_log_message(GameLog.battle_card_crushed(card.get("name", "?"), player_id, zone_index))
+	_on_log_message(GameLog.battle_card_crushed(card.get("id", ""), player_id, zone_index))
 	_sync_boards()
 	_broadcast_state()
 
