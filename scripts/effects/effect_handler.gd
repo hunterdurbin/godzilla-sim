@@ -236,6 +236,10 @@ func collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int)
 	if has_trigger(player.current_monster, "on_when_invading"):
 		var effect := get_effect(player.current_monster)
 		var ctx := _build_context(player_id, player.current_monster)
+		# Capture zone state before crush resolves (for effects that check zone occupancy)
+		var zone_idx := to_zone - 1
+		if zone_idx >= 0 and zone_idx < 8:
+			ctx.metadata["zone_had_card"] = not player.is_zone_empty(zone_idx)
 		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": effect.on_when_invading.bind(ctx, from_zone, to_zone)})
 	return entries
 

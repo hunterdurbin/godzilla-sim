@@ -9,6 +9,7 @@ var owner: PlayerState
 var opponent: PlayerState
 var card_data: Dictionary
 var effect_handler: EffectHandler
+var metadata: Dictionary = {}  ## Extra data set at collection time for deferred resolution
 
 
 static func create(

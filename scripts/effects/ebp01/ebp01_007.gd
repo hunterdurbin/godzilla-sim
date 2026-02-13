@@ -16,10 +16,10 @@ func get_burst_rank() -> int:
 	return 3
 
 
-func on_when_invading(ctx: EffectContext, _from_zone: int, to_zone: int) -> void:
-	# Check if the zone the monster is invading into has a battle card (will be crushed)
-	var zone_idx: int = to_zone - 1
-	if zone_idx >= 0 and zone_idx < 8 and not ctx.owner.is_zone_empty(zone_idx):
+func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
+	# Check if the zone the monster invaded into had a battle card (crushed during movement)
+	# Zone state is captured at collection time since crush resolves before deferred abilities
+	if ctx.metadata.get("zone_had_card", false):
 		var reduction: int = mini(ctx.opponent.rage, 2)
 		if reduction > 0:
 			ctx.opponent.rage -= reduction
