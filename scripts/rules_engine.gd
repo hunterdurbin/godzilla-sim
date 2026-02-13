@@ -124,6 +124,10 @@ func get_discardable_cards_for_invade(player: PlayerState) -> Array[int]:
 	var indices: Array[int] = []
 	if player.has_invaded_this_turn:
 		return indices
+	if effect_handler and effect_handler.is_own_invasion_blocked(player.player_id):
+		return indices
+	if effect_handler and effect_handler.is_invasion_blocked(1 - player.player_id):
+		return indices
 	for i in range(player.hand.size()):
 		if player.hand[i].get("invasion_icon", 0) > 0:
 			indices.append(i)
