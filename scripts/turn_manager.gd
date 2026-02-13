@@ -5,6 +5,7 @@ extends RefCounted
 
 signal phase_started(phase: CardEnums.GamePhase)
 signal phase_ended(phase: CardEnums.GamePhase)
+signal sub_phase_changed(sub_index: int)
 signal awaiting_player_action(valid_actions: Array)
 signal turn_started(player_id: int)
 signal turn_ended(player_id: int)
@@ -88,17 +89,23 @@ func _execute_start_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.START
 	phase_started.emit(CardEnums.GamePhase.START)
+	sub_phase_changed.emit(0) # Resolve Effects
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.START)
 	await action_handler.resolve_check_timing(game_state) # 7.2.1
 
 	var player := game_state.get_current_player()
 	var opponent := game_state.get_opponent_of_current()
 
+	sub_phase_changed.emit(1) # Draw Cards
 	log_message.emit(GameLog.start_phase_draw(opponent.get_monster_rank()))
-
-	action_handler.execute_start_phase(game_state)
-
+	action_handler.execute_start_phase_draw(game_state)
 	log_message.emit(GameLog.hand_size(player.hand.size()))
+
+	sub_phase_changed.emit(2) # Discard Strategies
+	await action_handler.execute_start_phase_discard(game_state)
+
+	sub_phase_changed.emit(3) # Reset Rage
+	action_handler.execute_start_phase_reset(game_state)
 
 	await action_handler.resolve_check_timing(game_state) # 7.2.5
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.START)
@@ -112,11 +119,13 @@ func _begin_main_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.MAIN
 	phase_started.emit(CardEnums.GamePhase.MAIN)
+	sub_phase_changed.emit(0) # Resolve Effects
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
 	await action_handler.resolve_check_timing(game_state) # 7.3.1
 
 	log_message.emit(GameLog.main_phase())
 
+	sub_phase_changed.emit(1) # Player Actions
 	_processing_action = false
 	_prompt_player_actions()
 
@@ -203,6 +212,7 @@ func _begin_counter_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.COUNTER
 	phase_started.emit(CardEnums.GamePhase.COUNTER)
+	sub_phase_changed.emit(0) # Resolve Effects
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await action_handler.resolve_check_timing(game_state) # 7.4.1
 
@@ -214,6 +224,7 @@ func _begin_counter_phase() -> void:
 	var player_name := "Player %d" % (game_state.current_player_id + 1)
 	log_message.emit(GameLog.counter_phase(player_name, total_cp, threat))
 
+	sub_phase_changed.emit(1) # Counter Check
 	await action_handler.resolve_counter(game_state)
 
 	if is_game_over:
@@ -231,6 +242,7 @@ func _begin_end_phase() -> void:
 
 	game_state.current_phase = CardEnums.GamePhase.END
 	phase_started.emit(CardEnums.GamePhase.END)
+	sub_phase_changed.emit(0) # Resolve Effects
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.END)
 	await action_handler.resolve_check_timing(game_state) # 7.5.1
 
@@ -239,6 +251,7 @@ func _begin_end_phase() -> void:
 	log_message.emit(GameLog.end_phase(player_name, player.monster_zone))
 
 	# Burst discard, then advance (7.5.2)
+	sub_phase_changed.emit(1) # Advance
 	await action_handler.execute_end_phase_burst_discard(game_state)
 	await action_handler.execute_end_phase_advance(game_state)
 
@@ -254,6 +267,7 @@ func _begin_end_phase() -> void:
 	await action_handler.resolve_check_timing(game_state) # 7.5.3
 
 	# Draw up to 5 cards (7.5.4)
+	sub_phase_changed.emit(2) # Refill Hand
 	action_handler.execute_end_phase_draw(game_state)
 	log_message.emit(GameLog.hand_refilled(player_name, player.hand.size()))
 

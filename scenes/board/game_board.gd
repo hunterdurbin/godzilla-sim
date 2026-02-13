@@ -94,6 +94,55 @@ var _monster_deck_view_cards: Array[Dictionary] = []
 @onready var card_zoom_overlay: Control = $CardZoomOverlay
 @onready var card_zoom_container: CenterContainer = $CardZoomOverlay/CardContainer
 
+# Turn tracker: main phase labels [player_id][phase_index]
+@onready var _turn_tracker_phases: Array = [
+	[ # Player 1
+		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1Start,
+		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1Main,
+		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1Counter,
+		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1End,
+	],
+	[ # Player 2
+		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2Start,
+		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2Main,
+		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2Counter,
+		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2End,
+	],
+]
+# Turn tracker: sub-phase labels [player_id][phase_index] -> Array of Labels
+@onready var _turn_tracker_subs: Array = [
+	[ # Player 1
+		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1StartEffects,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1StartDraw,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1StartDiscard,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1StartReset],
+		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1MainEffects,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1MainActions],
+		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1CounterEffects,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1CounterCheck],
+		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1EndEffects,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1EndAdvance,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1EndRefill],
+	],
+	[ # Player 2
+		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2StartEffects,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2StartDraw,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2StartDiscard,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2StartReset],
+		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2MainEffects,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2MainActions],
+		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2CounterEffects,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2CounterCheck],
+		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2EndEffects,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2EndAdvance,
+		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2EndRefill],
+	],
+]
+@onready var _turn_tracker_headers: Array = [
+	$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1Header,
+	$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2Header,
+]
+
 # Card hover preview
 var _preview_container: Control
 var _preview_bg: Panel
@@ -146,6 +195,9 @@ var _drag_can_invade: bool = false
 var _snap_preview_slot = null # Slot or Control currently being snap-previewed
 var _highlighted_card: Control = null # Card with selection highlight border
 
+# Turn tracker sub-phase index
+var _current_sub_phase: int = 0
+
 # Hand expand toggle
 var _hand_expanded: bool = false
 var _hand_tween: Tween = null
@@ -178,6 +230,7 @@ func _ready() -> void:
 		# Connect turn manager signals
 		turn_manager.phase_started.connect(_on_phase_started)
 		turn_manager.phase_ended.connect(_on_phase_ended)
+		turn_manager.sub_phase_changed.connect(_on_sub_phase_changed)
 		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
 		turn_manager.turn_started.connect(_on_turn_started)
 		turn_manager.game_ended.connect(_on_game_ended)
@@ -365,6 +418,24 @@ func _arrange_for_local_player() -> void:
 	player1_board.toggle_mirrored()
 	player2_board.toggle_mirrored()
 
+	# Swap turn tracker: local player (P2) to bottom, opponent (P1) to top
+	var tracker := $VBoxContainer/BoardArea/RightSpacer/TurnTracker
+	var children: Array[Node] = []
+	for child in tracker.get_children():
+		children.append(child)
+	var sep_idx := -1
+	for i in range(children.size()):
+		if children[i].name == "Separator":
+			sep_idx = i
+			break
+	# Reorder: P1 section, separator, P2 section
+	var new_order: Array[Node] = []
+	new_order.append_array(children.slice(sep_idx + 1))
+	new_order.append(children[sep_idx])
+	new_order.append_array(children.slice(0, sep_idx))
+	for i in range(new_order.size()):
+		tracker.move_child(new_order[i], i)
+
 
 func _position_hands() -> void:
 	var local_hand: Node2D
@@ -438,10 +509,34 @@ func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> vo
 		_rpc_submit_action.rpc_id(NetworkManager.host_peer_id, int(action), params_json)
 
 
+func _update_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: int = 0) -> void:
+	var active_color := Color(1.0, 0.9, 0.3, 1.0) # Gold for active phase/sub
+	var inactive_color := Color(0.4, 0.4, 0.5, 1.0) # Dim for inactive phases
+	var inactive_sub_color := Color(0.35, 0.35, 0.4, 1.0) # Dimmer for inactive sub-phases
+	var active_header_color := Color(1.0, 1.0, 1.0, 1.0) # White for active player
+	var inactive_header_color := Color(0.6, 0.6, 0.7, 1.0) # Dim for inactive player
+	var phase_idx := int(phase)
+	for pid in range(2):
+		_turn_tracker_headers[pid].add_theme_color_override(
+			"font_color", active_header_color if pid == player_id else inactive_header_color)
+		for i in range(4):
+			var is_active_phase := pid == player_id and i == phase_idx
+			var label: Label = _turn_tracker_phases[pid][i]
+			label.add_theme_color_override("font_color", active_color if is_active_phase else inactive_color)
+			label.text = ("► " if is_active_phase else "  ") + CardEnums.phase_to_string(i as CardEnums.GamePhase)
+			var subs: Array = _turn_tracker_subs[pid][i]
+			for si in range(subs.size()):
+				var sub_label: Label = subs[si]
+				var is_active_sub := is_active_phase and si == sub_phase
+				sub_label.add_theme_color_override("font_color", active_color if is_active_sub else inactive_sub_color)
+
+
 # --- Signal handlers from TurnManager (host/solo only) ---
 
 func _on_phase_started(phase: CardEnums.GamePhase) -> void:
 	phase_label.text = CardEnums.phase_to_string(phase)
+	_current_sub_phase = 0
+	_update_turn_tracker(turn_manager.game_state.current_player_id, phase, _current_sub_phase)
 	_sync_boards()
 	_broadcast_state()
 
@@ -451,8 +546,18 @@ func _on_phase_ended(_phase: CardEnums.GamePhase) -> void:
 	_broadcast_state()
 
 
+func _on_sub_phase_changed(sub_index: int) -> void:
+	_current_sub_phase = sub_index
+	_update_turn_tracker(
+		turn_manager.game_state.current_player_id,
+		turn_manager.game_state.current_phase,
+		sub_index)
+
+
 func _on_turn_started(player_id: int) -> void:
 	turn_label.text = "Turn %d - Player %d" % [turn_manager.game_state.turn_number, player_id + 1]
+	_current_sub_phase = 0
+	_update_turn_tracker(player_id, turn_manager.game_state.current_phase, _current_sub_phase)
 	_sync_boards()
 	_update_hand_visibility(player_id)
 	_broadcast_state()
@@ -2340,6 +2445,7 @@ func _serialize_game_state(viewer_id: int) -> String:
 	var data := {
 		"current_player_id": gs.current_player_id,
 		"current_phase": int(gs.current_phase),
+		"current_sub_phase": _current_sub_phase,
 		"turn_number": gs.turn_number,
 		"is_game_over": turn_manager.is_game_over,
 		"players": [],
@@ -2468,8 +2574,11 @@ func _rpc_receive_state(state_json: String) -> void:
 				board.apply_monster_gradient(_client_players[i].current_monster)
 
 	# Update UI
-	phase_label.text = CardEnums.phase_to_string(int(data["current_phase"]) as CardEnums.GamePhase)
+	var client_phase := int(data["current_phase"]) as CardEnums.GamePhase
+	var client_sub_phase: int = int(data.get("current_sub_phase", 0))
+	phase_label.text = CardEnums.phase_to_string(client_phase)
 	turn_label.text = "Turn %d - Player %d" % [int(data["turn_number"]), int(data["current_player_id"]) + 1]
+	_update_turn_tracker(_client_current_player_id, client_phase, client_sub_phase)
 	_sync_boards()
 	_update_hand_visibility(_client_current_player_id)
 

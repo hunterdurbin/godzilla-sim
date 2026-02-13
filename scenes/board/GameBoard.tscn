@@ -96,10 +96,211 @@ size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="RightSpacer" type="Control" parent="VBoxContainer/BoardArea" unique_id=132748966]
+[node name="RightSpacer" type="CenterContainer" parent="VBoxContainer/BoardArea" unique_id=132748966]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.25
+
+[node name="TurnTracker" type="VBoxContainer" parent="VBoxContainer/BoardArea/RightSpacer"]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="P2Header" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "Player 2"
+horizontal_alignment = 1
+
+[node name="P2Start" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "  Start Phase"
+
+[node name="P2StartEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Resolve Effects"
+
+[node name="P2StartDraw" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Draw Cards"
+
+[node name="P2StartDiscard" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Discard Strategies"
+
+[node name="P2StartReset" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Reset Rage"
+
+[node name="P2Main" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "  Main Phase"
+
+[node name="P2MainEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Resolve Effects"
+
+[node name="P2MainActions" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Player Actions"
+
+[node name="P2Counter" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "  Counter Phase"
+
+[node name="P2CounterEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Resolve Effects"
+
+[node name="P2CounterCheck" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Counter Check"
+
+[node name="P2End" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "  End Phase"
+
+[node name="P2EndEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Resolve Effects"
+
+[node name="P2EndAdvance" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Advance"
+
+[node name="P2EndRefill" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Refill Hand"
+
+[node name="Separator" type="HSeparator" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+
+[node name="P1Header" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
+theme_override_font_sizes/font_size = 12
+text = "Player 1"
+horizontal_alignment = 1
+
+[node name="P1Start" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "  Start Phase"
+
+[node name="P1StartEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Resolve Effects"
+
+[node name="P1StartDraw" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Draw Cards"
+
+[node name="P1StartDiscard" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Discard Strategies"
+
+[node name="P1StartReset" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Reset Rage"
+
+[node name="P1Main" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "  Main Phase"
+
+[node name="P1MainEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Resolve Effects"
+
+[node name="P1MainActions" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Player Actions"
+
+[node name="P1Counter" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "  Counter Phase"
+
+[node name="P1CounterEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Resolve Effects"
+
+[node name="P1CounterCheck" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Counter Check"
+
+[node name="P1End" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "  End Phase"
+
+[node name="P1EndEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Resolve Effects"
+
+[node name="P1EndAdvance" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Advance"
+
+[node name="P1EndRefill" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
+theme_override_font_sizes/font_size = 9
+text = "      Refill Hand"
 
 [node name="BottomSpacer" type="Control" parent="VBoxContainer" unique_id=546166432]
 custom_minimum_size = Vector2(0, 50)

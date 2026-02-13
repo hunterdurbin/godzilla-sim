@@ -34,14 +34,16 @@ func execute(action: CardEnums.ActionType, params: Dictionary, state: GameState)
 			await _invade(params["hand_index"], state)
 
 
-func execute_start_phase(state: GameState) -> void:
+func execute_start_phase_draw(state: GameState) -> void:
 	var player := state.get_current_player()
 	var opponent := state.get_opponent_of_current()
-
-	# Draw cards equal to opponent's monster rank
 	var draw_count: int = opponent.get_monster_rank()
 	player.draw_cards(draw_count)
 	cards_drawn.emit(player.player_id, draw_count)
+
+
+func execute_start_phase_discard(state: GameState) -> void:
+	var player := state.get_current_player()
 
 	# Clear strategy cards placed before this turn
 	# Check if any zone card can intercept the discard (e.g. EBP02-012 in zone 8)
@@ -75,6 +77,10 @@ func execute_start_phase(state: GameState) -> void:
 		if effect_handler and intercept_zone < 0:
 			for strategy_card in cleared:
 				await effect_handler.trigger_strategy_discarded(player.player_id, strategy_card)
+
+
+func execute_start_phase_reset(state: GameState) -> void:
+	var player := state.get_current_player()
 
 	# Reset rage to 0
 	player.rage = 0
