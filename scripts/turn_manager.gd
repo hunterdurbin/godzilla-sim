@@ -116,14 +116,17 @@ func _execute_start_phase() -> void:
 	log_message.emit(GameLog.hand_size(player.hand.size()))
 
 	sub_phase_changed.emit(2) # Discard Strategies
+	await _await_confirmation("Discard Strategies", "auto_discard_strategies")
 	await action_handler.execute_start_phase_discard(game_state)
 
 	sub_phase_changed.emit(3) # Reset Rage
+	await _await_confirmation("Reset Rage", "auto_reset_rage")
 	action_handler.execute_start_phase_reset(game_state)
 
 	await action_handler.resolve_check_timing(game_state) # 7.2.5
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.START)
 	phase_ended.emit(CardEnums.GamePhase.START)
+	await _await_confirmation("Main Phase", "auto_phase_advance")
 	_begin_main_phase()
 
 
@@ -165,6 +168,7 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 		phase_ended.emit(CardEnums.GamePhase.MAIN)
 		# Keep _processing_action = true through automated phases (COUNTER → END → START)
 		# to block any submit_action calls until the next MAIN phase is ready for input.
+		await _await_confirmation("Counter Phase", "auto_phase_advance")
 		_begin_counter_phase()
 		return
 
@@ -239,6 +243,7 @@ func _begin_counter_phase() -> void:
 	log_message.emit(GameLog.counter_phase(player_name, total_cp, threat))
 
 	sub_phase_changed.emit(1) # Counter Check
+	await _await_confirmation("Counter Check", "auto_counter_check")
 	await action_handler.resolve_counter(game_state)
 
 	if is_game_over:
@@ -247,6 +252,7 @@ func _begin_counter_phase() -> void:
 	await action_handler.resolve_check_timing(game_state) # 7.4.4
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.COUNTER)
 	phase_ended.emit(CardEnums.GamePhase.COUNTER)
+	await _await_confirmation("End Phase", "auto_phase_advance")
 	_begin_end_phase()
 
 
@@ -266,6 +272,7 @@ func _begin_end_phase() -> void:
 
 	# Burst discard, then advance (7.5.2)
 	sub_phase_changed.emit(1) # Advance
+	await _await_confirmation("Advance", "auto_advance")
 	await action_handler.execute_end_phase_burst_discard(game_state)
 	await action_handler.execute_end_phase_advance(game_state)
 

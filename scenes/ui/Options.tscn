@@ -91,6 +91,54 @@ theme_override_font_sizes/font_size = 20
 [node name="AutoPhaseCheck" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoPhaseRow"]
 layout_mode = 2
 
+[node name="AutoDiscardStrategiesRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoDiscardStrategiesRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Auto Discard Strategies"
+theme_override_font_sizes/font_size = 20
+
+[node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoDiscardStrategiesRow"]
+layout_mode = 2
+
+[node name="AutoResetRageRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoResetRageRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Auto Reset Rage"
+theme_override_font_sizes/font_size = 20
+
+[node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoResetRageRow"]
+layout_mode = 2
+
+[node name="AutoCounterCheckRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoCounterCheckRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Auto Counter Check"
+theme_override_font_sizes/font_size = 20
+
+[node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoCounterCheckRow"]
+layout_mode = 2
+
+[node name="AutoAdvanceRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoAdvanceRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Auto Advance"
+theme_override_font_sizes/font_size = 20
+
+[node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoAdvanceRow"]
+layout_mode = 2
+
 [node name="BackButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
