@@ -157,6 +157,7 @@ var waiting_for_card_select: bool = false
 var waiting_for_zone_select: bool = false
 var selected_card_id: String = ""
 var _selected_card_data: Dictionary = {} # Card data dict for the selected card
+var _awaiting_confirmation: bool = false
 
 # Hand discard selection state
 var _discard_selecting: bool = false
@@ -220,6 +221,16 @@ func _ready() -> void:
 		turn_manager = TurnManager.new()
 		turn_manager.setup(CardData)
 
+		# Set player names from settings
+		turn_manager.game_state.player_names[0] = GameSettings.player_name
+		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+		for i in range(2):
+			var board = player1_board if i == 0 else player2_board
+			if board and board.player_label:
+				board.player_label.text = GameLog.player_name(i)
+			if i < _turn_tracker_headers.size():
+				_turn_tracker_headers[i].text = GameLog.player_name(i)
+
 		# Apply monster color gradient to board backgrounds
 		for i in range(turn_manager.game_state.players.size()):
 			var player: PlayerState = turn_manager.game_state.players[i]
@@ -235,6 +246,7 @@ func _ready() -> void:
 		turn_manager.turn_started.connect(_on_turn_started)
 		turn_manager.game_ended.connect(_on_game_ended)
 		turn_manager.log_message.connect(_on_log_message)
+		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Connect action handler signals for visual feedback
 		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
@@ -264,6 +276,7 @@ func _ready() -> void:
 	else:
 		# Client: initialize empty client state, wait for host RPCs
 		_client_players = [PlayerState.new(0), PlayerState.new(1)]
+		GameLog.player_names[local_player_id] = GameSettings.player_name
 
 	# Connect buttons
 	btn_play_battle.pressed.connect(_on_play_battle_pressed)
@@ -552,10 +565,11 @@ func _on_sub_phase_changed(sub_index: int) -> void:
 		turn_manager.game_state.current_player_id,
 		turn_manager.game_state.current_phase,
 		sub_index)
+	_broadcast_state()
 
 
 func _on_turn_started(player_id: int) -> void:
-	turn_label.text = "Turn %d - Player %d" % [turn_manager.game_state.turn_number, player_id + 1]
+	turn_label.text = "Turn %d - %s" % [turn_manager.game_state.turn_number, turn_manager.game_state.player_names[player_id]]
 	_current_sub_phase = 0
 	_update_turn_tracker(player_id, turn_manager.game_state.current_phase, _current_sub_phase)
 	_sync_boards()
@@ -595,10 +609,40 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("WinLabel")
 	if win_label:
-		win_label.text = "Player %d Wins!\n%s" % [winner_id + 1, reason]
+		win_label.text = "%s Wins!\n%s" % [turn_manager.game_state.player_names[winner_id], reason]
 	_disable_all_buttons()
 	if is_multiplayer_game and NetworkManager.is_host():
 		_rpc_receive_game_ended.rpc(winner_id, reason)
+
+
+func _on_confirmation_requested(prompt: String, setting: String) -> void:
+	var current_pid: int = turn_manager.game_state.current_player_id
+	if is_multiplayer_game and current_pid != local_player_id:
+		# Forward to the remote client who owns this turn
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == current_pid:
+				_rpc_confirmation_requested.rpc_id(peer_id, prompt, setting)
+		return
+	# Local player: check their settings
+	if GameSettings.get(setting):
+		turn_manager.confirm()
+		return
+	_show_confirmation(prompt)
+
+
+func _show_confirmation(prompt: String) -> void:
+	_awaiting_confirmation = true
+	_disable_all_buttons()
+	btn_pass.text = prompt
+	btn_pass.visible = true
+	btn_pass.disabled = false
+	await btn_pass.pressed
+	_awaiting_confirmation = false
+	btn_pass.text = "Pass"
+	if turn_manager:
+		turn_manager.confirm()
+	elif is_multiplayer_game:
+		_rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
 
 
 func _on_state_changed() -> void:
@@ -693,7 +737,7 @@ func _build_bug_report_body() -> String:
 
 	for pid in range(2):
 		var ps: PlayerState = _get_player_state(pid)
-		lines.append("### Player %d" % (pid + 1))
+		lines.append("### %s" % turn_manager.game_state.player_names[pid])
 		var monster_name: String = ps.current_monster.get("name", "None") if not ps.current_monster.is_empty() else "None"
 		lines.append("- **Monster:** %s (Zone %d)" % [monster_name, ps.monster_zone])
 		lines.append("- **Rage:** %d" % ps.rage)
@@ -751,7 +795,8 @@ func _build_bug_report_body() -> String:
 func _on_concede_pressed() -> void:
 	var loser_id := local_player_id
 	var winner_id := 1 - loser_id
-	var reason := "Player %d conceded" % (loser_id + 1)
+	var loser_name := turn_manager.game_state.player_names[loser_id] if turn_manager else ("Player %d" % (loser_id + 1))
+	var reason := "%s conceded" % loser_name
 	if is_multiplayer_game and not NetworkManager.is_host():
 		_rpc_concede.rpc_id(NetworkManager.host_peer_id)
 	elif turn_manager:
@@ -765,7 +810,7 @@ func _rpc_concede() -> void:
 	var sender_id := multiplayer.get_remote_sender_id()
 	var loser_id := 1 if sender_id != 1 else 0
 	var winner_id := 1 - loser_id
-	turn_manager._on_game_over(winner_id, "Player %d conceded" % (loser_id + 1))
+	turn_manager._on_game_over(winner_id, "%s conceded" % turn_manager.game_state.player_names[loser_id])
 
 
 func _on_main_menu_pressed() -> void:
@@ -859,6 +904,8 @@ func _on_invade_pressed() -> void:
 
 
 func _on_pass_pressed() -> void:
+	if _awaiting_confirmation:
+		return
 	if _hand_card_selecting and _hand_card_allow_skip:
 		_skip_hand_card_selection()
 		return
@@ -1996,7 +2043,8 @@ func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void
 func _on_discard_clicked(pid: int) -> void:
 	var player := _get_player_state(pid)
 	_discard_view_cards = player.discard_pile.duplicate(true)
-	var title := "Player %d Discard Pile (%d)" % [pid + 1, _discard_view_cards.size()]
+	var pname := GameLog.player_name(pid)
+	var title := "%s Discard Pile (%d)" % [pname, _discard_view_cards.size()]
 	discard_view_title.text = title
 	discard_view_stacked.set_pressed_no_signal(true)
 	discard_view_overlay.visible = true
@@ -2452,6 +2500,7 @@ func _serialize_game_state(viewer_id: int) -> String:
 		"cp_modifiers": [cp_total_0, cp_total_1],
 		"threat_modifiers": [eh.get_threat_level_modifier(0) if eh else 0, eh.get_threat_level_modifier(1) if eh else 0],
 		"zone_cp_modifiers": [zone_cp_0, zone_cp_1],
+		"player_names": Array(gs.player_names),
 	}
 	for i in range(2):
 		var pd := _serialize_player_state(gs.players[i])
@@ -2565,19 +2614,34 @@ func _rpc_receive_state(state_json: String) -> void:
 		var pd: Dictionary = players_data[i]
 		_client_players[i] = _dict_to_player_state(pd, i == local_player_id)
 
-	# Apply monster color gradient on first state receive
+	# Apply monster color gradient and send player name on first state receive
 	if not _client_gradients_applied:
 		_client_gradients_applied = true
 		for i in range(2):
 			var board = player1_board if i == 0 else player2_board
 			if not _client_players[i].current_monster.is_empty():
 				board.apply_monster_gradient(_client_players[i].current_monster)
+		_rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
+
+	# Sync player names from host (disambiguate from client's perspective)
+	var host_names: Array = data.get("player_names", [])
+	if host_names.size() == 2:
+		var canonical: Array[String] = []
+		for i in range(2):
+			canonical.append(str(host_names[i]))
+		GameLog.player_names = GameLog.disambiguate(canonical, local_player_id)
+		for i in range(2):
+			var board = player1_board if i == 0 else player2_board
+			if board and board.player_label:
+				board.player_label.text = GameLog.player_name(i)
+			if i < _turn_tracker_headers.size():
+				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
 	# Update UI
 	var client_phase := int(data["current_phase"]) as CardEnums.GamePhase
 	var client_sub_phase: int = int(data.get("current_sub_phase", 0))
 	phase_label.text = CardEnums.phase_to_string(client_phase)
-	turn_label.text = "Turn %d - Player %d" % [int(data["turn_number"]), int(data["current_player_id"]) + 1]
+	turn_label.text = "Turn %d - %s" % [int(data["turn_number"]), GameLog.player_name(int(data["current_player_id"]))]
 	_update_turn_tracker(_client_current_player_id, client_phase, client_sub_phase)
 	_sync_boards()
 	_update_hand_visibility(_client_current_player_id)
@@ -2660,6 +2724,46 @@ func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
+
+
+## Host -> Client: confirmation request (draw / next turn)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_confirmation_requested(prompt: String, setting: String) -> void:
+	if NetworkManager.is_host():
+		return
+	if GameSettings.get(setting):
+		_rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
+		return
+	_show_confirmation(prompt)
+
+
+## Client -> Host: confirmation resolved
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_confirmation_resolved() -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	turn_manager.confirm()
+
+
+## Client -> Host: send player name
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_send_player_name(pname: String) -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
+	if sender_player_id >= 0 and sender_player_id < 2:
+		turn_manager.game_state.player_names[sender_player_id] = pname
+		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+		# Update host UI (disambiguation may affect both labels)
+		for i in range(2):
+			var board = player1_board if i == 0 else player2_board
+			if board and board.player_label:
+				board.player_label.text = GameLog.player_name(i)
+			if i < _turn_tracker_headers.size():
+				_turn_tracker_headers[i].text = GameLog.player_name(i)
+		# Re-broadcast so client gets the updated names
+		_broadcast_state()
 
 
 ## Host -> Client: hand discard request (player must choose cards to discard)
@@ -2763,7 +2867,7 @@ func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("WinLabel")
 	if win_label:
-		win_label.text = "Player %d Wins!\n%s" % [winner_id + 1, reason]
+		win_label.text = "%s Wins!\n%s" % [GameLog.player_name(winner_id), reason]
 	_disable_all_buttons()
 
 

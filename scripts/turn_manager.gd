@@ -12,6 +12,7 @@ signal turn_ended(player_id: int)
 signal game_started()
 signal game_ended(winner_id: int, reason: String)
 signal log_message(text: String)
+signal confirmation_requested(prompt: String, setting: String)
 
 var game_state: GameState
 var rules_engine: RulesEngine
@@ -20,6 +21,18 @@ var effect_handler: EffectHandler
 var is_game_over: bool = false
 var _processing_action: bool = false
 var _waiting_for_input: bool = false
+var _confirmation_pending: bool = false
+
+
+func confirm() -> void:
+	_confirmation_pending = false
+
+
+func _await_confirmation(prompt: String, setting: String) -> void:
+	_confirmation_pending = true
+	confirmation_requested.emit(prompt, setting)
+	while _confirmation_pending:
+		await Engine.get_main_loop().process_frame
 
 
 func setup(card_data_node: Node) -> void:
@@ -97,6 +110,7 @@ func _execute_start_phase() -> void:
 	var opponent := game_state.get_opponent_of_current()
 
 	sub_phase_changed.emit(1) # Draw Cards
+	await _await_confirmation("Draw %d card(s)" % opponent.get_monster_rank(), "auto_draw")
 	log_message.emit(GameLog.start_phase_draw(opponent.get_monster_rank()))
 	action_handler.execute_start_phase_draw(game_state)
 	log_message.emit(GameLog.hand_size(player.hand.size()))
@@ -156,7 +170,7 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 
 	# Capture card info before execute pops it from hand
 	var player := game_state.get_current_player()
-	var player_name := "Player %d" % (game_state.current_player_id + 1)
+	var player_name := game_state.player_names[game_state.current_player_id]
 	var hand_index: int = params.get("hand_index", -1)
 	var card_id: String = ""
 	var is_base_strategy: bool = false
@@ -221,7 +235,7 @@ func _begin_counter_phase() -> void:
 	var total_cp: int = player.get_total_counter_power()
 	var threat: int = opponent.get_threat_level()
 
-	var player_name := "Player %d" % (game_state.current_player_id + 1)
+	var player_name := game_state.player_names[game_state.current_player_id]
 	log_message.emit(GameLog.counter_phase(player_name, total_cp, threat))
 
 	sub_phase_changed.emit(1) # Counter Check
@@ -247,7 +261,7 @@ func _begin_end_phase() -> void:
 	await action_handler.resolve_check_timing(game_state) # 7.5.1
 
 	var player := game_state.get_current_player()
-	var player_name := "Player %d" % (game_state.current_player_id + 1)
+	var player_name := game_state.player_names[game_state.current_player_id]
 	log_message.emit(GameLog.end_phase(player_name, player.monster_zone))
 
 	# Burst discard, then advance (7.5.2)
@@ -268,6 +282,9 @@ func _begin_end_phase() -> void:
 
 	# Draw up to 5 cards (7.5.4)
 	sub_phase_changed.emit(2) # Refill Hand
+	var draw_count := 5 - player.hand.size()
+	if draw_count > 0:
+		await _await_confirmation("Draw %d card(s)" % draw_count, "auto_draw")
 	action_handler.execute_end_phase_draw(game_state)
 	log_message.emit(GameLog.hand_refilled(player_name, player.hand.size()))
 
@@ -278,6 +295,7 @@ func _begin_end_phase() -> void:
 	turn_ended.emit(game_state.current_player_id)
 
 	# Switch turns
+	await _await_confirmation("Next Turn", "auto_phase_advance")
 	_begin_turn(1 - game_state.current_player_id)
 
 

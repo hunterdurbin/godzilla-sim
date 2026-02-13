@@ -9,6 +9,7 @@ var players: Array[PlayerState] = []
 var current_player_id: int = 0
 var current_phase: CardEnums.GamePhase = CardEnums.GamePhase.START
 var turn_number: int = 0
+var player_names: Array[String] = ["Player 1", "Player 2"]
 
 
 func _init() -> void:

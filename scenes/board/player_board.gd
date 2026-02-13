@@ -121,7 +121,7 @@ func _setup_references() -> void:
 	threat_label = find_child("ThreatLabel", true, false) as Label
 
 	if player_label:
-		player_label.text = "Player %d" % (player_id + 1)
+		player_label.text = GameLog.player_name(player_id)
 
 	# Make discard area clickable
 	if discard_display:

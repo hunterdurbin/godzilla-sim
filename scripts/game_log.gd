@@ -3,6 +3,30 @@ class_name GameLog
 ## Centralized log message formatting for the game log panel.
 ## All methods are static and return formatted BBCode strings.
 
+static var player_names: Array[String] = ["Player 1", "Player 2"]
+
+
+static func disambiguate(names: Array[String], local_id: int) -> Array[String]:
+	if names.size() == 2 and names[0] == names[1]:
+		var result: Array[String] = names.duplicate()
+		var opponent_id := 1 - local_id
+		result[opponent_id] = "%s (2)" % result[opponent_id]
+		return result
+	return names
+
+
+static func player_name(player_id: int) -> String:
+	if player_id >= 0 and player_id < player_names.size():
+		return player_names[player_id]
+	return "Player %d" % (player_id + 1)
+
+
+static func short_name(player_id: int) -> String:
+	var full := player_name(player_id)
+	if full.length() > 6:
+		return full.left(6)
+	return full
+
 
 static func _bold(text: String) -> String:
 	return "[b]%s[/b]" % text
@@ -33,7 +57,7 @@ static func card_link(raw_id: String) -> String:
 # --- Turn structure ---
 
 static func turn_start(turn_number: int, player_id: int) -> String:
-	return "--- Turn %d: Player %d ---" % [turn_number, player_id + 1]
+	return "--- Turn %d: %s ---" % [turn_number, player_name(player_id)]
 
 
 static func start_phase_draw(count: int) -> String:
@@ -49,7 +73,7 @@ static func main_phase() -> String:
 
 
 static func player_pass(player_id: int) -> String:
-	return "%s passes." % _bold("Player %d" % (player_id + 1))
+	return "%s passes." % _bold(player_name(player_id))
 
 
 # --- Player actions ---
@@ -103,7 +127,7 @@ static func hand_refilled(player_name: String, count: int) -> String:
 
 
 static func game_over(winner_id: int, reason: String) -> String:
-	return "GAME OVER! Player %d wins: %s" % [winner_id + 1, reason]
+	return "GAME OVER! %s wins: %s" % [player_name(winner_id), reason]
 
 
 # --- Effects ---
@@ -121,7 +145,7 @@ static func burst_played(player_name: String, card_id: String, burst_rank: int, 
 
 static func revenge_triggered(player_id: int, card_id: String) -> String:
 	var revenge_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Revenge.png[/img]"
-	return "%s: %s %s" % [_bold("P%d" % (player_id + 1)), revenge_icon, card_link(card_id)]
+	return "%s: %s %s" % [_bold(short_name(player_id)), revenge_icon, card_link(card_id)]
 
 
 static func awakening_triggered(player_id: int, card_id: String, awakening_level: int) -> String:
@@ -131,7 +155,7 @@ static func awakening_triggered(player_id: int, card_id: String, awakening_level
 		awk_prefix = "[img=40]%s[/img]" % awk_icon_path
 	else:
 		awk_prefix = "Awakening %d:" % awakening_level
-	return "%s: %s %s" % [_bold("Player %d" % (player_id + 1)), awk_prefix, card_link(card_id)]
+	return "%s: %s %s" % [_bold(player_name(player_id)), awk_prefix, card_link(card_id)]
 
 
 static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: String, to_id: String) -> String:
@@ -141,45 +165,45 @@ static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: Str
 		evo_prefix = "[img=40]%s[/img]" % evo_icon_path
 	else:
 		evo_prefix = "Evolution %d:" % evo_rank
-	return "%s Zone %d: %s %s => %s" % [_bold("Player %d" % (player_id + 1)), zone_idx + 1, evo_prefix, card_link(from_id), card_link(to_id)]
+	return "%s Zone %d: %s %s => %s" % [_bold(player_name(player_id)), zone_idx + 1, evo_prefix, card_link(from_id), card_link(to_id)]
 
 
 # --- Specific card effects ---
 
 static func effect_milled_card(player_id: int, effect_source_id: String, milled_id: String) -> String:
-	return "%s %s: Sent %s to discard pile" % [_bold("P%d" % (player_id + 1)), card_link(effect_source_id), card_link(milled_id)]
+	return "%s %s: Sent %s to discard pile" % [_bold(short_name(player_id)), card_link(effect_source_id), card_link(milled_id)]
 
 
 static func effect_milled_cards(player_id: int, effect_source_id: String, milled: Array[Dictionary]) -> String:
 	var names: Array[String] = []
 	for card in milled:
 		names.append(card_link(card.get("id", "")))
-	return "%s %s: Sent %s to discard pile" % [_bold("P%d" % (player_id + 1)), card_link(effect_source_id), ", ".join(names)]
+	return "%s %s: Sent %s to discard pile" % [_bold(short_name(player_id)), card_link(effect_source_id), ", ".join(names)]
 
 
 static func effect_gained_rage_from_mill(player_id: int, effect_source_id: String, rage: int, milled_id: String) -> String:
 	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
-	return "%s %s: %s x%d (milled monster: %s)" % [_bold("P%d" % (player_id + 1)), card_link(effect_source_id), rage_icon, rage, card_link(milled_id)]
+	return "%s %s: %s x%d (milled monster: %s)" % [_bold(short_name(player_id)), card_link(effect_source_id), rage_icon, rage, card_link(milled_id)]
 
 
 # --- Board events ---
 
 static func effect_destroyed_card(source_player_id: int, effect_source_id: String, target_player_id: int, zone_index: int, destroyed_id: String) -> String:
 	var destroy_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Destroy.png[/img]"
-	return "%s %s %s: %s Zone %d %s" % [destroy_icon, _bold("P%d" % (source_player_id + 1)), card_link(effect_source_id), _bold("P%d" % (target_player_id + 1)), zone_index + 1, card_link(destroyed_id)]
+	return "%s %s %s: %s Zone %d %s" % [destroy_icon, _bold(short_name(source_player_id)), card_link(effect_source_id), _bold(short_name(target_player_id)), zone_index + 1, card_link(destroyed_id)]
 
 
 static func battle_card_crushed(card_id: String, player_id: int, zone_index: int) -> String:
 	var destroy_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Destroy.png[/img]"
-	return "%s %s Zone %d: %s crushed!" % [destroy_icon, _bold("P%d" % (player_id + 1)), zone_index + 1, card_link(card_id)]
+	return "%s %s Zone %d: %s crushed!" % [destroy_icon, _bold(short_name(player_id)), zone_index + 1, card_link(card_id)]
 
 
 static func counter_succeeded(player_id: int, total_cp: int, threat: int) -> String:
-	return "Counter SUCCESS! %s CP %d >= Threat %d" % [_bold("P%d" % (player_id + 1)), total_cp, threat]
+	return "Counter SUCCESS! %s CP %d >= Threat %d" % [_bold(short_name(player_id)), total_cp, threat]
 
 
 static func counter_failed(player_id: int, total_cp: int, threat: int) -> String:
-	return "Counter failed. %s CP %d < Threat %d" % [_bold("P%d" % (player_id + 1)), total_cp, threat]
+	return "Counter failed. %s CP %d < Threat %d" % [_bold(short_name(player_id)), total_cp, threat]
 
 
 # --- Utilities ---
