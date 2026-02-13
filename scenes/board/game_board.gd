@@ -656,6 +656,7 @@ func _rpc_concede() -> void:
 
 func _on_main_menu_pressed() -> void:
 	if is_multiplayer_game:
+		NetworkManager.notify_leaving()
 		NetworkManager.disconnect_game()
 	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
 

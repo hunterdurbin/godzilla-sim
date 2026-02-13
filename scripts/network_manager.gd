@@ -275,6 +275,17 @@ func _start_version_timeout() -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
+func _rpc_peer_leaving() -> void:
+	opponent_connected = false
+	player_disconnected.emit(multiplayer.get_remote_sender_id())
+
+
+func notify_leaving() -> void:
+	if multiplayer.multiplayer_peer and opponent_connected:
+		_rpc_peer_leaving.rpc()
+
+
+@rpc("any_peer", "call_remote", "reliable")
 func _rpc_exchange_version(remote_version: String) -> void:
 	if remote_version != GAME_VERSION:
 		version_mismatch.emit(GAME_VERSION, remote_version)
