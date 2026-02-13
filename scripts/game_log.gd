@@ -164,6 +164,11 @@ static func effect_gained_rage_from_mill(player_id: int, effect_source_id: Strin
 
 # --- Board events ---
 
+static func effect_destroyed_card(source_player_id: int, effect_source_id: String, target_player_id: int, zone_index: int, destroyed_id: String) -> String:
+	var destroy_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Destroy.png[/img]"
+	return "%s %s %s: %s Zone %d %s" % [destroy_icon, _bold("P%d" % (source_player_id + 1)), card_link(effect_source_id), _bold("P%d" % (target_player_id + 1)), zone_index + 1, card_link(destroyed_id)]
+
+
 static func battle_card_crushed(card_id: String, player_id: int, zone_index: int) -> String:
 	var destroy_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Destroy.png[/img]"
 	return "%s %s Zone %d: %s crushed!" % [destroy_icon, _bold("P%d" % (player_id + 1)), zone_index + 1, card_link(card_id)]

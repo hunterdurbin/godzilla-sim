@@ -950,6 +950,7 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 		target.zones_changed.emit()
 		target.deck_changed.emit()
 		target.discard_changed.emit()
+		_log_destroy(target.player_id, zone_idx, top_card)
 		return top_card
 
 	var stack: Array = target.clear_zone(zone_idx)
@@ -957,8 +958,17 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 	target.zones_changed.emit()
 	target.discard_changed.emit()
 	target.cards_destroyed_this_turn.append(top_card)
+	_log_destroy(target.player_id, zone_idx, top_card)
 	await trigger_revenge(target.player_id, top_card)
 	return top_card
+
+
+func _log_destroy(target_player_id: int, zone_idx: int, destroyed_card: Dictionary) -> void:
+	if not _active_effect_card.is_empty():
+		log_message.emit(GameLog.effect_destroyed_card(
+			_active_effect_player_id, _active_effect_card.get("id", ""),
+			target_player_id, zone_idx, destroyed_card.get("id", "")
+		))
 
 
 func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int) -> bool:
