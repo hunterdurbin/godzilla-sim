@@ -4,9 +4,13 @@ extends CardEffect
 ## <Burst3> <When Invading> When this card <Destroy> your battle cards,
 ## reduce your opponent's <Rage> by 2.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
-## Edge cases: None
+## Edge cases: 
+##   1step, 1 crush => reduce rage x2 (works)
+##   2step, 1 crush (first zone) => reduce rage x2? TODO: double check if this is intended
+##   2step, 1 crush (second zone) => reduce rage x2? TODO: double check if this is intended
+##   2step, 2 crush => reduce rage x4 (ability triggers twice) (works)
 ## Rules: None
 ## Interactions: None
 ## Implementation notes: None
