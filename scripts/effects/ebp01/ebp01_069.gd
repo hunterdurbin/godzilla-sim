@@ -4,7 +4,7 @@ extends CardEffect
 ## <Awakening6> <Enter> Draw 2 cards, then discard 2 cards.
 ## (Active if your monster card is in zone 6 or beyond.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
