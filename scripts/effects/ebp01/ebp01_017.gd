@@ -3,7 +3,7 @@ extends CardEffect
 ## EBP01-017: Kumonga(2004) - Battle Rank 2
 ## If this card is in zone 8, this card gains +3000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
