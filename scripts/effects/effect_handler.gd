@@ -213,9 +213,14 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 				chosen = 0
 			entry = entries.pop_at(chosen)
 
+		var saved_player_id: int = _active_effect_player_id
+		var saved_card: Dictionary = _active_effect_card
 		_set_active_effect(entry.player_id, entry.card_data)
 		await entry.callback.call()
-		_clear_active_effect()
+		if saved_card.is_empty():
+			_clear_active_effect()
+		else:
+			_set_active_effect(saved_player_id, saved_card)
 
 
 # --- Trigger dispatchers ---
@@ -258,9 +263,14 @@ func trigger_crush(player_id: int, card_data: Dictionary) -> void:
 	## Trigger crush effect on a card being destroyed by the crush rule.
 	var effect := get_effect(card_data)
 	if effect:
+		var saved_player_id: int = _active_effect_player_id
+		var saved_card: Dictionary = _active_effect_card
 		_set_active_effect(player_id, card_data)
 		await effect.on_crush(_build_context(player_id, card_data))
-		_clear_active_effect()
+		if saved_card.is_empty():
+			_clear_active_effect()
+		else:
+			_set_active_effect(saved_player_id, saved_card)
 
 
 func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
@@ -268,18 +278,28 @@ func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 	var effect := get_effect(card_data)
 	if effect and has_trigger(card_data, "on_revenge"):
 		log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
+		var saved_player_id: int = _active_effect_player_id
+		var saved_card: Dictionary = _active_effect_card
 		_set_active_effect(player_id, card_data)
 		await effect.on_revenge(_build_context(player_id, card_data))
-		_clear_active_effect()
+		if saved_card.is_empty():
+			_clear_active_effect()
+		else:
+			_set_active_effect(saved_player_id, saved_card)
 
 
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 	## Trigger discard-from-hand effect on the card being discarded.
 	var effect := get_effect(card_data)
 	if effect:
+		var saved_player_id: int = _active_effect_player_id
+		var saved_card: Dictionary = _active_effect_card
 		_set_active_effect(player_id, card_data)
 		await effect.on_discard_from_hand(_build_context(player_id, card_data))
-		_clear_active_effect()
+		if saved_card.is_empty():
+			_clear_active_effect()
+		else:
+			_set_active_effect(saved_player_id, saved_card)
 
 
 func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
