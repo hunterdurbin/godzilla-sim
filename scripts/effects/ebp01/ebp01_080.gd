@@ -6,7 +6,7 @@ extends CardEffect
 ## While this card is in the strategy zone, your rank 5 or lower battle cards in
 ## zones 1-5 cannot be <Destroy> by your opponent's effects.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

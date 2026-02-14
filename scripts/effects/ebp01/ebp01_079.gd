@@ -3,7 +3,7 @@ extends CardEffect
 ## EBP01-079: Gravity Beam - Strategy Rank 5 (White)
 ## Your opponent discards cards until they have 3 cards remaining in their hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
