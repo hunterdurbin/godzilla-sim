@@ -3,7 +3,7 @@ extends CardEffect
 ## EBP01-076: Destroy All Monsters - Strategy Rank 2 (White)
 ## When your monster card invades this turn, <Destroy> 1 of your opponent's battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

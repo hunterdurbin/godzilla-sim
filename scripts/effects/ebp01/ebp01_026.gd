@@ -5,7 +5,7 @@ extends CardEffect
 ## and <Fest> from your discard pile under this card.
 ## If there is a card under this card, this card gains +5000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
