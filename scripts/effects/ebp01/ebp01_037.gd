@@ -4,7 +4,7 @@ extends CardEffect
 ## Whenever this card advances, you may discard 1 strategy card from your hand
 ## to increase its <Rage> by 1.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -18,7 +18,7 @@ func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> v
 		func(card: Dictionary) -> bool:
 			return card.get("card_type") == CardEnums.CardType.STRATEGY,
 		"Discard a strategy card from hand to gain 1 Rage:",
-		true  # allow_skip
+		true # allow_skip
 	)
 	if not discarded.is_empty():
 		ctx.owner.rage += 1
