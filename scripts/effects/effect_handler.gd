@@ -1209,6 +1209,22 @@ func get_counter_power_modifier(player_id: int) -> int:
 	return total
 
 
+func get_strategy_cp_modifiers(player_id: int) -> Array[int]:
+	## Get per-strategy-slot total CP modifiers from strategy card effects.
+	var player := game_state.players[player_id]
+	var modifiers: Array[int] = []
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var effect := get_effect(sz_card)
+			if effect:
+				modifiers.append(effect.get_total_cp_modifier(_build_context(player_id, sz_card)))
+			else:
+				modifiers.append(0)
+		else:
+			modifiers.append(0)
+	return modifiers
+
+
 func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 	## Get per-zone counter power modifiers from battle card effects.
 	var player := game_state.players[player_id]

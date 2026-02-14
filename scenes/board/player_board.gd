@@ -179,9 +179,9 @@ func apply_monster_gradient(monster_data: Dictionary) -> void:
 
 
 ## Sync the entire board display to match a PlayerState
-func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = []) -> void:
+func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = []) -> void:
 	_sync_zones(player_state, zone_cp_mods)
-	_sync_strategy_zones(player_state)
+	_sync_strategy_zones(player_state, strategy_cp_mods)
 	_sync_monster(player_state, threat_modifier)
 	_sync_hand(player_state)
 	_sync_info(player_state, cp_modifier, threat_modifier)
@@ -224,7 +224,7 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = []) -> void:
 			_update_modifier_badge(card, cp_mod)
 
 
-func _sync_strategy_zones(state: PlayerState) -> void:
+func _sync_strategy_zones(state: PlayerState, strategy_cp_mods: Array = []) -> void:
 	var zone_count: int = state.strategy_zones.size()
 
 	# Show/hide and reposition slots when 3rd strategy zone is added
@@ -236,6 +236,7 @@ func _sync_strategy_zones(state: PlayerState) -> void:
 		if not slot:
 			continue
 		var sz_data: Dictionary = state.strategy_zones[i]
+		var cp_mod: int = strategy_cp_mods[i] if i < strategy_cp_mods.size() else 0
 
 		if sz_data.is_empty() and slot.has_card():
 			slot.remove_card(true)
@@ -243,6 +244,9 @@ func _sync_strategy_zones(state: PlayerState) -> void:
 			var card := _create_card(sz_data)
 			card.drag_enabled = false
 			slot.place_card(card, false)
+			_update_strategy_modifier_badge(card, cp_mod)
+		elif not sz_data.is_empty() and slot.has_card():
+			_update_strategy_modifier_badge(slot.get_card(), cp_mod)
 
 
 func _redistribute_strategy_slots(count: int) -> void:
@@ -580,6 +584,35 @@ func _update_stack_badge(card: Control, count: int) -> void:
 			_add_stack_badge(card, count)
 		else:
 			badge.text = "x%d" % count
+
+
+func _update_strategy_modifier_badge(card: Control, modifier: int) -> void:
+	var badge := card.get_node_or_null("ModifierBadge")
+	if modifier == 0:
+		if badge:
+			badge.queue_free()
+		return
+	if not badge:
+		badge = Label.new()
+		badge.name = "ModifierBadge"
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.add_theme_font_size_override("font_size", 12)
+		badge.add_theme_color_override("font_outline_color", Color.BLACK)
+		badge.add_theme_constant_override("outline_size", 3)
+		card.add_child(badge)
+	# Card is portrait in local space; slot rotates -90° CCW for landscape display.
+	# Portrait bottom-center → visual middle-right of landscape.
+	# Counter-rotate badge +90° so text reads horizontally on screen.
+	var bw: float = card.size.x * 0.8
+	var bh: float = card.size.y * 0.15
+	badge.size = Vector2(bw, bh)
+	badge.pivot_offset = Vector2(bw / 2.0, bh / 2.0)
+	badge.rotation = deg_to_rad(90)
+	badge.position = Vector2(card.size.x * 0.5 - bw / 2.0, card.size.y * 0.75 - bh / 2.0)
+	var prefix := "+" if modifier > 0 else ""
+	badge.text = "%s%d" % [prefix, modifier]
+	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
 
 
 func _update_modifier_badge(card: Control, modifier: int) -> void:
