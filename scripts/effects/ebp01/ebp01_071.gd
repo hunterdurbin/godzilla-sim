@@ -5,7 +5,7 @@ extends CardEffect
 ## +5000 counter power.
 ## When your opponent's <Rage> is increased, <Destroy> this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -23,14 +23,10 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 	return 0
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	# This triggers when ANY player's rage changes. We need opponent's rage increase.
-	# The rage_changed trigger is called on this card for its owner's rage changes.
-	# To detect opponent's rage increase, we check from the opponent's perspective.
-	# However, trigger_rage_changed is called per-player for that player's cards.
-	# So this card's on_rage_changed fires when the OWNER's rage changes.
-	# We need to self-destruct when the OPPONENT's rage increases.
-	# This requires a different trigger mechanism (opponent_rage_changed).
-	# For now, we approximate: if owner's rage hasn't changed but opponent's has,
-	# we can't detect it here. This is a system limitation.
-	pass
+func on_opponent_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
+	if new_rage <= old_rage:
+		return
+	var zone_idx := find_zone_of_card(ctx)
+	if zone_idx < 0:
+		return
+	await ctx.effect_handler.destroy_zones(ctx.owner, [zone_idx] as Array[int])

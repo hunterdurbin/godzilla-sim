@@ -44,6 +44,12 @@ func on_rage_changed(_ctx: EffectContext, _old_rage: int, _new_rage: int) -> voi
 	pass
 
 
+func on_opponent_rage_changed(_ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
+	## Called on active cards when the opponent's rage changes.
+	## Covers "When your opponent's <Rage> is increased" triggers.
+	pass
+
+
 func on_monster_advance(_ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	## Called on active cards when the owner's monster advances zones.
 	## Covers "When this card advances" and "When this card reaches zone X" triggers.

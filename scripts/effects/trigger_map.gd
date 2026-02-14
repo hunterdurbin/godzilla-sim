@@ -71,7 +71,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp01/ebp01_068.gd": ["get_counter_power_modifier"],
 	"res://scripts/effects/ebp01/ebp01_069.gd": ["on_enter"],
 	"res://scripts/effects/ebp01/ebp01_070.gd": ["on_enter"],
-	"res://scripts/effects/ebp01/ebp01_071.gd": ["on_rage_changed","get_counter_power_modifier"],
+	"res://scripts/effects/ebp01/ebp01_071.gd": ["on_opponent_rage_changed","get_counter_power_modifier"],
 	"res://scripts/effects/ebp01/ebp01_072.gd": ["on_enter"],
 	"res://scripts/effects/ebp01/ebp01_073.gd": ["get_invasion_observed_filter","on_invasion_observed","can_be_played"],
 	"res://scripts/effects/ebp01/ebp01_074.gd": ["get_counter_power_modifier"],

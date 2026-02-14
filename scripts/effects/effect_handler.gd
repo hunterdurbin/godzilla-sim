@@ -399,6 +399,30 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 			var ctx := _build_context(player_id, sz_card)
 			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_rage_changed.bind(ctx, old_rage, new_rage)})
 
+	# Also trigger on_opponent_rage_changed on the OTHER player's cards
+	var opp_id: int = 1 - player_id
+	var opp := game_state.players[opp_id]
+	var opp_entries: Array = []
+
+	if has_trigger(opp.current_monster, "on_opponent_rage_changed"):
+		var me := get_effect(opp.current_monster)
+		var ctx := _build_context(opp_id, opp.current_monster)
+		opp_entries.append({"player_id": opp_id, "card_data": opp.current_monster, "callback": me.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
+
+	for i in range(8):
+		var zone_card := opp.get_zone_top_card(i)
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_opponent_rage_changed"):
+			var ze := get_effect(zone_card)
+			var ctx := _build_context(opp_id, zone_card)
+			opp_entries.append({"player_id": opp_id, "card_data": zone_card, "callback": ze.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
+
+	for sz_card in opp.strategy_zones:
+		if not sz_card.is_empty() and has_trigger(sz_card, "on_opponent_rage_changed"):
+			var se := get_effect(sz_card)
+			var ctx := _build_context(opp_id, sz_card)
+			opp_entries.append({"player_id": opp_id, "card_data": sz_card, "callback": se.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
+
+	entries.append_array(opp_entries)
 	await _resolve_standby_entries(entries)
 
 
