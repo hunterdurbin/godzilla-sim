@@ -444,6 +444,7 @@ func _gain_rage(hand_index: int, state: GameState) -> void:
 	player.rage_changed.emit(player.rage)
 	player.discard_changed.emit()
 	if effect_handler:
+		await effect_handler.trigger_discard_from_hand(player.player_id, card)
 		await effect_handler.trigger_hand_card_discarded(player.player_id, card)
 		await effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
 

@@ -7,17 +7,18 @@ extends CardEffect
 ## Tested: Yes
 ## Known issues: None
 ## Edge cases: 
-##   Step2, own monster moves z3->z5, opponent monster in z2 => Opponent does NOT move.
+##   Step2, own monster moves z3->z5, opponent monster in z2 => Opponent moves to z3
 ## Rules: None
-## Interactions: Effect only cares about final zone monster ended up in for effect check
+## Interactions: Effect cares about checking any zones in between the advance sequence
 ## Implementation notes: None
 
 
-func on_monster_advance(ctx: EffectContext, _from_zone: int, to_zone: int) -> void:
-	var my_zone_idx: int = to_zone - 1
+func on_monster_advance(ctx: EffectContext, from_zone: int, to_zone: int) -> void:
 	var opp_monster_idx: int = ctx.opponent.monster_zone - 1
-	var opponent_columns := get_opponent_column_zones(my_zone_idx)
-	if opp_monster_idx in opponent_columns:
-		if ctx.opponent.monster_zone < 8:
-			ctx.opponent.monster_zone += 1
-			ctx.opponent.monster_changed.emit()
+	for zone in range(from_zone + 1, to_zone + 1):
+		var opponent_columns := get_opponent_column_zones(zone - 1)
+		if opp_monster_idx in opponent_columns:
+			if ctx.opponent.monster_zone < 8:
+				ctx.opponent.monster_zone += 1
+				ctx.opponent.monster_changed.emit()
+			return

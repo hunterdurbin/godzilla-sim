@@ -735,6 +735,7 @@ func discard_hand_to(player_id: int, target_count: int) -> void:
 		player.hand_changed.emit()
 		player.discard_changed.emit()
 		for card in discarded_cards:
+			await trigger_discard_from_hand(player_id, card)
 			await trigger_hand_card_discarded(player_id, card)
 
 
@@ -754,8 +755,9 @@ func resolve_hand_discard(player_id: int, hand_indices: Array[int]) -> void:
 			discarded_cards.append(card)
 	player.hand_changed.emit()
 	player.discard_changed.emit()
-	# Trigger hand card discarded for each card (after all are removed)
+	# Trigger discard-from-hand on each card, then broadcast to all active cards
 	for card in discarded_cards:
+		await trigger_discard_from_hand(player_id, card)
 		await trigger_hand_card_discarded(player_id, card)
 	_hand_discard_resolved.emit()
 
@@ -917,6 +919,7 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 	player.discard_pile.append(card)
 	player.hand_changed.emit()
 	player.discard_changed.emit()
+	await trigger_discard_from_hand(player_id, card)
 	await trigger_hand_card_discarded(player_id, card)
 	return card
 
@@ -1494,13 +1497,23 @@ func can_replace_invasion_cost(player_id: int) -> bool:
 
 
 func get_counter_immunity_threshold(player_id: int) -> int:
-	## Get the counter immunity threshold from the player's current monster.
+	## Get the counter immunity threshold from the player's monster and strategy cards.
 	## If defender's CP <= this value, monster retreats without rank up.
+	## Returns the highest threshold found across monster + strategy effects.
 	var player := game_state.players[player_id]
+	var best: int = 0
 	var effect := get_effect(player.current_monster)
 	if effect:
-		return effect.get_counter_immunity_threshold(_build_context(player_id, player.current_monster))
-	return 0
+		best = effect.get_counter_immunity_threshold(_build_context(player_id, player.current_monster))
+	# Strategy card counter immunity (e.g. EBP01-066)
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var se := get_effect(sz_card)
+			if se:
+				var val: int = se.get_counter_immunity_threshold(_build_context(player_id, sz_card))
+				if val > best:
+					best = val
+	return best
 
 
 func are_opponent_strategy_plays_blocked(player_id: int) -> bool:
