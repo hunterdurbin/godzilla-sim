@@ -3,11 +3,12 @@ extends CardEffect
 # <Base>
 # <Your Turn> Counter start: play up to 1 Godzilla battle card from hand.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
-# Edge cases: None
+# Edge cases:
+#   A chosen card must pass all play restrictions (e.g. EBP01-073 can be played if and only if the card requirement is met)
 # Rules: None
-# Interactions: None
+# Interactions: Any rank battle card can be played from this effect.
 # Implementation notes: None
 
 
@@ -23,15 +24,17 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return  # Your turn only
+		return # Your turn only
 
-	# Find Godzilla battle cards in hand
+	# Find Godzilla battle cards in hand (respecting play restrictions)
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card):
 			if card.get("card_type") != CardEnums.CardType.BATTLE:
 				return false
-			return CardEnums.CardTrait.GODZILLA in card.get("traits", []),
+			if not CardEnums.CardTrait.GODZILLA in card.get("traits", []):
+				return false
+			return ctx.effect_handler.can_card_be_played(ctx.owner.player_id, card),
 		"Play a Godzilla battle card from hand (or skip):",
 		true
 	)
