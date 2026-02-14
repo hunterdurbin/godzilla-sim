@@ -117,7 +117,10 @@ func get_playable_strategy_cards(player: PlayerState) -> Array[int]:
 	for i in range(player.hand.size()):
 		var card: Dictionary = player.hand[i]
 		if card.get("card_type") == CardEnums.CardType.STRATEGY:
-			if card.get("rank", 99) <= player.monster_zone:
+			var effective_rank: int = card.get("rank", 99)
+			if effect_handler:
+				effective_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
+			if effective_rank <= player.monster_zone:
 				indices.append(i)
 	return indices
 
@@ -232,7 +235,10 @@ func _can_play_any_strategy_card(player: PlayerState) -> bool:
 		return false
 	for card in player.hand:
 		if card.get("card_type") == CardEnums.CardType.STRATEGY:
-			if card.get("rank", 99) <= player.monster_zone:
+			var effective_rank: int = card.get("rank", 99)
+			if effect_handler:
+				effective_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
+			if effective_rank <= player.monster_zone:
 				return true
 	return false
 
