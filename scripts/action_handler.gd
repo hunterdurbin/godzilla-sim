@@ -529,7 +529,6 @@ func _invade(hand_index: int, state: GameState) -> void:
 				if effect_handler:
 					deferred_entries.append_array(effect_handler.collect_when_invading_entries(player.player_id, old_zone, player.monster_zone))
 					deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
-					deferred_entries.append_array(effect_handler.collect_invasion_observed_entries(player.player_id, old_zone, player.monster_zone))
 				is_victory = true
 				break
 			else:
@@ -542,13 +541,16 @@ func _invade(hand_index: int, state: GameState) -> void:
 			if effect_handler:
 				deferred_entries.append_array(effect_handler.collect_when_invading_entries(player.player_id, old_zone, player.monster_zone))
 				deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
-				deferred_entries.append_array(effect_handler.collect_invasion_observed_entries(player.player_id, old_zone, player.monster_zone))
 				# Destroy <Base> strategies when monster invades into zones 6-8 (12.9.2)
 				await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone)
 			# Check crush rule at each step
 			await check_crush_rule(state)
 
 	player.invasion_zones_crossed = player.monster_zone - start_zone
+
+	# Collect invasion observed entries once for the entire invasion movement
+	if effect_handler and player.monster_zone > start_zone:
+		deferred_entries.append_array(effect_handler.collect_invasion_observed_entries(player.player_id, start_zone, player.monster_zone))
 
 	# Resolve deferred effects after all movement completes
 	if effect_handler and not deferred_entries.is_empty():
