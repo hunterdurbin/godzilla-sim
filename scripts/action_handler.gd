@@ -46,37 +46,33 @@ func execute_start_phase_discard(state: GameState) -> void:
 	var player := state.get_current_player()
 
 	# Clear strategy cards placed before this turn
-	# Check if any zone card can intercept the discard (e.g. EBP02-012 in zone 8)
-	var intercept_zone: int = -1
-	if effect_handler:
-		intercept_zone = effect_handler.get_strategy_discard_interceptor(player.player_id)
-
-	var cleared: Array = []
+	# Collect indices to discard first, then process (replacement effects handled by helper)
+	var indices_to_discard: Array[int] = []
 	for i in range(player.strategy_zones.size()):
 		if not player.strategy_zones[i].is_empty():
 			if player.strategy_zone_turn_placed[i] < state.turn_number:
 				# Base strategies are exempt from start phase discard (12.9.2 / 7.2.3)
 				if effect_handler and effect_handler.is_base_strategy(player.strategy_zones[i]):
 					continue
+				indices_to_discard.append(i)
+
+	if not indices_to_discard.is_empty():
+		var cleared: Array = []
+		for i in indices_to_discard:
+			if effect_handler:
+				var card := await effect_handler.discard_strategy_from_zone(player.player_id, i)
+				if not card.is_empty():
+					cleared.append(card)
+			else:
 				var strategy_card: Dictionary = player.strategy_zones[i]
 				player.strategy_zones[i] = {}
-				if intercept_zone >= 0:
-					# Stack under the intercepting card instead of discarding
-					player.zones[intercept_zone].append(strategy_card)
-				else:
-					player.discard_pile.append(strategy_card)
+				player.discard_pile.append(strategy_card)
 				cleared.append(strategy_card)
-	if cleared.size() > 0:
-		strategy_cleared.emit(player.player_id, cleared)
-		player.strategy_zones_changed.emit()
-		if intercept_zone >= 0:
-			player.zones_changed.emit()
-		else:
+		if not effect_handler and not cleared.is_empty():
+			player.strategy_zones_changed.emit()
 			player.discard_changed.emit()
-		# Trigger strategy discarded for each cleared strategy (only non-intercepted)
-		if effect_handler and intercept_zone < 0:
-			for strategy_card in cleared:
-				await effect_handler.trigger_strategy_discarded(player.player_id, strategy_card)
+		if not cleared.is_empty():
+			strategy_cleared.emit(player.player_id, cleared)
 
 
 func execute_start_phase_reset(state: GameState) -> void:

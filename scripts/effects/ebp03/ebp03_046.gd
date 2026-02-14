@@ -60,12 +60,8 @@ func on_enter(ctx: EffectContext) -> void:
 			if not ctx.opponent.strategy_zones[i].is_empty():
 				valid_strat.append(i)
 		if not valid_strat.is_empty():
-			# Pick first occupied strategy zone (simplified - strategies use indices 0-1)
-			var strat_card: Dictionary = ctx.opponent.strategy_zones[valid_strat[0]]
-			ctx.opponent.strategy_zones[valid_strat[0]] = {}
-			EffectHandler.banish_or_discard(ctx.opponent, [strat_card])
-			ctx.opponent.strategy_zones_changed.emit()
-			ctx.opponent.discard_changed.emit()
+			# TODO: Player should be able to choose a strategy card if there is more than 1 option
+			await ctx.effect_handler.discard_strategy_from_zone(ctx.opponent.player_id, valid_strat[0])
 	elif chosen_id == "rage":
 		var old_rage := ctx.opponent.rage
 		ctx.opponent.rage -= 1

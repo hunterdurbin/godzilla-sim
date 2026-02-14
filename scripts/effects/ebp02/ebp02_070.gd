@@ -64,11 +64,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 
 func _destroy_self(ctx: EffectContext) -> void:
-	for i in range(2):
+	for i in range(ctx.owner.strategy_zones.size()):
 		if ctx.owner.strategy_zones[i].get("id", "") == ctx.card_data.get("id", ""):
-			var card: Dictionary = ctx.owner.strategy_zones[i]
-			ctx.owner.strategy_zones[i] = {}
-			ctx.owner.discard_pile.append(card)
-			ctx.owner.strategy_zones_changed.emit()
-			ctx.owner.discard_changed.emit()
+			await ctx.effect_handler.discard_strategy_from_zone(ctx.owner.player_id, i)
 			return

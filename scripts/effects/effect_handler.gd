@@ -1504,6 +1504,31 @@ func get_strategy_discard_interceptor(player_id: int) -> int:
 	return -1
 
 
+func discard_strategy_from_zone(player_id: int, zone_index: int) -> Dictionary:
+	## Remove a strategy card from a strategy zone, applying replacement effects (10.2.1.3).
+	## If an interceptor is active, stacks the card under it instead of discarding.
+	## Returns the removed card (empty dict if zone was already empty).
+	var player := game_state.players[player_id]
+	var card: Dictionary = player.strategy_zones[zone_index]
+	if card.is_empty():
+		return {}
+	player.strategy_zones[zone_index] = {}
+
+	var intercept_zone := get_strategy_discard_interceptor(player_id)
+	if intercept_zone >= 0:
+		player.zones[intercept_zone].append(card)
+		player.zones_changed.emit()
+	else:
+		banish_or_discard(player, [card])
+		player.discard_changed.emit()
+	player.strategy_zones_changed.emit()
+
+	# Replacement means it wasn't truly discarded — skip discard triggers
+	if intercept_zone < 0:
+		await trigger_strategy_discarded(player_id, card)
+	return card
+
+
 func get_opponent_field_rank_modifier(player_id: int) -> int:
 	## Get the field rank reduction applied to opponent's in-play battle cards.
 	## Queries the player's current monster effect.
@@ -1525,23 +1550,14 @@ func is_base_strategy(card_data: Dictionary) -> bool:
 
 func destroy_base_strategies_on_invasion(to_zone: int) -> void:
 	## Destroy all <Base> strategy cards when any monster invades into zones 6-8 (12.9.2).
-	## Checks both players' strategy zones. Triggers strategy_discarded for each.
+	## Checks both players' strategy zones. Uses discard_strategy_from_zone for replacement effects.
 	if to_zone < 6:
 		return
 	for pid in range(2):
 		var player := game_state.players[pid]
-		var destroyed: Array[Dictionary] = []
 		for i in range(player.strategy_zones.size() - 1, -1, -1):
 			if not player.strategy_zones[i].is_empty() and is_base_strategy(player.strategy_zones[i]):
-				var card: Dictionary = player.strategy_zones[i]
-				player.strategy_zones[i] = {}
-				banish_or_discard(player, [card])
-				destroyed.append(card)
-		if not destroyed.is_empty():
-			player.strategy_zones_changed.emit()
-			player.discard_changed.emit()
-			for card in destroyed:
-				await trigger_strategy_discarded(pid, card)
+				await discard_strategy_from_zone(pid, i)
 
 
 func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> int:

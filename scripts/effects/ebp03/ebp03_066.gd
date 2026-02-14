@@ -45,8 +45,4 @@ func on_enter(ctx: EffectContext) -> void:
 				idx_to_destroy = si
 				break
 
-	var strat_card: Dictionary = ctx.opponent.strategy_zones[idx_to_destroy]
-	ctx.opponent.strategy_zones[idx_to_destroy] = {}
-	EffectHandler.banish_or_discard(ctx.opponent, [strat_card])
-	ctx.opponent.strategy_zones_changed.emit()
-	ctx.opponent.discard_changed.emit()
+	await ctx.effect_handler.discard_strategy_from_zone(ctx.opponent.player_id, idx_to_destroy)
