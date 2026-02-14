@@ -79,6 +79,11 @@ var _choice_result: int = -1
 var _active_effect_player_id: int = -1
 var _active_effect_card: Dictionary = {}
 
+# Standby resolution deferral: when true, newly triggered enter/monster_played
+# effects are queued in _pending_standby_entries instead of resolving inline (10.4.3).
+var _in_standby_resolution: bool = false
+var _pending_standby_entries: Array = []
+
 
 func setup(p_game_state: GameState) -> void:
 	game_state = p_game_state
@@ -173,23 +178,44 @@ func _resolve_standby_entries(entries: Array) -> void:
 	## Turn player's abilities resolve first (10.4.3.2), then non-turn player's (10.4.3.3).
 	## Within each player, if multiple abilities are in standby, the player chooses
 	## the resolution order (10.6.3.1). Rule actions checked before each ability (10.4.3.1).
+	##
+	## When a card enters play during standby resolution (via evolution, play_from_discard,
+	## etc.), its triggered effects join the pending queue rather than resolving inline.
+	## After each batch resolves, pending entries are drained and resolved in a new batch.
 	if entries.is_empty():
 		return
 
-	var turn_pid: int = game_state.current_player_id
+	# Re-entrancy guard: if already resolving standby, just queue these entries.
+	# This handles e.g. trigger_monster_played calling _resolve_standby_entries
+	# from within a standby callback.
+	if _in_standby_resolution:
+		_pending_standby_entries.append_array(entries)
+		return
 
-	# Separate by player: turn player first, non-turn player second (10.4.3.2-10.4.3.3)
-	var turn_entries: Array = []
-	var non_turn_entries: Array = []
-	for entry in entries:
-		if entry.player_id == turn_pid:
-			turn_entries.append(entry)
-		else:
-			non_turn_entries.append(entry)
+	_in_standby_resolution = true
+	var current_entries: Array = entries
 
-	# Resolve turn player's abilities first (10.4.3.2), then non-turn player's (10.4.3.3)
-	await _resolve_player_standby(turn_pid, turn_entries)
-	await _resolve_player_standby(1 - turn_pid, non_turn_entries)
+	while not current_entries.is_empty():
+		var turn_pid: int = game_state.current_player_id
+
+		# Separate by player: turn player first, non-turn player second (10.4.3.2-10.4.3.3)
+		var turn_entries: Array = []
+		var non_turn_entries: Array = []
+		for entry in current_entries:
+			if entry.player_id == turn_pid:
+				turn_entries.append(entry)
+			else:
+				non_turn_entries.append(entry)
+
+		# Resolve turn player's abilities first (10.4.3.2), then non-turn player's (10.4.3.3)
+		await _resolve_player_standby(turn_pid, turn_entries)
+		await _resolve_player_standby(1 - turn_pid, non_turn_entries)
+
+		# Drain any entries that accumulated during this batch
+		current_entries = _pending_standby_entries
+		_pending_standby_entries = []
+
+	_in_standby_resolution = false
 
 
 func _resolve_player_standby(player_id: int, entries: Array) -> void:
@@ -222,16 +248,41 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 		else:
 			_set_active_effect(saved_player_id, saved_card)
 
+		# Drain pending entries for this player into the current queue so the
+		# player can choose resolution order among them (10.6.3.1).
+		# Entries for the other player stay in _pending_standby_entries for the
+		# outer _resolve_standby_entries loop to handle.
+		var remaining: Array = []
+		for p in _pending_standby_entries:
+			if p.player_id == player_id:
+				entries.append(p)
+			else:
+				remaining.append(p)
+		_pending_standby_entries = remaining
+
 
 # --- Trigger dispatchers ---
 
 func trigger_enter(player_id: int, card_data: Dictionary) -> void:
 	## Trigger <Enter> effect on the card that just entered play.
+	## If inside standby resolution, defers the enter to the pending queue (10.4.3).
+	if not has_trigger(card_data, "on_enter"):
+		return
 	var effect := get_effect(card_data)
-	if effect:
-		_set_active_effect(player_id, card_data)
-		await effect.on_enter(_build_context(player_id, card_data))
-		_clear_active_effect()
+	if not effect:
+		return
+
+	if _in_standby_resolution:
+		_pending_standby_entries.append({
+			"player_id": player_id,
+			"card_data": card_data,
+			"callback": effect.on_enter.bind(_build_context(player_id, card_data))
+		})
+		return
+
+	_set_active_effect(player_id, card_data)
+	await effect.on_enter(_build_context(player_id, card_data))
+	_clear_active_effect()
 
 
 func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void:
