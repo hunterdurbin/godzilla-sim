@@ -7,9 +7,9 @@ extends CardEffect
 ## Tested: Yes
 ## Known issues: None
 ## Edge cases: 
-##   Step2, own monster moves z3->z5, opponent monster in z2 => Moves opponent monster to z3
+##   Step2, own monster moves z3->z5, opponent monster in z2 => Opponent does NOT move.
 ## Rules: None
-## Interactions: None
+## Interactions: Effect only cares about final zone monster ended up in for effect check
 ## Implementation notes: None
 
 
