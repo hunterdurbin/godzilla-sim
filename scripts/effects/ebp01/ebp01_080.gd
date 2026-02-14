@@ -6,9 +6,6 @@ extends CardEffect
 ## While this card is in the strategy zone, your rank 5 or lower battle cards in
 ## zones 1-5 cannot be <Destroy> by your opponent's effects.
 ##
-## NOTE: Rank reduction and destruction protection require system-level support.
-## This effect declares the protection conditions. 
-##
 ## Tested: No
 ## Known issues: None
 ## Edge cases: None
@@ -30,6 +27,17 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 		if not sz_card.is_empty():
 			return -2
 	return 0
+
+
+func protects_card_from_destruction(_ctx: EffectContext, card_data: Dictionary, zone_idx: int) -> bool:
+	# Protect rank 5 or lower battle cards in zones 1-5 (indices 0-4)
+	if zone_idx > 4:
+		return false
+	if card_data.get("card_type") != CardEnums.CardType.BATTLE:
+		return false
+	if card_data.get("rank", 0) > 5:
+		return false
+	return true
 
 
 func is_base_strategy() -> bool:

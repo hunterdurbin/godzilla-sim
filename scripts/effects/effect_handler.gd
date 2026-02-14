@@ -1078,6 +1078,19 @@ func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	var effect := get_effect(card_data)
 	if effect and not effect.can_be_destroyed(_build_context(target.player_id, card_data)):
 		return false
+	# Check if any strategy card protects this card
+	var zone_idx: int = -1
+	for i in range(8):
+		if target.get_zone_top_card(i).get("id") == card_data.get("id"):
+			zone_idx = i
+			break
+	if zone_idx >= 0:
+		for sz_card in target.strategy_zones:
+			if not sz_card.is_empty():
+				var sz_effect := get_effect(sz_card)
+				if sz_effect and sz_effect.protects_card_from_destruction(
+						_build_context(target.player_id, sz_card), card_data, zone_idx):
+					return false
 	return true
 
 

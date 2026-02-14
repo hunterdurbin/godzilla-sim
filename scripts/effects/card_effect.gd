@@ -133,6 +133,12 @@ func can_be_destroyed(_ctx: EffectContext) -> bool:
 	return true
 
 
+func protects_card_from_destruction(_ctx: EffectContext, _card_data: Dictionary, _zone_idx: int) -> bool:
+	## Return true if this strategy card protects the given battle card from destruction.
+	## Called on active strategy cards when checking if a zone card can be destroyed.
+	return false
+
+
 # --- Play restriction methods ---
 
 func can_be_played(_ctx: EffectContext) -> bool:
