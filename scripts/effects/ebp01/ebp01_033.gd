@@ -5,15 +5,20 @@ extends CardEffect
 ## your monster card invaded this turn.
 ## <Destroy> all battle cards of both players.
 ##
-## NOTE: The rank reduction mechanic requires rules engine support.
-## The destruction effect is implemented here.
-##
 ## Tested: No
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
 ## Implementation notes: None
+
+
+func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary) -> int:
+	# Only modifies self
+	if target_card.get("id") != ctx.card_data.get("id"):
+		return 0
+	# Reduce by 1 for each zone the monster invaded this turn
+	return -ctx.owner.invasion_zones_crossed
 
 
 func on_enter(ctx: EffectContext) -> void:

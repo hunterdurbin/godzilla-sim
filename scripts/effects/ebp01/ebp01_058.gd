@@ -5,15 +5,23 @@ extends CardEffect
 ## this from your hand with its rank reduced by 2. (After being played, this card is rank 7.)
 ## <Enter> Return all cards in your discard pile to your deck then shuffle.
 ##
-## NOTE: The rank reduction mechanic requires rules engine support.
-## The enter effect is fully implemented.
-##
 ## Tested: No
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
 ## Implementation notes: None
+
+
+func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary) -> int:
+	# Only modifies self
+	if target_card.get("id") != ctx.card_data.get("id"):
+		return 0
+	# Check for a Biollante card with Evolution in discard
+	for card in ctx.owner.discard_pile:
+		if CardEnums.CardTrait.BIOLLANTE in card.get("traits", []) and card.has("evolution_rank"):
+			return -2
+	return 0
 
 
 func on_enter(ctx: EffectContext) -> void:

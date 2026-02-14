@@ -7,8 +7,7 @@ extends CardEffect
 ## zones 1-5 cannot be <Destroy> by your opponent's effects.
 ##
 ## NOTE: Rank reduction and destruction protection require system-level support.
-## This effect declares the protection conditions. The rank reduction mechanic
-## requires rules engine changes.
+## This effect declares the protection conditions. 
 ##
 ## Tested: No
 ## Known issues: None
@@ -20,6 +19,17 @@ extends CardEffect
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
+
+
+func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary) -> int:
+	# Only modifies self
+	if target_card.get("id") != ctx.card_data.get("id"):
+		return 0
+	# Check if opponent has any strategy card in play
+	for sz_card in ctx.opponent.strategy_zones:
+		if not sz_card.is_empty():
+			return -2
+	return 0
 
 
 func is_base_strategy() -> bool:
