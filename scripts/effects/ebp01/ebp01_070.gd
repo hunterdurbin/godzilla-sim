@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> Look at the top card of your deck. You may send it to your discard pile
 ## or place it back on top of your deck.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -18,20 +18,20 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var top_card: Dictionary = ctx.owner.main_deck.pop_front()
 
-	# Use deck search UI to let player decide: selecting the card = discard it
-	if ctx.effect_handler.deck_search_requested.get_connections().size() > 0:
-		ctx.effect_handler.deck_search_requested.emit(
-			ctx.owner.player_id, [top_card], [top_card],
-			"Top card of your deck — select to discard it, or cancel to keep it on top:")
-		await ctx.effect_handler._deck_search_resolved
-		var selected: Dictionary = ctx.effect_handler._deck_search_result
-		if not selected.is_empty():
-			ctx.owner.discard_pile.append(top_card)
-			ctx.owner.discard_changed.emit()
-		else:
-			ctx.owner.main_deck.push_front(top_card)
-	else:
-		# Fallback: keep on top
-		ctx.owner.main_deck.push_front(top_card)
+	var result: Dictionary = await ctx.effect_handler.arrange_deck_cards(
+		ctx.owner.player_id, [top_card],
+		"Look at the top card — keep on top or send to discard:")
+
+	# Put kept cards back on top
+	var keep: Array = result.get("keep", [])
+	for i in range(keep.size() - 1, -1, -1):
+		ctx.owner.main_deck.push_front(keep[i])
+
+	# Discard the rest
+	var discard: Array = result.get("discard", [])
+	for card in discard:
+		ctx.owner.discard_pile.append(card)
 
 	ctx.owner.deck_changed.emit()
+	if not discard.is_empty():
+		ctx.owner.discard_changed.emit()
