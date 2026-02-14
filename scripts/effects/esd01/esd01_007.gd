@@ -5,7 +5,7 @@ extends CardEffect
 ## discard pile at the beginning of your next end phase.
 ## <Enter> <Destroy> all of your opponent's battle cards in the same column as this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -19,6 +19,6 @@ func get_burst_rank() -> int:
 
 func on_enter(ctx: EffectContext) -> void:
 	# "Same column as this card" - for a monster card, the column is the monster's zone
-	var monster_zone_idx: int = ctx.owner.monster_zone - 1  # 0-indexed
+	var monster_zone_idx: int = ctx.owner.monster_zone - 1 # 0-indexed
 	var column_zones := get_opponent_column_zones(monster_zone_idx)
 	ctx.effect_handler.destroy_zones(ctx.opponent, column_zones)

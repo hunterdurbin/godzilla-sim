@@ -5,7 +5,7 @@ extends CardEffect
 ## with <Burst>, reveal it, add it to your hand, then shuffle your deck.
 ## (If you invaded 2 zones, activate this effect 2 times)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

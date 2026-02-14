@@ -4,7 +4,7 @@ extends CardEffect
 ## If your monster card has 2 or more <Rage>, search your deck for up to 1 battle card
 ## named Godzilla(2023), play it, then shuffle your deck.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

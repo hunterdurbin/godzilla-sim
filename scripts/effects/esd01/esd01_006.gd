@@ -5,7 +5,7 @@ extends CardEffect
 ## discard pile at the beginning of your next end phase.
 ## <Enter> <Destroy> 1 of your opponent's rank 4 or lower battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

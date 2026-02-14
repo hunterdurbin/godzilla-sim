@@ -5,7 +5,7 @@ extends CardEffect
 ## discard pile at the beginning of your next end phase.
 ## <Enter> Your opponent discards cards until they have 4 cards remaining in their hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

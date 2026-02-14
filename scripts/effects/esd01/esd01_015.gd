@@ -3,7 +3,7 @@ extends CardEffect
 ## ESD01-015: Operation Wadatsumi - Strategy Rank 7
 ## Your opponent discards cards until they have 2 cards remaining in their hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

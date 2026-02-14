@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> If your monster card has 2 or more <Rage>, reduce your opponent's <Rage> by 1.
 ## When this card is <Destroy>, place this card on the bottom of your deck instead.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

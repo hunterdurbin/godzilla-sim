@@ -5,7 +5,7 @@ extends CardEffect
 ## If this card is in zone 8, this card gains +3000 counter power.
 ## When this card is <Destroy>, place this card on the bottom of your deck instead.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

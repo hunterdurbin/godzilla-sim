@@ -4,7 +4,7 @@ extends CardEffect
 ## <Your Turn> Whenever your monster card's <Rage> is increased,
 ## <Destroy> 1 of your opponent's rank 6 or lower battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
