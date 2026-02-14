@@ -5,7 +5,7 @@ extends CardEffect
 ## your monster card invaded this turn.
 ## <Destroy> all battle cards of both players.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> Select 1 rank 4 or lower battle card with <Evolution> from your discard pile
 ## and play it in a zone adjacent to this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
