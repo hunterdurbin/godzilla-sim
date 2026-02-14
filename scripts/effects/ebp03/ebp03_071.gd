@@ -18,6 +18,8 @@ extends CardEffect
 func on_enter(ctx: EffectContext) -> void:
 	var player := ctx.owner
 	if player.main_deck.size() == 0:
+		# Skip arrange, but still draw (triggers discard reshuffle)
+		player.draw_cards(2)
 		return
 
 	# Look at top 4 cards
@@ -26,32 +28,22 @@ func on_enter(ctx: EffectContext) -> void:
 	for _i in range(look_count):
 		top_cards.append(player.main_deck.pop_front())
 
-	# Let the player choose which cards to keep on top (via select_from_cards)
-	# For each card, offer choice: keep on top or discard
-	var keep_on_top: Array[Dictionary] = []
-	var to_discard: Array[Dictionary] = []
+	var result: Dictionary = await ctx.effect_handler.arrange_deck_cards(
+		ctx.owner.player_id, top_cards,
+		"Put cards on top of deck in order, or send to discard:")
 
-	for card in top_cards:
-		var options: Array[String] = ["Keep on top of deck", "Send to discard pile"]
-		var chosen: int = await ctx.effect_handler.select_choice(
-			ctx.owner.player_id, options,
-			"Card: %s (Rank %d) — Keep on deck or discard?" % [card.get("name", "?"), card.get("rank", 0)])
-		if chosen == 0:
-			keep_on_top.append(card)
-		else:
-			to_discard.append(card)
-
-	# Put kept cards back on top (in chosen order — last selected goes deepest)
-	keep_on_top.reverse()
-	for card in keep_on_top:
-		player.main_deck.push_front(card)
+	# Put kept cards back on top (first in array = top of deck)
+	var keep: Array = result.get("keep", [])
+	for i in range(keep.size() - 1, -1, -1):
+		player.main_deck.push_front(keep[i])
 
 	# Discard the rest
-	for card in to_discard:
+	var discard: Array = result.get("discard", [])
+	for card in discard:
 		player.discard_pile.append(card)
 
 	player.deck_changed.emit()
-	if not to_discard.is_empty():
+	if not discard.is_empty():
 		player.discard_changed.emit()
 
 	# Draw 2 cards

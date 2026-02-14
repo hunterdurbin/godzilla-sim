@@ -59,6 +59,16 @@ var _log_lines: PackedStringArray = []
 @onready var show_cards_button: Button = $ShowCardsButton
 @onready var hand_toggle_button: Button = $HandToggleButton
 
+# Deck arrange overlay UI references
+@onready var deck_arrange_overlay: Control = $DeckArrangeOverlay
+@onready var deck_arrange_prompt: Label = $DeckArrangeOverlay/DeckArrangePanel/VBox/PromptLabel
+@onready var deck_arrange_keep_panel: PanelContainer = $DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/KeepPanel
+@onready var deck_arrange_keep_cards: GridContainer = $DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/KeepPanel/KeepVBox/KeepCards
+@onready var deck_arrange_discard_panel: PanelContainer = $DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/DiscardPanel
+@onready var deck_arrange_discard_cards: GridContainer = $DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/DiscardPanel/DiscardVBox/DiscardCards
+@onready var deck_arrange_view_board: Button = $DeckArrangeOverlay/DeckArrangePanel/VBox/ButtonRow/ViewBoardButton
+@onready var deck_arrange_confirm: Button = $DeckArrangeOverlay/DeckArrangePanel/VBox/ButtonRow/ConfirmButton
+
 # Discard view UI references
 @onready var discard_view_overlay: Control = $DiscardViewOverlay
 @onready var discard_view_title: Label = $DiscardViewOverlay/DiscardViewPanel/VBox/TitleLabel
@@ -73,6 +83,15 @@ var _deck_search_matching_ids: Dictionary = {} # card id -> true, for highlighti
 
 # Stored discard view data for stacked toggle
 var _discard_view_cards: Array[Dictionary] = []
+
+# Deck arrange data
+var _arrange_keep: Array[Dictionary] = []
+var _arrange_discard: Array[Dictionary] = []
+var _arrange_dragging_card: Control = null
+var _arrange_drag_source: String = ""  # "keep" or "discard"
+var _arrange_drag_index: int = -1
+var _arrange_drop_indicator: ColorRect = null
+var _view_board_source_overlay: Control = null
 
 # Monster deck view UI references
 @onready var monster_deck_view_overlay: Control = $MonsterDeckViewOverlay
@@ -265,6 +284,7 @@ func _ready() -> void:
 
 		# Connect effect handler signals for player choice UIs
 		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
+		turn_manager.action_handler.effect_handler.deck_arrange_requested.connect(_on_deck_arrange_requested)
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
 		turn_manager.action_handler.effect_handler.hand_card_selection_requested.connect(_on_hand_card_selection_requested)
 		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
@@ -315,6 +335,8 @@ func _ready() -> void:
 	deck_search_show_all.toggled.connect(_on_deck_search_toggled)
 	deck_search_stacked.toggled.connect(_on_deck_search_toggled)
 	deck_search_view_board.pressed.connect(_on_deck_search_view_board)
+	deck_arrange_view_board.pressed.connect(_on_deck_arrange_view_board)
+	deck_arrange_confirm.pressed.connect(_on_deck_arrange_confirm)
 	show_cards_button.pressed.connect(_on_show_cards_pressed)
 	hand_toggle_button.pressed.connect(_on_hand_toggle_pressed)
 
@@ -362,8 +384,9 @@ func _ready() -> void:
 	card_zoom_overlay.visible = false
 
 	# Ensure overlays render above hand cards (which have incrementing z_index)
-	card_zoom_overlay.z_index = 100
+	card_zoom_overlay.z_index = 200
 	deck_search_overlay.z_index = 100
+	deck_arrange_overlay.z_index = 100
 	discard_view_overlay.z_index = 100
 	monster_deck_view_overlay.z_index = 100
 	zone_stack_view_overlay.z_index = 100
@@ -1148,6 +1171,27 @@ func _end_snap_preview() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Dismiss card zoom on any click (must be first — blocks input from reaching overlays behind)
+	if card_zoom_overlay.visible and event is InputEventMouseButton and event.pressed:
+		_hide_card_zoom()
+		get_viewport().set_input_as_handled()
+		return
+
+	# Handle arrange card drag via _input (reparenting breaks gui_input mouse grab)
+	if _arrange_dragging_card:
+		if event is InputEventMouseMotion:
+			_arrange_dragging_card.global_position = get_global_mouse_position() - _arrange_dragging_card.drag_offset
+			_update_arrange_drop_indicator()
+			get_viewport().set_input_as_handled()
+			return
+		if event is InputEventMouseButton \
+				and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+			_arrange_dragging_card.is_dragging = false
+			_arrange_dragging_card.z_index = 0
+			_on_arrange_card_drag_ended(_arrange_dragging_card)
+			get_viewport().set_input_as_handled()
+			return
+
 	if not waiting_for_zone_select:
 		return
 
@@ -1576,6 +1620,7 @@ func _on_deck_search_toggled(_value: bool) -> void:
 
 func _on_deck_search_view_board() -> void:
 	deck_search_overlay.visible = false
+	_view_board_source_overlay = deck_search_overlay
 	show_cards_button.visible = true
 
 
@@ -1642,7 +1687,10 @@ func _clear_card_highlight() -> void:
 
 func _on_show_cards_pressed() -> void:
 	show_cards_button.visible = false
-	deck_search_overlay.visible = true
+	if _view_board_source_overlay:
+		_view_board_source_overlay.visible = true
+	else:
+		deck_search_overlay.visible = true
 
 
 func _on_deck_search_card_clicked(card: Control) -> void:
@@ -1663,6 +1711,225 @@ func _hide_deck_search() -> void:
 	_deck_search_matching = []
 	_deck_search_all = []
 	_deck_search_matching_ids.clear()
+
+
+# --- Deck arrange overlay UI ---
+
+func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt: String) -> void:
+	if is_multiplayer_game and player_id != local_player_id:
+		var cards_json := JSON.stringify(cards)
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				_rpc_deck_arrange_requested.rpc_id(peer_id, cards_json, prompt)
+		return
+	_show_deck_arrange(cards, prompt)
+
+
+func _show_deck_arrange(cards: Array[Dictionary], prompt: String) -> void:
+	_arrange_keep = cards.duplicate()
+	_arrange_discard = []
+	deck_arrange_prompt.text = prompt
+	deck_arrange_overlay.visible = true
+	_refresh_deck_arrange()
+
+
+func _refresh_deck_arrange() -> void:
+	# Clear existing cards
+	for child in deck_arrange_keep_cards.get_children():
+		if child.drag_started.is_connected(_on_arrange_card_drag_started):
+			child.drag_started.disconnect(_on_arrange_card_drag_started)
+		if child.drag_ended.is_connected(_on_arrange_card_drag_ended):
+			child.drag_ended.disconnect(_on_arrange_card_drag_ended)
+		child.queue_free()
+	for child in deck_arrange_discard_cards.get_children():
+		if child.drag_started.is_connected(_on_arrange_card_drag_started):
+			child.drag_started.disconnect(_on_arrange_card_drag_started)
+		if child.drag_ended.is_connected(_on_arrange_card_drag_ended):
+			child.drag_ended.disconnect(_on_arrange_card_drag_ended)
+		child.queue_free()
+
+	# Populate keep area
+	for i in range(_arrange_keep.size()):
+		var card_data := _arrange_keep[i]
+		var card: Control = _create_arrange_card(card_data)
+		card.drag_started.connect(_on_arrange_card_drag_started.bind(card, "keep", i))
+		card.drag_ended.connect(_on_arrange_card_drag_ended.bind(card))
+		deck_arrange_keep_cards.add_child(card)
+		_add_position_badge(card, i + 1)
+
+	# Populate discard area
+	for i in range(_arrange_discard.size()):
+		var card_data := _arrange_discard[i]
+		var card: Control = _create_arrange_card(card_data)
+		card.drag_started.connect(_on_arrange_card_drag_started.bind(card, "discard", i))
+		card.drag_ended.connect(_on_arrange_card_drag_ended.bind(card))
+		deck_arrange_discard_cards.add_child(card)
+
+
+func _create_arrange_card(card_data: Dictionary) -> Control:
+	var card: Control = card_scene.instantiate()
+	if card.has_method("set_card_data_dict"):
+		card.set_card_data_dict(card_data)
+	card.custom_minimum_size = Vector2(100, 140)
+	card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	card.drag_enabled = true
+	card.is_selectable = false
+	_set_gallery_hover(card)
+	return card
+
+
+func _on_arrange_card_drag_started(card: Control, source: String, index: int) -> void:
+	_arrange_dragging_card = card
+	_arrange_drag_source = source
+	_arrange_drag_index = index
+	# Kill hover tween — it keeps running after reparent and overrides position
+	if card.tween and card.tween.is_valid():
+		card.tween.kill()
+	card.scale = Vector2.ONE
+	# Create drop indicator (positioned absolutely over the overlay, not inside the grid)
+	_arrange_drop_indicator = ColorRect.new()
+	_arrange_drop_indicator.custom_minimum_size = Vector2(3, 140)
+	_arrange_drop_indicator.size = Vector2(3, 140)
+	_arrange_drop_indicator.color = Color(0.4, 0.7, 1.0, 0.9)
+	_arrange_drop_indicator.visible = false
+	deck_arrange_overlay.add_child(_arrange_drop_indicator)
+	# Capture position before reparenting out of grid
+	var gpos := card.global_position
+	card.get_parent().remove_child(card)
+	deck_arrange_overlay.add_child(card)
+	# Zero anchors left over from grid layout and restore position
+	card.anchor_left = 0.0
+	card.anchor_top = 0.0
+	card.anchor_right = 0.0
+	card.anchor_bottom = 0.0
+	card.size = Vector2(100, 140)
+	card.global_position = gpos
+
+
+func _on_arrange_card_drag_ended(card: Control) -> void:
+	var card_center := card.global_position + card.size * card.scale / 2.0
+	var keep_rect := deck_arrange_keep_panel.get_global_rect()
+	var discard_rect := deck_arrange_discard_panel.get_global_rect()
+
+	if keep_rect.has_point(card_center):
+		var card_data: Dictionary
+		if _arrange_drag_source == "keep":
+			card_data = _arrange_keep[_arrange_drag_index]
+			_arrange_keep.remove_at(_arrange_drag_index)
+		else:
+			card_data = _arrange_discard[_arrange_drag_index]
+			_arrange_discard.remove_at(_arrange_drag_index)
+		var insert_idx := _get_arrange_insert_index(card_center, "keep")
+		insert_idx = clampi(insert_idx, 0, _arrange_keep.size())
+		_arrange_keep.insert(insert_idx, card_data)
+	elif discard_rect.has_point(card_center):
+		var card_data: Dictionary
+		if _arrange_drag_source == "keep":
+			card_data = _arrange_keep[_arrange_drag_index]
+			_arrange_keep.remove_at(_arrange_drag_index)
+		else:
+			card_data = _arrange_discard[_arrange_drag_index]
+			_arrange_discard.remove_at(_arrange_drag_index)
+		var insert_idx := _get_arrange_insert_index(card_center, "discard")
+		insert_idx = clampi(insert_idx, 0, _arrange_discard.size())
+		_arrange_discard.insert(insert_idx, card_data)
+	# else: dropped outside both panels — no change
+
+	if _arrange_drop_indicator and is_instance_valid(_arrange_drop_indicator):
+		_arrange_drop_indicator.queue_free()
+		_arrange_drop_indicator = null
+	card.queue_free()
+	_arrange_dragging_card = null
+	_refresh_deck_arrange()
+
+
+func _get_arrange_insert_index(drop_pos: Vector2, target: String) -> int:
+	var container: GridContainer = deck_arrange_keep_cards if target == "keep" else deck_arrange_discard_cards
+	var best_idx := container.get_child_count()
+	var best_dist := INF
+	for i in range(container.get_child_count()):
+		var child: Control = container.get_child(i) as Control
+		var child_center := child.global_position + child.size * child.scale / 2.0
+		var dist: float = drop_pos.distance_squared_to(child_center)
+		if dist < best_dist:
+			best_dist = dist
+			if drop_pos.x < child_center.x:
+				best_idx = i
+			else:
+				best_idx = i + 1
+	return best_idx
+
+
+func _update_arrange_drop_indicator() -> void:
+	if not _arrange_drop_indicator or not is_instance_valid(_arrange_drop_indicator):
+		return
+	var card_center := _arrange_dragging_card.global_position + _arrange_dragging_card.size * _arrange_dragging_card.scale / 2.0
+	var keep_rect := deck_arrange_keep_panel.get_global_rect()
+	var discard_rect := deck_arrange_discard_panel.get_global_rect()
+
+	var container: GridContainer = null
+	var target_name := ""
+	if keep_rect.has_point(card_center):
+		container = deck_arrange_keep_cards
+		target_name = "keep"
+	elif discard_rect.has_point(card_center):
+		container = deck_arrange_discard_cards
+		target_name = "discard"
+
+	if container == null or container.get_child_count() == 0:
+		_arrange_drop_indicator.visible = false
+		return
+
+	var insert_idx := _get_arrange_insert_index(card_center, target_name)
+	insert_idx = clampi(insert_idx, 0, container.get_child_count())
+
+	# Get the reference card for positioning (the card at or just before the insert point)
+	var ref_child: Control
+	var line_x: float
+	if insert_idx < container.get_child_count():
+		ref_child = container.get_child(insert_idx) as Control
+		line_x = ref_child.global_position.x - 2.0
+	else:
+		ref_child = container.get_child(container.get_child_count() - 1) as Control
+		line_x = ref_child.global_position.x + ref_child.size.x * ref_child.scale.x + 2.0
+
+	_arrange_drop_indicator.global_position = Vector2(line_x, ref_child.global_position.y)
+	_arrange_drop_indicator.size.y = ref_child.size.y * ref_child.scale.y
+	_arrange_drop_indicator.visible = true
+
+
+func _add_position_badge(card: Control, pos: int) -> void:
+	var badge := Label.new()
+	badge.name = "PositionBadge"
+	badge.text = str(pos)
+	badge.add_theme_font_size_override("font_size", 16)
+	badge.add_theme_color_override("font_color", Color.WHITE)
+	badge.add_theme_color_override("font_outline_color", Color.BLACK)
+	badge.add_theme_constant_override("outline_size", 4)
+	badge.position = Vector2(8, 8)
+	card.add_child(badge)
+
+
+func _on_deck_arrange_view_board() -> void:
+	deck_arrange_overlay.visible = false
+	_view_board_source_overlay = deck_arrange_overlay
+	show_cards_button.visible = true
+
+
+func _on_deck_arrange_confirm() -> void:
+	deck_arrange_overlay.visible = false
+	show_cards_button.visible = false
+	_view_board_source_overlay = null
+	var keep := _arrange_keep.duplicate()
+	var discard := _arrange_discard.duplicate()
+	_arrange_keep.clear()
+	_arrange_discard.clear()
+	# Clear card instances
+	for child in deck_arrange_keep_cards.get_children():
+		child.queue_free()
+	for child in deck_arrange_discard_cards.get_children():
+		child.queue_free()
+	_resolve_deck_arrange_local(keep, discard)
 
 
 # --- Hand discard selection UI ---
@@ -2317,8 +2584,10 @@ func _on_overlay_background_clicked(event: InputEvent, hide_func: Callable) -> v
 
 
 func _on_card_zoom_overlay_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+	if event is InputEventMouseButton and event.pressed:
 		_hide_card_zoom()
+		get_viewport().set_input_as_handled()
+
 
 
 func _hide_card_zoom() -> void:
@@ -2497,6 +2766,14 @@ func _resolve_deck_search_local(selected: Dictionary) -> void:
 		_rpc_deck_search_resolved.rpc_id(NetworkManager.host_peer_id, JSON.stringify(selected))
 	else:
 		turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
+
+
+func _resolve_deck_arrange_local(keep: Array[Dictionary], discard: Array[Dictionary]) -> void:
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_rpc_deck_arrange_resolved.rpc_id(NetworkManager.host_peer_id,
+			JSON.stringify(keep), JSON.stringify(discard))
+	else:
+		turn_manager.action_handler.effect_handler.resolve_deck_arrange(keep, discard)
 
 
 # --- Multiplayer: State broadcast (host -> client) ---
@@ -2738,6 +3015,36 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 		if selected == null:
 			selected = {}
 	turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
+
+
+## Host -> Client: deck arrange request (player must reorder/discard cards)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_deck_arrange_requested(cards_json: String, prompt: String) -> void:
+	if NetworkManager.is_host():
+		return
+	var parsed: Array = JSON.parse_string(cards_json)
+	var cards: Array[Dictionary] = []
+	for c in parsed:
+		cards.append(c)
+	_show_deck_arrange(cards, prompt)
+
+
+## Client -> Host: deck arrange resolved (player arranged cards)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	var keep: Array[Dictionary] = []
+	var discard: Array[Dictionary] = []
+	var parsed_keep: Array = JSON.parse_string(keep_json)
+	if parsed_keep:
+		for c in parsed_keep:
+			keep.append(c)
+	var parsed_discard: Array = JSON.parse_string(discard_json)
+	if parsed_discard:
+		for c in parsed_discard:
+			discard.append(c)
+	turn_manager.action_handler.effect_handler.resolve_deck_arrange(keep, discard)
 
 
 ## Host -> Client: hand card selection request (player must choose a card from hand)

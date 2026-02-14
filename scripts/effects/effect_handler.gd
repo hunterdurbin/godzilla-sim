@@ -44,6 +44,14 @@ signal choice_requested(player_id: int, options: Array[String], prompt: String)
 ## Emitted internally after resolve_choice() stores the selection.
 signal _choice_resolved()
 
+## Emitted when a player must arrange cards from their deck (reorder + optional discard).
+## Connect from presentation layer to show a deck arrange overlay.
+## Call resolve_deck_arrange() with the kept and discarded cards when done.
+signal deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt: String)
+
+## Emitted internally after resolve_deck_arrange() stores the result.
+signal _deck_arrange_resolved()
+
 ## Emitted to highlight/unhighlight a zone card during effect resolution.
 signal effect_zone_highlighted(player_id: int, zone_index: int)
 signal effect_zone_unhighlighted(player_id: int, zone_index: int)
@@ -61,6 +69,8 @@ var game_state: GameState
 var action_handler  # ActionHandler reference (set by TurnManager)
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
 var _deck_search_result: Dictionary = {}
+var _deck_arrange_keep: Array[Dictionary] = []
+var _deck_arrange_discard: Array[Dictionary] = []
 var _zone_target_result: int = -1
 var _hand_card_selection_result: int = -1
 var _choice_result: int = -1
@@ -792,6 +802,31 @@ func resolve_deck_search(selected_card: Dictionary) -> void:
 	## Called by the presentation layer after the player selects a card from the search.
 	_deck_search_result = selected_card
 	_deck_search_resolved.emit()
+
+
+func arrange_deck_cards(player_id: int, cards: Array[Dictionary], prompt: String) -> Dictionary:
+	## Present cards to the player for reordering and optional discarding.
+	## Returns {"keep": Array[Dictionary], "discard": Array[Dictionary]}.
+	## "keep" is ordered: first element = top of deck.
+	if cards.is_empty():
+		return {"keep": [], "discard": []}
+
+	if deck_arrange_requested.get_connections().size() > 0:
+		_highlight_active_effect()
+		deck_arrange_requested.emit(player_id, cards, prompt)
+		await _deck_arrange_resolved
+		_unhighlight_active_effect()
+		return {"keep": _deck_arrange_keep, "discard": _deck_arrange_discard}
+	else:
+		# Fallback: keep all in original order
+		return {"keep": cards, "discard": []}
+
+
+func resolve_deck_arrange(keep: Array[Dictionary], discard: Array[Dictionary]) -> void:
+	## Called by the presentation layer after the player arranges cards.
+	_deck_arrange_keep = keep
+	_deck_arrange_discard = discard
+	_deck_arrange_resolved.emit()
 
 
 func select_zone_target(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false) -> int:

@@ -31,33 +31,20 @@ func on_enter(ctx: EffectContext) -> void:
 	if cards.is_empty():
 		return
 
-	if cards.size() == 1:
-		# Only 1 card — put it back
-		ctx.owner.main_deck.push_front(cards[0])
-		ctx.owner.deck_changed.emit()
-		return
+	var result: Dictionary = await ctx.effect_handler.arrange_deck_cards(
+		ctx.owner.player_id, cards,
+		"Put cards on top of deck in order, or send to discard:")
 
-	# Let the player choose which card to put on top (the other goes to discard)
-	if ctx.effect_handler.deck_search_requested.get_connections().size() > 0:
-		ctx.effect_handler.deck_search_requested.emit(
-			ctx.owner.player_id, cards, cards,
-			"Choose a card to put on top of your deck (the other goes to discard):")
-		await ctx.effect_handler._deck_search_resolved
-		var selected: Dictionary = ctx.effect_handler._deck_search_result
-		if not selected.is_empty():
-			var sel_id: String = selected.get("id", "")
-			for card in cards:
-				if card.get("id") == sel_id:
-					ctx.owner.main_deck.push_front(card)
-				else:
-					ctx.owner.discard_pile.append(card)
-		else:
-			for card in cards:
-				ctx.owner.main_deck.push_front(card)
-	else:
-		# Fallback: put first on top, discard rest
-		ctx.owner.main_deck.push_front(cards[0])
-		ctx.owner.discard_pile.append(cards[1])
+	# Put kept cards back on top (first in array = top of deck)
+	var keep: Array = result.get("keep", [])
+	for i in range(keep.size() - 1, -1, -1):
+		ctx.owner.main_deck.push_front(keep[i])
+
+	# Discard the rest
+	var discard: Array = result.get("discard", [])
+	for card in discard:
+		ctx.owner.discard_pile.append(card)
 
 	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
+	if not discard.is_empty():
+		ctx.owner.discard_changed.emit()
