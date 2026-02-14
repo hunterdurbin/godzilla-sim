@@ -133,6 +133,14 @@ func can_be_destroyed(_ctx: EffectContext) -> bool:
 	return true
 
 
+# --- Play restriction methods ---
+
+func can_be_played(_ctx: EffectContext) -> bool:
+	## Return false if this card has a play restriction that prevents it from being played.
+	## Checked before rank/zone validation in the rules engine.
+	return true
+
+
 # --- Modifier methods (override to alter stats) ---
 
 func get_counter_power_modifier(_ctx: EffectContext) -> int:

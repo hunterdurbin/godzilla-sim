@@ -45,6 +45,9 @@ func get_playable_battle_cards(player: PlayerState, opponent: PlayerState) -> Ar
 	for i in range(player.hand.size()):
 		var card: Dictionary = player.hand[i]
 		if card.get("card_type") == CardEnums.CardType.BATTLE:
+			# Check play restrictions (e.g. EBP01-073 discard pile requirement)
+			if effect_handler and not effect_handler.can_card_be_played(player.player_id, card):
+				continue
 			var base_rank: int = card.get("rank", 99)
 			if effect_handler:
 				base_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
@@ -205,6 +208,9 @@ func _can_play_any_battle_card(player: PlayerState, opponent: PlayerState) -> bo
 		return false
 	for card in player.hand:
 		if card.get("card_type") == CardEnums.CardType.BATTLE:
+			# Check play restrictions (e.g. EBP01-073 discard pile requirement)
+			if effect_handler and not effect_handler.can_card_be_played(player.player_id, card):
+				continue
 			var base_rank: int = card.get("rank", 99)
 			if effect_handler:
 				base_rank += effect_handler.get_play_rank_modifier(player.player_id, card)

@@ -1583,6 +1583,15 @@ func is_base_strategy(card_data: Dictionary) -> bool:
 	return false
 
 
+func can_card_be_played(player_id: int, card_data: Dictionary) -> bool:
+	## Check if a card's play restriction allows it to be played.
+	## Returns true if the card has no restriction or the restriction is satisfied.
+	var effect := get_effect(card_data)
+	if effect:
+		return effect.can_be_played(_build_context(player_id, card_data))
+	return true
+
+
 func destroy_base_strategies_on_invasion(to_zone: int) -> void:
 	## Destroy all <Base> strategy cards when any monster invades into zones 6-8 (12.9.2).
 	## Checks both players' strategy zones. Uses discard_strategy_from_zone for replacement effects.

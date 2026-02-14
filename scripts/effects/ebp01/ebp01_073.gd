@@ -6,14 +6,21 @@ extends CardEffect
 ## you may place 1 monster card from your discard pile under this card to set your
 ## opponent's <Rage> to 0.
 ##
-## NOTE: The play restriction requires rules engine support.
-##
 ## Tested: No
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
 ## Implementation notes: None
+
+
+func can_be_played(ctx: EffectContext) -> bool:
+	# Cannot be played if 7 or fewer monster cards in discard pile (need 8+)
+	var monster_count: int = 0
+	for card in ctx.owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			monster_count += 1
+	return monster_count > 7
 
 
 func get_invasion_observed_filter() -> Dictionary:
