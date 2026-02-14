@@ -171,7 +171,7 @@ func resolve_counter(state: GameState) -> void:
 		# Counter is immune — monster retreats but does NOT rank up
 		counter_immunity_triggered.emit(player.player_id, total_cp, immunity_threshold)
 
-		var retreat_zone: int = _get_retreat_zone(opponent.monster_zone)
+		var retreat_zone: int = get_retreat_zone(opponent.monster_zone)
 		if retreat_zone != opponent.monster_zone:
 			var old_zone: int = opponent.monster_zone
 			opponent.monster_zone = retreat_zone
@@ -185,7 +185,7 @@ func resolve_counter(state: GameState) -> void:
 			await effect_handler.trigger_counter_success(player.player_id)
 
 		# Retreat monster to its retreat zone
-		var retreat_zone: int = _get_retreat_zone(opponent.monster_zone)
+		var retreat_zone: int = get_retreat_zone(opponent.monster_zone)
 		if retreat_zone != opponent.monster_zone:
 			var old_zone: int = opponent.monster_zone
 			opponent.monster_zone = retreat_zone
@@ -228,7 +228,7 @@ func force_counter(state: GameState, counter_player_id: int) -> void:
 	var opponent := state.players[opponent_id]
 
 	# Retreat monster to its retreat zone
-	var retreat_zone: int = _get_retreat_zone(opponent.monster_zone)
+	var retreat_zone: int = get_retreat_zone(opponent.monster_zone)
 	if retreat_zone != opponent.monster_zone:
 		var old_zone: int = opponent.monster_zone
 		opponent.monster_zone = retreat_zone
@@ -367,7 +367,7 @@ func _resolve_overloaded_cards(player: PlayerState) -> bool:
 	return false
 
 
-func _get_retreat_zone(current_zone: int) -> int:
+static func get_retreat_zone(current_zone: int) -> int:
 	## Get the zone a monster retreats to when countered.
 	## Back row (1-5): retreat to previous back row zone.
 	## Front row (6-8): retreat to same-column back row zone.

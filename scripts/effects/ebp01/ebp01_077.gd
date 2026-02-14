@@ -6,7 +6,7 @@ extends CardEffect
 ##
 ## "As though it were countered" means retreat to the retreat zone without ranking up.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -19,20 +19,7 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	# Retreat opponent's monster to its retreat zone
-	var retreat_zone: int = _get_retreat_zone(ctx.opponent.monster_zone)
+	var retreat_zone: int = ActionHandler.get_retreat_zone(ctx.opponent.monster_zone)
 	if retreat_zone != ctx.opponent.monster_zone:
 		ctx.opponent.monster_zone = retreat_zone
 		ctx.opponent.monster_changed.emit()
-
-
-func _get_retreat_zone(current_zone: int) -> int:
-	match current_zone:
-		1: return 1
-		2: return 1
-		3: return 2
-		4: return 3
-		5: return 4
-		6: return 5
-		7: return 4
-		8: return 3
-	return current_zone
