@@ -5,7 +5,7 @@ extends CardEffect
 ## <When Invading> If you have 5 or more monster cards in your discard pile,
 ## increase this card's <Rage> by 1.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

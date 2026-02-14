@@ -6,7 +6,7 @@ extends CardEffect
 ## If you have 5 or more monster cards in your discard pile, this card gains
 ## +10,000 threat level.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -24,7 +24,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(_card: Dictionary) -> bool: return true,
 		"Discard a card to reduce opponent's Rage by 1:",
-		true  # allow_skip
+		true # allow_skip
 	)
 	if not discarded.is_empty() and ctx.opponent.rage > 0:
 		ctx.opponent.rage -= 1

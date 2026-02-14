@@ -4,7 +4,7 @@ extends CardEffect
 ## <When Invading> Discard 1 monster card from your hand: <Destroy> all of your
 ## opponent's rank 5 or lower battle cards in zones 1-5.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -18,7 +18,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		func(card: Dictionary) -> bool:
 			return card.get("card_type") == CardEnums.CardType.MONSTER,
 		"Discard a monster card to destroy opponent's rank 5 or lower cards in zones 1-5:",
-		true  # allow_skip
+		true # allow_skip
 	)
 	if discarded.is_empty():
 		return

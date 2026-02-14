@@ -4,7 +4,7 @@ extends CardEffect
 # 5 or more monster cards in your discard pile, <Destroy> all of your opponent's
 # rank 6 or lower battle cards. (Active if this is in zone 4 or beyond.)
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None
