@@ -137,7 +137,7 @@ func _on_deck_selected(deck_name: String) -> void:
 		# Host selects as player 0
 		_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_name)
 		_update_start_button()
-	else:
+	elif NetworkManager.is_multiplayer():
 		# Client selects and sends deck data to host
 		var data := DecklistManager.load_decklist(deck_name)
 		if data.is_empty():

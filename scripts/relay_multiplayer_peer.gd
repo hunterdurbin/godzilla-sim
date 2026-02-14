@@ -114,6 +114,14 @@ func _get_packet_peer() -> int:
 	return _other_peer_id
 
 
+func _get_packet_channel() -> int:
+	return 0
+
+
+func _get_packet_mode() -> MultiplayerPeer.TransferMode:
+	return TRANSFER_MODE_RELIABLE
+
+
 func _get_unique_id() -> int:
 	return _unique_id
 
