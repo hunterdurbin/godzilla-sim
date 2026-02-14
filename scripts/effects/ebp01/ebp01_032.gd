@@ -3,7 +3,7 @@ extends CardEffect
 ## EBP01-032: Heat Ray Charge - Strategy Rank 6
 ## Draw 2 cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -3,7 +3,7 @@ extends CardEffect
 ## EBP01-030: Godzilla Landing - Strategy Rank 3
 ## Advance the opponent's monster card by 1 zone.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
