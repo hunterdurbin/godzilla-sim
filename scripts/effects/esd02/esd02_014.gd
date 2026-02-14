@@ -3,7 +3,7 @@ extends CardEffect
 ## ESD02-014: The Legend of Infant Island - Strategy Rank 5
 ## Evolve 1 of your battle cards with <Evolution>.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

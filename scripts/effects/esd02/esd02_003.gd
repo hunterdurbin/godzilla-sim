@@ -5,7 +5,7 @@ extends CardEffect
 ## in zones adjacent to this card.
 ## (For example, if this card is in zone 7, the adjacent zones are 4, 6, and 8.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

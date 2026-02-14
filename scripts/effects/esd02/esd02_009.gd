@@ -4,7 +4,7 @@ extends CardEffect
 ## <Awakening4> <Enter> If this card is in zone 8, reduce your opponent's <Rage> by 1.
 ## (Active if your monster card is in zone 4 or beyond and this card was played in zone 8.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -3,7 +3,7 @@ extends CardEffect
 ## ESD02-006: Godzilla(1995) - Monster Rank 4
 ## For each strategy card your opponent has in play, this card gains +5000 threat level.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

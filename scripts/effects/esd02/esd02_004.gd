@@ -5,7 +5,7 @@ extends CardEffect
 ## <Destroy> all of your opponent's battle cards with a rank equal to or lower
 ## than the discarded card's rank.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -20,7 +20,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		func(card: Dictionary) -> bool:
 			return card.get("card_type") == CardEnums.CardType.BATTLE,
 		"Discard a battle card from hand to destroy opponent's cards of equal or lower rank:",
-		true  # allow_skip
+		true # allow_skip
 	)
 	if discarded.is_empty():
 		return

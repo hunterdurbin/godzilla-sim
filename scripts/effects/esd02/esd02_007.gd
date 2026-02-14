@@ -4,7 +4,7 @@ extends CardEffect
 ## <Evolution5> <Mothra> At the beginning of your main phase, you may search your deck
 ## for a rank 5 or lower <Mothra> battle card and play it by stacking it on top of this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

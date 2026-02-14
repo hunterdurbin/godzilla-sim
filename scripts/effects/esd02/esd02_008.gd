@@ -4,7 +4,7 @@ extends CardEffect
 ## <Evolution6> <Battra> At the beginning of your main phase, you may search your deck
 ## for a rank 6 or lower <Battra> battle card and play it by stacking it on top of this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
