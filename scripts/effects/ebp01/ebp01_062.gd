@@ -4,7 +4,7 @@ extends CardEffect
 ## <Your Turn> If you have a <Destoroyah> battle card in your zones, increase your
 ## total counter power by +10,000.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

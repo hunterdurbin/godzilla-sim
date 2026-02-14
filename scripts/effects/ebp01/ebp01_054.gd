@@ -5,7 +5,7 @@ extends CardEffect
 ## or lower <Destoroyah> battle card from your deck by placing it on top of this card.
 ## <Enter> If this card was played through evolution, draw 2 cards, then discard 2 cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

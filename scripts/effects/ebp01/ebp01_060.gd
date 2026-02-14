@@ -5,7 +5,7 @@ extends CardEffect
 ## named "Godzilla vs. Destoroyah" in your discard pile.
 ## If you have 1 or fewer strategy cards in play, play and activate the chosen card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

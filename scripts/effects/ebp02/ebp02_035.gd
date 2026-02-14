@@ -5,7 +5,7 @@ extends CardEffect
 ## cards in your opponent's discard pile to their deck then shuffle.
 ## <Enter> Play 2 "Tentacles" tokens in zones adjacent to this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

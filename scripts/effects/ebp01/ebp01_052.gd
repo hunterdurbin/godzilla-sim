@@ -4,7 +4,7 @@ extends CardEffect
 ## <Awakening4> If this card is in zones 1-5 and you have 5 or more monster cards
 ## in your discard pile, this card cannot be <Destroy> by your opponent's effects.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

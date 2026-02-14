@@ -3,7 +3,7 @@ extends CardEffect
 ## EBP01-061: Scale Attack - Strategy Rank 1 (Blue)
 ## If your opponent has 5 or more <Rage>, reduce their <Rage> by 3.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
