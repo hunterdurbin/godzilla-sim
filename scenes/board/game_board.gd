@@ -24,12 +24,11 @@ var _client_gradients_applied: bool = false
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
 @onready var player2_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player2Board
 @onready var action_panel: Control = $ActionPanel
-@onready var phase_label: Label = $VBoxContainer/TopHUD/PhaseLabel
-@onready var turn_label: Label = $VBoxContainer/TopHUD/TurnLabel
 @onready var log_output: RichTextLabel = $LogPanel/LogOutput
 var _log_lines: PackedStringArray = []
 @onready var end_game_panel: Control = $EndGamePanel
-@onready var card_select_prompt: Label = $VBoxContainer/TopHUD/CardSelectPromptTop
+@onready var action_prompt_panel: PanelContainer = $ActionPrompt
+@onready var card_select_prompt: Label = $ActionPrompt/PromptLabel
 @onready var btn_bug_report: Button = $BugReportButton
 @onready var btn_concede: Button = $ConcedeButton
 @onready var btn_main_menu: Button = $MainMenuButton
@@ -375,7 +374,7 @@ func _ready() -> void:
 
 	# Hide overlays and prompts
 	end_game_panel.visible = false
-	card_select_prompt.visible = false
+	action_prompt_panel.visible = false
 	deck_search_overlay.visible = false
 	show_cards_button.visible = false
 	discard_view_overlay.visible = false
@@ -604,7 +603,6 @@ func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: 
 # --- Signal handlers from TurnManager (host/solo only) ---
 
 func _on_phase_started(phase: CardEnums.GamePhase) -> void:
-	phase_label.text = CardEnums.phase_to_string(phase)
 	_current_sub_phase = 0
 	_update_turn_tracker(turn_manager.game_state.current_player_id, phase, _current_sub_phase)
 	_sync_boards()
@@ -626,7 +624,6 @@ func _on_sub_phase_changed(sub_index: int) -> void:
 
 
 func _on_turn_started(player_id: int) -> void:
-	turn_label.text = "Turn %d - %s" % [turn_manager.game_state.turn_number, turn_manager.game_state.player_names[player_id]]
 	_current_sub_phase = 0
 	_sync_boards()
 	_update_hand_visibility(player_id)
@@ -788,8 +785,9 @@ func _build_bug_report_body() -> String:
 		NetworkManager.Mode.ONLINE_CLIENT: "Online (Client)",
 	}
 	lines.append("- **Mode:** %s" % mode_names.get(NetworkManager.mode, "Unknown"))
-	lines.append("- **Turn:** %s" % turn_label.text)
-	lines.append("- **Phase:** %s" % phase_label.text)
+	var gs: GameState = turn_manager.game_state if turn_manager else null
+	lines.append("- **Turn:** Turn %d - %s" % [gs.turn_number if gs else 0, gs.player_names[gs.current_player_id] if gs else "?"])
+	lines.append("- **Phase:** %s" % (CardEnums.phase_to_string(gs.current_phase) if gs else "?"))
 	lines.append("")
 
 	for pid in range(2):
@@ -990,7 +988,7 @@ func _on_pass_pressed() -> void:
 func _enter_card_selection(prompt_text: String, valid_indices: Array[int]) -> void:
 	waiting_for_card_select = true
 	card_select_prompt.text = prompt_text
-	card_select_prompt.visible = true
+	action_prompt_panel.visible = true
 	_disable_all_buttons()
 	btn_pass.disabled = false
 	btn_pass.text = "Cancel"
@@ -1222,7 +1220,7 @@ func _cancel_selection() -> void:
 	selected_card_id = ""
 	_selected_card_data = {}
 	_zone_select_valid = []
-	card_select_prompt.visible = false
+	action_prompt_panel.visible = false
 	btn_pass.text = "Pass"
 	_restore_expanded_hand()
 
@@ -1295,7 +1293,7 @@ func _update_action_buttons(valid_actions: Array) -> void:
 	btn_pass.disabled = false
 	btn_pass.visible = true
 	btn_pass.text = "Pass"
-	card_select_prompt.visible = false
+	action_prompt_panel.visible = false
 
 
 func _disable_all_buttons() -> void:
@@ -1965,7 +1963,7 @@ func _show_hand_discard_selection(player_id: int, discard_count: int) -> void:
 
 	_disable_all_buttons()
 	card_select_prompt.text = "Select %d card%s to discard:" % [discard_count, "" if discard_count == 1 else "s"]
-	card_select_prompt.visible = true
+	action_prompt_panel.visible = true
 	btn_pass.visible = false
 
 
@@ -2017,7 +2015,7 @@ func _confirm_hand_discard() -> void:
 	hand_mgr.exit_selection_mode()
 	if hand_mgr.card_selected.is_connected(_on_discard_card_selected):
 		hand_mgr.card_selected.disconnect(_on_discard_card_selected)
-	card_select_prompt.visible = false
+	action_prompt_panel.visible = false
 	btn_pass.text = "Pass"
 	btn_pass.visible = true
 
@@ -2049,7 +2047,7 @@ func _force_cleanup_discard_selection() -> void:
 		if hand_mgr.card_selected.is_connected(_on_discard_card_selected):
 			hand_mgr.card_selected.disconnect(_on_discard_card_selected)
 
-	card_select_prompt.visible = false
+	action_prompt_panel.visible = false
 	btn_pass.text = "Pass"
 	btn_pass.visible = true
 
@@ -2085,7 +2083,7 @@ func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt
 
 	_disable_all_buttons()
 	card_select_prompt.text = prompt
-	card_select_prompt.visible = true
+	action_prompt_panel.visible = true
 
 	if allow_skip:
 		btn_pass.text = "Skip"
@@ -2137,7 +2135,7 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 	hand_mgr.exit_selection_mode()
 	if hand_mgr.card_selected.is_connected(_on_hand_card_clicked):
 		hand_mgr.card_selected.disconnect(_on_hand_card_clicked)
-	card_select_prompt.visible = false
+	action_prompt_panel.visible = false
 	btn_pass.text = "Pass"
 	btn_pass.visible = true
 	_update_hand_visibility(_get_current_pid())
@@ -2165,7 +2163,7 @@ func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zo
 
 	_disable_all_buttons()
 	card_select_prompt.text = prompt
-	card_select_prompt.visible = true
+	action_prompt_panel.visible = true
 
 	if allow_skip:
 		btn_pass.text = "Skip"
@@ -2211,7 +2209,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 
 	_zone_target_selecting = false
 	_zone_target_allow_skip = false
-	card_select_prompt.visible = false
+	action_prompt_panel.visible = false
 	btn_pass.text = "Pass"
 	btn_pass.visible = true
 
@@ -2242,7 +2240,7 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	action_panel.get_node("Row1").visible = false
 	action_panel.get_node("Row2").visible = false
 	card_select_prompt.text = prompt
-	card_select_prompt.visible = true
+	action_prompt_panel.visible = true
 
 	# Create a container for choice buttons inside the action panel
 	_choice_container = VBoxContainer.new()
@@ -2274,7 +2272,7 @@ func _cleanup_choice_selection() -> void:
 	if _choice_container:
 		_choice_container.queue_free()
 		_choice_container = null
-	card_select_prompt.visible = false
+	action_prompt_panel.visible = false
 	# Restore normal action button rows
 	action_panel.get_node("Row1").visible = true
 	action_panel.get_node("Row2").visible = true
@@ -2951,8 +2949,6 @@ func _rpc_receive_state(state_json: String) -> void:
 	# Update UI
 	var client_phase := int(data["current_phase"]) as CardEnums.GamePhase
 	var client_sub_phase: int = int(data.get("current_sub_phase", 0))
-	phase_label.text = CardEnums.phase_to_string(client_phase)
-	turn_label.text = "Turn %d - %s" % [int(data["turn_number"]), GameLog.player_name(int(data["current_player_id"]))]
 	_update_turn_tracker(_client_current_player_id, client_phase, client_sub_phase)
 	_sync_boards()
 	_update_hand_visibility(_client_current_player_id)

@@ -770,9 +770,6 @@ func search_deck(player_id: int, filter: Callable, prompt: String) -> Dictionary
 		if filter.call(card):
 			matching.append(card)
 
-	if matching.is_empty():
-		return {}
-
 	var selected: Dictionary = {}
 	if deck_search_requested.get_connections().size() > 0:
 		_highlight_active_effect()

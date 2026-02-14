@@ -31,30 +31,9 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
-[node name="TopHUD" type="HBoxContainer" parent="VBoxContainer" unique_id=1061205547]
+[node name="TopSpacer" type="Control" parent="VBoxContainer"]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
-theme_override_constants/separation = 20
-
-[node name="TurnLabel" type="Label" parent="VBoxContainer/TopHUD" unique_id=2143749068]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 14
-text = "Turn 1 - Player 1"
-
-[node name="PhaseLabel" type="Label" parent="VBoxContainer/TopHUD" unique_id=1930855195]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 14
-text = "Start Phase"
-horizontal_alignment = 1
-
-[node name="CardSelectPromptTop" type="Label" parent="VBoxContainer/TopHUD" unique_id=495342897]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 1, 0.5, 1)
-theme_override_font_sizes/font_size = 14
-horizontal_alignment = 2
 
 [node name="BoardArea" type="HBoxContainer" parent="VBoxContainer" unique_id=1268223294]
 layout_mode = 2
@@ -399,6 +378,24 @@ offset_bottom = 97.0
 grow_horizontal = 0
 theme_override_font_sizes/font_size = 11
 text = "Main Menu"
+
+[node name="ActionPrompt" type="PanelContainer" parent="." unique_id=495342897]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -60.0
+offset_right = 320.0
+offset_bottom = -10.0
+grow_vertical = 0
+
+[node name="PromptLabel" type="Label" parent="ActionPrompt"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0.5, 1)
+theme_override_font_sizes/font_size = 14
+autowrap_mode = 2
 
 [node name="LogPanel" type="PanelContainer" parent="." unique_id=1472588009]
 layout_mode = 1
