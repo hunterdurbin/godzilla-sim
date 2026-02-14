@@ -4,7 +4,7 @@ extends CardEffect
 ## <Burst2> <Enter> If you have 4 or more battle cards in your zones,
 ## reduce your opponent's <Rage> by 1.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

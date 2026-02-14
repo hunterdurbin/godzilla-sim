@@ -5,7 +5,7 @@ extends CardEffect
 ## all of your opponent's rank 5 or lower battle cards cannot engage with this card.
 ## (Their counter power is not included in the total during the counter phase.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

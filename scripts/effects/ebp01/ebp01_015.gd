@@ -5,7 +5,7 @@ extends CardEffect
 ## For each monster card revealed this way, increase this card's <Rage> by 1.
 ## If a card with <Step2> (invasion_icon >= 2) is revealed this way, this card advances to zone 6.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

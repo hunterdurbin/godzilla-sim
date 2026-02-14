@@ -4,7 +4,7 @@ extends CardEffect
 ## When this card advances into the same column as your opponent's monster card,
 ## advance your opponent's monster card by 1 zone.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
