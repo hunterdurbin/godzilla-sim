@@ -186,6 +186,11 @@ static func effect_gained_rage_from_mill(player_id: int, effect_source_id: Strin
 	return "%s %s: %s x%d (milled monster: %s)" % [_bold(short_name(player_id)), card_link(effect_source_id), rage_icon, rage, card_link(milled_id)]
 
 
+static func effect_gained_rage(player_id: int, effect_source_id: String, rage: int, amount: int) -> String:
+	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	return "%s %s: %s +%d (now x%d)" % [_bold(short_name(player_id)), card_link(effect_source_id), rage_icon, amount, rage]
+
+
 # --- Board events ---
 
 static func effect_destroyed_card(source_player_id: int, effect_source_id: String, target_player_id: int, zone_index: int, destroyed_id: String) -> String:

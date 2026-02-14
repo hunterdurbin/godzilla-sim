@@ -6,7 +6,7 @@ extends CardEffect
 ## <Opponent's Turn> Your monster card cannot be countered by 40,000 or lower counter
 ## power. Instead, it only moves as though it were countered.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -17,6 +17,9 @@ extends CardEffect
 func on_discard_from_hand(ctx: EffectContext) -> void:
 	ctx.owner.rage += 2
 	ctx.owner.rage_changed.emit(ctx.owner.rage)
+	ctx.effect_handler.log_message.emit(
+		GameLog.effect_gained_rage(ctx.owner.player_id, ctx.card_data.get("id", ""), ctx.owner.rage, 2)
+	)
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
