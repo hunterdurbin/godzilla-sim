@@ -6,7 +6,7 @@ extends CardEffect
 ## <Opponent's Turn> At the beginning of the counter phase, if this card has 3 or more <Rage>,
 ## <Destroy> all of your opponent's battle cards in the same column as this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
