@@ -272,7 +272,10 @@ func trigger_enter(player_id: int, card_data: Dictionary) -> void:
 	if not effect:
 		return
 
-	if _in_standby_resolution:
+	# Defer if inside standby resolution or nested inside another effect's execution.
+	# This ensures e.g. multiple evolutions from one effect all complete before any
+	# of the evolved cards' enters resolve.
+	if _in_standby_resolution or not _active_effect_card.is_empty():
 		_pending_standby_entries.append({
 			"player_id": player_id,
 			"card_data": card_data,
@@ -283,6 +286,13 @@ func trigger_enter(player_id: int, card_data: Dictionary) -> void:
 	_set_active_effect(player_id, card_data)
 	await effect.on_enter(_build_context(player_id, card_data))
 	_clear_active_effect()
+
+	# Drain any entries that accumulated during this enter effect (e.g. from
+	# perform_evolution or play_from_discard called within on_enter).
+	while not _pending_standby_entries.is_empty():
+		var batch: Array = _pending_standby_entries
+		_pending_standby_entries = []
+		await _resolve_standby_entries(batch)
 
 
 func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void:
