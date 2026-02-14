@@ -28,7 +28,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp01/ebp01_024.gd": ["on_enter"],
 	"res://scripts/effects/ebp01/ebp01_025.gd": ["get_counter_power_modifier"],
 	"res://scripts/effects/ebp01/ebp01_026.gd": ["get_phase_start_filter","on_phase_start","get_counter_power_modifier"],
-	"res://scripts/effects/ebp01/ebp01_027.gd": ["get_effect_categories"],
+	"res://scripts/effects/ebp01/ebp01_027.gd": ["get_play_rank_modifier_for_card","get_effect_categories"],
 	"res://scripts/effects/ebp01/ebp01_028.gd": ["get_effect_categories"],
 	"res://scripts/effects/ebp01/ebp01_029.gd": ["on_enter"],
 	"res://scripts/effects/ebp01/ebp01_030.gd": ["on_enter"],
