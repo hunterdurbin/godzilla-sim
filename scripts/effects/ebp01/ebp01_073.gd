@@ -6,7 +6,7 @@ extends CardEffect
 ## you may place 1 monster card from your discard pile under this card to set your
 ## opponent's <Rage> to 0.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -36,7 +36,7 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 	var stack: Array = ctx.owner.get_zone_stack(zone_idx)
 	for i in range(1, stack.size()):
 		if stack[i].get("card_type") == CardEnums.CardType.MONSTER:
-			return  # Already has a monster under it
+			return # Already has a monster under it
 
 	# Search discard for a monster card to place under
 	var selected := await ctx.effect_handler.search_discard(

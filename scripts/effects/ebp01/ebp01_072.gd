@@ -5,7 +5,7 @@ extends CardEffect
 ## top card of your deck to your discard pile. If it is a battle card, move your opponent's
 ## monster card with 50,000 or lower threat level backward by 1 zone.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
