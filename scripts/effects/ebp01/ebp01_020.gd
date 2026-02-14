@@ -5,7 +5,7 @@ extends CardEffect
 ## <Rage> by 1 to search your deck for up to 1 monster card with <Burst>, reveal it,
 ## add it to your hand, then shuffle your deck.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

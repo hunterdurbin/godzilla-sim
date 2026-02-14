@@ -6,7 +6,8 @@ extends CardEffect
 ##
 ## Tested: Yes
 ## Known issues: None
-## Edge cases: None
+## Edge cases: 
+##   Step2, own monster moves z3->z5, opponent monster in z2 => Moves opponent monster to z3
 ## Rules: None
 ## Interactions: None
 ## Implementation notes: None

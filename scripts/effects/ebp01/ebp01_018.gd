@@ -4,7 +4,7 @@ extends CardEffect
 ## <Awakening4> This card gains +3000 counter power.
 ## (Active if your monster card is in zone 4 or beyond.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
