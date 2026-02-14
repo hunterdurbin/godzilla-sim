@@ -151,7 +151,13 @@ func can_be_played(_ctx: EffectContext) -> bool:
 
 func get_counter_power_modifier(_ctx: EffectContext) -> int:
 	## Return additional counter power for this card (e.g., Awakening bonuses).
-	## Called during counter phase calculation.
+	## Called during counter phase calculation on battle cards in zones.
+	return 0
+
+
+func get_total_cp_modifier(_ctx: EffectContext) -> int:
+	## Return a flat bonus to the player's total counter power (e.g., strategy effects).
+	## Called during counter phase calculation on strategy cards.
 	return 0
 
 

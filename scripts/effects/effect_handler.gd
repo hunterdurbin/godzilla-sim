@@ -719,10 +719,13 @@ func discard_hand_to(player_id: int, target_count: int) -> void:
 		return
 
 	if hand_discard_requested.get_connections().size() > 0:
+		var saved_player_id: int = _active_effect_player_id
+		var saved_card_id: String = _active_effect_card.get("id", "")
 		_highlight_active_effect()
 		hand_discard_requested.emit(player_id, to_discard)
 		await _hand_discard_resolved
-		_unhighlight_active_effect()
+		if not saved_card_id.is_empty() and saved_player_id >= 0:
+			effect_card_unhighlighted.emit(saved_player_id, saved_card_id)
 	else:
 		# Fallback: discard from back of hand
 		var discarded_cards: Array[Dictionary] = []
@@ -1201,7 +1204,7 @@ func get_counter_power_modifier(player_id: int) -> int:
 		if not sz_card.is_empty():
 			var effect := get_effect(sz_card)
 			if effect:
-				total += effect.get_counter_power_modifier(_build_context(player_id, sz_card))
+				total += effect.get_total_cp_modifier(_build_context(player_id, sz_card))
 
 	return total
 
