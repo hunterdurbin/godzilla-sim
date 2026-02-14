@@ -280,6 +280,7 @@ func _ready() -> void:
 		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
 		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
+		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
 
 		# Connect effect handler signals for player choice UIs
@@ -742,6 +743,10 @@ func _on_counter_succeeded(player_id: int, total_cp: int, threat: int) -> void:
 
 func _on_counter_failed(player_id: int, total_cp: int, threat: int) -> void:
 	_on_log_message(GameLog.counter_failed(player_id, total_cp, threat))
+
+
+func _on_counter_immunity_triggered(player_id: int, total_cp: int, threshold: int) -> void:
+	_on_log_message(GameLog.counter_immunity(player_id, total_cp, threshold))
 
 
 func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monster: Dictionary) -> void:

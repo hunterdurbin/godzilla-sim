@@ -206,6 +206,10 @@ static func counter_failed(player_id: int, total_cp: int, threat: int) -> String
 	return "Counter failed. %s CP %d < Threat %d" % [_bold(short_name(player_id)), total_cp, threat]
 
 
+static func counter_immunity(player_id: int, total_cp: int, threshold: int) -> String:
+	return "Counter IMMUNE! %s CP %d <= Threshold %d — no rank up" % [_bold(short_name(player_id)), total_cp, threshold]
+
+
 # --- Utilities ---
 
 static func to_plain_text(bbcode: String) -> String:
