@@ -4,7 +4,7 @@ extends CardEffect
 ## <Your Turn> Whenever your monster card's <Rage> is increased, you may move 1 of your
 ## other battle cards in your zones to an unoccupied zone.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

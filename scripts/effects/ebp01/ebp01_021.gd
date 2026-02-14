@@ -5,7 +5,7 @@ extends CardEffect
 ## the top 2 cards of your deck, put any number on top of your deck in any order,
 ## and send the rest to your discard pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
