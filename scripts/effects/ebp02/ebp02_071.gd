@@ -15,37 +15,72 @@ extends CardEffect
 
 
 func on_enter(ctx: EffectContext) -> void:
-	# Check Awakening8 first (strongest)
-	if ctx.owner.monster_zone >= 8:
-		var destroyed: Dictionary = await ctx.effect_handler.destroy_zone_target(
-			ctx.owner.player_id, ctx.opponent,
-			func(_card: Dictionary) -> bool: return true,
-			"Destroy any battle card (Awakening8)? Skip for other options:")
-		if not destroyed.is_empty():
-			return
+	var options: Array[String] = []
+	var option_ids: Array[int] = []
 
-	# Check Awakening6 (medium)
+	# Option 0: Destroy 3 rank 4 or lower (if targets exist)
+	var has_r4_targets: bool = false
+	for i in range(8):
+		var top := ctx.opponent.get_zone_top_card(i)
+		if not top.is_empty() and top.get("rank", 0) <= 4:
+			has_r4_targets = true
+			break
+	if has_r4_targets:
+		options.append("Destroy 3 of opponent's rank 4 or lower battle cards")
+		option_ids.append(0)
+
+	# Option 1: Awakening6 — Destroy 2 rank 6 or lower
 	if ctx.owner.monster_zone >= 6:
-		var r6_zones: Array[int] = []
+		var has_r6_targets: bool = false
 		for i in range(8):
 			var top := ctx.opponent.get_zone_top_card(i)
 			if not top.is_empty() and top.get("rank", 0) <= 6:
-				r6_zones.append(i)
-		if not r6_zones.is_empty():
-			var chosen: int = await ctx.effect_handler.select_zone_target(
-				ctx.owner.player_id, ctx.opponent.player_id, r6_zones,
-				"Destroy rank 6 or lower (Awakening6)? Skip for 3x rank 4 or lower:", true)
-			if chosen >= 0:
-				await ctx.effect_handler.destroy_zones(ctx.opponent, [chosen])
+				has_r6_targets = true
+				break
+		if has_r6_targets:
+			options.append("Awakening6: Destroy 2 of opponent's rank 6 or lower battle cards")
+			option_ids.append(1)
+
+	# Option 2: Awakening8 — Destroy 1 any battle card
+	if ctx.owner.monster_zone >= 8:
+		var has_any_target: bool = false
+		for i in range(8):
+			if not ctx.opponent.is_zone_empty(i):
+				has_any_target = true
+				break
+		if has_any_target:
+			options.append("Awakening8: Destroy 1 of opponent's battle cards")
+			option_ids.append(2)
+
+	if options.is_empty():
+		return
+
+	var chosen_id: int
+	if options.size() == 1:
+		chosen_id = option_ids[0]
+	else:
+		var chosen_idx: int = await ctx.effect_handler.select_choice(
+			ctx.owner.player_id, options, "Choose one:")
+		if chosen_idx < 0 or chosen_idx >= option_ids.size():
+			chosen_id = option_ids[0]
+		else:
+			chosen_id = option_ids[chosen_idx]
+
+	match chosen_id:
+		0:
+			for _i in range(3):
+				await ctx.effect_handler.destroy_zone_target(
+					ctx.owner.player_id, ctx.opponent,
+					func(card: Dictionary) -> bool: return card.get("rank", 0) <= 4,
+					"Choose an opponent's rank 4 or lower battle card to destroy:")
+		1:
+			for _i in range(2):
 				await ctx.effect_handler.destroy_zone_target(
 					ctx.owner.player_id, ctx.opponent,
 					func(card: Dictionary) -> bool: return card.get("rank", 0) <= 6,
-					"Choose another rank 6 or lower battle card to destroy:")
-				return
-
-	# Default: destroy 3 rank 4 or lower
-	for _i in range(3):
-		await ctx.effect_handler.destroy_zone_target(
-			ctx.owner.player_id, ctx.opponent,
-			func(card: Dictionary) -> bool: return card.get("rank", 0) <= 4,
-			"Choose an opponent's rank 4 or lower battle card to destroy:")
+					"Choose an opponent's rank 6 or lower battle card to destroy:")
+		2:
+			await ctx.effect_handler.destroy_zone_target(
+				ctx.owner.player_id, ctx.opponent,
+				func(_card: Dictionary) -> bool: return true,
+				"Choose an opponent's battle card to destroy:")
