@@ -301,6 +301,9 @@ func _ready() -> void:
 		for player in turn_manager.game_state.players:
 			player.hand_changed.connect(_on_state_changed)
 			player.zones_changed.connect(_on_state_changed)
+			player.rage_changed.connect(_on_state_changed.unbind(1))
+			player.monster_changed.connect(_on_state_changed)
+			player.discard_changed.connect(_on_state_changed)
 	else:
 		# Client: initialize empty client state, wait for host RPCs
 		_client_players = [PlayerState.new(0), PlayerState.new(1)]
