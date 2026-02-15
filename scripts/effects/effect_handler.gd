@@ -158,17 +158,24 @@ func _unhighlight_active_effect() -> void:
 
 func _get_card_location_label(player_id: int, card_data: Dictionary) -> String:
 	## Return a display label like "Card Name (Zone 3)" for standby choice prompts.
+	## Uses a temporary marker key to find the exact dictionary reference, since
+	## multiple cards can share the same ID (e.g. tokens).
 	var player := game_state.players[player_id]
-	var card_id: String = card_data.get("id", "")
 	var card_name: String = card_data.get("name", "Unknown")
-	if player.current_monster.get("id", "") == card_id:
+	if not player.current_monster.is_empty() and player.current_monster.get("id", "") == card_data.get("id", ""):
 		return card_name + " (Monster)"
+	var _marker := "__ref_marker"
+	card_data[_marker] = true
 	for i in range(8):
-		if player.get_zone_top_card(i).get("id", "") == card_id:
+		var top := player.get_zone_top_card(i)
+		if not top.is_empty() and top.has(_marker):
+			card_data.erase(_marker)
 			return card_name + " (Zone %d)" % (i + 1)
 	for i in range(player.strategy_zones.size()):
-		if not player.strategy_zones[i].is_empty() and player.strategy_zones[i].get("id", "") == card_id:
+		if not player.strategy_zones[i].is_empty() and player.strategy_zones[i].has(_marker):
+			card_data.erase(_marker)
 			return card_name + " (Strategy %d)" % (i + 1)
+	card_data.erase(_marker)
 	return card_name
 
 
