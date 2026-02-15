@@ -28,6 +28,7 @@ func _ready() -> void:
 	NetworkManager.player_disconnected.connect(_on_player_disconnected)
 	NetworkManager.connection_failed.connect(_on_connection_failed)
 	NetworkManager.version_mismatch.connect(_on_version_mismatch)
+	NetworkManager.version_verified_ok.connect(_update_start_button)
 
 	DecklistManager.clear_selections()
 
@@ -91,11 +92,13 @@ func _on_copy_pressed() -> void:
 
 
 func _on_player_connected(_peer_id: int) -> void:
+	print("[Lobby] _on_player_connected peer=%d is_host=%s" % [_peer_id, NetworkManager.is_host()])
 	if NetworkManager.is_host():
 		status_label.text = "Opponent connected! Select a deck and press Start."
 		_update_start_button()
 	else:
 		deck_select.set_header("SELECT YOUR DECK")
+		print("[Lobby] Client current_selection='%s'" % deck_select.current_selection)
 		if not deck_select.current_selection.is_empty():
 			_on_deck_selected(deck_select.current_selection)
 		else:
@@ -134,21 +137,25 @@ func _on_version_mismatch(local_version: String, remote_version: String) -> void
 
 
 func _on_deck_selected(deck_name: String) -> void:
+	print("[Lobby] _on_deck_selected deck='%s' is_host=%s is_mp=%s" % [deck_name, NetworkManager.is_host(), NetworkManager.is_multiplayer()])
 	if deck_name.is_empty():
 		return
 
 	if NetworkManager.is_host():
 		_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_name)
+		print("[Lobby] Host deck ready=%s" % _host_deck_ready)
 		_update_start_button()
 	elif NetworkManager.is_multiplayer():
 		var data := DecklistManager.load_decklist(deck_name)
 		if data.is_empty():
+			print("[Lobby] Client deck data empty, skipping send")
 			return
 		var payload := JSON.stringify({
 			"deck_name": deck_name,
 			"monster": data["monster"],
 			"main": data["main"],
 		})
+		print("[Lobby] Client sending deck RPC to host")
 		_rpc_send_deck_data.rpc_id(NetworkManager.host_peer_id, payload)
 		status_label.text = "Deck \"%s\" sent to host. Waiting for host to start..." % deck_name
 
@@ -169,21 +176,25 @@ func _update_start_button() -> void:
 		start_button.visible = false
 		return
 	var can_start: bool = NetworkManager.opponent_connected and NetworkManager.version_verified and _host_deck_ready and _client_deck_received
+	print("[Lobby] _update_start_button: opponent=%s version=%s host_deck=%s client_deck=%s -> can_start=%s" % [NetworkManager.opponent_connected, NetworkManager.version_verified, _host_deck_ready, _client_deck_received, can_start])
 	start_button.visible = can_start
 	start_button.disabled = not can_start
 	if can_start:
-		status_label.text = "Opponent selected: \"%s\"\nReady to start!" % _client_deck_name
+		status_label.text = "Opponent deck received. Ready to start!"
 
 
 ## Client sends their deck data to host
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_send_deck_data(payload_json: String) -> void:
+	print("[Lobby] _rpc_send_deck_data received, is_host=%s" % NetworkManager.is_host())
 	if not NetworkManager.is_host():
 		return
 	var data: Dictionary = JSON.parse_string(payload_json)
 	if data.is_empty():
+		print("[Lobby] Deck payload parse failed")
 		return
 	_client_deck_name = data.get("deck_name", "Unknown")
+	print("[Lobby] Host received client deck: '%s'" % _client_deck_name)
 	var monster_entries: Array = data.get("monster", [])
 	var main_entries: Array = data.get("main", [])
 	DecklistManager.set_player_deck_from_entries(1, _client_deck_name, monster_entries, main_entries)

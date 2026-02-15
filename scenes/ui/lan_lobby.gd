@@ -27,6 +27,7 @@ func _ready() -> void:
 	NetworkManager.player_disconnected.connect(_on_player_disconnected)
 	NetworkManager.connection_failed.connect(_on_connection_failed)
 	NetworkManager.version_mismatch.connect(_on_version_mismatch)
+	NetworkManager.version_verified_ok.connect(_update_start_button)
 
 	DecklistManager.clear_selections()
 
@@ -170,7 +171,7 @@ func _update_start_button() -> void:
 	start_button.visible = can_start
 	start_button.disabled = not can_start
 	if can_start:
-		status_label.text = "Opponent selected: \"%s\"\nReady to start!" % _client_deck_name
+		status_label.text = "Opponent deck received. Ready to start!"
 
 
 ## Client sends their deck data to host

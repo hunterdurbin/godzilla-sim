@@ -12,6 +12,7 @@ signal player_disconnected(peer_id: int)
 signal connection_failed()
 signal game_starting()
 signal version_mismatch(local_version: String, remote_version: String)
+signal version_verified_ok()
 
 const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 2
@@ -111,6 +112,11 @@ func join_online(game_code: String) -> Error:
 
 	multiplayer.multiplayer_peer = relay_peer
 
+	# Set mode before connecting signals — connected_to_server fires during the
+	# await below, and listeners check is_multiplayer() which requires mode != SOLO.
+	mode = Mode.ONLINE_CLIENT
+	host_peer_id = 1
+
 	# Connect signals before waiting — connected_to_server fires when the relay
 	# peer transitions to CONNECTED (after the relay confirms the host is present).
 	multiplayer.connected_to_server.connect(_on_connected_to_server)
@@ -127,10 +133,9 @@ func join_online(game_code: String) -> Error:
 			multiplayer.peer_disconnected.disconnect(_on_peer_disconnected)
 		if multiplayer.server_disconnected.is_connected(_on_server_disconnected):
 			multiplayer.server_disconnected.disconnect(_on_server_disconnected)
+		mode = Mode.SOLO
+		host_peer_id = 1
 		return err
-
-	mode = Mode.ONLINE_CLIENT
-	host_peer_id = 1
 	return OK
 
 
@@ -292,3 +297,4 @@ func _rpc_exchange_version(remote_version: String) -> void:
 		disconnect_game()
 		return
 	version_verified = true
+	version_verified_ok.emit()
