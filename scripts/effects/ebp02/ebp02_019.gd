@@ -4,7 +4,7 @@ extends CardEffect
 ## Move 1 battle card in your zones to an unoccupied zone.
 ## If your monster card invaded this turn, advance your monster card by 1 zone.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -3,7 +3,7 @@ extends CardEffect
 ## EBP02-002: Godzilla(2016) 2nd Form - Monster Rank 2 (Red)
 ## If you have 1 or more strategy cards in play, this card gains +5000 threat level.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

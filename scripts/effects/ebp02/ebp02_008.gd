@@ -5,7 +5,7 @@ extends CardEffect
 ## Whenever this card's <Rage> is increased, <Destroy> all of your opponent's rank 6 or
 ## lower battle cards in the zone with the same number as the zone this card occupies.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -4,7 +4,7 @@ extends CardEffect
 ## <Your Turn> If you have 4 or more battle cards in your zones,
 ## increase your total counter power by 5000.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

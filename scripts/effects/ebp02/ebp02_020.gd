@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> If you have 5 or more strategy cards in your discard pile, create
 ## "Conductorless Train Bombers" tokens in each of your unoccupied zones.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

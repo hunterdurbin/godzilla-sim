@@ -4,7 +4,7 @@ extends CardEffect
 ## <Your Turn> <Awakening6> Whenever this card's <Rage> is increased, if you have a
 ## strategy card in play, your opponent discards cards until they have 3 cards remaining.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

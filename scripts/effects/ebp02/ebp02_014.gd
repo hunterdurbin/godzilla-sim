@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> Send the top card of your deck to your discard pile.
 ## If it is a monster card, advance your monster card to zone 6.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

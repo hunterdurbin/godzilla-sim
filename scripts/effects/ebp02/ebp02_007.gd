@@ -6,7 +6,7 @@ extends CardEffect
 ## cards of your deck, add 1 monster card from among them to your hand, then send the
 ## rest to your discard pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

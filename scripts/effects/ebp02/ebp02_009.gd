@@ -6,7 +6,7 @@ extends CardEffect
 ## discard pile to your hand.
 ## <When Invading> Your opponent discards cards until they have 3 cards remaining.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -6,7 +6,7 @@ extends CardEffect
 ## If there is a <4th Form> card under this card, this card gains +10,000 threat level
 ## for each strategy card in your strategy zone.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

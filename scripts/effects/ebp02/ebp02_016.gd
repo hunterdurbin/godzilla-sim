@@ -4,7 +4,7 @@ extends CardEffect
 ## If this card is in the same column as the opponent's monster card,
 ## this card gains +5000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

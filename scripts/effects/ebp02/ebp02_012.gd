@@ -6,7 +6,7 @@ extends CardEffect
 ## <Awakening4> At the beginning of your main phase, if there are 2 or more cards
 ## under this card, counter your opponent's monster card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -43,7 +43,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		return
 	# Need 2+ cards under this card (stack size > 1 since the card itself is the top)
 	var stack_size: int = ctx.owner.get_zone_stack(zone_idx).size()
-	if stack_size < 3:  # 1 (self) + 2 (under)
+	if stack_size < 3: # 1 (self) + 2 (under)
 		return
 	# Force counter the opponent's monster
 	await ctx.effect_handler.force_counter(ctx.owner.player_id)
