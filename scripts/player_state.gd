@@ -102,24 +102,27 @@ func draw_up_to(target_count: int) -> Array[Dictionary]:
 
 
 func has_empty_zone() -> bool:
+	var monster_idx: int = monster_zone - 1
 	for i in range(8):
-		if is_zone_empty(i):
+		if is_zone_empty(i) and i != monster_idx:
 			return true
 	return false
 
 
 func get_empty_zone_indices() -> Array[int]:
 	var indices: Array[int] = []
+	var monster_idx: int = monster_zone - 1
 	for i in range(8):
-		if is_zone_empty(i):
+		if is_zone_empty(i) and i != monster_idx:
 			indices.append(i)
 	return indices
 
 
 func get_occupied_zone_indices() -> Array[int]:
 	var indices: Array[int] = []
+	var monster_idx: int = monster_zone - 1
 	for i in range(8):
-		if not is_zone_empty(i):
+		if not is_zone_empty(i) or i == monster_idx:
 			indices.append(i)
 	return indices
 
