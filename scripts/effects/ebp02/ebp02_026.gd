@@ -26,7 +26,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Find opponent zones with cards
 	var targetable: Array[int] = []
 	for i in range(8):
-		if not ctx.opponent.is_zone_empty(i):
+		if ctx.opponent.zone_has_cards(i):
 			targetable.append(i)
 
 	if targetable.is_empty():

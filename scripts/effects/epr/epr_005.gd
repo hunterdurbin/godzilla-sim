@@ -18,7 +18,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var opponent_zones: Array[int] = get_opponent_column_zones(monster_zone_idx)
 	var zones_to_destroy: Array[int] = []
 	for zone_idx in opponent_zones:
-		if not ctx.opponent.is_zone_empty(zone_idx):
+		if ctx.opponent.zone_has_cards(zone_idx):
 			zones_to_destroy.append(zone_idx)
 	if not zones_to_destroy.is_empty():
 		await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)

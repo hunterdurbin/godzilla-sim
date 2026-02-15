@@ -32,12 +32,12 @@ func on_enter(ctx: EffectContext) -> void:
 	# Option 1: Destroy zone + adjacent (requires 4+ own battle cards)
 	var battle_count: int = 0
 	for i in range(8):
-		if not ctx.owner.is_zone_empty(i):
+		if ctx.owner.zone_has_cards(i):
 			battle_count += 1
 	if battle_count >= 4:
 		var has_opp_cards: bool = false
 		for i in range(8):
-			if not ctx.opponent.is_zone_empty(i):
+			if ctx.opponent.zone_has_cards(i):
 				has_opp_cards = true
 				break
 		if has_opp_cards:
@@ -67,7 +67,7 @@ func on_enter(ctx: EffectContext) -> void:
 		1:
 			var targetable_zones: Array[int] = []
 			for i in range(8):
-				if not ctx.opponent.is_zone_empty(i):
+				if ctx.opponent.zone_has_cards(i):
 					targetable_zones.append(i)
 			var chosen_zone: int = await ctx.effect_handler.select_zone_target(
 				ctx.owner.player_id, ctx.opponent.player_id, targetable_zones,
@@ -79,7 +79,7 @@ func on_enter(ctx: EffectContext) -> void:
 						affected_zones.append(adj)
 				var zones_to_destroy: Array[int] = []
 				for zi in affected_zones:
-					if not ctx.opponent.is_zone_empty(zi):
+					if ctx.opponent.zone_has_cards(zi):
 						zones_to_destroy.append(zi)
 				if not zones_to_destroy.is_empty():
 					await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)

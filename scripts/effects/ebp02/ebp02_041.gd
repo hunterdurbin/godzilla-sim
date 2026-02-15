@@ -17,7 +17,7 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	var mods: Dictionary = {}
 
 	for adj_zi in adjacent:
-		if not ctx.owner.is_zone_empty(adj_zi):
+		if ctx.owner.zone_has_cards(adj_zi):
 			mods[adj_zi] = 1000
 
 	return mods

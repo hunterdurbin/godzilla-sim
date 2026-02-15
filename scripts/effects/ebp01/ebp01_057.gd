@@ -16,7 +16,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Find all occupied zones (for swapping)
 	var occupied: Array[int] = []
 	for i in range(8):
-		if not ctx.owner.is_zone_empty(i):
+		if ctx.owner.zone_has_cards(i):
 			occupied.append(i)
 
 	if occupied.size() >= 2:

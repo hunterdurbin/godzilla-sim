@@ -14,7 +14,7 @@ extends CardEffect
 func on_enter(ctx: EffectContext) -> void:
 	var zones_to_destroy: Array[int] = []
 	for i in range(5): # zones 1-5 = indices 0-4
-		if not ctx.opponent.is_zone_empty(i):
+		if ctx.opponent.zone_has_cards(i):
 			zones_to_destroy.append(i)
 
 	if not zones_to_destroy.is_empty():

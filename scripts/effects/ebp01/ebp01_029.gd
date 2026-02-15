@@ -16,7 +16,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Find opponent zones that have rank 5 or lower battle cards
 	var targetable_zones: Array[int] = []
 	for i in range(8):
-		if not ctx.opponent.is_zone_empty(i):
+		if ctx.opponent.zone_has_cards(i):
 			targetable_zones.append(i)
 
 	if targetable_zones.is_empty():

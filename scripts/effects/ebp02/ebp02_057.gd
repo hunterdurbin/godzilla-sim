@@ -20,7 +20,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Find opponent's battle cards in same column
 	var targetable: Array[int] = []
 	for zi in opp_columns:
-		if not ctx.opponent.is_zone_empty(zi):
+		if ctx.opponent.zone_has_cards(zi):
 			targetable.append(zi)
 
 	if targetable.is_empty():

@@ -14,7 +14,7 @@ extends CardEffect
 func on_enter(ctx: EffectContext) -> void:
 	var battle_count := 0
 	for i in range(8):
-		if not ctx.owner.is_zone_empty(i):
+		if ctx.owner.zone_has_cards(i):
 			battle_count += 1
 	if battle_count < 2:
 		return

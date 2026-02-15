@@ -45,7 +45,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.monster_zone >= 8:
 		var has_any_target: bool = false
 		for i in range(8):
-			if not ctx.opponent.is_zone_empty(i):
+			if ctx.opponent.zone_has_cards(i):
 				has_any_target = true
 				break
 		if has_any_target:

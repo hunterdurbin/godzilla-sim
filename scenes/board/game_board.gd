@@ -814,7 +814,7 @@ func _build_bug_report_body() -> String:
 		# Battle zones (only occupied)
 		var occupied: Array[String] = []
 		for zi in range(8):
-			if not ps.is_zone_empty(zi):
+			if ps.zone_has_cards(zi):
 				var top_card: Dictionary = ps.get_zone_top_card(zi)
 				var stack_size: int = ps.get_zone_stack(zi).size()
 				var entry := "Zone %d: %s" % [zi + 1, top_card.get("name", "?")]
@@ -2530,7 +2530,7 @@ func _on_zone_slot_right_clicked(zone_num: int, pid: int) -> void:
 	var card_data: Dictionary = {}
 	if not player.current_monster.is_empty() and (player.monster_zone - 1) == zone_idx:
 		card_data = player.current_monster
-	elif not player.is_zone_empty(zone_idx):
+	elif player.zone_has_cards(zone_idx):
 		card_data = player.get_zone_top_card(zone_idx)
 	if card_data.is_empty():
 		return

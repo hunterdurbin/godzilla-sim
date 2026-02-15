@@ -37,7 +37,7 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.owner.monster_changed.emit()
 	# Only trigger crush on zone 8 (skip 4-7)
 	# Check if zone 8 (index 7) has a battle card to crush
-	if not ctx.owner.is_zone_empty(7):
+	if ctx.owner.zone_has_cards(7):
 		var crushed_stack: Array = ctx.owner.clear_zone(7)
 		EffectHandler.banish_or_discard(ctx.owner, crushed_stack)
 		ctx.owner.zones_changed.emit()

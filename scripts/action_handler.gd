@@ -313,7 +313,7 @@ func _check_crush_for_player(state: GameState, player_id: int) -> bool:
 	# The crush rule (11.3): if a battle card is in the same zone as the monster, destroy it.
 	var monster_zone_idx: int = player.monster_zone - 1  # 0-indexed
 	if monster_zone_idx >= 0 and monster_zone_idx < 8:
-		if not player.is_zone_empty(monster_zone_idx):
+		if player.zone_has_cards(monster_zone_idx):
 			var crushed_stack: Array = player.clear_zone(monster_zone_idx)
 			EffectHandler.banish_or_discard(player, crushed_stack)
 			battle_card_crushed.emit(player_id, monster_zone_idx, crushed_stack[0])
@@ -398,7 +398,7 @@ func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> vo
 
 	# Rule 11.5 - Overloaded Cards: if zone is occupied, destroy existing cards
 	# Unless the card's effect says to stack on top (e.g. Godzilla Jr. on Little Godzilla)
-	if not player.is_zone_empty(zone_index):
+	if player.zone_has_cards(zone_index):
 		var should_stack := false
 		if effect_handler:
 			should_stack = effect_handler.should_stack_on_play(player.player_id, card, zone_index)

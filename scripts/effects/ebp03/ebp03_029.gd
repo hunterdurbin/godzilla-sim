@@ -47,7 +47,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 				var player := ctx.game_state.players[pid]
 				var zones_to_destroy: Array[int] = []
 				for i in range(8):
-					if not player.is_zone_empty(i):
+					if player.zone_has_cards(i):
 						zones_to_destroy.append(i)
 				if not zones_to_destroy.is_empty():
 					await ctx.effect_handler.destroy_zones(player, zones_to_destroy)

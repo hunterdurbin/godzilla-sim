@@ -44,7 +44,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var zones_to_destroy: Array[int] = []
 	for rank in matching_ranks:
 		var zone_idx: int = rank - 1
-		if not ctx.opponent.is_zone_empty(zone_idx):
+		if ctx.opponent.zone_has_cards(zone_idx):
 			zones_to_destroy.append(zone_idx)
 
 	if not zones_to_destroy.is_empty():

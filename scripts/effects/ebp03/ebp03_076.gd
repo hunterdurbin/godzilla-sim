@@ -24,7 +24,7 @@ func get_threat_level_modifier(ctx: EffectContext) -> int:
 	var check_zones: Array[int] = [0, 4, 7]
 	for zi in check_zones:
 		# Check for battle card in zone
-		if not ctx.owner.is_zone_empty(zi):
+		if ctx.owner.zone_has_cards(zi):
 			bonus += 5000
 		# Check if own monster is in this zone
 		if ctx.owner.monster_zone == zi + 1:

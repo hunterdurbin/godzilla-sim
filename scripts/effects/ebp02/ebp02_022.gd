@@ -53,7 +53,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	ctx.owner.discard_changed.emit()
 
 	# Handle overload (existing card in zone)
-	if not ctx.owner.is_zone_empty(chosen):
+	if ctx.owner.zone_has_cards(chosen):
 		var destroyed_stack: Array = ctx.owner.clear_zone(chosen)
 		ctx.owner.discard_pile.append_array(destroyed_stack)
 		ctx.owner.discard_changed.emit()

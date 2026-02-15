@@ -29,7 +29,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var adjacent := get_adjacent_zones(zone_idx)
 	var zones_to_destroy: Array[int] = []
 	for adj_zi in adjacent:
-		if not ctx.owner.is_zone_empty(adj_zi):
+		if ctx.owner.zone_has_cards(adj_zi):
 			zones_to_destroy.append(adj_zi)
 
 	if not zones_to_destroy.is_empty():

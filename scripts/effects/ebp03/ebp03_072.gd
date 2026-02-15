@@ -16,7 +16,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var zones_to_destroy: Array[int] = []
 	for opp_zi in opp_column_zones:
-		if not ctx.opponent.is_zone_empty(opp_zi):
+		if ctx.opponent.zone_has_cards(opp_zi):
 			zones_to_destroy.append(opp_zi)
 
 	if not zones_to_destroy.is_empty():

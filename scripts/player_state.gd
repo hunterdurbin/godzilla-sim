@@ -43,7 +43,11 @@ func _init(id: int = 0) -> void:
 # --- Zone stack helpers ---
 
 func is_zone_empty(i: int) -> bool:
-	return zones[i].is_empty()
+	return zones[i].is_empty() and i != monster_zone - 1
+
+
+func zone_has_cards(i: int) -> bool:
+	return not zones[i].is_empty()
 
 
 func get_zone_top_card(i: int) -> Dictionary:
@@ -102,27 +106,24 @@ func draw_up_to(target_count: int) -> Array[Dictionary]:
 
 
 func has_empty_zone() -> bool:
-	var monster_idx: int = monster_zone - 1
 	for i in range(8):
-		if is_zone_empty(i) and i != monster_idx:
+		if is_zone_empty(i):
 			return true
 	return false
 
 
 func get_empty_zone_indices() -> Array[int]:
 	var indices: Array[int] = []
-	var monster_idx: int = monster_zone - 1
 	for i in range(8):
-		if is_zone_empty(i) and i != monster_idx:
+		if is_zone_empty(i):
 			indices.append(i)
 	return indices
 
 
 func get_occupied_zone_indices() -> Array[int]:
 	var indices: Array[int] = []
-	var monster_idx: int = monster_zone - 1
 	for i in range(8):
-		if not is_zone_empty(i) or i == monster_idx:
+		if not is_zone_empty(i):
 			indices.append(i)
 	return indices
 

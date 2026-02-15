@@ -23,7 +23,7 @@ func get_total_cp_modifier(ctx: EffectContext) -> int:
 	# Count battle cards in zones
 	var count: int = 0
 	for i in range(8):
-		if not ctx.owner.is_zone_empty(i):
+		if ctx.owner.zone_has_cards(i):
 			count += 1
 	if count >= 4:
 		return 5000

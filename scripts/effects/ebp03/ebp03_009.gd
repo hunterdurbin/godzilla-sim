@@ -17,7 +17,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Filter to zones that have cards
 	var valid_targets: Array[int] = []
 	for zi in opp_column_zones:
-		if not ctx.opponent.is_zone_empty(zi):
+		if ctx.opponent.zone_has_cards(zi):
 			valid_targets.append(zi)
 
 	if valid_targets.is_empty():

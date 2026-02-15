@@ -14,7 +14,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Find all occupied opponent zones (from left to right = zone 1 to 8 = index 0 to 7)
 	var occupied: Array[int] = []
 	for i in range(8):
-		if not ctx.opponent.is_zone_empty(i):
+		if ctx.opponent.zone_has_cards(i):
 			occupied.append(i)
 
 	if occupied.size() < 3:

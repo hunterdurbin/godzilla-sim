@@ -19,7 +19,7 @@ func get_burst_rank() -> int:
 func on_enter(ctx: EffectContext) -> void:
 	var battle_count: int = 0
 	for i in range(8):
-		if not ctx.owner.is_zone_empty(i):
+		if ctx.owner.zone_has_cards(i):
 			battle_count += 1
 	if battle_count >= 4 and ctx.opponent.rage > 0:
 		ctx.opponent.rage -= 1

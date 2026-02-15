@@ -322,7 +322,7 @@ func collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int)
 		# Capture zone state before crush resolves (for effects that check zone occupancy)
 		var zone_idx := to_zone - 1
 		if zone_idx >= 0 and zone_idx < 8:
-			ctx.metadata["zone_had_card"] = not player.is_zone_empty(zone_idx)
+			ctx.metadata["zone_had_card"] = player.zone_has_cards(zone_idx)
 		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": effect.on_when_invading.bind(ctx, from_zone, to_zone)})
 	return entries
 
@@ -1176,7 +1176,7 @@ func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dicti
 	## Returns an array of the destroyed top cards. Triggers revenge on each.
 	var destroyed: Array[Dictionary] = []
 	for zi in zone_indices:
-		if zi < 0 or zi >= 8 or target.is_zone_empty(zi):
+		if zi < 0 or zi >= 8 or not target.zone_has_cards(zi):
 			continue
 		var top_card := target.get_zone_top_card(zi)
 		if not _can_destroy_card(target, top_card):
@@ -1257,7 +1257,7 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	# Make a copy so each token instance is independent
 	token_data = token_data.duplicate()
 
-	if not player.is_zone_empty(zone_index):
+	if player.zone_has_cards(zone_index):
 		var destroyed_stack: Array = player.clear_zone(zone_index)
 		var top_card: Dictionary = destroyed_stack[0]
 		banish_or_discard(player, destroyed_stack)
@@ -1795,7 +1795,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 			return
 
 	# Handle overload if zone occupied
-	if not player.is_zone_empty(zone_idx):
+	if player.zone_has_cards(zone_idx):
 		var destroyed_stack: Array = player.clear_zone(zone_idx)
 		var top_card: Dictionary = destroyed_stack[0]
 		banish_or_discard(player, destroyed_stack)
