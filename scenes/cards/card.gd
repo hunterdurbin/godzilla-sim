@@ -4,6 +4,10 @@ extends Control
 
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 
+# Static texture cache shared across all Card instances
+static var _texture_cache: Dictionary = {}  # card_number -> ImageTexture
+static var _strategy_texture_cache: Dictionary = {}  # card_number -> ImageTexture (rotated)
+
 # Signals
 signal drag_started()
 signal drag_ended()
@@ -269,15 +273,27 @@ func _update_display() -> void:
 		var card_number := _resolve_card_number()
 		if card_number.is_empty():
 			return
+		var is_strategy := _is_strategy_card()
+		var cache := _strategy_texture_cache if is_strategy else _texture_cache
+		if cache.has(card_number):
+			card_image.texture = cache[card_number]
+			return
 		var set_number := card_number.split("-")[0]
 		var image_path := ARTWORK_BASE_PATH.path_join(set_number).path_join("%s.png" % card_number)
 		var abs_path := ProjectSettings.globalize_path(image_path)
 		if FileAccess.file_exists(image_path):
 			var image := Image.load_from_file(abs_path)
 			if image:
-				if _is_strategy_card():
+				if is_strategy:
 					image.rotate_90(CLOCKWISE)
-				card_image.texture = ImageTexture.create_from_image(image)
+				var tex := ImageTexture.create_from_image(image)
+				cache[card_number] = tex
+				card_image.texture = tex
+
+
+static func clear_texture_cache() -> void:
+	_texture_cache.clear()
+	_strategy_texture_cache.clear()
 
 
 func _is_strategy_card() -> bool:
