@@ -779,13 +779,18 @@ func _on_pool_card_clicked(card_node: Control) -> void:
 	if _showing_monster_tab:
 		if card_data.get("card_type", -1) != CardEnums.CardType.MONSTER:
 			return
-		_add_to_monster_deck(card_id)
+		var displaced_id := _add_to_monster_deck(card_id)
+		_has_unsaved_changes = true
+		_refresh_deck_display()
+		_update_pool_badge(card_id)
+		if not displaced_id.is_empty() and displaced_id != card_id:
+			_update_pool_badge(displaced_id)
 	else:
 		_add_to_main_deck(card_id)
+		_has_unsaved_changes = true
+		_refresh_deck_display()
+		_update_pool_badge(card_id)
 
-	_has_unsaved_changes = true
-	_refresh_deck_display()
-	_update_pool_badge(card_id)
 	_update_deck_stats()
 
 
@@ -819,22 +824,24 @@ func _on_deck_card_right_clicked(card_node: Control) -> void:
 	_update_deck_stats()
 
 
-func _add_to_monster_deck(card_id: String) -> void:
+func _add_to_monster_deck(card_id: String) -> String:
 	var template: Dictionary = CardData.CARD_TEMPLATES.get(card_id, {})
 	if template.is_empty():
-		return
+		return ""
 	var rank: int = template.get("rank", 0)
 	# Replace existing card at same rank
 	for entry in _monster_entries:
 		var existing: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
 		if existing.get("rank", 0) == rank:
+			var displaced_id: String = entry["card_number"]
 			entry["card_number"] = card_id
 			_sort_monster_entries()
-			return
+			return displaced_id
 	if _monster_entries.size() >= 4:
-		return
+		return ""
 	_monster_entries.append({"card_number": card_id, "quantity": 1})
 	_sort_monster_entries()
+	return ""
 
 
 func _add_to_main_deck(card_id: String) -> void:
