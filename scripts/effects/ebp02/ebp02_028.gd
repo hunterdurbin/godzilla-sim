@@ -39,9 +39,29 @@ func on_enter(ctx: EffectContext) -> void:
 
 	# Play as many as possible to adjacent zones (max 3)
 	var placed: int = 0
-	for zi in adjacent:
-		if placed >= 3 or matching.is_empty():
-			break
-		var card: Dictionary = matching.pop_front()
-		await ctx.effect_handler.play_from_discard(ctx.owner.player_id, card, zi)
+	while placed < 3 and not matching.is_empty():
+		# Let player choose which card to play
+		var card: Dictionary
+		if matching.size() == 1:
+			card = matching[0]
+		else:
+			card = await ctx.effect_handler.select_from_cards(
+				ctx.owner.player_id, matching, matching,
+				"Choose a battle card with Evolution to play (%d of up to 3):" % (placed + 1))
+			if card.is_empty():
+				break
+
+		# Let player choose which adjacent zone
+		var zone_idx: int
+		if adjacent.size() == 1:
+			zone_idx = adjacent[0]
+		else:
+			zone_idx = await ctx.effect_handler.select_zone_target(
+				ctx.owner.player_id, ctx.owner.player_id, adjacent,
+				"Choose an adjacent zone to play %s:" % card.get("name", "card"))
+			if zone_idx < 0:
+				break
+
+		matching.erase(card)
+		await ctx.effect_handler.play_from_discard(ctx.owner.player_id, card, zone_idx)
 		placed += 1

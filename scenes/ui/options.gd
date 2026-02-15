@@ -7,6 +7,8 @@ extends Control
 @onready var auto_reset_rage_check: CheckButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoResetRageRow/Check
 @onready var auto_counter_check_check: CheckButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoCounterCheckRow/Check
 @onready var auto_advance_check: CheckButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoAdvanceRow/Check
+@onready var sort_type_order_option: OptionButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SortTypeOrderRow/SortTypeOrderOption
+@onready var sort_rank_order_option: OptionButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SortRankOrderRow/SortRankOrderOption
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
 
 
@@ -26,6 +28,10 @@ func _ready() -> void:
 	auto_reset_rage_check.toggled.connect(_on_setting_toggled.bind("auto_reset_rage"))
 	auto_counter_check_check.toggled.connect(_on_setting_toggled.bind("auto_counter_check"))
 	auto_advance_check.toggled.connect(_on_setting_toggled.bind("auto_advance"))
+	sort_type_order_option.selected = GameSettings.hand_sort_type_order
+	sort_rank_order_option.selected = 0 if GameSettings.hand_sort_rank_ascending else 1
+	sort_type_order_option.item_selected.connect(_on_sort_type_order_selected)
+	sort_rank_order_option.item_selected.connect(_on_sort_rank_order_selected)
 	back_button.pressed.connect(_on_back_pressed)
 
 
@@ -46,6 +52,16 @@ func _on_auto_phase_toggled(enabled: bool) -> void:
 
 func _on_setting_toggled(enabled: bool, setting: String) -> void:
 	GameSettings.set(setting, enabled)
+	GameSettings.save()
+
+
+func _on_sort_type_order_selected(index: int) -> void:
+	GameSettings.hand_sort_type_order = index
+	GameSettings.save()
+
+
+func _on_sort_rank_order_selected(index: int) -> void:
+	GameSettings.hand_sort_rank_ascending = (index == 0)
 	GameSettings.save()
 
 
