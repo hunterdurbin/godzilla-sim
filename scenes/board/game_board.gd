@@ -88,7 +88,7 @@ var _discard_view_cards: Array[Dictionary] = []
 var _arrange_keep: Array[Dictionary] = []
 var _arrange_discard: Array[Dictionary] = []
 var _arrange_dragging_card: Control = null
-var _arrange_drag_source: String = ""  # "keep" or "discard"
+var _arrange_drag_source: String = "" # "keep" or "discard"
 var _arrange_drag_index: int = -1
 var _arrange_drop_indicator: ColorRect = null
 var _view_board_source_overlay: Control = null
@@ -219,7 +219,7 @@ var _highlighted_card: Control = null # Card with selection highlight border
 var _current_sub_phase: int = 0
 
 # Turn tracker transition queue (delays between phase changes)
-const PHASE_TRANSITION_DELAY: float = 0.1
+const PHASE_TRANSITION_DELAY: float = 0.05
 var _tracker_queue: Array[Dictionary] = []
 var _tracker_draining: bool = false
 var _tracker_last_phase: int = -1
@@ -2598,7 +2598,6 @@ func _on_card_zoom_overlay_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		_hide_card_zoom()
 		get_viewport().set_input_as_handled()
-
 
 
 func _hide_card_zoom() -> void:
