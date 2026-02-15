@@ -181,6 +181,7 @@ var waiting_for_zone_select: bool = false
 var selected_card_id: String = ""
 var _selected_card_data: Dictionary = {} # Card data dict for the selected card
 var _awaiting_confirmation: bool = false
+var _confirming_pass: bool = false
 
 # Hand discard selection state
 var _discard_selecting: bool = false
@@ -965,6 +966,9 @@ func _on_play_monster_pressed() -> void:
 
 
 func _on_invade_pressed() -> void:
+	if _confirming_pass:
+		_cancel_pass_confirmation()
+		return
 	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
 		return
 
@@ -983,6 +987,12 @@ func _on_invade_pressed() -> void:
 func _on_pass_pressed() -> void:
 	if _awaiting_confirmation:
 		return
+	if _confirming_pass:
+		_confirming_pass = false
+		_clear_card_highlight()
+		_cancel_selection()
+		_submit_action(CardEnums.ActionType.PASS)
+		return
 	if _hand_card_selecting and _hand_card_allow_skip:
 		_skip_hand_card_selection()
 		return
@@ -1000,9 +1010,35 @@ func _on_pass_pressed() -> void:
 		else:
 			_update_action_buttons(_client_playable.get("valid_actions", []))
 		return
+	if GameSettings.confirm_main_phase_pass:
+		_enter_pass_confirmation()
+		return
 	_clear_card_highlight()
 	_cancel_selection()
 	_submit_action(CardEnums.ActionType.PASS)
+
+
+func _enter_pass_confirmation() -> void:
+	_confirming_pass = true
+	_disable_all_buttons()
+	action_prompt_panel.visible = true
+	card_select_prompt.text = "Pass Main Phase?"
+	btn_pass.text = "Confirm"
+	btn_pass.disabled = false
+	btn_pass.visible = true
+	btn_invade.text = "Cancel"
+	btn_invade.disabled = false
+	btn_invade.visible = true
+
+
+func _cancel_pass_confirmation() -> void:
+	_confirming_pass = false
+	btn_invade.text = "Invade"
+	action_prompt_panel.visible = false
+	if turn_manager:
+		_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
+	else:
+		_update_action_buttons(_client_playable.get("valid_actions", []))
 
 
 # --- Card selection flow ---
@@ -1313,6 +1349,7 @@ func _update_hand_visibility(active_player_id: int) -> void:
 
 
 func _update_action_buttons(valid_actions: Array) -> void:
+	_confirming_pass = false
 	btn_play_battle.disabled = CardEnums.ActionType.PLAY_BATTLE not in valid_actions
 	btn_play_strategy.disabled = CardEnums.ActionType.PLAY_STRATEGY not in valid_actions
 	btn_gain_rage.disabled = CardEnums.ActionType.GAIN_RAGE not in valid_actions

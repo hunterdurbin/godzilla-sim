@@ -7,6 +7,7 @@ extends Control
 @onready var auto_reset_rage_check: CheckButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoResetRageRow/Check
 @onready var auto_counter_check_check: CheckButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoCounterCheckRow/Check
 @onready var auto_advance_check: CheckButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoAdvanceRow/Check
+@onready var confirm_main_phase_pass_check: CheckButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ConfirmMainPhasePassRow/Check
 @onready var sort_type_order_option: OptionButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SortTypeOrderRow/SortTypeOrderOption
 @onready var sort_rank_order_option: OptionButton = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SortRankOrderRow/SortRankOrderOption
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
@@ -28,6 +29,8 @@ func _ready() -> void:
 	auto_reset_rage_check.toggled.connect(_on_setting_toggled.bind("auto_reset_rage"))
 	auto_counter_check_check.toggled.connect(_on_setting_toggled.bind("auto_counter_check"))
 	auto_advance_check.toggled.connect(_on_setting_toggled.bind("auto_advance"))
+	confirm_main_phase_pass_check.button_pressed = GameSettings.confirm_main_phase_pass
+	confirm_main_phase_pass_check.toggled.connect(_on_setting_toggled.bind("confirm_main_phase_pass"))
 	sort_type_order_option.selected = GameSettings.hand_sort_type_order
 	sort_rank_order_option.selected = 0 if GameSettings.hand_sort_rank_ascending else 1
 	sort_type_order_option.item_selected.connect(_on_sort_type_order_selected)

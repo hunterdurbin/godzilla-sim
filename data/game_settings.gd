@@ -9,6 +9,7 @@ var auto_discard_strategies: bool = true
 var auto_reset_rage: bool = true
 var auto_counter_check: bool = true
 var auto_advance: bool = true
+var confirm_main_phase_pass: bool = false
 var hand_sort_type_order: int = 0  # 0-5 index into type permutations
 var hand_sort_rank_ascending: bool = true
 
@@ -33,6 +34,7 @@ func _save() -> void:
 	config.set_value("gameplay", "auto_reset_rage", auto_reset_rage)
 	config.set_value("gameplay", "auto_counter_check", auto_counter_check)
 	config.set_value("gameplay", "auto_advance", auto_advance)
+	config.set_value("gameplay", "confirm_main_phase_pass", confirm_main_phase_pass)
 	config.set_value("gameplay", "hand_sort_type_order", hand_sort_type_order)
 	config.set_value("gameplay", "hand_sort_rank_ascending", hand_sort_rank_ascending)
 	config.save(SETTINGS_PATH)
@@ -49,5 +51,6 @@ func _load() -> void:
 	auto_reset_rage = config.get_value("gameplay", "auto_reset_rage", true)
 	auto_counter_check = config.get_value("gameplay", "auto_counter_check", true)
 	auto_advance = config.get_value("gameplay", "auto_advance", true)
+	confirm_main_phase_pass = config.get_value("gameplay", "confirm_main_phase_pass", false)
 	hand_sort_type_order = config.get_value("gameplay", "hand_sort_type_order", 0)
 	hand_sort_rank_ascending = config.get_value("gameplay", "hand_sort_rank_ascending", true)

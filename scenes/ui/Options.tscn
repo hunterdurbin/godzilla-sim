@@ -139,6 +139,18 @@ theme_override_font_sizes/font_size = 20
 [node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoAdvanceRow"]
 layout_mode = 2
 
+[node name="ConfirmMainPhasePassRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ConfirmMainPhasePassRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Confirm Main Phase Pass"
+theme_override_font_sizes/font_size = 20
+
+[node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ConfirmMainPhasePassRow"]
+layout_mode = 2
+
 [node name="SortSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
