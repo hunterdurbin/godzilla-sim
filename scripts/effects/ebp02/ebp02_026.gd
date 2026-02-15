@@ -5,7 +5,7 @@ extends CardEffect
 ## <Destroy> all of your opponent's rank 5 or lower battle cards in that zone and
 ## zones adjacent to it.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

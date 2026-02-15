@@ -4,7 +4,7 @@ extends CardEffect
 ## This card cannot advance nor invade.
 ## <Enter> Play 1 "Tentacles" token in a zone adjacent to this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

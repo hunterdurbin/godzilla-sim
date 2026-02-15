@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> Reduce your opponent's <Rage> by 1.
 ## (Tokens cannot be added to the deck. They are banished when removed from zones.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

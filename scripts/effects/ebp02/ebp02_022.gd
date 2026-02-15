@@ -4,7 +4,7 @@ extends CardEffect
 ## <When Invading> If you discarded a blue battle card for this card's invade action,
 ## you may play that battle card from your discard pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

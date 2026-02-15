@@ -5,7 +5,7 @@ extends CardEffect
 ## This card cannot advance nor invade.
 ## (Start zone handled via "start_zone": 5 in card_data.gd)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

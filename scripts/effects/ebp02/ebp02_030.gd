@@ -5,7 +5,7 @@ extends CardEffect
 ## a rank 5 or lower <Little Godzilla> battle card from your deck by placing it on
 ## top of this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

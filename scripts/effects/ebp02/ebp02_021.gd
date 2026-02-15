@@ -4,7 +4,7 @@ extends CardEffect
 ## All of your rank 5 or lower battle cards in zones adjacent to this card
 ## gain +3000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

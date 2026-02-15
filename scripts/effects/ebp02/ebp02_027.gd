@@ -6,7 +6,7 @@ extends CardEffect
 ## only moves as though it were countered. (Do not play the next Monster Card
 ## from your monster deck.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

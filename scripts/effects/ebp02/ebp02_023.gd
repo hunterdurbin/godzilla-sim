@@ -5,7 +5,7 @@ extends CardEffect
 ## monster cards with 50,000 or less threat level retreats back by 1 zone.
 ## If you have 10 or more monster cards in your discard pile, this card gains +10,000 TL.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

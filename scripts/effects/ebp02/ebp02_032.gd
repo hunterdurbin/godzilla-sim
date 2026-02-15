@@ -4,7 +4,7 @@ extends CardEffect
 ## <Evolution7> <Biollante> At the beginning of your main phase, you may play a rank 7
 ## or lower <Biollante> battle card from your deck by placing it on top of this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
