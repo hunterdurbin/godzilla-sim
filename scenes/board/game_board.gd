@@ -252,6 +252,9 @@ func _ready() -> void:
 	# Rearrange layout for client so local player sees their board at bottom
 	_arrange_for_local_player()
 
+	# Make turn tracker labels clickable to toggle auto settings
+	_setup_settings_toggles()
+
 	if not is_multiplayer_game or NetworkManager.is_host():
 		# Host / solo: create and run TurnManager
 		turn_manager = TurnManager.new()
@@ -455,6 +458,96 @@ func _ready() -> void:
 		_disable_all_buttons()
 
 
+# Per-player auto settings (initialized from GameSettings, toggled independently)
+var _player_settings: Array[Dictionary] = []
+var _setting_labels: Dictionary = {} # setting_name -> Array[Label]
+
+const _SETTING_KEYS: Array[String] = [
+	"auto_draw", "auto_phase_advance", "auto_discard_strategies",
+	"auto_reset_rage", "auto_counter_check", "auto_advance",
+	"confirm_main_phase_pass",
+]
+
+
+func _setup_settings_toggles() -> void:
+	# Initialize per-player settings from GameSettings defaults
+	for pid in range(2):
+		var d := {}
+		for key in _SETTING_KEYS:
+			d[key] = GameSettings.get(key)
+		_player_settings.append(d)
+
+	# Sub-phase label → setting mappings: [phase_idx, sub_idx, setting_name]
+	var mappings: Array[Array] = [
+		[0, 1, "auto_draw"],              # Start > Draw Cards
+		[0, 2, "auto_discard_strategies"], # Start > Discard Strategies
+		[0, 3, "auto_reset_rage"],         # Start > Reset Rage
+		[1, 1, "confirm_main_phase_pass"], # Main > Player Actions
+		[2, 1, "auto_counter_check"],      # Counter > Counter Check
+		[3, 1, "auto_advance"],            # End > Advance
+		[3, 2, "auto_draw"],              # End > Refill Hand
+	]
+
+	for pid in range(2):
+		# In multiplayer, only make the local player's labels clickable
+		if is_multiplayer_game and pid != local_player_id:
+			continue
+		for m in mappings:
+			_wire_setting_label(_turn_tracker_subs[pid][m[0]][m[1]], m[2], pid)
+		for i in range(4):
+			_wire_setting_label(_turn_tracker_phases[pid][i], "auto_phase_advance", pid)
+
+	_update_all_setting_indicators()
+
+
+func _wire_setting_label(label: Label, setting: String, pid: int) -> void:
+	label.mouse_filter = Control.MOUSE_FILTER_STOP
+	label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	label.set_meta("setting", setting)
+	label.set_meta("player_id", pid)
+	label.set_meta("base_text", label.text)
+	label.gui_input.connect(_on_setting_label_input.bind(label))
+	if not _setting_labels.has(setting):
+		_setting_labels[setting] = []
+	_setting_labels[setting].append(label)
+
+
+func _on_setting_label_input(event: InputEvent, label: Label) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var setting: String = label.get_meta("setting")
+		var pid: int = label.get_meta("player_id")
+		_player_settings[pid][setting] = not _player_settings[pid][setting]
+		_update_all_setting_indicators()
+		# Re-apply turn tracker so phase label indicators refresh immediately
+		if _tracker_last_phase >= 0:
+			_apply_turn_tracker(_tracker_last_player, _tracker_last_phase as CardEnums.GamePhase, _current_sub_phase)
+
+
+func _is_setting_auto(setting: String, pid: int) -> bool:
+	# For most settings, true = auto. For confirm_main_phase_pass, true = manual.
+	if _player_settings.is_empty():
+		return setting != "confirm_main_phase_pass"
+	var value: bool = _player_settings[pid].get(setting, false)
+	if setting == "confirm_main_phase_pass":
+		return not value
+	return value
+
+
+func _update_all_setting_indicators() -> void:
+	for setting in _setting_labels:
+		for label in _setting_labels[setting]:
+			var pid: int = label.get_meta("player_id")
+			if label in _turn_tracker_phases[0] or label in _turn_tracker_phases[1]:
+				continue # Phase labels are updated in _apply_turn_tracker
+			var base: String = label.get_meta("base_text")
+			var stripped := base.strip_edges(true, false)
+			var indent_len := base.length() - stripped.length()
+			if not _is_setting_auto(setting, pid):
+				label.text = base.left(maxi(indent_len - 2, 0)) + "● " + stripped
+			else:
+				label.text = base
+
+
 func _start_game() -> void:
 	turn_manager.start_game()
 
@@ -611,7 +704,9 @@ func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: 
 			var is_active_phase := pid == player_id and i == phase_idx
 			var label: Label = _turn_tracker_phases[pid][i]
 			label.add_theme_color_override("font_color", active_color if is_active_phase else inactive_color)
-			label.text = ("► " if is_active_phase else "  ") + CardEnums.phase_to_string(i as CardEnums.GamePhase)
+			var show_stop := (not is_multiplayer_game or pid == local_player_id) and not _is_setting_auto("auto_phase_advance", pid)
+			var auto_indicator := "● " if show_stop else "  "
+			label.text = ("► " if is_active_phase else "  ") + auto_indicator + CardEnums.phase_to_string(i as CardEnums.GamePhase)
 			var subs: Array = _turn_tracker_subs[pid][i]
 			for si in range(subs.size()):
 				var sub_label: Label = subs[si]
@@ -696,8 +791,8 @@ func _on_confirmation_requested(prompt: String, setting: String) -> void:
 			if NetworkManager.peer_player_map[peer_id] == current_pid:
 				_rpc_confirmation_requested.rpc_id(peer_id, prompt, setting)
 		return
-	# Local player: check their settings
-	if GameSettings.get(setting):
+	# Local player: check their per-player settings
+	if _player_settings[current_pid].get(setting, false):
 		turn_manager.confirm()
 		return
 	_show_confirmation(prompt)
@@ -1010,7 +1105,7 @@ func _on_pass_pressed() -> void:
 		else:
 			_update_action_buttons(_client_playable.get("valid_actions", []))
 		return
-	if GameSettings.confirm_main_phase_pass:
+	if _player_settings[_get_current_pid()].get("confirm_main_phase_pass", false):
 		_enter_pass_confirmation()
 		return
 	_clear_card_highlight()
@@ -3252,7 +3347,7 @@ func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 func _rpc_confirmation_requested(prompt: String, setting: String) -> void:
 	if NetworkManager.is_host():
 		return
-	if GameSettings.get(setting):
+	if _player_settings[local_player_id].get(setting, false):
 		_rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
 		return
 	_show_confirmation(prompt)
