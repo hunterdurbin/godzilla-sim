@@ -469,28 +469,58 @@ func _build_monster_deck(entries: Array) -> Array[Dictionary]:
 
 
 func _create_default_decklist() -> void:
-	var content := LINE_DELIMITER_MONSTER_DECK + "
+	var godzilla_minus_one := LINE_DELIMITER_MONSTER_DECK + """
 1 ESD01-001
 1 ESD01-002
 1 ESD01-003
 1 ESD01-004
 
-" + LINE_DELIMITER_MAIN_DECK + "
+""" + LINE_DELIMITER_MAIN_DECK + """
+2 ESD01-002
 4 ESD01-005
-3 ESD01-006
-3 ESD01-007
-8 ESD01-008
-6 ESD01-009
-3 ESD01-010
-6 ESD01-011
+2 ESD01-003
+4 ESD01-006
+2 ESD01-004
+4 ESD01-007
+4 ESD01-008
+4 ESD01-009
+4 ESD01-011
+4 ESD01-010
 4 ESD01-012
+2 ESD01-016
 4 ESD01-013
-3 ESD01-014
-3 ESD01-015
-3 ESD01-016"
+2 ESD01-014
+4 ESD01-015"""
 
-	var path := DECKLIST_DIR + "ESD01 Starter" + DECK_EXTENSION
-	var file := FileAccess.open(path, FileAccess.WRITE)
-	if file:
-		file.store_string(content)
-		file.close()
+	var heisei_godzilla := LINE_DELIMITER_MONSTER_DECK + """
+1 ESD02-001
+1 ESD02-002
+1 ESD02-003
+1 ESD02-004
+
+""" + LINE_DELIMITER_MAIN_DECK + """
+3 ESD02-003
+4 ESD02-005
+3 ESD02-004
+4 ESD02-006
+4 ESD02-007
+4 ESD02-008
+4 ESD02-009
+4 ESD02-010
+4 ESD02-011
+4 ESD02-012
+2 ESD02-013
+2 ESD01-016
+4 ESD02-014
+4 ESD02-015"""
+
+	var defaults := {
+		"Starter Deck: Godzilla Minus One": godzilla_minus_one,
+		"Starter Deck: Heisei Series Godzilla": heisei_godzilla,
+	}
+	for deck_name: String in defaults:
+		var path: String = DECKLIST_DIR + deck_name + DECK_EXTENSION
+		var file := FileAccess.open(path, FileAccess.WRITE)
+		if file:
+			file.store_string(defaults[deck_name])
+			file.close()
