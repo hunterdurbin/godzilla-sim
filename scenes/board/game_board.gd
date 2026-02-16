@@ -14,6 +14,8 @@ var local_player_id: int = 0 # 0 for host/solo, 1 for client
 # Client-side state (populated from host RPCs)
 var _client_players: Array[PlayerState] = []
 var _client_current_player_id: int = 0
+var _client_turn_number: int = 0
+var _client_phase: CardEnums.GamePhase = CardEnums.GamePhase.START
 var _client_playable: Dictionary = {} # Playable card/zone indices from host
 var _client_cp_modifiers: Array = [0, 0]
 var _client_threat_modifiers: Array = [0, 0]
@@ -910,13 +912,16 @@ func _build_bug_report_body() -> String:
 	}
 	lines.append("- **Mode:** %s" % mode_names.get(NetworkManager.mode, "Unknown"))
 	var gs: GameState = turn_manager.game_state if turn_manager else null
-	lines.append("- **Turn:** Turn %d - %s" % [gs.turn_number if gs else 0, gs.player_names[gs.current_player_id] if gs else "?"])
-	lines.append("- **Phase:** %s" % (CardEnums.phase_to_string(gs.current_phase) if gs else "?"))
+	var turn_num: int = gs.turn_number if gs else _client_turn_number
+	var phase: CardEnums.GamePhase = gs.current_phase if gs else _client_phase
+	var cur_pid: int = gs.current_player_id if gs else _client_current_player_id
+	lines.append("- **Turn:** Turn %d - %s" % [turn_num, GameLog.player_names[cur_pid]])
+	lines.append("- **Phase:** %s" % CardEnums.phase_to_string(phase))
 	lines.append("")
 
 	for pid in range(2):
 		var ps: PlayerState = _get_player_state(pid)
-		lines.append("### %s" % turn_manager.game_state.player_names[pid])
+		lines.append("### %s" % GameLog.player_names[pid])
 		var monster_name: String = ps.current_monster.get("name", "None") if not ps.current_monster.is_empty() else "None"
 		lines.append("- **Monster:** %s (Zone %d)" % [monster_name, ps.monster_zone])
 		lines.append("- **Rage:** %d" % ps.rage)
@@ -3240,6 +3245,8 @@ func _rpc_receive_state(state_json: String) -> void:
 	_client_state_version = new_version
 
 	_client_current_player_id = int(data["current_player_id"])
+	_client_turn_number = int(data.get("turn_number", 0))
+	_client_phase = int(data.get("current_phase", 0)) as CardEnums.GamePhase
 
 	# Extract effect modifiers
 	if data.has("cp_modifiers"):
@@ -3341,6 +3348,7 @@ func _rpc_receive_action_context(actions_json: String, playable_json: String) ->
 ## Host -> Client: log message
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_log(text: String) -> void:
+	_log_lines.append(text)
 	if log_output:
 		log_output.append_text(text + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
