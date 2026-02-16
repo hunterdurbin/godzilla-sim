@@ -13,12 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
-func on_monster_advance(ctx: EffectContext, from_zone: int, to_zone: int) -> void:
+func on_monster_advance(ctx: EffectContext, _from_zone: int, to_zone: int) -> void:
 	var opp_monster_idx: int = ctx.opponent.monster_zone - 1
-	for zone in range(from_zone + 1, to_zone + 1):
-		var opponent_columns := get_opponent_column_zones(zone - 1)
-		if opp_monster_idx in opponent_columns:
-			if ctx.opponent.monster_zone < 8:
-				ctx.opponent.monster_zone += 1
-				ctx.opponent.monster_changed.emit()
-			return
+	var opponent_columns := get_opponent_column_zones(to_zone - 1)
+	if opp_monster_idx in opponent_columns:
+		if ctx.opponent.monster_zone < 8:
+			ctx.opponent.monster_zone += 1
+			ctx.opponent.monster_changed.emit()
