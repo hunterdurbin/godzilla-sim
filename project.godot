@@ -14,16 +14,19 @@ config/name="Unofficial Godzilla Sim"
 config/version="0.1.3"
 run/main_scene="res://scenes/ui/LoadingScreen.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
-config/icon="res://CardContent/Assets/Icons/game_icon.png"
 boot_splash/bg_color=Color(0, 0, 0, 1)
 boot_splash/show_image=false
+config/icon="res://CardContent/Assets/Icons/game_icon.png"
 
 [autoload]
 
 CardData="*res://data/card_data.gd"
 ArtworkDownloader="*res://scripts/artwork_downloader.gd"
 DecklistManager="*res://data/decklist_manager.gd"
+Noray="*uid://gu4bv4tgms3x"
+PacketHandshake="*uid://tt3j25a05n7c"
 NetworkManager="*res://scripts/network_manager.gd"
+GameSettings="*res://data/game_settings.gd"
 
 [display]
 
