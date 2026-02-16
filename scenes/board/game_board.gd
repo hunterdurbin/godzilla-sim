@@ -224,7 +224,7 @@ var _highlighted_card: Control = null # Card with selection highlight border
 var _current_sub_phase: int = 0
 
 # Turn tracker transition queue (delays between phase changes)
-const PHASE_TRANSITION_DELAY: float = 0.05
+const PHASE_TRANSITION_DELAY: float = 0.0
 var _tracker_queue: Array[Dictionary] = []
 var _tracker_draining: bool = false
 var _tracker_last_phase: int = -1
@@ -479,13 +479,13 @@ func _setup_settings_toggles() -> void:
 
 	# Sub-phase label → setting mappings: [phase_idx, sub_idx, setting_name]
 	var mappings: Array[Array] = [
-		[0, 1, "auto_draw"],              # Start > Draw Cards
+		[0, 1, "auto_draw"], # Start > Draw Cards
 		[0, 2, "auto_discard_strategies"], # Start > Discard Strategies
-		[0, 3, "auto_reset_rage"],         # Start > Reset Rage
+		[0, 3, "auto_reset_rage"], # Start > Reset Rage
 		[1, 1, "confirm_main_phase_pass"], # Main > Player Actions
-		[2, 1, "auto_counter_check"],      # Counter > Counter Check
-		[3, 1, "auto_advance"],            # End > Advance
-		[3, 2, "auto_draw"],              # End > Refill Hand
+		[2, 1, "auto_counter_check"], # Counter > Counter Check
+		[3, 1, "auto_advance"], # End > Advance
+		[3, 2, "auto_draw"], # End > Refill Hand
 	]
 
 	for pid in range(2):
@@ -1827,12 +1827,12 @@ func _on_opponent_hand_toggle_pressed() -> void:
 
 
 const HAND_SORT_TYPE_ORDERS: Array = [
-	[0, 1, 2],  # Monster, Battle, Strategy
-	[0, 2, 1],  # Monster, Strategy, Battle
-	[1, 0, 2],  # Battle, Monster, Strategy
-	[1, 2, 0],  # Battle, Strategy, Monster
-	[2, 0, 1],  # Strategy, Monster, Battle
-	[2, 1, 0],  # Strategy, Battle, Monster
+	[0, 1, 2], # Monster, Battle, Strategy
+	[0, 2, 1], # Monster, Strategy, Battle
+	[1, 0, 2], # Battle, Monster, Strategy
+	[1, 2, 0], # Battle, Strategy, Monster
+	[2, 0, 1], # Strategy, Monster, Battle
+	[2, 1, 0], # Strategy, Battle, Monster
 ]
 
 
@@ -2519,6 +2519,9 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	for i in range(options.size()):
 		var btn := Button.new()
 		btn.text = options[i]
+		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		btn.custom_minimum_size.x = 260
+		btn.size_flags_horizontal = Control.SIZE_SHRINK_END
 		btn.pressed.connect(_on_choice_button_pressed.bind(i))
 		_choice_container.add_child(btn)
 		_choice_buttons.append(btn)
