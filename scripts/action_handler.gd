@@ -405,11 +405,8 @@ func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> vo
 			should_stack = effect_handler.should_stack_on_play(player.player_id, card, zone_index)
 		if not should_stack:
 			var destroyed_stack: Array = player.clear_zone(zone_index)
-			var top_card: Dictionary = destroyed_stack[0]
 			EffectHandler.banish_or_discard(player, destroyed_stack)
 			player.discard_changed.emit()
-			if effect_handler:
-				await effect_handler.trigger_revenge(player.player_id, top_card)
 
 	player.push_zone_card(zone_index, card)
 	battle_card_played.emit(player.player_id, card, zone_index)
