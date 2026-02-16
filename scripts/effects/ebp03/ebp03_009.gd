@@ -2,7 +2,7 @@ extends CardEffect
 # Multi-purpose Fighting System-3 R4
 # <Enter> Choose 1 opponent zone in same column, Destroy all opponent R6- in that zone + adjacent.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None
@@ -14,17 +14,11 @@ func on_enter(ctx: EffectContext) -> void:
 	var monster_idx: int = ctx.owner.monster_zone - 1
 	var opp_column_zones := get_opponent_column_zones(monster_idx)
 
-	# Filter to zones that have cards
-	var valid_targets: Array[int] = []
-	for zi in opp_column_zones:
-		if ctx.opponent.zone_has_cards(zi):
-			valid_targets.append(zi)
-
-	if valid_targets.is_empty():
+	if opp_column_zones.is_empty():
 		return
 
 	var chosen: int = await ctx.effect_handler.select_zone_target(
-		ctx.owner.player_id, ctx.opponent.player_id, valid_targets,
+		ctx.owner.player_id, ctx.opponent.player_id, opp_column_zones,
 		"Choose an opponent zone in the same column:")
 	if chosen < 0:
 		return
