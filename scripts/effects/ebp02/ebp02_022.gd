@@ -22,43 +22,26 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	if CardEnums.CardColor.BLUE not in invasion_card.get("colors", []):
 		return
 
-	# Find the card in discard pile
+	# Check the card is still in discard
 	var card_id: String = invasion_card.get("id", "")
-	var discard_idx: int = -1
-	for i in range(ctx.owner.discard_pile.size()):
-		if ctx.owner.discard_pile[i].get("id", "") == card_id:
-			discard_idx = i
+	var found := false
+	for card in ctx.owner.discard_pile:
+		if card.get("id", "") == card_id:
+			found = true
 			break
-	if discard_idx < 0:
+	if not found:
 		return
 
-	# Let player choose a zone to place it
+	# Optional — player may skip
 	var valid_zones: Array[int] = []
 	for i in range(8):
-		if (ctx.owner.monster_zone - 1) != i:
+		if i != ctx.owner.monster_zone - 1:
 			valid_zones.append(i)
-	if valid_zones.is_empty():
-		return
-
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
 		"Play %s from discard to a zone (or skip):" % invasion_card.get("name", "card"),
 		true)
-
 	if chosen < 0:
 		return
 
-	# Remove from discard and place in zone
-	var card: Dictionary = ctx.owner.discard_pile.pop_at(discard_idx)
-	ctx.owner.discard_changed.emit()
-
-	# Handle overload (existing card in zone)
-	if ctx.owner.zone_has_cards(chosen):
-		var destroyed_stack: Array = ctx.owner.clear_zone(chosen)
-		ctx.owner.discard_pile.append_array(destroyed_stack)
-		ctx.owner.discard_changed.emit()
-		await ctx.effect_handler.trigger_revenge(ctx.owner.player_id, destroyed_stack[0])
-
-	ctx.owner.push_zone_card(chosen, card)
-	ctx.owner.zones_changed.emit()
-	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, card)
+	await ctx.effect_handler.play_from_discard(ctx.owner.player_id, invasion_card, chosen)

@@ -1259,10 +1259,8 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 
 	if player.zone_has_cards(zone_index):
 		var destroyed_stack: Array = player.clear_zone(zone_index)
-		var top_card: Dictionary = destroyed_stack[0]
 		banish_or_discard(player, destroyed_stack)
 		player.discard_changed.emit()
-		await trigger_revenge(player.player_id, top_card)
 
 	player.push_zone_card(zone_index, token_data)
 	player.zones_changed.emit()
@@ -1797,10 +1795,8 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 	# Handle overload if zone occupied
 	if player.zone_has_cards(zone_idx):
 		var destroyed_stack: Array = player.clear_zone(zone_idx)
-		var top_card: Dictionary = destroyed_stack[0]
 		banish_or_discard(player, destroyed_stack)
 		player.discard_changed.emit()
-		await trigger_revenge(player.player_id, top_card)
 
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
