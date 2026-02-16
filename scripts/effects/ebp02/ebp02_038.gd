@@ -6,7 +6,7 @@ extends CardEffect
 ## - If you have 10 or more monster cards in your discard pile,
 ##   <Destroy> 1 of your opponent's battle cards in zone 8.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

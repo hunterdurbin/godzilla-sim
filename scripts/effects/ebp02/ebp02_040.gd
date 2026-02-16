@@ -4,7 +4,7 @@ extends CardEffect
 ## If you have 5 or more <Weapon> battle cards with "MB" in their name in your zones,
 ## discard your hand and draw 5 cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -5,7 +5,7 @@ extends CardEffect
 ## monster card, 1 of your opponent's monster cards with 40,000 or less threat level
 ## retreats back by 1 zone.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

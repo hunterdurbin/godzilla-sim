@@ -5,7 +5,7 @@ extends CardEffect
 ## this card.
 ## This card gains +3000 threat level for each card with the same name under this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

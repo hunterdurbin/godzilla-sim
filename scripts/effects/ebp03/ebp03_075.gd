@@ -3,7 +3,7 @@ extends CardEffect
 # <Base>
 # <Your Turn> Counter start: evolve 1 of your R4 or lower battle cards with Evolution.
 #
-# Tested: No
+# Tested: No, Looks good at glance
 # Known issues: None
 # Edge cases: None
 # Rules: None
@@ -23,7 +23,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return  # Your turn only
+		return # Your turn only
 
 	# Find zones with R4 or lower battle cards that have Evolution
 	var valid_zones: Array[int] = []

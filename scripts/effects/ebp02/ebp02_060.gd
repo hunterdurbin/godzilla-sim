@@ -6,7 +6,7 @@ extends CardEffect
 ## <Revenge> If your opponent's monster card is in zones 1-5, you may return this card
 ## from your discard pile to your hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -3,7 +3,7 @@ extends CardEffect
 ## EBP02-041: Gigan(1972) - Monster Rank 1 (Green)
 ## Each of your battle cards in zones adjacent to this card gain +1000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -6,7 +6,7 @@ extends CardEffect
 ## At the beginning of your end phase, if your opponent's monster card is in zone 1-5,
 ## increase this card's <Rage> by 1.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

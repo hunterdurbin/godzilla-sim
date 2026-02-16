@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> Send the top 3 cards of your deck to your discard pile.
 ## <When Invading> <Destroy> 3 of your opponent's rank 4 or lower battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

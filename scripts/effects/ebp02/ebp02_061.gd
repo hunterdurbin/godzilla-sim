@@ -3,7 +3,7 @@ extends CardEffect
 ## EBP02-061: Godzilla(1972) - Battle Rank 4 (Green)
 ## If this card is in zone 8, this card gains +3000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

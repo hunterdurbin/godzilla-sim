@@ -6,7 +6,7 @@ extends CardEffect
 ## - Your opponent discards cards until they have 3 cards remaining in their hand.
 ## - Send the top 3 cards of your deck to your discard pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

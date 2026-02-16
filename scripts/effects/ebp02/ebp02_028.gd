@@ -6,7 +6,7 @@ extends CardEffect
 ## possible and you may play the battle cards in zones already occupied by other
 ## battle cards. Maximum of 3 cards.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
