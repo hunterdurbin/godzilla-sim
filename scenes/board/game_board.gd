@@ -14,6 +14,8 @@ var local_player_id: int = 0 # 0 for host/solo, 1 for client
 # Client-side state (populated from host RPCs)
 var _client_players: Array[PlayerState] = []
 var _client_current_player_id: int = 0
+var _client_turn_number: int = 0
+var _client_phase: CardEnums.GamePhase = CardEnums.GamePhase.START
 var _client_playable: Dictionary = {} # Playable card/zone indices from host
 var _client_cp_modifiers: Array = [0, 0]
 var _client_threat_modifiers: Array = [0, 0]
@@ -197,6 +199,10 @@ var _hand_card_allow_skip: bool = false
 # Action blocking — prevents input while an action is being processed
 var _action_pending: bool = false
 
+# State versioning for desync detection
+var _state_version: int = 0 # Incremented on each broadcast (host only)
+var _client_state_version: int = 0 # Last received version (client only)
+
 # Zone target selection state (for effects that let the player pick a zone)
 var _zone_target_selecting: bool = false
 var _zone_target_player_id: int = -1 # Who is choosing
@@ -317,6 +323,8 @@ func _ready() -> void:
 			player.rage_changed.connect(_on_state_changed.unbind(1))
 			player.monster_changed.connect(_on_state_changed)
 			player.discard_changed.connect(_on_state_changed)
+			player.deck_changed.connect(_on_state_changed)
+			player.strategy_zones_changed.connect(_on_state_changed)
 	else:
 		# Client: initialize empty client state, wait for host RPCs
 		_client_players = [PlayerState.new(0), PlayerState.new(1)]
@@ -904,13 +912,16 @@ func _build_bug_report_body() -> String:
 	}
 	lines.append("- **Mode:** %s" % mode_names.get(NetworkManager.mode, "Unknown"))
 	var gs: GameState = turn_manager.game_state if turn_manager else null
-	lines.append("- **Turn:** Turn %d - %s" % [gs.turn_number if gs else 0, gs.player_names[gs.current_player_id] if gs else "?"])
-	lines.append("- **Phase:** %s" % (CardEnums.phase_to_string(gs.current_phase) if gs else "?"))
+	var turn_num: int = gs.turn_number if gs else _client_turn_number
+	var phase: CardEnums.GamePhase = gs.current_phase if gs else _client_phase
+	var cur_pid: int = gs.current_player_id if gs else _client_current_player_id
+	lines.append("- **Turn:** Turn %d - %s" % [turn_num, GameLog.player_names[cur_pid]])
+	lines.append("- **Phase:** %s" % CardEnums.phase_to_string(phase))
 	lines.append("")
 
 	for pid in range(2):
 		var ps: PlayerState = _get_player_state(pid)
-		lines.append("### %s" % turn_manager.game_state.player_names[pid])
+		lines.append("### %s" % GameLog.player_names[pid])
 		var monster_name: String = ps.current_monster.get("name", "None") if not ps.current_monster.is_empty() else "None"
 		lines.append("- **Monster:** %s (Zone %d)" % [monster_name, ps.monster_zone])
 		lines.append("- **Rage:** %d" % ps.rage)
@@ -2583,14 +2594,16 @@ func _apply_zone_highlight(pid: int, zone_index: int, highlighted: bool) -> void
 func _on_effect_card_highlighted(pid: int, card_id: String) -> void:
 	if is_multiplayer_game:
 		for peer_id in NetworkManager.peer_player_map:
-			_rpc_effect_card_highlighted.rpc_id(peer_id, pid, card_id)
+			if peer_id != multiplayer.get_unique_id():
+				_rpc_effect_card_highlighted.rpc_id(peer_id, pid, card_id)
 	_apply_card_highlight(pid, card_id, true)
 
 
 func _on_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 	if is_multiplayer_game:
 		for peer_id in NetworkManager.peer_player_map:
-			_rpc_effect_card_unhighlighted.rpc_id(peer_id, pid, card_id)
+			if peer_id != multiplayer.get_unique_id():
+				_rpc_effect_card_unhighlighted.rpc_id(peer_id, pid, card_id)
 	_apply_card_highlight(pid, card_id, false)
 
 
@@ -3053,6 +3066,7 @@ func _broadcast_state() -> void:
 	if not turn_manager or not turn_manager.game_state:
 		return
 
+	_state_version += 1
 	for peer_id in NetworkManager.peer_player_map:
 		if peer_id == 1:
 			continue # Don't send to self (server peer ID is 1)
@@ -3075,6 +3089,7 @@ func _serialize_game_state(viewer_id: int) -> String:
 	for v in strat_cp_0: cp_total_0 += v
 	for v in strat_cp_1: cp_total_1 += v
 	var data := {
+		"state_version": _state_version,
 		"current_player_id": gs.current_player_id,
 		"current_phase": int(gs.current_phase),
 		"current_sub_phase": _current_sub_phase,
@@ -3094,6 +3109,8 @@ func _serialize_game_state(viewer_id: int) -> String:
 			pd.erase("hand")
 			pd.erase("monster_deck")
 		data["players"].append(pd)
+	# Include hash of shared game state for desync detection
+	data["state_hash"] = _compute_state_hash(gs)
 	return JSON.stringify(data)
 
 
@@ -3117,6 +3134,54 @@ func _serialize_player_state(ps: PlayerState) -> Dictionary:
 		"pre_burst_monster": ps.pre_burst_monster,
 		"monster_deck": ps.monster_deck.duplicate(true),
 	}
+
+
+func _compute_state_hash(gs: GameState) -> int:
+	## Hash shared (visible to both players) game state for desync detection.
+	var parts: PackedStringArray = []
+	parts.append("t%d" % gs.turn_number)
+	parts.append("p%d" % gs.current_player_id)
+	parts.append("ph%d" % int(gs.current_phase))
+	for i in range(2):
+		var ps: PlayerState = gs.players[i]
+		parts.append("m%d:%d" % [i, ps.monster_zone])
+		parts.append("r%d:%d" % [i, ps.rage])
+		parts.append("d%d:%d" % [i, ps.main_deck.size()])
+		parts.append("h%d:%d" % [i, ps.hand.size()])
+		parts.append("dp%d:%d" % [i, ps.discard_pile.size()])
+		# Hash zone top card IDs
+		for z in range(8):
+			var top := ps.get_zone_top_card(z)
+			if not top.is_empty():
+				parts.append("z%d_%d:%s" % [i, z, top.get("id", "")])
+		# Hash strategy zones
+		for s in range(ps.strategy_zones.size()):
+			if not ps.strategy_zones[s].is_empty():
+				parts.append("s%d_%d:%s" % [i, s, ps.strategy_zones[s].get("id", "")])
+	return "".join(parts).hash()
+
+
+func _compute_client_state_hash(turn_number: int, current_player_id: int, phase: int) -> int:
+	## Client-side hash using reconstructed _client_players state.
+	var parts: PackedStringArray = []
+	parts.append("t%d" % turn_number)
+	parts.append("p%d" % current_player_id)
+	parts.append("ph%d" % phase)
+	for i in range(2):
+		var ps: PlayerState = _client_players[i]
+		parts.append("m%d:%d" % [i, ps.monster_zone])
+		parts.append("r%d:%d" % [i, ps.rage])
+		parts.append("d%d:%d" % [i, ps.main_deck.size()])
+		parts.append("h%d:%d" % [i, ps.hand.size()])
+		parts.append("dp%d:%d" % [i, ps.discard_pile.size()])
+		for z in range(8):
+			var top := ps.get_zone_top_card(z)
+			if not top.is_empty():
+				parts.append("z%d_%d:%s" % [i, z, top.get("id", "")])
+		for s in range(ps.strategy_zones.size()):
+			if not ps.strategy_zones[s].is_empty():
+				parts.append("s%d_%d:%s" % [i, s, ps.strategy_zones[s].get("id", "")])
+	return "".join(parts).hash()
 
 
 func _compute_playable_data() -> Dictionary:
@@ -3175,7 +3240,15 @@ func _rpc_receive_state(state_json: String) -> void:
 	if data.is_empty():
 		return
 
+	# Track state version for desync detection
+	var new_version: int = int(data.get("state_version", 0))
+	if new_version > 0 and _client_state_version > 0 and new_version < _client_state_version:
+		push_warning("[DESYNC] Received state version %d but already at %d — out-of-order delivery" % [new_version, _client_state_version])
+	_client_state_version = new_version
+
 	_client_current_player_id = int(data["current_player_id"])
+	_client_turn_number = int(data.get("turn_number", 0))
+	_client_phase = int(data.get("current_phase", 0)) as CardEnums.GamePhase
 
 	# Extract effect modifiers
 	if data.has("cp_modifiers"):
@@ -3228,6 +3301,20 @@ func _rpc_receive_state(state_json: String) -> void:
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
+	# Desync detection: compare state hash from host with locally reconstructed state
+	if data.has("state_hash"):
+		var host_hash: int = int(data["state_hash"])
+		var local_hash: int = _compute_client_state_hash(
+			int(data.get("turn_number", 0)),
+			_client_current_player_id,
+			int(data.get("current_phase", 0)))
+		if host_hash != local_hash:
+			push_warning("[DESYNC] State hash mismatch at version %d (turn %d, phase %d) — host=%d local=%d" % [
+				_client_state_version,
+				int(data.get("turn_number", 0)),
+				int(data.get("current_phase", 0)),
+				host_hash, local_hash])
+
 	# Update UI
 	var client_phase := int(data["current_phase"]) as CardEnums.GamePhase
 	var client_sub_phase: int = int(data.get("current_sub_phase", 0))
@@ -3263,6 +3350,7 @@ func _rpc_receive_action_context(actions_json: String, playable_json: String) ->
 ## Host -> Client: log message
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_log(text: String) -> void:
+	_log_lines.append(text)
 	if log_output:
 		log_output.append_text(text + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
