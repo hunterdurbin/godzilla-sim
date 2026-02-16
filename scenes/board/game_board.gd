@@ -2594,14 +2594,16 @@ func _apply_zone_highlight(pid: int, zone_index: int, highlighted: bool) -> void
 func _on_effect_card_highlighted(pid: int, card_id: String) -> void:
 	if is_multiplayer_game:
 		for peer_id in NetworkManager.peer_player_map:
-			_rpc_effect_card_highlighted.rpc_id(peer_id, pid, card_id)
+			if peer_id != multiplayer.get_unique_id():
+				_rpc_effect_card_highlighted.rpc_id(peer_id, pid, card_id)
 	_apply_card_highlight(pid, card_id, true)
 
 
 func _on_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 	if is_multiplayer_game:
 		for peer_id in NetworkManager.peer_player_map:
-			_rpc_effect_card_unhighlighted.rpc_id(peer_id, pid, card_id)
+			if peer_id != multiplayer.get_unique_id():
+				_rpc_effect_card_unhighlighted.rpc_id(peer_id, pid, card_id)
 	_apply_card_highlight(pid, card_id, false)
 
 
