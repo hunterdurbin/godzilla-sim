@@ -321,6 +321,7 @@ func _check_crush_for_player(state: GameState, player_id: int) -> bool:
 			player.discard_changed.emit()
 			if effect_handler:
 				await effect_handler.trigger_crush(player_id, crushed_stack[0])
+				await effect_handler.trigger_revenge(player_id, crushed_stack[0])
 			return true
 	return false
 
