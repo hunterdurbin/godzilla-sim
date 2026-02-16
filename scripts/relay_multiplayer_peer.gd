@@ -27,6 +27,8 @@ func connect_as_host(url: String) -> Error:
 	_is_host = true
 	_other_peer_id = 2
 	_connection_status = CONNECTION_CONNECTING
+	_ws.outbound_buffer_size = 1048576 # 1 MB — default 64 KB is too small for game state
+	_ws.inbound_buffer_size = 1048576
 	return _ws.connect_to_url(url)
 
 
@@ -35,6 +37,8 @@ func connect_as_client(url: String) -> Error:
 	_is_host = false
 	_other_peer_id = 1
 	_connection_status = CONNECTION_CONNECTING
+	_ws.outbound_buffer_size = 1048576
+	_ws.inbound_buffer_size = 1048576
 	return _ws.connect_to_url(url)
 
 
