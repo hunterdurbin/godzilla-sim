@@ -522,7 +522,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 		if player.monster_zone >= 8:
 			# Check invasion victory
 			var opponent := state.get_opponent_of_current()
-			if opponent.is_zone_empty(7):  # Zone 8 = index 7
+			if not opponent.zone_has_battle_card(7):  # Zone 8 = index 7
 				var old_zone: int = player.monster_zone
 				player.monster_zone = 9  # Past zone 8
 				monster_advanced.emit(player.player_id, old_zone, player.monster_zone)

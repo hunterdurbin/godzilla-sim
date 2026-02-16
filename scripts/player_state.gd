@@ -46,6 +46,10 @@ func is_zone_empty(i: int) -> bool:
 	return zones[i].is_empty() and i != monster_zone - 1
 
 
+func zone_has_battle_card(i: int) -> bool:
+	return not zones[i].is_empty()
+
+
 func zone_has_cards(i: int) -> bool:
 	return not zones[i].is_empty()
 

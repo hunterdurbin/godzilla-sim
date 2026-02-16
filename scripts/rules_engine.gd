@@ -182,7 +182,7 @@ func check_win_condition(state: GameState) -> int:
 		if state.players[i].monster_zone > 8:
 			# Check if opponent's zone 8 is empty (invasion victory)
 			var opponent := state.players[1 - i]
-			if opponent.is_zone_empty(7):  # Zone 8 = index 7
+			if not opponent.zone_has_battle_card(7):  # Zone 8 = index 7
 				return i
 	return -1
 
