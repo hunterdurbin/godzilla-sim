@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://oe7nxxa14kw4"
-path="res://.godot/imported/《4th Form》.png-83213e968ec4e9c25d6f173cb49913de.ctex"
+uid="uid://bi2nt7xest4p7"
+path="res://.godot/imported/《2nd Form》.png-0b93b530868992a8fa0b85b2ad5e8fa7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://CardContent/Assets/effectIcons/forms/《4th Form》.png"
-dest_files=["res://.godot/imported/《4th Form》.png-83213e968ec4e9c25d6f173cb49913de.ctex"]
+source_file="res://CardContent/Assets/effectIcons/traits/《2nd Form》.png"
+dest_files=["res://.godot/imported/《2nd Form》.png-0b93b530868992a8fa0b85b2ad5e8fa7.ctex"]
 
 [params]
 
