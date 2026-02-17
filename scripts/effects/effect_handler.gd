@@ -36,6 +36,14 @@ signal zone_target_requested(player_id: int, target_player_id: int, valid_zones:
 ## Emitted internally after resolve_zone_target() stores the selection.
 signal _zone_target_resolved()
 
+## Emitted when a player must choose a strategy zone on a player's board.
+## Connect from presentation layer to highlight strategy slots and allow clicking.
+## Call resolve_strategy_target() with the chosen strategy index when done.
+signal strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String)
+
+## Emitted internally after resolve_strategy_target() stores the selection.
+signal _strategy_target_resolved()
+
 ## Emitted when a player must choose from multiple text options (e.g. "Choose one").
 ## Connect from presentation layer to show a choice dialog.
 ## Call resolve_choice() with the chosen index when done.
@@ -72,6 +80,7 @@ var _deck_search_result: Dictionary = {}
 var _deck_arrange_keep: Array[Dictionary] = []
 var _deck_arrange_discard: Array[Dictionary] = []
 var _zone_target_result: int = -1
+var _strategy_target_result: int = -1
 var _hand_card_selection_result: int = -1
 var _choice_result: int = -1
 
@@ -978,6 +987,32 @@ func resolve_zone_target(zone_index: int) -> void:
 	## Called by the presentation layer after the player selects a target zone.
 	_zone_target_result = zone_index
 	_zone_target_resolved.emit()
+
+
+func select_strategy_target(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> int:
+	## Ask a player to choose one of the valid strategy zones on the target player's board.
+	## Returns the chosen strategy index, or -1 if no valid indices.
+	if valid_indices.is_empty():
+		return -1
+
+	if valid_indices.size() == 1:
+		return valid_indices[0]
+
+	if strategy_target_requested.get_connections().size() > 0:
+		_highlight_active_effect()
+		strategy_target_requested.emit(player_id, target_player_id, valid_indices, prompt)
+		await _strategy_target_resolved
+		_unhighlight_active_effect()
+		return _strategy_target_result
+	else:
+		# Fallback: auto-pick first valid index
+		return valid_indices[0]
+
+
+func resolve_strategy_target(strategy_index: int) -> void:
+	## Called by the presentation layer after the player selects a strategy zone.
+	_strategy_target_result = strategy_index
+	_strategy_target_resolved.emit()
 
 
 func search_discard(player_id: int, filter: Callable, prompt: String) -> Dictionary:

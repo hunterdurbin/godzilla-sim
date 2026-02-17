@@ -210,6 +210,12 @@ var _zone_target_board_pid: int = -1 # Whose board the zones are on
 var _zone_target_valid_zones: Array[int] = []
 var _zone_target_allow_skip: bool = false
 
+# Strategy target selection state (for effects that let the player pick a strategy zone)
+var _strategy_target_selecting: bool = false
+var _strategy_target_player_id: int = -1
+var _strategy_target_board_pid: int = -1
+var _strategy_target_valid_indices: Array[int] = []
+
 # Standby choice selection state (for choosing ability resolution order)
 var _choice_selecting: bool = false
 var _choice_player_id: int = -1
@@ -308,6 +314,7 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
 		turn_manager.action_handler.effect_handler.hand_card_selection_requested.connect(_on_hand_card_selection_requested)
 		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
+		turn_manager.action_handler.effect_handler.strategy_target_requested.connect(_on_strategy_target_requested)
 		turn_manager.action_handler.effect_handler.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
 		turn_manager.action_handler.effect_handler.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
 		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
@@ -2500,6 +2507,70 @@ func _finish_zone_target(zone_idx: int) -> void:
 		turn_manager.action_handler.effect_handler.resolve_zone_target(zone_idx)
 
 
+# --- Strategy target selection UI ---
+
+func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
+	if is_multiplayer_game and player_id != local_player_id:
+		var indices_json := JSON.stringify(valid_indices)
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				_rpc_strategy_target_requested.rpc_id(peer_id, target_player_id, indices_json, prompt)
+		return
+	_show_strategy_target_selection(player_id, target_player_id, valid_indices, prompt)
+
+
+func _show_strategy_target_selection(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
+	_strategy_target_selecting = true
+	_strategy_target_player_id = player_id
+	_strategy_target_board_pid = target_player_id
+	_strategy_target_valid_indices = valid_indices
+
+	_disable_all_buttons()
+	card_select_prompt.text = prompt
+	action_prompt_panel.visible = true
+	btn_pass.visible = false
+
+	# Highlight valid strategy slots on the target player's board
+	var board: Control = player1_board if target_player_id == 0 else player2_board
+	for i in range(board.strategy_slots.size()):
+		var slot: Slot = board.strategy_slots[i]
+		if slot and i in valid_indices:
+			slot.set_highlighted(true)
+			slot.in_selection_mode = true
+			if not slot.slot_clicked.is_connected(_on_strategy_target_slot_clicked):
+				slot.slot_clicked.connect(_on_strategy_target_slot_clicked.bind(i))
+
+
+func _on_strategy_target_slot_clicked(_zone_num: int, _pid: int, strategy_idx: int) -> void:
+	if not _strategy_target_selecting:
+		return
+	if strategy_idx not in _strategy_target_valid_indices:
+		return
+	_finish_strategy_target(strategy_idx)
+
+
+func _finish_strategy_target(strategy_idx: int) -> void:
+	# Clean up UI
+	var board: Control = player1_board if _strategy_target_board_pid == 0 else player2_board
+	for i in range(board.strategy_slots.size()):
+		var slot: Slot = board.strategy_slots[i]
+		if slot:
+			slot.set_highlighted(false)
+			slot.in_selection_mode = false
+			if slot.slot_clicked.is_connected(_on_strategy_target_slot_clicked):
+				slot.slot_clicked.disconnect(_on_strategy_target_slot_clicked)
+
+	_strategy_target_selecting = false
+	action_prompt_panel.visible = false
+	btn_pass.text = "Pass"
+	btn_pass.visible = true
+
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_rpc_strategy_target_resolved.rpc_id(NetworkManager.host_peer_id, strategy_idx)
+	else:
+		turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_idx)
+
+
 # --- Standby ability order choice UI ---
 
 func _on_choice_requested(player_id: int, options: Array[String], prompt: String) -> void:
@@ -3514,6 +3585,26 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	turn_manager.action_handler.effect_handler.resolve_zone_target(zone_index)
+
+
+## Host -> Client: strategy target request (player must choose a strategy zone)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String) -> void:
+	if NetworkManager.is_host():
+		return
+	var parsed: Array = JSON.parse_string(indices_json)
+	var valid_indices: Array[int] = []
+	for v in parsed:
+		valid_indices.append(int(v))
+	_show_strategy_target_selection(local_player_id, target_player_id, valid_indices, prompt)
+
+
+## Client -> Host: strategy target resolved (player chose a strategy zone)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_strategy_target_resolved(strategy_index: int) -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_index)
 
 
 ## Host -> Client: choice request (player must choose ability order)
