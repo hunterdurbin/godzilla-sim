@@ -1278,6 +1278,10 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	player.push_zone_card(zone_index, token_data)
 	player.zones_changed.emit()
 	await trigger_enter(player.player_id, token_data)
+	# Tokens are treated as normal plays — trigger battle card played effects
+	# (but not considered played from hand).
+	if token_data.get("card_type") == CardEnums.CardType.BATTLE:
+		await trigger_battle_card_played(player.player_id, token_data, zone_index)
 	return true
 
 
