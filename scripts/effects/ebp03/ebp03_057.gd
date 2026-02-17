@@ -25,20 +25,11 @@ func on_enter(ctx: EffectContext) -> void:
 	if valid_strat.is_empty():
 		return
 
-	var idx_to_destroy: int = valid_strat[0]
-	var strat_options: Array[Dictionary] = []
-	for si in valid_strat:
-		strat_options.append(ctx.opponent.strategy_zones[si])
-	var chosen := await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, strat_options, strat_options,
+	var idx_to_destroy: int = await ctx.effect_handler.select_strategy_target(
+		ctx.owner.player_id, ctx.opponent.player_id, valid_strat,
 		"Choose an opponent strategy to Destroy:")
-	if not chosen.is_empty():
-		for si in valid_strat:
-			if ctx.opponent.strategy_zones[si].get("id") == chosen.get("id"):
-				idx_to_destroy = si
-				break
-
-	await ctx.effect_handler.discard_strategy_from_zone(ctx.opponent.player_id, idx_to_destroy)
+	if idx_to_destroy >= 0:
+		await ctx.effect_handler.discard_strategy_from_zone(ctx.opponent.player_id, idx_to_destroy)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
