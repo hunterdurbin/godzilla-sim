@@ -910,6 +910,7 @@ func _build_bug_report_body() -> String:
 		NetworkManager.Mode.ONLINE_HOST: "Online (Host)",
 		NetworkManager.Mode.ONLINE_CLIENT: "Online (Client)",
 	}
+	lines.append("- **Version:** %s" % NetworkManager.GAME_VERSION)
 	lines.append("- **Mode:** %s" % mode_names.get(NetworkManager.mode, "Unknown"))
 	var gs: GameState = turn_manager.game_state if turn_manager else null
 	var turn_num: int = gs.turn_number if gs else _client_turn_number
@@ -1128,7 +1129,7 @@ func _enter_pass_confirmation() -> void:
 	_confirming_pass = true
 	_disable_all_buttons()
 	action_prompt_panel.visible = true
-	card_select_prompt.text = "Pass Main Phase?"
+	card_select_prompt.text = "End Main Phase?"
 	btn_pass.text = "Confirm"
 	btn_pass.disabled = false
 	btn_pass.visible = true
@@ -1463,7 +1464,7 @@ func _update_action_buttons(valid_actions: Array) -> void:
 	btn_invade.disabled = CardEnums.ActionType.INVADE not in valid_actions
 	btn_pass.disabled = false
 	btn_pass.visible = true
-	btn_pass.text = "Pass"
+	btn_pass.text = "End Main"
 	action_prompt_panel.visible = false
 
 

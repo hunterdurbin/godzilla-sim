@@ -175,6 +175,10 @@ func _get_card_location_label(player_id: int, card_data: Dictionary) -> String:
 		if not player.strategy_zones[i].is_empty() and player.strategy_zones[i].has(_marker):
 			card_data.erase(_marker)
 			return card_name + " (Strategy %d)" % (i + 1)
+	for discard_card in player.discard_pile:
+		if discard_card.has(_marker):
+			card_data.erase(_marker)
+			return card_name + " (Discard)"
 	card_data.erase(_marker)
 	return card_name
 
@@ -558,6 +562,12 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 	return entries
 
 
+func _resolve_discard_play(player_id: int, card_data: Dictionary) -> void:
+	var placed_zone := await play_from_discard(player_id, card_data)
+	if placed_zone >= 0:
+		await trigger_battle_card_played(player_id, card_data, placed_zone)
+
+
 func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster: Dictionary) -> void:
 	## Trigger on_monster_played on all active cards for this player.
 	## Collects all applicable effects, then resolves with rule action checks between each.
@@ -587,17 +597,20 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 
 	await _resolve_standby_entries(entries)
 
-	# Check discard pile for cards that can play from discard on monster played
-	# (Resolved after all standby abilities, as a secondary check)
+	# Check discard pile for cards that can play from discard on monster played.
+	# These are treated as normal plays (triggering enter + battle card played),
+	# but are NOT considered played from hand.
+	# Collected as standby entries so they resolve with proper ordering and rule action checks.
+	var discard_entries: Array = []
 	var discard_copy: Array[Dictionary] = player.discard_pile.duplicate()
 	for discard_card in discard_copy:
 		var de := get_effect(discard_card)
 		if de:
 			var ctx := _build_context(player_id, discard_card)
 			if de.can_play_from_discard_on_monster_played(ctx):
-				_set_active_effect(player_id, discard_card)
-				await play_from_discard(player_id, discard_card)
-				_clear_active_effect()
+				discard_entries.append({"player_id": player_id, "card_data": discard_card, "callback": _resolve_discard_play.bind(player_id, discard_card)})
+
+	await _resolve_standby_entries(discard_entries)
 
 
 func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_index: int) -> void:
@@ -1265,6 +1278,10 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	player.push_zone_card(zone_index, token_data)
 	player.zones_changed.emit()
 	await trigger_enter(player.player_id, token_data)
+	# Tokens are treated as normal plays — trigger battle card played effects
+	# (but not considered played from hand).
+	if token_data.get("card_type") == CardEnums.CardType.BATTLE:
+		await trigger_battle_card_played(player.player_id, token_data, zone_index)
 	return true
 
 
@@ -1766,9 +1783,10 @@ func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> in
 
 # --- Helpers for card placement and movement ---
 
-func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1) -> void:
+func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1) -> int:
 	## Remove a card from the discard pile and play it into a zone.
 	## If zone_idx is -1, the player selects an available zone.
+	## Returns the zone index where the card was placed, or -1 if cancelled.
 	var player := game_state.players[player_id]
 
 	# Remove from discard
@@ -1785,12 +1803,13 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 		for i in range(8):
 			if i != player.monster_zone - 1:  # Can't play in own monster zone
 				valid_zones.append(i)
-		zone_idx = await select_zone_target(player_id, player_id, valid_zones, "Choose a zone to play from discard:")
+		var card_name: String = card_data.get("name", "card")
+		zone_idx = await select_zone_target(player_id, player_id, valid_zones, "Choose a zone to play %s from discard:" % card_name)
 		if zone_idx < 0:
 			# Can't skip — put back in discard as fallback
 			player.discard_pile.append(card_data)
 			player.discard_changed.emit()
-			return
+			return -1
 
 	# Handle overload if zone occupied
 	if player.zone_has_cards(zone_idx):
@@ -1801,6 +1820,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
 	await trigger_enter(player_id, card_data)
+	return zone_idx
 
 
 func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int) -> void:

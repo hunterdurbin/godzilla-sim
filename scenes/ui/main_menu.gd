@@ -7,6 +7,7 @@ const CardScript := preload("res://scenes/cards/card.gd")
 @onready var online_button: Button = $CenterContainer/VBoxContainer/OnlineButton
 @onready var deck_builder_button: Button = $CenterContainer/VBoxContainer/DeckBuilderButton
 @onready var options_button: Button = $OptionsButton
+@onready var version_label: Label = $VersionLabel
 @onready var deck_select_p1: PanelContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP1
 @onready var deck_select_p2: PanelContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP2
 
@@ -21,6 +22,8 @@ func _ready() -> void:
 	online_button.pressed.connect(_on_online_pressed)
 	deck_builder_button.pressed.connect(_on_deck_builder_pressed)
 	options_button.pressed.connect(_on_options_pressed)
+
+	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "")
 
 	DecklistManager.clear_selections()
 	CardScript.clear_texture_cache()
