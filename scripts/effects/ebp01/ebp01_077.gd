@@ -18,8 +18,8 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.rage > 2:
 		return
 
-	# Retreat opponent's monster to its retreat zone
-	var retreat_zone: int = ActionHandler.get_retreat_zone(ctx.opponent.monster_zone)
+	# "As though countered" — only zones 6-8 move back (5.15.1.1)
+	var retreat_zone: int = ActionHandler.get_counter_retreat_zone(ctx.opponent.monster_zone)
 	if retreat_zone != ctx.opponent.monster_zone:
 		ctx.opponent.monster_zone = retreat_zone
 		ctx.opponent.monster_changed.emit()
