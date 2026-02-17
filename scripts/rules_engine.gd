@@ -28,7 +28,7 @@ func get_valid_actions(state: GameState) -> Array:
 		actions.append(CardEnums.ActionType.PLAY_MONSTER)
 
 	# Can invade? (has any card to discard with invasion_icon > 0, hasn't invaded this turn)
-	if _can_invade(player):
+	if _can_invade(player, opponent):
 		# Check if opponent's cards block invasion (e.g. EBP02-068 column lock)
 		if not effect_handler or not effect_handler.is_invasion_blocked(opponent.player_id):
 			actions.append(CardEnums.ActionType.INVADE)
@@ -125,14 +125,17 @@ func get_playable_strategy_cards(player: PlayerState) -> Array[int]:
 	return indices
 
 
-func get_discardable_cards_for_invade(player: PlayerState) -> Array[int]:
+func get_discardable_cards_for_invade(player: PlayerState, opponent: PlayerState) -> Array[int]:
 	## Returns hand indices of cards that can be discarded for invasion
 	var indices: Array[int] = []
 	if player.has_invaded_this_turn:
 		return indices
 	if effect_handler and effect_handler.is_own_invasion_blocked(player.player_id):
 		return indices
-	if effect_handler and effect_handler.is_invasion_blocked(1 - player.player_id):
+	if effect_handler and effect_handler.is_invasion_blocked(opponent.player_id):
+		return indices
+	# Can't invade if already at zone 8 and blocked by opponent's battle card
+	if player.monster_zone >= 8 and opponent.zone_has_battle_card(7):
 		return indices
 	for i in range(player.hand.size()):
 		if player.hand[i].get("invasion_icon", 0) > 0:
@@ -286,11 +289,14 @@ func _traits_overlap(traits_a: Array, traits_b: Array) -> bool:
 	return false
 
 
-func _can_invade(player: PlayerState) -> bool:
+func _can_invade(player: PlayerState, opponent: PlayerState) -> bool:
 	if player.has_invaded_this_turn:
 		return false
 	# Check if monster prevents its own invasion (e.g. Biollante Rose Form)
 	if effect_handler and effect_handler.is_own_invasion_blocked(player.player_id):
+		return false
+	# Can't invade if already at zone 8 and blocked by opponent's battle card
+	if player.monster_zone >= 8 and opponent.zone_has_battle_card(7):
 		return false
 	for card in player.hand:
 		if card.get("invasion_icon", 0) > 0:

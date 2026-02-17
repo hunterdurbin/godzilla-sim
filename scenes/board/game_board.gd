@@ -1081,7 +1081,7 @@ func _on_invade_pressed() -> void:
 
 	var playable: Array[int] = []
 	if turn_manager:
-		playable = turn_manager.rules_engine.get_discardable_cards_for_invade(turn_manager.game_state.get_current_player())
+		playable = turn_manager.rules_engine.get_discardable_cards_for_invade(turn_manager.game_state.get_current_player(), turn_manager.game_state.get_opponent_of_current())
 	else:
 		playable.assign(_client_playable.get("invade_cards", []))
 	if playable.is_empty():
@@ -1604,7 +1604,7 @@ func _on_hand_drag_started(card: Control) -> void:
 		if hand_idx >= 0:
 			var invade_cards: Array[int] = []
 			if turn_manager:
-				invade_cards = turn_manager.rules_engine.get_discardable_cards_for_invade(player)
+				invade_cards = turn_manager.rules_engine.get_discardable_cards_for_invade(player, turn_manager.game_state.get_opponent_of_current())
 			else:
 				invade_cards.assign(_client_playable.get("invade_cards", []))
 			if hand_idx in invade_cards:
@@ -3204,7 +3204,7 @@ func _compute_playable_data() -> Dictionary:
 		"strategy_cards": rules.get_playable_strategy_cards(player),
 		"monster_cards": rules.get_playable_monsters(player),
 		"rage_cards": rules.get_monster_cards_for_rage(player),
-		"invade_cards": rules.get_discardable_cards_for_invade(player),
+		"invade_cards": rules.get_discardable_cards_for_invade(player, opponent),
 	}
 
 
