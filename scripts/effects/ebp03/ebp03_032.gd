@@ -45,12 +45,8 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		return
 
 	# The selected card is already discarded by select_hand_card. Discard the rest.
-	var discarded_count := 1
-	while not ctx.owner.hand.is_empty():
-		ctx.owner.discard_pile.append(ctx.owner.hand.pop_back())
-		discarded_count += 1
-	ctx.owner.hand_changed.emit()
-	ctx.owner.discard_changed.emit()
+	var discarded_count: int = 1 + ctx.owner.hand.size()
+	await ctx.effect_handler.discard_hand_to(ctx.owner.player_id, 0)
 	_bonus_cp = discarded_count * 1000
 
 

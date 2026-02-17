@@ -503,6 +503,8 @@ func _invade(hand_index: int, state: GameState) -> void:
 	if not replaced_cost:
 		player.discard_pile.append(card)
 		card_discarded.emit(player.player_id, card)
+		player.hand_changed.emit()
+		player.discard_changed.emit()
 		# Check if discarded card plays itself from discard (e.g. EBP03-061 Dagahra)
 		if effect_handler:
 			var discard_effect := effect_handler.get_effect(card)
@@ -515,6 +517,11 @@ func _invade(hand_index: int, state: GameState) -> void:
 	# Movement fully resolves before triggered abilities activate; cards removed
 	# during movement (crush, base strategy destruction) are filtered from the queue.
 	var deferred_entries: Array = []
+
+	# Collect hand discard triggers for deferred resolution alongside movement effects
+	if not replaced_cost and effect_handler:
+		deferred_entries.append_array(effect_handler.collect_discard_from_hand_entries(player.player_id, card))
+		deferred_entries.append_array(effect_handler.collect_hand_card_discarded_entries(player.player_id, card))
 	var is_victory := false
 	for _step in range(advance_amount):
 		if player.monster_zone >= 8:
