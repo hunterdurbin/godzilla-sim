@@ -65,21 +65,7 @@ func on_enter(ctx: EffectContext) -> void:
 				func(card: Dictionary) -> bool: return card.get("rank", 0) <= 4,
 				"Choose an opponent's rank 4 or lower battle card to destroy:")
 		1:
-			var targetable_zones: Array[int] = []
-			for i in range(8):
-				if ctx.opponent.zone_has_cards(i):
-					targetable_zones.append(i)
-			var chosen_zone: int = await ctx.effect_handler.select_zone_target(
-				ctx.owner.player_id, ctx.opponent.player_id, targetable_zones,
+			var all_zones: Array[int] = [0, 1, 2, 3, 4, 5, 6, 7]
+			await ctx.effect_handler.destroy_zone_and_adjacent(
+				ctx.owner.player_id, ctx.opponent, all_zones,
 				"Choose a zone — all cards there and in adjacent zones will be destroyed:")
-			if chosen_zone >= 0:
-				var affected_zones: Array[int] = [chosen_zone]
-				for adj in get_adjacent_zones(chosen_zone):
-					if adj not in affected_zones:
-						affected_zones.append(adj)
-				var zones_to_destroy: Array[int] = []
-				for zi in affected_zones:
-					if ctx.opponent.zone_has_cards(zi):
-						zones_to_destroy.append(zi)
-				if not zones_to_destroy.is_empty():
-					await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)

@@ -23,31 +23,17 @@ func on_enter(ctx: EffectContext) -> void:
 	if not has_strategy:
 		return
 
-	# Find opponent zones with cards
-	var targetable: Array[int] = []
+	# Check if opponent has any rank 5 or lower battle cards
+	var has_targets: bool = false
 	for i in range(8):
-		if ctx.opponent.zone_has_cards(i):
-			targetable.append(i)
-
-	if targetable.is_empty():
+		var top := ctx.opponent.get_zone_top_card(i)
+		if not top.is_empty() and top.get("rank", 0) <= 5:
+			has_targets = true
+			break
+	if not has_targets:
 		return
 
-	var chosen: int = await ctx.effect_handler.select_zone_target(
-		ctx.owner.player_id, ctx.opponent.player_id, targetable,
-		"Choose an opponent's zone (cards there and in adjacent zones will be destroyed):")
-	if chosen < 0:
-		return
-
-	var affected: Array[int] = [chosen]
-	for adj in get_adjacent_zones(chosen):
-		if adj not in affected:
-			affected.append(adj)
-
-	var zones_to_destroy: Array[int] = []
-	for zi in affected:
-		var zone_card := ctx.opponent.get_zone_top_card(zi)
-		if not zone_card.is_empty() and zone_card.get("rank", 0) <= 5:
-			zones_to_destroy.append(zi)
-
-	if not zones_to_destroy.is_empty():
-		await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
+	var all_zones: Array[int] = [0, 1, 2, 3, 4, 5, 6, 7]
+	await ctx.effect_handler.destroy_zone_and_adjacent(
+		ctx.owner.player_id, ctx.opponent, all_zones,
+		"Choose an opponent's zone (cards there and in adjacent zones will be destroyed):", 5)

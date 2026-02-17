@@ -14,19 +14,7 @@ extends CardEffect
 
 
 func on_enter(ctx: EffectContext) -> void:
-	# Let player choose any opponent zone (occupied or not — adjacent zones may have cards)
 	var all_zones: Array[int] = [0, 1, 2, 3, 4, 5, 6, 7]
-
-	var chosen: int = await ctx.effect_handler.select_zone_target(
-		ctx.owner.player_id, ctx.opponent.player_id, all_zones,
+	await ctx.effect_handler.destroy_zone_and_adjacent(
+		ctx.owner.player_id, ctx.opponent, all_zones,
 		"Choose an opponent's zone to destroy (including adjacent zones):")
-	if chosen < 0:
-		return
-
-	# Collect chosen zone + adjacent zones
-	var zones_to_destroy: Array[int] = [chosen]
-	for adj in get_adjacent_zones(chosen):
-		if adj not in zones_to_destroy:
-			zones_to_destroy.append(adj)
-
-	await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
