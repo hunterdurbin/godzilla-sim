@@ -383,6 +383,16 @@ func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 			_set_active_effect(saved_player_id, saved_card)
 
 
+func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) -> Array:
+	## Collect discard-from-hand entry for deferred resolution (e.g. during invasion).
+	var entries: Array = []
+	if has_trigger(card_data, "on_discard_from_hand"):
+		var effect := get_effect(card_data)
+		var ctx := _build_context(player_id, card_data)
+		entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_discard_from_hand.bind(ctx)})
+	return entries
+
+
 func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
 	## Trigger on_burst_discard on the Burst monster being discarded at end of turn.
 	var effect := get_effect(card_data)
@@ -676,6 +686,35 @@ func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
 			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_hand_card_discarded.bind(ctx, card_data)})
 
 	await _resolve_standby_entries(entries)
+
+
+func collect_hand_card_discarded_entries(player_id: int, card_data: Dictionary) -> Array:
+	## Collect hand-card-discarded entries for deferred resolution (e.g. during invasion).
+	var entries: Array = []
+	var player := game_state.players[player_id]
+
+	# Monster card
+	if has_trigger(player.current_monster, "on_hand_card_discarded"):
+		var me := get_effect(player.current_monster)
+		var ctx := _build_context(player_id, player.current_monster)
+		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_hand_card_discarded.bind(ctx, card_data)})
+
+	# Battle cards in zones (top card only)
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_hand_card_discarded"):
+			var ze := get_effect(zone_card)
+			var ctx := _build_context(player_id, zone_card)
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_hand_card_discarded.bind(ctx, card_data)})
+
+	# Strategy cards
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty() and has_trigger(sz_card, "on_hand_card_discarded"):
+			var se := get_effect(sz_card)
+			var ctx := _build_context(player_id, sz_card)
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_hand_card_discarded.bind(ctx, card_data)})
+
+	return entries
 
 
 func trigger_counter_success(defender_player_id: int) -> void:

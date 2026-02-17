@@ -28,12 +28,6 @@ func on_enter(ctx: EffectContext) -> void:
 	if mb_weapon_count < 5:
 		return
 
-	# Discard entire hand
-	for card in ctx.owner.hand:
-		ctx.owner.discard_pile.append(card)
-	ctx.owner.hand.clear()
-	ctx.owner.hand_changed.emit()
-	ctx.owner.discard_changed.emit()
-
-	# Draw 5
+	# Discard entire hand, then draw 5
+	await ctx.effect_handler.discard_hand_to(ctx.owner.player_id, 0)
 	ctx.owner.draw_cards(5)

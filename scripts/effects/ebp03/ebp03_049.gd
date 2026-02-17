@@ -18,11 +18,4 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.owner.draw_cards(2)
 
 	# Discard 2 cards
-	if ctx.owner.hand.size() <= 2:
-		# Must discard all remaining hand
-		while not ctx.owner.hand.is_empty():
-			ctx.owner.discard_pile.append(ctx.owner.hand.pop_back())
-		ctx.owner.hand_changed.emit()
-		ctx.owner.discard_changed.emit()
-	else:
-		await ctx.effect_handler.discard_hand_to(ctx.owner.player_id, ctx.owner.hand.size() - 2)
+	await ctx.effect_handler.discard_hand_to(ctx.owner.player_id, ctx.owner.hand.size() - 2)
