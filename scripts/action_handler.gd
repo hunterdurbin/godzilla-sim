@@ -171,7 +171,7 @@ func resolve_counter(state: GameState) -> void:
 		# Counter is immune — monster retreats but does NOT rank up
 		counter_immunity_triggered.emit(player.player_id, total_cp, immunity_threshold)
 
-		var retreat_zone: int = get_retreat_zone(opponent.monster_zone)
+		var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
 		if retreat_zone != opponent.monster_zone:
 			var old_zone: int = opponent.monster_zone
 			opponent.monster_zone = retreat_zone
@@ -184,8 +184,8 @@ func resolve_counter(state: GameState) -> void:
 		if effect_handler:
 			await effect_handler.trigger_counter_success(player.player_id)
 
-		# Retreat monster to its retreat zone
-		var retreat_zone: int = get_retreat_zone(opponent.monster_zone)
+		# Counter retreat: only zones 6-8 move back (5.15.1.1)
+		var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
 		if retreat_zone != opponent.monster_zone:
 			var old_zone: int = opponent.monster_zone
 			opponent.monster_zone = retreat_zone
@@ -227,8 +227,8 @@ func force_counter(state: GameState, counter_player_id: int) -> void:
 	var opponent_id: int = 1 - counter_player_id
 	var opponent := state.players[opponent_id]
 
-	# Retreat monster to its retreat zone
-	var retreat_zone: int = get_retreat_zone(opponent.monster_zone)
+	# Counter retreat: only zones 6-8 move back (5.15.1.1)
+	var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
 	if retreat_zone != opponent.monster_zone:
 		var old_zone: int = opponent.monster_zone
 		opponent.monster_zone = retreat_zone
@@ -369,15 +369,15 @@ func _resolve_overloaded_cards(player: PlayerState) -> bool:
 
 
 static func get_retreat_zone(current_zone: int) -> int:
-	## Get the zone a monster retreats to when countered.
-	## Back row (1-5): retreat to previous back row zone.
-	## Front row (6-8): retreat to same-column back row zone.
+	## Retreat: move back by 1 zone (5.13.2). Zone 1 stays in zone 1 (5.13.2.1).
+	return maxi(current_zone - 1, 1)
+
+
+static func get_counter_retreat_zone(current_zone: int) -> int:
+	## Get the zone a monster moves to when countered (5.15.1.1).
+	## Only zones 6, 7, 8 move — to the zone behind (4.4.5.1).
+	## Zones 1-5 do not move when countered.
 	match current_zone:
-		1: return 1
-		2: return 1
-		3: return 2
-		4: return 3
-		5: return 4
 		6: return 5
 		7: return 4
 		8: return 3
