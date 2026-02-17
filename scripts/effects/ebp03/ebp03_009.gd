@@ -17,24 +17,6 @@ func on_enter(ctx: EffectContext) -> void:
 	if opp_column_zones.is_empty():
 		return
 
-	var chosen: int = await ctx.effect_handler.select_zone_target(
-		ctx.owner.player_id, ctx.opponent.player_id, opp_column_zones,
-		"Choose an opponent zone in the same column:")
-	if chosen < 0:
-		return
-
-	# Collect the chosen zone + adjacent zones
-	var target_zones: Array[int] = [chosen]
-	for adj in get_adjacent_zones(chosen):
-		if adj not in target_zones:
-			target_zones.append(adj)
-
-	# Destroy all R6- battle cards in those zones
-	var zones_to_destroy: Array[int] = []
-	for zi in target_zones:
-		var card := ctx.opponent.get_zone_top_card(zi)
-		if not card.is_empty() and card.get("rank", 0) <= 6:
-			zones_to_destroy.append(zi)
-
-	if not zones_to_destroy.is_empty():
-		await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
+	await ctx.effect_handler.destroy_zone_and_adjacent(
+		ctx.owner.player_id, ctx.opponent, opp_column_zones,
+		"Choose an opponent zone in the same column:", 6)

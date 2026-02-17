@@ -1239,6 +1239,34 @@ func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dicti
 	return destroyed
 
 
+func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones: Array[int], prompt: String, max_rank: int = -1) -> Array[Dictionary]:
+	## Let a player choose a zone, then destroy all battle cards in that zone and adjacent zones.
+	## If max_rank > 0, only cards with rank <= max_rank are destroyed.
+	## valid_zones controls which zones can be chosen (e.g. all 8, or column-restricted).
+	## Returns the array of destroyed card data.
+	if valid_zones.is_empty():
+		return []
+
+	var chosen: int = await select_zone_target(player_id, target.player_id, valid_zones, prompt)
+	if chosen < 0:
+		return []
+
+	var affected: Array[int] = [chosen]
+	for adj in CardEffect.get_adjacent_zones(chosen):
+		if adj not in affected:
+			affected.append(adj)
+
+	if max_rank > 0:
+		var filtered: Array[int] = []
+		for zi in affected:
+			var card := target.get_zone_top_card(zi)
+			if not card.is_empty() and card.get("rank", 0) <= max_rank:
+				filtered.append(zi)
+		return await destroy_zones(target, filtered)
+	else:
+		return await destroy_zones(target, affected)
+
+
 func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	## Check if a card can be destroyed (respects destroy prevention effects).
 	var effect := get_effect(card_data)
