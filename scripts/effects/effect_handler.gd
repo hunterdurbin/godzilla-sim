@@ -389,7 +389,7 @@ func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) ->
 	if has_trigger(card_data, "on_discard_from_hand"):
 		var effect := get_effect(card_data)
 		var ctx := _build_context(player_id, card_data)
-		entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_discard_from_hand.bind(ctx)})
+		entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_discard_from_hand.bind(ctx), "skip_active_check": true})
 	return entries
 
 
@@ -873,9 +873,11 @@ func is_card_still_active(player_id: int, card_data: Dictionary) -> bool:
 
 func resolve_deferred_entries(entries: Array) -> void:
 	## Filter entries for cards still in play after movement, then resolve via standby pattern.
+	## Entries with skip_active_check (e.g. on_discard_from_hand) bypass the filter since
+	## those cards are in the discard pile, not on the field.
 	var active_entries: Array = []
 	for entry in entries:
-		if is_card_still_active(entry.player_id, entry.card_data):
+		if entry.get("skip_active_check", false) or is_card_still_active(entry.player_id, entry.card_data):
 			active_entries.append(entry)
 	await _resolve_standby_entries(active_entries)
 
