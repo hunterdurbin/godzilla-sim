@@ -264,8 +264,8 @@ func _update_display() -> void:
 	if not is_node_ready():
 		return
 
-	var card_back = get_node_or_null("CardBack")
-	var card_image = get_node_or_null("CardImage")
+	var card_back = get_node_or_null("Background/CardBack")
+	var card_image = get_node_or_null("Background/CardImage")
 
 	if is_face_down:
 		if card_back:

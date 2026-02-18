@@ -25,6 +25,7 @@ mouse_filter = 0
 script = ExtResource("1_abc123")
 
 [node name="Background" type="Panel" parent="."]
+clip_children = 2
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -34,7 +35,7 @@ grow_vertical = 2
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
 
-[node name="CardBack" type="TextureRect" parent="."]
+[node name="CardBack" type="TextureRect" parent="Background"]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -46,7 +47,7 @@ mouse_filter = 2
 expand_mode = 1
 stretch_mode = 6
 
-[node name="CardImage" type="TextureRect" parent="."]
+[node name="CardImage" type="TextureRect" parent="Background"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
