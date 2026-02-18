@@ -622,6 +622,7 @@ func _apply_gradients_and_sync() -> void:
 
 func _show_first_player_waiting() -> void:
 	_disable_all_buttons()
+	btn_concede.disabled = true
 	action_panel.get_node("Row1").visible = false
 	action_panel.get_node("Row2").visible = false
 	card_select_prompt.text = "Opponent won the coin flip. Waiting for their choice..."
@@ -635,10 +636,12 @@ func _cleanup_first_player_ui() -> void:
 	action_prompt_panel.visible = false
 	action_panel.get_node("Row1").visible = true
 	action_panel.get_node("Row2").visible = true
+	btn_concede.disabled = false
 
 
 func _show_first_player_choice() -> void:
 	_disable_all_buttons()
+	btn_concede.disabled = true
 	action_panel.get_node("Row1").visible = false
 	action_panel.get_node("Row2").visible = false
 	card_select_prompt.text = "You won the coin flip! Go first or second?"
