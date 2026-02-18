@@ -984,7 +984,7 @@ func _on_chat_submitted(text: String) -> void:
 		log_output.append_text(formatted + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game:
-		_rpc_receive_chat.rpc(filtered)
+		_rpc_receive_chat.rpc(local_player_id, filtered)
 	chat_char_count.text = str(chat_input.max_length)
 
 
@@ -3578,9 +3578,7 @@ func _rpc_receive_log(text: String) -> void:
 
 ## Any peer -> Any peer: chat message
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_receive_chat(text: String) -> void:
-	var sender_peer_id := multiplayer.get_remote_sender_id()
-	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_peer_id, -1)
+func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
 	if sender_player_id < 0 or sender_player_id > 1:
 		return
 	var filtered := ChatFilter.filter(text)
