@@ -8,18 +8,14 @@ extends Control
 @onready var mode_dropdown: OptionButton = $CenterContainer/VBoxContainer/SettingsRow/ModeSelect/ModeDropdown
 @onready var back_button: Button = $CenterContainer/VBoxContainer/BackButton
 
-const GAME_MODES: Array[Dictionary] = [
-	{"id": "rumble", "label": "Rumble"},
-	{"id": "no_rules", "label": "No Rules"},
-]
-
 var _host_deck_ready: bool = false
 var _client_deck_received: bool = false
 var _client_deck_name: String = ""
 var _version_mismatch_shown: bool = false
 var _is_hosting: bool = false
 var _is_joining: bool = false
-var _deck_selected: bool = false
+var _deck_valid: bool = false
+var _validation_errors: Array[String] = []
 
 
 func _ready() -> void:
@@ -28,8 +24,8 @@ func _ready() -> void:
 	back_button.pressed.connect(_on_back_pressed)
 	deck_select.deck_selected.connect(_on_deck_selected)
 
-	# Populate game mode dropdown
-	for gm in GAME_MODES:
+	# Populate game mode dropdown from centralized list
+	for gm in GameModeValidator.MODES:
 		mode_dropdown.add_item(gm.label)
 	mode_dropdown.select(0)
 	mode_dropdown.item_selected.connect(_on_mode_selected)
@@ -42,7 +38,7 @@ func _ready() -> void:
 
 	DecklistManager.clear_selections()
 
-	# Require deck selection before Create/Join
+	# Require valid deck before Create/Join
 	create_button.disabled = true
 	status_label.text = "Select a deck, then create or join a lobby."
 
@@ -54,12 +50,37 @@ func _ready() -> void:
 
 
 func _get_selected_mode() -> String:
-	return GAME_MODES[mode_dropdown.selected].id
+	return GameModeValidator.MODES[mode_dropdown.selected].id
 
 
 func _on_mode_selected(_index: int) -> void:
 	if not _is_hosting and not _is_joining:
+		_validate_current_deck()
 		_fetch_rooms()
+
+
+func _validate_current_deck() -> void:
+	if deck_select.current_selection.is_empty():
+		_deck_valid = false
+		_validation_errors = []
+		return
+
+	var data := DecklistManager.load_decklist(deck_select.current_selection)
+	if data.is_empty():
+		_deck_valid = false
+		_validation_errors = ["Could not load decklist."]
+		return
+
+	_validation_errors = GameModeValidator.validate(
+		_get_selected_mode(), data["monster"], data["main"])
+	_deck_valid = _validation_errors.is_empty()
+
+
+func _update_action_buttons() -> void:
+	if _is_hosting or _is_joining:
+		return
+	create_button.disabled = not _deck_valid
+	_set_join_buttons_disabled(not _deck_valid)
 
 
 func _fetch_rooms() -> void:
@@ -74,7 +95,7 @@ func _fetch_rooms() -> void:
 		child.queue_free()
 
 	if rooms.is_empty():
-		if _deck_selected and not _is_hosting and not _is_joining:
+		if _deck_valid and not _is_hosting and not _is_joining:
 			status_label.text = "No public lobbies available. Create one!"
 		return
 
@@ -88,12 +109,7 @@ func _fetch_rooms() -> void:
 		if code.is_empty():
 			continue
 
-		# Look up display label for the mode
-		var mode_label := room_mode
-		for gm in GAME_MODES:
-			if gm.id == room_mode:
-				mode_label = gm.label
-				break
+		var mode_label: String = GameModeValidator.get_mode_label(room_mode)
 
 		var row := HBoxContainer.new()
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -108,7 +124,7 @@ func _fetch_rooms() -> void:
 		join_btn.text = "Join"
 		join_btn.custom_minimum_size = Vector2(80, 36)
 		join_btn.add_theme_font_size_override("font_size", 16)
-		join_btn.disabled = not _deck_selected or _is_hosting or _is_joining
+		join_btn.disabled = not _deck_valid or _is_hosting or _is_joining
 		join_btn.pressed.connect(_on_join_room.bind(code))
 		row.add_child(join_btn)
 
@@ -126,15 +142,19 @@ func _on_create_pressed() -> void:
 	refresh_button.disabled = true
 	_is_hosting = true
 	_set_join_buttons_disabled(true)
+	deck_select.deck_dropdown.disabled = true
+	mode_dropdown.disabled = true
 	status_label.text = "Creating public lobby..."
 
 	var err := await NetworkManager.host_public(_get_selected_mode())
 	if err != OK:
 		status_label.text = "Failed to create lobby (error %d)" % err
-		create_button.disabled = not _deck_selected
+		create_button.disabled = not _deck_valid
 		refresh_button.disabled = false
 		_is_hosting = false
-		_set_join_buttons_disabled(not _deck_selected)
+		_set_join_buttons_disabled(not _deck_valid)
+		deck_select.deck_dropdown.disabled = false
+		mode_dropdown.disabled = false
 		return
 
 	_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_select.current_selection)
@@ -142,22 +162,26 @@ func _on_create_pressed() -> void:
 
 
 func _on_join_room(code: String) -> void:
-	if not _deck_selected:
-		status_label.text = "Select a deck first."
+	if not _deck_valid:
+		status_label.text = "Deck is not valid for this game mode."
 		return
 	create_button.disabled = true
 	refresh_button.disabled = true
 	_is_joining = true
 	_set_join_buttons_disabled(true)
+	deck_select.deck_dropdown.disabled = true
+	mode_dropdown.disabled = true
 	status_label.text = "Joining room %s..." % code
 
 	var err := await NetworkManager.join_online(code)
 	if err != OK:
 		status_label.text = "Failed to join room (error %d)" % err
-		create_button.disabled = not _deck_selected
+		create_button.disabled = not _deck_valid
 		refresh_button.disabled = false
 		_is_joining = false
-		_set_join_buttons_disabled(not _deck_selected)
+		_set_join_buttons_disabled(not _deck_valid)
+		deck_select.deck_dropdown.disabled = false
+		mode_dropdown.disabled = false
 		return
 
 	status_label.text = "Connecting to host..."
@@ -188,41 +212,53 @@ func _on_player_disconnected(_peer_id: int) -> void:
 		status_label.text = "Opponent has a different version (you: v%s)." % NetworkManager.GAME_VERSION
 	else:
 		status_label.text = "Opponent disconnected."
-	create_button.disabled = not _deck_selected
+	create_button.disabled = not _deck_valid
 	refresh_button.disabled = false
 	_client_deck_received = false
 	_client_deck_name = ""
 	_is_hosting = false
 	_is_joining = false
-	_set_join_buttons_disabled(not _deck_selected)
+	_set_join_buttons_disabled(not _deck_valid)
+	deck_select.deck_dropdown.disabled = false
+	mode_dropdown.disabled = false
 
 
 func _on_connection_failed() -> void:
 	status_label.text = "Connection failed."
-	create_button.disabled = not _deck_selected
+	create_button.disabled = not _deck_valid
 	refresh_button.disabled = false
 	_is_hosting = false
 	_is_joining = false
-	_set_join_buttons_disabled(not _deck_selected)
+	_set_join_buttons_disabled(not _deck_valid)
+	deck_select.deck_dropdown.disabled = false
+	mode_dropdown.disabled = false
 
 
 func _on_version_mismatch(local_version: String, remote_version: String) -> void:
 	_version_mismatch_shown = true
 	status_label.text = "Version mismatch! You: v%s, Opponent: v%s" % [local_version, remote_version]
-	create_button.disabled = not _deck_selected
+	create_button.disabled = not _deck_valid
 	refresh_button.disabled = false
 	_is_hosting = false
 	_is_joining = false
-	_set_join_buttons_disabled(not _deck_selected)
+	_set_join_buttons_disabled(not _deck_valid)
+	deck_select.deck_dropdown.disabled = false
+	mode_dropdown.disabled = false
 
 
 func _on_deck_selected(deck_name: String) -> void:
-	_deck_selected = not deck_name.is_empty()
-	if not _is_hosting and not _is_joining:
-		create_button.disabled = not _deck_selected
-		_set_join_buttons_disabled(not _deck_selected)
-		if _deck_selected:
-			status_label.text = "Deck selected. Create or join a lobby!"
+	if _is_hosting or _is_joining:
+		return
+	_validate_current_deck()
+	_update_action_buttons()
+	if deck_name.is_empty():
+		status_label.text = "Select a deck, then create or join a lobby."
+	elif _deck_valid:
+		status_label.text = "Deck selected. Create or join a lobby!"
+	else:
+		status_label.text = "Deck invalid for %s: %s" % [
+			GameModeValidator.get_mode_label(_get_selected_mode()),
+			_validation_errors[0]]
 
 
 func _on_back_pressed() -> void:
