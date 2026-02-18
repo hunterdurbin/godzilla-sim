@@ -5,13 +5,16 @@ extends Control
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 const CUSTOM_ART_BASE_PATH := "user://custom/cardArt"
 const CARD_BACK_PATH := "res://CardContent/Assets/cardBacks/default.jpeg"
+const CUSTOM_CARD_BACK_PATH := "user://custom/cardBack"
 
 # Static texture cache shared across all Card instances
 static var _texture_cache: Dictionary = {}  # card_number -> ImageTexture
 static var _strategy_texture_cache: Dictionary = {}  # card_number -> ImageTexture (rotated)
 static var _custom_texture_cache: Dictionary = {}  # card_number -> ImageTexture (custom art)
 static var _custom_strategy_texture_cache: Dictionary = {}  # card_number -> ImageTexture (custom rotated)
-static var _card_back_texture: Texture2D = null
+static var _default_card_back_texture: Texture2D = null
+static var _custom_card_back_texture: Texture2D = null  # null means no custom file found
+static var _card_back_loaded: bool = false
 
 # Signals
 signal drag_started()
@@ -37,6 +40,7 @@ var is_face_down: bool = false
 var is_selectable: bool = false
 var in_landscape_slot: bool = false
 var use_custom_art: bool = true
+var owner_player_id: int = -1  # -1 = unset (shows custom art), 0/1 = player ID
 
 # Drag state
 var is_dragging: bool = false
@@ -266,10 +270,24 @@ func _update_display() -> void:
 	if is_face_down:
 		if card_back:
 			card_back.visible = true
-			if not _card_back_texture:
-				_card_back_texture = load(CARD_BACK_PATH)
-			if _card_back_texture:
-				card_back.texture = _card_back_texture
+			if not _card_back_loaded:
+				_card_back_loaded = true
+				_default_card_back_texture = load(CARD_BACK_PATH)
+				for ext in ["png", "jpg", "jpeg", "webp"]:
+					var custom_path := CUSTOM_CARD_BACK_PATH.path_join("default.%s" % ext)
+					if FileAccess.file_exists(custom_path):
+						var abs_path := ProjectSettings.globalize_path(custom_path)
+						var image := Image.load_from_file(abs_path)
+						if image:
+							_custom_card_back_texture = ImageTexture.create_from_image(image)
+						break
+			var tex: Texture2D = null
+			if _custom_card_back_texture and _should_use_custom_back():
+				tex = _custom_card_back_texture
+			else:
+				tex = _default_card_back_texture
+			if tex:
+				card_back.texture = tex
 		if card_image:
 			card_image.visible = false
 		return
@@ -324,7 +342,22 @@ static func clear_texture_cache() -> void:
 	_strategy_texture_cache.clear()
 	_custom_texture_cache.clear()
 	_custom_strategy_texture_cache.clear()
-	_card_back_texture = null
+	_default_card_back_texture = null
+	_custom_card_back_texture = null
+	_card_back_loaded = false
+
+
+func _should_use_custom_back() -> bool:
+	var mode: int = GameSettings.custom_card_back_mode
+	if mode == 0:
+		return false
+	if mode == 2:
+		return true
+	# Mode 1: myself only
+	if owner_player_id == -1:
+		return true
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	return owner_player_id == local_id
 
 
 func _is_strategy_card() -> bool:

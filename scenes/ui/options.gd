@@ -39,6 +39,11 @@ func _on_color_overlay_selected(index: int) -> void:
 	GameSettings.save()
 
 
+func _on_custom_card_back_selected(index: int) -> void:
+	GameSettings.custom_card_back_mode = index
+	GameSettings.save()
+
+
 # --- Shared modal helpers ---
 
 func _create_modal(title_text: String, min_width: float = 460.0) -> Array:
@@ -218,6 +223,38 @@ func _on_customize_pressed() -> void:
 	art_folder_btn.pressed.connect(_on_open_folder.bind("user://custom/cardArt"))
 	art_folder_row.add_child(art_folder_btn)
 	vbox.add_child(art_folder_row)
+
+	vbox.add_child(HSeparator.new())
+
+	var back_row := HBoxContainer.new()
+	var back_label := Label.new()
+	back_label.text = "Custom Card Back"
+	back_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	back_label.add_theme_font_size_override("font_size", 18)
+	var back_option := OptionButton.new()
+	back_option.custom_minimum_size = Vector2(200, 0)
+	for item in ["Disabled", "Enabled (myself)", "Enabled (both)"]:
+		back_option.add_item(item)
+	back_option.selected = GameSettings.custom_card_back_mode
+	back_option.item_selected.connect(_on_custom_card_back_selected)
+	back_row.add_child(back_label)
+	back_row.add_child(back_option)
+	vbox.add_child(back_row)
+
+	var back_hint := Label.new()
+	back_hint.text = "Image must be named: default.png (or .jpg, .jpeg, .webp)"
+	back_hint.add_theme_font_size_override("font_size", 12)
+	back_hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
+	vbox.add_child(back_hint)
+
+	var back_folder_row := HBoxContainer.new()
+	back_folder_row.alignment = BoxContainer.ALIGNMENT_END
+	var back_folder_btn := Button.new()
+	back_folder_btn.text = "Open Card Back Folder"
+	back_folder_btn.add_theme_font_size_override("font_size", 14)
+	back_folder_btn.pressed.connect(_on_open_folder.bind("user://custom/cardBack"))
+	back_folder_row.add_child(back_folder_btn)
+	vbox.add_child(back_folder_row)
 
 	_add_close_button(vbox, popup)
 	_show_modal(popup)

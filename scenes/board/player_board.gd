@@ -602,6 +602,7 @@ func _on_strategy_slot_right_clicked(_zone_num: int, _pid: int, strategy_idx: in
 
 func _create_card(data: Dictionary) -> Control:
 	var card: Control = card_scene.instantiate()
+	card.owner_player_id = player_id
 	if card.has_method("set_card_data_dict"):
 		card.set_card_data_dict(data)
 	if card.has_signal("card_hover_started"):
