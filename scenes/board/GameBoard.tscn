@@ -703,18 +703,36 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -200.0
-offset_top = -60.0
+offset_top = -80.0
 offset_right = 200.0
-offset_bottom = 60.0
+offset_bottom = 80.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="WinLabel" type="Label" parent="EndGamePanel" unique_id=342460756]
+[node name="VBox" type="VBoxContainer" parent="EndGamePanel"]
+layout_mode = 2
+
+[node name="WinLabel" type="Label" parent="EndGamePanel/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 22
 text = "Game Over!"
 horizontal_alignment = 1
 vertical_alignment = 1
+size_flags_vertical = 3
+
+[node name="ButtonRow" type="HBoxContainer" parent="EndGamePanel/VBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="RematchButton" type="Button" parent="EndGamePanel/VBox/ButtonRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+text = "Rematch"
+
+[node name="MenuButton" type="Button" parent="EndGamePanel/VBox/ButtonRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(120, 0)
+text = "Main Menu"
 
 [node name="DeckArrangeOverlay" type="ColorRect" parent="."]
 visible = false
