@@ -151,51 +151,58 @@ theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 
-[node name="StatsDisplay" type="VBoxContainer" parent="LayoutContainer"]
+[node name="StatsDisplay" type="HBoxContainer" parent="LayoutContainer"]
 layout_mode = 1
 anchors_preset = 0
-anchor_left = 0.0
-anchor_top = 0.2
-anchor_right = 0.06
-anchor_bottom = 0.6
+anchor_left = 0.5834
+anchor_top = 0.2041
+anchor_right = 0.8301
+anchor_bottom = 0.3029
 offset_left = 0.0
 offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
+alignment = 1
 
 [node name="CPTitle" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
-text = "CP"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 9
+text = "CP:"
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.3, 0.7, 1.0, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
 
 [node name="CPLabel" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
+custom_minimum_size = Vector2(45, 0)
 text = "0"
-horizontal_alignment = 1
 vertical_alignment = 1
+clip_text = true
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.4, 0.8, 1.0, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 
+[node name="Spacer" type="Control" parent="LayoutContainer/StatsDisplay"]
+layout_mode = 2
+custom_minimum_size = Vector2(10, 0)
+
 [node name="ThreatTitle" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
-text = "Threat"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 9
+text = "Threat:"
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(1.0, 0.5, 0.2, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
 
 [node name="ThreatLabel" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
+custom_minimum_size = Vector2(50, 0)
 text = "0"
-horizontal_alignment = 1
 vertical_alignment = 1
+clip_text = true
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(1.0, 0.6, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)

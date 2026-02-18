@@ -26,7 +26,7 @@ func _ready() -> void:
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "")
 
 	DecklistManager.clear_selections()
-	# CardScript.clear_texture_cache()
+	CardScript.clear_texture_cache()
 
 	deck_select_p1.set_header("PLAYER 1 DECK")
 	deck_select_p2.set_header("PLAYER 2 DECK")
