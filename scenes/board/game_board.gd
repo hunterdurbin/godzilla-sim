@@ -1180,7 +1180,7 @@ func _rpc_concede() -> void:
 
 func _on_main_menu_pressed() -> void:
 	if is_multiplayer_game:
-		if end_game_panel.visible:
+		if end_game_panel.visible and multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 			_rpc_rematch_declined.rpc()
 		NetworkManager.notify_leaving()
 		NetworkManager.disconnect_game()
