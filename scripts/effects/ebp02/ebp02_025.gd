@@ -23,12 +23,7 @@ func can_monster_invade(_ctx: EffectContext) -> bool:
 func on_enter(ctx: EffectContext) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
 
-	# Find adjacent empty zones for the Tentacles token
-	var adjacent := get_adjacent_zones(monster_zone_idx)
-	var valid: Array[int] = []
-	for zi in adjacent:
-		if ctx.owner.is_zone_empty(zi):
-			valid.append(zi)
+	var valid := CardEffect.get_effect_play_adjacent_zones(ctx.owner, monster_zone_idx)
 
 	if valid.is_empty():
 		return

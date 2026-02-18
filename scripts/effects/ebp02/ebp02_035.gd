@@ -34,19 +34,17 @@ func on_enter(ctx: EffectContext) -> void:
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return
-	var adjacent := get_adjacent_zones(zone_idx)
+	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(ctx.owner, zone_idx)
+	if valid_adjacent.is_empty():
+		return
 	var placed: int = 0
 	for _i in range(2):
-		var empty_adjacent: Array[int] = []
-		for adj_zi in adjacent:
-			if ctx.owner.is_zone_empty(adj_zi):
-				empty_adjacent.append(adj_zi)
-		if empty_adjacent.is_empty():
-			break
 		var chosen: int = await ctx.effect_handler.select_zone_target(
-			ctx.owner.player_id, ctx.owner.player_id, empty_adjacent,
+			ctx.owner.player_id, ctx.owner.player_id, valid_adjacent,
 			"Choose a zone for Tentacles token (%d remaining):" % (2 - placed))
 		if chosen < 0:
 			break
 		await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T02", chosen)
 		placed += 1
+		# Rule 5.11.1.3: must play to different zones if possible
+		valid_adjacent.erase(chosen)

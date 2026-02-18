@@ -20,11 +20,9 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.card_data.get("played_from_effect", false):
 		return
 
-	for _i in range(2):
-		var empty_zones := ctx.owner.get_empty_zone_indices()
-		if empty_zones.is_empty():
-			break
+	var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
 
+	for _i in range(2):
 		var selected := await ctx.effect_handler.search_deck(
 			ctx.owner.player_id,
 			func(card: Dictionary) -> bool:
@@ -37,17 +35,22 @@ func on_enter(ctx: EffectContext) -> void:
 		if selected.is_empty():
 			break
 
-		empty_zones = ctx.owner.get_empty_zone_indices()
-		if empty_zones.is_empty():
-			break
-
 		var target_zone: int = await ctx.effect_handler.select_zone_target(
-			ctx.owner.player_id, ctx.owner.player_id, empty_zones,
+			ctx.owner.player_id, ctx.owner.player_id, valid_zones,
 			"Choose a zone to play the searched card:")
 		if target_zone < 0:
 			break
+
+		# Handle overload if zone occupied
+		if ctx.owner.zone_has_cards(target_zone):
+			var destroyed_stack: Array = ctx.owner.clear_zone(target_zone)
+			EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
+			ctx.owner.discard_changed.emit()
 
 		selected["played_from_effect"] = true
 		ctx.owner.push_zone_card(target_zone, selected)
 		ctx.owner.zones_changed.emit()
 		await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected)
+
+		# Rule 5.11.1.3: must play to different zones if possible
+		valid_zones.erase(target_zone)

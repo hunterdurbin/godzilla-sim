@@ -14,14 +14,8 @@ extends CardEffect
 
 func on_enter(ctx: EffectContext) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
-	var adjacent := get_adjacent_zones(monster_zone_idx)
-
-	# Filter for empty adjacent zones
-	var empty_adjacent: Array[int] = []
-	for zi in adjacent:
-		if ctx.owner.is_zone_empty(zi):
-			empty_adjacent.append(zi)
-	if empty_adjacent.is_empty():
+	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(ctx.owner, monster_zone_idx)
+	if valid_adjacent.is_empty():
 		return
 
 	# Search discard for rank 4 or lower battle card with Evolution
@@ -38,19 +32,17 @@ func on_enter(ctx: EffectContext) -> void:
 	if selected.is_empty():
 		return
 
-	# Re-check empty adjacent zones
-	empty_adjacent = []
-	for zi in adjacent:
-		if ctx.owner.is_zone_empty(zi):
-			empty_adjacent.append(zi)
-	if empty_adjacent.is_empty():
-		return
-
 	var target_zone: int = await ctx.effect_handler.select_zone_target(
-		ctx.owner.player_id, ctx.owner.player_id, empty_adjacent,
+		ctx.owner.player_id, ctx.owner.player_id, valid_adjacent,
 		"Choose an adjacent zone to play the card:")
 	if target_zone < 0:
 		return
+
+	# Handle overload if zone occupied
+	if ctx.owner.zone_has_cards(target_zone):
+		var destroyed_stack: Array = ctx.owner.clear_zone(target_zone)
+		EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
+		ctx.owner.discard_changed.emit()
 
 	ctx.owner.push_zone_card(target_zone, selected)
 	ctx.owner.zones_changed.emit()

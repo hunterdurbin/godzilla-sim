@@ -28,35 +28,24 @@ func on_enter(ctx: EffectContext) -> void:
 	if found.is_empty():
 		return
 
-	# Let player choose an empty zone to play it in
-	var empty := ctx.owner.get_empty_zone_indices()
-	if empty.is_empty():
-		# No empty zones, must overwrite — let them pick any zone
-		var all_zones: Array[int] = []
-		for i in range(8):
-			if i != zone_idx:
-				all_zones.append(i)
-		var dest := await ctx.effect_handler.select_zone_target(
-			ctx.owner.player_id, ctx.owner.player_id, all_zones,
-			"Choose a zone to play the Moguera battle card:")
-		if dest < 0:
-			# Put card back in deck
-			ctx.owner.main_deck.append(found)
-			ctx.owner.main_deck.shuffle()
-			ctx.owner.deck_changed.emit()
-			return
-		ctx.owner.push_zone_card(dest, found)
-	else:
-		var dest := await ctx.effect_handler.select_zone_target(
-			ctx.owner.player_id, ctx.owner.player_id, empty,
-			"Choose a zone to play the Moguera battle card:")
-		if dest < 0:
-			ctx.owner.main_deck.append(found)
-			ctx.owner.main_deck.shuffle()
-			ctx.owner.deck_changed.emit()
-			return
-		ctx.owner.push_zone_card(dest, found)
+	var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
 
+	var dest := await ctx.effect_handler.select_zone_target(
+		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
+		"Choose a zone to play the Moguera battle card:")
+	if dest < 0:
+		ctx.owner.main_deck.append(found)
+		ctx.owner.main_deck.shuffle()
+		ctx.owner.deck_changed.emit()
+		return
+
+	# Handle overload if zone occupied
+	if ctx.owner.zone_has_cards(dest):
+		var destroyed_stack: Array = ctx.owner.clear_zone(dest)
+		EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
+		ctx.owner.discard_changed.emit()
+
+	ctx.owner.push_zone_card(dest, found)
 	found["played_from_effect"] = true
 	ctx.owner.zones_changed.emit()
 	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found)

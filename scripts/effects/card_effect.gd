@@ -318,6 +318,31 @@ func find_zone_of_card(ctx: EffectContext) -> int:
 	return -1
 
 
+# --- Play zone utilities (rule 5.11.1.2) ---
+
+static func get_effect_play_zones(player: PlayerState) -> Array[int]:
+	## Get valid zones for playing a battle card from an effect (rule 5.11.1.2).
+	## Must avoid the monster zone if possible.
+	var monster_idx := player.monster_zone - 1
+	var zones: Array[int] = []
+	for i in range(8):
+		if i != monster_idx:
+			zones.append(i)
+	return zones
+
+
+static func get_effect_play_adjacent_zones(player: PlayerState, zone_idx: int) -> Array[int]:
+	## Get adjacent zones valid for playing a battle card from an effect (rule 5.11.1.2).
+	## Must avoid the monster zone if possible.
+	var monster_idx := player.monster_zone - 1
+	var adjacent := get_adjacent_zones(zone_idx)
+	var zones: Array[int] = []
+	for zi in adjacent:
+		if zi != monster_idx:
+			zones.append(zi)
+	return zones
+
+
 # --- Column utilities ---
 
 static func get_adjacent_zones(zone_idx: int) -> Array[int]:
