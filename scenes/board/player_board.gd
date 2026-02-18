@@ -47,6 +47,7 @@ var _discard_empty_label: Label = null
 var _discard_last_id: String = ""  # Track last shown card to avoid redundant updates
 var _discard_count_badge: Label = null
 var _monster_deck_card_backs: Array[Control] = []
+var _monster_deck_count_badge: Label = null
 
 
 func _ready() -> void:
@@ -159,9 +160,13 @@ func _setup_references() -> void:
 		_discard_count_badge = _create_count_badge()
 		discard_display.add_child(_discard_count_badge)
 
-	# Monster deck: dynamic stack of face-down cards + player label
+	# Monster deck: dynamic stack of face-down cards + hover count badge + player label
 	if monster_info_display:
 		_create_deck_stack(monster_info_display, _monster_deck_card_backs)
+		_monster_deck_count_badge = _create_count_badge()
+		monster_info_display.add_child(_monster_deck_count_badge)
+		monster_info_display.mouse_entered.connect(_monster_deck_count_badge.show)
+		monster_info_display.mouse_exited.connect(_monster_deck_count_badge.hide)
 		# Player label overlay at top
 		player_label = Label.new()
 		player_label.text = GameLog.player_name(player_id)
@@ -493,6 +498,8 @@ func _sync_info(state: PlayerState, cp_modifier: int = 0, threat_modifier: int =
 
 	# Monster deck: show/hide card backs proportional to remaining cards
 	var monster_deck_size: int = state.monster_deck.size()
+	if _monster_deck_count_badge:
+		_monster_deck_count_badge.text = "%d" % monster_deck_size
 	var monster_visible: int = mini(monster_deck_size, _monster_deck_card_backs.size())
 	for i in range(_monster_deck_card_backs.size()):
 		_monster_deck_card_backs[i].visible = i < monster_visible

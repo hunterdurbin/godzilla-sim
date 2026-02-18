@@ -3573,6 +3573,7 @@ func _serialize_game_state(viewer_id: int) -> String:
 		if i != viewer_id:
 			# Strip hand and monster deck data for opponent — only send counts
 			pd.erase("hand")
+			pd["monster_deck_count"] = pd["monster_deck"].size()
 			pd.erase("monster_deck")
 		data["players"].append(pd)
 	# Include hash of shared game state for desync detection
@@ -4120,9 +4121,14 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 		for j in range(count):
 			ps.hand.append({"face_down": true, "id": "opponent_%d" % j})
 
-	# Monster deck: full data for local player, empty for opponent
+	# Monster deck: full data for local player, placeholder count for opponent
 	if is_local and data.has("monster_deck"):
 		ps.monster_deck.assign(data["monster_deck"])
+	else:
+		var md_count: int = int(data.get("monster_deck_count", 0))
+		ps.monster_deck.resize(md_count)
+		for j in range(md_count):
+			ps.monster_deck[j] = {}
 
 	# Deck/discard: only counts needed for display labels
 	var deck_count: int = int(data.get("main_deck_count", 0))
