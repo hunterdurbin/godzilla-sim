@@ -47,12 +47,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 			var card: Dictionary = ctx.owner.discard_pile.pop_at(i)
 			ctx.owner.discard_changed.emit()
 
-			# Rule 5.11.1.2: must avoid monster zone if possible
-			var valid_zones: Array[int] = []
-			var monster_idx := ctx.owner.monster_zone - 1
-			for zi in range(8):
-				if zi != monster_idx:
-					valid_zones.append(zi)
+			var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
 
 			var dest := await ctx.effect_handler.select_zone_target(
 				ctx.owner.player_id, ctx.owner.player_id, valid_zones,

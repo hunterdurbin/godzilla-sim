@@ -26,12 +26,7 @@ func on_enter(ctx: EffectContext) -> void:
 		"Search for a Godzilla(2023) battle card to play"
 	)
 	if not selected.is_empty():
-		# Rule 5.11.1.2: must avoid monster zone if possible
-		var valid_zones: Array[int] = []
-		var monster_idx := player.monster_zone - 1
-		for i in range(8):
-			if i != monster_idx:
-				valid_zones.append(i)
+		var valid_zones := CardEffect.get_effect_play_zones(player)
 
 		var target_zone: int = await ctx.effect_handler.select_zone_target(
 			player.player_id, player.player_id, valid_zones,

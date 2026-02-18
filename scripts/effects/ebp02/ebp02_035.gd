@@ -34,13 +34,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return
-	var adjacent := get_adjacent_zones(zone_idx)
-	# Rule 5.11.1.2: adjacent zones, avoiding monster zone if possible
-	var monster_idx := ctx.owner.monster_zone - 1
-	var valid_adjacent: Array[int] = []
-	for adj_zi in adjacent:
-		if adj_zi != monster_idx:
-			valid_adjacent.append(adj_zi)
+	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(ctx.owner, zone_idx)
 	if valid_adjacent.is_empty():
 		return
 	var placed: int = 0

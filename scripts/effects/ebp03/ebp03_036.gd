@@ -28,12 +28,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if found.is_empty():
 		return
 
-	# Rule 5.11.1.2: must avoid monster zone if possible
-	var valid_zones: Array[int] = []
-	var monster_idx := ctx.owner.monster_zone - 1
-	for i in range(8):
-		if i != monster_idx:
-			valid_zones.append(i)
+	var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
 
 	var dest := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,

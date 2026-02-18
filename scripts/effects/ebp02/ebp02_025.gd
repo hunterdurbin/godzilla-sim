@@ -23,12 +23,7 @@ func can_monster_invade(_ctx: EffectContext) -> bool:
 func on_enter(ctx: EffectContext) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
 
-	# Rule 5.11.1.2: adjacent zones, avoiding monster zone if possible
-	var adjacent := get_adjacent_zones(monster_zone_idx)
-	var valid: Array[int] = []
-	for zi in adjacent:
-		if zi != monster_zone_idx:
-			valid.append(zi)
+	var valid := CardEffect.get_effect_play_adjacent_zones(ctx.owner, monster_zone_idx)
 
 	if valid.is_empty():
 		return
