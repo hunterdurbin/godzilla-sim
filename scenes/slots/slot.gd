@@ -36,6 +36,7 @@ var is_highlighted: bool = false
 var is_occupied: bool = false
 var has_monster_marker: bool = false
 var in_selection_mode: bool = false  # When true, allows highlighting even if occupied
+var _is_hovered: bool = false
 var _content_rect: Rect2 = Rect2()
 
 
@@ -222,10 +223,12 @@ func _update_visual_state() -> void:
 	var target_color: Color
 	if has_monster_marker:
 		target_color = Color(0.8, 0.5, 0.1, 0.4)  # Orange for monster position
+	elif is_highlighted and _is_hovered:
+		target_color = highlight_color  # Full blue on hover
+	elif is_highlighted:
+		target_color = Color(highlight_color.r, highlight_color.g, highlight_color.b, highlight_color.a * 0.5)  # Lighter blue for valid target
 	elif is_occupied:
 		target_color = occupied_color
-	elif is_highlighted:
-		target_color = highlight_color
 	else:
 		target_color = slot_color
 
@@ -264,13 +267,20 @@ func _on_mouse_entered() -> void:
 	if held_card and "card_data" in held_card and not held_card.card_data.is_empty():
 		if not held_card.get("is_face_down"):
 			slot_hover_preview.emit(held_card.card_data)
+	_is_hovered = true
 	if accept_cards and (is_empty() or in_selection_mode):
 		set_highlighted(true)
+	elif is_highlighted:
+		_update_visual_state()
 
 
 func _on_mouse_exited() -> void:
 	slot_hover_preview_cleared.emit()
-	set_highlighted(false)
+	_is_hovered = false
+	if not in_selection_mode:
+		set_highlighted(false)
+	else:
+		_update_visual_state()
 
 
 func _on_card_drag_started() -> void:
