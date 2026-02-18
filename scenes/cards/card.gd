@@ -40,6 +40,7 @@ var is_face_down: bool = false
 var is_selectable: bool = false
 var in_landscape_slot: bool = false
 var use_custom_art: bool = true
+var skip_effect_load: bool = false  # Skip loading effect scripts (e.g. in deck builder)
 var owner_player_id: int = -1  # -1 = unset (shows custom art), 0/1 = player ID
 
 # Drag state
@@ -174,12 +175,13 @@ func set_card_data_dict(data: Dictionary) -> void:
 	card_data = data
 	card_name = data.get("name", "Unknown")
 	card_description = data.get("description", "")
-	# Load effect script if specified
-	var script_path: String = data.get("effect_script", "")
-	if not script_path.is_empty() and ResourceLoader.exists(script_path):
-		var effect_script: GDScript = load(script_path)
-		if effect_script:
-			card_effect = effect_script.new()
+	# Load effect script if specified (skip in display-only contexts like deck builder)
+	if not skip_effect_load:
+		var script_path: String = data.get("effect_script", "")
+		if not script_path.is_empty() and ResourceLoader.exists(script_path):
+			var effect_script: GDScript = load(script_path)
+			if effect_script:
+				card_effect = effect_script.new()
 	if is_node_ready():
 		_update_display()
 

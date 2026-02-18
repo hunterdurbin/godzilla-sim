@@ -58,6 +58,7 @@ var _sort_mode: int = 0  # 0=ID, 1=Name, 2=Rank, 3=Type
 
 var _pending_action: Callable
 var _invalid_cards: Dictionary = {} # card_number -> true
+var _pool_load_generation: int = 0  # Incremented to cancel stale batched loads
 
 # --- Preview ---
 var _preview_card: Control
@@ -550,12 +551,30 @@ func _sort_by_type(a: Dictionary, b: Dictionary) -> bool:
 # Display: Pool
 # ============================================================
 
+const POOL_BATCH_SIZE := 15
+
 func _refresh_pool_display() -> void:
 	_clear_grid(pool_grid)
+	_pool_load_generation += 1
+	var gen := _pool_load_generation
 	pool_count_label.text = "(%d cards)" % _filtered_pool_cards.size()
-	for card_data in _filtered_pool_cards:
-		var wrapper := _create_card_wrapper(card_data, true)
-		pool_grid.add_child(wrapper)
+	# Snapshot the list so filter changes mid-load don't cause issues
+	var cards_to_load := _filtered_pool_cards.duplicate()
+	_load_pool_cards_batched(cards_to_load, gen)
+
+
+func _load_pool_cards_batched(cards: Array[Dictionary], gen: int) -> void:
+	var i := 0
+	while i < cards.size():
+		if gen != _pool_load_generation:
+			return  # A newer refresh was triggered; abort this one
+		var batch_end := mini(i + POOL_BATCH_SIZE, cards.size())
+		while i < batch_end:
+			var wrapper := _create_card_wrapper(cards[i], true)
+			pool_grid.add_child(wrapper)
+			i += 1
+		if i < cards.size():
+			await get_tree().process_frame
 
 
 func _update_pool_badge(card_id: String) -> void:
@@ -590,6 +609,7 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 
 	var card_node: Control = CARD_SCENE.instantiate()
 	card_node.use_custom_art = false
+	card_node.skip_effect_load = true
 	card_node.set_card_data_dict(card_data)
 	card_node.drag_enabled = false
 	card_node.custom_minimum_size = Vector2.ZERO

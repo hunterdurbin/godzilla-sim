@@ -5,6 +5,7 @@ extends Control
 ## The client receives state via RPC and sends actions back to the host.
 
 var turn_manager: TurnManager # Only exists on host/solo
+const CardScript := preload("res://scenes/cards/card.gd")
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
 # Multiplayer state
@@ -268,6 +269,9 @@ const OPPONENT_HAND_EXPAND_OFFSET: float = 195.0
 
 
 func _ready() -> void:
+	# Free deck-builder texture cache to reclaim memory for gameplay
+	CardScript.clear_texture_cache()
+
 	is_multiplayer_game = NetworkManager.is_multiplayer()
 	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game else 0
 

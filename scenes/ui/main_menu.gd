@@ -1,6 +1,5 @@
 extends Control
 
-const CardScript := preload("res://scenes/cards/card.gd")
 
 @onready var start_button: Button = $CenterContainer/VBoxContainer/StartButton
 @onready var lan_button: Button = $CenterContainer/VBoxContainer/LanButton
@@ -26,7 +25,6 @@ func _ready() -> void:
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "")
 
 	DecklistManager.clear_selections()
-	CardScript.clear_texture_cache()
 
 	deck_select_p1.set_header("PLAYER 1 DECK")
 	deck_select_p2.set_header("PLAYER 2 DECK")
