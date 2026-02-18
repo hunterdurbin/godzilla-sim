@@ -182,6 +182,7 @@ func _on_join_room(code: String) -> void:
 		_set_join_buttons_disabled(not _deck_valid)
 		deck_select.deck_dropdown.disabled = false
 		mode_dropdown.disabled = false
+		_fetch_rooms()
 		return
 
 	status_label.text = "Connecting to host..."
