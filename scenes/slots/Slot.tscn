@@ -16,4 +16,4 @@ script = ExtResource("1_slot")
 [node name="Label" type="Label" parent="."]
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "EMPTY"
+text = ""
