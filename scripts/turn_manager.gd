@@ -79,8 +79,8 @@ func setup(card_data_node: Node) -> void:
 	game_started.emit()
 
 
-func start_game() -> void:
-	_begin_turn(0)
+func start_game(first_player_id: int = 0) -> void:
+	_begin_turn(first_player_id)
 
 
 func _begin_turn(player_id: int) -> void:

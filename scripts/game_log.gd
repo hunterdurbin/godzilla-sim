@@ -253,4 +253,13 @@ static func to_plain_text(bbcode: String) -> String:
 	# Strip [b]...[/b] keeping inner text
 	regex.compile("\\[b\\](.*?)\\[/b\\]")
 	text = regex.sub(text, "$1", true)
+	# Strip [color=...]...[/color] keeping inner text
+	regex.compile("\\[color=[^\\]]*\\](.*?)\\[/color\\]")
+	text = regex.sub(text, "$1", true)
 	return text
+
+
+# --- Chat ---
+
+static func chat_message(pname: String, text: String) -> String:
+	return "[color=#e6d279]%s: %s[/color]" % [_bold(pname), text]

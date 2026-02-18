@@ -27,9 +27,13 @@ var _client_gradients_applied: bool = false
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
 @onready var player2_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player2Board
 @onready var action_panel: Control = $ActionPanel
-@onready var log_output: RichTextLabel = $LogPanel/LogOutput
+@onready var log_output: RichTextLabel = $LogPanel/LogVBox/LogOutput
+@onready var chat_input: LineEdit = $LogPanel/LogVBox/ChatRow/ChatInput
+@onready var chat_char_count: Label = $LogPanel/LogVBox/ChatRow/CharCount
 var _log_lines: PackedStringArray = []
 @onready var end_game_panel: Control = $EndGamePanel
+@onready var btn_rematch: Button = $EndGamePanel/VBox/ButtonRow/RematchButton
+@onready var btn_end_menu: Button = $EndGamePanel/VBox/ButtonRow/MenuButton
 @onready var action_prompt_panel: PanelContainer = $ActionPrompt
 @onready var card_select_prompt: Label = $ActionPrompt/PromptLabel
 @onready var btn_bug_report: Button = $BugReportButton
@@ -216,6 +220,16 @@ var _strategy_target_player_id: int = -1
 var _strategy_target_board_pid: int = -1
 var _strategy_target_valid_indices: Array[int] = []
 
+# First-player choice state
+var _first_player_choosing: bool = false
+var _first_player_chooser_id: int = -1 # Player who gets to decide
+var _first_player_result: int = -1 # Resolved first player id (-1 = pending)
+
+# Rematch state
+var _rematch_requested: bool = false
+var _opponent_rematch_requested: bool = false
+var _game_ended_by_disconnect: bool = false
+
 # Standby choice selection state (for choosing ability resolution order)
 var _choice_selecting: bool = false
 var _choice_player_id: int = -1
@@ -282,13 +296,6 @@ func _ready() -> void:
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
-		# Apply monster color gradient to board backgrounds
-		for i in range(turn_manager.game_state.players.size()):
-			var player: PlayerState = turn_manager.game_state.players[i]
-			var board = player1_board if i == 0 else player2_board
-			if not player.current_monster.is_empty():
-				board.apply_monster_gradient(player.current_monster)
-
 		# Connect turn manager signals
 		turn_manager.phase_started.connect(_on_phase_started)
 		turn_manager.phase_ended.connect(_on_phase_ended)
@@ -347,6 +354,8 @@ func _ready() -> void:
 	btn_bug_report.pressed.connect(_on_bug_report_pressed)
 	btn_concede.pressed.connect(_on_concede_pressed)
 	btn_main_menu.pressed.connect(_on_main_menu_pressed)
+	btn_rematch.pressed.connect(_on_rematch_pressed)
+	btn_end_menu.pressed.connect(_on_main_menu_pressed)
 
 	# Connect hand drag signals for drag-to-zone
 	player1_hand.hand_card_drag_started.connect(_on_hand_drag_started)
@@ -408,6 +417,8 @@ func _ready() -> void:
 	log_output.meta_underlined = false
 	log_output.meta_hover_started.connect(_on_log_meta_hover_started)
 	log_output.meta_hover_ended.connect(_on_log_meta_hover_ended)
+	chat_input.text_submitted.connect(_on_chat_submitted)
+	chat_input.text_changed.connect(_on_chat_text_changed)
 
 	# Hide overlays and prompts
 	end_game_panel.visible = false
@@ -467,7 +478,6 @@ func _ready() -> void:
 
 	# Initial board sync and start (host/solo only)
 	if turn_manager:
-		_sync_boards()
 		call_deferred("_start_game")
 	else:
 		_disable_all_buttons()
@@ -564,7 +574,142 @@ func _update_all_setting_indicators() -> void:
 
 
 func _start_game() -> void:
-	turn_manager.start_game()
+	if not is_multiplayer_game:
+		# Solo: no need to choose, player 1 always goes first
+		_apply_gradients_and_sync()
+		turn_manager.start_game(0)
+		return
+
+	# Multiplayer: randomly select which player gets to choose who goes first
+	_first_player_chooser_id = randi() % 2
+	_first_player_result = -1
+	_first_player_choosing = true
+
+	_on_log_message("%s won the coin flip!" % GameLog.player_name(_first_player_chooser_id))
+
+	if _first_player_chooser_id != local_player_id:
+		# The chooser is the remote client — send RPC, show waiting state locally
+		_show_first_player_waiting()
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == _first_player_chooser_id:
+				_rpc_first_player_choice_requested.rpc_id(peer_id)
+	else:
+		# Host is the chooser — tell the client to wait
+		_show_first_player_choice()
+		_rpc_first_player_waiting.rpc()
+
+	# Wait for the choice to resolve
+	while _first_player_result < 0:
+		await Engine.get_main_loop().process_frame
+
+	_first_player_choosing = false
+	_cleanup_first_player_ui()
+	# Tell the client to restore its action panel (waiting client never gets cleanup)
+	_rpc_cleanup_first_player.rpc()
+	_apply_gradients_and_sync()
+	_on_log_message("%s chose to go first." % GameLog.player_name(_first_player_result))
+	turn_manager.start_game(_first_player_result)
+
+
+func _apply_gradients_and_sync() -> void:
+	for i in range(turn_manager.game_state.players.size()):
+		var player: PlayerState = turn_manager.game_state.players[i]
+		var board = player1_board if i == 0 else player2_board
+		if not player.current_monster.is_empty():
+			board.apply_monster_gradient(player.current_monster)
+	_sync_boards()
+
+
+func _show_first_player_waiting() -> void:
+	_disable_all_buttons()
+	action_panel.get_node("Row1").visible = false
+	action_panel.get_node("Row2").visible = false
+	card_select_prompt.text = "Opponent won the coin flip. Waiting for their choice..."
+	action_prompt_panel.visible = true
+
+
+func _cleanup_first_player_ui() -> void:
+	var container := action_panel.get_node_or_null("FirstPlayerContainer")
+	if container:
+		container.queue_free()
+	action_prompt_panel.visible = false
+	action_panel.get_node("Row1").visible = true
+	action_panel.get_node("Row2").visible = true
+
+
+func _show_first_player_choice() -> void:
+	_disable_all_buttons()
+	action_panel.get_node("Row1").visible = false
+	action_panel.get_node("Row2").visible = false
+	card_select_prompt.text = "You won the coin flip! Go first or second?"
+	action_prompt_panel.visible = true
+
+	var container := VBoxContainer.new()
+	container.name = "FirstPlayerContainer"
+	action_panel.add_child(container)
+
+	var btn_first := Button.new()
+	btn_first.text = "Go First"
+	btn_first.custom_minimum_size.x = 260
+	btn_first.size_flags_horizontal = Control.SIZE_SHRINK_END
+	btn_first.pressed.connect(_on_first_player_chosen.bind(true))
+	container.add_child(btn_first)
+
+	var btn_second := Button.new()
+	btn_second.text = "Go Second"
+	btn_second.custom_minimum_size.x = 260
+	btn_second.size_flags_horizontal = Control.SIZE_SHRINK_END
+	btn_second.pressed.connect(_on_first_player_chosen.bind(false))
+	container.add_child(btn_second)
+
+
+func _on_first_player_chosen(go_first: bool) -> void:
+	if not _first_player_choosing:
+		return
+	_cleanup_first_player_ui()
+
+	var chosen_id: int = _first_player_chooser_id if go_first else (1 - _first_player_chooser_id)
+
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_rpc_first_player_choice_resolved.rpc_id(NetworkManager.host_peer_id, chosen_id)
+	else:
+		_first_player_result = chosen_id
+
+
+## Host -> Client: tell the client to wait while the host chooses
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_first_player_waiting() -> void:
+	if NetworkManager.is_host():
+		return
+	_first_player_choosing = true
+	_show_first_player_waiting()
+
+
+## Host -> Client: ask the client to choose first/second
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_first_player_choice_requested() -> void:
+	if NetworkManager.is_host():
+		return
+	_first_player_choosing = true
+	_first_player_chooser_id = local_player_id
+	_show_first_player_choice()
+
+
+## Client -> Host: resolve the first-player choice
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_first_player_choice_resolved(chosen_id: int) -> void:
+	if not NetworkManager.is_host():
+		return
+	_first_player_result = chosen_id
+
+
+## Host -> Client: tell waiting client to restore action panel after coin flip
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_cleanup_first_player() -> void:
+	if NetworkManager.is_host():
+		return
+	_first_player_choosing = false
+	_cleanup_first_player_ui()
 
 
 func _arrange_for_local_player() -> void:
@@ -789,10 +934,16 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 
 func _on_game_ended(winner_id: int, reason: String) -> void:
 	_action_pending = false
+	_game_ended_by_disconnect = false
+	_rematch_requested = false
+	_opponent_rematch_requested = false
 	end_game_panel.visible = true
-	var win_label: Label = end_game_panel.get_node_or_null("WinLabel")
+	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
 		win_label.text = "%s Wins!\n%s" % [turn_manager.game_state.player_names[winner_id], reason]
+	btn_rematch.visible = true
+	btn_rematch.disabled = false
+	btn_rematch.text = "Rematch"
 	_disable_all_buttons()
 	if is_multiplayer_game and NetworkManager.is_host():
 		_rpc_receive_game_ended.rpc(winner_id, reason)
@@ -842,6 +993,28 @@ func _on_log_message(text: String) -> void:
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game and NetworkManager.is_host():
 		_rpc_receive_log.rpc(text)
+
+
+func _on_chat_submitted(text: String) -> void:
+	chat_input.clear()
+	chat_input.release_focus()
+	var trimmed := text.strip_edges()
+	if trimmed.is_empty():
+		return
+	var filtered := ChatFilter.filter(trimmed)
+	var pname := GameLog.player_name(local_player_id)
+	var formatted := GameLog.chat_message(pname, filtered)
+	_log_lines.append(formatted)
+	if log_output:
+		log_output.append_text(formatted + "\n")
+		log_output.scroll_to_line(log_output.get_line_count() - 1)
+	if is_multiplayer_game:
+		_rpc_receive_chat.rpc(local_player_id, filtered)
+	chat_char_count.text = str(chat_input.max_length)
+
+
+func _on_chat_text_changed(new_text: String) -> void:
+	chat_char_count.text = str(chat_input.max_length - new_text.length())
 
 
 # --- Action handler visual feedback ---
@@ -1007,9 +1180,227 @@ func _rpc_concede() -> void:
 
 func _on_main_menu_pressed() -> void:
 	if is_multiplayer_game:
+		if end_game_panel.visible:
+			_rpc_rematch_declined.rpc()
 		NetworkManager.notify_leaving()
 		NetworkManager.disconnect_game()
 	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
+
+
+func _on_rematch_pressed() -> void:
+	if _game_ended_by_disconnect:
+		return
+
+	_rematch_requested = true
+
+	if not is_multiplayer_game:
+		_execute_rematch()
+		return
+
+	# Multiplayer: notify opponent, wait for them
+	btn_rematch.disabled = true
+	btn_rematch.text = "Waiting..."
+	_rpc_rematch_requested.rpc()
+
+	if _opponent_rematch_requested and NetworkManager.is_host():
+		_execute_rematch()
+		_rpc_execute_rematch.rpc()
+
+
+func _execute_rematch() -> void:
+	# 1. Hide end game panel and reset rematch flags
+	end_game_panel.visible = false
+	_rematch_requested = false
+	_opponent_rematch_requested = false
+	_game_ended_by_disconnect = false
+
+	# 2. Clear visual state on both boards
+	player1_board.reset_visuals()
+	player2_board.reset_visuals()
+
+	# 3. Clear hands
+	player1_hand.clear_cards(true)
+	player2_hand.clear_cards(true)
+
+	# 4. Reset game_board state variables
+	_action_pending = false
+	_awaiting_confirmation = false
+	_confirming_pass = false
+	_discard_selecting = false
+	_discard_player_id = -1
+	_discard_count = 0
+	_discard_selected_cards.clear()
+	_hand_card_selecting = false
+	_hand_card_player_id = -1
+	_hand_card_allow_skip = false
+	_zone_target_selecting = false
+	_zone_target_player_id = -1
+	_zone_target_board_pid = -1
+	_zone_target_valid_zones.clear()
+	_zone_target_allow_skip = false
+	_strategy_target_selecting = false
+	_strategy_target_player_id = -1
+	_strategy_target_board_pid = -1
+	_strategy_target_valid_indices.clear()
+	_choice_selecting = false
+	_choice_player_id = -1
+	_first_player_choosing = false
+	_first_player_chooser_id = -1
+	_first_player_result = -1
+	waiting_for_card_select = false
+	waiting_for_zone_select = false
+	selected_card_id = ""
+	_selected_card_data = {}
+	_zone_select_valid.clear()
+	_drag_card = null
+	_drag_valid_zones.clear()
+	_drag_action = CardEnums.ActionType.PASS
+	_drag_can_rage = false
+	_drag_can_invade = false
+	_hand_expanded = false
+	_opponent_hand_expanded = false
+	_current_sub_phase = 0
+	_tracker_queue.clear()
+	_tracker_draining = false
+	_tracker_last_phase = -1
+	_tracker_last_player = -1
+	_state_version = 0
+	_client_state_version = 0
+	_client_gradients_applied = false
+	pending_action = CardEnums.ActionType.PASS
+
+	# 5. Restore action panel and hide overlays
+	_cleanup_first_player_ui()
+	_cleanup_choice_selection()
+	action_panel.get_node("Row1").visible = true
+	action_panel.get_node("Row2").visible = true
+	action_prompt_panel.visible = false
+	deck_search_overlay.visible = false
+	deck_arrange_overlay.visible = false
+	show_cards_button.visible = false
+	discard_view_overlay.visible = false
+	monster_deck_view_overlay.visible = false
+	zone_stack_view_overlay.visible = false
+	card_zoom_overlay.visible = false
+
+	# 6. Reset client state
+	_client_players = [PlayerState.new(0), PlayerState.new(1)]
+	_client_current_player_id = 0
+	_client_turn_number = 0
+	_client_phase = CardEnums.GamePhase.START
+	_client_playable = {}
+	_client_cp_modifiers = [0, 0]
+	_client_threat_modifiers = [0, 0]
+	_client_zone_cp_mods = [[], []]
+	_client_strategy_cp_mods = [[], []]
+
+	# 7. Clear game log
+	_log_lines.clear()
+	if log_output:
+		log_output.clear()
+
+	# 8. Reset turn tracker display
+	_tracker_queue.clear()
+	_tracker_draining = false
+	_apply_turn_tracker(0, CardEnums.GamePhase.START, 0)
+
+	# 9. Recreate TurnManager (host/solo only)
+	if not is_multiplayer_game or NetworkManager.is_host():
+		# Drop old TurnManager reference (RefCounted — will be GC'd)
+		turn_manager = null
+		await get_tree().process_frame
+
+		turn_manager = TurnManager.new()
+		turn_manager.setup(CardData)
+
+		turn_manager.game_state.player_names[0] = GameSettings.player_name
+		GameLog.player_names = GameLog.disambiguate(
+			turn_manager.game_state.player_names, local_player_id)
+		for i in range(2):
+			var board = player1_board if i == 0 else player2_board
+			if board and board.player_label:
+				board.player_label.text = GameLog.player_name(i)
+			if i < _turn_tracker_headers.size():
+				_turn_tracker_headers[i].text = GameLog.player_name(i)
+
+		# Reconnect turn manager signals
+		turn_manager.phase_started.connect(_on_phase_started)
+		turn_manager.phase_ended.connect(_on_phase_ended)
+		turn_manager.sub_phase_changed.connect(_on_sub_phase_changed)
+		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
+		turn_manager.turn_started.connect(_on_turn_started)
+		turn_manager.game_ended.connect(_on_game_ended)
+		turn_manager.log_message.connect(_on_log_message)
+		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
+
+		# Reconnect action handler signals
+		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
+		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
+		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
+		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
+		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
+		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
+		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
+
+		# Reconnect effect handler signals
+		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
+		turn_manager.action_handler.effect_handler.deck_arrange_requested.connect(_on_deck_arrange_requested)
+		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
+		turn_manager.action_handler.effect_handler.hand_card_selection_requested.connect(_on_hand_card_selection_requested)
+		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
+		turn_manager.action_handler.effect_handler.strategy_target_requested.connect(_on_strategy_target_requested)
+		turn_manager.action_handler.effect_handler.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
+		turn_manager.action_handler.effect_handler.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
+		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
+		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
+		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
+		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
+
+		# Reconnect player state signals
+		for player in turn_manager.game_state.players:
+			player.hand_changed.connect(_on_state_changed)
+			player.zones_changed.connect(_on_state_changed)
+			player.rage_changed.connect(_on_state_changed.unbind(1))
+			player.monster_changed.connect(_on_state_changed)
+			player.discard_changed.connect(_on_state_changed)
+			player.deck_changed.connect(_on_state_changed)
+			player.strategy_zones_changed.connect(_on_state_changed)
+
+		# Start game (coin flip for multiplayer, immediate for solo)
+		call_deferred("_start_game")
+	else:
+		# Client: just wait for state broadcasts from host
+		_disable_all_buttons()
+
+
+# --- Rematch RPCs ---
+
+## Peer -> Peer: signal that this player wants a rematch
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_rematch_requested() -> void:
+	_opponent_rematch_requested = true
+	_on_log_message("Opponent wants a rematch!")
+
+	if _rematch_requested and NetworkManager.is_host():
+		_execute_rematch()
+		_rpc_execute_rematch.rpc()
+
+
+## Host -> Client: instruct client to execute the rematch reset
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_execute_rematch() -> void:
+	if NetworkManager.is_host():
+		return
+	_execute_rematch()
+
+
+## Peer -> Peer: opponent declined rematch (chose Main Menu)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_rematch_declined() -> void:
+	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
+	if win_label:
+		win_label.text = win_label.text + "\nOpponent returned to menu."
+	btn_rematch.visible = false
 
 
 # --- Button handlers ---
@@ -3428,6 +3819,20 @@ func _rpc_receive_log(text: String) -> void:
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 
 
+## Any peer -> Any peer: chat message
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
+	if sender_player_id < 0 or sender_player_id > 1:
+		return
+	var filtered := ChatFilter.filter(text)
+	var pname := GameLog.player_name(sender_player_id)
+	var formatted := GameLog.chat_message(pname, filtered)
+	_log_lines.append(formatted)
+	if log_output:
+		log_output.append_text(formatted + "\n")
+		log_output.scroll_to_line(log_output.get_line_count() - 1)
+
+
 ## Host -> Client: deck search request (player must choose a card)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt: String) -> void:
@@ -3663,10 +4068,16 @@ func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	_action_pending = false
+	_game_ended_by_disconnect = false
+	_rematch_requested = false
+	_opponent_rematch_requested = false
 	end_game_panel.visible = true
-	var win_label: Label = end_game_panel.get_node_or_null("WinLabel")
+	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
 		win_label.text = "%s Wins!\n%s" % [GameLog.player_name(winner_id), reason]
+	btn_rematch.visible = true
+	btn_rematch.disabled = false
+	btn_rematch.text = "Rematch"
 	_disable_all_buttons()
 
 
@@ -3731,9 +4142,13 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 
 func _on_opponent_disconnected(_peer_id: int) -> void:
 	_disable_all_buttons()
+	# If the game was already over (normal end), just hide the rematch button
+	if end_game_panel.visible:
+		btn_rematch.visible = false
+		return
+	_game_ended_by_disconnect = true
 	end_game_panel.visible = true
-	var win_label: Label = end_game_panel.get_node_or_null("WinLabel")
+	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
 		win_label.text = "Opponent disconnected."
-	# The EndGamePanel should have a way to return to menu.
-	# If it has a button, it will handle it. Otherwise we add a timer.
+	btn_rematch.visible = false

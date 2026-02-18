@@ -454,6 +454,49 @@ func clear_highlights() -> void:
 	highlight_discard_zone(false)
 
 
+## Clear all visual state for a fresh game (called during rematch).
+func reset_visuals() -> void:
+	# Remove all cards from zone slots
+	for slot in zone_slots:
+		if slot:
+			if slot.has_card() and slot.get_card() != monster_card:
+				slot.remove_card(true)
+			slot.set_highlighted(false)
+			slot.set_monster_marker(false)
+
+	# Remove monster card
+	if monster_card:
+		# Remove from its slot first
+		if monster_card_zone >= 0 and monster_card_zone < zone_slots.size():
+			var slot := zone_slots[monster_card_zone]
+			if slot and slot.has_card() and slot.get_card() == monster_card:
+				slot.remove_card(false)
+		monster_card.queue_free()
+		monster_card = null
+	monster_card_zone = -1
+
+	# Remove all cards from strategy slots
+	for slot in strategy_slots:
+		if slot:
+			if slot.has_card():
+				slot.remove_card(true)
+			slot.set_highlighted(false)
+
+	# Hide 3rd strategy slot if it was made visible (EBP03-013)
+	if strategy_slots.size() >= 3:
+		strategy_slots[2].visible = false
+
+	# Clear gradient overlay children (TextureRects created by apply_monster_gradient)
+	var overlay := $GradientOverlay as ColorRect
+	if overlay:
+		for child in overlay.get_children():
+			child.queue_free()
+		overlay.color = Color(0, 0, 0, 0)
+
+	highlight_rage_zone(false)
+	highlight_discard_zone(false)
+
+
 func _apply_mirror() -> void:
 	var bg := $LayoutContainer/Background as TextureRect
 	if bg:
