@@ -4,12 +4,14 @@ extends Control
 
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 const CUSTOM_ART_BASE_PATH := "user://custom/cardArt"
+const CARD_BACK_PATH := "res://CardContent/Assets/cardBacks/default.jpeg"
 
 # Static texture cache shared across all Card instances
 static var _texture_cache: Dictionary = {}  # card_number -> ImageTexture
 static var _strategy_texture_cache: Dictionary = {}  # card_number -> ImageTexture (rotated)
 static var _custom_texture_cache: Dictionary = {}  # card_number -> ImageTexture (custom art)
 static var _custom_strategy_texture_cache: Dictionary = {}  # card_number -> ImageTexture (custom rotated)
+static var _card_back_texture: Texture2D = null
 
 # Signals
 signal drag_started()
@@ -264,6 +266,10 @@ func _update_display() -> void:
 	if is_face_down:
 		if card_back:
 			card_back.visible = true
+			if not _card_back_texture:
+				_card_back_texture = load(CARD_BACK_PATH)
+			if _card_back_texture:
+				card_back.texture = _card_back_texture
 		if card_image:
 			card_image.visible = false
 		return
@@ -318,6 +324,7 @@ static func clear_texture_cache() -> void:
 	_strategy_texture_cache.clear()
 	_custom_texture_cache.clear()
 	_custom_strategy_texture_cache.clear()
+	_card_back_texture = null
 
 
 func _is_strategy_card() -> bool:
