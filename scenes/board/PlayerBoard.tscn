@@ -169,6 +169,8 @@ text = "CP"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(0.3, 0.7, 1.0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
 
 [node name="CPLabel" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
@@ -177,6 +179,8 @@ horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.4, 0.8, 1.0, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
 
 [node name="ThreatTitle" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
@@ -184,6 +188,8 @@ text = "Threat"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(1.0, 0.5, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
 
 [node name="ThreatLabel" type="Label" parent="LayoutContainer/StatsDisplay"]
 layout_mode = 2
@@ -192,6 +198,8 @@ horizontal_alignment = 1
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(1.0, 0.6, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
 
 [node name="Zone8" parent="LayoutContainer" instance=ExtResource("2_slot")]
 layout_mode = 1

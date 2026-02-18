@@ -3,10 +3,13 @@ extends Control
 ## Card node with hover scaling, drag functionality, and TCG card image display
 
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
+const CUSTOM_ART_BASE_PATH := "user://custom/cardArt"
 
 # Static texture cache shared across all Card instances
 static var _texture_cache: Dictionary = {}  # card_number -> ImageTexture
 static var _strategy_texture_cache: Dictionary = {}  # card_number -> ImageTexture (rotated)
+static var _custom_texture_cache: Dictionary = {}  # card_number -> ImageTexture (custom art)
+static var _custom_strategy_texture_cache: Dictionary = {}  # card_number -> ImageTexture (custom rotated)
 
 # Signals
 signal drag_started()
@@ -31,6 +34,7 @@ var card_effect: RefCounted = null  # CardEffect instance loaded from effect_scr
 var is_face_down: bool = false
 var is_selectable: bool = false
 var in_landscape_slot: bool = false
+var use_custom_art: bool = true
 
 # Drag state
 var is_dragging: bool = false
@@ -274,11 +278,29 @@ func _update_display() -> void:
 		if card_number.is_empty():
 			return
 		var is_strategy := _is_strategy_card()
+		var set_number := card_number.split("-")[0]
+		# Try custom art first
+		if use_custom_art and GameSettings.custom_card_art_enabled:
+			var custom_cache := _custom_strategy_texture_cache if is_strategy else _custom_texture_cache
+			if custom_cache.has(card_number):
+				card_image.texture = custom_cache[card_number]
+				return
+			var custom_path := CUSTOM_ART_BASE_PATH.path_join(set_number).path_join("%s.png" % card_number)
+			if FileAccess.file_exists(custom_path):
+				var custom_abs := ProjectSettings.globalize_path(custom_path)
+				var image := Image.load_from_file(custom_abs)
+				if image:
+					if is_strategy:
+						image.rotate_90(CLOCKWISE)
+					var tex := ImageTexture.create_from_image(image)
+					custom_cache[card_number] = tex
+					card_image.texture = tex
+					return
+		# Fall back to standard artwork
 		var cache := _strategy_texture_cache if is_strategy else _texture_cache
 		if cache.has(card_number):
 			card_image.texture = cache[card_number]
 			return
-		var set_number := card_number.split("-")[0]
 		var image_path := ARTWORK_BASE_PATH.path_join(set_number).path_join("%s.png" % card_number)
 		var abs_path := ProjectSettings.globalize_path(image_path)
 		if FileAccess.file_exists(image_path):
@@ -294,6 +316,8 @@ func _update_display() -> void:
 static func clear_texture_cache() -> void:
 	_texture_cache.clear()
 	_strategy_texture_cache.clear()
+	_custom_texture_cache.clear()
+	_custom_strategy_texture_cache.clear()
 
 
 func _is_strategy_card() -> bool:

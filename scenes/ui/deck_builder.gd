@@ -589,6 +589,7 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 	wrapper.add_theme_stylebox_override("panel", style)
 
 	var card_node: Control = CARD_SCENE.instantiate()
+	card_node.use_custom_art = false
 	card_node.set_card_data_dict(card_data)
 	card_node.drag_enabled = false
 	card_node.custom_minimum_size = Vector2.ZERO

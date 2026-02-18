@@ -67,141 +67,19 @@ theme_override_font_sizes/font_size = 18
 max_length = 24
 placeholder_text = "Enter name..."
 
-[node name="AutoDrawRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+[node name="AutomationButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
+size_flags_horizontal = 4
+text = "Automation..."
+theme_override_font_sizes/font_size = 22
 
-[node name="AutoDrawLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoDrawRow"]
+[node name="CustomizeButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
-size_flags_horizontal = 3
-text = "Auto Draw"
-theme_override_font_sizes/font_size = 20
-
-[node name="AutoDrawCheck" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoDrawRow"]
-layout_mode = 2
-
-[node name="AutoPhaseRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="AutoPhaseLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoPhaseRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Auto Phase Advance"
-theme_override_font_sizes/font_size = 20
-
-[node name="AutoPhaseCheck" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoPhaseRow"]
-layout_mode = 2
-
-[node name="AutoDiscardStrategiesRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoDiscardStrategiesRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Auto Discard Strategies"
-theme_override_font_sizes/font_size = 20
-
-[node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoDiscardStrategiesRow"]
-layout_mode = 2
-
-[node name="AutoResetRageRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoResetRageRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Auto Reset Rage"
-theme_override_font_sizes/font_size = 20
-
-[node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoResetRageRow"]
-layout_mode = 2
-
-[node name="AutoCounterCheckRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoCounterCheckRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Auto Counter Check"
-theme_override_font_sizes/font_size = 20
-
-[node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoCounterCheckRow"]
-layout_mode = 2
-
-[node name="AutoAdvanceRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoAdvanceRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Auto Advance"
-theme_override_font_sizes/font_size = 20
-
-[node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutoAdvanceRow"]
-layout_mode = 2
-
-[node name="ConfirmMainPhasePassRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ConfirmMainPhasePassRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Confirm Main Phase Pass"
-theme_override_font_sizes/font_size = 20
-
-[node name="Check" type="CheckButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ConfirmMainPhasePassRow"]
-layout_mode = 2
-
-[node name="SortSeparator" type="HSeparator" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="SortLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-text = "Hand Sort"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 24
-theme_override_colors/font_color = Color(0.9, 0.3, 0.1, 1)
-
-[node name="SortTypeOrderRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SortTypeOrderRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Type Order"
-theme_override_font_sizes/font_size = 20
-
-[node name="SortTypeOrderOption" type="OptionButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SortTypeOrderRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(250, 0)
-item_count = 6
-popup/item_0/text = "Monster, Battle, Strategy"
-popup/item_1/text = "Monster, Strategy, Battle"
-popup/item_1/id = 1
-popup/item_2/text = "Battle, Monster, Strategy"
-popup/item_2/id = 2
-popup/item_3/text = "Battle, Strategy, Monster"
-popup/item_3/id = 3
-popup/item_4/text = "Strategy, Monster, Battle"
-popup/item_4/id = 4
-popup/item_5/text = "Strategy, Battle, Monster"
-popup/item_5/id = 5
-
-[node name="SortRankOrderRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="Label" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SortRankOrderRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Rank Order"
-theme_override_font_sizes/font_size = 20
-
-[node name="SortRankOrderOption" type="OptionButton" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/SortRankOrderRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(250, 0)
-item_count = 2
-popup/item_0/text = "Ascending"
-popup/item_1/text = "Descending"
-popup/item_1/id = 1
+size_flags_horizontal = 4
+text = "Customize..."
+theme_override_font_sizes/font_size = 22
 
 [node name="BackButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)

@@ -45,6 +45,7 @@ var threat_label: Label
 func _ready() -> void:
 	clip_contents = true
 	_setup_references()
+	_apply_custom_playmat()
 	resized.connect(_update_layout)
 	_update_layout()
 
@@ -140,9 +141,37 @@ func _setup_references() -> void:
 			_add_border(area)
 
 
+func _apply_custom_playmat() -> void:
+	if not GameSettings.custom_playmat_enabled:
+		return
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	if player_id != local_id and not GameSettings.custom_playmat_opponent:
+		return
+	var dir_path := "user://custom/playmat"
+	for ext in ["png", "jpg", "jpeg", "webp"]:
+		var image_path := dir_path.path_join("default.%s" % ext)
+		if FileAccess.file_exists(image_path):
+			var abs_path := ProjectSettings.globalize_path(image_path)
+			var image := Image.load_from_file(abs_path)
+			if image:
+				var tex := ImageTexture.create_from_image(image)
+				var board_bg := $BoardBg as TextureRect
+				if board_bg:
+					board_bg.texture = tex
+			return
+
+
 ## Apply a gradient tint to the board background based on the rank 1 monster's colors.
 ## Call once during initial board setup.
 func apply_monster_gradient(monster_data: Dictionary) -> void:
+	if GameSettings.color_overlay_mode == 0:
+		return
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var is_self := player_id == local_id
+	if is_self and GameSettings.color_overlay_mode == 2:
+		return
+	if not is_self and GameSettings.color_overlay_mode == 1:
+		return
 	var overlay := $GradientOverlay as ColorRect
 	if not overlay:
 		return
