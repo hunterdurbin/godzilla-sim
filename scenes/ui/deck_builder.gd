@@ -57,6 +57,7 @@ var _invasion_filter: int = -1  # -1 = all, 1 = step 1, 2 = step 2
 var _sort_mode: int = 0  # 0=ID, 1=Name, 2=Rank, 3=Type
 
 var _pending_action: Callable
+var _invalid_cards: Dictionary = {} # card_number -> true
 
 # --- Preview ---
 var _preview_card: Control
@@ -185,21 +186,27 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	vbox.add_child(HSeparator.new())
 
-	# Deck stats
+	# Deck stats (fixed height)
 	deck_stats_label = RichTextLabel.new()
 	deck_stats_label.bbcode_enabled = true
 	deck_stats_label.custom_minimum_size.y = 60
 	deck_stats_label.fit_content = true
 	deck_stats_label.scroll_active = false
+	deck_stats_label.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	vbox.add_child(deck_stats_label)
 
-	# Validation
+	# Validation (scrollable, fixed height)
+	var validation_scroll := ScrollContainer.new()
+	validation_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	validation_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vbox.add_child(validation_scroll)
+
 	validation_label = RichTextLabel.new()
 	validation_label.bbcode_enabled = true
-	validation_label.custom_minimum_size.y = 40
 	validation_label.fit_content = true
 	validation_label.scroll_active = false
-	vbox.add_child(validation_label)
+	validation_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	validation_scroll.add_child(validation_label)
 
 	# Back button
 	back_button = Button.new()
@@ -577,6 +584,7 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 	wrapper.custom_minimum_size = SCALED_SIZE
 	wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	wrapper.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+	var card_id: String = card_data.get("id", "")
 	var style := StyleBoxEmpty.new()
 	wrapper.add_theme_stylebox_override("panel", style)
 
@@ -625,7 +633,6 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 				if count >= max_copies:
 					card_node.modulate = Color(0.5, 0.5, 0.5, 0.7)
 	else:
-		var card_id: String = card_data.get("id", "")
 		var is_monster_type: bool = card_data.get("card_type", -1) == CardEnums.CardType.MONSTER
 		var in_monster: bool = not _showing_monster_tab and _is_in_monster_deck(card_id)
 
@@ -669,6 +676,19 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 			wrapper.mouse_entered.connect(func(): move_btn.visible = true)
 			wrapper.mouse_exited.connect(_hide_if_outside)
 			move_btn.mouse_exited.connect(_hide_if_outside)
+
+	# Red border overlay for invalid cards
+	if not is_pool and card_id in _invalid_cards:
+		var border := Panel.new()
+		border.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var border_style := StyleBoxFlat.new()
+		border_style.bg_color = Color.TRANSPARENT
+		border_style.border_color = Color(1, 0.2, 0.1, 0.9)
+		border_style.set_border_width_all(2)
+		border_style.set_corner_radius_all(3)
+		border.add_theme_stylebox_override("panel", border_style)
+		wrapper.add_child(border)
 
 	return wrapper
 
@@ -747,6 +767,7 @@ func _hide_preview() -> void:
 
 func _refresh_deck_display() -> void:
 	_clear_grid(deck_grid)
+	_invalid_cards = DeckValidator.get_invalid_cards(_monster_entries, _main_entries)
 	var entries: Array = _monster_entries if _showing_monster_tab else _main_entries
 	for entry in entries:
 		var card_data: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
@@ -1026,90 +1047,9 @@ func _update_deck_stats() -> void:
 
 func _update_validation() -> void:
 	validation_label.clear()
-	var errors: Array[String] = []
+	var errors := DeckValidator.validate(_monster_entries, _main_entries)
+	var warnings := DeckValidator.warnings(_monster_entries, _main_entries)
 
-	# Check monster ranks
-	var ranks_found: Dictionary = {}
-	for entry in _monster_entries:
-		var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
-		if tmpl.is_empty():
-			continue
-		var rank: int = tmpl.get("rank", 0)
-		if rank in ranks_found:
-			errors.append("Duplicate monster rank %d" % rank)
-		ranks_found[rank] = true
-
-	if _monster_entries.size() == 4:
-		for r in [1, 2, 3, 4]:
-			if r not in ranks_found:
-				errors.append("Missing monster rank %d" % r)
-
-	# Check copy limits
-	var card_counts: Dictionary = {}
-	for entry in _monster_entries:
-		var base: String = entry["card_number"].trim_suffix("+")
-		card_counts[base] = card_counts.get(base, 0) + entry["quantity"]
-	for entry in _main_entries:
-		var base: String = entry["card_number"].trim_suffix("+")
-		card_counts[base] = card_counts.get(base, 0) + entry["quantity"]
-	for cn in card_counts:
-		if card_counts[cn] > 4:
-			var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(cn, {})
-			if not tmpl.get("unlimited_copies", false):
-				errors.append("%s has %d copies (max 4)" % [cn, card_counts[cn]])
-
-	# Step-2 check
-	if _get_step2_count() > 10:
-		errors.append("Too many Step-2 cards (%d / 10)" % _get_step2_count())
-
-	# Color matching
-	var allowed_colors: Array = [CardEnums.CardColor.WHITE]
-	for entry in _monster_entries:
-		var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
-		var rank: int = tmpl.get("rank", 0)
-		if rank == 1:
-			for c in tmpl.get("colors", []):
-				if c not in allowed_colors:
-					allowed_colors.append(c)
-
-	if allowed_colors.size() > 1:
-		var all_entries := _monster_entries + _main_entries
-		for entry in all_entries:
-			var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
-			if tmpl.is_empty():
-				continue
-			var card_colors: Array = tmpl.get("colors", [])
-			var has_allowed := false
-			for c in card_colors:
-				if c in allowed_colors:
-					has_allowed = true
-					break
-			if not has_allowed:
-				errors.append("%s color mismatch" % entry["card_number"])
-
-	# Rank-up warnings
-	var warnings: Array[String] = []
-	var rank_cards: Dictionary = {}
-	for entry in _monster_entries:
-		var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
-		if tmpl.is_empty():
-			continue
-		rank_cards[tmpl.get("rank", 0)] = tmpl
-
-	for r in [1, 2, 3]:
-		if r not in rank_cards or (r + 1) not in rank_cards:
-			continue
-		var current_traits: Array = rank_cards[r].get("traits", [])
-		var next_traits: Array = rank_cards[r + 1].get("traits", [])
-		var shared := false
-		for t in current_traits:
-			if t in next_traits:
-				shared = true
-				break
-		if not shared:
-			warnings.append("Rank %d and %d share no traits" % [r, r + 1])
-
-	# Display
 	if not errors.is_empty():
 		validation_label.append_text("[color=red][b]Errors[/b][/color]\n")
 		for err in errors:
