@@ -218,6 +218,11 @@ var _strategy_target_player_id: int = -1
 var _strategy_target_board_pid: int = -1
 var _strategy_target_valid_indices: Array[int] = []
 
+# First-player choice state
+var _first_player_choosing: bool = false
+var _first_player_chooser_id: int = -1 # Player who gets to decide
+var _first_player_result: int = -1 # Resolved first player id (-1 = pending)
+
 # Standby choice selection state (for choosing ability resolution order)
 var _choice_selecting: bool = false
 var _choice_player_id: int = -1
@@ -283,13 +288,6 @@ func _ready() -> void:
 				board.player_label.text = GameLog.player_name(i)
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
-
-		# Apply monster color gradient to board backgrounds
-		for i in range(turn_manager.game_state.players.size()):
-			var player: PlayerState = turn_manager.game_state.players[i]
-			var board = player1_board if i == 0 else player2_board
-			if not player.current_monster.is_empty():
-				board.apply_monster_gradient(player.current_monster)
 
 		# Connect turn manager signals
 		turn_manager.phase_started.connect(_on_phase_started)
@@ -471,7 +469,6 @@ func _ready() -> void:
 
 	# Initial board sync and start (host/solo only)
 	if turn_manager:
-		_sync_boards()
 		call_deferred("_start_game")
 	else:
 		_disable_all_buttons()
@@ -568,7 +565,132 @@ func _update_all_setting_indicators() -> void:
 
 
 func _start_game() -> void:
-	turn_manager.start_game()
+	if not is_multiplayer_game:
+		# Solo: no need to choose, player 1 always goes first
+		_apply_gradients_and_sync()
+		turn_manager.start_game(0)
+		return
+
+	# Multiplayer: randomly select which player gets to choose who goes first
+	_first_player_chooser_id = randi() % 2
+	_first_player_result = -1
+	_first_player_choosing = true
+
+	_on_log_message("%s won the coin flip!" % GameLog.player_name(_first_player_chooser_id))
+
+	if _first_player_chooser_id != local_player_id:
+		# The chooser is the remote client — send RPC, show waiting state locally
+		_show_first_player_waiting()
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == _first_player_chooser_id:
+				_rpc_first_player_choice_requested.rpc_id(peer_id)
+	else:
+		# Host is the chooser — tell the client to wait
+		_show_first_player_choice()
+		for peer_id in NetworkManager.peer_player_map:
+			_rpc_first_player_waiting.rpc_id(peer_id)
+
+	# Wait for the choice to resolve
+	while _first_player_result < 0:
+		await Engine.get_main_loop().process_frame
+
+	_first_player_choosing = false
+	_cleanup_first_player_ui()
+	_apply_gradients_and_sync()
+	_on_log_message("%s chose to go first." % GameLog.player_name(_first_player_result))
+	turn_manager.start_game(_first_player_result)
+
+
+func _apply_gradients_and_sync() -> void:
+	for i in range(turn_manager.game_state.players.size()):
+		var player: PlayerState = turn_manager.game_state.players[i]
+		var board = player1_board if i == 0 else player2_board
+		if not player.current_monster.is_empty():
+			board.apply_monster_gradient(player.current_monster)
+	_sync_boards()
+
+
+func _show_first_player_waiting() -> void:
+	_disable_all_buttons()
+	action_panel.get_node("Row1").visible = false
+	action_panel.get_node("Row2").visible = false
+	card_select_prompt.text = "Opponent won the coin flip. Waiting for their choice..."
+	action_prompt_panel.visible = true
+
+
+func _cleanup_first_player_ui() -> void:
+	var container := action_panel.get_node_or_null("FirstPlayerContainer")
+	if container:
+		container.queue_free()
+	action_prompt_panel.visible = false
+	action_panel.get_node("Row1").visible = true
+	action_panel.get_node("Row2").visible = true
+
+
+func _show_first_player_choice() -> void:
+	_disable_all_buttons()
+	action_panel.get_node("Row1").visible = false
+	action_panel.get_node("Row2").visible = false
+	card_select_prompt.text = "You won the coin flip! Go first or second?"
+	action_prompt_panel.visible = true
+
+	var container := VBoxContainer.new()
+	container.name = "FirstPlayerContainer"
+	action_panel.add_child(container)
+
+	var btn_first := Button.new()
+	btn_first.text = "Go First"
+	btn_first.custom_minimum_size.x = 260
+	btn_first.size_flags_horizontal = Control.SIZE_SHRINK_END
+	btn_first.pressed.connect(_on_first_player_chosen.bind(true))
+	container.add_child(btn_first)
+
+	var btn_second := Button.new()
+	btn_second.text = "Go Second"
+	btn_second.custom_minimum_size.x = 260
+	btn_second.size_flags_horizontal = Control.SIZE_SHRINK_END
+	btn_second.pressed.connect(_on_first_player_chosen.bind(false))
+	container.add_child(btn_second)
+
+
+func _on_first_player_chosen(go_first: bool) -> void:
+	if not _first_player_choosing:
+		return
+	_cleanup_first_player_ui()
+
+	var chosen_id: int = _first_player_chooser_id if go_first else (1 - _first_player_chooser_id)
+
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_rpc_first_player_choice_resolved.rpc_id(NetworkManager.host_peer_id, chosen_id)
+	else:
+		_first_player_result = chosen_id
+
+
+## Host -> Client: tell the client to wait while the host chooses
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_first_player_waiting() -> void:
+	if NetworkManager.is_host():
+		return
+	_first_player_choosing = true
+	_show_first_player_waiting()
+
+
+## Host -> Client: ask the client to choose first/second
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_first_player_choice_requested() -> void:
+	if NetworkManager.is_host():
+		return
+	_first_player_choosing = true
+	_first_player_chooser_id = local_player_id
+	_show_first_player_choice()
+
+
+## Client -> Host: resolve the first-player choice
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_first_player_choice_resolved(chosen_id: int) -> void:
+	if not NetworkManager.is_host():
+		return
+	_first_player_result = chosen_id
 
 
 func _arrange_for_local_player() -> void:
