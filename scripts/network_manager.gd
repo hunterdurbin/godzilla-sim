@@ -101,6 +101,62 @@ func host_online() -> Error:
 	return OK
 
 
+## Connect to the relay server and create a public room. Same as host_online()
+## but appends ?public=true so the relay server lists it for other players.
+func host_public() -> Error:
+	_room_code = _generate_room_code()
+	var relay_peer := RelayMultiplayerPeer.new()
+	var host_name := ChatFilter.filter(GameSettings.player_name).uri_encode()
+	var url := "ws://%s:%d/%s?public=true&version=%s&name=%s" % [RELAY_HOST, RELAY_PORT, _room_code, GAME_VERSION, host_name]
+	var err := relay_peer.connect_as_host(url)
+	if err != OK:
+		return err
+
+	multiplayer.multiplayer_peer = relay_peer
+
+	multiplayer.peer_connected.connect(_on_peer_connected)
+	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+
+	err = await _wait_for_relay_connection(relay_peer)
+	if err != OK:
+		multiplayer.multiplayer_peer = null
+		if multiplayer.peer_connected.is_connected(_on_peer_connected):
+			multiplayer.peer_connected.disconnect(_on_peer_connected)
+		if multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+			multiplayer.peer_disconnected.disconnect(_on_peer_disconnected)
+		return err
+
+	mode = Mode.ONLINE_HOST
+	host_peer_id = 1
+	local_player_id = 0
+	peer_player_map[1] = 0
+	return OK
+
+
+## Fetch the list of public rooms from the relay server.
+## Returns an Array of Dictionaries: [{"code": "ABC123", "players": 1}, ...]
+## Returns an empty Array on failure.
+func fetch_public_rooms() -> Array:
+	var http := HTTPRequest.new()
+	add_child(http)
+	var url := "http://%s:%d/rooms?version=%s" % [RELAY_HOST, RELAY_PORT, GAME_VERSION]
+	var err := http.request(url)
+	if err != OK:
+		http.queue_free()
+		return []
+	var result: Array = await http.request_completed
+	http.queue_free()
+	var response_code: int = result[1]
+	var body: PackedByteArray = result[3]
+	if response_code != 200:
+		return []
+	var json_str := body.get_string_from_utf8()
+	var parsed = JSON.parse_string(json_str)
+	if parsed is Array:
+		return parsed
+	return []
+
+
 ## Connect to a host's room via the relay server using their room code.
 func join_online(game_code: String) -> Error:
 	_room_code = game_code

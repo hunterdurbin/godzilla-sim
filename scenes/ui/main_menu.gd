@@ -65,7 +65,7 @@ func _on_lan_pressed() -> void:
 
 
 func _on_online_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/OnlineLobby.tscn")
+	get_tree().change_scene_to_file("res://scenes/ui/OnlinePlay.tscn")
 
 
 func _on_deck_builder_pressed() -> void:
