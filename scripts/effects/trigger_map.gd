@@ -240,6 +240,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp03/ebp03_078.gd": ["on_enter"],
 	"res://scripts/effects/ebp03/ebp03_079.gd": ["on_enter"],
 	"res://scripts/effects/ebp03/ebp03_080.gd": ["get_phase_start_filter","on_phase_start","is_base_strategy"],
+	"res://scripts/effects/epr/epr_005.gd": ["on_enter"],
 	"res://scripts/effects/esd01/esd01_002.gd": ["on_when_invading"],
 	"res://scripts/effects/esd01/esd01_003.gd": ["get_threat_level_modifier"],
 	"res://scripts/effects/esd01/esd01_004.gd": ["on_when_invading"],
