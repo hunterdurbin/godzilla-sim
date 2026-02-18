@@ -3093,6 +3093,7 @@ func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void
 func _on_discard_clicked(pid: int) -> void:
 	var player := _get_player_state(pid)
 	_discard_view_cards = player.discard_pile.duplicate(true)
+	_discard_view_cards.reverse()
 	var pname := GameLog.player_name(pid)
 	var title := "%s Discard Pile (%d)" % [pname, _discard_view_cards.size()]
 	discard_view_title.text = title
