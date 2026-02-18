@@ -1259,6 +1259,33 @@ func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, 
 	return await _execute_destroy_zone(target, chosen, zone_card)
 
 
+func destroy_chosen_zone(player_id: int, target: PlayerState, valid_zones: Array[int], prompt: String) -> Dictionary:
+	## Let a player choose one zone from a pre-computed list to destroy.
+	## Like destroy_zone_target but with pre-computed valid zones instead of a filter.
+	## Respects can_be_destroyed and on_would_be_destroyed replacement effects.
+	## Returns the destroyed card data, or empty dict if nothing was destroyed.
+	var destroyable: Array[int] = []
+	for zi in valid_zones:
+		if zi < 0 or zi >= 8 or not target.zone_has_cards(zi):
+			continue
+		var top_card := target.get_zone_top_card(zi)
+		if _can_destroy_card(target, top_card):
+			destroyable.append(zi)
+
+	if destroyable.is_empty():
+		return {}
+
+	var chosen: int = await select_zone_target(player_id, target.player_id, destroyable, prompt)
+	if chosen < 0:
+		return {}
+
+	var zone_card := target.get_zone_top_card(chosen)
+	if zone_card.is_empty():
+		return {}
+
+	return await _execute_destroy_zone(target, chosen, zone_card)
+
+
 func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dictionary]:
 	## Destroy all occupied zones in the given list on the target player's board.
 	## Respects can_be_destroyed and on_would_be_destroyed replacement effects.

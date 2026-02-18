@@ -42,8 +42,12 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		if not opp_card.is_empty() and opp_card.get("rank", 0) <= 5:
 			valid_zones.append(opp_zi)
 
-	if not valid_zones.is_empty():
-		await ctx.effect_handler.destroy_zones(ctx.opponent, valid_zones)
+	if valid_zones.is_empty():
+		return
+
+	await ctx.effect_handler.destroy_chosen_zone(
+		ctx.owner.player_id, ctx.opponent, valid_zones,
+		"Destroy 1 opponent rank 5 or lower battle card in same column:")
 
 
 func _has_color_battle_in_zones(ctx: EffectContext, color: CardEnums.CardColor) -> bool:
