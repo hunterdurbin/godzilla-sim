@@ -27,7 +27,9 @@ var _client_gradients_applied: bool = false
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
 @onready var player2_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player2Board
 @onready var action_panel: Control = $ActionPanel
-@onready var log_output: RichTextLabel = $LogPanel/LogOutput
+@onready var log_output: RichTextLabel = $LogPanel/LogVBox/LogOutput
+@onready var chat_input: LineEdit = $LogPanel/LogVBox/ChatRow/ChatInput
+@onready var chat_char_count: Label = $LogPanel/LogVBox/ChatRow/CharCount
 var _log_lines: PackedStringArray = []
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var action_prompt_panel: PanelContainer = $ActionPrompt
@@ -408,6 +410,8 @@ func _ready() -> void:
 	log_output.meta_underlined = false
 	log_output.meta_hover_started.connect(_on_log_meta_hover_started)
 	log_output.meta_hover_ended.connect(_on_log_meta_hover_ended)
+	chat_input.text_submitted.connect(_on_chat_submitted)
+	chat_input.text_changed.connect(_on_chat_text_changed)
 
 	# Hide overlays and prompts
 	end_game_panel.visible = false
@@ -842,6 +846,28 @@ func _on_log_message(text: String) -> void:
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game and NetworkManager.is_host():
 		_rpc_receive_log.rpc(text)
+
+
+func _on_chat_submitted(text: String) -> void:
+	chat_input.clear()
+	chat_input.release_focus()
+	var trimmed := text.strip_edges()
+	if trimmed.is_empty():
+		return
+	var filtered := ChatFilter.filter(trimmed)
+	var pname := GameLog.player_name(local_player_id)
+	var formatted := GameLog.chat_message(pname, filtered)
+	_log_lines.append(formatted)
+	if log_output:
+		log_output.append_text(formatted + "\n")
+		log_output.scroll_to_line(log_output.get_line_count() - 1)
+	if is_multiplayer_game:
+		_rpc_receive_chat.rpc(filtered)
+	chat_char_count.text = str(chat_input.max_length)
+
+
+func _on_chat_text_changed(new_text: String) -> void:
+	chat_char_count.text = str(chat_input.max_length - new_text.length())
 
 
 # --- Action handler visual feedback ---
@@ -3425,6 +3451,22 @@ func _rpc_receive_log(text: String) -> void:
 	_log_lines.append(text)
 	if log_output:
 		log_output.append_text(text + "\n")
+		log_output.scroll_to_line(log_output.get_line_count() - 1)
+
+
+## Any peer -> Any peer: chat message
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_receive_chat(text: String) -> void:
+	var sender_peer_id := multiplayer.get_remote_sender_id()
+	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_peer_id, -1)
+	if sender_player_id < 0 or sender_player_id > 1:
+		return
+	var filtered := ChatFilter.filter(text)
+	var pname := GameLog.player_name(sender_player_id)
+	var formatted := GameLog.chat_message(pname, filtered)
+	_log_lines.append(formatted)
+	if log_output:
+		log_output.append_text(formatted + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 
 

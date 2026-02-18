@@ -406,13 +406,33 @@ anchor_bottom = 0.75
 offset_left = 10.0
 offset_right = 50.0
 
-[node name="LogOutput" type="RichTextLabel" parent="LogPanel" unique_id=1596132669]
+[node name="LogVBox" type="VBoxContainer" parent="LogPanel"]
 layout_mode = 2
+
+[node name="LogOutput" type="RichTextLabel" parent="LogPanel/LogVBox" unique_id=1596132669]
+layout_mode = 2
+size_flags_vertical = 3
 theme_override_font_sizes/normal_font_size = 11
 theme_override_font_sizes/bold_font_size = 11
 text = "Game Log:
 "
 scroll_following = true
+
+[node name="ChatRow" type="HBoxContainer" parent="LogPanel/LogVBox"]
+layout_mode = 2
+
+[node name="ChatInput" type="LineEdit" parent="LogPanel/LogVBox/ChatRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 11
+placeholder_text = "Type to chat..."
+max_length = 200
+
+[node name="CharCount" type="Label" parent="LogPanel/LogVBox/ChatRow"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 10
+text = "200"
 
 [node name="Player1Hand" type="Node2D" parent="." unique_id=14222774]
 script = ExtResource("3_cm")
