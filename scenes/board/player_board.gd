@@ -29,17 +29,24 @@ var strategy_slots: Array[Slot] = []
 var hand_manager: CardManager # Set externally by GameBoard
 var monster_card: Control
 var monster_card_zone: int = -1 # Zone index (0-7) where monster card is currently placed
-var deck_count_label: Label
-var discard_count_label: Label
 var rage_label: Label
 var rage_threat_label: Label
 var rage_display: Control
 var discard_display: Control
 var monster_info_display: Control
-var monster_deck_count_label: Label
 var player_label: Label
 var cp_label: Label
 var threat_label: Label
+
+# Card-based info displays
+var _deck_display: Control = null
+var _deck_card_backs: Array[Control] = []
+var _deck_count_badge: Label = null
+var _discard_card: Control = null
+var _discard_empty_label: Label = null
+var _discard_last_id: String = ""  # Track last shown card to avoid redundant updates
+var _discard_count_badge: Label = null
+var _monster_deck_card_backs: Array[Control] = []
 
 
 func _ready() -> void:
@@ -107,36 +114,80 @@ func _setup_references() -> void:
 			strategy_slots.append(slot)
 
 	# Info nodes
-	deck_count_label = find_child("DeckCount", true, false) as Label
-	discard_count_label = find_child("DiscardCount", true, false) as Label
 	rage_label = find_child("RageLabel", true, false) as Label
 	rage_threat_label = find_child("RageThreatLabel", true, false) as Label
 	rage_display = find_child("RageDisplay", true, false) as Control
 	_style_rage_bg()
+	_deck_display = find_child("DeckInfo", true, false) as Control
 	discard_display = find_child("DiscardInfo", true, false) as Control
 	monster_info_display = find_child("MonsterInfo", true, false) as Control
-	monster_deck_count_label = find_child("MonsterDeckCount", true, false) as Label
-	player_label = find_child("PlayerLabel", true, false) as Label
 
 	cp_label = find_child("CPLabel", true, false) as Label
 	threat_label = find_child("ThreatLabel", true, false) as Label
 
-	if player_label:
-		player_label.text = GameLog.player_name(player_id)
+	# Deck: dynamic stack of face-down cards (height reflects card count) + hover count badge
+	if _deck_display:
+		_create_deck_stack(_deck_display, _deck_card_backs)
+		_deck_count_badge = _create_count_badge()
+		_deck_display.add_child(_deck_count_badge)
+		_deck_display.mouse_entered.connect(_deck_count_badge.show)
+		_deck_display.mouse_exited.connect(_deck_count_badge.hide)
 
-	# Make discard area clickable
+	# Discard: face-up top card + empty placeholder + hover count badge
+	if discard_display:
+		_discard_empty_label = Label.new()
+		_discard_empty_label.text = "Discard"
+		_discard_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_discard_empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_discard_empty_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_discard_empty_label.add_theme_font_size_override("font_size", 9)
+		_discard_empty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		discard_display.add_child(_discard_empty_label)
+
+		_discard_card = _create_card({})
+		_discard_card.drag_enabled = false
+		_discard_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_discard_card.custom_minimum_size = Vector2.ZERO
+		_discard_card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_discard_card.visible = false
+		discard_display.add_child(_discard_card)
+		# Also ignore mouse on the card's background panel
+		var bg := _discard_card.get_node_or_null("Background") as Control
+		if bg:
+			bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		_discard_count_badge = _create_count_badge()
+		discard_display.add_child(_discard_count_badge)
+
+	# Monster deck: dynamic stack of face-down cards + player label
+	if monster_info_display:
+		_create_deck_stack(monster_info_display, _monster_deck_card_backs)
+		# Player label overlay at top
+		player_label = Label.new()
+		player_label.text = GameLog.player_name(player_id)
+		player_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		player_label.add_theme_font_size_override("font_size", 10)
+		player_label.add_theme_color_override("font_color", Color(1, 0.85, 0.4, 1))
+		player_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+		player_label.add_theme_constant_override("outline_size", 3)
+		player_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+		player_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		monster_info_display.add_child(player_label)
+
+	# Make discard area clickable + hover preview/badge
 	if discard_display:
 		discard_display.mouse_filter = Control.MOUSE_FILTER_STOP
 		discard_display.gui_input.connect(_on_discard_gui_input)
+		discard_display.mouse_entered.connect(_on_discard_hover_started)
+		discard_display.mouse_exited.connect(_on_discard_hover_ended)
 
 	# Make monster info area clickable
 	if monster_info_display:
 		monster_info_display.mouse_filter = Control.MOUSE_FILTER_STOP
 		monster_info_display.gui_input.connect(_on_monster_info_gui_input)
 
-	# Add borders to clickable info areas
-	var deck_display := find_child("DeckInfo", true, false) as Control
-	for area in [deck_display, discard_display, monster_info_display]:
+	# Add borders to info areas
+	for area in [_deck_display, discard_display, monster_info_display]:
 		if area:
 			_add_border(area)
 
@@ -411,12 +462,41 @@ func _hand_set_matches(visual_cards: Array[Control], state_hand: Array) -> bool:
 
 
 func _sync_info(state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0) -> void:
-	if deck_count_label:
-		deck_count_label.text = "%d" % state.main_deck.size()
-	if discard_count_label:
-		discard_count_label.text = "%d" % state.discard_pile.size()
-	if monster_deck_count_label:
-		monster_deck_count_label.text = "Deck: %d" % state.monster_deck.size()
+	# Deck: show/hide card backs proportional to remaining cards
+	var deck_size: int = state.main_deck.size()
+	if _deck_count_badge:
+		_deck_count_badge.text = "%d" % deck_size
+	var visible_count: int = mini(deck_size, _deck_card_backs.size())
+	for i in range(_deck_card_backs.size()):
+		_deck_card_backs[i].visible = i < visible_count
+
+	# Discard: show top card face-up, update count badge
+	var discard_size: int = state.discard_pile.size()
+	if _discard_count_badge:
+		_discard_count_badge.text = "%d" % discard_size
+	if discard_size > 0:
+		var top_card: Dictionary = state.discard_pile.back()
+		var top_id: String = top_card.get("id", "")
+		if _discard_card:
+			if top_id != _discard_last_id:
+				_discard_card.set_card_data_dict(top_card)
+				_discard_last_id = top_id
+			_discard_card.visible = true
+		if _discard_empty_label:
+			_discard_empty_label.visible = false
+	else:
+		if _discard_card:
+			_discard_card.visible = false
+			_discard_last_id = ""
+		if _discard_empty_label:
+			_discard_empty_label.visible = true
+
+	# Monster deck: show/hide card backs proportional to remaining cards
+	var monster_deck_size: int = state.monster_deck.size()
+	var monster_visible: int = mini(monster_deck_size, _monster_deck_card_backs.size())
+	for i in range(_monster_deck_card_backs.size()):
+		_monster_deck_card_backs[i].visible = i < monster_visible
+
 	if cp_label:
 		var total_cp: int = state.get_total_counter_power() + cp_modifier
 		cp_label.text = "%d" % total_cp
@@ -521,6 +601,13 @@ func reset_visuals() -> void:
 		for child in overlay.get_children():
 			child.queue_free()
 		overlay.color = Color(0, 0, 0, 0)
+
+	# Reset discard card display
+	if _discard_card:
+		_discard_card.visible = false
+		_discard_last_id = ""
+	if _discard_empty_label:
+		_discard_empty_label.visible = true
 
 	highlight_rage_zone(false)
 	highlight_discard_zone(false)
@@ -721,3 +808,72 @@ func _add_border(control: Control) -> void:
 func _draw_border(control: Control) -> void:
 	var rect := Rect2(Vector2.ZERO, control.size)
 	control.draw_rect(rect, Color(0.45, 0.45, 0.55, 0.9), false, 2.0)
+
+
+# --- Card-back stack helpers ---
+
+func _create_card_back_panel() -> Panel:
+	var panel := Panel.new()
+	panel.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.18, 0.18, 0.24, 1)
+	style.set_border_width_all(1)
+	style.border_color = Color(0.4, 0.4, 0.5, 1)
+	style.set_corner_radius_all(6)
+	panel.add_theme_stylebox_override("panel", style)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var tex_rect := TextureRect.new()
+	tex_rect.texture = load("res://CardContent/Assets/cardBacks/default.jpeg")
+	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	tex_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(tex_rect)
+
+	return panel
+
+
+func _create_deck_stack(parent: Control, stack_arr: Array[Control], max_layers: int = 20) -> void:
+	## Create a stack of card-back panels that grows/shrinks with deck size.
+	## Each layer pushes the card on top up by 1px from the bottom.
+	for i in range(max_layers):
+		var panel := _create_card_back_panel()
+		panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var shift := float(i)  # 1px per layer, upward from bottom
+		panel.offset_top = -shift
+		panel.offset_bottom = -shift
+		panel.visible = false
+		parent.add_child(panel)
+		stack_arr.append(panel)
+
+
+func _on_discard_hover_started() -> void:
+	if _discard_count_badge:
+		_discard_count_badge.show()
+	if _discard_card and _discard_card.visible and not _discard_card.card_data.is_empty():
+		card_preview_requested.emit(_discard_card.card_data)
+
+
+func _on_discard_hover_ended() -> void:
+	if _discard_count_badge:
+		_discard_count_badge.hide()
+	card_preview_cleared.emit()
+
+
+func _create_count_badge() -> Label:
+	var badge := Label.new()
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge.add_theme_font_size_override("font_size", 14)
+	badge.add_theme_color_override("font_color", Color.WHITE)
+	badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	badge.add_theme_constant_override("outline_size", 4)
+	badge.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	badge.offset_top = -24
+	badge.offset_bottom = 0
+	badge.offset_left = -20
+	badge.offset_right = 20
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.visible = false
+	return badge
