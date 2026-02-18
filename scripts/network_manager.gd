@@ -103,11 +103,12 @@ func host_online() -> Error:
 
 ## Connect to the relay server and create a public room. Same as host_online()
 ## but appends ?public=true so the relay server lists it for other players.
-func host_public() -> Error:
+## game_mode: "rumble" or "no_rules"
+func host_public(game_mode: String = "rumble") -> Error:
 	_room_code = _generate_room_code()
 	var relay_peer := RelayMultiplayerPeer.new()
 	var host_name := ChatFilter.filter(GameSettings.player_name).uri_encode()
-	var url := "ws://%s:%d/%s?public=true&version=%s&name=%s" % [RELAY_HOST, RELAY_PORT, _room_code, GAME_VERSION, host_name]
+	var url := "ws://%s:%d/%s?public=true&version=%s&name=%s&mode=%s" % [RELAY_HOST, RELAY_PORT, _room_code, GAME_VERSION, host_name, game_mode.uri_encode()]
 	var err := relay_peer.connect_as_host(url)
 	if err != OK:
 		return err
@@ -134,12 +135,15 @@ func host_public() -> Error:
 
 
 ## Fetch the list of public rooms from the relay server.
-## Returns an Array of Dictionaries: [{"code": "ABC123", "players": 1}, ...]
+## Returns an Array of Dictionaries: [{"code": "ABC123", "players": 1, "mode": "rumble"}, ...]
 ## Returns an empty Array on failure.
-func fetch_public_rooms() -> Array:
+## game_mode: filter to a specific mode, or "" for all modes.
+func fetch_public_rooms(game_mode: String = "") -> Array:
 	var http := HTTPRequest.new()
 	add_child(http)
 	var url := "http://%s:%d/rooms?version=%s" % [RELAY_HOST, RELAY_PORT, GAME_VERSION]
+	if not game_mode.is_empty():
+		url += "&mode=%s" % game_mode.uri_encode()
 	var err := http.request(url)
 	if err != OK:
 		http.queue_free()

@@ -1,11 +1,17 @@
 extends Control
 
-@onready var create_button: Button = $MarginContainer/HBoxContainer/LobbyPanel/ActionRow/CreateButton
-@onready var refresh_button: Button = $MarginContainer/HBoxContainer/LobbyPanel/ActionRow/RefreshButton
-@onready var status_label: Label = $MarginContainer/HBoxContainer/LobbyPanel/StatusLabel
-@onready var room_list: VBoxContainer = $MarginContainer/HBoxContainer/LobbyPanel/RoomScroll/RoomList
-@onready var deck_select: PanelContainer = $MarginContainer/HBoxContainer/DeckSelect
-@onready var back_button: Button = $MarginContainer/HBoxContainer/LobbyPanel/BackButton
+@onready var create_button: Button = $CenterContainer/VBoxContainer/ActionRow/CreateButton
+@onready var refresh_button: Button = $CenterContainer/VBoxContainer/ActionRow/RefreshButton
+@onready var status_label: Label = $CenterContainer/VBoxContainer/StatusLabel
+@onready var room_list: VBoxContainer = $CenterContainer/VBoxContainer/RoomScroll/RoomList
+@onready var deck_select: VBoxContainer = $CenterContainer/VBoxContainer/SettingsRow/DeckSelect
+@onready var mode_dropdown: OptionButton = $CenterContainer/VBoxContainer/SettingsRow/ModeSelect/ModeDropdown
+@onready var back_button: Button = $CenterContainer/VBoxContainer/BackButton
+
+const GAME_MODES: Array[Dictionary] = [
+	{"id": "rumble", "label": "Rumble"},
+	{"id": "no_rules", "label": "No Rules"},
+]
 
 var _host_deck_ready: bool = false
 var _client_deck_received: bool = false
@@ -21,6 +27,12 @@ func _ready() -> void:
 	refresh_button.pressed.connect(_on_refresh_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	deck_select.deck_selected.connect(_on_deck_selected)
+
+	# Populate game mode dropdown
+	for gm in GAME_MODES:
+		mode_dropdown.add_item(gm.label)
+	mode_dropdown.select(0)
+	mode_dropdown.item_selected.connect(_on_mode_selected)
 
 	NetworkManager.player_connected.connect(_on_player_connected)
 	NetworkManager.player_disconnected.connect(_on_player_disconnected)
@@ -41,10 +53,19 @@ func _ready() -> void:
 	_fetch_rooms()
 
 
+func _get_selected_mode() -> String:
+	return GAME_MODES[mode_dropdown.selected].id
+
+
+func _on_mode_selected(_index: int) -> void:
+	if not _is_hosting and not _is_joining:
+		_fetch_rooms()
+
+
 func _fetch_rooms() -> void:
 	refresh_button.disabled = true
 
-	var rooms: Array = await NetworkManager.fetch_public_rooms()
+	var rooms: Array = await NetworkManager.fetch_public_rooms(_get_selected_mode())
 
 	refresh_button.disabled = false
 
@@ -63,15 +84,23 @@ func _fetch_rooms() -> void:
 	for room in rooms:
 		var code: String = room.get("code", "")
 		var host_name: String = room.get("name", code)
+		var room_mode: String = room.get("mode", "rumble")
 		if code.is_empty():
 			continue
+
+		# Look up display label for the mode
+		var mode_label := room_mode
+		for gm in GAME_MODES:
+			if gm.id == room_mode:
+				mode_label = gm.label
+				break
 
 		var row := HBoxContainer.new()
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 		row.add_theme_constant_override("separation", 15)
 
 		var label := Label.new()
-		label.text = "Room %s" % ChatFilter.filter(host_name)
+		label.text = "%s  [%s]" % [ChatFilter.filter(host_name), mode_label]
 		label.add_theme_font_size_override("font_size", 18)
 		row.add_child(label)
 
@@ -99,7 +128,7 @@ func _on_create_pressed() -> void:
 	_set_join_buttons_disabled(true)
 	status_label.text = "Creating public lobby..."
 
-	var err := await NetworkManager.host_public()
+	var err := await NetworkManager.host_public(_get_selected_mode())
 	if err != OK:
 		status_label.text = "Failed to create lobby (error %d)" % err
 		create_button.disabled = not _deck_selected

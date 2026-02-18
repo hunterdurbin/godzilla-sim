@@ -7,8 +7,8 @@ extends Control
 @onready var deck_builder_button: Button = $CenterContainer/VBoxContainer/DeckBuilderButton
 @onready var options_button: Button = $OptionsButton
 @onready var version_label: Label = $VersionLabel
-@onready var deck_select_p1: PanelContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP1
-@onready var deck_select_p2: PanelContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP2
+@onready var deck_select_p1: VBoxContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP1
+@onready var deck_select_p2: VBoxContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP2
 
 var _p1_ready: bool = false
 var _p2_ready: bool = false

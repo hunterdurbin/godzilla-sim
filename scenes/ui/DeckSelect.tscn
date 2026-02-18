@@ -2,88 +2,19 @@
 
 [ext_resource type="Script" path="res://scenes/ui/deck_select.gd" id="1_ds"]
 
-[node name="DeckSelect" type="PanelContainer"]
-custom_minimum_size = Vector2(600, 300)
+[node name="DeckSelect" type="VBoxContainer"]
 layout_mode = 2
-size_flags_horizontal = 4
+theme_override_constants/separation = 6
 script = ExtResource("1_ds")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
-layout_mode = 2
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 10
-
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="Header" type="Label" parent="MarginContainer/VBoxContainer"]
+[node name="Header" type="Label" parent="."]
 layout_mode = 2
 text = "SELECT DECK"
 horizontal_alignment = 1
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.9, 0.3, 0.1, 1)
 
-[node name="Content" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="DeckDropdown" type="OptionButton" parent="."]
+custom_minimum_size = Vector2(200, 36)
 layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 10
-
-[node name="DeckList" type="ItemList" parent="MarginContainer/VBoxContainer/Content"]
-layout_mode = 2
-custom_minimum_size = Vector2(180, 0)
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.35
-
-[node name="DeckPreview" type="RichTextLabel" parent="MarginContainer/VBoxContainer/Content"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 0.65
-bbcode_enabled = true
-scroll_active = true
-
-[node name="ButtonBar" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 10
-
-[node name="ImportButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonBar"]
-custom_minimum_size = Vector2(180, 36)
-layout_mode = 2
-text = "Import from Clipboard"
-
-[node name="DeleteButton" type="Button" parent="MarginContainer/VBoxContainer/ButtonBar"]
-custom_minimum_size = Vector2(120, 36)
-layout_mode = 2
-text = "Delete"
-
-[node name="DeleteDialog" type="ConfirmationDialog" parent="."]
-title = "Delete Decklist"
-size = Vector2i(350, 120)
-ok_button_text = "Delete"
-dialog_text = "Are you sure you want to delete this decklist?"
-
-[node name="ImportDialog" type="ConfirmationDialog" parent="."]
-title = "Import Decklist"
-size = Vector2i(350, 150)
-ok_button_text = "Import"
-
-[node name="VBoxContainer" type="VBoxContainer" parent="ImportDialog"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 8.0
-offset_top = 8.0
-offset_right = -8.0
-offset_bottom = -36.0
-theme_override_constants/separation = 8
-
-[node name="Label" type="Label" parent="ImportDialog/VBoxContainer"]
-layout_mode = 2
-text = "Enter a name for the imported deck:"
-
-[node name="NameEdit" type="LineEdit" parent="ImportDialog/VBoxContainer"]
-layout_mode = 2
-placeholder_text = "My Deck"
+theme_override_font_sizes/font_size = 16

@@ -6,7 +6,7 @@ extends Control
 @onready var join_button: Button = $CenterContainer/VBoxContainer/JoinPanel/JoinButton
 @onready var code_edit: LineEdit = $CenterContainer/VBoxContainer/JoinPanel/CodeEdit
 @onready var status_label: Label = $CenterContainer/VBoxContainer/StatusLabel
-@onready var deck_select: PanelContainer = $CenterContainer/VBoxContainer/DeckSelect
+@onready var deck_select: VBoxContainer = $CenterContainer/VBoxContainer/DeckSelect
 @onready var start_button: Button = $CenterContainer/VBoxContainer/StartButton
 @onready var back_button: Button = $CenterContainer/VBoxContainer/BackButton
 
