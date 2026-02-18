@@ -61,6 +61,7 @@ func setup(card_data_node: Node) -> void:
 		for m in player.monster_deck:
 			if m.get("rank") == 1:
 				player.current_monster = m
+				player.monster_deck.erase(m)
 				break
 		player.monster_zone = player.current_monster.get("start_zone", 1)
 		player.rage = 0

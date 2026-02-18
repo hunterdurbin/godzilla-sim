@@ -203,6 +203,7 @@ func resolve_counter(state: GameState) -> void:
 				if not old_monster.is_empty():
 					opponent.monster_stack.push_front(old_monster)
 				opponent.current_monster = m
+				opponent.monster_deck.erase(m)
 				opponent.rage = 0
 				opponent.rage_changed.emit(0)
 				found_next = true
@@ -246,6 +247,7 @@ func force_counter(state: GameState, counter_player_id: int) -> void:
 			if not old_monster.is_empty():
 				opponent.monster_stack.push_front(old_monster)
 			opponent.current_monster = m
+			opponent.monster_deck.erase(m)
 			opponent.rage = 0
 			opponent.rage_changed.emit(0)
 			found_next = true
@@ -271,6 +273,7 @@ func play_monster_from_effect(state: GameState, player_id: int, monster_card: Di
 		player.monster_stack.push_front(old_monster)
 
 	player.current_monster = monster_card
+	player.monster_deck.erase(monster_card)
 	monster_played.emit(player_id, old_monster, monster_card)
 	player.monster_changed.emit()
 	if effect_handler:
