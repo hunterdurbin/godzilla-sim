@@ -47,30 +47,28 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 			var card: Dictionary = ctx.owner.discard_pile.pop_at(i)
 			ctx.owner.discard_changed.emit()
 
-			var empty := ctx.owner.get_empty_zone_indices()
-			if empty.is_empty():
-				# No empty zones — let them pick any zone to overwrite
-				var all_zones: Array[int] = []
-				for zi in range(8):
-					all_zones.append(zi)
-				var dest := await ctx.effect_handler.select_zone_target(
-					ctx.owner.player_id, ctx.owner.player_id, all_zones,
-					"Choose a zone to play the battle card:")
-				if dest < 0:
-					ctx.owner.discard_pile.append(card)
-					ctx.owner.discard_changed.emit()
-					return
-				ctx.owner.push_zone_card(dest, card)
-			else:
-				var dest := await ctx.effect_handler.select_zone_target(
-					ctx.owner.player_id, ctx.owner.player_id, empty,
-					"Choose a zone to play the battle card:")
-				if dest < 0:
-					ctx.owner.discard_pile.append(card)
-					ctx.owner.discard_changed.emit()
-					return
-				ctx.owner.push_zone_card(dest, card)
+			# Rule 5.11.1.2: must avoid monster zone if possible
+			var valid_zones: Array[int] = []
+			var monster_idx := ctx.owner.monster_zone - 1
+			for zi in range(8):
+				if zi != monster_idx:
+					valid_zones.append(zi)
 
+			var dest := await ctx.effect_handler.select_zone_target(
+				ctx.owner.player_id, ctx.owner.player_id, valid_zones,
+				"Choose a zone to play the battle card:")
+			if dest < 0:
+				ctx.owner.discard_pile.append(card)
+				ctx.owner.discard_changed.emit()
+				return
+
+			# Handle overload if zone occupied
+			if ctx.owner.zone_has_cards(dest):
+				var destroyed_stack: Array = ctx.owner.clear_zone(dest)
+				EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
+				ctx.owner.discard_changed.emit()
+
+			ctx.owner.push_zone_card(dest, card)
 			ctx.owner.zones_changed.emit()
 			await ctx.effect_handler.trigger_enter(ctx.owner.player_id, card)
 			break

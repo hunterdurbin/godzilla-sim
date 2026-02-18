@@ -17,9 +17,6 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	var player := ctx.owner
-	var empty_zones := player.get_empty_zone_indices()
-	if empty_zones.is_empty():
-		return
 
 	var selected := await ctx.effect_handler.search_deck(
 		player.player_id,
@@ -29,19 +26,25 @@ func on_enter(ctx: EffectContext) -> void:
 		"Search for a Godzilla(2023) battle card to play"
 	)
 	if not selected.is_empty():
-		# Re-fetch empty zones in case state changed during search
-		empty_zones = player.get_empty_zone_indices()
-		if empty_zones.is_empty():
-			return
+		# Rule 5.11.1.2: must avoid monster zone if possible
+		var valid_zones: Array[int] = []
+		var monster_idx := player.monster_zone - 1
+		for i in range(8):
+			if i != monster_idx:
+				valid_zones.append(i)
 
-		# Let the player choose which zone to play the card in
 		var target_zone: int = await ctx.effect_handler.select_zone_target(
-			player.player_id, player.player_id, empty_zones,
+			player.player_id, player.player_id, valid_zones,
 			"Choose a zone to play the searched card:")
 		if target_zone < 0:
 			return
 
+		# Handle overload if zone occupied
+		if player.zone_has_cards(target_zone):
+			var destroyed_stack: Array = player.clear_zone(target_zone)
+			EffectHandler.banish_or_discard(player, destroyed_stack)
+			player.discard_changed.emit()
+
 		player.push_zone_card(target_zone, selected)
 		player.zones_changed.emit()
-		# Trigger enter on the newly played card
 		await ctx.effect_handler.trigger_enter(player.player_id, selected)

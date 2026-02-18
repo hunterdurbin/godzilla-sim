@@ -23,11 +23,11 @@ func can_monster_invade(_ctx: EffectContext) -> bool:
 func on_enter(ctx: EffectContext) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
 
-	# Find adjacent empty zones for the Tentacles token
+	# Rule 5.11.1.2: adjacent zones, avoiding monster zone if possible
 	var adjacent := get_adjacent_zones(monster_zone_idx)
 	var valid: Array[int] = []
 	for zi in adjacent:
-		if ctx.owner.is_zone_empty(zi):
+		if zi != monster_zone_idx:
 			valid.append(zi)
 
 	if valid.is_empty():
