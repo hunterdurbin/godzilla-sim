@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/main_menu.gd" id="1_mm"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DeckSelect.tscn" id="2_ds"]
+[ext_resource type="Texture2D" path="res://CardContent/Assets/patreon/patreon_banner.png" id="3_pb"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -77,6 +78,21 @@ layout_mode = 2
 size_flags_horizontal = 4
 text = "Deck Builder"
 theme_override_font_sizes/font_size = 22
+
+[node name="PatreonButton" type="TextureButton" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -91.25
+offset_right = 235.0
+offset_bottom = -35.0
+grow_vertical = 0
+texture_normal = ExtResource("3_pb")
+ignore_texture_size = true
+stretch_mode = 5
+mouse_default_cursor_shape = 2
 
 [node name="VersionLabel" type="Label" parent="."]
 layout_mode = 1

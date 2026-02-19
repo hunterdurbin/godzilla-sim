@@ -6,6 +6,7 @@ extends Control
 @onready var online_button: Button = $CenterContainer/VBoxContainer/OnlineButton
 @onready var deck_builder_button: Button = $CenterContainer/VBoxContainer/DeckBuilderButton
 @onready var options_button: Button = $OptionsButton
+@onready var patreon_button: TextureButton = $PatreonButton
 @onready var version_label: Label = $VersionLabel
 @onready var deck_select_p1: VBoxContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP1
 @onready var deck_select_p2: VBoxContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP2
@@ -21,6 +22,7 @@ func _ready() -> void:
 	online_button.pressed.connect(_on_online_pressed)
 	deck_builder_button.pressed.connect(_on_deck_builder_pressed)
 	options_button.pressed.connect(_on_options_pressed)
+	patreon_button.pressed.connect(_on_patreon_pressed)
 
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "")
 
@@ -70,6 +72,10 @@ func _on_online_pressed() -> void:
 
 func _on_deck_builder_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/DeckBuilder.tscn")
+
+
+func _on_patreon_pressed() -> void:
+	OS.shell_open("https://www.patreon.com/cw/sodabomber/membership")
 
 
 func _on_options_pressed() -> void:
