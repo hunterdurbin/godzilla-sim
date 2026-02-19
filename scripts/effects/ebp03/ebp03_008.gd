@@ -16,7 +16,7 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,
-		func(card): return card.get("rank", 0) <= 5,
+		func(card): return ctx.field_rank(card, ctx.opponent.player_id) <= 5,
 		"Destroy 1 opponent rank 5 or lower battle card:")
 
 
@@ -39,7 +39,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var valid_zones: Array[int] = []
 	for opp_zi in opp_column_zones:
 		var opp_card := ctx.opponent.get_zone_top_card(opp_zi)
-		if not opp_card.is_empty() and opp_card.get("rank", 0) <= 5:
+		if not opp_card.is_empty() and ctx.field_rank(opp_card, ctx.opponent.player_id) <= 5:
 			valid_zones.append(opp_zi)
 
 	if valid_zones.is_empty():

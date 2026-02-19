@@ -29,13 +29,13 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 	return 0
 
 
-func protects_card_from_destruction(_ctx: EffectContext, card_data: Dictionary, zone_idx: int) -> bool:
+func protects_card_from_destruction(ctx: EffectContext, card_data: Dictionary, zone_idx: int) -> bool:
 	# Protect rank 5 or lower battle cards in zones 1-5 (indices 0-4)
 	if zone_idx > 4:
 		return false
 	if card_data.get("card_type") != CardEnums.CardType.BATTLE:
 		return false
-	if card_data.get("rank", 0) > 5:
+	if ctx.field_rank(card_data, ctx.owner.player_id) > 5:
 		return false
 	return true
 

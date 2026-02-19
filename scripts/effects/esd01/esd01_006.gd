@@ -21,5 +21,5 @@ func on_enter(ctx: EffectContext) -> void:
 	# Destroy 1 of opponent's rank 4 or lower battle cards
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,
-		func(card: Dictionary) -> bool: return card.get("rank", 0) <= 4,
+		func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 4,
 		"Choose an opponent's rank 4 or lower battle card to destroy:")

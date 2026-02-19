@@ -26,7 +26,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var zones_to_destroy: Array[int] = []
 	for i in range(8):
 		var zone_card := ctx.opponent.get_zone_top_card(i)
-		if not zone_card.is_empty() and zone_card.get("rank", 0) <= max_rank:
+		if not zone_card.is_empty() and ctx.field_rank(zone_card, ctx.opponent.player_id) <= max_rank:
 			zones_to_destroy.append(i)
 
 	if not zones_to_destroy.is_empty():

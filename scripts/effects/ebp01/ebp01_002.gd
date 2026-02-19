@@ -36,5 +36,5 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	if card.get("card_type") == CardEnums.CardType.MONSTER:
 		await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
-			func(c: Dictionary) -> bool: return c.get("rank", 0) <= 5,
+			func(c: Dictionary) -> bool: return ctx.field_rank(c, ctx.opponent.player_id) <= 5,
 			"Choose an opponent's rank 5 or lower battle card to destroy:")

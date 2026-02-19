@@ -264,15 +264,15 @@ func apply_monster_gradient(monster_data: Dictionary) -> void:
 
 
 ## Sync the entire board display to match a PlayerState
-func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = []) -> void:
-	_sync_zones(player_state, zone_cp_mods)
+func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = [], zone_rank_mods: Array = []) -> void:
+	_sync_zones(player_state, zone_cp_mods, zone_rank_mods)
 	_sync_strategy_zones(player_state, strategy_cp_mods)
 	_sync_monster(player_state, threat_modifier)
 	_sync_hand(player_state)
 	_sync_info(player_state, cp_modifier, threat_modifier)
 
 
-func _sync_zones(state: PlayerState, zone_cp_mods: Array = []) -> void:
+func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: Array = []) -> void:
 	for i in range(mini(zone_slots.size(), 8)):
 		var slot := zone_slots[i]
 		if not slot:
@@ -290,6 +290,7 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = []) -> void:
 		var zone_data: Dictionary = state.get_zone_top_card(i)
 		var stack_size: int = state.get_zone_stack(i).size()
 		var cp_mod: int = zone_cp_mods[i] if i < zone_cp_mods.size() else 0
+		var rank_mod: int = zone_rank_mods[i] if i < zone_rank_mods.size() else 0
 
 		# Update card in slot
 		if zone_data.is_empty() and slot.has_card() and slot.get_card() != monster_card:
@@ -301,12 +302,14 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = []) -> void:
 			if stack_size > 1:
 				_add_stack_badge(card, stack_size)
 			_update_modifier_badge(card, cp_mod)
+			_update_rank_modifier_badge(card, rank_mod)
 		elif not zone_data.is_empty() and slot.has_card():
 			var card := slot.get_card()
 			if card.has_method("set_card_data_dict"):
 				card.set_card_data_dict(zone_data)
 			_update_stack_badge(card, stack_size)
 			_update_modifier_badge(card, cp_mod)
+			_update_rank_modifier_badge(card, rank_mod)
 
 
 func _sync_strategy_zones(state: PlayerState, strategy_cp_mods: Array = []) -> void:
@@ -800,6 +803,30 @@ func _update_modifier_badge(card: Control, modifier: int) -> void:
 		badge.anchor_right = 0.95
 		badge.anchor_top = 0.72
 		badge.anchor_bottom = 0.84
+		card.add_child(badge)
+	var prefix := "+" if modifier > 0 else ""
+	badge.text = "%s%d" % [prefix, modifier]
+	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
+
+
+func _update_rank_modifier_badge(card: Control, modifier: int) -> void:
+	var badge := card.get_node_or_null("RankModifierBadge")
+	if modifier == 0:
+		if badge:
+			badge.queue_free()
+		return
+	if not badge:
+		badge = Label.new()
+		badge.name = "RankModifierBadge"
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.add_theme_font_size_override("font_size", 12)
+		badge.add_theme_color_override("font_outline_color", Color.BLACK)
+		badge.add_theme_constant_override("outline_size", 3)
+		badge.anchor_left = 0.05
+		badge.anchor_right = 0.5
+		badge.anchor_top = 0.04
+		badge.anchor_bottom = 0.16
 		card.add_child(badge)
 	var prefix := "+" if modifier > 0 else ""
 	badge.text = "%s%d" % [prefix, modifier]

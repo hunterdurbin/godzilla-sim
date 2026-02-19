@@ -1328,7 +1328,7 @@ func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones:
 		var filtered: Array[int] = []
 		for zi in affected:
 			var card := target.get_zone_top_card(zi)
-			if not card.is_empty() and card.get("rank", 0) <= max_rank:
+			if not card.is_empty() and get_effective_field_rank(card, target.player_id) <= max_rank:
 				filtered.append(zi)
 		return await destroy_zones(target, filtered)
 	else:
@@ -1503,7 +1503,7 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 				var can_card_engage := effect.can_engage(ctx)
 				# Check engagement restriction from opponent's monster
 				if can_card_engage and max_restricted_rank >= 0:
-					var card_rank: int = zone_card.get("rank", 0)
+					var card_rank: int = get_effective_field_rank(zone_card, player_id)
 					if card_rank > 0 and card_rank <= max_restricted_rank:
 						can_card_engage = false
 				if can_card_engage:
@@ -1668,7 +1668,7 @@ func get_engagement_restricted_cp(defender_player_id: int) -> int:
 	for i in range(8):
 		var zone_card := defender.get_zone_top_card(i)
 		if not zone_card.is_empty():
-			var card_rank: int = zone_card.get("rank", 0)
+			var card_rank: int = get_effective_field_rank(zone_card, defender_player_id)
 			if card_rank > 0 and card_rank <= max_restricted_rank:
 				total_restricted += zone_card.get("counter_power", 0)
 	return total_restricted
@@ -1687,7 +1687,7 @@ func get_cards_that_can_engage(player_id: int) -> Array[int]:
 		if not zone_card.is_empty():
 			# Check engagement restriction from opponent's monster
 			if max_restricted_rank >= 0:
-				var card_rank: int = zone_card.get("rank", 0)
+				var card_rank: int = get_effective_field_rank(zone_card, player_id)
 				if card_rank > 0 and card_rank <= max_restricted_rank:
 					continue
 			var effect := get_effect(zone_card)
@@ -1909,7 +1909,27 @@ func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> in
 	var base_rank: int = card_data.get("rank", 0)
 	var opponent_id: int = 1 - owner_player_id
 	var modifier: int = get_opponent_field_rank_modifier(opponent_id)
-	return maxi(1, base_rank + modifier)
+	return maxi(0, base_rank + modifier)
+
+
+func get_zone_rank_modifiers(player_id: int) -> Array:
+	## Get per-zone rank modifier for display. Returns Array of 8 ints.
+	## Each value is the difference between effective rank and base rank for the zone's card.
+	var modifiers: Array = []
+	modifiers.resize(8)
+	modifiers.fill(0)
+	var player := game_state.players[player_id]
+	var opponent_id: int = 1 - player_id
+	var rank_mod: int = get_opponent_field_rank_modifier(opponent_id)
+	if rank_mod == 0:
+		return modifiers
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var base_rank: int = zone_card.get("rank", 0)
+			var effective: int = maxi(1, base_rank + rank_mod)
+			modifiers[i] = effective - base_rank
+	return modifiers
 
 
 # --- Helpers for card placement and movement ---

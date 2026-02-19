@@ -24,5 +24,5 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	# Monster is in monster_zone (1-indexed), opponent's same zone number = monster_zone - 1 (0-indexed)
 	var zone_idx: int = ctx.owner.monster_zone - 1
 	var opp_zone_card := ctx.opponent.get_zone_top_card(zone_idx)
-	if not opp_zone_card.is_empty() and opp_zone_card.get("rank", 0) <= 6:
+	if not opp_zone_card.is_empty() and ctx.field_rank(opp_zone_card, ctx.opponent.player_id) <= 6:
 		await ctx.effect_handler.destroy_zones(ctx.opponent, [zone_idx])

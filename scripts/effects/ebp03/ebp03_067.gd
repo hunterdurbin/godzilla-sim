@@ -32,14 +32,14 @@ func on_discard_from_hand(ctx: EffectContext) -> void:
 	for i in range(8):
 		var zone_card := ctx.opponent.get_zone_top_card(i)
 		if not zone_card.is_empty():
-			var rank: int = zone_card.get("rank", 99)
+			var rank: int = ctx.field_rank(zone_card, ctx.opponent.player_id)
 			if rank < lowest_rank:
 				lowest_rank = rank
 
 	if lowest_rank < 99:
 		await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
-			func(card: Dictionary) -> bool: return card.get("rank", 0) == lowest_rank,
+			func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) == lowest_rank,
 			"Destroy an opponent's lowest ranked battle card (or skip):")
 
 

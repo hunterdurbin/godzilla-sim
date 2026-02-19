@@ -31,7 +31,7 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 		var destroyed: Dictionary = await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
 			func(card: Dictionary) -> bool:
-				return card.get("rank", 99) <= 5,
+				return ctx.field_rank(card, ctx.opponent.player_id) <= 5,
 			"Destroy an opponent's rank 5 or lower battle card:")
 		if destroyed.is_empty():
 			break

@@ -31,7 +31,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		var card := ctx.owner.get_zone_top_card(i)
 		if card.is_empty():
 			continue
-		if card.get("rank", 0) > 4:
+		if ctx.field_rank(card, ctx.owner.player_id) > 4:
 			continue
 		if card.get("evolution_rank", -1) < 0:
 			continue

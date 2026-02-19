@@ -26,7 +26,7 @@ func on_battle_card_played(ctx: EffectContext, zone_index: int) -> void:
 	var zones_to_destroy: Array[int] = []
 	for opp_zi in opp_column_zones:
 		var opp_card := ctx.opponent.get_zone_top_card(opp_zi)
-		if not opp_card.is_empty() and opp_card.get("rank", 0) <= 6:
+		if not opp_card.is_empty() and ctx.field_rank(opp_card, ctx.opponent.player_id) <= 6:
 			zones_to_destroy.append(opp_zi)
 
 	if not zones_to_destroy.is_empty():
