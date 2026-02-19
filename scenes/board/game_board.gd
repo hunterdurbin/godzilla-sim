@@ -173,6 +173,7 @@ var _monster_deck_view_cards: Array[Dictionary] = []
 	$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1Header,
 	$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2Header,
 ]
+@onready var _turn_label: Label = $VBoxContainer/BoardArea/RightSpacer/TurnLabelMargin/TurnLabel
 
 # Card hover preview
 var _preview_container: Control
@@ -226,6 +227,7 @@ var _strategy_target_valid_indices: Array[int] = []
 var _first_player_choosing: bool = false
 var _first_player_chooser_id: int = -1 # Player who gets to decide
 var _first_player_result: int = -1 # Resolved first player id (-1 = pending)
+var _first_player_id: int = 0 # Which player went first (for * indicator)
 
 # Rematch state
 var _rematch_requested: bool = false
@@ -578,6 +580,7 @@ func _update_all_setting_indicators() -> void:
 func _start_game() -> void:
 	if not is_multiplayer_game:
 		# Solo: no need to choose, player 1 always goes first
+		_first_player_id = 0
 		_apply_gradients_and_sync()
 		turn_manager.start_game(0)
 		return
@@ -609,6 +612,7 @@ func _start_game() -> void:
 	# Tell the client to restore its action panel (waiting client never gets cleanup)
 	_rpc_cleanup_first_player.rpc()
 	_apply_gradients_and_sync()
+	_first_player_id = _first_player_result
 	_on_log_message("%s chose to go first." % GameLog.player_name(_first_player_result))
 	turn_manager.start_game(_first_player_result)
 
@@ -861,8 +865,14 @@ func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: 
 	var inactive_sub_color := Color(0.35, 0.35, 0.4, 1.0) # Dimmer for inactive sub-phases
 	var active_header_color := Color(1.0, 1.0, 1.0, 1.0) # White for active player
 	var inactive_header_color := Color(0.6, 0.6, 0.7, 1.0) # Dim for inactive player
+	# Update turn number label
+	var gs: GameState = turn_manager.game_state if turn_manager else null
+	var turn_num: int = gs.turn_number if gs else _client_turn_number
+	_turn_label.text = "Turn: %d" % turn_num
 	var phase_idx := int(phase)
 	for pid in range(2):
+		var first_marker := "* " if pid == _first_player_id else "  "
+		_turn_tracker_headers[pid].text = first_marker + GameLog.player_name(pid)
 		_turn_tracker_headers[pid].add_theme_color_override(
 			"font_color", active_header_color if pid == player_id else inactive_header_color)
 		for i in range(4):
@@ -1252,6 +1262,7 @@ func _execute_rematch() -> void:
 	_first_player_choosing = false
 	_first_player_chooser_id = -1
 	_first_player_result = -1
+	_first_player_id = 0
 	waiting_for_card_select = false
 	waiting_for_zone_select = false
 	selected_card_id = ""
@@ -3571,6 +3582,7 @@ func _serialize_game_state(viewer_id: int) -> String:
 		"strategy_cp_modifiers": [strat_cp_0, strat_cp_1],
 		"zone_rank_modifiers": [eh.get_zone_rank_modifiers(0) if eh else [], eh.get_zone_rank_modifiers(1) if eh else []],
 		"player_names": Array(gs.player_names),
+		"first_player_id": _first_player_id,
 	}
 	for i in range(2):
 		var pd := _serialize_player_state(gs.players[i])
@@ -3720,6 +3732,7 @@ func _rpc_receive_state(state_json: String) -> void:
 	_client_current_player_id = int(data["current_player_id"])
 	_client_turn_number = int(data.get("turn_number", 0))
 	_client_phase = int(data.get("current_phase", 0)) as CardEnums.GamePhase
+	_first_player_id = int(data.get("first_player_id", 0))
 
 	# Extract effect modifiers
 	if data.has("cp_modifiers"):

@@ -75,13 +75,28 @@ size_flags_vertical = 3
 custom_minimum_size = Vector2(0, 10)
 layout_mode = 2
 
-[node name="RightSpacer" type="CenterContainer" parent="VBoxContainer/BoardArea" unique_id=132748966]
+[node name="RightSpacer" type="HBoxContainer" parent="VBoxContainer/BoardArea" unique_id=132748966]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.25
 
-[node name="TurnTracker" type="VBoxContainer" parent="VBoxContainer/BoardArea/RightSpacer"]
+[node name="TurnLabelMargin" type="MarginContainer" parent="VBoxContainer/BoardArea/RightSpacer"]
 layout_mode = 2
+theme_override_constants/margin_left = 20
+
+[node name="TurnLabel" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnLabelMargin"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
+theme_override_font_sizes/font_size = 11
+text = "Turn: 0"
+vertical_alignment = 1
+
+[node name="TurnTracker" type="VBoxContainer" parent="VBoxContainer/BoardArea/RightSpacer"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
 theme_override_constants/separation = 2
 
 [node name="P2Header" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
