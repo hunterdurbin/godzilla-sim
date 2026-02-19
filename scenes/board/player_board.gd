@@ -48,6 +48,13 @@ var _discard_count_badge: Label = null
 var _monster_deck_card_backs: Array[Control] = []
 var _monster_deck_count_badge: Label = null
 
+# Card back texture cache (shared across instances)
+const _DEFAULT_CARD_BACK_PATH := "res://CardContent/Assets/cardBacks/default.jpeg"
+const _CUSTOM_CARD_BACK_DIR := "user://custom/cardBack"
+static var _card_back_cache_loaded: bool = false
+static var _default_card_back_tex: Texture2D = null
+static var _custom_card_back_tex: Texture2D = null  # null = no custom file found
+
 
 func _ready() -> void:
 	clip_contents = true
@@ -834,6 +841,34 @@ func _draw_border(control: Control) -> void:
 
 # --- Card-back stack helpers ---
 
+func _get_card_back_texture() -> Texture2D:
+	if not _card_back_cache_loaded:
+		_card_back_cache_loaded = true
+		_default_card_back_tex = load(_DEFAULT_CARD_BACK_PATH)
+		for ext in ["png", "jpg", "jpeg", "webp"]:
+			var custom_path := _CUSTOM_CARD_BACK_DIR.path_join("default.%s" % ext)
+			if FileAccess.file_exists(custom_path):
+				var abs_path := ProjectSettings.globalize_path(custom_path)
+				var image := Image.load_from_file(abs_path)
+				if image:
+					_custom_card_back_tex = ImageTexture.create_from_image(image)
+				break
+	if _custom_card_back_tex and _should_use_custom_back():
+		return _custom_card_back_tex
+	return _default_card_back_tex
+
+
+func _should_use_custom_back() -> bool:
+	var mode: int = GameSettings.custom_card_back_mode
+	if mode == 0:
+		return false
+	if mode == 2:
+		return true
+	# Mode 1: myself only
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	return player_id == local_id
+
+
 func _create_card_back_panel() -> Panel:
 	var panel := Panel.new()
 	panel.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
@@ -846,7 +881,7 @@ func _create_card_back_panel() -> Panel:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var tex_rect := TextureRect.new()
-	tex_rect.texture = load("res://CardContent/Assets/cardBacks/default.jpeg")
+	tex_rect.texture = _get_card_back_texture()
 	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	tex_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
