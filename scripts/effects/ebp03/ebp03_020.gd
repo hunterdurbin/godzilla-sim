@@ -17,7 +17,7 @@ func on_counter_success(ctx: EffectContext) -> void:
 		return
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,
-		func(card: Dictionary) -> bool: return card.get("rank", 0) <= 7,
+		func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 7,
 		"Choose an opponent's rank 7 or lower battle card to destroy:")
 
 

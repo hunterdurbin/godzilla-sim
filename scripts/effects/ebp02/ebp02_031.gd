@@ -18,7 +18,7 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 	var count: int = 0
 	for i in range(8):
 		var top := ctx.owner.get_zone_top_card(i)
-		if not top.is_empty() and top.get("id", "") != card_id and top.get("rank", 0) <= 5:
+		if not top.is_empty() and top.get("id", "") != card_id and ctx.field_rank(top, ctx.owner.player_id) <= 5:
 			count += 1
 	if count >= 2:
 		return 3000

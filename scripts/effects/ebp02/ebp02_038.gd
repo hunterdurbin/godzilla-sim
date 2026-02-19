@@ -22,7 +22,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var has_r5_targets: bool = false
 	for i in range(8):
 		var top := ctx.opponent.get_zone_top_card(i)
-		if not top.is_empty() and top.get("rank", 0) <= 5:
+		if not top.is_empty() and ctx.field_rank(top, ctx.opponent.player_id) <= 5:
 			has_r5_targets = true
 			break
 	if has_r5_targets:
@@ -58,7 +58,7 @@ func on_enter(ctx: EffectContext) -> void:
 		0:
 			await ctx.effect_handler.destroy_zone_target(
 				ctx.owner.player_id, ctx.opponent,
-				func(card: Dictionary) -> bool: return card.get("rank", 0) <= 5,
+				func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 5,
 				"Choose an opponent's rank 5 or lower battle card to destroy:")
 		1:
 			await ctx.effect_handler.destroy_zones(ctx.opponent, [7])

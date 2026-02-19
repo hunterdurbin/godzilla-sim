@@ -35,5 +35,5 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	if card.get("card_type") == CardEnums.CardType.MONSTER:
 		await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
-			func(c: Dictionary) -> bool: return c.get("rank", 0) <= 6,
+			func(c: Dictionary) -> bool: return ctx.field_rank(c, ctx.opponent.player_id) <= 6,
 			"Choose an opponent's rank 6 or lower battle card to destroy:")

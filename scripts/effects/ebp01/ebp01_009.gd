@@ -20,5 +20,5 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	if ctx.owner.rage >= 2:
 		await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
-			func(card: Dictionary) -> bool: return card.get("rank", 0) <= 6,
+			func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 6,
 			"Choose an opponent's rank 6 or lower battle card to destroy:")

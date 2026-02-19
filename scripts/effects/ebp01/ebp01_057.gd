@@ -51,7 +51,7 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 
 	for adj_zi in adjacent:
 		var adj_card := ctx.owner.get_zone_top_card(adj_zi)
-		if not adj_card.is_empty() and adj_card.get("rank", 0) <= 5:
+		if not adj_card.is_empty() and ctx.field_rank(adj_card, ctx.owner.player_id) <= 5:
 			mods[adj_zi] = 3000
 
 	return mods

@@ -22,7 +22,7 @@ func on_enter(ctx: EffectContext) -> void:
 		var zone_card := ctx.owner.get_zone_top_card(zi)
 		if zone_card.is_empty():
 			continue
-		if zone_card.get("rank", 0) > 4:
+		if ctx.field_rank(zone_card, ctx.owner.player_id) > 4:
 			continue
 		if not zone_card.has("evolution_rank"):
 			continue

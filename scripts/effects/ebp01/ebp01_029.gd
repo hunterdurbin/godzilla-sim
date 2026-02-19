@@ -17,7 +17,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var has_targets: bool = false
 	for i in range(8):
 		var top := ctx.opponent.get_zone_top_card(i)
-		if not top.is_empty() and top.get("rank", 0) <= 5:
+		if not top.is_empty() and ctx.field_rank(top, ctx.opponent.player_id) <= 5:
 			has_targets = true
 			break
 	if not has_targets:

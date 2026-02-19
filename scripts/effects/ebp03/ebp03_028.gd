@@ -59,7 +59,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var zones_to_destroy: Array[int] = []
 	for i in range(5):
 		var zone_card := ctx.opponent.get_zone_top_card(i)
-		if not zone_card.is_empty() and zone_card.get("rank", 0) <= 5:
+		if not zone_card.is_empty() and ctx.field_rank(zone_card, ctx.opponent.player_id) <= 5:
 			zones_to_destroy.append(i)
 
 	if not zones_to_destroy.is_empty():
