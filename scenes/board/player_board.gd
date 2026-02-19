@@ -34,7 +34,6 @@ var rage_threat_label: Label
 var rage_display: Control
 var discard_display: Control
 var monster_info_display: Control
-var player_label: Label
 var cp_label: Label
 var threat_label: Label
 
@@ -167,17 +166,6 @@ func _setup_references() -> void:
 		monster_info_display.add_child(_monster_deck_count_badge)
 		monster_info_display.mouse_entered.connect(_monster_deck_count_badge.show)
 		monster_info_display.mouse_exited.connect(_monster_deck_count_badge.hide)
-		# Player label overlay at top
-		player_label = Label.new()
-		player_label.text = GameLog.player_name(player_id)
-		player_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		player_label.add_theme_font_size_override("font_size", 10)
-		player_label.add_theme_color_override("font_color", Color(1, 0.85, 0.4, 1))
-		player_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-		player_label.add_theme_constant_override("outline_size", 3)
-		player_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-		player_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		monster_info_display.add_child(player_label)
 
 	# Make discard area clickable + hover preview/badge
 	if discard_display:

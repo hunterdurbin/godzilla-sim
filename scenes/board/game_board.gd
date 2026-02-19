@@ -295,9 +295,6 @@ func _ready() -> void:
 		turn_manager.game_state.player_names[0] = GameSettings.player_name
 		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
 		for i in range(2):
-			var board = player1_board if i == 0 else player2_board
-			if board and board.player_label:
-				board.player_label.text = GameLog.player_name(i)
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
@@ -1326,9 +1323,6 @@ func _execute_rematch() -> void:
 		GameLog.player_names = GameLog.disambiguate(
 			turn_manager.game_state.player_names, local_player_id)
 		for i in range(2):
-			var board = player1_board if i == 0 else player2_board
-			if board and board.player_label:
-				board.player_label.text = GameLog.player_name(i)
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
@@ -3778,9 +3772,6 @@ func _rpc_receive_state(state_json: String) -> void:
 			canonical.append(str(host_names[i]))
 		GameLog.player_names = GameLog.disambiguate(canonical, local_player_id)
 		for i in range(2):
-			var board = player1_board if i == 0 else player2_board
-			if board and board.player_label:
-				board.player_label.text = GameLog.player_name(i)
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
@@ -3961,9 +3952,6 @@ func _rpc_send_player_name(pname: String) -> void:
 		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
 		# Update host UI (disambiguation may affect both labels)
 		for i in range(2):
-			var board = player1_board if i == 0 else player2_board
-			if board and board.player_label:
-				board.player_label.text = GameLog.player_name(i)
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 		# Re-broadcast so client gets the updated names
