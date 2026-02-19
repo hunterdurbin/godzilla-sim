@@ -508,21 +508,15 @@ func _invade(hand_index: int, state: GameState) -> void:
 		card_discarded.emit(player.player_id, card)
 		player.hand_changed.emit()
 		player.discard_changed.emit()
-		# Check if discarded card plays itself from discard (e.g. EBP03-061 Dagahra)
-		if effect_handler:
-			var discard_effect := effect_handler.get_effect(card)
-			if discard_effect:
-				var ctx := EffectContext.create(state, player.player_id, card, effect_handler)
-				if discard_effect.on_discarded_for_invasion(ctx):
-					await effect_handler.play_from_discard(player.player_id, card)
 
 	# Advance step by step, collecting effect entries for deferred resolution.
 	# Movement fully resolves before triggered abilities activate; cards removed
 	# during movement (crush, base strategy destruction) are filtered from the queue.
 	var deferred_entries: Array = []
 
-	# Collect hand discard triggers for deferred resolution alongside movement effects
+	# Collect discard triggers for deferred resolution alongside movement effects
 	if not replaced_cost and effect_handler:
+		deferred_entries.append_array(effect_handler.collect_discarded_for_invasion_entries(player.player_id, card))
 		deferred_entries.append_array(effect_handler.collect_discard_from_hand_entries(player.player_id, card))
 		deferred_entries.append_array(effect_handler.collect_hand_card_discarded_entries(player.player_id, card))
 	var is_victory := false

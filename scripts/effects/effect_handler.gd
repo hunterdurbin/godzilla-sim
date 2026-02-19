@@ -393,6 +393,23 @@ func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) ->
 	return entries
 
 
+func collect_discarded_for_invasion_entries(player_id: int, card_data: Dictionary) -> Array:
+	## Collect discarded-for-invasion entry for deferred resolution during invasion.
+	## The callback checks on_discarded_for_invasion and plays from discard if true.
+	var entries: Array = []
+	if has_trigger(card_data, "on_discarded_for_invasion"):
+		entries.append({"player_id": player_id, "card_data": card_data, "callback": _resolve_discarded_for_invasion.bind(player_id, card_data), "skip_active_check": true})
+	return entries
+
+
+func _resolve_discarded_for_invasion(player_id: int, card_data: Dictionary) -> void:
+	var effect := get_effect(card_data)
+	if effect:
+		var ctx := _build_context(player_id, card_data)
+		if effect.on_discarded_for_invasion(ctx):
+			await play_from_discard(player_id, card_data)
+
+
 func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
 	## Trigger on_burst_discard on the Burst monster being discarded at end of turn.
 	var effect := get_effect(card_data)
