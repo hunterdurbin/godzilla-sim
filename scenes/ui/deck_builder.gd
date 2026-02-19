@@ -575,6 +575,8 @@ func _load_pool_cards_batched(cards: Array[Dictionary], gen: int) -> void:
 			i += 1
 		if i < cards.size():
 			await get_tree().process_frame
+			if not is_inside_tree():
+				return
 
 
 func _update_pool_badge(card_id: String) -> void:
