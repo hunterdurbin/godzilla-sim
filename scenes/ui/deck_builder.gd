@@ -17,6 +17,7 @@ var export_button: Button
 var deck_stats_label: RichTextLabel
 var validation_label: RichTextLabel
 var back_button: Button
+var format_option: OptionButton
 
 # --- Right panel: deck section ---
 var monster_tab_button: Button
@@ -58,6 +59,7 @@ var _sort_mode: int = 0  # 0=ID, 1=Name, 2=Rank, 3=Type
 
 var _pending_action: Callable
 var _invalid_cards: Dictionary = {} # card_number -> true
+var _game_mode: String = "rumble"
 var _pool_load_generation: int = 0  # Incremented to cancel stale batched loads
 
 # --- Preview ---
@@ -187,14 +189,25 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	vbox.add_child(HSeparator.new())
 
-	# Deck stats (fixed height)
+	# Deck stats row (stats label + format dropdown)
+	var stats_row := HBoxContainer.new()
+	stats_row.add_theme_constant_override("separation", 8)
+	stats_row.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	vbox.add_child(stats_row)
+
 	deck_stats_label = RichTextLabel.new()
 	deck_stats_label.bbcode_enabled = true
 	deck_stats_label.custom_minimum_size.y = 60
 	deck_stats_label.fit_content = true
 	deck_stats_label.scroll_active = false
-	deck_stats_label.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	vbox.add_child(deck_stats_label)
+	deck_stats_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stats_row.add_child(deck_stats_label)
+
+	format_option = OptionButton.new()
+	for i in range(GameModeValidator.MODES.size()):
+		format_option.add_item(GameModeValidator.MODES[i]["label"], i)
+	format_option.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	stats_row.add_child(format_option)
 
 	# Validation (scrollable, fixed height)
 	var validation_scroll := ScrollContainer.new()
@@ -447,6 +460,7 @@ func _connect_signals() -> void:
 	for i in range(invasion_buttons.size()):
 		invasion_buttons[i].pressed.connect(_on_invasion_button_pressed.bind(i))
 	sort_option.item_selected.connect(_on_sort_changed)
+	format_option.item_selected.connect(_on_format_changed)
 
 	# Dialogs
 	unsaved_dialog.confirmed.connect(_on_unsaved_confirmed)
@@ -790,7 +804,7 @@ func _hide_preview() -> void:
 
 func _refresh_deck_display() -> void:
 	_clear_grid(deck_grid)
-	_invalid_cards = DeckValidator.get_invalid_cards(_monster_entries, _main_entries)
+	_invalid_cards = {} if _game_mode == "no_rules" else DeckValidator.get_invalid_cards(_monster_entries, _main_entries)
 	var entries: Array = _monster_entries if _showing_monster_tab else _main_entries
 	for entry in entries:
 		var card_data: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
@@ -1070,8 +1084,10 @@ func _update_deck_stats() -> void:
 
 func _update_validation() -> void:
 	validation_label.clear()
-	var errors := DeckValidator.validate(_monster_entries, _main_entries)
-	var warnings := DeckValidator.warnings(_monster_entries, _main_entries)
+	var errors := GameModeValidator.validate(_game_mode, _monster_entries, _main_entries)
+	var warnings: Array[String] = []
+	if _game_mode != "no_rules":
+		warnings = DeckValidator.warnings(_monster_entries, _main_entries)
 
 	if not errors.is_empty():
 		validation_label.append_text("[color=red][b]Errors[/b][/color]\n")
@@ -1173,6 +1189,12 @@ func _on_sort_changed(index: int) -> void:
 	_sort_mode = index
 	_apply_filters()
 	_refresh_pool_display()
+
+
+func _on_format_changed(index: int) -> void:
+	_game_mode = GameModeValidator.MODES[index]["id"]
+	_refresh_deck_display()
+	_update_deck_stats()
 
 
 # ============================================================

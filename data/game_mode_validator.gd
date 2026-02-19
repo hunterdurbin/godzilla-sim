@@ -13,7 +13,8 @@ static func validate(game_mode: String, monster_entries: Array, main_entries: Ar
 		"rumble":
 			return DeckValidator.validate(monster_entries, main_entries)
 		"no_rules":
-			return []
+			var empty: Array[String] = []
+			return empty
 		_:
 			return DeckValidator.validate(monster_entries, main_entries)
 
