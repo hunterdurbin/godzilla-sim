@@ -31,7 +31,4 @@ func on_enter(ctx: EffectContext) -> void:
 
 	if card.get("card_type") == CardEnums.CardType.MONSTER:
 		if ctx.owner.monster_zone < 6:
-			var old_zone: int = ctx.owner.monster_zone
-			ctx.owner.monster_zone = 6
-			ctx.owner.monster_changed.emit()
-			await ctx.effect_handler.trigger_monster_advance(ctx.owner.player_id, old_zone, 6)
+			await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 6)

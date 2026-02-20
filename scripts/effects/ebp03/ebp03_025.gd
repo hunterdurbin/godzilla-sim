@@ -39,5 +39,4 @@ func on_enter(ctx: EffectContext) -> void:
 
 	# Advance opponent's monster to zone 5 (if not already at 5+)
 	if ctx.opponent.monster_zone < 5:
-		ctx.opponent.monster_zone = 5
-		ctx.opponent.monster_changed.emit()
+		await ctx.effect_handler.advance_monster_to_zone(ctx.opponent.player_id, 5)

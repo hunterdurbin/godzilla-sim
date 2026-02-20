@@ -503,6 +503,21 @@ func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> vo
 	await _resolve_standby_entries(entries)
 
 
+func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
+	## Advance a player's monster to the target zone one step at a time,
+	## collecting on_monster_advance entries per step and resolving them
+	## after all movement completes (deferred, like ActionHandler).
+	var player := game_state.players[player_id]
+	var deferred_entries: Array = []
+	while player.monster_zone < target_zone:
+		var from_zone: int = player.monster_zone
+		player.monster_zone += 1
+		player.monster_changed.emit()
+		deferred_entries.append_array(collect_monster_advance_entries(player_id, from_zone, player.monster_zone))
+	if not deferred_entries.is_empty():
+		await resolve_deferred_entries(deferred_entries)
+
+
 func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
 	## Collect monster advance entries for deferred resolution after movement completes.
 	var entries: Array = []
