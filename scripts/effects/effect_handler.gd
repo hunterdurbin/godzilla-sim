@@ -1840,7 +1840,7 @@ func force_counter(player_id: int) -> void:
 	## Force a successful counter of the opponent's monster.
 	## Used by EBP02-012 Godzilla(2016) Frozen.
 	if action_handler:
-		action_handler.force_counter(game_state, player_id)
+		await action_handler.force_counter(game_state, player_id)
 
 
 func get_strategy_discard_interceptor(player_id: int) -> int:
