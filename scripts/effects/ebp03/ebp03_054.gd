@@ -27,10 +27,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.monster_zone <= 1:
 		return
 
-	var old_zone := ctx.opponent.monster_zone
-	ctx.opponent.monster_zone -= 1
-	ctx.opponent.monster_changed.emit()
-	await ctx.effect_handler.trigger_monster_advance(ctx.opponent.player_id, old_zone, ctx.opponent.monster_zone)
+	await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
 
 
 func _has_base_in_play(ctx: EffectContext) -> bool:

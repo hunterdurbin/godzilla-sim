@@ -47,9 +47,7 @@ func on_counter_success(ctx: EffectContext) -> void:
 		return
 	# Retreat opponent's monster to zone 1
 	if ctx.opponent.monster_zone > 1:
-		var old_zone: int = ctx.opponent.monster_zone
-		ctx.opponent.monster_zone = 1
-		ctx.opponent.monster_changed.emit()
+		await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, 1)
 
 
 func _has_base_in_play(ctx: EffectContext) -> bool:
