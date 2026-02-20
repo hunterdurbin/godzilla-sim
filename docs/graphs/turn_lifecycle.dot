@@ -1,0 +1,254 @@
+digraph turn_lifecycle {
+    rankdir=TB
+    label="Turn Lifecycle: ActionHandler → EffectHandler Calls"
+    labelloc=t
+    fontsize=18
+    fontname="Helvetica-Bold"
+    bgcolor="white"
+    compound=true
+    nodesep=0.4
+    ranksep=0.5
+
+    node [fontname="Helvetica" fontsize=10 style=filled shape=box]
+    edge [fontname="Helvetica" fontsize=8]
+
+    // ── Color legend ──
+    subgraph cluster_legend {
+        label="Legend"
+        style=rounded
+        color=gray70
+        fontcolor=gray50
+        fontsize=9
+
+        leg_phase [label="Phase" fillcolor="#E8F5E9" color="#4CAF50" shape=box]
+        leg_ah [label="ActionHandler\nmethod" fillcolor="#BBDEFB" color="#1565C0" shape=box]
+        leg_trigger [label="EffectHandler\ntrigger" fillcolor="#FFCC80" color="#E65100" shape=box]
+        leg_query [label="EffectHandler\nmodifier/query" fillcolor="#CE93D8" color="#6A1B9A" shape=box]
+        leg_deferred [label="Deferred\ncollection" fillcolor="#FFF9C4" color="#F9A825" shape=box]
+
+        leg_phase -> leg_ah -> leg_trigger -> leg_query -> leg_deferred [style=invis]
+    }
+
+    // ════════════════════════════════════════
+    //  START PHASE
+    // ════════════════════════════════════════
+    subgraph cluster_start {
+        label="START PHASE"
+        style=rounded
+        color="#4CAF50"
+        fontcolor="#4CAF50"
+        bgcolor="#F1F8E9"
+
+        start_reset [label="execute_start_phase_reset()" fillcolor="#BBDEFB" color="#1565C0"]
+        start_draw [label="execute_start_phase_draw()" fillcolor="#BBDEFB" color="#1565C0"]
+        start_discard [label="execute_start_phase_discard()" fillcolor="#BBDEFB" color="#1565C0"]
+
+        is_base [label="is_base_strategy()" fillcolor="#CE93D8" color="#6A1B9A"]
+        discard_strat [label="discard_strategy_from_zone()" fillcolor="#FFCC80" color="#E65100"]
+        intercept [label="get_strategy_discard_interceptor()" fillcolor="#CE93D8" color="#6A1B9A"]
+        strat_discarded [label="trigger_strategy_discarded()" fillcolor="#FFCC80" color="#E65100"]
+
+        start_reset -> start_draw -> start_discard
+        start_discard -> is_base [label="skip if base"]
+        start_discard -> discard_strat
+        discard_strat -> intercept [label="check\ninterception"]
+        discard_strat -> strat_discarded [label="if not\nintercepted"]
+    }
+
+    // ════════════════════════════════════════
+    //  MAIN PHASE
+    // ════════════════════════════════════════
+    subgraph cluster_main {
+        label="MAIN PHASE (player actions)"
+        style=rounded
+        color="#1565C0"
+        fontcolor="#1565C0"
+        bgcolor="#E3F2FD"
+
+        execute [label="execute(action, params)" fillcolor="#BBDEFB" color="#1565C0" penwidth=2]
+
+        // ── Play Battle ──
+        subgraph cluster_battle {
+            label="PLAY_BATTLE"
+            style=filled
+            fillcolor="#E8EAF6"
+            color="#3F51B5"
+
+            play_battle [label="_play_battle_card()" fillcolor="#BBDEFB" color="#1565C0"]
+            stack_check [label="should_stack_on_play()" fillcolor="#CE93D8" color="#6A1B9A"]
+            banish_battle [label="banish_or_discard()\n[static]" fillcolor="#CE93D8" color="#6A1B9A"]
+            enter_b [label="trigger_enter()" fillcolor="#FFCC80" color="#E65100"]
+            bcp [label="trigger_battle_card_played()" fillcolor="#FFCC80" color="#E65100"]
+
+            play_battle -> stack_check
+            play_battle -> banish_battle [label="if overload"]
+            play_battle -> enter_b -> bcp
+        }
+
+        // ── Play Strategy ──
+        subgraph cluster_strategy {
+            label="PLAY_STRATEGY"
+            style=filled
+            fillcolor="#E8EAF6"
+            color="#3F51B5"
+
+            play_strat [label="_play_strategy_card()" fillcolor="#BBDEFB" color="#1565C0"]
+            enter_s [label="trigger_enter()" fillcolor="#FFCC80" color="#E65100"]
+
+            play_strat -> enter_s
+        }
+
+        // ── Gain Rage ──
+        subgraph cluster_rage {
+            label="GAIN_RAGE"
+            style=filled
+            fillcolor="#E8EAF6"
+            color="#3F51B5"
+
+            gain_rage [label="_gain_rage()" fillcolor="#BBDEFB" color="#1565C0"]
+            dfh [label="trigger_discard_from_hand()" fillcolor="#FFCC80" color="#E65100"]
+            thcd [label="trigger_hand_card_discarded()" fillcolor="#FFCC80" color="#E65100"]
+            trc [label="trigger_rage_changed()" fillcolor="#FFCC80" color="#E65100"]
+
+            gain_rage -> dfh -> thcd -> trc
+        }
+
+        // ── Play Monster ──
+        subgraph cluster_monster {
+            label="PLAY_MONSTER"
+            style=filled
+            fillcolor="#E8EAF6"
+            color="#3F51B5"
+
+            play_mon [label="_play_monster()" fillcolor="#BBDEFB" color="#1565C0"]
+            enter_m [label="trigger_enter()" fillcolor="#FFCC80" color="#E65100"]
+            tmp [label="trigger_monster_played()" fillcolor="#FFCC80" color="#E65100"]
+            trc_m [label="trigger_rage_changed()" fillcolor="#FFCC80" color="#E65100"]
+
+            play_mon -> enter_m -> tmp -> trc_m
+        }
+
+        // ── Invade ──
+        subgraph cluster_invade {
+            label="INVADE"
+            style=filled
+            fillcolor="#FFF8E1"
+            color="#F9A825"
+
+            invade [label="_invade()" fillcolor="#BBDEFB" color="#1565C0"]
+            replace_cost [label="can_replace_invasion_cost()" fillcolor="#CE93D8" color="#6A1B9A"]
+            sel_choice [label="select_choice()" fillcolor="#CE93D8" color="#6A1B9A"]
+
+            col_dfi [label="collect_discarded_for_\ninvasion_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+            col_dfh [label="collect_discard_from_\nhand_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+            col_hcd [label="collect_hand_card_\ndiscarded_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+
+            inv_loop [label="per-step loop" shape=diamond fillcolor="#FFF9C4" color="#F9A825"]
+            col_wi [label="collect_when_\ninvading_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+            col_ma [label="collect_monster_\nadvance_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+            destroy_base [label="destroy_base_strategies_\non_invasion()" fillcolor="#FFCC80" color="#E65100"]
+            crush_inv [label="check_crush_rule()" fillcolor="#BBDEFB" color="#1565C0"]
+
+            col_io [label="collect_invasion_\nobserved_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+            resolve_def [label="resolve_deferred_entries()" fillcolor="#FFCC80" color="#E65100"]
+
+            invade -> replace_cost
+            replace_cost -> sel_choice [label="if can replace"]
+            invade -> col_dfi
+            invade -> col_dfh
+            invade -> col_hcd
+            invade -> inv_loop
+            inv_loop -> col_wi
+            inv_loop -> col_ma
+            inv_loop -> destroy_base
+            inv_loop -> crush_inv
+            invade -> col_io [label="after loop"]
+            invade -> resolve_def [label="all deferred\nentries"]
+        }
+
+        execute -> play_battle [label="PLAY_BATTLE"]
+        execute -> play_strat [label="PLAY_STRATEGY"]
+        execute -> gain_rage [label="GAIN_RAGE"]
+        execute -> play_mon [label="PLAY_MONSTER"]
+        execute -> invade [label="INVADE"]
+    }
+
+    // ════════════════════════════════════════
+    //  COUNTER PHASE
+    // ════════════════════════════════════════
+    subgraph cluster_counter {
+        label="COUNTER PHASE"
+        style=rounded
+        color="#D32F2F"
+        fontcolor="#D32F2F"
+        bgcolor="#FFEBEE"
+
+        resolve_ctr [label="resolve_counter()" fillcolor="#BBDEFB" color="#1565C0" penwidth=2]
+        cpm [label="get_counter_power_modifier()" fillcolor="#CE93D8" color="#6A1B9A"]
+        tlm [label="get_threat_level_modifier()" fillcolor="#CE93D8" color="#6A1B9A"]
+        ercp [label="get_engagement_restricted_cp()" fillcolor="#CE93D8" color="#6A1B9A"]
+        cit [label="get_counter_immunity_threshold()" fillcolor="#CE93D8" color="#6A1B9A"]
+        tcs [label="trigger_counter_success()" fillcolor="#FFCC80" color="#E65100"]
+        enter_c [label="trigger_enter()\n(on rank-up monster)" fillcolor="#FFCC80" color="#E65100"]
+
+        resolve_ctr -> cpm
+        resolve_ctr -> tlm
+        resolve_ctr -> ercp
+        resolve_ctr -> cit
+        resolve_ctr -> tcs [label="if CP >= threat"]
+        resolve_ctr -> enter_c [label="after rank-up"]
+    }
+
+    // ════════════════════════════════════════
+    //  END PHASE
+    // ════════════════════════════════════════
+    subgraph cluster_end {
+        label="END PHASE"
+        style=rounded
+        color="#7B1FA2"
+        fontcolor="#7B1FA2"
+        bgcolor="#F3E5F5"
+
+        burst [label="execute_end_phase_\nburst_discard()" fillcolor="#BBDEFB" color="#1565C0"]
+        tbd [label="trigger_burst_discard()" fillcolor="#FFCC80" color="#E65100"]
+
+        advance [label="execute_end_phase_\nadvance()" fillcolor="#BBDEFB" color="#1565C0"]
+        blocked [label="is_monster_advance_blocked()" fillcolor="#CE93D8" color="#6A1B9A"]
+        extra [label="get_extra_end_phase_advance()" fillcolor="#CE93D8" color="#6A1B9A"]
+        col_ma_end [label="collect_monster_\nadvance_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+        crush_end [label="check_crush_rule()" fillcolor="#BBDEFB" color="#1565C0"]
+        resolve_end [label="resolve_deferred_entries()" fillcolor="#FFCC80" color="#E65100"]
+
+        end_draw [label="execute_end_phase_draw()" fillcolor="#BBDEFB" color="#1565C0"]
+
+        burst -> tbd
+        advance -> blocked [label="early return\nif blocked"]
+        advance -> extra
+        advance -> col_ma_end [label="per step"]
+        advance -> crush_end [label="per step"]
+        advance -> resolve_end [label="after all steps"]
+        burst -> advance -> end_draw
+    }
+
+    // ── Phase flow ──
+    start_reset -> execute [style=bold color="#2E7D32" lhead=cluster_main ltail=cluster_start label="  "]
+    execute -> resolve_ctr [style=bold color="#2E7D32" lhead=cluster_counter ltail=cluster_main label="  "]
+    resolve_ctr -> burst [style=bold color="#2E7D32" lhead=cluster_end ltail=cluster_counter label="  "]
+
+    // ── Crush rule detail ──
+    subgraph cluster_crush {
+        label="check_crush_rule()"
+        style=rounded
+        color=gray60
+        fontcolor=gray50
+        bgcolor="#FAFAFA"
+
+        crush_main [label="_check_crush_for_player()" fillcolor="#BBDEFB" color="#1565C0"]
+        banish_crush [label="banish_or_discard()\n[static]" fillcolor="#CE93D8" color="#6A1B9A"]
+        t_crush [label="trigger_crush()" fillcolor="#FFCC80" color="#E65100"]
+        t_revenge [label="trigger_revenge()" fillcolor="#FFCC80" color="#E65100"]
+
+        crush_main -> banish_crush
+        crush_main -> t_crush -> t_revenge
+    }
+}

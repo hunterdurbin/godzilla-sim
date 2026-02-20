@@ -1,0 +1,88 @@
+digraph architecture_overview {
+    rankdir=TB
+    label="ActionHandler ↔ EffectHandler Architecture Overview"
+    labelloc=t
+    fontsize=20
+    fontname="Helvetica-Bold"
+    bgcolor="white"
+    compound=true
+    newrank=true
+
+    node [fontname="Helvetica" fontsize=11 style=filled]
+    edge [fontname="Helvetica" fontsize=9]
+
+    // ── Orchestration layer ──
+    subgraph cluster_orchestration {
+        label="Orchestration"
+        style=dashed
+        color=gray60
+        fontcolor=gray40
+
+        TurnManager [label="TurnManager\n(turn lifecycle)" shape=box fillcolor="#E8F5E9" color="#4CAF50"]
+    }
+
+    // ── Logic layer ──
+    subgraph cluster_logic {
+        label="Logic Layer (RefCounted)"
+        style=rounded
+        color="#1565C0"
+        fontcolor="#1565C0"
+        bgcolor="#E3F2FD"
+
+        ActionHandler [label="ActionHandler\n(state mutations)" shape=box fillcolor="#BBDEFB" color="#1565C0"]
+        EffectHandler [label="EffectHandler\n(effect dispatch)" shape=box fillcolor="#BBDEFB" color="#1565C0"]
+        RulesEngine [label="RulesEngine\n(validation)" shape=box fillcolor="#BBDEFB" color="#1565C0"]
+        GameState [label="GameState" shape=box fillcolor="#C8E6C9" color="#388E3C"]
+        PlayerState [label="PlayerState ×2" shape=box fillcolor="#C8E6C9" color="#388E3C"]
+    }
+
+    // ── Effect scripts ──
+    subgraph cluster_effects {
+        label="Per-Card Effect Scripts"
+        style=rounded
+        color="#6A1B9A"
+        fontcolor="#6A1B9A"
+        bgcolor="#F3E5F5"
+
+        CardEffect [label="CardEffect\n(base class)" shape=box fillcolor="#CE93D8" color="#6A1B9A"]
+        EffectScripts [label="esd01_005.gd\nebp02_001.gd\nebp03_001.gd\n..." shape=note fillcolor="#E1BEE7" color="#6A1B9A"]
+    }
+
+    // ── Presentation layer ──
+    subgraph cluster_presentation {
+        label="Presentation Layer (Nodes)"
+        style=rounded
+        color="#E65100"
+        fontcolor="#E65100"
+        bgcolor="#FFF3E0"
+
+        GameBoard [label="GameBoard\n(main scene)" shape=box fillcolor="#FFCC80" color="#E65100"]
+        PlayerBoard [label="PlayerBoard ×2" shape=box fillcolor="#FFCC80" color="#E65100"]
+    }
+
+    // ── Orchestration edges ──
+    TurnManager -> ActionHandler [label="calls phase\nmethods" color="#4CAF50"]
+    TurnManager -> EffectHandler [label="creates &\nsetup()" color="#4CAF50"]
+    TurnManager -> RulesEngine [label="validates\nactions" color="#4CAF50"]
+
+    // ── Cross-references ──
+    ActionHandler -> EffectHandler [label="triggers &\nmodifier queries" color="#1565C0" penwidth=2]
+    EffectHandler -> ActionHandler [label="back-calls:\nresolve_check_timing\nforce_counter\nplay_monster_from_effect" color="#D32F2F" style=dashed penwidth=2]
+
+    // ── State access ──
+    ActionHandler -> GameState [label="mutates" color=gray50]
+    ActionHandler -> PlayerState [label="mutates" color=gray50]
+    EffectHandler -> GameState [label="reads" color=gray50 style=dotted]
+    EffectHandler -> PlayerState [label="reads &\nmutates" color=gray50]
+    RulesEngine -> GameState [label="reads" color=gray50 style=dotted]
+
+    // ── Effect dispatch ──
+    EffectHandler -> CardEffect [label="get_effect()\nhas_trigger()" color="#6A1B9A"]
+    CardEffect -> EffectScripts [label="extends" color="#6A1B9A" style=dotted]
+
+    // ── Presentation signals ──
+    ActionHandler -> GameBoard [label="signals:\nbattle_card_played\nmonster_advanced\netc." color="#E65100" style=dashed]
+    EffectHandler -> GameBoard [label="signals:\nhand_discard_requested\nchoice_requested\nzone_target_requested\netc." color="#E65100" style=dashed]
+    GameBoard -> EffectHandler [label="resolve callbacks:\nresolve_hand_discard()\nresolve_choice()\nresolve_zone_target()\netc." color="#E65100" style=dashed dir=back]
+    GameBoard -> PlayerBoard [label="owns" color="#E65100"]
+}

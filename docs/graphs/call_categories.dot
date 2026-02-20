@@ -1,0 +1,164 @@
+digraph call_categories {
+    rankdir=LR
+    label="ActionHandler ↔ EffectHandler: Call Categories"
+    labelloc=t
+    fontsize=18
+    fontname="Helvetica-Bold"
+    bgcolor="white"
+    nodesep=0.3
+    ranksep=1.5
+
+    node [fontname="Helvetica" fontsize=10 style=filled shape=record]
+    edge [fontname="Helvetica" fontsize=9]
+
+    // ══════════════════════════════════════
+    //  ActionHandler (source)
+    // ══════════════════════════════════════
+    subgraph cluster_ah {
+        label="ActionHandler"
+        style=rounded
+        color="#1565C0"
+        fontcolor="#1565C0"
+        bgcolor="#E3F2FD"
+
+        ah_actions [label="{Action Methods|_play_battle_card()\l_play_strategy_card()\l_gain_rage()\l_play_monster()\l_invade()\l}" fillcolor="#BBDEFB" color="#1565C0"]
+
+        ah_phases [label="{Phase Methods|execute_start_phase_discard()\lexecute_end_phase_burst_discard()\lexecute_end_phase_advance()\l}" fillcolor="#BBDEFB" color="#1565C0"]
+
+        ah_counter [label="{Counter|resolve_counter()\lforce_counter()\l}" fillcolor="#BBDEFB" color="#1565C0"]
+
+        ah_rules [label="{Rule Actions|check_crush_rule()\l_check_crush_for_player()\lresolve_check_timing()\l_resolve_illegal_cards()\l}" fillcolor="#BBDEFB" color="#1565C0"]
+
+        ah_special [label="{Effect-Initiated|play_monster_from_effect()\l}" fillcolor="#90CAF9" color="#0D47A1"]
+    }
+
+    // ══════════════════════════════════════
+    //  TRIGGERS (AH → EH)
+    // ══════════════════════════════════════
+    subgraph cluster_triggers {
+        label="Triggers\n(AH → EH)"
+        style=rounded
+        color="#E65100"
+        fontcolor="#E65100"
+        bgcolor="#FFF3E0"
+
+        trig_enter [label="trigger_enter()" fillcolor="#FFCC80" color="#E65100"]
+        trig_crush [label="trigger_crush()" fillcolor="#FFCC80" color="#E65100"]
+        trig_revenge [label="trigger_revenge()" fillcolor="#FFCC80" color="#E65100"]
+        trig_dfh [label="trigger_discard_from_hand()" fillcolor="#FFCC80" color="#E65100"]
+        trig_hcd [label="trigger_hand_card_discarded()" fillcolor="#FFCC80" color="#E65100"]
+        trig_rage [label="trigger_rage_changed()" fillcolor="#FFCC80" color="#E65100"]
+        trig_mp [label="trigger_monster_played()" fillcolor="#FFCC80" color="#E65100"]
+        trig_bcp [label="trigger_battle_card_played()" fillcolor="#FFCC80" color="#E65100"]
+        trig_bd [label="trigger_burst_discard()" fillcolor="#FFCC80" color="#E65100"]
+        trig_cs [label="trigger_counter_success()" fillcolor="#FFCC80" color="#E65100"]
+        trig_sd [label="trigger_strategy_discarded()" fillcolor="#FFCC80" color="#E65100"]
+    }
+
+    // ══════════════════════════════════════
+    //  DEFERRED COLLECTORS (AH → EH)
+    // ══════════════════════════════════════
+    subgraph cluster_deferred {
+        label="Deferred Collectors\n(AH → EH, during movement)"
+        style=rounded
+        color="#F9A825"
+        fontcolor="#F9A825"
+        bgcolor="#FFFDE7"
+
+        col_wi [label="collect_when_invading_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+        col_ma [label="collect_monster_advance_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+        col_io [label="collect_invasion_observed_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+        col_dfi [label="collect_discarded_for_invasion_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+        col_dfh [label="collect_discard_from_hand_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+        col_hcd [label="collect_hand_card_discarded_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+        resolve_def [label="resolve_deferred_entries()" fillcolor="#FFE082" color="#F57F17"]
+    }
+
+    // ══════════════════════════════════════
+    //  MODIFIER QUERIES (AH → EH)
+    // ══════════════════════════════════════
+    subgraph cluster_modifiers {
+        label="Modifier Queries\n(AH → EH)"
+        style=rounded
+        color="#6A1B9A"
+        fontcolor="#6A1B9A"
+        bgcolor="#F3E5F5"
+
+        mod_cp [label="get_counter_power_modifier()" fillcolor="#CE93D8" color="#6A1B9A"]
+        mod_tl [label="get_threat_level_modifier()" fillcolor="#CE93D8" color="#6A1B9A"]
+        mod_ercp [label="get_engagement_restricted_cp()" fillcolor="#CE93D8" color="#6A1B9A"]
+        mod_cit [label="get_counter_immunity_threshold()" fillcolor="#CE93D8" color="#6A1B9A"]
+        mod_extra [label="get_extra_end_phase_advance()" fillcolor="#CE93D8" color="#6A1B9A"]
+        mod_stack [label="should_stack_on_play()" fillcolor="#CE93D8" color="#6A1B9A"]
+        mod_base [label="is_base_strategy()" fillcolor="#CE93D8" color="#6A1B9A"]
+        mod_block [label="is_monster_advance_blocked()" fillcolor="#CE93D8" color="#6A1B9A"]
+        mod_inv [label="can_replace_invasion_cost()" fillcolor="#CE93D8" color="#6A1B9A"]
+        mod_banish [label="banish_or_discard()\n[static]" fillcolor="#CE93D8" color="#6A1B9A"]
+        mod_destroy [label="destroy_base_strategies_on_invasion()" fillcolor="#CE93D8" color="#6A1B9A"]
+    }
+
+    // ══════════════════════════════════════
+    //  BACK-CALLS (EH → AH)
+    // ══════════════════════════════════════
+    subgraph cluster_backcalls {
+        label="Back-Calls\n(EH → AH)"
+        style=rounded
+        color="#D32F2F"
+        fontcolor="#D32F2F"
+        bgcolor="#FFEBEE"
+
+        back_rct [label="resolve_check_timing()\n[from _resolve_player_standby]" fillcolor="#EF9A9A" color="#D32F2F"]
+        back_fc [label="force_counter()\n[from effect scripts]" fillcolor="#EF9A9A" color="#D32F2F"]
+    }
+
+    // ══════════════════════════════════════
+    //  EDGES: AH actions → triggers
+    // ══════════════════════════════════════
+    ah_actions -> trig_enter [color="#E65100" penwidth=1.5]
+    ah_actions -> trig_dfh [color="#E65100"]
+    ah_actions -> trig_hcd [color="#E65100"]
+    ah_actions -> trig_rage [color="#E65100"]
+    ah_actions -> trig_mp [color="#E65100"]
+    ah_actions -> trig_bcp [color="#E65100"]
+
+    ah_phases -> trig_bd [color="#E65100"]
+    ah_phases -> trig_sd [color="#E65100"]
+
+    ah_rules -> trig_crush [color="#E65100"]
+    ah_rules -> trig_revenge [color="#E65100"]
+
+    ah_counter -> trig_cs [color="#E65100"]
+    ah_counter -> trig_enter [color="#E65100" style=dashed label="rank-up"]
+
+    ah_special -> trig_enter [color="#E65100"]
+    ah_special -> trig_mp [color="#E65100"]
+
+    // ── Edges: AH → deferred collectors ──
+    ah_actions -> col_wi [color="#F9A825" label="invade"]
+    ah_actions -> col_ma [color="#F9A825" label="invade"]
+    ah_actions -> col_io [color="#F9A825" label="invade"]
+    ah_actions -> col_dfi [color="#F9A825" label="invade"]
+    ah_actions -> col_dfh [color="#F9A825" label="invade"]
+    ah_actions -> col_hcd [color="#F9A825" label="invade"]
+    ah_actions -> resolve_def [color="#F9A825" label="invade"]
+    ah_phases -> col_ma [color="#F9A825" label="advance" style=dashed]
+    ah_phases -> resolve_def [color="#F9A825" label="advance" style=dashed]
+
+    // ── Edges: AH → modifier queries ──
+    ah_counter -> mod_cp [color="#6A1B9A"]
+    ah_counter -> mod_tl [color="#6A1B9A"]
+    ah_counter -> mod_ercp [color="#6A1B9A"]
+    ah_counter -> mod_cit [color="#6A1B9A"]
+    ah_phases -> mod_extra [color="#6A1B9A"]
+    ah_phases -> mod_block [color="#6A1B9A"]
+    ah_phases -> mod_base [color="#6A1B9A"]
+    ah_actions -> mod_stack [color="#6A1B9A"]
+    ah_actions -> mod_inv [color="#6A1B9A"]
+    ah_actions -> mod_banish [color="#6A1B9A"]
+    ah_rules -> mod_banish [color="#6A1B9A"]
+    ah_actions -> mod_destroy [color="#6A1B9A" label="invade"]
+
+    // ── Edges: EH → AH back-calls ──
+    back_rct -> ah_rules [color="#D32F2F" penwidth=2 dir=back]
+    back_fc -> ah_counter [color="#D32F2F" penwidth=2 dir=back]
+}
