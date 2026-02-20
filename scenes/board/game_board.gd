@@ -1900,8 +1900,8 @@ func _get_active_player_board() -> Control:
 
 
 ## Translate player.hand indices to managed_cards indices by matching card IDs
-func _hand_indices_to_visual(hand_indices: Array[int], board: Control) -> Array[int]:
-	var player := _get_current_player()
+func _hand_indices_to_visual(hand_indices: Array[int], board: Control, player_id: int = -1) -> Array[int]:
+	var player := _get_player_state(player_id) if player_id >= 0 else _get_current_player()
 	var visual: Array[int] = []
 	var cards: Array[Control] = board.hand_manager.get_cards()
 	for hand_idx in hand_indices:
@@ -2771,8 +2771,11 @@ func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt
 	var board: Control = player1_board if player_id == 0 else player2_board
 	board.set_hand_face_down(false)
 
+	# Translate player.hand indices to visual managed_cards indices
+	var visual_indices := _hand_indices_to_visual(valid_indices, board, player_id)
+
 	var hand_mgr: CardManager = player1_hand if player_id == 0 else player2_hand
-	hand_mgr.enter_selection_mode(valid_indices)
+	hand_mgr.enter_selection_mode(visual_indices)
 	if not hand_mgr.card_selected.is_connected(_on_hand_card_clicked):
 		hand_mgr.card_selected.connect(_on_hand_card_clicked)
 
