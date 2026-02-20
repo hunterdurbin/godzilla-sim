@@ -34,5 +34,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var opp_tl: int = ctx.opponent.get_threat_level()
 	if opp_tl <= 40000 and ctx.opponent.monster_zone > 1:
-		ctx.opponent.monster_zone -= 1
-		ctx.opponent.monster_changed.emit()
+		await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)

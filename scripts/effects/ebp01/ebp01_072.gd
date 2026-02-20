@@ -41,5 +41,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if card.get("card_type") == CardEnums.CardType.BATTLE:
 		var opponent_tl: int = ctx.opponent.get_threat_level()
 		if opponent_tl <= 50000 and ctx.opponent.monster_zone > 1:
-			ctx.opponent.monster_zone -= 1
-			ctx.opponent.monster_changed.emit()
+			await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)

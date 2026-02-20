@@ -36,7 +36,4 @@ func on_enter(ctx: EffectContext) -> void:
 
 	if not selected.is_empty():
 		if ctx.owner.monster_zone < 8:
-			var old_zone: int = ctx.owner.monster_zone
-			ctx.owner.monster_zone += 1
-			ctx.owner.monster_changed.emit()
-			await ctx.effect_handler.trigger_monster_advance(ctx.owner.player_id, old_zone, ctx.owner.monster_zone)
+			await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, ctx.owner.monster_zone + 1)

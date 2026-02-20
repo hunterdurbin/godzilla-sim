@@ -24,5 +24,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if not ctx.owner.has_invaded_this_turn:
 		return
 	if ctx.opponent.monster_zone < 8:
-		ctx.opponent.monster_zone += 1
-		ctx.opponent.monster_changed.emit()
+		await ctx.effect_handler.advance_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone + 1)

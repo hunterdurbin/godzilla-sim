@@ -13,5 +13,4 @@ extends CardEffect
 
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.monster_zone < 8:
-		ctx.opponent.monster_zone += 1
-		ctx.opponent.monster_changed.emit()
+		await ctx.effect_handler.advance_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone + 1)

@@ -52,7 +52,4 @@ func on_enter(ctx: EffectContext) -> void:
 
 	# If opponent monster is in a matching zone, retreat 1
 	if ctx.opponent.monster_zone in matching_ranks and ctx.opponent.monster_zone > 1:
-		var old_zone := ctx.opponent.monster_zone
-		ctx.opponent.monster_zone -= 1
-		ctx.opponent.monster_changed.emit()
-		await ctx.effect_handler.trigger_monster_advance(ctx.opponent.player_id, old_zone, ctx.opponent.monster_zone)
+		await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)

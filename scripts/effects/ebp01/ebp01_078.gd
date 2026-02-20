@@ -13,5 +13,4 @@ extends CardEffect
 
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.monster_zone < 6:
-		ctx.owner.monster_zone = 6
-		ctx.owner.monster_changed.emit()
+		await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 6)
