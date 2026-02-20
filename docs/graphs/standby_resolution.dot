@@ -1,0 +1,158 @@
+digraph standby_resolution {
+    rankdir=TB
+    label="Standby Resolution Pattern (Rules 10.4.3)"
+    labelloc=t
+    fontsize=18
+    fontname="Helvetica-Bold"
+    bgcolor="white"
+    nodesep=0.5
+    ranksep=0.6
+
+    node [fontname="Helvetica" fontsize=10 style=filled shape=box]
+    edge [fontname="Helvetica" fontsize=9]
+
+    // ════════════════════════════════════════
+    //  ENTRY: trigger_X collects entries
+    // ════════════════════════════════════════
+    subgraph cluster_collection {
+        label="1. Entry Collection (trigger_X methods)"
+        style=rounded
+        color="#1565C0"
+        fontcolor="#1565C0"
+        bgcolor="#E3F2FD"
+
+        trigger_x [label="trigger_rage_changed()\ntrigger_monster_played()\ntrigger_battle_card_played()\ntrigger_phase_start()\ntrigger_hand_card_discarded()\ntrigger_counter_success()\ntrigger_strategy_discarded()\ntrigger_invasion_observed()" fillcolor="#BBDEFB" color="#1565C0"]
+
+        scan [label="Scan all active cards:\n• current_monster\n• zone top cards (×8)\n• strategy zone cards" shape=note fillcolor="#E8EAF6" color="#5C6BC0"]
+
+        has_trigger [label="has_trigger(card_data, method_name)\n→ checks pre-generated trigger_map.gd" fillcolor="#CE93D8" color="#6A1B9A"]
+
+        get_effect [label="get_effect(card_data)\n→ loads & caches CardEffect" fillcolor="#CE93D8" color="#6A1B9A"]
+
+        build_entry [label="Build entry dict:\n{\n  player_id: int,\n  card_data: Dictionary,\n  callback: effect.on_X.bind(ctx, ...)\n}" shape=note fillcolor="#FFF9C4" color="#F9A825"]
+
+        entries_arr [label="entries: Array\n[entry₁, entry₂, ...]" fillcolor="#FFF9C4" color="#F9A825" shape=folder]
+
+        trigger_x -> scan -> has_trigger
+        has_trigger -> get_effect [label="if overrides\nmethod"]
+        get_effect -> build_entry -> entries_arr
+    }
+
+    // ════════════════════════════════════════
+    //  RESOLVE STANDBY ENTRIES
+    // ════════════════════════════════════════
+    subgraph cluster_resolve {
+        label="2. _resolve_standby_entries(entries)"
+        style=rounded
+        color="#E65100"
+        fontcolor="#E65100"
+        bgcolor="#FFF3E0"
+
+        guard [label="Re-entrancy guard:\nif _in_standby_resolution:\n  append to _pending_standby_entries\n  return" fillcolor="#FFCCBC" color="#BF360C" shape=note]
+
+        set_flag [label="_in_standby_resolution = true" fillcolor="#FFCC80" color="#E65100"]
+
+        split [label="Split entries by player:\nturn_entries (current_player_id)\nnon_turn_entries (opponent)" fillcolor="#FFCC80" color="#E65100" shape=diamond]
+
+        resolve_turn [label="_resolve_player_standby(\n  turn_player_id,\n  turn_entries\n)" fillcolor="#FFE0B2" color="#E65100"]
+
+        resolve_non [label="_resolve_player_standby(\n  non_turn_player_id,\n  non_turn_entries\n)" fillcolor="#FFE0B2" color="#E65100"]
+
+        drain [label="Drain _pending_standby_entries\ninto current_entries" fillcolor="#FFCC80" color="#E65100" shape=diamond]
+
+        loop_check [label="current_entries\nempty?" fillcolor="#FFCC80" color="#E65100" shape=diamond]
+
+        clear_flag [label="_in_standby_resolution = false" fillcolor="#FFCC80" color="#E65100"]
+
+        guard -> set_flag
+        set_flag -> split [label="10.4.3.2"]
+        split -> resolve_turn [label="turn player\nfirst"]
+        resolve_turn -> resolve_non [label="10.4.3.3\nthen opponent"]
+        resolve_non -> drain
+        drain -> loop_check
+        loop_check -> split [label="not empty\n(new entries\naccumulated)" style=dashed]
+        loop_check -> clear_flag [label="empty"]
+    }
+
+    // ════════════════════════════════════════
+    //  RESOLVE PLAYER STANDBY
+    // ════════════════════════════════════════
+    subgraph cluster_player {
+        label="3. _resolve_player_standby(player_id, entries)"
+        style=rounded
+        color="#2E7D32"
+        fontcolor="#2E7D32"
+        bgcolor="#E8F5E9"
+
+        while_loop [label="while entries\nnot empty" fillcolor="#C8E6C9" color="#2E7D32" shape=diamond]
+
+        check_timing [label="action_handler.\nresolve_check_timing()\n(rule 10.4.3.1)" fillcolor="#BBDEFB" color="#1565C0"]
+
+        one_entry [label="entries.size() == 1?\npop the single entry" fillcolor="#C8E6C9" color="#2E7D32" shape=diamond]
+
+        choose [label="Multiple entries:\nselect_choice()\n\"Choose which ability\nto resolve\"\n(rule 10.6.3.1)" fillcolor="#CE93D8" color="#6A1B9A"]
+
+        execute [label="await entry.callback.call()" fillcolor="#A5D6A7" color="#2E7D32" penwidth=2]
+
+        effect_runs [label="Effect script runs:\n• may call trigger_enter()\n• may call perform_evolution()\n• may call play_from_discard()\n→ new entries go to\n  _pending_standby_entries" shape=note fillcolor="#DCEDC8" color="#689F38"]
+
+        drain_same [label="Drain _pending_standby_entries\nfor THIS player into entries\n(other player's stay pending)" fillcolor="#C8E6C9" color="#2E7D32"]
+
+        while_loop -> check_timing [label="before each\nability"]
+        check_timing -> one_entry
+        one_entry -> execute [label="yes\n(auto-pick)"]
+        one_entry -> choose [label="no\n(2+ entries)"]
+        choose -> execute
+        execute -> effect_runs [style=dashed]
+        effect_runs -> drain_same [style=dashed]
+        drain_same -> while_loop
+    }
+
+    // ════════════════════════════════════════
+    //  DEFERRED RESOLUTION (movement)
+    // ════════════════════════════════════════
+    subgraph cluster_deferred {
+        label="4. Deferred Resolution (during movement)"
+        style=rounded
+        color="#F9A825"
+        fontcolor="#F9A825"
+        bgcolor="#FFFDE7"
+
+        collect [label="During invasion/advance:\ncollect_*_entries()\nappend to deferred_entries" fillcolor="#FFF9C4" color="#F9A825"]
+
+        movement [label="Movement step:\nmonster_zone += 1\ncheck_crush_rule()" fillcolor="#FFF9C4" color="#F9A825"]
+
+        filter [label="resolve_deferred_entries():\nfilter by is_card_still_active()\n(skip cards crushed/removed\nduring movement)" fillcolor="#FFCC80" color="#E65100"]
+
+        to_standby [label="_resolve_standby_entries(\n  active_entries\n)" fillcolor="#FFE0B2" color="#E65100"]
+
+        collect -> movement [label="per step"]
+        movement -> collect [label="loop" style=dashed]
+        movement -> filter [label="after all\nsteps done"]
+        filter -> to_standby
+    }
+
+    // ════════════════════════════════════════
+    //  TRIGGER_ENTER special case
+    // ════════════════════════════════════════
+    subgraph cluster_enter {
+        label="5. trigger_enter() — Special Deferral"
+        style=rounded
+        color="#AD1457"
+        fontcolor="#AD1457"
+        bgcolor="#FCE4EC"
+
+        enter_check [label="trigger_enter(player_id, card)" fillcolor="#F8BBD0" color="#AD1457"]
+        in_standby [label="_in_standby_resolution\nor _active_effect_card\nnot empty?" fillcolor="#F8BBD0" color="#AD1457" shape=diamond]
+        defer_enter [label="Queue in\n_pending_standby_entries\n(deferred)" fillcolor="#F8BBD0" color="#AD1457"]
+        run_enter [label="Run immediately:\neffect.on_enter(ctx)\n+ drain pending" fillcolor="#F48FB1" color="#AD1457"]
+
+        enter_check -> in_standby
+        in_standby -> defer_enter [label="yes"]
+        in_standby -> run_enter [label="no"]
+    }
+
+    // ── Flow connections ──
+    entries_arr -> guard [label="pass to\nresolver" penwidth=2 color="#E65100"]
+    to_standby -> guard [label="same\nresolver" style=dashed color="#E65100"]
+}
