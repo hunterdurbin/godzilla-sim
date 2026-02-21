@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Unofficial Godzilla Sim
+Comment=An unofficial Godzilla Trading Card Game simulator
+Exec=godzilla_tcg_sim
+Icon=io.github.hunterdurbin.UnOfficialGodzillaSim
+Categories=Game;CardGame;
+Terminal=false
+StartupNotify=true

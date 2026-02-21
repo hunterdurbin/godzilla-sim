@@ -135,9 +135,55 @@ jobs:
           name: web
           path: build/web/
 
+  build-flatpak:
+    name: Flatpak Build
+    needs: [export-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flatpak and flatpak-builder
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+
+      - name: Add Flathub remote
+        run: |
+          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+
+      - name: Install SDK and runtime
+        run: |
+          sudo flatpak install -y flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux
+          path: flatpak/
+
+      - name: Copy icon for Flatpak build
+        run: cp CardContent/Assets/Icons/game_icon.png flatpak/game_icon.png
+
+      - name: Build Flatpak
+        run: |
+          cd flatpak
+          flatpak-builder --force-clean build-dir io.github.hunterdurbin.UnOfficialGodzillaSim.yml
+
+      - name: Create Flatpak bundle
+        run: |
+          cd flatpak
+          flatpak build-export repo build-dir
+          flatpak build-bundle repo ${PROJECT_NAME}.flatpak io.github.hunterdurbin.UnOfficialGodzillaSim
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatpak
+          path: flatpak/${{ env.PROJECT_NAME }}.flatpak
+
   create-release:
     name: Create Release
-    needs: [export-windows, export-linux, export-macos, export-web]
+    needs: [export-windows, export-linux, export-macos, export-web, build-flatpak]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -161,6 +207,7 @@ jobs:
             godzilla_tcg_sim-linux.zip
             macos/godzilla_tcg_sim-macos.zip
             godzilla_tcg_sim-web.zip
+            flatpak/godzilla_tcg_sim.flatpak
           generate_release_notes: true
           draft: false
           prerelease: false
