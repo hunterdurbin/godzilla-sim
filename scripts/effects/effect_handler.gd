@@ -523,20 +523,14 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 
 func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## Retreat a player's monster to the target zone one step at a time,
-	## crushing battle cards in each intermediate zone (rule 11.3) and
-	## collecting on_monster_advance entries per step, resolving them
-	## after all movement completes.
+	## crushing battle cards in each intermediate zone (rule 11.3).
+	## Retreat does NOT trigger on_monster_advance effects.
 	var player := game_state.players[player_id]
-	var deferred_entries: Array = []
 	while player.monster_zone > target_zone:
-		var from_zone: int = player.monster_zone
 		player.monster_zone -= 1
 		player.monster_changed.emit()
-		deferred_entries.append_array(collect_monster_advance_entries(player_id, from_zone, player.monster_zone))
 		if action_handler:
 			await action_handler.check_crush_rule(game_state)
-	if not deferred_entries.is_empty():
-		await resolve_deferred_entries(deferred_entries)
 
 
 func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
