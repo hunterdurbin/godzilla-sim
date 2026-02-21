@@ -13,6 +13,7 @@ extends Control
 
 var _p1_ready: bool = false
 var _p2_ready: bool = false
+var _update_dismissed: bool = false
 
 
 func _ready() -> void:
@@ -25,6 +26,12 @@ func _ready() -> void:
 	patreon_button.pressed.connect(_on_patreon_pressed)
 
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "")
+
+	# Check for updates
+	UpdateChecker.update_available.connect(_on_update_available)
+	if not UpdateChecker.pending_update.is_empty():
+		var u := UpdateChecker.pending_update
+		_on_update_available(u["current"], u["new_version"], u["download_url"], u["release_url"])
 
 	DecklistManager.clear_selections()
 
@@ -80,3 +87,95 @@ func _on_patreon_pressed() -> void:
 
 func _on_options_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/Options.tscn")
+
+
+# -- Update dialog ------------------------------------------------------------
+
+func _on_update_available(current: String, new_version: String, download_url: String, release_url: String) -> void:
+	if _update_dismissed:
+		return
+	_show_update_dialog(current, new_version, download_url, release_url)
+
+
+func _show_update_dialog(current: String, new_version: String, download_url: String, release_url: String) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(460, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+
+	var title := Label.new()
+	title.text = "Update Available"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
+	vbox.add_child(title)
+
+	var info := Label.new()
+	info.text = "Current version: v%s\nNew version: %s" % [current, new_version]
+	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	info.add_theme_font_size_override("font_size", 18)
+	vbox.add_child(info)
+
+	vbox.add_child(HSeparator.new())
+
+	var btn_box := VBoxContainer.new()
+	btn_box.add_theme_constant_override("separation", 8)
+
+	var update_btn := Button.new()
+	update_btn.text = "Update Now"
+	update_btn.custom_minimum_size = Vector2(200, 45)
+	update_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	update_btn.add_theme_font_size_override("font_size", 20)
+	update_btn.pressed.connect(func():
+		OS.shell_open(download_url if not download_url.is_empty() else release_url)
+		popup.hide()
+	)
+	btn_box.add_child(update_btn)
+
+	var skip_btn := Button.new()
+	skip_btn.text = "Skip This Version"
+	skip_btn.custom_minimum_size = Vector2(200, 40)
+	skip_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	skip_btn.add_theme_font_size_override("font_size", 18)
+	skip_btn.pressed.connect(func():
+		GameSettings.skipped_version = new_version
+		GameSettings.save()
+		_update_dismissed = true
+		popup.hide()
+	)
+	btn_box.add_child(skip_btn)
+
+	var later_btn := Button.new()
+	later_btn.text = "Later"
+	later_btn.custom_minimum_size = Vector2(200, 40)
+	later_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	later_btn.add_theme_font_size_override("font_size", 18)
+	later_btn.pressed.connect(func():
+		_update_dismissed = true
+		popup.hide()
+	)
+	btn_box.add_child(later_btn)
+
+	vbox.add_child(btn_box)
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+
+	add_child(popup)
+	popup.popup_centered()

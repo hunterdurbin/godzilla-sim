@@ -20,6 +20,9 @@ var color_overlay_mode: int = 3  # 0=none, 1=self only, 2=opponent only, 3=both
 var custom_card_art_enabled: bool = false
 var custom_card_back_mode: int = 0  # 0=disabled, 1=myself only, 2=both players
 
+# Update settings
+var skipped_version: String = ""
+
 
 func _ready() -> void:
 	_load()
@@ -49,6 +52,7 @@ func _save() -> void:
 	config.set_value("visual", "color_overlay_mode", color_overlay_mode)
 	config.set_value("visual", "custom_card_art_enabled", custom_card_art_enabled)
 	config.set_value("visual", "custom_card_back_mode", custom_card_back_mode)
+	config.set_value("updates", "skipped_version", skipped_version)
 	config.save(SETTINGS_PATH)
 
 
@@ -71,3 +75,4 @@ func _load() -> void:
 	color_overlay_mode = config.get_value("visual", "color_overlay_mode", 3)
 	custom_card_art_enabled = config.get_value("visual", "custom_card_art_enabled", false)
 	custom_card_back_mode = config.get_value("visual", "custom_card_back_mode", 0)
+	skipped_version = config.get_value("updates", "skipped_version", "")

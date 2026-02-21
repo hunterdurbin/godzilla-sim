@@ -28,6 +28,7 @@ PacketHandshake="*uid://tt3j25a05n7c"
 NetworkManager="*res://scripts/network_manager.gd"
 GameSettings="*res://data/game_settings.gd"
 StatsUploader="*res://scripts/stats_uploader.gd"
+UpdateChecker="*res://scripts/update_checker.gd"
 
 [display]
 

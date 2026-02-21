@@ -105,36 +105,6 @@ jobs:
           name: macos
           path: build/macos/*.zip
 
-  export-web:
-    name: Web Export
-    runs-on: ubuntu-latest
-    container:
-      image: barichello/godot-ci:4.6
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup export templates
-        run: |
-          mkdir -p "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
-          if [ -d "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable" ]; then
-            ln -sf /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
-          fi
-          echo "Templates at HOME:" && ls "${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" || true
-          echo "Templates at /root:" && ls "/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/" || true
-          echo "Find all export templates:" && find / -path "*/export_templates/${GODOT_VERSION}.stable" -type d 2>/dev/null || true
-
-      - name: Create build directory
-        run: mkdir -p build/web
-
-      - name: Export Web
-        run: godot --headless --export-release "Web" build/web/index.html
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: web
-          path: build/web/
-
   build-flatpak:
     name: Flatpak Build
     needs: [export-linux]
@@ -183,7 +153,7 @@ jobs:
 
   create-release:
     name: Create Release
-    needs: [export-windows, export-linux, export-macos, export-web, build-flatpak]
+    needs: [export-windows, export-linux, export-macos, build-flatpak]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -195,7 +165,6 @@ jobs:
         run: |
           cd windows && zip -r ../${PROJECT_NAME}-windows.zip . && cd ..
           cd linux && zip -r ../${PROJECT_NAME}-linux.zip . && cd ..
-          cd web && zip -r ../${PROJECT_NAME}-web.zip . && cd ..
         env:
           PROJECT_NAME: godzilla_tcg_sim
 
@@ -206,8 +175,7 @@ jobs:
             godzilla_tcg_sim-windows.zip
             godzilla_tcg_sim-linux.zip
             macos/godzilla_tcg_sim-macos.zip
-            godzilla_tcg_sim-web.zip
             flatpak/godzilla_tcg_sim.flatpak
           generate_release_notes: true
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(github.ref_name, 'unstable') }}
