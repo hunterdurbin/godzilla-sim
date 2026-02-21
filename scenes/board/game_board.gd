@@ -234,6 +234,12 @@ var _rematch_requested: bool = false
 var _opponent_rematch_requested: bool = false
 var _game_ended_by_disconnect: bool = false
 
+# Stats time tracking
+var _player_elapsed_ms: Array[int] = [0, 0]
+var _turn_start_time_ms: int = 0
+var _game_start_time_ms: int = 0
+var _stats_uploaded: bool = false
+
 # Standby choice selection state (for choosing ability resolution order)
 var _choice_selecting: bool = false
 var _choice_player_id: int = -1
@@ -919,6 +925,15 @@ func _on_turn_started(player_id: int) -> void:
 	# Don't broadcast here — current_phase is still END from the previous turn.
 	# The subsequent phase_started(START) signal handles the broadcast with correct state.
 
+	# Stats: accumulate previous player's think time and start new timer
+	var now := Time.get_ticks_msec()
+	if _game_start_time_ms == 0:
+		_game_start_time_ms = now
+	elif _turn_start_time_ms > 0:
+		var prev_player := 1 - player_id
+		_player_elapsed_ms[prev_player] += now - _turn_start_time_ms
+	_turn_start_time_ms = now
+
 
 func _on_awaiting_action(valid_actions: Array) -> void:
 	_action_pending = false
@@ -962,6 +977,7 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	_disable_all_buttons()
 	if is_multiplayer_game and NetworkManager.is_host():
 		_rpc_receive_game_ended.rpc(winner_id, reason)
+	_upload_stats(winner_id, reason, false)
 
 
 func _on_confirmation_requested(prompt: String, setting: String) -> void:
@@ -1284,6 +1300,10 @@ func _execute_rematch() -> void:
 	_client_state_version = 0
 	_client_gradients_applied = false
 	pending_action = CardEnums.ActionType.PASS
+	_player_elapsed_ms = [0, 0]
+	_turn_start_time_ms = 0
+	_game_start_time_ms = 0
+	_stats_uploaded = false
 
 	# 5. Restore action panel and hide overlays
 	_cleanup_first_player_ui()
@@ -4202,6 +4222,37 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 	return ps
 
 
+# --- Stats upload ---
+
+func _upload_stats(winner_id: int, reason: String, is_disconnect: bool) -> void:
+	# Only upload for online games, and only once per match
+	if _stats_uploaded:
+		return
+	if NetworkManager.mode != NetworkManager.Mode.ONLINE_HOST and NetworkManager.mode != NetworkManager.Mode.ONLINE_CLIENT:
+		return
+	# Host is primary reporter; client only reports on disconnect
+	if not is_disconnect and not NetworkManager.is_host():
+		return
+	_stats_uploaded = true
+
+	# Finalize active player's elapsed time
+	if _turn_start_time_ms > 0 and turn_manager:
+		var now := Time.get_ticks_msec()
+		var active_pid := turn_manager.game_state.current_player_id
+		_player_elapsed_ms[active_pid] += now - _turn_start_time_ms
+	var total_elapsed := Time.get_ticks_msec() - _game_start_time_ms if _game_start_time_ms > 0 else 0
+
+	StatsUploader.upload_game_result(
+		turn_manager.game_state,
+		winner_id,
+		reason,
+		_first_player_id,
+		_player_elapsed_ms,
+		total_elapsed,
+		is_disconnect,
+	)
+
+
 # --- Multiplayer: Disconnect handling ---
 
 func _on_opponent_disconnected(_peer_id: int) -> void:
@@ -4216,3 +4267,6 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 	if win_label:
 		win_label.text = "Opponent disconnected."
 	btn_rematch.visible = false
+	# Client takes over reporting when host disconnects
+	if not NetworkManager.is_host():
+		_upload_stats(local_player_id, "Opponent disconnected", true)

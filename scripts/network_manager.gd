@@ -29,6 +29,8 @@ var peer_player_map: Dictionary = {} # {peer_id: player_id}
 var opponent_connected: bool = false
 var version_verified: bool = false
 var _room_code: String = ""
+var game_mode: String = ""  # "rumble", "no_rules", or "" (private/LAN)
+var is_public_room: bool = false
 
 
 # --- LAN ---
@@ -103,9 +105,11 @@ func host_online() -> Error:
 
 ## Connect to the relay server and create a public room. Same as host_online()
 ## but appends ?public=true so the relay server lists it for other players.
-## game_mode: "rumble" or "no_rules"
-func host_public(game_mode: String = "rumble") -> Error:
+## p_game_mode: "rumble" or "no_rules"
+func host_public(p_game_mode: String = "rumble") -> Error:
 	_room_code = _generate_room_code()
+	game_mode = p_game_mode
+	is_public_room = true
 	var relay_peer := RelayMultiplayerPeer.new()
 	var host_name := ChatFilter.filter(GameSettings.player_name).uri_encode()
 	var url := "ws://%s:%d/%s?public=true&version=%s&name=%s&mode=%s" % [RELAY_HOST, RELAY_PORT, _room_code, GAME_VERSION, host_name, game_mode.uri_encode()]
@@ -137,13 +141,13 @@ func host_public(game_mode: String = "rumble") -> Error:
 ## Fetch the list of public rooms from the relay server.
 ## Returns an Array of Dictionaries: [{"code": "ABC123", "players": 1, "mode": "rumble"}, ...]
 ## Returns an empty Array on failure.
-## game_mode: filter to a specific mode, or "" for all modes.
-func fetch_public_rooms(game_mode: String = "") -> Array:
+## p_game_mode: filter to a specific mode, or "" for all modes.
+func fetch_public_rooms(p_game_mode: String = "") -> Array:
 	var http := HTTPRequest.new()
 	add_child(http)
 	var url := "http://%s:%d/rooms?version=%s" % [RELAY_HOST, RELAY_PORT, GAME_VERSION]
-	if not game_mode.is_empty():
-		url += "&mode=%s" % game_mode.uri_encode()
+	if not p_game_mode.is_empty():
+		url += "&mode=%s" % p_game_mode.uri_encode()
 	var err := http.request(url)
 	if err != OK:
 		http.queue_free()
@@ -222,6 +226,8 @@ func disconnect_game() -> void:
 	opponent_connected = false
 	version_verified = false
 	_room_code = ""
+	game_mode = ""
+	is_public_room = false
 
 
 func is_multiplayer() -> bool:
@@ -287,6 +293,7 @@ func _on_peer_connected(peer_id: int) -> void:
 	peer_player_map[multiplayer.get_unique_id()] = 0
 	opponent_connected = true
 	_rpc_assign_player.rpc_id(peer_id, 1)
+	_rpc_assign_game_mode.rpc_id(peer_id, game_mode, is_public_room)
 	_rpc_exchange_version.rpc_id(peer_id, GAME_VERSION)
 	player_connected.emit(peer_id)
 	_start_version_timeout()
@@ -330,6 +337,12 @@ func _rpc_assign_player(pid: int) -> void:
 func _rpc_start_game() -> void:
 	# Client receives signal to start the game
 	get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_assign_game_mode(p_game_mode: String, p_is_public: bool) -> void:
+	game_mode = p_game_mode
+	is_public_room = p_is_public
 
 
 func _start_version_timeout() -> void:
