@@ -24,6 +24,13 @@ var _client_zone_cp_mods: Array = [[], []]
 var _client_strategy_cp_mods: Array = [[], []]
 var _client_zone_rank_mods: Array = [[], []]
 var _client_gradients_applied: bool = false
+# Client-side stats snapshot (synced from host for disconnect reporting)
+var _client_stats_elapsed_ms: Array[int] = [0, 0]
+var _client_stats_game_start_ms: int = 0
+var _client_stats_turn_start_ms: int = 0
+var _client_stats_opponent_hand: Array = []
+var _client_stats_deck_names: Array[String] = ["", ""]
+var _client_stats_decklists: Array = [null, null]
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -3646,10 +3653,25 @@ func _serialize_game_state(viewer_id: int) -> String:
 		var pd := _serialize_player_state(gs.players[i])
 		if i != viewer_id:
 			# Strip hand and monster deck data for opponent — only send counts
+			# (full hand kept in stats_opponent_hand for disconnect reporting)
+			pd["stats_hand"] = pd["hand"].duplicate(true)
 			pd.erase("hand")
 			pd["monster_deck_count"] = pd["monster_deck"].size()
 			pd.erase("monster_deck")
 		data["players"].append(pd)
+	# Stats data for client disconnect reporting
+	data["stats_elapsed_ms"] = Array(_player_elapsed_ms)
+	data["stats_game_start_ms"] = _game_start_time_ms
+	data["stats_turn_start_ms"] = _turn_start_time_ms
+	for i in range(2):
+		var deck_name := DecklistManager.get_player_deck_name(i)
+		data["players"][i]["stats_deck_name"] = deck_name
+		var deck_data = DecklistManager._player_decks[i]
+		if deck_data != null:
+			data["players"][i]["stats_decklist"] = {
+				"main_entries": deck_data["main_entries"],
+				"monster_deck": deck_data["monster_deck"],
+			}
 	# Include hash of shared game state for desync detection
 	data["state_hash"] = _compute_state_hash(gs)
 	return JSON.stringify(data)
@@ -3825,6 +3847,22 @@ func _rpc_receive_state(state_json: String) -> void:
 	for i in range(2):
 		var pd: Dictionary = players_data[i]
 		_client_players[i] = _dict_to_player_state(pd, i == local_player_id)
+		# Store stats fields for disconnect reporting
+		if pd.has("stats_deck_name"):
+			_client_stats_deck_names[i] = str(pd["stats_deck_name"])
+		if pd.has("stats_decklist"):
+			_client_stats_decklists[i] = pd["stats_decklist"]
+		if pd.has("stats_hand") and i != local_player_id:
+			_client_stats_opponent_hand = pd["stats_hand"]
+
+	# Stats timing from host
+	if data.has("stats_elapsed_ms"):
+		var arr: Array = data["stats_elapsed_ms"]
+		_client_stats_elapsed_ms = [int(arr[0]), int(arr[1])] as Array[int]
+	if data.has("stats_game_start_ms"):
+		_client_stats_game_start_ms = int(data["stats_game_start_ms"])
+	if data.has("stats_turn_start_ms"):
+		_client_stats_turn_start_ms = int(data["stats_turn_start_ms"])
 
 	# Apply monster color gradient and send player name on first state receive
 	if not _client_gradients_applied:
@@ -4235,15 +4273,43 @@ func _upload_stats(winner_id: int, reason: String, is_disconnect: bool) -> void:
 		return
 	_stats_uploaded = true
 
+	# Host uses turn_manager directly; client reconstructs from synced state
+	var gs: GameState
+	if turn_manager:
+		gs = turn_manager.game_state
+	else:
+		gs = GameState.new()
+		gs.players = _client_players
+		gs.current_player_id = _client_current_player_id
+		gs.turn_number = _client_turn_number
+		gs.current_phase = _client_phase
+		gs.player_names = Array(GameLog.player_names) as Array[String]
+		# Restore opponent's hand from stats snapshot
+		var opponent_id := 1 - local_player_id
+		if not _client_stats_opponent_hand.is_empty():
+			gs.players[opponent_id].hand.assign(_client_stats_opponent_hand)
+		# Populate DecklistManager with synced decklist data
+		for i in range(2):
+			if _client_stats_decklists[i] != null and not DecklistManager.has_player_deck(i):
+				var dl: Dictionary = _client_stats_decklists[i]
+				DecklistManager._player_decks[i] = {
+					"deck_name": _client_stats_deck_names[i],
+					"monster_deck": dl.get("monster_deck", []),
+					"main_entries": dl.get("main_entries", []),
+				}
+		# Use host-synced elapsed times
+		_player_elapsed_ms = _client_stats_elapsed_ms.duplicate()
+		_game_start_time_ms = _client_stats_game_start_ms
+		_turn_start_time_ms = _client_stats_turn_start_ms
+
 	# Finalize active player's elapsed time
-	if _turn_start_time_ms > 0 and turn_manager:
+	if _turn_start_time_ms > 0:
 		var now := Time.get_ticks_msec()
-		var active_pid := turn_manager.game_state.current_player_id
+		var active_pid := gs.current_player_id
 		_player_elapsed_ms[active_pid] += now - _turn_start_time_ms
 	var total_elapsed := Time.get_ticks_msec() - _game_start_time_ms if _game_start_time_ms > 0 else 0
-
 	StatsUploader.upload_game_result(
-		turn_manager.game_state,
+		gs,
 		winner_id,
 		reason,
 		_first_player_id,
@@ -4267,6 +4333,5 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 	if win_label:
 		win_label.text = "Opponent disconnected."
 	btn_rematch.visible = false
-	# Client takes over reporting when host disconnects
-	if not NetworkManager.is_host():
-		_upload_stats(local_player_id, "Opponent disconnected", true)
+	# Host prioritizes reporting; client takes over if host disconnected
+	_upload_stats(local_player_id, "Opponent disconnected", true)
