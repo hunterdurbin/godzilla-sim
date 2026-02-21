@@ -628,7 +628,14 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 	return entries
 
 
-func _resolve_discard_play(player_id: int, card_data: Dictionary) -> void:
+func _resolve_discard_play(player_id: int, card_data: Dictionary, is_optional: bool) -> void:
+	if is_optional:
+		var card_name: String = card_data.get("name", "Unknown")
+		var options: Array[String] = ["Yes", "No"]
+		var chosen: int = await select_choice(player_id, options, "Play %s from discard?" % card_name)
+		if chosen == 1:
+			return
+
 	var placed_zone := await play_from_discard(player_id, card_data)
 	if placed_zone >= 0:
 		await trigger_battle_card_played(player_id, card_data, placed_zone)
@@ -674,7 +681,8 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 		if de:
 			var ctx := _build_context(player_id, discard_card)
 			if de.can_play_from_discard_on_monster_played(ctx):
-				discard_entries.append({"player_id": player_id, "card_data": discard_card, "callback": _resolve_discard_play.bind(player_id, discard_card)})
+				var optional: bool = de.is_discard_play_optional()
+				discard_entries.append({"player_id": player_id, "card_data": discard_card, "callback": _resolve_discard_play.bind(player_id, discard_card, optional)})
 
 	await _resolve_standby_entries(discard_entries)
 

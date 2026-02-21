@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func is_discard_play_optional() -> bool:
+	return true
+
+
 func can_play_from_discard_on_monster_played(ctx: EffectContext) -> bool:
 	# Only on your turn
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
