@@ -180,10 +180,6 @@ func resolve_counter(state: GameState) -> void:
 	elif total_cp >= threat:
 		counter_succeeded.emit(player.player_id, total_cp, threat)
 
-		# Trigger counter success effects before retreat/rank-up
-		if effect_handler:
-			await effect_handler.trigger_counter_success(player.player_id)
-
 		# Counter retreat: only zones 6-8 move back (5.15.1.1)
 		var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
 		if retreat_zone != opponent.monster_zone:
@@ -191,6 +187,10 @@ func resolve_counter(state: GameState) -> void:
 			opponent.monster_zone = retreat_zone
 			monster_advanced.emit(opponent.player_id, old_zone, opponent.monster_zone)
 			opponent.monster_changed.emit()
+
+		# Trigger counter success effects after retreat but before rank-up
+		if effect_handler:
+			await effect_handler.trigger_counter_success(player.player_id)
 
 		# Opponent must rank up their monster
 		var next_rank: int = opponent.current_monster.get("rank", 1) + 1
