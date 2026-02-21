@@ -505,7 +505,8 @@ func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> vo
 
 func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## Advance a player's monster to the target zone one step at a time,
-	## collecting on_monster_advance entries per step and resolving them
+	## crushing battle cards in each intermediate zone (rule 11.3) and
+	## collecting on_monster_advance entries per step, resolving them
 	## after all movement completes (deferred, like ActionHandler).
 	var player := game_state.players[player_id]
 	var deferred_entries: Array = []
@@ -514,13 +515,16 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 		player.monster_zone += 1
 		player.monster_changed.emit()
 		deferred_entries.append_array(collect_monster_advance_entries(player_id, from_zone, player.monster_zone))
+		if action_handler:
+			await action_handler.check_crush_rule(game_state)
 	if not deferred_entries.is_empty():
 		await resolve_deferred_entries(deferred_entries)
 
 
 func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## Retreat a player's monster to the target zone one step at a time,
-	## collecting on_monster_advance entries per step and resolving them
+	## crushing battle cards in each intermediate zone (rule 11.3) and
+	## collecting on_monster_advance entries per step, resolving them
 	## after all movement completes.
 	var player := game_state.players[player_id]
 	var deferred_entries: Array = []
@@ -529,6 +533,8 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 		player.monster_zone -= 1
 		player.monster_changed.emit()
 		deferred_entries.append_array(collect_monster_advance_entries(player_id, from_zone, player.monster_zone))
+		if action_handler:
+			await action_handler.check_crush_rule(game_state)
 	if not deferred_entries.is_empty():
 		await resolve_deferred_entries(deferred_entries)
 
