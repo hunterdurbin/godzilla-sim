@@ -275,6 +275,12 @@ func can_play_from_discard_on_monster_played(_ctx: EffectContext) -> bool:
 	return false
 
 
+func is_discard_play_optional() -> bool:
+	## Return true if playing from discard on monster played is a "may" ability.
+	## When true, the player is prompted and can decline.
+	return false
+
+
 func prevents_own_invasion(_ctx: EffectContext) -> bool:
 	## Return true if this card prevents its own controller from invading.
 	return false
