@@ -1,0 +1,32 @@
+app-id: io.github.hunterdurbin.UnOfficialGodzillaSim
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+
+command: godzilla_tcg_sim
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --socket=pulseaudio
+  - --share=network
+
+modules:
+  - name: godzilla-tcg-sim
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 godzilla_tcg_sim.x86_64 /app/bin/godzilla_tcg_sim
+      - install -Dm644 io.github.hunterdurbin.UnOfficialGodzillaSim.desktop /app/share/applications/io.github.hunterdurbin.UnOfficialGodzillaSim.desktop
+      - install -Dm644 io.github.hunterdurbin.UnOfficialGodzillaSim.metainfo.xml /app/share/metainfo/io.github.hunterdurbin.UnOfficialGodzillaSim.metainfo.xml
+      - install -Dm644 game_icon.png /app/share/icons/hicolor/256x256/apps/io.github.hunterdurbin.UnOfficialGodzillaSim.png
+    sources:
+      - type: file
+        path: godzilla_tcg_sim.x86_64
+      - type: file
+        path: io.github.hunterdurbin.UnOfficialGodzillaSim.desktop
+      - type: file
+        path: io.github.hunterdurbin.UnOfficialGodzillaSim.metainfo.xml
+      - type: file
+        path: game_icon.png
