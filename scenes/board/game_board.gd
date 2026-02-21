@@ -1753,6 +1753,41 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	# Dismiss overlays and skip optional prompts (priority order, topmost first)
+	# Uses ui_cancel (ESC on keyboard, B/Circle on controller)
+	if event.is_action_pressed("ui_cancel"):
+		if card_zoom_overlay.visible:
+			_hide_card_zoom()
+		elif deck_arrange_overlay.visible:
+			pass  # Mandatory — must confirm
+		elif deck_search_overlay.visible:
+			_on_deck_search_skip()
+		elif discard_view_overlay.visible:
+			_hide_discard_view()
+		elif monster_deck_view_overlay.visible:
+			_hide_monster_deck_view()
+		elif zone_stack_view_overlay.visible:
+			_hide_zone_stack_view()
+		elif _choice_selecting:
+			pass  # Mandatory — must pick an option
+		elif _hand_card_selecting and _hand_card_allow_skip:
+			_skip_hand_card_selection()
+		elif _zone_target_selecting and _zone_target_allow_skip:
+			_skip_zone_target()
+		elif waiting_for_card_select or waiting_for_zone_select:
+			_clear_card_highlight()
+			_cancel_selection()
+			if turn_manager:
+				_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
+			else:
+				_update_action_buttons(_client_playable.get("valid_actions", []))
+		elif _confirming_pass:
+			_cancel_pass_confirmation()
+		else:
+			return  # Nothing to dismiss — don't consume the event
+		get_viewport().set_input_as_handled()
+		return
+
 	# Handle arrange card drag via _input (reparenting breaks gui_input mouse grab)
 	if _arrange_dragging_card:
 		if event is InputEventMouseMotion:
