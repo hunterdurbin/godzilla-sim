@@ -145,7 +145,7 @@ jobs:
       - name: Install Flatpak and flatpak-builder
         run: |
           sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder
+          sudo apt-get install -y flatpak flatpak-builder imagemagick
 
       - name: Add Flathub remote
         run: |
@@ -161,8 +161,8 @@ jobs:
           name: linux
           path: flatpak/
 
-      - name: Copy icon for Flatpak build
-        run: cp CardContent/Assets/Icons/game_icon.png flatpak/game_icon.png
+      - name: Resize and copy icon for Flatpak build
+        run: convert CardContent/Assets/Icons/game_icon.png -resize 256x256 flatpak/game_icon.png
 
       - name: Build Flatpak
         run: |
