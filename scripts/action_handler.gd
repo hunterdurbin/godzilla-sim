@@ -135,7 +135,7 @@ func execute_end_phase_advance(state: GameState) -> void:
 		player.monster_changed.emit()
 		if effect_handler:
 			deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
-		await check_crush_rule(state)
+		await check_crush_rule(state, deferred_entries)
 
 	# Resolve deferred effects after all movement completes
 	if effect_handler and not deferred_entries.is_empty():
@@ -301,15 +301,19 @@ func resolve_check_timing(state: GameState) -> void:
 				changed = true
 
 
-func check_crush_rule(state: GameState) -> void:
+func check_crush_rule(state: GameState, deferred_entries: Variant = null) -> void:
 	## Interrupt type rule action (11.3): destroy battle cards sharing a zone with a monster.
 	## Per 11.1.2.1.1: turn player's interrupt rule actions resolve first.
-	await _check_crush_for_player(state, state.current_player_id)
-	await _check_crush_for_player(state, 1 - state.current_player_id)
+	## When deferred_entries is provided, crush/revenge effects are collected for later
+	## standby resolution instead of triggering immediately (used during movement).
+	await _check_crush_for_player(state, state.current_player_id, deferred_entries)
+	await _check_crush_for_player(state, 1 - state.current_player_id, deferred_entries)
 
 
-func _check_crush_for_player(state: GameState, player_id: int) -> bool:
+func _check_crush_for_player(state: GameState, player_id: int, deferred_entries: Variant = null) -> bool:
 	## Check if this player's monster shares a zone with a battle card. Returns true if crushed.
+	## When deferred_entries is provided, crush/revenge effects are collected instead of
+	## triggering immediately, so movement can fully resolve first.
 	var player := state.players[player_id]
 
 	# Monsters and battle cards occupy the SAME player's zones.
@@ -323,8 +327,11 @@ func _check_crush_for_player(state: GameState, player_id: int) -> bool:
 			player.zones_changed.emit()
 			player.discard_changed.emit()
 			if effect_handler:
-				await effect_handler.trigger_crush(player_id, crushed_stack[0])
-				await effect_handler.trigger_revenge(player_id, crushed_stack[0])
+				if deferred_entries != null:
+					deferred_entries.append_array(effect_handler.collect_crush_and_revenge_entries(player_id, crushed_stack[0]))
+				else:
+					await effect_handler.trigger_crush(player_id, crushed_stack[0])
+					await effect_handler.trigger_revenge(player_id, crushed_stack[0])
 			return true
 	return false
 
@@ -545,8 +552,8 @@ func _invade(hand_index: int, state: GameState) -> void:
 				deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
 				# Destroy <Base> strategies when monster invades into zones 6-8 (12.9.2)
 				await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone)
-			# Check crush rule at each step
-			await check_crush_rule(state)
+			# Check crush rule at each step (effects deferred until after movement)
+			await check_crush_rule(state, deferred_entries)
 
 	player.invasion_zones_crossed = player.monster_zone - start_zone
 
