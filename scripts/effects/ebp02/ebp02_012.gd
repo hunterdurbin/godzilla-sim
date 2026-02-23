@@ -31,17 +31,13 @@ func get_phase_start_filter() -> Dictionary:
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.MAIN:
 		return
-	# Only on your turn
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
-	# Must be in zone 8
-	var zone_idx := find_zone_of_card(ctx)
-	if zone_idx != 7:
 		return
 	# Awakening4: monster must be in zone 4+
 	if ctx.owner.monster_zone < 4:
 		return
-	# Need 2+ cards under this card (stack size > 1 since the card itself is the top)
+	# Need 2+ cards under this card
+	var zone_idx := find_zone_of_card(ctx)
 	var stack_size: int = ctx.owner.get_zone_stack(zone_idx).size()
 	if stack_size < 3: # 1 (self) + 2 (under)
 		return
