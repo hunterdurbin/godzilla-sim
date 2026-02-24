@@ -1,6 +1,7 @@
 extends CardEffect
 # Megalon and Gigan: Villain Tag Team (Strategy R5)
-# If opponent has 3+ battle cards in zones, Destroy leftmost and rightmost.
+# If there are 3 or more battle cards in your opponent’s zones, 
+# <Destroy> 1 battle card from the rightmost and 1 from the leftmost position from among them (from your perspective).
 #
 # Tested: No
 # Known issues: None
@@ -11,17 +12,43 @@ extends CardEffect
 
 
 func on_enter(ctx: EffectContext) -> void:
-	# Find all occupied opponent zones (from left to right = zone 1 to 8 = index 0 to 7)
-	var occupied: Array[int] = []
-	for i in range(8):
-		if ctx.opponent.zone_has_cards(i):
-			occupied.append(i)
+	# Column layout from left to right (your perspective looking at opponent's board):
+	# Col 1: zones 5/6, Col 2: zones 4/7, Col 3: zones 3/8, Col 4: zone 2, Col 5: zone 1
+	const COLUMNS: Array = [[4, 5], [3, 6], [2, 7], [1], [0]]
 
-	if occupied.size() < 3:
+	# Find columns that have battle cards, preserving left-to-right order
+	var occupied_columns: Array = []  # Array of {col_idx, zones: Array[int]}
+	var total_battle_cards: int = 0
+	for col in COLUMNS:
+		var col_zones: Array[int] = []
+		for zone_idx in col:
+			if ctx.opponent.zone_has_battle_card(zone_idx):
+				col_zones.append(zone_idx)
+		if not col_zones.is_empty():
+			occupied_columns.append(col_zones)
+			total_battle_cards += col_zones.size()
+
+	if total_battle_cards < 3:
 		return
 
-	var leftmost: int = occupied[0]
-	var rightmost: int = occupied[occupied.size() - 1]
+	var leftmost_zones: Array[int] = occupied_columns[0]
+	var rightmost_zones: Array[int] = occupied_columns[occupied_columns.size() - 1]
 
-	var zones_to_destroy: Array[int] = [leftmost, rightmost]
-	await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
+	# Collect targets: choose 1 from leftmost, 1 from rightmost, then destroy together
+	var zones_to_destroy: Array[int] = []
+
+	var right_chosen := await ctx.effect_handler.select_zone_target(
+		ctx.owner.player_id, ctx.opponent.player_id, rightmost_zones,
+		"Choose a battle card to destroy from the rightmost column:")
+	if right_chosen >= 0:
+		zones_to_destroy.append(right_chosen)
+
+	if rightmost_zones != leftmost_zones:
+		var left_chosen := await ctx.effect_handler.select_zone_target(
+			ctx.owner.player_id, ctx.opponent.player_id, leftmost_zones,
+			"Choose a battle card to destroy from the leftmost column:")
+		if left_chosen >= 0:
+			zones_to_destroy.append(left_chosen)
+
+	if not zones_to_destroy.is_empty():
+		await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
