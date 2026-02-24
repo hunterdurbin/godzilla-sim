@@ -557,6 +557,10 @@ func _invade(hand_index: int, state: GameState) -> void:
 
 	player.invasion_zones_crossed = player.monster_zone - start_zone
 
+	if is_victory:
+		state.game_over.emit(player.player_id, "Victory through invasion!")
+		return
+
 	# Collect invasion observed entries once for the entire invasion
 	if effect_handler and player.monster_zone > start_zone:
 		deferred_entries.append_array(effect_handler.collect_invasion_observed_entries(player.player_id, start_zone, player.monster_zone))
@@ -564,10 +568,6 @@ func _invade(hand_index: int, state: GameState) -> void:
 	# Resolve deferred effects after all movement completes
 	if effect_handler and not deferred_entries.is_empty():
 		await effect_handler.resolve_deferred_entries(deferred_entries)
-
-	if is_victory:
-		state.game_over.emit(player.player_id, "Victory through invasion!")
-		return
 
 	player.hand_changed.emit()
 	player.monster_changed.emit()
