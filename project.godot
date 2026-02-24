@@ -29,6 +29,7 @@ NetworkManager="*res://scripts/network_manager.gd"
 GameSettings="*res://data/game_settings.gd"
 StatsUploader="*res://scripts/stats_uploader.gd"
 UpdateChecker="*res://scripts/update_checker.gd"
+RpcLogger="*res://scripts/rpc_logger.gd"
 
 [display]
 
