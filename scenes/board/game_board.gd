@@ -189,6 +189,7 @@ var _preview_card: Control
 
 # Stored zone stack view data
 var _zone_stack_view_cards: Array[Dictionary] = []
+var _cards_revealed_active: bool = false
 
 # State tracking
 var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
@@ -351,6 +352,7 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
 		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
+		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 
 		# Connect player state signals so mid-effect changes (e.g. search_deck adding
@@ -1402,6 +1404,7 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
 		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
+		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 
 		# Reconnect player state signals
@@ -3446,6 +3449,19 @@ func _hide_zone_stack_view() -> void:
 	for child in zone_stack_view_grid.get_children():
 		child.queue_free()
 	_zone_stack_view_cards.clear()
+	if _cards_revealed_active:
+		_cards_revealed_active = false
+		turn_manager.action_handler.effect_handler.resolve_cards_revealed()
+
+
+func _on_cards_revealed_requested(_player_id: int, cards: Array[Dictionary], title: String) -> void:
+	_zone_stack_view_cards.clear()
+	_zone_stack_view_cards.append_array(cards)
+	var total: int = _zone_stack_view_cards.size()
+	zone_stack_view_title.text = "%s (%d card%s)" % [title, total, "" if total == 1 else "s"]
+	zone_stack_view_overlay.visible = true
+	_cards_revealed_active = true
+	_refresh_zone_stack_view_grid()
 
 
 # --- Card zoom (right-click) UI ---

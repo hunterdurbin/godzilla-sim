@@ -68,6 +68,13 @@ signal effect_zone_unhighlighted(player_id: int, zone_index: int)
 signal effect_card_highlighted(player_id: int, card_id: String)
 signal effect_card_unhighlighted(player_id: int, card_id: String)
 
+## Emitted when an effect wants to show a set of cards to the player (e.g. cards placed under a monster).
+## Connect from presentation layer to display an overlay. Call resolve_cards_revealed() when dismissed.
+signal cards_revealed_requested(player_id: int, cards: Array[Dictionary], title: String)
+
+## Emitted internally after resolve_cards_revealed() is called.
+signal _cards_revealed_resolved()
+
 ## Emitted to send a message to the game log.
 signal log_message(text: String)
 
@@ -1273,6 +1280,20 @@ func resolve_choice(index: int) -> void:
 	## Called by the presentation layer after the player selects a choice option.
 	_choice_result = index
 	_choice_resolved.emit()
+
+
+func reveal_cards(player_id: int, cards: Array[Dictionary], title: String) -> void:
+	## Show a set of cards to the player and wait for them to dismiss the overlay.
+	if cards.is_empty():
+		return
+	if cards_revealed_requested.get_connections().size() > 0:
+		cards_revealed_requested.emit(player_id, cards, title)
+		await _cards_revealed_resolved
+
+
+func resolve_cards_revealed() -> void:
+	## Called by the presentation layer when the player dismisses the revealed cards overlay.
+	_cards_revealed_resolved.emit()
 
 
 func perform_evolution(player_id: int, zone_idx: int) -> bool:
