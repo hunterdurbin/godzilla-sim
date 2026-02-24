@@ -274,7 +274,8 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: A
 			continue
 
 		# Skip the monster's zone — monster card is managed by _sync_monster
-		if (state.monster_zone - 1) == i:
+		# Clamp to zone 8 (index 7) so victory invasion still shows monster
+		if mini(state.monster_zone - 1, zone_slots.size() - 1) == i:
 			slot.set_monster_marker(true)
 			# Remove any battle card visual so the monster card can be placed by _sync_monster
 			if slot.has_card() and slot.get_card() != monster_card:
@@ -360,7 +361,7 @@ func _redistribute_strategy_slots(count: int) -> void:
 
 func _sync_monster(state: PlayerState, threat_mod: int = 0) -> void:
 	var m: Dictionary = state.current_monster
-	var target_zone: int = state.monster_zone - 1 # 0-indexed
+	var target_zone: int = mini(state.monster_zone - 1, zone_slots.size() - 1) # 0-indexed, clamped to zone 8
 
 	if not m.is_empty():
 		# Create card if it doesn't exist yet
