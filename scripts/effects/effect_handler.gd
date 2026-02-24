@@ -369,6 +369,24 @@ func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 			_set_active_effect(saved_player_id, saved_card)
 
 
+func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) -> Array:
+	## Collect crush and revenge entries for deferred resolution after movement.
+	## These entries use skip_active_check since the card is already in the discard pile.
+	var entries: Array = []
+	if has_trigger(card_data, "on_crush"):
+		var effect := get_effect(card_data)
+		var ctx := _build_context(player_id, card_data)
+		entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_crush.bind(ctx), "skip_active_check": true})
+	if has_trigger(card_data, "on_revenge"):
+		var effect := get_effect(card_data)
+		var ctx := _build_context(player_id, card_data)
+		var revenge_cb := func():
+			log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
+			await effect.on_revenge(ctx)
+		entries.append({"player_id": player_id, "card_data": card_data, "callback": revenge_cb, "skip_active_check": true})
+	return entries
+
+
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 	## Trigger discard-from-hand effect on the card being discarded.
 	var effect := get_effect(card_data)
@@ -516,7 +534,7 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 		player.monster_changed.emit()
 		deferred_entries.append_array(collect_monster_advance_entries(player_id, from_zone, player.monster_zone))
 		if action_handler:
-			await action_handler.check_crush_rule(game_state)
+			await action_handler.check_crush_rule(game_state, deferred_entries)
 	if not deferred_entries.is_empty():
 		await resolve_deferred_entries(deferred_entries)
 
@@ -525,12 +543,16 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## Retreat a player's monster to the target zone one step at a time,
 	## crushing battle cards in each intermediate zone (rule 11.3).
 	## Retreat does NOT trigger on_monster_advance effects.
+	## Crush/revenge effects are deferred until after all movement completes.
 	var player := game_state.players[player_id]
+	var deferred_entries: Array = []
 	while player.monster_zone > target_zone:
 		player.monster_zone -= 1
 		player.monster_changed.emit()
 		if action_handler:
-			await action_handler.check_crush_rule(game_state)
+			await action_handler.check_crush_rule(game_state, deferred_entries)
+	if not deferred_entries.is_empty():
+		await resolve_deferred_entries(deferred_entries)
 
 
 func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
