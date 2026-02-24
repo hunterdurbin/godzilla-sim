@@ -253,6 +253,12 @@ var _choice_player_id: int = -1
 var _choice_buttons: Array[Button] = []
 var _choice_container: VBoxContainer = null
 
+# Monster rank-up selection state
+var _rankup_selecting: bool = false
+var _rankup_player_id: int = -1
+var _rankup_valid_indices: Array[int] = []
+var _rankup_allow_skip: bool = false
+
 # Drag-to-zone state
 var _drag_card: Control = null
 var _drag_valid_zones: Array[int] = []
@@ -331,6 +337,7 @@ func _ready() -> void:
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
+		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
 		# Connect effect handler signals for player choice UIs
 		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
@@ -1539,6 +1546,9 @@ func _on_pass_pressed() -> void:
 		_cancel_selection()
 		_submit_action(CardEnums.ActionType.PASS)
 		return
+	if _rankup_selecting and _rankup_allow_skip:
+		_skip_rankup_selection()
+		return
 	if _hand_card_selecting and _hand_card_allow_skip:
 		_skip_hand_card_selection()
 		return
@@ -1792,7 +1802,13 @@ func _input(event: InputEvent) -> void:
 		elif discard_view_overlay.visible:
 			_hide_discard_view()
 		elif monster_deck_view_overlay.visible:
-			_hide_monster_deck_view()
+			if _rankup_selecting:
+				if _rankup_allow_skip:
+					_skip_rankup_selection()
+				else:
+					pass  # Mandatory — must pick a monster
+			else:
+				_hide_monster_deck_view()
 		elif zone_stack_view_overlay.visible:
 			_hide_zone_stack_view()
 		elif _choice_selecting:
@@ -3281,10 +3297,106 @@ func _on_monster_deck_view_stacked_toggled(_value: bool) -> void:
 
 
 func _hide_monster_deck_view() -> void:
+	if _rankup_selecting:
+		return  # Cannot dismiss during mandatory rank-up selection
 	monster_deck_view_overlay.visible = false
 	for child in monster_deck_view_grid.get_children():
 		child.queue_free()
 	_monster_deck_view_cards.clear()
+
+
+# --- Monster rank-up selection UI ---
+
+func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
+	if is_multiplayer_game and player_id != local_player_id:
+		var monsters_json := JSON.stringify(monsters)
+		var indices_json := JSON.stringify(valid_indices)
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				_rpc_monster_rankup_requested.rpc_id(peer_id, monsters_json, indices_json, prompt)
+		return
+	_show_monster_rankup_selection(player_id, monsters, valid_indices, prompt)
+
+
+func _show_monster_rankup_selection(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
+	_rankup_selecting = true
+	_rankup_player_id = player_id
+	_rankup_valid_indices = valid_indices
+	_rankup_allow_skip = valid_indices.is_empty()
+
+	_disable_all_buttons()
+	card_select_prompt.text = prompt
+	action_prompt_panel.visible = true
+
+	if _rankup_allow_skip:
+		btn_pass.text = "Skip"
+		btn_pass.visible = true
+		btn_pass.disabled = false
+	else:
+		btn_pass.visible = false
+
+	# Show monster deck overlay with selectable cards
+	monster_deck_view_title.text = prompt
+	monster_deck_view_close.visible = false
+	monster_deck_view_stacked.visible = false
+
+	for child in monster_deck_view_grid.get_children():
+		child.queue_free()
+
+	for i in range(monsters.size()):
+		var card_data := monsters[i]
+		var card: Control = card_scene.instantiate()
+		if card.has_method("set_card_data_dict"):
+			card.set_card_data_dict(card_data)
+		card.drag_enabled = false
+		_set_gallery_hover(card)
+
+		if i in valid_indices:
+			card.is_selectable = true
+			card.card_clicked.connect(_on_rankup_card_clicked.bind(i))
+		else:
+			card.is_selectable = false
+			card.modulate = Color(0.5, 0.5, 0.5, 1.0)
+
+		monster_deck_view_grid.add_child(card)
+
+	monster_deck_view_overlay.visible = true
+
+
+func _on_rankup_card_clicked(_card: Control, index: int) -> void:
+	if not _rankup_selecting:
+		return
+	_cleanup_rankup_selection()
+
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, index)
+	else:
+		turn_manager.action_handler.resolve_monster_rankup(index)
+
+
+func _skip_rankup_selection() -> void:
+	_cleanup_rankup_selection()
+
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, -1)
+	else:
+		turn_manager.action_handler.resolve_monster_rankup(-1)
+
+
+func _cleanup_rankup_selection() -> void:
+	_rankup_selecting = false
+	_rankup_valid_indices.clear()
+	_rankup_allow_skip = false
+
+	monster_deck_view_overlay.visible = false
+	monster_deck_view_close.visible = true
+	monster_deck_view_stacked.visible = true
+	for child in monster_deck_view_grid.get_children():
+		child.queue_free()
+
+	action_prompt_panel.visible = false
+	btn_pass.text = "Pass"
+	btn_pass.visible = true
 
 
 # --- Zone stack view UI ---
@@ -4147,6 +4259,30 @@ func _rpc_choice_resolved(index: int) -> void:
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	turn_manager.action_handler.effect_handler.resolve_choice(index)
+
+
+## Host -> Client: prompt monster rank-up selection
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, prompt: String) -> void:
+	if NetworkManager.is_host():
+		return
+	var parsed_monsters: Array = JSON.parse_string(monsters_json)
+	var monsters: Array[Dictionary] = []
+	for m in parsed_monsters:
+		monsters.append(m)
+	var parsed_indices: Array = JSON.parse_string(indices_json)
+	var valid_indices: Array[int] = []
+	for v in parsed_indices:
+		valid_indices.append(int(v))
+	_show_monster_rankup_selection(local_player_id, monsters, valid_indices, prompt)
+
+
+## Client -> Host: resolve monster rank-up selection
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_monster_rankup_resolved(index: int) -> void:
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	turn_manager.action_handler.resolve_monster_rankup(index)
 
 
 ## Host -> Client: highlight a zone card during effect resolution
