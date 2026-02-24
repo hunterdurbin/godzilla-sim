@@ -217,6 +217,7 @@ var _action_pending: bool = false
 # State versioning for desync detection
 var _state_version: int = 0 # Incremented on each broadcast (host only)
 var _client_state_version: int = 0 # Last received version (client only)
+var _broadcast_pending: bool = false # Debounce flag for frame-based coalescing
 
 # Zone target selection state (for effects that let the player pick a zone)
 var _zone_target_selecting: bool = false
@@ -966,6 +967,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 
 	if is_multiplayer_game:
 		_broadcast_state()
+		_flush_broadcast() # Action context must arrive after state
 		var active_id := turn_manager.game_state.current_player_id
 
 		# Compute playable indices for the active player
@@ -1011,7 +1013,7 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 func _on_confirmation_requested(prompt: String, setting: String) -> void:
 	var current_pid: int = turn_manager.game_state.current_player_id
 	if is_multiplayer_game and current_pid != local_player_id:
-		# Forward to the remote client who owns this turn
+		_flush_broadcast()
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == current_pid:
 				RpcLogger.log_send("confirmation_requested", prompt.length() + setting.length())
@@ -1335,6 +1337,7 @@ func _execute_rematch() -> void:
 	_tracker_last_player = -1
 	_state_version = 0
 	_client_state_version = 0
+	_broadcast_pending = false
 	_client_gradients_applied = false
 	pending_action = CardEnums.ActionType.PASS
 	_player_elapsed_ms = [0, 0]
@@ -2246,7 +2249,7 @@ func _on_hand_drag_ended(card: Control) -> void:
 
 func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
-		# Forward to the remote client who needs to make the choice
+		_flush_broadcast() # Client needs up-to-date state before search
 		var matching_json := JSON.stringify(matching_cards)
 		var all_json := JSON.stringify(all_cards)
 		for peer_id in NetworkManager.peer_player_map:
@@ -2517,6 +2520,7 @@ func _hide_deck_search() -> void:
 
 func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
+		_flush_broadcast()
 		var cards_json := JSON.stringify(cards)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
@@ -2737,7 +2741,7 @@ func _on_deck_arrange_confirm() -> void:
 
 func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
-		# Forward to the remote client who needs to make the choice
+		_flush_broadcast()
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_discard_requested", 4)
@@ -2863,7 +2867,7 @@ func _force_cleanup_discard_selection() -> void:
 
 func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
-		# Forward to the remote client who needs to make the choice
+		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
@@ -2956,7 +2960,7 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 
 func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
-		# Forward to the remote client who needs to make the choice
+		_flush_broadcast()
 		var zones_json := JSON.stringify(valid_zones)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
@@ -3036,6 +3040,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
+		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
@@ -3102,6 +3107,7 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 
 func _on_choice_requested(player_id: int, options: Array[String], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
+		_flush_broadcast()
 		var options_json := JSON.stringify(options)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
@@ -3356,6 +3362,7 @@ func _hide_monster_deck_view() -> void:
 
 func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
+		_flush_broadcast()
 		var monsters_json := JSON.stringify(monsters)
 		var indices_json := JSON.stringify(valid_indices)
 		for peer_id in NetworkManager.peer_player_map:
@@ -3782,6 +3789,24 @@ func _resolve_deck_arrange_local(keep: Array[Dictionary], discard: Array[Diction
 # --- Multiplayer: State broadcast (host -> client) ---
 
 func _broadcast_state() -> void:
+	if not is_multiplayer_game or not NetworkManager.is_host():
+		return
+	if not turn_manager or not turn_manager.game_state:
+		return
+	if not _broadcast_pending:
+		_broadcast_pending = true
+		_do_broadcast.call_deferred()
+
+
+## Force any pending broadcast to send immediately.
+## Call before sending RPCs that depend on the client having up-to-date state.
+func _flush_broadcast() -> void:
+	if _broadcast_pending:
+		_do_broadcast()
+
+
+func _do_broadcast() -> void:
+	_broadcast_pending = false
 	if not is_multiplayer_game or not NetworkManager.is_host():
 		return
 	if not turn_manager or not turn_manager.game_state:
