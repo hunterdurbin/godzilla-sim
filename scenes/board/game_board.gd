@@ -2243,8 +2243,8 @@ func _on_hand_drag_ended(card: Control) -> void:
 func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast() # Client needs up-to-date state before search
-		var matching_json := JSON.stringify(matching_cards)
-		var all_json := JSON.stringify(all_cards)
+		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
+		var all_json := JSON.stringify(_cards_to_ids(all_cards))
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
@@ -2514,7 +2514,7 @@ func _hide_deck_search() -> void:
 func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
-		var cards_json := JSON.stringify(cards)
+		var cards_json := JSON.stringify(_cards_to_ids(cards))
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("deck_arrange_requested", cards_json.length() + prompt.length())
@@ -3354,7 +3354,7 @@ func _hide_monster_deck_view() -> void:
 func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
-		var monsters_json := JSON.stringify(monsters)
+		var monsters_json := JSON.stringify(_cards_to_ids(monsters))
 		var indices_json := JSON.stringify(valid_indices)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
@@ -4178,15 +4178,9 @@ func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt: String) -> void:
 	RpcLogger.log_receive("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
-	var matching: Array = JSON.parse_string(matching_json)
-	var all_cards: Array = JSON.parse_string(all_json)
-	var typed_matching: Array[Dictionary] = []
-	for c in matching:
-		typed_matching.append(c)
-	var typed_all: Array[Dictionary] = []
-	for c in all_cards:
-		typed_all.append(c)
-	_show_deck_search(typed_matching, typed_all, prompt)
+	var matching_ids: Array = JSON.parse_string(matching_json)
+	var all_ids: Array = JSON.parse_string(all_json)
+	_show_deck_search(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt)
 
 
 ## Client -> Host: deck search resolved (player chose a card or skipped)
@@ -4209,11 +4203,8 @@ func _rpc_deck_arrange_requested(cards_json: String, prompt: String) -> void:
 	RpcLogger.log_receive("deck_arrange_requested", cards_json.length() + prompt.length())
 	if NetworkManager.is_host():
 		return
-	var parsed: Array = JSON.parse_string(cards_json)
-	var cards: Array[Dictionary] = []
-	for c in parsed:
-		cards.append(c)
-	_show_deck_arrange(cards, prompt)
+	var card_ids: Array = JSON.parse_string(cards_json)
+	_show_deck_arrange(_ids_to_cards(card_ids), prompt)
 
 
 ## Client -> Host: deck arrange resolved (player arranged cards)
@@ -4394,10 +4385,8 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 	RpcLogger.log_receive("monster_rankup_requested", monsters_json.length() + indices_json.length() + prompt.length())
 	if NetworkManager.is_host():
 		return
-	var parsed_monsters: Array = JSON.parse_string(monsters_json)
-	var monsters: Array[Dictionary] = []
-	for m in parsed_monsters:
-		monsters.append(m)
+	var monster_ids: Array = JSON.parse_string(monsters_json)
+	var monsters: Array[Dictionary] = _ids_to_cards(monster_ids)
 	var parsed_indices: Array = JSON.parse_string(indices_json)
 	var valid_indices: Array[int] = []
 	for v in parsed_indices:
