@@ -50,6 +50,7 @@ layout_mode = 2
 
 [node name="DeckSelectP2" parent="CenterContainer/VBoxContainer/DeckRow" instance=ExtResource("2_ds")]
 layout_mode = 2
+persist_key = "last_selected_deck_p2"
 
 [node name="StartButton" type="Button" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
