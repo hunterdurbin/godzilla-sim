@@ -1177,9 +1177,6 @@ func search_discard(player_id: int, filter: Callable, prompt: String) -> Diction
 		if filter.call(card):
 			matching.append(card)
 
-	if matching.is_empty():
-		return {}
-
 	var selected: Dictionary = {}
 	if deck_search_requested.get_connections().size() > 0:
 		_highlight_active_effect()
@@ -1187,7 +1184,7 @@ func search_discard(player_id: int, filter: Callable, prompt: String) -> Diction
 		await _deck_search_resolved
 		_unhighlight_active_effect()
 		selected = _deck_search_result
-	else:
+	elif not matching.is_empty():
 		# Fallback: auto-pick first match
 		selected = matching[0]
 
