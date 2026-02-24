@@ -259,7 +259,6 @@ var _choice_container: VBoxContainer = null
 var _rankup_selecting: bool = false
 var _rankup_player_id: int = -1
 var _rankup_valid_indices: Array[int] = []
-var _rankup_allow_skip: bool = false
 
 # Drag-to-zone state
 var _drag_card: Control = null
@@ -1577,9 +1576,6 @@ func _on_pass_pressed() -> void:
 		_cancel_selection()
 		_submit_action(CardEnums.ActionType.PASS)
 		return
-	if _rankup_selecting and _rankup_allow_skip:
-		_skip_rankup_selection()
-		return
 	if _hand_card_selecting and _hand_card_allow_skip:
 		_skip_hand_card_selection()
 		return
@@ -1834,10 +1830,7 @@ func _input(event: InputEvent) -> void:
 			_hide_discard_view()
 		elif monster_deck_view_overlay.visible:
 			if _rankup_selecting:
-				if _rankup_allow_skip:
-					_skip_rankup_selection()
-				else:
-					pass  # Mandatory — must pick a monster
+				pass  # Mandatory — must pick a monster
 			else:
 				_hide_monster_deck_view()
 		elif zone_stack_view_overlay.visible:
@@ -3349,8 +3342,6 @@ func _on_monster_deck_view_stacked_toggled(_value: bool) -> void:
 
 func _hide_monster_deck_view() -> void:
 	if _rankup_selecting:
-		if _rankup_allow_skip:
-			_skip_rankup_selection()
 		return  # Cannot dismiss during mandatory rank-up selection
 	monster_deck_view_overlay.visible = false
 	for child in monster_deck_view_grid.get_children():
@@ -3377,20 +3368,13 @@ func _show_monster_rankup_selection(player_id: int, monsters: Array[Dictionary],
 	_rankup_selecting = true
 	_rankup_player_id = player_id
 	_rankup_valid_indices = valid_indices
-	_rankup_allow_skip = valid_indices.is_empty()
 
 	_disable_all_buttons()
 
 	# Show monster deck overlay with selectable cards
 	monster_deck_view_title.text = prompt
+	monster_deck_view_close.visible = false
 	monster_deck_view_stacked.visible = false
-
-	if _rankup_allow_skip:
-		# Repurpose the close button as a Skip button inside the overlay
-		monster_deck_view_close.text = "Skip"
-		monster_deck_view_close.visible = true
-	else:
-		monster_deck_view_close.visible = false
 
 	for child in monster_deck_view_grid.get_children():
 		child.queue_free()
@@ -3427,23 +3411,11 @@ func _on_rankup_card_clicked(_card: Control, index: int) -> void:
 		turn_manager.action_handler.resolve_monster_rankup(index)
 
 
-func _skip_rankup_selection() -> void:
-	_cleanup_rankup_selection()
-
-	if is_multiplayer_game and not NetworkManager.is_host():
-		RpcLogger.log_send("monster_rankup_resolved", 4)
-		_rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, -1)
-	else:
-		turn_manager.action_handler.resolve_monster_rankup(-1)
-
-
 func _cleanup_rankup_selection() -> void:
 	_rankup_selecting = false
 	_rankup_valid_indices.clear()
-	_rankup_allow_skip = false
 
 	monster_deck_view_overlay.visible = false
-	monster_deck_view_close.text = "Close"
 	monster_deck_view_close.visible = true
 	monster_deck_view_stacked.visible = true
 	for child in monster_deck_view_grid.get_children():

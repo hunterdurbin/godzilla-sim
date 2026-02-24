@@ -222,7 +222,11 @@ func force_counter(state: GameState, counter_player_id: int) -> void:
 
 func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id: int) -> void:
 	## Prompt the opponent to choose a rank-up monster from their monster deck.
-	## If no valid monster exists, show the deck anyway with a skip option, then opponent loses.
+	## If the monster deck is empty or has no valid targets, opponent loses immediately.
+	if opponent.monster_deck.is_empty():
+		state.game_over.emit(winner_player_id, "Victory through countering!")
+		return
+
 	var next_rank: int = opponent.current_monster.get("rank", 1) + 1
 	var cur_traits: Array = opponent.current_monster.get("traits", [])
 
@@ -233,13 +237,13 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 		if m.get("rank") == next_rank and _traits_overlap(m.get("traits", []), cur_traits):
 			valid_indices.append(i)
 
+	if valid_indices.is_empty():
+		# No valid rank-up targets — opponent loses
+		state.game_over.emit(winner_player_id, "Victory through countering!")
+		return
+
 	# Request player selection via UI
-	var allow_skip: bool = valid_indices.is_empty()
-	var prompt: String
-	if allow_skip:
-		prompt = "No valid Rank %d monster available. View your monster deck." % next_rank
-	else:
-		prompt = "Choose a Rank %d monster to rank up to." % next_rank
+	var prompt := "Choose a Rank %d monster to rank up to." % next_rank
 
 	var chosen_index: int = -1
 	if monster_rankup_requested.get_connections().size() > 0:
@@ -248,7 +252,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 		monster_rankup_requested.emit(opponent.player_id, monsters, valid_indices, prompt)
 		await _monster_rankup_resolved
 		chosen_index = _monster_rankup_result
-	elif not valid_indices.is_empty():
+	else:
 		# Fallback: auto-pick first valid
 		chosen_index = valid_indices[0]
 
