@@ -40,6 +40,7 @@ var _client_stats_decklists: Array = [null, null]
 @onready var chat_input: LineEdit = $LogPanel/LogVBox/ChatRow/ChatInput
 @onready var chat_char_count: Label = $LogPanel/LogVBox/ChatRow/CharCount
 var _log_lines: PackedStringArray = []
+var _pending_log_lines: PackedStringArray = [] # Buffered for next broadcast
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var btn_rematch: Button = $EndGamePanel/VBox/ButtonRow/RematchButton
 @onready var btn_end_menu: Button = $EndGamePanel/VBox/ButtonRow/MenuButton
@@ -189,6 +190,7 @@ var _preview_card: Control
 
 # Stored zone stack view data
 var _zone_stack_view_cards: Array[Dictionary] = []
+var _cards_revealed_active: bool = false
 
 # State tracking
 var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
@@ -216,6 +218,10 @@ var _action_pending: bool = false
 # State versioning for desync detection
 var _state_version: int = 0 # Incremented on each broadcast (host only)
 var _client_state_version: int = 0 # Last received version (client only)
+var _broadcast_pending: bool = false # Debounce flag for frame-based coalescing
+var _last_sent_state: Dictionary = {} # Host: last serialized state sent to client
+var _last_sent_version: int = 0 # Host: version of _last_sent_state
+var _client_full_state: Dictionary = {} # Client: accumulated full state from deltas
 
 # Zone target selection state (for effects that let the player pick a zone)
 var _zone_target_selecting: bool = false
@@ -252,6 +258,11 @@ var _choice_selecting: bool = false
 var _choice_player_id: int = -1
 var _choice_buttons: Array[Button] = []
 var _choice_container: VBoxContainer = null
+
+# Monster rank-up selection state
+var _rankup_selecting: bool = false
+var _rankup_player_id: int = -1
+var _rankup_valid_indices: Array[int] = []
 
 # Drag-to-zone state
 var _drag_card: Control = null
@@ -331,6 +342,7 @@ func _ready() -> void:
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
+		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
 		# Connect effect handler signals for player choice UIs
 		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
@@ -344,6 +356,7 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
 		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
+		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 
 		# Connect player state signals so mid-effect changes (e.g. search_deck adding
@@ -610,10 +623,12 @@ func _start_game() -> void:
 		_show_first_player_waiting()
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == _first_player_chooser_id:
+				RpcLogger.log_send("first_player_choice_requested", 0)
 				_rpc_first_player_choice_requested.rpc_id(peer_id)
 	else:
 		# Host is the chooser — tell the client to wait
 		_show_first_player_choice()
+		RpcLogger.log_send("first_player_waiting", 0)
 		_rpc_first_player_waiting.rpc()
 
 	# Wait for the choice to resolve
@@ -623,6 +638,7 @@ func _start_game() -> void:
 	_first_player_choosing = false
 	_cleanup_first_player_ui()
 	# Tell the client to restore its action panel (waiting client never gets cleanup)
+	RpcLogger.log_send("cleanup_first_player", 0)
 	_rpc_cleanup_first_player.rpc()
 	_apply_gradients_and_sync()
 	_first_player_id = _first_player_result
@@ -693,6 +709,7 @@ func _on_first_player_chosen(go_first: bool) -> void:
 	var chosen_id: int = _first_player_chooser_id if go_first else (1 - _first_player_chooser_id)
 
 	if is_multiplayer_game and not NetworkManager.is_host():
+		RpcLogger.log_send("first_player_choice_resolved", 4)
 		_rpc_first_player_choice_resolved.rpc_id(NetworkManager.host_peer_id, chosen_id)
 	else:
 		_first_player_result = chosen_id
@@ -701,6 +718,7 @@ func _on_first_player_chosen(go_first: bool) -> void:
 ## Host -> Client: tell the client to wait while the host chooses
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_first_player_waiting() -> void:
+	RpcLogger.log_receive("first_player_waiting", 0)
 	if NetworkManager.is_host():
 		return
 	_first_player_choosing = true
@@ -710,6 +728,7 @@ func _rpc_first_player_waiting() -> void:
 ## Host -> Client: ask the client to choose first/second
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_first_player_choice_requested() -> void:
+	RpcLogger.log_receive("first_player_choice_requested", 0)
 	if NetworkManager.is_host():
 		return
 	_first_player_choosing = true
@@ -720,6 +739,7 @@ func _rpc_first_player_choice_requested() -> void:
 ## Client -> Host: resolve the first-player choice
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_first_player_choice_resolved(chosen_id: int) -> void:
+	RpcLogger.log_receive("first_player_choice_resolved", 4)
 	if not NetworkManager.is_host():
 		return
 	_first_player_result = chosen_id
@@ -728,6 +748,7 @@ func _rpc_first_player_choice_resolved(chosen_id: int) -> void:
 ## Host -> Client: tell waiting client to restore action panel after coin flip
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_cleanup_first_player() -> void:
+	RpcLogger.log_receive("cleanup_first_player", 0)
 	if NetworkManager.is_host():
 		return
 	_first_player_choosing = false
@@ -842,6 +863,7 @@ func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> vo
 		turn_manager.submit_action(action, params)
 	else:
 		var params_json := JSON.stringify(params) if not params.is_empty() else ""
+		RpcLogger.log_send("submit_action", 4 + params_json.length())
 		_rpc_submit_action.rpc_id(NetworkManager.host_peer_id, int(action), params_json)
 
 
@@ -948,6 +970,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 
 	if is_multiplayer_game:
 		_broadcast_state()
+		_flush_broadcast() # Action context must arrive after state
 		var active_id := turn_manager.game_state.current_player_id
 
 		# Compute playable indices for the active player
@@ -964,6 +987,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 			_disable_all_buttons()
 			for peer_id in NetworkManager.peer_player_map:
 				if NetworkManager.peer_player_map[peer_id] == active_id:
+					RpcLogger.log_send("receive_action_context", actions_json.length() + playable_json.length())
 					_rpc_receive_action_context.rpc_id(peer_id, actions_json, playable_json)
 	else:
 		_update_action_buttons(valid_actions)
@@ -983,16 +1007,23 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	btn_rematch.text = "Rematch"
 	_disable_all_buttons()
 	if is_multiplayer_game and NetworkManager.is_host():
+		# Flush any buffered logs before game end
+		if not _pending_log_lines.is_empty():
+			_broadcast_state()
+			_flush_broadcast()
+		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
 		_rpc_receive_game_ended.rpc(winner_id, reason)
+	RpcLogger.print_summary()
 	_upload_stats(winner_id, reason, false)
 
 
 func _on_confirmation_requested(prompt: String, setting: String) -> void:
 	var current_pid: int = turn_manager.game_state.current_player_id
 	if is_multiplayer_game and current_pid != local_player_id:
-		# Forward to the remote client who owns this turn
+		_flush_broadcast()
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == current_pid:
+				RpcLogger.log_send("confirmation_requested", prompt.length() + setting.length())
 				_rpc_confirmation_requested.rpc_id(peer_id, prompt, setting)
 		return
 	# Local player: check their per-player settings
@@ -1014,6 +1045,7 @@ func _show_confirmation(prompt: String) -> void:
 	if turn_manager:
 		turn_manager.confirm()
 	elif is_multiplayer_game:
+		RpcLogger.log_send("confirmation_resolved", 0)
 		_rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
 
 
@@ -1030,7 +1062,7 @@ func _on_log_message(text: String) -> void:
 		log_output.append_text(text + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game and NetworkManager.is_host():
-		_rpc_receive_log.rpc(text)
+		_pending_log_lines.append(text)
 
 
 func _on_chat_submitted(text: String) -> void:
@@ -1047,6 +1079,7 @@ func _on_chat_submitted(text: String) -> void:
 		log_output.append_text(formatted + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game:
+		RpcLogger.log_send("receive_chat", 4 + filtered.length())
 		_rpc_receive_chat.rpc(local_player_id, filtered)
 	chat_char_count.text = str(chat_input.max_length)
 
@@ -1201,6 +1234,7 @@ func _on_concede_pressed() -> void:
 	var loser_name := turn_manager.game_state.player_names[loser_id] if turn_manager else ("Player %d" % (loser_id + 1))
 	var reason := "%s conceded" % loser_name
 	if is_multiplayer_game and not NetworkManager.is_host():
+		RpcLogger.log_send("concede", 0)
 		_rpc_concede.rpc_id(NetworkManager.host_peer_id)
 	elif turn_manager:
 		turn_manager._on_game_over(winner_id, reason)
@@ -1208,6 +1242,7 @@ func _on_concede_pressed() -> void:
 
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_concede() -> void:
+	RpcLogger.log_receive("concede", 0)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
@@ -1219,6 +1254,7 @@ func _rpc_concede() -> void:
 func _on_main_menu_pressed() -> void:
 	if is_multiplayer_game:
 		if end_game_panel.visible and multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
+			RpcLogger.log_send("rematch_declined", 0)
 			_rpc_rematch_declined.rpc()
 		NetworkManager.notify_leaving()
 		NetworkManager.disconnect_game()
@@ -1238,10 +1274,12 @@ func _on_rematch_pressed() -> void:
 	# Multiplayer: notify opponent, wait for them
 	btn_rematch.disabled = true
 	btn_rematch.text = "Waiting..."
+	RpcLogger.log_send("rematch_requested", 0)
 	_rpc_rematch_requested.rpc()
 
 	if _opponent_rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
+		RpcLogger.log_send("execute_rematch", 0)
 		_rpc_execute_rematch.rpc()
 
 
@@ -1305,6 +1343,10 @@ func _execute_rematch() -> void:
 	_tracker_last_player = -1
 	_state_version = 0
 	_client_state_version = 0
+	_broadcast_pending = false
+	_last_sent_state = {}
+	_last_sent_version = 0
+	_client_full_state = {}
 	_client_gradients_applied = false
 	pending_action = CardEnums.ActionType.PASS
 	_player_elapsed_ms = [0, 0]
@@ -1395,6 +1437,7 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
 		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
+		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 
 		# Reconnect player state signals
@@ -1419,17 +1462,20 @@ func _execute_rematch() -> void:
 ## Peer -> Peer: signal that this player wants a rematch
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_rematch_requested() -> void:
+	RpcLogger.log_receive("rematch_requested", 0)
 	_opponent_rematch_requested = true
 	_on_log_message("Opponent wants a rematch!")
 
 	if _rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
+		RpcLogger.log_send("execute_rematch", 0)
 		_rpc_execute_rematch.rpc()
 
 
 ## Host -> Client: instruct client to execute the rematch reset
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_execute_rematch() -> void:
+	RpcLogger.log_receive("execute_rematch", 0)
 	if NetworkManager.is_host():
 		return
 	_execute_rematch()
@@ -1438,6 +1484,7 @@ func _rpc_execute_rematch() -> void:
 ## Peer -> Peer: opponent declined rematch (chose Main Menu)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_rematch_declined() -> void:
+	RpcLogger.log_receive("rematch_declined", 0)
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
 		win_label.text = win_label.text + "\nOpponent returned to menu."
@@ -1792,7 +1839,10 @@ func _input(event: InputEvent) -> void:
 		elif discard_view_overlay.visible:
 			_hide_discard_view()
 		elif monster_deck_view_overlay.visible:
-			_hide_monster_deck_view()
+			if _rankup_selecting:
+				pass  # Mandatory — must pick a monster
+			else:
+				_hide_monster_deck_view()
 		elif zone_stack_view_overlay.visible:
 			_hide_zone_stack_view()
 		elif _choice_selecting:
@@ -2202,11 +2252,12 @@ func _on_hand_drag_ended(card: Control) -> void:
 
 func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
-		# Forward to the remote client who needs to make the choice
-		var matching_json := JSON.stringify(matching_cards)
-		var all_json := JSON.stringify(all_cards)
+		_flush_broadcast() # Client needs up-to-date state before search
+		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
+		var all_json := JSON.stringify(_cards_to_ids(all_cards))
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
+				RpcLogger.log_send("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
 				_rpc_deck_search_requested.rpc_id(peer_id, matching_json, all_json, prompt)
 		return
 	_show_deck_search(matching_cards, all_cards, prompt)
@@ -2472,9 +2523,11 @@ func _hide_deck_search() -> void:
 
 func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
-		var cards_json := JSON.stringify(cards)
+		_flush_broadcast()
+		var cards_json := JSON.stringify(_cards_to_ids(cards))
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
+				RpcLogger.log_send("deck_arrange_requested", cards_json.length() + prompt.length())
 				_rpc_deck_arrange_requested.rpc_id(peer_id, cards_json, prompt)
 		return
 	_show_deck_arrange(cards, prompt)
@@ -2691,9 +2744,10 @@ func _on_deck_arrange_confirm() -> void:
 
 func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
-		# Forward to the remote client who needs to make the choice
+		_flush_broadcast()
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
+				RpcLogger.log_send("hand_discard_requested", 4)
 				_rpc_hand_discard_requested.rpc_id(peer_id, discard_count)
 		return
 	_show_hand_discard_selection(player_id, discard_count)
@@ -2784,6 +2838,7 @@ func _confirm_hand_discard() -> void:
 	if is_multiplayer_game and not NetworkManager.is_host():
 		# Client sends choice to host
 		var indices_json := JSON.stringify(hand_indices)
+		RpcLogger.log_send("hand_discard_resolved", indices_json.length())
 		_rpc_hand_discard_resolved.rpc_id(NetworkManager.host_peer_id, indices_json)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_hand_discard(_discard_player_id, hand_indices)
@@ -2815,10 +2870,11 @@ func _force_cleanup_discard_selection() -> void:
 
 func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
-		# Forward to the remote client who needs to make the choice
+		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
+				RpcLogger.log_send("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
 				_rpc_hand_card_selection_requested.rpc_id(peer_id, indices_json, prompt, allow_skip)
 		return
 	_show_hand_card_selection(player_id, valid_indices, prompt, allow_skip)
@@ -2873,6 +2929,7 @@ func _on_hand_card_clicked(card: Control, _index: int) -> void:
 	if is_multiplayer_game and _hand_card_player_id != local_player_id:
 		return
 	if is_multiplayer_game and not NetworkManager.is_host():
+		RpcLogger.log_send("hand_card_selection_resolved", 4)
 		_rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, hand_index)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
@@ -2885,6 +2942,7 @@ func _skip_hand_card_selection() -> void:
 	if is_multiplayer_game and _hand_card_player_id != local_player_id:
 		return
 	if is_multiplayer_game and not NetworkManager.is_host():
+		RpcLogger.log_send("hand_card_selection_resolved", 4)
 		_rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, -1)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(-1)
@@ -2905,10 +2963,11 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 
 func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
-		# Forward to the remote client who needs to make the choice
+		_flush_broadcast()
 		var zones_json := JSON.stringify(valid_zones)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
+				RpcLogger.log_send("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
 				_rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt, allow_skip)
 		return
 	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt, allow_skip)
@@ -2974,6 +3033,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 	btn_pass.visible = true
 
 	if is_multiplayer_game and not NetworkManager.is_host():
+		RpcLogger.log_send("zone_target_resolved", 4)
 		_rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_idx)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_zone_target(zone_idx)
@@ -2983,9 +3043,11 @@ func _finish_zone_target(zone_idx: int) -> void:
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
+		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
+				RpcLogger.log_send("strategy_target_requested", 4 + indices_json.length() + prompt.length())
 				_rpc_strategy_target_requested.rpc_id(peer_id, target_player_id, indices_json, prompt)
 		return
 	_show_strategy_target_selection(player_id, target_player_id, valid_indices, prompt)
@@ -3038,6 +3100,7 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 	btn_pass.visible = true
 
 	if is_multiplayer_game and not NetworkManager.is_host():
+		RpcLogger.log_send("strategy_target_resolved", 4)
 		_rpc_strategy_target_resolved.rpc_id(NetworkManager.host_peer_id, strategy_idx)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_idx)
@@ -3047,9 +3110,11 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 
 func _on_choice_requested(player_id: int, options: Array[String], prompt: String) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
+		_flush_broadcast()
 		var options_json := JSON.stringify(options)
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
+				RpcLogger.log_send("choice_requested", options_json.length() + prompt.length())
 				_rpc_choice_requested.rpc_id(peer_id, options_json, prompt)
 		return
 	_show_choice_selection(player_id, options, prompt)
@@ -3088,6 +3153,7 @@ func _on_choice_button_pressed(index: int) -> void:
 	_cleanup_choice_selection()
 
 	if is_multiplayer_game and not NetworkManager.is_host():
+		RpcLogger.log_send("choice_resolved", 4)
 		_rpc_choice_resolved.rpc_id(NetworkManager.host_peer_id, index)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_choice(index)
@@ -3111,6 +3177,7 @@ func _on_effect_zone_highlighted(pid: int, zone_index: int) -> void:
 	if is_multiplayer_game and pid != local_player_id:
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == pid:
+				RpcLogger.log_send("effect_zone_highlighted", 8)
 				_rpc_effect_zone_highlighted.rpc_id(peer_id, pid, zone_index)
 		return
 	_apply_zone_highlight(pid, zone_index, true)
@@ -3120,6 +3187,7 @@ func _on_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
 	if is_multiplayer_game and pid != local_player_id:
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == pid:
+				RpcLogger.log_send("effect_zone_unhighlighted", 8)
 				_rpc_effect_zone_unhighlighted.rpc_id(peer_id, pid, zone_index)
 		return
 	_apply_zone_highlight(pid, zone_index, false)
@@ -3139,6 +3207,7 @@ func _on_effect_card_highlighted(pid: int, card_id: String) -> void:
 	if is_multiplayer_game:
 		for peer_id in NetworkManager.peer_player_map:
 			if peer_id != multiplayer.get_unique_id():
+				RpcLogger.log_send("effect_card_highlighted", 4 + card_id.length())
 				_rpc_effect_card_highlighted.rpc_id(peer_id, pid, card_id)
 	_apply_card_highlight(pid, card_id, true)
 
@@ -3147,6 +3216,7 @@ func _on_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 	if is_multiplayer_game:
 		for peer_id in NetworkManager.peer_player_map:
 			if peer_id != multiplayer.get_unique_id():
+				RpcLogger.log_send("effect_card_unhighlighted", 4 + card_id.length())
 				_rpc_effect_card_unhighlighted.rpc_id(peer_id, pid, card_id)
 	_apply_card_highlight(pid, card_id, false)
 
@@ -3281,10 +3351,88 @@ func _on_monster_deck_view_stacked_toggled(_value: bool) -> void:
 
 
 func _hide_monster_deck_view() -> void:
+	if _rankup_selecting:
+		return  # Cannot dismiss during mandatory rank-up selection
 	monster_deck_view_overlay.visible = false
 	for child in monster_deck_view_grid.get_children():
 		child.queue_free()
 	_monster_deck_view_cards.clear()
+
+
+# --- Monster rank-up selection UI ---
+
+func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
+	if is_multiplayer_game and player_id != local_player_id:
+		_flush_broadcast()
+		var monsters_json := JSON.stringify(_cards_to_ids(monsters))
+		var indices_json := JSON.stringify(valid_indices)
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				RpcLogger.log_send("monster_rankup_requested", monsters_json.length() + indices_json.length() + prompt.length())
+				_rpc_monster_rankup_requested.rpc_id(peer_id, monsters_json, indices_json, prompt)
+		return
+	_show_monster_rankup_selection(player_id, monsters, valid_indices, prompt)
+
+
+func _show_monster_rankup_selection(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
+	_rankup_selecting = true
+	_rankup_player_id = player_id
+	_rankup_valid_indices = valid_indices
+
+	_disable_all_buttons()
+
+	# Show monster deck overlay with selectable cards
+	monster_deck_view_title.text = prompt
+	monster_deck_view_close.visible = false
+	monster_deck_view_stacked.visible = false
+
+	for child in monster_deck_view_grid.get_children():
+		child.queue_free()
+
+	for i in range(monsters.size()):
+		var card_data := monsters[i]
+		var card: Control = card_scene.instantiate()
+		if card.has_method("set_card_data_dict"):
+			card.set_card_data_dict(card_data)
+		card.drag_enabled = false
+		_set_gallery_hover(card)
+
+		if i in valid_indices:
+			card.is_selectable = true
+			card.card_clicked.connect(_on_rankup_card_clicked.bind(i))
+		else:
+			card.is_selectable = false
+			card.modulate = Color(0.5, 0.5, 0.5, 1.0)
+
+		monster_deck_view_grid.add_child(card)
+
+	monster_deck_view_overlay.visible = true
+
+
+func _on_rankup_card_clicked(_card: Control, index: int) -> void:
+	if not _rankup_selecting:
+		return
+	_cleanup_rankup_selection()
+
+	if is_multiplayer_game and not NetworkManager.is_host():
+		RpcLogger.log_send("monster_rankup_resolved", 4)
+		_rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, index)
+	else:
+		turn_manager.action_handler.resolve_monster_rankup(index)
+
+
+func _cleanup_rankup_selection() -> void:
+	_rankup_selecting = false
+	_rankup_valid_indices.clear()
+
+	monster_deck_view_overlay.visible = false
+	monster_deck_view_close.visible = true
+	monster_deck_view_stacked.visible = true
+	for child in monster_deck_view_grid.get_children():
+		child.queue_free()
+
+	btn_pass.text = "Pass"
+	btn_pass.visible = true
 
 
 # --- Zone stack view UI ---
@@ -3334,6 +3482,19 @@ func _hide_zone_stack_view() -> void:
 	for child in zone_stack_view_grid.get_children():
 		child.queue_free()
 	_zone_stack_view_cards.clear()
+	if _cards_revealed_active:
+		_cards_revealed_active = false
+		turn_manager.action_handler.effect_handler.resolve_cards_revealed()
+
+
+func _on_cards_revealed_requested(_player_id: int, cards: Array[Dictionary], title: String) -> void:
+	_zone_stack_view_cards.clear()
+	_zone_stack_view_cards.append_array(cards)
+	var total: int = _zone_stack_view_cards.size()
+	zone_stack_view_title.text = "%s (%d card%s)" % [title, total, "" if total == 1 else "s"]
+	zone_stack_view_overlay.visible = true
+	_cards_revealed_active = true
+	_refresh_zone_stack_view_grid()
 
 
 # --- Card zoom (right-click) UI ---
@@ -3590,15 +3751,19 @@ func _clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 func _resolve_deck_search_local(selected: Dictionary) -> void:
 	if is_multiplayer_game and not NetworkManager.is_host():
 		# Client sends selection back to host
-		_rpc_deck_search_resolved.rpc_id(NetworkManager.host_peer_id, JSON.stringify(selected))
+		var _search_json := JSON.stringify(selected)
+		RpcLogger.log_send("deck_search_resolved", _search_json.length())
+		_rpc_deck_search_resolved.rpc_id(NetworkManager.host_peer_id, _search_json)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
 
 
 func _resolve_deck_arrange_local(keep: Array[Dictionary], discard: Array[Dictionary]) -> void:
 	if is_multiplayer_game and not NetworkManager.is_host():
-		_rpc_deck_arrange_resolved.rpc_id(NetworkManager.host_peer_id,
-			JSON.stringify(keep), JSON.stringify(discard))
+		var _keep_json := JSON.stringify(keep)
+		var _discard_json := JSON.stringify(discard)
+		RpcLogger.log_send("deck_arrange_resolved", _keep_json.length() + _discard_json.length())
+		_rpc_deck_arrange_resolved.rpc_id(NetworkManager.host_peer_id, _keep_json, _discard_json)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_deck_arrange(keep, discard)
 
@@ -3610,17 +3775,58 @@ func _broadcast_state() -> void:
 		return
 	if not turn_manager or not turn_manager.game_state:
 		return
+	if not _broadcast_pending:
+		_broadcast_pending = true
+		_do_broadcast.call_deferred()
+
+
+## Force any pending broadcast to send immediately.
+## Call before sending RPCs that depend on the client having up-to-date state.
+func _flush_broadcast() -> void:
+	if _broadcast_pending:
+		_do_broadcast()
+
+
+func _do_broadcast() -> void:
+	_broadcast_pending = false
+	if not is_multiplayer_game or not NetworkManager.is_host():
+		return
+	if not turn_manager or not turn_manager.game_state:
+		return
 
 	_state_version += 1
 	for peer_id in NetworkManager.peer_player_map:
 		if peer_id == 1:
 			continue # Don't send to self (server peer ID is 1)
 		var viewer_id: int = NetworkManager.peer_player_map[peer_id]
-		var state_json := _serialize_game_state(viewer_id)
-		_rpc_receive_state.rpc_id(peer_id, state_json)
+		var state_dict := _serialize_game_state(viewer_id)
+
+		var envelope: Dictionary
+		if _last_sent_state.is_empty():
+			# First broadcast or after resync: send full state
+			envelope = {"v": _state_version, "bv": -1, "d": state_dict}
+		else:
+			var delta := _compute_delta(_last_sent_state, state_dict)
+			if delta.is_empty() and _pending_log_lines.is_empty():
+				# Nothing changed and no logs — skip broadcast entirely
+				_state_version -= 1
+				continue
+			envelope = {"v": _state_version, "bv": _last_sent_version, "d": delta}
+
+		# Piggyback buffered log lines on the envelope
+		if not _pending_log_lines.is_empty():
+			envelope["log"] = Array(_pending_log_lines)
+
+		_last_sent_state = state_dict.duplicate(true)
+		_last_sent_version = _state_version
+
+		var state_bytes := var_to_bytes(envelope)
+		RpcLogger.log_send("receive_state", state_bytes.size())
+		_rpc_receive_state.rpc_id(peer_id, state_bytes)
+	_pending_log_lines.clear()
 
 
-func _serialize_game_state(viewer_id: int) -> String:
+func _serialize_game_state(viewer_id: int) -> Dictionary:
 	var gs := turn_manager.game_state
 	var eh := turn_manager.effect_handler
 	var zone_cp_0: Array = eh.get_zone_cp_modifiers(0) if eh else []
@@ -3674,28 +3880,168 @@ func _serialize_game_state(viewer_id: int) -> String:
 			}
 	# Include hash of shared game state for desync detection
 	data["state_hash"] = _compute_state_hash(gs)
-	return JSON.stringify(data)
+	return data
+
+
+func _card_to_id(card: Dictionary) -> String:
+	return card.get("id", "")
+
+
+func _cards_to_ids(cards: Array) -> Array:
+	var ids: Array = []
+	for c in cards:
+		ids.append(c.get("id", "") if c is Dictionary else "")
+	return ids
+
+
+func _id_to_card(instance_id: String) -> Dictionary:
+	if instance_id.is_empty():
+		return {}
+	var base_id := instance_id
+	var underscore_pos := instance_id.find("_")
+	if underscore_pos != -1:
+		base_id = instance_id.substr(0, underscore_pos)
+	var template := CardData.get_card_by_id(base_id)
+	if template.is_empty():
+		return {}
+	var card := template.duplicate()
+	card["id"] = instance_id
+	return card
+
+
+func _ids_to_cards(ids: Array) -> Array[Dictionary]:
+	var cards: Array[Dictionary] = []
+	for id in ids:
+		var card := _id_to_card(str(id))
+		if not card.is_empty():
+			cards.append(card)
+	return cards
+
+
+# --- Delta state encoding helpers ---
+
+func _deep_equals(a: Variant, b: Variant) -> bool:
+	if typeof(a) != typeof(b):
+		return false
+	if a is Array:
+		if a.size() != b.size():
+			return false
+		for i in range(a.size()):
+			if not _deep_equals(a[i], b[i]):
+				return false
+		return true
+	if a is Dictionary:
+		if a.size() != b.size():
+			return false
+		for key in a:
+			if not b.has(key) or not _deep_equals(a[key], b[key]):
+				return false
+		return true
+	return a == b
+
+
+func _compute_delta(old_state: Dictionary, new_state: Dictionary) -> Dictionary:
+	var delta := {}
+	# Compare top-level fields (excluding "players" which is handled separately)
+	for key in new_state:
+		if key == "players":
+			continue
+		if not old_state.has(key) or not _deep_equals(old_state[key], new_state[key]):
+			delta[key] = new_state[key]
+	# Compare per-player state
+	var old_players: Array = old_state.get("players", [])
+	var new_players: Array = new_state.get("players", [])
+	for i in range(new_players.size()):
+		var new_pd: Dictionary = new_players[i]
+		if i >= old_players.size():
+			delta["p%d" % i] = new_pd
+			continue
+		var player_delta := _compute_player_delta(old_players[i], new_pd)
+		if not player_delta.is_empty():
+			delta["p%d" % i] = player_delta
+	return delta
+
+
+func _compute_player_delta(old_pd: Dictionary, new_pd: Dictionary) -> Dictionary:
+	var delta := {}
+	for key in new_pd:
+		if key == "zones":
+			# Compare each zone stack individually for sparse encoding
+			var old_zones: Array = old_pd.get("zones", [])
+			var new_zones: Array = new_pd.get("zones", [])
+			var zones_delta := {}
+			for z in range(maxi(old_zones.size(), new_zones.size())):
+				var old_z: Array = old_zones[z] if z < old_zones.size() else []
+				var new_z: Array = new_zones[z] if z < new_zones.size() else []
+				if not _deep_equals(old_z, new_z):
+					zones_delta[z] = new_z
+			if not zones_delta.is_empty():
+				delta["zones"] = zones_delta
+		else:
+			if not old_pd.has(key) or not _deep_equals(old_pd[key], new_pd[key]):
+				delta[key] = new_pd[key]
+	return delta
+
+
+func _apply_delta(full_state: Dictionary, delta: Dictionary) -> Dictionary:
+	var result := full_state.duplicate(true)
+	# Apply top-level fields
+	for key in delta:
+		if key == "p0" or key == "p1":
+			continue
+		result[key] = delta[key]
+	# Apply per-player deltas
+	var players: Array = result.get("players", [{}, {}])
+	for i in range(2):
+		var pkey := "p%d" % i
+		if not delta.has(pkey):
+			continue
+		var pd: Dictionary = delta[pkey]
+		if i >= players.size():
+			players.append(pd)
+			continue
+		var existing: Dictionary = players[i]
+		for field in pd:
+			if field == "zones" and pd[field] is Dictionary:
+				# Sparse zone update: merge individual zone indices
+				var zone_delta: Dictionary = pd[field]
+				var zones: Array = existing.get("zones", [])
+				for z_key in zone_delta:
+					var z_idx: int = int(z_key)
+					if z_idx < zones.size():
+						zones[z_idx] = zone_delta[z_key]
+				existing["zones"] = zones
+			else:
+				existing[field] = pd[field]
+	result["players"] = players
+	return result
 
 
 func _serialize_player_state(ps: PlayerState) -> Dictionary:
+	var zone_ids: Array = []
+	for zone_stack in ps.zones:
+		zone_ids.append(_cards_to_ids(zone_stack))
+	var strat_ids: Array = []
+	for s in ps.strategy_zones:
+		strat_ids.append(_card_to_id(s) if s is Dictionary else "")
 	return {
 		"player_id": ps.player_id,
 		"monster_zone": ps.monster_zone,
 		"rage": ps.rage,
-		"current_monster": ps.current_monster,
-		"zones": ps.zones.duplicate(true),
-		"strategy_zones": ps.strategy_zones.duplicate(true),
-		"hand": ps.hand.duplicate(true),
+		"current_monster": _card_to_id(ps.current_monster),
+		"zones": zone_ids,
+		"strategy_zones": strat_ids,
+		"hand": _cards_to_ids(ps.hand),
 		"hand_count": ps.hand.size(),
 		"main_deck_count": ps.main_deck.size(),
-		"discard_pile": ps.discard_pile.duplicate(true),
+		"discard_pile": _cards_to_ids(ps.discard_pile),
 		"discard_pile_count": ps.discard_pile.size(),
 		"has_invaded_this_turn": ps.has_invaded_this_turn,
 		"has_played_monster_this_turn": ps.has_played_monster_this_turn,
-		"monster_stack": ps.monster_stack.duplicate(true),
-		"burst_monster": ps.burst_monster,
-		"pre_burst_monster": ps.pre_burst_monster,
-		"monster_deck": ps.monster_deck.duplicate(true),
+		"monster_stack": _cards_to_ids(ps.monster_stack),
+		"burst_monster": _card_to_id(ps.burst_monster),
+		"pre_burst_monster": _card_to_id(ps.pre_burst_monster),
+		"monster_deck": _cards_to_ids(ps.monster_deck),
 	}
 
 
@@ -3775,6 +4121,7 @@ func _compute_playable_data() -> Dictionary:
 ## Client -> Host: submit an action
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_submit_action(action_type: int, params_json: String) -> void:
+	RpcLogger.log_receive("submit_action", 4 + params_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 
@@ -3798,16 +4145,43 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 
 ## Host -> Client: full game state update
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_receive_state(state_json: String) -> void:
-	var data: Dictionary = JSON.parse_string(state_json)
-	if data.is_empty():
+func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
+	RpcLogger.log_receive("receive_state", state_bytes.size())
+	var envelope: Dictionary = bytes_to_var(state_bytes)
+	if envelope.is_empty():
 		return
 
+	# Extract piggybacked log lines
+	if envelope.has("log"):
+		for line in envelope["log"]:
+			_log_lines.append(str(line))
+			if log_output:
+				log_output.append_text(str(line) + "\n")
+				log_output.scroll_to_line(log_output.get_line_count() - 1)
+
+	var version: int = int(envelope.get("v", 0))
+	var base_version: int = int(envelope.get("bv", -1))
+	var payload: Dictionary = envelope.get("d", {})
+
+	# Unwrap envelope: full state or delta
+	var data: Dictionary
+	if base_version == -1:
+		# Full state
+		data = payload
+		_client_full_state = data.duplicate(true)
+	else:
+		if _client_state_version != base_version:
+			push_warning("[DELTA] Base version mismatch: have %d, got bv=%d. Requesting resync." % [_client_state_version, base_version])
+			RpcLogger.log_send("request_resync", 0)
+			_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
+			return
+		_client_full_state = _apply_delta(_client_full_state, payload)
+		data = _client_full_state
+
 	# Track state version for desync detection
-	var new_version: int = int(data.get("state_version", 0))
-	if new_version > 0 and _client_state_version > 0 and new_version < _client_state_version:
-		push_warning("[DESYNC] Received state version %d but already at %d — out-of-order delivery" % [new_version, _client_state_version])
-	_client_state_version = new_version
+	if version > 0 and _client_state_version > 0 and version < _client_state_version:
+		push_warning("[DESYNC] Received state version %d but already at %d — out-of-order delivery" % [version, _client_state_version])
+	_client_state_version = version
 
 	_client_current_player_id = int(data["current_player_id"])
 	_client_turn_number = int(data.get("turn_number", 0))
@@ -3871,6 +4245,7 @@ func _rpc_receive_state(state_json: String) -> void:
 			var board = player1_board if i == 0 else player2_board
 			if not _client_players[i].current_monster.is_empty():
 				board.apply_monster_gradient(_client_players[i].current_monster)
+		RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
 		_rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
 
 	# Sync player names from host (disambiguate from client's perspective)
@@ -3897,6 +4272,11 @@ func _rpc_receive_state(state_json: String) -> void:
 				int(data.get("turn_number", 0)),
 				int(data.get("current_phase", 0)),
 				host_hash, local_hash])
+			# Auto-resync if this was a delta (full state hash mismatch is a real desync)
+			if base_version >= 0:
+				push_warning("[DELTA] Hash mismatch after delta apply — requesting resync")
+				RpcLogger.log_send("request_resync", 0)
+				_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
 
 	# Update UI
 	var client_phase := int(data["current_phase"]) as CardEnums.GamePhase
@@ -3906,9 +4286,22 @@ func _rpc_receive_state(state_json: String) -> void:
 	_update_hand_visibility(_client_current_player_id)
 
 
+## Client -> Host: request full state resend (delta base version mismatch or hash mismatch)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_request_resync() -> void:
+	if not NetworkManager.is_host():
+		return
+	RpcLogger.log_receive("request_resync", 0)
+	_last_sent_state = {}
+	_last_sent_version = 0
+	_broadcast_state()
+	_flush_broadcast()
+
+
 ## Host -> Client: valid actions and playable indices
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_action_context(actions_json: String, playable_json: String) -> void:
+	RpcLogger.log_receive("receive_action_context", actions_json.length() + playable_json.length())
 	_action_pending = false
 	# Clean up any stale discard/selection state before enabling action buttons
 	if _discard_selecting:
@@ -3933,6 +4326,7 @@ func _rpc_receive_action_context(actions_json: String, playable_json: String) ->
 ## Host -> Client: log message
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_log(text: String) -> void:
+	RpcLogger.log_receive("receive_log", text.length())
 	_log_lines.append(text)
 	if log_output:
 		log_output.append_text(text + "\n")
@@ -3942,6 +4336,7 @@ func _rpc_receive_log(text: String) -> void:
 ## Any peer -> Any peer: chat message
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
+	RpcLogger.log_receive("receive_chat", 4 + text.length())
 	if sender_player_id < 0 or sender_player_id > 1:
 		return
 	var filtered := ChatFilter.filter(text)
@@ -3956,20 +4351,16 @@ func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
 ## Host -> Client: deck search request (player must choose a card)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt: String) -> void:
-	var matching: Array = JSON.parse_string(matching_json)
-	var all_cards: Array = JSON.parse_string(all_json)
-	var typed_matching: Array[Dictionary] = []
-	for c in matching:
-		typed_matching.append(c)
-	var typed_all: Array[Dictionary] = []
-	for c in all_cards:
-		typed_all.append(c)
-	_show_deck_search(typed_matching, typed_all, prompt)
+	RpcLogger.log_receive("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
+	var matching_ids: Array = JSON.parse_string(matching_json)
+	var all_ids: Array = JSON.parse_string(all_json)
+	_show_deck_search(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt)
 
 
 ## Client -> Host: deck search resolved (player chose a card or skipped)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_deck_search_resolved(selected_json: String) -> void:
+	RpcLogger.log_receive("deck_search_resolved", selected_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	var selected: Dictionary = {}
@@ -3983,18 +4374,17 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 ## Host -> Client: deck arrange request (player must reorder/discard cards)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_deck_arrange_requested(cards_json: String, prompt: String) -> void:
+	RpcLogger.log_receive("deck_arrange_requested", cards_json.length() + prompt.length())
 	if NetworkManager.is_host():
 		return
-	var parsed: Array = JSON.parse_string(cards_json)
-	var cards: Array[Dictionary] = []
-	for c in parsed:
-		cards.append(c)
-	_show_deck_arrange(cards, prompt)
+	var card_ids: Array = JSON.parse_string(cards_json)
+	_show_deck_arrange(_ids_to_cards(card_ids), prompt)
 
 
 ## Client -> Host: deck arrange resolved (player arranged cards)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void:
+	RpcLogger.log_receive("deck_arrange_resolved", keep_json.length() + discard_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	var keep: Array[Dictionary] = []
@@ -4013,6 +4403,7 @@ func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void
 ## Host -> Client: hand card selection request (player must choose a card from hand)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool) -> void:
+	RpcLogger.log_receive("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
 	if NetworkManager.is_host():
 		return
 	var parsed: Array = JSON.parse_string(indices_json)
@@ -4025,6 +4416,7 @@ func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, al
 ## Client -> Host: hand card selection resolved
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
+	RpcLogger.log_receive("hand_card_selection_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
@@ -4033,9 +4425,11 @@ func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 ## Host -> Client: confirmation request (draw / next turn)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_confirmation_requested(prompt: String, setting: String) -> void:
+	RpcLogger.log_receive("confirmation_requested", prompt.length() + setting.length())
 	if NetworkManager.is_host():
 		return
 	if _player_settings[local_player_id].get(setting, false):
+		RpcLogger.log_send("confirmation_resolved", 0)
 		_rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
 		return
 	_show_confirmation(prompt)
@@ -4044,6 +4438,7 @@ func _rpc_confirmation_requested(prompt: String, setting: String) -> void:
 ## Client -> Host: confirmation resolved
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_confirmation_resolved() -> void:
+	RpcLogger.log_receive("confirmation_resolved", 0)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	turn_manager.confirm()
@@ -4052,6 +4447,7 @@ func _rpc_confirmation_resolved() -> void:
 ## Client -> Host: send player name
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_send_player_name(pname: String) -> void:
+	RpcLogger.log_receive("send_player_name", pname.length())
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
@@ -4070,6 +4466,7 @@ func _rpc_send_player_name(pname: String) -> void:
 ## Host -> Client: hand discard request (player must choose cards to discard)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_hand_discard_requested(discard_count: int) -> void:
+	RpcLogger.log_receive("hand_discard_requested", 4)
 	if NetworkManager.is_host():
 		return # Safety: this RPC is only for clients
 	_show_hand_discard_selection(local_player_id, discard_count)
@@ -4078,6 +4475,7 @@ func _rpc_hand_discard_requested(discard_count: int) -> void:
 ## Client -> Host: hand discard resolved (player chose cards)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_hand_discard_resolved(indices_json: String) -> void:
+	RpcLogger.log_receive("hand_discard_resolved", indices_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	var parsed: Array = JSON.parse_string(indices_json)
@@ -4092,6 +4490,7 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 ## Host -> Client: zone target request (player must choose a zone)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool) -> void:
+	RpcLogger.log_receive("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
 	if NetworkManager.is_host():
 		return
 	var parsed: Array = JSON.parse_string(zones_json)
@@ -4104,6 +4503,7 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 ## Client -> Host: zone target resolved (player chose a zone)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_zone_target_resolved(zone_index: int) -> void:
+	RpcLogger.log_receive("zone_target_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	turn_manager.action_handler.effect_handler.resolve_zone_target(zone_index)
@@ -4112,6 +4512,7 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 ## Host -> Client: strategy target request (player must choose a strategy zone)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String) -> void:
+	RpcLogger.log_receive("strategy_target_requested", 4 + indices_json.length() + prompt.length())
 	if NetworkManager.is_host():
 		return
 	var parsed: Array = JSON.parse_string(indices_json)
@@ -4124,6 +4525,7 @@ func _rpc_strategy_target_requested(target_player_id: int, indices_json: String,
 ## Client -> Host: strategy target resolved (player chose a strategy zone)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_strategy_target_resolved(strategy_index: int) -> void:
+	RpcLogger.log_receive("strategy_target_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_index)
@@ -4132,6 +4534,7 @@ func _rpc_strategy_target_resolved(strategy_index: int) -> void:
 ## Host -> Client: choice request (player must choose ability order)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_choice_requested(options_json: String, prompt: String) -> void:
+	RpcLogger.log_receive("choice_requested", options_json.length() + prompt.length())
 	if NetworkManager.is_host():
 		return
 	var parsed: Array = JSON.parse_string(options_json)
@@ -4144,14 +4547,40 @@ func _rpc_choice_requested(options_json: String, prompt: String) -> void:
 ## Client -> Host: choice resolved (player chose an option)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_choice_resolved(index: int) -> void:
+	RpcLogger.log_receive("choice_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
 	turn_manager.action_handler.effect_handler.resolve_choice(index)
 
 
+## Host -> Client: prompt monster rank-up selection
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, prompt: String) -> void:
+	RpcLogger.log_receive("monster_rankup_requested", monsters_json.length() + indices_json.length() + prompt.length())
+	if NetworkManager.is_host():
+		return
+	var monster_ids: Array = JSON.parse_string(monsters_json)
+	var monsters: Array[Dictionary] = _ids_to_cards(monster_ids)
+	var parsed_indices: Array = JSON.parse_string(indices_json)
+	var valid_indices: Array[int] = []
+	for v in parsed_indices:
+		valid_indices.append(int(v))
+	_show_monster_rankup_selection(local_player_id, monsters, valid_indices, prompt)
+
+
+## Client -> Host: resolve monster rank-up selection
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_monster_rankup_resolved(index: int) -> void:
+	RpcLogger.log_receive("monster_rankup_resolved", 4)
+	if not NetworkManager.is_host() or not turn_manager:
+		return
+	turn_manager.action_handler.resolve_monster_rankup(index)
+
+
 ## Host -> Client: highlight a zone card during effect resolution
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_effect_zone_highlighted(pid: int, zone_index: int) -> void:
+	RpcLogger.log_receive("effect_zone_highlighted", 8)
 	if NetworkManager.is_host():
 		return
 	_apply_zone_highlight(pid, zone_index, true)
@@ -4160,6 +4589,7 @@ func _rpc_effect_zone_highlighted(pid: int, zone_index: int) -> void:
 ## Host -> Client: unhighlight a zone card after effect resolution
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
+	RpcLogger.log_receive("effect_zone_unhighlighted", 8)
 	if NetworkManager.is_host():
 		return
 	_apply_zone_highlight(pid, zone_index, false)
@@ -4168,6 +4598,7 @@ func _rpc_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
 ## Host -> Client: highlight the source card of an active effect
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_effect_card_highlighted(pid: int, card_id: String) -> void:
+	RpcLogger.log_receive("effect_card_highlighted", 4 + card_id.length())
 	if NetworkManager.is_host():
 		return
 	_apply_card_highlight(pid, card_id, true)
@@ -4176,6 +4607,7 @@ func _rpc_effect_card_highlighted(pid: int, card_id: String) -> void:
 ## Host -> Client: unhighlight the source card after effect resolves
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
+	RpcLogger.log_receive("effect_card_unhighlighted", 4 + card_id.length())
 	if NetworkManager.is_host():
 		return
 	_apply_card_highlight(pid, card_id, false)
@@ -4184,6 +4616,7 @@ func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 ## Host -> Client: game over
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
+	RpcLogger.log_receive("receive_game_ended", 4 + reason.length())
 	_action_pending = false
 	_game_ended_by_disconnect = false
 	_rematch_requested = false
@@ -4196,6 +4629,7 @@ func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	btn_rematch.disabled = false
 	btn_rematch.text = "Rematch"
 	_disable_all_buttons()
+	RpcLogger.print_summary()
 
 
 # --- Multiplayer: State deserialization (client) ---
@@ -4204,53 +4638,61 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 	var ps := PlayerState.new(int(data["player_id"]))
 	ps.monster_zone = int(data["monster_zone"])
 	ps.rage = int(data["rage"])
-	ps.current_monster = data.get("current_monster", {})
+	ps.current_monster = _id_to_card(str(data.get("current_monster", "")))
 	ps.has_invaded_this_turn = data.get("has_invaded_this_turn", false)
 	ps.has_played_monster_this_turn = data.get("has_played_monster_this_turn", false)
 	for m in data.get("monster_stack", []):
-		ps.monster_stack.append(m)
-	ps.burst_monster = data.get("burst_monster", {})
-	ps.pre_burst_monster = data.get("pre_burst_monster", {})
+		var card := _id_to_card(str(m))
+		if not card.is_empty():
+			ps.monster_stack.append(card)
+	ps.burst_monster = _id_to_card(str(data.get("burst_monster", "")))
+	ps.pre_burst_monster = _id_to_card(str(data.get("pre_burst_monster", "")))
 
-	# Zones
+	# Zones: each zone is an array of card IDs
 	var zones_data: Array = data.get("zones", [])
 	for i in range(mini(zones_data.size(), 8)):
-		ps.zones[i] = zones_data[i]
+		var zone_stack: Array[Dictionary] = []
+		for card_id in zones_data[i]:
+			var card := _id_to_card(str(card_id))
+			if not card.is_empty():
+				zone_stack.append(card)
+		ps.zones[i] = zone_stack
 
-	# Strategy zones (may be 2 or 3)
+	# Strategy zones (may be 2 or 3): each is a card ID string
 	var sz_data: Array = data.get("strategy_zones", [])
 	if sz_data.size() > ps.strategy_zones.size():
 		ps.strategy_zones.resize(sz_data.size())
 		ps.strategy_zone_turn_placed.resize(sz_data.size())
 	for i in range(sz_data.size()):
-		ps.strategy_zones[i] = sz_data[i]
+		ps.strategy_zones[i] = _id_to_card(str(sz_data[i]))
 
-	# Hand: full data for local player, face-down placeholders for opponent
+	# Hand: IDs for local player, face-down placeholders for opponent
 	if is_local and data.has("hand"):
-		ps.hand.assign(data["hand"])
+		ps.hand.assign(_ids_to_cards(data["hand"]))
 	else:
 		var count: int = int(data.get("hand_count", 0))
 		ps.hand.clear()
 		for j in range(count):
 			ps.hand.append({"face_down": true, "id": "opponent_%d" % j})
 
-	# Monster deck: full data for local player, placeholder count for opponent
+	# Monster deck: IDs for local player, placeholder count for opponent
 	if is_local and data.has("monster_deck"):
-		ps.monster_deck.assign(data["monster_deck"])
+		ps.monster_deck.assign(_ids_to_cards(data["monster_deck"]))
 	else:
 		var md_count: int = int(data.get("monster_deck_count", 0))
 		ps.monster_deck.resize(md_count)
 		for j in range(md_count):
 			ps.monster_deck[j] = {}
 
-	# Deck/discard: only counts needed for display labels
+	# Deck: only counts needed for display labels
 	var deck_count: int = int(data.get("main_deck_count", 0))
 	ps.main_deck.resize(deck_count)
 	for j in range(deck_count):
 		ps.main_deck[j] = {}
 
+	# Discard pile: card IDs
 	if data.has("discard_pile"):
-		ps.discard_pile.assign(data["discard_pile"])
+		ps.discard_pile.assign(_ids_to_cards(data["discard_pile"]))
 	else:
 		var discard_count: int = int(data.get("discard_pile_count", 0))
 		ps.discard_pile.resize(discard_count)
@@ -4287,7 +4729,7 @@ func _upload_stats(winner_id: int, reason: String, is_disconnect: bool) -> void:
 		# Restore opponent's hand from stats snapshot
 		var opponent_id := 1 - local_player_id
 		if not _client_stats_opponent_hand.is_empty():
-			gs.players[opponent_id].hand.assign(_client_stats_opponent_hand)
+			gs.players[opponent_id].hand.assign(_ids_to_cards(_client_stats_opponent_hand))
 		# Populate DecklistManager with synced decklist data
 		for i in range(2):
 			if _client_stats_decklists[i] != null and not DecklistManager.has_player_deck(i):

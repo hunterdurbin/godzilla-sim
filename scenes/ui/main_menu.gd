@@ -8,12 +8,12 @@ extends Control
 @onready var options_button: Button = $OptionsButton
 @onready var patreon_button: TextureButton = $PatreonButton
 @onready var version_label: Label = $VersionLabel
+@onready var update_button: Button = $UpdateButton
 @onready var deck_select_p1: VBoxContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP1
 @onready var deck_select_p2: VBoxContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP2
 
 var _p1_ready: bool = false
 var _p2_ready: bool = false
-var _update_dismissed: bool = false
 
 
 func _ready() -> void:
@@ -28,6 +28,7 @@ func _ready() -> void:
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "")
 
 	# Check for updates
+	update_button.visible = false
 	UpdateChecker.update_available.connect(_on_update_available)
 	if not UpdateChecker.pending_update.is_empty():
 		var u := UpdateChecker.pending_update
@@ -91,13 +92,28 @@ func _on_options_pressed() -> void:
 
 # -- Update dialog ------------------------------------------------------------
 
-func _on_update_available(current: String, new_version: String, download_url: String, release_url: String) -> void:
-	if _update_dismissed:
+func _on_update_available(_current: String, new_version: String, download_url: String, release_url: String) -> void:
+	var is_skipped := new_version == GameSettings.skipped_version
+	if is_skipped or UpdateChecker.later_dismissed:
+		_show_update_button(new_version, download_url, release_url)
 		return
-	_show_update_dialog(current, new_version, download_url, release_url)
+	_show_update_dialog(new_version, download_url, release_url)
 
 
-func _show_update_dialog(current: String, new_version: String, download_url: String, release_url: String) -> void:
+func _show_update_button(new_version: String, download_url: String, release_url: String) -> void:
+	update_button.visible = true
+	# Reconnect in case this is called multiple times
+	if update_button.pressed.is_connected(_on_update_button_pressed):
+		update_button.pressed.disconnect(_on_update_button_pressed)
+	update_button.pressed.connect(_on_update_button_pressed.bind(new_version, download_url, release_url))
+
+
+func _on_update_button_pressed(new_version: String, download_url: String, release_url: String) -> void:
+	_show_update_dialog(new_version, download_url, release_url)
+
+
+func _show_update_dialog(new_version: String, download_url: String, release_url: String) -> void:
+	var current: String = ProjectSettings.get_setting("application/config/version", "")
 	var popup := PopupPanel.new()
 	popup.exclusive = true
 
@@ -156,7 +172,7 @@ func _show_update_dialog(current: String, new_version: String, download_url: Str
 	skip_btn.pressed.connect(func():
 		GameSettings.skipped_version = new_version
 		GameSettings.save()
-		_update_dismissed = true
+		_show_update_button(new_version, download_url, release_url)
 		popup.hide()
 	)
 	btn_box.add_child(skip_btn)
@@ -167,7 +183,7 @@ func _show_update_dialog(current: String, new_version: String, download_url: Str
 	later_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	later_btn.add_theme_font_size_override("font_size", 18)
 	later_btn.pressed.connect(func():
-		_update_dismissed = true
+		UpdateChecker.later_dismissed = true
 		popup.hide()
 	)
 	btn_box.add_child(later_btn)

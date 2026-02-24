@@ -27,6 +27,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.monster_stack.append_array(to_stack)
 		ctx.owner.discard_changed.emit()
 		ctx.owner.monster_changed.emit()
+		await ctx.effect_handler.reveal_cards(ctx.owner.player_id, to_stack, "Cards placed under %s" % my_name)
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:

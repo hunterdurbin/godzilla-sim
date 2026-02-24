@@ -6,6 +6,7 @@ signal update_available(current_version: String, new_version: String, download_u
 const GITHUB_API_URL := "https://api.github.com/repos/hunterdurbin/godzilla-sim/releases"
 
 var pending_update: Dictionary = {}
+var later_dismissed: bool = false
 
 var _http: HTTPRequest
 var _current_version: String = ""
@@ -46,10 +47,6 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 		return
 
 	var new_tag: String = best["tag"]
-	if new_tag == GameSettings.skipped_version:
-		print("[UpdateChecker] Update %s was previously skipped" % new_tag)
-		return
-
 	print("[UpdateChecker] Update available: %s -> %s" % [_current_version, new_tag])
 	pending_update = {
 		"current": _current_version,

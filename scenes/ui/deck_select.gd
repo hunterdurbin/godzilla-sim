@@ -9,7 +9,7 @@ signal deck_selected(deck_name: String)
 
 var current_selection: String = ""
 
-const _LAST_DECK_KEY := "last_selected_deck"
+@export var persist_key: String = "last_selected_deck"
 
 
 func _ready() -> void:
@@ -55,7 +55,7 @@ func _save_last_selected(deck_name: String) -> void:
 	var config := ConfigFile.new()
 	var path := "user://deck_select.cfg"
 	config.load(path)
-	config.set_value("deck_select", _LAST_DECK_KEY, deck_name)
+	config.set_value("deck_select", persist_key, deck_name)
 	config.save(path)
 
 
@@ -63,4 +63,4 @@ func _load_last_selected() -> String:
 	var config := ConfigFile.new()
 	if config.load("user://deck_select.cfg") != OK:
 		return ""
-	return config.get_value("deck_select", _LAST_DECK_KEY, "")
+	return config.get_value("deck_select", persist_key, "")

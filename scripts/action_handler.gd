@@ -16,8 +16,11 @@ signal strategy_cleared(player_id: int, cards: Array)
 signal counter_failed(player_id: int, total_cp: int, threat: int)
 signal counter_succeeded(player_id: int, total_cp: int, threat: int)
 signal counter_immunity_triggered(player_id: int, total_cp: int, threshold: int)
+signal monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String)
 
 var effect_handler: EffectHandler
+var _monster_rankup_result: int = -1
+signal _monster_rankup_resolved
 
 
 func execute(action: CardEnums.ActionType, params: Dictionary, state: GameState) -> void:
@@ -193,30 +196,7 @@ func resolve_counter(state: GameState) -> void:
 			await effect_handler.trigger_counter_success(player.player_id)
 
 		# Opponent must rank up their monster
-		var next_rank: int = opponent.current_monster.get("rank", 1) + 1
-		var cur_traits: Array = opponent.current_monster.get("traits", [])
-		var found_next: bool = false
-
-		for m in opponent.monster_deck:
-			if m.get("rank") == next_rank and _traits_overlap(m.get("traits", []), cur_traits):
-				var old_monster: Dictionary = opponent.current_monster
-				if not old_monster.is_empty():
-					opponent.monster_stack.push_front(old_monster)
-				opponent.current_monster = m
-				opponent.monster_deck.erase(m)
-				opponent.rage = 0
-				opponent.rage_changed.emit(0)
-				found_next = true
-				monster_countered.emit(opponent.player_id, old_monster, m)
-				opponent.monster_changed.emit()
-				# Trigger enter effect on the new monster
-				if effect_handler:
-					await effect_handler.trigger_enter(opponent.player_id, m)
-				break
-
-		if not found_next:
-			# Opponent loses - can't find valid rank-up monster
-			state.game_over.emit(player.player_id, "Victory through countering!")
+		await _rank_up_monster(state, opponent, player.player_id)
 	else:
 		counter_failed.emit(player.player_id, total_cp, threat)
 
@@ -237,29 +217,67 @@ func force_counter(state: GameState, counter_player_id: int) -> void:
 		opponent.monster_changed.emit()
 
 	# Opponent must rank up their monster
+	await _rank_up_monster(state, opponent, counter_player_id)
+
+
+func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id: int) -> void:
+	## Prompt the opponent to choose a rank-up monster from their monster deck.
+	## If the monster deck is empty or has no valid targets, opponent loses immediately.
+	if opponent.monster_deck.is_empty():
+		state.game_over.emit(winner_player_id, "Victory through countering!")
+		return
+
 	var next_rank: int = opponent.current_monster.get("rank", 1) + 1
 	var cur_traits: Array = opponent.current_monster.get("traits", [])
-	var found_next: bool = false
 
-	for m in opponent.monster_deck:
+	# Build valid indices (monsters that match rank + trait requirements)
+	var valid_indices: Array[int] = []
+	for i in range(opponent.monster_deck.size()):
+		var m: Dictionary = opponent.monster_deck[i]
 		if m.get("rank") == next_rank and _traits_overlap(m.get("traits", []), cur_traits):
-			var old_monster: Dictionary = opponent.current_monster
-			if not old_monster.is_empty():
-				opponent.monster_stack.push_front(old_monster)
-			opponent.current_monster = m
-			opponent.monster_deck.erase(m)
-			opponent.rage = 0
-			opponent.rage_changed.emit(0)
-			found_next = true
-			monster_countered.emit(opponent_id, old_monster, m)
-			opponent.monster_changed.emit()
-			# Trigger enter effect on the new monster
-			if effect_handler:
-				await effect_handler.trigger_enter(opponent_id, m)
-			break
+			valid_indices.append(i)
 
-	if not found_next:
-		state.game_over.emit(counter_player_id, "Victory through countering!")
+	if valid_indices.is_empty():
+		# No valid rank-up targets — opponent loses
+		state.game_over.emit(winner_player_id, "Victory through countering!")
+		return
+
+	# Request player selection via UI
+	var prompt := "Choose a Rank %d monster to rank up to." % next_rank
+
+	var chosen_index: int = -1
+	if monster_rankup_requested.get_connections().size() > 0:
+		var monsters: Array[Dictionary] = []
+		monsters.assign(opponent.monster_deck)
+		monster_rankup_requested.emit(opponent.player_id, monsters, valid_indices, prompt)
+		await _monster_rankup_resolved
+		chosen_index = _monster_rankup_result
+	else:
+		# Fallback: auto-pick first valid
+		chosen_index = valid_indices[0]
+
+	if chosen_index >= 0 and chosen_index < opponent.monster_deck.size():
+		var m: Dictionary = opponent.monster_deck[chosen_index]
+		var old_monster: Dictionary = opponent.current_monster
+		if not old_monster.is_empty():
+			opponent.monster_stack.push_front(old_monster)
+		opponent.current_monster = m
+		opponent.monster_deck.erase(m)
+		opponent.rage = 0
+		opponent.rage_changed.emit(0)
+		monster_countered.emit(opponent.player_id, old_monster, m)
+		opponent.monster_changed.emit()
+		if effect_handler:
+			await effect_handler.trigger_enter(opponent.player_id, m)
+	else:
+		# Opponent loses - can't find valid rank-up monster
+		state.game_over.emit(winner_player_id, "Victory through countering!")
+
+
+func resolve_monster_rankup(index: int) -> void:
+	## Called by the presentation layer after the player selects a rank-up monster.
+	_monster_rankup_result = index
+	_monster_rankup_resolved.emit()
 
 
 func play_monster_from_effect(state: GameState, player_id: int, monster_card: Dictionary) -> void:
@@ -518,7 +536,8 @@ func _invade(hand_index: int, state: GameState) -> void:
 
 	# Advance step by step, collecting effect entries for deferred resolution.
 	# Movement fully resolves before triggered abilities activate; cards removed
-	# during movement (crush, base strategy destruction) are filtered from the queue.
+	# during movement (crush) are filtered from the queue. Base strategy destruction
+	# is deferred to after movement but before standby resolution (12.9.2).
 	var deferred_entries: Array = []
 
 	# Collect discard triggers for deferred resolution alongside movement effects
@@ -550,8 +569,6 @@ func _invade(hand_index: int, state: GameState) -> void:
 			if effect_handler:
 				deferred_entries.append_array(effect_handler.collect_when_invading_entries(player.player_id, old_zone, player.monster_zone))
 				deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
-				# Destroy <Base> strategies when monster invades into zones 6-8 (12.9.2)
-				await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone)
 			# Check crush rule at each step (effects deferred until after movement)
 			await check_crush_rule(state, deferred_entries)
 
@@ -561,11 +578,16 @@ func _invade(hand_index: int, state: GameState) -> void:
 		state.game_over.emit(player.player_id, "Victory through invasion!")
 		return
 
+	# Destroy <Base> strategies after movement completes but before standby (12.9.2).
+	# The physical destruction happens now; strategy_discarded triggers join deferred_entries.
+	if effect_handler and player.monster_zone >= 6:
+		await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone, deferred_entries)
+
 	# Collect invasion observed entries once for the entire invasion
 	if effect_handler and player.monster_zone > start_zone:
 		deferred_entries.append_array(effect_handler.collect_invasion_observed_entries(player.player_id, start_zone, player.monster_zone))
 
-	# Resolve deferred effects after all movement completes
+	# Resolve deferred effects after all movement and rule actions complete
 	if effect_handler and not deferred_entries.is_empty():
 		await effect_handler.resolve_deferred_entries(deferred_entries)
 

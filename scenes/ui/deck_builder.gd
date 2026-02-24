@@ -607,7 +607,8 @@ func _update_pool_badge(card_id: String) -> void:
 		# Update modulate and add new badge
 		var count := _get_card_count_in_deck(card_id)
 		var max_copies := _get_max_copies(card_node.card_data)
-		card_node.modulate = Color(0.5, 0.5, 0.5, 0.7) if count >= max_copies else Color.WHITE
+		var at_max: bool = count >= max_copies and _game_mode != "no_rules"
+		card_node.modulate = Color(0.5, 0.5, 0.5, 0.7) if at_max else Color.WHITE
 		if count > 0:
 			var badge := _create_badge("%d/%d" % [count, max_copies])
 			wrapper.add_child(badge)
@@ -667,7 +668,7 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 			if count > 0:
 				var badge := _create_badge("%d/%d" % [count, max_copies])
 				wrapper.add_child(badge)
-				if count >= max_copies:
+				if count >= max_copies and _game_mode != "no_rules":
 					card_node.modulate = Color(0.5, 0.5, 0.5, 0.7)
 	else:
 		var is_monster_type: bool = card_data.get("card_type", -1) == CardEnums.CardType.MONSTER
@@ -903,15 +904,16 @@ func _add_to_monster_deck(card_id: String) -> String:
 
 
 func _add_to_main_deck(card_id: String) -> void:
-	var count := _get_card_count_in_deck(card_id)
-	var template: Dictionary = CardData.CARD_TEMPLATES.get(card_id, {})
-	var max_copies := _get_max_copies(template)
-	if count >= max_copies:
-		return
-	if _get_main_deck_total() >= 50:
-		return
-	if template.get("invasion_icon", 0) >= 2 and _get_step2_count() >= 10:
-		return
+	if _game_mode != "no_rules":
+		var count := _get_card_count_in_deck(card_id)
+		var template: Dictionary = CardData.CARD_TEMPLATES.get(card_id, {})
+		var max_copies := _get_max_copies(template)
+		if count >= max_copies:
+			return
+		if _get_main_deck_total() >= 50:
+			return
+		if template.get("invasion_icon", 0) >= 2 and _get_step2_count() >= 10:
+			return
 
 	for entry in _main_entries:
 		if entry["card_number"] == card_id:
