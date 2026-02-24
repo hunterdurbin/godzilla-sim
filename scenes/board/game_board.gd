@@ -218,6 +218,9 @@ var _action_pending: bool = false
 var _state_version: int = 0 # Incremented on each broadcast (host only)
 var _client_state_version: int = 0 # Last received version (client only)
 var _broadcast_pending: bool = false # Debounce flag for frame-based coalescing
+var _last_sent_state: Dictionary = {} # Host: last serialized state sent to client
+var _last_sent_version: int = 0 # Host: version of _last_sent_state
+var _client_full_state: Dictionary = {} # Client: accumulated full state from deltas
 
 # Zone target selection state (for effects that let the player pick a zone)
 var _zone_target_selecting: bool = false
@@ -1337,6 +1340,9 @@ func _execute_rematch() -> void:
 	_state_version = 0
 	_client_state_version = 0
 	_broadcast_pending = false
+	_last_sent_state = {}
+	_last_sent_version = 0
+	_client_full_state = {}
 	_client_gradients_applied = false
 	pending_action = CardEnums.ActionType.PASS
 	_player_elapsed_ms = [0, 0]
@@ -3789,12 +3795,29 @@ func _do_broadcast() -> void:
 		if peer_id == 1:
 			continue # Don't send to self (server peer ID is 1)
 		var viewer_id: int = NetworkManager.peer_player_map[peer_id]
-		var state_json := _serialize_game_state(viewer_id)
-		RpcLogger.log_send("receive_state", state_json.length())
-		_rpc_receive_state.rpc_id(peer_id, state_json)
+		var state_dict := _serialize_game_state(viewer_id)
+
+		var envelope: Dictionary
+		if _last_sent_state.is_empty():
+			# First broadcast or after resync: send full state
+			envelope = {"v": _state_version, "bv": -1, "d": state_dict}
+		else:
+			var delta := _compute_delta(_last_sent_state, state_dict)
+			if delta.is_empty():
+				# Nothing changed — skip broadcast entirely
+				_state_version -= 1
+				continue
+			envelope = {"v": _state_version, "bv": _last_sent_version, "d": delta}
+
+		_last_sent_state = state_dict.duplicate(true)
+		_last_sent_version = _state_version
+
+		var state_bytes := var_to_bytes(envelope)
+		RpcLogger.log_send("receive_state", state_bytes.size())
+		_rpc_receive_state.rpc_id(peer_id, state_bytes)
 
 
-func _serialize_game_state(viewer_id: int) -> String:
+func _serialize_game_state(viewer_id: int) -> Dictionary:
 	var gs := turn_manager.game_state
 	var eh := turn_manager.effect_handler
 	var zone_cp_0: Array = eh.get_zone_cp_modifiers(0) if eh else []
@@ -3848,7 +3871,7 @@ func _serialize_game_state(viewer_id: int) -> String:
 			}
 	# Include hash of shared game state for desync detection
 	data["state_hash"] = _compute_state_hash(gs)
-	return JSON.stringify(data)
+	return data
 
 
 func _card_to_id(card: Dictionary) -> String:
@@ -3884,6 +3907,105 @@ func _ids_to_cards(ids: Array) -> Array[Dictionary]:
 		if not card.is_empty():
 			cards.append(card)
 	return cards
+
+
+# --- Delta state encoding helpers ---
+
+func _deep_equals(a: Variant, b: Variant) -> bool:
+	if typeof(a) != typeof(b):
+		return false
+	if a is Array:
+		if a.size() != b.size():
+			return false
+		for i in range(a.size()):
+			if not _deep_equals(a[i], b[i]):
+				return false
+		return true
+	if a is Dictionary:
+		if a.size() != b.size():
+			return false
+		for key in a:
+			if not b.has(key) or not _deep_equals(a[key], b[key]):
+				return false
+		return true
+	return a == b
+
+
+func _compute_delta(old_state: Dictionary, new_state: Dictionary) -> Dictionary:
+	var delta := {}
+	# Compare top-level fields (excluding "players" which is handled separately)
+	for key in new_state:
+		if key == "players":
+			continue
+		if not old_state.has(key) or not _deep_equals(old_state[key], new_state[key]):
+			delta[key] = new_state[key]
+	# Compare per-player state
+	var old_players: Array = old_state.get("players", [])
+	var new_players: Array = new_state.get("players", [])
+	for i in range(new_players.size()):
+		var new_pd: Dictionary = new_players[i]
+		if i >= old_players.size():
+			delta["p%d" % i] = new_pd
+			continue
+		var player_delta := _compute_player_delta(old_players[i], new_pd)
+		if not player_delta.is_empty():
+			delta["p%d" % i] = player_delta
+	return delta
+
+
+func _compute_player_delta(old_pd: Dictionary, new_pd: Dictionary) -> Dictionary:
+	var delta := {}
+	for key in new_pd:
+		if key == "zones":
+			# Compare each zone stack individually for sparse encoding
+			var old_zones: Array = old_pd.get("zones", [])
+			var new_zones: Array = new_pd.get("zones", [])
+			var zones_delta := {}
+			for z in range(maxi(old_zones.size(), new_zones.size())):
+				var old_z: Array = old_zones[z] if z < old_zones.size() else []
+				var new_z: Array = new_zones[z] if z < new_zones.size() else []
+				if not _deep_equals(old_z, new_z):
+					zones_delta[z] = new_z
+			if not zones_delta.is_empty():
+				delta["zones"] = zones_delta
+		else:
+			if not old_pd.has(key) or not _deep_equals(old_pd[key], new_pd[key]):
+				delta[key] = new_pd[key]
+	return delta
+
+
+func _apply_delta(full_state: Dictionary, delta: Dictionary) -> Dictionary:
+	var result := full_state.duplicate(true)
+	# Apply top-level fields
+	for key in delta:
+		if key == "p0" or key == "p1":
+			continue
+		result[key] = delta[key]
+	# Apply per-player deltas
+	var players: Array = result.get("players", [{}, {}])
+	for i in range(2):
+		var pkey := "p%d" % i
+		if not delta.has(pkey):
+			continue
+		var pd: Dictionary = delta[pkey]
+		if i >= players.size():
+			players.append(pd)
+			continue
+		var existing: Dictionary = players[i]
+		for field in pd:
+			if field == "zones" and pd[field] is Dictionary:
+				# Sparse zone update: merge individual zone indices
+				var zone_delta: Dictionary = pd[field]
+				var zones: Array = existing.get("zones", [])
+				for z_key in zone_delta:
+					var z_idx: int = int(z_key)
+					if z_idx < zones.size():
+						zones[z_idx] = zone_delta[z_key]
+				existing["zones"] = zones
+			else:
+				existing[field] = pd[field]
+	result["players"] = players
+	return result
 
 
 func _serialize_player_state(ps: PlayerState) -> Dictionary:
@@ -4014,17 +4136,35 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 
 ## Host -> Client: full game state update
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_receive_state(state_json: String) -> void:
-	RpcLogger.log_receive("receive_state", state_json.length())
-	var data: Dictionary = JSON.parse_string(state_json)
-	if data.is_empty():
+func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
+	RpcLogger.log_receive("receive_state", state_bytes.size())
+	var envelope: Dictionary = bytes_to_var(state_bytes)
+	if envelope.is_empty():
 		return
 
+	var version: int = int(envelope.get("v", 0))
+	var base_version: int = int(envelope.get("bv", -1))
+	var payload: Dictionary = envelope.get("d", {})
+
+	# Unwrap envelope: full state or delta
+	var data: Dictionary
+	if base_version == -1:
+		# Full state
+		data = payload
+		_client_full_state = data.duplicate(true)
+	else:
+		if _client_state_version != base_version:
+			push_warning("[DELTA] Base version mismatch: have %d, got bv=%d. Requesting resync." % [_client_state_version, base_version])
+			RpcLogger.log_send("request_resync", 0)
+			_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
+			return
+		_client_full_state = _apply_delta(_client_full_state, payload)
+		data = _client_full_state
+
 	# Track state version for desync detection
-	var new_version: int = int(data.get("state_version", 0))
-	if new_version > 0 and _client_state_version > 0 and new_version < _client_state_version:
-		push_warning("[DESYNC] Received state version %d but already at %d — out-of-order delivery" % [new_version, _client_state_version])
-	_client_state_version = new_version
+	if version > 0 and _client_state_version > 0 and version < _client_state_version:
+		push_warning("[DESYNC] Received state version %d but already at %d — out-of-order delivery" % [version, _client_state_version])
+	_client_state_version = version
 
 	_client_current_player_id = int(data["current_player_id"])
 	_client_turn_number = int(data.get("turn_number", 0))
@@ -4115,6 +4255,11 @@ func _rpc_receive_state(state_json: String) -> void:
 				int(data.get("turn_number", 0)),
 				int(data.get("current_phase", 0)),
 				host_hash, local_hash])
+			# Auto-resync if this was a delta (full state hash mismatch is a real desync)
+			if base_version >= 0:
+				push_warning("[DELTA] Hash mismatch after delta apply — requesting resync")
+				RpcLogger.log_send("request_resync", 0)
+				_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
 
 	# Update UI
 	var client_phase := int(data["current_phase"]) as CardEnums.GamePhase
@@ -4122,6 +4267,18 @@ func _rpc_receive_state(state_json: String) -> void:
 	_update_turn_tracker(_client_current_player_id, client_phase, client_sub_phase)
 	_sync_boards()
 	_update_hand_visibility(_client_current_player_id)
+
+
+## Client -> Host: request full state resend (delta base version mismatch or hash mismatch)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_request_resync() -> void:
+	if not NetworkManager.is_host():
+		return
+	RpcLogger.log_receive("request_resync", 0)
+	_last_sent_state = {}
+	_last_sent_version = 0
+	_broadcast_state()
+	_flush_broadcast()
 
 
 ## Host -> Client: valid actions and playable indices
