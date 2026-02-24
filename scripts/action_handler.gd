@@ -518,7 +518,8 @@ func _invade(hand_index: int, state: GameState) -> void:
 
 	# Advance step by step, collecting effect entries for deferred resolution.
 	# Movement fully resolves before triggered abilities activate; cards removed
-	# during movement (crush, base strategy destruction) are filtered from the queue.
+	# during movement (crush) are filtered from the queue. Base strategy destruction
+	# is deferred to after movement but before standby resolution (12.9.2).
 	var deferred_entries: Array = []
 
 	# Collect discard triggers for deferred resolution alongside movement effects
@@ -550,8 +551,6 @@ func _invade(hand_index: int, state: GameState) -> void:
 			if effect_handler:
 				deferred_entries.append_array(effect_handler.collect_when_invading_entries(player.player_id, old_zone, player.monster_zone))
 				deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
-				# Destroy <Base> strategies when monster invades into zones 6-8 (12.9.2)
-				await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone)
 			# Check crush rule at each step (effects deferred until after movement)
 			await check_crush_rule(state, deferred_entries)
 
@@ -561,11 +560,16 @@ func _invade(hand_index: int, state: GameState) -> void:
 		state.game_over.emit(player.player_id, "Victory through invasion!")
 		return
 
+	# Destroy <Base> strategies after movement completes but before standby (12.9.2).
+	# The physical destruction happens now; strategy_discarded triggers join deferred_entries.
+	if effect_handler and player.monster_zone >= 6:
+		await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone, deferred_entries)
+
 	# Collect invasion observed entries once for the entire invasion
 	if effect_handler and player.monster_zone > start_zone:
 		deferred_entries.append_array(effect_handler.collect_invasion_observed_entries(player.player_id, start_zone, player.monster_zone))
 
-	# Resolve deferred effects after all movement completes
+	# Resolve deferred effects after all movement and rule actions complete
 	if effect_handler and not deferred_entries.is_empty():
 		await effect_handler.resolve_deferred_entries(deferred_entries)
 

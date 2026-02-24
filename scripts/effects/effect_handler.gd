@@ -855,6 +855,33 @@ func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> vo
 	await _resolve_standby_entries(entries)
 
 
+func collect_strategy_discarded_entries(player_id: int, strategy_card: Dictionary) -> Array:
+	## Collect on_strategy_discarded entries for deferred resolution (e.g. during invasion).
+	var entries: Array = []
+	var player := game_state.players[player_id]
+	var discarded_id: String = strategy_card.get("id", "")
+
+	if has_trigger(player.current_monster, "on_strategy_discarded"):
+		var me := get_effect(player.current_monster)
+		var ctx := _build_context(player_id, player.current_monster)
+		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_strategy_discarded.bind(ctx, strategy_card)})
+
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_strategy_discarded"):
+			var ze := get_effect(zone_card)
+			var ctx := _build_context(player_id, zone_card)
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_strategy_discarded.bind(ctx, strategy_card)})
+
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty() and sz_card.get("id", "") != discarded_id and has_trigger(sz_card, "on_strategy_discarded"):
+			var se := get_effect(sz_card)
+			var ctx := _build_context(player_id, sz_card)
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_strategy_discarded.bind(ctx, strategy_card)})
+
+	return entries
+
+
 func _passes_invasion_observed_filter(effect: CardEffect, player_id: int) -> bool:
 	## Check if an effect's invasion observed filter matches the current turn ownership.
 	var filter: Dictionary = effect.get_invasion_observed_filter()
@@ -1916,9 +1943,11 @@ func get_strategy_discard_interceptor(player_id: int) -> int:
 	return -1
 
 
-func discard_strategy_from_zone(player_id: int, zone_index: int) -> Dictionary:
+func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entries: Variant = null) -> Dictionary:
 	## Remove a strategy card from a strategy zone, applying replacement effects (10.2.1.3).
 	## If an interceptor is active, stacks the card under it instead of discarding.
+	## When deferred_entries is provided, strategy_discarded triggers are collected there
+	## instead of resolving immediately (used during invasion movement).
 	## Returns the removed card (empty dict if zone was already empty).
 	var player := game_state.players[player_id]
 	var card: Dictionary = player.strategy_zones[zone_index]
@@ -1937,7 +1966,10 @@ func discard_strategy_from_zone(player_id: int, zone_index: int) -> Dictionary:
 
 	# Replacement means it wasn't truly discarded — skip discard triggers
 	if intercept_zone < 0:
-		await trigger_strategy_discarded(player_id, card)
+		if deferred_entries != null:
+			deferred_entries.append_array(collect_strategy_discarded_entries(player_id, card))
+		else:
+			await trigger_strategy_discarded(player_id, card)
 	return card
 
 
@@ -1969,16 +2001,18 @@ func can_card_be_played(player_id: int, card_data: Dictionary) -> bool:
 	return true
 
 
-func destroy_base_strategies_on_invasion(to_zone: int) -> void:
+func destroy_base_strategies_on_invasion(to_zone: int, deferred_entries: Variant = null) -> void:
 	## Destroy all <Base> strategy cards when any monster invades into zones 6-8 (12.9.2).
 	## Checks both players' strategy zones. Uses discard_strategy_from_zone for replacement effects.
+	## When deferred_entries is provided, strategy_discarded triggers are collected there
+	## instead of resolving immediately.
 	if to_zone < 6:
 		return
 	for pid in range(2):
 		var player := game_state.players[pid]
 		for i in range(player.strategy_zones.size() - 1, -1, -1):
 			if not player.strategy_zones[i].is_empty() and is_base_strategy(player.strategy_zones[i]):
-				await discard_strategy_from_zone(pid, i)
+				await discard_strategy_from_zone(pid, i, deferred_entries)
 
 
 func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> int:
