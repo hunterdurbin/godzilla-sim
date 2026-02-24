@@ -40,6 +40,7 @@ var _client_stats_decklists: Array = [null, null]
 @onready var chat_input: LineEdit = $LogPanel/LogVBox/ChatRow/ChatInput
 @onready var chat_char_count: Label = $LogPanel/LogVBox/ChatRow/CharCount
 var _log_lines: PackedStringArray = []
+var _pending_log_lines: PackedStringArray = [] # Buffered for next broadcast
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var btn_rematch: Button = $EndGamePanel/VBox/ButtonRow/RematchButton
 @onready var btn_end_menu: Button = $EndGamePanel/VBox/ButtonRow/MenuButton
@@ -1006,6 +1007,10 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	btn_rematch.text = "Rematch"
 	_disable_all_buttons()
 	if is_multiplayer_game and NetworkManager.is_host():
+		# Flush any buffered logs before game end
+		if not _pending_log_lines.is_empty():
+			_broadcast_state()
+			_flush_broadcast()
 		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
 		_rpc_receive_game_ended.rpc(winner_id, reason)
 	RpcLogger.print_summary()
@@ -1057,8 +1062,7 @@ func _on_log_message(text: String) -> void:
 		log_output.append_text(text + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game and NetworkManager.is_host():
-		RpcLogger.log_send("receive_log", text.length())
-		_rpc_receive_log.rpc(text)
+		_pending_log_lines.append(text)
 
 
 func _on_chat_submitted(text: String) -> void:
@@ -3803,11 +3807,15 @@ func _do_broadcast() -> void:
 			envelope = {"v": _state_version, "bv": -1, "d": state_dict}
 		else:
 			var delta := _compute_delta(_last_sent_state, state_dict)
-			if delta.is_empty():
-				# Nothing changed — skip broadcast entirely
+			if delta.is_empty() and _pending_log_lines.is_empty():
+				# Nothing changed and no logs — skip broadcast entirely
 				_state_version -= 1
 				continue
 			envelope = {"v": _state_version, "bv": _last_sent_version, "d": delta}
+
+		# Piggyback buffered log lines on the envelope
+		if not _pending_log_lines.is_empty():
+			envelope["log"] = Array(_pending_log_lines)
 
 		_last_sent_state = state_dict.duplicate(true)
 		_last_sent_version = _state_version
@@ -3815,6 +3823,7 @@ func _do_broadcast() -> void:
 		var state_bytes := var_to_bytes(envelope)
 		RpcLogger.log_send("receive_state", state_bytes.size())
 		_rpc_receive_state.rpc_id(peer_id, state_bytes)
+	_pending_log_lines.clear()
 
 
 func _serialize_game_state(viewer_id: int) -> Dictionary:
@@ -4141,6 +4150,14 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	var envelope: Dictionary = bytes_to_var(state_bytes)
 	if envelope.is_empty():
 		return
+
+	# Extract piggybacked log lines
+	if envelope.has("log"):
+		for line in envelope["log"]:
+			_log_lines.append(str(line))
+			if log_output:
+				log_output.append_text(str(line) + "\n")
+				log_output.scroll_to_line(log_output.get_line_count() - 1)
 
 	var version: int = int(envelope.get("v", 0))
 	var base_version: int = int(envelope.get("bv", -1))
