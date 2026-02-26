@@ -96,6 +96,47 @@ jobs:
           name: macos
           path: build/macos/*.zip
 
+  # TODO: For Google Play publishing, this job needs:
+  #   1. Generate a release keystore: keytool -genkeypair -v -keystore release.keystore -alias release -keyalg RSA -keysize 2048 -validity 10000
+  #   2. Base64-encode it and store as GitHub secret ANDROID_KEYSTORE_BASE64
+  #   3. Add secrets ANDROID_KEYSTORE_USER (alias) and ANDROID_KEYSTORE_PASS (password)
+  #   4. Decode keystore in CI and set env vars:
+  #        GODOT_ANDROID_KEYSTORE_RELEASE_PATH, GODOT_ANDROID_KEYSTORE_RELEASE_USER, GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD
+  #   5. Switch export_format to 1 (AAB) in export_presets.cfg for Play Store uploads
+  #   6. Update package/unique_name in export_presets.cfg from "com.example.godzilla_tcg_sim"
+  export-android:
+    name: Android Export
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup export templates and editor settings
+        run: |
+          SRC="/root/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          DEST="${HOME}/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$DEST"
+          if [ -d "$SRC" ] && [ "$SRC" != "$DEST" ]; then
+            ln -sf "$SRC"/* "$DEST/"
+          fi
+          mkdir -p ~/.config/godot
+          if [ "$HOME" != "/root" ]; then
+            cp /root/.config/godot/editor_settings-4.6.tres ~/.config/godot/
+          fi
+
+      - name: Create build directory
+        run: mkdir -p build/android
+
+      - name: Export Android
+        run: godot --headless --export-debug "Android" build/android/${PROJECT_NAME}.apk
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: build/android/
+
   build-flatpak:
     name: Flatpak Build
     needs: [export-linux]
@@ -129,7 +170,7 @@ jobs:
 
   create-release:
     name: Create Release
-    needs: [export-windows, export-linux, export-macos, build-flatpak]
+    needs: [export-windows, export-linux, export-macos, export-android, build-flatpak]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -151,6 +192,7 @@ jobs:
             godzilla_tcg_sim-windows.zip
             godzilla_tcg_sim-linux.zip
             macos/godzilla_tcg_sim-macos.zip
+            android/godzilla_tcg_sim.apk
             flatpak/godzilla_tcg_sim.flatpak
           generate_release_notes: true
           draft: false
