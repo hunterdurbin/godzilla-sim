@@ -43,6 +43,24 @@ chmod +x ./UnofficialGodzillaSim.x86_64
 ./UnofficialGodzillaSim.x86_64
 ```
 
+### Android
+
+Android requires sideloading since the app is not available on the Google Play Store.
+
+#### Enable sideloading
+
+1. Open **Settings** → **Apps** (or **Settings** → **Security** on older devices)
+2. Enable **Install unknown apps** (or **Unknown sources**) for your browser or file manager
+   - On Android 8+, this is per-app: find the app you'll use to open the APK (e.g., Chrome, Files) and toggle **Allow from this source**
+
+#### Install the APK
+
+1. Download the `.apk` file from the [latest release](https://github.com/hunterdurbin/godzilla-sim/releases/latest) on your device
+2. Open the downloaded `.apk` file (check your notifications or the Downloads folder)
+3. Tap **Install** when prompted
+4. If Google Play Protect shows a warning ("Blocked by Play Protect" or "Unknown developer"), tap **More details** → **Install anyway**
+5. Once installed, open the app from your app drawer
+
 ## Development
 
 **Engine:** Godot 4.6
