@@ -15,7 +15,7 @@ extends CardEffect
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if _count_monsters_in_discard(ctx.owner) < 5:
+	if ctx.effect_handler.count_monsters_in_discard(ctx.owner) < 5:
 		return
 	if ctx.opponent.rage <= 0:
 		return
@@ -32,14 +32,6 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:
-	if _count_monsters_in_discard(ctx.owner) >= 5:
+	if ctx.effect_handler.count_monsters_in_discard(ctx.owner) >= 5:
 		return 10000
 	return 0
-
-
-func _count_monsters_in_discard(player: PlayerState) -> int:
-	var count: int = 0
-	for card in player.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
-			count += 1
-	return count

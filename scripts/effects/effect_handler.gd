@@ -2061,6 +2061,15 @@ func get_zone_rank_modifiers(player_id: int) -> Array:
 	return modifiers
 
 
+func count_monsters_in_discard(player: PlayerState) -> int:
+	## Count monster cards in discard pile. Includes cards with counts_as_monster_in_discard flag.
+	var count: int = 0
+	for card in player.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.MONSTER or card.get("counts_as_monster_in_discard", false):
+			count += 1
+	return count
+
+
 # --- Helpers for card placement and movement ---
 
 func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1) -> int:
