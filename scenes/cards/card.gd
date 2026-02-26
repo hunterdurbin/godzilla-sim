@@ -3,9 +3,22 @@ extends Control
 ## Card node with hover scaling, drag functionality, and TCG card image display
 
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
-const CUSTOM_ART_BASE_PATH := "user://custom/cardArt"
 const CARD_BACK_PATH := "res://CardContent/Assets/cardBacks/default.jpeg"
-const CUSTOM_CARD_BACK_PATH := "user://custom/cardBack"
+
+static var _custom_art_base: String = ""
+static var _custom_card_back_base: String = ""
+
+
+static func _get_custom_art_base() -> String:
+	if _custom_art_base.is_empty():
+		_custom_art_base = GameSettings.get_custom_base_path().path_join("cardArt")
+	return _custom_art_base
+
+
+static func _get_custom_card_back_base() -> String:
+	if _custom_card_back_base.is_empty():
+		_custom_card_back_base = GameSettings.get_custom_base_path().path_join("cardBack")
+	return _custom_card_back_base
 
 # Static texture cache shared across all Card instances
 static var _texture_cache: Dictionary = {}  # card_number -> ImageTexture
@@ -57,6 +70,11 @@ var _pre_hover_z_index: int = 0
 var _pre_hover_position: Vector2 = Vector2.ZERO
 var _hover_active: bool = false
 
+# Touch drag state (active only on touch devices)
+var _touch_press_start_pos: Vector2 = Vector2.ZERO
+var _touch_press_pending: bool = false
+const TOUCH_DRAG_THRESHOLD := 50.0
+
 
 func _ready() -> void:
 	# Set up card content
@@ -78,38 +96,105 @@ func _gui_input(event: InputEvent) -> void:
 				card_right_clicked.emit(self)
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.double_click:
+				if not is_face_down:
+					card_right_clicked.emit(self)
+				return
 			if event.pressed:
-				if is_selectable:
-					card_clicked.emit(self)
-					return
-				if not drag_enabled or is_face_down:
-					return
-				# Start dragging
+				if TouchHelper.is_touch_device():
+					_on_touch_press()
+				else:
+					_on_mouse_press()
+			else:
+				if TouchHelper.is_touch_device():
+					_on_touch_release()
+				else:
+					_on_mouse_release()
+
+	elif event is InputEventMouseMotion:
+		if TouchHelper.is_touch_device():
+			_on_touch_motion()
+		elif is_dragging:
+			_apply_drag_motion()
+
+
+## Desktop: left-click press — immediate select or drag start
+func _on_mouse_press() -> void:
+	if is_selectable:
+		card_clicked.emit(self)
+		return
+	if not drag_enabled or is_face_down:
+		return
+	is_dragging = true
+	drag_offset = get_global_mouse_position() - global_position
+	z_index = 100
+	drag_started.emit()
+
+
+## Desktop: left-click release — end drag
+func _on_mouse_release() -> void:
+	if not is_dragging:
+		return
+	is_dragging = false
+	is_snap_previewing = false
+	_hover_active = false
+	z_index = 0
+	drag_ended.emit()
+
+
+## Touch: press — defer drag/click until motion or release
+func _on_touch_press() -> void:
+	_touch_press_pending = true
+	_touch_press_start_pos = get_global_mouse_position()
+	drag_offset = get_global_mouse_position() - global_position
+
+
+## Touch: release — emit tap (card_clicked) or end drag
+func _on_touch_release() -> void:
+	if _touch_press_pending:
+		# Quick tap — treat as click
+		_touch_press_pending = false
+		if is_selectable:
+			card_clicked.emit(self)
+		return
+	# Was dragging — end drag
+	if is_dragging:
+		is_dragging = false
+		is_snap_previewing = false
+		_hover_active = false
+		z_index = 0
+		drag_ended.emit()
+
+
+## Touch: motion — check dead zone, then start drag or update drag position
+func _on_touch_motion() -> void:
+	if _touch_press_pending:
+		var dist := get_global_mouse_position().distance_to(_touch_press_start_pos)
+		if dist > TOUCH_DRAG_THRESHOLD:
+			if drag_enabled and not is_face_down:
+				# Exceeded dead zone — start drag
+				_touch_press_pending = false
 				is_dragging = true
-				drag_offset = get_global_mouse_position() - global_position
 				z_index = 100
 				drag_started.emit()
-			else:
-				if not is_dragging:
-					return
-				# Stop dragging
-				is_dragging = false
-				is_snap_previewing = false
-				_hover_active = false
-				z_index = 0
-				drag_ended.emit()
+			# If can't drag, keep _touch_press_pending true so release
+			# still emits card_clicked (finger slip on selectable card)
+	elif is_dragging:
+		_apply_drag_motion()
 
-	elif event is InputEventMouseMotion and is_dragging:
-		if is_snap_previewing:
-			return
-		var new_position = get_global_mouse_position() - drag_offset
-		var viewport_size = get_viewport_rect().size
-		var card_size = size * scale
 
-		new_position.x = clamp(new_position.x, 0, viewport_size.x - card_size.x)
-		new_position.y = clamp(new_position.y, 0, viewport_size.y - card_size.y)
+## Shared drag motion logic
+func _apply_drag_motion() -> void:
+	if is_snap_previewing:
+		return
+	var new_position = get_global_mouse_position() - drag_offset
+	var viewport_size = get_viewport_rect().size
+	var card_size = size * scale
 
-		global_position = new_position
+	new_position.x = clamp(new_position.x, 0, viewport_size.x - card_size.x)
+	new_position.y = clamp(new_position.y, 0, viewport_size.y - card_size.y)
+
+	global_position = new_position
 
 
 func _on_mouse_entered() -> void:
@@ -275,11 +360,11 @@ func _update_display() -> void:
 			if not _card_back_loaded:
 				_card_back_loaded = true
 				_default_card_back_texture = load(CARD_BACK_PATH)
+				var cb_base := _get_custom_card_back_base()
 				for ext in ["png", "jpg", "jpeg", "webp"]:
-					var custom_path := CUSTOM_CARD_BACK_PATH.path_join("default.%s" % ext)
+					var custom_path := cb_base.path_join("default.%s" % ext)
 					if FileAccess.file_exists(custom_path):
-						var abs_path := ProjectSettings.globalize_path(custom_path)
-						var image := Image.load_from_file(abs_path)
+						var image := Image.load_from_file(custom_path)
 						if image:
 							_custom_card_back_texture = ImageTexture.create_from_image(image)
 						break
@@ -311,10 +396,9 @@ func _update_display() -> void:
 			if custom_cache.has(card_number):
 				card_image.texture = custom_cache[card_number]
 				return
-			var custom_path := CUSTOM_ART_BASE_PATH.path_join(set_number).path_join("%s.png" % card_number)
+			var custom_path := _get_custom_art_base().path_join(set_number).path_join("%s.png" % card_number)
 			if FileAccess.file_exists(custom_path):
-				var custom_abs := ProjectSettings.globalize_path(custom_path)
-				var image := Image.load_from_file(custom_abs)
+				var image := Image.load_from_file(custom_path)
 				if image:
 					if is_strategy:
 						image.rotate_90(CLOCKWISE)

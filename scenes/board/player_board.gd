@@ -50,7 +50,6 @@ var _monster_deck_count_badge: Label = null
 
 # Card back texture cache (shared across instances)
 const _DEFAULT_CARD_BACK_PATH := "res://CardContent/Assets/cardBacks/default.jpeg"
-const _CUSTOM_CARD_BACK_DIR := "user://custom/cardBack"
 static var _card_back_cache_loaded: bool = false
 static var _default_card_back_tex: Texture2D = null
 static var _custom_card_back_tex: Texture2D = null  # null = no custom file found
@@ -198,12 +197,11 @@ func _apply_custom_playmat() -> void:
 	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
 	if player_id != local_id and not GameSettings.custom_playmat_opponent:
 		return
-	var dir_path := "user://custom/playmat"
+	var dir_path := GameSettings.get_custom_base_path().path_join("playmat")
 	for ext in ["png", "jpg", "jpeg", "webp"]:
 		var image_path := dir_path.path_join("default.%s" % ext)
 		if FileAccess.file_exists(image_path):
-			var abs_path := ProjectSettings.globalize_path(image_path)
-			var image := Image.load_from_file(abs_path)
+			var image := Image.load_from_file(image_path)
 			if image:
 				var tex := ImageTexture.create_from_image(image)
 				var board_bg := $BoardBg as TextureRect
@@ -846,11 +844,11 @@ func _get_card_back_texture() -> Texture2D:
 	if not _card_back_cache_loaded:
 		_card_back_cache_loaded = true
 		_default_card_back_tex = load(_DEFAULT_CARD_BACK_PATH)
+		var cb_dir := GameSettings.get_custom_base_path().path_join("cardBack")
 		for ext in ["png", "jpg", "jpeg", "webp"]:
-			var custom_path := _CUSTOM_CARD_BACK_DIR.path_join("default.%s" % ext)
+			var custom_path := cb_dir.path_join("default.%s" % ext)
 			if FileAccess.file_exists(custom_path):
-				var abs_path := ProjectSettings.globalize_path(custom_path)
-				var image := Image.load_from_file(abs_path)
+				var image := Image.load_from_file(custom_path)
 				if image:
 					_custom_card_back_tex = ImageTexture.create_from_image(image)
 				break

@@ -2,6 +2,20 @@ extends Node
 
 const SETTINGS_PATH := "user://settings.cfg"
 
+var _custom_base_path: String = ""
+
+
+## Returns the absolute path to the custom assets directory.
+## On Android, uses the external data directory (potentially browseable by file managers).
+## On other platforms, uses the standard user:// directory.
+func get_custom_base_path() -> String:
+	if _custom_base_path.is_empty():
+		if OS.get_name() == "Android":
+			_custom_base_path = OS.get_data_dir().path_join("custom")
+		else:
+			_custom_base_path = ProjectSettings.globalize_path("user://custom")
+	return _custom_base_path
+
 var player_name: String = ""
 var auto_draw: bool = true
 var auto_phase_advance: bool = true

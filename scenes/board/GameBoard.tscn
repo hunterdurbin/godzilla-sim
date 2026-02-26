@@ -516,6 +516,7 @@ text = "View Board"
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
+scroll_deadzone = 20
 
 [node name="CardGrid" type="GridContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ScrollContainer" unique_id=1765882031]
 layout_mode = 2
@@ -571,6 +572,7 @@ text = "Stacked"
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
+scroll_deadzone = 20
 
 [node name="CardGrid" type="GridContainer" parent="DiscardViewOverlay/DiscardViewPanel/VBox/ScrollContainer" unique_id=1045351002]
 layout_mode = 2
@@ -626,6 +628,7 @@ text = "Stacked"
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
+scroll_deadzone = 20
 
 [node name="CardGrid" type="GridContainer" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/ScrollContainer" unique_id=549177241]
 layout_mode = 2
@@ -676,6 +679,7 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
+scroll_deadzone = 20
 
 [node name="CardGrid" type="GridContainer" parent="ZoneStackViewOverlay/ZoneStackViewPanel/VBox/ScrollContainer" unique_id=396343001]
 layout_mode = 2

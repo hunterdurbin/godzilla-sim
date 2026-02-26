@@ -61,6 +61,7 @@ var _pending_action: Callable
 var _invalid_cards: Dictionary = {} # card_number -> true
 var _game_mode: String = "rumble"
 var _pool_load_generation: int = 0  # Incremented to cancel stale batched loads
+var _deck_list_touch_scrolled: bool = false  # Track if ItemList was scrolled on touch
 
 # --- Preview ---
 var _preview_card: Control
@@ -150,11 +151,19 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	deck_name_edit.placeholder_text = "Deck Name"
 	vbox.add_child(deck_name_edit)
 
-	# Deck list
+	# Deck list (wrapped in ScrollContainer for touch scrolling)
+	var deck_list_scroll := ScrollContainer.new()
+	deck_list_scroll.custom_minimum_size.y = 120
+	deck_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	deck_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	deck_list_scroll.scroll_deadzone = 20
+	vbox.add_child(deck_list_scroll)
+
 	deck_list = ItemList.new()
-	deck_list.custom_minimum_size.y = 120
-	deck_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(deck_list)
+	deck_list.auto_height = true
+	deck_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	deck_list.mouse_filter = Control.MOUSE_FILTER_PASS
+	deck_list_scroll.add_child(deck_list)
 
 	# Save / Load / Delete
 	var btn_row := HBoxContainer.new()
@@ -213,12 +222,14 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	var validation_scroll := ScrollContainer.new()
 	validation_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	validation_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	validation_scroll.scroll_deadzone = 20
 	vbox.add_child(validation_scroll)
 
 	validation_label = RichTextLabel.new()
 	validation_label.bbcode_enabled = true
 	validation_label.fit_content = true
 	validation_label.scroll_active = false
+	validation_label.mouse_filter = Control.MOUSE_FILTER_PASS
 	validation_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	validation_scroll.add_child(validation_label)
 
@@ -273,6 +284,7 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	deck_scroll = ScrollContainer.new()
 	deck_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	deck_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	deck_scroll.scroll_deadzone = 20
 	section.add_child(deck_scroll)
 
 	deck_grid = GridContainer.new()
@@ -280,6 +292,7 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	deck_grid.add_theme_constant_override("h_separation", 4)
 	deck_grid.add_theme_constant_override("v_separation", 4)
 	deck_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	deck_grid.mouse_filter = Control.MOUSE_FILTER_PASS
 	deck_scroll.add_child(deck_grid)
 
 
@@ -401,6 +414,7 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 	pool_scroll = ScrollContainer.new()
 	pool_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pool_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	pool_scroll.scroll_deadzone = 20
 	section.add_child(pool_scroll)
 
 	pool_grid = GridContainer.new()
@@ -408,6 +422,7 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 	pool_grid.add_theme_constant_override("h_separation", 4)
 	pool_grid.add_theme_constant_override("v_separation", 4)
 	pool_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pool_grid.mouse_filter = Control.MOUSE_FILTER_PASS
 	pool_scroll.add_child(pool_grid)
 
 
@@ -446,6 +461,7 @@ func _connect_signals() -> void:
 	export_button.pressed.connect(_on_export_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	deck_list.item_selected.connect(_on_deck_list_selected)
+	deck_list.gui_input.connect(_on_deck_list_gui_input)
 
 	# Deck tabs
 	monster_tab_button.pressed.connect(_on_monster_tab_pressed)
@@ -620,6 +636,7 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 	wrapper.custom_minimum_size = SCALED_SIZE
 	wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	wrapper.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
+	wrapper.mouse_filter = Control.MOUSE_FILTER_PASS
 	var card_id: String = card_data.get("id", "")
 	var style := StyleBoxEmpty.new()
 	wrapper.add_theme_stylebox_override("panel", style)
@@ -641,15 +658,33 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 	)
 
 	# Handle clicks on the wrapper since the card ignores mouse input
+	var parent_scroll: ScrollContainer = pool_scroll if is_pool else deck_scroll
 	var click_handler := func(event: InputEvent) -> void:
-		if event is InputEventMouseButton and event.pressed:
-			if event.button_index == MOUSE_BUTTON_LEFT:
-				if is_pool:
-					_on_pool_card_clicked(card_node)
+		if not (event is InputEventMouseButton):
+			return
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if TouchHelper.is_touch_device():
+				# Touch: fire click on release, only if finger didn't scroll
+				if event.pressed:
+					wrapper.set_meta("_press_pos", event.global_position)
+					wrapper.set_meta("_scroll_v", parent_scroll.scroll_vertical)
 				else:
-					_on_deck_card_clicked(card_node)
-			elif event.button_index == MOUSE_BUTTON_RIGHT and not is_pool:
-				_on_deck_card_right_clicked(card_node)
+					var press_pos: Vector2 = wrapper.get_meta("_press_pos", event.global_position)
+					var prev_scroll: int = wrapper.get_meta("_scroll_v", parent_scroll.scroll_vertical)
+					var scrolled := parent_scroll.scroll_vertical != prev_scroll
+					if not scrolled and event.global_position.distance_to(press_pos) < 20:
+						if is_pool:
+							_on_pool_card_clicked(card_node)
+						else:
+							_on_deck_card_clicked(card_node)
+			else:
+				if event.pressed:
+					if is_pool:
+						_on_pool_card_clicked(card_node)
+					else:
+						_on_deck_card_clicked(card_node)
+		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed and not is_pool:
+			_on_deck_card_right_clicked(card_node)
 	wrapper.gui_input.connect(click_handler)
 
 	# Card preview on hover
@@ -1248,7 +1283,25 @@ func _load_deck(deck_name: String) -> void:
 	_update_deck_stats()
 
 
+func _on_deck_list_gui_input(event: InputEvent) -> void:
+	if not TouchHelper.is_touch_device():
+		return
+	if not (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+	if event.pressed:
+		deck_list.set_meta("_press_pos", event.global_position)
+		_deck_list_touch_scrolled = false
+	else:
+		var press_pos: Vector2 = deck_list.get_meta("_press_pos", event.global_position)
+		if event.global_position.distance_to(press_pos) >= 20:
+			_deck_list_touch_scrolled = true
+			# Revert the selection ItemList made on press
+			deck_list.deselect_all()
+
+
 func _on_deck_list_selected(index: int) -> void:
+	if TouchHelper.is_touch_device() and _deck_list_touch_scrolled:
+		return
 	deck_name_edit.text = deck_list.get_item_text(index)
 
 
@@ -1328,6 +1381,12 @@ func _on_export_pressed() -> void:
 # ============================================================
 # Navigation
 # ============================================================
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_on_back_pressed()
+		get_viewport().set_input_as_handled()
+
 
 func _on_back_pressed() -> void:
 	if _has_unsaved_changes:

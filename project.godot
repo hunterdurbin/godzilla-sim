@@ -13,6 +13,7 @@ config_version=5
 config/name="Unofficial Godzilla Sim"
 config/version="0.1.5-release"
 run/main_scene="res://scenes/ui/LoadingScreen.tscn"
+config/quit_on_go_back=false
 config/features=PackedStringArray("4.6", "GL Compatibility")
 boot_splash/bg_color=Color(0, 0, 0, 1)
 boot_splash/show_image=false
@@ -30,6 +31,7 @@ GameSettings="*res://data/game_settings.gd"
 StatsUploader="*res://scripts/stats_uploader.gd"
 UpdateChecker="*res://scripts/update_checker.gd"
 RpcLogger="*res://scripts/rpc_logger.gd"
+TouchHelper="*res://scripts/touch_helper.gd"
 
 [display]
 
@@ -44,6 +46,10 @@ enabled=PackedStringArray()
 [physics]
 
 3d/physics_engine="Jolt Physics"
+
+[input_devices]
+
+pointing/android/enable_pan_and_scale_gestures=true
 
 [rendering]
 

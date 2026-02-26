@@ -38,6 +38,7 @@ var has_monster_marker: bool = false
 var in_selection_mode: bool = false  # When true, allows highlighting even if occupied
 var _is_hovered: bool = false
 var _content_rect: Rect2 = Rect2()
+var _pending_slot_click: bool = false
 
 
 func _ready() -> void:
@@ -316,12 +317,30 @@ func _on_card_drag_ended() -> void:
 
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT and (zone_number > 0 or in_selection_mode):
-			if held_card != null or in_selection_mode:
-				slot_clicked.emit(zone_number, player_id)
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.double_click and held_card != null:
+				_pending_slot_click = false
+				if not held_card.get("is_face_down"):
+					slot_right_clicked.emit(zone_number, player_id)
+			elif zone_number > 0 or in_selection_mode:
+				if held_card != null or in_selection_mode:
+					if held_card != null and not in_selection_mode and TouchHelper.is_touch_device():
+						# Touch only: delay to allow double-tap for card zoom
+						_pending_slot_click = true
+						get_tree().create_timer(0.3).timeout.connect(
+							_on_slot_click_timeout, CONNECT_ONE_SHOT
+						)
+					else:
+						slot_clicked.emit(zone_number, player_id)
 		elif event.button_index == MOUSE_BUTTON_RIGHT and held_card != null:
 			if not held_card.get("is_face_down"):
 				slot_right_clicked.emit(zone_number, player_id)
+
+
+func _on_slot_click_timeout() -> void:
+	if _pending_slot_click:
+		_pending_slot_click = false
+		slot_clicked.emit(zone_number, player_id)
 
 
 func _set_mouse_filter_recursive(node: Control, filter: MouseFilter) -> void:

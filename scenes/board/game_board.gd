@@ -133,6 +133,18 @@ var _monster_deck_view_cards: Array[Dictionary] = []
 @onready var card_zoom_overlay: Control = $CardZoomOverlay
 @onready var card_zoom_container: CenterContainer = $CardZoomOverlay/CardContainer
 
+# Pinch-to-zoom / pan state for card zoom overlay (touch only)
+var _pinch_active: bool = false
+var _pinch_used: bool = false # True after any pinch — suppress dismiss until next fresh tap
+var _pinch_start_distance: float = 0.0
+var _pinch_start_scale: float = 1.0
+var _pinch_touches: Dictionary = {} # index → position
+var _zoom_shown_frame: int = -1 # Frame when overlay was shown (ignore dismiss for 2 frames)
+var _zoom_dragging: bool = false # Single-finger drag active
+var _zoom_drag_start: Vector2 = Vector2.ZERO # Touch start position for deadzone check
+const PINCH_MAX_SCALE: float = 3.0
+const ZOOM_DRAG_DEADZONE: float = 20.0
+
 # Turn tracker: main phase labels [player_id][phase_index]
 @onready var _turn_tracker_phases: Array = [
 	[ # Player 1
@@ -200,6 +212,7 @@ var selected_card_id: String = ""
 var _selected_card_data: Dictionary = {} # Card data dict for the selected card
 var _awaiting_confirmation: bool = false
 var _confirming_pass: bool = false
+var _leave_dialog: ConfirmationDialog = null
 
 # Hand discard selection state
 var _discard_selecting: bool = false
@@ -468,6 +481,14 @@ func _ready() -> void:
 	monster_deck_view_overlay.z_index = 100
 	zone_stack_view_overlay.z_index = 100
 	end_game_panel.z_index = 100
+
+	# Leave game confirmation dialog
+	_leave_dialog = ConfirmationDialog.new()
+	_leave_dialog.title = "Leave Game"
+	_leave_dialog.dialog_text = "Leave the current game?"
+	_leave_dialog.ok_button_text = "Leave"
+	_leave_dialog.confirmed.connect(_on_main_menu_pressed)
+	add_child(_leave_dialog)
 
 	# Card hover preview panel (right side of screen)
 	_preview_container = Control.new()
@@ -1821,8 +1842,75 @@ func _end_snap_preview() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	var _zoom_fresh := card_zoom_overlay.visible and (Engine.get_process_frames() - _zoom_shown_frame) <= 2
+
+	# Pinch-to-zoom and drag-to-pan on card zoom overlay (touch only)
+	if card_zoom_overlay.visible and event is InputEventScreenTouch:
+		if event.pressed:
+			if _zoom_fresh:
+				get_viewport().set_input_as_handled()
+			else:
+				_pinch_touches[event.index] = event.position
+				if _pinch_touches.size() == 1:
+					_zoom_drag_start = event.position
+					_zoom_dragging = false
+				elif _pinch_touches.size() == 2:
+					_zoom_dragging = false
+					var points: Array = _pinch_touches.values()
+					_pinch_start_distance = (points[0] as Vector2).distance_to(points[1] as Vector2)
+					_pinch_start_scale = card_zoom_container.scale.x
+					_pinch_active = true
+					_pinch_used = true
+				get_viewport().set_input_as_handled()
+		else:
+			if not _pinch_touches.has(event.index):
+				get_viewport().set_input_as_handled()
+			else:
+				_pinch_touches.erase(event.index)
+				if _pinch_active:
+					_pinch_active = _pinch_touches.size() >= 2
+				elif _pinch_touches.is_empty():
+					if _pinch_used or _zoom_dragging:
+						_pinch_used = false
+						_zoom_dragging = false
+					else:
+						_hide_card_zoom()
+				get_viewport().set_input_as_handled()
+		return
+
+	if card_zoom_overlay.visible and event is InputEventScreenDrag:
+		var old_pos: Vector2 = _pinch_touches.get(event.index, event.position)
+		_pinch_touches[event.index] = event.position
+		if _pinch_active and _pinch_touches.size() >= 2:
+			# Two-finger pinch zoom
+			var points: Array = _pinch_touches.values()
+			var dist: float = (points[0] as Vector2).distance_to(points[1] as Vector2)
+			if _pinch_start_distance > 0.0:
+				var new_scale: float = clampf(_pinch_start_scale * dist / _pinch_start_distance, 1.0, PINCH_MAX_SCALE)
+				card_zoom_container.scale = Vector2(new_scale, new_scale)
+				card_zoom_container.pivot_offset = card_zoom_container.size / 2.0
+		elif _pinch_touches.size() == 1:
+			# Single-finger drag to pan (with deadzone)
+			if not _zoom_dragging:
+				if event.position.distance_to(_zoom_drag_start) > ZOOM_DRAG_DEADZONE:
+					_zoom_dragging = true
+			if _zoom_dragging:
+				card_zoom_container.position += event.position - old_pos
+		get_viewport().set_input_as_handled()
+		return
+
+	# Magnify gesture (trackpad pinch) — scales card zoom
+	if card_zoom_overlay.visible and event is InputEventMagnifyGesture:
+		_apply_card_zoom(event.factor)
+		get_viewport().set_input_as_handled()
+		return
+
 	# Dismiss card zoom on any click (must be first — blocks input from reaching overlays behind)
-	if card_zoom_overlay.visible and event is InputEventMouseButton and event.pressed:
+	# Skip emulated mouse events on touch — ScreenTouch handler above covers dismiss
+	if card_zoom_overlay.visible and not _zoom_fresh and event is InputEventMouseButton and event.pressed:
+		if TouchHelper.is_touch_device():
+			get_viewport().set_input_as_handled()
+			return
 		_hide_card_zoom()
 		get_viewport().set_input_as_handled()
 		return
@@ -1861,7 +1949,7 @@ func _input(event: InputEvent) -> void:
 		elif _confirming_pass:
 			_cancel_pass_confirmation()
 		else:
-			return  # Nothing to dismiss — don't consume the event
+			_leave_dialog.popup_centered()
 		get_viewport().set_input_as_handled()
 		return
 
@@ -3565,6 +3653,7 @@ func _show_card_zoom(card_data: Dictionary) -> void:
 		card.custom_minimum_size = Vector2(405, 567)
 		card_zoom_container.add_child(card)
 	card_zoom_overlay.visible = true
+	_zoom_shown_frame = Engine.get_process_frames()
 
 
 func _on_overlay_background_clicked(event: InputEvent, hide_func: Callable) -> void:
@@ -3573,6 +3662,10 @@ func _on_overlay_background_clicked(event: InputEvent, hide_func: Callable) -> v
 
 
 func _on_card_zoom_overlay_input(event: InputEvent) -> void:
+	if TouchHelper.is_touch_device():
+		return # Touch dismiss handled by _input ScreenTouch handler
+	if (Engine.get_process_frames() - _zoom_shown_frame) <= 2:
+		return
 	if event is InputEventMouseButton and event.pressed:
 		_hide_card_zoom()
 		get_viewport().set_input_as_handled()
@@ -3580,8 +3673,20 @@ func _on_card_zoom_overlay_input(event: InputEvent) -> void:
 
 func _hide_card_zoom() -> void:
 	card_zoom_overlay.visible = false
+	card_zoom_container.scale = Vector2.ONE
+	card_zoom_container.position = Vector2.ZERO
+	_pinch_touches.clear()
+	_pinch_active = false
+	_pinch_used = false
+	_zoom_dragging = false
 	for child in card_zoom_container.get_children():
 		child.queue_free()
+
+
+func _apply_card_zoom(factor: float) -> void:
+	var new_scale: float = clampf(card_zoom_container.scale.x * factor, 1.0, PINCH_MAX_SCALE)
+	card_zoom_container.scale = Vector2(new_scale, new_scale)
+	card_zoom_container.pivot_offset = card_zoom_container.size / 2.0
 
 
 # --- Card hover preview ---
@@ -3687,7 +3792,12 @@ func _set_gallery_hover(card: Control) -> void:
 
 
 func _on_gallery_card_input(event: InputEvent, card: Control) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+	if not (event is InputEventMouseButton and event.pressed):
+		return
+	if event.button_index == MOUSE_BUTTON_RIGHT:
+		if "card_data" in card and not card.card_data.is_empty():
+			_show_card_zoom(card.card_data)
+	elif event.button_index == MOUSE_BUTTON_LEFT and event.double_click:
 		if "card_data" in card and not card.card_data.is_empty():
 			_show_card_zoom(card.card_data)
 

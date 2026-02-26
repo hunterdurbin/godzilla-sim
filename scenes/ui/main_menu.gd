@@ -90,6 +90,11 @@ func _on_options_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/Options.tscn")
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		get_tree().quit()
+
+
 # -- Update dialog ------------------------------------------------------------
 
 func _on_update_available(_current: String, new_version: String, download_url: String, release_url: String) -> void:
