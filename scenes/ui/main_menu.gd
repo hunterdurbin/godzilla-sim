@@ -91,7 +91,7 @@ func _on_options_pressed() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
+	if event.is_action_pressed("ui_cancel") and OS.get_name() == "Android":
 		get_tree().quit()
 
 
