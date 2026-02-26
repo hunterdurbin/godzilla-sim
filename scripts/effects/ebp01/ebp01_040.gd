@@ -21,14 +21,6 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	if _count_monsters_in_discard(ctx.owner) >= 5:
+	if ctx.effect_handler.count_monsters_in_discard(ctx.owner) >= 5:
 		ctx.owner.rage += 1
 		ctx.owner.rage_changed.emit(ctx.owner.rage)
-
-
-func _count_monsters_in_discard(player: PlayerState) -> int:
-	var count: int = 0
-	for card in player.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
-			count += 1
-	return count

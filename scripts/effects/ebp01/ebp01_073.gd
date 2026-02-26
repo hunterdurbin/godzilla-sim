@@ -16,11 +16,7 @@ extends CardEffect
 
 func can_be_played(ctx: EffectContext) -> bool:
 	# Cannot be played if 7 or fewer monster cards in discard pile (need 8+)
-	var monster_count: int = 0
-	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
-			monster_count += 1
-	return monster_count > 7
+	return ctx.effect_handler.count_monsters_in_discard(ctx.owner) > 7
 
 
 func get_invasion_observed_filter() -> Dictionary:

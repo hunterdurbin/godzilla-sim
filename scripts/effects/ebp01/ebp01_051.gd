@@ -13,14 +13,6 @@ extends CardEffect
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	if _count_monsters_in_discard(ctx.owner) >= 5:
+	if ctx.effect_handler.count_monsters_in_discard(ctx.owner) >= 5:
 		return 3000
 	return 0
-
-
-func _count_monsters_in_discard(player: PlayerState) -> int:
-	var count: int = 0
-	for card in player.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
-			count += 1
-	return count
