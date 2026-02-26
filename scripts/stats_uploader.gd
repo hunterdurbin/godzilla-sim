@@ -1,7 +1,7 @@
 extends Node
 ## Autoload singleton: uploads game results to the API after online matches.
 
-const API_BASE := "http://api.godzillatcg.com"
+const API_BASE := "https://api.godzillatcg.com"
 const ENDPOINT := "/game-results"
 
 

@@ -5,7 +5,7 @@ extends Node
 signal download_complete(downloaded: int, skipped: int, failed: int)
 signal progress_updated(current: int, total: int, card_number: String)
 
-const API_BASE := "http://api.godzillatcg.com"
+const API_BASE := "https://api.godzillatcg.com"
 const CARDS_JSON_PATH := "res://CardContent/CardInfo/all_cards.json"
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 
