@@ -79,11 +79,100 @@ func _update_layout() -> void:
 	var content_span := content_bottom - content_top
 	var lc_height := size.y / content_span
 
+	# Preserve SVG aspect ratio: if the board is wider than the SVG would be
+	# at this height, constrain the width and center horizontally.
+	var lc_width := lc_height * (SVG_W / SVG_H)
+	var actual_width := minf(lc_width, size.x)
+	var x_offset := maxf(0.0, (size.x - actual_width) / 2.0)
+
 	var lc := $LayoutContainer
-	lc.offset_left = 0
+	lc.offset_left = x_offset
 	lc.offset_top = - content_top * lc_height
-	lc.offset_right = size.x
+	lc.offset_right = x_offset + actual_width
 	lc.offset_bottom = lc.offset_top + lc_height
+
+	# Constrain playmat background and overlay to match the LayoutContainer width
+	var board_bg := $BoardBg as TextureRect
+	board_bg.anchor_left = 0.0
+	board_bg.anchor_right = 0.0
+	board_bg.anchor_top = 0.0
+	board_bg.anchor_bottom = 1.0
+	board_bg.offset_left = x_offset
+	board_bg.offset_right = x_offset + actual_width
+
+	var overlay := $GradientOverlay as ColorRect
+	overlay.anchor_left = 0.0
+	overlay.anchor_right = 0.0
+	overlay.anchor_top = 0.0
+	overlay.anchor_bottom = 1.0
+	overlay.offset_left = x_offset
+	overlay.offset_right = x_offset + actual_width
+
+	# On mobile, bump label font sizes so they're readable on smaller boards.
+	# The LayoutContainer scales via anchors but font sizes are fixed pixels,
+	# so we set explicit sizes that work at phone scale.
+	if TouchHelper._is_mobile:
+		_apply_mobile_labels()
+
+
+var _mobile_labels_applied := false
+
+# Cached label references for mobile font scaling
+var _cp_title: Label
+var _threat_title: Label
+var _rage_title: Label
+
+func _apply_mobile_labels() -> void:
+	if _mobile_labels_applied:
+		return
+	_mobile_labels_applied = true
+	var lc := $LayoutContainer
+	# Combine CP and Threat into a single compact line: "CP: 0 | Threat: 5000"
+	# by hiding the separate title labels and increasing value font sizes.
+	var stats := lc.find_child("StatsDisplay", true, false) as HBoxContainer
+	if stats:
+		stats.clip_contents = true
+	_cp_title = lc.find_child("CPTitle", true, false) as Label
+	_threat_title = lc.find_child("ThreatTitle", true, false) as Label
+	var spacer := lc.find_child("Spacer", true, false) as Control
+	if _threat_title:
+		_threat_title.text = "T:"  # Abbreviate to save horizontal space
+	if spacer:
+		spacer.custom_minimum_size.x = 2.0
+	if cp_label:
+		cp_label.custom_minimum_size.x = 0.0
+		cp_label.clip_text = false
+		cp_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	if threat_label:
+		threat_label.custom_minimum_size.x = 0.0
+		threat_label.clip_text = false
+		threat_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	_rage_title = lc.find_child("RageTitle", true, false) as Label
+	# Apply default (balanced) font sizes
+	apply_mobile_label_scale(1.0)
+
+
+## Update mobile label font sizes based on board scale.
+## scale = 1.0 for balanced/enlarged, ~0.6 for shrunk board.
+func apply_mobile_label_scale(label_scale: float) -> void:
+	var title_size := maxi(10, int(12 * label_scale))
+	var value_size := maxi(10, int(14 * label_scale))
+	var rage_size := maxi(14, int(28 * label_scale))
+	var rage_threat_size := maxi(10, int(18 * label_scale))
+	if _cp_title:
+		_cp_title.add_theme_font_size_override("font_size", title_size)
+	if _threat_title:
+		_threat_title.add_theme_font_size_override("font_size", title_size)
+	if cp_label:
+		cp_label.add_theme_font_size_override("font_size", value_size)
+	if threat_label:
+		threat_label.add_theme_font_size_override("font_size", value_size)
+	if _rage_title:
+		_rage_title.add_theme_font_size_override("font_size", title_size)
+	if rage_label:
+		rage_label.add_theme_font_size_override("font_size", rage_size)
+	if rage_threat_label:
+		rage_threat_label.add_theme_font_size_override("font_size", rage_threat_size)
 
 
 func _setup_references() -> void:

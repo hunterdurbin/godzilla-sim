@@ -73,7 +73,10 @@ var _hover_active: bool = false
 # Touch drag state (active only on touch devices)
 var _touch_press_start_pos: Vector2 = Vector2.ZERO
 var _touch_press_pending: bool = false
+var _long_press_triggered: bool = false
+var _long_press_timer: SceneTreeTimer = null
 const TOUCH_DRAG_THRESHOLD := 50.0
+const LONG_PRESS_DURATION := 0.4
 
 
 func _ready() -> void:
@@ -83,6 +86,11 @@ func _ready() -> void:
 	# Store original values
 	original_scale = scale
 	original_position = position
+
+	# On touch devices, let events pass through so parent ScrollContainers can scroll.
+	# Respect MOUSE_FILTER_IGNORE if already set (e.g. discard pile display card).
+	if TouchHelper.is_touch_device() and mouse_filter != Control.MOUSE_FILTER_IGNORE:
+		mouse_filter = Control.MOUSE_FILTER_PASS
 
 	# Connect mouse signals
 	mouse_entered.connect(_on_mouse_entered)
@@ -145,16 +153,36 @@ func _on_mouse_release() -> void:
 ## Touch: press — defer drag/click until motion or release
 func _on_touch_press() -> void:
 	_touch_press_pending = true
+	_long_press_triggered = false
 	_touch_press_start_pos = get_global_mouse_position()
 	drag_offset = get_global_mouse_position() - global_position
+	# Start long-press timer for card preview (skip for draggable cards like hand cards)
+	if not is_face_down and not drag_enabled:
+		_long_press_timer = get_tree().create_timer(LONG_PRESS_DURATION)
+		_long_press_timer.timeout.connect(_on_long_press)
+
+
+## Touch: long press — show card preview
+func _on_long_press() -> void:
+	if not _touch_press_pending:
+		return
+	_touch_press_pending = false
+	_long_press_triggered = true
+	_long_press_timer = null
+	card_right_clicked.emit(self)
 
 
 ## Touch: release — emit tap (card_clicked) or end drag
 func _on_touch_release() -> void:
+	_cancel_long_press()
+	if _long_press_triggered:
+		_long_press_triggered = false
+		return
 	if _touch_press_pending:
-		# Quick tap — treat as click
 		_touch_press_pending = false
-		if is_selectable:
+		# Only treat as tap if finger didn't drift (e.g. parent ScrollContainer scrolled)
+		var dist := get_global_mouse_position().distance_to(_touch_press_start_pos)
+		if dist < TOUCH_DRAG_THRESHOLD and is_selectable:
 			card_clicked.emit(self)
 		return
 	# Was dragging — end drag
@@ -166,11 +194,20 @@ func _on_touch_release() -> void:
 		drag_ended.emit()
 
 
+## Cancel a pending long-press timer
+func _cancel_long_press() -> void:
+	if _long_press_timer:
+		if _long_press_timer.timeout.is_connected(_on_long_press):
+			_long_press_timer.timeout.disconnect(_on_long_press)
+		_long_press_timer = null
+
+
 ## Touch: motion — check dead zone, then start drag or update drag position
 func _on_touch_motion() -> void:
 	if _touch_press_pending:
 		var dist := get_global_mouse_position().distance_to(_touch_press_start_pos)
 		if dist > TOUCH_DRAG_THRESHOLD:
+			_cancel_long_press()
 			if drag_enabled and not is_face_down:
 				# Exceeded dead zone — start drag
 				_touch_press_pending = false

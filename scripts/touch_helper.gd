@@ -19,7 +19,8 @@ func _ready() -> void:
 	# On mobile platforms, always use touch mode — no dynamic switching.
 	# The emulator may send mouse events instead of InputEventScreenTouch,
 	# which would incorrectly flip _touch_mode to false without this guard.
-	_is_mobile = OS.get_name() in ["Android", "iOS"]
+	_is_mobile = OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile") \
+		or "--mobile" in OS.get_cmdline_args()
 	if _is_mobile or DisplayServer.is_touchscreen_available():
 		_touch_mode = true
 

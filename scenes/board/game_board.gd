@@ -62,7 +62,9 @@ var _pending_log_lines: PackedStringArray = [] # Buffered for next broadcast
 @onready var btn_gain_rage: Button = $ActionPanel/Row1/GainRage
 @onready var btn_play_monster: Button = $ActionPanel/Row2/PlayMonster
 @onready var btn_invade: Button = $ActionPanel/Row2/Invade
-@onready var btn_pass: Button = $ActionPanel/Row2/Pass
+@onready var btn_end_main: Button = $ActionPanel/Row2/EndMain
+@onready var btn_cancel: Button = $ActionPanel/Row0/Cancel
+@onready var btn_confirm: Button = $ActionPanel/Row0/Confirm
 
 # Deck search UI references
 @onready var deck_search_overlay: Control = $DeckSearchOverlay
@@ -75,7 +77,7 @@ var _pending_log_lines: PackedStringArray = [] # Buffered for next broadcast
 @onready var show_cards_button: Button = $ShowCardsButton
 @onready var hand_toggle_button: Button = $HandButtonStack/HandToggleButton
 @onready var sort_hand_button: Button = $HandButtonStack/SortHandButton
-@onready var opponent_hand_button_stack: VBoxContainer = $OpponentHandButtonStack
+@onready var opponent_hand_button_stack: HBoxContainer = $OpponentHandButtonStack
 @onready var opponent_hand_toggle_button: Button = $OpponentHandButtonStack/OpponentHandToggleButton
 @onready var opponent_sort_hand_button: Button = $OpponentHandButtonStack/OpponentSortHandButton
 
@@ -271,6 +273,7 @@ var _choice_selecting: bool = false
 var _choice_player_id: int = -1
 var _choice_buttons: Array[Button] = []
 var _choice_container: VBoxContainer = null
+var _choice_panel: PanelContainer = null  # Mobile wrapper panel
 
 # Monster rank-up selection state
 var _rankup_selecting: bool = false
@@ -306,6 +309,52 @@ const HAND_EXPAND_OFFSET: float = 160.0
 var _opponent_hand_expanded: bool = false
 var _opponent_hand_tween: Tween = null
 const OPPONENT_HAND_EXPAND_OFFSET: float = 195.0
+
+# Mobile layout
+var _is_mobile_layout: bool = false
+var _mobile_phase_label: Label = null
+var _mobile_log_tray_open: bool = false
+var _mobile_log_toggle_btn: Button = null
+var _mobile_log_tween: Tween = null
+# FAB (Floating Action Button) system for mobile action buttons
+var _fab_main_btn: Button = null
+var _fab_backdrop: ColorRect = null
+var _fab_container: Control = null
+var _fab_expanded: bool = false
+var _fab_action_btns: Array[Button] = []
+var _fab_labels: Array[Label] = []
+var _fab_tween: Tween = null
+var _mobile_log_badge: Label = null
+var _mobile_log_unread: int = 0
+enum MobileBoardView { LOCAL_ENLARGED, OPPONENT_ENLARGED, BALANCED }
+var _mobile_board_view: int = MobileBoardView.LOCAL_ENLARGED
+var _mobile_view_toggle_btn: Button = null
+var _mobile_tracker_tray_open: bool = false
+var _mobile_tracker_toggle_btn: Button = null
+var _mobile_tracker_tween: Tween = null
+var _mobile_menu_btn: Button = null
+var _mobile_menu_panel: Control = null
+var _mobile_menu_backdrop: ColorRect = null
+var _mobile_menu_open: bool = false
+# Safe area insets in canvas units (set in _apply_safe_area_insets)
+var _safe_left: float = 0.0
+var _safe_right: float = 0.0
+var _safe_top: float = 0.0
+var _safe_bottom: float = 0.0
+
+
+func _set_action_buttons_visible(vis: bool) -> void:
+	action_panel.get_node("Row1").visible = vis
+	action_panel.get_node("Row2").visible = vis
+	if _fab_main_btn:
+		_fab_main_btn.visible = vis
+		btn_end_main.visible = vis
+		btn_confirm.visible = vis
+		btn_cancel.visible = vis
+		btn_confirm.disabled = true
+		btn_cancel.disabled = true
+		if not vis:
+			_collapse_fab_instant()
 
 
 func _ready() -> void:
@@ -393,7 +442,9 @@ func _ready() -> void:
 	btn_gain_rage.pressed.connect(_on_gain_rage_pressed)
 	btn_play_monster.pressed.connect(_on_play_monster_pressed)
 	btn_invade.pressed.connect(_on_invade_pressed)
-	btn_pass.pressed.connect(_on_pass_pressed)
+	btn_end_main.pressed.connect(_on_end_main_pressed)
+	btn_cancel.pressed.connect(_on_cancel_pressed)
+	btn_confirm.pressed.connect(_on_confirm_pressed)
 	btn_bug_report.pressed.connect(_on_bug_report_pressed)
 	btn_concede.pressed.connect(_on_concede_pressed)
 	btn_main_menu.pressed.connect(_on_main_menu_pressed)
@@ -526,6 +577,15 @@ func _ready() -> void:
 
 	# Position hands over hand spaces (deferred so layout is resolved)
 	call_deferred("_position_hands")
+
+	# Re-position hands whenever player boards resize (stretch ratio changes, etc.)
+	player1_board.resized.connect(func(): call_deferred("_position_hands"))
+	player2_board.resized.connect(func(): call_deferred("_position_hands"))
+
+	# Apply mobile layout adjustments (deferred so containers are resolved)
+	if TouchHelper._is_mobile:
+		_is_mobile_layout = true
+		call_deferred("_apply_mobile_layout")
 
 	# Initial board sync and start (host/solo only)
 	if turn_manager:
@@ -679,45 +739,54 @@ func _apply_gradients_and_sync() -> void:
 func _show_first_player_waiting() -> void:
 	_disable_all_buttons()
 	btn_concede.disabled = true
-	action_panel.get_node("Row1").visible = false
-	action_panel.get_node("Row2").visible = false
+	_set_action_buttons_visible(false)
 	card_select_prompt.text = "Opponent won the coin flip. Waiting for their choice..."
 	action_prompt_panel.visible = true
 
 
 func _cleanup_first_player_ui() -> void:
 	var container := action_panel.get_node_or_null("FirstPlayerContainer")
+	if not container:
+		container = get_node_or_null("FirstPlayerContainer")
 	if container:
 		container.queue_free()
 	action_prompt_panel.visible = false
-	action_panel.get_node("Row1").visible = true
-	action_panel.get_node("Row2").visible = true
+	_set_action_buttons_visible(true)
 	btn_concede.disabled = false
 
 
 func _show_first_player_choice() -> void:
 	_disable_all_buttons()
 	btn_concede.disabled = true
-	action_panel.get_node("Row1").visible = false
-	action_panel.get_node("Row2").visible = false
+	_set_action_buttons_visible(false)
 	card_select_prompt.text = "You won the coin flip! Go first or second?"
 	action_prompt_panel.visible = true
 
 	var container := VBoxContainer.new()
 	container.name = "FirstPlayerContainer"
-	action_panel.add_child(container)
+	if _is_mobile_layout:
+		container.anchor_left = 0.3
+		container.anchor_right = 0.7
+		container.anchor_top = 1.0
+		container.anchor_bottom = 1.0
+		container.offset_top = -90.0
+		container.offset_bottom = -4.0
+		container.z_index = 55
+		add_child(container)
+	else:
+		action_panel.add_child(container)
 
 	var btn_first := Button.new()
 	btn_first.text = "Go First"
-	btn_first.custom_minimum_size.x = 260
-	btn_first.size_flags_horizontal = Control.SIZE_SHRINK_END
+	btn_first.custom_minimum_size.x = 325
+	btn_first.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
 	btn_first.pressed.connect(_on_first_player_chosen.bind(true))
 	container.add_child(btn_first)
 
 	var btn_second := Button.new()
 	btn_second.text = "Go Second"
-	btn_second.custom_minimum_size.x = 260
-	btn_second.size_flags_horizontal = Control.SIZE_SHRINK_END
+	btn_second.custom_minimum_size.x = 325
+	btn_second.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
 	btn_second.pressed.connect(_on_first_player_chosen.bind(false))
 	container.add_child(btn_second)
 
@@ -832,25 +901,1042 @@ func _position_hands() -> void:
 		opponent_hand = player1_hand
 		opponent_space = player1_hand_space
 
+	# On mobile the action panel is full-width at the bottom, so hand can be centered.
+	# On desktop, shift hand left to avoid the right-side action panel.
+	var hand_center_x: float = 0.5 if _is_mobile_layout else 0.35
+	var hand_width_pct: float = 0.92 if _is_mobile_layout else 0.95
+	# Cap mobile hand width so cards don't cover action buttons
+	const MOBILE_MAX_HAND_WIDTH := 700.0
+	var mobile_hand_expand := 120.0  # Smaller expand offset on mobile to avoid obscuring board
+
+	# On mobile, center hands on the viewport (scene) center.
+	var viewport_center_x := get_viewport().get_visible_rect().size.x / 2.0
+
 	# Local player hand: visible, centered in hand space
 	if local_space and local_hand:
 		var rect := local_space.get_global_rect()
-		var y_offset := -HAND_EXPAND_OFFSET if _hand_expanded else 0.0
-		local_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.35, rect.position.y + rect.size.y / 2.0 + y_offset)
-		local_hand.max_width = rect.size.x * 0.95
+		var expand_offset := mobile_hand_expand if _is_mobile_layout else HAND_EXPAND_OFFSET
+		var y_offset := -expand_offset if _hand_expanded else 0.0
+		var center_x := viewport_center_x if _is_mobile_layout else rect.position.x + rect.size.x * hand_center_x
+		# Cards are positioned by top-left corner, so the visual center of the
+		# arc is shifted right by half a card width. Compensate on mobile.
+		if _is_mobile_layout and not local_hand.managed_cards.is_empty():
+			var c: Control = local_hand.managed_cards[0]
+			center_x -= c.size.x * c.scale.x / 2.0
+		local_hand.global_position = Vector2(center_x, rect.position.y + rect.size.y / 2.0 + y_offset)
+		var width := rect.size.x * hand_width_pct
+		if _is_mobile_layout:
+			width = minf(width, MOBILE_MAX_HAND_WIDTH)
+		local_hand.max_width = width
 		local_hand.arrange_cards(false)
+
+		# Position local hand button stack at the bottom, left of the max-width hand edge
+		if _is_mobile_layout:
+			var hand_stack := $HandButtonStack as HBoxContainer
+			var stack_w := 150.0
+			var stack_h := 60.0
+			var cards_left: float = center_x - width / 2.0
+			hand_stack.anchor_left = 0.0
+			hand_stack.anchor_right = 0.0
+			hand_stack.anchor_top = 1.0
+			hand_stack.anchor_bottom = 1.0
+			var min_left := maxf(20.0, _safe_left + 4.0)
+			hand_stack.offset_left = maxf(min_left, cards_left - stack_w)
+			hand_stack.offset_right = hand_stack.offset_left + stack_w
+			var bot_pad := maxf(20.0, _safe_bottom + 4.0)
+			hand_stack.offset_top = -(stack_h + bot_pad - 4.0)
+			hand_stack.offset_bottom = -bot_pad
+
+			# Position board view toggle directly above the hand stack
+			if _mobile_view_toggle_btn:
+				var view_gap := 16.0
+				var view_w := 55.0
+				var view_h := 60.0
+				_mobile_view_toggle_btn.offset_left = hand_stack.offset_left
+				_mobile_view_toggle_btn.offset_right = hand_stack.offset_left + view_w
+				_mobile_view_toggle_btn.offset_bottom = hand_stack.offset_top - view_gap
+				_mobile_view_toggle_btn.offset_top = _mobile_view_toggle_btn.offset_bottom - view_h
 
 	# Opponent hand: mostly off-screen at top edge
 	if opponent_space and opponent_hand:
 		var rect := opponent_space.get_global_rect()
-		opponent_hand.global_position = Vector2(rect.position.x + rect.size.x * 0.35, rect.position.y - 195.0)
-		opponent_hand.max_width = rect.size.x * 0.95
+		var center_x := viewport_center_x if _is_mobile_layout else rect.position.x + rect.size.x * hand_center_x
+		if _is_mobile_layout and not opponent_hand.managed_cards.is_empty():
+			var c: Control = opponent_hand.managed_cards[0]
+			center_x -= c.size.x * c.scale.x / 2.0
+		var opp_base_y := rect.position.y - OPPONENT_HAND_EXPAND_OFFSET
+		var opp_y_offset := OPPONENT_HAND_EXPAND_OFFSET if _opponent_hand_expanded else 0.0
+		opponent_hand.global_position = Vector2(center_x, opp_base_y + opp_y_offset)
+		var width := rect.size.x * hand_width_pct
+		if _is_mobile_layout:
+			width = minf(width, MOBILE_MAX_HAND_WIDTH)
+		opponent_hand.max_width = width
 		opponent_hand.arrange_cards(false)
+
+	# Position opponent hand button stack at top of screen, left of the max-width hand edge
+	if _is_mobile_layout and opponent_hand:
+		var opp_stack := $OpponentHandButtonStack as HBoxContainer
+		var stack_w := 150.0
+		var stack_h := 60.0
+		var opp_width: float = opponent_hand.max_width
+		var opp_center_x := opponent_hand.global_position.x
+		var cards_left: float = opp_center_x - opp_width / 2.0
+		opp_stack.anchor_left = 0.0
+		opp_stack.anchor_right = 0.0
+		opp_stack.anchor_top = 0.0
+		opp_stack.anchor_bottom = 0.0
+		var opp_min_left := maxf(20.0, _safe_left + 4.0)
+		opp_stack.offset_left = maxf(opp_min_left, cards_left - stack_w)
+		opp_stack.offset_right = opp_stack.offset_left + stack_w
+		# Use generous minimum top padding to avoid iOS screen-edge gesture zone
+		# and to sit below the phase label
+		var top_pad := maxf(40.0, _safe_top + 24.0)
+		opp_stack.offset_top = top_pad
+		opp_stack.offset_bottom = top_pad + stack_h
 
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
+		if _is_mobile_layout:
+			_apply_safe_area_insets()
 		call_deferred("_position_hands")
+
+
+func _apply_mobile_layout() -> void:
+	# --- 1. Safe area insets (iOS notch/dynamic island, Android cutouts) ---
+	# Must be computed FIRST so all button positioning can use _safe_left/_safe_right/etc.
+	_apply_safe_area_insets()
+
+	# --- 2. Expand board to use full width ---
+	var left_spacer := $VBoxContainer/BoardArea/LeftSpacer
+	left_spacer.visible = false
+	var right_spacer := $VBoxContainer/BoardArea/RightSpacer
+	right_spacer.visible = false
+	var board_column := $VBoxContainer/BoardArea/BoardColumn
+	board_column.size_flags_stretch_ratio = 1.0
+
+	# --- 3. Reserve bottom space for action panel, eliminate top spacer ---
+	$VBoxContainer/TopSpacer.custom_minimum_size.y = 0
+	$VBoxContainer/BottomSpacer.custom_minimum_size.y = 100
+
+	# --- 3b. Constrain divider width to board content ---
+	var divider := board_column.get_node("Divider") as ColorRect
+	divider.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_update_mobile_divider.call_deferred()
+	player1_board.resized.connect(_update_mobile_divider.call_deferred)
+	player2_board.resized.connect(_update_mobile_divider.call_deferred)
+
+	# --- 4. Board view sizing + toggle button ---
+	_apply_mobile_board_view()
+	_setup_mobile_view_toggle()
+
+	# --- 5. Log panel as slide-out tray on the left ---
+	_setup_mobile_log_tray()
+
+	# --- 6. Hide card hover preview (mobile uses tap-to-zoom) ---
+	if _preview_container:
+		_preview_container.visible = false
+
+	# --- 7. Touch-friendly action panel (full width at bottom) ---
+	_apply_mobile_action_panel()
+
+	# --- 8. Compact utility buttons into menu popup ---
+	_apply_mobile_utility_buttons()
+
+	# --- 9. Reposition hand button stacks ---
+	_apply_mobile_hand_button_stacks()
+
+	# --- 10. Widen overlay panels ---
+	_apply_mobile_overlays()
+
+	# --- 11. Phase indicator in top-right + turn tracker tray on right ---
+	_create_mobile_phase_label()
+	_setup_mobile_tracker_tray()
+
+	# --- 12. Reposition action prompt ---
+	_apply_mobile_action_prompt()
+
+	# --- 13. Re-position hands for wider board ---
+	_position_hands()
+
+	# --- 14. Retry safe area after a brief delay ---
+	# DisplayServer may not report safe area until the display is fully initialized.
+	# If we got zeros, retry shortly so floating buttons get repositioned.
+	if _safe_left == 0.0 and _safe_right == 0.0 and _safe_top == 0.0:
+		get_tree().create_timer(0.2).timeout.connect(_retry_safe_area_insets, CONNECT_ONE_SHOT)
+
+
+func _apply_mobile_action_panel() -> void:
+	# Hide the default VBoxContainer panel — FAB replaces it
+	action_panel.visible = false
+
+	var pad_r := maxf(20.0, _safe_right + 4.0)
+	var pad_b := maxf(20.0, _safe_bottom + 4.0)
+
+	# --- Backdrop: full-screen dim overlay when FAB is expanded ---
+	_fab_backdrop = ColorRect.new()
+	_fab_backdrop.color = Color(0, 0, 0, 0.4)
+	_fab_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_fab_backdrop.z_index = 56
+	_fab_backdrop.visible = false
+	_fab_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_fab_backdrop)
+	_fab_backdrop.gui_input.connect(_on_fab_backdrop_input)
+
+	# --- FAB container: holds the 5 action buttons + labels ---
+	var btn_size := 85.0
+	var col_gap := 12.0
+	var row_gap := 8.0
+	var label_h := 18.0
+	var cell_h := btn_size + label_h + 2.0  # 105
+	var grid_cols := 3
+	var grid_w := btn_size * grid_cols + col_gap * (grid_cols - 1)  # 279
+	var container_w := grid_w + 20.0  # 299
+	var container_h := cell_h * 2.0 + row_gap + btn_size + 8.0  # 311
+
+	_fab_container = Control.new()
+	_fab_container.anchor_left = 1.0
+	_fab_container.anchor_right = 1.0
+	_fab_container.anchor_top = 1.0
+	_fab_container.anchor_bottom = 1.0
+	_fab_container.offset_left = -(pad_r + container_w)
+	_fab_container.offset_right = -pad_r
+	_fab_container.offset_top = -(pad_b + container_h)
+	_fab_container.offset_bottom = -pad_b
+	_fab_container.z_index = 57
+	_fab_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_fab_container)
+
+	# --- Main FAB button (always visible, bottom-right of container) ---
+	_fab_main_btn = Button.new()
+	_fab_main_btn.custom_minimum_size = Vector2(btn_size, btn_size)
+	_fab_main_btn.size = Vector2(btn_size, btn_size)
+	_fab_main_btn.position = Vector2(container_w - btn_size, container_h - btn_size)
+	_fab_main_btn.pivot_offset = Vector2(btn_size / 2.0, btn_size / 2.0)
+	_fab_main_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	_fab_main_btn.clip_contents = true
+	_fab_main_btn.pressed.connect(_toggle_fab)
+	_fab_main_btn.draw.connect(_draw_fab_main_icon)
+	_apply_circle_style(_fab_main_btn, Color(0.2, 0.45, 0.8))
+	_fab_container.add_child(_fab_main_btn)
+
+	# --- btn_end_main: standalone pill button, always visible alongside FAB ---
+	btn_end_main.get_parent().remove_child(btn_end_main)
+	btn_end_main.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	_fab_container.add_child(btn_end_main)
+	# --- btn_confirm / btn_cancel: standalone pill buttons, hidden by default ---
+	btn_confirm.get_parent().remove_child(btn_confirm)
+	btn_confirm.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	btn_confirm.disabled = true
+	_fab_container.add_child(btn_confirm)
+	btn_cancel.get_parent().remove_child(btn_cancel)
+	btn_cancel.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	btn_cancel.disabled = true
+	_fab_container.add_child(btn_cancel)
+	_setup_standalone_buttons()
+
+	# --- Reparent 5 action buttons into the FAB grid ---
+	# Row 0: Battle, Monster, Strategy (3 cols)
+	# Row 1: Rage, Invade (2 cols, centered)
+	var btn_order: Array[Button] = [
+		btn_play_battle, btn_play_monster, btn_play_strategy,
+		btn_gain_rage, btn_invade
+	]
+	var btn_labels_text: Array = [
+		"Battle", "Monster", "Strategy",
+		"Rage", "Invade"
+	]
+	var btn_icon_fns: Array[Callable] = [
+		_draw_icon_battle, _draw_icon_monster, _draw_icon_strategy,
+		_draw_icon_rage, _draw_icon_invade
+	]
+
+	var grid_left := (container_w - grid_w) / 2.0
+	var fab_center := _fab_main_btn.position + Vector2(btn_size / 2.0, btn_size / 2.0)
+
+	_fab_action_btns.clear()
+	_fab_labels.clear()
+
+	for i in range(5):
+		var btn: Button = btn_order[i]
+		var target_x: float
+		var target_y: float
+		if i < 3:
+			# Row 0: 3 buttons evenly spaced
+			target_x = grid_left + i * (btn_size + col_gap)
+			target_y = 0.0
+		else:
+			# Row 1: 2 buttons centered under row 0
+			var row1_offset := (grid_w - (btn_size * 2 + col_gap)) / 2.0
+			target_x = grid_left + row1_offset + (i - 3) * (btn_size + col_gap)
+			target_y = cell_h + row_gap
+
+		btn.get_parent().remove_child(btn)
+		btn.custom_minimum_size = Vector2(btn_size, btn_size)
+		btn.size = Vector2(btn_size, btn_size)
+		btn.text = ""
+		btn.clip_contents = true
+		btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		btn.pivot_offset = Vector2(btn_size / 2.0, btn_size / 2.0)
+		btn.position = fab_center - Vector2(btn_size / 2.0, btn_size / 2.0)
+		btn.scale = Vector2.ZERO
+		btn.visible = false
+		btn.set_meta("fab_target_pos", Vector2(target_x, target_y))
+		_apply_circle_style(btn, Color(0.2, 0.3, 0.5, 0.9))
+		btn.draw.connect(btn_icon_fns[i].bind(btn))
+		btn.pressed.connect(_collapse_fab_instant)
+		_fab_container.add_child(btn)
+		_fab_action_btns.append(btn)
+
+		# Label below button
+		var lbl := Label.new()
+		lbl.text = btn_labels_text[i]
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.add_theme_font_size_override("font_size", 12)
+		lbl.add_theme_color_override("font_color", Color.WHITE)
+		lbl.custom_minimum_size = Vector2(btn_size + 8.0, label_h)
+		lbl.size = Vector2(btn_size + 8.0, label_h)
+		lbl.position = Vector2(target_x - 4.0, target_y + btn_size + 2.0)
+		lbl.visible = false
+		_fab_container.add_child(lbl)
+		_fab_labels.append(lbl)
+
+
+func _create_circle_stylebox(bg_color: Color) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg_color
+	sb.corner_radius_top_left = 28
+	sb.corner_radius_top_right = 28
+	sb.corner_radius_bottom_left = 28
+	sb.corner_radius_bottom_right = 28
+	return sb
+
+
+func _apply_circle_style(btn: Button, base_color: Color = Color(0.2, 0.3, 0.5, 0.9)) -> void:
+	btn.add_theme_stylebox_override("normal", _create_circle_stylebox(base_color))
+	btn.add_theme_stylebox_override("hover", _create_circle_stylebox(base_color.lightened(0.1)))
+	btn.add_theme_stylebox_override("pressed", _create_circle_stylebox(base_color.darkened(0.15)))
+	btn.add_theme_stylebox_override("disabled", _create_circle_stylebox(Color(0.3, 0.3, 0.3, 0.5)))
+
+
+func _setup_standalone_buttons() -> void:
+	## Position btn_end_main, btn_confirm, btn_cancel as pill-shaped text buttons above the FAB.
+	var pill_w := 138.0
+	var pill_h := 55.0
+	var gap := 10.0
+	var fab_cx := _fab_main_btn.position.x + _fab_main_btn.size.x / 2.0
+	var fab_top := _fab_main_btn.position.y
+
+	# btn_end_main: directly above FAB main button
+	var end_main_y := fab_top - pill_h - gap
+	_apply_pill_style(btn_end_main, pill_w, pill_h, fab_cx, end_main_y)
+
+	# btn_confirm: above btn_end_main
+	var confirm_y := end_main_y - pill_h - gap
+	_apply_pill_style(btn_confirm, pill_w, pill_h, fab_cx, confirm_y)
+
+	# btn_cancel: above btn_confirm
+	var cancel_y := confirm_y - pill_h - gap
+	_apply_pill_style(btn_cancel, pill_w, pill_h, fab_cx, cancel_y)
+
+
+func _apply_pill_style(btn: Button, pill_w: float, pill_h: float, cx: float, y: float) -> void:
+	btn.custom_minimum_size = Vector2(pill_w, pill_h)
+	btn.size = Vector2(pill_w, pill_h)
+	btn.position = Vector2(cx - pill_w / 2.0, y)
+	btn.scale = Vector2.ONE
+	btn.pivot_offset = Vector2.ZERO
+	btn.add_theme_font_size_override("font_size", 18)
+	var pill_sb := StyleBoxFlat.new()
+	pill_sb.bg_color = Color(0.2, 0.3, 0.5, 0.9)
+	pill_sb.corner_radius_top_left = 15
+	pill_sb.corner_radius_top_right = 15
+	pill_sb.corner_radius_bottom_left = 15
+	pill_sb.corner_radius_bottom_right = 15
+	btn.add_theme_stylebox_override("normal", pill_sb)
+	var pill_hover := pill_sb.duplicate()
+	pill_hover.bg_color = Color(0.25, 0.35, 0.55, 0.9)
+	btn.add_theme_stylebox_override("hover", pill_hover)
+	var pill_pressed := pill_sb.duplicate()
+	pill_pressed.bg_color = Color(0.15, 0.25, 0.45, 0.9)
+	btn.add_theme_stylebox_override("pressed", pill_pressed)
+	var pill_disabled := pill_sb.duplicate()
+	pill_disabled.bg_color = Color(0.3, 0.3, 0.3, 0.5)
+	btn.add_theme_stylebox_override("disabled", pill_disabled)
+
+
+func _fit_button_text(btn: Button, base_size: int = 18, min_size: int = 10) -> void:
+	if not _is_mobile_layout:
+		return
+	btn.clip_text = true
+	var font := btn.get_theme_font("font")
+	# Account for Godot's internal button padding (~16px) plus corner radius inset
+	var available_w := btn.size.x - 32.0
+	var font_size := base_size
+	while font_size > min_size:
+		var text_w := font.get_string_size(btn.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+		if text_w <= available_w:
+			break
+		font_size -= 1
+	btn.add_theme_font_size_override("font_size", font_size)
+
+
+func _apply_split_pill_style(left_btn: Button, right_btn: Button, height: float, radius: float) -> void:
+	var bg_color := Color(0.2, 0.3, 0.5, 0.9)
+	var hover_color := Color(0.25, 0.35, 0.55, 0.9)
+	var pressed_color := Color(0.15, 0.25, 0.45, 0.9)
+
+	for btn: Button in [left_btn, right_btn]:
+		var is_left: bool = btn == left_btn
+		btn.custom_minimum_size.y = height
+		for state_name in ["normal", "hover", "pressed"]:
+			var sb := StyleBoxFlat.new()
+			match state_name:
+				"normal": sb.bg_color = bg_color
+				"hover": sb.bg_color = hover_color
+				"pressed": sb.bg_color = pressed_color
+			sb.corner_radius_top_left = int(radius) if is_left else 0
+			sb.corner_radius_bottom_left = int(radius) if is_left else 0
+			sb.corner_radius_top_right = 0 if is_left else int(radius)
+			sb.corner_radius_bottom_right = 0 if is_left else int(radius)
+			btn.add_theme_stylebox_override(state_name, sb)
+
+
+## Apply a tab/handle style to a button on a screen edge.
+## edge_side: "left" = flush left edge, rounded right; "right" = flush right edge, rounded left.
+func _apply_tab_style(btn: Button, edge_side: String) -> void:
+	var bg_color := Color(0.2, 0.3, 0.5, 0.85)
+	var hover_color := Color(0.25, 0.35, 0.55, 0.85)
+	var pressed_color := Color(0.15, 0.25, 0.45, 0.85)
+	var radius := 14
+	var flush_on_left: bool = edge_side == "left"
+
+	for state_name in ["normal", "hover", "pressed"]:
+		var sb := StyleBoxFlat.new()
+		match state_name:
+			"normal": sb.bg_color = bg_color
+			"hover": sb.bg_color = hover_color
+			"pressed": sb.bg_color = pressed_color
+		# Rounded on the side facing inward (where content expands from)
+		sb.corner_radius_top_left = 0 if flush_on_left else radius
+		sb.corner_radius_bottom_left = 0 if flush_on_left else radius
+		sb.corner_radius_top_right = radius if flush_on_left else 0
+		sb.corner_radius_bottom_right = radius if flush_on_left else 0
+		btn.add_theme_stylebox_override(state_name, sb)
+	var sb_disabled := StyleBoxFlat.new()
+	sb_disabled.bg_color = Color(0.3, 0.3, 0.3, 0.5)
+	sb_disabled.corner_radius_top_left = 0 if flush_on_left else radius
+	sb_disabled.corner_radius_bottom_left = 0 if flush_on_left else radius
+	sb_disabled.corner_radius_top_right = radius if flush_on_left else 0
+	sb_disabled.corner_radius_bottom_right = radius if flush_on_left else 0
+	btn.add_theme_stylebox_override("disabled", sb_disabled)
+
+
+func _apply_mobile_utility_buttons() -> void:
+	# Hide individual utility buttons — replaced by a single menu popup
+	btn_bug_report.visible = false
+	btn_concede.visible = false
+	btn_main_menu.visible = false
+
+	# Create a styled menu button in the top-right corner
+	_mobile_menu_btn = Button.new()
+	_mobile_menu_btn.text = "..."
+	_mobile_menu_btn.anchor_left = 1.0
+	_mobile_menu_btn.anchor_right = 1.0
+	_mobile_menu_btn.anchor_top = 0.0
+	_mobile_menu_btn.anchor_bottom = 0.0
+	var menu_pad_r := maxf(20.0, _safe_right + 4.0)
+	var menu_pad_t := maxf(40.0, _safe_top + 24.0)
+	_mobile_menu_btn.offset_left = -(menu_pad_r + 58.0)
+	_mobile_menu_btn.offset_top = menu_pad_t
+	_mobile_menu_btn.offset_right = -menu_pad_r
+	_mobile_menu_btn.offset_bottom = menu_pad_t + 55.0
+	_mobile_menu_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_mobile_menu_btn.custom_minimum_size.y = 55
+	_mobile_menu_btn.add_theme_font_size_override("font_size", 20)
+	_mobile_menu_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	_mobile_menu_btn.z_index = 50
+	_apply_mobile_menu_pill_style(_mobile_menu_btn)
+	_mobile_menu_btn.pressed.connect(_toggle_mobile_menu)
+	add_child(_mobile_menu_btn)
+
+	# Backdrop: dims screen when menu is open
+	_mobile_menu_backdrop = ColorRect.new()
+	_mobile_menu_backdrop.color = Color(0, 0, 0, 0.4)
+	_mobile_menu_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_mobile_menu_backdrop.z_index = 55
+	_mobile_menu_backdrop.visible = false
+	_mobile_menu_backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	_mobile_menu_backdrop.gui_input.connect(func(event: InputEvent):
+		if event is InputEventMouseButton and event.pressed:
+			_close_mobile_menu()
+	)
+	add_child(_mobile_menu_backdrop)
+
+	# Panel with large option buttons
+	_mobile_menu_panel = VBoxContainer.new()
+	_mobile_menu_panel.anchor_left = 1.0
+	_mobile_menu_panel.anchor_right = 1.0
+	_mobile_menu_panel.anchor_top = 0.0
+	_mobile_menu_panel.anchor_bottom = 0.0
+	var panel_w := 200.0
+	var btn_h := 55.0
+	var gap := 6.0
+	var panel_top := menu_pad_t + 55.0 + 8.0
+	_mobile_menu_panel.offset_left = -(menu_pad_r + panel_w)
+	_mobile_menu_panel.offset_right = -menu_pad_r
+	_mobile_menu_panel.offset_top = panel_top
+	_mobile_menu_panel.offset_bottom = panel_top + (btn_h + gap) * 3.0
+	_mobile_menu_panel.add_theme_constant_override("separation", int(gap))
+	_mobile_menu_panel.z_index = 56
+	_mobile_menu_panel.visible = false
+	_mobile_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_mobile_menu_panel)
+
+	for item in [["Report Bug", _on_bug_report_pressed], ["Concede", _on_concede_pressed], ["Main Menu", _on_main_menu_pressed]]:
+		var btn := Button.new()
+		btn.text = item[0]
+		btn.custom_minimum_size.y = btn_h
+		btn.add_theme_font_size_override("font_size", 18)
+		btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		_apply_mobile_menu_pill_style(btn)
+		btn.pressed.connect(func():
+			_close_mobile_menu()
+			(item[1] as Callable).call()
+		)
+		_mobile_menu_panel.add_child(btn)
+
+	# Hand toggle/sort buttons — fire on touch-down
+	for btn: Button in [hand_toggle_button, sort_hand_button,
+			opponent_hand_toggle_button, opponent_sort_hand_button]:
+		btn.custom_minimum_size.y = 60
+		btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+
+	# ShowCards button
+	show_cards_button.custom_minimum_size.y = 62
+	show_cards_button.add_theme_font_size_override("font_size", 22)
+	show_cards_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+
+	# End game buttons
+	btn_rematch.custom_minimum_size.y = 60
+	btn_rematch.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	btn_end_menu.custom_minimum_size.y = 60
+	btn_end_menu.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+
+
+func _apply_mobile_menu_pill_style(btn: Button) -> void:
+	var bg_color := Color(0.2, 0.3, 0.5, 0.9)
+	var hover_color := Color(0.25, 0.35, 0.55, 0.9)
+	var pressed_color := Color(0.15, 0.25, 0.45, 0.9)
+	for state_name in ["normal", "hover", "pressed"]:
+		var sb := StyleBoxFlat.new()
+		match state_name:
+			"normal": sb.bg_color = bg_color
+			"hover": sb.bg_color = hover_color
+			"pressed": sb.bg_color = pressed_color
+		sb.corner_radius_top_left = 15
+		sb.corner_radius_top_right = 15
+		sb.corner_radius_bottom_left = 15
+		sb.corner_radius_bottom_right = 15
+		btn.add_theme_stylebox_override(state_name, sb)
+
+
+func _toggle_mobile_menu() -> void:
+	if _mobile_menu_open:
+		_close_mobile_menu()
+	else:
+		_open_mobile_menu()
+
+
+func _open_mobile_menu() -> void:
+	_mobile_menu_open = true
+	_mobile_menu_backdrop.visible = true
+	_mobile_menu_panel.visible = true
+
+
+func _close_mobile_menu() -> void:
+	_mobile_menu_open = false
+	_mobile_menu_backdrop.visible = false
+	_mobile_menu_panel.visible = false
+
+
+func _update_mobile_divider() -> void:
+	var divider := $VBoxContainer/BoardArea/BoardColumn/Divider as ColorRect
+	# Use the wider of the two boards' LayoutContainer widths
+	var lc1 := player1_board.get_node("LayoutContainer") as Control
+	var lc2 := player2_board.get_node("LayoutContainer") as Control
+	var w := maxf(lc1.size.x, lc2.size.x)
+	if w > 0.0:
+		divider.custom_minimum_size.x = w
+
+
+func _apply_mobile_board_view() -> void:
+	var local_board: Control = player1_board if local_player_id == 0 else player2_board
+	var opponent_board: Control = player2_board if local_player_id == 0 else player1_board
+	match _mobile_board_view:
+		MobileBoardView.LOCAL_ENLARGED:
+			local_board.size_flags_stretch_ratio = 0.62
+			opponent_board.size_flags_stretch_ratio = 0.38
+			local_board.apply_mobile_label_scale(1.0)
+			opponent_board.apply_mobile_label_scale(0.6)
+		MobileBoardView.OPPONENT_ENLARGED:
+			local_board.size_flags_stretch_ratio = 0.38
+			opponent_board.size_flags_stretch_ratio = 0.62
+			local_board.apply_mobile_label_scale(0.6)
+			opponent_board.apply_mobile_label_scale(1.0)
+		MobileBoardView.BALANCED:
+			local_board.size_flags_stretch_ratio = 0.5
+			opponent_board.size_flags_stretch_ratio = 0.5
+			local_board.apply_mobile_label_scale(1.0)
+			opponent_board.apply_mobile_label_scale(1.0)
+
+
+func _setup_mobile_view_toggle() -> void:
+	_mobile_view_toggle_btn = Button.new()
+	_mobile_view_toggle_btn.custom_minimum_size = Vector2(55, 60)
+	# Anchored to bottom-left — positioned dynamically in _position_hands()
+	_mobile_view_toggle_btn.anchor_left = 0.0
+	_mobile_view_toggle_btn.anchor_right = 0.0
+	_mobile_view_toggle_btn.anchor_top = 1.0
+	_mobile_view_toggle_btn.anchor_bottom = 1.0
+	_mobile_view_toggle_btn.z_index = 61
+	_mobile_view_toggle_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	_mobile_view_toggle_btn.pressed.connect(_cycle_mobile_board_view)
+	add_child(_mobile_view_toggle_btn)
+	# Apply pill style matching the hand buttons
+	var bg_color := Color(0.2, 0.3, 0.5, 0.9)
+	var hover_color := Color(0.25, 0.35, 0.55, 0.9)
+	var pressed_color := Color(0.15, 0.25, 0.45, 0.9)
+	for state_name in ["normal", "hover", "pressed"]:
+		var sb := StyleBoxFlat.new()
+		match state_name:
+			"normal": sb.bg_color = bg_color
+			"hover": sb.bg_color = hover_color
+			"pressed": sb.bg_color = pressed_color
+		sb.corner_radius_top_left = 15
+		sb.corner_radius_top_right = 15
+		sb.corner_radius_bottom_left = 15
+		sb.corner_radius_bottom_right = 15
+		sb.content_margin_left = 8
+		sb.content_margin_right = 8
+		sb.content_margin_top = 8
+		sb.content_margin_bottom = 8
+		_mobile_view_toggle_btn.add_theme_stylebox_override(state_name, sb)
+	# Draw the icon via a custom draw callback
+	_mobile_view_toggle_btn.draw.connect(_draw_board_view_icon)
+	_mobile_view_toggle_btn.queue_redraw()
+
+
+func _cycle_mobile_board_view() -> void:
+	_mobile_board_view = (_mobile_board_view + 1) % 3
+	_apply_mobile_board_view()
+	_mobile_view_toggle_btn.queue_redraw()
+
+
+func _draw_board_view_icon() -> void:
+	var btn := _mobile_view_toggle_btn
+	if not btn:
+		return
+	var w := btn.size.x
+	var h := btn.size.y
+	var pad := 12.0
+	var gap := 3.0
+	var box_w := w - pad * 2.0
+	var total_h := h - pad * 2.0
+	var top_ratio: float
+	var bot_ratio: float
+	match _mobile_board_view:
+		MobileBoardView.LOCAL_ENLARGED:
+			top_ratio = 0.35  # opponent = small
+			bot_ratio = 0.65  # you = large
+		MobileBoardView.OPPONENT_ENLARGED:
+			top_ratio = 0.65  # opponent = large
+			bot_ratio = 0.35  # you = small
+		_:
+			top_ratio = 0.5
+			bot_ratio = 0.5
+	var top_h := (total_h - gap) * top_ratio
+	var bot_h := (total_h - gap) * bot_ratio
+	var x := pad
+	var color := Color(0.85, 0.85, 0.85)
+	# Top box (opponent)
+	btn.draw_rect(Rect2(x, pad, box_w, top_h), color, false, 1.5)
+	# Bottom box (you)
+	btn.draw_rect(Rect2(x, pad + top_h + gap, box_w, bot_h), color, false, 1.5)
+
+
+func _setup_mobile_log_tray() -> void:
+	var log_panel := $LogPanel as PanelContainer
+	var log_bg := StyleBoxFlat.new()
+	log_bg.bg_color = Color(0.08, 0.08, 0.12, 0.95)
+	log_bg.corner_radius_top_right = 10
+	log_bg.corner_radius_bottom_right = 10
+	log_panel.add_theme_stylebox_override("panel", log_bg)
+	# Position log panel as a left-side tray that slides in/out
+	log_panel.anchor_left = 0.0
+	log_panel.anchor_right = 0.0
+	log_panel.anchor_top = 0.1
+	log_panel.anchor_bottom = 0.85
+	log_panel.offset_left = 0.0
+	log_panel.offset_right = 320.0
+	log_panel.offset_top = 0.0
+	log_panel.offset_bottom = 0.0
+	log_panel.z_index = 90
+	# Start hidden off-screen to the left
+	log_panel.position.x = -320.0
+	log_panel.visible = true
+
+	# Toggle button pinned to the left edge
+	_mobile_log_toggle_btn = Button.new()
+	_mobile_log_toggle_btn.text = "Log"
+	_mobile_log_toggle_btn.custom_minimum_size = Vector2(50, 75)
+	_mobile_log_toggle_btn.anchor_left = 0.0
+	_mobile_log_toggle_btn.anchor_right = 0.0
+	_mobile_log_toggle_btn.anchor_top = 0.5
+	_mobile_log_toggle_btn.anchor_bottom = 0.5
+	var log_pad_l := maxf(4.0, _safe_left)
+	_mobile_log_toggle_btn.offset_left = log_pad_l
+	_mobile_log_toggle_btn.offset_top = -38.0
+	_mobile_log_toggle_btn.offset_right = log_pad_l + 50.0
+	_mobile_log_toggle_btn.offset_bottom = 37.0
+	_mobile_log_toggle_btn.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_mobile_log_toggle_btn.add_theme_font_size_override("font_size", 15)
+	_mobile_log_toggle_btn.z_index = 91
+	_mobile_log_toggle_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	_apply_tab_style(_mobile_log_toggle_btn, "left")
+	_mobile_log_toggle_btn.pressed.connect(_toggle_mobile_log_tray)
+	add_child(_mobile_log_toggle_btn)
+
+	# Unread chat badge (red circle with count, hidden by default)
+	_mobile_log_badge = Label.new()
+	_mobile_log_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_mobile_log_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_mobile_log_badge.custom_minimum_size = Vector2(25, 25)
+	_mobile_log_badge.add_theme_font_size_override("font_size", 14)
+	_mobile_log_badge.add_theme_color_override("font_color", Color.WHITE)
+	var badge_bg := StyleBoxFlat.new()
+	badge_bg.bg_color = Color(0.85, 0.15, 0.15)
+	badge_bg.corner_radius_top_left = 12
+	badge_bg.corner_radius_top_right = 12
+	badge_bg.corner_radius_bottom_left = 12
+	badge_bg.corner_radius_bottom_right = 12
+	badge_bg.content_margin_left = 5
+	badge_bg.content_margin_right = 5
+	_mobile_log_badge.add_theme_stylebox_override("normal", badge_bg)
+	_mobile_log_badge.anchor_left = 1.0
+	_mobile_log_badge.anchor_top = 0.0
+	_mobile_log_badge.offset_left = -8.0
+	_mobile_log_badge.offset_top = -6.0
+	_mobile_log_badge.offset_right = 12.0
+	_mobile_log_badge.offset_bottom = 14.0
+	_mobile_log_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mobile_log_badge.visible = false
+	_mobile_log_toggle_btn.add_child(_mobile_log_badge)
+
+
+func _notify_mobile_log_chat() -> void:
+	if not _is_mobile_layout or _mobile_log_tray_open:
+		return
+	_mobile_log_unread += 1
+	if _mobile_log_badge:
+		_mobile_log_badge.text = str(_mobile_log_unread)
+		_mobile_log_badge.visible = true
+
+
+func _clear_mobile_log_badge() -> void:
+	_mobile_log_unread = 0
+	if _mobile_log_badge:
+		_mobile_log_badge.visible = false
+
+
+func _toggle_mobile_log_tray() -> void:
+	var log_panel := $LogPanel as PanelContainer
+	_mobile_log_tray_open = not _mobile_log_tray_open
+
+	if _mobile_log_tween and _mobile_log_tween.is_valid():
+		_mobile_log_tween.kill()
+	_mobile_log_tween = create_tween()
+	_mobile_log_tween.set_ease(Tween.EASE_OUT)
+	_mobile_log_tween.set_trans(Tween.TRANS_CUBIC)
+
+	var log_pad := maxf(4.0, _safe_left)
+	if _mobile_log_tray_open:
+		_clear_mobile_log_badge()
+		_mobile_log_tween.tween_property(log_panel, "position:x", 0.0, 0.25)
+		_mobile_log_tween.parallel().tween_property(_mobile_log_toggle_btn, "offset_left", 320.0 + log_pad, 0.25)
+		_mobile_log_tween.parallel().tween_property(_mobile_log_toggle_btn, "offset_right", 370.0 + log_pad, 0.25)
+	else:
+		_mobile_log_tween.tween_property(log_panel, "position:x", -320.0, 0.25)
+		_mobile_log_tween.parallel().tween_property(_mobile_log_toggle_btn, "offset_left", log_pad, 0.25)
+		_mobile_log_tween.parallel().tween_property(_mobile_log_toggle_btn, "offset_right", log_pad + 50.0, 0.25)
+
+
+func _apply_mobile_hand_button_stacks() -> void:
+	# Stacks are dynamically positioned in _position_hands() on mobile,
+	# placed to the left of the hand / opponent board. Set anchors to 0,0
+	# for absolute offset positioning.
+	var hand_stack := $HandButtonStack as HBoxContainer
+	hand_stack.anchor_left = 0.0
+	hand_stack.anchor_right = 0.0
+	hand_stack.anchor_top = 0.0
+	hand_stack.anchor_bottom = 0.0
+	hand_stack.grow_horizontal = Control.GROW_DIRECTION_END
+	hand_stack.z_index = 56
+	hand_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var opp_stack := $OpponentHandButtonStack as HBoxContainer
+	opp_stack.anchor_left = 0.0
+	opp_stack.anchor_right = 0.0
+	opp_stack.anchor_top = 0.0
+	opp_stack.anchor_bottom = 0.0
+	opp_stack.grow_horizontal = Control.GROW_DIRECTION_END
+	opp_stack.z_index = 56
+	opp_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# Apply split-pill styling: [▲|Sort] / [▼|Sort]
+	_apply_split_pill_style(hand_toggle_button, sort_hand_button, 60.0, 15.0)
+	_apply_split_pill_style(opponent_hand_toggle_button, opponent_sort_hand_button, 60.0, 15.0)
+
+
+func _apply_mobile_action_prompt() -> void:
+	# Position action prompt centered, leaving room for FAB area on right.
+	var prompt := $ActionPrompt as PanelContainer
+	var pad_l := maxf(20.0, _safe_left + 4.0)
+	var pad_r := maxf(20.0, _safe_right + 4.0)
+	prompt.anchor_left = 0.0
+	prompt.anchor_right = 1.0
+	prompt.anchor_top = 1.0
+	prompt.anchor_bottom = 1.0
+	prompt.offset_left = pad_l
+	prompt.offset_top = -186.0
+	prompt.offset_right = -(pad_r + 300.0)  # Leave room for FAB area
+	prompt.offset_bottom = -160.0
+	prompt.z_index = 56
+
+
+func _apply_mobile_overlays() -> void:
+	# Increase scroll deadzone so touch scrolling doesn't accidentally tap cards
+	for scroll_path in [
+		"DeckSearchOverlay/DeckSearchPanel/VBox/ScrollContainer",
+		"DiscardViewOverlay/DiscardViewPanel/VBox/ScrollContainer",
+		"MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/ScrollContainer",
+		"ZoneStackViewOverlay/ZoneStackViewPanel/VBox/ScrollContainer",
+	]:
+		var sc: ScrollContainer = get_node_or_null(scroll_path)
+		if sc:
+			sc.scroll_deadzone = 40
+
+	# Touch-friendly close/skip/confirm buttons
+	for btn: Button in [deck_search_skip, discard_view_close, monster_deck_view_close,
+			zone_stack_view_close, deck_arrange_confirm, deck_arrange_view_board,
+			deck_search_view_board]:
+		btn.custom_minimum_size.y = 55
+		btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+
+	# Touch-friendly CheckButton toggles
+	for cb: CheckButton in [deck_search_show_all, deck_search_stacked,
+			discard_view_stacked, monster_deck_view_stacked]:
+		cb.custom_minimum_size.y = 55
+		cb.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+
+
+func _create_mobile_phase_label() -> void:
+	_mobile_phase_label = Label.new()
+	_mobile_phase_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_mobile_phase_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_mobile_phase_label.add_theme_font_size_override("font_size", 13)
+	_mobile_phase_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3, 1.0))
+	# Top-right corner
+	_mobile_phase_label.anchor_left = 0.5
+	_mobile_phase_label.anchor_right = 1.0
+	_mobile_phase_label.anchor_top = 0.0
+	_mobile_phase_label.anchor_bottom = 0.0
+	var phase_pad_r := maxf(60.0, _safe_right + 50.0)  # Leave room for "..." menu button
+	var phase_pad_t := maxf(20.0, _safe_top + 4.0)
+	_mobile_phase_label.offset_left = 0.0
+	_mobile_phase_label.offset_top = phase_pad_t
+	_mobile_phase_label.offset_right = -phase_pad_r
+	_mobile_phase_label.offset_bottom = phase_pad_t + 18.0
+	_mobile_phase_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mobile_phase_label.z_index = 50
+	add_child(_mobile_phase_label)
+
+
+func _setup_mobile_tracker_tray() -> void:
+	# Move the TurnTracker out of the hidden RightSpacer into a right-side tray
+	var tracker := $VBoxContainer/BoardArea/RightSpacer/TurnTracker as VBoxContainer
+	var turn_label_margin := $VBoxContainer/BoardArea/RightSpacer/TurnLabelMargin
+
+	# Create a panel to hold the tracker
+	var panel := PanelContainer.new()
+	panel.name = "MobileTrackerPanel"
+	var panel_bg := StyleBoxFlat.new()
+	panel_bg.bg_color = Color(0.08, 0.08, 0.12, 0.95)
+	panel_bg.corner_radius_top_left = 10
+	panel_bg.corner_radius_bottom_left = 10
+	panel.add_theme_stylebox_override("panel", panel_bg)
+	panel.anchor_left = 1.0
+	panel.anchor_right = 1.0
+	panel.anchor_top = 0.05
+	panel.anchor_bottom = 0.85
+	panel.offset_left = -140.0
+	panel.offset_right = 0.0
+	panel.z_index = 90
+	# Start off-screen: shift offsets right by 140px
+	panel.offset_left = 0.0
+	panel.offset_right = 140.0
+	add_child(panel)
+
+	# VBox inside the panel to stack turn label + tracker
+	var vbox := VBoxContainer.new()
+	panel.add_child(vbox)
+
+	# Move turn label into the vbox first
+	turn_label_margin.get_parent().remove_child(turn_label_margin)
+	vbox.add_child(turn_label_margin)
+
+	# Move tracker into the vbox
+	tracker.get_parent().remove_child(tracker)
+	vbox.add_child(tracker)
+	tracker.visible = true
+
+	# Toggle button pinned to the right edge
+	_mobile_tracker_toggle_btn = Button.new()
+	_mobile_tracker_toggle_btn.text = "Turns"
+	_mobile_tracker_toggle_btn.custom_minimum_size = Vector2(50, 75)
+	_mobile_tracker_toggle_btn.anchor_left = 1.0
+	_mobile_tracker_toggle_btn.anchor_right = 1.0
+	_mobile_tracker_toggle_btn.anchor_top = 0.5
+	_mobile_tracker_toggle_btn.anchor_bottom = 0.5
+	var trk_pad_r := maxf(4.0, _safe_right)
+	_mobile_tracker_toggle_btn.offset_left = -(trk_pad_r + 50.0)
+	_mobile_tracker_toggle_btn.offset_top = -38.0
+	_mobile_tracker_toggle_btn.offset_right = -trk_pad_r
+	_mobile_tracker_toggle_btn.offset_bottom = 37.0
+	_mobile_tracker_toggle_btn.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_mobile_tracker_toggle_btn.add_theme_font_size_override("font_size", 12)
+	_mobile_tracker_toggle_btn.z_index = 91
+	_mobile_tracker_toggle_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	_apply_tab_style(_mobile_tracker_toggle_btn, "right")
+	_mobile_tracker_toggle_btn.pressed.connect(_toggle_mobile_tracker_tray)
+	add_child(_mobile_tracker_toggle_btn)
+
+
+func _toggle_mobile_tracker_tray() -> void:
+	var panel := get_node_or_null("MobileTrackerPanel") as PanelContainer
+	if not panel:
+		return
+	_mobile_tracker_tray_open = not _mobile_tracker_tray_open
+
+	if _mobile_tracker_tween and _mobile_tracker_tween.is_valid():
+		_mobile_tracker_tween.kill()
+	_mobile_tracker_tween = create_tween()
+	_mobile_tracker_tween.set_ease(Tween.EASE_OUT)
+	_mobile_tracker_tween.set_trans(Tween.TRANS_CUBIC)
+
+	var trk_pad := maxf(4.0, _safe_right)
+	if _mobile_tracker_tray_open:
+		# Slide panel on-screen: offsets go to normal position
+		_mobile_tracker_tween.tween_property(panel, "offset_left", -(140.0 + trk_pad), 0.25)
+		_mobile_tracker_tween.parallel().tween_property(panel, "offset_right", -trk_pad, 0.25)
+		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_left", -(190.0 + trk_pad), 0.25)
+		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_right", -(140.0 + trk_pad), 0.25)
+	else:
+		# Slide panel off-screen to the right
+		_mobile_tracker_tween.tween_property(panel, "offset_left", 0.0, 0.25)
+		_mobile_tracker_tween.parallel().tween_property(panel, "offset_right", 140.0, 0.25)
+		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_left", -(trk_pad + 50.0), 0.25)
+		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_right", -trk_pad, 0.25)
+
+
+func _apply_safe_area_insets() -> void:
+	var safe_area := DisplayServer.get_display_safe_area()
+	var screen_size := DisplayServer.screen_get_size()
+	if screen_size.x > 0 and screen_size.y > 0:
+		var viewport_size := get_viewport().get_visible_rect().size
+		var scale_x := viewport_size.x / float(screen_size.x)
+		var scale_y := viewport_size.y / float(screen_size.y)
+		_safe_left = safe_area.position.x * scale_x
+		_safe_top = safe_area.position.y * scale_y
+		_safe_right = (screen_size.x - (safe_area.position.x + safe_area.size.x)) * scale_x
+		_safe_bottom = (screen_size.y - (safe_area.position.y + safe_area.size.y)) * scale_y
+		var vbox := $VBoxContainer
+		vbox.offset_left = _safe_left
+		vbox.offset_right = -_safe_right
+		vbox.offset_top = _safe_top
+
+
+func _retry_safe_area_insets() -> void:
+	_apply_safe_area_insets()
+	if _safe_left == 0.0 and _safe_right == 0.0 and _safe_top == 0.0:
+		return  # Still no safe area data — nothing to update
+	# Reposition all floating elements with the now-available safe area insets
+	var pad_l := maxf(20.0, _safe_left + 4.0)
+	var pad_r := maxf(20.0, _safe_right + 4.0)
+	var pad_b := maxf(20.0, _safe_bottom + 4.0)
+	# FAB container
+	if _fab_container:
+		var btn_size := 85.0
+		var col_gap := 12.0
+		var label_h := 18.0
+		var cell_h := btn_size + label_h + 2.0
+		var row_gap := 8.0
+		var grid_w := btn_size * 3 + col_gap * 2
+		var container_w := grid_w + 20.0
+		var container_h := cell_h * 2.0 + row_gap + btn_size + 8.0
+		_fab_container.offset_left = -(pad_r + container_w)
+		_fab_container.offset_right = -pad_r
+		_fab_container.offset_top = -(pad_b + container_h)
+		_fab_container.offset_bottom = -pad_b
+		if _fab_main_btn:
+			_fab_main_btn.position = Vector2(container_w - btn_size, container_h - btn_size)
+	# Log toggle button
+	var log_pad := maxf(4.0, _safe_left)
+	if _mobile_log_toggle_btn:
+		if not _mobile_log_tray_open:
+			_mobile_log_toggle_btn.offset_left = log_pad
+			_mobile_log_toggle_btn.offset_right = log_pad + 50.0
+		else:
+			_mobile_log_toggle_btn.offset_left = 320.0 + log_pad
+			_mobile_log_toggle_btn.offset_right = 370.0 + log_pad
+	# Board view toggle button — positioned dynamically in _position_hands()
+	# Tracker toggle button
+	var trk_pad := maxf(4.0, _safe_right)
+	if _mobile_tracker_toggle_btn:
+		if not _mobile_tracker_tray_open:
+			_mobile_tracker_toggle_btn.offset_left = -(trk_pad + 50.0)
+			_mobile_tracker_toggle_btn.offset_right = -trk_pad
+		else:
+			_mobile_tracker_toggle_btn.offset_left = -(190.0 + trk_pad)
+			_mobile_tracker_toggle_btn.offset_right = -(140.0 + trk_pad)
+	# Menu button + panel (top-right)
+	if _mobile_menu_btn:
+		var menu_pad := maxf(20.0, _safe_right + 4.0)
+		var menu_pad_t := maxf(40.0, _safe_top + 24.0)
+		_mobile_menu_btn.offset_left = -(menu_pad + 58.0)
+		_mobile_menu_btn.offset_right = -menu_pad
+		_mobile_menu_btn.offset_top = menu_pad_t
+		_mobile_menu_btn.offset_bottom = menu_pad_t + 55.0
+	if _mobile_menu_panel:
+		var menu_pad2 := maxf(20.0, _safe_right + 4.0)
+		var menu_pad_t2 := maxf(40.0, _safe_top + 24.0)
+		var panel_top := menu_pad_t2 + 55.0 + 8.0
+		_mobile_menu_panel.offset_left = -(menu_pad2 + 200.0)
+		_mobile_menu_panel.offset_right = -menu_pad2
+		_mobile_menu_panel.offset_top = panel_top
+	# Phase label (top-right)
+	if _mobile_phase_label:
+		var phase_pad := maxf(60.0, _safe_right + 50.0)
+		var phase_pad_t := maxf(20.0, _safe_top + 4.0)
+		_mobile_phase_label.offset_right = -phase_pad
+		_mobile_phase_label.offset_top = phase_pad_t
+	# Action prompt
+	var prompt := get_node_or_null("ActionPrompt") as PanelContainer
+	if prompt:
+		prompt.offset_left = pad_l
+		prompt.offset_right = -(pad_r + 230.0)
+	# Hand button stacks update via _position_hands
+	_position_hands()
 
 
 # --- State access helpers (work for both host and client) ---
@@ -943,6 +2029,12 @@ func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: 
 				var sub_label: Label = subs[si]
 				var is_active_sub := is_active_phase and si == sub_phase
 				sub_label.add_theme_color_override("font_color", active_color if is_active_sub else inactive_sub_color)
+
+	# Update compact mobile phase indicator
+	if _mobile_phase_label:
+		var phase_name := CardEnums.phase_to_string(phase)
+		var pname := GameLog.player_name(player_id)
+		_mobile_phase_label.text = "Turn %d | %s - %s" % [turn_num, pname, phase_name]
 
 
 # --- Signal handlers from TurnManager (host/solo only) ---
@@ -1057,12 +2149,13 @@ func _on_confirmation_requested(prompt: String, setting: String) -> void:
 func _show_confirmation(prompt: String) -> void:
 	_awaiting_confirmation = true
 	_disable_all_buttons()
-	btn_pass.text = prompt
-	btn_pass.visible = true
-	btn_pass.disabled = false
-	await btn_pass.pressed
+	btn_confirm.text = prompt
+	_fit_button_text(btn_confirm)
+	btn_confirm.disabled = false
+	await btn_confirm.pressed
 	_awaiting_confirmation = false
-	btn_pass.text = "Pass"
+	btn_confirm.disabled = true
+	btn_confirm.add_theme_font_size_override("font_size", 18)
 	if turn_manager:
 		turn_manager.confirm()
 	elif is_multiplayer_game:
@@ -1378,8 +2471,7 @@ func _execute_rematch() -> void:
 	# 5. Restore action panel and hide overlays
 	_cleanup_first_player_ui()
 	_cleanup_choice_selection()
-	action_panel.get_node("Row1").visible = true
-	action_panel.get_node("Row2").visible = true
+	_set_action_buttons_visible(true)
 	action_prompt_panel.visible = false
 	deck_search_overlay.visible = false
 	deck_arrange_overlay.visible = false
@@ -1580,9 +2672,6 @@ func _on_play_monster_pressed() -> void:
 
 
 func _on_invade_pressed() -> void:
-	if _confirming_pass:
-		_cancel_pass_confirmation()
-		return
 	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
 		return
 
@@ -1598,7 +2687,16 @@ func _on_invade_pressed() -> void:
 	_enter_card_selection("Select a card to discard for Invasion:", playable)
 
 
-func _on_pass_pressed() -> void:
+func _on_end_main_pressed() -> void:
+	if _player_settings[_get_current_pid()].get("confirm_main_phase_pass", false):
+		_enter_pass_confirmation()
+		return
+	_clear_card_highlight()
+	_cancel_selection()
+	_submit_action(CardEnums.ActionType.PASS)
+
+
+func _on_confirm_pressed() -> void:
 	if _awaiting_confirmation:
 		return
 	if _confirming_pass:
@@ -1616,6 +2714,12 @@ func _on_pass_pressed() -> void:
 	if _discard_selecting and _discard_selected_cards.size() == _discard_count:
 		_confirm_hand_discard()
 		return
+
+
+func _on_cancel_pressed() -> void:
+	if _confirming_pass:
+		_cancel_pass_confirmation()
+		return
 	if waiting_for_card_select or waiting_for_zone_select:
 		_clear_card_highlight()
 		_cancel_selection()
@@ -1624,12 +2728,6 @@ func _on_pass_pressed() -> void:
 		else:
 			_update_action_buttons(_client_playable.get("valid_actions", []))
 		return
-	if _player_settings[_get_current_pid()].get("confirm_main_phase_pass", false):
-		_enter_pass_confirmation()
-		return
-	_clear_card_highlight()
-	_cancel_selection()
-	_submit_action(CardEnums.ActionType.PASS)
 
 
 func _enter_pass_confirmation() -> void:
@@ -1637,18 +2735,17 @@ func _enter_pass_confirmation() -> void:
 	_disable_all_buttons()
 	action_prompt_panel.visible = true
 	card_select_prompt.text = "End Main Phase?"
-	btn_pass.text = "Confirm"
-	btn_pass.disabled = false
-	btn_pass.visible = true
-	btn_invade.text = "Cancel"
-	btn_invade.disabled = false
-	btn_invade.visible = true
+	btn_confirm.text = "Confirm"
+	btn_confirm.disabled = false
+	btn_cancel.text = "Cancel"
+	btn_cancel.disabled = false
 
 
 func _cancel_pass_confirmation() -> void:
 	_confirming_pass = false
-	btn_invade.text = "Invade"
 	action_prompt_panel.visible = false
+	btn_confirm.disabled = true
+	btn_cancel.disabled = true
 	if turn_manager:
 		_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
 	else:
@@ -1662,8 +2759,8 @@ func _enter_card_selection(prompt_text: String, valid_indices: Array[int]) -> vo
 	card_select_prompt.text = prompt_text
 	action_prompt_panel.visible = true
 	_disable_all_buttons()
-	btn_pass.disabled = false
-	btn_pass.text = "Cancel"
+	btn_cancel.text = "Cancel"
+	btn_cancel.disabled = false
 
 	var board := _get_active_player_board()
 	if board and board.hand_manager:
@@ -1882,8 +2979,18 @@ func _input(event: InputEvent) -> void:
 		var old_pos: Vector2 = _pinch_touches.get(event.index, event.position)
 		_pinch_touches[event.index] = event.position
 		if _pinch_active and _pinch_touches.size() >= 2:
-			# Two-finger pinch zoom
+			# Two-finger pinch zoom + pan simultaneously
 			var points: Array = _pinch_touches.values()
+			var old_midpoint := old_pos
+			# Compute old midpoint from the other finger's current pos and this finger's old pos
+			var keys: Array = _pinch_touches.keys()
+			var other_idx: int = keys[0] if keys[1] == event.index else keys[1]
+			var other_pos: Vector2 = _pinch_touches[other_idx]
+			old_midpoint = (old_pos + other_pos) / 2.0
+			var new_midpoint: Vector2 = (_pinch_touches[event.index] + other_pos) / 2.0
+			# Pan by midpoint delta
+			card_zoom_container.position += new_midpoint - old_midpoint
+			# Zoom by distance change
 			var dist: float = (points[0] as Vector2).distance_to(points[1] as Vector2)
 			if _pinch_start_distance > 0.0:
 				var new_scale: float = clampf(_pinch_start_scale * dist / _pinch_start_distance, 1.0, PINCH_MAX_SCALE)
@@ -1999,7 +3106,8 @@ func _cancel_selection() -> void:
 	_selected_card_data = {}
 	_zone_select_valid = []
 	action_prompt_panel.visible = false
-	btn_pass.text = "Pass"
+	btn_confirm.disabled = true
+	btn_cancel.disabled = true
 	_restore_expanded_hand()
 	_restore_expanded_opponent_hand()
 
@@ -2071,15 +3179,21 @@ func _update_hand_visibility(active_player_id: int) -> void:
 
 func _update_action_buttons(valid_actions: Array) -> void:
 	_confirming_pass = false
+	btn_invade.text = "Invade"
 	btn_play_battle.disabled = CardEnums.ActionType.PLAY_BATTLE not in valid_actions
 	btn_play_strategy.disabled = CardEnums.ActionType.PLAY_STRATEGY not in valid_actions
 	btn_gain_rage.disabled = CardEnums.ActionType.GAIN_RAGE not in valid_actions
 	btn_play_monster.disabled = CardEnums.ActionType.PLAY_MONSTER not in valid_actions
 	btn_invade.disabled = CardEnums.ActionType.INVADE not in valid_actions
-	btn_pass.disabled = false
-	btn_pass.visible = true
-	btn_pass.text = "End Main"
+	btn_end_main.disabled = false
+	btn_end_main.visible = true
+	btn_confirm.disabled = true
+	btn_cancel.disabled = true
 	action_prompt_panel.visible = false
+	# Redraw FAB icons to reflect enabled/disabled state
+	if _fab_container:
+		for btn: Button in _fab_action_btns:
+			btn.queue_redraw()
 
 
 func _disable_all_buttons() -> void:
@@ -2088,7 +3202,12 @@ func _disable_all_buttons() -> void:
 	btn_gain_rage.disabled = true
 	btn_play_monster.disabled = true
 	btn_invade.disabled = true
-	btn_pass.disabled = true
+	btn_end_main.disabled = true
+	btn_confirm.disabled = true
+	btn_cancel.disabled = true
+	if _fab_container:
+		for btn: Button in _fab_action_btns:
+			btn.queue_redraw()
 
 
 func _get_active_player_board() -> Control:
@@ -2392,6 +3511,7 @@ func _refresh_deck_search_grid() -> void:
 				card.card_clicked.connect(_on_deck_search_card_clicked)
 			else:
 				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
+			card.card_right_clicked.connect(_on_card_long_press_zoom)
 			deck_search_grid.add_child(card)
 			_add_count_badge(card, count)
 	else:
@@ -2407,6 +3527,7 @@ func _refresh_deck_search_grid() -> void:
 				card.card_clicked.connect(_on_deck_search_card_clicked)
 			else:
 				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
+			card.card_right_clicked.connect(_on_card_long_press_zoom)
 			deck_search_grid.add_child(card)
 
 
@@ -2420,6 +3541,260 @@ func _on_deck_search_view_board() -> void:
 	show_cards_button.visible = true
 
 
+# --- FAB (Floating Action Button) ---
+
+
+func _toggle_fab() -> void:
+	if _fab_expanded:
+		_collapse_fab()
+	else:
+		_expand_fab()
+
+
+func _expand_fab() -> void:
+	if _fab_expanded:
+		return
+	_fab_expanded = true
+
+	_fab_backdrop.visible = true
+	_fab_backdrop.modulate.a = 0.0
+
+	if _fab_tween and _fab_tween.is_valid():
+		_fab_tween.kill()
+	_fab_tween = create_tween()
+	_fab_tween.set_parallel(true)
+
+	# Fade in backdrop
+	_fab_tween.tween_property(_fab_backdrop, "modulate:a", 1.0, 0.2)
+
+	# Rotate FAB "+" to "×" (45°)
+	_fab_tween.tween_property(_fab_main_btn, "rotation", deg_to_rad(45.0), 0.25) \
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+	var btn_size := 85.0
+	var fab_center := _fab_main_btn.position + Vector2(btn_size / 2.0, btn_size / 2.0)
+
+	var count := _fab_action_btns.size()
+	for i in range(count):
+		var btn: Button = _fab_action_btns[i]
+		var lbl: Label = _fab_labels[i]
+		var target_pos: Vector2 = btn.get_meta("fab_target_pos")
+		var stagger := (count - 1 - i) * 0.03
+
+		btn.visible = true
+		btn.position = fab_center - Vector2(btn_size / 2.0, btn_size / 2.0)
+		btn.scale = Vector2.ZERO
+		btn.custom_minimum_size = Vector2(btn_size, btn_size)
+		btn.size = Vector2(btn_size, btn_size)
+		btn.text = ""
+		btn.pivot_offset = Vector2(btn_size / 2.0, btn_size / 2.0)
+		_apply_circle_style(btn, Color(0.2, 0.3, 0.5, 0.9))
+
+		_fab_tween.tween_property(btn, "position", target_pos, 0.25) \
+			.set_delay(stagger) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+		_fab_tween.tween_property(btn, "scale", Vector2.ONE, 0.25) \
+			.set_delay(stagger) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+		lbl.visible = true
+		lbl.modulate.a = 0.0
+		_fab_tween.tween_property(lbl, "modulate:a", 1.0, 0.15) \
+			.set_delay(stagger + 0.15)
+
+	# Hide standalone pills while FAB is expanded
+	btn_end_main.visible = false
+	btn_confirm.visible = false
+	btn_cancel.visible = false
+
+	_fab_main_btn.queue_redraw()
+
+
+func _collapse_fab() -> void:
+	if not _fab_expanded:
+		return
+	_fab_expanded = false
+
+	if _fab_tween and _fab_tween.is_valid():
+		_fab_tween.kill()
+	_fab_tween = create_tween()
+	_fab_tween.set_parallel(true)
+
+	_fab_tween.tween_property(_fab_backdrop, "modulate:a", 0.0, 0.15)
+	_fab_tween.tween_property(_fab_main_btn, "rotation", 0.0, 0.2) \
+		.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_BACK)
+
+	var btn_size := 85.0
+	var fab_center := _fab_main_btn.position + Vector2(btn_size / 2.0, btn_size / 2.0)
+
+	var count := _fab_action_btns.size()
+	for i in range(count):
+		var btn: Button = _fab_action_btns[i]
+		var lbl: Label = _fab_labels[i]
+		var stagger := i * 0.02
+
+		lbl.visible = false
+
+		_fab_tween.tween_property(btn, "position",
+			fab_center - Vector2(btn_size / 2.0, btn_size / 2.0), 0.2) \
+			.set_delay(stagger) \
+			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+		_fab_tween.tween_property(btn, "scale", Vector2.ZERO, 0.2) \
+			.set_delay(stagger) \
+			.set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+
+	_fab_tween.chain().tween_callback(func():
+		for btn: Button in _fab_action_btns:
+			btn.visible = false
+		_fab_backdrop.visible = false
+		_setup_standalone_buttons()
+		btn_end_main.visible = true
+		btn_confirm.visible = true
+		btn_cancel.visible = true
+	)
+
+	_fab_main_btn.queue_redraw()
+
+
+func _collapse_fab_instant() -> void:
+	if not _fab_expanded and not _fab_action_btns.is_empty() and not _fab_action_btns[0].visible:
+		# Already collapsed — just ensure standalone button positions
+		if _fab_container:
+			_setup_standalone_buttons()
+		return
+	_fab_expanded = false
+	if _fab_tween and _fab_tween.is_valid():
+		_fab_tween.kill()
+	for i in range(_fab_action_btns.size()):
+		_fab_action_btns[i].visible = false
+		_fab_action_btns[i].scale = Vector2.ZERO
+		if i < _fab_labels.size():
+			_fab_labels[i].visible = false
+	if _fab_backdrop:
+		_fab_backdrop.visible = false
+	if _fab_main_btn:
+		_fab_main_btn.rotation = 0.0
+		_fab_main_btn.queue_redraw()
+	_setup_standalone_buttons()
+	btn_end_main.visible = true
+	btn_confirm.visible = true
+	btn_cancel.visible = true
+
+
+func _on_fab_backdrop_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		_collapse_fab()
+		get_viewport().set_input_as_handled()
+
+
+# --- FAB Icon Drawing ---
+
+
+func _draw_fab_main_icon() -> void:
+	var btn := _fab_main_btn
+	if not btn:
+		return
+	var s := btn.size
+	var cx := s.x / 2.0
+	var cy := s.y / 2.0
+	var arm := 10.0
+	var color := Color.WHITE
+	# "+" shape — rotation tween makes it look like "×" when expanded
+	btn.draw_line(Vector2(cx - arm, cy), Vector2(cx + arm, cy), color, 3.0)
+	btn.draw_line(Vector2(cx, cy - arm), Vector2(cx, cy + arm), color, 3.0)
+
+
+func _draw_icon_battle(btn: Button) -> void:
+	if not btn:
+		return
+	var s := btn.size
+	var pad := 14.0
+	var color := Color.WHITE if not btn.disabled else Color(0.6, 0.6, 0.6)
+	var w := 2.5
+	# Crossed swords
+	btn.draw_line(Vector2(pad, pad), Vector2(s.x - pad, s.y - pad), color, w)
+	btn.draw_line(Vector2(s.x - pad, pad), Vector2(pad, s.y - pad), color, w)
+	# Crossguards
+	var t := (s.x - pad * 2) * 0.33
+	var c1 := Vector2(pad + t, pad + t)
+	btn.draw_line(c1 + Vector2(-4, 4), c1 + Vector2(4, -4), color, w)
+	var c2 := Vector2(s.x - pad - t, pad + t)
+	btn.draw_line(c2 + Vector2(-4, -4), c2 + Vector2(4, 4), color, w)
+
+
+func _draw_icon_monster(btn: Button) -> void:
+	if not btn:
+		return
+	var s := btn.size
+	var cx := s.x / 2.0
+	var cy := s.y / 2.0
+	var outer_r := s.x / 2.0 - 14.0
+	var inner_r := outer_r * 0.4
+	var color := Color.WHITE if not btn.disabled else Color(0.6, 0.6, 0.6)
+	var points: PackedVector2Array = []
+	for i in range(10):
+		var angle := -PI / 2.0 + i * PI / 5.0
+		var r := outer_r if i % 2 == 0 else inner_r
+		points.append(Vector2(cx + cos(angle) * r, cy + sin(angle) * r))
+	points.append(points[0])
+	btn.draw_polyline(points, color, 2.0)
+
+
+func _draw_icon_strategy(btn: Button) -> void:
+	if not btn:
+		return
+	var s := btn.size
+	var cx := s.x / 2.0
+	var cy := s.y / 2.0
+	var rx := s.x / 2.0 - 14.0
+	var ry := s.y / 2.0 - 12.0
+	var color := Color.WHITE if not btn.disabled else Color(0.6, 0.6, 0.6)
+	btn.draw_polyline(PackedVector2Array([
+		Vector2(cx, cy - ry),
+		Vector2(cx + rx, cy),
+		Vector2(cx, cy + ry),
+		Vector2(cx - rx, cy),
+		Vector2(cx, cy - ry),
+	]), color, 2.5)
+
+
+func _draw_icon_end_main(btn: Button) -> void:
+	if not btn:
+		return
+	var s := btn.size
+	var color := Color.WHITE if not btn.disabled else Color(0.6, 0.6, 0.6)
+	var pad := 14.0
+	# Checkmark
+	btn.draw_line(Vector2(pad, s.y * 0.5), Vector2(s.x * 0.4, s.y - pad), color, 2.5)
+	btn.draw_line(Vector2(s.x * 0.4, s.y - pad), Vector2(s.x - pad, pad), color, 2.5)
+
+
+func _draw_icon_rage(btn: Button) -> void:
+	if not btn:
+		return
+	var s := btn.size
+	var cx := s.x / 2.0
+	var color := Color.WHITE if not btn.disabled else Color(0.6, 0.6, 0.6)
+	var pad := 14.0
+	# Up arrow
+	btn.draw_line(Vector2(cx, s.y - pad), Vector2(cx, pad), color, 2.5)
+	btn.draw_line(Vector2(cx, pad), Vector2(cx - 8, pad + 10), color, 2.5)
+	btn.draw_line(Vector2(cx, pad), Vector2(cx + 8, pad + 10), color, 2.5)
+
+
+func _draw_icon_invade(btn: Button) -> void:
+	if not btn:
+		return
+	var s := btn.size
+	var cy := s.y / 2.0
+	var color := Color.WHITE if not btn.disabled else Color(0.6, 0.6, 0.6)
+	var pad := 14.0
+	# Right arrow
+	btn.draw_line(Vector2(pad, cy), Vector2(s.x - pad, cy), color, 2.5)
+	btn.draw_line(Vector2(s.x - pad, cy), Vector2(s.x - pad - 10, cy - 8), color, 2.5)
+	btn.draw_line(Vector2(s.x - pad, cy), Vector2(s.x - pad - 10, cy + 8), color, 2.5)
+
+
 func _on_hand_toggle_pressed() -> void:
 	_hand_expanded = not _hand_expanded
 	hand_toggle_button.text = "\u25bc" if _hand_expanded else "\u25b2"
@@ -2431,7 +3806,8 @@ func _on_hand_toggle_pressed() -> void:
 		return
 
 	var rect := local_space.get_global_rect()
-	var y_offset := -HAND_EXPAND_OFFSET if _hand_expanded else 0.0
+	var expand_offset := 120.0 if _is_mobile_layout else HAND_EXPAND_OFFSET
+	var y_offset := -expand_offset if _hand_expanded else 0.0
 	var target_y := rect.position.y + rect.size.y / 2.0 + y_offset
 
 	_tween_hand_to(local_hand, target_y)
@@ -2519,7 +3895,8 @@ func _restore_expanded_hand() -> void:
 	if not local_space or not local_hand:
 		return
 	var rect := local_space.get_global_rect()
-	_tween_hand_to(local_hand, rect.position.y + rect.size.y / 2.0 - HAND_EXPAND_OFFSET)
+	var expand_offset := 120.0 if _is_mobile_layout else HAND_EXPAND_OFFSET
+	_tween_hand_to(local_hand, rect.position.y + rect.size.y / 2.0 - expand_offset)
 
 
 func _temporarily_collapse_opponent_hand() -> void:
@@ -2671,6 +4048,7 @@ func _create_arrange_card(card_data: Dictionary) -> Control:
 	card.drag_enabled = true
 	card.is_selectable = false
 	_set_gallery_hover(card)
+	card.card_right_clicked.connect(_on_card_long_press_zoom)
 	return card
 
 
@@ -2863,7 +4241,7 @@ func _show_hand_discard_selection(player_id: int, discard_count: int) -> void:
 	_disable_all_buttons()
 	card_select_prompt.text = "Select %d card%s to discard:" % [discard_count, "" if discard_count == 1 else "s"]
 	action_prompt_panel.visible = true
-	btn_pass.visible = false
+	btn_confirm.disabled = true
 
 
 func _on_discard_card_selected(card: Control, _index: int) -> void:
@@ -2883,12 +4261,11 @@ func _on_discard_card_selected(card: Control, _index: int) -> void:
 	var remaining: int = _discard_count - _discard_selected_cards.size()
 	if remaining > 0:
 		card_select_prompt.text = "Select %d more card%s to discard:" % [remaining, "" if remaining == 1 else "s"]
-		btn_pass.visible = false
+		btn_confirm.disabled = true
 	else:
 		card_select_prompt.text = "Press Confirm to discard selected cards"
-		btn_pass.text = "Confirm"
-		btn_pass.visible = true
-		btn_pass.disabled = false
+		btn_confirm.text = "Confirm"
+		btn_confirm.disabled = false
 
 
 func _confirm_hand_discard() -> void:
@@ -2915,8 +4292,7 @@ func _confirm_hand_discard() -> void:
 	if hand_mgr.card_selected.is_connected(_on_discard_card_selected):
 		hand_mgr.card_selected.disconnect(_on_discard_card_selected)
 	action_prompt_panel.visible = false
-	btn_pass.text = "Pass"
-	btn_pass.visible = true
+	btn_confirm.disabled = true
 
 	# Restore hand visibility
 	_update_hand_visibility(_get_current_pid())
@@ -2948,8 +4324,7 @@ func _force_cleanup_discard_selection() -> void:
 			hand_mgr.card_selected.disconnect(_on_discard_card_selected)
 
 	action_prompt_panel.visible = false
-	btn_pass.text = "Pass"
-	btn_pass.visible = true
+	btn_confirm.disabled = true
 
 	_update_hand_visibility(_get_current_pid())
 
@@ -2990,11 +4365,10 @@ func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt
 	action_prompt_panel.visible = true
 
 	if allow_skip:
-		btn_pass.text = "Skip"
-		btn_pass.visible = true
-		btn_pass.disabled = false
+		btn_confirm.text = "Skip"
+		btn_confirm.disabled = false
 	else:
-		btn_pass.visible = false
+		btn_confirm.disabled = true
 
 
 func _on_hand_card_clicked(card: Control, _index: int) -> void:
@@ -3042,8 +4416,7 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 	if hand_mgr.card_selected.is_connected(_on_hand_card_clicked):
 		hand_mgr.card_selected.disconnect(_on_hand_card_clicked)
 	action_prompt_panel.visible = false
-	btn_pass.text = "Pass"
-	btn_pass.visible = true
+	btn_confirm.disabled = true
 	_update_hand_visibility(_get_current_pid())
 
 
@@ -3073,11 +4446,10 @@ func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zo
 	action_prompt_panel.visible = true
 
 	if allow_skip:
-		btn_pass.text = "Skip"
-		btn_pass.visible = true
-		btn_pass.disabled = false
+		btn_confirm.text = "Skip"
+		btn_confirm.disabled = false
 	else:
-		btn_pass.visible = false
+		btn_confirm.disabled = true
 
 	# Highlight valid zones on the target player's board
 	var board: Control = player1_board if target_player_id == 0 else player2_board
@@ -3117,8 +4489,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 	_zone_target_selecting = false
 	_zone_target_allow_skip = false
 	action_prompt_panel.visible = false
-	btn_pass.text = "Pass"
-	btn_pass.visible = true
+	btn_confirm.disabled = true
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("zone_target_resolved", 4)
@@ -3150,7 +4521,6 @@ func _show_strategy_target_selection(player_id: int, target_player_id: int, vali
 	_disable_all_buttons()
 	card_select_prompt.text = prompt
 	action_prompt_panel.visible = true
-	btn_pass.visible = false
 
 	# Highlight valid strategy slots on the target player's board
 	var board: Control = player1_board if target_player_id == 0 else player2_board
@@ -3184,8 +4554,7 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 
 	_strategy_target_selecting = false
 	action_prompt_panel.visible = false
-	btn_pass.text = "Pass"
-	btn_pass.visible = true
+	btn_confirm.disabled = true
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("strategy_target_resolved", 4)
@@ -3214,22 +4583,42 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 
 	_disable_all_buttons()
 	# Hide the normal action button rows so only choice buttons show
-	action_panel.get_node("Row1").visible = false
-	action_panel.get_node("Row2").visible = false
+	_set_action_buttons_visible(false)
 	card_select_prompt.text = prompt
 	action_prompt_panel.visible = true
 
-	# Create a container for choice buttons inside the action panel
+	# Create a container for choice buttons
 	_choice_container = VBoxContainer.new()
 	_choice_container.name = "ChoiceContainer"
-	action_panel.add_child(_choice_container)
+	if _is_mobile_layout:
+		# On mobile, wrap in a panel anchored to the right side above the bottom bar
+		_choice_panel = PanelContainer.new()
+		_choice_panel.anchor_left = 1.0
+		_choice_panel.anchor_right = 1.0
+		_choice_panel.anchor_top = 1.0
+		_choice_panel.anchor_bottom = 1.0
+		# Grow upward from the bottom spacer area
+		_choice_panel.offset_left = -350.0
+		_choice_panel.offset_right = -6.0
+		_choice_panel.offset_top = -130.0 - options.size() * 50.0
+		_choice_panel.offset_bottom = -130.0
+		_choice_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		_choice_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		_choice_panel.z_index = 56
+		_choice_panel.add_child(_choice_container)
+		add_child(_choice_panel)
+	else:
+		action_panel.add_child(_choice_container)
 
 	for i in range(options.size()):
 		var btn := Button.new()
 		btn.text = options[i]
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		btn.custom_minimum_size.x = 260
-		btn.size_flags_horizontal = Control.SIZE_SHRINK_END
+		btn.custom_minimum_size.x = 325
+		btn.custom_minimum_size.y = 60 if _is_mobile_layout else 0
+		btn.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
+		if _is_mobile_layout:
+			btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		btn.pressed.connect(_on_choice_button_pressed.bind(i))
 		_choice_container.add_child(btn)
 		_choice_buttons.append(btn)
@@ -3251,14 +4640,17 @@ func _cleanup_choice_selection() -> void:
 	_choice_selecting = false
 	_choice_buttons.clear()
 	if _choice_container:
+		# On mobile, the container is inside a wrapper panel — free it immediately
+		# so a subsequent choice_requested in the same frame gets a clean state.
+		if _choice_panel:
+			_choice_panel.remove_child(_choice_container)
+			_choice_panel.queue_free()
+			_choice_panel = null
 		_choice_container.queue_free()
 		_choice_container = null
 	action_prompt_panel.visible = false
 	# Restore normal action button rows
-	action_panel.get_node("Row1").visible = true
-	action_panel.get_node("Row2").visible = true
-	btn_pass.text = "Pass"
-	btn_pass.visible = true
+	_set_action_buttons_visible(true)
 
 
 func _on_effect_zone_highlighted(pid: int, zone_index: int) -> void:
@@ -3360,6 +4752,7 @@ func _refresh_discard_view_grid() -> void:
 			card.is_selectable = false
 			card.drag_enabled = false
 			_set_gallery_hover(card)
+			card.card_right_clicked.connect(_on_card_long_press_zoom)
 			discard_view_grid.add_child(card)
 			_add_count_badge(card, group["count"])
 	else:
@@ -3370,6 +4763,7 @@ func _refresh_discard_view_grid() -> void:
 			card.is_selectable = false
 			card.drag_enabled = false
 			_set_gallery_hover(card)
+			card.card_right_clicked.connect(_on_card_long_press_zoom)
 			discard_view_grid.add_child(card)
 
 
@@ -3421,6 +4815,7 @@ func _refresh_monster_deck_view_grid() -> void:
 			card.is_selectable = false
 			card.drag_enabled = false
 			_set_gallery_hover(card)
+			card.card_right_clicked.connect(_on_card_long_press_zoom)
 			monster_deck_view_grid.add_child(card)
 			_add_count_badge(card, group["count"])
 	else:
@@ -3431,6 +4826,7 @@ func _refresh_monster_deck_view_grid() -> void:
 			card.is_selectable = false
 			card.drag_enabled = false
 			_set_gallery_hover(card)
+			card.card_right_clicked.connect(_on_card_long_press_zoom)
 			monster_deck_view_grid.add_child(card)
 
 
@@ -3492,6 +4888,7 @@ func _show_monster_rankup_selection(player_id: int, monsters: Array[Dictionary],
 			card.is_selectable = false
 			card.modulate = Color(0.5, 0.5, 0.5, 1.0)
 
+		card.card_right_clicked.connect(_on_card_long_press_zoom)
 		monster_deck_view_grid.add_child(card)
 
 	monster_deck_view_overlay.visible = true
@@ -3519,8 +4916,7 @@ func _cleanup_rankup_selection() -> void:
 	for child in monster_deck_view_grid.get_children():
 		child.queue_free()
 
-	btn_pass.text = "Pass"
-	btn_pass.visible = true
+	btn_confirm.disabled = true
 
 
 # --- Zone stack view UI ---
@@ -3562,6 +4958,7 @@ func _refresh_zone_stack_view_grid() -> void:
 		card.is_selectable = false
 		card.drag_enabled = false
 		_set_gallery_hover(card)
+		card.card_right_clicked.connect(_on_card_long_press_zoom)
 		zone_stack_view_grid.add_child(card)
 
 
@@ -3611,6 +5008,11 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 	if card_data.is_empty():
 		return
 	_show_card_zoom(card_data)
+
+
+func _on_card_long_press_zoom(card: Control) -> void:
+	if "card_data" in card and not card.card_data.is_empty():
+		_show_card_zoom(card.card_data)
 
 
 func _on_hand_card_right_clicked(card: Control, _hand_player_id: int) -> void:
@@ -3681,6 +5083,10 @@ func _hide_card_zoom() -> void:
 	_zoom_dragging = false
 	for child in card_zoom_container.get_children():
 		child.queue_free()
+	# Reset all slot input state so no timers or pending clicks carry over
+	for board in [player1_board, player2_board]:
+		for slot in board.zone_slots:
+			slot.reset_input_state()
 
 
 func _apply_card_zoom(factor: float) -> void:
@@ -3692,6 +5098,8 @@ func _apply_card_zoom(factor: float) -> void:
 # --- Card hover preview ---
 
 func _show_card_preview(data: Dictionary) -> void:
+	if _is_mobile_layout:
+		return  # Mobile uses tap-to-zoom instead of hover preview
 	if data.is_empty():
 		return
 	_preview_card.set_card_data_dict(data)
@@ -4421,7 +5829,7 @@ func _rpc_receive_action_context(actions_json: String, playable_json: String) ->
 
 	var actions: Array = JSON.parse_string(actions_json)
 	_client_playable = JSON.parse_string(playable_json)
-	# Store valid_actions in playable for _on_pass_pressed cancel path
+	# Store valid_actions in playable for _on_cancel_pressed path
 	_client_playable["valid_actions"] = actions
 	# Convert float arrays to int arrays
 	for key in _client_playable:
@@ -4456,6 +5864,7 @@ func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
 	if log_output:
 		log_output.append_text(formatted + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
+	_notify_mobile_log_chat()
 
 
 ## Host -> Client: deck search request (player must choose a card)
