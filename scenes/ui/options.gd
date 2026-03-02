@@ -350,16 +350,11 @@ func _on_open_folder(subfolder: String) -> void:
 
 
 func _ensure_custom_dirs(subfolder: String) -> void:
-	var base := GameSettings.get_custom_base_path()
-	var path := base.path_join(subfolder)
-	print("[iOS dirs] base=%s subfolder=%s full=%s" % [base, subfolder, path])
-	var err := DirAccess.make_dir_recursive_absolute(path)
-	print("[iOS dirs] mkdir %s -> err=%s" % [path, err])
+	var path := GameSettings.get_custom_base_path().path_join(subfolder)
+	DirAccess.make_dir_recursive_absolute(path)
 	if subfolder == "cardArt":
 		for set_id in CARD_ART_SETS:
-			var set_path := path.path_join(set_id)
-			var set_err := DirAccess.make_dir_recursive_absolute(set_path)
-			print("[iOS dirs] mkdir %s -> err=%s" % [set_path, set_err])
+			DirAccess.make_dir_recursive_absolute(path.path_join(set_id))
 
 
 func _show_ios_file_instructions(subfolder: String) -> void:
