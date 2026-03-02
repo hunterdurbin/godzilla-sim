@@ -294,6 +294,21 @@ func _setup_references() -> void:
 			_add_border(area)
 
 
+## Case-insensitive file search for custom assets (iOS filesystem is case-sensitive).
+func _find_custom_file(dir_path: String, base_name: String) -> String:
+	var da := DirAccess.open(dir_path)
+	if da == null:
+		return ""
+	var prefix := base_name.to_lower() + "."
+	da.list_dir_begin()
+	var file_name := da.get_next()
+	while not file_name.is_empty():
+		if not da.current_is_dir() and file_name.to_lower().begins_with(prefix):
+			return dir_path.path_join(file_name)
+		file_name = da.get_next()
+	return ""
+
+
 func _apply_custom_playmat() -> void:
 	if not GameSettings.custom_playmat_enabled:
 		return
@@ -301,16 +316,14 @@ func _apply_custom_playmat() -> void:
 	if player_id != local_id and not GameSettings.custom_playmat_opponent:
 		return
 	var dir_path := GameSettings.get_custom_base_path().path_join("playmat")
-	for ext in ["png", "jpg", "jpeg", "webp"]:
-		var image_path := dir_path.path_join("default.%s" % ext)
-		if FileAccess.file_exists(image_path):
-			var image := Image.load_from_file(image_path)
-			if image:
-				var tex := ImageTexture.create_from_image(image)
-				var board_bg := $BoardBg as TextureRect
-				if board_bg:
-					board_bg.texture = tex
-			return
+	var image_path := _find_custom_file(dir_path, "default")
+	if not image_path.is_empty():
+		var image := Image.load_from_file(image_path)
+		if image:
+			var tex := ImageTexture.create_from_image(image)
+			var board_bg := $BoardBg as TextureRect
+			if board_bg:
+				board_bg.texture = tex
 
 
 ## Apply a gradient tint to the board background based on the rank 1 monster's colors.
@@ -981,13 +994,11 @@ func _get_card_back_texture() -> Texture2D:
 		_card_back_cache_loaded = true
 		_default_card_back_tex = load(_DEFAULT_CARD_BACK_PATH)
 		var cb_dir := GameSettings.get_custom_base_path().path_join("cardBack")
-		for ext in ["png", "jpg", "jpeg", "webp"]:
-			var custom_path := cb_dir.path_join("default.%s" % ext)
-			if FileAccess.file_exists(custom_path):
-				var image := Image.load_from_file(custom_path)
-				if image:
-					_custom_card_back_tex = ImageTexture.create_from_image(image)
-				break
+		var cb_path := _find_custom_file(cb_dir, "default")
+		if not cb_path.is_empty():
+			var image := Image.load_from_file(cb_path)
+			if image:
+				_custom_card_back_tex = ImageTexture.create_from_image(image)
 	if _custom_card_back_tex and _should_use_custom_back():
 		return _custom_card_back_tex
 	return _default_card_back_tex

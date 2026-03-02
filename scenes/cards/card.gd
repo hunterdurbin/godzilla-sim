@@ -20,6 +20,21 @@ static func _get_custom_card_back_base() -> String:
 		_custom_card_back_base = GameSettings.get_custom_base_path().path_join("cardBack")
 	return _custom_card_back_base
 
+
+## Case-insensitive file search for custom art (iOS filesystem is case-sensitive).
+static func _find_custom_file(dir_path: String, card_number: String) -> String:
+	var da := DirAccess.open(dir_path)
+	if da == null:
+		return ""
+	var prefix := card_number.to_lower() + "."
+	da.list_dir_begin()
+	var file_name := da.get_next()
+	while not file_name.is_empty():
+		if not da.current_is_dir() and file_name.to_lower().begins_with(prefix):
+			return dir_path.path_join(file_name)
+		file_name = da.get_next()
+	return ""
+
 # Static texture cache shared across all Card instances
 static var _texture_cache: Dictionary = {}  # card_number -> ImageTexture
 static var _strategy_texture_cache: Dictionary = {}  # card_number -> ImageTexture (rotated)
@@ -398,13 +413,11 @@ func _update_display() -> void:
 				_card_back_loaded = true
 				_default_card_back_texture = load(CARD_BACK_PATH)
 				var cb_base := _get_custom_card_back_base()
-				for ext in ["png", "jpg", "jpeg", "webp"]:
-					var custom_path := cb_base.path_join("default.%s" % ext)
-					if FileAccess.file_exists(custom_path):
-						var image := Image.load_from_file(custom_path)
-						if image:
-							_custom_card_back_texture = ImageTexture.create_from_image(image)
-						break
+				var cb_path := _find_custom_file(cb_base, "default")
+				if not cb_path.is_empty():
+					var image := Image.load_from_file(cb_path)
+					if image:
+						_custom_card_back_texture = ImageTexture.create_from_image(image)
 			var tex: Texture2D = null
 			if _custom_card_back_texture and _should_use_custom_back():
 				tex = _custom_card_back_texture
@@ -433,8 +446,9 @@ func _update_display() -> void:
 			if custom_cache.has(card_number):
 				card_image.texture = custom_cache[card_number]
 				return
-			var custom_path := _get_custom_art_base().path_join(set_number).path_join("%s.png" % card_number)
-			if FileAccess.file_exists(custom_path):
+			var custom_dir := _get_custom_art_base().path_join(set_number)
+			var custom_path := _find_custom_file(custom_dir, card_number)
+			if not custom_path.is_empty():
 				var image := Image.load_from_file(custom_path)
 				if image:
 					if is_strategy:
