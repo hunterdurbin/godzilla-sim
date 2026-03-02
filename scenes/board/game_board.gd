@@ -1149,9 +1149,12 @@ func _apply_mobile_action_panel() -> void:
 		"Battle", "Monster", "Strategy",
 		"Rage", "Invade"
 	]
-	var btn_icon_fns: Array[Callable] = [
-		_draw_icon_battle, _draw_icon_monster, _draw_icon_strategy,
-		_draw_icon_rage, _draw_icon_invade
+	var btn_textures: Array[Texture2D] = [
+		load("res://assets/buttons/battle.png"),
+		load("res://assets/buttons/monster.png"),
+		load("res://assets/buttons/strategy.png"),
+		load("res://assets/buttons/rage.png"),
+		load("res://assets/buttons/invasion.png"),
 	]
 
 	var grid_left := (container_w - grid_w) / 2.0
@@ -1186,7 +1189,7 @@ func _apply_mobile_action_panel() -> void:
 		btn.visible = false
 		btn.set_meta("fab_target_pos", Vector2(target_x, target_y))
 		_apply_circle_style(btn, Color(0.2, 0.3, 0.5, 0.9))
-		btn.draw.connect(btn_icon_fns[i].bind(btn))
+		btn.draw.connect(_draw_btn_texture.bind(btn, btn_textures[i]))
 		btn.pressed.connect(_collapse_fab_instant)
 		_fab_container.add_child(btn)
 		_fab_action_btns.append(btn)
@@ -3750,6 +3753,20 @@ func _on_fab_backdrop_input(event: InputEvent) -> void:
 
 
 # --- FAB Icon Drawing ---
+
+
+func _draw_btn_texture(btn: Button, tex: Texture2D) -> void:
+	if not btn or not tex:
+		return
+	var s := btn.size
+	var pad := 12.0
+	var available := Vector2(s.x - pad * 2, s.y - pad * 2)
+	var tex_size := tex.get_size()
+	var tex_scale := minf(available.x / tex_size.x, available.y / tex_size.y)
+	var draw_size := tex_size * tex_scale
+	var pos := Vector2((s.x - draw_size.x) / 2.0, (s.y - draw_size.y) / 2.0)
+	var color := Color.WHITE if not btn.disabled else Color(0.6, 0.6, 0.6)
+	btn.draw_texture_rect(tex, Rect2(pos, draw_size), false, color)
 
 
 func _draw_fab_main_icon() -> void:
