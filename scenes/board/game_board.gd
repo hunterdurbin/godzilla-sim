@@ -344,6 +344,7 @@ var _safe_bottom: float = 0.0
 
 
 func _set_action_buttons_visible(vis: bool) -> void:
+	action_panel.get_node("Row0").visible = vis
 	action_panel.get_node("Row1").visible = vis
 	action_panel.get_node("Row2").visible = vis
 	if _fab_main_btn:
@@ -2865,8 +2866,11 @@ func _enter_zone_selection() -> void:
 	waiting_for_card_select = false
 	waiting_for_zone_select = true
 	card_select_prompt.text = "Select a ZONE to place the battle card:"
-	_temporarily_collapse_hand()
-	_temporarily_collapse_opponent_hand()
+	var active_pid := _get_current_pid()
+	if not is_multiplayer_game and active_pid != local_player_id:
+		_temporarily_collapse_opponent_hand()
+	else:
+		_temporarily_collapse_hand()
 
 	var valid_zones: Array[int] = []
 	if turn_manager:
@@ -3225,11 +3229,11 @@ func _update_hand_visibility(active_player_id: int) -> void:
 		if player2_board:
 			player2_board.set_hand_face_down(local_player_id != 1)
 	else:
-		# Solo: active player face-up, opponent face-down
+		# Solo: both hands always face-up
 		if player1_board:
-			player1_board.set_hand_face_down(active_player_id != 0)
+			player1_board.set_hand_face_down(false)
 		if player2_board:
-			player2_board.set_hand_face_down(active_player_id != 1)
+			player2_board.set_hand_face_down(false)
 
 
 func _update_action_buttons(valid_actions: Array) -> void:
@@ -3407,8 +3411,11 @@ func _on_hand_drag_started(card: Control) -> void:
 	if _drag_can_invade:
 		board.highlight_discard_zone(true)
 
-	_temporarily_collapse_hand()
-	_temporarily_collapse_opponent_hand()
+	var active_pid := _get_current_pid()
+	if not is_multiplayer_game and active_pid != local_player_id:
+		_temporarily_collapse_opponent_hand()
+	else:
+		_temporarily_collapse_hand()
 
 
 func _on_hand_drag_ended(card: Control) -> void:
