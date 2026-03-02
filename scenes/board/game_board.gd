@@ -586,6 +586,8 @@ func _ready() -> void:
 	if TouchHelper._is_mobile:
 		_is_mobile_layout = true
 		call_deferred("_apply_mobile_layout")
+	else:
+		_apply_desktop_hand_button_stacks()
 
 	# Initial board sync and start (host/solo only)
 	if turn_manager:
@@ -931,7 +933,7 @@ func _position_hands() -> void:
 		local_hand.arrange_cards(false)
 
 		# Position local hand button stack at the bottom, left of the max-width hand edge
-		if _is_mobile_layout:
+		if _is_mobile_layout and not local_hand.managed_cards.is_empty():
 			var hand_stack := $HandButtonStack as HBoxContainer
 			var stack_w := 150.0
 			var stack_h := 60.0
@@ -974,7 +976,7 @@ func _position_hands() -> void:
 		opponent_hand.arrange_cards(false)
 
 	# Position opponent hand button stack at top of screen, left of the max-width hand edge
-	if _is_mobile_layout and opponent_hand:
+	if _is_mobile_layout and opponent_hand and not opponent_hand.managed_cards.is_empty():
 		var opp_stack := $OpponentHandButtonStack as HBoxContainer
 		var stack_w := 150.0
 		var stack_h := 60.0
@@ -1669,6 +1671,59 @@ func _toggle_mobile_log_tray() -> void:
 		_mobile_log_tween.tween_property(log_panel, "position:x", -320.0, 0.25)
 		_mobile_log_tween.parallel().tween_property(_mobile_log_toggle_btn, "offset_left", log_pad, 0.25)
 		_mobile_log_tween.parallel().tween_property(_mobile_log_toggle_btn, "offset_right", log_pad + 50.0, 0.25)
+
+
+func _apply_desktop_hand_button_stacks() -> void:
+	# Stack buttons vertically on desktop between the hand and action panel.
+	# Hide the HBoxContainers and reparent buttons to GameBoard for free positioning.
+	$HandButtonStack.visible = false
+	$OpponentHandButtonStack.visible = false
+
+	var btn_w := 55.0
+	var btn_h := 32.0
+	var gap := 2.0
+	var right_margin := 300.0  # Action panel left edge is at -270
+
+	# Reparent to GameBoard so HBoxContainer can't override layout
+	hand_toggle_button.reparent(self)
+	sort_hand_button.reparent(self)
+	opponent_hand_toggle_button.reparent(self)
+	opponent_sort_hand_button.reparent(self)
+
+	# Reset minimum sizes from .tscn so offset-based sizing works
+	for btn: Button in [hand_toggle_button, sort_hand_button,
+			opponent_hand_toggle_button, opponent_sort_hand_button]:
+		btn.custom_minimum_size = Vector2.ZERO
+
+	# Local player — bottom-right, stacked vertically
+	for btn: Button in [hand_toggle_button, sort_hand_button]:
+		btn.anchor_left = 1.0
+		btn.anchor_right = 1.0
+		btn.anchor_top = 1.0
+		btn.anchor_bottom = 1.0
+	hand_toggle_button.offset_left = -(right_margin + btn_w)
+	hand_toggle_button.offset_right = -right_margin
+	hand_toggle_button.offset_bottom = -(btn_h + gap + 10.0)
+	hand_toggle_button.offset_top = hand_toggle_button.offset_bottom - btn_h
+	sort_hand_button.offset_left = -(right_margin + btn_w)
+	sort_hand_button.offset_right = -right_margin
+	sort_hand_button.offset_bottom = -10.0
+	sort_hand_button.offset_top = sort_hand_button.offset_bottom - btn_h
+
+	# Opponent — top-right, stacked vertically
+	for btn: Button in [opponent_hand_toggle_button, opponent_sort_hand_button]:
+		btn.anchor_left = 1.0
+		btn.anchor_right = 1.0
+		btn.anchor_top = 0.0
+		btn.anchor_bottom = 0.0
+	opponent_hand_toggle_button.offset_left = -(right_margin + btn_w)
+	opponent_hand_toggle_button.offset_right = -right_margin
+	opponent_hand_toggle_button.offset_top = 10.0
+	opponent_hand_toggle_button.offset_bottom = 10.0 + btn_h
+	opponent_sort_hand_button.offset_left = -(right_margin + btn_w)
+	opponent_sort_hand_button.offset_right = -right_margin
+	opponent_sort_hand_button.offset_top = 10.0 + btn_h + gap
+	opponent_sort_hand_button.offset_bottom = 10.0 + btn_h * 2 + gap
 
 
 func _apply_mobile_hand_button_stacks() -> void:

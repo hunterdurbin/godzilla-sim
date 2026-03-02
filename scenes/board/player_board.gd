@@ -79,15 +79,25 @@ func _update_layout() -> void:
 	var content_span := content_bottom - content_top
 	var lc_height := size.y / content_span
 
-	# Preserve SVG aspect ratio: if the board is wider than the SVG would be
-	# at this height, constrain the width and center horizontally.
+	# Preserve SVG aspect ratio: constrain width or height so the board
+	# never stretches in either direction.
 	var lc_width := lc_height * (SVG_W / SVG_H)
 	var actual_width := minf(lc_width, size.x)
 	var x_offset := maxf(0.0, (size.x - actual_width) / 2.0)
 
+	# When width-constrained (tall/narrow display), recalculate height from
+	# the clamped width so zones and info areas keep their aspect ratio
+	# instead of stretching vertically.
+	if actual_width < lc_width:
+		lc_height = actual_width / (SVG_W / SVG_H)
+
+	# Center the visible content area vertically within the available space.
+	var visible_height := content_span * lc_height
+	var y_offset := (size.y - visible_height) / 2.0
+
 	var lc := $LayoutContainer
 	lc.offset_left = x_offset
-	lc.offset_top = - content_top * lc_height
+	lc.offset_top = y_offset - content_top * lc_height
 	lc.offset_right = x_offset + actual_width
 	lc.offset_bottom = lc.offset_top + lc_height
 
@@ -121,14 +131,13 @@ var _mobile_labels_applied := false
 var _cp_title: Label
 var _threat_title: Label
 var _rage_title: Label
+var _target_value_font_size: int = 14
 
 func _apply_mobile_labels() -> void:
 	if _mobile_labels_applied:
 		return
 	_mobile_labels_applied = true
 	var lc := $LayoutContainer
-	# Combine CP and Threat into a single compact line: "CP: 0 | Threat: 5000"
-	# by hiding the separate title labels and increasing value font sizes.
 	var stats := lc.find_child("StatsDisplay", true, false) as HBoxContainer
 	if stats:
 		stats.clip_contents = true
@@ -141,12 +150,16 @@ func _apply_mobile_labels() -> void:
 		spacer.custom_minimum_size.x = 2.0
 	if cp_label:
 		cp_label.custom_minimum_size.x = 0.0
-		cp_label.clip_text = false
-		cp_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		cp_label.clip_text = true
+		cp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		cp_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cp_label.resized.connect(func(): _apply_autofit(cp_label, 8))
 	if threat_label:
 		threat_label.custom_minimum_size.x = 0.0
-		threat_label.clip_text = false
-		threat_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		threat_label.clip_text = true
+		threat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		threat_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		threat_label.resized.connect(func(): _apply_autofit(threat_label, 8))
 	_rage_title = lc.find_child("RageTitle", true, false) as Label
 	# Apply default (balanced) font sizes
 	apply_mobile_label_scale(1.0)
@@ -155,14 +168,15 @@ func _apply_mobile_labels() -> void:
 ## Update mobile label font sizes based on board scale.
 ## scale = 1.0 for balanced/enlarged, ~0.6 for shrunk board.
 func apply_mobile_label_scale(label_scale: float) -> void:
-	var title_size := maxi(10, int(12 * label_scale))
-	var value_size := maxi(10, int(14 * label_scale))
+	var title_size := maxi(10, int(14 * label_scale))
+	var value_size := maxi(12, int(18 * label_scale))
 	var rage_size := maxi(14, int(28 * label_scale))
 	var rage_threat_size := maxi(10, int(18 * label_scale))
 	if _cp_title:
 		_cp_title.add_theme_font_size_override("font_size", title_size)
 	if _threat_title:
 		_threat_title.add_theme_font_size_override("font_size", title_size)
+	_target_value_font_size = value_size
 	if cp_label:
 		cp_label.add_theme_font_size_override("font_size", value_size)
 	if threat_label:
@@ -478,7 +492,7 @@ func _sync_monster(state: PlayerState, threat_mod: int = 0) -> void:
 		rage_label.text = "%d" % state.rage
 	if rage_threat_label:
 		var threat_bonus: int = state.rage * 5000
-		rage_threat_label.text = "(+%d)" % threat_bonus
+		rage_threat_label.text = "(+%s)" % _format_number(threat_bonus)
 
 
 func _sync_hand(state: PlayerState) -> void:
@@ -592,10 +606,10 @@ func _sync_info(state: PlayerState, cp_modifier: int = 0, threat_modifier: int =
 
 	if cp_label:
 		var total_cp: int = state.get_total_counter_power() + cp_modifier
-		cp_label.text = "%d" % total_cp
+		_set_label_autofit(cp_label, _format_number(total_cp))
 	if threat_label:
 		var total_threat: int = state.get_threat_level() + threat_modifier
-		threat_label.text = "%d" % total_threat
+		_set_label_autofit(threat_label, _format_number(total_threat))
 
 
 func set_hand_face_down(face_down: bool) -> void:
@@ -925,6 +939,39 @@ func _add_border(control: Control) -> void:
 func _draw_border(control: Control) -> void:
 	var rect := Rect2(Vector2.ZERO, control.size)
 	control.draw_rect(rect, Color(0.45, 0.45, 0.55, 0.9), false, 2.0)
+
+
+# --- Formatting helpers ---
+
+func _set_label_autofit(label: Label, text: String, min_size: int = 8) -> void:
+	label.text = text
+	_apply_autofit(label, min_size)
+
+
+func _apply_autofit(label: Label, min_size: int) -> void:
+	var font := label.get_theme_font("font")
+	var available := label.size.x
+	if available <= 0.0:
+		return
+	var fs := _target_value_font_size
+	while fs > min_size:
+		if font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= available:
+			break
+		fs -= 1
+	label.add_theme_font_size_override("font_size", fs)
+
+
+static func _format_number(value: int) -> String:
+	var negative := value < 0
+	var s := str(absi(value))
+	var result := ""
+	var count := 0
+	for i in range(s.length() - 1, -1, -1):
+		if count > 0 and count % 3 == 0:
+			result = "," + result
+		result = s[i] + result
+		count += 1
+	return ("-" + result) if negative else result
 
 
 # --- Card-back stack helpers ---

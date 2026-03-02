@@ -62,6 +62,7 @@ var _invalid_cards: Dictionary = {} # card_number -> true
 var _game_mode: String = "rumble"
 var _pool_load_generation: int = 0  # Incremented to cancel stale batched loads
 var _deck_list_touch_scrolled: bool = false  # Track if ItemList was scrolled on touch
+var _pending_deck_list_index: int = -1  # Deferred selection index for touch
 
 # --- Preview ---
 var _preview_card: Control
@@ -157,6 +158,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	deck_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	deck_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	deck_list_scroll.scroll_deadzone = 20
+	deck_list_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	vbox.add_child(deck_list_scroll)
 
 	deck_list = ItemList.new()
@@ -223,6 +225,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	validation_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	validation_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	validation_scroll.scroll_deadzone = 20
+	validation_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	vbox.add_child(validation_scroll)
 
 	validation_label = RichTextLabel.new()
@@ -285,6 +288,7 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	deck_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	deck_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	deck_scroll.scroll_deadzone = 20
+	deck_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	section.add_child(deck_scroll)
 
 	deck_grid = GridContainer.new()
@@ -415,6 +419,7 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 	pool_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pool_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	pool_scroll.scroll_deadzone = 20
+	pool_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	section.add_child(pool_scroll)
 
 	pool_grid = GridContainer.new()
@@ -1291,16 +1296,22 @@ func _on_deck_list_gui_input(event: InputEvent) -> void:
 	if event.pressed:
 		deck_list.set_meta("_press_pos", event.global_position)
 		_deck_list_touch_scrolled = false
+		_pending_deck_list_index = -1
 	else:
 		var press_pos: Vector2 = deck_list.get_meta("_press_pos", event.global_position)
 		if event.global_position.distance_to(press_pos) >= 20:
 			_deck_list_touch_scrolled = true
-			# Revert the selection ItemList made on press
 			deck_list.deselect_all()
+			_pending_deck_list_index = -1
+		elif _pending_deck_list_index >= 0:
+			# Finger stayed still — treat as tap, apply deferred selection
+			deck_name_edit.text = deck_list.get_item_text(_pending_deck_list_index)
 
 
 func _on_deck_list_selected(index: int) -> void:
-	if TouchHelper.is_touch_device() and _deck_list_touch_scrolled:
+	if TouchHelper.is_touch_device():
+		# Defer until release so we can distinguish scroll from tap
+		_pending_deck_list_index = index
 		return
 	deck_name_edit.text = deck_list.get_item_text(index)
 
