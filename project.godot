@@ -35,6 +35,10 @@ UpdateChecker="*res://scripts/update_checker.gd"
 RpcLogger="*res://scripts/rpc_logger.gd"
 TouchHelper="*res://scripts/touch_helper.gd"
 
+[gui]
+
+theme/custom="res://assets/fonts/default_theme.tres"
+
 [display]
 
 window/size/viewport_width=1280
@@ -46,13 +50,13 @@ window/stretch/aspect="expand"
 
 enabled=PackedStringArray()
 
-[physics]
-
-3d/physics_engine="Jolt Physics"
-
 [input_devices]
 
 pointing/android/enable_pan_and_scale_gestures=true
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
 
 [rendering]
 
