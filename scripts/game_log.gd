@@ -81,7 +81,7 @@ static func player_pass(player_id: int) -> String:
 static func played_battle(player_name: String, card_id: String, zone: int, has_enter: bool = false) -> String:
 	var name := _bold(player_name)
 	if has_enter:
-		var enter_icon := "[img=20]res://CardContent/Assets/effectIcons/others/Enter.png[/img]"
+		var enter_icon := "[img=20]res://assets/effectIcons/others/Enter.png[/img]"
 		return "%s: %s %s to Zone %d" % [name, enter_icon, card_link(card_id), zone + 1]
 	return "%s: Played %s to Zone %d" % [name, card_link(card_id), zone + 1]
 
@@ -89,25 +89,25 @@ static func played_battle(player_name: String, card_id: String, zone: int, has_e
 static func played_strategy(player_name: String, card_id: String, is_base: bool = false) -> String:
 	var name := _bold(player_name)
 	if is_base:
-		var base_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Base.png[/img]"
+		var base_icon := "[img=40]res://assets/effectIcons/others/Base.png[/img]"
 		return "%s: %s Played %s to Strategy Zone" % [name, base_icon, card_link(card_id)]
 	return "%s: Played %s to Strategy Zone" % [name, card_link(card_id)]
 
 
 static func gained_rage(player_name: String, rage: int, card_id: String) -> String:
-	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	var rage_icon := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
 	return "%s: %s x%d (discarded: %s)" % [_bold(player_name), rage_icon, rage, card_link(card_id)]
 
 
 static func played_monster(player_name: String, card_id: String, rage: int) -> String:
-	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	var rage_icon := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
 	return "%s: Played %s as Monster (%s x%d)" % [_bold(player_name), card_link(card_id), rage_icon, rage]
 
 
 static func invaded(player_name: String, zone: int, card_id: String, is_step2: bool = false) -> String:
 	var name := _bold(player_name)
 	if is_step2:
-		var step2_icon := "[img=20]res://CardContent/Assets/effectIcons/others/Step2.png[/img]"
+		var step2_icon := "[img=20]res://assets/effectIcons/others/Step2.png[/img]"
 		return "%s: %s Monster now at zone %d (discarded %s)" % [name, step2_icon, zone, card_link(card_id)]
 	return "%s: Invaded! Monster now at zone %d (discarded %s)" % [name, zone, card_link(card_id)]
 
@@ -133,23 +133,23 @@ static func game_over(winner_id: int, reason: String) -> String:
 # --- Effects ---
 
 static func burst_played(player_name: String, card_id: String, burst_rank: int, rage: int) -> String:
-	var burst_icon_path := "res://CardContent/Assets/effectIcons/bursts/Burst%d.png" % burst_rank
+	var burst_icon_path := "res://assets/effectIcons/bursts/Burst%d.png" % burst_rank
 	var burst_prefix: String
 	if ResourceLoader.exists(burst_icon_path):
 		burst_prefix = "[img=40]%s[/img]" % burst_icon_path
 	else:
 		burst_prefix = "Burst %d:" % burst_rank
-	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	var rage_icon := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
 	return "%s: %s %s %s x%d" % [_bold(player_name), burst_prefix, card_link(card_id), rage_icon, rage]
 
 
 static func revenge_triggered(player_id: int, card_id: String) -> String:
-	var revenge_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Revenge.png[/img]"
+	var revenge_icon := "[img=40]res://assets/effectIcons/others/Revenge.png[/img]"
 	return "%s: %s %s" % [_bold(short_name(player_id)), revenge_icon, card_link(card_id)]
 
 
 static func awakening_triggered(player_id: int, card_id: String, awakening_level: int) -> String:
-	var awk_icon_path := "res://CardContent/Assets/effectIcons/awakenings/Awakening%d.png" % awakening_level
+	var awk_icon_path := "res://assets/effectIcons/awakenings/Awakening%d.png" % awakening_level
 	var awk_prefix: String
 	if ResourceLoader.exists(awk_icon_path):
 		awk_prefix = "[img=40]%s[/img]" % awk_icon_path
@@ -159,7 +159,7 @@ static func awakening_triggered(player_id: int, card_id: String, awakening_level
 
 
 static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: String, to_id: String) -> String:
-	var evo_icon_path := "res://CardContent/Assets/effectIcons/evolutions/Evolution%d.png" % evo_rank
+	var evo_icon_path := "res://assets/effectIcons/evolutions/Evolution%d.png" % evo_rank
 	var evo_prefix: String
 	if ResourceLoader.exists(evo_icon_path):
 		evo_prefix = "[img=40]%s[/img]" % evo_icon_path
@@ -182,24 +182,24 @@ static func effect_milled_cards(player_id: int, effect_source_id: String, milled
 
 
 static func effect_gained_rage_from_mill(player_id: int, effect_source_id: String, rage: int, milled_id: String) -> String:
-	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	var rage_icon := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
 	return "%s %s: %s x%d (milled monster: %s)" % [_bold(short_name(player_id)), card_link(effect_source_id), rage_icon, rage, card_link(milled_id)]
 
 
 static func effect_gained_rage(player_id: int, effect_source_id: String, rage: int, amount: int) -> String:
-	var rage_icon := "[img=30]res://CardContent/Assets/effectIcons/others/Rage.png[/img]"
+	var rage_icon := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
 	return "%s %s: %s +%d (now x%d)" % [_bold(short_name(player_id)), card_link(effect_source_id), rage_icon, amount, rage]
 
 
 # --- Board events ---
 
 static func effect_destroyed_card(source_player_id: int, effect_source_id: String, target_player_id: int, zone_index: int, destroyed_id: String) -> String:
-	var destroy_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Destroy.png[/img]"
+	var destroy_icon := "[img=40]res://assets/effectIcons/others/Destroy.png[/img]"
 	return "%s %s %s: %s Zone %d %s" % [destroy_icon, _bold(short_name(source_player_id)), card_link(effect_source_id), _bold(short_name(target_player_id)), zone_index + 1, card_link(destroyed_id)]
 
 
 static func battle_card_crushed(card_id: String, player_id: int, zone_index: int) -> String:
-	var destroy_icon := "[img=40]res://CardContent/Assets/effectIcons/others/Destroy.png[/img]"
+	var destroy_icon := "[img=40]res://assets/effectIcons/others/Destroy.png[/img]"
 	return "%s %s Zone %d: %s crushed!" % [destroy_icon, _bold(short_name(player_id)), zone_index + 1, card_link(card_id)]
 
 

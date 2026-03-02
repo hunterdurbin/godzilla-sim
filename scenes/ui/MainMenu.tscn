@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/ui/main_menu.gd" id="1_mm"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DeckSelect.tscn" id="2_ds"]
-[ext_resource type="Texture2D" path="res://CardContent/Assets/patreon/patreon_banner.png" id="3_pb"]
+[ext_resource type="Texture2D" path="res://assets/patreon/patreon_banner.png" id="3_pb"]
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3

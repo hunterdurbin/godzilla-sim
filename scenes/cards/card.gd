@@ -3,7 +3,7 @@ extends Control
 ## Card node with hover scaling, drag functionality, and TCG card image display
 
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
-const CARD_BACK_PATH := "res://CardContent/Assets/cardBacks/default.jpeg"
+const CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
 
 static var _custom_art_base: String = ""
 static var _custom_card_back_base: String = ""

@@ -123,7 +123,7 @@ echo ""
 # --- Post-export patches ---
 INFOPLIST="${BUILD_DIR}/godzilla_tcg_sim/godzilla_tcg_sim-Info.plist"
 SPLASH_DIR="${BUILD_DIR}/godzilla_tcg_sim/Images.xcassets/SplashImage.imageset"
-GAME_ICON="${PROJECT_DIR}/CardContent/Assets/Icons/game_icon.png"
+GAME_ICON="${PROJECT_DIR}/assets/icons/game_icon.png"
 
 if [ -f "${INFOPLIST}" ]; then
     echo "Patching orientations..."

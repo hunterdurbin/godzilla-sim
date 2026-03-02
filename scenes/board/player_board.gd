@@ -49,7 +49,7 @@ var _monster_deck_card_backs: Array[Control] = []
 var _monster_deck_count_badge: Label = null
 
 # Card back texture cache (shared across instances)
-const _DEFAULT_CARD_BACK_PATH := "res://CardContent/Assets/cardBacks/default.jpeg"
+const _DEFAULT_CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
 static var _card_back_cache_loaded: bool = false
 static var _default_card_back_tex: Texture2D = null
 static var _custom_card_back_tex: Texture2D = null  # null = no custom file found
