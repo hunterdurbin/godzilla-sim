@@ -6,14 +6,23 @@ var _custom_base_path: String = ""
 
 
 ## Returns the absolute path to the custom assets directory.
-## On Android, uses the external data directory (potentially browseable by file managers).
+## On Android, uses the external data directory (browseable by file managers).
+## On iOS, uses the Documents directory (visible in the Files app).
 ## On other platforms, uses the standard user:// directory.
 func get_custom_base_path() -> String:
 	if _custom_base_path.is_empty():
 		if OS.get_name() == "Android":
 			_custom_base_path = OS.get_data_dir().path_join("custom")
+		elif OS.get_name() == "iOS":
+			var home := OS.get_environment("HOME")
+			print("[iOS] HOME=%s" % home)
+			print("[iOS] get_data_dir=%s" % OS.get_data_dir())
+			print("[iOS] get_user_data_dir=%s" % OS.get_user_data_dir())
+			print("[iOS] user://=%s" % ProjectSettings.globalize_path("user://"))
+			_custom_base_path = home.path_join("Documents/custom")
 		else:
 			_custom_base_path = ProjectSettings.globalize_path("user://custom")
+		print("[GameSettings] custom_base_path=%s" % _custom_base_path)
 	return _custom_base_path
 
 var player_name: String = ""
