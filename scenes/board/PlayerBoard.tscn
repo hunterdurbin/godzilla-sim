@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scenes/board/player_board.gd" id="1_pb"]
 [ext_resource type="PackedScene" path="res://scenes/slots/Slot.tscn" id="2_slot"]
-[ext_resource type="Texture2D" uid="uid://dpmgaoxs3mejc" path="res://assets/board/zones.svg" id="3_bg"]
+[ext_resource type="Texture2D" uid="uid://bi5c4b4txk6wa" path="res://assets/board/zones.svg" id="3_bg"]
 [ext_resource type="Texture2D" path="res://assets/board/default_board.png" id="4_board_bg"]
 
 [node name="PlayerBoard" type="Control"]
