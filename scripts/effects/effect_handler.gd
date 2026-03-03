@@ -1411,21 +1411,26 @@ func destroy_chosen_zone(player_id: int, target: PlayerState, valid_zones: Array
 func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dictionary]:
 	## Destroy all occupied zones in the given list on the target player's board.
 	## Respects can_be_destroyed and on_would_be_destroyed replacement effects.
-	## Returns an array of the destroyed top cards. Triggers revenge on each.
+	## Returns an array of the destroyed top cards.
+	## Revenge triggers are collected as standby entries and resolved after all
+	## zones are destroyed, per rules 10.4.3.
 	var destroyed: Array[Dictionary] = []
+	var deferred: Array = []
 	for zi in zone_indices:
 		if zi < 0 or zi >= 8 or not target.zone_has_cards(zi):
 			continue
 		var top_card := target.get_zone_top_card(zi)
 		if not _can_destroy_card(target, top_card):
 			continue
-		var result: Dictionary = await _execute_destroy_zone(target, zi, top_card)
+		var result: Dictionary = await _execute_destroy_zone(target, zi, top_card, deferred)
 		if not result.is_empty():
 			destroyed.append(result)
 
 	if not destroyed.is_empty():
 		target.zones_changed.emit()
 		target.discard_changed.emit()
+	if not deferred.is_empty():
+		await resolve_deferred_entries(deferred)
 	return destroyed
 
 
@@ -1478,8 +1483,10 @@ func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	return true
 
 
-func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Dictionary) -> Dictionary:
+func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Dictionary, deferred_entries: Variant = null) -> Dictionary:
 	## Execute destruction of a single zone, handling replacement effects.
+	## When deferred_entries is provided, revenge triggers are collected there
+	## instead of resolving immediately (used when destroying multiple zones).
 	## Returns the destroyed/replaced card, or empty dict on failure.
 	var effect := get_effect(top_card)
 	if effect and effect.on_would_be_destroyed(_build_context(target.player_id, top_card)):
@@ -1500,7 +1507,16 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 	target.discard_changed.emit()
 	target.cards_destroyed_this_turn.append(top_card)
 	_log_destroy(target.player_id, zone_idx, top_card)
-	await trigger_revenge(target.player_id, top_card)
+	if deferred_entries != null:
+		if has_trigger(top_card, "on_revenge"):
+			var rev_effect := get_effect(top_card)
+			var ctx := _build_context(target.player_id, top_card)
+			var revenge_cb := func():
+				log_message.emit(GameLog.revenge_triggered(target.player_id, top_card.get("id", "")))
+				await rev_effect.on_revenge(ctx)
+			deferred_entries.append({"player_id": target.player_id, "card_data": top_card, "callback": revenge_cb, "skip_active_check": true})
+	else:
+		await trigger_revenge(target.player_id, top_card)
 	return top_card
 
 
