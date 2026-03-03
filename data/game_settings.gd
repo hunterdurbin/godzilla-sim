@@ -6,12 +6,16 @@ var _custom_base_path: String = ""
 
 
 ## Returns the absolute path to the custom assets directory.
-## On Android, uses the external data directory (potentially browseable by file managers).
+## On Android, uses the external data directory (browseable by file managers).
+## On iOS, uses the Documents directory (visible in the Files app).
 ## On other platforms, uses the standard user:// directory.
 func get_custom_base_path() -> String:
 	if _custom_base_path.is_empty():
 		if OS.get_name() == "Android":
 			_custom_base_path = OS.get_data_dir().path_join("custom")
+		elif OS.get_name() == "iOS":
+			var home := OS.get_environment("HOME")
+			_custom_base_path = home.path_join("Documents/custom")
 		else:
 			_custom_base_path = ProjectSettings.globalize_path("user://custom")
 	return _custom_base_path
@@ -34,11 +38,15 @@ var color_overlay_mode: int = 3  # 0=none, 1=self only, 2=opponent only, 3=both
 var custom_card_art_enabled: bool = false
 var custom_card_back_mode: int = 0  # 0=disabled, 1=myself only, 2=both players
 
+# Advanced settings
+var use_mobile_layout: bool = false
+
 # Update settings
 var skipped_version: String = ""
 
 
 func _ready() -> void:
+	use_mobile_layout = OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	_load()
 	if player_name.is_empty():
 		player_name = "Player%06d" % (randi() % 1000000)
@@ -66,6 +74,7 @@ func _save() -> void:
 	config.set_value("visual", "color_overlay_mode", color_overlay_mode)
 	config.set_value("visual", "custom_card_art_enabled", custom_card_art_enabled)
 	config.set_value("visual", "custom_card_back_mode", custom_card_back_mode)
+	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
 	config.set_value("updates", "skipped_version", skipped_version)
 	config.save(SETTINGS_PATH)
 
@@ -89,4 +98,6 @@ func _load() -> void:
 	color_overlay_mode = config.get_value("visual", "color_overlay_mode", 3)
 	custom_card_art_enabled = config.get_value("visual", "custom_card_art_enabled", false)
 	custom_card_back_mode = config.get_value("visual", "custom_card_back_mode", 0)
+	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
+	use_mobile_layout = config.get_value("advanced", "use_mobile_layout", _mobile_default)
 	skipped_version = config.get_value("updates", "skipped_version", "")

@@ -308,12 +308,29 @@ anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -270.0
-offset_top = -78.0
+offset_top = -114.0
 offset_right = -10.0
 offset_bottom = -10.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_constants/separation = 4
+
+[node name="Row0" type="HBoxContainer" parent="ActionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 2
+
+[node name="Cancel" type="Button" parent="ActionPanel/Row0"]
+custom_minimum_size = Vector2(80, 32)
+layout_mode = 2
+disabled = true
+text = "Cancel"
+
+[node name="Confirm" type="Button" parent="ActionPanel/Row0"]
+custom_minimum_size = Vector2(80, 32)
+layout_mode = 2
+disabled = true
+text = "Confirm"
 
 [node name="Row1" type="HBoxContainer" parent="ActionPanel" unique_id=446663055]
 layout_mode = 2
@@ -350,10 +367,10 @@ custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 text = "Invade"
 
-[node name="Pass" type="Button" parent="ActionPanel/Row2" unique_id=1976192979]
+[node name="EndMain" type="Button" parent="ActionPanel/Row2" unique_id=1976192979]
 custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
-text = "Pass"
+text = "End Main"
 
 [node name="BugReportButton" type="Button" parent="." unique_id=1953231602]
 layout_mode = 1
@@ -866,7 +883,7 @@ grow_vertical = 2
 theme_override_font_sizes/font_size = 16
 text = "Show Cards"
 
-[node name="OpponentHandButtonStack" type="VBoxContainer" parent="."]
+[node name="OpponentHandButtonStack" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -877,21 +894,21 @@ offset_right = -320.0
 offset_bottom = 76.0
 grow_horizontal = 0
 grow_vertical = 1
-theme_override_constants/separation = 2
+theme_override_constants/separation = 0
 
 [node name="OpponentHandToggleButton" type="Button" parent="OpponentHandButtonStack"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 32)
+custom_minimum_size = Vector2(55, 32)
 theme_override_font_sizes/font_size = 16
 text = "▼"
 
 [node name="OpponentSortHandButton" type="Button" parent="OpponentHandButtonStack"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 32)
+custom_minimum_size = Vector2(82, 32)
 theme_override_font_sizes/font_size = 14
 text = "Sort"
 
-[node name="HandButtonStack" type="VBoxContainer" parent="."]
+[node name="HandButtonStack" type="HBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -904,16 +921,16 @@ offset_right = -320.0
 offset_bottom = -10.0
 grow_horizontal = 0
 grow_vertical = 0
-theme_override_constants/separation = 2
+theme_override_constants/separation = 0
 
 [node name="HandToggleButton" type="Button" parent="HandButtonStack" unique_id=1847291033]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 32)
+custom_minimum_size = Vector2(55, 32)
 theme_override_font_sizes/font_size = 16
 text = "▲"
 
 [node name="SortHandButton" type="Button" parent="HandButtonStack"]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 32)
+custom_minimum_size = Vector2(82, 32)
 theme_override_font_sizes/font_size = 14
 text = "Sort"

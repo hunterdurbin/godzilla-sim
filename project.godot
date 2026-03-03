@@ -17,7 +17,9 @@ config/quit_on_go_back=false
 config/features=PackedStringArray("4.6", "GL Compatibility")
 boot_splash/bg_color=Color(0, 0, 0, 1)
 boot_splash/show_image=false
-config/icon="res://CardContent/Assets/Icons/game_icon.png"
+boot_splash/stretch_mode=0
+boot_splash/image="res://assets/icons/game_icon.png"
+config/icon="res://assets/icons/game_icon.png"
 
 [autoload]
 
@@ -33,23 +35,29 @@ UpdateChecker="*res://scripts/update_checker.gd"
 RpcLogger="*res://scripts/rpc_logger.gd"
 TouchHelper="*res://scripts/touch_helper.gd"
 
+[gui]
+
+theme/custom="res://assets/fonts/default_theme.tres"
+
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [editor_plugins]
 
 enabled=PackedStringArray()
 
-[physics]
-
-3d/physics_engine="Jolt Physics"
-
 [input_devices]
 
 pointing/android/enable_pan_and_scale_gestures=true
+pointing/emulate_touch_from_mouse.mobile=true
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
 
 [rendering]
 

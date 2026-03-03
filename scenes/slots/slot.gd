@@ -39,6 +39,10 @@ var in_selection_mode: bool = false  # When true, allows highlighting even if oc
 var _is_hovered: bool = false
 var _content_rect: Rect2 = Rect2()
 var _pending_slot_click: bool = false
+var _long_press_timer: SceneTreeTimer = null
+var _long_press_cooldown: float = 0.0
+const LONG_PRESS_DURATION := 0.4
+const LONG_PRESS_COOLDOWN := 0.6
 
 
 func _ready() -> void:
@@ -316,28 +320,71 @@ func _on_card_drag_ended() -> void:
 
 
 func _on_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			if event.double_click and held_card != null:
-				_pending_slot_click = false
-				if not held_card.get("is_face_down"):
-					slot_right_clicked.emit(zone_number, player_id)
-			elif zone_number > 0 or in_selection_mode:
-				if held_card != null or in_selection_mode:
-					if held_card != null and not in_selection_mode and TouchHelper.is_touch_device():
-						# Touch only: delay to allow double-tap for card zoom
-						_pending_slot_click = true
-						get_tree().create_timer(0.3).timeout.connect(
-							_on_slot_click_timeout, CONNECT_ONE_SHOT
-						)
-					else:
-						slot_clicked.emit(zone_number, player_id)
-		elif event.button_index == MOUSE_BUTTON_RIGHT and held_card != null:
+	if not (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT):
+		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			if held_card != null and not held_card.get("is_face_down"):
+				slot_right_clicked.emit(zone_number, player_id)
+		return
+
+	var in_cooldown := (Time.get_ticks_msec() / 1000.0 - _long_press_cooldown) < LONG_PRESS_COOLDOWN
+
+	if event.pressed:
+		if event.double_click and not in_cooldown and held_card != null:
+			_pending_slot_click = false
+			_cancel_long_press()
 			if not held_card.get("is_face_down"):
 				slot_right_clicked.emit(zone_number, player_id)
+		elif zone_number > 0 or in_selection_mode:
+			if held_card != null or in_selection_mode:
+				if held_card != null and not in_selection_mode and TouchHelper.is_touch_device():
+					# Touch: delay click to allow double-tap + start long-press for zoom
+					_pending_slot_click = true
+					get_tree().create_timer(0.3).timeout.connect(
+						_on_slot_click_timeout, CONNECT_ONE_SHOT
+					)
+					_start_long_press()
+				else:
+					slot_clicked.emit(zone_number, player_id)
+	else:
+		# Button released — cancel long press timer (zoom fires on hold, not release)
+		_cancel_long_press()
+
+
+func _start_long_press() -> void:
+	_cancel_long_press()
+	if held_card != null and not held_card.get("is_face_down"):
+		_long_press_timer = get_tree().create_timer(LONG_PRESS_DURATION)
+		_long_press_timer.timeout.connect(_on_long_press)
+
+
+func _on_long_press() -> void:
+	_long_press_timer = null
+	# Verify finger is actually still down — the release event may have been
+	# consumed by the zoom overlay's _input handler and never reached this slot
+	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		return
+	_long_press_cooldown = Time.get_ticks_msec() / 1000.0
+	_pending_slot_click = false
+	if held_card != null and not held_card.get("is_face_down"):
+		slot_right_clicked.emit(zone_number, player_id)
+
+
+func reset_input_state() -> void:
+	_pending_slot_click = false
+	_cancel_long_press()
+	_long_press_cooldown = 0.0
+
+
+func _cancel_long_press() -> void:
+	if _long_press_timer:
+		if _long_press_timer.timeout.is_connected(_on_long_press):
+			_long_press_timer.timeout.disconnect(_on_long_press)
+		_long_press_timer = null
 
 
 func _on_slot_click_timeout() -> void:
+	if _long_press_timer:
+		return  # Long press still pending — don't fire click yet
 	if _pending_slot_click:
 		_pending_slot_click = false
 		slot_clicked.emit(zone_number, player_id)

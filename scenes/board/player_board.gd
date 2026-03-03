@@ -49,7 +49,7 @@ var _monster_deck_card_backs: Array[Control] = []
 var _monster_deck_count_badge: Label = null
 
 # Card back texture cache (shared across instances)
-const _DEFAULT_CARD_BACK_PATH := "res://CardContent/Assets/cardBacks/default.jpeg"
+const _DEFAULT_CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
 static var _card_back_cache_loaded: bool = false
 static var _default_card_back_tex: Texture2D = null
 static var _custom_card_back_tex: Texture2D = null  # null = no custom file found
@@ -79,11 +79,114 @@ func _update_layout() -> void:
 	var content_span := content_bottom - content_top
 	var lc_height := size.y / content_span
 
+	# Preserve SVG aspect ratio: constrain width or height so the board
+	# never stretches in either direction.
+	var lc_width := lc_height * (SVG_W / SVG_H)
+	var actual_width := minf(lc_width, size.x)
+	var x_offset := maxf(0.0, (size.x - actual_width) / 2.0)
+
+	# When width-constrained (tall/narrow display), recalculate height from
+	# the clamped width so zones and info areas keep their aspect ratio
+	# instead of stretching vertically.
+	if actual_width < lc_width:
+		lc_height = actual_width / (SVG_W / SVG_H)
+
+	# Center the visible content area vertically within the available space.
+	var visible_height := content_span * lc_height
+	var y_offset := (size.y - visible_height) / 2.0
+
 	var lc := $LayoutContainer
-	lc.offset_left = 0
-	lc.offset_top = - content_top * lc_height
-	lc.offset_right = size.x
+	lc.offset_left = x_offset
+	lc.offset_top = y_offset - content_top * lc_height
+	lc.offset_right = x_offset + actual_width
 	lc.offset_bottom = lc.offset_top + lc_height
+
+	# Constrain playmat background and overlay to match the LayoutContainer width
+	var board_bg := $BoardBg as TextureRect
+	board_bg.anchor_left = 0.0
+	board_bg.anchor_right = 0.0
+	board_bg.anchor_top = 0.0
+	board_bg.anchor_bottom = 1.0
+	board_bg.offset_left = x_offset
+	board_bg.offset_right = x_offset + actual_width
+
+	var overlay := $GradientOverlay as ColorRect
+	overlay.anchor_left = 0.0
+	overlay.anchor_right = 0.0
+	overlay.anchor_top = 0.0
+	overlay.anchor_bottom = 1.0
+	overlay.offset_left = x_offset
+	overlay.offset_right = x_offset + actual_width
+
+	# On mobile, bump label font sizes so they're readable on smaller boards.
+	# The LayoutContainer scales via anchors but font sizes are fixed pixels,
+	# so we set explicit sizes that work at phone scale.
+	if TouchHelper._is_mobile:
+		_apply_mobile_labels()
+
+
+var _mobile_labels_applied := false
+
+# Cached label references for mobile font scaling
+var _cp_title: Label
+var _threat_title: Label
+var _rage_title: Label
+var _target_value_font_size: int = 14
+
+func _apply_mobile_labels() -> void:
+	if _mobile_labels_applied:
+		return
+	_mobile_labels_applied = true
+	var lc := $LayoutContainer
+	var stats := lc.find_child("StatsDisplay", true, false) as HBoxContainer
+	if stats:
+		stats.clip_contents = true
+	_cp_title = lc.find_child("CPTitle", true, false) as Label
+	_threat_title = lc.find_child("ThreatTitle", true, false) as Label
+	var spacer := lc.find_child("Spacer", true, false) as Control
+	if _threat_title:
+		_threat_title.text = "T:"  # Abbreviate to save horizontal space
+	if spacer:
+		spacer.custom_minimum_size.x = 2.0
+	if cp_label:
+		cp_label.custom_minimum_size.x = 0.0
+		cp_label.clip_text = true
+		cp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		cp_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cp_label.resized.connect(func(): _apply_autofit(cp_label, 8))
+	if threat_label:
+		threat_label.custom_minimum_size.x = 0.0
+		threat_label.clip_text = true
+		threat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		threat_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		threat_label.resized.connect(func(): _apply_autofit(threat_label, 8))
+	_rage_title = lc.find_child("RageTitle", true, false) as Label
+	# Apply default (balanced) font sizes
+	apply_mobile_label_scale(1.0)
+
+
+## Update mobile label font sizes based on board scale.
+## scale = 1.0 for balanced/enlarged, ~0.6 for shrunk board.
+func apply_mobile_label_scale(label_scale: float) -> void:
+	var title_size := maxi(10, int(14 * label_scale))
+	var value_size := maxi(12, int(18 * label_scale))
+	var rage_size := maxi(14, int(28 * label_scale))
+	var rage_threat_size := maxi(10, int(18 * label_scale))
+	if _cp_title:
+		_cp_title.add_theme_font_size_override("font_size", title_size)
+	if _threat_title:
+		_threat_title.add_theme_font_size_override("font_size", title_size)
+	_target_value_font_size = value_size
+	if cp_label:
+		cp_label.add_theme_font_size_override("font_size", value_size)
+	if threat_label:
+		threat_label.add_theme_font_size_override("font_size", value_size)
+	if _rage_title:
+		_rage_title.add_theme_font_size_override("font_size", title_size)
+	if rage_label:
+		rage_label.add_theme_font_size_override("font_size", rage_size)
+	if rage_threat_label:
+		rage_threat_label.add_theme_font_size_override("font_size", rage_threat_size)
 
 
 func _setup_references() -> void:
@@ -191,6 +294,21 @@ func _setup_references() -> void:
 			_add_border(area)
 
 
+## Case-insensitive file search for custom assets (iOS filesystem is case-sensitive).
+func _find_custom_file(dir_path: String, base_name: String) -> String:
+	var da := DirAccess.open(dir_path)
+	if da == null:
+		return ""
+	var prefix := base_name.to_lower() + "."
+	da.list_dir_begin()
+	var file_name := da.get_next()
+	while not file_name.is_empty():
+		if not da.current_is_dir() and file_name.to_lower().begins_with(prefix):
+			return dir_path.path_join(file_name)
+		file_name = da.get_next()
+	return ""
+
+
 func _apply_custom_playmat() -> void:
 	if not GameSettings.custom_playmat_enabled:
 		return
@@ -198,16 +316,14 @@ func _apply_custom_playmat() -> void:
 	if player_id != local_id and not GameSettings.custom_playmat_opponent:
 		return
 	var dir_path := GameSettings.get_custom_base_path().path_join("playmat")
-	for ext in ["png", "jpg", "jpeg", "webp"]:
-		var image_path := dir_path.path_join("default.%s" % ext)
-		if FileAccess.file_exists(image_path):
-			var image := Image.load_from_file(image_path)
-			if image:
-				var tex := ImageTexture.create_from_image(image)
-				var board_bg := $BoardBg as TextureRect
-				if board_bg:
-					board_bg.texture = tex
-			return
+	var image_path := _find_custom_file(dir_path, "default")
+	if not image_path.is_empty():
+		var image := Image.load_from_file(image_path)
+		if image:
+			var tex := ImageTexture.create_from_image(image)
+			var board_bg := $BoardBg as TextureRect
+			if board_bg:
+				board_bg.texture = tex
 
 
 ## Apply a gradient tint to the board background based on the rank 1 monster's colors.
@@ -389,7 +505,7 @@ func _sync_monster(state: PlayerState, threat_mod: int = 0) -> void:
 		rage_label.text = "%d" % state.rage
 	if rage_threat_label:
 		var threat_bonus: int = state.rage * 5000
-		rage_threat_label.text = "(+%d)" % threat_bonus
+		rage_threat_label.text = "(+%s)" % _format_number(threat_bonus)
 
 
 func _sync_hand(state: PlayerState) -> void:
@@ -503,10 +619,10 @@ func _sync_info(state: PlayerState, cp_modifier: int = 0, threat_modifier: int =
 
 	if cp_label:
 		var total_cp: int = state.get_total_counter_power() + cp_modifier
-		cp_label.text = "%d" % total_cp
+		_set_label_autofit(cp_label, _format_number(total_cp))
 	if threat_label:
 		var total_threat: int = state.get_threat_level() + threat_modifier
-		threat_label.text = "%d" % total_threat
+		_set_label_autofit(threat_label, _format_number(total_threat))
 
 
 func set_hand_face_down(face_down: bool) -> void:
@@ -838,6 +954,39 @@ func _draw_border(control: Control) -> void:
 	control.draw_rect(rect, Color(0.45, 0.45, 0.55, 0.9), false, 2.0)
 
 
+# --- Formatting helpers ---
+
+func _set_label_autofit(label: Label, text: String, min_size: int = 8) -> void:
+	label.text = text
+	_apply_autofit(label, min_size)
+
+
+func _apply_autofit(label: Label, min_size: int) -> void:
+	var font := label.get_theme_font("font")
+	var available := label.size.x
+	if available <= 0.0:
+		return
+	var fs := _target_value_font_size
+	while fs > min_size:
+		if font.get_string_size(label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x <= available:
+			break
+		fs -= 1
+	label.add_theme_font_size_override("font_size", fs)
+
+
+static func _format_number(value: int) -> String:
+	var negative := value < 0
+	var s := str(absi(value))
+	var result := ""
+	var count := 0
+	for i in range(s.length() - 1, -1, -1):
+		if count > 0 and count % 3 == 0:
+			result = "," + result
+		result = s[i] + result
+		count += 1
+	return ("-" + result) if negative else result
+
+
 # --- Card-back stack helpers ---
 
 func _get_card_back_texture() -> Texture2D:
@@ -845,13 +994,11 @@ func _get_card_back_texture() -> Texture2D:
 		_card_back_cache_loaded = true
 		_default_card_back_tex = load(_DEFAULT_CARD_BACK_PATH)
 		var cb_dir := GameSettings.get_custom_base_path().path_join("cardBack")
-		for ext in ["png", "jpg", "jpeg", "webp"]:
-			var custom_path := cb_dir.path_join("default.%s" % ext)
-			if FileAccess.file_exists(custom_path):
-				var image := Image.load_from_file(custom_path)
-				if image:
-					_custom_card_back_tex = ImageTexture.create_from_image(image)
-				break
+		var cb_path := _find_custom_file(cb_dir, "default")
+		if not cb_path.is_empty():
+			var image := Image.load_from_file(cb_path)
+			if image:
+				_custom_card_back_tex = ImageTexture.create_from_image(image)
 	if _custom_card_back_tex and _should_use_custom_back():
 		return _custom_card_back_tex
 	return _default_card_back_tex

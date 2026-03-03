@@ -154,7 +154,7 @@ jobs:
           path: flatpak/
 
       - name: Copy icon for Flatpak build
-        run: cp CardContent/Assets/Icons/game_icon.png flatpak/game_icon.png
+        run: cp assets/icons/game_icon.png flatpak/game_icon.png
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:

@@ -3,6 +3,7 @@ extends Control
 @onready var player_name_edit: LineEdit = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PlayerNameRow/PlayerNameEdit
 @onready var automation_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutomationButton
 @onready var customize_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CustomizeButton
+@onready var advanced_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AdvancedButton
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
 
 
@@ -11,6 +12,7 @@ func _ready() -> void:
 	player_name_edit.text_changed.connect(_on_player_name_changed)
 	automation_button.pressed.connect(_on_automation_pressed)
 	customize_button.pressed.connect(_on_customize_pressed)
+	advanced_button.pressed.connect(_on_advanced_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 
 
@@ -177,13 +179,16 @@ func _on_customize_pressed() -> void:
 	var parts := _create_modal("Customize")
 	var popup: PopupPanel = parts[0]
 	var vbox: VBoxContainer = parts[1]
+	var is_ios := OS.get_name() == "iOS"
 	var is_mobile := OS.get_name() in ["Android", "iOS"]
 
 	_add_toggle_row(vbox, "Custom Playmat", "custom_playmat_enabled")
 	_add_toggle_row(vbox, "Apply Playmat to Opponent", "custom_playmat_opponent")
 
 	var playmat_hint := Label.new()
-	if is_mobile:
+	if is_ios:
+		playmat_hint.text = "Use the Files app to add images (named default.png)"
+	elif is_mobile:
 		playmat_hint.text = "Import any image to use as your playmat background"
 	else:
 		playmat_hint.text = "Image must be named: default.png (or .jpg, .jpeg, .webp)"
@@ -194,7 +199,13 @@ func _on_customize_pressed() -> void:
 	var playmat_btn_row := HBoxContainer.new()
 	playmat_btn_row.alignment = BoxContainer.ALIGNMENT_END
 	playmat_btn_row.add_theme_constant_override("separation", 8)
-	if is_mobile:
+	if is_ios:
+		var playmat_instructions_btn := Button.new()
+		playmat_instructions_btn.text = "How to Add Files"
+		playmat_instructions_btn.add_theme_font_size_override("font_size", 14)
+		playmat_instructions_btn.pressed.connect(_show_ios_file_instructions.bind("playmat"))
+		playmat_btn_row.add_child(playmat_instructions_btn)
+	elif is_mobile:
 		var playmat_import_btn := Button.new()
 		playmat_import_btn.text = "Import Image"
 		playmat_import_btn.add_theme_font_size_override("font_size", 14)
@@ -236,7 +247,23 @@ func _on_customize_pressed() -> void:
 	var art_btn_row := HBoxContainer.new()
 	art_btn_row.alignment = BoxContainer.ALIGNMENT_END
 	art_btn_row.add_theme_constant_override("separation", 8)
-	if is_mobile:
+	if is_ios:
+		var art_clear_btn := Button.new()
+		art_clear_btn.text = "Delete All"
+		art_clear_btn.add_theme_font_size_override("font_size", 14)
+		art_clear_btn.pressed.connect(_show_delete_all_card_art_confirm)
+		art_btn_row.add_child(art_clear_btn)
+		var art_remove_btn := Button.new()
+		art_remove_btn.text = "Remove Art"
+		art_remove_btn.add_theme_font_size_override("font_size", 14)
+		art_remove_btn.pressed.connect(_show_remove_card_art_prompt)
+		art_btn_row.add_child(art_remove_btn)
+		var art_instructions_btn := Button.new()
+		art_instructions_btn.text = "How to Add Files"
+		art_instructions_btn.add_theme_font_size_override("font_size", 14)
+		art_instructions_btn.pressed.connect(_show_ios_file_instructions.bind("cardArt"))
+		art_btn_row.add_child(art_instructions_btn)
+	elif is_mobile:
 		var art_clear_btn := Button.new()
 		art_clear_btn.text = "Delete All"
 		art_clear_btn.add_theme_font_size_override("font_size", 14)
@@ -278,7 +305,9 @@ func _on_customize_pressed() -> void:
 	vbox.add_child(back_row)
 
 	var back_hint := Label.new()
-	if is_mobile:
+	if is_ios:
+		back_hint.text = "Use the Files app to add images (named default.png)"
+	elif is_mobile:
 		back_hint.text = "Import any image to use as your card back"
 	else:
 		back_hint.text = "Image must be named: default.png (or .jpg, .jpeg, .webp)"
@@ -289,7 +318,13 @@ func _on_customize_pressed() -> void:
 	var back_btn_row := HBoxContainer.new()
 	back_btn_row.alignment = BoxContainer.ALIGNMENT_END
 	back_btn_row.add_theme_constant_override("separation", 8)
-	if is_mobile:
+	if is_ios:
+		var back_instructions_btn := Button.new()
+		back_instructions_btn.text = "How to Add Files"
+		back_instructions_btn.add_theme_font_size_override("font_size", 14)
+		back_instructions_btn.pressed.connect(_show_ios_file_instructions.bind("cardBack"))
+		back_btn_row.add_child(back_instructions_btn)
+	elif is_mobile:
 		var back_import_btn := Button.new()
 		back_import_btn.text = "Import Image"
 		back_import_btn.add_theme_font_size_override("font_size", 14)
@@ -314,6 +349,60 @@ func _on_open_folder(subfolder: String) -> void:
 		for set_id in CARD_ART_SETS:
 			DirAccess.make_dir_recursive_absolute(path.path_join(set_id))
 	OS.shell_open(path)
+
+
+func _ensure_custom_dirs(subfolder: String) -> void:
+	var path := GameSettings.get_custom_base_path().path_join(subfolder)
+	DirAccess.make_dir_recursive_absolute(path)
+	if subfolder == "cardArt":
+		for set_id in CARD_ART_SETS:
+			DirAccess.make_dir_recursive_absolute(path.path_join(set_id))
+
+
+func _show_ios_file_instructions(subfolder: String) -> void:
+	_ensure_custom_dirs(subfolder)
+	var app_name: String = ProjectSettings.get_setting("application/config/name", "this app")
+	var instructions := ""
+	match subfolder:
+		"playmat":
+			instructions = "1. Open the Files app on your device\n"
+			instructions += "2. Go to: On My iPhone > %s > custom > playmat\n" % app_name
+			instructions += "3. Copy an image named default.png\n"
+			instructions += "   (also supports .jpg, .jpeg, .webp)\n"
+			instructions += "4. Return to this app and enable Custom Playmat"
+		"cardArt":
+			instructions = "1. Open the Files app on your device\n"
+			instructions += "2. Go to: On My iPhone > %s > custom > cardArt > [SET]\n" % app_name
+			instructions += "3. Copy images named [SET]-[NUMBER].png\n"
+			instructions += "   (e.g. ESD01-008.png, EBP02-045.png)\n"
+			instructions += "4. Sets: %s\n" % ", ".join(CARD_ART_SETS)
+			instructions += "5. Return to this app and enable Custom Card Art"
+		"cardBack":
+			instructions = "1. Open the Files app on your device\n"
+			instructions += "2. Go to: On My iPhone > %s > custom > cardBack\n" % app_name
+			instructions += "3. Copy an image named default.png\n"
+			instructions += "   (also supports .jpg, .jpeg, .webp)\n"
+			instructions += "4. Return to this app and enable Custom Card Back"
+
+	var modal_parts := _create_modal("How to Add Files", 500.0)
+	var popup: PopupPanel = modal_parts[0]
+	var vbox: VBoxContainer = modal_parts[1]
+
+	var body := Label.new()
+	body.text = instructions
+	body.add_theme_font_size_override("font_size", 15)
+	body.add_theme_color_override("font_color", Color(0.85, 0.85, 0.85, 1.0))
+	vbox.add_child(body)
+
+	var note := Label.new()
+	note.text = "The folders have been created for you."
+	note.add_theme_font_size_override("font_size", 12)
+	note.add_theme_color_override("font_color", Color(0.5, 0.8, 0.5, 1.0))
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(note)
+
+	_add_close_button(vbox, popup)
+	_show_modal(popup)
 
 
 # --- Import handlers ---
@@ -704,6 +793,19 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_pressed()
 		get_viewport().set_input_as_handled()
+
+
+# --- Advanced modal ---
+
+func _on_advanced_pressed() -> void:
+	var parts := _create_modal("Advanced")
+	var popup: PopupPanel = parts[0]
+	var vbox: VBoxContainer = parts[1]
+
+	_add_toggle_row(vbox, "Use Mobile Layout", "use_mobile_layout")
+
+	_add_close_button(vbox, popup)
+	_show_modal(popup)
 
 
 func _on_back_pressed() -> void:
