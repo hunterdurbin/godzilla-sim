@@ -169,11 +169,13 @@ func fetch_public_rooms(p_game_mode: String = "") -> Array:
 
 ## Connect to a host's room via the relay server using their room code.
 func join_online(game_code: String) -> Error:
+	print("[NetworkManager] join_online('%s') start" % game_code)
 	_room_code = game_code
 	var relay_peer := RelayMultiplayerPeer.new()
 	var url := "ws://%s:%d/%s" % [RELAY_HOST, RELAY_PORT, game_code]
 	var err := relay_peer.connect_as_client(url)
 	if err != OK:
+		print("[NetworkManager] join_online: connect_as_client failed: %d" % err)
 		return err
 
 	multiplayer.multiplayer_peer = relay_peer
@@ -192,6 +194,7 @@ func join_online(game_code: String) -> Error:
 	# Wait for relay connection + host discovery
 	err = await _wait_for_relay_connection(relay_peer)
 	if err != OK:
+		print("[NetworkManager] join_online: relay connection failed: %d" % err)
 		multiplayer.multiplayer_peer = null
 		if multiplayer.connected_to_server.is_connected(_on_connected_to_server):
 			multiplayer.connected_to_server.disconnect(_on_connected_to_server)
@@ -202,6 +205,7 @@ func join_online(game_code: String) -> Error:
 		mode = Mode.SOLO
 		host_peer_id = 1
 		return err
+	print("[NetworkManager] join_online: connected OK, version_verified=%s" % version_verified)
 	return OK
 
 
@@ -268,6 +272,7 @@ func start_lan_game() -> void:
 ## Closes the old dead peer and creates a fresh WebSocket connection
 ## while preserving mode, player_id, and is_in_game state.
 func attempt_reconnect(game_code: String) -> Error:
+	print("[NetworkManager] attempt_reconnect('%s') start" % game_code)
 	# Close old dead peer without full state reset
 	if multiplayer.multiplayer_peer:
 		multiplayer.multiplayer_peer.close()
@@ -301,6 +306,7 @@ func attempt_reconnect(game_code: String) -> Error:
 	# Wait for relay connection
 	err = await _wait_for_relay_connection(relay_peer)
 	if err != OK:
+		print("[NetworkManager] attempt_reconnect: relay connection failed: %d" % err)
 		multiplayer.multiplayer_peer = null
 		if multiplayer.connected_to_server.is_connected(_on_connected_to_server):
 			multiplayer.connected_to_server.disconnect(_on_connected_to_server)
@@ -310,6 +316,7 @@ func attempt_reconnect(game_code: String) -> Error:
 			multiplayer.server_disconnected.disconnect(_on_server_disconnected)
 		return err
 
+	print("[NetworkManager] attempt_reconnect: connected OK")
 	return OK
 
 
@@ -328,8 +335,12 @@ func _generate_room_code() -> String:
 ## For the client, this happens when the relay confirms the host is present.
 func _wait_for_relay_connection(relay_peer: RelayMultiplayerPeer) -> Error:
 	var elapsed := 0.0
+	var last_status := -1
 	while elapsed < WS_CONNECT_TIMEOUT:
 		var status := relay_peer.get_connection_status()
+		if status != last_status:
+			print("[NetworkManager] relay status: %d (elapsed=%.1fs)" % [status, elapsed])
+			last_status = status
 		if status == MultiplayerPeer.CONNECTION_CONNECTED:
 			return OK
 		if status == MultiplayerPeer.CONNECTION_DISCONNECTED:
@@ -342,6 +353,7 @@ func _wait_for_relay_connection(relay_peer: RelayMultiplayerPeer) -> Error:
 # --- Host callbacks ---
 
 func _on_peer_connected(peer_id: int) -> void:
+	print("[NetworkManager] _on_peer_connected: peer=%d is_in_game=%s" % [peer_id, is_in_game])
 	# Assign the connecting peer as player 1
 	peer_player_map[peer_id] = 1
 	peer_player_map[multiplayer.get_unique_id()] = 0
@@ -367,6 +379,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 ## Client connected to the host (peer 1) — used for both LAN and relay.
 func _on_connected_to_server() -> void:
+	print("[NetworkManager] _on_connected_to_server: connected to host (peer %d)" % host_peer_id)
 	opponent_connected = true
 	_rpc_exchange_version.rpc_id(host_peer_id, GAME_VERSION)
 	player_connected.emit(host_peer_id)
@@ -423,6 +436,7 @@ func notify_leaving() -> void:
 
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_exchange_version(remote_version: String) -> void:
+	print("[NetworkManager] _rpc_exchange_version: remote='%s' local='%s'" % [remote_version, GAME_VERSION])
 	if remote_version != GAME_VERSION:
 		version_mismatch.emit(GAME_VERSION, remote_version)
 		disconnect_game()

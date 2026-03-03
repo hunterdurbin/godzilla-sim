@@ -265,26 +265,26 @@ func _show_reconnect_dialog() -> void:
 	reconnect_btn.pressed.connect(func():
 		reconnect_btn.disabled = true
 		reconnect_btn.text = "Connecting..."
-		status_label.text = "Joining room %s..." % saved_code
+		status_label.text = "Connecting to relay server..."
 		status_label.visible = true
+		print("[Reconnect] Attempting join_online('%s')" % saved_code)
 		# Restore game mode/public state before joining
 		NetworkManager.game_mode = GameSettings.reconnect_game_mode
 		NetworkManager.is_public_room = GameSettings.reconnect_is_public
 		var err: Error = await NetworkManager.join_online(saved_code)
+		print("[Reconnect] join_online returned: %d, version_verified=%s" % [err, NetworkManager.version_verified])
 		if err == OK:
-			status_label.text = "Connected! Waiting for game..."
 			NetworkManager.is_in_game = true
-			# Wait for version verify before transitioning
-			var verified := false
-			var verify_timer := get_tree().create_timer(NetworkManager.VERSION_TIMEOUT)
-			var on_verified := func():
-				verified = true
-			NetworkManager.version_verified_ok.connect(on_verified, CONNECT_ONE_SHOT)
-			await verify_timer.timeout
-			if not verified:
-				if NetworkManager.version_verified_ok.is_connected(on_verified):
-					NetworkManager.version_verified_ok.disconnect(on_verified)
-			if NetworkManager.version_verified or verified:
+			# Version exchange happens during join_online. Poll briefly
+			# in case the host's response arrives on the next frame.
+			if not NetworkManager.version_verified:
+				status_label.text = "Connected! Verifying game version..."
+				var elapsed := 0.0
+				while elapsed < NetworkManager.VERSION_TIMEOUT and not NetworkManager.version_verified:
+					await get_tree().create_timer(0.1).timeout
+					elapsed += 0.1
+			print("[Reconnect] version_verified=%s" % NetworkManager.version_verified)
+			if NetworkManager.version_verified:
 				popup.hide()
 				get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
 			else:
@@ -294,7 +294,9 @@ func _show_reconnect_dialog() -> void:
 				GameSettings.clear_reconnect_session()
 				NetworkManager.disconnect_game()
 		else:
-			status_label.text = "Failed to connect. Room may no longer exist."
+			var err_msg := "timeout" if err == ERR_TIMEOUT else "error %d" % err
+			status_label.text = "Failed to connect (%s).\nRoom may no longer exist." % err_msg
+			print("[Reconnect] Connection failed: %s" % err_msg)
 			reconnect_btn.text = "Retry"
 			reconnect_btn.disabled = false
 	)

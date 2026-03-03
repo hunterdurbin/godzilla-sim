@@ -497,6 +497,12 @@ func _ready() -> void:
 		# Client: initialize empty client state, wait for host RPCs
 		_client_players = [PlayerState.new(0), PlayerState.new(1)]
 		GameLog.player_names[local_player_id] = GameSettings.player_name
+		# If this is a reconnect (is_in_game was set before scene load), the host
+		# already sent state before this scene existed — request a fresh broadcast.
+		if NetworkManager.is_in_game:
+			_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
+			RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
+			_rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
 
 	# Connect buttons
 	btn_play_battle.pressed.connect(_on_play_battle_pressed)
@@ -6010,6 +6016,40 @@ func _rpc_request_resync() -> void:
 	_last_sent_version = 0
 	_broadcast_state()
 	_flush_broadcast()
+	# Re-send pending interaction if the host was waiting for client input
+	if not _pending_interaction.is_empty():
+		var method: String = _pending_interaction.get("method", "")
+		var args: Array = _pending_interaction.get("args", [])
+		var peer_id := multiplayer.get_remote_sender_id()
+		if peer_id > 0:
+			match method:
+				"action_context":
+					_rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
+				"deck_search":
+					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2])
+				"deck_arrange":
+					_rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
+				"hand_discard":
+					_rpc_hand_discard_requested.rpc_id(peer_id, args[0])
+				"hand_card_selection":
+					_rpc_hand_card_selection_requested.rpc_id(peer_id, args[0], args[1], args[2])
+				"zone_target":
+					_rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
+				"strategy_target":
+					_rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2])
+				"choice":
+					_rpc_choice_requested.rpc_id(peer_id, args[0], args[1])
+				"confirmation":
+					_rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
+				"monster_rankup":
+					_rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
+	elif turn_manager and not turn_manager.is_game_over:
+		# Check if it's the client's turn and re-prompt
+		var active_id := turn_manager.game_state.current_player_id
+		if active_id != local_player_id:
+			var valid_actions := turn_manager.rules_engine.get_valid_actions(turn_manager.game_state)
+			if not valid_actions.is_empty():
+				_on_awaiting_action(valid_actions)
 
 
 ## Host -> Client: valid actions and playable indices
@@ -6551,9 +6591,12 @@ func _attempt_client_reconnect() -> void:
 			_client_full_state = {}
 			_client_state_version = 0
 			_on_log_message("Reconnected!")
-			# Re-send player name so host can re-associate
+			# Re-send player name and request full state resync from host.
+			# The host already tried to resync during the relay handshake,
+			# but those RPCs may have arrived before the connection was fully ready.
 			RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
 			_rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
+			_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
 			return
 		# Failed — wait 2s and retry
 		_reconnect_label.text = "Connection lost.\nRetrying..."
