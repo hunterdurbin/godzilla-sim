@@ -35,20 +35,21 @@ UpdateChecker="*res://scripts/update_checker.gd"
 RpcLogger="*res://scripts/rpc_logger.gd"
 TouchHelper="*res://scripts/touch_helper.gd"
 
-[gui]
-
-theme/custom="res://assets/fonts/default_theme.tres"
-
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="expand"
+window/stretch/mode.mobile="canvas_items"
+window/stretch/aspect.mobile="expand"
 
 [editor_plugins]
 
 enabled=PackedStringArray()
+
+[gui]
+
+theme/custom="res://assets/fonts/default_theme.tres"
 
 [input_devices]
 

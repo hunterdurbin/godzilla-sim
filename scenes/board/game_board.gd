@@ -267,7 +267,7 @@ var _reconnect_cumulative_seconds: float = 0.0  # Cumulative across all disconne
 var _reconnect_current_start_ms: int = 0
 var _waiting_for_reconnect: bool = false
 var _reconnect_attempting: bool = false  # Guard for client reconnect loop
-const RECONNECT_CLAIM_WIN_SECONDS: float = 30.0
+const RECONNECT_CLAIM_WIN_SECONDS: float = 10.0
 var _pending_interaction: Dictionary = {}  # {method: String, args: Array}
 # Reconnect overlay nodes (built in code)
 var _reconnect_overlay: ColorRect = null
@@ -3015,9 +3015,13 @@ func _process(_delta: float) -> void:
 	if _waiting_for_reconnect and NetworkManager.is_host() and _reconnect_overlay.visible:
 		var elapsed_ms := Time.get_ticks_msec() - _reconnect_current_start_ms
 		var total_seconds := _reconnect_cumulative_seconds + elapsed_ms / 1000.0
-		_reconnect_timer_label.text = "Waiting: %ds" % int(total_seconds)
-		if total_seconds >= RECONNECT_CLAIM_WIN_SECONDS and not _reconnect_claim_btn.visible:
-			_reconnect_claim_btn.visible = true
+		var remaining := RECONNECT_CLAIM_WIN_SECONDS - total_seconds
+		if remaining > 0:
+			_reconnect_timer_label.text = "Claim win available in %ds" % ceili(remaining)
+		else:
+			_reconnect_timer_label.text = ""
+			if not _reconnect_claim_btn.visible:
+				_reconnect_claim_btn.visible = true
 		return  # Skip normal drag processing while overlay is showing
 
 	if not _drag_card or not _drag_card.is_dragging:
@@ -6503,7 +6507,7 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 		_waiting_for_reconnect = true
 		_reconnect_current_start_ms = Time.get_ticks_msec()
 		_reconnect_label.text = "Opponent disconnected.\nWaiting for reconnect..."
-		_reconnect_timer_label.text = "Waiting: 0s"
+		_reconnect_timer_label.text = "Claim win available in %ds" % int(RECONNECT_CLAIM_WIN_SECONDS)
 		_reconnect_claim_btn.visible = false
 		_reconnect_overlay.visible = true
 		return
