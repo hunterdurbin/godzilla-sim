@@ -262,6 +262,20 @@ var _rematch_requested: bool = false
 var _opponent_rematch_requested: bool = false
 var _game_ended_by_disconnect: bool = false
 
+# Reconnect state
+var _reconnect_cumulative_seconds: float = 0.0  # Cumulative across all disconnects
+var _reconnect_current_start_ms: int = 0
+var _waiting_for_reconnect: bool = false
+var _reconnect_attempting: bool = false  # Guard for client reconnect loop
+const RECONNECT_CLAIM_WIN_SECONDS: float = 30.0
+var _pending_interaction: Dictionary = {}  # {method: String, args: Array}
+# Reconnect overlay nodes (built in code)
+var _reconnect_overlay: ColorRect = null
+var _reconnect_label: Label = null
+var _reconnect_timer_label: Label = null
+var _reconnect_claim_btn: Button = null
+var _reconnect_menu_btn: Button = null
+
 # Stats time tracking
 var _player_elapsed_ms: Array[int] = [0, 0]
 var _turn_start_time_ms: int = 0
@@ -356,6 +370,53 @@ func _set_action_buttons_visible(vis: bool) -> void:
 		btn_cancel.disabled = true
 		if not vis:
 			_collapse_fab_instant()
+
+
+func _build_reconnect_overlay() -> void:
+	_reconnect_overlay = ColorRect.new()
+	_reconnect_overlay.color = Color(0, 0, 0, 0.75)
+	_reconnect_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_reconnect_overlay.z_index = 200
+	_reconnect_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_reconnect_overlay.visible = false
+
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_CENTER)
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 16)
+	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	vbox.grow_vertical = Control.GROW_DIRECTION_BOTH
+
+	_reconnect_label = Label.new()
+	_reconnect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_reconnect_label.add_theme_font_size_override("font_size", 24)
+	vbox.add_child(_reconnect_label)
+
+	_reconnect_timer_label = Label.new()
+	_reconnect_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_reconnect_timer_label.add_theme_font_size_override("font_size", 20)
+	_reconnect_timer_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	vbox.add_child(_reconnect_timer_label)
+
+	_reconnect_claim_btn = Button.new()
+	_reconnect_claim_btn.text = "Claim Win"
+	_reconnect_claim_btn.custom_minimum_size = Vector2(200, 45)
+	_reconnect_claim_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_reconnect_claim_btn.add_theme_font_size_override("font_size", 20)
+	_reconnect_claim_btn.visible = false
+	_reconnect_claim_btn.pressed.connect(_on_reconnect_claim_win)
+	vbox.add_child(_reconnect_claim_btn)
+
+	_reconnect_menu_btn = Button.new()
+	_reconnect_menu_btn.text = "Return to Menu"
+	_reconnect_menu_btn.custom_minimum_size = Vector2(200, 45)
+	_reconnect_menu_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_reconnect_menu_btn.add_theme_font_size_override("font_size", 20)
+	_reconnect_menu_btn.pressed.connect(_on_main_menu_pressed)
+	vbox.add_child(_reconnect_menu_btn)
+
+	_reconnect_overlay.add_child(vbox)
+	add_child(_reconnect_overlay)
 
 
 func _ready() -> void:
@@ -465,6 +526,17 @@ func _ready() -> void:
 	# Listen for disconnects in multiplayer
 	if is_multiplayer_game:
 		NetworkManager.player_disconnected.connect(_on_opponent_disconnected)
+		NetworkManager.player_reconnected.connect(_on_opponent_reconnected)
+		NetworkManager.is_in_game = true
+		_build_reconnect_overlay()
+		# Save reconnect session for app-restart recovery (online only)
+		if NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]:
+			GameSettings.save_reconnect_session(
+				NetworkManager.get_game_code(),
+				NetworkManager.is_host(),
+				NetworkManager.game_mode,
+				NetworkManager.is_public_room,
+			)
 
 	# Connect deck search buttons
 	deck_search_skip.pressed.connect(_on_deck_search_skip)
@@ -2157,6 +2229,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 		else:
 			# Client's turn — send context, disable host buttons
 			_disable_all_buttons()
+			_pending_interaction = {"method": "action_context", "args": [actions_json, playable_json]}
 			for peer_id in NetworkManager.peer_player_map:
 				if NetworkManager.peer_player_map[peer_id] == active_id:
 					RpcLogger.log_send("receive_action_context", actions_json.length() + playable_json.length())
@@ -2168,6 +2241,11 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 func _on_game_ended(winner_id: int, reason: String) -> void:
 	_action_pending = false
 	_game_ended_by_disconnect = false
+	# Defensive: hide reconnect overlay if game ends normally
+	if _waiting_for_reconnect:
+		_waiting_for_reconnect = false
+		if _reconnect_overlay:
+			_reconnect_overlay.visible = false
 	_rematch_requested = false
 	_opponent_rematch_requested = false
 	end_game_panel.visible = true
@@ -2193,6 +2271,7 @@ func _on_confirmation_requested(prompt: String, setting: String) -> void:
 	var current_pid: int = turn_manager.game_state.current_player_id
 	if is_multiplayer_game and current_pid != local_player_id:
 		_flush_broadcast()
+		_pending_interaction = {"method": "confirmation", "args": [prompt, setting]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == current_pid:
 				RpcLogger.log_send("confirmation_requested", prompt.length() + setting.length())
@@ -2425,10 +2504,16 @@ func _rpc_concede() -> void:
 
 
 func _on_main_menu_pressed() -> void:
+	_waiting_for_reconnect = false
+	_reconnect_attempting = false
+	if _reconnect_overlay:
+		_reconnect_overlay.visible = false
 	if is_multiplayer_game:
 		if end_game_panel.visible and multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 			RpcLogger.log_send("rematch_declined", 0)
 			_rpc_rematch_declined.rpc()
+		GameSettings.clear_reconnect_session()
+		NetworkManager.is_in_game = false
 		NetworkManager.notify_leaving()
 		NetworkManager.disconnect_game()
 	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
@@ -2462,6 +2547,16 @@ func _execute_rematch() -> void:
 	_rematch_requested = false
 	_opponent_rematch_requested = false
 	_game_ended_by_disconnect = false
+	_reconnect_cumulative_seconds = 0.0
+	_pending_interaction = {}
+	# Re-save session with fresh timestamp for the new game
+	if is_multiplayer_game and NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]:
+		GameSettings.save_reconnect_session(
+			NetworkManager.get_game_code(),
+			NetworkManager.is_host(),
+			NetworkManager.game_mode,
+			NetworkManager.is_public_room,
+		)
 
 	# 2. Clear visual state on both boards
 	player1_board.reset_visuals()
@@ -2916,6 +3011,15 @@ func _on_zone_hover_clicked(_zone_index: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	# Reconnect timer display (host only)
+	if _waiting_for_reconnect and NetworkManager.is_host() and _reconnect_overlay.visible:
+		var elapsed_ms := Time.get_ticks_msec() - _reconnect_current_start_ms
+		var total_seconds := _reconnect_cumulative_seconds + elapsed_ms / 1000.0
+		_reconnect_timer_label.text = "Waiting: %ds" % int(total_seconds)
+		if total_seconds >= RECONNECT_CLAIM_WIN_SECONDS and not _reconnect_claim_btn.visible:
+			_reconnect_claim_btn.visible = true
+		return  # Skip normal drag processing while overlay is showing
+
 	if not _drag_card or not _drag_card.is_dragging:
 		if _snap_preview_slot:
 			_end_snap_preview()
@@ -3527,6 +3631,7 @@ func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary]
 		_flush_broadcast() # Client needs up-to-date state before search
 		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
 		var all_json := JSON.stringify(_cards_to_ids(all_cards))
+		_pending_interaction = {"method": "deck_search", "args": [matching_json, all_json, prompt]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
@@ -4069,6 +4174,7 @@ func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var cards_json := JSON.stringify(_cards_to_ids(cards))
+		_pending_interaction = {"method": "deck_arrange", "args": [cards_json, prompt]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("deck_arrange_requested", cards_json.length() + prompt.length())
@@ -4290,6 +4396,7 @@ func _on_deck_arrange_confirm() -> void:
 func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
+		_pending_interaction = {"method": "hand_discard", "args": [discard_count]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_discard_requested", 4)
@@ -4414,6 +4521,7 @@ func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int]
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
+		_pending_interaction = {"method": "hand_card_selection", "args": [indices_json, prompt, allow_skip]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
@@ -4505,6 +4613,7 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var zones_json := JSON.stringify(valid_zones)
+		_pending_interaction = {"method": "zone_target", "args": [target_player_id, zones_json, prompt, allow_skip]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
@@ -4583,6 +4692,7 @@ func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
+		_pending_interaction = {"method": "strategy_target", "args": [target_player_id, indices_json, prompt]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("strategy_target_requested", 4 + indices_json.length() + prompt.length())
@@ -4648,6 +4758,7 @@ func _on_choice_requested(player_id: int, options: Array[String], prompt: String
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var options_json := JSON.stringify(options)
+		_pending_interaction = {"method": "choice", "args": [options_json, prompt]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("choice_requested", options_json.length() + prompt.length())
@@ -4929,6 +5040,7 @@ func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], v
 		_flush_broadcast()
 		var monsters_json := JSON.stringify(_cards_to_ids(monsters))
 		var indices_json := JSON.stringify(valid_indices)
+		_pending_interaction = {"method": "monster_rankup", "args": [monsters_json, indices_json, prompt]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("monster_rankup_requested", monsters_json.length() + indices_json.length() + prompt.length())
@@ -5726,6 +5838,7 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
 	if sender_player_id != turn_manager.game_state.current_player_id:
 		return # Not their turn
+	_pending_interaction = {}
 
 	var action: CardEnums.ActionType = action_type as CardEnums.ActionType
 	var params: Dictionary = {}
@@ -5961,6 +6074,7 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 	RpcLogger.log_receive("deck_search_resolved", selected_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
 		return
+	_pending_interaction = {}
 	var selected: Dictionary = {}
 	if not selected_json.is_empty():
 		selected = JSON.parse_string(selected_json)
@@ -5985,6 +6099,7 @@ func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void
 	RpcLogger.log_receive("deck_arrange_resolved", keep_json.length() + discard_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
 		return
+	_pending_interaction = {}
 	var keep: Array[Dictionary] = []
 	var discard: Array[Dictionary] = []
 	var parsed_keep: Array = JSON.parse_string(keep_json)
@@ -6017,6 +6132,7 @@ func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 	RpcLogger.log_receive("hand_card_selection_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
+	_pending_interaction = {}
 	turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
 
 
@@ -6039,6 +6155,7 @@ func _rpc_confirmation_resolved() -> void:
 	RpcLogger.log_receive("confirmation_resolved", 0)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
+	_pending_interaction = {}
 	turn_manager.confirm()
 
 
@@ -6076,6 +6193,7 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 	RpcLogger.log_receive("hand_discard_resolved", indices_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
 		return
+	_pending_interaction = {}
 	var parsed: Array = JSON.parse_string(indices_json)
 	var hand_indices: Array[int] = []
 	for v in parsed:
@@ -6104,6 +6222,7 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 	RpcLogger.log_receive("zone_target_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
+	_pending_interaction = {}
 	turn_manager.action_handler.effect_handler.resolve_zone_target(zone_index)
 
 
@@ -6126,6 +6245,7 @@ func _rpc_strategy_target_resolved(strategy_index: int) -> void:
 	RpcLogger.log_receive("strategy_target_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
+	_pending_interaction = {}
 	turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_index)
 
 
@@ -6148,6 +6268,7 @@ func _rpc_choice_resolved(index: int) -> void:
 	RpcLogger.log_receive("choice_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
+	_pending_interaction = {}
 	turn_manager.action_handler.effect_handler.resolve_choice(index)
 
 
@@ -6172,6 +6293,7 @@ func _rpc_monster_rankup_resolved(index: int) -> void:
 	RpcLogger.log_receive("monster_rankup_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
 		return
+	_pending_interaction = {}
 	turn_manager.action_handler.resolve_monster_rankup(index)
 
 
@@ -6367,11 +6489,171 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 	if end_game_panel.visible:
 		btn_rematch.visible = false
 		return
+
+	var is_online := NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]
+
+	# LAN games: immediate disconnect (no reconnect possible)
+	if not is_online:
+		_handle_final_disconnect()
+		return
+
+	# Online HOST side: show overlay and wait for reconnect
+	if NetworkManager.is_host():
+		_on_log_message("Opponent disconnected. Waiting for reconnect...")
+		_waiting_for_reconnect = true
+		_reconnect_current_start_ms = Time.get_ticks_msec()
+		_reconnect_label.text = "Opponent disconnected.\nWaiting for reconnect..."
+		_reconnect_timer_label.text = "Waiting: 0s"
+		_reconnect_claim_btn.visible = false
+		_reconnect_overlay.visible = true
+		return
+
+	# Online CLIENT side: auto-reconnect loop
+	if _reconnect_attempting:
+		return  # Already in a reconnect loop
+	_on_log_message("Connection lost. Attempting to reconnect...")
+	_waiting_for_reconnect = true
+	_reconnect_current_start_ms = Time.get_ticks_msec()
+	_reconnect_label.text = "Connection lost.\nReconnecting..."
+	_reconnect_timer_label.text = ""
+	_reconnect_claim_btn.visible = false
+	_reconnect_overlay.visible = true
+	_attempt_client_reconnect()
+
+
+func _handle_final_disconnect() -> void:
 	_game_ended_by_disconnect = true
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
 		win_label.text = "Opponent disconnected."
 	btn_rematch.visible = false
-	# Host prioritizes reporting; client takes over if host disconnected
 	_upload_stats(local_player_id, "Opponent disconnected", true)
+
+
+func _attempt_client_reconnect() -> void:
+	_reconnect_attempting = true
+	var room_code := NetworkManager.get_game_code()
+	while _waiting_for_reconnect and is_inside_tree():
+		_reconnect_label.text = "Connection lost.\nReconnecting..."
+		var err: Error = await NetworkManager.attempt_reconnect(room_code)
+		if err == OK:
+			# Reconnected — clear overlay and reset client delta state
+			_reconnect_cumulative_seconds += (Time.get_ticks_msec() - _reconnect_current_start_ms) / 1000.0
+			_waiting_for_reconnect = false
+			_reconnect_attempting = false
+			_reconnect_overlay.visible = false
+			# Reset delta state so next broadcast is treated as full state
+			_client_full_state = {}
+			_client_state_version = 0
+			_on_log_message("Reconnected!")
+			# Re-send player name so host can re-associate
+			RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
+			_rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
+			return
+		# Failed — wait 2s and retry
+		_reconnect_label.text = "Connection lost.\nRetrying..."
+		await get_tree().create_timer(2.0).timeout
+	_reconnect_attempting = false
+
+
+func _on_opponent_reconnected(_peer_id: int) -> void:
+	if not _waiting_for_reconnect:
+		return
+
+	# Accumulate elapsed wait time
+	_reconnect_cumulative_seconds += (Time.get_ticks_msec() - _reconnect_current_start_ms) / 1000.0
+	_waiting_for_reconnect = false
+	_reconnect_overlay.visible = false
+
+	if not end_game_panel.visible:
+		# Game is still in progress — resync the client
+		_on_log_message("Opponent reconnected!")
+		_resync_reconnected_client()
+	else:
+		# Game ended while they were gone (win was claimed) — re-send result
+		var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
+		var reason := win_label.text if win_label else "Opponent disconnected"
+		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
+		_rpc_receive_game_ended.rpc(local_player_id, "Opponent disconnected")
+		# Show rematch button now that opponent is back
+		btn_rematch.visible = true
+		btn_rematch.disabled = false
+		btn_rematch.text = "Rematch"
+		_game_ended_by_disconnect = false
+
+
+func _resync_reconnected_client() -> void:
+	# Force full state broadcast by clearing last sent state
+	_last_sent_state = {}
+	_last_sent_version = 0
+	_broadcast_state()
+	_flush_broadcast()
+
+	# Re-send pending interaction if the host was waiting for client input
+	if not _pending_interaction.is_empty():
+		var method: String = _pending_interaction.get("method", "")
+		var args: Array = _pending_interaction.get("args", [])
+		var peer_id := _get_client_peer_id()
+		if peer_id > 0:
+			match method:
+				"action_context":
+					RpcLogger.log_send("receive_action_context", args[0].length() + args[1].length())
+					_rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
+				"deck_search":
+					RpcLogger.log_send("deck_search_requested", args[0].length() + args[1].length() + args[2].length())
+					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2])
+				"deck_arrange":
+					RpcLogger.log_send("deck_arrange_requested", args[0].length() + args[1].length())
+					_rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
+				"hand_discard":
+					RpcLogger.log_send("hand_discard_requested", 4)
+					_rpc_hand_discard_requested.rpc_id(peer_id, args[0])
+				"hand_card_selection":
+					RpcLogger.log_send("hand_card_selection_requested", args[0].length() + args[1].length() + 1)
+					_rpc_hand_card_selection_requested.rpc_id(peer_id, args[0], args[1], args[2])
+				"zone_target":
+					RpcLogger.log_send("zone_target_requested", 4 + args[1].length() + args[2].length() + 1)
+					_rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
+				"strategy_target":
+					RpcLogger.log_send("strategy_target_requested", 4 + args[1].length() + args[2].length())
+					_rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2])
+				"choice":
+					RpcLogger.log_send("choice_requested", args[0].length() + args[1].length())
+					_rpc_choice_requested.rpc_id(peer_id, args[0], args[1])
+				"confirmation":
+					RpcLogger.log_send("confirmation_requested", args[0].length() + args[1].length())
+					_rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
+				"monster_rankup":
+					RpcLogger.log_send("monster_rankup_requested", args[0].length() + args[1].length() + args[2].length())
+					_rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
+	elif turn_manager and not turn_manager.is_game_over:
+		# No pending interaction — check if it's the client's turn and re-prompt
+		var active_id := turn_manager.game_state.current_player_id
+		if active_id != local_player_id:
+			# Re-trigger awaiting action for the client's turn
+			var valid_actions := turn_manager.rules_engine.get_valid_actions(turn_manager.game_state)
+			if not valid_actions.is_empty():
+				_on_awaiting_action(valid_actions)
+
+
+func _get_client_peer_id() -> int:
+	for peer_id in NetworkManager.peer_player_map:
+		if peer_id != 1 and NetworkManager.peer_player_map[peer_id] != local_player_id:
+			return peer_id
+	return -1
+
+
+func _on_reconnect_claim_win() -> void:
+	_waiting_for_reconnect = false
+	_reconnect_overlay.visible = false
+	# End the game with local player as winner
+	_game_ended_by_disconnect = true
+	end_game_panel.visible = true
+	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
+	if win_label:
+		win_label.text = "You Win!\nOpponent disconnected"
+	btn_rematch.visible = false
+	_disable_all_buttons()
+	_upload_stats(local_player_id, "Opponent disconnected", true)
+	_on_log_message("Claimed win due to opponent disconnect.")
