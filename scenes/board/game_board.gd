@@ -584,7 +584,7 @@ func _ready() -> void:
 	player2_board.resized.connect(func(): call_deferred("_position_hands"))
 
 	# Apply mobile layout adjustments (deferred so containers are resolved)
-	if TouchHelper._is_mobile:
+	if GameSettings.use_mobile_layout:
 		_is_mobile_layout = true
 		call_deferred("_apply_mobile_layout")
 	else:

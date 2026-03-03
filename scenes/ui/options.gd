@@ -3,6 +3,7 @@ extends Control
 @onready var player_name_edit: LineEdit = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PlayerNameRow/PlayerNameEdit
 @onready var automation_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutomationButton
 @onready var customize_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CustomizeButton
+@onready var advanced_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AdvancedButton
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
 
 
@@ -11,6 +12,7 @@ func _ready() -> void:
 	player_name_edit.text_changed.connect(_on_player_name_changed)
 	automation_button.pressed.connect(_on_automation_pressed)
 	customize_button.pressed.connect(_on_customize_pressed)
+	advanced_button.pressed.connect(_on_advanced_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 
 
@@ -791,6 +793,19 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		_on_back_pressed()
 		get_viewport().set_input_as_handled()
+
+
+# --- Advanced modal ---
+
+func _on_advanced_pressed() -> void:
+	var parts := _create_modal("Advanced")
+	var popup: PopupPanel = parts[0]
+	var vbox: VBoxContainer = parts[1]
+
+	_add_toggle_row(vbox, "Use Mobile Layout", "use_mobile_layout")
+
+	_add_close_button(vbox, popup)
+	_show_modal(popup)
 
 
 func _on_back_pressed() -> void:
