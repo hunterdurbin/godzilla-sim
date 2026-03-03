@@ -1,11 +1,11 @@
 extends CardEffect
 # Zilla (Battle R4)
-# End phase start: move to an adjacent horizontal zone.
+# End phase start: move to an adjacent horizontal zone (overloads if occupied).
 # Then if adjacent to your monster, Destroy this card.
 #
 # Tested: No
 # Known issues: None
-# Edge cases: None
+# Edge cases: Occupied destination zone is overloaded (not destroyed)
 # Rules: None
 # Interactions: None
 # Implementation notes: None
@@ -41,10 +41,11 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		if zone_idx < 7:
 			horizontal_adj.append(zone_idx + 1)
 
-	# Filter to empty zones
+	# Filter to non-monster zones (occupied zones are valid — overloaded on move)
+	var monster_idx: int = ctx.owner.monster_zone - 1
 	var valid: Array[int] = []
 	for adj in horizontal_adj:
-		if ctx.owner.is_zone_empty(adj):
+		if adj != monster_idx:
 			valid.append(adj)
 
 	if valid.is_empty():
@@ -56,13 +57,18 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if dest < 0:
 		return
 
+	# Handle overload if zone occupied
+	if ctx.owner.zone_has_cards(dest):
+		var overloaded: Array = ctx.owner.clear_zone(dest)
+		EffectHandler.banish_or_discard(ctx.owner, overloaded)
+		ctx.owner.discard_changed.emit()
+
 	var stack: Array = ctx.owner.zones[zone_idx]
 	ctx.owner.zones[zone_idx] = []
 	ctx.owner.zones[dest] = stack
 	ctx.owner.zones_changed.emit()
 
 	# Check if now adjacent to own monster
-	var monster_idx: int = ctx.owner.monster_zone - 1
 	if monster_idx in get_adjacent_zones(dest):
 		var destroyed_stack: Array = ctx.owner.clear_zone(dest)
 		EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
