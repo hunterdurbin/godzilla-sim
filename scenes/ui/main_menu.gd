@@ -48,7 +48,7 @@ func _ready() -> void:
 	if not deck_select_p2.current_selection.is_empty():
 		_on_p2_deck_selected(deck_select_p2.current_selection)
 
-	# Check for saved reconnect session (client only — host rooms are destroyed on disconnect)
+	# Check for saved reconnect session (client only — host has no saved game state after restart)
 	if GameSettings.has_valid_reconnect_session() and not GameSettings.reconnect_is_host:
 		_show_reconnect_dialog()
 

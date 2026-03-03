@@ -6044,12 +6044,11 @@ func _rpc_request_resync() -> void:
 				"monster_rankup":
 					_rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
 	elif turn_manager and not turn_manager.is_game_over:
-		# Check if it's the client's turn and re-prompt
-		var active_id := turn_manager.game_state.current_player_id
-		if active_id != local_player_id:
-			var valid_actions := turn_manager.rules_engine.get_valid_actions(turn_manager.game_state)
-			if not valid_actions.is_empty():
-				_on_awaiting_action(valid_actions)
+		# Re-prompt whoever's turn it is
+		# (_on_awaiting_action handles both host and client turn cases)
+		var valid_actions := turn_manager.rules_engine.get_valid_actions(turn_manager.game_state)
+		if not valid_actions.is_empty():
+			_on_awaiting_action(valid_actions)
 
 
 ## Host -> Client: valid actions and playable indices
@@ -6552,17 +6551,8 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 		_reconnect_overlay.visible = true
 		return
 
-	# Online CLIENT side: auto-reconnect loop
-	if _reconnect_attempting:
-		return  # Already in a reconnect loop
-	_on_log_message("Connection lost. Attempting to reconnect...")
-	_waiting_for_reconnect = true
-	_reconnect_current_start_ms = Time.get_ticks_msec()
-	_reconnect_label.text = "Connection lost.\nReconnecting..."
-	_reconnect_timer_label.text = ""
-	_reconnect_claim_btn.visible = false
-	_reconnect_overlay.visible = true
-	_attempt_client_reconnect()
+	# Online CLIENT side: host can't reconnect, so client wins immediately
+	_handle_final_disconnect()
 
 
 func _handle_final_disconnect() -> void:
@@ -6675,13 +6665,11 @@ func _resync_reconnected_client() -> void:
 					RpcLogger.log_send("monster_rankup_requested", args[0].length() + args[1].length() + args[2].length())
 					_rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
 	elif turn_manager and not turn_manager.is_game_over:
-		# No pending interaction — check if it's the client's turn and re-prompt
-		var active_id := turn_manager.game_state.current_player_id
-		if active_id != local_player_id:
-			# Re-trigger awaiting action for the client's turn
-			var valid_actions := turn_manager.rules_engine.get_valid_actions(turn_manager.game_state)
-			if not valid_actions.is_empty():
-				_on_awaiting_action(valid_actions)
+		# No pending interaction — re-prompt whoever's turn it is
+		# (_on_awaiting_action handles both host and client turn cases)
+		var valid_actions := turn_manager.rules_engine.get_valid_actions(turn_manager.game_state)
+		if not valid_actions.is_empty():
+			_on_awaiting_action(valid_actions)
 
 
 func _get_client_peer_id() -> int:
