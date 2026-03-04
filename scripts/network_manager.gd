@@ -9,6 +9,7 @@ enum Mode {SOLO, HOST, CLIENT, ONLINE_HOST, ONLINE_CLIENT}
 
 signal player_connected(peer_id: int)
 signal player_disconnected(peer_id: int)
+signal player_reconnected(peer_id: int)
 signal connection_failed()
 signal game_starting()
 signal version_mismatch(local_version: String, remote_version: String)
@@ -28,6 +29,7 @@ var host_peer_id: int = 1 ## Always peer 1 (server) for both LAN and relay
 var peer_player_map: Dictionary = {} # {peer_id: player_id}
 var opponent_connected: bool = false
 var version_verified: bool = false
+var is_in_game: bool = false  ## True while actively in GameBoard
 var _room_code: String = ""
 var game_mode: String = ""  # "rumble", "no_rules", or "" (private/LAN)
 var is_public_room: bool = false
@@ -167,11 +169,13 @@ func fetch_public_rooms(p_game_mode: String = "") -> Array:
 
 ## Connect to a host's room via the relay server using their room code.
 func join_online(game_code: String) -> Error:
+	print("[NetworkManager] join_online('%s') start" % game_code)
 	_room_code = game_code
 	var relay_peer := RelayMultiplayerPeer.new()
 	var url := "ws://%s:%d/%s" % [RELAY_HOST, RELAY_PORT, game_code]
 	var err := relay_peer.connect_as_client(url)
 	if err != OK:
+		print("[NetworkManager] join_online: connect_as_client failed: %d" % err)
 		return err
 
 	multiplayer.multiplayer_peer = relay_peer
@@ -190,6 +194,7 @@ func join_online(game_code: String) -> Error:
 	# Wait for relay connection + host discovery
 	err = await _wait_for_relay_connection(relay_peer)
 	if err != OK:
+		print("[NetworkManager] join_online: relay connection failed: %d" % err)
 		multiplayer.multiplayer_peer = null
 		if multiplayer.connected_to_server.is_connected(_on_connected_to_server):
 			multiplayer.connected_to_server.disconnect(_on_connected_to_server)
@@ -200,6 +205,7 @@ func join_online(game_code: String) -> Error:
 		mode = Mode.SOLO
 		host_peer_id = 1
 		return err
+	print("[NetworkManager] join_online: connected OK, version_verified=%s" % version_verified)
 	return OK
 
 
@@ -225,6 +231,7 @@ func disconnect_game() -> void:
 	peer_player_map.clear()
 	opponent_connected = false
 	version_verified = false
+	is_in_game = false
 	_room_code = ""
 	game_mode = ""
 	is_public_room = false
@@ -259,6 +266,60 @@ func start_lan_game() -> void:
 	get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
 
 
+# --- Reconnect ---
+
+## Client-only: attempt to reconnect to an existing relay room.
+## Closes the old dead peer and creates a fresh WebSocket connection
+## while preserving mode, player_id, and is_in_game state.
+func attempt_reconnect(game_code: String) -> Error:
+	print("[NetworkManager] attempt_reconnect('%s') start" % game_code)
+	# Close old dead peer without full state reset
+	if multiplayer.multiplayer_peer:
+		multiplayer.multiplayer_peer.close()
+		multiplayer.multiplayer_peer = null
+
+	# Disconnect stale signals
+	if multiplayer.connected_to_server.is_connected(_on_connected_to_server):
+		multiplayer.connected_to_server.disconnect(_on_connected_to_server)
+	if multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+		multiplayer.peer_disconnected.disconnect(_on_peer_disconnected)
+	if multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+		multiplayer.server_disconnected.disconnect(_on_server_disconnected)
+
+	# Create fresh relay peer
+	_room_code = game_code
+	var relay_peer := RelayMultiplayerPeer.new()
+	var url := "ws://%s:%d/%s" % [RELAY_HOST, RELAY_PORT, game_code]
+	var err := relay_peer.connect_as_client(url)
+	if err != OK:
+		return err
+
+	multiplayer.multiplayer_peer = relay_peer
+	mode = Mode.ONLINE_CLIENT
+	host_peer_id = 1
+
+	# Connect fresh signals
+	multiplayer.connected_to_server.connect(_on_connected_to_server)
+	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
+	multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+	# Wait for relay connection
+	err = await _wait_for_relay_connection(relay_peer)
+	if err != OK:
+		print("[NetworkManager] attempt_reconnect: relay connection failed: %d" % err)
+		multiplayer.multiplayer_peer = null
+		if multiplayer.connected_to_server.is_connected(_on_connected_to_server):
+			multiplayer.connected_to_server.disconnect(_on_connected_to_server)
+		if multiplayer.peer_disconnected.is_connected(_on_peer_disconnected):
+			multiplayer.peer_disconnected.disconnect(_on_peer_disconnected)
+		if multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+			multiplayer.server_disconnected.disconnect(_on_server_disconnected)
+		return err
+
+	print("[NetworkManager] attempt_reconnect: connected OK")
+	return OK
+
+
 # --- Relay helpers ---
 
 func _generate_room_code() -> String:
@@ -274,8 +335,12 @@ func _generate_room_code() -> String:
 ## For the client, this happens when the relay confirms the host is present.
 func _wait_for_relay_connection(relay_peer: RelayMultiplayerPeer) -> Error:
 	var elapsed := 0.0
+	var last_status := -1
 	while elapsed < WS_CONNECT_TIMEOUT:
 		var status := relay_peer.get_connection_status()
+		if status != last_status:
+			print("[NetworkManager] relay status: %d (elapsed=%.1fs)" % [status, elapsed])
+			last_status = status
 		if status == MultiplayerPeer.CONNECTION_CONNECTED:
 			return OK
 		if status == MultiplayerPeer.CONNECTION_DISCONNECTED:
@@ -288,6 +353,7 @@ func _wait_for_relay_connection(relay_peer: RelayMultiplayerPeer) -> Error:
 # --- Host callbacks ---
 
 func _on_peer_connected(peer_id: int) -> void:
+	print("[NetworkManager] _on_peer_connected: peer=%d is_in_game=%s" % [peer_id, is_in_game])
 	# Assign the connecting peer as player 1
 	peer_player_map[peer_id] = 1
 	peer_player_map[multiplayer.get_unique_id()] = 0
@@ -295,13 +361,17 @@ func _on_peer_connected(peer_id: int) -> void:
 	_rpc_assign_player.rpc_id(peer_id, 1)
 	_rpc_assign_game_mode.rpc_id(peer_id, game_mode, is_public_room)
 	_rpc_exchange_version.rpc_id(peer_id, GAME_VERSION)
-	player_connected.emit(peer_id)
+	if is_in_game:
+		player_reconnected.emit(peer_id)
+	else:
+		player_connected.emit(peer_id)
 	_start_version_timeout()
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
 	peer_player_map.erase(peer_id)
 	opponent_connected = false
+	version_verified = false
 	player_disconnected.emit(peer_id)
 
 
@@ -309,6 +379,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 ## Client connected to the host (peer 1) — used for both LAN and relay.
 func _on_connected_to_server() -> void:
+	print("[NetworkManager] _on_connected_to_server: connected to host (peer %d)" % host_peer_id)
 	opponent_connected = true
 	_rpc_exchange_version.rpc_id(host_peer_id, GAME_VERSION)
 	player_connected.emit(host_peer_id)
@@ -365,6 +436,7 @@ func notify_leaving() -> void:
 
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_exchange_version(remote_version: String) -> void:
+	print("[NetworkManager] _rpc_exchange_version: remote='%s' local='%s'" % [remote_version, GAME_VERSION])
 	if remote_version != GAME_VERSION:
 		version_mismatch.emit(GAME_VERSION, remote_version)
 		disconnect_game()

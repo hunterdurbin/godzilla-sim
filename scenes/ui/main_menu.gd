@@ -48,6 +48,10 @@ func _ready() -> void:
 	if not deck_select_p2.current_selection.is_empty():
 		_on_p2_deck_selected(deck_select_p2.current_selection)
 
+	# Check for saved reconnect session (client only — host has no saved game state after restart)
+	if GameSettings.has_valid_reconnect_session() and not GameSettings.reconnect_is_host:
+		_show_reconnect_dialog()
+
 
 func _on_p1_deck_selected(deck_name: String) -> void:
 	_p1_ready = not deck_name.is_empty() and DecklistManager.select_deck_for_player(0, deck_name)
@@ -192,6 +196,122 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 		popup.hide()
 	)
 	btn_box.add_child(later_btn)
+
+	vbox.add_child(btn_box)
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+
+	add_child(popup)
+	popup.popup_centered()
+
+
+# -- Reconnect dialog ----------------------------------------------------------
+
+func _show_reconnect_dialog() -> void:
+	var saved_code := GameSettings.reconnect_room_code
+
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(460, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+
+	var title := Label.new()
+	title.text = "Game In Progress"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vbox.add_child(title)
+
+	var info := Label.new()
+	info.text = "You were disconnected from a game.\nWould you like to reconnect?"
+	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	info.add_theme_font_size_override("font_size", 18)
+	vbox.add_child(info)
+
+	vbox.add_child(HSeparator.new())
+
+	var btn_box := VBoxContainer.new()
+	btn_box.add_theme_constant_override("separation", 8)
+
+	var status_label := Label.new()
+	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status_label.add_theme_font_size_override("font_size", 16)
+	status_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	status_label.visible = false
+	vbox.add_child(status_label)
+
+	var reconnect_btn := Button.new()
+	reconnect_btn.text = "Reconnect"
+	reconnect_btn.custom_minimum_size = Vector2(200, 45)
+	reconnect_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	reconnect_btn.add_theme_font_size_override("font_size", 20)
+	reconnect_btn.pressed.connect(func():
+		reconnect_btn.disabled = true
+		reconnect_btn.text = "Connecting..."
+		status_label.text = "Connecting to relay server..."
+		status_label.visible = true
+		print("[Reconnect] Attempting join_online('%s')" % saved_code)
+		# Restore game mode/public state before joining
+		NetworkManager.game_mode = GameSettings.reconnect_game_mode
+		NetworkManager.is_public_room = GameSettings.reconnect_is_public
+		var err: Error = await NetworkManager.join_online(saved_code)
+		print("[Reconnect] join_online returned: %d, version_verified=%s" % [err, NetworkManager.version_verified])
+		if err == OK:
+			NetworkManager.is_in_game = true
+			# Version exchange happens during join_online. Poll briefly
+			# in case the host's response arrives on the next frame.
+			if not NetworkManager.version_verified:
+				status_label.text = "Connected! Verifying game version..."
+				var elapsed := 0.0
+				while elapsed < NetworkManager.VERSION_TIMEOUT and not NetworkManager.version_verified:
+					await get_tree().create_timer(0.1).timeout
+					elapsed += 0.1
+			print("[Reconnect] version_verified=%s" % NetworkManager.version_verified)
+			if NetworkManager.version_verified:
+				popup.hide()
+				get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+			else:
+				status_label.text = "Version mismatch. Cannot reconnect."
+				reconnect_btn.text = "Reconnect"
+				reconnect_btn.disabled = false
+				GameSettings.clear_reconnect_session()
+				NetworkManager.disconnect_game()
+		else:
+			var err_msg := "timeout" if err == ERR_TIMEOUT else "error %d" % err
+			status_label.text = "Failed to connect (%s).\nRoom may no longer exist." % err_msg
+			print("[Reconnect] Connection failed: %s" % err_msg)
+			reconnect_btn.text = "Retry"
+			reconnect_btn.disabled = false
+	)
+	btn_box.add_child(reconnect_btn)
+
+	var dismiss_btn := Button.new()
+	dismiss_btn.text = "Dismiss"
+	dismiss_btn.custom_minimum_size = Vector2(200, 40)
+	dismiss_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	dismiss_btn.add_theme_font_size_override("font_size", 18)
+	dismiss_btn.pressed.connect(func():
+		GameSettings.clear_reconnect_session()
+		popup.hide()
+	)
+	btn_box.add_child(dismiss_btn)
 
 	vbox.add_child(btn_box)
 	margin.add_child(vbox)

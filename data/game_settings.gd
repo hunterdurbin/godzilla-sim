@@ -44,6 +44,14 @@ var use_mobile_layout: bool = false
 # Update settings
 var skipped_version: String = ""
 
+# Reconnect session data
+var reconnect_room_code: String = ""
+var reconnect_timestamp_sec: int = 0  # Unix time (persists across restarts)
+var reconnect_is_host: bool = false
+var reconnect_game_mode: String = ""
+var reconnect_is_public: bool = false
+const RECONNECT_TIMEOUT_SEC: int = 90 * 60  # 90 minutes
+
 
 func _ready() -> void:
 	use_mobile_layout = OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
@@ -55,6 +63,31 @@ func _ready() -> void:
 
 func save() -> void:
 	_save()
+
+
+func save_reconnect_session(room_code: String, is_host: bool, p_game_mode: String, p_is_public: bool) -> void:
+	reconnect_room_code = room_code
+	reconnect_timestamp_sec = int(Time.get_unix_time_from_system())
+	reconnect_is_host = is_host
+	reconnect_game_mode = p_game_mode
+	reconnect_is_public = p_is_public
+	_save()
+
+
+func clear_reconnect_session() -> void:
+	reconnect_room_code = ""
+	reconnect_timestamp_sec = 0
+	reconnect_is_host = false
+	reconnect_game_mode = ""
+	reconnect_is_public = false
+	_save()
+
+
+func has_valid_reconnect_session() -> bool:
+	if reconnect_room_code.is_empty():
+		return false
+	var elapsed := int(Time.get_unix_time_from_system()) - reconnect_timestamp_sec
+	return elapsed >= 0 and elapsed < RECONNECT_TIMEOUT_SEC
 
 
 func _save() -> void:
@@ -76,6 +109,11 @@ func _save() -> void:
 	config.set_value("visual", "custom_card_back_mode", custom_card_back_mode)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
 	config.set_value("updates", "skipped_version", skipped_version)
+	config.set_value("reconnect", "room_code", reconnect_room_code)
+	config.set_value("reconnect", "timestamp_sec", reconnect_timestamp_sec)
+	config.set_value("reconnect", "is_host", reconnect_is_host)
+	config.set_value("reconnect", "game_mode", reconnect_game_mode)
+	config.set_value("reconnect", "is_public", reconnect_is_public)
 	config.save(SETTINGS_PATH)
 
 
@@ -101,3 +139,8 @@ func _load() -> void:
 	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	use_mobile_layout = config.get_value("advanced", "use_mobile_layout", _mobile_default)
 	skipped_version = config.get_value("updates", "skipped_version", "")
+	reconnect_room_code = config.get_value("reconnect", "room_code", "")
+	reconnect_timestamp_sec = config.get_value("reconnect", "timestamp_sec", 0)
+	reconnect_is_host = config.get_value("reconnect", "is_host", false)
+	reconnect_game_mode = config.get_value("reconnect", "game_mode", "")
+	reconnect_is_public = config.get_value("reconnect", "is_public", false)
