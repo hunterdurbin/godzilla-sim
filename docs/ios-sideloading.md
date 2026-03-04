@@ -8,6 +8,19 @@ This guide explains how to install the Unofficial Godzilla TCG Sim `.ipa` on you
 
 ---
 
+## Quick Install via SideStore Source
+
+If you already have SideStore installed, you can add our source to get the app and future updates automatically:
+
+1. Open this link on your iOS device: `sidestore://source?url=https://hunterdurbin.github.io/godzilla-sim/source.json`
+2. Or manually add the source in SideStore: **Browse → Sources → +** and paste:
+   ```
+   https://hunterdurbin.github.io/godzilla-sim/source.json
+   ```
+3. Find "Unofficial Godzilla TCG Sim" in the source and tap **Get**
+
+---
+
 ## Option 1: SideStore (Recommended)
 
 **Best for:** Users who want to refresh apps on-device without a computer.
