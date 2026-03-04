@@ -8,9 +8,9 @@ This guide explains how to install the Unofficial Godzilla TCG Sim `.ipa` on you
 
 ---
 
-## Quick Install via SideStore Source
+## Quick Install via Source (SideStore / AltStore)
 
-If you already have SideStore installed, you can add our source to get the app and future updates automatically:
+If you already have SideStore or AltStore installed, you can add our source to get the app and future updates automatically:
 
 1. Open this link on your iOS device: `sidestore://source?url=https://hunterdurbin.github.io/godzilla-sim/source.json`
 2. Or manually add the source in SideStore: **Browse → Sources → +** and paste:
@@ -34,7 +34,11 @@ SideStore requires a computer (Mac, Windows, or Linux) for the initial install, 
 3. Install the WireGuard VPN profile (traffic stays local — nothing is sent externally)
 4. Enable the WireGuard VPN on your device
 
-### Install the .ipa
+### Install the App
+
+Once SideStore is set up, use the [Quick Install via Source](#quick-install-via-source-sidestore--altstore) at the top of this guide to add the app and get automatic updates.
+
+Alternatively, you can install manually:
 
 1. Download the `.ipa` file to your device (e.g., from Files, Safari, or AirDrop)
 2. Open it with SideStore, or tap **+** in SideStore and select the `.ipa`
@@ -62,7 +66,17 @@ AltStore can automatically refresh app signatures in the background, but require
 3. Connect your iPhone/iPad via USB (first time only)
 4. Install AltStore to your device through AltServer
 
-### Install the .ipa
+### Install the App
+
+You can add our source in AltStore to get the app and automatic updates:
+
+1. In AltStore, go to **Browse → Sources → +** and paste:
+   ```
+   https://hunterdurbin.github.io/godzilla-sim/source.json
+   ```
+2. Find "Unofficial Godzilla TCG Sim" in the source and tap **Get**
+
+Alternatively, install manually:
 
 1. Transfer the `.ipa` to your device or open it from Files
 2. Open the `.ipa` with AltStore
