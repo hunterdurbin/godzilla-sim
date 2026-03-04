@@ -14,7 +14,10 @@
       "subtitle": "Godzilla TCG Simulator",
       "localizedDescription": "A fan-made Godzilla Trading Card Game simulator. Play the Godzilla TCG against friends or practice decks in this unofficial simulator built with Godot.",
       "iconURL": "https://raw.githubusercontent.com/hunterdurbin/godzilla-sim/main/assets/icons/game_icon.png",
-      "tintColor": "4a90d9"
+      "tintColor": "4a90d9",
+      "minOSVersion": "15.0",
+      "appPermissions": {},
+      "screenshotURLs": []
     }
   ]
 }
