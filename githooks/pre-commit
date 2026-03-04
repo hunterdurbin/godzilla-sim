@@ -8,3 +8,11 @@ if git diff --cached --name-only | grep -qE '^scripts/effects/'; then
 	bash scripts/effects/generate_trigger_map.sh
 	git add "$TRIGGER_MAP"
 fi
+
+# Sync version from project.godot into export_presets.cfg
+if git diff --cached --name-only | grep -qE '^project\.godot$'; then
+	if git diff --cached project.godot | grep -qE '^\+config/version='; then
+		bash githooks/sync-version.sh
+		git add export_presets.cfg
+	fi
+fi
