@@ -13,8 +13,8 @@ fi
 
 # Extract version from project.godot (e.g. "0.2.0-release" or "0.2.0")
 FULL_VERSION=$(sed -n 's/^config\/version="\([^"]*\)"/\1/p' project.godot)
-# Strip suffix like "-release" for short_version
-SHORT_VERSION=$(echo "$FULL_VERSION" | sed 's/-.*//')
+# Use full version for short_version too (SideStore requires exact match with release tag)
+SHORT_VERSION="$FULL_VERSION"
 
 echo "[sync-version] Syncing version: short=$SHORT_VERSION full=$FULL_VERSION"
 
