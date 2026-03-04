@@ -1836,18 +1836,19 @@ func _apply_mobile_hand_button_stacks() -> void:
 
 
 func _apply_mobile_action_prompt() -> void:
-	# Position action prompt centered, leaving room for FAB area on right.
+	# Position action prompt in bottom-left, capped at 25% screen width.
+	# Grows vertically upward if text wraps.
 	var prompt := $ActionPrompt as PanelContainer
 	var pad_l := maxf(20.0, _safe_left + 4.0)
-	var pad_r := maxf(20.0, _safe_right + 4.0)
 	prompt.anchor_left = 0.0
-	prompt.anchor_right = 1.0
+	prompt.anchor_right = 0.25
 	prompt.anchor_top = 1.0
 	prompt.anchor_bottom = 1.0
 	prompt.offset_left = pad_l
 	prompt.offset_top = -186.0
-	prompt.offset_right = -(pad_r + 300.0)  # Leave room for FAB area
+	prompt.offset_right = 0.0
 	prompt.offset_bottom = -160.0
+	prompt.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	prompt.z_index = 56
 
 
@@ -2067,11 +2068,11 @@ func _retry_safe_area_insets() -> void:
 		var phase_pad_t := maxf(20.0, _safe_top + 4.0)
 		_mobile_phase_label.offset_right = -phase_pad
 		_mobile_phase_label.offset_top = phase_pad_t
-	# Action prompt
+	# Action prompt — width capped at 25% via anchor_right
 	var prompt := get_node_or_null("ActionPrompt") as PanelContainer
 	if prompt:
 		prompt.offset_left = pad_l
-		prompt.offset_right = -(pad_r + 230.0)
+		prompt.offset_right = 0.0
 	# Hand button stacks update via _position_hands
 	_position_hands()
 
