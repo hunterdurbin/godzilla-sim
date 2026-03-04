@@ -121,7 +121,7 @@ func _update_layout() -> void:
 	# On mobile, bump label font sizes so they're readable on smaller boards.
 	# The LayoutContainer scales via anchors but font sizes are fixed pixels,
 	# so we set explicit sizes that work at phone scale.
-	if TouchHelper._is_mobile:
+	if GameSettings.use_mobile_layout:
 		_apply_mobile_labels()
 
 
