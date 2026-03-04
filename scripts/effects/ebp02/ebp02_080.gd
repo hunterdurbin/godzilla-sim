@@ -4,7 +4,7 @@ extends CardEffect
 ## Reveal the top 2 cards of your deck. If they differ in at least 1 trait,
 ## add them to your hand; otherwise, send them to the discard pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -33,20 +33,21 @@ func on_enter(ctx: EffectContext) -> void:
 		"Revealed from deck (select any to confirm):")
 
 	# Check if they differ in at least 1 trait
+	# A card with no traits (e.g. strategy) cannot "differ in a trait" — both go to discard
 	var traits_a: Array = revealed[0].get("traits", [])
 	var traits_b: Array = revealed[1].get("traits", [])
 
 	var differ: bool = false
-	# Check if either card has a trait the other doesn't
-	for t in traits_a:
-		if t not in traits_b:
-			differ = true
-			break
-	if not differ:
-		for t in traits_b:
-			if t not in traits_a:
+	if not traits_a.is_empty() and not traits_b.is_empty():
+		for t in traits_a:
+			if t not in traits_b:
 				differ = true
 				break
+		if not differ:
+			for t in traits_b:
+				if t not in traits_a:
+					differ = true
+					break
 
 	if differ:
 		ctx.owner.hand.append_array(revealed)
