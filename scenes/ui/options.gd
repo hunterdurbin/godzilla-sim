@@ -791,8 +791,8 @@ func _on_card_back_file_selected(status: bool, paths: PackedStringArray, _idx: i
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
-		_on_back_pressed()
 		get_viewport().set_input_as_handled()
+		_on_back_pressed()
 
 
 # --- Advanced modal ---
