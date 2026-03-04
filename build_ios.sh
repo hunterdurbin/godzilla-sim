@@ -137,17 +137,59 @@ if [ -d "${SPLASH_DIR}" ] && [ -f "${GAME_ICON}" ]; then
     cp "${GAME_ICON}" "${SPLASH_DIR}/splash@3x.png"
 fi
 
+# Fix Release signing identity for free (Personal Team) Apple ID
+PBXPROJ="${BUILD_DIR}/godzilla_tcg_sim.xcodeproj/project.pbxproj"
+if [ -f "${PBXPROJ}" ]; then
+    echo "Patching Release signing to Apple Development..."
+    sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]" = "iPhone Distribution"/"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development"/g' "${PBXPROJ}"
+    sed -i '' 's/CODE_SIGN_IDENTITY = "iPhone Distribution"/CODE_SIGN_IDENTITY = "Apple Development"/g' "${PBXPROJ}"
+    sed -i '' 's/CODE_SIGN_IDENTITY = "Apple Distribution"/CODE_SIGN_IDENTITY = "Apple Development"/g' "${PBXPROJ}"
+fi
+
 echo ""
 
-if [ "${OPEN_XCODE}" = true ]; then
-    echo "Opening Xcode..."
-    open "${BUILD_DIR}/godzilla_tcg_sim.xcodeproj"
+# --- Build unsigned .ipa from command line ---
+
+ARCHIVE_PATH="${BUILD_DIR}/godzilla_tcg_sim.xcarchive"
+IPA_PATH="${BUILD_DIR}/godzilla_tcg_sim.ipa"
+
+echo "=== Building archive (unsigned) ==="
+xcodebuild \
+    -project "${BUILD_DIR}/godzilla_tcg_sim.xcodeproj" \
+    -scheme "godzilla_tcg_sim" \
+    -configuration Release \
+    -sdk iphoneos \
+    -archivePath "${ARCHIVE_PATH}" \
+    CODE_SIGNING_ALLOWED=NO \
+    CODE_SIGNING_REQUIRED=NO \
+    CODE_SIGN_IDENTITY="" \
+    archive
+
+if [ ! -d "${ARCHIVE_PATH}" ]; then
+    echo "ERROR: Archive failed. Check the output above."
+    exit 1
+fi
+
+echo ""
+echo "=== Packaging .ipa ==="
+PAYLOAD_DIR="${BUILD_DIR}/Payload"
+rm -rf "${PAYLOAD_DIR}"
+mkdir -p "${PAYLOAD_DIR}"
+cp -r "${ARCHIVE_PATH}/Products/Applications/"*.app "${PAYLOAD_DIR}/"
+cd "${BUILD_DIR}" && zip -qr "godzilla_tcg_sim.ipa" Payload
+rm -rf "${PAYLOAD_DIR}"
+
+if [ -f "${IPA_PATH}" ]; then
     echo ""
-    echo "In Xcode:"
-    echo "  1. Select your Team in Signing & Capabilities"
-    echo "  2. Connect an iOS device or select a simulator"
-    echo "  3. Click Run (Cmd+R) or Archive (Product > Archive)"
+    echo "=== Success! ==="
+    echo "  .ipa: ${IPA_PATH}"
+    echo ""
+    echo "Share this .ipa with users. They can install it via AltStore or SideStore."
 else
-    echo "To open in Xcode:"
-    echo "  open ${BUILD_DIR}/godzilla_tcg_sim.xcodeproj"
+    echo "ERROR: Failed to create .ipa"
+    exit 1
+fi
+
+if [ "${OPEN_XCODE}" = true ]; then
+    open "${BUILD_DIR}"
 fi

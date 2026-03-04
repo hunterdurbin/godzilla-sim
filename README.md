@@ -61,6 +61,10 @@ Android requires sideloading since the app is not available on the Google Play S
 4. If Google Play Protect shows a warning ("Blocked by Play Protect" or "Unknown developer"), tap **More details** → **Install anyway**
 5. Once installed, open the app from your app drawer
 
+### iOS
+
+iOS requires sideloading since the app is not available on the App Store. See the [iOS Sideloading Guide](docs/ios-sideloading.md) for detailed instructions on installing the `.ipa` using SideStore, AltStore, or Sideloadly.
+
 ## Development
 
 **Engine:** Godot 4.6
