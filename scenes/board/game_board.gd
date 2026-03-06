@@ -1792,8 +1792,9 @@ func _apply_desktop_hand_button_stacks() -> void:
 	sort_hand_button.offset_bottom = -10.0
 	sort_hand_button.offset_top = sort_hand_button.offset_bottom - btn_h
 
-	# Opponent — top-right, stacked vertically
+	# Opponent — top-right, stacked vertically (hidden in multiplayer)
 	for btn: Button in [opponent_hand_toggle_button, opponent_sort_hand_button]:
+		btn.visible = not is_multiplayer_game
 		btn.anchor_left = 1.0
 		btn.anchor_right = 1.0
 		btn.anchor_top = 0.0
