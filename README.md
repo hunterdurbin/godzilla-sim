@@ -45,6 +45,12 @@ chmod +x ./UnofficialGodzillaSim.x86_64
 ./UnofficialGodzillaSim.x86_64
 ```
 
+Alternatively, a Flatpak is available. Download the `.flatpak` file from the [latest release](https://github.com/hunterdurbin/godzilla-sim/releases/latest) and install it:
+
+```bash
+flatpak install ./UnofficialGodzillaSim.flatpak
+```
+
 ### Android
 
 Android requires sideloading since the app is not available on the Google Play Store.
