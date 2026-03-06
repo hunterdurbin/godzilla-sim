@@ -23,6 +23,8 @@ func _build_card_templates() -> void:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
 	for card in ESD02_CARDS:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
+	for card in SC01_CARDS:
+		CARD_TEMPLATES[card["id"]] = card.duplicate()
 
 
 # --- EBP01: Booster Pack 01 ---
@@ -3288,6 +3290,22 @@ var ESD02_CARDS: Array[Dictionary] = [
 		"invasion_icon": 1,
 		"description": "Choose 1 of your opponent's zones. <Destroy> all of your opponent's battle cards in that zone and zones adjacent to it.\n(For example, if a card is in zone 7, the adjacent zones are 4, 6, and 8.)",
 		"effect_script": "res://scripts/effects/esd02/esd02_015.gd"
+	},
+]
+
+
+# --- SC01: Special Collection 01 ---
+var SC01_CARDS: Array[Dictionary] = [
+	{
+		"id": "SC01-001",
+		"name": "Godzilla(1954)",
+		"card_type": CardEnums.CardType.BATTLE,
+		"rank": 8,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.GODZILLA],
+		"counter_power": 5000,
+		"invasion_icon": 1,
+		"description": "When playing this from your hand, if you discard a <Godzilla> card from your hand you can play this card at a -4 rank. (Afterwards it's a Rank 8).\nIf this is in the same column as your opponent's Monster card this gains +3000 counter power.\nWhen you successfully counter your opponent's Monster card, place this at the bottom of your deck."
 	},
 ]
 
