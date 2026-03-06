@@ -533,6 +533,9 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## crushing battle cards in each intermediate zone (rule 11.3) and
 	## collecting on_monster_advance entries per step, resolving them
 	## after all movement completes (deferred, like ActionHandler).
+	# Check if monster is blocked from advancing (e.g. Biollante Rose Form)
+	if is_monster_advance_blocked(player_id):
+		return
 	var player := game_state.players[player_id]
 	var deferred_entries: Array = []
 	while player.monster_zone < target_zone:
