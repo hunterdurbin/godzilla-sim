@@ -473,6 +473,27 @@ func _redistribute_strategy_slots(count: int) -> void:
 		slot.visible = true
 
 
+func _restore_strategy_slot_anchors() -> void:
+	# Original anchor values from PlayerBoard.tscn (non-mirrored)
+	var originals := [
+		{"top": 0.204, "bottom": 0.3908},
+		{"top": 0.4103, "bottom": 0.5969},
+	]
+	for i in range(mini(2, strategy_slots.size())):
+		var slot := strategy_slots[i]
+		var a_top: float = originals[i]["top"]
+		var a_bottom: float = originals[i]["bottom"]
+		if is_mirrored:
+			var flipped_top := 1.0 - a_bottom
+			var flipped_bottom := 1.0 - a_top
+			a_top = flipped_top
+			a_bottom = flipped_bottom
+		slot.anchor_bottom = a_bottom
+		slot.anchor_top = a_top
+		slot.offset_top = 0
+		slot.offset_bottom = 0
+
+
 func _sync_monster(state: PlayerState, threat_mod: int = 0) -> void:
 	var m: Dictionary = state.current_monster
 	var target_zone: int = mini(state.monster_zone - 1, zone_slots.size() - 1) # 0-indexed, clamped to zone 8
@@ -711,9 +732,10 @@ func reset_visuals() -> void:
 				slot.remove_card(true)
 			slot.set_highlighted(false)
 
-	# Hide 3rd strategy slot if it was made visible (EBP03-013)
+	# Reset strategy slot layout if 3rd zone was added (EBP03-013)
 	if strategy_slots.size() >= 3:
 		strategy_slots[2].visible = false
+		_restore_strategy_slot_anchors()
 
 	# Clear gradient overlay children (TextureRects created by apply_monster_gradient)
 	var overlay := $GradientOverlay as ColorRect
