@@ -2353,6 +2353,7 @@ func _on_chat_text_changed(new_text: String) -> void:
 
 func _on_play_cancelled(player_id: int) -> void:
 	# Reset the dragged card's scale/state and rearrange hand without reordering
+	_clear_card_highlight()
 	var board: Control = player1_board if player_id == 0 else player2_board
 	if board and board.hand_manager:
 		for card in board.hand_manager.get_cards():
@@ -2362,6 +2363,7 @@ func _on_play_cancelled(player_id: int) -> void:
 			if card.tween:
 				card.tween.kill()
 			card.scale = card.original_scale
+		board.hand_manager.exit_selection_mode()
 	# Sync boards in case the cost prompt changed hand/discard state
 	_sync_boards()
 
