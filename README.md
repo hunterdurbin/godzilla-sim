@@ -2,6 +2,8 @@
 
 A fan-made Godzilla Trading Card Game simulator built with Godot 4.6.
 
+> **Disclaimer:** This project is for education and learning purposes. This project is not to be used for official tournament play or similar use. All Rights Reserved. This is a fan-made simulator. Godzilla and the Godzilla Card Game are trademarks or registered trademarks of Toho Co., Ltd.
+
 ## Running the Game
 
 [Download the latest release](https://github.com/hunterdurbin/godzilla-sim/releases/latest) for your platform and run it. Since the game is not code-signed, your operating system may show a security warning on first launch.
