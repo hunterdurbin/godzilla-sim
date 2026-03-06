@@ -877,6 +877,7 @@ var EBP01_CARDS: Array[Dictionary] = [
 	{
 		"id": "EBP01-073",
 		"name": "Godzilla Against Mechagodzilla",
+		"common_names": ["GAM"],
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 7,
 		"colors": [CardEnums.CardColor.WHITE],
@@ -913,6 +914,7 @@ var EBP01_CARDS: Array[Dictionary] = [
 	{
 		"id": "EBP01-076",
 		"name": "Destroy All Monsters",
+		"common_names": ["DAM"],
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 2,
 		"colors": [CardEnums.CardColor.WHITE],
@@ -923,6 +925,7 @@ var EBP01_CARDS: Array[Dictionary] = [
 	{
 		"id": "EBP01-077",
 		"name": "Oxygen Destroyer",
+		"common_names": ["OD"],
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.WHITE],

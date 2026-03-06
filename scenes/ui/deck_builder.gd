@@ -542,8 +542,14 @@ func _card_matches_filters(card: Dictionary) -> bool:
 		var trait_text := ""
 		for t in card.get("traits", []):
 			trait_text += CardEnums.trait_to_string(t).to_lower() + " "
+		var common_match := false
+		for cn in card.get("common_names", []):
+			if cn.to_lower().contains(_search_text):
+				common_match = true
+				break
 		if not (name_str.contains(_search_text) or id_str.contains(_search_text)
-				or desc_str.contains(_search_text) or trait_text.contains(_search_text)):
+				or desc_str.contains(_search_text) or trait_text.contains(_search_text)
+				or common_match):
 			return false
 
 	return true
