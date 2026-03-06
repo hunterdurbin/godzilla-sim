@@ -35,7 +35,7 @@ func get_all_decklists() -> Array[String]:
 
 
 func load_decklist(deck_name: String) -> Dictionary:
-	var path := DECKLIST_DIR + deck_name + DECK_EXTENSION
+	var path := DECKLIST_DIR + sanitize_filename(deck_name) + DECK_EXTENSION
 	var file := FileAccess.open(path, FileAccess.READ)
 	if not file:
 		return {}
@@ -164,7 +164,7 @@ func get_decklist_preview(deck_name: String) -> String:
 
 
 func save_decklist(deck_name: String, monster_entries: Array, main_entries: Array) -> bool:
-	var path := DECKLIST_DIR + deck_name + DECK_EXTENSION
+	var path := DECKLIST_DIR + sanitize_filename(deck_name) + DECK_EXTENSION
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if not file:
 		return false
@@ -182,7 +182,7 @@ func save_decklist(deck_name: String, monster_entries: Array, main_entries: Arra
 
 
 func delete_decklist(deck_name: String) -> bool:
-	var path := DECKLIST_DIR + deck_name + DECK_EXTENSION
+	var path := DECKLIST_DIR + sanitize_filename(deck_name) + DECK_EXTENSION
 	if not FileAccess.file_exists(path):
 		return false
 	DirAccess.remove_absolute(path)
@@ -190,6 +190,13 @@ func delete_decklist(deck_name: String) -> bool:
 		if _player_decks[i] != null and _player_decks[i]["deck_name"] == deck_name:
 			_player_decks[i] = null
 	return true
+
+
+static func sanitize_filename(name: String) -> String:
+	## Remove characters illegal in Windows filenames: \ / : * ? " < > |
+	return name.replace("\\", "_").replace("/", "_").replace(":", "-") \
+		.replace("*", "_").replace("?", "_").replace("\"", "'") \
+		.replace("<", "_").replace(">", "_").replace("|", "_")
 
 
 # --- Internal ---
@@ -285,11 +292,11 @@ func _create_default_decklist() -> void:
 4 ESD02-015"""
 
 	var defaults := {
-		"Starter Deck: Godzilla Minus One": godzilla_minus_one,
-		"Starter Deck: Heisei Series Godzilla": heisei_godzilla,
+		"Starter Deck - Godzilla Minus One": godzilla_minus_one,
+		"Starter Deck - Heisei Series Godzilla": heisei_godzilla,
 	}
 	for deck_name: String in defaults:
-		var path: String = DECKLIST_DIR + deck_name + DECK_EXTENSION
+		var path: String = DECKLIST_DIR + sanitize_filename(deck_name) + DECK_EXTENSION
 		var file := FileAccess.open(path, FileAccess.WRITE)
 		if file:
 			file.store_string(defaults[deck_name])
