@@ -341,6 +341,7 @@ func _check_crush_for_player(state: GameState, player_id: int, deferred_entries:
 		if player.zone_has_cards(monster_zone_idx):
 			var crushed_stack: Array = player.clear_zone(monster_zone_idx)
 			EffectHandler.banish_or_discard(player, crushed_stack)
+			player.cards_destroyed_this_turn.append(crushed_stack[0])
 			battle_card_crushed.emit(player_id, monster_zone_idx, crushed_stack[0])
 			player.zones_changed.emit()
 			player.discard_changed.emit()
