@@ -902,6 +902,7 @@ var EBP01_CARDS: Array[Dictionary] = [
 	{
 		"id": "EBP01-075",
 		"name": "Godzilla, King of the Monsters",
+		"common_names": ["KOTM"],
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 8,
 		"colors": [CardEnums.CardColor.WHITE],
@@ -956,6 +957,7 @@ var EBP01_CARDS: Array[Dictionary] = [
 	{
 		"id": "EBP01-080",
 		"name": "Godzilla and its son on Monster Island",
+		"common_names": ["GAISOMI"],
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 6,
 		"colors": [CardEnums.CardColor.WHITE],
@@ -1182,6 +1184,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 	{
 		"id": "EBP02-019",
 		"name": "There is no danger of the creature coming ashore.",
+		"common_names": ["TINDOTCCA"],
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.RED],
@@ -3278,6 +3281,7 @@ var ESD02_CARDS: Array[Dictionary] = [
 	{
 		"id": "ESD02-015",
 		"name": "Burning Godzilla's Rampage",
+		"common_names": ["BGR"],
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 7,
 		"colors": [CardEnums.CardColor.BLUE],
