@@ -2698,6 +2698,7 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
+		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
 		# Reconnect effect handler signals
 		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
