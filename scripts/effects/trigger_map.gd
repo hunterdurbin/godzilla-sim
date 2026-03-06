@@ -268,4 +268,5 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/esd02/esd02_012.gd": ["get_counter_power_modifier","get_effect_categories"],
 	"res://scripts/effects/esd02/esd02_014.gd": ["on_enter"],
 	"res://scripts/effects/esd02/esd02_015.gd": ["on_enter"],
+	"res://scripts/effects/sc01/sc01_001.gd": ["on_counter_success","apply_play_cost","get_counter_power_modifier","get_play_rank_modifier_for_card","get_effect_categories"],
 }

@@ -153,6 +153,14 @@ func can_be_played(_ctx: EffectContext) -> bool:
 	return true
 
 
+func apply_play_cost(_ctx: EffectContext, _zone_index: int) -> bool:
+	## Called after a battle card is popped from hand but before placement.
+	## Override to prompt the player for an optional cost (e.g., discard a card).
+	## Return true if the card should be played, false to cancel (restore to hand).
+	## zone_index is the target zone (0-indexed).
+	return true
+
+
 # --- Modifier methods (override to alter stats) ---
 
 func get_counter_power_modifier(_ctx: EffectContext) -> int:

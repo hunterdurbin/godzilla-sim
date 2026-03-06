@@ -16,6 +16,7 @@ signal strategy_cleared(player_id: int, cards: Array)
 signal counter_failed(player_id: int, total_cp: int, threat: int)
 signal counter_succeeded(player_id: int, total_cp: int, threat: int)
 signal counter_immunity_triggered(player_id: int, total_cp: int, threshold: int)
+signal play_cancelled(player_id: int)
 signal monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String)
 
 var effect_handler: EffectHandler
@@ -424,7 +425,18 @@ func _traits_overlap(traits_a: Array, traits_b: Array) -> bool:
 
 func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
+
 	var card: Dictionary = player.hand.pop_at(hand_index)
+
+	# Apply optional play costs (e.g., SC01-001 discard a Godzilla card for rank reduction)
+	if effect_handler:
+		var proceed: bool = await effect_handler.apply_play_cost(player.player_id, card, zone_index)
+		if not proceed:
+			# Cost declined — restore card to hand and force visual rebuild
+			player.hand.insert(mini(hand_index, player.hand.size()), card)
+			player.hand_changed.emit()
+			play_cancelled.emit(player.player_id)
+			return
 
 	# Rule 11.5 - Overloaded Cards: if zone is occupied, destroy existing cards
 	# Unless the card's effect says to stack on top (e.g. Godzilla Jr. on Little Godzilla)

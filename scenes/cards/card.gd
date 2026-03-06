@@ -74,6 +74,7 @@ var owner_player_id: int = -1  # -1 = unset (shows custom art), 0/1 = player ID
 # Drag state
 var is_dragging: bool = false
 var is_snap_previewing: bool = false
+var is_locked_in_zone: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
 var original_position: Vector2 = Vector2.ZERO
 var original_scale: Vector2 = Vector2.ONE
@@ -250,7 +251,7 @@ func _apply_drag_motion() -> void:
 
 
 func _on_mouse_entered() -> void:
-	if not is_dragging:
+	if not is_dragging and not is_snap_previewing and not is_locked_in_zone:
 		if not _hover_active:
 			_pre_hover_z_index = z_index
 			# Only capture current position if no tween is running;
@@ -267,7 +268,7 @@ func _on_mouse_entered() -> void:
 
 func _on_mouse_exited() -> void:
 	card_hover_ended.emit(self)
-	if not is_dragging and _hover_active:
+	if not is_dragging and not is_snap_previewing and not is_locked_in_zone and _hover_active:
 		z_index = _pre_hover_z_index
 		_animate_hover(false)
 

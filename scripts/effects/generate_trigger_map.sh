@@ -13,7 +13,7 @@ METHODS=(
 	on_phase_start on_phase_end on_monster_played on_battle_card_played
 	on_hand_card_discarded on_counter_success on_strategy_discarded
 	get_invasion_observed_filter on_invasion_observed on_discarded_for_invasion on_would_be_destroyed
-	can_be_destroyed protects_card_from_destruction can_be_played
+	can_be_destroyed protects_card_from_destruction can_be_played apply_play_cost
 	get_counter_power_modifier get_total_cp_modifier get_field_cp_modifiers
 	get_threat_level_modifier can_engage get_engagement_restriction
 	get_play_rank_modifier_for_card
@@ -34,8 +34,8 @@ METHODS=(
 	echo ""
 	echo "const TRIGGERS: Dictionary = {"
 
-	# Find all per-card effect scripts (e.g. esd01/esd01_003.gd, ebp02/ebp02_010.gd)
-	find "$EFFECTS_DIR" -path "*/e[bsp][dpr]*/e[bsp][dpr]*.gd" -type f | sort | while read -r file; do
+	# Find all per-card effect scripts (e.g. esd01/esd01_003.gd, ebp02/ebp02_010.gd, sc01/sc01_001.gd)
+	find "$EFFECTS_DIR" \( -path "*/e[bsp][dpr]*/e[bsp][dpr]*.gd" -o -path "*/sc[0-9]*/sc[0-9]*.gd" \) -type f | sort | while read -r file; do
 		res_path="res://$file"
 
 		triggers=()
