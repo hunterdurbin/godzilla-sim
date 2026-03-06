@@ -1588,6 +1588,35 @@ func return_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
 			return
 
 
+func move_zone_card_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
+	## Move a card from its zone to the bottom of the player's deck.
+	## Finds the zone containing the card, removes it, and appends to deck.
+	var card_id: String = card_data.get("id", "")
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if zone_card.get("id", "") == card_id:
+			var stack: Array = player.clear_zone(i)
+			if not stack.is_empty():
+				player.main_deck.append(stack[0])
+				# Place any cards under it into discard
+				for j in range(1, stack.size()):
+					EffectHandler.banish_or_discard(player, [stack[j]])
+			player.zones_changed.emit()
+			player.deck_changed.emit()
+			return
+
+
+func apply_play_cost(player_id: int, card_data: Dictionary, zone_index: int) -> bool:
+	## Call the card's apply_play_cost hook. Returns true if play should proceed.
+	var effect := get_effect(card_data)
+	if not effect:
+		return true
+	if not has_trigger(card_data, "apply_play_cost"):
+		return true
+	var ctx := _build_context(player_id, card_data)
+	return await effect.apply_play_cost(ctx, zone_index)
+
+
 # --- Modifier queries ---
 
 func get_counter_power_modifier(player_id: int) -> int:

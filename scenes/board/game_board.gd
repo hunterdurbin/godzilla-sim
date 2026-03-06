@@ -463,6 +463,7 @@ func _ready() -> void:
 		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
 		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
 		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
+		turn_manager.action_handler.play_cancelled.connect(_on_play_cancelled)
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
@@ -2350,6 +2351,23 @@ func _on_chat_text_changed(new_text: String) -> void:
 
 # --- Action handler visual feedback ---
 
+func _on_play_cancelled(player_id: int) -> void:
+	# Reset the dragged card's scale/state and rearrange hand without reordering
+	_clear_card_highlight()
+	var board: Control = player1_board if player_id == 0 else player2_board
+	if board and board.hand_manager:
+		for card in board.hand_manager.get_cards():
+			card.is_locked_in_zone = false
+			if card.is_snap_previewing:
+				card.end_snap_preview()
+			if card.tween:
+				card.tween.kill()
+			card.scale = card.original_scale
+		board.hand_manager.exit_selection_mode()
+	# Sync boards in case the cost prompt changed hand/discard state
+	_sync_boards()
+
+
 func _on_battle_card_played(_player_id: int, _card: Dictionary, _zone_index: int) -> void:
 	_sync_boards()
 	_broadcast_state()
@@ -2696,6 +2714,7 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
 		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
 		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
+		turn_manager.action_handler.play_cancelled.connect(_on_play_cancelled)
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
@@ -3619,6 +3638,7 @@ func _on_hand_drag_ended(card: Control) -> void:
 					var hand_idx := _find_hand_index_by_id(card_id)
 					if hand_idx >= 0:
 						board.hand_manager.drop_handled = true
+						card.is_locked_in_zone = true
 						_drag_card = null
 						_drag_valid_zones = []
 						_restore_expanded_hand()
@@ -4616,6 +4636,7 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 	if hand_mgr.card_selected.is_connected(_on_hand_card_clicked):
 		hand_mgr.card_selected.disconnect(_on_hand_card_clicked)
 	action_prompt_panel.visible = false
+	btn_confirm.text = "Confirm"
 	btn_confirm.disabled = true
 	_update_hand_visibility(_get_current_pid())
 
