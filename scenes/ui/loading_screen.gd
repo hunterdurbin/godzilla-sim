@@ -9,14 +9,28 @@ func _ready() -> void:
 	skip_button.pressed.connect(_go_to_main_menu)
 	ArtworkDownloader.progress_updated.connect(_on_progress_updated)
 	ArtworkDownloader.download_complete.connect(_on_download_complete)
+	ArtworkDownloader.download_bytes_updated.connect(_on_download_bytes_updated)
 	# Deferred so signals are connected before download starts
 	ArtworkDownloader.start_download.call_deferred()
+
+
+func _on_download_bytes_updated(downloaded_bytes: int, total_bytes: int) -> void:
+	var dl_mb := downloaded_bytes / 1048576.0
+	if total_bytes > 0:
+		progress_bar.max_value = total_bytes
+		progress_bar.value = downloaded_bytes
+		var total_mb := total_bytes / 1048576.0
+		status_label.text = "Downloading... %.1f MB / %.1f MB" % [dl_mb, total_mb]
+	else:
+		progress_bar.max_value = 100
+		progress_bar.value = 0
+		status_label.text = "Downloading... %.1f MB" % dl_mb
 
 
 func _on_progress_updated(current: int, total: int, card_number: String) -> void:
 	progress_bar.max_value = total
 	progress_bar.value = current
-	status_label.text = "Checking %s... (%d/%d)" % [card_number, current, total]
+	status_label.text = "Extracting %s... (%d/%d)" % [card_number, current, total]
 
 
 func _on_download_complete(downloaded: int, skipped: int, failed: int) -> void:
