@@ -6,7 +6,7 @@ signal download_complete(downloaded: int, skipped: int, failed: int)
 signal progress_updated(current: int, total: int, card_number: String)
 signal download_bytes_updated(downloaded_bytes: int, total_bytes: int)
 
-const API_BASE := "http://localhost:8080"
+const API_BASE := "https://api.godzillatcg.com"
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 const IMAGE_EXTENSIONS := ["png", "jpg", "jpeg", "webp"]
 
