@@ -428,7 +428,7 @@ func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> vo
 
 	var card: Dictionary = player.hand.pop_at(hand_index)
 
-	# Apply optional play costs (e.g., SC01-001 discard a Godzilla card for rank reduction)
+	# Apply optional play costs (e.g., ESC01-001 discard a Godzilla card for rank reduction)
 	if effect_handler:
 		var proceed: bool = await effect_handler.apply_play_cost(player.player_id, card, zone_index)
 		if not proceed:

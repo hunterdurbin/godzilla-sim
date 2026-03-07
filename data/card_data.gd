@@ -23,7 +23,7 @@ func _build_card_templates() -> void:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
 	for card in ESD02_CARDS:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
-	for card in SC01_CARDS:
+	for card in ESC01_CARDS:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
 
 
@@ -3294,10 +3294,10 @@ var ESD02_CARDS: Array[Dictionary] = [
 ]
 
 
-# --- SC01: Special Collection 01 ---
-var SC01_CARDS: Array[Dictionary] = [
+# --- ESC01: Special Collection 01 ---
+var ESC01_CARDS: Array[Dictionary] = [
 	{
-		"id": "SC01-001",
+		"id": "ESC01-001",
 		"name": "Godzilla(1954)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 8,
@@ -3306,7 +3306,7 @@ var SC01_CARDS: Array[Dictionary] = [
 		"counter_power": 5000,
 		"invasion_icon": 1,
 		"description": "When playing this from your hand, if you discard a <Godzilla> card from your hand you can play this card at a -4 rank. (Afterwards it's a Rank 8).\nIf this is in the same column as your opponent's Monster card this gains +3000 counter power.\nWhen you successfully counter your opponent's Monster card, place this at the bottom of your deck.",
-		"effect_script": "res://scripts/effects/sc01/sc01_001.gd"
+		"effect_script": "res://scripts/effects/esc01/esc01_001.gd"
 	},
 ]
 

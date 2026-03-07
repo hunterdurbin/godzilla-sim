@@ -34,8 +34,8 @@ METHODS=(
 	echo ""
 	echo "const TRIGGERS: Dictionary = {"
 
-	# Find all per-card effect scripts (e.g. esd01/esd01_003.gd, ebp02/ebp02_010.gd, sc01/sc01_001.gd)
-	find "$EFFECTS_DIR" \( -path "*/e[bsp][dpr]*/e[bsp][dpr]*.gd" -o -path "*/sc[0-9]*/sc[0-9]*.gd" \) -type f | sort | while read -r file; do
+	# Find all per-card effect scripts (e.g. esd01/esd01_003.gd, ebp02/ebp02_010.gd, esc01/esc01_001.gd)
+	find "$EFFECTS_DIR" \( -path "*/e[bsp][dpr]*/e[bsp][dpr]*.gd" -o -path "*/esc[0-9]*/esc[0-9]*.gd" \) -type f | sort | while read -r file; do
 		res_path="res://$file"
 
 		triggers=()

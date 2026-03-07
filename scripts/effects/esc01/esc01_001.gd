@@ -1,6 +1,6 @@
 extends CardEffect
 
-## SC01-001: Godzilla(1954) - Battle Rank 8 (Red)
+## ESC01-001: Godzilla(1954) - Battle Rank 8 (Red)
 ## When playing this from your hand, if you discard a <Godzilla> card from your hand
 ## you can play this card at a -4 rank. (Afterwards it's a Rank 8).
 ## If this is in the same column as your opponent's Monster card this gains +3000 counter power.

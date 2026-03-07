@@ -241,6 +241,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp03/ebp03_079.gd": ["on_enter"],
 	"res://scripts/effects/ebp03/ebp03_080.gd": ["get_phase_start_filter","on_phase_start","is_base_strategy"],
 	"res://scripts/effects/epr/epr_005.gd": ["on_enter"],
+	"res://scripts/effects/esc01/esc01_001.gd": ["on_counter_success","apply_play_cost","get_counter_power_modifier","get_play_rank_modifier_for_card","get_effect_categories"],
 	"res://scripts/effects/esd01/esd01_002.gd": ["on_when_invading"],
 	"res://scripts/effects/esd01/esd01_003.gd": ["get_threat_level_modifier"],
 	"res://scripts/effects/esd01/esd01_004.gd": ["on_when_invading"],
@@ -268,5 +269,4 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/esd02/esd02_012.gd": ["get_counter_power_modifier","get_effect_categories"],
 	"res://scripts/effects/esd02/esd02_014.gd": ["on_enter"],
 	"res://scripts/effects/esd02/esd02_015.gd": ["on_enter"],
-	"res://scripts/effects/sc01/sc01_001.gd": ["on_counter_success","apply_play_cost","get_counter_power_modifier","get_play_rank_modifier_for_card","get_effect_categories"],
 }
