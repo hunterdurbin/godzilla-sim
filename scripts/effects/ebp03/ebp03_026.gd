@@ -27,24 +27,38 @@ func get_opponent_field_rank_modifier(ctx: EffectContext) -> int:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	# Place up to 2 monster cards from discard under this card
-	var placed: int = 0
-	for _i in range(2):
-		var selected: Dictionary = await ctx.effect_handler.search_discard(
-			ctx.owner.player_id,
-			func(card: Dictionary) -> bool: return card.get("card_type") == CardEnums.CardType.MONSTER,
-			"Place a monster card from discard under this card (%d of 2, or skip):" % (placed + 1))
-		if selected.is_empty():
-			break
-		ctx.owner.monster_stack.append(selected)
-		placed += 1
+	# Place exactly 2 monster cards from discard under this card (or skip entirely)
+	var monsters: Array[Dictionary] = []
+	for card in ctx.owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			monsters.append(card)
 
-	if placed == 0:
+	if monsters.size() < 2:
 		return
 
+	var selected: Array[Dictionary] = await ctx.effect_handler.select_cards_from_pool(
+		ctx.owner.player_id, monsters, ctx.owner.discard_pile.duplicate(),
+		"Place 2 monster cards from discard under this card (or skip):", 2)
+
+	if selected.is_empty():
+		return
+
+	# Remove selected cards from discard pile
+	for card in selected:
+		var card_id: String = card.get("id", "")
+		for i in range(ctx.owner.discard_pile.size()):
+			if ctx.owner.discard_pile[i].get("id") == card_id:
+				ctx.owner.discard_pile.remove_at(i)
+				break
+
+	# Place under monster
+	for card in selected:
+		ctx.owner.monster_stack.append(card)
+
+	ctx.owner.discard_changed.emit()
 	ctx.owner.monster_changed.emit()
 
-	# If placed at least 1, reduce opponent rage by 1
+	# Reduce opponent rage by 1
 	if ctx.opponent.rage > 0:
 		var old_rage: int = ctx.opponent.rage
 		ctx.opponent.rage -= 1
