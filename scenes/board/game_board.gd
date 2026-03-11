@@ -130,7 +130,8 @@ var _card_select_matching: Array[Dictionary] = []
 var _card_select_all: Array[Dictionary] = []
 var _card_select_matching_ids: Dictionary = {} # card id -> true
 var _card_select_selected: Array[Dictionary] = []
-var _card_select_required_count: int = 0
+var _card_select_min_count: int = 0
+var _card_select_max_count: int = 0
 var _arrange_drop_indicator: ColorRect = null
 var _view_board_source_overlay: Control = null
 
@@ -4461,28 +4462,29 @@ func _on_deck_arrange_confirm() -> void:
 
 # --- Card select overlay UI ---
 
-func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, required_count: int) -> void:
+func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int) -> void:
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
 		var all_json := JSON.stringify(_cards_to_ids(all_cards))
-		_pending_interaction = {"method": "card_select", "args": [matching_json, all_json, prompt, required_count]}
+		_pending_interaction = {"method": "card_select", "args": [matching_json, all_json, prompt, min_count, max_count]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("card_select_requested", matching_json.length() + all_json.length() + prompt.length())
-				_rpc_card_select_requested.rpc_id(peer_id, matching_json, all_json, prompt, required_count)
+				_rpc_card_select_requested.rpc_id(peer_id, matching_json, all_json, prompt, min_count, max_count)
 		return
-	_show_card_select(matching_cards, all_cards, prompt, required_count)
+	_show_card_select(matching_cards, all_cards, prompt, min_count, max_count)
 
 
-func _show_card_select(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, required_count: int) -> void:
+func _show_card_select(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int) -> void:
 	_card_select_matching = matching
 	_card_select_all = all_cards
 	_card_select_matching_ids.clear()
 	for card_data in matching:
 		_card_select_matching_ids[card_data.get("id", "")] = true
 	_card_select_selected = []
-	_card_select_required_count = required_count
+	_card_select_min_count = min_count
+	_card_select_max_count = max_count
 
 	card_pool_select_prompt.text = prompt
 	card_pool_select_show_all.set_pressed_no_signal(matching.is_empty())
@@ -4521,7 +4523,12 @@ func _refresh_card_select_pool() -> void:
 	var show_all := card_pool_select_show_all.button_pressed
 	var pool := _get_card_select_pool()
 	var all_selectable: bool = not show_all
-	var at_limit: bool = _card_select_selected.size() >= _card_select_required_count
+	var at_limit: bool = _card_select_selected.size() >= _card_select_max_count
+
+	# Get pool filter from effect handler if available
+	var pool_filter := Callable()
+	if turn_manager:
+		pool_filter = turn_manager.action_handler.effect_handler._card_select_pool_filter
 
 	_clear_grid(card_pool_select_pool_grid, _on_card_select_pool_clicked)
 
@@ -4539,7 +4546,8 @@ func _refresh_card_select_pool() -> void:
 			card.drag_enabled = false
 			_set_gallery_hover(card)
 			var is_match: bool = all_selectable or group["has_match"]
-			var can_select: bool = is_match and not at_limit
+			var passes_filter: bool = not pool_filter.is_valid() or pool_filter.call(card_data, _card_select_selected)
+			var can_select: bool = is_match and not at_limit and passes_filter
 			card.is_selectable = can_select
 			card.click_on_release = true
 			if can_select:
@@ -4559,7 +4567,8 @@ func _refresh_card_select_pool() -> void:
 			card.drag_enabled = false
 			_set_gallery_hover(card)
 			var is_match: bool = all_selectable or _card_select_matching_ids.has(card_data.get("id", ""))
-			var can_select: bool = is_match and not at_limit
+			var passes_filter: bool = not pool_filter.is_valid() or pool_filter.call(card_data, _card_select_selected)
+			var can_select: bool = is_match and not at_limit and passes_filter
 			card.is_selectable = can_select
 			card.click_on_release = true
 			if can_select:
@@ -4587,17 +4596,18 @@ func _refresh_card_select_selection() -> void:
 		card.card_right_clicked.connect(_on_card_long_press_zoom)
 		card_pool_select_selection_grid.add_child(card)
 
-	card_pool_select_selection_label.text = "Selected (%d/%d)" % [_card_select_selected.size(), _card_select_required_count]
+	card_pool_select_selection_label.text = "Selected (%d/%d)" % [_card_select_selected.size(), _card_select_max_count]
 
 
 func _update_card_select_buttons() -> void:
-	card_pool_select_confirm.disabled = _card_select_selected.size() != _card_select_required_count
-	card_pool_select_confirm.text = "Confirm (%d/%d)" % [_card_select_selected.size(), _card_select_required_count]
+	var count := _card_select_selected.size()
+	card_pool_select_confirm.disabled = count < _card_select_min_count or count > _card_select_max_count
+	card_pool_select_confirm.text = "Confirm (%d/%d)" % [count, _card_select_max_count]
 
 
 func _on_card_select_pool_clicked(card: Control) -> void:
 	var card_data: Dictionary = card.card_data if "card_data" in card else {}
-	if card_data.is_empty() or _card_select_selected.size() >= _card_select_required_count:
+	if card_data.is_empty() or _card_select_selected.size() >= _card_select_max_count:
 		return
 
 	var pool := _get_card_select_pool()
@@ -4640,7 +4650,8 @@ func _on_card_pool_select_skip() -> void:
 
 
 func _on_card_pool_select_confirm() -> void:
-	if _card_select_selected.size() != _card_select_required_count:
+	var sel_count := _card_select_selected.size()
+	if sel_count < _card_select_min_count or sel_count > _card_select_max_count:
 		return
 	var selected := _card_select_selected.duplicate()
 	_hide_card_select()
@@ -6306,7 +6317,7 @@ func _rpc_request_resync() -> void:
 				"deck_arrange":
 					_rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
 				"card_select":
-					_rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
+					_rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4])
 				"hand_discard":
 					_rpc_hand_discard_requested.rpc_id(peer_id, args[0])
 				"hand_card_selection":
@@ -6436,11 +6447,11 @@ func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void
 
 ## Host -> Client: card select request (player must select N cards from pool)
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_card_select_requested(matching_json: String, all_json: String, prompt: String, required_count: int) -> void:
+func _rpc_card_select_requested(matching_json: String, all_json: String, prompt: String, min_count: int, max_count: int) -> void:
 	RpcLogger.log_receive("card_select_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
 	var all_ids: Array = JSON.parse_string(all_json)
-	_show_card_select(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt, required_count)
+	_show_card_select(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt, min_count, max_count)
 
 
 ## Client -> Host: card select resolved (player selected cards or skipped)
@@ -6948,7 +6959,7 @@ func _resync_reconnected_client() -> void:
 					_rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
 				"card_select":
 					RpcLogger.log_send("card_select_requested", args[0].length() + args[1].length() + args[2].length())
-					_rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
+					_rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4])
 				"hand_discard":
 					RpcLogger.log_send("hand_discard_requested", 4)
 					_rpc_hand_discard_requested.rpc_id(peer_id, args[0])

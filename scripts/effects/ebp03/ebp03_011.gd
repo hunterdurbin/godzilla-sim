@@ -30,47 +30,40 @@ func on_enter(ctx: EffectContext) -> void:
 	if revealed.is_empty():
 		return
 
-	var chosen: Array[Dictionary] = []
-
 	# Collect all red or blue battle cards from revealed
-	var red_or_blue: Array[Dictionary] = []
+	var valid: Array[Dictionary] = []
 	for card in revealed:
 		if card.get("card_type") == CardEnums.CardType.BATTLE:
 			var colors: Array = card.get("colors", [])
 			if CardEnums.CardColor.RED in colors or CardEnums.CardColor.BLUE in colors:
-				red_or_blue.append(card)
+				valid.append(card)
 
-	# First pick: choose 1 red or blue battle card (always show revealed cards)
-	var first := await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, red_or_blue, revealed,
-		"Choose up to 1 red or blue battle card to add to hand (or skip):")
-	if not first.is_empty():
-		chosen.append(first)
-		var first_colors: Array = first.get("colors", [])
-		# Second pick: the other color (or either if first was dual-color)
-		var second_options: Array[Dictionary] = []
-		var second_prompt: String
-		if CardEnums.CardColor.RED in first_colors and CardEnums.CardColor.BLUE not in first_colors:
-			for card in red_or_blue:
-				if card.get("id", "") != first.get("id", "") and CardEnums.CardColor.BLUE in card.get("colors", []):
-					second_options.append(card)
-			second_prompt = "Choose up to 1 blue battle card to add to hand (or skip):"
-		elif CardEnums.CardColor.BLUE in first_colors and CardEnums.CardColor.RED not in first_colors:
-			for card in red_or_blue:
-				if card.get("id", "") != first.get("id", "") and CardEnums.CardColor.RED in card.get("colors", []):
-					second_options.append(card)
-			second_prompt = "Choose up to 1 red battle card to add to hand (or skip):"
-		else:
-			# Dual-color: either color is still valid
-			for card in red_or_blue:
-				if card.get("id", "") != first.get("id", ""):
-					second_options.append(card)
-			second_prompt = "Choose up to 1 red or blue battle card to add to hand (or skip):"
-		if not second_options.is_empty():
-			var second := await ctx.effect_handler.select_from_cards(
-				ctx.owner.player_id, second_options, revealed, second_prompt)
-			if not second.is_empty():
-				chosen.append(second)
+	# Pool filter: at most 1 red, at most 1 blue (dual-color cards count as both)
+	var filter := func(card: Dictionary, selection: Array[Dictionary]) -> bool:
+		var card_colors: Array = card.get("colors", [])
+		var has_red: bool = CardEnums.CardColor.RED in card_colors
+		var has_blue: bool = CardEnums.CardColor.BLUE in card_colors
+		# Count how many red/blue already selected
+		var red_count: int = 0
+		var blue_count: int = 0
+		for sel in selection:
+			var sel_colors: Array = sel.get("colors", [])
+			if CardEnums.CardColor.RED in sel_colors:
+				red_count += 1
+			if CardEnums.CardColor.BLUE in sel_colors:
+				blue_count += 1
+		# Card is selectable if it can contribute a color not yet at limit
+		if has_red and red_count >= 1 and has_blue and blue_count >= 1:
+			return false
+		if has_red and not has_blue and red_count >= 1:
+			return false
+		if has_blue and not has_red and blue_count >= 1:
+			return false
+		return true
+
+	var chosen: Array[Dictionary] = await ctx.effect_handler.select_cards_from_pool(
+		ctx.owner.player_id, valid, revealed,
+		"Choose up to 1 red and 1 blue battle card to add to hand:", 0, 2, filter)
 
 	var chosen_ids: Array[String] = []
 	for card in chosen:
