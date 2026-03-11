@@ -129,6 +129,10 @@ func _on_automation_pressed() -> void:
 
 	vbox.add_child(HSeparator.new())
 
+	_add_toggle_row(vbox, "Default Stacked View", "stacked_view")
+
+	vbox.add_child(HSeparator.new())
+
 	# Hand sort - type order
 	var type_row := HBoxContainer.new()
 	var type_label := Label.new()

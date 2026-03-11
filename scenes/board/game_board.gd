@@ -110,6 +110,9 @@ var _pending_log_lines: PackedStringArray = [] # Buffered for next broadcast
 @onready var discard_view_close: Button = $DiscardViewOverlay/DiscardViewPanel/VBox/CloseButton
 @onready var discard_view_stacked: CheckButton = $DiscardViewOverlay/DiscardViewPanel/VBox/StackedToggle
 
+# In-game stacked preference (initialized from GameSettings, remembered for the match)
+var _match_stacked_view: bool = true
+
 # Stored deck search data for toggling between matching/all/stacked
 var _deck_search_matching: Array[Dictionary] = []
 var _deck_search_all: Array[Dictionary] = []
@@ -445,6 +448,7 @@ func _ready() -> void:
 
 	is_multiplayer_game = NetworkManager.is_multiplayer()
 	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game else 0
+	_match_stacked_view = _match_stacked_view
 
 	# Wire hand CardManagers to PlayerBoards
 	player1_board.hand_manager = player1_hand
@@ -3719,7 +3723,7 @@ func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary]
 
 	deck_search_prompt.text = prompt
 	deck_search_show_all.set_pressed_no_signal(matching.is_empty())
-	deck_search_stacked.set_pressed_no_signal(true)
+	deck_search_stacked.set_pressed_no_signal(_match_stacked_view)
 	deck_search_overlay.visible = true
 
 	_refresh_deck_search_grid()
@@ -3771,6 +3775,7 @@ func _refresh_deck_search_grid() -> void:
 
 
 func _on_deck_search_toggled(_value: bool) -> void:
+	_match_stacked_view = deck_search_stacked.button_pressed
 	_refresh_deck_search_grid()
 
 
@@ -4488,7 +4493,7 @@ func _show_card_select(matching: Array[Dictionary], all_cards: Array[Dictionary]
 
 	card_pool_select_prompt.text = prompt
 	card_pool_select_show_all.set_pressed_no_signal(matching.is_empty())
-	card_pool_select_stacked.set_pressed_no_signal(true)
+	card_pool_select_stacked.set_pressed_no_signal(_match_stacked_view)
 	card_pool_select_overlay.visible = true
 
 	_refresh_card_select()
@@ -4635,6 +4640,7 @@ func _on_card_select_selection_clicked(card: Control) -> void:
 
 
 func _on_card_select_toggled(_value: bool) -> void:
+	_match_stacked_view = card_pool_select_stacked.button_pressed
 	_refresh_card_select()
 
 
@@ -5195,7 +5201,7 @@ func _on_discard_clicked(pid: int) -> void:
 	var pname := GameLog.player_name(pid)
 	var title := "%s Discard Pile (%d)" % [pname, _discard_view_cards.size()]
 	discard_view_title.text = title
-	discard_view_stacked.set_pressed_no_signal(true)
+	discard_view_stacked.set_pressed_no_signal(_match_stacked_view)
 	discard_view_overlay.visible = true
 	_refresh_discard_view_grid()
 
@@ -5238,6 +5244,7 @@ func _refresh_discard_view_grid() -> void:
 
 
 func _on_discard_view_stacked_toggled(_value: bool) -> void:
+	_match_stacked_view = discard_view_stacked.button_pressed
 	_refresh_discard_view_grid()
 
 
@@ -5258,7 +5265,7 @@ func _on_monster_deck_clicked(pid: int) -> void:
 	_monster_deck_view_cards = player.monster_deck.duplicate(true)
 	var title := "Monster Deck (%d)" % _monster_deck_view_cards.size()
 	monster_deck_view_title.text = title
-	monster_deck_view_stacked.set_pressed_no_signal(false)
+	monster_deck_view_stacked.set_pressed_no_signal(_match_stacked_view)
 	monster_deck_view_overlay.visible = true
 	_refresh_monster_deck_view_grid()
 
@@ -5301,6 +5308,7 @@ func _refresh_monster_deck_view_grid() -> void:
 
 
 func _on_monster_deck_view_stacked_toggled(_value: bool) -> void:
+	_match_stacked_view = monster_deck_view_stacked.button_pressed
 	_refresh_monster_deck_view_grid()
 
 
