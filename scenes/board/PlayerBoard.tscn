@@ -118,6 +118,30 @@ offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
 
+[node name="ThreatRow" type="HBoxContainer" parent="LayoutContainer/RageDisplay"]
+layout_mode = 2
+
+[node name="ThreatTitle" type="Label" parent="LayoutContainer/RageDisplay/ThreatRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Threat:"
+horizontal_alignment = 2
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(1.0, 0.5, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+
+[node name="ThreatLabel" type="Label" parent="LayoutContainer/RageDisplay/ThreatRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "0"
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1.0, 0.6, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+
 [node name="RageTitle" type="Label" parent="LayoutContainer/RageDisplay"]
 layout_mode = 2
 text = "Rage Zone"
@@ -151,60 +175,41 @@ theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
 
-[node name="StatsDisplay" type="HBoxContainer" parent="LayoutContainer"]
+
+[node name="CPDisplay" type="VBoxContainer" parent="LayoutContainer"]
 layout_mode = 1
 anchors_preset = 0
-anchor_left = 0.5834
-anchor_top = 0.2041
-anchor_right = 0.8301
-anchor_bottom = 0.3029
+anchor_left = 0.5754
+anchor_top = 0.2048
+anchor_right = 0.7664
+anchor_bottom = 0.5963
 offset_left = 0.0
 offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-alignment = 1
+mouse_filter = 2
 
-[node name="CPTitle" type="Label" parent="LayoutContainer/StatsDisplay"]
+[node name="CPRow" type="HBoxContainer" parent="LayoutContainer/CPDisplay"]
 layout_mode = 2
+
+[node name="CPTitle" type="Label" parent="LayoutContainer/CPDisplay/CPRow"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "CP:"
+horizontal_alignment = 2
 vertical_alignment = 1
 theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(0.3, 0.7, 1.0, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
 
-[node name="CPLabel" type="Label" parent="LayoutContainer/StatsDisplay"]
+[node name="CPLabel" type="Label" parent="LayoutContainer/CPDisplay/CPRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(45, 0)
+size_flags_horizontal = 3
 text = "0"
 vertical_alignment = 1
-clip_text = true
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.4, 0.8, 1.0, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 4
-
-[node name="Spacer" type="Control" parent="LayoutContainer/StatsDisplay"]
-layout_mode = 2
-custom_minimum_size = Vector2(10, 0)
-
-[node name="ThreatTitle" type="Label" parent="LayoutContainer/StatsDisplay"]
-layout_mode = 2
-text = "Threat:"
-vertical_alignment = 1
-theme_override_font_sizes/font_size = 12
-theme_override_colors/font_color = Color(1.0, 0.5, 0.2, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
-
-[node name="ThreatLabel" type="Label" parent="LayoutContainer/StatsDisplay"]
-layout_mode = 2
-custom_minimum_size = Vector2(50, 0)
-text = "0"
-vertical_alignment = 1
-clip_text = true
-theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(1.0, 0.6, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
 
