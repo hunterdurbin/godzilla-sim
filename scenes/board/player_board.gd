@@ -138,16 +138,12 @@ func _apply_mobile_labels() -> void:
 		return
 	_mobile_labels_applied = true
 	var lc := $LayoutContainer
-	var stats := lc.find_child("StatsDisplay", true, false) as HBoxContainer
-	if stats:
-		stats.clip_contents = true
 	_cp_title = lc.find_child("CPTitle", true, false) as Label
 	_threat_title = lc.find_child("ThreatTitle", true, false) as Label
-	var spacer := lc.find_child("Spacer", true, false) as Control
 	if _threat_title:
 		_threat_title.text = "T:"  # Abbreviate to save horizontal space
-	if spacer:
-		spacer.custom_minimum_size.x = 2.0
+	if _cp_title:
+		_cp_title.text = "CP:"  # Already short enough
 	if cp_label:
 		cp_label.custom_minimum_size.x = 0.0
 		cp_label.clip_text = true
@@ -193,6 +189,28 @@ func _setup_references() -> void:
 	# Mirror for player 2: flip all child anchors and background
 	if is_mirrored:
 		_apply_mirror()
+
+	# Determine if this is the local player's board
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var is_local := player_id == local_id
+
+	var rage := $LayoutContainer.find_child("RageDisplay", false, false) as VBoxContainer
+	if rage:
+		if is_local:
+			# Local player: move RageTitle to the bottom of the VBox
+			var rage_title := rage.find_child("RageTitle", false, false)
+			if rage_title:
+				rage.move_child(rage_title, rage.get_child_count() - 1)
+		else:
+			# Opponent: move ThreatRow to bottom (closest to center divider)
+			var threat_row := rage.find_child("ThreatRow", false, false)
+			if threat_row:
+				rage.move_child(threat_row, rage.get_child_count() - 1)
+
+	var cp_disp := $LayoutContainer.find_child("CPDisplay", false, false) as VBoxContainer
+	if cp_disp and not is_local:
+		# Opponent: align CPRow to bottom (closest to center divider)
+		cp_disp.alignment = BoxContainer.ALIGNMENT_END
 
 	# Zone slots (find by name so layout doesn't matter)
 	zone_slots.resize(8)
