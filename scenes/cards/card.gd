@@ -66,6 +66,7 @@ var card_data: Dictionary = {}
 var card_effect: RefCounted = null  # CardEffect instance loaded from effect_script
 var is_face_down: bool = false
 var is_selectable: bool = false
+var click_on_release: bool = false  # When true, defer card_clicked to mouse release with deadzone
 var in_landscape_slot: bool = false
 var use_custom_art: bool = true
 var skip_effect_load: bool = false  # Skip loading effect scripts (e.g. in deck builder)
@@ -85,6 +86,9 @@ var tween: Tween
 var _pre_hover_z_index: int = 0
 var _pre_hover_position: Vector2 = Vector2.ZERO
 var _hover_active: bool = false
+
+# Desktop click-on-release state
+var _mouse_press_start_pos: Vector2 = Vector2.ZERO
 
 # Touch drag state (active only on touch devices)
 var _touch_press_start_pos: Vector2 = Vector2.ZERO
@@ -145,6 +149,9 @@ func _gui_input(event: InputEvent) -> void:
 ## Desktop: left-click press — immediate select or drag start
 func _on_mouse_press() -> void:
 	if is_selectable:
+		if click_on_release:
+			_mouse_press_start_pos = get_global_mouse_position()
+			return
 		card_clicked.emit(self)
 		return
 	if not drag_enabled or is_face_down:
@@ -157,6 +164,11 @@ func _on_mouse_press() -> void:
 
 ## Desktop: left-click release — end drag
 func _on_mouse_release() -> void:
+	if click_on_release and is_selectable:
+		var dist := get_global_mouse_position().distance_to(_mouse_press_start_pos)
+		if dist < TOUCH_DRAG_THRESHOLD:
+			card_clicked.emit(self)
+		return
 	if not is_dragging:
 		return
 	is_dragging = false

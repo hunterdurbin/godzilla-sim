@@ -60,6 +60,14 @@ signal deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt: 
 ## Emitted internally after resolve_deck_arrange() stores the result.
 signal _deck_arrange_resolved()
 
+## Emitted when a player must select exactly N cards from a pool (e.g. discard pile).
+## Connect from presentation layer to show a card selection UI with pool + selection areas.
+## Call resolve_card_select() with the chosen cards when done.
+signal card_select_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, required_count: int)
+
+## Emitted internally after resolve_card_select() stores the result.
+signal _card_select_resolved()
+
 ## Emitted to highlight/unhighlight a zone card during effect resolution.
 signal effect_zone_highlighted(player_id: int, zone_index: int)
 signal effect_zone_unhighlighted(player_id: int, zone_index: int)
@@ -86,6 +94,7 @@ var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
 var _deck_search_result: Dictionary = {}
 var _deck_arrange_keep: Array[Dictionary] = []
 var _deck_arrange_discard: Array[Dictionary] = []
+var _card_select_result: Array[Dictionary] = []
 var _zone_target_result: int = -1
 var _strategy_target_result: int = -1
 var _hand_card_selection_result: int = -1
@@ -1118,6 +1127,35 @@ func resolve_deck_arrange(keep: Array[Dictionary], discard: Array[Dictionary]) -
 	_deck_arrange_keep = keep
 	_deck_arrange_discard = discard
 	_deck_arrange_resolved.emit()
+
+
+func select_cards_from_pool(player_id: int, matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, required_count: int) -> Array[Dictionary]:
+	## Ask a player to select exactly required_count cards from the matching pool.
+	## Shows a UI with pool + selection areas. Player may skip (returns empty array)
+	## or must select exactly required_count cards to confirm.
+	## Returns the selected cards, or empty array if skipped.
+	## The caller is responsible for removing selected cards from their source.
+	if matching.size() < required_count:
+		return []
+
+	if card_select_requested.get_connections().size() > 0:
+		_highlight_active_effect()
+		card_select_requested.emit(player_id, matching, all_cards, prompt, required_count)
+		await _card_select_resolved
+		_unhighlight_active_effect()
+		return _card_select_result
+	else:
+		# Fallback: auto-select first N matching
+		var result: Array[Dictionary] = []
+		for i in range(mini(required_count, matching.size())):
+			result.append(matching[i])
+		return result
+
+
+func resolve_card_select(selected: Array[Dictionary]) -> void:
+	## Called by the presentation layer after the player selects cards.
+	_card_select_result = selected
+	_card_select_resolved.emit()
 
 
 func select_zone_target(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false) -> int:
