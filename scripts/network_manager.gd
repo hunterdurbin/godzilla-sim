@@ -5,7 +5,7 @@ extends Node
 ## Registered as an autoload singleton. Contains no game logic —
 ## just connection lifecycle, player assignment, and session state.
 
-enum Mode {SOLO, HOST, CLIENT, ONLINE_HOST, ONLINE_CLIENT}
+enum Mode {SOLO, SOLO_BOT, HOST, CLIENT, ONLINE_HOST, ONLINE_CLIENT}
 
 signal player_connected(peer_id: int)
 signal player_disconnected(peer_id: int)
@@ -238,7 +238,7 @@ func disconnect_game() -> void:
 
 
 func is_multiplayer() -> bool:
-	return mode != Mode.SOLO
+	return mode != Mode.SOLO and mode != Mode.SOLO_BOT
 
 
 func is_host() -> bool:
@@ -248,6 +248,8 @@ func is_host() -> bool:
 func is_local_player_turn(current_player_id: int) -> bool:
 	if mode == Mode.SOLO:
 		return true
+	if mode == Mode.SOLO_BOT:
+		return current_player_id == local_player_id
 	return current_player_id == local_player_id
 
 
