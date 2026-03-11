@@ -90,6 +90,9 @@ var _hover_active: bool = false
 # Desktop click-on-release state
 var _mouse_press_start_pos: Vector2 = Vector2.ZERO
 
+# Double-click tracking (per-card: only double-click if same card clicked twice)
+static var _last_clicked_card: Control = null
+
 # Touch drag state (active only on touch devices)
 var _touch_press_start_pos: Vector2 = Vector2.ZERO
 var _touch_press_pending: bool = false
@@ -125,10 +128,16 @@ func _gui_input(event: InputEvent) -> void:
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.double_click:
-				if not is_face_down:
-					card_right_clicked.emit(self)
-				return
+				if is_instance_valid(_last_clicked_card) and _last_clicked_card == self:
+					_last_clicked_card = null
+					if not is_face_down:
+						card_right_clicked.emit(self)
+					return
+				# Different card or freed — treat as a normal single press
+				_last_clicked_card = self
+				event.double_click = false
 			if event.pressed:
+				_last_clicked_card = self
 				if TouchHelper.is_touch_device():
 					_on_touch_press()
 				else:

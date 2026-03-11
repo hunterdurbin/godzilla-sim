@@ -5666,8 +5666,13 @@ func _on_gallery_card_input(event: InputEvent, card: Control) -> void:
 		if "card_data" in card and not card.card_data.is_empty():
 			_show_card_zoom(card.card_data)
 	elif event.button_index == MOUSE_BUTTON_LEFT and event.double_click:
-		if "card_data" in card and not card.card_data.is_empty():
-			_show_card_zoom(card.card_data)
+		# Only treat as double-click if the same card instance was clicked both times.
+		# _last_clicked_card is a static var set in card._gui_input (which runs AFTER
+		# this signal handler), so it holds the card from the PREVIOUS click.
+		var last_card = card._last_clicked_card
+		if is_instance_valid(last_card) and last_card == card:
+			if "card_data" in card and not card.card_data.is_empty():
+				_show_card_zoom(card.card_data)
 
 
 func _get_card_template_id(card_data: Dictionary) -> String:
