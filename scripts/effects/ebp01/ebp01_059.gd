@@ -13,6 +13,14 @@ extends CardEffect
 ## Implementation notes: Uses trigger_discard_from_hand + play_from_discard
 
 
+func get_bot_tags() -> Array[String]:
+	return ["plays_from_discard", "boosts_cp", "zone_dependent"]
+
+
+func get_bot_preferred_zones() -> Array[int]:
+	return [7]  # zone 8 (0-indexed) — +3000 CP in zone 8
+
+
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	if find_zone_of_card(ctx) == 7:
 		return 3000

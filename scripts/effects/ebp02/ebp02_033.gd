@@ -11,6 +11,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp"]
+
+
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	if ctx.owner.monster_zone >= 4:
 		return 3000

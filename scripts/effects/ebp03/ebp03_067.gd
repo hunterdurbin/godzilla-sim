@@ -15,6 +15,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["plays_from_discard", "destroys_zone", "boosts_cp"]
+
+
 func on_discard_from_hand(ctx: EffectContext) -> void:
 	# Only on your turn
 	if ctx.game_state.current_player_id != ctx.owner.player_id:

@@ -13,6 +13,14 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone", "zone_dependent"]
+
+
+func get_bot_preferred_zones() -> Array[int]:
+	return [5, 6, 7]  # zones 6-8 (0-indexed)
+
+
 func get_burst_rank() -> int:
 	return 4
 

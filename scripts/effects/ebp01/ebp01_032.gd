@@ -11,5 +11,9 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["draws_cards"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	ctx.owner.draw_cards(2)

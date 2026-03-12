@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat", "weakens_opponent"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var monster_count: int = ctx.effect_handler.count_monsters_in_discard(ctx.owner)
 	if monster_count < 5:

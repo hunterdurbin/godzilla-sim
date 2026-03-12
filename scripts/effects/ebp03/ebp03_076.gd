@@ -11,13 +11,21 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat", "zone_dependent"]
+
+
+func get_bot_preferred_zones() -> Array[int]:
+	return [0, 4, 7]
+
+
 func is_base_strategy() -> bool:
 	return true
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:
 	if ctx.game_state.current_player_id == ctx.owner.player_id:
-		return 0  # Opponent's turn only
+		return 0 # Opponent's turn only
 
 	var bonus := 0
 	# Zones 1, 5, 8 = indices 0, 4, 7

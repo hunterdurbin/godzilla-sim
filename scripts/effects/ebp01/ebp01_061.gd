@@ -11,6 +11,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["weakens_opponent"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.rage >= 5:
 		var reduction: int = mini(ctx.opponent.rage, 3)

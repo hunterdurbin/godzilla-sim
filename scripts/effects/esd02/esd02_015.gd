@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var all_zones: Array[int] = [0, 1, 2, 3, 4, 5, 6, 7]
 	await ctx.effect_handler.destroy_zone_and_adjacent(

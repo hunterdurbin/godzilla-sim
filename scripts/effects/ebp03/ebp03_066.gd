@@ -11,6 +11,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary) -> int:
 	if target_card.get("id") != ctx.card_data.get("id"):
 		return 0

@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
+
 func on_enter(ctx: EffectContext) -> void:
 	await ctx.effect_handler.create_tokens_in_empty_zones(ctx.owner, "EBP02-T03", 2)
 

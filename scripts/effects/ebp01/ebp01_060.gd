@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["plays_from_discard"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if not ctx.card_data.get("played_through_evolution", false):
 		return

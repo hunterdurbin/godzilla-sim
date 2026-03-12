@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["mill_self", "advances_monster"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
 		return

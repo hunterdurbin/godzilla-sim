@@ -11,6 +11,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp"]
+
+
 func stacks_on_play(ctx: EffectContext, zone_index: int) -> bool:
 	return _zone_has_little_godzilla(ctx, zone_index)
 

@@ -12,6 +12,14 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["evolves", "zone_dependent"]
+
+
+func get_bot_preferred_zones() -> Array[int]:
+	return [7]
+
+
 func get_invasion_observed_filter() -> Dictionary:
 	return {"own_turn": true}
 

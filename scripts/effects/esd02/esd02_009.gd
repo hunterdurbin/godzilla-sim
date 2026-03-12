@@ -12,6 +12,14 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["weakens_opponent", "zone_dependent"]
+
+
+func get_bot_preferred_zones() -> Array[int]:
+	return [7]  # zone 8 (0-indexed) — effect only activates in zone 8
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Awakening4: requires monster in zone 4+
 	if ctx.owner.monster_zone < 4:

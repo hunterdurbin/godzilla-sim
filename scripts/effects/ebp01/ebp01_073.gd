@@ -14,6 +14,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat", "weakens_opponent"]
+
+
 func can_be_played(ctx: EffectContext) -> bool:
 	# Cannot be played if 7 or fewer monster cards in discard pile (need 8+)
 	return ctx.effect_handler.count_monsters_in_discard(ctx.owner) > 7

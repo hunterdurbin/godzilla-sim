@@ -15,6 +15,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var zones_crossed: int = ctx.owner.invasion_zones_crossed
 	var max_rank: int = 2  # 0 zones

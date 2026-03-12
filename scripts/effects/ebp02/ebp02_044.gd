@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat", "weakens_opponent"]
+
+
+
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	if ctx.opponent.monster_zone >= 6 and ctx.opponent.rage > 0:
 		var old_rage: int = ctx.opponent.rage

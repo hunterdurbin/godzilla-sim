@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["draws_cards"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var revealed: Array[Dictionary] = []
 	for _i in range(2):

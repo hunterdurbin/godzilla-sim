@@ -11,6 +11,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["draws_cards"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.card_data.get("played_through_evolution", false):
 		ctx.owner.draw_cards(1)

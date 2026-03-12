@@ -11,6 +11,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["searches_deck"]
+
+
 func is_base_strategy() -> bool:
 	return true
 
@@ -23,7 +27,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return  # Your turn only
+		return # Your turn only
 
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,

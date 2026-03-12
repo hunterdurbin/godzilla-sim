@@ -14,6 +14,14 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp", "zone_dependent"]
+
+
+func get_bot_preferred_zones() -> Array[int]:
+	return [0, 1, 2] # zone 7 (0-indexed) — boosts zone 8
+
+
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 

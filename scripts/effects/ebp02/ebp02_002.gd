@@ -11,6 +11,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat"]
+
+
 func get_threat_level_modifier(ctx: EffectContext) -> int:
 	for sz in ctx.owner.strategy_zones:
 		if not sz.is_empty():

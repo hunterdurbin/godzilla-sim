@@ -11,9 +11,17 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp", "zone_dependent"]
+
+
+func get_bot_preferred_zones() -> Array[int]:
+	return [7]
+
+
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	var mods := {}
-	var zone8_card := ctx.owner.get_zone_top_card(7)  # zone 8 = index 7
+	var zone8_card := ctx.owner.get_zone_top_card(7) # zone 8 = index 7
 	if not zone8_card.is_empty() and zone8_card.get("card_type") == CardEnums.CardType.BATTLE:
 		if CardEnums.CardTrait.MECHAGODZILLA in zone8_card.get("traits", []):
 			# Don't double-count if this card IS in zone 8

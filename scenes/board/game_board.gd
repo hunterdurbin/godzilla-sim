@@ -8,6 +8,10 @@ var turn_manager: TurnManager # Only exists on host/solo
 const CardScript := preload("res://scenes/cards/card.gd")
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
+# Bot state
+var bot_player: BotPlayer
+var is_bot_game: bool = false
+
 # Multiplayer state
 var is_multiplayer_game: bool = false
 var local_player_id: int = 0 # 0 for host/solo, 1 for client
@@ -447,6 +451,7 @@ func _ready() -> void:
 	CardScript.clear_texture_cache()
 
 	is_multiplayer_game = NetworkManager.is_multiplayer()
+	is_bot_game = NetworkManager.mode == NetworkManager.Mode.SOLO_BOT
 	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game else 0
 	_match_stacked_view = _match_stacked_view
 
@@ -508,6 +513,10 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
 		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
+
+		# Set up bot player for Solo v Bot mode
+		if is_bot_game:
+			_setup_bot()
 
 		# Connect player state signals so mid-effect changes (e.g. search_deck adding
 		# a card to hand) trigger visual updates immediately
@@ -587,7 +596,7 @@ func _ready() -> void:
 	sort_hand_button.pressed.connect(_on_sort_hand_pressed)
 	opponent_hand_toggle_button.pressed.connect(_on_opponent_hand_toggle_pressed)
 	opponent_sort_hand_button.pressed.connect(_on_opponent_sort_hand_pressed)
-	opponent_hand_button_stack.visible = not is_multiplayer_game
+	opponent_hand_button_stack.visible = not is_multiplayer_game and not is_bot_game
 
 	# Connect discard view
 	player1_board.discard_clicked.connect(_on_discard_clicked)
@@ -799,6 +808,23 @@ func _update_all_setting_indicators() -> void:
 
 
 func _start_game() -> void:
+	if is_bot_game:
+		# Solo v Bot: let the human choose who goes first
+		_first_player_chooser_id = 0
+		_first_player_result = -1
+		_first_player_choosing = true
+		_show_first_player_choice()
+
+		while _first_player_result < 0:
+			await Engine.get_main_loop().process_frame
+
+		_first_player_choosing = false
+		_cleanup_first_player_ui()
+		_first_player_id = _first_player_result
+		_apply_gradients_and_sync()
+		turn_manager.start_game(_first_player_result)
+		return
+
 	if not is_multiplayer_game:
 		# Solo: no need to choose, player 1 always goes first
 		_first_player_id = 0
@@ -839,6 +865,41 @@ func _start_game() -> void:
 	_first_player_id = _first_player_result
 	_on_log_message("%s chose to go first." % GameLog.player_name(_first_player_result))
 	turn_manager.start_game(_first_player_result)
+
+
+func _setup_bot() -> void:
+	bot_player = BotPlayer.new()
+	bot_player.bot_player_id = 1
+	bot_player.game_state = turn_manager.game_state
+	bot_player.rules_engine = turn_manager.rules_engine
+	bot_player.turn_manager = turn_manager
+	bot_player.action_handler = turn_manager.action_handler
+	bot_player.effect_handler = turn_manager.action_handler.effect_handler
+	bot_player.scene_tree = get_tree()
+
+	# Connect bot to all decision signals
+	turn_manager.awaiting_player_action.connect(bot_player._on_awaiting_action)
+	turn_manager.confirmation_requested.connect(bot_player._on_confirmation_requested)
+	turn_manager.action_handler.monster_rankup_requested.connect(bot_player._on_monster_rankup_requested)
+	bot_player.effect_handler.choice_requested.connect(bot_player._on_choice_requested)
+	bot_player.effect_handler.hand_discard_requested.connect(bot_player._on_hand_discard_requested)
+	bot_player.effect_handler.deck_search_requested.connect(bot_player._on_deck_search_requested)
+	bot_player.effect_handler.deck_arrange_requested.connect(bot_player._on_deck_arrange_requested)
+	bot_player.effect_handler.card_select_requested.connect(bot_player._on_card_select_requested)
+	bot_player.effect_handler.hand_card_selection_requested.connect(bot_player._on_hand_card_selection_requested)
+	bot_player.effect_handler.zone_target_requested.connect(bot_player._on_zone_target_requested)
+	bot_player.effect_handler.strategy_target_requested.connect(bot_player._on_strategy_target_requested)
+	bot_player.effect_handler.cards_revealed_requested.connect(bot_player._on_cards_revealed_requested)
+
+	# Analyze deck to determine playstyle
+	bot_player.analyze_deck()
+
+	# Set bot player name
+	turn_manager.game_state.player_names[1] = "Bot"
+	GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+	for i in range(2):
+		if i < _turn_tracker_headers.size():
+			_turn_tracker_headers[i].text = GameLog.player_name(i)
 
 
 func _apply_gradients_and_sync() -> void:
@@ -2257,6 +2318,10 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 	_action_pending = false
 	_sync_boards()
 
+	if is_bot_game and _get_current_pid() == bot_player.bot_player_id:
+		_disable_all_buttons()
+		return
+
 	if is_multiplayer_game:
 		_broadcast_state()
 		_flush_broadcast() # Action context must arrive after state
@@ -2314,6 +2379,8 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 
 func _on_confirmation_requested(prompt: String, setting: String) -> void:
 	var current_pid: int = turn_manager.game_state.current_player_id
+	if is_bot_game and current_pid == bot_player.bot_player_id:
+		return
 	if is_multiplayer_game and current_pid != local_player_id:
 		_flush_broadcast()
 		_pending_interaction = {"method": "confirmation", "args": [prompt, setting]}
@@ -2470,6 +2537,7 @@ func _build_bug_report_body() -> String:
 	lines.append("## Game State")
 	var mode_names := {
 		NetworkManager.Mode.SOLO: "Solo",
+		NetworkManager.Mode.SOLO_BOT: "Solo v Bot",
 		NetworkManager.Mode.HOST: "LAN (Host)",
 		NetworkManager.Mode.CLIENT: "LAN (Client)",
 		NetworkManager.Mode.ONLINE_HOST: "Online (Host)",
@@ -2772,6 +2840,10 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
 		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
+
+		# Reconnect bot player for Solo v Bot mode
+		if is_bot_game:
+			_setup_bot()
 
 		# Reconnect player state signals
 		for player in turn_manager.game_state.players:
@@ -3407,6 +3479,12 @@ func _update_hand_visibility(active_player_id: int) -> void:
 			player1_board.set_hand_face_down(local_player_id != 0)
 		if player2_board:
 			player2_board.set_hand_face_down(local_player_id != 1)
+	elif is_bot_game:
+		# Bot mode: P1 (human) face-up, P2 (bot) face-down
+		if player1_board:
+			player1_board.set_hand_face_down(false)
+		if player2_board:
+			player2_board.set_hand_face_down(true)
 	else:
 		# Solo: both hands always face-up
 		if player1_board:
@@ -3700,6 +3778,8 @@ func _on_hand_drag_ended(card: Control) -> void:
 # --- Deck search UI ---
 
 func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast() # Client needs up-to-date state before search
 		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
@@ -4245,6 +4325,8 @@ func _hide_deck_search() -> void:
 # --- Deck arrange overlay UI ---
 
 func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt: String) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var cards_json := JSON.stringify(_cards_to_ids(cards))
@@ -4468,6 +4550,8 @@ func _on_deck_arrange_confirm() -> void:
 # --- Card select overlay UI ---
 
 func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
@@ -4679,6 +4763,8 @@ func _hide_card_select() -> void:
 # --- Hand discard selection UI ---
 
 func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		_pending_interaction = {"method": "hand_discard", "args": [discard_count]}
@@ -4803,6 +4889,8 @@ func _force_cleanup_discard_selection() -> void:
 # --- Hand card selection UI (single-select for effects) ---
 
 func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
@@ -4896,6 +4984,8 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 # --- Zone target selection UI ---
 
 func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var zones_json := JSON.stringify(valid_zones)
@@ -4975,6 +5065,8 @@ func _finish_zone_target(zone_idx: int) -> void:
 # --- Strategy target selection UI ---
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
@@ -5041,6 +5133,8 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 # --- Standby ability order choice UI ---
 
 func _on_choice_requested(player_id: int, options: Array[String], prompt: String) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var options_json := JSON.stringify(options)
@@ -5324,6 +5418,8 @@ func _hide_monster_deck_view() -> void:
 # --- Monster rank-up selection UI ---
 
 func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var monsters_json := JSON.stringify(_cards_to_ids(monsters))
@@ -5451,7 +5547,9 @@ func _hide_zone_stack_view() -> void:
 		turn_manager.action_handler.effect_handler.resolve_cards_revealed()
 
 
-func _on_cards_revealed_requested(_player_id: int, cards: Array[Dictionary], title: String) -> void:
+func _on_cards_revealed_requested(player_id: int, cards: Array[Dictionary], title: String) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
 	_zone_stack_view_cards.clear()
 	_zone_stack_view_cards.append_array(cards)
 	var total: int = _zone_stack_view_cards.size()

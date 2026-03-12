@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["plays_from_discard", "boosts_cp"]
+
+
 func on_discarded_for_invasion(_ctx: EffectContext) -> bool:
 	# Play self from discard pile (handled by ActionHandler/EffectHandler)
 	return true

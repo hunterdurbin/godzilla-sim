@@ -10,6 +10,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["mill_self"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.main_deck.is_empty():
 		return

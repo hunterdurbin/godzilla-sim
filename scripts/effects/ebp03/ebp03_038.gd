@@ -10,6 +10,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func get_phase_start_filter() -> Dictionary:
 	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
 
@@ -18,7 +22,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return  # Own turn only
+		return # Own turn only
 	if ctx.opponent.rage < 2:
 		return
 

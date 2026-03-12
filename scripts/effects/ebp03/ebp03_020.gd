@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func on_counter_success(ctx: EffectContext) -> void:
 	if not _has_base_in_play(ctx):
 		return

@@ -307,6 +307,44 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	## Cards may have multiple effects spanning different categories.
 	return []
 
+
+func get_bot_tags() -> Array[String]:
+	## Return strategic tags for bot AI decision-making.
+	## Override in card scripts to declare what the effect does at a high level.
+	## Supported tags:
+	##   "destroys_zone"    — can destroy/remove opponent's battle card(s) from zones
+	##   "draws_cards"      — draws cards into hand
+	##   "boosts_cp"        — increases counter power (CP modifiers, buffs)
+	##   "boosts_threat"    — increases threat level
+	##   "disrupts_hand"    — forces opponent to discard from hand
+	##   "blocks_zone"      — blocks opponent from playing in certain zones
+	##   "blocks_invade"    — prevents opponent from invading
+	##   "heals_deck"       — returns cards from discard to deck
+	##   "searches_deck"    — searches deck for a specific card
+	##   "advances_monster" — advances own monster (extra advance, etc.)
+	##   "weakens_opponent" — reduces opponent's CP, rank, or field presence
+	##   "zone_dependent"   — effect requires being in a specific zone to activate
+	##                        (override get_bot_preferred_zones to specify which zones)
+	##   "mill_self"            — sends cards from own deck to own discard
+	##   "mill_opponent"        — sends cards from opponent's deck to their discard
+	##   "evolves"             — evolves a battle card (searches deck and stacks)
+	##   "plays_from_discard"  — plays cards from the discard pile to the field
+	##   "evolution"            — this card has Evolution and can be evolved into a stronger form
+	##   "column_dependent_battle" — effect is stronger in the same column as opponent's battle card
+	##   "column_dependent_monster" — effect depends on opponent's monster being in the same column
+	##   "column_dependent_monster_self" — effect depends on own monster being in the same column as opponent's battle card(s)
+	##   "column_avoid_battle_cards" — effect is harmful when opponent's battle cards are in the same column
+	##   "retreats_opponent" — retreats/moves opponent's monster backward
+	##   "plays_other_cards" — plays/creates additional cards (tokens, from hand, etc.) onto the field
+	return []
+
+
+func get_bot_preferred_zones() -> Array[int]:
+	## Return 0-indexed zone indices where this card's effect works best.
+	## Used with "zone_dependent" tag so the bot knows where to place the card.
+	## E.g., a card that only activates in zones 6-8 returns [5, 6, 7].
+	return []
+
 func get_burst_rank() -> int:
 	## Return the burst rank (1-4) if this card has Burst. Return -1 for no burst.
 	## Burst lets a monster card be played from an earlier rank but auto-discards next end phase.

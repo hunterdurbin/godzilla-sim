@@ -11,6 +11,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone", "column_dependent_monster_self"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if not _has_color_battle_in_zones(ctx, CardEnums.CardColor.BLUE):
 		return
@@ -28,7 +32,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
 	if ctx.game_state.current_player_id == ctx.owner.player_id:
-		return  # Opponent's turn only
+		return # Opponent's turn only
 	if not _has_color_battle_in_zones(ctx, CardEnums.CardColor.RED):
 		return
 

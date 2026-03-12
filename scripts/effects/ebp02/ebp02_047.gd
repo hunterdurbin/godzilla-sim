@@ -11,6 +11,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["mill_self"]
+
+
 func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	if ctx.owner.main_deck.is_empty():
 		return

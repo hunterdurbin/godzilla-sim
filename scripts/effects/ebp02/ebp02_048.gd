@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["mill_self", "destroys_zone"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var milled: Array[Dictionary] = ctx.owner.mill_cards(3)
 	if not milled.is_empty():

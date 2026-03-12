@@ -2,6 +2,7 @@ extends Control
 
 
 @onready var start_button: Button = $CenterContainer/VBoxContainer/StartButton
+@onready var solo_bot_button: Button = $CenterContainer/VBoxContainer/SoloBotButton
 @onready var lan_button: Button = $CenterContainer/VBoxContainer/LanButton
 @onready var online_button: Button = $CenterContainer/VBoxContainer/OnlineButton
 @onready var deck_builder_button: Button = $CenterContainer/VBoxContainer/DeckBuilderButton
@@ -19,6 +20,8 @@ var _p2_ready: bool = false
 func _ready() -> void:
 	start_button.pressed.connect(_on_start_pressed)
 	start_button.disabled = true
+	solo_bot_button.pressed.connect(_on_solo_bot_pressed)
+	solo_bot_button.disabled = true
 	lan_button.pressed.connect(_on_lan_pressed)
 	online_button.pressed.connect(_on_online_pressed)
 	deck_builder_button.pressed.connect(_on_deck_builder_pressed)
@@ -65,12 +68,19 @@ func _on_p2_deck_selected(deck_name: String) -> void:
 
 func _update_start_button() -> void:
 	start_button.disabled = not (_p1_ready and _p2_ready)
+	solo_bot_button.disabled = not (_p1_ready and _p2_ready)
 	if not start_button.disabled:
 		start_button.grab_focus()
 
 
 func _on_start_pressed() -> void:
 	NetworkManager.mode = NetworkManager.Mode.SOLO
+	get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+
+
+func _on_solo_bot_pressed() -> void:
+	NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
+	NetworkManager.local_player_id = 0
 	get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
 
 

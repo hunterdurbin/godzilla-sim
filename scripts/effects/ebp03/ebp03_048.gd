@@ -10,6 +10,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["weakens_opponent"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var my_id: String = ctx.card_data.get("id", "")
 	var other_battle_count := 0

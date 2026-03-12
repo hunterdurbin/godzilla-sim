@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat"]
+
+
 func get_threat_level_modifier(ctx: EffectContext) -> int:
 	if ctx.owner.monster_stack.size() < 5:
 		return 0

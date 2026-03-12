@@ -14,6 +14,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["plays_other_cards"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Expand strategy zones to 3 (permanent for rest of game)
 	if ctx.owner.strategy_zones.size() < 3:

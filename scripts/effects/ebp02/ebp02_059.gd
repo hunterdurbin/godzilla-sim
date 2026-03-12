@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["draws_cards"]
+
+
 func on_revenge(ctx: EffectContext) -> void:
 	# Check if there's a matching card in discard first
 	var has_target: bool = false

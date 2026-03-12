@@ -13,6 +13,14 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp", "zone_dependent", "heals_deck"]
+
+
+func get_bot_preferred_zones() -> Array[int]:
+	return [7]  # zone 8 (0-indexed) — gains +3000 CP in zone 8
+
+
 func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
 	# Only during your turn
 	if ctx.game_state.current_player_id != ctx.owner.player_id:

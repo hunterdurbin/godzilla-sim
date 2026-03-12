@@ -10,6 +10,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["weakens_opponent"]
+
+
 func on_revenge(ctx: EffectContext) -> void:
 	if ctx.opponent.rage > 0:
 		var old_rage := ctx.opponent.rage
