@@ -98,21 +98,28 @@ func _decide_battle_play(player: PlayerState, opponent: PlayerState) -> Array:
 
 
 func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: PlayerState) -> int:
-	# Priority: empty zones first, then zone priority table based on bot's monster zone
-	var empty_priority := _get_zone_priority(player.monster_zone)
-
-	# Override: if bot in z1-6 and opponent in z7/z8, prioritize z8
+	# Priority override: if bot in z1-6 and opponent in z7/z8, prioritize z8 first
 	if player.monster_zone <= 6 and opponent.monster_zone >= 7:
 		if 7 in valid_zones and not player.zone_has_cards(7):
 			return 7
 
+	# Build priority considering current zone AND zone+1 (monster advances at end of turn)
+	var priority := _get_zone_priority(player.monster_zone)
+	var next_zone := mini(player.monster_zone + 1, 8)
+	if next_zone != player.monster_zone:
+		var next_priority := _get_zone_priority(next_zone)
+		# Merge: zones from next_priority that aren't already in priority get appended
+		for z in next_priority:
+			if z not in priority:
+				priority.append(z)
+
 	# Prefer empty zones in priority order
-	for z in empty_priority:
+	for z in priority:
 		if z in valid_zones and not player.zone_has_cards(z):
 			return z
 
-	# Fallback: any valid zone in priority order
-	for z in empty_priority:
+	# Fallback: occupied zones in priority order
+	for z in priority:
 		if z in valid_zones:
 			return z
 
@@ -120,17 +127,78 @@ func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: P
 
 
 func _get_zone_priority(monster_zone: int) -> Array[int]:
-	# Zone priority table (0-indexed zone indices)
+	# Randomly pick one of the listed priority orders per monster zone.
+	# Brackets mean "any order" — those sub-arrays get shuffled.
+	# Values use 1-based zone numbers, converted to 0-indexed at the end.
+	var priority: Array = []
 	match monster_zone:
-		1: return [7, 6, 5, 4, 3, 2, 1]
-		2: return [7, 6, 5, 4, 3, 2, 0]
-		3: return [7, 6, 5, 4, 3, 1, 0]
-		4: return [7, 6, 5, 4, 2, 1, 0]
-		5: return [7, 0, 1, 2, 3, 6, 5]
-		6: return [7, 0, 1, 2, 4, 3, 6]
-		7: return [0, 1, 2, 5, 4, 3, 7]
-		8: return [0, 1, 2, 6, 5, 4, 3]
-		_: return [7, 6, 5, 4, 3, 2, 1, 0]
+		1:
+			# z1 => 8,7,6,5,4,3,2 or 7,8,6,5,4,3,2
+			if randi() % 2 == 0:
+				priority = [8, 7, 6, 5, 4, 3, 2]
+			else:
+				priority = [7, 8, 6, 5, 4, 3, 2]
+		2:
+			# z2 => 8,7,6,5,4,3,1 or 7,8,6,5,4,3,1 or 1,8,7,6,5,4,3
+			var roll := randi() % 3
+			if roll == 0:
+				priority = [8, 7, 6, 5, 4, 3, 1]
+			elif roll == 1:
+				priority = [7, 8, 6, 5, 4, 3, 1]
+			else:
+				priority = [1, 8, 7, 6, 5, 4, 3]
+		3:
+			# z3 => 8,7,6,5,4,[2,1] or 7,8,6,5,4,[2,1]
+			var tail := _shuffled([2, 1])
+			if randi() % 2 == 0:
+				priority = [8, 7, 6, 5, 4] + tail
+			else:
+				priority = [7, 8, 6, 5, 4] + tail
+		4:
+			# z4 => 8,7,6,5,[3,2,1] or [1,2,3],8,7,6,5
+			var group := _shuffled([3, 2, 1])
+			if randi() % 2 == 0:
+				priority = [8, 7, 6, 5] + group
+			else:
+				priority = group + [8, 7, 6, 5]
+		5:
+			# z5 => 8,[1,2,3],4,7,6 or [1,2,3],8,4,7,6
+			var group := _shuffled([1, 2, 3])
+			if randi() % 2 == 0:
+				priority = [8] + group + [4, 7, 6]
+			else:
+				priority = group + [8, 4, 7, 6]
+		6:
+			# z6 => 8,[1,2,3,5],4,7 or [1,2,3],[8,4,5],7
+			if randi() % 2 == 0:
+				var group := _shuffled([1, 2, 3, 5])
+				priority = [8] + group + [4, 7]
+			else:
+				var front := _shuffled([1, 2, 3])
+				var mid := _shuffled([8, 4, 5])
+				priority = front + mid + [7]
+		7:
+			# z7 => [1,2,3],6,5,4,8
+			var group := _shuffled([1, 2, 3])
+			priority = group + [6, 5, 4, 8]
+		8:
+			# z8 => [1,2,3],7,6,5,4
+			var group := _shuffled([1, 2, 3])
+			priority = group + [7, 6, 5, 4]
+		_:
+			priority = _shuffled([1, 2, 3, 4, 5, 6, 7, 8])
+
+	# Convert from 1-based zone numbers to 0-indexed
+	var result: Array[int] = []
+	for z in priority:
+		result.append(z - 1)
+	return result
+
+
+func _shuffled(arr: Array) -> Array:
+	var copy := arr.duplicate()
+	copy.shuffle()
+	return copy
 
 
 func _find_best_invade_card(player: PlayerState) -> int:
@@ -151,7 +219,14 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 		return []
 
 	var mz := player.monster_zone
-	var opp_mz := opponent.monster_zone
+
+	# If opponent is in z7/z8 and bot can't win this turn, don't invade — focus on defense
+	if opponent.monster_zone >= 7:
+		# Only invade if bot is at z7+ with a path to win past z8
+		if mz < 7:
+			return []
+		if mz == 7 and opponent.zone_has_battle_card(7):
+			return [] # z8 blocked, can't win
 
 	# Zone 6 + have 1-step card → invade to z7 for win setup
 	if mz == 6:
