@@ -188,11 +188,8 @@ func _decide_main_action(valid_actions: Array) -> Array:
 
 	# 6. Invade based on position and playstyle
 	if CardEnums.ActionType.INVADE in valid_actions:
-		# Counter playstyle skips strategic invading — only invades for the win (step 4)
-		if playstyle == Playstyle.COUNTER:
-			pass
-		# Balanced/Counter with a base strategy in play should not invade strategically
-		elif playstyle == Playstyle.BALANCED and _has_base_strategy_in_play(player):
+		# Counter and Balanced playstyles skip strategic invading — only invade for the win (step 4)
+		if playstyle == Playstyle.COUNTER or playstyle == Playstyle.BALANCED:
 			pass
 		else:
 			var invade_result := _decide_invade(player, opponent)
