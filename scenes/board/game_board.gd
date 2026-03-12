@@ -891,6 +891,9 @@ func _setup_bot() -> void:
 	bot_player.effect_handler.strategy_target_requested.connect(bot_player._on_strategy_target_requested)
 	bot_player.effect_handler.cards_revealed_requested.connect(bot_player._on_cards_revealed_requested)
 
+	# Analyze deck to determine playstyle
+	bot_player.analyze_deck()
+
 	# Set bot player name
 	turn_manager.game_state.player_names[1] = "Bot"
 	GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)

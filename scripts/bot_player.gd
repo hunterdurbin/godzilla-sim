@@ -6,8 +6,11 @@ extends RefCounted
 
 const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
 
+enum Playstyle { INVASION, COUNTER, BALANCED }
+
 var bot_player_id: int = 1
 var action_delay: float = 0.5
+var playstyle: Playstyle = Playstyle.BALANCED
 
 var game_state: GameState
 var rules_engine: RulesEngine
@@ -15,6 +18,111 @@ var turn_manager: TurnManager
 var action_handler: ActionHandler
 var effect_handler: EffectHandler
 var scene_tree: SceneTree
+
+
+func analyze_deck() -> void:
+	## Scan all cards in the bot's deck + hand to determine playstyle.
+	## Call after game setup when deck is populated.
+	var player := game_state.players[bot_player_id]
+	var all_cards: Array[Dictionary] = []
+	all_cards.append_array(player.hand)
+	all_cards.append_array(player.deck)
+
+	# Count tag occurrences and trigger map signals across all cards
+	var invasion_score: float = 0.0
+	var counter_score: float = 0.0
+	var card_count: int = all_cards.size()
+	if card_count == 0:
+		return
+
+	# Count monster cards (high monster count suggests aggressive play)
+	var monster_count: int = 0
+	for card in all_cards:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			monster_count += 1
+
+	# Monster ratio contributes to aggressive score (small factor)
+	invasion_score += monster_count * 0.5
+
+	for card in all_cards:
+		var effect := effect_handler.get_effect(card)
+		var tags: Array[String] = effect.get_bot_tags() if effect else []
+
+		# Tag-based scoring (primary weight)
+		if "boosts_threat" in tags:
+			invasion_score += 3.0
+		if "disrupts_hand" in tags:
+			invasion_score += 2.0
+		if "destroys_zone" in tags:
+			invasion_score += 2.0
+		if "advances_monster" in tags:
+			invasion_score += 3.0
+		if "weakens_opponent" in tags:
+			invasion_score += 1.5
+		if "column_dependent_monster" in tags:
+			invasion_score += 1.0
+
+		if "boosts_cp" in tags:
+			counter_score += 3.0
+		if "evolves" in tags:
+			counter_score += 2.5
+		if "evolution" in tags:
+			counter_score += 2.0
+		if "draws_cards" in tags:
+			counter_score += 1.5
+		if "searches_deck" in tags:
+			counter_score += 1.5
+		if "heals_deck" in tags:
+			counter_score += 1.5
+		if "blocks_invade" in tags:
+			counter_score += 2.0
+		if "blocks_zone" in tags:
+			counter_score += 1.5
+		if "column_dependent_battle" in tags:
+			counter_score += 1.0
+
+		# Trigger map scoring (secondary weight — half value)
+		var script_path: String = card.get("effect_script", "")
+		if script_path.is_empty():
+			continue
+		var triggers: Array = _TriggerMap.TRIGGERS.get(script_path, [])
+
+		if "get_threat_level_modifier" in triggers:
+			invasion_score += 1.0
+		if "on_when_invading" in triggers:
+			invasion_score += 1.5
+		if "get_extra_end_phase_advance" in triggers:
+			invasion_score += 1.5
+		if "on_opponent_rage_changed" in triggers:
+			invasion_score += 0.5
+
+		if "get_counter_power_modifier" in triggers or "get_field_cp_modifiers" in triggers \
+				or "get_total_cp_modifier" in triggers:
+			counter_score += 1.5
+		if "get_engagement_restriction" in triggers:
+			counter_score += 1.5
+		if "get_counter_immunity_threshold" in triggers:
+			counter_score += 1.0
+		if "prevents_opponent_invasion" in triggers:
+			counter_score += 1.5
+		if "get_blocked_opponent_zones" in triggers:
+			counter_score += 1.0
+		if "can_be_destroyed" in triggers or "on_would_be_destroyed" in triggers:
+			counter_score += 0.5
+
+	# Determine playstyle from ratio
+	var total := invasion_score + counter_score
+	if total == 0:
+		playstyle = Playstyle.BALANCED
+	elif invasion_score / total >= 0.6:
+		playstyle = Playstyle.INVASION
+	elif counter_score / total >= 0.6:
+		playstyle = Playstyle.COUNTER
+	else:
+		playstyle = Playstyle.BALANCED
+
+	print("[Bot] Deck analysis — invasion: %.1f, counter: %.1f, playstyle: %s" % [
+		invasion_score, counter_score, Playstyle.keys()[playstyle]])
 
 
 func _delay() -> void:
@@ -50,31 +158,41 @@ func _decide_main_action(valid_actions: Array) -> Array:
 		if not playable.is_empty():
 			return [CardEnums.ActionType.PLAY_MONSTER, {"hand_index": playable[0]}]
 
-	# 2. Score all playable cards and play the highest-value one
+	# 2. Aggressive: try to invade for the win before playing cards
+	if playstyle == Playstyle.INVASION:
+		if CardEnums.ActionType.INVADE in valid_actions:
+			if player.monster_zone >= 7 and not z8_blocked:
+				var invade_idx := _find_best_invade_card(player)
+				if invade_idx >= 0:
+					return [CardEnums.ActionType.INVADE, {"hand_index": invade_idx}]
+
+	# 3. Score all playable cards and play the highest-value one
 	var best_action := _decide_best_card_play(valid_actions, player, opponent, near_winning, z8_blocked)
 	if not best_action.is_empty():
 		return best_action
 
-	# 3. Win check: zone 7+ and opponent zone 8 empty → invade to win
+	# 4. Win check: zone 7+ and opponent zone 8 empty → invade to win
 	if CardEnums.ActionType.INVADE in valid_actions:
 		if player.monster_zone >= 7 and not z8_blocked:
 			var invade_idx := _find_best_invade_card(player)
 			if invade_idx >= 0:
 				return [CardEnums.ActionType.INVADE, {"hand_index": invade_idx}]
 
-	# 4. Gain rage (hand cycling) - discard monster cards
+	# 5. Gain rage (hand cycling) - discard monster cards
 	if CardEnums.ActionType.GAIN_RAGE in valid_actions:
 		var rage_cards := rules_engine.get_monster_cards_for_rage(player)
 		if not rage_cards.is_empty():
 			return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": rage_cards[0]}]
 
-	# 5. Invade based on position
+	# 6. Invade based on position and playstyle
 	if CardEnums.ActionType.INVADE in valid_actions:
-		var invade_result := _decide_invade(player, opponent)
-		if not invade_result.is_empty():
-			return invade_result
+		# Defensive playstyle skips strategic invading — only invades for the win (step 4)
+		if playstyle != Playstyle.COUNTER:
+			var invade_result := _decide_invade(player, opponent)
+			if not invade_result.is_empty():
+				return invade_result
 
-	# 6. Pass
+	# 7. Pass
 	return [CardEnums.ActionType.PASS, {}]
 
 
@@ -216,6 +334,18 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 		var opp_column_zones := CardEffect.get_opponent_column_zones(opp_monster_idx)
 		if not opp_column_zones.is_empty():
 			score += 15
+
+	# Playstyle multipliers — amplify tags that align with the deck's strategy
+	if playstyle == Playstyle.INVASION:
+		for tag in tags:
+			if tag in ["boosts_threat", "disrupts_hand", "destroys_zone", "advances_monster",
+					"weakens_opponent", "column_dependent_monster"]:
+				score += 10
+	elif playstyle == Playstyle.COUNTER:
+		for tag in tags:
+			if tag in ["boosts_cp", "evolves", "evolution", "draws_cards", "searches_deck",
+					"blocks_invade", "blocks_zone", "heals_deck", "column_dependent_battle"]:
+				score += 10
 
 	return score
 
