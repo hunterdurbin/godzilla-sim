@@ -565,15 +565,49 @@ func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: P
 			if z in valid_zones:
 				return z
 
-	# Column-dependent on monster: prefer zones in same column as opponent's monster
+	# Column-dependent on opponent's monster: must be in same column as opponent's monster
 	if "column_dependent_monster" in tags:
 		var opp_monster_idx: int = opponent.monster_zone - 1
-		var opp_column_zones := CardEffect.get_opponent_column_zones(opp_monster_idx)
-		for z in valid_zones:
-			if z in opp_column_zones and not player.zone_has_cards(z):
-				return z
+		if opp_monster_idx >= 0:
+			var opp_column_zones := CardEffect.get_opponent_column_zones(opp_monster_idx)
+			# Strongly prefer empty zones in the column
+			for z in opp_column_zones:
+				if z in valid_zones and not player.zone_has_cards(z):
+					return z
+			# Accept occupied zones in the column over non-column zones
+			for z in opp_column_zones:
+				if z in valid_zones:
+					return z
 
-	# Column-dependent: prefer zones where opponent has cards (same column)
+	# Column-dependent on own monster: prefer zones in same column as own monster
+	if "column_dependent_monster_self" in tags:
+		var own_monster_idx: int = player.monster_zone - 1
+		if own_monster_idx >= 0:
+			var own_column_zones := CardEffect.get_opponent_column_zones(own_monster_idx)
+			for z in own_column_zones:
+				if z in valid_zones and not player.zone_has_cards(z):
+					return z
+			for z in own_column_zones:
+				if z in valid_zones:
+					return z
+
+	# Column-avoid: avoid zones in same column as opponent's battle cards
+	if "column_avoid_battle_cards" in tags:
+		var avoid_zones: Array[int] = []
+		for z in valid_zones:
+			if opponent.zone_has_cards(z):
+				avoid_zones.append(z)
+		var safe_zones: Array[int] = []
+		for z in valid_zones:
+			if z not in avoid_zones:
+				safe_zones.append(z)
+		if not safe_zones.is_empty():
+			for z in safe_zones:
+				if not player.zone_has_cards(z):
+					return z
+			return safe_zones[0]
+
+	# Column-dependent on opponent's battle cards: prefer zones where opponent has cards
 	if "column_dependent_battle" in tags:
 		for z in valid_zones:
 			if not player.zone_has_cards(z) and opponent.zone_has_cards(z):
