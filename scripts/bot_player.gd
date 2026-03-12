@@ -769,8 +769,8 @@ func _on_choice_requested(player_id: int, options: Array[String], _prompt: Strin
 	if player_id != bot_player_id:
 		return
 	await _delay()
-	# Pick first option (can be refined per-card later)
-	effect_handler.resolve_choice(0)
+	# Last option is generally the strongest
+	effect_handler.resolve_choice(options.size() - 1)
 
 
 # --- Hand discard ---
@@ -839,7 +839,33 @@ func _card_sort_value(card: Dictionary) -> int:
 	var rank: int = card.get("rank", 0)
 	# Primary: highest CP or threat (whichever is larger)
 	# Secondary: lowest rank (subtract rank so lower rank scores higher)
-	return maxi(cp, threat) * 10 - rank
+	var base := maxi(cp, threat) * 10 - rank
+
+	# Monster cards that match the bot's active monster get a big bonus
+	if card.get("card_type") == CardEnums.CardType.MONSTER:
+		var player := game_state.players[bot_player_id]
+		var active := player.current_monster
+		if not active.is_empty():
+			var active_rank: int = active.get("rank", 0)
+			var active_traits: Array = active.get("traits", [])
+			var card_rank: int = card.get("rank", 0)
+			var card_traits: Array = card.get("traits", [])
+			# Burst rank matching active rank is highest priority
+			var has_burst_match := false
+			if effect_handler != null:
+				var effect := effect_handler.get_effect(card)
+				if effect != null and effect.get_burst_rank() == active_rank:
+					has_burst_match = true
+					base += 150000
+			# Same rank as active monster is next best for rank-up
+			if not has_burst_match and card_rank == active_rank:
+				base += 100000
+			# Shared traits indicate same monster line
+			for trait in card_traits:
+				if trait in active_traits:
+					base += 50000
+					break
+	return base
 
 
 func _pick_best_card(cards: Array[Dictionary]) -> Dictionary:
