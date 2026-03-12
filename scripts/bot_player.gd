@@ -6,7 +6,7 @@ extends RefCounted
 
 const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
 
-enum Playstyle { INVASION, COUNTER, BALANCED }
+enum Playstyle {INVASION, COUNTER, BALANCED}
 
 var bot_player_id: int = 1
 var action_delay: float = 0.5
@@ -160,13 +160,20 @@ func _decide_main_action(valid_actions: Array) -> Array:
 		if not playable.is_empty():
 			return [CardEnums.ActionType.PLAY_MONSTER, {"hand_index": playable[0]}]
 
-	# 2. Aggressive: try to invade for the win before playing cards
+	# 2. Aggressive: INVASION playstyle tries to invade early
 	if playstyle == Playstyle.INVASION:
 		if CardEnums.ActionType.INVADE in valid_actions:
+			# At zone 7+, invade for the win
 			if player.monster_zone >= 7 and not z8_blocked:
 				var invade_idx := _find_best_invade_card(player)
 				if invade_idx >= 0:
 					return [CardEnums.ActionType.INVADE, {"hand_index": invade_idx}]
+			# At zone 5 or below, prioritize 2-step invasion to advance quickly
+			# At zone 6, sometimes use 2-step if available (50% chance)
+			if player.monster_zone <= 5 or (player.monster_zone == 6 and randi() % 2 == 0):
+				var two_step_idx := _find_invade_card_with_steps(player, 2)
+				if two_step_idx >= 0:
+					return [CardEnums.ActionType.INVADE, {"hand_index": two_step_idx}]
 
 	# 3. Score all playable cards and play the highest-value one
 	var best_action := _decide_best_card_play(valid_actions, player, opponent, near_winning, z8_blocked)
@@ -184,14 +191,37 @@ func _decide_main_action(valid_actions: Array) -> Array:
 	if CardEnums.ActionType.GAIN_RAGE in valid_actions:
 		var rage_cards := rules_engine.get_monster_cards_for_rage(player)
 		if not rage_cards.is_empty():
-			return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": rage_cards[0]}]
+			# Never discard the only 2-step invasion card — filter it out
+			var safe_rage_cards: Array = []
+			var two_step_count := _count_invade_cards_with_steps(player, 2)
+			for idx in rage_cards:
+				var icon: int = player.hand[idx].get("invasion_icon", 0)
+				if icon == 2 and two_step_count <= 1:
+					continue  # Protect the last 2-step card
+				safe_rage_cards.append(idx)
+
+			if not safe_rage_cards.is_empty():
+				# Invasion with all monsters: discard worst invasion card, keep best
+				if playstyle == Playstyle.INVASION and _all_hand_cards_are_monsters(player):
+					if safe_rage_cards.size() > 1 or _find_best_invade_card(player) < 0:
+						var worst_idx := _find_worst_invade_card(safe_rage_cards, player)
+						return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": worst_idx}]
+				else:
+					return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": safe_rage_cards[0]}]
 
 	# 6. Invade based on position and playstyle
+	#    - INVASION: always tries to invade strategically
+	#    - BALANCED: invades unless a base strategy is in play
+	#    - COUNTER: never invades here (only for the win in step 4)
 	if CardEnums.ActionType.INVADE in valid_actions:
-		# Counter and Balanced playstyles skip strategic invading — only invade for the win (step 4)
-		if playstyle == Playstyle.COUNTER or playstyle == Playstyle.BALANCED:
-			pass
-		else:
+		var try_invade := false
+		match playstyle:
+			Playstyle.INVASION:
+				try_invade = true
+			Playstyle.BALANCED:
+				try_invade = not _has_base_strategy_in_play(player)
+
+		if try_invade:
 			var invade_result := _decide_invade(player, opponent)
 			if not invade_result.is_empty():
 				return invade_result
@@ -521,11 +551,11 @@ func _score_synergies(card_tags: Array[String], player: PlayerState, _opponent: 
 		var synergy_bonus: int = synergy[2]
 		if card_tag in card_tags:
 			if board_tags.has(synergy_tag):
-				bonus += synergy_bonus           # Full bonus: on board
+				bonus += synergy_bonus # Full bonus: on board
 			elif hand_tags.has(synergy_tag):
-				bonus += synergy_bonus / 2        # Half bonus: in hand
+				bonus += synergy_bonus / 2 # Half bonus: in hand
 			elif deck_tags.has(synergy_tag):
-				bonus += synergy_bonus / 4        # Quarter bonus: in deck
+				bonus += synergy_bonus / 4 # Quarter bonus: in deck
 	return bonus
 
 
@@ -725,6 +755,33 @@ func _has_base_strategy_in_play(player: PlayerState) -> bool:
 	return false
 
 
+func _all_hand_cards_are_monsters(player: PlayerState) -> bool:
+	for card in player.hand:
+		if card.get("card_type") != CardEnums.CardType.MONSTER:
+			return false
+	return not player.hand.is_empty()
+
+
+func _count_invade_cards_with_steps(player: PlayerState, steps: int) -> int:
+	var count: int = 0
+	for card in player.hand:
+		if card.get("invasion_icon", 0) == steps:
+			count += 1
+	return count
+
+
+func _find_worst_invade_card(indices: Array, player: PlayerState) -> int:
+	# Find the card with the lowest invasion icon (worst for invading)
+	var worst_idx: int = indices[0]
+	var worst_icon: int = player.hand[worst_idx].get("invasion_icon", 0)
+	for i in indices:
+		var icon: int = player.hand[i].get("invasion_icon", 0)
+		if icon < worst_icon:
+			worst_icon = icon
+			worst_idx = i
+	return worst_idx
+
+
 func _find_best_invade_card(player: PlayerState) -> int:
 	# Prefer 2-step invasion cards, then 1-step
 	var best_idx: int = -1
@@ -752,33 +809,32 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 		if mz == 7 and opponent.zone_has_battle_card(7):
 			return [] # z8 blocked, can't win
 
-	# Zone 6 + have 1-step card → invade to z7 for win setup
 	var inv_idx: int = -1
-	if mz == 6:
-		inv_idx = _find_invade_card_with_steps(player, 1)
-		if inv_idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
 
-	# Heavy invade path: z1→z3 (2-step), z3→z4 (1-step), z4→z6 (2-step), z6→z7 (1-step)
-	if mz == 1:
+	if playstyle == Playstyle.INVASION:
+		# Aggressive: invade at any zone, prefer 2-step then any
 		inv_idx = _find_invade_card_with_steps(player, 2)
-		if inv_idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
-	elif mz == 3:
-		inv_idx = _find_invade_card_with_steps(player, 1)
 		if inv_idx < 0:
+			inv_idx = _find_best_invade_card(player)
+		if inv_idx >= 0:
+			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
+	else:
+		# Balanced: conservative invade path
+		# Zone 6 → z7 for win setup
+		if mz == 6:
+			inv_idx = _find_invade_card_with_steps(player, 1)
+			if inv_idx >= 0:
+				return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
+		# z1→z3 (2-step), z3→z4 (1 or 2-step), z4→z6 (2-step)
+		if mz == 1 or mz == 4:
 			inv_idx = _find_invade_card_with_steps(player, 2)
-		if inv_idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
-	elif mz == 4:
-		inv_idx = _find_invade_card_with_steps(player, 2)
-		if inv_idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
-
-	# Conservative: don't invade from z2 or z5 unless we have a clear path
-	# In z7+, invade aggressively
-	if mz >= 7:
-		inv_idx = _find_best_invade_card(player)
+		elif mz == 3:
+			inv_idx = _find_invade_card_with_steps(player, 1)
+			if inv_idx < 0:
+				inv_idx = _find_invade_card_with_steps(player, 2)
+		# z7+: invade aggressively
+		elif mz >= 7:
+			inv_idx = _find_best_invade_card(player)
 		if inv_idx >= 0:
 			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
 
