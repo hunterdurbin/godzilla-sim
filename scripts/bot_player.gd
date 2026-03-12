@@ -633,12 +633,16 @@ func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: P
 		if z in valid_zones and not player.zone_has_cards(z):
 			return z
 
-	# Fallback: occupied zones in priority order
-	for z in priority:
-		if z in valid_zones:
-			return z
-
-	return valid_zones[0]
+	# Fallback: occupied zones — pick the one with lowest CP card to overwrite
+	var lowest_cp: int = 999999
+	var lowest_cp_zone: int = valid_zones[0]
+	for z in valid_zones:
+		var zone_card := player.get_zone_top_card(z)
+		var cp: int = zone_card.get("counter_power", 0) if not zone_card.is_empty() else 0
+		if cp < lowest_cp:
+			lowest_cp = cp
+			lowest_cp_zone = z
+	return lowest_cp_zone
 
 
 func _get_zone_priority(monster_zone: int) -> Array[int]:
