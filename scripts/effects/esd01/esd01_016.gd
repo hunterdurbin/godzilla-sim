@@ -11,6 +11,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone", "column_dependent_monster"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1 # 0-indexed
 	var column_zones := get_opponent_column_zones(monster_zone_idx)

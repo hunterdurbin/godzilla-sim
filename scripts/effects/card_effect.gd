@@ -325,6 +325,9 @@ func get_bot_tags() -> Array[String]:
 	##   "weakens_opponent" — reduces opponent's CP, rank, or field presence
 	##   "zone_dependent"   — effect requires being in a specific zone to activate
 	##                        (override get_bot_preferred_zones to specify which zones)
+	##   "evolves"             — evolves a battle card (searches deck and stacks)
+	##   "plays_from_discard"  — plays cards from the discard pile to the field
+	##   "evolution"            — this card has Evolution and can be evolved into a stronger form
 	##   "column_dependent_battle" — effect is stronger in the same column as opponent's battle card
 	##   "column_dependent_monster" — effect depends on opponent's monster being in the same column
 	return []

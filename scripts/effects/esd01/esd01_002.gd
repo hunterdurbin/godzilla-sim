@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["searches_deck"]
+
+
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	await _search_for_burst_godzilla(ctx)
 

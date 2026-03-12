@@ -11,5 +11,9 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["disrupts_hand"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 2)

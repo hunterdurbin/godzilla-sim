@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	# Only during your turn
 	if ctx.game_state.current_player_id != ctx.owner.player_id:

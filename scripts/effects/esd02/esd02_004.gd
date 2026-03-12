@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	# Cost: discard 1 battle card from hand (optional — player may skip)
 	var discarded := await ctx.effect_handler.select_hand_card(

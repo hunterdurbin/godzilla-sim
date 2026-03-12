@@ -4,6 +4,8 @@ extends RefCounted
 ## AI bot that controls Player 2 in Solo v Bot mode.
 ## Connects to the same signals as game_board.gd and calls resolve methods directly.
 
+const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
+
 var bot_player_id: int = 1
 var action_delay: float = 0.5
 
@@ -112,6 +114,10 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 
 func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, near_winning: bool, z8_blocked: bool) -> int:
 	var score: int = 10 # Base score: always worth playing
+
+	# Score based on trigger map (applies to all cards with effects)
+	score += _score_from_triggers(card, opponent)
+
 	var effect := effect_handler.get_effect(card)
 	if not effect:
 		return score
@@ -172,6 +178,18 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 	if "heals_deck" in tags:
 		score += 5
 
+	# Evolution upgrades existing cards for free
+	if "evolves" in tags:
+		score += 20
+
+	# Playing cards from discard builds board presence
+	if "plays_from_discard" in tags:
+		score += 20
+
+	# Evolution cards gain value over time by upgrading into stronger forms
+	if "evolution" in tags:
+		score += 15
+
 	# Zone/column dependent cards get a small bonus — their placement logic
 	# will handle picking the right zone, but they're worth prioritizing
 	if "zone_dependent" in tags:
@@ -200,6 +218,85 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 			score += 15
 
 	return score
+
+
+func _score_from_triggers(card: Dictionary, opponent: PlayerState) -> int:
+	## Infer a score bonus from the trigger map when bot tags are not defined.
+	var script_path: String = card.get("effect_script", "")
+	if script_path.is_empty():
+		return 0
+	var triggers: Array = _TriggerMap.TRIGGERS.get(script_path, [])
+	if triggers.is_empty():
+		return 0
+
+	var bonus: int = 0
+
+	# Triggers that indicate the card does something on entry (strategies, monsters)
+	if "on_enter" in triggers:
+		bonus += 10
+
+	# CP-related triggers suggest defensive value
+	if "get_counter_power_modifier" in triggers or "get_field_cp_modifiers" in triggers \
+			or "get_total_cp_modifier" in triggers:
+		bonus += 15
+
+	# Threat modifier suggests offensive value
+	if "get_threat_level_modifier" in triggers:
+		bonus += 10
+
+	# When invading triggers suggest invade synergy
+	if "on_when_invading" in triggers:
+		bonus += 5
+
+	# Phase start triggers suggest ongoing value
+	if "on_phase_start" in triggers:
+		bonus += 10
+
+	# Rage-related triggers suggest combo potential
+	if "on_rage_changed" in triggers or "on_opponent_rage_changed" in triggers:
+		bonus += 10
+
+	# Monster played triggers suggest synergy with rank-ups
+	if "on_monster_played" in triggers:
+		bonus += 5
+
+	# Destruction replacement suggests resilience
+	if "on_would_be_destroyed" in triggers or "can_be_destroyed" in triggers:
+		bonus += 10
+
+	# Engagement restriction suggests strong defensive value
+	if "get_engagement_restriction" in triggers:
+		bonus += 15
+		if opponent.monster_zone >= 5:
+			bonus += 10
+
+	# Invasion prevention is valuable when opponent is advancing
+	if "prevents_opponent_invasion" in triggers:
+		bonus += 5
+		if opponent.monster_zone >= 5:
+			bonus += 15
+
+	# Blocked zones restrict opponent
+	if "get_blocked_opponent_zones" in triggers:
+		bonus += 10
+
+	# Strategy blocking is situationally valuable
+	if "blocks_opponent_strategy_plays" in triggers:
+		bonus += 10
+
+	# Counter immunity is strong
+	if "get_counter_immunity_threshold" in triggers:
+		bonus += 15
+
+	# Extra end phase advance helps win faster
+	if "get_extra_end_phase_advance" in triggers:
+		bonus += 15
+
+	# Opponent field rank reduction weakens their board
+	if "get_opponent_field_rank_modifier" in triggers:
+		bonus += 10
+
+	return bonus
 
 
 func _decide_battle_play(player: PlayerState, opponent: PlayerState) -> Array:
