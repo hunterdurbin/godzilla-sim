@@ -26,7 +26,7 @@ func analyze_deck() -> void:
 	var player := game_state.players[bot_player_id]
 	var all_cards: Array[Dictionary] = []
 	all_cards.append_array(player.hand)
-	all_cards.append_array(player.deck)
+	all_cards.append_array(player.main_deck)
 
 	# Count tag occurrences and trigger map signals across all cards
 	var invasion_score: float = 0.0
@@ -176,9 +176,9 @@ func _decide_main_action(valid_actions: Array) -> Array:
 	# 4. Win check: zone 7+ and opponent zone 8 empty → invade to win
 	if CardEnums.ActionType.INVADE in valid_actions:
 		if player.monster_zone >= 7 and not z8_blocked:
-			var invade_idx := _find_best_invade_card(player)
-			if invade_idx >= 0:
-				return [CardEnums.ActionType.INVADE, {"hand_index": invade_idx}]
+			var win_invade_idx := _find_best_invade_card(player)
+			if win_invade_idx >= 0:
+				return [CardEnums.ActionType.INVADE, {"hand_index": win_invade_idx}]
 
 	# 5. Gain rage (hand cycling) - discard monster cards
 	if CardEnums.ActionType.GAIN_RAGE in valid_actions:
@@ -220,18 +220,18 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 
 	# Score playable battle cards
 	if CardEnums.ActionType.PLAY_BATTLE in valid_actions:
-		var playable := rules_engine.get_playable_battle_cards(player, opponent)
-		for hand_idx in playable:
-			var card: Dictionary = player.hand[hand_idx]
-			var valid_zones := rules_engine.get_valid_zones_for_card(card, player, opponent)
+		var battle_playable := rules_engine.get_playable_battle_cards(player, opponent)
+		for hand_idx in battle_playable:
+			var b_card: Dictionary = player.hand[hand_idx]
+			var valid_zones := rules_engine.get_valid_zones_for_card(b_card, player, opponent)
 			if valid_zones.is_empty():
 				continue
-			var score := _score_card(card, player, opponent, near_winning, z8_blocked)
+			var b_score := _score_card(b_card, player, opponent, near_winning, z8_blocked)
 			# Bonus for base CP value (higher CP cards are more impactful)
-			score += card.get("counter_power", 0) / 1000
-			if score > best_score:
-				best_score = score
-				var zone := _pick_battle_zone(valid_zones, player, opponent, card)
+			b_score += b_card.get("counter_power", 0) / 1000
+			if b_score > best_score:
+				best_score = b_score
+				var zone := _pick_battle_zone(valid_zones, player, opponent, b_card)
 				best_result = [CardEnums.ActionType.PLAY_BATTLE, {"hand_index": hand_idx, "zone_index": zone}]
 
 	return best_result
@@ -489,32 +489,32 @@ func _score_synergies(card_tags: Array[String], player: PlayerState, _opponent: 
 		var zone_card := player.get_zone_top_card(z)
 		if zone_card.is_empty():
 			continue
-		var effect := effect_handler.get_effect(zone_card)
-		if effect:
-			for tag in effect.get_bot_tags():
+		var zone_effect := effect_handler.get_effect(zone_card)
+		if zone_effect:
+			for tag in zone_effect.get_bot_tags():
 				board_tags[tag] = board_tags.get(tag, 0) + 1
 	for sz_card in player.strategy_zones:
 		if sz_card.is_empty():
 			continue
-		var effect := effect_handler.get_effect(sz_card)
-		if effect:
-			for tag in effect.get_bot_tags():
+		var sz_effect := effect_handler.get_effect(sz_card)
+		if sz_effect:
+			for tag in sz_effect.get_bot_tags():
 				board_tags[tag] = board_tags.get(tag, 0) + 1
 
 	# Collect tags from hand (near-future potential)
 	var hand_tags: Dictionary = {}
-	for card in player.hand:
-		var effect := effect_handler.get_effect(card)
-		if effect:
-			for tag in effect.get_bot_tags():
+	for h_card in player.hand:
+		var h_effect := effect_handler.get_effect(h_card)
+		if h_effect:
+			for tag in h_effect.get_bot_tags():
 				hand_tags[tag] = hand_tags.get(tag, 0) + 1
 
 	# Collect tags from deck (distant potential)
 	var deck_tags: Dictionary = {}
-	for card in player.main_deck:
-		var effect := effect_handler.get_effect(card)
-		if effect:
-			for tag in effect.get_bot_tags():
+	for d_card in player.main_deck:
+		var d_effect := effect_handler.get_effect(d_card)
+		if d_effect:
+			for tag in d_effect.get_bot_tags():
 				deck_tags[tag] = deck_tags.get(tag, 0) + 1
 
 	var bonus: int = 0
@@ -612,6 +612,8 @@ func _get_zone_priority(monster_zone: int) -> Array[int]:
 	# Brackets mean "any order" — those sub-arrays get shuffled.
 	# Values use 1-based zone numbers, converted to 0-indexed at the end.
 	var priority: Array = []
+	var shuffled_group: Array = []
+	var shuffled_group2: Array = []
 	match monster_zone:
 		1:
 			# z1 => 8,7,6,5,4,3,2 or 7,8,6,5,4,3,2
@@ -621,51 +623,50 @@ func _get_zone_priority(monster_zone: int) -> Array[int]:
 				priority = [7, 8, 6, 5, 4, 3, 2]
 		2:
 			# z2 => 8,7,6,5,4,3,1 or 7,8,6,5,4,3,1 or 1,8,7,6,5,4,3
-			var roll := randi() % 3
-			if roll == 0:
+			if randi() % 3 == 0:
 				priority = [8, 7, 6, 5, 4, 3, 1]
-			elif roll == 1:
+			elif randi() % 2 == 0:
 				priority = [7, 8, 6, 5, 4, 3, 1]
 			else:
 				priority = [1, 8, 7, 6, 5, 4, 3]
 		3:
 			# z3 => 8,7,6,5,4,[2,1] or 7,8,6,5,4,[2,1]
-			var tail := _shuffled([2, 1])
+			shuffled_group = _shuffled([2, 1])
 			if randi() % 2 == 0:
-				priority = [8, 7, 6, 5, 4] + tail
+				priority = [8, 7, 6, 5, 4] + shuffled_group
 			else:
-				priority = [7, 8, 6, 5, 4] + tail
+				priority = [7, 8, 6, 5, 4] + shuffled_group
 		4:
 			# z4 => 8,7,6,5,[3,2,1] or [1,2,3],8,7,6,5
-			var group := _shuffled([3, 2, 1])
+			shuffled_group = _shuffled([3, 2, 1])
 			if randi() % 2 == 0:
-				priority = [8, 7, 6, 5] + group
+				priority = [8, 7, 6, 5] + shuffled_group
 			else:
-				priority = group + [8, 7, 6, 5]
+				priority = shuffled_group + [8, 7, 6, 5]
 		5:
 			# z5 => 8,[1,2,3],4,7,6 or [1,2,3],8,4,7,6
-			var group := _shuffled([1, 2, 3])
+			shuffled_group = _shuffled([1, 2, 3])
 			if randi() % 2 == 0:
-				priority = [8] + group + [4, 7, 6]
+				priority = [8] + shuffled_group + [4, 7, 6]
 			else:
-				priority = group + [8, 4, 7, 6]
+				priority = shuffled_group + [8, 4, 7, 6]
 		6:
 			# z6 => 8,[1,2,3,5],4,7 or [1,2,3],[8,4,5],7
 			if randi() % 2 == 0:
-				var group := _shuffled([1, 2, 3, 5])
-				priority = [8] + group + [4, 7]
+				shuffled_group = _shuffled([1, 2, 3, 5])
+				priority = [8] + shuffled_group + [4, 7]
 			else:
-				var front := _shuffled([1, 2, 3])
-				var mid := _shuffled([8, 4, 5])
-				priority = front + mid + [7]
+				shuffled_group = _shuffled([1, 2, 3])
+				shuffled_group2 = _shuffled([8, 4, 5])
+				priority = shuffled_group + shuffled_group2 + [7]
 		7:
 			# z7 => [1,2,3],6,5,4,8
-			var group := _shuffled([1, 2, 3])
-			priority = group + [6, 5, 4, 8]
+			shuffled_group = _shuffled([1, 2, 3])
+			priority = shuffled_group + [6, 5, 4, 8]
 		8:
 			# z8 => [1,2,3],7,6,5,4
-			var group := _shuffled([1, 2, 3])
-			priority = group + [7, 6, 5, 4]
+			shuffled_group = _shuffled([1, 2, 3])
+			priority = shuffled_group + [7, 6, 5, 4]
 		_:
 			priority = _shuffled([1, 2, 3, 4, 5, 6, 7, 8])
 
@@ -717,33 +718,34 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 			return [] # z8 blocked, can't win
 
 	# Zone 6 + have 1-step card → invade to z7 for win setup
+	var inv_idx: int = -1
 	if mz == 6:
-		var idx := _find_invade_card_with_steps(player, 1)
-		if idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": idx}]
+		inv_idx = _find_invade_card_with_steps(player, 1)
+		if inv_idx >= 0:
+			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
 
 	# Heavy invade path: z1→z3 (2-step), z3→z4 (1-step), z4→z6 (2-step), z6→z7 (1-step)
 	if mz == 1:
-		var idx := _find_invade_card_with_steps(player, 2)
-		if idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": idx}]
+		inv_idx = _find_invade_card_with_steps(player, 2)
+		if inv_idx >= 0:
+			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
 	elif mz == 3:
-		var idx := _find_invade_card_with_steps(player, 1)
-		if idx < 0:
-			idx = _find_invade_card_with_steps(player, 2)
-		if idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": idx}]
+		inv_idx = _find_invade_card_with_steps(player, 1)
+		if inv_idx < 0:
+			inv_idx = _find_invade_card_with_steps(player, 2)
+		if inv_idx >= 0:
+			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
 	elif mz == 4:
-		var idx := _find_invade_card_with_steps(player, 2)
-		if idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": idx}]
+		inv_idx = _find_invade_card_with_steps(player, 2)
+		if inv_idx >= 0:
+			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
 
 	# Conservative: don't invade from z2 or z5 unless we have a clear path
 	# In z7+, invade aggressively
 	if mz >= 7:
-		var idx := _find_best_invade_card(player)
-		if idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": idx}]
+		inv_idx = _find_best_invade_card(player)
+		if inv_idx >= 0:
+			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
 
 	return []
 
@@ -873,8 +875,8 @@ func _card_sort_value(card: Dictionary) -> int:
 			if not has_burst_match and card_rank == active_rank:
 				base += 100000
 			# Shared traits indicate same monster line
-			for trait in card_traits:
-				if trait in active_traits:
+			for t in card_traits:
+				if t in active_traits:
 					base += 50000
 					break
 	return base
