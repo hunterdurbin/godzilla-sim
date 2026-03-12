@@ -1100,9 +1100,18 @@ func _on_zone_target_requested(player_id: int, _target_player_id: int, valid_zon
 	if valid_zones.is_empty() and allow_skip:
 		effect_handler.resolve_zone_target(-1)
 	elif not valid_zones.is_empty():
-		# Use zone priority to pick best zone
 		var player := game_state.players[bot_player_id]
-		var priority := _get_zone_priority(player.monster_zone)
+		var mz := player.monster_zone
+		var can_win := mz == 8 or (mz == 7 and _find_invade_card_with_steps(player, 2) >= 0)
+		# Near win: prioritize z8 to clear the path, then back zones
+		if can_win:
+			var win_priority: Array[int] = [7, 2, 1, 0, 3, 4, 5, 6]
+			for z in win_priority:
+				if z in valid_zones:
+					effect_handler.resolve_zone_target(z)
+					return
+		# Default: use zone placement priority based on monster position
+		var priority := _get_zone_priority(mz)
 		for z in priority:
 			if z in valid_zones:
 				effect_handler.resolve_zone_target(z)
