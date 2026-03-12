@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Check if opponent has any rank 5 or lower battle cards
 	var has_targets: bool = false

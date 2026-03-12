@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["heals_deck", "plays_from_discard"]
+
+
 func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary) -> int:
 	# Only modifies self
 	if target_card.get("id") != ctx.card_data.get("id"):

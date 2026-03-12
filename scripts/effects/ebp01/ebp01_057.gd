@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Find all occupied zones (for swapping)
 	var occupied: Array[int] = []

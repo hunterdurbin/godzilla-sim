@@ -11,6 +11,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var zones_to_destroy: Array[int] = []
 	for i in range(5): # zones 1-5 = indices 0-4

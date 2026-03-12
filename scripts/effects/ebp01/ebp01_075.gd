@@ -15,6 +15,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp", "weakens_opponent"]
+
+
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	return 3000 * ctx.owner.rage
 

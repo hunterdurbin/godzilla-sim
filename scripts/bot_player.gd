@@ -59,6 +59,8 @@ func analyze_deck() -> void:
 			invasion_score += 3.0
 		if "weakens_opponent" in tags:
 			invasion_score += 1.5
+		if "mill_opponent" in tags:
+			invasion_score += 1.0
 		if "column_dependent_monster" in tags:
 			invasion_score += 1.0
 
@@ -296,6 +298,14 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 	if "heals_deck" in tags:
 		score += 5
 
+	# Milling own deck can fuel discard-dependent effects
+	if "mill_self" in tags:
+		score += 10
+
+	# Milling opponent's deck disrupts their draws
+	if "mill_opponent" in tags:
+		score += 10
+
 	# Evolution upgrades existing cards for free
 	if "evolves" in tags:
 		score += 20
@@ -335,11 +345,14 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 		if not opp_column_zones.is_empty():
 			score += 15
 
+	# Tag synergies — bonus when this card synergizes with active/deck tags
+	score += _score_synergies(tags, player, opponent)
+
 	# Playstyle multipliers — amplify tags that align with the deck's strategy
 	if playstyle == Playstyle.INVASION:
 		for tag in tags:
 			if tag in ["boosts_threat", "disrupts_hand", "destroys_zone", "advances_monster",
-					"weakens_opponent", "column_dependent_monster"]:
+					"weakens_opponent", "mill_opponent", "column_dependent_monster"]:
 				score += 10
 	elif playstyle == Playstyle.COUNTER:
 		for tag in tags:
@@ -426,6 +439,91 @@ func _score_from_triggers(card: Dictionary, opponent: PlayerState) -> int:
 	if "get_opponent_field_rank_modifier" in triggers:
 		bonus += 10
 
+	return bonus
+
+
+# --- Tag synergies ---
+# Each entry: [tag_on_card, synergy_tag_on_board_or_deck, bonus]
+# "tag_on_card" is the tag on the card being scored.
+# "synergy_tag" is checked against active board cards and deck/hand.
+const TAG_SYNERGIES: Array = [
+	# mill_self feeds discard pile → plays_from_discard benefits
+	["mill_self", "plays_from_discard", 15],
+	["plays_from_discard", "mill_self", 15],
+	# heals_deck replenishes → evolution needs cards in deck to search
+	["heals_deck", "evolution", 15],
+	["evolution", "heals_deck", 10],
+	# evolves triggers evolution → evolution cards on board benefit
+	["evolves", "evolution", 20],
+	["evolution", "evolves", 10],
+	# destroys_zone clears path → advances_monster pushes forward
+	["destroys_zone", "advances_monster", 10],
+	["advances_monster", "destroys_zone", 10],
+	# boosts_threat + weakens_opponent → harder to counter
+	["boosts_threat", "weakens_opponent", 10],
+	["weakens_opponent", "boosts_threat", 10],
+	# mill_self fills discard → cards that check discard count benefit
+	["mill_self", "boosts_cp", 5],
+	# searches_deck + evolution → find evolution targets
+	["searches_deck", "evolution", 10],
+	# disrupts_hand + destroys_zone → total board control
+	["disrupts_hand", "destroys_zone", 10],
+	# blocks_invade + boosts_cp → lock down defense
+	["blocks_invade", "boosts_cp", 10],
+]
+
+
+func _score_synergies(card_tags: Array[String], player: PlayerState, _opponent: PlayerState) -> int:
+	## Check if this card's tags synergize with tags on active board cards or in deck/hand.
+	if card_tags.is_empty():
+		return 0
+
+	# Collect tags from all active board cards (zones + strategies)
+	var board_tags: Dictionary = {}
+	for z in range(8):
+		var zone_card := player.get_zone_top_card(z)
+		if zone_card.is_empty():
+			continue
+		var effect := effect_handler.get_effect(zone_card)
+		if effect:
+			for tag in effect.get_bot_tags():
+				board_tags[tag] = board_tags.get(tag, 0) + 1
+	for sz_card in player.strategy_zones:
+		if sz_card.is_empty():
+			continue
+		var effect := effect_handler.get_effect(sz_card)
+		if effect:
+			for tag in effect.get_bot_tags():
+				board_tags[tag] = board_tags.get(tag, 0) + 1
+
+	# Collect tags from hand (near-future potential)
+	var hand_tags: Dictionary = {}
+	for card in player.hand:
+		var effect := effect_handler.get_effect(card)
+		if effect:
+			for tag in effect.get_bot_tags():
+				hand_tags[tag] = hand_tags.get(tag, 0) + 1
+
+	# Collect tags from deck (distant potential)
+	var deck_tags: Dictionary = {}
+	for card in player.main_deck:
+		var effect := effect_handler.get_effect(card)
+		if effect:
+			for tag in effect.get_bot_tags():
+				deck_tags[tag] = deck_tags.get(tag, 0) + 1
+
+	var bonus: int = 0
+	for synergy in TAG_SYNERGIES:
+		var card_tag: String = synergy[0]
+		var synergy_tag: String = synergy[1]
+		var synergy_bonus: int = synergy[2]
+		if card_tag in card_tags:
+			if board_tags.has(synergy_tag):
+				bonus += synergy_bonus           # Full bonus: on board
+			elif hand_tags.has(synergy_tag):
+				bonus += synergy_bonus / 2        # Half bonus: in hand
+			elif deck_tags.has(synergy_tag):
+				bonus += synergy_bonus / 4        # Quarter bonus: in deck
 	return bonus
 
 
@@ -687,23 +785,44 @@ func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 
 
 func _pick_discard_indices(player: PlayerState, count: int) -> Array[int]:
-	# Prefer discarding monster cards (for cycling), then lowest-value cards
+	## Priority: monster cards first, then non-playable cards, then random.
+	var opponent := game_state.players[1 - bot_player_id]
 	var monster_indices: Array[int] = []
-	var other_indices: Array[int] = []
+	var non_playable_indices: Array[int] = []
+	var playable_indices: Array[int] = []
+
+	# Categorize hand cards
+	var playable_battles := rules_engine.get_playable_battle_cards(player, opponent)
+	var playable_strategies := rules_engine.get_playable_strategy_cards(player)
+	var playable_set: Dictionary = {}
+	for idx in playable_battles:
+		playable_set[idx] = true
+	for idx in playable_strategies:
+		playable_set[idx] = true
+
 	for i in range(player.hand.size()):
-		if player.hand[i].get("card_type") == CardEnums.CardType.MONSTER:
+		var card: Dictionary = player.hand[i]
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
 			monster_indices.append(i)
+		elif not playable_set.has(i):
+			non_playable_indices.append(i)
 		else:
-			other_indices.append(i)
+			playable_indices.append(i)
 
 	var result: Array[int] = []
-	# Add monsters first
+	# 1. Monster cards first (least useful in hand)
 	for idx in monster_indices:
 		if result.size() >= count:
 			break
 		result.append(idx)
-	# Then other cards
-	for idx in other_indices:
+	# 2. Non-playable cards (can't use them anyway)
+	for idx in non_playable_indices:
+		if result.size() >= count:
+			break
+		result.append(idx)
+	# 3. Playable cards randomly (shuffle to avoid predictability)
+	playable_indices.shuffle()
+	for idx in playable_indices:
 		if result.size() >= count:
 			break
 		result.append(idx)
@@ -712,15 +831,46 @@ func _pick_discard_indices(player: PlayerState, count: int) -> Array[int]:
 
 # --- Deck search ---
 
+func _card_sort_value(card: Dictionary) -> int:
+	## Score a card for selection priority: highest CP/threat first, then lowest rank.
+	## Higher return value = better pick.
+	var cp: int = card.get("counter_power", 0)
+	var threat: int = card.get("threat_level", 0)
+	var rank: int = card.get("rank", 0)
+	# Primary: highest CP or threat (whichever is larger)
+	# Secondary: lowest rank (subtract rank so lower rank scores higher)
+	return maxi(cp, threat) * 10 - rank
+
+
+func _pick_best_card(cards: Array[Dictionary]) -> Dictionary:
+	## Pick the best card from a list using _card_sort_value.
+	if cards.is_empty():
+		return {}
+	var best: Dictionary = cards[0]
+	var best_val: int = _card_sort_value(best)
+	for i in range(1, cards.size()):
+		var val := _card_sort_value(cards[i])
+		if val > best_val:
+			best_val = val
+			best = cards[i]
+	return best
+
+
+func _sort_cards_by_value(cards: Array[Dictionary]) -> Array[Dictionary]:
+	## Sort cards by _card_sort_value descending (best first).
+	var sorted: Array[Dictionary] = cards.duplicate()
+	sorted.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return _card_sort_value(a) > _card_sort_value(b))
+	return sorted
+
+
 func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], _prompt: String) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
-	# Pick first matching card, or empty dict to skip
-	if not matching_cards.is_empty():
-		effect_handler.resolve_deck_search(matching_cards[0])
-	else:
-		effect_handler.resolve_deck_search({})
+	# Pick best matching card by CP/threat then lowest rank
+	var best := _pick_best_card(matching_cards)
+	effect_handler.resolve_deck_search(best)
 
 
 # --- Deck arrange ---
@@ -739,10 +889,11 @@ func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary]
 	if player_id != bot_player_id:
 		return
 	await _delay()
-	# Pick first N matching cards (where N = min_count)
+	# Pick best N matching cards sorted by CP/threat then lowest rank
+	var sorted := _sort_cards_by_value(matching_cards)
 	var selected: Array[Dictionary] = []
-	for i in range(mini(min_count, matching_cards.size())):
-		selected.append(matching_cards[i])
+	for i in range(mini(min_count, sorted.size())):
+		selected.append(sorted[i])
 	effect_handler.resolve_card_select(selected)
 
 
@@ -752,12 +903,20 @@ func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int]
 	if player_id != bot_player_id:
 		return
 	await _delay()
-	if valid_indices.is_empty() and allow_skip:
+	if valid_indices.is_empty():
 		effect_handler.resolve_hand_card_selection(-1)
-	elif not valid_indices.is_empty():
-		effect_handler.resolve_hand_card_selection(valid_indices[0])
-	else:
-		effect_handler.resolve_hand_card_selection(-1)
+		return
+	# Pick the hand card with highest CP/threat, lowest rank
+	var player := game_state.players[bot_player_id]
+	var best_idx: int = valid_indices[0]
+	var best_val: int = _card_sort_value(player.hand[best_idx])
+	for i in range(1, valid_indices.size()):
+		var idx: int = valid_indices[i]
+		var val := _card_sort_value(player.hand[idx])
+		if val > best_val:
+			best_val = val
+			best_idx = idx
+	effect_handler.resolve_hand_card_selection(best_idx)
 
 
 # --- Zone target ---

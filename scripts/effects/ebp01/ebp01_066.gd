@@ -14,6 +14,10 @@ extends CardEffect
 ## Implementation notes: Strategy counter immunity via get_counter_immunity_threshold
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat", "weakens_opponent"]
+
+
 func on_discard_from_hand(ctx: EffectContext) -> void:
 	ctx.owner.rage += 2
 	ctx.owner.rage_changed.emit(ctx.owner.rage)

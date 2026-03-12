@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["advances_monster"]
+
+
 func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	var discarded := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,

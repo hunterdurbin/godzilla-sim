@@ -12,6 +12,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func on_counter_success(ctx: EffectContext) -> void:
 	# Awakening4: must be in zone 4 or beyond
 	if ctx.owner.monster_zone < 4:

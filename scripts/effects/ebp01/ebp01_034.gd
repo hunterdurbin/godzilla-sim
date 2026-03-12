@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["plays_from_discard"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
 	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(ctx.owner, monster_zone_idx)
