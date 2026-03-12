@@ -39,46 +39,167 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 func _decide_main_action(valid_actions: Array) -> Array:
 	var player := game_state.players[bot_player_id]
 	var opponent := game_state.players[1 - bot_player_id]
+	var near_winning := player.monster_zone >= 6
+	var z8_blocked := opponent.zone_has_battle_card(7)
 
-	# 1. Win check: zone 7+ and have 2-step invade card and opponent zone 8 empty
-	if CardEnums.ActionType.INVADE in valid_actions:
-		if player.monster_zone >= 7 and not opponent.zone_has_battle_card(7):
-			var invade_idx := _find_best_invade_card(player)
-			if invade_idx >= 0:
-				return [CardEnums.ActionType.INVADE, {"hand_index": invade_idx}]
-
-	# 2. Play monster if available (increases rage/threat)
+	# 1. Play monster if available (increases rage/threat, no downside)
 	if CardEnums.ActionType.PLAY_MONSTER in valid_actions:
 		var playable := rules_engine.get_playable_monsters(player)
 		if not playable.is_empty():
 			return [CardEnums.ActionType.PLAY_MONSTER, {"hand_index": playable[0]}]
 
-	# 3. Play strategy if available
-	if CardEnums.ActionType.PLAY_STRATEGY in valid_actions:
-		var playable := rules_engine.get_playable_strategy_cards(player)
-		if not playable.is_empty():
-			return [CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": playable[0]}]
+	# 2. Score all playable cards and play the highest-value one
+	var best_action := _decide_best_card_play(valid_actions, player, opponent, near_winning, z8_blocked)
+	if not best_action.is_empty():
+		return best_action
 
-	# 4. Play battle cards using zone priority
-	if CardEnums.ActionType.PLAY_BATTLE in valid_actions:
-		var result := _decide_battle_play(player, opponent)
-		if not result.is_empty():
-			return result
+	# 3. Win check: zone 7+ and opponent zone 8 empty → invade to win
+	if CardEnums.ActionType.INVADE in valid_actions:
+		if player.monster_zone >= 7 and not z8_blocked:
+			var invade_idx := _find_best_invade_card(player)
+			if invade_idx >= 0:
+				return [CardEnums.ActionType.INVADE, {"hand_index": invade_idx}]
 
-	# 5. Gain rage (hand cycling) - discard monster cards
+	# 4. Gain rage (hand cycling) - discard monster cards
 	if CardEnums.ActionType.GAIN_RAGE in valid_actions:
 		var rage_cards := rules_engine.get_monster_cards_for_rage(player)
 		if not rage_cards.is_empty():
 			return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": rage_cards[0]}]
 
-	# 6. Invade based on position
+	# 5. Invade based on position
 	if CardEnums.ActionType.INVADE in valid_actions:
 		var invade_result := _decide_invade(player, opponent)
 		if not invade_result.is_empty():
 			return invade_result
 
-	# 7. Pass
+	# 6. Pass
 	return [CardEnums.ActionType.PASS, {}]
+
+
+func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent: PlayerState, near_winning: bool, z8_blocked: bool) -> Array:
+	## Score all playable strategies and battle cards, pick the highest-value one.
+	var best_score: int = -1
+	var best_result: Array = []
+
+	# Score playable strategies
+	if CardEnums.ActionType.PLAY_STRATEGY in valid_actions:
+		var playable := rules_engine.get_playable_strategy_cards(player)
+		for hand_idx in playable:
+			var card: Dictionary = player.hand[hand_idx]
+			var score := _score_card(card, player, opponent, near_winning, z8_blocked)
+			if score > best_score:
+				best_score = score
+				best_result = [CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": hand_idx}]
+
+	# Score playable battle cards
+	if CardEnums.ActionType.PLAY_BATTLE in valid_actions:
+		var playable := rules_engine.get_playable_battle_cards(player, opponent)
+		for hand_idx in playable:
+			var card: Dictionary = player.hand[hand_idx]
+			var valid_zones := rules_engine.get_valid_zones_for_card(card, player, opponent)
+			if valid_zones.is_empty():
+				continue
+			var score := _score_card(card, player, opponent, near_winning, z8_blocked)
+			# Bonus for base CP value (higher CP cards are more impactful)
+			score += card.get("counter_power", 0) / 1000
+			if score > best_score:
+				best_score = score
+				var zone := _pick_battle_zone(valid_zones, player, opponent, card)
+				best_result = [CardEnums.ActionType.PLAY_BATTLE, {"hand_index": hand_idx, "zone_index": zone}]
+
+	return best_result
+
+
+func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, near_winning: bool, z8_blocked: bool) -> int:
+	var score: int = 10 # Base score: always worth playing
+	var effect := effect_handler.get_effect(card)
+	if not effect:
+		return score
+
+	var tags: Array[String] = effect.get_bot_tags()
+	if tags.is_empty():
+		return score
+
+	# Zone destruction is extremely valuable when near winning and z8 is blocked
+	if "destroys_zone" in tags:
+		score += 30
+		if near_winning and z8_blocked:
+			score += 50 # Could clear the path to win
+
+	# CP boosts help with counter defense
+	if "boosts_cp" in tags:
+		score += 20
+		if opponent.monster_zone >= 6:
+			score += 15 # More valuable when opponent is close
+
+	# Threat boosts help with winning counter checks
+	if "boosts_threat" in tags:
+		score += 15
+
+	# Card draw improves future options
+	if "draws_cards" in tags:
+		score += 15
+
+	# Hand disruption weakens opponent
+	if "disrupts_hand" in tags:
+		score += 20
+
+	# Blocking zones restricts opponent's plays
+	if "blocks_zone" in tags:
+		score += 15
+
+	# Blocking invasion prevents opponent from advancing
+	if "blocks_invade" in tags:
+		score += 10
+		if opponent.monster_zone >= 5:
+			score += 20 # Very valuable when opponent is close to winning
+
+	# Deck search finds key cards
+	if "searches_deck" in tags:
+		score += 15
+
+	# Monster advance helps push toward winning
+	if "advances_monster" in tags:
+		score += 20
+		if near_winning:
+			score += 15
+
+	# Weakening opponent's field presence
+	if "weakens_opponent" in tags:
+		score += 15
+
+	# Returning cards to deck
+	if "heals_deck" in tags:
+		score += 5
+
+	# Zone/column dependent cards get a small bonus — their placement logic
+	# will handle picking the right zone, but they're worth prioritizing
+	if "zone_dependent" in tags:
+		var preferred: Array[int] = effect.get_bot_preferred_zones()
+		# Bonus if the preferred zone is relevant to the current game state
+		for z in preferred:
+			if z == player.monster_zone - 1 or z == player.monster_zone:
+				score += 10
+				break
+
+	if "column_dependent_battle" in tags:
+		# More valuable when opponent has cards on the field to mirror
+		var opp_card_count: int = 0
+		for z in range(8):
+			if opponent.zone_has_cards(z):
+				opp_card_count += 1
+		if opp_card_count > 0:
+			score += 10 + opp_card_count * 3
+
+	if "column_dependent_monster" in tags:
+		# Valuable when opponent's monster is on the field (always is, but zone matters)
+		# Higher score when bot has zones in the same column as opponent's monster
+		var opp_monster_idx: int = opponent.monster_zone - 1
+		var opp_column_zones := CardEffect.get_opponent_column_zones(opp_monster_idx)
+		if not opp_column_zones.is_empty():
+			score += 15
+
+	return score
 
 
 func _decide_battle_play(player: PlayerState, opponent: PlayerState) -> Array:
@@ -86,18 +207,48 @@ func _decide_battle_play(player: PlayerState, opponent: PlayerState) -> Array:
 	if playable.is_empty():
 		return []
 
-	# Pick the first playable battle card and best zone
+	# Pick the first playable battle card and best zone, considering effect tags
 	for hand_idx in playable:
 		var card: Dictionary = player.hand[hand_idx]
 		var valid_zones := rules_engine.get_valid_zones_for_card(card, player, opponent)
 		if valid_zones.is_empty():
 			continue
-		var zone := _pick_battle_zone(valid_zones, player, opponent)
+		var zone := _pick_battle_zone(valid_zones, player, opponent, card)
 		return [CardEnums.ActionType.PLAY_BATTLE, {"hand_index": hand_idx, "zone_index": zone}]
 	return []
 
 
-func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: PlayerState) -> int:
+func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: PlayerState, card: Dictionary = {}) -> int:
+	# Check card effect tags for zone preferences
+	var effect := effect_handler.get_effect(card) if not card.is_empty() else null
+	var tags: Array[String] = effect.get_bot_tags() if effect else []
+
+	# Zone-dependent: prefer the card's preferred zones
+	if "zone_dependent" in tags and effect:
+		var preferred: Array[int] = effect.get_bot_preferred_zones()
+		# Try preferred empty zones first
+		for z in preferred:
+			if z in valid_zones and not player.zone_has_cards(z):
+				return z
+		# Then preferred occupied zones
+		for z in preferred:
+			if z in valid_zones:
+				return z
+
+	# Column-dependent on monster: prefer zones in same column as opponent's monster
+	if "column_dependent_monster" in tags:
+		var opp_monster_idx: int = opponent.monster_zone - 1
+		var opp_column_zones := CardEffect.get_opponent_column_zones(opp_monster_idx)
+		for z in valid_zones:
+			if z in opp_column_zones and not player.zone_has_cards(z):
+				return z
+
+	# Column-dependent: prefer zones where opponent has cards (same column)
+	if "column_dependent_battle" in tags:
+		for z in valid_zones:
+			if not player.zone_has_cards(z) and opponent.zone_has_cards(z):
+				return z
+
 	# Priority override: if bot in z1-6 and opponent in z7/z8, prioritize z8 first
 	if player.monster_zone <= 6 and opponent.monster_zone >= 7:
 		if 7 in valid_zones and not player.zone_has_cards(7):
