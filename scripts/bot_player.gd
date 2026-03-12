@@ -936,6 +936,41 @@ func _pick_discard_indices(player: PlayerState, count: int) -> Array[int]:
 
 # --- Deck search ---
 
+func _pick_evolution_card(candidates: Array[Dictionary]) -> Dictionary:
+	## Pick an evolution candidate only if it has >= CP than the card being evolved.
+	## Prefer highest rank, then highest CP.
+	if candidates.is_empty():
+		return {}
+
+	# Find the zone card being evolved (has evolution_rank set)
+	var player := game_state.players[bot_player_id]
+	var current_cp: int = 0
+	for z in range(8):
+		var zone_card := player.get_zone_top_card(z)
+		if not zone_card.is_empty() and zone_card.get("evolution_rank", -1) >= 0:
+			current_cp = zone_card.get("counter_power", 0)
+			break
+
+	# Filter candidates with CP >= current card's CP
+	var valid: Array[Dictionary] = []
+	for card in candidates:
+		if card.get("counter_power", 0) >= current_cp:
+			valid.append(card)
+
+	if valid.is_empty():
+		return {}  # Skip evolution — no upgrade available
+
+	# Sort: highest rank first, then highest CP
+	valid.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		var rank_a: int = a.get("rank", 0)
+		var rank_b: int = b.get("rank", 0)
+		if rank_a != rank_b:
+			return rank_a > rank_b
+		return a.get("counter_power", 0) > b.get("counter_power", 0)
+	)
+	return valid[0]
+
+
 func _card_sort_value(card: Dictionary) -> int:
 	## Score a card for selection priority: highest CP/threat first, then lowest rank.
 	## Higher return value = better pick.
@@ -995,13 +1030,19 @@ func _sort_cards_by_value(cards: Array[Dictionary]) -> Array[Dictionary]:
 	return sorted
 
 
-func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], _prompt: String) -> void:
+func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], prompt: String) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
-	# Pick best matching card by CP/threat then lowest rank
-	var best := _pick_best_card(matching_cards)
-	effect_handler.resolve_deck_search(best)
+
+	var selected: Dictionary
+	# Evolution search: only evolve if a candidate has >= CP, prefer highest rank
+	if "evolve" in prompt.to_lower():
+		selected = _pick_evolution_card(matching_cards)
+	else:
+		# Default: pick best matching card by CP/threat then lowest rank
+		selected = _pick_best_card(matching_cards)
+	effect_handler.resolve_deck_search(selected)
 
 
 # --- Deck arrange ---
