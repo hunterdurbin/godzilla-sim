@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp"]
+
+
+
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	var card_id: String = ctx.card_data.get("id", "")
 	var count: int = 0

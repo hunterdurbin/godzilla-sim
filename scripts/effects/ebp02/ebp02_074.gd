@@ -11,6 +11,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var opp_rank: int = ctx.opponent.get_monster_rank()
 	if opp_rank > 0:

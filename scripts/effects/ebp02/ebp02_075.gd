@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["weakens_opponent"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var has_mechagodzilla: bool = false
 	for i in range(8):

@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp"]
+
+
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
 	var adjacent := get_adjacent_zones(monster_zone_idx)

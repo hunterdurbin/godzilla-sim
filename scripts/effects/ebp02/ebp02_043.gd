@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp"]
+
+
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	var cards_under: int = ctx.owner.monster_stack.size()
 	if cards_under == 0:

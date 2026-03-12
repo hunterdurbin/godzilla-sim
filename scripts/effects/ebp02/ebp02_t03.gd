@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat"]
+
+
 func get_threat_level_modifier(ctx: EffectContext) -> int:
 	# Only grants TL bonus if owner's current monster has the SpaceGodzilla trait
 	var monster_traits: Array = ctx.owner.current_monster.get("traits", [])

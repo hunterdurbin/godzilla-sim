@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var my_name: String = ctx.card_data.get("name", "")
 	var to_stack: Array[Dictionary] = []

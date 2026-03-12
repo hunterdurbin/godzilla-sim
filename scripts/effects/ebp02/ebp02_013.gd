@@ -11,6 +11,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["advances_monster"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.rage >= 2 and ctx.owner.monster_zone < 5:
 		await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 5)

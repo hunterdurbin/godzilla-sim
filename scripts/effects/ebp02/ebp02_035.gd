@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["heals_deck"]
+
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Count Biollante cards in discard
 	var bio_count: int = 0

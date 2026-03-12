@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["disrupts_hand"]
+
+
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	if new_rage <= old_rage:
 		return

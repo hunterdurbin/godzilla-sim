@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat", "advances_monster"]
+
+
+
 func get_threat_level_modifier(ctx: EffectContext) -> int:
 	if ctx.owner.count_zone_tokens_by_id("EBP02-T03") >= 3:
 		return 20000

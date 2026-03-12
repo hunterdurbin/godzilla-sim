@@ -14,6 +14,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp", "draws_cards"]
+
+
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	for i in range(8):
 		var top := ctx.owner.get_zone_top_card(i)

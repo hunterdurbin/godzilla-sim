@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["advances_monster"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Move 1 battle card to empty zone
 	var occupied: Array[int] = []

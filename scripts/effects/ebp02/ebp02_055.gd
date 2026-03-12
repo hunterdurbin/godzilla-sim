@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["blocks_zone", "column_dependent_monster"]
+
+
+
 func get_blocked_opponent_zones(ctx: EffectContext) -> Array[int]:
 	# Awakening4: only active when monster is at zone 4+
 	if ctx.owner.monster_zone < 4:

@@ -14,6 +14,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var options: Array[String] = []
 	var option_ids: Array[int] = []

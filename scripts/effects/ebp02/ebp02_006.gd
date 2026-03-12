@@ -14,6 +14,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone", "boosts_threat"]
+
+
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	var has_third_form: bool = false
 	for card in ctx.owner.monster_stack:
