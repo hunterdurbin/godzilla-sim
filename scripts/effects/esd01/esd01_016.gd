@@ -12,7 +12,7 @@ extends CardEffect
 
 
 func get_bot_tags() -> Array[String]:
-	return ["destroys_zone", "column_dependent_monster"]
+	return ["destroys_zone", "column_dependent_monster_self"]
 
 
 func on_enter(ctx: EffectContext) -> void:

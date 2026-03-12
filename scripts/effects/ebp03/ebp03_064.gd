@@ -14,6 +14,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Check if opponent had a card destroyed this turn
 	if ctx.opponent.cards_destroyed_this_turn.is_empty():

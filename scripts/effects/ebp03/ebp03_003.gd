@@ -11,6 +11,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat", "destroys_zone"]
+
+
 func get_burst_rank() -> int:
 	return 2
 

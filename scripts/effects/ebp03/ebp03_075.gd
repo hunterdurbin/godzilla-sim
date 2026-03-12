@@ -11,6 +11,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["evolves"]
+
+
 func is_base_strategy() -> bool:
 	return true
 

@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["searches_deck", "plays_other_cards"]
+
+
 func get_phase_start_filter() -> Dictionary:
 	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
 

@@ -11,13 +11,17 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Column layout from left to right (your perspective looking at opponent's board):
 	# Col 1: zones 5/6, Col 2: zones 4/7, Col 3: zones 3/8, Col 4: zone 2, Col 5: zone 1
 	const COLUMNS: Array = [[4, 5], [3, 6], [2, 7], [1], [0]]
 
 	# Find columns that have battle cards, preserving left-to-right order
-	var occupied_columns: Array = []  # Array of {col_idx, zones: Array[int]}
+	var occupied_columns: Array = [] # Array of {col_idx, zones: Array[int]}
 	var total_battle_cards: int = 0
 	for col in COLUMNS:
 		var col_zones: Array[int] = []

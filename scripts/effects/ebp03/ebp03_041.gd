@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["weakens_opponent", "column_dependent_monster"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var my_zone: int = find_zone_of_card(ctx)
 	if my_zone < 0:

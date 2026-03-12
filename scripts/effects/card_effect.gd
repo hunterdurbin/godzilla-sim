@@ -332,6 +332,7 @@ func get_bot_tags() -> Array[String]:
 	##   "evolution"            — this card has Evolution and can be evolved into a stronger form
 	##   "column_dependent_battle" — effect is stronger in the same column as opponent's battle card
 	##   "column_dependent_monster" — effect depends on opponent's monster being in the same column
+	##   "column_dependent_monster_self" — effect depends on own monster being in the same column as opponent's battle card(s)
 	##   "column_avoid_battle_cards" — effect is harmful when opponent's battle cards are in the same column
 	##   "retreats_opponent" — retreats/moves opponent's monster backward
 	##   "plays_other_cards" — plays/creates additional cards (tokens, from hand, etc.) onto the field

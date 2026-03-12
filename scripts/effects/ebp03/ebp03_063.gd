@@ -12,6 +12,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["plays_from_discard"]
+
+
 func is_discard_play_optional() -> bool:
 	return true
 

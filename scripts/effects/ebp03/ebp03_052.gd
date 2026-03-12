@@ -15,6 +15,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["searches_deck", "draws_cards"]
+
+
 func on_would_be_destroyed(ctx: EffectContext) -> bool:
 	# Add all cards under this card to hand before destruction
 	var my_zone: int = find_zone_of_card(ctx)

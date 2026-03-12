@@ -15,6 +15,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["draws_cards", "mill_self"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var player := ctx.owner
 	if player.main_deck.size() == 0:

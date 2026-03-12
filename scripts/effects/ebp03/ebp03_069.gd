@@ -10,11 +10,15 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["disrupts_hand", "destroys_zone"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 4)
 
 	# Check for Mechagodzilla in zone 8
-	var zone8_card := ctx.owner.get_zone_top_card(7)  # zone 8 = index 7
+	var zone8_card := ctx.owner.get_zone_top_card(7) # zone 8 = index 7
 	if zone8_card.is_empty():
 		return
 

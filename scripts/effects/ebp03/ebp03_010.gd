@@ -11,6 +11,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["disrupts_hand", "boosts_threat"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var battle_count := 0
 	for i in range(8):

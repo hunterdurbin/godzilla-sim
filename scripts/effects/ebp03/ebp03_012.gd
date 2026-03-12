@@ -10,6 +10,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["searches_deck", "plays_other_cards"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Count strategy cards in play
 	var strategy_count := 0

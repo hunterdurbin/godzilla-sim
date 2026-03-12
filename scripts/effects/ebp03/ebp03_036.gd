@@ -10,9 +10,17 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["searches_deck", "plays_other_cards", "zone_dependent"]
+
+
+func get_bot_preferred_zones() -> Array[int]:
+	return [7]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var zone_idx := find_zone_of_card(ctx)
-	if zone_idx != 7:  # zone 8 = index 7
+	if zone_idx != 7: # zone 8 = index 7
 		return
 
 	# Only from hand (not through evolution, search, or other effects)

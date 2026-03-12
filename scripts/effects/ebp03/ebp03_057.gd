@@ -11,6 +11,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone", "boosts_cp"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var empty_count := ctx.opponent.get_empty_zone_indices().size()
 	if empty_count < 3:

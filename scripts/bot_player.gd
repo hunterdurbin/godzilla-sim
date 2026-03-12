@@ -188,8 +188,13 @@ func _decide_main_action(valid_actions: Array) -> Array:
 
 	# 6. Invade based on position and playstyle
 	if CardEnums.ActionType.INVADE in valid_actions:
-		# Defensive playstyle skips strategic invading — only invades for the win (step 4)
-		if playstyle != Playstyle.COUNTER:
+		# Counter playstyle skips strategic invading — only invades for the win (step 4)
+		if playstyle == Playstyle.COUNTER:
+			pass
+		# Balanced/Counter with a base strategy in play should not invade strategically
+		elif playstyle == Playstyle.BALANCED and _has_base_strategy_in_play(player):
+			pass
+		else:
 			var invade_result := _decide_invade(player, opponent)
 			if not invade_result.is_empty():
 				return invade_result
@@ -675,6 +680,13 @@ func _shuffled(arr: Array) -> Array:
 	var copy := arr.duplicate()
 	copy.shuffle()
 	return copy
+
+
+func _has_base_strategy_in_play(player: PlayerState) -> bool:
+	for sz in player.strategy_zones:
+		if not sz.is_empty() and sz.get("is_base", false):
+			return true
+	return false
 
 
 func _find_best_invade_card(player: PlayerState) -> int:

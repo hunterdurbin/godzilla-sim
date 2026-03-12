@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["evolves", "retreats_opponent"]
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Collect eligible Mothra zones with Evolution
 	var eligible: Array[int] = []
