@@ -169,8 +169,8 @@ func _decide_main_action(valid_actions: Array) -> Array:
 		if not playable.is_empty():
 			return [CardEnums.ActionType.PLAY_MONSTER, {"hand_index": playable[0]}]
 
-	# 2. Aggressive: INVASION playstyle tries to invade early (skip when behind on CP)
-	if not needs_defense and config.use_early_invasion and playstyle == Playstyle.INVASION:
+	# 2. Aggressive: INVASION playstyle tries to invade early
+	if config.use_early_invasion and playstyle == Playstyle.INVASION:
 		if CardEnums.ActionType.INVADE in valid_actions:
 			# At zone 7+, invade for the win
 			if player.monster_zone >= 7 and not z8_blocked:
