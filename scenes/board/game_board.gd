@@ -11,6 +11,7 @@ var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 # Bot state
 var bot_player: BotPlayer
 var is_bot_game: bool = false
+var _bot_seed_was_explicit: bool = false
 
 # Multiplayer state
 var is_multiplayer_game: bool = false
@@ -885,10 +886,10 @@ func _start_game() -> void:
 
 func _apply_bot_seed() -> void:
 	var s: int = NetworkManager.bot_seed
+	_bot_seed_was_explicit = s >= 0
 	if s < 0:
 		# Auto-generate a seed from the current unseeded RNG
 		s = randi()
-	NetworkManager.bot_seed = s
 	seed(s)
 	print("[Bot] RNG seed: %d" % s)
 	_on_log_message("Seed: %d" % s)
@@ -2876,6 +2877,8 @@ func _execute_rematch() -> void:
 
 		# Solo v Bot: seed RNG for deterministic replays
 		if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
+			if not _bot_seed_was_explicit:
+				NetworkManager.bot_seed = -1
 			_apply_bot_seed()
 
 		turn_manager = TurnManager.new()
