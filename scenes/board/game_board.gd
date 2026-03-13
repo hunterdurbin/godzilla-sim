@@ -879,6 +879,7 @@ func _apply_bot_seed() -> void:
 	NetworkManager.bot_seed = s
 	seed(s)
 	print("[Bot] RNG seed: %d" % s)
+	_on_log_message("Seed: %d" % s)
 
 
 func _setup_bot() -> void:
@@ -2560,6 +2561,10 @@ func _build_bug_report_body() -> String:
 	}
 	lines.append("- **Version:** %s" % NetworkManager.GAME_VERSION)
 	lines.append("- **Mode:** %s" % mode_names.get(NetworkManager.mode, "Unknown"))
+	if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
+		var diff_names := {BotConfig.Difficulty.EASY: "Easy", BotConfig.Difficulty.NORMAL: "Normal", BotConfig.Difficulty.HARD: "Hard"}
+		lines.append("- **Bot Difficulty:** %s" % diff_names.get(NetworkManager.bot_difficulty, "Unknown"))
+		lines.append("- **Bot Seed:** %d" % NetworkManager.bot_seed)
 	var gs: GameState = turn_manager.game_state if turn_manager else null
 	var turn_num: int = gs.turn_number if gs else _client_turn_number
 	var phase: CardEnums.GamePhase = gs.current_phase if gs else _client_phase
