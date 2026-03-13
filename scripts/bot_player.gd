@@ -291,11 +291,13 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 				best_score = score
 				best_result = [CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": hand_idx}]
 
-	# Score playable battle cards
+	# Score playable battle cards — plan zone assignments for all cards at once.
+	# Zone-preferring cards reserve their zones first, then generic cards pick from the rest.
 	if CardEnums.ActionType.PLAY_BATTLE in valid_actions:
 		var battle_playable := rules_engine.get_playable_battle_cards(player, opponent)
-		var best_rank: int = 999
-		var best_cp: int = -1
+
+		# Build scored entries for all playable battle cards
+		var entries: Array[Dictionary] = []
 		for hand_idx in battle_playable:
 			var b_card: Dictionary = player.hand[hand_idx]
 			var valid_zones := rules_engine.get_valid_zones_for_card(b_card, player, opponent)
@@ -304,28 +306,58 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 			var b_score := _score_card(b_card, player, opponent, near_winning, z8_blocked)
 			b_score += b_card.get("counter_power", 0) / config.cp_bonus_divisor
 			if cp_gap > 0:
-				var card_cp: int = b_card.get("counter_power", 0)
-				b_score += card_cp / 500
-			var b_rank: int = b_card.get("rank", 0)
-			var b_cp: int = b_card.get("counter_power", 0)
-			# Tiebreaker: lower rank first, then higher CP, then random
+				b_score += b_card.get("counter_power", 0) / 500
+			var has_zone_pref := _card_has_zone_preference(b_card)
+			entries.append({
+				"hand_idx": hand_idx, "card": b_card, "score": b_score,
+				"valid_zones": valid_zones, "has_zone_pref": has_zone_pref,
+				"rank": b_card.get("rank", 0), "cp": b_card.get("counter_power", 0),
+			})
+
+		# Assign zones: prioritized cards first, then generic cards
+		var reserved_zones: Dictionary = {}  # zone_idx -> hand_idx
+		# Pass 1: zone-preferring cards claim their preferred zones
+		for entry in entries:
+			if not entry.has_zone_pref or not entry.has_zone_pref:
+				continue
+			var zone := _pick_battle_zone(entry.valid_zones, player, opponent, entry.card)
+			reserved_zones[zone] = entry.hand_idx
+			entry["assigned_zone"] = zone
+
+		# Pass 2: generic cards pick zones, avoiding reserved ones
+		for entry in entries:
+			if entry.has("assigned_zone"):
+				continue
+			var available: Array[int] = []
+			for z in entry.valid_zones:
+				if z not in reserved_zones:
+					available.append(z)
+			if available.is_empty():
+				available.assign(entry.valid_zones)  # Fallback: use all zones
+			var zone := _pick_battle_zone(available, player, opponent, entry.card)
+			entry["assigned_zone"] = zone
+
+		# Pick the best entry: highest score, tiebreak by lower rank, higher CP, random
+		var best_rank: int = 999
+		var best_cp: int = -1
+		for entry in entries:
 			var is_better: bool = false
-			if b_score > best_score:
+			if entry.score > best_score:
 				is_better = true
-			elif b_score == best_score:
-				if b_rank < best_rank:
+			elif entry.score == best_score:
+				if entry.rank < best_rank:
 					is_better = true
-				elif b_rank == best_rank:
-					if b_cp > best_cp:
+				elif entry.rank == best_rank:
+					if entry.cp > best_cp:
 						is_better = true
-					elif b_cp == best_cp:
+					elif entry.cp == best_cp:
 						is_better = randi() % 2 == 0
 			if is_better:
-				best_score = b_score
-				best_rank = b_rank
-				best_cp = b_cp
-				var zone := _pick_battle_zone(valid_zones, player, opponent, b_card)
-				best_result = [CardEnums.ActionType.PLAY_BATTLE, {"hand_index": hand_idx, "zone_index": zone}]
+				best_score = entry.score
+				best_rank = entry.rank
+				best_cp = entry.cp
+				best_result = [CardEnums.ActionType.PLAY_BATTLE, {
+					"hand_index": entry.hand_idx, "zone_index": entry.assigned_zone}]
 
 	return best_result
 
@@ -535,6 +567,24 @@ func _score_synergies(card_tags: Array[String], player: PlayerState, _opponent: 
 			elif deck_tags.has(synergy_tag):
 				bonus += int(synergy_bonus * config.synergy_deck_multiplier)
 	return bonus
+
+
+const ZONE_PREF_TAGS: Array[String] = [
+	"zone_dependent", "column_dependent_monster", "column_dependent_monster_self",
+	"column_dependent_battle", "column_avoid_battle_cards",
+]
+
+
+func _card_has_zone_preference(card: Dictionary) -> bool:
+	## Returns true if this card has tags that prefer specific zones.
+	var effect := effect_handler.get_effect(card)
+	if not effect:
+		return false
+	var tags := effect.get_bot_tags()
+	for tag in tags:
+		if tag in ZONE_PREF_TAGS:
+			return true
+	return false
 
 
 func _decide_battle_play(player: PlayerState, opponent: PlayerState) -> Array:
