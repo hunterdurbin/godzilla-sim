@@ -33,6 +33,11 @@ var is_in_game: bool = false  ## True while actively in GameBoard
 var _room_code: String = ""
 var game_mode: String = ""  # "rumble", "no_rules", or "" (private/LAN)
 var is_public_room: bool = false
+var bot_config: BotConfig = BotConfig.normal()
+
+
+func set_bot_difficulty(difficulty: BotConfig.Difficulty) -> void:
+	bot_config = BotConfig.from_difficulty(difficulty)
 
 
 # --- LAN ---

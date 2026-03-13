@@ -869,6 +869,7 @@ func _start_game() -> void:
 
 func _setup_bot() -> void:
 	bot_player = BotPlayer.new()
+	bot_player.config = NetworkManager.bot_config
 	bot_player.bot_player_id = 1
 	bot_player.game_state = turn_manager.game_state
 	bot_player.rules_engine = turn_manager.rules_engine
