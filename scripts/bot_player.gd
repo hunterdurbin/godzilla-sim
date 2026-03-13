@@ -372,6 +372,25 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 	if config.enable_synergies:
 		score += _score_synergies(tags, player, opponent)
 
+	# Opponent-context bonuses — adjust scores based on opponent's current state
+	var opp_hand_size: int = opponent.hand.size()
+	var opp_deck_size: int = opponent.main_deck.size()
+	var opp_zone_count: int = 0
+	for z in range(8):
+		if opponent.zone_has_cards(z):
+			opp_zone_count += 1
+	for tag in tags:
+		if tag == "disrupts_hand" and opp_hand_size >= 5:
+			score += 15
+		elif tag == "mill_opponent" and opp_deck_size <= 15:
+			score += 15
+		elif tag == "destroys_zone" and opp_zone_count >= 5:
+			score += 10
+		elif tag == "weakens_opponent" and opponent.rage >= 3:
+			score += 10
+		elif tag == "boosts_cp" and not _can_counter_opponent():
+			score += 15
+
 	# Playstyle multipliers — amplify tags that align with the deck's strategy
 	if playstyle == Playstyle.INVASION:
 		for tag in tags:
