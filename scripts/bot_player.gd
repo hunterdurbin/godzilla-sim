@@ -1101,8 +1101,48 @@ func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], _promp
 	if player_id != bot_player_id:
 		return
 	await _delay()
-	# Keep all cards in original order
-	effect_handler.resolve_deck_arrange(cards, [])
+
+	var player := game_state.players[bot_player_id]
+	var active := player.current_monster
+	var active_rank: int = active.get("rank", 0) if not active.is_empty() else -1
+	var active_traits: Array = active.get("traits", []) if not active.is_empty() else []
+
+	var keep: Array[Dictionary] = []
+	var discard: Array[Dictionary] = []
+
+	for card in cards:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			# Keep monsters that match active monster (rank-up / burst potential)
+			var dominated := true
+			if not active.is_empty():
+				var card_rank: int = card.get("rank", 0)
+				var card_traits: Array = card.get("traits", [])
+				if card_rank == active_rank:
+					dominated = false  # Same rank = rank-up candidate
+				for t in card_traits:
+					if t in active_traits:
+						dominated = false  # Shared trait = same monster line
+						break
+				if card.get("invasion_icon", 0) > 0:
+					dominated = false  # Has invasion value
+				if effect_handler:
+					var effect := effect_handler.get_effect(card)
+					if effect and effect.get_burst_rank() == active_rank:
+						dominated = false  # Burst rank match
+			else:
+				dominated = false  # No active monster, keep everything
+			if dominated:
+				discard.append(card)
+			else:
+				keep.append(card)
+		else:
+			keep.append(card)
+
+	# Sort kept cards: best on top (first drawn)
+	keep.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return _card_sort_value(a) > _card_sort_value(b))
+
+	effect_handler.resolve_deck_arrange(keep, discard)
 
 
 # --- Card select ---
