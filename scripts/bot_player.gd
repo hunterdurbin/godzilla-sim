@@ -395,13 +395,42 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 	for z in range(8):
 		if opponent.zone_has_cards(z):
 			opp_zone_count += 1
+	# Count opponent battle cards in zones this card can actually target
+	var effective_target_count: int = opp_zone_count
+	if "destroys_zone" in tags:
+		if "column_dependent_monster_self" in tags:
+			var own_monster_idx: int = player.monster_zone - 1
+			var column_zones := CardEffect.get_opponent_column_zones(own_monster_idx)
+			effective_target_count = 0
+			for z in column_zones:
+				if opponent.zone_has_battle_card(z):
+					effective_target_count += 1
+		elif "column_dependent_monster" in tags:
+			var opp_monster_idx: int = opponent.monster_zone - 1
+			var column_zones := CardEffect.get_opponent_column_zones(opp_monster_idx)
+			effective_target_count = 0
+			for z in column_zones:
+				if opponent.zone_has_battle_card(z):
+					effective_target_count += 1
+
 	for tag in tags:
 		if tag == "disrupts_hand" and opp_hand_size >= 5:
 			score += 15
 		elif tag == "mill_opponent" and opp_deck_size <= 15:
 			score += 15
-		elif tag == "destroys_zone" and opp_zone_count >= 5:
-			score += 10
+		elif tag == "destroys_zone":
+			if effective_target_count >= 5:
+				score += 10
+			elif effective_target_count == 0:
+				# No targets — not worth playing unless duplicate in hand (play to thin)
+				var card_id: String = card.get("id", "")
+				var copies_in_hand: int = 0
+				if not card_id.is_empty():
+					for h_card in player.hand:
+						if h_card.get("id", "") == card_id:
+							copies_in_hand += 1
+				if copies_in_hand <= 1:
+					score -= 100  # Heavy penalty — don't play with no targets
 		elif tag == "weakens_opponent" and opponent.rage >= 3:
 			score += 10
 		elif tag == "boosts_cp" and not _can_counter_opponent():
@@ -1379,22 +1408,30 @@ func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, op
 	if mz >= 6 and 7 in valid_zones and opponent.zone_has_cards(7):
 		return 7
 
-	# Priority 2: destroy the opponent's highest-CP card to weaken their counter
+	# Priority 2: destroy the zone with highest total CP (card + adjacent cards)
+	# Adjacent CP acts as tiebreaker — maximizes value for effects that also hit neighbors
 	var cp_modifiers := effect_handler.get_zone_cp_modifiers(opponent.player_id)
 	var best_zone: int = valid_zones[0]
 	var best_cp: int = -1
+	var best_adj_cp: int = -1
 	for z in valid_zones:
 		var zone_card := opponent.get_zone_top_card(z)
 		if zone_card.is_empty():
 			continue
 		var cp: int = zone_card.get("counter_power", 0) + cp_modifiers[z]
-		if cp > best_cp:
+		# Sum adjacent zones' CP as tiebreaker
+		var adj_cp: int = 0
+		for adj_z in CardEffect.get_adjacent_zones(z):
+			var adj_card := opponent.get_zone_top_card(adj_z)
+			if not adj_card.is_empty():
+				adj_cp += adj_card.get("counter_power", 0) + cp_modifiers[adj_z]
+		if cp > best_cp or (cp == best_cp and adj_cp > best_adj_cp):
 			best_cp = cp
+			best_adj_cp = adj_cp
 			best_zone = z
 
 	# If all valid zones are empty, pick one in the bot's invasion path
 	if best_cp < 0:
-		# Prefer zones the bot's monster will pass through
 		for z_num in range(mz + 1, 9):
 			if (z_num - 1) in valid_zones:
 				return z_num - 1
