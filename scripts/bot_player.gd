@@ -452,10 +452,62 @@ func _decide_battle_play(player: PlayerState, opponent: PlayerState) -> Array:
 	return []
 
 
+func _get_crush_zone_indices() -> Array[int]:
+	## Returns 0-indexed zone indices the bot's monster will advance through at end of turn.
+	var player := game_state.players[bot_player_id]
+	var mz := player.monster_zone  # 1-indexed (1-8)
+	if mz >= 8:
+		return []
+	var extra: int = 0
+	if effect_handler:
+		extra = effect_handler.get_extra_end_phase_advance(bot_player_id)
+	var crush_zones: Array[int] = []
+	for i in range(1, 2 + extra):
+		var zone_num: int = mz + i
+		if zone_num > 8:
+			break
+		crush_zones.append(zone_num - 1)  # Convert to 0-indexed
+	return crush_zones
+
+
+func _can_counter_opponent() -> bool:
+	## Returns true if the bot's current counter power meets or exceeds the opponent's threat.
+	var player := game_state.players[bot_player_id]
+	var opponent := game_state.players[1 - bot_player_id]
+	var total_cp: int = player.get_total_counter_power()
+	total_cp += effect_handler.get_counter_power_modifier(player.player_id)
+	var threat: int = opponent.get_threat_level()
+	threat += effect_handler.get_threat_level_modifier(opponent.player_id)
+	return total_cp >= threat
+
+
 func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: PlayerState, card: Dictionary = {}) -> int:
+	# Crush zone awareness: avoid zones the monster will advance through at end of turn
+	var crush_zones := _get_crush_zone_indices()
+	if not crush_zones.is_empty():
+		if _can_counter_opponent():
+			# Bot can already counter — crush zones are expendable.
+			# Prefer furthest crush zone first (highest index = closest to zone 8).
+			crush_zones.sort()
+			for i in range(crush_zones.size() - 1, -1, -1):
+				var z: int = crush_zones[i]
+				if z in valid_zones and not player.zone_has_cards(z):
+					return z
+			# All crush zones occupied or not valid — fall through to normal logic
+		else:
+			# Bot can't counter — cards needed for defense, avoid crush zones
+			var safe_zones: Array[int] = []
+			for z in valid_zones:
+				if z not in crush_zones:
+					safe_zones.append(z)
+			if not safe_zones.is_empty():
+				valid_zones = safe_zones
+
 	# Check card effect tags for zone preferences
 	var effect := effect_handler.get_effect(card) if not card.is_empty() else null
-	var tags: Array[String] = effect.get_bot_tags() if effect else [] as Array[String]
+	var tags: Array[String] = []
+	if effect:
+		tags = effect.get_bot_tags()
 
 	# Zone-dependent: prefer the card's preferred zones
 	if "zone_dependent" in tags and effect:

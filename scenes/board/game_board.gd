@@ -466,6 +466,10 @@ func _ready() -> void:
 	_setup_settings_toggles()
 
 	if not is_multiplayer_game or NetworkManager.is_host():
+		# Solo v Bot: seed RNG for deterministic replays
+		if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
+			_apply_bot_seed()
+
 		# Host / solo: create and run TurnManager
 		turn_manager = TurnManager.new()
 		turn_manager.setup(CardData)
@@ -865,6 +869,16 @@ func _start_game() -> void:
 	_first_player_id = _first_player_result
 	_on_log_message("%s chose to go first." % GameLog.player_name(_first_player_result))
 	turn_manager.start_game(_first_player_result)
+
+
+func _apply_bot_seed() -> void:
+	var s: int = NetworkManager.bot_seed
+	if s < 0:
+		# Auto-generate a seed from the current unseeded RNG
+		s = randi()
+	NetworkManager.bot_seed = s
+	seed(s)
+	print("[Bot] RNG seed: %d" % s)
 
 
 func _setup_bot() -> void:
@@ -2794,6 +2808,10 @@ func _execute_rematch() -> void:
 		# Drop old TurnManager reference (RefCounted — will be GC'd)
 		turn_manager = null
 		await get_tree().process_frame
+
+		# Solo v Bot: seed RNG for deterministic replays
+		if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
+			_apply_bot_seed()
 
 		turn_manager = TurnManager.new()
 		turn_manager.setup(CardData)

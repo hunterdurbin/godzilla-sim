@@ -34,6 +34,7 @@ var _room_code: String = ""
 var game_mode: String = ""  # "rumble", "no_rules", or "" (private/LAN)
 var is_public_room: bool = false
 var bot_config: BotConfig = BotConfig.normal()
+var bot_seed: int = -1  ## Deterministic RNG seed for bot games (-1 = auto-generate)
 
 
 func set_bot_difficulty(difficulty: BotConfig.Difficulty) -> void:

@@ -129,6 +129,7 @@ var monster_trait_bonus: int = 50000
 var playstyle_threshold: float = 0.6
 
 
+
 static func easy() -> BotConfig:
 	var c := BotConfig.new()
 	c.action_delay = 0.7

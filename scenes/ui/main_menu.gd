@@ -113,6 +113,23 @@ func _show_difficulty_popup() -> void:
 
 	vbox.add_child(HSeparator.new())
 
+	# Seed input (debug: paste a seed number to replay an exact game)
+	var seed_row := HBoxContainer.new()
+	seed_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var seed_label := Label.new()
+	seed_label.text = "Seed:"
+	seed_label.add_theme_font_size_override("font_size", 16)
+	seed_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	seed_row.add_child(seed_label)
+	var seed_input := LineEdit.new()
+	seed_input.placeholder_text = "random"
+	seed_input.custom_minimum_size = Vector2(160, 0)
+	seed_input.add_theme_font_size_override("font_size", 16)
+	seed_row.add_child(seed_input)
+	vbox.add_child(seed_row)
+
+	vbox.add_child(HSeparator.new())
+
 	var btn_box := VBoxContainer.new()
 	btn_box.add_theme_constant_override("separation", 8)
 
@@ -131,6 +148,11 @@ func _show_difficulty_popup() -> void:
 		btn.add_theme_color_override("font_color", entry[2])
 		var difficulty: BotConfig.Difficulty = entry[1]
 		btn.pressed.connect(func():
+			var seed_text: String = seed_input.text.strip_edges()
+			if seed_text.is_valid_int():
+				NetworkManager.bot_seed = seed_text.to_int()
+			else:
+				NetworkManager.bot_seed = -1
 			NetworkManager.set_bot_difficulty(difficulty)
 			NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
 			NetworkManager.local_player_id = 0
