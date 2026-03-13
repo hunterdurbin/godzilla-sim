@@ -44,4 +44,4 @@ func _on_download_complete(downloaded: int, skipped: int, failed: int) -> void:
 
 
 func _go_to_main_menu() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
+	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")

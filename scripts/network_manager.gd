@@ -41,6 +41,17 @@ func set_bot_difficulty(difficulty: BotConfig.Difficulty) -> void:
 	bot_config = BotConfig.from_difficulty(difficulty)
 
 
+func change_scene(path: String) -> void:
+	## Change scene safely — disables input on the current scene first to prevent
+	## "_push_unhandled_input_internal: !is_inside_tree()" warnings.
+	var tree := get_tree()
+	var current := tree.current_scene
+	if current:
+		current.process_mode = Node.PROCESS_MODE_DISABLED
+	# Defer to next frame so the process mode change takes effect first
+	tree.call_deferred("change_scene_to_file", path)
+
+
 # --- LAN ---
 
 func host_game(port: int = DEFAULT_PORT) -> Error:

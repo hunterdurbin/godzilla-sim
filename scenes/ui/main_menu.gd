@@ -75,7 +75,7 @@ func _update_start_button() -> void:
 
 func _on_start_pressed() -> void:
 	NetworkManager.mode = NetworkManager.Mode.SOLO
-	get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+	NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
 
 
 func _on_solo_bot_pressed() -> void:
@@ -157,7 +157,7 @@ func _show_difficulty_popup() -> void:
 			NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
 			NetworkManager.local_player_id = 0
 			popup.hide()
-			get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+			NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
 		)
 		btn_box.add_child(btn)
 
@@ -179,15 +179,15 @@ func _show_difficulty_popup() -> void:
 
 
 func _on_lan_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/LanLobby.tscn")
+	NetworkManager.change_scene("res://scenes/ui/LanLobby.tscn")
 
 
 func _on_online_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/OnlinePlay.tscn")
+	NetworkManager.change_scene("res://scenes/ui/OnlinePlay.tscn")
 
 
 func _on_deck_builder_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/DeckBuilder.tscn")
+	NetworkManager.change_scene("res://scenes/ui/DeckBuilder.tscn")
 
 
 func _on_patreon_pressed() -> void:
@@ -195,7 +195,7 @@ func _on_patreon_pressed() -> void:
 
 
 func _on_options_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/Options.tscn")
+	NetworkManager.change_scene("res://scenes/ui/Options.tscn")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -390,7 +390,7 @@ func _show_reconnect_dialog() -> void:
 			print("[Reconnect] version_verified=%s" % NetworkManager.version_verified)
 			if NetworkManager.version_verified:
 				popup.hide()
-				get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+				NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
 			else:
 				status_label.text = "Version mismatch. Cannot reconnect."
 				reconnect_btn.text = "Reconnect"

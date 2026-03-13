@@ -13,11 +13,11 @@ func _ready() -> void:
 
 
 func _on_rumble_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/PublicLobby.tscn")
+	NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
 
 
 func _on_private_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/OnlineLobby.tscn")
+	NetworkManager.change_scene("res://scenes/ui/OnlineLobby.tscn")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -27,4 +27,4 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_back_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
+	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")

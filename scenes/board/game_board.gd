@@ -2661,7 +2661,7 @@ func _on_main_menu_pressed() -> void:
 		NetworkManager.is_in_game = false
 		NetworkManager.notify_leaving()
 		NetworkManager.disconnect_game()
-	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
+	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
 
 
 func _on_rematch_pressed() -> void:
