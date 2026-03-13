@@ -160,6 +160,8 @@ func _decide_main_action(valid_actions: Array) -> Array:
 	var opponent := game_state.players[1 - bot_player_id]
 	var near_winning := player.monster_zone >= 6
 	var z8_blocked := opponent.zone_has_battle_card(7)
+	var cp_gap := _get_cp_gap()  # positive = behind on CP, needs defense
+	var needs_defense := cp_gap > 0
 
 	# 1. Play monster if available (increases rage/threat, no downside)
 	if CardEnums.ActionType.PLAY_MONSTER in valid_actions:
@@ -167,8 +169,8 @@ func _decide_main_action(valid_actions: Array) -> Array:
 		if not playable.is_empty():
 			return [CardEnums.ActionType.PLAY_MONSTER, {"hand_index": playable[0]}]
 
-	# 2. Aggressive: INVASION playstyle tries to invade early
-	if config.use_early_invasion and playstyle == Playstyle.INVASION:
+	# 2. Aggressive: INVASION playstyle tries to invade early (skip when behind on CP)
+	if not needs_defense and config.use_early_invasion and playstyle == Playstyle.INVASION:
 		if CardEnums.ActionType.INVADE in valid_actions:
 			# At zone 7+, invade for the win
 			if player.monster_zone >= 7 and not z8_blocked:
@@ -186,49 +188,35 @@ func _decide_main_action(valid_actions: Array) -> Array:
 					if not _invasion_blocked_by_rage(player, two_step_idx, monsters):
 						return [CardEnums.ActionType.INVADE, {"hand_index": two_step_idx}]
 
-	# 3. Score all playable cards and play the highest-value one
-	var best_action := _decide_best_card_play(valid_actions, player, opponent, near_winning, z8_blocked)
+	# 3. When ahead on CP, gain rage early to build threat before playing cards
+	if not needs_defense and CardEnums.ActionType.GAIN_RAGE in valid_actions:
+		var rage_result := _try_gain_rage(player)
+		if not rage_result.is_empty():
+			return rage_result
+
+	# 4. Score all playable cards and play the highest-value one
+	var best_action := _decide_best_card_play(valid_actions, player, opponent, near_winning, z8_blocked, cp_gap)
 	if not best_action.is_empty():
 		return best_action
 
-	# 4. Win check: zone 7+ and opponent zone 8 empty → invade to win
+	# 5. Win check: zone 7+ and opponent zone 8 empty → invade to win
 	if CardEnums.ActionType.INVADE in valid_actions:
 		if player.monster_zone >= 7 and not z8_blocked:
 			var win_invade_idx := _find_best_invade_card(player)
 			if win_invade_idx >= 0:
 				return [CardEnums.ActionType.INVADE, {"hand_index": win_invade_idx}]
 
-	# 5. Gain rage (hand cycling) - discard monster cards
-	if CardEnums.ActionType.GAIN_RAGE in valid_actions:
-		var rage_cards := rules_engine.get_monster_cards_for_rage(player)
-		if not rage_cards.is_empty():
-			var safe_rage_cards: Array = []
-			if config.protect_two_step_cards:
-				# Never discard the only 2-step invasion card — filter it out
-				var two_step_count := _count_invade_cards_with_steps(player, 2)
-				for idx in rage_cards:
-					var icon: int = player.hand[idx].get("invasion_icon", 0)
-					if icon == 2 and two_step_count <= 1:
-						continue  # Protect the last 2-step card
-					safe_rage_cards.append(idx)
-			else:
-				for idx in rage_cards:
-					safe_rage_cards.append(idx)
+	# 6. Gain rage (when behind on CP, rage was skipped earlier — try now as fallback)
+	if needs_defense and CardEnums.ActionType.GAIN_RAGE in valid_actions:
+		var rage_result := _try_gain_rage(player)
+		if not rage_result.is_empty():
+			return rage_result
 
-			if not safe_rage_cards.is_empty():
-				# Invasion with all monsters: discard worst invasion card, keep best
-				if playstyle == Playstyle.INVASION and _all_hand_cards_are_monsters(player):
-					if safe_rage_cards.size() > 1 or _find_best_invade_card(player) < 0:
-						var worst_idx := _find_worst_invade_card(safe_rage_cards, player)
-						return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": worst_idx}]
-				else:
-					return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": safe_rage_cards[0]}]
-
-	# 6. Invade based on position and playstyle
+	# 7. Invade based on position and playstyle (skip when behind on CP)
 	#    - INVASION: always tries to invade strategically
 	#    - BALANCED: invades unless a base strategy is in play (when config allows)
-	#    - COUNTER: never invades here (only for the win in step 4)
-	if CardEnums.ActionType.INVADE in valid_actions:
+	#    - COUNTER: never invades here (only for the win in step 5)
+	if not needs_defense and CardEnums.ActionType.INVADE in valid_actions:
 		var try_invade := false
 		match playstyle:
 			Playstyle.INVASION:
@@ -243,12 +231,44 @@ func _decide_main_action(valid_actions: Array) -> Array:
 			if not invade_result.is_empty():
 				return invade_result
 
-	# 7. Pass
+	# 8. Pass
 	return [CardEnums.ActionType.PASS, {}]
 
 
-func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent: PlayerState, near_winning: bool, z8_blocked: bool) -> Array:
+func _try_gain_rage(player: PlayerState) -> Array:
+	## Try to gain rage by discarding a monster card. Returns empty array if not possible.
+	var rage_cards := rules_engine.get_monster_cards_for_rage(player)
+	if rage_cards.is_empty():
+		return []
+
+	var safe_rage_cards: Array = []
+	if config.protect_two_step_cards:
+		var two_step_count := _count_invade_cards_with_steps(player, 2)
+		for idx in rage_cards:
+			var icon: int = player.hand[idx].get("invasion_icon", 0)
+			if icon == 2 and two_step_count <= 1:
+				continue
+			safe_rage_cards.append(idx)
+	else:
+		for idx in rage_cards:
+			safe_rage_cards.append(idx)
+
+	if safe_rage_cards.is_empty():
+		return []
+
+	if playstyle == Playstyle.INVASION and _all_hand_cards_are_monsters(player):
+		if safe_rage_cards.size() > 1 or _find_best_invade_card(player) < 0:
+			var worst_idx := _find_worst_invade_card(safe_rage_cards, player)
+			return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": worst_idx}]
+	else:
+		return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": safe_rage_cards[0]}]
+
+	return []
+
+
+func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent: PlayerState, near_winning: bool, z8_blocked: bool, cp_gap: int = 0) -> Array:
 	## Score all playable strategies and battle cards, pick the highest-value one.
+	## When cp_gap > 0 (behind on CP), battle cards get a large bonus proportional to their CP.
 	var best_score: int = -1
 	var best_result: Array = []
 
@@ -273,6 +293,10 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 			var b_score := _score_card(b_card, player, opponent, near_winning, z8_blocked)
 			# Bonus for base CP value (higher CP cards are more impactful)
 			b_score += b_card.get("counter_power", 0) / config.cp_bonus_divisor
+			# When behind on CP, strongly prefer high-CP battle cards for defense
+			if cp_gap > 0:
+				var card_cp: int = b_card.get("counter_power", 0)
+				b_score += card_cp / 500  # Large bonus scaled by card's CP
 			if b_score > best_score:
 				best_score = b_score
 				var zone := _pick_battle_zone(valid_zones, player, opponent, b_card)
@@ -474,15 +498,20 @@ func _get_crush_zone_indices() -> Array[int]:
 	return crush_zones
 
 
-func _can_counter_opponent() -> bool:
-	## Returns true if the bot's current counter power meets or exceeds the opponent's threat.
+func _get_cp_gap() -> int:
+	## Returns opponent threat minus bot CP. Positive = bot is behind, negative/zero = bot is ahead.
 	var player := game_state.players[bot_player_id]
 	var opponent := game_state.players[1 - bot_player_id]
 	var total_cp: int = player.get_total_counter_power()
 	total_cp += effect_handler.get_counter_power_modifier(player.player_id)
 	var threat: int = opponent.get_threat_level()
 	threat += effect_handler.get_threat_level_modifier(opponent.player_id)
-	return total_cp >= threat
+	return threat - total_cp
+
+
+func _can_counter_opponent() -> bool:
+	## Returns true if the bot's current counter power meets or exceeds the opponent's threat.
+	return _get_cp_gap() <= 0
 
 
 func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: PlayerState, card: Dictionary = {}) -> int:
