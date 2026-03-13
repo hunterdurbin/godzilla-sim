@@ -15,10 +15,6 @@ func get_bot_tags() -> Array[String]:
 	return ["boosts_cp", "zone_dependent"]
 
 
-func get_bot_preferred_zones() -> Array[int]:
-	return [7]
-
-
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	var mods := {}
 	var zone8_card := ctx.owner.get_zone_top_card(7) # zone 8 = index 7

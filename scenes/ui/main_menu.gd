@@ -75,25 +75,146 @@ func _update_start_button() -> void:
 
 func _on_start_pressed() -> void:
 	NetworkManager.mode = NetworkManager.Mode.SOLO
-	get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+	NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
 
 
 func _on_solo_bot_pressed() -> void:
-	NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
-	NetworkManager.local_player_id = 0
-	get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+	_show_difficulty_popup()
+
+
+func _show_difficulty_popup() -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(360, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+
+	var title := Label.new()
+	title.text = "Bot Difficulty"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vbox.add_child(title)
+
+	vbox.add_child(HSeparator.new())
+
+	# Seed input (debug: paste a seed number to replay an exact game)
+	var seed_row := HBoxContainer.new()
+	seed_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	var seed_label := Label.new()
+	seed_label.text = "Seed:"
+	seed_label.add_theme_font_size_override("font_size", 16)
+	seed_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	seed_row.add_child(seed_label)
+	var seed_input := LineEdit.new()
+	seed_input.placeholder_text = "random"
+	seed_input.custom_minimum_size = Vector2(160, 0)
+	seed_input.add_theme_font_size_override("font_size", 16)
+	seed_row.add_child(seed_input)
+	vbox.add_child(seed_row)
+
+	# Action speed slider
+	var speed_row := VBoxContainer.new()
+	speed_row.add_theme_constant_override("separation", 4)
+	var speed_label := Label.new()
+	speed_label.text = "Bot Speed: automatic"
+	speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	speed_label.add_theme_font_size_override("font_size", 16)
+	speed_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	speed_row.add_child(speed_label)
+	var speed_slider := HSlider.new()
+	speed_slider.min_value = 0
+	speed_slider.max_value = 10
+	speed_slider.step = 1
+	speed_slider.value = 0
+	speed_slider.custom_minimum_size = Vector2(280, 0)
+	speed_slider.value_changed.connect(func(val: float):
+		if val == 0:
+			speed_label.text = "Bot Speed: automatic"
+		else:
+			speed_label.text = "Bot Speed: %.1fs" % (val * 0.1)
+	)
+	speed_row.add_child(speed_slider)
+	vbox.add_child(speed_row)
+
+	vbox.add_child(HSeparator.new())
+
+	var btn_box := VBoxContainer.new()
+	btn_box.add_theme_constant_override("separation", 8)
+
+	var difficulties: Array = [
+		["Easy", BotConfig.Difficulty.EASY, Color(0.3, 0.8, 0.3)],
+		["Normal", BotConfig.Difficulty.NORMAL, Color(0.9, 0.7, 0.1)],
+		["Hard", BotConfig.Difficulty.HARD, Color(0.9, 0.3, 0.1)],
+	]
+
+	for entry in difficulties:
+		var btn := Button.new()
+		btn.text = entry[0]
+		btn.custom_minimum_size = Vector2(200, 45)
+		btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		btn.add_theme_font_size_override("font_size", 22)
+		btn.add_theme_color_override("font_color", entry[2])
+		var difficulty: BotConfig.Difficulty = entry[1]
+		btn.pressed.connect(func():
+			var seed_text: String = seed_input.text.strip_edges()
+			if seed_text.is_valid_int():
+				NetworkManager.bot_seed = seed_text.to_int()
+			else:
+				NetworkManager.bot_seed = -1
+			NetworkManager.set_bot_difficulty(difficulty)
+			# Apply speed override if not automatic
+			if speed_slider.value > 0:
+				NetworkManager.bot_config.action_delay = speed_slider.value * 0.1
+			NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
+			NetworkManager.local_player_id = 0
+			popup.hide()
+			NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
+		)
+		btn_box.add_child(btn)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(200, 40)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.pressed.connect(func(): popup.hide())
+	btn_box.add_child(cancel_btn)
+
+	vbox.add_child(btn_box)
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+
+	add_child(popup)
+	popup.popup_centered()
 
 
 func _on_lan_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/LanLobby.tscn")
+	NetworkManager.change_scene("res://scenes/ui/LanLobby.tscn")
 
 
 func _on_online_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/OnlinePlay.tscn")
+	NetworkManager.change_scene("res://scenes/ui/OnlinePlay.tscn")
 
 
 func _on_deck_builder_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/DeckBuilder.tscn")
+	NetworkManager.change_scene("res://scenes/ui/DeckBuilder.tscn")
 
 
 func _on_patreon_pressed() -> void:
@@ -101,7 +222,7 @@ func _on_patreon_pressed() -> void:
 
 
 func _on_options_pressed() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/Options.tscn")
+	NetworkManager.change_scene("res://scenes/ui/Options.tscn")
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -296,7 +417,7 @@ func _show_reconnect_dialog() -> void:
 			print("[Reconnect] version_verified=%s" % NetworkManager.version_verified)
 			if NetworkManager.version_verified:
 				popup.hide()
-				get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+				NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
 			else:
 				status_label.text = "Version mismatch. Cannot reconnect."
 				reconnect_btn.text = "Reconnect"

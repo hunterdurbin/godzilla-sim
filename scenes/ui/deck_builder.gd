@@ -1414,7 +1414,7 @@ func _on_back_pressed() -> void:
 
 
 func _go_to_menu() -> void:
-	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
+	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
 
 
 func _on_unsaved_confirmed() -> void:

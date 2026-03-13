@@ -466,6 +466,10 @@ func _ready() -> void:
 	_setup_settings_toggles()
 
 	if not is_multiplayer_game or NetworkManager.is_host():
+		# Solo v Bot: seed RNG for deterministic replays
+		if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
+			_apply_bot_seed()
+
 		# Host / solo: create and run TurnManager
 		turn_manager = TurnManager.new()
 		turn_manager.setup(CardData)
@@ -867,8 +871,20 @@ func _start_game() -> void:
 	turn_manager.start_game(_first_player_result)
 
 
+func _apply_bot_seed() -> void:
+	var s: int = NetworkManager.bot_seed
+	if s < 0:
+		# Auto-generate a seed from the current unseeded RNG
+		s = randi()
+	NetworkManager.bot_seed = s
+	seed(s)
+	print("[Bot] RNG seed: %d" % s)
+	_on_log_message("Seed: %d" % s)
+
+
 func _setup_bot() -> void:
 	bot_player = BotPlayer.new()
+	bot_player.config = NetworkManager.bot_config
 	bot_player.bot_player_id = 1
 	bot_player.game_state = turn_manager.game_state
 	bot_player.rules_engine = turn_manager.rules_engine
@@ -2545,6 +2561,10 @@ func _build_bug_report_body() -> String:
 	}
 	lines.append("- **Version:** %s" % NetworkManager.GAME_VERSION)
 	lines.append("- **Mode:** %s" % mode_names.get(NetworkManager.mode, "Unknown"))
+	if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
+		var diff_names := {BotConfig.Difficulty.EASY: "Easy", BotConfig.Difficulty.NORMAL: "Normal", BotConfig.Difficulty.HARD: "Hard"}
+		lines.append("- **Bot Difficulty:** %s" % diff_names.get(NetworkManager.bot_difficulty, "Unknown"))
+		lines.append("- **Bot Seed:** %d" % NetworkManager.bot_seed)
 	var gs: GameState = turn_manager.game_state if turn_manager else null
 	var turn_num: int = gs.turn_number if gs else _client_turn_number
 	var phase: CardEnums.GamePhase = gs.current_phase if gs else _client_phase
@@ -2646,7 +2666,7 @@ func _on_main_menu_pressed() -> void:
 		NetworkManager.is_in_game = false
 		NetworkManager.notify_leaving()
 		NetworkManager.disconnect_game()
-	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
+	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
 
 
 func _on_rematch_pressed() -> void:
@@ -2793,6 +2813,10 @@ func _execute_rematch() -> void:
 		# Drop old TurnManager reference (RefCounted — will be GC'd)
 		turn_manager = null
 		await get_tree().process_frame
+
+		# Solo v Bot: seed RNG for deterministic replays
+		if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
+			_apply_bot_seed()
 
 		turn_manager = TurnManager.new()
 		turn_manager.setup(CardData)
