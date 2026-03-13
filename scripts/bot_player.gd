@@ -917,12 +917,123 @@ func _on_choice_requested(player_id: int, options: Array[String], _prompt: Strin
 	var pick: int
 	match config.choice_pick_mode:
 		0:
-			pick = 0  # First option
+			pick = 0
 		1:
-			pick = randi() % options.size()  # Random
+			pick = randi() % options.size()
 		_:
-			pick = options.size() - 1  # Last option (generally strongest)
+			pick = _score_choice_options(options)
 	effect_handler.resolve_choice(pick)
+
+
+func _score_choice_options(options: Array[String]) -> int:
+	## Score each choice option based on keywords and game state, return best index.
+	var player := game_state.players[bot_player_id]
+	var opponent := game_state.players[1 - bot_player_id]
+
+	# Zone selection pattern: "Zone N: CardName" — pick highest CP zone
+	if options.size() > 0 and options[0].begins_with("Zone "):
+		return _pick_zone_choice(options, opponent)
+
+	var best_idx: int = options.size() - 1  # Default: last option
+	var best_score: int = -1
+
+	for i in range(options.size()):
+		var opt: String = options[i].to_lower()
+		var score: int = 0
+
+		# Destruction — more valuable when opponent has lots of cards on field
+		if "destroy" in opt:
+			var opp_zone_count: int = 0
+			for z in range(8):
+				if opponent.zone_has_cards(z):
+					opp_zone_count += 1
+			score += 20 + opp_zone_count * 3
+
+			# Prefer higher rank thresholds (more targets)
+			for rank in [8, 7, 6, 5, 4, 3]:
+				if "rank %d" % rank in opt:
+					score += rank * 2
+					break
+
+			# Prefer destroying more cards
+			for count in [3, 2, 1]:
+				if "destroy %d" % count in opt or "destroy all" in opt:
+					score += count * 5
+					break
+			if "destroy all" in opt:
+				score += 15
+
+			# Zone 8 destruction is high priority when near winning
+			if "zone 8" in opt and player.monster_zone >= 6:
+				score += 25
+
+		# Hand disruption — better when opponent has many cards
+		if "discard" in opt and "opponent" in opt:
+			score += 15 + opponent.hand.size() * 2
+			# "discard to N" — lower N is stronger
+			for n in [1, 2, 3, 4]:
+				if "to %d" % n in opt:
+					score += (5 - n) * 5
+					break
+
+		# Rage increase for bot — good when behind on threat
+		if "increase rage" in opt or "rage by" in opt:
+			if "opponent" not in opt and "reduce" not in opt:
+				score += 15
+				if _can_counter_opponent():
+					score += 10  # Already ahead on CP, rage builds threat
+
+		# Rage reduction for opponent — good when opponent has high rage
+		if "reduce" in opt and ("opponent" in opt or "each" in opt) and "rage" in opt:
+			score += 10 + opponent.rage * 3
+
+		# Strategy destruction
+		if "destroy" in opt and "strategy" in opt:
+			var has_strategies := false
+			for sz in opponent.strategy_zones:
+				if not sz.is_empty():
+					has_strategies = true
+					break
+			if has_strategies:
+				score += 25
+
+		# Mill self — useful if deck has plays_from_discard synergy
+		if "your deck" in opt and "discard" in opt:
+			score += 5  # Low priority unless synergy-driven
+
+		# Return monster — generally good
+		if "return" in opt and "monster" in opt:
+			score += 20
+			if "any monster" in opt:
+				score += 10  # Broader target = better
+
+		if score > best_score:
+			best_score = score
+			best_idx = i
+
+	return best_idx
+
+
+func _pick_zone_choice(options: Array[String], opponent: PlayerState) -> int:
+	## For "Zone N: CardName" options, pick the zone with highest CP card.
+	var best_idx: int = 0
+	var best_cp: int = -1
+	for i in range(options.size()):
+		var opt: String = options[i]
+		# Parse zone number from "Zone N: ..."
+		var zone_str := opt.substr(5, opt.find(":") - 5).strip_edges()
+		if not zone_str.is_valid_int():
+			continue
+		var zone_num: int = zone_str.to_int()
+		var zone_idx: int = zone_num - 1
+		if zone_idx < 0 or zone_idx >= 8:
+			continue
+		var zone_card := opponent.get_zone_top_card(zone_idx)
+		var cp: int = zone_card.get("counter_power", 0) if not zone_card.is_empty() else 0
+		if cp > best_cp:
+			best_cp = cp
+			best_idx = i
+	return best_idx
 
 
 # --- Hand discard ---
