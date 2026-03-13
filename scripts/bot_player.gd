@@ -182,7 +182,9 @@ func _decide_main_action(valid_actions: Array) -> Array:
 					and randf() < config.zone_6_two_step_chance):
 				var two_step_idx := _find_invade_card_with_steps(player, 2)
 				if two_step_idx >= 0:
-					return [CardEnums.ActionType.INVADE, {"hand_index": two_step_idx}]
+					var monsters := _count_monster_cards_in_hand(player)
+					if not _invasion_blocked_by_rage(player, two_step_idx, monsters):
+						return [CardEnums.ActionType.INVADE, {"hand_index": two_step_idx}]
 
 	# 3. Score all playable cards and play the highest-value one
 	var best_action := _decide_best_card_play(valid_actions, player, opponent, near_winning, z8_blocked)
@@ -232,7 +234,9 @@ func _decide_main_action(valid_actions: Array) -> Array:
 			Playstyle.INVASION:
 				try_invade = true
 			Playstyle.BALANCED:
-				try_invade = config.balanced_can_invade and not _has_base_strategy_in_play(player)
+				try_invade = config.balanced_can_invade \
+						and player.monster_zone >= 4 \
+						and not _has_base_strategy_in_play(player)
 
 		if try_invade:
 			var invade_result := _decide_invade(player, opponent)
@@ -485,23 +489,20 @@ func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: P
 	# Crush zone awareness: avoid zones the monster will advance through at end of turn
 	var crush_zones := _get_crush_zone_indices()
 	if not crush_zones.is_empty():
-		if _can_counter_opponent():
-			# Bot can already counter — crush zones are expendable.
-			# Prefer furthest crush zone first (highest index = closest to zone 8).
+		var safe_zones: Array[int] = []
+		for z in valid_zones:
+			if z not in crush_zones:
+				safe_zones.append(z)
+		if not safe_zones.is_empty():
+			valid_zones = safe_zones
+		elif _can_counter_opponent():
+			# All non-crush zones are occupied — crush zones are expendable since bot can counter.
+			# Prefer furthest crush zone (highest index = closest to zone 8).
 			crush_zones.sort()
 			for i in range(crush_zones.size() - 1, -1, -1):
 				var z: int = crush_zones[i]
 				if z in valid_zones and not player.zone_has_cards(z):
 					return z
-			# All crush zones occupied or not valid — fall through to normal logic
-		else:
-			# Bot can't counter — cards needed for defense, avoid crush zones
-			var safe_zones: Array[int] = []
-			for z in valid_zones:
-				if z not in crush_zones:
-					safe_zones.append(z)
-			if not safe_zones.is_empty():
-				valid_zones = safe_zones
 
 	# Check card effect tags for zone preferences
 	var effect := effect_handler.get_effect(card) if not card.is_empty() else null
@@ -570,6 +571,18 @@ func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: P
 			for z in valid_zones:
 				if not player.zone_has_cards(z) and opponent.zone_has_cards(z):
 					return z
+
+	# Early game: when opponent is in zones 1-4, prioritize placing behind the bot's monster
+	# Cards behind the monster are safe from crush and provide defensive CP for counters
+	if opponent.monster_zone <= 4 and player.monster_zone > 1:
+		var behind_zones: Array[int] = []
+		for z in valid_zones:
+			if z < player.monster_zone - 1 and not player.zone_has_cards(z):
+				behind_zones.append(z)
+		if not behind_zones.is_empty():
+			# Pick the furthest back zone (lowest index) to spread out defense
+			behind_zones.sort()
+			return behind_zones[0]
 
 	# No zone priority table — pick random valid zone (prefer empty)
 	if not config.use_zone_priority_table:
@@ -707,6 +720,25 @@ func _all_hand_cards_are_monsters(player: PlayerState) -> bool:
 	return not player.hand.is_empty()
 
 
+func _count_monster_cards_in_hand(player: PlayerState) -> int:
+	var count: int = 0
+	for card in player.hand:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			count += 1
+	return count
+
+
+func _invasion_blocked_by_rage(player: PlayerState, inv_idx: int, monsters_in_hand: int) -> bool:
+	# Don't advance to z7/z8 unless bot has enough rage potential (>= 2 monster cards)
+	# If already at z7+, always allow (trying to win)
+	if player.monster_zone >= 7:
+		return false
+	var steps: int = player.hand[inv_idx].get("invasion_icon", 1)
+	if player.monster_zone + steps >= 7 and monsters_in_hand < 2:
+		return true
+	return false
+
+
 func _count_invade_cards_with_steps(player: PlayerState, steps: int) -> int:
 	var count: int = 0
 	for card in player.hand:
@@ -754,6 +786,10 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 		if mz == 7 and opponent.zone_has_battle_card(7):
 			return [] # z8 blocked, can't win
 
+	# Don't advance to z7/z8 unless bot can expect to gain rage >= 2
+	# (rage gain ≈ number of monster cards in hand)
+	var monsters_in_hand := _count_monster_cards_in_hand(player)
+
 	var inv_idx: int = -1
 
 	if playstyle == Playstyle.INVASION:
@@ -762,13 +798,14 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 		if inv_idx < 0:
 			inv_idx = _find_best_invade_card(player)
 		if inv_idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
+			if not _invasion_blocked_by_rage(player, inv_idx, monsters_in_hand):
+				return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
 	else:
 		# Balanced: conservative invade path
 		# Zone 6 → z7 for win setup
 		if mz == 6:
 			inv_idx = _find_invade_card_with_steps(player, 1)
-			if inv_idx >= 0:
+			if inv_idx >= 0 and not _invasion_blocked_by_rage(player, inv_idx, monsters_in_hand):
 				return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
 		# z1→z3 (2-step), z3→z4 (1 or 2-step), z4→z6 (2-step)
 		if mz == 1 or mz == 4:
@@ -781,7 +818,8 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 		elif mz >= 7:
 			inv_idx = _find_best_invade_card(player)
 		if inv_idx >= 0:
-			return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
+			if not _invasion_blocked_by_rage(player, inv_idx, monsters_in_hand):
+				return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
 
 	return []
 
