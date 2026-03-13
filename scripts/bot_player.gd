@@ -1111,7 +1111,7 @@ func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int]
 
 # --- Zone target ---
 
-func _on_zone_target_requested(player_id: int, _target_player_id: int, valid_zones: Array[int], _prompt: String, allow_skip: bool) -> void:
+func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], _prompt: String, allow_skip: bool) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
@@ -1119,23 +1119,65 @@ func _on_zone_target_requested(player_id: int, _target_player_id: int, valid_zon
 		effect_handler.resolve_zone_target(-1)
 	elif not valid_zones.is_empty():
 		var player := game_state.players[bot_player_id]
-		var mz := player.monster_zone
-		var can_win := mz == 8 or (mz == 7 and _find_invade_card_with_steps(player, 2) >= 0)
-		# Near win: prioritize z8 to clear the path, then back zones
-		if can_win:
-			for z in config.destroy_zone_priority_near_win:
-				if z in valid_zones:
-					effect_handler.resolve_zone_target(z)
-					return
-		# Default: use zone placement priority based on monster position
-		var priority := _get_zone_priority(mz)
-		for z in priority:
-			if z in valid_zones:
-				effect_handler.resolve_zone_target(z)
-				return
-		effect_handler.resolve_zone_target(valid_zones[0])
+		var opponent := game_state.players[1 - bot_player_id]
+
+		if target_player_id != bot_player_id:
+			# Targeting opponent's zones — pick strategically
+			effect_handler.resolve_zone_target(_pick_opponent_zone_target(valid_zones, player, opponent))
+		else:
+			# Targeting own zones — use existing priority logic
+			effect_handler.resolve_zone_target(_pick_own_zone_target(valid_zones, player))
 	else:
 		effect_handler.resolve_zone_target(-1)
+
+
+func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, opponent: PlayerState) -> int:
+	## Pick the best opponent zone to destroy/target.
+	var mz := player.monster_zone
+	var can_win := mz == 8 or (mz == 7 and _find_invade_card_with_steps(player, 2) >= 0)
+
+	# Near win: clear the invasion path first (z8, then z7)
+	if can_win:
+		for z in config.destroy_zone_priority_near_win:
+			if z in valid_zones:
+				return z
+
+	# Priority 1: zone 8 if it's blocking invasion and bot is in z6+
+	if mz >= 6 and 7 in valid_zones and opponent.zone_has_cards(7):
+		return 7
+
+	# Priority 2: destroy the opponent's highest-CP card to weaken their counter
+	var cp_modifiers := effect_handler.get_zone_cp_modifiers(opponent.player_id)
+	var best_zone: int = valid_zones[0]
+	var best_cp: int = -1
+	for z in valid_zones:
+		var zone_card := opponent.get_zone_top_card(z)
+		if zone_card.is_empty():
+			continue
+		var cp: int = zone_card.get("counter_power", 0) + cp_modifiers[z]
+		if cp > best_cp:
+			best_cp = cp
+			best_zone = z
+
+	# If all valid zones are empty, pick one in the bot's invasion path
+	if best_cp < 0:
+		# Prefer zones the bot's monster will pass through
+		for z_num in range(mz + 1, 9):
+			if (z_num - 1) in valid_zones:
+				return z_num - 1
+		return valid_zones[0]
+
+	return best_zone
+
+
+func _pick_own_zone_target(valid_zones: Array[int], player: PlayerState) -> int:
+	## Pick one of the bot's own zones (for placement, movement, etc.)
+	var mz := player.monster_zone
+	var priority := _get_zone_priority(mz)
+	for z in priority:
+		if z in valid_zones:
+			return z
+	return valid_zones[0]
 
 
 # --- Strategy target ---
