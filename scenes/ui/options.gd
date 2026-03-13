@@ -4,6 +4,7 @@ extends Control
 @onready var automation_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutomationButton
 @onready var customize_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CustomizeButton
 @onready var advanced_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AdvancedButton
+@onready var audio_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AudioButton
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
 
 
@@ -13,6 +14,7 @@ func _ready() -> void:
 	automation_button.pressed.connect(_on_automation_pressed)
 	customize_button.pressed.connect(_on_customize_pressed)
 	advanced_button.pressed.connect(_on_advanced_pressed)
+	audio_button.pressed.connect(_on_audio_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 
 
@@ -807,6 +809,17 @@ func _on_advanced_pressed() -> void:
 	var vbox: VBoxContainer = parts[1]
 
 	_add_toggle_row(vbox, "Use Mobile Layout", "use_mobile_layout")
+
+	_add_close_button(vbox, popup)
+	_show_modal(popup)
+
+
+func _on_audio_pressed() -> void:
+	var parts := _create_modal("Audio")
+	var popup: PopupPanel = parts[0]
+	var vbox: VBoxContainer = parts[1]
+
+	_add_toggle_row(vbox, "Sound Effects", "sound_enabled")
 
 	_add_close_button(vbox, popup)
 	_show_modal(popup)
