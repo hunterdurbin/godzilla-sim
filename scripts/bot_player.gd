@@ -294,20 +294,36 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 	# Score playable battle cards
 	if CardEnums.ActionType.PLAY_BATTLE in valid_actions:
 		var battle_playable := rules_engine.get_playable_battle_cards(player, opponent)
+		var best_rank: int = 999
+		var best_cp: int = -1
 		for hand_idx in battle_playable:
 			var b_card: Dictionary = player.hand[hand_idx]
 			var valid_zones := rules_engine.get_valid_zones_for_card(b_card, player, opponent)
 			if valid_zones.is_empty():
 				continue
 			var b_score := _score_card(b_card, player, opponent, near_winning, z8_blocked)
-			# Bonus for base CP value (higher CP cards are more impactful)
 			b_score += b_card.get("counter_power", 0) / config.cp_bonus_divisor
-			# When behind on CP, strongly prefer high-CP battle cards for defense
 			if cp_gap > 0:
 				var card_cp: int = b_card.get("counter_power", 0)
-				b_score += card_cp / 500  # Large bonus scaled by card's CP
+				b_score += card_cp / 500
+			var b_rank: int = b_card.get("rank", 0)
+			var b_cp: int = b_card.get("counter_power", 0)
+			# Tiebreaker: lower rank first, then higher CP, then random
+			var is_better: bool = false
 			if b_score > best_score:
+				is_better = true
+			elif b_score == best_score:
+				if b_rank < best_rank:
+					is_better = true
+				elif b_rank == best_rank:
+					if b_cp > best_cp:
+						is_better = true
+					elif b_cp == best_cp:
+						is_better = randi() % 2 == 0
+			if is_better:
 				best_score = b_score
+				best_rank = b_rank
+				best_cp = b_cp
 				var zone := _pick_battle_zone(valid_zones, player, opponent, b_card)
 				best_result = [CardEnums.ActionType.PLAY_BATTLE, {"hand_index": hand_idx, "zone_index": zone}]
 
