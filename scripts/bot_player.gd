@@ -256,14 +256,23 @@ func _try_gain_rage(player: PlayerState) -> Array:
 	if safe_rage_cards.is_empty():
 		return []
 
+	# Invasion playstyle with only monsters: keep best invasion card, discard worst
 	if playstyle == Playstyle.INVASION and _all_hand_cards_are_monsters(player):
 		if safe_rage_cards.size() > 1 or _find_best_invade_card(player) < 0:
 			var worst_idx := _find_worst_invade_card(safe_rage_cards, player)
 			return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": worst_idx}]
-	else:
-		return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": safe_rage_cards[0]}]
+		return []
 
-	return []
+	# Discard the least valuable monster — preserve rank-up matches and high-CP cards
+	var worst_idx: int = safe_rage_cards[0]
+	var worst_val: int = _card_sort_value(player.hand[worst_idx])
+	for i in range(1, safe_rage_cards.size()):
+		var idx: int = safe_rage_cards[i]
+		var val := _card_sort_value(player.hand[idx])
+		if val < worst_val:
+			worst_val = val
+			worst_idx = idx
+	return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": worst_idx}]
 
 
 func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent: PlayerState, near_winning: bool, z8_blocked: bool, cp_gap: int = 0) -> Array:
@@ -932,6 +941,10 @@ func _pick_discard_indices(player: PlayerState, count: int) -> Array[int]:
 			non_playable_indices.append(i)
 		else:
 			playable_indices.append(i)
+
+	# Sort monsters by value ascending — discard least valuable first (preserve rank-up matches)
+	monster_indices.sort_custom(func(a: int, b: int) -> bool:
+		return _card_sort_value(player.hand[a]) < _card_sort_value(player.hand[b]))
 
 	var pools: Dictionary = {
 		"monsters": monster_indices,
