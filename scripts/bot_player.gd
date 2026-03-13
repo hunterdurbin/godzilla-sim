@@ -603,8 +603,9 @@ func _decide_battle_play(player: PlayerState, opponent: PlayerState) -> Array:
 	return []
 
 
-func _get_crush_zone_indices() -> Array[int]:
-	## Returns 0-indexed zone indices the bot's monster will advance through at end of turn.
+func _get_crush_zone_indices(turns: int = 1) -> Array[int]:
+	## Returns 0-indexed zone indices the bot's monster will advance through.
+	## turns=1: this end of turn only. turns=2: this turn + next turn.
 	var player := game_state.players[bot_player_id]
 	var mz := player.monster_zone  # 1-indexed (1-8)
 	if mz >= 8:
@@ -612,8 +613,10 @@ func _get_crush_zone_indices() -> Array[int]:
 	var extra: int = 0
 	if effect_handler:
 		extra = effect_handler.get_extra_end_phase_advance(bot_player_id)
+	var advance_per_turn: int = 1 + extra
+	var total_advance: int = advance_per_turn * turns
 	var crush_zones: Array[int] = []
-	for i in range(1, 2 + extra):
+	for i in range(1, total_advance + 1):
 		var zone_num: int = mz + i
 		if zone_num > 8:
 			break
@@ -638,13 +641,41 @@ func _can_counter_opponent() -> bool:
 
 
 func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: PlayerState, card: Dictionary = {}) -> int:
-	# Crush zone awareness: avoid zones the monster will advance through at end of turn
-	var crush_zones := _get_crush_zone_indices()
+	# Compute effective value of each zone's existing card (base CP + effect contributions)
+	var cp_modifiers := effect_handler.get_zone_cp_modifiers(player.player_id)
+	var card_cp: int = card.get("counter_power", 0) if not card.is_empty() else 0
+
+	# Never overwrite a zone card with higher effective CP — would reduce net counter power
+	var no_loss_zones: Array[int] = []
+	for z in valid_zones:
+		var zone_card := player.get_zone_top_card(z)
+		if zone_card.is_empty():
+			no_loss_zones.append(z)
+		else:
+			var effective_cp: int = zone_card.get("counter_power", 0) + cp_modifiers[z]
+			if effective_cp <= card_cp:
+				no_loss_zones.append(z)
+	if not no_loss_zones.is_empty():
+		valid_zones = no_loss_zones
+
+	# Crush zone awareness: avoid zones the monster will advance through in the next 2 turns.
+	# Exceptions: zone 8 (won't be crushed), or card nets >= 2000 effective CP over existing.
+	var crush_zones := _get_crush_zone_indices(2)
 	if not crush_zones.is_empty():
 		var safe_zones: Array[int] = []
 		for z in valid_zones:
 			if z not in crush_zones:
 				safe_zones.append(z)
+			elif z == 7:
+				# Zone 8 (0-indexed 7) — assume it won't be crushed
+				safe_zones.append(z)
+			elif card_cp >= 2000:
+				var existing := player.get_zone_top_card(z)
+				var existing_effective: int = 0
+				if not existing.is_empty():
+					existing_effective = existing.get("counter_power", 0) + cp_modifiers[z]
+				if card_cp - existing_effective >= 2000:
+					safe_zones.append(z)
 		if not safe_zones.is_empty():
 			valid_zones = safe_zones
 		elif _can_counter_opponent():
