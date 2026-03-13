@@ -87,16 +87,11 @@ var synergy_deck_multiplier: float = 0.25
 # Each entry: [tag_on_card, synergy_tag_on_board_or_deck, bonus]
 var tag_synergies: Array = [
 	["mill_self", "plays_from_discard", 15],
-	["plays_from_discard", "mill_self", 15],
 	["heals_deck", "evolution", 15],
-	["evolution", "heals_deck", 10],
 	["evolves", "evolution", 20],
-	["evolution", "evolves", 10],
 	["destroys_zone", "advances_monster", 10],
-	["advances_monster", "destroys_zone", 10],
 	["boosts_threat", "weakens_opponent", 10],
 	["weakens_opponent", "boosts_threat", 10],
-	["mill_self", "boosts_cp", 5],
 	["searches_deck", "evolution", 10],
 	["disrupts_hand", "destroys_zone", 10],
 	["blocks_invade", "boosts_cp", 10],
@@ -117,7 +112,7 @@ var overwrite_lowest_cp_when_full: bool = true
 
 # Card selection
 var evolution_require_cp_upgrade: bool = true
-var choice_pick_mode: int = 2  # 0=first, 1=random, 2=last
+var choice_pick_mode: int = 2 # 0=first, 1=random, 2=last
 var discard_priority: Array = ["monsters", "non_playable", "playable"]
 
 # Monster sort bonuses
@@ -127,7 +122,6 @@ var monster_trait_bonus: int = 50000
 
 # Deck analysis
 var playstyle_threshold: float = 0.6
-
 
 
 static func easy() -> BotConfig:

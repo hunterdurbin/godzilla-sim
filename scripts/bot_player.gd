@@ -296,6 +296,15 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 	if CardEnums.ActionType.PLAY_BATTLE in valid_actions:
 		var battle_playable := rules_engine.get_playable_battle_cards(player, opponent)
 
+		# Collect tags for all playable battle cards to detect synergy ordering
+		var playable_tags: Dictionary = {}  # hand_idx -> Array[String]
+		for hand_idx in battle_playable:
+			var b_effect := effect_handler.get_effect(player.hand[hand_idx])
+			if b_effect:
+				playable_tags[hand_idx] = b_effect.get_bot_tags()
+			else:
+				playable_tags[hand_idx] = []
+
 		# Build scored entries for all playable battle cards
 		var entries: Array[Dictionary] = []
 		for hand_idx in battle_playable:
@@ -307,6 +316,13 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 			b_score += b_card.get("counter_power", 0) / config.cp_bonus_divisor
 			if cp_gap > 0:
 				b_score += b_card.get("counter_power", 0) / 500
+
+			# Synergy enabler bonus: if playing this card first would enable synergies
+			# for other cards in hand, boost score so it gets played first
+			if config.enable_synergies:
+				var my_tags: Array = playable_tags.get(hand_idx, [])
+				b_score += _score_enabler_bonus(hand_idx, my_tags, playable_tags)
+
 			var has_zone_pref := _card_has_zone_preference(b_card)
 			entries.append({
 				"hand_idx": hand_idx, "card": b_card, "score": b_score,
@@ -566,6 +582,27 @@ func _score_synergies(card_tags: Array[String], player: PlayerState, _opponent: 
 				bonus += int(synergy_bonus * config.synergy_hand_multiplier)
 			elif deck_tags.has(synergy_tag):
 				bonus += int(synergy_bonus * config.synergy_deck_multiplier)
+	return bonus
+
+
+func _score_enabler_bonus(my_idx: int, my_tags: Array, all_playable_tags: Dictionary) -> int:
+	## Bonus for cards that enable synergies for other playable cards in hand.
+	## If this card's tags match the synergy_tag another card needs on the board,
+	## playing this card first sets up the synergy — boost its score.
+	var bonus: int = 0
+	for synergy in config.tag_synergies:
+		var needed_on_board: String = synergy[1]  # tag the other card wants on the board
+		var other_card_tag: String = synergy[0]    # tag the other card must have
+		var synergy_bonus: int = synergy[2]
+		# Check if this card provides what another card needs on the board
+		if needed_on_board not in my_tags:
+			continue
+		for other_idx in all_playable_tags:
+			if other_idx == my_idx:
+				continue
+			var other_tags: Array = all_playable_tags[other_idx]
+			if other_card_tag in other_tags:
+				bonus += synergy_bonus
 	return bonus
 
 
