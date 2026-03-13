@@ -128,6 +128,30 @@ func _show_difficulty_popup() -> void:
 	seed_row.add_child(seed_input)
 	vbox.add_child(seed_row)
 
+	# Action speed slider
+	var speed_row := VBoxContainer.new()
+	speed_row.add_theme_constant_override("separation", 4)
+	var speed_label := Label.new()
+	speed_label.text = "Bot Speed: automatic"
+	speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	speed_label.add_theme_font_size_override("font_size", 16)
+	speed_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	speed_row.add_child(speed_label)
+	var speed_slider := HSlider.new()
+	speed_slider.min_value = 0
+	speed_slider.max_value = 10
+	speed_slider.step = 1
+	speed_slider.value = 0
+	speed_slider.custom_minimum_size = Vector2(280, 0)
+	speed_slider.value_changed.connect(func(val: float):
+		if val == 0:
+			speed_label.text = "Bot Speed: automatic"
+		else:
+			speed_label.text = "Bot Speed: %.1fs" % (val * 0.1)
+	)
+	speed_row.add_child(speed_slider)
+	vbox.add_child(speed_row)
+
 	vbox.add_child(HSeparator.new())
 
 	var btn_box := VBoxContainer.new()
@@ -154,6 +178,9 @@ func _show_difficulty_popup() -> void:
 			else:
 				NetworkManager.bot_seed = -1
 			NetworkManager.set_bot_difficulty(difficulty)
+			# Apply speed override if not automatic
+			if speed_slider.value > 0:
+				NetworkManager.bot_config.action_delay = speed_slider.value * 0.1
 			NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
 			NetworkManager.local_player_id = 0
 			popup.hide()
