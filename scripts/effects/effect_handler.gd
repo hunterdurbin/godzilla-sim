@@ -97,6 +97,7 @@ var _deck_arrange_discard: Array[Dictionary] = []
 var _card_select_result: Array[Dictionary] = []
 var _card_select_pool_filter: Callable = Callable()  # Optional: func(card, selection) -> bool
 var _zone_target_result: int = -1
+var pending_destroy_max_rank: int = -1  # Set before zone_target_requested for bot rank filtering
 var _strategy_target_result: int = -1
 var _hand_card_selection_result: int = -1
 var _choice_result: int = -1
@@ -1491,7 +1492,9 @@ func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones:
 	if valid_zones.is_empty():
 		return []
 
+	pending_destroy_max_rank = max_rank
 	var chosen: int = await select_zone_target(player_id, target.player_id, valid_zones, prompt)
+	pending_destroy_max_rank = -1
 	if chosen < 0:
 		return []
 

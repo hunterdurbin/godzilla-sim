@@ -14,6 +14,10 @@ func get_bot_tags() -> Array[String]:
 	return ["disrupts_hand", "destroys_zone"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 5
+
+
 func on_enter(ctx: EffectContext) -> void:
 	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 4)
 

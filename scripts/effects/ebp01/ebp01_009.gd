@@ -16,6 +16,14 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 6
+
+
+func bot_can_fulfill_on_when_invading(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.rage >= 2
+
+
 func get_burst_rank() -> int:
 	return 2
 

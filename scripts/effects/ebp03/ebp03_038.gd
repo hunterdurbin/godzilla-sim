@@ -11,7 +11,7 @@ extends CardEffect
 
 
 func get_bot_tags() -> Array[String]:
-	return ["destroys_zone"]
+	return ["avoid_own_adjacent"]
 
 
 func get_phase_start_filter() -> Dictionary:

@@ -17,6 +17,26 @@ func get_bot_tags() -> Array[String]:
 	return ["boosts_threat", "weakens_opponent"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	var monster_count: int = 0
+	for card in owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			monster_count += 1
+			if monster_count >= 5:
+				return true
+	return false
+
+
+func bot_can_fulfill_threat_level(owner: PlayerState, _opponent: PlayerState) -> bool:
+	var monster_count: int = 0
+	for card in owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			monster_count += 1
+			if monster_count >= 10:
+				return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var monster_count: int = ctx.effect_handler.count_monsters_in_discard(ctx.owner)
 	if monster_count < 5:

@@ -16,6 +16,17 @@ func get_bot_tags() -> Array[String]:
 	return ["draws_cards"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	for card in owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.MONSTER and card.get("rank", 0) <= 2:
+			return true
+	if owner.monster_stack.size() >= 5:
+		for card in owner.discard_pile:
+			if card.get("card_type") == CardEnums.CardType.MONSTER:
+				return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var has_low_rank_monster := false
 	for card in ctx.owner.discard_pile:

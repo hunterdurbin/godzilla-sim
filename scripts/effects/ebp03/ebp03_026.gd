@@ -18,6 +18,16 @@ func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	var monster_count := 0
+	for card in owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			monster_count += 1
+			if monster_count >= 2:
+				return true
+	return false
+
+
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS, CardEnums.EffectCategory.ACTIVATED]
 

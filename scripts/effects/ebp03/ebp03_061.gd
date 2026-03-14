@@ -17,6 +17,10 @@ func get_bot_tags() -> Array[String]:
 	return ["plays_from_discard", "boosts_cp"]
 
 
+func bot_can_fulfill_counter_power(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.monster_zone >= 6
+
+
 func on_discarded_for_invasion(_ctx: EffectContext) -> bool:
 	# Play self from discard pile (handled by ActionHandler/EffectHandler)
 	return true

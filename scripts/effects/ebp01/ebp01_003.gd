@@ -17,6 +17,10 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "mill_self"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 6
+
+
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	if new_rage <= old_rage:
 		return

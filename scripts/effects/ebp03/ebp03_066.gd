@@ -15,6 +15,13 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
+	for sz in opponent.strategy_zones:
+		if not sz.is_empty():
+			return true
+	return false
+
+
 func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary) -> int:
 	if target_card.get("id") != ctx.card_data.get("id"):
 		return 0

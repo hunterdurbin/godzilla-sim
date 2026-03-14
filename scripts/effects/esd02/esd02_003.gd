@@ -17,6 +17,19 @@ func get_bot_tags() -> Array[String]:
 	return ["plays_from_discard"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	var monster_zone_idx: int = owner.monster_zone - 1
+	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(owner, monster_zone_idx)
+	if valid_adjacent.is_empty():
+		return false
+	for card in owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.BATTLE \
+			and card.get("rank", 0) <= 4 \
+			and card.has("evolution_rank"):
+			return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var player := ctx.owner
 	var monster_zone_idx: int = player.monster_zone - 1

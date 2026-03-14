@@ -15,6 +15,23 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "boosts_cp"]
 
 
+func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
+	var empty_count: int = 0
+	for i in range(8):
+		if not opponent.zone_has_cards(i):
+			empty_count += 1
+			if empty_count >= 3:
+				return true
+	return false
+
+
+func bot_can_fulfill_counter_power(_owner: PlayerState, opponent: PlayerState) -> bool:
+	for sz in opponent.strategy_zones:
+		if not sz.is_empty():
+			return false
+	return true
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var empty_count := ctx.opponent.get_empty_zone_indices().size()
 	if empty_count < 3:

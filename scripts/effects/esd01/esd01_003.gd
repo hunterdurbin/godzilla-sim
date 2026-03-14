@@ -15,6 +15,10 @@ func get_bot_tags() -> Array[String]:
 	return ["boosts_threat"]
 
 
+func bot_can_fulfill_threat_level(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.rage >= 2
+
+
 func get_threat_level_modifier(ctx: EffectContext) -> int:
 	if ctx.owner.rage >= 2:
 		return 5000

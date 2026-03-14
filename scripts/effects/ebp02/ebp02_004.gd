@@ -17,6 +17,19 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 6
+
+
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	if CardEnums.CardTrait.SECOND_FORM in owner.current_monster.get("traits", []):
+		return true
+	for card in owner.monster_stack:
+		if CardEnums.CardTrait.SECOND_FORM in card.get("traits", []):
+			return true
+	return false
+
+
 func get_burst_rank() -> int:
 	return 2
 

@@ -16,6 +16,16 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "weakens_opponent"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	if owner.monster_zone < 4:
+		return false
+	for i in range(8):
+		var card := owner.get_zone_top_card(i)
+		if not card.is_empty() and card.get("name", "") == "Star Falcon":
+			return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.monster_zone < 4:
 		return

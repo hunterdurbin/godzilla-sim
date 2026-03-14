@@ -14,6 +14,10 @@ func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent"]
 
 
+func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
+	return opponent.rage > 0
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,

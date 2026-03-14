@@ -17,6 +17,20 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 7
+
+
+func bot_can_fulfill_on_when_invading(owner: PlayerState, _opponent: PlayerState) -> bool:
+	var monster_count := 0
+	for card in owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			monster_count += 1
+			if monster_count >= 5:
+				return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,

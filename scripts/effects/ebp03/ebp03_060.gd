@@ -14,6 +14,10 @@ func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent"]
 
 
+func bot_can_fulfill_on_revenge(_owner: PlayerState, opponent: PlayerState) -> bool:
+	return opponent.rage > 0
+
+
 func on_revenge(ctx: EffectContext) -> void:
 	if ctx.opponent.rage > 0:
 		var old_rage := ctx.opponent.rage

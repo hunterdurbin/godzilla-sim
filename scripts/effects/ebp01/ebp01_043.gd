@@ -16,6 +16,22 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 6
+
+
+func bot_can_fulfill_counter_success(owner: PlayerState, _opponent: PlayerState) -> bool:
+	if owner.monster_zone < 4:
+		return false
+	var monster_count := 0
+	for card in owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			monster_count += 1
+			if monster_count >= 5:
+				return true
+	return false
+
+
 func on_counter_success(ctx: EffectContext) -> void:
 	# Awakening4: must be in zone 4 or beyond
 	if ctx.owner.monster_zone < 4:

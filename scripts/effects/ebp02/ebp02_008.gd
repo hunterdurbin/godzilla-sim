@@ -17,6 +17,10 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "zone_dependent"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 6
+
+
 func get_bot_preferred_zones() -> Array[int]:
 	return [5, 6, 7]  # zones 6-8 (0-indexed)
 

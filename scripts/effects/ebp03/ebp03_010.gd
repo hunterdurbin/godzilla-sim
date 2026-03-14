@@ -15,6 +15,16 @@ func get_bot_tags() -> Array[String]:
 	return ["disrupts_hand", "boosts_threat"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	var battle_count: int = 0
+	for i in range(8):
+		if owner.zone_has_battle_card(i):
+			battle_count += 1
+			if battle_count >= 2:
+				return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var battle_count := 0
 	for i in range(8):

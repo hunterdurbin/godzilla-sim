@@ -17,6 +17,10 @@ func get_bot_tags() -> Array[String]:
 	return ["plays_other_cards", "searches_deck"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.current_monster.get("rank", 0) <= 3
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var cur_rank: int = ctx.owner.current_monster.get("rank", 0)
 	if cur_rank > 3:

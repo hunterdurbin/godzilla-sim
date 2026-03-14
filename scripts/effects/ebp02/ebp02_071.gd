@@ -18,6 +18,14 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func get_bot_destroy_max_rank(owner: PlayerState, _opponent: PlayerState) -> int:
+	if owner.monster_zone >= 8:
+		return -1
+	elif owner.monster_zone >= 6:
+		return 6
+	return 4
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var options: Array[String] = []
 	var option_ids: Array[int] = []

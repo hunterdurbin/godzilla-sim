@@ -19,6 +19,14 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func get_bot_destroy_max_rank(owner: PlayerState, _opponent: PlayerState) -> int:
+	if owner.invasion_zones_crossed >= 2:
+		return 6
+	elif owner.invasion_zones_crossed >= 1:
+		return 4
+	return 2
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var zones_crossed: int = ctx.owner.invasion_zones_crossed
 	var max_rank: int = 2  # 0 zones

@@ -15,6 +15,14 @@ func get_bot_tags() -> Array[String]:
 	return ["evolves"]
 
 
+func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:
+	for i in range(8):
+		var card := owner.get_zone_top_card(i)
+		if not card.is_empty() and card.get("rank", 0) <= 4 and card.get("evolution_rank", -1) >= 0:
+			return true
+	return false
+
+
 func is_base_strategy() -> bool:
 	return true
 

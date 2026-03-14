@@ -18,6 +18,28 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "boosts_threat"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 6
+
+
+func bot_can_fulfill_on_when_invading(owner: PlayerState, _opponent: PlayerState) -> bool:
+	if CardEnums.CardTrait.THIRD_FORM in owner.current_monster.get("traits", []):
+		return true
+	for card in owner.monster_stack:
+		if CardEnums.CardTrait.THIRD_FORM in card.get("traits", []):
+			return true
+	return false
+
+
+func bot_can_fulfill_threat_level(owner: PlayerState, _opponent: PlayerState) -> bool:
+	if CardEnums.CardTrait.FOURTH_FORM in owner.current_monster.get("traits", []):
+		return true
+	for card in owner.monster_stack:
+		if CardEnums.CardTrait.FOURTH_FORM in card.get("traits", []):
+			return true
+	return false
+
+
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	var has_third_form: bool = false
 	for card in ctx.owner.monster_stack:

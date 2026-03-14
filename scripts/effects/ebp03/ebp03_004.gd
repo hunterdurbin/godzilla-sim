@@ -17,6 +17,10 @@ func get_bot_tags() -> Array[String]:
 	return ["advances_monster"]
 
 
+func bot_can_fulfill_on_rage_changed(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.monster_zone >= 4
+
+
 func can_replace_invasion_cost(_ctx: EffectContext) -> bool:
 	return true
 

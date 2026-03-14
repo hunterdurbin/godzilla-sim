@@ -14,6 +14,10 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "column_dependent_monster_self"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 6
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var monster_idx: int = ctx.owner.monster_zone - 1
 	var opp_column_zones := get_opponent_column_zones(monster_idx)

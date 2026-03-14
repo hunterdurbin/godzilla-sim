@@ -14,6 +14,13 @@ func get_bot_tags() -> Array[String]:
 	return ["boosts_threat"]
 
 
+func bot_can_fulfill_threat_level(owner: PlayerState, _opponent: PlayerState) -> bool:
+	for strategy in owner.strategy_zones:
+		if not strategy.is_empty() and strategy.get("is_base", false):
+			return true
+	return false
+
+
 func get_threat_level_modifier(ctx: EffectContext) -> int:
 	if _has_base_in_play(ctx):
 		return 10000

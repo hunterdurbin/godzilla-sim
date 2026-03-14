@@ -15,6 +15,15 @@ func get_bot_tags() -> Array[String]:
 	return ["boosts_threat"]
 
 
+func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:
+	if owner.monster_zone < 4:
+		return false
+	for card in owner.hand:
+		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) >= 5:
+			return true
+	return false
+
+
 func get_phase_start_filter() -> Dictionary:
 	return {"phase": CardEnums.GamePhase.COUNTER}
 

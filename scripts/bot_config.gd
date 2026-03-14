@@ -120,6 +120,9 @@ var monster_burst_match_bonus: int = 150000
 var monster_rank_match_bonus: int = 100000
 var monster_trait_bonus: int = 50000
 
+# Activation check
+var use_activation_check: bool = true
+
 # Deck analysis
 var playstyle_threshold: float = 0.6
 
@@ -161,6 +164,8 @@ static func easy() -> BotConfig:
 	c.choice_pick_mode = 0
 	# Don't protect 2-step cards
 	c.protect_two_step_cards = false
+	# No activation check
+	c.use_activation_check = false
 	return c
 
 
