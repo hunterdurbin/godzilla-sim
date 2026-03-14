@@ -40,8 +40,8 @@ var custom_card_art_enabled: bool = false
 var custom_card_back_mode: int = 0  # 0=disabled, 1=myself only, 2=both players
 
 # Audio settings
-var sound_volume: int = 2  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
-var music_volume: int = 2  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
+var sound_volume: int = 1  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
+var music_volume: int = 0  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
 
 # Advanced settings
 var use_mobile_layout: bool = false
