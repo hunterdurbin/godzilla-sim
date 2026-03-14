@@ -33,6 +33,7 @@ UpdateChecker="*res://scripts/update_checker.gd"
 RpcLogger="*res://scripts/rpc_logger.gd"
 TouchHelper="*res://scripts/touch_helper.gd"
 SfxManager="*res://scripts/sfx_manager.gd"
+MusicManager="*res://scripts/music_manager.gd"
 
 [display]
 

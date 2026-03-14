@@ -56,6 +56,7 @@ var _pending_log_lines: PackedStringArray = [] # Buffered for next broadcast
 @onready var btn_concede: Button = $ConcedeButton
 @onready var btn_main_menu: Button = $MainMenuButton
 @onready var btn_sound_toggle: Button = $SoundToggleButton
+@onready var btn_music_toggle: Button = $MusicToggleButton
 
 # Hand references
 @onready var player1_hand: Node2D = $Player1Hand
@@ -381,6 +382,7 @@ var _mobile_menu_panel: Control = null
 var _mobile_menu_backdrop: ColorRect = null
 var _mobile_menu_open: bool = false
 var _mobile_sound_button: Button = null
+var _mobile_music_button: Button = null
 # Safe area insets in canvas units (set in _apply_safe_area_insets)
 var _safe_left: float = 0.0
 var _safe_right: float = 0.0
@@ -564,7 +566,9 @@ func _ready() -> void:
 	btn_concede.pressed.connect(_on_concede_pressed)
 	btn_main_menu.pressed.connect(_on_main_menu_pressed)
 	btn_sound_toggle.pressed.connect(_on_sound_toggle_pressed)
+	btn_music_toggle.pressed.connect(_on_music_toggle_pressed)
 	_update_sound_button_text()
+	_update_music_button_text()
 	btn_rematch.pressed.connect(_on_rematch_pressed)
 	btn_end_menu.pressed.connect(_on_main_menu_pressed)
 
@@ -1616,7 +1620,7 @@ func _apply_mobile_utility_buttons() -> void:
 
 	# Sound toggle in mobile menu
 	var sound_btn := Button.new()
-	sound_btn.text = "Sound: ON" if GameSettings.sound_enabled else "Sound: OFF"
+	sound_btn.text = _SOUND_LABELS[GameSettings.sound_volume]
 	sound_btn.custom_minimum_size.y = btn_h
 	sound_btn.add_theme_font_size_override("font_size", 18)
 	sound_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
@@ -1626,8 +1630,22 @@ func _apply_mobile_utility_buttons() -> void:
 	)
 	_mobile_menu_panel.add_child(sound_btn)
 	_mobile_sound_button = sound_btn
-	# Expand panel height for the extra button
-	_mobile_menu_panel.offset_bottom += btn_h + gap
+
+	# Music toggle in mobile menu
+	var music_btn := Button.new()
+	music_btn.text = _MUSIC_LABELS[GameSettings.music_volume]
+	music_btn.custom_minimum_size.y = btn_h
+	music_btn.add_theme_font_size_override("font_size", 18)
+	music_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	_apply_mobile_menu_pill_style(music_btn)
+	music_btn.pressed.connect(func():
+		_on_music_toggle_pressed()
+	)
+	_mobile_menu_panel.add_child(music_btn)
+	_mobile_music_button = music_btn
+
+	# Expand panel height for the extra buttons
+	_mobile_menu_panel.offset_bottom += (btn_h + gap) * 2
 
 	# Hand toggle/sort buttons — fire on touch-down
 	for btn: Button in [hand_toggle_button, sort_hand_button,
@@ -2575,17 +2593,39 @@ func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monst
 
 # --- Sound toggle ---
 
+const _SOUND_LABELS := ["Sound: OFF", "Sound: 25%", "Sound: 50%", "Sound: 75%", "Sound: 100%"]
+
 func _on_sound_toggle_pressed() -> void:
-	GameSettings.sound_enabled = not GameSettings.sound_enabled
+	GameSettings.sound_volume = (GameSettings.sound_volume + 1) % 5
 	GameSettings.save()
 	_update_sound_button_text()
 
 
 func _update_sound_button_text() -> void:
+	var label: String = _SOUND_LABELS[GameSettings.sound_volume]
 	if btn_sound_toggle:
-		btn_sound_toggle.text = "Sound: ON" if GameSettings.sound_enabled else "Sound: OFF"
+		btn_sound_toggle.text = label
 	if _mobile_sound_button:
-		_mobile_sound_button.text = "Sound: ON" if GameSettings.sound_enabled else "Sound: OFF"
+		_mobile_sound_button.text = label
+
+
+# --- Music toggle ---
+
+const _MUSIC_LABELS := ["Music: OFF", "Music: 25%", "Music: 50%", "Music: 75%", "Music: 100%"]
+
+func _on_music_toggle_pressed() -> void:
+	GameSettings.music_volume = (GameSettings.music_volume + 1) % 5
+	GameSettings.save()
+	MusicManager.set_volume(GameSettings.music_volume)
+	_update_music_button_text()
+
+
+func _update_music_button_text() -> void:
+	var label: String = _MUSIC_LABELS[GameSettings.music_volume]
+	if btn_music_toggle:
+		btn_music_toggle.text = label
+	if _mobile_music_button:
+		_mobile_music_button.text = label
 
 
 # --- Bug report ---

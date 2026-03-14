@@ -40,7 +40,8 @@ var custom_card_art_enabled: bool = false
 var custom_card_back_mode: int = 0  # 0=disabled, 1=myself only, 2=both players
 
 # Audio settings
-var sound_enabled: bool = true
+var sound_volume: int = 2  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
+var music_volume: int = 2  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
 
 # Advanced settings
 var use_mobile_layout: bool = false
@@ -112,7 +113,8 @@ func _save() -> void:
 	config.set_value("visual", "color_overlay_mode", color_overlay_mode)
 	config.set_value("visual", "custom_card_art_enabled", custom_card_art_enabled)
 	config.set_value("visual", "custom_card_back_mode", custom_card_back_mode)
-	config.set_value("audio", "sound_enabled", sound_enabled)
+	config.set_value("audio", "sound_volume", sound_volume)
+	config.set_value("audio", "music_volume", music_volume)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
 	config.set_value("updates", "skipped_version", skipped_version)
 	config.set_value("reconnect", "room_code", reconnect_room_code)
@@ -143,7 +145,17 @@ func _load() -> void:
 	color_overlay_mode = config.get_value("visual", "color_overlay_mode", 3)
 	custom_card_art_enabled = config.get_value("visual", "custom_card_art_enabled", false)
 	custom_card_back_mode = config.get_value("visual", "custom_card_back_mode", 0)
-	sound_enabled = config.get_value("audio", "sound_enabled", true)
+	# Migrate old bool sound_enabled to new int sound_volume
+	var _old_sound: Variant = config.get_value("audio", "sound_enabled", null)
+	if _old_sound != null and _old_sound is bool:
+		sound_volume = 4 if _old_sound else 0
+	else:
+		sound_volume = config.get_value("audio", "sound_volume", 2)
+	var _old_music: Variant = config.get_value("audio", "music_enabled", null)
+	if _old_music != null and _old_music is bool:
+		music_volume = 4 if _old_music else 0
+	else:
+		music_volume = config.get_value("audio", "music_volume", 2)
 	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	use_mobile_layout = config.get_value("advanced", "use_mobile_layout", _mobile_default)
 	skipped_version = config.get_value("updates", "skipped_version", "")

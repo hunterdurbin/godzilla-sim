@@ -823,7 +823,62 @@ func _on_audio_pressed() -> void:
 	var popup: PopupPanel = parts[0]
 	var vbox: VBoxContainer = parts[1]
 
-	_add_toggle_row(vbox, "Sound Effects", "sound_enabled")
+	# Sound volume slider (OFF, 25%, 50%, 75%, 100%)
+	var sound_row := HBoxContainer.new()
+	var sound_label := Label.new()
+	sound_label.text = "Sound Effects"
+	sound_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sound_label.add_theme_font_size_override("font_size", 18)
+	sound_row.add_child(sound_label)
+	var sound_volume_labels := ["OFF", "25%", "50%", "75%", "100%"]
+	var sound_value_label := Label.new()
+	sound_value_label.text = sound_volume_labels[GameSettings.sound_volume]
+	sound_value_label.custom_minimum_size = Vector2(40, 0)
+	sound_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sound_value_label.add_theme_font_size_override("font_size", 16)
+	var sound_slider := HSlider.new()
+	sound_slider.min_value = 0
+	sound_slider.max_value = 4
+	sound_slider.step = 1
+	sound_slider.value = GameSettings.sound_volume
+	sound_slider.custom_minimum_size = Vector2(140, 0)
+	sound_slider.value_changed.connect(func(val: float):
+		GameSettings.sound_volume = int(val)
+		GameSettings.save()
+		sound_value_label.text = sound_volume_labels[int(val)]
+	)
+	sound_row.add_child(sound_slider)
+	sound_row.add_child(sound_value_label)
+	vbox.add_child(sound_row)
+
+	# Music volume slider (OFF, 25%, 50%, 75%, 100%)
+	var music_row := HBoxContainer.new()
+	var music_label := Label.new()
+	music_label.text = "Music"
+	music_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	music_label.add_theme_font_size_override("font_size", 18)
+	music_row.add_child(music_label)
+	var music_volume_labels := ["OFF", "25%", "50%", "75%", "100%"]
+	var music_value_label := Label.new()
+	music_value_label.text = music_volume_labels[GameSettings.music_volume]
+	music_value_label.custom_minimum_size = Vector2(40, 0)
+	music_value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	music_value_label.add_theme_font_size_override("font_size", 16)
+	var music_slider := HSlider.new()
+	music_slider.min_value = 0
+	music_slider.max_value = 4
+	music_slider.step = 1
+	music_slider.value = GameSettings.music_volume
+	music_slider.custom_minimum_size = Vector2(140, 0)
+	music_slider.value_changed.connect(func(val: float):
+		GameSettings.music_volume = int(val)
+		GameSettings.save()
+		MusicManager.set_volume(int(val))
+		music_value_label.text = music_volume_labels[int(val)]
+	)
+	music_row.add_child(music_slider)
+	music_row.add_child(music_value_label)
+	vbox.add_child(music_row)
 
 	_add_close_button(vbox, popup)
 	_show_modal(popup)

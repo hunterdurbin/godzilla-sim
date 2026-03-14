@@ -45,16 +45,28 @@ func _ready() -> void:
 			push_warning("SfxManager: failed to load %s" % path)
 
 
+## Volume level (0-4) to dB mapping.
+const _VOLUME_DB := [
+	-80.0,  # 0 = OFF
+	-12.0,  # 1 = 25%
+	-6.0,   # 2 = 50%
+	-3.0,   # 3 = 75%
+	0.0,    # 4 = 100%
+]
+
+
 func play(sound_name: String) -> void:
-	if not GameSettings.sound_enabled:
+	var vol: int = GameSettings.sound_volume
+	if vol <= 0:
 		return
 	var stream: AudioStream = _sounds.get(sound_name)
 	if stream == null:
 		return
+	var db: float = _VOLUME_DB[mini(vol, 4)]
 	for player in _players:
 		if not player.playing:
 			player.stream = stream
-			player.volume_db = 0.0
+			player.volume_db = db
 			player.play()
 			return
 	# All players busy — skip this sound
