@@ -7,6 +7,8 @@ extends Control
 @onready var online_button: Button = $CenterContainer/VBoxContainer/OnlineButton
 @onready var deck_builder_button: Button = $CenterContainer/VBoxContainer/DeckBuilderButton
 @onready var options_button: Button = $OptionsButton
+@onready var sound_button: Button = $SoundButton
+@onready var music_button: Button = $MusicButton
 @onready var patreon_button: TextureButton = $PatreonButton
 @onready var version_label: Label = $VersionLabel
 @onready var update_button: Button = $UpdateButton
@@ -26,6 +28,10 @@ func _ready() -> void:
 	online_button.pressed.connect(_on_online_pressed)
 	deck_builder_button.pressed.connect(_on_deck_builder_pressed)
 	options_button.pressed.connect(_on_options_pressed)
+	sound_button.gui_input.connect(_on_sound_gui_input)
+	music_button.gui_input.connect(_on_music_gui_input)
+	_update_sound_button()
+	_update_music_button()
 	patreon_button.pressed.connect(_on_patreon_pressed)
 
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "")
@@ -134,7 +140,7 @@ func _show_difficulty_popup() -> void:
 	var speed_row := VBoxContainer.new()
 	speed_row.add_theme_constant_override("separation", 4)
 	var speed_label := Label.new()
-	speed_label.text = "Bot Speed: automatic"
+	speed_label.text = "Bot Speed: Automatic"
 	speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	speed_label.add_theme_font_size_override("font_size", 16)
 	speed_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
@@ -147,7 +153,7 @@ func _show_difficulty_popup() -> void:
 	speed_slider.custom_minimum_size = Vector2(280, 0)
 	speed_slider.value_changed.connect(func(val: float):
 		if val == 0:
-			speed_label.text = "Bot Speed: automatic"
+			speed_label.text = "Bot Speed: Automatic"
 		else:
 			speed_label.text = "Bot Speed: %.1fs" % (val * 0.1)
 	)
@@ -208,7 +214,7 @@ func _show_difficulty_popup() -> void:
 				NetworkManager.bot_config.action_delay = speed_slider.value * 0.1
 			# Apply playstyle override (0=auto, 1=invasion, 2=counter, 3=balanced)
 			var ps_val := int(playstyle_slider.value)
-			NetworkManager.bot_config.forced_playstyle = ps_val - 1  # -1=auto, 0=inv, 1=ctr, 2=bal
+			NetworkManager.bot_config.forced_playstyle = ps_val - 1 # -1=auto, 0=inv, 1=ctr, 2=bal
 			NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
 			NetworkManager.local_player_id = 0
 			popup.hide()
@@ -251,6 +257,44 @@ func _on_deck_builder_pressed() -> void:
 func _on_patreon_pressed() -> void:
 	SfxManager.play("ui_click")
 	OS.shell_open("https://www.patreon.com/cw/sodabomber/membership")
+
+
+const _VOLUME_LABELS := ["OFF", "25%", "50%", "75%", "100%"]
+
+
+func _on_sound_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			GameSettings.sound_volume = (GameSettings.sound_volume + 1) % 5
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			GameSettings.sound_volume = (GameSettings.sound_volume + 4) % 5
+		else:
+			return
+		GameSettings.save()
+		_update_sound_button()
+		SfxManager.play("ui_click")
+
+
+func _on_music_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			GameSettings.music_volume = (GameSettings.music_volume + 1) % 5
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			GameSettings.music_volume = (GameSettings.music_volume + 4) % 5
+		else:
+			return
+		SfxManager.play("ui_click")
+		GameSettings.save()
+		MusicManager.set_volume(GameSettings.music_volume)
+		_update_music_button()
+
+
+func _update_sound_button() -> void:
+	sound_button.text = "Sound: %s" % _VOLUME_LABELS[GameSettings.sound_volume]
+
+
+func _update_music_button() -> void:
+	music_button.text = "Music: %s" % _VOLUME_LABELS[GameSettings.music_volume]
 
 
 func _on_options_pressed() -> void:

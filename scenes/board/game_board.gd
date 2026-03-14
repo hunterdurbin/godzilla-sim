@@ -568,8 +568,8 @@ func _ready() -> void:
 	btn_bug_report.pressed.connect(_on_bug_report_pressed)
 	btn_concede.pressed.connect(_on_concede_pressed)
 	btn_main_menu.pressed.connect(_on_main_menu_pressed)
-	btn_sound_toggle.pressed.connect(_on_sound_toggle_pressed)
-	btn_music_toggle.pressed.connect(_on_music_toggle_pressed)
+	btn_sound_toggle.gui_input.connect(_on_sound_gui_input)
+	btn_music_toggle.gui_input.connect(_on_music_gui_input)
 	_update_sound_button_text()
 	_update_music_button_text()
 	btn_rematch.pressed.connect(_on_rematch_pressed)
@@ -2611,6 +2611,19 @@ func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monst
 
 const _SOUND_LABELS := ["Sound: OFF", "Sound: 25%", "Sound: 50%", "Sound: 75%", "Sound: 100%"]
 
+func _on_sound_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			GameSettings.sound_volume = (GameSettings.sound_volume + 1) % 5
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			GameSettings.sound_volume = (GameSettings.sound_volume + 4) % 5
+		else:
+			return
+		GameSettings.save()
+		_update_sound_button_text()
+		SfxManager.play("ui_click")
+
+
 func _on_sound_toggle_pressed() -> void:
 	GameSettings.sound_volume = (GameSettings.sound_volume + 1) % 5
 	GameSettings.save()
@@ -2628,6 +2641,20 @@ func _update_sound_button_text() -> void:
 # --- Music toggle ---
 
 const _MUSIC_LABELS := ["Music: OFF", "Music: 25%", "Music: 50%", "Music: 75%", "Music: 100%"]
+
+func _on_music_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			GameSettings.music_volume = (GameSettings.music_volume + 1) % 5
+		elif event.button_index == MOUSE_BUTTON_RIGHT:
+			GameSettings.music_volume = (GameSettings.music_volume + 4) % 5
+		else:
+			return
+		SfxManager.play("ui_click")
+		GameSettings.save()
+		MusicManager.set_volume(GameSettings.music_volume)
+		_update_music_button_text()
+
 
 func _on_music_toggle_pressed() -> void:
 	GameSettings.music_volume = (GameSettings.music_volume + 1) % 5
