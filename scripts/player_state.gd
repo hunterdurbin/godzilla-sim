@@ -8,6 +8,7 @@ signal rage_changed(new_rage: int)
 signal strategy_zones_changed()
 signal deck_changed()
 signal discard_changed()
+signal discard_reshuffled()
 
 var player_id: int = 0
 var monster_deck: Array[Dictionary] = []  # Rank I-IV, ordered
@@ -194,3 +195,4 @@ func _reshuffle_discard() -> void:
 	main_deck.shuffle()
 	deck_changed.emit()
 	discard_changed.emit()
+	discard_reshuffled.emit()

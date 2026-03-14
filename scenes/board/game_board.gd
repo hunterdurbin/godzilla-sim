@@ -542,6 +542,7 @@ func _ready() -> void:
 			player.discard_changed.connect(_on_state_changed)
 			player.deck_changed.connect(_on_state_changed)
 			player.strategy_zones_changed.connect(_on_state_changed)
+			player.discard_reshuffled.connect(_on_discard_reshuffled)
 	else:
 		# Client: initialize empty client state, wait for host RPCs
 		_client_players = [PlayerState.new(0), PlayerState.new(1)]
@@ -2525,6 +2526,10 @@ func _on_card_discarded(_player_id: int, _card: Dictionary) -> void:
 	SfxManager.play("card_discard")
 
 
+func _on_discard_reshuffled() -> void:
+	SfxManager.play("deck_shuffle")
+
+
 func _on_rage_gained(_player_id: int, _new_rage: int) -> void:
 	SfxManager.play("gain_rage")
 
@@ -2990,6 +2995,7 @@ func _execute_rematch() -> void:
 			player.discard_changed.connect(_on_state_changed)
 			player.deck_changed.connect(_on_state_changed)
 			player.strategy_zones_changed.connect(_on_state_changed)
+			player.discard_reshuffled.connect(_on_discard_reshuffled)
 
 		# Start game (coin flip for multiplayer, immediate for solo)
 		call_deferred("_start_game")
@@ -5993,7 +5999,6 @@ func _clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 
 
 func _resolve_deck_search_local(selected: Dictionary) -> void:
-	SfxManager.play("deck_shuffle")
 	if is_multiplayer_game and not NetworkManager.is_host():
 		# Client sends selection back to host
 		var _search_json := JSON.stringify(selected)
