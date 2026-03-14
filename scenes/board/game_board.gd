@@ -1552,6 +1552,8 @@ func _apply_mobile_utility_buttons() -> void:
 	btn_bug_report.visible = false
 	btn_concede.visible = false
 	btn_main_menu.visible = false
+	btn_sound_toggle.visible = false
+	btn_music_toggle.visible = false
 
 	# Create a styled menu button in the top-right corner
 	_mobile_menu_btn = Button.new()
