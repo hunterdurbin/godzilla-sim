@@ -17,6 +17,9 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 5
+
 
 func on_enter(ctx: EffectContext) -> void:
 	await ctx.effect_handler.create_tokens_in_empty_zones(ctx.owner, "EBP02-T03", 2)

@@ -16,6 +16,16 @@ func get_bot_tags() -> Array[String]:
 	return ["draws_cards", "boosts_cp"]
 
 
+func bot_can_fulfill_counter_power(owner: PlayerState, _opponent: PlayerState) -> bool:
+	var strategy_count: int = 0
+	for card in owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.STRATEGY:
+			strategy_count += 1
+			if strategy_count >= 5:
+				return true
+	return false
+
+
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 

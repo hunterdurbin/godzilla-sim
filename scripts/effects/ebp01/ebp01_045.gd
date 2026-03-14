@@ -16,6 +16,18 @@ func get_bot_tags() -> Array[String]:
 	return ["column_dependent_monster", "weakens_opponent"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool:
+	if opponent.rage <= 0:
+		return false
+	var battle_count: int = 0
+	for i in range(8):
+		if owner.zone_has_battle_card(i):
+			battle_count += 1
+			if battle_count >= 2:
+				return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:

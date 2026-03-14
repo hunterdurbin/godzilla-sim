@@ -15,6 +15,16 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
+	var count: int = 0
+	for i in range(8):
+		if opponent.zone_has_battle_card(i):
+			count += 1
+			if count >= 3:
+				return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Column layout from left to right (your perspective looking at opponent's board):
 	# Col 1: zones 5/6, Col 2: zones 4/7, Col 3: zones 3/8, Col 4: zone 2, Col 5: zone 1

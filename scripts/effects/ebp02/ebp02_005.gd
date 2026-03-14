@@ -16,6 +16,10 @@ func get_bot_tags() -> Array[String]:
 	return ["disrupts_hand"]
 
 
+func bot_can_fulfill_on_rage_changed(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.monster_zone >= 6
+
+
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	if new_rage <= old_rage:
 		return

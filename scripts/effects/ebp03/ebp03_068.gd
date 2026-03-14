@@ -17,6 +17,10 @@ func get_bot_tags() -> Array[String]:
 	return ["blocks_invade", "advances_monster"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.monster_zone == 3 and owner.current_monster.get("rank", 0) >= 3
+
+
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS, CardEnums.EffectCategory.ACTIVATED]
 

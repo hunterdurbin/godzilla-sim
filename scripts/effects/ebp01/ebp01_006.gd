@@ -16,6 +16,10 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "column_dependent_battle"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 5
+
+
 func get_phase_start_filter() -> Dictionary:
 	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
 

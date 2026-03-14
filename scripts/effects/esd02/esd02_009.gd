@@ -16,6 +16,10 @@ func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent", "zone_dependent"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.monster_zone >= 4
+
+
 func get_bot_preferred_zones() -> Array[int]:
 	return [7]  # zone 8 (0-indexed) — effect only activates in zone 8
 

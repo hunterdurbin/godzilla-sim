@@ -17,6 +17,17 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 5
+
+
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	for sz in owner.strategy_zones:
+		if not sz.is_empty():
+			return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var has_strategy: bool = false
 	for sz in ctx.owner.strategy_zones:

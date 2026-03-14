@@ -17,6 +17,16 @@ func get_bot_tags() -> Array[String]:
 	return ["searches_deck", "plays_other_cards"]
 
 
+func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:
+	if owner.monster_zone < 4:
+		return false
+	for i in range(8):
+		var zone_card := owner.get_zone_top_card(i)
+		if not zone_card.is_empty() and zone_card.get("name", "") == "Land Moguera":
+			return true
+	return false
+
+
 func get_phase_start_filter() -> Dictionary:
 	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
 

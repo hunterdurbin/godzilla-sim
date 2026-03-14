@@ -15,6 +15,14 @@ func get_bot_tags() -> Array[String]:
 	return ["evolves"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	for i in range(8):
+		var zone_card := owner.get_zone_top_card(i)
+		if not zone_card.is_empty() and zone_card.has("evolution_rank"):
+			return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var player := ctx.owner
 

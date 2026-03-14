@@ -334,6 +334,7 @@ func get_bot_tags() -> Array[String]:
 	##   "column_dependent_monster" — effect depends on opponent's monster being in the same column
 	##   "column_dependent_monster_self" — effect depends on own monster being in the same column as opponent's battle card(s)
 	##   "column_avoid_battle_cards" — effect is harmful when opponent's battle cards are in the same column
+	##   "avoid_own_adjacent" — effect is harmful to own adjacent battle cards (place away from own cards)
 	##   "retreats_opponent" — retreats/moves opponent's monster backward
 	##   "plays_other_cards" — plays/creates additional cards (tokens, from hand, etc.) onto the field
 	return []
@@ -344,6 +345,84 @@ func get_bot_preferred_zones() -> Array[int]:
 	## Used with "zone_dependent" tag so the bot knows where to place the card.
 	## E.g., a card that only activates in zones 6-8 returns [5, 6, 7].
 	return []
+
+
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	## Return the maximum rank of cards this effect can destroy.
+	## -1 means no rank restriction (can destroy any rank).
+	## Override in effect scripts with rank-limited destroy effects.
+	return -1
+
+
+## Bot fulfill methods — per-trigger activation checks.
+## Override in effect scripts to declare when a specific trigger can't fire.
+## The bot checks these to skip tag scoring when no trigger can fulfill.
+## All return true by default (assume can fulfill).
+
+
+func bot_can_fulfill_on_enter(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_on_when_invading(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_on_revenge(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_on_crush(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_on_discard_from_hand(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_on_burst_discard(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_on_rage_changed(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_on_opponent_rage_changed(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_on_monster_advance(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_on_phase_start(_owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:
+	return true
+
+
+func bot_can_fulfill_on_monster_played(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_counter_power(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_field_cp(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_total_cp(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_threat_level(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
+
+func bot_can_fulfill_counter_success(_owner: PlayerState, _opponent: PlayerState) -> bool:
+	return true
+
 
 func get_burst_rank() -> int:
 	## Return the burst rank (1-4) if this card has Burst. Return -1 for no burst.

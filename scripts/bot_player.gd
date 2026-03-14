@@ -6,6 +6,25 @@ extends RefCounted
 
 const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
 
+const _TRIGGER_FULFILL_MAP: Dictionary = {
+	"on_enter": &"bot_can_fulfill_on_enter",
+	"on_when_invading": &"bot_can_fulfill_on_when_invading",
+	"on_revenge": &"bot_can_fulfill_on_revenge",
+	"on_crush": &"bot_can_fulfill_on_crush",
+	"on_discard_from_hand": &"bot_can_fulfill_on_discard_from_hand",
+	"on_burst_discard": &"bot_can_fulfill_on_burst_discard",
+	"on_rage_changed": &"bot_can_fulfill_on_rage_changed",
+	"on_opponent_rage_changed": &"bot_can_fulfill_on_opponent_rage_changed",
+	"on_monster_advance": &"bot_can_fulfill_on_monster_advance",
+	"on_phase_start": &"bot_can_fulfill_on_phase_start",
+	"on_monster_played": &"bot_can_fulfill_on_monster_played",
+	"get_counter_power_modifier": &"bot_can_fulfill_counter_power",
+	"get_field_cp_modifiers": &"bot_can_fulfill_field_cp",
+	"get_total_cp_modifier": &"bot_can_fulfill_total_cp",
+	"get_threat_level_modifier": &"bot_can_fulfill_threat_level",
+	"on_counter_success": &"bot_can_fulfill_counter_success",
+}
+
 enum Playstyle {INVASION, COUNTER, BALANCED}
 
 var bot_player_id: int = 1
@@ -392,6 +411,26 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 	if tags.is_empty():
 		return score
 
+	# Penalize unfulfillable triggers — deduct score for each on_* trigger
+	# whose bot_can_fulfill_* returns false (the card's effect won't fully fire)
+	if config.use_activation_check:
+		var triggers: Array = _TriggerMap.TRIGGERS.get(card.get("effect_script", ""), [])
+		var has_destroy := "destroys_zone" in tags
+		for trigger in triggers:
+			var method: StringName = _TRIGGER_FULFILL_MAP.get(trigger, &"")
+			if method == &"":
+				continue
+			var result: bool
+			if method == &"bot_can_fulfill_on_phase_start":
+				result = effect.call(method, player, opponent, effect_handler)
+			else:
+				result = effect.call(method, player, opponent)
+			if not result:
+				if has_destroy and trigger == &"on_enter":
+					score -= config.unfulfilled_destroy_penalty
+				else:
+					score -= config.unfulfilled_trigger_penalty
+
 	# Base tag scores from config
 	for tag in tags:
 		score += config.tag_scores.get(tag, 0)
@@ -446,19 +485,27 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 	# Count opponent battle cards in zones this card can actually target
 	var effective_target_count: int = opp_zone_count
 	if "destroys_zone" in tags:
+		var destroy_max_rank: int = -1
+		if effect:
+			destroy_max_rank = effect.get_bot_destroy_max_rank(player, opponent)
 		if "column_dependent_monster_self" in tags:
 			var own_monster_idx: int = player.monster_zone - 1
 			var column_zones := CardEffect.get_opponent_column_zones(own_monster_idx)
 			effective_target_count = 0
 			for z in column_zones:
-				if opponent.zone_has_battle_card(z):
+				if _is_valid_destroy_target(opponent, z, destroy_max_rank):
 					effective_target_count += 1
 		elif "column_dependent_monster" in tags:
 			var opp_monster_idx: int = opponent.monster_zone - 1
 			var column_zones := CardEffect.get_opponent_column_zones(opp_monster_idx)
 			effective_target_count = 0
 			for z in column_zones:
-				if opponent.zone_has_battle_card(z):
+				if _is_valid_destroy_target(opponent, z, destroy_max_rank):
+					effective_target_count += 1
+		elif destroy_max_rank > 0:
+			effective_target_count = 0
+			for z in range(8):
+				if _is_valid_destroy_target(opponent, z, destroy_max_rank):
 					effective_target_count += 1
 
 	for tag in tags:
@@ -529,6 +576,15 @@ func _score_from_triggers(card: Dictionary, opponent: PlayerState) -> int:
 				bonus += sit_bonus
 
 	return bonus
+
+
+func _is_valid_destroy_target(opp: PlayerState, zone: int, max_rank: int) -> bool:
+	var top := opp.get_zone_top_card(zone)
+	if top.is_empty():
+		return false
+	if max_rank > 0 and top.get("rank", 0) > max_rank:
+		return false
+	return true
 
 
 func _score_synergies(card_tags: Array[String], player: PlayerState, _opponent: PlayerState) -> int:
@@ -608,7 +664,7 @@ func _score_enabler_bonus(my_idx: int, my_tags: Array, all_playable_tags: Dictio
 
 const ZONE_PREF_TAGS: Array[String] = [
 	"zone_dependent", "column_dependent_monster", "column_dependent_monster_self",
-	"column_dependent_battle", "column_avoid_battle_cards",
+	"column_dependent_battle", "column_avoid_battle_cards", "avoid_own_adjacent",
 ]
 
 
@@ -785,6 +841,20 @@ func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: P
 					if not player.zone_has_cards(z):
 						return z
 				return safe_zones[0]
+
+		# Avoid own adjacent: prefer zones with fewest own adjacent cards
+		if "avoid_own_adjacent" in tags:
+			var best_z: int = valid_zones[0]
+			var best_adj_count: int = 9
+			for z in valid_zones:
+				var adj_count: int = 0
+				for adj_z in CardEffect.get_adjacent_zones(z):
+					if player.zone_has_cards(adj_z):
+						adj_count += 1
+				if adj_count < best_adj_count:
+					best_adj_count = adj_count
+					best_z = z
+			return best_z
 
 		# Column-dependent on opponent's battle cards: prefer zones where opponent has cards
 		if "column_dependent_battle" in tags:
@@ -1529,6 +1599,7 @@ func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, op
 	# Priority 2: destroy the zone with highest total CP (card + adjacent cards)
 	# Adjacent CP acts as tiebreaker — maximizes value for effects that also hit neighbors
 	var cp_modifiers := effect_handler.get_zone_cp_modifiers(opponent.player_id)
+	var max_rank: int = effect_handler.pending_destroy_max_rank
 	var best_zone: int = valid_zones[0]
 	var best_cp: int = -1
 	var best_adj_cp: int = -1
@@ -1536,12 +1607,16 @@ func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, op
 		var zone_card := opponent.get_zone_top_card(z)
 		if zone_card.is_empty():
 			continue
+		if max_rank > 0 and zone_card.get("rank", 0) > max_rank:
+			continue
 		var cp: int = zone_card.get("counter_power", 0) + cp_modifiers[z]
 		# Sum adjacent zones' CP as tiebreaker
 		var adj_cp: int = 0
 		for adj_z in CardEffect.get_adjacent_zones(z):
 			var adj_card := opponent.get_zone_top_card(adj_z)
 			if not adj_card.is_empty():
+				if max_rank > 0 and adj_card.get("rank", 0) > max_rank:
+					continue
 				adj_cp += adj_card.get("counter_power", 0) + cp_modifiers[adj_z]
 		if cp > best_cp or (cp == best_cp and adj_cp > best_adj_cp):
 			best_cp = cp

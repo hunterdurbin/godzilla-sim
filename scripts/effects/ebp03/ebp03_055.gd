@@ -14,6 +14,14 @@ func get_bot_tags() -> Array[String]:
 	return ["heals_deck"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	for card in owner.discard_pile:
+		if card.get("card_type") == CardEnums.CardType.BATTLE \
+			and CardEnums.CardTrait.MOTHRA in card.get("traits", []):
+			return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,

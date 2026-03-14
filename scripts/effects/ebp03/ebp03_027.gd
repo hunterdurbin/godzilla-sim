@@ -18,6 +18,10 @@ func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent", "disrupts_hand"]
 
 
+func bot_can_fulfill_on_when_invading(owner: PlayerState, opponent: PlayerState) -> bool:
+	return owner.monster_stack.size() >= 5 and opponent.hand.size() > 4
+
+
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 

@@ -14,6 +14,23 @@ func get_bot_tags() -> Array[String]:
 	return ["searches_deck", "plays_other_cards"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	var strategy_count := 0
+	for sz in owner.strategy_zones:
+		if not sz.is_empty():
+			strategy_count += 1
+	if strategy_count > 1:
+		return false
+	if not owner.has_empty_strategy_zone():
+		return false
+	for card in owner.hand:
+		if card.get("card_type") == CardEnums.CardType.STRATEGY \
+			and CardEnums.CardColor.BLUE in card.get("colors", []) \
+			and card.get("rank", 0) <= 6:
+			return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	# Count strategy cards in play
 	var strategy_count := 0

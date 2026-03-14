@@ -15,6 +15,19 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "column_dependent_monster_self"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 5
+
+
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	for i in range(8):
+		var card := owner.get_zone_top_card(i)
+		if not card.is_empty() and card.get("card_type") == CardEnums.CardType.BATTLE:
+			if CardEnums.CardColor.BLUE in card.get("colors", []):
+				return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if not _has_color_battle_in_zones(ctx, CardEnums.CardColor.BLUE):
 		return

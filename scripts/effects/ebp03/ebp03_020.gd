@@ -16,6 +16,17 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 7
+
+
+func bot_can_fulfill_counter_success(owner: PlayerState, _opponent: PlayerState) -> bool:
+	for sz_card in owner.strategy_zones:
+		if not sz_card.is_empty() and sz_card.get("is_base", false):
+			return true
+	return false
+
+
 func on_counter_success(ctx: EffectContext) -> void:
 	if not _has_base_in_play(ctx):
 		return

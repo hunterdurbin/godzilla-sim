@@ -16,6 +16,10 @@ func get_bot_tags() -> Array[String]:
 	return ["draws_cards"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.main_deck.size() >= 2
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var revealed: Array[Dictionary] = []
 	for _i in range(2):

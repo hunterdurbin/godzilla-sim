@@ -120,6 +120,11 @@ var monster_burst_match_bonus: int = 150000
 var monster_rank_match_bonus: int = 100000
 var monster_trait_bonus: int = 50000
 
+# Activation check
+var use_activation_check: bool = true
+var unfulfilled_trigger_penalty: int = 20
+var unfulfilled_destroy_penalty: int = 40
+
 # Deck analysis
 var playstyle_threshold: float = 0.6
 
@@ -161,6 +166,8 @@ static func easy() -> BotConfig:
 	c.choice_pick_mode = 0
 	# Don't protect 2-step cards
 	c.protect_two_step_cards = false
+	# No activation check
+	c.use_activation_check = false
 	return c
 
 
@@ -195,6 +202,9 @@ static func hard() -> BotConfig:
 	c.synergy_board_multiplier = 1.5
 	c.synergy_hand_multiplier = 0.75
 	c.synergy_deck_multiplier = 0.4
+	# Stronger unfulfilled penalties
+	c.unfulfilled_trigger_penalty = int(c.unfulfilled_trigger_penalty * 1.3)
+	c.unfulfilled_destroy_penalty = int(c.unfulfilled_destroy_penalty * 1.3)
 	# Aggressive invasion
 	c.early_invasion_zone_threshold = 6
 	c.zone_6_two_step_chance = 0.75

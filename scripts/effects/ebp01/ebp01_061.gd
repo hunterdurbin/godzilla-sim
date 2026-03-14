@@ -15,6 +15,10 @@ func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent"]
 
 
+func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
+	return opponent.rage >= 5
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.rage >= 5:
 		var reduction: int = mini(ctx.opponent.rage, 3)

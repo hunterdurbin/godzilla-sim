@@ -16,6 +16,16 @@ func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool:
+	if opponent.rage <= 0:
+		return false
+	for i in range(8):
+		var top := owner.get_zone_top_card(i)
+		if top.get("name", "") == "Chibi Mechagodzilla":
+			return true
+	return false
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var has_mechagodzilla: bool = false
 	for i in range(8):

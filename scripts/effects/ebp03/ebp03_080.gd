@@ -16,6 +16,19 @@ func get_bot_tags() -> Array[String]:
 	return ["plays_other_cards"]
 
 
+func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, effect_handler = null) -> bool:
+	var valid_zones := CardEffect.get_effect_play_zones(owner)
+	if valid_zones.is_empty():
+		return false
+	for card in owner.hand:
+		if card.get("card_type") == CardEnums.CardType.BATTLE \
+			and CardEnums.CardTrait.GODZILLA in card.get("traits", []):
+			if effect_handler and not effect_handler.can_card_be_played(owner.player_id, card):
+				continue
+			return true
+	return false
+
+
 func is_base_strategy() -> bool:
 	return true
 

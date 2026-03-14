@@ -16,6 +16,10 @@ func get_bot_tags() -> Array[String]:
 	return ["disrupts_hand"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.rage >= 2
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.rage >= 2:
 		await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 2)

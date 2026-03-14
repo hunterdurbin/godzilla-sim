@@ -152,6 +152,28 @@ func _show_difficulty_popup() -> void:
 	speed_row.add_child(speed_slider)
 	vbox.add_child(speed_row)
 
+	# Playstyle slider
+	var playstyle_row := VBoxContainer.new()
+	playstyle_row.add_theme_constant_override("separation", 4)
+	var playstyle_label := Label.new()
+	playstyle_label.text = "Playstyle: Automatic"
+	playstyle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	playstyle_label.add_theme_font_size_override("font_size", 16)
+	playstyle_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	playstyle_row.add_child(playstyle_label)
+	var playstyle_names := ["Automatic", "Invasion", "Counter", "Balanced"]
+	var playstyle_slider := HSlider.new()
+	playstyle_slider.min_value = 0
+	playstyle_slider.max_value = 3
+	playstyle_slider.step = 1
+	playstyle_slider.value = 0
+	playstyle_slider.custom_minimum_size = Vector2(280, 0)
+	playstyle_slider.value_changed.connect(func(val: float):
+		playstyle_label.text = "Playstyle: %s" % playstyle_names[int(val)]
+	)
+	playstyle_row.add_child(playstyle_slider)
+	vbox.add_child(playstyle_row)
+
 	vbox.add_child(HSeparator.new())
 
 	var btn_box := VBoxContainer.new()
@@ -181,6 +203,9 @@ func _show_difficulty_popup() -> void:
 			# Apply speed override if not automatic
 			if speed_slider.value > 0:
 				NetworkManager.bot_config.action_delay = speed_slider.value * 0.1
+			# Apply playstyle override (0=auto, 1=invasion, 2=counter, 3=balanced)
+			var ps_val := int(playstyle_slider.value)
+			NetworkManager.bot_config.forced_playstyle = ps_val - 1  # -1=auto, 0=inv, 1=ctr, 2=bal
 			NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
 			NetworkManager.local_player_id = 0
 			popup.hide()

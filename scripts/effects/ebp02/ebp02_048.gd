@@ -16,6 +16,10 @@ func get_bot_tags() -> Array[String]:
 	return ["mill_self", "destroys_zone"]
 
 
+func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 4
+
+
 func on_enter(ctx: EffectContext) -> void:
 	var milled: Array[Dictionary] = ctx.owner.mill_cards(3)
 	if not milled.is_empty():

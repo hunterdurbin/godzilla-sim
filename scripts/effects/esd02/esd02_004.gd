@@ -17,6 +17,13 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func bot_can_fulfill_on_when_invading(owner: PlayerState, _opponent: PlayerState) -> bool:
+	for card in owner.hand:
+		if card.get("card_type") == CardEnums.CardType.BATTLE:
+			return true
+	return false
+
+
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	# Cost: discard 1 battle card from hand (optional — player may skip)
 	var discarded := await ctx.effect_handler.select_hand_card(

@@ -19,6 +19,10 @@ func get_bot_tags() -> Array[String]:
 	return ["searches_deck", "draws_cards"]
 
 
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	return owner.monster_zone >= 6
+
+
 func on_would_be_destroyed(ctx: EffectContext) -> bool:
 	# Add all cards under this card to hand before destruction
 	var my_zone: int = find_zone_of_card(ctx)
