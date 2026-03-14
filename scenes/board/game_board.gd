@@ -11,6 +11,7 @@ var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 # Bot state
 var bot_player: BotPlayer
 var is_bot_game: bool = false
+var _bot_seed_was_explicit: bool = false
 
 # Multiplayer state
 var is_multiplayer_game: bool = false
@@ -28,6 +29,7 @@ var _client_zone_cp_mods: Array = [[], []]
 var _client_strategy_cp_mods: Array = [[], []]
 var _client_zone_rank_mods: Array = [[], []]
 var _client_gradients_applied: bool = false
+var _prev_client_turn: int = 0
 # Client-side stats snapshot (synced from host for disconnect reporting)
 var _client_stats_elapsed_ms: Array[int] = [0, 0]
 var _client_stats_game_start_ms: int = 0
@@ -53,6 +55,7 @@ var _pending_log_lines: PackedStringArray = [] # Buffered for next broadcast
 @onready var btn_bug_report: Button = $BugReportButton
 @onready var btn_concede: Button = $ConcedeButton
 @onready var btn_main_menu: Button = $MainMenuButton
+@onready var btn_sound_toggle: Button = $SoundToggleButton
 
 # Hand references
 @onready var player1_hand: Node2D = $Player1Hand
@@ -377,6 +380,7 @@ var _mobile_menu_btn: Button = null
 var _mobile_menu_panel: Control = null
 var _mobile_menu_backdrop: ColorRect = null
 var _mobile_menu_open: bool = false
+var _mobile_sound_button: Button = null
 # Safe area insets in canvas units (set in _apply_safe_area_insets)
 var _safe_left: float = 0.0
 var _safe_right: float = 0.0
@@ -492,6 +496,9 @@ func _ready() -> void:
 		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Connect action handler signals for visual feedback
+		turn_manager.action_handler.cards_drawn.connect(_on_cards_drawn)
+		turn_manager.action_handler.rage_gained.connect(_on_rage_gained)
+		turn_manager.action_handler.strategy_card_played.connect(_on_strategy_card_played)
 		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
 		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
 		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
@@ -555,6 +562,8 @@ func _ready() -> void:
 	btn_bug_report.pressed.connect(_on_bug_report_pressed)
 	btn_concede.pressed.connect(_on_concede_pressed)
 	btn_main_menu.pressed.connect(_on_main_menu_pressed)
+	btn_sound_toggle.pressed.connect(_on_sound_toggle_pressed)
+	_update_sound_button_text()
 	btn_rematch.pressed.connect(_on_rematch_pressed)
 	btn_end_menu.pressed.connect(_on_main_menu_pressed)
 
@@ -817,6 +826,7 @@ func _start_game() -> void:
 		_first_player_chooser_id = 0
 		_first_player_result = -1
 		_first_player_choosing = true
+		SfxManager.play("game_start")
 		_show_first_player_choice()
 
 		while _first_player_result < 0:
@@ -826,6 +836,7 @@ func _start_game() -> void:
 		_cleanup_first_player_ui()
 		_first_player_id = _first_player_result
 		_apply_gradients_and_sync()
+		SfxManager.play("deck_shuffle")
 		turn_manager.start_game(_first_player_result)
 		return
 
@@ -833,6 +844,7 @@ func _start_game() -> void:
 		# Solo: no need to choose, player 1 always goes first
 		_first_player_id = 0
 		_apply_gradients_and_sync()
+		SfxManager.play("deck_shuffle")
 		turn_manager.start_game(0)
 		return
 
@@ -868,15 +880,16 @@ func _start_game() -> void:
 	_apply_gradients_and_sync()
 	_first_player_id = _first_player_result
 	_on_log_message("%s chose to go first." % GameLog.player_name(_first_player_result))
+	SfxManager.play("game_start")
 	turn_manager.start_game(_first_player_result)
 
 
 func _apply_bot_seed() -> void:
 	var s: int = NetworkManager.bot_seed
+	_bot_seed_was_explicit = s >= 0
 	if s < 0:
 		# Auto-generate a seed from the current unseeded RNG
 		s = randi()
-	NetworkManager.bot_seed = s
 	seed(s)
 	print("[Bot] RNG seed: %d" % s)
 	_on_log_message("Seed: %d" % s)
@@ -1600,6 +1613,21 @@ func _apply_mobile_utility_buttons() -> void:
 		)
 		_mobile_menu_panel.add_child(btn)
 
+	# Sound toggle in mobile menu
+	var sound_btn := Button.new()
+	sound_btn.text = "Sound: ON" if GameSettings.sound_enabled else "Sound: OFF"
+	sound_btn.custom_minimum_size.y = btn_h
+	sound_btn.add_theme_font_size_override("font_size", 18)
+	sound_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	_apply_mobile_menu_pill_style(sound_btn)
+	sound_btn.pressed.connect(func():
+		_on_sound_toggle_pressed()
+	)
+	_mobile_menu_panel.add_child(sound_btn)
+	_mobile_sound_button = sound_btn
+	# Expand panel height for the extra button
+	_mobile_menu_panel.offset_bottom += btn_h + gap
+
 	# Hand toggle/sort buttons — fire on touch-down
 	for btn: Button in [hand_toggle_button, sort_hand_button,
 			opponent_hand_toggle_button, opponent_sort_hand_button]:
@@ -2314,6 +2342,7 @@ func _on_sub_phase_changed(sub_index: int) -> void:
 
 
 func _on_turn_started(player_id: int) -> void:
+	SfxManager.play("turn_start")
 	_current_sub_phase = 0
 	_sync_boards()
 	_update_hand_visibility(player_id)
@@ -2365,6 +2394,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 
 
 func _on_game_ended(winner_id: int, reason: String) -> void:
+	SfxManager.play("game_win" if winner_id == local_player_id else "game_lose")
 	_action_pending = false
 	_game_ended_by_disconnect = false
 	# Defensive: hide reconnect overlay if game ends normally
@@ -2468,6 +2498,18 @@ func _on_chat_text_changed(new_text: String) -> void:
 	chat_char_count.text = str(chat_input.max_length - new_text.length())
 
 
+func _on_cards_drawn(_player_id: int, _count: int) -> void:
+	SfxManager.play("card_draw")
+
+
+func _on_rage_gained(_player_id: int, _new_rage: int) -> void:
+	SfxManager.play("gain_rage")
+
+
+func _on_strategy_card_played(_player_id: int, _card: Dictionary, _strategy_index: int) -> void:
+	SfxManager.play("card_play")
+
+
 # --- Action handler visual feedback ---
 
 func _on_play_cancelled(player_id: int) -> void:
@@ -2488,11 +2530,13 @@ func _on_play_cancelled(player_id: int) -> void:
 
 
 func _on_battle_card_played(_player_id: int, _card: Dictionary, _zone_index: int) -> void:
+	SfxManager.play("card_play")
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_monster_advanced(_player_id: int, _from_zone: int, _to_zone: int) -> void:
+	SfxManager.play("monster_advance")
 	_sync_boards()
 	_broadcast_state()
 
@@ -2504,12 +2548,14 @@ func _on_battle_card_crushed(player_id: int, zone_index: int, card: Dictionary) 
 
 
 func _on_counter_succeeded(player_id: int, total_cp: int, threat: int) -> void:
+	SfxManager.play("counter_success")
 	_on_log_message(GameLog.counter_succeeded(player_id, total_cp, threat))
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_counter_failed(player_id: int, total_cp: int, threat: int) -> void:
+	SfxManager.play("counter_fail")
 	_on_log_message(GameLog.counter_failed(player_id, total_cp, threat))
 
 
@@ -2520,6 +2566,21 @@ func _on_counter_immunity_triggered(player_id: int, total_cp: int, threshold: in
 func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
 	_sync_boards()
 	_broadcast_state()
+
+
+# --- Sound toggle ---
+
+func _on_sound_toggle_pressed() -> void:
+	GameSettings.sound_enabled = not GameSettings.sound_enabled
+	GameSettings.save()
+	_update_sound_button_text()
+
+
+func _update_sound_button_text() -> void:
+	if btn_sound_toggle:
+		btn_sound_toggle.text = "Sound: ON" if GameSettings.sound_enabled else "Sound: OFF"
+	if _mobile_sound_button:
+		_mobile_sound_button.text = "Sound: ON" if GameSettings.sound_enabled else "Sound: OFF"
 
 
 # --- Bug report ---
@@ -2816,6 +2877,8 @@ func _execute_rematch() -> void:
 
 		# Solo v Bot: seed RNG for deterministic replays
 		if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
+			if not _bot_seed_was_explicit:
+				NetworkManager.bot_seed = -1
 			_apply_bot_seed()
 
 		turn_manager = TurnManager.new()
@@ -2839,6 +2902,9 @@ func _execute_rematch() -> void:
 		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Reconnect action handler signals
+		turn_manager.action_handler.cards_drawn.connect(_on_cards_drawn)
+		turn_manager.action_handler.rage_gained.connect(_on_rage_gained)
+		turn_manager.action_handler.strategy_card_played.connect(_on_strategy_card_played)
 		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
 		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
 		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
@@ -4797,6 +4863,7 @@ func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 				RpcLogger.log_send("hand_discard_requested", 4)
 				_rpc_hand_discard_requested.rpc_id(peer_id, discard_count)
 		return
+	_play_action_required_if_not_turn_player(player_id)
 	_show_hand_discard_selection(player_id, discard_count)
 
 
@@ -4924,6 +4991,7 @@ func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int]
 				RpcLogger.log_send("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
 				_rpc_hand_card_selection_requested.rpc_id(peer_id, indices_json, prompt, allow_skip)
 		return
+	_play_action_required_if_not_turn_player(player_id)
 	_show_hand_card_selection(player_id, valid_indices, prompt, allow_skip)
 
 
@@ -5454,7 +5522,13 @@ func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], v
 				RpcLogger.log_send("monster_rankup_requested", monsters_json.length() + indices_json.length() + prompt.length())
 				_rpc_monster_rankup_requested.rpc_id(peer_id, monsters_json, indices_json, prompt)
 		return
+	_play_action_required_if_not_turn_player(player_id)
 	_show_monster_rankup_selection(player_id, monsters, valid_indices, prompt)
+
+
+func _play_action_required_if_not_turn_player(player_id: int) -> void:
+	if turn_manager and player_id != turn_manager.game_state.current_player_id:
+		SfxManager.play("action_required")
 
 
 func _show_monster_rankup_selection(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
@@ -5873,6 +5947,7 @@ func _clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 
 
 func _resolve_deck_search_local(selected: Dictionary) -> void:
+	SfxManager.play("deck_shuffle")
 	if is_multiplayer_game and not NetworkManager.is_host():
 		# Client sends selection back to host
 		var _search_json := JSON.stringify(selected)
@@ -6325,6 +6400,11 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	_client_phase = int(data.get("current_phase", 0)) as CardEnums.GamePhase
 	_first_player_id = int(data.get("first_player_id", 0))
 
+	# Client-side sound: detect turn changes
+	if _client_turn_number != _prev_client_turn and _prev_client_turn > 0:
+		SfxManager.play("turn_start")
+	_prev_client_turn = _client_turn_number
+
 	# Extract effect modifiers
 	if data.has("cp_modifiers"):
 		_client_cp_modifiers = data["cp_modifiers"]
@@ -6610,6 +6690,8 @@ func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, al
 	var valid_indices: Array[int] = []
 	for v in parsed:
 		valid_indices.append(int(v))
+	if _client_current_player_id != local_player_id:
+		SfxManager.play("action_required")
 	_show_hand_card_selection(local_player_id, valid_indices, prompt, allow_skip)
 
 
@@ -6671,6 +6753,8 @@ func _rpc_hand_discard_requested(discard_count: int) -> void:
 	RpcLogger.log_receive("hand_discard_requested", 4)
 	if NetworkManager.is_host():
 		return # Safety: this RPC is only for clients
+	if _client_current_player_id != local_player_id:
+		SfxManager.play("action_required")
 	_show_hand_discard_selection(local_player_id, discard_count)
 
 
@@ -6771,6 +6855,7 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 	var valid_indices: Array[int] = []
 	for v in parsed_indices:
 		valid_indices.append(int(v))
+	SfxManager.play("action_required")
 	_show_monster_rankup_selection(local_player_id, monsters, valid_indices, prompt)
 
 
@@ -6824,6 +6909,7 @@ func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	RpcLogger.log_receive("receive_game_ended", 4 + reason.length())
+	SfxManager.play("game_win" if winner_id == local_player_id else "game_lose")
 	_action_pending = false
 	_game_ended_by_disconnect = false
 	_rematch_requested = false

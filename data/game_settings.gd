@@ -39,6 +39,9 @@ var color_overlay_mode: int = 3  # 0=none, 1=self only, 2=opponent only, 3=both
 var custom_card_art_enabled: bool = false
 var custom_card_back_mode: int = 0  # 0=disabled, 1=myself only, 2=both players
 
+# Audio settings
+var sound_enabled: bool = true
+
 # Advanced settings
 var use_mobile_layout: bool = false
 
@@ -109,6 +112,7 @@ func _save() -> void:
 	config.set_value("visual", "color_overlay_mode", color_overlay_mode)
 	config.set_value("visual", "custom_card_art_enabled", custom_card_art_enabled)
 	config.set_value("visual", "custom_card_back_mode", custom_card_back_mode)
+	config.set_value("audio", "sound_enabled", sound_enabled)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
 	config.set_value("updates", "skipped_version", skipped_version)
 	config.set_value("reconnect", "room_code", reconnect_room_code)
@@ -139,6 +143,7 @@ func _load() -> void:
 	color_overlay_mode = config.get_value("visual", "color_overlay_mode", 3)
 	custom_card_art_enabled = config.get_value("visual", "custom_card_art_enabled", false)
 	custom_card_back_mode = config.get_value("visual", "custom_card_back_mode", 0)
+	sound_enabled = config.get_value("audio", "sound_enabled", true)
 	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	use_mobile_layout = config.get_value("advanced", "use_mobile_layout", _mobile_default)
 	skipped_version = config.get_value("updates", "skipped_version", "")
