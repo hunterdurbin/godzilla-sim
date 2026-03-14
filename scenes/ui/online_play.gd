@@ -13,10 +13,12 @@ func _ready() -> void:
 
 
 func _on_rumble_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
 
 
 func _on_private_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.change_scene("res://scenes/ui/OnlineLobby.tscn")
 
 
@@ -27,4 +29,5 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_back_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")

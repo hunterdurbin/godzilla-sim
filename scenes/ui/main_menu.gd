@@ -74,11 +74,13 @@ func _update_start_button() -> void:
 
 
 func _on_start_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.mode = NetworkManager.Mode.SOLO
 	NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
 
 
 func _on_solo_bot_pressed() -> void:
+	SfxManager.play("ui_click")
 	_show_difficulty_popup()
 
 
@@ -194,6 +196,7 @@ func _show_difficulty_popup() -> void:
 		btn.add_theme_color_override("font_color", entry[2])
 		var difficulty: BotConfig.Difficulty = entry[1]
 		btn.pressed.connect(func():
+			SfxManager.play("ui_click")
 			var seed_text: String = seed_input.text.strip_edges()
 			if seed_text.is_valid_int():
 				NetworkManager.bot_seed = seed_text.to_int()
@@ -218,7 +221,7 @@ func _show_difficulty_popup() -> void:
 	cancel_btn.custom_minimum_size = Vector2(200, 40)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 18)
-	cancel_btn.pressed.connect(func(): popup.hide())
+	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
 	btn_box.add_child(cancel_btn)
 
 	vbox.add_child(btn_box)
@@ -231,22 +234,27 @@ func _show_difficulty_popup() -> void:
 
 
 func _on_lan_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.change_scene("res://scenes/ui/LanLobby.tscn")
 
 
 func _on_online_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.change_scene("res://scenes/ui/OnlinePlay.tscn")
 
 
 func _on_deck_builder_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.change_scene("res://scenes/ui/DeckBuilder.tscn")
 
 
 func _on_patreon_pressed() -> void:
+	SfxManager.play("ui_click")
 	OS.shell_open("https://www.patreon.com/cw/sodabomber/membership")
 
 
 func _on_options_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.change_scene("res://scenes/ui/Options.tscn")
 
 
@@ -274,6 +282,7 @@ func _show_update_button(new_version: String, download_url: String, release_url:
 
 
 func _on_update_button_pressed(new_version: String, download_url: String, release_url: String) -> void:
+	SfxManager.play("ui_click")
 	_show_update_dialog(new_version, download_url, release_url)
 
 
@@ -324,6 +333,7 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	update_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	update_btn.add_theme_font_size_override("font_size", 20)
 	update_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
 		OS.shell_open(download_url if not download_url.is_empty() else release_url)
 		popup.hide()
 	)
@@ -335,6 +345,7 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	skip_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	skip_btn.add_theme_font_size_override("font_size", 18)
 	skip_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
 		GameSettings.skipped_version = new_version
 		GameSettings.save()
 		_show_update_button(new_version, download_url, release_url)
@@ -348,6 +359,7 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	later_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	later_btn.add_theme_font_size_override("font_size", 18)
 	later_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
 		UpdateChecker.later_dismissed = true
 		popup.hide()
 	)
@@ -419,6 +431,7 @@ func _show_reconnect_dialog() -> void:
 	reconnect_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	reconnect_btn.add_theme_font_size_override("font_size", 20)
 	reconnect_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
 		reconnect_btn.disabled = true
 		reconnect_btn.text = "Connecting..."
 		status_label.text = "Connecting to relay server..."
@@ -464,6 +477,7 @@ func _show_reconnect_dialog() -> void:
 	dismiss_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	dismiss_btn.add_theme_font_size_override("font_size", 18)
 	dismiss_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
 		GameSettings.clear_reconnect_session()
 		popup.hide()
 	)

@@ -44,4 +44,5 @@ func _on_download_complete(downloaded: int, skipped: int, failed: int) -> void:
 
 
 func _go_to_main_menu() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")

@@ -117,6 +117,7 @@ func _show_modal(popup: PopupPanel) -> void:
 # --- Automation modal ---
 
 func _on_automation_pressed() -> void:
+	SfxManager.play("ui_click")
 	var parts := _create_modal("Automation")
 	var popup: PopupPanel = parts[0]
 	var vbox: VBoxContainer = parts[1]
@@ -182,6 +183,7 @@ var _pending_card_art_src: String = ""  # Holds picked file path while waiting f
 
 
 func _on_customize_pressed() -> void:
+	SfxManager.play("ui_click")
 	var parts := _create_modal("Customize")
 	var popup: PopupPanel = parts[0]
 	var vbox: VBoxContainer = parts[1]
@@ -804,6 +806,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # --- Advanced modal ---
 
 func _on_advanced_pressed() -> void:
+	SfxManager.play("ui_click")
 	var parts := _create_modal("Advanced")
 	var popup: PopupPanel = parts[0]
 	var vbox: VBoxContainer = parts[1]
@@ -815,6 +818,7 @@ func _on_advanced_pressed() -> void:
 
 
 func _on_audio_pressed() -> void:
+	SfxManager.play("ui_click")
 	var parts := _create_modal("Audio")
 	var popup: PopupPanel = parts[0]
 	var vbox: VBoxContainer = parts[1]
@@ -826,4 +830,5 @@ func _on_audio_pressed() -> void:
 
 
 func _on_back_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")

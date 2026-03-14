@@ -40,6 +40,7 @@ func _ready() -> void:
 
 
 func _on_host_pressed() -> void:
+	SfxManager.play("ui_click")
 	var port := int(port_edit.text) if port_edit.text.is_valid_int() else NetworkManager.DEFAULT_PORT
 	var err := NetworkManager.host_game(port)
 	if err != OK:
@@ -61,6 +62,7 @@ func _on_host_pressed() -> void:
 
 
 func _on_join_pressed() -> void:
+	SfxManager.play("ui_click")
 	var ip := ip_edit.text.strip_edges()
 	if ip.is_empty():
 		status_label.text = "Enter the host's IP address"
@@ -153,6 +155,7 @@ func _on_deck_selected(deck_name: String) -> void:
 
 
 func _on_start_pressed() -> void:
+	SfxManager.play("ui_click")
 	if not NetworkManager.is_host():
 		return
 	NetworkManager.start_lan_game()
@@ -165,6 +168,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_back_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.disconnect_game()
 	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
 

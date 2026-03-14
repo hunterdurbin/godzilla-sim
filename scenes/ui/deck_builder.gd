@@ -1152,11 +1152,13 @@ func _update_validation() -> void:
 # ============================================================
 
 func _on_monster_tab_pressed() -> void:
+	SfxManager.play("ui_click")
 	_showing_monster_tab = true
 	_refresh_deck_display()
 
 
 func _on_main_tab_pressed() -> void:
+	SfxManager.play("ui_click")
 	_showing_monster_tab = false
 	_refresh_deck_display()
 
@@ -1250,6 +1252,7 @@ func _on_format_changed(index: int) -> void:
 # ============================================================
 
 func _on_save_pressed() -> void:
+	SfxManager.play("ui_click")
 	var deck_name := deck_name_edit.text.strip_edges()
 	if deck_name.is_empty():
 		deck_name_edit.grab_focus()
@@ -1266,6 +1269,7 @@ func _on_save_pressed() -> void:
 
 
 func _on_load_pressed() -> void:
+	SfxManager.play("ui_click")
 	var selected := deck_list.get_selected_items()
 	if selected.is_empty():
 		return
@@ -1323,6 +1327,7 @@ func _on_deck_list_selected(index: int) -> void:
 
 
 func _on_delete_pressed() -> void:
+	SfxManager.play("ui_click")
 	var selected := deck_list.get_selected_items()
 	if selected.is_empty():
 		return
@@ -1352,6 +1357,7 @@ func _refresh_deck_list() -> void:
 # ============================================================
 
 func _on_import_pressed() -> void:
+	SfxManager.play("ui_click")
 	var clipboard := DisplayServer.clipboard_get()
 	if clipboard.strip_edges().is_empty():
 		validation_label.clear()
@@ -1383,6 +1389,7 @@ func _import_from_clipboard() -> void:
 
 
 func _on_export_pressed() -> void:
+	SfxManager.play("ui_click")
 	var text := "[monster deck]\n"
 	for entry in _monster_entries:
 		text += "%d %s\n" % [entry["quantity"], entry["card_number"]]
@@ -1406,6 +1413,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_back_pressed() -> void:
+	SfxManager.play("ui_click")
 	if _has_unsaved_changes:
 		_pending_action = _go_to_menu
 		unsaved_dialog.popup_centered()

@@ -19,6 +19,7 @@ const SOUND_NAMES := [
 	"game_lose",
 	"monster_advance",
 	"button_click",
+	"ui_click",
 	"action_required",
 	"gain_rage",
 ]

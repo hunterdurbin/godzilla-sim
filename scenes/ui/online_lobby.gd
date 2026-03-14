@@ -39,6 +39,7 @@ func _ready() -> void:
 
 
 func _on_host_pressed() -> void:
+	SfxManager.play("ui_click")
 	host_button.disabled = true
 	join_button.disabled = true
 	code_edit.editable = false
@@ -63,6 +64,7 @@ func _on_host_pressed() -> void:
 
 
 func _on_join_pressed() -> void:
+	SfxManager.play("ui_click")
 	var code := code_edit.text.strip_edges()
 	if code.is_empty():
 		status_label.text = "Enter the host's game code"
@@ -85,6 +87,7 @@ func _on_join_pressed() -> void:
 
 
 func _on_copy_pressed() -> void:
+	SfxManager.play("ui_click")
 	DisplayServer.clipboard_set(NetworkManager.get_game_code())
 	copy_button.text = "Copied!"
 	await get_tree().create_timer(1.5).timeout
@@ -161,6 +164,7 @@ func _on_deck_selected(deck_name: String) -> void:
 
 
 func _on_start_pressed() -> void:
+	SfxManager.play("ui_click")
 	if not NetworkManager.is_host():
 		return
 	NetworkManager.start_lan_game()
@@ -173,6 +177,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_back_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.disconnect_game()
 	NetworkManager.change_scene("res://scenes/ui/OnlinePlay.tscn")
 

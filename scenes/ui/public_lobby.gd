@@ -132,12 +132,14 @@ func _fetch_rooms() -> void:
 
 
 func _on_refresh_pressed() -> void:
+	SfxManager.play("ui_click")
 	if _is_hosting or _is_joining:
 		return
 	_fetch_rooms()
 
 
 func _on_create_pressed() -> void:
+	SfxManager.play("ui_click")
 	create_button.disabled = true
 	refresh_button.disabled = true
 	_is_hosting = true
@@ -162,6 +164,7 @@ func _on_create_pressed() -> void:
 
 
 func _on_join_room(code: String) -> void:
+	SfxManager.play("ui_click")
 	if not _deck_valid:
 		status_label.text = "Deck is not valid for this game mode."
 		return
@@ -269,6 +272,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _on_back_pressed() -> void:
+	SfxManager.play("ui_click")
 	NetworkManager.disconnect_game()
 	NetworkManager.change_scene("res://scenes/ui/OnlinePlay.tscn")
 
