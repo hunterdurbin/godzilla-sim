@@ -381,6 +381,7 @@ var _mobile_cp_tray_open: bool = false
 var _mobile_cp_toggle_btn: Button = null
 var _mobile_cp_tween: Tween = null
 var _mobile_cp_panel: PanelContainer = null
+var _mobile_cp_panel_w: float = 180.0
 var _mobile_cp_opp_cp_label: Label = null
 var _mobile_cp_opp_threat_label: Label = null
 var _mobile_cp_local_cp_label: Label = null
@@ -1931,11 +1932,13 @@ func _toggle_mobile_log_tray() -> void:
 func _setup_mobile_cp_tray() -> void:
 	# Panel container for CP/Threat display
 	_mobile_cp_panel = PanelContainer.new()
+	var safe_pad := maxf(0.0, _safe_left)
+	_mobile_cp_panel_w = 180.0 + safe_pad
 	var cp_bg := StyleBoxFlat.new()
 	cp_bg.bg_color = Color(0.08, 0.08, 0.12, 0.95)
 	cp_bg.corner_radius_top_right = 10
 	cp_bg.corner_radius_bottom_right = 10
-	cp_bg.content_margin_left = 12
+	cp_bg.content_margin_left = 12 + safe_pad
 	cp_bg.content_margin_right = 12
 	cp_bg.content_margin_top = 10
 	cp_bg.content_margin_bottom = 10
@@ -1945,11 +1948,11 @@ func _setup_mobile_cp_tray() -> void:
 	_mobile_cp_panel.anchor_top = 0.5
 	_mobile_cp_panel.anchor_bottom = 0.5
 	_mobile_cp_panel.offset_left = 0.0
-	_mobile_cp_panel.offset_right = 180.0
+	_mobile_cp_panel.offset_right = _mobile_cp_panel_w
 	_mobile_cp_panel.offset_top = -135.0
 	_mobile_cp_panel.offset_bottom = -25.0
 	_mobile_cp_panel.z_index = 90
-	_mobile_cp_panel.position.x = -180.0
+	_mobile_cp_panel.position.x = -_mobile_cp_panel_w
 	add_child(_mobile_cp_panel)
 
 	var vbox := VBoxContainer.new()
@@ -2031,10 +2034,10 @@ func _toggle_mobile_cp_tray() -> void:
 	var cp_pad := maxf(4.0, _safe_left)
 	if _mobile_cp_tray_open:
 		_mobile_cp_tween.tween_property(_mobile_cp_panel, "position:x", 0.0, 0.25)
-		_mobile_cp_tween.parallel().tween_property(_mobile_cp_toggle_btn, "offset_left", 180.0 + cp_pad, 0.25)
-		_mobile_cp_tween.parallel().tween_property(_mobile_cp_toggle_btn, "offset_right", 230.0 + cp_pad, 0.25)
+		_mobile_cp_tween.parallel().tween_property(_mobile_cp_toggle_btn, "offset_left", _mobile_cp_panel_w + cp_pad, 0.25)
+		_mobile_cp_tween.parallel().tween_property(_mobile_cp_toggle_btn, "offset_right", _mobile_cp_panel_w + 50.0 + cp_pad, 0.25)
 	else:
-		_mobile_cp_tween.tween_property(_mobile_cp_panel, "position:x", -180.0, 0.25)
+		_mobile_cp_tween.tween_property(_mobile_cp_panel, "position:x", -_mobile_cp_panel_w, 0.25)
 		_mobile_cp_tween.parallel().tween_property(_mobile_cp_toggle_btn, "offset_left", cp_pad, 0.25)
 		_mobile_cp_tween.parallel().tween_property(_mobile_cp_toggle_btn, "offset_right", cp_pad + 50.0, 0.25)
 
@@ -2379,8 +2382,8 @@ func _retry_safe_area_insets() -> void:
 			_mobile_cp_toggle_btn.offset_left = log_pad
 			_mobile_cp_toggle_btn.offset_right = log_pad + 50.0
 		else:
-			_mobile_cp_toggle_btn.offset_left = 180.0 + log_pad
-			_mobile_cp_toggle_btn.offset_right = 230.0 + log_pad
+			_mobile_cp_toggle_btn.offset_left = _mobile_cp_panel_w + log_pad
+			_mobile_cp_toggle_btn.offset_right = _mobile_cp_panel_w + 50.0 + log_pad
 	# Board view toggle button — positioned dynamically in _position_hands()
 	# Tracker toggle button
 	var trk_pad := maxf(4.0, _safe_right)
