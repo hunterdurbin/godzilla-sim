@@ -411,26 +411,25 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 	if tags.is_empty():
 		return score
 
-	# Skip tag scoring if no triggers can fulfill in current game state
+	# Penalize unfulfillable triggers — deduct score for each on_* trigger
+	# whose bot_can_fulfill_* returns false (the card's effect won't fully fire)
 	if config.use_activation_check:
 		var triggers: Array = _TriggerMap.TRIGGERS.get(card.get("effect_script", ""), [])
-		var has_fulfill_check := false
-		var any_can_fulfill := false
+		var has_destroy := "destroys_zone" in tags
 		for trigger in triggers:
 			var method: StringName = _TRIGGER_FULFILL_MAP.get(trigger, &"")
 			if method == &"":
 				continue
-			has_fulfill_check = true
 			var result: bool
 			if method == &"bot_can_fulfill_on_phase_start":
 				result = effect.call(method, player, opponent, effect_handler)
 			else:
 				result = effect.call(method, player, opponent)
-			if result:
-				any_can_fulfill = true
-				break
-		if has_fulfill_check and not any_can_fulfill:
-			return score
+			if not result:
+				if has_destroy and trigger == &"on_enter":
+					score -= config.unfulfilled_destroy_penalty
+				else:
+					score -= config.unfulfilled_trigger_penalty
 
 	# Base tag scores from config
 	for tag in tags:
