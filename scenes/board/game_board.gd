@@ -377,6 +377,14 @@ var _mobile_view_toggle_btn: Button = null
 var _mobile_tracker_tray_open: bool = false
 var _mobile_tracker_toggle_btn: Button = null
 var _mobile_tracker_tween: Tween = null
+var _mobile_cp_tray_open: bool = false
+var _mobile_cp_toggle_btn: Button = null
+var _mobile_cp_tween: Tween = null
+var _mobile_cp_panel: PanelContainer = null
+var _mobile_cp_opp_cp_label: Label = null
+var _mobile_cp_opp_threat_label: Label = null
+var _mobile_cp_local_cp_label: Label = null
+var _mobile_cp_local_threat_label: Label = null
 var _mobile_menu_btn: Button = null
 var _mobile_menu_panel: Control = null
 var _mobile_menu_backdrop: ColorRect = null
@@ -1245,6 +1253,9 @@ func _apply_mobile_layout() -> void:
 	# --- 5. Log panel as slide-out tray on the left ---
 	_setup_mobile_log_tray()
 
+	# --- 5b. CP/Threat tray above log button ---
+	_setup_mobile_cp_tray()
+
 	# --- 6. Hide card hover preview (mobile uses tap-to-zoom) ---
 	if _preview_container:
 		_preview_container.visible = false
@@ -1917,6 +1928,164 @@ func _toggle_mobile_log_tray() -> void:
 		_mobile_log_tween.parallel().tween_property(_mobile_log_toggle_btn, "offset_right", log_pad + 50.0, 0.25)
 
 
+func _setup_mobile_cp_tray() -> void:
+	# Panel container for CP/Threat display
+	_mobile_cp_panel = PanelContainer.new()
+	var cp_bg := StyleBoxFlat.new()
+	cp_bg.bg_color = Color(0.08, 0.08, 0.12, 0.95)
+	cp_bg.corner_radius_top_right = 10
+	cp_bg.corner_radius_bottom_right = 10
+	cp_bg.content_margin_left = 12
+	cp_bg.content_margin_right = 12
+	cp_bg.content_margin_top = 10
+	cp_bg.content_margin_bottom = 10
+	_mobile_cp_panel.add_theme_stylebox_override("panel", cp_bg)
+	_mobile_cp_panel.anchor_left = 0.0
+	_mobile_cp_panel.anchor_right = 0.0
+	_mobile_cp_panel.anchor_top = 0.5
+	_mobile_cp_panel.anchor_bottom = 0.5
+	_mobile_cp_panel.offset_left = 0.0
+	_mobile_cp_panel.offset_right = 180.0
+	_mobile_cp_panel.offset_top = -135.0
+	_mobile_cp_panel.offset_bottom = -25.0
+	_mobile_cp_panel.z_index = 90
+	_mobile_cp_panel.position.x = -180.0
+	add_child(_mobile_cp_panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	_mobile_cp_panel.add_child(vbox)
+
+	# Opponent row (top: CP | Threat)
+	var opp_row := HBoxContainer.new()
+	_mobile_cp_opp_cp_label = Label.new()
+	_mobile_cp_opp_cp_label.text = "0"
+	_mobile_cp_opp_cp_label.add_theme_font_size_override("font_size", 14)
+	_mobile_cp_opp_cp_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+	_mobile_cp_opp_cp_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_mobile_cp_opp_cp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	opp_row.add_child(_mobile_cp_opp_cp_label)
+	_mobile_cp_opp_threat_label = Label.new()
+	_mobile_cp_opp_threat_label.text = "0"
+	_mobile_cp_opp_threat_label.add_theme_font_size_override("font_size", 14)
+	_mobile_cp_opp_threat_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.3))
+	_mobile_cp_opp_threat_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_mobile_cp_opp_threat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	opp_row.add_child(_mobile_cp_opp_threat_label)
+	vbox.add_child(opp_row)
+
+	# Separator
+	var sep := HSeparator.new()
+	sep.add_theme_constant_override("separation", 6)
+	vbox.add_child(sep)
+
+	# Local player row (bottom — Threat | CP, mirrored from opponent)
+	var local_row := HBoxContainer.new()
+	_mobile_cp_local_threat_label = Label.new()
+	_mobile_cp_local_threat_label.text = "0"
+	_mobile_cp_local_threat_label.add_theme_font_size_override("font_size", 14)
+	_mobile_cp_local_threat_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.3))
+	_mobile_cp_local_threat_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_mobile_cp_local_threat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	local_row.add_child(_mobile_cp_local_threat_label)
+	_mobile_cp_local_cp_label = Label.new()
+	_mobile_cp_local_cp_label.text = "0"
+	_mobile_cp_local_cp_label.add_theme_font_size_override("font_size", 14)
+	_mobile_cp_local_cp_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+	_mobile_cp_local_cp_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_mobile_cp_local_cp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	local_row.add_child(_mobile_cp_local_cp_label)
+	vbox.add_child(local_row)
+
+	# Toggle button above Log button
+	_mobile_cp_toggle_btn = Button.new()
+	_mobile_cp_toggle_btn.text = "CP"
+	_mobile_cp_toggle_btn.custom_minimum_size = Vector2(50, 75)
+	_mobile_cp_toggle_btn.anchor_left = 0.0
+	_mobile_cp_toggle_btn.anchor_right = 0.0
+	_mobile_cp_toggle_btn.anchor_top = 0.5
+	_mobile_cp_toggle_btn.anchor_bottom = 0.5
+	var cp_pad_l := maxf(4.0, _safe_left)
+	_mobile_cp_toggle_btn.offset_left = cp_pad_l
+	_mobile_cp_toggle_btn.offset_top = -117.0
+	_mobile_cp_toggle_btn.offset_right = cp_pad_l + 50.0
+	_mobile_cp_toggle_btn.offset_bottom = -42.0
+	_mobile_cp_toggle_btn.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_mobile_cp_toggle_btn.add_theme_font_size_override("font_size", 15)
+	_mobile_cp_toggle_btn.z_index = 91
+	_mobile_cp_toggle_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	_apply_tab_style(_mobile_cp_toggle_btn, "left")
+	_mobile_cp_toggle_btn.pressed.connect(_toggle_mobile_cp_tray)
+	add_child(_mobile_cp_toggle_btn)
+
+
+func _toggle_mobile_cp_tray() -> void:
+	_mobile_cp_tray_open = not _mobile_cp_tray_open
+
+	if _mobile_cp_tween and _mobile_cp_tween.is_valid():
+		_mobile_cp_tween.kill()
+	_mobile_cp_tween = create_tween()
+	_mobile_cp_tween.set_ease(Tween.EASE_OUT)
+	_mobile_cp_tween.set_trans(Tween.TRANS_CUBIC)
+
+	var cp_pad := maxf(4.0, _safe_left)
+	if _mobile_cp_tray_open:
+		_mobile_cp_tween.tween_property(_mobile_cp_panel, "position:x", 0.0, 0.25)
+		_mobile_cp_tween.parallel().tween_property(_mobile_cp_toggle_btn, "offset_left", 180.0 + cp_pad, 0.25)
+		_mobile_cp_tween.parallel().tween_property(_mobile_cp_toggle_btn, "offset_right", 230.0 + cp_pad, 0.25)
+	else:
+		_mobile_cp_tween.tween_property(_mobile_cp_panel, "position:x", -180.0, 0.25)
+		_mobile_cp_tween.parallel().tween_property(_mobile_cp_toggle_btn, "offset_left", cp_pad, 0.25)
+		_mobile_cp_tween.parallel().tween_property(_mobile_cp_toggle_btn, "offset_right", cp_pad + 50.0, 0.25)
+
+
+static func _fmt_num(value: int) -> String:
+	var negative := value < 0
+	var s := str(absi(value))
+	var result := ""
+	var count := 0
+	for i in range(s.length() - 1, -1, -1):
+		if count > 0 and count % 3 == 0:
+			result = "," + result
+		result = s[i] + result
+		count += 1
+	return ("-" + result) if negative else result
+
+
+func _sync_mobile_cp_tray() -> void:
+	if not _mobile_cp_opp_cp_label:
+		return
+	var states: Array[PlayerState] = [null, null]
+	var cp_mods: Array[int] = [0, 0]
+	var threat_mods: Array[int] = [0, 0]
+	if turn_manager and turn_manager.game_state:
+		states[0] = turn_manager.game_state.players[0]
+		states[1] = turn_manager.game_state.players[1]
+		var eh := turn_manager.effect_handler
+		if eh:
+			for pid in 2:
+				var zone_cp: Array = eh.get_zone_cp_modifiers(pid)
+				var strat_cp: Array = eh.get_strategy_cp_modifiers(pid)
+				for v in zone_cp: cp_mods[pid] += v
+				for v in strat_cp: cp_mods[pid] += v
+				threat_mods[pid] = eh.get_threat_level_modifier(pid)
+	elif not _client_players.is_empty():
+		states[0] = _client_players[0]
+		states[1] = _client_players[1]
+		cp_mods[0] = _client_cp_modifiers[0]
+		cp_mods[1] = _client_cp_modifiers[1]
+		threat_mods[0] = _client_threat_modifiers[0]
+		threat_mods[1] = _client_threat_modifiers[1]
+	var lid: int = local_player_id
+	var oid: int = 1 - lid
+	if states[lid]:
+		_mobile_cp_local_cp_label.text = _fmt_num(states[lid].get_total_counter_power() + cp_mods[lid])
+		_mobile_cp_local_threat_label.text = _fmt_num(states[lid].get_threat_level() + threat_mods[lid])
+	if states[oid]:
+		_mobile_cp_opp_cp_label.text = _fmt_num(states[oid].get_total_counter_power() + cp_mods[oid])
+		_mobile_cp_opp_threat_label.text = _fmt_num(states[oid].get_threat_level() + threat_mods[oid])
+
+
 func _apply_desktop_hand_button_stacks() -> void:
 	# Stack buttons vertically on desktop between the hand and action panel.
 	# Hide the HBoxContainers and reparent buttons to GameBoard for free positioning.
@@ -2204,6 +2373,14 @@ func _retry_safe_area_insets() -> void:
 		else:
 			_mobile_log_toggle_btn.offset_left = 320.0 + log_pad
 			_mobile_log_toggle_btn.offset_right = 370.0 + log_pad
+	# CP toggle button (above log button)
+	if _mobile_cp_toggle_btn:
+		if not _mobile_cp_tray_open:
+			_mobile_cp_toggle_btn.offset_left = log_pad
+			_mobile_cp_toggle_btn.offset_right = log_pad + 50.0
+		else:
+			_mobile_cp_toggle_btn.offset_left = 180.0 + log_pad
+			_mobile_cp_toggle_btn.offset_right = 230.0 + log_pad
 	# Board view toggle button — positioned dynamically in _position_hands()
 	# Tracker toggle button
 	var trk_pad := maxf(4.0, _safe_right)
@@ -3653,6 +3830,8 @@ func _sync_boards() -> void:
 			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0])
 		if player2_board and not skip_p2:
 			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1])
+	if _is_mobile_layout:
+		_sync_mobile_cp_tray()
 	call_deferred("_position_hands")
 
 
