@@ -528,6 +528,7 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 		turn_manager.action_handler.effect_handler.card_evolved.connect(_on_card_evolved)
+		turn_manager.action_handler.effect_handler.card_destroyed.connect(_on_card_destroyed)
 
 		# Set up bot player for Solo v Bot mode
 		if is_bot_game:
@@ -2539,6 +2540,10 @@ func _on_card_evolved(_player_id: int, _card: Dictionary, _zone_index: int) -> v
 	SfxManager.play("card_evolve")
 
 
+func _on_card_destroyed(_player_id: int, _zone_index: int) -> void:
+	SfxManager.play("card_destroy")
+
+
 func _on_strategy_card_played(_player_id: int, _card: Dictionary, _strategy_index: int) -> void:
 	SfxManager.play("card_play")
 
@@ -2575,6 +2580,7 @@ func _on_monster_advanced(_player_id: int, _from_zone: int, _to_zone: int) -> vo
 
 
 func _on_battle_card_crushed(player_id: int, zone_index: int, card: Dictionary) -> void:
+	SfxManager.play("card_destroy")
 	_on_log_message(GameLog.battle_card_crushed(card.get("id", ""), player_id, zone_index))
 	_sync_boards()
 	_broadcast_state()
@@ -2987,6 +2993,7 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 		turn_manager.action_handler.effect_handler.card_evolved.connect(_on_card_evolved)
+		turn_manager.action_handler.effect_handler.card_destroyed.connect(_on_card_destroyed)
 
 		# Reconnect bot player for Solo v Bot mode
 		if is_bot_game:

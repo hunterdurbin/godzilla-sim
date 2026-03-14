@@ -86,6 +86,7 @@ signal _cards_revealed_resolved()
 ## Emitted to send a message to the game log.
 signal log_message(text: String)
 signal card_evolved(player_id: int, card: Dictionary, zone_index: int)
+signal card_destroyed(player_id: int, zone_index: int)
 
 const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
 
@@ -1553,6 +1554,7 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 		target.deck_changed.emit()
 		target.discard_changed.emit()
 		_log_destroy(target.player_id, zone_idx, top_card)
+		card_destroyed.emit(target.player_id, zone_idx)
 		return top_card
 
 	var stack: Array = target.clear_zone(zone_idx)
@@ -1561,6 +1563,7 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 	target.discard_changed.emit()
 	target.cards_destroyed_this_turn.append(top_card)
 	_log_destroy(target.player_id, zone_idx, top_card)
+	card_destroyed.emit(target.player_id, zone_idx)
 	if deferred_entries != null:
 		if has_trigger(top_card, "on_revenge"):
 			var rev_effect := get_effect(top_card)
