@@ -527,6 +527,7 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
 		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
+		turn_manager.action_handler.effect_handler.card_evolved.connect(_on_card_evolved)
 
 		# Set up bot player for Solo v Bot mode
 		if is_bot_game:
@@ -2534,6 +2535,10 @@ func _on_rage_gained(_player_id: int, _new_rage: int) -> void:
 	SfxManager.play("gain_rage")
 
 
+func _on_card_evolved(_player_id: int, _card: Dictionary, _zone_index: int) -> void:
+	SfxManager.play("card_evolve")
+
+
 func _on_strategy_card_played(_player_id: int, _card: Dictionary, _strategy_index: int) -> void:
 	SfxManager.play("card_play")
 
@@ -2981,6 +2986,7 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
 		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
+		turn_manager.action_handler.effect_handler.card_evolved.connect(_on_card_evolved)
 
 		# Reconnect bot player for Solo v Bot mode
 		if is_bot_game:

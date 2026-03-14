@@ -11,6 +11,7 @@ const SOUND_NAMES := [
 	"card_play",
 	"card_draw",
 	"card_discard",
+	"card_evolve",
 	"deck_shuffle",
 	"turn_start",
 	"counter_success",

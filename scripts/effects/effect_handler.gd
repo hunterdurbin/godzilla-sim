@@ -85,6 +85,7 @@ signal _cards_revealed_resolved()
 
 ## Emitted to send a message to the game log.
 signal log_message(text: String)
+signal card_evolved(player_id: int, card: Dictionary, zone_index: int)
 
 const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
 
@@ -1376,6 +1377,7 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 	# Log the evolution
 	log_message.emit(GameLog.evolution(player_id, zone_idx, evo_rank, zone_card.get("id", ""), selected.get("id", "")))
 
+	card_evolved.emit(player_id, selected, zone_idx)
 	# Mark as played through evolution for enter effects (e.g. ESD02-010)
 	selected["played_through_evolution"] = true
 	selected["played_from_effect"] = true
