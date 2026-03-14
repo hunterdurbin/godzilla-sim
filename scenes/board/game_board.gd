@@ -293,12 +293,12 @@ var _opponent_rematch_requested: bool = false
 var _game_ended_by_disconnect: bool = false
 
 # Reconnect state
-var _reconnect_cumulative_seconds: float = 0.0  # Cumulative across all disconnects
+var _reconnect_cumulative_seconds: float = 0.0 # Cumulative across all disconnects
 var _reconnect_current_start_ms: int = 0
 var _waiting_for_reconnect: bool = false
-var _reconnect_attempting: bool = false  # Guard for client reconnect loop
+var _reconnect_attempting: bool = false # Guard for client reconnect loop
 const RECONNECT_CLAIM_WIN_SECONDS: float = 10.0
-var _pending_interaction: Dictionary = {}  # {method: String, args: Array}
+var _pending_interaction: Dictionary = {} # {method: String, args: Array}
 # Reconnect overlay nodes (built in code)
 var _reconnect_overlay: ColorRect = null
 var _reconnect_label: Label = null
@@ -317,7 +317,7 @@ var _choice_selecting: bool = false
 var _choice_player_id: int = -1
 var _choice_buttons: Array[Button] = []
 var _choice_container: VBoxContainer = null
-var _choice_panel: PanelContainer = null  # Mobile wrapper panel
+var _choice_panel: PanelContainer = null # Mobile wrapper panel
 
 # Monster rank-up selection state
 var _rankup_selecting: bool = false
@@ -370,7 +370,7 @@ var _fab_labels: Array[Label] = []
 var _fab_tween: Tween = null
 var _mobile_log_badge: Label = null
 var _mobile_log_unread: int = 0
-enum MobileBoardView { LOCAL_ENLARGED, OPPONENT_ENLARGED, BALANCED }
+enum MobileBoardView {LOCAL_ENLARGED, OPPONENT_ENLARGED, BALANCED}
 var _mobile_board_view: int = MobileBoardView.LOCAL_ENLARGED
 var _mobile_view_toggle_btn: Button = null
 var _mobile_tracker_tray_open: bool = false
@@ -497,6 +497,7 @@ func _ready() -> void:
 
 		# Connect action handler signals for visual feedback
 		turn_manager.action_handler.cards_drawn.connect(_on_cards_drawn)
+		turn_manager.action_handler.card_discarded.connect(_on_card_discarded)
 		turn_manager.action_handler.rage_gained.connect(_on_rage_gained)
 		turn_manager.action_handler.strategy_card_played.connect(_on_strategy_card_played)
 		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
@@ -836,7 +837,7 @@ func _start_game() -> void:
 		_cleanup_first_player_ui()
 		_first_player_id = _first_player_result
 		_apply_gradients_and_sync()
-		SfxManager.play("deck_shuffle")
+		SfxManager.play("game_setup")
 		turn_manager.start_game(_first_player_result)
 		return
 
@@ -844,7 +845,7 @@ func _start_game() -> void:
 		# Solo: no need to choose, player 1 always goes first
 		_first_player_id = 0
 		_apply_gradients_and_sync()
-		SfxManager.play("deck_shuffle")
+		SfxManager.play("game_setup")
 		turn_manager.start_game(0)
 		return
 
@@ -1111,7 +1112,7 @@ func _position_hands() -> void:
 	var hand_width_pct: float = 0.92 if _is_mobile_layout else 0.95
 	# Cap mobile hand width so cards don't cover action buttons
 	const MOBILE_MAX_HAND_WIDTH := 700.0
-	var mobile_hand_expand := 120.0  # Smaller expand offset on mobile to avoid obscuring board
+	var mobile_hand_expand := 120.0 # Smaller expand offset on mobile to avoid obscuring board
 
 	# On mobile, center hands on the viewport (scene) center.
 	var viewport_center_x := get_viewport().get_visible_rect().size.x / 2.0
@@ -1148,8 +1149,8 @@ func _position_hands() -> void:
 			hand_stack.offset_left = maxf(min_left, cards_left - stack_w)
 			hand_stack.offset_right = hand_stack.offset_left + stack_w
 			var bot_pad := maxf(20.0, _safe_bottom + 4.0)
-			hand_stack.offset_top = -(stack_h + bot_pad - 4.0)
-			hand_stack.offset_bottom = -bot_pad
+			hand_stack.offset_top = - (stack_h + bot_pad - 4.0)
+			hand_stack.offset_bottom = - bot_pad
 
 			# Position board view toggle directly above the hand stack
 			if _mobile_view_toggle_btn:
@@ -1292,21 +1293,21 @@ func _apply_mobile_action_panel() -> void:
 	var col_gap := 12.0
 	var row_gap := 8.0
 	var label_h := 18.0
-	var cell_h := btn_size + label_h + 2.0  # 105
+	var cell_h := btn_size + label_h + 2.0 # 105
 	var grid_cols := 3
-	var grid_w := btn_size * grid_cols + col_gap * (grid_cols - 1)  # 279
-	var container_w := grid_w + 20.0  # 299
-	var container_h := cell_h * 2.0 + row_gap + btn_size + 8.0  # 311
+	var grid_w := btn_size * grid_cols + col_gap * (grid_cols - 1) # 279
+	var container_w := grid_w + 20.0 # 299
+	var container_h := cell_h * 2.0 + row_gap + btn_size + 8.0 # 311
 
 	_fab_container = Control.new()
 	_fab_container.anchor_left = 1.0
 	_fab_container.anchor_right = 1.0
 	_fab_container.anchor_top = 1.0
 	_fab_container.anchor_bottom = 1.0
-	_fab_container.offset_left = -(pad_r + container_w)
-	_fab_container.offset_right = -pad_r
-	_fab_container.offset_top = -(pad_b + container_h)
-	_fab_container.offset_bottom = -pad_b
+	_fab_container.offset_left = - (pad_r + container_w)
+	_fab_container.offset_right = - pad_r
+	_fab_container.offset_top = - (pad_b + container_h)
+	_fab_container.offset_bottom = - pad_b
 	_fab_container.z_index = 57
 	_fab_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_fab_container)
@@ -1554,9 +1555,9 @@ func _apply_mobile_utility_buttons() -> void:
 	_mobile_menu_btn.anchor_bottom = 0.0
 	var menu_pad_r := maxf(20.0, _safe_right + 4.0)
 	var menu_pad_t := maxf(40.0, _safe_top + 24.0)
-	_mobile_menu_btn.offset_left = -(menu_pad_r + 58.0)
+	_mobile_menu_btn.offset_left = - (menu_pad_r + 58.0)
 	_mobile_menu_btn.offset_top = menu_pad_t
-	_mobile_menu_btn.offset_right = -menu_pad_r
+	_mobile_menu_btn.offset_right = - menu_pad_r
 	_mobile_menu_btn.offset_bottom = menu_pad_t + 55.0
 	_mobile_menu_btn.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_mobile_menu_btn.custom_minimum_size.y = 55
@@ -1590,8 +1591,8 @@ func _apply_mobile_utility_buttons() -> void:
 	var btn_h := 55.0
 	var gap := 6.0
 	var panel_top := menu_pad_t + 55.0 + 8.0
-	_mobile_menu_panel.offset_left = -(menu_pad_r + panel_w)
-	_mobile_menu_panel.offset_right = -menu_pad_r
+	_mobile_menu_panel.offset_left = - (menu_pad_r + panel_w)
+	_mobile_menu_panel.offset_right = - menu_pad_r
 	_mobile_menu_panel.offset_top = panel_top
 	_mobile_menu_panel.offset_bottom = panel_top + (btn_h + gap) * 3.0
 	_mobile_menu_panel.add_theme_constant_override("separation", int(gap))
@@ -1769,11 +1770,11 @@ func _draw_board_view_icon() -> void:
 	var bot_ratio: float
 	match _mobile_board_view:
 		MobileBoardView.LOCAL_ENLARGED:
-			top_ratio = 0.35  # opponent = small
-			bot_ratio = 0.65  # you = large
+			top_ratio = 0.35 # opponent = small
+			bot_ratio = 0.65 # you = large
 		MobileBoardView.OPPONENT_ENLARGED:
-			top_ratio = 0.65  # opponent = large
-			bot_ratio = 0.35  # you = small
+			top_ratio = 0.65 # opponent = large
+			bot_ratio = 0.35 # you = small
 		_:
 			top_ratio = 0.5
 			bot_ratio = 0.5
@@ -1902,13 +1903,13 @@ func _apply_desktop_hand_button_stacks() -> void:
 	var btn_w := 55.0
 	var btn_h := 32.0
 	var gap := 2.0
-	var right_margin := 300.0  # Action panel left edge is at -270
+	var right_margin := 300.0 # Action panel left edge is at -270
 
 	# Reparent to GameBoard so HBoxContainer can't override layout
-	hand_toggle_button.reparent(self)
-	sort_hand_button.reparent(self)
-	opponent_hand_toggle_button.reparent(self)
-	opponent_sort_hand_button.reparent(self)
+	hand_toggle_button.reparent(self )
+	sort_hand_button.reparent(self )
+	opponent_hand_toggle_button.reparent(self )
+	opponent_sort_hand_button.reparent(self )
 
 	# Reset minimum sizes from .tscn so offset-based sizing works
 	for btn: Button in [hand_toggle_button, sort_hand_button,
@@ -1921,12 +1922,12 @@ func _apply_desktop_hand_button_stacks() -> void:
 		btn.anchor_right = 1.0
 		btn.anchor_top = 1.0
 		btn.anchor_bottom = 1.0
-	hand_toggle_button.offset_left = -(right_margin + btn_w)
-	hand_toggle_button.offset_right = -right_margin
-	hand_toggle_button.offset_bottom = -(btn_h + gap + 10.0)
+	hand_toggle_button.offset_left = - (right_margin + btn_w)
+	hand_toggle_button.offset_right = - right_margin
+	hand_toggle_button.offset_bottom = - (btn_h + gap + 10.0)
 	hand_toggle_button.offset_top = hand_toggle_button.offset_bottom - btn_h
-	sort_hand_button.offset_left = -(right_margin + btn_w)
-	sort_hand_button.offset_right = -right_margin
+	sort_hand_button.offset_left = - (right_margin + btn_w)
+	sort_hand_button.offset_right = - right_margin
 	sort_hand_button.offset_bottom = -10.0
 	sort_hand_button.offset_top = sort_hand_button.offset_bottom - btn_h
 
@@ -1937,12 +1938,12 @@ func _apply_desktop_hand_button_stacks() -> void:
 		btn.anchor_right = 1.0
 		btn.anchor_top = 0.0
 		btn.anchor_bottom = 0.0
-	opponent_hand_toggle_button.offset_left = -(right_margin + btn_w)
-	opponent_hand_toggle_button.offset_right = -right_margin
+	opponent_hand_toggle_button.offset_left = - (right_margin + btn_w)
+	opponent_hand_toggle_button.offset_right = - right_margin
 	opponent_hand_toggle_button.offset_top = 10.0
 	opponent_hand_toggle_button.offset_bottom = 10.0 + btn_h
-	opponent_sort_hand_button.offset_left = -(right_margin + btn_w)
-	opponent_sort_hand_button.offset_right = -right_margin
+	opponent_sort_hand_button.offset_left = - (right_margin + btn_w)
+	opponent_sort_hand_button.offset_right = - right_margin
 	opponent_sort_hand_button.offset_top = 10.0 + btn_h + gap
 	opponent_sort_hand_button.offset_bottom = 10.0 + btn_h * 2 + gap
 
@@ -2032,11 +2033,11 @@ func _create_mobile_phase_label() -> void:
 	_mobile_phase_label.anchor_right = 1.0
 	_mobile_phase_label.anchor_top = 0.0
 	_mobile_phase_label.anchor_bottom = 0.0
-	var phase_pad_r := maxf(60.0, _safe_right + 50.0)  # Leave room for "..." menu button
+	var phase_pad_r := maxf(60.0, _safe_right + 50.0) # Leave room for "..." menu button
 	var phase_pad_t := maxf(20.0, _safe_top + 4.0)
 	_mobile_phase_label.offset_left = 0.0
 	_mobile_phase_label.offset_top = phase_pad_t
-	_mobile_phase_label.offset_right = -phase_pad_r
+	_mobile_phase_label.offset_right = - phase_pad_r
 	_mobile_phase_label.offset_bottom = phase_pad_t + 18.0
 	_mobile_phase_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mobile_phase_label.z_index = 50
@@ -2090,9 +2091,9 @@ func _setup_mobile_tracker_tray() -> void:
 	_mobile_tracker_toggle_btn.anchor_top = 0.5
 	_mobile_tracker_toggle_btn.anchor_bottom = 0.5
 	var trk_pad_r := maxf(4.0, _safe_right)
-	_mobile_tracker_toggle_btn.offset_left = -(trk_pad_r + 50.0)
+	_mobile_tracker_toggle_btn.offset_left = - (trk_pad_r + 50.0)
 	_mobile_tracker_toggle_btn.offset_top = -38.0
-	_mobile_tracker_toggle_btn.offset_right = -trk_pad_r
+	_mobile_tracker_toggle_btn.offset_right = - trk_pad_r
 	_mobile_tracker_toggle_btn.offset_bottom = 37.0
 	_mobile_tracker_toggle_btn.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_mobile_tracker_toggle_btn.add_theme_font_size_override("font_size", 12)
@@ -2118,15 +2119,15 @@ func _toggle_mobile_tracker_tray() -> void:
 	var trk_pad := maxf(4.0, _safe_right)
 	if _mobile_tracker_tray_open:
 		# Slide panel on-screen: offsets go to normal position
-		_mobile_tracker_tween.tween_property(panel, "offset_left", -(140.0 + trk_pad), 0.25)
+		_mobile_tracker_tween.tween_property(panel, "offset_left", - (140.0 + trk_pad), 0.25)
 		_mobile_tracker_tween.parallel().tween_property(panel, "offset_right", -trk_pad, 0.25)
-		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_left", -(190.0 + trk_pad), 0.25)
-		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_right", -(140.0 + trk_pad), 0.25)
+		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_left", - (190.0 + trk_pad), 0.25)
+		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_right", - (140.0 + trk_pad), 0.25)
 	else:
 		# Slide panel off-screen to the right
 		_mobile_tracker_tween.tween_property(panel, "offset_left", 0.0, 0.25)
 		_mobile_tracker_tween.parallel().tween_property(panel, "offset_right", 140.0, 0.25)
-		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_left", -(trk_pad + 50.0), 0.25)
+		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_left", - (trk_pad + 50.0), 0.25)
 		_mobile_tracker_tween.parallel().tween_property(_mobile_tracker_toggle_btn, "offset_right", -trk_pad, 0.25)
 
 
@@ -2143,14 +2144,14 @@ func _apply_safe_area_insets() -> void:
 		_safe_bottom = (screen_size.y - (safe_area.position.y + safe_area.size.y)) * scale_y
 		var vbox := $VBoxContainer
 		vbox.offset_left = _safe_left
-		vbox.offset_right = -_safe_right
+		vbox.offset_right = - _safe_right
 		vbox.offset_top = _safe_top
 
 
 func _retry_safe_area_insets() -> void:
 	_apply_safe_area_insets()
 	if _safe_left == 0.0 and _safe_right == 0.0 and _safe_top == 0.0:
-		return  # Still no safe area data — nothing to update
+		return # Still no safe area data — nothing to update
 	# Reposition all floating elements with the now-available safe area insets
 	var pad_l := maxf(20.0, _safe_left + 4.0)
 	var pad_r := maxf(20.0, _safe_right + 4.0)
@@ -2165,10 +2166,10 @@ func _retry_safe_area_insets() -> void:
 		var grid_w := btn_size * 3 + col_gap * 2
 		var container_w := grid_w + 20.0
 		var container_h := cell_h * 2.0 + row_gap + btn_size + 8.0
-		_fab_container.offset_left = -(pad_r + container_w)
-		_fab_container.offset_right = -pad_r
-		_fab_container.offset_top = -(pad_b + container_h)
-		_fab_container.offset_bottom = -pad_b
+		_fab_container.offset_left = - (pad_r + container_w)
+		_fab_container.offset_right = - pad_r
+		_fab_container.offset_top = - (pad_b + container_h)
+		_fab_container.offset_bottom = - pad_b
 		if _fab_main_btn:
 			_fab_main_btn.position = Vector2(container_w - btn_size, container_h - btn_size)
 	# Log toggle button
@@ -2185,31 +2186,31 @@ func _retry_safe_area_insets() -> void:
 	var trk_pad := maxf(4.0, _safe_right)
 	if _mobile_tracker_toggle_btn:
 		if not _mobile_tracker_tray_open:
-			_mobile_tracker_toggle_btn.offset_left = -(trk_pad + 50.0)
-			_mobile_tracker_toggle_btn.offset_right = -trk_pad
+			_mobile_tracker_toggle_btn.offset_left = - (trk_pad + 50.0)
+			_mobile_tracker_toggle_btn.offset_right = - trk_pad
 		else:
-			_mobile_tracker_toggle_btn.offset_left = -(190.0 + trk_pad)
-			_mobile_tracker_toggle_btn.offset_right = -(140.0 + trk_pad)
+			_mobile_tracker_toggle_btn.offset_left = - (190.0 + trk_pad)
+			_mobile_tracker_toggle_btn.offset_right = - (140.0 + trk_pad)
 	# Menu button + panel (top-right)
 	if _mobile_menu_btn:
 		var menu_pad := maxf(20.0, _safe_right + 4.0)
 		var menu_pad_t := maxf(40.0, _safe_top + 24.0)
-		_mobile_menu_btn.offset_left = -(menu_pad + 58.0)
-		_mobile_menu_btn.offset_right = -menu_pad
+		_mobile_menu_btn.offset_left = - (menu_pad + 58.0)
+		_mobile_menu_btn.offset_right = - menu_pad
 		_mobile_menu_btn.offset_top = menu_pad_t
 		_mobile_menu_btn.offset_bottom = menu_pad_t + 55.0
 	if _mobile_menu_panel:
 		var menu_pad2 := maxf(20.0, _safe_right + 4.0)
 		var menu_pad_t2 := maxf(40.0, _safe_top + 24.0)
 		var panel_top := menu_pad_t2 + 55.0 + 8.0
-		_mobile_menu_panel.offset_left = -(menu_pad2 + 200.0)
-		_mobile_menu_panel.offset_right = -menu_pad2
+		_mobile_menu_panel.offset_left = - (menu_pad2 + 200.0)
+		_mobile_menu_panel.offset_right = - menu_pad2
 		_mobile_menu_panel.offset_top = panel_top
 	# Phase label (top-right)
 	if _mobile_phase_label:
 		var phase_pad := maxf(60.0, _safe_right + 50.0)
 		var phase_pad_t := maxf(20.0, _safe_top + 4.0)
-		_mobile_phase_label.offset_right = -phase_pad
+		_mobile_phase_label.offset_right = - phase_pad
 		_mobile_phase_label.offset_top = phase_pad_t
 	# Action prompt — width capped at 25% via anchor_right
 	var prompt := get_node_or_null("ActionPrompt") as PanelContainer
@@ -2500,6 +2501,10 @@ func _on_chat_text_changed(new_text: String) -> void:
 
 func _on_cards_drawn(_player_id: int, _count: int) -> void:
 	SfxManager.play("card_draw")
+
+
+func _on_card_discarded(_player_id: int, _card: Dictionary) -> void:
+	SfxManager.play("card_discard")
 
 
 func _on_rage_gained(_player_id: int, _new_rage: int) -> void:
@@ -2903,6 +2908,7 @@ func _execute_rematch() -> void:
 
 		# Reconnect action handler signals
 		turn_manager.action_handler.cards_drawn.connect(_on_cards_drawn)
+		turn_manager.action_handler.card_discarded.connect(_on_card_discarded)
 		turn_manager.action_handler.rage_gained.connect(_on_rage_gained)
 		turn_manager.action_handler.strategy_card_played.connect(_on_strategy_card_played)
 		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
@@ -3250,7 +3256,7 @@ func _process(_delta: float) -> void:
 			_reconnect_timer_label.text = ""
 			if not _reconnect_claim_btn.visible:
 				_reconnect_claim_btn.visible = true
-		return  # Skip normal drag processing while overlay is showing
+		return # Skip normal drag processing while overlay is showing
 
 	if not _drag_card or not _drag_card.is_dragging:
 		if _snap_preview_slot:
@@ -3426,7 +3432,7 @@ func _input(event: InputEvent) -> void:
 		if card_zoom_overlay.visible:
 			_hide_card_zoom()
 		elif deck_arrange_overlay.visible:
-			pass  # Mandatory — must confirm
+			pass # Mandatory — must confirm
 		elif card_pool_select_overlay.visible:
 			_on_card_pool_select_skip()
 		elif deck_search_overlay.visible:
@@ -3435,13 +3441,13 @@ func _input(event: InputEvent) -> void:
 			_hide_discard_view()
 		elif monster_deck_view_overlay.visible:
 			if _rankup_selecting:
-				pass  # Mandatory — must pick a monster
+				pass # Mandatory — must pick a monster
 			else:
 				_hide_monster_deck_view()
 		elif zone_stack_view_overlay.visible:
 			_hide_zone_stack_view()
 		elif _choice_selecting:
-			pass  # Mandatory — must pick an option
+			pass # Mandatory — must pick an option
 		elif _hand_card_selecting and _hand_card_allow_skip:
 			_skip_hand_card_selection()
 		elif _zone_target_selecting and _zone_target_allow_skip:
@@ -5500,7 +5506,7 @@ func _on_monster_deck_view_stacked_toggled(_value: bool) -> void:
 
 func _hide_monster_deck_view() -> void:
 	if _rankup_selecting:
-		return  # Cannot dismiss during mandatory rank-up selection
+		return # Cannot dismiss during mandatory rank-up selection
 	monster_deck_view_overlay.visible = false
 	for child in monster_deck_view_grid.get_children():
 		child.queue_free()
@@ -5774,7 +5780,7 @@ func _apply_card_zoom(factor: float) -> void:
 
 func _show_card_preview(data: Dictionary) -> void:
 	if _is_mobile_layout:
-		return  # Mobile uses tap-to-zoom instead of hover preview
+		return # Mobile uses tap-to-zoom instead of hover preview
 	if data.is_empty():
 		return
 	_preview_card.set_card_data_dict(data)
@@ -6015,7 +6021,7 @@ func _do_broadcast() -> void:
 		var envelope: Dictionary
 		if _last_sent_state.is_empty():
 			# First broadcast or after resync: send full state
-			envelope = {"v": _state_version, "bv": -1, "d": state_dict}
+			envelope = {"v": _state_version, "bv": - 1, "d": state_dict}
 		else:
 			var delta := _compute_delta(_last_sent_state, state_dict)
 			if delta.is_empty() and _pending_log_lines.is_empty():
@@ -6202,7 +6208,7 @@ func _apply_delta(full_state: Dictionary, delta: Dictionary) -> Dictionary:
 			continue
 		result[key] = delta[key]
 	# Apply per-player deltas
-	var players: Array = result.get("players", [{}, {}])
+	var players: Array = result.get("players", [ {}, {}])
 	for i in range(2):
 		var pkey := "p%d" % i
 		if not delta.has(pkey):

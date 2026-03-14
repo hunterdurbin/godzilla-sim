@@ -10,6 +10,7 @@ const POOL_SIZE := 4
 const SOUND_NAMES := [
 	"card_play",
 	"card_draw",
+	"card_discard",
 	"deck_shuffle",
 	"turn_start",
 	"counter_success",
