@@ -105,7 +105,10 @@ func _get_packet_script() -> PackedByteArray:
 func _put_packet_script(p_buffer: PackedByteArray) -> Error:
 	if _ws.get_ready_state() != WebSocketPeer.STATE_OPEN:
 		return ERR_UNAVAILABLE
-	return _ws.send(p_buffer, WebSocketPeer.WRITE_MODE_BINARY)
+	var err := _ws.send(p_buffer, WebSocketPeer.WRITE_MODE_BINARY)
+	if err != OK:
+		push_warning("[RelayPeer] send failed: err=%d, size=%d" % [err, p_buffer.size()])
+	return err
 
 
 # --- MultiplayerPeer ---
