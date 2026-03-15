@@ -321,7 +321,8 @@ func get_bot_tags() -> Array[String]:
 	##   "blocks_invade"    — prevents opponent from invading
 	##   "heals_deck"       — returns cards from discard to deck
 	##   "searches_deck"    — searches deck for a specific card
-	##   "advances_monster" — advances own monster (extra advance, etc.)
+	##   "advances_self"    — advances own monster (extra advance, etc.)
+	##   "advances_opponent" — advances opponent's monster
 	##   "weakens_opponent" — reduces opponent's CP, rank, or field presence
 	##   "zone_dependent"   — effect requires being in a specific zone to activate
 	##                        (override get_bot_preferred_zones to specify which zones)
@@ -351,6 +352,13 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 	## Return the maximum rank of cards this effect can destroy.
 	## -1 means no rank restriction (can destroy any rank).
 	## Override in effect scripts with rank-limited destroy effects.
+	return -1
+
+
+func get_bot_max_advance_zone(_owner: PlayerState, _opponent: PlayerState) -> int:
+	## Return the maximum zone this effect would advance a monster to.
+	## -1 means no cap (advances relative to current position).
+	## Used by bot to evaluate whether the advance has value at current game state.
 	return -1
 
 

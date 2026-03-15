@@ -14,7 +14,11 @@ extends CardEffect
 
 
 func get_bot_tags() -> Array[String]:
-	return ["weakens_opponent"]
+	return ["weakens_opponent", "advances_opponent"]
+
+
+func get_bot_max_advance_zone(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 5
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

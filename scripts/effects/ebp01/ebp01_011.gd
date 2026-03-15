@@ -13,6 +13,14 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["advances_opponent"]
+
+
+func bot_can_fulfill_on_monster_advance(_owner: PlayerState, opponent: PlayerState) -> bool:
+	return opponent.monster_zone < 8
+
+
 func on_monster_advance(ctx: EffectContext, _from_zone: int, to_zone: int) -> void:
 	var opp_monster_idx: int = ctx.opponent.monster_zone - 1
 	var opponent_columns := get_opponent_column_zones(to_zone - 1)

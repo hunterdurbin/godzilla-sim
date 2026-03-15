@@ -81,8 +81,10 @@ func analyze_deck() -> void:
 			invasion_score += 2.0
 		if "destroys_zone" in tags:
 			invasion_score += 2.0
-		if "advances_monster" in tags:
+		if "advances_self" in tags:
 			invasion_score += 3.0
+		if "advances_opponent" in tags:
+			invasion_score += 2.0
 		if "weakens_opponent" in tags:
 			invasion_score += 1.5
 		if "mill_opponent" in tags:
@@ -528,14 +530,41 @@ func _score_card(card: Dictionary, player: PlayerState, opponent: PlayerState, n
 					score -= 100  # Heavy penalty — don't play with no targets
 		elif tag == "weakens_opponent" and opponent.rage >= 3:
 			score += 10
+		elif tag == "advances_opponent":
+			var max_zone: int = -1
+			if effect:
+				max_zone = effect.get_bot_max_advance_zone(player, opponent)
+			var target_zone: int
+			if max_zone > 0:
+				target_zone = mini(max_zone, opponent.monster_zone + 1)
+			else:
+				target_zone = opponent.monster_zone + 1
+			if target_zone <= opponent.monster_zone:
+				score -= 100  # No effect — don't play
+			elif target_zone >= 7:
+				var can_counter := _can_counter_opponent()
+				var crushes_z8 := target_zone >= 8 and opponent.zone_has_battle_card(7)
+				var can_win := player.monster_zone >= 7 and (crushes_z8 or not opponent.zone_has_battle_card(7))
+				if can_win:
+					score += 30  # Setup for the kill
+				elif can_counter:
+					score += 10  # Safe — we can handle their invasion
+				else:
+					score -= 50  # Too risky — opponent near winning
+		elif tag == "advances_self":
+			var max_zone: int = -1
+			if effect:
+				max_zone = effect.get_bot_max_advance_zone(player, opponent)
+			if max_zone > 0 and player.monster_zone >= max_zone:
+				score -= 100  # Already past cap — no value
 		elif tag == "boosts_cp" and not _can_counter_opponent():
 			score += 15
 
 	# Playstyle multipliers — amplify tags that align with the deck's strategy
 	if playstyle == Playstyle.INVASION:
 		for tag in tags:
-			if tag in ["boosts_threat", "disrupts_hand", "destroys_zone", "advances_monster",
-					"weakens_opponent", "mill_opponent", "column_dependent_monster"]:
+			if tag in ["boosts_threat", "disrupts_hand", "destroys_zone", "advances_self",
+					"advances_opponent", "weakens_opponent", "mill_opponent", "column_dependent_monster"]:
 				score += config.playstyle_multiplier
 	elif playstyle == Playstyle.COUNTER:
 		for tag in tags:

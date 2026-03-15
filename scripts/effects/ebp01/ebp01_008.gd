@@ -12,6 +12,14 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["advances_opponent"]
+
+
+func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
+	return opponent.monster_zone < 8
+
+
 func get_burst_rank() -> int:
 	return 2
 

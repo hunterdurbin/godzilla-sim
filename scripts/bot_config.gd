@@ -26,7 +26,8 @@ var tag_scores: Dictionary = {
 	"blocks_zone": 15,
 	"blocks_invade": 10,
 	"searches_deck": 15,
-	"advances_monster": 20,
+	"advances_self": 20,
+	"advances_opponent": 20,
 	"weakens_opponent": 15,
 	"heals_deck": 5,
 	"mill_self": 10,
@@ -43,7 +44,8 @@ var tag_situational_bonuses: Dictionary = {
 	"destroys_zone": {"near_winning_z8_blocked": 50},
 	"boosts_cp": {"opponent_zone_6_plus": 15},
 	"blocks_invade": {"opponent_zone_5_plus": 20},
-	"advances_monster": {"near_winning": 15},
+	"advances_self": {"near_winning": 15},
+	"advances_opponent": {},
 }
 
 # Column/zone-dependent tag scoring
@@ -89,7 +91,9 @@ var tag_synergies: Array = [
 	["mill_self", "plays_from_discard", 15],
 	["heals_deck", "evolution", 15],
 	["evolves", "evolution", 20],
-	["destroys_zone", "advances_monster", 10],
+	["destroys_zone", "advances_self", 10],
+	["advances_opponent", "boosts_threat", 10],
+	["advances_opponent", "destroys_zone", 10],
 	["boosts_threat", "weakens_opponent", 10],
 	["weakens_opponent", "boosts_threat", 10],
 	["searches_deck", "evolution", 10],
