@@ -13,7 +13,11 @@ extends CardEffect
 
 
 func get_bot_tags() -> Array[String]:
-	return ["mill_self", "advances_monster"]
+	return ["mill_self", "advances_self"]
+
+
+func get_bot_max_advance_zone(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 6
 
 
 func on_enter(ctx: EffectContext) -> void:

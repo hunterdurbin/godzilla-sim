@@ -14,7 +14,7 @@ extends CardEffect
 
 
 func get_bot_tags() -> Array[String]:
-	return ["advances_monster"]
+	return ["advances_self"]
 
 
 func bot_can_fulfill_on_rage_changed(owner: PlayerState, _opponent: PlayerState) -> bool:

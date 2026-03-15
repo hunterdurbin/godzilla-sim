@@ -12,7 +12,7 @@ extends CardEffect
 
 
 func get_bot_tags() -> Array[String]:
-	return ["advances_monster", "boosts_threat"]
+	return ["advances_self", "boosts_threat"]
 
 
 func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:

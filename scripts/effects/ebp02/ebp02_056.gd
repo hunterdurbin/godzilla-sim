@@ -14,7 +14,14 @@ extends CardEffect
 
 
 func get_bot_tags() -> Array[String]:
-	return ["boosts_threat", "advances_monster"]
+	return ["boosts_threat", "advances_self"]
+
+
+func get_bot_max_advance_zone(owner: PlayerState, _opponent: PlayerState) -> int:
+	var crystals := owner.count_zone_tokens_by_id("EBP02-T03")
+	if crystals == 0:
+		return -1
+	return mini(owner.monster_zone + 1 + crystals, 8)
 
 
 

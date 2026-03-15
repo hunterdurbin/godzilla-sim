@@ -12,6 +12,14 @@ extends CardEffect
 ## Implementation notes: None
 
 
+func get_bot_tags() -> Array[String]:
+	return ["advances_opponent"]
+
+
+func bot_can_fulfill_on_phase_start(_owner: PlayerState, opponent: PlayerState, _effect_handler = null) -> bool:
+	return opponent.monster_zone < 8
+
+
 func get_phase_start_filter() -> Dictionary:
 	return {"phase": CardEnums.GamePhase.END, "own_turn": true}
 
