@@ -268,6 +268,7 @@ var _broadcast_pending: bool = false # Debounce flag for frame-based coalescing
 var _last_sent_state: Dictionary = {} # Host: last serialized state sent to client
 var _last_sent_version: int = 0 # Host: version of _last_sent_state
 var _client_full_state: Dictionary = {} # Client: accumulated full state from deltas
+var _last_resync_request_ms: int = 0 # Client: rate-limit resync requests
 
 # Zone target selection state (for effects that let the player pick a zone)
 var _zone_target_selecting: bool = false
@@ -3513,17 +3514,22 @@ func _on_zone_hover_clicked(_zone_index: int) -> void:
 
 
 func _process(_delta: float) -> void:
-	# Reconnect timer display (host only)
-	if _waiting_for_reconnect and NetworkManager.is_host() and _reconnect_overlay.visible:
+	# Reconnect overlay display
+	if _waiting_for_reconnect and _reconnect_overlay.visible:
 		var elapsed_ms := Time.get_ticks_msec() - _reconnect_current_start_ms
 		var total_seconds := _reconnect_cumulative_seconds + elapsed_ms / 1000.0
-		var remaining := RECONNECT_CLAIM_WIN_SECONDS - total_seconds
-		if remaining > 0:
-			_reconnect_timer_label.text = "Claim win available in %ds" % ceili(remaining)
+		if NetworkManager.is_host():
+			# Host: show countdown until "Claim Win" becomes available
+			var remaining := RECONNECT_CLAIM_WIN_SECONDS - total_seconds
+			if remaining > 0:
+				_reconnect_timer_label.text = "Claim win available in %ds" % ceili(remaining)
+			else:
+				_reconnect_timer_label.text = ""
+				if not _reconnect_claim_btn.visible:
+					_reconnect_claim_btn.visible = true
 		else:
-			_reconnect_timer_label.text = ""
-			if not _reconnect_claim_btn.visible:
-				_reconnect_claim_btn.visible = true
+			# Client: show elapsed time reconnecting
+			_reconnect_timer_label.text = "Reconnecting... %ds" % int(total_seconds)
 		return # Skip normal drag processing while overlay is showing
 
 	if not _drag_card or not _drag_card.is_dragging:
@@ -6307,6 +6313,9 @@ func _do_broadcast() -> void:
 		_last_sent_version = _state_version
 
 		var state_bytes := var_to_bytes(envelope)
+		if state_bytes.size() > 32768:
+			push_warning("[BROADCAST] Large state packet: %d bytes (v=%d, full=%s)" % [
+				state_bytes.size(), _state_version, str(_last_sent_state.is_empty())])
 		RpcLogger.log_send("receive_state", state_bytes.size())
 		_rpc_receive_state.rpc_id(peer_id, state_bytes)
 	_pending_log_lines.clear()
@@ -6634,7 +6643,14 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	RpcLogger.log_receive("receive_state", state_bytes.size())
-	var envelope: Dictionary = bytes_to_var(state_bytes)
+	if state_bytes.is_empty():
+		return
+	var decoded: Variant = bytes_to_var(state_bytes)
+	if decoded == null or not decoded is Dictionary:
+		push_warning("[STATE] bytes_to_var failed or returned non-Dictionary (size=%d)" % state_bytes.size())
+		_request_resync_throttled()
+		return
+	var envelope: Dictionary = decoded
 	if envelope.is_empty():
 		return
 
@@ -6659,11 +6675,16 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	else:
 		if _client_state_version != base_version:
 			push_warning("[DELTA] Base version mismatch: have %d, got bv=%d. Requesting resync." % [_client_state_version, base_version])
-			RpcLogger.log_send("request_resync", 0)
-			_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
+			_request_resync_throttled()
 			return
 		_client_full_state = _apply_delta(_client_full_state, payload)
 		data = _client_full_state
+
+	# Validate that the data has required fields before processing
+	if not data.has("current_player_id") or not data.has("players"):
+		push_warning("[STATE] Received state missing required fields — requesting resync")
+		_request_resync_throttled()
+		return
 
 	# Track state version for desync detection
 	if version > 0 and _client_state_version > 0 and version < _client_state_version:
@@ -6710,6 +6731,10 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 
 	# Reconstruct PlayerState objects
 	var players_data: Array = data["players"]
+	if players_data.size() < 2:
+		push_warning("[STATE] players array too small: %d" % players_data.size())
+		_request_resync_throttled()
+		return
 	for i in range(2):
 		var pd: Dictionary = players_data[i]
 		_client_players[i] = _dict_to_player_state(pd, i == local_player_id)
@@ -6767,8 +6792,7 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 			# Auto-resync if this was a delta (full state hash mismatch is a real desync)
 			if base_version >= 0:
 				push_warning("[DELTA] Hash mismatch after delta apply — requesting resync")
-				RpcLogger.log_send("request_resync", 0)
-				_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
+				_request_resync_throttled()
 
 	# Update UI
 	var client_phase := int(data["current_phase"]) as CardEnums.GamePhase
@@ -6776,6 +6800,18 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	_update_turn_tracker(_client_current_player_id, client_phase, client_sub_phase)
 	_sync_boards()
 	_update_hand_visibility(_client_current_player_id)
+
+
+## Rate-limited resync request (client only). Prevents flooding the host with
+## resync RPCs when multiple deltas fail in quick succession.
+const RESYNC_COOLDOWN_MS: int = 2000
+func _request_resync_throttled() -> void:
+	var now := Time.get_ticks_msec()
+	if now - _last_resync_request_ms < RESYNC_COOLDOWN_MS:
+		return # Too soon — skip this resync request
+	_last_resync_request_ms = now
+	RpcLogger.log_send("request_resync", 0)
+	_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
 
 
 ## Client -> Host: request full state resend (delta base version mismatch or hash mismatch)
@@ -7356,8 +7392,17 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 		_reconnect_overlay.visible = true
 		return
 
-	# Online CLIENT side: host can't reconnect, so client wins immediately
-	_handle_final_disconnect()
+	# Online CLIENT side: attempt to reconnect to the host via relay
+	_on_log_message("Connection lost. Attempting to reconnect...")
+	_waiting_for_reconnect = true
+	_reconnect_current_start_ms = Time.get_ticks_msec()
+	_reconnect_label.text = "Connection lost.\nReconnecting..."
+	_reconnect_timer_label.text = ""
+	_reconnect_claim_btn.visible = false
+	_reconnect_menu_btn.visible = true
+	_reconnect_overlay.visible = true
+	if not _reconnect_attempting:
+		_attempt_client_reconnect()
 
 
 func _handle_final_disconnect() -> void:
@@ -7377,7 +7422,7 @@ func _attempt_client_reconnect() -> void:
 		_reconnect_label.text = "Connection lost.\nReconnecting..."
 		var err: Error = await NetworkManager.attempt_reconnect(room_code)
 		if err == OK:
-			# Reconnected — clear overlay and reset client delta state
+			# Reconnected — clear overlay and reset ALL client delta state
 			_reconnect_cumulative_seconds += (Time.get_ticks_msec() - _reconnect_current_start_ms) / 1000.0
 			_waiting_for_reconnect = false
 			_reconnect_attempting = false
@@ -7385,12 +7430,19 @@ func _attempt_client_reconnect() -> void:
 			# Reset delta state so next broadcast is treated as full state
 			_client_full_state = {}
 			_client_state_version = 0
+			_last_resync_request_ms = 0
+			_action_pending = false
 			_on_log_message("Reconnected!")
+			# Wait a frame for the connection to stabilize before sending RPCs
+			await get_tree().process_frame
+			if not is_inside_tree():
+				return
 			# Re-send player name and request full state resync from host.
 			# The host already tried to resync during the relay handshake,
 			# but those RPCs may have arrived before the connection was fully ready.
 			RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
 			_rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
+			RpcLogger.log_send("request_resync", 0)
 			_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
 			return
 		# Failed — wait 2s and retry
@@ -7409,13 +7461,20 @@ func _on_opponent_reconnected(_peer_id: int) -> void:
 	_reconnect_overlay.visible = false
 
 	if not end_game_panel.visible:
-		# Game is still in progress — resync the client
+		# Game is still in progress — resync the client after a brief delay
+		# to let the connection stabilize before sending large state RPCs
 		_on_log_message("Opponent reconnected!")
+		await get_tree().create_timer(0.2).timeout
+		if not is_inside_tree():
+			return
 		_resync_reconnected_client()
 	else:
 		# Game ended while they were gone (win was claimed) — re-send result
 		var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 		var reason := win_label.text if win_label else "Opponent disconnected"
+		await get_tree().create_timer(0.2).timeout
+		if not is_inside_tree():
+			return
 		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
 		_rpc_receive_game_ended.rpc(local_player_id, "Opponent disconnected")
 		# Show rematch button now that opponent is back
