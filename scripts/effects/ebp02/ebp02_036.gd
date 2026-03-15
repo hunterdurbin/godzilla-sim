@@ -37,6 +37,6 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if zone_idx not in adjacent:
 		return
 
-	var opp_tl: int = ctx.opponent.get_threat_level()
+	var opp_tl: int = ctx.effect_handler.get_effective_threat_level(ctx.opponent.player_id)
 	if opp_tl <= 40000 and ctx.opponent.monster_zone > 1:
 		await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)

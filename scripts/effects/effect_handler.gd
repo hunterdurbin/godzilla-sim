@@ -1787,6 +1787,12 @@ func get_threat_level_modifier(player_id: int) -> int:
 	return total
 
 
+func get_effective_threat_level(player_id: int) -> int:
+	## Get the full effective threat level including base, rage, and all effect modifiers.
+	var player := game_state.players[player_id]
+	return player.get_threat_level() + get_threat_level_modifier(player_id)
+
+
 func get_play_rank_modifier(player_id: int, card: Dictionary) -> int:
 	## Get total play rank modifier for a card being played from hand.
 	## Checks the card's own effect (self-modifier) and active strategy cards.
