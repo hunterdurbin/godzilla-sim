@@ -34,6 +34,7 @@ var playstyle: Playstyle = Playstyle.BALANCED
 # Combo system — detects multi-card win paths, protects pieces, boosts scores.
 var _combos: Array[BotCombo] = []
 var _active_combo_plan: Dictionary = {}
+var combo_stats: Dictionary = {"detected": 0, "full": 0, "partial": 0, "executed": 0}
 
 var game_state: GameState
 var rules_engine: RulesEngine
@@ -172,8 +173,11 @@ func analyze_deck() -> void:
 
 
 func _delay() -> void:
-	if scene_tree and config.action_delay > 0:
-		await scene_tree.create_timer(config.action_delay).timeout
+	if scene_tree:
+		if config.action_delay > 0:
+			await scene_tree.create_timer(config.action_delay).timeout
+		else:
+			await Engine.get_main_loop().process_frame
 
 
 func is_bot_turn() -> bool:
@@ -217,6 +221,11 @@ func _decide_main_action(valid_actions: Array) -> Array:
 			_active_combo_plan.get("combo_name", "?"),
 			_active_combo_plan.get("state", "?"),
 			_active_combo_plan.get("viability", 0)])
+		combo_stats["detected"] += 1
+		if _active_combo_plan.get("state") == "full":
+			combo_stats["full"] += 1
+		elif _active_combo_plan.get("state") == "partial":
+			combo_stats["partial"] += 1
 
 	var combo_monster_rules := _get_combo_monster_rules(player)
 
@@ -248,6 +257,14 @@ func _decide_main_action(valid_actions: Array) -> Array:
 			var win_invade_idx := _find_best_invade_card(player)
 			if win_invade_idx >= 0:
 				return [CardEnums.ActionType.INVADE, {"hand_index": win_invade_idx}]
+
+	# 2.5. Combo execution: play combo pieces in sequence when all key pieces are ready.
+	#       This overrides normal card scoring to enforce correct play order.
+	if not _active_combo_plan.is_empty():
+		var combo_exec := _get_combo_execution_action(valid_actions, player, opponent)
+		if not combo_exec.is_empty():
+			combo_stats["executed"] += 1
+			return combo_exec
 
 	# 3. Aggressive: INVASION playstyle tries to invade early
 	#    Combo reserved cards are excluded; combo may suppress invasion entirely.
@@ -364,7 +381,7 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 		for hand_idx in playable:
 			var card: Dictionary = player.hand[hand_idx]
 			var score := _score_card(card, player, opponent, near_winning, z8_blocked)
-			score += _get_combo_score_adjustment(hand_idx)
+			score = _get_combo_adjusted_score(hand_idx, score)
 			if score > best_score:
 				best_score = score
 				best_result = [CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": hand_idx}]
@@ -402,7 +419,7 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 				b_score += _score_enabler_bonus(hand_idx, my_tags, playable_tags)
 
 			# Combo score adjustment (boost when full, penalize when partial)
-			b_score += _get_combo_score_adjustment(hand_idx)
+			b_score = _get_combo_adjusted_score(hand_idx, b_score)
 
 			var has_zone_pref := _card_has_zone_preference(b_card)
 			entries.append({
@@ -874,6 +891,16 @@ func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: P
 				if z in valid_zones and not player.zone_has_cards(z):
 					return z
 
+	# Combo zone avoidance: avoid zones the combo will crush during execution
+	var combo_avoid := _get_combo_battle_zone_avoidance()
+	if not combo_avoid.is_empty():
+		var combo_safe: Array[int] = []
+		for z in valid_zones:
+			if z not in combo_avoid:
+				combo_safe.append(z)
+		if not combo_safe.is_empty():
+			valid_zones = combo_safe
+
 	# Check card effect tags for zone preferences
 	var effect := effect_handler.get_effect(card) if not card.is_empty() else null
 	var tags: Array[String] = []
@@ -1179,8 +1206,11 @@ func _ensure_combo_plan() -> void:
 
 
 func _get_combo_reserved_indices() -> Array[int]:
-	## Returns all hand indices reserved by the active combo plan.
+	## Returns hand indices reserved by the active combo plan.
+	## Only reserves in full state — partial combo shouldn't hamstring normal play.
 	_ensure_combo_plan()
+	if _active_combo_plan.get("state") != "full":
+		return []
 	var reserved: Array[int] = []
 	reserved.assign(_active_combo_plan.get("reserved_indices", []))
 	return reserved
@@ -1195,6 +1225,58 @@ func _get_combo_score_adjustment(hand_idx: int) -> int:
 		if combo.combo_name == name:
 			return combo.get_score_adjustment(_active_combo_plan, hand_idx)
 	return 0
+
+
+func _get_combo_adjusted_score(hand_idx: int, base_score: int) -> int:
+	## Returns context-aware adjusted score from the active combo.
+	if _active_combo_plan.is_empty():
+		return base_score
+	var combo_name_key: String = _active_combo_plan.get("combo_name", "")
+	var player := game_state.players[bot_player_id]
+	var opponent := game_state.players[1 - bot_player_id]
+	for combo in _combos:
+		if combo.combo_name == combo_name_key:
+			return combo.adjust_card_score(_active_combo_plan, hand_idx, base_score,
+					player, opponent)
+	return base_score
+
+
+func _get_combo_invasion_preference() -> Dictionary:
+	## Returns invasion guidance from the active combo.
+	if _active_combo_plan.is_empty():
+		return {"preferred_steps": 0, "max_zone": -1, "target_zone": -1}
+	var combo_name_key: String = _active_combo_plan.get("combo_name", "")
+	var player := game_state.players[bot_player_id]
+	var opponent := game_state.players[1 - bot_player_id]
+	for combo in _combos:
+		if combo.combo_name == combo_name_key:
+			return combo.get_invasion_preference(_active_combo_plan, player, opponent)
+	return {"preferred_steps": 0, "max_zone": -1, "target_zone": -1}
+
+
+func _get_combo_battle_zone_avoidance() -> Array[int]:
+	## Returns zones to avoid placing battle cards in (combo will crush them).
+	if _active_combo_plan.is_empty():
+		return []
+	var combo_name_key: String = _active_combo_plan.get("combo_name", "")
+	var player := game_state.players[bot_player_id]
+	for combo in _combos:
+		if combo.combo_name == combo_name_key:
+			return combo.get_battle_zone_avoidance(_active_combo_plan, player)
+	return []
+
+
+func _get_combo_execution_action(valid_actions: Array, player: PlayerState,
+		opponent: PlayerState) -> Array:
+	## Ask the active combo for the next forced action in the execution sequence.
+	if _active_combo_plan.is_empty():
+		return []
+	var combo_name_key: String = _active_combo_plan.get("combo_name", "")
+	for combo in _combos:
+		if combo.combo_name == combo_name_key:
+			return combo.get_execution_action(_active_combo_plan, valid_actions,
+					player, opponent, self)
+	return []
 
 
 func _get_combo_monster_rules(player: PlayerState) -> Dictionary:
@@ -1239,6 +1321,27 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 	# (rage gain ≈ number of monster cards in hand)
 	var monsters_in_hand := _count_monster_cards_in_hand(player)
 
+	# Combo invasion preference — target specific zones for combo setup
+	var combo_pref := _get_combo_invasion_preference()
+	var combo_target: int = combo_pref.get("target_zone", -1)
+	var combo_max: int = combo_pref.get("max_zone", -1)
+	var combo_steps: int = combo_pref.get("preferred_steps", 0)
+
+	# If combo has a target zone, try to reach it
+	if combo_target > 0 and mz < combo_target:
+		var steps_needed: int = combo_target - mz
+		if combo_steps > 0:
+			var idx := find_invade_card_with_steps(player, combo_steps, exclude)
+			if idx >= 0 and mz + player.hand[idx].get("invasion_icon", 0) <= (combo_max if combo_max > 0 else 99):
+				if not _invasion_blocked_by_rage(player, idx, monsters_in_hand):
+					return [CardEnums.ActionType.INVADE, {"hand_index": idx}]
+		# Try exact steps to reach target
+		if steps_needed <= 2:
+			var idx := find_invade_card_with_steps(player, steps_needed, exclude)
+			if idx >= 0:
+				if not _invasion_blocked_by_rage(player, idx, monsters_in_hand):
+					return [CardEnums.ActionType.INVADE, {"hand_index": idx}]
+
 	var inv_idx: int = -1
 
 	if playstyle == Playstyle.INVASION:
@@ -1246,6 +1349,11 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 		inv_idx = find_invade_card_with_steps(player, 2, exclude)
 		if inv_idx < 0:
 			inv_idx = _find_best_invade_card(player, exclude)
+		# Respect combo max_zone: don't overshoot
+		if inv_idx >= 0 and combo_max > 0:
+			var would_reach: int = mz + player.hand[inv_idx].get("invasion_icon", 0)
+			if would_reach > combo_max:
+				inv_idx = -1
 		if inv_idx >= 0:
 			if not _invasion_blocked_by_rage(player, inv_idx, monsters_in_hand):
 				return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]
@@ -1266,6 +1374,11 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 		# z7+: invade aggressively
 		elif mz >= 7:
 			inv_idx = _find_best_invade_card(player, exclude)
+		# Respect combo max_zone: don't overshoot
+		if inv_idx >= 0 and combo_max > 0:
+			var would_reach: int = mz + player.hand[inv_idx].get("invasion_icon", 0)
+			if would_reach > combo_max:
+				inv_idx = -1
 		if inv_idx >= 0:
 			if not _invasion_blocked_by_rage(player, inv_idx, monsters_in_hand):
 				return [CardEnums.ActionType.INVADE, {"hand_index": inv_idx}]

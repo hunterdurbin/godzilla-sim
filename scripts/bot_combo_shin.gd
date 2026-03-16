@@ -142,29 +142,190 @@ func check(player: PlayerState, opponent: PlayerState, bot) -> Dictionary:
 
 
 func should_suppress_invasion(plan: Dictionary, player: PlayerState, opponent: PlayerState) -> bool:
-	# Counter-retreat strategy: if the advance_to_6 card is a strategy with rank
-	# that matches a counter retreat zone, ALLOW invasion to reach the setup zone.
-	# E.g. rank 4 strategy + zone 7 → counter retreat to zone 4 → strategy playable.
+	var mz := player.monster_zone
+
+	# Full state at z5+: never suppress — bot needs to advance for execution
+	if plan.get("state") == "full" and mz >= 5:
+		return false
+
+	# Counter-retreat strategy: allow invasion to reach the setup zone.
 	var adv6_idx: int = plan.get("advance_to_6_idx", -1)
 	if adv6_idx >= 0 and adv6_idx < player.hand.size():
 		var adv6_card: Dictionary = player.hand[adv6_idx]
 		if adv6_card.get("card_type") == CardEnums.CardType.STRATEGY:
 			var strat_rank: int = adv6_card.get("rank", 99)
-			# Zone 7 retreats to 4, zone 8 retreats to 3
-			# If strategy rank <= retreat zone, allow invasion to reach zones 6-7
-			if player.monster_zone >= 5 and player.monster_zone <= 7:
-				var retreat_zone: int = ActionHandler.get_counter_retreat_zone(player.monster_zone + 1)
+			if mz >= 5 and mz <= 7:
+				var retreat_zone: int = ActionHandler.get_counter_retreat_zone(mz + 1)
 				if retreat_zone >= strat_rank:
-					return false  # Allow invasion — counter retreat enables the strategy
+					return false
 
-	# Early game pace-matching: stay within ±1 zone of opponent in zones 1-4.
-	# Don't invade if already ahead by 1+ zones.
-	if opponent.monster_zone <= 4 and player.monster_zone >= opponent.monster_zone + 1:
-		return true
-	# Going first: opponent still at zone 1 — wait to see where they go
-	if opponent.monster_zone <= 1 and player.monster_zone <= 1:
+	# Partial state: only suppress when both at zone 1 (going first, no info)
+	if opponent.monster_zone <= 1 and mz <= 1:
 		return true
 	return false
+
+
+func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: PlayerState) -> Dictionary:
+	var pref := {"preferred_steps": 0, "max_zone": -1, "target_zone": -1}
+	var mz := player.monster_zone
+	var has_adv6: bool = plan.get("advance_to_6_idx", -1) >= 0
+
+	if plan.get("state") == "full" and mz >= 6:
+		# Full combo at zone 6+: no limit, go for the win
+		return pref
+
+	if mz <= 3 and has_adv6:
+		# Early zones with advance-to-6 card: reach zone 4 where rank-4 strategy becomes playable
+		pref["target_zone"] = 4
+		pref["preferred_steps"] = 2 if mz <= 2 else 1
+	elif mz >= 4 and mz <= 5 and has_adv6:
+		# Mid zones with advance-to-6 card: reach zone 6, don't overshoot
+		pref["target_zone"] = 6
+		pref["max_zone"] = 6
+		pref["preferred_steps"] = 2 if mz == 4 else 1
+	elif mz >= 5 and mz <= 6 and has_adv6:
+		# Check counter-retreat setup: invade to z7 → counter retreat to z4 enables strategy
+		var adv6_idx: int = plan.get("advance_to_6_idx", -1)
+		if adv6_idx >= 0 and adv6_idx < player.hand.size():
+			var adv6_card: Dictionary = player.hand[adv6_idx]
+			if adv6_card.get("card_type") == CardEnums.CardType.STRATEGY:
+				var next_zone: int = mz + 1
+				var retreat_zone: int = ActionHandler.get_counter_retreat_zone(next_zone)
+				var strat_rank: int = adv6_card.get("rank", 99)
+				if retreat_zone >= strat_rank:
+					pref["target_zone"] = 7
+					pref["preferred_steps"] = 1
+	elif mz >= 7:
+		# At z7+: invade aggressively
+		pref["preferred_steps"] = 0  # any
+
+	return pref
+
+
+func adjust_card_score(plan: Dictionary, hand_idx: int, base_score: int,
+		player: PlayerState, opponent: PlayerState) -> int:
+	var score: int = base_score
+	var mz := player.monster_zone
+	var invade_idx: int = plan.get("invade_idx", -1)
+
+	if plan.get("state") == "full":
+		# Full: boost combo pieces, protect invasion card
+		var boosted: Array = plan.get("boosted_indices", [])
+		if hand_idx in boosted:
+			score += maxi(plan.get("viability", 0), full_min_bonus)
+		elif hand_idx == invade_idx:
+			score -= partial_penalty
+	else:
+		# Partial: only protect invasion card from being played as battle card.
+		# All other pieces can be played normally for immediate value.
+		if hand_idx == invade_idx:
+			score -= partial_penalty
+
+	# Boost advance-to-6 cards at zone 4-5 (they enable the combo NOW)
+	if mz >= 4 and mz <= 5 and plan.get("advance_to_6_idx", -1) == hand_idx:
+		score += 30
+
+	# Boost destroy cards when z8 is blocked and combo is near execution
+	if plan.get("state") == "full" or mz >= 5:
+		if opponent.zone_has_battle_card(7) and plan.get("destroy_idx", -1) == hand_idx:
+			score += 20
+
+	return score
+
+
+func get_execution_action(plan: Dictionary, valid_actions: Array,
+		player: PlayerState, opponent: PlayerState, bot) -> Array:
+	# Only sequence when all key pieces are in hand
+	var invade_idx: int = plan.get("invade_idx", -1)
+	var adv_idx: int = plan.get("advancement_idx", -1)
+	if invade_idx < 0 or adv_idx < 0:
+		return []
+
+	var mz := player.monster_zone
+
+	# Step 1: Get to zone 6 — play advance-to-6 card
+	if mz < 6:
+		var adv6_idx: int = plan.get("advance_to_6_idx", -1)
+		if adv6_idx >= 0:
+			var action := _try_play_card(adv6_idx, player, opponent, valid_actions, bot)
+			if not action.is_empty():
+				return action
+
+	# Check if advancement is ready to play (gates Steps 2-4)
+	var adv_ready := false
+	if mz >= 6 and adv_idx >= 0 and adv_idx < player.hand.size():
+		if plan.get("advancement_is_monster", false):
+			if CardEnums.ActionType.PLAY_MONSTER in valid_actions:
+				var playable: Array[int] = bot.rules_engine.get_playable_monsters(player)
+				adv_ready = adv_idx in playable
+		else:
+			adv_ready = not _try_play_card(adv_idx, player, opponent, valid_actions, bot).is_empty()
+
+	# Step 2: Advance from z6+ (only when advancement is playable)
+	if adv_ready:
+		if plan.get("advancement_is_monster", false):
+			return [CardEnums.ActionType.PLAY_MONSTER, {"hand_index": adv_idx}]
+		else:
+			return _try_play_card(adv_idx, player, opponent, valid_actions, bot)
+
+	# Steps 3-4 only when advancement is ready (don't invade prematurely)
+	if adv_ready or mz >= 7:
+		# Step 3: Clear z8 if blocked
+		if mz >= 6 and opponent.zone_has_battle_card(7):
+			var destroy_idx: int = plan.get("destroy_idx", -1)
+			if destroy_idx >= 0:
+				var action := _try_play_card(destroy_idx, player, opponent, valid_actions, bot)
+				if not action.is_empty():
+					return action
+
+		# Step 4: Invade to z7 from z6
+		if mz == 6 and CardEnums.ActionType.INVADE in valid_actions:
+			var one_step: int = bot.find_invade_card_with_steps(player, 1, [])
+			if one_step >= 0:
+				return [CardEnums.ActionType.INVADE, {"hand_index": one_step}]
+
+	return []
+
+
+func _try_play_card(hand_idx: int, player: PlayerState, opponent: PlayerState,
+		valid_actions: Array, bot) -> Array:
+	## Try to play a specific card from hand. Returns action array or [].
+	if hand_idx < 0 or hand_idx >= player.hand.size():
+		return []
+	var card: Dictionary = player.hand[hand_idx]
+	var card_type: int = card.get("card_type", -1)
+	var rules_eng: RulesEngine = bot.rules_engine
+
+	if card_type == CardEnums.CardType.STRATEGY:
+		if CardEnums.ActionType.PLAY_STRATEGY not in valid_actions:
+			return []
+		if hand_idx not in rules_eng.get_playable_strategy_cards(player):
+			return []
+		return [CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": hand_idx}]
+
+	elif card_type == CardEnums.CardType.BATTLE:
+		if CardEnums.ActionType.PLAY_BATTLE not in valid_actions:
+			return []
+		if hand_idx not in rules_eng.get_playable_battle_cards(player, opponent):
+			return []
+		var valid_zones := rules_eng.get_valid_zones_for_card(card, player, opponent)
+		if valid_zones.is_empty():
+			return []
+		var zone: int = bot._pick_battle_zone(valid_zones, player, opponent, card)
+		return [CardEnums.ActionType.PLAY_BATTLE, {"hand_index": hand_idx, "zone_index": zone}]
+
+	return []
+
+
+func get_battle_zone_avoidance(plan: Dictionary, player: PlayerState) -> Array[int]:
+	var avoid: Array[int] = []
+	var mz := player.monster_zone
+	# Avoid zones the monster will crush when advancing to zone 6.
+	# Zones mz+1 through 6 get crushed (1-indexed), convert to 0-indexed.
+	if mz < 6 and (plan.get("state") == "full" or plan.get("advance_to_6_idx", -1) >= 0):
+		for z in range(mz + 1, 7):  # zones mz+1 to 6 (1-indexed)
+			avoid.append(z - 1)  # Convert to 0-indexed
+	return avoid
 
 
 func get_monster_play_rules(plan: Dictionary, player: PlayerState, bot) -> Dictionary:
