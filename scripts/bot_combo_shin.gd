@@ -60,9 +60,16 @@ func check(player: PlayerState, opponent: PlayerState, bot) -> Dictionary:
 	if player.monster_zone < 6:
 		advance_to_6_idx = _find_advance_to_zone_6_card(player, opponent, reserved, bot)
 
+	# Counter-retreat path: rank-up monster with "advances_opponent" in monster deck.
+	# Getting countered auto-plays it, pushing opponent forward and crushing their z8.
+	# This replaces the need for a hand advancement card AND destroy card.
+	var counter_retreat_path: bool = _has_counter_retreat_path(player, opponent, bot)
+
 	# Determine combo state
-	var z8_can_clear: bool = z8_clear or destroy_idx >= 0 or not crush_indices.is_empty()
-	var have_all: bool = invade_idx >= 0 and advancement_idx >= 0 \
+	var z8_can_clear: bool = z8_clear or destroy_idx >= 0 or not crush_indices.is_empty() \
+			or counter_retreat_path
+	var have_all: bool = invade_idx >= 0 \
+			and (advancement_idx >= 0 or counter_retreat_path) \
 			and z8_can_clear \
 			and (player.monster_zone >= 6 or advance_to_6_idx >= 0)
 
@@ -98,6 +105,7 @@ func check(player: PlayerState, opponent: PlayerState, bot) -> Dictionary:
 	if have_all:
 		var plan := _build_plan("full", advance_to_6_idx, advancement_idx,
 				advancement_is_monster, destroy_idx, invade_idx, cost_reserve_idx, crush_indices)
+		plan["counter_retreat_path"] = counter_retreat_path
 		plan["viability"] = _compute_viability(player, opponent, plan, bot)
 		return plan
 
@@ -137,18 +145,28 @@ func check(player: PlayerState, opponent: PlayerState, bot) -> Dictionary:
 	if plan_destroy_idx < 0:
 		var partial_reserved := [invade_idx, advancement_idx, advance_to_6_idx]
 		plan_destroy_idx = _find_any_destroy_card(player, partial_reserved, bot)
-	return _build_plan("partial", advance_to_6_idx, advancement_idx,
+	var partial_plan := _build_plan("partial", advance_to_6_idx, advancement_idx,
 			advancement_is_monster, plan_destroy_idx, invade_idx, cost_reserve_idx, crush_indices)
+	partial_plan["counter_retreat_path"] = counter_retreat_path
+	return partial_plan
 
 
 func should_suppress_invasion(plan: Dictionary, player: PlayerState, opponent: PlayerState) -> bool:
 	var mz := player.monster_zone
+	var opp_z := opponent.monster_zone
+	var has_cr: bool = plan.get("counter_retreat_path", false)
+
+	# Counter-bait: when opponent at z7+ and we have the counter-retreat path,
+	# ENCOURAGE invasion (return false) — we WANT to get countered.
+	if has_cr and opp_z >= 7 and mz >= 5:
+		return false
 
 	# Full state at z5+: never suppress — bot needs to advance for execution
 	if plan.get("state") == "full" and mz >= 5:
 		return false
 
-	# Counter-retreat strategy: allow invasion to reach the setup zone.
+	# Counter-retreat strategy for advance-to-6 card:
+	# allow invasion to reach zones where counter-retreat enables strategy play.
 	var adv6_idx: int = plan.get("advance_to_6_idx", -1)
 	if adv6_idx >= 0 and adv6_idx < player.hand.size():
 		var adv6_card: Dictionary = player.hand[adv6_idx]
@@ -159,8 +177,13 @@ func should_suppress_invasion(plan: Dictionary, player: PlayerState, opponent: P
 				if retreat_zone >= strat_rank:
 					return false
 
-	# Partial state: only suppress when both at zone 1 (going first, no info)
-	if opponent.monster_zone <= 1 and mz <= 1:
+	# Slow play: don't rush too far ahead of opponent.
+	# Stay within 2 zones of opponent to set up the counter-bait timing.
+	if has_cr and mz >= opp_z + 2:
+		return true
+
+	# Both at zone 1: suppress (no info yet)
+	if opp_z <= 1 and mz <= 1:
 		return true
 	return false
 
@@ -169,6 +192,17 @@ func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: Pl
 	var pref := {"preferred_steps": 0, "max_zone": -1, "target_zone": -1}
 	var mz := player.monster_zone
 	var has_adv6: bool = plan.get("advance_to_6_idx", -1) >= 0
+	var has_cr: bool = plan.get("counter_retreat_path", false)
+
+	# Counter-bait: opponent at z7+ and we have counter-retreat path.
+	# Invade to z7/z8 to GET countered — rank-up advances opponent and clears z8.
+	if has_cr and opponent.monster_zone >= 7 and mz >= 5:
+		# Target z7 or z8 (zones where counter-retreat activates rank-up)
+		if mz <= 6:
+			pref["target_zone"] = mini(mz + 2, 8)
+		else:
+			pref["target_zone"] = mini(mz + 1, 8)
+		return pref
 
 	if plan.get("state") == "full" and mz >= 6:
 		# Full combo at zone 6+: no limit, go for the win
@@ -712,6 +746,25 @@ func _scan_deck_for_combo_pieces(player: PlayerState, opponent: PlayerState,
 	return found_advancement and found_destroy and found_advance_to_6
 
 
+# --- Counter-retreat path ---
+
+func _has_counter_retreat_path(player: PlayerState, opponent: PlayerState, bot) -> bool:
+	## Check if the monster deck has a rank 3+ monster with "advances_opponent" on_enter.
+	## If so, getting countered will auto-play it, pushing the opponent forward.
+	var cur_rank: int = player.current_monster.get("rank", 0)
+	var effects: EffectHandler = bot.effect_handler
+	for monster in player.monster_deck:
+		var m_rank: int = monster.get("rank", 0)
+		if m_rank != cur_rank + 1:
+			continue
+		var effect := effects.get_effect(monster)
+		if not effect:
+			continue
+		if "advances_opponent" in effect.get_bot_tags():
+			return true
+	return false
+
+
 # --- Viability ---
 
 func _compute_viability(player: PlayerState, opponent: PlayerState,
@@ -723,9 +776,14 @@ func _compute_viability(player: PlayerState, opponent: PlayerState,
 	if zone_idx >= 0 and zone_idx < proximity_scores.size():
 		score += proximity_scores[zone_idx]
 
-	# Opponent pressure
+	# Opponent pressure — flipped when counter-retreat path is available:
+	# opponent at z7 is GOOD (counter-bait ready), not bad.
+	var has_cr: bool = plan.get("counter_retreat_path", false)
 	var pressure: int = 0
-	if opponent.monster_zone <= 4:
+	if has_cr and opponent.monster_zone >= 7:
+		# Opponent at z7+ is ideal for counter-bait
+		pressure = 30
+	elif opponent.monster_zone <= 4:
 		pressure = low_pressure_bonus
 	elif opponent.monster_zone <= 6:
 		pressure = 0
