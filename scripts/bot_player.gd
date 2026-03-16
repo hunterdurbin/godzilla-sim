@@ -267,8 +267,8 @@ func _decide_main_action(valid_actions: Array) -> Array:
 			return combo_exec
 
 	# 3. Aggressive: INVASION playstyle tries to invade early
-	#    Combo reserved cards are excluded; combo may suppress invasion entirely.
-	var combo_reserved := _get_combo_reserved_indices()
+	#    Combo invasion-excludes only apply in full state (partial doesn't block invasion).
+	var combo_inv_excludes := _get_combo_invasion_excludes()
 	var combo_suppress := _should_combo_suppress_invasion(player, opponent)
 	if config.use_early_invasion and playstyle == Playstyle.INVASION:
 		if CardEnums.ActionType.INVADE in valid_actions:
@@ -276,7 +276,7 @@ func _decide_main_action(valid_actions: Array) -> Array:
 				if player.monster_zone <= config.early_invasion_zone_threshold \
 						or (player.monster_zone == config.early_invasion_zone_threshold + 1 \
 						and randf() < config.zone_6_two_step_chance):
-					var two_step_idx := find_invade_card_with_steps(player, 2, combo_reserved)
+					var two_step_idx := find_invade_card_with_steps(player, 2, combo_inv_excludes)
 					if two_step_idx >= 0:
 						var monsters := _count_monster_cards_in_hand(player)
 						if not _invasion_blocked_by_rage(player, two_step_idx, monsters):
@@ -1207,8 +1207,26 @@ func _ensure_combo_plan() -> void:
 
 func _get_combo_reserved_indices() -> Array[int]:
 	## Returns hand indices reserved by the active combo plan.
-	## Only reserves in full state — partial combo shouldn't hamstring normal play.
+	## Full state: all reserved. Partial: only critical pieces (invasion + advancement).
 	_ensure_combo_plan()
+	if _active_combo_plan.get("state") == "full":
+		var reserved: Array[int] = []
+		reserved.assign(_active_combo_plan.get("reserved_indices", []))
+		return reserved
+	# Partial: protect only the hardest-to-replace pieces from discard
+	var critical: Array[int] = []
+	var inv_idx: int = _active_combo_plan.get("invade_idx", -1)
+	if inv_idx >= 0:
+		critical.append(inv_idx)
+	var adv_idx: int = _active_combo_plan.get("advancement_idx", -1)
+	if adv_idx >= 0:
+		critical.append(adv_idx)
+	return critical
+
+
+func _get_combo_invasion_excludes() -> Array[int]:
+	## Returns hand indices excluded from invasion use.
+	## Only excludes in full state — partial shouldn't block invasion.
 	if _active_combo_plan.get("state") != "full":
 		return []
 	var reserved: Array[int] = []
@@ -1307,7 +1325,7 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 		return []
 
 	var mz := player.monster_zone
-	var exclude := _get_combo_reserved_indices()
+	var exclude := _get_combo_invasion_excludes()
 
 	# If opponent is in z7/z8 and bot can't win this turn, don't invade — focus on defense
 	if opponent.monster_zone >= 7:
