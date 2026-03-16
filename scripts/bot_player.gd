@@ -31,6 +31,13 @@ var bot_player_id: int = 1
 var config: BotConfig = BotConfig.normal()
 var playstyle: Playstyle = Playstyle.BALANCED
 
+# Shin combo plan: set per action decision, cleared when combo is not viable.
+# Keys: "state" ("full"|"partial"), "viability" (int, full only),
+#        "advance_to_6_idx" (-1 if zone 6+), "advancement_idx" (card #2),
+#        "advancement_is_monster" (bool), "destroy_idx" (-1 if z8 clear),
+#        "invade_idx" (2-invasion card)
+var _shin_combo_plan: Dictionary = {}
+
 var game_state: GameState
 var rules_engine: RulesEngine
 var turn_manager: TurnManager
@@ -184,13 +191,61 @@ func _decide_main_action(valid_actions: Array) -> Array:
 	var cp_gap := _get_cp_gap()  # positive = behind on CP, needs defense
 	var needs_defense := cp_gap > 0
 
+	# 0. Shin combo check — detect multi-turn win path (hard mode only)
+	_shin_combo_plan = {}
+	if config.use_shin_combo_check:
+		_shin_combo_plan = _check_shin_combo(player, opponent)
+		if not _shin_combo_plan.is_empty():
+			print("[Bot] Shin combo detected! state=%s viability=%d plan=%s" % [
+				_shin_combo_plan.get("state", "?"),
+				_shin_combo_plan.get("viability", 0),
+				str(_shin_combo_plan)])
+
+	var _shin_is_full: bool = _shin_combo_plan.get("state") == "full"
+
+	# Downgrade full → partial if advancement monster exists but isn't playable yet.
+	# Pieces stay protected but scoring doesn't boost cards for a combo that can't fire.
+	if _shin_is_full and _shin_combo_plan.get("advancement_is_monster", false):
+		var adv_idx: int = _shin_combo_plan.get("advancement_idx", -1)
+		if adv_idx >= 0 and _shin_combo_plan.get("advance_to_6_idx", -1) < 0:
+			# At zone 6+: check if advancement monster is actually playable
+			var playable := rules_engine.get_playable_monsters(player)
+			if adv_idx not in playable:
+				_shin_is_full = false
+
 	# 1. Play monster if available (increases rage/threat, no downside)
+	#    When shin combo is "full" and card #2 is a monster rank-up:
+	#    - Before zone 6: skip monster play (advance card #1 must go first)
+	#    - At zone 6+: play ONLY the advancement monster, skip all others
+	#    When combo is "partial" or "full": never play the advancement monster
+	#    as a normal rank-up — it must be saved for the combo.
 	if CardEnums.ActionType.PLAY_MONSTER in valid_actions:
-		var playable := rules_engine.get_playable_monsters(player)
-		if not playable.is_empty():
-			return [CardEnums.ActionType.PLAY_MONSTER, {"hand_index": playable[0]}]
+		var skip_monster := false
+		var shin_adv_idx: int = -1
+		if _shin_combo_plan.get("advancement_is_monster", false):
+			shin_adv_idx = _shin_combo_plan.get("advancement_idx", -1)
+		if _shin_is_full and shin_adv_idx >= 0:
+			if _shin_combo_plan.get("advance_to_6_idx", -1) >= 0:
+				# Card #1 not played yet — skip all monster plays
+				skip_monster = true
+			else:
+				# At zone 6+: play the advancement monster if it's ready
+				var playable := rules_engine.get_playable_monsters(player)
+				if shin_adv_idx in playable:
+					return [CardEnums.ActionType.PLAY_MONSTER, {"hand_index": shin_adv_idx}]
+				# Not playable yet (trait mismatch or wrong rank) — allow other
+				# monsters normally. Playing monsters builds rage/threat and the
+				# rank-up chain may eventually make the advancement monster playable.
+		if not skip_monster:
+			var playable := rules_engine.get_playable_monsters(player)
+			# Exclude the advancement monster from normal plays (full or partial)
+			if shin_adv_idx >= 0:
+				playable = playable.filter(func(idx: int) -> bool: return idx != shin_adv_idx)
+			if not playable.is_empty():
+				return [CardEnums.ActionType.PLAY_MONSTER, {"hand_index": playable[0]}]
 
 	# 2. Aggressive: INVASION playstyle tries to invade early
+	#    When shin combo is active (full or partial), don't burn the reserved 2-step card.
 	if config.use_early_invasion and playstyle == Playstyle.INVASION:
 		if CardEnums.ActionType.INVADE in valid_actions:
 			# At zone 7+, invade for the win
@@ -199,15 +254,15 @@ func _decide_main_action(valid_actions: Array) -> Array:
 				if invade_idx >= 0:
 					return [CardEnums.ActionType.INVADE, {"hand_index": invade_idx}]
 			# At or below threshold, prioritize 2-step invasion to advance quickly
-			# At threshold+1, sometimes use 2-step if available
-			if player.monster_zone <= config.early_invasion_zone_threshold \
-					or (player.monster_zone == config.early_invasion_zone_threshold + 1 \
-					and randf() < config.zone_6_two_step_chance):
-				var two_step_idx := _find_invade_card_with_steps(player, 2)
-				if two_step_idx >= 0:
-					var monsters := _count_monster_cards_in_hand(player)
-					if not _invasion_blocked_by_rage(player, two_step_idx, monsters):
-						return [CardEnums.ActionType.INVADE, {"hand_index": two_step_idx}]
+			if _shin_combo_plan.is_empty():
+				if player.monster_zone <= config.early_invasion_zone_threshold \
+						or (player.monster_zone == config.early_invasion_zone_threshold + 1 \
+						and randf() < config.zone_6_two_step_chance):
+					var two_step_idx := _find_invade_card_with_steps(player, 2)
+					if two_step_idx >= 0:
+						var monsters := _count_monster_cards_in_hand(player)
+						if not _invasion_blocked_by_rage(player, two_step_idx, monsters):
+							return [CardEnums.ActionType.INVADE, {"hand_index": two_step_idx}]
 
 	# 3. When ahead on CP, gain rage early to build threat before playing cards
 	if not needs_defense and CardEnums.ActionType.GAIN_RAGE in valid_actions:
@@ -237,7 +292,9 @@ func _decide_main_action(valid_actions: Array) -> Array:
 	#    - INVASION: always tries to invade strategically
 	#    - BALANCED: invades unless a base strategy is in play (when config allows)
 	#    - COUNTER: never invades here (only for the win in step 5)
-	if not needs_defense and CardEnums.ActionType.INVADE in valid_actions:
+	#    When shin combo is active, skip to preserve the reserved 2-step card.
+	if not needs_defense and CardEnums.ActionType.INVADE in valid_actions \
+			and _shin_combo_plan.is_empty():
 		var try_invade := false
 		match playstyle:
 			Playstyle.INVASION:
@@ -263,15 +320,21 @@ func _try_gain_rage(player: PlayerState) -> Array:
 		return []
 
 	var safe_rage_cards: Array = []
+	var shin_reserved := _get_shin_combo_reserved_indices()
 	if config.protect_two_step_cards:
 		var two_step_count := _count_invade_cards_with_steps(player, 2)
 		for idx in rage_cards:
+			# Never discard shin combo reserved cards
+			if idx in shin_reserved:
+				continue
 			var icon: int = player.hand[idx].get("invasion_icon", 0)
 			if icon == 2 and two_step_count <= 1:
 				continue
 			safe_rage_cards.append(idx)
 	else:
 		for idx in rage_cards:
+			if idx in shin_reserved:
+				continue
 			safe_rage_cards.append(idx)
 
 	if safe_rage_cards.is_empty():
@@ -301,6 +364,8 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 	## When cp_gap > 0 (behind on CP), battle cards get a large bonus proportional to their CP.
 	var best_score: int = -1
 	var best_result: Array = []
+	var shin_state: String = _shin_combo_plan.get("state", "")
+	var shin_reserved := _get_shin_combo_reserved_indices()
 
 	# Score playable strategies
 	if CardEnums.ActionType.PLAY_STRATEGY in valid_actions:
@@ -308,6 +373,14 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 		for hand_idx in playable:
 			var card: Dictionary = player.hand[hand_idx]
 			var score := _score_card(card, player, opponent, near_winning, z8_blocked)
+			# Shin combo: boost combo cards when full, penalize when partial
+			if shin_state == "full":
+				var v: int = maxi(_shin_combo_plan.get("viability", 0), config.shin_combo_full_min_bonus)
+				if hand_idx == _shin_combo_plan.get("advance_to_6_idx", -1) \
+						or hand_idx == _shin_combo_plan.get("destroy_idx", -1):
+					score += v
+			elif shin_state == "partial" and hand_idx in shin_reserved:
+				score -= config.shin_combo_partial_penalty
 			if score > best_score:
 				best_score = score
 				best_result = [CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": hand_idx}]
@@ -343,6 +416,16 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 			if config.enable_synergies:
 				var my_tags: Array = playable_tags.get(hand_idx, [])
 				b_score += _score_enabler_bonus(hand_idx, my_tags, playable_tags)
+
+			# Shin combo: boost combo cards when full, penalize when partial
+			if shin_state == "full":
+				var v: int = maxi(_shin_combo_plan.get("viability", 0), config.shin_combo_full_min_bonus)
+				if hand_idx == _shin_combo_plan.get("advance_to_6_idx", -1) \
+						or hand_idx == _shin_combo_plan.get("advancement_idx", -1) \
+						or hand_idx == _shin_combo_plan.get("destroy_idx", -1):
+					b_score += v
+			elif shin_state == "partial" and hand_idx in shin_reserved:
+				b_score -= config.shin_combo_partial_penalty
 
 			var has_zone_pref := _card_has_zone_preference(b_card)
 			entries.append({
@@ -1090,6 +1173,394 @@ func _find_best_invade_card(player: PlayerState) -> int:
 	return best_idx
 
 
+func _check_shin_combo(player: PlayerState, opponent: PlayerState) -> Dictionary:
+	## Check if the bot can set up a "Shin Combo" single-turn win path.
+	## Full combo from zone 3-5: advance card #1 → zone 6, card #2 → zone 7,
+	##   (destroy z8 if blocked), invade 2-step → zone 9 = victory.
+	## From zone 6: only card #2 + (destroy) + invasion needed.
+	## Returns a plan dict with state/viability/indices, or empty dict if impossible.
+
+	# Zone 7+ with rank 3+ doesn't need combo (in win position and can't be pushed back)
+	# Below rank 3, a successful counter pushes the monster back — keep collecting pieces.
+	if player.monster_zone >= 7 and player.current_monster.get("rank", 0) >= 3:
+		return {}
+
+	# Required: Find a 2-invasion card in hand
+	var invade_idx := _find_invade_card_with_steps(player, 2)
+	if invade_idx < 0:
+		return {}
+
+	# Opponent zone 8 must be clear or clearable
+	var z8_clear := not opponent.zone_has_battle_card(7)
+	var destroy_idx: int = -1
+	var reserved := [invade_idx]
+
+	if not z8_clear:
+		destroy_idx = _find_zone_8_destroy_card(player, opponent, reserved)
+	reserved.append(destroy_idx)
+
+	# Find card #2 (advancement card: advances from zone 6 → zone 7+)
+	var adv_result := _find_advancement_card(player, opponent, reserved)
+	var advancement_idx: int = adv_result[0]
+	var advancement_is_monster: bool = adv_result[1]
+	reserved.append(advancement_idx)
+
+	# Find card #1 (advance to zone 6) — not needed if already at zone 6
+	var advance_to_6_idx: int = -1
+	if player.monster_zone < 6:
+		advance_to_6_idx = _find_advance_to_zone_6_card(player, opponent, reserved)
+
+	# Determine combo state
+	var have_all := invade_idx >= 0 and advancement_idx >= 0 \
+			and (z8_clear or destroy_idx >= 0) \
+			and (player.monster_zone >= 6 or advance_to_6_idx >= 0)
+
+	if have_all:
+		var plan := {
+			"state": "full",
+			"advance_to_6_idx": advance_to_6_idx,
+			"advancement_idx": advancement_idx,
+			"advancement_is_monster": advancement_is_monster,
+			"destroy_idx": destroy_idx,
+			"invade_idx": invade_idx,
+		}
+		plan["viability"] = _compute_shin_combo_viability(player, opponent, plan)
+		return plan
+
+	# Check for partial combo — some pieces in hand, rest in deck
+	var missing_in_deck := _scan_deck_for_combo_pieces(player, opponent,
+			advancement_idx < 0, not z8_clear and destroy_idx < 0,
+			player.monster_zone < 6 and advance_to_6_idx < 0)
+	if missing_in_deck:
+		# Proactively reserve a destroy card even if z8 is currently clear —
+		# opponent may fill it before the combo assembles.
+		var plan_destroy_idx := destroy_idx
+		if plan_destroy_idx < 0:
+			var partial_reserved := [invade_idx, advancement_idx, advance_to_6_idx]
+			plan_destroy_idx = _find_any_destroy_card(player, partial_reserved)
+		return {
+			"state": "partial",
+			"advance_to_6_idx": advance_to_6_idx,
+			"advancement_idx": advancement_idx,
+			"advancement_is_monster": advancement_is_monster,
+			"destroy_idx": plan_destroy_idx,
+			"invade_idx": invade_idx,
+			"viability": 0,
+		}
+
+	return {}
+
+
+func _find_advancement_card(player: PlayerState, opponent: PlayerState,
+		reserved: Array) -> Array:
+	## Find card #2: a playable card with "advances_self" and max_advance_zone >= 7 or == -1.
+	## Searches battle cards, strategy cards, and playable monsters.
+	## Returns [hand_idx, is_monster] or [-1, false].
+	##
+	## Card #2 fires AFTER card #1 advances monster to zone 6, so evaluate
+	## get_bot_max_advance_zone as if monster is already at zone 6.
+	var saved_zone := player.monster_zone
+	player.monster_zone = maxi(saved_zone, 6)
+	var result := _find_advancement_card_at_zone_6(player, opponent, reserved)
+	player.monster_zone = saved_zone
+	return result
+
+
+func _find_advancement_card_at_zone_6(player: PlayerState, opponent: PlayerState,
+		reserved: Array) -> Array:
+	## Inner search for _find_advancement_card (called with monster_zone set to 6+).
+
+	# Check playable battle cards
+	var playable_battles := rules_engine.get_playable_battle_cards(player, opponent)
+	for hand_idx in playable_battles:
+		if hand_idx in reserved:
+			continue
+		var card: Dictionary = player.hand[hand_idx]
+		var effect := effect_handler.get_effect(card)
+		if not effect:
+			continue
+		var tags: Array[String] = effect.get_bot_tags()
+		if "advances_self" not in tags:
+			continue
+		var max_zone: int = effect.get_bot_max_advance_zone(player, opponent)
+		if max_zone != -1 and max_zone < 7:
+			continue
+		if effect.has_method(&"bot_can_fulfill_on_enter"):
+			if not effect.bot_can_fulfill_on_enter(player, opponent):
+				continue
+		return [hand_idx, false]
+
+	# Check playable strategy cards
+	var playable_strategies := rules_engine.get_playable_strategy_cards(player)
+	for hand_idx in playable_strategies:
+		if hand_idx in reserved:
+			continue
+		var card: Dictionary = player.hand[hand_idx]
+		var effect := effect_handler.get_effect(card)
+		if not effect:
+			continue
+		var tags: Array[String] = effect.get_bot_tags()
+		if "advances_self" not in tags:
+			continue
+		var max_zone: int = effect.get_bot_max_advance_zone(player, opponent)
+		if max_zone != -1 and max_zone < 7:
+			continue
+		if effect.has_method(&"bot_can_fulfill_on_enter"):
+			if not effect.bot_can_fulfill_on_enter(player, opponent):
+				continue
+		return [hand_idx, false]
+
+	# Check ALL monster cards in hand (not just currently playable ones — the combo
+	# involves playing card #1 first, then ranking up to the advancement monster).
+	for hand_idx in range(player.hand.size()):
+		if hand_idx in reserved:
+			continue
+		var card: Dictionary = player.hand[hand_idx]
+		if card.get("card_type") != CardEnums.CardType.MONSTER:
+			continue
+		var effect := effect_handler.get_effect(card)
+		if not effect:
+			continue
+		var tags: Array[String] = effect.get_bot_tags()
+		if "advances_self" not in tags:
+			continue
+		var max_zone: int = effect.get_bot_max_advance_zone(player, opponent)
+		if max_zone != -1 and max_zone < 7:
+			continue
+		if effect.has_method(&"bot_can_fulfill_on_enter"):
+			if not effect.bot_can_fulfill_on_enter(player, opponent):
+				continue
+		return [hand_idx, true]
+
+	return [-1, false]
+
+
+func _scan_deck_for_combo_pieces(player: PlayerState, _opponent: PlayerState,
+		need_advancement: bool, need_destroy: bool, need_advance_to_6: bool) -> bool:
+	## Scan the deck for missing combo pieces. Returns true if all missing pieces
+	## exist somewhere in the deck (so they can be drawn into later).
+	## Evaluates advancement cards as if monster is at zone 6 (same as _find_advancement_card).
+	var found_advancement := not need_advancement
+	var found_destroy := not need_destroy
+	var found_advance_to_6 := not need_advance_to_6
+
+	var saved_zone := player.monster_zone
+	for card in player.main_deck:
+		var effect := effect_handler.get_effect(card)
+		if not effect:
+			continue
+		var tags: Array[String] = effect.get_bot_tags()
+
+		if not found_advancement and "advances_self" in tags:
+			# Evaluate from zone 6 (card #2 fires after card #1 advances to 6)
+			player.monster_zone = maxi(saved_zone, 6)
+			var max_zone: int = effect.get_bot_max_advance_zone(player, _opponent)
+			player.monster_zone = saved_zone
+			if max_zone == -1 or max_zone >= 7:
+				found_advancement = true
+
+		if not found_destroy and "destroys_zone" in tags:
+			found_destroy = true
+
+		if not found_advance_to_6 and "advances_self" in tags:
+			var max_zone: int = effect.get_bot_max_advance_zone(player, _opponent)
+			if max_zone == -1 or max_zone >= 6:
+				found_advance_to_6 = true
+
+		if found_advancement and found_destroy and found_advance_to_6:
+			return true
+
+	return found_advancement and found_destroy and found_advance_to_6
+
+
+func _compute_shin_combo_viability(player: PlayerState, opponent: PlayerState,
+		plan: Dictionary) -> int:
+	## Compute viability score (0-150) for a full shin combo.
+	## Factors: proximity, opponent pressure, zone 8 clear, hand flexibility, CP advantage.
+	var score: int = 0
+
+	# Proximity: +30 to +80 based on monster zone (3-6)
+	var zone_idx: int = player.monster_zone - 3
+	if zone_idx >= 0 and zone_idx < config.shin_combo_proximity_scores.size():
+		score += config.shin_combo_proximity_scores[zone_idx]
+
+	# Opponent pressure: based on opponent monster zone
+	var pressure_bonus: int = 0
+	if opponent.monster_zone <= 4:
+		pressure_bonus = config.shin_combo_low_pressure_bonus  # +20
+	elif opponent.monster_zone <= 6:
+		pressure_bonus = 0
+	elif opponent.monster_zone == 7:
+		pressure_bonus = -config.shin_combo_high_pressure_penalty  # -20
+	else:
+		pressure_bonus = -config.shin_combo_critical_pressure_penalty  # -40
+	# Halve penalty if bot can counter
+	if pressure_bonus < 0 and _can_counter_opponent():
+		pressure_bonus /= 2
+	score += pressure_bonus
+
+	# Zone 8 clear bonus: +20 if no destroy card needed
+	if plan.get("destroy_idx", -1) == -1:
+		score += config.shin_combo_z8_clear_bonus
+
+	# Hand flexibility penalty: based on remaining cards after combo pieces used
+	var combo_pieces: int = 1  # invasion card always needed
+	if plan.get("advance_to_6_idx", -1) >= 0:
+		combo_pieces += 1
+	if plan.get("advancement_idx", -1) >= 0:
+		combo_pieces += 1
+	if plan.get("destroy_idx", -1) >= 0:
+		combo_pieces += 1
+	var remaining: int = player.hand.size() - combo_pieces
+	if remaining >= 5:
+		score -= 10
+	elif remaining >= 3:
+		score -= 15
+	elif remaining >= 1:
+		score -= 25
+	else:
+		score -= 30
+
+	# CP advantage penalty: if in COUNTER phase and behind on CP
+	var cp_gap := _get_cp_gap()
+	if cp_gap >= 10000:
+		score -= 30
+	elif cp_gap >= 5000:
+		score -= 15
+
+	# Invasion blocked: heavy penalty if own invasion is blocked by effects
+	if effect_handler.is_own_invasion_blocked(player.player_id):
+		score -= 100
+
+	return maxi(score, 0)
+
+
+func _get_shin_combo_reserved_indices() -> Array[int]:
+	## Returns all hand indices reserved by the shin combo plan (full or partial).
+	var reserved: Array[int] = []
+	if _shin_combo_plan.is_empty():
+		return reserved
+	for key in ["advance_to_6_idx", "advancement_idx", "destroy_idx", "invade_idx"]:
+		var idx: int = _shin_combo_plan.get(key, -1)
+		if idx >= 0:
+			reserved.append(idx)
+	return reserved
+
+
+func _find_any_destroy_card(player: PlayerState, reserved: Array) -> int:
+	## Find any card in hand with "destroys_zone" tag, excluding reserved indices.
+	## Used for proactive destroy card reservation in partial combo state.
+	for hand_idx in range(player.hand.size()):
+		if hand_idx in reserved:
+			continue
+		var effect := effect_handler.get_effect(player.hand[hand_idx])
+		if not effect:
+			continue
+		if "destroys_zone" in effect.get_bot_tags():
+			return hand_idx
+	return -1
+
+
+func _find_zone_8_destroy_card(player: PlayerState, opponent: PlayerState, reserved: Array) -> int:
+	## Find a playable card in hand that can destroy the opponent's zone 8 battle card.
+	## Returns hand index, or -1 if none found.
+	var z8_card := opponent.get_zone_top_card(7)
+	if z8_card.is_empty():
+		return -1
+	var z8_rank: int = z8_card.get("rank", 0)
+
+	# Check playable battle cards
+	var playable_battles := rules_engine.get_playable_battle_cards(player, opponent)
+	for hand_idx in playable_battles:
+		if hand_idx in reserved:
+			continue
+		var card: Dictionary = player.hand[hand_idx]
+		var effect := effect_handler.get_effect(card)
+		if not effect:
+			continue
+		var tags: Array[String] = effect.get_bot_tags()
+		if "destroys_zone" not in tags:
+			continue
+		# Check rank restriction — can this card destroy zone 8's card?
+		var max_rank: int = effect.get_bot_destroy_max_rank(player, opponent)
+		if max_rank > 0 and z8_rank > max_rank:
+			continue
+		# Check fulfillment
+		if effect.has_method(&"bot_can_fulfill_on_enter"):
+			if not effect.bot_can_fulfill_on_enter(player, opponent):
+				continue
+		return hand_idx
+
+	# Check playable strategy cards
+	var playable_strategies := rules_engine.get_playable_strategy_cards(player)
+	for hand_idx in playable_strategies:
+		if hand_idx in reserved:
+			continue
+		var card: Dictionary = player.hand[hand_idx]
+		var effect := effect_handler.get_effect(card)
+		if not effect:
+			continue
+		var tags: Array[String] = effect.get_bot_tags()
+		if "destroys_zone" not in tags:
+			continue
+		var max_rank: int = effect.get_bot_destroy_max_rank(player, opponent)
+		if max_rank > 0 and z8_rank > max_rank:
+			continue
+		if effect.has_method(&"bot_can_fulfill_on_enter"):
+			if not effect.bot_can_fulfill_on_enter(player, opponent):
+				continue
+		return hand_idx
+
+	return -1
+
+
+func _find_advance_to_zone_6_card(player: PlayerState, opponent: PlayerState,
+		reserved: Array) -> int:
+	## Find a playable card with "advances_self" that can advance to zone 6+.
+	## Excludes cards reserved for other combo roles.
+	var playable_battles := rules_engine.get_playable_battle_cards(player, opponent)
+	for hand_idx in playable_battles:
+		if hand_idx in reserved:
+			continue
+		var card: Dictionary = player.hand[hand_idx]
+		var effect := effect_handler.get_effect(card)
+		if not effect:
+			continue
+		var tags: Array[String] = effect.get_bot_tags()
+		if "advances_self" not in tags:
+			continue
+		var max_zone: int = effect.get_bot_max_advance_zone(player, opponent)
+		if max_zone != -1 and max_zone < 6:
+			continue
+		# Check fulfillment
+		if effect.has_method(&"bot_can_fulfill_on_enter"):
+			if not effect.bot_can_fulfill_on_enter(player, opponent):
+				continue
+		return hand_idx
+
+	# Also check playable strategy cards with advances_self
+	var playable_strategies := rules_engine.get_playable_strategy_cards(player)
+	for hand_idx in playable_strategies:
+		if hand_idx in reserved:
+			continue
+		var card: Dictionary = player.hand[hand_idx]
+		var effect := effect_handler.get_effect(card)
+		if not effect:
+			continue
+		var tags: Array[String] = effect.get_bot_tags()
+		if "advances_self" not in tags:
+			continue
+		var max_zone: int = effect.get_bot_max_advance_zone(player, opponent)
+		if max_zone != -1 and max_zone < 6:
+			continue
+		if effect.has_method(&"bot_can_fulfill_on_enter"):
+			if not effect.bot_can_fulfill_on_enter(player, opponent):
+				continue
+		return hand_idx
+
+	return -1
+
+
 func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 	var invade_cards := rules_engine.get_discardable_cards_for_invade(player, opponent)
 	if invade_cards.is_empty():
@@ -1311,10 +1782,13 @@ func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 
 func _pick_discard_indices(player: PlayerState, count: int) -> Array[int]:
 	## Priority: monster cards first, then non-playable cards, then random.
+	## Shin combo reserved cards are protected — discarded only as a last resort.
 	var opponent := game_state.players[1 - bot_player_id]
+	var shin_reserved := _get_shin_combo_reserved_indices()
 	var monster_indices: Array[int] = []
 	var non_playable_indices: Array[int] = []
 	var playable_indices: Array[int] = []
+	var protected_indices: Array[int] = []
 
 	# Categorize hand cards
 	var playable_battles := rules_engine.get_playable_battle_cards(player, opponent)
@@ -1326,6 +1800,10 @@ func _pick_discard_indices(player: PlayerState, count: int) -> Array[int]:
 		playable_set[idx] = true
 
 	for i in range(player.hand.size()):
+		# Shin combo pieces go to a protected pool (discarded last)
+		if i in shin_reserved:
+			protected_indices.append(i)
+			continue
 		var card: Dictionary = player.hand[i]
 		if card.get("card_type") == CardEnums.CardType.MONSTER:
 			monster_indices.append(i)
@@ -1353,6 +1831,11 @@ func _pick_discard_indices(player: PlayerState, count: int) -> Array[int]:
 			if result.size() >= count:
 				break
 			result.append(idx)
+	# Last resort: if still need more, discard protected shin combo pieces
+	for idx in protected_indices:
+		if result.size() >= count:
+			break
+		result.append(idx)
 	return result
 
 
@@ -1575,12 +2058,19 @@ func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int]
 	if valid_indices.is_empty():
 		effect_handler.resolve_hand_card_selection(-1)
 		return
-	# Pick the hand card with highest CP/threat, lowest rank
+	# Prefer non-combo-reserved cards; fall back to reserved only if no alternative
 	var player := game_state.players[bot_player_id]
-	var best_idx: int = valid_indices[0]
+	var shin_reserved := _get_shin_combo_reserved_indices()
+	var safe_indices: Array[int] = []
+	for idx in valid_indices:
+		if idx not in shin_reserved:
+			safe_indices.append(idx)
+	var pick_from: Array[int] = safe_indices if not safe_indices.is_empty() else valid_indices
+	# Pick the hand card with highest CP/threat, lowest rank
+	var best_idx: int = pick_from[0]
 	var best_val: int = _card_sort_value(player.hand[best_idx])
-	for i in range(1, valid_indices.size()):
-		var idx: int = valid_indices[i]
+	for i in range(1, pick_from.size()):
+		var idx: int = pick_from[i]
 		var val := _card_sort_value(player.hand[idx])
 		if val > best_val:
 			best_val = val

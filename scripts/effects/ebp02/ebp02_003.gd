@@ -17,6 +17,21 @@ func get_bot_tags() -> Array[String]:
 	return ["advances_self"]
 
 
+func get_bot_max_advance_zone(owner: PlayerState, _opponent: PlayerState) -> int:
+	return mini(owner.monster_zone + 1, 8)
+
+
+func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
+	# Check active monster and stack — GUC will be in the stack by the time
+	# this card is played (it gets stacked when ranked up from).
+	if owner.current_monster.get("name", "") == "Giant Unknown Creature":
+		return true
+	for card in owner.monster_stack:
+		if card.get("name", "") == "Giant Unknown Creature":
+			return true
+	return false
+
+
 func get_burst_rank() -> int:
 	return 3
 
