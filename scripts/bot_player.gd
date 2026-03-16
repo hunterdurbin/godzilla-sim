@@ -410,9 +410,14 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 			if valid_zones.is_empty():
 				continue
 			var b_score := _score_card(b_card, player, opponent, near_winning, z8_blocked)
-			b_score += b_card.get("counter_power", 0) / config.cp_bonus_divisor
+			var b_cp: int = b_card.get("counter_power", 0)
+			b_score += b_cp / config.cp_bonus_divisor
+			# Scale CP bonus with how far behind we are
 			if cp_gap > 0:
-				b_score += b_card.get("counter_power", 0) / 500
+				b_score += b_cp * mini(cp_gap, 20000) / 10000
+			# Emergency CP: when opponent at z7+, heavily weight CP to survive invasion
+			if opponent.monster_zone >= 7:
+				b_score += b_cp / 200
 
 			# Synergy enabler bonus: if playing this card first would enable synergies
 			# for other cards in hand, boost score so it gets played first
@@ -1007,8 +1012,9 @@ func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: P
 			return empty_zones[randi() % empty_zones.size()]
 		return valid_zones[randi() % valid_zones.size()]
 
-	# Priority override: if bot in z1-6 and opponent in z7/z8, prioritize z8 first
-	if player.monster_zone <= 6 and opponent.monster_zone >= 7:
+	# Proactive z8 defense: start placing cards in z8 when opponent is approaching
+	# z7 (at z5+), not just when they've already arrived. Gives 2-3 extra turns.
+	if opponent.monster_zone >= 5:
 		if 7 in valid_zones and not player.zone_has_cards(7):
 			return 7
 
