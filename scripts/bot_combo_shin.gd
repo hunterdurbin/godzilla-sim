@@ -177,9 +177,9 @@ func should_suppress_invasion(plan: Dictionary, player: PlayerState, opponent: P
 				if retreat_zone >= strat_rank:
 					return false
 
-	# Slow play: don't rush too far ahead of opponent.
-	# Stay within 2 zones of opponent to set up the counter-bait timing.
-	if has_cr and mz >= opp_z + 2:
+	# Slow play: only suppress when far ahead AND opponent is approaching z7.
+	# Too aggressive suppression hurts more than counter-bait helps.
+	if has_cr and mz >= opp_z + 3 and opp_z >= 4:
 		return true
 
 	# Both at zone 1: suppress (no info yet)
@@ -799,7 +799,7 @@ func _compute_viability(player: PlayerState, opponent: PlayerState,
 	if plan.get("destroy_idx", -1) == -1:
 		score += z8_clear_bonus
 
-	# Hand flexibility penalty
+	# Hand flexibility penalty (reduced — combo near execution shouldn't be punished)
 	var combo_pieces: int = 1 # invasion card
 	if plan.get("advance_to_6_idx", -1) >= 0:
 		combo_pieces += 1
@@ -809,13 +809,13 @@ func _compute_viability(player: PlayerState, opponent: PlayerState,
 		combo_pieces += 1
 	var remaining: int = player.hand.size() - combo_pieces
 	if remaining >= 5:
-		score -= 10
+		score -= 5
 	elif remaining >= 3:
-		score -= 15
+		score -= 10
 	elif remaining >= 1:
-		score -= 25
+		score -= 15
 	else:
-		score -= 30
+		score -= 20
 
 	# CP gap penalty
 	var cp_gap: int = bot.get_cp_gap()

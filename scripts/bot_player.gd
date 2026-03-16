@@ -231,7 +231,9 @@ func _decide_main_action(valid_actions: Array) -> Array:
 
 	# Downgrade full → partial for scoring if combo can't execute yet
 	# (e.g. advancement monster not playable). Pieces stay protected.
+	# Exception: counter-retreat path doesn't need hand-playable advancement.
 	if _active_combo_plan.get("state") == "full" \
+			and not _active_combo_plan.get("counter_retreat_path", false) \
 			and combo_monster_rules.get("force_play_idx", -1) < 0 \
 			and combo_monster_rules.get("skip_all", false):
 		_active_combo_plan["state"] = "partial"
@@ -1327,13 +1329,15 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 	var mz := player.monster_zone
 	var exclude := _get_combo_invasion_excludes()
 
-	# If opponent is in z7/z8 and bot can't win this turn, don't invade — focus on defense
+	# If opponent is in z7/z8 and bot can't win this turn, don't invade — focus on defense.
+	# Exception: counter-bait — if combo has counter-retreat path, invade to GET countered.
 	if opponent.monster_zone >= 7:
-		# Only invade if bot is at z7+ with a path to win past z8
-		if mz < 7:
-			return []
-		if mz == 7 and opponent.zone_has_battle_card(7):
-			return [] # z8 blocked, can't win
+		var combo_cr: bool = _active_combo_plan.get("counter_retreat_path", false)
+		if not combo_cr:
+			if mz < 7:
+				return []
+			if mz == 7 and opponent.zone_has_battle_card(7):
+				return []
 
 	# Don't advance to z7/z8 unless bot can expect to gain rage >= 2
 	# (rage gain ≈ number of monster cards in hand)
