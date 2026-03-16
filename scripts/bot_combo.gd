@@ -61,6 +61,13 @@ func get_execution_action(plan: Dictionary, valid_actions: Array,
 	return []
 
 
+func get_rankup_bonus(plan: Dictionary, monster: Dictionary,
+		player: PlayerState, opponent: PlayerState, bot) -> int:
+	## Override: return score bonus for choosing this monster during rank-up.
+	## Positive = prefer, negative = avoid, 0 = no opinion.
+	return 0
+
+
 func get_battle_zone_avoidance(plan: Dictionary, player: PlayerState) -> Array[int]:
 	## Override: return 0-indexed zones where battle cards should NOT be placed
 	## (bot's monster will crush them during combo execution).

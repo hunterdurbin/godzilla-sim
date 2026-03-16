@@ -317,6 +317,24 @@ func _try_play_card(hand_idx: int, player: PlayerState, opponent: PlayerState,
 	return []
 
 
+func get_rankup_bonus(plan: Dictionary, monster: Dictionary,
+		player: PlayerState, opponent: PlayerState, bot) -> int:
+	# Strongly prefer rank 3 "advances_opponent" monster — getting countered into
+	# this monster pushes the opponent forward and crushes their z8 defense.
+	var effect: CardEffect = bot.effect_handler.get_effect(monster)
+	if not effect:
+		return 0
+	if "advances_opponent" not in effect.get_bot_tags():
+		return 0
+	# Opponent at z7+: advancing them crushes their z8 card → huge bonus
+	if opponent.monster_zone >= 7:
+		return 200
+	# Opponent at z5-6: advancing them is still beneficial positioning
+	if opponent.monster_zone >= 5:
+		return 50
+	return 10
+
+
 func get_battle_zone_avoidance(plan: Dictionary, player: PlayerState) -> Array[int]:
 	var avoid: Array[int] = []
 	var mz := player.monster_zone

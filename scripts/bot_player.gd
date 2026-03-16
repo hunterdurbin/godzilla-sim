@@ -1406,13 +1406,70 @@ func _on_confirmation_requested(_prompt: String, _setting: String) -> void:
 
 # --- Monster rank-up ---
 
-func _on_monster_rankup_requested(player_id: int, _monsters: Array[Dictionary], valid_indices: Array[int], _prompt: String) -> void:
+func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], _prompt: String) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
-	# Pick highest valid index (highest rank available)
-	var best := valid_indices[valid_indices.size() - 1]
+	var best := _score_rankup_candidates(monsters, valid_indices)
 	action_handler.resolve_monster_rankup(best)
+
+
+func _score_rankup_candidates(monsters: Array[Dictionary], valid_indices: Array[int]) -> int:
+	## Score each rankup candidate and return the best index.
+	## Scoring layers: base rank, effect tags, combo preferences.
+	var player := game_state.players[bot_player_id]
+	var opponent := game_state.players[1 - bot_player_id]
+	var best_idx: int = valid_indices[valid_indices.size() - 1]
+	var best_score: int = -999
+
+	for idx in valid_indices:
+		var monster: Dictionary = monsters[idx]
+		var score: int = 0
+
+		# Base: prefer higher rank (primary tiebreaker)
+		score += monster.get("rank", 0) * 10
+
+		# Threat level: prefer higher threat
+		score += monster.get("threat_level", 0) / 1000
+
+		# Effect tags: score useful abilities
+		var effect := effect_handler.get_effect(monster)
+		if effect:
+			var tags: Array[String] = effect.get_bot_tags()
+			# Advancing opponent is valuable when they're in z5+
+			if "advances_opponent" in tags and opponent.monster_zone >= 5:
+				score += 40
+			# Destroying zones is valuable near endgame
+			if "destroys_zone" in tags:
+				score += 20
+			# Threat boost scales with rage
+			if "boosts_threat" in tags and player.rage >= 2:
+				score += 15
+			# Advancement effects when combo is active
+			if "advances_self" in tags:
+				score += 10
+
+		# Combo preferences (highest priority layer)
+		score += _get_combo_rankup_bonus(monster, player, opponent)
+
+		if score > best_score:
+			best_score = score
+			best_idx = idx
+
+	return best_idx
+
+
+func _get_combo_rankup_bonus(monster: Dictionary, player: PlayerState,
+		opponent: PlayerState) -> int:
+	## Ask all active combos for rank-up preference on this monster.
+	if _active_combo_plan.is_empty():
+		return 0
+	var combo_name_key: String = _active_combo_plan.get("combo_name", "")
+	for combo in _combos:
+		if combo.combo_name == combo_name_key:
+			return combo.get_rankup_bonus(_active_combo_plan, monster,
+					player, opponent, self)
+	return 0
 
 
 # --- Effect choice ---
