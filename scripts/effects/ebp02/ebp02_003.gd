@@ -21,6 +21,10 @@ func get_bot_max_advance_zone(owner: PlayerState, _opponent: PlayerState) -> int
 	return mini(owner.monster_zone + 1, 8)
 
 
+func get_bot_advance_reliability(_owner: PlayerState, _opponent: PlayerState) -> int:
+	return 100
+
+
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	# Check active monster and stack — GUC will be in the stack by the time
 	# this card is played (it gets stacked when ranked up from).
@@ -30,6 +34,10 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 		if card.get("name", "") == "Giant Unknown Creature":
 			return true
 	return false
+
+
+func get_bot_effect_costs() -> Array[Dictionary]:
+	return [{"card_type": CardEnums.CardType.STRATEGY, "count": 1}]
 
 
 func get_burst_rank() -> int:

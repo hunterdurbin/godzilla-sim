@@ -20,6 +20,16 @@ func get_bot_max_advance_zone(_owner: PlayerState, _opponent: PlayerState) -> in
 	return 6
 
 
+func get_bot_advance_reliability(owner: PlayerState, _opponent: PlayerState) -> int:
+	if owner.main_deck.is_empty():
+		return 0
+	var monster_count: int = 0
+	for card in owner.main_deck:
+		if card.get("card_type") == CardEnums.CardType.MONSTER:
+			monster_count += 1
+	return int(float(monster_count) / float(owner.main_deck.size()) * 100.0)
+
+
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.main_deck.is_empty():
 		return

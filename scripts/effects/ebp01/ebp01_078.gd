@@ -19,6 +19,14 @@ func get_bot_max_advance_zone(_owner: PlayerState, _opponent: PlayerState) -> in
 	return 6
 
 
+func get_bot_advance_reliability(owner: PlayerState, _opponent: PlayerState) -> int:
+	# Guaranteed advance to zone 6, but strategy rank 4 requires monster zone 4+.
+	# Less reliable when monster could be pushed back below zone 4.
+	if owner.monster_zone >= 4:
+		return 100
+	return 30  # Can't play yet — needs zone 4+
+
+
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	return owner.monster_zone < 6
 

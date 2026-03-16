@@ -12,6 +12,8 @@ var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 var bot_player: BotPlayer
 var is_bot_game: bool = false
 var _bot_seed_was_explicit: bool = false
+var _bot_cards_visible: bool = false
+var _bot_visibility_button: Button
 
 # Multiplayer state
 var is_multiplayer_game: bool = false
@@ -629,6 +631,10 @@ func _ready() -> void:
 	opponent_sort_hand_button.pressed.connect(_on_opponent_sort_hand_pressed)
 	opponent_hand_button_stack.visible = not is_multiplayer_game and not is_bot_game
 
+	# Bot card visibility toggle
+	if is_bot_game:
+		_setup_bot_visibility_toggle()
+
 	# Connect discard view
 	player1_board.discard_clicked.connect(_on_discard_clicked)
 	player2_board.discard_clicked.connect(_on_discard_clicked)
@@ -947,6 +953,23 @@ func _setup_bot() -> void:
 	for i in range(2):
 		if i < _turn_tracker_headers.size():
 			_turn_tracker_headers[i].text = GameLog.player_name(i)
+
+
+func _setup_bot_visibility_toggle() -> void:
+	_bot_visibility_button = Button.new()
+	_bot_visibility_button.text = "Show Bot Cards"
+	_bot_visibility_button.toggle_mode = true
+	_bot_visibility_button.custom_minimum_size = Vector2(140, 36)
+	_bot_visibility_button.position = Vector2(8, 8)
+	_bot_visibility_button.toggled.connect(_on_bot_visibility_toggled)
+	add_child(_bot_visibility_button)
+
+
+func _on_bot_visibility_toggled(toggled_on: bool) -> void:
+	_bot_cards_visible = toggled_on
+	_bot_visibility_button.text = "Hide Bot Cards" if toggled_on else "Show Bot Cards"
+	if player2_board:
+		player2_board.set_hand_face_down(not toggled_on)
 
 
 func _apply_gradients_and_sync() -> void:
@@ -3852,11 +3875,11 @@ func _update_hand_visibility(active_player_id: int) -> void:
 		if player2_board:
 			player2_board.set_hand_face_down(local_player_id != 1)
 	elif is_bot_game:
-		# Bot mode: P1 (human) face-up, P2 (bot) face-down
+		# Bot mode: P1 (human) face-up, P2 (bot) respects visibility toggle
 		if player1_board:
 			player1_board.set_hand_face_down(false)
 		if player2_board:
-			player2_board.set_hand_face_down(true)
+			player2_board.set_hand_face_down(not _bot_cards_visible)
 	else:
 		# Solo: both hands always face-up
 		if player1_board:

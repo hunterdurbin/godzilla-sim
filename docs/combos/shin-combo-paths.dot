@@ -1,0 +1,263 @@
+// Shin Combo — Single-Turn Win Paths
+// Render: dot -Tpng shin-combo-paths.dot -o shin-combo-paths.png
+// Or:     dot -Tsvg shin-combo-paths.dot -o shin-combo-paths.svg
+
+digraph ShinCombo {
+    rankdir=TB
+    bgcolor="white"
+    fontname="Helvetica"
+    node [fontname="Helvetica", fontsize=11]
+    edge [fontname="Helvetica", fontsize=9]
+
+    // ========== STYLES ==========
+    node [shape=box, style="rounded,filled"]
+
+    // Zone nodes
+    node [fillcolor="#e8f4fd"]
+
+    // Card play nodes
+    // Decision nodes use diamond
+
+    // ========== START ==========
+    start [label="Bot's Turn\nMonster at Zone N", shape=ellipse, fillcolor="#b3d9ff", style=filled]
+
+    // ========== WIN CHECK ==========
+    win_check [label="Zone ≥ 7\nZ8 clear?", shape=diamond, fillcolor="#fff3cd"]
+    win_now [label="INVADE\n(any card)\nTOP PRIORITY", fillcolor="#28a745", fontcolor=white, style="rounded,filled,bold"]
+    start -> win_check [label="Step 1: Always\ncheck win first"]
+    win_check -> win_now [label="Yes", color="#28a745", penwidth=2]
+
+    // ========== COMBO ELIGIBILITY ==========
+    rank_check [label="Zone ≥ 7\nRank ≥ 3?", shape=diamond, fillcolor="#fff3cd"]
+    normal_play [label="Normal play\n(no combo needed)", fillcolor="#d4edda"]
+    win_check -> rank_check [label="No"]
+    rank_check -> normal_play [label="Yes\n(can't be\npushed back)"]
+
+    // ========== PIECE CHECK ==========
+    piece_check [label="Combo pieces\nin hand?", shape=diamond, fillcolor="#fff3cd"]
+    rank_check -> piece_check [label="No\n(vulnerable)"]
+
+    partial [label="PARTIAL STATE\n• Protect all pieces (-100 penalty)\n• Protect 2-step invasion card\n• Reserve strategy for effect cost\n• Pace-match opponent zones 1-4", fillcolor="#ffeeba"]
+    piece_check -> partial [label="Some missing"]
+
+    // ========== ZONE ROUTING ==========
+    zone_check [label="Monster\nzone?", shape=diamond, fillcolor="#fff3cd"]
+    piece_check -> zone_check [label="All found"]
+
+    // ========== ZONES 1-3: PARTIAL ONLY ==========
+    z1_3 [label="Zone 1-3\nCard #1 strategies unplayable\n(rank > zone)", fillcolor="#f8d7da"]
+    zone_check -> z1_3 [label="1-3"]
+    z1_3 -> partial [label="Protect pieces\nwait for advance"]
+
+    // ========== ZONE 4-5: PLAY CARD #1 ==========
+    subgraph cluster_card1 {
+        label="PHASE 1: Advance to Zone 6"
+        style="dashed,rounded"
+        color="#6c757d"
+        fontsize=12
+        bgcolor="#f8f9fa"
+
+        z4_5 [label="Zone 4-5", fillcolor="#e8f4fd"]
+
+        card1_choice [label="Choose Card #1\n(advance to zone 6)", shape=diamond, fillcolor="#fff3cd"]
+
+        ebp01_078 [label="EBP01-078\nGodzilla Attacks\n(Strategy R4)\n━━━━━━━━━━━━\nGuaranteed → Zone 6\nPlayable: own zone ≥ 4\nReliability: 100%", fillcolor="#d4edda"]
+        ebp02_014 [label="EBP02-014\nCabinet Helicopter\n(Battle R6)\n━━━━━━━━━━━━\nMill top deck → Zone 6\nPlayable: opp zone ≥ 6\nReliability: monster/deck %", fillcolor="#ffeeba"]
+        ebp03_035 [label="EBP03-035\nSatsuma\n(Battle R5)\n━━━━━━━━━━━━\nColumn match + discard\nstrategy → Zone 6\nPlayable: opp zone ≥ 5\nReliability: 90% (column)\nCost: 1 strategy", fillcolor="#ffeeba"]
+
+        z4_5 -> card1_choice
+        card1_choice -> ebp01_078 [label="Best: guaranteed"]
+        card1_choice -> ebp02_014 [label="Alt: RNG"]
+        card1_choice -> ebp03_035 [label="Alt: column"]
+    }
+    zone_check -> z4_5 [label="4-5"]
+
+    // ========== ZONE 6: SKIP CARD #1 ==========
+    z6 [label="Zone 6\nSkip Card #1\n(already at target)", fillcolor="#d4edda"]
+    zone_check -> z6 [label="6"]
+
+    // ========== CONVERGE AT ZONE 6 ==========
+    at_z6 [label="Monster at Zone 6", fillcolor="#b3d9ff", shape=ellipse]
+    ebp01_078 -> at_z6
+    ebp02_014 -> at_z6 [label="if monster\nrevealed"]
+    ebp03_035 -> at_z6 [label="if column\naligned"]
+    z6 -> at_z6
+
+    // ========== PHASE 2: CARD #2 ==========
+    subgraph cluster_card2 {
+        label="PHASE 2: Advance to Zone 7"
+        style="dashed,rounded"
+        color="#6c757d"
+        fontsize=12
+        bgcolor="#f8f9fa"
+
+        ebp02_003 [label="EBP02-003\nGodzilla(2016) 2nd Form\n(Monster R2 / Burst 3)\n━━━━━━━━━━━━━━━━\nRequires:\n• GUC active or in stack\n• 1 strategy card to discard\n━━━━━━━━━━━━━━━━\nEffect: Advance +1 zone\nReliability: 100%", fillcolor="#cce5ff"]
+    }
+    at_z6 -> ebp02_003 [label="Play Card #2", penwidth=2, color="#0066cc"]
+
+    at_z7 [label="Monster at Zone 7", fillcolor="#b3d9ff", shape=ellipse]
+    ebp02_003 -> at_z7 [label="Zone 6 → Zone 7", penwidth=2, color="#0066cc"]
+
+    // ========== PHASE 3: CLEAR Z8 + INVADE ==========
+    subgraph cluster_phase3 {
+        label="PHASE 3: Clear Zone 8 + Invade for Win"
+        style="dashed,rounded"
+        color="#6c757d"
+        fontsize=12
+        bgcolor="#f8f9fa"
+
+        z8_check [label="Opponent Z8\nhas battle card?", shape=diamond, fillcolor="#fff3cd"]
+
+        z8_clear [label="Z8 Clear\nReady to invade!", fillcolor="#d4edda"]
+
+        // Destroy path
+        destroy [label="Play destroy card\n(any destroys_zone)", fillcolor="#f5c6cb"]
+
+        // Crush path — opponent can be 1 or 2 zones away from Z8
+        crush_check [label="Opponent monster\ncan reach Z8?\n(within 1-2 advances)", shape=diamond, fillcolor="#fff3cd"]
+
+        adv_opp_1 [label="Opp at Z7:\nPlay 1x advances_opponent\n━━━━━━━━━━━━━━━━\nOpp Z7 → Z8\nCrushes their Z8 battle card", fillcolor="#f5c6cb"]
+
+        adv_opp_2 [label="Opp at Z6:\nPlay 2x advances_opponent\n(e.g. 2x Godzilla Landing)\n━━━━━━━━━━━━━━━━\nOpp Z6 → Z7 → Z8\nRequires 2 cards + strategy slots\nCrushes their Z8 battle card", fillcolor="#f5c6cb"]
+
+        // Final invasion
+        invade_win [label="INVADE 2-STEP\nZ7 → Z8 → Z9", fillcolor="#28a745", fontcolor=white, style="rounded,filled,bold"]
+        victory [label="VICTORY!", shape=doubleoctagon, fillcolor="#28a745", fontcolor=white, style=filled]
+    }
+
+    at_z7 -> z8_check [penwidth=2, color="#0066cc"]
+    z8_check -> z8_clear [label="No"]
+    z8_check -> destroy [label="Yes\n(have destroy card)"]
+    z8_check -> crush_check [label="Yes\n(no destroy card)"]
+    crush_check -> adv_opp_1 [label="Opp at Z7\n(1 advance)"]
+    crush_check -> adv_opp_2 [label="Opp at Z6\n(2 advances +\n2 strategy slots)"]
+    crush_check -> partial [label="No\n(opp too far /\ninsufficient cards)", style=dashed, color="#dc3545"]
+    destroy -> z8_clear
+    adv_opp_1 -> z8_clear [label="Z8 crushed"]
+    adv_opp_2 -> z8_clear [label="Z8 crushed"]
+    z8_clear -> invade_win [penwidth=2, color="#28a745"]
+    invade_win -> victory [penwidth=2, color="#28a745"]
+
+    // ========== COUNTER-RETREAT LOOP ==========
+    subgraph cluster_retreat {
+        label="Counter-Retreat Feedback Loop"
+        style="dashed,rounded"
+        color="#e83e8c"
+        fontsize=12
+        bgcolor="#fdf2f8"
+
+        countered [label="Monster countered\non opponent's turn", shape=diamond, fillcolor="#f5c6cb"]
+        retreat_7 [label="Zone 7 → Zone 4\n(R4 strategy now playable!)", fillcolor="#f5c6cb"]
+        retreat_8 [label="Zone 8 → Zone 3\n(need different Card #1)", fillcolor="#f8d7da"]
+        retreat_6 [label="Zone 6 → Zone 5", fillcolor="#ffeeba"]
+    }
+
+    countered -> retreat_7 [label="From Z7"]
+    countered -> retreat_8 [label="From Z8"]
+    countered -> retreat_6 [label="From Z6"]
+
+    retreat_7 -> z4_5 [label="Re-enter combo\nat zone 4", style=dashed, color="#e83e8c"]
+    retreat_8 -> z1_3 [label="Pushed back\nto zone 3", style=dashed, color="#dc3545"]
+    retreat_6 -> z4_5 [label="Re-enter combo\nat zone 5", style=dashed, color="#e83e8c"]
+
+    // ========== CARD #1 RELIABILITY BY ZONE ==========
+    subgraph cluster_reliability {
+        label="Card #1 Reliability by Bot Zone"
+        style="rounded"
+        color="#6c757d"
+        fontsize=12
+        bgcolor="#f8f9fa"
+        node [shape=plaintext, fillcolor=white]
+
+        reliability_table [label=<
+<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6">
+  <TR>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Bot Zone</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>EBP01-078</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>EBP02-014</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>EBP03-035</B></FONT></TD>
+  </TR>
+  <TR>
+    <TD>Zone 1-3</TD>
+    <TD BGCOLOR="#f8d7da">30% (unplayable)</TD>
+    <TD BGCOLOR="#ffeeba">~30% (opp too low)</TD>
+    <TD BGCOLOR="#ffeeba">~60% (opp too low)</TD>
+  </TR>
+  <TR>
+    <TD>Zone 4</TD>
+    <TD BGCOLOR="#d4edda"><B>100%</B> (guaranteed)</TD>
+    <TD BGCOLOR="#ffeeba">~30% (opp dep.)</TD>
+    <TD BGCOLOR="#ffeeba">~60% (column dep.)</TD>
+  </TR>
+  <TR>
+    <TD>Zone 5</TD>
+    <TD BGCOLOR="#d4edda"><B>100%</B></TD>
+    <TD BGCOLOR="#ffeeba">~40%</TD>
+    <TD BGCOLOR="#d4edda"><B>90%</B> (if aligned)</TD>
+  </TR>
+  <TR>
+    <TD>Zone 6+</TD>
+    <TD COLSPAN="3" BGCOLOR="#d4edda"><B>Not needed</B> (already at target)</TD>
+  </TR>
+</TABLE>
+        >]
+    }
+
+    // ========== VIABILITY SCORING ==========
+    subgraph cluster_viability {
+        label="Viability Score (Full State)"
+        style="rounded"
+        color="#6c757d"
+        fontsize=12
+        bgcolor="#f8f9fa"
+        node [shape=plaintext, fillcolor=white]
+
+        viability_table [label=<
+<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6">
+  <TR>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Factor</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Condition</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Score</B></FONT></TD>
+  </TR>
+  <TR><TD>Proximity</TD><TD>Zone 3</TD><TD>+50</TD></TR>
+  <TR><TD>Proximity</TD><TD>Zone 4</TD><TD>+70</TD></TR>
+  <TR><TD>Proximity</TD><TD>Zone 5</TD><TD>+90</TD></TR>
+  <TR><TD>Proximity</TD><TD BGCOLOR="#d4edda">Zone 6</TD><TD BGCOLOR="#d4edda"><B>+100</B></TD></TR>
+  <TR><TD>Opp Pressure</TD><TD>Opp Z1-4</TD><TD>+20</TD></TR>
+  <TR><TD>Opp Pressure</TD><TD>Opp Z5-6</TD><TD>+0</TD></TR>
+  <TR><TD>Opp Pressure</TD><TD>Opp Z7</TD><TD>-20</TD></TR>
+  <TR><TD>Opp Pressure</TD><TD BGCOLOR="#f8d7da">Opp Z8</TD><TD BGCOLOR="#f8d7da">-40</TD></TR>
+  <TR><TD>Z8 Clear</TD><TD>No destroy needed</TD><TD>+20</TD></TR>
+  <TR><TD>Hand</TD><TD>5+ remaining</TD><TD>-10</TD></TR>
+  <TR><TD>Hand</TD><TD>0 remaining</TD><TD>-30</TD></TR>
+  <TR><TD>CP Gap</TD><TD>≥ 10000 behind</TD><TD>-30</TD></TR>
+  <TR><TD BGCOLOR="#f8d7da">Blocked</TD><TD BGCOLOR="#f8d7da">Invasion blocked</TD><TD BGCOLOR="#f8d7da"><B>-100</B></TD></TR>
+  <TR><TD COLSPAN="2" BGCOLOR="#cce5ff">Minimum bonus when full</TD><TD BGCOLOR="#cce5ff"><B>100</B></TD></TR>
+</TABLE>
+        >]
+    }
+
+    // ========== LEGEND ==========
+    subgraph cluster_legend {
+        label="Legend"
+        style="rounded"
+        color="#6c757d"
+        fontsize=12
+        bgcolor="#f8f9fa"
+        node [shape=plaintext, fillcolor=white]
+
+        legend [label=<
+<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="4">
+  <TR><TD BGCOLOR="#28a745"><FONT COLOR="white"> Win / Victory </FONT></TD>
+      <TD BGCOLOR="#cce5ff"> Key combo card </TD>
+      <TD BGCOLOR="#d4edda"> Good / Viable </TD></TR>
+  <TR><TD BGCOLOR="#ffeeba"> Conditional / RNG </TD>
+      <TD BGCOLOR="#f5c6cb"> Clear / Destroy action </TD>
+      <TD BGCOLOR="#f8d7da"> Blocked / Bad </TD></TR>
+  <TR><TD BGCOLOR="#b3d9ff"> Zone state </TD>
+      <TD BGCOLOR="#fff3cd"> Decision point </TD>
+      <TD BGCOLOR="#fdf2f8"> Counter-retreat </TD></TR>
+</TABLE>
+        >]
+    }
+}
