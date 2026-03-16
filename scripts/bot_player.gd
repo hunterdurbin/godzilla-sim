@@ -284,18 +284,27 @@ func _decide_main_action(valid_actions: Array) -> Array:
 						if not _invasion_blocked_by_rage(player, two_step_idx, monsters):
 							return [CardEnums.ActionType.INVADE, {"hand_index": two_step_idx}]
 
-	# 4. When ahead on CP, gain rage early to build threat before playing cards
-	if not needs_defense and CardEnums.ActionType.GAIN_RAGE in valid_actions:
+	# 4. Combo cycling: gain rage to dig for combo pieces before playing cards.
+	#    This trades a monster card for rage + draws at end of turn.
+	var combo_cycling := _should_combo_prioritize_cycling(player, opponent)
+	if combo_cycling and CardEnums.ActionType.GAIN_RAGE in valid_actions:
 		var rage_result := _try_gain_rage(player)
 		if not rage_result.is_empty():
 			return rage_result
 
-	# 5. Score all playable cards and play the highest-value one
+	# 5. When ahead on CP, gain rage early to build threat before playing cards
+	if not combo_cycling and not needs_defense \
+			and CardEnums.ActionType.GAIN_RAGE in valid_actions:
+		var rage_result := _try_gain_rage(player)
+		if not rage_result.is_empty():
+			return rage_result
+
+	# 6. Score all playable cards and play the highest-value one
 	var best_action := _decide_best_card_play(valid_actions, player, opponent, near_winning, z8_blocked, cp_gap)
 	if not best_action.is_empty():
 		return best_action
 
-	# 6. Gain rage (when behind on CP, rage was skipped earlier — try now as fallback)
+	# 7. Gain rage (when behind on CP, rage was skipped earlier — try now as fallback)
 	if needs_defense and CardEnums.ActionType.GAIN_RAGE in valid_actions:
 		var rage_result := _try_gain_rage(player)
 		if not rage_result.is_empty():
@@ -1221,15 +1230,12 @@ func _get_combo_reserved_indices() -> Array[int]:
 		var reserved: Array[int] = []
 		reserved.assign(_active_combo_plan.get("reserved_indices", []))
 		return reserved
-	# Partial: protect only the hardest-to-replace pieces from discard
-	var critical: Array[int] = []
-	var inv_idx: int = _active_combo_plan.get("invade_idx", -1)
-	if inv_idx >= 0:
-		critical.append(inv_idx)
-	var adv_idx: int = _active_combo_plan.get("advancement_idx", -1)
-	if adv_idx >= 0:
-		critical.append(adv_idx)
-	return critical
+	# Partial: delegate to the combo for which pieces are critical
+	var combo_name_key: String = _active_combo_plan.get("combo_name", "")
+	for combo in _combos:
+		if combo.combo_name == combo_name_key:
+			return combo.get_partial_reserved_indices(_active_combo_plan)
+	return []
 
 
 func _get_combo_invasion_excludes() -> Array[int]:
@@ -1290,6 +1296,17 @@ func _get_combo_battle_zone_avoidance() -> Array[int]:
 		if combo.combo_name == combo_name_key:
 			return combo.get_battle_zone_avoidance(_active_combo_plan, player)
 	return []
+
+
+func _should_combo_prioritize_cycling(player: PlayerState, opponent: PlayerState) -> bool:
+	## Ask the active combo if the bot should cycle hand (gain rage) before playing cards.
+	if _active_combo_plan.is_empty():
+		return false
+	var combo_name_key: String = _active_combo_plan.get("combo_name", "")
+	for combo in _combos:
+		if combo.combo_name == combo_name_key:
+			return combo.should_prioritize_cycling(_active_combo_plan, player, opponent)
+	return false
 
 
 func _get_combo_execution_action(valid_actions: Array, player: PlayerState,

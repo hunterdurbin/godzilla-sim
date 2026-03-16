@@ -40,6 +40,13 @@ func should_suppress_invasion(plan: Dictionary, player: PlayerState, opponent: P
 	return false
 
 
+func should_prioritize_cycling(plan: Dictionary, player: PlayerState,
+		opponent: PlayerState) -> bool:
+	## Override: return true to cycle hand (gain rage) before playing cards.
+	## Used by combos that need to dig for pieces rather than build board.
+	return false
+
+
 func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: PlayerState) -> Dictionary:
 	## Override: return invasion guidance for combo-aware invasion targeting.
 	## Keys: preferred_steps (1 or 2, 0=no pref), max_zone (-1=no limit),
@@ -59,6 +66,16 @@ func get_execution_action(plan: Dictionary, valid_actions: Array,
 	## Override: when combo pieces are playable, return the next action in sequence.
 	## Returns [action_type, params] or [] if no combo action to take.
 	return []
+
+
+func get_partial_reserved_indices(plan: Dictionary) -> Array[int]:
+	## Override: return hand indices to protect from discard in partial state.
+	## Default: only protect the invasion card.
+	var critical: Array[int] = []
+	var inv_idx: int = plan.get("invade_idx", -1)
+	if inv_idx >= 0:
+		critical.append(inv_idx)
+	return critical
 
 
 func get_rankup_bonus(plan: Dictionary, monster: Dictionary,

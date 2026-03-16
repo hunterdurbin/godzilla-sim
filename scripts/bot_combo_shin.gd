@@ -21,7 +21,11 @@ func _init() -> void:
 
 
 func check(player: PlayerState, opponent: PlayerState, bot) -> Dictionary:
-	# Zone 7+ with rank 3+ doesn't need combo (can't be pushed back)
+	# Rank 4+: counter-retreat can't reach rank 3 anymore, combo is done.
+	# Switch to normal counter/invasion play.
+	if player.current_monster.get("rank", 0) >= 4:
+		return {}
+	# Zone 7+ with rank 3+: already past the combo setup window.
 	if player.monster_zone >= 7 and player.current_monster.get("rank", 0) >= 3:
 		return {}
 
@@ -151,22 +155,48 @@ func check(player: PlayerState, opponent: PlayerState, bot) -> Dictionary:
 	return partial_plan
 
 
+func should_prioritize_cycling(plan: Dictionary, player: PlayerState,
+		opponent: PlayerState) -> bool:
+	# Shin combo cycles hand to find pieces rather than building board.
+	# Prioritize rage gain (discard monster → draw at end of turn) when:
+	# - Combo is partial (still looking for pieces)
+	# - Counter-retreat path exists (combo is viable)
+	# - Not yet at the execution window
+	if plan.get("state") != "partial":
+		return false
+	if not plan.get("counter_retreat_path", false):
+		return false
+	# Don't cycle when opponent is about to win — need to defend
+	if opponent.monster_zone >= 7:
+		return false
+	return true
+
+
 func should_suppress_invasion(plan: Dictionary, player: PlayerState, opponent: PlayerState) -> bool:
 	var mz := player.monster_zone
 	var opp_z := opponent.monster_zone
 	var has_cr: bool = plan.get("counter_retreat_path", false)
 
-	# Counter-bait: when opponent at z7+ and we have the counter-retreat path,
-	# ENCOURAGE invasion (return false) — we WANT to get countered.
-	if has_cr and opp_z >= 7 and mz >= 5:
+	# Counter-bait window: opponent at z7+ and bot at z5-7 with counter-retreat path.
+	# ALLOW invasion — we want to reach z6-7 and get countered on purpose.
+	if has_cr and opp_z >= 7 and mz >= 5 and mz <= 7:
 		return false
 
-	# Full state at z5+: never suppress — bot needs to advance for execution
-	if plan.get("state") == "full" and mz >= 5:
+	# Full state at z6-7: allow invasion for execution
+	if plan.get("state") == "full" and mz >= 6 and mz <= 7:
 		return false
 
-	# Counter-retreat strategy for advance-to-6 card:
-	# allow invasion to reach zones where counter-retreat enables strategy play.
+	# Shin combo wants to slow play and build board until setup is ready.
+	# Suppress early invasion when combo has pieces — play battle cards first.
+	if has_cr:
+		# Don't rush ahead of opponent
+		if mz >= opp_z + 2:
+			return true
+		# At z5+: only invade for counter-bait (handled above), not aggressively
+		if mz >= 5 and opp_z < 7:
+			return true
+
+	# Counter-retreat strategy for advance-to-6 card
 	var adv6_idx: int = plan.get("advance_to_6_idx", -1)
 	if adv6_idx >= 0 and adv6_idx < player.hand.size():
 		var adv6_card: Dictionary = player.hand[adv6_idx]
@@ -176,11 +206,6 @@ func should_suppress_invasion(plan: Dictionary, player: PlayerState, opponent: P
 				var retreat_zone: int = ActionHandler.get_counter_retreat_zone(mz + 1)
 				if retreat_zone >= strat_rank:
 					return false
-
-	# Slow play: only suppress when far ahead AND opponent is approaching z7.
-	# Too aggressive suppression hurts more than counter-bait helps.
-	if has_cr and mz >= opp_z + 3 and opp_z >= 4:
-		return true
 
 	# Both at zone 1: suppress (no info yet)
 	if opp_z <= 1 and mz <= 1:
@@ -194,18 +219,24 @@ func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: Pl
 	var has_adv6: bool = plan.get("advance_to_6_idx", -1) >= 0
 	var has_cr: bool = plan.get("counter_retreat_path", false)
 
-	# Counter-bait: opponent at z7+ and we have counter-retreat path.
-	# Invade to z7/z8 to GET countered — rank-up advances opponent and clears z8.
-	if has_cr and opponent.monster_zone >= 7 and mz >= 5:
-		# Target z7 or z8 (zones where counter-retreat activates rank-up)
-		if mz <= 6:
-			pref["target_zone"] = mini(mz + 2, 8)
+	# Shin combo: never invade past z7 unless we have overwhelming threat.
+	# Ending a turn at z7 → end-phase advances to z8, which is a bad position
+	# unless we can push through z8 with 35k+ threat advantage.
+	if has_cr:
+		var threat_surplus: int = _get_threat_surplus(player, opponent)
+		if threat_surplus >= 35000:
+			pref["max_zone"] = -1  # Overwhelming advantage, no cap
 		else:
-			pref["target_zone"] = mini(mz + 1, 8)
+			pref["max_zone"] = 7  # Cap at z7 — avoid ending at z8
+
+	# Counter-bait: opponent at z7+ and we have counter-retreat path.
+	# Invade to z6-7 to GET countered — rank-up advances opponent and clears z8.
+	if has_cr and opponent.monster_zone >= 7 and mz >= 5:
+		pref["target_zone"] = mini(mz + 1, 7)  # Cap target at z7
 		return pref
 
 	if plan.get("state") == "full" and mz >= 6:
-		# Full combo at zone 6+: no limit, go for the win
+		# Full combo at zone 6+: use the max_zone already set above
 		return pref
 
 	if mz <= 3 and has_adv6:
@@ -263,6 +294,15 @@ func adjust_card_score(plan: Dictionary, hand_idx: int, base_score: int,
 	if plan.get("state") == "full" or mz >= 5:
 		if opponent.zone_has_battle_card(7) and plan.get("destroy_idx", -1) == hand_idx:
 			score += 20
+
+	# Protect strategy cards: the combo needs strategies both as pieces
+	# (advance-to-6) and as fuel (EBP02-003 costs a strategy discard).
+	# Don't play a strategy if it would drop below 2 in hand.
+	if hand_idx < player.hand.size() \
+			and player.hand[hand_idx].get("card_type") == CardEnums.CardType.STRATEGY:
+		var strat_count: int = _count_strategies_in_hand(player)
+		if strat_count <= 2:
+			score -= 80
 
 	return score
 
@@ -351,6 +391,16 @@ func _try_play_card(hand_idx: int, player: PlayerState, opponent: PlayerState,
 	return []
 
 
+func get_partial_reserved_indices(plan: Dictionary) -> Array[int]:
+	# Shin combo needs: invasion card, advancement card, and advance-to-6 (strategy fuel)
+	var critical: Array[int] = []
+	for key in ["invade_idx", "advancement_idx", "advance_to_6_idx"]:
+		var idx: int = plan.get(key, -1)
+		if idx >= 0:
+			critical.append(idx)
+	return critical
+
+
 func get_rankup_bonus(plan: Dictionary, monster: Dictionary,
 		player: PlayerState, opponent: PlayerState, bot) -> int:
 	# Strongly prefer rank 3 "advances_opponent" monster — getting countered into
@@ -389,23 +439,22 @@ func get_monster_play_rules(plan: Dictionary, player: PlayerState, bot) -> Dicti
 	if adv_idx < 0:
 		return rules
 
-	# Always exclude the advancement monster from normal plays
+	# Partial: just exclude the specific advancement card from normal plays.
+	# Other monsters can play freely — only restrict when executing.
 	rules["exclude_idx"] = adv_idx
 
 	if plan.get("state") != "full":
 		return rules
 
+	# Full: protect the rank slot for execution
 	if plan.get("advance_to_6_idx", -1) >= 0:
-		# Card #1 not played yet — skip all monster plays
 		rules["skip_all"] = true
 	else:
-		# At zone 6+: play the advancement monster if playable, skip all others
 		var playable: Array[int] = bot.rules_engine.get_playable_monsters(player)
 		if adv_idx in playable:
 			rules["force_play_idx"] = adv_idx
-			rules["exclude_idx"] = -1 # Will be force-played, not excluded
+			rules["exclude_idx"] = -1
 		else:
-			# Not playable yet — skip all monsters to preserve the slot
 			rules["skip_all"] = true
 
 	return rules
@@ -744,6 +793,23 @@ func _scan_deck_for_combo_pieces(player: PlayerState, opponent: PlayerState,
 			return true
 
 	return found_advancement and found_destroy and found_advance_to_6
+
+
+# --- Threat / CP helpers ---
+
+func _count_strategies_in_hand(player: PlayerState) -> int:
+	var count: int = 0
+	for card in player.hand:
+		if card.get("card_type") == CardEnums.CardType.STRATEGY:
+			count += 1
+	return count
+
+
+func _get_threat_surplus(player: PlayerState, opponent: PlayerState) -> int:
+	## Returns bot's threat minus opponent's total CP. Positive = bot overwhelms counter.
+	var bot_threat: int = player.get_threat_level()
+	var opp_cp: int = opponent.get_total_counter_power()
+	return bot_threat - opp_cp
 
 
 # --- Counter-retreat path ---
