@@ -219,6 +219,11 @@ func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: Pl
 	var threat_surplus: int = _get_threat_surplus(player, opponent)
 	if threat_surplus >= 35000:
 		pref["max_zone"] = -1
+	elif opp_z >= 7:
+		# Opponent at z7+: they can invade 2-step to win. Don't advance
+		# past z6 — z7 end-of-turn pushes to z8 which is suicidal.
+		# Stay at z5-6 and focus on defense / counter-bait.
+		pref["max_zone"] = 6
 	else:
 		# Cap at opponent zone + 1 or z7, whichever is lower
 		pref["max_zone"] = mini(opp_z + 1, 7)
@@ -226,9 +231,10 @@ func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: Pl
 	# Always prefer 1-step to conserve 2-step cards for the win
 	pref["preferred_steps"] = 1
 
-	# Counter-bait: opponent at z7+ → invade to z6-7 to get countered
-	if opp_z >= 7 and mz >= 5 and mz <= 7:
-		pref["target_zone"] = mini(mz + 1, 7)
+	# Counter-bait: opponent at z7+ → position at z5-6 for counter setup.
+	# Don't invade past z6 — let end-of-turn advance to z7 where counter happens.
+	if opp_z >= 7 and mz >= 4 and mz <= 6:
+		pref["target_zone"] = mini(mz + 1, 6)
 		return pref
 
 	# Positioning: stay within 1 zone of opponent
@@ -293,6 +299,12 @@ func get_execution_action(plan: Dictionary, valid_actions: Array,
 
 	# Don't execute past z7 — z8 is past the combo's effective zone
 	if mz >= 8:
+		return []
+
+	# Don't execute when advancing would be suicidal.
+	# If opponent is at z7+ they can invade 2-step to win — don't push forward,
+	# focus on defense. Exception: bot is already at z6+ with enough pieces to win NOW.
+	if opp_z >= 7 and mz < 6:
 		return []
 
 	# Don't execute until opponent is in position.
