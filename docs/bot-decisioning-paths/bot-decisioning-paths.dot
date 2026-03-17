@@ -1,0 +1,174 @@
+// Bot Decision Paths — Main Action Priority Chain
+// Render: dot -Tpng bot-decisioning-paths.dot -o bot-decisioning-paths.png
+
+digraph BotDecision {
+    rankdir=TB
+    bgcolor="white"
+    fontname="Helvetica"
+    node [fontname="Helvetica", fontsize=11, shape=box, style="rounded,filled"]
+    edge [fontname="Helvetica", fontsize=9]
+
+    // ========== START ==========
+    start [label="Bot's Main Phase\nAction Decision", shape=ellipse, fillcolor="#b3d9ff", style=filled]
+
+    // ========== STEP 0: COMBO CHECK ==========
+    combo_check [label="Step 0: Combo Check\nDetect multi-card win paths\nSet combo plan (full/partial/none)", fillcolor="#e8f4fd"]
+    start -> combo_check
+
+    // ========== STEP 1: PLAY MONSTER ==========
+    monster_check [label="Monster playable?\nCombo skip_all?", shape=diamond, fillcolor="#fff3cd"]
+    play_monster [label="Step 1: Play Monster\n(increases rage/threat)\nCombo may force/exclude", fillcolor="#cce5ff"]
+    combo_check -> monster_check
+    monster_check -> play_monster [label="Yes + not skipped"]
+
+    // ========== STEP 2: WIN CHECK ==========
+    win_check [label="Zone 7+ AND\nopp z8 clear?", shape=diamond, fillcolor="#fff3cd"]
+    win_invade [label="Step 2: WIN INVASION\nInvade immediately!\nTOP PRIORITY", fillcolor="#28a745", fontcolor=white, style="rounded,filled,bold"]
+    monster_check -> win_check [label="No monster\nor skipped"]
+    play_monster -> win_check [label="After monster"]
+    win_check -> win_invade [label="Yes", color="#28a745", penwidth=2]
+
+    // ========== STEP 2.5: COMBO EXECUTION ==========
+    combo_exec [label="Combo execution\nready?\n(viability &gt; 0, opp in\nposition, bot &lt; z8)", shape=diamond, fillcolor="#fff3cd"]
+    exec_action [label="Step 2.5: Combo Execution\nForced sequence:\n1. Advance-to-6\n2. Advancement card\n3. Destroy z8\n4. Invade 1-step", fillcolor="#e83e8c", fontcolor=white]
+    win_check -> combo_exec [label="No"]
+    combo_exec -> exec_action [label="Yes", color="#e83e8c", penwidth=2]
+
+    // ========== STEP 3: EARLY INVASION ==========
+    early_inv_check [label="INVASION playstyle?\nCombo prefers 1-step?\nCombo suppressed?", shape=diamond, fillcolor="#fff3cd"]
+    early_inv [label="Step 3: Early Invasion\n2-step aggressive invade\n(INVASION playstyle only)", fillcolor="#ffeeba"]
+    combo_exec -> early_inv_check [label="No"]
+    early_inv_check -> early_inv [label="INVASION +\nnot 1-step +\nnot suppressed"]
+
+    // ========== STEP 4: COMBO CYCLING ==========
+    cycle_check [label="Combo cycling?\n(partial + counter-retreat\n+ opp below z7)", shape=diamond, fillcolor="#fff3cd"]
+    cycle [label="Step 4: Combo Cycling\nGain rage to dig for pieces\n(discard monster, draw later)", fillcolor="#cce5ff"]
+    early_inv_check -> cycle_check [label="No early\ninvasion"]
+    cycle_check -> cycle [label="Yes"]
+
+    // ========== STEP 5: GAIN RAGE ==========
+    rage_check [label="Ahead on CP?\nNot cycling?", shape=diamond, fillcolor="#fff3cd"]
+    gain_rage [label="Step 5: Gain Rage\nBuild threat before\nplaying cards", fillcolor="#d4edda"]
+    cycle_check -> rage_check [label="No"]
+    rage_check -> gain_rage [label="Ahead on CP"]
+
+    // ========== STEP 6: PLAY BEST CARD ==========
+    play_card [label="Step 6: Play Best Card\nScore all strategies + battle cards\n━━━━━━━━━━━━━━━━\nScoring: base + triggers + tags\n+ CP bonus + synergies + combo adj.\n━━━━━━━━━━━━━━━━\nBattle cards: pick zone, assign\nTiebreak: lower rank, higher CP", fillcolor="#d4edda"]
+    rage_check -> play_card [label="Behind on CP\nor no rage cards"]
+
+    // ========== STEP 7: FALLBACK RAGE ==========
+    rage_fallback [label="Step 7: Gain Rage\n(fallback when behind)", fillcolor="#ffeeba"]
+    play_card -> rage_fallback [label="No playable cards\nwith score &gt; 0"]
+
+    // ========== STEP 8: INVADE ==========
+    invade_check [label="Not behind on CP?\nNot combo-suppressed?\nPlaystyle allows?", shape=diamond, fillcolor="#fff3cd"]
+    invade [label="Step 8: Invade\n━━━━━━━━━━━━\nINVASION: always try\nBALANCED: z4+ no base strat\nCOUNTER: never\n━━━━━━━━━━━━\nRespects combo max_zone\nand preferred steps", fillcolor="#ffeeba"]
+    rage_fallback -> invade_check [label="No rage cards"]
+    invade_check -> invade [label="Yes"]
+
+    // ========== STEP 9: PASS ==========
+    pass [label="Step 9: PASS\nEnd main phase", fillcolor="#f8d7da"]
+    invade_check -> pass [label="No"]
+    invade -> pass [label="No valid\ninvasion"]
+
+    // ========== CARD SCORING DETAIL ==========
+    subgraph cluster_scoring {
+        label="Card Scoring Layers"
+        style="rounded"
+        color="#6c757d"
+        fontsize=12
+        bgcolor="#f8f9fa"
+        node [shape=plaintext, fillcolor=white]
+
+        scoring_table [label=<
+<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6">
+  <TR>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Layer</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Source</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Example</B></FONT></TD>
+  </TR>
+  <TR><TD>Base</TD><TD>config.base_play_score</TD><TD>+10</TD></TR>
+  <TR><TD>Triggers</TD><TD>trigger_score_rules</TD><TD>on_enter: +10, CP mod: +15</TD></TR>
+  <TR><TD>Tags</TD><TD>tag_scores + situational</TD><TD>destroys_zone: +30 (+50 near win)</TD></TR>
+  <TR><TD>CP</TD><TD>counter_power / divisor</TD><TD>3000 CP = +3 base</TD></TR>
+  <TR><TD>Defense</TD><TD>CP gap scaling</TD><TD>CP * gap / 10000 when behind</TD></TR>
+  <TR><TD BGCOLOR="#f5c6cb">Emergency</TD><TD BGCOLOR="#f5c6cb">Opponent z7+</TD><TD BGCOLOR="#f5c6cb">CP / 200</TD></TR>
+  <TR><TD>Synergy</TD><TD>Enabler bonus</TD><TD>+5-15 per enabled card</TD></TR>
+  <TR><TD BGCOLOR="#cce5ff">Combo</TD><TD BGCOLOR="#cce5ff">adjust_card_score()</TD><TD BGCOLOR="#cce5ff">Full: +100, Partial inv: -100</TD></TR>
+</TABLE>
+        >]
+    }
+
+    // ========== ZONE SELECTION DETAIL ==========
+    subgraph cluster_zones {
+        label="Zone Selection Priority"
+        style="rounded"
+        color="#6c757d"
+        fontsize=12
+        bgcolor="#f8f9fa"
+        node [shape=plaintext, fillcolor=white]
+
+        zone_table [label=<
+<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6">
+  <TR>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>#</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Check</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Action</B></FONT></TD>
+  </TR>
+  <TR><TD>1</TD><TD>CP loss check</TD><TD>Skip if overwriting higher CP</TD></TR>
+  <TR><TD>2</TD><TD>Crush zones</TD><TD>Avoid zones monster will pass</TD></TR>
+  <TR><TD>3</TD><TD>Combo avoidance</TD><TD>Avoid combo crush zones</TD></TR>
+  <TR><TD>4</TD><TD BGCOLOR="#f5c6cb">Proactive z8</TD><TD BGCOLOR="#f5c6cb">Opp z5+: fill z8 first</TD></TR>
+  <TR><TD>5</TD><TD>Effect tags</TD><TD>zone_dependent, column_dependent</TD></TR>
+  <TR><TD>6</TD><TD>Early defense</TD><TD>Opp z1-4: place behind monster</TD></TR>
+  <TR><TD>7</TD><TD>Priority table</TD><TD>Zone order by monster position</TD></TR>
+  <TR><TD>8</TD><TD>Fallback</TD><TD>Overwrite lowest CP card</TD></TR>
+</TABLE>
+        >]
+    }
+
+    // ========== PLAYSTYLE ==========
+    subgraph cluster_playstyle {
+        label="Playstyle Behavior"
+        style="rounded"
+        color="#6c757d"
+        fontsize=12
+        bgcolor="#f8f9fa"
+        node [shape=plaintext, fillcolor=white]
+
+        playstyle_table [label=<
+<TABLE BORDER="1" CELLBORDER="1" CELLSPACING="0" CELLPADDING="6">
+  <TR>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Playstyle</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Early Invasion</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Late Invasion</B></FONT></TD>
+    <TD BGCOLOR="#343a40"><FONT COLOR="white"><B>Rage Priority</B></FONT></TD>
+  </TR>
+  <TR><TD BGCOLOR="#f5c6cb">INVASION</TD><TD>2-step aggressive</TD><TD>Always try</TD><TD>Build threat</TD></TR>
+  <TR><TD BGCOLOR="#ffeeba">BALANCED</TD><TD>None</TD><TD>z4+ no base strat</TD><TD>When ahead</TD></TR>
+  <TR><TD BGCOLOR="#d4edda">COUNTER</TD><TD>None</TD><TD>Win only</TD><TD>When ahead</TD></TR>
+</TABLE>
+        >]
+    }
+
+    // ========== LEGEND ==========
+    subgraph cluster_legend {
+        label="Legend"
+        style="rounded"
+        color="#6c757d"
+        fontsize=12
+        bgcolor="#f8f9fa"
+        node [shape=plaintext, fillcolor=white]
+
+        legend [label=<
+<TABLE BORDER="0" CELLBORDER="0" CELLSPACING="4" CELLPADDING="4">
+  <TR><TD BGCOLOR="#28a745"><FONT COLOR="white"> Win action </FONT></TD>
+      <TD BGCOLOR="#cce5ff"> Combo / Key action </TD>
+      <TD BGCOLOR="#d4edda"> Normal play </TD></TR>
+  <TR><TD BGCOLOR="#ffeeba"> Conditional </TD>
+      <TD BGCOLOR="#f8d7da"> Pass / Fallback </TD>
+      <TD BGCOLOR="#e83e8c"><FONT COLOR="white"> Combo execution </FONT></TD></TR>
+</TABLE>
+        >]
+    }
+}
