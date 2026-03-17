@@ -177,92 +177,63 @@ func should_suppress_invasion(plan: Dictionary, player: PlayerState, opponent: P
 	var opp_z := opponent.monster_zone
 	var has_cr: bool = plan.get("counter_retreat_path", false)
 
-	# Counter-bait window: opponent at z7+ and bot at z5-7 with counter-retreat path.
-	# ALLOW invasion — we want to reach z6-7 and get countered on purpose.
-	if has_cr and opp_z >= 7 and mz >= 5 and mz <= 7:
+	if not has_cr:
+		return false
+
+	# Counter-bait window: opponent at z7+ and bot at z5-7.
+	# ALLOW invasion — we want to reach z6-7 and get countered.
+	if opp_z >= 7 and mz >= 5 and mz <= 7:
 		return false
 
 	# Full state at z6-7: allow invasion for execution
 	if plan.get("state") == "full" and mz >= 6 and mz <= 7:
 		return false
 
-	# Shin combo wants to slow play and build board until setup is ready.
-	# Suppress early invasion when combo has pieces — play battle cards first.
-	if has_cr:
-		# Don't rush ahead of opponent
-		if mz >= opp_z + 2:
-			return true
-		# At z5+: only invade for counter-bait (handled above), not aggressively
-		if mz >= 5 and opp_z < 7:
-			return true
-
-	# Counter-retreat strategy for advance-to-6 card
-	var adv6_idx: int = plan.get("advance_to_6_idx", -1)
-	if adv6_idx >= 0 and adv6_idx < player.hand.size():
-		var adv6_card: Dictionary = player.hand[adv6_idx]
-		if adv6_card.get("card_type") == CardEnums.CardType.STRATEGY:
-			var strat_rank: int = adv6_card.get("rank", 99)
-			if mz >= 5 and mz <= 7:
-				var retreat_zone: int = ActionHandler.get_counter_retreat_zone(mz + 1)
-				if retreat_zone >= strat_rank:
-					return false
-
-	# Both at zone 1: suppress (no info yet)
-	if opp_z <= 1 and mz <= 1:
+	# Tempo control: pace-match the opponent tightly.
+	# Never invade more than 1 zone ahead of opponent.
+	if mz >= opp_z + 1:
 		return true
+
+	# At z5+: only invade for counter-bait (handled above), not aggressively
+	if mz >= 5 and opp_z < 7:
+		return true
+
 	return false
 
 
 func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: PlayerState) -> Dictionary:
 	var pref := {"preferred_steps": 0, "max_zone": -1, "target_zone": -1}
 	var mz := player.monster_zone
-	var has_adv6: bool = plan.get("advance_to_6_idx", -1) >= 0
+	var opp_z := opponent.monster_zone
 	var has_cr: bool = plan.get("counter_retreat_path", false)
 
-	# Shin combo: never invade past z7 unless we have overwhelming threat.
-	# Ending a turn at z7 → end-phase advances to z8, which is a bad position
-	# unless we can push through z8 with 35k+ threat advantage.
-	if has_cr:
-		var threat_surplus: int = _get_threat_surplus(player, opponent)
-		if threat_surplus >= 35000:
-			pref["max_zone"] = -1  # Overwhelming advantage, no cap
-		else:
-			pref["max_zone"] = 7  # Cap at z7 — avoid ending at z8
-
-	# Counter-bait: opponent at z7+ and we have counter-retreat path.
-	# Invade to z6-7 to GET countered — rank-up advances opponent and clears z8.
-	if has_cr and opponent.monster_zone >= 7 and mz >= 5:
-		pref["target_zone"] = mini(mz + 1, 7)  # Cap target at z7
+	if not has_cr:
 		return pref
 
-	if plan.get("state") == "full" and mz >= 6:
-		# Full combo at zone 6+: use the max_zone already set above
+	# Shin combo invasion rules:
+	# 1. Save 2-step invasion cards for the win — use 1-step for positioning
+	# 2. Never invade past z7 unless overwhelming threat (35k+ surplus)
+	# 3. Pace-match: don't invade past opponent's zone + 1
+	# 4. Counter-bait at z6-7 only when opponent is at z7+
+
+	var threat_surplus: int = _get_threat_surplus(player, opponent)
+	if threat_surplus >= 35000:
+		pref["max_zone"] = -1
+	else:
+		# Cap at opponent zone + 1 or z7, whichever is lower
+		pref["max_zone"] = mini(opp_z + 1, 7)
+
+	# Always prefer 1-step to conserve 2-step cards for the win
+	pref["preferred_steps"] = 1
+
+	# Counter-bait: opponent at z7+ → invade to z6-7 to get countered
+	if opp_z >= 7 and mz >= 5 and mz <= 7:
+		pref["target_zone"] = mini(mz + 1, 7)
 		return pref
 
-	if mz <= 3 and has_adv6:
-		# Early zones with advance-to-6 card: reach zone 4 where rank-4 strategy becomes playable
-		pref["target_zone"] = 4
-		pref["preferred_steps"] = 2 if mz <= 2 else 1
-	elif mz >= 4 and mz <= 5 and has_adv6:
-		# Mid zones with advance-to-6 card: reach zone 6, don't overshoot
-		pref["target_zone"] = 6
-		pref["max_zone"] = 6
-		pref["preferred_steps"] = 2 if mz == 4 else 1
-	elif mz >= 5 and mz <= 6 and has_adv6:
-		# Check counter-retreat setup: invade to z7 → counter retreat to z4 enables strategy
-		var adv6_idx: int = plan.get("advance_to_6_idx", -1)
-		if adv6_idx >= 0 and adv6_idx < player.hand.size():
-			var adv6_card: Dictionary = player.hand[adv6_idx]
-			if adv6_card.get("card_type") == CardEnums.CardType.STRATEGY:
-				var next_zone: int = mz + 1
-				var retreat_zone: int = ActionHandler.get_counter_retreat_zone(next_zone)
-				var strat_rank: int = adv6_card.get("rank", 99)
-				if retreat_zone >= strat_rank:
-					pref["target_zone"] = 7
-					pref["preferred_steps"] = 1
-	elif mz >= 7:
-		# At z7+: invade aggressively
-		pref["preferred_steps"] = 0  # any
+	# Positioning: stay within 1 zone of opponent
+	if mz < opp_z:
+		pref["target_zone"] = mini(mz + 1, opp_z)
 
 	return pref
 
@@ -316,8 +287,14 @@ func get_execution_action(plan: Dictionary, valid_actions: Array,
 		return []
 
 	var mz := player.monster_zone
+	var opp_z := opponent.monster_zone
 
-	# Step 1: Get to zone 6 — play advance-to-6 card
+	# Don't execute until opponent is in position.
+	# Opponent at z6+ (about to reach z7) or already has a card in z8 = go time.
+	if opp_z < 6 and not opponent.zone_has_battle_card(7):
+		return []
+
+	# Step 1: Get to zone 6 — play advance-to-6 card (only when below z6)
 	if mz < 6:
 		var adv6_idx: int = plan.get("advance_to_6_idx", -1)
 		if adv6_idx >= 0:

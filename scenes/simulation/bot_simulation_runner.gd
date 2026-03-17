@@ -126,6 +126,10 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 
 func _record_result(winner_id: int, reason: String) -> void:
 	var gs: GameState = _current_turn_manager.game_state
+	# Snapshot final state into combo stats
+	for i in range(2):
+		_current_bots[i].combo_stats["final_rank"] = gs.players[i].current_monster.get("rank", 0)
+		_current_bots[i].combo_stats["final_zone"] = gs.players[i].monster_zone
 	var result := {
 		"winner": winner_id,
 		"reason": reason,
@@ -134,6 +138,7 @@ func _record_result(winner_id: int, reason: String) -> void:
 		"p2_zone": gs.players[1].monster_zone,
 		"p1_combo_stats": _current_bots[0].combo_stats.duplicate(),
 		"p2_combo_stats": _current_bots[1].combo_stats.duplicate(),
+		"p1_combo_log": _current_bots[0].combo_log.duplicate(),
 	}
 	_results.append(result)
 	_games_completed += 1
@@ -200,3 +205,18 @@ func _print_summary() -> void:
 	print("Win reasons:")
 	for key in reasons:
 		print("  %s: %d" % [key, reasons[key]])
+
+	# Per-game combo diagnostics
+	print("")
+	print("=== Per-Game Combo Log (P1) ===")
+	for i in range(_results.size()):
+		var r: Dictionary = _results[i]
+		var winner_str: String = "P1 WIN" if r.winner == 0 else "P2 WIN"
+		var cs: Dictionary = r.p1_combo_stats
+		var log: Array = r.get("p1_combo_log", [])
+		print("Game %d: %s (%s) | T%d z%d r%d | full=%d exec=%d viab=%d" % [
+			i + 1, winner_str, r.reason,
+			r.turns, r.p1_zone, cs.get("final_rank", 0),
+			cs.get("full", 0), cs.get("executed", 0), cs.get("max_viability", 0)])
+		for entry in log:
+			print("  %s" % entry)

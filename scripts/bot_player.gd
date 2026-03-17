@@ -34,7 +34,12 @@ var playstyle: Playstyle = Playstyle.BALANCED
 # Combo system — detects multi-card win paths, protects pieces, boosts scores.
 var _combos: Array[BotCombo] = []
 var _active_combo_plan: Dictionary = {}
-var combo_stats: Dictionary = {"detected": 0, "full": 0, "partial": 0, "executed": 0}
+var combo_stats: Dictionary = {
+	"detected": 0, "full": 0, "partial": 0, "executed": 0,
+	"max_viability": 0,
+}
+## Key moment log — array of strings describing game state at critical decisions.
+var combo_log: Array[String] = []
 
 var game_state: GameState
 var rules_engine: RulesEngine
@@ -222,8 +227,13 @@ func _decide_main_action(valid_actions: Array) -> Array:
 			_active_combo_plan.get("state", "?"),
 			_active_combo_plan.get("viability", 0)])
 		combo_stats["detected"] += 1
+		var viability: int = _active_combo_plan.get("viability", 0)
+		if viability > combo_stats["max_viability"]:
+			combo_stats["max_viability"] = viability
 		if _active_combo_plan.get("state") == "full":
 			combo_stats["full"] += 1
+			if combo_stats["full"] == 1:
+				_combo_log_state("FIRST_FULL")
 		elif _active_combo_plan.get("state") == "partial":
 			combo_stats["partial"] += 1
 
@@ -266,6 +276,7 @@ func _decide_main_action(valid_actions: Array) -> Array:
 		var combo_exec := _get_combo_execution_action(valid_actions, player, opponent)
 		if not combo_exec.is_empty():
 			combo_stats["executed"] += 1
+			_combo_log_state("EXEC_%s" % CardEnums.ActionType.keys()[combo_exec[0]])
 			return combo_exec
 
 	# 3. Aggressive: INVASION playstyle tries to invade early
@@ -290,6 +301,7 @@ func _decide_main_action(valid_actions: Array) -> Array:
 	if combo_cycling and CardEnums.ActionType.GAIN_RAGE in valid_actions:
 		var rage_result := _try_gain_rage(player)
 		if not rage_result.is_empty():
+			_combo_log_state("CYCLE")
 			return rage_result
 
 	# 5. When ahead on CP, gain rage early to build threat before playing cards
@@ -842,6 +854,31 @@ func _get_crush_zone_indices(turns: int = 1) -> Array[int]:
 			break
 		crush_zones.append(zone_num - 1)  # Convert to 0-indexed
 	return crush_zones
+
+
+func _combo_log_state(event: String) -> void:
+	## Log a game state snapshot at a key combo moment.
+	var player := game_state.players[bot_player_id]
+	var opponent := game_state.players[1 - bot_player_id]
+	var cp: int = player.get_total_counter_power()
+	cp += effect_handler.get_counter_power_modifier(player.player_id)
+	var threat: int = player.get_threat_level()
+	threat += effect_handler.get_threat_level_modifier(player.player_id)
+	var opp_threat: int = opponent.get_threat_level()
+	opp_threat += effect_handler.get_threat_level_modifier(opponent.player_id)
+	var opp_cp: int = opponent.get_total_counter_power()
+	opp_cp += effect_handler.get_counter_power_modifier(opponent.player_id)
+	var strats: int = 0
+	for card in player.hand:
+		if card.get("card_type") == CardEnums.CardType.STRATEGY:
+			strats += 1
+	combo_log.append("T%d %s | z%d(r%d) hand=%d strats=%d rage=%d CP=%d threat=%d | opp z%d CP=%d threat=%d | combo=%s viab=%d" % [
+		game_state.turn_number, event,
+		player.monster_zone, player.current_monster.get("rank", 0),
+		player.hand.size(), strats, player.rage, cp, threat,
+		opponent.monster_zone, opp_cp, opp_threat,
+		_active_combo_plan.get("state", "none"),
+		_active_combo_plan.get("viability", 0)])
 
 
 func get_cp_gap() -> int:
@@ -1455,6 +1492,7 @@ func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], v
 	if player_id != bot_player_id:
 		return
 	await _delay()
+	_combo_log_state("RANKUP")
 	var best := _score_rankup_candidates(monsters, valid_indices)
 	action_handler.resolve_monster_rankup(best)
 
