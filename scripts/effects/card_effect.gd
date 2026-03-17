@@ -362,6 +362,23 @@ func get_bot_max_advance_zone(_owner: PlayerState, _opponent: PlayerState) -> in
 	return -1
 
 
+func get_bot_advance_reliability(_owner: PlayerState, _opponent: PlayerState) -> int:
+	## Return how reliably this card advances the monster (0-100).
+	## 100 = guaranteed, 50 = conditional/RNG, 0 = very unlikely.
+	## May factor in current zone — e.g. a card that only works from zone 4+
+	## is less reliable when the monster could be pushed back to zone 3.
+	## Used by combo system to prefer reliable pieces.
+	return 50
+
+
+func get_bot_effect_costs() -> Array[Dictionary]:
+	## Return the hand discard costs required for this card's effect to fire.
+	## Each entry: {"card_type": CardEnums.CardType, "count": int}
+	## Empty array = no discard cost. Used by combo system to verify effect
+	## costs don't consume other combo pieces.
+	return []
+
+
 ## Bot fulfill methods — per-trigger activation checks.
 ## Override in effect scripts to declare when a specific trigger can't fire.
 ## The bot checks these to skip tag scoring when no trigger can fulfill.

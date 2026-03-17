@@ -129,6 +129,9 @@ var use_activation_check: bool = true
 var unfulfilled_trigger_penalty: int = 20
 var unfulfilled_destroy_penalty: int = 40
 
+# Combos — list of combo names to enable (e.g., ["shin"])
+var enabled_combos: Array[String] = []
+
 # Deck analysis
 var playstyle_threshold: float = 0.6
 
@@ -212,6 +215,8 @@ static func hard() -> BotConfig:
 	# Aggressive invasion
 	c.early_invasion_zone_threshold = 6
 	c.zone_6_two_step_chance = 0.75
+	# Combos
+	c.enabled_combos = ["shin"]
 	return c
 
 
