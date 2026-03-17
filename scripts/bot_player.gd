@@ -279,11 +279,13 @@ func _decide_main_action(valid_actions: Array) -> Array:
 			_combo_log_state("EXEC_%s" % CardEnums.ActionType.keys()[combo_exec[0]])
 			return combo_exec
 
-	# 3. Aggressive: INVASION playstyle tries to invade early
-	#    Combo invasion-excludes only apply in full state (partial doesn't block invasion).
+	# 3. Aggressive: INVASION playstyle tries to invade early with 2-step cards.
+	#    Skip when combo prefers 1-step (saves 2-step cards for the win).
 	var combo_inv_excludes := _get_combo_invasion_excludes()
 	var combo_suppress := _should_combo_suppress_invasion(player, opponent)
-	if config.use_early_invasion and playstyle == Playstyle.INVASION:
+	var combo_pref := _get_combo_invasion_preference()
+	var combo_prefers_1step: bool = combo_pref.get("preferred_steps", 0) == 1
+	if config.use_early_invasion and playstyle == Playstyle.INVASION and not combo_prefers_1step:
 		if CardEnums.ActionType.INVADE in valid_actions:
 			if not combo_suppress:
 				if player.monster_zone <= config.early_invasion_zone_threshold \

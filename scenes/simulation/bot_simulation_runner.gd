@@ -106,7 +106,7 @@ func _start_next_game() -> void:
 	_current_turn_manager.turn_started.connect(_on_turn_started)
 
 	_game_running = true
-	_current_turn_manager.start_game(0)
+	_current_turn_manager.start_game(_games_completed % 2)  # Alternate starting player
 
 
 func _on_turn_started(_player_id: int) -> void:
