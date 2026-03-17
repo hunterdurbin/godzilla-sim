@@ -7,7 +7,7 @@ extends Node
 @export var p1_difficulty: BotConfig.Difficulty = BotConfig.Difficulty.HARD
 @export var p2_difficulty: BotConfig.Difficulty = BotConfig.Difficulty.NORMAL
 @export var p1_deck_name: String = "shin (Ian)"
-@export var p2_deck_name: String = "ESD02 Starter"
+@export var p2_deck_name: String = "03 - Mothra"
 @export var base_seed: int = 0
 
 var _games_completed: int = 0
@@ -61,7 +61,7 @@ func _start_next_game() -> void:
 	bot1.turn_manager = _current_turn_manager
 	bot1.action_handler = _current_turn_manager.action_handler
 	bot1.effect_handler = _current_turn_manager.action_handler.effect_handler
-	bot1.scene_tree = get_tree()  # Needed for async signal timing
+	bot1.scene_tree = get_tree() # Needed for async signal timing
 
 	var bot2 := BotPlayer.new()
 	bot2.config = BotConfig.from_difficulty(p2_difficulty)
@@ -106,7 +106,7 @@ func _start_next_game() -> void:
 	_current_turn_manager.turn_started.connect(_on_turn_started)
 
 	_game_running = true
-	_current_turn_manager.start_game(_games_completed % 2)  # Alternate starting player
+	_current_turn_manager.start_game(_games_completed % 2) # Alternate starting player
 
 
 func _on_turn_started(_player_id: int) -> void:
