@@ -20,6 +20,35 @@ func _init() -> void:
 	partial_penalty = 100
 
 
+func is_deck_compatible(player: PlayerState, bot) -> bool:
+	## Check if the deck has the core shin combo pieces in main deck + hand:
+	## 1. "advances_self" card with max_zone >= 7 (advancement to z7+)
+	## 2. "advances_self" card with max_zone >= 6 (advance-to-6)
+	## 3. Card with invasion_icon >= 2 (2-step invasion for the win)
+	var effects: EffectHandler = bot.effect_handler
+	var has_advancement := false
+	var has_advance_to_6 := false
+	var has_2step_invasion := false
+
+	var all_cards: Array[Dictionary] = []
+	all_cards.append_array(player.hand)
+	all_cards.append_array(player.main_deck)
+	for card in all_cards:
+		if card.get("invasion_icon", 0) >= 2:
+			has_2step_invasion = true
+		var effect := effects.get_effect(card)
+		if effect and "advances_self" in effect.get_bot_tags():
+			var max_zone: int = effect.get_bot_max_advance_zone(player, player)
+			if max_zone == -1 or max_zone >= 7:
+				has_advancement = true
+			if max_zone == -1 or max_zone >= 6:
+				has_advance_to_6 = true
+		if has_advancement and has_advance_to_6 and has_2step_invasion:
+			return true
+
+	return has_advancement and has_advance_to_6 and has_2step_invasion
+
+
 func check(player: PlayerState, opponent: PlayerState, bot) -> Dictionary:
 	# Rank 4+: counter-retreat can't reach rank 3 anymore, combo is done.
 	# Switch to normal counter/invasion play.

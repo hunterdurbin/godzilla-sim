@@ -51,13 +51,19 @@ var scene_tree: SceneTree
 
 func init_combos() -> void:
 	## Initialize combo detectors based on difficulty config. Call after game setup.
+	## Only enables combos if the deck has the required pieces.
 	_combos.clear()
+	var player := game_state.players[bot_player_id]
 	for combo_name in config.enabled_combos:
 		match combo_name:
 			"shin":
 				var shin := BotComboShin.new()
-				shin.enabled = true
-				_combos.append(shin)
+				if shin.is_deck_compatible(player, self):
+					shin.enabled = true
+					_combos.append(shin)
+					print("[Bot] Shin combo enabled — deck has counter-retreat path")
+				else:
+					print("[Bot] Shin combo skipped — deck lacks key pieces")
 
 
 func analyze_deck() -> void:
