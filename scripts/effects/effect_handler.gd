@@ -392,12 +392,24 @@ func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) -> Array:
 	## Collect crush and revenge entries for deferred resolution after movement.
 	## These entries use skip_active_check since the card is already in the discard pile.
+	## When a card has both on_crush and on_revenge, they are merged into a single entry
+	## so the card only appears once in standby choice prompts.
 	var entries: Array = []
-	if has_trigger(card_data, "on_crush"):
+	var has_crush := has_trigger(card_data, "on_crush")
+	var has_revenge := has_trigger(card_data, "on_revenge")
+	if has_crush and has_revenge:
+		var effect := get_effect(card_data)
+		var ctx := _build_context(player_id, card_data)
+		var combined_cb := func():
+			await effect.on_crush(ctx)
+			log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
+			await effect.on_revenge(ctx)
+		entries.append({"player_id": player_id, "card_data": card_data, "callback": combined_cb, "skip_active_check": true})
+	elif has_crush:
 		var effect := get_effect(card_data)
 		var ctx := _build_context(player_id, card_data)
 		entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_crush.bind(ctx), "skip_active_check": true})
-	if has_trigger(card_data, "on_revenge"):
+	elif has_revenge:
 		var effect := get_effect(card_data)
 		var ctx := _build_context(player_id, card_data)
 		var revenge_cb := func():
