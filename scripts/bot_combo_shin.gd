@@ -280,7 +280,9 @@ func adjust_card_score(plan: Dictionary, hand_idx: int, base_score: int,
 
 func get_execution_action(plan: Dictionary, valid_actions: Array,
 		player: PlayerState, opponent: PlayerState, bot) -> Array:
-	# Only sequence when all key pieces are in hand
+	# Only sequence when combo is viable and all key pieces are in hand
+	if plan.get("viability", 0) <= 0:
+		return []
 	var invade_idx: int = plan.get("invade_idx", -1)
 	var adv_idx: int = plan.get("advancement_idx", -1)
 	if invade_idx < 0 or adv_idx < 0:
@@ -288,6 +290,10 @@ func get_execution_action(plan: Dictionary, valid_actions: Array,
 
 	var mz := player.monster_zone
 	var opp_z := opponent.monster_zone
+
+	# Don't execute past z7 — z8 is past the combo's effective zone
+	if mz >= 8:
+		return []
 
 	# Don't execute until opponent is in position.
 	# Opponent at z6+ (about to reach z7) or already has a card in z8 = go time.
