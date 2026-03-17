@@ -629,7 +629,7 @@ func _ready() -> void:
 	sort_hand_button.pressed.connect(_on_sort_hand_pressed)
 	opponent_hand_toggle_button.pressed.connect(_on_opponent_hand_toggle_pressed)
 	opponent_sort_hand_button.pressed.connect(_on_opponent_sort_hand_pressed)
-	opponent_hand_button_stack.visible = not is_multiplayer_game and not is_bot_game
+	opponent_hand_button_stack.visible = not is_multiplayer_game
 
 	# Bot card visibility toggle
 	if is_bot_game:
@@ -960,7 +960,6 @@ func _setup_bot_visibility_toggle() -> void:
 	_bot_visibility_button.text = "Show Bot Cards"
 	_bot_visibility_button.toggle_mode = true
 	_bot_visibility_button.custom_minimum_size = Vector2(140, 36)
-	_bot_visibility_button.position = Vector2(8, 8)
 	_bot_visibility_button.toggled.connect(_on_bot_visibility_toggled)
 	add_child(_bot_visibility_button)
 
@@ -1238,6 +1237,17 @@ func _position_hands() -> void:
 		var top_pad := maxf(40.0, _safe_top + 24.0)
 		opp_stack.offset_top = top_pad
 		opp_stack.offset_bottom = top_pad + stack_h
+
+		# Bot visibility button below opponent hand stack
+		if _bot_visibility_button:
+			_bot_visibility_button.anchor_left = 0.0
+			_bot_visibility_button.anchor_right = 0.0
+			_bot_visibility_button.anchor_top = 0.0
+			_bot_visibility_button.anchor_bottom = 0.0
+			_bot_visibility_button.offset_left = opp_stack.offset_left
+			_bot_visibility_button.offset_right = opp_stack.offset_right
+			_bot_visibility_button.offset_top = top_pad + stack_h + 4.0
+			_bot_visibility_button.offset_bottom = top_pad + stack_h + 4.0 + 36.0
 
 
 func _notification(what: int) -> void:
@@ -2165,6 +2175,19 @@ func _apply_desktop_hand_button_stacks() -> void:
 	opponent_sort_hand_button.offset_right = - right_margin
 	opponent_sort_hand_button.offset_top = 10.0 + btn_h + gap
 	opponent_sort_hand_button.offset_bottom = 10.0 + btn_h * 2 + gap
+
+	# Bot visibility button below sort button
+	if _bot_visibility_button:
+		_bot_visibility_button.anchor_left = 1.0
+		_bot_visibility_button.anchor_right = 1.0
+		_bot_visibility_button.anchor_top = 0.0
+		_bot_visibility_button.anchor_bottom = 0.0
+		var bot_top := 10.0 + btn_h * 2 + gap * 2
+		_bot_visibility_button.offset_left = - (right_margin + btn_w)
+		_bot_visibility_button.offset_right = - right_margin
+		_bot_visibility_button.offset_top = bot_top
+		_bot_visibility_button.offset_bottom = bot_top + btn_h
+		_bot_visibility_button.custom_minimum_size = Vector2.ZERO
 
 
 func _apply_mobile_hand_button_stacks() -> void:
