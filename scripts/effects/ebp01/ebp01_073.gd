@@ -53,5 +53,4 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 	ctx.owner.zones_changed.emit()
 
 	# Set opponent's rage to 0
-	ctx.opponent.rage = 0
-	ctx.opponent.rage_changed.emit(0)
+	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, ctx.opponent.rage)

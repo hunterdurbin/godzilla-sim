@@ -526,6 +526,49 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 	await _resolve_standby_entries(entries)
 
 
+func is_rage_reduction_prevented(player_id: int) -> bool:
+	## Check if a player's rage reduction is prevented by any active effect.
+	var player := game_state.players[player_id]
+
+	# Check monster card
+	var me := get_effect(player.current_monster)
+	if me and me.prevents_rage_reduction(_build_context(player_id, player.current_monster)):
+		return true
+
+	# Check battle cards in zones (top card only)
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze and ze.prevents_rage_reduction(_build_context(player_id, zone_card)):
+				return true
+
+	# Check strategy cards
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var se := get_effect(sz_card)
+			if se and se.prevents_rage_reduction(_build_context(player_id, sz_card)):
+				return true
+
+	return false
+
+
+func reduce_rage(player_id: int, amount: int) -> int:
+	## Reduce a player's rage by amount. Returns actual amount reduced.
+	## Respects rage reduction prevention effects (e.g. EBP03-004).
+	var player := game_state.players[player_id]
+	if player.rage <= 0 or amount <= 0:
+		return 0
+	if is_rage_reduction_prevented(player_id):
+		return 0
+	var old_rage: int = player.rage
+	var actual: int = mini(amount, player.rage)
+	player.rage -= actual
+	player.rage_changed.emit(player.rage)
+	await trigger_rage_changed(player_id, old_rage, player.rage)
+	return actual
+
+
 func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> void:
 	## Trigger monster advance on all active cards for this player.
 	## Collects all applicable effects, then resolves with rule action checks between each.

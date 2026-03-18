@@ -21,6 +21,4 @@ func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> boo
 
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.rage >= 5:
-		var reduction: int = mini(ctx.opponent.rage, 3)
-		ctx.opponent.rage -= reduction
-		ctx.opponent.rage_changed.emit(ctx.opponent.rage)
+		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 3)

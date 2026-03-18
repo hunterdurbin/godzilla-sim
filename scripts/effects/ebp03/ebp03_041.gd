@@ -33,11 +33,7 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	# Reduce opponent rage by 2
-	if ctx.opponent.rage > 0:
-		var old_rage: int = ctx.opponent.rage
-		ctx.opponent.rage = maxi(0, ctx.opponent.rage - 2)
-		ctx.opponent.rage_changed.emit(ctx.opponent.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.opponent.player_id, old_rage, ctx.opponent.rage)
+	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
 
 
 func on_would_be_destroyed(_ctx: EffectContext) -> bool:

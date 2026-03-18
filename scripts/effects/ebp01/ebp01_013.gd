@@ -37,6 +37,5 @@ func on_enter(ctx: EffectContext) -> void:
 	for i in range(8):
 		if ctx.owner.zone_has_cards(i):
 			battle_count += 1
-	if battle_count >= 4 and ctx.opponent.rage > 0:
-		ctx.opponent.rage -= 1
-		ctx.opponent.rage_changed.emit(ctx.opponent.rage)
+	if battle_count >= 4:
+		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

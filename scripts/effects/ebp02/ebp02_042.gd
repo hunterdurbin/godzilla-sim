@@ -28,11 +28,7 @@ func on_enter(ctx: EffectContext) -> void:
 		true)
 
 	if not selected.is_empty():
-		if ctx.opponent.rage > 0:
-			var old_rage: int = ctx.opponent.rage
-			ctx.opponent.rage = max(0, ctx.opponent.rage - 2)
-			ctx.opponent.rage_changed.emit(ctx.opponent.rage)
-			await ctx.effect_handler.trigger_rage_changed(ctx.opponent.player_id, old_rage, ctx.opponent.rage)
+		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
 
 
 func get_phase_start_filter() -> Dictionary:

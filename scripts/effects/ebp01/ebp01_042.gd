@@ -52,9 +52,8 @@ func on_enter(ctx: EffectContext) -> void:
 		"Discard a card to reduce opponent's Rage by 1:",
 		true # allow_skip
 	)
-	if not discarded.is_empty() and ctx.opponent.rage > 0:
-		ctx.opponent.rage -= 1
-		ctx.opponent.rage_changed.emit(ctx.opponent.rage)
+	if not discarded.is_empty():
+		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:

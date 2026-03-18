@@ -24,10 +24,7 @@ func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> v
 	if discarded_card.get("card_type") != CardEnums.CardType.BATTLE:
 		return
 	if ctx.opponent.rage > 0:
-		var old_rage: int = ctx.opponent.rage
-		ctx.opponent.rage -= 1
-		ctx.opponent.rage_changed.emit(ctx.opponent.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.opponent.player_id, old_rage, ctx.opponent.rage)
+		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
 	else:
 		var old_rage: int = ctx.owner.rage
 		ctx.owner.rage += 1
