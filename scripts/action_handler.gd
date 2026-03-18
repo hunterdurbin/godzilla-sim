@@ -291,6 +291,13 @@ func play_monster_from_effect(state: GameState, player_id: int, monster_card: Di
 	if not old_monster.is_empty():
 		player.monster_stack.push_front(old_monster)
 
+	# If a burst monster is active, the new monster buries it in the stack.
+	# Clear burst state so the burst card isn't discarded at end of turn.
+	if not player.burst_monster.is_empty():
+		player.burst_monster = {}
+		player.pre_burst_monster = {}
+
+	player.has_played_monster_this_turn = true
 	player.current_monster = monster_card
 	player.monster_deck.erase(monster_card)
 	monster_played.emit(player_id, old_monster, monster_card)
