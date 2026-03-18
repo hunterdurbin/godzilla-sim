@@ -55,10 +55,9 @@ func on_enter(ctx: EffectContext) -> void:
 			EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
 			ctx.owner.discard_changed.emit()
 
-		selected["played_from_effect"] = true
 		ctx.owner.push_zone_card(target_zone, selected)
 		ctx.owner.zones_changed.emit()
-		await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected)
+		await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected, true)
 
 		# Rule 5.11.1.3: must play to different zones if possible
 		valid_zones.erase(target_zone)

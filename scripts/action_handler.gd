@@ -269,7 +269,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 		monster_countered.emit(opponent.player_id, old_monster, m)
 		opponent.monster_changed.emit()
 		if effect_handler:
-			await effect_handler.trigger_enter(opponent.player_id, m)
+			await effect_handler.trigger_enter(opponent.player_id, m, true)
 	else:
 		# Opponent loses - can't find valid rank-up monster
 		state.game_over.emit(winner_player_id, "Victory through countering!")
@@ -296,7 +296,7 @@ func play_monster_from_effect(state: GameState, player_id: int, monster_card: Di
 	monster_played.emit(player_id, old_monster, monster_card)
 	player.monster_changed.emit()
 	if effect_handler:
-		await effect_handler.trigger_enter(player_id, monster_card)
+		await effect_handler.trigger_enter(player_id, monster_card, true)
 		await effect_handler.trigger_monster_played(player_id, old_monster, monster_card)
 
 

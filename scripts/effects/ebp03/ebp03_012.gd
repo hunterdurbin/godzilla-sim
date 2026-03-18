@@ -77,5 +77,5 @@ func on_enter(ctx: EffectContext) -> void:
 				ctx.owner.strategy_zones_changed.emit()
 			ctx.owner.discard_changed.emit()
 			# Trigger enter for the strategy card
-			await ctx.effect_handler.trigger_enter(ctx.owner.player_id, card)
+			await ctx.effect_handler.trigger_enter(ctx.owner.player_id, card, true)
 			break

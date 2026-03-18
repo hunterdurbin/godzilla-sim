@@ -82,5 +82,5 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 			ctx.owner.push_zone_card(dest, card)
 			ctx.owner.zones_changed.emit()
-			await ctx.effect_handler.trigger_enter(ctx.owner.player_id, card)
+			await ctx.effect_handler.trigger_enter(ctx.owner.player_id, card, true)
 			break

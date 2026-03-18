@@ -50,4 +50,4 @@ func on_enter(ctx: EffectContext) -> void:
 
 	ctx.owner.push_zone_card(target_zone, selected)
 	ctx.owner.zones_changed.emit()
-	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected)
+	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected, true)

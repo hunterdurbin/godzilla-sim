@@ -50,4 +50,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	# Play selected Chibi Godzilla to the zone this token was in
 	ctx.owner.push_zone_card(zone_idx, selected)
 	ctx.owner.zones_changed.emit()
-	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected)
+	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected, true)
