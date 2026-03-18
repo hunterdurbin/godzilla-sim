@@ -17,10 +17,4 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.opponent.rage > 0:
-		var old_rage: int = ctx.opponent.rage
-		ctx.opponent.rage -= 1
-		ctx.opponent.rage_changed.emit(ctx.opponent.rage)
-		if ctx.effect_handler:
-			await ctx.effect_handler.trigger_rage_changed(
-				ctx.opponent.player_id, old_rage, ctx.opponent.rage)
+	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

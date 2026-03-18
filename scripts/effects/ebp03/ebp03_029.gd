@@ -67,9 +67,4 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		2:
 			# Reduce each player's rage by 2
 			for pid in range(2):
-				var player := ctx.game_state.players[pid]
-				if player.rage > 0:
-					var old_rage: int = player.rage
-					player.rage = maxi(0, player.rage - 2)
-					player.rage_changed.emit(player.rage)
-					await ctx.effect_handler.trigger_rage_changed(pid, old_rage, player.rage)
+				await ctx.effect_handler.reduce_rage(pid, 2)

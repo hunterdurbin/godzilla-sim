@@ -34,8 +34,5 @@ func on_enter(ctx: EffectContext) -> void:
 			has_mechagodzilla = true
 			break
 
-	if has_mechagodzilla and ctx.opponent.rage > 0:
-		var old_rage: int = ctx.opponent.rage
-		ctx.opponent.rage -= 1
-		ctx.opponent.rage_changed.emit(ctx.opponent.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.opponent.player_id, old_rage, ctx.opponent.rage)
+	if has_mechagodzilla:
+		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

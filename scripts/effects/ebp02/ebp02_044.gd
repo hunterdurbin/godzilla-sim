@@ -19,11 +19,8 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	if ctx.opponent.monster_zone >= 6 and ctx.opponent.rage > 0:
-		var old_rage: int = ctx.opponent.rage
-		ctx.opponent.rage = max(0, ctx.opponent.rage - 2)
-		ctx.opponent.rage_changed.emit(ctx.opponent.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.opponent.player_id, old_rage, ctx.opponent.rage)
+	if ctx.opponent.monster_zone >= 6:
+		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
 
 
 func get_phase_start_filter() -> Dictionary:

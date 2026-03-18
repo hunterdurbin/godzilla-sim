@@ -166,7 +166,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp03/ebp03_001.gd": ["get_phase_start_filter","on_phase_start","get_threat_level_modifier"],
 	"res://scripts/effects/ebp03/ebp03_002.gd": ["get_phase_start_filter","on_phase_start"],
 	"res://scripts/effects/ebp03/ebp03_003.gd": ["get_phase_start_filter","on_phase_start","get_burst_rank"],
-	"res://scripts/effects/ebp03/ebp03_004.gd": ["on_rage_changed","can_replace_invasion_cost"],
+	"res://scripts/effects/ebp03/ebp03_004.gd": ["prevents_rage_reduction","can_replace_invasion_cost"],
 	"res://scripts/effects/ebp03/ebp03_005.gd": ["get_phase_start_filter","on_phase_start","get_burst_rank"],
 	"res://scripts/effects/ebp03/ebp03_007.gd": ["on_when_invading"],
 	"res://scripts/effects/ebp03/ebp03_008.gd": ["on_enter","get_phase_start_filter","on_phase_start"],

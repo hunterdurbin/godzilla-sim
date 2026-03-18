@@ -37,8 +37,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if other_battle_count < 2:
 		return
 
-	if ctx.opponent.rage > 0:
-		var old_rage := ctx.opponent.rage
-		ctx.opponent.rage -= 1
-		ctx.opponent.rage_changed.emit(ctx.opponent.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.opponent.player_id, old_rage, ctx.opponent.rage)
+	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
