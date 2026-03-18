@@ -303,9 +303,12 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 
 # --- Trigger dispatchers ---
 
-func trigger_enter(player_id: int, card_data: Dictionary) -> void:
+func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = false) -> void:
 	## Trigger <Enter> effect on the card that just entered play.
+	## If from_effect is true, marks the card so enter effects know it wasn't played from hand.
 	## If inside standby resolution, defers the enter to the pending queue (10.4.3).
+	if from_effect:
+		card_data["played_from_effect"] = true
 	if not has_trigger(card_data, "on_enter"):
 		return
 	var effect := get_effect(card_data)
@@ -1393,10 +1396,9 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 	card_evolved.emit(player_id, selected, zone_idx)
 	# Mark as played through evolution for enter effects (e.g. ESD02-010)
 	selected["played_through_evolution"] = true
-	selected["played_from_effect"] = true
 	player.push_zone_card(zone_idx, selected)
 	player.zones_changed.emit()
-	await trigger_enter(player_id, selected)
+	await trigger_enter(player_id, selected, true)
 	return true
 
 
@@ -1615,7 +1617,7 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 
 	player.push_zone_card(zone_index, token_data)
 	player.zones_changed.emit()
-	await trigger_enter(player.player_id, token_data)
+	await trigger_enter(player.player_id, token_data, true)
 	# Tokens are treated as normal plays — trigger battle card played effects
 	# (but not considered played from hand).
 	if token_data.get("card_type") == CardEnums.CardType.BATTLE:
@@ -2228,7 +2230,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
-	await trigger_enter(player_id, card_data)
+	await trigger_enter(player_id, card_data, true)
 	return zone_idx
 
 

@@ -85,4 +85,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if not selected.is_empty():
 		ctx.owner.push_zone_card(chosen, selected)
 		ctx.owner.zones_changed.emit()
-		await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected)
+		await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected, true)

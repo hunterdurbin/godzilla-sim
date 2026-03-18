@@ -48,4 +48,4 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.owner.strategy_zones[sz_index] = selected
 	ctx.owner.strategy_zone_turn_placed[sz_index] = ctx.game_state.turn_number
 	ctx.owner.strategy_zones_changed.emit()
-	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected)
+	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected, true)

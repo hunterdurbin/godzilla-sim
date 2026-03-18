@@ -70,7 +70,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 		player.push_zone_card(target_zone, selected)
 		player.zones_changed.emit()
-		await ctx.effect_handler.trigger_enter(player.player_id, selected)
+		await ctx.effect_handler.trigger_enter(player.player_id, selected, true)
 
 		# Rule 5.11.1.3: must play to different zones if possible
 		valid_adjacent.erase(target_zone)

@@ -57,4 +57,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	# Play on top of this card in the same zone
 	ctx.owner.push_zone_card(zone_idx, found)
 	ctx.owner.zones_changed.emit()
-	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found)
+	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found, true)

@@ -54,6 +54,5 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.discard_changed.emit()
 
 	ctx.owner.push_zone_card(dest, found)
-	found["played_from_effect"] = true
 	ctx.owner.zones_changed.emit()
-	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found)
+	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found, true)
