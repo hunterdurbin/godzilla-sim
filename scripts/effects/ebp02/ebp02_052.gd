@@ -31,4 +31,4 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		return
 
 	# Place a Crystals token in an empty zone
-	await ctx.effect_handler.create_tokens_in_empty_zones(ctx.owner, "EBP02-T03", 1)
+	await ctx.effect_handler.create_tokens_in_zones(ctx.owner, "EBP02-T03", 1)

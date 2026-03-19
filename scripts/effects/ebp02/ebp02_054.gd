@@ -22,7 +22,7 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func on_enter(ctx: EffectContext) -> void:
-	await ctx.effect_handler.create_tokens_in_empty_zones(ctx.owner, "EBP02-T03", 2)
+	await ctx.effect_handler.create_tokens_in_zones(ctx.owner, "EBP02-T03", 2)
 
 
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:

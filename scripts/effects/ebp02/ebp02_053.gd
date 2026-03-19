@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	await ctx.effect_handler.create_tokens_in_empty_zones(ctx.owner, "EBP02-T03", 1)
+	await ctx.effect_handler.create_tokens_in_zones(ctx.owner, "EBP02-T03", 1)
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:

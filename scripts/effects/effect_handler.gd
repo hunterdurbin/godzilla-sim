@@ -1668,19 +1668,29 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	return true
 
 
-func create_tokens_in_empty_zones(player: PlayerState, token_id: String, count: int) -> int:
-	## Let the player select empty zones to place up to count tokens.
+func create_tokens_in_zones(player: PlayerState, token_id: String, count: int) -> int:
+	## Let the player select zones to place up to count tokens.
+	## Tokens can overload occupied zones. When placing multiple tokens from
+	## one effect, each must go to a different zone.
 	## Returns the number of tokens actually placed.
 	var placed: int = 0
+	var used_zones: Array[int] = []
 	for _i in range(count):
-		var empty := player.get_empty_zone_indices()
-		if empty.is_empty():
+		var valid: Array[int] = []
+		for i in range(8):
+			if i == player.monster_zone - 1:
+				continue
+			if i in used_zones:
+				continue
+			valid.append(i)
+		if valid.is_empty():
 			break
 		var chosen: int = await select_zone_target(
-			player.player_id, player.player_id, empty,
-			"Choose an empty zone for a token (%d remaining):" % (count - placed))
+			player.player_id, player.player_id, valid,
+			"Choose a zone for a token (%d remaining):" % (count - placed))
 		if chosen < 0:
 			break
+		used_zones.append(chosen)
 		if await create_token_in_zone(player, token_id, chosen):
 			placed += 1
 	return placed
