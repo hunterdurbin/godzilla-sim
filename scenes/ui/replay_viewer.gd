@@ -142,7 +142,8 @@ func _process(delta: float) -> void:
 	if not _auto_playing:
 		return
 	_auto_timer += delta
-	var interval: float = speed_slider.value
+	# Slider left=slow, right=fast; invert to get interval
+	var interval: float = speed_slider.max_value - speed_slider.value + speed_slider.min_value
 	if _auto_timer >= interval:
 		_auto_timer = 0.0
 		if _snapshot_index < _replay.snapshots.size() - 1:
@@ -188,6 +189,12 @@ func _render_snapshot(index: int) -> void:
 		var p2_name: String = _replay.player_names[1] if _replay.player_names.size() > 1 else "P2"
 		_sync_hand_display(p1_hand_grid, p1_hand_title, ps0.hand, p1_name)
 		_sync_hand_display(p2_hand_grid, p2_hand_title, ps1.hand, p2_name)
+
+		# Highlight active player's hand title
+		var active_color := Color(0.9, 0.7, 0.1, 1)
+		var inactive_color := Color(0.7, 0.7, 0.7, 1)
+		p1_hand_title.add_theme_color_override("font_color", active_color if current_pid == 0 else inactive_color)
+		p2_hand_title.add_theme_color_override("font_color", active_color if current_pid == 1 else inactive_color)
 
 	# Display accumulated log lines up to (and including) this snapshot
 	log_output.clear()
@@ -693,6 +700,34 @@ func _input(event: InputEvent) -> void:
 			_hide_gallery()
 			get_viewport().set_input_as_handled()
 			return
+
+	# Keyboard shortcuts for navigation
+	if not _replay or _replay.snapshots.is_empty():
+		return
+	if event is InputEventKey and event.pressed:
+		match event.keycode:
+			KEY_RIGHT:
+				if event.shift_pressed:
+					_on_next_turn_pressed()
+				else:
+					_on_next_pressed()
+				get_viewport().set_input_as_handled()
+			KEY_LEFT:
+				if event.shift_pressed:
+					_on_prev_turn_pressed()
+				else:
+					_on_prev_pressed()
+				get_viewport().set_input_as_handled()
+			KEY_SPACE:
+				if not event.echo:
+					_on_play_pause_pressed()
+				get_viewport().set_input_as_handled()
+			KEY_UP:
+				speed_slider.value = minf(speed_slider.max_value, speed_slider.value + speed_slider.step)
+				get_viewport().set_input_as_handled()
+			KEY_DOWN:
+				speed_slider.value = maxf(speed_slider.min_value, speed_slider.value - speed_slider.step)
+				get_viewport().set_input_as_handled()
 
 
 # --- Helpers ---
