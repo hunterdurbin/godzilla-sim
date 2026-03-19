@@ -8,6 +8,11 @@ var turn_manager: TurnManager # Only exists on host/solo
 const CardScript := preload("res://scenes/cards/card.gd")
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
+# Replay recording
+var replay_recorder: ReplayRecorder
+var _save_game_button: Button
+var _loaded_from_save: bool = false
+
 # Bot state
 var bot_player: BotPlayer
 var is_bot_game: bool = false
@@ -470,7 +475,7 @@ func _ready() -> void:
 
 	is_multiplayer_game = NetworkManager.is_multiplayer()
 	is_bot_game = NetworkManager.mode == NetworkManager.Mode.SOLO_BOT
-	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game else 0
+	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	_match_stacked_view = _match_stacked_view
 
 	# Wire hand CardManagers to PlayerBoards
@@ -484,16 +489,30 @@ func _ready() -> void:
 	_setup_settings_toggles()
 
 	if not is_multiplayer_game or NetworkManager.is_host():
-		# Solo v Bot: seed RNG for deterministic replays
+		# Seed RNG: use saved seed if loading, otherwise bot_seed for bot games
+		var loaded_seed: int = int(GameSerializer.pending_load.get("game_seed", -1))
+		if loaded_seed > 0:
+			NetworkManager.bot_seed = loaded_seed
+			print("[GameBoard._ready] Using saved game_seed=%d" % loaded_seed)
 		if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
 			_apply_bot_seed()
+		elif loaded_seed > 0:
+			# Non-bot mode but has a saved seed — apply it for consistency
+			seed(loaded_seed)
+			print("[GameBoard._ready] Seeded RNG with %d (non-bot mode)" % loaded_seed)
 
 		# Host / solo: create and run TurnManager
 		turn_manager = TurnManager.new()
-		turn_manager.setup(CardData)
+		if not GameSerializer.pending_load.is_empty():
+			turn_manager.setup_from_save(GameSerializer.pending_load)
+			_loaded_from_save = true
+			_first_player_id = GameSerializer.pending_load.get("first_player_id", 0)
+			GameSerializer.pending_load = {}
+		else:
+			turn_manager.setup(CardData)
 
 		# Set player names from settings
-		turn_manager.game_state.player_names[0] = GameSettings.player_name
+		turn_manager.game_state.player_names[local_player_id] = GameSettings.player_name
 		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
 		for i in range(2):
 			if i < _turn_tracker_headers.size():
@@ -541,6 +560,9 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 		turn_manager.action_handler.effect_handler.card_evolved.connect(_on_card_evolved)
 		turn_manager.action_handler.effect_handler.card_destroyed.connect(_on_card_destroyed)
+
+		# Set up replay recorder
+		_setup_replay_recorder()
 
 		# Set up bot player for Solo v Bot mode
 		if is_bot_game:
@@ -634,6 +656,10 @@ func _ready() -> void:
 	# Bot card visibility toggle
 	if is_bot_game:
 		_setup_bot_visibility_toggle()
+
+	# Save game button (solo/bot only)
+	if not is_multiplayer_game:
+		_setup_save_button()
 
 	# Connect discard view
 	player1_board.discard_clicked.connect(_on_discard_clicked)
@@ -845,6 +871,20 @@ func _update_all_setting_indicators() -> void:
 
 
 func _start_game() -> void:
+	# Loaded from save: skip first-player choice, jump to saved turn
+	if _loaded_from_save:
+		_loaded_from_save = false
+		_apply_gradients_and_sync()
+		SfxManager.play("game_setup")
+		var saved_pid: int = turn_manager.game_state.current_player_id
+		var saved_phase: CardEnums.GamePhase = turn_manager.game_state.current_phase
+		var saved_sub: int = turn_manager.game_state.current_sub_phase
+		# If already past main-phase resolve effects, skip to player actions.
+		# Otherwise run main-phase resolve effects from the start of the sub-phase.
+		var skip_effects: bool = saved_phase == CardEnums.GamePhase.MAIN and saved_sub >= 1
+		turn_manager.resume_to_main_phase(saved_pid, not skip_effects)
+		return
+
 	if is_bot_game:
 		# Solo v Bot: let the human choose who goes first
 		_first_player_chooser_id = 0
@@ -908,12 +948,35 @@ func _start_game() -> void:
 	turn_manager.start_game(_first_player_result)
 
 
+func _setup_replay_recorder() -> void:
+	replay_recorder = ReplayRecorder.new()
+	var seed_val: int = NetworkManager.bot_seed if NetworkManager.bot_seed >= 0 else 0
+	var mode_str: String
+	match NetworkManager.mode:
+		NetworkManager.Mode.SOLO: mode_str = "solo"
+		NetworkManager.Mode.SOLO_BOT: mode_str = "solo_bot"
+		NetworkManager.Mode.HOST, NetworkManager.Mode.CLIENT: mode_str = "lan"
+		NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT: mode_str = "online"
+		_: mode_str = "unknown"
+	var diff_str: String = BotConfig.Difficulty.keys()[NetworkManager.bot_difficulty] if is_bot_game else ""
+	var d_names: Array[String] = [
+		DecklistManager.get_player_deck_name(0),
+		DecklistManager.get_player_deck_name(1),
+	]
+	replay_recorder.start(turn_manager.game_state, seed_val, mode_str, diff_str, d_names, get_tree())
+	turn_manager.log_message.connect(replay_recorder.on_log_message)
+	turn_manager.sub_phase_changed.connect(replay_recorder.on_phase_boundary)
+
+
 func _apply_bot_seed() -> void:
 	var s: int = NetworkManager.bot_seed
+	print("[_apply_bot_seed] Entry: NetworkManager.bot_seed=%d, _bot_seed_was_explicit=%s" % [s, _bot_seed_was_explicit])
 	_bot_seed_was_explicit = s >= 0
 	if s < 0:
 		# Auto-generate a seed from the current unseeded RNG
 		s = randi()
+		print("[_apply_bot_seed] Auto-generated seed: %d" % s)
+	NetworkManager.bot_seed = s
 	seed(s)
 	print("[Bot] RNG seed: %d" % s)
 	_on_log_message("Seed: %d" % s)
@@ -969,6 +1032,48 @@ func _on_bot_visibility_toggled(toggled_on: bool) -> void:
 	_bot_visibility_button.text = "Hide Bot Cards" if toggled_on else "Show Bot Cards"
 	if player2_board:
 		player2_board.set_hand_face_down(not toggled_on)
+
+
+func _setup_save_button() -> void:
+	_save_game_button = Button.new()
+	_save_game_button.text = "Save Game"
+	_save_game_button.custom_minimum_size = Vector2(120, 36)
+	_save_game_button.add_theme_font_size_override("font_size", 14)
+	_save_game_button.pressed.connect(_on_save_game_pressed)
+	add_child(_save_game_button)
+	# Position below concede button
+	_save_game_button.position = Vector2(10, 90)
+
+
+func _on_save_game_pressed() -> void:
+	if not turn_manager or not turn_manager.game_state:
+		return
+	SfxManager.play("ui_click")
+	var mode_str: String
+	match NetworkManager.mode:
+		NetworkManager.Mode.SOLO: mode_str = "solo"
+		NetworkManager.Mode.SOLO_BOT: mode_str = "solo_bot"
+		_: mode_str = "solo"
+	var diff_str: String = BotConfig.Difficulty.keys()[NetworkManager.bot_difficulty] if is_bot_game else ""
+	var d_names: Array[String] = [
+		DecklistManager.get_player_deck_name(0),
+		DecklistManager.get_player_deck_name(1),
+	]
+	# Capture a seed from the current RNG state so loading this save produces
+	# deterministic bot behavior (the original seed is stale — RNG has advanced).
+	var save_seed: int = randi()
+	print("[Save] Capturing game_seed=%d for save file" % save_seed)
+	var data := GameSerializer.serialize_game_state(turn_manager.game_state, _first_player_id, mode_str, diff_str, d_names, save_seed)
+	var path := GameSerializer.save_game_to_file(data)
+	if not path.is_empty():
+		_save_game_button.text = "Saved!"
+		_save_game_button.disabled = true
+		# Re-enable after 2 seconds
+		get_tree().create_timer(2.0).timeout.connect(func():
+			if is_instance_valid(_save_game_button):
+				_save_game_button.text = "Save Game"
+				_save_game_button.disabled = false
+		)
 
 
 func _apply_gradients_and_sync() -> void:
@@ -2670,6 +2775,16 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 			_flush_broadcast()
 		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
 		_rpc_receive_game_ended.rpc(winner_id, reason)
+	# Save replay (host)
+	if replay_recorder:
+		replay_recorder.finish(winner_id, reason, _first_player_id)
+		replay_recorder.save()
+		# Send replay to client so they get a complete copy
+		if is_multiplayer_game and NetworkManager.is_host():
+			var replay_json := JSON.stringify(replay_recorder._replay.to_dict())
+			var compressed := replay_json.to_utf8_buffer().compress(FileAccess.COMPRESSION_GZIP)
+			print("[Replay] Sending replay to client (%d bytes compressed)" % compressed.size())
+			_rpc_receive_replay.rpc(compressed)
 	RpcLogger.print_summary()
 	_upload_stats(winner_id, reason, false)
 
@@ -2715,6 +2830,8 @@ func _on_state_changed() -> void:
 	if not _discard_selecting:
 		_update_hand_visibility(_get_current_pid())
 	_broadcast_state()
+	if replay_recorder:
+		replay_recorder.on_state_changed()
 
 
 func _on_log_message(text: String) -> void:
@@ -3044,12 +3161,24 @@ func _on_main_menu_pressed() -> void:
 	if _reconnect_overlay:
 		_reconnect_overlay.visible = false
 	if is_multiplayer_game:
-		if end_game_panel.visible and multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
-			RpcLogger.log_send("rematch_declined", 0)
-			_rpc_rematch_declined.rpc()
+		var connected := multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
+		if end_game_panel.visible:
+			# Game already over — notify rematch declined
+			if connected:
+				RpcLogger.log_send("rematch_declined", 0)
+				_rpc_rematch_declined.rpc()
+		elif connected and turn_manager and not turn_manager.is_game_over:
+			# Mid-game exit counts as concession
+			if NetworkManager.is_host():
+				var loser_id := local_player_id
+				var winner_id := 1 - loser_id
+				var loser_name := turn_manager.game_state.player_names[loser_id]
+				turn_manager._on_game_over(winner_id, "%s conceded" % loser_name)
+			else:
+				RpcLogger.log_send("concede", 0)
+				_rpc_concede.rpc_id(NetworkManager.host_peer_id)
 		GameSettings.clear_reconnect_session()
 		NetworkManager.is_in_game = false
-		NetworkManager.notify_leaving()
 		NetworkManager.disconnect_game()
 	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
 
@@ -3199,7 +3328,7 @@ func _execute_rematch() -> void:
 		turn_manager = null
 		await get_tree().process_frame
 
-		# Solo v Bot: seed RNG for deterministic replays
+		# Solo v Bot: seed RNG for deterministic behavior
 		if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
 			if not _bot_seed_was_explicit:
 				NetworkManager.bot_seed = -1
@@ -3208,7 +3337,7 @@ func _execute_rematch() -> void:
 		turn_manager = TurnManager.new()
 		turn_manager.setup(CardData)
 
-		turn_manager.game_state.player_names[0] = GameSettings.player_name
+		turn_manager.game_state.player_names[local_player_id] = GameSettings.player_name
 		GameLog.player_names = GameLog.disambiguate(
 			turn_manager.game_state.player_names, local_player_id)
 		for i in range(2):
@@ -3272,6 +3401,9 @@ func _execute_rematch() -> void:
 			player.deck_changed.connect(_on_state_changed)
 			player.strategy_zones_changed.connect(_on_state_changed)
 			player.discard_reshuffled.connect(_on_discard_reshuffled)
+
+		# Set up replay recorder for the new game
+		_setup_replay_recorder()
 
 		# Start game (coin flip for multiplayer, immediate for solo)
 		call_deferred("_start_game")
@@ -7293,6 +7425,30 @@ func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	btn_rematch.text = "Rematch"
 	_disable_all_buttons()
 	RpcLogger.print_summary()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_receive_replay(compressed: PackedByteArray) -> void:
+	RpcLogger.log_receive("receive_replay", compressed.size())
+	var json_bytes := compressed.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+	if json_bytes.is_empty():
+		push_warning("[Replay] Failed to decompress replay data")
+		return
+	var json := JSON.new()
+	if json.parse(json_bytes.get_string_from_utf8()) != OK:
+		push_warning("[Replay] Failed to parse replay JSON")
+		return
+	var replay := ReplayData.new()
+	replay.from_dict(json.data)
+	var ver := ReplayData._get_game_version()
+	var fname := "replay_%s.json" % replay.timestamp.replace(" ", "_").replace(":", "").replace("-", "")
+	var path := ReplayData.get_version_recent_dir(ver) + fname
+	var err := ReplayData.save_to_file(replay, path)
+	if err == OK:
+		print("[Replay] Client saved replay to %s (%d snapshots)" % [path, replay.snapshots.size()])
+		ReplayData.prune_recent(ver)
+	else:
+		push_warning("[Replay] Client failed to save replay (error %d)" % err)
 
 
 # --- Multiplayer: State deserialization (client) ---

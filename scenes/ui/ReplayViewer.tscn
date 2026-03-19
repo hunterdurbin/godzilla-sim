@@ -1,0 +1,194 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/ui/replay_viewer.gd" id="1_rv"]
+
+[node name="ReplayViewer" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_rv")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.06, 0.06, 0.08, 1)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TopBar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="TurnLabel" type="Label" parent="VBoxContainer/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Turn 1/1 — Player 1"
+theme_override_font_sizes/font_size = 20
+theme_override_colors/font_color = Color(0.9, 0.7, 0.1, 1)
+
+[node name="ExitButton" type="Button" parent="VBoxContainer/TopBar"]
+custom_minimum_size = Vector2(80, 36)
+layout_mode = 2
+text = "Exit"
+theme_override_font_sizes/font_size = 16
+
+[node name="Content" type="HSplitContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = -250
+
+[node name="BoardColumn" type="VBoxContainer" parent="VBoxContainer/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+
+[node name="RightPanel" type="VBoxContainer" parent="VBoxContainer/Content"]
+layout_mode = 2
+custom_minimum_size = Vector2(250, 0)
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="P2HandPanel" type="PanelContainer" parent="VBoxContainer/Content/RightPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 120)
+
+[node name="P2HandVBox" type="VBoxContainer" parent="VBoxContainer/Content/RightPanel/P2HandPanel"]
+layout_mode = 2
+
+[node name="P2HandTitle" type="Label" parent="VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox"]
+layout_mode = 2
+text = "P2 Hand (0)"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="P2HandScroll" type="ScrollContainer" parent="VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 0
+
+[node name="P2HandGrid" type="HBoxContainer" parent="VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox/P2HandScroll"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LogPanel" type="PanelContainer" parent="VBoxContainer/Content/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LogVBox" type="VBoxContainer" parent="VBoxContainer/Content/RightPanel/LogPanel"]
+layout_mode = 2
+
+[node name="LogTitle" type="Label" parent="VBoxContainer/Content/RightPanel/LogPanel/LogVBox"]
+layout_mode = 2
+text = "Game Log"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="LogOutput" type="RichTextLabel" parent="VBoxContainer/Content/RightPanel/LogPanel/LogVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true
+theme_override_font_sizes/normal_font_size = 13
+
+[node name="P1HandPanel" type="PanelContainer" parent="VBoxContainer/Content/RightPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 120)
+
+[node name="P1HandVBox" type="VBoxContainer" parent="VBoxContainer/Content/RightPanel/P1HandPanel"]
+layout_mode = 2
+
+[node name="P1HandTitle" type="Label" parent="VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox"]
+layout_mode = 2
+text = "P1 Hand (0)"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="P1HandScroll" type="ScrollContainer" parent="VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 0
+
+[node name="P1HandGrid" type="HBoxContainer" parent="VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox/P1HandScroll"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Controls" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="PrevTurnButton" type="Button" parent="VBoxContainer/Controls"]
+custom_minimum_size = Vector2(50, 40)
+layout_mode = 2
+text = "<<"
+theme_override_font_sizes/font_size = 16
+
+[node name="PrevButton" type="Button" parent="VBoxContainer/Controls"]
+custom_minimum_size = Vector2(50, 40)
+layout_mode = 2
+text = "<"
+theme_override_font_sizes/font_size = 16
+
+[node name="PlayPauseButton" type="Button" parent="VBoxContainer/Controls"]
+custom_minimum_size = Vector2(80, 40)
+layout_mode = 2
+text = "Play"
+theme_override_font_sizes/font_size = 16
+
+[node name="NextButton" type="Button" parent="VBoxContainer/Controls"]
+custom_minimum_size = Vector2(50, 40)
+layout_mode = 2
+text = ">"
+theme_override_font_sizes/font_size = 16
+
+[node name="NextTurnButton" type="Button" parent="VBoxContainer/Controls"]
+custom_minimum_size = Vector2(50, 40)
+layout_mode = 2
+text = ">>"
+theme_override_font_sizes/font_size = 16
+
+[node name="PlayFromHereButton" type="Button" parent="VBoxContainer/Controls"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Play From Here"
+theme_override_font_sizes/font_size = 16
+
+[node name="SpeedLabel" type="Label" parent="VBoxContainer/Controls"]
+layout_mode = 2
+text = "Speed:"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
+
+[node name="SpeedSlider" type="HSlider" parent="VBoxContainer/Controls"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+min_value = 0.2
+max_value = 2.0
+step = 0.1
+value = 0.5
+
+[node name="TurnSlider" type="HSlider" parent="VBoxContainer/Controls"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+min_value = 0.0
+max_value = 1.0
+step = 1.0
+value = 0.0

@@ -8,6 +8,7 @@ signal game_over(winner_id: int, reason: String)
 var players: Array[PlayerState] = []
 var current_player_id: int = 0
 var current_phase: CardEnums.GamePhase = CardEnums.GamePhase.START
+var current_sub_phase: int = 0
 var turn_number: int = 0
 var player_names: Array[String] = ["Player 1", "Player 2"]
 

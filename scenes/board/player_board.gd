@@ -6,6 +6,7 @@ extends Control
 ## Mirroring for Player 2 flips all child anchors and the background texture.
 
 signal zone_card_dropped(zone_index: int, card: Control)
+signal deck_clicked(player_id: int)
 signal discard_clicked(player_id: int)
 signal monster_deck_clicked(player_id: int)
 signal zone_slot_clicked(zone_number: int, player_id: int)
@@ -191,7 +192,7 @@ func _setup_references() -> void:
 		_apply_mirror()
 
 	# Determine if this is the local player's board
-	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	var is_local := player_id == local_id
 
 	var rage := $LayoutContainer.find_child("RageDisplay", false, false) as VBoxContainer
@@ -259,6 +260,8 @@ func _setup_references() -> void:
 		_deck_display.add_child(_deck_count_badge)
 		_deck_display.mouse_entered.connect(_deck_count_badge.show)
 		_deck_display.mouse_exited.connect(_deck_count_badge.hide)
+		_deck_display.mouse_filter = Control.MOUSE_FILTER_STOP
+		_deck_display.gui_input.connect(_on_deck_gui_input)
 
 	# Discard: face-up top card + empty placeholder + hover count badge
 	if discard_display:
@@ -330,7 +333,7 @@ func _find_custom_file(dir_path: String, base_name: String) -> String:
 func _apply_custom_playmat() -> void:
 	if not GameSettings.custom_playmat_enabled:
 		return
-	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	if player_id != local_id and not GameSettings.custom_playmat_opponent:
 		return
 	var dir_path := GameSettings.get_custom_base_path().path_join("playmat")
@@ -349,7 +352,7 @@ func _apply_custom_playmat() -> void:
 func apply_monster_gradient(monster_data: Dictionary) -> void:
 	if GameSettings.color_overlay_mode == 0:
 		return
-	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	var is_self := player_id == local_id
 	if is_self and GameSettings.color_overlay_mode == 2:
 		return
@@ -825,6 +828,11 @@ func toggle_mirrored() -> void:
 	_update_layout()
 
 
+func _on_deck_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		deck_clicked.emit(player_id)
+
+
 func _on_discard_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		discard_clicked.emit(player_id)
@@ -1051,7 +1059,7 @@ func _should_use_custom_back() -> bool:
 	if mode == 2:
 		return true
 	# Mode 1: myself only
-	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	return player_id == local_id
 
 

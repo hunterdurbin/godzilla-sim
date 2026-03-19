@@ -375,11 +375,12 @@ func _wait_for_relay_connection(relay_peer: RelayMultiplayerPeer) -> Error:
 
 func _on_peer_connected(peer_id: int) -> void:
 	print("[NetworkManager] _on_peer_connected: peer=%d is_in_game=%s" % [peer_id, is_in_game])
-	# Assign the connecting peer as player 1
-	peer_player_map[peer_id] = 1
-	peer_player_map[multiplayer.get_unique_id()] = 0
+	# Assign the connecting peer as the other player
+	var client_pid := 1 - local_player_id
+	peer_player_map[peer_id] = client_pid
+	peer_player_map[multiplayer.get_unique_id()] = local_player_id
 	opponent_connected = true
-	_rpc_assign_player.rpc_id(peer_id, 1)
+	_rpc_assign_player.rpc_id(peer_id, client_pid)
 	_rpc_assign_game_mode.rpc_id(peer_id, game_mode, is_public_room)
 	_rpc_exchange_version.rpc_id(peer_id, GAME_VERSION)
 	if is_in_game:
