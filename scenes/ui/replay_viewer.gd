@@ -20,6 +20,7 @@ var player2_board: Control
 @onready var prev_button: Button = $VBoxContainer/Controls/PrevButton
 @onready var play_pause_button: Button = $VBoxContainer/Controls/PlayPauseButton
 @onready var next_button: Button = $VBoxContainer/Controls/NextButton
+@onready var play_from_here_button: Button = $VBoxContainer/Controls/PlayFromHereButton
 @onready var speed_slider: HSlider = $VBoxContainer/Controls/SpeedSlider
 @onready var turn_slider: HSlider = $VBoxContainer/Controls/TurnSlider
 
@@ -62,6 +63,7 @@ func _ready() -> void:
 	prev_button.pressed.connect(_on_prev_pressed)
 	next_button.pressed.connect(_on_next_pressed)
 	play_pause_button.pressed.connect(_on_play_pause_pressed)
+	play_from_here_button.pressed.connect(_on_play_from_here_pressed)
 
 	# Set player names for log display
 	GameLog.player_names = _replay.player_names.duplicate()
@@ -150,6 +152,27 @@ func _on_turn_slider_changed(value: float) -> void:
 	var idx := int(value)
 	if idx != _snapshot_index:
 		_render_snapshot(idx)
+
+
+func _on_play_from_here_pressed() -> void:
+	SfxManager.play("ui_click")
+	var snap: Dictionary = _replay.snapshots[_snapshot_index]
+	# Build a save-compatible dict from the current snapshot + replay metadata
+	GameSerializer.pending_load = {
+		"version": 1,
+		"turn_number": snap.get("turn_number", 1),
+		"current_player_id": snap.get("current_player_id", 0),
+		"current_phase": snap.get("phase", 0),
+		"player_names": Array(_replay.player_names),
+		"first_player_id": _replay.first_player_id,
+		"mode": "solo",
+		"bot_difficulty": "",
+		"deck_names": Array(_replay.deck_names),
+		"players": snap.get("players", []),
+	}
+	NetworkManager.mode = NetworkManager.Mode.SOLO
+	NetworkManager.local_player_id = 0
+	NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
 
 
 func _on_exit_pressed() -> void:

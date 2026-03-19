@@ -101,6 +101,12 @@ layout_mode = 2
 text = "Next >"
 theme_override_font_sizes/font_size = 16
 
+[node name="PlayFromHereButton" type="Button" parent="VBoxContainer/Controls"]
+custom_minimum_size = Vector2(120, 40)
+layout_mode = 2
+text = "Play From Here"
+theme_override_font_sizes/font_size = 16
+
 [node name="SpeedLabel" type="Label" parent="VBoxContainer/Controls"]
 layout_mode = 2
 text = "Speed:"
