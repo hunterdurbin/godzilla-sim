@@ -31,7 +31,6 @@ var _client_zone_cp_mods: Array = [[], []]
 var _client_strategy_cp_mods: Array = [[], []]
 var _client_zone_rank_mods: Array = [[], []]
 var _client_gradients_applied: bool = false
-var _prev_client_turn: int = 0
 # Client-side stats snapshot (synced from host for disconnect reporting)
 var _client_stats_elapsed_ms: Array[int] = [0, 0]
 var _client_stats_game_start_ms: int = 0
@@ -49,6 +48,7 @@ var _client_stats_decklists: Array = [null, null]
 @onready var chat_char_count: Label = $LogPanel/LogVBox/ChatRow/CharCount
 var _log_lines: PackedStringArray = []
 var _pending_log_lines: PackedStringArray = [] # Buffered for next broadcast
+var _pending_sound_events: PackedStringArray = [] # Sound events buffered for client
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var btn_rematch: Button = $EndGamePanel/VBox/ButtonRow/RematchButton
 @onready var btn_end_menu: Button = $EndGamePanel/VBox/ButtonRow/MenuButton
@@ -2593,7 +2593,7 @@ func _on_sub_phase_changed(sub_index: int) -> void:
 
 
 func _on_turn_started(player_id: int) -> void:
-	SfxManager.play("turn_start")
+	_queue_sound("turn_start")
 	_current_sub_phase = 0
 	_sync_boards()
 	_update_hand_visibility(player_id)
@@ -2749,32 +2749,39 @@ func _on_chat_text_changed(new_text: String) -> void:
 	chat_char_count.text = str(chat_input.max_length - new_text.length())
 
 
+## Queue a sound event for broadcast to the client.
+func _queue_sound(sound_name: String) -> void:
+	SfxManager.play(sound_name)
+	if is_multiplayer_game and NetworkManager.is_host():
+		_pending_sound_events.append(sound_name)
+
+
 func _on_cards_drawn(_player_id: int, _count: int) -> void:
-	SfxManager.play("card_draw")
+	_queue_sound("card_draw")
 
 
 func _on_card_discarded(_player_id: int, _card: Dictionary) -> void:
-	SfxManager.play("card_discard")
+	_queue_sound("card_discard")
 
 
 func _on_discard_reshuffled() -> void:
-	SfxManager.play("deck_shuffle")
+	_queue_sound("deck_shuffle")
 
 
 func _on_rage_gained(_player_id: int, _new_rage: int) -> void:
-	SfxManager.play("gain_rage")
+	_queue_sound("gain_rage")
 
 
 func _on_card_evolved(_player_id: int, _card: Dictionary, _zone_index: int) -> void:
-	SfxManager.play("card_evolve")
+	_queue_sound("card_evolve")
 
 
 func _on_card_destroyed(_player_id: int, _zone_index: int) -> void:
-	SfxManager.play("card_destroy")
+	_queue_sound("card_destroy")
 
 
 func _on_strategy_card_played(_player_id: int, _card: Dictionary, _strategy_index: int) -> void:
-	SfxManager.play("card_play")
+	_queue_sound("card_play")
 
 
 # --- Action handler visual feedback ---
@@ -2797,33 +2804,33 @@ func _on_play_cancelled(player_id: int) -> void:
 
 
 func _on_battle_card_played(_player_id: int, _card: Dictionary, _zone_index: int) -> void:
-	SfxManager.play("card_play")
+	_queue_sound("card_play")
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_monster_advanced(_player_id: int, _from_zone: int, _to_zone: int) -> void:
-	SfxManager.play("monster_advance")
+	_queue_sound("monster_advance")
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_battle_card_crushed(player_id: int, zone_index: int, card: Dictionary) -> void:
-	SfxManager.play("card_destroy")
+	_queue_sound("card_destroy")
 	_on_log_message(GameLog.battle_card_crushed(card.get("id", ""), player_id, zone_index))
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_counter_succeeded(player_id: int, total_cp: int, threat: int) -> void:
-	SfxManager.play("counter_success")
+	_queue_sound("counter_success")
 	_on_log_message(GameLog.counter_succeeded(player_id, total_cp, threat))
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_counter_failed(player_id: int, total_cp: int, threat: int) -> void:
-	SfxManager.play("counter_fail")
+	_queue_sound("counter_fail")
 	_on_log_message(GameLog.counter_failed(player_id, total_cp, threat))
 
 
@@ -6345,8 +6352,8 @@ func _do_broadcast() -> void:
 			envelope = {"v": _state_version, "bv": - 1, "d": state_dict}
 		else:
 			var delta := _compute_delta(_last_sent_state, state_dict)
-			if delta.is_empty() and _pending_log_lines.is_empty():
-				# Nothing changed and no logs — skip broadcast entirely
+			if delta.is_empty() and _pending_log_lines.is_empty() and _pending_sound_events.is_empty():
+				# Nothing changed, no logs, no sounds — skip broadcast entirely
 				_state_version -= 1
 				continue
 			envelope = {"v": _state_version, "bv": _last_sent_version, "d": delta}
@@ -6354,6 +6361,10 @@ func _do_broadcast() -> void:
 		# Piggyback buffered log lines on the envelope
 		if not _pending_log_lines.is_empty():
 			envelope["log"] = Array(_pending_log_lines)
+
+		# Piggyback buffered sound events on the envelope
+		if not _pending_sound_events.is_empty():
+			envelope["sfx"] = Array(_pending_sound_events)
 
 		_last_sent_state = state_dict.duplicate(true)
 		_last_sent_version = _state_version
@@ -6365,6 +6376,7 @@ func _do_broadcast() -> void:
 		RpcLogger.log_send("receive_state", state_bytes.size())
 		_rpc_receive_state.rpc_id(peer_id, state_bytes)
 	_pending_log_lines.clear()
+	_pending_sound_events.clear()
 
 
 func _serialize_game_state(viewer_id: int) -> Dictionary:
@@ -6708,6 +6720,11 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 				log_output.append_text(str(line) + "\n")
 				log_output.scroll_to_line(log_output.get_line_count() - 1)
 
+	# Play piggybacked sound events from host
+	if envelope.has("sfx"):
+		for sfx_name in envelope["sfx"]:
+			SfxManager.play(str(sfx_name))
+
 	var version: int = int(envelope.get("v", 0))
 	var base_version: int = int(envelope.get("bv", -1))
 	var payload: Dictionary = envelope.get("d", {})
@@ -6742,10 +6759,6 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	_client_phase = int(data.get("current_phase", 0)) as CardEnums.GamePhase
 	_first_player_id = int(data.get("first_player_id", 0))
 
-	# Client-side sound: detect turn changes
-	if _client_turn_number != _prev_client_turn and _prev_client_turn > 0:
-		SfxManager.play("turn_start")
-	_prev_client_turn = _client_turn_number
 
 	# Extract effect modifiers
 	if data.has("cp_modifiers"):
