@@ -126,7 +126,7 @@ const MAX_RECENT_SAVES := 50
 static var pending_load: Dictionary = {}
 
 
-static func serialize_game_state(gs: GameState, first_player_id: int, mode: String, bot_difficulty: String, deck_names: Array[String]) -> Dictionary:
+static func serialize_game_state(gs: GameState, first_player_id: int, mode: String, bot_difficulty: String, deck_names: Array[String], game_seed: int = 0) -> Dictionary:
 	return {
 		"version": 1,
 		"game_version": ProjectSettings.get_setting("application/config/version", ""),
@@ -140,6 +140,7 @@ static func serialize_game_state(gs: GameState, first_player_id: int, mode: Stri
 		"mode": mode,
 		"bot_difficulty": bot_difficulty,
 		"deck_names": Array(deck_names),
+		"game_seed": game_seed,
 		"label": "",
 		"players": [
 			serialize_player_state(gs.players[0]),

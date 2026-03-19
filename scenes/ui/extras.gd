@@ -790,7 +790,13 @@ func _launch_load_game(path: String) -> void:
 	if data.is_empty():
 		_show_message("Failed to load save file.")
 		return
+	print("[Load] Loading save: mode=%s, game_seed=%s" % [data.get("mode", "?"), data.get("game_seed", "MISSING")])
 	GameSerializer.pending_load = data
+	# Restore seed for deterministic RNG on load
+	var saved_seed: int = int(data.get("game_seed", -1))
+	if saved_seed > 0:
+		NetworkManager.bot_seed = saved_seed
+		print("[Load] Restored NetworkManager.bot_seed=%d" % saved_seed)
 	# Set network mode based on saved game mode
 	var mode: String = data.get("mode", "solo")
 	match mode:

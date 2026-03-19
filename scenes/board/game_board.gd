@@ -489,9 +489,17 @@ func _ready() -> void:
 	_setup_settings_toggles()
 
 	if not is_multiplayer_game or NetworkManager.is_host():
-		# Solo v Bot: seed RNG for deterministic replays
+		# Seed RNG: use saved seed if loading, otherwise bot_seed for bot games
+		var loaded_seed: int = int(GameSerializer.pending_load.get("game_seed", -1))
+		if loaded_seed > 0:
+			NetworkManager.bot_seed = loaded_seed
+			print("[GameBoard._ready] Using saved game_seed=%d" % loaded_seed)
 		if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
 			_apply_bot_seed()
+		elif loaded_seed > 0:
+			# Non-bot mode but has a saved seed — apply it for consistency
+			seed(loaded_seed)
+			print("[GameBoard._ready] Seeded RNG with %d (non-bot mode)" % loaded_seed)
 
 		# Host / solo: create and run TurnManager
 		turn_manager = TurnManager.new()
@@ -962,10 +970,13 @@ func _setup_replay_recorder() -> void:
 
 func _apply_bot_seed() -> void:
 	var s: int = NetworkManager.bot_seed
+	print("[_apply_bot_seed] Entry: NetworkManager.bot_seed=%d, _bot_seed_was_explicit=%s" % [s, _bot_seed_was_explicit])
 	_bot_seed_was_explicit = s >= 0
 	if s < 0:
 		# Auto-generate a seed from the current unseeded RNG
 		s = randi()
+		print("[_apply_bot_seed] Auto-generated seed: %d" % s)
+	NetworkManager.bot_seed = s
 	seed(s)
 	print("[Bot] RNG seed: %d" % s)
 	_on_log_message("Seed: %d" % s)
@@ -1048,7 +1059,11 @@ func _on_save_game_pressed() -> void:
 		DecklistManager.get_player_deck_name(0),
 		DecklistManager.get_player_deck_name(1),
 	]
-	var data := GameSerializer.serialize_game_state(turn_manager.game_state, _first_player_id, mode_str, diff_str, d_names)
+	# Capture a seed from the current RNG state so loading this save produces
+	# deterministic bot behavior (the original seed is stale — RNG has advanced).
+	var save_seed: int = randi()
+	print("[Save] Capturing game_seed=%d for save file" % save_seed)
+	var data := GameSerializer.serialize_game_state(turn_manager.game_state, _first_player_id, mode_str, diff_str, d_names, save_seed)
 	var path := GameSerializer.save_game_to_file(data)
 	if not path.is_empty():
 		_save_game_button.text = "Saved!"
@@ -3295,7 +3310,7 @@ func _execute_rematch() -> void:
 		turn_manager = null
 		await get_tree().process_frame
 
-		# Solo v Bot: seed RNG for deterministic replays
+		# Solo v Bot: seed RNG for deterministic behavior
 		if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
 			if not _bot_seed_was_explicit:
 				NetworkManager.bot_seed = -1
