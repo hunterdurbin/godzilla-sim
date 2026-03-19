@@ -2,6 +2,7 @@ extends Control
 
 @onready var watch_replay_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/WatchReplayButton
 @onready var load_game_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LoadGameButton
+@onready var load_game_online_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LoadGameOnlineButton
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
 
 var _replay_popup: PopupPanel = null
@@ -18,9 +19,17 @@ var _save_filter_favorites_only: bool = false
 var _save_filter_current_version: bool = false
 
 
+var _online_load_popup: PopupPanel = null
+var _online_load_status: Label = null
+var _online_load_code_label: Label = null
+var _online_load_copy_btn: Button = null
+var _online_load_start_btn: Button = null
+
+
 func _ready() -> void:
 	watch_replay_button.pressed.connect(_on_watch_replay_pressed)
 	load_game_button.pressed.connect(_on_load_game_pressed)
+	load_game_online_button.pressed.connect(_on_load_game_online_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 
 
@@ -47,9 +56,354 @@ func _on_load_game_pressed() -> void:
 	_show_save_list(saves)
 
 
+func _on_load_game_online_pressed() -> void:
+	SfxManager.play("ui_click")
+	var saves := GameSerializer.list_saves()
+	if saves.is_empty():
+		_show_message("No saved games found.")
+		return
+	_show_save_list_for_online(saves)
+
+
+func _show_save_list_for_online(saves: Array[Dictionary]) -> void:
+	## Shows the save list but selecting a save hosts a private online lobby instead.
+	_save_filter_favorites_only = false
+	_save_filter_current_version = false
+
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+	_save_popup = popup
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(700, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+
+	var title := Label.new()
+	title.text = "Load Game Online"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vbox.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = "Select a save to host as a private online game"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 14)
+	subtitle.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	vbox.add_child(subtitle)
+	vbox.add_child(HSeparator.new())
+
+	# Filters
+	var toolbar := HBoxContainer.new()
+	toolbar.add_theme_constant_override("separation", 8)
+
+	var fav_filter_btn := Button.new()
+	fav_filter_btn.text = "Favorites Only"
+	fav_filter_btn.toggle_mode = true
+	fav_filter_btn.custom_minimum_size = Vector2(120, 32)
+	fav_filter_btn.add_theme_font_size_override("font_size", 14)
+	fav_filter_btn.toggled.connect(func(on: bool):
+		SfxManager.play("ui_click")
+		_save_filter_favorites_only = on
+		_refresh_save_list_for_online(saves)
+	)
+	toolbar.add_child(fav_filter_btn)
+
+	var ver_filter_btn := Button.new()
+	ver_filter_btn.text = "Current Version"
+	ver_filter_btn.toggle_mode = true
+	ver_filter_btn.custom_minimum_size = Vector2(130, 32)
+	ver_filter_btn.add_theme_font_size_override("font_size", 14)
+	ver_filter_btn.toggled.connect(func(on: bool):
+		SfxManager.play("ui_click")
+		_save_filter_current_version = on
+		_refresh_save_list_for_online(saves)
+	)
+	toolbar.add_child(ver_filter_btn)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toolbar.add_child(spacer)
+
+	_save_count_label = Label.new()
+	_save_count_label.add_theme_font_size_override("font_size", 14)
+	_save_count_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	toolbar.add_child(_save_count_label)
+
+	vbox.add_child(toolbar)
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 350)
+	_save_list_vbox = VBoxContainer.new()
+	_save_list_vbox.add_theme_constant_override("separation", 6)
+	_save_list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	scroll.add_child(_save_list_vbox)
+	vbox.add_child(scroll)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(200, 40)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	vbox.add_child(cancel_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+
+	_populate_save_list_for_online(saves)
+	popup.popup_centered()
+
+
+func _populate_save_list_for_online(saves: Array[Dictionary]) -> void:
+	var current_ver := GameSerializer._get_game_version()
+
+	var filtered: Array[Dictionary] = []
+	for e in saves:
+		if _save_filter_favorites_only and not e.get("is_favorite", false):
+			continue
+		if _save_filter_current_version and e.get("game_version", "") != current_ver:
+			continue
+		filtered.append(e)
+
+	var fav_count := 0
+	for e in saves:
+		if e.get("is_favorite", false):
+			fav_count += 1
+	_save_count_label.text = "%d shown / %d total (%d favorited)" % [filtered.size(), saves.size(), fav_count]
+
+	for child in _save_list_vbox.get_children():
+		child.queue_free()
+
+	for entry in filtered:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+
+		var info_btn := Button.new()
+		info_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info_btn.custom_minimum_size = Vector2(0, 44)
+		info_btn.add_theme_font_size_override("font_size", 13)
+		info_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+
+		var names: Array = entry.get("player_names", ["?", "?"])
+		var turn: int = entry.get("turn_number", 0)
+		var ts: String = entry.get("timestamp", "")
+		var mode: String = entry.get("mode", "")
+		var lbl: String = entry.get("label", "")
+		var ver: String = entry.get("game_version", "")
+		var decks: Array = entry.get("deck_names", ["", ""])
+
+		var line1 := ""
+		if not lbl.is_empty():
+			line1 = "[%s] " % lbl
+		line1 += "%s  |  %s vs %s  |  Turn %d  |  %s" % [ts, names[0], names[1], turn, mode]
+		if not ver.is_empty() and ver != current_ver:
+			line1 += "  (v%s)" % ver
+
+		var line2 := ""
+		if not str(decks[0]).is_empty() or not str(decks[1]).is_empty():
+			line2 = "%s vs %s" % [str(decks[0]), str(decks[1])]
+
+		info_btn.text = line1 if line2.is_empty() else line1 + "\n" + line2
+		var path: String = entry["path"]
+		info_btn.pressed.connect(func():
+			SfxManager.play("ui_click")
+			_save_popup.hide()
+			_host_online_with_save(path)
+		)
+		row.add_child(info_btn)
+		_save_list_vbox.add_child(row)
+
+
+func _refresh_save_list_for_online(saves: Array[Dictionary]) -> void:
+	_populate_save_list_for_online(saves)
+
+
+func _host_online_with_save(save_path: String) -> void:
+	var data := GameSerializer.load_save_file(save_path)
+	if data.is_empty():
+		_show_message("Failed to load save file.")
+		return
+
+	# Stage save data for the host GameBoard to pick up
+	GameSerializer.pending_load = data
+
+	_show_online_load_lobby()
+
+
+func _show_online_load_lobby() -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+	_online_load_popup = popup
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(460, 0)
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	ps.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	ps.set_border_width_all(2)
+	ps.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", ps)
+
+	var mg := MarginContainer.new()
+	mg.add_theme_constant_override("margin_left", 24)
+	mg.add_theme_constant_override("margin_top", 24)
+	mg.add_theme_constant_override("margin_right", 24)
+	mg.add_theme_constant_override("margin_bottom", 24)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 16)
+
+	var title := Label.new()
+	title.text = "Host Online Game"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vb.add_child(title)
+
+	_online_load_status = Label.new()
+	_online_load_status.text = "Connecting to relay server..."
+	_online_load_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_online_load_status.add_theme_font_size_override("font_size", 16)
+	vb.add_child(_online_load_status)
+
+	# Code display row
+	var code_row := HBoxContainer.new()
+	code_row.add_theme_constant_override("separation", 8)
+	code_row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	_online_load_code_label = Label.new()
+	_online_load_code_label.text = ""
+	_online_load_code_label.add_theme_font_size_override("font_size", 28)
+	_online_load_code_label.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
+	code_row.add_child(_online_load_code_label)
+
+	_online_load_copy_btn = Button.new()
+	_online_load_copy_btn.text = "Copy"
+	_online_load_copy_btn.custom_minimum_size = Vector2(70, 32)
+	_online_load_copy_btn.add_theme_font_size_override("font_size", 14)
+	_online_load_copy_btn.visible = false
+	_online_load_copy_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		DisplayServer.clipboard_set(NetworkManager.get_game_code())
+		_online_load_copy_btn.text = "Copied!"
+		get_tree().create_timer(1.5).timeout.connect(func():
+			if is_instance_valid(_online_load_copy_btn):
+				_online_load_copy_btn.text = "Copy"
+		)
+	)
+	code_row.add_child(_online_load_copy_btn)
+	vb.add_child(code_row)
+
+	_online_load_start_btn = Button.new()
+	_online_load_start_btn.text = "Start Game"
+	_online_load_start_btn.custom_minimum_size = Vector2(160, 40)
+	_online_load_start_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_online_load_start_btn.add_theme_font_size_override("font_size", 18)
+	_online_load_start_btn.visible = false
+	_online_load_start_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_cleanup_online_load_signals()
+		popup.hide()
+		NetworkManager.start_lan_game()
+	)
+	vb.add_child(_online_load_start_btn)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(120, 36)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 16)
+	cancel_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_cleanup_online_load_signals()
+		NetworkManager.disconnect_game()
+		GameSerializer.pending_load = {}
+		popup.hide()
+	)
+	vb.add_child(cancel_btn)
+
+	mg.add_child(vb)
+	panel.add_child(mg)
+	popup.add_child(panel)
+	add_child(popup)
+	popup.popup_centered()
+
+	# Start hosting
+	_do_host_online_for_load()
+
+
+func _do_host_online_for_load() -> void:
+	var err := await NetworkManager.host_online()
+	if err != OK:
+		_online_load_status.text = "Failed to connect to relay server (error %d)" % err
+		GameSerializer.pending_load = {}
+		return
+
+	_online_load_code_label.text = NetworkManager.get_game_code()
+	_online_load_copy_btn.visible = true
+	_online_load_status.text = "Share this code with your opponent:"
+
+	# Wait for opponent
+	NetworkManager.player_connected.connect(_on_online_load_player_connected)
+	NetworkManager.player_disconnected.connect(_on_online_load_player_disconnected)
+	NetworkManager.version_mismatch.connect(_on_online_load_version_mismatch)
+	NetworkManager.version_verified_ok.connect(_on_online_load_version_ok)
+
+
+func _on_online_load_player_connected(_peer_id: int) -> void:
+	_online_load_status.text = "Opponent connected! Verifying version..."
+
+
+func _on_online_load_player_disconnected(_peer_id: int) -> void:
+	_online_load_status.text = "Opponent disconnected. Waiting for reconnect..."
+	_online_load_start_btn.visible = false
+
+
+func _on_online_load_version_mismatch(local_ver: String, remote_ver: String) -> void:
+	_online_load_status.text = "Version mismatch! You: v%s, Opponent: v%s" % [local_ver, remote_ver]
+	_online_load_start_btn.visible = false
+
+
+func _on_online_load_version_ok() -> void:
+	_online_load_status.text = "Opponent connected and verified! Press Start."
+	_online_load_start_btn.visible = true
+
+
+func _cleanup_online_load_signals() -> void:
+	if NetworkManager.player_connected.is_connected(_on_online_load_player_connected):
+		NetworkManager.player_connected.disconnect(_on_online_load_player_connected)
+	if NetworkManager.player_disconnected.is_connected(_on_online_load_player_disconnected):
+		NetworkManager.player_disconnected.disconnect(_on_online_load_player_disconnected)
+	if NetworkManager.version_mismatch.is_connected(_on_online_load_version_mismatch):
+		NetworkManager.version_mismatch.disconnect(_on_online_load_version_mismatch)
+	if NetworkManager.version_verified_ok.is_connected(_on_online_load_version_ok):
+		NetworkManager.version_verified_ok.disconnect(_on_online_load_version_ok)
+
+
 func _show_message(text: String) -> void:
 	var popup := PopupPanel.new()
 	popup.exclusive = true
+	popup.popup_window = false
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(360, 0)
 	var panel_style := StyleBoxFlat.new()
@@ -95,6 +449,7 @@ func _show_replay_list(replays: Array[Dictionary]) -> void:
 
 	var popup := PopupPanel.new()
 	popup.exclusive = true
+	popup.popup_window = false
 	_replay_popup = popup
 
 	var panel := PanelContainer.new()
@@ -341,6 +696,7 @@ func _refresh_replay_list() -> void:
 func _show_label_dialog(path: String, current_label: String) -> void:
 	var popup := PopupPanel.new()
 	popup.exclusive = true
+	popup.popup_window = false
 
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(360, 0)
@@ -408,6 +764,7 @@ func _show_label_dialog(path: String, current_label: String) -> void:
 func _show_confirm(text: String, on_confirm: Callable) -> void:
 	var popup := PopupPanel.new()
 	popup.exclusive = true
+	popup.popup_window = false
 
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(360, 0)
@@ -479,6 +836,7 @@ func _show_save_list(saves: Array[Dictionary]) -> void:
 
 	var popup := PopupPanel.new()
 	popup.exclusive = true
+	popup.popup_window = false
 	_save_popup = popup
 
 	var panel := PanelContainer.new()
@@ -721,6 +1079,7 @@ func _refresh_save_list() -> void:
 func _show_save_label_dialog(path: String, current_label: String) -> void:
 	var popup := PopupPanel.new()
 	popup.exclusive = true
+	popup.popup_window = false
 
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(360, 0)
