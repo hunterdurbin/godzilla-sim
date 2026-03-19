@@ -3179,9 +3179,6 @@ func _on_main_menu_pressed() -> void:
 				_rpc_concede.rpc_id(NetworkManager.host_peer_id)
 		GameSettings.clear_reconnect_session()
 		NetworkManager.is_in_game = false
-		NetworkManager.notify_leaving()
-		# Wait a frame so RPCs (game end, concede, leaving) flush before closing the peer
-		await get_tree().process_frame
 		NetworkManager.disconnect_game()
 	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
 
