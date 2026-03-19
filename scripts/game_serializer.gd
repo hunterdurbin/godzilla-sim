@@ -132,6 +132,7 @@ static func serialize_game_state(gs: GameState, first_player_id: int, mode: Stri
 		"turn_number": gs.turn_number,
 		"current_player_id": gs.current_player_id,
 		"current_phase": int(gs.current_phase),
+		"current_sub_phase": gs.current_sub_phase,
 		"player_names": Array(gs.player_names),
 		"first_player_id": first_player_id,
 		"mode": mode,

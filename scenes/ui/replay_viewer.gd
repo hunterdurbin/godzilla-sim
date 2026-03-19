@@ -69,6 +69,15 @@ func _ready() -> void:
 	play_pause_button.pressed.connect(_on_play_pause_pressed)
 	play_from_here_button.pressed.connect(_on_play_from_here_pressed)
 
+	# Version mismatch warning
+	var current_version: String = ProjectSettings.get_setting("application/config/version", "")
+	if not _replay.game_version.is_empty() and _replay.game_version != current_version:
+		var warning := Label.new()
+		warning.text = "Warning: replay recorded on v%s (current v%s) — may not work as expected" % [_replay.game_version, current_version]
+		warning.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))
+		warning.add_theme_font_size_override("font_size", 13)
+		$VBoxContainer/TopBar.add_child(warning)
+
 	# Set player names for log display
 	GameLog.player_names = _replay.player_names.duplicate()
 
@@ -196,12 +205,14 @@ func _on_play_from_here_pressed() -> void:
 		"turn_number": snap.get("turn_number", 1),
 		"current_player_id": snap.get("current_player_id", 0),
 		"current_phase": snap.get("phase", 0),
+		"current_sub_phase": snap.get("sub_phase", 0),
 		"player_names": Array(_replay.player_names),
 		"first_player_id": _replay.first_player_id,
 		"mode": "solo",
 		"bot_difficulty": "",
 		"deck_names": Array(_replay.deck_names),
 		"players": snap.get("players", []),
+		"pending_effects": snap.get("pending_effects", []),
 	}
 	NetworkManager.mode = NetworkManager.Mode.SOLO
 	NetworkManager.local_player_id = 0

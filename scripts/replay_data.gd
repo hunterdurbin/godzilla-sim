@@ -8,6 +8,7 @@ const REPLAY_DIR := "user://replays/"
 const REPLAY_VERSION := 1
 
 var version: int = REPLAY_VERSION
+var game_version: String = ""
 var timestamp: String = ""
 var game_seed: int = 0
 var player_names: Array[String] = ["Player 1", "Player 2"]
@@ -28,6 +29,7 @@ static var pending_replay: ReplayData = null
 func to_dict() -> Dictionary:
 	return {
 		"version": version,
+		"game_version": game_version,
 		"timestamp": timestamp,
 		"game_seed": game_seed,
 		"player_names": Array(player_names),
@@ -44,6 +46,7 @@ func to_dict() -> Dictionary:
 
 func from_dict(data: Dictionary) -> void:
 	version = data.get("version", 1)
+	game_version = data.get("game_version", "")
 	timestamp = data.get("timestamp", "")
 	game_seed = data.get("game_seed", 0)
 	var pn: Array = data.get("player_names", ["Player 1", "Player 2"])

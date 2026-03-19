@@ -118,6 +118,76 @@ func setup(p_game_state: GameState) -> void:
 	game_state = p_game_state
 
 
+# --- Pending effect serialization ---
+
+
+func get_pending_effects_data() -> Array:
+	## Return a serializable snapshot of pending standby entries (for replay/save).
+	var result: Array = []
+	for entry in _pending_standby_entries:
+		if entry.get("trigger_type", "") == "on_enter":
+			var location := _find_card_location(entry.player_id, entry.card_data)
+			if not location.is_empty():
+				result.append({
+					"player_id": entry.player_id,
+					"card_id": entry.card_data.get("id", ""),
+					"trigger_type": "on_enter",
+					"location": location,
+				})
+	return result
+
+
+func restore_pending_effects(data: Array) -> void:
+	## Pre-populate _pending_standby_entries from serialized data so that the
+	## next _resolve_standby_entries call will drain them naturally.
+	for item in data:
+		if item.get("trigger_type", "") != "on_enter":
+			continue
+		var card_data := _get_card_at_location(item.player_id, item.location)
+		if card_data.is_empty():
+			continue
+		var effect := get_effect(card_data)
+		if not effect or not has_trigger(card_data, "on_enter"):
+			continue
+		_pending_standby_entries.append({
+			"player_id": item.player_id,
+			"card_data": card_data,
+			"trigger_type": "on_enter",
+			"callback": effect.on_enter.bind(_build_context(item.player_id, card_data))
+		})
+
+
+func _find_card_location(player_id: int, card_data: Dictionary) -> String:
+	## Find a card's location on the field, returned as "monster", "zone:N", or "strategy:N".
+	var player := game_state.players[player_id]
+	var card_id: String = card_data.get("id", "")
+	if player.current_monster.get("id", "") == card_id:
+		return "monster"
+	for i in range(8):
+		var top := player.get_zone_top_card(i)
+		if top.get("id", "") == card_id:
+			return "zone:%d" % i
+	for i in range(player.strategy_zones.size()):
+		if player.strategy_zones[i].get("id", "") == card_id:
+			return "strategy:%d" % i
+	return ""
+
+
+func _get_card_at_location(player_id: int, location: String) -> Dictionary:
+	## Retrieve the card dict at a serialized location string.
+	var player := game_state.players[player_id]
+	if location == "monster":
+		return player.current_monster
+	if location.begins_with("zone:"):
+		var idx := int(location.substr(5))
+		return player.get_zone_top_card(idx)
+	if location.begins_with("strategy:"):
+		var idx := int(location.substr(9))
+		if idx < player.strategy_zones.size():
+			return player.strategy_zones[idx]
+	return {}
+
+
 # --- Effect loading ---
 
 func get_effect(card_data: Dictionary) -> CardEffect:
@@ -322,6 +392,7 @@ func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = fa
 		_pending_standby_entries.append({
 			"player_id": player_id,
 			"card_data": card_data,
+			"trigger_type": "on_enter",
 			"callback": effect.on_enter.bind(_build_context(player_id, card_data))
 		})
 		return

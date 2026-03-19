@@ -12,6 +12,7 @@ var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 var replay_recorder: ReplayRecorder
 var _save_game_button: Button
 var _loaded_from_save: bool = false
+var _saved_pending_effects: Array = []
 
 # Bot state
 var bot_player: BotPlayer
@@ -499,6 +500,7 @@ func _ready() -> void:
 			turn_manager.setup_from_save(GameSerializer.pending_load)
 			_loaded_from_save = true
 			_first_player_id = GameSerializer.pending_load.get("first_player_id", 0)
+			_saved_pending_effects = GameSerializer.pending_load.get("pending_effects", [])
 			GameSerializer.pending_load = {}
 		else:
 			turn_manager.setup(CardData)
@@ -869,7 +871,15 @@ func _start_game() -> void:
 		_apply_gradients_and_sync()
 		SfxManager.play("game_setup")
 		var saved_pid: int = turn_manager.game_state.current_player_id
-		turn_manager.start_game(saved_pid)
+		var saved_phase: CardEnums.GamePhase = turn_manager.game_state.current_phase
+		var saved_sub: int = turn_manager.game_state.current_sub_phase
+		var pending: Array = _saved_pending_effects
+		_saved_pending_effects = []
+		# If pending effects exist, they take priority (pre-populated into standby queue).
+		# Otherwise, if not yet past main-phase player actions, run phase-start effects.
+		var skip_effects: bool = saved_phase == CardEnums.GamePhase.MAIN and saved_sub >= 1
+		var resolve: bool = pending.is_empty() and not skip_effects
+		turn_manager.resume_to_main_phase(saved_pid, pending, resolve)
 		return
 
 	if is_bot_game:
@@ -950,7 +960,7 @@ func _setup_replay_recorder() -> void:
 		DecklistManager.get_player_deck_name(0),
 		DecklistManager.get_player_deck_name(1),
 	]
-	replay_recorder.start(turn_manager.game_state, seed_val, mode_str, diff_str, d_names, get_tree())
+	replay_recorder.start(turn_manager.game_state, seed_val, mode_str, diff_str, d_names, get_tree(), turn_manager.effect_handler)
 	turn_manager.log_message.connect(replay_recorder.on_log_message)
 
 
@@ -3362,6 +3372,9 @@ func _execute_rematch() -> void:
 			player.deck_changed.connect(_on_state_changed)
 			player.strategy_zones_changed.connect(_on_state_changed)
 			player.discard_reshuffled.connect(_on_discard_reshuffled)
+
+		# Set up replay recorder for the new game
+		_setup_replay_recorder()
 
 		# Start game (coin flip for multiplayer, immediate for solo)
 		call_deferred("_start_game")

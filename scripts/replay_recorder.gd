@@ -7,15 +7,18 @@ extends RefCounted
 
 var _replay: ReplayData
 var _game_state: GameState
+var _effect_handler: EffectHandler
 var _pending_logs: PackedStringArray = []
 var _snapshot_pending: bool = false  # Debounce flag — at most one snapshot per frame
 var _scene_tree: SceneTree  # Needed for deferred frame callback
 
 
-func start(game_state: GameState, seed_val: int, mode: String, bot_difficulty: String, deck_names: Array[String], scene_tree: SceneTree) -> void:
+func start(game_state: GameState, seed_val: int, mode: String, bot_difficulty: String, deck_names: Array[String], scene_tree: SceneTree, effect_handler: EffectHandler = null) -> void:
 	_game_state = game_state
+	_effect_handler = effect_handler
 	_scene_tree = scene_tree
 	_replay = ReplayData.new()
+	_replay.game_version = ProjectSettings.get_setting("application/config/version", "")
 	_replay.timestamp = Time.get_datetime_string_from_system(false, true).replace("T", " ")
 	_replay.game_seed = seed_val
 	_replay.mode = mode
@@ -44,10 +47,12 @@ func _capture_snapshot() -> void:
 		"turn_number": _game_state.turn_number,
 		"current_player_id": _game_state.current_player_id,
 		"phase": int(_game_state.current_phase),
+		"sub_phase": _game_state.current_sub_phase,
 		"players": [
 			GameSerializer.serialize_player_state(_game_state.players[0]),
 			GameSerializer.serialize_player_state(_game_state.players[1]),
 		],
+		"pending_effects": _effect_handler.get_pending_effects_data() if _effect_handler else [],
 		"log_lines": Array(_pending_logs),
 	}
 	_pending_logs = []
@@ -65,10 +70,12 @@ func finish(winner_id: int, reason: String, first_player_id: int) -> ReplayData:
 		"turn_number": _game_state.turn_number,
 		"current_player_id": _game_state.current_player_id,
 		"phase": int(_game_state.current_phase),
+		"sub_phase": _game_state.current_sub_phase,
 		"players": [
 			GameSerializer.serialize_player_state(_game_state.players[0]),
 			GameSerializer.serialize_player_state(_game_state.players[1]),
 		],
+		"pending_effects": _effect_handler.get_pending_effects_data() if _effect_handler else [],
 		"log_lines": Array(_pending_logs),
 	}
 	_pending_logs = []
