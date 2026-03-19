@@ -12,18 +12,25 @@ set -uo pipefail
 #
 # Usage:
 #   ./build_ios.sh                     # Export Xcode project and open it
+#   ./build_ios.sh --unstable          # Build the unstable variant (different bundle ID)
 #   ./build_ios.sh --no-open           # Export Xcode project without opening
 #   GODOT_BIN=/path/to/Godot ./build_ios.sh
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${PROJECT_DIR}/build/ios"
 EXPORT_PRESET="iOS"
+PROJECT_NAME="godzilla_tcg_sim"
 OPEN_XCODE=true
 GODOT_BIN="${GODOT_BIN:-godot}"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --unstable)
+            EXPORT_PRESET="iOS Unstable"
+            PROJECT_NAME="godzilla_tcg_sim_unstable"
+            shift
+            ;;
         --no-open)
             OPEN_XCODE=false
             shift
@@ -35,6 +42,7 @@ while [[ $# -gt 0 ]]; do
             echo "Signing and deployment are handled in Xcode."
             echo ""
             echo "Options:"
+            echo "  --unstable      Build the unstable variant (different bundle ID)"
             echo "  --no-open       Don't open Xcode after export"
             echo "  -h, --help      Show this help"
             echo ""
@@ -103,10 +111,10 @@ echo ""
 # attempts to archive/sign it via xcodebuild. The archive step often fails (no device
 # registered, no provisioning profile, etc.) but the Xcode project is still generated
 # successfully. We ignore the exit code and check for the .xcodeproj instead.
-"${GODOT_BIN}" --headless --export-debug "${EXPORT_PRESET}" "${BUILD_DIR}/godzilla_tcg_sim.ipa" --path "${PROJECT_DIR}" 2>&1 || true
+"${GODOT_BIN}" --headless --export-debug "${EXPORT_PRESET}" "${BUILD_DIR}/${PROJECT_NAME}.ipa" --path "${PROJECT_DIR}" 2>&1 || true
 
 # Check if the Xcode project was generated (this is what we actually need)
-if [ ! -d "${BUILD_DIR}/godzilla_tcg_sim.xcodeproj" ]; then
+if [ ! -d "${BUILD_DIR}/${PROJECT_NAME}.xcodeproj" ]; then
     echo ""
     echo "ERROR: Xcode project was not generated."
     echo "  Check the Godot output above for errors."
@@ -117,12 +125,12 @@ fi
 
 echo ""
 echo "=== Xcode project exported successfully ==="
-echo "  ${BUILD_DIR}/godzilla_tcg_sim.xcodeproj"
+echo "  ${BUILD_DIR}/${PROJECT_NAME}.xcodeproj"
 echo ""
 
 # --- Post-export patches ---
-INFOPLIST="${BUILD_DIR}/godzilla_tcg_sim/godzilla_tcg_sim-Info.plist"
-SPLASH_DIR="${BUILD_DIR}/godzilla_tcg_sim/Images.xcassets/SplashImage.imageset"
+INFOPLIST="${BUILD_DIR}/${PROJECT_NAME}/${PROJECT_NAME}-Info.plist"
+SPLASH_DIR="${BUILD_DIR}/${PROJECT_NAME}/Images.xcassets/SplashImage.imageset"
 GAME_ICON="${PROJECT_DIR}/assets/icons/game_icon.png"
 
 if [ -f "${INFOPLIST}" ]; then
@@ -138,7 +146,7 @@ if [ -d "${SPLASH_DIR}" ] && [ -f "${GAME_ICON}" ]; then
 fi
 
 # Fix Release signing identity for free (Personal Team) Apple ID
-PBXPROJ="${BUILD_DIR}/godzilla_tcg_sim.xcodeproj/project.pbxproj"
+PBXPROJ="${BUILD_DIR}/${PROJECT_NAME}.xcodeproj/project.pbxproj"
 if [ -f "${PBXPROJ}" ]; then
     echo "Patching Release signing to Apple Development..."
     sed -i '' 's/"CODE_SIGN_IDENTITY\[sdk=iphoneos\*\]" = "iPhone Distribution"/"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Development"/g' "${PBXPROJ}"
@@ -150,13 +158,13 @@ echo ""
 
 # --- Build unsigned .ipa from command line ---
 
-ARCHIVE_PATH="${BUILD_DIR}/godzilla_tcg_sim.xcarchive"
-IPA_PATH="${BUILD_DIR}/godzilla_tcg_sim.ipa"
+ARCHIVE_PATH="${BUILD_DIR}/${PROJECT_NAME}.xcarchive"
+IPA_PATH="${BUILD_DIR}/${PROJECT_NAME}.ipa"
 
 echo "=== Building archive (unsigned) ==="
 xcodebuild \
-    -project "${BUILD_DIR}/godzilla_tcg_sim.xcodeproj" \
-    -scheme "godzilla_tcg_sim" \
+    -project "${BUILD_DIR}/${PROJECT_NAME}.xcodeproj" \
+    -scheme "${PROJECT_NAME}" \
     -configuration Release \
     -sdk iphoneos \
     -archivePath "${ARCHIVE_PATH}" \
@@ -176,7 +184,7 @@ PAYLOAD_DIR="${BUILD_DIR}/Payload"
 rm -rf "${PAYLOAD_DIR}"
 mkdir -p "${PAYLOAD_DIR}"
 cp -r "${ARCHIVE_PATH}/Products/Applications/"*.app "${PAYLOAD_DIR}/"
-cd "${BUILD_DIR}" && zip -qr "godzilla_tcg_sim.ipa" Payload
+cd "${BUILD_DIR}" && zip -qr "${PROJECT_NAME}.ipa" Payload
 rm -rf "${PAYLOAD_DIR}"
 
 if [ -f "${IPA_PATH}" ]; then
