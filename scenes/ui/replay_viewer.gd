@@ -17,9 +17,11 @@ var player2_board: Control
 @onready var exit_button: Button = $VBoxContainer/TopBar/ExitButton
 @onready var board_column: VBoxContainer = $VBoxContainer/Content/BoardColumn
 @onready var log_output: RichTextLabel = $VBoxContainer/Content/LogPanel/LogVBox/LogOutput
+@onready var prev_turn_button: Button = $VBoxContainer/Controls/PrevTurnButton
 @onready var prev_button: Button = $VBoxContainer/Controls/PrevButton
 @onready var play_pause_button: Button = $VBoxContainer/Controls/PlayPauseButton
 @onready var next_button: Button = $VBoxContainer/Controls/NextButton
+@onready var next_turn_button: Button = $VBoxContainer/Controls/NextTurnButton
 @onready var play_from_here_button: Button = $VBoxContainer/Controls/PlayFromHereButton
 @onready var speed_slider: HSlider = $VBoxContainer/Controls/SpeedSlider
 @onready var turn_slider: HSlider = $VBoxContainer/Controls/TurnSlider
@@ -60,8 +62,10 @@ func _ready() -> void:
 
 	# Connect controls
 	exit_button.pressed.connect(_on_exit_pressed)
+	prev_turn_button.pressed.connect(_on_prev_turn_pressed)
 	prev_button.pressed.connect(_on_prev_pressed)
 	next_button.pressed.connect(_on_next_pressed)
+	next_turn_button.pressed.connect(_on_next_turn_pressed)
 	play_pause_button.pressed.connect(_on_play_pause_pressed)
 	play_from_here_button.pressed.connect(_on_play_from_here_pressed)
 
@@ -124,7 +128,9 @@ func _render_snapshot(index: int) -> void:
 
 	# Update button states
 	prev_button.disabled = index <= 0
+	prev_turn_button.disabled = index <= 0
 	next_button.disabled = index >= total_steps - 1
+	next_turn_button.disabled = index >= total_steps - 1
 
 
 func _on_prev_pressed() -> void:
@@ -139,6 +145,33 @@ func _on_next_pressed() -> void:
 	if _snapshot_index < _replay.snapshots.size() - 1:
 		_render_snapshot(_snapshot_index + 1)
 		turn_slider.set_value_no_signal(float(_snapshot_index))
+
+
+func _on_prev_turn_pressed() -> void:
+	SfxManager.play("ui_click")
+	if _snapshot_index <= 0:
+		return
+	var current_turn: int = _replay.snapshots[_snapshot_index].get("turn_number", 0)
+	# Walk backward to find the first snapshot of the previous turn
+	var target := _snapshot_index - 1
+	while target > 0 and _replay.snapshots[target].get("turn_number", 0) == current_turn:
+		target -= 1
+	_render_snapshot(target)
+	turn_slider.set_value_no_signal(float(_snapshot_index))
+
+
+func _on_next_turn_pressed() -> void:
+	SfxManager.play("ui_click")
+	var max_idx: int = _replay.snapshots.size() - 1
+	if _snapshot_index >= max_idx:
+		return
+	var current_turn: int = _replay.snapshots[_snapshot_index].get("turn_number", 0)
+	# Walk forward to find the first snapshot of the next turn
+	var target := _snapshot_index + 1
+	while target < max_idx and _replay.snapshots[target].get("turn_number", 0) == current_turn:
+		target += 1
+	_render_snapshot(target)
+	turn_slider.set_value_no_signal(float(_snapshot_index))
 
 
 func _on_play_pause_pressed() -> void:
