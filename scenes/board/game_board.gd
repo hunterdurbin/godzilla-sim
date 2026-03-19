@@ -8,6 +8,11 @@ var turn_manager: TurnManager # Only exists on host/solo
 const CardScript := preload("res://scenes/cards/card.gd")
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
+# Replay recording
+var replay_recorder: ReplayRecorder
+var _save_game_button: Button
+var _loaded_from_save: bool = false
+
 # Bot state
 var bot_player: BotPlayer
 var is_bot_game: bool = false
@@ -490,7 +495,13 @@ func _ready() -> void:
 
 		# Host / solo: create and run TurnManager
 		turn_manager = TurnManager.new()
-		turn_manager.setup(CardData)
+		if not GameSerializer.pending_load.is_empty():
+			turn_manager.setup_from_save(GameSerializer.pending_load)
+			_loaded_from_save = true
+			_first_player_id = GameSerializer.pending_load.get("first_player_id", 0)
+			GameSerializer.pending_load = {}
+		else:
+			turn_manager.setup(CardData)
 
 		# Set player names from settings
 		turn_manager.game_state.player_names[0] = GameSettings.player_name
@@ -541,6 +552,9 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 		turn_manager.action_handler.effect_handler.card_evolved.connect(_on_card_evolved)
 		turn_manager.action_handler.effect_handler.card_destroyed.connect(_on_card_destroyed)
+
+		# Set up replay recorder
+		_setup_replay_recorder()
 
 		# Set up bot player for Solo v Bot mode
 		if is_bot_game:
@@ -634,6 +648,10 @@ func _ready() -> void:
 	# Bot card visibility toggle
 	if is_bot_game:
 		_setup_bot_visibility_toggle()
+
+	# Save game button (solo/bot only)
+	if not is_multiplayer_game:
+		_setup_save_button()
 
 	# Connect discard view
 	player1_board.discard_clicked.connect(_on_discard_clicked)
@@ -845,6 +863,15 @@ func _update_all_setting_indicators() -> void:
 
 
 func _start_game() -> void:
+	# Loaded from save: skip first-player choice, jump to saved turn
+	if _loaded_from_save:
+		_loaded_from_save = false
+		_apply_gradients_and_sync()
+		SfxManager.play("game_setup")
+		var saved_pid: int = turn_manager.game_state.current_player_id
+		turn_manager.start_game(saved_pid)
+		return
+
 	if is_bot_game:
 		# Solo v Bot: let the human choose who goes first
 		_first_player_chooser_id = 0
@@ -908,6 +935,26 @@ func _start_game() -> void:
 	turn_manager.start_game(_first_player_result)
 
 
+func _setup_replay_recorder() -> void:
+	replay_recorder = ReplayRecorder.new()
+	var seed_val: int = NetworkManager.bot_seed if NetworkManager.bot_seed >= 0 else 0
+	var mode_str: String
+	match NetworkManager.mode:
+		NetworkManager.Mode.SOLO: mode_str = "solo"
+		NetworkManager.Mode.SOLO_BOT: mode_str = "solo_bot"
+		NetworkManager.Mode.HOST, NetworkManager.Mode.CLIENT: mode_str = "lan"
+		NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT: mode_str = "online"
+		_: mode_str = "unknown"
+	var diff_str: String = BotConfig.Difficulty.keys()[NetworkManager.bot_difficulty] if is_bot_game else ""
+	var d_names: Array[String] = [
+		DecklistManager.get_player_deck_name(0),
+		DecklistManager.get_player_deck_name(1),
+	]
+	replay_recorder.start(turn_manager.game_state, seed_val, mode_str, diff_str, d_names)
+	turn_manager.turn_started.connect(replay_recorder.on_turn_started)
+	turn_manager.log_message.connect(replay_recorder.on_log_message)
+
+
 func _apply_bot_seed() -> void:
 	var s: int = NetworkManager.bot_seed
 	_bot_seed_was_explicit = s >= 0
@@ -969,6 +1016,44 @@ func _on_bot_visibility_toggled(toggled_on: bool) -> void:
 	_bot_visibility_button.text = "Hide Bot Cards" if toggled_on else "Show Bot Cards"
 	if player2_board:
 		player2_board.set_hand_face_down(not toggled_on)
+
+
+func _setup_save_button() -> void:
+	_save_game_button = Button.new()
+	_save_game_button.text = "Save Game"
+	_save_game_button.custom_minimum_size = Vector2(120, 36)
+	_save_game_button.add_theme_font_size_override("font_size", 14)
+	_save_game_button.pressed.connect(_on_save_game_pressed)
+	add_child(_save_game_button)
+	# Position below concede button
+	_save_game_button.position = Vector2(10, 90)
+
+
+func _on_save_game_pressed() -> void:
+	if not turn_manager or not turn_manager.game_state:
+		return
+	SfxManager.play("ui_click")
+	var mode_str: String
+	match NetworkManager.mode:
+		NetworkManager.Mode.SOLO: mode_str = "solo"
+		NetworkManager.Mode.SOLO_BOT: mode_str = "solo_bot"
+		_: mode_str = "solo"
+	var diff_str: String = BotConfig.Difficulty.keys()[NetworkManager.bot_difficulty] if is_bot_game else ""
+	var d_names: Array[String] = [
+		DecklistManager.get_player_deck_name(0),
+		DecklistManager.get_player_deck_name(1),
+	]
+	var data := GameSerializer.serialize_game_state(turn_manager.game_state, _first_player_id, mode_str, diff_str, d_names)
+	var path := GameSerializer.save_game_to_file(data)
+	if not path.is_empty():
+		_save_game_button.text = "Saved!"
+		_save_game_button.disabled = true
+		# Re-enable after 2 seconds
+		get_tree().create_timer(2.0).timeout.connect(func():
+			if is_instance_valid(_save_game_button):
+				_save_game_button.text = "Save Game"
+				_save_game_button.disabled = false
+		)
 
 
 func _apply_gradients_and_sync() -> void:
@@ -2670,6 +2755,10 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 			_flush_broadcast()
 		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
 		_rpc_receive_game_ended.rpc(winner_id, reason)
+	# Save replay
+	if replay_recorder:
+		replay_recorder.finish(winner_id, reason, _first_player_id)
+		replay_recorder.save()
 	RpcLogger.print_summary()
 	_upload_stats(winner_id, reason, false)
 

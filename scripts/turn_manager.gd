@@ -80,6 +80,48 @@ func setup(card_data_node: Node) -> void:
 	game_started.emit()
 
 
+func setup_from_save(data: Dictionary) -> void:
+	## Restore a game from a saved state dictionary.
+	game_state = GameState.new()
+	rules_engine = RulesEngine.new()
+	action_handler = ActionHandler.new()
+	effect_handler = EffectHandler.new()
+	effect_handler.setup(game_state)
+	effect_handler.action_handler = action_handler
+	action_handler.effect_handler = effect_handler
+	rules_engine.effect_handler = effect_handler
+
+	# Restore game-level state
+	game_state.turn_number = data.get("turn_number", 1) - 1  # Will be incremented by _begin_turn
+	game_state.current_player_id = data.get("current_player_id", 0)
+	var pn: Array = data.get("player_names", ["Player 1", "Player 2"])
+	game_state.player_names = [str(pn[0]) if pn.size() > 0 else "Player 1", str(pn[1]) if pn.size() > 1 else "Player 2"]
+
+	# Restore player states
+	var players_data: Array = data.get("players", [])
+	for i in range(2):
+		if i < players_data.size():
+			game_state.players[i] = GameSerializer.deserialize_to_player_state(players_data[i])
+
+	# Register effects for all cards currently on the field
+	for player in game_state.players:
+		for zone_stack in player.zones:
+			for card in zone_stack:
+				effect_handler.get_effect(card)
+		for strat in player.strategy_zones:
+			if strat is Dictionary and not strat.is_empty():
+				effect_handler.get_effect(strat)
+		if not player.current_monster.is_empty():
+			effect_handler.get_effect(player.current_monster)
+
+	# Connect signals
+	game_state.game_over.connect(_on_game_over)
+	for player in game_state.players:
+		player.hand_changed.connect(_on_hand_changed)
+
+	game_started.emit()
+
+
 func start_game(first_player_id: int = 0) -> void:
 	_begin_turn(first_player_id)
 

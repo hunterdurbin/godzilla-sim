@@ -6,6 +6,7 @@ extends Control
 @onready var lan_button: Button = $CenterContainer/VBoxContainer/LanButton
 @onready var online_button: Button = $CenterContainer/VBoxContainer/OnlineButton
 @onready var deck_builder_button: Button = $CenterContainer/VBoxContainer/DeckBuilderButton
+@onready var extras_button: Button = $CenterContainer/VBoxContainer/ExtrasButton
 @onready var options_button: Button = $OptionsButton
 @onready var sound_button: Button = $SoundButton
 @onready var music_button: Button = $MusicButton
@@ -27,6 +28,7 @@ func _ready() -> void:
 	lan_button.pressed.connect(_on_lan_pressed)
 	online_button.pressed.connect(_on_online_pressed)
 	deck_builder_button.pressed.connect(_on_deck_builder_pressed)
+	extras_button.pressed.connect(_on_extras_pressed)
 	options_button.pressed.connect(_on_options_pressed)
 	sound_button.gui_input.connect(_on_sound_gui_input)
 	music_button.gui_input.connect(_on_music_gui_input)
@@ -252,6 +254,11 @@ func _on_online_pressed() -> void:
 func _on_deck_builder_pressed() -> void:
 	SfxManager.play("ui_click")
 	NetworkManager.change_scene("res://scenes/ui/DeckBuilder.tscn")
+
+
+func _on_extras_pressed() -> void:
+	SfxManager.play("ui_click")
+	NetworkManager.change_scene("res://scenes/ui/Extras.tscn")
 
 
 func _on_patreon_pressed() -> void:
