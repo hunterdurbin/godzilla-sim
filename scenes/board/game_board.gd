@@ -950,8 +950,7 @@ func _setup_replay_recorder() -> void:
 		DecklistManager.get_player_deck_name(0),
 		DecklistManager.get_player_deck_name(1),
 	]
-	replay_recorder.start(turn_manager.game_state, seed_val, mode_str, diff_str, d_names)
-	turn_manager.turn_started.connect(replay_recorder.on_turn_started)
+	replay_recorder.start(turn_manager.game_state, seed_val, mode_str, diff_str, d_names, get_tree())
 	turn_manager.log_message.connect(replay_recorder.on_log_message)
 
 
@@ -2804,6 +2803,8 @@ func _on_state_changed() -> void:
 	if not _discard_selecting:
 		_update_hand_visibility(_get_current_pid())
 	_broadcast_state()
+	if replay_recorder:
+		replay_recorder.on_state_changed()
 
 
 func _on_log_message(text: String) -> void:

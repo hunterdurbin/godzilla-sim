@@ -86,7 +86,7 @@ theme_override_constants/separation = 12
 [node name="PrevButton" type="Button" parent="VBoxContainer/Controls"]
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
-text = "< Prev Turn"
+text = "< Prev"
 theme_override_font_sizes/font_size = 16
 
 [node name="PlayPauseButton" type="Button" parent="VBoxContainer/Controls"]
@@ -98,7 +98,7 @@ theme_override_font_sizes/font_size = 16
 [node name="NextButton" type="Button" parent="VBoxContainer/Controls"]
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
-text = "Next Turn >"
+text = "Next >"
 theme_override_font_sizes/font_size = 16
 
 [node name="SpeedLabel" type="Label" parent="VBoxContainer/Controls"]

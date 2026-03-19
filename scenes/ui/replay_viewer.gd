@@ -1,7 +1,8 @@
 extends Control
 
-## Replay viewer: renders per-turn state snapshots with PlayerBoard.sync_to_state().
-## No game logic — just visual rendering of captured snapshots.
+## Replay viewer: renders state snapshots with PlayerBoard.sync_to_state().
+## Snapshots are captured per-interaction (every board state change), so
+## stepping forward/back shows each card play, draw, etc.
 
 var _replay: ReplayData
 var _snapshot_index: int = 0
@@ -21,6 +22,8 @@ var player2_board: Control
 @onready var next_button: Button = $VBoxContainer/Controls/NextButton
 @onready var speed_slider: HSlider = $VBoxContainer/Controls/SpeedSlider
 @onready var turn_slider: HSlider = $VBoxContainer/Controls/TurnSlider
+
+const PHASE_NAMES := ["Start", "Main", "Counter", "End"]
 
 
 func _ready() -> void:
@@ -85,16 +88,18 @@ func _process(delta: float) -> void:
 func _render_snapshot(index: int) -> void:
 	_snapshot_index = index
 	var snap: Dictionary = _replay.snapshots[index]
+	var total_steps: int = _replay.snapshots.size()
 
-	# Update turn label
+	# Build turn label: step N / total — Turn X — Phase — Player
 	var turn_num: int = snap.get("turn_number", 0)
 	var current_pid: int = snap.get("current_player_id", 0)
-	var max_turns: int = _replay.total_turns
+	var phase_idx: int = snap.get("phase", 0)
+	var phase_name: String = PHASE_NAMES[phase_idx] if phase_idx < PHASE_NAMES.size() else "?"
 	var player_name: String = _replay.player_names[current_pid] if current_pid < _replay.player_names.size() else "?"
-	turn_label.text = "Turn %d/%d — %s" % [turn_num, max_turns, player_name]
+	turn_label.text = "Step %d/%d — Turn %d — %s — %s" % [index + 1, total_steps, turn_num, phase_name, player_name]
 
 	# Indicate final snapshot
-	if index == _replay.snapshots.size() - 1 and _replay.winner_id >= 0:
+	if index == total_steps - 1 and _replay.winner_id >= 0:
 		var winner_name: String = _replay.player_names[_replay.winner_id] if _replay.winner_id < _replay.player_names.size() else "?"
 		turn_label.text += "  [GAME OVER — %s wins]" % winner_name
 
@@ -108,15 +113,16 @@ func _render_snapshot(index: int) -> void:
 		player1_board.sync_to_state(ps0)
 		player2_board.sync_to_state(ps1)
 
-	# Display log lines
+	# Display accumulated log lines up to (and including) this snapshot
 	log_output.clear()
-	var log_lines: Array = snap.get("log_lines", [])
-	for line in log_lines:
-		log_output.append_text(str(line) + "\n")
+	for i in range(index + 1):
+		var log_lines: Array = _replay.snapshots[i].get("log_lines", [])
+		for line in log_lines:
+			log_output.append_text(str(line) + "\n")
 
 	# Update button states
 	prev_button.disabled = index <= 0
-	next_button.disabled = index >= _replay.snapshots.size() - 1
+	next_button.disabled = index >= total_steps - 1
 
 
 func _on_prev_pressed() -> void:
