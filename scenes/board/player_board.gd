@@ -6,6 +6,7 @@ extends Control
 ## Mirroring for Player 2 flips all child anchors and the background texture.
 
 signal zone_card_dropped(zone_index: int, card: Control)
+signal deck_clicked(player_id: int)
 signal discard_clicked(player_id: int)
 signal monster_deck_clicked(player_id: int)
 signal zone_slot_clicked(zone_number: int, player_id: int)
@@ -259,6 +260,8 @@ func _setup_references() -> void:
 		_deck_display.add_child(_deck_count_badge)
 		_deck_display.mouse_entered.connect(_deck_count_badge.show)
 		_deck_display.mouse_exited.connect(_deck_count_badge.hide)
+		_deck_display.mouse_filter = Control.MOUSE_FILTER_STOP
+		_deck_display.gui_input.connect(_on_deck_gui_input)
 
 	# Discard: face-up top card + empty placeholder + hover count badge
 	if discard_display:
@@ -823,6 +826,11 @@ func toggle_mirrored() -> void:
 		board_bg.flip_v = is_mirrored
 	# Recalculate LayoutContainer crop for the new mirrored state
 	_update_layout()
+
+
+func _on_deck_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		deck_clicked.emit(player_id)
 
 
 func _on_discard_gui_input(event: InputEvent) -> void:

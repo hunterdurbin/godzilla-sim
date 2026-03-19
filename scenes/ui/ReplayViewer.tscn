@@ -55,28 +55,80 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 3.0
 
-[node name="LogPanel" type="PanelContainer" parent="VBoxContainer/Content"]
+[node name="RightPanel" type="VBoxContainer" parent="VBoxContainer/Content"]
 layout_mode = 2
 custom_minimum_size = Vector2(250, 0)
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.0
 
-[node name="LogVBox" type="VBoxContainer" parent="VBoxContainer/Content/LogPanel"]
+[node name="P2HandPanel" type="PanelContainer" parent="VBoxContainer/Content/RightPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 120)
+
+[node name="P2HandVBox" type="VBoxContainer" parent="VBoxContainer/Content/RightPanel/P2HandPanel"]
 layout_mode = 2
 
-[node name="LogTitle" type="Label" parent="VBoxContainer/Content/LogPanel/LogVBox"]
+[node name="P2HandTitle" type="Label" parent="VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox"]
+layout_mode = 2
+text = "P2 Hand (0)"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="P2HandScroll" type="ScrollContainer" parent="VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 0
+
+[node name="P2HandGrid" type="HBoxContainer" parent="VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox/P2HandScroll"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LogPanel" type="PanelContainer" parent="VBoxContainer/Content/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LogVBox" type="VBoxContainer" parent="VBoxContainer/Content/RightPanel/LogPanel"]
+layout_mode = 2
+
+[node name="LogTitle" type="Label" parent="VBoxContainer/Content/RightPanel/LogPanel/LogVBox"]
 layout_mode = 2
 text = "Game Log"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
 
-[node name="LogOutput" type="RichTextLabel" parent="VBoxContainer/Content/LogPanel/LogVBox"]
+[node name="LogOutput" type="RichTextLabel" parent="VBoxContainer/Content/RightPanel/LogPanel/LogVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
 scroll_following = true
 theme_override_font_sizes/normal_font_size = 13
+
+[node name="P1HandPanel" type="PanelContainer" parent="VBoxContainer/Content/RightPanel"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 120)
+
+[node name="P1HandVBox" type="VBoxContainer" parent="VBoxContainer/Content/RightPanel/P1HandPanel"]
+layout_mode = 2
+
+[node name="P1HandTitle" type="Label" parent="VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox"]
+layout_mode = 2
+text = "P1 Hand (0)"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 13
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="P1HandScroll" type="ScrollContainer" parent="VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 0
+
+[node name="P1HandGrid" type="HBoxContainer" parent="VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox/P1HandScroll"]
+layout_mode = 2
+theme_override_constants/separation = 4
 
 [node name="Controls" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
