@@ -515,7 +515,7 @@ func _should_use_custom_back() -> bool:
 	# Mode 1: myself only
 	if owner_player_id == -1:
 		return true
-	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	return owner_player_id == local_id
 
 

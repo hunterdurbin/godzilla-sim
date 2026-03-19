@@ -192,7 +192,7 @@ func _setup_references() -> void:
 		_apply_mirror()
 
 	# Determine if this is the local player's board
-	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	var is_local := player_id == local_id
 
 	var rage := $LayoutContainer.find_child("RageDisplay", false, false) as VBoxContainer
@@ -333,7 +333,7 @@ func _find_custom_file(dir_path: String, base_name: String) -> String:
 func _apply_custom_playmat() -> void:
 	if not GameSettings.custom_playmat_enabled:
 		return
-	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	if player_id != local_id and not GameSettings.custom_playmat_opponent:
 		return
 	var dir_path := GameSettings.get_custom_base_path().path_join("playmat")
@@ -352,7 +352,7 @@ func _apply_custom_playmat() -> void:
 func apply_monster_gradient(monster_data: Dictionary) -> void:
 	if GameSettings.color_overlay_mode == 0:
 		return
-	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	var is_self := player_id == local_id
 	if is_self and GameSettings.color_overlay_mode == 2:
 		return
@@ -1059,7 +1059,7 @@ func _should_use_custom_back() -> bool:
 	if mode == 2:
 		return true
 	# Mode 1: myself only
-	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else 0
+	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	return player_id == local_id
 
 
