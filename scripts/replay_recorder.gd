@@ -88,11 +88,13 @@ func finish(winner_id: int, reason: String, first_player_id: int) -> ReplayData:
 
 
 func save() -> String:
+	var ver := ReplayData._get_game_version()
 	var fname := "replay_%s.json" % _replay.timestamp.replace(" ", "_").replace(":", "").replace("-", "")
-	var path := ReplayData.REPLAY_DIR + fname
+	var path := ReplayData.get_version_recent_dir(ver) + fname
 	var err := ReplayData.save_to_file(_replay, path)
 	if err != OK:
 		push_warning("ReplayRecorder: Failed to save replay to %s (error %d)" % [path, err])
 		return ""
 	print("[Replay] Saved to %s (%d snapshots)" % [path, _replay.snapshots.size()])
+	ReplayData.prune_recent(ver)
 	return path
