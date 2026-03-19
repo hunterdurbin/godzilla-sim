@@ -56,4 +56,4 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	# Only trigger when rage increases
 	if new_rage <= old_rage:
 		return
-	await ctx.effect_handler.create_tokens_in_empty_zones(ctx.owner, "EBP02-T03", 2)
+	await ctx.effect_handler.create_tokens_in_zones(ctx.owner, "EBP02-T03", 2)
