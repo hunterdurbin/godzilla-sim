@@ -19,6 +19,8 @@ If you already have SideStore or AltStore installed, you can add our source to g
    ```
 3. Find "Unofficial Godzilla TCG Sim" in the source and tap **Get**
 
+> **Unstable builds:** The source includes both a **stable** and an **unstable (pre-release)** version. You can install both side-by-side since they use different bundle IDs. Note that installing both uses **2 of your 3** free sideloading slots. The unstable version appears with an orange tint and includes the latest features still being tested.
+
 ---
 
 ## Option 1: SideStore (Recommended)
