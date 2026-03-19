@@ -35,6 +35,12 @@ TouchHelper="*res://scripts/touch_helper.gd"
 SfxManager="*res://scripts/sfx_manager.gd"
 MusicManager="*res://scripts/music_manager.gd"
 
+[debug]
+
+file_logging/enable_file_logging=true
+file_logging/log_path="user://crash_logs/godot.log"
+file_logging/max_log_files=10
+
 [display]
 
 window/size/viewport_width=1280
