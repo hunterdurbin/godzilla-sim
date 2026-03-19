@@ -146,13 +146,13 @@ func _load() -> void:
 	custom_card_art_enabled = config.get_value("visual", "custom_card_art_enabled", false)
 	custom_card_back_mode = config.get_value("visual", "custom_card_back_mode", 0)
 	# Migrate old bool sound_enabled to new int sound_volume
-	var _old_sound: Variant = config.get_value("audio", "sound_enabled", null)
-	if _old_sound != null and _old_sound is bool:
+	var _old_sound: Variant = config.get_value("audio", "sound_enabled", "") if config.has_section_key("audio", "sound_enabled") else ""
+	if _old_sound is bool:
 		sound_volume = 4 if _old_sound else 0
 	else:
 		sound_volume = config.get_value("audio", "sound_volume", 2)
-	var _old_music: Variant = config.get_value("audio", "music_enabled", null)
-	if _old_music != null and _old_music is bool:
+	var _old_music: Variant = config.get_value("audio", "music_enabled", "") if config.has_section_key("audio", "music_enabled") else ""
+	if _old_music is bool:
 		music_volume = 4 if _old_music else 0
 	else:
 		music_volume = config.get_value("audio", "music_volume", 2)

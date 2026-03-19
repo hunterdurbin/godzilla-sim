@@ -3161,12 +3161,27 @@ func _on_main_menu_pressed() -> void:
 	if _reconnect_overlay:
 		_reconnect_overlay.visible = false
 	if is_multiplayer_game:
-		if end_game_panel.visible and multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
-			RpcLogger.log_send("rematch_declined", 0)
-			_rpc_rematch_declined.rpc()
+		var connected := multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
+		if end_game_panel.visible:
+			# Game already over — notify rematch declined
+			if connected:
+				RpcLogger.log_send("rematch_declined", 0)
+				_rpc_rematch_declined.rpc()
+		elif connected and turn_manager and not turn_manager.is_game_over:
+			# Mid-game exit counts as concession
+			if NetworkManager.is_host():
+				var loser_id := local_player_id
+				var winner_id := 1 - loser_id
+				var loser_name := turn_manager.game_state.player_names[loser_id]
+				turn_manager._on_game_over(winner_id, "%s conceded" % loser_name)
+			else:
+				RpcLogger.log_send("concede", 0)
+				_rpc_concede.rpc_id(NetworkManager.host_peer_id)
 		GameSettings.clear_reconnect_session()
 		NetworkManager.is_in_game = false
 		NetworkManager.notify_leaving()
+		# Wait a frame so RPCs (game end, concede, leaving) flush before closing the peer
+		await get_tree().process_frame
 		NetworkManager.disconnect_game()
 	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
 
