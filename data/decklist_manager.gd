@@ -192,9 +192,9 @@ func delete_decklist(deck_name: String) -> bool:
 	return true
 
 
-static func sanitize_filename(name: String) -> String:
+static func sanitize_filename(file_name: String) -> String:
 	## Remove characters illegal in Windows filenames: \ / : * ? " < > |
-	return name.replace("\\", "_").replace("/", "_").replace(":", "-") \
+	return file_name.replace("\\", "_").replace("/", "_").replace(":", "-") \
 		.replace("*", "_").replace("?", "_").replace("\"", "'") \
 		.replace("<", "_").replace(">", "_").replace("|", "_")
 
