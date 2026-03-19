@@ -128,14 +128,11 @@ func start_game(first_player_id: int = 0) -> void:
 	_begin_turn(first_player_id)
 
 
-func resume_to_main_phase(player_id: int, pending_effects: Array = [], resolve_effects: bool = false) -> void:
+func resume_to_main_phase(player_id: int, resolve_effects: bool = false) -> void:
 	## Resume a loaded game into the main phase.
-	## pending_effects: serialized pending standby entries to restore before resolving.
-	## resolve_effects: when true AND pending_effects is empty, runs trigger_phase_start
-	## and resolve_check_timing (e.g. snapshot was before main-phase effects fired).
-	## Pending effects take priority — if present, they are pre-populated into the
-	## standby queue so trigger_phase_start drains them naturally alongside any
-	## newly discovered phase-start entries.
+	## When resolve_effects is true, runs trigger_phase_start and
+	## resolve_check_timing before prompting (snapshot was before main-phase
+	## effects fired).  When false, skips straight to the player action prompt.
 	game_state.current_player_id = player_id
 	game_state.turn_number += 1  # Was decremented by 1 in setup_from_save
 	game_state.current_phase = CardEnums.GamePhase.MAIN
@@ -144,16 +141,7 @@ func resume_to_main_phase(player_id: int, pending_effects: Array = [], resolve_e
 	turn_started.emit(player_id)
 	phase_started.emit(CardEnums.GamePhase.MAIN)
 
-	if not pending_effects.is_empty():
-		# Pre-populate pending queue; trigger_phase_start will drain them
-		# alongside any phase-start entries it discovers.
-		effect_handler.restore_pending_effects(pending_effects)
-		game_state.current_sub_phase = 0
-		sub_phase_changed.emit(0) # Resolve Effects
-		await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
-		await action_handler.resolve_check_timing(game_state)
-		log_message.emit(GameLog.main_phase())
-	elif resolve_effects:
+	if resolve_effects:
 		game_state.current_sub_phase = 0
 		sub_phase_changed.emit(0) # Resolve Effects
 		await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)

@@ -4,18 +4,18 @@ extends RefCounted
 ## Records state snapshots during gameplay for replay viewing.
 ## Captures a snapshot on every board state change (debounced per-frame)
 ## so the viewer can step through each interaction.
+## Boundary snapshots are captured synchronously when a sub-phase starts,
+## before any effects modify state. Only boundary snapshots allow "Play From Here".
 
 var _replay: ReplayData
 var _game_state: GameState
-var _effect_handler: EffectHandler
 var _pending_logs: PackedStringArray = []
 var _snapshot_pending: bool = false  # Debounce flag — at most one snapshot per frame
 var _scene_tree: SceneTree  # Needed for deferred frame callback
 
 
-func start(game_state: GameState, seed_val: int, mode: String, bot_difficulty: String, deck_names: Array[String], scene_tree: SceneTree, effect_handler: EffectHandler = null) -> void:
+func start(game_state: GameState, seed_val: int, mode: String, bot_difficulty: String, deck_names: Array[String], scene_tree: SceneTree) -> void:
 	_game_state = game_state
-	_effect_handler = effect_handler
 	_scene_tree = scene_tree
 	_replay = ReplayData.new()
 	_replay.game_version = ProjectSettings.get_setting("application/config/version", "")
@@ -41,18 +41,29 @@ func on_log_message(text: String) -> void:
 	_pending_logs.append(text)
 
 
+func on_phase_boundary(_sub_index: int) -> void:
+	## Capture an immediate boundary snapshot when a sub-phase starts,
+	## before any effects run. These are the only snapshots that allow
+	## "Play From Here" since there are no pending effects in the queue.
+	_do_capture(true)
+
+
 func _capture_snapshot() -> void:
 	_snapshot_pending = false
+	_do_capture(false)
+
+
+func _do_capture(is_boundary: bool) -> void:
 	var snap := {
 		"turn_number": _game_state.turn_number,
 		"current_player_id": _game_state.current_player_id,
 		"phase": int(_game_state.current_phase),
 		"sub_phase": _game_state.current_sub_phase,
+		"is_boundary": is_boundary,
 		"players": [
 			GameSerializer.serialize_player_state(_game_state.players[0]),
 			GameSerializer.serialize_player_state(_game_state.players[1]),
 		],
-		"pending_effects": _effect_handler.get_pending_effects_data() if _effect_handler else [],
 		"log_lines": Array(_pending_logs),
 	}
 	_pending_logs = []
@@ -66,20 +77,7 @@ func finish(winner_id: int, reason: String, first_player_id: int) -> ReplayData:
 		_capture_snapshot()
 
 	# Capture a final snapshot with any remaining logs
-	var final_snap := {
-		"turn_number": _game_state.turn_number,
-		"current_player_id": _game_state.current_player_id,
-		"phase": int(_game_state.current_phase),
-		"sub_phase": _game_state.current_sub_phase,
-		"players": [
-			GameSerializer.serialize_player_state(_game_state.players[0]),
-			GameSerializer.serialize_player_state(_game_state.players[1]),
-		],
-		"pending_effects": _effect_handler.get_pending_effects_data() if _effect_handler else [],
-		"log_lines": Array(_pending_logs),
-	}
-	_pending_logs = []
-	_replay.snapshots.append(final_snap)
+	_do_capture(false)
 
 	_replay.winner_id = winner_id
 	_replay.win_reason = reason

@@ -140,6 +140,7 @@ func _render_snapshot(index: int) -> void:
 	prev_turn_button.disabled = index <= 0
 	next_button.disabled = index >= total_steps - 1
 	next_turn_button.disabled = index >= total_steps - 1
+	play_from_here_button.disabled = not snap.get("is_boundary", false)
 
 
 func _on_prev_pressed() -> void:
@@ -212,7 +213,6 @@ func _on_play_from_here_pressed() -> void:
 		"bot_difficulty": "",
 		"deck_names": Array(_replay.deck_names),
 		"players": snap.get("players", []),
-		"pending_effects": snap.get("pending_effects", []),
 	}
 	NetworkManager.mode = NetworkManager.Mode.SOLO
 	NetworkManager.local_player_id = 0
