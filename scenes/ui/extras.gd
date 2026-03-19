@@ -24,6 +24,7 @@ var _online_load_status: Label = null
 var _online_load_code_label: Label = null
 var _online_load_copy_btn: Button = null
 var _online_load_start_btn: Button = null
+var _load_chosen_seat: int = 0
 
 
 func _ready() -> void:
@@ -227,7 +228,10 @@ func _populate_save_list_for_online(saves: Array[Dictionary]) -> void:
 		info_btn.pressed.connect(func():
 			SfxManager.play("ui_click")
 			_save_popup.hide()
-			_host_online_with_save(path)
+			_show_player_choice_dialog(names, func(chosen_id: int):
+				_load_chosen_seat = chosen_id
+				_host_online_with_save(path)
+			)
 		)
 		row.add_child(info_btn)
 		_save_list_vbox.add_child(row)
@@ -358,6 +362,10 @@ func _do_host_online_for_load() -> void:
 		_online_load_status.text = "Failed to connect to relay server (error %d)" % err
 		GameSerializer.pending_load = {}
 		return
+
+	# Override host seat to the player's chosen seat
+	NetworkManager.local_player_id = _load_chosen_seat
+	NetworkManager.peer_player_map[1] = _load_chosen_seat
 
 	_online_load_code_label.text = NetworkManager.get_game_code()
 	_online_load_copy_btn.visible = true
@@ -1034,7 +1042,10 @@ func _build_save_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
 	info_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
 		_save_popup.hide()
-		_launch_load_game(path)
+		_show_player_choice_dialog(names, func(chosen_id: int):
+			NetworkManager.local_player_id = chosen_id
+			_launch_load_game(path)
+		)
 	)
 	row.add_child(info_btn)
 
@@ -1144,6 +1155,77 @@ func _show_save_label_dialog(path: String, current_label: String) -> void:
 	line_edit.grab_focus()
 
 
+func _show_player_choice_dialog(names: Array, on_chosen: Callable) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(360, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+
+	var label := Label.new()
+	label.text = "Play as which player?"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 20)
+	vbox.add_child(label)
+
+	var p1_name: String = str(names[0]) if names.size() > 0 else "Player 1"
+	var p2_name: String = str(names[1]) if names.size() > 1 else "Player 2"
+
+	var p1_btn := Button.new()
+	p1_btn.text = "Play as %s (Player 1)" % p1_name
+	p1_btn.custom_minimum_size = Vector2(0, 44)
+	p1_btn.add_theme_font_size_override("font_size", 18)
+	p1_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+		on_chosen.call(0)
+	)
+	vbox.add_child(p1_btn)
+
+	var p2_btn := Button.new()
+	p2_btn.text = "Play as %s (Player 2)" % p2_name
+	p2_btn.custom_minimum_size = Vector2(0, 44)
+	p2_btn.add_theme_font_size_override("font_size", 18)
+	p2_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+		on_chosen.call(1)
+	)
+	vbox.add_child(p2_btn)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(120, 36)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 16)
+	cancel_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+	)
+	vbox.add_child(cancel_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+	popup.popup_centered()
+
+
 func _launch_load_game(path: String) -> void:
 	var data := GameSerializer.load_save_file(path)
 	if data.is_empty():
@@ -1169,5 +1251,4 @@ func _launch_load_game(path: String) -> void:
 				"HARD": diff = BotConfig.Difficulty.HARD
 			NetworkManager.set_bot_difficulty(diff)
 		_: NetworkManager.mode = NetworkManager.Mode.SOLO
-	NetworkManager.local_player_id = 0
 	NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")

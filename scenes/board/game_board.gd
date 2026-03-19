@@ -475,7 +475,7 @@ func _ready() -> void:
 
 	is_multiplayer_game = NetworkManager.is_multiplayer()
 	is_bot_game = NetworkManager.mode == NetworkManager.Mode.SOLO_BOT
-	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game else 0
+	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	_match_stacked_view = _match_stacked_view
 
 	# Wire hand CardManagers to PlayerBoards
@@ -512,7 +512,7 @@ func _ready() -> void:
 			turn_manager.setup(CardData)
 
 		# Set player names from settings
-		turn_manager.game_state.player_names[0] = GameSettings.player_name
+		turn_manager.game_state.player_names[local_player_id] = GameSettings.player_name
 		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
 		for i in range(2):
 			if i < _turn_tracker_headers.size():
@@ -2775,10 +2775,16 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 			_flush_broadcast()
 		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
 		_rpc_receive_game_ended.rpc(winner_id, reason)
-	# Save replay
+	# Save replay (host)
 	if replay_recorder:
 		replay_recorder.finish(winner_id, reason, _first_player_id)
 		replay_recorder.save()
+		# Send replay to client so they get a complete copy
+		if is_multiplayer_game and NetworkManager.is_host():
+			var replay_json := JSON.stringify(replay_recorder._replay.to_dict())
+			var compressed := replay_json.to_utf8_buffer().compress(FileAccess.COMPRESSION_GZIP)
+			print("[Replay] Sending replay to client (%d bytes compressed)" % compressed.size())
+			_rpc_receive_replay.rpc(compressed)
 	RpcLogger.print_summary()
 	_upload_stats(winner_id, reason, false)
 
@@ -3319,7 +3325,7 @@ func _execute_rematch() -> void:
 		turn_manager = TurnManager.new()
 		turn_manager.setup(CardData)
 
-		turn_manager.game_state.player_names[0] = GameSettings.player_name
+		turn_manager.game_state.player_names[local_player_id] = GameSettings.player_name
 		GameLog.player_names = GameLog.disambiguate(
 			turn_manager.game_state.player_names, local_player_id)
 		for i in range(2):
@@ -7407,6 +7413,30 @@ func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	btn_rematch.text = "Rematch"
 	_disable_all_buttons()
 	RpcLogger.print_summary()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_receive_replay(compressed: PackedByteArray) -> void:
+	RpcLogger.log_receive("receive_replay", compressed.size())
+	var json_bytes := compressed.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+	if json_bytes.is_empty():
+		push_warning("[Replay] Failed to decompress replay data")
+		return
+	var json := JSON.new()
+	if json.parse(json_bytes.get_string_from_utf8()) != OK:
+		push_warning("[Replay] Failed to parse replay JSON")
+		return
+	var replay := ReplayData.new()
+	replay.from_dict(json.data)
+	var ver := ReplayData._get_game_version()
+	var fname := "replay_%s.json" % replay.timestamp.replace(" ", "_").replace(":", "").replace("-", "")
+	var path := ReplayData.get_version_recent_dir(ver) + fname
+	var err := ReplayData.save_to_file(replay, path)
+	if err == OK:
+		print("[Replay] Client saved replay to %s (%d snapshots)" % [path, replay.snapshots.size()])
+		ReplayData.prune_recent(ver)
+	else:
+		push_warning("[Replay] Client failed to save replay (error %d)" % err)
 
 
 # --- Multiplayer: State deserialization (client) ---

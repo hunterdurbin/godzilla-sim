@@ -6,6 +6,9 @@ extends RefCounted
 ## so the viewer can step through each interaction.
 ## Boundary snapshots are captured synchronously when a sub-phase starts,
 ## before any effects modify state. Only boundary snapshots allow "Play From Here".
+##
+## Runs on the host side only. In multiplayer, the host sends the finished
+## replay to the client via RPC at game end so both players get a full copy.
 
 var _replay: ReplayData
 var _game_state: GameState
