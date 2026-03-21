@@ -2848,6 +2848,7 @@ func _on_log_message(text: String) -> void:
 func _on_chat_submitted(text: String) -> void:
 	chat_input.clear()
 	chat_input.release_focus()
+	get_tree().create_timer(0.0).timeout.connect(chat_input.grab_focus)
 	var trimmed := text.strip_edges()
 	if trimmed.is_empty():
 		return
@@ -3805,6 +3806,10 @@ func _end_snap_preview() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and chat_input.has_focus():
+		if not chat_input.get_global_rect().has_point(event.global_position):
+			chat_input.release_focus()
+
 	var _zoom_fresh := card_zoom_overlay.visible and (Engine.get_process_frames() - _zoom_shown_frame) <= 2
 
 	# Pinch-to-zoom and drag-to-pan on card zoom overlay (touch only)
