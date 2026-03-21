@@ -25,6 +25,8 @@ func _build_card_templates() -> void:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
 	for card in ESC01_CARDS:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
+	for card in EFC01_CARDS:
+		CARD_TEMPLATES[card["id"]] = card.duplicate()
 
 
 # --- EBP01: Booster Pack 01 ---
@@ -3307,6 +3309,81 @@ var ESC01_CARDS: Array[Dictionary] = [
 		"invasion_icon": 1,
 		"description": "When playing this from your hand, if you discard a <Godzilla> card from your hand you can play this card at a -4 rank. (Afterwards it's a Rank 8).\nIf this is in the same column as your opponent's Monster card this gains +3000 counter power.\nWhen you successfully counter your opponent's Monster card, place this at the bottom of your deck.",
 		"effect_script": "res://scripts/effects/esc01/esc01_001.gd"
+	},
+]
+
+
+# --- EFC01: Festival Collection 01 ---
+var EFC01_CARDS: Array[Dictionary] = [
+	{
+		"id": "EFC01-001",
+		"name": "Godzilla(Gojika Festival)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 4,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.FESTIVAL_GODZILLA],
+		"threat_level": 28000,
+		"invasion_icon": 1,
+		"description": "<Burst3>\nIf every zone adjacent to this card's zone has a battle card with <Festival Godzilla>, this card gains +10000 counter power.",
+		"effect_script": "res://scripts/effects/efc01/efc01_001.gd"
+	},
+	{
+		"id": "EFC01-002",
+		"name": "Gigan(Gojika Festival)",
+		"card_type": CardEnums.CardType.BATTLE,
+		"rank": 5,
+		"colors": [CardEnums.CardColor.WHITE],
+		"traits": [CardEnums.CardTrait.GIGAN, CardEnums.CardTrait.WEAPON, CardEnums.CardTrait.FESTIVAL_GODZILLA],
+		"counter_power": 3000,
+		"invasion_icon": 1,
+		"description": "<Enter> If this card is in a zone adjacent to your monster card, send the top card of your deck to your discard pile. If it is a battle card, you may return up to 1 monster card from your discard pile to your hand.",
+		"effect_script": "res://scripts/effects/efc01/efc01_002.gd"
+	},
+	{
+		"id": "EFC01-003",
+		"name": "Jet Jaguar(Gojika Festival)",
+		"card_type": CardEnums.CardType.BATTLE,
+		"rank": 6,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.JET_JAGUAR, CardEnums.CardTrait.MECH, CardEnums.CardTrait.FESTIVAL_GODZILLA],
+		"counter_power": 5000,
+		"invasion_icon": 1,
+		"description": "<Enter> You may discard a card with <Gigan> and <Festival Godzilla> from your hand. If you do, search your deck for a battle card with <Weapon> or <Mech> and invasion icon 2, and add it to your hand.",
+		"effect_script": "res://scripts/effects/efc01/efc01_003.gd"
+	},
+	{
+		"id": "EFC01-004",
+		"name": "Hedorah(2021)",
+		"card_type": CardEnums.CardType.BATTLE,
+		"rank": 8,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.HEDORAH, CardEnums.CardTrait.FESTIVAL_GODZILLA],
+		"counter_power": 7000,
+		"invasion_icon": 1,
+		"description": "When playing this card from your hand, this card's rank is reduced by 1 for each of your opponent's battle cards in zones.",
+		"effect_script": "res://scripts/effects/efc01/efc01_004.gd"
+	},
+	{
+		"id": "EFC01-005",
+		"name": "Godzilla Appears in Godzilla Festival",
+		"card_type": CardEnums.CardType.STRATEGY,
+		"rank": 6,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [],
+		"invasion_icon": 2,
+		"description": "<Your Turn> When you play a monster card, reveal the top 5 cards of your deck. Add all cards with <Festival Godzilla> to your hand and discard the rest.\nAt the beginning of your counter phase, discard your hand.",
+		"effect_script": "res://scripts/effects/efc01/efc01_005.gd"
+	},
+	{
+		"id": "EFC01-006",
+		"name": "King Ghidorah's Defense",
+		"card_type": CardEnums.CardType.STRATEGY,
+		"rank": 3,
+		"colors": [CardEnums.CardColor.WHITE],
+		"traits": [],
+		"invasion_icon": 1,
+		"description": "<Opponent's Turn> If your opponent has 2 or fewer battle cards in zones, your battle cards cannot be destroyed by your opponent's effects.",
+		"effect_script": "res://scripts/effects/efc01/efc01_006.gd"
 	},
 ]
 
