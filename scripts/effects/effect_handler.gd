@@ -1741,11 +1741,13 @@ func apply_play_cost(player_id: int, card_data: Dictionary, zone_index: int) -> 
 # --- Modifier queries ---
 
 func get_counter_power_modifier(player_id: int) -> int:
-	## Get total counter power modifier from all active effects (zones + strategies).
+	## Get total counter power modifier from all active effects (monster, zones + strategies).
 	var total: int = 0
 	var per_zone := get_zone_cp_modifiers(player_id)
 	for mod in per_zone:
 		total += mod
+
+	total += get_monster_cp_modifier(player_id)
 
 	# Strategy card flat CP modifiers (e.g. EBP02-017)
 	var player := game_state.players[player_id]
@@ -1756,6 +1758,15 @@ func get_counter_power_modifier(player_id: int) -> int:
 				total += effect.get_total_cp_modifier(_build_context(player_id, sz_card))
 
 	return total
+
+
+func get_monster_cp_modifier(player_id: int) -> int:
+	## Get counter power modifier from the active monster card effect (e.g. EFC01-001).
+	var player := game_state.players[player_id]
+	var monster_effect := get_effect(player.current_monster)
+	if monster_effect:
+		return monster_effect.get_counter_power_modifier(_build_context(player_id, player.current_monster))
+	return 0
 
 
 func get_strategy_cp_modifiers(player_id: int) -> Array[int]:

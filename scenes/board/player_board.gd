@@ -394,10 +394,10 @@ func apply_monster_gradient(monster_data: Dictionary) -> void:
 
 
 ## Sync the entire board display to match a PlayerState
-func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = [], zone_rank_mods: Array = []) -> void:
+func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = [], zone_rank_mods: Array = [], monster_cp_mod: int = 0) -> void:
 	_sync_zones(player_state, zone_cp_mods, zone_rank_mods)
 	_sync_strategy_zones(player_state, strategy_cp_mods)
-	_sync_monster(player_state, threat_modifier)
+	_sync_monster(player_state, threat_modifier, monster_cp_mod)
 	_sync_hand(player_state)
 	_sync_info(player_state, cp_modifier, threat_modifier)
 
@@ -515,7 +515,7 @@ func _restore_strategy_slot_anchors() -> void:
 		slot.offset_bottom = 0
 
 
-func _sync_monster(state: PlayerState, threat_mod: int = 0) -> void:
+func _sync_monster(state: PlayerState, threat_mod: int = 0, cp_mod: int = 0) -> void:
 	var m: Dictionary = state.current_monster
 	var target_zone: int = mini(state.monster_zone - 1, zone_slots.size() - 1) # 0-indexed, clamped to zone 8
 
@@ -542,6 +542,7 @@ func _sync_monster(state: PlayerState, threat_mod: int = 0) -> void:
 			monster_card_zone = target_zone
 
 		_update_modifier_badge(monster_card, threat_mod)
+		_update_monster_cp_badge(monster_card, cp_mod)
 
 	if rage_label:
 		rage_label.text = "%d" % state.rage
@@ -989,6 +990,30 @@ func _update_rank_modifier_badge(card: Control, modifier: int) -> void:
 	var prefix := "+" if modifier > 0 else ""
 	badge.text = "%s%d" % [prefix, modifier]
 	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
+
+
+func _update_monster_cp_badge(card: Control, modifier: int) -> void:
+	var badge := card.get_node_or_null("MonsterCPBadge")
+	if modifier == 0:
+		if badge:
+			badge.queue_free()
+		return
+	if not badge:
+		badge = Label.new()
+		badge.name = "MonsterCPBadge"
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.add_theme_font_size_override("font_size", 12)
+		badge.add_theme_color_override("font_outline_color", Color.BLACK)
+		badge.add_theme_constant_override("outline_size", 3)
+		badge.anchor_left = 0.05
+		badge.anchor_right = 0.6
+		badge.anchor_top = 0.72
+		badge.anchor_bottom = 0.84
+		card.add_child(badge)
+	var prefix := "+" if modifier > 0 else ""
+	badge.text = "CP %s%d" % [prefix, modifier]
+	badge.add_theme_color_override("font_color", Color(0.3, 0.6, 1.0, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
 
 
 func _add_border(control: Control) -> void:
