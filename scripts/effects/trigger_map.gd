@@ -246,6 +246,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/efc01/efc01_004.gd": ["get_play_rank_modifier_for_card","get_effect_categories"],
 	"res://scripts/effects/efc01/efc01_005.gd": ["get_phase_start_filter","on_phase_start","on_monster_played"],
 	"res://scripts/effects/efc01/efc01_006.gd": ["protects_card_from_destruction","get_effect_categories"],
+	"res://scripts/effects/epr/epr_004.gd": ["on_enter"],
 	"res://scripts/effects/epr/epr_005.gd": ["on_enter"],
 	"res://scripts/effects/esc01/esc01_001.gd": ["on_counter_success","apply_play_cost","get_counter_power_modifier","get_play_rank_modifier_for_card","get_effect_categories"],
 	"res://scripts/effects/esd01/esd01_002.gd": ["on_when_invading"],
