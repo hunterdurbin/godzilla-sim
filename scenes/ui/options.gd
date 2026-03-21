@@ -813,7 +813,65 @@ func _on_advanced_pressed() -> void:
 
 	_add_toggle_row(vbox, "Use Mobile Layout", "use_mobile_layout")
 
+	vbox.add_child(HSeparator.new())
+
+	var redownload_btn := Button.new()
+	redownload_btn.text = "Re-download Card Assets"
+	redownload_btn.custom_minimum_size = Vector2(200, 40)
+	redownload_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	redownload_btn.add_theme_font_size_override("font_size", 18)
+	redownload_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+		_show_redownload_confirm()
+	)
+	vbox.add_child(redownload_btn)
+
 	_add_close_button(vbox, popup)
+	_show_modal(popup)
+
+
+func _show_redownload_confirm() -> void:
+	var modal_parts := _create_modal("Re-download Card Assets")
+	var popup: PopupPanel = modal_parts[0]
+	var vbox: VBoxContainer = modal_parts[1]
+
+	var info := Label.new()
+	info.text = "This will delete all downloaded card artwork\nand re-download it from the server.\n\nCustom card art will not be affected."
+	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	info.add_theme_font_size_override("font_size", 16)
+	vbox.add_child(info)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(120, 40)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+	)
+	btn_row.add_child(cancel_btn)
+
+	var confirm_btn := Button.new()
+	confirm_btn.text = "Re-download"
+	confirm_btn.custom_minimum_size = Vector2(160, 40)
+	confirm_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	confirm_btn.add_theme_font_size_override("font_size", 18)
+	confirm_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		ArtworkDownloader.clear_downloaded_artwork()
+		_CardScript.clear_texture_cache()
+		popup.hide()
+		NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn")
+	)
+	btn_row.add_child(confirm_btn)
+
+	vbox.add_child(btn_row)
 	_show_modal(popup)
 
 
