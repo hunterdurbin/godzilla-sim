@@ -2206,6 +2206,7 @@ func _sync_mobile_cp_tray() -> void:
 		var eh := turn_manager.effect_handler
 		if eh:
 			for pid in 2:
+				cp_mods[pid] += eh.get_monster_cp_modifier(pid)
 				var zone_cp: Array = eh.get_zone_cp_modifiers(pid)
 				var strat_cp: Array = eh.get_strategy_cp_modifiers(pid)
 				for v in zone_cp: cp_mods[pid] += v
@@ -4005,8 +4006,8 @@ func _sync_boards() -> void:
 		var zone_cp_1: Array = eh.get_zone_cp_modifiers(1) if eh else []
 		var strat_cp_0: Array = eh.get_strategy_cp_modifiers(0) if eh else []
 		var strat_cp_1: Array = eh.get_strategy_cp_modifiers(1) if eh else []
-		var cp_mod_0: int = 0
-		var cp_mod_1: int = 0
+		var cp_mod_0: int = eh.get_monster_cp_modifier(0) if eh else 0
+		var cp_mod_1: int = eh.get_monster_cp_modifier(1) if eh else 0
 		for v in zone_cp_0: cp_mod_0 += v
 		for v in zone_cp_1: cp_mod_1 += v
 		for v in strat_cp_0: cp_mod_0 += v
@@ -6518,8 +6519,8 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 	var zone_cp_1: Array = eh.get_zone_cp_modifiers(1) if eh else []
 	var strat_cp_0: Array = eh.get_strategy_cp_modifiers(0) if eh else []
 	var strat_cp_1: Array = eh.get_strategy_cp_modifiers(1) if eh else []
-	var cp_total_0: int = 0
-	var cp_total_1: int = 0
+	var cp_total_0: int = eh.get_monster_cp_modifier(0) if eh else 0
+	var cp_total_1: int = eh.get_monster_cp_modifier(1) if eh else 0
 	for v in zone_cp_0: cp_total_0 += v
 	for v in zone_cp_1: cp_total_1 += v
 	for v in strat_cp_0: cp_total_0 += v
