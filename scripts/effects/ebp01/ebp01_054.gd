@@ -39,12 +39,4 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	ctx.owner.draw_cards(2)
-
-	for _i in range(2):
-		if ctx.owner.hand.is_empty():
-			break
-		await ctx.effect_handler.select_hand_card(
-			ctx.owner.player_id,
-			func(_card: Dictionary) -> bool: return true,
-			"Choose a card to discard:"
-		)
+	await ctx.effect_handler.discard_hand_to(ctx.owner.player_id, ctx.owner.hand.size() - 2)
