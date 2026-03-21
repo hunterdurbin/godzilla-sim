@@ -851,7 +851,7 @@ func _hide_preview() -> void:
 
 func _refresh_deck_display() -> void:
 	_clear_grid(deck_grid)
-	_invalid_cards = {} if _game_mode == "no_rules" else DeckValidator.get_invalid_cards(_monster_entries, _main_entries)
+	_invalid_cards = GameModeValidator.get_invalid_cards(_game_mode, _monster_entries, _main_entries)
 	var entries: Array = _monster_entries if _showing_monster_tab else _main_entries
 	for entry in entries:
 		var card_data: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
