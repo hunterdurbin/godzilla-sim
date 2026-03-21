@@ -21,6 +21,33 @@ func _ready() -> void:
 	add_child(_http)
 
 
+func clear_downloaded_artwork() -> void:
+	var dir := DirAccess.open(ARTWORK_BASE_PATH)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var entry := dir.get_next()
+	while not entry.is_empty():
+		if dir.current_is_dir() and entry != "." and entry != "..":
+			_remove_dir_contents(ARTWORK_BASE_PATH.path_join(entry))
+		entry = dir.get_next()
+	dir.list_dir_end()
+	print("[ArtworkDownloader] Cleared all downloaded artwork from %s" % ARTWORK_BASE_PATH)
+
+
+func _remove_dir_contents(path: String) -> void:
+	var dir := DirAccess.open(path)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while not file_name.is_empty():
+		if not dir.current_is_dir():
+			dir.remove(file_name)
+		file_name = dir.get_next()
+	dir.list_dir_end()
+
+
 func start_download() -> void:
 	if _is_running:
 		return
