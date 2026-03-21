@@ -242,6 +242,7 @@ var _preview_card: Control
 
 # Stored zone stack view data
 var _zone_stack_view_cards: Array[Dictionary] = []
+var _zone_stack_top_index: int = -1
 var _cards_revealed_active: bool = false
 
 # State tracking
@@ -6083,6 +6084,7 @@ func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
 	var total: int = _zone_stack_view_cards.size()
 	zone_stack_view_title.text = "Zone %d (%d card%s)" % [zone_num, total, "" if total == 1 else "s"]
 	zone_stack_view_overlay.visible = true
+	_zone_stack_top_index = 0
 	_refresh_zone_stack_view_grid()
 
 
@@ -6100,9 +6102,25 @@ func _refresh_zone_stack_view_grid() -> void:
 		_set_gallery_hover(card)
 		card.card_right_clicked.connect(_on_card_long_press_zoom)
 		zone_stack_view_grid.add_child(card)
+		if i == _zone_stack_top_index:
+			card.set_highlight(true)
+			_add_top_card_badge(card)
+
+
+func _add_top_card_badge(card: Control) -> void:
+	var badge := Label.new()
+	badge.name = "TopCardBadge"
+	badge.text = "TOP"
+	badge.add_theme_font_size_override("font_size", 16)
+	badge.add_theme_color_override("font_color", Color.WHITE)
+	badge.add_theme_color_override("font_outline_color", Color.BLACK)
+	badge.add_theme_constant_override("outline_size", 4)
+	badge.position = Vector2(8, 8)
+	card.add_child(badge)
 
 
 func _hide_zone_stack_view() -> void:
+	_zone_stack_top_index = -1
 	zone_stack_view_overlay.visible = false
 	for child in zone_stack_view_grid.get_children():
 		child.queue_free()
@@ -6121,6 +6139,7 @@ func _on_cards_revealed_requested(player_id: int, cards: Array[Dictionary], titl
 	zone_stack_view_title.text = "%s (%d card%s)" % [title, total, "" if total == 1 else "s"]
 	zone_stack_view_overlay.visible = true
 	_cards_revealed_active = true
+	_zone_stack_top_index = -1
 	_refresh_zone_stack_view_grid()
 
 
