@@ -35,6 +35,7 @@ var _client_threat_modifiers: Array = [0, 0]
 var _client_zone_cp_mods: Array = [[], []]
 var _client_strategy_cp_mods: Array = [[], []]
 var _client_zone_rank_mods: Array = [[], []]
+var _client_monster_cp_mods: Array = [0, 0]
 var _client_gradients_applied: bool = false
 # Client-side stats snapshot (synced from host for disconnect reporting)
 var _client_stats_elapsed_ms: Array[int] = [0, 0]
@@ -3312,6 +3313,7 @@ func _execute_rematch() -> void:
 	_client_zone_cp_mods = [[], []]
 	_client_strategy_cp_mods = [[], []]
 	_client_zone_rank_mods = [[], []]
+	_client_monster_cp_mods = [0, 0]
 
 	# 7. Clear game log
 	_log_lines.clear()
@@ -4006,8 +4008,10 @@ func _sync_boards() -> void:
 		var zone_cp_1: Array = eh.get_zone_cp_modifiers(1) if eh else []
 		var strat_cp_0: Array = eh.get_strategy_cp_modifiers(0) if eh else []
 		var strat_cp_1: Array = eh.get_strategy_cp_modifiers(1) if eh else []
-		var cp_mod_0: int = eh.get_monster_cp_modifier(0) if eh else 0
-		var cp_mod_1: int = eh.get_monster_cp_modifier(1) if eh else 0
+		var monster_cp_0: int = eh.get_monster_cp_modifier(0) if eh else 0
+		var monster_cp_1: int = eh.get_monster_cp_modifier(1) if eh else 0
+		var cp_mod_0: int = monster_cp_0
+		var cp_mod_1: int = monster_cp_1
 		for v in zone_cp_0: cp_mod_0 += v
 		for v in zone_cp_1: cp_mod_1 += v
 		for v in strat_cp_0: cp_mod_0 += v
@@ -4017,14 +4021,14 @@ func _sync_boards() -> void:
 		var zone_rank_0: Array = eh.get_zone_rank_modifiers(0) if eh else []
 		var zone_rank_1: Array = eh.get_zone_rank_modifiers(1) if eh else []
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0)
+			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0)
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1)
+			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1)
 	elif not _client_players.is_empty():
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0])
+			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0])
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1])
+			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1], _client_monster_cp_mods[1])
 	if _is_mobile_layout:
 		_sync_mobile_cp_tray()
 	call_deferred("_position_hands")
@@ -6538,6 +6542,7 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 		"zone_cp_modifiers": [zone_cp_0, zone_cp_1],
 		"strategy_cp_modifiers": [strat_cp_0, strat_cp_1],
 		"zone_rank_modifiers": [eh.get_zone_rank_modifiers(0) if eh else [], eh.get_zone_rank_modifiers(1) if eh else []],
+		"monster_cp_modifiers": [eh.get_monster_cp_modifier(0) if eh else 0, eh.get_monster_cp_modifier(1) if eh else 0],
 		"player_names": Array(gs.player_names),
 		"first_player_id": _first_player_id,
 	}
@@ -6920,6 +6925,10 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 			var arr: Array = _client_zone_rank_mods[i]
 			for j in range(arr.size()):
 				arr[j] = int(arr[j])
+	if data.has("monster_cp_modifiers"):
+		_client_monster_cp_mods = data["monster_cp_modifiers"]
+		for j in range(_client_monster_cp_mods.size()):
+			_client_monster_cp_mods[j] = int(_client_monster_cp_mods[j])
 
 	# Reconstruct PlayerState objects
 	var players_data: Array = data["players"]
