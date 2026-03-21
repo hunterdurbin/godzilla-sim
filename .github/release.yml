@@ -12,6 +12,9 @@ changelog:
       labels:
         - effects
         - cards
+    - title: Game Rules
+      labels:
+        - rules
     - title: Other Changes
       labels:
         - "*"
