@@ -65,6 +65,10 @@ func _ready() -> void:
 		turn_label.text = "No replay data"
 		return
 
+	# Reset local_player_id so PlayerBoard layouts are correct
+	# (may be stale from loading a save as player 2)
+	NetworkManager.local_player_id = 0
+
 	# Create player boards
 	player2_board = player_board_scene.instantiate()
 	player2_board.player_id = 1
