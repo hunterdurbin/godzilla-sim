@@ -301,6 +301,9 @@ var _first_player_id: int = 0 # Which player went first (for * indicator)
 var _rematch_requested: bool = false
 var _opponent_rematch_requested: bool = false
 var _game_ended_by_disconnect: bool = false
+var _rematch_deck_select: VBoxContainer = null
+var _rematch_deck_changed: bool = false
+var _rematch_deck_name: String = ""
 
 # Reconnect state
 var _reconnect_cumulative_seconds: float = 0.0 # Cumulative across all disconnects
@@ -661,6 +664,8 @@ func _ready() -> void:
 	# Save game button (solo/bot only)
 	if not is_multiplayer_game:
 		_setup_save_button()
+
+	_setup_rematch_deck_select()
 
 	# Connect discard view
 	player1_board.discard_clicked.connect(_on_discard_clicked)
@@ -2769,6 +2774,7 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
 	btn_rematch.text = "Rematch"
+	_populate_rematch_deck_select()
 	_disable_all_buttons()
 	if is_multiplayer_game and NetworkManager.is_host():
 		# Flush any buffered logs before game end
@@ -3190,6 +3196,10 @@ func _on_rematch_pressed() -> void:
 	if _game_ended_by_disconnect:
 		return
 
+	# Apply local deck change before rematch
+	if _rematch_deck_changed and not _rematch_deck_name.is_empty():
+		DecklistManager.select_deck_for_player(local_player_id, _rematch_deck_name)
+
 	_rematch_requested = true
 
 	if not is_multiplayer_game:
@@ -3199,8 +3209,21 @@ func _on_rematch_pressed() -> void:
 	# Multiplayer: notify opponent, wait for them
 	btn_rematch.disabled = true
 	btn_rematch.text = "Waiting..."
-	RpcLogger.log_send("rematch_requested", 0)
-	_rpc_rematch_requested.rpc()
+	_rematch_deck_select.deck_dropdown.disabled = true
+
+	if _rematch_deck_changed and not _rematch_deck_name.is_empty():
+		# Send deck data so opponent/host can apply it
+		var data := DecklistManager.load_decklist(_rematch_deck_name)
+		var payload := JSON.stringify({
+			"deck_name": _rematch_deck_name,
+			"monster": data.get("monster", []),
+			"main": data.get("main", []),
+		})
+		RpcLogger.log_send("rematch_with_deck", payload.length())
+		_rpc_rematch_with_deck.rpc(payload)
+	else:
+		RpcLogger.log_send("rematch_requested", 0)
+		_rpc_rematch_requested.rpc()
 
 	if _opponent_rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
@@ -3214,6 +3237,10 @@ func _execute_rematch() -> void:
 	_rematch_requested = false
 	_opponent_rematch_requested = false
 	_game_ended_by_disconnect = false
+	_rematch_deck_select.visible = false
+	_rematch_deck_select.deck_dropdown.disabled = false
+	_rematch_deck_changed = false
+	_rematch_deck_name = ""
 	_reconnect_cumulative_seconds = 0.0
 	_pending_interaction = {}
 	# Re-save session with fresh timestamp for the new game
@@ -3416,6 +3443,72 @@ func _execute_rematch() -> void:
 		_disable_all_buttons()
 
 
+# --- Rematch deck select ---
+
+func _setup_rematch_deck_select() -> void:
+	var scene := preload("res://scenes/ui/DeckSelect.tscn")
+	_rematch_deck_select = scene.instantiate()
+	_rematch_deck_select.persist_key = "rematch_deck"
+	# Add as direct child of game board, positioned below Save Game button
+	add_child(_rematch_deck_select)
+	var y_pos := 130.0
+	if _save_game_button:
+		y_pos = _save_game_button.position.y + _save_game_button.custom_minimum_size.y + 4
+	_rematch_deck_select.position = Vector2(10, y_pos)
+	_rematch_deck_select.header_label.visible = false
+	_rematch_deck_select.visible = false
+	_rematch_deck_select.deck_selected.connect(_on_rematch_deck_selected)
+
+
+func _populate_rematch_deck_select() -> void:
+	_rematch_deck_changed = false
+	_rematch_deck_name = ""
+	var dropdown: OptionButton = _rematch_deck_select.deck_dropdown
+	dropdown.clear()
+	dropdown.disabled = false
+
+	var current_deck := DecklistManager.get_player_deck_name(local_player_id)
+	var all_decks := DecklistManager.get_all_decklists()
+	var valid_decks: Array[String] = []
+
+	var skip_validation := not is_multiplayer_game
+	for deck_name in all_decks:
+		if skip_validation:
+			valid_decks.append(deck_name)
+			continue
+		var data := DecklistManager.load_decklist(deck_name)
+		if data.is_empty():
+			continue
+		var errors := GameModeValidator.validate(
+			NetworkManager.game_mode,
+			data.get("monster", []),
+			data.get("main", []),
+		)
+		if errors.is_empty():
+			valid_decks.append(deck_name)
+
+	if valid_decks.size() <= 1:
+		# No alternative decks to choose from — hide the dropdown
+		_rematch_deck_select.visible = false
+		return
+
+	var select_idx := 0
+	for i in range(valid_decks.size()):
+		dropdown.add_item(valid_decks[i])
+		if valid_decks[i] == current_deck:
+			select_idx = i
+
+	dropdown.select(select_idx)
+	_rematch_deck_select.current_selection = valid_decks[select_idx]
+	_rematch_deck_select.visible = true
+
+
+func _on_rematch_deck_selected(deck_name: String) -> void:
+	var current_deck := DecklistManager.get_player_deck_name(local_player_id)
+	_rematch_deck_changed = deck_name != current_deck
+	_rematch_deck_name = deck_name
+
+
 # --- Rematch RPCs ---
 
 ## Peer -> Peer: signal that this player wants a rematch
@@ -3424,6 +3517,46 @@ func _rpc_rematch_requested() -> void:
 	RpcLogger.log_receive("rematch_requested", 0)
 	_opponent_rematch_requested = true
 	_on_log_message("Opponent wants a rematch!")
+
+	if _rematch_requested and NetworkManager.is_host():
+		_execute_rematch()
+		RpcLogger.log_send("execute_rematch", 0)
+		_rpc_execute_rematch.rpc()
+
+
+## Peer -> Peer: rematch request with a changed deck
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_rematch_with_deck(payload_json: String) -> void:
+	RpcLogger.log_receive("rematch_with_deck", payload_json.length())
+	var json := JSON.new()
+	if json.parse(payload_json) != OK:
+		push_warning("[Rematch] Failed to parse deck payload")
+		return
+	var payload: Dictionary = json.data
+	var deck_name: String = payload.get("deck_name", "")
+	var monster_entries: Array = payload.get("monster", [])
+	var main_entries: Array = payload.get("main", [])
+
+	# Validate the deck for the current game mode
+	var errors := GameModeValidator.validate(NetworkManager.game_mode, monster_entries, main_entries)
+	if not errors.is_empty():
+		push_warning("[Rematch] Opponent's deck is invalid for mode '%s': %s" % [NetworkManager.game_mode, str(errors)])
+		return
+
+	# Determine sender's player_id from RPC sender peer
+	var sender_peer := multiplayer.get_remote_sender_id()
+	var sender_pid: int = -1
+	for peer_id in NetworkManager.peer_player_map:
+		if peer_id == sender_peer:
+			sender_pid = NetworkManager.peer_player_map[peer_id]
+			break
+	if sender_pid == -1:
+		push_warning("[Rematch] Could not determine sender player_id")
+		return
+
+	DecklistManager.set_player_deck_from_entries(sender_pid, deck_name, monster_entries, main_entries)
+	_opponent_rematch_requested = true
+	_on_log_message("Opponent wants a rematch (new deck)!")
 
 	if _rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
@@ -3448,6 +3581,7 @@ func _rpc_rematch_declined() -> void:
 	if win_label:
 		win_label.text = win_label.text + "\nOpponent returned to menu."
 	btn_rematch.visible = false
+	_rematch_deck_select.visible = false
 
 
 # --- Button handlers ---
@@ -7438,6 +7572,7 @@ func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
 	btn_rematch.text = "Rematch"
+	_populate_rematch_deck_select()
 	_disable_all_buttons()
 	RpcLogger.print_summary()
 
@@ -7602,6 +7737,7 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 	# If the game was already over (normal end), just hide the rematch button
 	if end_game_panel.visible:
 		btn_rematch.visible = false
+		_rematch_deck_select.visible = false
 		return
 
 	var is_online := NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]
@@ -7712,6 +7848,7 @@ func _on_opponent_reconnected(_peer_id: int) -> void:
 		btn_rematch.disabled = false
 		btn_rematch.text = "Rematch"
 		_game_ended_by_disconnect = false
+		_populate_rematch_deck_select()
 
 
 func _resync_reconnected_client() -> void:
