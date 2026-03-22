@@ -47,7 +47,23 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if selected.is_empty():
 		return
 
-	# Play selected Chibi Godzilla to the zone this token was in
-	ctx.owner.push_zone_card(zone_idx, selected)
+	# Let the player choose any zone to play the Chibi Godzilla
+	var valid_zones: Array[int] = []
+	for i in range(8):
+		if i != ctx.owner.monster_zone - 1:
+			valid_zones.append(i)
+	var target_zone: int = await ctx.effect_handler.select_zone_target(
+		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
+		"Choose a zone to play Chibi Godzilla:")
+	if target_zone < 0:
+		return
+
+	# Handle overload if zone occupied
+	if ctx.owner.zone_has_cards(target_zone):
+		var destroyed_stack: Array = ctx.owner.clear_zone(target_zone)
+		EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
+		ctx.owner.discard_changed.emit()
+
+	ctx.owner.push_zone_card(target_zone, selected)
 	ctx.owner.zones_changed.emit()
 	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected, true)
