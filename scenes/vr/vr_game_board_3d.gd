@@ -32,13 +32,12 @@ const MAX_LOG_LINES := 8
 
 
 func _ready() -> void:
-	# Enable XR rendering
-	XRManager.enable_xr_viewport()
-
 	# Stop menu music for VR
 	MusicManager.set_volume(0)
 
 	print("[VRGameBoard3D] Setting up scene...")
+	_setup_xr()
+	print("[VRGameBoard3D] XR done")
 	_setup_xr_rig()
 	print("[VRGameBoard3D] XR rig done")
 	_setup_environment()
@@ -54,8 +53,16 @@ func _ready() -> void:
 	call_deferred("_setup_game")
 
 
-func _exit_tree() -> void:
-	XRManager.disable_xr_viewport()
+func _setup_xr() -> void:
+	# Use godot-xr-tools StartXR for reliable XR initialization
+	var start_xr_scene := load("res://addons/godot-xr-tools/xr/start_xr.tscn")
+	if start_xr_scene:
+		var start_xr := start_xr_scene.instantiate()
+		start_xr.name = "StartXR"
+		add_child(start_xr)
+		print("[VRGameBoard3D] StartXR node added")
+	else:
+		push_error("[VRGameBoard3D] Failed to load StartXR scene")
 
 
 func _setup_xr_rig() -> void:
