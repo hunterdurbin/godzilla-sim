@@ -29,7 +29,7 @@ func _build_room() -> void:
 	floor_inst.mesh = floor_mesh
 	floor_inst.name = "Floor"
 	var floor_mat := StandardMaterial3D.new()
-	floor_mat.albedo_color = Color(0.15, 0.12, 0.1)  # Dark wood floor
+	floor_mat.albedo_color = Color(0.4, 0.3, 0.2)  # Wood floor
 	floor_mat.roughness = 0.8
 	floor_inst.material_override = floor_mat
 	add_child(floor_inst)
@@ -49,7 +49,7 @@ func _build_room() -> void:
 	ceil_inst.position = Vector3(0, ROOM_HEIGHT, 0)
 	ceil_inst.rotation.x = PI  # Flip to face downward
 	var ceil_mat := StandardMaterial3D.new()
-	ceil_mat.albedo_color = Color(0.25, 0.22, 0.2)
+	ceil_mat.albedo_color = Color(0.5, 0.48, 0.45)
 	ceil_mat.roughness = 0.9
 	ceil_inst.material_override = ceil_mat
 	add_child(ceil_inst)
@@ -63,7 +63,7 @@ func _add_wall(wall_name: String, pos: Vector3, wall_size: Vector3) -> void:
 	inst.name = wall_name
 	inst.position = pos
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.22, 0.18, 0.15)  # Warm dark wall
+	mat.albedo_color = Color(0.5, 0.45, 0.4)  # Wall
 	mat.roughness = 0.85
 	inst.material_override = mat
 	add_child(inst)
@@ -132,10 +132,10 @@ func _build_lighting() -> void:
 	# World environment
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.05, 0.04, 0.03)
+	env.background_color = Color(0.2, 0.2, 0.25)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.15, 0.12, 0.1)
-	env.ambient_light_energy = 0.3
+	env.ambient_light_color = Color(0.6, 0.55, 0.5)
+	env.ambient_light_energy = 0.8
 	env.tonemap_mode = Environment.TONE_MAP_ACES
 	env.ssao_enabled = false  # Keep lightweight for Quest
 	var world_env := WorldEnvironment.new()
@@ -148,8 +148,8 @@ func _build_lighting() -> void:
 	dir_light.name = "OverheadLight"
 	dir_light.position = Vector3(0, ROOM_HEIGHT - 0.1, 0)
 	dir_light.rotation = Vector3(deg_to_rad(-70), 0, 0)
-	dir_light.light_color = Color(1.0, 0.95, 0.85)  # Warm white
-	dir_light.light_energy = 0.5
+	dir_light.light_color = Color(1.0, 0.95, 0.85)
+	dir_light.light_energy = 1.5
 	dir_light.shadow_enabled = true
 	add_child(dir_light)
 
@@ -158,10 +158,10 @@ func _build_lighting() -> void:
 	table_light.name = "TableLight1"
 	table_light.position = Vector3(0, TABLE_HEIGHT + 0.8, 0)
 	table_light.light_color = Color(1.0, 0.95, 0.9)
-	table_light.light_energy = 1.5
-	table_light.omni_range = 2.0
-	table_light.omni_attenuation = 1.5
-	table_light.shadow_enabled = false  # Save perf on Quest
+	table_light.light_energy = 3.0
+	table_light.omni_range = 3.0
+	table_light.omni_attenuation = 1.0
+	table_light.shadow_enabled = false
 	add_child(table_light)
 
 	# Secondary fill light

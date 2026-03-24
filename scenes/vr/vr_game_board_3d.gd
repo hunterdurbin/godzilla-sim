@@ -38,28 +38,36 @@ func _ready() -> void:
 	# Stop menu music for VR
 	MusicManager.set_volume(0)
 
+	print("[VRGameBoard3D] Setting up scene...")
+	_setup_xr_rig()
+	print("[VRGameBoard3D] XR rig done")
+	_setup_environment()
+	print("[VRGameBoard3D] Environment done")
+	_setup_boards()
+	print("[VRGameBoard3D] Boards done")
+	_setup_hand_display()
+	print("[VRGameBoard3D] Hand display done")
+	_setup_ui()
+	print("[VRGameBoard3D] UI done")
+
+	# Defer game setup to next frame so the visual scene renders first
+	call_deferred("_setup_game")
+
 
 func _init_xr() -> void:
 	# Find and initialize OpenXR if XRManager hasn't already
 	var xr_interface := XRManager.get_xr_interface()
 	if xr_interface == null:
 		xr_interface = XRServer.find_interface("OpenXR")
-		if xr_interface:
-			xr_interface.initialize()
+		if xr_interface and xr_interface.initialize():
+			print("[VRGameBoard3D] OpenXR initialized in VR scene")
 
 	if xr_interface and xr_interface.is_initialized():
 		get_viewport().use_xr = true
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		print("[VRGameBoard3D] XR viewport enabled")
 	else:
-		push_warning("[VRGameBoard3D] No XR interface available — rendering without XR")
-
-	_setup_xr_rig()
-	_setup_environment()
-	_setup_boards()
-	_setup_hand_display()
-	_setup_ui()
-	_setup_game()
+		push_warning("[VRGameBoard3D] No XR interface — rendering without XR")
 
 
 func _exit_tree() -> void:
@@ -188,8 +196,10 @@ func _setup_ui() -> void:
 
 
 func _setup_game() -> void:
+	print("[VRGameBoard3D] Setting up game...")
 	turn_manager = TurnManager.new()
 	turn_manager.setup(CardData)
+	print("[VRGameBoard3D] TurnManager setup done")
 
 	# Set player names
 	turn_manager.game_state.player_names[0] = GameSettings.player_name
