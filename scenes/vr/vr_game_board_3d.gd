@@ -40,17 +40,17 @@ func _ready() -> void:
 	print("[VRGameBoard3D] XR done")
 	_setup_xr_rig()
 	print("[VRGameBoard3D] XR rig done")
+
+	# Minimal test: just environment, no game logic
 	_setup_environment()
 	print("[VRGameBoard3D] Environment done")
-	_setup_boards()
-	print("[VRGameBoard3D] Boards done")
-	_setup_hand_display()
-	print("[VRGameBoard3D] Hand display done")
-	_setup_ui()
-	print("[VRGameBoard3D] UI done")
 
-	# Defer game setup to next frame so the visual scene renders first
-	call_deferred("_setup_game")
+	# Skip boards/hand/ui/game for now to test if VR renders
+	#_setup_boards()
+	#_setup_hand_display()
+	#_setup_ui()
+	#call_deferred("_setup_game")
+	print("[VRGameBoard3D] READY — check headset")
 
 
 func _setup_xr() -> void:
