@@ -54,15 +54,15 @@ func _ready() -> void:
 
 
 func _setup_xr() -> void:
-	# Use godot-xr-tools StartXR for reliable XR initialization
-	var start_xr_scene: PackedScene = load("res://addons/godot-xr-tools/xr/start_xr.tscn")
-	if start_xr_scene:
-		var start_xr: Node = start_xr_scene.instantiate()
-		start_xr.name = "StartXR"
-		add_child(start_xr)
-		print("[VRGameBoard3D] StartXR node added")
+	# Official Godot docs pattern: engine auto-initializes OpenXR when
+	# xr/openxr/enabled=true in project settings. Just check and enable viewport.
+	var xr_interface := XRServer.find_interface("OpenXR")
+	if xr_interface and xr_interface.is_initialized():
+		print("[VRGameBoard3D] OpenXR initialized successfully")
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		get_viewport().use_xr = true
 	else:
-		push_error("[VRGameBoard3D] Failed to load StartXR scene")
+		push_warning("[VRGameBoard3D] OpenXR not initialized — headset connected?")
 
 
 func _setup_xr_rig() -> void:
