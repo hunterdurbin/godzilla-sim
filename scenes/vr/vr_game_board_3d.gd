@@ -55,9 +55,9 @@ func _ready() -> void:
 
 func _setup_xr() -> void:
 	# Use godot-xr-tools StartXR for reliable XR initialization
-	var start_xr_scene := load("res://addons/godot-xr-tools/xr/start_xr.tscn")
+	var start_xr_scene: PackedScene = load("res://addons/godot-xr-tools/xr/start_xr.tscn")
 	if start_xr_scene:
-		var start_xr := start_xr_scene.instantiate()
+		var start_xr: Node = start_xr_scene.instantiate()
 		start_xr.name = "StartXR"
 		add_child(start_xr)
 		print("[VRGameBoard3D] StartXR node added")
