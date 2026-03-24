@@ -83,23 +83,27 @@ func _setup_xr_rig() -> void:
 	right_controller.tracker = &"right_hand"
 	xr_origin.add_child(right_controller)
 
-	# Add laser pointer to right controller
+	# Position player at table edge
+	# Table surface is at y~0.775, player sits at +Z side looking toward -Z
+	# XR tracking adds the player's physical head height automatically
+	xr_origin.position = Vector3(0, 0, 0.55)
+
+	add_child(xr_origin)
+
+	# Add laser pointer to right controller (deferred to avoid blocking scene load)
+	call_deferred("_setup_pointer")
+
+
+func _setup_pointer() -> void:
 	var pointer_script := preload("res://scenes/vr/vr_pointer.gd")
 	var pointer := Node3D.new()
 	pointer.name = "Pointer"
 	pointer.set_script(pointer_script)
 	right_controller.add_child(pointer)
-
-	# Connect pointer signals
 	pointer.pointed_at_slot.connect(_on_pointer_slot)
 	pointer.pointed_at_card.connect(_on_pointer_card)
 	pointer.pointed_at_nothing.connect(_on_pointer_nothing)
-
-	# Position player at table edge, seated height
-	# Table is at (0, 0.75, 0), player sits at +Z side looking toward -Z
-	xr_origin.position = Vector3(0, 0, 0.55)
-
-	add_child(xr_origin)
+	print("[VRGameBoard3D] Pointer setup done")
 
 
 func _setup_environment() -> void:
