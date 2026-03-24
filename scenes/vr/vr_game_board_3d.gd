@@ -32,8 +32,8 @@ const MAX_LOG_LINES := 8
 
 
 func _ready() -> void:
-	# Initialize and enable XR for this scene
-	_init_xr()
+	# Enable XR rendering
+	XRManager.enable_xr_viewport()
 
 	# Stop menu music for VR
 	MusicManager.set_volume(0)
@@ -54,25 +54,8 @@ func _ready() -> void:
 	call_deferred("_setup_game")
 
 
-func _init_xr() -> void:
-	# Find and initialize OpenXR if XRManager hasn't already
-	var xr_interface := XRManager.get_xr_interface()
-	if xr_interface == null:
-		xr_interface = XRServer.find_interface("OpenXR")
-		if xr_interface and xr_interface.initialize():
-			print("[VRGameBoard3D] OpenXR initialized in VR scene")
-
-	if xr_interface and xr_interface.is_initialized():
-		get_viewport().use_xr = true
-		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
-		print("[VRGameBoard3D] XR viewport enabled")
-	else:
-		push_warning("[VRGameBoard3D] No XR interface — rendering without XR")
-
-
 func _exit_tree() -> void:
-	# Disable XR when leaving VR scene so 2D menus work again
-	get_viewport().use_xr = false
+	XRManager.disable_xr_viewport()
 
 
 func _setup_xr_rig() -> void:
