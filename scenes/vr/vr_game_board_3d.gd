@@ -32,13 +32,27 @@ const MAX_LOG_LINES := 8
 
 
 func _ready() -> void:
-	# Enable XR on the viewport now that we're in the VR scene
-	if XRManager.is_vr_mode():
-		get_viewport().use_xr = true
-		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	# Initialize and enable XR for this scene
+	_init_xr()
 
 	# Stop menu music for VR
 	MusicManager.set_volume(0)
+
+
+func _init_xr() -> void:
+	# Find and initialize OpenXR if XRManager hasn't already
+	var xr_interface := XRManager.get_xr_interface()
+	if xr_interface == null:
+		xr_interface = XRServer.find_interface("OpenXR")
+		if xr_interface:
+			xr_interface.initialize()
+
+	if xr_interface and xr_interface.is_initialized():
+		get_viewport().use_xr = true
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+		print("[VRGameBoard3D] XR viewport enabled")
+	else:
+		push_warning("[VRGameBoard3D] No XR interface available — rendering without XR")
 
 	_setup_xr_rig()
 	_setup_environment()
