@@ -136,7 +136,7 @@ func _build_lighting() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.6, 0.55, 0.5)
 	env.ambient_light_energy = 0.8
-	env.tonemap_mode = Environment.TONE_MAP_LINEAR
+	env.set("tonemap_mode", 0)  # 0 = Linear
 	env.ssao_enabled = false  # Keep lightweight for Quest
 	var world_env := WorldEnvironment.new()
 	world_env.name = "WorldEnvironment"
