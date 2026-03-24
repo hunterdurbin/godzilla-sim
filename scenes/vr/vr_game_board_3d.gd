@@ -324,17 +324,17 @@ func _on_hand_card_clicked(_card: VRCard3D, index: int) -> void:
 	for action in _valid_actions:
 		if action == CardEnums.ActionType.PLAY_BATTLE:
 			if card_data.get("card_type") == CardEnums.CardType.BATTLE:
-				# Find first valid zone
-				var valid: Array = turn_manager.rules_engine.get_valid_battle_zones(
-					turn_manager.game_state, local_player_id, card_data)
+				var gs: GameState = turn_manager.game_state
+				var valid: Array = turn_manager.rules_engine.get_valid_zones_for_card(
+					card_data, gs.players[local_player_id], gs.players[1 - local_player_id])
 				if not valid.is_empty():
-					turn_manager.action_handler.execute_play_battle(
-						turn_manager.game_state, local_player_id, index, valid[0])
+					turn_manager.submit_action(CardEnums.ActionType.PLAY_BATTLE,
+						{"hand_index": index, "zone_index": valid[0]})
 					return
 		elif action == CardEnums.ActionType.GAIN_RAGE:
 			if card_data.get("card_type") == CardEnums.CardType.BATTLE:
-				turn_manager.action_handler.execute_gain_rage(
-					turn_manager.game_state, local_player_id, index)
+				turn_manager.submit_action(CardEnums.ActionType.GAIN_RAGE,
+					{"hand_index": index})
 				return
 
 
@@ -383,8 +383,6 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 				action_names.append("Play Monster")
 			CardEnums.ActionType.INVADE:
 				action_names.append("Invade")
-			CardEnums.ActionType.END_MAIN:
-				action_names.append("End Main")
 			CardEnums.ActionType.PASS:
 				action_names.append("Pass")
 	action_label.text = "Actions:\n" + "\n".join(action_names)
@@ -443,7 +441,7 @@ func _on_deck_search_requested(player_id: int, _matching_cards: Array[Dictionary
 	if player_id != local_player_id:
 		return  # Bot handles its own searches
 	# Auto-skip for prototype
-	turn_manager.action_handler.effect_handler.resolve_deck_search(null)
+	turn_manager.action_handler.effect_handler.resolve_deck_search({})
 
 
 func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
@@ -454,7 +452,7 @@ func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 	var indices: Array[int] = []
 	for i in range(mini(discard_count, player.hand.size())):
 		indices.append(i)
-	turn_manager.action_handler.effect_handler.resolve_hand_discard(indices)
+	turn_manager.action_handler.effect_handler.resolve_hand_discard(local_player_id, indices)
 
 
 func _on_zone_clicked(zone_number: int, _player_id: int) -> void:
