@@ -32,12 +32,25 @@ const MAX_LOG_LINES := 8
 
 
 func _ready() -> void:
+	# Enable XR on the viewport now that we're in the VR scene
+	if XRManager.is_vr_mode():
+		get_viewport().use_xr = true
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+
+	# Stop menu music for VR
+	MusicManager.set_volume(0)
+
 	_setup_xr_rig()
 	_setup_environment()
 	_setup_boards()
 	_setup_hand_display()
 	_setup_ui()
 	_setup_game()
+
+
+func _exit_tree() -> void:
+	# Disable XR when leaving VR scene so 2D menus work again
+	get_viewport().use_xr = false
 
 
 func _setup_xr_rig() -> void:

@@ -37,11 +37,8 @@ func _ready() -> void:
 	print("[XRManager] OpenXR initialized successfully")
 	_vr_active = true
 
-	# Configure the main viewport for XR
-	get_viewport().use_xr = true
-
-	# Let XR handle frame timing instead of vsync
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	# Do NOT set use_xr here — let the VR scene enable it when it loads.
+	# Setting it globally would break 2D menus.
 
 	xr_initialized.emit()
 

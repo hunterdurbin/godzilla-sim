@@ -72,7 +72,8 @@ pointing/emulate_touch_from_mouse.mobile=true
 [rendering]
 
 rendering_device/driver.windows="d3d12"
-renderer/rendering_method="gl_compatibility"
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.web="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
 
 [xr]
