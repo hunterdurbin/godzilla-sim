@@ -34,6 +34,9 @@ RpcLogger="*res://scripts/rpc_logger.gd"
 TouchHelper="*res://scripts/touch_helper.gd"
 SfxManager="*res://scripts/sfx_manager.gd"
 MusicManager="*res://scripts/music_manager.gd"
+XRManager="*res://scripts/xr_manager.gd"
+XRToolsUserSettings="*uid://bqgb8i74tm0t"
+XRToolsRumbleManager="*uid://by853dk86g1qw"
 
 [debug]
 
@@ -51,7 +54,7 @@ window/stretch/aspect.mobile="expand"
 
 [editor_plugins]
 
-enabled=PackedStringArray()
+enabled=PackedStringArray("res://addons/godot-xr-tools/plugin.cfg")
 
 [gui]
 
@@ -70,5 +73,11 @@ pointing/emulate_touch_from_mouse.mobile=true
 
 rendering_device/driver.windows="d3d12"
 renderer/rendering_method="gl_compatibility"
-renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
+
+[xr]
+
+openxr/enabled=true
+openxr/form_factor=0
+openxr/view_configuration=1
+openxr/startup_alert=false
