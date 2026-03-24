@@ -237,6 +237,13 @@ func _setup_game() -> void:
 	# Initial sync
 	_sync_boards()
 
+	# Wait a few frames so VR renders before the game loop starts
+	print("[VRGameBoard3D] Waiting for VR to render...")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().process_frame
+	print("[VRGameBoard3D] Starting game")
+
 	# Start game — player 0 goes first for prototype
 	turn_manager.start_game(0)
 
