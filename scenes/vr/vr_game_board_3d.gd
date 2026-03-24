@@ -375,8 +375,9 @@ func _on_log_message(text: String) -> void:
 
 
 func _on_confirmation_requested(_prompt: String, _setting: String) -> void:
-	# Auto-confirm for prototype
-	turn_manager.confirm()
+	# Auto-confirm for local player; bot handles its own confirmations
+	if turn_manager.game_state.current_player_id == local_player_id:
+		turn_manager.confirm()
 
 
 func _on_cards_drawn(player_id: int, _count: int) -> void:
@@ -388,11 +389,11 @@ func _on_battle_card_played(_player_id: int, _card: Dictionary, _zone: int) -> v
 	_sync_boards()
 
 
-func _on_strategy_card_played(_player_id: int, _card: Dictionary) -> void:
+func _on_strategy_card_played(_player_id: int, _card: Dictionary, _strategy_index: int) -> void:
 	_sync_boards()
 
 
-func _on_rage_gained(_player_id: int, _card: Dictionary) -> void:
+func _on_rage_gained(_player_id: int, _new_rage: int) -> void:
 	_sync_boards()
 
 
@@ -400,21 +401,27 @@ func _on_monster_advanced(_player_id: int, _from_zone: int, _to_zone: int) -> vo
 	_sync_boards()
 
 
-func _on_choice_requested(_choices: Array, _prompt: String, _player_id: int) -> void:
+func _on_choice_requested(player_id: int, _options: Array[String], _prompt: String) -> void:
+	if player_id != local_player_id:
+		return  # Bot handles its own choices
 	# Auto-select first choice for prototype
 	turn_manager.action_handler.effect_handler.resolve_choice(0)
 
 
-func _on_deck_search_requested(_cards: Array, _prompt: String, _player_id: int, _allow_skip: bool) -> void:
+func _on_deck_search_requested(player_id: int, _matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], _prompt: String) -> void:
+	if player_id != local_player_id:
+		return  # Bot handles its own searches
 	# Auto-skip for prototype
 	turn_manager.action_handler.effect_handler.resolve_deck_search(null)
 
 
-func _on_hand_discard_requested(_count: int, _player_id: int, _prompt: String) -> void:
+func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
+	if player_id != local_player_id:
+		return  # Bot handles its own discards
 	# Auto-discard first N cards for prototype
 	var player := turn_manager.game_state.players[local_player_id]
 	var indices: Array[int] = []
-	for i in range(mini(_count, player.hand.size())):
+	for i in range(mini(discard_count, player.hand.size())):
 		indices.append(i)
 	turn_manager.action_handler.effect_handler.resolve_hand_discard(indices)
 
