@@ -269,9 +269,9 @@ func _setup_bot() -> void:
 
 
 func _sync_boards() -> void:
-	var gs := turn_manager.game_state
-	var p0 := gs.players[local_player_id]
-	var p1 := gs.players[1 - local_player_id]
+	var gs: GameState = turn_manager.game_state
+	var p0: PlayerState = gs.players[local_player_id]
+	var p1: PlayerState = gs.players[1 - local_player_id]
 
 	local_board.sync_to_state(p0)
 	opponent_board.sync_to_state(p1)
@@ -314,11 +314,11 @@ func _on_hand_card_clicked(_card: VRCard3D, index: int) -> void:
 	if _valid_actions.is_empty():
 		return
 
-	var player := turn_manager.game_state.players[local_player_id]
+	var player: PlayerState = turn_manager.game_state.players[local_player_id]
 	if index >= player.hand.size():
 		return
 
-	var card_data := player.hand[index]
+	var card_data: Dictionary = player.hand[index]
 
 	# Try to find a matching action for this card
 	for action in _valid_actions:
@@ -341,7 +341,7 @@ func _on_hand_card_clicked(_card: VRCard3D, index: int) -> void:
 # --- Signal handlers ---
 
 func _on_phase_started(phase: CardEnums.GamePhase) -> void:
-	var phase_names := {
+	var phase_names: Dictionary = {
 		CardEnums.GamePhase.START: "Start Phase",
 		CardEnums.GamePhase.MAIN: "Main Phase",
 		CardEnums.GamePhase.COUNTER: "Counter Phase",
@@ -356,21 +356,21 @@ func _on_phase_ended(_phase: CardEnums.GamePhase) -> void:
 
 
 func _on_turn_started(player_id: int) -> void:
-	var name_str := turn_manager.game_state.player_names[player_id]
+	var name_str: String = turn_manager.game_state.player_names[player_id]
 	phase_label.text = "%s's Turn" % name_str
 	_sync_boards()
 
 
 func _on_awaiting_action(valid_actions: Array) -> void:
 	_valid_actions = valid_actions
-	var current_pid := turn_manager.game_state.current_player_id
+	var current_pid: int = turn_manager.game_state.current_player_id
 
 	if current_pid != local_player_id:
 		action_label.text = "Opponent's turn..."
 		return
 
 	# Build action label
-	var action_names := []
+	var action_names: Array = []
 	for action in valid_actions:
 		match action:
 			CardEnums.ActionType.PLAY_BATTLE:
@@ -392,7 +392,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 
 
 func _on_game_ended(winner_id: int, reason: String) -> void:
-	var winner_name := turn_manager.game_state.player_names[winner_id]
+	var winner_name: String = turn_manager.game_state.player_names[winner_id]
 	phase_label.text = "%s wins!\n%s" % [winner_name, reason]
 	action_label.text = ""
 	_sync_boards()
@@ -450,7 +450,7 @@ func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 	if player_id != local_player_id:
 		return  # Bot handles its own discards
 	# Auto-discard first N cards for prototype
-	var player := turn_manager.game_state.players[local_player_id]
+	var player: PlayerState = turn_manager.game_state.players[local_player_id]
 	var indices: Array[int] = []
 	for i in range(mini(discard_count, player.hand.size())):
 		indices.append(i)

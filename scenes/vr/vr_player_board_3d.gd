@@ -289,7 +289,7 @@ func _sync_info(state: PlayerState, cp_modifier: int, threat_modifier: int) -> v
 	# CP display (sum of all zone CPs)
 	var total_cp := cp_modifier
 	for i in range(8):
-		var zone_data := state.get_zone_top_card(i)
+		var zone_data: Dictionary = state.get_zone_top_card(i)
 		if not zone_data.is_empty():
 			total_cp += zone_data.get("cp", 0)
 	cp_label.text = "CP: %d" % total_cp
