@@ -325,7 +325,7 @@ func _on_hand_card_clicked(_card: VRCard3D, index: int) -> void:
 		if action == CardEnums.ActionType.PLAY_BATTLE:
 			if card_data.get("card_type") == CardEnums.CardType.BATTLE:
 				# Find first valid zone
-				var valid := turn_manager.rules_engine.get_valid_battle_zones(
+				var valid: Array = turn_manager.rules_engine.get_valid_battle_zones(
 					turn_manager.game_state, local_player_id, card_data)
 				if not valid.is_empty():
 					turn_manager.action_handler.execute_play_battle(
