@@ -10,7 +10,7 @@ extends CardEffect
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
-## Implementation notes: Uses trigger_discard_from_hand + play_from_discard
+## Implementation notes: Uses trigger_discard_from_hand + play_from_discard; checks ctx.metadata["caused_by_opponent"]
 
 
 func get_bot_tags() -> Array[String]:
@@ -28,6 +28,10 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 
 
 func on_discard_from_hand(ctx: EffectContext) -> void:
+	# Only trigger when discarded by opponent's effect
+	if not ctx.metadata.get("caused_by_opponent", false):
+		return
+
 	# Check if opponent's monster is in zones 4-8
 	if ctx.opponent.monster_zone < 4:
 		return

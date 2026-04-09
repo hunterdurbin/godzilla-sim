@@ -426,10 +426,13 @@ func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 	## Trigger discard-from-hand effect on the card being discarded.
 	var effect := get_effect(card_data)
 	if effect:
+		var caused_by_opponent: bool = _active_effect_player_id >= 0 and _active_effect_player_id != player_id
 		var saved_player_id: int = _active_effect_player_id
 		var saved_card: Dictionary = _active_effect_card
 		_set_active_effect(player_id, card_data)
-		await effect.on_discard_from_hand(_build_context(player_id, card_data))
+		var ctx := _build_context(player_id, card_data)
+		ctx.metadata["caused_by_opponent"] = caused_by_opponent
+		await effect.on_discard_from_hand(ctx)
 		if saved_card.is_empty():
 			_clear_active_effect()
 		else:
@@ -442,6 +445,8 @@ func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) ->
 	if has_trigger(card_data, "on_discard_from_hand"):
 		var effect := get_effect(card_data)
 		var ctx := _build_context(player_id, card_data)
+		var caused_by_opponent: bool = _active_effect_player_id >= 0 and _active_effect_player_id != player_id
+		ctx.metadata["caused_by_opponent"] = caused_by_opponent
 		entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_discard_from_hand.bind(ctx), "skip_active_check": true})
 	return entries
 
