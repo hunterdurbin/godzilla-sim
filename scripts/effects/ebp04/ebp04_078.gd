@@ -13,6 +13,11 @@ func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> boo
 
 
 func on_enter(ctx: EffectContext) -> void:
+	if ctx.effect_handler.is_opponent_monster_move_blocked(ctx.opponent.player_id):
+		ctx.effect_handler.log_message.emit(
+			"Crawling Calamity: Opponent's monster move is blocked by an effect.")
+		return
+
 	var opp_zone: int = ctx.opponent.monster_zone
 	if opp_zone < 3 or opp_zone > 5:
 		return

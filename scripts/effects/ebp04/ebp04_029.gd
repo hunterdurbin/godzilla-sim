@@ -2,8 +2,11 @@ extends CardEffect
 # Gigan (2004)
 # Opp cannot discard an Invade 1 card to invade.
 # <Enter> If opp monster in zones 1-5, may return 1 Gigan monster from discard to hand.
-# Note: blocks_invade1_invasion_cost is a new mechanism — stub returns true.
-# TODO: wire blocks_invade1_invasion_cost into ActionHandler._invade().
+# blocks_invade1_invasion_cost is wired into ActionHandler._invade().
+
+
+func blocks_invade1_invasion_cost(_ctx: EffectContext) -> bool:
+	return true
 
 
 func get_bot_tags() -> Array[String]:
@@ -27,5 +30,4 @@ func on_enter(ctx: EffectContext) -> void:
 		"Return a Gigan monster from your discard pile to your hand (or skip):")
 
 	if not found.is_empty():
-		ctx.owner.hand.append(found)
-		ctx.owner.hand_changed.emit()
+		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)

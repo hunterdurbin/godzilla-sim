@@ -17,5 +17,4 @@ func on_enter(ctx: EffectContext) -> void:
 			"Return a non-green battle card from your discard to hand (or skip):")
 		if found.is_empty():
 			break
-		ctx.owner.hand.append(found)
-		ctx.owner.hand_changed.emit()
+		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)

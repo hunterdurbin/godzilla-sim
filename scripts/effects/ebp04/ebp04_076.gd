@@ -2,9 +2,8 @@ extends CardEffect
 # Dormancy
 # <Base>
 # Your monster card cannot be moved by any of your opponent's effects.
-# Note: prevents_opponent_monster_move is a new mechanism.
-# TODO: add virtual to card_effect.gd, check in ActionHandler wherever opponent's
-# effect would set monster zone (retreat_monster_to_zone, advance_monster_to_zone, etc.)
+# prevents_opponent_monster_move is wired into EffectHandler.is_opponent_monster_move_blocked(),
+# checked by effect scripts (e.g. EBP04-078) before moving the opponent's monster.
 
 
 func get_bot_tags() -> Array[String]:
@@ -12,6 +11,10 @@ func get_bot_tags() -> Array[String]:
 
 
 func is_base_strategy() -> bool:
+	return true
+
+
+func prevents_opponent_monster_move(_ctx: EffectContext) -> bool:
 	return true
 
 

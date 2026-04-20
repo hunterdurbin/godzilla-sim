@@ -120,6 +120,7 @@ func get_playable_strategy_cards(player: PlayerState) -> Array[int]:
 			var effective_rank: int = card.get("rank", 99)
 			if effect_handler:
 				effective_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
+				effective_rank += effect_handler.get_strategy_hand_rank_modifier(player.player_id, card)
 			if effective_rank <= player.monster_zone:
 				indices.append(i)
 	return indices

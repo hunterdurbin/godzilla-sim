@@ -2,9 +2,6 @@ extends CardEffect
 # Gaira
 # <Opponent's Turn> Each time opp returns a card from discard to hand + this in area 1 →
 # return 1 card from own discard to hand.
-# Note: needs trigger_card_returned_from_discard hook. Stub for now.
-# TODO: add trigger_card_returned_from_discard in EffectHandler, fire from search_discard
-# when used by opponent's effects.
 
 
 func get_bot_tags() -> Array[String]:
@@ -13,3 +10,20 @@ func get_bot_tags() -> Array[String]:
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
+
+
+func on_card_returned_from_discard(ctx: EffectContext, _card: Dictionary) -> void:
+	# Only active on opponent's turn
+	if ctx.game_state.current_player_id == ctx.owner.player_id:
+		return
+	# This card must be in zone 1 (index 0)
+	if find_zone_of_card(ctx) != 0:
+		return
+
+	var found := await ctx.effect_handler.search_discard(
+		ctx.owner.player_id,
+		func(c: Dictionary) -> bool: return true,
+		"Gaira: Return 1 card from your discard to hand (or skip):")
+	if not found.is_empty():
+		ctx.owner.hand.append(found)
+		ctx.owner.hand_changed.emit()

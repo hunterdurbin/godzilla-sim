@@ -149,6 +149,9 @@ func execute_end_phase_advance(state: GameState) -> void:
 func execute_end_phase_draw(state: GameState) -> void:
 	## Draw up to 5 cards (7.5.4).
 	var player := state.get_current_player()
+	if effect_handler and effect_handler.is_opponent_end_phase_draw_blocked(player.player_id):
+		effect_handler.log_message.emit("End phase draw blocked by opponent's effect.")
+		return
 	var drawn := player.draw_up_to(5)
 	if drawn.size() > 0:
 		cards_drawn.emit(player.player_id, drawn.size())
@@ -533,6 +536,14 @@ func _invade(hand_index: int, state: GameState) -> void:
 	player.has_invaded_this_turn = true
 	player.last_invasion_card = card
 	var start_zone: int = player.monster_zone
+
+	# Check if invade1 cost is blocked by opponent (e.g. EBP04-029 Gigan R3)
+	if advance_amount == 1 and effect_handler and effect_handler.is_invade1_cost_blocked(player.player_id):
+		# Card stays in hand — return it and abort invasion
+		player.hand.insert(hand_index, card)
+		player.has_invaded_this_turn = false
+		effect_handler.log_message.emit("Invasion blocked: opponent prevents using Invade 1 cards as cost.")
+		return
 
 	# Check for invasion cost replacement (e.g. EBP03-004: mill from deck instead)
 	var replaced_cost := false

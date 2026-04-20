@@ -305,6 +305,42 @@ func can_replace_invasion_cost(_ctx: EffectContext) -> bool:
 	return false
 
 
+func blocks_opponent_end_phase_draw(_ctx: EffectContext) -> bool:
+	## Return true if this card prevents the opponent from drawing during end phase.
+	## Used by EBP04-028 (Gigan R2), EBP04-030 (Modified Gigan).
+	return false
+
+
+func blocks_invade1_invasion_cost(_ctx: EffectContext) -> bool:
+	## Return true if this card prevents the opponent from using invade1 cards as invasion cost.
+	## Used by EBP04-029 (Gigan R3).
+	return false
+
+
+func prevents_opponent_monster_move(_ctx: EffectContext) -> bool:
+	## Return true if this card prevents the opponent from moving this player's monster via effects.
+	## Used by EBP04-076 (Dormancy base strategy).
+	return false
+
+
+func get_strategy_hand_rank_modifier(_ctx: EffectContext, _card: Dictionary) -> int:
+	## Return rank adjustment applied to a strategy card while it is in the controller's hand.
+	## Used by EBP04-068 (Kaiser Ghidorah battle): -1 per color in discard if no strategies in play.
+	return 0
+
+
+func on_ally_zone_card_destroyed(_ctx: EffectContext, _destroyed_card: Dictionary, _zone_idx: int) -> void:
+	## Called when one of this card's controller's battle cards is destroyed.
+	## Used by EBP04-039 (Zilla): moves self to zone adjacent to own monster.
+	pass
+
+
+func on_card_returned_from_discard(_ctx: EffectContext, _card: Dictionary) -> void:
+	## Called when the opponent returns a card from their discard pile to their hand.
+	## Used by EBP04-073 (Gaira): if this is in zone 1, return own card from discard to hand.
+	pass
+
+
 # --- Property methods (override to declare card mechanics) ---
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

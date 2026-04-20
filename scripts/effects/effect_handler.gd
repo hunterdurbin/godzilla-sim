@@ -1629,8 +1629,10 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 				log_message.emit(GameLog.revenge_triggered(target.player_id, top_card.get("id", "")))
 				await rev_effect.on_revenge(ctx)
 			deferred_entries.append({"player_id": target.player_id, "card_data": top_card, "callback": revenge_cb, "skip_active_check": true})
+		deferred_entries.append_array(collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
 	else:
 		await trigger_revenge(target.player_id, top_card)
+		await trigger_ally_zone_card_destroyed(target.player_id, top_card, zone_idx)
 	return top_card
 
 
@@ -2314,3 +2316,148 @@ func get_cards_under_top(player: PlayerState, zone_idx: int) -> Array:
 	if stack.size() <= 1:
 		return []
 	return stack.slice(1)
+
+
+# --- EBP04 new mechanism helpers ---
+
+func is_opponent_end_phase_draw_blocked(drawing_player_id: int) -> bool:
+	## Check if the drawing player is blocked from drawing during end phase.
+	## Checks opponent's zone cards and monster for blocks_opponent_end_phase_draw.
+	var opponent_id: int = 1 - drawing_player_id
+	var opponent := game_state.players[opponent_id]
+	var ctx_card := opponent.current_monster
+	var effect := get_effect(ctx_card)
+	if effect and effect.blocks_opponent_end_phase_draw(_build_context(opponent_id, ctx_card)):
+		return true
+	for i in range(8):
+		var zone_card := opponent.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze and ze.blocks_opponent_end_phase_draw(_build_context(opponent_id, zone_card)):
+				return true
+	return false
+
+
+func is_opponent_monster_move_blocked(target_player_id: int) -> bool:
+	## Check if the target player's monster is protected from being moved by opponent effects.
+	## Checks target player's strategy zones for prevents_opponent_monster_move.
+	var player := game_state.players[target_player_id]
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var effect := get_effect(sz_card)
+			if effect and effect.prevents_opponent_monster_move(_build_context(target_player_id, sz_card)):
+				return true
+	return false
+
+
+func is_invade1_cost_blocked(invading_player_id: int) -> bool:
+	## Check if the invading player is blocked from using invade1 cards as invasion cost.
+	## Checks opponent's zone cards and monster for blocks_invade1_invasion_cost.
+	var opponent_id: int = 1 - invading_player_id
+	var opponent := game_state.players[opponent_id]
+	var effect := get_effect(opponent.current_monster)
+	if effect and effect.blocks_invade1_invasion_cost(_build_context(opponent_id, opponent.current_monster)):
+		return true
+	for i in range(8):
+		var zone_card := opponent.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze and ze.blocks_invade1_invasion_cost(_build_context(opponent_id, zone_card)):
+				return true
+	return false
+
+
+func get_strategy_hand_rank_modifier(player_id: int, card: Dictionary) -> int:
+	## Sum rank modifiers applied to a strategy card while held in the given player's hand.
+	## Queries the opponent's zone cards and monster for get_strategy_hand_rank_modifier.
+	var opponent_id: int = 1 - player_id
+	var opponent := game_state.players[opponent_id]
+	var total: int = 0
+	var effect := get_effect(opponent.current_monster)
+	if effect:
+		total += effect.get_strategy_hand_rank_modifier(_build_context(opponent_id, opponent.current_monster), card)
+	for i in range(8):
+		var zone_card := opponent.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze:
+				total += ze.get_strategy_hand_rank_modifier(_build_context(opponent_id, zone_card), card)
+	return total
+
+
+func trigger_all_monster_enter_abilities(player_id: int) -> void:
+	## Re-trigger all on_enter abilities of each card in the player's monster zone stack.
+	## Includes current_monster and all stacked-under cards. Used by EBP04-041 (New Gotengo).
+	var player := game_state.players[player_id]
+	var all_monsters: Array[Dictionary] = []
+	if not player.current_monster.is_empty():
+		all_monsters.append(player.current_monster)
+	for card in player.monster_stack:
+		all_monsters.append(card)
+	for card in all_monsters:
+		var effect := get_effect(card)
+		if effect:
+			var ctx := _build_context(player_id, card)
+			await effect.on_enter(ctx)
+
+
+func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
+	## Collect standby entries for on_ally_zone_card_destroyed triggers.
+	## Iterates the destroying player's zone cards for cards with this trigger.
+	var entries: Array = []
+	var player := game_state.players[player_id]
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if zone_card.is_empty():
+			continue
+		if zone_card.get("id", "") == destroyed_card.get("id", ""):
+			continue  # Skip the card that was just destroyed
+		if not has_trigger(zone_card, "on_ally_zone_card_destroyed"):
+			continue
+		var effect := get_effect(zone_card)
+		if effect:
+			var ctx := _build_context(player_id, zone_card)
+			entries.append({"callback": effect.on_ally_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx), "player_id": player_id})
+	return entries
+
+
+func trigger_ally_zone_card_destroyed(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
+	## Fire on_ally_zone_card_destroyed triggers for the player whose card was destroyed.
+	var entries := collect_ally_zone_card_destroyed_entries(player_id, destroyed_card, zone_idx)
+	if not entries.is_empty():
+		await _resolve_standby_entries(entries)
+
+
+func collect_card_returned_from_discard_entries(returning_player_id: int, card: Dictionary) -> Array:
+	## Collect standby entries for on_card_returned_from_discard triggers.
+	## Iterates the OPPONENT's zone cards (they react when returning_player_id returns a card).
+	var observer_id: int = 1 - returning_player_id
+	var entries: Array = []
+	var observer := game_state.players[observer_id]
+	for i in range(8):
+		var zone_card := observer.get_zone_top_card(i)
+		if zone_card.is_empty():
+			continue
+		if not has_trigger(zone_card, "on_card_returned_from_discard"):
+			continue
+		var effect := get_effect(zone_card)
+		if effect:
+			var ctx := _build_context(observer_id, zone_card)
+			entries.append({"callback": effect.on_card_returned_from_discard.bind(ctx, card), "player_id": observer_id})
+	return entries
+
+
+func trigger_card_returned_from_discard(returning_player_id: int, card: Dictionary) -> void:
+	## Fire on_card_returned_from_discard triggers when a player returns a card from discard to hand.
+	var entries := collect_card_returned_from_discard_entries(returning_player_id, card)
+	if not entries.is_empty():
+		await _resolve_standby_entries(entries)
+
+
+func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
+	## Add a card to a player's hand and fire on_card_returned_from_discard triggers.
+	## Use this instead of hand.append() when returning a card from discard to hand via an effect.
+	var player := game_state.players[player_id]
+	player.hand.append(card)
+	player.hand_changed.emit()
+	await trigger_card_returned_from_discard(player_id, card)

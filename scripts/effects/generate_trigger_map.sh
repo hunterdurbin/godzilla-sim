@@ -25,6 +25,9 @@ METHODS=(
 	can_play_from_discard_on_monster_played prevents_own_invasion
 	can_replace_invasion_cost get_effect_categories get_burst_rank
 	is_base_strategy
+	blocks_opponent_end_phase_draw blocks_invade1_invasion_cost
+	prevents_opponent_monster_move get_strategy_hand_rank_modifier
+	on_ally_zone_card_destroyed on_card_returned_from_discard
 )
 
 {

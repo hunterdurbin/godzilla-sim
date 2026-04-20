@@ -2,8 +2,6 @@ extends CardEffect
 # Zilla
 # <Opponent's Turn> Each time one of your non-red battle cards is Destroyed →
 # move this card to an area adjacent to your monster card.
-# Note: needs on_ally_zone_card_destroyed hook for full accuracy.
-# TODO: add trigger_ally_zone_card_destroyed in EffectHandler.
 
 
 func get_bot_tags() -> Array[String]:
@@ -12,3 +10,46 @@ func get_bot_tags() -> Array[String]:
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
+
+
+func on_ally_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary, _zone_idx: int) -> void:
+	# Only active on opponent's turn
+	if ctx.game_state.current_player_id == ctx.owner.player_id:
+		return
+
+	# Destroyed card must be a non-red battle card (not this card itself)
+	if destroyed_card.get("card_type") != CardEnums.CardType.BATTLE:
+		return
+	if CardEnums.CardColor.RED in destroyed_card.get("colors", []):
+		return
+
+	# Find where this card currently is
+	var self_zone := find_zone_of_card(ctx)
+	if self_zone < 0:
+		return
+
+	# Find zones adjacent to own monster
+	var monster_idx: int = ctx.owner.monster_zone - 1
+	var adjacent := get_adjacent_zones(monster_idx)
+	var valid_targets: Array[int] = []
+	for zi in adjacent:
+		if zi != self_zone and not ctx.owner.zones[zi].is_empty():
+			# Can move to any adjacent zone that isn't already occupied? Rules unclear;
+			# treat as: can move even to occupied (overloading), but not current zone.
+			pass
+		if zi != self_zone:
+			valid_targets.append(zi)
+
+	if valid_targets.is_empty():
+		return
+
+	var chosen: int = await ctx.effect_handler.select_zone_target(
+		ctx.owner.player_id, ctx.owner.player_id, valid_targets,
+		"Zilla: Move to a zone adjacent to your monster (or skip):", true)
+	if chosen < 0:
+		return
+
+	# Move this card
+	ctx.owner.zones[self_zone].erase(ctx.card_data)
+	ctx.owner.zones[chosen].push_front(ctx.card_data)
+	ctx.owner.zones_changed.emit()

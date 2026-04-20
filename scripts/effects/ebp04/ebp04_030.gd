@@ -2,8 +2,11 @@ extends CardEffect
 # Modified Gigan
 # <Opponent's Turn> Opp cannot draw cards during end phase.
 # <Enter> Destroy 1 opp battle card in zones 1-5.
-# Note: blocks_opponent_end_phase_draw is a new mechanism.
-# TODO: wire into ActionHandler.execute_end_phase().
+# blocks_opponent_end_phase_draw is wired into ActionHandler.execute_end_phase_draw().
+
+
+func blocks_opponent_end_phase_draw(ctx: EffectContext) -> bool:
+	return ctx.game_state.current_player_id != ctx.owner.player_id
 
 
 func get_bot_tags() -> Array[String]:
