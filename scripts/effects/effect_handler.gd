@@ -641,6 +641,13 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 		await resolve_deferred_entries(deferred_entries)
 
 
+func counter_retreat_monster(player_id: int) -> void:
+	## Move a player's monster as though it were countered (5.15.1.1).
+	## Delegates to ActionHandler.apply_counter_retreat().
+	if action_handler:
+		action_handler.apply_counter_retreat(game_state.players[player_id])
+
+
 func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
 	## Collect monster advance entries for deferred resolution after movement completes.
 	var entries: Array = []

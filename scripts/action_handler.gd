@@ -175,22 +175,12 @@ func resolve_counter(state: GameState) -> void:
 		# Counter is immune — monster retreats but does NOT rank up
 		counter_immunity_triggered.emit(player.player_id, total_cp, immunity_threshold)
 
-		var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
-		if retreat_zone != opponent.monster_zone:
-			var old_zone: int = opponent.monster_zone
-			opponent.monster_zone = retreat_zone
-			monster_advanced.emit(opponent.player_id, old_zone, opponent.monster_zone)
-			opponent.monster_changed.emit()
+		apply_counter_retreat(opponent)
 	elif total_cp >= threat:
 		counter_succeeded.emit(player.player_id, total_cp, threat)
 
 		# Counter retreat: only zones 6-8 move back (5.15.1.1)
-		var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
-		if retreat_zone != opponent.monster_zone:
-			var old_zone: int = opponent.monster_zone
-			opponent.monster_zone = retreat_zone
-			monster_advanced.emit(opponent.player_id, old_zone, opponent.monster_zone)
-			opponent.monster_changed.emit()
+		apply_counter_retreat(opponent)
 
 		# Trigger counter success effects after retreat but before rank-up
 		if effect_handler:
@@ -210,12 +200,7 @@ func force_counter(state: GameState, counter_player_id: int) -> void:
 	var opponent := state.players[opponent_id]
 
 	# Counter retreat: only zones 6-8 move back (5.15.1.1)
-	var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
-	if retreat_zone != opponent.monster_zone:
-		var old_zone: int = opponent.monster_zone
-		opponent.monster_zone = retreat_zone
-		monster_advanced.emit(opponent_id, old_zone, opponent.monster_zone)
-		opponent.monster_changed.emit()
+	apply_counter_retreat(opponent)
 
 	# Opponent must rank up their monster
 	await _rank_up_monster(state, opponent, counter_player_id)
@@ -408,6 +393,18 @@ func _resolve_overloaded_cards(player: PlayerState) -> bool:
 static func get_retreat_zone(current_zone: int) -> int:
 	## Retreat: move back by 1 zone (5.13.2). Zone 1 stays in zone 1 (5.13.2.1).
 	return maxi(current_zone - 1, 1)
+
+
+func apply_counter_retreat(opponent: PlayerState) -> void:
+	## Move opponent's monster to its counter retreat zone (5.15.1.1).
+	## Zones 6→5, 7→4, 8→3; zones 1-5 do not move.
+	## Emits monster_advanced and monster_changed. Does NOT rank up.
+	var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
+	if retreat_zone != opponent.monster_zone:
+		var old_zone: int = opponent.monster_zone
+		opponent.monster_zone = retreat_zone
+		monster_advanced.emit(opponent.player_id, old_zone, opponent.monster_zone)
+		opponent.monster_changed.emit()
 
 
 static func get_counter_retreat_zone(current_zone: int) -> int:

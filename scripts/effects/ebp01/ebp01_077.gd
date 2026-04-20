@@ -4,7 +4,8 @@ extends CardEffect
 ## If your opponent has 2 or fewer <Rage>, move your opponent's monster card as though
 ## it were countered. (Do not play the next monster card from your monster deck.)
 ##
-## "As though it were countered" means retreat to the retreat zone without ranking up.
+## "As though it were countered" means move directly to the counter retreat zone (no step-by-step,
+## no ranking up). Uses the same direct zone assignment as ActionHandler.resolve_counter().
 ##
 ## Tested: Yes
 ## Known issues: None
@@ -26,7 +27,5 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.rage > 2:
 		return
 
-	# "As though countered" — only zones 6-8 move back (5.15.1.1)
-	var retreat_zone: int = ActionHandler.get_counter_retreat_zone(ctx.opponent.monster_zone)
-	if retreat_zone != ctx.opponent.monster_zone:
-		await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, retreat_zone)
+	# "As though countered" — direct zone move, not step-by-step retreat (5.15.1.1)
+	ctx.effect_handler.counter_retreat_monster(ctx.opponent.player_id)
