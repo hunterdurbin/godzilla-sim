@@ -1,0 +1,37 @@
+extends CardEffect
+# Monster X (Battle)
+# Counter power X = 3000 × number of different colors (including white) in own zones.
+# <Evolution 8> <Kaiser Ghidorah>
+
+
+func get_bot_tags() -> Array[String]:
+	return ["boosts_cp", "evolution"]
+
+
+func get_phase_start_filter() -> Dictionary:
+	return {"phase": CardEnums.GamePhase.MAIN, "own_turn": true}
+
+
+func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
+	if phase != CardEnums.GamePhase.MAIN:
+		return
+	if ctx.game_state.current_player_id != ctx.owner.player_id:
+		return
+	var zone_idx := find_zone_of_card(ctx)
+	if zone_idx < 0:
+		return
+	await ctx.effect_handler.perform_evolution(ctx.owner.player_id, zone_idx)
+
+
+func get_counter_power_modifier(ctx: EffectContext) -> int:
+	var colors: Array[int] = []
+	var my_zone: int = find_zone_of_card(ctx)
+	for i in range(8):
+		if i == my_zone:
+			continue
+		var zone_card := ctx.owner.get_zone_top_card(i)
+		if not zone_card.is_empty() and zone_card.get("card_type") == CardEnums.CardType.BATTLE:
+			for c: int in zone_card.get("colors", []):
+				if c not in colors:
+					colors.append(c)
+	return colors.size() * 3000

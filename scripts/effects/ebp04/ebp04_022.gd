@@ -1,0 +1,52 @@
+extends CardEffect
+# Godzilla Amphibia
+# When this card is successfully countered, reveal top 5 of deck.
+# For each green battle card revealed, Destroy 1 battle card with 6000 or less CP
+# in opp's areas 1-5.
+
+
+func get_bot_tags() -> Array[String]:
+	return ["destroys_zone"]
+
+
+func on_counter_success(ctx: EffectContext) -> void:
+	var revealed: Array[Dictionary] = []
+	for i in range(5):
+		if ctx.owner.main_deck.is_empty():
+			break
+		revealed.append(ctx.owner.main_deck.pop_front())
+
+	if revealed.is_empty():
+		return
+
+	ctx.effect_handler.cards_revealed_requested.emit(
+		ctx.owner.player_id, revealed, "Revealed from deck top:")
+	await ctx.effect_handler._cards_revealed_resolved
+
+	for card in revealed:
+		ctx.owner.discard_pile.append(card)
+	ctx.owner.deck_changed.emit()
+	ctx.owner.discard_changed.emit()
+
+	var green_count: int = 0
+	for card in revealed:
+		if (card.get("card_type") == CardEnums.CardType.BATTLE and
+				CardEnums.CardColor.GREEN in card.get("colors", [])):
+			green_count += 1
+
+	# Collect valid target zones (zones 1-5 = indices 0-4 with <= 6000 CP)
+	for _i in range(green_count):
+		var valid_zones: Array[int] = []
+		for zi in range(5):
+			var opp_card := ctx.opponent.get_zone_top_card(zi)
+			if not opp_card.is_empty() and opp_card.get("counter_power", 0) <= 6000:
+				valid_zones.append(zi)
+		if valid_zones.is_empty():
+			break
+		var chosen: int = await ctx.effect_handler.select_zone_target(
+			ctx.owner.player_id, ctx.opponent.player_id, valid_zones,
+			"Destroy an opponent's battle card with 6000 or less CP in zones 1-5 (or skip):",
+			true)
+		if chosen < 0:
+			break
+		await ctx.effect_handler.destroy_zones(ctx.opponent, [chosen])
