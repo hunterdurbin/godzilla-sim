@@ -1633,9 +1633,11 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 				await rev_effect.on_revenge(ctx)
 			deferred_entries.append({"player_id": target.player_id, "card_data": top_card, "callback": revenge_cb, "skip_active_check": true})
 		deferred_entries.append_array(collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
+		deferred_entries.append_array(collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
 	else:
 		await trigger_revenge(target.player_id, top_card)
 		await trigger_ally_zone_card_destroyed(target.player_id, top_card, zone_idx)
+		await trigger_opponent_zone_card_destroyed(target.player_id, top_card, zone_idx)
 	return top_card
 
 
@@ -2468,6 +2470,38 @@ func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Di
 func trigger_ally_zone_card_destroyed(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
 	## Fire on_ally_zone_card_destroyed triggers for the player whose card was destroyed.
 	var entries := collect_ally_zone_card_destroyed_entries(player_id, destroyed_card, zone_idx)
+	if not entries.is_empty():
+		await _resolve_standby_entries(entries)
+
+
+func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
+	## Collect standby entries for on_opponent_zone_card_destroyed triggers.
+	## Iterates the opponent of the destroyed card's owner (they react when opponent's card is destroyed).
+	var entries: Array = []
+	var watcher_id := game_state.get_opponent_id(destroyed_player_id)
+	var watcher := game_state.players[watcher_id]
+	var monster := watcher.current_monster
+	if not monster.is_empty() and has_trigger(monster, "on_opponent_zone_card_destroyed"):
+		var effect := get_effect(monster)
+		if effect:
+			var ctx := _build_context(watcher_id, monster)
+			entries.append({"callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx), "player_id": watcher_id})
+	for i in range(8):
+		var zone_card := watcher.get_zone_top_card(i)
+		if zone_card.is_empty():
+			continue
+		if not has_trigger(zone_card, "on_opponent_zone_card_destroyed"):
+			continue
+		var effect := get_effect(zone_card)
+		if effect:
+			var ctx := _build_context(watcher_id, zone_card)
+			entries.append({"callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx), "player_id": watcher_id})
+	return entries
+
+
+func trigger_opponent_zone_card_destroyed(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
+	## Fire on_opponent_zone_card_destroyed triggers on the opponent of the destroyed card's owner.
+	var entries := collect_opponent_zone_card_destroyed_entries(destroyed_player_id, destroyed_card, zone_idx)
 	if not entries.is_empty():
 		await _resolve_standby_entries(entries)
 

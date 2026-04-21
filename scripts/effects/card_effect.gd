@@ -351,6 +351,12 @@ func on_ally_zone_card_destroyed(_ctx: EffectContext, _destroyed_card: Dictionar
 	pass
 
 
+func on_opponent_zone_card_destroyed(_ctx: EffectContext, _destroyed_card: Dictionary, _zone_idx: int) -> void:
+	## Called on the opponent of the player whose battle card was destroyed.
+	## Used by EBP04-002 (Godzilla 2004): triggers when opponent's card in same column is destroyed.
+	pass
+
+
 func on_card_returned_from_discard(_ctx: EffectContext, _card: Dictionary) -> void:
 	## Called when the opponent returns a card from their discard pile to their hand.
 	## Used by EBP04-073 (Gaira): if this is in zone 1, return own card from discard to hand.

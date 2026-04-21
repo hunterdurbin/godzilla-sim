@@ -241,7 +241,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp03/ebp03_079.gd": ["on_enter"],
 	"res://scripts/effects/ebp03/ebp03_080.gd": ["get_phase_start_filter","on_phase_start","is_base_strategy"],
 	"res://scripts/effects/ebp04/ebp04_001.gd": ["get_phase_start_filter","on_phase_start"],
-	"res://scripts/effects/ebp04/ebp04_002.gd": ["get_effect_categories"],
+	"res://scripts/effects/ebp04/ebp04_002.gd": ["get_effect_categories","on_opponent_zone_card_destroyed"],
 	"res://scripts/effects/ebp04/ebp04_003.gd": ["on_enter","get_burst_rank"],
 	"res://scripts/effects/ebp04/ebp04_005.gd": ["on_enter"],
 	"res://scripts/effects/ebp04/ebp04_009.gd": ["get_phase_start_filter","on_phase_start"],
