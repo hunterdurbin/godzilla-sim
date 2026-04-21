@@ -20,6 +20,7 @@ var hand: Array[Dictionary] = []
 var discard_pile: Array[Dictionary] = []
 var zones: Array = []  # 8 entries, each an Array of Dictionaries (card stack, index 0 = top)
 var strategy_zones: Array = []  # Up to 2 entries, each {} or a strategy card dict
+var strategy_zone_stacks: Array = []  # Parallel to strategy_zones: cards stacked under each strategy (e.g. EBP04-089)
 var has_invaded_this_turn: bool = false
 var has_played_monster_this_turn: bool = false
 var strategy_zone_turn_placed: Array[int] = [0, 0]  # Turn number when each was placed
@@ -39,6 +40,9 @@ func _init(id: int = 0) -> void:
 	strategy_zones.resize(2)
 	strategy_zones[0] = {}
 	strategy_zones[1] = {}
+	strategy_zone_stacks.resize(2)
+	strategy_zone_stacks[0] = []
+	strategy_zone_stacks[1] = []
 
 
 # --- Zone stack helpers ---

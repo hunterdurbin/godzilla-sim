@@ -15,17 +15,10 @@ func is_base_strategy() -> bool:
 	return true
 
 
-func _get_cards_under_count(ctx: EffectContext) -> int:
-	var strategy_idx := _find_own_strategy_zone(ctx)
-	if strategy_idx < 0:
-		return 0
-	return ctx.effect_handler.get_cards_under_top(ctx.owner, strategy_idx).size()
-
-
 func _find_own_strategy_zone(ctx: EffectContext) -> int:
+	var self_id: String = ctx.card_data.get("id", "")
 	for i in range(ctx.owner.strategy_zones.size()):
-		var top := ctx.owner.strategy_zones[i]
-		if not top.is_empty() and top[0].get("id", "") == ctx.card_data.get("id", ""):
+		if ctx.owner.strategy_zones[i].get("id", "") == self_id:
 			return i
 	return -1
 
@@ -42,15 +35,17 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	if strategy_idx < 0:
 		return
 
-	var count_before := ctx.effect_handler.get_cards_under_top(ctx.owner, strategy_idx).size()
+	var count_before: int = ctx.effect_handler.get_cards_under_strategy_top(ctx.owner, strategy_idx).size()
 
-	# The rage cards that were discarded are already gone; we track count via delta
-	# We place placeholder markers representing each rage reduction card
-	# In practice, place the actual discarded cards under — but rage discard
-	# happens in game logic before this trigger fires. We track count via instance var.
-	# TODO: Wire rage discard cards to be placed under this card via ActionHandler.
-	# For now, increment a stored count by delta and check milestones.
-	var count_after := count_before + delta
+	# Move top delta cards from discard pile under this strategy as trackers
+	for _i in range(delta):
+		if ctx.owner.discard_pile.is_empty():
+			break
+		var tracker: Dictionary = ctx.owner.discard_pile.pop_back()
+		ctx.effect_handler.place_card_under_strategy_zone(ctx.owner, tracker, strategy_idx)
+		ctx.owner.discard_changed.emit()
+
+	var count_after: int = ctx.effect_handler.get_cards_under_strategy_top(ctx.owner, strategy_idx).size()
 
 	# Check milestones crossed
 	for milestone in [15, 22, 30]:

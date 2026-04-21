@@ -2318,6 +2318,22 @@ func get_cards_under_top(player: PlayerState, zone_idx: int) -> Array:
 	return stack.slice(1)
 
 
+func place_card_under_strategy_zone(player: PlayerState, card: Dictionary, strat_idx: int) -> void:
+	## Place a card under the top card of a strategy zone (into strategy_zone_stacks).
+	## Used by EBP04-089 (Inherited Life) to track rage card placements.
+	if strat_idx < 0 or strat_idx >= player.strategy_zone_stacks.size():
+		return
+	player.strategy_zone_stacks[strat_idx].append(card)
+	player.strategy_zones_changed.emit()
+
+
+func get_cards_under_strategy_top(player: PlayerState, strat_idx: int) -> Array:
+	## Return cards stacked under a strategy zone's top card.
+	if strat_idx < 0 or strat_idx >= player.strategy_zone_stacks.size():
+		return []
+	return player.strategy_zone_stacks[strat_idx]
+
+
 # --- EBP04 new mechanism helpers ---
 
 func is_opponent_end_phase_draw_blocked(drawing_player_id: int) -> bool:

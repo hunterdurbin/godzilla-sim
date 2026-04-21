@@ -25,6 +25,8 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.strategy_zones[2] = {}
 		ctx.owner.strategy_zone_turn_placed.resize(3)
 		ctx.owner.strategy_zone_turn_placed[2] = 0
+		ctx.owner.strategy_zone_stacks.resize(3)
+		ctx.owner.strategy_zone_stacks[2] = []
 		ctx.owner.strategy_zones_changed.emit()
 
 
