@@ -103,6 +103,9 @@ func can_play_battle_card_at_zone(card: Dictionary, zone_index: int, player: Pla
 		var blocked: Array[int] = effect_handler.get_opponent_blocked_zones(opponent.player_id)
 		if zone_index in blocked:
 			return false
+		var required: Array[int] = effect_handler.get_card_required_play_zones(player.player_id, card)
+		if not required.is_empty() and zone_index not in required:
+			return false
 	return true
 
 

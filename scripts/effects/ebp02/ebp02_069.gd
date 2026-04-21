@@ -37,7 +37,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if second < 0:
 		return
 
-	var stack_a: Array = ctx.opponent.zones[first]
-	ctx.opponent.zones[first] = ctx.opponent.zones[second]
-	ctx.opponent.zones[second] = stack_a
-	ctx.opponent.zones_changed.emit()
+	await ctx.effect_handler.swap_zones(ctx.opponent, first, second)

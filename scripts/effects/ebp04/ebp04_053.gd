@@ -31,8 +31,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if zone_b < 0:
 		return
 
-	var stack_a: Array = ctx.owner.zones[zone_a].duplicate()
-	var stack_b: Array = ctx.owner.zones[zone_b].duplicate()
-	ctx.owner.zones[zone_a] = stack_b
-	ctx.owner.zones[zone_b] = stack_a
-	ctx.owner.zones_changed.emit()
+	await ctx.effect_handler.swap_zones(ctx.owner, zone_a, zone_b)

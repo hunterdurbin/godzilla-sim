@@ -3898,6 +3898,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"colors": [CardEnums.CardColor.GREEN],
 		"traits": [CardEnums.CardTrait.TOKEN, CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.GODZILLA_EARTH],
 		"counter_power": 0,
+		"effect_script": "res://scripts/effects/ebp04/ebp04_T01.gd",
 		"description": "(Tokens cannot be added to the deck. They are banished when removed from zones.)"
 	},
 ]

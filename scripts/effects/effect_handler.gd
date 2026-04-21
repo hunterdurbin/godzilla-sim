@@ -1621,6 +1621,9 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 	target.cards_destroyed_this_turn.append(top_card)
 	_log_destroy(target.player_id, zone_idx, top_card)
 	card_destroyed.emit(target.player_id, zone_idx)
+	if has_trigger(top_card, "on_destroy"):
+		var d_effect := get_effect(top_card)
+		await d_effect.on_destroy(_build_context(target.player_id, top_card), zone_idx)
 	if deferred_entries != null:
 		if has_trigger(top_card, "on_revenge"):
 			var rev_effect := get_effect(top_card)
@@ -2205,6 +2208,31 @@ func can_card_be_played(player_id: int, card_data: Dictionary) -> bool:
 	if effect:
 		return effect.can_be_played(_build_context(player_id, card_data))
 	return true
+
+
+func get_card_required_play_zones(player_id: int, card_data: Dictionary) -> Array[int]:
+	## Returns the zone indices this card is restricted to, or empty if unrestricted.
+	var effect := get_effect(card_data)
+	if effect:
+		return effect.get_required_play_zones(_build_context(player_id, card_data))
+	return []
+
+
+func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
+	## Swap two zone stacks and fire on_zone_changed for each top card that moved.
+	var top_a: Dictionary = player.get_zone_top_card(zone_a)
+	var top_b: Dictionary = player.get_zone_top_card(zone_b)
+	var stack_a: Array = player.zones[zone_a].duplicate()
+	var stack_b: Array = player.zones[zone_b].duplicate()
+	player.zones[zone_a] = stack_b
+	player.zones[zone_b] = stack_a
+	player.zones_changed.emit()
+	if not top_a.is_empty() and has_trigger(top_a, "on_zone_changed"):
+		var eff := get_effect(top_a)
+		await eff.on_zone_changed(_build_context(player.player_id, top_a), zone_a, zone_b)
+	if not top_b.is_empty() and has_trigger(top_b, "on_zone_changed"):
+		var eff := get_effect(top_b)
+		await eff.on_zone_changed(_build_context(player.player_id, top_b), zone_b, zone_a)
 
 
 func destroy_base_strategies_on_invasion(to_zone: int, deferred_entries: Variant = null) -> void:

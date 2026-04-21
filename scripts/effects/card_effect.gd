@@ -152,10 +152,26 @@ func protects_card_from_destruction(_ctx: EffectContext, _card_data: Dictionary,
 
 # --- Play restriction methods ---
 
+func on_destroy(_ctx: EffectContext, _zone_idx: int) -> void:
+	## Called when this card is destroyed and removed from a zone (before revenge/banish).
+	pass
+
+
+func on_zone_changed(_ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
+	## Called when this card is moved between zones while remaining in play.
+	pass
+
+
 func can_be_played(_ctx: EffectContext) -> bool:
 	## Return false if this card has a play restriction that prevents it from being played.
 	## Checked before rank/zone validation in the rules engine.
 	return true
+
+
+func get_required_play_zones(_ctx: EffectContext) -> Array[int]:
+	## Return a non-empty Array of allowed zone indices to restrict which zones this card
+	## can be placed in. Empty array = no restriction (any valid zone allowed).
+	return []
 
 
 func apply_play_cost(_ctx: EffectContext, _zone_index: int) -> bool:

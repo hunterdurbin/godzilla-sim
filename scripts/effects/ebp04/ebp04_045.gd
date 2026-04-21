@@ -10,7 +10,7 @@ func get_bot_tags() -> Array[String]:
 	return ["zone_dependent"]
 
 
-func apply_play_cost(ctx: EffectContext) -> bool:
+func apply_play_cost(ctx: EffectContext, _zone_index: int) -> bool:
 	await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:

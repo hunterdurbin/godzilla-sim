@@ -38,11 +38,7 @@ func on_enter(ctx: EffectContext) -> void:
 					ctx.owner.player_id, ctx.owner.player_id, second_choices,
 					"Choose the second battle card to swap with:", true)
 				if second >= 0:
-					# Swap the entire stacks
-					var stack_a: Array = ctx.owner.zones[first]
-					ctx.owner.zones[first] = ctx.owner.zones[second]
-					ctx.owner.zones[second] = stack_a
-					ctx.owner.zones_changed.emit()
+					await ctx.effect_handler.swap_zones(ctx.owner, first, second)
 
 
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:

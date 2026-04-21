@@ -27,7 +27,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		return
 	if ctx.owner.monster_zone < 6:
 		return
-	var zone_cards := ctx.owner.get_all_zone_cards()
+	var zone_cards: Array = ctx.owner.get_all_zone_cards()
 	if zone_cards.size() < 2:
 		return
 
@@ -48,5 +48,4 @@ func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> v
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,
 		func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 4,
-		"Destroy an opponent's Rank 4 or lower battle card (or skip):",
-		true)
+		"Destroy an opponent's Rank 4 or lower battle card:")
