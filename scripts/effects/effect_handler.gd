@@ -2432,19 +2432,11 @@ func get_strategy_hand_rank_modifier(player_id: int, card: Dictionary) -> int:
 
 
 func trigger_all_monster_enter_abilities(player_id: int) -> void:
-	## Re-trigger all on_enter abilities of each card in the player's monster zone stack.
-	## Includes current_monster and all stacked-under cards. Used by EBP04-041 (New Gotengo).
+	## Re-trigger the on_enter ability of the topmost monster card. Used by EBP04-041 (New Gotengo).
 	var player := game_state.players[player_id]
-	var all_monsters: Array[Dictionary] = []
-	if not player.current_monster.is_empty():
-		all_monsters.append(player.current_monster)
-	for card in player.monster_stack:
-		all_monsters.append(card)
-	for card in all_monsters:
-		var effect := get_effect(card)
-		if effect:
-			var ctx := _build_context(player_id, card)
-			await effect.on_enter(ctx)
+	if player.current_monster.is_empty():
+		return
+	await trigger_enter(player_id, player.current_monster)
 
 
 func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:

@@ -1,10 +1,9 @@
 extends CardEffect
 # Godzilla 2004
 # <Enter> If 1 or fewer strategies in zones, search deck for Rank 1 Strategy, place + resolve.
-# Each time you Destroy opp battle in same column + 3 Rank 1 strategies in discard pile,
-# Destroy all opp battle cards <= rank of destroyed card.
-# Note: second effect needs on_zone_card_destroyed hook. Stub for now.
-
+# 
+# Each time you Destroy an opponent's battle card in the same column and at least 3 Rank 1 strategies
+# in discard pile, Destroy all opponent battle cards <= rank of destroyed card.
 
 func get_bot_tags() -> Array[String]:
 	return ["searches_deck", "destroys_zone"]
@@ -35,7 +34,6 @@ func on_enter(ctx: EffectContext) -> void:
 	if found.is_empty():
 		return
 
-	# Find empty strategy zone
 	var target_idx: int = -1
 	for i in range(ctx.owner.strategy_zones.size()):
 		if ctx.owner.strategy_zones[i].is_empty():
@@ -47,8 +45,27 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.owner.strategy_zones[target_idx] = found
 	ctx.owner.strategy_changed.emit()
 
-	# Resolve the placed card's effect
-	var strat_effect := ctx.effect_handler.get_effect(found)
-	if strat_effect:
-		var strat_ctx := EffectContext.create(ctx.game_state, ctx.owner.player_id, found, ctx.effect_handler)
-		await strat_effect.on_enter(strat_ctx)
+	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found)
+
+
+func on_opponent_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary, zone_idx: int) -> void:
+	var my_zone_idx: int = ctx.owner.monster_zone - 1
+	if my_zone_idx < 0:
+		return
+	if zone_idx not in get_opponent_column_zones(my_zone_idx):
+		return
+	var rank1_in_discard: int = 0
+	for card in ctx.owner.discard:
+		if ctx.field_rank(card, ctx.owner.player_id) == 1:
+			rank1_in_discard += 1
+	if rank1_in_discard < 3:
+		return
+	var destroyed_rank: int = ctx.field_rank(destroyed_card, ctx.opponent.player_id)
+	var targets: Array[int] = []
+	for i in range(8):
+		var card := ctx.opponent.get_zone_top_card(i)
+		if not card.is_empty() and ctx.field_rank(card, ctx.opponent.player_id) <= destroyed_rank:
+			targets.append(i)
+	if targets.is_empty():
+		return
+	await ctx.effect_handler.destroy_zones(ctx.opponent, targets)

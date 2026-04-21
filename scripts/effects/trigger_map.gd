@@ -243,7 +243,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp04/ebp04_001.gd": ["get_phase_start_filter","on_phase_start"],
 	"res://scripts/effects/ebp04/ebp04_002.gd": ["get_effect_categories","on_opponent_zone_card_destroyed"],
 	"res://scripts/effects/ebp04/ebp04_003.gd": ["on_enter","get_burst_rank"],
-	"res://scripts/effects/ebp04/ebp04_005.gd": ["on_enter"],
+	"res://scripts/effects/ebp04/ebp04_005.gd": ["on_enter","on_opponent_zone_card_destroyed"],
 	"res://scripts/effects/ebp04/ebp04_009.gd": ["get_phase_start_filter","on_phase_start"],
 	"res://scripts/effects/ebp04/ebp04_010.gd": ["prevents_rage_reduction"],
 	"res://scripts/effects/ebp04/ebp04_011.gd": ["get_threat_level_modifier"],
