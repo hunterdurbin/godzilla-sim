@@ -1,6 +1,6 @@
 extends CardEffect
 # Godzilla Aquatilius
-# Own counter phase start: discard top of deck; if green battle → opp discards to 4.
+# Own counter phase start: may discard top of deck; if green battle → opp discards to 4.
 
 
 func get_bot_tags() -> Array[String]:
@@ -19,6 +19,12 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if ctx.owner.main_deck.is_empty():
 		return
 
+	var chosen: int = await ctx.effect_handler.select_choice(
+		ctx.owner.player_id, ["Discard top of deck", "Skip"],
+		"May discard the top card of your deck:")
+	if chosen != 0:
+		return
+
 	var top_card: Dictionary = ctx.owner.main_deck.pop_front()
 	ctx.owner.discard_pile.append(top_card)
 	ctx.owner.deck_changed.emit()
@@ -29,4 +35,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		CardEnums.CardColor.GREEN in top_card.get("colors", [])
 	)
 	if is_green_battle:
-		await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 4)
+		await ctx.effect_handler.discard_hand_to(ctx.opponent, 4)
