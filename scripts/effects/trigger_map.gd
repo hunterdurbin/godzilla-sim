@@ -263,7 +263,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp04/ebp04_025.gd": ["on_enter","on_when_invading"],
 	"res://scripts/effects/ebp04/ebp04_026.gd": ["on_when_invading","get_counter_power_modifier"],
 	"res://scripts/effects/ebp04/ebp04_027.gd": ["get_phase_start_filter","on_phase_start","can_monster_advance","can_monster_invade"],
-	"res://scripts/effects/ebp04/ebp04_028.gd": ["on_battle_card_played","get_opponent_field_rank_modifier","get_effect_categories","blocks_opponent_end_phase_draw","get_strategy_hand_rank_modifier"],
+	"res://scripts/effects/ebp04/ebp04_028.gd": ["on_battle_card_played","get_effect_categories","get_strategy_hand_rank_modifier"],
 	"res://scripts/effects/ebp04/ebp04_029.gd": ["on_enter","get_effect_categories","blocks_invade1_invasion_cost"],
 	"res://scripts/effects/ebp04/ebp04_030.gd": ["on_enter","get_effect_categories","blocks_opponent_end_phase_draw"],
 	"res://scripts/effects/ebp04/ebp04_031.gd": ["get_threat_level_modifier","get_counter_immunity_threshold"],

@@ -353,9 +353,12 @@ func prevents_opponent_monster_move(_ctx: EffectContext) -> bool:
 	return false
 
 
-func get_strategy_hand_rank_modifier(_ctx: EffectContext, _card: Dictionary) -> int:
-	## Return rank adjustment applied to a strategy card while it is in the controller's hand.
-	## Used by EBP04-068 (Kaiser Ghidorah battle): -1 per color in discard if no strategies in play.
+func get_strategy_hand_rank_modifier(_ctx: EffectContext, _card: Dictionary, _target_player_id: int) -> int:
+	## Return rank adjustment applied to a strategy card while it is in target_player_id's hand.
+	## ctx.owner is the card applying the modifier. Use target_player_id to decide who is affected:
+	##   target == ctx.owner.player_id → affects own strategies
+	##   target != ctx.owner.player_id → affects opponent strategies
+	##   always return a value → affects both
 	return 0
 
 

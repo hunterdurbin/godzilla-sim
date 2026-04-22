@@ -2454,20 +2454,22 @@ func is_invade1_cost_blocked(invading_player_id: int) -> bool:
 
 
 func get_strategy_hand_rank_modifier(player_id: int, card: Dictionary) -> int:
-	## Sum rank modifiers applied to a strategy card while held in the given player's hand.
-	## Queries the opponent's zone cards and monster for get_strategy_hand_rank_modifier.
-	var opponent_id: int = 1 - player_id
-	var opponent := game_state.players[opponent_id]
+	## Sum rank modifiers applied to a strategy card while held in player_id's hand.
+	## Queries all cards from both players so effects can target owner, opponent, or both.
 	var total: int = 0
-	var effect := get_effect(opponent.current_monster)
-	if effect:
-		total += effect.get_strategy_hand_rank_modifier(_build_context(opponent_id, opponent.current_monster), card)
-	for i in range(8):
-		var zone_card := opponent.get_zone_top_card(i)
-		if not zone_card.is_empty():
-			var ze := get_effect(zone_card)
-			if ze:
-				total += ze.get_strategy_hand_rank_modifier(_build_context(opponent_id, zone_card), card)
+	for source_id in range(2):
+		var source := game_state.players[source_id]
+		var effect := get_effect(source.current_monster)
+		if effect:
+			total += effect.get_strategy_hand_rank_modifier(
+				_build_context(source_id, source.current_monster), card, player_id)
+		for i in range(8):
+			var zone_card := source.get_zone_top_card(i)
+			if not zone_card.is_empty():
+				var ze := get_effect(zone_card)
+				if ze:
+					total += ze.get_strategy_hand_rank_modifier(
+						_build_context(source_id, zone_card), card, player_id)
 	return total
 
 
