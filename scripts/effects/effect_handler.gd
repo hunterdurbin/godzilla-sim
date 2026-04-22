@@ -1772,6 +1772,15 @@ func apply_play_cost(player_id: int, card_data: Dictionary, zone_index: int) -> 
 	return await effect.apply_play_cost(ctx, zone_index)
 
 
+func can_monster_be_played_from_hand(player_id: int, card_data: Dictionary) -> bool:
+	## Check if a monster card can be played via an alternate play cost.
+	var effect := get_effect(card_data)
+	if not effect or not has_trigger(card_data, "can_play_as_monster"):
+		return false
+	var ctx := _build_context(player_id, card_data)
+	return effect.can_play_as_monster(ctx)
+
+
 # --- Modifier queries ---
 
 func get_counter_power_modifier(player_id: int) -> int:

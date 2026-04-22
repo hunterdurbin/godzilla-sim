@@ -180,6 +180,10 @@ func get_playable_monsters(player: PlayerState) -> Array[int]:
 		# Burst play: card's burst rank matches current monster rank
 		if _has_burst_for_rank(card, cur_rank):
 			indices.append(i)
+			continue
+		# Alternate play cost (e.g. EBP04-012 Biollante Plant Beast Form)
+		if effect_handler and effect_handler.can_monster_be_played_from_hand(player.player_id, card):
+			indices.append(i)
 	return indices
 
 

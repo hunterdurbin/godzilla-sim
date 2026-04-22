@@ -507,8 +507,18 @@ func _play_monster(hand_index: int, state: GameState) -> void:
 	var old_monster: Dictionary = player.current_monster
 	var old_rage: int = player.rage
 
+	# Alternate play cost (e.g. EBP04-012): execute cost before committing, allow cancel
+	var rank_mismatch: bool = card.get("rank", 0) != old_monster.get("rank", 0)
+	if rank_mismatch and effect_handler and effect_handler.has_trigger(card, "apply_play_cost"):
+		var cost_ok: bool = await effect_handler.apply_play_cost(player.player_id, card, -1)
+		if not cost_ok:
+			player.hand.insert(hand_index, card)
+			player.hand_changed.emit()
+			return
+		rank_mismatch = false  # Not a burst play — cost was paid
+
 	# Detect Burst play: card rank doesn't match current monster rank
-	var is_burst_play: bool = card.get("rank", 0) != old_monster.get("rank", 0)
+	var is_burst_play: bool = rank_mismatch
 	if is_burst_play:
 		player.pre_burst_monster = old_monster
 		player.burst_monster = card

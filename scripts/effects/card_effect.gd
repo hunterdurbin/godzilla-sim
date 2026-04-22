@@ -182,10 +182,18 @@ func get_required_play_zones(_ctx: EffectContext) -> Array[int]:
 
 func apply_play_cost(_ctx: EffectContext, _zone_index: int) -> bool:
 	## Called after a battle card is popped from hand but before placement.
+	## Also called for monster cards with alternate play costs (zone_index = -1).
 	## Override to prompt the player for an optional cost (e.g., discard a card).
 	## Return true if the card should be played, false to cancel (restore to hand).
-	## zone_index is the target zone (0-indexed).
+	## zone_index is the target zone (0-indexed), or -1 for monsters.
 	return true
+
+
+func can_play_as_monster(_ctx: EffectContext) -> bool:
+	## Return true if this monster card can be played via an alternate play cost.
+	## Checked in addition to normal rank/trait matching in get_playable_monsters.
+	## Used by EBP04-012: playable when rank 2 Biollante is current monster.
+	return false
 
 
 # --- Modifier methods (override to alter stats) ---
