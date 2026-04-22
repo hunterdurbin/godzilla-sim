@@ -28,19 +28,3 @@ func on_battle_card_played(ctx: EffectContext, _zone_index: int, played_from_dec
 	if not played_from_deck:
 		return
 	await ctx.effect_handler.discard_hand_to(ctx.opponent, 1)
-
-
-func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, target_player_id: int) -> int:
-	# Only affects the opponent's strategies, only on the opponent's turn
-	if target_player_id == ctx.owner.player_id:
-		return 0
-	if ctx.game_state.current_player_id != target_player_id:
-		return 0
-	return 3
-
-
-func on_battle_card_played(ctx: EffectContext, _zone_index: int) -> void:
-	# <Opponent's Turn> Each time opp plays a battle card → discard to 1
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
-		return
-	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 1)
