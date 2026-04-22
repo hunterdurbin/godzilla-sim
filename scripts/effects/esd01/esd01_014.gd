@@ -42,13 +42,4 @@ func on_enter(ctx: EffectContext) -> void:
 		if target_zone < 0:
 			return
 
-		# Handle overload if zone occupied
-		if player.zone_has_cards(target_zone):
-			var destroyed_stack: Array = player.clear_zone(target_zone)
-			EffectHandler.banish_or_discard(player, destroyed_stack)
-			player.discard_changed.emit()
-
-		player.push_zone_card(target_zone, selected)
-		player.zones_changed.emit()
-		await ctx.effect_handler.trigger_enter(player.player_id, selected, true)
-		await ctx.effect_handler.trigger_battle_card_played(player.player_id, selected, target_zone, true)
+		await ctx.effect_handler.play_battle_card_from_deck(player.player_id, selected, target_zone)

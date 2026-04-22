@@ -52,7 +52,4 @@ func on_enter(ctx: EffectContext) -> void:
 			ctx.owner.discard_changed.emit()
 			continue
 
-		ctx.owner.zones[chosen] = [card]
-		ctx.owner.zones_changed.emit()
-		await ctx.effect_handler.trigger_enter(ctx.owner.player_id, card, true)
-		await ctx.effect_handler.trigger_battle_card_played(ctx.owner.player_id, card, chosen, true)
+		await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, card, chosen)

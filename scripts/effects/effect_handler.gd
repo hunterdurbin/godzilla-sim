@@ -225,10 +225,12 @@ func _resolve_standby_entries(entries: Array) -> void:
 	if entries.is_empty():
 		return
 
-	# Re-entrancy guard: if already resolving standby, just queue these entries.
-	# This handles e.g. trigger_monster_played calling _resolve_standby_entries
-	# from within a standby callback.
-	if _in_standby_resolution:
+	# Re-entrancy guard: defer if already in standby resolution OR if an effect
+	# callback is actively executing. The second case covers e.g. trigger_enter's
+	# direct path, where _in_standby_resolution is false but _active_effect_card
+	# is set — without this guard, a trigger called from within that callback
+	# would run immediately instead of deferring behind the active effect's enter.
+	if _in_standby_resolution or not _active_effect_card.is_empty():
 		_pending_standby_entries.append_array(entries)
 		return
 
@@ -2385,6 +2387,22 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 	player.zones_changed.emit()
 	await trigger_enter(player_id, card_data, true)
 	return zone_idx
+
+
+func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int) -> void:
+	## Place a battle card directly from the deck into a zone, then fire enter and
+	## on_battle_card_played (with played_from_deck=true) in the correct order.
+	## Handles zone overload. Use this instead of manual push+trigger_enter+trigger_battle_card_played
+	## so that standby entry ordering is correct when called from within effect callbacks.
+	var player := game_state.players[player_id]
+	if player.zone_has_cards(zone_idx):
+		var destroyed_stack: Array = player.clear_zone(zone_idx)
+		banish_or_discard(player, destroyed_stack)
+		player.discard_changed.emit()
+	player.push_zone_card(zone_idx, card_data)
+	player.zones_changed.emit()
+	await trigger_enter(player_id, card_data, true)
+	await trigger_battle_card_played(player_id, card_data, zone_idx, true)
 
 
 func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int) -> void:

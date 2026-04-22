@@ -54,8 +54,10 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if found.is_empty():
 		return
 
-	# Play on top of this card in the same zone
+	# Play on top of this card in the same zone (intentional stack — no overload)
 	ctx.owner.push_zone_card(zone_idx, found)
 	ctx.owner.zones_changed.emit()
 	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found, true)
 	await ctx.effect_handler.trigger_battle_card_played(ctx.owner.player_id, found, zone_idx, true)
+	# Note: trigger_enter defers on_enter to pending queue; trigger_battle_card_played
+	# also defers — both resolve correctly after this callback via _resolve_standby_entries.

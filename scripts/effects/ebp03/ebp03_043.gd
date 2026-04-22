@@ -83,7 +83,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		"Search for a Moguera battle card to play on Land Moguera:")
 
 	if not selected.is_empty():
-		ctx.owner.push_zone_card(chosen, selected)
-		ctx.owner.zones_changed.emit()
-		await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected, true)
-		await ctx.effect_handler.trigger_battle_card_played(ctx.owner.player_id, selected, chosen, true)
+		await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, selected, chosen)
