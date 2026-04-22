@@ -144,6 +144,12 @@ func prevents_rage_reduction(_ctx: EffectContext) -> bool:
 	return false
 
 
+func on_rage_reset(_ctx: EffectContext) -> int:
+	## Called during start phase rage reset. Return the new rage value to override (0 = no override).
+	## Used by EBP04-010: may discard 2 cards to set rage to 2 instead of 0.
+	return 0
+
+
 func protects_card_from_destruction(_ctx: EffectContext, _card_data: Dictionary, _zone_idx: int) -> bool:
 	## Return true if this strategy card protects the given battle card from destruction.
 	## Called on active strategy cards when checking if a zone card can be destroyed.

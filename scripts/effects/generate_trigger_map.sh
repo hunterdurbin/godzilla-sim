@@ -28,7 +28,7 @@ METHODS=(
 	blocks_opponent_end_phase_draw blocks_invade1_invasion_cost
 	prevents_opponent_monster_move get_strategy_hand_rank_modifier
 	on_ally_zone_card_destroyed on_opponent_zone_card_destroyed on_card_returned_from_discard
-	on_destroy on_zone_changed get_required_play_zones
+	on_destroy on_zone_changed get_required_play_zones on_rage_reset
 )
 
 {

@@ -553,6 +553,33 @@ func is_rage_reduction_prevented(player_id: int) -> bool:
 	return false
 
 
+func apply_rage_reset(player_id: int) -> int:
+	## Called at start phase rage reset. Returns new rage value (0 by default).
+	## Effects can intercept by returning a non-zero value from on_rage_reset.
+	var player := game_state.players[player_id]
+	var candidates: Array = []
+	var me := get_effect(player.current_monster)
+	if me and has_trigger(player.current_monster, "on_rage_reset"):
+		candidates.append({"card": player.current_monster, "effect": me})
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze and has_trigger(zone_card, "on_rage_reset"):
+				candidates.append({"card": zone_card, "effect": ze})
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var se := get_effect(sz_card)
+			if se and has_trigger(sz_card, "on_rage_reset"):
+				candidates.append({"card": sz_card, "effect": se})
+	for entry in candidates:
+		var ctx := _build_context(player_id, entry.card)
+		var result: int = await entry.effect.on_rage_reset(ctx)
+		if result != 0:
+			return result
+	return 0
+
+
 func reduce_rage(player_id: int, amount: int) -> int:
 	## Reduce a player's rage by amount. Returns actual amount reduced.
 	## Respects rage reduction prevention effects (e.g. EBP03-004).

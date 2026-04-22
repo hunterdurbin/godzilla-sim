@@ -196,7 +196,7 @@ func _execute_start_phase() -> void:
 	game_state.current_sub_phase = 3
 	sub_phase_changed.emit(3) # Reset Rage
 	await _await_confirmation("Reset Rage", "auto_reset_rage")
-	action_handler.execute_start_phase_reset(game_state)
+	await action_handler.execute_start_phase_reset(game_state)
 
 	await action_handler.resolve_check_timing(game_state) # 7.2.5
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.START)

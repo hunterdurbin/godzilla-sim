@@ -82,9 +82,12 @@ func execute_start_phase_discard(state: GameState) -> void:
 func execute_start_phase_reset(state: GameState) -> void:
 	var player := state.get_current_player()
 
-	# Reset rage to 0
-	player.rage = 0
-	player.rage_changed.emit(0)
+	# Reset rage to 0, allowing effects to intercept (e.g. EBP04-010)
+	var new_rage: int = 0
+	if effect_handler:
+		new_rage = await effect_handler.apply_rage_reset(player.player_id)
+	player.rage = new_rage
+	player.rage_changed.emit(new_rage)
 
 	# Reset per-turn flags
 	player.has_invaded_this_turn = false
