@@ -1601,6 +1601,10 @@ func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones:
 		return await destroy_zones(target, affected)
 
 
+func can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
+	return _can_destroy_card(target, card_data)
+
+
 func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	## Check if a card can be destroyed (respects destroy prevention effects).
 	var effect := get_effect(card_data)
