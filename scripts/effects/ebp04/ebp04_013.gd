@@ -1,8 +1,9 @@
 extends CardEffect
 # Godzilla (2000)
-# <Enter> If 5+ monster cards in discard, reveal + discard top 3 of deck.
-# For each revealed rank, Destroy opp battle cards in same zone number
-# OR retreat opp monster backward 1 zone.
+# <Enter> If you have 5 or more monster cards in your discard pile, 
+# reveal and discard the top 3 cards of your deck. Of the revealed cards’ ranks, 
+# <Destroy> all of your opponent’s battle cards in the same zone number 
+# or retreat your opponent’s monster card in the same zone number backwards by 1 zone.
 
 
 func get_bot_tags() -> Array[String]:
@@ -46,45 +47,43 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.owner.deck_changed.emit()
 	ctx.owner.discard_changed.emit()
 
-	# Collect unique ranks
+	# Collect unique ranks from revealed cards
 	var ranks: Array[int] = []
 	for card in revealed:
 		var r: int = card.get("rank", 0)
 		if r > 0 and r not in ranks:
 			ranks.append(r)
 
-	# For each rank, offer: destroy opp battle in zone N OR retreat opp monster
+	# Determine which effects are available across all ranks
+	var destroy_zones: Array[int] = []
+	var can_retreat: bool = false
 	for rank in ranks:
-		var zone_idx: int = rank - 1  # rank 1 = zone 1 = index 0
+		var zone_idx: int = rank - 1
 		if zone_idx < 0 or zone_idx > 7:
 			continue
+		if not ctx.opponent.get_zone_top_card(zone_idx).is_empty():
+			destroy_zones.append(zone_idx)
+		if ctx.opponent.monster_zone == rank and ctx.opponent.monster_zone > 1:
+			can_retreat = true
 
-		var opp_card_in_zone := ctx.opponent.get_zone_top_card(zone_idx)
-		var opp_monster_zone_matches := ctx.opponent.monster_zone == rank
+	if destroy_zones.is_empty() and not can_retreat:
+		return
 
-		if opp_card_in_zone.is_empty() and not opp_monster_zone_matches:
-			continue
+	# One choice: destroy battle cards OR retreat monster
+	var options: Array[String] = []
+	if not destroy_zones.is_empty():
+		var zone_numbers: Array = destroy_zones.map(func(z): return str(z + 1))
+		options.append("Destroy opponent battle cards in\n  zones: %s" % ", ".join(zone_numbers))
+	if can_retreat:
+		options.append("Retreat opponent's monster 1 zone")
+	var chosen: int = await ctx.effect_handler.select_choice(
+		ctx.owner.player_id, options, "Choose an effect for revealed ranks %s:" % str(ranks))
 
-		var options: Array[String] = []
-		if not opp_card_in_zone.is_empty():
-			options.append("Destroy opponent's battle card in zone %d" % rank)
-		if opp_monster_zone_matches and ctx.opponent.monster_zone > 1:
-			options.append("Retreat opponent's monster 1 zone")
-		options.append("Skip")
+	if chosen < 0:
+		return
 
-		if options.size() <= 1:
-			continue
-
-		var chosen: int = await ctx.effect_handler.select_choice(
-			ctx.owner.player_id, options,
-			"Revealed Rank %d — choose an effect:" % rank)
-
-		if chosen < 0:
-			continue
-
-		var chosen_label: String = options[chosen]
-		if "Destroy" in chosen_label and not opp_card_in_zone.is_empty():
-			await ctx.effect_handler.destroy_zones(ctx.opponent, [zone_idx])
-		elif "Retreat" in chosen_label and opp_monster_zone_matches:
-			await ctx.effect_handler.retreat_monster_to_zone(
-				ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
+	if "Destroy" in options[chosen]:
+		await ctx.effect_handler.destroy_zones(ctx.opponent, destroy_zones)
+	elif "Retreat" in options[chosen]:
+		await ctx.effect_handler.retreat_monster_to_zone(
+			ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
