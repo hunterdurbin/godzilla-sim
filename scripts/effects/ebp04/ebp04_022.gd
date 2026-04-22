@@ -35,7 +35,7 @@ func on_counter_success(ctx: EffectContext) -> void:
 			green_count += 1
 
 	# Collect valid target zones (zones 1-5 = indices 0-4 with <= 6000 CP)
-	for _i in range(green_count):
+	for i in range(green_count):
 		var valid_zones: Array[int] = []
 		for zi in range(5):
 			var opp_card := ctx.opponent.get_zone_top_card(zi)
@@ -43,10 +43,10 @@ func on_counter_success(ctx: EffectContext) -> void:
 				valid_zones.append(zi)
 		if valid_zones.is_empty():
 			break
+		var remaining: int = green_count - i
 		var chosen: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.opponent.player_id, valid_zones,
-			"Destroy an opponent's battle card with 6000 or less CP in zones 1-5 (or skip):",
-			true)
+			"Destroy an opponent's battle card with 6000 or less CP in zones 1-5 (%d left):" % remaining)
 		if chosen < 0:
 			break
 		await ctx.effect_handler.destroy_zones(ctx.opponent, [chosen])
