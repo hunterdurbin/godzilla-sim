@@ -24,7 +24,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 
 
-func on_battle_card_played(ctx: EffectContext, zone_index: int) -> void:
+func on_battle_card_played(ctx: EffectContext, zone_index: int, _played_from_deck: bool = false) -> void:
 	# <Your Turn> — only active during owner's turn
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
 		return

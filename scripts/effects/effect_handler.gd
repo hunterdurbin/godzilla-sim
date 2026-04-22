@@ -817,28 +817,45 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 	await _resolve_standby_entries(discard_entries)
 
 
-func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_index: int) -> void:
-	## Trigger on_battle_card_played on all active cards for this player.
-	## Called after a battle card is placed in a zone and its enter effect resolves.
-	## Collects all applicable effects, then resolves with rule action checks between each.
+func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_index: int, played_from_deck: bool = false) -> void:
+	## Trigger on_battle_card_played on all active cards from both players.
+	## played_from_deck: true when the card was played directly from the deck (e.g. via a deck-dig effect).
+	## Both sides are checked so opponent-watching effects (e.g. EBP04-028 Gigan) fire correctly.
 	var entries: Array = []
 	var player := game_state.players[player_id]
+	var opponent_id: int = 1 - player_id
+	var opponent := game_state.players[opponent_id]
 	var played_id: String = card_data.get("id", "")
 
-	# Strategy cards (e.g. EBP02-073 Bloody Chainsaw)
+	# Own strategy cards (e.g. EBP02-073 Bloody Chainsaw — <Your Turn> effect)
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, "on_battle_card_played"):
 			var se := get_effect(sz_card)
 			var ctx := _build_context(player_id, sz_card)
-			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_battle_card_played.bind(ctx, zone_index)})
+			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_battle_card_played.bind(ctx, zone_index, played_from_deck)})
 
-	# Battle cards in zones (top card only, skip the card that was just played)
+	# Own battle cards in zones (top card only, skip the card that was just played)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty() and zone_card.get("id", "") != played_id and has_trigger(zone_card, "on_battle_card_played"):
 			var ze := get_effect(zone_card)
 			var ctx := _build_context(player_id, zone_card)
-			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_battle_card_played.bind(ctx, zone_index)})
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_battle_card_played.bind(ctx, zone_index, played_from_deck)})
+
+	# Opponent strategy cards (e.g. EBP04-028 Gigan — <Opponent's Turn> effect)
+	for sz_card in opponent.strategy_zones:
+		if not sz_card.is_empty() and has_trigger(sz_card, "on_battle_card_played"):
+			var se := get_effect(sz_card)
+			var ctx := _build_context(opponent_id, sz_card)
+			entries.append({"player_id": opponent_id, "card_data": sz_card, "callback": se.on_battle_card_played.bind(ctx, zone_index, played_from_deck)})
+
+	# Opponent battle cards in zones (top card only)
+	for i in range(8):
+		var zone_card := opponent.get_zone_top_card(i)
+		if not zone_card.is_empty() and has_trigger(zone_card, "on_battle_card_played"):
+			var ze := get_effect(zone_card)
+			var ctx := _build_context(opponent_id, zone_card)
+			entries.append({"player_id": opponent_id, "card_data": zone_card, "callback": ze.on_battle_card_played.bind(ctx, zone_index, played_from_deck)})
 
 	await _resolve_standby_entries(entries)
 

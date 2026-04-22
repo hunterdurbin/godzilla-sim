@@ -15,7 +15,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 
 
-func on_battle_card_played(ctx: EffectContext, _zone_index: int) -> void:
+func on_battle_card_played(ctx: EffectContext, _zone_index: int, _played_from_deck: bool = false) -> void:
 	if ctx.game_state.current_player_id == ctx.owner.player_id:
 		return
 	var my_zone: int = find_zone_of_card(ctx)

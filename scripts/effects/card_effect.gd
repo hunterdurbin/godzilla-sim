@@ -82,9 +82,10 @@ func on_monster_played(_ctx: EffectContext, _old_monster: Dictionary, _new_monst
 	pass
 
 
-func on_battle_card_played(_ctx: EffectContext, _zone_index: int) -> void:
-	## Called on active strategy/zone cards when the owner plays a battle card.
-	## zone_index is the zone (0-indexed) where the battle card was placed.
+func on_battle_card_played(_ctx: EffectContext, _zone_index: int, _played_from_deck: bool = false) -> void:
+	## Called on active cards (both players) when a battle card is played.
+	## zone_index: 0-indexed zone where the card landed.
+	## played_from_deck: true when the card was played directly from the deck (not from hand or discard).
 	pass
 
 

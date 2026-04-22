@@ -56,3 +56,4 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.owner.push_zone_card(dest, found)
 	ctx.owner.zones_changed.emit()
 	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found, true)
+	await ctx.effect_handler.trigger_battle_card_played(ctx.owner.player_id, found, dest, true)
