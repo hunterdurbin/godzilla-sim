@@ -19,8 +19,12 @@ func get_phase_start_filter() -> Dictionary:
 	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
 
 
+func on_phase_end(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
+	if phase == CardEnums.GamePhase.END:
+		_counter_immunity = 0
+
+
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	_counter_immunity = 0
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
 	if ctx.game_state.current_player_id == ctx.owner.player_id:

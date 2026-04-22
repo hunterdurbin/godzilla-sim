@@ -249,7 +249,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp04/ebp04_011.gd": ["get_threat_level_modifier"],
 	"res://scripts/effects/ebp04/ebp04_012.gd": ["on_enter","apply_play_cost","can_play_as_monster"],
 	"res://scripts/effects/ebp04/ebp04_013.gd": ["on_enter"],
-	"res://scripts/effects/ebp04/ebp04_014.gd": ["get_phase_start_filter","on_phase_start","on_hand_card_discarded","get_counter_immunity_threshold"],
+	"res://scripts/effects/ebp04/ebp04_014.gd": ["get_phase_start_filter","on_phase_start","on_phase_end","on_hand_card_discarded","get_counter_immunity_threshold"],
 	"res://scripts/effects/ebp04/ebp04_015.gd": ["on_hand_card_discarded"],
 	"res://scripts/effects/ebp04/ebp04_016.gd": ["get_threat_level_modifier"],
 	"res://scripts/effects/ebp04/ebp04_017.gd": ["get_total_cp_modifier"],
