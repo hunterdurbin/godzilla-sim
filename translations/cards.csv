@@ -1,0 +1,1102 @@
+keys,en,ja
+CARD_EBP01-001_NAME,Godzilla(1954),ゴジラ(1954)
+CARD_EBP01-001_DESC,"At the beginning of your counter phase, send the top card of your deck to your discard pile.
+If it is a monster card, increase this card's <Rage> by 1.",あなたの撃退フェイズ開始時、あなたの山札を上から１枚捨て札にする。それが怪獣カードなら、これの<怒り>を１増やす。
+CARD_EBP01-002_NAME,Godzilla(1954),ゴジラ(1954)
+CARD_EBP01-002_DESC,"<Burst1> (You can play this card from rank I. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<When Invading> Send the top card of your deck to your discard pile. If it is a monster card, <Destroy> 1 of your opponent's rank 5 or lower battle cards.","<強襲Ⅰ>（これは等級Ⅰから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする）
+<進攻時>あなたの山札を上から１枚捨て札にする。それが怪獣カードなら、相手の等級５以下の交戦カードを１枚<破壊>する。"
+CARD_EBP01-003_NAME,Godzilla(1954),ゴジラ(1954)
+CARD_EBP01-003_DESC,"Whenever this card's <Rage> is increased, send the top card of your deck to your discard pile. If it is a monster card, <Destroy> 1 of your opponent's rank 6 or lower battle cards.",これの<怒り>が増えるたび、あなたの山札を上から１枚捨て札にする。それが怪獣カードなら、相手の等級６以下の交戦カードを１枚<破壊>する。
+CARD_EBP01-004_NAME,Godzilla(1954),ゴジラ(1954)
+CARD_EBP01-004_DESC,"<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+When this card reaches zone 8, <Destroy> all battle cards in each player's zones.","<強襲Ⅲ>（これは等級Ⅲから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする）
+これがエリア８に到達した時、各プレイヤーの交戦カードをすべて<破壊>する。（進攻の場合、前進をすべて終えてから発動）"
+CARD_EBP01-005_NAME,Godzilla(1955),ゴジラ(1955)
+CARD_EBP01-005_DESC,"<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Enter> Your opponent discards cards until they have 4 cards remaining in their hand.","<強襲Ⅲ>（これは等級Ⅲから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする）
+<出現時>相手は自分の手札を４枚になるよう捨てる。"
+CARD_EBP01-006_NAME,Godzilla(1974),ゴジラ(1974)
+CARD_EBP01-006_DESC,"<Opponent's Turn> At the beginning of the counter phase, <Destroy> all of your opponent's rank 5 or lower battle cards in the same column as this card.",<相手のターン中>撃退フェイズ開始時、これと同じ縦列にいる相手の等級５以下の交戦カードをすべて<破壊>する。
+CARD_EBP01-007_NAME,Godzilla(1975),ゴジラ(1975)
+CARD_EBP01-007_DESC,"<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<When Invading> When this card <Destroy> your battle cards, reduce your opponent's <Rage> by 2.","<強襲Ⅲ>（これは等級Ⅲから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする）
+<進攻時>これがあなたの交戦カードを<破壊>した時、相手の<怒り>を２減らす。"
+CARD_EBP01-008_NAME,Godzilla(2004),ゴジラ(2004)
+CARD_EBP01-008_DESC,"<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Enter> Advance your opponent's monster card by 1 zone.","<強襲Ⅱ>（これは等級Ⅱから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする）
+<出現時>相手の怪獣カードを１エリア前進させる。"
+CARD_EBP01-009_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_EBP01-009_DESC,"<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<When Invading> If this card has 2 or more <Rage> , <Destroy> 1 of your opponent's rank 6 or lower battle cards.","<強襲Ⅱ>（これは等級Ⅱから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする）
+<進攻時>これの<怒り>が２以上なら、相手の等級６以下の交戦カードを１枚<破壊>する。"
+CARD_EBP01-010_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_EBP01-010_DESC,"Whenever this card's <Rage> is increased, <Destroy> all of your opponent's battle cards in the same column as this card.
+<Opponent's Turn> At the beginning of the counter phase, if this card has 3 or more <Rage> , <Destroy> all of your opponent's battle cards in the same column as this card.","これの<怒り>が増えるたび、これと同じ縦列にいる相手の交戦カードをすべて<破壊>する。
+<相手のターン中>撃退フェイズ開始時、これの<怒り>が３以上なら、これと同じ縦列にいる相手の交戦カードをすべて<破壊>する。"
+CARD_EBP01-011_NAME,Godzilla(Fest Godzilla),ゴジラ(フェス・ゴジラ)
+CARD_EBP01-011_DESC,"When this card advances into the same column as your opponent's monster card, advance your opponent's monster card by 1 zone.",これが相手の怪獣カードと同じ縦列に前進した時、相手の怪獣カードを１エリア前進させる。
+CARD_EBP01-012_NAME,Godzilla(Fest Godzilla),ゴジラ(フェス・ゴジラ)
+CARD_EBP01-012_DESC,"At the beginning of your end phase, if this card invaded this turn, advance your opponent's monster card by 1 zone.",あなたのエンドフェイズ開始時、これがこのターン進攻していたら、相手の怪獣カードを１エリア前進させる。
+CARD_EBP01-013_NAME,Godzilla(Fest Godzilla),ゴジラ(フェス・ゴジラ)
+CARD_EBP01-013_DESC,"<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Enter> If you have 4 or more battle cards in your zones, reduce your opponent's <Rage> by 1.","<強襲Ⅱ>（これは等級Ⅱから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする）
+<出現時>あなたのエリアに交戦カードが４枚以上いるなら、相手の<怒り>を１減らす。"
+CARD_EBP01-014_NAME,Godzilla(Fest Godzilla),ゴジラ(フェス・ゴジラ)
+CARD_EBP01-014_DESC,"<Opponent's Turn> <Awakening4> If you have 2 or more battle cards in your zones, all of your opponent's rank 5 or lower battle cards cannot engage with this card. (Their counter power is not included in the total counter power during the counter phase.)",<相手のターン中><覚醒４>あなたのエリアに交戦カードが２枚以上いるなら、相手の等級５以下の交戦カードすべては、これと戦闘できない。（撃退フェイズにそれらの撃退力は合計されない）
+CARD_EBP01-015_NAME,Godzilla(Fest Godzilla),ゴジラ(フェス・ゴジラ)
+CARD_EBP01-015_DESC,"<Your Turn> <Enter> Reveal the top 5 cards of your deck and send them to your discard pile. For each monster card revealed this way, increase this card's <Rage> by 1. If a card with <Step2> is revealed this way, this card advances to zone 6.",<あなたのターン中><出現時>あなたの山札を上から５枚公開して捨て札にする。公開した怪獣カード１枚につき、これの<怒り>を１増やす。<足２>を公開したら、これをエリア６まで前進させる。
+CARD_EBP01-016_NAME,Ebirah(2004),エビラ(2004)
+CARD_EBP01-016_DESC,,
+CARD_EBP01-017_NAME,Kumonga(2004),クモンガ(2004)
+CARD_EBP01-017_DESC,"If this card is in zone 8, this card gains +3000 counter power.",これがエリア８にいるなら、撃退力＋3000。
+CARD_EBP01-018_NAME,Mechagodzilla(1974),メカゴジラ(1974)
+CARD_EBP01-018_DESC,<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.),<覚醒４>これの撃退力＋3000。（あなたの怪獣カードがエリア４以降にいるなら有効）
+CARD_EBP01-019_NAME,Kamacuras(1967),カマキラス(1967)
+CARD_EBP01-019_DESC,"<Awakening6> <Enter> If this card was played from your hand, search your deck for up to 2 <ãKamacurasã> battle cards, play them, then shuffle your deck. (Active if your monster card is in zone 6 or beyond.)",<覚醒６><出現時>手札から出現したら、あなたの山札から<《カマキラス》>を持つ交戦カードを２枚まで探して出現させ、山札をシャッフルする。（あなたの怪獣カードがエリア６以降にいるなら有効）
+CARD_EBP01-020_NAME,Anguirus(1968),アンギラス(1968)
+CARD_EBP01-020_DESC,"If this card is in zone 8, whenever your monster card invades, you may reduce its <Rage> by 1 to search your deck for up to 1 monster card with <Burst> , reveal it, add it to your hand, then shuffle your deck.",あなたの怪獣カードが進攻するたび、それの<怒り>を１減らすことで、これがエリア８にいるなら、あなたの山札から<強襲>を持つ怪獣カードを１枚まで探して公開し、手札に加え、山札をシャッフルする。
+CARD_EBP01-021_NAME,Rodan(1968),ラドン(1968)
+CARD_EBP01-021_DESC,"<Enter> If this card is in the same column as your opponent's monster card, look at the top 2 cards of your deck, put any number on top of your deck in any order, and send the rest to your discard pile.",<出現時>これが相手の怪獣カードと同じ縦列にいるなら、あなたの山札を上から２枚見て、望む枚数山札の上に好きな順で置き、残りを捨て札にする。
+CARD_EBP01-022_NAME,Titanosaurus,チタノザウルス
+CARD_EBP01-022_DESC,"<Your Turn> Whenever your monster card's <Rage> is increased, you may move 1 of your other battle cards in your zones to an unoccupied zone.",<あなたのターン中>あなたの怪獣カードの<怒り>が増えるたび、あなたのエリアにいる他の交戦カードを１枚、空いているエリアに移動させてよい。
+CARD_EBP01-023_NAME,Mechagodzilla(1975),メカゴジラ(1975)
+CARD_EBP01-023_DESC,"If your monster card has 2 or more <Rage> , this card gains +3000 counter power.",あなたの怪獣カードの<怒り>が２以上なら、これの撃退力＋3000。
+CARD_EBP01-024_NAME,Minilla(2004),ミニラ(2004)
+CARD_EBP01-024_DESC,<Enter> Reduce your opponent's <Rage> by 1.,<出現時>相手の<怒り>を１減らす。
+CARD_EBP01-025_NAME,King Caesar(1974),キングシーサー(1974)
+CARD_EBP01-025_DESC,"If this card is in a zone adjacent to your monster card, this card gains +3000 counter power.",これがあなたの怪獣カードの隣接エリアにいるなら、撃退力＋3000。
+CARD_EBP01-026_NAME,Jet Jaguar(2023),ジェットジャガー(2023)
+CARD_EBP01-026_DESC,"At the beginning of your counter phase, you may place 1 card with both <ãGiganã> and <ãFestã> from your discard pile under this card.
+If there is a card under this card, this card gains +5000 counter power.","あなたの撃退フェイズ開始時、あなたの捨て札から<《ガイガン》>と<《フェス・ゴジラ》>を両方持つカードを１枚、これの下に重ねてよい。
+これの下にカードがあるなら、撃退力＋5000。"
+CARD_EBP01-027_NAME,Hedorah(1971),ヘドラ(1971)
+CARD_EBP01-027_DESC,"When playing this card from your hand, you can reduce its rank by 1 for each battle card in your zones. (After being played this card is rank 8)",あなたのエリアにいる交戦カード１枚につき、等級を－１して手札から出現できる。（出現後は等級８）
+CARD_EBP01-028_NAME,Godzilla vs. Mechagodzilla,ゴジラ対メカゴジラ
+CARD_EBP01-028_DESC,<Opponent's Turn> All of your opponent's rank 3 or lower battle cards cannot engage with your monster card. (Their counter power is not included in the total during the counter phase.),<相手のターン中>相手の等級３以下の交戦カードすべては、あなたの怪獣カードと戦闘できない。（撃退フェイズにそれらの撃退力は合計されない）
+CARD_EBP01-029_NAME,Unthinkable Destruction,信じられない光景
+CARD_EBP01-029_DESC,Choose 1 of your opponent's zones. <Destroy> all of your opponent's rank 5 or lower battle cards in that zone and zones adjacent to it.,相手のエリア１つを指定し、そのエリアおよび隣接エリアにいる相手の等級５以下の交戦カードをすべて<破壊>する。
+CARD_EBP01-030_NAME,Godzilla Landing,ゴジラ上陸
+CARD_EBP01-030_DESC,Advance the opponent's monster card by 1 zone.,相手の怪獣カードを１エリア前進させる。
+CARD_EBP01-031_NAME,Space Beam,スペースビーム
+CARD_EBP01-031_DESC,"If your monster card has 2 or more <Rage> , your opponent discards cards until they have 2 cards remaining in their hand.",あなたの怪獣カードの<怒り>が２以上なら、相手は自分の手札を２枚になるよう捨てる。
+CARD_EBP01-032_NAME,Heat Ray Charge,熱線準備
+CARD_EBP01-032_DESC,Draw 2 cards.,あなたは２枚引く。
+CARD_EBP01-033_NAME,Final Showdown,決着
+CARD_EBP01-033_DESC,"You can play this card from your hand with its rank reduced by 1 for each zone your monster card invaded this turn.
+<Destroy> all battle cards of both players.","このターンあなたの怪獣カードが進攻したエリア１つにつき、等級を－１して手札から発動できる。
+各プレイヤーの交戦カードをすべて<破壊>する。"
+CARD_EBP01-034_NAME,Godzilla(1989),ゴジラ(1989)
+CARD_EBP01-034_DESC,<Enter> Select 1 rank 4 or lower battle card with <Evolution> from your discard pile and play it in a zone adjacent to this card.,<出現時>あなたの捨て札から<進化>を持つ等級４以下の交戦カードを１枚、これの隣接エリア１つに出現させる。
+CARD_EBP01-035_NAME,Godzilla(1989),ゴジラ(1989)
+CARD_EBP01-035_DESC,<Enter> Evolve all of your rank 4 or lower battle cards with <Evolution> in zones adjacent to this card.,<出現時>これの隣接エリアにいるあなたの<進化>を持つ等級４以下の交戦カードをすべて進化させる。
+CARD_EBP01-036_NAME,Godzilla(1992),ゴジラ(1992)
+CARD_EBP01-036_DESC,<Enter> Evolve all of your battle cards with <Evolution> in zones adjacent to this card.,<出現時>これの隣接エリアにいるあなたの<進化>を持つ交戦カードをすべて進化させる。
+CARD_EBP01-037_NAME,Godzilla(1995),ゴジラ(1995)
+CARD_EBP01-037_DESC,"Whenever this card advances, you may discard 1 strategy card from your hand to increase its <Rage> by 1.",これが前進するたび、あなたの手札の戦略カードを１枚捨てることで、これの<怒り>を１増やす。
+CARD_EBP01-038_NAME,Godzilla(1995),ゴジラ(1995)
+CARD_EBP01-038_DESC,"<Opponent's Turn> <Awakening6> This card cannot be countered by 50,000 or lower counter power, instead, it only moves as though it were countered. (Do not play the next monster card from your monster deck.) (Active if this card is in zone 6 or beyond, and the opponent's total counter power is 50,000 or lower.)",<相手のターン中><覚醒６>これは撃退力50000以下では撃退されず、その際に撃退されたかのように移動のみ行う。（これがエリア６以降にいて相手の撃退力が合計50000以下なら有効）
+CARD_EBP01-039_NAME,Godzilla(1999),ゴジラ(1999)
+CARD_EBP01-039_DESC,<When Invading> Discard 1 monster card from your handï¼ <Destroy> all of your opponent's rank 5 or lower battle cards in zones 1-5.,<進攻時>あなたの手札の怪獣カードを１枚捨てることで、相手のエリア１～５にいる等級５以下の交戦カードをすべて<破壊>する。
+CARD_EBP01-040_NAME,Godzilla(1999),ゴジラ(1999)
+CARD_EBP01-040_DESC,"<Enter> <Destroy> 1 of your opponent's rank 7 or lower battle cards.
+<When Invading> If you have 5 or more monster cards in your discard pile, increase this card's <Rage> by 1.","<出現時>相手の等級７以下の交戦カードを１枚<破壊>する。
+<進攻時>あなたの捨て札の怪獣カードが５枚以上なら、これの<怒り>を１増やす。"
+CARD_EBP01-041_NAME,Godzilla(2000),ゴジラ(2000)
+CARD_EBP01-041_DESC,<When Invading> <Destroy> 1 of your opponent's rank 4 or lower battle cards.,<進攻時>相手の等級４以下の交戦カードを１枚<破壊>する。
+CARD_EBP01-042_NAME,Godzilla(2000),ゴジラ(2000)
+CARD_EBP01-042_DESC,"<Enter> If you have 5 or more monster cards in your discard pile, you may discard 1 card from your hand to reduce your opponent's <Rage> by 1.
+If you have 5 or more monster cards in your discard pile, this card gains +10,000 threat level.","<出現時>あなたの捨て札の怪獣カードが５枚以上なら、あなたの手札を１枚捨てることで、相手の<怒り>を１減らす。
+あなたの捨て札の怪獣カードが５枚以上なら、これの脅威度＋10000。"
+CARD_EBP01-043_NAME,Godzilla(2000),ゴジラ(2000)
+CARD_EBP01-043_DESC,"<Awakening4> When you successfully counter your opponent's monster card, if you have 5 or more monster cards in your discard pile, <Destroy> all of your opponent's rank 6 or lower battle cards. (Active if this card is in zone 4 or beyond.)",<覚醒４>あなたが相手の怪獣カードを撃退した時、あなたの捨て札の怪獣カードが５枚以上なら、相手の等級６以下の交戦カードをすべて<破壊>する。（これがエリア４以降にいるなら有効）
+CARD_EBP01-044_NAME,Mothra(egg)(1992),モスラの卵(1992)
+CARD_EBP01-044_DESC,"<Evolution5> <ãMothraã> (At the beginning of your main phase, you may play a rank 5 or lower <ãMothraã> battle card from your deck by placing it on top of this card.)",<進化５><《モスラ》>（あなたのメインフェイズ開始時、山札から<《モスラ》>を持つ等級５以下の交戦カードをこれの上に重ねて出現させてよい）
+CARD_EBP01-045_NAME,Meganula,メガニューラ
+CARD_EBP01-045_DESC,"<Enter> If this card is in the same column as your opponent's monster card and you have 2 or more battle cards in your zones, reduce your opponent's <Rage> by 1.",<出現時>これが相手の怪獣カードと同じ縦列にいて、あなたのエリアに他の交戦カードが２枚以上いるなら、相手の<怒り>を１減らす。
+CARD_EBP01-046_NAME,MBT-MB92,92式メーサービーム戦車
+CARD_EBP01-046_DESC,"You may have any number of this card in your deck.
+<Awakening6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)","これはデッキに好きな枚数入れてよい。
+<覚醒６>これの撃退力＋3000。（あなたの怪獣カードがエリア６以降にいるなら有効）"
+CARD_EBP01-047_NAME,Orga,オルガ
+CARD_EBP01-047_DESC,"<Enter> Draw 1 card, then discard 1 card.",<出現時>あなたは１枚引いて手札を１枚捨てる。
+CARD_EBP01-048_NAME,Biollante Rose Form,ビオランテ花獣形態
+CARD_EBP01-048_DESC,"<Evolution7> <ãBiollanteã> (At the beginning of your main phase, you may play a rank 7 or lower battle card with <ãBiollanteã> from your deck by placing it on top of this card.)",<進化７><《ビオランテ》>（あなたのメインフェイズ開始時、山札から<《ビオランテ》>を持つ等級７以下の交戦カードをこれの上に重ねて出現させてよい）
+CARD_EBP01-049_NAME,Destoroyah Aggregate Form,デストロイア集合体
+CARD_EBP01-049_DESC,"<Evolution6> <ãDestoroyahã> (At the beginning of your main phase, you may play a rank 6 or lower <ãDestoroyahã> battle card from your deck by placing it on top of this card.)",<進化６><《デストロイア》>（あなたのメインフェイズ開始時、山札から<《デストロイア》>を持つ等級６以下の交戦カードをこれの上に重ねて出現させてよい）
+CARD_EBP01-050_NAME,Mothra(larva)(1992),モスラ幼虫(1992)
+CARD_EBP01-050_DESC,"<Evolution7> <ãMothraã> (At the beginning of your main phase, you may play a rank 7 or lower <ãMothraã> battle card from your deck by placing it on top of this card.)",<進化７><《モスラ》>（あなたのメインフェイズ開始時、山札から<《モスラ》>を持つ等級７以下の交戦カードをこれの上に重ねて出現させてよい）
+CARD_EBP01-051_NAME,Orga Phase II,オルガフェイズⅡ
+CARD_EBP01-051_DESC,"If you have 5 or more monster cards in your discard pile, this card gains +3000 counter power.",あなたの捨て札の怪獣カードが５枚以上なら、これの撃退力＋3000。
+CARD_EBP01-052_NAME,Megaguirus,メガギラス
+CARD_EBP01-052_DESC,"<Awakening4> If this card is in zones 1-5 and you have 5 or more monster cards in your discard pile, this card cannot be <Destroy> by your opponent's effects. (Active if your monster card is in zone 4 or beyond.)",<覚醒４>これがエリア１～５にいて、あなたの捨て札の怪獣カードが５枚以上なら、これは相手の効果で<破壊>されない。（あなたの怪獣カードがエリア４以降にいるなら有効）
+CARD_EBP01-053_NAME,Rodan(1993),ラドン(1993)
+CARD_EBP01-053_DESC,,
+CARD_EBP01-054_NAME,Destoroyah Flying Form,デストロイア飛翔体
+CARD_EBP01-054_DESC,"<Evolution8> <ãDestoroyahã> (At the beginning of your main phase, you may play a rank 8 or lower <ãDestoroyahã> battle card from your deck by placing it on top of this card.)
+<Enter> If this card was played through evolution, draw 2 cards, then discard 2 cards.","<進化８><《デストロイア》>（あなたのメインフェイズ開始時、山札から<《デストロイア》>を持つ等級８以下の交戦カードをこれの上に重ねて出現させてよい）
+<出現時>進化で出現したら、あなたは２枚引いて手札を２枚捨てる。"
+CARD_EBP01-055_NAME,Battra(imago),バトラ成虫
+CARD_EBP01-055_DESC,"<Enter> Draw 1 card, then discard 1 card.",<出現時>あなたは１枚引いて手札を１枚捨てる。
+CARD_EBP01-056_NAME,Super X2,スーパーX2
+CARD_EBP01-056_DESC,"If this card is in the same column as your opponent's monster card, this card gains +3000 counter power for each of your opponent's <Rage> .",これが相手の怪獣カードと同じ縦列にいるなら、相手の<怒り>１につき、撃退力＋3000。
+CARD_EBP01-057_NAME,Mothra(imago)(1992),モスラ成虫(1992)
+CARD_EBP01-057_DESC,"<Enter> Choose 2 battle cards in your zones, you may swap their positions.
+Your rank 5 or lower battle cards in zones adjacent to this card gain +3000 counter power.","<出現時>あなたのエリアにいる交戦カードを２枚選び、それらのいるエリアを入れ替えてよい。
+これの隣接エリアにいるあなたの等級５以下の交戦カードすべての撃退力＋3000。"
+CARD_EBP01-058_NAME,Biollante Plant Beast Form,ビオランテ植獣形態
+CARD_EBP01-058_DESC,"If you have a <ãBiollanteã> card with <Evolution> in your discard pile, you can play this from your hand with its rank reduced by 2. (After being played, this card is rank 7.)
+<Enter> Return all cards in your discard pile to your deck then shuffle.","あなたの捨て札に<進化>と<《ビオランテ》>を両方持つカードがあるなら、等級を－２して手札から出現できる。（出現後は等級７）
+<出現時>あなたの捨て札をすべて山札に戻してシャッフルする。"
+CARD_EBP01-059_NAME,Fire Rodan,ファイヤーラドン
+CARD_EBP01-059_DESC,"When this card is discarded from your hand by your opponent's effect, and their monster card is in zones 4-8, you may play this card. (Regardless of what zone your opponent's monster card is occupying.)
+If this card is in zone 8, this card gains +3000 counter power.","相手の効果でこれを手札から捨てた時、相手の怪獣カードがエリア４～８にいるなら、これを出現させてよい。
+これがエリア８にいるなら、撃退力＋3000。"
+CARD_EBP01-060_NAME,Destoroyah Perfect Form,デストロイア完全体
+CARD_EBP01-060_DESC,"<Enter> If this card was played through evolution, choose up to 1 strategy card named ãGodzilla vs. Destoroyahãin your discard pile.
+If you have 1 or fewer strategy cards in play, play and activate the chosen card. (Regardless of rank.)",<出現時>進化で出現したら、あなたの捨て札から「ゴジラVSデストロイア」の戦略カードを１枚まで選ぶ。あなたが置いている戦略カードが１枚以下なら、選んだカードを置いて発動させる。（等級は無視できる）
+CARD_EBP01-061_NAME,Scale Attack,鱗粉攻撃
+CARD_EBP01-061_DESC,"If your opponent has 5 or more <Rage> , reduce their <Rage> by 3.",相手の<怒り>が５以上なら、それを３減らす。
+CARD_EBP01-062_NAME,Godzilla vs. Destoroyah,ゴジラVSデストロイア
+CARD_EBP01-062_DESC,"<Your Turn> If you have a <ãDestoroyahã> battle card in your zones, increase your total counter power by +10,000.",<あなたのターン中>あなたのエリアに<《デストロイア》>を持つ交戦カードがいるなら、あなたの撃退力の合計を＋10000。
+CARD_EBP01-063_NAME,Guardians Awaken,守護神と破壊神
+CARD_EBP01-063_DESC,Evolve all of your rank 4 or lower battle cards with <Evolution> .,あなたの<進化>を持つ等級４以下の交戦カードをすべて進化させる。
+CARD_EBP01-064_NAME,Godzilla vs. Megaguirus,ゴジラｘメガギラス G消滅作戦
+CARD_EBP01-064_DESC,"Choose one of the following:
+ã» <Destroy> 1 of your opponent's rank 4 or lower battle cards.
+ã»If you have 4 or more battle cards in your zones, choose 1 of your opponent's zones and <Destroy> all battle cards in that zone and zones adjacent to it.","以下を１つ行う。
+・相手の等級４以下の交戦カードを１枚<破壊>する。
+・あなたのエリアに交戦カードが４枚以上いるなら、相手のエリア１つを指定し、そのエリアおよび隣接エリアにいる相手の交戦カードをすべて<破壊>する。"
+CARD_EBP01-065_NAME,Godzilla vs. Destoroyah,ゴジラVSデストロイア
+CARD_EBP01-065_DESC,<Destroy> all of your opponent's battle cards in zones 1-5.,相手のエリア１～５にいる交戦カードをすべて<破壊>する。
+CARD_EBP01-066_NAME,Godzilla vs. Biollante,ゴジラVSビオランテ
+CARD_EBP01-066_DESC,"When this card is discarded from your hand by your opponent's effect, increase your monster card's <Rage> by 2.
+<Opponent's Turn> Your monster card cannot be countered by 40,000 or lower counter power. Instead, it only moves as though it were countered. (Do not play the next monster card from your monster deck.)","相手の効果でこれを手札から捨てた時、あなたの怪獣カードの<怒り>を２増やす。
+<相手のターン中>あなたの怪獣カードは撃退力40000以下では撃退されず、その際に撃退されたかのように移動のみ行う。"
+CARD_EBP01-067_NAME,Gorosaurus,ゴロザウルス
+CARD_EBP01-067_DESC,<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.),<覚醒４>これの撃退力＋3000。（あなたの怪獣カードがエリア４以降にいるなら有効）
+CARD_EBP01-068_NAME,Manda(1968),マンダ(1968)
+CARD_EBP01-068_DESC,"If this card is in a zone adjacent to your monster card, this card gains +3000 counter power.",これがあなたの怪獣カードの隣接エリアにいるなら、撃退力＋3000。
+CARD_EBP01-069_NAME,Varan,バラン
+CARD_EBP01-069_DESC,"<Awakening6> <Enter> Draw 2 cards, then discard 2 cards. (Active if your monster card is in zone 6 or beyond.)",<覚醒６><出現時>あなたは２枚引いて手札を２枚捨てる。（あなたの怪獣カードがエリア６以降にいるなら有効）
+CARD_EBP01-070_NAME,Baragon(1968),バラゴン(1968)
+CARD_EBP01-070_DESC,<Enter> Look at the top card of your deck. You may send it to your discard pile or place it back on top of your deck.,<出現時>あなたの山札を上から１枚見て、それを捨て札にするか山札の上に置く。
+CARD_EBP01-071_NAME,Giant Condor,大コンドル
+CARD_EBP01-071_DESC,"If this card is in the same column as your opponent's monster card, this card gains +5000 counter power.
+When your opponent's <Rage> is increased, <Destroy> this card.","これが相手の怪獣カードと同じ縦列にいるなら、撃退力＋5000。
+相手の<怒り>が増えた時、これを<破壊>する。"
+CARD_EBP01-072_NAME,Gigan(2022),ガイガン(2022)
+CARD_EBP01-072_DESC,"<Enter> If this card is in the same column as your opponent's monster card, send the top card of your deck to your discard pile. If it is a battle card, move your opponent's monster card with 50,000 or lower threat level backward by 1 zone.",<出現時>これが相手の怪獣カードと同じ縦列にいるなら、あなたの山札を上から１枚捨て札にする。それが交戦カードなら、相手の脅威度50000以下の怪獣カードを１エリア後退させる。
+CARD_EBP01-073_NAME,Godzilla Against Mechagodzilla,ゴジラ×メカゴジラ
+CARD_EBP01-073_DESC,"This card cannot be played if you have 7 or fewer monster cards in your discard pile.
+When your monster card invades, if there are no monster cards under this card, you may place 1 monster card from your discard pile under this card to set your opponent's <Rage> to 0.","あなたの捨て札の怪獣カードが７枚以下ではこれは出現できない。
+あなたの怪獣カードが進攻した時、これの下に怪獣カードがないなら、あなたの捨て札から怪獣カードを１枚これの下に重ねることで、相手の<怒り>を０にする。"
+CARD_EBP01-074_NAME,King Ghidorah(2024),キングギドラ(2024)
+CARD_EBP01-074_DESC,"If you have a card named ãGravity Beamã in play, this card gains +20,000 counter power.",あなたの「引力光線」が置かれているなら、これの撃退力＋20000。
+CARD_EBP01-075_NAME,"Godzilla, King of the Monsters",怪獣王ゴジラ
+CARD_EBP01-075_DESC,"This card gains +3000 counter power for each of your monster card's <Rage> .
+If your monster card has 3 or more <Rage> , and this card is in zones 1-5, this card cannot be <Destroy> by your opponent's effects.
+<Awakening8> You can play this card with its rank reduced by 4. (Active if your monster card is in zone 8. After being played, this card is rank 8.)","あなたの怪獣カードの<怒り>１につき、これの撃退力＋3000。
+あなたの怪獣カードの<怒り>が３以上で、これがエリア１～５にいるなら、これは相手の効果で<破壊>されない。
+<覚醒８>等級を－４して手札から出現できる。（あなたの怪獣カードがエリア８にいるなら有効。出現後は等級８）"
+CARD_EBP01-076_NAME,Destroy All Monsters,怪獣総進撃
+CARD_EBP01-076_DESC,"When your monster card invades this turn, <Destroy> 1 of your opponent's battle cards.",このターンあなたの怪獣カードが進攻していたら、相手の交戦カードを１枚<破壊>する。
+CARD_EBP01-077_NAME,Oxygen Destroyer,オキシジェン・デストロイヤー
+CARD_EBP01-077_DESC,"If your opponent has 2 or fewer <Rage> , move your opponent's monster card as though it were countered. (Do not play the next monster card from your monster deck.)",相手の<怒り>が２以下なら、相手の怪獣カードを撃退したかのように移動させる。
+CARD_EBP01-078_NAME,Godzilla Attacks,ゴジラ襲来
+CARD_EBP01-078_DESC,Advance your monster card to zone 6.,あなたの怪獣カードをエリア６まで前進させる。
+CARD_EBP01-079_NAME,Gravity Beam,引力光線
+CARD_EBP01-079_DESC,Your opponent discards cards until they have 3 cards remaining in their hand.,相手は自分の手札を３枚になるよう捨てる。
+CARD_EBP01-080_NAME,Godzilla and its son on Monster Island,怪獣島のゴジラ親子
+CARD_EBP01-080_DESC,"If your opponent has a strategy card in play, you can play this from your hand with its rank reduced by 2.
+While this card is in the strategy zone, your rank 5 or lower battle cards in zones 1-5 cannot be <Destroy> by your opponent's effects.","相手が戦略カードを置いているなら、等級を－２して手札から発動できる。
+これが戦略カード置き場にある間、あなたのエリア１～５にいる等級５以下の交戦カードすべては相手の効果で<破壊>されない。"
+CARD_EBP02-001_NAME,Giant Unknown Creature,巨大不明生物
+CARD_EBP02-001_DESC,"<Opponent's Turn> At the beginning of the counter phase, you may discard 1 strategy card from your hand to increase this card's <Rage> by 1.",<相手のターン中>撃退フェイズ開始時、あなたの手札の戦略カードを１枚捨てることで、これの<怒り>を１増やす。
+CARD_EBP02-002_NAME,Godzilla(2016) 2nd Form,ゴジラ(2016) 第2形態
+CARD_EBP02-002_DESC,"If you have 1 or more strategy cards in play, this card gains +5000 threat level.",あなたが戦略カードを置いているなら、これの脅威度＋5000。
+CARD_EBP02-003_NAME,Godzilla(2016) 2nd Form,ゴジラ(2016) 第2形態
+CARD_EBP02-003_DESC,"<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Enter> If there is a card named âGiant Unknown Creatureâ under this card, you may discard 1 strategy card from your hand to advance this card by 1 zone.","<強襲Ⅲ>(これは等級Ⅲから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする)
+<出現時>これの下に「巨大不明生物」があるなら、あなたの手札の戦略カードを１枚捨てることで、これは１エリア前進する。"
+CARD_EBP02-004_NAME,Godzilla(2016) 3rd Form,ゴジラ(2016) 第3形態
+CARD_EBP02-004_DESC,"<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Enter> If there is a <ã2nd Formã> card under this card, <Destroy> 1 of your opponent's rank 6 or lower battle cards for each strategy card in your strategy zone.","<強襲Ⅱ>(これは等級Ⅱから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする)
+<出現時>これの下に<《第2形態》>を持つカードがあるなら、あなたが置いている戦略カード１枚につき、相手の等級６以下の交戦カードを１枚<破壊>する。"
+CARD_EBP02-005_NAME,Godzilla(2016) 3rd Form,ゴジラ(2016) 第3形態
+CARD_EBP02-005_DESC,"<Your Turn> <Awakening6> Whenever this card's <Rage> is increased, if you have a strategy card in play, your opponent discards cards until they have 3 cards remaining in their hand.",<あなたのターン中><覚醒６>これの<怒り>が増えるたび、あなたが戦略カードを置いているなら、相手は自分の手札を３枚になるよう捨てる。
+CARD_EBP02-006_NAME,Godzilla(2016) 4th Form,ゴジラ(2016) 第4形態
+CARD_EBP02-006_DESC,"<When Invading> If there is a card with <ã3rd Formã> under this card, <Destroy> all of your opponent's rank 6 or lower battle cards.
+If there is a <ã4th Formã> card under this card, this card gains +10,000 threat level for each strategy card in your strategy zone.","<進攻時>これの下に<《第3形態》>を持つカードがあるなら、相手の等級６以下の交戦カードをすべて<破壊>する。
+これの下に<《第4形態》>を持つカードがあるなら、あなたが置いている戦略カード１枚につき、脅威度＋10000。"
+CARD_EBP02-007_NAME,Godzilla(2016) 4th Form,ゴジラ(2016) 第4形態
+CARD_EBP02-007_DESC,"<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Enter> You may discard 1 strategy card from your hand. If you do, reveal the top 5 cards of your deck, add 1 monster card from among them to your hand, then send the rest to your discard pile.","<強襲Ⅲ>(これは等級Ⅲから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする)
+<出現時>あなたの手札の戦略カードを１枚捨てることで、あなたの山札を上から５枚公開し、その中の怪獣カードを１枚手札に加え、残りを捨て札にする。"
+CARD_EBP02-008_NAME,Godzilla(1969),ゴジラ(1969)
+CARD_EBP02-008_DESC,"<Burst4> (You can play this card from rank â£. If you do, send this card to your discard pile at the beginning of your next end phase.)
+Whenever this card's <Rage> is increased, <Destroy> all of your opponent's rank 6 or lower battle cards in the zone with the same number as the zone this card occupies.","<強襲Ⅳ>(これは等級Ⅳから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする)
+これの<怒り>が増えるたび、これがいるエリアと同じ数字の相手のエリアにいる等級６以下の交戦カードを<破壊>する。"
+CARD_EBP02-009_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_EBP02-009_DESC,"<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+When this card is discarded by the effect of Burst, return this card from your discard pile to your hand.
+<When Invading> Your opponent discards cards until they have 3 cards remaining in their hand.","<強襲Ⅲ>(これは等級Ⅲから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする)
+これが強襲の効果であなたの捨て札に置かれた時、捨て札からこれを手札に戻す。
+<進攻時>相手は自分の手札を３枚になるよう捨てる。"
+CARD_EBP02-010_NAME,King Caesar(2004),キングシーサー(2004)
+CARD_EBP02-010_DESC,<Enter> Move 1 of your other battle cards in your zones to an unoccupied zone.,<出現時>あなたのエリアにいる他の交戦カードを１枚、空いているエリアに移動させる。
+CARD_EBP02-011_NAME,Gabara,ガバラ
+CARD_EBP02-011_DESC,"If your monster card has 2 or more <Rage> , this card gains +3000 counter power.",あなたの怪獣カードの<怒り>が２以上なら、これの撃退力＋3000。
+CARD_EBP02-012_NAME,Godzilla(2016) Frozen,ゴジラ(2016) 凍結
+CARD_EBP02-012_DESC,"If this card is in zone 8, whenever your strategy cards would be discarded from the strategy zone, you may place them under this card instead.
+<Awakening4> At the beginning of your main phase, if there are 2 or more cards under this card, counter your opponent's monster card.","これがエリア８にいるなら、あなたのカードが戦略カード置き場から捨て札になる際、かわりにそれをこれの下に重ねてよい。
+<覚醒４>あなたのメインフェイズ開始時、これの下にカードが２枚以上あるなら、相手の怪獣カードを撃退する。"
+CARD_EBP02-013_NAME,Minilla(1969),ミニラ(1969)
+CARD_EBP02-013_DESC,"<Enter> If your monster card has 2 or more <Rage> , advance your monster card to zone 5.",<出現時>あなたの怪獣カードの<怒り>が２以上なら、あなたの怪獣カードをエリア５まで前進させる。
+CARD_EBP02-014_NAME,Cabinet Helicopter,内閣搭乗ヘリコプター
+CARD_EBP02-014_DESC,"<Enter> Send the top card of your deck to your discard pile. If it is a monster card, advance your monster card to zone 6.",<出現時>あなたの山札を上から１枚捨て札にする。それが怪獣カードなら、あなたの怪獣カードをエリア６まで前進させる。
+CARD_EBP02-015_NAME,Rodan(2004),ラドン(2004)
+CARD_EBP02-015_DESC,"If this card is in a zone with the same number as the zone that your opponent's monster card occupies, this card gains +3000 counter power.",これが相手の怪獣カードがいるエリアと同じ数字のエリアにいるなら、撃退力＋3000。
+CARD_EBP02-016_NAME,Anguirus(2004),アンギラス(2004)
+CARD_EBP02-016_DESC,"If this card is in the same column as the opponent's monster card, this card gains +5000 counter power.",これが相手の怪獣カードと同じ縦列にいるなら、撃退力＋5000。
+CARD_EBP02-017_NAME,Operation Taba,タバ作戦
+CARD_EBP02-017_DESC,"<Your Turn> If you have 4 or more battle cards in your zones, increase your total counter power by 5000.",<あなたのターン中>あなたのエリアに交戦カードが４枚以上いるなら、あなたの撃退力の合計を＋5000。
+CARD_EBP02-018_NAME,Despair,絶望
+CARD_EBP02-018_DESC,"If your monster card has 2 or more <Rage> , <Destroy> 1 of your opponent's battle cards that is occupying a zone at or before the zone your monster card currently occupies. (If your monster card is in Zone 4, you can select battle cards in your opponent's zone 1, 2, 3, or 4.)",あなたの怪獣カードがいるエリア以下の数字をひとつ指定する。あなたの怪獣カードの<怒り>が２以上なら、指定した数字の相手のエリアにいる交戦カードを１枚<破壊>する。
+CARD_EBP02-019_NAME,There is no danger of the creature coming ashore.,「巨大不明生物の上陸はありません」
+CARD_EBP02-019_DESC,"Move 1 battle card in your zones to an unoccupied zone. If your monster card invaded this turn, advance your monster card by 1 zone.",あなたのエリアにいる交戦カードを１枚、空いているエリアに移動させる。さらにこのターンあなたの怪獣カードが進攻していたら、あなたの怪獣カードを１エリア前進させる。
+CARD_EBP02-020_NAME,Operation Yashiori -Conductorless train bombers-,ヤシオリ作戦 -無人在来線爆弾-
+CARD_EBP02-020_DESC,"If you have 5 or more strategy cards in your discard pile, create âConductorless train bombersâ tokens in each of your unoccupied zones. (Tokens are prepared separately from your main deck.)",あなたの捨て札に戦略カードが５枚以上あるなら、あなたの空いているエリアすべてに「無人在来線爆弾」トークンを出現させる。(トークンはデッキとは別に用意する)
+CARD_EBP02-021_NAME,Godzilla(1993),ゴジラ(1993)
+CARD_EBP02-021_DESC,All of your rank 5 or lower battle cards in zones adjacent to this card gain +3000 counter power.,これの隣接エリアにいるあなたの等級５以下の交戦カードすべての撃退力＋3000。
+CARD_EBP02-022_NAME,Godzilla(1994),ゴジラ(1994)
+CARD_EBP02-022_DESC,"<When Invading> If you discarded a blue battle card for this card's invade action, you may play that battle card from your discard pile.",<進攻時>これの進攻で青の交戦カードを捨てたなら、あなたの捨て札からそれを出現させる。
+CARD_EBP02-023_NAME,Godzilla(1999),ゴジラ(1999)
+CARD_EBP02-023_DESC,"<Enter> If you have 5 or more monster cards in your discard pile, 1 of your opponent's monster cards with 50,000 or less threat level retreats back by 1 zone.
+If you have 10 or more monster cards in your discard pile, this card gains +10,000 threat level.","<出現時>あなたの捨て札の怪獣カードが５枚以上なら、相手の脅威度50000以下の怪獣カードを１エリア後退させる。
+あなたの捨て札の怪獣カードが10枚以上なら、これの脅威度＋10000。"
+CARD_EBP02-024_NAME,Biollante Rose Form,ビオランテ花獣形態
+CARD_EBP02-024_DESC,"If this card is in your monster deck, at the start of the game it will be played in Zone 5.
+This card cannot advance nor invade.","これはゲーム開始時にエリア５に出現する。
+これは前進も進攻もできない。"
+CARD_EBP02-025_NAME,Biollante Rose Form,ビオランテ花獣形態
+CARD_EBP02-025_DESC,"This card cannot advance nor invade.
+<Enter> Play 1 âTentaclesâ token in a zone adjacent to this card. (Tokens are prepared separately from your main deck.)","これは前進も進攻もできない。
+<出現時>「触手」トークンを１枚、これの隣接エリア１つに出現させる。(トークンはデッキとは別に用意する)"
+CARD_EBP02-026_NAME,Biollante Plant Beast Form,ビオランテ植獣形態
+CARD_EBP02-026_DESC,"<Enter> If you have a strategy card in play, choose 1 of your opponent's zones. <Destroy> all of your opponent's rank 5 or lower battle cards in that zone and zones adjacent to it.",<出現時>あなたが戦略カードを置いているなら、相手のエリア１つを指定し、そのエリアおよび隣接エリアにいる相手の等級５以下の交戦カードをすべて<破壊>する。
+CARD_EBP02-027_NAME,Biollante Plant Beast Form,ビオランテ植獣形態
+CARD_EBP02-027_DESC,"<Opponent's Turn> <Awakening6> If your opponent has a strategy card in play, this card cannot be countered by 40,000 or lower counter power. Instead, it only moves as though it were countered. (Do not play the next Monster Card from your monster deck.)",<相手のターン中><覚醒６>相手が戦略カードを置いているなら、これは撃退力40000以下では撃退されず、その際に撃退されたかのように移動のみ行う。
+CARD_EBP02-028_NAME,Biollante Plant Beast Form,ビオランテ植獣形態
+CARD_EBP02-028_DESC,<Enter> Play as many rank 4 or lower battle cards with <Evolution> from your discard pile to each of this card's adjacent zones. (You must play as many as possible and you may play the battle cards in zones already occupied by other battle cards. Maximum of 3 cards.),<出現時>あなたの捨て札から<進化>を持つ等級４以下の交戦カードをこれの隣接エリアすべてに出現させる。(可能な限り出現させる。最大３枚)
+CARD_EBP02-029_NAME,Biollante Plant Beast Form,ビオランテ植獣形態
+CARD_EBP02-029_DESC,"<Opponent's Turn> At the beginning of the counter phase, for the rest of the turn, double the counter power of all of your opponent's battle cards in the same column as this card. (Refer to those battle card's counter power at the ability resolution timing.)",<相手のターン中>撃退フェイズ開始時、そのターン中、これと同じ縦列にいる相手の交戦カードすべての撃退力を２倍にする。(この効果解決時の撃退力を参照する)
+CARD_EBP02-030_NAME,Baby Godzilla,ベビーゴジラ
+CARD_EBP02-030_DESC,"<Evolution5> <ãLittle Godzillaã> (At the beginning of your main phase, you may play a rank 5 or lower <ãLittle Godzillaã> battle card from your deck by placing it on top of this card.)",<進化５><《リトルゴジラ》>(あなたのメインフェイズ開始時、山札から<《リトルゴジラ》>を持つ等級５以下の交戦カードをこれの上に重ねて出現させてよい)
+CARD_EBP02-031_NAME,MBT-MB92 modified,92式メーサー戦車（改）
+CARD_EBP02-031_DESC,"You may have any number of this card in your deck.
+If the number of other rank 5 or lower battle cards in your zones is 2 or more, this card gains +3000 counter power.","これはデッキに好きな枚数入れてよい。
+あなたのエリアに等級５以下の他の交戦カードが２枚以上いるなら、これの撃退力＋3000。"
+CARD_EBP02-032_NAME,Biollante Rose Form,ビオランテ花獣形態
+CARD_EBP02-032_DESC,"<Evolution7> <ãBiollanteã> (At the beginning of your main phase, you may play a rank 7 or lower <ãBiollanteã> battle card from your deck by placing it on top of this card.)",<進化７><《ビオランテ》>(あなたのメインフェイズ開始時、山札から<《ビオランテ》>を持つ等級７以下の交戦カードをこれの上に重ねて出現させてよい)
+CARD_EBP02-033_NAME,Little Godzilla,リトルゴジラ
+CARD_EBP02-033_DESC,<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.),<覚醒４>これの撃退力＋3000。(あなたの怪獣カードがエリア４以降にいるなら有効)
+CARD_EBP02-034_NAME,Super X3,スーパーX3
+CARD_EBP02-034_DESC,"If this card is in zone 8, this card gains +3000 counter power.",これがエリア８にいるなら、撃退力＋3000。
+CARD_EBP02-035_NAME,Biollante Plant Beast Form,ビオランテ植獣形態
+CARD_EBP02-035_DESC,"<Enter> If you have 2 or more cards with âãããªã©ã³ãï¼ ãâ in your discard pile, return all cards in your opponent's discard pile to their deck then shuffle.
+<Enter> Play 2 âTentaclesâ tokens in zones adjacent to this card. (Tokens are prepared separately from your main deck.)","<出現時>あなたの捨て札の<《ビオランテ》>を持つカードが２枚以上なら、相手は自分の捨て札をすべて山札に戻してシャッフルする。
+<出現時>「触手」トークンを２枚、これの隣接エリアに出現させる。(トークンはデッキとは別に用意する)"
+CARD_EBP02-036_NAME,Godzilla(1994),ゴジラ(1994)
+CARD_EBP02-036_DESC,"At the beginning of your end phase, if this card is in a zone adjacent to your monster card, 1 of your opponent's monster cards with 40,000 or less threat level retreats back by 1 zone.",あなたのエンドフェイズ開始時、これがあなたの怪獣カードの隣接エリアにいるなら、相手の脅威度40000以下の怪獣カードを１エリア後退させる。
+CARD_EBP02-037_NAME,Destoroyah Perfect Form,デストロイア完全体
+CARD_EBP02-037_DESC,"<Enter> Draw 2 cards, then discard 2 cards.",<出現時>あなたは２枚引いて手札を２枚捨てる。
+CARD_EBP02-038_NAME,Godzilla 2000: Millennium,ゴジラ2000 ミレニアム
+CARD_EBP02-038_DESC,"Choose one of the following:
+
+ã» <Destroy> 1 of your opponent's rank 5 or lower battle cards.
+ã»If you have 10 or more monster cards in your discard pile, <Destroy> 1 of your opponent's battle cards in zone 8.","以下を１つ行う。
+・相手の等級５以下の交戦カードを１枚<破壊>する。
+・あなたの捨て札の怪獣カードが10枚以上なら、相手のエリア８にいる交戦カードを<破壊>する。"
+CARD_EBP02-039_NAME,Lake Ashi Monster,芦ノ湖の怪獣
+CARD_EBP02-039_DESC,<Your Turn> You can play battle cards with <ãBiollanteã> from your hand with their rank reduced by 3. (They return to their original rank after being played.),<あなたのターン中>あなたの手札の<《ビオランテ》>を持つ交戦カードすべては等級を－３して出現できる。(出現後は元の等級)
+CARD_EBP02-040_NAME,Interception Operation,迎撃作戦
+CARD_EBP02-040_DESC,"If you have 5 or more <ãWeaponã> battle cards with âMBâ in their name in your zones, discard your hand and draw 5 cards.",あなたのエリアに、カード名に「メーサー」を含む<《兵器》>を持つ交戦カードが５枚以上いるなら、あなたは自分の手札をすべて捨て、５枚引く。
+CARD_EBP02-041_NAME,Gigan(1972),ガイガン(1972)
+CARD_EBP02-041_DESC,Each of your battle cards in zones adjacent to this card gain +1000 counter power.,これの隣接エリアにいるあなたの交戦カードすべての撃退力＋1000。
+CARD_EBP02-042_NAME,Gigan(1972),ガイガン(1972)
+CARD_EBP02-042_DESC,"<Enter> You may discard a card with <ãKing Ghidorahã> or <ãMegalonã> from your hand to reduce your opponent's <Rage> by 2.
+At the beginning of your end phase, if your opponent's monster card is in zone 1â5, increase this card's <Rage> by 1.","<出現時>あなたの手札の、<《キングギドラ》>か<《メガロ》>を持つカードを１枚捨てることで、相手の<怒り>を２減らす。
+あなたのエンドフェイズ開始時、相手の怪獣カードがエリア１～５にいるなら、これの<怒り>を１増やす。"
+CARD_EBP02-043_NAME,Gigan(2004),ガイガン(2004)
+CARD_EBP02-043_DESC,Each of your battle cards in zones adjacent to this card gain +1000 counter power for each card under this card.,これの下にあるカード１枚につき、これの隣接エリアにいるあなたの交戦カードすべての撃退力＋1000。
+CARD_EBP02-044_NAME,Modified Gigan,改造ガイガン
+CARD_EBP02-044_DESC,"<When Invading> If your opponent's monster card is in zones 6â8, reduce their <Rage> by 2.
+At the beginning of your end phase, if your opponent's monster card is in zones 1â5, increase this card's <Rage> by 2.","<進攻時>相手の怪獣カードがエリア６～８にいるなら、相手の<怒り>を２減らす。
+あなたのエンドフェイズ開始時、相手の怪獣カードがエリア１～５にいるなら、これの<怒り>を２増やす。"
+CARD_EBP02-045_NAME,King Ghidorah(1964),キングギドラ(1964)
+CARD_EBP02-045_DESC,This card gains +3000 threat level for each rank of your opponent's monster.,相手の怪獣カードの等級Ⅰにつき、これの脅威度＋3000。
+CARD_EBP02-046_NAME,King Ghidorah(1965),キングギドラ(1965)
+CARD_EBP02-046_DESC,"<Enter> Place all cards with the same name as this card from your discard pile under this card.
+This card gains +3000 threat level for each card with the same name under this card.","<出現時>あなたの捨て札から、これと同じカードをすべてこれの下に重ねて置く。
+これの下にあるこれと同じカード１枚につき、脅威度＋3000。"
+CARD_EBP02-047_NAME,King Ghidorah(1991),キングギドラ(1991)
+CARD_EBP02-047_DESC,"Whenever this card advances, send the top card of your deck to your discard pile.",これが前進するたび、あなたの山札を上から１枚捨て札にする。
+CARD_EBP02-048_NAME,King Ghidorah(1991),キングギドラ(1991)
+CARD_EBP02-048_DESC,"<Enter> Send the top 3 cards of your deck to your discard pile.
+<When Invading> <Destroy> 3 of your opponent's rank 4 or lower battle cards.","<出現時>あなたの山札を上から３枚捨て札にする。
+<進攻時>相手の等級４以下の交戦カードを３枚<破壊>する。"
+CARD_EBP02-049_NAME,King Ghidorah(1991),キングギドラ(1991)
+CARD_EBP02-049_DESC,"<Enter> If there are 3 or more cards under this card, choose one of the following:
+ã» <Destroy> 3 of your opponent's rank 5 or lower battle cards.
+ã»Your opponent discards cards until they have 3 cards remaining in their hand.
+ã»Send the top 3 cards of your deck to your discard pile.","<出現時>これの下にカードが３枚以上あるなら、以下を１つ行う。
+・相手の等級５以下の交戦カードを３枚<破壊>する。
+・相手は自分の手札を３枚になるよう捨てる。
+・あなたの山札を上から３枚捨て札にする。"
+CARD_EBP02-050_NAME,Mecha-King Ghidorah,メカキングギドラ
+CARD_EBP02-050_DESC,"<Enter> If there are 5 or more cards under this card, choose one of the following:
+ã» <Destroy> 3 of your opponent's rank 6 or lower battle cards.
+ã»Your opponent discards cards until they have 2 cards remaining in their hand.
+ã»Increase this card's <Rage> by 3.","<出現時>これの下にカードが５枚以上あるなら、以下を１つ行う。
+・相手の等級６以下の交戦カードを３枚<破壊>する。
+・相手は自分の手札を２枚になるよう捨てる。
+・これの<怒り>を３増やす。"
+CARD_EBP02-051_NAME,Mecha-King Ghidorah,メカキングギドラ
+CARD_EBP02-051_DESC,"If there are 5 or more cards under this card, this card gains +3000 threat level for each of your opponent's unoccupied zones.",これの下にカードが５枚以上あるなら、相手の空いているエリア１つにつき、脅威度＋3000。
+CARD_EBP02-052_NAME,SpaceGodzilla Flying Form,スペースゴジラ 飛行形態
+CARD_EBP02-052_DESC,"<When Invading> You may discard 1 card from your hand, if you do, play 1 âCrystalsâ token. (Tokens are prepared separately from your deck.)",<進攻時>あなたの手札を１枚捨てることで、「結晶体」トークンを１枚出現させる。(トークンはデッキとは別に用意する)
+CARD_EBP02-053_NAME,SpaceGodzilla,スペースゴジラ
+CARD_EBP02-053_DESC,"<When Invading> Play 1 âCrystalsâ token. (Tokens are prepared separately from your deck.)
+If there is a âCrystalsâ in your zones, this card gains +5000 threat level.","<進攻時>「結晶体」トークンを１枚出現させる。(トークンはデッキとは別に用意する)
+あなたのエリアに「結晶体」がいるなら、これの脅威度＋5000。"
+CARD_EBP02-054_NAME,SpaceGodzilla,スペースゴジラ
+CARD_EBP02-054_DESC,"<Enter> Play 2 âCrystalsâ tokens. (Tokens are prepared separately from your deck.)
+Whenever this card's <Rage> is increased, <Destroy> 1 of your opponent's rank 5 or lower battle cards for each âCrystalsâ in your zones.","<出現時>「結晶体」トークンを２枚出現させる。(トークンはデッキとは別に用意する)
+これの<怒り>が増えるたび、あなたのエリアにいる「結晶体」１枚につき、相手の等級５以下の交戦カードを１枚<破壊>する。"
+CARD_EBP02-055_NAME,SpaceGodzilla,スペースゴジラ
+CARD_EBP02-055_DESC,"<Awakening4> If there are 3 or more âCrystalsâ in your zones, your opponent cannot play battle cards in zones in the same column as this card. (Does not destroy cards already there.)",<覚醒４>あなたのエリアに「結晶体」が３枚以上いるなら、相手はこれと同じ縦列のエリアに交戦カードを出現させることができない。(すでにいる交戦カードを破壊はしない)
+CARD_EBP02-056_NAME,SpaceGodzilla,スペースゴジラ
+CARD_EBP02-056_DESC,"If you have 3 or more âCrystalsâ in your zones, this card gains +20,000 threat level.
+<Your Turn> When this card advances during the end phase, it advances 1 additional zone for each âCrystalsâ in your zones.","あなたのエリアに「結晶体」が３枚以上いるなら、これの脅威度＋20000。
+<あなたのターン中>これがエンドフェイズに前進する際、あなたのエリアにいる「結晶体」の枚数分、追加で前進する。"
+CARD_EBP02-057_NAME,SpaceGodzilla Flying Form,スペースゴジラ 飛行形態
+CARD_EBP02-057_DESC,"<Enter> Move 1 of your opponent's battle cards in the same column as this card to an unoccupied zone.
+Whenever this card's <Rage> is increased, play 2 âCrystalsâ tokens. (Tokens are prepared separately from your deck.)","<出現時>これと同じ縦列にいる相手の交戦カードを１枚、空いているエリアに移動させる。
+これの<怒り>が増えるたび、「結晶体」トークンを２枚出現させる。(トークンはデッキとは別に用意する)"
+CARD_EBP02-058_NAME,Dorat,ドラット
+CARD_EBP02-058_DESC,<Revenge> Return up to 1 <ãKing Ghidorahã> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.),<逆襲>あなたの捨て札の<《キングギドラ》>を持つ怪獣カードを１枚まで手札に戻す。(カード効果か怪獣カードの移動で破壊されたら発動)
+CARD_EBP02-059_NAME,Godzillasaurus,ゴジラザウルス
+CARD_EBP02-059_DESC,"<Revenge> You may discard 1 card from your hand, if you do, return 1 battle card named âGodzilla(1991)â from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)",<逆襲>あなたの手札を１枚捨てることで、あなたの捨て札の「ゴジラ(1991)」の交戦カードを１枚手札に戻す。(カード効果か怪獣カードの移動で破壊されたら発動)
+CARD_EBP02-060_NAME,Gigan(2004),ガイガン(2004)
+CARD_EBP02-060_DESC,"If this card is in the same column as your opponent's monster card, this card gains +3000 counter power.
+<Revenge> If your opponent's monster card is in zones 1â5, you may return this card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)","これが相手の怪獣カードと同じ縦列にいるなら、撃退力＋3000。
+<逆襲>相手の怪獣カードがエリア１～５にいるなら、あなたの捨て札からこれを手札に戻してよい。(カード効果か怪獣カードの移動で破壊されたら発動)"
+CARD_EBP02-061_NAME,Godzilla(1972),ゴジラ(1972)
+CARD_EBP02-061_DESC,"If this card is in zone 8, this card gains +3000 counter power.",これがエリア８にいるなら、撃退力＋3000。
+CARD_EBP02-062_NAME,SpaceGodzilla,スペースゴジラ
+CARD_EBP02-062_DESC,<Revenge> Return up to 1 <ãSpaceGodzillaã> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.),<逆襲>あなたの捨て札の<《スペースゴジラ》>を持つ怪獣カードを１枚まで手札に戻す。(カード効果か怪獣カードの移動で破壊されたら発動)
+CARD_EBP02-063_NAME,Megalon,メガロ
+CARD_EBP02-063_DESC,,
+CARD_EBP02-064_NAME,Gigan(1972),ガイガン(1972)
+CARD_EBP02-064_DESC,"If there is a card with <ãKing Ghidorahã> or <ãMegalonã> in your zones, this card gains +3000 counter power.
+<Revenge> Return up to 1 <ãKing Ghidorahã> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster movement.)","あなたのエリアに<《キングギドラ》>か<《メガロ》>を持つカードがいるなら、これの撃退力＋3000。
+<逆襲>あなたの捨て札の<《キングギドラ》>を持つ怪獣カードを１枚まで手札に戻す。(カード効果か怪獣カードの移動で破壊されたら発動)"
+CARD_EBP02-065_NAME,Godzilla(1991),ゴジラ(1991)
+CARD_EBP02-065_DESC,"<Awakening6> If there are 3 or more cards under your monster card, this card gains +5000 counter power. If there are 5 or more, this card gains an additional +5000 counter power.",<覚醒６>あなたの怪獣カードの下にカードが３枚以上あるなら、これの撃退力＋5000。５枚以上あるなら、さらに＋5000。
+CARD_EBP02-066_NAME,King Ghidorah(1964),キングギドラ(1964)
+CARD_EBP02-066_DESC,<Awakening6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.),<覚醒６>これの撃退力＋3000。(あなたの怪獣カードがエリア６以降にいるなら有効)
+CARD_EBP02-067_NAME,M.O.G.U.E.R.A.,M.O.G.E.R.A.
+CARD_EBP02-067_DESC,"If your opponent has a <ãGodzillaã> card in their zones, this card gains +5000 counter power.",相手のエリアに<《ゴジラ》>を持つカードがいるなら、これの撃退力＋5000。
+CARD_EBP02-068_NAME,Mecha-King Ghidorah,メカキングギドラ
+CARD_EBP02-068_DESC,"You can play this card from your hand with its rank reduced by 2 for each non-rank 23 <ãKing Ghidorahã> card in your discard pile. (This card's rank returns to 23 after being played.)
+If this card is in the same column as your opponent's monster card, they cannot invade, and this card gains +3000 counter power.","あなたの捨て札の、等級㉓でない<《キングギドラ》>を持つカード１枚につき、等級を－２して手札から出現できる。(出現後は等級㉓)
+これが相手の怪獣カードと同じ縦列にいるなら、相手は進攻できず、これの撃退力＋3000。"
+CARD_EBP02-069_NAME,Godzilla vs. SpaceGodzilla,ゴジラVSスペースゴジラ
+CARD_EBP02-069_DESC,Choose 2 of your opponent's battle cards in their zones and swap their positions.,相手のエリアにいる交戦カードを２枚選び、それらのいるエリアを入れ替える。
+CARD_EBP02-070_NAME,Godzilla vs. SpaceGodzilla,ゴジラVSスペースゴジラ
+CARD_EBP02-070_DESC,"<Opponent's Turn> Your opponent cannot play strategy cards. (Does not destroy cards already in play.)
+<Opponent's Turn> At the beginning of the main phase, your opponent may discard cards until they have 5 cards remaining in their hand. If they discard at least 1 card, <Destroy> this card.","<相手のターン中>相手は戦略カードを置くことができない。(すでに置かれている戦略カードを破壊はしない)
+<相手のターン中>メインフェイズ開始時、相手は自分の手札を５枚になるよう捨ててよい。１枚以上捨てたら、これを<破壊>する。"
+CARD_EBP02-071_NAME,Godzilla vs. King Ghidorah,ゴジラVSキングギドラ
+CARD_EBP02-071_DESC,"Choose one of the following:
+ã» <Destroy> 3 of your opponent's rank 4 or lower battle cards.
+ã» <Awakening6> <Destroy> 2 of your opponent's rank 6 or lower battle cards.
+ã» <Awakening8> <Destroy> 1 of your opponent's battle cards.","以下を１つ行う。
+・相手の等級４以下の交戦カードを３枚<破壊>する。
+・<覚醒６>相手の等級６以下の交戦カードを２枚<破壊>する。
+・<覚醒８>相手の交戦カードを１枚<破壊>する。"
+CARD_EBP02-072_NAME,God of Destruction's Counterattack,破壊神反撃
+CARD_EBP02-072_DESC,"<Your Turn> If you have 3 or more âCrystalsâ in your zones, your total counter power is increased by 20,000.",<あなたのターン中>あなたのエリアに「結晶体」が３枚以上いるなら、あなたの撃退力の合計を＋20000。
+CARD_EBP02-073_NAME,Bloody Chainsaw,ブラッディ・チェーンソー
+CARD_EBP02-073_DESC,"<Your Turn> Whenever you play a battle card, <Destroy> all of your opponent's rank 6 or lower battle cards in the same column as that battle card.",<あなたのターン中>あなたの交戦カードが出現するたび、それと同じ縦列にいる相手の等級６以下の交戦カードをすべて<破壊>する。
+CARD_EBP02-074_NAME,Bite Attack,噛みつき攻撃！
+CARD_EBP02-074_DESC,Increase your monster card's <Rage> by 1 for each rank of your opponent's monster.,相手の怪獣カードの等級Ⅰにつき、あなたの怪獣カードの<怒り>を１増やす。
+CARD_EBP02-075_NAME,Chibi Mothra,ちびモスラ
+CARD_EBP02-075_DESC,"<Enter> If a card named âChibi Mechagodzillaâ is in your zones, reduce your opponent's <Rage> by 1.",<出現時>あなたのエリアに「ちびメカゴジラ」がいるなら、相手の<怒り>を１減らす。
+CARD_EBP02-076_NAME,Chibi Mechagodzilla,ちびメカゴジラ
+CARD_EBP02-076_DESC,"If this card is in a zone adjacent to your monster card, this card gains +3000 counter power.",これがあなたの怪獣カードの隣接エリアにいるなら、撃退力＋3000。
+CARD_EBP02-077_NAME,Chibi Godzilla,ちびゴジラ
+CARD_EBP02-077_DESC,"At the beginning of your main phase, send the top 2 cards of your deck to your discard pile.
+If a <ãGodzillaã> card was sent to your discard pile this way, <Destroy> this card and play a âChibi Godzilla 2nd Formâ token. (Tokens are prepared separately from your deck.)",あなたのメインフェイズ開始時、あなたの山札を上から２枚捨て札にする。<《ゴジラ》>を持つカードを捨てたら、これを<破壊>し、「ちびゴジラ 第2形態」トークンを１枚出現させる。(トークンはデッキとは別に用意する)
+CARD_EBP02-078_NAME,Mothra(imago)(2003),モスラ成虫(2003)
+CARD_EBP02-078_DESC,"<Enter> If this card is in the same column as your opponent's monster card, reveal the top 2 cards of your deck. Add all rank 5 or lower battle cards among them to your hand and send the rest into your discard pile.",<出現時>これが相手の怪獣カードと同じ縦列にいるなら、あなたの山札を上から２枚公開し、その中の等級５以下の交戦カードをすべて手札に加え、残りを捨て札にする。
+CARD_EBP02-079_NAME,Destructive Impulse,破壊衝動
+CARD_EBP02-079_DESC,"Perform the following action based on how many zones your monster card advanced through invasion this turn:
+
+0 - <Destroy> all of your opponent's rank 2 or lower battle cards.
+1 - <Destroy> all of your opponent's rank 4 or lower battle cards.
+2 - <Destroy> all of your opponent's rank 6 or lower battle cards.","このターンあなたの怪獣カードが進攻で前進したエリアの数により以下を行う。
+・０‐相手の等級２以下の交戦カードをすべて<破壊>する。
+・１‐相手の等級４以下の交戦カードをすべて<破壊>する。
+・２‐相手の等級６以下の交戦カードをすべて<破壊>する。"
+CARD_EBP02-080_NAME,Joint Struggle,共闘
+CARD_EBP02-080_DESC,"Reveal the top 2 cards of your deck. If they differ in at least 1 trait, add them to your hand; otherwise, send them to the discard pile. (Example if one is <ãMechã> and the other is <ãMechagodzillaã> and <ãMechã> , you may add them to your hand.)",あなたの山札を上から２枚公開し、それらが異なる特徴を１つ以上持つなら手札に加え、違うなら捨て札にする。(例えば１枚目が<《ゴジラ》>で２枚目が<《ゴジラ》><《フェス・ゴジラ》>なら手札に加わる)
+CARD_EBP02-T01_NAME,Conductorless Train Bombers,
+CARD_EBP02-T01_DESC,"<Enter> Reduce your opponent's <Rage> by 1.
+(Tokens cannot be added to the deck. They are banished when removed from zones.)",
+CARD_EBP02-T02_NAME,Tentacles,
+CARD_EBP02-T02_DESC,(Tokens cannot be added to the deck. They are banished when removed from zones.),
+CARD_EBP02-T03_NAME,Crystals,
+CARD_EBP02-T03_DESC,"All of your <ãSpaceGodzillaã> monster cards in your zones gain +1000 threat level.
+(Tokens cannot be added to the deck. They are banished when removed from zones.)",
+CARD_EBP02-T04_NAME,Chibi Godzilla 2nd Form,
+CARD_EBP02-T04_DESC,"At the beginning of your end phase, <Destroy> this card and play 1 battle card named âChibi Godzillaâ from your discard pile.
+(Tokens cannot be added to the deck. They are banished when removed from zones.)",
+CARD_EBP03-001_NAME,Godzilla(2001),ゴジラ(2001)
+CARD_EBP03-001_DESC,"<Awakening4> At the beginning of your end phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, this card advances 1 zone.
+<Awakening6> This card gains +5000 threat level.","<覚醒４>あなたのエンドフェイズ開始時、あなたの手札の等級５以上の交戦カードを１枚捨てることで、これは１エリア前進する。
+<覚醒６>これの脅威度＋5000。"
+CARD_EBP03-002_NAME,Godzilla(2001),ゴジラ(2001)
+CARD_EBP03-002_DESC,"<Opponentâs Turn> <Awakening4> At the beginning of the counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this cardâs <Rage> by 1.
+<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this cardâs <Rage> by 2.","<相手のターン中><覚醒４>撃退フェイズ開始時、あなたの手札の等級５以上の交戦カードを１枚捨てることで、これの<怒り>を１増やす。
+<覚醒８>あなたの撃退フェイズ開始時、あなたの手札の等級５以上の交戦カードを１枚捨てることで、これの<怒り>を２増やす。"
+CARD_EBP03-003_NAME,Godzilla(2001),ゴジラ(2001)
+CARD_EBP03-003_DESC,"<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this cardâs <Rage> by 2, then <Destroy> all of your opponentâs rank 6 or lower battle cards. (Active if this card is in zone 8.)","<強襲Ⅱ>(これは等級Ⅱから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする)
+<覚醒８>あなたの撃退フェイズ開始時、あなたの手札の等級５以上の交戦カードを１枚捨てることで、これの<怒り>を２増やし、相手の等級６以下の交戦カードをすべて<破壊>する。"
+CARD_EBP03-004_NAME,Godzilla(2001),ゴジラ(2001)
+CARD_EBP03-004_DESC,"When this card invades, you may send the top card of your deck to your discard pile instead of discarding a card from your hand.
+<Opponent's Turn> <Awakening4> This card's <Rage> cannot be reduced by your opponent's effects. (Active if this is in zone 4 or beyond.)","これが進攻する際、あなたは手札を１枚捨てるかわりに山札を上から１枚捨ててよい。
+<相手のターン中><覚醒４>これの<怒り>は相手の効果で減らない。(これがエリア４以降にいるなら有効)"
+CARD_EBP03-005_NAME,Godzilla(2001),ゴジラ(2001)
+CARD_EBP03-005_DESC,"<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this cardâs <Rage> by 3, then <Destroy> all of your opponentâs rank 7 or lower battle cards. (Active if this card is in zone 8.)","<強襲Ⅲ>(これは等級Ⅲから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする)
+<覚醒８>あなたの撃退フェイズ開始時、あなたの手札の等級５以上の交戦カードを１枚捨てることで、これの<怒り>を３増やし、相手の等級７以下の交戦カードをすべて<破壊>する。"
+CARD_EBP03-006_NAME,Multi-purpose Fighting System-3,3式機龍
+CARD_EBP03-006_DESC,"<Resonance> Red/Blue
+ã»Monster cards in your deck must have <ãWeaponã> or <ãMechã> .
+ã»Battle cards in your deck must have <ãWeaponã> or <ãMechã> .
+(You can mix red, blue, and white, but your monster deck and main deck must satisfy the above.)","<共鳴>赤/青
+・怪獣カードは<《兵器》>か<《機械》>のみ。
+・交戦カードは<《兵器》>か<《機械》>のみ。
+（赤、青、白を混ぜて使えるが、怪獣デッキとメインデッキは上記を満たして構築する）"
+CARD_EBP03-007_NAME,Multi-purpose Fighting System-3,3式機龍
+CARD_EBP03-007_DESC,"<When Invading> Reveal from the top of your deck a number of cards equal to the rank of your opponentâs monster card. Add 1 red or blue battle card among them to your hand, then send the rest to your discard pile.",<進攻時>あなたの山札を上から、相手の怪獣カードの等級と同じ枚数公開し、その中の、赤か青の交戦カードを１枚手札に加え、残りを捨て札にする。
+CARD_EBP03-008_NAME,Multi-purpose Fighting System-3,3式機龍
+CARD_EBP03-008_DESC,"<Enter> If there is a blue battle card in your zones, <Destroy> 1 of your opponentâs rank 5 or lower battle cards.
+<Opponentâs Turn> At the beginning of the counter phase, if there is a red battle card in your zones, <Destroy> 1 of your opponentâs rank 5 or lower battle cards in the same column as this card.","<出現時>あなたのエリアに青の交戦カードがいるなら、相手の等級５以下の交戦カードを１枚<破壊>する。
+<相手のターン中>撃退フェイズ開始時、あなたのエリアに赤の交戦カードがいるなら、これと同じ縦列にいる相手の等級５以下の交戦カードを１枚<破壊>する。"
+CARD_EBP03-009_NAME,Multi-purpose Fighting System-3,3式機龍
+CARD_EBP03-009_DESC,"<Enter> Choose 1 of your opponentâs zones in the same column as this card, then <Destroy> all of your opponentâs rank 6 or lower battle cards in that zone and zones adjacent to it.",<出現時>これと同じ縦列の相手のエリア１つを指定し、そのエリアおよび隣接エリアにいる相手の等級６以下の交戦カードをすべて<破壊>する。
+CARD_EBP03-010_NAME,Multi-purpose Fighting System-3,3式機龍〈改〉
+CARD_EBP03-010_DESC,"<Enter> If there are 2 or more battle cards in your zones, your opponent discards cards until they have 4 cards remaining in their hand. If a battle card is discarded this way, increase this cardâs <Rage> by 1.",<出現時>あなたのエリアに交戦カードが２枚以上いるなら、相手は自分の手札を４枚になるよう捨てる。この効果で相手が交戦カードを捨てていたら、これの<怒り>を１増やす。
+CARD_EBP03-011_NAME,Multi-purpose Fighting System-3,3式機龍〈改〉
+CARD_EBP03-011_DESC,"<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Enter> Reveal from the top of your deck a number of cards equal to the rank of your opponentâs monster card. Add up to 1 red battle card and up to 1 blue battle card among them to your hand, then send the rest to your discard pile.","<強襲Ⅲ>(これは等級Ⅲから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする)
+<出現時>あなたの山札を上から、相手の怪獣カードの等級と同じ枚数公開し、その中の赤と青の交戦カードをそれぞれ１枚手札に加え、残りを捨て札にする。"
+CARD_EBP03-012_NAME,Godzilla(1993),ゴジラ(1993)
+CARD_EBP03-012_DESC,"<Enter> If you have 1 or fewer strategy cards in play, you may place up to 1 blue rank 6 or lower strategy card from your hand into your strategy zone and activate it.",<出現時>あなたが置いている戦略カードが１枚以下なら、あなたの手札から、青で等級６以下の戦略カードを１枚まで置いて発動させる。
+CARD_EBP03-013_NAME,Godzilla(1995),ゴジラ(1995)
+CARD_EBP03-013_DESC,"<Enter> For the rest of the game, you have 3 strategy card zones. (It remains 3 even if this leaves play.)
+<Opponent's Turn> At the beginning of the counter phase, if there are no cards in your strategy zones, you lose the game.","<出現時>これ以降、あなたの戦略カード置き場は３つになる。(これがいなくなっても３つのままになる)
+<相手のターン中>撃退フェイズ開始時、あなたの戦略カード置き場にカードがないなら、あなたはゲームに敗北する。"
+CARD_EBP03-014_NAME,Godzilla(2002),ゴジラ(2002)
+CARD_EBP03-014_DESC,"At the beginning of your end phase, you may discard 1 battle card from your hand. If you do, draw 1 card.",あなたのエンドフェイズ開始時、あなたの手札の交戦カードを１枚捨てることで、１枚引く。
+CARD_EBP03-015_NAME,Godzilla(2002),ゴジラ(2002)
+CARD_EBP03-015_DESC,"Whenever you discard a battle card from your hand, reduce your opponent's <Rage> by 1.",あなたが手札から交戦カードを捨てるたび、相手の<怒り>を１減らす。
+CARD_EBP03-016_NAME,Godzilla(2003),ゴジラ(2003)
+CARD_EBP03-016_DESC,"Whenever you discard a battle card from your hand, reduce your opponent's <Rage> by 1. If your opponent's <Rage> is 0, increase this card's <Rage> by 1 instead.",あなたが手札から交戦カードを捨てるたび、相手の<怒り>を１減らす。相手の<怒り>が０なら、かわりにこれの<怒り>を１増やす。
+CARD_EBP03-017_NAME,Godzilla(2003),ゴジラ(2003)
+CARD_EBP03-017_DESC,"Whenever you discard a battle card from your hand, reduce your opponent's <Rage> by 1. If your opponent's <Rage> is 0, increase this card's <Rage> by 1 instead.
+<Enter> You may discard 1 battle card from your hand. If you do, <Destroy> 1 of your opponent's rank 6 or lower battle cards.","あなたが手札から交戦カードを捨てるたび、相手の<怒り>を１減らす。相手の<怒り>が０なら、かわりにこれの<怒り>を１増やす。
+<出現時>あなたの手札の交戦カードを１枚捨てることで、相手の等級６以下の交戦カードを１枚<破壊>する。"
+CARD_EBP03-018_NAME,Mothra(imago)(1996),モスラ成虫(1996)
+CARD_EBP03-018_DESC,"<Resonance> Blue/Green
+ã»Monster cards in your deck must have <ãMothraã> .
+ã»Your deck must contain at least 10 strategy cards.
+(You can mix blue, green, and white, but your monster deck and main deck must satisfy the above.)","<共鳴>青/緑
+・怪獣カードは<《モスラ》>のみ。
+・戦略カードを10枚以上。
+（青、緑、白を混ぜて使えるが、怪獣デッキとメインデッキは上記を満たして構築する）"
+CARD_EBP03-019_NAME,Mothra(larva)(1996),モスラ幼虫(1996)
+CARD_EBP03-019_DESC,"When you successfully counter your opponent's monster card, if you have a card with <Base> in play, increase this card's <Rage> by 2.",あなたが相手の怪獣カードを撃退した時、あなたが<拠点>を置いているなら、これの<怒り>を２増やす。
+CARD_EBP03-020_NAME,Mothra Leo,モスラレオ
+CARD_EBP03-020_DESC,"When you successfully counter your opponent's monster card, if you have a card with <Base> in play, <Destroy> 1 opponent's rank 7 or lower battle card.",あなたが相手の怪獣カードを撃退した時、あなたが<拠点>を置いているなら、相手の等級７以下の交戦カードを１枚<破壊>する。
+CARD_EBP03-021_NAME,Rainbow Mothra,レインボーモスラ
+CARD_EBP03-021_DESC,<Enter> Return 1 strategy card with <Base> from your discard pile to your hand.,<出現時>あなたの捨て札から<拠点>を持つ戦略カードを１枚手札に戻す。
+CARD_EBP03-022_NAME,Aqua Mothra,アクアモスラ
+CARD_EBP03-022_DESC,"If you have a card with <Base> in play, this card gains +10,000 threat level.",あなたが<拠点>を置いているなら、これの脅威度＋10000。
+CARD_EBP03-023_NAME,Armor Mothra,鎧モスラ
+CARD_EBP03-023_DESC,"<Enter> Evolve all of your <ãMothraã> battle cards with <Evolution> .
+When you successfully counter your opponent's monster card, if you have a card with <Base> in play, retreat your opponent's monster card back to zone 1.","<出現時>あなたの<進化>と<《モスラ》>を両方持つ交戦カードをすべて進化させる。
+あなたが相手の怪獣カードを撃退した時、あなたが<拠点>を置いているなら、相手の怪獣カードをエリア１まで後退させる。"
+CARD_EBP03-024_NAME,Baragon(2001),婆羅護吽
+CARD_EBP03-024_DESC,"<Resonance> Green/Red
+ã»Monster cards in your deck must have <ãSacred Guardian Beastsã> .
+ã»Battle cards in your deck must be Rank 5 or higher.
+(You can mix green, red, and white, but your monster deck and main deck must satisfy the above.)","<共鳴>緑/赤
+・怪獣カードは<《護国聖獣》>のみ。
+・交戦カードは等級５以上のみ。
+（緑、赤、白を混ぜて使えるが、怪獣デッキとメインデッキは上記を満たして構築する）"
+CARD_EBP03-025_NAME,Mothra(imago)(2001),最珠羅
+CARD_EBP03-025_DESC,"<Your Turn> Reduce the rank of all battle cards in your opponent's zones by 1.
+<Enter> You may place 1 monster card from your discard pile under this card. If you do, advance your opponent's monster card to zone 5.","<あなたのターン中>相手のエリアにいる交戦カードすべての等級－１。
+<出現時>あなたの捨て札から怪獣カードを１枚、これの下に重ねることで、相手の怪獣カードをエリア５まで前進させる。"
+CARD_EBP03-026_NAME,Mothra(imago)(2001),最珠羅
+CARD_EBP03-026_DESC,"<Your Turn> If there are 3 or more cards under this card, reduce the rank of all battle cards in your opponent's zones by 2.
+<Enter> You may place 2 monster cards from your discard pile under this card. If you do, reduce your opponent's <Rage> by 1.","<あなたのターン中>これの下にカードが３枚以上あるなら、相手のエリアにいる交戦カードすべての等級－２。
+<出現時>あなたの捨て札から怪獣カードを２枚、これの下に重ねることで、相手の<怒り>を１減らす。"
+CARD_EBP03-027_NAME,Ghidorah(2001),魏怒羅
+CARD_EBP03-027_DESC,"<Your Turn> If there are 3 or more cards under this card, reduce the rank of all battle cards in your opponent's zones by 2.
+<When Invading> If there are 5 or more cards under this card, your opponent discards cards until they have 4 cards remaining in their hand.","<あなたのターン中>これの下にカードが３枚以上あるなら、相手のエリアにいる交戦カードすべての等級－２。
+<進攻時>これの下にカードが５枚以上あるなら、相手は自分の手札を４枚になるよう捨てる。"
+CARD_EBP03-028_NAME,Thousand-Year Dragon King Ghidorah,千年竜王キングギドラ
+CARD_EBP03-028_DESC,"<Your Turn> If there are 5 or more cards under this card, reduce the rank of all battle cards in your opponent's zones by 3.
+<Opponent's Turn> At the beginning of the counter phase, you may place 3 monster cards from your discard pile under this card. If you do, <Destroy> all rank 5 or lower battle cards in your opponent's zones 1â5.","<あなたのターン中>これの下にカードが５枚以上あるなら、相手のエリアにいる交戦カードすべての等級－３。
+<相手のターン中>撃退フェイズ開始時、あなたの捨て札から怪獣カードを３枚、これの下に重ねることで、相手のエリア１～５にいる等級５以下の交戦カードをすべて<破壊>する。"
+CARD_EBP03-029_NAME,Thousand-Year Dragon King Ghidorah,千年竜王キングギドラ
+CARD_EBP03-029_DESC,"<Your Turn> If there are 5 or more cards under this card, reduce the rank of all battle cards in your opponent's zones by 3.
+<When Invading> If there are 7 or more cards under this card, choose one:
+ã» <Destroy> all battle cards of both players.
+ã»Each player discards cards until they have 2 cards remaining in their hand.
+ã»Reduce each player's monster card's <Rage> by 2.","<あなたのターン中>これの下にカードが５枚以上あるなら、相手のエリアにいる交戦カードすべての等級－３。
+<進攻時>これの下にカードが７枚以上あるなら、以下を１つ行う。
+・各プレイヤーの交戦カードをすべて<破壊>する。
+・各プレイヤーは自分の手札を２枚になるよう捨てる。
+・各プレイヤーの怪獣カードの<怒り>を２減らす。"
+CARD_EBP03-030_NAME,SHIRASAGI : AC-3,AC-3 しらさぎ
+CARD_EBP03-030_DESC,"Your <ãMechagodzillaã> battle cards in your zone 8 gain +3000 counter power.
+<Enter> You may move 1 other battle card in your zones to an unoccupied zone.","あなたのエリア８にいる<《メカゴジラ》>を持つ交戦カードの撃退力＋3000。
+<出現時>あなたのエリアにいる他の交戦カードを１枚、空いているエリアに移動させてよい。"
+CARD_EBP03-031_NAME,MBT-MB90,90式メーサー殺獣光線車
+CARD_EBP03-031_DESC,"You may have any number of this card in your deck.
+<Enter> Look at the top card of your deck. You may send it to your discard pile or place it back on top of your deck.","これはデッキに好きな枚数入れてよい。
+<出現時>あなたの山札を上から１枚見て、それを捨て札にするか山札の上に置く。"
+CARD_EBP03-032_NAME,Mechagodzilla(1974),メカゴジラ(1974)
+CARD_EBP03-032_DESC,"At the beginning of your counter phase, if this card is in a zone adjacent to your monster card, you may discard all the cards in your hand. If you do, for the rest of the turn, this card gains +1000 counter power for each card discarded this way.",あなたの撃退フェイズ開始時、これがあなたの怪獣カードの隣接エリアにいるなら、あなたの手札をすべて捨てることで、そのターン中、この効果で捨てたカード１枚につき、これの撃退力＋1000。
+CARD_EBP03-033_NAME,Mechagodzilla(1975),メカゴジラ(1975)
+CARD_EBP03-033_DESC,"<Enter> You may discard 1 rank 5 or higher battle card from your hand. If you do, search your deck for up to 1 card named âSpace Beamâ, reveal it, add it to your hand, then shuffle your deck.",<出現時>あなたの手札の等級５以上の交戦カードを１枚捨てることで、あなたの山札から「スペースビーム」を１枚まで探して公開し、手札に加え、山札をシャッフルする。
+CARD_EBP03-034_NAME,Jet Jaguar(1973),ジェットジャガー(1973)
+CARD_EBP03-034_DESC,"<Enter> You may discard 1 strategy card from your hand. If you do, reduce your opponentâs <Rage> by 1.",<出現時>あなたの手札の戦略カードを１枚捨てることで、相手の<怒り>を１減らす。
+CARD_EBP03-035_NAME,Satsuma,特殊潜行艇さつま
+CARD_EBP03-035_DESC,"<Enter> If this card is in the same column as your opponentâs monster card, you may discard 1 strategy card from your hand. If you do, advance your monster card to zone 6.",<出現時>これが相手の怪獣カードと同じ縦列にいるなら、あなたの手札の戦略カードを１枚捨てることで、あなたの怪獣カードをエリア６まで前進させる。
+CARD_EBP03-036_NAME,Moguera,モゲラ
+CARD_EBP03-036_DESC,"<Enter> If this card was played from your hand and is in zone 8, search your deck for up to 1 âãã¢ã²ã©ãï¼ â battle card, play it, then shuffle your deck.",<出現時>手札から出現して、これがエリア８にいるなら、あなたの山札から<《モゲラ》>を持つ交戦カードを１枚まで探して出現させ、山札をシャッフルする。
+CARD_EBP03-037_NAME,Godzilla(2001),ゴジラ(2001)
+CARD_EBP03-037_DESC,"<Awakening8> <Enter> Increase your monster cardâs <Rage> by 1.
+<Awakening8> This card gains +5000 counter power.","<覚醒８><出現時>あなたの怪獣カードの<怒り>を１増やす。
+<覚醒８>これの撃退力＋5000。"
+CARD_EBP03-038_NAME,Multi-purpose Fighting System-3,3式機龍
+CARD_EBP03-038_DESC,"At the beginning of your counter phase, if your opponent has 2 or more <Rage> , <Destroy> all of your battle cards in zones adjacent to this card.",あなたの撃退フェイズ開始時、相手の<怒り>が２以上なら、これの隣接エリアにいるあなたの交戦カードをすべて<破壊>する。
+CARD_EBP03-039_NAME,Godzilla(2016) 4th Form,ゴジラ(2016) 第4形態
+CARD_EBP03-039_DESC,"Whenever your card is sent from a strategy zone to the discard pile, draw 1 card. (Also triggers when a strategy card is destroyed)
+If there are 5 or more strategy cards in your discard pile, this card gains +5000 counter power.","あなたのカードが戦略カード置き場から捨て札になった時、１枚引く。(例えば2枚捨て札にしたら2枚引く。破壊でも発動する) 
+あなたの捨て札に戦略カードが５枚以上あるなら、これの撃退力＋5000。"
+CARD_EBP03-040_NAME,Mechagodzilla(1975),メカゴジラ(1975)
+CARD_EBP03-040_DESC,"At the beginning of your counter phase, you may move this card to an unoccupied zone.
+If this is in the same column as your opponentâs monster card, this card gains +3000 counter power.","あなたの撃退フェイズ開始時、これを空いているエリアに移動させてよい。
+これが相手の怪獣カードと同じ縦列にいるなら、撃退力＋3000。"
+CARD_EBP03-041_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_EBP03-041_DESC,"<Enter> If this is in the same column as your opponent's monster card and your monster card has 2 or more <Rage> , reduce your opponent's <Rage> by 2.
+When this card would be <Destroy> , put this card on the bottom of your deck instead.","<出現時>これが相手の怪獣カードと同じ縦列にいて、あなたの怪獣カードの<怒り>が２以上なら、相手の<怒り>を２減らす。
+これが<破壊>される際、かわりにあなたの山札の下に置く。"
+CARD_EBP03-042_NAME,Ghogo,ゴーゴ
+CARD_EBP03-042_DESC,"When your monster card invades, if this is in zone 8, you may put this card under one of your <ãMothraã> battle cards with <Evolution> . If you do, evolve that <ãMothraã> battle card.",あなたの怪獣カードが進攻した時、これがエリア８にいるなら、これをあなたの<進化>と<《モスラ》>を両方持つ交戦カードの下に置くことで、その<《モスラ》>を持つ交戦カードを進化させる。
+CARD_EBP03-043_NAME,Star Falcon,スターファルコン
+CARD_EBP03-043_DESC,"<Awakening4> At the beginning of your counter phase, you may place this card under a card named ""Land Moguera"" in your zones. If you do, search your deck for up to 1 Moguera battle card, play it on top of the card named ""Land Moguera"" you chose for this effect, then shuffle your deck. (Active if your monster card is in zone 4 or beyond.)",<覚醒４>あなたの撃退フェイズ開始時、これをあなたのエリアにいる「ランドモゲラー」の下に重ねてよい。そうしたら、あなたの山札から<《モゲラ》>を持つ交戦カードを１枚まで探してそれらの上に重ねて出現させ、山札をシャッフルする。(あなたの怪獣カードがエリア４以降にいるなら有効)
+CARD_EBP03-044_NAME,Mothra(larva)(1992),モスラ幼虫(1992)
+CARD_EBP03-044_DESC,"<Evolution7> <ãMothraã> (At the beginning of your main phase, you may play a rank 7 or lower <ãMothraã> battle card from your deck by placing it on top of this card.)",<進化７><《モスラ》>(あなたのメインフェイズ開始時、山札から<《モスラ》>を持つ等級７以下の交戦カードをこれの上に重ねて出現させてよい)
+CARD_EBP03-045_NAME,Mothra(larva)(2003),モスラ幼虫(2003)
+CARD_EBP03-045_DESC,"If this card is in a zone adjacent to your monster card, this card gains +3000 counter power.",これがあなたの怪獣カードの隣接エリアにいるなら、撃退力＋3000。
+CARD_EBP03-046_NAME,Land Moguera,ランドモゲラー
+CARD_EBP03-046_DESC,"<Awakening4> <Enter> If âStar Falconâ is in your zones, choose one:
+ã» <Destroy> 1 of your opponentâs strategy cards.
+ã»Reduce your opponentâs <Rage> by 1.","<覚醒４><出現時>あなたのエリアに「スターファルコン」がいるなら、以下を１つ行う。
+・相手の戦略カードを１枚<破壊>する。
+・相手の<怒り>を１減らす。"
+CARD_EBP03-047_NAME,Garuda,ガルーダ
+CARD_EBP03-047_DESC,"At the beginning of your counter phase, if this card is in the same column as your opponentâs monster card, you may discard 1 battle card with <ãWeaponã> or <ãMechã> from your hand. If you do, search your deck for up to 1 battle card named âSuper Mechagodzillaâ, play it on top of this card, then shuffle your deck.",あなたの撃退フェイズ開始時、これが相手の怪獣カードと同じ縦列にいるなら、あなたの手札の、<《兵器》>か<《機械》>を持つ交戦カードを１枚捨てることで、あなたの山札から「スーパーメカゴジラ」の交戦カードを１枚まで探してこれの上に重ねて出現させ、山札をシャッフルする。
+CARD_EBP03-048_NAME,Mechagodzilla(1993),メカゴジラ(1993)
+CARD_EBP03-048_DESC,"<Enter> If there are 2 or more other battle cards in your zones, reduce your opponentâs <Rage> by 1.",<出現時>あなたのエリアに他の交戦カードが２枚以上いるなら、相手の<怒り>を１減らす。
+CARD_EBP03-049_NAME,Godzilla(2002),ゴジラ(2002)
+CARD_EBP03-049_DESC,"<Enter> If this card is in zone 8, draw 2 cards, then discard 2 cards.",<出現時>これがエリア８にいるなら、あなたは２枚引いて手札を２枚捨てる。
+CARD_EBP03-050_NAME,Rainbow Mothra,レインボーモスラ
+CARD_EBP03-050_DESC,"<Enter> If you have a card with <Base> in play, an opponentâs monster card with 20,000 or less threat level retreats backward by 1 zone.
+<Evolution8> <ãMothraã> (At the beginning of your main phase, you may play a rank 8 or lower <ãMothraã> battle card from your deck by placing it on top of this card.)","<出現時>あなたが<拠点>を置いているなら、相手の脅威度20000以下の怪獣カードを１エリア後退させる。
+<進化８><《モスラ》>(あなたのメインフェイズ開始時、山札から<《モスラ》>を持つ等級８以下の交戦カードをこれの上に重ねて出現させてよい)"
+CARD_EBP03-051_NAME,Godzilla Jr.,ゴジラジュニア
+CARD_EBP03-051_DESC,"If you would play this card on top of your <ãLittle Godzillaã> battle card, you may play this from your hand with its rank reduced by 2. (After being played, this card is rank 7.)
+This card gains +5000 counter power for each card under it.","これをあなたの<《リトルゴジラ》>を持つ交戦カードの上に重ねて出現させるなら、等級を－２して手札から出現できる。(出現後は等級７)
+これの下にあるカード１枚につき、撃退力＋5000。"
+CARD_EBP03-052_NAME,M.O.G.U.E.R.A.,M.O.G.E.R.A.
+CARD_EBP03-052_DESC,"When this card would be <Destroy> by an opponent's effect, add all cards under this card to your hand.
+<Awakening6> <Enter> If there are no cards under this card, search your deck for up to 1 card named ""Land Moguera"" and up to 1 card named ""Star Falcon"", place them under this card, then shuffle your deck.","これが相手の効果で<破壊>される際、これの下にあるカードをすべて手札に加える。
+<覚醒６><出現時>これの下にカードがないなら、あなたの山札から「ランドモゲラー」と「スターファルコン」をそれぞれ１枚まで探してこれの下に重ね、山札をシャッフルする。"
+CARD_EBP03-053_NAME,Super Mechagodzilla,スーパーメカゴジラ
+CARD_EBP03-053_DESC,"While your opponent's <Rage> is 0, this card cannot be <Destroy> by opponent's effects.
+If this card is in the same column as your opponent's monster card, this card gains +3000 counter power for each of your opponent's <Rage> .","相手の<怒り>が０なら、これは相手の効果で<破壊>されない。
+これが相手の怪獣カードと同じ縦列にいるなら、相手の<怒り>１につき、撃退力＋3000。"
+CARD_EBP03-054_NAME,Eternal Mothra,鎧モスラ・エターナル
+CARD_EBP03-054_DESC,"<Enter> If this card is in zone 8 and you have a card with <Base> in play, an opponentâs monster card with 60,000 or less threat level retreats backward by 1 zone.",<出現時>これがエリア８にいて、あなたが<拠点>を置いているなら、相手の脅威度60000以下の怪獣カードを１エリア後退させる。
+CARD_EBP03-055_NAME,Primitive Mothra,原始モスラ
+CARD_EBP03-055_DESC,<Enter> You may put up to 1 <ãMothraã> battle card from your discard pile on top of your deck.,<出現時>あなたの捨て札の<《モスラ》>を持つ交戦カードを１枚まで山札の上に置く。
+CARD_EBP03-056_NAME,Manda(2004),マンダ(2004)
+CARD_EBP03-056_DESC,"If this card is in the same column as your opponentâs monster card, this card gains +3000 counter power.",これが相手の怪獣カードと同じ縦列にいるなら、撃退力＋3000。
+CARD_EBP03-057_NAME,Desghidorah,デスギドラ
+CARD_EBP03-057_DESC,"<Enter> If your opponent has 3 or more unoccupied zones, <Destroy> 1 of your opponentâs strategy cards.
+If your opponent has no strategy cards in play, this card gains +3000 counter power.","<出現時>相手の空いているエリアが３つ以上なら、相手の戦略カードを１枚<破壊>する。
+相手が戦略カードを置いていないなら、これの撃退力＋3000。"
+CARD_EBP03-058_NAME,Zilla,ジラ
+CARD_EBP03-058_DESC,"At the beginning of your end phase, move this card to an adjacent zone horizontal to the zone this card currently occupies. Then, if this card is in a zone adjacent to your monster card, <Destroy> this card..",あなたのエンドフェイズ開始時、これを自身の右または左の隣接エリアに移動させる。その後、これがあなたの怪獣カードの隣接エリアにいるなら、これを<破壊>する。
+CARD_EBP03-059_NAME,Cretaceous King Ghidorah(1998),白亜紀型キングギドラ(1998)
+CARD_EBP03-059_DESC,<Revenge> Return up to 1 <ãKing Ghidorahã> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.),<逆襲>あなたの捨て札の<《キングギドラ》>を持つ怪獣カードを１枚まで手札に戻す。(カード効果か怪獣カードの移動で破壊されたら発動)
+CARD_EBP03-060_NAME,Mothra(imago)(1961),モスラ成虫(1961)
+CARD_EBP03-060_DESC,<Revenge> Reduce your opponentâs <Rage> by 1. (Activates when destroyed by a card effect or monster card movement.),<逆襲>相手の<怒り>を１減らす。(カード効果か怪獣カードの移動で破壊されたら発動)
+CARD_EBP03-061_NAME,Dagahra,ダガーラ
+CARD_EBP03-061_DESC,"When you discard this card from your hand for your monster card's invasion, you may play this card from your discard pile.
+<Awakening6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)","あなたの怪獣カードの進攻でこれを手札から捨てた時、あなたの捨て札からこれを出現させる。
+<覚醒６>これの撃退力＋3000。(あなたの怪獣カードがエリア６以降にいるなら有効)"
+CARD_EBP03-062_NAME,Baragon(2001),婆羅護吽
+CARD_EBP03-062_DESC,"When your opponent's monster card invades, <Destroy> this card.
+<Revenge> Return up to 1 âãè­·å½èç£ãï¼ â monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)","相手の怪獣カードが進攻した時、これを<破壊>する。
+<逆襲>あなたの捨て札の<《護国聖獣》>を持つ怪獣カードを１枚まで手札に戻す。(カード効果か怪獣カードの移動で破壊されたら発動)"
+CARD_EBP03-063_NAME,King Ghidorah(1998),キングギドラ(1998)
+CARD_EBP03-063_DESC,"<Your Turn> <Awakening4> When your monster card is played, you may play this card from your discard pile. (Active if your monster card is in zone 4 or beyond.)",<あなたのターン中><覚醒４>あなたの怪獣カードが出現した時、あなたの捨て札からこれを出現させてよい。(あなたの怪獣カードがエリア４以降にいるなら有効)
+CARD_EBP03-064_NAME,Mothra(imago)(2001),最珠羅
+CARD_EBP03-064_DESC,"<Enter> If an opponent's battle card was <Destroy> this turn, you may place 1 battle card from your discard pile under this card.
+<Awakening4> If there is a card under this card, this card gains +3000 counter power.
+<Awakening6> If there is a card under this card, this card gains an additional +3000 counter power.","<出現時>このターン相手の交戦カードが<破壊>されていたら、あなたの捨て札から交戦カードを１枚、これの下に重ねてよい。
+<覚醒４>これの下にカードがあるなら、撃退力＋3000。
+<覚醒６>これの下にカードがあるなら、さらに撃退力＋3000。"
+CARD_EBP03-065_NAME,King Ghidorah(1998),キングギドラ(1998)
+CARD_EBP03-065_DESC,"If there are 5 or more cards under your monster card, this card gains +3000 counter power.",あなたの怪獣カードの下にカードが５枚以上あるなら、これの撃退力＋3000。
+CARD_EBP03-066_NAME,Thousand-Year Dragon King Ghidorah,千年竜王キングギドラ
+CARD_EBP03-066_DESC,"If your opponent has 2 or more strategy cards in play, you may play this card from your hand with its rank reduced by 2. (After being played, this card is rank 8.)
+<Enter> <Destroy> 1 of your opponentâs strategy cards.","相手が戦略カードを２枚以上置いているなら、等級を－２して手札から出現できる。(出現後は等級８)
+<出現時>相手の戦略カードを１枚<破壊>する。"
+CARD_EBP03-067_NAME,Monster X,モンスターX
+CARD_EBP03-067_DESC,"<Your Turn> When this card is discarded from your hand, if there are 2 or more colors among battle cards in your zones, play this card and <Destroy> up to 1 of your opponent's lowest ranked battle cards in their zones.
+This card's counter power X is equal to 3000 multiplied by the number of different colors among other battle cards in your zones. (White also counts as a color.)","<あなたのターン中>これを手札から捨てた時、あなたのエリアにいる交戦カードが２色以上なら、これを出現させ、相手の最も等級の低い交戦カードを１枚まで<破壊>する。
+これの撃退力Xは、あなたのエリアにいる他の交戦カードの色の数を3000倍した値に等しい。"
+CARD_EBP03-068_NAME,Godzilla Flies,ゴジラ、空を飛ぶ
+CARD_EBP03-068_DESC,"<Your Turn> Your monster card cannot invade.
+Move your rank III or higher monster card in zone 3 vertically to zone 8. (Your battle cards in zones 4â7 will not be <Destroy> by this movement.)","<あなたのターン中>あなたの怪獣カードは進攻できない。
+エリア３にいるあなたの等級Ⅲ以上の怪獣カードをエリア８に縦方向に移動させる。(その際、エリア４～７にいるあなたの交戦カードは破壊されない)"
+CARD_EBP03-069_NAME,Space Beam,スペースビーム
+CARD_EBP03-069_DESC,"Your opponent discards cards until they have 4 cards remaining in their hand. Then, if there is a <ãMechagodzillaã> card in your zone 8, <Destroy> all opponentâs rank 5 or lower battle cards.",相手は自分の手札を４枚になるよう捨てる。さらにあなたのエリア８に<《メカゴジラ》>を持つカードがいるなら、相手の等級５以下の交戦カードをすべて<破壊>する。
+CARD_EBP03-070_NAME,Mechagodzilla Hangar,メカゴジラ格納庫
+CARD_EBP03-070_DESC,"<Base> When any monster card invades into zones 6â8, <Destroy> this card. (Cards with Base are not sent to the discard pile at the start phase.)
+<Your Turn> At the beginning of your counter phase, search your deck for up to 1 battle card with <ãWeaponã> or <ãMechã> , reveal it, add it to your hand, then shuffle your deck.","<拠点>いずれかの怪獣カードがエリア６～８に進攻した時、これを<破壊>する。(これは拠点である。拠点はスタートフェイズに捨て札にならない)
+<あなたのターン中>撃退フェイズ開始時、あなたの山札から、<《兵器》>か<《機械》>を持つ交戦カードを１枚まで探して公開し、手札に加え、山札をシャッフルする。"
+CARD_EBP03-071_NAME,Godzilla's Skeleton,ゴジラの骨
+CARD_EBP03-071_DESC,"When counting monster cards in your discard pile, treat this card as a monster card as well.
+Look at the top 4 cards of your deck, put any number of them on top of your deck in any order, send the rest to your discard pile, then draw 2 cards.","あなたが捨て札の怪獣カードを数える際、これは怪獣カードとしても扱う。
+あなたの山札を上から４枚見て、望む枚数山札の上に好きな順で置き、残りを捨て札にし、２枚引く。"
+CARD_EBP03-072_NAME,Petit Railgun,プチ・レールガン
+CARD_EBP03-072_DESC,[Destroy] all of your opponent's battle cards in the same column as your monster card.,あなたの怪獣カードと同じ縦列にいる相手の交戦カードをすべて<破壊>する。
+CARD_EBP03-073_NAME,All-Weapon Attack,オールウェポンアタック
+CARD_EBP03-073_DESC,"Reveal the top 3 cards of your deck and send them to your discard pile; <Destroy> all of your opponentâs battle cards in zones whose numbers match the ranks of the revealed cards, if your opponent's monster card occupies 1 of those zones, your opponentâs monster card retreats backward by 1 zone.",あなたの山札を上から３枚公開して捨て札にし、公開したカードの等級と同じ数字の相手のエリアにいる交戦カードをすべて<破壊>し、同じ数字の相手のエリアにいる怪獣カードを１エリア後退させる。
+CARD_EBP03-074_NAME,A Journey of 130 Million Years,1億3千万年の旅
+CARD_EBP03-074_DESC,"If your monster card is rank III or lower, play 1 monster card from your monster deck that shares a trait with it, whose its rank is 1 higher than your monster card's current rank. (This play does not increase <Rage> .)",あなたの怪獣カードが等級Ⅲ以下なら、それに＋１した等級で共通の特徴を持つ怪獣カードを１枚、あなたの怪獣デッキから出現させる。(この出現で<怒り>は増えない)
+CARD_EBP03-075_NAME,Yakusugi,屋久杉
+CARD_EBP03-075_DESC,"<Base> When any monster card invades into zones 6â8, <Destroy> this card. (Cards with Base are not sent to the discard pile at the start phase.)
+<Your Turn> At the beginning of your counter phase, evolve 1 of your rank 4 or lower battle cards with <Evolution> .","<拠点>いずれかの怪獣カードがエリア６～８に進攻した時、これを<破壊>する。(これは拠点である。拠点はスタートフェイズに捨て札にならない)
+<あなたのターン中>撃退フェイズ開始時、あなたの<進化>を持つ等級４以下の交戦カードを１枚進化させる。"
+CARD_EBP03-076_NAME,The Battle at Fukuoka Tower,福岡タワー決戦
+CARD_EBP03-076_DESC,"<Base> When any monster card invades into zones 6â8, <Destroy> this card. (Cards with Base are not sent to the discard pile at the start phase.)
+<Opponentâs Turn> For each monster or battle card in your zones 1, 5, and 8, your monster card gains +5000 threat level.","<拠点>いずれかの怪獣カードがエリア６～８に進攻した時、これを<破壊>する。(これは拠点である。拠点はスタートフェイズに捨て札にならない)
+<相手のターン中>あなたのエリア１、５、８にいる怪獣カードか交戦カード１枚につき、あなたの怪獣カードの脅威度＋5000。"
+CARD_EBP03-077_NAME,Rebirth of Mothra 3,モスラ3 キングギドラ来襲
+CARD_EBP03-077_DESC,"Choose one:
+ã»Return 1 rank II or lower monster card from your discard pile to your hand.
+ã»If there are 5 or more cards under your monster card, return 1 monster card from your discard pile to your hand.","以下を１つ行う。
+・あなたの捨て札の等級Ⅱ以下の怪獣カードを１枚手札に戻す。
+・あなたの怪獣カードの下にカードが５枚以上あるなら、あなたの捨て札の怪獣カードを１枚手札に戻す。"
+CARD_EBP03-078_NAME,Megalon and Gigan:Villain Tag Team,メガロとガイガン、悪役タッグ
+CARD_EBP03-078_DESC,"If there are 3 or more battle cards in your opponentâs zones, <Destroy> 1 battle card from the rightmost and 1 from the leftmost position from among them (from your perspective).",相手のエリアにいる交戦カードが３枚以上なら、それらのうち、あなたから見て最も右側と左側のカードからそれぞれ１枚を<破壊>する。
+CARD_EBP03-079_NAME,Godzilla Captured!,ゴジラ捕獲！
+CARD_EBP03-079_DESC,Set your opponentâs <Rage> to 0.,相手の<怒り>を０にする。
+CARD_EBP03-080_NAME,Odo Island,大戸島
+CARD_EBP03-080_DESC,"<Base> When any monster card invades into zones 6â8, <Destroy> this card. (Cards with Base are not sent to the discard pile at the start phase.)
+<Your Turn> At the beginning of your counter phase, you may play up to 1 <ãGodzillaã> battle card from your hand.","<拠点>いずれかの怪獣カードがエリア６～８に進攻した時、これを<破壊>する。(これは拠点である。拠点はスタートフェイズに捨て札にならない)
+<あなたのターン中>撃退フェイズ開始時、あなたの手札の<《ゴジラ》>を持つ交戦カードを１枚まで出現させる。"
+CARD_EBP04-001_NAME,Godzilla (2004),ゴジラ(2004)
+CARD_EBP04-001_DESC,"<Opponent's Turn> At the beginning of their counter phase, if there are no battle cards in the same column as this card, this card gains +1 <Rage>.",<相手のターン中>撃退フェイズ開始時、これと同じ縦列に相手の交戦カードがいないなら、これの<怒り>を１増やす。
+CARD_EBP04-002_NAME,Godzilla (2004),ゴジラ(2004)
+CARD_EBP04-002_DESC,"Each time you <Destroy> an opponent's battle card in the same column as this card, if you have a Rank 1 strategy card in play, your opponent discards until they have 2 cards in hand.",これと同じ縦列にいる相手の交戦カードが<破壊>されるたび、あなたが等級１の戦略カードを置いているなら、相手は自分の手札を２枚になるよう捨てる。
+CARD_EBP04-003_NAME,Godzilla (2004),ゴジラ(2004)
+CARD_EBP04-003_DESC,"<Burst II>
+<Enter> If you have a Rank 1 strategy card in play, <Destroy> one of your opponent's Rank 6 or lower battle cards.","<強襲Ⅱ>(これは等級Ⅱから出現できる。そうしたら、そのターンのエンドフェイズ開始時にこのカード１枚を捨て札にする)
+<出現時>あなたが等級１の戦略カードを置いているなら、相手の等級６以下の交戦カードを１枚<破壊>する。"
+CARD_EBP04-005_NAME,Godzilla 2004,ゴジラ(2004)
+CARD_EBP04-005_DESC,"<Enter> If you have 1 or fewer strategy cards in your strategy zones, search your deck for 1 Rank 1 Strategy card, reveal it and place it in your strategy zones, shuffle your deck, and resolve the placed card's effect.
+Every time you <Destroy> an opponent's battle card in the same column as this, if you have 3 or more Rank 1 strategy cards in your discard pile, <Destroy> all of your opponent's battle cards equal to or less than the Rank of the battle card you <Destroy>.","<出現時>あなたが置いている戦略カードが１枚以下なら、あなたの山札から等級１の戦略カードを１枚まで探して置き、山札をシャッフルし、置いたカードを発動させる。
+これと同じ縦列にいる相手の交戦カードが<破壊>されるたび、あなたの捨て札の等級１の戦略カードが３枚以上なら、その<破壊>されたカードの等級以下の相手の交戦カードをすべて<破壊>する。"
+CARD_EBP04-009_NAME,Godzilla (2016) 3rd Form,ゴジラ(2016) 第3形態
+CARD_EBP04-009_DESC,"<Opponent's Turn> At the beginning of their counter phase, you may discard 1 strategy card from your hand to <Destroy> all of your opponent's Rank 6 or lower battle cards in the same column as this.",<相手のターン中>撃退フェイズ開始時、あなたの手札の戦略カードを１枚捨てることで、これと同じ縦列にいる相手の等級６以下の交戦カードをすべて<破壊>する。
+CARD_EBP04-010_NAME,Godzilla (2023),ゴジラ(2023)
+CARD_EBP04-010_DESC,"During your start phase, when you would set this card's <Rage> to 0, if its <Rage> is 2 or higher you may discard 2 cards from your hand to set its <Rage> to 2 instead.",あなたのスタートフェイズにこれの<怒り>を０にする際、これの<怒り>が２以上なら、あなたの手札を２枚捨てることで、かわりにこれの<怒り>を２にする。
+CARD_EBP04-011_NAME,Type 3 Kiryu (Modified),3式機龍〈改〉
+CARD_EBP04-011_DESC,"If you have 1 or more Blue and Red battle cards each in your zones, this gains +10,000 threat.",あなたのエリアに赤と青の交戦カードがそれぞれ１枚以上いるなら、これの脅威度＋10000。
+CARD_EBP04-012_NAME,Biollante Plant Beast Form,ビオランテ植獣形態
+CARD_EBP04-012_DESC,"You may place 1 Rank III monster card from your monster deck underneath your Rank II <Biollante> card to play this card from your hand.
+<Enter> Place [Tentacle] tokens in every area adjacent to this card (Maximum is 3).","あなたの怪獣デッキから等級Ⅲのカードを１枚、あなたの等級Ⅱで<《ビオランテ》>を持つ怪獣カードの下に重ねることで、これを手札から出現できる。(等級Ⅱからこれを出現させられる)
+<出現時>「触手」トークンをこれの隣接エリアすべてに出現させる。(トークンはデッキとは別に用意し、可能な限り出現させる。最大３枚)"
+CARD_EBP04-013_NAME,Godzilla (2000),ゴジラ(2000)
+CARD_EBP04-013_DESC,"<Enter> If you have 5 or more monster cards in your discard pile, reveal and discard the top 3 cards of your deck. Of the revealed cards' ranks, <Destroy> all of your opponent's battle cards in the same zone number or retreat your opponent's monster card in the same zone number backwards by 1 zone.",<出現時>あなたの捨て札の怪獣カードが５枚以上なら、あなたの山札を上から３枚公開して捨て札にし、公開したカードの等級と同じ数字の相手のエリアにいる交戦カードをすべて<破壊>し、同じ数字の相手のエリアにいる怪獣カードを１エリア後退させる。
+CARD_EBP04-014_NAME,Godzilla (2002),ゴジラ(2002)
+CARD_EBP04-014_DESC,"Each time you discard a battle card from your hand and your opponent has 0 <Rage>, <Destroy> 1 of your opponent's rank 4 or lower battle cards.
+<Opponent's Turn> <Awakening 6> At the beginning of the counter phase, if you have 2 or more cards in your zones you may discard 1 battle card from your hand so that during the turn this card cannot be countered by 30,000 or less counter power.","あなたが手札から交戦カードを捨てるたび、相手の<怒り>が０なら、相手の等級４以下の交戦カードを１枚<破壊>する。
+<相手のターン中><覚醒６>撃退フェイズ開始時、あなたのエリアに交戦カードが２枚以上いるなら、あなたの手札の交戦カードを１枚捨てることで、そのターン中、これは撃退力30000以下では撃退されない。(下がりもしない)"
+CARD_EBP04-015_NAME,Godzilla (2003),ゴジラ(2003)
+CARD_EBP04-015_DESC,"Each time you discard a battle card from your hand and your opponent has 0 <Rage>, <Destroy> 1 of your opponent's Rank 6 or lower battle cards.",あなたが手札から交戦カードを捨てるたび、相手の<怒り>が０なら、相手の等級６以下の交戦カードを１枚<破壊>する。
+CARD_EBP04-016_NAME,Godzilla (Fest Godzilla II),ゴジラ(フェス・ゴジラⅡ)
+CARD_EBP04-016_DESC,"If this is in a zone greater than or equal to your opponent's monster card's, this gains +3000 threat.",これのいるエリアの数字が相手の怪獣カードがいるエリアの数字以上なら、これの脅威度＋3000。
+CARD_EBP04-017_NAME,Godzilla (Fest Godzilla II),ゴジラ(フェス・ゴジラⅡ)
+CARD_EBP04-017_DESC,"If this card is in a zone greater than or equal to your opponent's monster card, add +5000 to your total counter power.",これのいるエリアの数字が相手の怪獣カードがいるエリアの数字以上なら、あなたの撃退力の合計を＋5000。
+CARD_EBP04-018_NAME,Godzilla (Fest Godzilla II),ゴジラ(フェス・ゴジラⅡ)
+CARD_EBP04-018_DESC,"<Enter> If you have 5 or more monster cards in your discard pile, <Destroy> 1 of your opponents Rank 6 or lower battle cards.
+If this is in a zone equal to or greater than your opponent's monster card's, increase this card's threat by +10000.","<出現時>あなたの捨て札の怪獣カードが５枚以上なら、相手の等級６以下の交戦カードを１枚<破壊>する。
+これのいるエリアの数字が相手の怪獣カードがいるエリアの数字以上なら、これの脅威度＋10000。"
+CARD_EBP04-019_NAME,Godzilla (Fest Godzilla II),ゴジラ(フェス・ゴジラⅡ)
+CARD_EBP04-019_DESC,"If this is in a zone equal to or greater than your opponent's monster card's and you have 5 or more monster cards in your discard pile, increase this card's threat by +10000 and add +10000 to your total counter power.",これのいるエリアの数字が相手の怪獣カードがいるエリアの数字以上で、あなたの捨て札の怪獣カードが５枚以上なら、これの脅威度＋10000、あなたの撃退力の合計を＋10000。
+CARD_EBP04-020_NAME,Aqua Mothra,アクアモスラ
+CARD_EBP04-020_DESC,"<Enter> If you have a Base in play, <Destroy> all battle cards adjacent to your opponent's monster card.",<出現時>あなたが<拠点>を置いているなら、相手の怪獣カードの隣接エリアにいる相手の交戦カードをすべて<破壊>する。
+CARD_EBP04-021_NAME,Godzilla Aquatilius,ゴジラアクアティリス
+CARD_EBP04-021_DESC,"At the beginning of your counter phase, you may discard the top card of your deck. If that card is a green battle card, your opponent discards until they have 4 cards in hand.",あなたの撃退フェイズ開始時、あなたの山札を上から１枚捨て札にする。それが緑の交戦カードなら、相手は自分の手札を４枚になるよう捨てる。
+CARD_EBP04-022_NAME,Godzilla Amphibia,ゴジラアンフィビア
+CARD_EBP04-022_DESC,"When this card is successfully countered, reveal 5 cards from the top of your deck. For each green battle card revealed, <Destroy> 1 6000 or less counter power battle card in your opponent's areas 1-5.",これが撃退された時、あなたの山札を上から５枚公開して捨て札にし、公開した緑の交戦カード１枚につき、相手のエリア１～５にいる撃退力6000以下の交戦カードを１枚<破壊>する。
+CARD_EBP04-023_NAME,Godzilla Telestorius,ゴジラテレストリス
+CARD_EBP04-023_DESC,"For each of your opponent's battle cards in the same column as this card, this card gains +10,000 threat.",これと同じ縦列にいる相手の交戦カード１枚につき、脅威度＋10000。
+CARD_EBP04-024_NAME,Godzilla Ultima,ゴジラウルティマ
+CARD_EBP04-024_DESC,"<Enter> If you have 10 or more green battle cards in your discard pile, <Destroy> a desired number of your opponent's battle cards until their total Ranks equal 7 or less combined.
+For each green battle card in your discard pile this card gains 1,000 threat.","<出現時>あなたの捨て札の緑の交戦カードが10枚以上なら、相手の交戦カードを等級が合計７以下になるよう望む枚数<破壊>する。
+あなたの捨て札の緑の交戦カード１枚につき、これの脅威度＋1000。"
+CARD_EBP04-025_NAME,Godzilla Ultima,ゴジラウルティマ
+CARD_EBP04-025_DESC,"<Enter> <Destroy> 1 of your opponent's strategy cards.
+<When Invading> If you have 10 or more green battle cards in your discard pile, your opponent discards until they have 3 cards in hand.","<出現時>相手の戦略カードを１枚<破壊>する。
+<進攻時>あなたの捨て札の緑の交戦カードが10枚以上なら、相手は自分の手札を３枚になるよう捨てる。"
+CARD_EBP04-026_NAME,Spacegodzilla,スペースゴジラ
+CARD_EBP04-026_DESC,"<When Invading> Play 3 [Crystal] tokens.
+<Awakening 6> If you have 3 or more [Crystal] tokens in your zones, increase your counter power by +10,000.","<進攻時>「結晶体」トークンを３枚出現させる。(トークンはデッキとは別に用意する)
+<覚醒６>あなたのエリアに「結晶体」が３枚以上いるなら、あなたの撃退力の合計を＋10000。(これがエリア６以降にいるなら有効)"
+CARD_EBP04-027_NAME,Gigan (2004),ガイガン(2004)
+CARD_EBP04-027_DESC,"This card cannot advance nor invade.
+<Your Turn> At the beginning of your main phase, you may discard a <Invade 2> card from your hand. If you do so this card is countered.
+<Opponent's Turn> At the beginning of their main phase, your opponent may discard a <Invade 2> card from their hand. If they do so this card is countered.","これは前進も進攻もできない。
+<あなたのターン中>メインフェイズ開始時、あなたの手札の<足２>を１枚捨ててよい。捨てたら、これを撃退する。
+<相手のターン中>メインフェイズ開始時、相手は自分の手札の<足２>を１枚捨ててよい。捨てたら、これを撃退する。"
+CARD_EBP04-028_NAME,Gigan (2004),ガイガン(2004)
+CARD_EBP04-028_DESC,"<Opponent's Turn> All strategy cards of your opponent gain +3 in rank. (After play, they are returned to their original ranks)
+<Opponent's Turn> Each time your opponent plays a battle card from their main deck, your opponent discards until they have 1 card remaining in their hand.","<相手のターン中>相手の手札の戦略カードすべての等級＋３。(置いた後は元の等級)
+<相手のターン中>相手が山札から交戦カードを出現させるたび、相手は自分の手札を１枚捨てる。"
+CARD_EBP04-029_NAME,Gigan (2004),ガイガン(2004)
+CARD_EBP04-029_DESC,"Your opponent cannot discard a <Invade 1> card to invade.
+<Enter> If your opponent's monster card is in Zones 1-5, you may return up to 1 <Gigan> monster card from your discard pile to your hand.","相手は進攻で手札から<足１>を捨てることができない。
+<出現時>相手の怪獣カードがエリア１～５にいるなら、あなたの捨て札の<《ガイガン》>を持つ怪獣カードを１枚まで手札に戻す。"
+CARD_EBP04-030_NAME,Modified Gigan,改造ガイガン
+CARD_EBP04-030_DESC,"<Opponent's Turn> Your opponent cannot draw cards during their end phase.
+<Enter> <Destroy> 1 of your opponent's battle cards in zones 1-5.","<相手のターン中>エンドフェイズ中、相手はカードを引くことができない。
+<出現時>相手のエリア１～５にいる交戦カードを１枚<破壊>する。"
+CARD_EBP04-031_NAME,Monster X,モンスターX
+CARD_EBP04-031_DESC,"This card's X Threat increases by +3000 for each color of battle card in your zones. In addition, if the opponent has 1 or less battle cards in their zones, they cannot counter this.
+<Resonance> Red, Blue, Green.
+ã»You may only use Battle Cards with <Final Wars>.","これの脅威度Xは、あなたのエリアにいる交戦カードの色数を3000倍した値に等しく、相手のエリアにいる交戦カードが１枚以下なら、これは撃退されない。
+<共鳴>赤/青/緑 
+・交戦カードは<《FINAL WARS》>のみ。
+(赤、青、緑、白を混ぜて使えるが、怪獣デッキとメインデッキは上記を満たして構築する)"
+CARD_EBP04-032_NAME,Monster X,モンスターX
+CARD_EBP04-032_DESC,"This card's threat level X is equal to 10,000 times the number of different colors among battle cards in your zones. If your opponent's zones have 1 or fewer battle cards, this card cannot be countered.",これの脅威度Xは、あなたのエリアにいる交戦カードの色数を10000倍した値に等しく、相手のエリアにいる交戦カードが１枚以下なら、これは撃退されない。
+CARD_EBP04-033_NAME,Kaiser Ghidorah,カイザーギドラ
+CARD_EBP04-033_DESC,"You can play this on top of a <Monster X> monster card in your zones.
+<Enter> If you have 3 or more colors of battle cards in your discard pile, decrease your opponent's <Rage> by 1.","これはあなたのエリアにいる<《モンスターX》>を持つ怪獣カードの上に重ねて出現できる。
+<出現時>あなたの捨て札の交戦カードの色数が３以上なら、相手の<怒り>を１減らす。"
+CARD_EBP04-035_NAME,Kaiser Ghidorah,カイザーギドラ
+CARD_EBP04-035_DESC,"<Enter> <Destroy> one card at a time, in order, from your opponents lowest numbered area with a battle card up to the number of cards equal to the number of colors of battle cards in your discard pile.",<出現時>あなたの捨て札の交戦カードの色数と同じ枚数、相手の最も数字の小さいエリアにいる交戦カードから１枚ずつ順に<破壊>する。
+CARD_EBP04-036_NAME,Kaiser Ghidorah,カイザーギドラ
+CARD_EBP04-036_DESC,This card gains +5000 threat for each color of battle card in your discard pile.,あなたの捨て札の交戦カードの色数１につき、これの脅威度＋5000。
+CARD_EBP04-037_NAME,Minilla (2004),ミニラ(2004)
+CARD_EBP04-037_DESC,"If you have a rank 1 strategy card in play, this card gains +3000 counter power.",あなたが等級１の戦略カードを置いているなら、これの撃退力＋3000。
+CARD_EBP04-038_NAME,Kamacuras,カマキラス(2004)
+CARD_EBP04-038_DESC,"If there are 2 or more other battle cards in your zones, this card gains +3000 counter power.",あなたのエリアに他の交戦カードが２枚以上いるなら、これの撃退力＋3000。
+CARD_EBP04-039_NAME,Zilla,ジラ
+CARD_EBP04-039_DESC,"<Opponent's Turn> Each time one of your non-red battle cards are <Destroy>, move this card to an area adjacent to your monster card.",<相手のターン中>あなたの、赤でない交戦カードが<破壊>されるたび、これをあなたの怪獣カードの隣接エリアに移動させる。
+CARD_EBP04-040_NAME,Anguirus (2004),アンギラス(2004)
+CARD_EBP04-040_DESC,"<Awakening 6> <Enter> If you have 1 or more <Rodan> and <King Caesar> battle cards each in your zones, increase your monster card's <Rage> by 3.",<覚醒６><出現時>あなたのエリアに、<《ラドン》>を持つ交戦カードと<《キングシーサー》>を持つ交戦カードがそれぞれ１枚以上いるなら、あなたの怪獣カードの<怒り>を３増やす。(あなたの怪獣カードがエリア６以降にいるなら有効)
+CARD_EBP04-041_NAME,New Gotengo,新・轟天号
+CARD_EBP04-041_DESC,"At the beginning of your counter phase, if this card is in area 8 trigger all <Enter> abilities of your monster card.
+<Awakening 6> This card gains +3000 counter power.","あなたの撃退フェイズ開始時、これがエリア８にいるなら、あなたの怪獣カードが持つ<出現時>能力をすべて誘発させる。
+<覚醒６>これの撃退力＋3000。(あなたの怪獣カードがエリア６以降にいるなら有効)"
+CARD_EBP04-042_NAME,Mothra Imago (2004),モスラ成虫(2004)
+CARD_EBP04-042_DESC,"<Enter> If you have 3 or more rank 1 strategy cards in your discard pile, decrease your opponent's <Rage> by 1.",<出現時>あなたの捨て札の等級１の戦略カードが３枚以上なら、相手の<怒り>を１減らす。
+CARD_EBP04-043_NAME,Multipurpose Fighting System-3,3式機龍
+CARD_EBP04-043_DESC,"At the beginning of your counter phase, you may place a <Invade 2> card from your Strategy Zones under this.
+If there is a card under this card, this card gains +10,000 counter power.","あなたの撃退フェイズ開始時、あなたの戦略カード置き場から<足２>を１枚、これの下に重ねてよい。
+これの下にカードがあるなら、撃退力＋10000。"
+CARD_EBP04-044_NAME,Hedorah (2004),ヘドラ(2004)
+CARD_EBP04-044_DESC,"<Awakening 4> For each non-red battle card in your zones, you can play this from your hand at -2 rank.",<覚醒４>あなたのエリアにいる、赤でない交戦カード１枚につき、等級を－２して手札から出現できる。(あなたの怪獣カードがエリア４以降にいるなら有効。出現後は等級８)
+CARD_EBP04-045_NAME,Manda (2004),マンダ(2004)
+CARD_EBP04-045_DESC,"When you play this from your hand, you may discard a non-blue battle card from your hand to decrease this card's rank by -2 (afterwards it's 3).",これを手札から出現させる際、あなたの手札の、青でない交戦カードを１枚捨てるなら、等級を－２して出現できる。(出現後は等級３)
+CARD_EBP04-046_NAME,Rodan (2004),ラドン(2004)
+CARD_EBP04-046_DESC,"When this card is discarded from your hand by your opponent's effect you may play this card.
+<Awakening 6> This gains +3000 counter power.","相手の効果でこれを手札から捨てた時、これを出現させてよい。
+<覚醒６>これの撃退力＋3000。(あなたの怪獣カードがエリア６以降にいるなら有効)"
+CARD_EBP04-047_NAME,Monster X,モンスターX
+CARD_EBP04-047_DESC,"This card's counter power X is equal to 3000 times the number of different colors among battle cards in your zones (white included).
+<Evolution 8> <Kaiser Ghidorah>","これの撃退力Xは、あなたのエリアにいる他の交戦カードの色数を3000倍した値に等しい。(白も色として数える)
+<進化８><《カイザーギドラ》>(あなたのメインフェイズ開始時、山札から<《カイザーギドラ》>を持つ等級８以下の交戦カードをこれの上に重ねて出現させてよい)"
+CARD_EBP04-048_NAME,Little Godzilla,リトルゴジラ
+CARD_EBP04-048_DESC,Your in play strategy cards cannot be <Destroy> by your opponents effects.,あなたが置いている戦略カードは相手の効果で<破壊>されない。
+CARD_EBP04-049_NAME,Ebirah (2004),エビラ(2004)
+CARD_EBP04-049_DESC,"At the beginning of your counter phase, if you have a Rank 8 or higher battle card in play, reveal and discard 1 card from the top of your deck. If it is a non-blue card decrease your opponent's <Rage> by -2. If it's a blue card <Destroy> 1 of your rank 8 or higher battle cards.",あなたの撃退フェイズ開始時、あなたの等級８以上の交戦カードがいるなら、あなたの山札を上から１枚公開して捨て札にし、公開したカードが青でないなら相手の<怒り>を２減らし、青ならあなたの等級８以上の交戦カードを１枚<破壊>する。
+CARD_EBP04-050_NAME,Battra Larva,バトラ幼虫
+CARD_EBP04-050_DESC,"Any time your monster card invades and this is in Area 8, enact 1 of the following:
+ã»Draw 1 card and discard 1 card from your hand.
+ã»Discard 1 card from your hand to decrease your opponent's <Rage> by 1.","あなたの怪獣カードが進攻するたび、これがエリア８にいるなら、以下を１つ行う。
+・あなたは１枚引いて手札を１枚捨てる。
+・あなたの手札を１枚捨てることで、相手の<怒り>を１減らす。"
+CARD_EBP04-052_NAME,Mothra Imago (1992),モスラ成虫(1992)
+CARD_EBP04-052_DESC,"When this card is discarded from your hand by your opponent's effect and their monster card is in zones 4-8 you may play this card.
+Any time you discard cards from your hand by your opponent's effects, and this is in area 8, increase your <Rage> by 2.","相手の効果でこれを手札から捨てた時、相手の怪獣カードがエリア４～８にいるなら、これを出現させてよい。
+相手の効果であなたが手札を捨てるたび、これがエリア８にいるなら、あなたの怪獣カードの<怒り>を２増やす。"
+CARD_EBP04-053_NAME,MOGERA,M.O.G.E.R.A.
+CARD_EBP04-053_DESC,<Enter> You may choose to swap zones of any 2 battle cards in your zones.,<出現時>あなたのエリアにいる交戦カードを２枚選び、それらのいるエリアを入れ替えてよい。
+CARD_EBP04-054_NAME,Destoroyah Perfect Form,デストロイア完全体
+CARD_EBP04-054_DESC,"For each Strategy Card you have in play, this card gains 5000 counter power.
+For each strategy card your opponent has in play, this card loses 5000 counter power.","あなたが置いている戦略カード１枚につき、これの撃退力＋5000。
+相手が置いている戦略カード１枚につき、これの撃退力－5000。"
+CARD_EBP04-055_NAME,Higher Dimensional Monster Ghidorah,高次元怪獣ギドラ
+CARD_EBP04-055_DESC,"<Enter> You may <Destroy> 4 other green battle cards in your zones. If you don't do so, <Destroy> this.",<出現時>あなたのエリアにいる他の緑の交戦カードを４枚<破壊>してよい。そうしないなら、これを<破壊>する。
+CARD_EBP04-056_NAME,Kumonga (2004),クモンガ(2004)
+CARD_EBP04-056_DESC,"If this card is in the same column as your opponent's monster card, and the opponent has 0 <Rage>, your opponent cannot invade.",これが相手の怪獣カードと同じ縦列にいて、相手の<怒り>が０なら、相手は進攻できない。
+CARD_EBP04-057_NAME,King Caesar (2004),キングシーサー(2004)
+CARD_EBP04-057_DESC,"If there is a non-green battle card in your zones, this gains +3000 counter power.",あなたのエリアに、緑でない交戦カードがいるなら、これの撃退力＋3000。
+CARD_EBP04-058_NAME,Servum,セルヴァム
+CARD_EBP04-058_DESC,"<Awakening 4> If this card is in an area adjacent to your monster card, this card gains +3000 counter power.",<覚醒４>これがあなたの怪獣カードの隣接エリアにいるなら、撃退力＋3000。(あなたの怪獣カードがエリア４以降にいるなら有効)
+CARD_EBP04-059_NAME,Rodan (2021),ラドン(2021)
+CARD_EBP04-059_DESC,"You may have any number of this card in your deck.
+<Revenge> If you have 5 or more green battle cards in your discard pile, you may return up to 1 <Rodan> battle card from your discard to your hand.","これはデッキに好きな枚数入れてよい。
+<逆襲>あなたの捨て札の緑の交戦カードが５枚以上なら、あなたの捨て札の<《ラドン》>を持つ交戦カードを１枚まで手札に戻す。(カード効果か怪獣カードの移動で破壊されたら発動。これも戻せる)"
+CARD_EBP04-060_NAME,Valkyrie,ヴァルチャー
+CARD_EBP04-060_DESC,If you have a [Mechagodzilla City] in play this card gains +3000 counter power.,あなたが「メカゴジラシティ」を置いているなら、これの撃退力＋3000。
+CARD_EBP04-061_NAME,Mechagodzilla (2018),メカゴジラ(2018)
+CARD_EBP04-061_DESC,"<Enter> If you have 4 or more other green battle cards in your zones, you may discard 1 green card from your deck and then shuffle your deck.",<出現時>あなたのエリアに他の緑の交戦カードが４枚以上いるなら、あなたの山札から緑のカードを１枚まで探して捨て札にし、山札をシャッフルする。
+CARD_EBP04-062_NAME,Anguirus (2021),アンギラス(2021)
+CARD_EBP04-062_DESC,"<Revenge> If you have 10 or more green battle cards in your discard pile, increase your monster card's <Rage> for each of your opponent's battle cards in the same column as your monster card.",<逆襲>あなたの捨て札の緑の交戦カードが10枚以上なら、あなたの怪獣カードと同じ縦列にいる相手の交戦カード１枚につき、あなたの怪獣カードの<怒り>を１増やす。
+CARD_EBP04-063_NAME,Godzilla Filius,ゴジラ・フィリウス
+CARD_EBP04-063_DESC,<Revenge> Return up to 1 [Godzilla Earth] battle card from your discard pile to your hand.,<逆襲>あなたの捨て札の「ゴジラ・アース」の交戦カードを１枚まで手札に戻す。(カード効果か怪獣カードの移動で破壊されたら発動)
+CARD_EBP04-064_NAME,Jet Jaguar (2021),ジェットジャガー(2021)
+CARD_EBP04-064_DESC,"At the beginning of your counter phase, if you have 10 or more green battle cards in your discard pile, you may <Destroy> this to reduce your opponent's <Rage> by 3.",あなたの撃退フェイズ開始時、あなたの捨て札の緑の交戦カードが10枚以上なら、これを<破壊>することで、相手の<怒り>を３減らす。
+CARD_EBP04-065_NAME,Godzilla Earth,ゴジラ・アース
+CARD_EBP04-065_DESC,"If this card is in the same column as your opponent's monster card, this card gains +3000 counter power.",これが相手の怪獣カードと同じ縦列にいるなら、撃退力＋3000。
+CARD_EBP04-066_NAME,Gigan (2004),ガイガン(2004)
+CARD_EBP04-066_DESC,"<Opponent's Turn> If there is a Battle card in your zones that is not green, all strategy cards in your opponent's hand gain +2 in rank (after play they return to their original rank).",<相手のターン中>あなたのエリアに、緑でない交戦カードがいるなら、相手の手札の戦略カードすべての等級＋２。(置いた後は元の等級)
+CARD_EBP04-067_NAME,Godzilla Earth,ゴジラ・アース
+CARD_EBP04-067_DESC,"You can only play this card in Area 8.
+<Enter> Play 1 [Godzilla Earth] Token in your area 3. If this card and the token are not in an area, or they are moved, <Destroy> both.","これはエリア８にしか出現できない。
+<出現時>あなたのエリア３に「ゴジラ・アース」トークンを１枚出現させる。これとそのトークンは、どちらかがエリアにいない、または移動すると両方<破壊>される。"
+CARD_EBP04-068_NAME,Kaiser Ghidorah,カイザーギドラ
+CARD_EBP04-068_DESC,"<Your Turn> If you have no strategy cards in play, decrease the ranks of strategy cards in your hand by -1 for each color of battle card in your discard pile.",<あなたのターン中>あなたが置いている戦略カードがないなら、あなたの捨て札の交戦カードの色数１につき、あなたの手札の戦略カードすべての等級－１。(置いた後は元の等級)
+CARD_EBP04-069_NAME,Gezora,ゲゾラ
+CARD_EBP04-069_DESC,"<Awakening 4> If this is in the same column as your opponent's blue monster card, this gains +5000 counter power.",<覚醒４>これが相手の青の怪獣カードと同じ縦列にいるなら、撃退力＋5000。(あなたの怪獣カードがエリア４以降にいるなら有効)
+CARD_EBP04-070_NAME,Ganimes,ガニメ
+CARD_EBP04-070_DESC,"<Awakening 4> If this is in the same column as your opponent's green monster card, this gains +5000 counter power.",<覚醒４>これが相手の緑の怪獣カードと同じ縦列にいるなら、撃退力＋5000。(あなたの怪獣カードがエリア４以降にいるなら有効)
+CARD_EBP04-071_NAME,Kamoebas (1970),カメーバ(1970)
+CARD_EBP04-071_DESC,"<Awakening 4> If this is in the same column as your opponent's red monster card, this gains +5000 counter power.",<覚醒４>これが相手の赤の怪獣カードと同じ縦列にいるなら、撃退力＋5000。(あなたの怪獣カードがエリア４以降にいるなら有効)
+CARD_EBP04-072_NAME,Sanda,サンダ
+CARD_EBP04-072_DESC,"<Opponent's Turn> Each time your opponent plays a card from their deck, if this is in area 5, search your deck for up to 1 card, add it to your hand, and shuffle your deck.",<相手のターン中>相手が山札から交戦カードを出現させるたび、これがエリア５にいるなら、あなたは自分の山札からカードを１枚まで探して手札に加え、山札をシャッフルする。
+CARD_EBP04-073_NAME,Gaira,ガイラ
+CARD_EBP04-073_DESC,"<Opponent's Turn> Each time your opponent returns a card from their discard pile to their hand, if this is in area 1, return up to 1 card from your discard pile to your hand.",<相手のターン中>相手が捨て札のカードを手札に戻すたび、これがエリア１にいるなら、あなたは自分の捨て札のカードを１枚まで手札に戻す。
+CARD_EBP04-074_NAME,Rodan (1956),ラドン(1956)
+CARD_EBP04-074_DESC,<Enter> <Destroy> 1 of your opponent's strategy cards.,<出現時>相手の戦略カードを１枚<破壊>する。
+CARD_EBP04-075_NAME,Hyper Spiral Beam,ハイパースパイラル熱線
+CARD_EBP04-075_DESC,"<Opponent's Turn> At the beginning of their counter phase, discard the top card from your main deck. If that card is a Monster card, <Destroy> 1 of your opponent's battle cards in the same column as your monster card.",<相手のターン中>撃退フェイズ開始時、あなたの山札を上から１枚捨て札にする。それが怪獣カードなら、あなたの怪獣カードと同じ縦列にいる相手の交戦カードを１枚<破壊>する。
+CARD_EBP04-076_NAME,Dormancy,休眠
+CARD_EBP04-076_DESC,"<Base>
+Your monster card cannot be moved by any of your opponent's effects. (Move when you are countered)","<拠点>いずれかの怪獣カードがエリア６～８に進攻した時、これを<破壊>する。(これは拠点である。拠点はスタートフェイズに捨て札にならない)
+あなたの怪獣カードは相手の効果で移動しない。(撃退された際には移動する)"
+CARD_EBP04-077_NAME,First Kiryu Commander Yashiro Akane,第1機龍隊 家城茜
+CARD_EBP04-077_DESC,"Reveal the top 3 cards of your deck, among those add 1 <Mechagodzilla> battle card and discard the rest. If the card you add to your hand is [MFS-3] or [Godzilla x MechaGodzilla] you may instead place it in Area 8.",あなたの山札を上から３枚公開し、その中の<《メカゴジラ》>を持つ交戦カードを１枚まで手札に加え、残りを捨て札にする。手札に加えるカードが「3式機龍」か「ゴジラ×メカゴジラ」なら、かわりにエリア８に出現させてよい。
+CARD_EBP04-078_NAME,Crawling Calamity,這い寄る厄災
+CARD_EBP04-078_DESC,"Move your opponent's Monster card in areas 3-5 vertically. (3->8, 4->7, 5->6. Do not destroy battle cards in areas in between)",エリア３～５にいる相手の怪獣カードを縦方向に移動させる。(エリア３→８、４→７、５→６に移動させ、その際、間のエリアにいる相手の交戦カードは破壊されない)
+CARD_EBP04-079_NAME,Godzilla Final Wars,ゴジラ FINAL WARS
+CARD_EBP04-079_DESC,"Reveal the top 7 cards of your deck, play all <Final Wars> battle cards among them and discard the rest.",あなたの山札を上から７枚公開し、その中の<《FINAL WARS》>を持つ交戦カードをすべて出現させ、残りを捨て札にする。
+CARD_EBP04-080_NAME,Mothra Familial Bonds,モスラ親子の絆
+CARD_EBP04-080_DESC,Evolve all Rank 3 or lower battle cards with <Evolution> in zones 1-5.,あなたのエリア１～５にいる<進化>を持つ等級３以下の交戦カードをすべて進化させる。
+CARD_EBP04-081_NAME,Twisting Terror,絡みつく恐怖
+CARD_EBP04-081_DESC,<Your Turn> Your monster card cannot advance nor invade.,<あなたのターン中>あなたの怪獣カードは前進も進攻もできない。
+CARD_EBP04-082_NAME,X-Aliens' Mother Ship,X星人の母艦
+CARD_EBP04-082_DESC,"<Base>
+<Your Turn> All non-blue battle cards in zones adjacent to your monster card gain +3000 counter power.","<拠点>いずれかの怪獣カードがエリア６～８に進攻した時、これを<破壊>する。(これは拠点である。拠点はスタートフェイズに捨て札にならない)
+<あなたのターン中>あなたの怪獣カードの隣接エリアにいる、あなたの、青でない交戦カードすべての撃退力＋3000。"
+CARD_EBP04-083_NAME,Godzilla vs. Destoroyah,ゴジラVSデストロイア
+CARD_EBP04-083_DESC,<Destroy> all of your opponent's battle cards in zones 6-8.,相手のエリア６～８にいる交戦カードをすべて<破壊>する。
+CARD_EBP04-085_NAME,The Golden Demise,黄金の終焉
+CARD_EBP04-085_DESC,"<Base>
+When this is moved from your strategy zones to your discard pile, if you have 2 or more green battle cards in your zones you may return this from your discard pile to your hand.
+<Opponent's Turn> [Higher Dimensional Monster Ghidorah] in your zones 1-5 cannot be <Destroy> by your opponent's effects.","これが戦略カード置き場から捨て札になった時、あなたのエリアに緑の交戦カードが２枚以上いるなら、あなたの捨て札からこれを手札に戻してよい。
+<相手のターン中>あなたのエリア１～５にいる「高次元怪獣ギドラ」は相手の効果で<破壊>されない。"
+CARD_EBP04-086_NAME,Mechagodzilla City,メカゴジラシティ
+CARD_EBP04-086_DESC,"<Base>
+<Your Turn> At the beginning of the counter phase, for each 5 green battle cards in your discard pile, play 1 [Valkyrie] battle card from your discard pile.","<拠点>いずれかの怪獣カードがエリア６～８に進攻した時、これを<破壊>する。(これは拠点である。拠点はスタートフェイズに捨て札にならない)
+<あなたのターン中>撃退フェイズ開始時、あなたの捨て札の緑の交戦カード５枚につき、あなたの捨て札から「ヴァルチャー」を１枚出現させる。"
+CARD_EBP04-087_NAME,Beginning of the Two,はじまりのふたり
+CARD_EBP04-087_DESC,"<Destroy> up to 1 red, blue, green, and white battle cards each in your opponent's zones 1-5.",相手のエリア１～５にいる、赤、青、緑、白の交戦カードをそれぞれ１枚まで<破壊>する。
+CARD_EBP04-088_NAME,Kidnapped Monsters,連れ去られた怪獣達
+CARD_EBP04-088_DESC,Return up to 2 non-green battle cards from your discard pile to your hand.,あなたの捨て札の、緑でない交戦カードを２枚まで手札に戻す。
+CARD_EBP04-089_NAME,Inherited Life,受け継がれし命
+CARD_EBP04-089_DESC,"<Base>
+Do not move this to your discard pile at the beginning of your start phase.
+<Your Turn> When you decrease your Monster card's <Rage>, put them underneath this. On the 15th card <Destroy> all of your opponent's battle cards. On the 22nd card your opponent discards their entire hand. On the 30th card you win the game.","あなたのスタートフェイズ中、これは捨て札にならない。
+<あなたのターン中>あなたの怪獣カードの<怒り>が減る際、それをこれの下に置く。それが15枚目なら相手の交戦カードをすべて<破壊>し、22枚目なら相手は自分の手札をすべて捨て、30枚目ならあなたはこのゲームに勝利する。"
+CARD_EBP04-T01_NAME,Godzilla Earth,
+CARD_EBP04-T01_DESC,(Tokens cannot be added to the deck. They are banished when removed from zones.),
+CARD_EPR-001_NAME,"Godzilla, King of the Monsters 70th",
+CARD_EPR-001_DESC,,
+CARD_EPR-002_NAME,GODZILLA THE ARTï½Eric Haze,
+CARD_EPR-002_DESC,,
+CARD_EPR-003_NAME,Godzilla Galaxy Odyssey,
+CARD_EPR-003_DESC,,
+CARD_EPR-004_NAME,Heat Ray,放射熱線
+CARD_EPR-004_DESC,<Destroy> all of your opponent's battle cards in the same column as your monster card.,あなたの怪獣カードと同じ縦列にいる相手の交戦カードをすべて<破壊>する。
+CARD_EPR-005_NAME,Godzilla's Bite,噛みつき
+CARD_EPR-005_DESC,<Destroy> all of your opponent's battle cards in the same column as your monster card.,あなたの怪獣カードと同じ縦列にいる相手の交戦カードをすべて<破壊>する。
+CARD_EPR-006_NAME,"Godzilla, King of the Monsters - Kaiju on the Earth LEGENDS",
+CARD_EPR-006_DESC,,
+CARD_EPR-007_NAME,Chibi Godzilla,
+CARD_EPR-007_DESC,,
+CARD_EPR-008_NAME,Chibi Godzilla,
+CARD_EPR-008_DESC,,
+CARD_EPR-009_NAME,Chibi Godzilla,
+CARD_EPR-009_DESC,,
+CARD_EPR-010_NAME,Chibi Godzilla,
+CARD_EPR-010_DESC,,
+CARD_ESD01-001_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_ESD01-001_DESC,,
+CARD_ESD01-002_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_ESD01-002_DESC,"<When Invading> Search your deck for up to 1 rank â¢ card named ãGodzilla(2023)ã with <Burst> , reveal it, add it to your hand, then shuffle your deck. (If you invaded 2 zones, activate this effect 2 times)",<進攻時>あなたの山札から<強襲>を持つ等級Ⅲの「ゴジラ(2023)」を１枚まで探して公開し、手札に加え、山札をシャッフルする。（２エリア進攻したら２回発動）
+CARD_ESD01-003_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_ESD01-003_DESC,"If this card has 2 or more <Rage> , this card gains +5000 threat level.",これの<怒り>が２以上なら、脅威度＋5000。
+CARD_ESD01-004_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_ESD01-004_DESC,"<When Invading> If this card has 2 or more <Rage> , your opponent discards cards until they have 2 cards remaining in their hand.",<進攻時>これの<怒り>が２以上なら、相手は自分の手札を２枚になるよう捨てる。
+CARD_ESD01-005_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_ESD01-005_DESC,"<Burst1> (You can play this card from rank I. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Enter> Your opponent discards cards until they have 4 cards remaining in their hand.","<強襲Ⅰ>（これは等級Ⅰから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする）
+<出現時>相手は自分の手札を４枚になるよう捨てる。"
+CARD_ESD01-006_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_ESD01-006_DESC,"<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Enter> <Destroy> 1 of your opponent's rank 4 or lower battle cards.","<強襲Ⅱ>（これは等級Ⅱから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする）
+<出現時>相手の等級４以下の交戦カードを１枚<破壊>する。"
+CARD_ESD01-007_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_ESD01-007_DESC,"<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+<Enter> <Destroy> all of your opponent's battle cards in the same column as this card.","<強襲Ⅲ>（これは等級Ⅲから出現できる。そうしたら、次のあなたのエンドフェイズ開始時にこのカード１枚を捨て札にする）
+<出現時>これと同じ縦列にいる相手の交戦カードをすべて<破壊>する。"
+CARD_ESD01-008_NAME,Shinseimaru,新生丸
+CARD_ESD01-008_DESC,(Battle cards in your hand can be played if their rank is equal to or lower than the number in the zone where the opponent's monster card is.),（手札の交戦カードは等級が相手の怪獣カードがいるエリアの数字以下なら使える）
+CARD_ESD01-009_NAME,Reinforcements,援軍
+CARD_ESD01-009_DESC,<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.),<覚醒４>これの撃退力＋3000。（あなたの怪獣カードがエリア４以降にいるなら有効）
+CARD_ESD01-010_NAME,City of Tokyo,東京の街
+CARD_ESD01-010_DESC,"If your monster card has 2 or more <Rage> , your other battle card in zone 8 gains +5000 counter power.
+<Awakening6> Your other battle card in zone 8 gains +5000 counter power. (Active if your monster card is in zone 6 or beyond.)","あなたの怪獣カードの<怒り>が２以上なら、あなたのエリア８にいる他の交戦カードの撃退力＋5000。
+<覚醒６>あなたのエリア８にいる他の交戦カードの撃退力＋5000。（どちらか片方だけでも有効。あなたの怪獣カードの<怒り>が２以上でエリア６以降にいるなら＋10000）"
+CARD_ESD01-011_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_ESD01-011_DESC,"<Enter> If your monster card has 2 or more <Rage> , reduce your opponent's <Rage> by 1.
+When this card is <Destroy> , place this card on the bottom of your deck instead.","<出現時>あなたの怪獣カードの<怒り>が２以上なら、相手の<怒り>を１減らす。
+これが<破壊>される際、かわりにあなたの山札の下に置く。"
+CARD_ESD01-012_NAME,Godzilla(2023),ゴジラ(2023)
+CARD_ESD01-012_DESC,"<Your Turn> When you play a monster card, you may move this card to an unoccupied zone.
+If this card is in zone 8, this card gains +3000 counter power.
+When this card is <Destroy> , place this card on the bottom of your deck instead.","<あなたのターン中>あなたの怪獣カードが出現した時、これを空いているエリアに移動させてよい。
+これがエリア８にいるなら、撃退力＋3000。
+これが<破壊>される際、かわりにあなたの山札の下に置く。"
+CARD_ESD01-013_NAME,Ginza Annihilated,銀座壊滅
+CARD_ESD01-013_DESC,"<Your Turn> Whenever your monster card's <Rage> is increased, <Destroy> 1 of your opponent's rank 6 or lower battle cards.",<あなたのターン中>あなたの怪獣カードの<怒り>が増えるたび、相手の等級６以下の交戦カードを１枚<破壊>する。
+CARD_ESD01-014_NAME,Godzilla Emerges,ゴジラ出現
+CARD_ESD01-014_DESC,"If your monster card has 2 or more <Rage> , search your deck for up to 1 battle card named ãGodzilla(2023)ã, play it, then shuffle your deck.",あなたの怪獣カードの<怒り>が２以上なら、あなたの山札から「ゴジラ(2023)」の交戦カードを１枚まで探して出現させ、山札をシャッフルする。
+CARD_ESD01-015_NAME,Operation Wadatsumi,海神作戦
+CARD_ESD01-015_DESC,Your opponent discards cards until they have 2 cards remaining in their hand.,"相手は自分の手札を２枚になるよう捨てる。
+
+=== Rage-GZ30 |  ===
+
+
+=== Rage-GZ30+ |  ===
+
+
+=== Rage-GZ30++ |  ==="
+CARD_ESD01-016_NAME,Heat Ray,
+CARD_ESD01-016_DESC,<Destroy> all of your opponent's battle cards in the same column as your monster card.,
+CARD_ESD02-001_NAME,Godzilla(1984),ゴジラ(1984)
+CARD_ESD02-001_DESC,,
+CARD_ESD02-002_NAME,Godzilla(1989),ゴジラ(1989)
+CARD_ESD02-002_DESC,<Enter> <Destroy> 1 of your opponent's rank 4 or lower battle cards.,<出現時>相手の等級４以下の交戦カードを１枚<破壊>する。
+CARD_ESD02-003_NAME,Godzilla(1992),ゴジラ(1992)
+CARD_ESD02-003_DESC,"<Enter> :Play 2 rank 4 or lower battle cards with <Evolution> from your discard pile in zones adjacent to this card.
+(For example, if this card is in zone 7, the adjacent zones are 4, 6, and 8.)",<出現時>あなたの捨て札から<進化>を持つ等級４以下の交戦カードを２枚、これの隣接エリアに出現させる。（例えばエリア７なら４、６、８が隣接）
+CARD_ESD02-004_NAME,Godzilla(1994),ゴジラ(1994)
+CARD_ESD02-004_DESC,<When Invading> Discard 1 battle card from your handï¼ <Destroy> all of your opponent's battle cards with a rank equal to or lower than the discarded card's rank.,<進攻時>あなたの手札から交戦カードを１枚捨てることで、その捨てたカードの等級以下の、相手の交戦カードをすべて<破壊>する。
+CARD_ESD02-005_NAME,Godzilla(1993),ゴジラ(1993)
+CARD_ESD02-005_DESC,"<When Invading> Reduce your opponent's <Rage> by 1. (If you invaded 2 zones, activate this effect 2 times.)",<進攻時>相手の<怒り>を１減らす。（２エリア進攻したら２回発動）
+CARD_ESD02-006_NAME,Godzilla(1995),ゴジラ(1995)
+CARD_ESD02-006_DESC,"For each strategy card your opponent has in play, this card gains +5000 threat level.",相手が置いている戦略カード１枚につき、これの脅威度＋5000。
+CARD_ESD02-007_NAME,Mothra(larva)(1992),モスラ幼虫(1992)
+CARD_ESD02-007_DESC,"<Evolution5> <ãMothraã> At the beginning of your main phase, you may search your deck for a rank 5 or lower <ãMothraã> battle card and play it by stacking it on top of this card. Search for ãMothra(imago)(1992)ã rank 5 counter power 5000 and you may place it on top of this card)",<進化５><《モスラ》>（あなたのメインフェイズ開始時、山札から<《モスラ》>を持つ等級５以下の交戦カードをこれの上に重ねて出現させてよい。→「モスラ成虫(1992)」等級５撃退力5000）
+CARD_ESD02-008_NAME,Battra(larva),バトラ幼虫
+CARD_ESD02-008_DESC,"<Evolution6> <ãBattraã> (At the beginning of your main phase, you may search your deck for a rank 6 or lower <ãBattraã> battle card and play it by stacking it on top of this card. Search for ãBattra(imago)ã rank 6 counter power 5000 and you may place it on top of this card.)",<進化６><《バトラ》>（あなたのメインフェイズ開始時、山札から<《バトラ》>を持つ等級６以下の交戦カードをこれの上に重ねて出現させてよい。→「バトラ成虫」等級６撃退力5000+）
+CARD_ESD02-009_NAME,Super-X,スーパーX
+CARD_ESD02-009_DESC,"<Awakening4> <Enter> If this card is in zone 8, reduce your opponent's <Rage> by 1. (Active if your monster card is in zone 4 or beyond and this card was played in zone 8.)",<覚醒４><出現時>これがエリア８にいるなら、相手の<怒り>を１減らす。（あなたの怪獣カードがエリア４以降にいて、これがエリア８に出現したら有効）
+CARD_ESD02-010_NAME,Mothra(imago)(1992),モスラ成虫(1992)
+CARD_ESD02-010_DESC,"<Enter> If this card was played through evolution, draw 1 card.",<出現時>進化で出現したら、あなたは１枚引く。
+CARD_ESD02-011_NAME,Battra(imago),バトラ成虫
+CARD_ESD02-011_DESC,<Awakening6> This card gains ï¼3000 counter power. (Active if your monster card is in zone 6 or beyond.),<覚醒６>これの撃退力＋3000。（あなたの怪獣カードがエリア６以降にいるなら有効）
+CARD_ESD02-012_NAME,Mechagodzilla(1993),メカゴジラ(1993)
+CARD_ESD02-012_DESC,"If your opponent's monster card is rank IV or higher, this card gains +5000 counter power.
+If this card is in the same column as your opponent's monster card, this card gains +3000 counter power.
+(If both conditions are met, this card gains +8000 counter power.)","相手の怪獣カードが等級Ⅳ以上なら、これの撃退力＋5000。
+これが相手の怪獣カードと同じ縦列にいるなら、撃退力＋3000。
+（どちらか片方だけでも有効。両方有効なら＋8000）"
+CARD_ESD02-013_NAME,Destoroyah Perfect Form,デストロイア完全体
+CARD_ESD02-013_DESC,,
+CARD_ESD02-014_NAME,The Legend of Infant Island,インファント島の伝説
+CARD_ESD02-014_DESC,Evolve 1 of your battle cards with <Evolution> .,あなたの<進化>を持つ交戦カードを１枚進化させる。
+CARD_ESD02-015_NAME,Burning Godzilla's Rampage,バーニングゴジラ暴走
+CARD_ESD02-015_DESC,"Choose 1 of your opponent's zones. <Destroy> all of your opponent's battle cards in that zone and zones adjacent to it.
+(For example, if a card is in zone 7, the adjacent zones are 4, 6, and 8.)","相手のエリア１つを指定し、そのエリアおよび隣接エリアにいる相手の交戦カードをすべて<破壊>する。（例えばエリア７を指定したら４、６、７、８にいる交戦カードを破壊）
+
+=== Rage-GZ16 |  ===
+
+
+=== Rage-GZ16+ |  ===
+
+
+=== Rage-GZ16++ |  ==="
+CARD_ESC01-001_NAME,Godzilla(1954),
+CARD_ESC01-001_DESC,"When playing this from your hand, if you discard a <Godzilla> card from your hand you can play this card at a -4 rank. (Afterwards it's a Rank 8).
+If this is in the same column as your opponent's Monster card this gains +3000 counter power.
+When you successfully counter your opponent's Monster card, place this at the bottom of your deck.",
+CARD_EFC01-001_NAME,Godzilla(Gojika Festival),ゴジラ(ゴジカ・フェス)
+CARD_EFC01-001_DESC,"<Burst3>
+If every zone adjacent to this card's zone has a battle card with <Festival Godzilla>, this card gains +10000 counter power.","<強襲Ⅲ>
+これに隣接するあなたのエリアすべてに<《フェス・ゴジラ》>を持つ交戦カードがいるなら、あなたの撃退力の合計を＋10000。"
+CARD_EFC01-002_NAME,Gigan(Gojika Festival),ガイガン(ゴジカ・フェス)
+CARD_EFC01-002_DESC,"<Enter> If this card is in a zone adjacent to your monster card, send the top card of your deck to your discard pile. If it is a battle card, you may return up to 1 monster card from your discard pile to your hand.",<出現時>これがあなたの怪獣カードの隣接エリアにいるなら、あなたの山札を上から１枚捨て札にする。それが交戦カードなら、あなたの捨て札の怪獣カードを１枚まで手札に戻す。
+CARD_EFC01-003_NAME,Jet Jaguar(Gojika Festival),ジェットジャガー(ゴジカ・フェス)
+CARD_EFC01-003_DESC,"<Enter> You may discard a card with <Gigan> and <Festival Godzilla> from your hand. If you do, search your deck for a battle card with <Weapon> or <Mech> and invasion icon 2, and add it to your hand.",<出現時>あなたの手札の<《ガイガン》>と<《フェス・ゴジラ》>を両方持つカードを１枚捨てることで、あなたの山札から、<《兵器》>か<《機械》>を持つ<足２>の交戦カードを１枚まで探して公開し、手札に加え、山札をシャッフルする。
+CARD_EFC01-004_NAME,Hedorah(2021),ヘドラ(2021)
+CARD_EFC01-004_DESC,"When playing this card from your hand, this card's rank is reduced by 1 for each of your opponent's battle cards in zones.",相手のエリアにいる交戦カード１枚につき、等級を－１して手札から出現できる。
+CARD_EFC01-005_NAME,Godzilla Appears in Godzilla Festival,ゴジラ ゴジラ・フェスに現わる
+CARD_EFC01-005_DESC,"<Your Turn> When you play a monster card, reveal the top 5 cards of your deck. Add all cards with <Festival Godzilla> to your hand and discard the rest.
+At the beginning of your counter phase, discard your hand.","<あなたのターン中>あなたの怪獣カードが出現した時、あなたの山札を上から５枚公開し、その中の<《フェス・ゴジラ》>を持つカードをすべて手札に加え、残りを捨て札にする。
+あなたの撃退フェイズ開始時、あなたの手札をすべて捨てる。"
+CARD_EFC01-006_NAME,King Ghidorah's Defense,キングギドラの防御
+CARD_EFC01-006_DESC,"<Opponent's Turn> If your opponent has 2 or fewer battle cards in zones, your battle cards cannot be destroyed by your opponent's effects.",<相手のターン中>相手のエリアにいる交戦カードが２枚以下なら、あなたのエリアにいる交戦カードすべては相手の効果で<破壊>されない。

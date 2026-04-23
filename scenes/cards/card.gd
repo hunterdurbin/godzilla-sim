@@ -332,8 +332,15 @@ func _scale_card(target_scale: float) -> void:
 ## Set card data from a dictionary (TCG format)
 func set_card_data_dict(data: Dictionary) -> void:
 	card_data = data
-	card_name = data.get("name", "Unknown")
-	card_description = data.get("description", "")
+	var id: String = data.get("id", "")
+	var raw_name: String = data.get("name", "Unknown")
+	var raw_desc: String = data.get("description", "")
+	if id.is_empty():
+		card_name = raw_name
+		card_description = raw_desc
+	else:
+		card_name = _tr_card("CARD_%s_NAME" % id, raw_name)
+		card_description = _tr_card("CARD_%s_DESC" % id, raw_desc)
 	# Load effect script if specified (skip in display-only contexts like deck builder)
 	if not skip_effect_load:
 		var script_path: String = data.get("effect_script", "")
@@ -343,6 +350,11 @@ func set_card_data_dict(data: Dictionary) -> void:
 				card_effect = effect_script.new()
 	if is_node_ready():
 		_update_display()
+
+
+static func _tr_card(key: String, fallback: String) -> String:
+	var translated: String = TranslationServer.translate(key)
+	return fallback if translated == key else translated
 
 
 ## Set basic card display data (legacy compatibility)

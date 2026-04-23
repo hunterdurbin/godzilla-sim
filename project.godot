@@ -64,7 +64,8 @@ pointing/emulate_touch_from_mouse.mobile=true
 
 [internationalization]
 
-locale/translations=PackedStringArray("res://translations/strings.en.translation", "res://translations/strings.ja.translation")
+locale/translations=PackedStringArray("res://translations/strings.en.translation", "res://translations/strings.ja.translation", "res://translations/cards.en.translation", "res://translations/cards.ja.translation")
+locale/fallback="en"
 
 [physics]
 
