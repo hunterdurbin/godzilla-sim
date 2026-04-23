@@ -14,9 +14,8 @@ func can_play_as_monster(ctx: EffectContext) -> bool:
 		return false
 	if ctx.owner.current_monster.get("rank", 0) != 2:
 		return false
-	# TODO: The effect restraints don't appear to require the card placed under to share the same trait
-	# if CardEnums.CardTrait.BIOLLANTE not in ctx.owner.current_monster.get("traits", []):
-	# 	return false
+	if CardEnums.CardTrait.BIOLLANTE not in ctx.owner.current_monster.get("traits", []):
+		return false
 	for card in ctx.owner.monster_deck:
 		if card.get("rank", 0) == 3:
 			return true

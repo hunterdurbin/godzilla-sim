@@ -75,6 +75,9 @@ func on_enter(ctx: EffectContext) -> void:
 			ctx.owner.player_id, options,
 			"%s — where would you like to place it?" % card_name)
 		if place_chosen == 0:
+			# Stage in discard so play_from_discard can remove+place+trigger enter cleanly.
+			ctx.owner.discard_pile.append(chosen_mech)
+			ctx.owner.discard_changed.emit()
 			await ctx.effect_handler.play_from_discard(ctx.owner.player_id, chosen_mech, 7)
 			return
 

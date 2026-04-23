@@ -2,12 +2,16 @@ extends CardEffect
 # Kaiser Ghidorah
 # Can play on top of a Monster X monster card in own zones.
 # <Enter> If 3+ colors of battle cards in discard → opp rage -1.
-# Note: alternate play cost (on top of Monster X) needs apply_play_cost support for
-# monster-over-monster stacking. TODO.
 
 
 func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent"]
+
+
+func can_play_as_monster(ctx: EffectContext) -> bool:
+	if ctx.card_data.get("played_from_effect", false):
+		return false
+	return CardEnums.CardTrait.MONSTER_X in ctx.owner.current_monster.get("traits", [])
 
 
 func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:

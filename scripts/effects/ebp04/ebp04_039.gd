@@ -33,10 +33,6 @@ func on_ally_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary,
 	var adjacent := get_adjacent_zones(monster_idx)
 	var valid_targets: Array[int] = []
 	for zi in adjacent:
-		if zi != self_zone and not ctx.owner.zones[zi].is_empty():
-			# Can move to any adjacent zone that isn't already occupied? Rules unclear;
-			# treat as: can move even to occupied (overloading), but not current zone.
-			pass
 		if zi != self_zone:
 			valid_targets.append(zi)
 

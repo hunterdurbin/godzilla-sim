@@ -25,10 +25,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	var colors: Array[int] = []
-	var my_zone: int = find_zone_of_card(ctx)
 	for i in range(8):
-		if i == my_zone:
-			continue
 		var zone_card := ctx.owner.get_zone_top_card(i)
 		if not zone_card.is_empty() and zone_card.get("card_type") == CardEnums.CardType.BATTLE:
 			for c: int in zone_card.get("colors", []):

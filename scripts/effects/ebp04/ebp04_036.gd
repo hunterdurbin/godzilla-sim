@@ -1,5 +1,5 @@
 extends CardEffect
-# Kaiser Ghidorah (Battle)
+# Kaiser Ghidorah
 # +5000 counter power per color of battle card in discard.
 
 
@@ -7,7 +7,7 @@ func get_bot_tags() -> Array[String]:
 	return ["boosts_cp"]
 
 
-func get_counter_power_modifier(ctx: EffectContext) -> int:
+func get_threat_level_modifier(ctx: EffectContext) -> int:
 	var colors: Array[int] = []
 	for card in ctx.owner.discard_pile:
 		if card.get("card_type") == CardEnums.CardType.BATTLE:
