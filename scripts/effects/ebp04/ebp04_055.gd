@@ -1,7 +1,14 @@
 extends CardEffect
-# Higher Dimensional Monster Ghidorah
-# <Enter> You may Destroy 4 other green battle cards in own zones.
-# If you don't, Destroy this card.
+## EBP04-055: Higher Dimensional Monster Ghidorah - Battle Rank 1 (Green)
+## <Enter> You may <Destroy> 4 other green battle cards in your zones. If you
+## don't do so, <Destroy> this.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

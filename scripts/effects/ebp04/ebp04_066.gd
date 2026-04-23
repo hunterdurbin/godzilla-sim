@@ -1,7 +1,15 @@
 extends CardEffect
-# Gigan (2004) (Battle)
-# <Opponent's Turn> If non-green battle card in own zones →
-# all opp strategy cards in hand gain +2 rank (after play, return to original).
+## EBP04-066: Gigan (2004) - Battle Rank 7 (Green)
+## <Opponent's Turn> If there is a Battle card in your zones that is not green,
+## all strategy cards in your opponent's hand gain +2 in rank (after play they
+## return to their original rank).
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

@@ -1,6 +1,13 @@
 extends CardEffect
-# Mothra Familial Bonds
-# Evolve all Rank 3 or lower battle cards with Evolution in own zones 1-5.
+## EBP04-080: Mothra Familial Bonds - Strategy Rank 2 (Blue)
+## Evolve all Rank 3 or lower battle cards with <Evolution> in zones 1-5.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

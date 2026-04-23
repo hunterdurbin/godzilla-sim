@@ -1,7 +1,15 @@
 extends CardEffect
-# Godzilla (2004)
-# Each time you Destroy an opponent's battle card in the same column as this card,
-# if you have a Rank 1 strategy card in play, opponent discards to 2.
+## EBP04-002: Godzilla (2004) - Monster Rank 2 (Red)
+## Each time you <Destroy> an opponent's battle card in the same column as this
+## card, if you have a Rank 1 strategy card in play, your opponent discards until
+## they have 2 cards in hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

@@ -1,6 +1,14 @@
 extends CardEffect
-# Beginning of the Two
-# Destroy up to 1 red, blue, green, and white battle card each in opp's zones 1-5.
+## EBP04-087: Beginning of the Two - Strategy Rank 5 (Green)
+## <Destroy> up to 1 red, blue, green, and white battle cards each in your
+## opponent's zones 1-5.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

@@ -1,6 +1,14 @@
 extends CardEffect
-# Godzilla Telestorius
-# For each opp battle card in same column as this → +10000 threat.
+## EBP04-023: Godzilla Telestorius - Monster Rank 3 (Green)
+## For each of your opponent's battle cards in the same column as this card,
+## this card gains +10,000 threat.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

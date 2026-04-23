@@ -1,6 +1,15 @@
 extends CardEffect
-# Kaiser Ghidorah (Battle)
-# <Enter> Destroy opp battle cards from lowest zone, count = # colors in discard.
+## EBP04-035: Kaiser Ghidorah - Monster Rank 4 (Red, Blue, Green)
+## <Enter> <Destroy> one card at a time, in order, from your opponents lowest
+## numbered area with a battle card up to the number of cards equal to the
+## number of colors of battle cards in your discard pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

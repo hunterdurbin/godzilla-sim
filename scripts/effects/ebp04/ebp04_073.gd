@@ -1,7 +1,15 @@
 extends CardEffect
-# Gaira
-# <Opponent's Turn> Each time opp returns a card from discard to hand + this in area 1 →
-# return 1 card from own discard to hand.
+## EBP04-073: Gaira - Battle Rank 5 (White)
+## <Opponent's Turn> Each time your opponent returns a card from their discard
+## pile to their hand, if this is in area 1, return up to 1 card from your
+## discard pile to your hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

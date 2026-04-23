@@ -1,6 +1,14 @@
 extends CardEffect
-# Godzilla Filius
-# <Revenge> Return up to 1 [Godzilla Earth] battle card from discard to hand.
+## EBP04-063: Godzilla Filius - Battle Rank 5 (Green)
+## <Revenge> Return up to 1 [Godzilla Earth] battle card from your discard pile
+## to your hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

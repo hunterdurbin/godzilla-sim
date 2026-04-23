@@ -1,6 +1,14 @@
 extends CardEffect
-# Minilla (2004)
-# If you have a rank 1 strategy card in play → +3000 counter power.
+## EBP04-037: Minilla (2004) - Battle Rank 3 (Red)
+## If you have a rank 1 strategy card in play, this card gains +3000 counter
+## power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

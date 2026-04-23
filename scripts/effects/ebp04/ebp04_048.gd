@@ -1,6 +1,13 @@
 extends CardEffect
-# Little Godzilla
-# Your in-play strategy cards cannot be Destroyed by opponent's effects.
+## EBP04-048: Little Godzilla - Battle Rank 5 (Blue)
+## Your in play strategy cards cannot be <Destroy> by your opponents effects.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

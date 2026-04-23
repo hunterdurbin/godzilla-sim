@@ -1,8 +1,15 @@
 extends CardEffect
-# Godzilla Earth (Battle)
-# Can only be played in area 8.
-# <Enter> Play 1 [Godzilla Earth] Token in own area 3.
-# If this card or token are moved/not in zone, Destroy both.
+## EBP04-067: Godzilla Earth - Battle Rank 7 (Green)
+## You can only play this card in Area 8.
+## <Enter> Play 1 [Godzilla Earth] Token in your area 3. If this card and the
+## token are not in an area, or they are moved, <Destroy> both.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

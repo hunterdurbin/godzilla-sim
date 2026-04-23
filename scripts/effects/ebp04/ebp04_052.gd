@@ -1,7 +1,16 @@
 extends CardEffect
-# Mothra Imago (1992)
-# When discarded from hand by opponent's effect + opp monster in zones 4-8 → may play self.
-# When discarded from hand by opponent's effects + this is in area 8 → own rage +2.
+## EBP04-052: Mothra Imago (1992) - Battle Rank 7 (Blue)
+## When this card is discarded from your hand by your opponent's effect and
+## their monster card is in zones 4-8 you may play this card.
+## Any time you discard cards from your hand by your opponent's effects, and
+## this is in area 8, increase your <Rage> by 2.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

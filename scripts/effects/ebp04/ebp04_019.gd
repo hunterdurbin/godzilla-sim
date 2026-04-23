@@ -1,6 +1,15 @@
 extends CardEffect
-# Godzilla (Fest Godzilla II)
-# If zone >= opp monster zone AND 5+ monsters in discard → +10000 threat + +10000 total CP.
+## EBP04-019: Godzilla (Fest Godzilla II) - Monster Rank 4 (Blue)
+## If this is in a zone equal to or greater than your opponent's monster card's
+## and you have 5 or more monster cards in your discard pile, increase this
+## card's threat by +10000 and add +10000 to your total counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

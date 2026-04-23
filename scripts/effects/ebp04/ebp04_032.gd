@@ -1,7 +1,15 @@
 extends CardEffect
-# Monster X
-# Threat X = 10000 × number of different colors among battle cards in own zones.
-# If opp has 1 or fewer battle cards → cannot be countered.
+## EBP04-032: Monster X - Monster Rank 2 (Red, Blue, Green)
+## This card's threat level X is equal to 10,000 times the number of different
+## colors among battle cards in your zones. If your opponent's zones have 1 or
+## fewer battle cards, this card cannot be countered.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

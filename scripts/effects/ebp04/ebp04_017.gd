@@ -1,6 +1,14 @@
 extends CardEffect
-# Godzilla (Fest Godzilla II)
-# If in zone >= opp monster zone → +5000 total counter power.
+## EBP04-017: Godzilla (Fest Godzilla II) - Monster Rank 2 (Blue)
+## If this card is in a zone greater than or equal to your opponent's monster
+## card, add +5000 to your total counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

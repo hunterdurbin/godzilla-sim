@@ -1,6 +1,14 @@
 extends CardEffect
-# Kumonga (2004)
-# If in same column as opp monster AND opp has 0 rage → opp cannot invade.
+## EBP04-056: Kumonga (2004) - Battle Rank 2 (Green)
+## If this card is in the same column as your opponent's monster card, and
+## the opponent has 0 <Rage>, your opponent cannot invade.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

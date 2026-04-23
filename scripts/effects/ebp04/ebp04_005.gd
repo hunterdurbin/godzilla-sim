@@ -1,9 +1,20 @@
 extends CardEffect
-# Godzilla 2004
-# <Enter> If 1 or fewer strategies in zones, search deck for Rank 1 Strategy, place + resolve.
-# 
-# Each time you Destroy an opponent's battle card in the same column and at least 3 Rank 1 strategies
-# in discard pile, Destroy all opponent battle cards <= rank of destroyed card.
+## EBP04-005: Godzilla 2004 - Monster Rank 4 (Red)
+## <Enter> If you have 1 or fewer strategy cards in your strategy zones, search
+## your deck for 1 Rank 1 Strategy card, reveal it and place it in your strategy
+## zones, shuffle your deck, and resolve the placed card's effect.
+## Every time you <Destroy> an opponent's battle card in the same column as this,
+## if you have 3 or more Rank 1 strategy cards in your discard pile, <Destroy>
+## all of your opponent's battle cards equal to or less than the Rank of the
+## battle card you <Destroy>.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
+
 
 func get_bot_tags() -> Array[String]:
 	return ["searches_deck", "destroys_zone"]

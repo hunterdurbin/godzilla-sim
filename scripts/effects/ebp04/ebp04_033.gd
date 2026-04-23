@@ -1,7 +1,15 @@
 extends CardEffect
-# Kaiser Ghidorah
-# Can play on top of a Monster X monster card in own zones.
-# <Enter> If 3+ colors of battle cards in discard → opp rage -1.
+## EBP04-033: Kaiser Ghidorah - Monster Rank 3 (Red, Blue, Green)
+## You can play this on top of a <Monster X> monster card in your zones.
+## <Enter> If you have 3 or more colors of battle cards in your discard pile,
+## decrease your opponent's <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

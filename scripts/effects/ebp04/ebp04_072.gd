@@ -1,7 +1,15 @@
 extends CardEffect
-# Sanda
-# <Opponent's Turn> Each time opp plays a card from their deck, if this is in area 5 →
-# search own deck for up to 1 card, add to hand.
+## EBP04-072: Sanda - Battle Rank 5 (White)
+## <Opponent's Turn> Each time your opponent plays a card from their deck, if
+## this is in area 5, search your deck for up to 1 card, add it to your hand,
+## and shuffle your deck.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

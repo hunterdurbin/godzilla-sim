@@ -1,7 +1,15 @@
 extends CardEffect
-# Godzilla (2023)
-# During your start phase, when rage would be set to 0,
-# if rage >= 2, may discard 2 cards to set rage to 2 instead.
+## EBP04-010: Godzilla (2023) - Monster Rank 2 (Red)
+## During your start phase, when you would set this card's <Rage> to 0, if its
+## <Rage> is 2 or higher you may discard 2 cards from your hand to set its
+## <Rage> to 2 instead.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

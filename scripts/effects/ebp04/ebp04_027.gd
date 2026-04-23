@@ -1,8 +1,18 @@
 extends CardEffect
-# Gigan (2004)
-# Cannot advance nor invade.
-# <Your Turn> Main phase start: may discard invade2 card → this card is countered.
-# <Opponent's Turn> Main phase start: opp may discard invade2 → this card is countered.
+## EBP04-027: Gigan (2004) - Monster Rank 1 (Green)
+## This card cannot advance nor invade.
+## <Your Turn> At the beginning of your main phase, you may discard a <Invade 2>
+## card from your hand. If you do so this card is countered.
+## <Opponent's Turn> At the beginning of their main phase, your opponent may
+## discard a <Invade 2> card from their hand. If they do so this card is
+## countered.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

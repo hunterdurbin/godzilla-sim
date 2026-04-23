@@ -1,7 +1,15 @@
 extends CardEffect
-# Rodan (2004)
-# When discarded from hand by opponent's effect → may play this card.
-# <Awakening 6> +3000 counter power.
+## EBP04-046: Rodan (2004) - Battle Rank 4 (Blue)
+## When this card is discarded from your hand by your opponent's effect you
+## may play this card.
+## <Awakening 6> This gains +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

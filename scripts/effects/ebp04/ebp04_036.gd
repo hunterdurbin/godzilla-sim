@@ -1,6 +1,14 @@
 extends CardEffect
-# Kaiser Ghidorah
-# +5000 counter power per color of battle card in discard.
+## EBP04-036: Kaiser Ghidorah - Monster Rank 4 (Red, Blue, Green)
+## This card gains +5000 threat for each color of battle card in your discard
+## pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

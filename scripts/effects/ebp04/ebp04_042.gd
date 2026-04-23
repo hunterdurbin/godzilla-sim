@@ -1,6 +1,14 @@
 extends CardEffect
-# Mothra Imago (2004)
-# <Enter> If 3+ rank 1 strategy cards in discard → opp rage -1.
+## EBP04-042: Mothra Imago (2004) - Battle Rank 7 (Red)
+## <Enter> If you have 3 or more rank 1 strategy cards in your discard pile,
+## decrease your opponent's <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

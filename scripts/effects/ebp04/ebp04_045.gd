@@ -1,9 +1,14 @@
 extends CardEffect
-# Manda (2004)
-# When played from hand, may discard a non-blue battle card from hand to
-# decrease this card's rank by -2 for the play (afterwards it's the original rank).
-# Simplification: the -2 play rank modifier applies whenever a non-blue battle card
-# is available in hand; apply_play_cost then requires the discard.
+## EBP04-045: Manda (2004) - Battle Rank 3 (Blue)
+## When you play this from your hand, you may discard a non-blue battle card
+## from your hand to decrease this card's rank by -2 (afterwards it's 3).
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

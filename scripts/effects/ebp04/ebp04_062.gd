@@ -1,7 +1,15 @@
 extends CardEffect
-# Anguirus (2021)
-# <Revenge> If 10+ green battle cards in discard →
-# rage +1 per opp battle card in same column as monster.
+## EBP04-062: Anguirus (2021) - Battle Rank 5 (Green)
+## <Revenge> If you have 10 or more green battle cards in your discard pile,
+## increase your monster card's <Rage> for each of your opponent's battle cards
+## in the same column as your monster card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

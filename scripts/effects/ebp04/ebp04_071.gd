@@ -1,6 +1,14 @@
 extends CardEffect
-# Kamoebas (1970)
-# <Awakening 4> If in same column as opp's RED monster → +5000 CP.
+## EBP04-071: Kamoebas (1970) - Battle Rank 5 (White)
+## <Awakening 4> If this is in the same column as your opponent's red monster
+## card, this gains +5000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

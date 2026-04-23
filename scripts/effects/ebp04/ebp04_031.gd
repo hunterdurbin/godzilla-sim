@@ -1,8 +1,17 @@
 extends CardEffect
-# Monster X
-# Threat X = +3000 per color of battle card in own zones.
-# If opp has 1 or fewer battle cards → cannot be countered (counter immunity very high).
-# Resonance Red+Blue+Green, only FINAL_WARS battle cards.
+## EBP04-031: Monster X - Monster Rank 1 (Red, Blue, Green)
+## This card's X Threat increases by +3000 for each color of battle card in
+## your zones. In addition, if the opponent has 1 or less battle cards in
+## their zones, they cannot counter this.
+## <Resonance> Red, Blue, Green.
+## - You may only use Battle Cards with <Final Wars>.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

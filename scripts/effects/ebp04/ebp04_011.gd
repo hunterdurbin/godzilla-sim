@@ -1,6 +1,14 @@
 extends CardEffect
-# Type 3 Kiryu (Modified)
-# If you have 1 or more Blue AND Red battle cards each in your zones → +10000 threat.
+## EBP04-011: Type 3 Kiryu (Modified) - Monster Rank 4 (Red, Blue)
+## If you have 1 or more Blue and Red battle cards each in your zones, this
+## gains +10,000 threat.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

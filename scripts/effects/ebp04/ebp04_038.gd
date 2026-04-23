@@ -1,6 +1,14 @@
 extends CardEffect
-# Kamacuras
-# If there are 2 or more other battle cards in own zones → +3000 counter power.
+## EBP04-038: Kamacuras - Battle Rank 3 (Red)
+## If there are 2 or more other battle cards in your zones, this card gains
+## +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

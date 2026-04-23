@@ -1,6 +1,14 @@
 extends CardEffect
-# Godzilla (2004)
-# <Opponent's Turn> Counter phase start: if no battle cards in same column → +1 Rage.
+## EBP04-001: Godzilla (2004) - Monster Rank 1 (Red)
+## <Opponent's Turn> At the beginning of their counter phase, if there are no
+## battle cards in the same column as this card, this card gains +1 <Rage>.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

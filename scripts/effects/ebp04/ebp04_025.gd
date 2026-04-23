@@ -1,7 +1,15 @@
 extends CardEffect
-# Godzilla Ultima
-# <Enter> Destroy 1 opp strategy card.
-# <When Invading> If 10+ green battle cards in discard → opp discards to 3.
+## EBP04-025: Godzilla Ultima - Monster Rank 4 (Green)
+## <Enter> <Destroy> 1 of your opponent's strategy cards.
+## <When Invading> If you have 10 or more green battle cards in your discard
+## pile, your opponent discards until they have 3 cards in hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

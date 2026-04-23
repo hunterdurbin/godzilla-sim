@@ -1,7 +1,15 @@
 extends CardEffect
-# X-Aliens' Mother Ship
-# <Base>
-# <Your Turn> All non-blue battle cards in zones adjacent to own monster → +3000 CP.
+## EBP04-082: X-Aliens' Mother Ship - Strategy Rank 5 (Blue)
+## <Base>
+## <Your Turn> All non-blue battle cards in zones adjacent to your monster card
+## gain +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

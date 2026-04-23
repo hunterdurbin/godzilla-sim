@@ -1,6 +1,14 @@
 extends CardEffect
-# Godzilla Earth (Battle)
-# If in same column as opp monster → +3000 CP.
+## EBP04-065: Godzilla Earth - Battle Rank 6 (Green)
+## If this card is in the same column as your opponent's monster card, this card
+## gains +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

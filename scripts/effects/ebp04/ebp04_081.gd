@@ -1,7 +1,13 @@
 extends CardEffect
-# Twisting Terror
-# <Base>
-# <Your Turn> Your monster card cannot advance nor invade.
+## EBP04-081: Twisting Terror - Strategy Rank 3 (Blue)
+## <Your Turn> Your monster card cannot advance nor invade.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

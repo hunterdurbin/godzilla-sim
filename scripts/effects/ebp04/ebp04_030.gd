@@ -1,8 +1,14 @@
 extends CardEffect
-# Modified Gigan
-# <Opponent's Turn> Opp cannot draw cards during end phase.
-# <Enter> Destroy 1 opp battle card in zones 1-5.
-# blocks_opponent_end_phase_draw is wired into ActionHandler.execute_end_phase_draw().
+## EBP04-030: Modified Gigan - Monster Rank 4 (Green)
+## <Opponent's Turn> Your opponent cannot draw cards during their end phase.
+## <Enter> <Destroy> 1 of your opponent's battle cards in zones 1-5.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func blocks_opponent_end_phase_draw(ctx: EffectContext) -> bool:

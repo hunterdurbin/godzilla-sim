@@ -1,6 +1,15 @@
 extends CardEffect
-# Godzilla Aquatilius
-# Own counter phase start: may discard top of deck; if green battle → opp discards to 4.
+## EBP04-021: Godzilla Aquatilius - Monster Rank 1 (Green)
+## At the beginning of your counter phase, you may discard the top card of your
+## deck. If that card is a green battle card, your opponent discards until they
+## have 4 cards in hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

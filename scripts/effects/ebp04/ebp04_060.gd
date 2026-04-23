@@ -1,6 +1,14 @@
 extends CardEffect
-# Valkyrie
-# If [Mechagodzilla City] (EBP04-086) is in play → +3000 CP.
+## EBP04-060: Valkyrie - Battle Rank 4 (Green)
+## If you have a [Mechagodzilla City] in play this card gains +3000 counter
+## power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

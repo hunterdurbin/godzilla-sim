@@ -1,6 +1,14 @@
 extends CardEffect
-# Godzilla (Fest Godzilla II)
-# If in zone >= opp monster zone → +3000 threat.
+## EBP04-016: Godzilla (Fest Godzilla II) - Monster Rank 1 (Blue)
+## If this is in a zone greater than or equal to your opponent's monster card's,
+## this gains +3000 threat.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

@@ -1,7 +1,16 @@
 extends CardEffect
-# Godzilla Ultima
-# <Enter> If 10+ green battle cards in discard, Destroy opp cards until total rank <= 7.
-# Continuous: per green battle card in discard → +1000 threat.
+## EBP04-024: Godzilla Ultima - Monster Rank 4 (Green)
+## <Enter> If you have 10 or more green battle cards in your discard pile,
+## <Destroy> a desired number of your opponent's battle cards until their total
+## Ranks equal 7 or less combined.
+## For each green battle card in your discard pile this card gains 1,000 threat.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

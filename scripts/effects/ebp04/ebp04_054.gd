@@ -1,7 +1,16 @@
 extends CardEffect
-# Destoroyah Perfect Form
-# +5000 CP per own strategy card in play.
-# -5000 CP per opp strategy card in play.
+## EBP04-054: Destoroyah Perfect Form - Battle Rank 8 (Blue)
+## For each Strategy Card you have in play, this card gains 5000 counter
+## power.
+## For each strategy card your opponent has in play, this card loses 5000
+## counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

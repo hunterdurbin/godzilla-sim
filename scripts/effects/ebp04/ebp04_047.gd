@@ -1,7 +1,15 @@
 extends CardEffect
-# Monster X (Battle)
-# Counter power X = 3000 × number of different colors (including white) in own zones.
-# <Evolution 8> <Kaiser Ghidorah>
+## EBP04-047: Monster X - Battle Rank 5 (Blue)
+## This card's counter power X is equal to 3000 times the number of different
+## colors among battle cards in your zones (white included).
+## <Evolution 8> <Kaiser Ghidorah>
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

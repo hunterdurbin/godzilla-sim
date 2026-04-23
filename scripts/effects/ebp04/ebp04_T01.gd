@@ -1,6 +1,14 @@
 extends CardEffect
-# Godzilla Earth Token
-# If this token is destroyed or moved, destroy EBP04-067 in zone 8.
+## EBP04-T01: Godzilla Earth - Battle Rank 7 (Green)
+## (Tokens cannot be added to the deck. They are banished when removed from
+## zones.)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func on_destroy(ctx: EffectContext, _zone_idx: int) -> void:

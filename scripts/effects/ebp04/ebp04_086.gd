@@ -1,8 +1,16 @@
 extends CardEffect
-# Mechagodzilla City
-# <Base>
-# <Your Turn> Own counter phase start: for each 5 green battle cards in discard →
-# play 1 Valkyrie battle card from discard.
+## EBP04-086: Mechagodzilla City - Strategy Rank 4 (Green)
+## <Base>
+## <Your Turn> At the beginning of the counter phase, for each 5 green battle
+## cards in your discard pile, play 1 [Valkyrie] battle card from your discard
+## pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

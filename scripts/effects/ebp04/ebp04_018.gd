@@ -1,7 +1,16 @@
 extends CardEffect
-# Godzilla (Fest Godzilla II)
-# <Enter> If 5+ monsters in discard → Destroy 1 opp Rank 6 or lower battle card.
-# Continuous: if zone >= opp monster zone → +10000 threat.
+## EBP04-018: Godzilla (Fest Godzilla II) - Monster Rank 3 (Blue)
+## <Enter> If you have 5 or more monster cards in your discard pile, <Destroy>
+## 1 of your opponents Rank 6 or lower battle cards.
+## If this is in a zone equal to or greater than your opponent's monster card's,
+## increase this card's threat by +10000.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

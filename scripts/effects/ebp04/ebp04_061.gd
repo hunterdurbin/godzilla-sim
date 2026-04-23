@@ -1,6 +1,14 @@
 extends CardEffect
-# Mechagodzilla (2018)
-# <Enter> If 4+ other green battle cards in own zones → discard 1 green card from deck.
+## EBP04-061: Mechagodzilla (2018) - Battle Rank 5 (Green)
+## <Enter> If you have 4 or more other green battle cards in your zones, you may
+## discard 1 green card from your deck and then shuffle your deck.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

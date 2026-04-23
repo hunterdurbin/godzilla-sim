@@ -1,6 +1,14 @@
 extends CardEffect
-# Gezora
-# <Awakening 4> If in same column as opp's BLUE monster → +5000 CP.
+## EBP04-069: Gezora - Battle Rank 3 (White)
+## <Awakening 4> If this is in the same column as your opponent's blue monster
+## card, this gains +5000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

@@ -1,9 +1,15 @@
 extends CardEffect
-# Dormancy
-# <Base>
-# Your monster card cannot be moved by any of your opponent's effects.
-# prevents_opponent_monster_move is wired into EffectHandler.is_opponent_monster_move_blocked(),
-# checked by effect scripts (e.g. EBP04-078) before moving the opponent's monster.
+## EBP04-076: Dormancy - Strategy Rank 2 (Red)
+## <Base>
+## Your monster card cannot be moved by any of your opponent's effects. (Move
+## when you are countered)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

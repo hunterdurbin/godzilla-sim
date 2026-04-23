@@ -1,6 +1,14 @@
 extends CardEffect
-# Aqua Mothra
-# <Enter> If you have a Base in play, Destroy all battle cards adjacent to opp monster.
+## EBP04-020: Aqua Mothra - Monster Rank 4 (Blue, Green)
+## <Enter> If you have a Base in play, <Destroy> all battle cards adjacent to
+## your opponent's monster card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

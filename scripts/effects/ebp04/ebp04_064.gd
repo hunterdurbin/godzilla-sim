@@ -1,6 +1,15 @@
 extends CardEffect
-# Jet Jaguar (2021)
-# Own counter phase start: if 10+ green in discard → may Destroy this to reduce opp rage by 3.
+## EBP04-064: Jet Jaguar (2021) - Battle Rank 6 (Green)
+## At the beginning of your counter phase, if you have 10 or more green battle
+## cards in your discard pile, you may <Destroy> this to reduce your opponent's
+## <Rage> by 3.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

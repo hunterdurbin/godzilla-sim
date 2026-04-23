@@ -1,7 +1,15 @@
 extends CardEffect
-# Godzilla (2016) 3rd Form
-# <Opponent's Turn> Counter phase start: discard strategy from hand →
-# Destroy all opp Rank 6 or lower battle cards in same column.
+## EBP04-009: Godzilla (2016) 3rd Form - Monster Rank 3 (Red)
+## <Opponent's Turn> At the beginning of their counter phase, you may discard 1
+## strategy card from your hand to <Destroy> all of your opponent's Rank 6 or
+## lower battle cards in the same column as this.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

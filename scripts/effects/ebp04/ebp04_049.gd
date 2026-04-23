@@ -1,8 +1,16 @@
 extends CardEffect
-# Ebirah (2004)
-# Own counter phase start: if rank 8+ battle card in play →
-# reveal and discard top card of deck.
-# If non-blue → opp rage -2. If blue → Destroy 1 own rank 8+ battle card.
+## EBP04-049: Ebirah (2004) - Battle Rank 5 (Blue)
+## At the beginning of your counter phase, if you have a Rank 8 or higher
+## battle card in play, reveal and discard 1 card from the top of your deck.
+## If it is a non-blue card decrease your opponent's <Rage> by -2. If it's a
+## blue card <Destroy> 1 of your rank 8 or higher battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

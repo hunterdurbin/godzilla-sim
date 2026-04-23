@@ -1,7 +1,15 @@
 extends CardEffect
-# New Gotengo
-# Own counter phase start: if this is in area 8 → trigger all Enter abilities of monster.
-# <Awakening 6> +3000 counter power.
+## EBP04-041: New Gotengo - Battle Rank 5 (Red)
+## At the beginning of your counter phase, if this card is in area 8 trigger
+## all <Enter> abilities of your monster card.
+## <Awakening 6> This card gains +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

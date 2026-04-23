@@ -1,10 +1,18 @@
 extends CardEffect
-# Inherited Life
-# <Base> Do not move to discard at start phase.
-# <Your Turn> When you decrease your Monster's Rage, put those cards underneath this.
-# 15th card: destroy all opp battle cards.
-# 22nd card: opp discards entire hand.
-# 30th card: you win the game.
+## EBP04-089: Inherited Life - Strategy Rank 1 (White)
+## <Base>
+## Do not move this to your discard pile at the beginning of your start phase.
+## <Your Turn> When you decrease your Monster card's <Rage>, put them underneath
+## this. On the 15th card <Destroy> all of your opponent's battle cards. On the
+## 22nd card your opponent discards their entire hand. On the 30th card you win
+## the game.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

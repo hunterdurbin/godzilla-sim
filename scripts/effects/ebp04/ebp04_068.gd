@@ -1,6 +1,15 @@
 extends CardEffect
-# Kaiser Ghidorah (Battle)
-# <Your Turn> If no strategies in play → strategy cards in hand gain -1 rank per color in discard.
+## EBP04-068: Kaiser Ghidorah - Battle Rank 8 (Red, Blue, Green)
+## <Your Turn> If you have no strategy cards in play, decrease the ranks of
+## strategy cards in your hand by -1 for each color of battle card in your
+## discard pile.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

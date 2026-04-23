@@ -1,6 +1,13 @@
 extends CardEffect
-# Rodan (1956)
-# <Enter> Destroy 1 opp strategy card.
+## EBP04-074: Rodan (1956) - Battle Rank 6 (White)
+## <Enter> <Destroy> 1 of your opponent's strategy cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

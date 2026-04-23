@@ -1,7 +1,17 @@
 extends CardEffect
-# Gigan (2004)
-# <Opponent's Turn> All opp strategy cards gain +3 rank (after play, return to original).
-# <Opponent's Turn> Each time your opponent plays a Battle card from their Main deck, your opponent discards until they have 1 card remaining in their hand. 
+## EBP04-028: Gigan (2004) - Monster Rank 2 (Green)
+## <Opponent's Turn> All strategy cards of your opponent gain +3 in rank. (After
+## play, they are returned to their original ranks)
+## <Opponent's Turn> Each time your opponent plays a battle card from their
+## main deck, your opponent discards until they have 1 card remaining in their
+## hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

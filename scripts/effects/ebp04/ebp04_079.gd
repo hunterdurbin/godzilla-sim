@@ -1,6 +1,14 @@
 extends CardEffect
-# Godzilla Final Wars
-# Reveal top 7 of deck. Play all Final Wars battle cards. Discard the rest.
+## EBP04-079: Godzilla Final Wars - Strategy Rank 7 (Red)
+## Reveal the top 7 cards of your deck, play all <Final Wars> battle cards among
+## them and discard the rest.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

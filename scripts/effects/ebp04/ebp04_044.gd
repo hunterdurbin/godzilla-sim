@@ -1,8 +1,14 @@
 extends CardEffect
-# Hedorah (2004)
-# <Awakening 4> For each non-red battle card in own zones, play from hand at -2 rank.
-# Note: This is a play rank modifier applied per non-red battle card count.
-# get_play_rank_modifier_for_card handles the -2 per card reduction.
+## EBP04-044: Hedorah (2004) - Battle Rank 8 (Red)
+## <Awakening 4> For each non-red battle card in your zones, you can play this
+## from your hand at -2 rank.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

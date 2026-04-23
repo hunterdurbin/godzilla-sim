@@ -1,7 +1,15 @@
 extends CardEffect
-# First Kiryu Commander Yashiro Akane
-# Reveal top 3 of deck, add 1 Mechagodzilla battle card to hand, discard rest.
-# If added card is MFS-3 or Godzilla x MechaGodzilla → may place in area 8 instead.
+## EBP04-077: First Kiryu Commander Yashiro Akane - Strategy Rank 4 (Red)
+## Reveal the top 3 cards of your deck, among those add 1 <Mechagodzilla> battle
+## card and discard the rest. If the card you add to your hand is [MFS-3] or
+## [Godzilla x MechaGodzilla] you may instead place it in Area 8.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

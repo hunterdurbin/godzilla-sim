@@ -1,7 +1,14 @@
 extends CardEffect
-# Crawling Calamity
-# Move opp monster in areas 3-5 vertically (3→8, 4→7, 5→6).
-# Does NOT destroy battle cards in zones between.
+## EBP04-078: Crawling Calamity - Strategy Rank 5 (Red)
+## Move your opponent's Monster card in areas 3-5 vertically. (3->8, 4->7, 5->6.
+## Do not destroy battle cards in areas in between)
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

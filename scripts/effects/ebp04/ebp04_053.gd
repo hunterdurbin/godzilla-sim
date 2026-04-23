@@ -1,6 +1,13 @@
 extends CardEffect
-# MOGERA
-# <Enter> May swap zones of any 2 battle cards in own zones.
+## EBP04-053: MOGERA - Battle Rank 7 (Blue)
+## <Enter> You may choose to swap zones of any 2 battle cards in your zones.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

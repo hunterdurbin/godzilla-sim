@@ -1,8 +1,15 @@
 extends CardEffect
-# Godzilla (2004)
-# <Burst II>
-# <Enter> If you have a Rank 1 strategy card in play, Destroy one of your opponent's
-# Rank 6 or lower battle cards.
+## EBP04-003: Godzilla (2004) - Monster Rank 3 (Red)
+## <Burst II>
+## <Enter> If you have a Rank 1 strategy card in play, <Destroy> one of your
+## opponent's Rank 6 or lower battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

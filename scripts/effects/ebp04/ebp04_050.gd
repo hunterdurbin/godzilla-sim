@@ -1,8 +1,16 @@
 extends CardEffect
-# Battra Larva
-# When own monster invades and this is in area 8 → choose:
-# 1) Draw 1 card and discard 1 card from hand.
-# 2) Discard 1 card from hand to reduce opp rage by 1.
+## EBP04-050: Battra Larva - Battle Rank 6 (Blue)
+## Any time your monster card invades and this is in Area 8, enact 1 of the
+## following:
+## - Draw 1 card and discard 1 card from your hand.
+## - Discard 1 card from your hand to decrease your opponent's <Rage> by 1.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

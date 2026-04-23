@@ -1,7 +1,15 @@
 extends CardEffect
-# Multipurpose Fighting System-3 (Battle)
-# Own counter phase start: may place an Invade 2 card from strategy zones under this.
-# If there is a card under this → +10000 counter power.
+## EBP04-043: Multipurpose Fighting System-3 - Battle Rank 7 (Red)
+## At the beginning of your counter phase, you may place a <Invade 2> card
+## from your Strategy Zones under this.
+## If there is a card under this card, this card gains +10,000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

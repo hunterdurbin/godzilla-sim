@@ -1,7 +1,14 @@
 extends CardEffect
-# Zilla
-# <Opponent's Turn> Each time one of your non-red battle cards is Destroyed →
-# move this card to an area adjacent to your monster card.
+## EBP04-039: Zilla - Battle Rank 4 (Red)
+## <Opponent's Turn> Each time one of your non-red battle cards are <Destroy>,
+## move this card to an area adjacent to your monster card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

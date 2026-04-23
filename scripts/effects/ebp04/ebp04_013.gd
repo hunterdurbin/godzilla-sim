@@ -1,9 +1,16 @@
 extends CardEffect
-# Godzilla (2000)
-# <Enter> If you have 5 or more monster cards in your discard pile, 
-# reveal and discard the top 3 cards of your deck. Of the revealed cards’ ranks, 
-# <Destroy> all of your opponent’s battle cards in the same zone number 
-# or retreat your opponent’s monster card in the same zone number backwards by 1 zone.
+## EBP04-013: Godzilla (2000) - Monster Rank 3 (Blue)
+## <Enter> If you have 5 or more monster cards in your discard pile, reveal and
+## discard the top 3 cards of your deck. Of the revealed cards' ranks, <Destroy>
+## all of your opponent's battle cards in the same zone number or retreat your
+## opponent's monster card in the same zone number backwards by 1 zone.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

@@ -1,6 +1,13 @@
 extends CardEffect
-# Kidnapped Monsters
-# Return up to 2 non-green battle cards from your discard pile to your hand.
+## EBP04-088: Kidnapped Monsters - Strategy Rank 8 (Green)
+## Return up to 2 non-green battle cards from your discard pile to your hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

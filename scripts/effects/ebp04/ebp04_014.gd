@@ -1,8 +1,19 @@
 extends CardEffect
-# Godzilla (2002)
-# On hand battle card discard + opp rage=0 → Destroy opp rank 4 or lower battle card.
-# <Opponent's Turn> <Awakening 6> Counter phase start: discard battle →
-# this card cannot be countered by 30,000 or less CP this turn.
+## EBP04-014: Godzilla (2002) - Monster Rank 2 (Blue)
+## Each time you discard a battle card from your hand and your opponent has 0
+## <Rage>, <Destroy> 1 of your opponent's rank 4 or lower battle cards.
+## <Opponent's Turn> <Awakening 6> At the beginning of the counter phase, if
+## you have 2 or more cards in your zones you may discard 1 battle card from
+## your hand so that during the turn this card cannot be countered by 30,000 or
+## less counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
+
 
 var _counter_immunity: int = 0
 

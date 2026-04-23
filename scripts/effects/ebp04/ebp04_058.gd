@@ -1,6 +1,14 @@
 extends CardEffect
-# Servum
-# <Awakening 4> If in area adjacent to monster → +3000 CP.
+## EBP04-058: Servum - Battle Rank 3 (Green)
+## <Awakening 4> If this card is in an area adjacent to your monster card,
+## this card gains +3000 counter power.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

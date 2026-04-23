@@ -1,7 +1,14 @@
 extends CardEffect
-# Godzilla (2003)
-# Each time you discard a battle card from hand + opp rage=0 →
-# Destroy 1 opp Rank 6 or lower battle card.
+## EBP04-015: Godzilla (2003) - Monster Rank 4 (Blue)
+## Each time you discard a battle card from your hand and your opponent has 0
+## <Rage>, <Destroy> 1 of your opponent's Rank 6 or lower battle cards.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

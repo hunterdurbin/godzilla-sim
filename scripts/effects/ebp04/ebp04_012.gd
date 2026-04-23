@@ -1,8 +1,16 @@
 extends CardEffect
-# Biollante Plant Beast Form
-# You may place 1 Rank III monster card from your monster deck underneath your
-# Rank II <Biollante> card to play this card from your hand.
-# <Enter> Place [Tentacle] tokens in every adjacent area (max 3).
+## EBP04-012: Biollante Plant Beast Form - Monster Rank 3 (Blue)
+## You may place 1 Rank III monster card from your monster deck underneath your
+## Rank II <Biollante> card to play this card from your hand.
+## <Enter> Place [Tentacle] tokens in every area adjacent to this card (Maximum
+## is 3).
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

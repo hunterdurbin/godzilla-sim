@@ -1,7 +1,15 @@
 extends CardEffect
-# Rodan (2021)
-# Unlimited copies in deck.
-# <Revenge> If 5+ green battle cards in discard → return 1 Rodan battle card from discard.
+## EBP04-059: Rodan (2021) - Battle Rank 4 (Green)
+## You may have any number of this card in your deck.
+## <Revenge> If you have 5 or more green battle cards in your discard pile,
+## you may return up to 1 <Rodan> battle card from your discard to your hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

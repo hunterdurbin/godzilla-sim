@@ -1,7 +1,15 @@
 extends CardEffect
-# Hyper Spiral Beam
-# <Opponent's Turn> Counter phase start: discard top of own deck.
-# If that card is a Monster card → Destroy 1 opp battle in same column as own monster.
+## EBP04-075: Hyper Spiral Beam - Strategy Rank 1 (Red)
+## <Opponent's Turn> At the beginning of their counter phase, discard the top
+## card from your main deck. If that card is a Monster card, <Destroy> 1 of your
+## opponent's battle cards in the same column as your monster card.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

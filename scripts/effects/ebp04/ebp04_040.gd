@@ -1,6 +1,14 @@
 extends CardEffect
-# Anguirus (2004)
-# <Awakening 6> <Enter> If 1+ Rodan AND 1+ King Caesar in own zones → monster rage +3.
+## EBP04-040: Anguirus (2004) - Battle Rank 5 (Red)
+## <Awakening 6> <Enter> If you have 1 or more <Rodan> and <King Caesar>
+## battle cards each in your zones, increase your monster card's <Rage> by 3.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:

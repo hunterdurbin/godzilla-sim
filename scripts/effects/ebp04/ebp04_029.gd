@@ -1,8 +1,15 @@
 extends CardEffect
-# Gigan (2004)
-# Opp cannot discard an Invade 1 card to invade.
-# <Enter> If opp monster in zones 1-5, may return 1 Gigan monster from discard to hand.
-# blocks_invade1_invasion_cost is wired into ActionHandler._invade().
+## EBP04-029: Gigan (2004) - Monster Rank 3 (Green)
+## Your opponent cannot discard a <Invade 1> card to invade.
+## <Enter> If your opponent's monster card is in Zones 1-5, you may return up to
+## 1 <Gigan> monster card from your discard pile to your hand.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func blocks_invade1_invasion_cost(_ctx: EffectContext) -> bool:

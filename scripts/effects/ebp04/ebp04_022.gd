@@ -1,8 +1,15 @@
 extends CardEffect
-# Godzilla Amphibia
-# When this card is successfully countered, reveal top 5 of deck.
-# For each green battle card revealed, Destroy 1 battle card with 6000 or less CP
-# in opp's areas 1-5.
+## EBP04-022: Godzilla Amphibia - Monster Rank 2 (Green)
+## When this card is successfully countered, reveal 5 cards from the top of
+## your deck. For each green battle card revealed, <Destroy> 1 6000 or less
+## counter power battle card in your opponent's areas 1-5.
+##
+## Tested: No
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
 
 
 func get_bot_tags() -> Array[String]:
