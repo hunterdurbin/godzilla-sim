@@ -266,7 +266,7 @@ func _on_patreon_pressed() -> void:
 	OS.shell_open("https://www.patreon.com/cw/sodabomber/membership")
 
 
-const _VOLUME_LABELS := ["OFF", "25%", "50%", "75%", "100%"]
+const _VOLUME_LABELS := ["STR_VOL_OFF", "25%", "50%", "75%", "100%"]
 
 
 func _on_sound_gui_input(event: InputEvent) -> void:
@@ -297,11 +297,11 @@ func _on_music_gui_input(event: InputEvent) -> void:
 
 
 func _update_sound_button() -> void:
-	sound_button.text = "Sound: %s" % _VOLUME_LABELS[GameSettings.sound_volume]
+	sound_button.text = tr("STR_MENU_SOUND_FMT").replace("{VAL}", tr(_VOLUME_LABELS[GameSettings.sound_volume]))
 
 
 func _update_music_button() -> void:
-	music_button.text = "Music: %s" % _VOLUME_LABELS[GameSettings.music_volume]
+	music_button.text = tr("STR_MENU_MUSIC_FMT").replace("{VAL}", tr(_VOLUME_LABELS[GameSettings.music_volume]))
 
 
 func _on_options_pressed() -> void:

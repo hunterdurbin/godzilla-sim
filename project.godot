@@ -62,6 +62,10 @@ theme/custom="res://assets/fonts/default_theme.tres"
 pointing/android/enable_pan_and_scale_gestures=true
 pointing/emulate_touch_from_mouse.mobile=true
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://translations/strings.en.translation", "res://translations/strings.ja.translation")
+
 [physics]
 
 3d/physics_engine="Jolt Physics"

@@ -21,6 +21,7 @@ func get_custom_base_path() -> String:
 	return _custom_base_path
 
 var player_name: String = ""
+var locale: String = "en"
 var auto_draw: bool = true
 var auto_phase_advance: bool = true
 var auto_discard_strategies: bool = true
@@ -61,9 +62,16 @@ const RECONNECT_TIMEOUT_SEC: int = 90 * 60  # 90 minutes
 func _ready() -> void:
 	use_mobile_layout = OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	_load()
+	TranslationServer.set_locale(locale)
 	if player_name.is_empty():
 		player_name = "Player%06d" % (randi() % 1000000)
 		_save()
+
+
+func set_locale(new_locale: String) -> void:
+	locale = new_locale
+	TranslationServer.set_locale(new_locale)
+	_save()
 
 
 func save() -> void:
@@ -98,6 +106,7 @@ func has_valid_reconnect_session() -> bool:
 func _save() -> void:
 	var config := ConfigFile.new()
 	config.set_value("gameplay", "player_name", player_name)
+	config.set_value("gameplay", "locale", locale)
 	config.set_value("gameplay", "auto_draw", auto_draw)
 	config.set_value("gameplay", "auto_phase_advance", auto_phase_advance)
 	config.set_value("gameplay", "auto_discard_strategies", auto_discard_strategies)
@@ -130,6 +139,7 @@ func _load() -> void:
 	if config.load(SETTINGS_PATH) != OK:
 		return
 	player_name = config.get_value("gameplay", "player_name", "")
+	locale = config.get_value("gameplay", "locale", "en")
 	auto_draw = config.get_value("gameplay", "auto_draw", true)
 	auto_phase_advance = config.get_value("gameplay", "auto_phase_advance", true)
 	auto_discard_strategies = config.get_value("gameplay", "auto_discard_strategies", true)

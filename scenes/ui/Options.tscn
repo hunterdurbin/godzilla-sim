@@ -45,7 +45,7 @@ theme_override_constants/separation = 20
 
 [node name="Title" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Options"
+text = "STR_OPTIONS_TITLE"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 36
 theme_override_colors/font_color = Color(0.9, 0.3, 0.1, 1)
@@ -56,7 +56,7 @@ layout_mode = 2
 [node name="PlayerNameLabel" type="Label" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PlayerNameRow"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Player Name"
+text = "STR_OPTIONS_PLAYER_NAME"
 theme_override_font_sizes/font_size = 20
 
 [node name="PlayerNameEdit" type="LineEdit" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PlayerNameRow"]
@@ -65,39 +65,46 @@ custom_minimum_size = Vector2(250, 0)
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 18
 max_length = 24
-placeholder_text = "Enter name..."
+placeholder_text = "STR_OPTIONS_NAME_PLACEHOLDER"
 
 [node name="AutomationButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Automation..."
+text = "STR_OPTIONS_AUTOMATION"
 theme_override_font_sizes/font_size = 22
 
 [node name="CustomizeButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Customize..."
+text = "STR_OPTIONS_CUSTOMIZE"
 theme_override_font_sizes/font_size = 22
 
 [node name="AdvancedButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Advanced..."
+text = "STR_OPTIONS_ADVANCED"
 theme_override_font_sizes/font_size = 22
 
 [node name="AudioButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Audio..."
+text = "STR_OPTIONS_AUDIO"
+theme_override_font_sizes/font_size = 22
+
+[node name="LanguageButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+auto_translate_mode = 2
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+size_flags_horizontal = 4
 theme_override_font_sizes/font_size = 22
 
 [node name="BackButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Back"
+text = "STR_OPTIONS_BACK"
 theme_override_font_sizes/font_size = 22

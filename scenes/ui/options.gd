@@ -5,7 +5,10 @@ extends Control
 @onready var customize_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CustomizeButton
 @onready var advanced_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AdvancedButton
 @onready var audio_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AudioButton
+@onready var language_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LanguageButton
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
+
+const _LOCALE_CYCLE := ["en", "ja"]
 
 
 func _ready() -> void:
@@ -15,7 +18,22 @@ func _ready() -> void:
 	customize_button.pressed.connect(_on_customize_pressed)
 	advanced_button.pressed.connect(_on_advanced_pressed)
 	audio_button.pressed.connect(_on_audio_pressed)
+	language_button.pressed.connect(_on_language_pressed)
 	back_button.pressed.connect(_on_back_pressed)
+	_refresh_language_button()
+
+
+func _refresh_language_button() -> void:
+	var lang_key := "STR_LANG_" + GameSettings.locale.to_upper()
+	language_button.text = tr("STR_OPTIONS_LANGUAGE_FMT").replace("{LANG}", tr(lang_key))
+
+
+func _on_language_pressed() -> void:
+	SfxManager.play("ui_click")
+	var idx := _LOCALE_CYCLE.find(GameSettings.locale)
+	var next: String = _LOCALE_CYCLE[(idx + 1) % _LOCALE_CYCLE.size()] if idx >= 0 else _LOCALE_CYCLE[0]
+	GameSettings.set_locale(next)
+	_refresh_language_button()
 
 
 func _on_player_name_changed(new_text: String) -> void:
