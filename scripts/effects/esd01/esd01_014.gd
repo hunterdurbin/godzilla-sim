@@ -30,7 +30,7 @@ func on_enter(ctx: EffectContext) -> void:
 		player.player_id,
 		func(card: Dictionary) -> bool:
 			return card.get("name", "") == "Godzilla(2023)" \
-				and card.get("card_type") == CardEnums.CardType.BATTLE,
+				and CardUtils.is_battle(card),
 		"Search for a Godzilla(2023) battle card to play"
 	)
 	if not selected.is_empty():
