@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dnw7oqb85ybk1"
-path="res://.godot/imported/⁅《FINAL WARS》＠⁆.png-9780b93668f995601ed563a12a70ac4a.ctex"
+path="res://.godot/imported/《Final Wars》.png-13dfd3bb83714aac18ad2d6b53ad93cd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/traits/⁅《FINAL WARS》＠⁆.png"
-dest_files=["res://.godot/imported/⁅《FINAL WARS》＠⁆.png-9780b93668f995601ed563a12a70ac4a.ctex"]
+source_file="res://assets/effectIcons/ja/traits/《Final Wars》.png"
+dest_files=["res://.godot/imported/《Final Wars》.png-13dfd3bb83714aac18ad2d6b53ad93cd.ctex"]
 
 [params]
 

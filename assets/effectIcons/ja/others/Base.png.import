@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cuge8qn2mof4b"
-path="res://.godot/imported/拠点.png-cce4499df8c47280de148b4b4d5549fa.ctex"
+path="res://.godot/imported/Base.png-929aaa8985f29a735d496b0b61d71661.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/others/拠点.png"
-dest_files=["res://.godot/imported/拠点.png-cce4499df8c47280de148b4b4d5549fa.ctex"]
+source_file="res://assets/effectIcons/ja/others/Base.png"
+dest_files=["res://.godot/imported/Base.png-929aaa8985f29a735d496b0b61d71661.ctex"]
 
 [params]
 

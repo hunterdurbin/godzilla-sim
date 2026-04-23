@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dwf58i7hsr8sm"
-path="res://.godot/imported/第3形態.png-e495dbbf14c51af6ab1c2a2b8faff7e1.ctex"
+path="res://.godot/imported/《3rd Form》.png-3243bb27f745283aa5fa1278ccfa88aa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/traits/第3形態.png"
-dest_files=["res://.godot/imported/第3形態.png-e495dbbf14c51af6ab1c2a2b8faff7e1.ctex"]
+source_file="res://assets/effectIcons/ja/traits/《3rd Form》.png"
+dest_files=["res://.godot/imported/《3rd Form》.png-3243bb27f745283aa5fa1278ccfa88aa.ctex"]
 
 [params]
 

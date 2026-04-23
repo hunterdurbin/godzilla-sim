@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c3ed0bqxo3kob"
-path="res://.godot/imported/メガロ.png-5c4b54d3b8215c17774ccc3ef9c02000.ctex"
+path="res://.godot/imported/《Megalon》.png-73bc9d368c741b42eee0aa4e018694e4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/traits/メガロ.png"
-dest_files=["res://.godot/imported/メガロ.png-5c4b54d3b8215c17774ccc3ef9c02000.ctex"]
+source_file="res://assets/effectIcons/ja/traits/《Megalon》.png"
+dest_files=["res://.godot/imported/《Megalon》.png-73bc9d368c741b42eee0aa4e018694e4.ctex"]
 
 [params]
 

@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://iv5bg1bi8ig0"
-path="res://.godot/imported/共鳴.png-13fb424977bb24469bfdb17d992b18af.ctex"
+path="res://.godot/imported/Resonance.png-2760e6a37e4384d55408a43cc0a2ce41.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/others/共鳴.png"
-dest_files=["res://.godot/imported/共鳴.png-13fb424977bb24469bfdb17d992b18af.ctex"]
+source_file="res://assets/effectIcons/ja/others/Resonance.png"
+dest_files=["res://.godot/imported/Resonance.png-2760e6a37e4384d55408a43cc0a2ce41.ctex"]
 
 [params]
 

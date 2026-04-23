@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d2xx7m06b0xoh"
-path="res://.godot/imported/⁅《ラドン》＠⁆.png-2f001213504170afc593179e59b7e336.ctex"
+path="res://.godot/imported/《Rodan》.png-7cfdc1c544766569658767e83daecb58.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/traits/⁅《ラドン》＠⁆.png"
-dest_files=["res://.godot/imported/⁅《ラドン》＠⁆.png-2f001213504170afc593179e59b7e336.ctex"]
+source_file="res://assets/effectIcons/ja/traits/《Rodan》.png"
+dest_files=["res://.godot/imported/《Rodan》.png-7cfdc1c544766569658767e83daecb58.ctex"]
 
 [params]
 

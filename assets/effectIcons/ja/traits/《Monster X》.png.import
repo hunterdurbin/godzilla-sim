@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cgghlll7cj8jd"
-path="res://.godot/imported/⁅《モンスターX》＠⁆.png-5ce045f781a1862c2682be349da2458f.ctex"
+path="res://.godot/imported/《Monster X》.png-f7cee25b1e9e099df1a31c18ea360e38.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/traits/⁅《モンスターX》＠⁆.png"
-dest_files=["res://.godot/imported/⁅《モンスターX》＠⁆.png-5ce045f781a1862c2682be349da2458f.ctex"]
+source_file="res://assets/effectIcons/ja/traits/《Monster X》.png"
+dest_files=["res://.godot/imported/《Monster X》.png-f7cee25b1e9e099df1a31c18ea360e38.ctex"]
 
 [params]
 

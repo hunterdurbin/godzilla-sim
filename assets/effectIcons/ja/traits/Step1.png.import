@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://db1ictl8qe3vg"
-path="res://.godot/imported/⁅足１＠⁆.png-08e6fc23780032d2c5e870ffaca90aeb.ctex"
+path="res://.godot/imported/Step1.png-0493136104f1bdca429f5c536da09f21.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/traits/⁅足１＠⁆.png"
-dest_files=["res://.godot/imported/⁅足１＠⁆.png-08e6fc23780032d2c5e870ffaca90aeb.ctex"]
+source_file="res://assets/effectIcons/ja/traits/Step1.png"
+dest_files=["res://.godot/imported/Step1.png-0493136104f1bdca429f5c536da09f21.ctex"]
 
 [params]
 

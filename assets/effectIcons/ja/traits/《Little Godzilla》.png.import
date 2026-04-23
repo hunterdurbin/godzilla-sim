@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cmguqaxup4xgx"
-path="res://.godot/imported/リトルゴジラ.png-874a5288dd7c18cd20e696da98dcbee2.ctex"
+path="res://.godot/imported/《Little Godzilla》.png-643e2b6be9699f622fc50696693b5306.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/traits/リトルゴジラ.png"
-dest_files=["res://.godot/imported/リトルゴジラ.png-874a5288dd7c18cd20e696da98dcbee2.ctex"]
+source_file="res://assets/effectIcons/ja/traits/《Little Godzilla》.png"
+dest_files=["res://.godot/imported/《Little Godzilla》.png-643e2b6be9699f622fc50696693b5306.ctex"]
 
 [params]
 

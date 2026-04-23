@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://byyofvmfu6o5"
-path="res://.godot/imported/⁅《キングシーサー》＠⁆.png-0b6769645076f20f3375958065a69830.ctex"
+path="res://.godot/imported/《King Caesar》.png-4b0a2cdc56eccfb3cb691437c34e4a33.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/traits/⁅《キングシーサー》＠⁆.png"
-dest_files=["res://.godot/imported/⁅《キングシーサー》＠⁆.png-0b6769645076f20f3375958065a69830.ctex"]
+source_file="res://assets/effectIcons/ja/traits/《King Caesar》.png"
+dest_files=["res://.godot/imported/《King Caesar》.png-4b0a2cdc56eccfb3cb691437c34e4a33.ctex"]
 
 [params]
 

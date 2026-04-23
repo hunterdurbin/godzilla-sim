@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c66t6h6631k5u"
-path="res://.godot/imported/第4形態.png-fe18c156137507dbce90f1561c3fbaf4.ctex"
+path="res://.godot/imported/《4th Form》.png-000eec41a2e3e73c1f439aae0cb698dd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/traits/第4形態.png"
-dest_files=["res://.godot/imported/第4形態.png-fe18c156137507dbce90f1561c3fbaf4.ctex"]
+source_file="res://assets/effectIcons/ja/traits/《4th Form》.png"
+dest_files=["res://.godot/imported/《4th Form》.png-000eec41a2e3e73c1f439aae0cb698dd.ctex"]
 
 [params]
 

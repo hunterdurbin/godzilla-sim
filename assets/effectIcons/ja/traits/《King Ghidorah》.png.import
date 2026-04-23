@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b5pmbvr51e26c"
-path="res://.godot/imported/キングギドラ.png-e951db9348a2b29e67a00368b477bca7.ctex"
+path="res://.godot/imported/《King Ghidorah》.png-78e97cb8c8915fef0ed5746491beb451.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/traits/キングギドラ.png"
-dest_files=["res://.godot/imported/キングギドラ.png-e951db9348a2b29e67a00368b477bca7.ctex"]
+source_file="res://assets/effectIcons/ja/traits/《King Ghidorah》.png"
+dest_files=["res://.godot/imported/《King Ghidorah》.png-78e97cb8c8915fef0ed5746491beb451.ctex"]
 
 [params]
 
