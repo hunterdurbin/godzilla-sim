@@ -35,14 +35,14 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 	# Check if there are already monster cards under this card
 	var stack: Array = ctx.owner.get_zone_stack(zone_idx)
 	for i in range(1, stack.size()):
-		if stack[i].get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(stack[i]):
 			return # Already has a monster under it
 
 	# Search discard for a monster card to place under
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.MONSTER,
+			return CardUtils.is_monster(card),
 		"Place a monster card from your discard pile under this card to set opponent's Rage to 0:"
 	)
 	if selected.is_empty():

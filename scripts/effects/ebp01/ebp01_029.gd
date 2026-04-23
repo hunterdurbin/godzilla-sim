@@ -22,13 +22,7 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 func on_enter(ctx: EffectContext) -> void:
 	# Check if opponent has any rank 5 or lower battle cards
-	var has_targets: bool = false
-	for i in range(8):
-		var top := ctx.opponent.get_zone_top_card(i)
-		if not top.is_empty() and ctx.field_rank(top, ctx.opponent.player_id) <= 5:
-			has_targets = true
-			break
-	if not has_targets:
+	if ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 5).is_empty():
 		return
 
 	var all_zones: Array[int] = [0, 1, 2, 3, 4, 5, 6, 7]

@@ -34,10 +34,9 @@ func on_enter(ctx: EffectContext) -> void:
 		var selected := await ctx.effect_handler.search_deck(
 			ctx.owner.player_id,
 			func(card: Dictionary) -> bool:
-				if card.get("card_type") != CardEnums.CardType.BATTLE:
+				if not CardUtils.is_battle(card):
 					return false
-				var traits: Array = card.get("traits", [])
-				return CardEnums.CardTrait.KAMACURAS in traits,
+				return CardUtils.has_trait(card, CardEnums.CardTrait.KAMACURAS),
 			"Search for a Kamacuras battle card to play:"
 		)
 		if selected.is_empty():

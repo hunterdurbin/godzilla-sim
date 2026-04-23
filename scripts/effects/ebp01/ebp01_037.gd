@@ -20,10 +20,9 @@ func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> v
 	var discarded := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.STRATEGY,
+			return CardUtils.is_strategy(card),
 		"Discard a strategy card from hand to gain 1 Rage:",
 		true # allow_skip
 	)
 	if not discarded.is_empty():
-		ctx.owner.rage += 1
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)

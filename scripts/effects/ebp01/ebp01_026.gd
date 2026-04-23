@@ -35,8 +35,8 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			var traits: Array = card.get("traits", [])
-			return CardEnums.CardTrait.GIGAN in traits and CardEnums.CardTrait.FEST in traits,
+			return CardUtils.has_trait(card, CardEnums.CardTrait.GIGAN) \
+				and CardUtils.has_trait(card, CardEnums.CardTrait.FEST),
 		"Choose a Gigan + Fest card from your discard pile to place under this card:"
 	)
 

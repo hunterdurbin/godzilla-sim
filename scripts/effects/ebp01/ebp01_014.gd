@@ -35,8 +35,4 @@ func _should_restrict(ctx: EffectContext) -> bool:
 	if ctx.owner.monster_zone < 4:
 		return false
 	# 2+ battle cards in zones
-	var count: int = 0
-	for i in range(8):
-		if ctx.owner.zone_has_cards(i):
-			count += 1
-	return count >= 2
+	return ctx.owner.get_occupied_zone_indices().size() >= 2

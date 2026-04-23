@@ -47,14 +47,13 @@ func on_enter(ctx: EffectContext) -> void:
 	var monster_count: int = 0
 	var has_step2: bool = false
 	for card in revealed:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 		if card.get("invasion_icon", 0) >= 2:
 			has_step2 = true
 
 	if monster_count > 0:
-		ctx.owner.rage += monster_count
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, monster_count)
 
 	if has_step2 and ctx.owner.monster_zone < 6:
 		await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 6)

@@ -23,10 +23,8 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 		return
 
 	# Find other occupied zones (excluding this card's zone)
-	var occupied: Array[int] = []
-	for i in range(8):
-		if i != my_zone and ctx.owner.zone_has_cards(i):
-			occupied.append(i)
+	var occupied: Array[int] = ctx.owner.get_occupied_zone_indices()
+	occupied.erase(my_zone)
 	if occupied.is_empty():
 		return
 

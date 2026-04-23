@@ -19,13 +19,7 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool:
 	if opponent.rage <= 0:
 		return false
-	var battle_count: int = 0
-	for i in range(8):
-		if owner.zone_has_battle_card(i):
-			battle_count += 1
-			if battle_count >= 4:
-				return true
-	return false
+	return owner.count_zones_matching(CardUtils.is_battle) >= 4
 
 
 func get_burst_rank() -> int:
@@ -33,9 +27,5 @@ func get_burst_rank() -> int:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var battle_count: int = 0
-	for i in range(8):
-		if ctx.owner.zone_has_cards(i):
-			battle_count += 1
-	if battle_count >= 4:
+	if ctx.owner.get_occupied_zone_indices().size() >= 4:
 		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

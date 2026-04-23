@@ -16,17 +16,11 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	# Collect eligible zones
-	var eligible: Array[int] = []
-	for i in range(8):
-		var zone_card := ctx.owner.get_zone_top_card(i)
-		if zone_card.is_empty():
-			continue
-		if ctx.field_rank(zone_card, ctx.owner.player_id) > 4:
-			continue
-		if not zone_card.has("evolution_rank"):
-			continue
-		eligible.append(i)
+	# Collect eligible zones: rank 4 or lower with Evolution
+	var eligible: Array[int] = ctx.owner.get_zone_top_indices_matching(
+		func(c: Dictionary) -> bool:
+			return c.has("evolution_rank") \
+				and ctx.field_rank(c, ctx.owner.player_id) <= 4)
 
 	# Let the player choose the order when multiple zones are eligible
 	while not eligible.is_empty():

@@ -24,7 +24,7 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 func bot_can_fulfill_on_when_invading(owner: PlayerState, _opponent: PlayerState) -> bool:
 	var monster_count := 0
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 			if monster_count >= 5:
 				return true
@@ -40,5 +40,4 @@ func on_enter(ctx: EffectContext) -> void:
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	if ctx.effect_handler.count_monsters_in_discard(ctx.owner) >= 5:
-		ctx.owner.rage += 1
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)

@@ -41,9 +41,8 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		ctx.owner.player_id, revealed, revealed,
 		"Sent to discard pile:")
 
-	if card.get("card_type") == CardEnums.CardType.MONSTER:
-		ctx.owner.rage += 1
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
+	if CardUtils.is_monster(card):
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)
 		ctx.effect_handler.log_message.emit(
 			GameLog.effect_gained_rage_from_mill(ctx.owner.player_id, ctx.card_data.get("id", ""), ctx.owner.rage, card.get("id", ""))
 		)

@@ -23,7 +23,7 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 		return 0
 	# Check for a Biollante card with Evolution in discard
 	for card in ctx.owner.discard_pile:
-		if CardEnums.CardTrait.BIOLLANTE in card.get("traits", []) and card.has("evolution_rank"):
+		if CardUtils.has_trait(card, CardEnums.CardTrait.BIOLLANTE) and card.has("evolution_rank"):
 			return -2
 	return 0
 

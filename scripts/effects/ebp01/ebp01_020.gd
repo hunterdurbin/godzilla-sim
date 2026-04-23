@@ -46,7 +46,7 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 	var selected := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			if card.get("card_type") != CardEnums.CardType.MONSTER:
+			if not CardUtils.is_monster(card):
 				return false
 			var effect := ctx.effect_handler.get_effect(card)
 			return effect != null and effect.get_burst_rank() >= 0,

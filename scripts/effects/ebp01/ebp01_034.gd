@@ -26,7 +26,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			if card.get("card_type") != CardEnums.CardType.BATTLE:
+			if not CardUtils.is_battle(card):
 				return false
 			if card.get("rank", 0) > 4:
 				return false

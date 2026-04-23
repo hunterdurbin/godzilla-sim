@@ -22,18 +22,14 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	# Count active strategy cards
-	var strategy_count: int = 0
-	for sz_card in ctx.owner.strategy_zones:
-		if not sz_card.is_empty():
-			strategy_count += 1
-	if strategy_count > 1:
+	if ctx.owner.count_strategies_in_play() > 1:
 		return
 
 	# Search discard for "Godzilla vs. Destoroyah" strategy
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.STRATEGY \
+			return CardUtils.is_strategy(card) \
 				and card.get("name", "") == "Godzilla vs. Destoroyah",
 		"Choose a 'Godzilla vs. Destoroyah' strategy card from your discard pile:"
 	)

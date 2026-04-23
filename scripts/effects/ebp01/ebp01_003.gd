@@ -40,7 +40,7 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 		ctx.owner.player_id, revealed, revealed,
 		"Sent to discard pile:")
 
-	if card.get("card_type") == CardEnums.CardType.MONSTER:
+	if CardUtils.is_monster(card):
 		await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
 			func(c: Dictionary) -> bool: return ctx.field_rank(c, ctx.opponent.player_id) <= 6,

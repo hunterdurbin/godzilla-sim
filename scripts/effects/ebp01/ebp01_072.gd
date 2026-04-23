@@ -42,7 +42,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id, revealed, revealed,
 		"Sent to discard pile:")
 
-	if card.get("card_type") == CardEnums.CardType.BATTLE:
+	if CardUtils.is_battle(card):
 		var opponent_tl: int = ctx.effect_handler.get_effective_threat_level(ctx.opponent.player_id)
 		if opponent_tl <= 50000 and ctx.opponent.monster_zone > 1:
 			await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
