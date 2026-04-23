@@ -10,12 +10,12 @@ class_name GameLog
 
 static var player_names: Array[String] = ["Player 1", "Player 2"]
 
-const _ENTER_ICON := "[img=20]res://assets/effectIcons/others/Enter.png[/img]"
-const _RAGE_ICON := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
-const _BASE_ICON := "[img=40]res://assets/effectIcons/others/Base.png[/img]"
-const _STEP2_ICON := "[img=20]res://assets/effectIcons/others/Step2.png[/img]"
-const _REVENGE_ICON := "[img=40]res://assets/effectIcons/others/Revenge.png[/img]"
-const _DESTROY_ICON := "[img=40]res://assets/effectIcons/others/Destroy.png[/img]"
+const _ENTER_ICON := "[img=20]res://assets/effectIcons/en/others/Enter.png[/img]"
+const _RAGE_ICON := "[img=30]res://assets/effectIcons/en/others/Rage.png[/img]"
+const _BASE_ICON := "[img=40]res://assets/effectIcons/en/others/Base.png[/img]"
+const _STEP2_ICON := "[img=20]res://assets/effectIcons/en/others/Step2.png[/img]"
+const _REVENGE_ICON := "[img=40]res://assets/effectIcons/en/others/Revenge.png[/img]"
+const _DESTROY_ICON := "[img=40]res://assets/effectIcons/en/others/Destroy.png[/img]"
 
 
 static func disambiguate(names: Array[String], local_id: int) -> Array[String]:
@@ -268,7 +268,7 @@ static func render(token: Dictionary) -> String:
 				.replace("{REASON}", reason)
 		"burst_played":
 			var rank: int = int(token.get("burst_rank", 0))
-			var prefix := _icon_or_fallback("res://assets/effectIcons/bursts/Burst%d.png" % rank, "STR_LOG_BURST_FALLBACK_PREFIX_FMT", rank)
+			var prefix := _icon_or_fallback("res://assets/effectIcons/en/bursts/Burst%d.png" % rank, "STR_LOG_BURST_FALLBACK_PREFIX_FMT", rank)
 			return TranslationServer.translate("STR_LOG_BURST_PLAYED_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{BURST_PREFIX}", prefix) \
@@ -282,14 +282,14 @@ static func render(token: Dictionary) -> String:
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"awakening_triggered":
 			var level: int = int(token.get("awakening_level", 0))
-			var awk_prefix := _icon_or_fallback("res://assets/effectIcons/awakenings/Awakening%d.png" % level, "STR_LOG_AWAKENING_FALLBACK_PREFIX_FMT", level)
+			var awk_prefix := _icon_or_fallback("res://assets/effectIcons/en/awakenings/Awakening%d.png" % level, "STR_LOG_AWAKENING_FALLBACK_PREFIX_FMT", level)
 			return TranslationServer.translate("STR_LOG_AWAKENING_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{AWK_PREFIX}", awk_prefix) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"evolution":
 			var evo_rank: int = int(token.get("evo_rank", 0))
-			var evo_prefix := _icon_or_fallback("res://assets/effectIcons/evolutions/Evolution%d.png" % evo_rank, "STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT", evo_rank)
+			var evo_prefix := _icon_or_fallback("res://assets/effectIcons/en/evolutions/Evolution%d.png" % evo_rank, "STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT", evo_rank)
 			return TranslationServer.translate("STR_LOG_EVOLUTION_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{ZONE}", str(int(token.get("zone_idx", 0)) + 1)) \
