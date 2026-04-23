@@ -19,16 +19,10 @@ func on_enter(ctx: EffectContext) -> void:
 	var my_zone: int = find_zone_of_card(ctx)
 
 	# Count eligible green battle cards (excluding self)
-	var green_zones: Array[int] = []
-	for i in range(8):
-		if i == my_zone:
-			continue
-		var zone_card := ctx.owner.get_zone_top_card(i)
-		if zone_card.is_empty():
-			continue
-		if (zone_card.get("card_type") == CardEnums.CardType.BATTLE and
-				CardEnums.CardColor.GREEN in zone_card.get("colors", [])):
-			green_zones.append(i)
+	var green_zones: Array[int] = ctx.owner.get_zone_top_indices_matching(
+		func(c: Dictionary) -> bool:
+			return CardUtils.is_battle(c) and CardUtils.has_color(c, CardEnums.CardColor.GREEN))
+	green_zones.erase(my_zone)
 
 	if green_zones.size() < 4:
 		# Can't pay cost, destroy self

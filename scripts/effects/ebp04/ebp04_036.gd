@@ -18,7 +18,7 @@ func get_bot_tags() -> Array[String]:
 func get_threat_level_modifier(ctx: EffectContext) -> int:
 	var colors: Array[int] = []
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.BATTLE:
+		if CardUtils.is_battle(card):
 			for c: int in card.get("colors", []):
 				if c not in colors:
 					colors.append(c)

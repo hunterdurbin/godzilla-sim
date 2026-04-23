@@ -22,7 +22,7 @@ func can_play_as_monster(ctx: EffectContext) -> bool:
 		return false
 	if ctx.owner.current_monster.get("rank", 0) != 2:
 		return false
-	if CardEnums.CardTrait.BIOLLANTE not in ctx.owner.current_monster.get("traits", []):
+	if not CardUtils.has_trait(ctx.owner.current_monster, CardEnums.CardTrait.BIOLLANTE):
 		return false
 	for card in ctx.owner.monster_deck:
 		if card.get("rank", 0) == 3:

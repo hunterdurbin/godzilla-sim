@@ -19,9 +19,9 @@ func on_revenge(ctx: EffectContext) -> void:
 	var found := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			if card.get("card_type") != CardEnums.CardType.BATTLE:
+			if not CardUtils.is_battle(card):
 				return false
-			return CardEnums.CardTrait.GODZILLA_EARTH in card.get("traits", []),
+			return CardUtils.has_trait(card, CardEnums.CardTrait.GODZILLA_EARTH),
 		"Return a Godzilla Earth battle card from your discard to your hand (or skip):")
 	if not found.is_empty():
 		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)

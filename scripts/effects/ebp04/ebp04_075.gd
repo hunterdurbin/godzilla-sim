@@ -37,7 +37,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	ctx.owner.deck_changed.emit()
 	ctx.owner.discard_changed.emit()
 
-	if top_card.get("card_type") != CardEnums.CardType.MONSTER:
+	if not CardUtils.is_monster(top_card):
 		return
 
 	var monster_idx: int = ctx.owner.monster_zone - 1

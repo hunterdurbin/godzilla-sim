@@ -21,7 +21,7 @@ func on_enter(ctx: EffectContext) -> void:
 		var zone_card := ctx.owner.get_zone_top_card(i)
 		if zone_card.is_empty():
 			continue
-		if zone_card.get("card_type") != CardEnums.CardType.BATTLE:
+		if not CardUtils.is_battle(zone_card):
 			continue
 		if zone_card.get("evolution_rank", -1) < 0:
 			continue

@@ -30,8 +30,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var green_count: int = 0
 	for card in ctx.owner.discard_pile:
-		if (card.get("card_type") == CardEnums.CardType.BATTLE and
-				CardEnums.CardColor.GREEN in card.get("colors", [])):
+		if CardUtils.is_battle(card) and CardUtils.has_color(card, CardEnums.CardColor.GREEN):
 			green_count += 1
 	if green_count < 10:
 		return

@@ -28,7 +28,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card: Dictionary) -> bool: return card.get("card_type") == CardEnums.CardType.STRATEGY,
+		func(card: Dictionary) -> bool: return CardUtils.is_strategy(card),
 		"Discard a strategy card to Destroy all opponent Rank 6 or lower battle cards in this column (or skip):",
 		true)
 	if selected.is_empty():

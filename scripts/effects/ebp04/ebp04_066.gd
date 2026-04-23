@@ -25,12 +25,7 @@ func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, targ
 		return 0
 	if ctx.game_state.current_player_id != target_player_id:
 		return 0
-	for i in range(8):
-		var zone_card := ctx.owner.get_zone_top_card(i)
-		if zone_card.is_empty():
-			continue
-		if zone_card.get("card_type") != CardEnums.CardType.BATTLE:
-			continue
-		if CardEnums.CardColor.GREEN not in zone_card.get("colors", []):
-			return 2
-	return 0
+	var has_non_green_battle: bool = ctx.owner.has_zone_matching(
+		func(c: Dictionary) -> bool:
+			return CardUtils.is_battle(c) and not CardUtils.has_color(c, CardEnums.CardColor.GREEN))
+	return 2 if has_non_green_battle else 0

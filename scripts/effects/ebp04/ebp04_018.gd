@@ -35,6 +35,6 @@ func on_enter(ctx: EffectContext) -> void:
 func _monster_discard_count(ctx: EffectContext) -> int:
 	var count: int = 0
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			count += 1
 	return count

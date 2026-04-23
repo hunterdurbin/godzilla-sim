@@ -48,7 +48,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card: Dictionary) -> bool: return card.get("card_type") == CardEnums.CardType.BATTLE,
+		func(card: Dictionary) -> bool: return CardUtils.is_battle(card),
 		"Discard a battle card: this card cannot be countered by 30,000 or less CP this turn (or skip):",
 		true)
 	if not selected.is_empty():
@@ -56,7 +56,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 
 func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> void:
-	if discarded_card.get("card_type") != CardEnums.CardType.BATTLE:
+	if not CardUtils.is_battle(discarded_card):
 		return
 	if ctx.opponent.rage != 0:
 		return

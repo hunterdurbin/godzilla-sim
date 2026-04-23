@@ -37,8 +37,7 @@ func on_counter_success(ctx: EffectContext) -> void:
 
 	var green_count: int = 0
 	for card in revealed:
-		if (card.get("card_type") == CardEnums.CardType.BATTLE and
-				CardEnums.CardColor.GREEN in card.get("colors", [])):
+		if CardUtils.is_battle(card) and CardUtils.has_color(card, CardEnums.CardColor.GREEN):
 			green_count += 1
 
 	# Collect valid target zones (zones 1-5 = indices 0-4 with <= 6000 CP)

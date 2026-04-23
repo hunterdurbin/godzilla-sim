@@ -40,8 +40,8 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	ctx.owner.discard_changed.emit()
 
 	var is_green_battle: bool = (
-		top_card.get("card_type") == CardEnums.CardType.BATTLE and
-		CardEnums.CardColor.GREEN in top_card.get("colors", [])
+		CardUtils.is_battle(top_card) and
+		CardUtils.has_color(top_card, CardEnums.CardColor.GREEN)
 	)
 	if is_green_battle:
 		await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 4)

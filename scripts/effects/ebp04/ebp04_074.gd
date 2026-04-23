@@ -15,10 +15,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
-	for sz in opponent.strategy_zones:
-		if not sz.is_empty():
-			return true
-	return false
+	return opponent.has_any_strategy_in_play()
 
 
 func on_enter(ctx: EffectContext) -> void:

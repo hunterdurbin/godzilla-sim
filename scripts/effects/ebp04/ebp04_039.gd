@@ -25,9 +25,9 @@ func on_ally_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary,
 		return
 
 	# Destroyed card must be a non-red battle card (not this card itself)
-	if destroyed_card.get("card_type") != CardEnums.CardType.BATTLE:
+	if not CardUtils.is_battle(destroyed_card):
 		return
-	if CardEnums.CardColor.RED in destroyed_card.get("colors", []):
+	if CardUtils.has_color(destroyed_card, CardEnums.CardColor.RED):
 		return
 
 	# Find where this card currently is

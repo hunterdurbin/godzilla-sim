@@ -27,12 +27,8 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
 		return
 
-	var has_rank8_plus := false
-	for i in range(8):
-		var zone_card := ctx.owner.get_zone_top_card(i)
-		if not zone_card.is_empty() and ctx.field_rank(zone_card, ctx.owner.player_id) >= 8:
-			has_rank8_plus = true
-			break
+	var has_rank8_plus: bool = not ctx.effect_handler.get_zones_in_rank_range(
+		ctx.owner.player_id, 8, -1).is_empty()
 	if not has_rank8_plus:
 		return
 
@@ -48,16 +44,13 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		ctx.owner.player_id, [top_card], "Revealed from deck top:")
 	await ctx.effect_handler._cards_revealed_resolved
 
-	var is_blue: bool = CardEnums.CardColor.BLUE in top_card.get("colors", [])
+	var is_blue: bool = CardUtils.has_color(top_card, CardEnums.CardColor.BLUE)
 
 	if not is_blue:
 		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
 	else:
-		var valid_zones: Array[int] = []
-		for i in range(8):
-			var zone_card := ctx.owner.get_zone_top_card(i)
-			if not zone_card.is_empty() and ctx.field_rank(zone_card, ctx.owner.player_id) >= 8:
-				valid_zones.append(i)
+		var valid_zones: Array[int] = ctx.effect_handler.get_zones_in_rank_range(
+			ctx.owner.player_id, 8, -1)
 		if not valid_zones.is_empty():
 			var chosen: int = await ctx.effect_handler.select_zone_target(
 				ctx.owner.player_id, ctx.owner.player_id, valid_zones,

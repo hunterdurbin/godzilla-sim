@@ -32,7 +32,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		if ctx.opponent.zone_has_cards(zi):
 			return
 
-	var old_rage := ctx.owner.rage
-	ctx.owner.rage += 1
-	ctx.owner.rage_changed.emit(ctx.owner.rage)
-	await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)

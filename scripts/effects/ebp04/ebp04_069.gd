@@ -18,7 +18,7 @@ func get_bot_tags() -> Array[String]:
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	if ctx.owner.monster_zone < 4:
 		return 0
-	if CardEnums.CardColor.BLUE not in ctx.opponent.current_monster.get("colors", []):
+	if not CardUtils.has_color(ctx.opponent.current_monster, CardEnums.CardColor.BLUE):
 		return 0
 	if _is_in_opponent_monster_column(ctx):
 		return 5000

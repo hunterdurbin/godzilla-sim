@@ -31,13 +31,9 @@ func on_strategy_discarded(ctx: EffectContext, strategy_card: Dictionary) -> voi
 	if strategy_card.get("id", "") != ctx.card_data.get("id", ""):
 		return
 
-	var green_count: int = 0
-	for i in range(8):
-		var zone_card := ctx.owner.get_zone_top_card(i)
-		if (not zone_card.is_empty() and
-				zone_card.get("card_type") == CardEnums.CardType.BATTLE and
-				CardEnums.CardColor.GREEN in zone_card.get("colors", [])):
-			green_count += 1
+	var green_count: int = ctx.owner.count_zones_matching(
+		func(c: Dictionary) -> bool:
+			return CardUtils.is_battle(c) and CardUtils.has_color(c, CardEnums.CardColor.GREEN))
 
 	if green_count < 2:
 		return
@@ -62,4 +58,4 @@ func protects_card_from_destruction(ctx: EffectContext, card_data: Dictionary, z
 		return false
 	if zone_idx >= 5:
 		return false
-	return CardEnums.CardTrait.HIGHER_DIMENSIONAL in card_data.get("traits", [])
+	return CardUtils.has_trait(card_data, CardEnums.CardTrait.HIGHER_DIMENSIONAL)

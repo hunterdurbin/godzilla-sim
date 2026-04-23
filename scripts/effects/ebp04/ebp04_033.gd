@@ -19,7 +19,7 @@ func get_bot_tags() -> Array[String]:
 func can_play_as_monster(ctx: EffectContext) -> bool:
 	if ctx.card_data.get("played_from_effect", false):
 		return false
-	return CardEnums.CardTrait.MONSTER_X in ctx.owner.current_monster.get("traits", [])
+	return CardUtils.has_trait(ctx.owner.current_monster, CardEnums.CardTrait.MONSTER_X)
 
 
 func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
@@ -35,7 +35,7 @@ func on_enter(ctx: EffectContext) -> void:
 func _count_discard_colors(ctx: EffectContext) -> int:
 	var colors: Array[int] = []
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.BATTLE:
+		if CardUtils.is_battle(card):
 			for c: int in card.get("colors", []):
 				if c not in colors:
 					colors.append(c)

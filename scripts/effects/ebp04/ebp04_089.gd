@@ -66,10 +66,7 @@ func _trigger_milestone(ctx: EffectContext, milestone: int) -> void:
 		15:
 			ctx.effect_handler.log_message.emit(
 				"Inherited Life: 15 rage cards — destroying all opponent battle cards!")
-			var zones_to_destroy: Array[int] = []
-			for i in range(8):
-				if not ctx.opponent.get_zone_top_card(i).is_empty():
-					zones_to_destroy.append(i)
+			var zones_to_destroy: Array[int] = ctx.opponent.get_occupied_zone_indices()
 			if not zones_to_destroy.is_empty():
 				await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
 		22:

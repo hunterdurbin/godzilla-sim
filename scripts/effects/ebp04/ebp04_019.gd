@@ -21,7 +21,7 @@ func _condition_met(ctx: EffectContext) -> bool:
 		return false
 	var count: int = 0
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			count += 1
 	return count >= 5
 

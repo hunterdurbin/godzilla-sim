@@ -21,4 +21,4 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 func protects_card_from_destruction(ctx: EffectContext, card_data: Dictionary, _zone_idx: int) -> bool:
 	# Protects strategy cards in strategy zones from opponent destruction effects
 	# Note: this is called from strategy zone destruction checks, not zone_idx
-	return card_data.get("card_type") == CardEnums.CardType.STRATEGY
+	return CardUtils.is_strategy(card_data)

@@ -31,9 +31,9 @@ func on_enter(ctx: EffectContext) -> void:
 	var found := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			if card.get("card_type") != CardEnums.CardType.MONSTER:
+			if not CardUtils.is_monster(card):
 				return false
-			return CardEnums.CardTrait.GIGAN in card.get("traits", []),
+			return CardUtils.has_trait(card, CardEnums.CardTrait.GIGAN),
 		"Return a Gigan monster from your discard pile to your hand (or skip):")
 
 	if not found.is_empty():

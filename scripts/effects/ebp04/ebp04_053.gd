@@ -15,10 +15,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var occupied: Array[int] = []
-	for i in range(8):
-		if ctx.owner.zone_has_cards(i):
-			occupied.append(i)
+	var occupied: Array[int] = ctx.owner.get_occupied_zone_indices()
 	if occupied.size() < 2:
 		return
 

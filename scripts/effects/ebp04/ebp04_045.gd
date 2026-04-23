@@ -37,15 +37,15 @@ func apply_play_cost(ctx: EffectContext, zone_index: int) -> bool:
 
 
 func _is_non_blue_battle(card: Dictionary) -> bool:
-	if card.get("card_type") != CardEnums.CardType.BATTLE:
+	if not CardUtils.is_battle(card):
 		return false
-	return CardEnums.CardColor.BLUE not in card.get("colors", [])
+	return not CardUtils.has_color(card, CardEnums.CardColor.BLUE)
 
 
 func _hand_has_non_blue_battle(player: PlayerState) -> bool:
 	for card in player.hand:
-		if card.get("card_type") != CardEnums.CardType.BATTLE:
+		if not CardUtils.is_battle(card):
 			continue
-		if CardEnums.CardColor.BLUE not in card.get("colors", []):
+		if not CardUtils.has_color(card, CardEnums.CardColor.BLUE):
 			return true
 	return false

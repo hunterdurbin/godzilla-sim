@@ -17,15 +17,12 @@ func get_bot_tags() -> Array[String]:
 
 func on_enter(ctx: EffectContext) -> void:
 	var my_zone: int = find_zone_of_card(ctx)
-	var green_count: int = 0
-	for i in range(8):
-		if i == my_zone:
-			continue
-		var zone_card := ctx.owner.get_zone_top_card(i)
-		if (not zone_card.is_empty() and
-				zone_card.get("card_type") == CardEnums.CardType.BATTLE and
-				CardEnums.CardColor.GREEN in zone_card.get("colors", [])):
-			green_count += 1
+	var green_tops: Array[int] = ctx.owner.get_zone_top_indices_matching(
+		func(c: Dictionary) -> bool:
+			return CardUtils.is_battle(c) and CardUtils.has_color(c, CardEnums.CardColor.GREEN))
+	var green_count: int = green_tops.size()
+	if my_zone in green_tops:
+		green_count -= 1
 
 	if green_count < 4:
 		return
@@ -34,7 +31,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return CardEnums.CardColor.GREEN in card.get("colors", []),
+			return CardUtils.has_color(card, CardEnums.CardColor.GREEN),
 		"Discard 1 green card from your deck (or skip):")
 	if not found.is_empty():
 		ctx.owner.discard_pile.append(found)

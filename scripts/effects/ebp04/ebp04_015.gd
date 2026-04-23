@@ -16,7 +16,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> void:
-	if discarded_card.get("card_type") != CardEnums.CardType.BATTLE:
+	if not CardUtils.is_battle(discarded_card):
 		return
 	if ctx.opponent.rage != 0:
 		return

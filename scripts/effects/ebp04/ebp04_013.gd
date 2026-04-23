@@ -20,7 +20,7 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	var monster_count: int = 0
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 	return monster_count >= 5
 
@@ -28,7 +28,7 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 func on_enter(ctx: EffectContext) -> void:
 	var monster_count: int = 0
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 	if monster_count < 5:
 		return

@@ -27,15 +27,10 @@ func get_strategy_hand_rank_modifier(ctx: EffectContext, card: Dictionary, targe
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
 		return 0
 	# Only applies to strategy cards in hand
-	if card.get("card_type") != CardEnums.CardType.STRATEGY:
+	if not CardUtils.is_strategy(card):
 		return 0
 	# Only if no strategies currently in play
-	var has_strategy := false
-	for sz in ctx.owner.strategy_zones:
-		if not sz.is_empty():
-			has_strategy = true
-			break
-	if has_strategy:
+	if ctx.owner.has_any_strategy_in_play():
 		return 0
 	# Count distinct colors in discard
 	var colors_seen: Array = []

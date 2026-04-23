@@ -20,12 +20,7 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 		return 0
 	if ctx.owner.monster_zone < 4:
 		return 0
-	var non_red_count: int = 0
-	for i in range(8):
-		var zone_card := ctx.owner.get_zone_top_card(i)
-		if zone_card.is_empty() or zone_card.get("card_type") != CardEnums.CardType.BATTLE:
-			continue
-		var colors: Array = zone_card.get("colors", [])
-		if CardEnums.CardColor.RED not in colors:
-			non_red_count += 1
+	var non_red_count: int = ctx.owner.count_zones_matching(
+		func(c: Dictionary) -> bool:
+			return CardUtils.is_battle(c) and not CardUtils.has_color(c, CardEnums.CardColor.RED))
 	return -2 * non_red_count

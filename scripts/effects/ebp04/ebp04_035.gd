@@ -23,20 +23,16 @@ func on_enter(ctx: EffectContext) -> void:
 
 	for _i in range(color_count):
 		# Find lowest-numbered zone with a battle card
-		var target_zone: int = -1
-		for zi in range(8):
-			if ctx.opponent.zone_has_cards(zi):
-				target_zone = zi
-				break
-		if target_zone < 0:
+		var occupied: Array[int] = ctx.opponent.get_occupied_zone_indices()
+		if occupied.is_empty():
 			break
-		await ctx.effect_handler.destroy_zones(ctx.opponent, [target_zone])
+		await ctx.effect_handler.destroy_zones(ctx.opponent, [occupied[0]])
 
 
 func _count_discard_colors(ctx: EffectContext) -> int:
 	var colors: Array[int] = []
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.BATTLE:
+		if CardUtils.is_battle(card):
 			for c: int in card.get("colors", []):
 				if c not in colors:
 					colors.append(c)

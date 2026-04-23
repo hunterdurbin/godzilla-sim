@@ -22,7 +22,7 @@ func get_required_play_zones(_ctx: EffectContext) -> Array[int]:
 
 func on_enter(ctx: EffectContext) -> void:
 	var top: Dictionary = ctx.owner.get_zone_top_card(2)
-	if top.get("card_type") == CardEnums.CardType.MONSTER:
+	if CardUtils.is_monster(top):
 		return
 	await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP04-T01", 2)
 

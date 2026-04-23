@@ -29,7 +29,7 @@ func on_enter(ctx: EffectContext) -> void:
 			var zone_card := ctx.opponent.get_zone_top_card(i)
 			if zone_card.is_empty():
 				continue
-			if color in zone_card.get("colors", []):
+			if CardUtils.has_color(zone_card, color):
 				valid_zones.append(i)
 		if valid_zones.is_empty():
 			continue

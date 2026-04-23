@@ -17,10 +17,8 @@ func get_bot_tags() -> Array[String]:
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	var my_zone: int = find_zone_of_card(ctx)
-	var count: int = 0
-	for i in range(8):
-		if i == my_zone:
-			continue
-		if ctx.owner.zone_has_cards(i):
-			count += 1
+	var occupied: Array[int] = ctx.owner.get_occupied_zone_indices()
+	var count: int = occupied.size()
+	if my_zone in occupied:
+		count -= 1
 	return 3000 if count >= 2 else 0

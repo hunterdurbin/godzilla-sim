@@ -35,7 +35,4 @@ func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> v
 	if my_zone != 7:  # Must be zone 8 (index 7)
 		return
 
-	var old_rage := ctx.owner.rage
-	ctx.owner.rage += 2
-	ctx.owner.rage_changed.emit(ctx.owner.rage)
-	await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2)

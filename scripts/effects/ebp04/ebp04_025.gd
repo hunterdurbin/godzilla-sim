@@ -47,7 +47,6 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 func _green_battle_discard_count(ctx: EffectContext) -> int:
 	var count: int = 0
 	for card in ctx.owner.discard_pile:
-		if (card.get("card_type") == CardEnums.CardType.BATTLE and
-				CardEnums.CardColor.GREEN in card.get("colors", [])):
+		if CardUtils.is_battle(card) and CardUtils.has_color(card, CardEnums.CardColor.GREEN):
 			count += 1
 	return count

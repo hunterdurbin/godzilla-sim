@@ -21,25 +21,18 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	var count: int = 0
-	for sz in owner.strategy_zones:
-		if not sz.is_empty():
-			count += 1
-	return count <= 1
+	return owner.count_strategies_in_play() <= 1
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var strat_count: int = 0
-	for sz in ctx.owner.strategy_zones:
-		if not sz.is_empty():
-			strat_count += 1
+	var strat_count: int = ctx.owner.count_strategies_in_play()
 	if strat_count > 1:
 		return
 
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.STRATEGY and card.get("rank", 99) == 1,
+			return CardUtils.is_strategy(card) and card.get("rank", 99) == 1,
 		"Search for a Rank 1 Strategy card:")
 
 	if found.is_empty():
@@ -72,11 +65,8 @@ func on_opponent_zone_card_destroyed(ctx: EffectContext, destroyed_card: Diction
 	if rank1_in_discard < 3:
 		return
 	var destroyed_rank: int = ctx.field_rank(destroyed_card, ctx.opponent.player_id)
-	var targets: Array[int] = []
-	for i in range(8):
-		var card := ctx.opponent.get_zone_top_card(i)
-		if not card.is_empty() and ctx.field_rank(card, ctx.opponent.player_id) <= destroyed_rank:
-			targets.append(i)
+	var targets: Array[int] = ctx.effect_handler.get_zones_in_rank_range(
+		ctx.opponent.player_id, -1, destroyed_rank)
 	if targets.is_empty():
 		return
 	await ctx.effect_handler.destroy_zones(ctx.opponent, targets)

@@ -19,8 +19,8 @@ func on_enter(ctx: EffectContext) -> void:
 		var found := await ctx.effect_handler.search_discard(
 			ctx.owner.player_id,
 			func(card: Dictionary) -> bool:
-				return (card.get("card_type") == CardEnums.CardType.BATTLE and
-					CardEnums.CardColor.GREEN not in card.get("colors", [])),
+				return (CardUtils.is_battle(card) and
+					not CardUtils.has_color(card, CardEnums.CardColor.GREEN)),
 			"Return a non-green battle card from your discard to hand (or skip):")
 		if found.is_empty():
 			break

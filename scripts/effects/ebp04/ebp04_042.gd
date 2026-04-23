@@ -22,7 +22,7 @@ func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> boo
 func on_enter(ctx: EffectContext) -> void:
 	var rank1_strat_count: int = 0
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.STRATEGY and card.get("rank", 0) == 1:
+		if CardUtils.is_strategy(card) and card.get("rank", 0) == 1:
 			rank1_strat_count += 1
 	if rank1_strat_count < 3:
 		return

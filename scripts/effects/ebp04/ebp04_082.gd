@@ -34,9 +34,9 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 
 	for zi in adjacent:
 		var zone_card := ctx.owner.get_zone_top_card(zi)
-		if zone_card.is_empty() or zone_card.get("card_type") != CardEnums.CardType.BATTLE:
+		if zone_card.is_empty() or not CardUtils.is_battle(zone_card):
 			continue
-		if CardEnums.CardColor.BLUE in zone_card.get("colors", []):
+		if CardUtils.has_color(zone_card, CardEnums.CardColor.BLUE):
 			continue
 		mods[zi] = mods.get(zi, 0) + 3000
 

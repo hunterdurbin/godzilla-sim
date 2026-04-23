@@ -33,8 +33,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var green_count: int = 0
 	for card in ctx.owner.discard_pile:
-		if (card.get("card_type") == CardEnums.CardType.BATTLE and
-				CardEnums.CardColor.GREEN in card.get("colors", [])):
+		if CardUtils.is_battle(card) and CardUtils.has_color(card, CardEnums.CardColor.GREEN):
 			green_count += 1
 
 	var plays: int = green_count / 5
@@ -45,7 +44,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		var found := await ctx.effect_handler.search_discard(
 			ctx.owner.player_id,
 			func(card: Dictionary) -> bool:
-				return CardEnums.CardTrait.VALKYRIE in card.get("traits", []),
+				return CardUtils.has_trait(card, CardEnums.CardTrait.VALKYRIE),
 			"Play a Valkyrie from your discard pile (or skip):")
 		if found.is_empty():
 			break

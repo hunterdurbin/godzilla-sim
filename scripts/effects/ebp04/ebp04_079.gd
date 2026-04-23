@@ -32,8 +32,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var final_wars_cards: Array[Dictionary] = []
 	var other_cards: Array[Dictionary] = []
 	for card in revealed:
-		if (card.get("card_type") == CardEnums.CardType.BATTLE and
-				CardEnums.CardTrait.FINAL_WARS in card.get("traits", [])):
+		if CardUtils.is_battle(card) and CardUtils.has_trait(card, CardEnums.CardTrait.FINAL_WARS):
 			final_wars_cards.append(card)
 		else:
 			other_cards.append(card)

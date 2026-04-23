@@ -34,8 +34,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var mech_cards: Array[Dictionary] = []
 	var non_mech_cards: Array[Dictionary] = []
 	for card in revealed:
-		if (card.get("card_type") == CardEnums.CardType.BATTLE and
-				CardEnums.CardTrait.MECHAGODZILLA in card.get("traits", [])):
+		if CardUtils.is_battle(card) and CardUtils.has_trait(card, CardEnums.CardTrait.MECHAGODZILLA):
 			mech_cards.append(card)
 		else:
 			non_mech_cards.append(card)
