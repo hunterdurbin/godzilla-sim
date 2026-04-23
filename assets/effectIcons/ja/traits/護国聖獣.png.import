@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://vfokliaukiev"
-path="res://.godot/imported/第4形態.png-6538ce9fb251c7a3e4f0dac52728da2f.ctex"
+uid="uid://33r16s13g8yy"
+path="res://.godot/imported/護国聖獣.png-120c055886bf30292bf32eec69bc8b94.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/others/第4形態.png"
-dest_files=["res://.godot/imported/第4形態.png-6538ce9fb251c7a3e4f0dac52728da2f.ctex"]
+source_file="res://assets/effectIcons/ja/traits/護国聖獣.png"
+dest_files=["res://.godot/imported/護国聖獣.png-120c055886bf30292bf32eec69bc8b94.ctex"]
 
 [params]
 

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkisdoa162k0w"
-path="res://.godot/imported/兵器.png-481dcb41d6d7c79744812f9561e7a1c8.ctex"
+uid="uid://c66t6h6631k5u"
+path="res://.godot/imported/第4形態.png-fe18c156137507dbce90f1561c3fbaf4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/others/兵器.png"
-dest_files=["res://.godot/imported/兵器.png-481dcb41d6d7c79744812f9561e7a1c8.ctex"]
+source_file="res://assets/effectIcons/ja/traits/第4形態.png"
+dest_files=["res://.godot/imported/第4形態.png-fe18c156137507dbce90f1561c3fbaf4.ctex"]
 
 [params]
 

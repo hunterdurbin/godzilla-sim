@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cbjehvb20pxmc"
-path="res://.godot/imported/2ndform.png-5e232d715c6f06521c62be3ae910c544.ctex"
+uid="uid://dwf58i7hsr8sm"
+path="res://.godot/imported/第3形態.png-e495dbbf14c51af6ab1c2a2b8faff7e1.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/others/2ndform.png"
-dest_files=["res://.godot/imported/2ndform.png-5e232d715c6f06521c62be3ae910c544.ctex"]
+source_file="res://assets/effectIcons/ja/traits/第3形態.png"
+dest_files=["res://.godot/imported/第3形態.png-e495dbbf14c51af6ab1c2a2b8faff7e1.ctex"]
 
 [params]
 

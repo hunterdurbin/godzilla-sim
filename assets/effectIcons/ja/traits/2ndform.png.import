@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://r1myo5ilxdgf"
-path="res://.godot/imported/機械.png-869d740734f3bdfb6aa3adb828191200.ctex"
+uid="uid://mnxc04exad6"
+path="res://.godot/imported/2ndform.png-9f6f153b1bd0de21c0f1447114395727.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/others/機械.png"
-dest_files=["res://.godot/imported/機械.png-869d740734f3bdfb6aa3adb828191200.ctex"]
+source_file="res://assets/effectIcons/ja/traits/2ndform.png"
+dest_files=["res://.godot/imported/2ndform.png-9f6f153b1bd0de21c0f1447114395727.ctex"]
 
 [params]
 

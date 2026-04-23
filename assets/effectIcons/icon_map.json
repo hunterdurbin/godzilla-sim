@@ -1,5 +1,5 @@
 {
-  "_comment": "Maps Japanese icon tokens (as they appear in scraped card text) to EN and JP asset paths under assets/effectIcons/. en=null means no English icon published yet.",
+  "_comment": "Maps Japanese icon tokens (as they appear in scraped card text) to both JP and EN asset paths under assets/effectIcons/. en=null means no English icon has been published for that token yet.",
   "entries": [
     {
       "token": "⁅《FINAL WARS》＠⁆",
@@ -111,38 +111,38 @@
     },
     {
       "token": "⁅《兵器》＠⁆",
-      "category": "others",
-      "ja": "ja/others/兵器.png",
-      "en": "en/others/《Weapon》.png"
+      "category": "traits",
+      "ja": "ja/traits/兵器.png",
+      "en": "en/traits/《Weapon》.png"
     },
     {
       "token": "⁅《機械》＠⁆",
-      "category": "others",
-      "ja": "ja/others/機械.png",
-      "en": "en/others/《Mech》.png"
+      "category": "traits",
+      "ja": "ja/traits/機械.png",
+      "en": "en/traits/《Mech》.png"
     },
     {
       "token": "⁅《第2形態》＠⁆",
-      "category": "others",
-      "ja": "ja/others/2ndform.png",
-      "en": "en/others/《2nd Form》.png"
+      "category": "traits",
+      "ja": "ja/traits/2ndform.png",
+      "en": "en/traits/《2nd Form》.png"
     },
     {
       "token": "⁅《第3形態》＠⁆",
-      "category": "others",
-      "ja": "ja/others/第3形態.png",
-      "en": "en/others/《3rd Form》.png"
+      "category": "traits",
+      "ja": "ja/traits/第3形態.png",
+      "en": "en/traits/《3rd Form》.png"
     },
     {
       "token": "⁅《第4形態》＠⁆",
-      "category": "others",
-      "ja": "ja/others/第4形態.png",
-      "en": "en/others/《4th Form》.png"
+      "category": "traits",
+      "ja": "ja/traits/第4形態.png",
+      "en": "en/traits/《4th Form》.png"
     },
     {
       "token": "⁅《護国聖獣》＠⁆",
-      "category": "others",
-      "ja": "ja/others/護国聖獣.png",
+      "category": "traits",
+      "ja": "ja/traits/護国聖獣.png",
       "en": null
     },
     {

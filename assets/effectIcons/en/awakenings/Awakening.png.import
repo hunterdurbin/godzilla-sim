@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bgfmrmotg7hvk"
-path="res://.godot/imported/第3形態.png-e395c27cff27140755bff00fd35d4e89.ctex"
+uid="uid://bolx5qrogu0t1"
+path="res://.godot/imported/Awakening.png-25c50d7c75948596b871c7c641c0e7a0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/others/第3形態.png"
-dest_files=["res://.godot/imported/第3形態.png-e395c27cff27140755bff00fd35d4e89.ctex"]
+source_file="res://assets/effectIcons/en/awakenings/Awakening.png"
+dest_files=["res://.godot/imported/Awakening.png-25c50d7c75948596b871c7c641c0e7a0.ctex"]
 
 [params]
 

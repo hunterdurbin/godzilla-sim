@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bfim38krqcmy2"
-path="res://.godot/imported/護国聖獣.png-f6cb9610dcc5a4253b1485e0c4302d92.ctex"
+uid="uid://blo5n0bpg47te"
+path="res://.godot/imported/兵器.png-ddbf6813f1c53e9657fa01beb905b701.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/effectIcons/ja/others/護国聖獣.png"
-dest_files=["res://.godot/imported/護国聖獣.png-f6cb9610dcc5a4253b1485e0c4302d92.ctex"]
+source_file="res://assets/effectIcons/ja/traits/兵器.png"
+dest_files=["res://.godot/imported/兵器.png-ddbf6813f1c53e9657fa01beb905b701.ctex"]
 
 [params]
 
