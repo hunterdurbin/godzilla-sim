@@ -1,0 +1,756 @@
+# EBP02 (English) card effects scraped from en.godzilla-cardgame.com
+# Source: https://en.godzilla-cardgame.com/cardlist/searchresults/?expansion=EBP02&view=text&sort=new
+# Total cards: 193
+# Icon images have been inlined as <Name> tokens matching the texticon PNG filename stems
+# (e.g. <Rage>, <Burst1>, <Awakening3>, <Opponent's Turn>).
+# Format per entry (blank-line separated):
+#   === Card Number | Card Name ===
+#   effect text (info-Text, may span multiple lines)
+
+=== EBP02-001 | Giant Unknown Creature ===
+<Opponent’s Turn> At the beginning of the counter phase, you may discard 1 strategy card from your hand to increase this card's <Rage> by 1.
+
+=== EBP02-001+ | Giant Unknown Creature ===
+<Opponent’s Turn> At the beginning of the counter phase, you may discard 1 strategy card from your hand to increase this card's <Rage> by 1.
+
+=== EBP02-002 | Godzilla(2016) 2nd Form ===
+If you have 1 or more strategy cards in play, this card gains +5000 threat level.
+
+=== EBP02-002+ | Godzilla(2016) 2nd Form ===
+If you have 1 or more strategy cards in play, this card gains +5000 threat level.
+
+=== EBP02-003 | Godzilla(2016) 2nd Form ===
+<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+ <Enter> If there is a card named “Giant Unknown Creature” under this card, you may discard 1 strategy card from your hand to advance this card by 1 zone.
+
+=== EBP02-003+ | Godzilla(2016) 2nd Form ===
+<Burst3>
+
+ <Enter> If there is a card named “Giant Unknown Creature” under this card, you may discard 1 strategy card from your hand to advance this card by 1 zone.
+
+=== EBP02-004 | Godzilla(2016) 3rd Form ===
+<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+ <Enter> If there is a <《2nd Form》> card under this card, <Destroy> 1 of your opponent's rank 6 or lower battle cards for each strategy card in your strategy zone.
+
+=== EBP02-004+ | Godzilla(2016) 3rd Form ===
+<Burst2>
+
+ <Enter> If there is a <《2nd Form》> card under this card, <Destroy> 1 of your opponent's rank 6 or lower battle cards for each strategy card in your strategy zone.
+
+=== EBP02-005 | Godzilla(2016) 3rd Form ===
+<Your Turn> <Awakening6> Whenever this card's <Rage> is increased, if you have a strategy card in play, your opponent discards cards until they have 3 cards remaining in their hand.
+
+=== EBP02-005+ | Godzilla(2016) 3rd Form ===
+<Your Turn> <Awakening6> Whenever this card's <Rage> is increased, if you have a strategy card in play, your opponent discards cards until they have 3 cards remaining in their hand.
+
+=== EBP02-006 | Godzilla(2016) 4th Form ===
+<When Invading> If there is a card with <《3rd Form》> under this card, <Destroy> all of your opponent's rank 6 or lower battle cards.
+
+ If there is a <《4th Form》> card under this card, this card gains +10,000 threat level for each strategy card in your strategy zone.
+
+=== EBP02-006+ | Godzilla(2016) 4th Form ===
+<When Invading> If there is a card with <《3rd Form》> under this card, <Destroy> all of your opponent's rank 6 or lower battle cards.
+
+ If there is a <《4th Form》> card under this card, this card gains +10,000 threat level for each strategy card in your strategy zone.
+
+=== EBP02-007 | Godzilla(2016) 4th Form ===
+<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+ <Enter> You may discard 1 strategy card from your hand. If you do, reveal the top 5 cards of your deck, add 1 monster card from among them to your hand, then send the rest to your discard pile.
+
+=== EBP02-007+ | Godzilla(2016) 4th Form ===
+<Burst3>
+
+ <Enter> You may discard 1 strategy card from your hand. If you do, reveal the top 5 cards of your deck, add 1 monster card from among them to your hand, then send the rest to your discard pile.
+
+=== EBP02-007++A | Godzilla(2016) 4th Form ===
+<Burst3>
+
+ <Enter> You may discard 1 strategy card from your hand. If you do, reveal the top 5 cards of your deck, add 1 monster card from among them to your hand, then send the rest to your discard pile.
+
+=== EBP02-008 | Godzilla(1969) ===
+<Burst4> (You can play this card from rank Ⅳ. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+Whenever this card's <Rage> is increased, <Destroy> all of your opponent's rank 6 or lower battle cards in the zone with the same number as the zone this card occupies.
+
+=== EBP02-008+ | Godzilla(1969) ===
+<Burst4>
+
+Whenever this card's <Rage> is increased, <Destroy> all of your opponent's rank 6 or lower battle cards in the zone with the same number as the zone this card occupies.
+
+=== EBP02-009 | Godzilla(2023) ===
+<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+When this card is discarded by the effect of Burst, return this card from your discard pile to your hand.
+
+ <When Invading> Your opponent discards cards until they have 3 cards remaining in their hand.
+
+=== EBP02-009+ | Godzilla(2023) ===
+<Burst3>
+
+When this card is discarded by the effect of Burst, return this card from your discard pile to your hand.
+
+ <When Invading> Your opponent discards cards until they have 3 cards remaining in their hand.
+
+=== EBP02-021 | Godzilla(1993) ===
+All of your rank 5 or lower battle cards in zones adjacent to this card gain +3000 counter power.
+
+=== EBP02-021+ | Godzilla(1993) ===
+All of your rank 5 or lower battle cards in zones adjacent to this card gain +3000 counter power.
+
+=== EBP02-022 | Godzilla(1994) ===
+<When Invading> If you discarded a blue battle card for this card's invade action, you may play that battle card from your discard pile.
+
+=== EBP02-022+ | Godzilla(1994) ===
+<When Invading> If you discarded a blue battle card for this card's invade action, you may play that battle card from your discard pile.
+
+=== EBP02-023 | Godzilla(1999) ===
+<Enter> If you have 5 or more monster cards in your discard pile, 1 of your opponent's monster cards with 50,000 or less threat level retreats back by 1 zone.
+
+ If you have 10 or more monster cards in your discard pile, this card gains +10,000 threat level.
+
+=== EBP02-023+ | Godzilla(1999) ===
+<Enter> If you have 5 or more monster cards in your discard pile, 1 of your opponent's monster cards with 50,000 or less threat level retreats back by 1 zone.
+
+ If you have 10 or more monster cards in your discard pile, this card gains +10,000 threat level.
+
+=== EBP02-024 | Biollante Rose Form ===
+If this card is in your monster deck, at the start of the game it will be played in Zone 5.
+
+This card cannot advance nor invade.
+
+=== EBP02-024+ | Biollante Rose Form ===
+If this card is in your monster deck, at the start of the game it will be played in Zone 5.
+
+This card cannot advance nor invade.
+
+=== EBP02-025 | Biollante Rose Form ===
+This card cannot advance nor invade.
+
+ <Enter> Play 1 “Tentacles” token in a zone adjacent to this card. (Tokens are prepared separately from your main deck.)
+
+=== EBP02-025+ | Biollante Rose Form ===
+This card cannot advance nor invade.
+
+ <Enter> Play 1 “Tentacles” token in a zone adjacent to this card.
+
+=== EBP02-026 | Biollante Plant Beast Form ===
+<Enter> If you have a strategy card in play, choose 1 of your opponent's zones. <Destroy> all of your opponent's rank 5 or lower battle cards in that zone and zones adjacent to it.
+
+=== EBP02-026+ | Biollante Plant Beast Form ===
+<Enter> If you have a strategy card in play, choose 1 of your opponent's zones. <Destroy> all of your opponent's rank 5 or lower battle cards in that zone and zones adjacent to it.
+
+=== EBP02-027 | Biollante Plant Beast Form ===
+<Opponent’s Turn> <Awakening6>If your opponent has a strategy card in play, this card cannot be countered by 40,000 or lower counter power. Instead, it only moves as though it were countered. (Do not play the next Monster Card from your monster deck.)
+
+=== EBP02-027+ | Biollante Plant Beast Form ===
+<Opponent’s Turn> <Awakening6>If your opponent has a strategy card in play, this card cannot be countered by 40,000 or lower counter power. Instead, it only moves as though it were countered.
+
+=== EBP02-028 | Biollante Plant Beast Form ===
+<Enter> Play as many rank 4 or lower battle cards with <Evolution> from your discard pile to each of this card's adjacent zones. (You must play as many as possible and you may play the battle cards in zones already occupied by other battle cards. Maximum of 3 cards.)
+
+=== EBP02-028+ | Biollante Plant Beast Form ===
+<Enter> Play as many rank 4 or lower battle cards with <Evolution> from your discard pile to each of this card's adjacent zones.
+
+=== EBP02-029 | Biollante Plant Beast Form ===
+<Opponent’s Turn> At the beginning of the counter phase, for the rest of the turn, double the counter power of all of your opponent's battle cards in the same column as this card. (Refer to those battle card's counter power at the ability resolution timing.)
+
+=== EBP02-029+ | Biollante Plant Beast Form ===
+<Opponent’s Turn> At the beginning of the counter phase, for the rest of the turn, double the counter power of all of your opponent's battle cards in the same column as this card.
+
+=== EBP02-041 | Gigan(1972) ===
+Each of your battle cards in zones adjacent to this card gain +1000 counter power.
+
+=== EBP02-041+ | Gigan(1972) ===
+Each of your battle cards in zones adjacent to this card gain +1000 counter power.
+
+=== EBP02-042 | Gigan(1972) ===
+<Enter> You may discard a card with <《King Ghidorah》> or <《Megalon》> from your hand to reduce your opponent's <Rage> by 2.
+
+ At the beginning of your end phase, if your opponent's monster card is in zone 1–5, increase this card's <Rage> by 1.
+
+=== EBP02-042+ | Gigan(1973) ===
+<Enter> You may discard a card with <《King Ghidorah》> or <《Megalon》> from your hand to reduce your opponent's <Rage> by 2.
+
+ At the beginning of your end phase, if your opponent's monster card is in zone 1–5, increase this card's <Rage> by 1.
+
+=== EBP02-043 | Gigan(2004) ===
+Each of your battle cards in zones adjacent to this card gain +1000 counter power for each card under this card.
+
+=== EBP02-043+ | Gigan(2004) ===
+Each of your battle cards in zones adjacent to this card gain +1000 counter power for each card under this card.
+
+=== EBP02-044 | Modified Gigan ===
+<When Invading> If your opponent's monster card is in zones 6–8, reduce their <Rage> by 2.
+
+At the beginning of your end phase, if your opponent's monster card is in zones 1–5, increase this card's <Rage> by 2.
+
+=== EBP02-044+ | Modified Gigan ===
+<When Invading> If your opponent's monster card is in zones 6–8, reduce their <Rage> by 2.
+
+At the beginning of your end phase, if your opponent's monster card is in zones 1–5, increase this card's <Rage> by 2.
+
+=== EBP02-045 | King Ghidorah(1964) ===
+This card gains +3000 threat level for each rank of your opponent's monster.
+
+=== EBP02-045+ | King Ghidorah(1964) ===
+This card gains +3000 threat level for each rank of your opponent's monster.
+
+=== EBP02-046 | King Ghidorah(1965) ===
+<Enter> Place all cards with the same name as this card from your discard pile under this card.
+
+This card gains +3000 threat level for each card with the same name under this card.
+
+=== EBP02-046+ | King Ghidorah(1965) ===
+<Enter> Place all cards with the same name as this card from your discard pile under this card.
+
+This card gains +3000 threat level for each card with the same name under this card.
+
+=== EBP02-047 | King Ghidorah(1991) ===
+Whenever this card advances, send the top card of your deck to your discard pile.
+
+=== EBP02-047+ | King Ghidorah(1991) ===
+Whenever this card advances, send the top card of your deck to your discard pile.
+
+=== EBP02-048 | King Ghidorah(1991) ===
+<Enter> Send the top 3 cards of your deck to your discard pile.
+
+ <When Invading> <Destroy> 3 of your opponent's rank 4 or lower battle cards.
+
+=== EBP02-048+ | King Ghidorah(1991) ===
+<Enter> Send the top 3 cards of your deck to your discard pile.
+
+ <When Invading> <Destroy> 3 of your opponent's rank 4 or lower battle cards.
+
+=== EBP02-049 | King Ghidorah(1991) ===
+<Enter> If there are 3 or more cards under this card, choose one of the following:
+
+ ・<Destroy> 3 of your opponent's rank 5 or lower battle cards.
+
+ ・Your opponent discards cards until they have 3 cards remaining in their hand.
+
+ ・Send the top 3 cards of your deck to your discard pile.
+
+=== EBP02-049+ | King Ghidorah(1991) ===
+<Enter> If there are 3 or more cards under this card, choose one of the following:
+
+ ・<Destroy> 3 of your opponent's rank 5 or lower battle cards.
+
+ ・Your opponent discards cards until they have 3 cards remaining in their hand.
+
+ ・Send the top 3 cards of your deck to your discard pile.
+
+=== EBP02-050 | Mecha-King Ghidorah ===
+<Enter> If there are 5 or more cards under this card, choose one of the following:
+
+ ・<Destroy> 3 of your opponent's rank 6 or lower battle cards.
+
+ ・Your opponent discards cards until they have 2 cards remaining in their hand.
+
+ ・Increase this card's <Rage> by 3.
+
+=== EBP02-050+ | Mecha-King Ghidorah ===
+<Enter> If there are 5 or more cards under this card, choose one of the following:
+
+ ・<Destroy> 3 of your opponent's rank 6 or lower battle cards.
+
+ ・Your opponent discards cards until they have 2 cards remaining in their hand.
+
+ ・Increase this card's <Rage> by 3.
+
+=== EBP02-051 | Mecha-King Ghidorah ===
+If there are 5 or more cards under this card, this card gains +3000 threat level for each of your opponent's unoccupied zones.
+
+=== EBP02-051+ | Mecha-King Ghidorah ===
+If there are 5 or more cards under this card, this card gains +3000 threat level for each of your opponent's unoccupied zones.
+
+=== EBP02-052 | SpaceGodzilla Flying Form ===
+<When Invading> You may discard 1 card from your hand, if you do, play 1 “Crystals” token. (Tokens are prepared separately from your deck.)
+
+=== EBP02-052+ | SpaceGodzilla Flying Form ===
+<When Invading> You may discard 1 card from your hand, if you do, play 1 “Crystals” token.
+
+=== EBP02-053 | SpaceGodzilla ===
+<When Invading> Play 1 “Crystals” token. (Tokens are prepared separately from your deck.)
+
+ If there is a “Crystals” in your zones, this card gains +5000 threat level.
+
+=== EBP02-053+ | SpaceGodzilla ===
+<When Invading> Play 1 “Crystals” token.
+
+ If there is a “Crystals” in your zones, this card gains +5000 threat level.
+
+=== EBP02-054 | SpaceGodzilla ===
+<Enter> Play 2 “Crystals” tokens. (Tokens are prepared separately from your deck.)
+
+ Whenever this card's <Rage> is increased, <Destroy> 1 of your opponent's rank 5 or lower battle cards for each “Crystals” in your zones.
+
+=== EBP02-054+ | SpaceGodzilla ===
+<Enter> Play 2 “Crystals” tokens.
+
+ Whenever this card's <Rage> is increased, <Destroy> 1 of your opponent's rank 5 or lower battle cards for each “Crystals” in your zones.
+
+=== EBP02-055 | SpaceGodzilla ===
+<Awakening4> If there are 3 or more “Crystals” in your zones, your opponent cannot play battle cards in zones in the same column as this card. (Does not destroy cards already there.)
+
+=== EBP02-055+ | SpaceGodzilla ===
+<Awakening4> If there are 3 or more “Crystals” in your zones, your opponent cannot play battle cards in zones in the same column as this card.
+
+=== EBP02-056 | SpaceGodzilla ===
+If you have 3 or more “Crystals” in your zones, this card gains +20,000 threat level.
+
+ <Your Turn> When this card advances during the end phase, it advances 1 additional zone for each “Crystals” in your zones.
+
+=== EBP02-056+ | SpaceGodzilla ===
+If you have 3 or more “Crystals” in your zones, this card gains +20,000 threat level.
+
+ <Your Turn> When this card advances during the end phase, it advances 1 additional zone for each “Crystals” in your zones.
+
+=== EBP02-057 | SpaceGodzilla Flying Form ===
+<Enter> Move 1 of your opponent's battle cards in the same column as this card to an unoccupied zone.
+
+ Whenever this card's <Rage> is increased, play 2 “Crystals” tokens. (Tokens are prepared separately from your deck.)
+
+=== EBP02-057+ | SpaceGodzilla Flying Form ===
+<Enter> Move 1 of your opponent's battle cards in the same column as this card to an unoccupied zone.
+
+ Whenever this card's <Rage> is increased, play 2 “Crystals” tokens.
+
+=== EBP02-010 | King Caesar(2004) ===
+<Enter> Move 1 of your other battle cards in your zones to an unoccupied zone.
+
+=== EBP02-010+ | King Caesar(2004) ===
+<Enter> Move 1 of your other battle cards in your zones to an unoccupied zone.
+
+=== EBP02-011 | Gabara ===
+If your monster card has 2 or more <Rage>, this card gains +3000 counter power.
+
+=== EBP02-011+ | Gabara ===
+If your monster card has 2 or more <Rage>, this card gains +3000 counter power.
+
+=== EBP02-012 | Godzilla(2016) Frozen ===
+If this card is in zone 8, whenever your strategy cards would be discarded from the strategy zone, you may place them under this card instead.
+
+ <Awakening4> At the beginning of your main phase, if there are 2 or more cards under this card, counter your opponent's monster card.
+
+=== EBP02-012+ | Godzilla(2016) Frozen ===
+If this card is in zone 8, whenever your strategy cards would be discarded from the strategy zone, you may place them under this card instead.
+
+ <Awakening4> At the beginning of your main phase, if there are 2 or more cards under this card, counter your opponent's monster card.
+
+=== EBP02-013 | Minilla(1969) ===
+<Enter> If your monster card has 2 or more <Rage>, advance your monster card to zone 5.
+
+=== EBP02-013+ | Minilla(1969) ===
+<Enter> If your monster card has 2 or more <Rage>, advance your monster card to zone 5.
+
+=== EBP02-014 | Cabinet Helicopter ===
+<Enter> Send the top card of your deck to your discard pile. If it is a monster card, advance your monster card to zone 6.
+
+=== EBP02-014+ | Cabinet Helicopter ===
+<Enter> Send the top card of your deck to your discard pile. If it is a monster card, advance your monster card to zone 6.
+
+=== EBP02-015 | Rodan(2004) ===
+If this card is in a zone with the same number as the zone that your opponent's monster card occupies, this card gains +3000 counter power.
+
+=== EBP02-015+ | Rodan(2004) ===
+If this card is in a zone with the same number as the zone that your opponent's monster card occupies, this card gains +3000 counter power.
+
+=== EBP02-016 | Anguirus(2004) ===
+If this card is in the same column as the opponent's monster card, this card gains +5000 counter power.
+
+=== EBP02-016+ | Anguirus(2004) ===
+If this card is in the same column as the opponent's monster card, this card gains +5000 counter power.
+
+=== EBP02-030 | Baby Godzilla ===
+<Evolution5> <《Little Godzilla》> (At the beginning of your main phase, you may play a rank 5 or lower <《Little Godzilla》> battle card from your deck by placing it on top of this card.)
+
+=== EBP02-030+ | Baby Godzilla ===
+<Evolution5> <《Little Godzilla》>
+
+=== EBP02-031 | MBT-MB92 modified ===
+You may have any number of this card in your deck.
+
+ If the number of other rank 5 or lower battle cards in your zones is 2 or more, this card gains +3000 counter power.
+
+=== EBP02-031+ | MBT-MB92 modified ===
+You may have any number of this card in your deck.
+
+ If the number of other rank 5 or lower battle cards in your zones is 2 or more, this card gains +3000 counter power.
+
+=== EBP02-032 | Biollante Rose Form ===
+<Evolution7> <《Biollante》> (At the beginning of your main phase, you may play a rank 7 or lower <《Biollante》> battle card from your deck by placing it on top of this card.)
+
+=== EBP02-032+ | Biollante Rose Form ===
+<Evolution7> <《Biollante》>
+
+=== EBP02-033 | Little Godzilla ===
+<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)
+
+=== EBP02-033+ | Little Godzilla ===
+<Awakening4> This card gains +3000 counter power.
+
+=== EBP02-034 | Super X3 ===
+If this card is in zone 8, this card gains +3000 counter power.
+
+=== EBP02-034+ | Super X3 ===
+If this card is in zone 8, this card gains +3000 counter power.
+
+=== EBP02-035 | Biollante Plant Beast Form ===
+<Enter> If you have 2 or more cards with ⁅《ビオランテ＠》⁆ in your discard pile, return all cards in your opponent's discard pile to their deck then shuffle.
+
+<Enter> Play 2 “Tentacles” tokens in zones adjacent to this card. (Tokens are prepared separately from your main deck.)
+
+=== EBP02-035+ | Biollante Plant Beast Form ===
+<Enter> If you have 2 or more cards with ⁅《ビオランテ＠》⁆ in your discard pile, return all cards in your opponent's discard pile to their deck then shuffle.
+
+<Enter> Play 2 “Tentacles” tokens in zones adjacent to this card.
+
+=== EBP02-036 | Godzilla(1994) ===
+At the beginning of your end phase, if this card is in a zone adjacent to your monster card, 1 of your opponent's monster cards with 40,000 or less threat level retreats back by 1 zone.
+
+=== EBP02-036+ | Godzilla(1994) ===
+At the beginning of your end phase, if this card is in a zone adjacent to your monster card, 1 of your opponent's monster cards with 40,000 or less threat level retreats back by 1 zone.
+
+=== EBP02-037 | Destoroyah Perfect Form ===
+<Enter> Draw 2 cards, then discard 2 cards.
+
+=== EBP02-037+ | Destoroyah Perfect Form ===
+<Enter> Draw 2 cards, then discard 2 cards.
+
+=== EBP02-058 | Dorat ===
+<Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)
+
+=== EBP02-058+ | Dorat ===
+<Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to your hand.
+
+=== EBP02-059 | Godzillasaurus ===
+<Revenge> You may discard 1 card from your hand, if you do, return 1 battle card named “Godzilla(1991)” from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)
+
+=== EBP02-059+ | Godzillasaurus ===
+<Revenge> You may discard 1 card from your hand, if you do, return 1 battle card named “Godzilla(1991)” from your discard pile to your hand.
+
+=== EBP02-060 | Gigan(2004) ===
+If this card is in the same column as your opponent's monster card, this card gains +3000 counter power.
+
+ <Revenge> If your opponent's monster card is in zones 1–5, you may return this card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)
+
+=== EBP02-060+ | Gigan(2004) ===
+If this card is in the same column as your opponent's monster card, this card gains +3000 counter power.
+
+ <Revenge> If your opponent's monster card is in zones 1–5, you may return this card from your discard pile to your hand.
+
+=== EBP02-061 | Godzilla(1972) ===
+If this card is in zone 8, this card gains +3000 counter power.
+
+=== EBP02-061+ | Godzilla(1972) ===
+If this card is in zone 8, this card gains +3000 counter power.
+
+=== EBP02-062 | SpaceGodzilla ===
+<Revenge> Return up to 1 <《SpaceGodzilla》> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)
+
+=== EBP02-062+ | SpaceGodzilla ===
+<Revenge> Return up to 1 <《SpaceGodzilla》> monster card from your discard pile to your hand.
+
+=== EBP02-063 | Megalon ===
+
+
+=== EBP02-063+ | Megalon ===
+
+
+=== EBP02-064 | Gigan(1972) ===
+If there is a card with <《King Ghidorah》> or <《Megalon》> in your zones, this card gains +3000 counter power.
+
+ <Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster movement.)
+
+=== EBP02-064+ | Gigan(1972) ===
+If there is a card with <《King Ghidorah》> or <《Megalon》> in your zones, this card gains +3000 counter power.
+
+ <Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to your hand.
+
+=== EBP02-065 | Godzilla(1991) ===
+<Awakening6> If there are 3 or more cards under your monster card, this card gains +5000 counter power. If there are 5 or more, this card gains an additional +5000 counter power.
+
+=== EBP02-065+ | Godzilla(1991) ===
+<Awakening6> If there are 3 or more cards under your monster card, this card gains +5000 counter power. If there are 5 or more, this card gains an additional +5000 counter power.
+
+=== EBP02-066 | King Ghidorah(1964) ===
+<Awakening6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)
+
+=== EBP02-066+ | King Ghidorah(1964) ===
+<Awakening6> This card gains +3000 counter power.
+
+=== EBP02-067 | M.O.G.U.E.R.A. ===
+If your opponent has a<《Godzilla》> card in their zones, this card gains +5000 counter power.
+
+=== EBP02-067+ | M.O.G.U.E.R.A. ===
+If your opponent has a<《Godzilla》> card in their zones, this card gains +5000 counter power.
+
+=== EBP02-068 | Mecha-King Ghidorah ===
+You can play this card from your hand with its rank reduced by 2 for each non-rank 23 <《King Ghidorah》> card in your discard pile. (This card's rank returns to 23 after being played.)
+
+If this card is in the same column as your opponent's monster card, they cannot invade, and this card gains +3000 counter power.
+
+=== EBP02-068+ | Mecha-King Ghidorah ===
+You can play this card from your hand with its rank reduced by 2 for each non-rank 23 <《King Ghidorah》> card in your discard pile.
+
+If this card is in the same column as your opponent's monster card, they cannot invade, and this card gains +3000 counter power.
+
+=== EBP02-075 | Chibi Mothra ===
+<Enter> If a card named “Chibi Mechagodzilla” is in your zones, reduce your opponent's <Rage> by 1.
+
+=== EBP02-075+ | Chibi Mothra ===
+<Enter> If a card named “Chibi Mechagodzilla” is in your zones, reduce your opponent's <Rage> by 1.
+
+=== EBP02-076 | Chibi Mechagodzilla ===
+If this card is in a zone adjacent to your monster card, this card gains +3000 counter power.
+
+=== EBP02-076+ | Chibi Mechagodzilla ===
+If this card is in a zone adjacent to your monster card, this card gains +3000 counter power.
+
+=== EBP02-077 | Chibi Godzilla ===
+At the beginning of your main phase, send the top 2 cards of your deck to your discard pile.
+
+ If a<《Godzilla》> card was sent to your discard pile this way, <Destroy> this card and play a “Chibi Godzilla 2nd Form” token. (Tokens are prepared separately from your deck.)
+
+=== EBP02-077+ | Chibi Godzilla ===
+At the beginning of your main phase, send the top 2 cards of your deck to your discard pile.
+
+ If a<《Godzilla》> card was sent to your discard pile this way, <Destroy> this card and play a “Chibi Godzilla 2nd Form” token.
+
+=== EBP02-078 | Mothra(imago)(2003) ===
+<Enter> If this card is in the same column as your opponent's monster card, reveal the top 2 cards of your deck. Add all rank 5 or lower battle cards among them to your hand and send the rest into your discard pile.
+
+=== EBP02-078+ | Mothra(imago)(2003) ===
+<Enter> If this card is in the same column as your opponent's monster card, reveal the top 2 cards of your deck. Add all rank 5 or lower battle cards among them to your hand and send the rest into your discard pile.
+
+=== EBP02-T01 | Conductorless Train Bombers ===
+<Enter> Reduce your opponent's <Rage> by 1.
+
+ (Tokens cannot be added to the deck. They are banished when removed from zones.)
+
+=== EBP02-T01+ | Conductorless Train Bombers ===
+<Enter> Reduce your opponent's <Rage> by 1.
+
+=== EBP02-T02 | Tentacles ===
+(Tokens cannot be added to the deck. They are banished when removed from zones.)
+
+=== EBP02-T02+ | Tentacles ===
+
+
+=== EBP02-T03 | Crystals ===
+All of your <《SpaceGodzilla》> monster cards in your zones gain +1000 threat level.
+
+ (Tokens cannot be added to the deck. They are banished when removed from zones.)
+
+=== EBP02-T03+ | Crystals ===
+All of your <《SpaceGodzilla》> monster cards in your zones gain +1000 threat level.
+
+=== EBP02-T04 | Chibi Godzilla 2nd Form ===
+At the beginning of your end phase, <Destroy> this card and play 1 battle card named “Chibi Godzilla” from your discard pile.
+
+ (Tokens cannot be added to the deck. They are banished when removed from zones.)
+
+=== EBP02-T04+ | Chibi Godzilla 2nd Form ===
+At the beginning of your end phase, <Destroy> this card and play 1 battle card named “Chibi Godzilla” from your discard pile.
+
+=== EBP02-017 | Operation Taba ===
+<Your Turn> If you have 4 or more battle cards in your zones, increase your total counter power by 5000.
+
+=== EBP02-017+ | Operation Taba ===
+<Your Turn> If you have 4 or more battle cards in your zones, increase your total counter power by 5000.
+
+=== EBP02-018 | Despair ===
+If your monster card has 2 or more <Rage>, <Destroy> 1 of your opponent's battle cards that occupies a zone before the zone your monster card currently occupies. (If your monster card is in Zone 4, you can select battle cards in your opponent's zone 1, 2, or 3.)
+
+=== EBP02-018+ | Despair ===
+If your monster card has 2 or more <Rage>, <Destroy> 1 of your opponent's battle cards that occupies a zone before the zone your monster card currently occupies.
+
+=== EBP02-019 | There is no danger of the creature coming ashore. ===
+Move 1 battle card in your zones to an unoccupied zone. If your monster card invaded this turn, advance your monster card by 1 zone.
+
+=== EBP02-019+ | There is no danger of the creature coming ashore. ===
+Move 1 battle card in your zones to an unoccupied zone. If your monster card invaded this turn, advance your monster card by 1 zone.
+
+=== EBP02-020 | Operation Yashiori -Conductorless train bombers- ===
+If you have 5 or more strategy cards in your discard pile, create “Conductorless train bombers” tokens in each of your unoccupied zones. (Tokens are prepared separately from your main deck.)
+
+=== EBP02-038 | Godzilla 2000: Millennium ===
+Choose one of the following:
+
+ ・<Destroy> 1 of your opponent's rank 5 or lower battle cards.
+
+ ・If you have 10 or more monster cards in your discard pile, <Destroy> 1 of your opponent's battle cards in zone 8.
+
+=== EBP02-038+ | Godzilla 2000: Millennium ===
+Choose one of the following:
+
+ ・<Destroy> 1 of your opponent's rank 5 or lower battle cards.
+
+ ・If you have 10 or more monster cards in your discard pile, <Destroy> 1 of your opponent's battle cards in zone 8.
+
+=== EBP02-039 | Lake Ashi Monster ===
+<Your Turn> You can play battle cards with <《Biollante》> from your hand with their rank reduced by 3. (They return to their original rank after being played.)
+
+=== EBP02-039+ | Lake Ashi Monster ===
+<Your Turn> You can play battle cards with <《Biollante》> from your hand with their rank reduced by 3.
+
+=== EBP02-040 | Interception Operation ===
+If you have 5 or more <《Weapon》> battle cards with “MB” in their name in your zones, discard your hand and draw 5 cards.
+
+=== EBP02-040+ | Interception Operation ===
+If you have 5 or more <《Weapon》> battle cards with “MB” in their name in your zones, discard your hand and draw 5 cards.
+
+=== EBP02-069 | Godzilla vs. SpaceGodzilla ===
+Choose 2 of your opponent's battle cards in their zones and swap their positions.
+
+=== EBP02-069+ | Godzilla vs. SpaceGodzilla ===
+Choose 2 of your opponent's battle cards in their zones and swap their positions.
+
+=== EBP02-070 | Godzilla vs. SpaceGodzilla ===
+<Opponent’s Turn> Your opponent cannot play strategy cards. (Does not destroy cards already in play.)
+
+ <Opponent’s Turn> At the beginning of the main phase, your opponent may discard cards until they have 5 cards remaining in their hand. If they discard at least 1 card, <Destroy> this card.
+
+=== EBP02-070+ | Godzilla vs. SpaceGodzilla ===
+<Opponent’s Turn> Your opponent cannot play strategy cards.
+
+ <Opponent’s Turn> At the beginning of the main phase, your opponent may discard cards until they have 5 cards remaining in their hand. If they discard at least 1 card, <Destroy> this card.
+
+=== EBP02-071 | Godzilla vs. King Ghidorah ===
+Choose one of the following:
+
+ ・<Destroy> 3 of your opponent's rank 4 or lower battle cards.
+
+ ・<Awakening6> <Destroy> 2 of your opponent's rank 6 or lower battle cards.
+
+ ・<Awakening8> <Destroy> 1 of your opponent's battle cards.
+
+=== EBP02-071+ | Godzilla vs. King Ghidorah ===
+Choose one of the following:
+
+ ・<Destroy> 3 of your opponent's rank 4 or lower battle cards.
+
+ ・<Awakening6> <Destroy> 2 of your opponent's rank 6 or lower battle cards.
+
+ ・<Awakening8> <Destroy> 1 of your opponent's battle cards.
+
+=== EBP02-072 | God of Destruction's Counterattack ===
+<Your Turn> If you have 3 or more “Crystals” in your zones, your total counter power is increased by 20,000.
+
+=== EBP02-072+ | God of Destruction's Counterattack ===
+<Your Turn> If you have 3 or more “Crystals” in your zones, your total counter power is increased by 20,000.
+
+=== EBP02-073 | Bloody Chainsaw ===
+<Your Turn> Whenever you play a battle card, <Destroy> all of your opponent's rank 6 or lower battle cards in the same column as that battle card.
+
+=== EBP02-073+ | Bloody Chainsaw ===
+<Your Turn> Whenever you play a battle card, <Destroy> all of your opponent's rank 6 or lower battle cards in the same column as that battle card.
+
+=== EBP02-074 | Bite Attack ===
+Increase your monster card's <Rage> by 1 for each rank of your opponent's monster.
+
+=== EBP02-074+ | Bite Attack ===
+Increase your monster card's <Rage> by 1 for each rank of your opponent's monster.
+
+=== EBP02-079 | Destructive Impulse ===
+Perform the following action based on how many zones your monster card advanced through invasion this turn:
+
+ 0 - <Destroy> all of your opponent's rank 2 or lower battle cards.
+
+ 1 - <Destroy> all of your opponent's rank 4 or lower battle cards.
+
+ 2 - <Destroy> all of your opponent's rank 6 or lower battle cards.
+
+=== EBP02-079+ | Destructive Impulse ===
+Perform the following action based on how many zones your monster card advanced through invasion this turn:
+
+ 0 - <Destroy> all of your opponent's rank 2 or lower battle cards.
+
+ 1 - <Destroy> all of your opponent's rank 4 or lower battle cards.
+
+ 2 - <Destroy> all of your opponent's rank 6 or lower battle cards.
+
+=== EBP02-080 | Joint Struggle ===
+Reveal the top 2 cards of your deck. If they differ in at least 1 trait, add them to your hand; otherwise, send them to the discard pile. (Example if one is <《Mech》> and the other is <《Mechagodzilla》> and <《Mech》>, you may add them to your hand.)
+
+=== EBP02-080+ | Joint Struggle ===
+Reveal the top 2 cards of your deck. If they differ in at least 1 trait, add them to your hand; otherwise, send them to the discard pile.
+
+=== Rage-E02 |  ===
+
+
+=== Rage-E03 |  ===
+
+
+=== Rage-E04 |  ===
+
+
+=== Rage-E05 |  ===
+
+
+=== Rage-EGZ02 |  ===
+
+
+=== Rage-EGZ02+ |  ===
+
+
+=== Rage-EGZ02++ |  ===
+
+
+=== Rage-EGZ06 |  ===
+
+
+=== Rage-EGZ06+ |  ===
+
+
+=== Rage-EGZ06++ |  ===
+
+
+=== Rage-EGZ10 |  ===
+
+
+=== Rage-EGZ10+ |  ===
+
+
+=== Rage-EGZ10++ |  ===
+
+
+=== Rage-EGZ12 |  ===
+
+
+=== Rage-EGZ12+ |  ===
+
+
+=== Rage-EGZ12++ |  ===
+
+
+=== Rage-EGZ18 |  ===
+
+
+=== Rage-EGZ18+ |  ===
+
+
+=== Rage-EGZ18++ |  ===
+
+
+=== Rage-EGZ21 |  ===
+
+
+=== Rage-EGZ21+ |  ===
+
+
+=== Rage-EGZ21++ |  ===
+
+
+=== Rage-EGZ29 |  ===
+
+
+=== Rage-EGZ29+ |  ===
+
+
+=== Rage-EGZ29++ |  ===
+
+

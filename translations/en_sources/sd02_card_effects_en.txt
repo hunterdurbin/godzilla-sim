@@ -1,0 +1,80 @@
+# ESD02 (English) card effects scraped from en.godzilla-cardgame.com
+# Source: https://en.godzilla-cardgame.com/cardlist/searchresults/?expansion=ESD02&view=text&sort=new
+# Total cards: 21
+# Icon images have been inlined as <Name> tokens matching the texticon PNG filename stems
+# (e.g. <Rage>, <Burst1>, <Awakening3>, <Opponent's Turn>).
+# Format per entry (blank-line separated):
+#   === Card Number | Card Name ===
+#   effect text (info-Text, may span multiple lines)
+
+=== ESD02-001 | Godzilla(1984) ===
+
+
+=== ESD02-001+ | Godzilla(1984) ===
+
+
+=== ESD02-002 | Godzilla(1989) ===
+<Enter> <Destroy> 1 of your opponent's rank 4 or lower battle cards.
+
+=== ESD02-003 | Godzilla(1992) ===
+<Enter>:Play 2 rank 4 or lower battle cards with <Evolution> from your discard pile in zones adjacent to this card.
+
+ (For example, if this card is in zone 7, the adjacent zones are 4, 6, and 8.)
+
+=== ESD02-004 | Godzilla(1994) ===
+<When Invading> Discard 1 battle card from your hand： <Destroy> all of your opponent's battle cards with a rank equal to or lower than the discarded card’s rank.
+
+=== ESD02-005 | Godzilla(1993) ===
+<When Invading> Reduce your opponent’s <Rage> by 1. (If you invaded 2 zones, activate this effect 2 times.)
+
+=== ESD02-006 | Godzilla(1995) ===
+For each strategy card your opponent has in play, this card gains +5000 threat level.
+
+=== ESD02-006+ | Godzilla(1995) ===
+For each strategy card your opponent has in play, this card gains +5000 threat level.
+
+=== ESD02-007 | Mothra(larva)(1992) ===
+<Evolution5><《Mothra》>At the beginning of your main phase, you may search your deck for a rank 5 or lower <《Mothra》>battle card and play it by stacking it on top of this card. Search for 「Mothra(imago)(1992)」 rank 5 counter power 5000 and you may place it on top of this card)
+
+=== ESD02-008 | Battra(larva) ===
+<Evolution6><《Battra》>(At the beginning of your main phase, you may search your deck for a rank 6 or lower <《Battra》> battle card and play it by stacking it on top of this card. Search for 「Battra(imago)」 rank 6 counter power 5000 and you may place it on top of this card.)
+
+=== ESD02-009 | Super-X ===
+<Awakening4> <Enter> If this card is in zone 8, reduce your opponent’s <Rage> by 1. (Active if your monster card is in zone 4 or beyond and this card was played in zone 8.)
+
+=== ESD02-010 | Mothra(imago)(1992) ===
+<Enter>If this card was played through evolution, draw 1 card.
+
+=== ESD02-011 | Battra(imago) ===
+<Awakening6> This card gains ＋3000 counter power. (Active if your monster card is in zone 6 or beyond.)
+
+=== ESD02-012 | Mechagodzilla(1993) ===
+If your opponent’s monster card is rank IV or higher, this card gains +5000 counter power.
+
+If this card is in the same column as your opponent’s monster card, this card gains +3000 counter power.
+
+(If both conditions are met, this card gains +8000 counter power.)
+
+=== ESD02-013 | Destoroyah Perfect Form ===
+
+
+=== ESD01-016 | Heat Ray ===
+<Destroy> all of your opponent’s battle cards in the same column as your monster card.
+
+=== ESD02-014 | The Legend of Infant Island ===
+Evolve 1 of your battle cards with <Evolution>.
+
+=== ESD02-015 | Burning Godzilla's Rampage ===
+Choose 1 of your opponent’s zones. <Destroy> all of your opponent’s battle cards in that zone and zones adjacent to it.
+
+(For example, if a card is in zone 7, the adjacent zones are 4, 6, and 8.)
+
+=== Rage-EGZ16 |  ===
+
+
+=== Rage-EGZ16+ |  ===
+
+
+=== Rage-EGZ16++ |  ===
+
+

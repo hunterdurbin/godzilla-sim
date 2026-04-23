@@ -1,0 +1,794 @@
+# EBP03 (English) card effects scraped from en.godzilla-cardgame.com
+# Source: https://en.godzilla-cardgame.com/cardlist/searchresults/?expansion=EBP03&view=text&sort=new
+# Total cards: 191
+# Icon images have been inlined as <Name> tokens matching the texticon PNG filename stems
+# (e.g. <Rage>, <Burst1>, <Awakening3>, <Opponent's Turn>).
+# Format per entry (blank-line separated):
+#   === Card Number | Card Name ===
+#   effect text (info-Text, may span multiple lines)
+
+=== EBP03-001 | Godzilla(2001) ===
+<Awakening4> At the beginning of your end phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, this card advances 1 zone.
+
+<Awakening6> This card gains +5000 threat level.
+
+=== EBP03-001+ | Godzilla(2001) ===
+<Awakening4> At the beginning of your end phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, this card advances 1 zone.
+
+<Awakening6> This card gains +5000 threat level.
+
+=== EBP03-002 | Godzilla(2001) ===
+<Opponent’s Turn> <Awakening4> At the beginning of the counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 1.
+
+<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 2.
+
+=== EBP03-002+ | Godzilla(2001) ===
+<Opponent’s Turn> <Awakening4> At the beginning of the counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 1.
+
+<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 2.
+
+=== EBP03-003 | Godzilla(2001) ===
+<Burst2> (You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 2, then <Destroy> all of your opponent’s rank 6 or lower battle cards. (Active if this card is in zone 8.)
+
+=== EBP03-003+ | Godzilla(2001) ===
+<Burst2>
+
+<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 2, then <Destroy> all of your opponent’s rank 6 or lower battle cards.
+
+=== EBP03-004 | Godzilla(2001) ===
+When this card invades, you may send the top card of your deck to your discard pile instead of discarding a card from your hand.
+
+<Opponent’s Turn> <Awakening4> This card’s <Rage> cannot be reduced by your opponent’s effects. (Active if this is in zone 4 or beyond.)
+
+=== EBP03-004+ | Godzilla(2001) ===
+When this card invades, you may send the top card of your deck to your discard pile instead of discarding a card from your hand.
+
+<Opponent’s Turn> <Awakening4> This card’s <Rage> cannot be reduced by your opponent’s effects.
+
+=== EBP03-005 | Godzilla(2001) ===
+<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 3, then <Destroy> all of your opponent’s rank 7 or lower battle cards. (Active if this card is in zone 8.)
+
+=== EBP03-005+ | Godzilla(2001) ===
+<Burst3>
+
+<Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage> by 3, then <Destroy> all of your opponent’s rank 7 or lower battle cards.
+
+=== EBP03-006 | Multi-purpose Fighting System-3 ===
+<Resonance> Red/Blue
+
+・Monster cards in your deck must have <《Weapon》> or <《Mech》>.
+
+・Battle cards in your deck must have <《Weapon》> or <《Mech》>.
+
+(You can mix red, blue, and white, but your monster deck and main deck must satisfy the above.)
+
+=== EBP03-006+ | Multi-purpose Fighting System-3 ===
+<Resonance> Red/Blue
+
+・Monster cards in your deck must have <《Weapon》> or <《Mech》>.
+
+・Battle cards in your deck must have <《Weapon》> or <《Mech》>.
+
+=== EBP03-007 | Multi-purpose Fighting System-3 ===
+<When Invading> Reveal from the top of your deck a number of cards equal to the rank of your opponent’s monster card. Add 1 red or blue battle card among them to your hand, then send the rest to your discard pile.
+
+=== EBP03-007+ | Multi-purpose Fighting System-3 ===
+<When Invading> Reveal from the top of your deck a number of cards equal to the rank of your opponent’s monster card. Add 1 red or blue battle card among them to your hand, then send the rest to your discard pile.
+
+=== EBP03-008 | Multi-purpose Fighting System-3 ===
+<Enter> If there is a blue battle card in your zones, <Destroy> 1 of your opponent’s rank 5 or lower battle cards.
+
+<Opponent’s Turn> At the beginning of the counter phase, if there is a red battle card in your zones, <Destroy> 1 of your opponent’s rank 5 or lower battle cards in the same column as this card.
+
+=== EBP03-008+ | Multi-purpose Fighting System-3 ===
+<Enter> If there is a blue battle card in your zones, <Destroy> 1 of your opponent’s rank 5 or lower battle cards.
+
+<Opponent’s Turn> At the beginning of the counter phase, if there is a red battle card in your zones, <Destroy> 1 of your opponent’s rank 5 or lower battle cards in the same column as this card.
+
+=== EBP03-009 | Multi-purpose Fighting System-3 ===
+<Enter> Choose 1 of your opponent’s zones in the same column as this card, then <Destroy> all of your opponent’s rank 6 or lower battle cards in that zone and zones adjacent to it.
+
+=== EBP03-009+ | Multi-purpose Fighting System-3 ===
+<Enter> If there are 2 or more battle cards in your zones, your opponent discards cards until they have 4 cards remaining in their hand. If a battle card is discarded this way, increase this card’s <Rage> by 1.
+
+=== EBP03-010 | Multi-purpose Fighting System-3 ===
+<Enter> If there are 2 or more battle cards in your zones, your opponent discards cards until they have 4 cards remaining in their hand. If a battle card is discarded this way, increase this card’s <Rage> by 1.
+
+=== EBP03-010+ | Multi-purpose Fighting System-3 ===
+<Burst3>
+
+<Enter> Reveal from the top of your deck a number of cards equal to the rank of your opponent’s monster card. Add up to 1 red battle card and up to 1 blue battle card among them to your hand, then send the rest to your discard pile.
+
+=== EBP03-011 | Multi-purpose Fighting System-3 ===
+<Burst3> (You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+<Enter> Reveal from the top of your deck a number of cards equal to the rank of your opponent’s monster card. Add up to 1 red battle card and up to 1 blue battle card among them to your hand, then send the rest to your discard pile.
+
+=== EBP03-011+ | Multi-purpose Fighting System-3 ===
+<Enter> Choose 1 of your opponent’s zones in the same column as this card, then <Destroy> all of your opponent’s rank 6 or lower battle cards in that zone and zones adjacent to it.
+
+=== EBP03-012 | Godzilla(1993) ===
+<Enter> If you have 1 or fewer strategy cards in play, you may place up to 1 blue rank 6 or lower strategy card from your hand into your strategy zone and activate it.
+
+=== EBP03-012+ | Godzilla(1993) ===
+<Enter> If you have 1 or fewer strategy cards in play, you may place up to 1 blue rank 6 or lower strategy card from your hand into your strategy zone and activate it.
+
+=== EBP03-013 | Godzilla(1995) ===
+<Enter> For the rest of the game, you have 3 strategy card zones. (It remains 3 even if this leaves play.)
+
+<Opponent’s Turn> At the beginning of the counter phase, if there are no cards in your strategy zones, you lose the game.
+
+=== EBP03-013+ | Godzilla(1995) ===
+<Enter> For the rest of the game, you have 3 strategy card zones.
+
+<Opponent’s Turn> At the beginning of the counter phase, if there are no cards in your strategy zones, you lose the game.
+
+=== EBP03-014 | Godzilla(2002) ===
+At the beginning of your end phase, you may discard 1 battle card from your hand. If you do, draw 1 card.
+
+=== EBP03-014+ | Godzilla(2002) ===
+At the beginning of your end phase, you may discard 1 battle card from your hand. If you do, draw 1 card.
+
+=== EBP03-015 | Godzilla(2002) ===
+Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by 1.
+
+=== EBP03-015+ | Godzilla(2002) ===
+Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by 1.
+
+=== EBP03-016 | Godzilla(2003) ===
+Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by 1. If your opponent’s <Rage> is 0, increase this card’s <Rage> by 1 instead.
+
+=== EBP03-016+ | Godzilla(2003) ===
+Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by 1. If your opponent’s <Rage> is 0, increase this card’s <Rage> by 1 instead.
+
+=== EBP03-017 | Godzilla(2003) ===
+Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by 1. If your opponent’s <Rage> is 0, increase this card’s <Rage> by 1 instead.
+
+<Enter> You may discard 1 battle card from your hand. If you do, <Destroy> 1 of your opponent’s rank 6 or lower battle cards.
+
+=== EBP03-017+ | Godzilla(2003) ===
+Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by 1. If your opponent’s <Rage> is 0, increase this card’s <Rage> by 1 instead.
+
+<Enter> You may discard 1 battle card from your hand. If you do, <Destroy> 1 of your opponent’s rank 6 or lower battle cards.
+
+=== EBP03-018 | Mothra(imago)(1996) ===
+<Resonance> Blue/Green
+
+・Monster cards in your deck must have <《Mothra》>.
+
+・Your deck must contain at least 10 strategy cards.
+
+(You can mix blue, green, and white, but your monster deck and main deck must satisfy the above.)
+
+=== EBP03-018+ | Mothra(imago)(1996) ===
+<Resonance> Blue/Green
+
+・Monster cards in your deck must have <《Mothra》>.
+
+・Your deck must contain at least 10 strategy cards.
+
+=== EBP03-019 | Mothra(larva)(1996) ===
+When you successfully counter your opponent’s monster card, if you have a card with <Base> in play, increase this card’s <Rage> by 2.
+
+=== EBP03-019+ | Mothra(larva)(1996) ===
+When you successfully counter your opponent’s monster card, if you have a card with <Base> in play, increase this card’s <Rage> by 2.
+
+=== EBP03-020 | Mothra Leo ===
+When you successfully counter your opponent’s monster card, if you have a card with <Base> in play, <Destroy> 1 opponent’s rank 7 or lower battle card.
+
+=== EBP03-020+ | Mothra Leo ===
+When you successfully counter your opponent’s monster card, if you have a card with <Base> in play, <Destroy> 1 opponent’s rank 7 or lower battle card.
+
+=== EBP03-021 | Rainbow Mothra ===
+<Enter> Return 1 strategy card with <Base> from your discard pile to your hand.
+
+=== EBP03-021+ | Rainbow Mothra ===
+<Enter> Return 1 strategy card with <Base> from your discard pile to your hand.
+
+=== EBP03-022 | Aqua Mothra ===
+If you have a card with <Base> in play, this card gains +10,000 threat level.
+
+=== EBP03-022+ | Aqua Mothra ===
+If you have a card with <Base> in play, this card gains +10,000 threat level.
+
+=== EBP03-023 | Armor Mothra ===
+<Enter> Evolve all of your<《Mothra》> battle cards with <Evolution>.
+
+When you successfully counter your opponent’s monster card, if you have a card with <Base> in play, retreat your opponent’s monster card back to zone 1.
+
+=== EBP03-023+ | Armor Mothra ===
+<Enter> Evolve all of your<《Mothra》> battle cards with <Evolution>.
+
+When you successfully counter your opponent’s monster card, if you have a card with <Base> in play, retreat your opponent’s monster card back to zone 1.
+
+=== EBP03-024 | Baragon(2001) ===
+<Resonance> Green/Red
+
+・Monster cards in your deck must have ⁅《護国聖獣》＠⁆ .
+
+・Battle cards in your deck must be Rank 5 or higher.
+
+(You can mix green, red, and white, but your monster deck and main deck must satisfy the above.)
+
+=== EBP03-024+ | Baragon(2001) ===
+<Resonance> Green/Red
+
+・Monster cards in your deck must have ⁅《護国聖獣》＠⁆ .
+
+・Battle cards in your deck must be Rank 5 or higher.
+
+=== EBP03-025 | Mothra(imago)(2001) ===
+<Your Turn> Reduce the rank of all battle cards in your opponent’s zones by 1.
+
+<Enter> You may place 1 monster card from your discard pile under this card. If you do, advance your opponent’s monster card to zone 5.
+
+=== EBP03-025+ | Mothra(imago)(2001) ===
+<Your Turn> Reduce the rank of all battle cards in your opponent’s zones by 1.
+
+<Enter> You may place 1 monster card from your discard pile under this card. If you do, advance your opponent’s monster card to zone 5.
+
+=== EBP03-026 | Mothra(imago)(2001) ===
+<Your Turn> If there are 3 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 2.
+
+<Enter> You may place 2 monster cards from your discard pile under this card. If you do, reduce your opponent’s <Rage> by 1.
+
+=== EBP03-026+ | Mothra(imago)(2001) ===
+<Your Turn> If there are 3 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 2.
+
+<Enter> You may place 2 monster cards from your discard pile under this card. If you do, reduce your opponent’s <Rage> by 1.
+
+=== EBP03-027 | Ghidorah(2001) ===
+<Your Turn> If there are 3 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 2.
+
+<When Invading> If there are 5 or more cards under this card, your opponent discards cards until they have 4 cards remaining in their hand.
+
+=== EBP03-027+ | Ghidorah(2001) ===
+<Your Turn> If there are 3 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 2.
+
+<When Invading> If there are 5 or more cards under this card, your opponent discards cards until they have 4 cards remaining in their hand.
+
+=== EBP03-028 | Thousand-Year Dragon King Ghidorah ===
+<Your Turn> If there are 5 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 3.
+
+<Opponent’s Turn> At the beginning of the counter phase, you may place 3 monster cards from your discard pile under this card. If you do, <Destroy> all rank 5 or lower battle cards in your opponent’s zones 1–5.
+
+=== EBP03-028+ | Thousand-Year Dragon King Ghidorah ===
+<Your Turn> If there are 5 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 3.
+
+<Opponent’s Turn> At the beginning of the counter phase, you may place 3 monster cards from your discard pile under this card. If you do, <Destroy> all rank 5 or lower battle cards in your opponent’s zones 1–5.
+
+=== EBP03-029 | Thousand-Year Dragon King Ghidorah ===
+<Your Turn> If there are 5 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 3.
+
+<When Invading> If there are 7 or more cards under this card, choose one:
+
+・<Destroy> all battle cards of both players.
+
+・Each player discards cards until they have 2 cards remaining in their hand.
+
+・Reduce each player’s monster card’s <Rage> by 2.
+
+=== EBP03-029+ | Thousand-Year Dragon King Ghidorah ===
+<Your Turn> If there are 5 or more cards under this card, reduce the rank of all battle cards in your opponent’s zones by 3.
+
+<When Invading> If there are 7 or more cards under this card, choose one:
+
+・<Destroy> all battle cards of both players.
+
+・Each player discards cards until they have 2 cards remaining in their hand.
+
+・Reduce each player’s monster card’s <Rage> by 2.
+
+=== EBP01-073++ | Godzilla Against Mechagodzilla ===
+This card cannot be played if you have 7 or fewer monster cards in your discard pile.
+
+When your monster card invades, if there are no monster cards under this card, you may place 1 monster card from your discard pile under this card to set your opponent’s <Rage> to 0.
+
+=== EBP03-030 | SHIRASAGI : AC-3 ===
+Your <《Mechagodzilla》> battle cards in your zone 8 gain +3000 counter power.
+
+<Enter> You may move 1 other battle card in your zones to an unoccupied zone.
+
+=== EBP03-030+ | SHIRASAGI : AC-3 ===
+Your <《Mechagodzilla》> battle cards in your zone 8 gain +3000 counter power.
+
+<Enter> You may move 1 other battle card in your zones to an unoccupied zone.
+
+=== EBP03-031 | MBT-MB90 ===
+You may have any number of this card in your deck.
+
+<Enter> Look at the top card of your deck. You may send it to your discard pile or place it back on top of your deck.
+
+=== EBP03-031+ | MBT-MB90 ===
+You may have any number of this card in your deck.
+
+<Enter> Look at the top card of your deck. You may send it to your discard pile or place it back on top of your deck.
+
+=== EBP03-032 | Mechagodzilla(1974) ===
+At the beginning of your counter phase, if this card is in a zone adjacent to your monster card, you may discard all the cards in your hand. If you do, for the rest of the turn, this card gains +1000 counter power for each card discarded this way.
+
+=== EBP03-032+ | Mechagodzilla(1974) ===
+At the beginning of your counter phase, if this card is in a zone adjacent to your monster card, you may discard all the cards in your hand. If you do, for the rest of the turn, this card gains +1000 counter power for each card discarded this way.
+
+=== EBP03-033 | Mechagodzilla(1975) ===
+<Enter> You may discard 1 rank 5 or higher battle card from your hand. If you do, search your deck for up to 1 card named “Space Beam”, reveal it, add it to your hand, then shuffle your deck.
+
+=== EBP03-033+ | Mechagodzilla(1975) ===
+<Enter> You may discard 1 rank 5 or higher battle card from your hand. If you do, search your deck for up to 1 card named “Space Beam”, reveal it, add it to your hand, then shuffle your deck.
+
+=== EBP03-034 | Jet Jaguar(1973) ===
+<Enter> You may discard 1 strategy card from your hand. If you do, reduce your opponent’s <Rage> by 1.
+
+=== EBP03-034+ | Jet Jaguar(1973) ===
+<Enter> You may discard 1 strategy card from your hand. If you do, reduce your opponent’s <Rage> by 1.
+
+=== EBP03-035 | Satsuma ===
+<Enter> If this card is in the same column as your opponent’s monster card, you may discard 1 strategy card from your hand. If you do, advance your monster card to zone 6.
+
+=== EBP03-035+ | Satsuma ===
+<Enter> If this card is in the same column as your opponent’s monster card, you may discard 1 strategy card from your hand. If you do, advance your monster card to zone 6.
+
+=== EBP03-036 | Moguera ===
+<Enter> If this card was played from your hand and is in zone 8, search your deck for up to 1 ⁅《モゲラ》＠⁆ battle card, play it, then shuffle your deck.
+
+=== EBP03-036+ | Moguera ===
+<Enter> If this card was played from your hand and is in zone 8, search your deck for up to 1 ⁅《モゲラ》＠⁆ battle card, play it, then shuffle your deck.
+
+=== EBP03-037 | Godzilla(2001) ===
+<Awakening8> <Enter> Increase your monster card’s <Rage> by 1.
+
+<Awakening8> This card gains +5000 counter power.
+
+=== EBP03-037+ | Godzilla(2001) ===
+<Awakening8> <Enter> Increase your monster card’s <Rage> by 1.
+
+<Awakening8> This card gains +5000 counter power.
+
+=== EBP03-038 | Multi-purpose Fighting System-3 ===
+At the beginning of your counter phase, if your opponent has 2 or more <Rage> , <Destroy> all of your battle cards in zones adjacent to this card.
+
+=== EBP03-038+ | Multi-purpose Fighting System-3 ===
+At the beginning of your counter phase, if your opponent has 2 or more <Rage> , <Destroy> all of your battle cards in zones adjacent to this card.
+
+=== EBP03-039 | Godzilla(2016) 4th Form ===
+Whenever your card is sent from a strategy zone to the discard pile, draw 1 card. (Also triggers when a strategy card is destroyed)
+
+If there are 5 or more strategy cards in your discard pile, this card gains +5000 counter power.
+
+=== EBP03-039+ | Godzilla(2016) 4th Form ===
+Whenever your card is sent from a strategy zone to the discard pile, draw 1 card.
+
+If there are 5 or more strategy cards in your discard pile, this card gains +5000 counter power.
+
+=== EBP03-040 | Mechagodzilla(1975) ===
+At the beginning of your counter phase, you may move this card to an unoccupied zone.
+
+If this is in the same column as your opponent’s monster card, this card gains +3000 counter power.
+
+=== EBP03-040+ | Mechagodzilla(1975) ===
+At the beginning of your counter phase, you may move this card to an unoccupied zone.
+
+If this is in the same column as your opponent’s monster card, this card gains +3000 counter power.
+
+=== EBP03-041 | Godzilla(2023) ===
+<Enter> If this is in the same column as your opponent’s monster card and your monster card has 2 or more <Rage>, reduce your opponent’s <Rage> by 2.
+
+When this card would be <Destroy>, put this card on the bottom of your deck instead.
+
+=== EBP03-041+ | Godzilla(2023) ===
+<Enter> If this is in the same column as your opponent’s monster card and your monster card has 2 or more <Rage>, reduce your opponent’s <Rage> by 2.
+
+When this card would be <Destroy>, put this card on the bottom of your deck instead.
+
+=== EBP03-042 | Ghogo ===
+When your monster card invades, if this is in zone 8, you may put this card under one of your <《Mothra》> battle cards with <Evolution>. If you do, evolve that <《Mothra》> battle card.
+
+=== EBP03-042+ | Ghogo ===
+When your monster card invades, if this is in zone 8, you may put this card under one of your <《Mothra》> battle cards with <Evolution>. If you do, evolve that <《Mothra》> battle card.
+
+=== EBP03-043 | Star Falcon ===
+<Awakening4> At the beginning of your counter phase, you may place this card under a card named “Land Moguera” in your zones. If you do, search your deck for up to 1 ⁅《モゲラ》＠⁆ battle card, play it on top of the card named “Land Moguera” you chose for this effect, then shuffle your deck. (Active if your monster card is in zone 4 or beyond.)
+
+=== EBP03-043+ | Star Falcon ===
+<Awakening4> At the beginning of your counter phase, you may place this card under a card named “Land Moguera” in your zones. If you do, search your deck for up to 1 ⁅《モゲラ》＠⁆ battle card, play it on top of the card named “Land Moguera” you chose for this effect, then shuffle your deck.
+
+=== EBP03-044 | Mothra(larva)(1992) ===
+<Evolution7> <《Mothra》> (At the beginning of your main phase, you may play a rank 7 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)
+
+=== EBP03-044+ | Mothra(larva)(1992) ===
+<Evolution7> <《Mothra》>
+
+=== EBP03-045 | Mothra(larva)(2003) ===
+If this card is in a zone adjacent to your monster card, this card gains +3000 counter power.
+
+=== EBP03-045+ | Mothra(larva)(2003) ===
+If this card is in a zone adjacent to your monster card, this card gains +3000 counter power.
+
+=== EBP03-046 | Land Moguera ===
+<Awakening4> <Enter> If “Star Falcon” is in your zones, choose one:
+
+・<Destroy> 1 of your opponent’s strategy cards.
+
+・Reduce your opponent’s <Rage> by 1.
+
+=== EBP03-046+ | Land Moguera ===
+<Awakening4> <Enter> If “Star Falcon” is in your zones, choose one:
+
+・<Destroy> 1 of your opponent’s strategy cards.
+
+・Reduce your opponent’s <Rage> by 1.
+
+=== EBP03-047 | Garuda ===
+At the beginning of your counter phase, if this card is in the same column as your opponent’s monster card, you may discard 1 battle card with <《Weapon》> or <《Mech》> from your hand. If you do, search your deck for up to 1 battle card named “Super Mechagodzilla”, play it on top of this card, then shuffle your deck.
+
+=== EBP03-047+ | Garuda ===
+At the beginning of your counter phase, if this card is in the same column as your opponent’s monster card, you may discard 1 battle card with <《Weapon》> or <《Mech》> from your hand. If you do, search your deck for up to 1 battle card named “Super Mechagodzilla”, play it on top of this card, then shuffle your deck.
+
+=== EBP03-048 | Mechagodzilla(1993) ===
+<Enter> If there are 2 or more other battle cards in your zones, reduce your opponent’s <Rage> by 1.
+
+=== EBP03-048+ | Mechagodzilla(1993) ===
+<Enter> If there are 2 or more other battle cards in your zones, reduce your opponent’s <Rage> by 1.
+
+=== EBP03-049 | Godzilla(2002) ===
+<Enter> If this card is in zone 8, draw 2 cards, then discard 2 cards.
+
+=== EBP03-049+ | Godzilla(2002) ===
+<Enter> If this card is in zone 8, draw 2 cards, then discard 2 cards.
+
+=== EBP03-050 | Rainbow Mothra ===
+<Enter> If you have a card with <Base> in play, an opponent’s monster card with 20,000 or less threat level retreats backward by 1 zone.
+
+<Evolution8> <《Mothra》> (At the beginning of your main phase, you may play a rank 8 or lower <《Mothra》> battle card from your deck by placing it on top of this card.)
+
+=== EBP03-050+ | Rainbow Mothra ===
+<Enter> If you have a card with <Base> in play, an opponent’s monster card with 20,000 or less threat level retreats backward by 1 zone.
+
+<Evolution8> <《Mothra》>
+
+=== EBP03-051 | Godzilla Jr. ===
+If you would play this card on top of your <《Little Godzilla》> battle card, you may play this from your hand with its rank reduced by 2. (After being played, this card is rank 7.)
+
+This card gains +5000 counter power for each card under it.
+
+=== EBP03-051+ | Godzilla Jr. ===
+If you would play this card on top of your <《Little Godzilla》> battle card, you may play this from your hand with its rank reduced by 2.
+
+This card gains +5000 counter power for each card under it.
+
+=== EBP03-052 | M.O.G.U.E.R.A. ===
+When this card would be <Destroy> by an opponent’s effect, add all cards under this card to your hand.
+
+<Awakening6> <Enter> If there are no cards under this card, search your deck for up to 1 card named “Land Moguera” and up to 1 card named “Star Falcon”, place them under this card, then shuffle your deck.
+
+=== EBP03-052+ | M.O.G.U.E.R.A. ===
+When this card would be <Destroy> by an opponent’s effect, add all cards under this card to your hand.
+
+<Awakening6> <Enter> If there are no cards under this card, search your deck for up to 1 card named “Land Moguera” and up to 1 card named “Star Falcon”, place them under this card, then shuffle your deck.
+
+=== EBP03-053 | Super Mechagodzilla ===
+While your opponent’s <Rage> is 0, this card cannot be <Destroy> by opponent’s effects.
+
+If this card is in the same column as your opponent’s monster card, this card gains +3000 counter power for each of your opponent’s <Rage>.
+
+=== EBP03-053+ | Super Mechagodzilla ===
+While your opponent’s <Rage> is 0, this card cannot be <Destroy> by opponent’s effects.
+
+If this card is in the same column as your opponent’s monster card, this card gains +3000 counter power for each of your opponent’s <Rage>.
+
+=== EBP03-054 | Eternal Mothra ===
+<Enter> If this card is in zone 8 and you have a card with <Base> in play, an opponent’s monster card with 60,000 or less threat level retreats backward by 1 zone.
+
+=== EBP03-054+ | Eternal Mothra ===
+<Enter> If this card is in zone 8 and you have a card with <Base> in play, an opponent’s monster card with 60,000 or less threat level retreats backward by 1 zone.
+
+=== EBP03-055 | Primitive Mothra ===
+<Enter> You may put up to 1 <《Mothra》> battle card from your discard pile on top of your deck.
+
+=== EBP03-055+ | Primitive Mothra ===
+<Enter> You may put up to 1 <《Mothra》> battle card from your discard pile on top of your deck.
+
+=== EBP03-056 | Manda(2004) ===
+If this card is in the same column as your opponent’s monster card, this card gains +3000 counter power.
+
+=== EBP03-056+ | Manda(2004) ===
+If this card is in the same column as your opponent’s monster card, this card gains +3000 counter power.
+
+=== EBP03-057 | Desghidorah ===
+<Enter> If your opponent has 3 or more unoccupied zones, <Destroy> 1 of your opponent’s strategy cards.
+
+If your opponent has no strategy cards in play, this card gains +3000 counter power.
+
+=== EBP03-057+ | Desghidorah ===
+<Enter> If your opponent has 3 or more unoccupied zones, <Destroy> 1 of your opponent’s strategy cards.
+
+If your opponent has no strategy cards in play, this card gains +3000 counter power.
+
+=== EBP03-058 | Zilla ===
+At the beginning of your end phase, move this card to an adjacent zone horizontal to the zone this card currently occupies. Then, if this card is in a zone adjacent to your monster card, <Destroy> this card..
+
+=== EBP03-058+ | Zilla ===
+At the beginning of your end phase, move this card to an adjacent zone horizontal to the zone this card currently occupies. Then, if this card is in a zone adjacent to your monster card, <Destroy> this card.
+
+=== EBP03-059 | Cretaceous King Ghidorah(1998) ===
+<Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)
+
+=== EBP03-059+ | Cretaceous King Ghidorah(1998) ===
+<Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to your hand.
+
+=== EBP03-060 | Mothra(imago)(1961) ===
+<Revenge> Reduce your opponent’s <Rage> by 1. (Activates when destroyed by a card effect or monster card movement.)
+
+=== EBP03-060+ | Mothra(imago)(1961) ===
+<Revenge> Reduce your opponent’s <Rage> by 1.
+
+=== EBP03-061 | Dagahra ===
+When you discard this card from your hand for your monster card’s invasion, you may play this card from your discard pile.
+
+<Awakening6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)
+
+=== EBP03-061+ | Dagahra ===
+When you discard this card from your hand for your monster card’s invasion, you may play this card from your discard pile.
+
+<Awakening6> This card gains +3000 counter power.
+
+=== EBP03-062 | Baragon(2001) ===
+When your opponent’s monster card invades, <Destroy> this card.
+
+<Revenge> Return up to 1 ⁅《護国聖獣》＠⁆ monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)
+
+=== EBP03-062+ | Baragon(2001) ===
+When your opponent’s monster card invades, <Destroy> this card.
+
+<Revenge> Return up to 1 ⁅《護国聖獣》＠⁆ monster card from your discard pile to your hand.
+
+=== EBP03-063 | King Ghidorah(1998) ===
+<Your Turn> <Awakening4> When your monster card is played, you may play this card from your discard pile. (Active if your monster card is in zone 4 or beyond.)
+
+=== EBP03-063+ | King Ghidorah(1998) ===
+<Your Turn> <Awakening4> When your monster card is played, you may play this card from your discard pile.
+
+=== EBP03-064 | Mothra(imago)(2001) ===
+<Enter> If an opponent's battle card was <Destroy> this turn, you may place 1 battle card from your discard pile under this card.
+
+<Awakening4> If there is a card under this card, this card gains +3000 counter power.
+
+<Awakening6> If there is a card under this card, this card gains an additional +3000 counter power.
+
+=== EBP03-064+ | Mothra(imago)(2001) ===
+<Enter> If an opponent's battle card was <Destroy> this turn, you may place 1 battle card from your discard pile under this card.
+
+<Awakening4> If there is a card under this card, this card gains +3000 counter power.
+
+<Awakening6> If there is a card under this card, this card gains an additional +3000 counter power.
+
+=== EBP03-065 | King Ghidorah(1998) ===
+If there are 5 or more cards under your monster card, this card gains +3000 counter power.
+
+=== EBP03-065+ | King Ghidorah(1998) ===
+If there are 5 or more cards under your monster card, this card gains +3000 counter power.
+
+=== EBP03-066 | Thousand-Year Dragon King Ghidorah ===
+If your opponent has 2 or more strategy cards in play, you may play this card from your hand with its rank reduced by 2. (After being played, this card is rank 8.)
+
+<Enter> <Destroy> 1 of your opponent’s strategy cards.
+
+=== EBP03-066+ | Thousand-Year Dragon King Ghidorah ===
+If your opponent has 2 or more strategy cards in play, you may play this card from your hand with its rank reduced by 2.
+
+<Enter> <Destroy> 1 of your opponent’s strategy cards.
+
+=== EBP03-067 | Monster X ===
+<Your Turn> When this card is discarded from your hand, if there are 2 or more colors among battle cards in your zones, play this card and <Destroy> up to 1 of your opponent’s lowest ranked battle cards in their zones.
+
+This card’s counter power X is equal to 3000 multiplied by the number of different colors among other battle cards in your zones. (White also counts as a color.)
+
+=== EBP03-067+ | Monster X ===
+<Your Turn> When this card is discarded from your hand, if there are 2 or more colors among battle cards in your zones, play this card and <Destroy> up to 1 of your opponent’s lowest ranked battle cards in their zones.
+
+This card’s counter power X is equal to 3000 multiplied by the number of different colors among other battle cards in your zones.
+
+=== EBP03-068 | Godzilla Flies ===
+<Your Turn> Your monster card cannot invade.
+
+Move your rank III or higher monster card in zone 3 vertically to zone 8. (Your battle cards in zones 4–7 will not be <Destroy> by this movement.)
+
+=== EBP03-068+ | Godzilla Flies ===
+<Your Turn> Your monster card cannot invade.
+
+Move your rank III or higher monster card in zone 3 vertically to zone 8.
+
+=== EBP03-069 | Space Beam ===
+Your opponent discards cards until they have 4 cards remaining in their hand. Then, if there is a <《Mechagodzilla》> card in your zone 8, <Destroy> all opponent’s rank 5 or lower battle cards.
+
+=== EBP03-069+ | Space Beam ===
+Your opponent discards cards until they have 4 cards remaining in their hand. Then, if there is a <《Mechagodzilla》> card in your zone 8, <Destroy> all opponent’s rank 5 or lower battle cards.
+
+=== EBP03-070 | Mechagodzilla Hangar ===
+<Base>When any monster card invades into zones 6–8,  <Destroy> this card.  (Cards with Base are not sent to the discard pile at the start phase.)
+
+<Your Turn> At the beginning of your counter phase, search your deck for up to 1 battle card with <《Weapon》> or <《Mech》>, reveal it, add it to your hand, then shuffle your deck.
+
+=== EBP03-070+ | Mechagodzilla Hangar ===
+<Base>When any monster card invades into zones 6–8,  <Destroy> this card.  (Cards with Base are not sent to the discard pile at the start phase.)
+
+<Your Turn> At the beginning of your counter phase, search your deck for up to 1 battle card with <《Weapon》> or <《Mech》>, reveal it, add it to your hand, then shuffle your deck.
+
+=== EBP03-071 | Godzilla's Skeleton ===
+When counting monster cards in your discard pile, treat this card as a monster card as well.
+
+Look at the top 4 cards of your deck, put any number of them on top of your deck in any order, send the rest to your discard pile, then draw 2 cards.
+
+=== EBP03-071+ | Godzilla's Skeleton ===
+When counting monster cards in your discard pile, treat this card as a monster card as well.
+
+Look at the top 4 cards of your deck, put any number of them on top of your deck in any order, send the rest to your discard pile, then draw 2 cards.
+
+=== EBP03-072 | Petit Railgun ===
+[Destroy] all of your opponent's battle cards in the same column as your monster card.
+
+=== EBP03-072+ | Petit Railgun ===
+[Destroy] all of your opponent's battle cards in the same column as your monster card.
+
+=== EBP03-073 | All-Weapon Attack ===
+Reveal the top 3 cards of your deck and send them to your discard pile; <Destroy> all of your opponent’s battle cards in zones whose numbers match the ranks of the revealed cards, if your opponent's monster card occupies 1 of those zones,  your opponent’s monster card retreats backward by 1 zone.
+
+=== EBP03-073+ | All-Weapon Attack ===
+Reveal the top 3 cards of your deck and send them to your discard pile; <Destroy> all of your opponent’s battle cards in zones whose numbers match the ranks of the revealed cards, if your opponent's monster card occupies 1 of those zones,  your opponent’s monster card retreats backward by 1 zone.
+
+=== EBP03-074 | A Journey of 130 Million Years ===
+If your monster card is rank III or lower, play 1 monster card from your monster deck that shares a trait with it, whose its rank is 1 higher than your monster card's current rank. (This play does not increase <Rage>.)
+
+=== EBP03-074+ | A Journey of 130 Million Years ===
+If your monster card is rank III or lower, play 1 monster card from your monster deck that shares a trait with it, whose its rank is 1 higher than your monster card's current rank.
+
+=== EBP03-075 | Yakusugi ===
+<Base>When any monster card invades into zones 6–8,  <Destroy> this card.  (Cards with Base are not sent to the discard pile at the start phase.)
+
+<Your Turn> At the beginning of your counter phase, evolve 1 of your rank 4 or lower battle cards with <Evolution>.
+
+=== EBP03-075+ | Yakusugi ===
+<Base>When any monster card invades into zones 6–8,  <Destroy> this card.
+
+<Your Turn> At the beginning of your counter phase, evolve 1 of your rank 4 or lower battle cards with <Evolution>.
+
+=== EBP03-076 | The Battle at Fukuoka Tower ===
+<Base>When any monster card invades into zones 6–8,  <Destroy> this card.  (Cards with Base are not sent to the discard pile at the start phase.)
+
+<Opponent’s Turn> For each monster or battle card in your zones 1, 5, and 8, your monster card gains +5000 threat level.
+
+=== EBP03-076+ | The Battle at Fukuoka Tower ===
+<Base>When any monster card invades into zones 6–8,  <Destroy> this card.
+
+<Opponent’s Turn> For each monster or battle card in your zones 1, 5, and 8, your monster card gains +5000 threat level.
+
+=== EBP03-077 | Rebirth of Mothra 3 ===
+Choose one:
+
+・Return 1 rank II or lower monster card from your discard pile to your hand.
+
+・If there are 5 or more cards under your monster card, return 1 monster card from your discard pile to your hand.
+
+=== EBP03-077+ | Rebirth of Mothra 3 ===
+Choose one:
+
+・Return 1 rank II or lower monster card from your discard pile to your hand.
+
+・If there are 5 or more cards under your monster card, return 1 monster card from your discard pile to your hand.
+
+=== EBP03-078 | Megalon and Gigan:Villain Tag Team ===
+If there are 3 or more battle cards in your opponent’s zones, <Destroy> 1 battle card from the rightmost and 1 from the leftmost position from among them (from your perspective).
+
+=== EBP03-078+ | Megalon and Gigan:Villain Tag Team ===
+If there are 3 or more battle cards in your opponent’s zones, <Destroy> 1 battle card from the rightmost and 1 from the leftmost position from among them.
+
+=== EBP03-079 | Godzilla Captured! ===
+Set your opponent’s <Rage> to 0.
+
+=== EBP03-079+ | Godzilla Captured! ===
+Set your opponent’s <Rage> to 0.
+
+=== EBP03-080 | Odo Island ===
+<Base>When any monster card invades into zones 6–8,  <Destroy> this card.  (Cards with Base are not sent to the discard pile at the start phase.)
+
+<Your Turn> At the beginning of your counter phase, you may play up to 1<《Godzilla》> battle card from your hand.
+
+=== EBP03-080+ | Odo Island ===
+<Base>When any monster card invades into zones 6–8,  <Destroy> this card.
+
+<Your Turn> At the beginning of your counter phase, you may play up to 1<《Godzilla》> battle card from your hand.
+
+=== Rage-E06 |  ===
+
+
+=== Rage-E06+ |  ===
+
+
+=== Rage-E06++ |  ===
+
+
+=== Rage-E07 |  ===
+
+
+=== Rage-E07+ |  ===
+
+
+=== Rage-E07++ |  ===
+
+
+=== Rage-E08 |  ===
+
+
+=== Rage-E08+ |  ===
+
+
+=== Rage-E08++ |  ===
+
+
+=== Rage-EGZ03 |  ===
+
+
+=== Rage-EGZ03+ |  ===
+
+
+=== Rage-EGZ03++ |  ===
+
+
+=== Rage-EGZ04 |  ===
+
+
+=== Rage-EGZ04+ |  ===
+
+
+=== Rage-EGZ04++ |  ===
+
+
+=== Rage-EGZ05 |  ===
+
+
+=== Rage-EGZ05+ |  ===
+
+
+=== Rage-EGZ05++ |  ===
+
+
+=== Rage-EGZ15 |  ===
+
+
+=== Rage-EGZ15+ |  ===
+
+
+=== Rage-EGZ15++ |  ===
+
+
+=== Rage-EGZ20 |  ===
+
+
+=== Rage-EGZ20+ |  ===
+
+
+=== Rage-EGZ20++ |  ===
+
+
+=== Rage-EGZ25 |  ===
+
+
+=== Rage-EGZ25+ |  ===
+
+
+=== Rage-EGZ25++ |  ===
+
+
+=== Rage-EGZ26 |  ===
+
+
+=== Rage-EGZ26+ |  ===
+
+
+=== Rage-EGZ26++ |  ===
+
+

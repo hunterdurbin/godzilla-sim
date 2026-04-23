@@ -1,0 +1,90 @@
+# ESD01 (English) card effects scraped from en.godzilla-cardgame.com
+# Source: https://en.godzilla-cardgame.com/cardlist/searchresults/?expansion=ESD01&view=text&sort=new
+# Total cards: 21
+# Icon images have been inlined as <Name> tokens matching the texticon PNG filename stems
+# (e.g. <Rage>, <Burst1>, <Awakening3>, <Opponent's Turn>).
+# Format per entry (blank-line separated):
+#   === Card Number | Card Name ===
+#   effect text (info-Text, may span multiple lines)
+
+=== ESD01-001 | Godzilla(2023) ===
+
+
+=== ESD01-001+ | Godzilla(2023) ===
+
+
+=== ESD01-002 | Godzilla(2023) ===
+<When Invading> Search your deck for up to 1 rank Ⅲ card named 「Godzilla(2023)」 with <Burst>, reveal it, add it to your hand, then shuffle your deck. (If you invaded 2 zones, activate this effect 2 times)
+
+=== ESD01-003 | Godzilla(2023) ===
+If this card has 2 or more <Rage>, this card gains +5000 threat level.
+
+=== ESD01-004 | Godzilla(2023) ===
+<When Invading>If this card has 2 or more <Rage>, your opponent discards cards until they have 2 cards remaining in their hand.
+
+=== ESD01-005 | Godzilla(2023) ===
+<Burst1>(You can play this card from rank I. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+<Enter> Your opponent discards cards until they have 4 cards remaining in their hand.
+
+=== ESD01-006 | Godzilla(2023) ===
+<Burst2>(You can play this card from rank II. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+<Enter> <Destroy> 1 of your opponent’s rank 4 or lower battle cards.
+
+=== ESD01-007 | Godzilla(2023) ===
+<Burst3>(You can play this card from rank III. If you do, send this card to your discard pile at the beginning of your next end phase.)
+
+<Enter> <Destroy> all of your opponent’s battle cards in the same column as this card.
+
+=== ESD01-008 | Shinseimaru ===
+(Battle cards in your hand can be played if their rank is equal to or lower than the number in the zone where the opponent's monster card is.)
+
+=== ESD01-009 | Reinforcements ===
+<Awakening4> This card gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)
+
+=== ESD01-010 | City of Tokyo ===
+If your monster card has 2 or more <Rage> , your other battle card in zone 8 gains +5000 counter power.
+
+<Awakening6> Your other battle card in zone 8 gains +5000 counter power. (Active if your monster card is in zone 6 or beyond.)
+
+=== ESD01-011 | Godzilla(2023) ===
+<Enter>If your monster card has 2 or more <Rage>, reduce your opponent's <Rage> by 1.
+
+When this card is <Destroy>, place this card on the bottom of your deck instead.
+
+=== ESD01-012 | Godzilla(2023) ===
+<Your Turn> When you play a monster card, you may move this card to an unoccupied zone.
+
+If this card is in zone 8, this card gains +3000 counter power.
+
+When this card is <Destroy>, place this card on the bottom of your deck instead.
+
+=== ESD01-012+ | Godzilla(2023) ===
+<Your Turn> When you play a monster card, you may move this card to an unoccupied zone.
+
+If this card is in zone 8, this card gains +3000 counter power.
+
+When this card is <Destroy>, place this card on the bottom of your deck instead.
+
+=== ESD01-013 | Ginza Annihilated ===
+<Your Turn> Whenever your monster card's <Rage> is increased, <Destroy> 1 of your opponent's rank 6 or lower battle cards.
+
+=== ESD01-014 | Godzilla Emerges ===
+If your monster card has 2 or more <Rage>, search your deck for up to 1 battle card named 「Godzilla(2023)」, play it, then shuffle your deck.
+
+=== ESD01-015 | Operation Wadatsumi ===
+Your opponent discards cards until they have 2 cards remaining in their hand.
+
+=== ESD01-016 | Heat Ray ===
+<Destroy> all of your opponent’s battle cards in the same column as your monster card.
+
+=== Rage-EGZ30 |  ===
+
+
+=== Rage-EGZ30+ |  ===
+
+
+=== Rage-EGZ30++ |  ===
+
+
