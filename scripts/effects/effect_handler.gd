@@ -598,6 +598,19 @@ func reduce_rage(player_id: int, amount: int) -> int:
 	return actual
 
 
+func gain_rage(player_id: int, amount: int) -> int:
+	## Increase a player's rage by amount. Returns actual amount gained.
+	## Mirror of reduce_rage — handles the old/new rage bookkeeping and trigger dispatch.
+	if amount <= 0:
+		return 0
+	var player := game_state.players[player_id]
+	var old_rage: int = player.rage
+	player.rage += amount
+	player.rage_changed.emit(player.rage)
+	await trigger_rage_changed(player_id, old_rage, player.rage)
+	return amount
+
+
 func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> void:
 	## Trigger monster advance on all active cards for this player.
 	## Collects all applicable effects, then resolves with rule action checks between each.
@@ -2318,6 +2331,24 @@ func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> in
 	return maxi(0, base_rank + modifier)
 
 
+func get_zones_in_rank_range(player_id: int, min_rank: int = -1, max_rank: int = -1) -> Array[int]:
+	## Return occupied zone indices whose top battle card's effective field rank
+	## falls within [min_rank, max_rank]. Use -1 for either bound to leave it unbounded.
+	var result: Array[int] = []
+	var player := game_state.players[player_id]
+	for i in range(8):
+		var top := player.get_zone_top_card(i)
+		if top.is_empty():
+			continue
+		var rank: int = get_effective_field_rank(top, player_id)
+		if min_rank >= 0 and rank < min_rank:
+			continue
+		if max_rank >= 0 and rank > max_rank:
+			continue
+		result.append(i)
+	return result
+
+
 func get_zone_rank_modifiers(player_id: int) -> Array:
 	## Get per-zone rank modifier for display. Returns Array of 8 ints.
 	## Each value is the difference between effective rank and base rank for the zone's card.
@@ -2547,7 +2578,7 @@ func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, dest
 	## Collect standby entries for on_opponent_zone_card_destroyed triggers.
 	## Iterates the opponent of the destroyed card's owner (they react when opponent's card is destroyed).
 	var entries: Array = []
-	var watcher_id: int = game_state.get_opponent_id(destroyed_player_id)
+	var watcher_id: int = 1 - destroyed_player_id
 	var watcher := game_state.players[watcher_id]
 	var monster := watcher.current_monster
 	if not monster.is_empty() and has_trigger(monster, "on_opponent_zone_card_destroyed"):

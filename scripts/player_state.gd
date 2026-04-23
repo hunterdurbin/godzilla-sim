@@ -137,6 +137,46 @@ func get_occupied_zone_indices() -> Array[int]:
 	return indices
 
 
+func get_zone_top_indices_matching(filter: Callable) -> Array[int]:
+	## Return occupied zone indices whose top card matches the filter predicate.
+	## Filter signature: func(card: Dictionary) -> bool.
+	var indices: Array[int] = []
+	for i in range(8):
+		var top: Dictionary = get_zone_top_card(i)
+		if not top.is_empty() and filter.call(top):
+			indices.append(i)
+	return indices
+
+
+func get_zone_top_cards_matching(filter: Callable) -> Array[Dictionary]:
+	## Return the top cards of occupied zones that match the filter predicate.
+	var cards: Array[Dictionary] = []
+	for i in range(8):
+		var top: Dictionary = get_zone_top_card(i)
+		if not top.is_empty() and filter.call(top):
+			cards.append(top)
+	return cards
+
+
+func count_zones_matching(filter: Callable) -> int:
+	## Count occupied zones whose top card matches the filter predicate.
+	var n: int = 0
+	for i in range(8):
+		var top: Dictionary = get_zone_top_card(i)
+		if not top.is_empty() and filter.call(top):
+			n += 1
+	return n
+
+
+func has_zone_matching(filter: Callable) -> bool:
+	## True if any occupied zone's top card matches the filter predicate.
+	for i in range(8):
+		var top: Dictionary = get_zone_top_card(i)
+		if not top.is_empty() and filter.call(top):
+			return true
+	return false
+
+
 func mill_cards(count: int) -> Array[Dictionary]:
 	## Send top N cards from deck to discard pile. Returns the milled cards.
 	var milled: Array[Dictionary] = []
@@ -164,6 +204,21 @@ func get_first_empty_strategy_zone_index() -> int:
 		if strategy_zones[i].is_empty():
 			return i
 	return -1
+
+
+func count_strategies_in_play() -> int:
+	var n: int = 0
+	for sz in strategy_zones:
+		if not sz.is_empty():
+			n += 1
+	return n
+
+
+func has_any_strategy_in_play() -> bool:
+	for sz in strategy_zones:
+		if not sz.is_empty():
+			return true
+	return false
 
 
 func get_monster_rank() -> int:

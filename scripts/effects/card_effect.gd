@@ -580,6 +580,36 @@ static func get_effect_play_adjacent_zones(player: PlayerState, zone_idx: int) -
 	return zones
 
 
+# --- Monster stack utilities ---
+
+static func monster_has_trait(player: PlayerState, trait_id: int) -> bool:
+	## True if the player's current monster OR any card under it in the monster stack has the trait.
+	if trait_id in player.current_monster.get("traits", []):
+		return true
+	for card in player.monster_stack:
+		if trait_id in card.get("traits", []):
+			return true
+	return false
+
+
+static func monster_stack_has_trait(player: PlayerState, trait_id: int) -> bool:
+	## True if any card under the current monster (not the current monster itself) has the trait.
+	## Use this for "If there is a card with <X> under this card" wording.
+	for card in player.monster_stack:
+		if trait_id in card.get("traits", []):
+			return true
+	return false
+
+
+static func count_monster_stack_matching(player: PlayerState, filter: Callable) -> int:
+	## Count cards in the monster stack (under the current monster) that match the filter predicate.
+	var n: int = 0
+	for card in player.monster_stack:
+		if filter.call(card):
+			n += 1
+	return n
+
+
 # --- Column utilities ---
 
 static func get_adjacent_zones(zone_idx: int) -> Array[int]:
