@@ -1,10 +1,10 @@
 {
-  "_comment": "Maps Japanese icon tokens (as they appear in scraped card text) to both JP and EN asset paths under assets/effectIcons/. en=null means no English icon has been published for that token yet.",
+  "_comment": "Maps Japanese icon tokens (as they appear in scraped card text) to both JP and EN asset paths under assets/effectIcons/. JP files have been renamed to mirror the EN filenames where possible. en=null means the JP-only icon has no EN equivalent published yet (the ja filename is a best-guess EN-style name and will resolve naturally if/when the English site releases that icon).",
   "entries": [
     {
       "token": "⁅《FINAL WARS》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/⁅《FINAL WARS》＠⁆.png",
+      "ja": "ja/traits/《Final Wars》.png",
       "en": "en/traits/《Final Wars》.png"
     },
     {
@@ -22,25 +22,25 @@
     {
       "token": "⁅《キングギドラ》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/キングギドラ.png",
+      "ja": "ja/traits/《King Ghidorah》.png",
       "en": "en/traits/《King Ghidorah》.png"
     },
     {
       "token": "⁅《キングシーサー》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/⁅《キングシーサー》＠⁆.png",
+      "ja": "ja/traits/《King Caesar》.png",
       "en": "en/traits/《King Caesar》.png"
     },
     {
       "token": "⁅《ゴジラ》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/ゴジラ.png",
+      "ja": "ja/traits/《Godzilla》.png",
       "en": "en/traits/《Godzilla》.png"
     },
     {
       "token": "⁅《スペースゴジラ》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/スペースゴジラ.png",
+      "ja": "ja/traits/《SpaceGodzilla》.png",
       "en": "en/traits/《SpaceGodzilla》.png"
     },
     {
@@ -70,19 +70,19 @@
     {
       "token": "⁅《メカゴジラ》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/メカゴジラ.png",
+      "ja": "ja/traits/《Mechagodzilla》.png",
       "en": "en/traits/《Mechagodzilla》.png"
     },
     {
       "token": "⁅《メガロ》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/メガロ.png",
+      "ja": "ja/traits/《Megalon》.png",
       "en": "en/traits/《Megalon》.png"
     },
     {
       "token": "⁅《モゲラ》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/モゲラ.png",
+      "ja": "ja/traits/《Moguera》.png",
       "en": null
     },
     {
@@ -94,55 +94,55 @@
     {
       "token": "⁅《モンスターX》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/⁅《モンスターX》＠⁆.png",
+      "ja": "ja/traits/《Monster X》.png",
       "en": "en/traits/《Monster X》.png"
     },
     {
       "token": "⁅《ラドン》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/⁅《ラドン》＠⁆.png",
+      "ja": "ja/traits/《Rodan》.png",
       "en": "en/traits/《Rodan》.png"
     },
     {
       "token": "⁅《リトルゴジラ》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/リトルゴジラ.png",
+      "ja": "ja/traits/《Little Godzilla》.png",
       "en": "en/traits/《Little Godzilla》.png"
     },
     {
       "token": "⁅《兵器》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/兵器.png",
+      "ja": "ja/traits/《Weapon》.png",
       "en": "en/traits/《Weapon》.png"
     },
     {
       "token": "⁅《機械》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/機械.png",
+      "ja": "ja/traits/《Mech》.png",
       "en": "en/traits/《Mech》.png"
     },
     {
       "token": "⁅《第2形態》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/2ndform.png",
+      "ja": "ja/traits/《2nd Form》.png",
       "en": "en/traits/《2nd Form》.png"
     },
     {
       "token": "⁅《第3形態》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/第3形態.png",
+      "ja": "ja/traits/《3rd Form》.png",
       "en": "en/traits/《3rd Form》.png"
     },
     {
       "token": "⁅《第4形態》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/第4形態.png",
+      "ja": "ja/traits/《4th Form》.png",
       "en": "en/traits/《4th Form》.png"
     },
     {
       "token": "⁅《護国聖獣》＠⁆",
       "category": "traits",
-      "ja": "ja/traits/護国聖獣.png",
+      "ja": "ja/traits/《Guardian Monster》.png",
       "en": null
     },
     {
@@ -154,7 +154,7 @@
     {
       "token": "⁅共鳴＠⁆",
       "category": "others",
-      "ja": "ja/others/共鳴.png",
+      "ja": "ja/others/Resonance.png",
       "en": "en/others/Resonance.png"
     },
     {
@@ -214,7 +214,7 @@
     {
       "token": "⁅拠点＠⁆",
       "category": "others",
-      "ja": "ja/others/拠点.png",
+      "ja": "ja/others/Base.png",
       "en": "en/others/Base.png"
     },
     {
@@ -286,7 +286,7 @@
     {
       "token": "⁅足１＠⁆",
       "category": "traits",
-      "ja": "ja/traits/⁅足１＠⁆.png",
+      "ja": "ja/traits/Step1.png",
       "en": null
     },
     {
@@ -298,7 +298,7 @@
     {
       "token": "⁅逆襲＠⁆",
       "category": "others",
-      "ja": "ja/others/逆襲.png",
+      "ja": "ja/others/Revenge.png",
       "en": "en/others/Revenge.png"
     },
     {
