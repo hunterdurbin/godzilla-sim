@@ -254,3 +254,40 @@ STR_DB_SORT_TYPE,Sort: Type,並び替え: タイプ
 STR_DB_POOL_COUNT_FMT,({N} cards),({N}枚)
 STR_DB_TO_MAIN,→Main,→メイン
 STR_DB_TO_MONSTER,→Mon,→怪獣
+STR_LOG_TURN_START_FMT,--- Turn {N}: {PLAYER} ---,--- ターン {N}: {PLAYER} ---
+STR_LOG_START_PHASE_DRAW_FMT,Start Phase: Drawing {N} card(s),開始フェイズ: {N}枚ドロー
+STR_LOG_HAND_SIZE_FMT,Hand size: {N},手札: {N}枚
+STR_LOG_MAIN_PHASE,Main Phase: Choose your actions,メインフェイズ: アクションを選択
+STR_LOG_PLAYER_PASS_FMT,[b]{PLAYER}[/b] passes.,[b]{PLAYER}[/b] パス。
+STR_LOG_PLAYED_BATTLE_FMT,[b]{PLAYER}[/b]: Played {CARD} to Zone {ZONE},[b]{PLAYER}[/b]: {CARD} をエリア{ZONE}に出現
+STR_LOG_PLAYED_BATTLE_ENTER_FMT,[b]{PLAYER}[/b]: {ENTER_ICON} {CARD} to Zone {ZONE},[b]{PLAYER}[/b]: {ENTER_ICON} {CARD} をエリア{ZONE}に出現
+STR_LOG_PLAYED_STRATEGY_FMT,[b]{PLAYER}[/b]: Played {CARD} to Strategy Zone,[b]{PLAYER}[/b]: {CARD} を戦略置き場に出現
+STR_LOG_PLAYED_STRATEGY_BASE_FMT,[b]{PLAYER}[/b]: {BASE_ICON} Played {CARD} to Strategy Zone,[b]{PLAYER}[/b]: {BASE_ICON} {CARD} を戦略置き場に出現
+STR_LOG_GAINED_RAGE_FMT,[b]{PLAYER}[/b]: {RAGE_ICON} x{N} (discarded: {CARD}),[b]{PLAYER}[/b]: {RAGE_ICON} x{N} (捨て札: {CARD})
+STR_LOG_PLAYED_MONSTER_FMT,[b]{PLAYER}[/b]: Played {CARD} as Monster ({RAGE_ICON} x{N}),[b]{PLAYER}[/b]: {CARD} を怪獣として出現 ({RAGE_ICON} x{N})
+STR_LOG_INVADED_FMT,[b]{PLAYER}[/b]: Invaded! Monster now at zone {ZONE} (discarded {CARD}),[b]{PLAYER}[/b]: 進攻! 怪獣はエリア{ZONE}へ (捨て札 {CARD})
+STR_LOG_INVADED_STEP2_FMT,[b]{PLAYER}[/b]: {STEP2_ICON} Monster now at zone {ZONE} (discarded {CARD}),[b]{PLAYER}[/b]: {STEP2_ICON} 怪獣はエリア{ZONE}へ (捨て札 {CARD})
+STR_LOG_COUNTER_PHASE_FMT,[b]{PLAYER}[/b]: Counter Phase: CP {CP} vs Threat {THREAT},[b]{PLAYER}[/b]: 撃退フェイズ: 撃退力 {CP} vs 脅威度 {THREAT}
+STR_LOG_END_PHASE_FMT,[b]{PLAYER}[/b]: End Phase: Monster at zone {ZONE},[b]{PLAYER}[/b]: エンドフェイズ: 怪獣はエリア{ZONE}
+STR_LOG_HAND_REFILLED_FMT,[b]{PLAYER}[/b]: Hand refilled to {N} cards,[b]{PLAYER}[/b]: 手札を{N}枚に補充
+STR_LOG_GAME_OVER_FMT,GAME OVER! {PLAYER} wins: {REASON},ゲーム終了! {PLAYER} の勝利: {REASON}
+STR_LOG_BURST_PLAYED_FMT,[b]{PLAYER}[/b]: {BURST_PREFIX} {CARD} {RAGE_ICON} x{N},[b]{PLAYER}[/b]: {BURST_PREFIX} {CARD} {RAGE_ICON} x{N}
+STR_LOG_BURST_FALLBACK_PREFIX_FMT,Burst {N}:,強襲 {N}:
+STR_LOG_REVENGE_FMT,[b]{PLAYER}[/b]: {REVENGE_ICON} {CARD},[b]{PLAYER}[/b]: {REVENGE_ICON} {CARD}
+STR_LOG_AWAKENING_FMT,[b]{PLAYER}[/b]: {AWK_PREFIX} {CARD},[b]{PLAYER}[/b]: {AWK_PREFIX} {CARD}
+STR_LOG_AWAKENING_FALLBACK_PREFIX_FMT,Awakening {N}:,覚醒 {N}:
+STR_LOG_EVOLUTION_FMT,[b]{PLAYER}[/b] Zone {ZONE}: {EVO_PREFIX} {FROM_CARD} => {TO_CARD},[b]{PLAYER}[/b] エリア{ZONE}: {EVO_PREFIX} {FROM_CARD} => {TO_CARD}
+STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT,Evolution {N}:,進化 {N}:
+STR_LOG_MILLED_CARD_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: Sent {MILLED_CARD} to discard pile,[b]{PLAYER}[/b] {SOURCE_CARD}: {MILLED_CARD} を捨て札に送る
+STR_LOG_MILLED_CARDS_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: Sent {MILLED_CARDS} to discard pile,[b]{PLAYER}[/b] {SOURCE_CARD}: {MILLED_CARDS} を捨て札に送る
+STR_LOG_EFFECT_RAGE_FROM_MILL_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} x{N} (milled monster: {MILLED_CARD}),[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} x{N} (捨てた怪獣: {MILLED_CARD})
+STR_LOG_EFFECT_RAGE_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} +{AMOUNT} (now x{N}),[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} +{AMOUNT} (現在 x{N})
+STR_LOG_EFFECT_DESTROYED_FMT,{DESTROY_ICON} [b]{SOURCE_PLAYER}[/b] {SOURCE_CARD}: [b]{TARGET_PLAYER}[/b] Zone {ZONE} {DESTROYED_CARD},{DESTROY_ICON} [b]{SOURCE_PLAYER}[/b] {SOURCE_CARD}: [b]{TARGET_PLAYER}[/b] エリア{ZONE} {DESTROYED_CARD}
+STR_LOG_CARD_CRUSHED_FMT,{DESTROY_ICON} [b]{PLAYER}[/b] Zone {ZONE}: {CARD} crushed!,{DESTROY_ICON} [b]{PLAYER}[/b] エリア{ZONE}: {CARD} 撃破!
+STR_LOG_COUNTER_SUCCESS_FMT,Counter SUCCESS! [b]{PLAYER}[/b] CP {CP} >= Threat {THREAT},撃退成功! [b]{PLAYER}[/b] 撃退力 {CP} >= 脅威度 {THREAT}
+STR_LOG_COUNTER_FAIL_FMT,Counter failed. [b]{PLAYER}[/b] CP {CP} < Threat {THREAT},撃退失敗。 [b]{PLAYER}[/b] 撃退力 {CP} < 脅威度 {THREAT}
+STR_LOG_COUNTER_IMMUNE_FMT,Counter IMMUNE! [b]{PLAYER}[/b] CP {CP} <= Threshold {THRESHOLD} — no rank up,撃退無効! [b]{PLAYER}[/b] 撃退力 {CP} <= 閾値 {THRESHOLD} — 等級アップなし
+STR_LOG_REASON_COUNTER_VICTORY,Victory through countering!,撃退による勝利!
+STR_LOG_REASON_INVASION_VICTORY,Victory through invasion!,進攻による勝利!
+STR_LOG_REASON_NO_STRATEGIES,No strategy cards in play!,場に戦略カードなし!
+STR_LOG_REASON_OPPONENT_DISCONNECTED,Opponent disconnected,対戦相手が切断されました

@@ -1,9 +1,21 @@
 class_name GameLog
 
-## Centralized log message formatting for the game log panel.
-## All methods are static and return formatted BBCode strings.
+## Centralized log message constructors and renderer.
+##
+## Event methods return structured token Dictionaries. Each client renders
+## them via `render()` at display time using its own locale, so hosts and
+## clients in different locales see the log in their own language.
+## `chat_message()` and the `_bold`/`card_link` helpers produce BBCode
+## directly (used inside `render()` and by chat).
 
 static var player_names: Array[String] = ["Player 1", "Player 2"]
+
+const _ENTER_ICON := "[img=20]res://assets/effectIcons/others/Enter.png[/img]"
+const _RAGE_ICON := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
+const _BASE_ICON := "[img=40]res://assets/effectIcons/others/Base.png[/img]"
+const _STEP2_ICON := "[img=20]res://assets/effectIcons/others/Step2.png[/img]"
+const _REVENGE_ICON := "[img=40]res://assets/effectIcons/others/Revenge.png[/img]"
+const _DESTROY_ICON := "[img=40]res://assets/effectIcons/others/Destroy.png[/img]"
 
 
 static func disambiguate(names: Array[String], local_id: int) -> Array[String]:
@@ -39,183 +51,321 @@ static func _strip_card_id(raw_id: String) -> String:
 
 
 static func card_link(raw_id: String) -> String:
-	## Build a BBCode URL link for a card ID. Displays the card name if found.
+	## Build a BBCode URL link for a card ID. The displayed label is translated
+	## to the current locale via `CARD_<id>_NAME` with a fallback to the
+	## English name from `CardData.CARD_TEMPLATES` and finally to the raw ID.
 	var card_number := _strip_card_id(raw_id)
 	if card_number.is_empty():
 		return ""
-	var card_data: Node = Engine.get_main_loop().root.get_node_or_null("CardData")
 	var label := card_number
+	var card_data: Node = Engine.get_main_loop().root.get_node_or_null("CardData")
+	var raw_name := ""
 	if card_data:
 		var template: Dictionary = card_data.get_card_by_id(card_number)
 		if not template.is_empty():
-			label = template.get("name", card_number)
+			raw_name = template.get("name", "")
+	var key := "CARD_%s_NAME" % card_number
+	var translated: String = TranslationServer.translate(key)
+	if translated != key:
+		label = translated
+	elif not raw_name.is_empty():
+		label = raw_name
 	if label.length() > 18:
 		label = label.left(15) + "..."
 	return "[url=%s]❰%s❱[/url]" % [card_number, label]
 
 
-# --- Turn structure ---
+# --- Token constructors ---------------------------------------------------
 
-static func turn_start(turn_number: int, player_id: int) -> String:
-	return "--- Turn %d: %s ---" % [turn_number, player_name(player_id)]
-
-
-static func start_phase_draw(count: int) -> String:
-	return "Start Phase: Drawing %d card(s)" % count
+static func turn_start(turn_number: int, player_id: int) -> Dictionary:
+	return {"type": "turn_start", "turn": turn_number, "player_id": player_id}
 
 
-static func hand_size(count: int) -> String:
-	return "Hand size: %d" % count
+static func start_phase_draw(count: int) -> Dictionary:
+	return {"type": "start_phase_draw", "count": count}
 
 
-static func main_phase() -> String:
-	return "Main Phase: Choose your actions"
+static func hand_size(count: int) -> Dictionary:
+	return {"type": "hand_size", "count": count}
 
 
-static func player_pass(player_id: int) -> String:
-	return "%s passes." % _bold(player_name(player_id))
+static func main_phase() -> Dictionary:
+	return {"type": "main_phase"}
 
 
-# --- Player actions ---
-
-static func played_battle(player_name: String, card_id: String, zone: int, has_enter: bool = false) -> String:
-	var name := _bold(player_name)
-	if has_enter:
-		var enter_icon := "[img=20]res://assets/effectIcons/others/Enter.png[/img]"
-		return "%s: %s %s to Zone %d" % [name, enter_icon, card_link(card_id), zone + 1]
-	return "%s: Played %s to Zone %d" % [name, card_link(card_id), zone + 1]
+static func player_pass(player_id: int) -> Dictionary:
+	return {"type": "player_pass", "player_id": player_id}
 
 
-static func played_strategy(player_name: String, card_id: String, is_base: bool = false) -> String:
-	var name := _bold(player_name)
-	if is_base:
-		var base_icon := "[img=40]res://assets/effectIcons/others/Base.png[/img]"
-		return "%s: %s Played %s to Strategy Zone" % [name, base_icon, card_link(card_id)]
-	return "%s: Played %s to Strategy Zone" % [name, card_link(card_id)]
+static func played_battle(player_id: int, card_id: String, zone: int, has_enter: bool = false) -> Dictionary:
+	return {"type": "played_battle", "player_id": player_id, "card_id": card_id, "zone": zone, "has_enter": has_enter}
 
 
-static func gained_rage(player_name: String, rage: int, card_id: String) -> String:
-	var rage_icon := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
-	return "%s: %s x%d (discarded: %s)" % [_bold(player_name), rage_icon, rage, card_link(card_id)]
+static func played_strategy(player_id: int, card_id: String, is_base: bool = false) -> Dictionary:
+	return {"type": "played_strategy", "player_id": player_id, "card_id": card_id, "is_base": is_base}
 
 
-static func played_monster(player_name: String, card_id: String, rage: int) -> String:
-	var rage_icon := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
-	return "%s: Played %s as Monster (%s x%d)" % [_bold(player_name), card_link(card_id), rage_icon, rage]
+static func gained_rage(player_id: int, rage: int, card_id: String) -> Dictionary:
+	return {"type": "gained_rage", "player_id": player_id, "rage": rage, "card_id": card_id}
 
 
-static func invaded(player_name: String, zone: int, card_id: String, is_step2: bool = false) -> String:
-	var name := _bold(player_name)
-	if is_step2:
-		var step2_icon := "[img=20]res://assets/effectIcons/others/Step2.png[/img]"
-		return "%s: %s Monster now at zone %d (discarded %s)" % [name, step2_icon, zone, card_link(card_id)]
-	return "%s: Invaded! Monster now at zone %d (discarded %s)" % [name, zone, card_link(card_id)]
+static func played_monster(player_id: int, card_id: String, rage: int) -> Dictionary:
+	return {"type": "played_monster", "player_id": player_id, "card_id": card_id, "rage": rage}
 
 
-# --- Counter & end phase ---
-
-static func counter_phase(player_name: String, cp: int, threat: int) -> String:
-	return "%s: Counter Phase: CP %d vs Threat %d" % [_bold(player_name), cp, threat]
+static func invaded(player_id: int, zone: int, card_id: String, is_step2: bool = false) -> Dictionary:
+	return {"type": "invaded", "player_id": player_id, "zone": zone, "card_id": card_id, "is_step2": is_step2}
 
 
-static func end_phase(player_name: String, zone: int) -> String:
-	return "%s: End Phase: Monster at zone %d" % [_bold(player_name), zone]
+static func counter_phase(player_id: int, cp: int, threat: int) -> Dictionary:
+	return {"type": "counter_phase", "player_id": player_id, "cp": cp, "threat": threat}
 
 
-static func hand_refilled(player_name: String, count: int) -> String:
-	return "%s: Hand refilled to %d cards" % [_bold(player_name), count]
+static func end_phase(player_id: int, zone: int) -> Dictionary:
+	return {"type": "end_phase", "player_id": player_id, "zone": zone}
 
 
-static func game_over(winner_id: int, reason: String) -> String:
-	return "GAME OVER! %s wins: %s" % [player_name(winner_id), reason]
+static func hand_refilled(player_id: int, count: int) -> Dictionary:
+	return {"type": "hand_refilled", "player_id": player_id, "count": count}
 
 
-# --- Effects ---
-
-static func burst_played(player_name: String, card_id: String, burst_rank: int, rage: int) -> String:
-	var burst_icon_path := "res://assets/effectIcons/bursts/Burst%d.png" % burst_rank
-	var burst_prefix: String
-	if ResourceLoader.exists(burst_icon_path):
-		burst_prefix = "[img=40]%s[/img]" % burst_icon_path
-	else:
-		burst_prefix = "Burst %d:" % burst_rank
-	var rage_icon := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
-	return "%s: %s %s %s x%d" % [_bold(player_name), burst_prefix, card_link(card_id), rage_icon, rage]
+static func game_over(winner_id: int, reason_key: String) -> Dictionary:
+	return {"type": "game_over", "winner_id": winner_id, "reason_key": reason_key}
 
 
-static func revenge_triggered(player_id: int, card_id: String) -> String:
-	var revenge_icon := "[img=40]res://assets/effectIcons/others/Revenge.png[/img]"
-	return "%s: %s %s" % [_bold(short_name(player_id)), revenge_icon, card_link(card_id)]
+static func burst_played(player_id: int, card_id: String, burst_rank: int, rage: int) -> Dictionary:
+	return {"type": "burst_played", "player_id": player_id, "card_id": card_id, "burst_rank": burst_rank, "rage": rage}
 
 
-static func awakening_triggered(player_id: int, card_id: String, awakening_level: int) -> String:
-	var awk_icon_path := "res://assets/effectIcons/awakenings/Awakening%d.png" % awakening_level
-	var awk_prefix: String
-	if ResourceLoader.exists(awk_icon_path):
-		awk_prefix = "[img=40]%s[/img]" % awk_icon_path
-	else:
-		awk_prefix = "Awakening %d:" % awakening_level
-	return "%s: %s %s" % [_bold(player_name(player_id)), awk_prefix, card_link(card_id)]
+static func revenge_triggered(player_id: int, card_id: String) -> Dictionary:
+	return {"type": "revenge_triggered", "player_id": player_id, "card_id": card_id}
 
 
-static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: String, to_id: String) -> String:
-	var evo_icon_path := "res://assets/effectIcons/evolutions/Evolution%d.png" % evo_rank
-	var evo_prefix: String
-	if ResourceLoader.exists(evo_icon_path):
-		evo_prefix = "[img=40]%s[/img]" % evo_icon_path
-	else:
-		evo_prefix = "Evolution %d:" % evo_rank
-	return "%s Zone %d: %s %s => %s" % [_bold(player_name(player_id)), zone_idx + 1, evo_prefix, card_link(from_id), card_link(to_id)]
+static func awakening_triggered(player_id: int, card_id: String, awakening_level: int) -> Dictionary:
+	return {"type": "awakening_triggered", "player_id": player_id, "card_id": card_id, "awakening_level": awakening_level}
 
 
-# --- Specific card effects ---
-
-static func effect_milled_card(player_id: int, effect_source_id: String, milled_id: String) -> String:
-	return "%s %s: Sent %s to discard pile" % [_bold(short_name(player_id)), card_link(effect_source_id), card_link(milled_id)]
+static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: String, to_id: String) -> Dictionary:
+	return {"type": "evolution", "player_id": player_id, "zone_idx": zone_idx, "evo_rank": evo_rank, "from_id": from_id, "to_id": to_id}
 
 
-static func effect_milled_cards(player_id: int, effect_source_id: String, milled: Array[Dictionary]) -> String:
-	var names: Array[String] = []
+static func effect_milled_card(player_id: int, effect_source_id: String, milled_id: String) -> Dictionary:
+	return {"type": "effect_milled_card", "player_id": player_id, "source_id": effect_source_id, "milled_id": milled_id}
+
+
+static func effect_milled_cards(player_id: int, effect_source_id: String, milled: Array[Dictionary]) -> Dictionary:
+	var milled_ids: Array[String] = []
 	for card in milled:
-		names.append(card_link(card.get("id", "")))
-	return "%s %s: Sent %s to discard pile" % [_bold(short_name(player_id)), card_link(effect_source_id), ", ".join(names)]
+		milled_ids.append(card.get("id", ""))
+	return {"type": "effect_milled_cards", "player_id": player_id, "source_id": effect_source_id, "milled_ids": milled_ids}
 
 
-static func effect_gained_rage_from_mill(player_id: int, effect_source_id: String, rage: int, milled_id: String) -> String:
-	var rage_icon := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
-	return "%s %s: %s x%d (milled monster: %s)" % [_bold(short_name(player_id)), card_link(effect_source_id), rage_icon, rage, card_link(milled_id)]
+static func effect_gained_rage_from_mill(player_id: int, effect_source_id: String, rage: int, milled_id: String) -> Dictionary:
+	return {"type": "effect_gained_rage_from_mill", "player_id": player_id, "source_id": effect_source_id, "rage": rage, "milled_id": milled_id}
 
 
-static func effect_gained_rage(player_id: int, effect_source_id: String, rage: int, amount: int) -> String:
-	var rage_icon := "[img=30]res://assets/effectIcons/others/Rage.png[/img]"
-	return "%s %s: %s +%d (now x%d)" % [_bold(short_name(player_id)), card_link(effect_source_id), rage_icon, amount, rage]
+static func effect_gained_rage(player_id: int, effect_source_id: String, rage: int, amount: int) -> Dictionary:
+	return {"type": "effect_gained_rage", "player_id": player_id, "source_id": effect_source_id, "rage": rage, "amount": amount}
 
 
-# --- Board events ---
-
-static func effect_destroyed_card(source_player_id: int, effect_source_id: String, target_player_id: int, zone_index: int, destroyed_id: String) -> String:
-	var destroy_icon := "[img=40]res://assets/effectIcons/others/Destroy.png[/img]"
-	return "%s %s %s: %s Zone %d %s" % [destroy_icon, _bold(short_name(source_player_id)), card_link(effect_source_id), _bold(short_name(target_player_id)), zone_index + 1, card_link(destroyed_id)]
+static func effect_destroyed_card(source_player_id: int, effect_source_id: String, target_player_id: int, zone_index: int, destroyed_id: String) -> Dictionary:
+	return {"type": "effect_destroyed_card", "source_player_id": source_player_id, "source_id": effect_source_id, "target_player_id": target_player_id, "zone_index": zone_index, "destroyed_id": destroyed_id}
 
 
-static func battle_card_crushed(card_id: String, player_id: int, zone_index: int) -> String:
-	var destroy_icon := "[img=40]res://assets/effectIcons/others/Destroy.png[/img]"
-	return "%s %s Zone %d: %s crushed!" % [destroy_icon, _bold(short_name(player_id)), zone_index + 1, card_link(card_id)]
+static func battle_card_crushed(card_id: String, player_id: int, zone_index: int) -> Dictionary:
+	return {"type": "battle_card_crushed", "card_id": card_id, "player_id": player_id, "zone_index": zone_index}
 
 
-static func counter_succeeded(player_id: int, total_cp: int, threat: int) -> String:
-	return "Counter SUCCESS! %s CP %d >= Threat %d" % [_bold(short_name(player_id)), total_cp, threat]
+static func counter_succeeded(player_id: int, total_cp: int, threat: int) -> Dictionary:
+	return {"type": "counter_succeeded", "player_id": player_id, "total_cp": total_cp, "threat": threat}
 
 
-static func counter_failed(player_id: int, total_cp: int, threat: int) -> String:
-	return "Counter failed. %s CP %d < Threat %d" % [_bold(short_name(player_id)), total_cp, threat]
+static func counter_failed(player_id: int, total_cp: int, threat: int) -> Dictionary:
+	return {"type": "counter_failed", "player_id": player_id, "total_cp": total_cp, "threat": threat}
 
 
-static func counter_immunity(player_id: int, total_cp: int, threshold: int) -> String:
-	return "Counter IMMUNE! %s CP %d <= Threshold %d — no rank up" % [_bold(short_name(player_id)), total_cp, threshold]
+static func counter_immunity(player_id: int, total_cp: int, threshold: int) -> Dictionary:
+	return {"type": "counter_immunity", "player_id": player_id, "total_cp": total_cp, "threshold": threshold}
 
 
-# --- Utilities ---
+# --- Rendering ------------------------------------------------------------
+
+static func _icon_or_fallback(icon_path: String, fallback_key: String, rank: int) -> String:
+	if ResourceLoader.exists(icon_path):
+		return "[img=40]%s[/img]" % icon_path
+	return TranslationServer.translate(fallback_key).replace("{N}", str(rank))
+
+
+static func render(token: Dictionary) -> String:
+	## Render a log token as BBCode in the current locale.
+	var t: String = token.get("type", "")
+	match t:
+		"turn_start":
+			return TranslationServer.translate("STR_LOG_TURN_START_FMT") \
+				.replace("{N}", str(token.get("turn", 0))) \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0)))
+		"start_phase_draw":
+			return TranslationServer.translate("STR_LOG_START_PHASE_DRAW_FMT") \
+				.replace("{N}", str(token.get("count", 0)))
+		"hand_size":
+			return TranslationServer.translate("STR_LOG_HAND_SIZE_FMT") \
+				.replace("{N}", str(token.get("count", 0)))
+		"main_phase":
+			return TranslationServer.translate("STR_LOG_MAIN_PHASE")
+		"player_pass":
+			return TranslationServer.translate("STR_LOG_PLAYER_PASS_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0)))
+		"played_battle":
+			var key := "STR_LOG_PLAYED_BATTLE_ENTER_FMT" if token.get("has_enter", false) else "STR_LOG_PLAYED_BATTLE_FMT"
+			return TranslationServer.translate(key) \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{ENTER_ICON}", _ENTER_ICON) \
+				.replace("{CARD}", card_link(token.get("card_id", ""))) \
+				.replace("{ZONE}", str(int(token.get("zone", 0)) + 1))
+		"played_strategy":
+			var key := "STR_LOG_PLAYED_STRATEGY_BASE_FMT" if token.get("is_base", false) else "STR_LOG_PLAYED_STRATEGY_FMT"
+			return TranslationServer.translate(key) \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{BASE_ICON}", _BASE_ICON) \
+				.replace("{CARD}", card_link(token.get("card_id", "")))
+		"gained_rage":
+			return TranslationServer.translate("STR_LOG_GAINED_RAGE_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{RAGE_ICON}", _RAGE_ICON) \
+				.replace("{N}", str(token.get("rage", 0))) \
+				.replace("{CARD}", card_link(token.get("card_id", "")))
+		"played_monster":
+			return TranslationServer.translate("STR_LOG_PLAYED_MONSTER_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{CARD}", card_link(token.get("card_id", ""))) \
+				.replace("{RAGE_ICON}", _RAGE_ICON) \
+				.replace("{N}", str(token.get("rage", 0)))
+		"invaded":
+			var key := "STR_LOG_INVADED_STEP2_FMT" if token.get("is_step2", false) else "STR_LOG_INVADED_FMT"
+			return TranslationServer.translate(key) \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{STEP2_ICON}", _STEP2_ICON) \
+				.replace("{ZONE}", str(token.get("zone", 0))) \
+				.replace("{CARD}", card_link(token.get("card_id", "")))
+		"counter_phase":
+			return TranslationServer.translate("STR_LOG_COUNTER_PHASE_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{CP}", str(token.get("cp", 0))) \
+				.replace("{THREAT}", str(token.get("threat", 0)))
+		"end_phase":
+			return TranslationServer.translate("STR_LOG_END_PHASE_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{ZONE}", str(token.get("zone", 0)))
+		"hand_refilled":
+			return TranslationServer.translate("STR_LOG_HAND_REFILLED_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{N}", str(token.get("count", 0)))
+		"game_over":
+			var reason_key: String = token.get("reason_key", "")
+			var reason: String = TranslationServer.translate(reason_key) if not reason_key.is_empty() else ""
+			return TranslationServer.translate("STR_LOG_GAME_OVER_FMT") \
+				.replace("{PLAYER}", player_name(token.get("winner_id", 0))) \
+				.replace("{REASON}", reason)
+		"burst_played":
+			var rank: int = int(token.get("burst_rank", 0))
+			var prefix := _icon_or_fallback("res://assets/effectIcons/bursts/Burst%d.png" % rank, "STR_LOG_BURST_FALLBACK_PREFIX_FMT", rank)
+			return TranslationServer.translate("STR_LOG_BURST_PLAYED_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{BURST_PREFIX}", prefix) \
+				.replace("{CARD}", card_link(token.get("card_id", ""))) \
+				.replace("{RAGE_ICON}", _RAGE_ICON) \
+				.replace("{N}", str(token.get("rage", 0)))
+		"revenge_triggered":
+			return TranslationServer.translate("STR_LOG_REVENGE_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{REVENGE_ICON}", _REVENGE_ICON) \
+				.replace("{CARD}", card_link(token.get("card_id", "")))
+		"awakening_triggered":
+			var level: int = int(token.get("awakening_level", 0))
+			var awk_prefix := _icon_or_fallback("res://assets/effectIcons/awakenings/Awakening%d.png" % level, "STR_LOG_AWAKENING_FALLBACK_PREFIX_FMT", level)
+			return TranslationServer.translate("STR_LOG_AWAKENING_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{AWK_PREFIX}", awk_prefix) \
+				.replace("{CARD}", card_link(token.get("card_id", "")))
+		"evolution":
+			var evo_rank: int = int(token.get("evo_rank", 0))
+			var evo_prefix := _icon_or_fallback("res://assets/effectIcons/evolutions/Evolution%d.png" % evo_rank, "STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT", evo_rank)
+			return TranslationServer.translate("STR_LOG_EVOLUTION_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{ZONE}", str(int(token.get("zone_idx", 0)) + 1)) \
+				.replace("{EVO_PREFIX}", evo_prefix) \
+				.replace("{FROM_CARD}", card_link(token.get("from_id", ""))) \
+				.replace("{TO_CARD}", card_link(token.get("to_id", "")))
+		"effect_milled_card":
+			return TranslationServer.translate("STR_LOG_MILLED_CARD_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{MILLED_CARD}", card_link(token.get("milled_id", "")))
+		"effect_milled_cards":
+			var milled_ids: Array = token.get("milled_ids", [])
+			var links: Array[String] = []
+			for mid in milled_ids:
+				links.append(card_link(str(mid)))
+			return TranslationServer.translate("STR_LOG_MILLED_CARDS_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{MILLED_CARDS}", ", ".join(links))
+		"effect_gained_rage_from_mill":
+			return TranslationServer.translate("STR_LOG_EFFECT_RAGE_FROM_MILL_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{RAGE_ICON}", _RAGE_ICON) \
+				.replace("{N}", str(token.get("rage", 0))) \
+				.replace("{MILLED_CARD}", card_link(token.get("milled_id", "")))
+		"effect_gained_rage":
+			return TranslationServer.translate("STR_LOG_EFFECT_RAGE_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{RAGE_ICON}", _RAGE_ICON) \
+				.replace("{AMOUNT}", str(token.get("amount", 0))) \
+				.replace("{N}", str(token.get("rage", 0)))
+		"effect_destroyed_card":
+			return TranslationServer.translate("STR_LOG_EFFECT_DESTROYED_FMT") \
+				.replace("{DESTROY_ICON}", _DESTROY_ICON) \
+				.replace("{SOURCE_PLAYER}", short_name(token.get("source_player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{TARGET_PLAYER}", short_name(token.get("target_player_id", 0))) \
+				.replace("{ZONE}", str(int(token.get("zone_index", 0)) + 1)) \
+				.replace("{DESTROYED_CARD}", card_link(token.get("destroyed_id", "")))
+		"battle_card_crushed":
+			return TranslationServer.translate("STR_LOG_CARD_CRUSHED_FMT") \
+				.replace("{DESTROY_ICON}", _DESTROY_ICON) \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{ZONE}", str(int(token.get("zone_index", 0)) + 1)) \
+				.replace("{CARD}", card_link(token.get("card_id", "")))
+		"counter_succeeded":
+			return TranslationServer.translate("STR_LOG_COUNTER_SUCCESS_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{CP}", str(token.get("total_cp", 0))) \
+				.replace("{THREAT}", str(token.get("threat", 0)))
+		"counter_failed":
+			return TranslationServer.translate("STR_LOG_COUNTER_FAIL_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{CP}", str(token.get("total_cp", 0))) \
+				.replace("{THREAT}", str(token.get("threat", 0)))
+		"counter_immunity":
+			return TranslationServer.translate("STR_LOG_COUNTER_IMMUNE_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{CP}", str(token.get("total_cp", 0))) \
+				.replace("{THRESHOLD}", str(token.get("threshold", 0)))
+		"chat":
+			var sender_id: int = int(token.get("sender_id", -1))
+			var pname := player_name(sender_id) if sender_id >= 0 else String(token.get("sender_name", ""))
+			return chat_message(pname, String(token.get("text", "")))
+		_:
+			return ""
+
+
+static func render_plain(token: Dictionary) -> String:
+	return to_plain_text(render(token))
+
+
+# --- Utilities ------------------------------------------------------------
 
 static func to_plain_text(bbcode: String) -> String:
 	## Convert BBCode log text to plain text for bug reports.
@@ -259,7 +409,7 @@ static func to_plain_text(bbcode: String) -> String:
 	return text
 
 
-# --- Chat ---
+# --- Chat -----------------------------------------------------------------
 
 static func chat_message(pname: String, text: String) -> String:
 	return "[color=#e6d279]%s: %s[/color]" % [_bold(pname), text]

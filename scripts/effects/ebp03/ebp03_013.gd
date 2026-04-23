@@ -51,4 +51,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if not has_strategy:
 		# You lose the game
 		var opponent_id: int = 1 - ctx.owner.player_id
-		ctx.game_state.game_over.emit(opponent_id, "No strategy cards in play!")
+		ctx.game_state.game_over.emit(opponent_id, "STR_LOG_REASON_NO_STRATEGIES")

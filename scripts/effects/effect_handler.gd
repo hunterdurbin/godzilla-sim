@@ -84,7 +84,7 @@ signal cards_revealed_requested(player_id: int, cards: Array[Dictionary], title:
 signal _cards_revealed_resolved()
 
 ## Emitted to send a message to the game log.
-signal log_message(text: String)
+signal log_message(token: Dictionary)
 signal card_evolved(player_id: int, card: Dictionary, zone_index: int)
 signal card_destroyed(player_id: int, zone_index: int)
 

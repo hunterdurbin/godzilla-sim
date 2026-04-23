@@ -205,7 +205,10 @@ func _render_snapshot(index: int) -> void:
 	for i in range(index + 1):
 		var log_lines: Array = _replay.snapshots[i].get("log_lines", [])
 		for line in log_lines:
-			log_output.append_text(str(line) + "\n")
+			if typeof(line) == TYPE_DICTIONARY:
+				log_output.append_text(GameLog.render(line) + "\n")
+			else:
+				log_output.append_text(str(line) + "\n")
 
 	# Update button states
 	prev_button.disabled = index <= 0

@@ -231,7 +231,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 	## Prompt the opponent to choose a rank-up monster from their monster deck.
 	## If the monster deck is empty or has no valid targets, opponent loses immediately.
 	if opponent.monster_deck.is_empty():
-		state.game_over.emit(winner_player_id, "Victory through countering!")
+		state.game_over.emit(winner_player_id, "STR_LOG_REASON_COUNTER_VICTORY")
 		return
 
 	var next_rank: int = opponent.current_monster.get("rank", 1) + 1
@@ -246,7 +246,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 
 	if valid_indices.is_empty():
 		# No valid rank-up targets — opponent loses
-		state.game_over.emit(winner_player_id, "Victory through countering!")
+		state.game_over.emit(winner_player_id, "STR_LOG_REASON_COUNTER_VICTORY")
 		return
 
 	# Request player selection via UI
@@ -278,7 +278,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 			await effect_handler.trigger_enter(opponent.player_id, m, true)
 	else:
 		# Opponent loses - can't find valid rank-up monster
-		state.game_over.emit(winner_player_id, "Victory through countering!")
+		state.game_over.emit(winner_player_id, "STR_LOG_REASON_COUNTER_VICTORY")
 
 
 func resolve_monster_rankup(index: int) -> void:
@@ -619,7 +619,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 	player.invasion_zones_crossed = player.monster_zone - start_zone
 
 	if is_victory:
-		state.game_over.emit(player.player_id, "Victory through invasion!")
+		state.game_over.emit(player.player_id, "STR_LOG_REASON_INVASION_VICTORY")
 		return
 
 	# Destroy <Base> strategies after movement completes but before standby (12.9.2).

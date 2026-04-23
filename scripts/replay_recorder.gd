@@ -12,7 +12,7 @@ extends RefCounted
 
 var _replay: ReplayData
 var _game_state: GameState
-var _pending_logs: PackedStringArray = []
+var _pending_logs: Array = []
 var _snapshot_pending: bool = false  # Debounce flag — at most one snapshot per frame
 var _scene_tree: SceneTree  # Needed for deferred frame callback
 
@@ -40,8 +40,8 @@ func on_state_changed() -> void:
 	_scene_tree.process_frame.connect(_capture_snapshot, CONNECT_ONE_SHOT)
 
 
-func on_log_message(text: String) -> void:
-	_pending_logs.append(text)
+func on_log_message(token: Dictionary) -> void:
+	_pending_logs.append(token)
 
 
 func on_phase_boundary(_sub_index: int) -> void:
@@ -69,7 +69,7 @@ func _do_capture(is_boundary: bool) -> void:
 		],
 		"log_lines": Array(_pending_logs),
 	}
-	_pending_logs = []
+	_pending_logs = [] as Array
 	_replay.snapshots.append(snap)
 
 

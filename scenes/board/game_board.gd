@@ -52,8 +52,10 @@ var _client_stats_decklists: Array = [null, null]
 @onready var log_output: RichTextLabel = $LogPanel/LogVBox/LogOutput
 @onready var chat_input: LineEdit = $LogPanel/LogVBox/ChatRow/ChatInput
 @onready var chat_char_count: Label = $LogPanel/LogVBox/ChatRow/CharCount
-var _log_lines: PackedStringArray = []
-var _pending_log_lines: PackedStringArray = [] # Buffered for next broadcast
+## Log entries are Dictionaries (tokens rendered by GameLog.render) or Strings
+## (legacy/system messages that render as-is). See `_on_log_message`.
+var _log_tokens: Array = []
+var _pending_log_tokens: Array = [] # Buffered for next broadcast
 var _pending_sound_events: PackedStringArray = [] # Sound events buffered for client
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var btn_rematch: Button = $EndGamePanel/VBox/ButtonRow/RematchButton
@@ -2756,7 +2758,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 		_update_action_buttons(valid_actions)
 
 
-func _on_game_ended(winner_id: int, reason: String) -> void:
+func _on_game_ended(winner_id: int, reason_key: String) -> void:
 	SfxManager.play("game_win" if winner_id == local_player_id else "game_lose")
 	_action_pending = false
 	_game_ended_by_disconnect = false
@@ -2770,7 +2772,8 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", turn_manager.game_state.player_names[winner_id]) + "\n" + reason
+		var reason_text := tr(reason_key) if not reason_key.is_empty() else ""
+		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", turn_manager.game_state.player_names[winner_id]) + "\n" + reason_text
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
 	btn_rematch.text = tr("STR_GB_REMATCH")
@@ -2778,14 +2781,14 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	_disable_all_buttons()
 	if is_multiplayer_game and NetworkManager.is_host():
 		# Flush any buffered logs before game end
-		if not _pending_log_lines.is_empty():
+		if not _pending_log_tokens.is_empty():
 			_broadcast_state()
 			_flush_broadcast()
-		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
-		_rpc_receive_game_ended.rpc(winner_id, reason)
+		RpcLogger.log_send("receive_game_ended", 4 + reason_key.length())
+		_rpc_receive_game_ended.rpc(winner_id, reason_key)
 	# Save replay (host)
 	if replay_recorder:
-		replay_recorder.finish(winner_id, reason, _first_player_id)
+		replay_recorder.finish(winner_id, reason_key, _first_player_id)
 		replay_recorder.save()
 		# Send replay to client so they get a complete copy
 		if is_multiplayer_game and NetworkManager.is_host():
@@ -2794,7 +2797,7 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 			print("[Replay] Sending replay to client (%d bytes compressed)" % compressed.size())
 			_rpc_receive_replay.rpc(compressed)
 	RpcLogger.print_summary()
-	_upload_stats(winner_id, reason, false)
+	_upload_stats(winner_id, reason_key, false)
 
 
 func _on_confirmation_requested(prompt: String, setting: String) -> void:
@@ -2842,13 +2845,23 @@ func _on_state_changed() -> void:
 		replay_recorder.on_state_changed()
 
 
-func _on_log_message(text: String) -> void:
-	_log_lines.append(text)
+func _on_log_message(message) -> void:
+	## Accepts a GameLog token Dictionary or a raw String (pre-formatted
+	## system messages like reconnect status). Tokens render in the local
+	## locale via GameLog.render; strings append as-is.
+	_log_tokens.append(message)
+	var rendered := _render_log_entry(message)
 	if log_output:
-		log_output.append_text(text + "\n")
+		log_output.append_text(rendered + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game and NetworkManager.is_host():
-		_pending_log_lines.append(text)
+		_pending_log_tokens.append(message)
+
+
+func _render_log_entry(entry) -> String:
+	if typeof(entry) == TYPE_DICTIONARY:
+		return GameLog.render(entry)
+	return str(entry)
 
 
 func _on_chat_submitted(text: String) -> void:
@@ -2859,11 +2872,10 @@ func _on_chat_submitted(text: String) -> void:
 	if trimmed.is_empty():
 		return
 	var filtered := ChatFilter.filter(trimmed)
-	var pname := GameLog.player_name(local_player_id)
-	var formatted := GameLog.chat_message(pname, filtered)
-	_log_lines.append(formatted)
+	var token := {"type": "chat", "sender_id": local_player_id, "text": filtered}
+	_log_tokens.append(token)
 	if log_output:
-		log_output.append_text(formatted + "\n")
+		log_output.append_text(GameLog.render(token) + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game:
 		RpcLogger.log_send("receive_chat", 4 + filtered.length())
@@ -3123,14 +3135,18 @@ func _build_bug_report_body() -> String:
 		lines.append("")
 
 	# Game log (last 50 lines)
-	if _log_lines.size() > 0:
+	if _log_tokens.size() > 0:
 		lines.append("<details>")
 		lines.append("<summary>Game Log (last 50 lines)</summary>")
 		lines.append("")
 		lines.append("```")
-		var start_idx := maxi(0, _log_lines.size() - 50)
-		for i in range(start_idx, _log_lines.size()):
-			lines.append(GameLog.to_plain_text(_log_lines[i]))
+		var start_idx := maxi(0, _log_tokens.size() - 50)
+		for i in range(start_idx, _log_tokens.size()):
+			var entry = _log_tokens[i]
+			if typeof(entry) == TYPE_DICTIONARY:
+				lines.append(GameLog.render_plain(entry))
+			else:
+				lines.append(GameLog.to_plain_text(str(entry)))
 		lines.append("```")
 		lines.append("")
 		lines.append("</details>")
@@ -3343,7 +3359,7 @@ func _execute_rematch() -> void:
 	_client_monster_cp_mods = [0, 0]
 
 	# 7. Clear game log
-	_log_lines.clear()
+	_log_tokens.clear()
 	if log_output:
 		log_output.clear()
 
@@ -6627,15 +6643,15 @@ func _do_broadcast() -> void:
 			envelope = {"v": _state_version, "bv": - 1, "d": state_dict}
 		else:
 			var delta := _compute_delta(_last_sent_state, state_dict)
-			if delta.is_empty() and _pending_log_lines.is_empty() and _pending_sound_events.is_empty():
+			if delta.is_empty() and _pending_log_tokens.is_empty() and _pending_sound_events.is_empty():
 				# Nothing changed, no logs, no sounds — skip broadcast entirely
 				_state_version -= 1
 				continue
 			envelope = {"v": _state_version, "bv": _last_sent_version, "d": delta}
 
-		# Piggyback buffered log lines on the envelope
-		if not _pending_log_lines.is_empty():
-			envelope["log"] = Array(_pending_log_lines)
+		# Piggyback buffered log tokens on the envelope (dicts + legacy strings)
+		if not _pending_log_tokens.is_empty():
+			envelope["log"] = _pending_log_tokens.duplicate()
 
 		# Piggyback buffered sound events on the envelope
 		if not _pending_sound_events.is_empty():
@@ -6650,7 +6666,7 @@ func _do_broadcast() -> void:
 				state_bytes.size(), _state_version, str(_last_sent_state.is_empty())])
 		RpcLogger.log_send("receive_state", state_bytes.size())
 		_rpc_receive_state.rpc_id(peer_id, state_bytes)
-	_pending_log_lines.clear()
+	_pending_log_tokens.clear()
 	_pending_sound_events.clear()
 
 
@@ -6988,12 +7004,12 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	if envelope.is_empty():
 		return
 
-	# Extract piggybacked log lines
+	# Extract piggybacked log entries (tokens rendered in local locale)
 	if envelope.has("log"):
-		for line in envelope["log"]:
-			_log_lines.append(str(line))
+		for entry in envelope["log"]:
+			_log_tokens.append(entry)
 			if log_output:
-				log_output.append_text(str(line) + "\n")
+				log_output.append_text(_render_log_entry(entry) + "\n")
 				log_output.scroll_to_line(log_output.get_line_count() - 1)
 
 	# Play piggybacked sound events from host
@@ -7225,11 +7241,11 @@ func _rpc_receive_action_context(actions_json: String, playable_json: String) ->
 	_update_action_buttons(actions)
 
 
-## Host -> Client: log message
+## Host -> Client: log message (legacy raw-string path; kept for compatibility)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_log(text: String) -> void:
 	RpcLogger.log_receive("receive_log", text.length())
-	_log_lines.append(text)
+	_log_tokens.append(text)
 	if log_output:
 		log_output.append_text(text + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
@@ -7242,11 +7258,10 @@ func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
 	if sender_player_id < 0 or sender_player_id > 1:
 		return
 	var filtered := ChatFilter.filter(text)
-	var pname := GameLog.player_name(sender_player_id)
-	var formatted := GameLog.chat_message(pname, filtered)
-	_log_lines.append(formatted)
+	var token := {"type": "chat", "sender_id": sender_player_id, "text": filtered}
+	_log_tokens.append(token)
 	if log_output:
-		log_output.append_text(formatted + "\n")
+		log_output.append_text(GameLog.render(token) + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	_notify_mobile_log_chat()
 
@@ -7557,8 +7572,8 @@ func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 
 ## Host -> Client: game over
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
-	RpcLogger.log_receive("receive_game_ended", 4 + reason.length())
+func _rpc_receive_game_ended(winner_id: int, reason_key: String) -> void:
+	RpcLogger.log_receive("receive_game_ended", 4 + reason_key.length())
 	SfxManager.play("game_win" if winner_id == local_player_id else "game_lose")
 	_action_pending = false
 	_game_ended_by_disconnect = false
@@ -7567,7 +7582,8 @@ func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", GameLog.player_name(winner_id)) + "\n" + reason
+		var reason_text := tr(reason_key) if not reason_key.is_empty() else ""
+		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", GameLog.player_name(winner_id)) + "\n" + reason_text
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
 	btn_rematch.text = tr("STR_GB_REMATCH")
@@ -7835,13 +7851,11 @@ func _on_opponent_reconnected(_peer_id: int) -> void:
 		_resync_reconnected_client()
 	else:
 		# Game ended while they were gone (win was claimed) — re-send result
-		var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
-		var reason := win_label.text if win_label else "Opponent disconnected"
 		await get_tree().create_timer(0.2).timeout
 		if not is_inside_tree():
 			return
-		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
-		_rpc_receive_game_ended.rpc(local_player_id, "Opponent disconnected")
+		RpcLogger.log_send("receive_game_ended", 4 + len("STR_LOG_REASON_OPPONENT_DISCONNECTED"))
+		_rpc_receive_game_ended.rpc(local_player_id, "STR_LOG_REASON_OPPONENT_DISCONNECTED")
 		# Show rematch button now that opponent is back
 		btn_rematch.visible = true
 		btn_rematch.disabled = false
