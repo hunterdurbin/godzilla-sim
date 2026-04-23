@@ -107,3 +107,95 @@ STR_PHASE_START,Start Phase,
 STR_PHASE_MAIN,Main Phase,
 STR_PHASE_COUNTER,Counter Phase,
 STR_PHASE_END,End Phase,
+STR_PB_THREAT,Threat:,脅威:
+STR_PB_THREAT_SHORT,T:,脅:
+STR_PB_RAGE_ZONE,Rage Zone,怒りゾーン
+STR_PB_CP,CP:,CP:
+STR_PB_DISCARD,Discard,捨て札
+STR_GB_TURN_FMT,Turn: {N},ターン: {N}
+STR_GB_TURN_HEADER_FMT,Turn {N} | {PLAYER} - {PHASE},ターン {N} | {PLAYER} - {PHASE}
+STR_GB_PHASE_SUB_RESOLVE_EFFECTS,"      Resolve Effects","      効果解決"
+STR_GB_PHASE_SUB_DRAW_CARDS,"      Draw Cards","      ドロー"
+STR_GB_PHASE_SUB_DISCARD_STRATEGIES,"      Discard Strategies","      戦略カード廃棄"
+STR_GB_PHASE_SUB_RESET_RAGE,"      Reset Rage","      怒りリセット"
+STR_GB_PHASE_SUB_PLAYER_ACTIONS,"      Player Actions","      プレイヤーアクション"
+STR_GB_PHASE_SUB_COUNTER_CHECK,"      Counter Check","      カウンター確認"
+STR_GB_PHASE_SUB_ADVANCE,"      Advance","      前進"
+STR_GB_PHASE_SUB_REFILL_HAND,"      Refill Hand","      手札補充"
+STR_GB_CANCEL,Cancel,キャンセル
+STR_GB_CONFIRM,Confirm,決定
+STR_GB_PLAY_BATTLE,Play Battle,バトル出現
+STR_GB_PLAY_STRATEGY,Strategy,戦略
+STR_GB_GAIN_RAGE,Gain Rage,怒り獲得
+STR_GB_PLAY_MONSTER,Play Monster,怪獣出現
+STR_GB_INVADE,Invade,侵攻
+STR_GB_END_MAIN,End Main,メイン終了
+STR_GB_END_MAIN_QUESTION,End Main Phase?,メインフェイズを終了？
+STR_GB_SKIP,Skip,スキップ
+STR_GB_REPORT_BUG,Report Bug,バグ報告
+STR_GB_CONCEDE,Concede,降参
+STR_GB_MAIN_MENU,Main Menu,メインメニュー
+STR_GB_CLAIM_WIN,Claim Win,勝利を宣言
+STR_GB_RETURN_TO_MENU,Return to Menu,メニューに戻る
+STR_GB_GAME_LOG,"Game Log:
+",ゲームログ:
+STR_GB_CHAT_PLACEHOLDER,Type to chat...,チャットを入力...
+STR_GB_SEARCH_YOUR_DECK,Search your deck:,デッキを検索:
+STR_GB_SHOW_ALL,Show All,全て表示
+STR_GB_STACKED,Stacked,スタック
+STR_GB_VIEW_BOARD,View Board,ボードを表示
+STR_GB_DISCARD_PILE,Discard Pile,捨て札の山
+STR_GB_MONSTER_DECK,Monster Deck,怪獣デッキ
+STR_GB_DECK,Deck,デッキ
+STR_GB_ZONE_STACK,Zone Stack,ゾーンスタック
+STR_GB_CLOSE,Close,閉じる
+STR_GB_GAME_OVER,Game Over!,ゲームオーバー!
+STR_GB_REMATCH,Rematch,再戦
+STR_GB_WAITING,Waiting...,待機中...
+STR_GB_ARRANGE_CARDS,Arrange cards:,カードを並び替え:
+STR_GB_KEEP_ON_DECK,Keep on Deck (top -> bottom),デッキに戻す (上→下)
+STR_GB_SEND_TO_DISCARD,Send to Discard,捨て札に送る
+STR_GB_SELECT_CARDS,Select cards:,カードを選択:
+STR_GB_AVAILABLE_CARDS,Available Cards,利用可能なカード
+STR_GB_SELECTED_FMT,Selected ({N}/{MAX}),選択済み ({N}/{MAX})
+STR_GB_CONFIRM_COUNT_FMT,Confirm ({N}/{MAX}),決定 ({N}/{MAX})
+STR_GB_SHOW_CARDS,Show Cards,カードを表示
+STR_GB_HIDE_CARDS,Hide Cards,カードを隠す
+STR_GB_SORT,Sort,並び替え
+STR_GB_SHOW_BOT_CARDS,Show Bot Cards,ボットのカードを表示
+STR_GB_HIDE_BOT_CARDS,Hide Bot Cards,ボットのカードを隠す
+STR_GB_SAVE_GAME,Save Game,ゲームを保存
+STR_GB_SAVED,Saved!,保存しました!
+STR_GB_COIN_FLIP_WAITING,Opponent won the coin flip. Waiting for their choice...,相手がコイントスに勝ちました。選択を待っています...
+STR_GB_COIN_FLIP_WON,You won the coin flip! Go first or second?,コイントスに勝ちました！先攻？後攻？
+STR_GB_GO_FIRST,Go First,先攻
+STR_GB_GO_SECOND,Go Second,後攻
+STR_GB_LOG,Log,ログ
+STR_GB_CP,CP,CP
+STR_GB_TURNS,Turns,ターン
+STR_GB_SELECT_ZONE,Select a ZONE to place the battle card:,バトルカードを置くゾーンを選択:
+STR_GB_NO_DISCARD,No cards in discard pile.,捨て札にカードがありません。
+STR_GB_NO_MONSTER_DECK,No cards remaining in monster deck.,怪獣デッキにカードが残っていません。
+STR_GB_ZONE_HEADER_FMT,Zone {N} ({C} cards),ゾーン {N} ({C}枚)
+STR_GB_TITLE_COUNT_FMT,{TITLE} ({C} cards),{TITLE} ({C}枚)
+STR_GB_WINS_FMT,{NAME} Wins!,{NAME} の勝利!
+STR_GB_SELECT_DISCARD_FMT,Select {N} cards to discard:,捨てるカードを {N} 枚選択:
+STR_GB_SELECT_MORE_DISCARD_FMT,Select {N} more cards to discard:,あと {N} 枚捨てるカードを選択:
+STR_GB_PRESS_CONFIRM_DISCARD,Press Confirm to discard selected cards,決定を押して選択したカードを捨てる
+STR_GB_OPPONENT_DISCONNECTED_WAIT,"Opponent disconnected.
+Waiting for reconnect...","対戦相手が切断されました。
+再接続を待っています..."
+STR_GB_CONNECTION_LOST_RECONNECTING,"Connection lost.
+Reconnecting...","接続が失われました。
+再接続中..."
+STR_GB_CONNECTION_LOST_RETRYING,"Connection lost.
+Retrying...","接続が失われました。
+再試行中..."
+STR_GB_OPPONENT_DISCONNECTED,Opponent disconnected.,対戦相手が切断されました。
+STR_GB_YOU_WIN_OPP_DISC,"You Win!
+Opponent disconnected","あなたの勝利!
+対戦相手が切断されました"
+STR_GB_CLAIM_WIN_TIMER_FMT,Claim win available in {N}s,勝利を宣言できるまで {N} 秒
+STR_GB_RECONNECTING_FMT,Reconnecting... {N}s,再接続中... {N} 秒
+STR_GB_SOUND_FMT,Sound: {VAL},音量: {VAL}
+STR_GB_MUSIC_FMT,Music: {VAL},音楽: {VAL}

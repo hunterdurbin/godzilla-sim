@@ -453,7 +453,7 @@ func _build_reconnect_overlay() -> void:
 	vbox.add_child(_reconnect_timer_label)
 
 	_reconnect_claim_btn = Button.new()
-	_reconnect_claim_btn.text = "Claim Win"
+	_reconnect_claim_btn.text = tr("STR_GB_CLAIM_WIN")
 	_reconnect_claim_btn.custom_minimum_size = Vector2(200, 45)
 	_reconnect_claim_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_reconnect_claim_btn.add_theme_font_size_override("font_size", 20)
@@ -462,7 +462,7 @@ func _build_reconnect_overlay() -> void:
 	vbox.add_child(_reconnect_claim_btn)
 
 	_reconnect_menu_btn = Button.new()
-	_reconnect_menu_btn.text = "Return to Menu"
+	_reconnect_menu_btn.text = tr("STR_GB_RETURN_TO_MENU")
 	_reconnect_menu_btn.custom_minimum_size = Vector2(200, 45)
 	_reconnect_menu_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_reconnect_menu_btn.add_theme_font_size_override("font_size", 20)
@@ -1026,7 +1026,7 @@ func _setup_bot() -> void:
 
 func _setup_bot_visibility_toggle() -> void:
 	_bot_visibility_button = Button.new()
-	_bot_visibility_button.text = "Show Bot Cards"
+	_bot_visibility_button.text = tr("STR_GB_SHOW_BOT_CARDS")
 	_bot_visibility_button.toggle_mode = true
 	_bot_visibility_button.custom_minimum_size = Vector2(140, 36)
 	_bot_visibility_button.toggled.connect(_on_bot_visibility_toggled)
@@ -1035,14 +1035,14 @@ func _setup_bot_visibility_toggle() -> void:
 
 func _on_bot_visibility_toggled(toggled_on: bool) -> void:
 	_bot_cards_visible = toggled_on
-	_bot_visibility_button.text = "Hide Bot Cards" if toggled_on else "Show Bot Cards"
+	_bot_visibility_button.text = tr("STR_GB_HIDE_BOT_CARDS") if toggled_on else tr("STR_GB_SHOW_BOT_CARDS")
 	if player2_board:
 		player2_board.set_hand_face_down(not toggled_on)
 
 
 func _setup_save_button() -> void:
 	_save_game_button = Button.new()
-	_save_game_button.text = "Save Game"
+	_save_game_button.text = tr("STR_GB_SAVE_GAME")
 	_save_game_button.custom_minimum_size = Vector2(120, 36)
 	_save_game_button.add_theme_font_size_override("font_size", 14)
 	_save_game_button.pressed.connect(_on_save_game_pressed)
@@ -1072,12 +1072,12 @@ func _on_save_game_pressed() -> void:
 	var data := GameSerializer.serialize_game_state(turn_manager.game_state, _first_player_id, mode_str, diff_str, d_names, save_seed)
 	var path := GameSerializer.save_game_to_file(data)
 	if not path.is_empty():
-		_save_game_button.text = "Saved!"
+		_save_game_button.text = tr("STR_GB_SAVED")
 		_save_game_button.disabled = true
 		# Re-enable after 2 seconds
 		get_tree().create_timer(2.0).timeout.connect(func():
 			if is_instance_valid(_save_game_button):
-				_save_game_button.text = "Save Game"
+				_save_game_button.text = tr("STR_GB_SAVE_GAME")
 				_save_game_button.disabled = false
 		)
 
@@ -1095,7 +1095,7 @@ func _show_first_player_waiting() -> void:
 	_disable_all_buttons()
 	btn_concede.disabled = true
 	_set_action_buttons_visible(false)
-	card_select_prompt.text = "Opponent won the coin flip. Waiting for their choice..."
+	card_select_prompt.text = tr("STR_GB_COIN_FLIP_WAITING")
 	action_prompt_panel.visible = true
 
 
@@ -1114,7 +1114,7 @@ func _show_first_player_choice() -> void:
 	_disable_all_buttons()
 	btn_concede.disabled = true
 	_set_action_buttons_visible(false)
-	card_select_prompt.text = "You won the coin flip! Go first or second?"
+	card_select_prompt.text = tr("STR_GB_COIN_FLIP_WON")
 	action_prompt_panel.visible = true
 
 	var container := VBoxContainer.new()
@@ -1132,14 +1132,14 @@ func _show_first_player_choice() -> void:
 		action_panel.add_child(container)
 
 	var btn_first := Button.new()
-	btn_first.text = "Go First"
+	btn_first.text = tr("STR_GB_GO_FIRST")
 	btn_first.custom_minimum_size.x = 325
 	btn_first.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
 	btn_first.pressed.connect(_on_first_player_chosen.bind(true))
 	container.add_child(btn_first)
 
 	var btn_second := Button.new()
-	btn_second.text = "Go Second"
+	btn_second.text = tr("STR_GB_GO_SECOND")
 	btn_second.custom_minimum_size.x = 325
 	btn_second.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
 	btn_second.pressed.connect(_on_first_player_chosen.bind(false))
@@ -1782,7 +1782,7 @@ func _apply_mobile_utility_buttons() -> void:
 
 	# Sound toggle in mobile menu
 	var sound_btn := Button.new()
-	sound_btn.text = _SOUND_LABELS[GameSettings.sound_volume]
+	sound_btn.text = tr("STR_GB_SOUND_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.sound_volume]))
 	sound_btn.custom_minimum_size.y = btn_h
 	sound_btn.add_theme_font_size_override("font_size", 18)
 	sound_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
@@ -1795,7 +1795,7 @@ func _apply_mobile_utility_buttons() -> void:
 
 	# Music toggle in mobile menu
 	var music_btn := Button.new()
-	music_btn.text = _MUSIC_LABELS[GameSettings.music_volume]
+	music_btn.text = tr("STR_GB_MUSIC_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.music_volume]))
 	music_btn.custom_minimum_size.y = btn_h
 	music_btn.add_theme_font_size_override("font_size", 18)
 	music_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
@@ -1991,7 +1991,7 @@ func _setup_mobile_log_tray() -> void:
 
 	# Toggle button pinned to the left edge
 	_mobile_log_toggle_btn = Button.new()
-	_mobile_log_toggle_btn.text = "Log"
+	_mobile_log_toggle_btn.text = tr("STR_GB_LOG")
 	_mobile_log_toggle_btn.custom_minimum_size = Vector2(50, 75)
 	_mobile_log_toggle_btn.anchor_left = 0.0
 	_mobile_log_toggle_btn.anchor_right = 0.0
@@ -2147,7 +2147,7 @@ func _setup_mobile_cp_tray() -> void:
 
 	# Toggle button above Log button
 	_mobile_cp_toggle_btn = Button.new()
-	_mobile_cp_toggle_btn.text = "CP"
+	_mobile_cp_toggle_btn.text = tr("STR_GB_CP")
 	_mobile_cp_toggle_btn.custom_minimum_size = Vector2(50, 75)
 	_mobile_cp_toggle_btn.anchor_left = 0.0
 	_mobile_cp_toggle_btn.anchor_right = 0.0
@@ -2438,7 +2438,7 @@ func _setup_mobile_tracker_tray() -> void:
 
 	# Toggle button pinned to the right edge
 	_mobile_tracker_toggle_btn = Button.new()
-	_mobile_tracker_toggle_btn.text = "Turns"
+	_mobile_tracker_toggle_btn.text = tr("STR_GB_TURNS")
 	_mobile_tracker_toggle_btn.custom_minimum_size = Vector2(50, 75)
 	_mobile_tracker_toggle_btn.anchor_left = 1.0
 	_mobile_tracker_toggle_btn.anchor_right = 1.0
@@ -2654,7 +2654,7 @@ func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: 
 	# Update turn number label
 	var gs: GameState = turn_manager.game_state if turn_manager else null
 	var turn_num: int = gs.turn_number if gs else _client_turn_number
-	_turn_label.text = "Turn: %d" % turn_num
+	_turn_label.text = tr("STR_GB_TURN_FMT").replace("{N}", str(turn_num))
 	var phase_idx := int(phase)
 	for pid in range(2):
 		var first_marker := "* " if pid == _first_player_id else "  "
@@ -2678,7 +2678,7 @@ func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: 
 	if _mobile_phase_label:
 		var phase_name := CardEnums.phase_to_string(phase)
 		var pname := GameLog.player_name(player_id)
-		_mobile_phase_label.text = "Turn %d | %s - %s" % [turn_num, pname, phase_name]
+		_mobile_phase_label.text = tr("STR_GB_TURN_HEADER_FMT").replace("{N}", str(turn_num)).replace("{PLAYER}", pname).replace("{PHASE}", phase_name)
 
 
 # --- Signal handlers from TurnManager (host/solo only) ---
@@ -2770,10 +2770,10 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		win_label.text = "%s Wins!\n%s" % [turn_manager.game_state.player_names[winner_id], reason]
+		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", turn_manager.game_state.player_names[winner_id]) + "\n" + reason
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
-	btn_rematch.text = "Rematch"
+	btn_rematch.text = tr("STR_GB_REMATCH")
 	_populate_rematch_deck_select()
 	_disable_all_buttons()
 	if is_multiplayer_game and NetworkManager.is_host():
@@ -2971,7 +2971,7 @@ func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monst
 
 # --- Sound toggle ---
 
-const _SOUND_LABELS := ["Sound: OFF", "Sound: 25%", "Sound: 50%", "Sound: 75%", "Sound: 100%"]
+const _VOLUME_VALUE_KEYS := ["STR_VOL_OFF", "25%", "50%", "75%", "100%"]
 
 func _on_sound_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -2993,7 +2993,7 @@ func _on_sound_toggle_pressed() -> void:
 
 
 func _update_sound_button_text() -> void:
-	var label: String = _SOUND_LABELS[GameSettings.sound_volume]
+	var label: String = tr("STR_GB_SOUND_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.sound_volume]))
 	if btn_sound_toggle:
 		btn_sound_toggle.text = label
 	if _mobile_sound_button:
@@ -3002,7 +3002,6 @@ func _update_sound_button_text() -> void:
 
 # --- Music toggle ---
 
-const _MUSIC_LABELS := ["Music: OFF", "Music: 25%", "Music: 50%", "Music: 75%", "Music: 100%"]
 
 func _on_music_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -3026,7 +3025,7 @@ func _on_music_toggle_pressed() -> void:
 
 
 func _update_music_button_text() -> void:
-	var label: String = _MUSIC_LABELS[GameSettings.music_volume]
+	var label: String = tr("STR_GB_MUSIC_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.music_volume]))
 	if btn_music_toggle:
 		btn_music_toggle.text = label
 	if _mobile_music_button:
@@ -3208,7 +3207,7 @@ func _on_rematch_pressed() -> void:
 
 	# Multiplayer: notify opponent, wait for them
 	btn_rematch.disabled = true
-	btn_rematch.text = "Waiting..."
+	btn_rematch.text = tr("STR_GB_WAITING")
 	_rematch_deck_select.deck_dropdown.disabled = true
 
 	if _rematch_deck_changed and not _rematch_deck_name.is_empty():
@@ -3714,10 +3713,10 @@ func _enter_pass_confirmation() -> void:
 	_confirming_pass = true
 	_disable_all_buttons()
 	action_prompt_panel.visible = true
-	card_select_prompt.text = "End Main Phase?"
-	btn_confirm.text = "Confirm"
+	card_select_prompt.text = tr("STR_GB_END_MAIN_QUESTION")
+	btn_confirm.text = tr("STR_GB_CONFIRM")
 	btn_confirm.disabled = false
-	btn_cancel.text = "Cancel"
+	btn_cancel.text = tr("STR_GB_CANCEL")
 	btn_cancel.disabled = false
 
 
@@ -3739,7 +3738,7 @@ func _enter_card_selection(prompt_text: String, valid_indices: Array[int]) -> vo
 	card_select_prompt.text = prompt_text
 	action_prompt_panel.visible = true
 	_disable_all_buttons()
-	btn_cancel.text = "Cancel"
+	btn_cancel.text = tr("STR_GB_CANCEL")
 	btn_cancel.disabled = false
 
 	var board := _get_active_player_board()
@@ -3789,7 +3788,7 @@ func _on_hand_card_selected(card: Control, _visual_index: int) -> void:
 func _enter_zone_selection() -> void:
 	waiting_for_card_select = false
 	waiting_for_zone_select = true
-	card_select_prompt.text = "Select a ZONE to place the battle card:"
+	card_select_prompt.text = tr("STR_GB_SELECT_ZONE")
 	var active_pid := _get_current_pid()
 	if not is_multiplayer_game and active_pid != local_player_id:
 		_temporarily_collapse_opponent_hand()
@@ -3845,14 +3844,14 @@ func _process(_delta: float) -> void:
 			# Host: show countdown until "Claim Win" becomes available
 			var remaining := RECONNECT_CLAIM_WIN_SECONDS - total_seconds
 			if remaining > 0:
-				_reconnect_timer_label.text = "Claim win available in %ds" % ceili(remaining)
+				_reconnect_timer_label.text = tr("STR_GB_CLAIM_WIN_TIMER_FMT").replace("{N}", str(ceili(remaining)))
 			else:
 				_reconnect_timer_label.text = ""
 				if not _reconnect_claim_btn.visible:
 					_reconnect_claim_btn.visible = true
 		else:
 			# Client: show elapsed time reconnecting
-			_reconnect_timer_label.text = "Reconnecting... %ds" % int(total_seconds)
+			_reconnect_timer_label.text = tr("STR_GB_RECONNECTING_FMT").replace("{N}", str(int(total_seconds)))
 		return # Skip normal drag processing while overlay is showing
 
 	if not _drag_card or not _drag_card.is_dragging:
@@ -4196,7 +4195,7 @@ func _update_hand_visibility(active_player_id: int) -> void:
 
 func _update_action_buttons(valid_actions: Array) -> void:
 	_confirming_pass = false
-	btn_invade.text = "Invade"
+	btn_invade.text = tr("STR_GB_INVADE")
 	btn_play_battle.disabled = CardEnums.ActionType.PLAY_BATTLE not in valid_actions
 	btn_play_strategy.disabled = CardEnums.ActionType.PLAY_STRATEGY not in valid_actions
 	btn_gain_rage.disabled = CardEnums.ActionType.GAIN_RAGE not in valid_actions
@@ -5386,13 +5385,13 @@ func _refresh_card_select_selection() -> void:
 		card.card_right_clicked.connect(_on_card_long_press_zoom)
 		card_pool_select_selection_grid.add_child(card)
 
-	card_pool_select_selection_label.text = "Selected (%d/%d)" % [_card_select_selected.size(), _card_select_max_count]
+	card_pool_select_selection_label.text = tr("STR_GB_SELECTED_FMT").replace("{N}", str(_card_select_selected.size())).replace("{MAX}", str(_card_select_max_count))
 
 
 func _update_card_select_buttons() -> void:
 	var count := _card_select_selected.size()
 	card_pool_select_confirm.disabled = count < _card_select_min_count or count > _card_select_max_count
-	card_pool_select_confirm.text = "Confirm (%d/%d)" % [count, _card_select_max_count]
+	card_pool_select_confirm.text = tr("STR_GB_CONFIRM_COUNT_FMT").replace("{N}", str(count)).replace("{MAX}", str(_card_select_max_count))
 
 
 func _on_card_select_pool_clicked(card: Control) -> void:
@@ -5498,7 +5497,7 @@ func _show_hand_discard_selection(player_id: int, discard_count: int) -> void:
 		hand_mgr.card_selected.connect(_on_discard_card_selected)
 
 	_disable_all_buttons()
-	card_select_prompt.text = "Select %d card%s to discard:" % [discard_count, "" if discard_count == 1 else "s"]
+	card_select_prompt.text = tr("STR_GB_SELECT_DISCARD_FMT").replace("{N}", str(discard_count))
 	action_prompt_panel.visible = true
 	btn_confirm.disabled = true
 
@@ -5519,11 +5518,11 @@ func _on_discard_card_selected(card: Control, _index: int) -> void:
 	# Update prompt and confirm button
 	var remaining: int = _discard_count - _discard_selected_cards.size()
 	if remaining > 0:
-		card_select_prompt.text = "Select %d more card%s to discard:" % [remaining, "" if remaining == 1 else "s"]
+		card_select_prompt.text = tr("STR_GB_SELECT_MORE_DISCARD_FMT").replace("{N}", str(remaining))
 		btn_confirm.disabled = true
 	else:
-		card_select_prompt.text = "Press Confirm to discard selected cards"
-		btn_confirm.text = "Confirm"
+		card_select_prompt.text = tr("STR_GB_PRESS_CONFIRM_DISCARD")
+		btn_confirm.text = tr("STR_GB_CONFIRM")
 		btn_confirm.disabled = false
 
 
@@ -5628,7 +5627,7 @@ func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt
 	action_prompt_panel.visible = true
 
 	if allow_skip:
-		btn_confirm.text = "Skip"
+		btn_confirm.text = tr("STR_GB_SKIP")
 		btn_confirm.disabled = false
 	else:
 		btn_confirm.disabled = true
@@ -5679,7 +5678,7 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 	if hand_mgr.card_selected.is_connected(_on_hand_card_clicked):
 		hand_mgr.card_selected.disconnect(_on_hand_card_clicked)
 	action_prompt_panel.visible = false
-	btn_confirm.text = "Confirm"
+	btn_confirm.text = tr("STR_GB_CONFIRM")
 	btn_confirm.disabled = true
 	_update_hand_visibility(_get_current_pid())
 
@@ -5713,7 +5712,7 @@ func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zo
 	action_prompt_panel.visible = true
 
 	if allow_skip:
-		btn_confirm.text = "Skip"
+		btn_confirm.text = tr("STR_GB_SKIP")
 		btn_confirm.disabled = false
 	else:
 		btn_confirm.disabled = true
@@ -6011,7 +6010,7 @@ func _refresh_discard_view_grid() -> void:
 
 	if _discard_view_cards.is_empty():
 		var empty_label := Label.new()
-		empty_label.text = "No cards in discard pile."
+		empty_label.text = tr("STR_GB_NO_DISCARD")
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		discard_view_grid.add_child(empty_label)
 		return
@@ -6075,7 +6074,7 @@ func _refresh_monster_deck_view_grid() -> void:
 
 	if _monster_deck_view_cards.is_empty():
 		var empty_label := Label.new()
-		empty_label.text = "No cards remaining in monster deck."
+		empty_label.text = tr("STR_GB_NO_MONSTER_DECK")
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		monster_deck_view_grid.add_child(empty_label)
 		return
@@ -6225,7 +6224,7 @@ func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
 	for card_data in stack:
 		_zone_stack_view_cards.append(card_data)
 	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = "Zone %d (%d card%s)" % [zone_num, total, "" if total == 1 else "s"]
+	zone_stack_view_title.text = tr("STR_GB_ZONE_HEADER_FMT").replace("{N}", str(zone_num)).replace("{C}", str(total))
 	zone_stack_view_overlay.visible = true
 	_refresh_zone_stack_view_grid()
 
@@ -6262,7 +6261,7 @@ func _on_cards_revealed_requested(player_id: int, cards: Array[Dictionary], titl
 	_zone_stack_view_cards.clear()
 	_zone_stack_view_cards.append_array(cards)
 	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = "%s (%d card%s)" % [title, total, "" if total == 1 else "s"]
+	zone_stack_view_title.text = tr("STR_GB_TITLE_COUNT_FMT").replace("{TITLE}", title).replace("{C}", str(total))
 	zone_stack_view_overlay.visible = true
 	_cards_revealed_active = true
 	_refresh_zone_stack_view_grid()
@@ -7568,10 +7567,10 @@ func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		win_label.text = "%s Wins!\n%s" % [GameLog.player_name(winner_id), reason]
+		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", GameLog.player_name(winner_id)) + "\n" + reason
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
-	btn_rematch.text = "Rematch"
+	btn_rematch.text = tr("STR_GB_REMATCH")
 	_populate_rematch_deck_select()
 	_disable_all_buttons()
 	RpcLogger.print_summary()
@@ -7752,8 +7751,8 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 		_on_log_message("Opponent disconnected. Waiting for reconnect...")
 		_waiting_for_reconnect = true
 		_reconnect_current_start_ms = Time.get_ticks_msec()
-		_reconnect_label.text = "Opponent disconnected.\nWaiting for reconnect..."
-		_reconnect_timer_label.text = "Claim win available in %ds" % int(RECONNECT_CLAIM_WIN_SECONDS)
+		_reconnect_label.text = tr("STR_GB_OPPONENT_DISCONNECTED_WAIT")
+		_reconnect_timer_label.text = tr("STR_GB_CLAIM_WIN_TIMER_FMT").replace("{N}", str(int(RECONNECT_CLAIM_WIN_SECONDS)))
 		_reconnect_claim_btn.visible = false
 		_reconnect_overlay.visible = true
 		return
@@ -7762,7 +7761,7 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 	_on_log_message("Connection lost. Attempting to reconnect...")
 	_waiting_for_reconnect = true
 	_reconnect_current_start_ms = Time.get_ticks_msec()
-	_reconnect_label.text = "Connection lost.\nReconnecting..."
+	_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RECONNECTING")
 	_reconnect_timer_label.text = ""
 	_reconnect_claim_btn.visible = false
 	_reconnect_menu_btn.visible = true
@@ -7776,7 +7775,7 @@ func _handle_final_disconnect() -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		win_label.text = "Opponent disconnected."
+		win_label.text = tr("STR_GB_OPPONENT_DISCONNECTED")
 	btn_rematch.visible = false
 	_upload_stats(local_player_id, "Opponent disconnected", true)
 
@@ -7785,7 +7784,7 @@ func _attempt_client_reconnect() -> void:
 	_reconnect_attempting = true
 	var room_code := NetworkManager.get_game_code()
 	while _waiting_for_reconnect and is_inside_tree():
-		_reconnect_label.text = "Connection lost.\nReconnecting..."
+		_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RECONNECTING")
 		var err: Error = await NetworkManager.attempt_reconnect(room_code)
 		if err == OK:
 			# Reconnected — clear overlay and reset ALL client delta state
@@ -7812,7 +7811,7 @@ func _attempt_client_reconnect() -> void:
 			_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
 			return
 		# Failed — wait 2s and retry
-		_reconnect_label.text = "Connection lost.\nRetrying..."
+		_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RETRYING")
 		await get_tree().create_timer(2.0).timeout
 	_reconnect_attempting = false
 
@@ -7846,7 +7845,7 @@ func _on_opponent_reconnected(_peer_id: int) -> void:
 		# Show rematch button now that opponent is back
 		btn_rematch.visible = true
 		btn_rematch.disabled = false
-		btn_rematch.text = "Rematch"
+		btn_rematch.text = tr("STR_GB_REMATCH")
 		_game_ended_by_disconnect = false
 		_populate_rematch_deck_select()
 
@@ -7921,7 +7920,7 @@ func _on_reconnect_claim_win() -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		win_label.text = "You Win!\nOpponent disconnected"
+		win_label.text = tr("STR_GB_YOU_WIN_OPP_DISC")
 	btn_rematch.visible = false
 	_disable_all_buttons()
 	_upload_stats(local_player_id, "Opponent disconnected", true)

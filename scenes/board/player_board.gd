@@ -142,9 +142,9 @@ func _apply_mobile_labels() -> void:
 	_cp_title = lc.find_child("CPTitle", true, false) as Label
 	_threat_title = lc.find_child("ThreatTitle", true, false) as Label
 	if _threat_title:
-		_threat_title.text = "T:"  # Abbreviate to save horizontal space
+		_threat_title.text = tr("STR_PB_THREAT_SHORT")  # Abbreviate to save horizontal space
 	if _cp_title:
-		_cp_title.text = "CP:"  # Already short enough
+		_cp_title.text = tr("STR_PB_CP")
 	if cp_label:
 		cp_label.custom_minimum_size.x = 0.0
 		cp_label.clip_text = true
@@ -266,7 +266,7 @@ func _setup_references() -> void:
 	# Discard: face-up top card + empty placeholder + hover count badge
 	if discard_display:
 		_discard_empty_label = Label.new()
-		_discard_empty_label.text = "Discard"
+		_discard_empty_label.text = tr("STR_PB_DISCARD")
 		_discard_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_discard_empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_discard_empty_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
