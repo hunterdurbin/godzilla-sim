@@ -18,5 +18,5 @@ func on_rage_reset(ctx: EffectContext) -> int:
 		ctx.owner.player_id, options, "Rage would reset to 0. Discard 2 cards to keep rage at 2?")
 	if chosen != 0:
 		return 0
-	await ctx.effect_handler.discard_hand_to(ctx.owner, ctx.owner.hand.size() - 2)
+	await ctx.effect_handler.discard_hand_to(ctx.owner.player_id, ctx.owner.hand.size() - 2)
 	return 2

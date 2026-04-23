@@ -27,4 +27,4 @@ func on_battle_card_played(ctx: EffectContext, _zone_index: int, played_from_dec
 		return
 	if not played_from_deck:
 		return
-	await ctx.effect_handler.discard_hand_to(ctx.opponent, 1)
+	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 1)

@@ -35,4 +35,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		CardEnums.CardColor.GREEN in top_card.get("colors", [])
 	)
 	if is_green_battle:
-		await ctx.effect_handler.discard_hand_to(ctx.opponent, 4)
+		await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 4)

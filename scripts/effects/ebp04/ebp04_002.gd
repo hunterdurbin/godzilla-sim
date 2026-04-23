@@ -25,4 +25,4 @@ func on_opponent_zone_card_destroyed(ctx: EffectContext, _destroyed_card: Dictio
 			break
 	if not has_rank1_strategy:
 		return
-	await ctx.effect_handler.discard_hand_to(ctx.opponent, 2)
+	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 2)

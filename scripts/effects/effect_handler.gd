@@ -2547,7 +2547,7 @@ func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, dest
 	## Collect standby entries for on_opponent_zone_card_destroyed triggers.
 	## Iterates the opponent of the destroyed card's owner (they react when opponent's card is destroyed).
 	var entries: Array = []
-	var watcher_id := game_state.get_opponent_id(destroyed_player_id)
+	var watcher_id: int = game_state.get_opponent_id(destroyed_player_id)
 	var watcher := game_state.players[watcher_id]
 	var monster := watcher.current_monster
 	if not monster.is_empty() and has_trigger(monster, "on_opponent_zone_card_destroyed"):
