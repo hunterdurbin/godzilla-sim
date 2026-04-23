@@ -36,7 +36,7 @@ theme_override_constants/separation = 15
 
 [node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Public Lobbies"
+text = "STR_PUBLIC_LOBBIES"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 36
 theme_override_colors/font_color = Color(0.9, 0.3, 0.1, 1)
@@ -55,7 +55,7 @@ theme_override_constants/separation = 6
 
 [node name="ModeLabel" type="Label" parent="CenterContainer/VBoxContainer/SettingsRow/ModeSelect"]
 layout_mode = 2
-text = "GAME MODE"
+text = "STR_GAME_MODE"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.9, 0.3, 0.1, 1)
@@ -73,13 +73,13 @@ theme_override_constants/separation = 15
 [node name="CreateButton" type="Button" parent="CenterContainer/VBoxContainer/ActionRow"]
 custom_minimum_size = Vector2(160, 40)
 layout_mode = 2
-text = "Create Lobby"
+text = "STR_CREATE_LOBBY"
 theme_override_font_sizes/font_size = 18
 
 [node name="RefreshButton" type="Button" parent="CenterContainer/VBoxContainer/ActionRow"]
 custom_minimum_size = Vector2(120, 40)
 layout_mode = 2
-text = "Refresh"
+text = "STR_LOBBY_REFRESH"
 theme_override_font_sizes/font_size = 18
 
 [node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
@@ -102,5 +102,5 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(200, 40)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Back"
+text = "STR_GENERIC_BACK"
 theme_override_font_sizes/font_size = 18

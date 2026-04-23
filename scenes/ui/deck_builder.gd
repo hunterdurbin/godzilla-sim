@@ -141,7 +141,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "DECK BUILDER"
+	title.text = tr("STR_DB_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
@@ -149,7 +149,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	# Deck name
 	deck_name_edit = LineEdit.new()
-	deck_name_edit.placeholder_text = "Deck Name"
+	deck_name_edit.placeholder_text = tr("STR_DB_DECK_NAME")
 	vbox.add_child(deck_name_edit)
 
 	# Deck list (wrapped in ScrollContainer for touch scrolling)
@@ -173,17 +173,17 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	vbox.add_child(btn_row)
 
 	save_button = Button.new()
-	save_button.text = "Save"
+	save_button.text = tr("STR_DB_SAVE")
 	save_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_row.add_child(save_button)
 
 	load_button = Button.new()
-	load_button.text = "Load"
+	load_button.text = tr("STR_DB_LOAD")
 	load_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_row.add_child(load_button)
 
 	delete_button = Button.new()
-	delete_button.text = "Delete"
+	delete_button.text = tr("STR_DB_DELETE")
 	delete_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_row.add_child(delete_button)
 
@@ -191,11 +191,11 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	# Clipboard buttons
 	import_button = Button.new()
-	import_button.text = "Import from Clipboard"
+	import_button.text = tr("STR_DB_IMPORT")
 	vbox.add_child(import_button)
 
 	export_button = Button.new()
-	export_button.text = "Export to Clipboard"
+	export_button.text = tr("STR_DB_EXPORT")
 	vbox.add_child(export_button)
 
 	vbox.add_child(HSeparator.new())
@@ -216,7 +216,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	format_option = OptionButton.new()
 	for i in range(GameModeValidator.MODES.size()):
-		format_option.add_item(GameModeValidator.MODES[i]["label"], i)
+		format_option.add_item(tr(GameModeValidator.MODES[i]["label"]), i)
 	format_option.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	stats_row.add_child(format_option)
 
@@ -238,7 +238,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	# Back button
 	back_button = Button.new()
-	back_button.text = "Back to Menu"
+	back_button.text = tr("STR_DB_BACK")
 	back_button.custom_minimum_size.y = 40
 	vbox.add_child(back_button)
 
@@ -267,19 +267,19 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	section.add_child(header)
 
 	var label := Label.new()
-	label.text = "DECK"
+	label.text = tr("STR_DB_DECK")
 	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
 	header.add_child(label)
 
 	monster_tab_button = Button.new()
-	monster_tab_button.text = "Monster"
+	monster_tab_button.text = tr("STR_TYPE_MONSTER")
 	monster_tab_button.toggle_mode = true
 	monster_tab_button.button_pressed = true
 	header.add_child(monster_tab_button)
 
 	main_tab_button = Button.new()
-	main_tab_button.text = "Main"
+	main_tab_button.text = tr("STR_DB_TAB_MAIN")
 	main_tab_button.toggle_mode = true
 	header.add_child(main_tab_button)
 
@@ -318,7 +318,7 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 
 	# Search
 	search_edit = LineEdit.new()
-	search_edit.placeholder_text = "Search cards..."
+	search_edit.placeholder_text = tr("STR_DB_SEARCH_PLACEHOLDER")
 	search_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	search_edit.custom_minimum_size.x = 150
 	hbox.add_child(search_edit)
@@ -328,10 +328,10 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 	type_box.add_theme_constant_override("separation", 2)
 	hbox.add_child(type_box)
 
-	var type_names := ["All", "Monster", "Battle", "Strategy"]
-	for i in range(type_names.size()):
+	var type_name_keys := ["STR_DB_FILTER_ALL", "STR_TYPE_MONSTER", "STR_TYPE_BATTLE", "STR_TYPE_STRATEGY"]
+	for i in range(type_name_keys.size()):
 		var btn := Button.new()
-		btn.text = type_names[i]
+		btn.text = tr(type_name_keys[i])
 		btn.toggle_mode = true
 		btn.button_pressed = (i == 0)
 		btn.add_theme_font_size_override("font_size", 12)
@@ -352,10 +352,9 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 		CardEnums.CardColor.WHITE,
 		CardEnums.CardColor.GREEN,
 	]
-	var color_names := ["Red", "Blue", "White", "Green"]
-	for i in range(color_names.size()):
+	for i in range(color_values.size()):
 		var btn := Button.new()
-		btn.text = color_names[i]
+		btn.text = CardEnums.color_to_string(color_values[i])
 		btn.toggle_mode = true
 		btn.add_theme_font_size_override("font_size", 12)
 		btn.add_theme_color_override("font_color", CardEnums.color_to_godot_color(color_values[i]))
@@ -370,10 +369,10 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 	invasion_box.add_theme_constant_override("separation", 2)
 	hbox.add_child(invasion_box)
 
-	var inv_names := ["Step 1", "Step 2"]
-	for i in range(inv_names.size()):
+	var inv_name_keys := ["STR_DB_INVASION_STEP1", "STR_DB_INVASION_STEP2"]
+	for i in range(inv_name_keys.size()):
 		var btn := Button.new()
-		btn.text = inv_names[i]
+		btn.text = tr(inv_name_keys[i])
 		btn.toggle_mode = true
 		btn.add_theme_font_size_override("font_size", 12)
 		invasion_box.add_child(btn)
@@ -384,10 +383,10 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 
 	# Sort
 	sort_option = OptionButton.new()
-	sort_option.add_item("Sort: ID", 0)
-	sort_option.add_item("Sort: Name", 1)
-	sort_option.add_item("Sort: Rank", 2)
-	sort_option.add_item("Sort: Type", 3)
+	sort_option.add_item(tr("STR_DB_SORT_ID"), 0)
+	sort_option.add_item(tr("STR_DB_SORT_NAME"), 1)
+	sort_option.add_item(tr("STR_DB_SORT_RANK"), 2)
+	sort_option.add_item(tr("STR_DB_SORT_TYPE"), 3)
 	sort_option.add_theme_font_size_override("font_size", 12)
 	hbox.add_child(sort_option)
 
@@ -404,7 +403,7 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 	section.add_child(header)
 
 	var label := Label.new()
-	label.text = "CARD POOL"
+	label.text = tr("STR_DB_CARD_POOL")
 	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
 	header.add_child(label)
@@ -598,7 +597,7 @@ func _refresh_pool_display() -> void:
 	_clear_grid(pool_grid)
 	_pool_load_generation += 1
 	var gen := _pool_load_generation
-	pool_count_label.text = "(%d cards)" % _filtered_pool_cards.size()
+	pool_count_label.text = tr("STR_DB_POOL_COUNT_FMT").replace("{N}", str(_filtered_pool_cards.size()))
 	# Snapshot the list so filter changes mid-load don't cause issues
 	var cards_to_load := _filtered_pool_cards.duplicate()
 	_load_pool_cards_batched(cards_to_load, gen)
@@ -739,13 +738,13 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 			move_btn.z_index = 10
 			move_btn.visible = false
 			if _showing_monster_tab:
-				move_btn.text = "→Main"
+				move_btn.text = tr("STR_DB_TO_MAIN")
 				move_btn.pressed.connect(_move_monster_to_main.bind(card_id))
 			elif in_monster:
-				move_btn.text = "→Main"
+				move_btn.text = tr("STR_DB_TO_MAIN")
 				move_btn.pressed.connect(_move_monster_to_main.bind(card_id))
 			else:
-				move_btn.text = "→Mon"
+				move_btn.text = tr("STR_DB_TO_MONSTER")
 				move_btn.pressed.connect(_move_monster_to_monster.bind(card_id))
 			btn_layer.add_child(move_btn)
 			wrapper.add_child(btn_layer)
@@ -1398,8 +1397,8 @@ func _on_export_pressed() -> void:
 		text += "%d %s\n" % [entry["quantity"], entry["card_number"]]
 	DisplayServer.clipboard_set(text)
 	# Brief feedback
-	export_button.text = "Copied!"
-	get_tree().create_timer(1.5).timeout.connect(func(): export_button.text = "Export to Clipboard")
+	export_button.text = tr("STR_DB_COPIED")
+	get_tree().create_timer(1.5).timeout.connect(func(): export_button.text = tr("STR_DB_EXPORT"))
 
 
 # ============================================================

@@ -87,7 +87,7 @@ func _on_player_connected(_peer_id: int) -> void:
 		status_label.text = "Opponent connected! Select a deck and press Start."
 		_update_start_button()
 	else:
-		deck_select.set_header("SELECT YOUR DECK")
+		deck_select.set_header(tr("STR_DS_SELECT_YOUR_DECK"))
 		# If the client already has a deck selected, send it now
 		if not deck_select.current_selection.is_empty():
 			_on_deck_selected(deck_select.current_selection)

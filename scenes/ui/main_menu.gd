@@ -47,8 +47,8 @@ func _ready() -> void:
 
 	DecklistManager.clear_selections()
 
-	deck_select_p1.set_header("PLAYER 1 DECK")
-	deck_select_p2.set_header("PLAYER 2 DECK")
+	deck_select_p1.set_header(tr("STR_DS_P1_DECK"))
+	deck_select_p2.set_header(tr("STR_DS_P2_DECK"))
 
 	deck_select_p1.deck_selected.connect(_on_p1_deck_selected)
 	deck_select_p2.deck_selected.connect(_on_p2_deck_selected)

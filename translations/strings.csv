@@ -199,3 +199,58 @@ STR_GB_CLAIM_WIN_TIMER_FMT,Claim win available in {N}s,勝利を宣言できる�
 STR_GB_RECONNECTING_FMT,Reconnecting... {N}s,再接続中... {N} 秒
 STR_GB_SOUND_FMT,Sound: {VAL},音量: {VAL}
 STR_GB_MUSIC_FMT,Music: {VAL},音楽: {VAL}
+STR_GENERIC_BACK,Back,戻る
+STR_LOBBY_HOST,Host Game,ホストする
+STR_LOBBY_JOIN,Join Game,参加する
+STR_LOBBY_START,Start Game,ゲーム開始
+STR_LOBBY_PORT,Port:,ポート:
+STR_LOBBY_COPY,Copy,コピー
+STR_LOBBY_REFRESH,Refresh,更新
+STR_LOBBY_ENTER_CODE,Enter game code,ゲームコードを入力
+STR_LOBBY_IP_PLACEHOLDER,192.168.1.x,192.168.1.x
+STR_EXTRAS_WATCH_REPLAY,Watch Replay,リプレイを見る
+STR_EXTRAS_LOAD_GAME,Load Game,ゲームを読み込む
+STR_EXTRAS_LOAD_GAME_ONLINE,Load Game Online,オンラインゲームを読み込む
+STR_ONLINE_PLAY_TITLE,Online Play,オンラインプレイ
+STR_ONLINE_PUBLIC,Public,公開
+STR_ONLINE_PRIVATE,Private,プライベート
+STR_PUBLIC_LOBBIES,Public Lobbies,公開ロビー
+STR_GAME_MODE,GAME MODE,ゲームモード
+STR_CREATE_LOBBY,Create Lobby,ロビー作成
+STR_MODE_RUMBLE,Rumble,ランブル
+STR_MODE_NO_RULES,No Rules,ルールなし
+STR_DS_SELECT_DECK,SELECT DECK,デッキを選択
+STR_DS_SELECT_YOUR_DECK,SELECT YOUR DECK,あなたのデッキを選択
+STR_DS_P1_DECK,PLAYER 1 DECK,プレイヤー1のデッキ
+STR_DS_P2_DECK,PLAYER 2 DECK,プレイヤー2のデッキ
+STR_LS_TITLE,UNOFFICIAL GODZILLA TCG,非公式ゴジラTCG
+STR_LS_LOADING_ARTWORK,Loading Card Artwork...,カードアートを読み込み中...
+STR_LS_PREPARING,Preparing...,準備中...
+STR_RV_EXIT,Exit,終了
+STR_RV_GAME_LOG,Game Log,ゲームログ
+STR_RV_PLAY,Play,再生
+STR_RV_PLAY_FROM_HERE,Play From Here,ここから再生
+STR_RV_SPEED,Speed:,速度:
+STR_DB_TITLE,DECK BUILDER,デッキビルダー
+STR_DB_DECK_NAME,Deck Name,デッキ名
+STR_DB_SAVE,Save,保存
+STR_DB_LOAD,Load,読み込み
+STR_DB_DELETE,Delete,削除
+STR_DB_IMPORT,Import from Clipboard,クリップボードから読み込み
+STR_DB_EXPORT,Export to Clipboard,クリップボードに書き出し
+STR_DB_COPIED,Copied!,コピーしました!
+STR_DB_BACK,Back to Menu,メニューに戻る
+STR_DB_DECK,DECK,デッキ
+STR_DB_TAB_MAIN,Main,メイン
+STR_DB_CARD_POOL,CARD POOL,カードプール
+STR_DB_SEARCH_PLACEHOLDER,Search cards...,カードを検索...
+STR_DB_FILTER_ALL,All,全て
+STR_DB_INVASION_STEP1,Step 1,ステップ1
+STR_DB_INVASION_STEP2,Step 2,ステップ2
+STR_DB_SORT_ID,Sort: ID,並び替え: ID
+STR_DB_SORT_NAME,Sort: Name,並び替え: 名前
+STR_DB_SORT_RANK,Sort: Rank,並び替え: ランク
+STR_DB_SORT_TYPE,Sort: Type,並び替え: タイプ
+STR_DB_POOL_COUNT_FMT,({N} cards),({N}枚)
+STR_DB_TO_MAIN,→Main,→メイン
+STR_DB_TO_MONSTER,→Mon,→怪獣

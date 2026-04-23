@@ -26,7 +26,7 @@ func _ready() -> void:
 
 	# Populate game mode dropdown from centralized list
 	for gm in GameModeValidator.MODES:
-		mode_dropdown.add_item(gm.label)
+		mode_dropdown.add_item(tr(gm.label))
 	mode_dropdown.select(0)
 	mode_dropdown.item_selected.connect(_on_mode_selected)
 

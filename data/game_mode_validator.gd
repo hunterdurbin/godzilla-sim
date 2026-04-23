@@ -2,8 +2,8 @@ class_name GameModeValidator
 ## Validates decklists against game mode-specific rules.
 
 const MODES: Array[Dictionary] = [
-	{"id": "rumble", "label": "Rumble"},
-	{"id": "no_rules", "label": "No Rules"},
+	{"id": "rumble", "label": "STR_MODE_RUMBLE"},
+	{"id": "no_rules", "label": "STR_MODE_NO_RULES"},
 ]
 
 # Rumble restricted list: max 1 copy across monster + main decks.
@@ -38,7 +38,7 @@ static func validate(game_mode: String, monster_entries: Array, main_entries: Ar
 static func get_mode_label(mode_id: String) -> String:
 	for m in MODES:
 		if m.id == mode_id:
-			return m.label
+			return TranslationServer.translate(m.label)
 	return mode_id
 
 
