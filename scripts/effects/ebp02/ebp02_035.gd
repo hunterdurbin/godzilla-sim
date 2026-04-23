@@ -22,8 +22,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Count Biollante cards in discard
 	var bio_count: int = 0
 	for card in ctx.owner.discard_pile:
-		var traits: Array = card.get("traits", [])
-		if CardEnums.CardTrait.BIOLLANTE in traits:
+		if CardUtils.has_trait(card, CardEnums.CardTrait.BIOLLANTE):
 			bio_count += 1
 
 	if bio_count >= 2:

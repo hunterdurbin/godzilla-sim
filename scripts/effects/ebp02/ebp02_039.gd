@@ -21,10 +21,9 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 	if ctx.game_state.current_player_id != ctx.owner.player_id:
 		return 0
 	# Only for battle cards
-	if target_card.get("card_type") != CardEnums.CardType.BATTLE:
+	if not CardUtils.is_battle(target_card):
 		return 0
 	# Only for cards with the Biollante trait
-	var traits: Array = target_card.get("traits", [])
-	if CardEnums.CardTrait.BIOLLANTE not in traits:
+	if not CardUtils.has_trait(target_card, CardEnums.CardTrait.BIOLLANTE):
 		return 0
 	return -3

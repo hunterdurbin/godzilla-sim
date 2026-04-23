@@ -30,7 +30,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Collect rank 4 or lower battle cards with Evolution from discard pile
 	var matching: Array[Dictionary] = []
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") != CardEnums.CardType.BATTLE:
+		if not CardUtils.is_battle(card):
 			continue
 		if card.get("rank", 99) > 4:
 			continue

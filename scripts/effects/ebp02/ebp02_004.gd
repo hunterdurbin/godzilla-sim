@@ -22,12 +22,7 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	if CardEnums.CardTrait.SECOND_FORM in owner.current_monster.get("traits", []):
-		return true
-	for card in owner.monster_stack:
-		if CardEnums.CardTrait.SECOND_FORM in card.get("traits", []):
-			return true
-	return false
+	return CardEffect.monster_has_trait(owner, CardEnums.CardTrait.SECOND_FORM)
 
 
 func get_burst_rank() -> int:
@@ -35,20 +30,12 @@ func get_burst_rank() -> int:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var has_second_form: bool = false
-	for card in ctx.owner.monster_stack:
-		var traits: Array = card.get("traits", [])
-		if CardEnums.CardTrait.SECOND_FORM in traits:
-			has_second_form = true
-			break
+	var has_second_form: bool = CardEffect.monster_stack_has_trait(ctx.owner, CardEnums.CardTrait.SECOND_FORM)
 
 	if not has_second_form:
 		return
 
-	var strategy_count: int = 0
-	for sz in ctx.owner.strategy_zones:
-		if not sz.is_empty():
-			strategy_count += 1
+	var strategy_count: int = ctx.owner.count_strategies_in_play()
 
 	for _i in range(strategy_count):
 		await ctx.effect_handler.destroy_zone_target(

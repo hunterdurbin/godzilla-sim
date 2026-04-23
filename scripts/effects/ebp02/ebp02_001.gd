@@ -29,14 +29,11 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.STRATEGY,
+			return CardUtils.is_strategy(card),
 		"Discard a strategy card to gain 1 rage (or skip):",
 		true)
 
 	if not selected.is_empty():
-		var old_rage: int = ctx.owner.rage
-		ctx.owner.rage += 1
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
 		ctx.effect_handler.log_message.emit(
-			GameLog.effect_gained_rage(ctx.owner.player_id, ctx.card_data.get("id", ""), ctx.owner.rage, 1))
-		await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+			GameLog.effect_gained_rage(ctx.owner.player_id, ctx.card_data.get("id", ""), ctx.owner.rage + 1, 1))
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)

@@ -35,12 +35,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var option_ids: Array[int] = []
 
 	# Option 0: Destroy 3 R5- battle cards
-	var has_r5_targets: bool = false
-	for i in range(8):
-		var top := ctx.opponent.get_zone_top_card(i)
-		if not top.is_empty() and ctx.field_rank(top, ctx.opponent.player_id) <= 5:
-			has_r5_targets = true
-			break
+	var has_r5_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 5).is_empty()
 	if has_r5_targets:
 		options.append("Destroy 3 of opponent's rank 5 or lower battle cards")
 		option_ids.append(0)

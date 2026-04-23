@@ -20,7 +20,7 @@ func on_revenge(ctx: EffectContext) -> void:
 	# Check if there's a matching card in discard first
 	var has_target: bool = false
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("name", "") == "Godzilla(1991)":
+		if CardUtils.is_battle(card) and card.get("name", "") == "Godzilla(1991)":
 			has_target = true
 			break
 
@@ -39,7 +39,7 @@ func on_revenge(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.BATTLE and card.get("name", "") == "Godzilla(1991)",
+			return CardUtils.is_battle(card) and card.get("name", "") == "Godzilla(1991)",
 		"Choose a Godzilla(1991) battle card to return to your hand:")
 
 	if not selected.is_empty():

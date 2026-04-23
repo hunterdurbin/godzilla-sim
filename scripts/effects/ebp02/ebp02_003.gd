@@ -57,7 +57,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.STRATEGY,
+			return CardUtils.is_strategy(card),
 		"Discard a strategy card to advance by 1 zone (or skip):",
 		true)
 

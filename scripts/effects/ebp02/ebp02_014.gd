@@ -25,7 +25,7 @@ func get_bot_advance_reliability(owner: PlayerState, _opponent: PlayerState) -> 
 		return 0
 	var monster_count: int = 0
 	for card in owner.main_deck:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 	return int(float(monster_count) / float(owner.main_deck.size()) * 100.0)
 
@@ -47,6 +47,6 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id, revealed, revealed,
 		"Sent to discard pile:")
 
-	if card.get("card_type") == CardEnums.CardType.MONSTER:
+	if CardUtils.is_monster(card):
 		if ctx.owner.monster_zone < 6:
 			await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 6)

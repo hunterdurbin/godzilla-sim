@@ -42,7 +42,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 			"Sent to discard pile:")
 	var found_godzilla: bool = false
 	for card in milled_cards:
-		if CardEnums.CardTrait.GODZILLA in card.get("traits", []):
+		if CardUtils.has_trait(card, CardEnums.CardTrait.GODZILLA):
 			found_godzilla = true
 			break
 

@@ -28,11 +28,7 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	if ctx.owner.monster_zone < 6:
 		return
 
-	var has_strategy: bool = false
-	for sz in ctx.owner.strategy_zones:
-		if not sz.is_empty():
-			has_strategy = true
-			break
+	var has_strategy: bool = ctx.owner.has_any_strategy_in_play()
 
 	if has_strategy:
 		await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 3)

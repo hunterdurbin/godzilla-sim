@@ -20,11 +20,9 @@ func get_bot_tags() -> Array[String]:
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	var card_id: String = ctx.card_data.get("id", "")
-	var count: int = 0
-	for i in range(8):
-		var top := ctx.owner.get_zone_top_card(i)
-		if not top.is_empty() and top.get("id", "") != card_id and ctx.field_rank(top, ctx.owner.player_id) <= 5:
-			count += 1
+	var count: int = ctx.owner.count_zones_matching(
+		func(c: Dictionary) -> bool:
+			return c.get("id", "") != card_id and ctx.field_rank(c, ctx.owner.player_id) <= 5)
 	if count >= 2:
 		return 3000
 	return 0

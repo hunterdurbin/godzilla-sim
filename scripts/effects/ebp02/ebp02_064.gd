@@ -19,13 +19,11 @@ func get_bot_tags() -> Array[String]:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	for i in range(8):
-		var top := ctx.owner.get_zone_top_card(i)
-		if top.is_empty():
-			continue
-		var traits: Array = top.get("traits", [])
-		if CardEnums.CardTrait.KING_GHIDORAH in traits or CardEnums.CardTrait.MEGALON in traits:
-			return 3000
+	var has: bool = ctx.owner.has_zone_matching(
+		func(c: Dictionary) -> bool:
+			return CardUtils.has_any_trait(c, [CardEnums.CardTrait.KING_GHIDORAH, CardEnums.CardTrait.MEGALON]))
+	if has:
+		return 3000
 	return 0
 
 
@@ -33,10 +31,9 @@ func on_revenge(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			if card.get("card_type") != CardEnums.CardType.MONSTER:
+			if not CardUtils.is_monster(card):
 				return false
-			var traits: Array = card.get("traits", [])
-			return CardEnums.CardTrait.KING_GHIDORAH in traits,
+			return CardUtils.has_trait(card, CardEnums.CardTrait.KING_GHIDORAH),
 		"Return a King Ghidorah monster card to your hand:")
 
 	if not selected.is_empty():

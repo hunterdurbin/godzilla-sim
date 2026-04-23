@@ -22,29 +22,17 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	for sz in owner.strategy_zones:
-		if not sz.is_empty():
-			return true
-	return false
+	return owner.has_any_strategy_in_play()
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var has_strategy: bool = false
-	for sz in ctx.owner.strategy_zones:
-		if not sz.is_empty():
-			has_strategy = true
-			break
+	var has_strategy: bool = ctx.owner.has_any_strategy_in_play()
 
 	if not has_strategy:
 		return
 
 	# Check if opponent has any rank 5 or lower battle cards
-	var has_targets: bool = false
-	for i in range(8):
-		var top := ctx.opponent.get_zone_top_card(i)
-		if not top.is_empty() and ctx.field_rank(top, ctx.opponent.player_id) <= 5:
-			has_targets = true
-			break
+	var has_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 5).is_empty()
 	if not has_targets:
 		return
 

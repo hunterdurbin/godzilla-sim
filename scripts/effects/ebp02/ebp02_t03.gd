@@ -18,7 +18,6 @@ func get_bot_tags() -> Array[String]:
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:
 	# Only grants TL bonus if owner's current monster has the SpaceGodzilla trait
-	var monster_traits: Array = ctx.owner.current_monster.get("traits", [])
-	if CardEnums.CardTrait.SPACEGODZILLA in monster_traits:
+	if CardUtils.has_trait(ctx.owner.current_monster, CardEnums.CardTrait.SPACEGODZILLA):
 		return 1000
 	return 0

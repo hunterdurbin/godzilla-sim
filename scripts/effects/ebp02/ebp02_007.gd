@@ -26,7 +26,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.STRATEGY,
+			return CardUtils.is_strategy(card),
 		"Discard a strategy card to search top 5 for a monster (or skip):",
 		true)
 
@@ -44,7 +44,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var monsters: Array[Dictionary] = []
 	var rest: Array[Dictionary] = []
 	for card in revealed:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monsters.append(card)
 		else:
 			rest.append(card)

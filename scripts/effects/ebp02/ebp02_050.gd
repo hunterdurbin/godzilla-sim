@@ -35,12 +35,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var option_ids: Array[int] = []
 
 	# Option 0: Destroy 3 R6- battle cards
-	var has_r6_targets: bool = false
-	for i in range(8):
-		var top := ctx.opponent.get_zone_top_card(i)
-		if not top.is_empty() and ctx.field_rank(top, ctx.opponent.player_id) <= 6:
-			has_r6_targets = true
-			break
+	var has_r6_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 6).is_empty()
 	if has_r6_targets:
 		options.append("Destroy 3 of opponent's rank 6 or lower battle cards")
 		option_ids.append(0)
@@ -75,7 +70,4 @@ func on_enter(ctx: EffectContext) -> void:
 		1:
 			await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 2)
 		2:
-			var old_rage: int = ctx.owner.rage
-			ctx.owner.rage += 3
-			ctx.owner.rage_changed.emit(ctx.owner.rage)
-			await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+			await ctx.effect_handler.gain_rage(ctx.owner.player_id, 3)

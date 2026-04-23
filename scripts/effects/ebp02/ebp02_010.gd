@@ -13,11 +13,8 @@ extends CardEffect
 
 func on_enter(ctx: EffectContext) -> void:
 	var card_id: String = ctx.card_data.get("id", "")
-	var occupied: Array[int] = []
-	for i in range(8):
-		var top := ctx.owner.get_zone_top_card(i)
-		if not top.is_empty() and top.get("id", "") != card_id:
-			occupied.append(i)
+	var occupied: Array[int] = ctx.owner.get_zone_top_indices_matching(
+		func(c: Dictionary) -> bool: return c.get("id", "") != card_id)
 
 	if occupied.is_empty():
 		return

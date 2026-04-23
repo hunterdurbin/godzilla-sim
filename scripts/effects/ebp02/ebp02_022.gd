@@ -21,9 +21,9 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	if invasion_card.is_empty():
 		return
 	# Must be a blue battle card
-	if invasion_card.get("card_type") != CardEnums.CardType.BATTLE:
+	if not CardUtils.is_battle(invasion_card):
 		return
-	if CardEnums.CardColor.BLUE not in invasion_card.get("colors", []):
+	if not CardUtils.has_color(invasion_card, CardEnums.CardColor.BLUE):
 		return
 
 	# Check the card is still in discard

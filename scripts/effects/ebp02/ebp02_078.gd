@@ -47,7 +47,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var added_to_discard: bool = false
 
 	for card in revealed:
-		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) <= 5:
+		if CardUtils.is_battle(card) and card.get("rank", 0) <= 5:
 			ctx.owner.hand.append(card)
 			added_to_hand = true
 		else:
