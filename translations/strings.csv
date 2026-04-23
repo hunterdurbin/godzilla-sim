@@ -96,17 +96,17 @@ STR_TRAIT_GEZORA,Gezora,
 STR_TRAIT_GANIMES,Ganimes,
 STR_TRAIT_KAMOEBAS,Kamoebas,
 STR_TRAIT_SERVUM,Servum,
-STR_COLOR_RED,Red,
-STR_COLOR_BLUE,Blue,
-STR_COLOR_WHITE,White,
-STR_COLOR_GREEN,Green,
-STR_TYPE_MONSTER,Monster,
-STR_TYPE_BATTLE,Battle,
-STR_TYPE_STRATEGY,Strategy,
-STR_PHASE_START,Start Phase,
-STR_PHASE_MAIN,Main Phase,
-STR_PHASE_COUNTER,Counter Phase,
-STR_PHASE_END,End Phase,
+STR_COLOR_RED,Red,赤
+STR_COLOR_BLUE,Blue,青
+STR_COLOR_WHITE,White,白
+STR_COLOR_GREEN,Green,緑
+STR_TYPE_MONSTER,Monster,怪獣
+STR_TYPE_BATTLE,Battle,交戦
+STR_TYPE_STRATEGY,Strategy,戦略
+STR_PHASE_START,Start Phase,開始フェイズ
+STR_PHASE_MAIN,Main Phase,メインフェイズ
+STR_PHASE_COUNTER,Counter Phase,撃退フェイズ
+STR_PHASE_END,End Phase,エンドフェイズ
 STR_PB_THREAT,Threat:,脅威:
 STR_PB_THREAT_SHORT,T:,脅:
 STR_PB_RAGE_ZONE,Rage Zone,怒りゾーン
@@ -119,16 +119,16 @@ STR_GB_PHASE_SUB_DRAW_CARDS,"      Draw Cards","      ドロー"
 STR_GB_PHASE_SUB_DISCARD_STRATEGIES,"      Discard Strategies","      戦略カード廃棄"
 STR_GB_PHASE_SUB_RESET_RAGE,"      Reset Rage","      怒りリセット"
 STR_GB_PHASE_SUB_PLAYER_ACTIONS,"      Player Actions","      プレイヤーアクション"
-STR_GB_PHASE_SUB_COUNTER_CHECK,"      Counter Check","      カウンター確認"
+STR_GB_PHASE_SUB_COUNTER_CHECK,"      Counter Check","      撃退確認"
 STR_GB_PHASE_SUB_ADVANCE,"      Advance","      前進"
 STR_GB_PHASE_SUB_REFILL_HAND,"      Refill Hand","      手札補充"
 STR_GB_CANCEL,Cancel,キャンセル
 STR_GB_CONFIRM,Confirm,決定
-STR_GB_PLAY_BATTLE,Play Battle,バトル出現
+STR_GB_PLAY_BATTLE,Play Battle,交戦出現
 STR_GB_PLAY_STRATEGY,Strategy,戦略
 STR_GB_GAIN_RAGE,Gain Rage,怒り獲得
 STR_GB_PLAY_MONSTER,Play Monster,怪獣出現
-STR_GB_INVADE,Invade,侵攻
+STR_GB_INVADE,Invade,進攻
 STR_GB_END_MAIN,End Main,メイン終了
 STR_GB_END_MAIN_QUESTION,End Main Phase?,メインフェイズを終了？
 STR_GB_SKIP,Skip,スキップ
@@ -144,10 +144,10 @@ STR_GB_SEARCH_YOUR_DECK,Search your deck:,デッキを検索:
 STR_GB_SHOW_ALL,Show All,全て表示
 STR_GB_STACKED,Stacked,スタック
 STR_GB_VIEW_BOARD,View Board,ボードを表示
-STR_GB_DISCARD_PILE,Discard Pile,捨て札の山
+STR_GB_DISCARD_PILE,Discard Pile,捨て札
 STR_GB_MONSTER_DECK,Monster Deck,怪獣デッキ
 STR_GB_DECK,Deck,デッキ
-STR_GB_ZONE_STACK,Zone Stack,ゾーンスタック
+STR_GB_ZONE_STACK,Zone Stack,エリアスタック
 STR_GB_CLOSE,Close,閉じる
 STR_GB_GAME_OVER,Game Over!,ゲームオーバー!
 STR_GB_REMATCH,Rematch,再戦
@@ -173,10 +173,10 @@ STR_GB_GO_SECOND,Go Second,後攻
 STR_GB_LOG,Log,ログ
 STR_GB_CP,CP,CP
 STR_GB_TURNS,Turns,ターン
-STR_GB_SELECT_ZONE,Select a ZONE to place the battle card:,バトルカードを置くゾーンを選択:
+STR_GB_SELECT_ZONE,Select a ZONE to place the battle card:,交戦カードを置くエリアを選択:
 STR_GB_NO_DISCARD,No cards in discard pile.,捨て札にカードがありません。
 STR_GB_NO_MONSTER_DECK,No cards remaining in monster deck.,怪獣デッキにカードが残っていません。
-STR_GB_ZONE_HEADER_FMT,Zone {N} ({C} cards),ゾーン {N} ({C}枚)
+STR_GB_ZONE_HEADER_FMT,Zone {N} ({C} cards),エリア {N} ({C}枚)
 STR_GB_TITLE_COUNT_FMT,{TITLE} ({C} cards),{TITLE} ({C}枚)
 STR_GB_WINS_FMT,{NAME} Wins!,{NAME} の勝利!
 STR_GB_SELECT_DISCARD_FMT,Select {N} cards to discard:,捨てるカードを {N} 枚選択:
