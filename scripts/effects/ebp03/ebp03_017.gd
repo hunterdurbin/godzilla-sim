@@ -24,7 +24,7 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	for card in owner.hand:
-		if card.get("card_type") == CardEnums.CardType.BATTLE:
+		if CardUtils.is_battle(card):
 			return true
 	return false
 
@@ -34,22 +34,19 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> void:
-	if discarded_card.get("card_type") != CardEnums.CardType.BATTLE:
+	if not CardUtils.is_battle(discarded_card):
 		return
 	if ctx.opponent.rage > 0:
 		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
 	else:
-		var old_rage: int = ctx.owner.rage
-		ctx.owner.rage += 1
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)
 
 
 func on_enter(ctx: EffectContext) -> void:
 	# Discard 1 battle card from hand (optional)
 	var selected: Dictionary = await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card: Dictionary) -> bool: return card.get("card_type") == CardEnums.CardType.BATTLE,
+		func(card: Dictionary) -> bool: return CardUtils.is_battle(card),
 		"Discard a battle card to destroy an opponent's rank 6 or lower battle card (or skip):",
 		true)
 

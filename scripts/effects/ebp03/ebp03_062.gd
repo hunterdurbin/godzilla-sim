@@ -35,9 +35,9 @@ func on_revenge(ctx: EffectContext) -> void:
 	var selected: Dictionary = await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			if card.get("card_type") != CardEnums.CardType.MONSTER:
+			if not CardUtils.is_monster(card):
 				return false
-			return CardEnums.CardTrait.SACRED_GUARDIAN_BEASTS in card.get("traits", []),
+			return CardUtils.has_trait(card, CardEnums.CardTrait.SACRED_GUARDIAN_BEASTS),
 		"Return a Sacred Guardian Beast monster card from discard to hand:")
 
 	if not selected.is_empty():

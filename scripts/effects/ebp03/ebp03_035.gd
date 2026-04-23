@@ -22,7 +22,7 @@ func get_bot_advance_reliability(owner: PlayerState, _opponent: PlayerState) -> 
 	# Requires same column as opponent monster AND a strategy card in hand to discard.
 	var has_strategy: bool = false
 	for card in owner.hand:
-		if card.get("card_type") == CardEnums.CardType.STRATEGY:
+		if CardUtils.is_strategy(card):
 			has_strategy = true
 			break
 	if not has_strategy:
@@ -57,7 +57,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.STRATEGY,
+		func(card): return CardUtils.is_strategy(card),
 		"Discard a strategy card to advance your monster to zone 6 (or skip):",
 		true
 	)

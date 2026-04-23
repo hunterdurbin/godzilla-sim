@@ -16,13 +16,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
-	var count: int = 0
-	for i in range(8):
-		if opponent.zone_has_battle_card(i):
-			count += 1
-			if count >= 3:
-				return true
-	return false
+	return opponent.get_occupied_zone_indices().size() >= 3
 
 
 func on_enter(ctx: EffectContext) -> void:

@@ -16,21 +16,11 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	var battle_count: int = 0
-	for i in range(8):
-		if owner.zone_has_battle_card(i):
-			battle_count += 1
-			if battle_count >= 2:
-				return true
-	return false
+	return owner.get_occupied_zone_indices().size() >= 2
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var battle_count := 0
-	for i in range(8):
-		if ctx.owner.zone_has_cards(i):
-			battle_count += 1
-	if battle_count < 2:
+	if ctx.owner.get_occupied_zone_indices().size() < 2:
 		return
 
 	# Track opponent hand before discard
@@ -44,12 +34,9 @@ func on_enter(ctx: EffectContext) -> void:
 	var battle_discarded := false
 	for card in hand_before:
 		if card not in ctx.opponent.hand:
-			if card.get("card_type") == CardEnums.CardType.BATTLE:
+			if CardUtils.is_battle(card):
 				battle_discarded = true
 				break
 
 	if battle_discarded:
-		var old_rage := ctx.owner.rage
-		ctx.owner.rage += 1
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)

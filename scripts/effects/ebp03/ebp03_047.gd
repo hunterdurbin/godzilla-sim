@@ -36,10 +36,9 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card):
-			if card.get("card_type") != CardEnums.CardType.BATTLE:
+			if not CardUtils.is_battle(card):
 				return false
-			var traits: Array = card.get("traits", [])
-			return CardEnums.CardTrait.WEAPON in traits or CardEnums.CardTrait.MECH in traits,
+			return CardUtils.has_any_trait(card, [CardEnums.CardTrait.WEAPON, CardEnums.CardTrait.MECH]),
 		"Discard a Weapon/Mech battle card to search for Super Mechagodzilla (or skip):",
 		true
 	)
@@ -48,7 +47,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
-		func(card): return card.get("name", "") == "Super Mechagodzilla" and card.get("card_type") == CardEnums.CardType.BATTLE,
+		func(card): return card.get("name", "") == "Super Mechagodzilla" and CardUtils.is_battle(card),
 		"Search for Super Mechagodzilla:"
 	)
 	if found.is_empty():

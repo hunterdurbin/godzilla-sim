@@ -23,7 +23,7 @@ func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, 
 	if owner.monster_zone < 8:
 		return false
 	for card in owner.hand:
-		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) >= 5:
+		if CardUtils.is_battle(card) and card.get("rank", 0) >= 5:
 			return true
 	return false
 
@@ -46,21 +46,14 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) >= 5,
+		func(card): return CardUtils.is_battle(card) and card.get("rank", 0) >= 5,
 		"Discard a rank 5+ battle card to gain 2 rage and Destroy opponent R6- (or skip):",
 		true
 	)
 	if not selected.is_empty():
-		var old_rage := ctx.owner.rage
-		ctx.owner.rage += 2
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2)
 
 		# Destroy all opponent R6 or lower battle cards
-		var zones_to_destroy: Array[int] = []
-		for i in range(8):
-			var opp_card := ctx.opponent.get_zone_top_card(i)
-			if not opp_card.is_empty() and ctx.field_rank(opp_card, ctx.opponent.player_id) <= 6:
-				zones_to_destroy.append(i)
+		var zones_to_destroy: Array[int] = ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 6)
 		if not zones_to_destroy.is_empty():
 			await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)

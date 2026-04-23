@@ -16,20 +16,11 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
-	var empty_count: int = 0
-	for i in range(8):
-		if not opponent.zone_has_cards(i):
-			empty_count += 1
-			if empty_count >= 3:
-				return true
-	return false
+	return opponent.get_empty_zone_indices().size() >= 3
 
 
 func bot_can_fulfill_counter_power(_owner: PlayerState, opponent: PlayerState) -> bool:
-	for sz in opponent.strategy_zones:
-		if not sz.is_empty():
-			return false
-	return true
+	return not opponent.has_any_strategy_in_play()
 
 
 func on_enter(ctx: EffectContext) -> void:
@@ -54,7 +45,6 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	for sz in ctx.opponent.strategy_zones:
-		if not sz.is_empty():
-			return 0
+	if ctx.opponent.has_any_strategy_in_play():
+		return 0
 	return 3000

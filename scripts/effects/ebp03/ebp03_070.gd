@@ -32,10 +32,9 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card):
-			if card.get("card_type") != CardEnums.CardType.BATTLE:
+			if not CardUtils.is_battle(card):
 				return false
-			var traits: Array = card.get("traits", [])
-			return CardEnums.CardTrait.WEAPON in traits or CardEnums.CardTrait.MECH in traits,
+			return CardUtils.has_any_trait(card, [CardEnums.CardTrait.WEAPON, CardEnums.CardTrait.MECH]),
 		"Search for a Weapon or Mech battle card:"
 	)
 	if not found.is_empty():

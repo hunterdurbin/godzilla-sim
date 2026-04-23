@@ -53,10 +53,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 			# Destroy all battle cards of both players
 			for pid in range(2):
 				var player := ctx.game_state.players[pid]
-				var zones_to_destroy: Array[int] = []
-				for i in range(8):
-					if player.zone_has_cards(i):
-						zones_to_destroy.append(i)
+				var zones_to_destroy: Array[int] = player.get_occupied_zone_indices()
 				if not zones_to_destroy.is_empty():
 					await ctx.effect_handler.destroy_zones(player, zones_to_destroy)
 		1:

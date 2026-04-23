@@ -19,7 +19,7 @@ func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, 
 	if owner.monster_zone < 4:
 		return false
 	for card in owner.hand:
-		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) >= 5:
+		if CardUtils.is_battle(card) and card.get("rank", 0) >= 5:
 			return true
 	return false
 
@@ -45,12 +45,9 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 func _try_discard_for_rage(ctx: EffectContext, rage_gain: int) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) >= 5,
+		func(card): return CardUtils.is_battle(card) and card.get("rank", 0) >= 5,
 		"Discard a rank 5+ battle card to gain %d rage (or skip):" % rage_gain,
 		true
 	)
 	if not selected.is_empty():
-		var old_rage := ctx.owner.rage
-		ctx.owner.rage += rage_gain
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, rage_gain)

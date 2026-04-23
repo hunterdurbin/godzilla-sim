@@ -21,8 +21,8 @@ func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, 
 	if valid_zones.is_empty():
 		return false
 	for card in owner.hand:
-		if card.get("card_type") == CardEnums.CardType.BATTLE \
-			and CardEnums.CardTrait.GODZILLA in card.get("traits", []):
+		if CardUtils.is_battle(card) \
+			and CardUtils.has_trait(card, CardEnums.CardTrait.GODZILLA):
 			if effect_handler and not effect_handler.can_card_be_played(owner.player_id, card):
 				continue
 			return true
@@ -47,9 +47,9 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card):
-			if card.get("card_type") != CardEnums.CardType.BATTLE:
+			if not CardUtils.is_battle(card):
 				return false
-			if not CardEnums.CardTrait.GODZILLA in card.get("traits", []):
+			if not CardUtils.has_trait(card, CardEnums.CardTrait.GODZILLA):
 				return false
 			return ctx.effect_handler.can_card_be_played(ctx.owner.player_id, card),
 		"Play a Godzilla battle card from hand (or skip):",

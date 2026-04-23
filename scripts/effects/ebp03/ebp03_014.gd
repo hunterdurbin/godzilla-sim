@@ -26,7 +26,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.BATTLE,
+		func(card): return CardUtils.is_battle(card),
 		"Discard a battle card to draw 1 (or skip):",
 		true
 	)

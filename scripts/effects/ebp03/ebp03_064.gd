@@ -30,7 +30,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Place 1 battle card from discard under this card (optional)
 	var selected: Dictionary = await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
-		func(card: Dictionary) -> bool: return card.get("card_type") == CardEnums.CardType.BATTLE,
+		func(card: Dictionary) -> bool: return CardUtils.is_battle(card),
 		"Place a battle card from discard under this card:")
 
 	if not selected.is_empty():

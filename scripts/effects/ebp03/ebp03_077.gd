@@ -18,11 +18,11 @@ func get_bot_tags() -> Array[String]:
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER and card.get("rank", 0) <= 2:
+		if CardUtils.is_monster(card) and card.get("rank", 0) <= 2:
 			return true
 	if owner.monster_stack.size() >= 5:
 		for card in owner.discard_pile:
-			if card.get("card_type") == CardEnums.CardType.MONSTER:
+			if CardUtils.is_monster(card):
 				return true
 	return false
 
@@ -30,7 +30,7 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 func on_enter(ctx: EffectContext) -> void:
 	var has_low_rank_monster := false
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER and card.get("rank", 0) <= 2:
+		if CardUtils.is_monster(card) and card.get("rank", 0) <= 2:
 			has_low_rank_monster = true
 			break
 
@@ -38,7 +38,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var has_any_monster := false
 	if has_five_under:
 		for card in ctx.owner.discard_pile:
-			if card.get("card_type") == CardEnums.CardType.MONSTER:
+			if CardUtils.is_monster(card):
 				has_any_monster = true
 				break
 
@@ -76,7 +76,7 @@ func on_enter(ctx: EffectContext) -> void:
 func _return_low_rank_monster(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.MONSTER and card.get("rank", 0) <= 2,
+		func(card): return CardUtils.is_monster(card) and card.get("rank", 0) <= 2,
 		"Return a rank 2 or lower monster from discard to hand:"
 	)
 	if not selected.is_empty():
@@ -87,7 +87,7 @@ func _return_low_rank_monster(ctx: EffectContext) -> void:
 func _return_any_monster(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.MONSTER,
+		func(card): return CardUtils.is_monster(card),
 		"Return a monster from discard to hand:"
 	)
 	if not selected.is_empty():

@@ -16,8 +16,8 @@ func get_bot_tags() -> Array[String]:
 
 func bot_can_fulfill_on_revenge(owner: PlayerState, _opponent: PlayerState) -> bool:
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER \
-			and CardEnums.CardTrait.KING_GHIDORAH in card.get("traits", []):
+		if CardUtils.is_monster(card) \
+			and CardUtils.has_trait(card, CardEnums.CardTrait.KING_GHIDORAH):
 			return true
 	return false
 
@@ -25,8 +25,8 @@ func bot_can_fulfill_on_revenge(owner: PlayerState, _opponent: PlayerState) -> b
 func on_revenge(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.MONSTER \
-			and CardEnums.CardTrait.KING_GHIDORAH in card.get("traits", []),
+		func(card): return CardUtils.is_monster(card) \
+			and CardUtils.has_trait(card, CardEnums.CardTrait.KING_GHIDORAH),
 		"Return a King Ghidorah monster from discard to hand (or skip):"
 	)
 	if not selected.is_empty():

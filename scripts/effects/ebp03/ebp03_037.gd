@@ -26,10 +26,7 @@ func bot_can_fulfill_counter_power(owner: PlayerState, _opponent: PlayerState) -
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.monster_zone < 8:
 		return
-	var old_rage := ctx.owner.rage
-	ctx.owner.rage += 1
-	ctx.owner.rage_changed.emit(ctx.owner.rage)
-	await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

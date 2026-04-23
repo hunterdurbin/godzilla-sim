@@ -36,7 +36,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Place 1 monster card from discard under this card (optional)
 	var selected: Dictionary = await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
-		func(card: Dictionary) -> bool: return card.get("card_type") == CardEnums.CardType.MONSTER,
+		func(card: Dictionary) -> bool: return CardUtils.is_monster(card),
 		"Place a monster card from discard under this card (or skip):")
 
 	if selected.is_empty():

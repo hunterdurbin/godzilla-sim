@@ -19,7 +19,7 @@ func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, 
 	if owner.monster_zone < 4 or owner.monster_zone >= 8:
 		return false
 	for card in owner.hand:
-		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) >= 5:
+		if CardUtils.is_battle(card) and card.get("rank", 0) >= 5:
 			return true
 	return false
 
@@ -41,7 +41,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		return
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) >= 5,
+		func(card): return CardUtils.is_battle(card) and card.get("rank", 0) >= 5,
 		"Discard a rank 5+ battle card to advance 1 zone (or skip):",
 		true
 	)

@@ -21,7 +21,7 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	var monster_count := 0
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 			if monster_count >= 2:
 				return true
@@ -44,7 +44,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Place exactly 2 monster cards from discard under this card (or skip entirely)
 	var monsters: Array[Dictionary] = []
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monsters.append(card)
 
 	if monsters.size() < 2:

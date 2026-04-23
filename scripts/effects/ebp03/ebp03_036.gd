@@ -29,8 +29,8 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.BATTLE \
-			and CardEnums.CardTrait.MOGUERA in card.get("traits", []),
+		func(card): return CardUtils.is_battle(card) \
+			and CardUtils.has_trait(card, CardEnums.CardTrait.MOGUERA),
 		"Search for a Moguera battle card to play:"
 	)
 	if found.is_empty():
