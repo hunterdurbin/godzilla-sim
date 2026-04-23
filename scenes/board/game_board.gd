@@ -925,7 +925,7 @@ func _start_game() -> void:
 	_first_player_result = -1
 	_first_player_choosing = true
 
-	_on_log_message("%s won the coin flip!" % GameLog.player_name(_first_player_chooser_id))
+	_on_log_message(GameLog.coin_flip_won(_first_player_chooser_id))
 
 	if _first_player_chooser_id != local_player_id:
 		# The chooser is the remote client — send RPC, show waiting state locally
@@ -951,7 +951,7 @@ func _start_game() -> void:
 	_rpc_cleanup_first_player.rpc()
 	_apply_gradients_and_sync()
 	_first_player_id = _first_player_result
-	_on_log_message("%s chose to go first." % GameLog.player_name(_first_player_result))
+	_on_log_message(GameLog.first_player_chose(_first_player_result, true))
 	SfxManager.play("game_start")
 	turn_manager.start_game(_first_player_result)
 
@@ -987,7 +987,7 @@ func _apply_bot_seed() -> void:
 	NetworkManager.bot_seed = s
 	seed(s)
 	print("[Bot] RNG seed: %d" % s)
-	_on_log_message("Seed: %d" % s)
+	_on_log_message(GameLog.seed_announce(s))
 
 
 func _setup_bot() -> void:
@@ -2772,7 +2772,7 @@ func _on_game_ended(winner_id: int, reason_key: String) -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		var reason_text := tr(reason_key) if not reason_key.is_empty() else ""
+		var reason_text := GameLog.render_reason(reason_key)
 		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", turn_manager.game_state.player_names[winner_id]) + "\n" + reason_text
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
@@ -3159,13 +3159,11 @@ func _build_bug_report_body() -> String:
 func _on_concede_pressed() -> void:
 	var loser_id := local_player_id
 	var winner_id := 1 - loser_id
-	var loser_name := turn_manager.game_state.player_names[loser_id] if turn_manager else ("Player %d" % (loser_id + 1))
-	var reason := "%s conceded" % loser_name
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("concede", 0)
 		_rpc_concede.rpc_id(NetworkManager.host_peer_id)
 	elif turn_manager:
-		turn_manager._on_game_over(winner_id, reason)
+		turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -3176,7 +3174,7 @@ func _rpc_concede() -> void:
 	var sender_id := multiplayer.get_remote_sender_id()
 	var loser_id := 1 if sender_id != 1 else 0
 	var winner_id := 1 - loser_id
-	turn_manager._on_game_over(winner_id, "%s conceded" % turn_manager.game_state.player_names[loser_id])
+	turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
 
 
 func _on_main_menu_pressed() -> void:
@@ -3196,8 +3194,7 @@ func _on_main_menu_pressed() -> void:
 			if NetworkManager.is_host():
 				var loser_id := local_player_id
 				var winner_id := 1 - loser_id
-				var loser_name := turn_manager.game_state.player_names[loser_id]
-				turn_manager._on_game_over(winner_id, "%s conceded" % loser_name)
+				turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
 			else:
 				RpcLogger.log_send("concede", 0)
 				_rpc_concede.rpc_id(NetworkManager.host_peer_id)
@@ -3531,7 +3528,7 @@ func _on_rematch_deck_selected(deck_name: String) -> void:
 func _rpc_rematch_requested() -> void:
 	RpcLogger.log_receive("rematch_requested", 0)
 	_opponent_rematch_requested = true
-	_on_log_message("Opponent wants a rematch!")
+	_on_log_message(GameLog.opponent_wants_rematch(false))
 
 	if _rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
@@ -3571,7 +3568,7 @@ func _rpc_rematch_with_deck(payload_json: String) -> void:
 
 	DecklistManager.set_player_deck_from_entries(sender_pid, deck_name, monster_entries, main_entries)
 	_opponent_rematch_requested = true
-	_on_log_message("Opponent wants a rematch (new deck)!")
+	_on_log_message(GameLog.opponent_wants_rematch(true))
 
 	if _rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
@@ -7582,7 +7579,7 @@ func _rpc_receive_game_ended(winner_id: int, reason_key: String) -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		var reason_text := tr(reason_key) if not reason_key.is_empty() else ""
+		var reason_text := GameLog.render_reason(reason_key)
 		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", GameLog.player_name(winner_id)) + "\n" + reason_text
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
@@ -7764,7 +7761,7 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 
 	# Online HOST side: show overlay and wait for reconnect
 	if NetworkManager.is_host():
-		_on_log_message("Opponent disconnected. Waiting for reconnect...")
+		_on_log_message(GameLog.opponent_disconnected_waiting())
 		_waiting_for_reconnect = true
 		_reconnect_current_start_ms = Time.get_ticks_msec()
 		_reconnect_label.text = tr("STR_GB_OPPONENT_DISCONNECTED_WAIT")
@@ -7774,7 +7771,7 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 		return
 
 	# Online CLIENT side: attempt to reconnect to the host via relay
-	_on_log_message("Connection lost. Attempting to reconnect...")
+	_on_log_message(GameLog.connection_lost_reconnecting())
 	_waiting_for_reconnect = true
 	_reconnect_current_start_ms = Time.get_ticks_msec()
 	_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RECONNECTING")
@@ -7813,7 +7810,7 @@ func _attempt_client_reconnect() -> void:
 			_client_state_version = 0
 			_last_resync_request_ms = 0
 			_action_pending = false
-			_on_log_message("Reconnected!")
+			_on_log_message(GameLog.reconnected())
 			# Wait a frame for the connection to stabilize before sending RPCs
 			await get_tree().process_frame
 			if not is_inside_tree():
@@ -7844,7 +7841,7 @@ func _on_opponent_reconnected(_peer_id: int) -> void:
 	if not end_game_panel.visible:
 		# Game is still in progress — resync the client after a brief delay
 		# to let the connection stabilize before sending large state RPCs
-		_on_log_message("Opponent reconnected!")
+		_on_log_message(GameLog.opponent_reconnected())
 		await get_tree().create_timer(0.2).timeout
 		if not is_inside_tree():
 			return
@@ -7938,4 +7935,4 @@ func _on_reconnect_claim_win() -> void:
 	btn_rematch.visible = false
 	_disable_all_buttons()
 	_upload_stats(local_player_id, "Opponent disconnected", true)
-	_on_log_message("Claimed win due to opponent disconnect.")
+	_on_log_message(GameLog.claimed_win_disconnect())

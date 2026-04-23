@@ -138,7 +138,8 @@ STR_GB_MAIN_MENU,Main Menu,メインメニュー
 STR_GB_CLAIM_WIN,Claim Win,勝利を宣言
 STR_GB_RETURN_TO_MENU,Return to Menu,メニューに戻る
 STR_GB_GAME_LOG,"Game Log:
-",ゲームログ:
+","ゲームログ:
+"
 STR_GB_CHAT_PLACEHOLDER,Type to chat...,チャットを入力...
 STR_GB_SEARCH_YOUR_DECK,Search your deck:,デッキを検索:
 STR_GB_SHOW_ALL,Show All,全て表示
@@ -291,3 +292,15 @@ STR_LOG_REASON_COUNTER_VICTORY,Victory through countering!,撃退による勝利
 STR_LOG_REASON_INVASION_VICTORY,Victory through invasion!,進攻による勝利!
 STR_LOG_REASON_NO_STRATEGIES,No strategy cards in play!,場に戦略カードなし!
 STR_LOG_REASON_OPPONENT_DISCONNECTED,Opponent disconnected,対戦相手が切断されました
+STR_LOG_REASON_CONCEDED_FMT,{PLAYER} conceded,{PLAYER} が降参
+STR_LOG_COIN_FLIP_WON_FMT,{PLAYER} won the coin flip!,{PLAYER} がコイントスに勝ちました!
+STR_LOG_CHOSE_TO_GO_FIRST_FMT,{PLAYER} chose to go first.,{PLAYER} が先攻を選びました。
+STR_LOG_CHOSE_TO_GO_SECOND_FMT,{PLAYER} chose to go second.,{PLAYER} が後攻を選びました。
+STR_LOG_SEED_FMT,Seed: {N},シード: {N}
+STR_LOG_OPPONENT_WANTS_REMATCH,Opponent wants a rematch!,対戦相手が再戦を希望しています!
+STR_LOG_OPPONENT_WANTS_REMATCH_NEW_DECK,Opponent wants a rematch (new deck)!,対戦相手が再戦を希望しています (新しいデッキ)!
+STR_LOG_OPPONENT_DISCONNECTED_WAITING,Opponent disconnected. Waiting for reconnect...,対戦相手が切断されました。再接続を待っています...
+STR_LOG_CONNECTION_LOST_RECONNECTING,Connection lost. Attempting to reconnect...,接続が失われました。再接続を試みています...
+STR_LOG_RECONNECTED,Reconnected!,再接続しました!
+STR_LOG_OPPONENT_RECONNECTED,Opponent reconnected!,対戦相手が再接続しました!
+STR_LOG_CLAIMED_WIN_DISCONNECT,Claimed win due to opponent disconnect.,対戦相手の切断により勝利を宣言しました。

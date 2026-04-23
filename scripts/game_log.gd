@@ -191,6 +191,69 @@ static func counter_immunity(player_id: int, total_cp: int, threshold: int) -> D
 	return {"type": "counter_immunity", "player_id": player_id, "total_cp": total_cp, "threshold": threshold}
 
 
+static func coin_flip_won(player_id: int) -> Dictionary:
+	return {"type": "coin_flip_won", "player_id": player_id}
+
+
+static func first_player_chose(player_id: int, went_first: bool) -> Dictionary:
+	return {"type": "first_player_chose", "player_id": player_id, "went_first": went_first}
+
+
+static func seed_announce(seed: int) -> Dictionary:
+	return {"type": "seed", "seed": seed}
+
+
+static func opponent_wants_rematch(new_deck: bool = false) -> Dictionary:
+	return {"type": "opponent_wants_rematch", "new_deck": new_deck}
+
+
+static func opponent_disconnected_waiting() -> Dictionary:
+	return {"type": "opponent_disconnected_waiting"}
+
+
+static func connection_lost_reconnecting() -> Dictionary:
+	return {"type": "connection_lost_reconnecting"}
+
+
+static func reconnected() -> Dictionary:
+	return {"type": "reconnected"}
+
+
+static func opponent_reconnected() -> Dictionary:
+	return {"type": "opponent_reconnected"}
+
+
+static func claimed_win_disconnect() -> Dictionary:
+	return {"type": "claimed_win_disconnect"}
+
+
+static func concede_reason_key(loser_id: int) -> String:
+	## Build a reason key with player-id parameter for concede game-over.
+	## Rendered by `render_reason` via the `|player=N` suffix.
+	return "STR_LOG_REASON_CONCEDED_FMT|player=%d" % loser_id
+
+
+static func render_reason(reason_key: String) -> String:
+	## Translate a game-over reason key, supporting pipe-separated params
+	## (e.g. "STR_LOG_REASON_CONCEDED_FMT|player=0"). `player=N` is substituted
+	## as `{PLAYER}` using the local player_names table.
+	if reason_key.is_empty():
+		return ""
+	var parts := reason_key.split("|")
+	var key: String = parts[0]
+	var text := TranslationServer.translate(key)
+	for i in range(1, parts.size()):
+		var kv := parts[i].split("=", true, 1)
+		if kv.size() == 2:
+			var name: String = kv[0]
+			var val: String = kv[1]
+			if name == "player":
+				text = text.replace("{PLAYER}", player_name(int(val)))
+			else:
+				text = text.replace("{%s}" % name.to_upper(), val)
+	return text
+
+
 # --- Rendering ------------------------------------------------------------
 
 static func _icon_or_fallback(icon_path: String, fallback_key: String, rank: int) -> String:
@@ -360,6 +423,29 @@ static func render(token: Dictionary) -> String:
 			var sender_id: int = int(token.get("sender_id", -1))
 			var pname := player_name(sender_id) if sender_id >= 0 else String(token.get("sender_name", ""))
 			return chat_message(pname, String(token.get("text", "")))
+		"coin_flip_won":
+			return TranslationServer.translate("STR_LOG_COIN_FLIP_WON_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0)))
+		"first_player_chose":
+			var key := "STR_LOG_CHOSE_TO_GO_FIRST_FMT" if token.get("went_first", true) else "STR_LOG_CHOSE_TO_GO_SECOND_FMT"
+			return TranslationServer.translate(key) \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0)))
+		"seed":
+			return TranslationServer.translate("STR_LOG_SEED_FMT") \
+				.replace("{N}", str(token.get("seed", 0)))
+		"opponent_wants_rematch":
+			var key := "STR_LOG_OPPONENT_WANTS_REMATCH_NEW_DECK" if token.get("new_deck", false) else "STR_LOG_OPPONENT_WANTS_REMATCH"
+			return TranslationServer.translate(key)
+		"opponent_disconnected_waiting":
+			return TranslationServer.translate("STR_LOG_OPPONENT_DISCONNECTED_WAITING")
+		"connection_lost_reconnecting":
+			return TranslationServer.translate("STR_LOG_CONNECTION_LOST_RECONNECTING")
+		"reconnected":
+			return TranslationServer.translate("STR_LOG_RECONNECTED")
+		"opponent_reconnected":
+			return TranslationServer.translate("STR_LOG_OPPONENT_RECONNECTED")
+		"claimed_win_disconnect":
+			return TranslationServer.translate("STR_LOG_CLAIMED_WIN_DISCONNECT")
 		_:
 			return ""
 
