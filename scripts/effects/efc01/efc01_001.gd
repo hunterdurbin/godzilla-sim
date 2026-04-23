@@ -32,8 +32,8 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 		var card := ctx.owner.get_zone_top_card(zone_idx)
 		if card.is_empty():
 			return 0
-		if card.get("card_type") != CardEnums.CardType.BATTLE:
+		if not CardUtils.is_battle(card):
 			return 0
-		if CardEnums.CardTrait.FESTIVAL_GODZILLA not in card.get("traits", []):
+		if not CardUtils.has_trait(card, CardEnums.CardTrait.FESTIVAL_GODZILLA):
 			return 0
 	return 10000

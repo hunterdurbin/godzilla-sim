@@ -22,8 +22,8 @@ func on_enter(ctx: EffectContext) -> void:
 	var discarded := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			var traits: Array = card.get("traits", [])
-			return CardEnums.CardTrait.GIGAN in traits and CardEnums.CardTrait.FESTIVAL_GODZILLA in traits,
+			return CardUtils.has_trait(card, CardEnums.CardTrait.GIGAN) \
+				and CardUtils.has_trait(card, CardEnums.CardTrait.FESTIVAL_GODZILLA),
 		"Discard a Gigan+Festival Godzilla card to search for a Weapon/Mech battle card (or skip):",
 		true)
 
@@ -34,12 +34,11 @@ func on_enter(ctx: EffectContext) -> void:
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			if card.get("card_type") != CardEnums.CardType.BATTLE:
+			if not CardUtils.is_battle(card):
 				return false
 			if card.get("invasion_icon", 0) != 2:
 				return false
-			var traits: Array = card.get("traits", [])
-			return CardEnums.CardTrait.WEAPON in traits or CardEnums.CardTrait.MECH in traits,
+			return CardUtils.has_any_trait(card, [CardEnums.CardTrait.WEAPON, CardEnums.CardTrait.MECH]),
 		"Choose a Weapon or Mech battle card with invasion icon 2:")
 
 	if not found.is_empty():

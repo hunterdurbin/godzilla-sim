@@ -43,7 +43,7 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 	var fest_cards: Array[Dictionary] = []
 	var discard_cards: Array[Dictionary] = []
 	for card in revealed:
-		if CardEnums.CardTrait.FESTIVAL_GODZILLA in card.get("traits", []):
+		if CardUtils.has_trait(card, CardEnums.CardTrait.FESTIVAL_GODZILLA):
 			fest_cards.append(card)
 		else:
 			discard_cards.append(card)

@@ -21,12 +21,8 @@ func protects_card_from_destruction(ctx: EffectContext, card_data: Dictionary, _
 	if ctx.game_state.current_player_id == ctx.owner.player_id:
 		return false
 	# Count opponent's battle cards in zones
-	var count: int = 0
-	for i in range(8):
-		var card := ctx.opponent.get_zone_top_card(i)
-		if not card.is_empty() and card.get("card_type") == CardEnums.CardType.BATTLE:
-			count += 1
+	var count: int = ctx.opponent.count_zones_matching(CardUtils.is_battle)
 	if count > 2:
 		return false
 	# Protect all our battle cards
-	return card_data.get("card_type") == CardEnums.CardType.BATTLE
+	return CardUtils.is_battle(card_data)

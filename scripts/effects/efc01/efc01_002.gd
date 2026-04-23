@@ -40,13 +40,13 @@ func on_enter(ctx: EffectContext) -> void:
 		"Sent to discard pile:")
 
 	# If the milled card is a battle card, may return 1 monster from discard to hand
-	if milled[0].get("card_type") != CardEnums.CardType.BATTLE:
+	if not CardUtils.is_battle(milled[0]):
 		return
 
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.MONSTER,
+			return CardUtils.is_monster(card),
 		"Return a monster card from discard to hand (or skip):")
 
 	if not selected.is_empty():
