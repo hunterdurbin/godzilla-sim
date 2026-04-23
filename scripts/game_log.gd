@@ -10,12 +10,15 @@ class_name GameLog
 
 static var player_names: Array[String] = ["Player 1", "Player 2"]
 
-const _ENTER_ICON := "[img=20]res://assets/effectIcons/en/others/Enter.png[/img]"
-const _RAGE_ICON := "[img=30]res://assets/effectIcons/en/others/Rage.png[/img]"
-const _BASE_ICON := "[img=40]res://assets/effectIcons/en/others/Base.png[/img]"
-const _STEP2_ICON := "[img=20]res://assets/effectIcons/en/others/Step2.png[/img]"
-const _REVENGE_ICON := "[img=40]res://assets/effectIcons/en/others/Revenge.png[/img]"
-const _DESTROY_ICON := "[img=40]res://assets/effectIcons/en/others/Destroy.png[/img]"
+
+static func _icon_locale_dir() -> String:
+	## Returns the effect-icon subfolder matching the current locale.
+	## Filenames mirror between en/ and ja/ so swapping the directory is enough.
+	return "ja" if TranslationServer.get_locale().begins_with("ja") else "en"
+
+
+static func _icon(size: int, category: String, filename: String) -> String:
+	return "[img=%d]res://assets/effectIcons/%s/%s/%s[/img]" % [size, _icon_locale_dir(), category, filename]
 
 
 static func disambiguate(names: Array[String], local_id: int) -> Array[String]:
@@ -219,32 +222,32 @@ static func render(token: Dictionary) -> String:
 			var key := "STR_LOG_PLAYED_BATTLE_ENTER_FMT" if token.get("has_enter", false) else "STR_LOG_PLAYED_BATTLE_FMT"
 			return TranslationServer.translate(key) \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
-				.replace("{ENTER_ICON}", _ENTER_ICON) \
+				.replace("{ENTER_ICON}", _icon(20, "others", "Enter.png")) \
 				.replace("{CARD}", card_link(token.get("card_id", ""))) \
 				.replace("{ZONE}", str(int(token.get("zone", 0)) + 1))
 		"played_strategy":
 			var key := "STR_LOG_PLAYED_STRATEGY_BASE_FMT" if token.get("is_base", false) else "STR_LOG_PLAYED_STRATEGY_FMT"
 			return TranslationServer.translate(key) \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
-				.replace("{BASE_ICON}", _BASE_ICON) \
+				.replace("{BASE_ICON}", _icon(40, "others", "Base.png")) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"gained_rage":
 			return TranslationServer.translate("STR_LOG_GAINED_RAGE_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
-				.replace("{RAGE_ICON}", _RAGE_ICON) \
+				.replace("{RAGE_ICON}", _icon(30, "others", "Rage.png")) \
 				.replace("{N}", str(token.get("rage", 0))) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"played_monster":
 			return TranslationServer.translate("STR_LOG_PLAYED_MONSTER_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{CARD}", card_link(token.get("card_id", ""))) \
-				.replace("{RAGE_ICON}", _RAGE_ICON) \
+				.replace("{RAGE_ICON}", _icon(30, "others", "Rage.png")) \
 				.replace("{N}", str(token.get("rage", 0)))
 		"invaded":
 			var key := "STR_LOG_INVADED_STEP2_FMT" if token.get("is_step2", false) else "STR_LOG_INVADED_FMT"
 			return TranslationServer.translate(key) \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
-				.replace("{STEP2_ICON}", _STEP2_ICON) \
+				.replace("{STEP2_ICON}", _icon(20, "others", "Step2.png")) \
 				.replace("{ZONE}", str(token.get("zone", 0))) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"counter_phase":
@@ -268,28 +271,28 @@ static func render(token: Dictionary) -> String:
 				.replace("{REASON}", reason)
 		"burst_played":
 			var rank: int = int(token.get("burst_rank", 0))
-			var prefix := _icon_or_fallback("res://assets/effectIcons/en/bursts/Burst%d.png" % rank, "STR_LOG_BURST_FALLBACK_PREFIX_FMT", rank)
+			var prefix := _icon_or_fallback("res://assets/effectIcons/%s/bursts/Burst%d.png" % [_icon_locale_dir(), rank], "STR_LOG_BURST_FALLBACK_PREFIX_FMT", rank)
 			return TranslationServer.translate("STR_LOG_BURST_PLAYED_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{BURST_PREFIX}", prefix) \
 				.replace("{CARD}", card_link(token.get("card_id", ""))) \
-				.replace("{RAGE_ICON}", _RAGE_ICON) \
+				.replace("{RAGE_ICON}", _icon(30, "others", "Rage.png")) \
 				.replace("{N}", str(token.get("rage", 0)))
 		"revenge_triggered":
 			return TranslationServer.translate("STR_LOG_REVENGE_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
-				.replace("{REVENGE_ICON}", _REVENGE_ICON) \
+				.replace("{REVENGE_ICON}", _icon(40, "others", "Revenge.png")) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"awakening_triggered":
 			var level: int = int(token.get("awakening_level", 0))
-			var awk_prefix := _icon_or_fallback("res://assets/effectIcons/en/awakenings/Awakening%d.png" % level, "STR_LOG_AWAKENING_FALLBACK_PREFIX_FMT", level)
+			var awk_prefix := _icon_or_fallback("res://assets/effectIcons/%s/awakenings/Awakening%d.png" % [_icon_locale_dir(), level], "STR_LOG_AWAKENING_FALLBACK_PREFIX_FMT", level)
 			return TranslationServer.translate("STR_LOG_AWAKENING_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{AWK_PREFIX}", awk_prefix) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"evolution":
 			var evo_rank: int = int(token.get("evo_rank", 0))
-			var evo_prefix := _icon_or_fallback("res://assets/effectIcons/en/evolutions/Evolution%d.png" % evo_rank, "STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT", evo_rank)
+			var evo_prefix := _icon_or_fallback("res://assets/effectIcons/%s/evolutions/Evolution%d.png" % [_icon_locale_dir(), evo_rank], "STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT", evo_rank)
 			return TranslationServer.translate("STR_LOG_EVOLUTION_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{ZONE}", str(int(token.get("zone_idx", 0)) + 1)) \
@@ -314,19 +317,19 @@ static func render(token: Dictionary) -> String:
 			return TranslationServer.translate("STR_LOG_EFFECT_RAGE_FROM_MILL_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
-				.replace("{RAGE_ICON}", _RAGE_ICON) \
+				.replace("{RAGE_ICON}", _icon(30, "others", "Rage.png")) \
 				.replace("{N}", str(token.get("rage", 0))) \
 				.replace("{MILLED_CARD}", card_link(token.get("milled_id", "")))
 		"effect_gained_rage":
 			return TranslationServer.translate("STR_LOG_EFFECT_RAGE_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
-				.replace("{RAGE_ICON}", _RAGE_ICON) \
+				.replace("{RAGE_ICON}", _icon(30, "others", "Rage.png")) \
 				.replace("{AMOUNT}", str(token.get("amount", 0))) \
 				.replace("{N}", str(token.get("rage", 0)))
 		"effect_destroyed_card":
 			return TranslationServer.translate("STR_LOG_EFFECT_DESTROYED_FMT") \
-				.replace("{DESTROY_ICON}", _DESTROY_ICON) \
+				.replace("{DESTROY_ICON}", _icon(40, "others", "Destroy.png")) \
 				.replace("{SOURCE_PLAYER}", short_name(token.get("source_player_id", 0))) \
 				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
 				.replace("{TARGET_PLAYER}", short_name(token.get("target_player_id", 0))) \
@@ -334,7 +337,7 @@ static func render(token: Dictionary) -> String:
 				.replace("{DESTROYED_CARD}", card_link(token.get("destroyed_id", "")))
 		"battle_card_crushed":
 			return TranslationServer.translate("STR_LOG_CARD_CRUSHED_FMT") \
-				.replace("{DESTROY_ICON}", _DESTROY_ICON) \
+				.replace("{DESTROY_ICON}", _icon(40, "others", "Destroy.png")) \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{ZONE}", str(int(token.get("zone_index", 0)) + 1)) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
