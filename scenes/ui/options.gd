@@ -34,6 +34,64 @@ func _on_language_pressed() -> void:
 	var next: String = _LOCALE_CYCLE[(idx + 1) % _LOCALE_CYCLE.size()] if idx >= 0 else _LOCALE_CYCLE[0]
 	GameSettings.set_locale(next)
 	_refresh_language_button()
+	if GameSettings.card_art_locale != next:
+		_prompt_card_art_switch(next)
+
+
+func _prompt_card_art_switch(target_locale: String) -> void:
+	var parts := _create_modal(tr("STR_OPTIONS_ART_MATCH_TITLE"))
+	var popup: PopupPanel = parts[0]
+	var vbox: VBoxContainer = parts[1]
+
+	var lang_name := tr("STR_LANG_" + target_locale.to_upper())
+	var prompt := Label.new()
+	prompt.text = tr("STR_OPTIONS_ART_MATCH_PROMPT_FMT").replace("{LANG}", lang_name)
+	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	prompt.add_theme_font_size_override("font_size", 16)
+	vbox.add_child(prompt)
+
+	var cached: int = ArtworkDownloader.get_cached_count(target_locale)
+	var status := Label.new()
+	if cached > 0:
+		status.text = tr("STR_OPTIONS_ART_STATUS_CACHED_FMT").replace("{N}", str(cached))
+	else:
+		status.text = tr("STR_OPTIONS_ART_STATUS_NONE")
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status.add_theme_font_size_override("font_size", 13)
+	status.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	vbox.add_child(status)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
+
+	var no_btn := Button.new()
+	no_btn.text = tr("STR_OPTIONS_ART_MATCH_NO")
+	no_btn.custom_minimum_size = Vector2(140, 40)
+	no_btn.add_theme_font_size_override("font_size", 16)
+	no_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide())
+	btn_row.add_child(no_btn)
+
+	var yes_btn := Button.new()
+	yes_btn.text = tr("STR_OPTIONS_ART_MATCH_YES")
+	yes_btn.custom_minimum_size = Vector2(140, 40)
+	yes_btn.add_theme_font_size_override("font_size", 16)
+	yes_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		GameSettings.card_art_locale = target_locale
+		GameSettings.save()
+		_CardScript.clear_texture_cache()
+		popup.hide()
+		# If art isn't cached yet, jump to LoadingScreen so it downloads now.
+		if ArtworkDownloader.get_cached_count(target_locale) == 0:
+			NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn"))
+	btn_row.add_child(yes_btn)
+
+	vbox.add_child(btn_row)
+	_show_modal(popup)
 
 
 func _on_player_name_changed(new_text: String) -> void:

@@ -31,7 +31,7 @@ var opponent_connected: bool = false
 var version_verified: bool = false
 var is_in_game: bool = false  ## True while actively in GameBoard
 var _room_code: String = ""
-var game_mode: String = ""  # "rumble", "no_rules", or "" (private/LAN)
+var game_mode: String = ""  # "rumble_west", "rumble_east", "no_rules", or "" (private/LAN)
 var is_public_room: bool = false
 var bot_config: BotConfig = BotConfig.normal()
 var bot_difficulty: BotConfig.Difficulty = BotConfig.Difficulty.NORMAL
@@ -126,8 +126,8 @@ func host_online() -> Error:
 
 ## Connect to the relay server and create a public room. Same as host_online()
 ## but appends ?public=true so the relay server lists it for other players.
-## p_game_mode: "rumble" or "no_rules"
-func host_public(p_game_mode: String = "rumble") -> Error:
+## p_game_mode: "rumble_west", "rumble_east", or "no_rules"
+func host_public(p_game_mode: String = "rumble_west") -> Error:
 	_room_code = _generate_room_code()
 	game_mode = p_game_mode
 	is_public_room = true
@@ -160,7 +160,7 @@ func host_public(p_game_mode: String = "rumble") -> Error:
 
 
 ## Fetch the list of public rooms from the relay server.
-## Returns an Array of Dictionaries: [{"code": "ABC123", "players": 1, "mode": "rumble"}, ...]
+## Returns an Array of Dictionaries: [{"code": "ABC123", "players": 1, "mode": "rumble_west"}, ...]
 ## Returns an empty Array on failure.
 ## p_game_mode: filter to a specific mode, or "" for all modes.
 func fetch_public_rooms(p_game_mode: String = "") -> Array:

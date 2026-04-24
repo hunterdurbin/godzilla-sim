@@ -59,7 +59,7 @@ var _sort_mode: int = 0  # 0=ID, 1=Name, 2=Rank, 3=Type
 
 var _pending_action: Callable
 var _invalid_cards: Dictionary = {} # card_number -> true
-var _game_mode: String = "rumble"
+var _game_mode: String = "rumble_west"
 var _pool_load_generation: int = 0  # Incremented to cancel stale batched loads
 var _deck_list_touch_scrolled: bool = false  # Track if ItemList was scrolled on touch
 var _pending_deck_list_index: int = -1  # Deferred selection index for touch
@@ -513,6 +513,11 @@ func _apply_filters() -> void:
 
 
 func _card_matches_filters(card: Dictionary) -> bool:
+	# Game mode card pool — hides cards outside the active format's pool.
+	# No-rules mode accepts every card.
+	if not GameModeValidator.is_card_valid_for_mode(card.get("id", ""), _game_mode):
+		return false
+
 	# Type filter
 	if _type_filter >= 0 and card.get("card_type", -1) != _type_filter:
 		return false
@@ -1242,6 +1247,8 @@ func _on_sort_changed(index: int) -> void:
 
 func _on_format_changed(index: int) -> void:
 	_game_mode = GameModeValidator.MODES[index]["id"]
+	_apply_filters()
+	_refresh_pool_display()
 	_refresh_deck_display()
 	_update_deck_stats()
 

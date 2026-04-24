@@ -26,6 +26,10 @@ STR_OPTIONS_ART_STATUS_CACHED_FMT,{N} cards cached,{N}枚キャッシュ済み
 STR_OPTIONS_ART_STATUS_NONE,not downloaded,未ダウンロード
 STR_OPTIONS_ART_DOWNLOAD,Download,ダウンロード
 STR_OPTIONS_ART_REDOWNLOAD,Re-download,再ダウンロード
+STR_OPTIONS_ART_MATCH_TITLE,Switch Card Artwork?,カードアートを切り替えますか？
+STR_OPTIONS_ART_MATCH_PROMPT_FMT,Also switch card artwork to {LANG}?,カードアートも {LANG} に切り替えますか？
+STR_OPTIONS_ART_MATCH_YES,"Yes, switch",はい、切り替える
+STR_OPTIONS_ART_MATCH_NO,Keep current,このまま
 STR_LANG_EN,English,English
 STR_LANG_JA,日本語,日本語
 STR_TRAIT_KAIJU,Kaiju,
@@ -223,8 +227,10 @@ STR_ONLINE_PRIVATE,Private,プライベート
 STR_PUBLIC_LOBBIES,Public Lobbies,公開ロビー
 STR_GAME_MODE,GAME MODE,ゲームモード
 STR_CREATE_LOBBY,Create Lobby,ロビー作成
-STR_MODE_RUMBLE,Rumble,ランブル
+STR_MODE_RUMBLE_WEST,Rumble (West),ランブル (西)
+STR_MODE_RUMBLE_EAST,Rumble (East),ランブル (東)
 STR_MODE_NO_RULES,No Rules,ルールなし
+STR_MODE_BULKZILLA,BULKZILLA,BULKZILLA
 STR_DS_SELECT_DECK,SELECT DECK,デッキを選択
 STR_DS_SELECT_YOUR_DECK,SELECT YOUR DECK,あなたのデッキを選択
 STR_DS_P1_DECK,PLAYER 1 DECK,プレイヤー1のデッキ

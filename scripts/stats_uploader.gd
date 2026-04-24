@@ -62,7 +62,8 @@ func _build_payload(
 ) -> Dictionary:
 	var gm: String = NetworkManager.game_mode
 	if gm.is_empty():
-		gm = "rumble"
+		gm = "rumble_west"
+	gm = GameModeValidator.normalize_mode_id(gm)
 
 	var payload := {
 		"game_version": NetworkManager.GAME_VERSION,

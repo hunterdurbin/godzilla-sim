@@ -105,7 +105,7 @@ func _fetch_rooms() -> void:
 	for room in rooms:
 		var code: String = room.get("code", "")
 		var host_name: String = room.get("name", code)
-		var room_mode: String = room.get("mode", "rumble")
+		var room_mode: String = GameModeValidator.normalize_mode_id(room.get("mode", "rumble_west"))
 		if code.is_empty():
 			continue
 
