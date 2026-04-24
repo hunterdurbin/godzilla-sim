@@ -491,21 +491,40 @@ func _update_display() -> void:
 					custom_cache[card_number] = tex
 					card_image.texture = tex
 					return
-		# Fall back to standard artwork
+		# Fall back to standard artwork (try card_art_locale, then en/, then legacy flat path)
 		var cache := _strategy_texture_cache if is_strategy else _texture_cache
-		if cache.has(card_number):
-			card_image.texture = cache[card_number]
+		var cache_key: String = "%s|%s" % [GameSettings.card_art_locale, card_number]
+		if cache.has(cache_key):
+			card_image.texture = cache[cache_key]
 			return
-		var image_path := ARTWORK_BASE_PATH.path_join(set_number).path_join("%s.png" % card_number)
-		var abs_path := ProjectSettings.globalize_path(image_path)
-		if FileAccess.file_exists(image_path):
+		var image_path := _find_artwork_path(set_number, card_number)
+		if not image_path.is_empty():
+			var abs_path := ProjectSettings.globalize_path(image_path)
 			var image := Image.load_from_file(abs_path)
 			if image:
 				if is_strategy:
 					image.rotate_90(CLOCKWISE)
 				var tex := ImageTexture.create_from_image(image)
-				cache[card_number] = tex
+				cache[cache_key] = tex
 				card_image.texture = tex
+
+
+static func _find_artwork_path(set_number: String, card_number: String) -> String:
+	## Resolution order: current locale → en/ fallback → legacy flat path.
+	## Returns the first existing `res://`-style path, or "" if none found.
+	var candidates: Array[String] = []
+	var locale: String = GameSettings.card_art_locale
+	var locale_dir: String = ARTWORK_BASE_PATH.path_join(locale).path_join(set_number)
+	candidates.append(locale_dir.path_join("%s.png" % card_number))
+	if locale != "en":
+		var en_dir := ARTWORK_BASE_PATH.path_join("en").path_join(set_number)
+		candidates.append(en_dir.path_join("%s.png" % card_number))
+	# Legacy flat layout from before per-locale subfolders (pre-migration).
+	candidates.append(ARTWORK_BASE_PATH.path_join(set_number).path_join("%s.png" % card_number))
+	for p in candidates:
+		if FileAccess.file_exists(p):
+			return p
+	return ""
 
 
 static func clear_texture_cache() -> void:

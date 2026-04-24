@@ -22,6 +22,7 @@ func get_custom_base_path() -> String:
 
 var player_name: String = ""
 var locale: String = "en"
+var card_art_locale: String = "en"  # decoupled from UI locale; user downloads per-locale artwork
 var auto_draw: bool = true
 var auto_phase_advance: bool = true
 var auto_discard_strategies: bool = true
@@ -107,6 +108,7 @@ func _save() -> void:
 	var config := ConfigFile.new()
 	config.set_value("gameplay", "player_name", player_name)
 	config.set_value("gameplay", "locale", locale)
+	config.set_value("gameplay", "card_art_locale", card_art_locale)
 	config.set_value("gameplay", "auto_draw", auto_draw)
 	config.set_value("gameplay", "auto_phase_advance", auto_phase_advance)
 	config.set_value("gameplay", "auto_discard_strategies", auto_discard_strategies)
@@ -140,6 +142,7 @@ func _load() -> void:
 		return
 	player_name = config.get_value("gameplay", "player_name", "")
 	locale = config.get_value("gameplay", "locale", "en")
+	card_art_locale = config.get_value("gameplay", "card_art_locale", "en")
 	auto_draw = config.get_value("gameplay", "auto_draw", true)
 	auto_phase_advance = config.get_value("gameplay", "auto_phase_advance", true)
 	auto_discard_strategies = config.get_value("gameplay", "auto_discard_strategies", true)

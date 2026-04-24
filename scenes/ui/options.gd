@@ -849,48 +849,78 @@ func _on_advanced_pressed() -> void:
 	_show_modal(popup)
 
 
+const _ART_LOCALES := ["en", "ja"]
+
+
 func _show_redownload_confirm() -> void:
 	var modal_parts := _create_modal("Re-download Card Assets")
 	var popup: PopupPanel = modal_parts[0]
 	var vbox: VBoxContainer = modal_parts[1]
 
-	var info := Label.new()
-	info.text = "This will delete all downloaded card artwork\nand re-download it from the server.\n\nCustom card art will not be affected."
-	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info.add_theme_font_size_override("font_size", 16)
-	vbox.add_child(info)
+	var prompt := Label.new()
+	prompt.text = tr("STR_OPTIONS_ART_PICK_LANGUAGE")
+	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt.add_theme_font_size_override("font_size", 16)
+	vbox.add_child(prompt)
+
+	for art_locale in _ART_LOCALES:
+		vbox.add_child(_build_locale_row(art_locale, popup))
+
+	vbox.add_child(HSeparator.new())
 
 	var btn_row := HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	btn_row.add_theme_constant_override("separation", 16)
-
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_GB_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(120, 40)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 18)
 	cancel_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		popup.hide()
-	)
+		popup.hide())
 	btn_row.add_child(cancel_btn)
+	vbox.add_child(btn_row)
 
-	var confirm_btn := Button.new()
-	confirm_btn.text = "Re-download"
-	confirm_btn.custom_minimum_size = Vector2(160, 40)
-	confirm_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	confirm_btn.add_theme_font_size_override("font_size", 18)
-	confirm_btn.pressed.connect(func():
+	_show_modal(popup)
+
+
+func _build_locale_row(art_locale: String, popup: PopupPanel) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	var lang_label := Label.new()
+	lang_label.text = tr("STR_LANG_" + art_locale.to_upper())
+	lang_label.custom_minimum_size = Vector2(100, 0)
+	lang_label.add_theme_font_size_override("font_size", 18)
+	row.add_child(lang_label)
+
+	var cached_count: int = ArtworkDownloader.get_cached_count(art_locale)
+	var status_label := Label.new()
+	if cached_count > 0:
+		status_label.text = tr("STR_OPTIONS_ART_STATUS_CACHED_FMT").replace("{N}", str(cached_count))
+	else:
+		status_label.text = tr("STR_OPTIONS_ART_STATUS_NONE")
+	status_label.custom_minimum_size = Vector2(180, 0)
+	status_label.add_theme_font_size_override("font_size", 14)
+	status_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	row.add_child(status_label)
+
+	var action_btn := Button.new()
+	action_btn.text = tr("STR_OPTIONS_ART_REDOWNLOAD") if cached_count > 0 else tr("STR_OPTIONS_ART_DOWNLOAD")
+	action_btn.custom_minimum_size = Vector2(140, 36)
+	action_btn.add_theme_font_size_override("font_size", 16)
+	action_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		ArtworkDownloader.clear_downloaded_artwork()
+		GameSettings.card_art_locale = art_locale
+		GameSettings.save()
+		ArtworkDownloader.clear_downloaded_artwork(art_locale)
 		_CardScript.clear_texture_cache()
 		popup.hide()
-		NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn")
-	)
-	btn_row.add_child(confirm_btn)
+		NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn"))
+	row.add_child(action_btn)
 
-	vbox.add_child(btn_row)
-	_show_modal(popup)
+	return row
 
 
 func _on_audio_pressed() -> void:

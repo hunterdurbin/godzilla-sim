@@ -21,6 +21,11 @@ STR_OPTIONS_ADVANCED,Advanced...,詳細...
 STR_OPTIONS_AUDIO,Audio...,オーディオ...
 STR_OPTIONS_BACK,Back,戻る
 STR_OPTIONS_LANGUAGE_FMT,Language: {LANG},言語: {LANG}
+STR_OPTIONS_ART_PICK_LANGUAGE,Choose a language to download:,ダウンロードする言語を選択:
+STR_OPTIONS_ART_STATUS_CACHED_FMT,{N} cards cached,{N}枚キャッシュ済み
+STR_OPTIONS_ART_STATUS_NONE,not downloaded,未ダウンロード
+STR_OPTIONS_ART_DOWNLOAD,Download,ダウンロード
+STR_OPTIONS_ART_REDOWNLOAD,Re-download,再ダウンロード
 STR_LANG_EN,English,English
 STR_LANG_JA,日本語,日本語
 STR_TRAIT_KAIJU,Kaiju,
