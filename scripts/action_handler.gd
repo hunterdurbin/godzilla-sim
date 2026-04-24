@@ -237,11 +237,19 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 	var next_rank: int = opponent.current_monster.get("rank", 1) + 1
 	var cur_traits: Array = opponent.current_monster.get("traits", [])
 
-	# Build valid indices (monsters that match rank + trait requirements)
+	# Build valid indices (monsters that match rank + trait requirements).
+	# Also accept monsters whose can_play_as_monster() alternate bridge is satisfied
+	# (e.g. EBP04-033/034 "play on top of Monster X" — their [Kaiser Ghidorah] trait
+	# does not overlap [Monster X] but rank-up is still permitted by the alternate cost).
 	var valid_indices: Array[int] = []
 	for i in range(opponent.monster_deck.size()):
 		var m: Dictionary = opponent.monster_deck[i]
-		if m.get("rank") == next_rank and _traits_overlap(m.get("traits", []), cur_traits):
+		if m.get("rank") != next_rank:
+			continue
+		var trait_ok := _traits_overlap(m.get("traits", []), cur_traits)
+		if not trait_ok and effect_handler:
+			trait_ok = effect_handler.can_play_as_monster(opponent.player_id, m)
+		if trait_ok:
 			valid_indices.append(i)
 
 	if valid_indices.is_empty():
@@ -577,6 +585,10 @@ func _invade(hand_index: int, state: GameState) -> void:
 		card_discarded.emit(player.player_id, card)
 		player.hand_changed.emit()
 		player.discard_changed.emit()
+
+	# Apply per-monster invasion advance bonuses (e.g. EBP04-007 Godzilla 1962: +1 on Invade 1).
+	if effect_handler:
+		advance_amount += effect_handler.get_invasion_advance_bonus(player.player_id, card.get("invasion_icon", 0))
 
 	# Advance step by step, collecting effect entries for deferred resolution.
 	# Movement fully resolves before triggered abilities activate; cards removed

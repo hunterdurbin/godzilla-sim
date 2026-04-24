@@ -2956,6 +2956,18 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"description": "<Burst II>\n<Enter> If you have a Rank 1 strategy card in play, <Destroy> one of your opponent's Rank 6 or lower battle cards."
 	},
 	{
+		"id": "EBP04-004",
+		"name": "Godzilla (2004)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 3,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.GODZILLA],
+		"threat_level": 23000,
+		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp04/ebp04_004.gd",
+		"description": "<Enter> If you have a Rank 1 strategy card in play, this gains +2 <Rage>."
+	},
+	{
 		"id": "EBP04-005",
 		"name": "Godzilla 2004",
 		"card_type": CardEnums.CardType.MONSTER,
@@ -2966,6 +2978,42 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"invasion_icon": 2,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_005.gd",
 		"description": "<Enter> If you have 1 or fewer strategy cards in your strategy zones, search your deck for 1 Rank 1 Strategy card, reveal it and place it in your strategy zones, shuffle your deck, and resolve the placed card's effect.\nEvery time you <Destroy> an opponent's battle card in the same column as this, if you have 3 or more Rank 1 strategy cards in your discard pile, <Destroy> all of your opponent's battle cards equal to or less than the Rank of the battle card you <Destroy>."
+	},
+	{
+		"id": "EBP04-006",
+		"name": "Godzilla (2004)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 4,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.GODZILLA],
+		"threat_level": 38000,
+		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp04/ebp04_006.gd",
+		"description": "<Opponent's Turn> If you have 3 or more Rank 1 strategy cards in your discard pile, none of your opponent's Rank 5 or lower battle cards can engage with this card (at the beginning of the counter phase their counter power is not added to the total)."
+	},
+	{
+		"id": "EBP04-007",
+		"name": "Godzilla (1962)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 4,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.GODZILLA],
+		"threat_level": 37000,
+		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp04/ebp04_007.gd",
+		"description": "<Burst III>\nWhen you invade with <Invade 1>, this advances 2 zones."
+	},
+	{
+		"id": "EBP04-008",
+		"name": "Godzilla (2001)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 3,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.GODZILLA],
+		"threat_level": 23000,
+		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp04/ebp04_008.gd",
+		"description": "<Burst II>\n<Awakening 8> At the beginning of your counter phase, your opponent discards until they have 3 cards in hand."
 	},
 	{
 		"id": "EBP04-009",
@@ -3274,6 +3322,18 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"description": "You can play this on top of a <Monster X> monster card in your zones.\n<Enter> If you have 3 or more colors of battle cards in your discard pile, decrease your opponent's <Rage> by 1."
 	},
 	{
+		"id": "EBP04-034",
+		"name": "Kaiser Ghidorah",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 3,
+		"colors": [CardEnums.CardColor.RED, CardEnums.CardColor.BLUE, CardEnums.CardColor.GREEN],
+		"traits": [CardEnums.CardTrait.KAISER_GHIDORAH],
+		"threat_level": 24000,
+		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp04/ebp04_034.gd",
+		"description": "You can play this on top of a <Monster X> monster card in your zones.\n<Enter> If you have 3 or more colors of battle cards in your discard pile, <Destroy> 1 of your opponent's Rank 5 or lower battle cards."
+	},
+	{
 		"id": "EBP04-035",
 		"name": "Kaiser Ghidorah",
 		"card_type": CardEnums.CardType.MONSTER,
@@ -3467,6 +3527,18 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"invasion_icon": 1,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_050.gd",
 		"description": "Any time your monster card invades and this is in Area 8, enact 1 of the following:\n・Draw 1 card and discard 1 card from your hand.\n・Discard 1 card from your hand to decrease your opponent's <Rage> by 1."
+	},
+	{
+		"id": "EBP04-051",
+		"name": "Super Mechagodzilla",
+		"card_type": CardEnums.CardType.BATTLE,
+		"rank": 6,
+		"colors": [CardEnums.CardColor.BLUE],
+		"traits": [CardEnums.CardTrait.MECHAGODZILLA, CardEnums.CardTrait.WEAPON],
+		"counter_power": 5000,
+		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp04/ebp04_051.gd",
+		"description": "<Enter> If this is in the same column as your opponent's monster card, your opponent's 30,000 or less threat monster card retreats back 1 zone."
 	},
 	{
 		"id": "EBP04-052",
@@ -3836,6 +3908,16 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"invasion_icon": 1,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_083.gd",
 		"description": "<Destroy> all of your opponent's battle cards in zones 6-8."
+	},
+	{
+		"id": "EBP04-084",
+		"name": "Atomic Beam",
+		"card_type": CardEnums.CardType.STRATEGY,
+		"rank": 1,
+		"colors": [CardEnums.CardColor.GREEN],
+		"invasion_icon": 1,
+		"effect_script": "res://scripts/effects/ebp04/ebp04_084.gd",
+		"description": "<Destroy> all of your opponent's battle cards in the same column as your monster card."
 	},
 	{
 		"id": "EBP04-085",

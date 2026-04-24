@@ -2123,6 +2123,25 @@ func get_extra_end_phase_advance(player_id: int) -> int:
 	return 0
 
 
+func get_invasion_advance_bonus(player_id: int, invasion_icon: int) -> int:
+	## Get extra invasion advance zones from the current monster's effect.
+	var player := game_state.players[player_id]
+	var effect := get_effect(player.current_monster)
+	if effect:
+		return effect.get_invasion_advance_bonus(_build_context(player_id, player.current_monster), invasion_icon)
+	return 0
+
+
+func can_play_as_monster(player_id: int, card: Dictionary) -> bool:
+	## Query a monster card's alternate play cost (e.g. EBP04-033/034 "play on top of Monster X").
+	## Used by ActionHandler._rank_up_monster to bridge non-overlapping traits when an
+	## alternate play condition is satisfied.
+	var effect := get_effect(card)
+	if effect == null:
+		return false
+	return effect.can_play_as_monster(_build_context(player_id, card))
+
+
 func is_monster_advance_blocked(player_id: int) -> bool:
 	## Check if the player's current monster cannot advance (e.g. Biollante Rose Form).
 	var player := game_state.players[player_id]

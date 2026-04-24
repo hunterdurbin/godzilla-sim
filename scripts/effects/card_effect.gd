@@ -336,6 +336,12 @@ func can_replace_invasion_cost(_ctx: EffectContext) -> bool:
 	return false
 
 
+func get_invasion_advance_bonus(_ctx: EffectContext, _invasion_icon: int) -> int:
+	## Return extra zones to advance during invasion, on top of the card's invasion_icon amount.
+	## Called on the invading monster. Used by EBP04-007 (Godzilla 1962): +1 on Invade 1.
+	return 0
+
+
 func blocks_opponent_end_phase_draw(_ctx: EffectContext) -> bool:
 	## Return true if this card prevents the opponent from drawing during end phase.
 	## Used by EBP04-028 (Gigan R2), EBP04-030 (Modified Gigan).
