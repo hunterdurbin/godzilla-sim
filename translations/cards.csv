@@ -979,8 +979,7 @@ CARD_EBP04-087_DESC,"<Destroy> up to 1 red, blue, green, and white battle cards 
 CARD_EBP04-088_NAME,Kidnapped Monsters,連れ去られた怪獣達
 CARD_EBP04-088_DESC,Return up to 2 non-green battle cards from your discard pile to your hand.,あなたの捨て札の、緑でない交戦カードを２枚まで手札に戻す。
 CARD_EBP04-089_NAME,Inherited Life,受け継がれし命
-CARD_EBP04-089_DESC,"<Base>
-Do not move this to your discard pile at the beginning of your start phase.
+CARD_EBP04-089_DESC,"Do not move this to your discard pile at the beginning of your start phase.
 <Your Turn> When you decrease your Monster card's <Rage>, put them underneath this. On the 15th card <Destroy> all of your opponent's battle cards. On the 22nd card your opponent discards their entire hand. On the 30th card you win the game.","あなたのスタートフェイズ中、これは捨て札にならない。
 <あなたのターン中>あなたの怪獣カードの<怒り>が減る際、それをこれの下に置く。それが15枚目なら相手の交戦カードをすべて<破壊>し、22枚目なら相手は自分の手札をすべて捨て、30枚目ならあなたはこのゲームに勝利する。"
 CARD_EBP04-T01_NAME,Godzilla Earth,ゴジラ・アース

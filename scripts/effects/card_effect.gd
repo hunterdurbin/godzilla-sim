@@ -549,6 +549,14 @@ func is_base_strategy() -> bool:
 	return false
 
 
+func prevents_self_start_phase_discard(_ctx: EffectContext) -> bool:
+	## Return true to exempt this strategy from the Start Phase discard rule (7.2.3)
+	## without making it a <Base> card. Unlike Base, such cards are NOT destroyed by
+	## invasion to zones 6-8 (12.9.2). Use for cards with custom anti-discard rule
+	## text rather than the <Base> keyword.
+	return false
+
+
 # --- Zone utilities ---
 
 func find_zone_of_card(ctx: EffectContext) -> int:

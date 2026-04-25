@@ -10,7 +10,9 @@ extends CardEffect
 ## Tested: No
 ## Known issues: None
 ## Edge cases: None
-## Rules: None
+## Rules: Self-anti-discard rule text — NOT the <Base> keyword (12.9).
+##   Card stays in play across start phases but is not subject to Base-specific
+##   interactions (e.g., not destroyed by invasion to zones 6-8 per 12.9.2).
 ## Interactions: None
 ## Implementation notes: None
 
@@ -19,7 +21,7 @@ func get_bot_tags() -> Array[String]:
 	return ["win_condition"]
 
 
-func is_base_strategy() -> bool:
+func prevents_self_start_phase_discard(_ctx: EffectContext) -> bool:
 	return true
 
 

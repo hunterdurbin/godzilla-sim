@@ -328,7 +328,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp04/ebp04_086.gd": ["get_phase_start_filter","on_phase_start","is_base_strategy"],
 	"res://scripts/effects/ebp04/ebp04_087.gd": ["on_enter"],
 	"res://scripts/effects/ebp04/ebp04_088.gd": ["on_enter"],
-	"res://scripts/effects/ebp04/ebp04_089.gd": ["on_rage_changed","is_base_strategy"],
+	"res://scripts/effects/ebp04/ebp04_089.gd": ["on_rage_changed","prevents_self_start_phase_discard"],
 	"res://scripts/effects/ebp04/ebp04_T01.gd": ["on_destroy","on_zone_changed"],
 	"res://scripts/effects/efc01/efc01_001.gd": ["get_counter_power_modifier","get_burst_rank"],
 	"res://scripts/effects/efc01/efc01_002.gd": ["on_enter"],

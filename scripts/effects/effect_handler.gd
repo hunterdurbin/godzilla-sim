@@ -2294,6 +2294,15 @@ func is_base_strategy(card_data: Dictionary) -> bool:
 	return false
 
 
+func prevents_self_start_phase_discard(player_id: int, card_data: Dictionary) -> bool:
+	## Check if a strategy card has custom anti-discard text exempting it from the
+	## Start Phase discard rule (7.2.3) without being a <Base> card.
+	var effect := get_effect(card_data)
+	if effect:
+		return effect.prevents_self_start_phase_discard(_build_context(player_id, card_data))
+	return false
+
+
 func can_card_be_played(player_id: int, card_data: Dictionary) -> bool:
 	## Check if a card's play restriction allows it to be played.
 	## Returns true if the card has no restriction or the restriction is satisfied.

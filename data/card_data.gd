@@ -3968,9 +3968,8 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"rank": 1,
 		"colors": [CardEnums.CardColor.WHITE],
 		"invasion_icon": 2,
-		"is_base": true,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_089.gd",
-		"description": "<Base>\nDo not move this to your discard pile at the beginning of your start phase.\n<Your Turn> When you decrease your Monster card's <Rage>, put them underneath this. On the 15th card <Destroy> all of your opponent's battle cards. On the 22nd card your opponent discards their entire hand. On the 30th card you win the game."
+		"description": "Do not move this to your discard pile at the beginning of your start phase.\n<Your Turn> When you decrease your Monster card's <Rage>, put them underneath this. On the 15th card <Destroy> all of your opponent's battle cards. On the 22nd card your opponent discards their entire hand. On the 30th card you win the game."
 	},
 	{
 		"id": "EBP04-T01",

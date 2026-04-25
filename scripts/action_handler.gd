@@ -58,6 +58,9 @@ func execute_start_phase_discard(state: GameState) -> void:
 				# Base strategies are exempt from start phase discard (12.9.2 / 7.2.3)
 				if effect_handler and effect_handler.is_base_strategy(player.strategy_zones[i]):
 					continue
+				# Cards with custom anti-discard rule text (e.g. EBP04-089) are also exempt
+				if effect_handler and effect_handler.prevents_self_start_phase_discard(player.player_id, player.strategy_zones[i]):
+					continue
 				indices_to_discard.append(i)
 
 	if not indices_to_discard.is_empty():
