@@ -23,7 +23,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, target_player_id: int) -> int:
 	if ctx.is_owner(target_player_id):
 		return 0
-	if ctx.game_state.current_player_id != target_player_id:
+	if not ctx.is_turn(target_player_id):
 		return 0
 	var has_non_green_battle: bool = ctx.owner.has_zone_matching(
 		func(c: Dictionary) -> bool:

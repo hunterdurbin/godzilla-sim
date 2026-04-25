@@ -52,6 +52,10 @@ func is_opponent_turn() -> bool:
 	return game_state.current_player_id == opponent.player_id
 
 
+func is_turn(p_player_id: int) -> bool:
+	return game_state.current_player_id == p_player_id
+
+
 # --- Awakening (rule-text shorthand for owner.monster_zone >= threshold) ---
 
 func is_awakening(threshold: int) -> bool:

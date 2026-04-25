@@ -26,7 +26,7 @@ func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, targ
 	# Only affects the opponent's strategies, only on the opponent's turn
 	if ctx.is_owner(target_player_id):
 		return 0
-	if ctx.game_state.current_player_id != target_player_id:
+	if not ctx.is_turn(target_player_id):
 		return 0
 	return 3
 
