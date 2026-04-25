@@ -56,6 +56,8 @@ func _get_selected_mode() -> String:
 func _on_mode_selected(_index: int) -> void:
 	if not _is_hosting and not _is_joining:
 		_validate_current_deck()
+		_update_action_buttons()
+		_update_deck_status()
 		_fetch_rooms()
 
 
@@ -250,12 +252,16 @@ func _on_version_mismatch(local_version: String, remote_version: String) -> void
 	mode_dropdown.disabled = false
 
 
-func _on_deck_selected(deck_name: String) -> void:
+func _on_deck_selected(_deck_name: String) -> void:
 	if _is_hosting or _is_joining:
 		return
 	_validate_current_deck()
 	_update_action_buttons()
-	if deck_name.is_empty():
+	_update_deck_status()
+
+
+func _update_deck_status() -> void:
+	if deck_select.current_selection.is_empty():
 		status_label.text = tr("STR_PUBLIC_SELECT_DECK")
 	elif _deck_valid:
 		status_label.text = tr("STR_PUBLIC_DECK_OK")
