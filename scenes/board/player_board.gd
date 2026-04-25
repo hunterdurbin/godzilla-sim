@@ -11,6 +11,7 @@ signal discard_clicked(player_id: int)
 signal monster_deck_clicked(player_id: int)
 signal zone_slot_clicked(zone_number: int, player_id: int)
 signal zone_slot_right_clicked(zone_number: int, player_id: int)
+signal strategy_slot_clicked(strategy_index: int, player_id: int)
 signal strategy_slot_right_clicked(strategy_index: int, player_id: int)
 signal card_preview_requested(data: Dictionary)
 signal card_preview_cleared()
@@ -236,6 +237,7 @@ func _setup_references() -> void:
 			slot.slot_type = "strategy_zone"
 			slot.player_id = player_id
 			slot.landscape = true
+			slot.slot_clicked.connect(_on_strategy_slot_clicked.bind(i - 1))
 			slot.slot_right_clicked.connect(_on_strategy_slot_right_clicked.bind(i - 1))
 			slot.slot_hover_preview.connect(_on_slot_hover_preview)
 			slot.slot_hover_preview_cleared.connect(_on_slot_hover_cleared)
@@ -850,6 +852,10 @@ func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
 
 func _on_zone_slot_right_clicked(zone_num: int, pid: int) -> void:
 	zone_slot_right_clicked.emit(zone_num, pid)
+
+
+func _on_strategy_slot_clicked(_zone_num: int, _pid: int, strategy_idx: int) -> void:
+	strategy_slot_clicked.emit(strategy_idx, player_id)
 
 
 func _on_strategy_slot_right_clicked(_zone_num: int, _pid: int, strategy_idx: int) -> void:

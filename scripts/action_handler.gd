@@ -86,11 +86,16 @@ func execute_start_phase_reset(state: GameState) -> void:
 	var player := state.get_current_player()
 
 	# Reset rage to 0, allowing effects to intercept (e.g. EBP04-010)
+	var old_rage: int = player.rage
 	var new_rage: int = 0
 	if effect_handler:
 		new_rage = await effect_handler.apply_rage_reset(player.player_id)
 	player.rage = new_rage
 	player.rage_changed.emit(new_rage)
+	# Fire rage_changed trigger so cards that watch for rage decrease (EBP04-089)
+	# pick up the start phase reset.
+	if effect_handler and new_rage != old_rage:
+		await effect_handler.trigger_rage_changed(player.player_id, old_rage, new_rage)
 
 	# Reset per-turn flags
 	player.has_invaded_this_turn = false

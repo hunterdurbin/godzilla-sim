@@ -325,6 +325,7 @@ STR_GB_SELECT_ZONE,Select a ZONE to place the battle card:,交戦カードを置
 STR_GB_NO_DISCARD,No cards in discard pile.,捨て札にカードがありません。
 STR_GB_NO_MONSTER_DECK,No cards remaining in monster deck.,怪獣デッキにカードが残っていません。
 STR_GB_ZONE_HEADER_FMT,Zone {N} ({C} cards),エリア {N} ({C}枚)
+STR_GB_STRATEGY_HEADER_FMT,Strategy {N} ({C} cards),戦略 {N} ({C}枚)
 STR_GB_TITLE_COUNT_FMT,{TITLE} ({C} cards),{TITLE} ({C}枚)
 STR_GB_WINS_FMT,{NAME} Wins!,{NAME} の勝利!
 STR_GB_SELECT_DISCARD_FMT,Select {N} cards to discard:,捨てるカードを {N} 枚選択:

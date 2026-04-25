@@ -686,6 +686,8 @@ func _ready() -> void:
 	# Connect zone stack view
 	player1_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
 	player2_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
+	player1_board.strategy_slot_clicked.connect(_on_strategy_slot_clicked)
+	player2_board.strategy_slot_clicked.connect(_on_strategy_slot_clicked)
 	zone_stack_view_close.pressed.connect(_hide_zone_stack_view)
 	zone_stack_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_zone_stack_view))
 
@@ -6313,6 +6315,28 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 	if card_data.is_empty():
 		return
 	_show_card_zoom(card_data)
+
+
+func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
+	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting:
+		return
+	var player := _get_player_state(pid)
+	if strategy_idx < 0 or strategy_idx >= player.strategy_zones.size():
+		return
+	var card_data: Dictionary = player.strategy_zones[strategy_idx]
+	if card_data.is_empty():
+		return
+	var stack: Array = []
+	if strategy_idx < player.strategy_zone_stacks.size():
+		stack = player.strategy_zone_stacks[strategy_idx]
+	_zone_stack_view_cards.clear()
+	_zone_stack_view_cards.append(card_data)
+	for c in stack:
+		_zone_stack_view_cards.append(c)
+	var total: int = _zone_stack_view_cards.size()
+	zone_stack_view_title.text = tr("STR_GB_STRATEGY_HEADER_FMT").replace("{N}", str(strategy_idx + 1)).replace("{C}", str(total))
+	zone_stack_view_overlay.visible = true
+	_refresh_zone_stack_view_grid()
 
 
 func _on_card_long_press_zoom(card: Control) -> void:
