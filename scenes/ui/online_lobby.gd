@@ -43,11 +43,11 @@ func _on_host_pressed() -> void:
 	host_button.disabled = true
 	join_button.disabled = true
 	code_edit.editable = false
-	status_label.text = "Connecting to relay server..."
+	status_label.text = tr("STR_ONLINE_CONNECTING_RELAY")
 
 	var err := await NetworkManager.host_online()
 	if err != OK:
-		status_label.text = "Failed to connect to relay server (error %d)" % err
+		status_label.text = tr("STR_ONLINE_RELAY_FAILED_FMT") % err
 		host_button.disabled = false
 		join_button.disabled = false
 		code_edit.editable = true
@@ -60,44 +60,44 @@ func _on_host_pressed() -> void:
 	if not deck_select.current_selection.is_empty():
 		_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_select.current_selection)
 
-	status_label.text = "Share this game code with your opponent:"
+	status_label.text = tr("STR_ONLINE_SHARE_CODE")
 
 
 func _on_join_pressed() -> void:
 	SfxManager.play("ui_click")
 	var code := code_edit.text.strip_edges()
 	if code.is_empty():
-		status_label.text = "Enter the host's game code"
+		status_label.text = tr("STR_ONLINE_ENTER_CODE")
 		return
 
 	host_button.disabled = true
 	join_button.disabled = true
 	code_edit.editable = false
-	status_label.text = "Connecting to relay server..."
+	status_label.text = tr("STR_ONLINE_CONNECTING_RELAY")
 
 	var err := await NetworkManager.join_online(code)
 	if err != OK:
-		status_label.text = "Failed to connect (error %d)" % err
+		status_label.text = tr("STR_ONLINE_CONNECT_FAILED_FMT") % err
 		host_button.disabled = false
 		join_button.disabled = false
 		code_edit.editable = true
 		return
 
-	status_label.text = "Connecting to host..."
+	status_label.text = tr("STR_ONLINE_CONNECTING_HOST")
 
 
 func _on_copy_pressed() -> void:
 	SfxManager.play("ui_click")
 	DisplayServer.clipboard_set(NetworkManager.get_game_code())
-	copy_button.text = "Copied!"
+	copy_button.text = tr("STR_COMMON_COPIED")
 	await get_tree().create_timer(1.5).timeout
-	copy_button.text = "Copy"
+	copy_button.text = tr("STR_COMMON_COPY")
 
 
 func _on_player_connected(_peer_id: int) -> void:
 	print("[Lobby] _on_player_connected peer=%d is_host=%s" % [_peer_id, NetworkManager.is_host()])
 	if NetworkManager.is_host():
-		status_label.text = "Opponent connected! Select a deck and press Start."
+		status_label.text = tr("STR_LAN_OPPONENT_CONNECTED_HOST")
 		_update_start_button()
 	else:
 		deck_select.set_header(tr("STR_DS_SELECT_YOUR_DECK"))
@@ -105,16 +105,16 @@ func _on_player_connected(_peer_id: int) -> void:
 		if not deck_select.current_selection.is_empty():
 			_on_deck_selected(deck_select.current_selection)
 		else:
-			status_label.text = "Connected! Select a deck."
+			status_label.text = tr("STR_LAN_CONNECTED_SELECT_DECK")
 
 
 func _on_player_disconnected(_peer_id: int) -> void:
 	if _version_mismatch_shown:
 		return
 	if not NetworkManager.version_verified:
-		status_label.text = "Opponent has a different version (you: v%s)." % NetworkManager.GAME_VERSION
+		status_label.text = tr("STR_LAN_OPPONENT_DIFFERENT_VERSION_FMT") % NetworkManager.GAME_VERSION
 	else:
-		status_label.text = "Opponent disconnected."
+		status_label.text = tr("STR_LAN_OPPONENT_DISCONNECTED")
 	host_button.disabled = false
 	join_button.disabled = false
 	code_edit.editable = true
@@ -124,7 +124,7 @@ func _on_player_disconnected(_peer_id: int) -> void:
 
 
 func _on_connection_failed() -> void:
-	status_label.text = "Connection failed. Check the code and try again."
+	status_label.text = tr("STR_ONLINE_CONNECTION_FAILED_RETRY")
 	host_button.disabled = false
 	join_button.disabled = false
 	code_edit.editable = true
@@ -132,7 +132,7 @@ func _on_connection_failed() -> void:
 
 func _on_version_mismatch(local_version: String, remote_version: String) -> void:
 	_version_mismatch_shown = true
-	status_label.text = "Version mismatch! You: v%s, Opponent: v%s" % [local_version, remote_version]
+	status_label.text = tr("STR_LAN_VERSION_MISMATCH_FMT") % [local_version, remote_version]
 	host_button.disabled = false
 	join_button.disabled = false
 	code_edit.editable = true
@@ -160,7 +160,7 @@ func _on_deck_selected(deck_name: String) -> void:
 		})
 		print("[Lobby] Client sending deck RPC to host")
 		_rpc_send_deck_data.rpc_id(NetworkManager.host_peer_id, payload)
-		status_label.text = "Deck \"%s\" sent to host. Waiting for host to start..." % deck_name
+		status_label.text = tr("STR_LAN_DECK_SENT_FMT") % deck_name
 
 
 func _on_start_pressed() -> void:
@@ -191,7 +191,7 @@ func _update_start_button() -> void:
 	start_button.visible = can_start
 	start_button.disabled = not can_start
 	if can_start:
-		status_label.text = "Opponent deck received. Ready to start!"
+		status_label.text = tr("STR_LAN_OPPONENT_DECK_READY")
 
 
 ## Client sends their deck data to host

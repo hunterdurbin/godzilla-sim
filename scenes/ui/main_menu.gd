@@ -115,7 +115,7 @@ func _show_difficulty_popup() -> void:
 	vbox.add_theme_constant_override("separation", 16)
 
 	var title := Label.new()
-	title.text = "Bot Difficulty"
+	title.text = tr("STR_MENU_BOT_DIFFICULTY")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
@@ -127,12 +127,12 @@ func _show_difficulty_popup() -> void:
 	var seed_row := HBoxContainer.new()
 	seed_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	var seed_label := Label.new()
-	seed_label.text = "Seed:"
+	seed_label.text = tr("STR_MENU_SEED")
 	seed_label.add_theme_font_size_override("font_size", 16)
 	seed_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 	seed_row.add_child(seed_label)
 	var seed_input := LineEdit.new()
-	seed_input.placeholder_text = "random"
+	seed_input.placeholder_text = tr("STR_MENU_SEED_PLACEHOLDER")
 	seed_input.custom_minimum_size = Vector2(160, 0)
 	seed_input.add_theme_font_size_override("font_size", 16)
 	seed_row.add_child(seed_input)
@@ -142,7 +142,7 @@ func _show_difficulty_popup() -> void:
 	var speed_row := VBoxContainer.new()
 	speed_row.add_theme_constant_override("separation", 4)
 	var speed_label := Label.new()
-	speed_label.text = "Bot Speed: Automatic"
+	speed_label.text = tr("STR_MENU_BOT_SPEED_AUTO")
 	speed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	speed_label.add_theme_font_size_override("font_size", 16)
 	speed_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
@@ -155,9 +155,9 @@ func _show_difficulty_popup() -> void:
 	speed_slider.custom_minimum_size = Vector2(280, 0)
 	speed_slider.value_changed.connect(func(val: float):
 		if val == 0:
-			speed_label.text = "Bot Speed: Automatic"
+			speed_label.text = tr("STR_MENU_BOT_SPEED_AUTO")
 		else:
-			speed_label.text = "Bot Speed: %.1fs" % (val * 0.1)
+			speed_label.text = tr("STR_MENU_BOT_SPEED_FMT") % (val * 0.1)
 	)
 	speed_row.add_child(speed_slider)
 	vbox.add_child(speed_row)
@@ -166,12 +166,12 @@ func _show_difficulty_popup() -> void:
 	var playstyle_row := VBoxContainer.new()
 	playstyle_row.add_theme_constant_override("separation", 4)
 	var playstyle_label := Label.new()
-	playstyle_label.text = "Playstyle: Automatic"
+	playstyle_label.text = tr("STR_MENU_PLAYSTYLE_AUTO")
 	playstyle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	playstyle_label.add_theme_font_size_override("font_size", 16)
 	playstyle_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 	playstyle_row.add_child(playstyle_label)
-	var playstyle_names := ["Automatic", "Invasion", "Counter", "Balanced"]
+	var playstyle_keys := ["STR_MENU_PLAYSTYLE_AUTOMATIC", "STR_MENU_PLAYSTYLE_INVASION", "STR_MENU_PLAYSTYLE_COUNTER", "STR_MENU_PLAYSTYLE_BALANCED"]
 	var playstyle_slider := HSlider.new()
 	playstyle_slider.min_value = 0
 	playstyle_slider.max_value = 3
@@ -179,7 +179,7 @@ func _show_difficulty_popup() -> void:
 	playstyle_slider.value = 0
 	playstyle_slider.custom_minimum_size = Vector2(280, 0)
 	playstyle_slider.value_changed.connect(func(val: float):
-		playstyle_label.text = "Playstyle: %s" % playstyle_names[int(val)]
+		playstyle_label.text = tr("STR_MENU_PLAYSTYLE_FMT") % tr(playstyle_keys[int(val)])
 	)
 	playstyle_row.add_child(playstyle_slider)
 	vbox.add_child(playstyle_row)
@@ -190,9 +190,9 @@ func _show_difficulty_popup() -> void:
 	btn_box.add_theme_constant_override("separation", 8)
 
 	var difficulties: Array = [
-		["Easy", BotConfig.Difficulty.EASY, Color(0.3, 0.8, 0.3)],
-		["Normal", BotConfig.Difficulty.NORMAL, Color(0.9, 0.7, 0.1)],
-		["Hard", BotConfig.Difficulty.HARD, Color(0.9, 0.3, 0.1)],
+		[tr("STR_MENU_DIFFICULTY_EASY"), BotConfig.Difficulty.EASY, Color(0.3, 0.8, 0.3)],
+		[tr("STR_MENU_DIFFICULTY_NORMAL"), BotConfig.Difficulty.NORMAL, Color(0.9, 0.7, 0.1)],
+		[tr("STR_MENU_DIFFICULTY_HARD"), BotConfig.Difficulty.HARD, Color(0.9, 0.3, 0.1)],
 	]
 
 	for entry in difficulties:
@@ -225,7 +225,7 @@ func _show_difficulty_popup() -> void:
 		btn_box.add_child(btn)
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(200, 40)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 18)
@@ -361,14 +361,14 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	vbox.add_theme_constant_override("separation", 16)
 
 	var title := Label.new()
-	title.text = "Update Available"
+	title.text = tr("STR_MENU_UPDATE_AVAILABLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
 	vbox.add_child(title)
 
 	var info := Label.new()
-	info.text = "Current version: v%s\nNew version: %s" % [current, new_version]
+	info.text = tr("STR_MENU_UPDATE_VERSIONS_FMT") % [current, new_version]
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(info)
@@ -379,7 +379,7 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	btn_box.add_theme_constant_override("separation", 8)
 
 	var update_btn := Button.new()
-	update_btn.text = "Update Now"
+	update_btn.text = tr("STR_MENU_UPDATE_NOW")
 	update_btn.custom_minimum_size = Vector2(200, 45)
 	update_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	update_btn.add_theme_font_size_override("font_size", 20)
@@ -391,7 +391,7 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	btn_box.add_child(update_btn)
 
 	var skip_btn := Button.new()
-	skip_btn.text = "Skip This Version"
+	skip_btn.text = tr("STR_MENU_UPDATE_SKIP")
 	skip_btn.custom_minimum_size = Vector2(200, 40)
 	skip_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	skip_btn.add_theme_font_size_override("font_size", 18)
@@ -405,7 +405,7 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	btn_box.add_child(skip_btn)
 
 	var later_btn := Button.new()
-	later_btn.text = "Later"
+	later_btn.text = tr("STR_MENU_UPDATE_LATER")
 	later_btn.custom_minimum_size = Vector2(200, 40)
 	later_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	later_btn.add_theme_font_size_override("font_size", 18)
@@ -452,14 +452,14 @@ func _show_reconnect_dialog() -> void:
 	vbox.add_theme_constant_override("separation", 16)
 
 	var title := Label.new()
-	title.text = "Game In Progress"
+	title.text = tr("STR_MENU_RECONNECT_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
 	vbox.add_child(title)
 
 	var info := Label.new()
-	info.text = "You were disconnected from a game.\nWould you like to reconnect?"
+	info.text = tr("STR_MENU_RECONNECT_PROMPT")
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(info)
@@ -477,15 +477,15 @@ func _show_reconnect_dialog() -> void:
 	vbox.add_child(status_label)
 
 	var reconnect_btn := Button.new()
-	reconnect_btn.text = "Reconnect"
+	reconnect_btn.text = tr("STR_MENU_RECONNECT")
 	reconnect_btn.custom_minimum_size = Vector2(200, 45)
 	reconnect_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	reconnect_btn.add_theme_font_size_override("font_size", 20)
 	reconnect_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
 		reconnect_btn.disabled = true
-		reconnect_btn.text = "Connecting..."
-		status_label.text = "Connecting to relay server..."
+		reconnect_btn.text = tr("STR_MENU_CONNECTING")
+		status_label.text = tr("STR_MENU_RECONNECT_CONNECTING")
 		status_label.visible = true
 		print("[Reconnect] Attempting join_online('%s')" % saved_code)
 		# Restore game mode/public state before joining
@@ -498,7 +498,7 @@ func _show_reconnect_dialog() -> void:
 			# Version exchange happens during join_online. Poll briefly
 			# in case the host's response arrives on the next frame.
 			if not NetworkManager.version_verified:
-				status_label.text = "Connected! Verifying game version..."
+				status_label.text = tr("STR_MENU_RECONNECT_VERIFYING")
 				var elapsed := 0.0
 				while elapsed < NetworkManager.VERSION_TIMEOUT and not NetworkManager.version_verified:
 					await get_tree().create_timer(0.1).timeout
@@ -508,22 +508,22 @@ func _show_reconnect_dialog() -> void:
 				popup.hide()
 				NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
 			else:
-				status_label.text = "Version mismatch. Cannot reconnect."
-				reconnect_btn.text = "Reconnect"
+				status_label.text = tr("STR_MENU_RECONNECT_VERSION_MISMATCH")
+				reconnect_btn.text = tr("STR_MENU_RECONNECT")
 				reconnect_btn.disabled = false
 				GameSettings.clear_reconnect_session()
 				NetworkManager.disconnect_game()
 		else:
-			var err_msg := "timeout" if err == ERR_TIMEOUT else "error %d" % err
-			status_label.text = "Failed to connect (%s).\nRoom may no longer exist." % err_msg
+			var err_msg := tr("STR_MENU_ERR_TIMEOUT") if err == ERR_TIMEOUT else tr("STR_MENU_ERR_CODE_FMT") % err
+			status_label.text = tr("STR_MENU_RECONNECT_FAILED_FMT") % err_msg
 			print("[Reconnect] Connection failed: %s" % err_msg)
-			reconnect_btn.text = "Retry"
+			reconnect_btn.text = tr("STR_MENU_RETRY")
 			reconnect_btn.disabled = false
 	)
 	btn_box.add_child(reconnect_btn)
 
 	var dismiss_btn := Button.new()
-	dismiss_btn.text = "Dismiss"
+	dismiss_btn.text = tr("STR_MENU_DISMISS")
 	dismiss_btn.custom_minimum_size = Vector2(200, 40)
 	dismiss_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	dismiss_btn.add_theme_font_size_override("font_size", 18)

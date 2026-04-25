@@ -432,14 +432,16 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 
 func _build_dialogs() -> void:
 	unsaved_dialog = ConfirmationDialog.new()
-	unsaved_dialog.title = "Unsaved Changes"
-	unsaved_dialog.dialog_text = "You have unsaved changes. Discard and continue?"
-	unsaved_dialog.ok_button_text = "Discard"
+	unsaved_dialog.title = tr("STR_DB_UNSAVED_TITLE")
+	unsaved_dialog.dialog_text = tr("STR_DB_UNSAVED_TEXT")
+	unsaved_dialog.ok_button_text = tr("STR_DB_UNSAVED_DISCARD")
+	unsaved_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	add_child(unsaved_dialog)
 
 	delete_dialog = ConfirmationDialog.new()
-	delete_dialog.title = "Delete Deck"
-	delete_dialog.ok_button_text = "Delete"
+	delete_dialog.title = tr("STR_DB_DELETE_TITLE")
+	delete_dialog.ok_button_text = tr("STR_DB_DELETE_OK")
+	delete_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	add_child(delete_dialog)
 
 
@@ -1338,7 +1340,7 @@ func _on_delete_pressed() -> void:
 	if selected.is_empty():
 		return
 	var deck_name: String = deck_list.get_item_text(selected[0])
-	delete_dialog.dialog_text = "Delete \"%s\"?" % deck_name
+	delete_dialog.dialog_text = tr("STR_DB_DELETE_PROMPT") % deck_name
 	delete_dialog.popup_centered()
 
 

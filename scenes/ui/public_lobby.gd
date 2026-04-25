@@ -40,7 +40,7 @@ func _ready() -> void:
 
 	# Require valid deck before Create/Join
 	create_button.disabled = true
-	status_label.text = "Select a deck, then create or join a lobby."
+	status_label.text = tr("STR_PUBLIC_SELECT_DECK")
 
 	# Check if a deck is already selected
 	if not deck_select.current_selection.is_empty():
@@ -68,7 +68,7 @@ func _validate_current_deck() -> void:
 	var data := DecklistManager.load_decklist(deck_select.current_selection)
 	if data.is_empty():
 		_deck_valid = false
-		_validation_errors = ["Could not load decklist."]
+		_validation_errors = [tr("STR_PUBLIC_DECK_LOAD_FAILED")]
 		return
 
 	_validation_errors = GameModeValidator.validate(
@@ -96,11 +96,11 @@ func _fetch_rooms() -> void:
 
 	if rooms.is_empty():
 		if _deck_valid and not _is_hosting and not _is_joining:
-			status_label.text = "No public lobbies available. Create one!"
+			status_label.text = tr("STR_PUBLIC_NO_LOBBIES")
 		return
 
 	if not _is_hosting and not _is_joining:
-		status_label.text = "%d lobby(s) found:" % rooms.size()
+		status_label.text = tr("STR_PUBLIC_LOBBIES_FOUND_FMT") % rooms.size()
 
 	for room in rooms:
 		var code: String = room.get("code", "")
@@ -121,7 +121,7 @@ func _fetch_rooms() -> void:
 		row.add_child(label)
 
 		var join_btn := Button.new()
-		join_btn.text = "Join"
+		join_btn.text = tr("STR_PUBLIC_JOIN")
 		join_btn.custom_minimum_size = Vector2(80, 36)
 		join_btn.add_theme_font_size_override("font_size", 16)
 		join_btn.disabled = not _deck_valid or _is_hosting or _is_joining
@@ -146,11 +146,11 @@ func _on_create_pressed() -> void:
 	_set_join_buttons_disabled(true)
 	deck_select.deck_dropdown.disabled = true
 	mode_dropdown.disabled = true
-	status_label.text = "Creating public lobby..."
+	status_label.text = tr("STR_PUBLIC_CREATING")
 
 	var err := await NetworkManager.host_public(_get_selected_mode())
 	if err != OK:
-		status_label.text = "Failed to create lobby (error %d)" % err
+		status_label.text = tr("STR_PUBLIC_CREATE_FAILED_FMT") % err
 		create_button.disabled = not _deck_valid
 		refresh_button.disabled = false
 		_is_hosting = false
@@ -160,13 +160,13 @@ func _on_create_pressed() -> void:
 		return
 
 	_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_select.current_selection)
-	status_label.text = "Lobby created! Waiting for opponent..."
+	status_label.text = tr("STR_PUBLIC_LOBBY_CREATED")
 
 
 func _on_join_room(code: String) -> void:
 	SfxManager.play("ui_click")
 	if not _deck_valid:
-		status_label.text = "Deck is not valid for this game mode."
+		status_label.text = tr("STR_PUBLIC_DECK_INVALID_MODE")
 		return
 	create_button.disabled = true
 	refresh_button.disabled = true
@@ -174,11 +174,11 @@ func _on_join_room(code: String) -> void:
 	_set_join_buttons_disabled(true)
 	deck_select.deck_dropdown.disabled = true
 	mode_dropdown.disabled = true
-	status_label.text = "Joining room %s..." % code
+	status_label.text = tr("STR_PUBLIC_JOINING_FMT") % code
 
 	var err := await NetworkManager.join_online(code)
 	if err != OK:
-		status_label.text = "Failed to join room (error %d)" % err
+		status_label.text = tr("STR_PUBLIC_JOIN_FAILED_FMT") % err
 		create_button.disabled = not _deck_valid
 		refresh_button.disabled = false
 		_is_joining = false
@@ -188,12 +188,12 @@ func _on_join_room(code: String) -> void:
 		_fetch_rooms()
 		return
 
-	status_label.text = "Connecting to host..."
+	status_label.text = tr("STR_ONLINE_CONNECTING_HOST")
 
 
 func _on_player_connected(_peer_id: int) -> void:
 	if NetworkManager.is_host():
-		status_label.text = "Opponent connected! Starting game..."
+		status_label.text = tr("STR_PUBLIC_OPPONENT_CONNECTED_STARTING")
 		_try_auto_start()
 	else:
 		# Client: send deck immediately
@@ -206,16 +206,16 @@ func _on_player_connected(_peer_id: int) -> void:
 			"main": data["main"],
 		})
 		_rpc_send_deck_data.rpc_id(NetworkManager.host_peer_id, payload)
-		status_label.text = "Connected! Waiting for game to start..."
+		status_label.text = tr("STR_PUBLIC_CONNECTED_WAITING")
 
 
 func _on_player_disconnected(_peer_id: int) -> void:
 	if _version_mismatch_shown:
 		return
 	if not NetworkManager.version_verified:
-		status_label.text = "Opponent has a different version (you: v%s)." % NetworkManager.GAME_VERSION
+		status_label.text = tr("STR_LAN_OPPONENT_DIFFERENT_VERSION_FMT") % NetworkManager.GAME_VERSION
 	else:
-		status_label.text = "Opponent disconnected."
+		status_label.text = tr("STR_LAN_OPPONENT_DISCONNECTED")
 	create_button.disabled = not _deck_valid
 	refresh_button.disabled = false
 	_client_deck_received = false
@@ -228,7 +228,7 @@ func _on_player_disconnected(_peer_id: int) -> void:
 
 
 func _on_connection_failed() -> void:
-	status_label.text = "Connection failed."
+	status_label.text = tr("STR_PUBLIC_CONNECTION_FAILED")
 	create_button.disabled = not _deck_valid
 	refresh_button.disabled = false
 	_is_hosting = false
@@ -240,7 +240,7 @@ func _on_connection_failed() -> void:
 
 func _on_version_mismatch(local_version: String, remote_version: String) -> void:
 	_version_mismatch_shown = true
-	status_label.text = "Version mismatch! You: v%s, Opponent: v%s" % [local_version, remote_version]
+	status_label.text = tr("STR_LAN_VERSION_MISMATCH_FMT") % [local_version, remote_version]
 	create_button.disabled = not _deck_valid
 	refresh_button.disabled = false
 	_is_hosting = false
@@ -256,11 +256,11 @@ func _on_deck_selected(deck_name: String) -> void:
 	_validate_current_deck()
 	_update_action_buttons()
 	if deck_name.is_empty():
-		status_label.text = "Select a deck, then create or join a lobby."
+		status_label.text = tr("STR_PUBLIC_SELECT_DECK")
 	elif _deck_valid:
-		status_label.text = "Deck selected. Create or join a lobby!"
+		status_label.text = tr("STR_PUBLIC_DECK_OK")
 	else:
-		status_label.text = "Deck invalid for %s: %s" % [
+		status_label.text = tr("STR_PUBLIC_DECK_INVALID_FMT") % [
 			GameModeValidator.get_mode_label(_get_selected_mode()),
 			_validation_errors[0]]
 
@@ -281,7 +281,7 @@ func _try_auto_start() -> void:
 	if not NetworkManager.is_host():
 		return
 	if NetworkManager.opponent_connected and NetworkManager.version_verified and _host_deck_ready and _client_deck_received:
-		status_label.text = "Starting game..."
+		status_label.text = tr("STR_PUBLIC_STARTING_GAME")
 		NetworkManager.start_lan_game()
 
 

@@ -23,8 +23,8 @@ CARD_ID_RE = re.compile(r'"id"\s*:\s*"([^"]+)"')
 CARD_NAME_RE = re.compile(r'"name"\s*:\s*"((?:[^"\\]|\\.)*)"')
 CARD_DESC_RE = re.compile(r'"description"\s*:\s*"((?:[^"\\]|\\.)*)"')
 
-# JP scrape header: === BP01-001 | ゴジラ(1954) === (also matches PR-005, SC01-001)
-JP_HEADER_RE = re.compile(r'^===\s+([A-Z]+\d*-\d+\+?)\s*\|\s*(.+?)\s*===\s*$')
+# JP scrape header: === BP01-001 | ゴジラ(1954) === (also matches PR-005, SC01-001, BP02-T01)
+JP_HEADER_RE = re.compile(r'^===\s+([A-Z]+\d*-(?:T\d+|\d+)\+?)\s*\|\s*(.+?)\s*===\s*$')
 
 
 def parse_card_data() -> list[dict]:

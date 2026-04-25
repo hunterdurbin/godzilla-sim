@@ -43,7 +43,7 @@ func _on_watch_replay_pressed() -> void:
 	SfxManager.play("ui_click")
 	var replays := ReplayData.list_replays()
 	if replays.is_empty():
-		_show_message("No replays found.")
+		_show_message(tr("STR_EXTRAS_NO_REPLAYS"))
 		return
 	_show_replay_list(replays)
 
@@ -52,7 +52,7 @@ func _on_load_game_pressed() -> void:
 	SfxManager.play("ui_click")
 	var saves := GameSerializer.list_saves()
 	if saves.is_empty():
-		_show_message("No saved games found.")
+		_show_message(tr("STR_EXTRAS_NO_SAVES"))
 		return
 	_show_save_list(saves)
 
@@ -61,7 +61,7 @@ func _on_load_game_online_pressed() -> void:
 	SfxManager.play("ui_click")
 	var saves := GameSerializer.list_saves()
 	if saves.is_empty():
-		_show_message("No saved games found.")
+		_show_message(tr("STR_EXTRAS_NO_SAVES"))
 		return
 	_show_save_list_for_online(saves)
 
@@ -95,14 +95,14 @@ func _show_save_list_for_online(saves: Array[Dictionary]) -> void:
 	vbox.add_theme_constant_override("separation", 12)
 
 	var title := Label.new()
-	title.text = "Load Game Online"
+	title.text = tr("STR_EXTRAS_LOAD_GAME_ONLINE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
 	vbox.add_child(title)
 
 	var subtitle := Label.new()
-	subtitle.text = "Select a save to host as a private online game"
+	subtitle.text = tr("STR_EXTRAS_SELECT_SAVE_HOST")
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	subtitle.add_theme_font_size_override("font_size", 14)
 	subtitle.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
@@ -114,7 +114,7 @@ func _show_save_list_for_online(saves: Array[Dictionary]) -> void:
 	toolbar.add_theme_constant_override("separation", 8)
 
 	var fav_filter_btn := Button.new()
-	fav_filter_btn.text = "Favorites Only"
+	fav_filter_btn.text = tr("STR_EXTRAS_FAVORITES_ONLY")
 	fav_filter_btn.toggle_mode = true
 	fav_filter_btn.custom_minimum_size = Vector2(120, 32)
 	fav_filter_btn.add_theme_font_size_override("font_size", 14)
@@ -126,7 +126,7 @@ func _show_save_list_for_online(saves: Array[Dictionary]) -> void:
 	toolbar.add_child(fav_filter_btn)
 
 	var ver_filter_btn := Button.new()
-	ver_filter_btn.text = "Current Version"
+	ver_filter_btn.text = tr("STR_EXTRAS_CURRENT_VERSION")
 	ver_filter_btn.toggle_mode = true
 	ver_filter_btn.custom_minimum_size = Vector2(130, 32)
 	ver_filter_btn.add_theme_font_size_override("font_size", 14)
@@ -158,7 +158,7 @@ func _show_save_list_for_online(saves: Array[Dictionary]) -> void:
 	vbox.add_child(scroll)
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(200, 40)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 18)
@@ -189,7 +189,7 @@ func _populate_save_list_for_online(saves: Array[Dictionary]) -> void:
 	for e in saves:
 		if e.get("is_favorite", false):
 			fav_count += 1
-	_save_count_label.text = "%d shown / %d total (%d favorited)" % [filtered.size(), saves.size(), fav_count]
+	_save_count_label.text = tr("STR_EXTRAS_LIST_COUNT_FMT") % [filtered.size(), saves.size(), fav_count]
 
 	for child in _save_list_vbox.get_children():
 		child.queue_free()
@@ -215,7 +215,7 @@ func _populate_save_list_for_online(saves: Array[Dictionary]) -> void:
 		var line1 := ""
 		if not lbl.is_empty():
 			line1 = "[%s] " % lbl
-		line1 += "%s  |  %s vs %s  |  Turn %d  |  %s" % [ts, names[0], names[1], turn, mode]
+		line1 += tr("STR_EXTRAS_SAVE_LINE_FMT") % [ts, names[0], names[1], turn, mode]
 		if not ver.is_empty() and ver != current_ver:
 			line1 += "  (v%s)" % ver
 
@@ -244,7 +244,7 @@ func _refresh_save_list_for_online(saves: Array[Dictionary]) -> void:
 func _host_online_with_save(save_path: String) -> void:
 	var data := GameSerializer.load_save_file(save_path)
 	if data.is_empty():
-		_show_message("Failed to load save file.")
+		_show_message(tr("STR_EXTRAS_LOAD_SAVE_FAILED"))
 		return
 
 	# Stage save data for the host GameBoard to pick up
@@ -278,14 +278,14 @@ func _show_online_load_lobby() -> void:
 	vb.add_theme_constant_override("separation", 16)
 
 	var title := Label.new()
-	title.text = "Host Online Game"
+	title.text = tr("STR_EXTRAS_HOST_ONLINE_GAME")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
 	vb.add_child(title)
 
 	_online_load_status = Label.new()
-	_online_load_status.text = "Connecting to relay server..."
+	_online_load_status.text = tr("STR_ONLINE_CONNECTING_RELAY")
 	_online_load_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_online_load_status.add_theme_font_size_override("font_size", 16)
 	vb.add_child(_online_load_status)
@@ -302,24 +302,24 @@ func _show_online_load_lobby() -> void:
 	code_row.add_child(_online_load_code_label)
 
 	_online_load_copy_btn = Button.new()
-	_online_load_copy_btn.text = "Copy"
+	_online_load_copy_btn.text = tr("STR_COMMON_COPY")
 	_online_load_copy_btn.custom_minimum_size = Vector2(70, 32)
 	_online_load_copy_btn.add_theme_font_size_override("font_size", 14)
 	_online_load_copy_btn.visible = false
 	_online_load_copy_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
 		DisplayServer.clipboard_set(NetworkManager.get_game_code())
-		_online_load_copy_btn.text = "Copied!"
+		_online_load_copy_btn.text = tr("STR_COMMON_COPIED")
 		get_tree().create_timer(1.5).timeout.connect(func():
 			if is_instance_valid(_online_load_copy_btn):
-				_online_load_copy_btn.text = "Copy"
+				_online_load_copy_btn.text = tr("STR_COMMON_COPY")
 		)
 	)
 	code_row.add_child(_online_load_copy_btn)
 	vb.add_child(code_row)
 
 	_online_load_start_btn = Button.new()
-	_online_load_start_btn.text = "Start Game"
+	_online_load_start_btn.text = tr("STR_LOBBY_START")
 	_online_load_start_btn.custom_minimum_size = Vector2(160, 40)
 	_online_load_start_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_online_load_start_btn.add_theme_font_size_override("font_size", 18)
@@ -333,7 +333,7 @@ func _show_online_load_lobby() -> void:
 	vb.add_child(_online_load_start_btn)
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(120, 36)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 16)
@@ -359,7 +359,7 @@ func _show_online_load_lobby() -> void:
 func _do_host_online_for_load() -> void:
 	var err := await NetworkManager.host_online()
 	if err != OK:
-		_online_load_status.text = "Failed to connect to relay server (error %d)" % err
+		_online_load_status.text = tr("STR_ONLINE_RELAY_FAILED_FMT") % err
 		GameSerializer.pending_load = {}
 		return
 
@@ -369,7 +369,7 @@ func _do_host_online_for_load() -> void:
 
 	_online_load_code_label.text = NetworkManager.get_game_code()
 	_online_load_copy_btn.visible = true
-	_online_load_status.text = "Share this code with your opponent:"
+	_online_load_status.text = tr("STR_EXTRAS_SHARE_CODE")
 
 	# Wait for opponent
 	NetworkManager.player_connected.connect(_on_online_load_player_connected)
@@ -379,21 +379,21 @@ func _do_host_online_for_load() -> void:
 
 
 func _on_online_load_player_connected(_peer_id: int) -> void:
-	_online_load_status.text = "Opponent connected! Verifying version..."
+	_online_load_status.text = tr("STR_EXTRAS_OPPONENT_CONNECTED_VERIFYING")
 
 
 func _on_online_load_player_disconnected(_peer_id: int) -> void:
-	_online_load_status.text = "Opponent disconnected. Waiting for reconnect..."
+	_online_load_status.text = tr("STR_EXTRAS_OPPONENT_DISCONNECTED_WAITING")
 	_online_load_start_btn.visible = false
 
 
 func _on_online_load_version_mismatch(local_ver: String, remote_ver: String) -> void:
-	_online_load_status.text = "Version mismatch! You: v%s, Opponent: v%s" % [local_ver, remote_ver]
+	_online_load_status.text = tr("STR_LAN_VERSION_MISMATCH_FMT") % [local_ver, remote_ver]
 	_online_load_start_btn.visible = false
 
 
 func _on_online_load_version_ok() -> void:
-	_online_load_status.text = "Opponent connected and verified! Press Start."
+	_online_load_status.text = tr("STR_EXTRAS_OPPONENT_VERIFIED")
 	_online_load_start_btn.visible = true
 
 
@@ -437,7 +437,7 @@ func _show_message(text: String) -> void:
 	vbox.add_child(label)
 
 	var ok_btn := Button.new()
-	ok_btn.text = "OK"
+	ok_btn.text = tr("STR_COMMON_OK")
 	ok_btn.custom_minimum_size = Vector2(120, 40)
 	ok_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	ok_btn.add_theme_font_size_override("font_size", 18)
@@ -479,7 +479,7 @@ func _show_replay_list(replays: Array[Dictionary]) -> void:
 	vbox.add_theme_constant_override("separation", 12)
 
 	var title := Label.new()
-	title.text = "Select Replay"
+	title.text = tr("STR_EXTRAS_SELECT_REPLAY")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
@@ -491,7 +491,7 @@ func _show_replay_list(replays: Array[Dictionary]) -> void:
 	toolbar.add_theme_constant_override("separation", 8)
 
 	var open_folder_btn := Button.new()
-	open_folder_btn.text = "Open Folder"
+	open_folder_btn.text = tr("STR_EXTRAS_OPEN_FOLDER")
 	open_folder_btn.custom_minimum_size = Vector2(110, 32)
 	open_folder_btn.add_theme_font_size_override("font_size", 14)
 	open_folder_btn.pressed.connect(func():
@@ -501,13 +501,13 @@ func _show_replay_list(replays: Array[Dictionary]) -> void:
 	toolbar.add_child(open_folder_btn)
 
 	var delete_all_btn := Button.new()
-	delete_all_btn.text = "Delete All Recent"
+	delete_all_btn.text = tr("STR_EXTRAS_DELETE_ALL_RECENT")
 	delete_all_btn.custom_minimum_size = Vector2(140, 32)
 	delete_all_btn.add_theme_font_size_override("font_size", 14)
 	delete_all_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
 	delete_all_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		_show_confirm("Delete all non-favorited replays?", func():
+		_show_confirm(tr("STR_EXTRAS_CONFIRM_DELETE_ALL_REPLAYS"), func():
 			ReplayData.delete_all_recent()
 			_refresh_replay_list()
 		)
@@ -515,7 +515,7 @@ func _show_replay_list(replays: Array[Dictionary]) -> void:
 	toolbar.add_child(delete_all_btn)
 
 	var fav_filter_btn := Button.new()
-	fav_filter_btn.text = "Favorites Only"
+	fav_filter_btn.text = tr("STR_EXTRAS_FAVORITES_ONLY")
 	fav_filter_btn.toggle_mode = true
 	fav_filter_btn.custom_minimum_size = Vector2(120, 32)
 	fav_filter_btn.add_theme_font_size_override("font_size", 14)
@@ -527,7 +527,7 @@ func _show_replay_list(replays: Array[Dictionary]) -> void:
 	toolbar.add_child(fav_filter_btn)
 
 	var ver_filter_btn := Button.new()
-	ver_filter_btn.text = "Current Version"
+	ver_filter_btn.text = tr("STR_EXTRAS_CURRENT_VERSION")
 	ver_filter_btn.toggle_mode = true
 	ver_filter_btn.custom_minimum_size = Vector2(130, 32)
 	ver_filter_btn.add_theme_font_size_override("font_size", 14)
@@ -560,7 +560,7 @@ func _show_replay_list(replays: Array[Dictionary]) -> void:
 	vbox.add_child(scroll)
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(200, 40)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 18)
@@ -595,7 +595,7 @@ func _populate_replay_list(replays: Array[Dictionary]) -> void:
 	for e in replays:
 		if e.get("is_favorite", false):
 			fav_count += 1
-	_replay_count_label.text = "%d shown / %d total (%d favorited)" % [filtered.size(), replays.size(), fav_count]
+	_replay_count_label.text = tr("STR_EXTRAS_LIST_COUNT_FMT") % [filtered.size(), replays.size(), fav_count]
 
 	# Clear existing rows
 	for child in _replay_list_vbox.get_children():
@@ -646,7 +646,7 @@ func _build_replay_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
 	var line1 := ""
 	if not lbl.is_empty():
 		line1 = "[%s] " % lbl
-	line1 += "%s  |  %s vs %s  |  %d turns  |  Winner: %s" % [ts, names[0], names[1], turns, winner_name]
+	line1 += tr("STR_EXTRAS_REPLAY_LINE_FMT") % [ts, names[0], names[1], turns, winner_name]
 	if not ver.is_empty() and ver != current_ver:
 		line1 += "  (v%s)" % ver
 
@@ -664,7 +664,7 @@ func _build_replay_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
 
 	# Label button
 	var label_btn := Button.new()
-	label_btn.text = "Label"
+	label_btn.text = tr("STR_EXTRAS_LABEL")
 	label_btn.custom_minimum_size = Vector2(50, 30)
 	label_btn.add_theme_font_size_override("font_size", 12)
 	label_btn.pressed.connect(func():
@@ -681,7 +681,7 @@ func _build_replay_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
 	del_btn.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	del_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		_show_confirm("Delete this replay?", func():
+		_show_confirm(tr("STR_EXTRAS_CONFIRM_DELETE_REPLAY"), func():
 			ReplayData.delete_replay(path)
 			_refresh_replay_list()
 		)
@@ -696,7 +696,7 @@ func _refresh_replay_list() -> void:
 	var replays := ReplayData.list_replays()
 	if replays.is_empty() and _replay_popup:
 		_replay_popup.hide()
-		_show_message("No replays found.")
+		_show_message(tr("STR_EXTRAS_NO_REPLAYS"))
 		return
 	_populate_replay_list(replays)
 
@@ -725,14 +725,14 @@ func _show_label_dialog(path: String, current_label: String) -> void:
 	vb.add_theme_constant_override("separation", 12)
 
 	var lbl := Label.new()
-	lbl.text = "Set Label"
+	lbl.text = tr("STR_EXTRAS_SET_LABEL")
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.add_theme_font_size_override("font_size", 20)
 	vb.add_child(lbl)
 
 	var line_edit := LineEdit.new()
 	line_edit.text = current_label
-	line_edit.placeholder_text = "Enter label..."
+	line_edit.placeholder_text = tr("STR_EXTRAS_LABEL_PLACEHOLDER")
 	line_edit.custom_minimum_size = Vector2(300, 36)
 	line_edit.add_theme_font_size_override("font_size", 16)
 	vb.add_child(line_edit)
@@ -742,14 +742,14 @@ func _show_label_dialog(path: String, current_label: String) -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(100, 36)
 	cancel_btn.add_theme_font_size_override("font_size", 16)
 	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
 	btn_row.add_child(cancel_btn)
 
 	var save_btn := Button.new()
-	save_btn.text = "Save"
+	save_btn.text = tr("STR_DB_SAVE")
 	save_btn.custom_minimum_size = Vector2(100, 36)
 	save_btn.add_theme_font_size_override("font_size", 16)
 	save_btn.pressed.connect(func():
@@ -803,14 +803,14 @@ func _show_confirm(text: String, on_confirm: Callable) -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(100, 36)
 	cancel_btn.add_theme_font_size_override("font_size", 16)
 	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
 	btn_row.add_child(cancel_btn)
 
 	var confirm_btn := Button.new()
-	confirm_btn.text = "Confirm"
+	confirm_btn.text = tr("STR_EXTRAS_CONFIRM")
 	confirm_btn.custom_minimum_size = Vector2(100, 36)
 	confirm_btn.add_theme_font_size_override("font_size", 16)
 	confirm_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
@@ -832,7 +832,7 @@ func _show_confirm(text: String, on_confirm: Callable) -> void:
 func _launch_replay(path: String) -> void:
 	var replay := ReplayData.load_from_file(path)
 	if not replay:
-		_show_message("Failed to load replay.")
+		_show_message(tr("STR_EXTRAS_LOAD_REPLAY_FAILED"))
 		return
 	ReplayData.pending_replay = replay
 	NetworkManager.change_scene("res://scenes/ui/ReplayViewer.tscn")
@@ -866,7 +866,7 @@ func _show_save_list(saves: Array[Dictionary]) -> void:
 	vbox.add_theme_constant_override("separation", 12)
 
 	var title := Label.new()
-	title.text = "Load Game"
+	title.text = tr("STR_EXTRAS_LOAD_GAME")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 28)
 	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
@@ -878,7 +878,7 @@ func _show_save_list(saves: Array[Dictionary]) -> void:
 	toolbar.add_theme_constant_override("separation", 8)
 
 	var open_folder_btn := Button.new()
-	open_folder_btn.text = "Open Folder"
+	open_folder_btn.text = tr("STR_EXTRAS_OPEN_FOLDER")
 	open_folder_btn.custom_minimum_size = Vector2(110, 32)
 	open_folder_btn.add_theme_font_size_override("font_size", 14)
 	open_folder_btn.pressed.connect(func():
@@ -888,13 +888,13 @@ func _show_save_list(saves: Array[Dictionary]) -> void:
 	toolbar.add_child(open_folder_btn)
 
 	var delete_all_btn := Button.new()
-	delete_all_btn.text = "Delete All Recent"
+	delete_all_btn.text = tr("STR_EXTRAS_DELETE_ALL_RECENT")
 	delete_all_btn.custom_minimum_size = Vector2(140, 32)
 	delete_all_btn.add_theme_font_size_override("font_size", 14)
 	delete_all_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
 	delete_all_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		_show_confirm("Delete all non-favorited saves?", func():
+		_show_confirm(tr("STR_EXTRAS_CONFIRM_DELETE_ALL_SAVES"), func():
 			GameSerializer.delete_all_recent_saves()
 			_refresh_save_list()
 		)
@@ -902,7 +902,7 @@ func _show_save_list(saves: Array[Dictionary]) -> void:
 	toolbar.add_child(delete_all_btn)
 
 	var fav_filter_btn := Button.new()
-	fav_filter_btn.text = "Favorites Only"
+	fav_filter_btn.text = tr("STR_EXTRAS_FAVORITES_ONLY")
 	fav_filter_btn.toggle_mode = true
 	fav_filter_btn.custom_minimum_size = Vector2(120, 32)
 	fav_filter_btn.add_theme_font_size_override("font_size", 14)
@@ -914,7 +914,7 @@ func _show_save_list(saves: Array[Dictionary]) -> void:
 	toolbar.add_child(fav_filter_btn)
 
 	var ver_filter_btn := Button.new()
-	ver_filter_btn.text = "Current Version"
+	ver_filter_btn.text = tr("STR_EXTRAS_CURRENT_VERSION")
 	ver_filter_btn.toggle_mode = true
 	ver_filter_btn.custom_minimum_size = Vector2(130, 32)
 	ver_filter_btn.add_theme_font_size_override("font_size", 14)
@@ -947,7 +947,7 @@ func _show_save_list(saves: Array[Dictionary]) -> void:
 	vbox.add_child(scroll)
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(200, 40)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 18)
@@ -980,7 +980,7 @@ func _populate_save_list(saves: Array[Dictionary]) -> void:
 	for e in saves:
 		if e.get("is_favorite", false):
 			fav_count += 1
-	_save_count_label.text = "%d shown / %d total (%d favorited)" % [filtered.size(), saves.size(), fav_count]
+	_save_count_label.text = tr("STR_EXTRAS_LIST_COUNT_FMT") % [filtered.size(), saves.size(), fav_count]
 
 	# Clear existing rows
 	for child in _save_list_vbox.get_children():
@@ -1030,7 +1030,7 @@ func _build_save_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
 	var line1 := ""
 	if not lbl.is_empty():
 		line1 = "[%s] " % lbl
-	line1 += "%s  |  %s vs %s  |  Turn %d  |  %s" % [ts, names[0], names[1], turn, mode]
+	line1 += tr("STR_EXTRAS_SAVE_LINE_FMT") % [ts, names[0], names[1], turn, mode]
 	if not ver.is_empty() and ver != current_ver:
 		line1 += "  (v%s)" % ver
 
@@ -1051,7 +1051,7 @@ func _build_save_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
 
 	# Label button
 	var label_btn := Button.new()
-	label_btn.text = "Label"
+	label_btn.text = tr("STR_EXTRAS_LABEL")
 	label_btn.custom_minimum_size = Vector2(50, 30)
 	label_btn.add_theme_font_size_override("font_size", 12)
 	label_btn.pressed.connect(func():
@@ -1068,7 +1068,7 @@ func _build_save_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
 	del_btn.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 	del_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		_show_confirm("Delete this save?", func():
+		_show_confirm(tr("STR_EXTRAS_CONFIRM_DELETE_SAVE"), func():
 			GameSerializer.delete_save(path)
 			_refresh_save_list()
 		)
@@ -1082,7 +1082,7 @@ func _refresh_save_list() -> void:
 	var saves := GameSerializer.list_saves()
 	if saves.is_empty() and _save_popup:
 		_save_popup.hide()
-		_show_message("No saved games found.")
+		_show_message(tr("STR_EXTRAS_NO_SAVES"))
 		return
 	_populate_save_list(saves)
 
@@ -1111,14 +1111,14 @@ func _show_save_label_dialog(path: String, current_label: String) -> void:
 	vb.add_theme_constant_override("separation", 12)
 
 	var lbl := Label.new()
-	lbl.text = "Set Label"
+	lbl.text = tr("STR_EXTRAS_SET_LABEL")
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.add_theme_font_size_override("font_size", 20)
 	vb.add_child(lbl)
 
 	var line_edit := LineEdit.new()
 	line_edit.text = current_label
-	line_edit.placeholder_text = "Enter label..."
+	line_edit.placeholder_text = tr("STR_EXTRAS_LABEL_PLACEHOLDER")
 	line_edit.custom_minimum_size = Vector2(300, 36)
 	line_edit.add_theme_font_size_override("font_size", 16)
 	vb.add_child(line_edit)
@@ -1128,14 +1128,14 @@ func _show_save_label_dialog(path: String, current_label: String) -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(100, 36)
 	cancel_btn.add_theme_font_size_override("font_size", 16)
 	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
 	btn_row.add_child(cancel_btn)
 
 	var save_btn := Button.new()
-	save_btn.text = "Save"
+	save_btn.text = tr("STR_DB_SAVE")
 	save_btn.custom_minimum_size = Vector2(100, 36)
 	save_btn.add_theme_font_size_override("font_size", 16)
 	save_btn.pressed.connect(func():
@@ -1178,16 +1178,16 @@ func _show_player_choice_dialog(names: Array, on_chosen: Callable) -> void:
 	vbox.add_theme_constant_override("separation", 16)
 
 	var label := Label.new()
-	label.text = "Play as which player?"
+	label.text = tr("STR_EXTRAS_PLAY_AS_WHICH")
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 20)
 	vbox.add_child(label)
 
-	var p1_name: String = str(names[0]) if names.size() > 0 else "Player 1"
-	var p2_name: String = str(names[1]) if names.size() > 1 else "Player 2"
+	var p1_name: String = str(names[0]) if names.size() > 0 else tr("STR_EXTRAS_PLAYER_1")
+	var p2_name: String = str(names[1]) if names.size() > 1 else tr("STR_EXTRAS_PLAYER_2")
 
 	var p1_btn := Button.new()
-	p1_btn.text = "Play as %s (Player 1)" % p1_name
+	p1_btn.text = tr("STR_EXTRAS_PLAY_AS_P1_FMT") % p1_name
 	p1_btn.custom_minimum_size = Vector2(0, 44)
 	p1_btn.add_theme_font_size_override("font_size", 18)
 	p1_btn.pressed.connect(func():
@@ -1198,7 +1198,7 @@ func _show_player_choice_dialog(names: Array, on_chosen: Callable) -> void:
 	vbox.add_child(p1_btn)
 
 	var p2_btn := Button.new()
-	p2_btn.text = "Play as %s (Player 2)" % p2_name
+	p2_btn.text = tr("STR_EXTRAS_PLAY_AS_P2_FMT") % p2_name
 	p2_btn.custom_minimum_size = Vector2(0, 44)
 	p2_btn.add_theme_font_size_override("font_size", 18)
 	p2_btn.pressed.connect(func():
@@ -1209,7 +1209,7 @@ func _show_player_choice_dialog(names: Array, on_chosen: Callable) -> void:
 	vbox.add_child(p2_btn)
 
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(120, 36)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 16)
@@ -1229,7 +1229,7 @@ func _show_player_choice_dialog(names: Array, on_chosen: Callable) -> void:
 func _launch_load_game(path: String) -> void:
 	var data := GameSerializer.load_save_file(path)
 	if data.is_empty():
-		_show_message("Failed to load save file.")
+		_show_message(tr("STR_EXTRAS_LOAD_SAVE_FAILED"))
 		return
 	print("[Load] Loading save: mode=%s, game_seed=%s" % [data.get("mode", "?"), data.get("game_seed", "MISSING")])
 	GameSerializer.pending_load = data

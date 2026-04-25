@@ -11,6 +11,48 @@ STR_MENU_OPTIONS,Options,設定
 STR_MENU_UPDATE_AVAILABLE,Update Available,アップデートあり
 STR_MENU_SOUND_FMT,Sound: {VAL},音量: {VAL}
 STR_MENU_MUSIC_FMT,Music: {VAL},音楽: {VAL}
+STR_MENU_BOT_DIFFICULTY,Bot Difficulty,ボットの難易度
+STR_MENU_DIFFICULTY_EASY,Easy,かんたん
+STR_MENU_DIFFICULTY_NORMAL,Normal,ふつう
+STR_MENU_DIFFICULTY_HARD,Hard,むずかしい
+STR_MENU_SEED,Seed:,シード:
+STR_MENU_SEED_PLACEHOLDER,random,ランダム
+STR_MENU_BOT_SPEED_AUTO,Bot Speed: Automatic,ボット速度: 自動
+STR_MENU_BOT_SPEED_FMT,Bot Speed: %.1fs,ボット速度: %.1f秒
+STR_MENU_PLAYSTYLE_AUTO,Playstyle: Automatic,プレイスタイル: 自動
+STR_MENU_PLAYSTYLE_FMT,Playstyle: %s,プレイスタイル: %s
+STR_MENU_PLAYSTYLE_AUTOMATIC,Automatic,自動
+STR_MENU_PLAYSTYLE_INVASION,Invasion,進攻型
+STR_MENU_PLAYSTYLE_COUNTER,Counter,撃退型
+STR_MENU_PLAYSTYLE_BALANCED,Balanced,バランス型
+STR_MENU_UPDATE_VERSIONS_FMT,"Current version: v%s
+New version: %s","現在のバージョン: v%s
+新バージョン: %s"
+STR_MENU_UPDATE_NOW,Update Now,今すぐアップデート
+STR_MENU_UPDATE_SKIP,Skip This Version,このバージョンをスキップ
+STR_MENU_UPDATE_LATER,Later,あとで
+STR_MENU_RECONNECT_TITLE,Game In Progress,進行中のゲーム
+STR_MENU_RECONNECT_PROMPT,"You were disconnected from a game.
+Would you like to reconnect?","ゲームから切断されました。
+再接続しますか?"
+STR_MENU_RECONNECT,Reconnect,再接続
+STR_MENU_RETRY,Retry,再試行
+STR_MENU_DISMISS,Dismiss,閉じる
+STR_MENU_CONNECTING,Connecting...,接続中...
+STR_MENU_RECONNECT_CONNECTING,Connecting to relay server...,リレーサーバーに接続中...
+STR_MENU_RECONNECT_VERIFYING,Connected! Verifying game version...,接続しました! ゲームバージョンを確認中...
+STR_MENU_RECONNECT_VERSION_MISMATCH,Version mismatch. Cannot reconnect.,バージョンが一致しません。再接続できません。
+STR_MENU_RECONNECT_FAILED_FMT,"Failed to connect (%s).
+Room may no longer exist.","接続に失敗しました (%s)。
+ルームが存在しない可能性があります。"
+STR_MENU_ERR_TIMEOUT,timeout,タイムアウト
+STR_MENU_ERR_CODE_FMT,error %d,エラー %d
+STR_COMMON_CANCEL,Cancel,キャンセル
+STR_COMMON_OK,OK,OK
+STR_COMMON_CLOSE,Close,閉じる
+STR_COMMON_DELETE,Delete,削除
+STR_COMMON_COPY,Copy,コピー
+STR_COMMON_COPIED,Copied!,コピーしました!
 STR_VOL_OFF,OFF,オフ
 STR_OPTIONS_TITLE,Options,設定
 STR_OPTIONS_PLAYER_NAME,Player Name,プレイヤー名
@@ -30,6 +72,102 @@ STR_OPTIONS_ART_MATCH_TITLE,Switch Card Artwork?,カードアートを切り替�
 STR_OPTIONS_ART_MATCH_PROMPT_FMT,Also switch card artwork to {LANG}?,カードアートも {LANG} に切り替えますか？
 STR_OPTIONS_ART_MATCH_YES,"Yes, switch",はい、切り替える
 STR_OPTIONS_ART_MATCH_NO,Keep current,このまま
+STR_OPTIONS_AUTOMATION_TITLE,Automation,自動化
+STR_OPTIONS_CUSTOMIZE_TITLE,Customize,カスタマイズ
+STR_OPTIONS_ADVANCED_TITLE,Advanced,詳細
+STR_OPTIONS_AUDIO_TITLE,Audio,オーディオ
+STR_OPTIONS_AUTO_DRAW,Auto Draw,自動ドロー
+STR_OPTIONS_AUTO_PHASE,Auto Phase Advance,自動フェイズ進行
+STR_OPTIONS_AUTO_DISCARD_STRATEGIES,Auto Discard Strategies,戦略カード自動捨て
+STR_OPTIONS_AUTO_RESET_RAGE,Auto Reset Rage,怒り自動リセット
+STR_OPTIONS_AUTO_COUNTER_CHECK,Auto Counter Check,撃退確認自動化
+STR_OPTIONS_AUTO_ADVANCE,Auto Advance,自動前進
+STR_OPTIONS_CONFIRM_MAIN_PASS,Confirm Main Phase Pass,メインフェイズ終了の確認
+STR_OPTIONS_STACKED_VIEW,Default Stacked View,初期表示は重ねて表示
+STR_OPTIONS_SORT_TYPE_ORDER,Hand Sort Type Order,手札並び替え順 (タイプ)
+STR_OPTIONS_SORT_RANK_ORDER,Hand Sort Rank Order,手札並び替え順 (等級)
+STR_OPTIONS_SORT_MBS,"Monster, Battle, Strategy","怪獣、交戦、戦略"
+STR_OPTIONS_SORT_MSB,"Monster, Strategy, Battle","怪獣、戦略、交戦"
+STR_OPTIONS_SORT_BMS,"Battle, Monster, Strategy","交戦、怪獣、戦略"
+STR_OPTIONS_SORT_BSM,"Battle, Strategy, Monster","交戦、戦略、怪獣"
+STR_OPTIONS_SORT_SMB,"Strategy, Monster, Battle","戦略、怪獣、交戦"
+STR_OPTIONS_SORT_SBM,"Strategy, Battle, Monster","戦略、交戦、怪獣"
+STR_OPTIONS_ASCENDING,Ascending,昇順
+STR_OPTIONS_DESCENDING,Descending,降順
+STR_OPTIONS_CUSTOM_PLAYMAT,Custom Playmat,プレイマットのカスタム
+STR_OPTIONS_PLAYMAT_OPPONENT,Apply Playmat to Opponent,プレイマットを相手にも適用
+STR_OPTIONS_HINT_IOS_DEFAULT,Use the Files app to add images (named default.png),ファイルアプリで画像 (default.png) を追加してください
+STR_OPTIONS_HINT_MOBILE_PLAYMAT,Import any image to use as your playmat background,プレイマット背景に使用する画像をインポートしてください
+STR_OPTIONS_HINT_DESKTOP_DEFAULT,"Image must be named: default.png (or .jpg, .jpeg, .webp)","画像のファイル名は default.png である必要があります (.jpg, .jpeg, .webp も可)"
+STR_OPTIONS_HINT_MOBILE_CARD_BACK,Import any image to use as your card back,カード裏面に使用する画像をインポートしてください
+STR_OPTIONS_HINT_CARD_ART,"Files must be named <CARD_NUMBER>.png (e.g. ESD01-008.png)","ファイル名は <カード番号>.png にしてください (例: ESD01-008.png)"
+STR_OPTIONS_HOW_TO_ADD_FILES,How to Add Files,ファイルの追加方法
+STR_OPTIONS_IMPORT_IMAGE,Import Image,画像をインポート
+STR_OPTIONS_IMPORT_IMAGES,Import Images,画像をインポート
+STR_OPTIONS_OPEN_PLAYMAT_FOLDER,Open Playmat Folder,プレイマットフォルダを開く
+STR_OPTIONS_OPEN_CARD_ART_FOLDER,Open Card Art Folder,カードアートフォルダを開く
+STR_OPTIONS_OPEN_CARD_BACK_FOLDER,Open Card Back Folder,カード裏面フォルダを開く
+STR_OPTIONS_DELETE_ALL,Delete All,すべて削除
+STR_OPTIONS_REMOVE_ART,Remove Art,アートを削除
+STR_OPTIONS_REMOVE,Remove,削除
+STR_OPTIONS_COLOR_OVERLAY,Color Overlay,カラーオーバーレイ
+STR_OPTIONS_OVERLAY_NONE,Do Not Apply,適用しない
+STR_OPTIONS_OVERLAY_SELF,Only Myself,自分のみ
+STR_OPTIONS_OVERLAY_OPPONENT,Only Opponent,相手のみ
+STR_OPTIONS_OVERLAY_BOTH,Both Players,両方
+STR_OPTIONS_CUSTOM_CARD_ART,Custom Card Art,カードアートのカスタム
+STR_OPTIONS_CUSTOM_CARD_BACK,Custom Card Back,カード裏面のカスタム
+STR_OPTIONS_BACK_DISABLED,Disabled,無効
+STR_OPTIONS_BACK_SELF,Enabled (myself),有効 (自分)
+STR_OPTIONS_BACK_BOTH,Enabled (both),有効 (両方)
+STR_OPTIONS_USE_MOBILE_LAYOUT,Use Mobile Layout,モバイルレイアウトを使用
+STR_OPTIONS_REDOWNLOAD_ASSETS,Re-download Card Assets,カードアセットを再ダウンロード
+STR_OPTIONS_SOUND_EFFECTS,Sound Effects,効果音
+STR_OPTIONS_MUSIC,Music,音楽
+STR_OPTIONS_ENTER_CARD_NUMBER,Enter Card Number,カード番号を入力
+STR_OPTIONS_CARD_NUMBER_HINT,"e.g. ESD01-008, EBP02-045","例: ESD01-008、EBP02-045"
+STR_OPTIONS_REMOVE_ART_TITLE,Remove Card Art,カードアートを削除
+STR_OPTIONS_REMOVE_ART_HINT,Enter the card number to remove (e.g. ESD01-008),削除するカード番号を入力してください (例: ESD01-008)
+STR_OPTIONS_DELETE_ALL_CONFIRM_TITLE,Delete All Custom Card Art?,すべてのカスタムカードアートを削除しますか?
+STR_OPTIONS_DELETE_ALL_CONFIRM_BODY,"This will remove all imported card art images.
+This cannot be undone.","インポートしたカードアート画像をすべて削除します。
+この操作は元に戻せません。"
+STR_OPTIONS_INVALID_CARD_NUMBER,Invalid format. Use SET-NUMBER (e.g. ESD01-008),書式が無効です。SET-番号 の形式で入力してください (例: ESD01-008)
+STR_OPTIONS_REMOVED_FMT,Removed %s,%s を削除しました
+STR_OPTIONS_NO_ART_FOUND_FMT,No custom art found for %s,%s のカスタムアートが見つかりません
+STR_OPTIONS_DIALOG_IMPORT_PLAYMAT,Import Playmat Image,プレイマット画像をインポート
+STR_OPTIONS_DIALOG_IMPORT_CARD_ART,Import Card Art,カードアートをインポート
+STR_OPTIONS_DIALOG_IMPORT_CARD_BACK,Import Card Back Image,カード裏面画像をインポート
+STR_OPTIONS_FOLDERS_CREATED,The folders have been created for you.,フォルダが作成されました。
+STR_OPTIONS_IOS_INSTR_PLAYMAT_FMT,"1. Open the Files app on your device
+2. Go to: On My iPhone > %s > custom > playmat
+3. Copy an image named default.png
+   (also supports .jpg, .jpeg, .webp)
+4. Return to this app and enable Custom Playmat","1. デバイスでファイルアプリを開く
+2. 移動先: このiPhone内 > %s > custom > playmat
+3. default.png という名前の画像をコピー
+   (.jpg、.jpeg、.webp も可)
+4. このアプリに戻り、プレイマットのカスタムを有効化"
+STR_OPTIONS_IOS_INSTR_CARD_ART_FMT,"1. Open the Files app on your device
+2. Go to: On My iPhone > %s > custom > cardArt > [SET]
+3. Copy images named [SET]-[NUMBER].png
+   (e.g. ESD01-008.png, EBP02-045.png)
+4. Sets: %s
+5. Return to this app and enable Custom Card Art","1. デバイスでファイルアプリを開く
+2. 移動先: このiPhone内 > %s > custom > cardArt > [セット]
+3. [セット]-[番号].png という名前の画像をコピー
+   (例: ESD01-008.png、EBP02-045.png)
+4. セット: %s
+5. このアプリに戻り、カードアートのカスタムを有効化"
+STR_OPTIONS_IOS_INSTR_CARD_BACK_FMT,"1. Open the Files app on your device
+2. Go to: On My iPhone > %s > custom > cardBack
+3. Copy an image named default.png
+   (also supports .jpg, .jpeg, .webp)
+4. Return to this app and enable Custom Card Back","1. デバイスでファイルアプリを開く
+2. 移動先: このiPhone内 > %s > custom > cardBack
+3. default.png という名前の画像をコピー
+   (.jpg、.jpeg、.webp も可)
+4. このアプリに戻り、カード裏面のカスタムを有効化"
 STR_LANG_EN,English,English
 STR_LANG_JA,日本語,日本語
 STR_TRAIT_KAIJU,Kaiju,
@@ -217,12 +355,82 @@ STR_LOBBY_COPY,Copy,コピー
 STR_LOBBY_REFRESH,Refresh,更新
 STR_LOBBY_ENTER_CODE,Enter game code,ゲームコードを入力
 STR_LOBBY_IP_PLACEHOLDER,192.168.1.x,192.168.1.x
+STR_LAN_HOST_FAILED_FMT,Failed to host (port %d may be in use),ホスト失敗 (ポート %d は使用中の可能性があります)
+STR_LAN_HOSTING_FMT,"Hosting on %s:%d
+Waiting for opponent...","%s:%d でホスト中
+対戦相手を待機中..."
+STR_LAN_ENTER_IP,Enter the host's IP address,ホストのIPアドレスを入力してください
+STR_LAN_CONNECT_FAILED,Failed to connect,接続に失敗しました
+STR_LAN_CONNECTING_FMT,Connecting to %s:%d...,%s:%d に接続中...
+STR_LAN_OPPONENT_CONNECTED_HOST,Opponent connected! Select a deck and press Start.,対戦相手が接続しました! デッキを選択してスタートを押してください。
+STR_LAN_CONNECTED_SELECT_DECK,Connected! Select a deck.,接続しました! デッキを選択してください。
+STR_LAN_OPPONENT_DIFFERENT_VERSION_FMT,Opponent has a different version (you: v%s).,対戦相手のバージョンが異なります (あなた: v%s)。
+STR_LAN_OPPONENT_DISCONNECTED,Opponent disconnected.,対戦相手が切断しました。
+STR_LAN_CONNECTION_FAILED_RETRY,Connection failed. Check the IP and try again.,接続に失敗しました。IPを確認して再試行してください。
+STR_LAN_VERSION_MISMATCH_FMT,"Version mismatch! You: v%s, Opponent: v%s","バージョンが一致しません! あなた: v%s、対戦相手: v%s"
+STR_LAN_DECK_SENT_FMT,"Deck ""%s"" sent to host. Waiting for host to start...","デッキ「%s」をホストに送信しました。ホストの開始を待機中..."
+STR_LAN_OPPONENT_DECK_READY,Opponent deck received. Ready to start!,対戦相手のデッキを受信しました。開始できます!
 STR_EXTRAS_WATCH_REPLAY,Watch Replay,リプレイを見る
 STR_EXTRAS_LOAD_GAME,Load Game,ゲームを読み込む
 STR_EXTRAS_LOAD_GAME_ONLINE,Load Game Online,オンラインゲームを読み込む
+STR_EXTRAS_NO_REPLAYS,No replays found.,リプレイが見つかりません。
+STR_EXTRAS_NO_SAVES,No saved games found.,保存されたゲームが見つかりません。
+STR_EXTRAS_SELECT_REPLAY,Select Replay,リプレイを選択
+STR_EXTRAS_SELECT_SAVE_HOST,Select a save to host as a private online game,プライベートオンラインゲームとしてホストするセーブを選択
+STR_EXTRAS_HOST_ONLINE_GAME,Host Online Game,オンラインゲームをホスト
+STR_EXTRAS_FAVORITES_ONLY,Favorites Only,お気に入りのみ
+STR_EXTRAS_CURRENT_VERSION,Current Version,現バージョン
+STR_EXTRAS_OPEN_FOLDER,Open Folder,フォルダを開く
+STR_EXTRAS_DELETE_ALL_RECENT,Delete All Recent,最近のものをすべて削除
+STR_EXTRAS_LIST_COUNT_FMT,"%d shown / %d total (%d favorited)","表示 %d 件 / 合計 %d 件 (お気に入り %d 件)"
+STR_EXTRAS_SAVE_LINE_FMT,"%s  |  %s vs %s  |  Turn %d  |  %s","%s  |  %s vs %s  |  ターン %d  |  %s"
+STR_EXTRAS_REPLAY_LINE_FMT,"%s  |  %s vs %s  |  %d turns  |  Winner: %s","%s  |  %s vs %s  |  %d ターン  |  勝者: %s"
+STR_EXTRAS_LABEL,Label,ラベル
+STR_EXTRAS_SET_LABEL,Set Label,ラベルを設定
+STR_EXTRAS_LABEL_PLACEHOLDER,Enter label...,ラベルを入力...
+STR_EXTRAS_CONFIRM,Confirm,確定
+STR_EXTRAS_CONFIRM_DELETE_REPLAY,Delete this replay?,このリプレイを削除しますか?
+STR_EXTRAS_CONFIRM_DELETE_SAVE,Delete this save?,このセーブを削除しますか?
+STR_EXTRAS_CONFIRM_DELETE_ALL_REPLAYS,Delete all non-favorited replays?,お気に入り以外のリプレイをすべて削除しますか?
+STR_EXTRAS_CONFIRM_DELETE_ALL_SAVES,Delete all non-favorited saves?,お気に入り以外のセーブをすべて削除しますか?
+STR_EXTRAS_LOAD_REPLAY_FAILED,Failed to load replay.,リプレイの読み込みに失敗しました。
+STR_EXTRAS_LOAD_SAVE_FAILED,Failed to load save file.,セーブファイルの読み込みに失敗しました。
+STR_EXTRAS_SHARE_CODE,Share this code with your opponent:,このコードを対戦相手と共有してください:
+STR_EXTRAS_OPPONENT_CONNECTED_VERIFYING,Opponent connected! Verifying version...,対戦相手が接続しました! バージョンを確認中...
+STR_EXTRAS_OPPONENT_DISCONNECTED_WAITING,Opponent disconnected. Waiting for reconnect...,対戦相手が切断しました。再接続を待機中...
+STR_EXTRAS_OPPONENT_VERIFIED,Opponent connected and verified! Press Start.,対戦相手が接続・確認されました! スタートを押してください。
+STR_EXTRAS_PLAY_AS_WHICH,Play as which player?,どのプレイヤーでプレイしますか?
+STR_EXTRAS_PLAYER_1,Player 1,プレイヤー1
+STR_EXTRAS_PLAYER_2,Player 2,プレイヤー2
+STR_EXTRAS_PLAY_AS_P1_FMT,Play as %s (Player 1),%s (プレイヤー1) でプレイ
+STR_EXTRAS_PLAY_AS_P2_FMT,Play as %s (Player 2),%s (プレイヤー2) でプレイ
 STR_ONLINE_PLAY_TITLE,Online Play,オンラインプレイ
 STR_ONLINE_PUBLIC,Public,公開
 STR_ONLINE_PRIVATE,Private,プライベート
+STR_ONLINE_CONNECTING_RELAY,Connecting to relay server...,リレーサーバーに接続中...
+STR_ONLINE_RELAY_FAILED_FMT,Failed to connect to relay server (error %d),リレーサーバーへの接続に失敗しました (エラー %d)
+STR_ONLINE_SHARE_CODE,Share this game code with your opponent:,このゲームコードを対戦相手と共有してください:
+STR_ONLINE_ENTER_CODE,Enter the host's game code,ホストのゲームコードを入力してください
+STR_ONLINE_CONNECT_FAILED_FMT,Failed to connect (error %d),接続に失敗しました (エラー %d)
+STR_ONLINE_CONNECTING_HOST,Connecting to host...,ホストに接続中...
+STR_ONLINE_CONNECTION_FAILED_RETRY,Connection failed. Check the code and try again.,接続に失敗しました。コードを確認して再試行してください。
+STR_PUBLIC_SELECT_DECK,"Select a deck, then create or join a lobby.","デッキを選択してから、ロビーを作成または参加してください。"
+STR_PUBLIC_DECK_LOAD_FAILED,Could not load decklist.,デッキリストを読み込めませんでした。
+STR_PUBLIC_NO_LOBBIES,No public lobbies available. Create one!,公開ロビーがありません。作成してください!
+STR_PUBLIC_LOBBIES_FOUND_FMT,%d lobby(s) found:,%d 件のロビーが見つかりました:
+STR_PUBLIC_JOIN,Join,参加
+STR_PUBLIC_CREATING,Creating public lobby...,公開ロビーを作成中...
+STR_PUBLIC_CREATE_FAILED_FMT,Failed to create lobby (error %d),ロビーの作成に失敗しました (エラー %d)
+STR_PUBLIC_LOBBY_CREATED,Lobby created! Waiting for opponent...,ロビーを作成しました! 対戦相手を待機中...
+STR_PUBLIC_DECK_INVALID_MODE,Deck is not valid for this game mode.,このゲームモードでは無効なデッキです。
+STR_PUBLIC_JOINING_FMT,Joining room %s...,ルーム %s に参加中...
+STR_PUBLIC_JOIN_FAILED_FMT,Failed to join room (error %d),ルームへの参加に失敗しました (エラー %d)
+STR_PUBLIC_OPPONENT_CONNECTED_STARTING,Opponent connected! Starting game...,対戦相手が接続しました! ゲームを開始します...
+STR_PUBLIC_CONNECTED_WAITING,Connected! Waiting for game to start...,接続しました! ゲーム開始を待機中...
+STR_PUBLIC_CONNECTION_FAILED,Connection failed.,接続に失敗しました。
+STR_PUBLIC_DECK_OK,Deck selected. Create or join a lobby!,デッキを選択しました。ロビーを作成または参加してください!
+STR_PUBLIC_DECK_INVALID_FMT,"Deck invalid for %s: %s","%s には無効なデッキ: %s"
+STR_PUBLIC_STARTING_GAME,Starting game...,ゲームを開始します...
 STR_PUBLIC_LOBBIES,Public Lobbies,公開ロビー
 STR_GAME_MODE,GAME MODE,ゲームモード
 STR_CREATE_LOBBY,Create Lobby,ロビー作成
@@ -237,11 +445,34 @@ STR_DS_P2_DECK,PLAYER 2 DECK,プレイヤー2のデッキ
 STR_LS_TITLE,UNOFFICIAL GODZILLA TCG,非公式ゴジラTCG
 STR_LS_LOADING_ARTWORK,Loading Card Artwork...,カードアートを読み込み中...
 STR_LS_PREPARING,Preparing...,準備中...
+STR_LS_DOWNLOADING_FMT,Downloading... %.1f MB / %.1f MB,ダウンロード中... %.1f MB / %.1f MB
+STR_LS_DOWNLOADING_INDETERMINATE_FMT,Downloading... %.1f MB,ダウンロード中... %.1f MB
+STR_LS_EXTRACTING_FMT,"Extracting %s... (%d/%d)","展開中 %s... (%d/%d)"
+STR_LS_UP_TO_DATE,All artwork up to date!,カードアートはすべて最新です!
+STR_LS_DONE_FMT,"Done! Downloaded: %d, Skipped: %d, Failed: %d","完了! ダウンロード: %d、スキップ: %d、失敗: %d"
 STR_RV_EXIT,Exit,終了
 STR_RV_GAME_LOG,Game Log,ゲームログ
 STR_RV_PLAY,Play,再生
 STR_RV_PLAY_FROM_HERE,Play From Here,ここから再生
 STR_RV_SPEED,Speed:,速度:
+STR_RV_PAUSE,Pause,一時停止
+STR_RV_CLOSE,Close,閉じる
+STR_RV_STACKED,Stacked,重ねる
+STR_RV_NO_REPLAY_DATA,No replay data,リプレイデータなし
+STR_RV_NO_CARDS,No cards.,カードなし。
+STR_RV_PHASE_START,Start,開始
+STR_RV_PHASE_MAIN,Main,メイン
+STR_RV_PHASE_COUNTER,Counter,撃退
+STR_RV_PHASE_END,End,エンド
+STR_RV_TURN_LABEL_FMT,Step %d/%d — Turn %d — %s — %s,ステップ %d/%d — ターン %d — %s — %s
+STR_RV_GAME_OVER_FMT,"  [GAME OVER — %s wins]","  [ゲーム終了 — %s の勝利]"
+STR_RV_VERSION_MISMATCH_FMT,"Warning: replay recorded on v%s (current v%s) — may not work as expected","警告: このリプレイは v%s で記録されました (現バージョン v%s) — 正しく再生されない可能性があります"
+STR_RV_HAND_TITLE_FMT,"%s Hand (%d)","%s の手札 (%d)"
+STR_RV_GALLERY_TITLE_FMT,"%s (%d)","%s (%d)"
+STR_RV_ZONE_STACK_TITLE_FMT,"%s Zone %d Stack","%s のエリア %d スタック"
+STR_RV_DISCARD_TITLE_FMT,%s Discard Pile,%s の捨て札
+STR_RV_MAIN_DECK_TITLE_FMT,%s Main Deck,%s の山札
+STR_RV_MONSTER_DECK_TITLE_FMT,%s Monster Deck,%s の怪獣デッキ
 STR_DB_TITLE,DECK BUILDER,デッキビルダー
 STR_DB_DECK_NAME,Deck Name,デッキ名
 STR_DB_SAVE,Save,保存
@@ -265,6 +496,12 @@ STR_DB_SORT_TYPE,Sort: Type,並び替え: タイプ
 STR_DB_POOL_COUNT_FMT,({N} cards),({N}枚)
 STR_DB_TO_MAIN,→Main,→メイン
 STR_DB_TO_MONSTER,→Mon,→怪獣
+STR_DB_UNSAVED_TITLE,Unsaved Changes,未保存の変更
+STR_DB_UNSAVED_TEXT,You have unsaved changes. Discard and continue?,未保存の変更があります。破棄して続行しますか?
+STR_DB_UNSAVED_DISCARD,Discard,破棄
+STR_DB_DELETE_TITLE,Delete Deck,デッキを削除
+STR_DB_DELETE_OK,Delete,削除
+STR_DB_DELETE_PROMPT,"Delete ""%s""?","「%s」を削除しますか?"
 STR_LOG_TURN_START_FMT,--- Turn {N}: {PLAYER} ---,--- ターン {N}: {PLAYER} ---
 STR_LOG_START_PHASE_DRAW_FMT,Start Phase: Drawing {N} card(s),開始フェイズ: {N}枚ドロー
 STR_LOG_HAND_SIZE_FMT,Hand size: {N},手札: {N}枚

@@ -37,7 +37,7 @@ var _player_states: Array = []  # Array of PlayerState
 @onready var speed_slider: HSlider = $VBoxContainer/Controls/SpeedSlider
 @onready var turn_slider: HSlider = $VBoxContainer/Controls/TurnSlider
 
-const PHASE_NAMES := ["Start", "Main", "Counter", "End"]
+const PHASE_KEYS := ["STR_RV_PHASE_START", "STR_RV_PHASE_MAIN", "STR_RV_PHASE_COUNTER", "STR_RV_PHASE_END"]
 
 # Card preview (hover)
 var _preview_container: Control
@@ -62,7 +62,7 @@ func _ready() -> void:
 	ReplayData.pending_replay = null
 
 	if not _replay or _replay.snapshots.is_empty():
-		turn_label.text = "No replay data"
+		turn_label.text = tr("STR_RV_NO_REPLAY_DATA")
 		return
 
 	# Reset local_player_id so PlayerBoard layouts are correct
@@ -119,7 +119,7 @@ func _ready() -> void:
 	var current_version: String = ProjectSettings.get_setting("application/config/version", "")
 	if not _replay.game_version.is_empty() and _replay.game_version != current_version:
 		var warning := Label.new()
-		warning.text = "Warning: replay recorded on v%s (current v%s) — may not work as expected" % [_replay.game_version, current_version]
+		warning.text = tr("STR_RV_VERSION_MISMATCH_FMT") % [_replay.game_version, current_version]
 		warning.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))
 		warning.add_theme_font_size_override("font_size", 13)
 		$VBoxContainer/TopBar.add_child(warning)
@@ -155,7 +155,7 @@ func _process(delta: float) -> void:
 			turn_slider.set_value_no_signal(float(_snapshot_index))
 		else:
 			_auto_playing = false
-			play_pause_button.text = "Play"
+			play_pause_button.text = tr("STR_RV_PLAY")
 
 
 func _render_snapshot(index: int) -> void:
@@ -167,14 +167,14 @@ func _render_snapshot(index: int) -> void:
 	var turn_num: int = snap.get("turn_number", 0)
 	var current_pid: int = snap.get("current_player_id", 0)
 	var phase_idx: int = snap.get("phase", 0)
-	var phase_name: String = PHASE_NAMES[phase_idx] if phase_idx < PHASE_NAMES.size() else "?"
+	var phase_name: String = tr(PHASE_KEYS[phase_idx]) if phase_idx < PHASE_KEYS.size() else "?"
 	var player_name: String = _replay.player_names[current_pid] if current_pid < _replay.player_names.size() else "?"
-	turn_label.text = "Step %d/%d — Turn %d — %s — %s" % [index + 1, total_steps, turn_num, phase_name, player_name]
+	turn_label.text = tr("STR_RV_TURN_LABEL_FMT") % [index + 1, total_steps, turn_num, phase_name, player_name]
 
 	# Indicate final snapshot
 	if index == total_steps - 1 and _replay.winner_id >= 0:
 		var winner_name: String = _replay.player_names[_replay.winner_id] if _replay.winner_id < _replay.player_names.size() else "?"
-		turn_label.text += "  [GAME OVER — %s wins]" % winner_name
+		turn_label.text += tr("STR_RV_GAME_OVER_FMT") % winner_name
 
 	# Deserialize player states and sync boards
 	var players_data: Array = snap.get("players", [])
@@ -225,7 +225,7 @@ func _sync_hand_display(grid: HBoxContainer, title: Label, hand_cards: Array, pl
 	for child in grid.get_children():
 		child.queue_free()
 
-	title.text = "%s Hand (%d)" % [player_name, hand_cards.size()]
+	title.text = tr("STR_RV_HAND_TITLE_FMT") % [player_name, hand_cards.size()]
 
 	for card_data in hand_cards:
 		var card: Control = card_scene.instantiate()
@@ -459,7 +459,7 @@ func _build_gallery_overlay() -> void:
 	title_row.add_child(_gallery_title)
 
 	_gallery_stacked_toggle = CheckButton.new()
-	_gallery_stacked_toggle.text = "Stacked"
+	_gallery_stacked_toggle.text = tr("STR_RV_STACKED")
 	_gallery_stacked_toggle.add_theme_font_size_override("font_size", 13)
 	_gallery_stacked_toggle.toggled.connect(_on_gallery_stacked_toggled)
 	title_row.add_child(_gallery_stacked_toggle)
@@ -479,7 +479,7 @@ func _build_gallery_overlay() -> void:
 
 	# Close button
 	var close_btn := Button.new()
-	close_btn.text = "Close"
+	close_btn.text = tr("STR_RV_CLOSE")
 	close_btn.custom_minimum_size = Vector2(100, 36)
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	close_btn.pressed.connect(_hide_gallery)
@@ -490,7 +490,7 @@ func _show_gallery(title: String, cards: Array, show_stacked: bool = true) -> vo
 	_gallery_cards.clear()
 	for c in cards:
 		_gallery_cards.append(c)
-	_gallery_title.text = "%s (%d)" % [title, cards.size()]
+	_gallery_title.text = tr("STR_RV_GALLERY_TITLE_FMT") % [title, cards.size()]
 	_gallery_stacked_toggle.visible = show_stacked
 	_gallery_stacked_toggle.set_pressed_no_signal(false)
 	_gallery_overlay.visible = true
@@ -510,7 +510,7 @@ func _refresh_gallery_grid() -> void:
 
 	if _gallery_cards.is_empty():
 		var empty_label := Label.new()
-		empty_label.text = "No cards."
+		empty_label.text = tr("STR_RV_NO_CARDS")
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_gallery_grid.add_child(empty_label)
 		return
@@ -616,7 +616,7 @@ func _on_zone_clicked(zone_num: int, pid: int) -> void:
 		var stack: Array = state.get_zone_stack(zone_idx)
 		if stack.size() > 1:
 			var pname: String = _replay.player_names[pid] if pid < _replay.player_names.size() else "P%d" % (pid + 1)
-			_show_gallery("%s Zone %d Stack" % [pname, zone_num], stack, false)
+			_show_gallery(tr("STR_RV_ZONE_STACK_TITLE_FMT") % [pname, zone_num], stack, false)
 		elif stack.size() == 1:
 			_show_card_zoom(stack[0])
 		else:
@@ -631,7 +631,7 @@ func _on_zone_right_clicked(zone_num: int, pid: int) -> void:
 		var stack: Array = state.get_zone_stack(zone_idx)
 		if stack.size() > 1:
 			var pname: String = _replay.player_names[pid] if pid < _replay.player_names.size() else "P%d" % (pid + 1)
-			_show_gallery("%s Zone %d Stack" % [pname, zone_num], stack, false)
+			_show_gallery(tr("STR_RV_ZONE_STACK_TITLE_FMT") % [pname, zone_num], stack, false)
 		elif stack.size() == 1:
 			_show_card_zoom(stack[0])
 		else:
@@ -655,21 +655,21 @@ func _on_discard_clicked(pid: int) -> void:
 		var cards: Array[Dictionary] = state.discard_pile.duplicate(true)
 		cards.reverse()
 		var pname: String = _replay.player_names[pid] if pid < _replay.player_names.size() else "P%d" % (pid + 1)
-		_show_gallery("%s Discard Pile" % pname, cards)
+		_show_gallery(tr("STR_RV_DISCARD_TITLE_FMT") % pname, cards)
 
 
 func _on_deck_clicked(pid: int) -> void:
 	if pid < _player_states.size():
 		var state: PlayerState = _player_states[pid]
 		var pname: String = _replay.player_names[pid] if pid < _replay.player_names.size() else "P%d" % (pid + 1)
-		_show_gallery("%s Main Deck" % pname, state.main_deck.duplicate(true))
+		_show_gallery(tr("STR_RV_MAIN_DECK_TITLE_FMT") % pname, state.main_deck.duplicate(true))
 
 
 func _on_monster_deck_clicked(pid: int) -> void:
 	if pid < _player_states.size():
 		var state: PlayerState = _player_states[pid]
 		var pname: String = _replay.player_names[pid] if pid < _replay.player_names.size() else "P%d" % (pid + 1)
-		_show_gallery("%s Monster Deck" % pname, state.monster_deck.duplicate(true))
+		_show_gallery(tr("STR_RV_MONSTER_DECK_TITLE_FMT") % pname, state.monster_deck.duplicate(true))
 
 
 # --- Log hover ---
@@ -792,7 +792,7 @@ func _on_next_turn_pressed() -> void:
 func _on_play_pause_pressed() -> void:
 	SfxManager.play("ui_click")
 	_auto_playing = not _auto_playing
-	play_pause_button.text = "Pause" if _auto_playing else "Play"
+	play_pause_button.text = tr("STR_RV_PAUSE") if _auto_playing else tr("STR_RV_PLAY")
 	_auto_timer = 0.0
 
 

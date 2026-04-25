@@ -36,7 +36,7 @@ theme_override_constants/separation = 20
 auto_translate_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Turn 1/1 — Player 1"
+text = ""
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.9, 0.7, 0.1, 1)
 
@@ -72,7 +72,7 @@ layout_mode = 2
 [node name="P2HandTitle" type="Label" parent="VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox"]
 auto_translate_mode = 2
 layout_mode = 2
-text = "P2 Hand (0)"
+text = ""
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
@@ -118,7 +118,7 @@ layout_mode = 2
 [node name="P1HandTitle" type="Label" parent="VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox"]
 auto_translate_mode = 2
 layout_mode = 2
-text = "P1 Hand (0)"
+text = ""
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
