@@ -870,12 +870,19 @@ func _update_all_setting_indicators() -> void:
 			if label in _turn_tracker_phases[0] or label in _turn_tracker_phases[1]:
 				continue # Phase labels are updated in _apply_turn_tracker
 			var base: String = label.get_meta("base_text")
-			var stripped := base.strip_edges(true, false)
-			var indent_len := base.length() - stripped.length()
+			# `base` is captured from .tscn (raw STR_* key). The auto branch can
+			# assign it back as-is and let Godot auto-translate at render time.
+			# The manual branch composes a new string ("● " + …) that's not a
+			# known translation key, so we must resolve it ourselves first.
 			if not _is_setting_auto(setting, pid):
-				label.text = base.left(maxi(indent_len - 2, 0)) + "● " + stripped
+				var resolved := tr(base)
+				var stripped := resolved.strip_edges(true, false)
+				var indent_len := resolved.length() - stripped.length()
+				label.text = resolved.left(maxi(indent_len - 2, 0)) + "● " + stripped
+				label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 			else:
 				label.text = base
+				label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_INHERIT
 
 
 func _start_game() -> void:
