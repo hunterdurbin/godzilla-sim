@@ -761,3 +761,6 @@ STR_EFF_EBP01_060_PROMPT,Choose a 'Godzilla vs. Destoroyah' strategy card from y
 STR_EFF_EBP01_034_PROMPT,Choose a rank 4 or lower battle card with Evolution from your discard pile:,捨て札から<進化>を持つ等級4以下の交戦カードを選ぶ:
 STR_EFF_EBP01_026_PROMPT,Choose a Gigan + Fest card from your discard pile to place under this card:,捨て札から<ガイガン>+<フェス・ゴジラ>のカードを選んでこの下に置く:
 STR_EFF_EBP01_073_PROMPT,Place a monster card from your discard pile under this card to set opponent's Rage to 0:,捨て札から怪獣カードをこの下に置いて相手の<怒り>を0にする:
+STR_EFF_EBP04_089_MILESTONE_15,Inherited Life: 15 rage cards — destroying all opponent battle cards!,「受け継がれる命」: <怒り>カード15枚 — 相手の交戦カードをすべて<破壊>!
+STR_EFF_EBP04_089_MILESTONE_22,Inherited Life: 22 rage cards — opponent discards entire hand!,「受け継がれる命」: <怒り>カード22枚 — 相手は手札をすべて捨てる!
+STR_EFF_EBP04_089_MILESTONE_30,Inherited Life: 30 rage cards — you win the game!,「受け継がれる命」: <怒り>カード30枚 — あなたの勝利!

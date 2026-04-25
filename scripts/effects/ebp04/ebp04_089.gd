@@ -1,6 +1,6 @@
 extends CardEffect
 ## EBP04-089: Inherited Life - Strategy Rank 1 (White)
-## <Base>
+##
 ## Do not move this to your discard pile at the beginning of your start phase.
 ## <Your Turn> When you decrease your Monster card's <Rage>, put them underneath
 ## this. On the 15th card <Destroy> all of your opponent's battle cards. On the
@@ -64,20 +64,17 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 func _trigger_milestone(ctx: EffectContext, milestone: int) -> void:
 	match milestone:
 		15:
-			ctx.effect_handler.log_message.emit(
-				"Inherited Life: 15 rage cards — destroying all opponent battle cards!")
+			ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_089_MILESTONE_15"))
 			var zones_to_destroy: Array[int] = ctx.opponent.get_occupied_zone_indices()
 			if not zones_to_destroy.is_empty():
 				await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
 		22:
-			ctx.effect_handler.log_message.emit(
-				"Inherited Life: 22 rage cards — opponent discards entire hand!")
+			ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_089_MILESTONE_22"))
 			while not ctx.opponent.hand.is_empty():
 				var card := ctx.opponent.hand.pop_back() as Dictionary
 				ctx.opponent.discard_pile.append(card)
 			ctx.opponent.hand_changed.emit()
 			ctx.opponent.discard_changed.emit()
 		30:
-			ctx.effect_handler.log_message.emit(
-				"Inherited Life: 30 rage cards — you win the game!")
+			ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_089_MILESTONE_30"))
 			ctx.game_state.declare_winner(ctx.owner.player_id)
