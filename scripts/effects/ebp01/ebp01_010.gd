@@ -16,6 +16,7 @@ extends CardEffect
 
 const TRIGGER_FILTERS = {
 	"on_rage_changed": {"direction": "increase"},
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false},
 }
 
 
@@ -29,15 +30,7 @@ func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void
 	await ctx.effect_handler.destroy_zones(ctx.opponent, column_zones)
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.is_own_turn():
-		return
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if ctx.owner.rage < 3:
 		return
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1

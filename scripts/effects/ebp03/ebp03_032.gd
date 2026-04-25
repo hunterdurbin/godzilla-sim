@@ -9,6 +9,11 @@ extends CardEffect
 # Interactions: None
 # Implementation notes: None
 
+
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
+}
+
 var _bonus_cp: int = 0
 
 
@@ -16,17 +21,8 @@ func get_bot_tags() -> Array[String]:
 	return ["boosts_cp"]
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	_bonus_cp = 0
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.is_opponent_turn():
-		return # Own turn only
-
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return

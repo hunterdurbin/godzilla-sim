@@ -11,16 +11,12 @@ extends CardEffect
 # Implementation notes: None
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.END, "own_turn": true}
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.END, "own_turn": true},
+}
 
 
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.END:
-		return
-	if ctx.is_opponent_turn():
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return

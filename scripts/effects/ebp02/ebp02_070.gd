@@ -15,6 +15,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.MAIN, "own_turn": false},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["blocks_zone"]
 
@@ -30,16 +35,7 @@ func blocks_opponent_strategy_plays(ctx: EffectContext) -> bool:
 	return true
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.MAIN, "own_turn": false}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.MAIN:
-		return
-	# Only active during opponent's turn
-	if ctx.is_own_turn():
-		return
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	# Opponent (the turn player) may discard to 5 to destroy this card
 	if ctx.opponent.hand.size() <= 5:
 		return

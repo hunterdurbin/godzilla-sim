@@ -11,6 +11,11 @@ extends CardEffect
 # Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["boosts_threat"]
 
@@ -24,14 +29,7 @@ func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, 
 	return false
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var is_own_turn := ctx.is_own_turn()
 
 	# Effect 1: Opponent's turn, Awakening4, +1 rage

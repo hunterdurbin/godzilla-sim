@@ -15,6 +15,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.MAIN},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return []
 
@@ -27,14 +32,7 @@ func can_monster_invade(_ctx: EffectContext) -> bool:
 	return false
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.MAIN}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.MAIN:
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var is_own_turn := ctx.is_own_turn()
 	var acting_player: PlayerState = ctx.owner if is_own_turn else ctx.opponent
 	var acting_player_id: int = acting_player.player_id

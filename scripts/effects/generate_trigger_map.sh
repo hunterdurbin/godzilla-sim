@@ -9,7 +9,7 @@ OUTPUT="$EFFECTS_DIR/trigger_map.gd"
 # NOTE: Update this list whenever a new overridable method is added to card_effect.gd
 METHODS=(
 	on_enter on_when_invading on_revenge on_crush on_discard_from_hand
-	on_burst_discard on_rage_changed on_opponent_rage_changed on_monster_advance get_phase_start_filter
+	on_burst_discard on_rage_changed on_opponent_rage_changed on_monster_advance
 	on_phase_start on_phase_end on_monster_played on_battle_card_played
 	on_hand_card_discarded on_counter_success on_strategy_discarded
 	get_invasion_observed_filter on_invasion_observed on_discarded_for_invasion on_would_be_destroyed

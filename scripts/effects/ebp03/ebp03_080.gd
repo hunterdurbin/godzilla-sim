@@ -12,6 +12,11 @@ extends CardEffect
 # Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["plays_other_cards"]
 
@@ -33,16 +38,7 @@ func is_base_strategy() -> bool:
 	return true
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.is_opponent_turn():
-		return # Your turn only
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	# Find Godzilla battle cards in hand (respecting play restrictions)
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,

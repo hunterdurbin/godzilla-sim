@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["plays_from_discard"]
 
@@ -21,16 +26,7 @@ func is_base_strategy() -> bool:
 	return true
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.is_opponent_turn():
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var green_count: int = 0
 	for card in ctx.owner.discard_pile:
 		if CardUtils.is_battle(card) and CardUtils.has_color(card, CardEnums.CardColor.GREEN):

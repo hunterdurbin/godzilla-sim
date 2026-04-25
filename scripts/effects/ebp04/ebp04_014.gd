@@ -15,6 +15,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false},
+}
+
 var _counter_immunity: int = 0
 
 
@@ -26,20 +30,12 @@ func get_counter_immunity_threshold(_ctx: EffectContext) -> int:
 	return _counter_immunity
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
-
-
 func on_phase_end(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase == CardEnums.GamePhase.END:
 		_counter_immunity = 0
 
 
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.is_own_turn():
-		return
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if not ctx.is_awakening(6):
 		return
 	var zone_cards: Array = ctx.owner.get_all_zone_cards()

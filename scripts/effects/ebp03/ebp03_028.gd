@@ -15,6 +15,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent", "destroys_zone"]
 
@@ -45,17 +50,7 @@ func get_opponent_field_rank_modifier(ctx: EffectContext) -> int:
 	return -3
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	# Only on opponent's turn
-	if ctx.is_own_turn():
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	# Place exactly 3 monster cards from discard under this card (or skip entirely)
 	var monsters: Array[Dictionary] = []
 	for card in ctx.owner.discard_pile:
