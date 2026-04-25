@@ -636,6 +636,9 @@ func apply_rage_reset(player_id: int) -> int:
 func reduce_rage(player_id: int, amount: int) -> int:
 	## Reduce a player's rage by amount. Returns actual amount reduced.
 	## Respects rage reduction prevention effects (e.g. EBP03-004).
+	## Populates the player's transient pending_rage_markers bucket with one
+	## RAGE-MARKER per point reduced so claiming effects (e.g. EBP04-089) can
+	## pop them; whatever isn't claimed is banished after the trigger resolves.
 	var player := game_state.players[player_id]
 	if not player.has_rage() or amount <= 0:
 		return 0
@@ -645,7 +648,9 @@ func reduce_rage(player_id: int, amount: int) -> int:
 	var actual: int = mini(amount, player.rage)
 	player.rage -= actual
 	player.rage_changed.emit(player.rage)
+	player.push_pending_rage_markers(actual)
 	await trigger_rage_changed(player_id, old_rage, player.rage)
+	player.pending_rage_markers.clear()
 	return actual
 
 

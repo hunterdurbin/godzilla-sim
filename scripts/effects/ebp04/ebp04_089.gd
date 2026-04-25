@@ -14,12 +14,13 @@ extends CardEffect
 ##   Card stays in play across start phases but is not subject to Base-specific
 ##   interactions (e.g., not destroyed by invasion to zones 6-8 per 12.9.2).
 ## Interactions: None
-## Implementation notes: <Rage> is a counter on the monster, not a physical card.
-##   To "put them underneath this" we spawn RAGE-MARKER token placeholders — one
-##   per point of rage decrease — and stack them under this strategy. The markers
-##   carry the TOKEN trait so they never enter the deck or discard pile.
-
-const RAGE_MARKER_ID := "RAGE-MARKER"
+## Implementation notes: Rage is a resource. The rage-decrease site (reduce_rage
+##   and execute_start_phase_reset) drops one RAGE-MARKER per point lost into the
+##   player's transient pending_rage_markers bucket. This effect claims markers
+##   from that bucket via pop_back() and stacks them under its strategy. With
+##   two copies of this card in play, the first to resolve claims all available
+##   markers; the second sees an empty bucket — so the resource is never
+##   double-counted.
 
 const TRIGGER_FILTERS = {
 	"on_rage_changed": {"own_turn": true, "direction": "decrease"},
@@ -35,9 +36,10 @@ func prevents_self_start_phase_discard(_ctx: EffectContext) -> bool:
 
 
 func _find_own_strategy_zone(ctx: EffectContext) -> int:
-	var self_id: String = ctx.card_data.get("id", "")
+	# Match by reference identity, not card id — two copies of this strategy
+	# can share the same id but each must track its own rage stack.
 	for i in range(ctx.owner.strategy_zones.size()):
-		if ctx.owner.strategy_zones[i].get("id", "") == self_id:
+		if is_same(ctx.owner.strategy_zones[i], ctx.card_data):
 			return i
 	return -1
 
@@ -52,15 +54,12 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 
 	var count_before: int = ctx.effect_handler.get_cards_under_strategy_top(ctx.owner, strategy_idx).size()
 
-	# Spawn one RAGE-MARKER token placeholder per rage point lost and stack
-	# them under this strategy. Rage isn't a real card, so we fabricate markers
-	# rather than pulling from the discard pile.
-	var template: Dictionary = CardData.get_card_by_id(RAGE_MARKER_ID)
-	if template.is_empty():
-		push_warning("EBP04-089: RAGE-MARKER card data not found")
-		return
-	for _i in range(delta):
-		var marker: Dictionary = template.duplicate()
+	# Claim up to `delta` rage markers from the player's pending_rage_markers
+	# bucket — rage is a resource. If another effect (or another copy of this
+	# card) already popped them, the bucket may be empty; just take what's left.
+	var to_claim: int = mini(delta, ctx.owner.pending_rage_markers.size())
+	for _i in range(to_claim):
+		var marker: Dictionary = ctx.owner.pending_rage_markers.pop_back()
 		ctx.effect_handler.place_card_under_strategy_zone(ctx.owner, marker, strategy_idx)
 
 	var count_after: int = ctx.effect_handler.get_cards_under_strategy_top(ctx.owner, strategy_idx).size()

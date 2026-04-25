@@ -93,9 +93,15 @@ func execute_start_phase_reset(state: GameState) -> void:
 	player.rage = new_rage
 	player.rage_changed.emit(new_rage)
 	# Fire rage_changed trigger so cards that watch for rage decrease (EBP04-089)
-	# pick up the start phase reset.
+	# pick up the start phase reset. Populate the claim bucket on decrease so
+	# they can pop markers as a true resource; clear leftovers afterwards.
 	if effect_handler and new_rage != old_rage:
+		var delta: int = old_rage - new_rage
+		if delta > 0:
+			player.push_pending_rage_markers(delta)
 		await effect_handler.trigger_rage_changed(player.player_id, old_rage, new_rage)
+		if delta > 0:
+			player.pending_rage_markers.clear()
 
 	# Reset per-turn flags
 	player.has_invaded_this_turn = false
