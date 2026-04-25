@@ -40,7 +40,7 @@ func get_phase_start_filter() -> Dictionary:
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return # Opponent's turn only
 	if not _has_color_battle_in_zones(ctx, CardEnums.CardColor.RED):
 		return

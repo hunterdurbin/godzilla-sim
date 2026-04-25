@@ -23,7 +23,7 @@ func get_bot_preferred_zones() -> Array[int]:
 
 func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
 	# Only during your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 
 	# Find which zone this card is in

@@ -24,7 +24,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	_bonus_cp = 0
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return # Own turn only
 
 	var zone_idx := find_zone_of_card(ctx)
@@ -55,6 +55,6 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
 	return _bonus_cp

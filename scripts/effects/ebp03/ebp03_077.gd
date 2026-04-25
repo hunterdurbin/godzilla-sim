@@ -18,9 +18,9 @@ func get_bot_tags() -> Array[String]:
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	for card in owner.discard_pile:
-		if CardUtils.is_monster(card) and card.get("rank", 0) <= 2:
+		if CardUtils.is_monster(card) and CardUtils.rank_at_most(card, 2):
 			return true
-	if owner.monster_stack.size() >= 5:
+	if owner.has_monster_stack(5):
 		for card in owner.discard_pile:
 			if CardUtils.is_monster(card):
 				return true
@@ -30,11 +30,11 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 func on_enter(ctx: EffectContext) -> void:
 	var has_low_rank_monster := false
 	for card in ctx.owner.discard_pile:
-		if CardUtils.is_monster(card) and card.get("rank", 0) <= 2:
+		if CardUtils.is_monster(card) and CardUtils.rank_at_most(card, 2):
 			has_low_rank_monster = true
 			break
 
-	var has_five_under := ctx.owner.monster_stack.size() >= 5
+	var has_five_under := ctx.has_monster_stack(5)
 	var has_any_monster := false
 	if has_five_under:
 		for card in ctx.owner.discard_pile:
@@ -76,7 +76,7 @@ func on_enter(ctx: EffectContext) -> void:
 func _return_low_rank_monster(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
-		func(card): return CardUtils.is_monster(card) and card.get("rank", 0) <= 2,
+		func(card): return CardUtils.is_monster(card) and CardUtils.rank_at_most(card, 2),
 		tr("STR_EFF_EBP03_077_PROMPT_A")
 	)
 	if not selected.is_empty():

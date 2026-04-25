@@ -23,7 +23,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_opponent_zone_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	# Only active from counter phase onward during opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return {}
 	if ctx.game_state.current_phase < CardEnums.GamePhase.COUNTER:
 		return {}

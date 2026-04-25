@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool:
-	return owner.rage >= 2 and opponent.rage > 0
+	return owner.rage >= 2 and opponent.has_rage()
 
 
 func on_enter(ctx: EffectContext) -> void:

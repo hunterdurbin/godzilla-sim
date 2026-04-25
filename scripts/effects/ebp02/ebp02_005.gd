@@ -17,15 +17,15 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_rage_changed(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 6
+	return owner.is_awakening(6)
 
 
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	if new_rage <= old_rage:
 		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
-	if ctx.owner.monster_zone < 6:
+	if not ctx.is_awakening(6):
 		return
 
 	var has_strategy: bool = ctx.owner.has_any_strategy_in_play()

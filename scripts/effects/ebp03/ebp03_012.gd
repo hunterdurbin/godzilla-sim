@@ -22,7 +22,7 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 	for card in owner.hand:
 		if CardUtils.is_strategy(card) \
 			and CardUtils.has_color(card, CardEnums.CardColor.BLUE) \
-			and card.get("rank", 0) <= 6:
+			and CardUtils.rank_at_most(card, 6):
 			return true
 	return false
 
@@ -40,7 +40,7 @@ func on_enter(ctx: EffectContext) -> void:
 		var card: Dictionary = ctx.owner.hand[i]
 		if CardUtils.is_strategy(card) \
 			and CardUtils.has_color(card, CardEnums.CardColor.BLUE) \
-			and card.get("rank", 0) <= 6:
+			and CardUtils.rank_at_most(card, 6):
 			valid_indices.append(i)
 
 	if valid_indices.is_empty():
@@ -50,7 +50,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_strategy(card) \
 			and CardUtils.has_color(card, CardEnums.CardColor.BLUE) \
-			and card.get("rank", 0) <= 6,
+			and CardUtils.rank_at_most(card, 6),
 		tr("STR_EFF_EBP03_012_PROMPT"),
 		true
 	)

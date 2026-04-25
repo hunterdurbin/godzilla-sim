@@ -24,7 +24,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, target_player_id: int) -> int:
 	# Only affects the opponent's strategies, only on the opponent's turn
-	if target_player_id == ctx.owner.player_id:
+	if ctx.is_owner(target_player_id):
 		return 0
 	if ctx.game_state.current_player_id != target_player_id:
 		return 0
@@ -33,7 +33,7 @@ func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, targ
 
 func on_battle_card_played(ctx: EffectContext, _zone_index: int, played_from_deck: bool = false) -> void:
 	# <Opponent's Turn> Each time opp plays a battle card from their main deck → discard to 1
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return
 	if not played_from_deck:
 		return

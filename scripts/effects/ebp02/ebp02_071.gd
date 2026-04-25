@@ -19,9 +19,9 @@ func get_bot_tags() -> Array[String]:
 
 
 func get_bot_destroy_max_rank(owner: PlayerState, _opponent: PlayerState) -> int:
-	if owner.monster_zone >= 8:
+	if owner.is_awakening(8):
 		return -1
-	elif owner.monster_zone >= 6:
+	elif owner.is_awakening(6):
 		return 6
 	return 4
 
@@ -37,14 +37,14 @@ func on_enter(ctx: EffectContext) -> void:
 		option_ids.append(0)
 
 	# Option 1: Awakening6 — Destroy 2 rank 6 or lower
-	if ctx.owner.monster_zone >= 6:
+	if ctx.is_awakening(6):
 		var has_r6_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 6).is_empty()
 		if has_r6_targets:
 			options.append("Awakening6: Destroy 2 of opponent's rank 6 or lower battle cards")
 			option_ids.append(1)
 
 	# Option 2: Awakening8 — Destroy 1 any battle card
-	if ctx.owner.monster_zone >= 8:
+	if ctx.is_awakening(8):
 		var has_any_target: bool = not ctx.opponent.get_occupied_zone_indices().is_empty()
 		if has_any_target:
 			options.append("Awakening8: Destroy 1 of opponent's battle cards")

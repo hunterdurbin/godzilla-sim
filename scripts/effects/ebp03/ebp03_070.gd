@@ -26,7 +26,7 @@ func get_phase_start_filter() -> Dictionary:
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return # Your turn only
 
 	var found := await ctx.effect_handler.search_deck(

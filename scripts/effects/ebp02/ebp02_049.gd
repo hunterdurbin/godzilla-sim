@@ -23,11 +23,11 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_stack.size() >= 3
+	return owner.has_monster_stack(3)
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.monster_stack.size() < 3:
+	if not ctx.has_monster_stack(3):
 		return
 
 	# Build available options

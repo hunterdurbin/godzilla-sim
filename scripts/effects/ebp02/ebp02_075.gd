@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool:
-	if opponent.rage <= 0:
+	if not opponent.has_rage():
 		return false
 	return owner.has_zone_matching(
 		func(c: Dictionary) -> bool: return c.get("name", "") == "Chibi Mechagodzilla")

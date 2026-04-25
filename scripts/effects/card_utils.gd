@@ -35,3 +35,11 @@ static func is_strategy(card: Dictionary) -> bool:
 
 static func is_monster(card: Dictionary) -> bool:
 	return card.get("card_type") == CardEnums.CardType.MONSTER
+
+
+static func rank_at_least(card: Dictionary, rank: int) -> bool:
+	return card.get("rank", 0) >= rank
+
+
+static func rank_at_most(card: Dictionary, rank: int) -> bool:
+	return card.get("rank", 0) <= rank

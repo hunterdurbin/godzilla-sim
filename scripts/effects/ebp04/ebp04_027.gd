@@ -35,7 +35,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.MAIN:
 		return
 
-	var is_own_turn := ctx.game_state.current_player_id == ctx.owner.player_id
+	var is_own_turn := ctx.is_own_turn()
 	var acting_player: PlayerState = ctx.owner if is_own_turn else ctx.opponent
 	var acting_player_id: int = acting_player.player_id
 

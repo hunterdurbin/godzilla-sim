@@ -586,7 +586,7 @@ func reduce_rage(player_id: int, amount: int) -> int:
 	## Reduce a player's rage by amount. Returns actual amount reduced.
 	## Respects rage reduction prevention effects (e.g. EBP03-004).
 	var player := game_state.players[player_id]
-	if player.rage <= 0 or amount <= 0:
+	if not player.has_rage() or amount <= 0:
 		return 0
 	if is_rage_reduction_prevented(player_id):
 		return 0

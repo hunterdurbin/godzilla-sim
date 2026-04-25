@@ -37,7 +37,7 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 
 
 func get_bot_effect_costs() -> Array[Dictionary]:
-	return [{"card_type": CardEnums.CardType.STRATEGY, "count": 1}]
+	return [ {"card_type": CardEnums.CardType.STRATEGY, "count": 1}]
 
 
 func get_burst_rank() -> int:

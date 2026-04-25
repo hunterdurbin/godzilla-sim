@@ -16,20 +16,20 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 8
+	return owner.is_awakening(8)
 
 
 func bot_can_fulfill_counter_power(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 8
+	return owner.is_awakening(8)
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.monster_zone < 8:
+	if not ctx.is_awakening(8):
 		return
 	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	if ctx.owner.monster_zone >= 8:
+	if ctx.is_awakening(8):
 		return 5000
 	return 0

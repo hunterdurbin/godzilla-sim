@@ -30,3 +30,45 @@ static func create(
 func field_rank(p_card_data: Dictionary, owner_player_id: int) -> int:
 	## Get the effective rank of an in-play battle card, accounting for field rank modifiers.
 	return effect_handler.get_effective_field_rank(p_card_data, owner_player_id)
+
+
+# --- Player identity ---
+
+func is_owner(p_player_id: int) -> bool:
+	return p_player_id == owner.player_id
+
+
+func is_opponent(p_player_id: int) -> bool:
+	return p_player_id == opponent.player_id
+
+
+# --- Turn ownership ---
+
+func is_own_turn() -> bool:
+	return game_state.current_player_id == owner.player_id
+
+
+func is_opponent_turn() -> bool:
+	return game_state.current_player_id == opponent.player_id
+
+
+# --- Awakening (rule-text shorthand for owner.monster_zone >= threshold) ---
+
+func is_awakening(threshold: int) -> bool:
+	return owner.is_awakening(threshold)
+
+
+# --- Monster stack ---
+
+func has_monster_stack(min_count: int) -> bool:
+	return owner.has_monster_stack(min_count)
+
+
+# --- Rage ---
+
+func has_rage() -> bool:
+	return owner.has_rage()
+
+
+func opponent_has_rage() -> bool:
+	return opponent.has_rage()

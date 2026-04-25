@@ -18,7 +18,7 @@ func get_bot_tags() -> Array[String]:
 func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary) -> int:
 	if target_card.get("id") != ctx.card_data.get("id"):
 		return 0
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return 0
 	var non_red_count: int = ctx.owner.count_zones_matching(
 		func(c: Dictionary) -> bool:

@@ -17,14 +17,14 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	if owner.monster_zone < 4:
+	if not owner.is_awakening(4):
 		return false
 	return owner.has_zone_matching(func(c: Dictionary) -> bool:
 		return c.get("name", "") == "Star Falcon")
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return
 
 	# Check for Star Falcon in zones
@@ -37,7 +37,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Check what options are available
 	var can_destroy_strategy := ctx.opponent.has_any_strategy_in_play()
 
-	var can_reduce_rage := ctx.opponent.rage > 0
+	var can_reduce_rage := ctx.opponent_has_rage()
 
 	if not can_destroy_strategy and not can_reduce_rage:
 		return

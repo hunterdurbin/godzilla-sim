@@ -21,7 +21,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func on_ally_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary, _zone_idx: int) -> void:
 	# Only active on opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return
 
 	# Destroyed card must be a non-red battle card (not this card itself)

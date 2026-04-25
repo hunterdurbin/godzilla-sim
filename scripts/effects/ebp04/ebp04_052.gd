@@ -19,16 +19,16 @@ func get_bot_tags() -> Array[String]:
 
 func on_discard_from_hand(ctx: EffectContext) -> void:
 	# Only when discarded by opponent's effect
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return
 
-	if ctx.opponent.monster_zone >= 4:
+	if ctx.opponent.is_awakening(4):
 		await ctx.effect_handler.play_from_discard(ctx.owner.player_id, ctx.card_data)
 
 
 func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> void:
 	# Rage +2 when ANY hand card discarded by opponent + this is in area 8
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return
 
 	var my_zone: int = find_zone_of_card(ctx)

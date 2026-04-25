@@ -22,7 +22,7 @@ func get_bot_max_advance_zone(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 
 	var revealed: Array[Dictionary] = []
@@ -55,5 +55,5 @@ func on_enter(ctx: EffectContext) -> void:
 	if monster_count > 0:
 		await ctx.effect_handler.gain_rage(ctx.owner.player_id, monster_count)
 
-	if has_step2 and ctx.owner.monster_zone < 6:
+	if has_step2 and not ctx.is_awakening(6):
 		await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 6)

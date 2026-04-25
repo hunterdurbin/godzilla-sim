@@ -22,7 +22,7 @@ func get_bot_max_advance_zone(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone == 3 and owner.current_monster.get("rank", 0) >= 3
+	return owner.monster_zone == 3 and owner.CardUtils.rank_at_least(current_monster, 3)
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
@@ -31,7 +31,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func prevents_own_invasion(ctx: EffectContext) -> bool:
 	# Only on your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return false
 	return true
 

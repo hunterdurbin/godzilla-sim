@@ -33,9 +33,9 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func get_opponent_field_rank_modifier(ctx: EffectContext) -> int:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
-	if ctx.owner.monster_stack.size() < 3:
+	if not ctx.has_monster_stack(3):
 		return 0
 	return -2
 

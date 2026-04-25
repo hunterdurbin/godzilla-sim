@@ -33,7 +33,7 @@ func _find_own_strategy_zone(ctx: EffectContext) -> int:
 
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	# Only trigger on own turn when rage decreases
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 	var delta := old_rage - new_rage
 	if delta <= 0:

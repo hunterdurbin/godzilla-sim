@@ -21,7 +21,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	if ctx.owner.monster_zone < 6:
+	if not ctx.is_awakening(6):
 		return 0
 	if ctx.owner.count_zone_tokens_by_id("EBP02-T03") >= 3:
 		return 10000

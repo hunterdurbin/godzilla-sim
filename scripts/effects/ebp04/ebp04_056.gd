@@ -20,7 +20,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func prevents_opponent_invasion(ctx: EffectContext) -> bool:
-	if ctx.opponent.rage != 0:
+	if ctx.opponent_has_rage():
 		return false
 	return _is_in_opponent_monster_column(ctx)
 

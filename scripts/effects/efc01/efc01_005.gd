@@ -23,7 +23,7 @@ func get_phase_start_filter() -> Dictionary:
 
 func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
 	# Only during your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 
 	# Reveal top 5 cards
@@ -69,7 +69,7 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 	# Discard entire hand
 	await ctx.effect_handler.discard_hand_to(ctx.owner.player_id, 0)

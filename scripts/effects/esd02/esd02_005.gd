@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_when_invading(_owner: PlayerState, opponent: PlayerState) -> bool:
-	return opponent.rage > 0
+	return opponent.has_rage()
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:

@@ -28,7 +28,7 @@ func get_invasion_observed_filter() -> Dictionary:
 func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
 	if find_zone_of_card(ctx) != 7:
 		return
-	if ctx.owner.rage <= 0:
+	if not ctx.has_rage():
 		return
 
 	# "you may" — ask the player

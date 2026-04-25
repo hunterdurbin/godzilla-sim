@@ -22,7 +22,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_total_cp_modifier(ctx: EffectContext) -> int:
 	# Only active on your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
 	# Check for Destoroyah battle card in zones
 	var has_destoroyah: bool = ctx.owner.has_zone_matching(

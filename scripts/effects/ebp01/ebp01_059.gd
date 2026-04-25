@@ -29,7 +29,7 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 
 func on_discard_from_hand(ctx: EffectContext) -> void:
 	# Check if opponent's monster is in zones 4-8
-	if ctx.opponent.monster_zone < 4:
+	if not ctx.opponent.is_awakening(4):
 		return
 
 	# Play self from discard

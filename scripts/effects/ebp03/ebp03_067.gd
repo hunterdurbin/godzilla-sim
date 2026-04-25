@@ -21,7 +21,7 @@ func get_bot_tags() -> Array[String]:
 
 func on_discard_from_hand(ctx: EffectContext) -> void:
 	# Only on your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 
 	var color_count: int = _count_zone_colors(ctx)

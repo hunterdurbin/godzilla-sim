@@ -36,7 +36,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> void:
 	if not CardUtils.is_battle(discarded_card):
 		return
-	if ctx.opponent.rage > 0:
+	if ctx.opponent_has_rage():
 		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
 	else:
 		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)

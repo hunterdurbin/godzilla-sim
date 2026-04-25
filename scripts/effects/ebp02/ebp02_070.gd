@@ -25,7 +25,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func blocks_opponent_strategy_plays(ctx: EffectContext) -> bool:
 	# Only active during opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return false
 	return true
 
@@ -38,7 +38,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.MAIN:
 		return
 	# Only active during opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return
 	# Opponent (the turn player) may discard to 5 to destroy this card
 	if ctx.opponent.hand.size() <= 5:

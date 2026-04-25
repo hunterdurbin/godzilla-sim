@@ -21,7 +21,7 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func bot_can_fulfill_counter_success(owner: PlayerState, _opponent: PlayerState) -> bool:
-	if owner.monster_zone < 4:
+	if not owner.is_awakening(4):
 		return false
 	var monster_count := 0
 	for card in owner.discard_pile:
@@ -34,7 +34,7 @@ func bot_can_fulfill_counter_success(owner: PlayerState, _opponent: PlayerState)
 
 func on_counter_success(ctx: EffectContext) -> void:
 	# Awakening4: must be in zone 4 or beyond
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return
 	# Need 5 or more monster cards in discard pile
 	var monster_count: int = 0

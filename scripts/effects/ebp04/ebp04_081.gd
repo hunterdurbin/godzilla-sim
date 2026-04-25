@@ -23,8 +23,8 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func prevents_own_invasion(ctx: EffectContext) -> bool:
-	return ctx.game_state.current_player_id == ctx.owner.player_id
+	return ctx.is_own_turn()
 
 
 func can_monster_advance(ctx: EffectContext) -> bool:
-	return ctx.game_state.current_player_id != ctx.owner.player_id
+	return ctx.is_opponent_turn()

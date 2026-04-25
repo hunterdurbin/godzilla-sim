@@ -19,9 +19,9 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_counter_immunity_threshold(ctx: EffectContext) -> int:
 	# Only active during opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return 0
 	# Awakening6: owner's monster must be in zone 6 or higher
-	if ctx.owner.monster_zone < 6:
+	if not ctx.is_awakening(6):
 		return 0
 	return 50000

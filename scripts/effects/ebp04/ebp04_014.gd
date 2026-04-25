@@ -38,9 +38,9 @@ func on_phase_end(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return
-	if ctx.owner.monster_zone < 6:
+	if not ctx.is_awakening(6):
 		return
 	var zone_cards: Array = ctx.owner.get_all_zone_cards()
 	if zone_cards.size() < 2:
@@ -58,7 +58,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> void:
 	if not CardUtils.is_battle(discarded_card):
 		return
-	if ctx.opponent.rage != 0:
+	if ctx.opponent_has_rage():
 		return
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,

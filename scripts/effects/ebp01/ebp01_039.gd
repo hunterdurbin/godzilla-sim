@@ -30,7 +30,7 @@ func bot_can_fulfill_on_when_invading(owner: PlayerState, opponent: PlayerState)
 		return false
 	for i in range(5):
 		var top := opponent.get_zone_top_card(i)
-		if not top.is_empty() and top.get("rank", 0) <= 5:
+		if not top.is_empty() and CardUtils.rank_at_most(top, 5):
 			return true
 	return false
 

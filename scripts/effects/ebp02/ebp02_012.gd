@@ -39,10 +39,10 @@ func get_phase_start_filter() -> Dictionary:
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.MAIN:
 		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 	# Awakening4: monster must be in zone 4+
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return
 	# Need 2+ cards under this card
 	var zone_idx := find_zone_of_card(ctx)

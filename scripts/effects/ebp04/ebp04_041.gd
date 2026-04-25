@@ -23,7 +23,7 @@ func get_phase_start_filter() -> Dictionary:
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 
 	var zone_idx := find_zone_of_card(ctx)
@@ -34,6 +34,6 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	if ctx.owner.monster_zone >= 6:
+	if ctx.is_awakening(6):
 		return 3000
 	return 0

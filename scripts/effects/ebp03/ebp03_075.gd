@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 
 func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:
 	return owner.has_zone_matching(func(c: Dictionary) -> bool:
-		return c.get("rank", 0) <= 4 and c.get("evolution_rank", -1) >= 0)
+		return CardUtils.rank_at_most(c, 4) and c.get("evolution_rank", -1) >= 0)
 
 
 func is_base_strategy() -> bool:
@@ -31,7 +31,7 @@ func get_phase_start_filter() -> Dictionary:
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return # Your turn only
 
 	# Find zones with R4 or lower battle cards that have Evolution

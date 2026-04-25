@@ -22,7 +22,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_total_cp_modifier(ctx: EffectContext) -> int:
 	# <Your Turn> — only active during owner's turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
 	# Count battle cards in zones
 	var count: int = ctx.owner.get_occupied_zone_indices().size()

@@ -20,7 +20,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 6
+	return owner.is_awakening(6)
 
 
 func on_would_be_destroyed(ctx: EffectContext) -> bool:
@@ -45,7 +45,7 @@ func on_would_be_destroyed(ctx: EffectContext) -> bool:
 
 func on_enter(ctx: EffectContext) -> void:
 	# Awakening6: monster must be in zone 6+
-	if ctx.owner.monster_zone < 6:
+	if not ctx.is_awakening(6):
 		return
 
 	var my_zone: int = find_zone_of_card(ctx)

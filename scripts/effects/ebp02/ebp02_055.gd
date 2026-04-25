@@ -20,7 +20,7 @@ func get_bot_tags() -> Array[String]:
 
 func get_blocked_opponent_zones(ctx: EffectContext) -> Array[int]:
 	# Awakening4: only active when monster is at zone 4+
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return []
 	# Need 3+ Crystals tokens
 	if ctx.owner.count_zone_tokens_by_id("EBP02-T03") < 3:

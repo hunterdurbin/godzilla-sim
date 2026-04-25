@@ -24,7 +24,7 @@ func is_base_strategy() -> bool:
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return 0 # Opponent's turn only
 
 	var bonus := 0

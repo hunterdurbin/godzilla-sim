@@ -27,7 +27,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_opponent_field_rank_modifier(ctx: EffectContext) -> int:
 	# Only active during your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
 	return -1
 

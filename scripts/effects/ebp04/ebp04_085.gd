@@ -54,7 +54,7 @@ func on_strategy_discarded(ctx: EffectContext, strategy_card: Dictionary) -> voi
 
 func protects_card_from_destruction(ctx: EffectContext, card_data: Dictionary, zone_idx: int) -> bool:
 	# Opponent's Turn: protect Higher Dimensional Monster Ghidorah in zones 1-5
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return false
 	if zone_idx >= 5:
 		return false

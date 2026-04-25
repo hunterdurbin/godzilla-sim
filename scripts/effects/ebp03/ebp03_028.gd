@@ -38,9 +38,9 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func get_opponent_field_rank_modifier(ctx: EffectContext) -> int:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
-	if ctx.owner.monster_stack.size() < 5:
+	if not ctx.has_monster_stack(5):
 		return 0
 	return -3
 
@@ -53,7 +53,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
 	# Only on opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return
 
 	# Place exactly 3 monster cards from discard under this card (or skip entirely)

@@ -22,9 +22,9 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_strategy_hand_rank_modifier(ctx: EffectContext, card: Dictionary, target_player_id: int) -> int:
 	# Only affects own strategies, only on own turn
-	if target_player_id != ctx.owner.player_id:
+	if ctx.is_opponent(target_player_id):
 		return 0
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
 	# Only applies to strategy cards in hand
 	if not CardUtils.is_strategy(card):

@@ -23,7 +23,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func can_be_destroyed(ctx: EffectContext) -> bool:
 	# Cannot be destroyed while opponent's rage is 0
-	if ctx.opponent.rage == 0:
+	if not ctx.opponent_has_rage():
 		return false
 	return true
 

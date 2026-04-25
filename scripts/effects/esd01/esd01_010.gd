@@ -45,7 +45,7 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	if ctx.owner.rage >= 2:
 		bonus += 5000
 	# Awakening6: +5000 if monster in zone 6+
-	if ctx.owner.monster_zone >= 6:
+	if ctx.is_awakening(6):
 		bonus += 5000
 
 	if bonus == 0:

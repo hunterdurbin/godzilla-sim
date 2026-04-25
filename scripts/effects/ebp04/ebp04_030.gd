@@ -12,7 +12,7 @@ extends CardEffect
 
 
 func blocks_opponent_end_phase_draw(ctx: EffectContext) -> bool:
-	return ctx.game_state.current_player_id != ctx.owner.player_id
+	return ctx.is_opponent_turn()
 
 
 func get_bot_tags() -> Array[String]:

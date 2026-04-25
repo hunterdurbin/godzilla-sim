@@ -83,6 +83,20 @@ func get_threat_level() -> int:
 	return current_monster.get("threat_level", 0) + (rage * 5000)
 
 
+# --- Effect predicate helpers (rule-text shorthands) ---
+
+func is_awakening(threshold: int) -> bool:
+	return monster_zone >= threshold
+
+
+func has_monster_stack(min_count: int) -> bool:
+	return monster_stack.size() >= min_count
+
+
+func has_rage() -> bool:
+	return rage > 0
+
+
 func get_total_counter_power() -> int:
 	var total: int = 0
 	for i in range(8):

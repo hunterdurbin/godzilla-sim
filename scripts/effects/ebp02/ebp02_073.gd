@@ -26,7 +26,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func on_battle_card_played(ctx: EffectContext, zone_index: int, _played_from_deck: bool = false) -> void:
 	# <Your Turn> — only active during owner's turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 	# Find opponent's zones in the same column
 	var opp_column_zones := get_opponent_column_zones(zone_index)

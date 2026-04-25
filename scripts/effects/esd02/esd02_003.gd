@@ -24,7 +24,7 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 		return false
 	for card in owner.discard_pile:
 		if card.get("card_type") == CardEnums.CardType.BATTLE \
-			and card.get("rank", 0) <= 4 \
+			and CardUtils.rank_at_most(card, 4) \
 			and card.has("evolution_rank"):
 			return true
 	return false

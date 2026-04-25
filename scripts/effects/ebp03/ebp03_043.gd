@@ -18,7 +18,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:
-	if owner.monster_zone < 4:
+	if not owner.is_awakening(4):
 		return false
 	return owner.has_zone_matching(func(c: Dictionary) -> bool:
 		return c.get("name", "") == "Land Moguera")
@@ -32,10 +32,10 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
 	# Only on your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 	# Awakening4: monster must be in zone 4+
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return
 
 	var my_zone: int = find_zone_of_card(ctx)

@@ -27,8 +27,8 @@ func get_phase_start_filter() -> Dictionary:
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.COUNTER:
 		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
-	if ctx.owner.monster_zone < 8:
+	if not ctx.is_awakening(8):
 		return
 	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 3)

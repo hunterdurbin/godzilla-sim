@@ -25,7 +25,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return {}
 
 	var monster_idx: int = ctx.owner.monster_zone - 1

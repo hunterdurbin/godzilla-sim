@@ -22,7 +22,7 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	# Only during your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 
 	# Only trigger when rage increases

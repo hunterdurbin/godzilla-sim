@@ -16,7 +16,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.monster_zone < 6:
+	if not ctx.is_awakening(6):
 		return
 
 	var has_rodan: bool = ctx.owner.has_zone_matching(

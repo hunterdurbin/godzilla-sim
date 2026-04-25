@@ -48,9 +48,9 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 
 	var bonus: int = 0
 	# Awakening4: monster in zone 4+
-	if ctx.owner.monster_zone >= 4:
+	if ctx.is_awakening(4):
 		bonus += 3000
 	# Awakening6: monster in zone 6+
-	if ctx.owner.monster_zone >= 6:
+	if ctx.is_awakening(6):
 		bonus += 3000
 	return bonus

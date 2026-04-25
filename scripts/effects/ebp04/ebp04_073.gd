@@ -22,7 +22,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func on_card_returned_from_discard(ctx: EffectContext, _card: Dictionary) -> void:
 	# Only active on opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return
 	# This card must be in zone 1 (index 0)
 	if find_zone_of_card(ctx) != 0:

@@ -16,7 +16,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return 0
 	var my_zone: int = find_zone_of_card(ctx)
 	if my_zone < 0:

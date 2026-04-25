@@ -18,7 +18,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func protects_card_from_destruction(ctx: EffectContext, card_data: Dictionary, _zone_idx: int) -> bool:
 	# Only during opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return false
 	# Count opponent's battle cards in zones
 	var count: int = ctx.opponent.count_zones_matching(CardUtils.is_battle)

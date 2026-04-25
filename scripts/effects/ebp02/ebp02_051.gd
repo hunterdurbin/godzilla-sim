@@ -17,11 +17,11 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_threat_level(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_stack.size() >= 5
+	return owner.has_monster_stack(5)
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:
-	if ctx.owner.monster_stack.size() < 5:
+	if not ctx.has_monster_stack(5):
 		return 0
 
 	var empty_count: int = ctx.opponent.get_empty_zone_indices().size()

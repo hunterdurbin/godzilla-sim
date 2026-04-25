@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return CardUtils.is_battle(card) and card.get("rank", 0) >= 5,
+		func(card): return CardUtils.is_battle(card) and CardUtils.rank_at_least(card, 5),
 		tr("STR_EFF_EBP03_033_PROMPT"),
 		true
 	)

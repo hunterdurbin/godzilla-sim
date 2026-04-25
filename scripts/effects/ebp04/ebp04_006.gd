@@ -23,7 +23,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_engagement_restriction(ctx: EffectContext) -> int:
 	# Opponent's turn only
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return -1
 	if _rank1_strategy_discard_count(ctx) < 3:
 		return -1

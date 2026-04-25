@@ -16,16 +16,16 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:
-	if owner.monster_zone < 4 or owner.monster_zone >= 8:
+	if not owner.is_awakening(4) or owner.is_awakening(8):
 		return false
 	for card in owner.hand:
-		if CardUtils.is_battle(card) and card.get("rank", 0) >= 5:
+		if CardUtils.is_battle(card) and CardUtils.rank_at_least(card, 5):
 			return true
 	return false
 
 
 func bot_can_fulfill_threat_level(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 6
+	return owner.is_awakening(6)
 
 
 func get_phase_start_filter() -> Dictionary:
@@ -35,22 +35,22 @@ func get_phase_start_filter() -> Dictionary:
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if phase != CardEnums.GamePhase.END:
 		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return CardUtils.is_battle(card) and card.get("rank", 0) >= 5,
+		func(card): return CardUtils.is_battle(card) and CardUtils.rank_at_least(card, 5),
 		tr("STR_EFF_EBP03_001_PROMPT"),
 		true
 	)
 	if not selected.is_empty():
-		if ctx.owner.monster_zone < 8:
+		if not ctx.is_awakening(8):
 			await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, ctx.owner.monster_zone + 1)
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:
-	if ctx.owner.monster_zone >= 6:
+	if ctx.is_awakening(6):
 		return 5000
 	return 0
