@@ -52,7 +52,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 			if not CardUtils.has_trait(card, CardEnums.CardTrait.GODZILLA):
 				return false
 			return ctx.effect_handler.can_card_be_played(ctx.owner.player_id, card),
-		"Play a Godzilla battle card from hand (or skip):",
+		tr("STR_EFF_EBP03_080_PROMPT"),
 		true
 	)
 	if selected.is_empty():
@@ -68,7 +68,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 			var dest := await ctx.effect_handler.select_zone_target(
 				ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-				"Choose a zone to play the battle card:")
+				tr("STR_EFF_PLAY_BATTLE_ZONE"))
 			if dest < 0:
 				ctx.owner.discard_pile.append(card)
 				ctx.owner.discard_changed.emit()

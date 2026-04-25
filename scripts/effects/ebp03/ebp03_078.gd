@@ -47,14 +47,14 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var right_chosen := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.opponent.player_id, rightmost_zones,
-		"Choose a battle card to destroy from the rightmost column:")
+		tr("STR_EFF_DESTROY_OPP_RANK_RIGHT_COL"))
 	if right_chosen >= 0:
 		zones_to_destroy.append(right_chosen)
 
 	if rightmost_zones != leftmost_zones:
 		var left_chosen := await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.opponent.player_id, leftmost_zones,
-			"Choose a battle card to destroy from the leftmost column:")
+			tr("STR_EFF_DESTROY_OPP_RANK_LEFT_COL"))
 		if left_chosen >= 0:
 			zones_to_destroy.append(left_chosen)
 

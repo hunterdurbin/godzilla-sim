@@ -37,7 +37,7 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 	# Show all revealed cards
 	await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, revealed, revealed,
-		"Revealed cards:")
+		tr("STR_EFF_REVEALED_CARDS"))
 
 	# Separate Fest cards from the rest
 	var fest_cards: Array[Dictionary] = []

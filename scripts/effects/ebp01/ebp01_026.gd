@@ -37,7 +37,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		func(card: Dictionary) -> bool:
 			return CardUtils.has_trait(card, CardEnums.CardTrait.GIGAN) \
 				and CardUtils.has_trait(card, CardEnums.CardTrait.FEST),
-		"Choose a Gigan + Fest card from your discard pile to place under this card:"
+		tr("STR_EFF_EBP01_026_PROMPT")
 	)
 
 	if not selected.is_empty():

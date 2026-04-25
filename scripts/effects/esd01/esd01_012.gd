@@ -41,7 +41,7 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 	# Let the player choose which empty zone to move to (may skip)
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, empty_zones,
-		"Choose an empty zone to move this card to:", true)
+		tr("STR_EFF_ESD01_012_PROMPT"), true)
 
 	ctx.effect_handler.unhighlight_zone_card(ctx.owner.player_id, current_zone_idx)
 

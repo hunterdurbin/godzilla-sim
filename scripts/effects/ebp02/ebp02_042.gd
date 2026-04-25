@@ -23,7 +23,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.has_any_trait(card, [CardEnums.CardTrait.KING_GHIDORAH, CardEnums.CardTrait.MEGALON]),
-		"Discard a King Ghidorah or Megalon card to reduce opponent's rage by 2 (or skip):",
+		tr("STR_EFF_EBP02_042_PROMPT"),
 		true)
 
 	if not selected.is_empty():

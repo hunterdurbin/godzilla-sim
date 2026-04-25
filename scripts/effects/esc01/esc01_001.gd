@@ -45,7 +45,7 @@ func apply_play_cost(ctx: EffectContext, _zone_index: int) -> bool:
 	var filter := func(card: Dictionary) -> bool:
 		return CardEnums.CardTrait.GODZILLA in card.get("traits", [])
 	var discarded := await ctx.effect_handler.select_hand_card(
-		ctx.owner.player_id, filter, "Discard a Godzilla card to play at -4 rank:", true)
+		ctx.owner.player_id, filter, tr("STR_EFF_ESC01_001_PROMPT"), true)
 	# If player skipped or no valid card, cancel the play
 	return not discarded.is_empty()
 

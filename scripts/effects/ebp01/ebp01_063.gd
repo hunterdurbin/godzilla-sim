@@ -33,6 +33,6 @@ func on_enter(ctx: EffectContext) -> void:
 				var card := ctx.owner.get_zone_top_card(ez)
 				options.append("Zone %d: %s" % [ez + 1, card.get("name", "?")])
 			var chosen: int = await ctx.effect_handler.select_choice(
-				ctx.owner.player_id, options, "Choose which zone to evolve next:")
+				ctx.owner.player_id, options, tr("STR_EFF_CHOOSE_EVOLVE_ZONE"))
 			zi = eligible.pop_at(chosen)
 		await ctx.effect_handler.perform_evolution(ctx.owner.player_id, zi)

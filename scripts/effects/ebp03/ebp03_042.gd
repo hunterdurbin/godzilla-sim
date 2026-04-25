@@ -41,7 +41,7 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 	# Choose a Mothra card to place self under (optional)
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		"Place Ghogo under a Mothra card with Evolution to evolve it (or skip):", true)
+		tr("STR_EFF_EBP03_042_PROMPT"), true)
 
 	if chosen < 0:
 		return

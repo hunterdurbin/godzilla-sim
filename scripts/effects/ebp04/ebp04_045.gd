@@ -31,7 +31,7 @@ func apply_play_cost(ctx: EffectContext, zone_index: int) -> bool:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		_is_non_blue_battle,
-		"Discard a non-blue battle card (play cost for Manda -2 rank):",
+		tr("STR_EFF_EBP04_045_PROMPT"),
 		false)
 	return not selected.is_empty()
 

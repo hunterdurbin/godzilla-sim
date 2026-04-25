@@ -53,7 +53,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 		var chosen: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.owner.player_id, empty_zones,
-			"Play %s — choose a zone:" % card.get("name", "card"))
+			tr("STR_EFF_PLAY_NAMED_FMT") % card.get("name", "card"))
 		if chosen < 0:
 			ctx.owner.discard_pile.append(card)
 			ctx.owner.discard_changed.emit()

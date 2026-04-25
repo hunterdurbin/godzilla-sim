@@ -43,7 +43,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 			valid_zones.append(i)
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		"Play %s from discard to a zone (or skip):" % invasion_card.get("name", "card"),
+		tr("STR_EFF_PLACE_DISCARD_FMT") % invasion_card.get("name", "card"),
 		true)
 	if chosen < 0:
 		return

@@ -39,7 +39,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var idx_to_destroy: int = await ctx.effect_handler.select_strategy_target(
 		ctx.owner.player_id, ctx.opponent.player_id, valid_strat,
-		"Choose an opponent strategy to Destroy:")
+		tr("STR_EFF_DESTROY_OPP_STRATEGY"))
 	if idx_to_destroy >= 0:
 		await ctx.effect_handler.discard_strategy_from_zone(ctx.opponent.player_id, idx_to_destroy)
 

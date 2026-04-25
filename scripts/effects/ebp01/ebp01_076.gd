@@ -23,4 +23,4 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,
 		func(_card: Dictionary) -> bool: return true,
-		"Choose an opponent's battle card to destroy:")
+		tr("STR_EFF_DESTROY_OPP_BATTLE"))

@@ -52,7 +52,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var chosen: Dictionary = await ctx.effect_handler.select_hand_card(
 		ctx.opponent.player_id,
 		func(_card: Dictionary) -> bool: return true,
-		"Discard %d card(s) to destroy Godzilla vs. SpaceGodzilla? (Select a card to confirm, skip to decline)" % discard_count,
+		tr("STR_EFF_EBP02_070_PROMPT_FMT") % discard_count,
 		true)
 
 	if chosen.is_empty():

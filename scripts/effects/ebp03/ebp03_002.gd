@@ -46,7 +46,7 @@ func _try_discard_for_rage(ctx: EffectContext, rage_gain: int) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_battle(card) and card.get("rank", 0) >= 5,
-		"Discard a rank 5+ battle card to gain %d rage (or skip):" % rage_gain,
+		tr("STR_EFF_EBP03_002_PROMPT_FMT") % rage_gain,
 		true
 	)
 	if not selected.is_empty():

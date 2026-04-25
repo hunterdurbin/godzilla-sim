@@ -39,7 +39,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Let player choose which card to evolve
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		player.player_id, player.player_id, valid_zones,
-		"Choose a battle card with Evolution to evolve:")
+		tr("STR_EFF_EVOLVE_BATTLE"))
 	if chosen < 0:
 		return
 

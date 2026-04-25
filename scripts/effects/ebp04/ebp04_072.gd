@@ -31,7 +31,7 @@ func on_battle_card_played(ctx: EffectContext, _zone_index: int, played_from_dec
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(_card): return true,
-		"Search your deck for a card to add to your hand (or skip):")
+		tr("STR_EFF_SEARCH_DECK_OR_SKIP"))
 	if not found.is_empty():
 		ctx.owner.hand.append(found)
 		ctx.owner.hand_changed.emit()

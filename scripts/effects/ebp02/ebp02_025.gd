@@ -30,7 +30,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid,
-		"Choose an adjacent zone for a Tentacles token:")
+		tr("STR_EFF_EBP02_025_PROMPT"))
 	if chosen < 0:
 		return
 

@@ -25,7 +25,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_strategy(card) and card.get("is_base", false),
-		"Return a Base strategy card from discard to hand:"
+		tr("STR_EFF_EBP03_021_PROMPT")
 	)
 	if not selected.is_empty():
 		ctx.owner.hand.append(selected)

@@ -37,7 +37,7 @@ func on_enter(ctx: EffectContext) -> void:
 	)
 	await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, milled, milled,
-		"Sent to discard pile:")
+		tr("STR_EFF_DISCARDED_PILE"))
 
 	# If the milled card is a battle card, may return 1 monster from discard to hand
 	if not CardUtils.is_battle(milled[0]):
@@ -47,7 +47,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.is_monster(card),
-		"Return a monster card from discard to hand (or skip):")
+		tr("STR_EFF_EFC01_002_PROMPT"))
 
 	if not selected.is_empty():
 		ctx.owner.hand.append(selected)

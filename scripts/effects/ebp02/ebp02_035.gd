@@ -45,7 +45,7 @@ func on_enter(ctx: EffectContext) -> void:
 	for _i in range(2):
 		var chosen: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.owner.player_id, valid_adjacent,
-			"Choose a zone for Tentacles token (%d remaining):" % (2 - placed))
+			tr("STR_EFF_EBP02_035_TOKEN_FMT") % (2 - placed))
 		if chosen < 0:
 			break
 		await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T02", chosen)

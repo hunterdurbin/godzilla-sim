@@ -64,7 +64,7 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	var chosen_idx := await ctx.effect_handler.select_choice(
-		ctx.owner.player_id, options, "Choose an effect:")
+		ctx.owner.player_id, options, tr("STR_EFF_CHOOSE_EFFECT"))
 	var chosen_id: String = option_ids[chosen_idx] if chosen_idx >= 0 and chosen_idx < option_ids.size() else ""
 
 	if chosen_id == "low_rank":
@@ -77,7 +77,7 @@ func _return_low_rank_monster(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_monster(card) and card.get("rank", 0) <= 2,
-		"Return a rank 2 or lower monster from discard to hand:"
+		tr("STR_EFF_EBP03_077_PROMPT_A")
 	)
 	if not selected.is_empty():
 		ctx.owner.hand.append(selected)
@@ -88,7 +88,7 @@ func _return_any_monster(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_monster(card),
-		"Return a monster from discard to hand:"
+		tr("STR_EFF_EBP03_077_PROMPT_B")
 	)
 	if not selected.is_empty():
 		ctx.owner.hand.append(selected)

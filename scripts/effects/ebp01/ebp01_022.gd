@@ -37,7 +37,7 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	# Choose which card to move
 	var source: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, occupied,
-		"Choose a battle card to move to an empty zone:", true)
+		tr("STR_EFF_MOVE_BATTLE_TO_EMPTY"), true)
 
 	ctx.effect_handler.unhighlight_zone_card(ctx.owner.player_id, my_zone)
 
@@ -51,7 +51,7 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 
 	var dest: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, empty_zones,
-		"Choose an empty zone to move the card to:")
+		tr("STR_EFF_MOVE_DEST_EMPTY"))
 	if dest < 0:
 		return
 

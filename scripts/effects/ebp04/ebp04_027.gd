@@ -42,7 +42,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		acting_player_id,
 		func(card: Dictionary) -> bool: return card.get("invasion_icon", 0) == 2,
-		"Discard an Invade 2 card to counter this Gigan (or skip):",
+		tr("STR_EFF_EBP04_027_PROMPT"),
 		true)
 	if selected.is_empty():
 		return

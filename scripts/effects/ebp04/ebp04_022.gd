@@ -52,7 +52,7 @@ func on_counter_success(ctx: EffectContext) -> void:
 		var remaining: int = green_count - i
 		var chosen: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.opponent.player_id, valid_zones,
-			"Destroy an opponent's battle card with 6000 or less CP in zones 1-5 (%d left):" % remaining)
+			tr("STR_EFF_DESTROY_OPP_CP_LEQ_FMT") % remaining)
 		if chosen < 0:
 			break
 		await ctx.effect_handler.destroy_zones(ctx.opponent, [chosen])

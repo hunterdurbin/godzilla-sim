@@ -49,7 +49,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool: return CardUtils.is_battle(card),
-		"Discard a battle card: this card cannot be countered by 30,000 or less CP this turn (or skip):",
+		tr("STR_EFF_EBP04_014_PROMPT"),
 		true)
 	if not selected.is_empty():
 		_counter_immunity = 30000
@@ -63,4 +63,4 @@ func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> v
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,
 		func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 4,
-		"Destroy an opponent's Rank 4 or lower battle card:")
+		tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 4)

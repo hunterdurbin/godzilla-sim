@@ -31,7 +31,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected: Dictionary = await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool: return CardUtils.is_battle(card),
-		"Place a battle card from discard under this card:")
+		tr("STR_EFF_EBP03_064_PROMPT"))
 
 	if not selected.is_empty():
 		ctx.effect_handler.place_card_under_zone(ctx.owner, selected, my_zone)

@@ -34,7 +34,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var result: Dictionary = await ctx.effect_handler.arrange_deck_cards(
 		ctx.owner.player_id, top_cards,
-		"Put cards on top of deck in order, or send to discard:")
+		tr("STR_EFF_DECK_ARRANGE_TOP"))
 
 	# Put kept cards back on top (first in array = top of deck)
 	var keep: Array = result.get("keep", [])

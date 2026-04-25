@@ -21,9 +21,9 @@ func on_rage_reset(ctx: EffectContext) -> int:
 		return 0
 	if ctx.owner.hand.size() < 2:
 		return 0
-	var options: Array[String] = ["Discard 2 cards (set rage to 2)", "Let rage reset to 0"]
+	var options: Array[String] = [tr("STR_EFF_EBP04_010_CHOICE_A"), tr("STR_EFF_EBP04_010_CHOICE_B")]
 	var chosen: int = await ctx.effect_handler.select_choice(
-		ctx.owner.player_id, options, "Rage would reset to 0. Discard 2 cards to keep rage at 2?")
+		ctx.owner.player_id, options, tr("STR_EFF_EBP04_010_PROMPT"))
 	if chosen != 0:
 		return 0
 	await ctx.effect_handler.discard_hand_to(ctx.owner.player_id, ctx.owner.hand.size() - 2)

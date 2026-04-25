@@ -51,7 +51,7 @@ func on_enter(ctx: EffectContext) -> void:
 		func(card): return CardUtils.is_strategy(card) \
 			and CardUtils.has_color(card, CardEnums.CardColor.BLUE) \
 			and card.get("rank", 0) <= 6,
-		"Place a blue rank 6 or lower strategy card (or skip):",
+		tr("STR_EFF_EBP03_012_PROMPT"),
 		true
 	)
 	if selected.is_empty():

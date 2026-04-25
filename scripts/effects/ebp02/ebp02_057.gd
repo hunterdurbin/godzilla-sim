@@ -32,7 +32,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var source: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.opponent.player_id, targetable,
-		"Choose an opponent's battle card in the same column to move:", true)
+		tr("STR_EFF_MOVE_OPP_SAME_COLUMN"), true)
 	if source < 0:
 		return
 
@@ -42,7 +42,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var dest: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.opponent.player_id, empty,
-		"Choose an unoccupied zone to move it to:")
+		tr("STR_EFF_MOVE_UNOCCUPIED"))
 	if dest < 0:
 		return
 

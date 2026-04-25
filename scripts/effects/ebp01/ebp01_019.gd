@@ -37,14 +37,14 @@ func on_enter(ctx: EffectContext) -> void:
 				if not CardUtils.is_battle(card):
 					return false
 				return CardUtils.has_trait(card, CardEnums.CardTrait.KAMACURAS),
-			"Search for a Kamacuras battle card to play:"
+			tr("STR_EFF_EBP01_019_SEARCH")
 		)
 		if selected.is_empty():
 			break
 
 		var target_zone: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-			"Choose a zone to play the searched card:")
+			tr("STR_EFF_PLAY_SEARCHED_ZONE"))
 		if target_zone < 0:
 			break
 

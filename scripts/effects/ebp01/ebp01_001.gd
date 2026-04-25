@@ -39,7 +39,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var revealed: Array[Dictionary] = [card]
 	await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, revealed, revealed,
-		"Sent to discard pile:")
+		tr("STR_EFF_DISCARDED_PILE"))
 
 	if CardUtils.is_monster(card):
 		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)

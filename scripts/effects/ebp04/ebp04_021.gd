@@ -29,8 +29,8 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		return
 
 	var chosen: int = await ctx.effect_handler.select_choice(
-		ctx.owner.player_id, ["Discard top of deck", "Skip"],
-		"May discard the top card of your deck:")
+		ctx.owner.player_id, [tr("STR_EFF_EBP04_021_CHOICE"), tr("STR_EFF_BTN_SKIP")],
+		tr("STR_EFF_EBP04_021_PROMPT"))
 	if chosen != 0:
 		return
 

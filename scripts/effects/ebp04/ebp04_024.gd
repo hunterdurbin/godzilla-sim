@@ -47,7 +47,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 		var chosen: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.opponent.player_id, destroyable_zones,
-			"Destroy an opponent's battle card (total remaining ranks must reach 7 or less):")
+			tr("STR_EFF_DESTROY_OPP_REMAINING_RANKS_FMT") % 7)
 		if chosen < 0:
 			break
 		await ctx.effect_handler.destroy_zones(ctx.opponent, [chosen])

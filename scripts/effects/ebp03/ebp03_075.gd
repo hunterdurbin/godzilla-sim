@@ -43,7 +43,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var chosen := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		"Choose a rank 4 or lower battle card with Evolution to evolve (or skip):", true)
+		tr("STR_EFF_EBP03_075_PROMPT"), true)
 	if chosen < 0:
 		return
 

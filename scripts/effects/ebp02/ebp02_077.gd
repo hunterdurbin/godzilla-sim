@@ -39,7 +39,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		)
 		await ctx.effect_handler.select_from_cards(
 			ctx.owner.player_id, milled_cards, milled_cards,
-			"Sent to discard pile:")
+			tr("STR_EFF_DISCARDED_PILE"))
 	var found_godzilla: bool = false
 	for card in milled_cards:
 		if CardUtils.has_trait(card, CardEnums.CardTrait.GODZILLA):

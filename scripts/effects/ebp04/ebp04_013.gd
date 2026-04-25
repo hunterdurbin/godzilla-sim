@@ -84,7 +84,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if can_retreat:
 		options.append("Retreat opponent's monster 1 zone")
 	var chosen: int = await ctx.effect_handler.select_choice(
-		ctx.owner.player_id, options, "Choose an effect for revealed ranks %s:" % str(ranks))
+		ctx.owner.player_id, options, tr("STR_EFF_EBP04_013_PROMPT_FMT") % str(ranks))
 
 	if chosen < 0:
 		return

@@ -35,7 +35,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 			if not CardUtils.is_battle(card):
 				return false
 			return CardUtils.has_any_trait(card, [CardEnums.CardTrait.WEAPON, CardEnums.CardTrait.MECH]),
-		"Search for a Weapon or Mech battle card:"
+		tr("STR_EFF_EBP03_070_SEARCH")
 	)
 	if not found.is_empty():
 		ctx.owner.hand.append(found)

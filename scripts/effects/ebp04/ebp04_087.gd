@@ -36,7 +36,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 		var chosen: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.opponent.player_id, valid_zones,
-			"Destroy an opponent's %s battle card in zones 1-5 (or skip):" % CardEnums.color_to_string(color),
+			tr("STR_EFF_DESTROY_OPP_COLOR_ZONES_1_5_FMT") % CardEnums.color_to_string(color),
 			true)
 		if chosen >= 0:
 			await ctx.effect_handler.destroy_zones(ctx.opponent, [chosen])

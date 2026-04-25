@@ -30,7 +30,7 @@ func on_revenge(ctx: EffectContext) -> void:
 	var discarded := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(_card: Dictionary) -> bool: return true,
-		"Discard a card to return Godzilla(1991) from discard (or skip):",
+		tr("STR_EFF_EBP02_059_PROMPT"),
 		true)
 
 	if discarded.is_empty():
@@ -40,7 +40,7 @@ func on_revenge(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.is_battle(card) and card.get("name", "") == "Godzilla(1991)",
-		"Choose a Godzilla(1991) battle card to return to your hand:")
+		tr("STR_EFF_EBP02_059_DISCARD_PROMPT"))
 
 	if not selected.is_empty():
 		ctx.owner.hand.append(selected)

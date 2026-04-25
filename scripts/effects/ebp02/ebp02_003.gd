@@ -58,7 +58,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.is_strategy(card),
-		"Discard a strategy card to advance by 1 zone (or skip):",
+		tr("STR_EFF_EBP02_003_PROMPT"),
 		true)
 
 	if not selected.is_empty():

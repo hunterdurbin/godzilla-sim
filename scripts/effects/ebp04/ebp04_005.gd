@@ -33,7 +33,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.is_strategy(card) and card.get("rank", 99) == 1,
-		"Search for a Rank 1 Strategy card:")
+		tr("STR_EFF_EBP04_005_SEARCH"))
 
 	if found.is_empty():
 		return

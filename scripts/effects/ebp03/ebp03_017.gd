@@ -47,7 +47,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected: Dictionary = await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool: return CardUtils.is_battle(card),
-		"Discard a battle card to destroy an opponent's rank 6 or lower battle card (or skip):",
+		tr("STR_EFF_EBP03_017_PROMPT"),
 		true)
 
 	if selected.is_empty():
@@ -57,4 +57,4 @@ func on_enter(ctx: EffectContext) -> void:
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,
 		func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 6,
-		"Choose an opponent's rank 6 or lower battle card to destroy:")
+		tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 6)

@@ -23,7 +23,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var options: Array[Dictionary] = [top_card]
 	var chosen := await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, options, options,
-		"Top card of deck (select to send to discard, or skip to keep on top):")
+		tr("STR_EFF_DECK_TOP_OR_SKIP"))
 
 	if not chosen.is_empty():
 		# Send to discard

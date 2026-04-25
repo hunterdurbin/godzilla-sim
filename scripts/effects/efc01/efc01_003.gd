@@ -24,7 +24,7 @@ func on_enter(ctx: EffectContext) -> void:
 		func(card: Dictionary) -> bool:
 			return CardUtils.has_trait(card, CardEnums.CardTrait.GIGAN) \
 				and CardUtils.has_trait(card, CardEnums.CardTrait.FEST),
-		"Discard a Gigan+Fest card to search for a Weapon/Mech battle card (or skip):",
+		tr("STR_EFF_EFC01_003_PROMPT"),
 		true)
 
 	if discarded.is_empty():
@@ -39,7 +39,7 @@ func on_enter(ctx: EffectContext) -> void:
 			if card.get("invasion_icon", 0) != 2:
 				return false
 			return CardUtils.has_any_trait(card, [CardEnums.CardTrait.WEAPON, CardEnums.CardTrait.MECH]),
-		"Choose a Weapon or Mech battle card with invasion icon 2:")
+		tr("STR_EFF_EFC01_003_SEARCH"))
 
 	if not found.is_empty():
 		ctx.owner.hand.append(found)

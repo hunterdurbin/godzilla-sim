@@ -30,4 +30,4 @@ func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> v
 	var revealed: Array[Dictionary] = [card]
 	await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, revealed, revealed,
-		"Sent to discard pile:")
+		tr("STR_EFF_DISCARDED_PILE"))

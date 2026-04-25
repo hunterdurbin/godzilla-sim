@@ -42,7 +42,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(_card): return true,
-		"Discard all hand for +1000 CP each? (select any card to confirm, skip to decline):",
+		tr("STR_EFF_EBP03_032_PROMPT"),
 		true
 	)
 	if selected.is_empty():

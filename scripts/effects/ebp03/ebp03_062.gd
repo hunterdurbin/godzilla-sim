@@ -38,7 +38,7 @@ func on_revenge(ctx: EffectContext) -> void:
 			if not CardUtils.is_monster(card):
 				return false
 			return CardUtils.has_trait(card, CardEnums.CardTrait.SACRED_GUARDIAN_BEASTS),
-		"Return a Sacred Guardian Beast monster card from discard to hand:")
+		tr("STR_EFF_EBP03_062_PROMPT"))
 
 	if not selected.is_empty():
 		ctx.owner.hand.append(selected)

@@ -31,11 +31,11 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	var options: Array[String] = [
-		"Destroy 4 green battle cards in your zones",
-		"Skip (this card will be Destroyed)",
+		tr("STR_EFF_EBP04_055_CHOICE_A"),
+		tr("STR_EFF_EBP04_055_CHOICE_B"),
 	]
 	var chosen: int = await ctx.effect_handler.select_choice(
-		ctx.owner.player_id, options, "Choose:")
+		ctx.owner.player_id, options, tr("STR_EFF_EBP04_055_PROMPT"))
 
 	if chosen == 1:
 		if my_zone >= 0:
@@ -51,7 +51,7 @@ func on_enter(ctx: EffectContext) -> void:
 			break
 		var picked: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.owner.player_id, remaining_green,
-			"Choose a green battle card to Destroy (%d remaining):" % (4 - to_destroy.size()))
+			tr("STR_EFF_DESTROY_GREEN_REMAINING_FMT") % (4 - to_destroy.size()))
 		if picked < 0:
 			break
 		to_destroy.append(picked)

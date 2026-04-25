@@ -40,7 +40,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var revealed: Array[Dictionary] = [card]
 	await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, revealed, revealed,
-		"Sent to discard pile:")
+		tr("STR_EFF_DISCARDED_PILE"))
 
 	if CardUtils.is_battle(card):
 		var opponent_tl: int = ctx.effect_handler.get_effective_threat_level(ctx.opponent.player_id)

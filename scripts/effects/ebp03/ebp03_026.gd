@@ -52,7 +52,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var selected: Array[Dictionary] = await ctx.effect_handler.select_cards_from_pool(
 		ctx.owner.player_id, monsters, ctx.owner.discard_pile.duplicate(),
-		"Place 2 monster cards from discard under this card (or skip):", 2)
+		tr("STR_EFF_EBP03_026_SELECT"), 2)
 
 	if selected.is_empty():
 		return

@@ -30,12 +30,12 @@ func on_invasion_observed(ctx: EffectContext, invading_player_id: int, _from_zon
 		return
 
 	var options: Array[String] = [
-		"Draw 1 card, then discard 1 card from hand",
-		"Discard 1 card from hand to reduce opponent's Rage by 1",
+		tr("STR_EFF_EBP04_050_CHOICE_A"),
+		tr("STR_EFF_EBP04_050_CHOICE_B"),
 	]
 	var chosen: int = await ctx.effect_handler.select_choice(
 		ctx.owner.player_id, options,
-		"Choose one:")
+		tr("STR_EFF_CHOOSE_ONE"))
 
 	match chosen:
 		0:
@@ -43,12 +43,12 @@ func on_invasion_observed(ctx: EffectContext, invading_player_id: int, _from_zon
 			await ctx.effect_handler.select_hand_card(
 				ctx.owner.player_id,
 				func(_card): return true,
-				"Discard 1 card from your hand:")
+				tr("STR_EFF_EBP04_050_HAND_DRAW"))
 		1:
 			var selected := await ctx.effect_handler.select_hand_card(
 				ctx.owner.player_id,
 				func(_card): return true,
-				"Discard 1 card to reduce opponent's Rage by 1 (or skip):",
+				tr("STR_EFF_EBP04_050_HAND_RAGE"),
 				true)
 			if not selected.is_empty():
 				await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

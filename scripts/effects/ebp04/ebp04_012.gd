@@ -41,7 +41,7 @@ func apply_play_cost(ctx: EffectContext, zone_index: int) -> bool:
 		return false
 	var chosen := await ctx.effect_handler.select_cards_from_pool(
 		ctx.owner.player_id, rank3_cards, rank3_cards,
-		"Select a Rank III monster to place under Biollante:", 1)
+		tr("STR_EFF_EBP04_012_PROMPT"), 1)
 	if chosen.is_empty():
 		return false
 	var placed: Dictionary = chosen[0]

@@ -31,7 +31,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_battle(card) \
 			and CardUtils.has_trait(card, CardEnums.CardTrait.MOGUERA),
-		"Search for a Moguera battle card to play:"
+		tr("STR_EFF_EBP03_036_SEARCH")
 	)
 	if found.is_empty():
 		return
@@ -40,7 +40,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var dest := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		"Choose a zone to play the Moguera battle card:")
+		tr("STR_EFF_EBP03_036_ZONE"))
 	if dest < 0:
 		ctx.owner.main_deck.append(found)
 		ctx.owner.main_deck.shuffle()

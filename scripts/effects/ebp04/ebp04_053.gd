@@ -21,7 +21,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var zone_a: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, occupied,
-		"Choose the first battle card to swap (or skip):", true)
+		tr("STR_EFF_SWAP_FIRST_OR_SKIP"), true)
 	if zone_a < 0:
 		return
 
@@ -31,7 +31,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var zone_b: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, remaining,
-		"Choose the second battle card to swap with:")
+		tr("STR_EFF_SWAP_SECOND"))
 	if zone_b < 0:
 		return
 

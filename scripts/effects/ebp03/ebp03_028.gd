@@ -67,7 +67,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var selected: Array[Dictionary] = await ctx.effect_handler.select_cards_from_pool(
 		ctx.owner.player_id, monsters, ctx.owner.discard_pile.duplicate(),
-		"Place 3 monster cards from discard under this card (or skip):", 3)
+		tr("STR_EFF_EBP03_028_SELECT"), 3)
 
 	if selected.is_empty():
 		return

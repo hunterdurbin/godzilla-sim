@@ -53,7 +53,7 @@ func on_enter(ctx: EffectContext) -> void:
 		option_ids.append("rage")
 
 	var chosen_idx := await ctx.effect_handler.select_choice(
-		ctx.owner.player_id, options, "Choose an effect:")
+		ctx.owner.player_id, options, tr("STR_EFF_CHOOSE_EFFECT"))
 	var chosen_id: String = option_ids[chosen_idx] if chosen_idx >= 0 and chosen_idx < option_ids.size() else ""
 
 	if chosen_id == "destroy":
@@ -65,7 +65,7 @@ func on_enter(ctx: EffectContext) -> void:
 		if not valid_strat.is_empty():
 			var idx_to_destroy: int = await ctx.effect_handler.select_strategy_target(
 				ctx.owner.player_id, ctx.opponent.player_id, valid_strat,
-				"Choose an opponent strategy to Destroy:")
+				tr("STR_EFF_DESTROY_OPP_STRATEGY"))
 			if idx_to_destroy >= 0:
 				await ctx.effect_handler.discard_strategy_from_zone(ctx.opponent.player_id, idx_to_destroy)
 	elif chosen_id == "rage":

@@ -45,7 +45,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 			ctx.owner.player_id,
 			func(card: Dictionary) -> bool:
 				return CardUtils.has_trait(card, CardEnums.CardTrait.VALKYRIE),
-			"Play a Valkyrie from your discard pile (or skip):")
+			tr("STR_EFF_EBP04_086_PROMPT"))
 		if found.is_empty():
 			break
 		await ctx.effect_handler.play_from_discard(ctx.owner.player_id, found)

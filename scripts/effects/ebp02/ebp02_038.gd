@@ -44,7 +44,7 @@ func on_enter(ctx: EffectContext) -> void:
 		chosen_id = option_ids[0]
 	else:
 		var chosen_idx: int = await ctx.effect_handler.select_choice(
-			ctx.owner.player_id, options, "Choose one:")
+			ctx.owner.player_id, options, tr("STR_EFF_CHOOSE_ONE"))
 		if chosen_idx < 0 or chosen_idx >= option_ids.size():
 			chosen_id = option_ids[0]
 		else:
@@ -55,6 +55,6 @@ func on_enter(ctx: EffectContext) -> void:
 			await ctx.effect_handler.destroy_zone_target(
 				ctx.owner.player_id, ctx.opponent,
 				func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 5,
-				"Choose an opponent's rank 5 or lower battle card to destroy:")
+				tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 5)
 		1:
 			await ctx.effect_handler.destroy_zones(ctx.opponent, [7])

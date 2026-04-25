@@ -23,13 +23,13 @@ func on_enter(ctx: EffectContext) -> void:
 	if not occupied.is_empty():
 		var source: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.owner.player_id, occupied,
-			"Choose a battle card to move:", true)
+			tr("STR_EFF_MOVE_BATTLE"), true)
 		if source >= 0:
 			var empty := ctx.owner.get_empty_zone_indices()
 			if not empty.is_empty():
 				var dest: int = await ctx.effect_handler.select_zone_target(
 					ctx.owner.player_id, ctx.owner.player_id, empty,
-					"Choose an unoccupied zone to move it to:")
+					tr("STR_EFF_MOVE_UNOCCUPIED"))
 				if dest >= 0:
 					var stack: Array = ctx.owner.zones[source]
 					ctx.owner.zones[source] = []

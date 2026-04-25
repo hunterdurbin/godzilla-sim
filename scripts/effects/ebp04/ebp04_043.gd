@@ -37,7 +37,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var chosen: int = await ctx.effect_handler.select_strategy_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_strat,
-		"Place an Invade 2 strategy card under this (or skip):")
+		tr("STR_EFF_EBP04_043_PROMPT"))
 	if chosen < 0:
 		return
 

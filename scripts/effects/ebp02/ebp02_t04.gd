@@ -42,7 +42,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return card.get("name", "") == "Chibi Godzilla",
-		"Play a Chibi Godzilla from your discard pile:")
+		tr("STR_EFF_EBP02_T04_DISCARD_PROMPT"))
 
 	if selected.is_empty():
 		return
@@ -54,7 +54,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 			valid_zones.append(i)
 	var target_zone: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		"Choose a zone to play Chibi Godzilla:")
+		tr("STR_EFF_EBP02_T04_PROMPT"))
 	if target_zone < 0:
 		return
 

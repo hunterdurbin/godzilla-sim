@@ -31,14 +31,14 @@ func on_enter(ctx: EffectContext) -> void:
 			if card.get("rank", 0) > 4:
 				return false
 			return card.has("evolution_rank"),
-		"Choose a rank 4 or lower battle card with Evolution from your discard pile:"
+		tr("STR_EFF_EBP01_034_PROMPT")
 	)
 	if selected.is_empty():
 		return
 
 	var target_zone: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_adjacent,
-		"Choose an adjacent zone to play the card:")
+		tr("STR_EFF_PLAY_ADJ_ZONE"))
 	if target_zone < 0:
 		return
 

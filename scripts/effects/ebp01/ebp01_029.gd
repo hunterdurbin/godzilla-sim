@@ -28,4 +28,4 @@ func on_enter(ctx: EffectContext) -> void:
 	var all_zones: Array[int] = [0, 1, 2, 3, 4, 5, 6, 7]
 	await ctx.effect_handler.destroy_zone_and_adjacent(
 		ctx.owner.player_id, ctx.opponent, all_zones,
-		"Choose a zone — rank 5 or lower cards there and in adjacent zones will be destroyed:", 5)
+		tr("STR_EFF_EBP01_029_PROMPT"), 5)

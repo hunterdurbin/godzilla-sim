@@ -54,6 +54,6 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		if not valid_zones.is_empty():
 			var chosen: int = await ctx.effect_handler.select_zone_target(
 				ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-				"Destroy 1 of your rank 8 or higher battle cards:")
+				tr("STR_EFF_DESTROY_OWN_RANK_HIGHER_FMT") % 8)
 			if chosen >= 0:
 				await ctx.effect_handler.destroy_zones(ctx.owner, [chosen])

@@ -41,7 +41,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Show revealed cards to the player
 	await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, revealed, revealed,
-		"Revealed from deck (select any to confirm):")
+		tr("STR_EFF_DECK_REVEAL"))
 
 	var added_to_hand: bool = false
 	var added_to_discard: bool = false

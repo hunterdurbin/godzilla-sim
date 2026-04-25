@@ -30,7 +30,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return card.get("card_type") == CardEnums.CardType.BATTLE,
-		"Discard a battle card from hand to destroy opponent's cards of equal or lower rank:",
+		tr("STR_EFF_ESD02_004_PROMPT"),
 		true # allow_skip
 	)
 	if discarded.is_empty():

@@ -21,7 +21,7 @@ func on_enter(ctx: EffectContext) -> void:
 			func(card: Dictionary) -> bool:
 				return (CardUtils.is_battle(card) and
 					not CardUtils.has_color(card, CardEnums.CardColor.GREEN)),
-			"Return a non-green battle card from your discard to hand (or skip):")
+			tr("STR_EFF_EBP04_088_PROMPT"))
 		if found.is_empty():
 			break
 		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)

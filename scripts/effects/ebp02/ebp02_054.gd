@@ -40,6 +40,6 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 			ctx.owner.player_id, ctx.opponent,
 			func(card: Dictionary) -> bool:
 				return ctx.field_rank(card, ctx.opponent.player_id) <= 5,
-			"Destroy an opponent's rank 5 or lower battle card:")
+			tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 5)
 		if destroyed.is_empty():
 			break

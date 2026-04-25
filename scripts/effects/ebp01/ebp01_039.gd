@@ -40,7 +40,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.is_monster(card),
-		"Discard a monster card to destroy opponent's rank 5 or lower cards in zones 1-5:",
+		tr("STR_EFF_EBP01_039_PROMPT"),
 		true # allow_skip
 	)
 	if discarded.is_empty():

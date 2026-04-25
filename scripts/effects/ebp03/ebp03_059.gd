@@ -27,7 +27,7 @@ func on_revenge(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_monster(card) \
 			and CardUtils.has_trait(card, CardEnums.CardTrait.KING_GHIDORAH),
-		"Return a King Ghidorah monster from discard to hand (or skip):"
+		tr("STR_EFF_EBP03_059_PROMPT")
 	)
 	if not selected.is_empty():
 		ctx.owner.hand.append(selected)

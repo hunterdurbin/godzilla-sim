@@ -44,7 +44,7 @@ func on_discard_from_hand(ctx: EffectContext) -> void:
 		await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
 			func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) == lowest_rank,
-			"Destroy an opponent's lowest ranked battle card (or skip):")
+			tr("STR_EFF_DESTROY_OPP_LOWEST_OR_SKIP"))
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

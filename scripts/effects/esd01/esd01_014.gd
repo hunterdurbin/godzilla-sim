@@ -31,14 +31,14 @@ func on_enter(ctx: EffectContext) -> void:
 		func(card: Dictionary) -> bool:
 			return card.get("name", "") == "Godzilla(2023)" \
 				and CardUtils.is_battle(card),
-		"Search for a Godzilla(2023) battle card to play"
+		tr("STR_EFF_ESD01_014_SEARCH")
 	)
 	if not selected.is_empty():
 		var valid_zones := CardEffect.get_effect_play_zones(player)
 
 		var target_zone: int = await ctx.effect_handler.select_zone_target(
 			player.player_id, player.player_id, valid_zones,
-			"Choose a zone to play the searched card:")
+			tr("STR_EFF_PLAY_SEARCHED_ZONE"))
 		if target_zone < 0:
 			return
 

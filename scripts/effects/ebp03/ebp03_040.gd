@@ -35,7 +35,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var dest := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, empty,
-		"Move this card to an empty zone (or skip):", true)
+		tr("STR_EFF_MOVE_TO_EMPTY_OR_SKIP"), true)
 	if dest < 0:
 		return
 

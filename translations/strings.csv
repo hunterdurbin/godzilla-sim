@@ -575,3 +575,189 @@ STR_LOG_CONNECTION_LOST_RECONNECTING,Connection lost. Attempting to reconnect...
 STR_LOG_RECONNECTED,Reconnected!,再接続しました!
 STR_LOG_OPPONENT_RECONNECTED,Opponent reconnected!,対戦相手が再接続しました!
 STR_LOG_CLAIMED_WIN_DISCONNECT,Claimed win due to opponent disconnect.,対戦相手の切断により勝利を宣言しました。
+STR_EFF_CHOOSE_ONE,Choose one:,ひとつ選ぶ:
+STR_EFF_CHOOSE_EFFECT,Choose an effect:,効果を選ぶ:
+STR_EFF_CHOOSE_ABILITY,Choose which ability to resolve:,発動する能力を選ぶ:
+STR_EFF_REVEALED_CARDS,Revealed cards:,公開されたカード:
+STR_EFF_DECK_REVEAL,Revealed from deck (select any to confirm):,山札から公開 (どれか選んで確定):
+STR_EFF_DISCARDED_PILE,Sent to discard pile:,捨て札に送られた:
+STR_EFF_BTN_YES,Yes,はい
+STR_EFF_BTN_NO,No,いいえ
+STR_EFF_BTN_SKIP,Skip,スキップ
+STR_EFF_DESTROY_OPP_RANK_LOWER_FMT,Destroy an opponent's Rank %d or lower battle card:,相手の等級%d以下の交戦カードを<破壊>する:
+STR_EFF_DESTROY_OPP_BATTLE,Destroy an opponent's battle card:,相手の交戦カードを<破壊>する:
+STR_EFF_DESTROY_OPP_BATTLE_OR_SKIP,Destroy an opponent's battle card (or skip):,相手の交戦カードを<破壊>する (またはスキップ):
+STR_EFF_DESTROY_OPP_LOWEST_OR_SKIP,Destroy an opponent's lowest ranked battle card (or skip):,相手の最低等級の交戦カードを<破壊>する (またはスキップ):
+STR_EFF_DESTROY_OPP_BATTLE_ZONES_1_5,Destroy an opponent's battle card in zones 1-5:,相手のエリア1〜5にいる交戦カードを<破壊>する:
+STR_EFF_DESTROY_OPP_SAME_COLUMN,Destroy an opponent's battle card in the same column as your monster:,あなたの怪獣と同じ縦列にいる相手の交戦カードを<破壊>する:
+STR_EFF_DESTROY_OPP_BEFORE_ZONE_FMT,Choose an opponent's battle card at or before zone %d to destroy:,エリア%d以前にいる相手の交戦カードを選んで<破壊>:
+STR_EFF_DESTROY_OPP_RANK_LEFT_COL,Choose a battle card to destroy from the leftmost column:,最も左の縦列から<破壊>する交戦カードを選ぶ:
+STR_EFF_DESTROY_OPP_RANK_RIGHT_COL,Choose a battle card to destroy from the rightmost column:,最も右の縦列から<破壊>する交戦カードを選ぶ:
+STR_EFF_DESTROY_OPP_CP_LEQ_FMT,Destroy an opponent's battle card with 6000 or less CP in zones 1-5 (%d left):,エリア1〜5にいる撃退力6000以下の相手の交戦カードを<破壊> (残り%d):
+STR_EFF_DESTROY_OPP_REMAINING_RANKS_FMT,Destroy an opponent's battle card (total remaining ranks must reach %d or less):,相手の交戦カードを<破壊>する (残り等級合計が%d以下になるまで):
+STR_EFF_DESTROY_OPP_COLOR_ZONES_1_5_FMT,Destroy an opponent's %s battle card in zones 1-5 (or skip):,エリア1〜5にいる相手の%s交戦カードを<破壊> (またはスキップ):
+STR_EFF_DESTROY_OWN_RANK_HIGHER_FMT,Destroy 1 of your rank %d or higher battle cards:,あなたの等級%d以上の交戦カードを1枚<破壊>する:
+STR_EFF_DESTROY_OWN_RANK_LOWER_FMT,Choose a rank %d or lower battle card to destroy:,等級%d以下の交戦カードを選んで<破壊>:
+STR_EFF_DESTROY_OPP_RANK_LOWER_LIST_FMT,Destroy %d opponent rank %d or lower battle card:,相手の等級%d以下の交戦カードを%d枚<破壊>する:
+STR_EFF_DESTROY_GREEN_REMAINING_FMT,Choose a green battle card to Destroy (%d remaining):,緑の交戦カードを選んで<破壊> (残り%d):
+STR_EFF_MOVE_BATTLE,Choose a battle card to move:,移動する交戦カードを選ぶ:
+STR_EFF_MOVE_BATTLE_OR_SKIP,Choose a battle card to move (or skip):,移動する交戦カードを選ぶ (またはスキップ):
+STR_EFF_MOVE_BATTLE_TO_EMPTY,Choose a battle card to move to an empty zone:,空きエリアへ移動する交戦カードを選ぶ:
+STR_EFF_MOVE_DEST_EMPTY,Choose an empty zone to move the card to:,カードを移動する空きエリアを選ぶ:
+STR_EFF_MOVE_DEST_ZONE,Choose destination zone:,移動先のエリアを選ぶ:
+STR_EFF_MOVE_OPP_SAME_COLUMN,Choose an opponent's battle card in the same column to move:,同じ縦列にいる相手の交戦カードを移動:
+STR_EFF_MOVE_UNOCCUPIED,Choose an unoccupied zone to move it to:,移動先の空きエリアを選ぶ:
+STR_EFF_MOVE_TO_EMPTY_OR_SKIP,Move this card to an empty zone (or skip):,このカードを空きエリアへ移動 (またはスキップ):
+STR_EFF_MOVE_THIS_TO_EMPTY,Choose an empty zone to move this card to:,このカードを移動する空きエリアを選ぶ:
+STR_EFF_SWAP_FIRST,Choose the first battle card to swap:,入れ替える1枚目の交戦カードを選ぶ:
+STR_EFF_SWAP_FIRST_OR_SKIP,Choose the first battle card to swap (or skip):,入れ替える1枚目の交戦カードを選ぶ (またはスキップ):
+STR_EFF_SWAP_SECOND,Choose the second battle card to swap with:,入れ替える2枚目の交戦カードを選ぶ:
+STR_EFF_SWAP_OPP_FIRST,Choose the first opponent battle card to swap:,入れ替える1枚目の相手交戦カードを選ぶ:
+STR_EFF_SWAP_OPP_SECOND,Choose the second opponent battle card to swap with:,入れ替える2枚目の相手交戦カードを選ぶ:
+STR_EFF_PLAY_SEARCHED_ZONE,Choose a zone to play the searched card:,探したカードを置くエリアを選ぶ:
+STR_EFF_PLAY_BATTLE_ZONE,Choose a zone to play the battle card:,交戦カードを置くエリアを選ぶ:
+STR_EFF_PLAY_ADJ_ZONE,Choose an adjacent zone to play the card:,隣接エリアを選んでカードを置く:
+STR_EFF_PLAY_ADJ_ZONE_IN,Choose an adjacent zone to play the card in:,カードを置く隣接エリアを選ぶ:
+STR_EFF_PLAY_ADJ_ZONE_NAMED_FMT,Choose an adjacent zone to play %s:,%sを置く隣接エリアを選ぶ:
+STR_EFF_PLAY_NAMED_FMT,Play %s — choose a zone:,%sを置く — エリアを選ぶ:
+STR_EFF_PLAY_FROM_DISCARD_FMT,Play %s from discard?,%sを捨て札から出しますか?
+STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT,Choose a zone to play %s from discard:,%sを捨て札から置くエリアを選ぶ:
+STR_EFF_PLACE_DISCARD_FMT,Play %s from discard to a zone (or skip):,%sを捨て札からエリアに置く (またはスキップ):
+STR_EFF_TOKEN_ZONE_FMT,Choose a zone for a token (%d remaining):,トークンを置くエリアを選ぶ (残り%d):
+STR_EFF_SEARCH_EVOLVE_FMT,Search for a rank %d or lower battle card to evolve into:,進化先の等級%d以下の交戦カードを探す:
+STR_EFF_SEARCH_DECK_OR_SKIP,Search your deck for a card to add to your hand (or skip):,山札からカードを探して手札に加える (またはスキップ):
+STR_EFF_CHOOSE_EVOLVE_ZONE,Choose which zone to evolve next:,次に進化させるエリアを選ぶ:
+STR_EFF_EVOLVE_BATTLE,Choose a battle card with Evolution to evolve:,<進化>を持つ交戦カードを進化させる:
+STR_EFF_DECK_ARRANGE_TOP,"Put cards on top of deck in order, or send to discard:",順序を決めて山札の上に置くか、捨て札へ:
+STR_EFF_DECK_LOOK_TOP,Look at the top card — keep on top or send to discard:,山札の上を見る — 上に戻すか捨て札へ:
+STR_EFF_DECK_TOP_OR_SKIP,"Top card of deck (select to send to discard, or skip to keep on top):",山札の上 (選択で捨て札へ、スキップで上に残す):
+STR_EFF_EBP01_020_PROMPT,Reduce Rage by 1 to search deck for a monster with Burst?,<怒り>を1減らして<強襲>を持つ怪獣を山札から探す?
+STR_EFF_EBP01_020_SEARCH,Search for a monster card with Burst to add to your hand:,<強襲>を持つ怪獣カードを手札に加える:
+STR_EFF_EBP01_019_SEARCH,Search for a Kamacuras battle card to play:,<カマキラス>の交戦カードを探して出す:
+STR_EFF_EBP01_037_PROMPT,Discard a strategy card from hand to gain 1 Rage:,戦略カードを1枚捨てて<怒り>を1増やす:
+STR_EFF_EBP01_039_PROMPT,Discard a monster card to destroy opponent's rank 5 or lower cards in zones 1-5:,怪獣カードを1枚捨てて、エリア1〜5にいる相手の等級5以下のカードを<破壊>する:
+STR_EFF_EBP01_042_PROMPT,Discard a card to reduce opponent's Rage by 1:,カードを1枚捨てて相手の<怒り>を1減らす:
+STR_EFF_EBP02_001_PROMPT,Discard a strategy card to gain 1 rage (or skip):,戦略カードを捨てて<怒り>を1増やす (またはスキップ):
+STR_EFF_EBP02_003_PROMPT,Discard a strategy card to advance by 1 zone (or skip):,戦略カードを1枚捨てて1エリア前進する (またはスキップ):
+STR_EFF_EBP02_007_PROMPT,Discard a strategy card to search top 5 for a monster (or skip):,戦略カードを1枚捨てて山札の上5枚から怪獣を探す (またはスキップ):
+STR_EFF_EBP02_007_SELECT,Choose a monster card to add to your hand:,手札に加える怪獣カードを選ぶ:
+STR_EFF_EBP02_025_PROMPT,Choose an adjacent zone for a Tentacles token:,「触手」トークンを置く隣接エリアを選ぶ:
+STR_EFF_EBP02_028_SELECT_FMT,Choose a battle card with Evolution to play (%d of up to 3):,<進化>を持つ交戦カードを選んで出す (最大3枚中%d枚目):
+STR_EFF_EBP02_028_ZONE_FMT,Choose an adjacent zone to play %s:,%sを置く隣接エリアを選ぶ:
+STR_EFF_EBP02_035_TOKEN_FMT,Choose a zone for Tentacles token (%d remaining):,「触手」トークンを置くエリアを選ぶ (残り%d):
+STR_EFF_EBP02_042_PROMPT,Discard a King Ghidorah or Megalon card to reduce opponent's rage by 2 (or skip):,<キングギドラ>または<メガロ>を捨てて相手の<怒り>を2減らす (またはスキップ):
+STR_EFF_EBP02_052_PROMPT,Discard a card to play a Crystals token (or skip):,カードを1枚捨てて「結晶体」トークンを出す (またはスキップ):
+STR_EFF_EBP02_059_PROMPT,Discard a card to return Godzilla(1991) from discard (or skip):,カードを1枚捨てて捨て札からゴジラ(1991)を戻す (またはスキップ):
+STR_EFF_EBP02_069_PROMPT_FIRST,Choose the first opponent battle card to swap:,入れ替える1枚目の相手交戦カードを選ぶ:
+STR_EFF_EBP02_069_PROMPT_SECOND,Choose the second opponent battle card to swap with:,入れ替える2枚目の相手交戦カードを選ぶ:
+STR_EFF_EBP02_070_PROMPT_FMT,"Discard %d card(s) to destroy Godzilla vs. SpaceGodzilla? (Select a card to confirm, skip to decline)",%d枚捨ててゴジラVSスペースゴジラを<破壊>? (カード選択で確定、スキップで拒否)
+STR_EFF_EBP02_T04_PROMPT,Choose a zone to play Chibi Godzilla:,「ちびゴジラ」を置くエリアを選ぶ:
+STR_EFF_EBP03_001_PROMPT,Discard a rank 5+ battle card to advance 1 zone (or skip):,等級5以上の交戦カードを捨てて1エリア前進 (またはスキップ):
+STR_EFF_EBP03_002_PROMPT_FMT,Discard a rank 5+ battle card to gain %d rage (or skip):,等級5以上の交戦カードを捨てて<怒り>を%d増やす (またはスキップ):
+STR_EFF_EBP03_003_PROMPT,Discard a rank 5+ battle card to gain 2 rage and Destroy opponent R6- (or skip):,等級5以上の交戦カードを捨てて<怒り>を2増やし、相手の等級6以下を<破壊> (またはスキップ):
+STR_EFF_EBP03_005_PROMPT,Discard a rank 5+ battle card to gain 3 rage and Destroy opponent R7- (or skip):,等級5以上の交戦カードを捨てて<怒り>を3増やし、相手の等級7以下を<破壊> (またはスキップ):
+STR_EFF_EBP03_007_SELECT,Choose 1 red or blue battle card to add to hand:,手札に加える赤または青の交戦カードを1枚選ぶ:
+STR_EFF_EBP03_011_SELECT,Choose up to 1 red and 1 blue battle card to add to hand:,赤1枚と青1枚まで選んで手札に加える:
+STR_EFF_EBP03_012_PROMPT,Place a blue rank 6 or lower strategy card (or skip):,青の等級6以下の戦略カードを置く (またはスキップ):
+STR_EFF_EBP03_014_PROMPT,Discard a battle card to draw 1 (or skip):,交戦カードを1枚捨てて1枚引く (またはスキップ):
+STR_EFF_EBP03_017_PROMPT,Discard a battle card to destroy an opponent's rank 6 or lower battle card (or skip):,交戦カードを捨てて相手の等級6以下の交戦カードを<破壊> (またはスキップ):
+STR_EFF_EBP03_026_SELECT,Place 2 monster cards from discard under this card (or skip):,捨て札から怪獣カードを2枚このカードの下に置く (またはスキップ):
+STR_EFF_EBP03_028_SELECT,Place 3 monster cards from discard under this card (or skip):,捨て札から怪獣カードを3枚このカードの下に置く (またはスキップ):
+STR_EFF_EBP03_030_PROMPT,Choose a battle card to move (or skip):,移動する交戦カードを選ぶ (またはスキップ):
+STR_EFF_EBP03_031_PROMPT,"Top card of deck (select to send to discard, or skip to keep on top):",山札の上 (選択で捨て札、スキップで上に残す):
+STR_EFF_EBP03_032_PROMPT,"Discard all hand for +1000 CP each? (select any card to confirm, skip to decline):",手札をすべて捨てて1枚ごとに撃退力+1000? (カード選択で確定、スキップで拒否):
+STR_EFF_EBP03_033_PROMPT,Discard a rank 5+ battle card to search for Space Beam (or skip):,等級5以上の交戦カードを捨てて「スペースビーム」を探す (またはスキップ):
+STR_EFF_EBP03_033_SEARCH,Search for Space Beam:,「スペースビーム」を探す:
+STR_EFF_EBP03_034_PROMPT,Discard a strategy card to reduce opponent rage by 1 (or skip):,戦略カードを捨てて相手の<怒り>を1減らす (またはスキップ):
+STR_EFF_EBP03_035_PROMPT,Discard a strategy card to advance your monster to zone 6 (or skip):,戦略カードを捨てて怪獣をエリア6まで前進 (またはスキップ):
+STR_EFF_EBP03_036_SEARCH,Search for a Moguera battle card to play:,出す<モゲラ>の交戦カードを探す:
+STR_EFF_EBP03_036_ZONE,Choose a zone to play the Moguera battle card:,<モゲラ>の交戦カードを置くエリアを選ぶ:
+STR_EFF_EBP03_040_PROMPT,Move this card to an empty zone (or skip):,このカードを空きエリアへ移動 (またはスキップ):
+STR_EFF_EBP03_042_PROMPT,Place Ghogo under a Mothra card with Evolution to evolve it (or skip):,「ゴーゴ」を<進化>を持つ<モスラ>の下に置いて進化 (またはスキップ):
+STR_EFF_EBP03_043_PROMPT,Place Star Falcon under Land Moguera (or skip):,「スターファルコン」を「ランドモゲラー」の下に置く (またはスキップ):
+STR_EFF_EBP03_043_SEARCH,Search for a Moguera battle card to play on Land Moguera:,「ランドモゲラー」に重ねる<モゲラ>の交戦カードを探す:
+STR_EFF_EBP03_047_PROMPT,Discard a Weapon/Mech battle card to search for Super Mechagodzilla (or skip):,<兵器>/<機械>の交戦カードを捨てて「スーパーメカゴジラ」を探す (またはスキップ):
+STR_EFF_EBP03_047_SEARCH,Search for Super Mechagodzilla:,「スーパーメカゴジラ」を探す:
+STR_EFF_EBP03_052_LAND_SEARCH,Search for Land Moguera to place under M.O.G.U.E.R.A.:,「M.O.G.U.E.R.A.」の下に置く「ランドモゲラー」を探す:
+STR_EFF_EBP03_052_STAR_SEARCH,Search for Star Falcon to place under M.O.G.U.E.R.A.:,「M.O.G.U.E.R.A.」の下に置く「スターファルコン」を探す:
+STR_EFF_EBP03_058_PROMPT,Move Zilla to an adjacent horizontal zone:,「ジラ」を隣接する横のエリアへ移動:
+STR_EFF_EBP03_067_PROMPT,Destroy an opponent's lowest ranked battle card (or skip):,相手の最低等級の交戦カードを<破壊> (またはスキップ):
+STR_EFF_EBP03_070_SEARCH,Search for a Weapon or Mech battle card:,<兵器>または<機械>の交戦カードを探す:
+STR_EFF_EBP03_080_PROMPT,Play a Godzilla battle card from hand (or skip):,手札から<ゴジラ>の交戦カードを出す (またはスキップ):
+STR_EFF_EBP04_005_SEARCH,Search for a Rank 1 Strategy card:,等級1の戦略カードを探す:
+STR_EFF_EBP04_009_PROMPT,Discard a strategy card to Destroy all opponent Rank 6 or lower battle cards in this column (or skip):,戦略カードを捨ててこの縦列にいる相手の等級6以下の交戦カードをすべて<破壊> (またはスキップ):
+STR_EFF_EBP04_010_PROMPT,Rage would reset to 0. Discard 2 cards to keep rage at 2?,<怒り>が0にリセットされます。2枚捨てて<怒り>を2にしますか?
+STR_EFF_EBP04_010_CHOICE_A,Discard 2 cards (set rage to 2),2枚捨てる (<怒り>を2に)
+STR_EFF_EBP04_010_CHOICE_B,Let rage reset to 0,<怒り>を0にする
+STR_EFF_EBP04_013_PROMPT_FMT,Choose an effect for revealed ranks %s:,公開された等級%sの効果を選ぶ:
+STR_EFF_EBP04_014_PROMPT,"Discard a battle card: this card cannot be countered by 30,000 or less CP this turn (or skip):",交戦カードを1枚捨てる: このターン、撃退力30000以下では撃退されない (またはスキップ):
+STR_EFF_EBP04_021_PROMPT,May discard the top card of your deck:,山札の上のカードを捨てる:
+STR_EFF_EBP04_021_CHOICE,Discard top of deck,山札の上を捨てる
+STR_EFF_EBP04_027_PROMPT,Discard an Invade 2 card to counter this Gigan (or skip):,<足2>のカードを捨ててこの<ガイガン>を撃退 (またはスキップ):
+STR_EFF_EBP04_039_PROMPT,Zilla: Move to a zone adjacent to your monster (or skip):,「ジラ」: あなたの怪獣の隣接エリアへ移動 (またはスキップ):
+STR_EFF_EBP04_045_PROMPT,Discard a non-blue battle card (play cost for Manda -2 rank):,青以外の交戦カードを1枚捨てる (「マンダ」の出現コスト等級-2):
+STR_EFF_EBP04_049_PROMPT,Destroy 1 of your rank 8 or higher battle cards:,あなたの等級8以上の交戦カードを1枚<破壊>する:
+STR_EFF_EBP04_050_CHOICE_A,"Draw 1 card, then discard 1 card from hand",1枚引いて手札を1枚捨てる
+STR_EFF_EBP04_050_CHOICE_B,Discard 1 card from hand to reduce opponent's Rage by 1,手札を1枚捨てて相手の<怒り>を1減らす
+STR_EFF_EBP04_050_HAND_DRAW,Discard 1 card from your hand:,手札を1枚捨てる:
+STR_EFF_EBP04_050_HAND_RAGE,Discard 1 card to reduce opponent's Rage by 1 (or skip):,1枚捨てて相手の<怒り>を1減らす (またはスキップ):
+STR_EFF_EBP04_055_PROMPT,Choose:,選ぶ:
+STR_EFF_EBP04_055_CHOICE_A,Destroy 4 green battle cards in your zones,あなたのエリアの緑の交戦カードを4枚<破壊>
+STR_EFF_EBP04_055_CHOICE_B,Skip (this card will be Destroyed),スキップ (このカードは<破壊>される)
+STR_EFF_EBP04_061_PROMPT,Discard 1 green card from your deck (or skip):,山札の緑のカードを1枚捨てる (またはスキップ):
+STR_EFF_EBP04_064_PROMPT,Jet Jaguar (2021) — choose:,ジェットジャガー(2021) — 選ぶ:
+STR_EFF_EBP04_064_CHOICE,Destroy this card to reduce opponent's Rage by 3,このカードを<破壊>して相手の<怒り>を3減らす
+STR_EFF_EBP04_012_PROMPT,Select a Rank III monster to place under Biollante:,「ビオランテ」の下に置く等級3の怪獣を選ぶ:
+STR_EFF_EBP04_077_PROMPT_FMT,%s — where would you like to place it?,%s — どこに置きますか?
+STR_EFF_EBP04_077_SEARCH,Choose a Weapon or Mech battle card with invasion icon 2:,<足2>の<兵器>/<機械>の交戦カードを選ぶ:
+STR_EFF_EBP04_077_FROM_DECK,Choose 1 Mechagodzilla battle card to add to hand:,手札に加える<メカゴジラ>の交戦カードを選ぶ:
+STR_EFF_EBP04_077_PLACE_8,Place in Area 8,エリア8に置く
+STR_EFF_EBP04_077_PLACE_HAND,Add to hand,手札に加える
+STR_EFF_EBP03_029_CHOICE_A,Destroy all battle cards of both players,両プレイヤーの交戦カードをすべて<破壊>
+STR_EFF_EBP03_029_CHOICE_B,Each player discards to 2 cards in hand,両プレイヤーは手札を2枚になるよう捨てる
+STR_EFF_EBP03_029_CHOICE_C,Reduce each player's Rage by 2,両プレイヤーの<怒り>を2減らす
+STR_EFF_ESD01_002_SEARCH,Search for a Rank III Godzilla(2023) with Burst,<強襲>を持つ等級3の「ゴジラ(2023)」を探す
+STR_EFF_ESD01_012_PROMPT,Choose an empty zone to move this card to:,このカードを移動する空きエリアを選ぶ:
+STR_EFF_ESD01_014_SEARCH,Search for a Godzilla(2023) battle card to play,出す「ゴジラ(2023)」の交戦カードを探す
+STR_EFF_ESD02_003_PROMPT,Choose an adjacent zone to play the card in:,カードを置く隣接エリアを選ぶ:
+STR_EFF_ESD02_004_PROMPT,Discard a battle card from hand to destroy opponent's cards of equal or lower rank:,手札から交戦カードを捨てて相手の同等級以下のカードを<破壊>:
+STR_EFF_EFC01_003_PROMPT,Discard a Gigan+Fest card to search for a Weapon/Mech battle card (or skip):,<ガイガン>+<フェス・ゴジラ>を捨てて<兵器>/<機械>の交戦カードを探す (またはスキップ):
+STR_EFF_EFC01_003_SEARCH,Choose a Weapon or Mech battle card with invasion icon 2:,<足2>の<兵器>/<機械>の交戦カードを選ぶ:
+STR_EFF_ESC01_001_PROMPT,Discard a Godzilla card to play at -4 rank:,<ゴジラ>のカードを捨てて等級-4で出す:
+STR_EFF_EBP02_018_FMT,Choose an opponent's battle card at or before zone %d to destroy:,エリア%d以前にいる相手の交戦カードを選んで<破壊>:
+STR_EFF_EBP02_022_PROMPT_FMT,Play %s from discard to a zone (or skip):,%sを捨て札からエリアに置く (またはスキップ):
+STR_EFF_EBP02_057_PROMPT,Choose an opponent's battle card in the same column to move:,同じ縦列にいる相手の交戦カードを移動:
+STR_EFF_EBP03_075_PROMPT,Choose a rank 4 or lower battle card with Evolution to evolve (or skip):,<進化>を持つ等級4以下の交戦カードを進化させる (またはスキップ):
+STR_EFF_DESTROY_OPP_STRATEGY,Destroy an opponent's strategy card:,相手の戦略カードを<破壊>:
+STR_EFF_EBP03_009_PROMPT,Choose an opponent zone in the same column:,同じ縦列にいる相手のエリアを選ぶ:
+STR_EFF_ESD02_015_PROMPT,Choose an opponent's zone to destroy (including adjacent zones):,<破壊>する相手のエリアを選ぶ (隣接エリアも含む):
+STR_EFF_EBP02_026_PROMPT,Choose an opponent's zone (cards there and in adjacent zones will be destroyed):,相手のエリアを選ぶ (そこと隣接エリアのカードが<破壊>される):
+STR_EFF_EBP01_064_PROMPT,Choose a zone — all cards there and in adjacent zones will be destroyed:,エリアを選ぶ — そこと隣接エリアのすべてのカードが<破壊>される:
+STR_EFF_EBP01_029_PROMPT,Choose a zone — rank 5 or lower cards there and in adjacent zones will be destroyed:,エリアを選ぶ — そこと隣接エリアの等級5以下のカードが<破壊>される:
+STR_EFF_EBP03_008_PROMPT,Destroy 1 opponent rank 5 or lower battle card in same column:,同じ縦列にいる相手の等級5以下の交戦カードを1枚<破壊>:
+STR_EFF_EBP02_046_TITLE_FMT,Cards placed under %s,%sの下に置かれたカード
+STR_EFF_EBP03_055_PROMPT,Put a Mothra battle card from discard on top of deck (or skip):,捨て札から<モスラ>の交戦カードを山札の上に置く (またはスキップ):
+STR_EFF_EBP03_021_PROMPT,Return a Base strategy card from discard to hand:,捨て札から<拠点>の戦略カードを手札に戻す:
+STR_EFF_EBP03_064_PROMPT,Place a battle card from discard under this card:,捨て札から交戦カードをこのカードの下に置く:
+STR_EFF_EBP03_025_PROMPT,Place a monster card from discard under this card (or skip):,捨て札から怪獣カードをこのカードの下に置く (またはスキップ):
+STR_EFF_EBP03_077_PROMPT_A,Return a rank 2 or lower monster from discard to hand:,捨て札から等級2以下の怪獣を手札に戻す:
+STR_EFF_EBP03_077_PROMPT_B,Return a monster from discard to hand:,捨て札から怪獣を手札に戻す:
+STR_EFF_EBP03_062_PROMPT,Return a Sacred Guardian Beast monster card from discard to hand:,捨て札から<護国聖獣>の怪獣カードを手札に戻す:
+STR_EFF_EBP03_059_PROMPT,Return a King Ghidorah monster from discard to hand (or skip):,捨て札から<キングギドラ>の怪獣を手札に戻す (またはスキップ):
+STR_EFF_EBP04_059_PROMPT,Return a Rodan battle card from your discard pile to your hand (or skip):,捨て札から<ラドン>の交戦カードを手札に戻す (またはスキップ):
+STR_EFF_EBP04_029_PROMPT,Return a Gigan monster from your discard pile to your hand (or skip):,捨て札から<ガイガン>の怪獣を手札に戻す (またはスキップ):
+STR_EFF_EBP04_063_PROMPT,Return a Godzilla Earth battle card from your discard to your hand (or skip):,捨て札から「ゴジラ・アース」の交戦カードを手札に戻す (またはスキップ):
+STR_EFF_EBP04_073_PROMPT,Gaira: Return 1 card from your discard to hand (or skip):,「ガイラ」: 捨て札からカードを1枚手札に戻す (またはスキップ):
+STR_EFF_EBP04_043_PROMPT,Place an Invade 2 strategy card under this (or skip):,<足2>の戦略カードをこの下に置く (またはスキップ):
+STR_EFF_EBP04_086_PROMPT,Play a Valkyrie from your discard pile (or skip):,捨て札から「ヴァルキリー」を出す (またはスキップ):
+STR_EFF_EBP04_088_PROMPT,Return a non-green battle card from your discard to hand (or skip):,捨て札から緑以外の交戦カードを手札に戻す (またはスキップ):
+STR_EFF_ESD02_003_DISCARD_PROMPT,Search discard pile for a rank 4 or lower battle card with Evolution to play:,捨て札から<進化>を持つ等級4以下の交戦カードを出す:
+STR_EFF_EBP02_062_PROMPT,Return a SpaceGodzilla monster card to your hand:,<スペースゴジラ>の怪獣カードを手札に戻す:
+STR_EFF_EBP02_059_DISCARD_PROMPT,Choose a Godzilla(1991) battle card to return to your hand:,手札に戻す「ゴジラ(1991)」の交戦カードを選ぶ:
+STR_EFF_EBP02_058_PROMPT,Return a King Ghidorah monster card to your hand:,<キングギドラ>の怪獣カードを手札に戻す:
+STR_EFF_EBP02_T04_DISCARD_PROMPT,Play a Chibi Godzilla from your discard pile:,捨て札から「ちびゴジラ」を出す:
+STR_EFF_EFC01_002_PROMPT,Return a monster card from discard to hand (or skip):,捨て札から怪獣カードを手札に戻す (またはスキップ):
+STR_EFF_EBP01_060_PROMPT,Choose a 'Godzilla vs. Destoroyah' strategy card from your discard pile:,捨て札から「ゴジラVSデストロイア」の戦略カードを選ぶ:
+STR_EFF_EBP01_034_PROMPT,Choose a rank 4 or lower battle card with Evolution from your discard pile:,捨て札から<進化>を持つ等級4以下の交戦カードを選ぶ:
+STR_EFF_EBP01_026_PROMPT,Choose a Gigan + Fest card from your discard pile to place under this card:,捨て札から<ガイガン>+<フェス・ゴジラ>のカードを選んでこの下に置く:
+STR_EFF_EBP01_073_PROMPT,Place a monster card from your discard pile under this card to set opponent's Rage to 0:,捨て札から怪獣カードをこの下に置いて相手の<怒り>を0にする:

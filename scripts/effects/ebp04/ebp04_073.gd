@@ -31,7 +31,7 @@ func on_card_returned_from_discard(ctx: EffectContext, _card: Dictionary) -> voi
 	var found := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(c: Dictionary) -> bool: return true,
-		"Gaira: Return 1 card from your discard to hand (or skip):")
+		tr("STR_EFF_EBP04_073_PROMPT"))
 	if not found.is_empty():
 		ctx.owner.hand.append(found)
 		ctx.owner.hand_changed.emit()

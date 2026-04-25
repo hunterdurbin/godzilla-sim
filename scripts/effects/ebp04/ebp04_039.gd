@@ -48,7 +48,7 @@ func on_ally_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary,
 
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_targets,
-		"Zilla: Move to a zone adjacent to your monster (or skip):", true)
+		tr("STR_EFF_EBP04_039_PROMPT"), true)
 	if chosen < 0:
 		return
 

@@ -58,7 +58,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_strategy(card),
-		"Discard a strategy card to advance your monster to zone 6 (or skip):",
+		tr("STR_EFF_EBP03_035_PROMPT"),
 		true
 	)
 	if selected.is_empty():

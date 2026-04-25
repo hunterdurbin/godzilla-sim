@@ -43,7 +43,7 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.is_monster(card),
-		"Place a monster card from your discard pile under this card to set opponent's Rage to 0:"
+		tr("STR_EFF_EBP01_073_PROMPT")
 	)
 	if selected.is_empty():
 		return

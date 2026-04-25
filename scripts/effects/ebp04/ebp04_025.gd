@@ -27,7 +27,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var chosen: int = await ctx.effect_handler.select_strategy_target(
 		ctx.owner.player_id, ctx.opponent.player_id, valid_strat,
-		"Destroy an opponent's strategy card:")
+		tr("STR_EFF_DESTROY_OPP_STRATEGY"))
 	if chosen < 0:
 		return
 

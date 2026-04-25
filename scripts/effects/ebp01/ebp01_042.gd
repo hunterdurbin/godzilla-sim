@@ -45,7 +45,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var discarded := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(_card: Dictionary) -> bool: return true,
-		"Discard a card to reduce opponent's Rage by 1:",
+		tr("STR_EFF_EBP01_042_PROMPT"),
 		true # allow_skip
 	)
 	if not discarded.is_empty():

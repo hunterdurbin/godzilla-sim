@@ -53,7 +53,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if mech_cards.size() > 1:
 		var mech_options := await ctx.effect_handler.select_from_cards(
 			ctx.owner.player_id, mech_cards, mech_cards,
-			"Choose 1 Mechagodzilla battle card to add to hand:")
+			tr("STR_EFF_EBP04_077_FROM_DECK"))
 		if not mech_options.is_empty():
 			chosen_mech = mech_options[0]
 
@@ -75,12 +75,12 @@ func on_enter(ctx: EffectContext) -> void:
 
 	if can_place_in_zone8 and ctx.owner.zones[7].is_empty():
 		var options: Array[String] = [
-			"Place in Area 8",
-			"Add to hand",
+			tr("STR_EFF_EBP04_077_PLACE_8"),
+			tr("STR_EFF_EBP04_077_PLACE_HAND"),
 		]
 		var place_chosen: int = await ctx.effect_handler.select_choice(
 			ctx.owner.player_id, options,
-			"%s — where would you like to place it?" % card_name)
+			tr("STR_EFF_EBP04_077_PROMPT_FMT") % card_name)
 		if place_chosen == 0:
 			# Stage in discard so play_from_discard can remove+place+trigger enter cleanly.
 			ctx.owner.discard_pile.append(chosen_mech)

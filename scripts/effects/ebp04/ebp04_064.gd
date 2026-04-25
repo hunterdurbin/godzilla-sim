@@ -37,8 +37,8 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	var selected := await ctx.effect_handler.select_choice(
 		ctx.owner.player_id,
-		["Destroy this card to reduce opponent's Rage by 3", "Skip"],
-		"Jet Jaguar (2021) — choose:")
+		[tr("STR_EFF_EBP04_064_CHOICE"), tr("STR_EFF_BTN_SKIP")],
+		tr("STR_EFF_EBP04_064_PROMPT"))
 	if selected != 0:
 		return
 

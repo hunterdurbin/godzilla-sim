@@ -30,6 +30,6 @@ func on_revenge(ctx: EffectContext) -> void:
 			if not CardUtils.is_battle(card):
 				return false
 			return CardUtils.has_trait(card, CardEnums.CardTrait.RODAN),
-		"Return a Rodan battle card from your discard pile to your hand (or skip):")
+		tr("STR_EFF_EBP04_059_PROMPT"))
 	if not found.is_empty():
 		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)

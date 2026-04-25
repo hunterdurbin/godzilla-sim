@@ -21,7 +21,7 @@ func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> v
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.is_strategy(card),
-		"Discard a strategy card from hand to gain 1 Rage:",
+		tr("STR_EFF_EBP01_037_PROMPT"),
 		true # allow_skip
 	)
 	if not discarded.is_empty():

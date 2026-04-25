@@ -39,10 +39,10 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	var revealed: Array[Dictionary] = [card]
 	await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, revealed, revealed,
-		"Sent to discard pile:")
+		tr("STR_EFF_DISCARDED_PILE"))
 
 	if CardUtils.is_monster(card):
 		await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
 			func(c: Dictionary) -> bool: return ctx.field_rank(c, ctx.opponent.player_id) <= 5,
-			"Choose an opponent's rank 5 or lower battle card to destroy:")
+			tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 5)

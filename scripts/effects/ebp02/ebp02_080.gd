@@ -38,7 +38,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Show revealed cards to the player
 	await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, revealed, revealed,
-		"Revealed from deck (select any to confirm):")
+		tr("STR_EFF_DECK_REVEAL"))
 
 	# Check if they differ in at least 1 trait
 	# A card with no traits (e.g. strategy) cannot "differ in a trait" — both go to discard

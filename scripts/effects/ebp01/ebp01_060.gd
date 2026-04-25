@@ -31,7 +31,7 @@ func on_enter(ctx: EffectContext) -> void:
 		func(card: Dictionary) -> bool:
 			return CardUtils.is_strategy(card) \
 				and card.get("name", "") == "Godzilla vs. Destoroyah",
-		"Choose a 'Godzilla vs. Destoroyah' strategy card from your discard pile:"
+		tr("STR_EFF_EBP01_060_PROMPT")
 	)
 	if selected.is_empty():
 		return

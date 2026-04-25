@@ -30,7 +30,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.is_strategy(card),
-		"Discard a strategy card to gain 1 rage (or skip):",
+		tr("STR_EFF_EBP02_001_PROMPT"),
 		true)
 
 	if not selected.is_empty():

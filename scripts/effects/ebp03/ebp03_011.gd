@@ -64,7 +64,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var chosen: Array[Dictionary] = await ctx.effect_handler.select_cards_from_pool(
 		ctx.owner.player_id, valid, revealed,
-		"Choose up to 1 red and 1 blue battle card to add to hand:", 0, 2, filter)
+		tr("STR_EFF_EBP03_011_SELECT"), 0, 2, filter)
 
 	var chosen_ids: Array[String] = []
 	for card in chosen:

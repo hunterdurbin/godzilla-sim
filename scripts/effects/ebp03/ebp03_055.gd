@@ -27,7 +27,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_battle(card) \
 			and CardUtils.has_trait(card, CardEnums.CardTrait.MOTHRA),
-		"Put a Mothra battle card from discard on top of deck (or skip):"
+		tr("STR_EFF_EBP03_055_PROMPT")
 	)
 	if not selected.is_empty():
 		ctx.owner.main_deck.push_front(selected)

@@ -53,7 +53,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	# Choose which Land Moguera to place under (optional)
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, land_moguera_zones,
-		"Place Star Falcon under Land Moguera (or skip):", true)
+		tr("STR_EFF_EBP03_043_PROMPT"), true)
 
 	if chosen < 0:
 		return
@@ -73,7 +73,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 			if not CardUtils.is_battle(card):
 				return false
 			return CardUtils.has_trait(card, CardEnums.CardTrait.MOGUERA),
-		"Search for a Moguera battle card to play on Land Moguera:")
+		tr("STR_EFF_EBP03_043_SEARCH"))
 
 	if not selected.is_empty():
 		await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, selected, chosen)

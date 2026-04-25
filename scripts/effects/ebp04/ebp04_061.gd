@@ -32,7 +32,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.has_color(card, CardEnums.CardColor.GREEN),
-		"Discard 1 green card from your deck (or skip):")
+		tr("STR_EFF_EBP04_061_PROMPT"))
 	if not found.is_empty():
 		ctx.owner.discard_pile.append(found)
 		ctx.owner.discard_changed.emit()

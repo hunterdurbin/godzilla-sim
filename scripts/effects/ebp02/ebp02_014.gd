@@ -45,7 +45,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var revealed: Array[Dictionary] = [card]
 	await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, revealed, revealed,
-		"Sent to discard pile:")
+		tr("STR_EFF_DISCARDED_PILE"))
 
 	if CardUtils.is_monster(card):
 		if ctx.owner.monster_zone < 6:

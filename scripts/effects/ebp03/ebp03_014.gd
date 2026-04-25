@@ -27,7 +27,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_battle(card),
-		"Discard a battle card to draw 1 (or skip):",
+		tr("STR_EFF_EBP03_014_PROMPT"),
 		true
 	)
 	if not selected.is_empty():

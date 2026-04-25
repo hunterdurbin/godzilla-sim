@@ -36,7 +36,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var source := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, occupied,
-		"Choose a battle card to move (or skip):", true)
+		tr("STR_EFF_MOVE_BATTLE_OR_SKIP"), true)
 	if source < 0:
 		return
 
@@ -46,7 +46,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var dest := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, empty,
-		"Choose destination zone:")
+		tr("STR_EFF_MOVE_DEST_ZONE"))
 	if dest < 0:
 		return
 

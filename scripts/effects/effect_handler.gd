@@ -276,7 +276,7 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 			var options: Array[String] = []
 			for e in entries:
 				options.append(_get_card_location_label(e.player_id, e.card_data))
-			var chosen: int = await select_choice(player_id, options, "Choose which ability to resolve:")
+			var chosen: int = await select_choice(player_id, options, tr("STR_EFF_CHOOSE_ABILITY"))
 			if chosen < 0 or chosen >= entries.size():
 				chosen = 0
 			entry = entries.pop_at(chosen)
@@ -776,8 +776,8 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 func _resolve_discard_play(player_id: int, card_data: Dictionary, is_optional: bool) -> void:
 	if is_optional:
 		var card_name: String = card_data.get("name", "Unknown")
-		var options: Array[String] = ["Yes", "No"]
-		var chosen: int = await select_choice(player_id, options, "Play %s from discard?" % card_name)
+		var options: Array[String] = [tr("STR_EFF_BTN_YES"), tr("STR_EFF_BTN_NO")]
+		var chosen: int = await select_choice(player_id, options, tr("STR_EFF_PLAY_FROM_DISCARD_FMT") % card_name)
 		if chosen == 1:
 			return
 
@@ -1486,7 +1486,7 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 				return false
 			var traits: Array = card.get("traits", [])
 			return evo_trait in traits,
-		"Search for a rank %d or lower battle card to evolve into:" % evo_rank
+		tr("STR_EFF_SEARCH_EVOLVE_FMT") % evo_rank
 	)
 
 	if selected.is_empty():
@@ -1757,7 +1757,7 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int) -
 			break
 		var chosen: int = await select_zone_target(
 			player.player_id, player.player_id, valid,
-			"Choose a zone for a token (%d remaining):" % (count - placed))
+			tr("STR_EFF_TOKEN_ZONE_FMT") % (count - placed))
 		if chosen < 0:
 			break
 		used_zones.append(chosen)
@@ -2420,7 +2420,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 			if i != player.monster_zone - 1:  # Can't play in own monster zone
 				valid_zones.append(i)
 		var card_name: String = card_data.get("name", "card")
-		zone_idx = await select_zone_target(player_id, player_id, valid_zones, "Choose a zone to play %s from discard:" % card_name)
+		zone_idx = await select_zone_target(player_id, player_id, valid_zones, tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_name)
 		if zone_idx < 0:
 			# Can't skip — put back in discard as fallback
 			player.discard_pile.append(card_data)

@@ -30,7 +30,7 @@ func on_enter(ctx: EffectContext) -> void:
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,
 		func(card): return ctx.field_rank(card, ctx.opponent.player_id) <= 5,
-		"Destroy 1 opponent rank 5 or lower battle card:")
+		tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 5)
 
 
 func get_phase_start_filter() -> Dictionary:
@@ -60,7 +60,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	await ctx.effect_handler.destroy_chosen_zone(
 		ctx.owner.player_id, ctx.opponent, valid_zones,
-		"Destroy 1 opponent rank 5 or lower battle card in same column:")
+		tr("STR_EFF_EBP03_008_PROMPT"))
 
 
 func _has_color_battle_in_zones(ctx: EffectContext, color: CardEnums.CardColor) -> bool:

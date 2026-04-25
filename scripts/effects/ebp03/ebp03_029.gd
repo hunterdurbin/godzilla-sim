@@ -41,12 +41,12 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		return
 
 	var options: Array[String] = [
-		"Destroy all battle cards of both players",
-		"Each player discards to 2 cards in hand",
-		"Reduce each player's Rage by 2"
+		tr("STR_EFF_EBP03_029_CHOICE_A"),
+		tr("STR_EFF_EBP03_029_CHOICE_B"),
+		tr("STR_EFF_EBP03_029_CHOICE_C")
 	]
 	var chosen: int = await ctx.effect_handler.select_choice(
-		ctx.owner.player_id, options, "Choose one:")
+		ctx.owner.player_id, options, tr("STR_EFF_CHOOSE_ONE"))
 
 	match chosen:
 		0:

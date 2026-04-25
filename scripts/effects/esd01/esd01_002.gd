@@ -31,7 +31,7 @@ func _search_for_burst_godzilla(ctx: EffectContext) -> void:
 			if card.get("card_type") != CardEnums.CardType.MONSTER: return false
 			var effect := ctx.effect_handler.get_effect(card)
 			return effect != null and effect.get_burst_rank() >= 0,
-		"Search for a Rank III Godzilla(2023) with Burst"
+		tr("STR_EFF_ESD01_002_SEARCH")
 	)
 	if not selected.is_empty():
 		player.hand.append(selected)

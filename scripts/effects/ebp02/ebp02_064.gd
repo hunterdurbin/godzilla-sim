@@ -34,7 +34,7 @@ func on_revenge(ctx: EffectContext) -> void:
 			if not CardUtils.is_monster(card):
 				return false
 			return CardUtils.has_trait(card, CardEnums.CardTrait.KING_GHIDORAH),
-		"Return a King Ghidorah monster card to your hand:")
+		tr("STR_EFF_EBP02_058_PROMPT"))
 
 	if not selected.is_empty():
 		ctx.owner.hand.append(selected)
