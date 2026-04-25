@@ -87,4 +87,4 @@ func _trigger_milestone(ctx: EffectContext, milestone: int) -> void:
 			ctx.opponent.discard_changed.emit()
 		30:
 			ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_089_MILESTONE_30"))
-			ctx.game_state.declare_winner(ctx.owner.player_id)
+			ctx.game_state.game_over.emit(ctx.owner.player_id, "STR_LOG_REASON_INHERITED_LIFE")
