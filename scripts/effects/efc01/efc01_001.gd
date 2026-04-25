@@ -2,7 +2,7 @@ extends CardEffect
 
 ## EFC01-001: Godzilla(Gojika Festival) - Monster Rank 4 (Red)
 ## <Burst3>
-## If every zone adjacent to this card's zone has a battle card with <Festival Godzilla>,
+## If every zone adjacent to this card's zone has a battle card with <Fest>,
 ## this card gains +10000 counter power.
 ##
 ## Tested: No
@@ -34,6 +34,6 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 			return 0
 		if not CardUtils.is_battle(card):
 			return 0
-		if not CardUtils.has_trait(card, CardEnums.CardTrait.FESTIVAL_GODZILLA):
+		if not CardUtils.has_trait(card, CardEnums.CardTrait.FEST):
 			return 0
 	return 10000

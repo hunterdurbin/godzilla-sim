@@ -1,7 +1,7 @@
 extends CardEffect
 
 ## EFC01-003: Jet Jaguar(Gojika Festival) - Battle Rank 6 (Red)
-## <Enter> You may discard a card with both <Gigan> and <Festival Godzilla> from your hand.
+## <Enter> You may discard a card with both <Gigan> and <Fest> from your hand.
 ## If you do, search your deck for a battle card with <Weapon> or <Mech> and
 ## invasion_icon = 2, add it to your hand.
 ##
@@ -18,13 +18,13 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	# Discard a card with both GIGAN and Festival Godzilla traits from hand (optional)
+	# Discard a card with both GIGAN and Fest traits from hand (optional)
 	var discarded := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return CardUtils.has_trait(card, CardEnums.CardTrait.GIGAN) \
-				and CardUtils.has_trait(card, CardEnums.CardTrait.FESTIVAL_GODZILLA),
-		"Discard a Gigan+Festival Godzilla card to search for a Weapon/Mech battle card (or skip):",
+				and CardUtils.has_trait(card, CardEnums.CardTrait.FEST),
+		"Discard a Gigan+Fest card to search for a Weapon/Mech battle card (or skip):",
 		true)
 
 	if discarded.is_empty():

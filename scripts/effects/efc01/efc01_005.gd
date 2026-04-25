@@ -2,7 +2,7 @@ extends CardEffect
 
 ## EFC01-005: Godzilla Appears in Godzilla Festival - Strategy Rank 6 (Red)
 ## <Your Turn> When you play a monster card, reveal the top 5 cards of your deck.
-## Add all cards with <Festival Godzilla> to your hand and discard the rest.
+## Add all cards with <Fest> to your hand and discard the rest.
 ## At the beginning of your counter phase, discard your hand.
 ##
 ## Tested: No
@@ -39,11 +39,11 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 		ctx.owner.player_id, revealed, revealed,
 		"Revealed cards:")
 
-	# Separate Festival Godzilla cards from the rest
+	# Separate Fest cards from the rest
 	var fest_cards: Array[Dictionary] = []
 	var discard_cards: Array[Dictionary] = []
 	for card in revealed:
-		if CardUtils.has_trait(card, CardEnums.CardTrait.FESTIVAL_GODZILLA):
+		if CardUtils.has_trait(card, CardEnums.CardTrait.FEST):
 			fest_cards.append(card)
 		else:
 			discard_cards.append(card)
@@ -53,7 +53,7 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 		ctx.owner.main_deck.remove_at(i)
 	ctx.owner.deck_changed.emit()
 
-	# Add Festival Godzilla cards to hand
+	# Add Fest cards to hand
 	for card in fest_cards:
 		ctx.owner.hand.append(card)
 	if not fest_cards.is_empty():
