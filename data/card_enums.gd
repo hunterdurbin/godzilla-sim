@@ -1,7 +1,7 @@
 class_name CardEnums
 
 
-enum CardType {MONSTER, BATTLE, STRATEGY}
+enum CardType {MONSTER, BATTLE, STRATEGY, RAGE}
 
 enum CardColor {RED, BLUE, WHITE, GREEN}
 
@@ -126,6 +126,7 @@ static func type_to_key(t: CardType) -> StringName:
 		CardType.MONSTER: return &"STR_TYPE_MONSTER"
 		CardType.BATTLE: return &"STR_TYPE_BATTLE"
 		CardType.STRATEGY: return &"STR_TYPE_STRATEGY"
+		CardType.RAGE: return &"STR_TYPE_RAGE"
 		_: return &"STR_UNKNOWN"
 
 

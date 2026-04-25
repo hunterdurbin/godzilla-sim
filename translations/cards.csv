@@ -984,6 +984,8 @@ CARD_EBP04-089_DESC,"Do not move this to your discard pile at the beginning of y
 <あなたのターン中>あなたの怪獣カードの<怒り>が減る際、それをこれの下に置く。それが15枚目なら相手の交戦カードをすべて<破壊>し、22枚目なら相手は自分の手札をすべて捨て、30枚目ならあなたはこのゲームに勝利する。"
 CARD_EBP04-T01_NAME,Godzilla Earth,ゴジラ・アース
 CARD_EBP04-T01_DESC,(Tokens cannot be added to the deck. They are banished when removed from zones.),(トークンはデッキに入れられない。エリア外に移動すると消滅する)
+CARD_RAGE-MARKER_NAME,Rage,怒り
+CARD_RAGE-MARKER_DESC,"Placeholder representing 1 <Rage> placed by an effect. Behaves like a token: never enters the deck or discard pile.",効果によって置かれた<怒り>１つを表すプレースホルダー。トークンと同様に、デッキや捨て札には入らない。
 CARD_EPR-001_NAME,"Godzilla, King of the Monsters 70th",
 CARD_EPR-001_DESC,,
 CARD_EPR-002_NAME,GODZILLA THE ARTï½Eric Haze,

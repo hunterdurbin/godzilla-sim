@@ -29,6 +29,8 @@ func _build_card_templates() -> void:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
 	for card in EFC01_CARDS:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
+	for card in SYSTEM_CARDS:
+		CARD_TEMPLATES[card["id"]] = card.duplicate()
 
 
 # --- EBP01: Booster Pack 01 ---
@@ -4543,6 +4545,20 @@ var EFC01_CARDS: Array[Dictionary] = [
 		"invasion_icon": 1,
 		"description": "<Opponent's Turn> If your opponent has 2 or fewer battle cards in zones, your battle cards cannot be destroyed by your opponent's effects.",
 		"effect_script": "res://scripts/effects/efc01/efc01_006.gd"
+	},
+]
+
+# --- SYSTEM: Engine-internal placeholder cards (not from any set) ---
+# These represent in-game concepts (e.g. <Rage>) as physical cards so they can
+# be placed in stacks and counted by effects. They are never part of any deck.
+var SYSTEM_CARDS: Array[Dictionary] = [
+	{
+		"id": "RAGE-MARKER",
+		"name": "Rage",
+		"card_type": CardEnums.CardType.RAGE,
+		"colors": [],
+		"traits": [],
+		"description": "Placeholder representing 1 <Rage> placed by an effect. Has its own card type so the engine never treats it as a Monster, Battle, or Strategy card. Never enters the deck or discard pile."
 	},
 ]
 

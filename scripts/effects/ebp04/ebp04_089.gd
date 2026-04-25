@@ -14,7 +14,12 @@ extends CardEffect
 ##   Card stays in play across start phases but is not subject to Base-specific
 ##   interactions (e.g., not destroyed by invasion to zones 6-8 per 12.9.2).
 ## Interactions: None
-## Implementation notes: None
+## Implementation notes: <Rage> is a counter on the monster, not a physical card.
+##   To "put them underneath this" we spawn RAGE-MARKER token placeholders — one
+##   per point of rage decrease — and stack them under this strategy. The markers
+##   carry the TOKEN trait so they never enter the deck or discard pile.
+
+const RAGE_MARKER_ID := "RAGE-MARKER"
 
 
 func get_bot_tags() -> Array[String]:
@@ -47,13 +52,16 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 
 	var count_before: int = ctx.effect_handler.get_cards_under_strategy_top(ctx.owner, strategy_idx).size()
 
-	# Move top delta cards from discard pile under this strategy as trackers
+	# Spawn one RAGE-MARKER token placeholder per rage point lost and stack
+	# them under this strategy. Rage isn't a real card, so we fabricate markers
+	# rather than pulling from the discard pile.
+	var template: Dictionary = CardData.get_card_by_id(RAGE_MARKER_ID)
+	if template.is_empty():
+		push_warning("EBP04-089: RAGE-MARKER card data not found")
+		return
 	for _i in range(delta):
-		if ctx.owner.discard_pile.is_empty():
-			break
-		var tracker: Dictionary = ctx.owner.discard_pile.pop_back()
-		ctx.effect_handler.place_card_under_strategy_zone(ctx.owner, tracker, strategy_idx)
-		ctx.owner.discard_changed.emit()
+		var marker: Dictionary = template.duplicate()
+		ctx.effect_handler.place_card_under_strategy_zone(ctx.owner, marker, strategy_idx)
 
 	var count_after: int = ctx.effect_handler.get_cards_under_strategy_top(ctx.owner, strategy_idx).size()
 

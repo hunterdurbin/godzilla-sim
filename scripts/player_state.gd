@@ -258,12 +258,16 @@ func count_zone_tokens_by_id(token_id: String) -> int:
 func _reshuffle_discard() -> void:
 	if discard_pile.is_empty():
 		return
-	# Safety: filter out any tokens that leaked into discard
-	var non_tokens: Array[Dictionary] = []
+	# Safety: filter out tokens and engine-internal markers (e.g. RAGE-MARKER)
+	# that leaked into the discard pile — they must never reach the deck.
+	var deckable: Array[Dictionary] = []
 	for card in discard_pile:
-		if not is_token(card):
-			non_tokens.append(card)
-	main_deck.append_array(non_tokens)
+		if is_token(card):
+			continue
+		if card.get("card_type") == CardEnums.CardType.RAGE:
+			continue
+		deckable.append(card)
+	main_deck.append_array(deckable)
 	discard_pile.clear()
 	main_deck.shuffle()
 	deck_changed.emit()

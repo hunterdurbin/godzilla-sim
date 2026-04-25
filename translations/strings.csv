@@ -249,6 +249,7 @@ STR_COLOR_GREEN,Green,緑
 STR_TYPE_MONSTER,Monster,怪獣
 STR_TYPE_BATTLE,Battle,交戦
 STR_TYPE_STRATEGY,Strategy,戦略
+STR_TYPE_RAGE,Rage,怒り
 STR_PHASE_START,Start Phase,開始フェイズ
 STR_PHASE_MAIN,Main Phase,メインフェイズ
 STR_PHASE_COUNTER,Counter Phase,撃退フェイズ
