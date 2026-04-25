@@ -47,7 +47,6 @@ func _prompt_card_art_switch(target_locale: String) -> void:
 	var prompt := Label.new()
 	prompt.text = tr("STR_OPTIONS_ART_MATCH_PROMPT_FMT").replace("{LANG}", lang_name)
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prompt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	prompt.add_theme_font_size_override("font_size", 16)
 	vbox.add_child(prompt)
 
@@ -187,6 +186,10 @@ func _add_close_button(vbox: VBoxContainer, popup: PopupPanel) -> void:
 
 func _show_modal(popup: PopupPanel) -> void:
 	add_child(popup)
+	# reset_size() forces the window to shrink to its content's min size
+	# before centering. Without it, embedded popups can keep a stale size
+	# from prior layout passes and stretch vertically.
+	popup.reset_size()
 	popup.popup_centered()
 
 
