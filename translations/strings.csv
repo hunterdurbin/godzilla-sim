@@ -525,6 +525,7 @@ STR_VALIDATE_RANK_FALLBACK_FMT,Rank %d,等級 %d
 STR_VALIDATE_OR_SEPARATOR," or ",または
 STR_VALIDATE_RESTRICTED_FMT,"%s is restricted (max 1 copy, has %d)","%s は制限カードです (最大1枚、現在 %d 枚)"
 STR_VALIDATE_CHOICE_RESTRICTED_FMT,%s and %s are choice restricted (only one allowed),%s と %s は選択制限カードです (どちらか1枚のみ)
+STR_VALIDATE_NOT_IN_FORMAT_FMT,"%s [%s] is not allowed in %s","%s [%s] は %s では使用できません"
 STR_LOG_TURN_START_FMT,--- Turn {N}: {PLAYER} ---,--- ターン {N}: {PLAYER} ---
 STR_LOG_START_PHASE_DRAW_FMT,Start Phase: Drawing {N} card(s),開始フェイズ: {N}枚ドロー
 STR_LOG_HAND_SIZE_FMT,Hand size: {N},手札: {N}枚

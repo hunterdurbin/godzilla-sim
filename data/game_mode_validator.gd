@@ -64,6 +64,7 @@ const MODES: Array[Dictionary] = [
 
 const ERR_RESTRICTED := "STR_VALIDATE_RESTRICTED_FMT"
 const ERR_CHOICE_RESTRICTED := "STR_VALIDATE_CHOICE_RESTRICTED_FMT"
+const ERR_NOT_IN_FORMAT := "STR_VALIDATE_NOT_IN_FORMAT_FMT"
 
 
 static func normalize_mode_id(game_mode: String) -> String:
@@ -136,7 +137,7 @@ static func validate(game_mode: String, monster_entries: Array, main_entries: Ar
 	var errors := DeckValidator.validate(monster_entries, main_entries)
 	var m := get_mode(game_mode)
 	if not m.is_empty() and m.has("card_pool"):
-		errors.append_array(_validate_pool_restrictions(m.card_pool, monster_entries, main_entries))
+		errors.append_array(_validate_pool_restrictions(m, monster_entries, main_entries))
 	return errors
 
 
@@ -148,7 +149,7 @@ static func get_invalid_cards(game_mode: String, monster_entries: Array, main_en
 	var invalid := DeckValidator.get_invalid_cards(monster_entries, main_entries)
 	var m := get_mode(game_mode)
 	if not m.is_empty() and m.has("card_pool"):
-		_flag_pool_invalid(m.card_pool, monster_entries, main_entries, invalid)
+		_flag_pool_invalid(m.card_pool, game_mode, monster_entries, main_entries, invalid)
 	return invalid
 
 
@@ -160,9 +161,15 @@ static func _count_by_base(entries: Array) -> Dictionary:
 	return counts
 
 
-static func _flag_pool_invalid(pool: Dictionary, monster_entries: Array, main_entries: Array, invalid: Dictionary) -> void:
+static func _flag_pool_invalid(pool: Dictionary, game_mode: String, monster_entries: Array, main_entries: Array, invalid: Dictionary) -> void:
 	var all_entries: Array = monster_entries + main_entries
 	var card_counts: Dictionary = _count_by_base(all_entries)
+
+	# Cards not in the format's allow list (out-of-format / banned).
+	for entry in all_entries:
+		var cn: String = entry["card_number"]
+		if not is_card_valid_for_mode(cn, game_mode):
+			invalid[cn] = true
 
 	# Restricted: flag every copy if the base id is over limit.
 	for cn in pool.get("restricted", []):
@@ -180,9 +187,25 @@ static func _flag_pool_invalid(pool: Dictionary, monster_entries: Array, main_en
 					invalid[entry["card_number"]] = true
 
 
-static func _validate_pool_restrictions(pool: Dictionary, monster_entries: Array, main_entries: Array) -> Array[String]:
+static func _validate_pool_restrictions(mode: Dictionary, monster_entries: Array, main_entries: Array) -> Array[String]:
 	var errors: Array[String] = []
+	var pool: Dictionary = mode["card_pool"]
+	var mode_id: String = mode.get("id", "")
+	var format_label: String = Loc.t(mode.get("label", ""))
 	var card_counts: Dictionary = _count_by_base(monster_entries + main_entries)
+	var seen_out_of_format: Dictionary = {}
+
+	# Out-of-format check: any entry the pool's allow/exclude rules reject.
+	for entry in monster_entries + main_entries:
+		var cn: String = entry["card_number"]
+		var base: String = cn.trim_suffix("+")
+		if seen_out_of_format.has(base):
+			continue
+		if not is_card_valid_for_mode(cn, mode_id):
+			seen_out_of_format[base] = true
+			var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(cn, {})
+			var card_name: String = tmpl.get("name", base)
+			errors.append(Loc.t(ERR_NOT_IN_FORMAT) % [card_name, base, format_label])
 
 	# Restricted list: max 1 copy across monster + main decks.
 	for cn in pool.get("restricted", []):
