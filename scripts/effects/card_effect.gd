@@ -3,6 +3,29 @@ extends RefCounted
 
 ## Base class for card effect scripts. Override trigger methods to define card abilities.
 ## Effect scripts are stateless — all state comes from the EffectContext passed to each call.
+##
+## # Declarative trigger filters
+##
+## A subclass may declare a class-level constant `TRIGGER_FILTERS` to gate when a
+## trigger fires, replacing repeated early-return guards inside method bodies. The
+## EffectHandler dispatcher reads the constant via Script.get_script_constant_map()
+## before invoking each trigger and skips entries whose filter doesn't match.
+##
+## Shape:
+##     const TRIGGER_FILTERS = {
+##         "on_rage_changed": {"own_turn": true, "direction": "decrease"},
+##         "on_phase_start":  {"phase": CardEnums.GamePhase.MAIN},
+##     }
+##
+## Supported keys (all optional within a per-method dict):
+##   "phase":     CardEnums.GamePhase — fire only during this phase
+##   "own_turn":  bool                — true = controller's turn; false = opponent's turn
+##   "direction": "increase" | "decrease" | "both" — defaults to "both"; only meaningful
+##                for triggers that pass old/new values (e.g. on_rage_changed); ignored
+##                for phase/turn-only triggers; unknown values pass through
+##
+## Empty per-method dict or missing entry = always fire (backward compatible).
+## See EffectHandler.get_trigger_filter / _passes_trigger_filter for the dispatcher side.
 
 
 # --- Trigger methods (override in subclasses) ---

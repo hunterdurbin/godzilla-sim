@@ -93,6 +93,7 @@ const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
 var game_state: GameState
 var action_handler  # ActionHandler reference (set by TurnManager)
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
+var _filters_cache: Dictionary = {}  # script_path -> TRIGGER_FILTERS dict (declarative trigger gating)
 var _deck_search_result: Dictionary = {}
 var _deck_arrange_keep: Array[Dictionary] = []
 var _deck_arrange_discard: Array[Dictionary] = []
@@ -153,6 +154,43 @@ func has_trigger(card_data: Dictionary, method_name: String) -> bool:
 		return false
 	var triggers: Array = _TriggerMap.TRIGGERS.get(script_path, [])
 	return method_name in triggers
+
+
+func get_trigger_filter(card_data: Dictionary, method_name: String) -> Dictionary:
+	## Read the per-method filter dict an effect script declares as a class-level
+	## TRIGGER_FILTERS constant. Returns {} if the script has no filter for the method.
+	## See card_effect.gd header for the supported filter keys and semantics.
+	var script_path: String = card_data.get("effect_script", "")
+	if script_path.is_empty():
+		return {}
+	if not _filters_cache.has(script_path):
+		var script: Script = load(script_path)
+		var consts: Dictionary = script.get_script_constant_map() if script else {}
+		_filters_cache[script_path] = consts.get("TRIGGER_FILTERS", {})
+	var all_filters: Dictionary = _filters_cache[script_path]
+	return all_filters.get(method_name, {})
+
+
+func _passes_trigger_filter(filter: Dictionary, player_id: int, old_value: int, new_value: int) -> bool:
+	## Evaluate a TRIGGER_FILTERS entry against the current state. Empty dict = pass.
+	## "phase" / "own_turn" check current phase + turn ownership; "direction" checks
+	## old_value vs new_value (only meaningful for triggers that pass deltas, e.g.
+	## on_rage_changed). Unknown direction values pass through.
+	if filter.is_empty():
+		return true
+	if filter.has("phase") and filter.phase != game_state.current_phase:
+		return false
+	if filter.has("own_turn"):
+		var is_own_turn: bool = (game_state.current_player_id == player_id)
+		if filter.own_turn != is_own_turn:
+			return false
+	if filter.has("direction"):
+		var dir: String = filter.direction
+		if dir == "increase" and new_value <= old_value:
+			return false
+		if dir == "decrease" and new_value >= old_value:
+			return false
+	return true
 
 
 func _build_context(owner_id: int, card_data: Dictionary) -> EffectContext:
@@ -477,29 +515,36 @@ func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
 func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 	## Trigger rage changed on all active cards for this player (monster + zones + strategies).
 	## Collects all applicable effects, then resolves with rule action checks between each.
+	## Each candidate is gated through TRIGGER_FILTERS (phase / own_turn / direction).
 	var entries: Array = []
 	var player := game_state.players[player_id]
 
 	# Monster card
 	if has_trigger(player.current_monster, "on_rage_changed"):
-		var me := get_effect(player.current_monster)
-		var ctx := _build_context(player_id, player.current_monster)
-		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_rage_changed.bind(ctx, old_rage, new_rage)})
+		var filter := get_trigger_filter(player.current_monster, "on_rage_changed")
+		if _passes_trigger_filter(filter, player_id, old_rage, new_rage):
+			var me := get_effect(player.current_monster)
+			var ctx := _build_context(player_id, player.current_monster)
+			entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_rage_changed.bind(ctx, old_rage, new_rage)})
 
 	# Battle cards in zones (top card only — stacked cards are inactive per 12.7.3)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty() and has_trigger(zone_card, "on_rage_changed"):
-			var ze := get_effect(zone_card)
-			var ctx := _build_context(player_id, zone_card)
-			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_rage_changed.bind(ctx, old_rage, new_rage)})
+			var filter := get_trigger_filter(zone_card, "on_rage_changed")
+			if _passes_trigger_filter(filter, player_id, old_rage, new_rage):
+				var ze := get_effect(zone_card)
+				var ctx := _build_context(player_id, zone_card)
+				entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_rage_changed.bind(ctx, old_rage, new_rage)})
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, "on_rage_changed"):
-			var se := get_effect(sz_card)
-			var ctx := _build_context(player_id, sz_card)
-			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_rage_changed.bind(ctx, old_rage, new_rage)})
+			var filter := get_trigger_filter(sz_card, "on_rage_changed")
+			if _passes_trigger_filter(filter, player_id, old_rage, new_rage):
+				var se := get_effect(sz_card)
+				var ctx := _build_context(player_id, sz_card)
+				entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_rage_changed.bind(ctx, old_rage, new_rage)})
 
 	# Also trigger on_opponent_rage_changed on the OTHER player's cards
 	var opp_id: int = 1 - player_id
@@ -507,22 +552,28 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 	var opp_entries: Array = []
 
 	if has_trigger(opp.current_monster, "on_opponent_rage_changed"):
-		var me := get_effect(opp.current_monster)
-		var ctx := _build_context(opp_id, opp.current_monster)
-		opp_entries.append({"player_id": opp_id, "card_data": opp.current_monster, "callback": me.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
+		var filter := get_trigger_filter(opp.current_monster, "on_opponent_rage_changed")
+		if _passes_trigger_filter(filter, opp_id, old_rage, new_rage):
+			var me := get_effect(opp.current_monster)
+			var ctx := _build_context(opp_id, opp.current_monster)
+			opp_entries.append({"player_id": opp_id, "card_data": opp.current_monster, "callback": me.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
 
 	for i in range(8):
 		var zone_card := opp.get_zone_top_card(i)
 		if not zone_card.is_empty() and has_trigger(zone_card, "on_opponent_rage_changed"):
-			var ze := get_effect(zone_card)
-			var ctx := _build_context(opp_id, zone_card)
-			opp_entries.append({"player_id": opp_id, "card_data": zone_card, "callback": ze.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
+			var filter := get_trigger_filter(zone_card, "on_opponent_rage_changed")
+			if _passes_trigger_filter(filter, opp_id, old_rage, new_rage):
+				var ze := get_effect(zone_card)
+				var ctx := _build_context(opp_id, zone_card)
+				opp_entries.append({"player_id": opp_id, "card_data": zone_card, "callback": ze.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
 
 	for sz_card in opp.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, "on_opponent_rage_changed"):
-			var se := get_effect(sz_card)
-			var ctx := _build_context(opp_id, sz_card)
-			opp_entries.append({"player_id": opp_id, "card_data": sz_card, "callback": se.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
+			var filter := get_trigger_filter(sz_card, "on_opponent_rage_changed")
+			if _passes_trigger_filter(filter, opp_id, old_rage, new_rage):
+				var se := get_effect(sz_card)
+				var ctx := _build_context(opp_id, sz_card)
+				opp_entries.append({"player_id": opp_id, "card_data": sz_card, "callback": se.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
 
 	entries.append_array(opp_entries)
 	await _resolve_standby_entries(entries)

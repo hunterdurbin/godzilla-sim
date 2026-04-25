@@ -21,6 +21,10 @@ extends CardEffect
 
 const RAGE_MARKER_ID := "RAGE-MARKER"
 
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"own_turn": true, "direction": "decrease"},
+}
+
 
 func get_bot_tags() -> Array[String]:
 	return ["win_condition"]
@@ -39,13 +43,9 @@ func _find_own_strategy_zone(ctx: EffectContext) -> int:
 
 
 func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	# Only trigger on own turn when rage decreases
-	if ctx.is_opponent_turn():
-		return
+	# Turn ownership and rage-direction guards live in TRIGGER_FILTERS — by the
+	# time we get here, it's the controller's turn and rage is decreasing.
 	var delta := old_rage - new_rage
-	if delta <= 0:
-		return
-
 	var strategy_idx := _find_own_strategy_zone(ctx)
 	if strategy_idx < 0:
 		return
