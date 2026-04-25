@@ -1,23 +1,23 @@
 class_name DeckValidator
 ## Static deck validation utilities shared by DecklistManager and DeckBuilder.
 
-# --- Error messages ---
-const ERR_UNKNOWN_CARD := "Unknown card: %s"
-const ERR_NOT_MONSTER := "%s is not a monster card"
-const ERR_TOKEN_IN_DECK := "%s has Token trait (not allowed in decks)"
-const ERR_DUPLICATE_RANK := "Duplicate monster rank %d"
-const ERR_MONSTER_COUNT := "Monster deck must have exactly 4 cards (has %d)"
-const ERR_MISSING_RANK := "Monster deck missing rank %d"
-const ERR_COLOR_MISMATCH := "%s [%s] color doesn't match monster deck"
-const ERR_MAIN_COUNT := "Main deck must have exactly 50 cards (has %d)"
-const ERR_STEP2_LIMIT := "Main deck has %d Step-2 cards (max 10)"
-const ERR_COPY_LIMIT := "Card %s has %d copies (max 4)"
-const ERR_MISSING_TRAIT := "%s [%s] missing required trait (%s)"
-const ERR_BELOW_MIN_RANK := "%s [%s] rank %d is below minimum %d"
-const ERR_STRATEGY_COUNT := "Deck needs at least %d strategy cards (has %d)"
+# --- Error message translation keys ---
+const ERR_UNKNOWN_CARD := "STR_VALIDATE_UNKNOWN_CARD_FMT"
+const ERR_NOT_MONSTER := "STR_VALIDATE_NOT_MONSTER_FMT"
+const ERR_TOKEN_IN_DECK := "STR_VALIDATE_TOKEN_IN_DECK_FMT"
+const ERR_DUPLICATE_RANK := "STR_VALIDATE_DUPLICATE_RANK_FMT"
+const ERR_MONSTER_COUNT := "STR_VALIDATE_MONSTER_COUNT_FMT"
+const ERR_MISSING_RANK := "STR_VALIDATE_MISSING_RANK_FMT"
+const ERR_COLOR_MISMATCH := "STR_VALIDATE_COLOR_MISMATCH_FMT"
+const ERR_MAIN_COUNT := "STR_VALIDATE_MAIN_COUNT_FMT"
+const ERR_STEP2_LIMIT := "STR_VALIDATE_STEP2_LIMIT_FMT"
+const ERR_COPY_LIMIT := "STR_VALIDATE_COPY_LIMIT_FMT"
+const ERR_MISSING_TRAIT := "STR_VALIDATE_MISSING_TRAIT_FMT"
+const ERR_BELOW_MIN_RANK := "STR_VALIDATE_BELOW_MIN_RANK_FMT"
+const ERR_STRATEGY_COUNT := "STR_VALIDATE_STRATEGY_COUNT_FMT"
 
-# --- Warning messages ---
-const WARN_NO_SHARED_TRAITS := "%s (rank %d) shares no traits with %s (rank %d)"
+# --- Warning message translation keys ---
+const WARN_NO_SHARED_TRAITS := "STR_VALIDATE_NO_SHARED_TRAITS_FMT"
 
 
 static func validate(monster_entries: Array, main_entries: Array) -> Array[String]:
@@ -40,20 +40,20 @@ static func validate(monster_entries: Array, main_entries: Array) -> Array[Strin
 
 		var template: Dictionary = CardData.CARD_TEMPLATES.get(cn, {})
 		if template.is_empty():
-			errors.append(ERR_UNKNOWN_CARD % cn)
+			errors.append(Loc.t(ERR_UNKNOWN_CARD) % cn)
 			continue
 
 		if template.get("card_type") != CardEnums.CardType.MONSTER:
-			errors.append(ERR_NOT_MONSTER % cn)
+			errors.append(Loc.t(ERR_NOT_MONSTER) % cn)
 			continue
 
 		if CardEnums.CardTrait.TOKEN in template.get("traits", []):
-			errors.append(ERR_TOKEN_IN_DECK % cn)
+			errors.append(Loc.t(ERR_TOKEN_IN_DECK) % cn)
 
 		var rank: int = template.get("rank", 0)
 		for _i in range(qty):
 			if rank in monster_ranks_found:
-				errors.append(ERR_DUPLICATE_RANK % rank)
+				errors.append(Loc.t(ERR_DUPLICATE_RANK) % rank)
 			else:
 				monster_ranks_found[rank] = true
 
@@ -64,11 +64,11 @@ static func validate(monster_entries: Array, main_entries: Array) -> Array[Strin
 			resonance = template.get("resonance", {})
 
 	if monster_total != 4:
-		errors.append(ERR_MONSTER_COUNT % monster_total)
+		errors.append(Loc.t(ERR_MONSTER_COUNT) % monster_total)
 
 	for r in [1, 2, 3, 4]:
 		if r not in monster_ranks_found:
-			errors.append(ERR_MISSING_RANK % r)
+			errors.append(Loc.t(ERR_MISSING_RANK) % r)
 
 	# Color check for monster deck cards (second pass)
 	if allowed_colors.size() > 1:
@@ -77,7 +77,7 @@ static func validate(monster_entries: Array, main_entries: Array) -> Array[Strin
 			if template.is_empty():
 				continue
 			if not _has_allowed_color(template, allowed_colors):
-				errors.append(ERR_COLOR_MISMATCH % [
+				errors.append(Loc.t(ERR_COLOR_MISMATCH) % [
 					template.get("name", entry["card_number"]), entry["card_number"]])
 
 	# --- Main Deck ---
@@ -93,11 +93,11 @@ static func validate(monster_entries: Array, main_entries: Array) -> Array[Strin
 
 		var template: Dictionary = CardData.CARD_TEMPLATES.get(cn, {})
 		if template.is_empty():
-			errors.append(ERR_UNKNOWN_CARD % cn)
+			errors.append(Loc.t(ERR_UNKNOWN_CARD) % cn)
 			continue
 
 		if CardEnums.CardTrait.TOKEN in template.get("traits", []):
-			errors.append(ERR_TOKEN_IN_DECK % cn)
+			errors.append(Loc.t(ERR_TOKEN_IN_DECK) % cn)
 
 		if template.get("invasion_icon", 0) >= 2:
 			invasion2_count += qty
@@ -105,20 +105,20 @@ static func validate(monster_entries: Array, main_entries: Array) -> Array[Strin
 		# Color check
 		if allowed_colors.size() > 1:
 			if not _has_allowed_color(template, allowed_colors):
-				errors.append(ERR_COLOR_MISMATCH % [template.get("name", cn), cn])
+				errors.append(Loc.t(ERR_COLOR_MISMATCH) % [template.get("name", cn), cn])
 
 	if main_total != 50:
-		errors.append(ERR_MAIN_COUNT % main_total)
+		errors.append(Loc.t(ERR_MAIN_COUNT) % main_total)
 
 	if invasion2_count > 10:
-		errors.append(ERR_STEP2_LIMIT % invasion2_count)
+		errors.append(Loc.t(ERR_STEP2_LIMIT) % invasion2_count)
 
 	# --- Cross-deck copy limit ---
 	for cn in card_number_counts:
 		if card_number_counts[cn] > 4:
 			var tmpl: Dictionary = CardData.CARD_TEMPLATES.get(cn, {})
 			if not tmpl.get("unlimited_copies", false):
-				errors.append(ERR_COPY_LIMIT % [cn, card_number_counts[cn]])
+				errors.append(Loc.t(ERR_COPY_LIMIT) % [cn, card_number_counts[cn]])
 
 	# --- Resonance requirements ---
 	if not resonance.is_empty():
@@ -228,9 +228,9 @@ static func warnings(monster_entries: Array, main_entries: Array) -> Array[Strin
 				shared = true
 				break
 		if not shared:
-			result.append(WARN_NO_SHARED_TRAITS % [
-				current.get("name", "Rank %d" % r), r,
-				next.get("name", "Rank %d" % (r + 1)), r + 1])
+			result.append(Loc.t(WARN_NO_SHARED_TRAITS) % [
+				current.get("name", Loc.t("STR_VALIDATE_RANK_FALLBACK_FMT") % r), r,
+				next.get("name", Loc.t("STR_VALIDATE_RANK_FALLBACK_FMT") % (r + 1)), r + 1])
 
 	return result
 
@@ -255,7 +255,7 @@ static func _trait_names_string(traits: Array) -> String:
 	var names: Array[String] = []
 	for t in traits:
 		names.append(CardEnums.trait_to_string(t))
-	return " or ".join(names)
+	return Loc.t("STR_VALIDATE_OR_SEPARATOR").join(names)
 
 
 static func _validate_resonance(resonance: Dictionary, main_entries: Array) -> Array[String]:
@@ -279,20 +279,20 @@ static func _validate_resonance(resonance: Dictionary, main_entries: Array) -> A
 
 		if card_type == CardEnums.CardType.MONSTER and not req_monster_traits.is_empty():
 			if not _has_any_trait(traits, req_monster_traits):
-				errors.append(ERR_MISSING_TRAIT % [card_label[0], card_label[1],
+				errors.append(Loc.t(ERR_MISSING_TRAIT) % [card_label[0], card_label[1],
 					_trait_names_string(req_monster_traits)])
 
 		if card_type == CardEnums.CardType.BATTLE and not req_battle_traits.is_empty():
 			if not _has_any_trait(traits, req_battle_traits):
-				errors.append(ERR_MISSING_TRAIT % [card_label[0], card_label[1],
+				errors.append(Loc.t(ERR_MISSING_TRAIT) % [card_label[0], card_label[1],
 					_trait_names_string(req_battle_traits)])
 
 		if card_type == CardEnums.CardType.BATTLE and min_battle_rank > 0:
 			if tmpl.get("rank", 0) < min_battle_rank:
-				errors.append(ERR_BELOW_MIN_RANK % [card_label[0], card_label[1],
+				errors.append(Loc.t(ERR_BELOW_MIN_RANK) % [card_label[0], card_label[1],
 					tmpl.get("rank", 0), min_battle_rank])
 
 	if min_strategy_count > 0 and strategy_count < min_strategy_count:
-		errors.append(ERR_STRATEGY_COUNT % [min_strategy_count, strategy_count])
+		errors.append(Loc.t(ERR_STRATEGY_COUNT) % [min_strategy_count, strategy_count])
 
 	return errors

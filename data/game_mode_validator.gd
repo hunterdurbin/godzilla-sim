@@ -62,8 +62,8 @@ const MODES: Array[Dictionary] = [
 	},
 ]
 
-const ERR_RESTRICTED := "%s is restricted (max 1 copy, has %d)"
-const ERR_CHOICE_RESTRICTED := "%s and %s are choice restricted (only one allowed)"
+const ERR_RESTRICTED := "STR_VALIDATE_RESTRICTED_FMT"
+const ERR_CHOICE_RESTRICTED := "STR_VALIDATE_CHOICE_RESTRICTED_FMT"
 
 
 static func normalize_mode_id(game_mode: String) -> String:
@@ -102,7 +102,7 @@ static func get_mode_label(mode_id: String) -> String:
 	var m := get_mode(mode_id)
 	if m.is_empty():
 		return mode_id
-	return TranslationServer.translate(m.label)
+	return Loc.t(m.label)
 
 
 static func is_card_valid_for_mode(card_number: String, game_mode: String) -> bool:
@@ -187,11 +187,11 @@ static func _validate_pool_restrictions(pool: Dictionary, monster_entries: Array
 	# Restricted list: max 1 copy across monster + main decks.
 	for cn in pool.get("restricted", []):
 		if card_counts.get(cn, 0) > 1:
-			errors.append(ERR_RESTRICTED % [cn, card_counts[cn]])
+			errors.append(Loc.t(ERR_RESTRICTED) % [cn, card_counts[cn]])
 
 	# Choice restricted: mutually exclusive pairs.
 	for pair in pool.get("choice_restricted", []):
 		if card_counts.get(pair[0], 0) > 0 and card_counts.get(pair[1], 0) > 0:
-			errors.append(ERR_CHOICE_RESTRICTED % [pair[0], pair[1]])
+			errors.append(Loc.t(ERR_CHOICE_RESTRICTED) % [pair[0], pair[1]])
 
 	return errors

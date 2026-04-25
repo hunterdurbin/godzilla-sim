@@ -1127,9 +1127,9 @@ func _update_deck_stats() -> void:
 	var sc := "[color=green]" if step2_count <= 10 else "[color=red]"
 
 	var text := ""
-	text += "[b]Monster Deck:[/b] %s%d / 4[/color]\n" % [mc, monster_count]
-	text += "[b]Main Deck:[/b] %s%d / 50[/color]\n" % [mnc, main_count]
-	text += "[b]Step-2 Cards:[/b] %s%d / 10[/color]" % [sc, step2_count]
+	text += "[b]%s[/b] %s%d / 4[/color]\n" % [tr("STR_DB_MONSTER_DECK"), mc, monster_count]
+	text += "[b]%s[/b] %s%d / 50[/color]\n" % [tr("STR_DB_MAIN_DECK"), mnc, main_count]
+	text += "[b]%s[/b] %s%d / 10[/color]" % [tr("STR_DB_STEP2_CARDS"), sc, step2_count]
 	deck_stats_label.clear()
 	deck_stats_label.append_text(text)
 
@@ -1144,11 +1144,11 @@ func _update_validation() -> void:
 		warnings = DeckValidator.warnings(_monster_entries, _main_entries)
 
 	if not errors.is_empty():
-		validation_label.append_text("[color=red][b]Errors[/b][/color]\n")
+		validation_label.append_text("[color=red][b]%s[/b][/color]\n" % tr("STR_DB_ERRORS"))
 		for err in errors:
 			validation_label.append_text("[color=red]- %s[/color]\n" % err)
 	if not warnings.is_empty():
-		validation_label.append_text("[color=yellow][b]Warnings[/b][/color]\n")
+		validation_label.append_text("[color=yellow][b]%s[/b][/color]\n" % tr("STR_DB_WARNINGS"))
 		for warn in warnings:
 			validation_label.append_text("[color=yellow]- %s[/color]\n" % warn)
 

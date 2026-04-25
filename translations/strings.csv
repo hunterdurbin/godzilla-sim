@@ -502,6 +502,29 @@ STR_DB_UNSAVED_DISCARD,Discard,破棄
 STR_DB_DELETE_TITLE,Delete Deck,デッキを削除
 STR_DB_DELETE_OK,Delete,削除
 STR_DB_DELETE_PROMPT,"Delete ""%s""?","「%s」を削除しますか?"
+STR_DB_MONSTER_DECK,Monster Deck:,怪獣デッキ:
+STR_DB_MAIN_DECK,Main Deck:,メインデッキ:
+STR_DB_STEP2_CARDS,Step-2 Cards:,足2カード:
+STR_DB_ERRORS,Errors,エラー
+STR_DB_WARNINGS,Warnings,警告
+STR_VALIDATE_UNKNOWN_CARD_FMT,Unknown card: %s,不明なカード: %s
+STR_VALIDATE_NOT_MONSTER_FMT,%s is not a monster card,%s は怪獣カードではありません
+STR_VALIDATE_TOKEN_IN_DECK_FMT,%s has Token trait (not allowed in decks),%s はトークン特徴を持っています (デッキに入れられません)
+STR_VALIDATE_DUPLICATE_RANK_FMT,Duplicate monster rank %d,等級 %d の怪獣が重複しています
+STR_VALIDATE_MONSTER_COUNT_FMT,Monster deck must have exactly 4 cards (has %d),怪獣デッキはちょうど4枚必要です (現在 %d 枚)
+STR_VALIDATE_MISSING_RANK_FMT,Monster deck missing rank %d,怪獣デッキに等級 %d がありません
+STR_VALIDATE_COLOR_MISMATCH_FMT,"%s [%s] color doesn't match monster deck","%s [%s] の色が怪獣デッキと合いません"
+STR_VALIDATE_MAIN_COUNT_FMT,Main deck must have exactly 50 cards (has %d),メインデッキはちょうど50枚必要です (現在 %d 枚)
+STR_VALIDATE_STEP2_LIMIT_FMT,Main deck has %d Step-2 cards (max 10),メインデッキの足2カードが %d 枚あります (最大10枚)
+STR_VALIDATE_COPY_LIMIT_FMT,Card %s has %d copies (max 4),カード %s が %d 枚あります (最大4枚)
+STR_VALIDATE_MISSING_TRAIT_FMT,"%s [%s] missing required trait (%s)","%s [%s] に必要な特徴がありません (%s)"
+STR_VALIDATE_BELOW_MIN_RANK_FMT,"%s [%s] rank %d is below minimum %d","%s [%s] の等級 %d は最低 %d 未満です"
+STR_VALIDATE_STRATEGY_COUNT_FMT,Deck needs at least %d strategy cards (has %d),デッキには戦略カードが最低 %d 枚必要です (現在 %d 枚)
+STR_VALIDATE_NO_SHARED_TRAITS_FMT,"%s (rank %d) shares no traits with %s (rank %d)","%s (等級 %d) と %s (等級 %d) は共通の特徴がありません"
+STR_VALIDATE_RANK_FALLBACK_FMT,Rank %d,等級 %d
+STR_VALIDATE_OR_SEPARATOR," or ",または
+STR_VALIDATE_RESTRICTED_FMT,"%s is restricted (max 1 copy, has %d)","%s は制限カードです (最大1枚、現在 %d 枚)"
+STR_VALIDATE_CHOICE_RESTRICTED_FMT,%s and %s are choice restricted (only one allowed),%s と %s は選択制限カードです (どちらか1枚のみ)
 STR_LOG_TURN_START_FMT,--- Turn {N}: {PLAYER} ---,--- ターン {N}: {PLAYER} ---
 STR_LOG_START_PHASE_DRAW_FMT,Start Phase: Drawing {N} card(s),開始フェイズ: {N}枚ドロー
 STR_LOG_HAND_SIZE_FMT,Hand size: {N},手札: {N}枚
