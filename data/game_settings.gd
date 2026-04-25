@@ -21,7 +21,7 @@ func get_custom_base_path() -> String:
 	return _custom_base_path
 
 var player_name: String = ""
-var locale: String = "en"
+var locale: String = ""  # empty = never chosen; LoadingScreen prompts on first launch
 var card_art_locale: String = "en"  # decoupled from UI locale; user downloads per-locale artwork
 var auto_draw: bool = true
 var auto_phase_advance: bool = true
@@ -63,10 +63,17 @@ const RECONNECT_TIMEOUT_SEC: int = 90 * 60  # 90 minutes
 func _ready() -> void:
 	use_mobile_layout = OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	_load()
-	TranslationServer.set_locale(locale)
+	# Apply persisted locale immediately if chosen; otherwise LoadingScreen
+	# prompts the user, then calls set_locale().
+	if not locale.is_empty():
+		TranslationServer.set_locale(locale)
 	if player_name.is_empty():
 		player_name = "Player%06d" % (randi() % 1000000)
 		_save()
+
+
+func has_chosen_locale() -> bool:
+	return not locale.is_empty()
 
 
 func set_locale(new_locale: String) -> void:
@@ -141,8 +148,14 @@ func _load() -> void:
 	if config.load(SETTINGS_PATH) != OK:
 		return
 	player_name = config.get_value("gameplay", "player_name", "")
-	locale = config.get_value("gameplay", "locale", "en")
-	card_art_locale = config.get_value("gameplay", "card_art_locale", "en")
+	locale = config.get_value("gameplay", "locale", "")
+	card_art_locale = config.get_value("gameplay", "card_art_locale", "")
+	# Migrate / repair: empty card_art_locale means a stale write or pre-locale
+	# install. Fall back to the UI locale when set, else "en". Without this,
+	# ArtworkDownloader.start_download() would treat the empty path as
+	# uncached and re-fetch all 382 cards.
+	if card_art_locale.is_empty():
+		card_art_locale = locale if not locale.is_empty() else "en"
 	auto_draw = config.get_value("gameplay", "auto_draw", true)
 	auto_phase_advance = config.get_value("gameplay", "auto_phase_advance", true)
 	auto_discard_strategies = config.get_value("gameplay", "auto_discard_strategies", true)
