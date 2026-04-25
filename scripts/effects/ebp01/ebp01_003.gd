@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"direction": "increase"},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "mill_self"]
 
@@ -21,9 +26,7 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 	return 6
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	if new_rage <= old_rage:
-		return
+func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	if ctx.owner.main_deck.is_empty():
 		return
 

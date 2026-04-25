@@ -12,12 +12,12 @@ extends CardEffect
 ## Implementation notes: None
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	if ctx.is_opponent_turn():
-		return
-	if new_rage <= old_rage:
-		return
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"own_turn": true, "direction": "increase"},
+}
 
+
+func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	var my_zone := find_zone_of_card(ctx)
 	if my_zone < 0:
 		return

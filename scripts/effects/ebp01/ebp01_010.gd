@@ -14,13 +14,16 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"direction": "increase"},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "column_dependent_battle"]
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	if new_rage <= old_rage:
-		return
+func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
 	var column_zones := get_opponent_column_zones(monster_zone_idx)
 	await ctx.effect_handler.destroy_zones(ctx.opponent, column_zones)

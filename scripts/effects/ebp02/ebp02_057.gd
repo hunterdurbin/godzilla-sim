@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"direction": "increase"},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["plays_other_cards"]
 
@@ -52,8 +57,5 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.opponent.zones_changed.emit()
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	# Only trigger when rage increases
-	if new_rage <= old_rage:
-		return
+func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	await ctx.effect_handler.create_tokens_in_zones(ctx.owner, "EBP02-T03", 2)

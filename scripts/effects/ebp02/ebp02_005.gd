@@ -12,6 +12,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"own_turn": true, "direction": "increase"},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["disrupts_hand"]
 
@@ -20,11 +25,7 @@ func bot_can_fulfill_on_rage_changed(owner: PlayerState, _opponent: PlayerState)
 	return owner.is_awakening(6)
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	if new_rage <= old_rage:
-		return
-	if ctx.is_opponent_turn():
-		return
+func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	if not ctx.is_awakening(6):
 		return
 
