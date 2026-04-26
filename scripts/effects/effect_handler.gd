@@ -2757,7 +2757,7 @@ func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Di
 		var effect := get_effect(zone_card)
 		if effect:
 			var ctx := _build_context(player_id, zone_card)
-			entries.append({"callback": effect.on_ally_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx), "player_id": player_id})
+			entries.append({"player_id": player_id, "card_data": zone_card, "callback": effect.on_ally_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)})
 	return entries
 
 
@@ -2779,7 +2779,7 @@ func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, dest
 		var effect := get_effect(monster)
 		if effect:
 			var ctx := _build_context(watcher_id, monster)
-			entries.append({"callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx), "player_id": watcher_id})
+			entries.append({"player_id": watcher_id, "card_data": monster, "callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)})
 	for i in range(8):
 		var zone_card := watcher.get_zone_top_card(i)
 		if zone_card.is_empty():
@@ -2789,7 +2789,7 @@ func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, dest
 		var effect := get_effect(zone_card)
 		if effect:
 			var ctx := _build_context(watcher_id, zone_card)
-			entries.append({"callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx), "player_id": watcher_id})
+			entries.append({"player_id": watcher_id, "card_data": zone_card, "callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)})
 	return entries
 
 
