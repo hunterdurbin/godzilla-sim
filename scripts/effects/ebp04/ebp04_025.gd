@@ -34,7 +34,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var strat_card: Dictionary = ctx.opponent.strategy_zones[chosen]
 	ctx.opponent.strategy_zones[chosen] = {}
 	ctx.opponent.discard_pile.append(strat_card)
-	ctx.opponent.strategy_changed.emit()
+	ctx.opponent.strategy_zones_changed.emit()
 	ctx.opponent.discard_changed.emit()
 
 

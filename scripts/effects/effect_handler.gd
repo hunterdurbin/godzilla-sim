@@ -1542,6 +1542,47 @@ func discard_cards(player_id: int, cards: Array[Dictionary]) -> void:
 	player.discard_changed.emit()
 
 
+func search_and_discard_deck_top(player_id: int, count: int, filter: Callable, prompt: String) -> Dictionary:
+	## Pop up to `count` cards from the top of the player's deck and present them
+	## in a search prompt. Filter-matching cards are selectable by default; the
+	## non-matching cards are accessible via the "Show All" toggle in the UI so
+	## the player can see the full reveal. Everything not picked is discarded.
+	## Returns the picked card, or {} if there were no matches or the player skipped.
+	var player := game_state.players[player_id]
+	var popped: Array[Dictionary] = []
+	for _i in range(count):
+		if player.main_deck.is_empty():
+			break
+		popped.append(player.main_deck.pop_front())
+	if popped.is_empty():
+		return {}
+	player.deck_changed.emit()
+
+	var matching: Array[Dictionary] = []
+	for card in popped:
+		if filter.call(card):
+			matching.append(card)
+
+	var picked: Dictionary = await select_from_cards(player_id, matching, popped, prompt)
+
+	var rest: Array[Dictionary] = []
+	if picked.is_empty():
+		rest = popped
+	else:
+		# Resolve picked back to the actual popped instance (the result may have
+		# been round-tripped through JSON in multiplayer, losing reference identity).
+		var picked_id: String = picked.get("id", "")
+		var matched_one: bool = false
+		for card in popped:
+			if not matched_one and card.get("id", "") == picked_id:
+				picked = card
+				matched_one = true
+				continue
+			rest.append(card)
+	discard_cards(player_id, rest)
+	return picked
+
+
 func resolve_cards_revealed() -> void:
 	## Called by the presentation layer when the player dismisses the revealed cards overlay.
 	_cards_revealed_resolved.emit()

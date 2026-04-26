@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-043: Multipurpose Fighting System-3 - Battle Rank 7 (Red)
+## EBP04-043: Multi-purpose Fighting System-3 - Battle Rank 7 (Red)
 ## At the beginning of your counter phase, you may place a <Invade 2> card
 ## from your Strategy Zones under this.
 ## If there is a card under this card, this card gains +10,000 counter power.
@@ -39,7 +39,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 
 	var strat_card: Dictionary = ctx.owner.strategy_zones[chosen]
 	ctx.owner.strategy_zones[chosen] = {}
-	ctx.owner.strategy_changed.emit()
+	ctx.owner.strategy_zones_changed.emit()
 
 	# Place under this card
 	var my_zone: int = find_zone_of_card(ctx)
@@ -51,5 +51,5 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 	var my_zone: int = find_zone_of_card(ctx)
 	if my_zone < 0:
 		return 0
-	var cards_under: Array = ctx.owner.get_cards_under_top(my_zone)
+	var cards_under: Array = ctx.effect_handler.get_cards_under_top(ctx.owner, my_zone)
 	return 10000 if not cards_under.is_empty() else 0

@@ -47,7 +47,7 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	ctx.owner.strategy_zones[target_idx] = found
-	ctx.owner.strategy_changed.emit()
+	ctx.owner.strategy_zones_changed.emit()
 
 	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found)
 

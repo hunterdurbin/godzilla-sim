@@ -3433,7 +3433,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-043",
-		"name": "Multipurpose Fighting System-3",
+		"name": "Multi-purpose Fighting System-3",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 7,
 		"colors": [CardEnums.CardColor.RED],
@@ -3848,7 +3848,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"colors": [CardEnums.CardColor.RED],
 		"invasion_icon": 2,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_077.gd",
-		"description": "Reveal the top 3 cards of your deck, among those add 1 <Mechagodzilla> battle card and discard the rest. If the card you add to your hand is [MFS-3] or [Godzilla x MechaGodzilla] you may instead place it in Area 8."
+		"description": "Reveal the top 3 cards of your deck, among those add 1 <Mechagodzilla> battle card and discard the rest. If the card you add to your hand is [Multi-purpose Fighting System-3] or [Godzilla Against Mechagodzilla] you may instead place it in Area 8."
 	},
 	{
 		"id": "EBP04-078",
