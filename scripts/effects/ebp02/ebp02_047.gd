@@ -16,11 +16,4 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	var card := ctx.mill_one()
-	if card.is_empty():
-		return
-
-	var revealed: Array[Dictionary] = [card]
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		tr("STR_EFF_DISCARDED_PILE"))
+	await ctx.mill_one()

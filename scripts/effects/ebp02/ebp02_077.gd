@@ -27,11 +27,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if zone_idx < 0:
 		return
 
-	var milled_cards := ctx.mill(2)
-	if not milled_cards.is_empty():
-		await ctx.effect_handler.select_from_cards(
-			ctx.owner.player_id, milled_cards, milled_cards,
-			tr("STR_EFF_DISCARDED_PILE"))
+	var milled_cards := await ctx.mill(2)
 	var found_godzilla: bool = false
 	for card in milled_cards:
 		if CardUtils.has_trait(card, CardEnums.CardTrait.GODZILLA):

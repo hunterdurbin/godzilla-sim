@@ -2,7 +2,7 @@ extends CardEffect
 ## EBP04-004: Godzilla (2004) - Monster Rank 3 (Red)
 ## <Enter> If you have a Rank 1 strategy card in play, this gains +2 <Rage>.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -27,14 +27,9 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
-	var card := ctx.mill_one()
+	var card := await ctx.mill_one()
 	if card.is_empty():
 		return
-
-	var revealed: Array[Dictionary] = [card]
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		tr("STR_EFF_DISCARDED_PILE"))
 
 	if CardUtils.is_monster(card):
 		await ctx.effect_handler.destroy_zone_target(

@@ -26,14 +26,9 @@ func on_enter(ctx: EffectContext) -> void:
 	if (ctx.opponent.monster_zone - 1) not in opp_columns:
 		return
 
-	var card := ctx.mill_one()
+	var card := await ctx.mill_one()
 	if card.is_empty():
 		return
-
-	var revealed: Array[Dictionary] = [card]
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		tr("STR_EFF_DISCARDED_PILE"))
 
 	if CardUtils.is_battle(card):
 		var opponent_tl: int = ctx.effect_handler.get_effective_threat_level(ctx.opponent.player_id)

@@ -28,13 +28,9 @@ func on_enter(ctx: EffectContext) -> void:
 	if zone_idx not in adjacent:
 		return
 
-	var card := ctx.mill_one()
+	var card := await ctx.mill_one()
 	if card.is_empty():
 		return
-	var revealed: Array[Dictionary] = [card]
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		tr("STR_EFF_DISCARDED_PILE"))
 
 	if not CardUtils.is_battle(card):
 		return

@@ -31,14 +31,9 @@ func get_bot_advance_reliability(owner: PlayerState, _opponent: PlayerState) -> 
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var card := ctx.mill_one()
+	var card := await ctx.mill_one()
 	if card.is_empty():
 		return
-
-	var revealed: Array[Dictionary] = [card]
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		tr("STR_EFF_DISCARDED_PILE"))
 
 	if CardUtils.is_monster(card):
 		if ctx.owner.monster_zone < 6:

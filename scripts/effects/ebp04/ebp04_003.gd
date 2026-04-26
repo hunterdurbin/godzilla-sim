@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> If you have a Rank 1 strategy card in play, <Destroy> one of your
 ## opponent's Rank 6 or lower battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

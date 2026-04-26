@@ -25,14 +25,9 @@ func get_burst_rank() -> int:
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	var card := ctx.mill_one()
+	var card := await ctx.mill_one()
 	if card.is_empty():
 		return
-
-	var revealed: Array[Dictionary] = [card]
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		tr("STR_EFF_DISCARDED_PILE"))
 
 	if CardUtils.is_monster(card):
 		await ctx.effect_handler.destroy_zone_target(

@@ -26,4 +26,5 @@ func on_enter(ctx: EffectContext) -> void:
 		tr("STR_EFF_DECK_TOP_OR_SKIP"))
 
 	if not chosen.is_empty():
-		ctx.mill_one()
+		# Skip the auto-reveal — the player already saw the card in the prompt above.
+		await ctx.mill_one(false)

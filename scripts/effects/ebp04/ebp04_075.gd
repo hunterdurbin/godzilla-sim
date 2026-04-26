@@ -4,7 +4,7 @@ extends CardEffect
 ## card from your main deck. If that card is a Monster card, <Destroy> 1 of your
 ## opponent's battle cards in the same column as your monster card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -26,7 +26,7 @@ func is_base_strategy() -> bool:
 
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
-	var top_card := ctx.mill_one()
+	var top_card := await ctx.mill_one()
 	if top_card.is_empty():
 		return
 

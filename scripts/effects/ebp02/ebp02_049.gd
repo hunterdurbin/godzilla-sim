@@ -74,8 +74,4 @@ func on_enter(ctx: EffectContext) -> void:
 		1:
 			await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 3)
 		2:
-			var milled := ctx.mill(3)
-			if not milled.is_empty():
-				await ctx.effect_handler.select_from_cards(
-					ctx.owner.player_id, milled, milled,
-					tr("STR_EFF_DISCARDED_PILE"))
+			await ctx.mill(3)

@@ -82,21 +82,26 @@ func opponent_has_rage() -> bool:
 
 # --- Mill ---
 
-func mill(count: int = 1) -> Array[Dictionary]:
+func mill(count: int = 1, show_reveal: bool = true) -> Array[Dictionary]:
 	## Send the top `count` cards from owner's deck to the discard pile.
 	## Returns the milled cards (empty if the deck was empty). Logs an
-	## effect_milled_cards entry attributed to ctx.card_data when anything was milled.
+	## effect_milled_cards entry attributed to ctx.card_data. When `show_reveal`
+	## is true (default) the milled cards are shown to the player via
+	## reveal_cards; pass false when the caller has already presented the
+	## cards (e.g. EBP03-031 prompts before milling).
 	var milled := owner.mill_cards(count)
 	if not milled.is_empty():
 		effect_handler.log_message.emit(
 			GameLog.effect_milled_cards(owner.player_id, card_data.get("id", ""), milled))
+		if show_reveal:
+			await effect_handler.reveal_cards(owner.player_id, milled, tr("STR_EFF_DISCARDED_PILE"))
 	return milled
 
 
-func mill_one() -> Dictionary:
+func mill_one(show_reveal: bool = true) -> Dictionary:
 	## Send the top card of owner's deck to the discard pile and return it.
-	## Returns {} if the deck was empty.
-	var milled := mill(1)
+	## Returns {} if the deck was empty. See mill() for `show_reveal` semantics.
+	var milled := await mill(1, show_reveal)
 	return milled[0] if not milled.is_empty() else {}
 
 

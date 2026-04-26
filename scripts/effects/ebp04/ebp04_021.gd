@@ -31,7 +31,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if chosen != 0:
 		return
 
-	var top_card := ctx.mill_one()
+	var top_card := await ctx.mill_one()
 	if top_card.is_empty():
 		return
 

@@ -4,7 +4,7 @@ extends CardEffect
 ## card, if you have a Rank 1 strategy card in play, your opponent discards until
 ## they have 2 cards in hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
