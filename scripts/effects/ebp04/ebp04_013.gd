@@ -5,7 +5,7 @@ extends CardEffect
 ## all of your opponent's battle cards in the same zone number or retreat your
 ## opponent's monster card in the same zone number backwards by 1 zone.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -33,10 +33,9 @@ func on_enter(ctx: EffectContext) -> void:
 	if monster_count < 5:
 		return
 
-	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 3)
+	var revealed := await ctx.mill(3)
 	if revealed.is_empty():
 		return
-	ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 
 	# Collect unique ranks from revealed cards
 	var ranks: Array[int] = []

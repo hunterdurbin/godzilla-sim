@@ -5,7 +5,7 @@ extends CardEffect
 ## <Enter> Place [Tentacle] tokens in every area adjacent to this card (Maximum
 ## is 3).
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
