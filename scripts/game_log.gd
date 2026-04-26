@@ -88,14 +88,6 @@ static func start_phase_draw(count: int) -> Dictionary:
 	return {"type": "start_phase_draw", "count": count}
 
 
-static func hand_size(count: int) -> Dictionary:
-	return {"type": "hand_size", "count": count}
-
-
-static func main_phase() -> Dictionary:
-	return {"type": "main_phase"}
-
-
 static func player_pass(player_id: int) -> Dictionary:
 	return {"type": "player_pass", "player_id": player_id}
 
@@ -118,14 +110,6 @@ static func played_monster(player_id: int, card_id: String, rage: int) -> Dictio
 
 static func invaded(player_id: int, card_id: String, is_step2: bool = false) -> Dictionary:
 	return {"type": "invaded", "player_id": player_id, "card_id": card_id, "is_step2": is_step2}
-
-
-static func end_phase(player_id: int, zone: int) -> Dictionary:
-	return {"type": "end_phase", "player_id": player_id, "zone": zone}
-
-
-static func hand_refilled(player_id: int, count: int) -> Dictionary:
-	return {"type": "hand_refilled", "player_id": player_id, "count": count}
 
 
 static func game_over(winner_id: int, reason_key: String) -> Dictionary:
@@ -269,11 +253,6 @@ static func render(token: Dictionary) -> String:
 		"start_phase_draw":
 			return TranslationServer.translate("STR_LOG_START_PHASE_DRAW_FMT") \
 				.replace("{N}", str(token.get("count", 0)))
-		"hand_size":
-			return TranslationServer.translate("STR_LOG_HAND_SIZE_FMT") \
-				.replace("{N}", str(token.get("count", 0)))
-		"main_phase":
-			return TranslationServer.translate("STR_LOG_MAIN_PHASE")
 		"player_pass":
 			return TranslationServer.translate("STR_LOG_PLAYER_PASS_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0)))
@@ -308,14 +287,6 @@ static func render(token: Dictionary) -> String:
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{STEP2_ICON}", _icon(20, "others", "Step2.png")) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
-		"end_phase":
-			return TranslationServer.translate("STR_LOG_END_PHASE_FMT") \
-				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
-				.replace("{ZONE}", str(token.get("zone", 0)))
-		"hand_refilled":
-			return TranslationServer.translate("STR_LOG_HAND_REFILLED_FMT") \
-				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
-				.replace("{N}", str(token.get("count", 0)))
 		"game_over":
 			var reason_key: String = token.get("reason_key", "")
 			var reason: String = TranslationServer.translate(reason_key) if not reason_key.is_empty() else ""

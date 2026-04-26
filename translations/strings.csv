@@ -530,8 +530,6 @@ STR_VALIDATE_CHOICE_RESTRICTED_FMT,%s and %s are choice restricted (only one all
 STR_VALIDATE_NOT_IN_FORMAT_FMT,"%s [%s] is not allowed in %s","%s [%s] は %s では使用できません"
 STR_LOG_TURN_START_FMT,--- Turn {N}: {PLAYER} ---,--- ターン {N}: {PLAYER} ---
 STR_LOG_START_PHASE_DRAW_FMT,Start Phase: Drawing {N} card(s),開始フェイズ: {N}枚ドロー
-STR_LOG_HAND_SIZE_FMT,Hand size: {N},手札: {N}枚
-STR_LOG_MAIN_PHASE,Main Phase: Choose your actions,メインフェイズ: アクションを選択
 STR_LOG_PLAYER_PASS_FMT,[b]{PLAYER}[/b] passes.,[b]{PLAYER}[/b] パス。
 STR_LOG_PLAYED_BATTLE_FMT,[b]{PLAYER}[/b]: Played {CARD} to Zone {ZONE},[b]{PLAYER}[/b]: {CARD} をエリア{ZONE}に出現
 STR_LOG_PLAYED_BATTLE_ENTER_FMT,[b]{PLAYER}[/b]: {ENTER_ICON} {CARD} to Zone {ZONE},[b]{PLAYER}[/b]: {ENTER_ICON} {CARD} をエリア{ZONE}に出現
@@ -541,8 +539,6 @@ STR_LOG_GAINED_RAGE_FMT,[b]{PLAYER}[/b]: {RAGE_ICON} x{N} (discarded: {CARD}),[b
 STR_LOG_PLAYED_MONSTER_FMT,[b]{PLAYER}[/b]: Played {CARD} as Monster ({RAGE_ICON} x{N}),[b]{PLAYER}[/b]: {CARD} を怪獣として出現 ({RAGE_ICON} x{N})
 STR_LOG_INVADED_FMT,[b]{PLAYER}[/b]: Invaded! (discarded {CARD}),[b]{PLAYER}[/b]: 進攻! (捨て札 {CARD})
 STR_LOG_INVADED_STEP2_FMT,[b]{PLAYER}[/b]: {STEP2_ICON} Invaded! (discarded {CARD}),[b]{PLAYER}[/b]: {STEP2_ICON} 進攻! (捨て札 {CARD})
-STR_LOG_END_PHASE_FMT,[b]{PLAYER}[/b]: End Phase: Monster at zone {ZONE},[b]{PLAYER}[/b]: エンドフェイズ: 怪獣はエリア{ZONE}
-STR_LOG_HAND_REFILLED_FMT,[b]{PLAYER}[/b]: Hand refilled to {N} cards,[b]{PLAYER}[/b]: 手札を{N}枚に補充
 STR_LOG_GAME_OVER_FMT,GAME OVER! {PLAYER} wins: {REASON},ゲーム終了! {PLAYER} の勝利: {REASON}
 STR_LOG_BURST_PLAYED_FMT,[b]{PLAYER}[/b]: {BURST_PREFIX} {CARD} {RAGE_ICON} x{N},[b]{PLAYER}[/b]: {BURST_PREFIX} {CARD} {RAGE_ICON} x{N}
 STR_LOG_BURST_FALLBACK_PREFIX_FMT,Burst {N}:,強襲 {N}:

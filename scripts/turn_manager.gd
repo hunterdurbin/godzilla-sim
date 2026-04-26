@@ -146,7 +146,6 @@ func resume_to_main_phase(player_id: int, resolve_effects: bool = false) -> void
 		sub_phase_changed.emit(0) # Resolve Effects
 		await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
 		await action_handler.resolve_check_timing(game_state)
-		log_message.emit(GameLog.main_phase())
 
 	game_state.current_sub_phase = 1
 	sub_phase_changed.emit(1) # Player Actions
@@ -178,7 +177,6 @@ func _execute_start_phase() -> void:
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.START)
 	await action_handler.resolve_check_timing(game_state) # 7.2.1
 
-	var player := game_state.get_current_player()
 	var opponent := game_state.get_opponent_of_current()
 
 	game_state.current_sub_phase = 1
@@ -186,7 +184,6 @@ func _execute_start_phase() -> void:
 	await _await_confirmation("Draw %d card(s)" % opponent.get_monster_rank(), "auto_draw")
 	log_message.emit(GameLog.start_phase_draw(opponent.get_monster_rank()))
 	action_handler.execute_start_phase_draw(game_state)
-	log_message.emit(GameLog.hand_size(player.hand.size()))
 
 	game_state.current_sub_phase = 2
 	sub_phase_changed.emit(2) # Discard Strategies
@@ -215,8 +212,6 @@ func _begin_main_phase() -> void:
 	sub_phase_changed.emit(0) # Resolve Effects
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
 	await action_handler.resolve_check_timing(game_state) # 7.3.1
-
-	log_message.emit(GameLog.main_phase())
 
 	game_state.current_sub_phase = 1
 	sub_phase_changed.emit(1) # Player Actions
@@ -308,7 +303,6 @@ func _begin_end_phase() -> void:
 	await action_handler.resolve_check_timing(game_state) # 7.5.1
 
 	var player := game_state.get_current_player()
-	log_message.emit(GameLog.end_phase(game_state.current_player_id, player.monster_zone))
 
 	# Burst discard, then advance (7.5.2)
 	game_state.current_sub_phase = 1
@@ -335,7 +329,6 @@ func _begin_end_phase() -> void:
 	if draw_count > 0:
 		await _await_confirmation("Draw %d card(s)" % draw_count, "auto_draw")
 	action_handler.execute_end_phase_draw(game_state)
-	log_message.emit(GameLog.hand_refilled(game_state.current_player_id, player.hand.size()))
 
 	await action_handler.resolve_check_timing(game_state) # 7.5.5
 
