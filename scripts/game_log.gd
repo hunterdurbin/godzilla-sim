@@ -120,10 +120,6 @@ static func invaded(player_id: int, card_id: String, is_step2: bool = false) -> 
 	return {"type": "invaded", "player_id": player_id, "card_id": card_id, "is_step2": is_step2}
 
 
-static func counter_phase(player_id: int, cp: int, threat: int) -> Dictionary:
-	return {"type": "counter_phase", "player_id": player_id, "cp": cp, "threat": threat}
-
-
 static func end_phase(player_id: int, zone: int) -> Dictionary:
 	return {"type": "end_phase", "player_id": player_id, "zone": zone}
 
@@ -312,11 +308,6 @@ static func render(token: Dictionary) -> String:
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{STEP2_ICON}", _icon(20, "others", "Step2.png")) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
-		"counter_phase":
-			return TranslationServer.translate("STR_LOG_COUNTER_PHASE_FMT") \
-				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
-				.replace("{CP}", str(token.get("cp", 0))) \
-				.replace("{THREAT}", str(token.get("threat", 0)))
 		"end_phase":
 			return TranslationServer.translate("STR_LOG_END_PHASE_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \

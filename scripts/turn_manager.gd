@@ -281,13 +281,6 @@ func _begin_counter_phase() -> void:
 	await effect_handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await action_handler.resolve_check_timing(game_state) # 7.4.1
 
-	var player := game_state.get_current_player()
-	var opponent := game_state.get_opponent_of_current()
-	var total_cp: int = player.get_total_counter_power()
-	var threat: int = opponent.get_threat_level()
-
-	log_message.emit(GameLog.counter_phase(game_state.current_player_id, total_cp, threat))
-
 	game_state.current_sub_phase = 1
 	sub_phase_changed.emit(1) # Counter Check
 	await _await_confirmation("Counter Check", "auto_counter_check")
