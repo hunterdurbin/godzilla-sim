@@ -3,7 +3,7 @@ extends CardEffect
 ## If this is in a zone greater than or equal to your opponent's monster card's,
 ## this gains +3000 threat.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

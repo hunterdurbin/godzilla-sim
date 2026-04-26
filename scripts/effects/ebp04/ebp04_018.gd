@@ -5,7 +5,7 @@ extends CardEffect
 ## If this is in a zone equal to or greater than your opponent's monster card's,
 ## increase this card's threat by +10000.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

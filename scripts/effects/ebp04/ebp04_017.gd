@@ -15,7 +15,7 @@ func get_bot_tags() -> Array[String]:
 	return ["boosts_cp"]
 
 
-func get_total_cp_modifier(ctx: EffectContext) -> int:
+func get_counter_power_modifier(ctx: EffectContext) -> int:
 	if ctx.owner.monster_zone >= ctx.opponent.monster_zone:
 		return 5000
 	return 0

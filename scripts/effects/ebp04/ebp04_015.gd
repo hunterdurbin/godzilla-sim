@@ -3,7 +3,7 @@ extends CardEffect
 ## Each time you discard a battle card from your hand and your opponent has 0
 ## <Rage>, <Destroy> 1 of your opponent's Rank 6 or lower battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

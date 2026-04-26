@@ -4,7 +4,7 @@ extends CardEffect
 ## and you have 5 or more monster cards in your discard pile, increase this
 ## card's threat by +10000 and add +10000 to your total counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -30,5 +30,5 @@ func get_threat_level_modifier(ctx: EffectContext) -> int:
 	return 10000 if _condition_met(ctx) else 0
 
 
-func get_total_cp_modifier(ctx: EffectContext) -> int:
+func get_counter_power_modifier(ctx: EffectContext) -> int:
 	return 10000 if _condition_met(ctx) else 0
