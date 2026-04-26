@@ -12,6 +12,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_opponent_zone_card_destroyed": {"column": "monster"},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["disrupts_hand", "column_dependent_monster_self"]
 
@@ -20,12 +25,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 
 
-func on_opponent_zone_card_destroyed(ctx: EffectContext, _destroyed_card: Dictionary, zone_idx: int) -> void:
-	var my_zone_idx: int = ctx.owner.monster_zone - 1
-	if my_zone_idx < 0:
-		return
-	if zone_idx not in get_opponent_column_zones(my_zone_idx):
-		return
+func on_opponent_zone_card_destroyed(ctx: EffectContext, _destroyed_card: Dictionary, _zone_idx: int) -> void:
 	var has_rank1_strategy := false
 	for sz in ctx.owner.strategy_zones:
 		if not sz.is_empty() and ctx.field_rank(sz, ctx.owner.player_id) == 1:

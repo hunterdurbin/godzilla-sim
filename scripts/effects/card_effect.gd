@@ -666,6 +666,21 @@ static func get_adjacent_zones(zone_idx: int) -> Array[int]:
 	return []
 
 
+static func get_column_zones(zone_idx: int) -> Array[int]:
+	## Get this player's own zone indices in the same column as zone_idx.
+	## Columns: 1=[0], 2=[1], 3=[2,7], 4=[3,6], 5=[4,5]
+	match zone_idx:
+		0: return [0]
+		1: return [1]
+		2: return [2, 7]
+		3: return [3, 6]
+		4: return [4, 5]
+		5: return [4, 5]
+		6: return [3, 6]
+		7: return [2, 7]
+	return []
+
+
 static func get_opponent_column_zones(zone_idx: int) -> Array[int]:
 	## Get the opponent's zone indices in the same column as the given zone.
 	## Accounts for 180° board mirroring between players.

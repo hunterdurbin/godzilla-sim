@@ -2754,6 +2754,8 @@ func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Di
 			continue  # Skip the card that was just destroyed
 		if not has_trigger(zone_card, "on_ally_zone_card_destroyed"):
 			continue
+		if not _passes_zone_destroyed_filter(zone_card, "on_ally_zone_card_destroyed", player, zone_idx, false):
+			continue
 		var effect := get_effect(zone_card)
 		if effect:
 			var ctx := _build_context(player_id, zone_card)
@@ -2776,21 +2778,47 @@ func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, dest
 	var watcher := game_state.players[watcher_id]
 	var monster := watcher.current_monster
 	if not monster.is_empty() and has_trigger(monster, "on_opponent_zone_card_destroyed"):
-		var effect := get_effect(monster)
-		if effect:
-			var ctx := _build_context(watcher_id, monster)
-			entries.append({"player_id": watcher_id, "card_data": monster, "callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)})
+		if _passes_zone_destroyed_filter(monster, "on_opponent_zone_card_destroyed", watcher, zone_idx, true):
+			var effect := get_effect(monster)
+			if effect:
+				var ctx := _build_context(watcher_id, monster)
+				entries.append({"player_id": watcher_id, "card_data": monster, "callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)})
 	for i in range(8):
 		var zone_card := watcher.get_zone_top_card(i)
 		if zone_card.is_empty():
 			continue
 		if not has_trigger(zone_card, "on_opponent_zone_card_destroyed"):
 			continue
+		if not _passes_zone_destroyed_filter(zone_card, "on_opponent_zone_card_destroyed", watcher, zone_idx, true):
+			continue
 		var effect := get_effect(zone_card)
 		if effect:
 			var ctx := _build_context(watcher_id, zone_card)
 			entries.append({"player_id": watcher_id, "card_data": zone_card, "callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)})
 	return entries
+
+
+func _passes_zone_destroyed_filter(card_data: Dictionary, method_name: String, watcher: PlayerState, zone_idx: int, is_cross_board: bool) -> bool:
+	## Evaluate TRIGGER_FILTERS[method_name] for zone-card-destroyed triggers.
+	## `column: "monster"` — destroyed zone must be in the watcher's monster column.
+	## `is_cross_board` distinguishes ally (false, same side) vs opponent (true, cross-board).
+	var filter: Dictionary = get_trigger_filter(card_data, method_name)
+	if filter.is_empty():
+		return true
+	if filter.has("column"):
+		var anchor: int = watcher.monster_zone - 1
+		if anchor < 0:
+			return false
+		match String(filter.column):
+			"monster":
+				var allowed: Array[int]
+				if is_cross_board:
+					allowed = CardEffect.get_opponent_column_zones(anchor)
+				else:
+					allowed = CardEffect.get_column_zones(anchor)
+				if zone_idx not in allowed:
+					return false
+	return true
 
 
 func trigger_opponent_zone_card_destroyed(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:

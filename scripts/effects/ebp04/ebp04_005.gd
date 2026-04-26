@@ -8,12 +8,17 @@ extends CardEffect
 ## all of your opponent's battle cards equal to or less than the Rank of the
 ## battle card you <Destroy>.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
 ## Implementation notes: None
+
+
+const TRIGGER_FILTERS = {
+	"on_opponent_zone_card_destroyed": {"column": "monster"},
+}
 
 
 func get_bot_tags() -> Array[String]:
@@ -52,17 +57,12 @@ func on_enter(ctx: EffectContext) -> void:
 	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found)
 
 
-func on_opponent_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary, zone_idx: int) -> void:
-	var my_zone_idx: int = ctx.owner.monster_zone - 1
-	if my_zone_idx < 0:
-		return
-	if zone_idx not in get_opponent_column_zones(my_zone_idx):
-		return
-	var rank1_in_discard: int = 0
-	for card in ctx.owner.discard:
-		if ctx.field_rank(card, ctx.owner.player_id) == 1:
-			rank1_in_discard += 1
-	if rank1_in_discard < 3:
+func on_opponent_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary, _zone_idx: int) -> void:
+	var rank1_strategies_in_discard: int = 0
+	for card in ctx.owner.discard_pile:
+		if CardUtils.is_strategy(card) and card.get("rank", 0) == 1:
+			rank1_strategies_in_discard += 1
+	if rank1_strategies_in_discard < 3:
 		return
 	var destroyed_rank: int = ctx.field_rank(destroyed_card, ctx.opponent.player_id)
 	var targets: Array[int] = ctx.effect_handler.get_zones_in_rank_range(
