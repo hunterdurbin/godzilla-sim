@@ -6320,7 +6320,7 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 
 
 func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
-	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting:
+	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _strategy_target_selecting:
 		return
 	var player := _get_player_state(pid)
 	if strategy_idx < 0 or strategy_idx >= player.strategy_zones.size():

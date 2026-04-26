@@ -748,7 +748,8 @@ STR_EFF_EBP04_059_PROMPT,Return a Rodan battle card from your discard pile to yo
 STR_EFF_EBP04_029_PROMPT,Return a Gigan monster from your discard pile to your hand (or skip):,捨て札から<ガイガン>の怪獣を手札に戻す (またはスキップ):
 STR_EFF_EBP04_063_PROMPT,Return a Godzilla Earth battle card from your discard to your hand (or skip):,捨て札から「ゴジラ・アース」の交戦カードを手札に戻す (またはスキップ):
 STR_EFF_EBP04_073_PROMPT,Gaira: Return 1 card from your discard to hand (or skip):,「ガイラ」: 捨て札からカードを1枚手札に戻す (またはスキップ):
-STR_EFF_EBP04_043_PROMPT,Place an Invade 2 strategy card under this (or skip):,<足2>の戦略カードをこの下に置く (またはスキップ):
+STR_EFF_EBP04_043_PROMPT,Choose an Invade 2 strategy card to place under this:,この下に置く<足2>の戦略カードを選ぶ:
+STR_EFF_EBP04_043_CONFIRM,Place an Invade 2 strategy card under this card?,<足2>の戦略カードをこのカードの下に置きますか?
 STR_EFF_EBP04_086_PROMPT,Play a Valkyrie from your discard pile:,捨て札から「ヴァルキリー」を出す:
 STR_EFF_EBP04_088_PROMPT,Return a non-green battle card from your discard to hand (or skip):,捨て札から緑以外の交戦カードを手札に戻す (またはスキップ):
 STR_EFF_ESD02_003_DISCARD_PROMPT,Search discard pile for a rank 4 or lower battle card with Evolution to play:,捨て札から<進化>を持つ等級4以下の交戦カードを出す:

@@ -4,7 +4,7 @@ extends CardEffect
 ## from your Strategy Zones under this.
 ## If there is a card under this card, this card gains +10,000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -29,6 +29,15 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		if not sz_card.is_empty() and sz_card.get("invasion_icon", 0) == 2:
 			valid_strat.append(i)
 	if valid_strat.is_empty():
+		return
+
+	# "May" effect — always confirm with the player, even when only one
+	# strategy is eligible (select_strategy_target auto-picks in that case).
+	var confirm: int = await ctx.effect_handler.select_choice(
+		ctx.owner.player_id,
+		[tr("STR_EFF_BTN_YES"), tr("STR_EFF_BTN_NO")],
+		tr("STR_EFF_EBP04_043_CONFIRM"))
+	if confirm != 0:
 		return
 
 	var chosen: int = await ctx.effect_handler.select_strategy_target(
