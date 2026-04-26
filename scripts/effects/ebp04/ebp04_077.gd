@@ -5,7 +5,7 @@ extends CardEffect
 ## [Multi-purpose Fighting System-3] or [Godzilla Against Mechagodzilla] you
 ## may instead place it in Area 8.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

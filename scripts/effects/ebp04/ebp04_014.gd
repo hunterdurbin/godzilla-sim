@@ -17,22 +17,25 @@ extends CardEffect
 
 const TRIGGER_FILTERS = {
 	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false},
+	"on_phase_end": {"phase": CardEnums.GamePhase.END, "own_turn": false},
 }
 
-var _counter_immunity: int = 0
+var _counter_prevention_threshold: int = 0
 
 
 func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
-func get_counter_immunity_threshold(_ctx: EffectContext) -> int:
-	return _counter_immunity
+func prevents_counter(_ctx: EffectContext, total_cp: int) -> bool:
+	# "cannot be countered by 30,000 or less counter power" — Japanese clarifies
+	# "(does not retreat either)" so this is full prevention, not the
+	# EBP02-027 retreat-anyway immunity.
+	return _counter_prevention_threshold > 0 and total_cp <= _counter_prevention_threshold
 
 
-func on_phase_end(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase == CardEnums.GamePhase.END:
-		_counter_immunity = 0
+func on_phase_end(_ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
+	_counter_prevention_threshold = 0
 
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
@@ -48,7 +51,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		tr("STR_EFF_EBP04_014_PROMPT"),
 		true)
 	if not selected.is_empty():
-		_counter_immunity = 30000
+		_counter_prevention_threshold = 30000
 
 
 func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> void:

@@ -3,7 +3,7 @@ extends CardEffect
 ## <Revenge> Return up to 1 [Godzilla Earth] battle card from your discard pile
 ## to your hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

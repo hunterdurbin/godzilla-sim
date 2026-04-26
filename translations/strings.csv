@@ -556,6 +556,7 @@ STR_LOG_CARD_CRUSHED_FMT,{DESTROY_ICON} [b]{PLAYER}[/b] Zone {ZONE}: {CARD} crus
 STR_LOG_COUNTER_SUCCESS_FMT,Counter SUCCESS! [b]{PLAYER}[/b] CP {CP} >= Threat {THREAT},撃退成功! [b]{PLAYER}[/b] 撃退力 {CP} >= 脅威度 {THREAT}
 STR_LOG_COUNTER_FAIL_FMT,Counter failed. [b]{PLAYER}[/b] CP {CP} < Threat {THREAT},撃退失敗。 [b]{PLAYER}[/b] 撃退力 {CP} < 脅威度 {THREAT}
 STR_LOG_COUNTER_IMMUNE_FMT,Counter IMMUNE! [b]{PLAYER}[/b] CP {CP} <= Threshold {THRESHOLD} — no rank up,撃退無効! [b]{PLAYER}[/b] 撃退力 {CP} <= 閾値 {THRESHOLD} — 等級アップなし
+STR_LOG_COUNTER_PREVENTED_FMT,Counter PREVENTED — [b]{PLAYER}[/b] cannot be countered,撃退不可 — [b]{PLAYER}[/b] は撃退できない
 STR_LOG_REASON_COUNTER_VICTORY,Victory through countering!,撃退による勝利!
 STR_LOG_REASON_INVASION_VICTORY,Victory through invasion!,進攻による勝利!
 STR_LOG_REASON_NO_STRATEGIES,No strategy cards in play!,場に戦略カードなし!

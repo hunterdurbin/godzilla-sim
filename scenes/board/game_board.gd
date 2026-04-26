@@ -546,6 +546,7 @@ func _ready() -> void:
 		turn_manager.action_handler.play_cancelled.connect(_on_play_cancelled)
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
+		turn_manager.action_handler.counter_prevented.connect(_on_counter_prevented)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
 		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
@@ -2986,6 +2987,10 @@ func _on_counter_immunity_triggered(player_id: int, total_cp: int, threshold: in
 	_on_log_message(GameLog.counter_immunity(player_id, total_cp, threshold))
 
 
+func _on_counter_prevented(player_id: int) -> void:
+	_on_log_message(GameLog.counter_prevented(player_id))
+
+
 func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
 	_sync_boards()
 	_broadcast_state()
@@ -3419,6 +3424,7 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.play_cancelled.connect(_on_play_cancelled)
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
+		turn_manager.action_handler.counter_prevented.connect(_on_counter_prevented)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
 		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 

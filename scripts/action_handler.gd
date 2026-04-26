@@ -16,6 +16,7 @@ signal strategy_cleared(player_id: int, cards: Array)
 signal counter_failed(player_id: int, total_cp: int, threat: int)
 signal counter_succeeded(player_id: int, total_cp: int, threat: int)
 signal counter_immunity_triggered(player_id: int, total_cp: int, threshold: int)
+signal counter_prevented(player_id: int)
 signal play_cancelled(player_id: int)
 signal monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String)
 
@@ -185,6 +186,13 @@ func resolve_counter(state: GameState) -> void:
 		threat += effect_handler.get_threat_level_modifier(opponent.player_id)
 		# Subtract base CP of cards restricted from engaging by opponent's monster
 		total_cp -= effect_handler.get_engagement_restricted_cp(player.player_id)
+
+	# Full counter prevention (e.g. EBP04-014/031/032): no retreat, no rank up —
+	# counter simply doesn't happen. Distinct from counter immunity which still
+	# retreats. Prevention may be CP-conditional, hence the total_cp parameter.
+	if effect_handler and effect_handler.is_counter_prevented(opponent.player_id, total_cp):
+		counter_prevented.emit(opponent.player_id)
+		return
 
 	# Check counter immunity (e.g. EBP02-027: CP <= threshold → retreat without rank up)
 	var immunity_threshold: int = 0

@@ -6,7 +6,7 @@ extends CardEffect
 ## <Resonance> Red, Blue, Green.
 ## - You may only use Battle Cards with <Final Wars>.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -22,11 +22,13 @@ func get_threat_level_modifier(ctx: EffectContext) -> int:
 	return _count_zone_colors(ctx) * 3000
 
 
-func get_counter_immunity_threshold(ctx: EffectContext) -> int:
-	var opp_card_count: int = ctx.opponent.get_occupied_zone_indices().size()
-	if opp_card_count <= 1:
-		return 999999
-	return 0
+func prevents_counter(ctx: EffectContext, _total_cp: int) -> bool:
+	# "If the opponent has 1 or less battle cards in their zones, they cannot
+	# counter this." Counter is fully prevented — opponent's monster doesn't
+	# retreat (would be the EBP02-027 immunity behavior).
+	var battle_count: int = ctx.opponent.get_zone_top_cards_matching(
+		func(c: Dictionary) -> bool: return CardUtils.is_battle(c)).size()
+	return battle_count <= 1
 
 
 func _count_zone_colors(ctx: EffectContext) -> int:

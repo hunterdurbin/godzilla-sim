@@ -291,6 +291,16 @@ func get_counter_immunity_threshold(_ctx: EffectContext) -> int:
 	return 0
 
 
+func prevents_counter(_ctx: EffectContext, _total_cp: int) -> bool:
+	## Return true if this effect fully prevents the opponent from countering
+	## the invader (no retreat, no rank up — counter just doesn't happen).
+	## `total_cp` is the defender's effective counter power so prevention can be
+	## CP-conditional (e.g. EBP04-014 prevents only when CP <= 30000).
+	## Distinct from get_counter_immunity_threshold, which still retreats the
+	## monster (i.e. "moves as though it were countered").
+	return false
+
+
 func get_opponent_zone_cp_modifiers(_ctx: EffectContext) -> Dictionary:
 	## Return {zone_index: cp_bonus} for bonuses this card grants to the OPPONENT's zones.
 	## Used by EBP02-029 to double opponent's CP in the same column.

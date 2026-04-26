@@ -778,10 +778,10 @@ func trigger_phase_end(phase: CardEnums.GamePhase) -> void:
 	await _resolve_standby_entries(entries)
 
 
-func _passes_phase_filter(card_data: Dictionary, player_id: int, phase: CardEnums.GamePhase) -> bool:
-	## Check if a card's TRIGGER_FILTERS["on_phase_start"] entry matches the given
-	## phase and turn ownership.
-	var filter: Dictionary = get_trigger_filter(card_data, "on_phase_start")
+func _passes_phase_filter(card_data: Dictionary, method_name: String, player_id: int, phase: CardEnums.GamePhase) -> bool:
+	## Check if a card's TRIGGER_FILTERS[method_name] entry matches the given
+	## phase and turn ownership. method_name is "on_phase_start" or "on_phase_end".
+	var filter: Dictionary = get_trigger_filter(card_data, method_name)
 	if filter.is_empty():
 		return true
 	if filter.has("phase") and filter.phase != phase:
@@ -803,7 +803,7 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 	# Monster card
 	if has_trigger(player.current_monster, method_name):
 		var me := get_effect(player.current_monster)
-		if not is_start or _passes_phase_filter(player.current_monster, player_id, phase):
+		if _passes_phase_filter(player.current_monster, method_name, player_id, phase):
 			var ctx := _build_context(player_id, player.current_monster)
 			var method: Callable = me.on_phase_start if is_start else me.on_phase_end
 			entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": method.bind(ctx, phase)})
@@ -813,7 +813,7 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty() and has_trigger(zone_card, method_name):
 			var ze := get_effect(zone_card)
-			if not is_start or _passes_phase_filter(zone_card, player_id, phase):
+			if _passes_phase_filter(zone_card, method_name, player_id, phase):
 				var ctx := _build_context(player_id, zone_card)
 				var method: Callable = ze.on_phase_start if is_start else ze.on_phase_end
 				entries.append({"player_id": player_id, "card_data": zone_card, "callback": method.bind(ctx, phase)})
@@ -822,7 +822,7 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, method_name):
 			var se := get_effect(sz_card)
-			if not is_start or _passes_phase_filter(sz_card, player_id, phase):
+			if _passes_phase_filter(sz_card, method_name, player_id, phase):
 				var ctx := _build_context(player_id, sz_card)
 				var method: Callable = se.on_phase_start if is_start else se.on_phase_end
 				entries.append({"player_id": player_id, "card_data": sz_card, "callback": method.bind(ctx, phase)})
@@ -2343,6 +2343,24 @@ func get_counter_immunity_threshold(player_id: int) -> int:
 				if val > best:
 					best = val
 	return best
+
+
+func is_counter_prevented(player_id: int, total_cp: int) -> bool:
+	## Returns true if the invader (player_id) has any effect fully preventing
+	## the counter — counter doesn't happen at all (no retreat, no rank up).
+	## `total_cp` is the defender's effective CP so effects can gate prevention
+	## on a CP threshold (e.g. EBP04-014: prevented only when CP <= 30000).
+	var player := game_state.players[player_id]
+	var effect := get_effect(player.current_monster)
+	if effect and effect.prevents_counter(_build_context(player_id, player.current_monster), total_cp):
+		return true
+	for sz_card in player.strategy_zones:
+		if sz_card.is_empty():
+			continue
+		var se := get_effect(sz_card)
+		if se and se.prevents_counter(_build_context(player_id, sz_card), total_cp):
+			return true
+	return false
 
 
 func are_opponent_strategy_plays_blocked(player_id: int) -> bool:

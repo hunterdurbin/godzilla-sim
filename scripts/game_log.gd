@@ -171,6 +171,10 @@ static func counter_immunity(player_id: int, total_cp: int, threshold: int) -> D
 	return {"type": "counter_immunity", "player_id": player_id, "total_cp": total_cp, "threshold": threshold}
 
 
+static func counter_prevented(player_id: int) -> Dictionary:
+	return {"type": "counter_prevented", "player_id": player_id}
+
+
 static func coin_flip_won(player_id: int) -> Dictionary:
 	return {"type": "coin_flip_won", "player_id": player_id}
 
@@ -380,6 +384,9 @@ static func render(token: Dictionary) -> String:
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{CP}", str(token.get("total_cp", 0))) \
 				.replace("{THRESHOLD}", str(token.get("threshold", 0)))
+		"counter_prevented":
+			return TranslationServer.translate("STR_LOG_COUNTER_PREVENTED_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0)))
 		"chat":
 			var sender_id: int = int(token.get("sender_id", -1))
 			var pname := player_name(sender_id) if sender_id >= 0 else String(token.get("sender_name", ""))

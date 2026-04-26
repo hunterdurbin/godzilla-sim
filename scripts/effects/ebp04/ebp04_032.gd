@@ -20,11 +20,12 @@ func get_threat_level_modifier(ctx: EffectContext) -> int:
 	return _count_zone_colors(ctx) * 10000
 
 
-func get_counter_immunity_threshold(ctx: EffectContext) -> int:
-	var opp_card_count: int = ctx.opponent.get_occupied_zone_indices().size()
-	if opp_card_count <= 1:
-		return 999999
-	return 0
+func prevents_counter(ctx: EffectContext, _total_cp: int) -> bool:
+	# "If your opponent's zones have 1 or fewer battle cards, this card cannot
+	# be countered." Full prevention — no retreat, no rank up.
+	var battle_count: int = ctx.opponent.get_zone_top_cards_matching(
+		func(c: Dictionary) -> bool: return CardUtils.is_battle(c)).size()
+	return battle_count <= 1
 
 
 func _count_zone_colors(ctx: EffectContext) -> int:
