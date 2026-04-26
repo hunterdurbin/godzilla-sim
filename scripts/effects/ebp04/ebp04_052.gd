@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_hand_card_discarded": {"own_turn": false},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["plays_from_discard", "boosts_threat"]
 
@@ -26,11 +31,8 @@ func on_discard_from_hand(ctx: EffectContext) -> void:
 		await ctx.effect_handler.play_from_discard(ctx.owner.player_id, ctx.card_data)
 
 
-func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> void:
+func on_hand_card_discarded(ctx: EffectContext, _discarded_card: Dictionary) -> void:
 	# Rage +2 when ANY hand card discarded by opponent + this is in area 8
-	if ctx.is_own_turn():
-		return
-
 	var my_zone: int = find_zone_of_card(ctx)
 	if my_zone != 7:  # Must be zone 8 (index 7)
 		return

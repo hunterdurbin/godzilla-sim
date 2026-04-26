@@ -7,7 +7,7 @@ extends CardEffect
 ## your hand so that during the turn this card cannot be countered by 30,000 or
 ## less counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -18,6 +18,7 @@ extends CardEffect
 const TRIGGER_FILTERS = {
 	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false},
 	"on_phase_end": {"phase": CardEnums.GamePhase.END, "own_turn": false},
+	"on_hand_card_discarded": {"card_type": "battle"},
 }
 
 var _counter_prevention_threshold: int = 0
@@ -53,9 +54,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		_counter_prevention_threshold = 30000
 
 
-func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> void:
-	if not CardUtils.is_battle(discarded_card):
-		return
+func on_hand_card_discarded(ctx: EffectContext, _discarded_card: Dictionary) -> void:
 	if ctx.opponent_has_rage():
 		return
 	await ctx.effect_handler.destroy_zone_target(

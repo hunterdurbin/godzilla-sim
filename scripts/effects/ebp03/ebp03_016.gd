@@ -12,6 +12,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_hand_card_discarded": {"card_type": "battle"},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent", "boosts_threat"]
 
@@ -20,9 +25,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 
 
-func on_hand_card_discarded(ctx: EffectContext, discarded_card: Dictionary) -> void:
-	if not CardUtils.is_battle(discarded_card):
-		return
+func on_hand_card_discarded(ctx: EffectContext, _discarded_card: Dictionary) -> void:
 	if ctx.opponent_has_rage():
 		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
 	else:

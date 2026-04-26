@@ -23,6 +23,11 @@ extends RefCounted
 ##   "direction": "increase" | "decrease" | "both" — defaults to "both"; only meaningful
 ##                for triggers that pass old/new values (e.g. on_rage_changed); ignored
 ##                for phase/turn-only triggers; unknown values pass through
+##   "column":    "monster" — only meaningful for on_ally_zone_card_destroyed /
+##                on_opponent_zone_card_destroyed; destroyed zone must be in the watcher's
+##                monster column
+##   "card_type": "battle" | "strategy" | "monster" — only meaningful for
+##                on_hand_card_discarded; the discarded card must match the named type
 ##
 ## Empty per-method dict or missing entry = always fire (backward compatible).
 ## See EffectHandler.get_trigger_filter / _passes_trigger_filter for the dispatcher side.
