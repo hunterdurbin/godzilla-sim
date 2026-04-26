@@ -2718,9 +2718,12 @@ func trigger_card_returned_from_discard(returning_player_id: int, card: Dictiona
 
 
 func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
-	## Add a card to a player's hand and fire on_card_returned_from_discard triggers.
-	## Use this instead of hand.append() when returning a card from discard to hand via an effect.
+	## Move a card from a player's discard pile to their hand and fire
+	## on_card_returned_from_discard triggers. Safe to call when the card has already
+	## been popped from discard (e.g. by search_discard) — the erase becomes a no-op.
 	var player := game_state.players[player_id]
+	if player.discard_pile.erase(card):
+		player.discard_changed.emit()
 	player.hand.append(card)
 	player.hand_changed.emit()
 	await trigger_card_returned_from_discard(player_id, card)

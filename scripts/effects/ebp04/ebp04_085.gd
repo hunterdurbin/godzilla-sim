@@ -38,18 +38,7 @@ func on_strategy_discarded(ctx: EffectContext, strategy_card: Dictionary) -> voi
 	if green_count < 2:
 		return
 
-	# Remove from discard and add to hand
-	var idx: int = ctx.owner.discard_pile.rfind(strategy_card)
-	if idx < 0:
-		for i in range(ctx.owner.discard_pile.size()):
-			if ctx.owner.discard_pile[i].get("id", "") == strategy_card.get("id", ""):
-				idx = i
-				break
-	if idx >= 0:
-		ctx.owner.discard_pile.remove_at(idx)
-		ctx.owner.hand.append(strategy_card)
-		ctx.owner.discard_changed.emit()
-		ctx.owner.hand_changed.emit()
+	await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, strategy_card)
 
 
 func protects_card_from_destruction(ctx: EffectContext, card_data: Dictionary, zone_idx: int) -> bool:
