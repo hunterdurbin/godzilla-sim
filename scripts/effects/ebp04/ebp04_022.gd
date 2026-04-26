@@ -26,12 +26,13 @@ func on_self_countered(ctx: EffectContext) -> void:
 		if CardUtils.is_battle(card) and CardUtils.has_color(card, CardEnums.CardColor.GREEN):
 			green_count += 1
 
-	# Collect valid target zones (zones 1-5 = indices 0-4 with <= 6000 CP)
+	# Collect valid target zones (areas 1-5 = indices 0-4 with effective CP <= 6000).
+	# Effective CP is recomputed each iteration since destroying a card can shift
+	# modifiers granted to its neighbors via get_field_cp_modifiers.
 	for i in range(green_count):
 		var valid_zones: Array[int] = []
-		for zi in range(5):
-			var opp_card := ctx.opponent.get_zone_top_card(zi)
-			if not opp_card.is_empty() and opp_card.get("counter_power", 0) <= 6000:
+		for zi in ctx.effect_handler.get_zones_in_cp_range(ctx.opponent.player_id, -1, 6000):
+			if zi < 5:
 				valid_zones.append(zi)
 		if valid_zones.is_empty():
 			break

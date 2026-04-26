@@ -2556,6 +2556,36 @@ func get_zones_in_rank_range(player_id: int, min_rank: int = -1, max_rank: int =
 	return result
 
 
+func get_effective_zone_cp(player_id: int, zone_idx: int) -> int:
+	## Get the effective counter power of the top battle card in a zone, including
+	## per-zone CP modifiers from active effects. Returns 0 if the zone is empty.
+	var top := game_state.players[player_id].get_zone_top_card(zone_idx)
+	if top.is_empty():
+		return 0
+	var modifiers := get_zone_cp_modifiers(player_id)
+	return top.get("counter_power", 0) + modifiers[zone_idx]
+
+
+func get_zones_in_cp_range(player_id: int, min_cp: int = -1, max_cp: int = -1) -> Array[int]:
+	## Return occupied zone indices whose top battle card's effective CP falls within
+	## [min_cp, max_cp]. Use -1 for either bound to leave it unbounded. Mirrors
+	## get_zones_in_rank_range; modifiers are computed once per call.
+	var result: Array[int] = []
+	var player := game_state.players[player_id]
+	var modifiers := get_zone_cp_modifiers(player_id)
+	for i in range(8):
+		var top := player.get_zone_top_card(i)
+		if top.is_empty():
+			continue
+		var cp: int = top.get("counter_power", 0) + modifiers[i]
+		if min_cp >= 0 and cp < min_cp:
+			continue
+		if max_cp >= 0 and cp > max_cp:
+			continue
+		result.append(i)
+	return result
+
+
 func get_zone_rank_modifiers(player_id: int) -> Array:
 	## Get per-zone rank modifier for display. Returns Array of 8 ints.
 	## Each value is the difference between effective rank and base rank for the zone's card.

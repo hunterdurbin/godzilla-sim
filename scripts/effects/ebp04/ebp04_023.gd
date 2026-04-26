@@ -3,7 +3,7 @@ extends CardEffect
 ## For each of your opponent's battle cards in the same column as this card,
 ## this card gains +10,000 threat.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
