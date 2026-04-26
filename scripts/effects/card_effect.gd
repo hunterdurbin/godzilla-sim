@@ -120,6 +120,12 @@ func on_counter_success(_ctx: EffectContext) -> void:
 	pass
 
 
+func on_self_countered(_ctx: EffectContext) -> void:
+	## Called on the attacker's monster when it is successfully countered (CP >= threat).
+	## Covers "When this card is successfully countered" triggers (e.g. EBP04-022).
+	pass
+
+
 func on_strategy_discarded(_ctx: EffectContext, _strategy_card: Dictionary) -> void:
 	## Called on active cards when a strategy card is sent from a strategy zone to discard.
 	## Covers "When a strategy card is sent to discard" triggers.

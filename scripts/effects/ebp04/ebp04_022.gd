@@ -4,7 +4,7 @@ extends CardEffect
 ## your deck. For each green battle card revealed, <Destroy> 1 6000 or less
 ## counter power battle card in your opponent's areas 1-5.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -16,11 +16,10 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
-func on_counter_success(ctx: EffectContext) -> void:
-	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 5)
+func on_self_countered(ctx: EffectContext) -> void:
+	var revealed := await ctx.mill(5)
 	if revealed.is_empty():
 		return
-	ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 
 	var green_count: int = 0
 	for card in revealed:

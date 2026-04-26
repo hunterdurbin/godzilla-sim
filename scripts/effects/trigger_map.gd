@@ -261,7 +261,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp04/ebp04_019.gd": ["get_counter_power_modifier","get_threat_level_modifier"],
 	"res://scripts/effects/ebp04/ebp04_020.gd": ["on_enter"],
 	"res://scripts/effects/ebp04/ebp04_021.gd": ["on_phase_start"],
-	"res://scripts/effects/ebp04/ebp04_022.gd": ["on_counter_success"],
+	"res://scripts/effects/ebp04/ebp04_022.gd": ["on_self_countered"],
 	"res://scripts/effects/ebp04/ebp04_023.gd": ["get_threat_level_modifier"],
 	"res://scripts/effects/ebp04/ebp04_024.gd": ["on_enter","get_threat_level_modifier"],
 	"res://scripts/effects/ebp04/ebp04_025.gd": ["on_enter","on_when_invading"],

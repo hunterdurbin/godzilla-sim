@@ -997,32 +997,41 @@ func collect_hand_card_discarded_entries(player_id: int, card_data: Dictionary) 
 	return entries
 
 
-func trigger_counter_success(defender_player_id: int) -> void:
-	## Trigger on ALL active cards for the defender when counter succeeds (CP >= threat).
-	## Collects all applicable effects, then resolves with rule action checks between each.
+func trigger_counter_success(counterer_player_id: int, countered_player_id: int) -> void:
+	## Trigger when a counter succeeds (CP >= threat). Collects:
+	##   - on_counter_success on all active cards for the counterer (the player whose
+	##     CP overcame the opponent's threat — i.e. the turn player in this game)
+	##   - on_self_countered on the countered player's monster card (the one whose
+	##     monster retreats and ranks up — the opponent in this game)
+	## Resolves with rule action checks between each ability.
 	var entries: Array = []
-	var player := game_state.players[defender_player_id]
+	var counterer := game_state.players[counterer_player_id]
 
-	# Monster card
-	if has_trigger(player.current_monster, "on_counter_success"):
-		var me := get_effect(player.current_monster)
-		var ctx := _build_context(defender_player_id, player.current_monster)
-		entries.append({"player_id": defender_player_id, "card_data": player.current_monster, "callback": me.on_counter_success.bind(ctx)})
+	# Counterer side — "When you successfully counter your opponent's monster" cards
+	if has_trigger(counterer.current_monster, "on_counter_success"):
+		var me := get_effect(counterer.current_monster)
+		var ctx := _build_context(counterer_player_id, counterer.current_monster)
+		entries.append({"player_id": counterer_player_id, "card_data": counterer.current_monster, "callback": me.on_counter_success.bind(ctx)})
 
-	# Battle cards in zones (top card only)
 	for i in range(8):
-		var zone_card := player.get_zone_top_card(i)
+		var zone_card := counterer.get_zone_top_card(i)
 		if not zone_card.is_empty() and has_trigger(zone_card, "on_counter_success"):
 			var ze := get_effect(zone_card)
-			var ctx := _build_context(defender_player_id, zone_card)
-			entries.append({"player_id": defender_player_id, "card_data": zone_card, "callback": ze.on_counter_success.bind(ctx)})
+			var ctx := _build_context(counterer_player_id, zone_card)
+			entries.append({"player_id": counterer_player_id, "card_data": zone_card, "callback": ze.on_counter_success.bind(ctx)})
 
-	# Strategy cards
-	for sz_card in player.strategy_zones:
+	for sz_card in counterer.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, "on_counter_success"):
 			var se := get_effect(sz_card)
-			var ctx := _build_context(defender_player_id, sz_card)
-			entries.append({"player_id": defender_player_id, "card_data": sz_card, "callback": se.on_counter_success.bind(ctx)})
+			var ctx := _build_context(counterer_player_id, sz_card)
+			entries.append({"player_id": counterer_player_id, "card_data": sz_card, "callback": se.on_counter_success.bind(ctx)})
+
+	# Countered side — only the monster card itself gets "countered" (battle cards aren't)
+	var countered := game_state.players[countered_player_id]
+	if has_trigger(countered.current_monster, "on_self_countered"):
+		var cme := get_effect(countered.current_monster)
+		var cctx := _build_context(countered_player_id, countered.current_monster)
+		entries.append({"player_id": countered_player_id, "card_data": countered.current_monster, "callback": cme.on_self_countered.bind(cctx)})
 
 	await _resolve_standby_entries(entries)
 

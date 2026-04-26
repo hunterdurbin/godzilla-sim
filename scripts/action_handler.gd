@@ -220,9 +220,11 @@ func resolve_counter(state: GameState) -> void:
 			monster_advanced.emit(opponent.player_id, old_zone, opponent.monster_zone)
 			opponent.monster_changed.emit()
 
-		# Trigger counter success effects after retreat but before rank-up
+		# Trigger counter success effects after retreat but before rank-up.
+		# Counterer (player, current player) handles on_counter_success;
+		# countered monster (opponent) handles on_self_countered.
 		if effect_handler:
-			await effect_handler.trigger_counter_success(player.player_id)
+			await effect_handler.trigger_counter_success(player.player_id, opponent.player_id)
 
 		# Opponent must rank up their monster
 		await _rank_up_monster(state, opponent, player.player_id)

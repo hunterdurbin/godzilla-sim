@@ -4,7 +4,7 @@ extends CardEffect
 ## deck. If that card is a green battle card, your opponent discards until they
 ## have 4 cards in hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
