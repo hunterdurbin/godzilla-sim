@@ -44,12 +44,10 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 
 	# Get opponent zones in same column as this monster
 	var monster_idx: int = ctx.owner.monster_zone - 1
-	var opp_column_zones := get_opponent_column_zones(monster_idx)
-
 	var valid_zones: Array[int] = []
-	for opp_zi in opp_column_zones:
+	for opp_zi in ctx.get_opponent_column_zones_with_cards(monster_idx):
 		var opp_card := ctx.opponent.get_zone_top_card(opp_zi)
-		if not opp_card.is_empty() and ctx.field_rank(opp_card, ctx.opponent.player_id) <= 5:
+		if ctx.field_rank(opp_card, ctx.opponent.player_id) <= 5:
 			valid_zones.append(opp_zi)
 
 	if valid_zones.is_empty():

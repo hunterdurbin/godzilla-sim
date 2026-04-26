@@ -31,11 +31,10 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		return
 
 	var monster_idx: int = ctx.owner.monster_zone - 1
-	var col_zones := get_opponent_column_zones(monster_idx)
 	var targetable: Array[int] = []
-	for zi in col_zones:
+	for zi in ctx.get_opponent_column_zones_with_cards(monster_idx):
 		var opp_card := ctx.opponent.get_zone_top_card(zi)
-		if not opp_card.is_empty() and ctx.field_rank(opp_card, ctx.opponent.player_id) <= 6:
+		if ctx.field_rank(opp_card, ctx.opponent.player_id) <= 6:
 			targetable.append(zi)
 	if targetable.is_empty():
 		return

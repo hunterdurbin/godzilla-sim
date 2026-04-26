@@ -26,13 +26,11 @@ func get_bot_tags() -> Array[String]:
 
 func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
-	var column_zones := get_opponent_column_zones(monster_zone_idx)
-	await ctx.effect_handler.destroy_zones(ctx.opponent, column_zones)
+	await ctx.effect_handler.destroy_zones(ctx.opponent, ctx.get_opponent_column_zones_with_cards(monster_zone_idx))
 
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if ctx.owner.rage < 3:
 		return
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
-	var column_zones := get_opponent_column_zones(monster_zone_idx)
-	await ctx.effect_handler.destroy_zones(ctx.opponent, column_zones)
+	await ctx.effect_handler.destroy_zones(ctx.opponent, ctx.get_opponent_column_zones_with_cards(monster_zone_idx))
