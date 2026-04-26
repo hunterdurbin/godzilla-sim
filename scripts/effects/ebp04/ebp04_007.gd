@@ -3,7 +3,7 @@ extends CardEffect
 ## <Burst III>
 ## When you invade with <Invade 1>, this advances 2 zones.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

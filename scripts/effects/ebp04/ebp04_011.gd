@@ -3,7 +3,7 @@ extends CardEffect
 ## If you have 1 or more Blue and Red battle cards each in your zones, this
 ## gains +10,000 threat.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

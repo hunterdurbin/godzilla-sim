@@ -4,7 +4,7 @@ extends CardEffect
 ## strategy card from your hand to <Destroy> all of your opponent's Rank 6 or
 ## lower battle cards in the same column as this.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

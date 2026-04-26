@@ -4,7 +4,7 @@ extends CardEffect
 ## <Rage> is 2 or higher you may discard 2 cards from your hand to set its
 ## <Rage> to 2 instead.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -5,7 +5,7 @@ extends CardEffect
 ## this card (at the beginning of the counter phase their counter power is not
 ## added to the total).
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
