@@ -2936,7 +2936,7 @@ func _on_strategy_card_played(_player_id: int, _card: Dictionary, _strategy_inde
 # --- Action handler visual feedback ---
 
 func _on_play_cancelled(player_id: int) -> void:
-	# Reset the dragged card's scale/state and rearrange hand without reordering
+	# Reset the dragged card's scale/state and tween it back to its slot.
 	_clear_card_highlight()
 	var board: Control = player1_board if player_id == 0 else player2_board
 	if board and board.hand_manager:
@@ -2948,6 +2948,10 @@ func _on_play_cancelled(player_id: int) -> void:
 				card.tween.kill()
 			card.scale = card.original_scale
 		board.hand_manager.exit_selection_mode()
+		# Drop-handled drag skipped arrange_cards, so the dragged card is still
+		# at its drop position. Move only that card back to its slot — leave
+		# the rest of the player's hand order untouched.
+		board.hand_manager.restore_drop_handled_card_position()
 	# Sync boards in case the cost prompt changed hand/discard state
 	_sync_boards()
 

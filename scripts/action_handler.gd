@@ -550,8 +550,10 @@ func _play_monster(hand_index: int, state: GameState) -> void:
 	if rank_mismatch and effect_handler and effect_handler.has_trigger(card, "apply_play_cost"):
 		var cost_ok: bool = await effect_handler.apply_play_cost(player.player_id, card, -1)
 		if not cost_ok:
+			# Cost declined — restore card to hand and force visual rebuild
 			player.hand.insert(hand_index, card)
 			player.hand_changed.emit()
+			play_cancelled.emit(player.player_id)
 			return
 		rank_mismatch = false  # Not a burst play — cost was paid
 
