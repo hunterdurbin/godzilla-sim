@@ -539,8 +539,8 @@ STR_LOG_PLAYED_STRATEGY_FMT,[b]{PLAYER}[/b]: Played {CARD} to Strategy Zone,[b]{
 STR_LOG_PLAYED_STRATEGY_BASE_FMT,[b]{PLAYER}[/b]: {BASE_ICON} Played {CARD} to Strategy Zone,[b]{PLAYER}[/b]: {BASE_ICON} {CARD} を戦略置き場に出現
 STR_LOG_GAINED_RAGE_FMT,[b]{PLAYER}[/b]: {RAGE_ICON} x{N} (discarded: {CARD}),[b]{PLAYER}[/b]: {RAGE_ICON} x{N} (捨て札: {CARD})
 STR_LOG_PLAYED_MONSTER_FMT,[b]{PLAYER}[/b]: Played {CARD} as Monster ({RAGE_ICON} x{N}),[b]{PLAYER}[/b]: {CARD} を怪獣として出現 ({RAGE_ICON} x{N})
-STR_LOG_INVADED_FMT,[b]{PLAYER}[/b]: Invaded! Monster now at zone {ZONE} (discarded {CARD}),[b]{PLAYER}[/b]: 進攻! 怪獣はエリア{ZONE}へ (捨て札 {CARD})
-STR_LOG_INVADED_STEP2_FMT,[b]{PLAYER}[/b]: {STEP2_ICON} Monster now at zone {ZONE} (discarded {CARD}),[b]{PLAYER}[/b]: {STEP2_ICON} 怪獣はエリア{ZONE}へ (捨て札 {CARD})
+STR_LOG_INVADED_FMT,[b]{PLAYER}[/b]: Invaded! (discarded {CARD}),[b]{PLAYER}[/b]: 進攻! (捨て札 {CARD})
+STR_LOG_INVADED_STEP2_FMT,[b]{PLAYER}[/b]: {STEP2_ICON} Invaded! (discarded {CARD}),[b]{PLAYER}[/b]: {STEP2_ICON} 進攻! (捨て札 {CARD})
 STR_LOG_COUNTER_PHASE_FMT,[b]{PLAYER}[/b]: Counter Phase: CP {CP} vs Threat {THREAT},[b]{PLAYER}[/b]: 撃退フェイズ: 撃退力 {CP} vs 脅威度 {THREAT}
 STR_LOG_END_PHASE_FMT,[b]{PLAYER}[/b]: End Phase: Monster at zone {ZONE},[b]{PLAYER}[/b]: エンドフェイズ: 怪獣はエリア{ZONE}
 STR_LOG_HAND_REFILLED_FMT,[b]{PLAYER}[/b]: Hand refilled to {N} cards,[b]{PLAYER}[/b]: 手札を{N}枚に補充

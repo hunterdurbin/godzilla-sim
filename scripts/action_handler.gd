@@ -489,6 +489,10 @@ func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> vo
 	player.hand_changed.emit()
 	player.zones_changed.emit()
 	if effect_handler:
+		# Log the action before triggered effects fire so the log reads in causal order
+		var has_enter := effect_handler.has_trigger(card, "on_enter")
+		effect_handler.log_message.emit(
+			GameLog.played_battle(player.player_id, card.get("id", ""), zone_index, has_enter))
 		await effect_handler.trigger_enter(player.player_id, card)
 		await effect_handler.trigger_battle_card_played(player.player_id, card, zone_index)
 
@@ -503,6 +507,8 @@ func _play_strategy_card(hand_index: int, state: GameState) -> void:
 	player.hand_changed.emit()
 	player.strategy_zones_changed.emit()
 	if effect_handler:
+		effect_handler.log_message.emit(
+			GameLog.played_strategy(player.player_id, card.get("id", ""), card.get("is_base", false)))
 		await effect_handler.trigger_enter(player.player_id, card)
 
 
@@ -518,6 +524,8 @@ func _gain_rage(hand_index: int, state: GameState) -> void:
 	player.rage_changed.emit(player.rage)
 	player.discard_changed.emit()
 	if effect_handler:
+		effect_handler.log_message.emit(
+			GameLog.gained_rage(player.player_id, player.rage, card.get("id", "")))
 		await effect_handler.trigger_discard_from_hand(player.player_id, card)
 		await effect_handler.trigger_hand_card_discarded(player.player_id, card)
 		await effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
@@ -559,6 +567,14 @@ func _play_monster(hand_index: int, state: GameState) -> void:
 	player.monster_changed.emit()
 	player.rage_changed.emit(player.rage)
 	if effect_handler:
+		if is_burst_play:
+			var burst_effect := effect_handler.get_effect(card)
+			var burst_rank: int = burst_effect.get_burst_rank() if burst_effect else -1
+			effect_handler.log_message.emit(
+				GameLog.burst_played(player.player_id, card.get("id", ""), burst_rank, player.rage))
+		else:
+			effect_handler.log_message.emit(
+				GameLog.played_monster(player.player_id, card.get("id", ""), player.rage))
 		await effect_handler.trigger_enter(player.player_id, card)
 		await effect_handler.trigger_monster_played(player.player_id, old_monster, card)
 		await effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
@@ -599,6 +615,13 @@ func _invade(hand_index: int, state: GameState) -> void:
 		card_discarded.emit(player.player_id, card)
 		player.hand_changed.emit()
 		player.discard_changed.emit()
+
+	# Log the invade action right after the cost is paid, before movement and triggered
+	# effects fire, so the log reads in causal order (action announced first, then effects).
+	if effect_handler:
+		effect_handler.log_message.emit(GameLog.invaded(
+			player.player_id, card.get("id", ""),
+			card.get("invasion_icon", 0) >= 2))
 
 	# Apply per-monster invasion advance bonuses (e.g. EBP04-007 Godzilla 1962: +1 on Invade 1).
 	if effect_handler:
