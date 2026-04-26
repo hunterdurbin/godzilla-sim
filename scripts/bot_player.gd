@@ -1892,7 +1892,7 @@ func _sort_cards_by_value(cards: Array[Dictionary]) -> Array[Dictionary]:
 	return sorted
 
 
-func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], prompt: String) -> void:
+func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], prompt: String, _allow_skip: bool = true) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()

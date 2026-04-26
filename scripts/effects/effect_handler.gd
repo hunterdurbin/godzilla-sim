@@ -15,7 +15,7 @@ signal _hand_discard_resolved()
 ## Emitted when a player must choose a card from their deck during a search effect.
 ## Connect from presentation layer to show a deck search selection UI.
 ## Call resolve_deck_search() with the chosen card when done.
-signal deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String)
+signal deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, allow_skip: bool)
 
 ## Emitted internally after resolve_deck_search() stores the selection.
 signal _deck_search_resolved()
@@ -1241,10 +1241,10 @@ func resolve_hand_discard(player_id: int, hand_indices: Array[int]) -> void:
 	_hand_discard_resolved.emit()
 
 
-func search_deck(player_id: int, filter: Callable, prompt: String) -> Dictionary:
+func search_deck(player_id: int, filter: Callable, prompt: String, allow_skip: bool = true) -> Dictionary:
 	## Search a player's deck for cards matching filter. Shows UI for player choice.
 	## Returns the selected card (already removed from deck, deck shuffled).
-	## Returns empty dict if no matches found or player skips.
+	## Returns empty dict if no matches found or (when allow_skip) player skips.
 	var player := game_state.players[player_id]
 	var matching: Array[Dictionary] = []
 	for card in player.main_deck:
@@ -1254,7 +1254,7 @@ func search_deck(player_id: int, filter: Callable, prompt: String) -> Dictionary
 	var selected: Dictionary = {}
 	if deck_search_requested.get_connections().size() > 0:
 		_highlight_active_effect()
-		deck_search_requested.emit(player_id, matching, player.main_deck.duplicate(), prompt)
+		deck_search_requested.emit(player_id, matching, player.main_deck.duplicate(), prompt, allow_skip)
 		await _deck_search_resolved
 		_unhighlight_active_effect()
 		selected = _deck_search_result
@@ -1393,10 +1393,10 @@ func resolve_strategy_target(strategy_index: int) -> void:
 	_strategy_target_resolved.emit()
 
 
-func search_discard(player_id: int, filter: Callable, prompt: String) -> Dictionary:
+func search_discard(player_id: int, filter: Callable, prompt: String, allow_skip: bool = true) -> Dictionary:
 	## Search a player's discard pile for cards matching filter. Shows UI for player choice.
 	## Returns the selected card (already removed from discard pile).
-	## Returns empty dict if no matches found or player skips.
+	## Returns empty dict if no matches found or (when allow_skip) player skips.
 	var player := game_state.players[player_id]
 	var matching: Array[Dictionary] = []
 	for card in player.discard_pile:
@@ -1406,7 +1406,7 @@ func search_discard(player_id: int, filter: Callable, prompt: String) -> Diction
 	var selected: Dictionary = {}
 	if deck_search_requested.get_connections().size() > 0:
 		_highlight_active_effect()
-		deck_search_requested.emit(player_id, matching, player.discard_pile.duplicate(), prompt)
+		deck_search_requested.emit(player_id, matching, player.discard_pile.duplicate(), prompt, allow_skip)
 		await _deck_search_resolved
 		_unhighlight_active_effect()
 		selected = _deck_search_result

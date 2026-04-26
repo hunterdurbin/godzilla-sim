@@ -4500,23 +4500,23 @@ func _on_hand_drag_ended(card: Control) -> void:
 
 # --- Deck search UI ---
 
-func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String) -> void:
+func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, allow_skip: bool = true) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast() # Client needs up-to-date state before search
 		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
 		var all_json := JSON.stringify(_cards_to_ids(all_cards))
-		_pending_interaction = {"method": "deck_search", "args": [matching_json, all_json, prompt]}
+		_pending_interaction = {"method": "deck_search", "args": [matching_json, all_json, prompt, allow_skip]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
-				_rpc_deck_search_requested.rpc_id(peer_id, matching_json, all_json, prompt)
+				_rpc_deck_search_requested.rpc_id(peer_id, matching_json, all_json, prompt, allow_skip)
 		return
-	_show_deck_search(matching_cards, all_cards, prompt)
+	_show_deck_search(matching_cards, all_cards, prompt, allow_skip)
 
 
-func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String) -> void:
+func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, allow_skip: bool = true) -> void:
 	# Store data for toggling
 	_deck_search_matching = matching
 	_deck_search_all = all_cards
@@ -4525,6 +4525,7 @@ func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary]
 		_deck_search_matching_ids[card_data.get("id", "")] = true
 
 	deck_search_prompt.text = prompt
+	deck_search_skip.visible = allow_skip
 	deck_search_show_all.set_pressed_no_signal(matching.is_empty())
 	deck_search_stacked.set_pressed_no_signal(_match_stacked_view)
 	deck_search_overlay.visible = true
@@ -7218,7 +7219,7 @@ func _rpc_request_resync() -> void:
 				"action_context":
 					_rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
 				"deck_search":
-					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2])
+					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
 				"deck_arrange":
 					_rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
 				"card_select":
@@ -7297,11 +7298,11 @@ func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
 
 ## Host -> Client: deck search request (player must choose a card)
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt: String) -> void:
+func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt: String, allow_skip: bool = true) -> void:
 	RpcLogger.log_receive("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
 	var all_ids: Array = JSON.parse_string(all_json)
-	_show_deck_search(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt)
+	_show_deck_search(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt, allow_skip)
 
 
 ## Client -> Host: deck search resolved (player chose a card or skipped)
@@ -7912,7 +7913,7 @@ func _resync_reconnected_client() -> void:
 					_rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
 				"deck_search":
 					RpcLogger.log_send("deck_search_requested", args[0].length() + args[1].length() + args[2].length())
-					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2])
+					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
 				"deck_arrange":
 					RpcLogger.log_send("deck_arrange_requested", args[0].length() + args[1].length())
 					_rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
