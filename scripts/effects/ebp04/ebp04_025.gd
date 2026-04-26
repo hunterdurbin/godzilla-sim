@@ -4,7 +4,7 @@ extends CardEffect
 ## <When Invading> If you have 10 or more green battle cards in your discard
 ## pile, your opponent discards until they have 3 cards in hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

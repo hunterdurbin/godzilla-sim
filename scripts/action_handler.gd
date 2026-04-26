@@ -232,23 +232,24 @@ func resolve_counter(state: GameState) -> void:
 		counter_failed.emit(player.player_id, total_cp, threat)
 
 
-func force_counter(state: GameState, counter_player_id: int) -> void:
-	## Force a successful counter on the specified player's opponent's monster.
-	## The opponent's monster retreats and ranks up (or opponent loses if can't rank up).
-	## Used by EBP02-012 Godzilla(2016) Frozen.
-	var opponent_id: int = 1 - counter_player_id
-	var opponent := state.players[opponent_id]
+func force_counter(state: GameState, target_player_id: int) -> void:
+	## Force a successful counter against target_player_id's monster.
+	## The target's monster retreats and ranks up (or target loses if can't rank up).
+	## The non-target player is recorded as the counter winner.
+	## Used by EBP02-012 (counter opponent's monster) and EBP04-027 (counter Gigan itself).
+	var winner_id: int = 1 - target_player_id
+	var target := state.players[target_player_id]
 
 	# Counter retreat: only zones 6-8 move back (5.15.1.1)
-	var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
-	if retreat_zone != opponent.monster_zone:
-		var old_zone: int = opponent.monster_zone
-		opponent.monster_zone = retreat_zone
-		monster_advanced.emit(opponent_id, old_zone, opponent.monster_zone)
-		opponent.monster_changed.emit()
+	var retreat_zone: int = get_counter_retreat_zone(target.monster_zone)
+	if retreat_zone != target.monster_zone:
+		var old_zone: int = target.monster_zone
+		target.monster_zone = retreat_zone
+		monster_advanced.emit(target_player_id, old_zone, target.monster_zone)
+		target.monster_changed.emit()
 
-	# Opponent must rank up their monster
-	await _rank_up_monster(state, opponent, counter_player_id)
+	# Target must rank up their monster
+	await _rank_up_monster(state, target, winner_id)
 
 
 func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id: int) -> void:

@@ -7,7 +7,7 @@ extends CardEffect
 ## discard a <Invade 2> card from their hand. If they do so this card is
 ## countered.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -45,6 +45,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if selected.is_empty():
 		return
 
-	# Force counter this card
+	# "This card is countered" — Gigan (ctx.owner's monster) is the party whose
+	# monster retreats and ranks up regardless of which player paid the cost.
 	if ctx.effect_handler.action_handler:
 		await ctx.effect_handler.force_counter(ctx.owner.player_id)

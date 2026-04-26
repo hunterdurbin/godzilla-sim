@@ -5,7 +5,7 @@ extends CardEffect
 ## Ranks equal 7 or less combined.
 ## For each green battle card in your discard pile this card gains 1,000 threat.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

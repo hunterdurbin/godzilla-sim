@@ -4,7 +4,7 @@ extends CardEffect
 ## <Awakening 6> If you have 3 or more [Crystal] tokens in your zones, increase
 ## your counter power by +10,000.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

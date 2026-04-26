@@ -2404,11 +2404,11 @@ func are_opponent_strategy_plays_blocked(player_id: int) -> bool:
 	return false
 
 
-func force_counter(player_id: int) -> void:
-	## Force a successful counter of the opponent's monster.
-	## Used by EBP02-012 Godzilla(2016) Frozen.
+func force_counter(target_player_id: int) -> void:
+	## Force a successful counter against target_player_id's monster.
+	## The target's monster retreats and ranks up; the other player is the winner.
 	if action_handler:
-		await action_handler.force_counter(game_state, player_id)
+		await action_handler.force_counter(game_state, target_player_id)
 
 
 func get_strategy_discard_interceptor(player_id: int) -> int:

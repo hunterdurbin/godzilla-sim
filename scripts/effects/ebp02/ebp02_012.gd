@@ -47,4 +47,4 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if stack_size < 3: # 1 (self) + 2 (under)
 		return
 	# Force counter the opponent's monster
-	await ctx.effect_handler.force_counter(ctx.owner.player_id)
+	await ctx.effect_handler.force_counter(ctx.opponent.player_id)
