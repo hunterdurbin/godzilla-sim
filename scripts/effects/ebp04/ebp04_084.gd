@@ -16,12 +16,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var monster_idx: int = ctx.owner.monster_zone - 1
-	var col_zones := get_opponent_column_zones(monster_idx)
-	var targetable: Array[int] = []
-	for zi in col_zones:
-		if ctx.opponent.zone_has_cards(zi):
-			targetable.append(zi)
+	var targetable := ctx.get_opponent_column_zones_with_cards(ctx.owner.monster_zone - 1)
 	if targetable.is_empty():
 		return
 	await ctx.effect_handler.destroy_zones(ctx.opponent, targetable)

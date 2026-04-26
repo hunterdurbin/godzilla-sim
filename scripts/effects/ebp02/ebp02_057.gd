@@ -23,15 +23,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var monster_zone_idx: int = ctx.owner.monster_zone - 1
-	var opp_columns := get_opponent_column_zones(monster_zone_idx)
-
-	# Find opponent's battle cards in same column
-	var targetable: Array[int] = []
-	for zi in opp_columns:
-		if ctx.opponent.zone_has_cards(zi):
-			targetable.append(zi)
-
+	var targetable := ctx.get_opponent_column_zones_with_cards(ctx.owner.monster_zone - 1)
 	if targetable.is_empty():
 		return
 

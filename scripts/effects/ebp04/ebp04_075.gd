@@ -37,13 +37,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if not CardUtils.is_monster(top_card):
 		return
 
-	var monster_idx: int = ctx.owner.monster_zone - 1
-	var col_zones := get_opponent_column_zones(monster_idx)
-
-	var valid_zones: Array[int] = []
-	for zi in col_zones:
-		if ctx.opponent.zone_has_cards(zi):
-			valid_zones.append(zi)
+	var valid_zones := ctx.get_opponent_column_zones_with_cards(ctx.owner.monster_zone - 1)
 	if valid_zones.is_empty():
 		return
 

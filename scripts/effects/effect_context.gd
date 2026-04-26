@@ -76,3 +76,14 @@ func has_rage() -> bool:
 
 func opponent_has_rage() -> bool:
 	return opponent.has_rage()
+
+
+# --- Column queries ---
+
+func get_opponent_column_zones_with_cards(zone_idx: int) -> Array[int]:
+	## The opponent's column-zone indices that map to zone_idx and currently hold a battle card.
+	var out: Array[int] = []
+	for zi in CardEffect.get_opponent_column_zones(zone_idx):
+		if opponent.zone_has_cards(zi):
+			out.append(zi)
+	return out
