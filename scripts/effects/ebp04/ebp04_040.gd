@@ -27,4 +27,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if not (has_rodan and has_king_caesar):
 		return
 
-	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 3)
+	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 3, ctx.card_data.get("id", ""))

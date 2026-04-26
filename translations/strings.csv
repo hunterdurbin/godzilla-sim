@@ -536,6 +536,7 @@ STR_LOG_PLAYED_BATTLE_ENTER_FMT,[b]{PLAYER}[/b]: {ENTER_ICON} {CARD} to Zone {ZO
 STR_LOG_PLAYED_STRATEGY_FMT,[b]{PLAYER}[/b]: Played {CARD} to Strategy Zone,[b]{PLAYER}[/b]: {CARD} を戦略置き場に出現
 STR_LOG_PLAYED_STRATEGY_BASE_FMT,[b]{PLAYER}[/b]: {BASE_ICON} Played {CARD} to Strategy Zone,[b]{PLAYER}[/b]: {BASE_ICON} {CARD} を戦略置き場に出現
 STR_LOG_GAINED_RAGE_FMT,[b]{PLAYER}[/b]: {RAGE_ICON} x{N} (discarded: {CARD}),[b]{PLAYER}[/b]: {RAGE_ICON} x{N} (捨て札: {CARD})
+STR_LOG_RAGE_GAINED_FMT,[b]{PLAYER}[/b]: {RAGE_ICON} +{AMOUNT} (now x{N}),[b]{PLAYER}[/b]: {RAGE_ICON} +{AMOUNT} (現在 x{N})
 STR_LOG_PLAYED_MONSTER_FMT,[b]{PLAYER}[/b]: Played {CARD} as Monster ({RAGE_ICON} x{N}),[b]{PLAYER}[/b]: {CARD} を怪獣として出現 ({RAGE_ICON} x{N})
 STR_LOG_INVADED_FMT,[b]{PLAYER}[/b]: Invaded! (discarded {CARD}),[b]{PLAYER}[/b]: 進攻! (捨て札 {CARD})
 STR_LOG_INVADED_STEP2_FMT,[b]{PLAYER}[/b]: {STEP2_ICON} Invaded! (discarded {CARD}),[b]{PLAYER}[/b]: {STEP2_ICON} 進攻! (捨て札 {CARD})

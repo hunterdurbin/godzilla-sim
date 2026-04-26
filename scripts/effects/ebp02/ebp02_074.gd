@@ -18,4 +18,4 @@ func get_bot_tags() -> Array[String]:
 func on_enter(ctx: EffectContext) -> void:
 	var opp_rank: int = ctx.opponent.get_monster_rank()
 	if opp_rank > 0:
-		await ctx.effect_handler.gain_rage(ctx.owner.player_id, opp_rank)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, opp_rank, ctx.card_data.get("id", ""))

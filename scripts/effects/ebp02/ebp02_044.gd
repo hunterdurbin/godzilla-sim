@@ -29,4 +29,4 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if ctx.opponent.monster_zone <= 5:
-		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2, ctx.card_data.get("id", ""))

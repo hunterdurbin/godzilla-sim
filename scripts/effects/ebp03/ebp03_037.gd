@@ -26,7 +26,7 @@ func bot_can_fulfill_counter_power(owner: PlayerState, _opponent: PlayerState) -
 func on_enter(ctx: EffectContext) -> void:
 	if not ctx.is_awakening(8):
 		return
-	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)
+	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

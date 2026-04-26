@@ -654,15 +654,17 @@ func reduce_rage(player_id: int, amount: int) -> int:
 	return actual
 
 
-func gain_rage(player_id: int, amount: int) -> int:
+func gain_rage(player_id: int, amount: int, source_card_id: String = "") -> int:
 	## Increase a player's rage by amount. Returns actual amount gained.
 	## Mirror of reduce_rage — handles the old/new rage bookkeeping and trigger dispatch.
+	## `source_card_id` (optional) attributes the rage gain to a card in the log.
 	if amount <= 0:
 		return 0
 	var player := game_state.players[player_id]
 	var old_rage: int = player.rage
 	player.rage += amount
 	player.rage_changed.emit(player.rage)
+	log_message.emit(GameLog.rage_gained(player_id, amount, player.rage, source_card_id))
 	await trigger_rage_changed(player_id, old_rage, player.rage)
 	return amount
 

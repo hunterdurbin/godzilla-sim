@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 func on_enter(ctx: EffectContext) -> void:
 	if not _has_rank1_strategy(ctx):
 		return
-	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2)
+	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2, ctx.card_data.get("id", ""))
 
 
 func _has_rank1_strategy(ctx: EffectContext) -> bool:

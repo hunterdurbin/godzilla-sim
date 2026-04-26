@@ -48,4 +48,4 @@ func _try_discard_for_rage(ctx: EffectContext, rage_gain: int) -> void:
 		true
 	)
 	if not selected.is_empty():
-		await ctx.effect_handler.gain_rage(ctx.owner.player_id, rage_gain)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, rage_gain, ctx.card_data.get("id", ""))

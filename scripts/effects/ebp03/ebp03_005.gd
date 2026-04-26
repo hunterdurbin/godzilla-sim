@@ -48,7 +48,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		true
 	)
 	if not selected.is_empty():
-		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 3)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 3, ctx.card_data.get("id", ""))
 
 		var zones_to_destroy: Array[int] = ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 7)
 		if not zones_to_destroy.is_empty():

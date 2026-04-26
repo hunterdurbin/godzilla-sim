@@ -39,7 +39,7 @@ func on_enter(ctx: EffectContext) -> void:
 			has_step2 = true
 
 	if monster_count > 0:
-		await ctx.effect_handler.gain_rage(ctx.owner.player_id, monster_count)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, monster_count, ctx.card_data.get("id", ""))
 
 	if has_step2 and not ctx.is_awakening(6):
 		await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 6)

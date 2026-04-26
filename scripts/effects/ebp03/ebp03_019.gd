@@ -19,7 +19,7 @@ func get_bot_tags() -> Array[String]:
 func on_counter_success(ctx: EffectContext) -> void:
 	if not _has_base_in_play(ctx):
 		return
-	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2)
+	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2, ctx.card_data.get("id", ""))
 
 
 func _has_base_in_play(ctx: EffectContext) -> bool:

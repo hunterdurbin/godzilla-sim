@@ -39,4 +39,4 @@ func on_enter(ctx: EffectContext) -> void:
 				break
 
 	if battle_discarded:
-		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))

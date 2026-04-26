@@ -48,7 +48,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		true
 	)
 	if not selected.is_empty():
-		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2, ctx.card_data.get("id", ""))
 
 		# Destroy all opponent R6 or lower battle cards
 		var zones_to_destroy: Array[int] = ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 6)

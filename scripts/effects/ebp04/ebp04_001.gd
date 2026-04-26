@@ -3,7 +3,7 @@ extends CardEffect
 ## <Opponent's Turn> At the beginning of their counter phase, if there are no
 ## battle cards in the same column as this card, this card gains +1 <Rage>.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -23,4 +23,4 @@ func get_bot_tags() -> Array[String]:
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if not ctx.get_opponent_column_zones_with_cards(ctx.owner.monster_zone - 1).is_empty():
 		return
-	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)
+	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))

@@ -104,6 +104,13 @@ static func gained_rage(player_id: int, rage: int, card_id: String) -> Dictionar
 	return {"type": "gained_rage", "player_id": player_id, "rage": rage, "card_id": card_id}
 
 
+static func rage_gained(player_id: int, amount: int, total: int, source_card_id: String = "") -> Dictionary:
+	## Generic rage gain log emitted by EffectHandler.gain_rage. When source_card_id
+	## is non-empty the log shows the source attribution; otherwise it falls back
+	## to the player-only format.
+	return {"type": "rage_gained", "player_id": player_id, "amount": amount, "total": total, "source_id": source_card_id}
+
+
 static func played_monster(player_id: int, card_id: String, rage: int) -> Dictionary:
 	return {"type": "played_monster", "player_id": player_id, "card_id": card_id, "rage": rage}
 
@@ -279,6 +286,20 @@ static func render(token: Dictionary) -> String:
 				.replace("{RAGE_ICON}", _icon(30, "others", "Rage.png")) \
 				.replace("{N}", str(token.get("rage", 0))) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
+		"rage_gained":
+			var source_id: String = String(token.get("source_id", ""))
+			if source_id != "":
+				return TranslationServer.translate("STR_LOG_EFFECT_RAGE_FMT") \
+					.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+					.replace("{SOURCE_CARD}", card_link(source_id)) \
+					.replace("{RAGE_ICON}", _icon(30, "others", "Rage.png")) \
+					.replace("{AMOUNT}", str(token.get("amount", 0))) \
+					.replace("{N}", str(token.get("total", 0)))
+			return TranslationServer.translate("STR_LOG_RAGE_GAINED_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{RAGE_ICON}", _icon(30, "others", "Rage.png")) \
+				.replace("{AMOUNT}", str(token.get("amount", 0))) \
+				.replace("{N}", str(token.get("total", 0)))
 		"played_monster":
 			return TranslationServer.translate("STR_LOG_PLAYED_MONSTER_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \

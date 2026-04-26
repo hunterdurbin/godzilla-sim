@@ -27,4 +27,4 @@ func on_revenge(ctx: EffectContext) -> void:
 	var opp_count := ctx.get_opponent_column_zones_with_cards(ctx.owner.monster_zone - 1).size()
 	if opp_count == 0:
 		return
-	await ctx.effect_handler.gain_rage(ctx.owner.player_id, opp_count)
+	await ctx.effect_handler.gain_rage(ctx.owner.player_id, opp_count, ctx.card_data.get("id", ""))

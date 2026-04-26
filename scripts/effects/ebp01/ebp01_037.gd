@@ -25,4 +25,4 @@ func on_monster_advance(ctx: EffectContext, _from_zone: int, _to_zone: int) -> v
 		true # allow_skip
 	)
 	if not discarded.is_empty():
-		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))
