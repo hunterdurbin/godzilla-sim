@@ -320,7 +320,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp04/ebp04_078.gd": ["on_enter"],
 	"res://scripts/effects/ebp04/ebp04_079.gd": ["on_enter"],
 	"res://scripts/effects/ebp04/ebp04_080.gd": ["on_enter"],
-	"res://scripts/effects/ebp04/ebp04_081.gd": ["can_monster_advance","prevents_own_invasion","get_effect_categories","is_base_strategy"],
+	"res://scripts/effects/ebp04/ebp04_081.gd": ["can_monster_advance","prevents_own_invasion","get_effect_categories"],
 	"res://scripts/effects/ebp04/ebp04_082.gd": ["get_field_cp_modifiers","get_effect_categories","is_base_strategy"],
 	"res://scripts/effects/ebp04/ebp04_083.gd": ["on_enter"],
 	"res://scripts/effects/ebp04/ebp04_084.gd": ["on_enter"],

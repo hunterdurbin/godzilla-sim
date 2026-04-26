@@ -14,10 +14,6 @@ func get_bot_tags() -> Array[String]:
 	return []
 
 
-func is_base_strategy() -> bool:
-	return true
-
-
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 
