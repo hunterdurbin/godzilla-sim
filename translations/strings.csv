@@ -762,3 +762,9 @@ STR_EFF_EBP01_073_PROMPT,Place a monster card from your discard pile under this 
 STR_EFF_EBP04_089_MILESTONE_15,Inherited Life: 15 rage cards — destroying all opponent battle cards!,「受け継がれる命」: <怒り>カード15枚 — 相手の交戦カードをすべて<破壊>!
 STR_EFF_EBP04_089_MILESTONE_22,Inherited Life: 22 rage cards — opponent discards entire hand!,「受け継がれる命」: <怒り>カード22枚 — 相手は手札をすべて捨てる!
 STR_EFF_EBP04_089_MILESTONE_30,Inherited Life: 30 rage cards — you win the game!,「受け継がれる命」: <怒り>カード30枚 — あなたの勝利!
+STR_AH_CHOOSE_RANKUP_FMT,Choose a Rank %d monster to rank up to.,等級%dの怪獣を選んで等級アップ。
+STR_AH_END_PHASE_DRAW_BLOCKED,End phase draw blocked by opponent's effect.,相手の効果でエンドフェイズのドローが妨げられました。
+STR_AH_INVADE1_BLOCKED,Invasion blocked: opponent prevents using Invade 1 cards as cost.,進攻不可: 相手が<足1>カードのコスト使用を阻止しています。
+STR_AH_INVADE_COST_PROMPT,Choose invasion cost method:,進攻コストの方法を選ぶ:
+STR_AH_INVADE_COST_MILL,Send top deck card to discard,山札の上を捨て札へ
+STR_AH_INVADE_COST_HAND,Discard from hand,手札から捨てる

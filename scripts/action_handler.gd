@@ -167,7 +167,7 @@ func execute_end_phase_draw(state: GameState) -> void:
 	## Draw up to 5 cards (7.5.4).
 	var player := state.get_current_player()
 	if effect_handler and effect_handler.is_opponent_end_phase_draw_blocked(player.player_id):
-		effect_handler.log_message.emit("End phase draw blocked by opponent's effect.")
+		effect_handler.log_message.emit(tr("STR_AH_END_PHASE_DRAW_BLOCKED"))
 		return
 	var drawn := player.draw_up_to(5)
 	if drawn.size() > 0:
@@ -272,7 +272,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 		return
 
 	# Request player selection via UI
-	var prompt := "Choose a Rank %d monster to rank up to." % next_rank
+	var prompt := tr("STR_AH_CHOOSE_RANKUP_FMT") % next_rank
 
 	var chosen_index: int = -1
 	if monster_rankup_requested.get_connections().size() > 0:
@@ -593,7 +593,7 @@ func _invade(hand_index: int, state: GameState) -> void:
 		# Card stays in hand — return it and abort invasion
 		player.hand.insert(hand_index, card)
 		player.has_invaded_this_turn = false
-		effect_handler.log_message.emit("Invasion blocked: opponent prevents using Invade 1 cards as cost.")
+		effect_handler.log_message.emit(tr("STR_AH_INVADE1_BLOCKED"))
 		return
 
 	# Check for invasion cost replacement (e.g. EBP03-004: mill from deck instead)
@@ -601,8 +601,8 @@ func _invade(hand_index: int, state: GameState) -> void:
 	if effect_handler and effect_handler.can_replace_invasion_cost(player.player_id):
 		var choice: int = await effect_handler.select_choice(
 			player.player_id,
-			["Send top deck card to discard", "Discard from hand"] as Array[String],
-			"Choose invasion cost method:"
+			[tr("STR_AH_INVADE_COST_MILL"), tr("STR_AH_INVADE_COST_HAND")] as Array[String],
+			tr("STR_AH_INVADE_COST_PROMPT")
 		)
 		if choice == 0 and not player.main_deck.is_empty():
 			# Mill from deck; return invasion card to hand
