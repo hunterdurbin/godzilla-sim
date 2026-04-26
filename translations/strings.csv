@@ -484,6 +484,7 @@ STR_DB_IMPORT,Import from Clipboard,クリップボードから読み込み
 STR_DB_EXPORT,Export to Clipboard,クリップボードに書き出し
 STR_DB_COPIED,Copied!,コピーしました!
 STR_DB_BACK,Back to Menu,メニューに戻る
+STR_DB_SET_AS_DEFAULT,Set as default,デフォルトに設定
 STR_DB_DECK,DECK,デッキ
 STR_DB_TAB_MAIN,Main,メイン
 STR_DB_CARD_POOL,CARD POOL,カードプール

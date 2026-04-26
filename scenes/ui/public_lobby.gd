@@ -27,7 +27,12 @@ func _ready() -> void:
 	# Populate game mode dropdown from centralized list
 	for gm in GameModeValidator.MODES:
 		mode_dropdown.add_item(tr(gm.label))
-	mode_dropdown.select(0)
+	var default_idx := 0
+	for i in range(GameModeValidator.MODES.size()):
+		if GameModeValidator.MODES[i]["id"] == GameSettings.default_game_mode:
+			default_idx = i
+			break
+	mode_dropdown.select(default_idx)
 	mode_dropdown.item_selected.connect(_on_mode_selected)
 
 	NetworkManager.player_connected.connect(_on_player_connected)

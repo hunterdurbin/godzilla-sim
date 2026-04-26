@@ -33,6 +33,7 @@ var confirm_main_phase_pass: bool = false
 var hand_sort_type_order: int = 0  # 0-5 index into type permutations
 var hand_sort_rank_ascending: bool = true
 var stacked_view: bool = true  # Remembered stacked toggle for overlays
+var default_game_mode: String = "rumble_west"
 
 # Visual settings
 var custom_playmat_enabled: bool = false
@@ -126,6 +127,7 @@ func _save() -> void:
 	config.set_value("gameplay", "hand_sort_type_order", hand_sort_type_order)
 	config.set_value("gameplay", "hand_sort_rank_ascending", hand_sort_rank_ascending)
 	config.set_value("gameplay", "stacked_view", stacked_view)
+	config.set_value("gameplay", "default_game_mode", default_game_mode)
 	config.set_value("visual", "custom_playmat_enabled", custom_playmat_enabled)
 	config.set_value("visual", "custom_playmat_opponent", custom_playmat_opponent)
 	config.set_value("visual", "color_overlay_mode", color_overlay_mode)
@@ -166,6 +168,7 @@ func _load() -> void:
 	hand_sort_type_order = config.get_value("gameplay", "hand_sort_type_order", 0)
 	hand_sort_rank_ascending = config.get_value("gameplay", "hand_sort_rank_ascending", true)
 	stacked_view = config.get_value("gameplay", "stacked_view", true)
+	default_game_mode = config.get_value("gameplay", "default_game_mode", "rumble_west")
 	custom_playmat_enabled = config.get_value("visual", "custom_playmat_enabled", false)
 	custom_playmat_opponent = config.get_value("visual", "custom_playmat_opponent", false)
 	color_overlay_mode = config.get_value("visual", "color_overlay_mode", 3)

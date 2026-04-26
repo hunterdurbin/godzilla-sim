@@ -18,6 +18,7 @@ var deck_stats_label: RichTextLabel
 var validation_label: RichTextLabel
 var back_button: Button
 var format_option: OptionButton
+var default_mode_check: CheckBox
 
 # --- Right panel: deck section ---
 var monster_tab_button: Button
@@ -80,6 +81,12 @@ func _ready() -> void:
 	_connect_signals()
 	_build_pool_card_list()
 	_refresh_deck_list()
+
+	var saved_idx := _index_of_mode(GameSettings.default_game_mode)
+	_game_mode = GameModeValidator.MODES[saved_idx]["id"]
+	format_option.select(saved_idx)
+	default_mode_check.set_pressed_no_signal(_game_mode == GameSettings.default_game_mode)
+
 	_apply_filters()
 	_refresh_pool_display()
 	_refresh_deck_display()
@@ -214,11 +221,20 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	deck_stats_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stats_row.add_child(deck_stats_label)
 
+	var format_col := VBoxContainer.new()
+	format_col.add_theme_constant_override("separation", 4)
+	format_col.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	stats_row.add_child(format_col)
+
 	format_option = OptionButton.new()
 	for i in range(GameModeValidator.MODES.size()):
 		format_option.add_item(tr(GameModeValidator.MODES[i]["label"]), i)
-	format_option.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	stats_row.add_child(format_option)
+	format_col.add_child(format_option)
+
+	default_mode_check = CheckBox.new()
+	default_mode_check.text = tr("STR_DB_SET_AS_DEFAULT")
+	default_mode_check.add_theme_font_size_override("font_size", 14)
+	format_col.add_child(default_mode_check)
 
 	# Validation (scrollable, fixed height)
 	var validation_scroll := ScrollContainer.new()
@@ -483,6 +499,7 @@ func _connect_signals() -> void:
 		invasion_buttons[i].pressed.connect(_on_invasion_button_pressed.bind(i))
 	sort_option.item_selected.connect(_on_sort_changed)
 	format_option.item_selected.connect(_on_format_changed)
+	default_mode_check.toggled.connect(_on_default_mode_toggled)
 
 	# Dialogs
 	unsaved_dialog.confirmed.connect(_on_unsaved_confirmed)
@@ -1249,10 +1266,27 @@ func _on_sort_changed(index: int) -> void:
 
 func _on_format_changed(index: int) -> void:
 	_game_mode = GameModeValidator.MODES[index]["id"]
+	default_mode_check.set_pressed_no_signal(_game_mode == GameSettings.default_game_mode)
 	_apply_filters()
 	_refresh_pool_display()
 	_refresh_deck_display()
 	_update_deck_stats()
+
+
+func _on_default_mode_toggled(pressed: bool) -> void:
+	SfxManager.play("ui_click")
+	if pressed:
+		GameSettings.default_game_mode = _game_mode
+	else:
+		GameSettings.default_game_mode = "rumble_west"
+	GameSettings.save()
+
+
+func _index_of_mode(mode_id: String) -> int:
+	for i in range(GameModeValidator.MODES.size()):
+		if GameModeValidator.MODES[i]["id"] == mode_id:
+			return i
+	return 0
 
 
 # ============================================================
