@@ -780,3 +780,5 @@ STR_GB_CONCEDE,Concede,降参
 STR_GB_MAIN_MENU,Main Menu,メインメニュー
 STR_EFF_EBP04_013_DESTROY_FMT,"Destroy opponent battle cards in zones: %s","エリア%sにいる相手の交戦カードを<破壊>"
 STR_EFF_EBP04_013_RETREAT,Retreat opponent's monster 1 zone,相手の怪獣を1エリア後退させる
+STR_EFF_EBP04_078_BLOCKED,Crawling Calamity: Opponent's monster move is blocked by an effect.,「這い寄る災厄」: 相手の怪獣の移動は効果で阻止されました。
+STR_EFF_EBP04_078_TELEPORT_FMT,Crawling Calamity: Opponent's monster teleported from zone %d to zone %d.,「這い寄る災厄」: 相手の怪獣がエリア%dからエリア%dへ転移しました。

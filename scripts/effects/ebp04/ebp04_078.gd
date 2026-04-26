@@ -21,8 +21,7 @@ func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> boo
 
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.effect_handler.is_opponent_monster_move_blocked(ctx.opponent.player_id):
-		ctx.effect_handler.log_message.emit(
-			"Crawling Calamity: Opponent's monster move is blocked by an effect.")
+		ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_078_BLOCKED"))
 		return
 
 	var opp_zone: int = ctx.opponent.monster_zone
@@ -40,4 +39,4 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.opponent.monster_zone = target_zone
 	ctx.opponent.monster_changed.emit()
 	ctx.effect_handler.log_message.emit(
-		"Crawling Calamity: Opponent's monster teleported from zone %d to zone %d." % [opp_zone, target_zone])
+		tr("STR_EFF_EBP04_078_TELEPORT_FMT") % [opp_zone, target_zone])
