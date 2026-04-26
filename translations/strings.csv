@@ -768,3 +768,11 @@ STR_AH_INVADE1_BLOCKED,Invasion blocked: opponent prevents using Invade 1 cards 
 STR_AH_INVADE_COST_PROMPT,Choose invasion cost method:,進攻コストの方法を選ぶ:
 STR_AH_INVADE_COST_MILL,Send top deck card to discard,山札の上を捨て札へ
 STR_AH_INVADE_COST_HAND,Discard from hand,手札から捨てる
+STR_GB_DISCARD_TITLE_FMT,%s Discard Pile (%d),%s の捨て札 (%d)
+STR_GB_MONSTER_DECK_TITLE_FMT,Monster Deck (%d),怪獣デッキ (%d)
+STR_GB_LEAVE_TITLE,Leave Game,ゲームを退出
+STR_GB_LEAVE_PROMPT,Leave the current game?,現在のゲームを退出しますか?
+STR_GB_LEAVE_OK,Leave,退出
+STR_GB_REPORT_BUG,Report Bug,バグ報告
+STR_GB_CONCEDE,Concede,降参
+STR_GB_MAIN_MENU,Main Menu,メインメニュー

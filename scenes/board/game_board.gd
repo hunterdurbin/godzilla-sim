@@ -729,9 +729,10 @@ func _ready() -> void:
 
 	# Leave game confirmation dialog
 	_leave_dialog = ConfirmationDialog.new()
-	_leave_dialog.title = "Leave Game"
-	_leave_dialog.dialog_text = "Leave the current game?"
-	_leave_dialog.ok_button_text = "Leave"
+	_leave_dialog.title = tr("STR_GB_LEAVE_TITLE")
+	_leave_dialog.dialog_text = tr("STR_GB_LEAVE_PROMPT")
+	_leave_dialog.ok_button_text = tr("STR_GB_LEAVE_OK")
+	_leave_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	_leave_dialog.confirmed.connect(_on_main_menu_pressed)
 	add_child(_leave_dialog)
 
@@ -1778,7 +1779,7 @@ func _apply_mobile_utility_buttons() -> void:
 	_mobile_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_mobile_menu_panel)
 
-	for item in [["Report Bug", _on_bug_report_pressed], ["Concede", _on_concede_pressed], ["Main Menu", _on_main_menu_pressed]]:
+	for item in [[tr("STR_GB_REPORT_BUG"), _on_bug_report_pressed], [tr("STR_GB_CONCEDE"), _on_concede_pressed], [tr("STR_GB_MAIN_MENU"), _on_main_menu_pressed]]:
 		var btn := Button.new()
 		btn.text = item[0]
 		btn.custom_minimum_size.y = btn_h
@@ -6017,7 +6018,7 @@ func _on_discard_clicked(pid: int) -> void:
 	_discard_view_cards = player.discard_pile.duplicate(true)
 	_discard_view_cards.reverse()
 	var pname := GameLog.player_name(pid)
-	var title := "%s Discard Pile (%d)" % [pname, _discard_view_cards.size()]
+	var title := tr("STR_GB_DISCARD_TITLE_FMT") % [pname, _discard_view_cards.size()]
 	discard_view_title.text = title
 	discard_view_stacked.set_pressed_no_signal(_match_stacked_view)
 	discard_view_overlay.visible = true
@@ -6081,7 +6082,7 @@ func _on_monster_deck_clicked(pid: int) -> void:
 		return
 	var player := _get_player_state(pid)
 	_monster_deck_view_cards = player.monster_deck.duplicate(true)
-	var title := "Monster Deck (%d)" % _monster_deck_view_cards.size()
+	var title := tr("STR_GB_MONSTER_DECK_TITLE_FMT") % _monster_deck_view_cards.size()
 	monster_deck_view_title.text = title
 	monster_deck_view_stacked.set_pressed_no_signal(_match_stacked_view)
 	monster_deck_view_overlay.visible = true
