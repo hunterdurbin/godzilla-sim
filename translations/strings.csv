@@ -625,6 +625,7 @@ STR_EFF_TOKEN_ZONE_FMT,Choose a zone for a token (%d remaining):,トークンを
 STR_EFF_SEARCH_EVOLVE_FMT,Search for a rank %d or lower battle card to evolve into:,進化先の等級%d以下の交戦カードを探す:
 STR_EFF_SEARCH_DECK_OR_SKIP,Search your deck for a card to add to your hand (or skip):,山札からカードを探して手札に加える (またはスキップ):
 STR_EFF_CHOOSE_EVOLVE_ZONE,Choose which zone to evolve next:,次に進化させるエリアを選ぶ:
+STR_EFF_ZONE_OPTION_FMT,"Zone %d: %s","エリア %d: %s"
 STR_EFF_EVOLVE_BATTLE,Choose a battle card with Evolution to evolve:,<進化>を持つ交戦カードを進化させる:
 STR_EFF_DECK_ARRANGE_TOP,"Put cards on top of deck in order, or send to discard:",順序を決めて山札の上に置くか、捨て札へ:
 STR_EFF_DECK_LOOK_TOP,Look at the top card — keep on top or send to discard:,山札の上を見る — 上に戻すか捨て札へ:

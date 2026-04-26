@@ -1561,6 +1561,26 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 	return true
 
 
+func evolve_zones_in_order(player_id: int, eligible_zones: Array[int]) -> void:
+	## Run perform_evolution over the given eligible zones, prompting the player to
+	## choose order whenever 2+ remain. Single-eligible auto-resolves.
+	var player := game_state.players[player_id]
+	var remaining: Array[int] = eligible_zones.duplicate()
+	while not remaining.is_empty():
+		var zi: int
+		if remaining.size() == 1:
+			zi = remaining.pop_back()
+		else:
+			var options: Array[String] = []
+			for ez in remaining:
+				var card := player.get_zone_top_card(ez)
+				options.append(tr("STR_EFF_ZONE_OPTION_FMT") % [ez + 1, card.get("name", "?")])
+			var chosen: int = await select_choice(
+				player_id, options, tr("STR_EFF_CHOOSE_EVOLVE_ZONE"))
+			zi = remaining.pop_at(chosen)
+		await perform_evolution(player_id, zi)
+
+
 func highlight_zone_card(player_id: int, zone_index: int) -> void:
 	## Highlight a zone's card to show its effect is being resolved.
 	effect_zone_highlighted.emit(player_id, zone_index)
