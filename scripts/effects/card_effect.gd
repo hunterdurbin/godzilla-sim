@@ -28,6 +28,8 @@ extends RefCounted
 ##                monster column
 ##   "card_type": "battle" | "strategy" | "monster" — only meaningful for
 ##                on_hand_card_discarded; the discarded card must match the named type
+##   "played_from_deck": bool — only meaningful for on_battle_card_played; gates by
+##                whether the played card came from the deck (true) or not (false)
 ##
 ## Empty per-method dict or missing entry = always fire (backward compatible).
 ## See EffectHandler.get_trigger_filter / _passes_trigger_filter for the dispatcher side.

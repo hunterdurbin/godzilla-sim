@@ -6,12 +6,17 @@ extends CardEffect
 ## main deck, your opponent discards until they have 1 card remaining in their
 ## hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
 ## Implementation notes: None
+
+
+const TRIGGER_FILTERS = {
+	"on_battle_card_played": {"own_turn": false, "played_from_deck": true},
+}
 
 
 func get_bot_tags() -> Array[String]:
@@ -31,10 +36,5 @@ func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, targ
 	return 3
 
 
-func on_battle_card_played(ctx: EffectContext, _zone_index: int, played_from_deck: bool = false) -> void:
-	# <Opponent's Turn> Each time opp plays a battle card from their main deck → discard to 1
-	if ctx.is_own_turn():
-		return
-	if not played_from_deck:
-		return
+func on_battle_card_played(ctx: EffectContext, _zone_index: int, _played_from_deck: bool = false) -> void:
 	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 1)
