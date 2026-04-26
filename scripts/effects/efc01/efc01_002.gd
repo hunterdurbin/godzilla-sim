@@ -28,19 +28,15 @@ func on_enter(ctx: EffectContext) -> void:
 	if zone_idx not in adjacent:
 		return
 
-	# Mill 1 card
-	var milled: Array[Dictionary] = ctx.owner.mill_cards(1)
-	if milled.is_empty():
+	var card := ctx.mill_one()
+	if card.is_empty():
 		return
-	ctx.effect_handler.log_message.emit(
-		GameLog.effect_milled_cards(ctx.owner.player_id, ctx.card_data.get("id", ""), milled)
-	)
+	var revealed: Array[Dictionary] = [card]
 	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, milled, milled,
+		ctx.owner.player_id, revealed, revealed,
 		tr("STR_EFF_DISCARDED_PILE"))
 
-	# If the milled card is a battle card, may return 1 monster from discard to hand
-	if not CardUtils.is_battle(milled[0]):
+	if not CardUtils.is_battle(card):
 		return
 
 	var selected := await ctx.effect_handler.search_discard(

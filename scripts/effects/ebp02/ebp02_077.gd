@@ -27,12 +27,8 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if zone_idx < 0:
 		return
 
-	# Mill top 2 cards
-	var milled_cards: Array[Dictionary] = ctx.owner.mill_cards(2)
+	var milled_cards := ctx.mill(2)
 	if not milled_cards.is_empty():
-		ctx.effect_handler.log_message.emit(
-			GameLog.effect_milled_cards(ctx.owner.player_id, ctx.card_data.get("id", ""), milled_cards)
-		)
 		await ctx.effect_handler.select_from_cards(
 			ctx.owner.player_id, milled_cards, milled_cards,
 			tr("STR_EFF_DISCARDED_PILE"))

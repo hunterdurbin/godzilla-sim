@@ -80,6 +80,28 @@ func opponent_has_rage() -> bool:
 
 # --- Column queries ---
 
+# --- Mill ---
+
+func mill(count: int = 1) -> Array[Dictionary]:
+	## Send the top `count` cards from owner's deck to the discard pile.
+	## Returns the milled cards (empty if the deck was empty). Logs an
+	## effect_milled_cards entry attributed to ctx.card_data when anything was milled.
+	var milled := owner.mill_cards(count)
+	if not milled.is_empty():
+		effect_handler.log_message.emit(
+			GameLog.effect_milled_cards(owner.player_id, card_data.get("id", ""), milled))
+	return milled
+
+
+func mill_one() -> Dictionary:
+	## Send the top card of owner's deck to the discard pile and return it.
+	## Returns {} if the deck was empty.
+	var milled := mill(1)
+	return milled[0] if not milled.is_empty() else {}
+
+
+# --- Column queries ---
+
 func get_opponent_column_zones_with_cards(zone_idx: int) -> Array[int]:
 	## The opponent's column-zone indices that map to zone_idx and currently hold a battle card.
 	var out: Array[int] = []

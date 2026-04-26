@@ -26,16 +26,9 @@ func on_enter(ctx: EffectContext) -> void:
 	if (ctx.opponent.monster_zone - 1) not in opp_columns:
 		return
 
-	if ctx.owner.main_deck.is_empty():
+	var card := ctx.mill_one()
+	if card.is_empty():
 		return
-
-	var card: Dictionary = ctx.owner.main_deck.pop_front()
-	ctx.owner.discard_pile.append(card)
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
-	ctx.effect_handler.log_message.emit(
-		GameLog.effect_milled_card(ctx.owner.player_id, ctx.card_data.get("id", ""), card.get("id", ""))
-	)
 
 	var revealed: Array[Dictionary] = [card]
 	await ctx.effect_handler.select_from_cards(
