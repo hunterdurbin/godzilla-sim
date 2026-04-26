@@ -778,6 +778,5 @@ STR_GB_LEAVE_OK,Leave,退出
 STR_GB_REPORT_BUG,Report Bug,バグ報告
 STR_GB_CONCEDE,Concede,降参
 STR_GB_MAIN_MENU,Main Menu,メインメニュー
-STR_EFF_EBP04_013_DESTROY_FMT,"Destroy opponent battle cards in
-  zones: %s","エリア%sにいる相手の交戦カードを<破壊>"
+STR_EFF_EBP04_013_DESTROY_FMT,"Destroy opponent battle cards in zones: %s","エリア%sにいる相手の交戦カードを<破壊>"
 STR_EFF_EBP04_013_RETREAT,Retreat opponent's monster 1 zone,相手の怪獣を1エリア後退させる
