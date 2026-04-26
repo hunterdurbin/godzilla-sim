@@ -3,7 +3,7 @@ extends CardEffect
 ## <Enter> If you have a Base in play, <Destroy> all battle cards adjacent to
 ## your opponent's monster card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

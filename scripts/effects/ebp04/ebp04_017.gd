@@ -3,7 +3,7 @@ extends CardEffect
 ## If this card is in a zone greater than or equal to your opponent's monster
 ## card, add +5000 to your total counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

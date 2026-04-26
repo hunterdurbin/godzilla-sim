@@ -951,8 +951,8 @@ func _update_strategy_modifier_badge(card: Control, modifier: int) -> void:
 
 
 func _update_modifier_badge(card: Control, modifier: int) -> void:
-	# Battle-card CP modifier badge — positioned above where the threat band sits
-	# on monster cards so a card showing both CP and threat bonuses doesn't collide.
+	# Battle-card CP modifier badge — sits in the lower band so the green CP
+	# label lines up with monster cards' green threat label (also lower).
 	# Strategy cards use _update_strategy_modifier_badge instead.
 	var badge := card.get_node_or_null("ModifierBadge")
 	if modifier == 0:
@@ -969,8 +969,8 @@ func _update_modifier_badge(card: Control, modifier: int) -> void:
 		badge.add_theme_constant_override("outline_size", 3)
 		badge.anchor_left = 0.4
 		badge.anchor_right = 0.95
-		badge.anchor_top = 0.52
-		badge.anchor_bottom = 0.64
+		badge.anchor_top = 0.72
+		badge.anchor_bottom = 0.84
 		card.add_child(badge)
 	var prefix := "+" if modifier > 0 else ""
 	badge.text = "%s%d" % [prefix, modifier]

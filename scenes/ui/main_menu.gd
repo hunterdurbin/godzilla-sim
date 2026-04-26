@@ -84,6 +84,9 @@ func _update_start_button() -> void:
 func _on_start_pressed() -> void:
 	SfxManager.play("ui_click")
 	NetworkManager.mode = NetworkManager.Mode.SOLO
+	# Reset seat in case a previous load-save session set it to 1 — without this
+	# the new solo game inherits the stale id and the board renders mirrored.
+	NetworkManager.local_player_id = 0
 	NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
 
 
