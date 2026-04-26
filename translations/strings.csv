@@ -577,6 +577,7 @@ STR_EFF_CHOOSE_ONE,Choose one:,ひとつ選ぶ:
 STR_EFF_CHOOSE_EFFECT,Choose an effect:,効果を選ぶ:
 STR_EFF_CHOOSE_ABILITY,Choose which ability to resolve:,発動する能力を選ぶ:
 STR_EFF_REVEALED_CARDS,Revealed cards:,公開されたカード:
+STR_EFF_REVEALED_FROM_DECK_TOP,Revealed from deck top:,山札の上から公開:
 STR_EFF_DECK_REVEAL,Revealed from deck (select any to confirm):,山札から公開 (どれか選んで確定):
 STR_EFF_DISCARDED_PILE,Sent to discard pile:,捨て札に送られた:
 STR_EFF_BTN_YES,Yes,はい
@@ -777,3 +778,6 @@ STR_GB_LEAVE_OK,Leave,退出
 STR_GB_REPORT_BUG,Report Bug,バグ報告
 STR_GB_CONCEDE,Concede,降参
 STR_GB_MAIN_MENU,Main Menu,メインメニュー
+STR_EFF_EBP04_013_DESTROY_FMT,"Destroy opponent battle cards in
+  zones: %s","エリア%sにいる相手の交戦カードを<破壊>"
+STR_EFF_EBP04_013_RETREAT,Retreat opponent's monster 1 zone,相手の怪獣を1エリア後退させる

@@ -17,31 +17,16 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var revealed: Array[Dictionary] = []
-	for _i in range(3):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-
+	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 3)
 	if revealed.is_empty():
-		ctx.owner.deck_changed.emit()
 		return
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 
-	ctx.owner.deck_changed.emit()
-
-	# Show revealed cards to the player
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		tr("STR_EFF_DECK_REVEAL"))
-
-	# Send all revealed to discard
 	var matching_ranks: Array[int] = []
 	for card in revealed:
-		ctx.owner.discard_pile.append(card)
 		var rank: int = card.get("rank", 0)
 		if rank >= 1 and rank <= 8 and rank not in matching_ranks:
 			matching_ranks.append(rank)
-	ctx.owner.discard_changed.emit()
 
 	# Destroy opponent battle cards in zones matching revealed ranks
 	# rank N = zone N = index N-1

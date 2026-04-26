@@ -21,24 +21,11 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var revealed: Array[Dictionary] = []
-	for _i in range(2):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-	ctx.owner.deck_changed.emit()
-
+	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 2)
 	if revealed.size() < 2:
 		# Not enough cards — send whatever was revealed to discard
-		if not revealed.is_empty():
-			ctx.owner.discard_pile.append_array(revealed)
-			ctx.owner.discard_changed.emit()
+		ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 		return
-
-	# Show revealed cards to the player
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		tr("STR_EFF_DECK_REVEAL"))
 
 	# Check if they differ in at least 1 trait
 	# A card with no traits (e.g. strategy) cannot "differ in a trait" — both go to discard
@@ -61,5 +48,4 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.hand.append_array(revealed)
 		ctx.owner.hand_changed.emit()
 	else:
-		ctx.owner.discard_pile.append_array(revealed)
-		ctx.owner.discard_changed.emit()
+		ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)

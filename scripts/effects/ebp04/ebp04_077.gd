@@ -17,18 +17,9 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var revealed: Array[Dictionary] = []
-	for i in range(3):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-
+	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 3)
 	if revealed.is_empty():
 		return
-
-	ctx.effect_handler.cards_revealed_requested.emit(
-		ctx.owner.player_id, revealed, "Revealed from deck top:")
-	await ctx.effect_handler._cards_revealed_resolved
 
 	# Find Mechagodzilla battle cards among revealed
 	var mech_cards: Array[Dictionary] = []
@@ -39,13 +30,9 @@ func on_enter(ctx: EffectContext) -> void:
 		else:
 			non_mech_cards.append(card)
 
-	# Discard non-Mechagodzilla cards
-	for card in non_mech_cards:
-		ctx.owner.discard_pile.append(card)
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, non_mech_cards)
 
 	if mech_cards.is_empty():
-		ctx.owner.deck_changed.emit()
-		ctx.owner.discard_changed.emit()
 		return
 
 	# If multiple Mechagodzilla cards, pick one to add to hand
@@ -58,12 +45,11 @@ func on_enter(ctx: EffectContext) -> void:
 			chosen_mech = mech_options[0]
 
 	# Discard the remaining Mechagodzilla cards
+	var remaining_mech: Array[Dictionary] = []
 	for card in mech_cards:
 		if card.get("id", "") != chosen_mech.get("id", ""):
-			ctx.owner.discard_pile.append(card)
-
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
+			remaining_mech.append(card)
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, remaining_mech)
 
 	# Check if the chosen card is MFS-3 or Godzilla x MechaGodzilla
 	var card_name: String = chosen_mech.get("name", "")

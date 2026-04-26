@@ -33,26 +33,10 @@ func on_enter(ctx: EffectContext) -> void:
 	if monster_count < 5:
 		return
 
-	# Reveal top 3 cards
-	var revealed: Array[Dictionary] = []
-	for i in range(3):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-
+	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 3)
 	if revealed.is_empty():
 		return
-
-	# Show revealed cards
-	ctx.effect_handler.cards_revealed_requested.emit(
-		ctx.owner.player_id, revealed, "Revealed cards from deck top:")
-	await ctx.effect_handler._cards_revealed_resolved
-
-	# Discard all revealed
-	for card in revealed:
-		ctx.owner.discard_pile.append(card)
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 
 	# Collect unique ranks from revealed cards
 	var ranks: Array[int] = []
@@ -78,19 +62,23 @@ func on_enter(ctx: EffectContext) -> void:
 
 	# One choice: destroy battle cards OR retreat monster
 	var options: Array[String] = []
+	var actions: Array[String] = [] # parallel to options; "destroy" | "retreat"
 	if not destroy_zones.is_empty():
 		var zone_numbers: Array = destroy_zones.map(func(z): return str(z + 1))
-		options.append("Destroy opponent battle cards in\n  zones: %s" % ", ".join(zone_numbers))
+		options.append(tr("STR_EFF_EBP04_013_DESTROY_FMT") % ", ".join(zone_numbers))
+		actions.append("destroy")
 	if can_retreat:
-		options.append("Retreat opponent's monster 1 zone")
+		options.append(tr("STR_EFF_EBP04_013_RETREAT"))
+		actions.append("retreat")
 	var chosen: int = await ctx.effect_handler.select_choice(
 		ctx.owner.player_id, options, tr("STR_EFF_EBP04_013_PROMPT_FMT") % str(ranks))
 
 	if chosen < 0:
 		return
 
-	if "Destroy" in options[chosen]:
-		await ctx.effect_handler.destroy_zones(ctx.opponent, destroy_zones)
-	elif "Retreat" in options[chosen]:
-		await ctx.effect_handler.retreat_monster_to_zone(
-			ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
+	match actions[chosen]:
+		"destroy":
+			await ctx.effect_handler.destroy_zones(ctx.opponent, destroy_zones)
+		"retreat":
+			await ctx.effect_handler.retreat_monster_to_zone(
+				ctx.opponent.player_id, ctx.opponent.monster_zone - 1)

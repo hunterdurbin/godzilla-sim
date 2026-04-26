@@ -26,8 +26,4 @@ func on_enter(ctx: EffectContext) -> void:
 		tr("STR_EFF_DECK_TOP_OR_SKIP"))
 
 	if not chosen.is_empty():
-		# Send to discard
-		ctx.owner.main_deck.pop_front()
-		ctx.owner.discard_pile.append(top_card)
-		ctx.owner.deck_changed.emit()
-		ctx.owner.discard_changed.emit()
+		ctx.mill_one()

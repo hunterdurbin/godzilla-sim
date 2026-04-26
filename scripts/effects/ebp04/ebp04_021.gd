@@ -31,10 +31,9 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if chosen != 0:
 		return
 
-	var top_card: Dictionary = ctx.owner.main_deck.pop_front()
-	ctx.owner.discard_pile.append(top_card)
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
+	var top_card := ctx.mill_one()
+	if top_card.is_empty():
+		return
 
 	var is_green_battle: bool = (
 		CardUtils.is_battle(top_card) and

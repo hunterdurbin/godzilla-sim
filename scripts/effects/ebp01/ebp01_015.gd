@@ -25,24 +25,10 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.is_opponent_turn():
 		return
 
-	var revealed: Array[Dictionary] = []
-	for _i in range(5):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-	ctx.owner.deck_changed.emit()
-
+	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 5)
 	if revealed.is_empty():
 		return
-
-	# Show revealed cards to the player
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		tr("STR_EFF_DECK_REVEAL"))
-
-	# Send all revealed to discard
-	ctx.owner.discard_pile.append_array(revealed)
-	ctx.owner.discard_changed.emit()
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 
 	var monster_count: int = 0
 	var has_step2: bool = false

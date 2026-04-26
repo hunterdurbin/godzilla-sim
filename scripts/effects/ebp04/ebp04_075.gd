@@ -26,13 +26,9 @@ func is_base_strategy() -> bool:
 
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
-	if ctx.owner.main_deck.is_empty():
+	var top_card := ctx.mill_one()
+	if top_card.is_empty():
 		return
-
-	var top_card: Dictionary = ctx.owner.main_deck.pop_front()
-	ctx.owner.discard_pile.append(top_card)
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
 
 	if not CardUtils.is_monster(top_card):
 		return

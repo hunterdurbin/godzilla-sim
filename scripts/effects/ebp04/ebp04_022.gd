@@ -17,23 +17,10 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_counter_success(ctx: EffectContext) -> void:
-	var revealed: Array[Dictionary] = []
-	for i in range(5):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-
+	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 5)
 	if revealed.is_empty():
 		return
-
-	ctx.effect_handler.cards_revealed_requested.emit(
-		ctx.owner.player_id, revealed, "Revealed from deck top:")
-	await ctx.effect_handler._cards_revealed_resolved
-
-	for card in revealed:
-		ctx.owner.discard_pile.append(card)
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 
 	var green_count: int = 0
 	for card in revealed:

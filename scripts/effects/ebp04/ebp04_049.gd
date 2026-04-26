@@ -28,18 +28,12 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if not has_rank8_plus:
 		return
 
-	if ctx.owner.main_deck.is_empty():
+	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 1)
+	if revealed.is_empty():
 		return
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 
-	var top_card: Dictionary = ctx.owner.main_deck.pop_front()
-	ctx.owner.discard_pile.append(top_card)
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
-
-	ctx.effect_handler.cards_revealed_requested.emit(
-		ctx.owner.player_id, [top_card], "Revealed from deck top:")
-	await ctx.effect_handler._cards_revealed_resolved
-
+	var top_card: Dictionary = revealed[0]
 	var is_blue: bool = CardUtils.has_color(top_card, CardEnums.CardColor.BLUE)
 
 	if not is_blue:

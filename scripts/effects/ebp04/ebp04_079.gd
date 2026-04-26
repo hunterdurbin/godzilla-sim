@@ -16,18 +16,9 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var revealed: Array[Dictionary] = []
-	for i in range(7):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-
+	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 7)
 	if revealed.is_empty():
 		return
-
-	ctx.effect_handler.cards_revealed_requested.emit(
-		ctx.owner.player_id, revealed, "Revealed from deck top:")
-	await ctx.effect_handler._cards_revealed_resolved
 
 	var final_wars_cards: Array[Dictionary] = []
 	var other_cards: Array[Dictionary] = []
@@ -37,26 +28,20 @@ func on_enter(ctx: EffectContext) -> void:
 		else:
 			other_cards.append(card)
 
-	for card in other_cards:
-		ctx.owner.discard_pile.append(card)
-
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, other_cards)
 
 	# Play each Final Wars battle card into an available zone
 	for card in final_wars_cards:
 		var empty_zones := ctx.owner.get_empty_zone_indices()
 		if empty_zones.is_empty():
-			ctx.owner.discard_pile.append(card)
-			ctx.owner.discard_changed.emit()
+			ctx.effect_handler.discard_cards(ctx.owner.player_id, [card])
 			continue
 
 		var chosen: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.owner.player_id, empty_zones,
 			tr("STR_EFF_PLAY_NAMED_FMT") % card.get("name", "card"))
 		if chosen < 0:
-			ctx.owner.discard_pile.append(card)
-			ctx.owner.discard_changed.emit()
+			ctx.effect_handler.discard_cards(ctx.owner.player_id, [card])
 			continue
 
 		await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, card, chosen)

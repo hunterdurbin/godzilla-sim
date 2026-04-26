@@ -1514,6 +1514,34 @@ func reveal_cards(player_id: int, cards: Array[Dictionary], title: String) -> vo
 		await _cards_revealed_resolved
 
 
+func reveal_deck_top(player_id: int, count: int, title_key: String = "STR_EFF_REVEALED_FROM_DECK_TOP") -> Array[Dictionary]:
+	## Pop up to `count` cards from the top of the player's deck and present them
+	## with a reveal overlay. Returns the popped cards — caller decides disposition
+	## (discard, partition, play, etc.).
+	var player := game_state.players[player_id]
+	var revealed: Array[Dictionary] = []
+	for i in range(count):
+		if player.main_deck.is_empty():
+			break
+		revealed.append(player.main_deck.pop_front())
+	if revealed.is_empty():
+		return revealed
+	player.deck_changed.emit()
+	await reveal_cards(player_id, revealed, tr(title_key))
+	return revealed
+
+
+func discard_cards(player_id: int, cards: Array[Dictionary]) -> void:
+	## Append a batch of cards to the player's discard pile and emit discard_changed.
+	## For tokens or mixed batches, use banish_or_discard per-card instead.
+	if cards.is_empty():
+		return
+	var player := game_state.players[player_id]
+	for card in cards:
+		player.discard_pile.append(card)
+	player.discard_changed.emit()
+
+
 func resolve_cards_revealed() -> void:
 	## Called by the presentation layer when the player dismisses the revealed cards overlay.
 	_cards_revealed_resolved.emit()
