@@ -603,10 +603,13 @@ func _invade(hand_index: int, state: GameState) -> void:
 
 	# Check if invade1 cost is blocked by opponent (e.g. EBP04-029 Gigan R3)
 	if advance_amount == 1 and effect_handler and effect_handler.is_invade1_cost_blocked(player.player_id):
-		# Card stays in hand — return it and abort invasion
+		# Card stays in hand — return it and abort invasion. Emit play_cancelled
+		# so the UI restores the dragged card's hand position (matches the
+		# monster-cost-cancelled flow in _play_monster).
 		player.hand.insert(hand_index, card)
 		player.has_invaded_this_turn = false
 		effect_handler.log_message.emit(tr("STR_AH_INVADE1_BLOCKED"))
+		play_cancelled.emit(player.player_id)
 		return
 
 	# Check for invasion cost replacement (e.g. EBP03-004: mill from deck instead)

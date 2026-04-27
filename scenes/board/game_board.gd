@@ -247,6 +247,11 @@ var _preview_card: Control
 var _zone_stack_view_cards: Array[Dictionary] = []
 var _cards_revealed_active: bool = false
 
+# Tracks the Card node that received the most recent effect-card highlight so
+# unhighlight can clear it by reference even if its card_data later mutates
+# (e.g. evolution stacks a new card via set_card_data_dict on the same node).
+var _highlighted_effect_card_node: Control = null
+
 # State tracking
 var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
 var waiting_for_card_select: bool = false
@@ -2623,6 +2628,10 @@ func _get_opponent_player() -> PlayerState:
 func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> void:
 	_action_pending = true
 	_disable_all_buttons()
+	# Clear the hand-card selection border on every submission. In multiplayer the
+	# host's _rpc_receive_action_context handles this, but solo never gets that
+	# RPC so a clicked-then-played card kept its yellow HighlightOverlay forever.
+	_clear_card_highlight()
 	if not is_multiplayer_game or NetworkManager.is_host():
 		turn_manager.submit_action(action, params)
 	else:
@@ -6008,17 +6017,27 @@ func _on_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 
 
 func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void:
+	if not highlighted:
+		# Reset by node reference rather than card_id — the held_card's card_data
+		# may have changed since highlight (e.g. evolution mutates the held node
+		# in place), so an id-based lookup can miss the original target.
+		if _highlighted_effect_card_node and is_instance_valid(_highlighted_effect_card_node):
+			_highlighted_effect_card_node.modulate = Color.WHITE
+		_highlighted_effect_card_node = null
+		return
 	var board: Control = player1_board if pid == 0 else player2_board
-	var color := Color(1.2, 1.2, 0.6, 1.0) if highlighted else Color.WHITE
+	var color := Color(1.2, 1.2, 0.6, 1.0)
 	# Check zone slots (battle cards)
 	for slot in board.zone_slots:
 		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == card_id:
 			slot.held_card.modulate = color
+			_highlighted_effect_card_node = slot.held_card
 			return
 	# Check strategy slots
 	for slot in board.strategy_slots:
 		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == card_id:
 			slot.held_card.modulate = color
+			_highlighted_effect_card_node = slot.held_card
 			return
 
 

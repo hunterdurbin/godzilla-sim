@@ -205,6 +205,10 @@ func _set_active_effect(player_id: int, card_data: Dictionary) -> void:
 
 
 func _clear_active_effect() -> void:
+	# Defensive: emit unhighlight when clearing, in case the leaf function that
+	# emitted the matching highlight didn't reach its own _unhighlight call.
+	# UI side is idempotent — clearing an already-clear highlight is a no-op.
+	_unhighlight_active_effect()
 	_active_effect_player_id = -1
 	_active_effect_card = {}
 

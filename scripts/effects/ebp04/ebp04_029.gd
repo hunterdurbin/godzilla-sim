@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> If your opponent's monster card is in Zones 1-5, you may return up to
 ## 1 <Gigan> monster card from your discard pile to your hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
