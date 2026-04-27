@@ -167,6 +167,10 @@ func execute_end_phase_advance(state: GameState) -> void:
 func execute_end_phase_draw(state: GameState) -> void:
 	## Draw up to 5 cards (7.5.4).
 	var player := state.get_current_player()
+	# Skip silently if hand is already at the cap — no draw would happen anyway,
+	# so the "draw blocked" log line would just be noise.
+	if player.hand.size() >= 5:
+		return
 	if effect_handler and effect_handler.is_opponent_end_phase_draw_blocked(player.player_id):
 		effect_handler.log_message.emit(tr("STR_AH_END_PHASE_DRAW_BLOCKED"))
 		return
