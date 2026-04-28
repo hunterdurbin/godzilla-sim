@@ -41,6 +41,7 @@ var pool_scroll: ScrollContainer
 # --- Dialogs ---
 var unsaved_dialog: ConfirmationDialog
 var delete_dialog: ConfirmationDialog
+var empty_save_dialog: ConfirmationDialog
 
 # --- State ---
 var _monster_entries: Array = []
@@ -461,6 +462,13 @@ func _build_dialogs() -> void:
 	delete_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	add_child(delete_dialog)
 
+	empty_save_dialog = ConfirmationDialog.new()
+	empty_save_dialog.title = tr("STR_DB_EMPTY_SAVE_TITLE")
+	empty_save_dialog.dialog_text = tr("STR_DB_EMPTY_SAVE_TEXT")
+	empty_save_dialog.ok_button_text = tr("STR_DB_EMPTY_SAVE_OK")
+	empty_save_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
+	add_child(empty_save_dialog)
+
 
 func _apply_panel_style(panel: PanelContainer) -> void:
 	var style := StyleBoxFlat.new()
@@ -505,6 +513,7 @@ func _connect_signals() -> void:
 	# Dialogs
 	unsaved_dialog.confirmed.connect(_on_unsaved_confirmed)
 	delete_dialog.confirmed.connect(_on_delete_confirmed)
+	empty_save_dialog.confirmed.connect(_on_empty_save_confirmed)
 
 
 # ============================================================
@@ -1426,6 +1435,22 @@ func _on_save_pressed() -> void:
 	if deck_name.is_empty():
 		deck_name_edit.grab_focus()
 		return
+	# Guard: saving an empty deck on top of an existing name silently wipes it.
+	# Prompt first; only proceed on confirm.
+	if _monster_entries.is_empty() and _main_entries.is_empty():
+		empty_save_dialog.popup_centered()
+		return
+	_perform_save(deck_name)
+
+
+func _on_empty_save_confirmed() -> void:
+	var deck_name := deck_name_edit.text.strip_edges()
+	if deck_name.is_empty():
+		return
+	_perform_save(deck_name)
+
+
+func _perform_save(deck_name: String) -> void:
 	DecklistManager.save_decklist(deck_name, _monster_entries, _main_entries)
 	_current_deck_name = deck_name
 	_has_unsaved_changes = false

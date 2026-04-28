@@ -518,6 +518,9 @@ STR_DB_SORT_TYPE,Sort: Type,並び替え: タイプ
 STR_DB_POOL_COUNT_FMT,({N} cards),({N}枚)
 STR_DB_TO_MAIN,→Main,→メイン
 STR_DB_TO_MONSTER,→Mon,→怪獣
+STR_DB_EMPTY_SAVE_TITLE,Save Empty Deck?,空のデッキを保存しますか?
+STR_DB_EMPTY_SAVE_TEXT,"This deck has no cards. Saving will overwrite any existing deck with this name. Continue?","このデッキにはカードがありません。保存すると、同じ名前の既存のデッキが上書きされます。続行しますか?"
+STR_DB_EMPTY_SAVE_OK,Save Anyway,それでも保存
 STR_DB_UNSAVED_TITLE,Unsaved Changes,未保存の変更
 STR_DB_UNSAVED_TEXT,You have unsaved changes. Discard and continue?,未保存の変更があります。破棄して続行しますか?
 STR_DB_UNSAVED_DISCARD,Discard,破棄
