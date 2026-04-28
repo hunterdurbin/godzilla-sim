@@ -3,7 +3,7 @@ extends CardEffect
 ## Move your opponent's Monster card in areas 3-5 vertically. (3->8, 4->7, 5->6.
 ## Do not destroy battle cards in areas in between)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
