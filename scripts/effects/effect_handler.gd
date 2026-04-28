@@ -1179,9 +1179,10 @@ func collect_strategy_discarded_entries(player_id: int, strategy_card: Dictionar
 	return entries
 
 
-func _passes_invasion_observed_filter(effect: CardEffect, player_id: int) -> bool:
-	## Check if an effect's invasion observed filter matches the current turn ownership.
-	var filter: Dictionary = effect.get_invasion_observed_filter()
+func _passes_invasion_observed_filter(card_data: Dictionary, player_id: int) -> bool:
+	## Evaluate TRIGGER_FILTERS["on_invasion_observed"] for an observer card.
+	## "own_turn": bool — gate by the watcher's turn ownership.
+	var filter: Dictionary = get_trigger_filter(card_data, "on_invasion_observed")
 	if filter.is_empty():
 		return true
 	if filter.has("own_turn"):
@@ -1200,28 +1201,28 @@ func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone:
 		var player := game_state.players[pid]
 
 		# Monster card
-		if has_trigger(player.current_monster, "on_invasion_observed"):
+		if has_trigger(player.current_monster, "on_invasion_observed") \
+				and _passes_invasion_observed_filter(player.current_monster, pid):
 			var me := get_effect(player.current_monster)
-			if _passes_invasion_observed_filter(me, pid):
-				var ctx := _build_context(pid, player.current_monster)
-				entries.append({"player_id": pid, "card_data": player.current_monster, "callback": me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+			var ctx := _build_context(pid, player.current_monster)
+			entries.append({"player_id": pid, "card_data": player.current_monster, "callback": me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
 
 		# Battle cards in zones (top card only)
 		for i in range(8):
 			var zone_card := player.get_zone_top_card(i)
-			if not zone_card.is_empty() and has_trigger(zone_card, "on_invasion_observed"):
+			if not zone_card.is_empty() and has_trigger(zone_card, "on_invasion_observed") \
+					and _passes_invasion_observed_filter(zone_card, pid):
 				var ze := get_effect(zone_card)
-				if _passes_invasion_observed_filter(ze, pid):
-					var ctx := _build_context(pid, zone_card)
-					entries.append({"player_id": pid, "card_data": zone_card, "callback": ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+				var ctx := _build_context(pid, zone_card)
+				entries.append({"player_id": pid, "card_data": zone_card, "callback": ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
 
 		# Strategy cards
 		for sz_card in player.strategy_zones:
-			if not sz_card.is_empty() and has_trigger(sz_card, "on_invasion_observed"):
+			if not sz_card.is_empty() and has_trigger(sz_card, "on_invasion_observed") \
+					and _passes_invasion_observed_filter(sz_card, pid):
 				var se := get_effect(sz_card)
-				if _passes_invasion_observed_filter(se, pid):
-					var ctx := _build_context(pid, sz_card)
-					entries.append({"player_id": pid, "card_data": sz_card, "callback": se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+				var ctx := _build_context(pid, sz_card)
+				entries.append({"player_id": pid, "card_data": sz_card, "callback": se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
 
 	await _resolve_standby_entries(entries)
 
@@ -1232,26 +1233,26 @@ func collect_invasion_observed_entries(invading_player_id: int, from_zone: int, 
 	for pid in range(2):
 		var player := game_state.players[pid]
 
-		if has_trigger(player.current_monster, "on_invasion_observed"):
+		if has_trigger(player.current_monster, "on_invasion_observed") \
+				and _passes_invasion_observed_filter(player.current_monster, pid):
 			var me := get_effect(player.current_monster)
-			if _passes_invasion_observed_filter(me, pid):
-				var ctx := _build_context(pid, player.current_monster)
-				entries.append({"player_id": pid, "card_data": player.current_monster, "callback": me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+			var ctx := _build_context(pid, player.current_monster)
+			entries.append({"player_id": pid, "card_data": player.current_monster, "callback": me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
 
 		for i in range(8):
 			var zone_card := player.get_zone_top_card(i)
-			if not zone_card.is_empty() and has_trigger(zone_card, "on_invasion_observed"):
+			if not zone_card.is_empty() and has_trigger(zone_card, "on_invasion_observed") \
+					and _passes_invasion_observed_filter(zone_card, pid):
 				var ze := get_effect(zone_card)
-				if _passes_invasion_observed_filter(ze, pid):
-					var ctx := _build_context(pid, zone_card)
-					entries.append({"player_id": pid, "card_data": zone_card, "callback": ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+				var ctx := _build_context(pid, zone_card)
+				entries.append({"player_id": pid, "card_data": zone_card, "callback": ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
 
 		for sz_card in player.strategy_zones:
-			if not sz_card.is_empty() and has_trigger(sz_card, "on_invasion_observed"):
+			if not sz_card.is_empty() and has_trigger(sz_card, "on_invasion_observed") \
+					and _passes_invasion_observed_filter(sz_card, pid):
 				var se := get_effect(sz_card)
-				if _passes_invasion_observed_filter(se, pid):
-					var ctx := _build_context(pid, sz_card)
-					entries.append({"player_id": pid, "card_data": sz_card, "callback": se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+				var ctx := _build_context(pid, sz_card)
+				entries.append({"player_id": pid, "card_data": sz_card, "callback": se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
 
 	return entries
 

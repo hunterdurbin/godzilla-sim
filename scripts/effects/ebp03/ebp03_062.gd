@@ -12,12 +12,13 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_invasion_observed": {"own_turn": false},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["draws_cards"]
-
-
-func get_invasion_observed_filter() -> Dictionary:
-	return {"own_turn": false}
 
 
 func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:

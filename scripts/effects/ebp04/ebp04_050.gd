@@ -5,7 +5,7 @@ extends CardEffect
 ## - Draw 1 card and discard 1 card from your hand.
 ## - Discard 1 card from your hand to decrease your opponent's <Rage> by 1.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -13,12 +13,13 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_invasion_observed": {"own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent", "draws_cards"]
-
-
-func get_invasion_observed_filter() -> Dictionary:
-	return {"own_turn": true}
 
 
 func on_invasion_observed(ctx: EffectContext, invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
@@ -26,7 +27,7 @@ func on_invasion_observed(ctx: EffectContext, invading_player_id: int, _from_zon
 		return
 
 	var my_zone: int = find_zone_of_card(ctx)
-	if my_zone != 7:  # Must be zone 8 (index 7)
+	if my_zone != 7: # Must be zone 8 (index 7)
 		return
 
 	var options: Array[String] = [

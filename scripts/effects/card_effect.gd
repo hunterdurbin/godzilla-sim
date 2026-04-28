@@ -138,14 +138,6 @@ func on_strategy_discarded(_ctx: EffectContext, _strategy_card: Dictionary) -> v
 	pass
 
 
-func get_invasion_observed_filter() -> Dictionary:
-	## Override to declare when on_invasion_observed should enter standby.
-	## Supported keys:
-	##   "own_turn": bool — true = own turn only, false = opponent's turn only
-	## Return {} to always enter standby (default, backward compatible).
-	return {}
-
-
 func on_invasion_observed(_ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
 	## Called on ALL active cards for BOTH players when a monster invades.
 	## Covers battle card reactions to invasion events (not the monster's own on_when_invading).
