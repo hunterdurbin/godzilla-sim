@@ -4,12 +4,17 @@ extends CardEffect
 ## Your monster card cannot be moved by any of your opponent's effects. (Move
 ## when you are countered)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
 ## Implementation notes: None
+
+
+const TRIGGER_FILTERS = {
+	"prevents_opponent_monster_move": {"caused_by_opponent": true},
+}
 
 
 func get_bot_tags() -> Array[String]:

@@ -753,8 +753,12 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## crushing battle cards in each intermediate zone (rule 11.3) and
 	## collecting on_monster_advance entries per step, resolving them
 	## after all movement completes (deferred, like ActionHandler).
+	## Effect-driven move — blocked by `prevents_opponent_monster_move`
+	## (e.g. EBP04-076 Dormancy when caller is the opponent's effect).
 	# Check if monster is blocked from advancing (e.g. Biollante Rose Form)
 	if is_monster_advance_blocked(player_id):
+		return
+	if is_opponent_monster_move_blocked(player_id):
 		return
 	var player := game_state.players[player_id]
 	var deferred_entries: Array = []
@@ -774,6 +778,10 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## crushing battle cards in each intermediate zone (rule 11.3).
 	## Retreat does NOT trigger on_monster_advance effects.
 	## Crush/revenge effects are deferred until after all movement completes.
+	## Effect-driven move — blocked by `prevents_opponent_monster_move`
+	## (e.g. EBP04-076 Dormancy when caller is the opponent's effect).
+	if is_opponent_monster_move_blocked(player_id):
+		return
 	var player := game_state.players[player_id]
 	var deferred_entries: Array = []
 	while player.monster_zone > target_zone:
@@ -791,9 +799,13 @@ func move_monster_as_countered(player_id: int) -> void:
 	## Does NOT crush intermediate zones and does NOT rank up — distinct from
 	## retreat_monster_to_zone (which crushes step-by-step) and force_counter
 	## (which also forces a rank-up). Used for "moves as though it were
-	## countered" rule wording — e.g. EBP01-077 (Oxygen Destroyer) and the
-	## counter-immunity branch in resolve_counter.
+	## countered" rule wording (e.g. EBP01-077 Oxygen Destroyer).
+	## This is an effect-driven move and is blocked by `prevents_opponent_
+	## monster_move` (e.g. EBP04-076 Dormancy) — the actual counter-immunity
+	## branch in resolve_counter is a rule action and bypasses this helper.
 	if not action_handler:
+		return
+	if is_opponent_monster_move_blocked(player_id):
 		return
 	var player := game_state.players[player_id]
 	var retreat_zone: int = ActionHandler.get_counter_retreat_zone(player.monster_zone)
@@ -2958,15 +2970,45 @@ func is_opponent_end_phase_draw_blocked(drawing_player_id: int) -> bool:
 	return false
 
 
+func _passes_prevents_monster_move_filter(card_data: Dictionary, watcher_player_id: int) -> bool:
+	## Evaluate TRIGGER_FILTERS["prevents_opponent_monster_move"] for the
+	## passive-query protector. Even though this is a query (not a triggered
+	## ability), authors can gate it by turn ownership or by who's causing
+	## the move:
+	## "own_turn": bool — gate by watcher's turn ownership.
+	## "caused_by_opponent": bool — gate by `_active_effect_player_id`. true =
+	##   only block when the opponent's active effect is moving the monster.
+	var filter: Dictionary = get_trigger_filter(card_data, "prevents_opponent_monster_move")
+	if filter.is_empty():
+		return true
+	if filter.has("own_turn"):
+		var is_own_turn: bool = (game_state.current_player_id == watcher_player_id)
+		if filter.own_turn != is_own_turn:
+			return false
+	if filter.has("caused_by_opponent"):
+		var by_effect: bool = _active_effect_player_id >= 0
+		var caused_by_opponent: bool = by_effect and _active_effect_player_id != watcher_player_id
+		var caused_by_self: bool = by_effect and _active_effect_player_id == watcher_player_id
+		if filter.caused_by_opponent and not caused_by_opponent:
+			return false
+		if not filter.caused_by_opponent and not caused_by_self:
+			return false
+	return true
+
+
 func is_opponent_monster_move_blocked(target_player_id: int) -> bool:
 	## Check if the target player's monster is protected from being moved by opponent effects.
 	## Checks target player's strategy zones for prevents_opponent_monster_move.
+	## TRIGGER_FILTERS keys: own_turn, caused_by_opponent.
 	var player := game_state.players[target_player_id]
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty():
-			var effect := get_effect(sz_card)
-			if effect and effect.prevents_opponent_monster_move(_build_context(target_player_id, sz_card)):
-				return true
+		if sz_card.is_empty():
+			continue
+		if not _passes_prevents_monster_move_filter(sz_card, target_player_id):
+			continue
+		var effect := get_effect(sz_card)
+		if effect and effect.prevents_opponent_monster_move(_build_context(target_player_id, sz_card)):
+			return true
 	return false
 
 
