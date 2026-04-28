@@ -4,7 +4,7 @@ extends CardEffect
 ## may play this card.
 ## <Awakening 6> This gains +3000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -12,15 +12,19 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_discard_from_hand": {"caused_by_opponent": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["plays_from_discard", "boosts_cp"]
 
 
 func on_discard_from_hand(ctx: EffectContext) -> void:
-	# Only when discarded by opponent's effect (not own turn)
-	if ctx.is_own_turn():
-		return
-	await ctx.effect_handler.play_from_discard(ctx.owner.player_id, ctx.card_data)
+	await ctx.effect_handler.play_from_discard_or_skip(
+		ctx.owner.player_id, ctx.card_data,
+		tr("STR_EFF_PLACE_DISCARD_FMT") % ctx.card_data.get("name", "card"))
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

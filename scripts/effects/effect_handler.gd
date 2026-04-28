@@ -466,8 +466,37 @@ func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) ->
 	return entries
 
 
+func _passes_discard_from_hand_filter(card_data: Dictionary, player_id: int) -> bool:
+	## Evaluate TRIGGER_FILTERS["on_discard_from_hand"] for the discarded card's
+	## self-trigger. The discard may happen on either player's turn, so the
+	## relevant gate is who *caused* the discard, not whose turn it is.
+	## "caused_by_opponent": bool — true = fire only when an opponent effect caused
+	##   the discard (e.g. EBP04-046 Rodan); false = fire only when the owner's own
+	##   effect caused it. Rules-based discards (no active effect) match neither
+	##   value, so the trigger is skipped under either setting.
+	## "own_turn": bool — secondary gate by the card owner's turn ownership.
+	var filter: Dictionary = get_trigger_filter(card_data, "on_discard_from_hand")
+	if filter.is_empty():
+		return true
+	if filter.has("caused_by_opponent"):
+		var by_effect: bool = _active_effect_player_id >= 0
+		var caused_by_opponent: bool = by_effect and _active_effect_player_id != player_id
+		var caused_by_self: bool = by_effect and _active_effect_player_id == player_id
+		if filter.caused_by_opponent and not caused_by_opponent:
+			return false
+		if not filter.caused_by_opponent and not caused_by_self:
+			return false
+	if filter.has("own_turn"):
+		var is_own_turn: bool = (game_state.current_player_id == player_id)
+		if filter.own_turn != is_own_turn:
+			return false
+	return true
+
+
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 	## Trigger discard-from-hand effect on the card being discarded.
+	if not _passes_discard_from_hand_filter(card_data, player_id):
+		return
 	var effect := get_effect(card_data)
 	if effect:
 		var saved_player_id: int = _active_effect_player_id
@@ -483,11 +512,27 @@ func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) -> Array:
 	## Collect discard-from-hand entry for deferred resolution (e.g. during invasion).
 	var entries: Array = []
-	if has_trigger(card_data, "on_discard_from_hand"):
+	if has_trigger(card_data, "on_discard_from_hand") and _passes_discard_from_hand_filter(card_data, player_id):
 		var effect := get_effect(card_data)
 		var ctx := _build_context(player_id, card_data)
 		entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_discard_from_hand.bind(ctx), "skip_active_check": true})
 	return entries
+
+
+func trigger_hand_cards_discarded_batch(player_id: int, cards: Array) -> void:
+	## Standby-resolve on_discard_from_hand and on_hand_card_discarded for a
+	## set of cards discarded simultaneously, per rule 10.4.3. Bundling all
+	## entries into one batch lets the player choose resolution order when
+	## multiple cards trigger at once (e.g. discarding two EBP04-046 Rodans
+	## from hand).
+	if cards.is_empty():
+		return
+	var entries: Array = []
+	for card in cards:
+		entries.append_array(collect_discard_from_hand_entries(player_id, card))
+		entries.append_array(collect_hand_card_discarded_entries(player_id, card))
+	if not entries.is_empty():
+		await _resolve_standby_entries(entries)
 
 
 func collect_discarded_for_invasion_entries(player_id: int, card_data: Dictionary) -> Array:
@@ -1268,9 +1313,7 @@ func discard_hand_to(player_id: int, target_count: int) -> void:
 			discarded_cards.append(card)
 		player.hand_changed.emit()
 		player.discard_changed.emit()
-		for card in discarded_cards:
-			await trigger_discard_from_hand(player_id, card)
-			await trigger_hand_card_discarded(player_id, card)
+		await trigger_hand_cards_discarded_batch(player_id, discarded_cards)
 
 
 func resolve_hand_discard(player_id: int, hand_indices: Array[int]) -> void:
@@ -1289,10 +1332,9 @@ func resolve_hand_discard(player_id: int, hand_indices: Array[int]) -> void:
 			discarded_cards.append(card)
 	player.hand_changed.emit()
 	player.discard_changed.emit()
-	# Trigger discard-from-hand on each card, then broadcast to all active cards
-	for card in discarded_cards:
-		await trigger_discard_from_hand(player_id, card)
-		await trigger_hand_card_discarded(player_id, card)
+	# Bundle all simultaneously-discarded triggers into one standby batch so
+	# the player can choose resolution order when 2+ cards trigger (10.4.3).
+	await trigger_hand_cards_discarded_batch(player_id, discarded_cards)
 	_hand_discard_resolved.emit()
 
 
@@ -2716,6 +2758,30 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 	player.zones_changed.emit()
 	await trigger_enter(player_id, card_data, true)
 	return zone_idx
+
+
+func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: String, zone_filter: Callable = Callable()) -> int:
+	## 'May'-style helper: prompt the player for a zone (with skip), then play
+	## the card from discard there. If the player skips or no zones are valid,
+	## the card stays in discard and -1 is returned.
+	## zone_filter is an optional Callable(zone_idx: int) -> bool to restrict
+	## valid placement zones; if omitted, any non-monster zone is valid.
+	var player := game_state.players[player_id]
+	var monster_idx: int = player.monster_zone - 1
+	var valid_zones: Array[int] = []
+	for i in range(8):
+		if i == monster_idx:
+			continue
+		if zone_filter.is_valid() and not zone_filter.call(i):
+			continue
+		valid_zones.append(i)
+	if valid_zones.is_empty():
+		return -1
+	var zone_idx: int = await select_zone_target(
+		player_id, player_id, valid_zones, prompt, true)
+	if zone_idx < 0:
+		return -1
+	return await play_from_discard(player_id, card_data, zone_idx)
 
 
 func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int) -> void:

@@ -14,6 +14,7 @@ extends CardEffect
 
 
 const TRIGGER_FILTERS = {
+	"on_discard_from_hand": {"caused_by_opponent": true},
 	"on_hand_card_discarded": {"own_turn": false},
 }
 
@@ -23,12 +24,12 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_discard_from_hand(ctx: EffectContext) -> void:
-	# Only when discarded by opponent's effect
-	if ctx.is_own_turn():
+	# Opponent's monster must be in zones 4-8
+	if ctx.opponent.monster_zone < 4:
 		return
-
-	if ctx.opponent.is_awakening(4):
-		await ctx.effect_handler.play_from_discard(ctx.owner.player_id, ctx.card_data)
+	await ctx.effect_handler.play_from_discard_or_skip(
+		ctx.owner.player_id, ctx.card_data,
+		tr("STR_EFF_PLACE_DISCARD_FMT") % ctx.card_data.get("name", "card"))
 
 
 func on_hand_card_discarded(ctx: EffectContext, _discarded_card: Dictionary) -> void:

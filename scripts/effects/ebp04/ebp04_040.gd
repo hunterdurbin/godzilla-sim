@@ -3,7 +3,7 @@ extends CardEffect
 ## <Awakening 6> <Enter> If you have 1 or more <Rodan> and <King Caesar>
 ## battle cards each in your zones, increase your monster card's <Rage> by 3.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

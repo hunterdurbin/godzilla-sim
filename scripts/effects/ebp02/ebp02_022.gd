@@ -36,16 +36,6 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	if not found:
 		return
 
-	# Optional — player may skip
-	var valid_zones: Array[int] = []
-	for i in range(8):
-		if i != ctx.owner.monster_zone - 1:
-			valid_zones.append(i)
-	var chosen: int = await ctx.effect_handler.select_zone_target(
-		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		tr("STR_EFF_PLACE_DISCARD_FMT") % invasion_card.get("name", "card"),
-		true)
-	if chosen < 0:
-		return
-
-	await ctx.effect_handler.play_from_discard(ctx.owner.player_id, invasion_card, chosen)
+	await ctx.effect_handler.play_from_discard_or_skip(
+		ctx.owner.player_id, invasion_card,
+		tr("STR_EFF_PLACE_DISCARD_FMT") % invasion_card.get("name", "card"))
