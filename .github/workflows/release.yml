@@ -29,12 +29,14 @@ jobs:
         run: mkdir -p build/windows
 
       - name: Export Windows
+        env:
+          PRESET: ${{ contains(github.ref_name, 'unstable') && 'Windows Desktop Unstable' || 'Windows Desktop' }}
+          SUFFIX: ${{ contains(github.ref_name, 'unstable') && '_unstable' || '' }}
         run: |
-          if [[ "${GITHUB_REF_NAME}" == *unstable* ]]; then
-            godot --headless --export-release "Windows Desktop Unstable" build/windows/${PROJECT_NAME}_unstable.exe
-          else
-            godot --headless --export-release "Windows Desktop" build/windows/${PROJECT_NAME}.exe
-          fi
+          OUTPUT="build/windows/${PROJECT_NAME}${SUFFIX}.exe"
+          godot --headless --export-release "$PRESET" "$OUTPUT"
+          ls -la build/windows/
+          test -f "$OUTPUT" || { echo "ERROR: $OUTPUT not produced"; exit 1; }
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -61,12 +63,14 @@ jobs:
         run: mkdir -p build/linux
 
       - name: Export Linux
+        env:
+          PRESET: ${{ contains(github.ref_name, 'unstable') && 'Linux Unstable' || 'Linux' }}
+          SUFFIX: ${{ contains(github.ref_name, 'unstable') && '_unstable' || '' }}
         run: |
-          if [[ "${GITHUB_REF_NAME}" == *unstable* ]]; then
-            godot --headless --export-release "Linux Unstable" build/linux/${PROJECT_NAME}_unstable.x86_64
-          else
-            godot --headless --export-release "Linux" build/linux/${PROJECT_NAME}.x86_64
-          fi
+          OUTPUT="build/linux/${PROJECT_NAME}${SUFFIX}.x86_64"
+          godot --headless --export-release "$PRESET" "$OUTPUT"
+          ls -la build/linux/
+          test -f "$OUTPUT" || { echo "ERROR: $OUTPUT not produced"; exit 1; }
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -93,12 +97,14 @@ jobs:
         run: mkdir -p build/macos
 
       - name: Export macOS
+        env:
+          PRESET: ${{ contains(github.ref_name, 'unstable') && 'macOS Unstable' || 'macOS' }}
+          SUFFIX: ${{ contains(github.ref_name, 'unstable') && '_unstable' || '' }}
         run: |
-          if [[ "${GITHUB_REF_NAME}" == *unstable* ]]; then
-            godot --headless --export-release "macOS Unstable" build/macos/${PROJECT_NAME}_unstable.app
-          else
-            godot --headless --export-release "macOS" build/macos/${PROJECT_NAME}.app
-          fi
+          OUTPUT="build/macos/${PROJECT_NAME}${SUFFIX}.app"
+          godot --headless --export-release "$PRESET" "$OUTPUT"
+          ls -la build/macos/
+          test -d "$OUTPUT" || { echo "ERROR: $OUTPUT not produced"; exit 1; }
 
       - name: Zip macOS app
         run: |
@@ -144,12 +150,14 @@ jobs:
         run: mkdir -p build/android
 
       - name: Export Android
+        env:
+          PRESET: ${{ contains(github.ref_name, 'unstable') && 'Android Unstable' || 'Android' }}
+          SUFFIX: ${{ contains(github.ref_name, 'unstable') && '_unstable' || '' }}
         run: |
-          if [[ "${GITHUB_REF_NAME}" == *unstable* ]]; then
-            godot --headless --export-debug "Android Unstable" build/android/${PROJECT_NAME}_unstable.apk
-          else
-            godot --headless --export-debug "Android" build/android/${PROJECT_NAME}.apk
-          fi
+          OUTPUT="build/android/${PROJECT_NAME}${SUFFIX}.apk"
+          godot --headless --export-debug "$PRESET" "$OUTPUT"
+          ls -la build/android/
+          test -f "$OUTPUT" || { echo "ERROR: $OUTPUT not produced"; exit 1; }
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -175,6 +183,9 @@ jobs:
 
       - name: Copy icon for Flatpak build
         run: cp assets/icons/game_icon.png flatpak/game_icon.png
+
+      - name: Inspect flatpak build inputs
+        run: ls -la flatpak/
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
