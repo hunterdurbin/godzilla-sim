@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> If you have 3 or more colors of battle cards in your discard pile,
 ## <Destroy> 1 of your opponent's Rank 5 or lower battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -4,7 +4,7 @@ extends CardEffect
 ## numbered area with a battle card up to the number of cards equal to the
 ## number of colors of battle cards in your discard pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -21,12 +21,13 @@ func on_enter(ctx: EffectContext) -> void:
 	if color_count == 0:
 		return
 
-	for _i in range(color_count):
-		# Find lowest-numbered zone with a battle card
-		var occupied: Array[int] = ctx.opponent.get_occupied_zone_indices()
-		if occupied.is_empty():
-			break
-		await ctx.effect_handler.destroy_zones(ctx.opponent, [occupied[0]])
+	# Pre-select target zones (lowest-numbered occupied zones, up to color_count).
+	# Per Q523: target areas are chosen up front, then destroyed in order;
+	# zones that can't be destroyed are skipped without re-targeting.
+	var occupied: Array[int] = ctx.opponent.get_occupied_zone_indices()
+	var targets: Array[int] = occupied.slice(0, color_count)
+	for zone_idx in targets:
+		await ctx.effect_handler.destroy_zones(ctx.opponent, [zone_idx])
 
 
 func _count_discard_colors(ctx: EffectContext) -> int:
