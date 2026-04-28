@@ -120,6 +120,21 @@ func _on_bot_config_pressed() -> void:
 	_show_bot_config_popup()
 
 
+const _WEIGHT_MIN := 1
+const _WEIGHT_MAX := 100
+
+
+static func _read_weight(input: LineEdit) -> int:
+	var t := input.text.strip_edges()
+	if not t.is_valid_int():
+		return _WEIGHT_MIN
+	return clampi(t.to_int(), _WEIGHT_MIN, _WEIGHT_MAX)
+
+
+static func _write_weight(input: LineEdit, val: int) -> void:
+	input.text = str(clampi(val, _WEIGHT_MIN, _WEIGHT_MAX))
+
+
 func _reconcile_bot_deck_weights() -> void:
 	# Prune entries pointing at decks that no longer exist on disk so the
 	# saved cfg stays in sync with the actual deck list.
@@ -347,8 +362,8 @@ func _show_bot_config_popup() -> void:
 	deck_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	deck_list.add_theme_constant_override("separation", 4)
 
-	# Per-deck rows (CheckBox + Label + SpinBox)
-	var deck_rows: Array = []  # [{"name": String, "check": CheckBox, "spin": SpinBox}, ...]
+	# Per-deck rows (CheckBox + [−] [input] [+] stepper for mobile-friendly tapping)
+	var deck_rows: Array = []
 	for deck_name in DecklistManager.get_all_decklists():
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
@@ -359,21 +374,50 @@ func _show_bot_config_popup() -> void:
 
 		var row_check := CheckBox.new()
 		row_check.text = deck_name
+		row_check.tooltip_text = deck_name
 		row_check.button_pressed = enabled
 		row_check.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row_check.clip_text = true
 		row.add_child(row_check)
 
-		var weight_spin := SpinBox.new()
-		weight_spin.min_value = 1
-		weight_spin.max_value = 100
-		weight_spin.step = 1
-		weight_spin.value = weight
-		weight_spin.custom_minimum_size = Vector2(70, 0)
-		row.add_child(weight_spin)
+		var stepper := HBoxContainer.new()
+		stepper.add_theme_constant_override("separation", 2)
 
+		var dec_btn := Button.new()
+		dec_btn.text = "−"
+		dec_btn.custom_minimum_size = Vector2(36, 36)
+		dec_btn.add_theme_font_size_override("font_size", 18)
+		stepper.add_child(dec_btn)
+
+		var weight_input := LineEdit.new()
+		weight_input.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		weight_input.custom_minimum_size = Vector2(50, 36)
+		weight_input.add_theme_font_size_override("font_size", 14)
+		weight_input.max_length = 3
+		_write_weight(weight_input, weight)
+		stepper.add_child(weight_input)
+
+		var inc_btn := Button.new()
+		inc_btn.text = "+"
+		inc_btn.custom_minimum_size = Vector2(36, 36)
+		inc_btn.add_theme_font_size_override("font_size", 18)
+		stepper.add_child(inc_btn)
+
+		dec_btn.pressed.connect(func():
+			SfxManager.play("ui_click")
+			_write_weight(weight_input, _read_weight(weight_input) - 1)
+		)
+		inc_btn.pressed.connect(func():
+			SfxManager.play("ui_click")
+			_write_weight(weight_input, _read_weight(weight_input) + 1)
+		)
+		# Re-clamp typed input on commit / focus loss
+		weight_input.text_submitted.connect(func(_t): _write_weight(weight_input, _read_weight(weight_input)))
+		weight_input.focus_exited.connect(func(): _write_weight(weight_input, _read_weight(weight_input)))
+
+		row.add_child(stepper)
 		deck_list.add_child(row)
-		deck_rows.append({"name": deck_name, "check": row_check, "spin": weight_spin})
+		deck_rows.append({"name": deck_name, "check": row_check, "input": weight_input, "dec": dec_btn, "inc": inc_btn})
 
 	deck_scroll.add_child(deck_list)
 	right_col.add_child(deck_scroll)
@@ -406,7 +450,7 @@ func _show_bot_config_popup() -> void:
 	reset_weights_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
 		for r in deck_rows:
-			r["spin"].value = 1
+			_write_weight(r["input"], 1)
 	)
 
 	# Enable/disable deck row widgets + helper buttons in sync with master toggle
@@ -416,7 +460,9 @@ func _show_bot_config_popup() -> void:
 		reset_weights_btn.disabled = not on
 		for r in deck_rows:
 			r["check"].disabled = not on
-			r["spin"].editable = on
+			r["input"].editable = on
+			r["dec"].disabled = not on
+			r["inc"].disabled = not on
 	random_deck_check.toggled.connect(func(_v): update_deck_widgets.call())
 	update_deck_widgets.call()
 
@@ -446,7 +492,7 @@ func _show_bot_config_popup() -> void:
 		GameSettings.bot_random_deck_enabled = random_deck_check.button_pressed
 		var weights := {}
 		for r in deck_rows:
-			var w := int(r["spin"].value) if r["check"].button_pressed else 0
+			var w := _read_weight(r["input"]) if r["check"].button_pressed else 0
 			weights[r["name"]] = w
 		GameSettings.bot_deck_weights = weights
 		GameSettings.save()
