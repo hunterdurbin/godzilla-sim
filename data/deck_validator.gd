@@ -222,9 +222,15 @@ static func warnings(monster_entries: Array, main_entries: Array) -> Array[Strin
 		var next: Dictionary = rank_cards[r + 1]
 		var current_traits: Array = current.get("traits", [])
 		var next_traits: Array = next.get("traits", [])
+		# Standard rank-up: trait overlap. Alternate bridge: the next-rank
+		# card's effect script declares RANKUP_ALT_PREDECESSOR_TRAITS, listing
+		# trait ids it accepts as a predecessor (e.g. EBP04-033/034 accept
+		# Monster X). If any such trait overlaps with the current monster, the
+		# rank-up is valid even without direct trait sharing.
+		var alt_traits: Array = _get_rankup_alt_predecessor_traits(next)
 		var shared := false
 		for t in current_traits:
-			if t in next_traits:
+			if t in next_traits or t in alt_traits:
 				shared = true
 				break
 		if not shared:
@@ -233,6 +239,20 @@ static func warnings(monster_entries: Array, main_entries: Array) -> Array[Strin
 				next.get("name", Loc.t("STR_VALIDATE_RANK_FALLBACK_FMT") % (r + 1)), r + 1])
 
 	return result
+
+
+static func _get_rankup_alt_predecessor_traits(card_template: Dictionary) -> Array:
+	## Read the script-level RANKUP_ALT_PREDECESSOR_TRAITS const if declared.
+	## Returns the list of trait ids the next-rank card accepts as predecessor
+	## via its can_play_as_monster bridge.
+	var script_path: String = card_template.get("effect_script", "")
+	if script_path.is_empty():
+		return []
+	var script: Script = load(script_path)
+	if script == null:
+		return []
+	var consts: Dictionary = script.get_script_constant_map()
+	return consts.get("RANKUP_ALT_PREDECESSOR_TRAITS", [])
 
 
 # --- Internal helpers ---

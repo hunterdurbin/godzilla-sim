@@ -12,6 +12,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+## Predecessor traits this card accepts as an alt rank-up bridge. Used by
+## DeckValidator to suppress the no-shared-traits warning.
+const RANKUP_ALT_PREDECESSOR_TRAITS := [CardEnums.CardTrait.MONSTER_X]
+
+
 func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
