@@ -20,10 +20,6 @@ func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> boo
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.effect_handler.is_opponent_monster_move_blocked(ctx.opponent.player_id):
-		ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_078_BLOCKED"))
-		return
-
 	var opp_zone: int = ctx.opponent.monster_zone
 	if opp_zone < 3 or opp_zone > 5:
 		return
@@ -35,8 +31,11 @@ func on_enter(ctx: EffectContext) -> void:
 		5: target_zone = 6
 		_: return
 
-	# Move monster without destroying intervening battle cards
-	ctx.opponent.monster_zone = target_zone
-	ctx.opponent.monster_changed.emit()
+	# teleport_monster respects EBP04-076 (Dormancy) via the
+	# prevents_opponent_monster_move filter — returns false if blocked.
+	var moved: bool = ctx.effect_handler.teleport_monster(ctx.opponent.player_id, target_zone)
+	if not moved:
+		ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_078_BLOCKED"))
+		return
 	ctx.effect_handler.log_message.emit(
 		tr("STR_EFF_EBP04_078_TELEPORT_FMT") % [opp_zone, target_zone])

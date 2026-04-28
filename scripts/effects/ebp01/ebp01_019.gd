@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_enter": {"played_from_hand": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["searches_deck"]
 
@@ -23,9 +28,6 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 
 func on_enter(ctx: EffectContext) -> void:
 	if not ctx.is_awakening(6):
-		return
-	# Only from hand (not through evolution, search, or other effects)
-	if ctx.card_data.get("played_from_effect", false):
 		return
 
 	var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
