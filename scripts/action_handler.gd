@@ -398,6 +398,9 @@ func _check_crush_for_player(state: GameState, player_id: int, deferred_entries:
 			player.zones_changed.emit()
 			player.discard_changed.emit()
 			if effect_handler:
+				# Linked-card cleanup (rule-agnostic) fires immediately so partner
+				# cards see the removal regardless of deferred standby resolution.
+				await effect_handler.trigger_leave_play(player_id, crushed_stack[0], monster_zone_idx)
 				if deferred_entries != null:
 					deferred_entries.append_array(effect_handler.collect_crush_and_revenge_entries(player_id, crushed_stack[0]))
 				else:

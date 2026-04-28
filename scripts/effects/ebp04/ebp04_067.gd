@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> Play 1 [Godzilla Earth] Token in your area 3. 
 ## If this card and the token are not in an area, or they are moved, <Destroy> both.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -51,6 +51,6 @@ func on_zone_changed(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void
 
 func _find_token_zone(ctx: EffectContext) -> int:
 	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == "EBP04-T01":
+		if CardUtils.base_id(ctx.owner.get_zone_top_card(i)) == "EBP04-T01":
 			return i
 	return -1

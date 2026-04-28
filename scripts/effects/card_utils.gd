@@ -5,6 +5,15 @@ class_name CardUtils
 ## `card.get("traits", [])` / `card.get("card_type") == ...` patterns.
 
 
+static func base_id(card: Dictionary) -> String:
+	## Strip the per-copy suffix from a card's instance id ("EBP04-067_0_3" →
+	## "EBP04-067"). Use this when comparing against card-data ids in effect
+	## logic — the raw `card["id"]` is the per-copy instance id at runtime.
+	var id: String = card.get("id", "")
+	var underscore: int = id.find("_")
+	return id if underscore < 0 else id.substr(0, underscore)
+
+
 static func has_trait(card: Dictionary, trait_id: int) -> bool:
 	return trait_id in card.get("traits", [])
 

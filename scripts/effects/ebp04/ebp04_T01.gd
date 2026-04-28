@@ -3,7 +3,7 @@ extends CardEffect
 ## (Tokens cannot be added to the deck. They are banished when removed from
 ## zones.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -28,6 +28,6 @@ func on_zone_changed(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void
 
 func _find_partner_zone(ctx: EffectContext) -> int:
 	for i in range(8):
-		if ctx.owner.get_zone_top_card(i).get("id", "") == "EBP04-067":
+		if CardUtils.base_id(ctx.owner.get_zone_top_card(i)) == "EBP04-067":
 			return i
 	return -1
