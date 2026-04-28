@@ -336,9 +336,20 @@ func prevents_counter(_ctx: EffectContext, _total_cp: int) -> bool:
 
 
 func get_opponent_zone_cp_modifiers(_ctx: EffectContext) -> Dictionary:
-	## Return {zone_index: cp_bonus} for bonuses this card grants to the OPPONENT's zones.
-	## Used by EBP02-029 to double opponent's CP in the same column.
+	## Return {zone_index: cp_bonus} for additive bonuses this card grants to
+	## the OPPONENT's zones. For doubling effects use `get_opponent_doubled_zones`
+	## instead so the multiplier applies to base + all other modifiers.
 	return {}
+
+
+func get_opponent_doubled_zones(_ctx: EffectContext) -> Array[int]:
+	## Return zone indices on the opponent's board whose total CP should be
+	## doubled by this card. Doubling is applied AFTER all additive modifiers
+	## (base CP + own bonuses + field bonuses + strategy bonuses), so existing
+	## bonus modifiers are doubled too. Used by EBP02-029 (Biollante Plant
+	## Beast Form R4): "double the counter power of all of your opponent's
+	## battle cards in the same column as this card".
+	return []
 
 
 func blocks_opponent_strategy_plays(_ctx: EffectContext) -> bool:

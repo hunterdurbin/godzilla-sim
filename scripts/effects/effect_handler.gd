@@ -2278,7 +2278,9 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 			if zone_idx >= 0 and zone_idx < 8:
 				modifiers[zone_idx] += sz_field_mods[zone_idx]
 
-	# Opponent's monster CP modifiers that affect this player's zones (e.g. EBP02-029 CP doubling)
+	# Opponent's monster CP modifiers that affect this player's zones —
+	# additive bonuses first, then doubling (so the doubling sees base + all
+	# other modifiers and doubles the running total, not just base CP).
 	var opp_monster_effect := get_effect(game_state.players[opponent_id].current_monster)
 	if opp_monster_effect:
 		var opp_ctx := _build_context(opponent_id, game_state.players[opponent_id].current_monster)
@@ -2286,6 +2288,13 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 		for zone_idx in opp_mods:
 			if zone_idx >= 0 and zone_idx < 8:
 				modifiers[zone_idx] += opp_mods[zone_idx]
+		var doubled_zones: Array[int] = opp_monster_effect.get_opponent_doubled_zones(opp_ctx)
+		for zone_idx in doubled_zones:
+			if zone_idx >= 0 and zone_idx < 8:
+				var base_cp: int = player.get_zone_top_card(zone_idx).get("counter_power", 0)
+				# Doubling total = 2 * (base + mod). Add the existing total to
+				# turn modifier into base + 2 * modifier.
+				modifiers[zone_idx] += base_cp + modifiers[zone_idx]
 
 	return modifiers
 

@@ -109,7 +109,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp02/ebp02_026.gd": ["on_enter"],
 	"res://scripts/effects/ebp02/ebp02_027.gd": ["get_counter_immunity_threshold","get_effect_categories"],
 	"res://scripts/effects/ebp02/ebp02_028.gd": ["on_enter"],
-	"res://scripts/effects/ebp02/ebp02_029.gd": ["get_opponent_zone_cp_modifiers","get_effect_categories"],
+	"res://scripts/effects/ebp02/ebp02_029.gd": ["get_opponent_doubled_zones","get_effect_categories"],
 	"res://scripts/effects/ebp02/ebp02_030.gd": ["on_phase_start"],
 	"res://scripts/effects/ebp02/ebp02_031.gd": ["get_counter_power_modifier"],
 	"res://scripts/effects/ebp02/ebp02_032.gd": ["on_phase_start"],
