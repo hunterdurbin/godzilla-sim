@@ -324,7 +324,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp04/ebp04_082.gd": ["get_field_cp_modifiers","get_effect_categories","is_base_strategy"],
 	"res://scripts/effects/ebp04/ebp04_083.gd": ["on_enter"],
 	"res://scripts/effects/ebp04/ebp04_084.gd": ["on_enter"],
-	"res://scripts/effects/ebp04/ebp04_085.gd": ["on_strategy_discarded","protects_card_from_destruction","get_effect_categories","is_base_strategy"],
+	"res://scripts/effects/ebp04/ebp04_085.gd": ["on_strategy_discarded","protects_card_from_destruction","get_effect_categories"],
 	"res://scripts/effects/ebp04/ebp04_086.gd": ["on_phase_start","is_base_strategy"],
 	"res://scripts/effects/ebp04/ebp04_087.gd": ["on_enter"],
 	"res://scripts/effects/ebp04/ebp04_088.gd": ["on_enter"],

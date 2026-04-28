@@ -2,7 +2,7 @@ extends CardEffect
 ## EBP04-083: Godzilla vs. Destoroyah - Strategy Rank 6 (Blue)
 ## <Destroy> all of your opponent's battle cards in zones 6-8.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -23,7 +23,7 @@ func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> boo
 
 func on_enter(ctx: EffectContext) -> void:
 	var zones_to_destroy: Array[int] = []
-	for i in range(5, 8):  # zones 6-8 = indices 5-7
+	for i in range(5, 8): # zones 6-8 = indices 5-7
 		if ctx.opponent.zone_has_cards(i):
 			zones_to_destroy.append(i)
 	if not zones_to_destroy.is_empty():

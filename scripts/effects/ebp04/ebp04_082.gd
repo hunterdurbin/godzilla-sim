@@ -4,7 +4,7 @@ extends CardEffect
 ## <Your Turn> All non-blue battle cards in zones adjacent to your monster card
 ## gain +3000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

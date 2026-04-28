@@ -162,6 +162,10 @@ static func effect_destroyed_card(source_player_id: int, effect_source_id: Strin
 	return {"type": "effect_destroyed_card", "source_player_id": source_player_id, "source_id": effect_source_id, "target_player_id": target_player_id, "zone_index": zone_index, "destroyed_id": destroyed_id}
 
 
+static func effect_returned_card_to_hand(player_id: int, effect_source_id: String, returned_id: String) -> Dictionary:
+	return {"type": "effect_returned_card_to_hand", "player_id": player_id, "source_id": effect_source_id, "returned_id": returned_id}
+
+
 static func battle_card_crushed(card_id: String, player_id: int, zone_index: int) -> Dictionary:
 	return {"type": "battle_card_crushed", "card_id": card_id, "player_id": player_id, "zone_index": zone_index}
 
@@ -384,6 +388,11 @@ static func render(token: Dictionary) -> String:
 				.replace("{TARGET_PLAYER}", short_name(token.get("target_player_id", 0))) \
 				.replace("{ZONE}", str(int(token.get("zone_index", 0)) + 1)) \
 				.replace("{DESTROYED_CARD}", card_link(token.get("destroyed_id", "")))
+		"effect_returned_card_to_hand":
+			return TranslationServer.translate("STR_LOG_EFFECT_RETURNED_TO_HAND_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{RETURNED_CARD}", card_link(token.get("returned_id", "")))
 		"battle_card_crushed":
 			return TranslationServer.translate("STR_LOG_CARD_CRUSHED_FMT") \
 				.replace("{DESTROY_ICON}", _icon(40, "others", "Destroy.png")) \

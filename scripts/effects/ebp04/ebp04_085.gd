@@ -1,6 +1,5 @@
 extends CardEffect
 ## EBP04-085: The Golden Demise - Strategy Rank 1 (Green)
-## <Base>
 ## When this is moved from your strategy zones to your discard pile, if you have
 ## 2 or more green battle cards in your zones you may return this from your
 ## discard pile to your hand.
@@ -17,10 +16,6 @@ extends CardEffect
 
 func get_bot_tags() -> Array[String]:
 	return ["protects_cards"]
-
-
-func is_base_strategy() -> bool:
-	return true
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:

@@ -3928,9 +3928,8 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"rank": 1,
 		"colors": [CardEnums.CardColor.GREEN],
 		"invasion_icon": 1,
-		"is_base": true,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_085.gd",
-		"description": "<Base>\nWhen this is moved from your strategy zones to your discard pile, if you have 2 or more green battle cards in your zones you may return this from your discard pile to your hand.\n<Opponent's Turn> [Higher Dimensional Monster Ghidorah] in your zones 1-5 cannot be <Destroy> by your opponent's effects."
+		"description": "When this is moved from your strategy zones to your discard pile, if you have 2 or more green battle cards in your zones you may return this from your discard pile to your hand.\n<Opponent's Turn> [Higher Dimensional Monster Ghidorah] in your zones 1-5 cannot be <Destroy> by your opponent's effects."
 	},
 	{
 		"id": "EBP04-086",

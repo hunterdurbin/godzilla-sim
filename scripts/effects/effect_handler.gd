@@ -1194,12 +1194,23 @@ func trigger_counter_success(counterer_player_id: int, countered_player_id: int)
 	await _resolve_standby_entries(entries)
 
 
-func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> void:
-	## Trigger on ALL active cards when a strategy card is sent from strategy zone to discard.
-	## Collects all applicable effects, then resolves with rule action checks between each.
+func _collect_strategy_discarded_entries_inner(player_id: int, strategy_card: Dictionary) -> Array:
 	var entries: Array = []
 	var player := game_state.players[player_id]
 	var discarded_id: String = strategy_card.get("id", "")
+
+	# Self-trigger: the card being discarded reacts to its own discard.
+	# It's already in the discard pile so skip_active_check bypasses the
+	# "card still in play" filter on standby resolution.
+	if has_trigger(strategy_card, "on_strategy_discarded"):
+		var ds := get_effect(strategy_card)
+		var dctx := _build_context(player_id, strategy_card)
+		entries.append({
+			"player_id": player_id,
+			"card_data": strategy_card,
+			"callback": ds.on_strategy_discarded.bind(dctx, strategy_card),
+			"skip_active_check": true,
+		})
 
 	# Monster card
 	if has_trigger(player.current_monster, "on_strategy_discarded"):
@@ -1215,34 +1226,7 @@ func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> vo
 			var ctx := _build_context(player_id, zone_card)
 			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_strategy_discarded.bind(ctx, strategy_card)})
 
-	# Strategy cards (skip the card being discarded)
-	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty() and sz_card.get("id", "") != discarded_id and has_trigger(sz_card, "on_strategy_discarded"):
-			var se := get_effect(sz_card)
-			var ctx := _build_context(player_id, sz_card)
-			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_strategy_discarded.bind(ctx, strategy_card)})
-
-	await _resolve_standby_entries(entries)
-
-
-func collect_strategy_discarded_entries(player_id: int, strategy_card: Dictionary) -> Array:
-	## Collect on_strategy_discarded entries for deferred resolution (e.g. during invasion).
-	var entries: Array = []
-	var player := game_state.players[player_id]
-	var discarded_id: String = strategy_card.get("id", "")
-
-	if has_trigger(player.current_monster, "on_strategy_discarded"):
-		var me := get_effect(player.current_monster)
-		var ctx := _build_context(player_id, player.current_monster)
-		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_strategy_discarded.bind(ctx, strategy_card)})
-
-	for i in range(8):
-		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty() and has_trigger(zone_card, "on_strategy_discarded"):
-			var ze := get_effect(zone_card)
-			var ctx := _build_context(player_id, zone_card)
-			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_strategy_discarded.bind(ctx, strategy_card)})
-
+	# Strategy cards (skip the just-discarded card; it's already handled by self-trigger)
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty() and sz_card.get("id", "") != discarded_id and has_trigger(sz_card, "on_strategy_discarded"):
 			var se := get_effect(sz_card)
@@ -1250,6 +1234,18 @@ func collect_strategy_discarded_entries(player_id: int, strategy_card: Dictionar
 			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_strategy_discarded.bind(ctx, strategy_card)})
 
 	return entries
+
+
+func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> void:
+	## Trigger on the discarded card itself + ALL active cards when a strategy
+	## is sent from strategy zone to discard. Collects all applicable effects,
+	## then resolves with rule action checks between each.
+	await _resolve_standby_entries(_collect_strategy_discarded_entries_inner(player_id, strategy_card))
+
+
+func collect_strategy_discarded_entries(player_id: int, strategy_card: Dictionary) -> Array:
+	## Collect on_strategy_discarded entries for deferred resolution (e.g. during invasion).
+	return _collect_strategy_discarded_entries_inner(player_id, strategy_card)
 
 
 func _passes_invasion_observed_filter(card_data: Dictionary, player_id: int) -> bool:
@@ -3274,6 +3270,7 @@ func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
 	## Move a card from a player's discard pile to their hand and fire
 	## on_card_returned_from_discard triggers. Safe to call when the card has already
 	## been popped from discard (e.g. by search_discard) — the erase becomes a no-op.
+	## Logs the return attributed to whichever effect is currently active.
 	var player := game_state.players[player_id]
 	var was_in_discard: bool = card in player.discard_pile
 	if was_in_discard:
@@ -3281,4 +3278,6 @@ func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
 		player.discard_changed.emit()
 	player.hand.append(card)
 	player.hand_changed.emit()
+	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	log_message.emit(GameLog.effect_returned_card_to_hand(player_id, source_id, card.get("id", "")))
 	await trigger_card_returned_from_discard(player_id, card)
