@@ -488,7 +488,7 @@ STR_DB_SET_AS_DEFAULT,Set as default,デフォルトに設定
 STR_DB_DECK,DECK,デッキ
 STR_DB_TAB_MAIN,Main,メイン
 STR_DB_CARD_POOL,CARD POOL,カードプール
-STR_DB_SEARCH_PLACEHOLDER,Search cards...,カードを検索...
+"STR_DB_SEARCH_PLACEHOLDER","Search... e.g. godzilla, cp>1000, r=3","検索... 例: ゴジラ, cp>1000, r=3"
 STR_DB_FILTER_ALL,All,全て
 STR_DB_INVASION_STEP1,Step 1,ステップ1
 STR_DB_INVASION_STEP2,Step 2,ステップ2

@@ -53,6 +53,7 @@ var _all_pool_cards: Array[Dictionary] = []
 var _filtered_pool_cards: Array[Dictionary] = []
 
 var _search_text: String = ""
+var _search_criteria: Array = []  # Parsed criteria from _search_text; each is a Dict
 var _type_filter: int = -1  # -1 = all
 var _color_filters: Array[int] = []
 var _invasion_filter: int = -1  # -1 = all, 1 = step 1, 2 = step 2
@@ -557,25 +558,134 @@ func _card_matches_filters(card: Dictionary) -> bool:
 		if card.get("invasion_icon", 0) != _invasion_filter:
 			return false
 
-	# Text search
-	if not _search_text.is_empty():
-		var name_str: String = card.get("name", "").to_lower()
-		var id_str: String = card.get("id", "").to_lower()
-		var desc_str: String = card.get("description", "").to_lower()
-		var trait_text := ""
-		for t in card.get("traits", []):
-			trait_text += CardEnums.trait_to_string(t).to_lower() + " "
-		var common_match := false
-		for cn in card.get("common_names", []):
-			if cn.to_lower().contains(_search_text):
-				common_match = true
-				break
-		if not (name_str.contains(_search_text) or id_str.contains(_search_text)
-				or desc_str.contains(_search_text) or trait_text.contains(_search_text)
-				or common_match):
+	# Text search — comma-separated criteria (AND); each is either a numeric
+	# comparison (e.g. cp>1000, r=3, >1000) or a fuzzy text match.
+	for criterion in _search_criteria:
+		if not _card_matches_search_criterion(card, criterion):
 			return false
 
 	return true
+
+
+# --- Search parsing & matching ---
+
+const _SEARCH_FIELD_ALIASES := {
+	"c": "cp", "cp": "cp", "counter": "cp", "power": "cp", "counterpower": "cp",
+	"t": "threat", "threat": "threat", "level": "threat", "threatlevel": "threat",
+	"r": "rank", "rank": "rank",
+}
+
+const _SEARCH_NUMERIC_FIELDS := ["cp", "threat", "rank"]
+
+
+static func _parse_search_criteria(raw: String) -> Array:
+	## Split on commas; parse each as either a numeric compare or fuzzy text.
+	var criteria: Array = []
+	for chunk in raw.split(","):
+		var token: String = chunk.strip_edges().to_lower()
+		if token.is_empty():
+			continue
+		var compare := _try_parse_compare(token)
+		if not compare.is_empty():
+			criteria.append(compare)
+		else:
+			criteria.append({"type": "fuzzy", "needle": token})
+	return criteria
+
+
+static func _try_parse_compare(token: String) -> Dictionary:
+	## Match `[field][op][int]`. op ∈ {>=, <=, !=, ==, =, >, <}. Field is
+	## optional; if omitted, the comparison is checked against any numeric field
+	## (cp, threat, rank). Returns {} if the token isn't a valid compare.
+	var ops := [">=", "<=", "!=", "==", "=", ">", "<"]
+	var op_str := ""
+	var op_pos := -1
+	for op in ops:
+		var p := token.find(op)
+		if p >= 0:
+			op_str = op
+			op_pos = p
+			break
+	if op_pos < 0:
+		return {}
+	var lhs := token.substr(0, op_pos).strip_edges().replace(" ", "").replace("_", "")
+	var rhs := token.substr(op_pos + op_str.length()).strip_edges()
+	if not rhs.is_valid_int():
+		return {}
+	var field := "any"
+	if not lhs.is_empty():
+		if not _SEARCH_FIELD_ALIASES.has(lhs):
+			return {}
+		field = _SEARCH_FIELD_ALIASES[lhs]
+	# Normalize "==" → "=" for downstream.
+	if op_str == "==":
+		op_str = "="
+	return {"type": "compare", "field": field, "op": op_str, "value": rhs.to_int()}
+
+
+func _card_matches_search_criterion(card: Dictionary, criterion: Dictionary) -> bool:
+	match criterion.get("type", ""):
+		"compare":
+			var field: String = criterion.get("field", "any")
+			var op: String = criterion.get("op", "=")
+			var value: int = criterion.get("value", 0)
+			if field == "any":
+				for f in _SEARCH_NUMERIC_FIELDS:
+					if not _card_has_field(card, f):
+						continue
+					if _compare_int(_card_field(card, f), op, value):
+						return true
+				return false
+			if not _card_has_field(card, field):
+				return false
+			return _compare_int(_card_field(card, field), op, value)
+		"fuzzy":
+			return _card_matches_fuzzy(card, criterion.get("needle", ""))
+	return false
+
+
+static func _card_has_field(card: Dictionary, field: String) -> bool:
+	match field:
+		"cp": return card.has("counter_power")
+		"threat": return card.has("threat_level")
+		"rank": return card.has("rank")
+	return false
+
+
+static func _card_field(card: Dictionary, field: String) -> int:
+	match field:
+		"cp": return card.get("counter_power", 0)
+		"threat": return card.get("threat_level", 0)
+		"rank": return card.get("rank", 0)
+	return 0
+
+
+static func _compare_int(lhs: int, op: String, rhs: int) -> bool:
+	match op:
+		">": return lhs > rhs
+		"<": return lhs < rhs
+		">=": return lhs >= rhs
+		"<=": return lhs <= rhs
+		"=": return lhs == rhs
+		"!=": return lhs != rhs
+	return false
+
+
+func _card_matches_fuzzy(card: Dictionary, needle: String) -> bool:
+	## Substring match across name, id, description, traits, and common names.
+	if card.get("name", "").to_lower().contains(needle):
+		return true
+	if card.get("id", "").to_lower().contains(needle):
+		return true
+	if card.get("description", "").to_lower().contains(needle):
+		return true
+	for t in card.get("traits", []):
+		if CardEnums.trait_to_string(t).to_lower().contains(needle):
+			return true
+	for cn in card.get("common_names", []):
+		if String(cn).to_lower().contains(needle):
+			return true
+	return false
 
 
 func _sort_pool() -> void:
@@ -1192,6 +1302,7 @@ func _on_main_tab_pressed() -> void:
 
 func _on_search_changed(new_text: String) -> void:
 	_search_text = new_text.strip_edges().to_lower()
+	_search_criteria = _parse_search_criteria(_search_text)
 	_search_timer.start()
 
 
