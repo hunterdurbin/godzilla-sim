@@ -3896,7 +3896,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.BLUE],
-		"invasion_icon": 1,
+		"invasion_icon": 2,
 		"is_base": true,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_082.gd",
 		"description": "<Base>\n<Your Turn> All non-blue battle cards in zones adjacent to your monster card gain +3000 counter power."
