@@ -7,7 +7,7 @@ extends CardEffect
 ## 22nd card your opponent discards their entire hand. On the 30th card you win
 ## the game.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: Self-anti-discard rule text — NOT the <Base> keyword (12.9).
