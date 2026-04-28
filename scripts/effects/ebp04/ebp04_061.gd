@@ -3,7 +3,7 @@ extends CardEffect
 ## <Enter> If you have 4 or more other green battle cards in your zones, you may
 ## discard 1 green card from your deck and then shuffle your deck.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

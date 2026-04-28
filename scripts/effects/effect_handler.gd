@@ -785,6 +785,26 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 		await resolve_deferred_entries(deferred_entries)
 
 
+func move_monster_as_countered(player_id: int) -> void:
+	## Move a player's monster as though it were countered (rule 5.15.1.1):
+	## a single-step teleport to the counter-retreat zone (8→3, 7→4, 6→5).
+	## Does NOT crush intermediate zones and does NOT rank up — distinct from
+	## retreat_monster_to_zone (which crushes step-by-step) and force_counter
+	## (which also forces a rank-up). Used for "moves as though it were
+	## countered" rule wording — e.g. EBP01-077 (Oxygen Destroyer) and the
+	## counter-immunity branch in resolve_counter.
+	if not action_handler:
+		return
+	var player := game_state.players[player_id]
+	var retreat_zone: int = ActionHandler.get_counter_retreat_zone(player.monster_zone)
+	if retreat_zone == player.monster_zone:
+		return
+	var old_zone: int = player.monster_zone
+	player.monster_zone = retreat_zone
+	action_handler.monster_advanced.emit(player_id, old_zone, player.monster_zone)
+	player.monster_changed.emit()
+
+
 func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
 	## Collect monster advance entries for deferred resolution after movement completes.
 	var entries: Array = []

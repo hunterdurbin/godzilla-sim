@@ -3938,7 +3938,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.GREEN],
-		"invasion_icon": 1,
+		"invasion_icon": 2,
 		"is_base": true,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_086.gd",
 		"description": "<Base>\n<Your Turn> At the beginning of the counter phase, for each 5 green battle cards in your discard pile, play 1 [Valkyrie] battle card from your discard pile."

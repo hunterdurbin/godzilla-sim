@@ -4,7 +4,7 @@ extends CardEffect
 ## increase your monster card's <Rage> for each of your opponent's battle cards
 ## in the same column as your monster card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
