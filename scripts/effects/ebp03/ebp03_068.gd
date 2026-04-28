@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"can_monster_invade": {"own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["blocks_invade", "advances_self"]
 
@@ -29,11 +34,8 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS, CardEnums.EffectCategory.ACTIVATED]
 
 
-func prevents_own_invasion(ctx: EffectContext) -> bool:
-	# Only on your turn
-	if ctx.is_opponent_turn():
-		return false
-	return true
+func can_monster_invade(_ctx: EffectContext) -> bool:
+	return false
 
 
 func on_enter(ctx: EffectContext) -> void:

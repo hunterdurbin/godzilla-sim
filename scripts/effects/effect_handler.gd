@@ -2503,30 +2503,60 @@ func can_play_as_monster(player_id: int, card: Dictionary) -> bool:
 	return effect.can_play_as_monster(_build_context(player_id, card))
 
 
+func _passes_own_turn_filter(card_data: Dictionary, method_name: String, watcher_player_id: int) -> bool:
+	## Generic own-turn filter check for query-style virtuals
+	## (can_monster_advance / can_monster_invade). Empty/missing filter = pass.
+	var filter: Dictionary = get_trigger_filter(card_data, method_name)
+	if filter.is_empty():
+		return true
+	if filter.has("own_turn"):
+		var is_own_turn: bool = (game_state.current_player_id == watcher_player_id)
+		if filter.own_turn != is_own_turn:
+			return false
+	return true
+
+
 func is_monster_advance_blocked(player_id: int) -> bool:
-	## Check if the player's current monster cannot advance (e.g. Biollante Rose Form).
+	## Check if the player's monster cannot advance. Queries the monster card
+	## itself plus all active strategy cards (any can override
+	## `can_monster_advance` to return false). TRIGGER_FILTERS supports
+	## `own_turn` for turn-gated overrides.
 	var player := game_state.players[player_id]
-	var effect := get_effect(player.current_monster)
-	if effect:
-		return not effect.can_monster_advance(_build_context(player_id, player.current_monster))
+	if not player.current_monster.is_empty() \
+			and _passes_own_turn_filter(player.current_monster, "can_monster_advance", player_id):
+		var effect := get_effect(player.current_monster)
+		if effect and not effect.can_monster_advance(_build_context(player_id, player.current_monster)):
+			return true
+	for sz_card in player.strategy_zones:
+		if sz_card.is_empty():
+			continue
+		if not _passes_own_turn_filter(sz_card, "can_monster_advance", player_id):
+			continue
+		var se := get_effect(sz_card)
+		if se and not se.can_monster_advance(_build_context(player_id, sz_card)):
+			return true
 	return false
 
 
 func is_own_invasion_blocked(player_id: int) -> bool:
-	## Check if the player's current monster or strategy cards prevent invasion.
+	## Check if the player's monster cannot invade. Queries the monster card
+	## itself plus all active strategy cards (any can override
+	## `can_monster_invade` to return false). TRIGGER_FILTERS supports
+	## `own_turn` for turn-gated overrides.
 	var player := game_state.players[player_id]
-	var effect := get_effect(player.current_monster)
-	if effect:
-		if not effect.can_monster_invade(_build_context(player_id, player.current_monster)):
+	if not player.current_monster.is_empty() \
+			and _passes_own_turn_filter(player.current_monster, "can_monster_invade", player_id):
+		var effect := get_effect(player.current_monster)
+		if effect and not effect.can_monster_invade(_build_context(player_id, player.current_monster)):
 			return true
-
-	# Check strategy cards for prevents_own_invasion
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty():
-			var se := get_effect(sz_card)
-			if se and se.prevents_own_invasion(_build_context(player_id, sz_card)):
-				return true
-
+		if sz_card.is_empty():
+			continue
+		if not _passes_own_turn_filter(sz_card, "can_monster_invade", player_id):
+			continue
+		var se := get_effect(sz_card)
+		if se and not se.can_monster_invade(_build_context(player_id, sz_card)):
+			return true
 	return false
 
 

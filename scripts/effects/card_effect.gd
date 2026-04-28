@@ -34,6 +34,10 @@ extends RefCounted
 ##                card entered play. true = only fire when played from hand
 ##                (matches "if played from hand" rule text); false = only fire
 ##                when entered via an effect (search / evolution / discard / etc.).
+##   "own_turn" on can_monster_advance / can_monster_invade gates whether the
+##                override is consulted by turn ownership; both virtuals are
+##                queried across the monster card AND every active strategy
+##                card (a strategy returning false blocks the action).
 ##   "played_by_opponent": bool — only meaningful for on_battle_card_played; gates by
 ##                who played the card (true = the watcher's opponent played it).
 ##                Use this for "your opponent plays..." rule wording instead of
@@ -376,11 +380,6 @@ func can_play_from_discard_on_monster_played(_ctx: EffectContext) -> bool:
 func is_discard_play_optional() -> bool:
 	## Return true if playing from discard on monster played is a "may" ability.
 	## When true, the player is prompted and can decline.
-	return false
-
-
-func prevents_own_invasion(_ctx: EffectContext) -> bool:
-	## Return true if this card prevents its own controller from invading.
 	return false
 
 
