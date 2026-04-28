@@ -15,7 +15,7 @@ extends CardEffect
 
 
 const TRIGGER_FILTERS = {
-	"on_battle_card_played": {"own_turn": false, "played_from_deck": true},
+	"on_battle_card_played": {"own_turn": false, "played_by_opponent": true, "played_from_deck": true},
 }
 
 

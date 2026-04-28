@@ -30,6 +30,10 @@ extends RefCounted
 ##                on_hand_card_discarded; the discarded card must match the named type
 ##   "played_from_deck": bool — only meaningful for on_battle_card_played; gates by
 ##                whether the played card came from the deck (true) or not (false)
+##   "played_by_opponent": bool — only meaningful for on_battle_card_played; gates by
+##                who played the card (true = the watcher's opponent played it).
+##                Use this for "your opponent plays..." rule wording instead of
+##                own_turn, since opponents can play cards on your turn via effects.
 ##   "caused_by_opponent": bool — only meaningful for on_discard_from_hand; gates by
 ##                which player's active effect caused the discard. true = opponent's
 ##                effect (e.g. EBP04-046 Rodan); false = owner's own effect.
