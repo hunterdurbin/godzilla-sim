@@ -3,7 +3,7 @@ extends CardEffect
 ## Reveal the top 7 cards of your deck, play all <Final Wars> battle cards among
 ## them and discard the rest.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -30,8 +30,18 @@ func on_enter(ctx: EffectContext) -> void:
 
 	ctx.effect_handler.discard_cards(ctx.owner.player_id, other_cards)
 
-	# Play each Final Wars battle card into an available zone
-	for card in final_wars_cards:
+	# Player picks the order to play each Final Wars card. Each pick also
+	# chooses a zone; if no zone is selectable the card is discarded instead.
+	while not final_wars_cards.is_empty():
+		var card: Dictionary
+		card = await ctx.effect_handler.select_from_cards(
+			ctx.owner.player_id, final_wars_cards, final_wars_cards,
+			tr("STR_EFF_EBP04_079_PICK"))
+		if card.is_empty():
+			ctx.effect_handler.discard_cards(ctx.owner.player_id, final_wars_cards)
+			return
+		final_wars_cards.erase(card)
+
 		var empty_zones := ctx.owner.get_empty_zone_indices()
 		if empty_zones.is_empty():
 			ctx.effect_handler.discard_cards(ctx.owner.player_id, [card])
