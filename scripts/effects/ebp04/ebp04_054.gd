@@ -5,7 +5,7 @@ extends CardEffect
 ## For each strategy card your opponent has in play, this card loses 5000
 ## counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

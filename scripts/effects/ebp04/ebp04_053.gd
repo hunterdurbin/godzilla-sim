@@ -2,7 +2,7 @@ extends CardEffect
 ## EBP04-053: MOGERA - Battle Rank 7 (Blue)
 ## <Enter> You may choose to swap zones of any 2 battle cards in your zones.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

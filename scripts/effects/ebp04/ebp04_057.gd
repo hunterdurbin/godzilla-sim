@@ -3,7 +3,7 @@ extends CardEffect
 ## If there is a non-green battle card in your zones, this gains +3000 counter
 ## power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

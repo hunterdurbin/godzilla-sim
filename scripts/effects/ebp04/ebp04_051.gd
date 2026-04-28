@@ -3,7 +3,7 @@ extends CardEffect
 ## <Enter> If this is in the same column as your opponent's monster card,
 ## your opponent's 30,000 or less threat monster card retreats back 1 zone.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

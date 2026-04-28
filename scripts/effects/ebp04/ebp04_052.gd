@@ -5,7 +5,7 @@ extends CardEffect
 ## Any time you discard cards from your hand by your opponent's effects, and
 ## this is in area 8, increase your <Rage> by 2.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -35,7 +35,7 @@ func on_discard_from_hand(ctx: EffectContext) -> void:
 func on_hand_card_discarded(ctx: EffectContext, _discarded_card: Dictionary) -> void:
 	# Rage +2 when ANY hand card discarded by opponent + this is in area 8
 	var my_zone: int = find_zone_of_card(ctx)
-	if my_zone != 7:  # Must be zone 8 (index 7)
+	if my_zone != 7: # Must be zone 8 (index 7)
 		return
 
 	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2, ctx.card_data.get("id", ""))

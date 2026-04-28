@@ -1501,10 +1501,15 @@ func search_discard(player_id: int, filter: Callable, prompt: String, allow_skip
 		if filter.call(card):
 			matching.append(card)
 
+	# Force skip when nothing is selectable so the player gets feedback that
+	# the search ran but found no valid cards (instead of a soft-locked UI
+	# with nothing to click).
+	var effective_skip: bool = allow_skip or matching.is_empty()
+
 	var selected: Dictionary = {}
 	if deck_search_requested.get_connections().size() > 0:
 		_highlight_active_effect()
-		deck_search_requested.emit(player_id, matching, player.discard_pile.duplicate(), prompt, allow_skip)
+		deck_search_requested.emit(player_id, matching, player.discard_pile.duplicate(), prompt, effective_skip)
 		await _deck_search_resolved
 		_unhighlight_active_effect()
 		selected = _deck_search_result

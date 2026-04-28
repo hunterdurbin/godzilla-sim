@@ -3,7 +3,7 @@ extends CardEffect
 ## <Awakening 4> If this card is in an area adjacent to your monster card,
 ## this card gains +3000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

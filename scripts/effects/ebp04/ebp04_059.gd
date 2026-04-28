@@ -4,7 +4,7 @@ extends CardEffect
 ## <Revenge> If you have 5 or more green battle cards in your discard pile,
 ## you may return up to 1 <Rodan> battle card from your discard to your hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

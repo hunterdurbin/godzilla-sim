@@ -3,7 +3,7 @@ extends CardEffect
 ## <Enter> You may <Destroy> 4 other green battle cards in your zones. If you
 ## don't do so, <Destroy> this.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

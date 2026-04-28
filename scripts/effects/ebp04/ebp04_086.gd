@@ -5,7 +5,7 @@ extends CardEffect
 ## cards in your discard pile, play 1 [Valkyrie] battle card from your discard
 ## pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -3,7 +3,7 @@ extends CardEffect
 ## If this card is in the same column as your opponent's monster card, and
 ## the opponent has 0 <Rage>, your opponent cannot invade.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
