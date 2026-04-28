@@ -598,7 +598,6 @@ STR_EFF_DESTROY_OPP_RANK_LEFT_COL,Choose a battle card to destroy from the leftm
 STR_EFF_DESTROY_OPP_RANK_RIGHT_COL,Choose a battle card to destroy from the rightmost column:,最も右の縦列から<破壊>する交戦カードを選ぶ:
 STR_EFF_DESTROY_OPP_CP_LEQ_FMT,Destroy an opponent's battle card with 6000 or less CP in zones 1-5 (%d left):,エリア1〜5にいる撃退力6000以下の相手の交戦カードを<破壊> (残り%d):
 STR_EFF_DESTROY_OPP_REMAINING_RANKS_FMT,Destroy an opponent's battle card (total remaining ranks must reach %d or less):,相手の交戦カードを<破壊>する (残り等級合計が%d以下になるまで):
-STR_EFF_DESTROY_OPP_COLOR_ZONES_1_5_FMT,Destroy an opponent's %s battle card in zones 1-5 (or skip):,エリア1〜5にいる相手の%s交戦カードを<破壊> (またはスキップ):
 STR_EFF_DESTROY_OWN_RANK_HIGHER_FMT,Destroy 1 of your rank %d or higher battle cards:,あなたの等級%d以上の交戦カードを1枚<破壊>する:
 STR_EFF_DESTROY_OWN_RANK_LOWER_FMT,Choose a rank %d or lower battle card to destroy:,等級%d以下の交戦カードを選んで<破壊>:
 STR_EFF_DESTROY_OPP_RANK_LOWER_LIST_FMT,Destroy %d opponent rank %d or lower battle card:,相手の等級%d以下の交戦カードを%d枚<破壊>する:
@@ -756,6 +755,7 @@ STR_EFF_EBP04_073_PROMPT,Gaira: Return 1 card from your discard to hand (or skip
 STR_EFF_EBP04_043_PROMPT,Choose an Invade 2 strategy card to place under this:,この下に置く<足2>の戦略カードを選ぶ:
 STR_EFF_EBP04_043_CONFIRM,Place an Invade 2 strategy card under this card?,<足2>の戦略カードをこのカードの下に置きますか?
 STR_EFF_EBP04_086_PROMPT,Play a Valkyrie from your discard pile:,捨て札から「ヴァルキリー」を出す:
+STR_EFF_EBP04_087_PROMPT,Choose a battle card to destroy (one per remaining color; skip when done):,<破壊>する交戦カードを選ぶ (残りの色ごとに1枚; 終わるならスキップ):
 STR_EFF_EBP04_088_PROMPT,Return a non-green battle card from your discard to hand (or skip):,捨て札から緑以外の交戦カードを手札に戻す (またはスキップ):
 STR_EFF_ESD02_003_DISCARD_PROMPT,Search discard pile for a rank 4 or lower battle card with Evolution to play:,捨て札から<進化>を持つ等級4以下の交戦カードを出す:
 STR_EFF_EBP02_062_PROMPT,Return a SpaceGodzilla monster card to your hand:,<スペースゴジラ>の怪獣カードを手札に戻す:

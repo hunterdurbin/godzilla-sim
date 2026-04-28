@@ -6,7 +6,7 @@ extends CardEffect
 ## <Opponent's Turn> [Higher Dimensional Monster Ghidorah] in your zones 1-5
 ## cannot be <Destroy> by your opponent's effects.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
