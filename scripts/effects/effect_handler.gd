@@ -1643,18 +1643,22 @@ func resolve_hand_card_selection(hand_index: int) -> void:
 	_hand_card_selection_resolved.emit()
 
 
-func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: Array[Dictionary], prompt: String) -> Dictionary:
+func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: Array[Dictionary], prompt: String, allow_skip: bool = true) -> Dictionary:
 	## Present a set of revealed cards to the player and let them choose one.
 	## Uses the deck_search UI but does NOT modify the deck or shuffle.
-	## Returns the chosen card, or empty dict if no options or no UI connected.
+	## When `allow_skip` is false the player must pick a card unless `options`
+	## is empty (then returns {}). Returns the chosen card, or empty dict if
+	## no options or (allow_skip) the player skipped.
+	if options.is_empty():
+		return {}
 	if deck_search_requested.get_connections().size() > 0:
 		_highlight_active_effect()
-		deck_search_requested.emit(player_id, options, all_visible, prompt)
+		deck_search_requested.emit(player_id, options, all_visible, prompt, allow_skip)
 		await _deck_search_resolved
 		_unhighlight_active_effect()
 		return _deck_search_result
 	else:
-		return options[0] if not options.is_empty() else {}
+		return options[0]
 
 
 func select_choice(player_id: int, options: Array[String], prompt: String) -> int:
@@ -2264,6 +2268,19 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 		for zone_idx in monster_field_mods:
 			if zone_idx >= 0 and zone_idx < 8:
 				modifiers[zone_idx] += monster_field_mods[zone_idx]
+
+	# Strategy card field CP modifiers (e.g. EBP04-082 X-Aliens' Mother Ship)
+	for sz_card in player.strategy_zones:
+		if sz_card.is_empty():
+			continue
+		var sz_effect := get_effect(sz_card)
+		if sz_effect == null:
+			continue
+		var sz_ctx := _build_context(player_id, sz_card)
+		var sz_field_mods: Dictionary = sz_effect.get_field_cp_modifiers(sz_ctx)
+		for zone_idx in sz_field_mods:
+			if zone_idx >= 0 and zone_idx < 8:
+				modifiers[zone_idx] += sz_field_mods[zone_idx]
 
 	# Opponent's monster CP modifiers that affect this player's zones (e.g. EBP02-029 CP doubling)
 	var opp_monster_effect := get_effect(game_state.players[opponent_id].current_monster)

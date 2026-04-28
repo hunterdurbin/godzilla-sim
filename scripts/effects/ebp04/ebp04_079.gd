@@ -30,14 +30,16 @@ func on_enter(ctx: EffectContext) -> void:
 
 	ctx.effect_handler.discard_cards(ctx.owner.player_id, other_cards)
 
-	# Player picks the order to play each Final Wars card. Each pick also
-	# chooses a zone; if no zone is selectable the card is discarded instead.
+	# Player picks the order to play each Final Wars card. The pick is
+	# mandatory (rule says "play all"); zone selection per card is also
+	# mandatory unless no empty zone is available, in which case the card
+	# is discarded as a fallback.
 	while not final_wars_cards.is_empty():
-		var card: Dictionary
-		card = await ctx.effect_handler.select_from_cards(
+		var card: Dictionary = await ctx.effect_handler.select_from_cards(
 			ctx.owner.player_id, final_wars_cards, final_wars_cards,
-			tr("STR_EFF_EBP04_079_PICK"))
+			tr("STR_EFF_EBP04_079_PICK"), false)
 		if card.is_empty():
+			# No-UI fallback or empty options — discard the rest defensively.
 			ctx.effect_handler.discard_cards(ctx.owner.player_id, final_wars_cards)
 			return
 		final_wars_cards.erase(card)
