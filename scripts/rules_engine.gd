@@ -138,9 +138,10 @@ func get_discardable_cards_for_invade(player: PlayerState, opponent: PlayerState
 		return indices
 	if effect_handler and effect_handler.is_invasion_blocked(opponent.player_id):
 		return indices
-	# Can't invade if already at zone 8 and blocked by opponent's battle card
-	if player.monster_zone >= 8 and opponent.zone_has_battle_card(7):
-		return indices
+	# Note: a fully blocked invasion (monster at 8 with opponent zone-8 battle card)
+	# is still permitted as a discard-only invade for hand cycling. _invade skips
+	# `<when invading>` and other movement-triggered effects when no zones are
+	# crossed, so this is just a free discard with the invasion cost paid.
 	for i in range(player.hand.size()):
 		if player.hand[i].get("invasion_icon", 0) > 0:
 			indices.append(i)

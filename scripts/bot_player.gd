@@ -1394,6 +1394,11 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 	if invade_cards.is_empty():
 		return []
 
+	# Skip the discard-only cycle invade — bot shouldn't burn its invade just to
+	# cycle a card when no zones can be crossed.
+	if player.monster_zone >= 8 and opponent.zone_has_battle_card(7):
+		return []
+
 	var mz := player.monster_zone
 	var exclude := _get_combo_invasion_excludes()
 

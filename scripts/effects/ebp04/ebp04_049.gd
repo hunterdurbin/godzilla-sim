@@ -5,7 +5,7 @@ extends CardEffect
 ## If it is a non-blue card decrease your opponent's <Rage> by -2. If it's a
 ## blue card <Destroy> 1 of your rank 8 or higher battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -28,12 +28,10 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if not has_rank8_plus:
 		return
 
-	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 1)
-	if revealed.is_empty():
+	var top_card := await ctx.mill_one()
+	if top_card.is_empty():
 		return
-	ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 
-	var top_card: Dictionary = revealed[0]
 	var is_blue: bool = CardUtils.has_color(top_card, CardEnums.CardColor.BLUE)
 
 	if not is_blue:

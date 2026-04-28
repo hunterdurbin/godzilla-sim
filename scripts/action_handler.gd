@@ -693,8 +693,10 @@ func _invade(hand_index: int, state: GameState) -> void:
 		return
 
 	# Destroy <Base> strategies after movement completes but before standby (12.9.2).
+	# Only fires when the monster actually advanced into zones 6-8 — a discard-only
+	# invade (no movement) doesn't count as invading to a new zone.
 	# The physical destruction happens now; strategy_discarded triggers join deferred_entries.
-	if effect_handler and player.monster_zone >= 6:
+	if effect_handler and player.monster_zone > start_zone and player.monster_zone >= 6:
 		await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone, deferred_entries)
 
 	# Collect invasion observed entries once for the entire invasion
