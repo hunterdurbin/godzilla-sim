@@ -580,16 +580,25 @@ const _SEARCH_NUMERIC_FIELDS := ["cp", "threat", "rank"]
 
 static func _parse_search_criteria(raw: String) -> Array:
 	## Split on commas; parse each as either a numeric compare or fuzzy text.
+	## A leading `!` negates the criterion (exclude matching cards).
 	var criteria: Array = []
 	for chunk in raw.split(","):
 		var token: String = chunk.strip_edges().to_lower()
 		if token.is_empty():
 			continue
+		var negate: bool = token.begins_with("!")
+		if negate:
+			token = token.substr(1).strip_edges()
+			if token.is_empty():
+				continue
 		var compare := _try_parse_compare(token)
+		var entry: Dictionary
 		if not compare.is_empty():
-			criteria.append(compare)
+			entry = compare
 		else:
-			criteria.append({"type": "fuzzy", "needle": token})
+			entry = {"type": "fuzzy", "needle": token}
+		entry["negate"] = negate
+		criteria.append(entry)
 	return criteria
 
 
@@ -624,6 +633,13 @@ static func _try_parse_compare(token: String) -> Dictionary:
 
 
 func _card_matches_search_criterion(card: Dictionary, criterion: Dictionary) -> bool:
+	var matched: bool = _evaluate_criterion(card, criterion)
+	if criterion.get("negate", false):
+		return not matched
+	return matched
+
+
+func _evaluate_criterion(card: Dictionary, criterion: Dictionary) -> bool:
 	match criterion.get("type", ""):
 		"compare":
 			var field: String = criterion.get("field", "any")
