@@ -1975,6 +1975,32 @@ func can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	return _can_destroy_card(target, card_data)
 
 
+func _passes_can_be_destroyed_filter(card_data: Dictionary, watcher_player_id: int) -> bool:
+	## Evaluate TRIGGER_FILTERS["can_be_destroyed"]. When the filter doesn't
+	## pass, the card's can_be_destroyed override is skipped (defaulting to
+	## "can be destroyed").
+	## "caused_by_opponent": bool — true = override fires only when the
+	##   opponent's active effect is causing the destruction (e.g.
+	##   EBP01-075 "cannot be Destroyed by your opponent's effects").
+	## "own_turn": bool — gate by the card owner's turn ownership.
+	var filter: Dictionary = get_trigger_filter(card_data, "can_be_destroyed")
+	if filter.is_empty():
+		return true
+	if filter.has("caused_by_opponent"):
+		var by_effect: bool = _active_effect_player_id >= 0
+		var caused_by_opponent: bool = by_effect and _active_effect_player_id != watcher_player_id
+		var caused_by_self: bool = by_effect and _active_effect_player_id == watcher_player_id
+		if filter.caused_by_opponent and not caused_by_opponent:
+			return false
+		if not filter.caused_by_opponent and not caused_by_self:
+			return false
+	if filter.has("own_turn"):
+		var is_own_turn: bool = (game_state.current_player_id == watcher_player_id)
+		if filter.own_turn != is_own_turn:
+			return false
+	return true
+
+
 func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	## Check if a card can be destroyed (respects destroy prevention effects).
 	## Scans the owner's monster, battle zones, and strategy zones for any
@@ -1982,7 +2008,9 @@ func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	## `card_data` may be a battle card (zone_idx 0-7) or a strategy card
 	## (zone_idx -1 since strategies don't sit in numbered zones).
 	var effect := get_effect(card_data)
-	if effect and not effect.can_be_destroyed(_build_context(target.player_id, card_data)):
+	if effect \
+			and _passes_can_be_destroyed_filter(card_data, target.player_id) \
+			and not effect.can_be_destroyed(_build_context(target.player_id, card_data)):
 		return false
 
 	var card_id: String = card_data.get("id", "")
@@ -1992,24 +2020,56 @@ func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 			zone_idx = i
 			break
 
-	if not target.current_monster.is_empty():
+	if not target.current_monster.is_empty() \
+			and _passes_protects_filter(target.current_monster, target.player_id):
 		var m_effect := get_effect(target.current_monster)
 		if m_effect and m_effect.protects_card_from_destruction(
 				_build_context(target.player_id, target.current_monster), card_data, zone_idx):
 			return false
 	for i in range(8):
 		var zc := target.get_zone_top_card(i)
-		if not zc.is_empty():
-			var ze := get_effect(zc)
-			if ze and ze.protects_card_from_destruction(
-					_build_context(target.player_id, zc), card_data, zone_idx):
-				return false
+		if zc.is_empty():
+			continue
+		if not _passes_protects_filter(zc, target.player_id):
+			continue
+		var ze := get_effect(zc)
+		if ze and ze.protects_card_from_destruction(
+				_build_context(target.player_id, zc), card_data, zone_idx):
+			return false
 	for sz_card in target.strategy_zones:
-		if not sz_card.is_empty():
-			var sz_effect := get_effect(sz_card)
-			if sz_effect and sz_effect.protects_card_from_destruction(
-					_build_context(target.player_id, sz_card), card_data, zone_idx):
-				return false
+		if sz_card.is_empty():
+			continue
+		if not _passes_protects_filter(sz_card, target.player_id):
+			continue
+		var sz_effect := get_effect(sz_card)
+		if sz_effect and sz_effect.protects_card_from_destruction(
+				_build_context(target.player_id, sz_card), card_data, zone_idx):
+			return false
+	return true
+
+
+func _passes_protects_filter(card_data: Dictionary, watcher_player_id: int) -> bool:
+	## Evaluate TRIGGER_FILTERS["protects_card_from_destruction"] for protector
+	## cards. When the filter doesn't pass the override is skipped.
+	## Supported keys (same semantics as can_be_destroyed):
+	## "caused_by_opponent": bool — true = protect only when opponent's effect
+	##   caused the destruction (e.g. EBP04-048 Little Godzilla).
+	## "own_turn": bool — gate by the protector's turn ownership.
+	var filter: Dictionary = get_trigger_filter(card_data, "protects_card_from_destruction")
+	if filter.is_empty():
+		return true
+	if filter.has("caused_by_opponent"):
+		var by_effect: bool = _active_effect_player_id >= 0
+		var caused_by_opponent: bool = by_effect and _active_effect_player_id != watcher_player_id
+		var caused_by_self: bool = by_effect and _active_effect_player_id == watcher_player_id
+		if filter.caused_by_opponent and not caused_by_opponent:
+			return false
+		if not filter.caused_by_opponent and not caused_by_self:
+			return false
+	if filter.has("own_turn"):
+		var is_own_turn: bool = (game_state.current_player_id == watcher_player_id)
+		if filter.own_turn != is_own_turn:
+			return false
 	return true
 
 

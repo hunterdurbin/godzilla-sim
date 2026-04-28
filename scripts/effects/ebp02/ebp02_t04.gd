@@ -38,7 +38,8 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return card.get("name", "") == "Chibi Godzilla",
-		tr("STR_EFF_EBP02_T04_DISCARD_PROMPT"))
+		tr("STR_EFF_EBP02_T04_DISCARD_PROMPT"),
+		false)
 
 	if selected.is_empty():
 		return

@@ -14,6 +14,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"protects_card_from_destruction": {"caused_by_opponent": true},
+}
+
+
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 

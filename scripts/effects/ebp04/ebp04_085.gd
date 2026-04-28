@@ -14,6 +14,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"protects_card_from_destruction": {"own_turn": false, "caused_by_opponent": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["protects_cards"]
 
@@ -36,10 +41,9 @@ func on_strategy_discarded(ctx: EffectContext, strategy_card: Dictionary) -> voi
 	await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, strategy_card)
 
 
-func protects_card_from_destruction(ctx: EffectContext, card_data: Dictionary, zone_idx: int) -> bool:
-	# Opponent's Turn: protect Higher Dimensional Monster Ghidorah in zones 1-5
-	if ctx.is_own_turn():
-		return false
+func protects_card_from_destruction(_ctx: EffectContext, card_data: Dictionary, zone_idx: int) -> bool:
+	# Turn / cause-by-opponent gating handled by TRIGGER_FILTERS.
+	# Protect Higher Dimensional Monster Ghidorah in zones 1-5.
 	if zone_idx >= 5:
 		return false
 	return CardUtils.has_trait(card_data, CardEnums.CardTrait.HIGHER_DIMENSIONAL)

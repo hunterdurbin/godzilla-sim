@@ -45,10 +45,12 @@ extends RefCounted
 ##   "returned_by_opponent": bool — only meaningful for on_card_returned_from_discard;
 ##                gates by who returned the card from discard (true = watcher's
 ##                opponent returned it).
-##   "caused_by_opponent": bool — only meaningful for on_discard_from_hand and
-##                prevents_opponent_monster_move; gates by which player's active
-##                effect caused the action. true = opponent's effect (e.g. EBP04-046
-##                Rodan, EBP04-076 Dormancy); false = owner's own effect.
+##   "caused_by_opponent": bool — only meaningful for on_discard_from_hand,
+##                prevents_opponent_monster_move, can_be_destroyed, and
+##                protects_card_from_destruction; gates by which player's active
+##                effect caused the action. true = opponent's effect (e.g.
+##                EBP04-046 Rodan, EBP04-076 Dormancy, EBP01-075 Godzilla KOTM,
+##                EBP04-048 Little Godzilla); false = owner's own effect.
 ##                Rules-based actions (no active effect) match neither value.
 ##
 ## Empty per-method dict or missing entry = always fire (backward compatible).

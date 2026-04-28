@@ -15,6 +15,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"can_be_destroyed": {"caused_by_opponent": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["boosts_cp", "weakens_opponent"]
 

@@ -4078,7 +4078,9 @@ func _input(event: InputEvent) -> void:
 		elif card_pool_select_overlay.visible:
 			_on_card_pool_select_skip()
 		elif deck_search_overlay.visible:
-			_on_deck_search_skip()
+			# ESC dismisses only when skip is allowed; otherwise the prompt is mandatory.
+			if deck_search_skip.visible:
+				_on_deck_search_skip()
 		elif discard_view_overlay.visible:
 			_hide_discard_view()
 		elif monster_deck_view_overlay.visible:
