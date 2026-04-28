@@ -4,7 +4,7 @@ extends CardEffect
 ## colors among battle cards in your zones (white included).
 ## <Evolution 8> <Kaiser Ghidorah>
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

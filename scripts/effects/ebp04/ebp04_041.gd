@@ -4,7 +4,7 @@ extends CardEffect
 ## all <Enter> abilities of your monster card.
 ## <Awakening 6> This card gains +3000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -23,7 +23,7 @@ func get_bot_tags() -> Array[String]:
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var zone_idx := find_zone_of_card(ctx)
-	if zone_idx != 7:  # Must be zone 8 (index 7)
+	if zone_idx != 7: # Must be zone 8 (index 7)
 		return
 
 	await ctx.effect_handler.trigger_all_monster_enter_abilities(ctx.owner.player_id)

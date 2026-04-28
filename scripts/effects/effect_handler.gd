@@ -1885,22 +1885,39 @@ func can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 
 func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	## Check if a card can be destroyed (respects destroy prevention effects).
+	## Scans the owner's monster, battle zones, and strategy zones for any
+	## active card whose `protects_card_from_destruction` returns true.
+	## `card_data` may be a battle card (zone_idx 0-7) or a strategy card
+	## (zone_idx -1 since strategies don't sit in numbered zones).
 	var effect := get_effect(card_data)
 	if effect and not effect.can_be_destroyed(_build_context(target.player_id, card_data)):
 		return false
-	# Check if any strategy card protects this card
+
+	var card_id: String = card_data.get("id", "")
 	var zone_idx: int = -1
 	for i in range(8):
-		if target.get_zone_top_card(i).get("id") == card_data.get("id"):
+		if target.get_zone_top_card(i).get("id", "") == card_id:
 			zone_idx = i
 			break
-	if zone_idx >= 0:
-		for sz_card in target.strategy_zones:
-			if not sz_card.is_empty():
-				var sz_effect := get_effect(sz_card)
-				if sz_effect and sz_effect.protects_card_from_destruction(
-						_build_context(target.player_id, sz_card), card_data, zone_idx):
-					return false
+
+	if not target.current_monster.is_empty():
+		var m_effect := get_effect(target.current_monster)
+		if m_effect and m_effect.protects_card_from_destruction(
+				_build_context(target.player_id, target.current_monster), card_data, zone_idx):
+			return false
+	for i in range(8):
+		var zc := target.get_zone_top_card(i)
+		if not zc.is_empty():
+			var ze := get_effect(zc)
+			if ze and ze.protects_card_from_destruction(
+					_build_context(target.player_id, zc), card_data, zone_idx):
+				return false
+	for sz_card in target.strategy_zones:
+		if not sz_card.is_empty():
+			var sz_effect := get_effect(sz_card)
+			if sz_effect and sz_effect.protects_card_from_destruction(
+					_build_context(target.player_id, sz_card), card_data, zone_idx):
+				return false
 	return true
 
 
@@ -2509,15 +2526,21 @@ func get_strategy_discard_interceptor(player_id: int) -> int:
 	return -1
 
 
-func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entries: Variant = null) -> Dictionary:
+func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entries: Variant = null, bypass_protection: bool = false) -> Dictionary:
 	## Remove a strategy card from a strategy zone, applying replacement effects (10.2.1.3).
 	## If an interceptor is active, stacks the card under it instead of discarding.
 	## When deferred_entries is provided, strategy_discarded triggers are collected there
 	## instead of resolving immediately (used during invasion movement).
-	## Returns the removed card (empty dict if zone was already empty).
+	## When bypass_protection is true, skips the destruction-protection check —
+	## set this for rule-driven moves (start phase discard, invasion-base destruction)
+	## that aren't <Destroy> by an effect. Effect-driven destroys leave it false so
+	## protectors like EBP04-048 (Little Godzilla) take effect.
+	## Returns the removed card (empty dict if zone was already empty or protected).
 	var player := game_state.players[player_id]
 	var card: Dictionary = player.strategy_zones[zone_index]
 	if card.is_empty():
+		return {}
+	if not bypass_protection and not _can_destroy_card(player, card):
 		return {}
 	player.strategy_zones[zone_index] = {}
 
@@ -2630,7 +2653,8 @@ func destroy_base_strategies_on_invasion(to_zone: int, deferred_entries: Variant
 		var player := game_state.players[pid]
 		for i in range(player.strategy_zones.size() - 1, -1, -1):
 			if not player.strategy_zones[i].is_empty() and is_base_strategy(player.strategy_zones[i]):
-				await discard_strategy_from_zone(pid, i, deferred_entries)
+				# Rule-driven invasion destruction (12.9.2) — bypass protection.
+				await discard_strategy_from_zone(pid, i, deferred_entries, true)
 
 
 func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> int:

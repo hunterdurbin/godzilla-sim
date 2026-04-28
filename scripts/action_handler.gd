@@ -68,7 +68,8 @@ func execute_start_phase_discard(state: GameState) -> void:
 		var cleared: Array = []
 		for i in indices_to_discard:
 			if effect_handler:
-				var card := await effect_handler.discard_strategy_from_zone(player.player_id, i)
+				# Start phase discard (7.2.3) is a rule action, not <Destroy> — bypass protection.
+				var card := await effect_handler.discard_strategy_from_zone(player.player_id, i, null, true)
 				if not card.is_empty():
 					cleared.append(card)
 			else:

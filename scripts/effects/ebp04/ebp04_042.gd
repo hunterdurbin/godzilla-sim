@@ -3,7 +3,7 @@ extends CardEffect
 ## <Enter> If you have 3 or more rank 1 strategy cards in your discard pile,
 ## decrease your opponent's <Rage> by 1.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

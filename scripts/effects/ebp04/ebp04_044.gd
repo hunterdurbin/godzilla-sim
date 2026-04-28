@@ -3,7 +3,7 @@ extends CardEffect
 ## <Awakening 4> For each non-red battle card in your zones, you can play this
 ## from your hand at -2 rank.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

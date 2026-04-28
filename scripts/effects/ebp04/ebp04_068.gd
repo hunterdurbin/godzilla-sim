@@ -4,7 +4,7 @@ extends CardEffect
 ## strategy cards in your hand by -1 for each color of battle card in your
 ## discard pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
