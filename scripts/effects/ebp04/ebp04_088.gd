@@ -2,7 +2,7 @@ extends CardEffect
 ## EBP04-088: Kidnapped Monsters - Strategy Rank 8 (Green)
 ## Return up to 2 non-green battle cards from your discard pile to your hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
