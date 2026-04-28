@@ -3,7 +3,7 @@ extends CardEffect
 ## <Awakening 4> If this is in the same column as your opponent's red monster
 ## card, this gains +5000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
