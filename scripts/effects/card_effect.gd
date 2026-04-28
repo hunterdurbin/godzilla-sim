@@ -184,6 +184,15 @@ func protects_card_from_destruction(_ctx: EffectContext, _card_data: Dictionary,
 
 func on_destroy(_ctx: EffectContext, _zone_idx: int) -> void:
 	## Called when this card is destroyed and removed from a zone (before revenge/banish).
+	## Reserved for <Destroy> rule actions only — does NOT fire for overload (rule 11.5).
+	pass
+
+
+func on_leave_play(_ctx: EffectContext, _zone_idx: int) -> void:
+	## Called whenever this card leaves a zone for any reason: destroyed,
+	## overloaded, banished, returned to hand/deck. Fires after on_destroy when
+	## both apply. Use this for linked-card effects that need to react to any
+	## removal (e.g. EBP04-067 + token).
 	pass
 
 

@@ -4,7 +4,7 @@ extends CardEffect
 ## all strategy cards in your opponent's hand gain +2 in rank (after play they
 ## return to their original rank).
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

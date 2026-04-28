@@ -4,7 +4,7 @@ extends CardEffect
 ## cards in your discard pile, you may <Destroy> this to reduce your opponent's
 ## <Rage> by 3.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -22,9 +22,9 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
-	if ctx.opponent.rage < 3:
-		return
-
+	# Only condition is 10+ green battle cards in discard. Opponent's current
+	# rage isn't a gate — the player may still choose to destroy this even if
+	# the rage reduction caps at 0.
 	var green_count: int = 0
 	for card in ctx.owner.discard_pile:
 		if CardUtils.is_battle(card) and CardUtils.has_color(card, CardEnums.CardColor.GREEN):

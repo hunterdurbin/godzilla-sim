@@ -1786,6 +1786,20 @@ func unhighlight_zone_card(player_id: int, zone_index: int) -> void:
 	effect_zone_unhighlighted.emit(player_id, zone_index)
 
 
+func trigger_leave_play(player_id: int, leaving_card: Dictionary, zone_index: int) -> void:
+	## Fire on_leave_play for a card that just left a zone for any reason
+	## (destroyed, overloaded, banished, returned to hand/deck). Distinct from
+	## on_destroy/on_revenge, which only fire for <Destroy> actions per the
+	## rules. Used by linked-card effects (e.g. EBP04-067 ↔ token).
+	if leaving_card.is_empty():
+		return
+	if not has_trigger(leaving_card, "on_leave_play"):
+		return
+	var effect := get_effect(leaving_card)
+	if effect:
+		await effect.on_leave_play(_build_context(player_id, leaving_card), zone_index)
+
+
 static func banish_or_discard(player: PlayerState, stack: Array) -> void:
 	## Route cards to banishment (tokens) or discard pile (non-tokens).
 	## Tokens are removed from the game entirely; non-tokens go to discard pile.
@@ -1976,6 +1990,9 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 	if has_trigger(top_card, "on_destroy"):
 		var d_effect := get_effect(top_card)
 		await d_effect.on_destroy(_build_context(target.player_id, top_card), zone_idx)
+	# Destroy is one way to leave play — fire the generic hook for linked-card
+	# effects that don't care whether removal was via <Destroy> or overload.
+	await trigger_leave_play(target.player_id, top_card, zone_idx)
 	if deferred_entries != null:
 		if has_trigger(top_card, "on_revenge"):
 			var rev_effect := get_effect(top_card)
@@ -2012,13 +2029,16 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	# Make a copy so each token instance is independent
 	token_data = token_data.duplicate()
 
+	var overloaded_top: Dictionary = {}
 	if player.zone_has_cards(zone_index):
+		overloaded_top = player.get_zone_top_card(zone_index)
 		var destroyed_stack: Array = player.clear_zone(zone_index)
 		banish_or_discard(player, destroyed_stack)
 		player.discard_changed.emit()
 
 	player.push_zone_card(zone_index, token_data)
 	player.zones_changed.emit()
+	await trigger_leave_play(player.player_id, overloaded_top, zone_index)
 	await trigger_enter(player.player_id, token_data, true)
 	# Tokens are treated as normal plays — trigger battle card played effects
 	# (but not considered played from hand).
@@ -2641,14 +2661,24 @@ func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
 		return
 	if not player.zone_has_cards(from_zone):
 		return
+	var overloaded_top: Dictionary = {}
 	if player.zone_has_cards(to_zone):
+		overloaded_top = player.get_zone_top_card(to_zone)
 		var overloaded: Array = player.clear_zone(to_zone)
 		banish_or_discard(player, overloaded)
 		player.discard_changed.emit()
+	var moved_top: Dictionary = player.get_zone_top_card(from_zone)
 	var stack: Array = player.zones[from_zone]
 	player.zones[from_zone] = []
 	player.zones[to_zone] = stack
 	player.zones_changed.emit()
+	# Fire on_destroy for the overloaded card, then on_zone_changed for the
+	# moved card — mirrors the linked-card semantics used by swap_zones and
+	# play_from_discard so cards like EBP04-067 can react to forced movement.
+	await trigger_leave_play(player.player_id, overloaded_top, to_zone)
+	if not moved_top.is_empty() and has_trigger(moved_top, "on_zone_changed"):
+		var me := get_effect(moved_top)
+		await me.on_zone_changed(_build_context(player.player_id, moved_top), from_zone, to_zone)
 
 
 func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
@@ -2799,13 +2829,16 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 			return -1
 
 	# Handle overload if zone occupied
+	var overloaded_top: Dictionary = {}
 	if player.zone_has_cards(zone_idx):
+		overloaded_top = player.get_zone_top_card(zone_idx)
 		var destroyed_stack: Array = player.clear_zone(zone_idx)
 		banish_or_discard(player, destroyed_stack)
 		player.discard_changed.emit()
 
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
+	await trigger_leave_play(player_id, overloaded_top, zone_idx)
 	await trigger_enter(player_id, card_data, true)
 	return zone_idx
 
@@ -2840,12 +2873,15 @@ func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx:
 	## Handles zone overload. Use this instead of manual push+trigger_enter+trigger_battle_card_played
 	## so that standby entry ordering is correct when called from within effect callbacks.
 	var player := game_state.players[player_id]
+	var overloaded_top: Dictionary = {}
 	if player.zone_has_cards(zone_idx):
+		overloaded_top = player.get_zone_top_card(zone_idx)
 		var destroyed_stack: Array = player.clear_zone(zone_idx)
 		banish_or_discard(player, destroyed_stack)
 		player.discard_changed.emit()
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
+	await trigger_leave_play(player_id, overloaded_top, zone_idx)
 	await trigger_enter(player_id, card_data, true)
 	await trigger_battle_card_played(player_id, card_data, zone_idx, true)
 
