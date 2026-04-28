@@ -25,6 +25,12 @@ STR_MENU_PLAYSTYLE_AUTOMATIC,Automatic,自動
 STR_MENU_PLAYSTYLE_INVASION,Invasion,進攻型
 STR_MENU_PLAYSTYLE_COUNTER,Counter,撃退型
 STR_MENU_PLAYSTYLE_BALANCED,Balanced,バランス型
+STR_MENU_BOT_CONFIG,Bot Config,ボット設定
+STR_MENU_BOT_DECK,Bot Deck,ボットデッキ
+STR_MENU_BOT_DECK_RANDOM,Use Random Deck,ランダムデッキを使用
+STR_MENU_DECK_SELECT_ALL,Select All,すべて選択
+STR_MENU_DECK_UNSELECT_ALL,Unselect All,すべて解除
+STR_MENU_DECK_RESET_WEIGHTS,Reset Weights,重みをリセット
 STR_MENU_UPDATE_VERSIONS_FMT,"Current version: v%s
 New version: %s","現在のバージョン: v%s
 新バージョン: %s"
@@ -49,6 +55,8 @@ STR_MENU_ERR_TIMEOUT,timeout,タイムアウト
 STR_MENU_ERR_CODE_FMT,error %d,エラー %d
 STR_COMMON_CANCEL,Cancel,キャンセル
 STR_COMMON_OK,OK,OK
+STR_COMMON_SAVE,Save,保存
+STR_COMMON_CLEAR,Clear,クリア
 STR_COMMON_CLOSE,Close,閉じる
 STR_COMMON_DELETE,Delete,削除
 STR_COMMON_COPY,Copy,コピー

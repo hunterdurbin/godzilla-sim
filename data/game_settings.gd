@@ -50,6 +50,14 @@ var music_volume: int = 0  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
 # Advanced settings
 var use_mobile_layout: bool = false
 
+# Bot settings
+var bot_difficulty: int = BotConfig.Difficulty.NORMAL  # 0=Easy, 1=Normal, 2=Hard
+var bot_seed_text: String = ""             # raw text; if valid int, used as seed; "" = auto
+var bot_speed_value: int = 0               # 0=Auto, 1-10 = 0.1s..1.0s delay
+var bot_playstyle_value: int = 0           # 0=Auto, 1=Invasion, 2=Counter, 3=Balanced
+var bot_random_deck_enabled: bool = false
+var bot_deck_weights: Dictionary = {}      # {deck_name: int weight, 0=disabled, >=1=weight}
+
 # Update settings
 var skipped_version: String = ""
 
@@ -137,6 +145,12 @@ func _save() -> void:
 	config.set_value("visual", "custom_rage_marker_enabled", custom_rage_marker_enabled)
 	config.set_value("audio", "sound_volume", sound_volume)
 	config.set_value("audio", "music_volume", music_volume)
+	config.set_value("bot", "difficulty", bot_difficulty)
+	config.set_value("bot", "seed_text", bot_seed_text)
+	config.set_value("bot", "speed_value", bot_speed_value)
+	config.set_value("bot", "playstyle_value", bot_playstyle_value)
+	config.set_value("bot", "random_deck_enabled", bot_random_deck_enabled)
+	config.set_value("bot", "deck_weights", bot_deck_weights)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
 	config.set_value("updates", "skipped_version", skipped_version)
 	config.set_value("reconnect", "room_code", reconnect_room_code)
@@ -188,6 +202,12 @@ func _load() -> void:
 		music_volume = 4 if _old_music else 0
 	else:
 		music_volume = config.get_value("audio", "music_volume", 2)
+	bot_difficulty = config.get_value("bot", "difficulty", BotConfig.Difficulty.NORMAL)
+	bot_seed_text = config.get_value("bot", "seed_text", "")
+	bot_speed_value = config.get_value("bot", "speed_value", 0)
+	bot_playstyle_value = config.get_value("bot", "playstyle_value", 0)
+	bot_random_deck_enabled = config.get_value("bot", "random_deck_enabled", false)
+	bot_deck_weights = config.get_value("bot", "deck_weights", {})
 	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	use_mobile_layout = config.get_value("advanced", "use_mobile_layout", _mobile_default)
 	skipped_version = config.get_value("updates", "skipped_version", "")

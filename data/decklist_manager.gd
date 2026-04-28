@@ -189,6 +189,10 @@ func delete_decklist(deck_name: String) -> bool:
 	for i in range(2):
 		if _player_decks[i] != null and _player_decks[i]["deck_name"] == deck_name:
 			_player_decks[i] = null
+	# Drop any bot-deck weight entry so the random-pool list stays in sync
+	if GameSettings.bot_deck_weights.has(deck_name):
+		GameSettings.bot_deck_weights.erase(deck_name)
+		GameSettings.save()
 	return true
 
 
