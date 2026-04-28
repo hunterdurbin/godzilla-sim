@@ -30,8 +30,8 @@ func on_enter(ctx: EffectContext) -> void:
 		option_ids.append(0)
 
 	# Option 1: Destroy zone + adjacent (requires 4+ own battle cards)
-	if ctx.owner.get_occupied_zone_indices().size() >= 4:
-		var has_opp_cards: bool = not ctx.opponent.get_occupied_zone_indices().is_empty()
+	if ctx.owner.get_battle_card_zone_indices().size() >= 4:
+		var has_opp_cards: bool = not ctx.opponent.get_battle_card_zone_indices().is_empty()
 		if has_opp_cards:
 			options.append("Choose a zone and destroy all cards there and in adjacent zones")
 			option_ids.append(1)

@@ -16,11 +16,11 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.get_occupied_zone_indices().size() >= 2
+	return owner.get_battle_card_zone_indices().size() >= 2
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.get_occupied_zone_indices().size() < 2:
+	if ctx.owner.get_battle_card_zone_indices().size() < 2:
 		return
 
 	# Track opponent hand before discard

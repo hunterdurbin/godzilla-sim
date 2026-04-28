@@ -12,7 +12,7 @@ extends CardEffect
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var occupied: Array[int] = ctx.opponent.get_occupied_zone_indices()
+	var occupied: Array[int] = ctx.opponent.get_battle_card_zone_indices()
 
 	if occupied.size() < 2:
 		return

@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool:
 	if not opponent.has_rage():
 		return false
-	return owner.get_occupied_zone_indices().size() >= 2
+	return owner.get_battle_card_zone_indices().size() >= 2
 
 
 func on_enter(ctx: EffectContext) -> void:

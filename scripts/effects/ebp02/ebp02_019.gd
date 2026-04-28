@@ -18,7 +18,7 @@ func get_bot_tags() -> Array[String]:
 
 func on_enter(ctx: EffectContext) -> void:
 	# Move 1 battle card to empty zone
-	var occupied: Array[int] = ctx.owner.get_occupied_zone_indices()
+	var occupied: Array[int] = ctx.owner.get_battle_card_zone_indices()
 
 	if not occupied.is_empty():
 		var source: int = await ctx.effect_handler.select_zone_target(

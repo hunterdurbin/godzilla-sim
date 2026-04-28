@@ -31,7 +31,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if (ctx.opponent.monster_zone - 1) not in opp_columns:
 		return
 
-	if ctx.owner.get_occupied_zone_indices().size() < 2:
+	if ctx.owner.get_battle_card_zone_indices().size() < 2:
 		return
 
 	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

@@ -35,4 +35,4 @@ func _should_restrict(ctx: EffectContext) -> bool:
 	if not ctx.is_awakening(4):
 		return false
 	# 2+ battle cards in zones
-	return ctx.owner.get_occupied_zone_indices().size() >= 2
+	return ctx.owner.get_battle_card_zone_indices().size() >= 2

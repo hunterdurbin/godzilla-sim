@@ -24,7 +24,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Pre-select target zones (lowest-numbered occupied zones, up to color_count).
 	# Per Q523: target areas are chosen up front, then destroyed in order;
 	# zones that can't be destroyed are skipped without re-targeting.
-	var occupied: Array[int] = ctx.opponent.get_occupied_zone_indices()
+	var occupied: Array[int] = ctx.opponent.get_battle_card_zone_indices()
 	var targets: Array[int] = occupied.slice(0, color_count)
 	for zone_idx in targets:
 		await ctx.effect_handler.destroy_zones(ctx.opponent, [zone_idx])

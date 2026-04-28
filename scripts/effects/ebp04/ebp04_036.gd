@@ -3,7 +3,7 @@ extends CardEffect
 ## This card gains +5000 threat for each color of battle card in your discard
 ## pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -25,7 +25,7 @@ func get_total_cp_modifier(ctx: EffectContext) -> int:
 	if ctx.is_opponent_turn():
 		return 0
 	# Count battle cards in zones
-	var count: int = ctx.owner.get_occupied_zone_indices().size()
+	var count: int = ctx.owner.get_battle_card_zone_indices().size()
 	if count >= 4:
 		return 5000
 	return 0

@@ -22,7 +22,7 @@ func get_threat_level_modifier(ctx: EffectContext) -> int:
 
 
 func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
-	return not opponent.get_occupied_zone_indices().is_empty()
+	return not opponent.get_battle_card_zone_indices().is_empty()
 
 
 func on_enter(ctx: EffectContext) -> void:

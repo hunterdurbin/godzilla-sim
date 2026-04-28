@@ -161,10 +161,13 @@ func get_empty_zone_indices() -> Array[int]:
 	return indices
 
 
-func get_occupied_zone_indices() -> Array[int]:
+func get_battle_card_zone_indices() -> Array[int]:
+	## Zones holding a battle card. The monster zone is included only if a
+	## battle card is also stacked there. Use this for "battle cards in zones"
+	## semantics; use `get_empty_zone_indices` for placement.
 	var indices: Array[int] = []
 	for i in range(8):
-		if not is_zone_empty(i):
+		if zone_has_battle_card(i):
 			indices.append(i)
 	return indices
 

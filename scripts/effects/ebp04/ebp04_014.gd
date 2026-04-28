@@ -42,7 +42,7 @@ func on_phase_end(_ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if not ctx.is_awakening(6):
 		return
-	if ctx.owner.get_occupied_zone_indices().size() < 2:
+	if ctx.owner.get_battle_card_zone_indices().size() < 2:
 		return
 
 	var selected := await ctx.effect_handler.select_hand_card(

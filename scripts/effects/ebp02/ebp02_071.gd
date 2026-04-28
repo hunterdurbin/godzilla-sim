@@ -45,7 +45,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	# Option 2: Awakening8 — Destroy 1 any battle card
 	if ctx.is_awakening(8):
-		var has_any_target: bool = not ctx.opponent.get_occupied_zone_indices().is_empty()
+		var has_any_target: bool = not ctx.opponent.get_battle_card_zone_indices().is_empty()
 		if has_any_target:
 			options.append("Awakening8: Destroy 1 of opponent's battle cards")
 			option_ids.append(2)

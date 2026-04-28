@@ -74,7 +74,7 @@ func _trigger_milestone(ctx: EffectContext, milestone: int) -> void:
 	match milestone:
 		15:
 			ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_089_MILESTONE_15"))
-			var zones_to_destroy: Array[int] = ctx.opponent.get_occupied_zone_indices()
+			var zones_to_destroy: Array[int] = ctx.opponent.get_battle_card_zone_indices()
 			if not zones_to_destroy.is_empty():
 				await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
 		22:

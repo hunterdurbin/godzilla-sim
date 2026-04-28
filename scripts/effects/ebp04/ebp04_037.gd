@@ -3,7 +3,7 @@ extends CardEffect
 ## If you have a rank 1 strategy card in play, this card gains +3000 counter
 ## power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
