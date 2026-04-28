@@ -28,5 +28,4 @@ func on_enter(ctx: EffectContext) -> void:
 		tr("STR_EFF_EBP03_021_PROMPT")
 	)
 	if not selected.is_empty():
-		ctx.owner.hand.append(selected)
-		ctx.owner.hand_changed.emit()
+		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, selected)

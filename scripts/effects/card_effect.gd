@@ -34,6 +34,9 @@ extends RefCounted
 ##                who played the card (true = the watcher's opponent played it).
 ##                Use this for "your opponent plays..." rule wording instead of
 ##                own_turn, since opponents can play cards on your turn via effects.
+##   "returned_by_opponent": bool — only meaningful for on_card_returned_from_discard;
+##                gates by who returned the card from discard (true = watcher's
+##                opponent returned it).
 ##   "caused_by_opponent": bool — only meaningful for on_discard_from_hand; gates by
 ##                which player's active effect caused the discard. true = opponent's
 ##                effect (e.g. EBP04-046 Rodan); false = owner's own effect.

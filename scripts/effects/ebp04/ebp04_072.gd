@@ -4,7 +4,7 @@ extends CardEffect
 ## this is in area 5, search your deck for up to 1 card, add it to your hand,
 ## and shuffle your deck.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

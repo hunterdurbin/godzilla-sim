@@ -3093,22 +3093,43 @@ func trigger_opponent_zone_card_destroyed(destroyed_player_id: int, destroyed_ca
 		await _resolve_standby_entries(entries)
 
 
+func _passes_card_returned_filter(card_data: Dictionary, watcher_player_id: int, returning_player_id: int) -> bool:
+	## Evaluate TRIGGER_FILTERS["on_card_returned_from_discard"].
+	## "own_turn": bool — gate by watcher's turn ownership.
+	## "returned_by_opponent": bool — true = only when the watcher's opponent
+	##                                returned the card.
+	var filter: Dictionary = get_trigger_filter(card_data, "on_card_returned_from_discard")
+	if filter.is_empty():
+		return true
+	if filter.has("own_turn"):
+		var is_own_turn: bool = (game_state.current_player_id == watcher_player_id)
+		if filter.own_turn != is_own_turn:
+			return false
+	if filter.has("returned_by_opponent"):
+		var by_opponent: bool = returning_player_id != watcher_player_id
+		if filter.returned_by_opponent != by_opponent:
+			return false
+	return true
+
+
 func collect_card_returned_from_discard_entries(returning_player_id: int, card: Dictionary) -> Array:
-	## Collect standby entries for on_card_returned_from_discard triggers.
-	## Iterates the OPPONENT's zone cards (they react when returning_player_id returns a card).
-	var observer_id: int = 1 - returning_player_id
+	## Collect standby entries for on_card_returned_from_discard triggers from
+	## active cards on BOTH players. TRIGGER_FILTERS gates by turn / who returned.
 	var entries: Array = []
-	var observer := game_state.players[observer_id]
-	for i in range(8):
-		var zone_card := observer.get_zone_top_card(i)
-		if zone_card.is_empty():
-			continue
-		if not has_trigger(zone_card, "on_card_returned_from_discard"):
-			continue
-		var effect := get_effect(zone_card)
-		if effect:
-			var ctx := _build_context(observer_id, zone_card)
-			entries.append({"callback": effect.on_card_returned_from_discard.bind(ctx, card), "player_id": observer_id})
+	for pid in range(2):
+		var observer := game_state.players[pid]
+		for i in range(8):
+			var zone_card := observer.get_zone_top_card(i)
+			if zone_card.is_empty():
+				continue
+			if not has_trigger(zone_card, "on_card_returned_from_discard"):
+				continue
+			if not _passes_card_returned_filter(zone_card, pid, returning_player_id):
+				continue
+			var effect := get_effect(zone_card)
+			if effect:
+				var ctx := _build_context(pid, zone_card)
+				entries.append({"callback": effect.on_card_returned_from_discard.bind(ctx, card), "player_id": pid, "card_data": zone_card})
 	return entries
 
 

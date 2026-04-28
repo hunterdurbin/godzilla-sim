@@ -80,8 +80,7 @@ func _return_low_rank_monster(ctx: EffectContext) -> void:
 		tr("STR_EFF_EBP03_077_PROMPT_A")
 	)
 	if not selected.is_empty():
-		ctx.owner.hand.append(selected)
-		ctx.owner.hand_changed.emit()
+		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, selected)
 
 
 func _return_any_monster(ctx: EffectContext) -> void:
@@ -91,5 +90,4 @@ func _return_any_monster(ctx: EffectContext) -> void:
 		tr("STR_EFF_EBP03_077_PROMPT_B")
 	)
 	if not selected.is_empty():
-		ctx.owner.hand.append(selected)
-		ctx.owner.hand_changed.emit()
+		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, selected)
