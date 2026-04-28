@@ -348,8 +348,9 @@ func play_monster_from_effect(state: GameState, player_id: int, monster_card: Di
 	monster_played.emit(player_id, old_monster, monster_card)
 	player.monster_changed.emit()
 	if effect_handler:
+		var discard_snapshot: Array = player.discard_pile.duplicate()
 		await effect_handler.trigger_enter(player_id, monster_card, true)
-		await effect_handler.trigger_monster_played(player_id, old_monster, monster_card)
+		await effect_handler.trigger_monster_played(player_id, old_monster, monster_card, discard_snapshot)
 
 
 func resolve_check_timing(state: GameState) -> void:
@@ -602,8 +603,12 @@ func _play_monster(hand_index: int, state: GameState) -> void:
 		else:
 			effect_handler.log_message.emit(
 				GameLog.played_monster(player.player_id, card.get("id", ""), player.rage))
+		# Snapshot discard before on_enter so cards milled during enter don't
+		# retroactively qualify for can_play_from_discard_on_monster_played
+		# (e.g. EBP02-048 milling EBP03-063 into discard).
+		var discard_snapshot: Array = player.discard_pile.duplicate()
 		await effect_handler.trigger_enter(player.player_id, card)
-		await effect_handler.trigger_monster_played(player.player_id, old_monster, card)
+		await effect_handler.trigger_monster_played(player.player_id, old_monster, card, discard_snapshot)
 		await effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
 
 

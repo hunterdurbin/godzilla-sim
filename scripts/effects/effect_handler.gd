@@ -946,21 +946,30 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 
 
 func _resolve_discard_play(player_id: int, card_data: Dictionary, is_optional: bool) -> void:
+	## Play a card from discard via on-monster-played trigger. For optional
+	## ('may play') effects, route through play_from_discard_or_skip so the
+	## prompt is the standard "Play <card> from discard to a zone (or skip)"
+	## zone-picker rather than a Yes/No choice. Mandatory plays use
+	## play_from_discard directly (auto-picks zone, no skip).
+	var placed_zone: int
 	if is_optional:
 		var card_name: String = card_data.get("name", "Unknown")
-		var options: Array[String] = [tr("STR_EFF_BTN_YES"), tr("STR_EFF_BTN_NO")]
-		var chosen: int = await select_choice(player_id, options, tr("STR_EFF_PLAY_FROM_DISCARD_FMT") % card_name)
-		if chosen == 1:
-			return
-
-	var placed_zone := await play_from_discard(player_id, card_data)
+		placed_zone = await play_from_discard_or_skip(
+			player_id, card_data, tr("STR_EFF_PLACE_DISCARD_FMT") % card_name)
+	else:
+		placed_zone = await play_from_discard(player_id, card_data)
 	if placed_zone >= 0:
 		await trigger_battle_card_played(player_id, card_data, placed_zone)
 
 
-func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster: Dictionary) -> void:
+func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster: Dictionary, discard_snapshot: Array = []) -> void:
 	## Trigger on_monster_played on all active cards for this player.
 	## Collects all applicable effects, then resolves with rule action checks between each.
+	## `discard_snapshot` should be the discard pile captured BEFORE the new
+	## monster's on_enter ran — cards milled into discard during enter (e.g.
+	## EBP02-048 King Ghidorah 1991's mill 3) shouldn't qualify for
+	## can_play_from_discard_on_monster_played because they weren't there to
+	## "see" the monster get played. Empty array = use the current pile.
 	var entries: Array = []
 	var player := game_state.players[player_id]
 	var triggered_ids: Array[String] = []
@@ -988,12 +997,14 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 	await _resolve_standby_entries(entries)
 
 	# Check discard pile for cards that can play from discard on monster played.
-	# These are treated as normal plays (triggering enter + battle card played),
-	# but are NOT considered played from hand.
-	# Collected as standby entries so they resolve with proper ordering and rule action checks.
+	# Use the pre-enter snapshot when provided so newly-milled cards don't
+	# retroactively qualify. Filter to cards that are still in the live discard
+	# (so something an effect already removed doesn't try to play).
+	var pool: Array = discard_snapshot if not discard_snapshot.is_empty() else player.discard_pile.duplicate()
 	var discard_entries: Array = []
-	var discard_copy: Array[Dictionary] = player.discard_pile.duplicate()
-	for discard_card in discard_copy:
+	for discard_card in pool:
+		if not discard_card in player.discard_pile:
+			continue
 		var de := get_effect(discard_card)
 		if de:
 			var ctx := _build_context(player_id, discard_card)
