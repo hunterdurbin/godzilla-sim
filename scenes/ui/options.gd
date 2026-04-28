@@ -5,7 +5,7 @@ extends Control
 @onready var customize_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CustomizeButton
 @onready var advanced_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AdvancedButton
 @onready var audio_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AudioButton
-@onready var language_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LanguageButton
+@onready var language_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LanguageRow/LanguageButton
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
 
 const _LOCALE_CYCLE := ["en", "ja"]
