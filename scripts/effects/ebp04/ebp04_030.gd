@@ -3,7 +3,7 @@ extends CardEffect
 ## <Opponent's Turn> Your opponent cannot draw cards during their end phase.
 ## <Enter> <Destroy> 1 of your opponent's battle cards in zones 1-5.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

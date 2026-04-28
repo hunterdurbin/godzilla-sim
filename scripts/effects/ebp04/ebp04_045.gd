@@ -3,7 +3,7 @@ extends CardEffect
 ## When you play this from your hand, you may discard a non-blue battle card
 ## from your hand to decrease this card's rank by -2 (afterwards it's 3).
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -23,17 +23,20 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 	return -2
 
 
-func apply_play_cost(ctx: EffectContext, zone_index: int) -> bool:
-	if zone_index == -1:
-		return true # Not a hand-to-zone play
+func apply_play_cost(ctx: EffectContext, _zone_index: int) -> bool:
+	# 'May' effect: prompt whenever a discard is available so the player can cycle.
+	# Skipping is fine as long as the base rank already fits.
+	var base_rank_fits: bool = ctx.card_data.get("rank", 99) <= ctx.opponent.monster_zone
 	if not _hand_has_non_blue_battle(ctx.owner):
-		return true # No discount claimed; normal play
+		return base_rank_fits
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		_is_non_blue_battle,
 		tr("STR_EFF_EBP04_045_PROMPT"),
-		false)
-	return not selected.is_empty()
+		true)
+	if not selected.is_empty():
+		return true
+	return base_rank_fits
 
 
 func _is_non_blue_battle(card: Dictionary) -> bool:

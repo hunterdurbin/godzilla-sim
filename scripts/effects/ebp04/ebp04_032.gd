@@ -4,7 +4,7 @@ extends CardEffect
 ## colors among battle cards in your zones. If your opponent's zones have 1 or
 ## fewer battle cards, this card cannot be countered.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
