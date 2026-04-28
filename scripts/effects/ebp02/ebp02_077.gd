@@ -43,5 +43,16 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	ctx.owner.zones_changed.emit()
 	ctx.owner.discard_changed.emit()
 
-	# Play Chibi Godzilla 2nd Form token in the zone this card was in
-	await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T04", zone_idx)
+	# Player picks any non-monster zone for the token (defaults to the now-
+	# empty zone if no UI is wired up).
+	var monster_idx: int = ctx.owner.monster_zone - 1
+	var valid_zones: Array[int] = []
+	for i in range(8):
+		if i != monster_idx:
+			valid_zones.append(i)
+	var target_zone: int = await ctx.effect_handler.select_zone_target(
+		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
+		tr("STR_EFF_EBP02_T04_PROMPT"))
+	if target_zone < 0:
+		target_zone = zone_idx
+	await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T04", target_zone)
