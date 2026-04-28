@@ -41,6 +41,7 @@ var custom_playmat_opponent: bool = false
 var color_overlay_mode: int = 3  # 0=none, 1=self only, 2=opponent only, 3=both
 var custom_card_art_enabled: bool = false
 var custom_card_back_mode: int = 0  # 0=disabled, 1=myself only, 2=both players
+var custom_rage_marker_enabled: bool = false
 
 # Audio settings
 var sound_volume: int = 1  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
@@ -133,6 +134,7 @@ func _save() -> void:
 	config.set_value("visual", "color_overlay_mode", color_overlay_mode)
 	config.set_value("visual", "custom_card_art_enabled", custom_card_art_enabled)
 	config.set_value("visual", "custom_card_back_mode", custom_card_back_mode)
+	config.set_value("visual", "custom_rage_marker_enabled", custom_rage_marker_enabled)
 	config.set_value("audio", "sound_volume", sound_volume)
 	config.set_value("audio", "music_volume", music_volume)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
@@ -174,6 +176,7 @@ func _load() -> void:
 	color_overlay_mode = config.get_value("visual", "color_overlay_mode", 3)
 	custom_card_art_enabled = config.get_value("visual", "custom_card_art_enabled", false)
 	custom_card_back_mode = config.get_value("visual", "custom_card_back_mode", 0)
+	custom_rage_marker_enabled = config.get_value("visual", "custom_rage_marker_enabled", false)
 	# Migrate old bool sound_enabled to new int sound_volume
 	var _old_sound: Variant = config.get_value("audio", "sound_enabled", "") if config.has_section_key("audio", "sound_enabled") else ""
 	if _old_sound is bool:

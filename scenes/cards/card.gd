@@ -4,6 +4,8 @@ extends Control
 
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 const CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
+const RAGE_MARKER_DEFAULT_PATH := "res://assets/rage/default.png"
+const RAGE_MARKER_CUSTOM_DIR := "rage"
 
 static var _custom_art_base: String = ""
 static var _custom_card_back_base: String = ""
@@ -43,6 +45,9 @@ static var _custom_strategy_texture_cache: Dictionary = {}  # card_number -> Ima
 static var _default_card_back_texture: Texture2D = null
 static var _custom_card_back_texture: Texture2D = null  # null means no custom file found
 static var _card_back_loaded: bool = false
+static var _rage_marker_default_texture: Texture2D = null
+static var _rage_marker_custom_texture: Texture2D = null  # null means no custom file found
+static var _rage_marker_loaded: bool = false
 
 # Signals
 signal drag_started()
@@ -472,6 +477,12 @@ func _update_display() -> void:
 		var card_number := _resolve_card_number()
 		if card_number.is_empty():
 			return
+		# RAGE-MARKER ships with a built-in default image; it's never
+		# downloaded, but the player can still override via the same custom
+		# folder pattern as the card back (<custom_base>/rage/default.<ext>).
+		if card_number == "RAGE-MARKER":
+			_apply_rage_marker_texture(card_image)
+			return
 		var is_strategy := _is_strategy_card()
 		var set_number := card_number.split("-")[0]
 		# Try custom art first
@@ -509,6 +520,30 @@ func _update_display() -> void:
 				card_image.texture = tex
 
 
+static func _apply_rage_marker_texture(card_image: TextureRect) -> void:
+	## Load the default RAGE-MARKER image once and cache it. Custom override
+	## lives under <custom_base>/rage/default.<ext> (same pattern as the
+	## card back) and is used when GameSettings.custom_rage_marker_enabled
+	## is true and the file exists.
+	if not _rage_marker_loaded:
+		_rage_marker_loaded = true
+		if ResourceLoader.exists(RAGE_MARKER_DEFAULT_PATH):
+			_rage_marker_default_texture = load(RAGE_MARKER_DEFAULT_PATH)
+		var custom_dir := GameSettings.get_custom_base_path().path_join(RAGE_MARKER_CUSTOM_DIR)
+		var custom_path := _find_custom_file(custom_dir, "default")
+		if not custom_path.is_empty():
+			var image := Image.load_from_file(custom_path)
+			if image:
+				_rage_marker_custom_texture = ImageTexture.create_from_image(image)
+	var tex: Texture2D = null
+	if _rage_marker_custom_texture and GameSettings.custom_rage_marker_enabled:
+		tex = _rage_marker_custom_texture
+	else:
+		tex = _rage_marker_default_texture
+	if tex:
+		card_image.texture = tex
+
+
 static func _find_artwork_path(set_number: String, card_number: String) -> String:
 	## Resolution order: current locale → en/ fallback → legacy flat path.
 	## Returns the first existing `res://`-style path, or "" if none found.
@@ -535,6 +570,9 @@ static func clear_texture_cache() -> void:
 	_default_card_back_texture = null
 	_custom_card_back_texture = null
 	_card_back_loaded = false
+	_rage_marker_default_texture = null
+	_rage_marker_custom_texture = null
+	_rage_marker_loaded = false
 
 
 func _should_use_custom_back() -> bool:

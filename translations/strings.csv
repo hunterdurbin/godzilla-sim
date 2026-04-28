@@ -168,6 +168,17 @@ STR_OPTIONS_IOS_INSTR_CARD_BACK_FMT,"1. Open the Files app on your device
 3. default.png という名前の画像をコピー
    (.jpg、.jpeg、.webp も可)
 4. このアプリに戻り、カード裏面のカスタムを有効化"
+STR_OPTIONS_CUSTOM_RAGE_MARKER,Custom Rage Marker,「怒り」マーカーのカスタム
+STR_OPTIONS_HINT_MOBILE_RAGE,Import any image to use as your rage marker,「怒り」マーカーに使用する画像をインポートしてください
+STR_OPTIONS_OPEN_RAGE_FOLDER,Open Rage Marker Folder,「怒り」マーカーフォルダを開く
+STR_OPTIONS_DIALOG_IMPORT_RAGE_MARKER,Import Rage Marker Image,「怒り」マーカー画像をインポート
+STR_OPTIONS_IOS_INSTR_RAGE_FMT,"1. Open the Files app on your device
+2. Go to: On My iPhone > %s > custom > rage
+3. Copy an image named default.png
+   (also supports .jpg, .jpeg, .webp)","1. デバイスでファイルアプリを開く
+2. 移動先: このiPhone内 > %s > custom > rage
+3. default.png という名前の画像をコピー
+   (.jpg、.jpeg、.webp も可)"
 STR_LANG_EN,English,English
 STR_LANG_JA,日本語,日本語
 STR_TRAIT_KAIJU,Kaiju,

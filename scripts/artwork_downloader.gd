@@ -100,8 +100,13 @@ func artwork_exists(card_number: String, locale: String) -> bool:
 func get_cached_count(locale: String) -> int:
 	## Count how many card templates have at least one image cached on disk
 	## for the given locale. Used by Options to render per-locale status.
+	## SYSTEM placeholders (e.g. RAGE-MARKER) ship with built-in art and
+	## aren't tracked by the downloader.
 	var count := 0
 	for card_id in CardData.CARD_TEMPLATES:
+		var template: Dictionary = CardData.CARD_TEMPLATES[card_id]
+		if template.get("card_type", -1) == CardEnums.CardType.RAGE:
+			continue
 		if artwork_exists(card_id, locale):
 			count += 1
 	return count
@@ -193,8 +198,13 @@ func start_download() -> void:
 
 
 func _get_all_card_numbers() -> Array[String]:
+	## Skip engine-internal SYSTEM placeholders (e.g. RAGE-MARKER) — those
+	## ship with built-in default art and aren't hosted by the downloader.
 	var card_numbers: Array[String] = []
 	for card_id in CardData.CARD_TEMPLATES:
+		var template: Dictionary = CardData.CARD_TEMPLATES[card_id]
+		if template.get("card_type", -1) == CardEnums.CardType.RAGE:
+			continue
 		card_numbers.append(card_id)
 	return card_numbers
 
