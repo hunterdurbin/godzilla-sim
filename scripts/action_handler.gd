@@ -326,7 +326,9 @@ func resolve_monster_rankup(index: int) -> void:
 
 
 func play_monster_from_effect(state: GameState, player_id: int, monster_card: Dictionary) -> void:
-	## Play a monster card from the monster deck without rage increase.
+	## Play a monster card from the monster deck without rage increase. Does
+	## NOT set `has_played_monster_this_turn` — effect-driven plays don't
+	## consume the player's once-per-turn monster-play action.
 	## Used by strategy effects like EBP03-074 (A Journey of 130 Million Years).
 	var player := state.players[player_id]
 	var old_monster: Dictionary = player.current_monster
@@ -341,7 +343,6 @@ func play_monster_from_effect(state: GameState, player_id: int, monster_card: Di
 		player.burst_monster = {}
 		player.pre_burst_monster = {}
 
-	player.has_played_monster_this_turn = true
 	player.current_monster = monster_card
 	player.monster_deck.erase(monster_card)
 	monster_played.emit(player_id, old_monster, monster_card)
