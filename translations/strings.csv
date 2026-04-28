@@ -756,7 +756,7 @@ STR_EFF_EBP04_043_PROMPT,Choose an Invade 2 strategy card to place under this:,�
 STR_EFF_EBP04_043_CONFIRM,Place an Invade 2 strategy card under this card?,<足2>の戦略カードをこのカードの下に置きますか?
 STR_EFF_EBP04_086_PROMPT,Play a Valkyrie from your discard pile:,捨て札から「ヴァルキリー」を出す:
 STR_EFF_EBP04_087_PROMPT,Choose a battle card to destroy (one per remaining color; skip when done):,<破壊>する交戦カードを選ぶ (残りの色ごとに1枚; 終わるならスキップ):
-STR_EFF_EBP04_088_PROMPT,Return a non-green battle card from your discard to hand (or skip):,捨て札から緑以外の交戦カードを手札に戻す (またはスキップ):
+STR_EFF_EBP04_088_PROMPT,Return up to 2 non-green battle cards from your discard pile to your hand:,捨て札から緑以外の交戦カードを最大2枚手札に戻す:
 STR_EFF_ESD02_003_DISCARD_PROMPT,Search discard pile for a rank 4 or lower battle card with Evolution to play:,捨て札から<進化>を持つ等級4以下の交戦カードを出す:
 STR_EFF_EBP02_062_PROMPT,Return a SpaceGodzilla monster card to your hand:,<スペースゴジラ>の怪獣カードを手札に戻す:
 STR_EFF_EBP02_059_DISCARD_PROMPT,Choose a Godzilla(1991) battle card to return to your hand:,手札に戻す「ゴジラ(1991)」の交戦カードを選ぶ:

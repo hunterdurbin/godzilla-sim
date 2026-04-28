@@ -15,13 +15,16 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	for _i in range(2):
-		var found := await ctx.effect_handler.search_discard(
-			ctx.owner.player_id,
-			func(card: Dictionary) -> bool:
-				return (CardUtils.is_battle(card) and
-					not CardUtils.has_color(card, CardEnums.CardColor.GREEN)),
-			tr("STR_EFF_EBP04_088_PROMPT"))
-		if found.is_empty():
-			break
-		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)
+	var matching: Array[Dictionary] = []
+	for card in ctx.owner.discard_pile:
+		if CardUtils.is_battle(card) and not CardUtils.has_color(card, CardEnums.CardColor.GREEN):
+			matching.append(card)
+	if matching.is_empty():
+		return
+
+	# 'Up to 2' — min_count=0 lets the player confirm any amount including zero.
+	var selected := await ctx.effect_handler.select_cards_from_pool(
+		ctx.owner.player_id, matching, ctx.owner.discard_pile.duplicate(),
+		tr("STR_EFF_EBP04_088_PROMPT"), 0, 2)
+	for card in selected:
+		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, card)
