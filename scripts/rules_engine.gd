@@ -103,6 +103,9 @@ func can_play_battle_card_at_zone(card: Dictionary, zone_index: int, player: Pla
 		var blocked: Array[int] = effect_handler.get_opponent_blocked_zones(opponent.player_id)
 		if zone_index in blocked:
 			return false
+		var required: Array[int] = effect_handler.get_card_required_play_zones(player.player_id, card)
+		if not required.is_empty() and zone_index not in required:
+			return false
 	return true
 
 
@@ -120,6 +123,7 @@ func get_playable_strategy_cards(player: PlayerState) -> Array[int]:
 			var effective_rank: int = card.get("rank", 99)
 			if effect_handler:
 				effective_rank += effect_handler.get_play_rank_modifier(player.player_id, card)
+				effective_rank += effect_handler.get_strategy_hand_rank_modifier(player.player_id, card)
 			if effective_rank <= player.monster_zone:
 				indices.append(i)
 	return indices
@@ -134,9 +138,10 @@ func get_discardable_cards_for_invade(player: PlayerState, opponent: PlayerState
 		return indices
 	if effect_handler and effect_handler.is_invasion_blocked(opponent.player_id):
 		return indices
-	# Can't invade if already at zone 8 and blocked by opponent's battle card
-	if player.monster_zone >= 8 and opponent.zone_has_battle_card(7):
-		return indices
+	# Note: a fully blocked invasion (monster at 8 with opponent zone-8 battle card)
+	# is still permitted as a discard-only invade for hand cycling. _invade skips
+	# `<when invading>` and other movement-triggered effects when no zones are
+	# crossed, so this is just a free discard with the invasion cost paid.
 	for i in range(player.hand.size()):
 		if player.hand[i].get("invasion_icon", 0) > 0:
 			indices.append(i)
@@ -175,6 +180,10 @@ func get_playable_monsters(player: PlayerState) -> Array[int]:
 			continue
 		# Burst play: card's burst rank matches current monster rank
 		if _has_burst_for_rank(card, cur_rank):
+			indices.append(i)
+			continue
+		# Alternate play cost (e.g. EBP04-012 Biollante Plant Beast Form)
+		if effect_handler and effect_handler.can_monster_be_played_from_hand(player.player_id, card):
 			indices.append(i)
 	return indices
 

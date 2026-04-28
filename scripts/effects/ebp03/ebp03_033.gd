@@ -17,8 +17,8 @@ func get_bot_tags() -> Array[String]:
 func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) >= 5,
-		"Discard a rank 5+ battle card to search for Space Beam (or skip):",
+		func(card): return CardUtils.is_battle(card) and CardUtils.rank_at_least(card, 5),
+		tr("STR_EFF_EBP03_033_PROMPT"),
 		true
 	)
 	if selected.is_empty():
@@ -27,7 +27,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card): return card.get("name", "") == "Space Beam",
-		"Search for Space Beam:"
+		tr("STR_EFF_EBP03_033_SEARCH")
 	)
 	if not found.is_empty():
 		ctx.owner.hand.append(found)

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Unofficial Godzilla Sim Unstable
+Comment=An unofficial Godzilla Trading Card Game simulator (unstable build)
+Exec=godzilla_tcg_sim_unstable
+Icon=io.github.hunterdurbin.UnOfficialGodzillaSim.Unstable
+Categories=Game;CardGame;
+Terminal=false
+StartupNotify=true

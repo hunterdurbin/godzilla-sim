@@ -16,7 +16,6 @@ func get_bot_tags() -> Array[String]:
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:
-	for sz in ctx.owner.strategy_zones:
-		if not sz.is_empty():
-			return 5000
+	if ctx.owner.has_any_strategy_in_play():
+		return 5000
 	return 0

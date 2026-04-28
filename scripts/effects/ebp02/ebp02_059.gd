@@ -20,7 +20,7 @@ func on_revenge(ctx: EffectContext) -> void:
 	# Check if there's a matching card in discard first
 	var has_target: bool = false
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("name", "") == "Godzilla(1991)":
+		if CardUtils.is_battle(card) and card.get("name", "") == "Godzilla(1991)":
 			has_target = true
 			break
 
@@ -30,7 +30,7 @@ func on_revenge(ctx: EffectContext) -> void:
 	var discarded := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(_card: Dictionary) -> bool: return true,
-		"Discard a card to return Godzilla(1991) from discard (or skip):",
+		tr("STR_EFF_EBP02_059_PROMPT"),
 		true)
 
 	if discarded.is_empty():
@@ -39,9 +39,8 @@ func on_revenge(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.BATTLE and card.get("name", "") == "Godzilla(1991)",
-		"Choose a Godzilla(1991) battle card to return to your hand:")
+			return CardUtils.is_battle(card) and card.get("name", "") == "Godzilla(1991)",
+		tr("STR_EFF_EBP02_059_DISCARD_PROMPT"))
 
 	if not selected.is_empty():
-		ctx.owner.hand.append(selected)
-		ctx.owner.hand_changed.emit()
+		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, selected)

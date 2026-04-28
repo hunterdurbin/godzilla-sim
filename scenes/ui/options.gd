@@ -5,7 +5,10 @@ extends Control
 @onready var customize_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CustomizeButton
 @onready var advanced_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AdvancedButton
 @onready var audio_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AudioButton
+@onready var language_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LanguageRow/LanguageButton
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
+
+const _LOCALE_CYCLE := ["en", "ja"]
 
 
 func _ready() -> void:
@@ -15,7 +18,79 @@ func _ready() -> void:
 	customize_button.pressed.connect(_on_customize_pressed)
 	advanced_button.pressed.connect(_on_advanced_pressed)
 	audio_button.pressed.connect(_on_audio_pressed)
+	language_button.pressed.connect(_on_language_pressed)
 	back_button.pressed.connect(_on_back_pressed)
+	_refresh_language_button()
+
+
+func _refresh_language_button() -> void:
+	var lang_key := "STR_LANG_" + GameSettings.locale.to_upper()
+	language_button.text = tr("STR_OPTIONS_LANGUAGE_FMT").replace("{LANG}", tr(lang_key))
+
+
+func _on_language_pressed() -> void:
+	SfxManager.play("ui_click")
+	var idx := _LOCALE_CYCLE.find(GameSettings.locale)
+	var next: String = _LOCALE_CYCLE[(idx + 1) % _LOCALE_CYCLE.size()] if idx >= 0 else _LOCALE_CYCLE[0]
+	GameSettings.set_locale(next)
+	_refresh_language_button()
+	if GameSettings.card_art_locale != next:
+		_prompt_card_art_switch(next)
+
+
+func _prompt_card_art_switch(target_locale: String) -> void:
+	var parts := _create_modal(tr("STR_OPTIONS_ART_MATCH_TITLE"))
+	var popup: PopupPanel = parts[0]
+	var vbox: VBoxContainer = parts[1]
+
+	var lang_name := tr("STR_LANG_" + target_locale.to_upper())
+	var prompt := Label.new()
+	prompt.text = tr("STR_OPTIONS_ART_MATCH_PROMPT_FMT").replace("{LANG}", lang_name)
+	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt.add_theme_font_size_override("font_size", 16)
+	vbox.add_child(prompt)
+
+	var cached: int = ArtworkDownloader.get_cached_count(target_locale)
+	var status := Label.new()
+	if cached > 0:
+		status.text = tr("STR_OPTIONS_ART_STATUS_CACHED_FMT").replace("{N}", str(cached))
+	else:
+		status.text = tr("STR_OPTIONS_ART_STATUS_NONE")
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status.add_theme_font_size_override("font_size", 13)
+	status.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	vbox.add_child(status)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
+
+	var no_btn := Button.new()
+	no_btn.text = tr("STR_OPTIONS_ART_MATCH_NO")
+	no_btn.custom_minimum_size = Vector2(140, 40)
+	no_btn.add_theme_font_size_override("font_size", 16)
+	no_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide())
+	btn_row.add_child(no_btn)
+
+	var yes_btn := Button.new()
+	yes_btn.text = tr("STR_OPTIONS_ART_MATCH_YES")
+	yes_btn.custom_minimum_size = Vector2(140, 40)
+	yes_btn.add_theme_font_size_override("font_size", 16)
+	yes_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		GameSettings.card_art_locale = target_locale
+		GameSettings.save()
+		_CardScript.clear_texture_cache()
+		popup.hide()
+		# If art isn't cached yet, jump to LoadingScreen so it downloads now.
+		if ArtworkDownloader.get_cached_count(target_locale) == 0:
+			NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn"))
+	btn_row.add_child(yes_btn)
+
+	vbox.add_child(btn_row)
+	_show_modal(popup)
 
 
 func _on_player_name_changed(new_text: String) -> void:
@@ -101,7 +176,7 @@ func _add_toggle_row(vbox: VBoxContainer, label_text: String, setting: String) -
 
 func _add_close_button(vbox: VBoxContainer, popup: PopupPanel) -> void:
 	var close_btn := Button.new()
-	close_btn.text = "Close"
+	close_btn.text = tr("STR_COMMON_CLOSE")
 	close_btn.custom_minimum_size = Vector2(120, 40)
 	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	close_btn.add_theme_font_size_override("font_size", 18)
@@ -111,6 +186,10 @@ func _add_close_button(vbox: VBoxContainer, popup: PopupPanel) -> void:
 
 func _show_modal(popup: PopupPanel) -> void:
 	add_child(popup)
+	# reset_size() forces the window to shrink to its content's min size
+	# before centering. Without it, embedded popups can keep a stale size
+	# from prior layout passes and stretch vertically.
+	popup.reset_size()
 	popup.popup_centered()
 
 
@@ -118,36 +197,36 @@ func _show_modal(popup: PopupPanel) -> void:
 
 func _on_automation_pressed() -> void:
 	SfxManager.play("ui_click")
-	var parts := _create_modal("Automation")
+	var parts := _create_modal(tr("STR_OPTIONS_AUTOMATION_TITLE"))
 	var popup: PopupPanel = parts[0]
 	var vbox: VBoxContainer = parts[1]
 
-	_add_toggle_row(vbox, "Auto Draw", "auto_draw")
-	_add_toggle_row(vbox, "Auto Phase Advance", "auto_phase_advance")
-	_add_toggle_row(vbox, "Auto Discard Strategies", "auto_discard_strategies")
-	_add_toggle_row(vbox, "Auto Reset Rage", "auto_reset_rage")
-	_add_toggle_row(vbox, "Auto Counter Check", "auto_counter_check")
-	_add_toggle_row(vbox, "Auto Advance", "auto_advance")
-	_add_toggle_row(vbox, "Confirm Main Phase Pass", "confirm_main_phase_pass")
+	_add_toggle_row(vbox, tr("STR_OPTIONS_AUTO_DRAW"), "auto_draw")
+	_add_toggle_row(vbox, tr("STR_OPTIONS_AUTO_PHASE"), "auto_phase_advance")
+	_add_toggle_row(vbox, tr("STR_OPTIONS_AUTO_DISCARD_STRATEGIES"), "auto_discard_strategies")
+	_add_toggle_row(vbox, tr("STR_OPTIONS_AUTO_RESET_RAGE"), "auto_reset_rage")
+	_add_toggle_row(vbox, tr("STR_OPTIONS_AUTO_COUNTER_CHECK"), "auto_counter_check")
+	_add_toggle_row(vbox, tr("STR_OPTIONS_AUTO_ADVANCE"), "auto_advance")
+	_add_toggle_row(vbox, tr("STR_OPTIONS_CONFIRM_MAIN_PASS"), "confirm_main_phase_pass")
 
 	vbox.add_child(HSeparator.new())
 
-	_add_toggle_row(vbox, "Default Stacked View", "stacked_view")
+	_add_toggle_row(vbox, tr("STR_OPTIONS_STACKED_VIEW"), "stacked_view")
 
 	vbox.add_child(HSeparator.new())
 
 	# Hand sort - type order
 	var type_row := HBoxContainer.new()
 	var type_label := Label.new()
-	type_label.text = "Hand Sort Type Order"
+	type_label.text = tr("STR_OPTIONS_SORT_TYPE_ORDER")
 	type_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	type_label.add_theme_font_size_override("font_size", 18)
 	var type_option := OptionButton.new()
 	type_option.custom_minimum_size = Vector2(220, 0)
-	for item in ["Monster, Battle, Strategy", "Monster, Strategy, Battle",
-			"Battle, Monster, Strategy", "Battle, Strategy, Monster",
-			"Strategy, Monster, Battle", "Strategy, Battle, Monster"]:
-		type_option.add_item(item)
+	for key in ["STR_OPTIONS_SORT_MBS", "STR_OPTIONS_SORT_MSB",
+			"STR_OPTIONS_SORT_BMS", "STR_OPTIONS_SORT_BSM",
+			"STR_OPTIONS_SORT_SMB", "STR_OPTIONS_SORT_SBM"]:
+		type_option.add_item(tr(key))
 	type_option.selected = GameSettings.hand_sort_type_order
 	type_option.item_selected.connect(_on_sort_type_order_selected)
 	type_row.add_child(type_label)
@@ -157,13 +236,13 @@ func _on_automation_pressed() -> void:
 	# Hand sort - rank order
 	var rank_row := HBoxContainer.new()
 	var rank_label := Label.new()
-	rank_label.text = "Hand Sort Rank Order"
+	rank_label.text = tr("STR_OPTIONS_SORT_RANK_ORDER")
 	rank_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rank_label.add_theme_font_size_override("font_size", 18)
 	var rank_option := OptionButton.new()
 	rank_option.custom_minimum_size = Vector2(220, 0)
-	rank_option.add_item("Ascending")
-	rank_option.add_item("Descending")
+	rank_option.add_item(tr("STR_OPTIONS_ASCENDING"))
+	rank_option.add_item(tr("STR_OPTIONS_DESCENDING"))
 	rank_option.selected = 0 if GameSettings.hand_sort_rank_ascending else 1
 	rank_option.item_selected.connect(_on_sort_rank_order_selected)
 	rank_row.add_child(rank_label)
@@ -176,7 +255,7 @@ func _on_automation_pressed() -> void:
 
 # --- Customize modal ---
 
-const CARD_ART_SETS := ["EBP01", "EBP02", "EBP03", "EPR", "ESD01", "ESD02"]
+const CARD_ART_SETS := ["EBP01", "EBP02", "EBP03", "EBP04", "EPR", "ESD01", "ESD02", "ESC01", "EFC01"]
 const _CardScript := preload("res://scenes/cards/card.gd")
 var _image_filters := PackedStringArray(["*.png,*.jpg,*.jpeg,*.webp ; Image Files"])
 var _pending_card_art_src: String = ""  # Holds picked file path while waiting for card number input
@@ -184,170 +263,246 @@ var _pending_card_art_src: String = ""  # Holds picked file path while waiting f
 
 func _on_customize_pressed() -> void:
 	SfxManager.play("ui_click")
-	var parts := _create_modal("Customize")
+	# Wider modal so the sections fit two columns side-by-side.
+	var parts := _create_modal(tr("STR_OPTIONS_CUSTOMIZE_TITLE"), 920.0)
 	var popup: PopupPanel = parts[0]
 	var vbox: VBoxContainer = parts[1]
 	var is_ios := OS.get_name() == "iOS"
 	var is_mobile := OS.get_name() in ["Android", "iOS"]
 
-	_add_toggle_row(vbox, "Custom Playmat", "custom_playmat_enabled")
-	_add_toggle_row(vbox, "Apply Playmat to Opponent", "custom_playmat_opponent")
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 24)
+	grid.add_theme_constant_override("v_separation", 16)
+	grid.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	vbox.add_child(grid)
 
-	var playmat_hint := Label.new()
-	if is_ios:
-		playmat_hint.text = "Use the Files app to add images (named default.png)"
-	elif is_mobile:
-		playmat_hint.text = "Import any image to use as your playmat background"
-	else:
-		playmat_hint.text = "Image must be named: default.png (or .jpg, .jpeg, .webp)"
-	playmat_hint.add_theme_font_size_override("font_size", 12)
-	playmat_hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
-	vbox.add_child(playmat_hint)
-
-	var playmat_btn_row := HBoxContainer.new()
-	playmat_btn_row.alignment = BoxContainer.ALIGNMENT_END
-	playmat_btn_row.add_theme_constant_override("separation", 8)
-	if is_ios:
-		var playmat_instructions_btn := Button.new()
-		playmat_instructions_btn.text = "How to Add Files"
-		playmat_instructions_btn.add_theme_font_size_override("font_size", 14)
-		playmat_instructions_btn.pressed.connect(_show_ios_file_instructions.bind("playmat"))
-		playmat_btn_row.add_child(playmat_instructions_btn)
-	elif is_mobile:
-		var playmat_import_btn := Button.new()
-		playmat_import_btn.text = "Import Image"
-		playmat_import_btn.add_theme_font_size_override("font_size", 14)
-		playmat_import_btn.pressed.connect(_on_import_playmat)
-		playmat_btn_row.add_child(playmat_import_btn)
-	else:
-		var playmat_folder_btn := Button.new()
-		playmat_folder_btn.text = "Open Playmat Folder"
-		playmat_folder_btn.add_theme_font_size_override("font_size", 14)
-		playmat_folder_btn.pressed.connect(_on_open_folder.bind("playmat"))
-		playmat_btn_row.add_child(playmat_folder_btn)
-	vbox.add_child(playmat_btn_row)
-
-	var overlay_row := HBoxContainer.new()
-	var overlay_label := Label.new()
-	overlay_label.text = "Color Overlay"
-	overlay_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	overlay_label.add_theme_font_size_override("font_size", 18)
-	var overlay_option := OptionButton.new()
-	overlay_option.custom_minimum_size = Vector2(200, 0)
-	for item in ["Do Not Apply", "Only Myself", "Only Opponent", "Both Players"]:
-		overlay_option.add_item(item)
-	overlay_option.selected = GameSettings.color_overlay_mode
-	overlay_option.item_selected.connect(_on_color_overlay_selected)
-	overlay_row.add_child(overlay_label)
-	overlay_row.add_child(overlay_option)
-	vbox.add_child(overlay_row)
-
-	vbox.add_child(HSeparator.new())
-
-	_add_toggle_row(vbox, "Custom Card Art", "custom_card_art_enabled")
-
-	var art_hint := Label.new()
-	art_hint.text = "Files must be named <CARD_NUMBER>.png (e.g. ESD01-008.png)"
-	art_hint.add_theme_font_size_override("font_size", 12)
-	art_hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
-	vbox.add_child(art_hint)
-
-	var art_btn_row := HBoxContainer.new()
-	art_btn_row.alignment = BoxContainer.ALIGNMENT_END
-	art_btn_row.add_theme_constant_override("separation", 8)
-	if is_ios:
-		var art_clear_btn := Button.new()
-		art_clear_btn.text = "Delete All"
-		art_clear_btn.add_theme_font_size_override("font_size", 14)
-		art_clear_btn.pressed.connect(_show_delete_all_card_art_confirm)
-		art_btn_row.add_child(art_clear_btn)
-		var art_remove_btn := Button.new()
-		art_remove_btn.text = "Remove Art"
-		art_remove_btn.add_theme_font_size_override("font_size", 14)
-		art_remove_btn.pressed.connect(_show_remove_card_art_prompt)
-		art_btn_row.add_child(art_remove_btn)
-		var art_instructions_btn := Button.new()
-		art_instructions_btn.text = "How to Add Files"
-		art_instructions_btn.add_theme_font_size_override("font_size", 14)
-		art_instructions_btn.pressed.connect(_show_ios_file_instructions.bind("cardArt"))
-		art_btn_row.add_child(art_instructions_btn)
-	elif is_mobile:
-		var art_clear_btn := Button.new()
-		art_clear_btn.text = "Delete All"
-		art_clear_btn.add_theme_font_size_override("font_size", 14)
-		art_clear_btn.pressed.connect(_show_delete_all_card_art_confirm)
-		art_btn_row.add_child(art_clear_btn)
-		var art_remove_btn := Button.new()
-		art_remove_btn.text = "Remove Art"
-		art_remove_btn.add_theme_font_size_override("font_size", 14)
-		art_remove_btn.pressed.connect(_show_remove_card_art_prompt)
-		art_btn_row.add_child(art_remove_btn)
-		var art_import_btn := Button.new()
-		art_import_btn.text = "Import Images"
-		art_import_btn.add_theme_font_size_override("font_size", 14)
-		art_import_btn.pressed.connect(_on_import_card_art)
-		art_btn_row.add_child(art_import_btn)
-	else:
-		var art_folder_btn := Button.new()
-		art_folder_btn.text = "Open Card Art Folder"
-		art_folder_btn.add_theme_font_size_override("font_size", 14)
-		art_folder_btn.pressed.connect(_on_open_folder.bind("cardArt"))
-		art_btn_row.add_child(art_folder_btn)
-	vbox.add_child(art_btn_row)
-
-	vbox.add_child(HSeparator.new())
-
-	var back_row := HBoxContainer.new()
-	var back_label := Label.new()
-	back_label.text = "Custom Card Back"
-	back_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	back_label.add_theme_font_size_override("font_size", 18)
-	var back_option := OptionButton.new()
-	back_option.custom_minimum_size = Vector2(200, 0)
-	for item in ["Disabled", "Enabled (myself)", "Enabled (both)"]:
-		back_option.add_item(item)
-	back_option.selected = GameSettings.custom_card_back_mode
-	back_option.item_selected.connect(_on_custom_card_back_selected)
-	back_row.add_child(back_label)
-	back_row.add_child(back_option)
-	vbox.add_child(back_row)
-
-	var back_hint := Label.new()
-	if is_ios:
-		back_hint.text = "Use the Files app to add images (named default.png)"
-	elif is_mobile:
-		back_hint.text = "Import any image to use as your card back"
-	else:
-		back_hint.text = "Image must be named: default.png (or .jpg, .jpeg, .webp)"
-	back_hint.add_theme_font_size_override("font_size", 12)
-	back_hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
-	vbox.add_child(back_hint)
-
-	var back_btn_row := HBoxContainer.new()
-	back_btn_row.alignment = BoxContainer.ALIGNMENT_END
-	back_btn_row.add_theme_constant_override("separation", 8)
-	if is_ios:
-		var back_instructions_btn := Button.new()
-		back_instructions_btn.text = "How to Add Files"
-		back_instructions_btn.add_theme_font_size_override("font_size", 14)
-		back_instructions_btn.pressed.connect(_show_ios_file_instructions.bind("cardBack"))
-		back_btn_row.add_child(back_instructions_btn)
-	elif is_mobile:
-		var back_import_btn := Button.new()
-		back_import_btn.text = "Import Image"
-		back_import_btn.add_theme_font_size_override("font_size", 14)
-		back_import_btn.pressed.connect(_on_import_card_back)
-		back_btn_row.add_child(back_import_btn)
-	else:
-		var back_folder_btn := Button.new()
-		back_folder_btn.text = "Open Card Back Folder"
-		back_folder_btn.add_theme_font_size_override("font_size", 14)
-		back_folder_btn.pressed.connect(_on_open_folder.bind("cardBack"))
-		back_btn_row.add_child(back_folder_btn)
-	vbox.add_child(back_btn_row)
+	grid.add_child(_build_playmat_section(is_ios, is_mobile))
+	grid.add_child(_build_card_art_section(is_ios, is_mobile))
+	grid.add_child(_build_card_back_section(is_ios, is_mobile))
+	grid.add_child(_build_rage_marker_section(is_ios, is_mobile))
+	grid.add_child(_build_color_overlay_section())
 
 	_add_close_button(vbox, popup)
 	_show_modal(popup)
+
+
+func _new_section_vbox() -> VBoxContainer:
+	var section := VBoxContainer.new()
+	section.add_theme_constant_override("separation", 8)
+	section.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# Shrink vertically so the grid cells don't stretch the modal to full
+	# screen height when one section is taller than the others.
+	section.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	return section
+
+
+func _build_playmat_section(is_ios: bool, is_mobile: bool) -> VBoxContainer:
+	var section := _new_section_vbox()
+	_add_toggle_row(section, tr("STR_OPTIONS_CUSTOM_PLAYMAT"), "custom_playmat_enabled")
+	_add_toggle_row(section, tr("STR_OPTIONS_PLAYMAT_OPPONENT"), "custom_playmat_opponent")
+
+	var hint := Label.new()
+	if is_ios:
+		hint.text = tr("STR_OPTIONS_HINT_IOS_DEFAULT")
+	elif is_mobile:
+		hint.text = tr("STR_OPTIONS_HINT_MOBILE_PLAYMAT")
+	else:
+		hint.text = tr("STR_OPTIONS_HINT_DESKTOP_DEFAULT")
+	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
+	section.add_child(hint)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_END
+	btn_row.add_theme_constant_override("separation", 8)
+	if is_ios:
+		var b := Button.new()
+		b.text = tr("STR_OPTIONS_HOW_TO_ADD_FILES")
+		b.add_theme_font_size_override("font_size", 14)
+		b.pressed.connect(_show_ios_file_instructions.bind("playmat"))
+		btn_row.add_child(b)
+	elif is_mobile:
+		var b := Button.new()
+		b.text = tr("STR_OPTIONS_IMPORT_IMAGE")
+		b.add_theme_font_size_override("font_size", 14)
+		b.pressed.connect(_on_import_playmat)
+		btn_row.add_child(b)
+	else:
+		var b := Button.new()
+		b.text = tr("STR_OPTIONS_OPEN_PLAYMAT_FOLDER")
+		b.add_theme_font_size_override("font_size", 14)
+		b.pressed.connect(_on_open_folder.bind("playmat"))
+		btn_row.add_child(b)
+	section.add_child(btn_row)
+	return section
+
+
+func _build_color_overlay_section() -> VBoxContainer:
+	var section := _new_section_vbox()
+	var row := HBoxContainer.new()
+	var label := Label.new()
+	label.text = tr("STR_OPTIONS_COLOR_OVERLAY")
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", 18)
+	var option := OptionButton.new()
+	option.custom_minimum_size = Vector2(200, 0)
+	for key in ["STR_OPTIONS_OVERLAY_NONE", "STR_OPTIONS_OVERLAY_SELF", "STR_OPTIONS_OVERLAY_OPPONENT", "STR_OPTIONS_OVERLAY_BOTH"]:
+		option.add_item(tr(key))
+	option.selected = GameSettings.color_overlay_mode
+	option.item_selected.connect(_on_color_overlay_selected)
+	row.add_child(label)
+	row.add_child(option)
+	section.add_child(row)
+	return section
+
+
+func _build_card_art_section(is_ios: bool, is_mobile: bool) -> VBoxContainer:
+	var section := _new_section_vbox()
+	_add_toggle_row(section, tr("STR_OPTIONS_CUSTOM_CARD_ART"), "custom_card_art_enabled")
+
+	var hint := Label.new()
+	hint.text = tr("STR_OPTIONS_HINT_CARD_ART")
+	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
+	section.add_child(hint)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_END
+	btn_row.add_theme_constant_override("separation", 8)
+	if is_ios:
+		var clear_btn := Button.new()
+		clear_btn.text = tr("STR_OPTIONS_DELETE_ALL")
+		clear_btn.add_theme_font_size_override("font_size", 14)
+		clear_btn.pressed.connect(_show_delete_all_card_art_confirm)
+		btn_row.add_child(clear_btn)
+		var remove_btn := Button.new()
+		remove_btn.text = tr("STR_OPTIONS_REMOVE_ART")
+		remove_btn.add_theme_font_size_override("font_size", 14)
+		remove_btn.pressed.connect(_show_remove_card_art_prompt)
+		btn_row.add_child(remove_btn)
+		var instr_btn := Button.new()
+		instr_btn.text = tr("STR_OPTIONS_HOW_TO_ADD_FILES")
+		instr_btn.add_theme_font_size_override("font_size", 14)
+		instr_btn.pressed.connect(_show_ios_file_instructions.bind("cardArt"))
+		btn_row.add_child(instr_btn)
+	elif is_mobile:
+		var clear_btn := Button.new()
+		clear_btn.text = tr("STR_OPTIONS_DELETE_ALL")
+		clear_btn.add_theme_font_size_override("font_size", 14)
+		clear_btn.pressed.connect(_show_delete_all_card_art_confirm)
+		btn_row.add_child(clear_btn)
+		var remove_btn := Button.new()
+		remove_btn.text = tr("STR_OPTIONS_REMOVE_ART")
+		remove_btn.add_theme_font_size_override("font_size", 14)
+		remove_btn.pressed.connect(_show_remove_card_art_prompt)
+		btn_row.add_child(remove_btn)
+		var import_btn := Button.new()
+		import_btn.text = tr("STR_OPTIONS_IMPORT_IMAGES")
+		import_btn.add_theme_font_size_override("font_size", 14)
+		import_btn.pressed.connect(_on_import_card_art)
+		btn_row.add_child(import_btn)
+	else:
+		var folder_btn := Button.new()
+		folder_btn.text = tr("STR_OPTIONS_OPEN_CARD_ART_FOLDER")
+		folder_btn.add_theme_font_size_override("font_size", 14)
+		folder_btn.pressed.connect(_on_open_folder.bind("cardArt"))
+		btn_row.add_child(folder_btn)
+	section.add_child(btn_row)
+	return section
+
+
+func _build_card_back_section(is_ios: bool, is_mobile: bool) -> VBoxContainer:
+	var section := _new_section_vbox()
+	var row := HBoxContainer.new()
+	var label := Label.new()
+	label.text = tr("STR_OPTIONS_CUSTOM_CARD_BACK")
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", 18)
+	var option := OptionButton.new()
+	option.custom_minimum_size = Vector2(200, 0)
+	for key in ["STR_OPTIONS_BACK_DISABLED", "STR_OPTIONS_BACK_SELF", "STR_OPTIONS_BACK_BOTH"]:
+		option.add_item(tr(key))
+	option.selected = GameSettings.custom_card_back_mode
+	option.item_selected.connect(_on_custom_card_back_selected)
+	row.add_child(label)
+	row.add_child(option)
+	section.add_child(row)
+
+	var hint := Label.new()
+	if is_ios:
+		hint.text = tr("STR_OPTIONS_HINT_IOS_DEFAULT")
+	elif is_mobile:
+		hint.text = tr("STR_OPTIONS_HINT_MOBILE_CARD_BACK")
+	else:
+		hint.text = tr("STR_OPTIONS_HINT_DESKTOP_DEFAULT")
+	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
+	section.add_child(hint)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_END
+	btn_row.add_theme_constant_override("separation", 8)
+	if is_ios:
+		var b := Button.new()
+		b.text = tr("STR_OPTIONS_HOW_TO_ADD_FILES")
+		b.add_theme_font_size_override("font_size", 14)
+		b.pressed.connect(_show_ios_file_instructions.bind("cardBack"))
+		btn_row.add_child(b)
+	elif is_mobile:
+		var b := Button.new()
+		b.text = tr("STR_OPTIONS_IMPORT_IMAGE")
+		b.add_theme_font_size_override("font_size", 14)
+		b.pressed.connect(_on_import_card_back)
+		btn_row.add_child(b)
+	else:
+		var b := Button.new()
+		b.text = tr("STR_OPTIONS_OPEN_CARD_BACK_FOLDER")
+		b.add_theme_font_size_override("font_size", 14)
+		b.pressed.connect(_on_open_folder.bind("cardBack"))
+		btn_row.add_child(b)
+	section.add_child(btn_row)
+	return section
+
+
+func _build_rage_marker_section(is_ios: bool, is_mobile: bool) -> VBoxContainer:
+	var section := _new_section_vbox()
+	_add_toggle_row(section, tr("STR_OPTIONS_CUSTOM_RAGE_MARKER"), "custom_rage_marker_enabled")
+
+	var hint := Label.new()
+	if is_ios:
+		hint.text = tr("STR_OPTIONS_HINT_IOS_DEFAULT")
+	elif is_mobile:
+		hint.text = tr("STR_OPTIONS_HINT_MOBILE_RAGE")
+	else:
+		hint.text = tr("STR_OPTIONS_HINT_DESKTOP_DEFAULT")
+	hint.add_theme_font_size_override("font_size", 12)
+	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
+	section.add_child(hint)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_END
+	btn_row.add_theme_constant_override("separation", 8)
+	if is_ios:
+		var b := Button.new()
+		b.text = tr("STR_OPTIONS_HOW_TO_ADD_FILES")
+		b.add_theme_font_size_override("font_size", 14)
+		b.pressed.connect(_show_ios_file_instructions.bind("rage"))
+		btn_row.add_child(b)
+	elif is_mobile:
+		var b := Button.new()
+		b.text = tr("STR_OPTIONS_IMPORT_IMAGE")
+		b.add_theme_font_size_override("font_size", 14)
+		b.pressed.connect(_on_import_rage_marker)
+		btn_row.add_child(b)
+	else:
+		var b := Button.new()
+		b.text = tr("STR_OPTIONS_OPEN_RAGE_FOLDER")
+		b.add_theme_font_size_override("font_size", 14)
+		b.pressed.connect(_on_open_folder.bind("rage"))
+		btn_row.add_child(b)
+	section.add_child(btn_row)
+	return section
 
 
 func _on_open_folder(subfolder: String) -> void:
@@ -373,26 +528,15 @@ func _show_ios_file_instructions(subfolder: String) -> void:
 	var instructions := ""
 	match subfolder:
 		"playmat":
-			instructions = "1. Open the Files app on your device\n"
-			instructions += "2. Go to: On My iPhone > %s > custom > playmat\n" % app_name
-			instructions += "3. Copy an image named default.png\n"
-			instructions += "   (also supports .jpg, .jpeg, .webp)\n"
-			instructions += "4. Return to this app and enable Custom Playmat"
+			instructions = tr("STR_OPTIONS_IOS_INSTR_PLAYMAT_FMT") % app_name
 		"cardArt":
-			instructions = "1. Open the Files app on your device\n"
-			instructions += "2. Go to: On My iPhone > %s > custom > cardArt > [SET]\n" % app_name
-			instructions += "3. Copy images named [SET]-[NUMBER].png\n"
-			instructions += "   (e.g. ESD01-008.png, EBP02-045.png)\n"
-			instructions += "4. Sets: %s\n" % ", ".join(CARD_ART_SETS)
-			instructions += "5. Return to this app and enable Custom Card Art"
+			instructions = tr("STR_OPTIONS_IOS_INSTR_CARD_ART_FMT") % [app_name, ", ".join(CARD_ART_SETS)]
 		"cardBack":
-			instructions = "1. Open the Files app on your device\n"
-			instructions += "2. Go to: On My iPhone > %s > custom > cardBack\n" % app_name
-			instructions += "3. Copy an image named default.png\n"
-			instructions += "   (also supports .jpg, .jpeg, .webp)\n"
-			instructions += "4. Return to this app and enable Custom Card Back"
+			instructions = tr("STR_OPTIONS_IOS_INSTR_CARD_BACK_FMT") % app_name
+		"rage":
+			instructions = tr("STR_OPTIONS_IOS_INSTR_RAGE_FMT") % app_name
 
-	var modal_parts := _create_modal("How to Add Files", 500.0)
+	var modal_parts := _create_modal(tr("STR_OPTIONS_HOW_TO_ADD_FILES"), 500.0)
 	var popup: PopupPanel = modal_parts[0]
 	var vbox: VBoxContainer = modal_parts[1]
 
@@ -403,7 +547,7 @@ func _show_ios_file_instructions(subfolder: String) -> void:
 	vbox.add_child(body)
 
 	var note := Label.new()
-	note.text = "The folders have been created for you."
+	note.text = tr("STR_OPTIONS_FOLDERS_CREATED")
 	note.add_theme_font_size_override("font_size", 12)
 	note.add_theme_color_override("font_color", Color(0.5, 0.8, 0.5, 1.0))
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -439,7 +583,7 @@ func _copy_as_png(src: String, dest: String) -> Error:
 
 
 func _on_import_playmat() -> void:
-	DisplayServer.file_dialog_show("Import Playmat Image", "", "", false,
+	DisplayServer.file_dialog_show(tr("STR_OPTIONS_DIALOG_IMPORT_PLAYMAT"), "", "", false,
 		DisplayServer.FILE_DIALOG_MODE_OPEN_FILE, _image_filters,
 		_on_playmat_file_selected)
 
@@ -467,7 +611,7 @@ func _on_import_card_art() -> void:
 	# and prompt for the card number after selection.
 	var mode := DisplayServer.FILE_DIALOG_MODE_OPEN_FILE if is_mobile \
 		else DisplayServer.FILE_DIALOG_MODE_OPEN_FILES
-	DisplayServer.file_dialog_show("Import Card Art", "", "", false,
+	DisplayServer.file_dialog_show(tr("STR_OPTIONS_DIALOG_IMPORT_CARD_ART"), "", "", false,
 		mode, _image_filters, _on_card_art_files_selected)
 
 
@@ -517,14 +661,14 @@ func _show_card_number_prompt() -> void:
 	vbox.add_theme_constant_override("separation", 12)
 
 	var title := Label.new()
-	title.text = "Enter Card Number"
+	title.text = tr("STR_OPTIONS_ENTER_CARD_NUMBER")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
 	vbox.add_child(title)
 
 	var hint := Label.new()
-	hint.text = "e.g. ESD01-008, EBP02-045"
+	hint.text = tr("STR_OPTIONS_CARD_NUMBER_HINT")
 	hint.add_theme_font_size_override("font_size", 14)
 	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -540,7 +684,7 @@ func _show_card_number_prompt() -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_row.add_theme_constant_override("separation", 16)
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(100, 36)
 	cancel_btn.add_theme_font_size_override("font_size", 16)
 	cancel_btn.pressed.connect(func():
@@ -549,7 +693,7 @@ func _show_card_number_prompt() -> void:
 		popup.queue_free())
 	btn_row.add_child(cancel_btn)
 	var ok_btn := Button.new()
-	ok_btn.text = "OK"
+	ok_btn.text = tr("STR_COMMON_OK")
 	ok_btn.custom_minimum_size = Vector2(100, 36)
 	ok_btn.add_theme_font_size_override("font_size", 16)
 	ok_btn.pressed.connect(func():
@@ -613,14 +757,14 @@ func _show_delete_all_card_art_confirm() -> void:
 	vbox.add_theme_constant_override("separation", 12)
 
 	var title := Label.new()
-	title.text = "Delete All Custom Card Art?"
+	title.text = tr("STR_OPTIONS_DELETE_ALL_CONFIRM_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
 	vbox.add_child(title)
 
 	var hint := Label.new()
-	hint.text = "This will remove all imported card art images.\nThis cannot be undone."
+	hint.text = tr("STR_OPTIONS_DELETE_ALL_CONFIRM_BODY")
 	hint.add_theme_font_size_override("font_size", 14)
 	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -630,7 +774,7 @@ func _show_delete_all_card_art_confirm() -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_row.add_theme_constant_override("separation", 16)
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(100, 36)
 	cancel_btn.add_theme_font_size_override("font_size", 16)
 	cancel_btn.pressed.connect(func():
@@ -638,7 +782,7 @@ func _show_delete_all_card_art_confirm() -> void:
 		popup.queue_free())
 	btn_row.add_child(cancel_btn)
 	var delete_btn := Button.new()
-	delete_btn.text = "Delete All"
+	delete_btn.text = tr("STR_OPTIONS_DELETE_ALL")
 	delete_btn.custom_minimum_size = Vector2(100, 36)
 	delete_btn.add_theme_font_size_override("font_size", 16)
 	delete_btn.pressed.connect(func():
@@ -693,14 +837,14 @@ func _show_remove_card_art_prompt() -> void:
 	vbox.add_theme_constant_override("separation", 12)
 
 	var title := Label.new()
-	title.text = "Remove Card Art"
+	title.text = tr("STR_OPTIONS_REMOVE_ART_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 22)
 	title.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
 	vbox.add_child(title)
 
 	var hint := Label.new()
-	hint.text = "Enter the card number to remove (e.g. ESD01-008)"
+	hint.text = tr("STR_OPTIONS_REMOVE_ART_HINT")
 	hint.add_theme_font_size_override("font_size", 14)
 	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6, 1.0))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -722,7 +866,7 @@ func _show_remove_card_art_prompt() -> void:
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	btn_row.add_theme_constant_override("separation", 16)
 	var close_btn := Button.new()
-	close_btn.text = "Close"
+	close_btn.text = tr("STR_COMMON_CLOSE")
 	close_btn.custom_minimum_size = Vector2(100, 36)
 	close_btn.add_theme_font_size_override("font_size", 16)
 	close_btn.pressed.connect(func():
@@ -730,7 +874,7 @@ func _show_remove_card_art_prompt() -> void:
 		popup.queue_free())
 	btn_row.add_child(close_btn)
 	var remove_btn := Button.new()
-	remove_btn.text = "Remove"
+	remove_btn.text = tr("STR_OPTIONS_REMOVE")
 	remove_btn.custom_minimum_size = Vector2(100, 36)
 	remove_btn.add_theme_font_size_override("font_size", 16)
 	remove_btn.pressed.connect(func():
@@ -754,7 +898,7 @@ func _execute_remove_card_art(card_number: String, status_label: Label) -> void:
 		return
 	var parts := card_number.split("-")
 	if parts.size() < 2:
-		status_label.text = "Invalid format. Use SET-NUMBER (e.g. ESD01-008)"
+		status_label.text = tr("STR_OPTIONS_INVALID_CARD_NUMBER")
 		status_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4, 1.0))
 		status_label.visible = true
 		return
@@ -763,18 +907,18 @@ func _execute_remove_card_art(card_number: String, status_label: Label) -> void:
 	var target := base.path_join(set_id).path_join("%s.png" % card_number)
 	if FileAccess.file_exists(target):
 		DirAccess.remove_absolute(target)
-		status_label.text = "Removed %s" % card_number
+		status_label.text = tr("STR_OPTIONS_REMOVED_FMT") % card_number
 		status_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4, 1.0))
 		status_label.visible = true
 		_CardScript.clear_texture_cache()
 	else:
-		status_label.text = "No custom art found for %s" % card_number
+		status_label.text = tr("STR_OPTIONS_NO_ART_FOUND_FMT") % card_number
 		status_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.4, 1.0))
 		status_label.visible = true
 
 
 func _on_import_card_back() -> void:
-	DisplayServer.file_dialog_show("Import Card Back Image", "", "", false,
+	DisplayServer.file_dialog_show(tr("STR_OPTIONS_DIALOG_IMPORT_CARD_BACK"), "", "", false,
 		DisplayServer.FILE_DIALOG_MODE_OPEN_FILE, _image_filters,
 		_on_card_back_file_selected)
 
@@ -797,6 +941,29 @@ func _on_card_back_file_selected(status: bool, paths: PackedStringArray, _idx: i
 	_CardScript.clear_texture_cache()
 
 
+func _on_import_rage_marker() -> void:
+	DisplayServer.file_dialog_show(tr("STR_OPTIONS_DIALOG_IMPORT_RAGE_MARKER"), "", "", false,
+		DisplayServer.FILE_DIALOG_MODE_OPEN_FILE, _image_filters,
+		_on_rage_marker_file_selected)
+
+
+func _on_rage_marker_file_selected(status: bool, paths: PackedStringArray, _idx: int) -> void:
+	print("[Import] rage marker callback: status=%s paths=%s" % [status, paths])
+	if not status or paths.is_empty():
+		return
+	var src := paths[0]
+	var target := GameSettings.get_custom_base_path().path_join("rage")
+	DirAccess.make_dir_recursive_absolute(target)
+	for ext in ["png", "jpg", "jpeg", "webp"]:
+		var old := target.path_join("default.%s" % ext)
+		if FileAccess.file_exists(old):
+			DirAccess.remove_absolute(old)
+	var dest := target.path_join("default.png")
+	var err := _copy_as_png(src, dest)
+	print("[Import] rage marker result: %s (exists=%s)" % [err, FileAccess.file_exists(dest)])
+	_CardScript.clear_texture_cache()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
@@ -807,16 +974,16 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _on_advanced_pressed() -> void:
 	SfxManager.play("ui_click")
-	var parts := _create_modal("Advanced")
+	var parts := _create_modal(tr("STR_OPTIONS_ADVANCED_TITLE"))
 	var popup: PopupPanel = parts[0]
 	var vbox: VBoxContainer = parts[1]
 
-	_add_toggle_row(vbox, "Use Mobile Layout", "use_mobile_layout")
+	_add_toggle_row(vbox, tr("STR_OPTIONS_USE_MOBILE_LAYOUT"), "use_mobile_layout")
 
 	vbox.add_child(HSeparator.new())
 
 	var redownload_btn := Button.new()
-	redownload_btn.text = "Re-download Card Assets"
+	redownload_btn.text = tr("STR_OPTIONS_REDOWNLOAD_ASSETS")
 	redownload_btn.custom_minimum_size = Vector2(200, 40)
 	redownload_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	redownload_btn.add_theme_font_size_override("font_size", 18)
@@ -831,64 +998,94 @@ func _on_advanced_pressed() -> void:
 	_show_modal(popup)
 
 
+const _ART_LOCALES := ["en", "ja"]
+
+
 func _show_redownload_confirm() -> void:
-	var modal_parts := _create_modal("Re-download Card Assets")
+	var modal_parts := _create_modal(tr("STR_OPTIONS_REDOWNLOAD_ASSETS"))
 	var popup: PopupPanel = modal_parts[0]
 	var vbox: VBoxContainer = modal_parts[1]
 
-	var info := Label.new()
-	info.text = "This will delete all downloaded card artwork\nand re-download it from the server.\n\nCustom card art will not be affected."
-	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info.add_theme_font_size_override("font_size", 16)
-	vbox.add_child(info)
+	var prompt := Label.new()
+	prompt.text = tr("STR_OPTIONS_ART_PICK_LANGUAGE")
+	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt.add_theme_font_size_override("font_size", 16)
+	vbox.add_child(prompt)
+
+	for art_locale in _ART_LOCALES:
+		vbox.add_child(_build_locale_row(art_locale, popup))
+
+	vbox.add_child(HSeparator.new())
 
 	var btn_row := HBoxContainer.new()
 	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	btn_row.add_theme_constant_override("separation", 16)
-
 	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
+	cancel_btn.text = tr("STR_GB_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(120, 40)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 18)
 	cancel_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		popup.hide()
-	)
+		popup.hide())
 	btn_row.add_child(cancel_btn)
+	vbox.add_child(btn_row)
 
-	var confirm_btn := Button.new()
-	confirm_btn.text = "Re-download"
-	confirm_btn.custom_minimum_size = Vector2(160, 40)
-	confirm_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	confirm_btn.add_theme_font_size_override("font_size", 18)
-	confirm_btn.pressed.connect(func():
+	_show_modal(popup)
+
+
+func _build_locale_row(art_locale: String, popup: PopupPanel) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	var lang_label := Label.new()
+	lang_label.text = tr("STR_LANG_" + art_locale.to_upper())
+	lang_label.custom_minimum_size = Vector2(100, 0)
+	lang_label.add_theme_font_size_override("font_size", 18)
+	row.add_child(lang_label)
+
+	var cached_count: int = ArtworkDownloader.get_cached_count(art_locale)
+	var status_label := Label.new()
+	if cached_count > 0:
+		status_label.text = tr("STR_OPTIONS_ART_STATUS_CACHED_FMT").replace("{N}", str(cached_count))
+	else:
+		status_label.text = tr("STR_OPTIONS_ART_STATUS_NONE")
+	status_label.custom_minimum_size = Vector2(180, 0)
+	status_label.add_theme_font_size_override("font_size", 14)
+	status_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	row.add_child(status_label)
+
+	var action_btn := Button.new()
+	action_btn.text = tr("STR_OPTIONS_ART_REDOWNLOAD") if cached_count > 0 else tr("STR_OPTIONS_ART_DOWNLOAD")
+	action_btn.custom_minimum_size = Vector2(140, 36)
+	action_btn.add_theme_font_size_override("font_size", 16)
+	action_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		ArtworkDownloader.clear_downloaded_artwork()
+		GameSettings.card_art_locale = art_locale
+		GameSettings.save()
+		ArtworkDownloader.clear_downloaded_artwork(art_locale)
 		_CardScript.clear_texture_cache()
 		popup.hide()
-		NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn")
-	)
-	btn_row.add_child(confirm_btn)
+		NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn"))
+	row.add_child(action_btn)
 
-	vbox.add_child(btn_row)
-	_show_modal(popup)
+	return row
 
 
 func _on_audio_pressed() -> void:
 	SfxManager.play("ui_click")
-	var parts := _create_modal("Audio")
+	var parts := _create_modal(tr("STR_OPTIONS_AUDIO_TITLE"))
 	var popup: PopupPanel = parts[0]
 	var vbox: VBoxContainer = parts[1]
 
 	# Sound volume slider (OFF, 25%, 50%, 75%, 100%)
 	var sound_row := HBoxContainer.new()
 	var sound_label := Label.new()
-	sound_label.text = "Sound Effects"
+	sound_label.text = tr("STR_OPTIONS_SOUND_EFFECTS")
 	sound_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sound_label.add_theme_font_size_override("font_size", 18)
 	sound_row.add_child(sound_label)
-	var sound_volume_labels := ["OFF", "25%", "50%", "75%", "100%"]
+	var sound_volume_labels := [tr("STR_VOL_OFF"), "25%", "50%", "75%", "100%"]
 	var sound_value_label := Label.new()
 	sound_value_label.text = sound_volume_labels[GameSettings.sound_volume]
 	sound_value_label.custom_minimum_size = Vector2(40, 0)
@@ -912,11 +1109,11 @@ func _on_audio_pressed() -> void:
 	# Music volume slider (OFF, 25%, 50%, 75%, 100%)
 	var music_row := HBoxContainer.new()
 	var music_label := Label.new()
-	music_label.text = "Music"
+	music_label.text = tr("STR_OPTIONS_MUSIC")
 	music_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	music_label.add_theme_font_size_override("font_size", 18)
 	music_row.add_child(music_label)
-	var music_volume_labels := ["OFF", "25%", "50%", "75%", "100%"]
+	var music_volume_labels := [tr("STR_VOL_OFF"), "25%", "50%", "75%", "100%"]
 	var music_value_label := Label.new()
 	music_value_label.text = music_volume_labels[GameSettings.music_volume]
 	music_value_label.custom_minimum_size = Vector2(40, 0)

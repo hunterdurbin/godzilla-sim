@@ -1,0 +1,812 @@
+keys,en,ja
+STR_UNKNOWN,Unknown,不明
+STR_MENU_SUBTITLE,Unofficial Godzilla tcg sim,非公式ゴジラTCGシム
+STR_MENU_PLAY_SELF,Solo v Self,ソロ対自分
+STR_MENU_PLAY_BOT,Solo v Bot,ソロ対ボット
+STR_MENU_LAN,LAN Multiplayer,LANマルチプレイ
+STR_MENU_ONLINE,Online Multiplayer,オンラインマルチプレイ
+STR_MENU_DECK_BUILDER,Deck Builder,デッキビルダー
+STR_MENU_EXTRAS,Extras,その他
+STR_MENU_OPTIONS,Options,設定
+STR_MENU_UPDATE_AVAILABLE,Update Available,アップデートあり
+STR_MENU_SOUND_FMT,Sound: {VAL},音量: {VAL}
+STR_MENU_MUSIC_FMT,Music: {VAL},音楽: {VAL}
+STR_MENU_BOT_DIFFICULTY,Bot Difficulty,ボットの難易度
+STR_MENU_DIFFICULTY_EASY,Easy,かんたん
+STR_MENU_DIFFICULTY_NORMAL,Normal,ふつう
+STR_MENU_DIFFICULTY_HARD,Hard,むずかしい
+STR_MENU_SEED,Seed:,シード:
+STR_MENU_SEED_PLACEHOLDER,random,ランダム
+STR_MENU_BOT_SPEED_AUTO,Bot Speed: Automatic,ボット速度: 自動
+STR_MENU_BOT_SPEED_FMT,Bot Speed: %.1fs,ボット速度: %.1f秒
+STR_MENU_PLAYSTYLE_AUTO,Playstyle: Automatic,プレイスタイル: 自動
+STR_MENU_PLAYSTYLE_FMT,Playstyle: %s,プレイスタイル: %s
+STR_MENU_PLAYSTYLE_AUTOMATIC,Automatic,自動
+STR_MENU_PLAYSTYLE_INVASION,Invasion,進攻型
+STR_MENU_PLAYSTYLE_COUNTER,Counter,撃退型
+STR_MENU_PLAYSTYLE_BALANCED,Balanced,バランス型
+STR_MENU_BOT_CONFIG,Bot Config,ボット設定
+STR_MENU_BOT_DECK,Bot Deck,ボットデッキ
+STR_MENU_BOT_DECK_RANDOM,Use Random Deck,ランダムデッキを使用
+STR_MENU_DECK_SELECT_ALL,Select All,すべて選択
+STR_MENU_DECK_UNSELECT_ALL,Unselect All,すべて解除
+STR_MENU_DECK_RESET_WEIGHTS,Reset Weights,重みをリセット
+STR_MENU_UPDATE_VERSIONS_FMT,"Current version: v%s
+New version: %s","現在のバージョン: v%s
+新バージョン: %s"
+STR_MENU_UPDATE_NOW,Update Now,今すぐアップデート
+STR_MENU_UPDATE_SKIP,Skip This Version,このバージョンをスキップ
+STR_MENU_UPDATE_LATER,Later,あとで
+STR_MENU_RECONNECT_TITLE,Game In Progress,進行中のゲーム
+STR_MENU_RECONNECT_PROMPT,"You were disconnected from a game.
+Would you like to reconnect?","ゲームから切断されました。
+再接続しますか?"
+STR_MENU_RECONNECT,Reconnect,再接続
+STR_MENU_RETRY,Retry,再試行
+STR_MENU_DISMISS,Dismiss,閉じる
+STR_MENU_CONNECTING,Connecting...,接続中...
+STR_MENU_RECONNECT_CONNECTING,Connecting to relay server...,リレーサーバーに接続中...
+STR_MENU_RECONNECT_VERIFYING,Connected! Verifying game version...,接続しました! ゲームバージョンを確認中...
+STR_MENU_RECONNECT_VERSION_MISMATCH,Version mismatch. Cannot reconnect.,バージョンが一致しません。再接続できません。
+STR_MENU_RECONNECT_FAILED_FMT,"Failed to connect (%s).
+Room may no longer exist.","接続に失敗しました (%s)。
+ルームが存在しない可能性があります。"
+STR_MENU_ERR_TIMEOUT,timeout,タイムアウト
+STR_MENU_ERR_CODE_FMT,error %d,エラー %d
+STR_COMMON_CANCEL,Cancel,キャンセル
+STR_COMMON_OK,OK,OK
+STR_COMMON_SAVE,Save,保存
+STR_COMMON_CLEAR,Clear,クリア
+STR_COMMON_CLOSE,Close,閉じる
+STR_COMMON_DELETE,Delete,削除
+STR_COMMON_COPY,Copy,コピー
+STR_COMMON_COPIED,Copied!,コピーしました!
+STR_VOL_OFF,OFF,オフ
+STR_OPTIONS_TITLE,Options,設定
+STR_OPTIONS_PLAYER_NAME,Player Name,プレイヤー名
+STR_OPTIONS_NAME_PLACEHOLDER,Enter name...,名前を入力...
+STR_OPTIONS_AUTOMATION,Automation...,自動化...
+STR_OPTIONS_CUSTOMIZE,Customize...,カスタマイズ...
+STR_OPTIONS_ADVANCED,Advanced...,詳細...
+STR_OPTIONS_AUDIO,Audio...,オーディオ...
+STR_OPTIONS_BACK,Back,戻る
+STR_OPTIONS_LANGUAGE_FMT,Language: {LANG},言語: {LANG}
+STR_OPTIONS_ART_PICK_LANGUAGE,Choose a language to download:,ダウンロードする言語を選択:
+STR_OPTIONS_ART_STATUS_CACHED_FMT,{N} cards cached,{N}枚キャッシュ済み
+STR_OPTIONS_ART_STATUS_NONE,not downloaded,未ダウンロード
+STR_OPTIONS_ART_DOWNLOAD,Download,ダウンロード
+STR_OPTIONS_ART_REDOWNLOAD,Re-download,再ダウンロード
+STR_OPTIONS_ART_MATCH_TITLE,Switch Card Artwork?,カードアートを切り替えますか？
+STR_OPTIONS_ART_MATCH_PROMPT_FMT,Also switch card artwork to {LANG}?,カードアートも {LANG} に切り替えますか？
+STR_OPTIONS_ART_MATCH_YES,"Yes, switch",はい、切り替える
+STR_OPTIONS_ART_MATCH_NO,Keep current,このまま
+STR_OPTIONS_AUTOMATION_TITLE,Automation,自動化
+STR_OPTIONS_CUSTOMIZE_TITLE,Customize,カスタマイズ
+STR_OPTIONS_ADVANCED_TITLE,Advanced,詳細
+STR_OPTIONS_AUDIO_TITLE,Audio,オーディオ
+STR_OPTIONS_AUTO_DRAW,Auto Draw,自動ドロー
+STR_OPTIONS_AUTO_PHASE,Auto Phase Advance,自動フェイズ進行
+STR_OPTIONS_AUTO_DISCARD_STRATEGIES,Auto Discard Strategies,戦略カード自動捨て
+STR_OPTIONS_AUTO_RESET_RAGE,Auto Reset Rage,怒り自動リセット
+STR_OPTIONS_AUTO_COUNTER_CHECK,Auto Counter Check,撃退確認自動化
+STR_OPTIONS_AUTO_ADVANCE,Auto Advance,自動前進
+STR_OPTIONS_CONFIRM_MAIN_PASS,Confirm Main Phase Pass,メインフェイズ終了の確認
+STR_OPTIONS_STACKED_VIEW,Default Stacked View,初期表示は重ねて表示
+STR_OPTIONS_SORT_TYPE_ORDER,Hand Sort Type Order,手札並び替え順 (タイプ)
+STR_OPTIONS_SORT_RANK_ORDER,Hand Sort Rank Order,手札並び替え順 (等級)
+STR_OPTIONS_SORT_MBS,"Monster, Battle, Strategy","怪獣、交戦、戦略"
+STR_OPTIONS_SORT_MSB,"Monster, Strategy, Battle","怪獣、戦略、交戦"
+STR_OPTIONS_SORT_BMS,"Battle, Monster, Strategy","交戦、怪獣、戦略"
+STR_OPTIONS_SORT_BSM,"Battle, Strategy, Monster","交戦、戦略、怪獣"
+STR_OPTIONS_SORT_SMB,"Strategy, Monster, Battle","戦略、怪獣、交戦"
+STR_OPTIONS_SORT_SBM,"Strategy, Battle, Monster","戦略、交戦、怪獣"
+STR_OPTIONS_ASCENDING,Ascending,昇順
+STR_OPTIONS_DESCENDING,Descending,降順
+STR_OPTIONS_CUSTOM_PLAYMAT,Custom Playmat,プレイマットのカスタム
+STR_OPTIONS_PLAYMAT_OPPONENT,Apply Playmat to Opponent,プレイマットを相手にも適用
+STR_OPTIONS_HINT_IOS_DEFAULT,Use the Files app to add images (named default.png),ファイルアプリで画像 (default.png) を追加してください
+STR_OPTIONS_HINT_MOBILE_PLAYMAT,Import any image to use as your playmat background,プレイマット背景に使用する画像をインポートしてください
+STR_OPTIONS_HINT_DESKTOP_DEFAULT,"Image must be named: default.png (or .jpg, .jpeg, .webp)","画像のファイル名は default.png である必要があります (.jpg, .jpeg, .webp も可)"
+STR_OPTIONS_HINT_MOBILE_CARD_BACK,Import any image to use as your card back,カード裏面に使用する画像をインポートしてください
+STR_OPTIONS_HINT_CARD_ART,"Files must be named <CARD_NUMBER>.png (e.g. ESD01-008.png)","ファイル名は <カード番号>.png にしてください (例: ESD01-008.png)"
+STR_OPTIONS_HOW_TO_ADD_FILES,How to Add Files,ファイルの追加方法
+STR_OPTIONS_IMPORT_IMAGE,Import Image,画像をインポート
+STR_OPTIONS_IMPORT_IMAGES,Import Images,画像をインポート
+STR_OPTIONS_OPEN_PLAYMAT_FOLDER,Open Playmat Folder,プレイマットフォルダを開く
+STR_OPTIONS_OPEN_CARD_ART_FOLDER,Open Card Art Folder,カードアートフォルダを開く
+STR_OPTIONS_OPEN_CARD_BACK_FOLDER,Open Card Back Folder,カード裏面フォルダを開く
+STR_OPTIONS_DELETE_ALL,Delete All,すべて削除
+STR_OPTIONS_REMOVE_ART,Remove Art,アートを削除
+STR_OPTIONS_REMOVE,Remove,削除
+STR_OPTIONS_COLOR_OVERLAY,Color Overlay,カラーオーバーレイ
+STR_OPTIONS_OVERLAY_NONE,Do Not Apply,適用しない
+STR_OPTIONS_OVERLAY_SELF,Only Myself,自分のみ
+STR_OPTIONS_OVERLAY_OPPONENT,Only Opponent,相手のみ
+STR_OPTIONS_OVERLAY_BOTH,Both Players,両方
+STR_OPTIONS_CUSTOM_CARD_ART,Custom Card Art,カードアートのカスタム
+STR_OPTIONS_CUSTOM_CARD_BACK,Custom Card Back,カード裏面のカスタム
+STR_OPTIONS_BACK_DISABLED,Disabled,無効
+STR_OPTIONS_BACK_SELF,Enabled (myself),有効 (自分)
+STR_OPTIONS_BACK_BOTH,Enabled (both),有効 (両方)
+STR_OPTIONS_USE_MOBILE_LAYOUT,Use Mobile Layout,モバイルレイアウトを使用
+STR_OPTIONS_REDOWNLOAD_ASSETS,Re-download Card Assets,カードアセットを再ダウンロード
+STR_OPTIONS_SOUND_EFFECTS,Sound Effects,効果音
+STR_OPTIONS_MUSIC,Music,音楽
+STR_OPTIONS_ENTER_CARD_NUMBER,Enter Card Number,カード番号を入力
+STR_OPTIONS_CARD_NUMBER_HINT,"e.g. ESD01-008, EBP02-045","例: ESD01-008、EBP02-045"
+STR_OPTIONS_REMOVE_ART_TITLE,Remove Card Art,カードアートを削除
+STR_OPTIONS_REMOVE_ART_HINT,Enter the card number to remove (e.g. ESD01-008),削除するカード番号を入力してください (例: ESD01-008)
+STR_OPTIONS_DELETE_ALL_CONFIRM_TITLE,Delete All Custom Card Art?,すべてのカスタムカードアートを削除しますか?
+STR_OPTIONS_DELETE_ALL_CONFIRM_BODY,"This will remove all imported card art images.
+This cannot be undone.","インポートしたカードアート画像をすべて削除します。
+この操作は元に戻せません。"
+STR_OPTIONS_INVALID_CARD_NUMBER,Invalid format. Use SET-NUMBER (e.g. ESD01-008),書式が無効です。SET-番号 の形式で入力してください (例: ESD01-008)
+STR_OPTIONS_REMOVED_FMT,Removed %s,%s を削除しました
+STR_OPTIONS_NO_ART_FOUND_FMT,No custom art found for %s,%s のカスタムアートが見つかりません
+STR_OPTIONS_DIALOG_IMPORT_PLAYMAT,Import Playmat Image,プレイマット画像をインポート
+STR_OPTIONS_DIALOG_IMPORT_CARD_ART,Import Card Art,カードアートをインポート
+STR_OPTIONS_DIALOG_IMPORT_CARD_BACK,Import Card Back Image,カード裏面画像をインポート
+STR_OPTIONS_FOLDERS_CREATED,The folders have been created for you.,フォルダが作成されました。
+STR_OPTIONS_IOS_INSTR_PLAYMAT_FMT,"1. Open the Files app on your device
+2. Go to: On My iPhone > %s > custom > playmat
+3. Copy an image named default.png
+   (also supports .jpg, .jpeg, .webp)
+4. Return to this app and enable Custom Playmat","1. デバイスでファイルアプリを開く
+2. 移動先: このiPhone内 > %s > custom > playmat
+3. default.png という名前の画像をコピー
+   (.jpg、.jpeg、.webp も可)
+4. このアプリに戻り、プレイマットのカスタムを有効化"
+STR_OPTIONS_IOS_INSTR_CARD_ART_FMT,"1. Open the Files app on your device
+2. Go to: On My iPhone > %s > custom > cardArt > [SET]
+3. Copy images named [SET]-[NUMBER].png
+   (e.g. ESD01-008.png, EBP02-045.png)
+4. Sets: %s
+5. Return to this app and enable Custom Card Art","1. デバイスでファイルアプリを開く
+2. 移動先: このiPhone内 > %s > custom > cardArt > [セット]
+3. [セット]-[番号].png という名前の画像をコピー
+   (例: ESD01-008.png、EBP02-045.png)
+4. セット: %s
+5. このアプリに戻り、カードアートのカスタムを有効化"
+STR_OPTIONS_IOS_INSTR_CARD_BACK_FMT,"1. Open the Files app on your device
+2. Go to: On My iPhone > %s > custom > cardBack
+3. Copy an image named default.png
+   (also supports .jpg, .jpeg, .webp)
+4. Return to this app and enable Custom Card Back","1. デバイスでファイルアプリを開く
+2. 移動先: このiPhone内 > %s > custom > cardBack
+3. default.png という名前の画像をコピー
+   (.jpg、.jpeg、.webp も可)
+4. このアプリに戻り、カード裏面のカスタムを有効化"
+STR_OPTIONS_CUSTOM_RAGE_MARKER,Custom Rage Marker,「怒り」マーカーのカスタム
+STR_OPTIONS_HINT_MOBILE_RAGE,Import any image to use as your rage marker,「怒り」マーカーに使用する画像をインポートしてください
+STR_OPTIONS_OPEN_RAGE_FOLDER,Open Rage Marker Folder,「怒り」マーカーフォルダを開く
+STR_OPTIONS_DIALOG_IMPORT_RAGE_MARKER,Import Rage Marker Image,「怒り」マーカー画像をインポート
+STR_OPTIONS_IOS_INSTR_RAGE_FMT,"1. Open the Files app on your device
+2. Go to: On My iPhone > %s > custom > rage
+3. Copy an image named default.png
+   (also supports .jpg, .jpeg, .webp)","1. デバイスでファイルアプリを開く
+2. 移動先: このiPhone内 > %s > custom > rage
+3. default.png という名前の画像をコピー
+   (.jpg、.jpeg、.webp も可)"
+STR_LANG_EN,English,English
+STR_LANG_JA,日本語,日本語
+STR_TRAIT_KAIJU,Kaiju,
+STR_TRAIT_MECHA,Mecha,
+STR_TRAIT_ALIEN,Alien,
+STR_TRAIT_MUTANT,Mutant,
+STR_TRAIT_ANGUIRUS,Anguirus,
+STR_TRAIT_BABY_GODZILLA,Baby Godzilla,
+STR_TRAIT_BARAGON,Baragon,
+STR_TRAIT_BATTRA,Battra,
+STR_TRAIT_BIOLLANTE,Biollante,
+STR_TRAIT_BOAT,Boat,
+STR_TRAIT_CHIBI,Chibi,
+STR_TRAIT_CHIBI_GODZILLA_RAIDS_AGAIN,Chibi Godzilla Raids Again,
+STR_TRAIT_CITY,City,
+STR_TRAIT_CRYSTAL,Crystal,
+STR_TRAIT_DAGAHRA,Dagahra,
+STR_TRAIT_DESGHIDORAH,Desghidorah,
+STR_TRAIT_DESTOROYAH,Destoroyah,
+STR_TRAIT_DORAT,Dorat,
+STR_TRAIT_EBIRAH,Ebirah,
+STR_TRAIT_FEST,Fest,
+STR_TRAIT_FINAL_WARS,Final Wars,
+STR_TRAIT_FOURTH_FORM,4th Form,
+STR_TRAIT_GABARA,Gabara,
+STR_TRAIT_GHIDORAH,Ghidorah,
+STR_TRAIT_GHOGO,Ghogo,
+STR_TRAIT_GIANT_CONDOR,Giant Condor,
+STR_TRAIT_GIGAN,Gigan,
+STR_TRAIT_GODZILLA,Godzilla,
+STR_TRAIT_GODZILLASAURUS,Godzillasaurus,
+STR_TRAIT_GODZILLA_JR,Godzilla Jr.,
+STR_TRAIT_GOROSAURUS,Gorosaurus,
+STR_TRAIT_HEDORAH,Hedorah,
+STR_TRAIT_JET_JAGUAR,Jet Jaguar,
+STR_TRAIT_KAMACURAS,Kamacuras,
+STR_TRAIT_KING_CAESAR,King Caesar,
+STR_TRAIT_KING_GHIDORAH,King Ghidorah,
+STR_TRAIT_KUMONGA,Kumonga,
+STR_TRAIT_LITTLE_GODZILLA,Little Godzilla,
+STR_TRAIT_MANDA,Manda,
+STR_TRAIT_MECH,Mech,
+STR_TRAIT_MECHAGODZILLA,Mechagodzilla,
+STR_TRAIT_MEGAGUIRUS,Megaguirus,
+STR_TRAIT_MEGALON,Megalon,
+STR_TRAIT_MEGANULA,Meganula,
+STR_TRAIT_MINILLA,Minilla,
+STR_TRAIT_MOGUERA,Moguera,
+STR_TRAIT_MONSTER_X,Monster X,
+STR_TRAIT_MOTHRA,Mothra,
+STR_TRAIT_ORGA,Orga,
+STR_TRAIT_RODAN,Rodan,
+STR_TRAIT_SACRED_GUARDIAN_BEASTS,Sacred Guardian Beasts,
+STR_TRAIT_SECOND_FORM,2nd Form,
+STR_TRAIT_SPACEGODZILLA,SpaceGodzilla,
+STR_TRAIT_SUPER_X,Super X,
+STR_TRAIT_THIRD_FORM,3rd Form,
+STR_TRAIT_TITANOSAURUS,Titanosaurus,
+STR_TRAIT_TOKEN,Token,
+STR_TRAIT_TWENTY_THIRD_CENTURY,23rd century,
+STR_TRAIT_VARAN,Varan,
+STR_TRAIT_WEAPON,Weapon,
+STR_TRAIT_ZILLA,Zilla,
+STR_TRAIT_GODZILLA_EARTH,Godzilla Earth,
+STR_TRAIT_HIGHER_DIMENSIONAL,Higher Dimensional,
+STR_TRAIT_TENTACLE,Tentacle,
+STR_TRAIT_VALKYRIE,Valkyrie,
+STR_TRAIT_KAISER_GHIDORAH,Kaiser Ghidorah,
+STR_TRAIT_SANDA,Sanda,
+STR_TRAIT_GAIRA,Gaira,
+STR_TRAIT_GEZORA,Gezora,
+STR_TRAIT_GANIMES,Ganimes,
+STR_TRAIT_KAMOEBAS,Kamoebas,
+STR_TRAIT_SERVUM,Servum,
+STR_COLOR_RED,Red,赤
+STR_COLOR_BLUE,Blue,青
+STR_COLOR_WHITE,White,白
+STR_COLOR_GREEN,Green,緑
+STR_TYPE_MONSTER,Monster,怪獣
+STR_TYPE_BATTLE,Battle,交戦
+STR_TYPE_STRATEGY,Strategy,戦略
+STR_TYPE_RAGE,Rage,怒り
+STR_PHASE_START,Start Phase,開始フェイズ
+STR_PHASE_MAIN,Main Phase,メインフェイズ
+STR_PHASE_COUNTER,Counter Phase,撃退フェイズ
+STR_PHASE_END,End Phase,エンドフェイズ
+STR_PB_THREAT,Threat:,脅威:
+STR_PB_THREAT_SHORT,T:,脅:
+STR_PB_RAGE_ZONE,Rage Zone,怒りゾーン
+STR_PB_CP,CP:,CP:
+STR_PB_DISCARD,Discard,捨て札
+STR_GB_TURN_FMT,Turn: {N},ターン: {N}
+STR_GB_TURN_HEADER_FMT,Turn {N} | {PLAYER} - {PHASE},ターン {N} | {PLAYER} - {PHASE}
+STR_GB_PHASE_SUB_RESOLVE_EFFECTS,"      Resolve Effects","      効果解決"
+STR_GB_PHASE_SUB_DRAW_CARDS,"      Draw Cards","      ドロー"
+STR_GB_PHASE_SUB_DISCARD_STRATEGIES,"      Discard Strategies","      戦略カード廃棄"
+STR_GB_PHASE_SUB_RESET_RAGE,"      Reset Rage","      怒りリセット"
+STR_GB_PHASE_SUB_PLAYER_ACTIONS,"      Player Actions","      プレイヤーアクション"
+STR_GB_PHASE_SUB_COUNTER_CHECK,"      Counter Check","      撃退確認"
+STR_GB_PHASE_SUB_ADVANCE,"      Advance","      前進"
+STR_GB_PHASE_SUB_REFILL_HAND,"      Refill Hand","      手札補充"
+STR_GB_CANCEL,Cancel,キャンセル
+STR_GB_CONFIRM,Confirm,決定
+STR_GB_PLAY_BATTLE,Play Battle,交戦出現
+STR_GB_PLAY_STRATEGY,Strategy,戦略
+STR_GB_GAIN_RAGE,Gain Rage,怒り獲得
+STR_GB_PLAY_MONSTER,Play Monster,怪獣出現
+STR_GB_INVADE,Invade,進攻
+STR_GB_END_MAIN,End Main,メイン終了
+STR_GB_END_MAIN_QUESTION,End Main Phase?,メインフェイズを終了？
+STR_GB_SKIP,Skip,スキップ
+STR_GB_REPORT_BUG,Report Bug,バグ報告
+STR_GB_CONCEDE,Concede,降参
+STR_GB_MAIN_MENU,Main Menu,メインメニュー
+STR_GB_CLAIM_WIN,Claim Win,勝利を宣言
+STR_GB_RETURN_TO_MENU,Return to Menu,メニューに戻る
+STR_GB_GAME_LOG,"Game Log:
+","ゲームログ:
+"
+STR_GB_CHAT_PLACEHOLDER,Type to chat...,チャットを入力...
+STR_GB_SEARCH_YOUR_DECK,Search your deck:,デッキを検索:
+STR_GB_SHOW_ALL,Show All,全て表示
+STR_GB_STACKED,Stacked,スタック
+STR_GB_VIEW_BOARD,View Board,ボードを表示
+STR_GB_DISCARD_PILE,Discard Pile,捨て札
+STR_GB_MONSTER_DECK,Monster Deck,怪獣デッキ
+STR_GB_DECK,Deck,デッキ
+STR_GB_ZONE_STACK,Zone Stack,エリアスタック
+STR_GB_CLOSE,Close,閉じる
+STR_GB_GAME_OVER,Game Over!,ゲームオーバー!
+STR_GB_REMATCH,Rematch,再戦
+STR_GB_WAITING,Waiting...,待機中...
+STR_GB_ARRANGE_CARDS,Arrange cards:,カードを並び替え:
+STR_GB_KEEP_ON_DECK,Keep on Deck (top -> bottom),デッキに戻す (上→下)
+STR_GB_SEND_TO_DISCARD,Send to Discard,捨て札に送る
+STR_GB_SELECT_CARDS,Select cards:,カードを選択:
+STR_GB_AVAILABLE_CARDS,Available Cards,利用可能なカード
+STR_GB_SELECTED_FMT,Selected ({N}/{MAX}),選択済み ({N}/{MAX})
+STR_GB_CONFIRM_COUNT_FMT,Confirm ({N}/{MAX}),決定 ({N}/{MAX})
+STR_GB_SHOW_CARDS,Show Cards,カードを表示
+STR_GB_HIDE_CARDS,Hide Cards,カードを隠す
+STR_GB_SORT,Sort,並び替え
+STR_GB_SHOW_BOT_CARDS,Show Bot Cards,ボットのカードを表示
+STR_GB_HIDE_BOT_CARDS,Hide Bot Cards,ボットのカードを隠す
+STR_GB_SAVE_GAME,Save Game,ゲームを保存
+STR_GB_SAVED,Saved!,保存しました!
+STR_GB_COIN_FLIP_WAITING,Opponent won the coin flip. Waiting for their choice...,相手がコイントスに勝ちました。選択を待っています...
+STR_GB_COIN_FLIP_WON,You won the coin flip! Go first or second?,コイントスに勝ちました！先攻？後攻？
+STR_GB_GO_FIRST,Go First,先攻
+STR_GB_GO_SECOND,Go Second,後攻
+STR_GB_LOG,Log,ログ
+STR_GB_CP,CP,CP
+STR_GB_TURNS,Turns,ターン
+STR_GB_SELECT_ZONE,Select a ZONE to place the battle card:,交戦カードを置くエリアを選択:
+STR_GB_NO_DISCARD,No cards in discard pile.,捨て札にカードがありません。
+STR_GB_NO_MONSTER_DECK,No cards remaining in monster deck.,怪獣デッキにカードが残っていません。
+STR_GB_ZONE_HEADER_FMT,Zone {N} ({C} cards),エリア {N} ({C}枚)
+STR_GB_STRATEGY_HEADER_FMT,Strategy {N} ({C} cards),戦略 {N} ({C}枚)
+STR_GB_TITLE_COUNT_FMT,{TITLE} ({C} cards),{TITLE} ({C}枚)
+STR_GB_WINS_FMT,{NAME} Wins!,{NAME} の勝利!
+STR_GB_SELECT_DISCARD_FMT,Select {N} cards to discard:,捨てるカードを {N} 枚選択:
+STR_GB_SELECT_MORE_DISCARD_FMT,Select {N} more cards to discard:,あと {N} 枚捨てるカードを選択:
+STR_GB_PRESS_CONFIRM_DISCARD,Press Confirm to discard selected cards,決定を押して選択したカードを捨てる
+STR_GB_OPPONENT_DISCONNECTED_WAIT,"Opponent disconnected.
+Waiting for reconnect...","対戦相手が切断されました。
+再接続を待っています..."
+STR_GB_CONNECTION_LOST_RECONNECTING,"Connection lost.
+Reconnecting...","接続が失われました。
+再接続中..."
+STR_GB_CONNECTION_LOST_RETRYING,"Connection lost.
+Retrying...","接続が失われました。
+再試行中..."
+STR_GB_OPPONENT_DISCONNECTED,Opponent disconnected.,対戦相手が切断されました。
+STR_GB_YOU_WIN_OPP_DISC,"You Win!
+Opponent disconnected","あなたの勝利!
+対戦相手が切断されました"
+STR_GB_CLAIM_WIN_TIMER_FMT,Claim win available in {N}s,勝利を宣言できるまで {N} 秒
+STR_GB_RECONNECTING_FMT,Reconnecting... {N}s,再接続中... {N} 秒
+STR_GB_SOUND_FMT,Sound: {VAL},音量: {VAL}
+STR_GB_MUSIC_FMT,Music: {VAL},音楽: {VAL}
+STR_GENERIC_BACK,Back,戻る
+STR_LOBBY_HOST,Host Game,ホストする
+STR_LOBBY_JOIN,Join Game,参加する
+STR_LOBBY_START,Start Game,ゲーム開始
+STR_LOBBY_PORT,Port:,ポート:
+STR_LOBBY_COPY,Copy,コピー
+STR_LOBBY_REFRESH,Refresh,更新
+STR_LOBBY_ENTER_CODE,Enter game code,ゲームコードを入力
+STR_LOBBY_IP_PLACEHOLDER,192.168.1.x,192.168.1.x
+STR_LAN_HOST_FAILED_FMT,Failed to host (port %d may be in use),ホスト失敗 (ポート %d は使用中の可能性があります)
+STR_LAN_HOSTING_FMT,"Hosting on %s:%d
+Waiting for opponent...","%s:%d でホスト中
+対戦相手を待機中..."
+STR_LAN_ENTER_IP,Enter the host's IP address,ホストのIPアドレスを入力してください
+STR_LAN_CONNECT_FAILED,Failed to connect,接続に失敗しました
+STR_LAN_CONNECTING_FMT,Connecting to %s:%d...,%s:%d に接続中...
+STR_LAN_OPPONENT_CONNECTED_HOST,Opponent connected! Select a deck and press Start.,対戦相手が接続しました! デッキを選択してスタートを押してください。
+STR_LAN_CONNECTED_SELECT_DECK,Connected! Select a deck.,接続しました! デッキを選択してください。
+STR_LAN_OPPONENT_DIFFERENT_VERSION_FMT,Opponent has a different version (you: v%s).,対戦相手のバージョンが異なります (あなた: v%s)。
+STR_LAN_OPPONENT_DISCONNECTED,Opponent disconnected.,対戦相手が切断しました。
+STR_LAN_CONNECTION_FAILED_RETRY,Connection failed. Check the IP and try again.,接続に失敗しました。IPを確認して再試行してください。
+STR_LAN_VERSION_MISMATCH_FMT,"Version mismatch! You: v%s, Opponent: v%s","バージョンが一致しません! あなた: v%s、対戦相手: v%s"
+STR_LAN_DECK_SENT_FMT,"Deck ""%s"" sent to host. Waiting for host to start...","デッキ「%s」をホストに送信しました。ホストの開始を待機中..."
+STR_LAN_OPPONENT_DECK_READY,Opponent deck received. Ready to start!,対戦相手のデッキを受信しました。開始できます!
+STR_EXTRAS_WATCH_REPLAY,Watch Replay,リプレイを見る
+STR_EXTRAS_LOAD_GAME,Load Game,ゲームを読み込む
+STR_EXTRAS_LOAD_GAME_ONLINE,Load Game Online,オンラインゲームを読み込む
+STR_EXTRAS_NO_REPLAYS,No replays found.,リプレイが見つかりません。
+STR_EXTRAS_NO_SAVES,No saved games found.,保存されたゲームが見つかりません。
+STR_EXTRAS_SELECT_REPLAY,Select Replay,リプレイを選択
+STR_EXTRAS_SELECT_SAVE_HOST,Select a save to host as a private online game,プライベートオンラインゲームとしてホストするセーブを選択
+STR_EXTRAS_HOST_ONLINE_GAME,Host Online Game,オンラインゲームをホスト
+STR_EXTRAS_FAVORITES_ONLY,Favorites Only,お気に入りのみ
+STR_EXTRAS_CURRENT_VERSION,Current Version,現バージョン
+STR_EXTRAS_OPEN_FOLDER,Open Folder,フォルダを開く
+STR_EXTRAS_DELETE_ALL_RECENT,Delete All Recent,最近のものをすべて削除
+STR_EXTRAS_LIST_COUNT_FMT,"%d shown / %d total (%d favorited)","表示 %d 件 / 合計 %d 件 (お気に入り %d 件)"
+STR_EXTRAS_SAVE_LINE_FMT,"%s  |  %s vs %s  |  Turn %d  |  %s","%s  |  %s vs %s  |  ターン %d  |  %s"
+STR_EXTRAS_REPLAY_LINE_FMT,"%s  |  %s vs %s  |  %d turns  |  Winner: %s","%s  |  %s vs %s  |  %d ターン  |  勝者: %s"
+STR_EXTRAS_LABEL,Label,ラベル
+STR_EXTRAS_SET_LABEL,Set Label,ラベルを設定
+STR_EXTRAS_LABEL_PLACEHOLDER,Enter label...,ラベルを入力...
+STR_EXTRAS_CONFIRM,Confirm,確定
+STR_EXTRAS_CONFIRM_DELETE_REPLAY,Delete this replay?,このリプレイを削除しますか?
+STR_EXTRAS_CONFIRM_DELETE_SAVE,Delete this save?,このセーブを削除しますか?
+STR_EXTRAS_CONFIRM_DELETE_ALL_REPLAYS,Delete all non-favorited replays?,お気に入り以外のリプレイをすべて削除しますか?
+STR_EXTRAS_CONFIRM_DELETE_ALL_SAVES,Delete all non-favorited saves?,お気に入り以外のセーブをすべて削除しますか?
+STR_EXTRAS_LOAD_REPLAY_FAILED,Failed to load replay.,リプレイの読み込みに失敗しました。
+STR_EXTRAS_LOAD_SAVE_FAILED,Failed to load save file.,セーブファイルの読み込みに失敗しました。
+STR_EXTRAS_SHARE_CODE,Share this code with your opponent:,このコードを対戦相手と共有してください:
+STR_EXTRAS_OPPONENT_CONNECTED_VERIFYING,Opponent connected! Verifying version...,対戦相手が接続しました! バージョンを確認中...
+STR_EXTRAS_OPPONENT_DISCONNECTED_WAITING,Opponent disconnected. Waiting for reconnect...,対戦相手が切断しました。再接続を待機中...
+STR_EXTRAS_OPPONENT_VERIFIED,Opponent connected and verified! Press Start.,対戦相手が接続・確認されました! スタートを押してください。
+STR_EXTRAS_PLAY_AS_WHICH,Play as which player?,どのプレイヤーでプレイしますか?
+STR_EXTRAS_PLAYER_1,Player 1,プレイヤー1
+STR_EXTRAS_PLAYER_2,Player 2,プレイヤー2
+STR_EXTRAS_PLAY_AS_P1_FMT,Play as %s (Player 1),%s (プレイヤー1) でプレイ
+STR_EXTRAS_PLAY_AS_P2_FMT,Play as %s (Player 2),%s (プレイヤー2) でプレイ
+STR_ONLINE_PLAY_TITLE,Online Play,オンラインプレイ
+STR_ONLINE_PUBLIC,Public,公開
+STR_ONLINE_PRIVATE,Private,プライベート
+STR_ONLINE_CONNECTING_RELAY,Connecting to relay server...,リレーサーバーに接続中...
+STR_ONLINE_RELAY_FAILED_FMT,Failed to connect to relay server (error %d),リレーサーバーへの接続に失敗しました (エラー %d)
+STR_ONLINE_SHARE_CODE,Share this game code with your opponent:,このゲームコードを対戦相手と共有してください:
+STR_ONLINE_ENTER_CODE,Enter the host's game code,ホストのゲームコードを入力してください
+STR_ONLINE_CONNECT_FAILED_FMT,Failed to connect (error %d),接続に失敗しました (エラー %d)
+STR_ONLINE_CONNECTING_HOST,Connecting to host...,ホストに接続中...
+STR_ONLINE_CONNECTION_FAILED_RETRY,Connection failed. Check the code and try again.,接続に失敗しました。コードを確認して再試行してください。
+STR_PUBLIC_SELECT_DECK,"Select a deck, then create or join a lobby.","デッキを選択してから、ロビーを作成または参加してください。"
+STR_PUBLIC_DECK_LOAD_FAILED,Could not load decklist.,デッキリストを読み込めませんでした。
+STR_PUBLIC_NO_LOBBIES,No public lobbies available. Create one!,公開ロビーがありません。作成してください!
+STR_PUBLIC_LOBBIES_FOUND_FMT,%d lobby(s) found:,%d 件のロビーが見つかりました:
+STR_PUBLIC_JOIN,Join,参加
+STR_PUBLIC_CREATING,Creating public lobby...,公開ロビーを作成中...
+STR_PUBLIC_CREATE_FAILED_FMT,Failed to create lobby (error %d),ロビーの作成に失敗しました (エラー %d)
+STR_PUBLIC_LOBBY_CREATED,Lobby created! Waiting for opponent...,ロビーを作成しました! 対戦相手を待機中...
+STR_PUBLIC_DECK_INVALID_MODE,Deck is not valid for this game mode.,このゲームモードでは無効なデッキです。
+STR_PUBLIC_JOINING_FMT,Joining room %s...,ルーム %s に参加中...
+STR_PUBLIC_JOIN_FAILED_FMT,Failed to join room (error %d),ルームへの参加に失敗しました (エラー %d)
+STR_PUBLIC_OPPONENT_CONNECTED_STARTING,Opponent connected! Starting game...,対戦相手が接続しました! ゲームを開始します...
+STR_PUBLIC_CONNECTED_WAITING,Connected! Waiting for game to start...,接続しました! ゲーム開始を待機中...
+STR_PUBLIC_CONNECTION_FAILED,Connection failed.,接続に失敗しました。
+STR_PUBLIC_DECK_OK,Deck selected. Create or join a lobby!,デッキを選択しました。ロビーを作成または参加してください!
+STR_PUBLIC_DECK_INVALID_FMT,"Deck invalid for %s: %s","%s には無効なデッキ: %s"
+STR_PUBLIC_STARTING_GAME,Starting game...,ゲームを開始します...
+STR_PUBLIC_LOBBIES,Public Lobbies,公開ロビー
+STR_GAME_MODE,GAME MODE,ゲームモード
+STR_CREATE_LOBBY,Create Lobby,ロビー作成
+STR_MODE_RUMBLE_WEST,Rumble (West),ランブル (西)
+STR_MODE_RUMBLE_EAST,Rumble (East),ランブル (東)
+STR_MODE_NO_RULES,No Rules,ルールなし
+STR_MODE_BULKZILLA,BULKZILLA,BULKZILLA
+STR_DS_SELECT_DECK,SELECT DECK,デッキを選択
+STR_DS_SELECT_YOUR_DECK,SELECT YOUR DECK,あなたのデッキを選択
+STR_DS_P1_DECK,PLAYER 1 DECK,プレイヤー1のデッキ
+STR_DS_P2_DECK,PLAYER 2 DECK,プレイヤー2のデッキ
+STR_LS_TITLE,UNOFFICIAL GODZILLA TCG,非公式ゴジラTCG
+STR_LS_LOADING_ARTWORK,Loading Card Artwork...,カードアートを読み込み中...
+STR_LS_PREPARING,Preparing...,準備中...
+STR_LS_DOWNLOADING_FMT,Downloading... %.1f MB / %.1f MB,ダウンロード中... %.1f MB / %.1f MB
+STR_LS_DOWNLOADING_INDETERMINATE_FMT,Downloading... %.1f MB,ダウンロード中... %.1f MB
+STR_LS_EXTRACTING_FMT,"Extracting %s... (%d/%d)","展開中 %s... (%d/%d)"
+STR_LS_UP_TO_DATE,All artwork up to date!,カードアートはすべて最新です!
+STR_LS_DONE_FMT,"Done! Downloaded: %d, Skipped: %d, Failed: %d","完了! ダウンロード: %d、スキップ: %d、失敗: %d"
+STR_RV_EXIT,Exit,終了
+STR_RV_GAME_LOG,Game Log,ゲームログ
+STR_RV_PLAY,Play,再生
+STR_RV_PLAY_FROM_HERE,Play From Here,ここから再生
+STR_RV_SPEED,Speed:,速度:
+STR_RV_PAUSE,Pause,一時停止
+STR_RV_CLOSE,Close,閉じる
+STR_RV_STACKED,Stacked,重ねる
+STR_RV_NO_REPLAY_DATA,No replay data,リプレイデータなし
+STR_RV_NO_CARDS,No cards.,カードなし。
+STR_RV_PHASE_START,Start,開始
+STR_RV_PHASE_MAIN,Main,メイン
+STR_RV_PHASE_COUNTER,Counter,撃退
+STR_RV_PHASE_END,End,エンド
+STR_RV_TURN_LABEL_FMT,Step %d/%d — Turn %d — %s — %s,ステップ %d/%d — ターン %d — %s — %s
+STR_RV_GAME_OVER_FMT,"  [GAME OVER — %s wins]","  [ゲーム終了 — %s の勝利]"
+STR_RV_VERSION_MISMATCH_FMT,"Warning: replay recorded on v%s (current v%s) — may not work as expected","警告: このリプレイは v%s で記録されました (現バージョン v%s) — 正しく再生されない可能性があります"
+STR_RV_HAND_TITLE_FMT,"%s Hand (%d)","%s の手札 (%d)"
+STR_RV_GALLERY_TITLE_FMT,"%s (%d)","%s (%d)"
+STR_RV_ZONE_STACK_TITLE_FMT,"%s Zone %d Stack","%s のエリア %d スタック"
+STR_RV_DISCARD_TITLE_FMT,%s Discard Pile,%s の捨て札
+STR_RV_MAIN_DECK_TITLE_FMT,%s Main Deck,%s の山札
+STR_RV_MONSTER_DECK_TITLE_FMT,%s Monster Deck,%s の怪獣デッキ
+STR_DB_TITLE,DECK BUILDER,デッキビルダー
+STR_DB_DECK_NAME,Deck Name,デッキ名
+STR_DB_SAVE,Save,保存
+STR_DB_LOAD,Load,読み込み
+STR_DB_DELETE,Delete,削除
+STR_DB_IMPORT,Import from Clipboard,クリップボードから読み込み
+STR_DB_EXPORT,Export to Clipboard,クリップボードに書き出し
+STR_DB_COPIED,Copied!,コピーしました!
+STR_DB_BACK,Back to Menu,メニューに戻る
+STR_DB_SET_AS_DEFAULT,Set as default,デフォルトに設定
+STR_DB_DECK,DECK,デッキ
+STR_DB_TAB_MAIN,Main,メイン
+STR_DB_CARD_POOL,CARD POOL,カードプール
+"STR_DB_SEARCH_PLACEHOLDER","Search... e.g. godzilla, cp>1000, r=3","検索... 例: ゴジラ, cp>1000, r=3"
+STR_DB_FILTER_ALL,All,全て
+STR_DB_INVASION_STEP1,Step 1,ステップ1
+STR_DB_INVASION_STEP2,Step 2,ステップ2
+STR_DB_SORT_ID,Sort: ID,並び替え: ID
+STR_DB_SORT_NAME,Sort: Name,並び替え: 名前
+STR_DB_SORT_RANK,Sort: Rank,並び替え: ランク
+STR_DB_SORT_TYPE,Sort: Type,並び替え: タイプ
+STR_DB_POOL_COUNT_FMT,({N} cards),({N}枚)
+STR_DB_TO_MAIN,→Main,→メイン
+STR_DB_TO_MONSTER,→Mon,→怪獣
+STR_DB_EMPTY_SAVE_TITLE,Save Empty Deck?,空のデッキを保存しますか?
+STR_DB_EMPTY_SAVE_TEXT,"This deck has no cards. Saving will overwrite any existing deck with this name. Continue?","このデッキにはカードがありません。保存すると、同じ名前の既存のデッキが上書きされます。続行しますか?"
+STR_DB_EMPTY_SAVE_OK,Save Anyway,それでも保存
+STR_DB_UNSAVED_TITLE,Unsaved Changes,未保存の変更
+STR_DB_UNSAVED_TEXT,You have unsaved changes. Discard and continue?,未保存の変更があります。破棄して続行しますか?
+STR_DB_UNSAVED_DISCARD,Discard,破棄
+STR_DB_DELETE_TITLE,Delete Deck,デッキを削除
+STR_DB_DELETE_OK,Delete,削除
+STR_DB_DELETE_PROMPT,"Delete ""%s""?","「%s」を削除しますか?"
+STR_DB_MONSTER_DECK,Monster Deck:,怪獣デッキ:
+STR_DB_MAIN_DECK,Main Deck:,メインデッキ:
+STR_DB_STEP2_CARDS,Step-2 Cards:,足2カード:
+STR_DB_ERRORS,Errors,エラー
+STR_DB_WARNINGS,Warnings,警告
+STR_VALIDATE_UNKNOWN_CARD_FMT,Unknown card: %s,不明なカード: %s
+STR_VALIDATE_NOT_MONSTER_FMT,%s is not a monster card,%s は怪獣カードではありません
+STR_VALIDATE_TOKEN_IN_DECK_FMT,%s has Token trait (not allowed in decks),%s はトークン特徴を持っています (デッキに入れられません)
+STR_VALIDATE_DUPLICATE_RANK_FMT,Duplicate monster rank %d,等級 %d の怪獣が重複しています
+STR_VALIDATE_MONSTER_COUNT_FMT,Monster deck must have exactly 4 cards (has %d),怪獣デッキはちょうど4枚必要です (現在 %d 枚)
+STR_VALIDATE_MISSING_RANK_FMT,Monster deck missing rank %d,怪獣デッキに等級 %d がありません
+STR_VALIDATE_COLOR_MISMATCH_FMT,"%s [%s] color doesn't match monster deck","%s [%s] の色が怪獣デッキと合いません"
+STR_VALIDATE_MAIN_COUNT_FMT,Main deck must have exactly 50 cards (has %d),メインデッキはちょうど50枚必要です (現在 %d 枚)
+STR_VALIDATE_STEP2_LIMIT_FMT,Main deck has %d Step-2 cards (max 10),メインデッキの足2カードが %d 枚あります (最大10枚)
+STR_VALIDATE_COPY_LIMIT_FMT,Card %s has %d copies (max 4),カード %s が %d 枚あります (最大4枚)
+STR_VALIDATE_MISSING_TRAIT_FMT,"%s [%s] missing required trait (%s)","%s [%s] に必要な特徴がありません (%s)"
+STR_VALIDATE_BELOW_MIN_RANK_FMT,"%s [%s] rank %d is below minimum %d","%s [%s] の等級 %d は最低 %d 未満です"
+STR_VALIDATE_STRATEGY_COUNT_FMT,Deck needs at least %d strategy cards (has %d),デッキには戦略カードが最低 %d 枚必要です (現在 %d 枚)
+STR_VALIDATE_NO_SHARED_TRAITS_FMT,"%s (rank %d) shares no traits with %s (rank %d)","%s (等級 %d) と %s (等級 %d) は共通の特徴がありません"
+STR_VALIDATE_RANK_FALLBACK_FMT,Rank %d,等級 %d
+STR_VALIDATE_OR_SEPARATOR," or ",または
+STR_VALIDATE_RESTRICTED_FMT,"%s is restricted (max 1 copy, has %d)","%s は制限カードです (最大1枚、現在 %d 枚)"
+STR_VALIDATE_CHOICE_RESTRICTED_FMT,%s and %s are choice restricted (only one allowed),%s と %s は選択制限カードです (どちらか1枚のみ)
+STR_VALIDATE_NOT_IN_FORMAT_FMT,"%s [%s] is not allowed in %s","%s [%s] は %s では使用できません"
+STR_LOG_TURN_START_FMT,--- Turn {N}: {PLAYER} ---,--- ターン {N}: {PLAYER} ---
+STR_LOG_START_PHASE_DRAW_FMT,Start Phase: Drawing {N} card(s),開始フェイズ: {N}枚ドロー
+STR_LOG_PLAYER_PASS_FMT,[b]{PLAYER}[/b] passes.,[b]{PLAYER}[/b] パス。
+STR_LOG_PLAYED_BATTLE_FMT,[b]{PLAYER}[/b]: Played {CARD} to Zone {ZONE},[b]{PLAYER}[/b]: {CARD} をエリア{ZONE}に出現
+STR_LOG_PLAYED_BATTLE_ENTER_FMT,[b]{PLAYER}[/b]: {ENTER_ICON} {CARD} to Zone {ZONE},[b]{PLAYER}[/b]: {ENTER_ICON} {CARD} をエリア{ZONE}に出現
+STR_LOG_PLAYED_STRATEGY_FMT,[b]{PLAYER}[/b]: Played {CARD} to Strategy Zone,[b]{PLAYER}[/b]: {CARD} を戦略置き場に出現
+STR_LOG_PLAYED_STRATEGY_BASE_FMT,[b]{PLAYER}[/b]: {BASE_ICON} Played {CARD} to Strategy Zone,[b]{PLAYER}[/b]: {BASE_ICON} {CARD} を戦略置き場に出現
+STR_LOG_GAINED_RAGE_FMT,[b]{PLAYER}[/b]: {RAGE_ICON} x{N} (discarded: {CARD}),[b]{PLAYER}[/b]: {RAGE_ICON} x{N} (捨て札: {CARD})
+STR_LOG_RAGE_GAINED_FMT,[b]{PLAYER}[/b]: {RAGE_ICON} +{AMOUNT} (now x{N}),[b]{PLAYER}[/b]: {RAGE_ICON} +{AMOUNT} (現在 x{N})
+STR_LOG_PLAYED_MONSTER_FMT,[b]{PLAYER}[/b]: Played {CARD} as Monster ({RAGE_ICON} x{N}),[b]{PLAYER}[/b]: {CARD} を怪獣として出現 ({RAGE_ICON} x{N})
+STR_LOG_INVADED_FMT,[b]{PLAYER}[/b]: Invaded! (discarded {CARD}),[b]{PLAYER}[/b]: 進攻! (捨て札 {CARD})
+STR_LOG_INVADED_STEP2_FMT,[b]{PLAYER}[/b]: {STEP2_ICON} Invaded! (discarded {CARD}),[b]{PLAYER}[/b]: {STEP2_ICON} 進攻! (捨て札 {CARD})
+STR_LOG_GAME_OVER_FMT,GAME OVER! {PLAYER} wins: {REASON},ゲーム終了! {PLAYER} の勝利: {REASON}
+STR_LOG_BURST_PLAYED_FMT,[b]{PLAYER}[/b]: {BURST_PREFIX} {CARD} {RAGE_ICON} x{N},[b]{PLAYER}[/b]: {BURST_PREFIX} {CARD} {RAGE_ICON} x{N}
+STR_LOG_BURST_FALLBACK_PREFIX_FMT,Burst {N}:,強襲 {N}:
+STR_LOG_REVENGE_FMT,[b]{PLAYER}[/b]: {REVENGE_ICON} {CARD},[b]{PLAYER}[/b]: {REVENGE_ICON} {CARD}
+STR_LOG_AWAKENING_FMT,[b]{PLAYER}[/b]: {AWK_PREFIX} {CARD},[b]{PLAYER}[/b]: {AWK_PREFIX} {CARD}
+STR_LOG_AWAKENING_FALLBACK_PREFIX_FMT,Awakening {N}:,覚醒 {N}:
+STR_LOG_EVOLUTION_FMT,[b]{PLAYER}[/b] Zone {ZONE}: {EVO_PREFIX} {FROM_CARD} => {TO_CARD},[b]{PLAYER}[/b] エリア{ZONE}: {EVO_PREFIX} {FROM_CARD} => {TO_CARD}
+STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT,Evolution {N}:,進化 {N}:
+STR_LOG_MILLED_CARD_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: Sent {MILLED_CARD} to discard pile,[b]{PLAYER}[/b] {SOURCE_CARD}: {MILLED_CARD} を捨て札に送る
+STR_LOG_MILLED_CARDS_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: Sent {MILLED_CARDS} to discard pile,[b]{PLAYER}[/b] {SOURCE_CARD}: {MILLED_CARDS} を捨て札に送る
+STR_LOG_EFFECT_RAGE_FROM_MILL_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} x{N} (milled monster: {MILLED_CARD}),[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} x{N} (捨てた怪獣: {MILLED_CARD})
+STR_LOG_EFFECT_RAGE_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} +{AMOUNT} (now x{N}),[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} +{AMOUNT} (現在 x{N})
+STR_LOG_EFFECT_DESTROYED_FMT,{DESTROY_ICON} [b]{SOURCE_PLAYER}[/b] {SOURCE_CARD}: [b]{TARGET_PLAYER}[/b] Zone {ZONE} {DESTROYED_CARD},{DESTROY_ICON} [b]{SOURCE_PLAYER}[/b] {SOURCE_CARD}: [b]{TARGET_PLAYER}[/b] エリア{ZONE} {DESTROYED_CARD}
+STR_LOG_EFFECT_RETURNED_TO_HAND_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: returned {RETURNED_CARD} to hand,[b]{PLAYER}[/b] {SOURCE_CARD}: {RETURNED_CARD}を手札に戻す
+STR_LOG_CARD_CRUSHED_FMT,{DESTROY_ICON} [b]{PLAYER}[/b] Zone {ZONE}: {CARD} crushed!,{DESTROY_ICON} [b]{PLAYER}[/b] エリア{ZONE}: {CARD} 撃破!
+STR_LOG_COUNTER_SUCCESS_FMT,Counter SUCCESS! [b]{PLAYER}[/b] CP {CP} >= Threat {THREAT},撃退成功! [b]{PLAYER}[/b] 撃退力 {CP} >= 脅威度 {THREAT}
+STR_LOG_COUNTER_FAIL_FMT,Counter failed. [b]{PLAYER}[/b] CP {CP} < Threat {THREAT},撃退失敗。 [b]{PLAYER}[/b] 撃退力 {CP} < 脅威度 {THREAT}
+STR_LOG_COUNTER_IMMUNE_FMT,Counter IMMUNE! [b]{PLAYER}[/b] CP {CP} <= Threshold {THRESHOLD} — no rank up,撃退無効! [b]{PLAYER}[/b] 撃退力 {CP} <= 閾値 {THRESHOLD} — 等級アップなし
+STR_LOG_COUNTER_PREVENTED_FMT,Counter PREVENTED — [b]{PLAYER}[/b] cannot be countered,撃退不可 — [b]{PLAYER}[/b] は撃退できない
+STR_LOG_REASON_COUNTER_VICTORY,Victory through countering!,撃退による勝利!
+STR_LOG_REASON_INVASION_VICTORY,Victory through invasion!,進攻による勝利!
+STR_LOG_REASON_NO_STRATEGIES,No strategy cards in play!,場に戦略カードなし!
+STR_LOG_REASON_INHERITED_LIFE,Victory through Inherited Life!,受け継がれし命による勝利!
+STR_LOG_REASON_OPPONENT_DISCONNECTED,Opponent disconnected,対戦相手が切断されました
+STR_LOG_REASON_CONCEDED_FMT,{PLAYER} conceded,{PLAYER} が降参
+STR_LOG_COIN_FLIP_WON_FMT,{PLAYER} won the coin flip!,{PLAYER} がコイントスに勝ちました!
+STR_LOG_CHOSE_TO_GO_FIRST_FMT,{PLAYER} chose to go first.,{PLAYER} が先攻を選びました。
+STR_LOG_CHOSE_TO_GO_SECOND_FMT,{PLAYER} chose to go second.,{PLAYER} が後攻を選びました。
+STR_LOG_SEED_FMT,Seed: {N},シード: {N}
+STR_LOG_OPPONENT_WANTS_REMATCH,Opponent wants a rematch!,対戦相手が再戦を希望しています!
+STR_LOG_OPPONENT_WANTS_REMATCH_NEW_DECK,Opponent wants a rematch (new deck)!,対戦相手が再戦を希望しています (新しいデッキ)!
+STR_LOG_OPPONENT_DISCONNECTED_WAITING,Opponent disconnected. Waiting for reconnect...,対戦相手が切断されました。再接続を待っています...
+STR_LOG_CONNECTION_LOST_RECONNECTING,Connection lost. Attempting to reconnect...,接続が失われました。再接続を試みています...
+STR_LOG_RECONNECTED,Reconnected!,再接続しました!
+STR_LOG_OPPONENT_RECONNECTED,Opponent reconnected!,対戦相手が再接続しました!
+STR_LOG_CLAIMED_WIN_DISCONNECT,Claimed win due to opponent disconnect.,対戦相手の切断により勝利を宣言しました。
+STR_EFF_CHOOSE_ONE,Choose one:,ひとつ選ぶ:
+STR_EFF_CHOOSE_EFFECT,Choose an effect:,効果を選ぶ:
+STR_EFF_CHOOSE_ABILITY,Choose which ability to resolve:,発動する能力を選ぶ:
+STR_EFF_REVEALED_CARDS,Revealed cards:,公開されたカード:
+STR_EFF_REVEALED_FROM_DECK_TOP,Revealed from deck top:,山札の上から公開:
+STR_EFF_DECK_REVEAL,Revealed from deck (select any to confirm):,山札から公開 (どれか選んで確定):
+STR_EFF_DISCARDED_PILE,Sent to discard pile:,捨て札に送られた:
+STR_EFF_BTN_YES,Yes,はい
+STR_EFF_BTN_NO,No,いいえ
+STR_EFF_BTN_SKIP,Skip,スキップ
+STR_EFF_DESTROY_OPP_RANK_LOWER_FMT,Destroy an opponent's Rank %d or lower battle card:,相手の等級%d以下の交戦カードを<破壊>する:
+STR_EFF_DESTROY_OPP_BATTLE,Destroy an opponent's battle card:,相手の交戦カードを<破壊>する:
+STR_EFF_DESTROY_OPP_BATTLE_OR_SKIP,Destroy an opponent's battle card (or skip):,相手の交戦カードを<破壊>する (またはスキップ):
+STR_EFF_DESTROY_OPP_LOWEST_OR_SKIP,Destroy an opponent's lowest ranked battle card (or skip):,相手の最低等級の交戦カードを<破壊>する (またはスキップ):
+STR_EFF_DESTROY_OPP_BATTLE_ZONES_1_5,Destroy an opponent's battle card in zones 1-5:,相手のエリア1〜5にいる交戦カードを<破壊>する:
+STR_EFF_DESTROY_OPP_SAME_COLUMN,Destroy an opponent's battle card in the same column as your monster:,あなたの怪獣と同じ縦列にいる相手の交戦カードを<破壊>する:
+STR_EFF_DESTROY_OPP_BEFORE_ZONE_FMT,Choose an opponent's battle card at or before zone %d to destroy:,エリア%d以前にいる相手の交戦カードを選んで<破壊>:
+STR_EFF_DESTROY_OPP_RANK_LEFT_COL,Choose a battle card to destroy from the leftmost column:,最も左の縦列から<破壊>する交戦カードを選ぶ:
+STR_EFF_DESTROY_OPP_RANK_RIGHT_COL,Choose a battle card to destroy from the rightmost column:,最も右の縦列から<破壊>する交戦カードを選ぶ:
+STR_EFF_DESTROY_OPP_CP_LEQ_FMT,Destroy an opponent's battle card with 6000 or less CP in zones 1-5 (%d left):,エリア1〜5にいる撃退力6000以下の相手の交戦カードを<破壊> (残り%d):
+STR_EFF_DESTROY_OPP_REMAINING_RANKS_FMT,Destroy an opponent's battle card (total remaining ranks must reach %d or less):,相手の交戦カードを<破壊>する (残り等級合計が%d以下になるまで):
+STR_EFF_DESTROY_OWN_RANK_HIGHER_FMT,Destroy 1 of your rank %d or higher battle cards:,あなたの等級%d以上の交戦カードを1枚<破壊>する:
+STR_EFF_DESTROY_OWN_RANK_LOWER_FMT,Choose a rank %d or lower battle card to destroy:,等級%d以下の交戦カードを選んで<破壊>:
+STR_EFF_DESTROY_OPP_RANK_LOWER_LIST_FMT,Destroy %d opponent rank %d or lower battle card:,相手の等級%d以下の交戦カードを%d枚<破壊>する:
+STR_EFF_DESTROY_GREEN_REMAINING_FMT,Choose a green battle card to Destroy (%d remaining):,緑の交戦カードを選んで<破壊> (残り%d):
+STR_EFF_MOVE_BATTLE,Choose a battle card to move:,移動する交戦カードを選ぶ:
+STR_EFF_MOVE_BATTLE_OR_SKIP,Choose a battle card to move (or skip):,移動する交戦カードを選ぶ (またはスキップ):
+STR_EFF_MOVE_BATTLE_TO_EMPTY,Choose a battle card to move to an empty zone:,空きエリアへ移動する交戦カードを選ぶ:
+STR_EFF_MOVE_DEST_EMPTY,Choose an empty zone to move the card to:,カードを移動する空きエリアを選ぶ:
+STR_EFF_MOVE_DEST_ZONE,Choose destination zone:,移動先のエリアを選ぶ:
+STR_EFF_MOVE_OPP_SAME_COLUMN,Choose an opponent's battle card in the same column to move:,同じ縦列にいる相手の交戦カードを移動:
+STR_EFF_MOVE_UNOCCUPIED,Choose an unoccupied zone to move it to:,移動先の空きエリアを選ぶ:
+STR_EFF_MOVE_TO_EMPTY_OR_SKIP,Move this card to an empty zone (or skip):,このカードを空きエリアへ移動 (またはスキップ):
+STR_EFF_MOVE_THIS_TO_EMPTY,Choose an empty zone to move this card to:,このカードを移動する空きエリアを選ぶ:
+STR_EFF_SWAP_FIRST,Choose the first battle card to swap:,入れ替える1枚目の交戦カードを選ぶ:
+STR_EFF_SWAP_FIRST_OR_SKIP,Choose the first battle card to swap (or skip):,入れ替える1枚目の交戦カードを選ぶ (またはスキップ):
+STR_EFF_SWAP_SECOND,Choose the second battle card to swap with:,入れ替える2枚目の交戦カードを選ぶ:
+STR_EFF_SWAP_OPP_FIRST,Choose the first opponent battle card to swap:,入れ替える1枚目の相手交戦カードを選ぶ:
+STR_EFF_SWAP_OPP_SECOND,Choose the second opponent battle card to swap with:,入れ替える2枚目の相手交戦カードを選ぶ:
+STR_EFF_PLAY_SEARCHED_ZONE,Choose a zone to play the searched card:,探したカードを置くエリアを選ぶ:
+STR_EFF_PLAY_BATTLE_ZONE,Choose a zone to play the battle card:,交戦カードを置くエリアを選ぶ:
+STR_EFF_PLAY_ADJ_ZONE,Choose an adjacent zone to play the card:,隣接エリアを選んでカードを置く:
+STR_EFF_PLAY_ADJ_ZONE_IN,Choose an adjacent zone to play the card in:,カードを置く隣接エリアを選ぶ:
+STR_EFF_PLAY_ADJ_ZONE_NAMED_FMT,Choose an adjacent zone to play %s:,%sを置く隣接エリアを選ぶ:
+STR_EFF_PLAY_NAMED_FMT,Play %s — choose a zone:,%sを置く — エリアを選ぶ:
+STR_EFF_PLAY_FROM_DISCARD_FMT,Play %s from discard?,%sを捨て札から出しますか?
+STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT,Choose a zone to play %s from discard:,%sを捨て札から置くエリアを選ぶ:
+STR_EFF_PLACE_DISCARD_FMT,Play %s from discard to a zone (or skip):,%sを捨て札からエリアに置く (またはスキップ):
+STR_EFF_TOKEN_ZONE_FMT,Choose a zone for a token (%d remaining):,トークンを置くエリアを選ぶ (残り%d):
+STR_EFF_SEARCH_EVOLVE_FMT,Search for a rank %d or lower battle card to evolve into:,進化先の等級%d以下の交戦カードを探す:
+STR_EFF_SEARCH_DECK_OR_SKIP,Search your deck for a card to add to your hand (or skip):,山札からカードを探して手札に加える (またはスキップ):
+STR_EFF_CHOOSE_EVOLVE_ZONE,Choose which zone to evolve next:,次に進化させるエリアを選ぶ:
+STR_EFF_ZONE_OPTION_FMT,"Zone %d: %s","エリア %d: %s"
+STR_EFF_EVOLVE_BATTLE,Choose a battle card with Evolution to evolve:,<進化>を持つ交戦カードを進化させる:
+STR_EFF_DECK_ARRANGE_TOP,"Put cards on top of deck in order, or send to discard:",順序を決めて山札の上に置くか、捨て札へ:
+STR_EFF_DECK_LOOK_TOP,Look at the top card — keep on top or send to discard:,山札の上を見る — 上に戻すか捨て札へ:
+STR_EFF_DECK_TOP_OR_SKIP,"Top card of deck (select to send to discard, or skip to keep on top):",山札の上 (選択で捨て札へ、スキップで上に残す):
+STR_EFF_EBP01_020_PROMPT,Reduce Rage by 1 to search deck for a monster with Burst?,<怒り>を1減らして<強襲>を持つ怪獣を山札から探す?
+STR_EFF_EBP01_020_SEARCH,Search for a monster card with Burst to add to your hand:,<強襲>を持つ怪獣カードを手札に加える:
+STR_EFF_EBP01_019_SEARCH,Search for a Kamacuras battle card to play:,<カマキラス>の交戦カードを探して出す:
+STR_EFF_EBP01_037_PROMPT,Discard a strategy card from hand to gain 1 Rage:,戦略カードを1枚捨てて<怒り>を1増やす:
+STR_EFF_EBP01_039_PROMPT,Discard a monster card to destroy opponent's rank 5 or lower cards in zones 1-5:,怪獣カードを1枚捨てて、エリア1〜5にいる相手の等級5以下のカードを<破壊>する:
+STR_EFF_EBP01_042_PROMPT,Discard a card to reduce opponent's Rage by 1:,カードを1枚捨てて相手の<怒り>を1減らす:
+STR_EFF_EBP02_001_PROMPT,Discard a strategy card to gain 1 rage (or skip):,戦略カードを捨てて<怒り>を1増やす (またはスキップ):
+STR_EFF_EBP02_003_PROMPT,Discard a strategy card to advance by 1 zone (or skip):,戦略カードを1枚捨てて1エリア前進する (またはスキップ):
+STR_EFF_EBP02_007_PROMPT,Discard a strategy card to search top 5 for a monster (or skip):,戦略カードを1枚捨てて山札の上5枚から怪獣を探す (またはスキップ):
+STR_EFF_EBP02_007_SELECT,Choose a monster card to add to your hand:,手札に加える怪獣カードを選ぶ:
+STR_EFF_EBP02_025_PROMPT,Choose an adjacent zone for a Tentacles token:,「触手」トークンを置く隣接エリアを選ぶ:
+STR_EFF_EBP02_028_SELECT_FMT,Choose a battle card with Evolution to play (%d of up to 3):,<進化>を持つ交戦カードを選んで出す (最大3枚中%d枚目):
+STR_EFF_EBP02_028_ZONE_FMT,Choose an adjacent zone to play %s:,%sを置く隣接エリアを選ぶ:
+STR_EFF_EBP02_035_TOKEN_FMT,Choose a zone for Tentacles token (%d remaining):,「触手」トークンを置くエリアを選ぶ (残り%d):
+STR_EFF_EBP02_042_PROMPT,Discard a King Ghidorah or Megalon card to reduce opponent's rage by 2 (or skip):,<キングギドラ>または<メガロ>を捨てて相手の<怒り>を2減らす (またはスキップ):
+STR_EFF_EBP02_052_PROMPT,Discard a card to play a Crystals token (or skip):,カードを1枚捨てて「結晶体」トークンを出す (またはスキップ):
+STR_EFF_EBP02_059_PROMPT,Discard a card to return Godzilla(1991) from discard (or skip):,カードを1枚捨てて捨て札からゴジラ(1991)を戻す (またはスキップ):
+STR_EFF_EBP02_069_PROMPT_FIRST,Choose the first opponent battle card to swap:,入れ替える1枚目の相手交戦カードを選ぶ:
+STR_EFF_EBP02_069_PROMPT_SECOND,Choose the second opponent battle card to swap with:,入れ替える2枚目の相手交戦カードを選ぶ:
+STR_EFF_EBP02_070_PROMPT_FMT,"Discard %d card(s) to destroy Godzilla vs. SpaceGodzilla? (Select a card to confirm, skip to decline)",%d枚捨ててゴジラVSスペースゴジラを<破壊>? (カード選択で確定、スキップで拒否)
+STR_EFF_EBP02_T04_PROMPT,Choose a zone to play Chibi Godzilla:,「ちびゴジラ」を置くエリアを選ぶ:
+STR_EFF_EBP03_001_PROMPT,Discard a rank 5+ battle card to advance 1 zone (or skip):,等級5以上の交戦カードを捨てて1エリア前進 (またはスキップ):
+STR_EFF_EBP03_002_PROMPT_FMT,Discard a rank 5+ battle card to gain %d rage (or skip):,等級5以上の交戦カードを捨てて<怒り>を%d増やす (またはスキップ):
+STR_EFF_EBP03_003_PROMPT,Discard a rank 5+ battle card to gain 2 rage and Destroy opponent R6- (or skip):,等級5以上の交戦カードを捨てて<怒り>を2増やし、相手の等級6以下を<破壊> (またはスキップ):
+STR_EFF_EBP03_005_PROMPT,Discard a rank 5+ battle card to gain 3 rage and Destroy opponent R7- (or skip):,等級5以上の交戦カードを捨てて<怒り>を3増やし、相手の等級7以下を<破壊> (またはスキップ):
+STR_EFF_EBP03_007_SELECT,Choose 1 red or blue battle card to add to hand:,手札に加える赤または青の交戦カードを1枚選ぶ:
+STR_EFF_EBP03_011_SELECT,Choose up to 1 red and 1 blue battle card to add to hand:,赤1枚と青1枚まで選んで手札に加える:
+STR_EFF_EBP03_012_PROMPT,Place a blue rank 6 or lower strategy card (or skip):,青の等級6以下の戦略カードを置く (またはスキップ):
+STR_EFF_EBP03_014_PROMPT,Discard a battle card to draw 1 (or skip):,交戦カードを1枚捨てて1枚引く (またはスキップ):
+STR_EFF_EBP03_017_PROMPT,Discard a battle card to destroy an opponent's rank 6 or lower battle card (or skip):,交戦カードを捨てて相手の等級6以下の交戦カードを<破壊> (またはスキップ):
+STR_EFF_EBP03_026_SELECT,Place 2 monster cards from discard under this card (or skip):,捨て札から怪獣カードを2枚このカードの下に置く (またはスキップ):
+STR_EFF_EBP03_028_SELECT,Place 3 monster cards from discard under this card (or skip):,捨て札から怪獣カードを3枚このカードの下に置く (またはスキップ):
+STR_EFF_EBP03_030_PROMPT,Choose a battle card to move (or skip):,移動する交戦カードを選ぶ (またはスキップ):
+STR_EFF_EBP03_031_PROMPT,"Top card of deck (select to send to discard, or skip to keep on top):",山札の上 (選択で捨て札、スキップで上に残す):
+STR_EFF_EBP03_032_PROMPT,"Discard all hand for +1000 CP each? (select any card to confirm, skip to decline):",手札をすべて捨てて1枚ごとに撃退力+1000? (カード選択で確定、スキップで拒否):
+STR_EFF_EBP03_033_PROMPT,Discard a rank 5+ battle card to search for Space Beam (or skip):,等級5以上の交戦カードを捨てて「スペースビーム」を探す (またはスキップ):
+STR_EFF_EBP03_033_SEARCH,Search for Space Beam:,「スペースビーム」を探す:
+STR_EFF_EBP03_034_PROMPT,Discard a strategy card to reduce opponent rage by 1 (or skip):,戦略カードを捨てて相手の<怒り>を1減らす (またはスキップ):
+STR_EFF_EBP03_035_PROMPT,Discard a strategy card to advance your monster to zone 6 (or skip):,戦略カードを捨てて怪獣をエリア6まで前進 (またはスキップ):
+STR_EFF_EBP03_036_SEARCH,Search for a Moguera battle card to play:,出す<モゲラ>の交戦カードを探す:
+STR_EFF_EBP03_036_ZONE,Choose a zone to play the Moguera battle card:,<モゲラ>の交戦カードを置くエリアを選ぶ:
+STR_EFF_EBP03_040_PROMPT,Move this card to an empty zone (or skip):,このカードを空きエリアへ移動 (またはスキップ):
+STR_EFF_EBP03_042_PROMPT,Place Ghogo under a Mothra card with Evolution to evolve it (or skip):,「ゴーゴ」を<進化>を持つ<モスラ>の下に置いて進化 (またはスキップ):
+STR_EFF_EBP03_043_PROMPT,Place Star Falcon under Land Moguera (or skip):,「スターファルコン」を「ランドモゲラー」の下に置く (またはスキップ):
+STR_EFF_EBP03_043_SEARCH,Search for a Moguera battle card to play on Land Moguera:,「ランドモゲラー」に重ねる<モゲラ>の交戦カードを探す:
+STR_EFF_EBP03_047_PROMPT,Discard a Weapon/Mech battle card to search for Super Mechagodzilla (or skip):,<兵器>/<機械>の交戦カードを捨てて「スーパーメカゴジラ」を探す (またはスキップ):
+STR_EFF_EBP03_047_SEARCH,Search for Super Mechagodzilla:,「スーパーメカゴジラ」を探す:
+STR_EFF_EBP03_052_LAND_SEARCH,Search for Land Moguera to place under M.O.G.U.E.R.A.:,「M.O.G.U.E.R.A.」の下に置く「ランドモゲラー」を探す:
+STR_EFF_EBP03_052_STAR_SEARCH,Search for Star Falcon to place under M.O.G.U.E.R.A.:,「M.O.G.U.E.R.A.」の下に置く「スターファルコン」を探す:
+STR_EFF_EBP03_058_PROMPT,Move Zilla to an adjacent horizontal zone:,「ジラ」を隣接する横のエリアへ移動:
+STR_EFF_EBP03_067_PROMPT,Destroy an opponent's lowest ranked battle card (or skip):,相手の最低等級の交戦カードを<破壊> (またはスキップ):
+STR_EFF_EBP03_070_SEARCH,Search for a Weapon or Mech battle card:,<兵器>または<機械>の交戦カードを探す:
+STR_EFF_EBP03_080_PROMPT,Play a Godzilla battle card from hand (or skip):,手札から<ゴジラ>の交戦カードを出す (またはスキップ):
+STR_EFF_EBP04_005_SEARCH,Search for a Rank 1 Strategy card:,等級1の戦略カードを探す:
+STR_EFF_EBP04_009_PROMPT,Discard a strategy card to Destroy all opponent Rank 6 or lower battle cards in this column (or skip):,戦略カードを捨ててこの縦列にいる相手の等級6以下の交戦カードをすべて<破壊> (またはスキップ):
+STR_EFF_EBP04_010_PROMPT,Rage would reset to 0. Discard 2 cards to keep rage at 2?,<怒り>が0にリセットされます。2枚捨てて<怒り>を2にしますか?
+STR_EFF_EBP04_010_CHOICE_A,Discard 2 cards (set rage to 2),2枚捨てる (<怒り>を2に)
+STR_EFF_EBP04_010_CHOICE_B,Let rage reset to 0,<怒り>を0にする
+STR_EFF_EBP04_013_PROMPT_FMT,Choose an effect for revealed ranks %s:,公開された等級%sの効果を選ぶ:
+STR_EFF_EBP04_014_PROMPT,"Discard a battle card: this card cannot be countered by 30,000 or less CP this turn (or skip):",交戦カードを1枚捨てる: このターン、撃退力30000以下では撃退されない (またはスキップ):
+STR_EFF_EBP04_021_PROMPT,May discard the top card of your deck:,山札の上のカードを捨てる:
+STR_EFF_EBP04_021_CHOICE,Discard top of deck,山札の上を捨てる
+STR_EFF_EBP04_027_PROMPT,Discard an Invade 2 card to counter this Gigan (or skip):,<足2>のカードを捨ててこの<ガイガン>を撃退 (またはスキップ):
+STR_EFF_EBP04_039_PROMPT,Zilla: Move to a zone adjacent to your monster (or skip):,「ジラ」: あなたの怪獣の隣接エリアへ移動 (またはスキップ):
+STR_EFF_EBP04_045_PROMPT,Discard a non-blue battle card (play cost for Manda -2 rank):,青以外の交戦カードを1枚捨てる (「マンダ」の出現コスト等級-2):
+STR_EFF_EBP04_049_PROMPT,Destroy 1 of your rank 8 or higher battle cards:,あなたの等級8以上の交戦カードを1枚<破壊>する:
+STR_EFF_EBP04_050_CHOICE_A,"Draw 1 card, then discard 1 card from hand",1枚引いて手札を1枚捨てる
+STR_EFF_EBP04_050_CHOICE_B,Discard 1 card from hand to reduce opponent's Rage by 1,手札を1枚捨てて相手の<怒り>を1減らす
+STR_EFF_EBP04_050_HAND_DRAW,Discard 1 card from your hand:,手札を1枚捨てる:
+STR_EFF_EBP04_050_HAND_RAGE,Discard 1 card to reduce opponent's Rage by 1 (or skip):,1枚捨てて相手の<怒り>を1減らす (またはスキップ):
+STR_EFF_EBP04_055_PROMPT,Choose:,選ぶ:
+STR_EFF_EBP04_055_CHOICE_A,Destroy 4 green battle cards in your zones,あなたのエリアの緑の交戦カードを4枚<破壊>
+STR_EFF_EBP04_055_CHOICE_B,Skip (this card will be Destroyed),スキップ (このカードは<破壊>される)
+STR_EFF_EBP04_061_PROMPT,Discard 1 green card from your deck (or skip):,山札の緑のカードを1枚捨てる (またはスキップ):
+STR_EFF_EBP04_064_PROMPT,Jet Jaguar (2021) — choose:,ジェットジャガー(2021) — 選ぶ:
+STR_EFF_EBP04_064_CHOICE,Destroy this card to reduce opponent's Rage by 3,このカードを<破壊>して相手の<怒り>を3減らす
+STR_EFF_EBP04_012_PROMPT,Select a Rank III monster to place under Biollante:,「ビオランテ」の下に置く等級3の怪獣を選ぶ:
+STR_EFF_EBP04_077_PROMPT_FMT,%s — where would you like to place it?,%s — どこに置きますか?
+STR_EFF_EBP04_077_SEARCH,Choose a Weapon or Mech battle card with invasion icon 2:,<足2>の<兵器>/<機械>の交戦カードを選ぶ:
+STR_EFF_EBP04_077_FROM_DECK,Choose 1 Mechagodzilla battle card to add to hand:,手札に加える<メカゴジラ>の交戦カードを選ぶ:
+STR_EFF_EBP04_077_PLACE_8,Place in Area 8,エリア8に置く
+STR_EFF_EBP04_077_PLACE_HAND,Add to hand,手札に加える
+STR_EFF_EBP04_079_PICK,Choose the next Final Wars battle card to play:,次に出す<ファイナルウォーズ>の交戦カードを選ぶ:
+STR_EFF_EBP03_029_CHOICE_A,Destroy all battle cards of both players,両プレイヤーの交戦カードをすべて<破壊>
+STR_EFF_EBP03_029_CHOICE_B,Each player discards to 2 cards in hand,両プレイヤーは手札を2枚になるよう捨てる
+STR_EFF_EBP03_029_CHOICE_C,Reduce each player's Rage by 2,両プレイヤーの<怒り>を2減らす
+STR_EFF_ESD01_002_SEARCH,Search for a Rank III Godzilla(2023) with Burst,<強襲>を持つ等級3の「ゴジラ(2023)」を探す
+STR_EFF_ESD01_012_PROMPT,Choose an empty zone to move this card to:,このカードを移動する空きエリアを選ぶ:
+STR_EFF_ESD01_014_SEARCH,Search for a Godzilla(2023) battle card to play,出す「ゴジラ(2023)」の交戦カードを探す
+STR_EFF_ESD02_003_PROMPT,Choose an adjacent zone to play the card in:,カードを置く隣接エリアを選ぶ:
+STR_EFF_ESD02_004_PROMPT,Discard a battle card from hand to destroy opponent's cards of equal or lower rank:,手札から交戦カードを捨てて相手の同等級以下のカードを<破壊>:
+STR_EFF_EFC01_003_PROMPT,Discard a Gigan+Fest card to search for a Weapon/Mech battle card (or skip):,<ガイガン>+<フェス・ゴジラ>を捨てて<兵器>/<機械>の交戦カードを探す (またはスキップ):
+STR_EFF_EFC01_003_SEARCH,Choose a Weapon or Mech battle card with invasion icon 2:,<足2>の<兵器>/<機械>の交戦カードを選ぶ:
+STR_EFF_ESC01_001_PROMPT,Discard a Godzilla card to play at -4 rank:,<ゴジラ>のカードを捨てて等級-4で出す:
+STR_EFF_EBP02_018_FMT,Choose an opponent's battle card at or before zone %d to destroy:,エリア%d以前にいる相手の交戦カードを選んで<破壊>:
+STR_EFF_EBP02_022_PROMPT_FMT,Play %s from discard to a zone (or skip):,%sを捨て札からエリアに置く (またはスキップ):
+STR_EFF_EBP02_057_PROMPT,Choose an opponent's battle card in the same column to move:,同じ縦列にいる相手の交戦カードを移動:
+STR_EFF_EBP03_075_PROMPT,Choose a rank 4 or lower battle card with Evolution to evolve (or skip):,<進化>を持つ等級4以下の交戦カードを進化させる (またはスキップ):
+STR_EFF_DESTROY_OPP_STRATEGY,Destroy an opponent's strategy card:,相手の戦略カードを<破壊>:
+STR_EFF_EBP03_009_PROMPT,Choose an opponent zone in the same column:,同じ縦列にいる相手のエリアを選ぶ:
+STR_EFF_ESD02_015_PROMPT,Choose an opponent's zone to destroy (including adjacent zones):,<破壊>する相手のエリアを選ぶ (隣接エリアも含む):
+STR_EFF_EBP02_026_PROMPT,Choose an opponent's zone (cards there and in adjacent zones will be destroyed):,相手のエリアを選ぶ (そこと隣接エリアのカードが<破壊>される):
+STR_EFF_EBP01_064_PROMPT,Choose a zone — all cards there and in adjacent zones will be destroyed:,エリアを選ぶ — そこと隣接エリアのすべてのカードが<破壊>される:
+STR_EFF_EBP01_029_PROMPT,Choose a zone — rank 5 or lower cards there and in adjacent zones will be destroyed:,エリアを選ぶ — そこと隣接エリアの等級5以下のカードが<破壊>される:
+STR_EFF_EBP03_008_PROMPT,Destroy 1 opponent rank 5 or lower battle card in same column:,同じ縦列にいる相手の等級5以下の交戦カードを1枚<破壊>:
+STR_EFF_EBP02_046_TITLE_FMT,Cards placed under %s,%sの下に置かれたカード
+STR_EFF_EBP03_055_PROMPT,Put a Mothra battle card from discard on top of deck (or skip):,捨て札から<モスラ>の交戦カードを山札の上に置く (またはスキップ):
+STR_EFF_EBP03_021_PROMPT,Return a Base strategy card from discard to hand:,捨て札から<拠点>の戦略カードを手札に戻す:
+STR_EFF_EBP03_064_PROMPT,Place a battle card from discard under this card:,捨て札から交戦カードをこのカードの下に置く:
+STR_EFF_EBP03_025_PROMPT,Place a monster card from discard under this card (or skip):,捨て札から怪獣カードをこのカードの下に置く (またはスキップ):
+STR_EFF_EBP03_077_PROMPT_A,Return a rank 2 or lower monster from discard to hand:,捨て札から等級2以下の怪獣を手札に戻す:
+STR_EFF_EBP03_077_PROMPT_B,Return a monster from discard to hand:,捨て札から怪獣を手札に戻す:
+STR_EFF_EBP03_062_PROMPT,Return a Sacred Guardian Beast monster card from discard to hand:,捨て札から<護国聖獣>の怪獣カードを手札に戻す:
+STR_EFF_EBP03_059_PROMPT,Return a King Ghidorah monster from discard to hand (or skip):,捨て札から<キングギドラ>の怪獣を手札に戻す (またはスキップ):
+STR_EFF_EBP04_059_PROMPT,Return a Rodan battle card from your discard pile to your hand (or skip):,捨て札から<ラドン>の交戦カードを手札に戻す (またはスキップ):
+STR_EFF_EBP04_029_PROMPT,Return a Gigan monster from your discard pile to your hand (or skip):,捨て札から<ガイガン>の怪獣を手札に戻す (またはスキップ):
+STR_EFF_EBP04_063_PROMPT,Return a Godzilla Earth battle card from your discard to your hand (or skip):,捨て札から「ゴジラ・アース」の交戦カードを手札に戻す (またはスキップ):
+STR_EFF_EBP04_073_PROMPT,Gaira: Return 1 card from your discard to hand (or skip):,「ガイラ」: 捨て札からカードを1枚手札に戻す (またはスキップ):
+STR_EFF_EBP04_043_PROMPT,Choose an Invade 2 strategy card to place under this:,この下に置く<足2>の戦略カードを選ぶ:
+STR_EFF_EBP04_043_CONFIRM,Place an Invade 2 strategy card under this card?,<足2>の戦略カードをこのカードの下に置きますか?
+STR_EFF_EBP04_086_PROMPT,Play a Valkyrie from your discard pile:,捨て札から「ヴァルキリー」を出す:
+STR_EFF_EBP04_087_PROMPT,Choose a battle card to destroy (one per remaining color; skip when done):,<破壊>する交戦カードを選ぶ (残りの色ごとに1枚; 終わるならスキップ):
+STR_EFF_EBP04_088_PROMPT,Return up to 2 non-green battle cards from your discard pile to your hand:,捨て札から緑以外の交戦カードを最大2枚手札に戻す:
+STR_EFF_ESD02_003_DISCARD_PROMPT,Search discard pile for a rank 4 or lower battle card with Evolution to play:,捨て札から<進化>を持つ等級4以下の交戦カードを出す:
+STR_EFF_EBP02_062_PROMPT,Return a SpaceGodzilla monster card to your hand:,<スペースゴジラ>の怪獣カードを手札に戻す:
+STR_EFF_EBP02_059_DISCARD_PROMPT,Choose a Godzilla(1991) battle card to return to your hand:,手札に戻す「ゴジラ(1991)」の交戦カードを選ぶ:
+STR_EFF_EBP02_058_PROMPT,Return a King Ghidorah monster card to your hand:,<キングギドラ>の怪獣カードを手札に戻す:
+STR_EFF_EBP02_T04_DISCARD_PROMPT,Play a Chibi Godzilla from your discard pile:,捨て札から「ちびゴジラ」を出す:
+STR_EFF_EFC01_002_PROMPT,Return a monster card from discard to hand (or skip):,捨て札から怪獣カードを手札に戻す (またはスキップ):
+STR_EFF_EBP01_060_PROMPT,Choose a 'Godzilla vs. Destoroyah' strategy card from your discard pile:,捨て札から「ゴジラVSデストロイア」の戦略カードを選ぶ:
+STR_EFF_EBP01_034_PROMPT,Choose a rank 4 or lower battle card with Evolution from your discard pile:,捨て札から<進化>を持つ等級4以下の交戦カードを選ぶ:
+STR_EFF_EBP01_026_PROMPT,Choose a Gigan + Fest card from your discard pile to place under this card:,捨て札から<ガイガン>+<フェス・ゴジラ>のカードを選んでこの下に置く:
+STR_EFF_EBP01_073_PROMPT,Place a monster card from your discard pile under this card to set opponent's Rage to 0:,捨て札から怪獣カードをこの下に置いて相手の<怒り>を0にする:
+STR_EFF_EBP04_089_MILESTONE_15,Inherited Life: 15 rage cards — destroying all opponent battle cards!,「受け継がれる命」: <怒り>カード15枚 — 相手の交戦カードをすべて<破壊>!
+STR_EFF_EBP04_089_MILESTONE_22,Inherited Life: 22 rage cards — opponent discards entire hand!,「受け継がれる命」: <怒り>カード22枚 — 相手は手札をすべて捨てる!
+STR_EFF_EBP04_089_MILESTONE_30,Inherited Life: 30 rage cards — you win the game!,「受け継がれる命」: <怒り>カード30枚 — あなたの勝利!
+STR_AH_CHOOSE_RANKUP_FMT,Choose a Rank %d monster to rank up to.,等級%dの怪獣を選んで等級アップ。
+STR_AH_END_PHASE_DRAW_BLOCKED,End phase draw blocked by opponent's effect.,相手の効果でエンドフェイズのドローが妨げられました。
+STR_AH_INVADE1_BLOCKED,Invasion blocked: opponent prevents using Invade 1 cards as cost.,進攻不可: 相手が<足1>カードのコスト使用を阻止しています。
+STR_AH_INVADE_COST_PROMPT,Choose invasion cost method:,進攻コストの方法を選ぶ:
+STR_AH_INVADE_COST_MILL,Send top deck card to discard,山札の上を捨て札へ
+STR_AH_INVADE_COST_HAND,Discard from hand,手札から捨てる
+STR_GB_DISCARD_TITLE_FMT,%s Discard Pile (%d),%s の捨て札 (%d)
+STR_GB_MONSTER_DECK_TITLE_FMT,Monster Deck (%d),怪獣デッキ (%d)
+STR_GB_LEAVE_TITLE,Leave Game,ゲームを退出
+STR_GB_LEAVE_PROMPT,Leave the current game?,現在のゲームを退出しますか?
+STR_GB_LEAVE_OK,Leave,退出
+STR_GB_REPORT_BUG,Report Bug,バグ報告
+STR_GB_CONCEDE,Concede,降参
+STR_GB_MAIN_MENU,Main Menu,メインメニュー
+STR_EFF_EBP04_013_DESTROY_FMT,"Destroy opponent battle cards in zones: %s","エリア%sにいる相手の交戦カードを<破壊>"
+STR_EFF_EBP04_013_RETREAT,Retreat opponent's monster 1 zone,相手の怪獣を1エリア後退させる
+STR_EFF_EBP04_078_BLOCKED,Crawling Calamity: Opponent's monster move is blocked by an effect.,「這い寄る災厄」: 相手の怪獣の移動は効果で阻止されました。
+STR_EFF_EBP04_078_TELEPORT_FMT,Crawling Calamity: Opponent's monster teleported from zone %d to zone %d.,「這い寄る災厄」: 相手の怪獣がエリア%dからエリア%dへ転移しました。

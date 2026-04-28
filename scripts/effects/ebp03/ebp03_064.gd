@@ -30,8 +30,8 @@ func on_enter(ctx: EffectContext) -> void:
 	# Place 1 battle card from discard under this card (optional)
 	var selected: Dictionary = await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
-		func(card: Dictionary) -> bool: return card.get("card_type") == CardEnums.CardType.BATTLE,
-		"Place a battle card from discard under this card:")
+		func(card: Dictionary) -> bool: return CardUtils.is_battle(card),
+		tr("STR_EFF_EBP03_064_PROMPT"))
 
 	if not selected.is_empty():
 		ctx.effect_handler.place_card_under_zone(ctx.owner, selected, my_zone)
@@ -48,9 +48,9 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 
 	var bonus: int = 0
 	# Awakening4: monster in zone 4+
-	if ctx.owner.monster_zone >= 4:
+	if ctx.is_awakening(4):
 		bonus += 3000
 	# Awakening6: monster in zone 6+
-	if ctx.owner.monster_zone >= 6:
+	if ctx.is_awakening(6):
 		bonus += 3000
 	return bonus

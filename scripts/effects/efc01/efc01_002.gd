@@ -28,27 +28,18 @@ func on_enter(ctx: EffectContext) -> void:
 	if zone_idx not in adjacent:
 		return
 
-	# Mill 1 card
-	var milled: Array[Dictionary] = ctx.owner.mill_cards(1)
-	if milled.is_empty():
+	var card := await ctx.mill_one()
+	if card.is_empty():
 		return
-	ctx.effect_handler.log_message.emit(
-		GameLog.effect_milled_cards(ctx.owner.player_id, ctx.card_data.get("id", ""), milled)
-	)
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, milled, milled,
-		"Sent to discard pile:")
 
-	# If the milled card is a battle card, may return 1 monster from discard to hand
-	if milled[0].get("card_type") != CardEnums.CardType.BATTLE:
+	if not CardUtils.is_battle(card):
 		return
 
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.MONSTER,
-		"Return a monster card from discard to hand (or skip):")
+			return CardUtils.is_monster(card),
+		tr("STR_EFF_EFC01_002_PROMPT"))
 
 	if not selected.is_empty():
-		ctx.owner.hand.append(selected)
-		ctx.owner.hand_changed.emit()
+		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, selected)

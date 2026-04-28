@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 4
+	return owner.is_awakening(4)
 
 
 func get_bot_preferred_zones() -> Array[int]:
@@ -26,7 +26,7 @@ func get_bot_preferred_zones() -> Array[int]:
 
 func on_enter(ctx: EffectContext) -> void:
 	# Awakening4: requires monster in zone 4+
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return
 
 	# Must be in zone 8 (index 7)

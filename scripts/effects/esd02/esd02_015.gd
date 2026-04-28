@@ -21,4 +21,4 @@ func on_enter(ctx: EffectContext) -> void:
 	var all_zones: Array[int] = [0, 1, 2, 3, 4, 5, 6, 7]
 	await ctx.effect_handler.destroy_zone_and_adjacent(
 		ctx.owner.player_id, ctx.opponent, all_zones,
-		"Choose an opponent's zone to destroy (including adjacent zones):")
+		tr("STR_EFF_ESD02_015_PROMPT"))

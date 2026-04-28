@@ -16,7 +16,7 @@ func get_bot_tags() -> Array[String]:
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.STRATEGY and card.get("is_base", false):
+		if CardUtils.is_strategy(card) and card.get("is_base", false):
 			return true
 	return false
 
@@ -24,9 +24,8 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.STRATEGY and card.get("is_base", false),
-		"Return a Base strategy card from discard to hand:"
+		func(card): return CardUtils.is_strategy(card) and card.get("is_base", false),
+		tr("STR_EFF_EBP03_021_PROMPT")
 	)
 	if not selected.is_empty():
-		ctx.owner.hand.append(selected)
-		ctx.owner.hand_changed.emit()
+		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, selected)

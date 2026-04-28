@@ -10,24 +10,20 @@ extends CardEffect
 # Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.END, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["draws_cards"]
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.END, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.END:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.BATTLE,
-		"Discard a battle card to draw 1 (or skip):",
+		func(card): return CardUtils.is_battle(card),
+		tr("STR_EFF_EBP03_014_PROMPT"),
 		true
 	)
 	if not selected.is_empty():

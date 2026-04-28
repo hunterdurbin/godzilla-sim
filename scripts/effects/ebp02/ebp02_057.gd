@@ -13,26 +13,23 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"direction": "increase"},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["plays_other_cards"]
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var monster_zone_idx: int = ctx.owner.monster_zone - 1
-	var opp_columns := get_opponent_column_zones(monster_zone_idx)
-
-	# Find opponent's battle cards in same column
-	var targetable: Array[int] = []
-	for zi in opp_columns:
-		if ctx.opponent.zone_has_cards(zi):
-			targetable.append(zi)
-
+	var targetable := ctx.get_opponent_column_zones_with_cards(ctx.owner.monster_zone - 1)
 	if targetable.is_empty():
 		return
 
 	var source: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.opponent.player_id, targetable,
-		"Choose an opponent's battle card in the same column to move:", true)
+		tr("STR_EFF_MOVE_OPP_SAME_COLUMN"), true)
 	if source < 0:
 		return
 
@@ -42,7 +39,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var dest: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.opponent.player_id, empty,
-		"Choose an unoccupied zone to move it to:")
+		tr("STR_EFF_MOVE_UNOCCUPIED"))
 	if dest < 0:
 		return
 
@@ -52,8 +49,5 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.opponent.zones_changed.emit()
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	# Only trigger when rage increases
-	if new_rage <= old_rage:
-		return
+func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	await ctx.effect_handler.create_tokens_in_zones(ctx.owner, "EBP02-T03", 2)

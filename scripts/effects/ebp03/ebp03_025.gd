@@ -27,7 +27,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_opponent_field_rank_modifier(ctx: EffectContext) -> int:
 	# Only active during your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
 	return -1
 
@@ -36,8 +36,8 @@ func on_enter(ctx: EffectContext) -> void:
 	# Place 1 monster card from discard under this card (optional)
 	var selected: Dictionary = await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
-		func(card: Dictionary) -> bool: return card.get("card_type") == CardEnums.CardType.MONSTER,
-		"Place a monster card from discard under this card (or skip):")
+		func(card: Dictionary) -> bool: return CardUtils.is_monster(card),
+		tr("STR_EFF_EBP03_025_PROMPT"))
 
 	if selected.is_empty():
 		return

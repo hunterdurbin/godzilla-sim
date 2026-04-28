@@ -12,16 +12,17 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_invasion_observed": {"own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["evolves", "zone_dependent"]
 
 
 func get_bot_preferred_zones() -> Array[int]:
 	return [7]
-
-
-func get_invasion_observed_filter() -> Dictionary:
-	return {"own_turn": true}
 
 
 func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
@@ -31,18 +32,9 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 		return
 
 	# Find Mothra battle cards with Evolution in owner's zones
-	var valid_zones: Array[int] = []
-	for i in range(8):
-		if i == my_zone:
-			continue
-		var zone_card := ctx.owner.get_zone_top_card(i)
-		if zone_card.is_empty():
-			continue
-		if zone_card.get("evolution_rank", -1) < 0:
-			continue
-		if CardEnums.CardTrait.MOTHRA not in zone_card.get("traits", []):
-			continue
-		valid_zones.append(i)
+	var valid_zones: Array[int] = ctx.owner.get_zone_top_indices_matching(func(c: Dictionary) -> bool:
+		return c.get("evolution_rank", -1) >= 0 and CardUtils.has_trait(c, CardEnums.CardTrait.MOTHRA))
+	valid_zones.erase(my_zone)
 
 	if valid_zones.is_empty():
 		return
@@ -50,7 +42,7 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 	# Choose a Mothra card to place self under (optional)
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		"Place Ghogo under a Mothra card with Evolution to evolve it (or skip):", true)
+		tr("STR_EFF_EBP03_042_PROMPT"), true)
 
 	if chosen < 0:
 		return

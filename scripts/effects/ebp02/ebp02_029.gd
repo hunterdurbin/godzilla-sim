@@ -21,21 +21,19 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 
 
-func get_opponent_zone_cp_modifiers(ctx: EffectContext) -> Dictionary:
-	# Only active from counter phase onward during opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
-		return {}
+func get_opponent_doubled_zones(ctx: EffectContext) -> Array[int]:
+	# Only active from counter phase onward during opponent's turn (relative
+	# to this card's controller).
+	if ctx.is_own_turn():
+		return []
 	if ctx.game_state.current_phase < CardEnums.GamePhase.COUNTER:
-		return {}
+		return []
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
 	if monster_zone_idx < 0:
-		return {}
-	var column_zones := get_opponent_column_zones(monster_zone_idx)
-	var mods: Dictionary = {}
-	for zi in column_zones:
+		return []
+	var doubled: Array[int] = []
+	for zi in get_opponent_column_zones(monster_zone_idx):
 		var opp_card: Dictionary = ctx.opponent.get_zone_top_card(zi)
-		if not opp_card.is_empty():
-			var cp: int = opp_card.get("counter_power", 0)
-			if cp > 0:
-				mods[zi] = cp # Adding base CP again = doubling
-	return mods
+		if not opp_card.is_empty() and opp_card.get("counter_power", 0) > 0:
+			doubled.append(zi)
+	return doubled

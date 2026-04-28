@@ -23,11 +23,8 @@ func on_enter(ctx: EffectContext) -> void:
 	var options: Array[Dictionary] = [top_card]
 	var chosen := await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, options, options,
-		"Top card of deck (select to send to discard, or skip to keep on top):")
+		tr("STR_EFF_DECK_TOP_OR_SKIP"))
 
 	if not chosen.is_empty():
-		# Send to discard
-		ctx.owner.main_deck.pop_front()
-		ctx.owner.discard_pile.append(top_card)
-		ctx.owner.deck_changed.emit()
-		ctx.owner.discard_changed.emit()
+		# Skip the auto-reveal — the player already saw the card in the prompt above.
+		await ctx.mill_one(false)

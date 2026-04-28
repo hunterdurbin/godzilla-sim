@@ -18,16 +18,13 @@ func get_bot_tags() -> Array[String]:
 
 func on_enter(ctx: EffectContext) -> void:
 	# Find all occupied zones (for swapping)
-	var occupied: Array[int] = []
-	for i in range(8):
-		if ctx.owner.zone_has_cards(i):
-			occupied.append(i)
+	var occupied: Array[int] = ctx.owner.get_battle_card_zone_indices()
 
 	if occupied.size() >= 2:
 		# Choose first card to swap
 		var first: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.owner.player_id, occupied,
-			"Choose the first battle card to swap:", true)
+			tr("STR_EFF_SWAP_FIRST"), true)
 		if first >= 0:
 			var second_choices: Array[int] = []
 			for zi in occupied:
@@ -36,13 +33,9 @@ func on_enter(ctx: EffectContext) -> void:
 			if not second_choices.is_empty():
 				var second: int = await ctx.effect_handler.select_zone_target(
 					ctx.owner.player_id, ctx.owner.player_id, second_choices,
-					"Choose the second battle card to swap with:", true)
+					tr("STR_EFF_SWAP_SECOND"), true)
 				if second >= 0:
-					# Swap the entire stacks
-					var stack_a: Array = ctx.owner.zones[first]
-					ctx.owner.zones[first] = ctx.owner.zones[second]
-					ctx.owner.zones[second] = stack_a
-					ctx.owner.zones_changed.emit()
+					await ctx.effect_handler.swap_zones(ctx.owner, first, second)
 
 
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:

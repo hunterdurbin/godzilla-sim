@@ -13,9 +13,13 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.END, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["boosts_threat", "weakens_opponent"]
-
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
@@ -23,18 +27,6 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.END, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.END:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if ctx.opponent.monster_zone <= 5:
-		var old_rage: int = ctx.owner.rage
-		ctx.owner.rage += 2
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 2, ctx.card_data.get("id", ""))

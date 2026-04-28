@@ -21,7 +21,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_when_invading(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_stack.size() >= 7
+	return owner.has_monster_stack(7)
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
@@ -29,34 +29,31 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func get_opponent_field_rank_modifier(ctx: EffectContext) -> int:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
-	if ctx.owner.monster_stack.size() < 5:
+	if not ctx.has_monster_stack(5):
 		return 0
 	return -3
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	if ctx.owner.monster_stack.size() < 7:
+	if not ctx.has_monster_stack(7):
 		return
 
 	var options: Array[String] = [
-		"Destroy all battle cards of both players",
-		"Each player discards to 2 cards in hand",
-		"Reduce each player's Rage by 2"
+		tr("STR_EFF_EBP03_029_CHOICE_A"),
+		tr("STR_EFF_EBP03_029_CHOICE_B"),
+		tr("STR_EFF_EBP03_029_CHOICE_C")
 	]
 	var chosen: int = await ctx.effect_handler.select_choice(
-		ctx.owner.player_id, options, "Choose one:")
+		ctx.owner.player_id, options, tr("STR_EFF_CHOOSE_ONE"))
 
 	match chosen:
 		0:
 			# Destroy all battle cards of both players
 			for pid in range(2):
 				var player := ctx.game_state.players[pid]
-				var zones_to_destroy: Array[int] = []
-				for i in range(8):
-					if player.zone_has_cards(i):
-						zones_to_destroy.append(i)
+				var zones_to_destroy: Array[int] = player.get_battle_card_zone_indices()
 				if not zones_to_destroy.is_empty():
 					await ctx.effect_handler.destroy_zones(player, zones_to_destroy)
 		1:

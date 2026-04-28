@@ -19,7 +19,7 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_counter_power(owner: PlayerState, _opponent: PlayerState) -> bool:
 	var strategy_count: int = 0
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.STRATEGY:
+		if CardUtils.is_strategy(card):
 			strategy_count += 1
 			if strategy_count >= 5:
 				return true
@@ -37,7 +37,7 @@ func on_strategy_discarded(ctx: EffectContext, _strategy_card: Dictionary) -> vo
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	var strategy_count: int = 0
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.STRATEGY:
+		if CardUtils.is_strategy(card):
 			strategy_count += 1
 	if strategy_count >= 5:
 		return 5000

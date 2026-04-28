@@ -29,14 +29,10 @@ func get_engagement_restriction(ctx: EffectContext) -> int:
 
 func _should_restrict(ctx: EffectContext) -> bool:
 	# Opponent's turn only
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return false
 	# Awakening4
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return false
 	# 2+ battle cards in zones
-	var count: int = 0
-	for i in range(8):
-		if ctx.owner.zone_has_cards(i):
-			count += 1
-	return count >= 2
+	return ctx.owner.get_battle_card_zone_indices().size() >= 2

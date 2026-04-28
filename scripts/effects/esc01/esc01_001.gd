@@ -6,7 +6,7 @@ extends CardEffect
 ## If this is in the same column as your opponent's Monster card this gains +3000 counter power.
 ## When you successfully counter your opponent's Monster card, place this at the bottom of your deck.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -33,21 +33,18 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 
 
 func apply_play_cost(ctx: EffectContext, _zone_index: int) -> bool:
-	# If the card can be played at base rank (8) without the cost, skip the prompt
-	# Only prompt if the rank reduction is needed (player chose a zone requiring it)
-	# The rank reduction is always -4, so effective rank is 4
-	# If opponent monster zone >= 8, the card is playable without cost
-	if ctx.card_data.get("rank", 99) <= ctx.opponent.monster_zone:
-		return true
-	# Need the -4 reduction — must discard a Godzilla card
+	# 'May' effect: prompt whenever a discard is available so the player can cycle.
+	# Skipping is fine as long as the base rank already fits.
+	var base_rank_fits: bool = ctx.card_data.get("rank", 99) <= ctx.opponent.monster_zone
 	if not _has_godzilla_in_hand(ctx):
-		return false
+		return base_rank_fits
 	var filter := func(card: Dictionary) -> bool:
 		return CardEnums.CardTrait.GODZILLA in card.get("traits", [])
 	var discarded := await ctx.effect_handler.select_hand_card(
-		ctx.owner.player_id, filter, "Discard a Godzilla card to play at -4 rank:", true)
-	# If player skipped or no valid card, cancel the play
-	return not discarded.is_empty()
+		ctx.owner.player_id, filter, tr("STR_EFF_ESC01_001_PROMPT"), true)
+	if not discarded.is_empty():
+		return true
+	return base_rank_fits
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

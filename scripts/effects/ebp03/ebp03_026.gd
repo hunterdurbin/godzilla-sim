@@ -21,7 +21,7 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	var monster_count := 0
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 			if monster_count >= 2:
 				return true
@@ -33,9 +33,9 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func get_opponent_field_rank_modifier(ctx: EffectContext) -> int:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
-	if ctx.owner.monster_stack.size() < 3:
+	if not ctx.has_monster_stack(3):
 		return 0
 	return -2
 
@@ -44,7 +44,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Place exactly 2 monster cards from discard under this card (or skip entirely)
 	var monsters: Array[Dictionary] = []
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monsters.append(card)
 
 	if monsters.size() < 2:
@@ -52,7 +52,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var selected: Array[Dictionary] = await ctx.effect_handler.select_cards_from_pool(
 		ctx.owner.player_id, monsters, ctx.owner.discard_pile.duplicate(),
-		"Place 2 monster cards from discard under this card (or skip):", 2)
+		tr("STR_EFF_EBP03_026_SELECT"), 2)
 
 	if selected.is_empty():
 		return

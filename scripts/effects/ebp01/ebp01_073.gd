@@ -14,6 +14,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_invasion_observed": {"own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["boosts_threat", "weakens_opponent"]
 
@@ -21,10 +26,6 @@ func get_bot_tags() -> Array[String]:
 func can_be_played(ctx: EffectContext) -> bool:
 	# Cannot be played if 7 or fewer monster cards in discard pile (need 8+)
 	return ctx.effect_handler.count_monsters_in_discard(ctx.owner) > 7
-
-
-func get_invasion_observed_filter() -> Dictionary:
-	return {"own_turn": true}
 
 
 func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
@@ -35,15 +36,15 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 	# Check if there are already monster cards under this card
 	var stack: Array = ctx.owner.get_zone_stack(zone_idx)
 	for i in range(1, stack.size()):
-		if stack[i].get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(stack[i]):
 			return # Already has a monster under it
 
 	# Search discard for a monster card to place under
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.MONSTER,
-		"Place a monster card from your discard pile under this card to set opponent's Rage to 0:"
+			return CardUtils.is_monster(card),
+		tr("STR_EFF_EBP01_073_PROMPT")
 	)
 	if selected.is_empty():
 		return

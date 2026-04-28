@@ -12,12 +12,13 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_invasion_observed": {"own_turn": false},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["draws_cards"]
-
-
-func get_invasion_observed_filter() -> Dictionary:
-	return {"own_turn": false}
 
 
 func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
@@ -35,11 +36,10 @@ func on_revenge(ctx: EffectContext) -> void:
 	var selected: Dictionary = await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			if card.get("card_type") != CardEnums.CardType.MONSTER:
+			if not CardUtils.is_monster(card):
 				return false
-			return CardEnums.CardTrait.SACRED_GUARDIAN_BEASTS in card.get("traits", []),
-		"Return a Sacred Guardian Beast monster card from discard to hand:")
+			return CardUtils.has_trait(card, CardEnums.CardTrait.SACRED_GUARDIAN_BEASTS),
+		tr("STR_EFF_EBP03_062_PROMPT"))
 
 	if not selected.is_empty():
-		ctx.owner.hand.append(selected)
-		ctx.owner.hand_changed.emit()
+		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, selected)

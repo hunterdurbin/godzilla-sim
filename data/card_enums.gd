@@ -1,11 +1,11 @@
 class_name CardEnums
 
 
-enum CardType {MONSTER, BATTLE, STRATEGY}
+enum CardType {MONSTER, BATTLE, STRATEGY, RAGE}
 
 enum CardColor {RED, BLUE, WHITE, GREEN}
 
-enum CardTrait {KAIJU, MECHA, ALIEN, MUTANT, ANGUIRUS, BABY_GODZILLA, BARAGON, BATTRA, BIOLLANTE, BOAT, CHIBI, CHIBI_GODZILLA_RAIDS_AGAIN, CITY, CRYSTAL, DAGAHRA, DESGHIDORAH, DESTOROYAH, DORAT, EBIRAH, FEST, FESTIVAL_GODZILLA, FINAL_WARS, FOURTH_FORM, GABARA, GHIDORAH, GHOGO, GIANT_CONDOR, GIGAN, GODZILLA, GODZILLASAURUS, GODZILLA_JR, GOROSAURUS, HEDORAH, JET_JAGUAR, KAMACURAS, KING_CAESAR, KING_GHIDORAH, KUMONGA, LITTLE_GODZILLA, MANDA, MECH, MECHAGODZILLA, MEGAGUIRUS, MEGALON, MEGANULA, MINILLA, MOGUERA, MONSTER_X, MOTHRA, ORGA, RODAN, SACRED_GUARDIAN_BEASTS, SECOND_FORM, SPACEGODZILLA, SUPER_X, THIRD_FORM, TITANOSAURUS, TOKEN, TWENTY_THIRD_CENTURY, VARAN, WEAPON, ZILLA}
+enum CardTrait {KAIJU, MECHA, ALIEN, MUTANT, ANGUIRUS, BABY_GODZILLA, BARAGON, BATTRA, BIOLLANTE, BOAT, CHIBI, CHIBI_GODZILLA_RAIDS_AGAIN, CITY, CRYSTAL, DAGAHRA, DESGHIDORAH, DESTOROYAH, DORAT, EBIRAH, FEST, FINAL_WARS, FOURTH_FORM, GABARA, GHIDORAH, GHOGO, GIANT_CONDOR, GIGAN, GODZILLA, GODZILLASAURUS, GODZILLA_JR, GOROSAURUS, HEDORAH, JET_JAGUAR, KAMACURAS, KING_CAESAR, KING_GHIDORAH, KUMONGA, LITTLE_GODZILLA, MANDA, MECH, MECHAGODZILLA, MEGAGUIRUS, MEGALON, MEGANULA, MINILLA, MOGUERA, MONSTER_X, MOTHRA, ORGA, RODAN, SACRED_GUARDIAN_BEASTS, SECOND_FORM, SPACEGODZILLA, SUPER_X, THIRD_FORM, TITANOSAURUS, TOKEN, TWENTY_THIRD_CENTURY, VARAN, WEAPON, ZILLA, GODZILLA_EARTH, HIGHER_DIMENSIONAL, TENTACLE, VALKYRIE, KAISER_GHIDORAH, SANDA, GAIRA, GEZORA, GANIMES, KAMOEBAS, SERVUM}
 
 enum GamePhase {START, MAIN, COUNTER, END}
 
@@ -24,87 +24,110 @@ static func rank_to_roman(rank: int) -> String:
 
 
 static func color_to_string(color: CardColor) -> String:
+	return TranslationServer.translate(color_to_key(color))
+
+
+static func color_to_key(color: CardColor) -> StringName:
 	match color:
-		CardColor.RED: return "Red"
-		CardColor.BLUE: return "Blue"
-		CardColor.WHITE: return "White"
-		CardColor.GREEN: return "Green"
-		_: return "Unknown"
+		CardColor.RED: return &"STR_COLOR_RED"
+		CardColor.BLUE: return &"STR_COLOR_BLUE"
+		CardColor.WHITE: return &"STR_COLOR_WHITE"
+		CardColor.GREEN: return &"STR_COLOR_GREEN"
+		_: return &"STR_UNKNOWN"
 
 
 static func trait_to_string(t: CardTrait) -> String:
+	return TranslationServer.translate(trait_to_key(t))
+
+
+static func trait_to_key(t: CardTrait) -> StringName:
 	match t:
-		CardTrait.KAIJU: return "Kaiju"
-		CardTrait.MECHA: return "Mecha"
-		CardTrait.ALIEN: return "Alien"
-		CardTrait.MUTANT: return "Mutant"
-		CardTrait.ANGUIRUS: return "Anguirus"
-		CardTrait.BABY_GODZILLA: return "Baby Godzilla"
-		CardTrait.BARAGON: return "Baragon"
-		CardTrait.BATTRA: return "Battra"
-		CardTrait.BIOLLANTE: return "Biollante"
-		CardTrait.BOAT: return "Boat"
-		CardTrait.CHIBI: return "Chibi"
-		CardTrait.CHIBI_GODZILLA_RAIDS_AGAIN: return "Chibi Godzilla Raids Again"
-		CardTrait.CITY: return "City"
-		CardTrait.CRYSTAL: return "Crystal"
-		CardTrait.DAGAHRA: return "Dagahra"
-		CardTrait.DESGHIDORAH: return "Desghidorah"
-		CardTrait.DESTOROYAH: return "Destoroyah"
-		CardTrait.DORAT: return "Dorat"
-		CardTrait.EBIRAH: return "Ebirah"
-		CardTrait.FEST: return "Fest"
-		CardTrait.FESTIVAL_GODZILLA: return "Festival Godzilla"
-		CardTrait.FINAL_WARS: return "Final Wars"
-		CardTrait.FOURTH_FORM: return "4th Form"
-		CardTrait.GABARA: return "Gabara"
-		CardTrait.GHIDORAH: return "Ghidorah"
-		CardTrait.GHOGO: return "Ghogo"
-		CardTrait.GIANT_CONDOR: return "Giant Condor"
-		CardTrait.GIGAN: return "Gigan"
-		CardTrait.GODZILLA: return "Godzilla"
-		CardTrait.GODZILLASAURUS: return "Godzillasaurus"
-		CardTrait.GODZILLA_JR: return "Godzilla Jr."
-		CardTrait.GOROSAURUS: return "Gorosaurus"
-		CardTrait.HEDORAH: return "Hedorah"
-		CardTrait.JET_JAGUAR: return "Jet Jaguar"
-		CardTrait.KAMACURAS: return "Kamacuras"
-		CardTrait.KING_CAESAR: return "King Caesar"
-		CardTrait.KING_GHIDORAH: return "King Ghidorah"
-		CardTrait.KUMONGA: return "Kumonga"
-		CardTrait.LITTLE_GODZILLA: return "Little Godzilla"
-		CardTrait.MANDA: return "Manda"
-		CardTrait.MECH: return "Mech"
-		CardTrait.MECHAGODZILLA: return "Mechagodzilla"
-		CardTrait.MEGAGUIRUS: return "Megaguirus"
-		CardTrait.MEGALON: return "Megalon"
-		CardTrait.MEGANULA: return "Meganula"
-		CardTrait.MINILLA: return "Minilla"
-		CardTrait.MOGUERA: return "Moguera"
-		CardTrait.MONSTER_X: return "Monster X"
-		CardTrait.MOTHRA: return "Mothra"
-		CardTrait.ORGA: return "Orga"
-		CardTrait.RODAN: return "Rodan"
-		CardTrait.SACRED_GUARDIAN_BEASTS: return "Sacred Guardian Beasts"
-		CardTrait.SECOND_FORM: return "2nd Form"
-		CardTrait.SPACEGODZILLA: return "SpaceGodzilla"
-		CardTrait.SUPER_X: return "Super X"
-		CardTrait.THIRD_FORM: return "3rd Form"
-		CardTrait.TITANOSAURUS: return "Titanosaurus"
-		CardTrait.TOKEN: return "Token"
-		CardTrait.TWENTY_THIRD_CENTURY: return "23rd century"
-		CardTrait.VARAN: return "Varan"
-		CardTrait.WEAPON: return "Weapon"
-		CardTrait.ZILLA: return "Zilla"
-		_: return "Unknown"
+		CardTrait.KAIJU: return &"STR_TRAIT_KAIJU"
+		CardTrait.MECHA: return &"STR_TRAIT_MECHA"
+		CardTrait.ALIEN: return &"STR_TRAIT_ALIEN"
+		CardTrait.MUTANT: return &"STR_TRAIT_MUTANT"
+		CardTrait.ANGUIRUS: return &"STR_TRAIT_ANGUIRUS"
+		CardTrait.BABY_GODZILLA: return &"STR_TRAIT_BABY_GODZILLA"
+		CardTrait.BARAGON: return &"STR_TRAIT_BARAGON"
+		CardTrait.BATTRA: return &"STR_TRAIT_BATTRA"
+		CardTrait.BIOLLANTE: return &"STR_TRAIT_BIOLLANTE"
+		CardTrait.BOAT: return &"STR_TRAIT_BOAT"
+		CardTrait.CHIBI: return &"STR_TRAIT_CHIBI"
+		CardTrait.CHIBI_GODZILLA_RAIDS_AGAIN: return &"STR_TRAIT_CHIBI_GODZILLA_RAIDS_AGAIN"
+		CardTrait.CITY: return &"STR_TRAIT_CITY"
+		CardTrait.CRYSTAL: return &"STR_TRAIT_CRYSTAL"
+		CardTrait.DAGAHRA: return &"STR_TRAIT_DAGAHRA"
+		CardTrait.DESGHIDORAH: return &"STR_TRAIT_DESGHIDORAH"
+		CardTrait.DESTOROYAH: return &"STR_TRAIT_DESTOROYAH"
+		CardTrait.DORAT: return &"STR_TRAIT_DORAT"
+		CardTrait.EBIRAH: return &"STR_TRAIT_EBIRAH"
+		CardTrait.FEST: return &"STR_TRAIT_FEST"
+		CardTrait.FINAL_WARS: return &"STR_TRAIT_FINAL_WARS"
+		CardTrait.FOURTH_FORM: return &"STR_TRAIT_FOURTH_FORM"
+		CardTrait.GABARA: return &"STR_TRAIT_GABARA"
+		CardTrait.GHIDORAH: return &"STR_TRAIT_GHIDORAH"
+		CardTrait.GHOGO: return &"STR_TRAIT_GHOGO"
+		CardTrait.GIANT_CONDOR: return &"STR_TRAIT_GIANT_CONDOR"
+		CardTrait.GIGAN: return &"STR_TRAIT_GIGAN"
+		CardTrait.GODZILLA: return &"STR_TRAIT_GODZILLA"
+		CardTrait.GODZILLASAURUS: return &"STR_TRAIT_GODZILLASAURUS"
+		CardTrait.GODZILLA_JR: return &"STR_TRAIT_GODZILLA_JR"
+		CardTrait.GOROSAURUS: return &"STR_TRAIT_GOROSAURUS"
+		CardTrait.HEDORAH: return &"STR_TRAIT_HEDORAH"
+		CardTrait.JET_JAGUAR: return &"STR_TRAIT_JET_JAGUAR"
+		CardTrait.KAMACURAS: return &"STR_TRAIT_KAMACURAS"
+		CardTrait.KING_CAESAR: return &"STR_TRAIT_KING_CAESAR"
+		CardTrait.KING_GHIDORAH: return &"STR_TRAIT_KING_GHIDORAH"
+		CardTrait.KUMONGA: return &"STR_TRAIT_KUMONGA"
+		CardTrait.LITTLE_GODZILLA: return &"STR_TRAIT_LITTLE_GODZILLA"
+		CardTrait.MANDA: return &"STR_TRAIT_MANDA"
+		CardTrait.MECH: return &"STR_TRAIT_MECH"
+		CardTrait.MECHAGODZILLA: return &"STR_TRAIT_MECHAGODZILLA"
+		CardTrait.MEGAGUIRUS: return &"STR_TRAIT_MEGAGUIRUS"
+		CardTrait.MEGALON: return &"STR_TRAIT_MEGALON"
+		CardTrait.MEGANULA: return &"STR_TRAIT_MEGANULA"
+		CardTrait.MINILLA: return &"STR_TRAIT_MINILLA"
+		CardTrait.MOGUERA: return &"STR_TRAIT_MOGUERA"
+		CardTrait.MONSTER_X: return &"STR_TRAIT_MONSTER_X"
+		CardTrait.MOTHRA: return &"STR_TRAIT_MOTHRA"
+		CardTrait.ORGA: return &"STR_TRAIT_ORGA"
+		CardTrait.RODAN: return &"STR_TRAIT_RODAN"
+		CardTrait.SACRED_GUARDIAN_BEASTS: return &"STR_TRAIT_SACRED_GUARDIAN_BEASTS"
+		CardTrait.SECOND_FORM: return &"STR_TRAIT_SECOND_FORM"
+		CardTrait.SPACEGODZILLA: return &"STR_TRAIT_SPACEGODZILLA"
+		CardTrait.SUPER_X: return &"STR_TRAIT_SUPER_X"
+		CardTrait.THIRD_FORM: return &"STR_TRAIT_THIRD_FORM"
+		CardTrait.TITANOSAURUS: return &"STR_TRAIT_TITANOSAURUS"
+		CardTrait.TOKEN: return &"STR_TRAIT_TOKEN"
+		CardTrait.TWENTY_THIRD_CENTURY: return &"STR_TRAIT_TWENTY_THIRD_CENTURY"
+		CardTrait.VARAN: return &"STR_TRAIT_VARAN"
+		CardTrait.WEAPON: return &"STR_TRAIT_WEAPON"
+		CardTrait.ZILLA: return &"STR_TRAIT_ZILLA"
+		CardTrait.GODZILLA_EARTH: return &"STR_TRAIT_GODZILLA_EARTH"
+		CardTrait.HIGHER_DIMENSIONAL: return &"STR_TRAIT_HIGHER_DIMENSIONAL"
+		CardTrait.TENTACLE: return &"STR_TRAIT_TENTACLE"
+		CardTrait.VALKYRIE: return &"STR_TRAIT_VALKYRIE"
+		CardTrait.KAISER_GHIDORAH: return &"STR_TRAIT_KAISER_GHIDORAH"
+		CardTrait.SANDA: return &"STR_TRAIT_SANDA"
+		CardTrait.GAIRA: return &"STR_TRAIT_GAIRA"
+		CardTrait.GEZORA: return &"STR_TRAIT_GEZORA"
+		CardTrait.GANIMES: return &"STR_TRAIT_GANIMES"
+		CardTrait.KAMOEBAS: return &"STR_TRAIT_KAMOEBAS"
+		CardTrait.SERVUM: return &"STR_TRAIT_SERVUM"
+		_: return &"STR_UNKNOWN"
 
 
 static func type_to_string(t: CardType) -> String:
+	return TranslationServer.translate(type_to_key(t))
+
+
+static func type_to_key(t: CardType) -> StringName:
 	match t:
-		CardType.MONSTER: return "Monster"
-		CardType.BATTLE: return "Battle"
-		CardType.STRATEGY: return "Strategy"
-		_: return "Unknown"
+		CardType.MONSTER: return &"STR_TYPE_MONSTER"
+		CardType.BATTLE: return &"STR_TYPE_BATTLE"
+		CardType.STRATEGY: return &"STR_TYPE_STRATEGY"
+		CardType.RAGE: return &"STR_TYPE_RAGE"
+		_: return &"STR_UNKNOWN"
 
 
 static func color_to_godot_color(color: CardColor) -> Color:
@@ -117,9 +140,13 @@ static func color_to_godot_color(color: CardColor) -> Color:
 
 
 static func phase_to_string(phase: GamePhase) -> String:
+	return TranslationServer.translate(phase_to_key(phase))
+
+
+static func phase_to_key(phase: GamePhase) -> StringName:
 	match phase:
-		GamePhase.START: return "Start Phase"
-		GamePhase.MAIN: return "Main Phase"
-		GamePhase.COUNTER: return "Counter Phase"
-		GamePhase.END: return "End Phase"
-		_: return "Unknown"
+		GamePhase.START: return &"STR_PHASE_START"
+		GamePhase.MAIN: return &"STR_PHASE_MAIN"
+		GamePhase.COUNTER: return &"STR_PHASE_COUNTER"
+		GamePhase.END: return &"STR_PHASE_END"
+		_: return &"STR_UNKNOWN"

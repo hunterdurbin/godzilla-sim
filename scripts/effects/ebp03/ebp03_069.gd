@@ -26,20 +26,16 @@ func on_enter(ctx: EffectContext) -> void:
 	if zone8_card.is_empty():
 		return
 
-	var has_mechagodzilla: bool = CardEnums.CardTrait.MECHAGODZILLA in zone8_card.get("traits", [])
+	var has_mechagodzilla: bool = CardUtils.has_trait(zone8_card, CardEnums.CardTrait.MECHAGODZILLA)
 	if not has_mechagodzilla:
 		# Also check monster card if it's in zone 8
 		if ctx.owner.monster_zone == 8:
-			has_mechagodzilla = CardEnums.CardTrait.MECHAGODZILLA in ctx.owner.current_monster.get("traits", [])
+			has_mechagodzilla = CardUtils.has_trait(ctx.owner.current_monster, CardEnums.CardTrait.MECHAGODZILLA)
 
 	if not has_mechagodzilla:
 		return
 
-	var zones_to_destroy: Array[int] = []
-	for i in range(8):
-		var opp_card := ctx.opponent.get_zone_top_card(i)
-		if not opp_card.is_empty() and ctx.field_rank(opp_card, ctx.opponent.player_id) <= 5:
-			zones_to_destroy.append(i)
+	var zones_to_destroy: Array[int] = ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 5)
 
 	if not zones_to_destroy.is_empty():
 		await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)

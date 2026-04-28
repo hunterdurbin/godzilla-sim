@@ -15,14 +15,14 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
-	return opponent.rage > 0
+	return opponent.has_rage()
 
 
 func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.STRATEGY,
-		"Discard a strategy card to reduce opponent rage by 1 (or skip):",
+		func(card): return CardUtils.is_strategy(card),
+		tr("STR_EFF_EBP03_034_PROMPT"),
 		true
 	)
 	if selected.is_empty():

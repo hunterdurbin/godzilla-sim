@@ -13,32 +13,25 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["searches_deck", "plays_other_cards"]
 
 
 func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:
-	if owner.monster_zone < 4:
+	if not owner.is_awakening(4):
 		return false
-	for i in range(8):
-		var zone_card := owner.get_zone_top_card(i)
-		if not zone_card.is_empty() and zone_card.get("name", "") == "Land Moguera":
-			return true
-	return false
+	return owner.has_zone_matching(func(c: Dictionary) -> bool:
+		return c.get("name", "") == "Land Moguera")
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	# Only on your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	# Awakening4: monster must be in zone 4+
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return
 
 	var my_zone: int = find_zone_of_card(ctx)
@@ -46,13 +39,9 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		return
 
 	# Find zones with "Land Moguera" as top card
-	var land_moguera_zones: Array[int] = []
-	for i in range(8):
-		if i == my_zone:
-			continue
-		var zone_card := ctx.owner.get_zone_top_card(i)
-		if not zone_card.is_empty() and zone_card.get("name", "") == "Land Moguera":
-			land_moguera_zones.append(i)
+	var land_moguera_zones: Array[int] = ctx.owner.get_zone_top_indices_matching(func(c: Dictionary) -> bool:
+		return c.get("name", "") == "Land Moguera")
+	land_moguera_zones.erase(my_zone)
 
 	if land_moguera_zones.is_empty():
 		return
@@ -60,7 +49,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	# Choose which Land Moguera to place under (optional)
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, land_moguera_zones,
-		"Place Star Falcon under Land Moguera (or skip):", true)
+		tr("STR_EFF_EBP03_043_PROMPT"), true)
 
 	if chosen < 0:
 		return
@@ -77,12 +66,10 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected: Dictionary = await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			if card.get("card_type") != CardEnums.CardType.BATTLE:
+			if not CardUtils.is_battle(card):
 				return false
-			return CardEnums.CardTrait.MOGUERA in card.get("traits", []),
-		"Search for a Moguera battle card to play on Land Moguera:")
+			return CardUtils.has_trait(card, CardEnums.CardTrait.MOGUERA),
+		tr("STR_EFF_EBP03_043_SEARCH"))
 
 	if not selected.is_empty():
-		ctx.owner.push_zone_card(chosen, selected)
-		ctx.owner.zones_changed.emit()
-		await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected, true)
+		await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, selected, chosen)

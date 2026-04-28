@@ -12,6 +12,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "column_dependent_battle"]
 
@@ -20,24 +25,12 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 	return 5
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	# Opponent's turn only
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
-	var column_zones := get_opponent_column_zones(monster_zone_idx)
-
 	var zones_to_destroy: Array[int] = []
-	for zi in column_zones:
+	for zi in ctx.get_opponent_column_zones_with_cards(monster_zone_idx):
 		var zone_card := ctx.opponent.get_zone_top_card(zi)
-		if not zone_card.is_empty() and ctx.field_rank(zone_card, ctx.opponent.player_id) <= 5:
+		if ctx.field_rank(zone_card, ctx.opponent.player_id) <= 5:
 			zones_to_destroy.append(zi)
 
 	if not zones_to_destroy.is_empty():

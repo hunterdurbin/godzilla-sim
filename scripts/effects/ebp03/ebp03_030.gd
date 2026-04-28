@@ -18,8 +18,8 @@ func get_bot_tags() -> Array[String]:
 func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	var mods := {}
 	var zone8_card := ctx.owner.get_zone_top_card(7) # zone 8 = index 7
-	if not zone8_card.is_empty() and zone8_card.get("card_type") == CardEnums.CardType.BATTLE:
-		if CardEnums.CardTrait.MECHAGODZILLA in zone8_card.get("traits", []):
+	if not zone8_card.is_empty() and CardUtils.is_battle(zone8_card):
+		if CardUtils.has_trait(zone8_card, CardEnums.CardTrait.MECHAGODZILLA):
 			# Don't double-count if this card IS in zone 8
 			var my_zone := find_zone_of_card(ctx)
 			if my_zone != 7:
@@ -29,17 +29,14 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 
 func on_enter(ctx: EffectContext) -> void:
 	var my_id: String = ctx.card_data.get("id", "")
-	var occupied: Array[int] = []
-	for i in range(8):
-		var top := ctx.owner.get_zone_top_card(i)
-		if not top.is_empty() and top.get("id", "") != my_id:
-			occupied.append(i)
+	var occupied: Array[int] = ctx.owner.get_zone_top_indices_matching(func(c: Dictionary) -> bool:
+		return c.get("id", "") != my_id)
 	if occupied.is_empty():
 		return
 
 	var source := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, occupied,
-		"Choose a battle card to move (or skip):", true)
+		tr("STR_EFF_MOVE_BATTLE_OR_SKIP"), true)
 	if source < 0:
 		return
 
@@ -49,7 +46,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var dest := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, empty,
-		"Choose destination zone:")
+		tr("STR_EFF_MOVE_DEST_ZONE"))
 	if dest < 0:
 		return
 

@@ -34,4 +34,4 @@ func on_enter(ctx: EffectContext) -> void:
 				if ctx.opponent.get_zone_top_card(i).get("id", "") == card_id:
 					return (i + 1) <= max_zone # Zone number <= monster zone
 			return false,
-		"Choose an opponent's battle card at or before zone %d to destroy:" % max_zone)
+		tr("STR_EFF_EBP02_018_FMT") % max_zone)

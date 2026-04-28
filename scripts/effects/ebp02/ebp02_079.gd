@@ -35,11 +35,7 @@ func on_enter(ctx: EffectContext) -> void:
 	elif zones_crossed >= 1:
 		max_rank = 4
 
-	var zones_to_destroy: Array[int] = []
-	for i in range(8):
-		var zone_card := ctx.opponent.get_zone_top_card(i)
-		if not zone_card.is_empty() and ctx.field_rank(zone_card, ctx.opponent.player_id) <= max_rank:
-			zones_to_destroy.append(i)
+	var zones_to_destroy: Array[int] = ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, max_rank)
 
 	if not zones_to_destroy.is_empty():
 		await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)

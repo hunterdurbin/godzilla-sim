@@ -15,30 +15,20 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	var strategy_count := 0
-	for sz in owner.strategy_zones:
-		if not sz.is_empty():
-			strategy_count += 1
-	if strategy_count > 1:
+	if owner.count_strategies_in_play() > 1:
 		return false
 	if not owner.has_empty_strategy_zone():
 		return false
 	for card in owner.hand:
-		if card.get("card_type") == CardEnums.CardType.STRATEGY \
-			and CardEnums.CardColor.BLUE in card.get("colors", []) \
-			and card.get("rank", 0) <= 6:
+		if CardUtils.is_strategy(card) \
+			and CardUtils.has_color(card, CardEnums.CardColor.BLUE) \
+			and CardUtils.rank_at_most(card, 6):
 			return true
 	return false
 
 
 func on_enter(ctx: EffectContext) -> void:
-	# Count strategy cards in play
-	var strategy_count := 0
-	for sz in ctx.owner.strategy_zones:
-		if not sz.is_empty():
-			strategy_count += 1
-
-	if strategy_count > 1:
+	if ctx.owner.count_strategies_in_play() > 1:
 		return
 
 	if not ctx.owner.has_empty_strategy_zone():
@@ -48,9 +38,9 @@ func on_enter(ctx: EffectContext) -> void:
 	var valid_indices: Array[int] = []
 	for i in range(ctx.owner.hand.size()):
 		var card: Dictionary = ctx.owner.hand[i]
-		if card.get("card_type") == CardEnums.CardType.STRATEGY \
-			and CardEnums.CardColor.BLUE in card.get("colors", []) \
-			and card.get("rank", 0) <= 6:
+		if CardUtils.is_strategy(card) \
+			and CardUtils.has_color(card, CardEnums.CardColor.BLUE) \
+			and CardUtils.rank_at_most(card, 6):
 			valid_indices.append(i)
 
 	if valid_indices.is_empty():
@@ -58,10 +48,10 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.STRATEGY \
-			and CardEnums.CardColor.BLUE in card.get("colors", []) \
-			and card.get("rank", 0) <= 6,
-		"Place a blue rank 6 or lower strategy card (or skip):",
+		func(card): return CardUtils.is_strategy(card) \
+			and CardUtils.has_color(card, CardEnums.CardColor.BLUE) \
+			and CardUtils.rank_at_most(card, 6),
+		tr("STR_EFF_EBP03_012_PROMPT"),
 		true
 	)
 	if selected.is_empty():

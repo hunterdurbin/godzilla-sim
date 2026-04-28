@@ -23,8 +23,8 @@ func can_replace_invasion_cost(_ctx: EffectContext) -> bool:
 
 func prevents_rage_reduction(ctx: EffectContext) -> bool:
 	# <Opponent's Turn> <Awakening4>: Rage cannot be reduced by opponent's effects
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return false # Only active on opponent's turn
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return false # Awakening4 not active
 	return true

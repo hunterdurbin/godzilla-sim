@@ -14,6 +14,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.MAIN, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["zone_dependent"]
 
@@ -32,17 +37,9 @@ func can_intercept_strategy_discard(ctx: EffectContext) -> bool:
 	return zone_idx == 7
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.MAIN, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.MAIN:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	# Awakening4: monster must be in zone 4+
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return
 	# Need 2+ cards under this card
 	var zone_idx := find_zone_of_card(ctx)
@@ -50,4 +47,4 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	if stack_size < 3: # 1 (self) + 2 (under)
 		return
 	# Force counter the opponent's monster
-	await ctx.effect_handler.force_counter(ctx.owner.player_id)
+	await ctx.effect_handler.force_counter(ctx.opponent.player_id)

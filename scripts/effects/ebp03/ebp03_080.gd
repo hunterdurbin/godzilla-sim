@@ -12,6 +12,11 @@ extends CardEffect
 # Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["plays_other_cards"]
 
@@ -21,8 +26,8 @@ func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, 
 	if valid_zones.is_empty():
 		return false
 	for card in owner.hand:
-		if card.get("card_type") == CardEnums.CardType.BATTLE \
-			and CardEnums.CardTrait.GODZILLA in card.get("traits", []):
+		if CardUtils.is_battle(card) \
+			and CardUtils.has_trait(card, CardEnums.CardTrait.GODZILLA):
 			if effect_handler and not effect_handler.can_card_be_played(owner.player_id, card):
 				continue
 			return true
@@ -33,26 +38,17 @@ func is_base_strategy() -> bool:
 	return true
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return # Your turn only
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	# Find Godzilla battle cards in hand (respecting play restrictions)
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card):
-			if card.get("card_type") != CardEnums.CardType.BATTLE:
+			if not CardUtils.is_battle(card):
 				return false
-			if not CardEnums.CardTrait.GODZILLA in card.get("traits", []):
+			if not CardUtils.has_trait(card, CardEnums.CardTrait.GODZILLA):
 				return false
 			return ctx.effect_handler.can_card_be_played(ctx.owner.player_id, card),
-		"Play a Godzilla battle card from hand (or skip):",
+		tr("STR_EFF_EBP03_080_PROMPT"),
 		true
 	)
 	if selected.is_empty():
@@ -68,7 +64,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 			var dest := await ctx.effect_handler.select_zone_target(
 				ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-				"Choose a zone to play the battle card:")
+				tr("STR_EFF_PLAY_BATTLE_ZONE"))
 			if dest < 0:
 				ctx.owner.discard_pile.append(card)
 				ctx.owner.discard_changed.emit()

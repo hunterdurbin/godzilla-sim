@@ -15,6 +15,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.MAIN, "own_turn": false},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["blocks_zone"]
 
@@ -25,21 +30,12 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func blocks_opponent_strategy_plays(ctx: EffectContext) -> bool:
 	# Only active during opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return false
 	return true
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.MAIN, "own_turn": false}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.MAIN:
-		return
-	# Only active during opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
-		return
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	# Opponent (the turn player) may discard to 5 to destroy this card
 	if ctx.opponent.hand.size() <= 5:
 		return
@@ -52,7 +48,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var chosen: Dictionary = await ctx.effect_handler.select_hand_card(
 		ctx.opponent.player_id,
 		func(_card: Dictionary) -> bool: return true,
-		"Discard %d card(s) to destroy Godzilla vs. SpaceGodzilla? (Select a card to confirm, skip to decline)" % discard_count,
+		tr("STR_EFF_EBP02_070_PROMPT_FMT") % discard_count,
 		true)
 
 	if chosen.is_empty():

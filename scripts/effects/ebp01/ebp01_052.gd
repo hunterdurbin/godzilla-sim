@@ -12,13 +12,18 @@ extends CardEffect
 ## Implementation notes: Uses can_be_destroyed system hook
 
 
+const TRIGGER_FILTERS = {
+	"can_be_destroyed": {"caused_by_opponent": true},
+}
+
+
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 
 
 func can_be_destroyed(ctx: EffectContext) -> bool:
 	# Awakening4: owner's monster must be in zone 4 or higher
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return true
 	# Must be in zones 1-5 (indices 0-4)
 	var zone_idx := find_zone_of_card(ctx)

@@ -33,14 +33,13 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	# Find red or blue battle cards among revealed
 	var valid: Array[Dictionary] = []
 	for card in revealed:
-		if card.get("card_type") == CardEnums.CardType.BATTLE:
-			var card_colors: Array = card.get("colors", [])
-			if CardEnums.CardColor.RED in card_colors or CardEnums.CardColor.BLUE in card_colors:
+		if CardUtils.is_battle(card):
+			if CardUtils.has_color(card, CardEnums.CardColor.RED) or CardUtils.has_color(card, CardEnums.CardColor.BLUE):
 				valid.append(card)
 
 	var chosen: Dictionary = await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, valid, revealed,
-		"Choose 1 red or blue battle card to add to hand:")
+		tr("STR_EFF_EBP03_007_SELECT"))
 
 	# Add chosen to hand, discard rest
 	for card in revealed:

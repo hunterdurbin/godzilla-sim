@@ -23,11 +23,11 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_stack.size() >= 3
+	return owner.has_monster_stack(3)
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.monster_stack.size() < 3:
+	if not ctx.has_monster_stack(3):
 		return
 
 	# Build available options
@@ -35,12 +35,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var option_ids: Array[int] = []
 
 	# Option 0: Destroy 3 R5- battle cards
-	var has_r5_targets: bool = false
-	for i in range(8):
-		var top := ctx.opponent.get_zone_top_card(i)
-		if not top.is_empty() and ctx.field_rank(top, ctx.opponent.player_id) <= 5:
-			has_r5_targets = true
-			break
+	var has_r5_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 5).is_empty()
 	if has_r5_targets:
 		options.append("Destroy 3 of opponent's rank 5 or lower battle cards")
 		option_ids.append(0)
@@ -63,7 +58,7 @@ func on_enter(ctx: EffectContext) -> void:
 		chosen_id = option_ids[0]
 	else:
 		var chosen_idx: int = await ctx.effect_handler.select_choice(
-			ctx.owner.player_id, options, "Choose one:")
+			ctx.owner.player_id, options, tr("STR_EFF_CHOOSE_ONE"))
 		if chosen_idx < 0 or chosen_idx >= option_ids.size():
 			chosen_id = option_ids[0]
 		else:
@@ -75,15 +70,8 @@ func on_enter(ctx: EffectContext) -> void:
 				await ctx.effect_handler.destroy_zone_target(
 					ctx.owner.player_id, ctx.opponent,
 					func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 5,
-					"Choose a rank 5 or lower battle card to destroy:")
+					tr("STR_EFF_DESTROY_OWN_RANK_LOWER_FMT") % 5)
 		1:
 			await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 3)
 		2:
-			var milled: Array[Dictionary] = ctx.owner.mill_cards(3)
-			if not milled.is_empty():
-				ctx.effect_handler.log_message.emit(
-					GameLog.effect_milled_cards(ctx.owner.player_id, ctx.card_data.get("id", ""), milled)
-				)
-				await ctx.effect_handler.select_from_cards(
-					ctx.owner.player_id, milled, milled,
-					"Sent to discard pile:")
+			await ctx.mill(3)

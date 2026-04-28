@@ -1,0 +1,41 @@
+extends CardEffect
+## EBP04-078: Crawling Calamity - Strategy Rank 5 (Red)
+## Move your opponent's Monster card in areas 3-5 vertically. (3->8, 4->7, 5->6.
+## Do not destroy battle cards in areas in between)
+##
+## Tested: Yes
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
+
+
+func get_bot_tags() -> Array[String]:
+	return ["advances_opponent"]
+
+
+func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
+	return opponent.monster_zone >= 3 and opponent.monster_zone <= 5
+
+
+func on_enter(ctx: EffectContext) -> void:
+	var opp_zone: int = ctx.opponent.monster_zone
+	if opp_zone < 3 or opp_zone > 5:
+		return
+
+	var target_zone: int
+	match opp_zone:
+		3: target_zone = 8
+		4: target_zone = 7
+		5: target_zone = 6
+		_: return
+
+	# teleport_monster respects EBP04-076 (Dormancy) via the
+	# prevents_opponent_monster_move filter — returns false if blocked.
+	var moved: bool = ctx.effect_handler.teleport_monster(ctx.opponent.player_id, target_zone)
+	if not moved:
+		ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_078_BLOCKED"))
+		return
+	ctx.effect_handler.log_message.emit(
+		tr("STR_EFF_EBP04_078_TELEPORT_FMT") % [opp_zone, target_zone])

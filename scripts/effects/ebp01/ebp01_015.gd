@@ -22,39 +22,24 @@ func get_bot_max_advance_zone(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 
-	var revealed: Array[Dictionary] = []
-	for _i in range(5):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-	ctx.owner.deck_changed.emit()
-
+	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 5)
 	if revealed.is_empty():
 		return
-
-	# Show revealed cards to the player
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		"Revealed from deck (select any to confirm):")
-
-	# Send all revealed to discard
-	ctx.owner.discard_pile.append_array(revealed)
-	ctx.owner.discard_changed.emit()
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 
 	var monster_count: int = 0
 	var has_step2: bool = false
 	for card in revealed:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 		if card.get("invasion_icon", 0) >= 2:
 			has_step2 = true
 
 	if monster_count > 0:
-		ctx.owner.rage += monster_count
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, monster_count, ctx.card_data.get("id", ""))
 
-	if has_step2 and ctx.owner.monster_zone < 6:
+	if has_step2 and not ctx.is_awakening(6):
 		await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 6)

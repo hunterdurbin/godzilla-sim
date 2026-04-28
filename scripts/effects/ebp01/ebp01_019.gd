@@ -13,19 +13,21 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_enter": {"played_from_hand": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["searches_deck"]
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 6
+	return owner.is_awakening(6)
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.monster_zone < 6:
-		return
-	# Only from hand (not through evolution, search, or other effects)
-	if ctx.card_data.get("played_from_effect", false):
+	if not ctx.is_awakening(6):
 		return
 
 	var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
@@ -34,30 +36,21 @@ func on_enter(ctx: EffectContext) -> void:
 		var selected := await ctx.effect_handler.search_deck(
 			ctx.owner.player_id,
 			func(card: Dictionary) -> bool:
-				if card.get("card_type") != CardEnums.CardType.BATTLE:
+				if not CardUtils.is_battle(card):
 					return false
-				var traits: Array = card.get("traits", [])
-				return CardEnums.CardTrait.KAMACURAS in traits,
-			"Search for a Kamacuras battle card to play:"
+				return CardUtils.has_trait(card, CardEnums.CardTrait.KAMACURAS),
+			tr("STR_EFF_EBP01_019_SEARCH")
 		)
 		if selected.is_empty():
 			break
 
 		var target_zone: int = await ctx.effect_handler.select_zone_target(
 			ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-			"Choose a zone to play the searched card:")
+			tr("STR_EFF_PLAY_SEARCHED_ZONE"))
 		if target_zone < 0:
 			break
 
-		# Handle overload if zone occupied
-		if ctx.owner.zone_has_cards(target_zone):
-			var destroyed_stack: Array = ctx.owner.clear_zone(target_zone)
-			EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
-			ctx.owner.discard_changed.emit()
-
-		ctx.owner.push_zone_card(target_zone, selected)
-		ctx.owner.zones_changed.emit()
-		await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected, true)
+		await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, selected, target_zone)
 
 		# Rule 5.11.1.3: must play to different zones if possible
 		valid_zones.erase(target_zone)

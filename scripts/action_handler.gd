@@ -16,6 +16,7 @@ signal strategy_cleared(player_id: int, cards: Array)
 signal counter_failed(player_id: int, total_cp: int, threat: int)
 signal counter_succeeded(player_id: int, total_cp: int, threat: int)
 signal counter_immunity_triggered(player_id: int, total_cp: int, threshold: int)
+signal counter_prevented(player_id: int)
 signal play_cancelled(player_id: int)
 signal monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String)
 
@@ -58,13 +59,17 @@ func execute_start_phase_discard(state: GameState) -> void:
 				# Base strategies are exempt from start phase discard (12.9.2 / 7.2.3)
 				if effect_handler and effect_handler.is_base_strategy(player.strategy_zones[i]):
 					continue
+				# Cards with custom anti-discard rule text (e.g. EBP04-089) are also exempt
+				if effect_handler and effect_handler.prevents_self_start_phase_discard(player.player_id, player.strategy_zones[i]):
+					continue
 				indices_to_discard.append(i)
 
 	if not indices_to_discard.is_empty():
 		var cleared: Array = []
 		for i in indices_to_discard:
 			if effect_handler:
-				var card := await effect_handler.discard_strategy_from_zone(player.player_id, i)
+				# Start phase discard (7.2.3) is a rule action, not <Destroy> — bypass protection.
+				var card := await effect_handler.discard_strategy_from_zone(player.player_id, i, null, true)
 				if not card.is_empty():
 					cleared.append(card)
 			else:
@@ -82,9 +87,23 @@ func execute_start_phase_discard(state: GameState) -> void:
 func execute_start_phase_reset(state: GameState) -> void:
 	var player := state.get_current_player()
 
-	# Reset rage to 0
-	player.rage = 0
-	player.rage_changed.emit(0)
+	# Reset rage to 0, allowing effects to intercept (e.g. EBP04-010)
+	var old_rage: int = player.rage
+	var new_rage: int = 0
+	if effect_handler:
+		new_rage = await effect_handler.apply_rage_reset(player.player_id)
+	player.rage = new_rage
+	player.rage_changed.emit(new_rage)
+	# Fire rage_changed trigger so cards that watch for rage decrease (EBP04-089)
+	# pick up the start phase reset. Populate the claim bucket on decrease so
+	# they can pop markers as a true resource; clear leftovers afterwards.
+	if effect_handler and new_rage != old_rage:
+		var delta: int = old_rage - new_rage
+		if delta > 0:
+			player.push_pending_rage_markers(delta)
+		await effect_handler.trigger_rage_changed(player.player_id, old_rage, new_rage)
+		if delta > 0:
+			player.pending_rage_markers.clear()
 
 	# Reset per-turn flags
 	player.has_invaded_this_turn = false
@@ -149,6 +168,13 @@ func execute_end_phase_advance(state: GameState) -> void:
 func execute_end_phase_draw(state: GameState) -> void:
 	## Draw up to 5 cards (7.5.4).
 	var player := state.get_current_player()
+	# Skip silently if hand is already at the cap — no draw would happen anyway,
+	# so the "draw blocked" log line would just be noise.
+	if player.hand.size() >= 5:
+		return
+	if effect_handler and effect_handler.is_opponent_end_phase_draw_blocked(player.player_id):
+		effect_handler.log_message.emit(tr("STR_AH_END_PHASE_DRAW_BLOCKED"))
+		return
 	var drawn := player.draw_up_to(5)
 	if drawn.size() > 0:
 		cards_drawn.emit(player.player_id, drawn.size())
@@ -166,12 +192,22 @@ func resolve_counter(state: GameState) -> void:
 		# Subtract base CP of cards restricted from engaging by opponent's monster
 		total_cp -= effect_handler.get_engagement_restricted_cp(player.player_id)
 
-	# Check counter immunity (e.g. EBP02-027: CP <= threshold → retreat without rank up)
+	# Full counter prevention (e.g. EBP04-014/031/032): no retreat, no rank up —
+	# counter simply doesn't happen. Distinct from counter immunity which still
+	# retreats. Prevention may be CP-conditional, hence the total_cp parameter.
+	if effect_handler and effect_handler.is_counter_prevented(opponent.player_id, total_cp):
+		counter_prevented.emit(opponent.player_id)
+		return
+
+	# Check counter immunity (e.g. EBP02-027: CP between threat and threshold
+	# → retreat without rank up). Per rule wording the opponent must still
+	# have enough counter power to "pseudo-counter" — if CP < threat the
+	# counter just fails normally.
 	var immunity_threshold: int = 0
 	if effect_handler:
 		immunity_threshold = effect_handler.get_counter_immunity_threshold(opponent.player_id)
 
-	if immunity_threshold > 0 and total_cp <= immunity_threshold:
+	if immunity_threshold > 0 and total_cp >= threat and total_cp <= immunity_threshold:
 		# Counter is immune — monster retreats but does NOT rank up
 		counter_immunity_triggered.emit(player.player_id, total_cp, immunity_threshold)
 
@@ -192,9 +228,11 @@ func resolve_counter(state: GameState) -> void:
 			monster_advanced.emit(opponent.player_id, old_zone, opponent.monster_zone)
 			opponent.monster_changed.emit()
 
-		# Trigger counter success effects after retreat but before rank-up
+		# Trigger counter success effects after retreat but before rank-up.
+		# Counterer (player, current player) handles on_counter_success;
+		# countered monster (opponent) handles on_self_countered.
 		if effect_handler:
-			await effect_handler.trigger_counter_success(player.player_id)
+			await effect_handler.trigger_counter_success(player.player_id, opponent.player_id)
 
 		# Opponent must rank up their monster
 		await _rank_up_monster(state, opponent, player.player_id)
@@ -202,49 +240,58 @@ func resolve_counter(state: GameState) -> void:
 		counter_failed.emit(player.player_id, total_cp, threat)
 
 
-func force_counter(state: GameState, counter_player_id: int) -> void:
-	## Force a successful counter on the specified player's opponent's monster.
-	## The opponent's monster retreats and ranks up (or opponent loses if can't rank up).
-	## Used by EBP02-012 Godzilla(2016) Frozen.
-	var opponent_id: int = 1 - counter_player_id
-	var opponent := state.players[opponent_id]
+func force_counter(state: GameState, target_player_id: int) -> void:
+	## Force a successful counter against target_player_id's monster.
+	## The target's monster retreats and ranks up (or target loses if can't rank up).
+	## The non-target player is recorded as the counter winner.
+	## Used by EBP02-012 (counter opponent's monster) and EBP04-027 (counter Gigan itself).
+	var winner_id: int = 1 - target_player_id
+	var target := state.players[target_player_id]
 
 	# Counter retreat: only zones 6-8 move back (5.15.1.1)
-	var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
-	if retreat_zone != opponent.monster_zone:
-		var old_zone: int = opponent.monster_zone
-		opponent.monster_zone = retreat_zone
-		monster_advanced.emit(opponent_id, old_zone, opponent.monster_zone)
-		opponent.monster_changed.emit()
+	var retreat_zone: int = get_counter_retreat_zone(target.monster_zone)
+	if retreat_zone != target.monster_zone:
+		var old_zone: int = target.monster_zone
+		target.monster_zone = retreat_zone
+		monster_advanced.emit(target_player_id, old_zone, target.monster_zone)
+		target.monster_changed.emit()
 
-	# Opponent must rank up their monster
-	await _rank_up_monster(state, opponent, counter_player_id)
+	# Target must rank up their monster
+	await _rank_up_monster(state, target, winner_id)
 
 
 func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id: int) -> void:
 	## Prompt the opponent to choose a rank-up monster from their monster deck.
 	## If the monster deck is empty or has no valid targets, opponent loses immediately.
 	if opponent.monster_deck.is_empty():
-		state.game_over.emit(winner_player_id, "Victory through countering!")
+		state.game_over.emit(winner_player_id, "STR_LOG_REASON_COUNTER_VICTORY")
 		return
 
 	var next_rank: int = opponent.current_monster.get("rank", 1) + 1
 	var cur_traits: Array = opponent.current_monster.get("traits", [])
 
-	# Build valid indices (monsters that match rank + trait requirements)
+	# Build valid indices (monsters that match rank + trait requirements).
+	# Also accept monsters whose can_play_as_monster() alternate bridge is satisfied
+	# (e.g. EBP04-033/034 "play on top of Monster X" — their [Kaiser Ghidorah] trait
+	# does not overlap [Monster X] but rank-up is still permitted by the alternate cost).
 	var valid_indices: Array[int] = []
 	for i in range(opponent.monster_deck.size()):
 		var m: Dictionary = opponent.monster_deck[i]
-		if m.get("rank") == next_rank and _traits_overlap(m.get("traits", []), cur_traits):
+		if m.get("rank") != next_rank:
+			continue
+		var trait_ok := _traits_overlap(m.get("traits", []), cur_traits)
+		if not trait_ok and effect_handler:
+			trait_ok = effect_handler.can_play_as_monster(opponent.player_id, m)
+		if trait_ok:
 			valid_indices.append(i)
 
 	if valid_indices.is_empty():
 		# No valid rank-up targets — opponent loses
-		state.game_over.emit(winner_player_id, "Victory through countering!")
+		state.game_over.emit(winner_player_id, "STR_LOG_REASON_COUNTER_VICTORY")
 		return
 
 	# Request player selection via UI
-	var prompt := "Choose a Rank %d monster to rank up to." % next_rank
+	var prompt := tr("STR_AH_CHOOSE_RANKUP_FMT") % next_rank
 
 	var chosen_index: int = -1
 	if monster_rankup_requested.get_connections().size() > 0:
@@ -272,7 +319,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 			await effect_handler.trigger_enter(opponent.player_id, m, true)
 	else:
 		# Opponent loses - can't find valid rank-up monster
-		state.game_over.emit(winner_player_id, "Victory through countering!")
+		state.game_over.emit(winner_player_id, "STR_LOG_REASON_COUNTER_VICTORY")
 
 
 func resolve_monster_rankup(index: int) -> void:
@@ -282,7 +329,9 @@ func resolve_monster_rankup(index: int) -> void:
 
 
 func play_monster_from_effect(state: GameState, player_id: int, monster_card: Dictionary) -> void:
-	## Play a monster card from the monster deck without rage increase.
+	## Play a monster card from the monster deck without rage increase. Does
+	## NOT set `has_played_monster_this_turn` — effect-driven plays don't
+	## consume the player's once-per-turn monster-play action.
 	## Used by strategy effects like EBP03-074 (A Journey of 130 Million Years).
 	var player := state.players[player_id]
 	var old_monster: Dictionary = player.current_monster
@@ -297,14 +346,14 @@ func play_monster_from_effect(state: GameState, player_id: int, monster_card: Di
 		player.burst_monster = {}
 		player.pre_burst_monster = {}
 
-	player.has_played_monster_this_turn = true
 	player.current_monster = monster_card
 	player.monster_deck.erase(monster_card)
 	monster_played.emit(player_id, old_monster, monster_card)
 	player.monster_changed.emit()
 	if effect_handler:
+		var discard_snapshot: Array = player.discard_pile.duplicate()
 		await effect_handler.trigger_enter(player_id, monster_card, true)
-		await effect_handler.trigger_monster_played(player_id, old_monster, monster_card)
+		await effect_handler.trigger_monster_played(player_id, old_monster, monster_card, discard_snapshot)
 
 
 func resolve_check_timing(state: GameState) -> void:
@@ -354,6 +403,9 @@ func _check_crush_for_player(state: GameState, player_id: int, deferred_entries:
 			player.zones_changed.emit()
 			player.discard_changed.emit()
 			if effect_handler:
+				# Linked-card cleanup (rule-agnostic) fires immediately so partner
+				# cards see the removal regardless of deferred standby resolution.
+				await effect_handler.trigger_leave_play(player_id, crushed_stack[0], monster_zone_idx)
 				if deferred_entries != null:
 					deferred_entries.append_array(effect_handler.collect_crush_and_revenge_entries(player_id, crushed_stack[0]))
 				else:
@@ -452,15 +504,24 @@ func _play_battle_card(hand_index: int, zone_index: int, state: GameState) -> vo
 		if effect_handler:
 			should_stack = effect_handler.should_stack_on_play(player.player_id, card, zone_index)
 		if not should_stack:
+			var overloaded_top: Dictionary = player.get_zone_top_card(zone_index)
 			var destroyed_stack: Array = player.clear_zone(zone_index)
 			EffectHandler.banish_or_discard(player, destroyed_stack)
 			player.discard_changed.emit()
+			# Overload is not <Destroy> (rule 11.5) — on_destroy/on_revenge do
+			# not fire — but on_leave_play does so linked-card effects clean up.
+			if effect_handler:
+				await effect_handler.trigger_leave_play(player.player_id, overloaded_top, zone_index)
 
 	player.push_zone_card(zone_index, card)
 	battle_card_played.emit(player.player_id, card, zone_index)
 	player.hand_changed.emit()
 	player.zones_changed.emit()
 	if effect_handler:
+		# Log the action before triggered effects fire so the log reads in causal order
+		var has_enter := effect_handler.has_trigger(card, "on_enter")
+		effect_handler.log_message.emit(
+			GameLog.played_battle(player.player_id, card.get("id", ""), zone_index, has_enter))
 		await effect_handler.trigger_enter(player.player_id, card)
 		await effect_handler.trigger_battle_card_played(player.player_id, card, zone_index)
 
@@ -475,6 +536,8 @@ func _play_strategy_card(hand_index: int, state: GameState) -> void:
 	player.hand_changed.emit()
 	player.strategy_zones_changed.emit()
 	if effect_handler:
+		effect_handler.log_message.emit(
+			GameLog.played_strategy(player.player_id, card.get("id", ""), card.get("is_base", false)))
 		await effect_handler.trigger_enter(player.player_id, card)
 
 
@@ -490,6 +553,8 @@ func _gain_rage(hand_index: int, state: GameState) -> void:
 	player.rage_changed.emit(player.rage)
 	player.discard_changed.emit()
 	if effect_handler:
+		effect_handler.log_message.emit(
+			GameLog.gained_rage(player.player_id, player.rage, card.get("id", "")))
 		await effect_handler.trigger_discard_from_hand(player.player_id, card)
 		await effect_handler.trigger_hand_card_discarded(player.player_id, card)
 		await effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
@@ -501,8 +566,20 @@ func _play_monster(hand_index: int, state: GameState) -> void:
 	var old_monster: Dictionary = player.current_monster
 	var old_rage: int = player.rage
 
+	# Alternate play cost (e.g. EBP04-012): execute cost before committing, allow cancel
+	var rank_mismatch: bool = card.get("rank", 0) != old_monster.get("rank", 0)
+	if rank_mismatch and effect_handler and effect_handler.has_trigger(card, "apply_play_cost"):
+		var cost_ok: bool = await effect_handler.apply_play_cost(player.player_id, card, -1)
+		if not cost_ok:
+			# Cost declined — restore card to hand and force visual rebuild
+			player.hand.insert(hand_index, card)
+			player.hand_changed.emit()
+			play_cancelled.emit(player.player_id)
+			return
+		rank_mismatch = false  # Not a burst play — cost was paid
+
 	# Detect Burst play: card rank doesn't match current monster rank
-	var is_burst_play: bool = card.get("rank", 0) != old_monster.get("rank", 0)
+	var is_burst_play: bool = rank_mismatch
 	if is_burst_play:
 		player.pre_burst_monster = old_monster
 		player.burst_monster = card
@@ -521,8 +598,20 @@ func _play_monster(hand_index: int, state: GameState) -> void:
 	player.monster_changed.emit()
 	player.rage_changed.emit(player.rage)
 	if effect_handler:
+		if is_burst_play:
+			var burst_effect := effect_handler.get_effect(card)
+			var burst_rank: int = burst_effect.get_burst_rank() if burst_effect else -1
+			effect_handler.log_message.emit(
+				GameLog.burst_played(player.player_id, card.get("id", ""), burst_rank, player.rage))
+		else:
+			effect_handler.log_message.emit(
+				GameLog.played_monster(player.player_id, card.get("id", ""), player.rage))
+		# Snapshot discard before on_enter so cards milled during enter don't
+		# retroactively qualify for can_play_from_discard_on_monster_played
+		# (e.g. EBP02-048 milling EBP03-063 into discard).
+		var discard_snapshot: Array = player.discard_pile.duplicate()
 		await effect_handler.trigger_enter(player.player_id, card)
-		await effect_handler.trigger_monster_played(player.player_id, old_monster, card)
+		await effect_handler.trigger_monster_played(player.player_id, old_monster, card, discard_snapshot)
 		await effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
 
 
@@ -534,13 +623,24 @@ func _invade(hand_index: int, state: GameState) -> void:
 	player.last_invasion_card = card
 	var start_zone: int = player.monster_zone
 
+	# Check if invade1 cost is blocked by opponent (e.g. EBP04-029 Gigan R3)
+	if advance_amount == 1 and effect_handler and effect_handler.is_invade1_cost_blocked(player.player_id):
+		# Card stays in hand — return it and abort invasion. Emit play_cancelled
+		# so the UI restores the dragged card's hand position (matches the
+		# monster-cost-cancelled flow in _play_monster).
+		player.hand.insert(hand_index, card)
+		player.has_invaded_this_turn = false
+		effect_handler.log_message.emit(tr("STR_AH_INVADE1_BLOCKED"))
+		play_cancelled.emit(player.player_id)
+		return
+
 	# Check for invasion cost replacement (e.g. EBP03-004: mill from deck instead)
 	var replaced_cost := false
 	if effect_handler and effect_handler.can_replace_invasion_cost(player.player_id):
 		var choice: int = await effect_handler.select_choice(
 			player.player_id,
-			["Send top deck card to discard", "Discard from hand"] as Array[String],
-			"Choose invasion cost method:"
+			[tr("STR_AH_INVADE_COST_MILL"), tr("STR_AH_INVADE_COST_HAND")] as Array[String],
+			tr("STR_AH_INVADE_COST_PROMPT")
 		)
 		if choice == 0 and not player.main_deck.is_empty():
 			# Mill from deck; return invasion card to hand
@@ -553,6 +653,17 @@ func _invade(hand_index: int, state: GameState) -> void:
 		card_discarded.emit(player.player_id, card)
 		player.hand_changed.emit()
 		player.discard_changed.emit()
+
+	# Log the invade action right after the cost is paid, before movement and triggered
+	# effects fire, so the log reads in causal order (action announced first, then effects).
+	if effect_handler:
+		effect_handler.log_message.emit(GameLog.invaded(
+			player.player_id, card.get("id", ""),
+			card.get("invasion_icon", 0) >= 2))
+
+	# Apply per-monster invasion advance bonuses (e.g. EBP04-007 Godzilla 1962: +1 on Invade 1).
+	if effect_handler:
+		advance_amount += effect_handler.get_invasion_advance_bonus(player.player_id, card.get("invasion_icon", 0))
 
 	# Advance step by step, collecting effect entries for deferred resolution.
 	# Movement fully resolves before triggered abilities activate; cards removed
@@ -595,12 +706,14 @@ func _invade(hand_index: int, state: GameState) -> void:
 	player.invasion_zones_crossed = player.monster_zone - start_zone
 
 	if is_victory:
-		state.game_over.emit(player.player_id, "Victory through invasion!")
+		state.game_over.emit(player.player_id, "STR_LOG_REASON_INVASION_VICTORY")
 		return
 
 	# Destroy <Base> strategies after movement completes but before standby (12.9.2).
+	# Only fires when the monster actually advanced into zones 6-8 — a discard-only
+	# invade (no movement) doesn't count as invading to a new zone.
 	# The physical destruction happens now; strategy_discarded triggers join deferred_entries.
-	if effect_handler and player.monster_zone >= 6:
+	if effect_handler and player.monster_zone > start_zone and player.monster_zone >= 6:
 		await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone, deferred_entries)
 
 	# Collect invasion observed entries once for the entire invasion

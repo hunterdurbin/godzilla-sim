@@ -17,10 +17,10 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_counter_power(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 4
+	return owner.is_awakening(4)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	if ctx.owner.monster_zone >= 4:
+	if ctx.is_awakening(4):
 		return 3000
 	return 0

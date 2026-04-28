@@ -27,4 +27,4 @@ func on_enter(ctx: EffectContext) -> void:
 
 	await ctx.effect_handler.destroy_zone_and_adjacent(
 		ctx.owner.player_id, ctx.opponent, opp_column_zones,
-		"Choose an opponent zone in the same column:", 6)
+		tr("STR_EFF_EBP03_009_PROMPT"), 6)

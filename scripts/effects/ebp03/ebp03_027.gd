@@ -19,7 +19,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_when_invading(owner: PlayerState, opponent: PlayerState) -> bool:
-	return owner.monster_stack.size() >= 5 and opponent.hand.size() > 4
+	return owner.has_monster_stack(5) and opponent.hand.size() > 4
 
 
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
@@ -27,15 +27,15 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func get_opponent_field_rank_modifier(ctx: EffectContext) -> int:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
-	if ctx.owner.monster_stack.size() < 3:
+	if not ctx.has_monster_stack(3):
 		return 0
 	return -2
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	if ctx.owner.monster_stack.size() < 5:
+	if not ctx.has_monster_stack(5):
 		return
 	if ctx.opponent.hand.size() <= 4:
 		return

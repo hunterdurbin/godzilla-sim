@@ -16,20 +16,13 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> bool:
-	for sz in opponent.strategy_zones:
-		if not sz.is_empty():
-			return true
-	return false
+	return opponent.has_any_strategy_in_play()
 
 
 func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary) -> int:
 	if target_card.get("id") != ctx.card_data.get("id"):
 		return 0
-	var opp_strat_count := 0
-	for sz in ctx.opponent.strategy_zones:
-		if not sz.is_empty():
-			opp_strat_count += 1
-	if opp_strat_count >= 2:
+	if ctx.opponent.count_strategies_in_play() >= 2:
 		return -2
 	return 0
 
@@ -45,6 +38,6 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var idx_to_destroy: int = await ctx.effect_handler.select_strategy_target(
 		ctx.owner.player_id, ctx.opponent.player_id, valid_strat,
-		"Choose an opponent strategy to Destroy:")
+		tr("STR_EFF_DESTROY_OPP_STRATEGY"))
 	if idx_to_destroy >= 0:
 		await ctx.effect_handler.discard_strategy_from_zone(ctx.opponent.player_id, idx_to_destroy)

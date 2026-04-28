@@ -17,33 +17,16 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	var mb_weapon_count: int = 0
-	for i in range(8):
-		var top := owner.get_zone_top_card(i)
-		if top.is_empty():
-			continue
-		var traits: Array = top.get("traits", [])
-		if CardEnums.CardTrait.WEAPON not in traits:
-			continue
-		if "MB" in top.get("name", ""):
-			mb_weapon_count += 1
-			if mb_weapon_count >= 5:
-				return true
-	return false
+	var mb_weapon_count: int = owner.count_zones_matching(
+		func(c: Dictionary) -> bool:
+			return CardUtils.has_trait(c, CardEnums.CardTrait.WEAPON) and "MB" in c.get("name", ""))
+	return mb_weapon_count >= 5
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var mb_weapon_count: int = 0
-	for i in range(8):
-		var top := ctx.owner.get_zone_top_card(i)
-		if top.is_empty():
-			continue
-		var traits: Array = top.get("traits", [])
-		if CardEnums.CardTrait.WEAPON not in traits:
-			continue
-		var name: String = top.get("name", "")
-		if "MB" in name:
-			mb_weapon_count += 1
+	var mb_weapon_count: int = ctx.owner.count_zones_matching(
+		func(c: Dictionary) -> bool:
+			return CardUtils.has_trait(c, CardEnums.CardTrait.WEAPON) and "MB" in c.get("name", ""))
 
 	if mb_weapon_count < 5:
 		return

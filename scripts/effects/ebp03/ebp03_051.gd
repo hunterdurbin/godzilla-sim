@@ -27,7 +27,7 @@ func get_zone_play_rank_modifier(ctx: EffectContext, zone_index: int) -> int:
 
 func _zone_has_little_godzilla(ctx: EffectContext, zone_index: int) -> bool:
 	var top := ctx.owner.get_zone_top_card(zone_index)
-	return not top.is_empty() and CardEnums.CardTrait.LITTLE_GODZILLA in top.get("traits", [])
+	return not top.is_empty() and CardUtils.has_trait(top, CardEnums.CardTrait.LITTLE_GODZILLA)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

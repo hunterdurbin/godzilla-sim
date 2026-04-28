@@ -11,6 +11,7 @@ signal discard_clicked(player_id: int)
 signal monster_deck_clicked(player_id: int)
 signal zone_slot_clicked(zone_number: int, player_id: int)
 signal zone_slot_right_clicked(zone_number: int, player_id: int)
+signal strategy_slot_clicked(strategy_index: int, player_id: int)
 signal strategy_slot_right_clicked(strategy_index: int, player_id: int)
 signal card_preview_requested(data: Dictionary)
 signal card_preview_cleared()
@@ -142,9 +143,9 @@ func _apply_mobile_labels() -> void:
 	_cp_title = lc.find_child("CPTitle", true, false) as Label
 	_threat_title = lc.find_child("ThreatTitle", true, false) as Label
 	if _threat_title:
-		_threat_title.text = "T:"  # Abbreviate to save horizontal space
+		_threat_title.text = tr("STR_PB_THREAT_SHORT")  # Abbreviate to save horizontal space
 	if _cp_title:
-		_cp_title.text = "CP:"  # Already short enough
+		_cp_title.text = tr("STR_PB_CP")
 	if cp_label:
 		cp_label.custom_minimum_size.x = 0.0
 		cp_label.clip_text = true
@@ -236,6 +237,7 @@ func _setup_references() -> void:
 			slot.slot_type = "strategy_zone"
 			slot.player_id = player_id
 			slot.landscape = true
+			slot.slot_clicked.connect(_on_strategy_slot_clicked.bind(i - 1))
 			slot.slot_right_clicked.connect(_on_strategy_slot_right_clicked.bind(i - 1))
 			slot.slot_hover_preview.connect(_on_slot_hover_preview)
 			slot.slot_hover_preview_cleared.connect(_on_slot_hover_cleared)
@@ -266,7 +268,7 @@ func _setup_references() -> void:
 	# Discard: face-up top card + empty placeholder + hover count badge
 	if discard_display:
 		_discard_empty_label = Label.new()
-		_discard_empty_label.text = "Discard"
+		_discard_empty_label.text = tr("STR_PB_DISCARD")
 		_discard_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_discard_empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		_discard_empty_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -541,7 +543,7 @@ func _sync_monster(state: PlayerState, threat_mod: int = 0, cp_mod: int = 0) -> 
 					new_slot.place_card(monster_card, false)
 			monster_card_zone = target_zone
 
-		_update_modifier_badge(monster_card, threat_mod)
+		_update_threat_modifier_badge(monster_card, threat_mod)
 		_update_monster_cp_badge(monster_card, cp_mod)
 
 	if rage_label:
@@ -852,6 +854,10 @@ func _on_zone_slot_right_clicked(zone_num: int, pid: int) -> void:
 	zone_slot_right_clicked.emit(zone_num, pid)
 
 
+func _on_strategy_slot_clicked(_zone_num: int, _pid: int, strategy_idx: int) -> void:
+	strategy_slot_clicked.emit(strategy_idx, player_id)
+
+
 func _on_strategy_slot_right_clicked(_zone_num: int, _pid: int, strategy_idx: int) -> void:
 	strategy_slot_right_clicked.emit(strategy_idx, player_id)
 
@@ -945,6 +951,9 @@ func _update_strategy_modifier_badge(card: Control, modifier: int) -> void:
 
 
 func _update_modifier_badge(card: Control, modifier: int) -> void:
+	# Battle-card CP modifier badge — sits in the lower band so the green CP
+	# label lines up with monster cards' green threat label (also lower).
+	# Strategy cards use _update_strategy_modifier_badge instead.
 	var badge := card.get_node_or_null("ModifierBadge")
 	if modifier == 0:
 		if badge:
@@ -953,6 +962,32 @@ func _update_modifier_badge(card: Control, modifier: int) -> void:
 	if not badge:
 		badge = Label.new()
 		badge.name = "ModifierBadge"
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		badge.add_theme_font_size_override("font_size", 12)
+		badge.add_theme_color_override("font_outline_color", Color.BLACK)
+		badge.add_theme_constant_override("outline_size", 3)
+		badge.anchor_left = 0.4
+		badge.anchor_right = 0.95
+		badge.anchor_top = 0.72
+		badge.anchor_bottom = 0.84
+		card.add_child(badge)
+	var prefix := "+" if modifier > 0 else ""
+	badge.text = "%s%d" % [prefix, modifier]
+	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
+
+
+func _update_threat_modifier_badge(card: Control, modifier: int) -> void:
+	# Monster threat modifier badge — bottom-right band, distinct node name so it
+	# can coexist with the CP modifier badge that sits one band above it.
+	var badge := card.get_node_or_null("ThreatModifierBadge")
+	if modifier == 0:
+		if badge:
+			badge.queue_free()
+		return
+	if not badge:
+		badge = Label.new()
+		badge.name = "ThreatModifierBadge"
 		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		badge.add_theme_font_size_override("font_size", 12)
@@ -993,6 +1028,8 @@ func _update_rank_modifier_badge(card: Control, modifier: int) -> void:
 
 
 func _update_monster_cp_badge(card: Control, modifier: int) -> void:
+	# Monster CP modifier badge — sits one band above the threat modifier so that
+	# a monster card with both CP and threat bonuses doesn't collide.
 	var badge := card.get_node_or_null("MonsterCPBadge")
 	if modifier == 0:
 		if badge:
@@ -1006,10 +1043,10 @@ func _update_monster_cp_badge(card: Control, modifier: int) -> void:
 		badge.add_theme_font_size_override("font_size", 12)
 		badge.add_theme_color_override("font_outline_color", Color.BLACK)
 		badge.add_theme_constant_override("outline_size", 3)
-		badge.anchor_left = 0.05
-		badge.anchor_right = 0.6
-		badge.anchor_top = 0.72
-		badge.anchor_bottom = 0.84
+		badge.anchor_left = 0.15
+		badge.anchor_right = 0.7
+		badge.anchor_top = 0.52
+		badge.anchor_bottom = 0.64
 		card.add_child(badge)
 	var prefix := "+" if modifier > 0 else ""
 	badge.text = "CP %s%d" % [prefix, modifier]

@@ -11,6 +11,11 @@ extends CardEffect
 # Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["searches_deck"]
 
@@ -19,24 +24,14 @@ func is_base_strategy() -> bool:
 	return true
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return # Your turn only
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card):
-			if card.get("card_type") != CardEnums.CardType.BATTLE:
+			if not CardUtils.is_battle(card):
 				return false
-			var traits: Array = card.get("traits", [])
-			return CardEnums.CardTrait.WEAPON in traits or CardEnums.CardTrait.MECH in traits,
-		"Search for a Weapon or Mech battle card:"
+			return CardUtils.has_any_trait(card, [CardEnums.CardTrait.WEAPON, CardEnums.CardTrait.MECH]),
+		tr("STR_EFF_EBP03_070_SEARCH")
 	)
 	if not found.is_empty():
 		ctx.owner.hand.append(found)

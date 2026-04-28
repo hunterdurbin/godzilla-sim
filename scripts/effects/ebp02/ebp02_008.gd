@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"direction": "increase"},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "zone_dependent"]
 
@@ -29,10 +34,7 @@ func get_burst_rank() -> int:
 	return 4
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	if new_rage <= old_rage:
-		return
-
+func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	# Monster is in monster_zone (1-indexed), opponent's same zone number = monster_zone - 1 (0-indexed)
 	var zone_idx: int = ctx.owner.monster_zone - 1
 	var opp_zone_card := ctx.opponent.get_zone_top_card(zone_idx)

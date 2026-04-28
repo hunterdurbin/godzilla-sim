@@ -37,7 +37,7 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 
 
 func get_bot_effect_costs() -> Array[Dictionary]:
-	return [{"card_type": CardEnums.CardType.STRATEGY, "count": 1}]
+	return [ {"card_type": CardEnums.CardType.STRATEGY, "count": 1}]
 
 
 func get_burst_rank() -> int:
@@ -57,8 +57,8 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.STRATEGY,
-		"Discard a strategy card to advance by 1 zone (or skip):",
+			return CardUtils.is_strategy(card),
+		tr("STR_EFF_EBP02_003_PROMPT"),
 		true)
 
 	if not selected.is_empty():

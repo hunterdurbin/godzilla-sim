@@ -11,6 +11,11 @@ extends CardEffect
 # Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "column_dependent_monster_self"]
 
@@ -20,12 +25,8 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	for i in range(8):
-		var card := owner.get_zone_top_card(i)
-		if not card.is_empty() and card.get("card_type") == CardEnums.CardType.BATTLE:
-			if CardEnums.CardColor.BLUE in card.get("colors", []):
-				return true
-	return false
+	return owner.has_zone_matching(func(c: Dictionary) -> bool:
+		return CardUtils.is_battle(c) and CardUtils.has_color(c, CardEnums.CardColor.BLUE))
 
 
 func on_enter(ctx: EffectContext) -> void:
@@ -34,29 +35,19 @@ func on_enter(ctx: EffectContext) -> void:
 	await ctx.effect_handler.destroy_zone_target(
 		ctx.owner.player_id, ctx.opponent,
 		func(card): return ctx.field_rank(card, ctx.opponent.player_id) <= 5,
-		"Destroy 1 opponent rank 5 or lower battle card:")
+		tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 5)
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
-		return # Opponent's turn only
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if not _has_color_battle_in_zones(ctx, CardEnums.CardColor.RED):
 		return
 
 	# Get opponent zones in same column as this monster
 	var monster_idx: int = ctx.owner.monster_zone - 1
-	var opp_column_zones := get_opponent_column_zones(monster_idx)
-
 	var valid_zones: Array[int] = []
-	for opp_zi in opp_column_zones:
+	for opp_zi in ctx.get_opponent_column_zones_with_cards(monster_idx):
 		var opp_card := ctx.opponent.get_zone_top_card(opp_zi)
-		if not opp_card.is_empty() and ctx.field_rank(opp_card, ctx.opponent.player_id) <= 5:
+		if ctx.field_rank(opp_card, ctx.opponent.player_id) <= 5:
 			valid_zones.append(opp_zi)
 
 	if valid_zones.is_empty():
@@ -64,13 +55,9 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 	await ctx.effect_handler.destroy_chosen_zone(
 		ctx.owner.player_id, ctx.opponent, valid_zones,
-		"Destroy 1 opponent rank 5 or lower battle card in same column:")
+		tr("STR_EFF_EBP03_008_PROMPT"))
 
 
 func _has_color_battle_in_zones(ctx: EffectContext, color: CardEnums.CardColor) -> bool:
-	for i in range(8):
-		var card := ctx.owner.get_zone_top_card(i)
-		if not card.is_empty() and card.get("card_type") == CardEnums.CardType.BATTLE:
-			if color in card.get("colors", []):
-				return true
-	return false
+	return ctx.owner.has_zone_matching(func(c: Dictionary) -> bool:
+		return CardUtils.is_battle(c) and CardUtils.has_color(c, color))

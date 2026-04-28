@@ -26,8 +26,8 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			return card.get("card_type") == CardEnums.CardType.STRATEGY,
-		"Discard a strategy card to search top 5 for a monster (or skip):",
+			return CardUtils.is_strategy(card),
+		tr("STR_EFF_EBP02_007_PROMPT"),
 		true)
 
 	if selected.is_empty():
@@ -44,14 +44,14 @@ func on_enter(ctx: EffectContext) -> void:
 	var monsters: Array[Dictionary] = []
 	var rest: Array[Dictionary] = []
 	for card in revealed:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monsters.append(card)
 		else:
 			rest.append(card)
 
 	var chosen: Dictionary = await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, monsters, revealed,
-		"Choose a monster card to add to your hand:")
+		tr("STR_EFF_EBP02_007_SELECT"))
 
 	if not chosen.is_empty():
 		var card_id: String = chosen.get("id", "")

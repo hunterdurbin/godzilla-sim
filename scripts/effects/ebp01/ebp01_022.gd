@@ -12,21 +12,19 @@ extends CardEffect
 ## Implementation notes: None
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
-	if new_rage <= old_rage:
-		return
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"own_turn": true, "direction": "increase"},
+}
 
+
+func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	var my_zone := find_zone_of_card(ctx)
 	if my_zone < 0:
 		return
 
 	# Find other occupied zones (excluding this card's zone)
-	var occupied: Array[int] = []
-	for i in range(8):
-		if i != my_zone and ctx.owner.zone_has_cards(i):
-			occupied.append(i)
+	var occupied: Array[int] = ctx.owner.get_battle_card_zone_indices()
+	occupied.erase(my_zone)
 	if occupied.is_empty():
 		return
 
@@ -39,7 +37,7 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 	# Choose which card to move
 	var source: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, occupied,
-		"Choose a battle card to move to an empty zone:", true)
+		tr("STR_EFF_MOVE_BATTLE_TO_EMPTY"), true)
 
 	ctx.effect_handler.unhighlight_zone_card(ctx.owner.player_id, my_zone)
 
@@ -53,7 +51,7 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 
 	var dest: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, empty_zones,
-		"Choose an empty zone to move the card to:")
+		tr("STR_EFF_MOVE_DEST_EMPTY"))
 	if dest < 0:
 		return
 

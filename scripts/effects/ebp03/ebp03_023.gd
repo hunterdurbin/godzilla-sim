@@ -19,31 +19,10 @@ func get_bot_tags() -> Array[String]:
 
 func on_enter(ctx: EffectContext) -> void:
 	# Collect eligible Mothra zones with Evolution
-	var eligible: Array[int] = []
-	for i in range(8):
-		var zone_card := ctx.owner.get_zone_top_card(i)
-		if zone_card.is_empty():
-			continue
-		if zone_card.get("evolution_rank", -1) < 0:
-			continue
-		if CardEnums.CardTrait.MOTHRA not in zone_card.get("traits", []):
-			continue
-		eligible.append(i)
+	var eligible: Array[int] = ctx.owner.get_zone_top_indices_matching(func(c: Dictionary) -> bool:
+		return c.get("evolution_rank", -1) >= 0 and CardUtils.has_trait(c, CardEnums.CardTrait.MOTHRA))
 
-	# Let the player choose the order when multiple zones are eligible
-	while not eligible.is_empty():
-		var zi: int
-		if eligible.size() == 1:
-			zi = eligible.pop_back()
-		else:
-			var options: Array[String] = []
-			for ez in eligible:
-				var card := ctx.owner.get_zone_top_card(ez)
-				options.append("Zone %d: %s" % [ez + 1, card.get("name", "?")])
-			var chosen: int = await ctx.effect_handler.select_choice(
-				ctx.owner.player_id, options, "Choose which zone to evolve next:")
-			zi = eligible.pop_at(chosen)
-		await ctx.effect_handler.perform_evolution(ctx.owner.player_id, zi)
+	await ctx.effect_handler.evolve_zones_in_order(ctx.owner.player_id, eligible)
 
 
 func on_counter_success(ctx: EffectContext) -> void:

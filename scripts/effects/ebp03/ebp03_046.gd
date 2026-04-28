@@ -17,38 +17,27 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	if owner.monster_zone < 4:
+	if not owner.is_awakening(4):
 		return false
-	for i in range(8):
-		var card := owner.get_zone_top_card(i)
-		if not card.is_empty() and card.get("name", "") == "Star Falcon":
-			return true
-	return false
+	return owner.has_zone_matching(func(c: Dictionary) -> bool:
+		return c.get("name", "") == "Star Falcon")
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return
 
 	# Check for Star Falcon in zones
-	var has_star_falcon := false
-	for i in range(8):
-		var card := ctx.owner.get_zone_top_card(i)
-		if not card.is_empty() and card.get("name", "") == "Star Falcon":
-			has_star_falcon = true
-			break
+	var has_star_falcon := ctx.owner.has_zone_matching(func(c: Dictionary) -> bool:
+		return c.get("name", "") == "Star Falcon")
 
 	if not has_star_falcon:
 		return
 
 	# Check what options are available
-	var can_destroy_strategy := false
-	for sz in ctx.opponent.strategy_zones:
-		if not sz.is_empty():
-			can_destroy_strategy = true
-			break
+	var can_destroy_strategy := ctx.opponent.has_any_strategy_in_play()
 
-	var can_reduce_rage := ctx.opponent.rage > 0
+	var can_reduce_rage := ctx.opponent_has_rage()
 
 	if not can_destroy_strategy and not can_reduce_rage:
 		return
@@ -64,7 +53,7 @@ func on_enter(ctx: EffectContext) -> void:
 		option_ids.append("rage")
 
 	var chosen_idx := await ctx.effect_handler.select_choice(
-		ctx.owner.player_id, options, "Choose an effect:")
+		ctx.owner.player_id, options, tr("STR_EFF_CHOOSE_EFFECT"))
 	var chosen_id: String = option_ids[chosen_idx] if chosen_idx >= 0 and chosen_idx < option_ids.size() else ""
 
 	if chosen_id == "destroy":
@@ -76,7 +65,7 @@ func on_enter(ctx: EffectContext) -> void:
 		if not valid_strat.is_empty():
 			var idx_to_destroy: int = await ctx.effect_handler.select_strategy_target(
 				ctx.owner.player_id, ctx.opponent.player_id, valid_strat,
-				"Choose an opponent strategy to Destroy:")
+				tr("STR_EFF_DESTROY_OPP_STRATEGY"))
 			if idx_to_destroy >= 0:
 				await ctx.effect_handler.discard_strategy_from_zone(ctx.opponent.player_id, idx_to_destroy)
 	elif chosen_id == "rage":

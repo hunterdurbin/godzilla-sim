@@ -12,17 +12,14 @@ extends CardEffect
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var occupied: Array[int] = []
-	for i in range(8):
-		if ctx.opponent.zone_has_cards(i):
-			occupied.append(i)
+	var occupied: Array[int] = ctx.opponent.get_battle_card_zone_indices()
 
 	if occupied.size() < 2:
 		return
 
 	var first: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.opponent.player_id, occupied,
-		"Choose the first opponent battle card to swap:")
+		tr("STR_EFF_EBP02_069_PROMPT_FIRST"))
 	if first < 0:
 		return
 
@@ -33,11 +30,8 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var second: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.opponent.player_id, second_choices,
-		"Choose the second opponent battle card to swap with:")
+		tr("STR_EFF_EBP02_069_PROMPT_SECOND"))
 	if second < 0:
 		return
 
-	var stack_a: Array = ctx.opponent.zones[first]
-	ctx.opponent.zones[first] = ctx.opponent.zones[second]
-	ctx.opponent.zones[second] = stack_a
-	ctx.opponent.zones_changed.emit()
+	await ctx.effect_handler.swap_zones(ctx.opponent, first, second)

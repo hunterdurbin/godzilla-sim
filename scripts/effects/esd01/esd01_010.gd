@@ -37,7 +37,7 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 
 	# Only applies if there's a battle card in zone 8
 	var zone8_card := ctx.owner.get_zone_top_card(7)
-	if zone8_card.is_empty() or zone8_card.get("card_type") != CardEnums.CardType.BATTLE:
+	if zone8_card.is_empty() or not CardUtils.is_battle(zone8_card):
 		return {}
 
 	var bonus := 0
@@ -45,7 +45,7 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 	if ctx.owner.rage >= 2:
 		bonus += 5000
 	# Awakening6: +5000 if monster in zone 6+
-	if ctx.owner.monster_zone >= 6:
+	if ctx.is_awakening(6):
 		bonus += 5000
 
 	if bonus == 0:

@@ -21,7 +21,7 @@ func get_bot_tags() -> Array[String]:
 
 func on_discard_from_hand(ctx: EffectContext) -> void:
 	# Only on your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 
 	var color_count: int = _count_zone_colors(ctx)
@@ -44,7 +44,7 @@ func on_discard_from_hand(ctx: EffectContext) -> void:
 		await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
 			func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) == lowest_rank,
-			"Destroy an opponent's lowest ranked battle card (or skip):")
+			tr("STR_EFF_DESTROY_OPP_LOWEST_OR_SKIP"))
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
@@ -55,7 +55,7 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 		if i == my_zone:
 			continue
 		var zone_card := ctx.owner.get_zone_top_card(i)
-		if not zone_card.is_empty() and zone_card.get("card_type") == CardEnums.CardType.BATTLE:
+		if not zone_card.is_empty() and CardUtils.is_battle(zone_card):
 			for c: int in zone_card.get("colors", []):
 				if c not in colors:
 					colors.append(c)
@@ -66,7 +66,7 @@ func _count_zone_colors(ctx: EffectContext) -> int:
 	var colors: Array[int] = []
 	for i in range(8):
 		var zone_card := ctx.owner.get_zone_top_card(i)
-		if not zone_card.is_empty() and zone_card.get("card_type") == CardEnums.CardType.BATTLE:
+		if not zone_card.is_empty() and CardUtils.is_battle(zone_card):
 			for c: int in zone_card.get("colors", []):
 				if c not in colors:
 					colors.append(c)

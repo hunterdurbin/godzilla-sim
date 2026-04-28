@@ -14,6 +14,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.END, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["boosts_threat", "weakens_opponent"]
 
@@ -22,27 +27,14 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			var traits: Array = card.get("traits", [])
-			return CardEnums.CardTrait.KING_GHIDORAH in traits or CardEnums.CardTrait.MEGALON in traits,
-		"Discard a King Ghidorah or Megalon card to reduce opponent's rage by 2 (or skip):",
+			return CardUtils.has_any_trait(card, [CardEnums.CardTrait.KING_GHIDORAH, CardEnums.CardTrait.MEGALON]),
+		tr("STR_EFF_EBP02_042_PROMPT"),
 		true)
 
 	if not selected.is_empty():
 		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.END, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.END:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if ctx.opponent.monster_zone <= 5:
-		var old_rage: int = ctx.owner.rage
-		ctx.owner.rage += 1
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))

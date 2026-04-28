@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_invasion_observed": {"own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["searches_deck", "zone_dependent"]
 
@@ -21,21 +26,17 @@ func get_bot_preferred_zones() -> Array[int]:
 	return [7]  # zone 8 (0-indexed)
 
 
-func get_invasion_observed_filter() -> Dictionary:
-	return {"own_turn": true}
-
-
 func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
 	if find_zone_of_card(ctx) != 7:
 		return
-	if ctx.owner.rage <= 0:
+	if not ctx.has_rage():
 		return
 
 	# "you may" — ask the player
 	var choice: int = await ctx.effect_handler.select_choice(
 		ctx.owner.player_id,
-		["Yes", "No"],
-		"Reduce Rage by 1 to search deck for a monster with Burst?"
+		[tr("STR_EFF_BTN_YES"), tr("STR_EFF_BTN_NO")],
+		tr("STR_EFF_EBP01_020_PROMPT")
 	)
 	if choice != 0:
 		return
@@ -46,11 +47,11 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 	var selected := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			if card.get("card_type") != CardEnums.CardType.MONSTER:
+			if not CardUtils.is_monster(card):
 				return false
 			var effect := ctx.effect_handler.get_effect(card)
 			return effect != null and effect.get_burst_rank() >= 0,
-		"Search for a monster card with Burst to add to your hand:"
+		tr("STR_EFF_EBP01_020_SEARCH")
 	)
 	if not selected.is_empty():
 		ctx.owner.hand.append(selected)

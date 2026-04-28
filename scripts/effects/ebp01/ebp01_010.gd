@@ -14,29 +14,23 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"direction": "increase"},
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "column_dependent_battle"]
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	if new_rage <= old_rage:
-		return
+func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
-	var column_zones := get_opponent_column_zones(monster_zone_idx)
-	await ctx.effect_handler.destroy_zones(ctx.opponent, column_zones)
+	await ctx.effect_handler.destroy_zones(ctx.opponent, ctx.get_opponent_column_zones_with_cards(monster_zone_idx))
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": false}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
-		return
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if ctx.owner.rage < 3:
 		return
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
-	var column_zones := get_opponent_column_zones(monster_zone_idx)
-	await ctx.effect_handler.destroy_zones(ctx.opponent, column_zones)
+	await ctx.effect_handler.destroy_zones(ctx.opponent, ctx.get_opponent_column_zones_with_cards(monster_zone_idx))

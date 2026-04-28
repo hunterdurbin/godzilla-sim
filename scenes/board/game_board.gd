@@ -52,8 +52,10 @@ var _client_stats_decklists: Array = [null, null]
 @onready var log_output: RichTextLabel = $LogPanel/LogVBox/LogOutput
 @onready var chat_input: LineEdit = $LogPanel/LogVBox/ChatRow/ChatInput
 @onready var chat_char_count: Label = $LogPanel/LogVBox/ChatRow/CharCount
-var _log_lines: PackedStringArray = []
-var _pending_log_lines: PackedStringArray = [] # Buffered for next broadcast
+## Log entries are Dictionaries (tokens rendered by GameLog.render) or Strings
+## (legacy/system messages that render as-is). See `_on_log_message`.
+var _log_tokens: Array = []
+var _pending_log_tokens: Array = [] # Buffered for next broadcast
 var _pending_sound_events: PackedStringArray = [] # Sound events buffered for client
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var btn_rematch: Button = $EndGamePanel/VBox/ButtonRow/RematchButton
@@ -244,6 +246,11 @@ var _preview_card: Control
 # Stored zone stack view data
 var _zone_stack_view_cards: Array[Dictionary] = []
 var _cards_revealed_active: bool = false
+
+# Tracks the Card node that received the most recent effect-card highlight so
+# unhighlight can clear it by reference even if its card_data later mutates
+# (e.g. evolution stacks a new card via set_card_data_dict on the same node).
+var _highlighted_effect_card_node: Control = null
 
 # State tracking
 var pending_action: CardEnums.ActionType = CardEnums.ActionType.PASS
@@ -453,7 +460,7 @@ func _build_reconnect_overlay() -> void:
 	vbox.add_child(_reconnect_timer_label)
 
 	_reconnect_claim_btn = Button.new()
-	_reconnect_claim_btn.text = "Claim Win"
+	_reconnect_claim_btn.text = tr("STR_GB_CLAIM_WIN")
 	_reconnect_claim_btn.custom_minimum_size = Vector2(200, 45)
 	_reconnect_claim_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_reconnect_claim_btn.add_theme_font_size_override("font_size", 20)
@@ -462,7 +469,7 @@ func _build_reconnect_overlay() -> void:
 	vbox.add_child(_reconnect_claim_btn)
 
 	_reconnect_menu_btn = Button.new()
-	_reconnect_menu_btn.text = "Return to Menu"
+	_reconnect_menu_btn.text = tr("STR_GB_RETURN_TO_MENU")
 	_reconnect_menu_btn.custom_minimum_size = Vector2(200, 45)
 	_reconnect_menu_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	_reconnect_menu_btn.add_theme_font_size_override("font_size", 20)
@@ -544,6 +551,7 @@ func _ready() -> void:
 		turn_manager.action_handler.play_cancelled.connect(_on_play_cancelled)
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
+		turn_manager.action_handler.counter_prevented.connect(_on_counter_prevented)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
 		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
@@ -684,6 +692,8 @@ func _ready() -> void:
 	# Connect zone stack view
 	player1_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
 	player2_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
+	player1_board.strategy_slot_clicked.connect(_on_strategy_slot_clicked)
+	player2_board.strategy_slot_clicked.connect(_on_strategy_slot_clicked)
 	zone_stack_view_close.pressed.connect(_hide_zone_stack_view)
 	zone_stack_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_zone_stack_view))
 
@@ -725,9 +735,10 @@ func _ready() -> void:
 
 	# Leave game confirmation dialog
 	_leave_dialog = ConfirmationDialog.new()
-	_leave_dialog.title = "Leave Game"
-	_leave_dialog.dialog_text = "Leave the current game?"
-	_leave_dialog.ok_button_text = "Leave"
+	_leave_dialog.title = tr("STR_GB_LEAVE_TITLE")
+	_leave_dialog.dialog_text = tr("STR_GB_LEAVE_PROMPT")
+	_leave_dialog.ok_button_text = tr("STR_GB_LEAVE_OK")
+	_leave_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	_leave_dialog.confirmed.connect(_on_main_menu_pressed)
 	add_child(_leave_dialog)
 
@@ -868,12 +879,19 @@ func _update_all_setting_indicators() -> void:
 			if label in _turn_tracker_phases[0] or label in _turn_tracker_phases[1]:
 				continue # Phase labels are updated in _apply_turn_tracker
 			var base: String = label.get_meta("base_text")
-			var stripped := base.strip_edges(true, false)
-			var indent_len := base.length() - stripped.length()
+			# `base` is captured from .tscn (raw STR_* key). The auto branch can
+			# assign it back as-is and let Godot auto-translate at render time.
+			# The manual branch composes a new string ("● " + …) that's not a
+			# known translation key, so we must resolve it ourselves first.
 			if not _is_setting_auto(setting, pid):
-				label.text = base.left(maxi(indent_len - 2, 0)) + "● " + stripped
+				var resolved := tr(base)
+				var stripped := resolved.strip_edges(true, false)
+				var indent_len := resolved.length() - stripped.length()
+				label.text = resolved.left(maxi(indent_len - 2, 0)) + "● " + stripped
+				label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
 			else:
 				label.text = base
+				label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_INHERIT
 
 
 func _start_game() -> void:
@@ -923,7 +941,7 @@ func _start_game() -> void:
 	_first_player_result = -1
 	_first_player_choosing = true
 
-	_on_log_message("%s won the coin flip!" % GameLog.player_name(_first_player_chooser_id))
+	_on_log_message(GameLog.coin_flip_won(_first_player_chooser_id))
 
 	if _first_player_chooser_id != local_player_id:
 		# The chooser is the remote client — send RPC, show waiting state locally
@@ -949,7 +967,7 @@ func _start_game() -> void:
 	_rpc_cleanup_first_player.rpc()
 	_apply_gradients_and_sync()
 	_first_player_id = _first_player_result
-	_on_log_message("%s chose to go first." % GameLog.player_name(_first_player_result))
+	_on_log_message(GameLog.first_player_chose(_first_player_result, true))
 	SfxManager.play("game_start")
 	turn_manager.start_game(_first_player_result)
 
@@ -985,7 +1003,7 @@ func _apply_bot_seed() -> void:
 	NetworkManager.bot_seed = s
 	seed(s)
 	print("[Bot] RNG seed: %d" % s)
-	_on_log_message("Seed: %d" % s)
+	_on_log_message(GameLog.seed_announce(s))
 
 
 func _setup_bot() -> void:
@@ -1026,7 +1044,7 @@ func _setup_bot() -> void:
 
 func _setup_bot_visibility_toggle() -> void:
 	_bot_visibility_button = Button.new()
-	_bot_visibility_button.text = "Show Bot Cards"
+	_bot_visibility_button.text = tr("STR_GB_SHOW_BOT_CARDS")
 	_bot_visibility_button.toggle_mode = true
 	_bot_visibility_button.custom_minimum_size = Vector2(140, 36)
 	_bot_visibility_button.toggled.connect(_on_bot_visibility_toggled)
@@ -1035,14 +1053,14 @@ func _setup_bot_visibility_toggle() -> void:
 
 func _on_bot_visibility_toggled(toggled_on: bool) -> void:
 	_bot_cards_visible = toggled_on
-	_bot_visibility_button.text = "Hide Bot Cards" if toggled_on else "Show Bot Cards"
+	_bot_visibility_button.text = tr("STR_GB_HIDE_BOT_CARDS") if toggled_on else tr("STR_GB_SHOW_BOT_CARDS")
 	if player2_board:
 		player2_board.set_hand_face_down(not toggled_on)
 
 
 func _setup_save_button() -> void:
 	_save_game_button = Button.new()
-	_save_game_button.text = "Save Game"
+	_save_game_button.text = tr("STR_GB_SAVE_GAME")
 	_save_game_button.custom_minimum_size = Vector2(120, 36)
 	_save_game_button.add_theme_font_size_override("font_size", 14)
 	_save_game_button.pressed.connect(_on_save_game_pressed)
@@ -1072,12 +1090,12 @@ func _on_save_game_pressed() -> void:
 	var data := GameSerializer.serialize_game_state(turn_manager.game_state, _first_player_id, mode_str, diff_str, d_names, save_seed)
 	var path := GameSerializer.save_game_to_file(data)
 	if not path.is_empty():
-		_save_game_button.text = "Saved!"
+		_save_game_button.text = tr("STR_GB_SAVED")
 		_save_game_button.disabled = true
 		# Re-enable after 2 seconds
 		get_tree().create_timer(2.0).timeout.connect(func():
 			if is_instance_valid(_save_game_button):
-				_save_game_button.text = "Save Game"
+				_save_game_button.text = tr("STR_GB_SAVE_GAME")
 				_save_game_button.disabled = false
 		)
 
@@ -1095,7 +1113,7 @@ func _show_first_player_waiting() -> void:
 	_disable_all_buttons()
 	btn_concede.disabled = true
 	_set_action_buttons_visible(false)
-	card_select_prompt.text = "Opponent won the coin flip. Waiting for their choice..."
+	card_select_prompt.text = tr("STR_GB_COIN_FLIP_WAITING")
 	action_prompt_panel.visible = true
 
 
@@ -1114,7 +1132,7 @@ func _show_first_player_choice() -> void:
 	_disable_all_buttons()
 	btn_concede.disabled = true
 	_set_action_buttons_visible(false)
-	card_select_prompt.text = "You won the coin flip! Go first or second?"
+	card_select_prompt.text = tr("STR_GB_COIN_FLIP_WON")
 	action_prompt_panel.visible = true
 
 	var container := VBoxContainer.new()
@@ -1132,14 +1150,14 @@ func _show_first_player_choice() -> void:
 		action_panel.add_child(container)
 
 	var btn_first := Button.new()
-	btn_first.text = "Go First"
+	btn_first.text = tr("STR_GB_GO_FIRST")
 	btn_first.custom_minimum_size.x = 325
 	btn_first.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
 	btn_first.pressed.connect(_on_first_player_chosen.bind(true))
 	container.add_child(btn_first)
 
 	var btn_second := Button.new()
-	btn_second.text = "Go Second"
+	btn_second.text = tr("STR_GB_GO_SECOND")
 	btn_second.custom_minimum_size.x = 325
 	btn_second.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
 	btn_second.pressed.connect(_on_first_player_chosen.bind(false))
@@ -1767,7 +1785,7 @@ func _apply_mobile_utility_buttons() -> void:
 	_mobile_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_mobile_menu_panel)
 
-	for item in [["Report Bug", _on_bug_report_pressed], ["Concede", _on_concede_pressed], ["Main Menu", _on_main_menu_pressed]]:
+	for item in [[tr("STR_GB_REPORT_BUG"), _on_bug_report_pressed], [tr("STR_GB_CONCEDE"), _on_concede_pressed], [tr("STR_GB_MAIN_MENU"), _on_main_menu_pressed]]:
 		var btn := Button.new()
 		btn.text = item[0]
 		btn.custom_minimum_size.y = btn_h
@@ -1782,7 +1800,7 @@ func _apply_mobile_utility_buttons() -> void:
 
 	# Sound toggle in mobile menu
 	var sound_btn := Button.new()
-	sound_btn.text = _SOUND_LABELS[GameSettings.sound_volume]
+	sound_btn.text = tr("STR_GB_SOUND_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.sound_volume]))
 	sound_btn.custom_minimum_size.y = btn_h
 	sound_btn.add_theme_font_size_override("font_size", 18)
 	sound_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
@@ -1795,7 +1813,7 @@ func _apply_mobile_utility_buttons() -> void:
 
 	# Music toggle in mobile menu
 	var music_btn := Button.new()
-	music_btn.text = _MUSIC_LABELS[GameSettings.music_volume]
+	music_btn.text = tr("STR_GB_MUSIC_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.music_volume]))
 	music_btn.custom_minimum_size.y = btn_h
 	music_btn.add_theme_font_size_override("font_size", 18)
 	music_btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
@@ -1991,7 +2009,7 @@ func _setup_mobile_log_tray() -> void:
 
 	# Toggle button pinned to the left edge
 	_mobile_log_toggle_btn = Button.new()
-	_mobile_log_toggle_btn.text = "Log"
+	_mobile_log_toggle_btn.text = tr("STR_GB_LOG")
 	_mobile_log_toggle_btn.custom_minimum_size = Vector2(50, 75)
 	_mobile_log_toggle_btn.anchor_left = 0.0
 	_mobile_log_toggle_btn.anchor_right = 0.0
@@ -2147,7 +2165,7 @@ func _setup_mobile_cp_tray() -> void:
 
 	# Toggle button above Log button
 	_mobile_cp_toggle_btn = Button.new()
-	_mobile_cp_toggle_btn.text = "CP"
+	_mobile_cp_toggle_btn.text = tr("STR_GB_CP")
 	_mobile_cp_toggle_btn.custom_minimum_size = Vector2(50, 75)
 	_mobile_cp_toggle_btn.anchor_left = 0.0
 	_mobile_cp_toggle_btn.anchor_right = 0.0
@@ -2438,7 +2456,7 @@ func _setup_mobile_tracker_tray() -> void:
 
 	# Toggle button pinned to the right edge
 	_mobile_tracker_toggle_btn = Button.new()
-	_mobile_tracker_toggle_btn.text = "Turns"
+	_mobile_tracker_toggle_btn.text = tr("STR_GB_TURNS")
 	_mobile_tracker_toggle_btn.custom_minimum_size = Vector2(50, 75)
 	_mobile_tracker_toggle_btn.anchor_left = 1.0
 	_mobile_tracker_toggle_btn.anchor_right = 1.0
@@ -2610,6 +2628,10 @@ func _get_opponent_player() -> PlayerState:
 func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> void:
 	_action_pending = true
 	_disable_all_buttons()
+	# Clear the hand-card selection border on every submission. In multiplayer the
+	# host's _rpc_receive_action_context handles this, but solo never gets that
+	# RPC so a clicked-then-played card kept its yellow HighlightOverlay forever.
+	_clear_card_highlight()
 	if not is_multiplayer_game or NetworkManager.is_host():
 		turn_manager.submit_action(action, params)
 	else:
@@ -2654,7 +2676,7 @@ func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: 
 	# Update turn number label
 	var gs: GameState = turn_manager.game_state if turn_manager else null
 	var turn_num: int = gs.turn_number if gs else _client_turn_number
-	_turn_label.text = "Turn: %d" % turn_num
+	_turn_label.text = tr("STR_GB_TURN_FMT").replace("{N}", str(turn_num))
 	var phase_idx := int(phase)
 	for pid in range(2):
 		var first_marker := "* " if pid == _first_player_id else "  "
@@ -2678,7 +2700,7 @@ func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: 
 	if _mobile_phase_label:
 		var phase_name := CardEnums.phase_to_string(phase)
 		var pname := GameLog.player_name(player_id)
-		_mobile_phase_label.text = "Turn %d | %s - %s" % [turn_num, pname, phase_name]
+		_mobile_phase_label.text = tr("STR_GB_TURN_HEADER_FMT").replace("{N}", str(turn_num)).replace("{PLAYER}", pname).replace("{PHASE}", phase_name)
 
 
 # --- Signal handlers from TurnManager (host/solo only) ---
@@ -2756,7 +2778,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 		_update_action_buttons(valid_actions)
 
 
-func _on_game_ended(winner_id: int, reason: String) -> void:
+func _on_game_ended(winner_id: int, reason_key: String) -> void:
 	SfxManager.play("game_win" if winner_id == local_player_id else "game_lose")
 	_action_pending = false
 	_game_ended_by_disconnect = false
@@ -2770,22 +2792,23 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		win_label.text = "%s Wins!\n%s" % [turn_manager.game_state.player_names[winner_id], reason]
+		var reason_text := GameLog.render_reason(reason_key)
+		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", turn_manager.game_state.player_names[winner_id]) + "\n" + reason_text
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
-	btn_rematch.text = "Rematch"
+	btn_rematch.text = tr("STR_GB_REMATCH")
 	_populate_rematch_deck_select()
 	_disable_all_buttons()
 	if is_multiplayer_game and NetworkManager.is_host():
 		# Flush any buffered logs before game end
-		if not _pending_log_lines.is_empty():
+		if not _pending_log_tokens.is_empty():
 			_broadcast_state()
 			_flush_broadcast()
-		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
-		_rpc_receive_game_ended.rpc(winner_id, reason)
+		RpcLogger.log_send("receive_game_ended", 4 + reason_key.length())
+		_rpc_receive_game_ended.rpc(winner_id, reason_key)
 	# Save replay (host)
 	if replay_recorder:
-		replay_recorder.finish(winner_id, reason, _first_player_id)
+		replay_recorder.finish(winner_id, reason_key, _first_player_id)
 		replay_recorder.save()
 		# Send replay to client so they get a complete copy
 		if is_multiplayer_game and NetworkManager.is_host():
@@ -2794,7 +2817,7 @@ func _on_game_ended(winner_id: int, reason: String) -> void:
 			print("[Replay] Sending replay to client (%d bytes compressed)" % compressed.size())
 			_rpc_receive_replay.rpc(compressed)
 	RpcLogger.print_summary()
-	_upload_stats(winner_id, reason, false)
+	_upload_stats(winner_id, reason_key, false)
 
 
 func _on_confirmation_requested(prompt: String, setting: String) -> void:
@@ -2842,13 +2865,23 @@ func _on_state_changed() -> void:
 		replay_recorder.on_state_changed()
 
 
-func _on_log_message(text: String) -> void:
-	_log_lines.append(text)
+func _on_log_message(message) -> void:
+	## Accepts a GameLog token Dictionary or a raw String (pre-formatted
+	## system messages like reconnect status). Tokens render in the local
+	## locale via GameLog.render; strings append as-is.
+	_log_tokens.append(message)
+	var rendered := _render_log_entry(message)
 	if log_output:
-		log_output.append_text(text + "\n")
+		log_output.append_text(rendered + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game and NetworkManager.is_host():
-		_pending_log_lines.append(text)
+		_pending_log_tokens.append(message)
+
+
+func _render_log_entry(entry) -> String:
+	if typeof(entry) == TYPE_DICTIONARY:
+		return GameLog.render(entry)
+	return str(entry)
 
 
 func _on_chat_submitted(text: String) -> void:
@@ -2859,11 +2892,10 @@ func _on_chat_submitted(text: String) -> void:
 	if trimmed.is_empty():
 		return
 	var filtered := ChatFilter.filter(trimmed)
-	var pname := GameLog.player_name(local_player_id)
-	var formatted := GameLog.chat_message(pname, filtered)
-	_log_lines.append(formatted)
+	var token := {"type": "chat", "sender_id": local_player_id, "text": filtered}
+	_log_tokens.append(token)
 	if log_output:
-		log_output.append_text(formatted + "\n")
+		log_output.append_text(GameLog.render(token) + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game:
 		RpcLogger.log_send("receive_chat", 4 + filtered.length())
@@ -2913,7 +2945,7 @@ func _on_strategy_card_played(_player_id: int, _card: Dictionary, _strategy_inde
 # --- Action handler visual feedback ---
 
 func _on_play_cancelled(player_id: int) -> void:
-	# Reset the dragged card's scale/state and rearrange hand without reordering
+	# Reset the dragged card's scale/state and tween it back to its slot.
 	_clear_card_highlight()
 	var board: Control = player1_board if player_id == 0 else player2_board
 	if board and board.hand_manager:
@@ -2925,6 +2957,10 @@ func _on_play_cancelled(player_id: int) -> void:
 				card.tween.kill()
 			card.scale = card.original_scale
 		board.hand_manager.exit_selection_mode()
+		# Drop-handled drag skipped arrange_cards, so the dragged card is still
+		# at its drop position. Move only that card back to its slot — leave
+		# the rest of the player's hand order untouched.
+		board.hand_manager.restore_drop_handled_card_position()
 	# Sync boards in case the cost prompt changed hand/discard state
 	_sync_boards()
 
@@ -2964,6 +3000,10 @@ func _on_counter_immunity_triggered(player_id: int, total_cp: int, threshold: in
 	_on_log_message(GameLog.counter_immunity(player_id, total_cp, threshold))
 
 
+func _on_counter_prevented(player_id: int) -> void:
+	_on_log_message(GameLog.counter_prevented(player_id))
+
+
 func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
 	_sync_boards()
 	_broadcast_state()
@@ -2971,7 +3011,7 @@ func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monst
 
 # --- Sound toggle ---
 
-const _SOUND_LABELS := ["Sound: OFF", "Sound: 25%", "Sound: 50%", "Sound: 75%", "Sound: 100%"]
+const _VOLUME_VALUE_KEYS := ["STR_VOL_OFF", "25%", "50%", "75%", "100%"]
 
 func _on_sound_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -2993,7 +3033,7 @@ func _on_sound_toggle_pressed() -> void:
 
 
 func _update_sound_button_text() -> void:
-	var label: String = _SOUND_LABELS[GameSettings.sound_volume]
+	var label: String = tr("STR_GB_SOUND_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.sound_volume]))
 	if btn_sound_toggle:
 		btn_sound_toggle.text = label
 	if _mobile_sound_button:
@@ -3002,7 +3042,6 @@ func _update_sound_button_text() -> void:
 
 # --- Music toggle ---
 
-const _MUSIC_LABELS := ["Music: OFF", "Music: 25%", "Music: 50%", "Music: 75%", "Music: 100%"]
 
 func _on_music_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
@@ -3026,7 +3065,7 @@ func _on_music_toggle_pressed() -> void:
 
 
 func _update_music_button_text() -> void:
-	var label: String = _MUSIC_LABELS[GameSettings.music_volume]
+	var label: String = tr("STR_GB_MUSIC_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.music_volume]))
 	if btn_music_toggle:
 		btn_music_toggle.text = label
 	if _mobile_music_button:
@@ -3124,14 +3163,18 @@ func _build_bug_report_body() -> String:
 		lines.append("")
 
 	# Game log (last 50 lines)
-	if _log_lines.size() > 0:
+	if _log_tokens.size() > 0:
 		lines.append("<details>")
 		lines.append("<summary>Game Log (last 50 lines)</summary>")
 		lines.append("")
 		lines.append("```")
-		var start_idx := maxi(0, _log_lines.size() - 50)
-		for i in range(start_idx, _log_lines.size()):
-			lines.append(GameLog.to_plain_text(_log_lines[i]))
+		var start_idx := maxi(0, _log_tokens.size() - 50)
+		for i in range(start_idx, _log_tokens.size()):
+			var entry = _log_tokens[i]
+			if typeof(entry) == TYPE_DICTIONARY:
+				lines.append(GameLog.render_plain(entry))
+			else:
+				lines.append(GameLog.to_plain_text(str(entry)))
 		lines.append("```")
 		lines.append("")
 		lines.append("</details>")
@@ -3144,13 +3187,11 @@ func _build_bug_report_body() -> String:
 func _on_concede_pressed() -> void:
 	var loser_id := local_player_id
 	var winner_id := 1 - loser_id
-	var loser_name := turn_manager.game_state.player_names[loser_id] if turn_manager else ("Player %d" % (loser_id + 1))
-	var reason := "%s conceded" % loser_name
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("concede", 0)
 		_rpc_concede.rpc_id(NetworkManager.host_peer_id)
 	elif turn_manager:
-		turn_manager._on_game_over(winner_id, reason)
+		turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -3161,7 +3202,7 @@ func _rpc_concede() -> void:
 	var sender_id := multiplayer.get_remote_sender_id()
 	var loser_id := 1 if sender_id != 1 else 0
 	var winner_id := 1 - loser_id
-	turn_manager._on_game_over(winner_id, "%s conceded" % turn_manager.game_state.player_names[loser_id])
+	turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
 
 
 func _on_main_menu_pressed() -> void:
@@ -3181,8 +3222,7 @@ func _on_main_menu_pressed() -> void:
 			if NetworkManager.is_host():
 				var loser_id := local_player_id
 				var winner_id := 1 - loser_id
-				var loser_name := turn_manager.game_state.player_names[loser_id]
-				turn_manager._on_game_over(winner_id, "%s conceded" % loser_name)
+				turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
 			else:
 				RpcLogger.log_send("concede", 0)
 				_rpc_concede.rpc_id(NetworkManager.host_peer_id)
@@ -3208,7 +3248,7 @@ func _on_rematch_pressed() -> void:
 
 	# Multiplayer: notify opponent, wait for them
 	btn_rematch.disabled = true
-	btn_rematch.text = "Waiting..."
+	btn_rematch.text = tr("STR_GB_WAITING")
 	_rematch_deck_select.deck_dropdown.disabled = true
 
 	if _rematch_deck_changed and not _rematch_deck_name.is_empty():
@@ -3344,7 +3384,7 @@ func _execute_rematch() -> void:
 	_client_monster_cp_mods = [0, 0]
 
 	# 7. Clear game log
-	_log_lines.clear()
+	_log_tokens.clear()
 	if log_output:
 		log_output.clear()
 
@@ -3397,6 +3437,7 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.play_cancelled.connect(_on_play_cancelled)
 		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
+		turn_manager.action_handler.counter_prevented.connect(_on_counter_prevented)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
 		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
@@ -3516,7 +3557,7 @@ func _on_rematch_deck_selected(deck_name: String) -> void:
 func _rpc_rematch_requested() -> void:
 	RpcLogger.log_receive("rematch_requested", 0)
 	_opponent_rematch_requested = true
-	_on_log_message("Opponent wants a rematch!")
+	_on_log_message(GameLog.opponent_wants_rematch(false))
 
 	if _rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
@@ -3556,7 +3597,7 @@ func _rpc_rematch_with_deck(payload_json: String) -> void:
 
 	DecklistManager.set_player_deck_from_entries(sender_pid, deck_name, monster_entries, main_entries)
 	_opponent_rematch_requested = true
-	_on_log_message("Opponent wants a rematch (new deck)!")
+	_on_log_message(GameLog.opponent_wants_rematch(true))
 
 	if _rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
@@ -3714,10 +3755,10 @@ func _enter_pass_confirmation() -> void:
 	_confirming_pass = true
 	_disable_all_buttons()
 	action_prompt_panel.visible = true
-	card_select_prompt.text = "End Main Phase?"
-	btn_confirm.text = "Confirm"
+	card_select_prompt.text = tr("STR_GB_END_MAIN_QUESTION")
+	btn_confirm.text = tr("STR_GB_CONFIRM")
 	btn_confirm.disabled = false
-	btn_cancel.text = "Cancel"
+	btn_cancel.text = tr("STR_GB_CANCEL")
 	btn_cancel.disabled = false
 
 
@@ -3739,7 +3780,7 @@ func _enter_card_selection(prompt_text: String, valid_indices: Array[int]) -> vo
 	card_select_prompt.text = prompt_text
 	action_prompt_panel.visible = true
 	_disable_all_buttons()
-	btn_cancel.text = "Cancel"
+	btn_cancel.text = tr("STR_GB_CANCEL")
 	btn_cancel.disabled = false
 
 	var board := _get_active_player_board()
@@ -3789,7 +3830,7 @@ func _on_hand_card_selected(card: Control, _visual_index: int) -> void:
 func _enter_zone_selection() -> void:
 	waiting_for_card_select = false
 	waiting_for_zone_select = true
-	card_select_prompt.text = "Select a ZONE to place the battle card:"
+	card_select_prompt.text = tr("STR_GB_SELECT_ZONE")
 	var active_pid := _get_current_pid()
 	if not is_multiplayer_game and active_pid != local_player_id:
 		_temporarily_collapse_opponent_hand()
@@ -3845,14 +3886,14 @@ func _process(_delta: float) -> void:
 			# Host: show countdown until "Claim Win" becomes available
 			var remaining := RECONNECT_CLAIM_WIN_SECONDS - total_seconds
 			if remaining > 0:
-				_reconnect_timer_label.text = "Claim win available in %ds" % ceili(remaining)
+				_reconnect_timer_label.text = tr("STR_GB_CLAIM_WIN_TIMER_FMT").replace("{N}", str(ceili(remaining)))
 			else:
 				_reconnect_timer_label.text = ""
 				if not _reconnect_claim_btn.visible:
 					_reconnect_claim_btn.visible = true
 		else:
 			# Client: show elapsed time reconnecting
-			_reconnect_timer_label.text = "Reconnecting... %ds" % int(total_seconds)
+			_reconnect_timer_label.text = tr("STR_GB_RECONNECTING_FMT").replace("{N}", str(int(total_seconds)))
 		return # Skip normal drag processing while overlay is showing
 
 	if not _drag_card or not _drag_card.is_dragging:
@@ -4037,7 +4078,9 @@ func _input(event: InputEvent) -> void:
 		elif card_pool_select_overlay.visible:
 			_on_card_pool_select_skip()
 		elif deck_search_overlay.visible:
-			_on_deck_search_skip()
+			# ESC dismisses only when skip is allowed; otherwise the prompt is mandatory.
+			if deck_search_skip.visible:
+				_on_deck_search_skip()
 		elif discard_view_overlay.visible:
 			_hide_discard_view()
 		elif monster_deck_view_overlay.visible:
@@ -4196,7 +4239,7 @@ func _update_hand_visibility(active_player_id: int) -> void:
 
 func _update_action_buttons(valid_actions: Array) -> void:
 	_confirming_pass = false
-	btn_invade.text = "Invade"
+	btn_invade.text = tr("STR_GB_INVADE")
 	btn_play_battle.disabled = CardEnums.ActionType.PLAY_BATTLE not in valid_actions
 	btn_play_strategy.disabled = CardEnums.ActionType.PLAY_STRATEGY not in valid_actions
 	btn_gain_rage.disabled = CardEnums.ActionType.GAIN_RAGE not in valid_actions
@@ -4478,23 +4521,23 @@ func _on_hand_drag_ended(card: Control) -> void:
 
 # --- Deck search UI ---
 
-func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String) -> void:
+func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, allow_skip: bool = true) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast() # Client needs up-to-date state before search
 		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
 		var all_json := JSON.stringify(_cards_to_ids(all_cards))
-		_pending_interaction = {"method": "deck_search", "args": [matching_json, all_json, prompt]}
+		_pending_interaction = {"method": "deck_search", "args": [matching_json, all_json, prompt, allow_skip]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
-				_rpc_deck_search_requested.rpc_id(peer_id, matching_json, all_json, prompt)
+				_rpc_deck_search_requested.rpc_id(peer_id, matching_json, all_json, prompt, allow_skip)
 		return
-	_show_deck_search(matching_cards, all_cards, prompt)
+	_show_deck_search(matching_cards, all_cards, prompt, allow_skip)
 
 
-func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String) -> void:
+func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, allow_skip: bool = true) -> void:
 	# Store data for toggling
 	_deck_search_matching = matching
 	_deck_search_all = all_cards
@@ -4503,6 +4546,7 @@ func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary]
 		_deck_search_matching_ids[card_data.get("id", "")] = true
 
 	deck_search_prompt.text = prompt
+	deck_search_skip.visible = allow_skip
 	deck_search_show_all.set_pressed_no_signal(matching.is_empty())
 	deck_search_stacked.set_pressed_no_signal(_match_stacked_view)
 	deck_search_overlay.visible = true
@@ -5386,13 +5430,13 @@ func _refresh_card_select_selection() -> void:
 		card.card_right_clicked.connect(_on_card_long_press_zoom)
 		card_pool_select_selection_grid.add_child(card)
 
-	card_pool_select_selection_label.text = "Selected (%d/%d)" % [_card_select_selected.size(), _card_select_max_count]
+	card_pool_select_selection_label.text = tr("STR_GB_SELECTED_FMT").replace("{N}", str(_card_select_selected.size())).replace("{MAX}", str(_card_select_max_count))
 
 
 func _update_card_select_buttons() -> void:
 	var count := _card_select_selected.size()
 	card_pool_select_confirm.disabled = count < _card_select_min_count or count > _card_select_max_count
-	card_pool_select_confirm.text = "Confirm (%d/%d)" % [count, _card_select_max_count]
+	card_pool_select_confirm.text = tr("STR_GB_CONFIRM_COUNT_FMT").replace("{N}", str(count)).replace("{MAX}", str(_card_select_max_count))
 
 
 func _on_card_select_pool_clicked(card: Control) -> void:
@@ -5498,7 +5542,7 @@ func _show_hand_discard_selection(player_id: int, discard_count: int) -> void:
 		hand_mgr.card_selected.connect(_on_discard_card_selected)
 
 	_disable_all_buttons()
-	card_select_prompt.text = "Select %d card%s to discard:" % [discard_count, "" if discard_count == 1 else "s"]
+	card_select_prompt.text = tr("STR_GB_SELECT_DISCARD_FMT").replace("{N}", str(discard_count))
 	action_prompt_panel.visible = true
 	btn_confirm.disabled = true
 
@@ -5519,11 +5563,11 @@ func _on_discard_card_selected(card: Control, _index: int) -> void:
 	# Update prompt and confirm button
 	var remaining: int = _discard_count - _discard_selected_cards.size()
 	if remaining > 0:
-		card_select_prompt.text = "Select %d more card%s to discard:" % [remaining, "" if remaining == 1 else "s"]
+		card_select_prompt.text = tr("STR_GB_SELECT_MORE_DISCARD_FMT").replace("{N}", str(remaining))
 		btn_confirm.disabled = true
 	else:
-		card_select_prompt.text = "Press Confirm to discard selected cards"
-		btn_confirm.text = "Confirm"
+		card_select_prompt.text = tr("STR_GB_PRESS_CONFIRM_DISCARD")
+		btn_confirm.text = tr("STR_GB_CONFIRM")
 		btn_confirm.disabled = false
 
 
@@ -5628,7 +5672,7 @@ func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt
 	action_prompt_panel.visible = true
 
 	if allow_skip:
-		btn_confirm.text = "Skip"
+		btn_confirm.text = tr("STR_GB_SKIP")
 		btn_confirm.disabled = false
 	else:
 		btn_confirm.disabled = true
@@ -5679,7 +5723,7 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 	if hand_mgr.card_selected.is_connected(_on_hand_card_clicked):
 		hand_mgr.card_selected.disconnect(_on_hand_card_clicked)
 	action_prompt_panel.visible = false
-	btn_confirm.text = "Confirm"
+	btn_confirm.text = tr("STR_GB_CONFIRM")
 	btn_confirm.disabled = true
 	_update_hand_visibility(_get_current_pid())
 
@@ -5713,7 +5757,7 @@ func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zo
 	action_prompt_panel.visible = true
 
 	if allow_skip:
-		btn_confirm.text = "Skip"
+		btn_confirm.text = tr("STR_GB_SKIP")
 		btn_confirm.disabled = false
 	else:
 		btn_confirm.disabled = true
@@ -5975,17 +6019,27 @@ func _on_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 
 
 func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void:
+	if not highlighted:
+		# Reset by node reference rather than card_id — the held_card's card_data
+		# may have changed since highlight (e.g. evolution mutates the held node
+		# in place), so an id-based lookup can miss the original target.
+		if _highlighted_effect_card_node and is_instance_valid(_highlighted_effect_card_node):
+			_highlighted_effect_card_node.modulate = Color.WHITE
+		_highlighted_effect_card_node = null
+		return
 	var board: Control = player1_board if pid == 0 else player2_board
-	var color := Color(1.2, 1.2, 0.6, 1.0) if highlighted else Color.WHITE
+	var color := Color(1.2, 1.2, 0.6, 1.0)
 	# Check zone slots (battle cards)
 	for slot in board.zone_slots:
 		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == card_id:
 			slot.held_card.modulate = color
+			_highlighted_effect_card_node = slot.held_card
 			return
 	# Check strategy slots
 	for slot in board.strategy_slots:
 		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == card_id:
 			slot.held_card.modulate = color
+			_highlighted_effect_card_node = slot.held_card
 			return
 
 
@@ -5996,7 +6050,7 @@ func _on_discard_clicked(pid: int) -> void:
 	_discard_view_cards = player.discard_pile.duplicate(true)
 	_discard_view_cards.reverse()
 	var pname := GameLog.player_name(pid)
-	var title := "%s Discard Pile (%d)" % [pname, _discard_view_cards.size()]
+	var title := tr("STR_GB_DISCARD_TITLE_FMT") % [pname, _discard_view_cards.size()]
 	discard_view_title.text = title
 	discard_view_stacked.set_pressed_no_signal(_match_stacked_view)
 	discard_view_overlay.visible = true
@@ -6011,7 +6065,7 @@ func _refresh_discard_view_grid() -> void:
 
 	if _discard_view_cards.is_empty():
 		var empty_label := Label.new()
-		empty_label.text = "No cards in discard pile."
+		empty_label.text = tr("STR_GB_NO_DISCARD")
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		discard_view_grid.add_child(empty_label)
 		return
@@ -6060,7 +6114,7 @@ func _on_monster_deck_clicked(pid: int) -> void:
 		return
 	var player := _get_player_state(pid)
 	_monster_deck_view_cards = player.monster_deck.duplicate(true)
-	var title := "Monster Deck (%d)" % _monster_deck_view_cards.size()
+	var title := tr("STR_GB_MONSTER_DECK_TITLE_FMT") % _monster_deck_view_cards.size()
 	monster_deck_view_title.text = title
 	monster_deck_view_stacked.set_pressed_no_signal(_match_stacked_view)
 	monster_deck_view_overlay.visible = true
@@ -6075,7 +6129,7 @@ func _refresh_monster_deck_view_grid() -> void:
 
 	if _monster_deck_view_cards.is_empty():
 		var empty_label := Label.new()
-		empty_label.text = "No cards remaining in monster deck."
+		empty_label.text = tr("STR_GB_NO_MONSTER_DECK")
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		monster_deck_view_grid.add_child(empty_label)
 		return
@@ -6225,7 +6279,7 @@ func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
 	for card_data in stack:
 		_zone_stack_view_cards.append(card_data)
 	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = "Zone %d (%d card%s)" % [zone_num, total, "" if total == 1 else "s"]
+	zone_stack_view_title.text = tr("STR_GB_ZONE_HEADER_FMT").replace("{N}", str(zone_num)).replace("{C}", str(total))
 	zone_stack_view_overlay.visible = true
 	_refresh_zone_stack_view_grid()
 
@@ -6262,7 +6316,7 @@ func _on_cards_revealed_requested(player_id: int, cards: Array[Dictionary], titl
 	_zone_stack_view_cards.clear()
 	_zone_stack_view_cards.append_array(cards)
 	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = "%s (%d card%s)" % [title, total, "" if total == 1 else "s"]
+	zone_stack_view_title.text = tr("STR_GB_TITLE_COUNT_FMT").replace("{TITLE}", title).replace("{C}", str(total))
 	zone_stack_view_overlay.visible = true
 	_cards_revealed_active = true
 	_refresh_zone_stack_view_grid()
@@ -6294,6 +6348,28 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 	if card_data.is_empty():
 		return
 	_show_card_zoom(card_data)
+
+
+func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
+	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _strategy_target_selecting:
+		return
+	var player := _get_player_state(pid)
+	if strategy_idx < 0 or strategy_idx >= player.strategy_zones.size():
+		return
+	var card_data: Dictionary = player.strategy_zones[strategy_idx]
+	if card_data.is_empty():
+		return
+	var stack: Array = []
+	if strategy_idx < player.strategy_zone_stacks.size():
+		stack = player.strategy_zone_stacks[strategy_idx]
+	_zone_stack_view_cards.clear()
+	_zone_stack_view_cards.append(card_data)
+	for c in stack:
+		_zone_stack_view_cards.append(c)
+	var total: int = _zone_stack_view_cards.size()
+	zone_stack_view_title.text = tr("STR_GB_STRATEGY_HEADER_FMT").replace("{N}", str(strategy_idx + 1)).replace("{C}", str(total))
+	zone_stack_view_overlay.visible = true
+	_refresh_zone_stack_view_grid()
 
 
 func _on_card_long_press_zoom(card: Control) -> void:
@@ -6628,15 +6704,15 @@ func _do_broadcast() -> void:
 			envelope = {"v": _state_version, "bv": - 1, "d": state_dict}
 		else:
 			var delta := _compute_delta(_last_sent_state, state_dict)
-			if delta.is_empty() and _pending_log_lines.is_empty() and _pending_sound_events.is_empty():
+			if delta.is_empty() and _pending_log_tokens.is_empty() and _pending_sound_events.is_empty():
 				# Nothing changed, no logs, no sounds — skip broadcast entirely
 				_state_version -= 1
 				continue
 			envelope = {"v": _state_version, "bv": _last_sent_version, "d": delta}
 
-		# Piggyback buffered log lines on the envelope
-		if not _pending_log_lines.is_empty():
-			envelope["log"] = Array(_pending_log_lines)
+		# Piggyback buffered log tokens on the envelope (dicts + legacy strings)
+		if not _pending_log_tokens.is_empty():
+			envelope["log"] = _pending_log_tokens.duplicate()
 
 		# Piggyback buffered sound events on the envelope
 		if not _pending_sound_events.is_empty():
@@ -6651,7 +6727,7 @@ func _do_broadcast() -> void:
 				state_bytes.size(), _state_version, str(_last_sent_state.is_empty())])
 		RpcLogger.log_send("receive_state", state_bytes.size())
 		_rpc_receive_state.rpc_id(peer_id, state_bytes)
-	_pending_log_lines.clear()
+	_pending_log_tokens.clear()
 	_pending_sound_events.clear()
 
 
@@ -6989,12 +7065,12 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	if envelope.is_empty():
 		return
 
-	# Extract piggybacked log lines
+	# Extract piggybacked log entries (tokens rendered in local locale)
 	if envelope.has("log"):
-		for line in envelope["log"]:
-			_log_lines.append(str(line))
+		for entry in envelope["log"]:
+			_log_tokens.append(entry)
 			if log_output:
-				log_output.append_text(str(line) + "\n")
+				log_output.append_text(_render_log_entry(entry) + "\n")
 				log_output.scroll_to_line(log_output.get_line_count() - 1)
 
 	# Play piggybacked sound events from host
@@ -7174,7 +7250,7 @@ func _rpc_request_resync() -> void:
 				"action_context":
 					_rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
 				"deck_search":
-					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2])
+					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
 				"deck_arrange":
 					_rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
 				"card_select":
@@ -7226,11 +7302,11 @@ func _rpc_receive_action_context(actions_json: String, playable_json: String) ->
 	_update_action_buttons(actions)
 
 
-## Host -> Client: log message
+## Host -> Client: log message (legacy raw-string path; kept for compatibility)
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_log(text: String) -> void:
 	RpcLogger.log_receive("receive_log", text.length())
-	_log_lines.append(text)
+	_log_tokens.append(text)
 	if log_output:
 		log_output.append_text(text + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
@@ -7243,22 +7319,21 @@ func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
 	if sender_player_id < 0 or sender_player_id > 1:
 		return
 	var filtered := ChatFilter.filter(text)
-	var pname := GameLog.player_name(sender_player_id)
-	var formatted := GameLog.chat_message(pname, filtered)
-	_log_lines.append(formatted)
+	var token := {"type": "chat", "sender_id": sender_player_id, "text": filtered}
+	_log_tokens.append(token)
 	if log_output:
-		log_output.append_text(formatted + "\n")
+		log_output.append_text(GameLog.render(token) + "\n")
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	_notify_mobile_log_chat()
 
 
 ## Host -> Client: deck search request (player must choose a card)
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt: String) -> void:
+func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt: String, allow_skip: bool = true) -> void:
 	RpcLogger.log_receive("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
 	var all_ids: Array = JSON.parse_string(all_json)
-	_show_deck_search(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt)
+	_show_deck_search(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt, allow_skip)
 
 
 ## Client -> Host: deck search resolved (player chose a card or skipped)
@@ -7558,8 +7633,8 @@ func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 
 ## Host -> Client: game over
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
-	RpcLogger.log_receive("receive_game_ended", 4 + reason.length())
+func _rpc_receive_game_ended(winner_id: int, reason_key: String) -> void:
+	RpcLogger.log_receive("receive_game_ended", 4 + reason_key.length())
 	SfxManager.play("game_win" if winner_id == local_player_id else "game_lose")
 	_action_pending = false
 	_game_ended_by_disconnect = false
@@ -7568,10 +7643,11 @@ func _rpc_receive_game_ended(winner_id: int, reason: String) -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		win_label.text = "%s Wins!\n%s" % [GameLog.player_name(winner_id), reason]
+		var reason_text := GameLog.render_reason(reason_key)
+		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", GameLog.player_name(winner_id)) + "\n" + reason_text
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
-	btn_rematch.text = "Rematch"
+	btn_rematch.text = tr("STR_GB_REMATCH")
 	_populate_rematch_deck_select()
 	_disable_all_buttons()
 	RpcLogger.print_summary()
@@ -7749,20 +7825,20 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 
 	# Online HOST side: show overlay and wait for reconnect
 	if NetworkManager.is_host():
-		_on_log_message("Opponent disconnected. Waiting for reconnect...")
+		_on_log_message(GameLog.opponent_disconnected_waiting())
 		_waiting_for_reconnect = true
 		_reconnect_current_start_ms = Time.get_ticks_msec()
-		_reconnect_label.text = "Opponent disconnected.\nWaiting for reconnect..."
-		_reconnect_timer_label.text = "Claim win available in %ds" % int(RECONNECT_CLAIM_WIN_SECONDS)
+		_reconnect_label.text = tr("STR_GB_OPPONENT_DISCONNECTED_WAIT")
+		_reconnect_timer_label.text = tr("STR_GB_CLAIM_WIN_TIMER_FMT").replace("{N}", str(int(RECONNECT_CLAIM_WIN_SECONDS)))
 		_reconnect_claim_btn.visible = false
 		_reconnect_overlay.visible = true
 		return
 
 	# Online CLIENT side: attempt to reconnect to the host via relay
-	_on_log_message("Connection lost. Attempting to reconnect...")
+	_on_log_message(GameLog.connection_lost_reconnecting())
 	_waiting_for_reconnect = true
 	_reconnect_current_start_ms = Time.get_ticks_msec()
-	_reconnect_label.text = "Connection lost.\nReconnecting..."
+	_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RECONNECTING")
 	_reconnect_timer_label.text = ""
 	_reconnect_claim_btn.visible = false
 	_reconnect_menu_btn.visible = true
@@ -7776,7 +7852,7 @@ func _handle_final_disconnect() -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		win_label.text = "Opponent disconnected."
+		win_label.text = tr("STR_GB_OPPONENT_DISCONNECTED")
 	btn_rematch.visible = false
 	_upload_stats(local_player_id, "Opponent disconnected", true)
 
@@ -7785,7 +7861,7 @@ func _attempt_client_reconnect() -> void:
 	_reconnect_attempting = true
 	var room_code := NetworkManager.get_game_code()
 	while _waiting_for_reconnect and is_inside_tree():
-		_reconnect_label.text = "Connection lost.\nReconnecting..."
+		_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RECONNECTING")
 		var err: Error = await NetworkManager.attempt_reconnect(room_code)
 		if err == OK:
 			# Reconnected — clear overlay and reset ALL client delta state
@@ -7798,7 +7874,7 @@ func _attempt_client_reconnect() -> void:
 			_client_state_version = 0
 			_last_resync_request_ms = 0
 			_action_pending = false
-			_on_log_message("Reconnected!")
+			_on_log_message(GameLog.reconnected())
 			# Wait a frame for the connection to stabilize before sending RPCs
 			await get_tree().process_frame
 			if not is_inside_tree():
@@ -7812,7 +7888,7 @@ func _attempt_client_reconnect() -> void:
 			_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
 			return
 		# Failed — wait 2s and retry
-		_reconnect_label.text = "Connection lost.\nRetrying..."
+		_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RETRYING")
 		await get_tree().create_timer(2.0).timeout
 	_reconnect_attempting = false
 
@@ -7829,24 +7905,22 @@ func _on_opponent_reconnected(_peer_id: int) -> void:
 	if not end_game_panel.visible:
 		# Game is still in progress — resync the client after a brief delay
 		# to let the connection stabilize before sending large state RPCs
-		_on_log_message("Opponent reconnected!")
+		_on_log_message(GameLog.opponent_reconnected())
 		await get_tree().create_timer(0.2).timeout
 		if not is_inside_tree():
 			return
 		_resync_reconnected_client()
 	else:
 		# Game ended while they were gone (win was claimed) — re-send result
-		var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
-		var reason := win_label.text if win_label else "Opponent disconnected"
 		await get_tree().create_timer(0.2).timeout
 		if not is_inside_tree():
 			return
-		RpcLogger.log_send("receive_game_ended", 4 + reason.length())
-		_rpc_receive_game_ended.rpc(local_player_id, "Opponent disconnected")
+		RpcLogger.log_send("receive_game_ended", 4 + len("STR_LOG_REASON_OPPONENT_DISCONNECTED"))
+		_rpc_receive_game_ended.rpc(local_player_id, "STR_LOG_REASON_OPPONENT_DISCONNECTED")
 		# Show rematch button now that opponent is back
 		btn_rematch.visible = true
 		btn_rematch.disabled = false
-		btn_rematch.text = "Rematch"
+		btn_rematch.text = tr("STR_GB_REMATCH")
 		_game_ended_by_disconnect = false
 		_populate_rematch_deck_select()
 
@@ -7870,7 +7944,7 @@ func _resync_reconnected_client() -> void:
 					_rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
 				"deck_search":
 					RpcLogger.log_send("deck_search_requested", args[0].length() + args[1].length() + args[2].length())
-					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2])
+					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
 				"deck_arrange":
 					RpcLogger.log_send("deck_arrange_requested", args[0].length() + args[1].length())
 					_rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
@@ -7921,8 +7995,8 @@ func _on_reconnect_claim_win() -> void:
 	end_game_panel.visible = true
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
-		win_label.text = "You Win!\nOpponent disconnected"
+		win_label.text = tr("STR_GB_YOU_WIN_OPP_DISC")
 	btn_rematch.visible = false
 	_disable_all_buttons()
 	_upload_stats(local_player_id, "Opponent disconnected", true)
-	_on_log_message("Claimed win due to opponent disconnect.")
+	_on_log_message(GameLog.claimed_win_disconnect())

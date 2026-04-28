@@ -12,21 +12,19 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"protects_card_from_destruction": {"own_turn": false, "caused_by_opponent": true},
+}
+
+
 func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 
 
 func protects_card_from_destruction(ctx: EffectContext, card_data: Dictionary, _zone_idx: int) -> bool:
-	# Only during opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
-		return false
-	# Count opponent's battle cards in zones
-	var count: int = 0
-	for i in range(8):
-		var card := ctx.opponent.get_zone_top_card(i)
-		if not card.is_empty() and card.get("card_type") == CardEnums.CardType.BATTLE:
-			count += 1
+	# Turn / cause-by-opponent gating handled by TRIGGER_FILTERS.
+	# Count opponent's battle cards in zones — only protect when ≤2.
+	var count: int = ctx.opponent.count_zones_matching(CardUtils.is_battle)
 	if count > 2:
 		return false
-	# Protect all our battle cards
-	return card_data.get("card_type") == CardEnums.CardType.BATTLE
+	return CardUtils.is_battle(card_data)

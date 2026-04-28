@@ -3,6 +3,58 @@ extends RefCounted
 
 ## Base class for card effect scripts. Override trigger methods to define card abilities.
 ## Effect scripts are stateless — all state comes from the EffectContext passed to each call.
+##
+## # Declarative trigger filters
+##
+## A subclass may declare a class-level constant `TRIGGER_FILTERS` to gate when a
+## trigger fires, replacing repeated early-return guards inside method bodies. The
+## EffectHandler dispatcher reads the constant via Script.get_script_constant_map()
+## before invoking each trigger and skips entries whose filter doesn't match.
+##
+## Shape:
+##     const TRIGGER_FILTERS = {
+##         "on_rage_changed": {"own_turn": true, "direction": "decrease"},
+##         "on_phase_start":  {"phase": CardEnums.GamePhase.MAIN},
+##     }
+##
+## Supported keys (all optional within a per-method dict):
+##   "phase":     CardEnums.GamePhase — fire only during this phase
+##   "own_turn":  bool                — true = controller's turn; false = opponent's turn
+##   "direction": "increase" | "decrease" | "both" — defaults to "both"; only meaningful
+##                for triggers that pass old/new values (e.g. on_rage_changed); ignored
+##                for phase/turn-only triggers; unknown values pass through
+##   "column":    "monster" — only meaningful for on_ally_zone_card_destroyed /
+##                on_opponent_zone_card_destroyed; destroyed zone must be in the watcher's
+##                monster column
+##   "card_type": "battle" | "strategy" | "monster" — only meaningful for
+##                on_hand_card_discarded; the discarded card must match the named type
+##   "played_from_deck": bool — only meaningful for on_battle_card_played; gates by
+##                whether the played card came from the deck (true) or not (false)
+##   "played_from_hand": bool — only meaningful for on_enter; gates by how the
+##                card entered play. true = only fire when played from hand
+##                (matches "if played from hand" rule text); false = only fire
+##                when entered via an effect (search / evolution / discard / etc.).
+##   "own_turn" on can_monster_advance / can_monster_invade gates whether the
+##                override is consulted by turn ownership; both virtuals are
+##                queried across the monster card AND every active strategy
+##                card (a strategy returning false blocks the action).
+##   "played_by_opponent": bool — only meaningful for on_battle_card_played; gates by
+##                who played the card (true = the watcher's opponent played it).
+##                Use this for "your opponent plays..." rule wording instead of
+##                own_turn, since opponents can play cards on your turn via effects.
+##   "returned_by_opponent": bool — only meaningful for on_card_returned_from_discard;
+##                gates by who returned the card from discard (true = watcher's
+##                opponent returned it).
+##   "caused_by_opponent": bool — only meaningful for on_discard_from_hand,
+##                prevents_opponent_monster_move, can_be_destroyed, and
+##                protects_card_from_destruction; gates by which player's active
+##                effect caused the action. true = opponent's effect (e.g.
+##                EBP04-046 Rodan, EBP04-076 Dormancy, EBP01-075 Godzilla KOTM,
+##                EBP04-048 Little Godzilla); false = owner's own effect.
+##                Rules-based actions (no active effect) match neither value.
+##
+## Empty per-method dict or missing entry = always fire (backward compatible).
+## See EffectHandler.get_trigger_filter / _passes_trigger_filter for the dispatcher side.
 
 
 # --- Trigger methods (override in subclasses) ---
@@ -56,15 +108,6 @@ func on_monster_advance(_ctx: EffectContext, _from_zone: int, _to_zone: int) -> 
 	pass
 
 
-func get_phase_start_filter() -> Dictionary:
-	## Override to declare when on_phase_start should enter standby.
-	## Supported keys:
-	##   "phase": CardEnums.GamePhase — only enters standby for this phase
-	##   "own_turn": bool — true = own turn only, false = opponent's turn only
-	## Return {} to always enter standby (default, backward compatible).
-	return {}
-
-
 func on_phase_start(_ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	## Called at the beginning of each phase on all active cards.
 	## Covers "At the beginning of your counter/main/end phase" triggers.
@@ -82,9 +125,10 @@ func on_monster_played(_ctx: EffectContext, _old_monster: Dictionary, _new_monst
 	pass
 
 
-func on_battle_card_played(_ctx: EffectContext, _zone_index: int) -> void:
-	## Called on active strategy/zone cards when the owner plays a battle card.
-	## zone_index is the zone (0-indexed) where the battle card was placed.
+func on_battle_card_played(_ctx: EffectContext, _zone_index: int, _played_from_deck: bool = false) -> void:
+	## Called on active cards (both players) when a battle card is played.
+	## zone_index: 0-indexed zone where the card landed.
+	## played_from_deck: true when the card was played directly from the deck (not from hand or discard).
 	pass
 
 
@@ -100,18 +144,16 @@ func on_counter_success(_ctx: EffectContext) -> void:
 	pass
 
 
+func on_self_countered(_ctx: EffectContext) -> void:
+	## Called on the attacker's monster when it is successfully countered (CP >= threat).
+	## Covers "When this card is successfully countered" triggers (e.g. EBP04-022).
+	pass
+
+
 func on_strategy_discarded(_ctx: EffectContext, _strategy_card: Dictionary) -> void:
 	## Called on active cards when a strategy card is sent from a strategy zone to discard.
 	## Covers "When a strategy card is sent to discard" triggers.
 	pass
-
-
-func get_invasion_observed_filter() -> Dictionary:
-	## Override to declare when on_invasion_observed should enter standby.
-	## Supported keys:
-	##   "own_turn": bool — true = own turn only, false = opponent's turn only
-	## Return {} to always enter standby (default, backward compatible).
-	return {}
 
 
 func on_invasion_observed(_ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:
@@ -144,6 +186,12 @@ func prevents_rage_reduction(_ctx: EffectContext) -> bool:
 	return false
 
 
+func on_rage_reset(_ctx: EffectContext) -> int:
+	## Called during start phase rage reset. Return the new rage value to override (0 = no override).
+	## Used by EBP04-010: may discard 2 cards to set rage to 2 instead of 0.
+	return 0
+
+
 func protects_card_from_destruction(_ctx: EffectContext, _card_data: Dictionary, _zone_idx: int) -> bool:
 	## Return true if this strategy card protects the given battle card from destruction.
 	## Called on active strategy cards when checking if a zone card can be destroyed.
@@ -152,18 +200,51 @@ func protects_card_from_destruction(_ctx: EffectContext, _card_data: Dictionary,
 
 # --- Play restriction methods ---
 
+func on_destroy(_ctx: EffectContext, _zone_idx: int) -> void:
+	## Called when this card is destroyed and removed from a zone (before revenge/banish).
+	## Reserved for <Destroy> rule actions only — does NOT fire for overload (rule 11.5).
+	pass
+
+
+func on_leave_play(_ctx: EffectContext, _zone_idx: int) -> void:
+	## Called whenever this card leaves a zone for any reason: destroyed,
+	## overloaded, banished, returned to hand/deck. Fires after on_destroy when
+	## both apply. Use this for linked-card effects that need to react to any
+	## removal (e.g. EBP04-067 + token).
+	pass
+
+
+func on_zone_changed(_ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
+	## Called when this card is moved between zones while remaining in play.
+	pass
+
+
 func can_be_played(_ctx: EffectContext) -> bool:
 	## Return false if this card has a play restriction that prevents it from being played.
 	## Checked before rank/zone validation in the rules engine.
 	return true
 
 
+func get_required_play_zones(_ctx: EffectContext) -> Array[int]:
+	## Return a non-empty Array of allowed zone indices to restrict which zones this card
+	## can be placed in. Empty array = no restriction (any valid zone allowed).
+	return []
+
+
 func apply_play_cost(_ctx: EffectContext, _zone_index: int) -> bool:
 	## Called after a battle card is popped from hand but before placement.
+	## Also called for monster cards with alternate play costs (zone_index = -1).
 	## Override to prompt the player for an optional cost (e.g., discard a card).
 	## Return true if the card should be played, false to cancel (restore to hand).
-	## zone_index is the target zone (0-indexed).
+	## zone_index is the target zone (0-indexed), or -1 for monsters.
 	return true
+
+
+func can_play_as_monster(_ctx: EffectContext) -> bool:
+	## Return true if this monster card can be played via an alternate play cost.
+	## Checked in addition to normal rank/trait matching in get_playable_monsters.
+	## Used by EBP04-012: playable when rank 2 Biollante is current monster.
+	return false
 
 
 # --- Modifier methods (override to alter stats) ---
@@ -246,10 +327,31 @@ func get_counter_immunity_threshold(_ctx: EffectContext) -> int:
 	return 0
 
 
+func prevents_counter(_ctx: EffectContext, _total_cp: int) -> bool:
+	## Return true if this effect fully prevents the opponent from countering
+	## the invader (no retreat, no rank up — counter just doesn't happen).
+	## `total_cp` is the defender's effective counter power so prevention can be
+	## CP-conditional (e.g. EBP04-014 prevents only when CP <= 30000).
+	## Distinct from get_counter_immunity_threshold, which still retreats the
+	## monster (i.e. "moves as though it were countered").
+	return false
+
+
 func get_opponent_zone_cp_modifiers(_ctx: EffectContext) -> Dictionary:
-	## Return {zone_index: cp_bonus} for bonuses this card grants to the OPPONENT's zones.
-	## Used by EBP02-029 to double opponent's CP in the same column.
+	## Return {zone_index: cp_bonus} for additive bonuses this card grants to
+	## the OPPONENT's zones. For doubling effects use `get_opponent_doubled_zones`
+	## instead so the multiplier applies to base + all other modifiers.
 	return {}
+
+
+func get_opponent_doubled_zones(_ctx: EffectContext) -> Array[int]:
+	## Return zone indices on the opponent's board whose total CP should be
+	## doubled by this card. Doubling is applied AFTER all additive modifiers
+	## (base CP + own bonuses + field bonuses + strategy bonuses), so existing
+	## bonus modifiers are doubled too. Used by EBP02-029 (Biollante Plant
+	## Beast Form R4): "double the counter power of all of your opponent's
+	## battle cards in the same column as this card".
+	return []
 
 
 func blocks_opponent_strategy_plays(_ctx: EffectContext) -> bool:
@@ -294,15 +396,61 @@ func is_discard_play_optional() -> bool:
 	return false
 
 
-func prevents_own_invasion(_ctx: EffectContext) -> bool:
-	## Return true if this card prevents its own controller from invading.
-	return false
-
-
 func can_replace_invasion_cost(_ctx: EffectContext) -> bool:
 	## Return true if this monster can replace the invasion cost (hand discard)
 	## with an alternative (e.g. milling from deck).
 	return false
+
+
+func get_invasion_advance_bonus(_ctx: EffectContext, _invasion_icon: int) -> int:
+	## Return extra zones to advance during invasion, on top of the card's invasion_icon amount.
+	## Called on the invading monster. Used by EBP04-007 (Godzilla 1962): +1 on Invade 1.
+	return 0
+
+
+func blocks_opponent_end_phase_draw(_ctx: EffectContext) -> bool:
+	## Return true if this card prevents the opponent from drawing during end phase.
+	## Used by EBP04-028 (Gigan R2), EBP04-030 (Modified Gigan).
+	return false
+
+
+func blocks_invade1_invasion_cost(_ctx: EffectContext) -> bool:
+	## Return true if this card prevents the opponent from using invade1 cards as invasion cost.
+	## Used by EBP04-029 (Gigan R3).
+	return false
+
+
+func prevents_opponent_monster_move(_ctx: EffectContext) -> bool:
+	## Return true if this card prevents the opponent from moving this player's monster via effects.
+	## Used by EBP04-076 (Dormancy base strategy).
+	return false
+
+
+func get_strategy_hand_rank_modifier(_ctx: EffectContext, _card: Dictionary, _target_player_id: int) -> int:
+	## Return rank adjustment applied to a strategy card while it is in target_player_id's hand.
+	## ctx.owner is the card applying the modifier. Use target_player_id to decide who is affected:
+	##   target == ctx.owner.player_id → affects own strategies
+	##   target != ctx.owner.player_id → affects opponent strategies
+	##   always return a value → affects both
+	return 0
+
+
+func on_ally_zone_card_destroyed(_ctx: EffectContext, _destroyed_card: Dictionary, _zone_idx: int) -> void:
+	## Called when one of this card's controller's battle cards is destroyed.
+	## Used by EBP04-039 (Zilla): moves self to zone adjacent to own monster.
+	pass
+
+
+func on_opponent_zone_card_destroyed(_ctx: EffectContext, _destroyed_card: Dictionary, _zone_idx: int) -> void:
+	## Called on the opponent of the player whose battle card was destroyed.
+	## Used by EBP04-002 (Godzilla 2004): triggers when opponent's card in same column is destroyed.
+	pass
+
+
+func on_card_returned_from_discard(_ctx: EffectContext, _card: Dictionary) -> void:
+	## Called when the opponent returns a card from their discard pile to their hand.
+	## Used by EBP04-073 (Gaira): if this is in zone 1, return own card from discard to hand.
+	pass
 
 
 # --- Property methods (override to declare card mechanics) ---
@@ -467,6 +615,14 @@ func is_base_strategy() -> bool:
 	return false
 
 
+func prevents_self_start_phase_discard(_ctx: EffectContext) -> bool:
+	## Return true to exempt this strategy from the Start Phase discard rule (7.2.3)
+	## without making it a <Base> card. Unlike Base, such cards are NOT destroyed by
+	## invasion to zones 6-8 (12.9.2). Use for cards with custom anti-discard rule
+	## text rather than the <Base> keyword.
+	return false
+
+
 # --- Zone utilities ---
 
 func find_zone_of_card(ctx: EffectContext) -> int:
@@ -504,6 +660,36 @@ static func get_effect_play_adjacent_zones(player: PlayerState, zone_idx: int) -
 	return zones
 
 
+# --- Monster stack utilities ---
+
+static func monster_has_trait(player: PlayerState, trait_id: int) -> bool:
+	## True if the player's current monster OR any card under it in the monster stack has the trait.
+	if trait_id in player.current_monster.get("traits", []):
+		return true
+	for card in player.monster_stack:
+		if trait_id in card.get("traits", []):
+			return true
+	return false
+
+
+static func monster_stack_has_trait(player: PlayerState, trait_id: int) -> bool:
+	## True if any card under the current monster (not the current monster itself) has the trait.
+	## Use this for "If there is a card with <X> under this card" wording.
+	for card in player.monster_stack:
+		if trait_id in card.get("traits", []):
+			return true
+	return false
+
+
+static func count_monster_stack_matching(player: PlayerState, filter: Callable) -> int:
+	## Count cards in the monster stack (under the current monster) that match the filter predicate.
+	var n: int = 0
+	for card in player.monster_stack:
+		if filter.call(card):
+			n += 1
+	return n
+
+
 # --- Column utilities ---
 
 static func get_adjacent_zones(zone_idx: int) -> Array[int]:
@@ -519,6 +705,21 @@ static func get_adjacent_zones(zone_idx: int) -> Array[int]:
 		5: return [4, 6]        # zone 6 → zones 5, 7
 		6: return [3, 5, 7]     # zone 7 → zones 4, 6, 8
 		7: return [2, 6]        # zone 8 → zones 3, 7
+	return []
+
+
+static func get_column_zones(zone_idx: int) -> Array[int]:
+	## Get this player's own zone indices in the same column as zone_idx.
+	## Columns: 1=[0], 2=[1], 3=[2,7], 4=[3,6], 5=[4,5]
+	match zone_idx:
+		0: return [0]
+		1: return [1]
+		2: return [2, 7]
+		3: return [3, 6]
+		4: return [4, 5]
+		5: return [4, 5]
+		6: return [3, 6]
+		7: return [2, 7]
 	return []
 
 

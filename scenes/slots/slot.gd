@@ -334,7 +334,7 @@ func _on_gui_input(event: InputEvent) -> void:
 			_cancel_long_press()
 			if not held_card.get("is_face_down"):
 				slot_right_clicked.emit(zone_number, player_id)
-		elif zone_number > 0 or in_selection_mode:
+		elif zone_number > 0 or in_selection_mode or slot_type == "strategy_zone":
 			if held_card != null or in_selection_mode:
 				if held_card != null and not in_selection_mode and TouchHelper.is_touch_device():
 					# Touch: delay click to allow double-tap + start long-press for zoom

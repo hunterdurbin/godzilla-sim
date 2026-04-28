@@ -24,7 +24,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	var selected: Dictionary = await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(_card: Dictionary) -> bool: return true,
-		"Discard a card to play a Crystals token (or skip):",
+		tr("STR_EFF_EBP02_052_PROMPT"),
 		true)
 
 	if selected.is_empty():

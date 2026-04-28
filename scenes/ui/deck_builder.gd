@@ -18,6 +18,7 @@ var deck_stats_label: RichTextLabel
 var validation_label: RichTextLabel
 var back_button: Button
 var format_option: OptionButton
+var default_mode_check: CheckBox
 
 # --- Right panel: deck section ---
 var monster_tab_button: Button
@@ -40,6 +41,7 @@ var pool_scroll: ScrollContainer
 # --- Dialogs ---
 var unsaved_dialog: ConfirmationDialog
 var delete_dialog: ConfirmationDialog
+var empty_save_dialog: ConfirmationDialog
 
 # --- State ---
 var _monster_entries: Array = []
@@ -52,6 +54,7 @@ var _all_pool_cards: Array[Dictionary] = []
 var _filtered_pool_cards: Array[Dictionary] = []
 
 var _search_text: String = ""
+var _search_criteria: Array = []  # Parsed criteria from _search_text; each is a Dict
 var _type_filter: int = -1  # -1 = all
 var _color_filters: Array[int] = []
 var _invasion_filter: int = -1  # -1 = all, 1 = step 1, 2 = step 2
@@ -59,7 +62,7 @@ var _sort_mode: int = 0  # 0=ID, 1=Name, 2=Rank, 3=Type
 
 var _pending_action: Callable
 var _invalid_cards: Dictionary = {} # card_number -> true
-var _game_mode: String = "rumble"
+var _game_mode: String = "rumble_west"
 var _pool_load_generation: int = 0  # Incremented to cancel stale batched loads
 var _deck_list_touch_scrolled: bool = false  # Track if ItemList was scrolled on touch
 var _pending_deck_list_index: int = -1  # Deferred selection index for touch
@@ -80,6 +83,12 @@ func _ready() -> void:
 	_connect_signals()
 	_build_pool_card_list()
 	_refresh_deck_list()
+
+	var saved_idx := _index_of_mode(GameSettings.default_game_mode)
+	_game_mode = GameModeValidator.MODES[saved_idx]["id"]
+	format_option.select(saved_idx)
+	default_mode_check.set_pressed_no_signal(_game_mode == GameSettings.default_game_mode)
+
 	_apply_filters()
 	_refresh_pool_display()
 	_refresh_deck_display()
@@ -141,7 +150,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	# Title
 	var title := Label.new()
-	title.text = "DECK BUILDER"
+	title.text = tr("STR_DB_TITLE")
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 24)
 	title.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
@@ -149,7 +158,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	# Deck name
 	deck_name_edit = LineEdit.new()
-	deck_name_edit.placeholder_text = "Deck Name"
+	deck_name_edit.placeholder_text = tr("STR_DB_DECK_NAME")
 	vbox.add_child(deck_name_edit)
 
 	# Deck list (wrapped in ScrollContainer for touch scrolling)
@@ -173,17 +182,17 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	vbox.add_child(btn_row)
 
 	save_button = Button.new()
-	save_button.text = "Save"
+	save_button.text = tr("STR_DB_SAVE")
 	save_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_row.add_child(save_button)
 
 	load_button = Button.new()
-	load_button.text = "Load"
+	load_button.text = tr("STR_DB_LOAD")
 	load_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_row.add_child(load_button)
 
 	delete_button = Button.new()
-	delete_button.text = "Delete"
+	delete_button.text = tr("STR_DB_DELETE")
 	delete_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn_row.add_child(delete_button)
 
@@ -191,11 +200,11 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	# Clipboard buttons
 	import_button = Button.new()
-	import_button.text = "Import from Clipboard"
+	import_button.text = tr("STR_DB_IMPORT")
 	vbox.add_child(import_button)
 
 	export_button = Button.new()
-	export_button.text = "Export to Clipboard"
+	export_button.text = tr("STR_DB_EXPORT")
 	vbox.add_child(export_button)
 
 	vbox.add_child(HSeparator.new())
@@ -214,11 +223,20 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	deck_stats_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stats_row.add_child(deck_stats_label)
 
+	var format_col := VBoxContainer.new()
+	format_col.add_theme_constant_override("separation", 4)
+	format_col.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	stats_row.add_child(format_col)
+
 	format_option = OptionButton.new()
 	for i in range(GameModeValidator.MODES.size()):
-		format_option.add_item(GameModeValidator.MODES[i]["label"], i)
-	format_option.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	stats_row.add_child(format_option)
+		format_option.add_item(tr(GameModeValidator.MODES[i]["label"]), i)
+	format_col.add_child(format_option)
+
+	default_mode_check = CheckBox.new()
+	default_mode_check.text = tr("STR_DB_SET_AS_DEFAULT")
+	default_mode_check.add_theme_font_size_override("font_size", 14)
+	format_col.add_child(default_mode_check)
 
 	# Validation (scrollable, fixed height)
 	var validation_scroll := ScrollContainer.new()
@@ -238,7 +256,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 
 	# Back button
 	back_button = Button.new()
-	back_button.text = "Back to Menu"
+	back_button.text = tr("STR_DB_BACK")
 	back_button.custom_minimum_size.y = 40
 	vbox.add_child(back_button)
 
@@ -267,19 +285,19 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	section.add_child(header)
 
 	var label := Label.new()
-	label.text = "DECK"
+	label.text = tr("STR_DB_DECK")
 	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
 	header.add_child(label)
 
 	monster_tab_button = Button.new()
-	monster_tab_button.text = "Monster"
+	monster_tab_button.text = tr("STR_TYPE_MONSTER")
 	monster_tab_button.toggle_mode = true
 	monster_tab_button.button_pressed = true
 	header.add_child(monster_tab_button)
 
 	main_tab_button = Button.new()
-	main_tab_button.text = "Main"
+	main_tab_button.text = tr("STR_DB_TAB_MAIN")
 	main_tab_button.toggle_mode = true
 	header.add_child(main_tab_button)
 
@@ -318,7 +336,7 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 
 	# Search
 	search_edit = LineEdit.new()
-	search_edit.placeholder_text = "Search cards..."
+	search_edit.placeholder_text = tr("STR_DB_SEARCH_PLACEHOLDER")
 	search_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	search_edit.custom_minimum_size.x = 150
 	hbox.add_child(search_edit)
@@ -328,10 +346,10 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 	type_box.add_theme_constant_override("separation", 2)
 	hbox.add_child(type_box)
 
-	var type_names := ["All", "Monster", "Battle", "Strategy"]
-	for i in range(type_names.size()):
+	var type_name_keys := ["STR_DB_FILTER_ALL", "STR_TYPE_MONSTER", "STR_TYPE_BATTLE", "STR_TYPE_STRATEGY"]
+	for i in range(type_name_keys.size()):
 		var btn := Button.new()
-		btn.text = type_names[i]
+		btn.text = tr(type_name_keys[i])
 		btn.toggle_mode = true
 		btn.button_pressed = (i == 0)
 		btn.add_theme_font_size_override("font_size", 12)
@@ -352,10 +370,9 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 		CardEnums.CardColor.WHITE,
 		CardEnums.CardColor.GREEN,
 	]
-	var color_names := ["Red", "Blue", "White", "Green"]
-	for i in range(color_names.size()):
+	for i in range(color_values.size()):
 		var btn := Button.new()
-		btn.text = color_names[i]
+		btn.text = CardEnums.color_to_string(color_values[i])
 		btn.toggle_mode = true
 		btn.add_theme_font_size_override("font_size", 12)
 		btn.add_theme_color_override("font_color", CardEnums.color_to_godot_color(color_values[i]))
@@ -370,10 +387,10 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 	invasion_box.add_theme_constant_override("separation", 2)
 	hbox.add_child(invasion_box)
 
-	var inv_names := ["Step 1", "Step 2"]
-	for i in range(inv_names.size()):
+	var inv_name_keys := ["STR_DB_INVASION_STEP1", "STR_DB_INVASION_STEP2"]
+	for i in range(inv_name_keys.size()):
 		var btn := Button.new()
-		btn.text = inv_names[i]
+		btn.text = tr(inv_name_keys[i])
 		btn.toggle_mode = true
 		btn.add_theme_font_size_override("font_size", 12)
 		invasion_box.add_child(btn)
@@ -384,10 +401,10 @@ func _build_filter_bar(parent: VBoxContainer) -> void:
 
 	# Sort
 	sort_option = OptionButton.new()
-	sort_option.add_item("Sort: ID", 0)
-	sort_option.add_item("Sort: Name", 1)
-	sort_option.add_item("Sort: Rank", 2)
-	sort_option.add_item("Sort: Type", 3)
+	sort_option.add_item(tr("STR_DB_SORT_ID"), 0)
+	sort_option.add_item(tr("STR_DB_SORT_NAME"), 1)
+	sort_option.add_item(tr("STR_DB_SORT_RANK"), 2)
+	sort_option.add_item(tr("STR_DB_SORT_TYPE"), 3)
 	sort_option.add_theme_font_size_override("font_size", 12)
 	hbox.add_child(sort_option)
 
@@ -404,7 +421,7 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 	section.add_child(header)
 
 	var label := Label.new()
-	label.text = "CARD POOL"
+	label.text = tr("STR_DB_CARD_POOL")
 	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
 	header.add_child(label)
@@ -433,15 +450,24 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 
 func _build_dialogs() -> void:
 	unsaved_dialog = ConfirmationDialog.new()
-	unsaved_dialog.title = "Unsaved Changes"
-	unsaved_dialog.dialog_text = "You have unsaved changes. Discard and continue?"
-	unsaved_dialog.ok_button_text = "Discard"
+	unsaved_dialog.title = tr("STR_DB_UNSAVED_TITLE")
+	unsaved_dialog.dialog_text = tr("STR_DB_UNSAVED_TEXT")
+	unsaved_dialog.ok_button_text = tr("STR_DB_UNSAVED_DISCARD")
+	unsaved_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	add_child(unsaved_dialog)
 
 	delete_dialog = ConfirmationDialog.new()
-	delete_dialog.title = "Delete Deck"
-	delete_dialog.ok_button_text = "Delete"
+	delete_dialog.title = tr("STR_DB_DELETE_TITLE")
+	delete_dialog.ok_button_text = tr("STR_DB_DELETE_OK")
+	delete_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	add_child(delete_dialog)
+
+	empty_save_dialog = ConfirmationDialog.new()
+	empty_save_dialog.title = tr("STR_DB_EMPTY_SAVE_TITLE")
+	empty_save_dialog.dialog_text = tr("STR_DB_EMPTY_SAVE_TEXT")
+	empty_save_dialog.ok_button_text = tr("STR_DB_EMPTY_SAVE_OK")
+	empty_save_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
+	add_child(empty_save_dialog)
 
 
 func _apply_panel_style(panel: PanelContainer) -> void:
@@ -482,10 +508,12 @@ func _connect_signals() -> void:
 		invasion_buttons[i].pressed.connect(_on_invasion_button_pressed.bind(i))
 	sort_option.item_selected.connect(_on_sort_changed)
 	format_option.item_selected.connect(_on_format_changed)
+	default_mode_check.toggled.connect(_on_default_mode_toggled)
 
 	# Dialogs
 	unsaved_dialog.confirmed.connect(_on_unsaved_confirmed)
 	delete_dialog.confirmed.connect(_on_delete_confirmed)
+	empty_save_dialog.confirmed.connect(_on_empty_save_confirmed)
 
 
 # ============================================================
@@ -514,6 +542,11 @@ func _apply_filters() -> void:
 
 
 func _card_matches_filters(card: Dictionary) -> bool:
+	# Game mode card pool — hides cards outside the active format's pool.
+	# No-rules mode accepts every card.
+	if not GameModeValidator.is_card_valid_for_mode(card.get("id", ""), _game_mode):
+		return false
+
 	# Type filter
 	if _type_filter >= 0 and card.get("card_type", -1) != _type_filter:
 		return false
@@ -534,25 +567,150 @@ func _card_matches_filters(card: Dictionary) -> bool:
 		if card.get("invasion_icon", 0) != _invasion_filter:
 			return false
 
-	# Text search
-	if not _search_text.is_empty():
-		var name_str: String = card.get("name", "").to_lower()
-		var id_str: String = card.get("id", "").to_lower()
-		var desc_str: String = card.get("description", "").to_lower()
-		var trait_text := ""
-		for t in card.get("traits", []):
-			trait_text += CardEnums.trait_to_string(t).to_lower() + " "
-		var common_match := false
-		for cn in card.get("common_names", []):
-			if cn.to_lower().contains(_search_text):
-				common_match = true
-				break
-		if not (name_str.contains(_search_text) or id_str.contains(_search_text)
-				or desc_str.contains(_search_text) or trait_text.contains(_search_text)
-				or common_match):
+	# Text search — comma-separated criteria (AND); each is either a numeric
+	# comparison (e.g. cp>1000, r=3, >1000) or a fuzzy text match.
+	for criterion in _search_criteria:
+		if not _card_matches_search_criterion(card, criterion):
 			return false
 
 	return true
+
+
+# --- Search parsing & matching ---
+
+const _SEARCH_FIELD_ALIASES := {
+	"c": "cp", "cp": "cp", "counter": "cp", "power": "cp", "counterpower": "cp",
+	"t": "threat", "threat": "threat", "level": "threat", "threatlevel": "threat",
+	"r": "rank", "rank": "rank",
+}
+
+const _SEARCH_NUMERIC_FIELDS := ["cp", "threat", "rank"]
+
+
+static func _parse_search_criteria(raw: String) -> Array:
+	## Split on commas; parse each as either a numeric compare or fuzzy text.
+	## A leading `!` negates the criterion (exclude matching cards).
+	var criteria: Array = []
+	for chunk in raw.split(","):
+		var token: String = chunk.strip_edges().to_lower()
+		if token.is_empty():
+			continue
+		var negate: bool = token.begins_with("!")
+		if negate:
+			token = token.substr(1).strip_edges()
+			if token.is_empty():
+				continue
+		var compare := _try_parse_compare(token)
+		var entry: Dictionary
+		if not compare.is_empty():
+			entry = compare
+		else:
+			entry = {"type": "fuzzy", "needle": token}
+		entry["negate"] = negate
+		criteria.append(entry)
+	return criteria
+
+
+static func _try_parse_compare(token: String) -> Dictionary:
+	## Match `[field][op][int]`. op ∈ {>=, <=, !=, ==, =, >, <}. Field is
+	## optional; if omitted, the comparison is checked against any numeric field
+	## (cp, threat, rank). Returns {} if the token isn't a valid compare.
+	var ops := [">=", "<=", "!=", "==", "=", ">", "<"]
+	var op_str := ""
+	var op_pos := -1
+	for op in ops:
+		var p := token.find(op)
+		if p >= 0:
+			op_str = op
+			op_pos = p
+			break
+	if op_pos < 0:
+		return {}
+	var lhs := token.substr(0, op_pos).strip_edges().replace(" ", "").replace("_", "")
+	var rhs := token.substr(op_pos + op_str.length()).strip_edges()
+	if not rhs.is_valid_int():
+		return {}
+	var field := "any"
+	if not lhs.is_empty():
+		if not _SEARCH_FIELD_ALIASES.has(lhs):
+			return {}
+		field = _SEARCH_FIELD_ALIASES[lhs]
+	# Normalize "==" → "=" for downstream.
+	if op_str == "==":
+		op_str = "="
+	return {"type": "compare", "field": field, "op": op_str, "value": rhs.to_int()}
+
+
+func _card_matches_search_criterion(card: Dictionary, criterion: Dictionary) -> bool:
+	var matched: bool = _evaluate_criterion(card, criterion)
+	if criterion.get("negate", false):
+		return not matched
+	return matched
+
+
+func _evaluate_criterion(card: Dictionary, criterion: Dictionary) -> bool:
+	match criterion.get("type", ""):
+		"compare":
+			var field: String = criterion.get("field", "any")
+			var op: String = criterion.get("op", "=")
+			var value: int = criterion.get("value", 0)
+			if field == "any":
+				for f in _SEARCH_NUMERIC_FIELDS:
+					if not _card_has_field(card, f):
+						continue
+					if _compare_int(_card_field(card, f), op, value):
+						return true
+				return false
+			if not _card_has_field(card, field):
+				return false
+			return _compare_int(_card_field(card, field), op, value)
+		"fuzzy":
+			return _card_matches_fuzzy(card, criterion.get("needle", ""))
+	return false
+
+
+static func _card_has_field(card: Dictionary, field: String) -> bool:
+	match field:
+		"cp": return card.has("counter_power")
+		"threat": return card.has("threat_level")
+		"rank": return card.has("rank")
+	return false
+
+
+static func _card_field(card: Dictionary, field: String) -> int:
+	match field:
+		"cp": return card.get("counter_power", 0)
+		"threat": return card.get("threat_level", 0)
+		"rank": return card.get("rank", 0)
+	return 0
+
+
+static func _compare_int(lhs: int, op: String, rhs: int) -> bool:
+	match op:
+		">": return lhs > rhs
+		"<": return lhs < rhs
+		">=": return lhs >= rhs
+		"<=": return lhs <= rhs
+		"=": return lhs == rhs
+		"!=": return lhs != rhs
+	return false
+
+
+func _card_matches_fuzzy(card: Dictionary, needle: String) -> bool:
+	## Substring match across name, id, description, traits, and common names.
+	if card.get("name", "").to_lower().contains(needle):
+		return true
+	if card.get("id", "").to_lower().contains(needle):
+		return true
+	if card.get("description", "").to_lower().contains(needle):
+		return true
+	for t in card.get("traits", []):
+		if CardEnums.trait_to_string(t).to_lower().contains(needle):
+			return true
+	for cn in card.get("common_names", []):
+		if String(cn).to_lower().contains(needle):
+			return true
+	return false
 
 
 func _sort_pool() -> void:
@@ -598,7 +756,7 @@ func _refresh_pool_display() -> void:
 	_clear_grid(pool_grid)
 	_pool_load_generation += 1
 	var gen := _pool_load_generation
-	pool_count_label.text = "(%d cards)" % _filtered_pool_cards.size()
+	pool_count_label.text = tr("STR_DB_POOL_COUNT_FMT").replace("{N}", str(_filtered_pool_cards.size()))
 	# Snapshot the list so filter changes mid-load don't cause issues
 	var cards_to_load := _filtered_pool_cards.duplicate()
 	_load_pool_cards_batched(cards_to_load, gen)
@@ -739,13 +897,13 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 			move_btn.z_index = 10
 			move_btn.visible = false
 			if _showing_monster_tab:
-				move_btn.text = "→Main"
+				move_btn.text = tr("STR_DB_TO_MAIN")
 				move_btn.pressed.connect(_move_monster_to_main.bind(card_id))
 			elif in_monster:
-				move_btn.text = "→Main"
+				move_btn.text = tr("STR_DB_TO_MAIN")
 				move_btn.pressed.connect(_move_monster_to_main.bind(card_id))
 			else:
-				move_btn.text = "→Mon"
+				move_btn.text = tr("STR_DB_TO_MONSTER")
 				move_btn.pressed.connect(_move_monster_to_monster.bind(card_id))
 			btn_layer.add_child(move_btn)
 			wrapper.add_child(btn_layer)
@@ -1121,9 +1279,9 @@ func _update_deck_stats() -> void:
 	var sc := "[color=green]" if step2_count <= 10 else "[color=red]"
 
 	var text := ""
-	text += "[b]Monster Deck:[/b] %s%d / 4[/color]\n" % [mc, monster_count]
-	text += "[b]Main Deck:[/b] %s%d / 50[/color]\n" % [mnc, main_count]
-	text += "[b]Step-2 Cards:[/b] %s%d / 10[/color]" % [sc, step2_count]
+	text += "[b]%s[/b] %s%d / 4[/color]\n" % [tr("STR_DB_MONSTER_DECK"), mc, monster_count]
+	text += "[b]%s[/b] %s%d / 50[/color]\n" % [tr("STR_DB_MAIN_DECK"), mnc, main_count]
+	text += "[b]%s[/b] %s%d / 10[/color]" % [tr("STR_DB_STEP2_CARDS"), sc, step2_count]
 	deck_stats_label.clear()
 	deck_stats_label.append_text(text)
 
@@ -1138,11 +1296,11 @@ func _update_validation() -> void:
 		warnings = DeckValidator.warnings(_monster_entries, _main_entries)
 
 	if not errors.is_empty():
-		validation_label.append_text("[color=red][b]Errors[/b][/color]\n")
+		validation_label.append_text("[color=red][b]%s[/b][/color]\n" % tr("STR_DB_ERRORS"))
 		for err in errors:
 			validation_label.append_text("[color=red]- %s[/color]\n" % err)
 	if not warnings.is_empty():
-		validation_label.append_text("[color=yellow][b]Warnings[/b][/color]\n")
+		validation_label.append_text("[color=yellow][b]%s[/b][/color]\n" % tr("STR_DB_WARNINGS"))
 		for warn in warnings:
 			validation_label.append_text("[color=yellow]- %s[/color]\n" % warn)
 
@@ -1169,6 +1327,7 @@ func _on_main_tab_pressed() -> void:
 
 func _on_search_changed(new_text: String) -> void:
 	_search_text = new_text.strip_edges().to_lower()
+	_search_criteria = _parse_search_criteria(_search_text)
 	_search_timer.start()
 
 
@@ -1243,8 +1402,27 @@ func _on_sort_changed(index: int) -> void:
 
 func _on_format_changed(index: int) -> void:
 	_game_mode = GameModeValidator.MODES[index]["id"]
+	default_mode_check.set_pressed_no_signal(_game_mode == GameSettings.default_game_mode)
+	_apply_filters()
+	_refresh_pool_display()
 	_refresh_deck_display()
 	_update_deck_stats()
+
+
+func _on_default_mode_toggled(pressed: bool) -> void:
+	SfxManager.play("ui_click")
+	if pressed:
+		GameSettings.default_game_mode = _game_mode
+	else:
+		GameSettings.default_game_mode = "rumble_west"
+	GameSettings.save()
+
+
+func _index_of_mode(mode_id: String) -> int:
+	for i in range(GameModeValidator.MODES.size()):
+		if GameModeValidator.MODES[i]["id"] == mode_id:
+			return i
+	return 0
 
 
 # ============================================================
@@ -1257,6 +1435,22 @@ func _on_save_pressed() -> void:
 	if deck_name.is_empty():
 		deck_name_edit.grab_focus()
 		return
+	# Guard: saving an empty deck on top of an existing name silently wipes it.
+	# Prompt first; only proceed on confirm.
+	if _monster_entries.is_empty() and _main_entries.is_empty():
+		empty_save_dialog.popup_centered()
+		return
+	_perform_save(deck_name)
+
+
+func _on_empty_save_confirmed() -> void:
+	var deck_name := deck_name_edit.text.strip_edges()
+	if deck_name.is_empty():
+		return
+	_perform_save(deck_name)
+
+
+func _perform_save(deck_name: String) -> void:
 	DecklistManager.save_decklist(deck_name, _monster_entries, _main_entries)
 	_current_deck_name = deck_name
 	_has_unsaved_changes = false
@@ -1332,7 +1526,7 @@ func _on_delete_pressed() -> void:
 	if selected.is_empty():
 		return
 	var deck_name: String = deck_list.get_item_text(selected[0])
-	delete_dialog.dialog_text = "Delete \"%s\"?" % deck_name
+	delete_dialog.dialog_text = tr("STR_DB_DELETE_PROMPT") % deck_name
 	delete_dialog.popup_centered()
 
 
@@ -1398,8 +1592,8 @@ func _on_export_pressed() -> void:
 		text += "%d %s\n" % [entry["quantity"], entry["card_number"]]
 	DisplayServer.clipboard_set(text)
 	# Brief feedback
-	export_button.text = "Copied!"
-	get_tree().create_timer(1.5).timeout.connect(func(): export_button.text = "Export to Clipboard")
+	export_button.text = tr("STR_DB_COPIED")
+	get_tree().create_timer(1.5).timeout.connect(func(): export_button.text = tr("STR_DB_EXPORT"))
 
 
 # ============================================================

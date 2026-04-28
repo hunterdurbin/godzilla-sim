@@ -21,14 +21,7 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var milled: Array[Dictionary] = ctx.owner.mill_cards(3)
-	if not milled.is_empty():
-		ctx.effect_handler.log_message.emit(
-			GameLog.effect_milled_cards(ctx.owner.player_id, ctx.card_data.get("id", ""), milled)
-		)
-		await ctx.effect_handler.select_from_cards(
-			ctx.owner.player_id, milled, milled,
-			"Sent to discard pile:")
+	await ctx.mill(3)
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
@@ -36,4 +29,4 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
 			func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 4,
-			"Choose an opponent's rank 4 or lower battle card to destroy:")
+			tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 4)

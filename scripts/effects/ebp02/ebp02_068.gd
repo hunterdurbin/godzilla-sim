@@ -31,8 +31,7 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 	var count: int = 0
 	for card in ctx.owner.discard_pile:
 		if card.get("rank", 0) != 23:
-			var traits: Array = card.get("traits", [])
-			if CardEnums.CardTrait.KING_GHIDORAH in traits:
+			if CardUtils.has_trait(card, CardEnums.CardTrait.KING_GHIDORAH):
 				count += 1
 	return -2 * count
 

@@ -21,11 +21,11 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func bot_can_fulfill_counter_success(owner: PlayerState, _opponent: PlayerState) -> bool:
-	if owner.monster_zone < 4:
+	if not owner.is_awakening(4):
 		return false
 	var monster_count := 0
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 			if monster_count >= 5:
 				return true
@@ -34,20 +34,16 @@ func bot_can_fulfill_counter_success(owner: PlayerState, _opponent: PlayerState)
 
 func on_counter_success(ctx: EffectContext) -> void:
 	# Awakening4: must be in zone 4 or beyond
-	if ctx.owner.monster_zone < 4:
+	if not ctx.is_awakening(4):
 		return
 	# Need 5 or more monster cards in discard pile
 	var monster_count: int = 0
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 	if monster_count < 5:
 		return
 	# Destroy all opponent's rank 6 or lower battle cards
-	var zones_to_destroy: Array[int] = []
-	for i in range(8):
-		var opp_card := ctx.opponent.get_zone_top_card(i)
-		if not opp_card.is_empty() and ctx.field_rank(opp_card, ctx.opponent.player_id) <= 6:
-			zones_to_destroy.append(i)
+	var zones_to_destroy: Array[int] = ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 6)
 	if not zones_to_destroy.is_empty():
 		await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)

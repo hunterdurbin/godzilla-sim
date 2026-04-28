@@ -12,38 +12,22 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["mill_self"]
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
-	if ctx.owner.main_deck.is_empty():
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
+	var card := await ctx.mill_one()
+	if card.is_empty():
 		return
 
-	var card: Dictionary = ctx.owner.main_deck.pop_front()
-	ctx.owner.discard_pile.append(card)
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
-	ctx.effect_handler.log_message.emit(
-		GameLog.effect_milled_card(ctx.owner.player_id, ctx.card_data.get("id", ""), card.get("id", ""))
-	)
-
-	var revealed: Array[Dictionary] = [card]
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		"Sent to discard pile:")
-
-	if card.get("card_type") == CardEnums.CardType.MONSTER:
-		ctx.owner.rage += 1
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
+	if CardUtils.is_monster(card):
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))
 		ctx.effect_handler.log_message.emit(
 			GameLog.effect_gained_rage_from_mill(ctx.owner.player_id, ctx.card_data.get("id", ""), ctx.owner.rage, card.get("id", ""))
 		)

@@ -29,9 +29,9 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var found := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.BATTLE \
-			and CardEnums.CardTrait.MOGUERA in card.get("traits", []),
-		"Search for a Moguera battle card to play:"
+		func(card): return CardUtils.is_battle(card) \
+			and CardUtils.has_trait(card, CardEnums.CardTrait.MOGUERA),
+		tr("STR_EFF_EBP03_036_SEARCH")
 	)
 	if found.is_empty():
 		return
@@ -40,19 +40,11 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var dest := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		"Choose a zone to play the Moguera battle card:")
+		tr("STR_EFF_EBP03_036_ZONE"))
 	if dest < 0:
 		ctx.owner.main_deck.append(found)
 		ctx.owner.main_deck.shuffle()
 		ctx.owner.deck_changed.emit()
 		return
 
-	# Handle overload if zone occupied
-	if ctx.owner.zone_has_cards(dest):
-		var destroyed_stack: Array = ctx.owner.clear_zone(dest)
-		EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
-		ctx.owner.discard_changed.emit()
-
-	ctx.owner.push_zone_card(dest, found)
-	ctx.owner.zones_changed.emit()
-	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found, true)
+	await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, found, dest)

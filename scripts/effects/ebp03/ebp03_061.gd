@@ -18,7 +18,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_counter_power(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 6
+	return owner.is_awakening(6)
 
 
 func on_discarded_for_invasion(_ctx: EffectContext) -> bool:
@@ -28,6 +28,6 @@ func on_discarded_for_invasion(_ctx: EffectContext) -> bool:
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	# Awakening6: monster in zone 6+
-	if ctx.owner.monster_zone >= 6:
+	if ctx.is_awakening(6):
 		return 3000
 	return 0

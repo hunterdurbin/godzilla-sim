@@ -1,0 +1,365 @@
+{
+  "_comment": "Maps Japanese icon tokens (as they appear in scraped card text) to both JP and EN asset paths under assets/effectIcons/. JP files have been renamed to mirror the EN filenames where possible. en=null means the JP-only icon has no EN equivalent published yet (the ja filename is a best-guess EN-style name and will resolve naturally if/when the English site releases that icon).",
+  "entries": [
+    {
+      "token": "⁅《FINAL WARS》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Final Wars》.png",
+      "en": "en/traits/《Final Wars》.png"
+    },
+    {
+      "token": "⁅《カマキラス》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Kamacuras》.png",
+      "en": "en/traits/《Kamacuras》.png"
+    },
+    {
+      "token": "⁅《ガイガン》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Gigan》.png",
+      "en": "en/traits/《Gigan》.png"
+    },
+    {
+      "token": "⁅《キングギドラ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《King Ghidorah》.png",
+      "en": "en/traits/《King Ghidorah》.png"
+    },
+    {
+      "token": "⁅《キングシーサー》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《King Caesar》.png",
+      "en": "en/traits/《King Caesar》.png"
+    },
+    {
+      "token": "⁅《ゴジラ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Godzilla》.png",
+      "en": "en/traits/《Godzilla》.png"
+    },
+    {
+      "token": "⁅《スペースゴジラ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《SpaceGodzilla》.png",
+      "en": "en/traits/《SpaceGodzilla》.png"
+    },
+    {
+      "token": "⁅《デストロイア》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Destoroyah》.png",
+      "en": "en/traits/《Destoroyah》.png"
+    },
+    {
+      "token": "⁅《バトラ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Battra》.png",
+      "en": "en/traits/《Battra》.png"
+    },
+    {
+      "token": "⁅《ビオランテ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Biollante》.png",
+      "en": "en/traits/《Biollante》.png"
+    },
+    {
+      "token": "⁅《フェス・ゴジラ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Fest》.png",
+      "en": "en/traits/《Fest》.png"
+    },
+    {
+      "token": "⁅《メカゴジラ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Mechagodzilla》.png",
+      "en": "en/traits/《Mechagodzilla》.png"
+    },
+    {
+      "token": "⁅《メガロ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Megalon》.png",
+      "en": "en/traits/《Megalon》.png"
+    },
+    {
+      "token": "⁅《モゲラ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Moguera》.png",
+      "en": null
+    },
+    {
+      "token": "⁅《モスラ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Mothra》.png",
+      "en": "en/traits/《Mothra》.png"
+    },
+    {
+      "token": "⁅《モンスターX》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Monster X》.png",
+      "en": "en/traits/《Monster X》.png"
+    },
+    {
+      "token": "⁅《ラドン》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Rodan》.png",
+      "en": "en/traits/《Rodan》.png"
+    },
+    {
+      "token": "⁅《リトルゴジラ》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Little Godzilla》.png",
+      "en": "en/traits/《Little Godzilla》.png"
+    },
+    {
+      "token": "⁅《兵器》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Weapon》.png",
+      "en": "en/traits/《Weapon》.png"
+    },
+    {
+      "token": "⁅《機械》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Mech》.png",
+      "en": "en/traits/《Mech》.png"
+    },
+    {
+      "token": "⁅《第2形態》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《2nd Form》.png",
+      "en": "en/traits/《2nd Form》.png"
+    },
+    {
+      "token": "⁅《第3形態》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《3rd Form》.png",
+      "en": "en/traits/《3rd Form》.png"
+    },
+    {
+      "token": "⁅《第4形態》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《4th Form》.png",
+      "en": "en/traits/《4th Form》.png"
+    },
+    {
+      "token": "⁅《護国聖獣》＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/《Sacred Guardian Beasts》.png",
+      "en": null
+    },
+    {
+      "token": "⁅あなたのターン中＠⁆",
+      "category": "others",
+      "ja": "ja/others/Your Turn.png",
+      "en": "en/others/Your Turn.png"
+    },
+    {
+      "token": "⁅共鳴＠⁆",
+      "category": "others",
+      "ja": "ja/others/Resonance.png",
+      "en": "en/others/Resonance.png"
+    },
+    {
+      "token": "⁅出現時＠⁆",
+      "category": "others",
+      "ja": "ja/others/Enter.png",
+      "en": "en/others/Enter.png"
+    },
+    {
+      "token": "⁅強襲Ⅰ＠⁆",
+      "category": "bursts",
+      "ja": "ja/bursts/Burst1.png",
+      "en": "en/bursts/Burst1.png"
+    },
+    {
+      "token": "⁅強襲Ⅱ＠⁆",
+      "category": "bursts",
+      "ja": "ja/bursts/Burst2.png",
+      "en": "en/bursts/Burst2.png"
+    },
+    {
+      "token": "⁅強襲Ⅲ＠⁆",
+      "category": "bursts",
+      "ja": "ja/bursts/Burst3.png",
+      "en": "en/bursts/Burst3.png"
+    },
+    {
+      "token": "⁅強襲Ⅳ＠⁆",
+      "category": "bursts",
+      "ja": "ja/bursts/Burst4.png",
+      "en": "en/bursts/Burst4.png"
+    },
+    {
+      "token": "⁅強襲Ⅴ＠⁆",
+      "category": "bursts",
+      "ja": "ja/bursts/Burst5.png",
+      "en": "en/bursts/Burst5.png"
+    },
+    {
+      "token": "⁅強襲Ⅵ＠⁆",
+      "category": "bursts",
+      "ja": "ja/bursts/Burst6.png",
+      "en": "en/bursts/Burst6.png"
+    },
+    {
+      "token": "⁅強襲＠⁆",
+      "category": "bursts",
+      "ja": "ja/bursts/Burst.png",
+      "en": "en/bursts/Burst.png"
+    },
+    {
+      "token": "⁅怒り＠⁆",
+      "category": "others",
+      "ja": "ja/others/Rage.png",
+      "en": "en/others/Rage.png"
+    },
+    {
+      "token": "⁅拠点＠⁆",
+      "category": "others",
+      "ja": "ja/others/Base.png",
+      "en": "en/others/Base.png"
+    },
+    {
+      "token": "⁅相手のターン中＠⁆",
+      "category": "others",
+      "ja": "ja/others/Opponent’s Turn.png",
+      "en": "en/others/Opponent’s Turn.png"
+    },
+    {
+      "token": "⁅破壊＠⁆",
+      "category": "others",
+      "ja": "ja/others/Destroy.png",
+      "en": "en/others/Destroy.png"
+    },
+    {
+      "token": "⁅覚醒１＠⁆",
+      "category": "awakenings",
+      "ja": "ja/awakenings/Awakening1.png",
+      "en": "en/awakenings/Awakening1.png"
+    },
+    {
+      "token": "⁅覚醒２＠⁆",
+      "category": "awakenings",
+      "ja": "ja/awakenings/Awakening2.png",
+      "en": "en/awakenings/Awakening2.png"
+    },
+    {
+      "token": "⁅覚醒３＠⁆",
+      "category": "awakenings",
+      "ja": "ja/awakenings/Awakening3.png",
+      "en": "en/awakenings/Awakening3.png"
+    },
+    {
+      "token": "⁅覚醒４＠⁆",
+      "category": "awakenings",
+      "ja": "ja/awakenings/Awakening4.png",
+      "en": "en/awakenings/Awakening4.png"
+    },
+    {
+      "token": "⁅覚醒５＠⁆",
+      "category": "awakenings",
+      "ja": "ja/awakenings/Awakening5.png",
+      "en": "en/awakenings/Awakening5.png"
+    },
+    {
+      "token": "⁅覚醒６＠⁆",
+      "category": "awakenings",
+      "ja": "ja/awakenings/Awakening6.png",
+      "en": "en/awakenings/Awakening6.png"
+    },
+    {
+      "token": "⁅覚醒７＠⁆",
+      "category": "awakenings",
+      "ja": "ja/awakenings/Awakening7.png",
+      "en": "en/awakenings/Awakening7.png"
+    },
+    {
+      "token": "⁅覚醒８＠⁆",
+      "category": "awakenings",
+      "ja": "ja/awakenings/Awakening8.png",
+      "en": "en/awakenings/Awakening8.png"
+    },
+    {
+      "token": "⁅覚醒＠⁆",
+      "category": "awakenings",
+      "ja": "ja/awakenings/Awakening.png",
+      "en": "en/awakenings/Awakening.png"
+    },
+    {
+      "token": "⁅足１＠⁆",
+      "category": "traits",
+      "ja": "ja/traits/Step1.png",
+      "en": null
+    },
+    {
+      "token": "⁅足２＠⁆",
+      "category": "others",
+      "ja": "ja/others/Step2.png",
+      "en": "en/others/Step2.png"
+    },
+    {
+      "token": "⁅逆襲＠⁆",
+      "category": "others",
+      "ja": "ja/others/Revenge.png",
+      "en": "en/others/Revenge.png"
+    },
+    {
+      "token": "⁅進化１＠⁆",
+      "category": "evolutions",
+      "ja": "ja/evolutions/Evolution1.png",
+      "en": "en/evolutions/Evolution1.png"
+    },
+    {
+      "token": "⁅進化２＠⁆",
+      "category": "evolutions",
+      "ja": "ja/evolutions/Evolution2.png",
+      "en": "en/evolutions/Evolution2.png"
+    },
+    {
+      "token": "⁅進化３＠⁆",
+      "category": "evolutions",
+      "ja": "ja/evolutions/Evolution3.png",
+      "en": "en/evolutions/Evolution3.png"
+    },
+    {
+      "token": "⁅進化４＠⁆",
+      "category": "evolutions",
+      "ja": "ja/evolutions/Evolution4.png",
+      "en": "en/evolutions/Evolution4.png"
+    },
+    {
+      "token": "⁅進化５＠⁆",
+      "category": "evolutions",
+      "ja": "ja/evolutions/Evolution5.png",
+      "en": "en/evolutions/Evolution5.png"
+    },
+    {
+      "token": "⁅進化６＠⁆",
+      "category": "evolutions",
+      "ja": "ja/evolutions/Evolution6.png",
+      "en": "en/evolutions/Evolution6.png"
+    },
+    {
+      "token": "⁅進化７＠⁆",
+      "category": "evolutions",
+      "ja": "ja/evolutions/Evolution7.png",
+      "en": "en/evolutions/Evolution7.png"
+    },
+    {
+      "token": "⁅進化８＠⁆",
+      "category": "evolutions",
+      "ja": "ja/evolutions/Evolution8.png",
+      "en": "en/evolutions/Evolution8.png"
+    },
+    {
+      "token": "⁅進化＠⁆",
+      "category": "evolutions",
+      "ja": "ja/evolutions/Evolution.png",
+      "en": "en/evolutions/Evolution.png"
+    },
+    {
+      "token": "⁅進攻時＠⁆",
+      "category": "others",
+      "ja": "ja/others/When Invading.png",
+      "en": "en/others/When Invading.png"
+    }
+  ]
+}

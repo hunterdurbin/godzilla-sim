@@ -1394,6 +1394,11 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 	if invade_cards.is_empty():
 		return []
 
+	# Skip the discard-only cycle invade — bot shouldn't burn its invade just to
+	# cycle a card when no zones can be crossed.
+	if player.monster_zone >= 8 and opponent.zone_has_battle_card(7):
+		return []
+
 	var mz := player.monster_zone
 	var exclude := _get_combo_invasion_excludes()
 
@@ -1892,7 +1897,7 @@ func _sort_cards_by_value(cards: Array[Dictionary]) -> Array[Dictionary]:
 	return sorted
 
 
-func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], prompt: String) -> void:
+func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], prompt: String, _allow_skip: bool = true) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()

@@ -21,6 +21,8 @@ func get_custom_base_path() -> String:
 	return _custom_base_path
 
 var player_name: String = ""
+var locale: String = ""  # empty = never chosen; LoadingScreen prompts on first launch
+var card_art_locale: String = "en"  # decoupled from UI locale; user downloads per-locale artwork
 var auto_draw: bool = true
 var auto_phase_advance: bool = true
 var auto_discard_strategies: bool = true
@@ -31,6 +33,7 @@ var confirm_main_phase_pass: bool = false
 var hand_sort_type_order: int = 0  # 0-5 index into type permutations
 var hand_sort_rank_ascending: bool = true
 var stacked_view: bool = true  # Remembered stacked toggle for overlays
+var default_game_mode: String = "rumble_west"
 
 # Visual settings
 var custom_playmat_enabled: bool = false
@@ -38,6 +41,7 @@ var custom_playmat_opponent: bool = false
 var color_overlay_mode: int = 3  # 0=none, 1=self only, 2=opponent only, 3=both
 var custom_card_art_enabled: bool = false
 var custom_card_back_mode: int = 0  # 0=disabled, 1=myself only, 2=both players
+var custom_rage_marker_enabled: bool = false
 
 # Audio settings
 var sound_volume: int = 1  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
@@ -45,6 +49,14 @@ var music_volume: int = 0  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
 
 # Advanced settings
 var use_mobile_layout: bool = false
+
+# Bot settings
+var bot_difficulty: int = BotConfig.Difficulty.NORMAL  # 0=Easy, 1=Normal, 2=Hard
+var bot_seed_text: String = ""             # raw text; if valid int, used as seed; "" = auto
+var bot_speed_value: int = 0               # 0=Auto, 1-10 = 0.1s..1.0s delay
+var bot_playstyle_value: int = 0           # 0=Auto, 1=Invasion, 2=Counter, 3=Balanced
+var bot_random_deck_enabled: bool = false
+var bot_deck_weights: Dictionary = {}      # {deck_name: int weight, 0=disabled, >=1=weight}
 
 # Update settings
 var skipped_version: String = ""
@@ -61,9 +73,23 @@ const RECONNECT_TIMEOUT_SEC: int = 90 * 60  # 90 minutes
 func _ready() -> void:
 	use_mobile_layout = OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	_load()
+	# Apply persisted locale immediately if chosen; otherwise LoadingScreen
+	# prompts the user, then calls set_locale().
+	if not locale.is_empty():
+		TranslationServer.set_locale(locale)
 	if player_name.is_empty():
 		player_name = "Player%06d" % (randi() % 1000000)
 		_save()
+
+
+func has_chosen_locale() -> bool:
+	return not locale.is_empty()
+
+
+func set_locale(new_locale: String) -> void:
+	locale = new_locale
+	TranslationServer.set_locale(new_locale)
+	_save()
 
 
 func save() -> void:
@@ -98,6 +124,8 @@ func has_valid_reconnect_session() -> bool:
 func _save() -> void:
 	var config := ConfigFile.new()
 	config.set_value("gameplay", "player_name", player_name)
+	config.set_value("gameplay", "locale", locale)
+	config.set_value("gameplay", "card_art_locale", card_art_locale)
 	config.set_value("gameplay", "auto_draw", auto_draw)
 	config.set_value("gameplay", "auto_phase_advance", auto_phase_advance)
 	config.set_value("gameplay", "auto_discard_strategies", auto_discard_strategies)
@@ -108,13 +136,21 @@ func _save() -> void:
 	config.set_value("gameplay", "hand_sort_type_order", hand_sort_type_order)
 	config.set_value("gameplay", "hand_sort_rank_ascending", hand_sort_rank_ascending)
 	config.set_value("gameplay", "stacked_view", stacked_view)
+	config.set_value("gameplay", "default_game_mode", default_game_mode)
 	config.set_value("visual", "custom_playmat_enabled", custom_playmat_enabled)
 	config.set_value("visual", "custom_playmat_opponent", custom_playmat_opponent)
 	config.set_value("visual", "color_overlay_mode", color_overlay_mode)
 	config.set_value("visual", "custom_card_art_enabled", custom_card_art_enabled)
 	config.set_value("visual", "custom_card_back_mode", custom_card_back_mode)
+	config.set_value("visual", "custom_rage_marker_enabled", custom_rage_marker_enabled)
 	config.set_value("audio", "sound_volume", sound_volume)
 	config.set_value("audio", "music_volume", music_volume)
+	config.set_value("bot", "difficulty", bot_difficulty)
+	config.set_value("bot", "seed_text", bot_seed_text)
+	config.set_value("bot", "speed_value", bot_speed_value)
+	config.set_value("bot", "playstyle_value", bot_playstyle_value)
+	config.set_value("bot", "random_deck_enabled", bot_random_deck_enabled)
+	config.set_value("bot", "deck_weights", bot_deck_weights)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
 	config.set_value("updates", "skipped_version", skipped_version)
 	config.set_value("reconnect", "room_code", reconnect_room_code)
@@ -130,6 +166,14 @@ func _load() -> void:
 	if config.load(SETTINGS_PATH) != OK:
 		return
 	player_name = config.get_value("gameplay", "player_name", "")
+	locale = config.get_value("gameplay", "locale", "")
+	card_art_locale = config.get_value("gameplay", "card_art_locale", "")
+	# Migrate / repair: empty card_art_locale means a stale write or pre-locale
+	# install. Fall back to the UI locale when set, else "en". Without this,
+	# ArtworkDownloader.start_download() would treat the empty path as
+	# uncached and re-fetch all 382 cards.
+	if card_art_locale.is_empty():
+		card_art_locale = locale if not locale.is_empty() else "en"
 	auto_draw = config.get_value("gameplay", "auto_draw", true)
 	auto_phase_advance = config.get_value("gameplay", "auto_phase_advance", true)
 	auto_discard_strategies = config.get_value("gameplay", "auto_discard_strategies", true)
@@ -140,11 +184,13 @@ func _load() -> void:
 	hand_sort_type_order = config.get_value("gameplay", "hand_sort_type_order", 0)
 	hand_sort_rank_ascending = config.get_value("gameplay", "hand_sort_rank_ascending", true)
 	stacked_view = config.get_value("gameplay", "stacked_view", true)
+	default_game_mode = config.get_value("gameplay", "default_game_mode", "rumble_west")
 	custom_playmat_enabled = config.get_value("visual", "custom_playmat_enabled", false)
 	custom_playmat_opponent = config.get_value("visual", "custom_playmat_opponent", false)
 	color_overlay_mode = config.get_value("visual", "color_overlay_mode", 3)
 	custom_card_art_enabled = config.get_value("visual", "custom_card_art_enabled", false)
 	custom_card_back_mode = config.get_value("visual", "custom_card_back_mode", 0)
+	custom_rage_marker_enabled = config.get_value("visual", "custom_rage_marker_enabled", false)
 	# Migrate old bool sound_enabled to new int sound_volume
 	var _old_sound: Variant = config.get_value("audio", "sound_enabled", "") if config.has_section_key("audio", "sound_enabled") else ""
 	if _old_sound is bool:
@@ -156,6 +202,12 @@ func _load() -> void:
 		music_volume = 4 if _old_music else 0
 	else:
 		music_volume = config.get_value("audio", "music_volume", 2)
+	bot_difficulty = config.get_value("bot", "difficulty", BotConfig.Difficulty.NORMAL)
+	bot_seed_text = config.get_value("bot", "seed_text", "")
+	bot_speed_value = config.get_value("bot", "speed_value", 0)
+	bot_playstyle_value = config.get_value("bot", "playstyle_value", 0)
+	bot_random_deck_enabled = config.get_value("bot", "random_deck_enabled", false)
+	bot_deck_weights = config.get_value("bot", "deck_weights", {})
 	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	use_mobile_layout = config.get_value("advanced", "use_mobile_layout", _mobile_default)
 	skipped_version = config.get_value("updates", "skipped_version", "")

@@ -35,7 +35,7 @@ theme_override_constants/separation = 20
 
 [node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "LAN Multiplayer"
+text = "STR_MENU_LAN"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 36
 theme_override_colors/font_color = Color(0.9, 0.3, 0.1, 1)
@@ -48,12 +48,12 @@ alignment = 1
 [node name="HostButton" type="Button" parent="CenterContainer/VBoxContainer/HostPanel"]
 custom_minimum_size = Vector2(150, 40)
 layout_mode = 2
-text = "Host Game"
+text = "STR_LOBBY_HOST"
 theme_override_font_sizes/font_size = 18
 
 [node name="PortLabel" type="Label" parent="CenterContainer/VBoxContainer/HostPanel"]
 layout_mode = 2
-text = "Port:"
+text = "STR_LOBBY_PORT"
 
 [node name="PortEdit" type="LineEdit" parent="CenterContainer/VBoxContainer/HostPanel"]
 custom_minimum_size = Vector2(80, 0)
@@ -70,18 +70,18 @@ alignment = 1
 [node name="JoinButton" type="Button" parent="CenterContainer/VBoxContainer/JoinPanel"]
 custom_minimum_size = Vector2(150, 40)
 layout_mode = 2
-text = "Join Game"
+text = "STR_LOBBY_JOIN"
 theme_override_font_sizes/font_size = 18
 
 [node name="IpEdit" type="LineEdit" parent="CenterContainer/VBoxContainer/JoinPanel"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
-placeholder_text = "192.168.1.x"
+placeholder_text = "STR_LOBBY_IP_PLACEHOLDER"
 alignment = 1
 
 [node name="PortLabel" type="Label" parent="CenterContainer/VBoxContainer/JoinPanel"]
 layout_mode = 2
-text = "Port:"
+text = "STR_LOBBY_PORT"
 
 [node name="JoinPortEdit" type="LineEdit" parent="CenterContainer/VBoxContainer/JoinPanel"]
 custom_minimum_size = Vector2(80, 0)
@@ -104,12 +104,12 @@ layout_mode = 2
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Start Game"
+text = "STR_LOBBY_START"
 theme_override_font_sizes/font_size = 22
 
 [node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 40)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Back"
+text = "STR_GENERIC_BACK"
 theme_override_font_sizes/font_size = 18

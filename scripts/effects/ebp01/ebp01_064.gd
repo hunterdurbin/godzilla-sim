@@ -23,27 +23,15 @@ func on_enter(ctx: EffectContext) -> void:
 	var option_ids: Array[int] = []
 
 	# Option 0: Destroy 1 rank 4 or lower (always available if targets exist)
-	var has_r4_targets: bool = false
-	for i in range(8):
-		var top := ctx.opponent.get_zone_top_card(i)
-		if not top.is_empty() and ctx.field_rank(top, ctx.opponent.player_id) <= 4:
-			has_r4_targets = true
-			break
+	var has_r4_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(
+		ctx.opponent.player_id, -1, 4).is_empty()
 	if has_r4_targets:
 		options.append("Destroy 1 of opponent's rank 4 or lower battle cards")
 		option_ids.append(0)
 
 	# Option 1: Destroy zone + adjacent (requires 4+ own battle cards)
-	var battle_count: int = 0
-	for i in range(8):
-		if ctx.owner.zone_has_cards(i):
-			battle_count += 1
-	if battle_count >= 4:
-		var has_opp_cards: bool = false
-		for i in range(8):
-			if ctx.opponent.zone_has_cards(i):
-				has_opp_cards = true
-				break
+	if ctx.owner.get_battle_card_zone_indices().size() >= 4:
+		var has_opp_cards: bool = not ctx.opponent.get_battle_card_zone_indices().is_empty()
 		if has_opp_cards:
 			options.append("Choose a zone and destroy all cards there and in adjacent zones")
 			option_ids.append(1)
@@ -56,7 +44,7 @@ func on_enter(ctx: EffectContext) -> void:
 		chosen_id = option_ids[0]
 	else:
 		var chosen_idx: int = await ctx.effect_handler.select_choice(
-			ctx.owner.player_id, options, "Choose one:")
+			ctx.owner.player_id, options, tr("STR_EFF_CHOOSE_ONE"))
 		if chosen_idx < 0 or chosen_idx >= option_ids.size():
 			chosen_id = option_ids[0]
 		else:
@@ -67,9 +55,9 @@ func on_enter(ctx: EffectContext) -> void:
 			await ctx.effect_handler.destroy_zone_target(
 				ctx.owner.player_id, ctx.opponent,
 				func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 4,
-				"Choose an opponent's rank 4 or lower battle card to destroy:")
+				tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 4)
 		1:
 			var all_zones: Array[int] = [0, 1, 2, 3, 4, 5, 6, 7]
 			await ctx.effect_handler.destroy_zone_and_adjacent(
 				ctx.owner.player_id, ctx.opponent, all_zones,
-				"Choose a zone — all cards there and in adjacent zones will be destroyed:")
+				tr("STR_EFF_EBP01_064_PROMPT"))

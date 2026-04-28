@@ -13,6 +13,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_rage_changed": {"direction": "increase"},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["destroys_zone", "mill_self"]
 
@@ -21,27 +26,13 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 	return 6
 
 
-func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-	if new_rage <= old_rage:
+func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:
+	var card := await ctx.mill_one()
+	if card.is_empty():
 		return
-	if ctx.owner.main_deck.is_empty():
-		return
 
-	var card: Dictionary = ctx.owner.main_deck.pop_front()
-	ctx.owner.discard_pile.append(card)
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
-	ctx.effect_handler.log_message.emit(
-		GameLog.effect_milled_card(ctx.owner.player_id, ctx.card_data.get("id", ""), card.get("id", ""))
-	)
-
-	var revealed: Array[Dictionary] = [card]
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		"Sent to discard pile:")
-
-	if card.get("card_type") == CardEnums.CardType.MONSTER:
+	if CardUtils.is_monster(card):
 		await ctx.effect_handler.destroy_zone_target(
 			ctx.owner.player_id, ctx.opponent,
 			func(c: Dictionary) -> bool: return ctx.field_rank(c, ctx.opponent.player_id) <= 6,
-			"Choose an opponent's rank 6 or lower battle card to destroy:")
+			tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 6)

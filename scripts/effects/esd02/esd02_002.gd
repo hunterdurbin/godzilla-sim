@@ -24,4 +24,4 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id, ctx.opponent,
 		func(card: Dictionary) -> bool:
 			return ctx.field_rank(card, ctx.opponent.player_id) <= 4,
-		"Choose an opponent's rank 4 or lower battle card to destroy:")
+		tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 4)

@@ -9,6 +9,11 @@ extends CardEffect
 # Interactions: None
 # Implementation notes: None
 
+
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
+}
+
 var _bonus_cp: int = 0
 
 
@@ -16,17 +21,8 @@ func get_bot_tags() -> Array[String]:
 	return ["boosts_cp"]
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	_bonus_cp = 0
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return # Own turn only
-
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return
@@ -42,7 +38,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(_card): return true,
-		"Discard all hand for +1000 CP each? (select any card to confirm, skip to decline):",
+		tr("STR_EFF_EBP03_032_PROMPT"),
 		true
 	)
 	if selected.is_empty():
@@ -55,6 +51,6 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return 0
 	return _bonus_cp

@@ -25,28 +25,16 @@ func get_bot_advance_reliability(owner: PlayerState, _opponent: PlayerState) -> 
 		return 0
 	var monster_count: int = 0
 	for card in owner.main_deck:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 	return int(float(monster_count) / float(owner.main_deck.size()) * 100.0)
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.main_deck.is_empty():
+	var card := await ctx.mill_one()
+	if card.is_empty():
 		return
 
-	var card: Dictionary = ctx.owner.main_deck.pop_front()
-	ctx.owner.discard_pile.append(card)
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
-	ctx.effect_handler.log_message.emit(
-		GameLog.effect_milled_card(ctx.owner.player_id, ctx.card_data.get("id", ""), card.get("id", ""))
-	)
-
-	var revealed: Array[Dictionary] = [card]
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		"Sent to discard pile:")
-
-	if card.get("card_type") == CardEnums.CardType.MONSTER:
+	if CardUtils.is_monster(card):
 		if ctx.owner.monster_zone < 6:
 			await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 6)

@@ -27,34 +27,19 @@ func on_enter(ctx: EffectContext) -> void:
 	if opp_monster_idx not in opp_columns:
 		return
 
-	# Reveal top 2
-	var revealed: Array[Dictionary] = []
-	for _i in range(2):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-	ctx.owner.deck_changed.emit()
-
+	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 2)
 	if revealed.is_empty():
 		return
 
-	# Show revealed cards to the player
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		"Revealed from deck (select any to confirm):")
-
-	var added_to_hand: bool = false
-	var added_to_discard: bool = false
-
+	var to_hand: Array[Dictionary] = []
+	var to_discard: Array[Dictionary] = []
 	for card in revealed:
-		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) <= 5:
-			ctx.owner.hand.append(card)
-			added_to_hand = true
+		if CardUtils.is_battle(card) and CardUtils.rank_at_most(card, 5):
+			to_hand.append(card)
 		else:
-			ctx.owner.discard_pile.append(card)
-			added_to_discard = true
+			to_discard.append(card)
 
-	if added_to_hand:
+	if not to_hand.is_empty():
+		ctx.owner.hand.append_array(to_hand)
 		ctx.owner.hand_changed.emit()
-	if added_to_discard:
-		ctx.owner.discard_changed.emit()
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, to_discard)

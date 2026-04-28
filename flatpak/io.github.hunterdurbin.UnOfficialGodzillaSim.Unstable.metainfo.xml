@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.hunterdurbin.UnOfficialGodzillaSim.Unstable</id>
+  <name>Unofficial Godzilla Sim Unstable</name>
+  <summary>An unofficial Godzilla Trading Card Game simulator (unstable build)</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary=https://github.com/hunterdurbin/godzilla-sim</project_license>
+
+  <url type="homepage">https://github.com/hunterdurbin/godzilla-sim</url>
+  <url type="bugtracker">https://github.com/hunterdurbin/godzilla-sim/issues</url>
+
+  <description>
+    <p>An unofficial simulator for the Godzilla Trading Card Game, built with Godot Engine. Unstable variant — installs alongside the stable build.</p>
+  </description>
+
+  <launchable type="desktop-id">io.github.hunterdurbin.UnOfficialGodzillaSim.Unstable.desktop</launchable>
+
+  <categories>
+    <category>Game</category>
+    <category>CardGame</category>
+  </categories>
+
+  <content_rating type="oars-1.1" />
+
+  <developer id="io.github.hunterdurbin">
+    <name>Hunter Durbin</name>
+  </developer>
+</component>

@@ -33,16 +33,17 @@ layout_mode = 2
 theme_override_constants/separation = 20
 
 [node name="TurnLabel" type="Label" parent="VBoxContainer/TopBar"]
+auto_translate_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Turn 1/1 — Player 1"
+text = ""
 theme_override_font_sizes/font_size = 20
 theme_override_colors/font_color = Color(0.9, 0.7, 0.1, 1)
 
 [node name="ExitButton" type="Button" parent="VBoxContainer/TopBar"]
 custom_minimum_size = Vector2(80, 36)
 layout_mode = 2
-text = "Exit"
+text = "STR_RV_EXIT"
 theme_override_font_sizes/font_size = 16
 
 [node name="Content" type="HSplitContainer" parent="VBoxContainer"]
@@ -69,8 +70,9 @@ custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 
 [node name="P2HandTitle" type="Label" parent="VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox"]
+auto_translate_mode = 2
 layout_mode = 2
-text = "P2 Hand (0)"
+text = ""
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
@@ -94,7 +96,7 @@ layout_mode = 2
 
 [node name="LogTitle" type="Label" parent="VBoxContainer/Content/RightPanel/LogPanel/LogVBox"]
 layout_mode = 2
-text = "Game Log"
+text = "STR_RV_GAME_LOG"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
@@ -114,8 +116,9 @@ custom_minimum_size = Vector2(0, 120)
 layout_mode = 2
 
 [node name="P1HandTitle" type="Label" parent="VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox"]
+auto_translate_mode = 2
 layout_mode = 2
-text = "P1 Hand (0)"
+text = ""
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 13
 theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
@@ -150,7 +153,7 @@ theme_override_font_sizes/font_size = 16
 [node name="PlayPauseButton" type="Button" parent="VBoxContainer/Controls"]
 custom_minimum_size = Vector2(80, 40)
 layout_mode = 2
-text = "Play"
+text = "STR_RV_PLAY"
 theme_override_font_sizes/font_size = 16
 
 [node name="NextButton" type="Button" parent="VBoxContainer/Controls"]
@@ -168,12 +171,12 @@ theme_override_font_sizes/font_size = 16
 [node name="PlayFromHereButton" type="Button" parent="VBoxContainer/Controls"]
 custom_minimum_size = Vector2(120, 40)
 layout_mode = 2
-text = "Play From Here"
+text = "STR_RV_PLAY_FROM_HERE"
 theme_override_font_sizes/font_size = 16
 
 [node name="SpeedLabel" type="Label" parent="VBoxContainer/Controls"]
 layout_mode = 2
-text = "Speed:"
+text = "STR_RV_SPEED"
 theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 

@@ -17,22 +17,15 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool:
-	if opponent.rage <= 0:
+	if not opponent.has_rage():
 		return false
-	for i in range(8):
-		var top := owner.get_zone_top_card(i)
-		if top.get("name", "") == "Chibi Mechagodzilla":
-			return true
-	return false
+	return owner.has_zone_matching(
+		func(c: Dictionary) -> bool: return c.get("name", "") == "Chibi Mechagodzilla")
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var has_mechagodzilla: bool = false
-	for i in range(8):
-		var top := ctx.owner.get_zone_top_card(i)
-		if top.get("name", "") == "Chibi Mechagodzilla":
-			has_mechagodzilla = true
-			break
+	var has_mechagodzilla: bool = ctx.owner.has_zone_matching(
+		func(c: Dictionary) -> bool: return c.get("name", "") == "Chibi Mechagodzilla")
 
 	if has_mechagodzilla:
 		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

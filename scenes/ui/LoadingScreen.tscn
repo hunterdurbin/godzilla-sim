@@ -34,14 +34,14 @@ theme_override_constants/separation = 20
 
 [node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "UNOFFICIAL GODZILLA TCG"
+text = "STR_LS_TITLE"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 48
 theme_override_colors/font_color = Color(0.9, 0.3, 0.1, 1)
 
 [node name="Subtitle" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Loading Card Artwork..."
+text = "STR_LS_LOADING_ARTWORK"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 24
 theme_override_colors/font_color = Color(0.7, 0.6, 0.5, 1)
@@ -56,7 +56,7 @@ theme_override_colors/font_color = Color(0.9, 0.3, 0.1, 1)
 
 [node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
-text = "Preparing..."
+text = "STR_LS_PREPARING"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 16
 theme_override_colors/font_color = Color(0.6, 0.5, 0.4, 1)
@@ -65,5 +65,5 @@ theme_override_colors/font_color = Color(0.6, 0.5, 0.4, 1)
 custom_minimum_size = Vector2(120, 40)
 layout_mode = 2
 size_flags_horizontal = 4
-text = "Skip"
+text = "STR_GB_SKIP"
 theme_override_font_sizes/font_size = 16

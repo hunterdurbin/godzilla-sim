@@ -24,7 +24,7 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 		return false
 	for card in owner.discard_pile:
 		if card.get("card_type") == CardEnums.CardType.BATTLE \
-			and card.get("rank", 0) <= 4 \
+			and CardUtils.rank_at_most(card, 4) \
 			and card.has("evolution_rank"):
 			return true
 	return false
@@ -50,7 +50,7 @@ func on_enter(ctx: EffectContext) -> void:
 				if card.get("rank", 0) > 4:
 					return false
 				return card.has("evolution_rank"),
-			"Search discard pile for a rank 4 or lower battle card with Evolution to play:"
+			tr("STR_EFF_ESD02_003_DISCARD_PROMPT")
 		)
 		if selected.is_empty():
 			break
@@ -58,7 +58,7 @@ func on_enter(ctx: EffectContext) -> void:
 		# Let player choose which adjacent zone to place it in
 		var target_zone: int = await ctx.effect_handler.select_zone_target(
 			player.player_id, player.player_id, valid_adjacent,
-			"Choose an adjacent zone to play the card in:")
+			tr("STR_EFF_ESD02_003_PROMPT"))
 		if target_zone < 0:
 			break
 

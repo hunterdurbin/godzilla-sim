@@ -30,24 +30,16 @@ func on_enter(ctx: EffectContext) -> void:
 		player.player_id,
 		func(card: Dictionary) -> bool:
 			return card.get("name", "") == "Godzilla(2023)" \
-				and card.get("card_type") == CardEnums.CardType.BATTLE,
-		"Search for a Godzilla(2023) battle card to play"
+				and CardUtils.is_battle(card),
+		tr("STR_EFF_ESD01_014_SEARCH")
 	)
 	if not selected.is_empty():
 		var valid_zones := CardEffect.get_effect_play_zones(player)
 
 		var target_zone: int = await ctx.effect_handler.select_zone_target(
 			player.player_id, player.player_id, valid_zones,
-			"Choose a zone to play the searched card:")
+			tr("STR_EFF_PLAY_SEARCHED_ZONE"))
 		if target_zone < 0:
 			return
 
-		# Handle overload if zone occupied
-		if player.zone_has_cards(target_zone):
-			var destroyed_stack: Array = player.clear_zone(target_zone)
-			EffectHandler.banish_or_discard(player, destroyed_stack)
-			player.discard_changed.emit()
-
-		player.push_zone_card(target_zone, selected)
-		player.zones_changed.emit()
-		await ctx.effect_handler.trigger_enter(player.player_id, selected, true)
+		await ctx.effect_handler.play_battle_card_from_deck(player.player_id, selected, target_zone)

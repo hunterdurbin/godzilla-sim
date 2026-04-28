@@ -13,20 +13,16 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["plays_from_discard", "boosts_cp"]
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return
@@ -35,9 +31,9 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
-			var traits: Array = card.get("traits", [])
-			return CardEnums.CardTrait.GIGAN in traits and CardEnums.CardTrait.FEST in traits,
-		"Choose a Gigan + Fest card from your discard pile to place under this card:"
+			return CardUtils.has_trait(card, CardEnums.CardTrait.GIGAN) \
+				and CardUtils.has_trait(card, CardEnums.CardTrait.FEST),
+		tr("STR_EFF_EBP01_026_PROMPT")
 	)
 
 	if not selected.is_empty():

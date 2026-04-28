@@ -16,11 +16,11 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 6
+	return owner.is_awakening(6)
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.monster_zone < 6:
+	if not ctx.is_awakening(6):
 		return
 
 	ctx.owner.draw_cards(2)

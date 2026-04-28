@@ -16,7 +16,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Count strategy cards in discard
 	var strategy_count: int = 0
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.STRATEGY:
+		if CardUtils.is_strategy(card):
 			strategy_count += 1
 
 	if strategy_count < 5:

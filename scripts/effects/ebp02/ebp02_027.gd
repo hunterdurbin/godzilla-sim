@@ -4,7 +4,7 @@ extends CardEffect
 ## <Opponent's Turn> <Awakening6> If your opponent has a strategy card in play,
 ## this card cannot be countered by 40,000 or lower counter power. Instead, it
 ## only moves as though it were countered. (Do not play the next Monster Card
-## from your monster deck.)
+## from your monster deck.) (Opponent must still have enough counter power to pseudo counter)
 ##
 ## Tested: Yes
 ## Known issues: None
@@ -24,10 +24,10 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_counter_immunity_threshold(ctx: EffectContext) -> int:
 	# Only active during opponent's turn
-	if ctx.game_state.current_player_id == ctx.owner.player_id:
+	if ctx.is_own_turn():
 		return 0
 	# Awakening6: owner's monster must be in zone 6 or higher
-	if ctx.owner.monster_zone < 6:
+	if not ctx.is_awakening(6):
 		return 0
 	# Opponent (the turn player / defender) must have a strategy card in play
 	var has_strategy: bool = false

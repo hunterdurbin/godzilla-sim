@@ -21,7 +21,7 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	var monster_count: int = 0
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 			if monster_count >= 5:
 				return true
@@ -31,7 +31,7 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 func bot_can_fulfill_threat_level(owner: PlayerState, _opponent: PlayerState) -> bool:
 	var monster_count: int = 0
 	for card in owner.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER:
+		if CardUtils.is_monster(card):
 			monster_count += 1
 			if monster_count >= 5:
 				return true
@@ -45,7 +45,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var discarded := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
 		func(_card: Dictionary) -> bool: return true,
-		"Discard a card to reduce opponent's Rage by 1:",
+		tr("STR_EFF_EBP01_042_PROMPT"),
 		true # allow_skip
 	)
 	if not discarded.is_empty():

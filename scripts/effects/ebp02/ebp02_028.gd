@@ -30,7 +30,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Collect rank 4 or lower battle cards with Evolution from discard pile
 	var matching: Array[Dictionary] = []
 	for card in ctx.owner.discard_pile:
-		if card.get("card_type") != CardEnums.CardType.BATTLE:
+		if not CardUtils.is_battle(card):
 			continue
 		if card.get("rank", 99) > 4:
 			continue
@@ -51,7 +51,7 @@ func on_enter(ctx: EffectContext) -> void:
 		else:
 			card = await ctx.effect_handler.select_from_cards(
 				ctx.owner.player_id, matching, matching,
-				"Choose a battle card with Evolution to play (%d of up to 3):" % (placed + 1))
+				tr("STR_EFF_EBP02_028_SELECT_FMT") % (placed + 1))
 			if card.is_empty():
 				break
 
@@ -62,7 +62,7 @@ func on_enter(ctx: EffectContext) -> void:
 		else:
 			zone_idx = await ctx.effect_handler.select_zone_target(
 				ctx.owner.player_id, ctx.owner.player_id, adjacent,
-				"Choose an adjacent zone to play %s:" % card.get("name", "card"))
+				tr("STR_EFF_PLAY_ADJ_ZONE_NAMED_FMT") % card.get("name", "card"))
 			if zone_idx < 0:
 				break
 

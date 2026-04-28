@@ -29,7 +29,12 @@ jobs:
         run: mkdir -p build/windows
 
       - name: Export Windows
-        run: godot --headless --export-release "Windows Desktop" build/windows/${PROJECT_NAME}.exe
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *unstable* ]]; then
+            godot --headless --export-release "Windows Desktop Unstable" build/windows/${PROJECT_NAME}_unstable.exe
+          else
+            godot --headless --export-release "Windows Desktop" build/windows/${PROJECT_NAME}.exe
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -56,7 +61,12 @@ jobs:
         run: mkdir -p build/linux
 
       - name: Export Linux
-        run: godot --headless --export-release "Linux" build/linux/${PROJECT_NAME}.x86_64
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *unstable* ]]; then
+            godot --headless --export-release "Linux Unstable" build/linux/${PROJECT_NAME}_unstable.x86_64
+          else
+            godot --headless --export-release "Linux" build/linux/${PROJECT_NAME}.x86_64
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -83,12 +93,17 @@ jobs:
         run: mkdir -p build/macos
 
       - name: Export macOS
-        run: godot --headless --export-release "macOS" build/macos/${PROJECT_NAME}.app
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *unstable* ]]; then
+            godot --headless --export-release "macOS Unstable" build/macos/${PROJECT_NAME}_unstable.app
+          else
+            godot --headless --export-release "macOS" build/macos/${PROJECT_NAME}.app
+          fi
 
       - name: Zip macOS app
         run: |
           cd build/macos
-          zip -r ${PROJECT_NAME}-macos.zip ${PROJECT_NAME}.app
+          zip -r ${PROJECT_NAME}-macos.zip *.app
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -129,7 +144,12 @@ jobs:
         run: mkdir -p build/android
 
       - name: Export Android
-        run: godot --headless --export-debug "Android" build/android/${PROJECT_NAME}.apk
+        run: |
+          if [[ "${GITHUB_REF_NAME}" == *unstable* ]]; then
+            godot --headless --export-debug "Android Unstable" build/android/${PROJECT_NAME}_unstable.apk
+          else
+            godot --headless --export-debug "Android" build/android/${PROJECT_NAME}.apk
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -158,7 +178,7 @@ jobs:
 
       - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
-          manifest-path: flatpak/io.github.hunterdurbin.UnOfficialGodzillaSim.yml
+          manifest-path: ${{ contains(github.ref_name, 'unstable') && 'flatpak/io.github.hunterdurbin.UnOfficialGodzillaSim.Unstable.yml' || 'flatpak/io.github.hunterdurbin.UnOfficialGodzillaSim.yml' }}
           bundle: ${{ env.PROJECT_NAME }}.flatpak
           cache-key: flatpak-builder-${{ github.sha }}
 
@@ -192,7 +212,7 @@ jobs:
             godzilla_tcg_sim-windows.zip
             godzilla_tcg_sim-linux.zip
             macos/godzilla_tcg_sim-macos.zip
-            android/godzilla_tcg_sim.apk
+            android/*.apk
             flatpak/godzilla_tcg_sim.flatpak
           generate_release_notes: true
           draft: false

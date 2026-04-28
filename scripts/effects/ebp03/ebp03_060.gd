@@ -15,7 +15,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_revenge(_owner: PlayerState, opponent: PlayerState) -> bool:
-	return opponent.rage > 0
+	return opponent.has_rage()
 
 
 func on_revenge(ctx: EffectContext) -> void:

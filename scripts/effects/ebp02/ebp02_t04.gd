@@ -13,20 +13,16 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.END, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["plays_other_cards"]
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.END, "own_turn": true}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.END:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
-
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return
@@ -42,7 +38,8 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool:
 			return card.get("name", "") == "Chibi Godzilla",
-		"Play a Chibi Godzilla from your discard pile:")
+		tr("STR_EFF_EBP02_T04_DISCARD_PROMPT"),
+		false)
 
 	if selected.is_empty():
 		return
@@ -54,7 +51,7 @@ func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
 			valid_zones.append(i)
 	var target_zone: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		"Choose a zone to play Chibi Godzilla:")
+		tr("STR_EFF_EBP02_T04_PROMPT"))
 	if target_zone < 0:
 		return
 

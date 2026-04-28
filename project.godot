@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Unofficial Godzilla Sim"
-config/version="0.1.11-release-hotfix.1"
+config/version="0.1.12-unstable.1"
 run/main_scene="res://scenes/ui/LoadingScreen.tscn"
 config/quit_on_go_back=false
 config/features=PackedStringArray("4.6", "GL Compatibility")
@@ -61,6 +61,10 @@ theme/custom="res://assets/fonts/default_theme.tres"
 
 pointing/android/enable_pan_and_scale_gestures=true
 pointing/emulate_touch_from_mouse.mobile=true
+
+[internationalization]
+
+locale/translations=PackedStringArray("res://translations/strings.en.translation", "res://translations/strings.ja.translation", "res://translations/cards.en.translation", "res://translations/cards.ja.translation")
 
 [physics]
 

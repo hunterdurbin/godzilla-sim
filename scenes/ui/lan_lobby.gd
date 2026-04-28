@@ -44,7 +44,7 @@ func _on_host_pressed() -> void:
 	var port := int(port_edit.text) if port_edit.text.is_valid_int() else NetworkManager.DEFAULT_PORT
 	var err := NetworkManager.host_game(port)
 	if err != OK:
-		status_label.text = "Failed to host (port %d may be in use)" % port
+		status_label.text = tr("STR_LAN_HOST_FAILED_FMT") % port
 		return
 
 	host_button.disabled = true
@@ -58,20 +58,20 @@ func _on_host_pressed() -> void:
 		_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_select.current_selection)
 
 	var local_ip := _get_local_ip()
-	status_label.text = "Hosting on %s:%d\nWaiting for opponent..." % [local_ip, port]
+	status_label.text = tr("STR_LAN_HOSTING_FMT") % [local_ip, port]
 
 
 func _on_join_pressed() -> void:
 	SfxManager.play("ui_click")
 	var ip := ip_edit.text.strip_edges()
 	if ip.is_empty():
-		status_label.text = "Enter the host's IP address"
+		status_label.text = tr("STR_LAN_ENTER_IP")
 		return
 
 	var port := int(join_port_edit.text) if join_port_edit.text.is_valid_int() else NetworkManager.DEFAULT_PORT
 	var err := NetworkManager.join_game(ip, port)
 	if err != OK:
-		status_label.text = "Failed to connect"
+		status_label.text = tr("STR_LAN_CONNECT_FAILED")
 		return
 
 	host_button.disabled = true
@@ -79,29 +79,29 @@ func _on_join_pressed() -> void:
 	ip_edit.editable = false
 	join_port_edit.editable = false
 	port_edit.editable = false
-	status_label.text = "Connecting to %s:%d..." % [ip, port]
+	status_label.text = tr("STR_LAN_CONNECTING_FMT") % [ip, port]
 
 
 func _on_player_connected(_peer_id: int) -> void:
 	if NetworkManager.is_host():
-		status_label.text = "Opponent connected! Select a deck and press Start."
+		status_label.text = tr("STR_LAN_OPPONENT_CONNECTED_HOST")
 		_update_start_button()
 	else:
-		deck_select.set_header("SELECT YOUR DECK")
+		deck_select.set_header(tr("STR_DS_SELECT_YOUR_DECK"))
 		# If the client already has a deck selected, send it now
 		if not deck_select.current_selection.is_empty():
 			_on_deck_selected(deck_select.current_selection)
 		else:
-			status_label.text = "Connected! Select a deck."
+			status_label.text = tr("STR_LAN_CONNECTED_SELECT_DECK")
 
 
 func _on_player_disconnected(_peer_id: int) -> void:
 	if _version_mismatch_shown:
 		return
 	if not NetworkManager.version_verified:
-		status_label.text = "Opponent has a different version (you: v%s)." % NetworkManager.GAME_VERSION
+		status_label.text = tr("STR_LAN_OPPONENT_DIFFERENT_VERSION_FMT") % NetworkManager.GAME_VERSION
 	else:
-		status_label.text = "Opponent disconnected."
+		status_label.text = tr("STR_LAN_OPPONENT_DISCONNECTED")
 	host_button.disabled = false
 	join_button.disabled = false
 	ip_edit.editable = true
@@ -113,7 +113,7 @@ func _on_player_disconnected(_peer_id: int) -> void:
 
 
 func _on_connection_failed() -> void:
-	status_label.text = "Connection failed. Check the IP and try again."
+	status_label.text = tr("STR_LAN_CONNECTION_FAILED_RETRY")
 	host_button.disabled = false
 	join_button.disabled = false
 	ip_edit.editable = true
@@ -123,7 +123,7 @@ func _on_connection_failed() -> void:
 
 func _on_version_mismatch(local_version: String, remote_version: String) -> void:
 	_version_mismatch_shown = true
-	status_label.text = "Version mismatch! You: v%s, Opponent: v%s" % [local_version, remote_version]
+	status_label.text = tr("STR_LAN_VERSION_MISMATCH_FMT") % [local_version, remote_version]
 	host_button.disabled = false
 	join_button.disabled = false
 	ip_edit.editable = true
@@ -151,7 +151,7 @@ func _on_deck_selected(deck_name: String) -> void:
 			"main": data["main"],
 		})
 		_rpc_send_deck_data.rpc_id(NetworkManager.host_peer_id, payload)
-		status_label.text = "Deck \"%s\" sent to host. Waiting for host to start..." % deck_name
+		status_label.text = tr("STR_LAN_DECK_SENT_FMT") % deck_name
 
 
 func _on_start_pressed() -> void:
@@ -181,7 +181,7 @@ func _update_start_button() -> void:
 	start_button.visible = can_start
 	start_button.disabled = not can_start
 	if can_start:
-		status_label.text = "Opponent deck received. Ready to start!"
+		status_label.text = tr("STR_LAN_OPPONENT_DECK_READY")
 
 
 ## Client sends their deck data to host

@@ -11,46 +11,41 @@ extends CardEffect
 # Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["boosts_threat"]
 
 
 func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:
-	if owner.monster_zone < 4:
+	if not owner.is_awakening(4):
 		return false
 	for card in owner.hand:
-		if card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) >= 5:
+		if CardUtils.is_battle(card) and CardUtils.rank_at_least(card, 5):
 			return true
 	return false
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER}
-
-
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-
-	var is_own_turn := ctx.game_state.current_player_id == ctx.owner.player_id
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
+	var is_own_turn := ctx.is_own_turn()
 
 	# Effect 1: Opponent's turn, Awakening4, +1 rage
-	if not is_own_turn and ctx.owner.monster_zone >= 4:
+	if not is_own_turn and ctx.is_awakening(4):
 		await _try_discard_for_rage(ctx, 1)
 	# Effect 2: Your turn, Awakening8, +2 rage
-	elif is_own_turn and ctx.owner.monster_zone >= 8:
+	elif is_own_turn and ctx.is_awakening(8):
 		await _try_discard_for_rage(ctx, 2)
 
 
 func _try_discard_for_rage(ctx: EffectContext, rage_gain: int) -> void:
 	var selected := await ctx.effect_handler.select_hand_card(
 		ctx.owner.player_id,
-		func(card): return card.get("card_type") == CardEnums.CardType.BATTLE and card.get("rank", 0) >= 5,
-		"Discard a rank 5+ battle card to gain %d rage (or skip):" % rage_gain,
+		func(card): return CardUtils.is_battle(card) and CardUtils.rank_at_least(card, 5),
+		tr("STR_EFF_EBP03_002_PROMPT_FMT") % rage_gain,
 		true
 	)
 	if not selected.is_empty():
-		var old_rage := ctx.owner.rage
-		ctx.owner.rage += rage_gain
-		ctx.owner.rage_changed.emit(ctx.owner.rage)
-		await ctx.effect_handler.trigger_rage_changed(ctx.owner.player_id, old_rage, ctx.owner.rage)
+		await ctx.effect_handler.gain_rage(ctx.owner.player_id, rage_gain, ctx.card_data.get("id", ""))

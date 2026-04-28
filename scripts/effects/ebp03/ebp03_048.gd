@@ -15,24 +15,15 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool:
-	if opponent.rage <= 0:
+	if not opponent.has_rage():
 		return false
-	var battle_count: int = 0
-	for i in range(8):
-		if owner.zone_has_battle_card(i):
-			battle_count += 1
-			if battle_count >= 2:
-				return true
-	return false
+	return owner.get_battle_card_zone_indices().size() >= 2
 
 
 func on_enter(ctx: EffectContext) -> void:
 	var my_id: String = ctx.card_data.get("id", "")
-	var other_battle_count := 0
-	for i in range(8):
-		var card := ctx.owner.get_zone_top_card(i)
-		if not card.is_empty() and card.get("id", "") != my_id:
-			other_battle_count += 1
+	var other_battle_count: int = ctx.owner.count_zones_matching(func(c: Dictionary) -> bool:
+		return c.get("id", "") != my_id)
 
 	if other_battle_count < 2:
 		return

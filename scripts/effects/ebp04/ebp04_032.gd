@@ -1,0 +1,39 @@
+extends CardEffect
+## EBP04-032: Monster X - Monster Rank 2 (Red, Blue, Green)
+## This card's threat level X is equal to 10,000 times the number of different
+## colors among battle cards in your zones. If your opponent's zones have 1 or
+## fewer battle cards, this card cannot be countered.
+##
+## Tested: Yes
+## Known issues: None
+## Edge cases: None
+## Rules: None
+## Interactions: None
+## Implementation notes: None
+
+
+func get_bot_tags() -> Array[String]:
+	return ["boosts_threat"]
+
+
+func get_threat_level_modifier(ctx: EffectContext) -> int:
+	return _count_zone_colors(ctx) * 10000
+
+
+func prevents_counter(ctx: EffectContext, _total_cp: int) -> bool:
+	# "If your opponent's zones have 1 or fewer battle cards, this card cannot
+	# be countered." Full prevention — no retreat, no rank up.
+	var battle_count: int = ctx.opponent.get_zone_top_cards_matching(
+		func(c: Dictionary) -> bool: return CardUtils.is_battle(c)).size()
+	return battle_count <= 1
+
+
+func _count_zone_colors(ctx: EffectContext) -> int:
+	var colors: Array[int] = []
+	var battle_tops: Array[Dictionary] = ctx.owner.get_zone_top_cards_matching(
+		func(c: Dictionary) -> bool: return CardUtils.is_battle(c))
+	for zone_card in battle_tops:
+		for c: int in zone_card.get("colors", []):
+			if c not in colors:
+				colors.append(c)
+	return colors.size()

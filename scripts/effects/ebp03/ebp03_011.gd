@@ -37,24 +37,21 @@ func on_enter(ctx: EffectContext) -> void:
 	# Collect all red or blue battle cards from revealed
 	var valid: Array[Dictionary] = []
 	for card in revealed:
-		if card.get("card_type") == CardEnums.CardType.BATTLE:
-			var colors: Array = card.get("colors", [])
-			if CardEnums.CardColor.RED in colors or CardEnums.CardColor.BLUE in colors:
+		if CardUtils.is_battle(card):
+			if CardUtils.has_color(card, CardEnums.CardColor.RED) or CardUtils.has_color(card, CardEnums.CardColor.BLUE):
 				valid.append(card)
 
 	# Pool filter: at most 1 red, at most 1 blue (dual-color cards count as both)
 	var filter := func(card: Dictionary, selection: Array[Dictionary]) -> bool:
-		var card_colors: Array = card.get("colors", [])
-		var has_red: bool = CardEnums.CardColor.RED in card_colors
-		var has_blue: bool = CardEnums.CardColor.BLUE in card_colors
+		var has_red: bool = CardUtils.has_color(card, CardEnums.CardColor.RED)
+		var has_blue: bool = CardUtils.has_color(card, CardEnums.CardColor.BLUE)
 		# Count how many red/blue already selected
 		var red_count: int = 0
 		var blue_count: int = 0
 		for sel in selection:
-			var sel_colors: Array = sel.get("colors", [])
-			if CardEnums.CardColor.RED in sel_colors:
+			if CardUtils.has_color(sel, CardEnums.CardColor.RED):
 				red_count += 1
-			if CardEnums.CardColor.BLUE in sel_colors:
+			if CardUtils.has_color(sel, CardEnums.CardColor.BLUE):
 				blue_count += 1
 		# Card is selectable if it can contribute a color not yet at limit
 		if has_red and red_count >= 1 and has_blue and blue_count >= 1:
@@ -67,7 +64,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var chosen: Array[Dictionary] = await ctx.effect_handler.select_cards_from_pool(
 		ctx.owner.player_id, valid, revealed,
-		"Choose up to 1 red and 1 blue battle card to add to hand:", 0, 2, filter)
+		tr("STR_EFF_EBP03_011_SELECT"), 0, 2, filter)
 
 	var chosen_ids: Array[String] = []
 	for card in chosen:

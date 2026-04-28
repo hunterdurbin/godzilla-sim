@@ -48,6 +48,7 @@ var card_target_rotations: Dictionary = {}  # Maps card to its target rotation
 var dragged_card: Control = null  # Currently dragged card
 var dragged_card_original_index: int = -1  # Original index of dragged card
 var drop_handled: bool = false  # Set by external listeners to prevent reordering
+var _drop_handled_card: Control = null  # Last drag whose drop was handled externally
 var selection_mode: bool = false  # When true, clicking selects instead of dragging
 var selectable_indices: Array[int] = []  # Which card indices are selectable
 var _drag_preview_index: int = -1  # Where the dragged card would be inserted
@@ -372,6 +373,21 @@ func _arrange_vertical(animate: bool) -> void:
 		_move_card_to_position(card, target_pos, 0.0, animate, i)
 
 
+func restore_drop_handled_card_position() -> void:
+	## Move the most-recently drop-handled card back to its hand slot without
+	## re-arranging the rest of the hand. Used when an external action that
+	## consumed a hand card (e.g. monster play) was cancelled, so the card's
+	## data is back in the hand but its visual was left at the drop position.
+	if not _drop_handled_card or _drop_handled_card not in managed_cards:
+		_drop_handled_card = null
+		return
+	var idx := managed_cards.find(_drop_handled_card)
+	var positions := _compute_slot_positions(managed_cards.size())
+	if idx >= 0 and idx < positions.size():
+		_move_card_to_position(_drop_handled_card, positions[idx], 0.0, true, idx)
+	_drop_handled_card = null
+
+
 func _move_card_to_position(card: Control, target_pos: Vector2, target_rotation: float, animate: bool, target_z: int = -1) -> void:
 	# Store the target position and rotation for this card
 	card_target_positions[card] = target_pos
@@ -407,6 +423,8 @@ func _move_card_to_position(card: Control, target_pos: Vector2, target_rotation:
 
 func _on_card_drag_started(card: Control) -> void:
 	_drag_preview_index = -1
+	# A new drag invalidates any pending drop-handled restore from a previous drag.
+	_drop_handled_card = null
 	# Store dragging state
 	if card in managed_cards:
 		dragged_card = card
@@ -425,6 +443,10 @@ func _on_card_drag_ended(card: Control) -> void:
 	drop_handled = false
 	hand_card_drag_ended.emit(card)
 	if drop_handled:
+		# External handler accepted the drop and is mid-action. Remember the
+		# card so restore_drop_handled_card_position() can put it back if the
+		# action gets cancelled (e.g. apply_play_cost declined).
+		_drop_handled_card = card
 		dragged_card = null
 		dragged_card_original_index = -1
 		return

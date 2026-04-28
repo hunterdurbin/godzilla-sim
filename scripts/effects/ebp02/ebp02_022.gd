@@ -21,9 +21,9 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	if invasion_card.is_empty():
 		return
 	# Must be a blue battle card
-	if invasion_card.get("card_type") != CardEnums.CardType.BATTLE:
+	if not CardUtils.is_battle(invasion_card):
 		return
-	if CardEnums.CardColor.BLUE not in invasion_card.get("colors", []):
+	if not CardUtils.has_color(invasion_card, CardEnums.CardColor.BLUE):
 		return
 
 	# Check the card is still in discard
@@ -36,16 +36,6 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	if not found:
 		return
 
-	# Optional — player may skip
-	var valid_zones: Array[int] = []
-	for i in range(8):
-		if i != ctx.owner.monster_zone - 1:
-			valid_zones.append(i)
-	var chosen: int = await ctx.effect_handler.select_zone_target(
-		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		"Play %s from discard to a zone (or skip):" % invasion_card.get("name", "card"),
-		true)
-	if chosen < 0:
-		return
-
-	await ctx.effect_handler.play_from_discard(ctx.owner.player_id, invasion_card, chosen)
+	await ctx.effect_handler.play_from_discard_or_skip(
+		ctx.owner.player_id, invasion_card,
+		tr("STR_EFF_PLACE_DISCARD_FMT") % invasion_card.get("name", "card"))

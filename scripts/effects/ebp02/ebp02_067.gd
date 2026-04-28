@@ -19,17 +19,13 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 	# Check opponent's monster card
 	var monster: Dictionary = ctx.opponent.current_monster
 	if not monster.is_empty():
-		var monster_traits: Array = monster.get("traits", [])
-		if CardEnums.CardTrait.GODZILLA in monster_traits:
+		if CardUtils.has_trait(monster, CardEnums.CardTrait.GODZILLA):
 			return 5000
 
 	# Check opponent's battle card zones
-	for i in range(8):
-		var top := ctx.opponent.get_zone_top_card(i)
-		if top.is_empty():
-			continue
-		var traits: Array = top.get("traits", [])
-		if CardEnums.CardTrait.GODZILLA in traits:
-			return 5000
+	var has: bool = ctx.opponent.has_zone_matching(
+		func(c: Dictionary) -> bool: return CardUtils.has_trait(c, CardEnums.CardTrait.GODZILLA))
+	if has:
+		return 5000
 
 	return 0

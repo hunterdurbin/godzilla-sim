@@ -2,7 +2,7 @@ extends CardEffect
 
 ## EFC01-005: Godzilla Appears in Godzilla Festival - Strategy Rank 6 (Red)
 ## <Your Turn> When you play a monster card, reveal the top 5 cards of your deck.
-## Add all cards with <Festival Godzilla> to your hand and discard the rest.
+## Add all cards with <Fest> to your hand and discard the rest.
 ## At the beginning of your counter phase, discard your hand.
 ##
 ## Tested: No
@@ -13,17 +13,18 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["draws_cards"]
 
 
-func get_phase_start_filter() -> Dictionary:
-	return {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true}
-
-
 func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
 	# Only during your turn
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
+	if ctx.is_opponent_turn():
 		return
 
 	# Reveal top 5 cards
@@ -37,13 +38,13 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 	# Show all revealed cards
 	await ctx.effect_handler.select_from_cards(
 		ctx.owner.player_id, revealed, revealed,
-		"Revealed cards:")
+		tr("STR_EFF_REVEALED_CARDS"))
 
-	# Separate Festival Godzilla cards from the rest
+	# Separate Fest cards from the rest
 	var fest_cards: Array[Dictionary] = []
 	var discard_cards: Array[Dictionary] = []
 	for card in revealed:
-		if CardEnums.CardTrait.FESTIVAL_GODZILLA in card.get("traits", []):
+		if CardUtils.has_trait(card, CardEnums.CardTrait.FEST):
 			fest_cards.append(card)
 		else:
 			discard_cards.append(card)
@@ -53,7 +54,7 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 		ctx.owner.main_deck.remove_at(i)
 	ctx.owner.deck_changed.emit()
 
-	# Add Festival Godzilla cards to hand
+	# Add Fest cards to hand
 	for card in fest_cards:
 		ctx.owner.hand.append(card)
 	if not fest_cards.is_empty():
@@ -66,10 +67,6 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 		ctx.owner.discard_changed.emit()
 
 
-func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
-	if phase != CardEnums.GamePhase.COUNTER:
-		return
-	if ctx.game_state.current_player_id != ctx.owner.player_id:
-		return
+func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	# Discard entire hand
 	await ctx.effect_handler.discard_hand_to(ctx.owner.player_id, 0)

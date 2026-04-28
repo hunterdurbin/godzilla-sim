@@ -20,7 +20,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.monster_zone >= 6
+	return owner.is_awakening(6)
 
 
 func on_would_be_destroyed(ctx: EffectContext) -> bool:
@@ -45,7 +45,7 @@ func on_would_be_destroyed(ctx: EffectContext) -> bool:
 
 func on_enter(ctx: EffectContext) -> void:
 	# Awakening6: monster must be in zone 6+
-	if ctx.owner.monster_zone < 6:
+	if not ctx.is_awakening(6):
 		return
 
 	var my_zone: int = find_zone_of_card(ctx)
@@ -61,7 +61,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var land_moguera: Dictionary = await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool: return card.get("name", "") == "Land Moguera",
-		"Search for Land Moguera to place under M.O.G.U.E.R.A.:")
+		tr("STR_EFF_EBP03_052_LAND_SEARCH"))
 
 	if not land_moguera.is_empty():
 		ctx.effect_handler.place_card_under_zone(ctx.owner, land_moguera, my_zone)
@@ -70,7 +70,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var star_falcon: Dictionary = await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,
 		func(card: Dictionary) -> bool: return card.get("name", "") == "Star Falcon",
-		"Search for Star Falcon to place under M.O.G.U.E.R.A.:")
+		tr("STR_EFF_EBP03_052_STAR_SEARCH"))
 
 	if not star_falcon.is_empty():
 		ctx.effect_handler.place_card_under_zone(ctx.owner, star_falcon, my_zone)

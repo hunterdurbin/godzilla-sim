@@ -15,6 +15,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"can_be_destroyed": {"caused_by_opponent": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["boosts_cp", "weakens_opponent"]
 
@@ -28,7 +33,7 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 	if target_card.get("id") != ctx.card_data.get("id"):
 		return 0
 	# Awakening8: monster must be in zone 8
-	if ctx.owner.monster_zone >= 8:
+	if ctx.is_awakening(8):
 		return -4
 	return 0
 

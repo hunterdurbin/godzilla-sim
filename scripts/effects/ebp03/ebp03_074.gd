@@ -18,7 +18,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.current_monster.get("rank", 0) <= 3
+	return CardUtils.rank_at_most(owner.current_monster, 3)
 
 
 func on_enter(ctx: EffectContext) -> void:
