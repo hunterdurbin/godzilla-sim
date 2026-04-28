@@ -3,7 +3,7 @@ extends CardEffect
 ## <Opponent's Turn> Each time one of your non-red battle cards are <Destroy>,
 ## move this card to an area adjacent to your monster card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
@@ -52,7 +52,4 @@ func on_ally_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary,
 	if chosen < 0:
 		return
 
-	# Move this card
-	ctx.owner.zones[self_zone].erase(ctx.card_data)
-	ctx.owner.zones[chosen].push_front(ctx.card_data)
-	ctx.owner.zones_changed.emit()
+	ctx.effect_handler.move_zone_stack(ctx.owner, self_zone, chosen)

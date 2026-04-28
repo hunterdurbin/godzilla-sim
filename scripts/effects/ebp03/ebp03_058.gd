@@ -53,16 +53,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if dest < 0:
 		return
 
-	# Handle overload if zone occupied
-	if ctx.owner.zone_has_cards(dest):
-		var overloaded: Array = ctx.owner.clear_zone(dest)
-		EffectHandler.banish_or_discard(ctx.owner, overloaded)
-		ctx.owner.discard_changed.emit()
-
-	var stack: Array = ctx.owner.zones[zone_idx]
-	ctx.owner.zones[zone_idx] = []
-	ctx.owner.zones[dest] = stack
-	ctx.owner.zones_changed.emit()
+	ctx.effect_handler.move_zone_stack(ctx.owner, zone_idx, dest)
 
 	# Check if now adjacent to own monster
 	if monster_idx in get_adjacent_zones(dest):

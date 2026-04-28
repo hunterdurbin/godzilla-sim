@@ -2542,6 +2542,24 @@ func get_card_required_play_zones(player_id: int, card_data: Dictionary) -> Arra
 	return []
 
 
+func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
+	## Move a zone's full stack to another zone, overloading any existing
+	## contents at the destination per rule 11.5. No-op if the source is empty
+	## or from_zone == to_zone.
+	if from_zone == to_zone:
+		return
+	if not player.zone_has_cards(from_zone):
+		return
+	if player.zone_has_cards(to_zone):
+		var overloaded: Array = player.clear_zone(to_zone)
+		banish_or_discard(player, overloaded)
+		player.discard_changed.emit()
+	var stack: Array = player.zones[from_zone]
+	player.zones[from_zone] = []
+	player.zones[to_zone] = stack
+	player.zones_changed.emit()
+
+
 func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
 	## Swap two zone stacks and fire on_zone_changed for each top card that moved.
 	var top_a: Dictionary = player.get_zone_top_card(zone_a)
