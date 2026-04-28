@@ -1496,12 +1496,11 @@ func resolve_zone_target(zone_index: int) -> void:
 
 func select_strategy_target(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> int:
 	## Ask a player to choose one of the valid strategy zones on the target player's board.
+	## Always prompts when at least one valid index exists so the player can see
+	## which strategy is being targeted (no silent auto-pick on size==1).
 	## Returns the chosen strategy index, or -1 if no valid indices.
 	if valid_indices.is_empty():
 		return -1
-
-	if valid_indices.size() == 1:
-		return valid_indices[0]
 
 	if strategy_target_requested.get_connections().size() > 0:
 		_highlight_active_effect()
@@ -1510,7 +1509,7 @@ func select_strategy_target(player_id: int, target_player_id: int, valid_indices
 		_unhighlight_active_effect()
 		return _strategy_target_result
 	else:
-		# Fallback: auto-pick first valid index
+		# Fallback (no UI listener, e.g. tests): auto-pick first valid index
 		return valid_indices[0]
 
 
@@ -2579,6 +2578,16 @@ func get_strategy_discard_interceptor(player_id: int) -> int:
 			if effect and effect.can_intercept_strategy_discard(_build_context(player_id, zone_card)):
 				return i
 	return -1
+
+
+func destroy_strategy_zone(player: PlayerState, zone_index: int) -> Dictionary:
+	## Effect-driven destroy of a strategy card. Thin wrapper over
+	## discard_strategy_from_zone that takes a PlayerState (ergonomic for card
+	## scripts holding ctx.owner / ctx.opponent) and uses default options:
+	## interceptor + banish_or_discard + strategy_discarded triggers, with
+	## destruction-protection (EBP04-048) honored. Use this instead of raw
+	## strategy_zones[i] = {} + discard_pile.append patterns.
+	return await discard_strategy_from_zone(player.player_id, zone_index)
 
 
 func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entries: Variant = null, bypass_protection: bool = false) -> Dictionary:

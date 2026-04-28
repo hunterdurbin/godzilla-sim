@@ -31,11 +31,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if chosen < 0:
 		return
 
-	var strat_card: Dictionary = ctx.opponent.strategy_zones[chosen]
-	ctx.opponent.strategy_zones[chosen] = {}
-	ctx.opponent.discard_pile.append(strat_card)
-	ctx.opponent.strategy_zones_changed.emit()
-	ctx.opponent.discard_changed.emit()
+	await ctx.effect_handler.destroy_strategy_zone(ctx.opponent, chosen)
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
