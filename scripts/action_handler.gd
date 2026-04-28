@@ -199,12 +199,15 @@ func resolve_counter(state: GameState) -> void:
 		counter_prevented.emit(opponent.player_id)
 		return
 
-	# Check counter immunity (e.g. EBP02-027: CP <= threshold → retreat without rank up)
+	# Check counter immunity (e.g. EBP02-027: CP between threat and threshold
+	# → retreat without rank up). Per rule wording the opponent must still
+	# have enough counter power to "pseudo-counter" — if CP < threat the
+	# counter just fails normally.
 	var immunity_threshold: int = 0
 	if effect_handler:
 		immunity_threshold = effect_handler.get_counter_immunity_threshold(opponent.player_id)
 
-	if immunity_threshold > 0 and total_cp <= immunity_threshold:
+	if immunity_threshold > 0 and total_cp >= threat and total_cp <= immunity_threshold:
 		# Counter is immune — monster retreats but does NOT rank up
 		counter_immunity_triggered.emit(player.player_id, total_cp, immunity_threshold)
 
