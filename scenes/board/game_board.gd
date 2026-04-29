@@ -2842,7 +2842,7 @@ func _on_confirmation_requested(prompt: String, setting: String) -> void:
 func _show_confirmation(prompt: String) -> void:
 	_awaiting_confirmation = true
 	_disable_all_buttons()
-	btn_confirm.text = prompt
+	btn_confirm.text = _resolve_translated_text(prompt)
 	_fit_button_text(btn_confirm)
 	btn_confirm.disabled = false
 	await btn_confirm.pressed
@@ -2881,7 +2881,24 @@ func _on_log_message(message) -> void:
 func _render_log_entry(entry) -> String:
 	if typeof(entry) == TYPE_DICTIONARY:
 		return GameLog.render(entry)
-	return str(entry)
+	return _resolve_translated_text(str(entry))
+
+
+## Defensive client-side fallback: log lines and prompts ship from the host
+## as already-translated strings (host's `tr()` baked the result into the RPC
+## payload). If the host's `tr()` ever returns the key literally — e.g. a
+## transient TranslationServer state or a build/version drift — the client
+## otherwise displays "STR_..." verbatim. Re-running `tr()` on the local side
+## resolves it when the key exists in our translation table.
+func _resolve_translated_text(text: String) -> String:
+	if not text.begins_with("STR_"):
+		return text
+	# tr() expects no leading/trailing whitespace to find a match
+	var stripped := text.strip_edges()
+	var translated := tr(stripped)
+	if translated == stripped:
+		return text
+	return text.replace(stripped, translated)
 
 
 func _on_chat_submitted(text: String) -> void:
@@ -3777,7 +3794,7 @@ func _cancel_pass_confirmation() -> void:
 
 func _enter_card_selection(prompt_text: String, valid_indices: Array[int]) -> void:
 	waiting_for_card_select = true
-	card_select_prompt.text = prompt_text
+	card_select_prompt.text = _resolve_translated_text(prompt_text)
 	action_prompt_panel.visible = true
 	_disable_all_buttons()
 	btn_cancel.text = tr("STR_GB_CANCEL")
@@ -4545,7 +4562,7 @@ func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary]
 	for card_data in matching:
 		_deck_search_matching_ids[card_data.get("id", "")] = true
 
-	deck_search_prompt.text = prompt
+	deck_search_prompt.text = _resolve_translated_text(prompt)
 	deck_search_skip.visible = allow_skip
 	deck_search_show_all.set_pressed_no_signal(matching.is_empty())
 	deck_search_stacked.set_pressed_no_signal(_match_stacked_view)
@@ -5087,7 +5104,7 @@ func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt
 func _show_deck_arrange(cards: Array[Dictionary], prompt: String) -> void:
 	_arrange_keep = cards.duplicate()
 	_arrange_discard = []
-	deck_arrange_prompt.text = prompt
+	deck_arrange_prompt.text = _resolve_translated_text(prompt)
 	deck_arrange_overlay.visible = true
 	_refresh_deck_arrange()
 
@@ -5320,7 +5337,7 @@ func _show_card_select(matching: Array[Dictionary], all_cards: Array[Dictionary]
 	_card_select_min_count = min_count
 	_card_select_max_count = max_count
 
-	card_pool_select_prompt.text = prompt
+	card_pool_select_prompt.text = _resolve_translated_text(prompt)
 	card_pool_select_show_all.set_pressed_no_signal(matching.is_empty())
 	card_pool_select_stacked.set_pressed_no_signal(_match_stacked_view)
 	card_pool_select_overlay.visible = true
@@ -5668,7 +5685,7 @@ func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt
 		hand_mgr.card_selected.connect(_on_hand_card_clicked)
 
 	_disable_all_buttons()
-	card_select_prompt.text = prompt
+	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
 	if allow_skip:
@@ -5753,7 +5770,7 @@ func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zo
 	_zone_target_allow_skip = allow_skip
 
 	_disable_all_buttons()
-	card_select_prompt.text = prompt
+	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
 	if allow_skip:
@@ -5833,7 +5850,7 @@ func _show_strategy_target_selection(player_id: int, target_player_id: int, vali
 	_strategy_target_valid_indices = valid_indices
 
 	_disable_all_buttons()
-	card_select_prompt.text = prompt
+	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
 	# Highlight valid strategy slots on the target player's board
@@ -5901,7 +5918,7 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	_disable_all_buttons()
 	# Hide the normal action button rows so only choice buttons show
 	_set_action_buttons_visible(false)
-	card_select_prompt.text = prompt
+	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
 	# Create a container for choice buttons
@@ -5929,7 +5946,7 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 
 	for i in range(options.size()):
 		var btn := Button.new()
-		btn.text = options[i]
+		btn.text = _resolve_translated_text(options[i])
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		btn.custom_minimum_size.x = 325
 		btn.custom_minimum_size.y = 60 if _is_mobile_layout else 0
@@ -6204,7 +6221,7 @@ func _show_monster_rankup_selection(player_id: int, monsters: Array[Dictionary],
 	_disable_all_buttons()
 
 	# Show monster deck overlay with selectable cards
-	monster_deck_view_title.text = prompt
+	monster_deck_view_title.text = _resolve_translated_text(prompt)
 	monster_deck_view_close.visible = false
 	monster_deck_view_stacked.visible = false
 
