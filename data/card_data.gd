@@ -3740,7 +3740,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"name": "Kaiser Ghidorah",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 8,
-		"colors": [CardEnums.CardColor.RED, CardEnums.CardColor.BLUE, CardEnums.CardColor.GREEN],
+		"colors": [CardEnums.CardColor.GREEN],
 		"traits": [CardEnums.CardTrait.KAISER_GHIDORAH, CardEnums.CardTrait.FINAL_WARS],
 		"counter_power": 11000,
 		"invasion_icon": 1,
