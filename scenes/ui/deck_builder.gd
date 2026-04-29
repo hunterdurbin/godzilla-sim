@@ -4,7 +4,9 @@ const CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 const CARD_SCALE := 0.42
 const CARD_SIZE := Vector2(150, 210)
 const SCALED_SIZE := CARD_SIZE * CARD_SCALE
-const GRID_COLUMNS := 7
+const ZOOM_MIN_COLUMNS := 5 # most zoomed in (largest cards)
+const ZOOM_MAX_COLUMNS := 12 # most zoomed out (smallest cards)
+const ZOOM_DEFAULT_COLUMNS := 7
 
 # --- Left panel ---
 var deck_name_edit: LineEdit
@@ -24,6 +26,10 @@ var default_mode_check: CheckBox
 # --- Right panel: deck section ---
 var monster_tab_button: Button
 var main_tab_button: Button
+var deck_zoom_in_button: Button
+var deck_zoom_out_button: Button
+var pool_zoom_in_button: Button
+var pool_zoom_out_button: Button
 var deck_grid: GridContainer
 var deck_scroll: ScrollContainer
 
@@ -53,23 +59,25 @@ var _main_entries: Array = []
 var _current_deck_name: String = ""
 var _has_unsaved_changes: bool = false
 var _showing_monster_tab: bool = true
+var _deck_zoom_columns: int = ZOOM_DEFAULT_COLUMNS
+var _pool_zoom_columns: int = ZOOM_DEFAULT_COLUMNS
 
 var _all_pool_cards: Array[Dictionary] = []
 var _filtered_pool_cards: Array[Dictionary] = []
 
 var _search_text: String = ""
-var _search_criteria: Array = []  # Parsed criteria from _search_text; each is a Dict
-var _type_filter: int = -1  # -1 = all
+var _search_criteria: Array = [] # Parsed criteria from _search_text; each is a Dict
+var _type_filter: int = -1 # -1 = all
 var _color_filters: Array[int] = []
-var _invasion_filter: int = -1  # -1 = all, 1 = step 1, 2 = step 2
-var _sort_mode: int = 0  # 0=ID, 1=Name, 2=Rank, 3=Type
+var _invasion_filter: int = -1 # -1 = all, 1 = step 1, 2 = step 2
+var _sort_mode: int = 0 # 0=ID, 1=Name, 2=Rank, 3=Type
 
 var _pending_action: Callable
 var _invalid_cards: Dictionary = {} # card_number -> true
 var _game_mode: String = "rumble_west"
-var _pool_load_generation: int = 0  # Incremented to cancel stale batched loads
-var _deck_list_touch_scrolled: bool = false  # Track if ItemList was scrolled on touch
-var _pending_deck_list_index: int = -1  # Deferred selection index for touch
+var _pool_load_generation: int = 0 # Incremented to cancel stale batched loads
+var _deck_list_touch_scrolled: bool = false # Track if ItemList was scrolled on touch
+var _pending_deck_list_index: int = -1 # Deferred selection index for touch
 
 # --- Preview ---
 var _preview_card: Control
@@ -97,6 +105,7 @@ func _ready() -> void:
 	_refresh_pool_display()
 	_refresh_deck_display()
 	_update_deck_stats()
+	_update_zoom_buttons()
 
 
 # ============================================================
@@ -318,6 +327,12 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	main_tab_button.toggle_mode = true
 	header.add_child(main_tab_button)
 
+	deck_zoom_out_button = _make_zoom_button("−", "Zoom out deck")
+	header.add_child(deck_zoom_out_button)
+
+	deck_zoom_in_button = _make_zoom_button("+", "Zoom in deck")
+	header.add_child(deck_zoom_in_button)
+
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -337,7 +352,7 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	section.add_child(deck_scroll)
 
 	deck_grid = GridContainer.new()
-	deck_grid.columns = GRID_COLUMNS
+	deck_grid.columns = _deck_zoom_columns
 	deck_grid.add_theme_constant_override("h_separation", 4)
 	deck_grid.add_theme_constant_override("v_separation", 4)
 	deck_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -458,6 +473,12 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 	pool_count_label.add_theme_color_override("font_color", Color(0.7, 0.6, 0.5, 1))
 	header.add_child(pool_count_label)
 
+	pool_zoom_out_button = _make_zoom_button("−", "Zoom out pool")
+	header.add_child(pool_zoom_out_button)
+
+	pool_zoom_in_button = _make_zoom_button("+", "Zoom in pool")
+	header.add_child(pool_zoom_in_button)
+
 	# Scroll + grid
 	pool_scroll = ScrollContainer.new()
 	pool_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -467,7 +488,7 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 	section.add_child(pool_scroll)
 
 	pool_grid = GridContainer.new()
-	pool_grid.columns = GRID_COLUMNS
+	pool_grid.columns = _pool_zoom_columns
 	pool_grid.add_theme_constant_override("h_separation", 4)
 	pool_grid.add_theme_constant_override("v_separation", 4)
 	pool_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -546,6 +567,10 @@ func _connect_signals() -> void:
 	# Deck tabs
 	monster_tab_button.pressed.connect(_on_monster_tab_pressed)
 	main_tab_button.pressed.connect(_on_main_tab_pressed)
+	deck_zoom_in_button.pressed.connect(_on_deck_zoom_in_pressed)
+	deck_zoom_out_button.pressed.connect(_on_deck_zoom_out_pressed)
+	pool_zoom_in_button.pressed.connect(_on_pool_zoom_in_pressed)
+	pool_zoom_out_button.pressed.connect(_on_pool_zoom_out_pressed)
 
 	# Filters
 	search_edit.text_changed.connect(_on_search_changed)
@@ -817,7 +842,7 @@ func _load_pool_cards_batched(cards: Array[Dictionary], gen: int) -> void:
 	var i := 0
 	while i < cards.size():
 		if gen != _pool_load_generation:
-			return  # A newer refresh was triggered; abort this one
+			return # A newer refresh was triggered; abort this one
 		var batch_end := mini(i + POOL_BATCH_SIZE, cards.size())
 		while i < batch_end:
 			var wrapper := _create_card_wrapper(cards[i], true)
@@ -1035,7 +1060,7 @@ func _position_preview() -> void:
 		if CARD_SIZE.x * s > vp.y:
 			s = vp.y / CARD_SIZE.x
 		_preview_card.scale = Vector2(s, s)
-		_preview_card.rotation = -PI / 2.0
+		_preview_card.rotation = - PI / 2.0
 		_preview_card.position.x = 105.0 * s - 75.0
 		_preview_card.position.y = 75.0 * s - 105.0
 	else:
@@ -1372,6 +1397,62 @@ func _on_main_tab_pressed() -> void:
 	_refresh_deck_display()
 
 
+func _make_zoom_button(label: String, tooltip: String) -> Button:
+	var btn := Button.new()
+	btn.text = label
+	btn.tooltip_text = tooltip
+	btn.custom_minimum_size = Vector2(28, 28)
+	btn.focus_mode = Control.FOCUS_NONE
+	return btn
+
+
+func _on_deck_zoom_in_pressed() -> void:
+	_set_deck_zoom_columns(_deck_zoom_columns - 1)
+
+
+func _on_deck_zoom_out_pressed() -> void:
+	_set_deck_zoom_columns(_deck_zoom_columns + 1)
+
+
+func _on_pool_zoom_in_pressed() -> void:
+	_set_pool_zoom_columns(_pool_zoom_columns - 1)
+
+
+func _on_pool_zoom_out_pressed() -> void:
+	_set_pool_zoom_columns(_pool_zoom_columns + 1)
+
+
+func _set_deck_zoom_columns(cols: int) -> void:
+	cols = clamp(cols, ZOOM_MIN_COLUMNS, ZOOM_MAX_COLUMNS)
+	if cols == _deck_zoom_columns:
+		_update_zoom_buttons()
+		return
+	SfxManager.play("ui_click")
+	_deck_zoom_columns = cols
+	deck_grid.columns = _deck_zoom_columns
+	_update_zoom_buttons()
+	_refresh_deck_display()
+
+
+func _set_pool_zoom_columns(cols: int) -> void:
+	cols = clamp(cols, ZOOM_MIN_COLUMNS, ZOOM_MAX_COLUMNS)
+	if cols == _pool_zoom_columns:
+		_update_zoom_buttons()
+		return
+	SfxManager.play("ui_click")
+	_pool_zoom_columns = cols
+	pool_grid.columns = _pool_zoom_columns
+	_update_zoom_buttons()
+	_refresh_pool_display()
+
+
+func _update_zoom_buttons() -> void:
+	deck_zoom_in_button.disabled = _deck_zoom_columns <= ZOOM_MIN_COLUMNS
+	deck_zoom_out_button.disabled = _deck_zoom_columns >= ZOOM_MAX_COLUMNS
+	pool_zoom_in_button.disabled = _pool_zoom_columns <= ZOOM_MIN_COLUMNS
+	pool_zoom_out_button.disabled = _pool_zoom_columns >= ZOOM_MAX_COLUMNS
+
+
 # ============================================================
 # Filter Handlers
 # ============================================================
@@ -1433,7 +1514,7 @@ func _on_color_button_pressed(_index: int) -> void:
 
 func _on_invasion_button_pressed(index: int) -> void:
 	# Radio-style: only one can be active, pressing active one deselects
-	var step := index + 1  # 0 → step 1, 1 → step 2
+	var step := index + 1 # 0 → step 1, 1 → step 2
 	if _invasion_filter == step:
 		_invasion_filter = -1
 		invasion_buttons[index].button_pressed = false
