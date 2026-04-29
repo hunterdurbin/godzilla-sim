@@ -44,13 +44,15 @@ func on_enter(ctx: EffectContext) -> void:
 			return
 		final_wars_cards.erase(card)
 
-		var empty_zones := ctx.owner.get_empty_zone_indices()
-		if empty_zones.is_empty():
+		# Allow overload — any non-monster zone is valid; play_battle_card_from_deck
+		# handles destruction of the existing zone contents per rule 11.5.
+		var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
+		if valid_zones.is_empty():
 			ctx.effect_handler.discard_cards(ctx.owner.player_id, [card])
 			continue
 
 		var chosen: int = await ctx.effect_handler.select_zone_target(
-			ctx.owner.player_id, ctx.owner.player_id, empty_zones,
+			ctx.owner.player_id, ctx.owner.player_id, valid_zones,
 			tr("STR_EFF_PLAY_NAMED_FMT") % card.get("name", "card"))
 		if chosen < 0:
 			ctx.effect_handler.discard_cards(ctx.owner.player_id, [card])
