@@ -543,6 +543,8 @@ STR_DB_UNSAVED_DISCARD,Discard,破棄
 STR_DB_DELETE_TITLE,Delete Deck,デッキを削除
 STR_DB_DELETE_OK,Delete,削除
 STR_DB_DELETE_PROMPT,"Delete ""%s""?","「%s」を削除しますか?"
+STR_DB_CLEAR_TITLE,Clear Deck,デッキをクリア
+STR_DB_CLEAR_TEXT,"Remove all cards from this deck? Monster and main deck entries will be cleared.","このデッキの全てのカードを削除しますか? 怪獣デッキとメインデッキの両方がクリアされます。"
 STR_DB_MONSTER_DECK,Monster Deck:,怪獣デッキ:
 STR_DB_MAIN_DECK,Main Deck:,メインデッキ:
 STR_DB_STEP2_CARDS,Step-2 Cards:,足2カード:

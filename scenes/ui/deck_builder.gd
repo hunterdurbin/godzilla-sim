@@ -43,6 +43,7 @@ var pool_scroll: ScrollContainer
 var unsaved_dialog: ConfirmationDialog
 var delete_dialog: ConfirmationDialog
 var empty_save_dialog: ConfirmationDialog
+var clear_dialog: ConfirmationDialog
 var format_info_dialog: AcceptDialog
 var format_info_body: VBoxContainer
 
@@ -317,6 +318,16 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	main_tab_button.toggle_mode = true
 	header.add_child(main_tab_button)
 
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_child(spacer)
+
+	var clear_button := Button.new()
+	clear_button.text = tr("STR_COMMON_CLEAR")
+	clear_button.pressed.connect(_on_clear_pressed)
+	header.add_child(clear_button)
+
 	# Scroll + grid
 	deck_scroll = ScrollContainer.new()
 	deck_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -485,6 +496,13 @@ func _build_dialogs() -> void:
 	empty_save_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	add_child(empty_save_dialog)
 
+	clear_dialog = ConfirmationDialog.new()
+	clear_dialog.title = tr("STR_DB_CLEAR_TITLE")
+	clear_dialog.dialog_text = tr("STR_DB_CLEAR_TEXT")
+	clear_dialog.ok_button_text = tr("STR_COMMON_CLEAR")
+	clear_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
+	add_child(clear_dialog)
+
 	format_info_dialog = AcceptDialog.new()
 	format_info_dialog.min_size = Vector2(560, 540)
 	var info_scroll := ScrollContainer.new()
@@ -546,6 +564,7 @@ func _connect_signals() -> void:
 	unsaved_dialog.confirmed.connect(_on_unsaved_confirmed)
 	delete_dialog.confirmed.connect(_on_delete_confirmed)
 	empty_save_dialog.confirmed.connect(_on_empty_save_confirmed)
+	clear_dialog.confirmed.connect(_on_clear_confirmed)
 
 
 # ============================================================
@@ -1670,6 +1689,22 @@ func _on_delete_confirmed() -> void:
 	var deck_name: String = deck_list.get_item_text(selected[0])
 	DecklistManager.delete_decklist(deck_name)
 	_refresh_deck_list()
+
+
+func _on_clear_pressed() -> void:
+	SfxManager.play("ui_click")
+	if _monster_entries.is_empty() and _main_entries.is_empty():
+		return
+	clear_dialog.popup_centered()
+
+
+func _on_clear_confirmed() -> void:
+	_monster_entries.clear()
+	_main_entries.clear()
+	_has_unsaved_changes = true
+	_refresh_deck_display()
+	_refresh_pool_display()
+	_update_deck_stats()
 
 
 func _refresh_deck_list() -> void:
