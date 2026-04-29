@@ -18,6 +18,7 @@ var deck_stats_label: RichTextLabel
 var validation_label: RichTextLabel
 var back_button: Button
 var format_option: OptionButton
+var format_info_button: Button
 var default_mode_check: CheckBox
 
 # --- Right panel: deck section ---
@@ -42,6 +43,8 @@ var pool_scroll: ScrollContainer
 var unsaved_dialog: ConfirmationDialog
 var delete_dialog: ConfirmationDialog
 var empty_save_dialog: ConfirmationDialog
+var format_info_dialog: AcceptDialog
+var format_info_body: VBoxContainer
 
 # --- State ---
 var _monster_entries: Array = []
@@ -228,10 +231,23 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	format_col.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	stats_row.add_child(format_col)
 
+	var format_row := HBoxContainer.new()
+	format_row.add_theme_constant_override("separation", 4)
+	format_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	format_col.add_child(format_row)
+
+	format_info_button = Button.new()
+	format_info_button.text = "i"
+	format_info_button.tooltip_text = tr("STR_DB_FORMAT_INFO_TOOLTIP")
+	format_info_button.custom_minimum_size = Vector2(28, 28)
+	format_info_button.focus_mode = Control.FOCUS_NONE
+	format_row.add_child(format_info_button)
+
 	format_option = OptionButton.new()
+	format_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for i in range(GameModeValidator.MODES.size()):
 		format_option.add_item(tr(GameModeValidator.MODES[i]["label"]), i)
-	format_col.add_child(format_option)
+	format_row.add_child(format_option)
 
 	default_mode_check = CheckBox.new()
 	default_mode_check.text = tr("STR_DB_SET_AS_DEFAULT")
@@ -469,6 +485,21 @@ func _build_dialogs() -> void:
 	empty_save_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	add_child(empty_save_dialog)
 
+	format_info_dialog = AcceptDialog.new()
+	format_info_dialog.min_size = Vector2(560, 540)
+	var info_scroll := ScrollContainer.new()
+	info_scroll.custom_minimum_size = Vector2(520, 480)
+	info_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	info_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	format_info_dialog.add_child(info_scroll)
+
+	format_info_body = VBoxContainer.new()
+	format_info_body.add_theme_constant_override("separation", 8)
+	format_info_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_scroll.add_child(format_info_body)
+	add_child(format_info_dialog)
+
 
 func _apply_panel_style(panel: PanelContainer) -> void:
 	var style := StyleBoxFlat.new()
@@ -508,6 +539,7 @@ func _connect_signals() -> void:
 		invasion_buttons[i].pressed.connect(_on_invasion_button_pressed.bind(i))
 	sort_option.item_selected.connect(_on_sort_changed)
 	format_option.item_selected.connect(_on_format_changed)
+	format_info_button.pressed.connect(_show_format_info)
 	default_mode_check.toggled.connect(_on_default_mode_toggled)
 
 	# Dialogs
@@ -1423,6 +1455,107 @@ func _index_of_mode(mode_id: String) -> int:
 		if GameModeValidator.MODES[i]["id"] == mode_id:
 			return i
 	return 0
+
+
+# ============================================================
+# Format Info Modal
+# ============================================================
+
+func _show_format_info() -> void:
+	SfxManager.play("ui_click")
+	_populate_format_info(_game_mode)
+	format_info_dialog.popup_centered()
+
+
+func _populate_format_info(mode_id: String) -> void:
+	for child in format_info_body.get_children():
+		child.queue_free()
+
+	var mode := GameModeValidator.get_mode(mode_id)
+	if mode.is_empty():
+		return
+
+	format_info_dialog.title = tr("STR_DB_FORMAT_INFO_TITLE_FMT") % tr(mode.get("label", ""))
+
+	_add_info_heading(tr("STR_DB_FORMAT_INFO_DESCRIPTION"))
+	_add_info_paragraph(tr(mode.get("desc", "")))
+
+	if not mode.has("card_pool"):
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_ALL_ALLOWED"))
+		return
+
+	var pool: Dictionary = mode["card_pool"]
+
+	var sets: Array = pool.get("include_sets", [])
+	if not sets.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_INCLUDED_SETS"))
+		var packed := PackedStringArray()
+		for s in sets:
+			packed.append(s)
+		_add_info_paragraph(", ".join(packed))
+
+	var includes: Array = pool.get("include_cards", [])
+	if not includes.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_INCLUDED_CARDS"))
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_INCLUDED_CARDS_SUMMARY_FMT") % includes.size())
+
+	var excludes: Array = pool.get("exclude_cards", [])
+	if not excludes.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_EXCLUDED_CARDS"))
+		_add_info_paragraph(_format_card_list(excludes))
+
+	var restricted: Array = pool.get("restricted", [])
+	if not restricted.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_RESTRICTED"))
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_RESTRICTED_RULE"))
+		_add_info_paragraph(_format_card_list(restricted))
+
+	var pairs: Array = pool.get("choice_restricted", [])
+	if not pairs.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_CHOICE_RESTRICTED"))
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_CHOICE_RULE"))
+		var lines := PackedStringArray()
+		for pair in pairs:
+			lines.append("%s  ⇄  %s" % [_format_card_line(pair[0]), _format_card_line(pair[1])])
+		_add_info_paragraph("\n".join(lines))
+
+
+func _add_info_heading(text: String) -> void:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
+	format_info_body.add_child(label)
+
+
+func _add_info_paragraph(text: String) -> void:
+	var label := RichTextLabel.new()
+	label.bbcode_enabled = true
+	label.fit_content = true
+	label.scroll_active = false
+	label.selection_enabled = true
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.text = text
+	format_info_body.add_child(label)
+
+
+func _format_card_list(card_ids: Array) -> String:
+	var lines := PackedStringArray()
+	for cid in card_ids:
+		lines.append(_format_card_line(cid))
+	return "\n".join(lines)
+
+
+func _format_card_line(card_id: String) -> String:
+	var key := "CARD_%s_NAME" % card_id
+	var translated := TranslationServer.translate(key)
+	var card_name: String
+	if translated != key:
+		card_name = translated
+	else:
+		card_name = CardData.CARD_TEMPLATES.get(card_id, {}).get("name", card_id)
+	return "%s · %s" % [card_id, card_name]
 
 
 # ============================================================

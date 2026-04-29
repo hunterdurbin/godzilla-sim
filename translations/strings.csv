@@ -459,6 +459,22 @@ STR_MODE_RUMBLE_WEST,Rumble (West),ランブル (西)
 STR_MODE_RUMBLE_EAST,Rumble (East),ランブル (東)
 STR_MODE_NO_RULES,No Rules,ルールなし
 STR_MODE_BULKZILLA,BULKZILLA,BULKZILLA
+STR_MODE_RUMBLE_WEST_DESC,Western tournament format. Lags the Japanese release by one booster; uses every Western-released set with a small banlist.,西部トーナメント形式。日本版より1ブースター遅れています。西部で発売済みの全セットと少数の禁止カードを含みます。
+STR_MODE_RUMBLE_EAST_DESC,Tracks the latest Japanese release. Includes every currently-implemented set with a small banlist.,最新の日本版リリースに準拠。現在実装されている全セットと少数の禁止カードを含みます。
+STR_MODE_NO_RULES_DESC,Casual play with no restrictions. Every implemented card is legal.,制限なしのカジュアルプレイ。実装済みのすべてのカードが使用可能です。
+STR_MODE_BULKZILLA_DESC,Budget format. Starter decks plus common and uncommon booster cards. The full allow list is shown below.,低予算形式。スターターデッキに加え、コモンとアンコモンのブースターカードが使用可能。許可リストの全体は下に表示されます。
+STR_DB_FORMAT_INFO_TOOLTIP,Show format rules,形式のルールを表示
+STR_DB_FORMAT_INFO_TITLE_FMT,Format Info — %s,形式情報 — %s
+STR_DB_FORMAT_INFO_ALL_ALLOWED,All cards are allowed in this format.,この形式ではすべてのカードが使用可能です。
+STR_DB_FORMAT_INFO_DESCRIPTION,Description,説明
+STR_DB_FORMAT_INFO_INCLUDED_SETS,Included Sets,含まれるセット
+STR_DB_FORMAT_INFO_INCLUDED_CARDS,Included Cards,含まれるカード
+STR_DB_FORMAT_INFO_INCLUDED_CARDS_SUMMARY_FMT,%d additional cards beyond the included sets.,含まれるセット以外に追加の %d 枚のカード。
+STR_DB_FORMAT_INFO_EXCLUDED_CARDS,Excluded Cards,除外カード
+STR_DB_FORMAT_INFO_RESTRICTED,Restricted Cards,制限カード
+STR_DB_FORMAT_INFO_CHOICE_RESTRICTED,Choice-Restricted Cards,選択制限カード
+STR_DB_FORMAT_INFO_RESTRICTED_RULE,Limit of 1 copy per deck.,1デッキにつき1枚まで。
+STR_DB_FORMAT_INFO_CHOICE_RULE,Paired cards cannot be used in the same deck.,ペアのカードは同じデッキで使用できません。
 STR_DS_SELECT_DECK,SELECT DECK,デッキを選択
 STR_DS_SELECT_YOUR_DECK,SELECT YOUR DECK,あなたのデッキを選択
 STR_DS_P1_DECK,PLAYER 1 DECK,プレイヤー1のデッキ
