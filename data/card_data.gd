@@ -3171,7 +3171,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"threat_level": 5000,
 		"invasion_icon": 1,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_021.gd",
-		"description": "At the beginning of your counter phase, you may discard the top card of your deck. If that card is a green battle card, your opponent discards until they have 4 cards in hand."
+		"description": "At the beginning of your counter phase, discard the top card of your deck. If that card is a green battle card, your opponent discards until they have 4 cards in hand."
 	},
 	{
 		"id": "EBP04-022",

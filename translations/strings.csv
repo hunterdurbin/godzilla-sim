@@ -732,8 +732,6 @@ STR_EFF_EBP04_010_CHOICE_A,Discard 2 cards (set rage to 2),2枚捨てる (<怒�
 STR_EFF_EBP04_010_CHOICE_B,Let rage reset to 0,<怒り>を0にする
 STR_EFF_EBP04_013_PROMPT_FMT,Choose an effect for revealed ranks %s:,公開された等級%sの効果を選ぶ:
 STR_EFF_EBP04_014_PROMPT,"Discard a battle card: this card cannot be countered by 30,000 or less CP this turn (or skip):",交戦カードを1枚捨てる: このターン、撃退力30000以下では撃退されない (またはスキップ):
-STR_EFF_EBP04_021_PROMPT,May discard the top card of your deck:,山札の上のカードを捨てる:
-STR_EFF_EBP04_021_CHOICE,Discard top of deck,山札の上を捨てる
 STR_EFF_EBP04_027_PROMPT,Discard an Invade 2 card to counter this Gigan (or skip):,<足2>のカードを捨ててこの<ガイガン>を撃退 (またはスキップ):
 STR_EFF_EBP04_039_PROMPT,Zilla: Move to a zone adjacent to your monster (or skip):,「ジラ」: あなたの怪獣の隣接エリアへ移動 (またはスキップ):
 STR_EFF_EBP04_045_PROMPT,Discard a non-blue battle card (play cost for Manda -2 rank):,青以外の交戦カードを1枚捨てる (「マンダ」の出現コスト等級-2):
