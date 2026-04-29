@@ -39,18 +39,25 @@ func _migrate_legacy_artwork() -> void:
 	var dir := DirAccess.open(ARTWORK_BASE_PATH)
 	if dir == null:
 		return
-	var en_root := base_path_for_locale("en")
-	var moved := 0
+	# Snapshot directory entries before mutating. Windows' FindFirstFile/
+	# FindNextFile is not safe to use concurrently with directory changes,
+	# and the merge step both creates en/ and removes legacy folders.
+	var legacy_entries: Array[String] = []
 	dir.list_dir_begin()
 	var entry := dir.get_next()
 	while not entry.is_empty():
 		if dir.current_is_dir() and entry != "." and entry != ".." and entry != "en" and entry != "ja":
-			var src := ARTWORK_BASE_PATH.path_join(entry)
-			var dst := en_root.path_join(entry)
-			if _merge_dir_into(src, dst):
-				moved += 1
+			legacy_entries.append(entry)
 		entry = dir.get_next()
 	dir.list_dir_end()
+
+	var en_root := base_path_for_locale("en")
+	var moved := 0
+	for legacy_entry in legacy_entries:
+		var src := ARTWORK_BASE_PATH.path_join(legacy_entry)
+		var dst := en_root.path_join(legacy_entry)
+		if _merge_dir_into(src, dst):
+			moved += 1
 	if moved > 0:
 		print("[ArtworkDownloader] Migrated %d legacy set folder(s) into en/" % moved)
 
@@ -64,26 +71,32 @@ func _merge_dir_into(src: String, dst: String) -> bool:
 	var src_dir := DirAccess.open(src)
 	if src_dir == null:
 		return false
+	# Snapshot file list before mutating the directory (see _migrate_legacy_artwork).
+	var files_to_move: Array[String] = []
 	src_dir.list_dir_begin()
 	var fname := src_dir.get_next()
 	while not fname.is_empty():
 		if not src_dir.current_is_dir():
-			var dp := dst.path_join(fname)
-			if not FileAccess.file_exists(dp):
-				var rename_err := DirAccess.rename_absolute(src.path_join(fname), dp)
-				if rename_err != OK:
-					# Fall back to read/write copy (cross-volume edge case)
-					var data := FileAccess.get_file_as_bytes(src.path_join(fname))
-					var out := FileAccess.open(dp, FileAccess.WRITE)
-					if out:
-						out.store_buffer(data)
-						out.close()
-						DirAccess.remove_absolute(src.path_join(fname))
-			else:
-				# en/ already has this file; drop the legacy copy.
-				DirAccess.remove_absolute(src.path_join(fname))
+			files_to_move.append(fname)
 		fname = src_dir.get_next()
 	src_dir.list_dir_end()
+
+	for fn in files_to_move:
+		var sp := src.path_join(fn)
+		var dp := dst.path_join(fn)
+		if not FileAccess.file_exists(dp):
+			var rename_err := DirAccess.rename_absolute(sp, dp)
+			if rename_err != OK:
+				# Fall back to read/write copy (cross-volume edge case)
+				var data := FileAccess.get_file_as_bytes(sp)
+				var out := FileAccess.open(dp, FileAccess.WRITE)
+				if out:
+					out.store_buffer(data)
+					out.close()
+					DirAccess.remove_absolute(sp)
+		else:
+			# en/ already has this file; drop the legacy copy.
+			DirAccess.remove_absolute(sp)
 	# Try removing the (hopefully empty) src directory.
 	DirAccess.remove_absolute(src)
 	return true
@@ -94,6 +107,14 @@ func artwork_exists(card_number: String, locale: String) -> bool:
 	for ext in IMAGE_EXTENSIONS:
 		if FileAccess.file_exists(base_dir.path_join("%s.%s" % [card_number, ext])):
 			return true
+	# Legacy flat layout (pre-locale) is implicitly the EN pack. Falling back
+	# to it for "en" stops a partially-failed migration from triggering a full
+	# re-download when the files are still on disk under their old paths.
+	if locale == "en":
+		var legacy_dir := LEGACY_BASE_PATH.path_join(_get_set_number(card_number))
+		for ext in IMAGE_EXTENSIONS:
+			if FileAccess.file_exists(legacy_dir.path_join("%s.%s" % [card_number, ext])):
+				return true
 	return false
 
 
@@ -121,7 +142,30 @@ func clear_downloaded_artwork(locale: String = "") -> void:
 	else:
 		var locale_root := base_path_for_locale(locale)
 		_clear_tree(locale_root)
+		# artwork_exists() treats the legacy flat layout as the EN pack, so
+		# wipe those folders too when clearing en/ — otherwise a re-download
+		# would be silently skipped for cards still present in the old layout.
+		if locale == "en":
+			_clear_legacy_flat_layout()
 		print("[ArtworkDownloader] Cleared %s artwork from %s" % [locale, locale_root])
+
+
+func _clear_legacy_flat_layout() -> void:
+	var dir := DirAccess.open(ARTWORK_BASE_PATH)
+	if dir == null:
+		return
+	var legacy_dirs: Array[String] = []
+	dir.list_dir_begin()
+	var entry := dir.get_next()
+	while not entry.is_empty():
+		if dir.current_is_dir() and entry != "." and entry != ".." and entry != "en" and entry != "ja":
+			legacy_dirs.append(entry)
+		entry = dir.get_next()
+	dir.list_dir_end()
+	for d in legacy_dirs:
+		var legacy_path := ARTWORK_BASE_PATH.path_join(d)
+		_remove_dir_contents(legacy_path)
+		DirAccess.remove_absolute(legacy_path)
 
 
 func _clear_tree(root: String) -> void:
@@ -151,9 +195,20 @@ func _remove_dir_contents(path: String) -> void:
 
 
 func start_download() -> void:
+	# Defensive: if a previous run is still in flight (e.g. the user hit Skip
+	# mid-download and is re-entering via Options > Re-download), cancel its
+	# HTTP request and reset state. Without this, the re-entrant call no-ops
+	# at the running guard and the LoadingScreen sits on "Preparing..." forever.
 	if _is_running:
-		return
+		push_warning("[ArtworkDownloader] start_download re-entered while a previous run was active; cancelling")
+		_http.cancel_request()
+		_is_running = false
 	_is_running = true
+
+	# Flip the StatusLabel off "Preparing..." immediately. Without this, the
+	# file-existence scan below leaves the bar idle until _download_batch's
+	# polling loop fires, which can feel like a hang to users.
+	download_bytes_updated.emit(0, 0)
 
 	var locale: String = GameSettings.card_art_locale
 	var all_card_numbers := _get_all_card_numbers()

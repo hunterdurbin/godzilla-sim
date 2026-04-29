@@ -19,8 +19,19 @@ func _ready() -> void:
 
 
 func _prompt_language() -> void:
-	var popup := PopupPanel.new()
-	popup.exclusive = true
+	# Control-based modal instead of PopupPanel. PopupPanel is a Window
+	# subclass and on Windows users have reported it never rendering visibly
+	# — leaving them staring at "Preparing..." with the popup capturing input
+	# but invisible. A plain ColorRect overlay sidesteps the subwindow path.
+	var overlay := ColorRect.new()
+	overlay.name = "LanguagePromptOverlay"
+	overlay.color = Color(0, 0, 0, 0.6)
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(center)
 
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(360, 0)
@@ -30,15 +41,18 @@ func _prompt_language() -> void:
 	panel_style.set_border_width_all(2)
 	panel_style.set_corner_radius_all(8)
 	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 24)
 	margin.add_theme_constant_override("margin_top", 24)
 	margin.add_theme_constant_override("margin_right", 24)
 	margin.add_theme_constant_override("margin_bottom", 24)
+	panel.add_child(margin)
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 16)
+	margin.add_child(vbox)
 
 	var title := Label.new()
 	# Bilingual title — locale isn't set yet, so don't tr() this.
@@ -64,16 +78,11 @@ func _prompt_language() -> void:
 			# reused, not re-downloaded.
 			GameSettings.card_art_locale = locale_id
 			GameSettings.save()
-			popup.hide()
-			popup.queue_free()
+			overlay.queue_free()
 			ArtworkDownloader.start_download.call_deferred())
 		vbox.add_child(btn)
 
-	margin.add_child(vbox)
-	panel.add_child(margin)
-	popup.add_child(panel)
-	add_child(popup)
-	popup.popup_centered()
+	add_child(overlay)
 
 
 func _on_download_bytes_updated(downloaded_bytes: int, total_bytes: int) -> void:
