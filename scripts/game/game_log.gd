@@ -318,7 +318,7 @@ static func render(token: Dictionary) -> String:
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"game_over":
 			var reason_key: String = token.get("reason_key", "")
-			var reason: String = TranslationServer.translate(reason_key) if not reason_key.is_empty() else ""
+			var reason := render_reason(reason_key)
 			return TranslationServer.translate("STR_LOG_GAME_OVER_FMT") \
 				.replace("{PLAYER}", player_name(token.get("winner_id", 0))) \
 				.replace("{REASON}", reason)
