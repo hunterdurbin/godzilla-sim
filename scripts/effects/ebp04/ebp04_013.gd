@@ -2,7 +2,7 @@ extends CardEffect
 ## EBP04-013: Godzilla (2000) - Monster Rank 3 (Blue)
 ## <Enter> If you have 5 or more monster cards in your discard pile, reveal and
 ## discard the top 3 cards of your deck. Of the revealed cards' ranks, <Destroy>
-## all of your opponent's battle cards in the same zone number or retreat your
+## all of your opponent's battle cards in the same zone number and retreat your
 ## opponent's monster card in the same zone number backwards by 1 zone.
 ##
 ## Tested: Yes
@@ -10,7 +10,10 @@ extends CardEffect
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
-## Implementation notes: None
+## Implementation notes: Both effects apply. When both are eligible, the player
+##   picks the resolution order (destroy-then-retreat or retreat-then-destroy);
+##   either is permitted per "and" effects. Retreat fires at most once even if
+##   multiple revealed ranks match the opponent's monster zone.
 
 
 func get_bot_tags() -> Array[String]:
@@ -44,40 +47,48 @@ func on_enter(ctx: EffectContext) -> void:
 		if r > 0 and r not in ranks:
 			ranks.append(r)
 
-	# Determine which effects are available across all ranks
+	# Battle-card zones to destroy: opp zones (rank-1) holding a battle card.
 	var destroy_zones: Array[int] = []
-	var can_retreat: bool = false
 	for rank in ranks:
 		var zone_idx: int = rank - 1
 		if zone_idx < 0 or zone_idx > 7:
 			continue
 		if not ctx.opponent.get_zone_top_card(zone_idx).is_empty():
 			destroy_zones.append(zone_idx)
-		if ctx.opponent.monster_zone == rank and ctx.opponent.monster_zone > 1:
-			can_retreat = true
 
-	if destroy_zones.is_empty() and not can_retreat:
-		return
+	var can_retreat: bool = (
+		ctx.opponent.monster_zone in ranks and ctx.opponent.monster_zone > 1
+	)
 
-	# One choice: destroy battle cards OR retreat monster
-	var options: Array[String] = []
-	var actions: Array[String] = [] # parallel to options; "destroy" | "retreat"
-	if not destroy_zones.is_empty():
-		var zone_numbers: Array = destroy_zones.map(func(z): return str(z + 1))
-		options.append(tr("STR_EFF_EBP04_013_DESTROY_FMT") % ", ".join(zone_numbers))
-		actions.append("destroy")
-	if can_retreat:
-		options.append(tr("STR_EFF_EBP04_013_RETREAT"))
-		actions.append("retreat")
-	var chosen: int = await ctx.effect_handler.select_choice(
-		ctx.owner.player_id, options, tr("STR_EFF_EBP04_013_PROMPT_FMT") % str(ranks))
+	await _resolve_destroy_and_retreat(ctx, destroy_zones, can_retreat)
 
-	if chosen < 0:
-		return
 
-	match actions[chosen]:
-		"destroy":
+func _resolve_destroy_and_retreat(
+	ctx: EffectContext, destroy_zones: Array[int], can_retreat: bool
+) -> void:
+	# Apply destroy + retreat in player-chosen order. When both apply, prompt
+	# for the order; if only one applies, run it directly.
+	var destroy_first: bool = true
+	if not destroy_zones.is_empty() and can_retreat:
+		var zone_list: String = ", ".join(destroy_zones.map(func(z): return str(z + 1)))
+		var chosen: int = await ctx.effect_handler.select_choice(
+			ctx.owner.player_id,
+			[
+				tr("STR_EFF_DESTROY_THEN_RETREAT_FMT") % zone_list,
+				tr("STR_EFF_RETREAT_THEN_DESTROY_FMT") % zone_list,
+			],
+			tr("STR_EFF_CHOOSE_ORDER"))
+		destroy_first = chosen != 1
+
+	if destroy_first:
+		if not destroy_zones.is_empty():
 			await ctx.effect_handler.destroy_zones(ctx.opponent, destroy_zones)
-		"retreat":
+		if can_retreat and ctx.opponent.monster_zone > 1:
 			await ctx.effect_handler.retreat_monster_to_zone(
 				ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
+	else:
+		if can_retreat and ctx.opponent.monster_zone > 1:
+			await ctx.effect_handler.retreat_monster_to_zone(
+				ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
+		if not destroy_zones.is_empty():
+			await ctx.effect_handler.destroy_zones(ctx.opponent, destroy_zones)

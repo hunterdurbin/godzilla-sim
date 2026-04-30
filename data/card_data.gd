@@ -3075,7 +3075,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"threat_level": 24000,
 		"invasion_icon": 2,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_013.gd",
-		"description": "<Enter> If you have 5 or more monster cards in your discard pile, reveal and discard the top 3 cards of your deck. Of the revealed cards' ranks, <Destroy> all of your opponent's battle cards in the same zone number or retreat your opponent's monster card in the same zone number backwards by 1 zone."
+		"description": "<Enter> If you have 5 or more monster cards in your discard pile, reveal and discard the top 3 cards of your deck. Of the revealed cards' ranks, <Destroy> all of your opponent's battle cards in the same zone number and retreat your opponent's monster card in the same zone number backwards by 1 zone."
 	},
 	{
 		"id": "EBP04-014",
