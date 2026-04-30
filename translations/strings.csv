@@ -455,9 +455,9 @@ STR_PUBLIC_STARTING_GAME,Starting game...,ゲームを開始します...
 STR_PUBLIC_LOBBIES,Public Lobbies,公開ロビー
 STR_GAME_MODE,GAME MODE,ゲームモード
 STR_CREATE_LOBBY,Create Lobby,ロビー作成
-STR_MODE_RUMBLE_WEST,Rumble (West),ランブル (西)
-STR_MODE_RUMBLE_EAST,Rumble (East),ランブル (東)
-STR_MODE_NO_RULES,No Rules,ルールなし
+STR_MODE_RUMBLE_WEST,Rumble (West),攻防戦 (西)
+STR_MODE_RUMBLE_EAST,Rumble (East),攻防戦 (東)
+STR_MODE_NO_RULES,No Rules,その他
 STR_MODE_BULKZILLA,BULKZILLA,BULKZILLA
 STR_MODE_RUMBLE_WEST_DESC,Western tournament format. Lags the Japanese release by one booster; uses every Western-released set with a small banlist.,西部トーナメント形式。日本版より1ブースター遅れています。西部で発売済みの全セットと少数の禁止カードを含みます。
 STR_MODE_RUMBLE_EAST_DESC,Tracks the latest Japanese release. Includes every currently-implemented set with a small banlist.,最新の日本版リリースに準拠。現在実装されている全セットと少数の禁止カードを含みます。
@@ -525,8 +525,8 @@ STR_DB_TAB_MAIN,Main,メイン
 STR_DB_CARD_POOL,CARD POOL,カードプール
 "STR_DB_SEARCH_PLACEHOLDER","Search... e.g. godzilla, cp>1000, r=3","検索... 例: ゴジラ, cp>1000, r=3"
 STR_DB_FILTER_ALL,All,全て
-STR_DB_INVASION_STEP1,Step 1,ステップ1
-STR_DB_INVASION_STEP2,Step 2,ステップ2
+STR_DB_INVASION_STEP1,Step 1,進行：1
+STR_DB_INVASION_STEP2,Step 2,進行：2
 STR_DB_SORT_ID,Sort: ID,並び替え: ID
 STR_DB_SORT_NAME,Sort: Name,並び替え: 名前
 STR_DB_SORT_RANK,Sort: Rank,並び替え: ランク
