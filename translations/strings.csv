@@ -7,6 +7,7 @@ STR_MENU_LAN,LAN Multiplayer,LANマルチプレイ
 STR_MENU_ONLINE,Online Multiplayer,オンラインマルチプレイ
 STR_MENU_DECK_BUILDER,Deck Builder,デッキビルダー
 STR_MENU_EXTRAS,Extras,その他
+STR_MENU_DISCORD,Join the Discord to discuss the sim,Discordに参加してシムについて話そう
 STR_MENU_OPTIONS,Options,設定
 STR_MENU_UPDATE_AVAILABLE,Update Available,アップデートあり
 STR_MENU_SOUND_FMT,Sound: {VAL},音量: {VAL}
