@@ -61,6 +61,11 @@ var bot_deck_weights: Dictionary = {}      # {deck_name: int weight, 0=disabled,
 # Update settings
 var skipped_version: String = ""
 
+# Cache invalidation — keys from CardArtworkFixPool.ENTRIES that have already
+# been applied on this install. New keys trigger a one-shot re-download on
+# the next launch.
+var applied_artwork_fixes: Array[String] = []
+
 # Reconnect session data
 var reconnect_room_code: String = ""
 var reconnect_timestamp_sec: int = 0  # Unix time (persists across restarts)
@@ -153,6 +158,7 @@ func _save() -> void:
 	config.set_value("bot", "deck_weights", bot_deck_weights)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
 	config.set_value("updates", "skipped_version", skipped_version)
+	config.set_value("cache", "applied_artwork_fixes", applied_artwork_fixes)
 	config.set_value("reconnect", "room_code", reconnect_room_code)
 	config.set_value("reconnect", "timestamp_sec", reconnect_timestamp_sec)
 	config.set_value("reconnect", "is_host", reconnect_is_host)
@@ -211,6 +217,12 @@ func _load() -> void:
 	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	use_mobile_layout = config.get_value("advanced", "use_mobile_layout", _mobile_default)
 	skipped_version = config.get_value("updates", "skipped_version", "")
+	# ConfigFile returns a generic Array; defensively rebuild as Array[String].
+	var raw_fixes: Array = config.get_value("cache", "applied_artwork_fixes", [])
+	applied_artwork_fixes.clear()
+	for k in raw_fixes:
+		if k is String:
+			applied_artwork_fixes.append(k)
 	reconnect_room_code = config.get_value("reconnect", "room_code", "")
 	reconnect_timestamp_sec = config.get_value("reconnect", "timestamp_sec", 0)
 	reconnect_is_host = config.get_value("reconnect", "is_host", false)

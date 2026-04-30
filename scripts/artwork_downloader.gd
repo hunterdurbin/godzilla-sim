@@ -194,6 +194,65 @@ func _remove_dir_contents(path: String) -> void:
 	dir.list_dir_end()
 
 
+func apply_fix_pool() -> void:
+	## Invalidate locally-cached artwork for any cards listed in
+	## CardArtworkFixPool entries that haven't been applied yet on this
+	## install. Files are deleted from every locale subfolder (and the
+	## legacy flat layout) so a later switch to another locale also re-fetches
+	## the corrected version. start_download() picks the now-missing cards
+	## back up in its normal scan.
+	var unapplied := CardArtworkFixPool.card_ids_for_unapplied(GameSettings.applied_artwork_fixes)
+	if unapplied.is_empty():
+		return
+	var deleted := 0
+	for card_number in unapplied:
+		deleted += _delete_card_artwork_all_locations(card_number)
+	# Mark every entry applied — even if no file existed (fresh install,
+	# already up-to-date). Idempotent; future runs no-op.
+	for key in CardArtworkFixPool.all_keys():
+		if not GameSettings.applied_artwork_fixes.has(key):
+			GameSettings.applied_artwork_fixes.append(key)
+	GameSettings.save()
+	print("[ArtworkDownloader] Fix pool: invalidated %d file(s) across %d card(s)" % [
+		deleted, unapplied.size()
+	])
+
+
+func _delete_card_artwork_all_locations(card_number: String) -> int:
+	## Returns the count of files actually deleted (0 if nothing was cached).
+	## Walks every direct child folder of ARTWORK_BASE_PATH so both the
+	## locale layout (en/<set>/, ja/<set>/) and the pre-locale flat layout
+	## (<set>/) get cleaned.
+	var set_number := _get_set_number(card_number)
+	var dir := DirAccess.open(ARTWORK_BASE_PATH)
+	if dir == null:
+		return 0
+	var subfolders: Array[String] = []
+	dir.list_dir_begin()
+	var entry := dir.get_next()
+	while not entry.is_empty():
+		if dir.current_is_dir() and entry != "." and entry != "..":
+			subfolders.append(entry)
+		entry = dir.get_next()
+	dir.list_dir_end()
+
+	var deleted := 0
+	for sub in subfolders:
+		var card_dir: String
+		if sub == set_number:
+			# Legacy flat layout: ARTWORK_BASE_PATH/<set>/<card>.<ext>
+			card_dir = ARTWORK_BASE_PATH.path_join(sub)
+		else:
+			# Locale layout: ARTWORK_BASE_PATH/<locale>/<set>/<card>.<ext>
+			card_dir = ARTWORK_BASE_PATH.path_join(sub).path_join(set_number)
+		for ext in IMAGE_EXTENSIONS:
+			var path := card_dir.path_join("%s.%s" % [card_number, ext])
+			if FileAccess.file_exists(path):
+				DirAccess.remove_absolute(path)
+				deleted += 1
+	return deleted
+
+
 func start_download() -> void:
 	# Defensive: if a previous run is still in flight (e.g. the user hit Skip
 	# mid-download and is re-entering via Options > Re-download), cancel its
@@ -204,6 +263,10 @@ func start_download() -> void:
 		_http.cancel_request()
 		_is_running = false
 	_is_running = true
+
+	# Invalidate any cached files for cards listed in unapplied fix-pool
+	# entries before the existence scan, so they're picked up as missing.
+	apply_fix_pool()
 
 	# Flip the StatusLabel off "Preparing..." immediately. Without this, the
 	# file-existence scan below leaves the bar idle until _download_batch's
