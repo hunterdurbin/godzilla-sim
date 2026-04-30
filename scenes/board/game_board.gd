@@ -46,6 +46,11 @@ var _client_stats_opponent_hand: Array = []
 var _client_stats_deck_names: Array[String] = ["", ""]
 var _client_stats_decklists: Array = [null, null]
 
+# Session runtime + multiplayer transport
+@onready var session: GameSession = $GameSession
+@onready var multiplayer_sync: MultiplayerSync = $GameSession/MultiplayerSync
+@onready var effect_ui_router: EffectUIRouter = $GameSession/EffectUIRouter
+
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
 @onready var player2_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player2Board
@@ -85,14 +90,8 @@ var _pending_sound_events: PackedStringArray = [] # Sound events buffered for cl
 @onready var btn_cancel: Button = $ActionPanel/Row0/Cancel
 @onready var btn_confirm: Button = $ActionPanel/Row0/Confirm
 
-# Deck search UI references
-@onready var deck_search_overlay: Control = $DeckSearchOverlay
-@onready var deck_search_prompt: Label = $DeckSearchOverlay/DeckSearchPanel/VBox/PromptLabel
-@onready var deck_search_grid: GridContainer = $DeckSearchOverlay/DeckSearchPanel/VBox/ScrollContainer/CardGrid
-@onready var deck_search_skip: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/SkipButton
-@onready var deck_search_show_all: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ShowAllToggle
-@onready var deck_search_stacked: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/StackedToggle
-@onready var deck_search_view_board: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ViewBoardButton
+# Deck search (extracted to scenes/board/overlays/DeckSearchOverlay.tscn)
+@onready var deck_search_overlay = $DeckSearchOverlay
 @onready var show_cards_button: Button = $ShowCardsButton
 @onready var hand_toggle_button: Button = $HandButtonStack/HandToggleButton
 @onready var sort_hand_button: Button = $HandButtonStack/SortHandButton
@@ -100,94 +99,36 @@ var _pending_sound_events: PackedStringArray = [] # Sound events buffered for cl
 @onready var opponent_hand_toggle_button: Button = $OpponentHandButtonStack/OpponentHandToggleButton
 @onready var opponent_sort_hand_button: Button = $OpponentHandButtonStack/OpponentSortHandButton
 
-# Deck arrange overlay UI references
-@onready var deck_arrange_overlay: Control = $DeckArrangeOverlay
-@onready var deck_arrange_prompt: Label = $DeckArrangeOverlay/DeckArrangePanel/VBox/PromptLabel
-@onready var deck_arrange_keep_panel: PanelContainer = $DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/KeepPanel
-@onready var deck_arrange_keep_cards: GridContainer = $DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/KeepPanel/KeepVBox/KeepCards
-@onready var deck_arrange_discard_panel: PanelContainer = $DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/DiscardPanel
-@onready var deck_arrange_discard_cards: GridContainer = $DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/DiscardPanel/DiscardVBox/DiscardCards
-@onready var deck_arrange_view_board: Button = $DeckArrangeOverlay/DeckArrangePanel/VBox/ButtonRow/ViewBoardButton
-@onready var deck_arrange_confirm: Button = $DeckArrangeOverlay/DeckArrangePanel/VBox/ButtonRow/ConfirmButton
+# Deck arrange (extracted to scenes/board/overlays/DeckArrangeOverlay.tscn)
+@onready var deck_arrange_overlay = $DeckArrangeOverlay
 
-# Card select overlay UI references
-@onready var card_pool_select_overlay: Control = $CardSelectOverlay
-@onready var card_pool_select_prompt: Label = $CardSelectOverlay/CardSelectPanel/VBox/PromptLabel
-@onready var card_pool_select_pool_grid: GridContainer = $CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/PoolPanel/PoolVBox/ScrollContainer/PoolGrid
-@onready var card_pool_select_selection_grid: GridContainer = $CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel/SelectionVBox/ScrollContainer/SelectionGrid
-@onready var card_pool_select_selection_label: Label = $CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel/SelectionVBox/SelectionLabel
-@onready var card_pool_select_show_all: CheckButton = $CardSelectOverlay/CardSelectPanel/VBox/ToggleRow/ShowAllToggle
-@onready var card_pool_select_stacked: CheckButton = $CardSelectOverlay/CardSelectPanel/VBox/ToggleRow/StackedToggle
-@onready var card_pool_select_view_board: Button = $CardSelectOverlay/CardSelectPanel/VBox/ToggleRow/ViewBoardButton
-@onready var card_pool_select_skip: Button = $CardSelectOverlay/CardSelectPanel/VBox/ButtonRow/SkipButton
-@onready var card_pool_select_confirm: Button = $CardSelectOverlay/CardSelectPanel/VBox/ButtonRow/ConfirmButton
+# Card select (extracted to scenes/board/overlays/CardSelectOverlay.tscn)
+@onready var card_pool_select_overlay = $CardSelectOverlay
 
-# Discard view UI references
+# Discard view (extracted to scenes/board/overlays/DiscardViewOverlay.tscn)
 @onready var discard_view_overlay: Control = $DiscardViewOverlay
-@onready var discard_view_title: Label = $DiscardViewOverlay/DiscardViewPanel/VBox/TitleLabel
-@onready var discard_view_grid: GridContainer = $DiscardViewOverlay/DiscardViewPanel/VBox/ScrollContainer/CardGrid
-@onready var discard_view_close: Button = $DiscardViewOverlay/DiscardViewPanel/VBox/CloseButton
-@onready var discard_view_stacked: CheckButton = $DiscardViewOverlay/DiscardViewPanel/VBox/StackedToggle
 
 # In-game stacked preference (initialized from GameSettings, remembered for the match)
 var _match_stacked_view: bool = true
 
 # Stored deck search data for toggling between matching/all/stacked
-var _deck_search_matching: Array[Dictionary] = []
-var _deck_search_all: Array[Dictionary] = []
-var _deck_search_matching_ids: Dictionary = {} # card id -> true, for highlighting
 
 # Stored discard view data for stacked toggle
-var _discard_view_cards: Array[Dictionary] = []
 
-# Deck arrange data
-var _arrange_keep: Array[Dictionary] = []
-var _arrange_discard: Array[Dictionary] = []
-var _arrange_dragging_card: Control = null
-var _arrange_drag_source: String = "" # "keep" or "discard"
-var _arrange_drag_index: int = -1
 
-# Card select data
-var _card_select_matching: Array[Dictionary] = []
-var _card_select_all: Array[Dictionary] = []
-var _card_select_matching_ids: Dictionary = {} # card id -> true
-var _card_select_selected: Array[Dictionary] = []
-var _card_select_min_count: int = 0
-var _card_select_max_count: int = 0
-var _arrange_drop_indicator: ColorRect = null
 var _view_board_source_overlay: Control = null
 
-# Monster deck view UI references
+# Monster deck view (extracted to scenes/board/overlays/MonsterDeckViewOverlay.tscn)
 @onready var monster_deck_view_overlay: Control = $MonsterDeckViewOverlay
-@onready var monster_deck_view_title: Label = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/TitleLabel
-@onready var monster_deck_view_grid: GridContainer = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/ScrollContainer/CardGrid
-@onready var monster_deck_view_close: Button = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/CloseButton
-@onready var monster_deck_view_stacked: CheckButton = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/StackedToggle
 
 # Stored monster deck view data for stacked toggle
-var _monster_deck_view_cards: Array[Dictionary] = []
 
 # Zone stack view UI references
+# Zone stack view (extracted to scenes/board/overlays/ZoneStackViewOverlay.tscn)
 @onready var zone_stack_view_overlay: Control = $ZoneStackViewOverlay
-@onready var zone_stack_view_title: Label = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/TitleLabel
-@onready var zone_stack_view_grid: GridContainer = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/ScrollContainer/CardGrid
-@onready var zone_stack_view_close: Button = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/CloseButton
 
-# Card zoom overlay
-@onready var card_zoom_overlay: Control = $CardZoomOverlay
-@onready var card_zoom_container: CenterContainer = $CardZoomOverlay/CardContainer
-
-# Pinch-to-zoom / pan state for card zoom overlay (touch only)
-var _pinch_active: bool = false
-var _pinch_used: bool = false # True after any pinch — suppress dismiss until next fresh tap
-var _pinch_start_distance: float = 0.0
-var _pinch_start_scale: float = 1.0
-var _pinch_touches: Dictionary = {} # index → position
-var _zoom_shown_frame: int = -1 # Frame when overlay was shown (ignore dismiss for 2 frames)
-var _zoom_dragging: bool = false # Single-finger drag active
-var _zoom_drag_start: Vector2 = Vector2.ZERO # Touch start position for deadzone check
-const PINCH_MAX_SCALE: float = 3.0
-const ZOOM_DRAG_DEADZONE: float = 20.0
+# Card zoom (extracted to scenes/board/overlays/CardZoomOverlay.tscn)
+@onready var card_zoom_overlay = $CardZoomOverlay
 
 # Turn tracker: main phase labels [player_id][phase_index]
 @onready var _turn_tracker_phases: Array = [
@@ -245,7 +186,6 @@ var _preview_bg: Panel
 var _preview_card: Control
 
 # Stored zone stack view data
-var _zone_stack_view_cards: Array[Dictionary] = []
 var _cards_revealed_active: bool = false
 
 # Tracks the Card node that received the most recent effect-card highlight so
@@ -336,9 +276,7 @@ var _stats_uploaded: bool = false
 # Standby choice selection state (for choosing ability resolution order)
 var _choice_selecting: bool = false
 var _choice_player_id: int = -1
-var _choice_buttons: Array[Button] = []
-var _choice_container: VBoxContainer = null
-var _choice_panel: PanelContainer = null # Mobile wrapper panel
+var _choice_overlay: ChoiceOverlay = ChoiceOverlay.new()
 
 # Monster rank-up selection state
 var _rankup_selecting: bool = false
@@ -513,66 +451,20 @@ func _ready() -> void:
 			seed(loaded_seed)
 			print("[GameBoard._ready] Seeded RNG with %d (non-bot mode)" % loaded_seed)
 
-		# Host / solo: create and run TurnManager
-		turn_manager = TurnManager.new()
+		# Host / solo: GameSession constructs TurnManager + sets player names
+		var loaded_save: Dictionary = {}
 		if not GameSerializer.pending_load.is_empty():
-			turn_manager.setup_from_save(GameSerializer.pending_load)
+			loaded_save = GameSerializer.pending_load
 			_loaded_from_save = true
 			_first_player_id = GameSerializer.pending_load.get("first_player_id", 0)
 			GameSerializer.pending_load = {}
-		else:
-			turn_manager.setup(CardData)
+		turn_manager = session.start_host_session(CardData, local_player_id, loaded_save)
 
-		# Set player names from settings
-		turn_manager.game_state.player_names[local_player_id] = GameSettings.player_name
-		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
 		for i in range(2):
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
-		# Connect turn manager signals
-		turn_manager.phase_started.connect(_on_phase_started)
-		turn_manager.phase_ended.connect(_on_phase_ended)
-		turn_manager.sub_phase_changed.connect(_on_sub_phase_changed)
-		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
-		turn_manager.turn_started.connect(_on_turn_started)
-		turn_manager.game_ended.connect(_on_game_ended)
-		turn_manager.log_message.connect(_on_log_message)
-		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
-
-		# Connect action handler signals for visual feedback
-		turn_manager.action_handler.cards_drawn.connect(_on_cards_drawn)
-		turn_manager.action_handler.card_discarded.connect(_on_card_discarded)
-		turn_manager.action_handler.rage_gained.connect(_on_rage_gained)
-		turn_manager.action_handler.strategy_card_played.connect(_on_strategy_card_played)
-		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
-		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
-		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
-		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
-		turn_manager.action_handler.play_cancelled.connect(_on_play_cancelled)
-		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
-		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
-		turn_manager.action_handler.counter_prevented.connect(_on_counter_prevented)
-		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
-		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
-
-		# Connect effect handler signals for player choice UIs
-		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
-		turn_manager.action_handler.effect_handler.deck_arrange_requested.connect(_on_deck_arrange_requested)
-		turn_manager.action_handler.effect_handler.card_select_requested.connect(_on_card_select_requested)
-		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
-		turn_manager.action_handler.effect_handler.hand_card_selection_requested.connect(_on_hand_card_selection_requested)
-		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
-		turn_manager.action_handler.effect_handler.strategy_target_requested.connect(_on_strategy_target_requested)
-		turn_manager.action_handler.effect_handler.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
-		turn_manager.action_handler.effect_handler.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
-		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
-		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
-		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
-		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
-		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
-		turn_manager.action_handler.effect_handler.card_evolved.connect(_on_card_evolved)
-		turn_manager.action_handler.effect_handler.card_destroyed.connect(_on_card_destroyed)
+		_connect_game_signals(turn_manager)
 
 		# Set up replay recorder
 		_setup_replay_recorder()
@@ -580,18 +472,6 @@ func _ready() -> void:
 		# Set up bot player for Solo v Bot mode
 		if is_bot_game:
 			_setup_bot()
-
-		# Connect player state signals so mid-effect changes (e.g. search_deck adding
-		# a card to hand) trigger visual updates immediately
-		for player in turn_manager.game_state.players:
-			player.hand_changed.connect(_on_state_changed)
-			player.zones_changed.connect(_on_state_changed)
-			player.rage_changed.connect(_on_state_changed.unbind(1))
-			player.monster_changed.connect(_on_state_changed)
-			player.discard_changed.connect(_on_state_changed)
-			player.deck_changed.connect(_on_state_changed)
-			player.strategy_zones_changed.connect(_on_state_changed)
-			player.discard_reshuffled.connect(_on_discard_reshuffled)
 	else:
 		# Client: initialize empty client state, wait for host RPCs
 		_client_players = [PlayerState.new(0), PlayerState.new(1)]
@@ -599,9 +479,9 @@ func _ready() -> void:
 		# If this is a reconnect (is_in_game was set before scene load), the host
 		# already sent state before this scene existed — request a fresh broadcast.
 		if NetworkManager.is_in_game:
-			_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
+			multiplayer_sync._rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
 			RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
-			_rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
+			multiplayer_sync._rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
 
 	# Connect buttons
 	btn_play_battle.pressed.connect(_on_play_battle_pressed)
@@ -648,17 +528,8 @@ func _ready() -> void:
 			)
 
 	# Connect deck search buttons
-	deck_search_skip.pressed.connect(_on_deck_search_skip)
-	deck_search_show_all.toggled.connect(_on_deck_search_toggled)
-	deck_search_stacked.toggled.connect(_on_deck_search_toggled)
-	deck_search_view_board.pressed.connect(_on_deck_search_view_board)
-	deck_arrange_view_board.pressed.connect(_on_deck_arrange_view_board)
-	deck_arrange_confirm.pressed.connect(_on_deck_arrange_confirm)
-	card_pool_select_skip.pressed.connect(_on_card_pool_select_skip)
-	card_pool_select_confirm.pressed.connect(_on_card_pool_select_confirm)
-	card_pool_select_show_all.toggled.connect(_on_card_select_toggled)
-	card_pool_select_stacked.toggled.connect(_on_card_select_toggled)
-	card_pool_select_view_board.pressed.connect(_on_card_pool_select_view_board)
+	deck_search_overlay.stacked_toggled.connect(func(s: bool): _match_stacked_view = s)
+	card_pool_select_overlay.stacked_toggled.connect(func(s: bool): _match_stacked_view = s)
 	show_cards_button.pressed.connect(_on_show_cards_pressed)
 	hand_toggle_button.pressed.connect(_on_hand_toggle_pressed)
 	sort_hand_button.pressed.connect(_on_sort_hand_pressed)
@@ -679,31 +550,26 @@ func _ready() -> void:
 	# Connect discard view
 	player1_board.discard_clicked.connect(_on_discard_clicked)
 	player2_board.discard_clicked.connect(_on_discard_clicked)
-	discard_view_close.pressed.connect(_hide_discard_view)
-	discard_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_discard_view))
-	discard_view_stacked.toggled.connect(_on_discard_view_stacked_toggled)
+	discard_view_overlay.stacked_toggled.connect(func(stacked: bool): _match_stacked_view = stacked)
 
 	# Connect monster deck view
 	player1_board.monster_deck_clicked.connect(_on_monster_deck_clicked)
 	player2_board.monster_deck_clicked.connect(_on_monster_deck_clicked)
-	monster_deck_view_close.pressed.connect(_hide_monster_deck_view)
-	monster_deck_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_monster_deck_view))
-	monster_deck_view_stacked.toggled.connect(_on_monster_deck_view_stacked_toggled)
+	monster_deck_view_overlay.stacked_toggled.connect(func(stacked: bool): _match_stacked_view = stacked)
 
 	# Connect zone stack view
 	player1_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
 	player2_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
 	player1_board.strategy_slot_clicked.connect(_on_strategy_slot_clicked)
 	player2_board.strategy_slot_clicked.connect(_on_strategy_slot_clicked)
-	zone_stack_view_close.pressed.connect(_hide_zone_stack_view)
-	zone_stack_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_zone_stack_view))
+	zone_stack_view_overlay.closed.connect(_on_zone_stack_view_closed)
 
 	# Connect card zoom (right-click)
 	player1_board.zone_slot_right_clicked.connect(_on_zone_slot_right_clicked)
 	player2_board.zone_slot_right_clicked.connect(_on_zone_slot_right_clicked)
 	player1_board.strategy_slot_right_clicked.connect(_on_strategy_slot_right_clicked)
 	player2_board.strategy_slot_right_clicked.connect(_on_strategy_slot_right_clicked)
-	card_zoom_overlay.gui_input.connect(_on_card_zoom_overlay_input)
+	card_zoom_overlay.slot_reset_callback = _reset_all_zone_slot_input
 
 	# Enable BBCode on log for hoverable card links (no underline)
 	log_output.bbcode_enabled = true
@@ -807,6 +673,68 @@ const _SETTING_KEYS: Array[String] = [
 	"auto_reset_rage", "auto_counter_check", "auto_advance",
 	"confirm_main_phase_pass",
 ]
+
+
+## Wire signals from a freshly-constructed TurnManager into game_board's
+## handlers. Called from initial _ready setup and from the rematch path so
+## the two paths share identical wiring.
+func _connect_game_signals(tm: TurnManager) -> void:
+	# Turn manager
+	tm.phase_started.connect(_on_phase_started)
+	tm.phase_ended.connect(_on_phase_ended)
+	tm.sub_phase_changed.connect(_on_sub_phase_changed)
+	tm.awaiting_player_action.connect(_on_awaiting_action)
+	tm.turn_started.connect(_on_turn_started)
+	tm.game_ended.connect(_on_game_ended)
+	tm.log_message.connect(_on_log_message)
+	tm.confirmation_requested.connect(_on_confirmation_requested)
+
+	# Action handler — visual feedback hooks
+	var ah := tm.action_handler
+	ah.cards_drawn.connect(_on_cards_drawn)
+	ah.card_discarded.connect(_on_card_discarded)
+	ah.rage_gained.connect(_on_rage_gained)
+	ah.strategy_card_played.connect(_on_strategy_card_played)
+	ah.battle_card_played.connect(_on_battle_card_played)
+	ah.monster_advanced.connect(_on_monster_advanced)
+	ah.battle_card_crushed.connect(_on_battle_card_crushed)
+	ah.counter_succeeded.connect(_on_counter_succeeded)
+	ah.play_cancelled.connect(_on_play_cancelled)
+	ah.counter_failed.connect(_on_counter_failed)
+	ah.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
+	ah.counter_prevented.connect(_on_counter_prevented)
+	ah.monster_countered.connect(_on_monster_countered)
+	ah.monster_rankup_requested.connect(_on_monster_rankup_requested)
+
+	# Effect handler — player choice prompts and visual highlights
+	var eh := ah.effect_handler
+	eh.deck_search_requested.connect(_on_deck_search_requested)
+	eh.deck_arrange_requested.connect(_on_deck_arrange_requested)
+	eh.card_select_requested.connect(_on_card_select_requested)
+	eh.hand_discard_requested.connect(_on_hand_discard_requested)
+	eh.hand_card_selection_requested.connect(_on_hand_card_selection_requested)
+	eh.zone_target_requested.connect(_on_zone_target_requested)
+	eh.strategy_target_requested.connect(_on_strategy_target_requested)
+	eh.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
+	eh.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
+	eh.effect_card_highlighted.connect(_on_effect_card_highlighted)
+	eh.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
+	eh.choice_requested.connect(_on_choice_requested)
+	eh.cards_revealed_requested.connect(_on_cards_revealed_requested)
+	eh.log_message.connect(_on_log_message)
+	eh.card_evolved.connect(_on_card_evolved)
+	eh.card_destroyed.connect(_on_card_destroyed)
+
+	# Player state signals — mid-effect mutations trigger immediate UI refresh
+	for player in tm.game_state.players:
+		player.hand_changed.connect(_on_state_changed)
+		player.zones_changed.connect(_on_state_changed)
+		player.rage_changed.connect(_on_state_changed.unbind(1))
+		player.monster_changed.connect(_on_state_changed)
+		player.discard_changed.connect(_on_state_changed)
+		player.deck_changed.connect(_on_state_changed)
+		player.strategy_zones_changed.connect(_on_state_changed)
+		player.discard_reshuffled.connect(_on_discard_reshuffled)
 
 
 func _setup_settings_toggles() -> void:
@@ -950,12 +878,12 @@ func _start_game() -> void:
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == _first_player_chooser_id:
 				RpcLogger.log_send("first_player_choice_requested", 0)
-				_rpc_first_player_choice_requested.rpc_id(peer_id)
+				multiplayer_sync._rpc_first_player_choice_requested.rpc_id(peer_id)
 	else:
 		# Host is the chooser — tell the client to wait
 		_show_first_player_choice()
 		RpcLogger.log_send("first_player_waiting", 0)
-		_rpc_first_player_waiting.rpc()
+		multiplayer_sync._rpc_first_player_waiting.rpc()
 
 	# Wait for the choice to resolve
 	while _first_player_result < 0:
@@ -965,7 +893,7 @@ func _start_game() -> void:
 	_cleanup_first_player_ui()
 	# Tell the client to restore its action panel (waiting client never gets cleanup)
 	RpcLogger.log_send("cleanup_first_player", 0)
-	_rpc_cleanup_first_player.rpc()
+	multiplayer_sync._rpc_cleanup_first_player.rpc()
 	_apply_gradients_and_sync()
 	_first_player_id = _first_player_result
 	_on_log_message(GameLog.first_player_chose(_first_player_result, true))
@@ -974,23 +902,7 @@ func _start_game() -> void:
 
 
 func _setup_replay_recorder() -> void:
-	replay_recorder = ReplayRecorder.new()
-	var seed_val: int = NetworkManager.bot_seed if NetworkManager.bot_seed >= 0 else 0
-	var mode_str: String
-	match NetworkManager.mode:
-		NetworkManager.Mode.SOLO: mode_str = "solo"
-		NetworkManager.Mode.SOLO_BOT: mode_str = "solo_bot"
-		NetworkManager.Mode.HOST, NetworkManager.Mode.CLIENT: mode_str = "lan"
-		NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT: mode_str = "online"
-		_: mode_str = "unknown"
-	var diff_str: String = BotConfig.Difficulty.keys()[NetworkManager.bot_difficulty] if is_bot_game else ""
-	var d_names: Array[String] = [
-		DecklistManager.get_player_deck_name(0),
-		DecklistManager.get_player_deck_name(1),
-	]
-	replay_recorder.start(turn_manager.game_state, seed_val, mode_str, diff_str, d_names, get_tree())
-	turn_manager.log_message.connect(replay_recorder.on_log_message)
-	turn_manager.sub_phase_changed.connect(replay_recorder.on_phase_boundary)
+	replay_recorder = session.setup_replay_recorder(is_bot_game)
 
 
 func _apply_bot_seed() -> void:
@@ -1008,36 +920,7 @@ func _apply_bot_seed() -> void:
 
 
 func _setup_bot() -> void:
-	bot_player = BotPlayer.new()
-	bot_player.config = NetworkManager.bot_config
-	bot_player.bot_player_id = 1
-	bot_player.game_state = turn_manager.game_state
-	bot_player.rules_engine = turn_manager.rules_engine
-	bot_player.turn_manager = turn_manager
-	bot_player.action_handler = turn_manager.action_handler
-	bot_player.effect_handler = turn_manager.action_handler.effect_handler
-	bot_player.scene_tree = get_tree()
-
-	# Connect bot to all decision signals
-	turn_manager.awaiting_player_action.connect(bot_player._on_awaiting_action)
-	turn_manager.confirmation_requested.connect(bot_player._on_confirmation_requested)
-	turn_manager.action_handler.monster_rankup_requested.connect(bot_player._on_monster_rankup_requested)
-	bot_player.effect_handler.choice_requested.connect(bot_player._on_choice_requested)
-	bot_player.effect_handler.hand_discard_requested.connect(bot_player._on_hand_discard_requested)
-	bot_player.effect_handler.deck_search_requested.connect(bot_player._on_deck_search_requested)
-	bot_player.effect_handler.deck_arrange_requested.connect(bot_player._on_deck_arrange_requested)
-	bot_player.effect_handler.card_select_requested.connect(bot_player._on_card_select_requested)
-	bot_player.effect_handler.hand_card_selection_requested.connect(bot_player._on_hand_card_selection_requested)
-	bot_player.effect_handler.zone_target_requested.connect(bot_player._on_zone_target_requested)
-	bot_player.effect_handler.strategy_target_requested.connect(bot_player._on_strategy_target_requested)
-	bot_player.effect_handler.cards_revealed_requested.connect(bot_player._on_cards_revealed_requested)
-
-	# Analyze deck to determine playstyle
-	bot_player.analyze_deck()
-
-	# Set bot player name
-	turn_manager.game_state.player_names[1] = "Bot"
-	GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+	bot_player = session.setup_bot(local_player_id)
 	for i in range(2):
 		if i < _turn_tracker_headers.size():
 			_turn_tracker_headers[i].text = GameLog.player_name(i)
@@ -1174,13 +1057,13 @@ func _on_first_player_chosen(go_first: bool) -> void:
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("first_player_choice_resolved", 4)
-		_rpc_first_player_choice_resolved.rpc_id(NetworkManager.host_peer_id, chosen_id)
+		multiplayer_sync._rpc_first_player_choice_resolved.rpc_id(NetworkManager.host_peer_id, chosen_id)
 	else:
 		_first_player_result = chosen_id
 
 
 ## Host -> Client: tell the client to wait while the host chooses
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_first_player_waiting() -> void:
 	RpcLogger.log_receive("first_player_waiting", 0)
 	if NetworkManager.is_host():
@@ -1190,7 +1073,7 @@ func _rpc_first_player_waiting() -> void:
 
 
 ## Host -> Client: ask the client to choose first/second
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_first_player_choice_requested() -> void:
 	RpcLogger.log_receive("first_player_choice_requested", 0)
 	if NetworkManager.is_host():
@@ -1201,7 +1084,7 @@ func _rpc_first_player_choice_requested() -> void:
 
 
 ## Client -> Host: resolve the first-player choice
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_first_player_choice_resolved(chosen_id: int) -> void:
 	RpcLogger.log_receive("first_player_choice_resolved", 4)
 	if not NetworkManager.is_host():
@@ -1210,7 +1093,7 @@ func _rpc_first_player_choice_resolved(chosen_id: int) -> void:
 
 
 ## Host -> Client: tell waiting client to restore action panel after coin flip
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_cleanup_first_player() -> void:
 	RpcLogger.log_receive("cleanup_first_player", 0)
 	if NetworkManager.is_host():
@@ -2379,20 +2262,8 @@ func _apply_mobile_overlays() -> void:
 		if sc:
 			sc.scroll_deadzone = 40
 
-	# Touch-friendly close/skip/confirm buttons
-	for btn: Button in [deck_search_skip, discard_view_close, monster_deck_view_close,
-			zone_stack_view_close, deck_arrange_confirm, deck_arrange_view_board,
-			deck_search_view_board, card_pool_select_skip, card_pool_select_confirm,
-			card_pool_select_view_board]:
-		btn.custom_minimum_size.y = 55
-		btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-
-	# Touch-friendly CheckButton toggles
-	for cb: CheckButton in [deck_search_show_all, deck_search_stacked,
-			discard_view_stacked, monster_deck_view_stacked,
-			card_pool_select_show_all, card_pool_select_stacked]:
-		cb.custom_minimum_size.y = 55
-		cb.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	# (Touch-friendly close/skip/confirm sizing now lives inside each
+	# extracted overlay's own _ready, gated on GameSettings.use_mobile_layout.)
 
 
 func _create_mobile_phase_label() -> void:
@@ -2638,7 +2509,7 @@ func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> vo
 	else:
 		var params_json := JSON.stringify(params) if not params.is_empty() else ""
 		RpcLogger.log_send("submit_action", 4 + params_json.length())
-		_rpc_submit_action.rpc_id(NetworkManager.host_peer_id, int(action), params_json)
+		multiplayer_sync._rpc_submit_action.rpc_id(NetworkManager.host_peer_id, int(action), params_json)
 
 
 func _update_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: int = 0) -> void:
@@ -2774,7 +2645,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 			for peer_id in NetworkManager.peer_player_map:
 				if NetworkManager.peer_player_map[peer_id] == active_id:
 					RpcLogger.log_send("receive_action_context", actions_json.length() + playable_json.length())
-					_rpc_receive_action_context.rpc_id(peer_id, actions_json, playable_json)
+					multiplayer_sync._rpc_receive_action_context.rpc_id(peer_id, actions_json, playable_json)
 	else:
 		_update_action_buttons(valid_actions)
 
@@ -2806,7 +2677,7 @@ func _on_game_ended(winner_id: int, reason_key: String) -> void:
 			_broadcast_state()
 			_flush_broadcast()
 		RpcLogger.log_send("receive_game_ended", 4 + reason_key.length())
-		_rpc_receive_game_ended.rpc(winner_id, reason_key)
+		multiplayer_sync._rpc_receive_game_ended.rpc(winner_id, reason_key)
 	# Save replay (host)
 	if replay_recorder:
 		replay_recorder.finish(winner_id, reason_key, _first_player_id)
@@ -2816,7 +2687,7 @@ func _on_game_ended(winner_id: int, reason_key: String) -> void:
 			var replay_json := JSON.stringify(replay_recorder._replay.to_dict())
 			var compressed := replay_json.to_utf8_buffer().compress(FileAccess.COMPRESSION_GZIP)
 			print("[Replay] Sending replay to client (%d bytes compressed)" % compressed.size())
-			_rpc_receive_replay.rpc(compressed)
+			multiplayer_sync._rpc_receive_replay.rpc(compressed)
 	RpcLogger.print_summary()
 	_upload_stats(winner_id, reason_key, false)
 
@@ -2831,7 +2702,7 @@ func _on_confirmation_requested(prompt: String, setting: String) -> void:
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == current_pid:
 				RpcLogger.log_send("confirmation_requested", prompt.length() + setting.length())
-				_rpc_confirmation_requested.rpc_id(peer_id, prompt, setting)
+				multiplayer_sync._rpc_confirmation_requested.rpc_id(peer_id, prompt, setting)
 		return
 	# Local player: check their per-player settings
 	if _player_settings[current_pid].get(setting, false):
@@ -2854,7 +2725,7 @@ func _show_confirmation(prompt: String) -> void:
 		turn_manager.confirm()
 	elif is_multiplayer_game:
 		RpcLogger.log_send("confirmation_resolved", 0)
-		_rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
+		multiplayer_sync._rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
 
 
 func _on_state_changed() -> void:
@@ -2917,7 +2788,7 @@ func _on_chat_submitted(text: String) -> void:
 		log_output.scroll_to_line(log_output.get_line_count() - 1)
 	if is_multiplayer_game:
 		RpcLogger.log_send("receive_chat", 4 + filtered.length())
-		_rpc_receive_chat.rpc(local_player_id, filtered)
+		multiplayer_sync._rpc_receive_chat.rpc(local_player_id, filtered)
 	chat_char_count.text = str(chat_input.max_length)
 
 
@@ -3207,12 +3078,12 @@ func _on_concede_pressed() -> void:
 	var winner_id := 1 - loser_id
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("concede", 0)
-		_rpc_concede.rpc_id(NetworkManager.host_peer_id)
+		multiplayer_sync._rpc_concede.rpc_id(NetworkManager.host_peer_id)
 	elif turn_manager:
 		turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
 
 
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_concede() -> void:
 	RpcLogger.log_receive("concede", 0)
 	if not NetworkManager.is_host() or not turn_manager:
@@ -3234,7 +3105,7 @@ func _on_main_menu_pressed() -> void:
 			# Game already over — notify rematch declined
 			if connected:
 				RpcLogger.log_send("rematch_declined", 0)
-				_rpc_rematch_declined.rpc()
+				multiplayer_sync._rpc_rematch_declined.rpc()
 		elif connected and turn_manager and not turn_manager.is_game_over:
 			# Mid-game exit counts as concession
 			if NetworkManager.is_host():
@@ -3243,7 +3114,7 @@ func _on_main_menu_pressed() -> void:
 				turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
 			else:
 				RpcLogger.log_send("concede", 0)
-				_rpc_concede.rpc_id(NetworkManager.host_peer_id)
+				multiplayer_sync._rpc_concede.rpc_id(NetworkManager.host_peer_id)
 		GameSettings.clear_reconnect_session()
 		NetworkManager.is_in_game = false
 		NetworkManager.disconnect_game()
@@ -3278,15 +3149,15 @@ func _on_rematch_pressed() -> void:
 			"main": data.get("main", []),
 		})
 		RpcLogger.log_send("rematch_with_deck", payload.length())
-		_rpc_rematch_with_deck.rpc(payload)
+		multiplayer_sync._rpc_rematch_with_deck.rpc(payload)
 	else:
 		RpcLogger.log_send("rematch_requested", 0)
-		_rpc_rematch_requested.rpc()
+		multiplayer_sync._rpc_rematch_requested.rpc()
 
 	if _opponent_rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
 		RpcLogger.log_send("execute_rematch", 0)
-		_rpc_execute_rematch.rpc()
+		multiplayer_sync._rpc_execute_rematch.rpc()
 
 
 func _execute_rematch() -> void:
@@ -3416,6 +3287,7 @@ func _execute_rematch() -> void:
 	if not is_multiplayer_game or NetworkManager.is_host():
 		# Drop old TurnManager reference (RefCounted — will be GC'd)
 		turn_manager = null
+		session.turn_manager = null
 		await get_tree().process_frame
 
 		# Solo v Bot: seed RNG for deterministic behavior
@@ -3424,74 +3296,17 @@ func _execute_rematch() -> void:
 				NetworkManager.bot_seed = -1
 			_apply_bot_seed()
 
-		turn_manager = TurnManager.new()
-		turn_manager.setup(CardData)
+		turn_manager = session.start_host_session(CardData, local_player_id)
 
-		turn_manager.game_state.player_names[local_player_id] = GameSettings.player_name
-		GameLog.player_names = GameLog.disambiguate(
-			turn_manager.game_state.player_names, local_player_id)
 		for i in range(2):
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
-		# Reconnect turn manager signals
-		turn_manager.phase_started.connect(_on_phase_started)
-		turn_manager.phase_ended.connect(_on_phase_ended)
-		turn_manager.sub_phase_changed.connect(_on_sub_phase_changed)
-		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
-		turn_manager.turn_started.connect(_on_turn_started)
-		turn_manager.game_ended.connect(_on_game_ended)
-		turn_manager.log_message.connect(_on_log_message)
-		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
-
-		# Reconnect action handler signals
-		turn_manager.action_handler.cards_drawn.connect(_on_cards_drawn)
-		turn_manager.action_handler.card_discarded.connect(_on_card_discarded)
-		turn_manager.action_handler.rage_gained.connect(_on_rage_gained)
-		turn_manager.action_handler.strategy_card_played.connect(_on_strategy_card_played)
-		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
-		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
-		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
-		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
-		turn_manager.action_handler.play_cancelled.connect(_on_play_cancelled)
-		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
-		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
-		turn_manager.action_handler.counter_prevented.connect(_on_counter_prevented)
-		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
-		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
-
-		# Reconnect effect handler signals
-		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
-		turn_manager.action_handler.effect_handler.deck_arrange_requested.connect(_on_deck_arrange_requested)
-		turn_manager.action_handler.effect_handler.card_select_requested.connect(_on_card_select_requested)
-		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
-		turn_manager.action_handler.effect_handler.hand_card_selection_requested.connect(_on_hand_card_selection_requested)
-		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
-		turn_manager.action_handler.effect_handler.strategy_target_requested.connect(_on_strategy_target_requested)
-		turn_manager.action_handler.effect_handler.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
-		turn_manager.action_handler.effect_handler.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
-		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
-		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
-		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
-		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
-		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
-		turn_manager.action_handler.effect_handler.card_evolved.connect(_on_card_evolved)
-		turn_manager.action_handler.effect_handler.card_destroyed.connect(_on_card_destroyed)
+		_connect_game_signals(turn_manager)
 
 		# Reconnect bot player for Solo v Bot mode
 		if is_bot_game:
 			_setup_bot()
-
-		# Reconnect player state signals
-		for player in turn_manager.game_state.players:
-			player.hand_changed.connect(_on_state_changed)
-			player.zones_changed.connect(_on_state_changed)
-			player.rage_changed.connect(_on_state_changed.unbind(1))
-			player.monster_changed.connect(_on_state_changed)
-			player.discard_changed.connect(_on_state_changed)
-			player.deck_changed.connect(_on_state_changed)
-			player.strategy_zones_changed.connect(_on_state_changed)
-			player.discard_reshuffled.connect(_on_discard_reshuffled)
 
 		# Set up replay recorder for the new game
 		_setup_replay_recorder()
@@ -3572,7 +3387,7 @@ func _on_rematch_deck_selected(deck_name: String) -> void:
 # --- Rematch RPCs ---
 
 ## Peer -> Peer: signal that this player wants a rematch
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_rematch_requested() -> void:
 	RpcLogger.log_receive("rematch_requested", 0)
 	_opponent_rematch_requested = true
@@ -3581,11 +3396,11 @@ func _rpc_rematch_requested() -> void:
 	if _rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
 		RpcLogger.log_send("execute_rematch", 0)
-		_rpc_execute_rematch.rpc()
+		multiplayer_sync._rpc_execute_rematch.rpc()
 
 
 ## Peer -> Peer: rematch request with a changed deck
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_rematch_with_deck(payload_json: String) -> void:
 	RpcLogger.log_receive("rematch_with_deck", payload_json.length())
 	var json := JSON.new()
@@ -3621,11 +3436,11 @@ func _rpc_rematch_with_deck(payload_json: String) -> void:
 	if _rematch_requested and NetworkManager.is_host():
 		_execute_rematch()
 		RpcLogger.log_send("execute_rematch", 0)
-		_rpc_execute_rematch.rpc()
+		multiplayer_sync._rpc_execute_rematch.rpc()
 
 
 ## Host -> Client: instruct client to execute the rematch reset
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_execute_rematch() -> void:
 	RpcLogger.log_receive("execute_rematch", 0)
 	if NetworkManager.is_host():
@@ -3634,7 +3449,7 @@ func _rpc_execute_rematch() -> void:
 
 
 ## Peer -> Peer: opponent declined rematch (chose Main Menu)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_rematch_declined() -> void:
 	RpcLogger.log_receive("rematch_declined", 0)
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
@@ -4004,111 +3819,31 @@ func _input(event: InputEvent) -> void:
 		if not chat_input.get_global_rect().has_point(event.global_position):
 			chat_input.release_focus()
 
-	var _zoom_fresh := card_zoom_overlay.visible and (Engine.get_process_frames() - _zoom_shown_frame) <= 2
-
-	# Pinch-to-zoom and drag-to-pan on card zoom overlay (touch only)
-	if card_zoom_overlay.visible and event is InputEventScreenTouch:
-		if event.pressed:
-			if _zoom_fresh:
-				get_viewport().set_input_as_handled()
-			else:
-				_pinch_touches[event.index] = event.position
-				if _pinch_touches.size() == 1:
-					_zoom_drag_start = event.position
-					_zoom_dragging = false
-				elif _pinch_touches.size() == 2:
-					_zoom_dragging = false
-					var points: Array = _pinch_touches.values()
-					_pinch_start_distance = (points[0] as Vector2).distance_to(points[1] as Vector2)
-					_pinch_start_scale = card_zoom_container.scale.x
-					_pinch_active = true
-					_pinch_used = true
-				get_viewport().set_input_as_handled()
-		else:
-			if not _pinch_touches.has(event.index):
-				get_viewport().set_input_as_handled()
-			else:
-				_pinch_touches.erase(event.index)
-				if _pinch_active:
-					_pinch_active = _pinch_touches.size() >= 2
-				elif _pinch_touches.is_empty():
-					if _pinch_used or _zoom_dragging:
-						_pinch_used = false
-						_zoom_dragging = false
-					else:
-						_hide_card_zoom()
-				get_viewport().set_input_as_handled()
-		return
-
-	if card_zoom_overlay.visible and event is InputEventScreenDrag:
-		var old_pos: Vector2 = _pinch_touches.get(event.index, event.position)
-		_pinch_touches[event.index] = event.position
-		if _pinch_active and _pinch_touches.size() >= 2:
-			# Two-finger pinch zoom + pan simultaneously
-			var points: Array = _pinch_touches.values()
-			var old_midpoint := old_pos
-			# Compute old midpoint from the other finger's current pos and this finger's old pos
-			var keys: Array = _pinch_touches.keys()
-			var other_idx: int = keys[0] if keys[1] == event.index else keys[1]
-			var other_pos: Vector2 = _pinch_touches[other_idx]
-			old_midpoint = (old_pos + other_pos) / 2.0
-			var new_midpoint: Vector2 = (_pinch_touches[event.index] + other_pos) / 2.0
-			# Pan by midpoint delta
-			card_zoom_container.position += new_midpoint - old_midpoint
-			# Zoom by distance change
-			var dist: float = (points[0] as Vector2).distance_to(points[1] as Vector2)
-			if _pinch_start_distance > 0.0:
-				var new_scale: float = clampf(_pinch_start_scale * dist / _pinch_start_distance, 1.0, PINCH_MAX_SCALE)
-				card_zoom_container.scale = Vector2(new_scale, new_scale)
-				card_zoom_container.pivot_offset = card_zoom_container.size / 2.0
-		elif _pinch_touches.size() == 1:
-			# Single-finger drag to pan (with deadzone)
-			if not _zoom_dragging:
-				if event.position.distance_to(_zoom_drag_start) > ZOOM_DRAG_DEADZONE:
-					_zoom_dragging = true
-			if _zoom_dragging:
-				card_zoom_container.position += event.position - old_pos
-		get_viewport().set_input_as_handled()
-		return
-
-	# Magnify gesture (trackpad pinch) — scales card zoom
-	if card_zoom_overlay.visible and event is InputEventMagnifyGesture:
-		_apply_card_zoom(event.factor)
-		get_viewport().set_input_as_handled()
-		return
-
-	# Dismiss card zoom on any click (must be first — blocks input from reaching overlays behind)
-	# Skip emulated mouse events on touch — ScreenTouch handler above covers dismiss
-	if card_zoom_overlay.visible and not _zoom_fresh and event is InputEventMouseButton and event.pressed:
-		if TouchHelper.is_touch_device():
-			get_viewport().set_input_as_handled()
-			return
-		_hide_card_zoom()
-		get_viewport().set_input_as_handled()
-		return
+	# Card-zoom overlay handles its own touch/click/magnify input internally
+	# (see card_zoom_overlay.gd _unhandled_input).
 
 	# Dismiss overlays and skip optional prompts (priority order, topmost first)
 	# Uses ui_cancel (ESC on keyboard, B/Circle on controller)
 	if event.is_action_pressed("ui_cancel"):
 		if card_zoom_overlay.visible:
-			_hide_card_zoom()
+			card_zoom_overlay.close()
 		elif deck_arrange_overlay.visible:
 			pass # Mandatory — must confirm
 		elif card_pool_select_overlay.visible:
-			_on_card_pool_select_skip()
+			_resolve_card_select_local([])
+			card_pool_select_overlay.close()
 		elif deck_search_overlay.visible:
 			# ESC dismisses only when skip is allowed; otherwise the prompt is mandatory.
-			if deck_search_skip.visible:
-				_on_deck_search_skip()
+			if deck_search_overlay.skip_visible():
+				_resolve_deck_search_local({})
+				deck_search_overlay.close()
 		elif discard_view_overlay.visible:
-			_hide_discard_view()
+			discard_view_overlay.close()
 		elif monster_deck_view_overlay.visible:
-			if _rankup_selecting:
-				pass # Mandatory — must pick a monster
-			else:
-				_hide_monster_deck_view()
+			# Overlay self-blocks close while in mandatory rank-up mode.
+			monster_deck_view_overlay.close()
 		elif zone_stack_view_overlay.visible:
-			_hide_zone_stack_view()
+			zone_stack_view_overlay.close()
 		elif _choice_selecting:
 			pass # Mandatory — must pick an option
 		elif _hand_card_selecting and _hand_card_allow_skip:
@@ -4129,18 +3864,16 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# Handle arrange card drag via _input (reparenting breaks gui_input mouse grab)
-	if _arrange_dragging_card:
+	# Handle arrange card drag via _input (reparenting breaks gui_input mouse grab).
+	# Overlay owns the drag state — game_board only forwards motion + release.
+	if deck_arrange_overlay.has_dragging_card():
 		if event is InputEventMouseMotion:
-			_arrange_dragging_card.global_position = get_global_mouse_position() - _arrange_dragging_card.drag_offset
-			_update_arrange_drop_indicator()
+			deck_arrange_overlay.handle_drag_motion()
 			get_viewport().set_input_as_handled()
 			return
 		if event is InputEventMouseButton \
 				and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
-			_arrange_dragging_card.is_dragging = false
-			_arrange_dragging_card.z_index = 0
-			_on_arrange_card_drag_ended(_arrange_dragging_card)
+			deck_arrange_overlay.handle_drag_release()
 			get_viewport().set_input_as_handled()
 			return
 
@@ -4553,80 +4286,25 @@ func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary]
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
-				_rpc_deck_search_requested.rpc_id(peer_id, matching_json, all_json, prompt, allow_skip)
+				multiplayer_sync._rpc_deck_search_requested.rpc_id(peer_id, matching_json, all_json, prompt, allow_skip)
 		return
 	_show_deck_search(matching_cards, all_cards, prompt, allow_skip)
 
 
 func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, allow_skip: bool = true) -> void:
-	# Store data for toggling
-	_deck_search_matching = matching
-	_deck_search_all = all_cards
-	_deck_search_matching_ids.clear()
-	for card_data in matching:
-		_deck_search_matching_ids[card_data.get("id", "")] = true
-
-	deck_search_prompt.text = _resolve_translated_text(prompt)
-	deck_search_skip.visible = allow_skip
-	deck_search_show_all.set_pressed_no_signal(matching.is_empty())
-	deck_search_stacked.set_pressed_no_signal(_match_stacked_view)
-	deck_search_overlay.visible = true
-
-	_refresh_deck_search_grid()
-
-
-func _refresh_deck_search_grid() -> void:
-	var show_all := deck_search_show_all.button_pressed
-	var stacked := deck_search_stacked.button_pressed
-	var cards: Array[Dictionary] = _deck_search_all if show_all else _deck_search_matching
-	var all_selectable: bool = not show_all
-
-	# Clear previous cards
-	_clear_grid(deck_search_grid, _on_deck_search_card_clicked)
-
-	if stacked:
-		var groups := _group_cards(cards, _deck_search_matching_ids)
-		for group in groups:
-			var card_data: Dictionary = group["card_data"]
-			var count: int = group["count"]
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			var is_match: bool = all_selectable or group["has_match"]
-			card.is_selectable = is_match
-			if is_match:
-				card.card_clicked.connect(_on_deck_search_card_clicked)
-			else:
-				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			deck_search_grid.add_child(card)
-			_add_count_badge(card, count)
-	else:
-		for card_data in cards:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			var is_match: bool = all_selectable or _deck_search_matching_ids.has(card_data.get("id", ""))
-			card.is_selectable = is_match
-			if is_match:
-				card.card_clicked.connect(_on_deck_search_card_clicked)
-			else:
-				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			deck_search_grid.add_child(card)
-
-
-func _on_deck_search_toggled(_value: bool) -> void:
-	_match_stacked_view = deck_search_stacked.button_pressed
-	_refresh_deck_search_grid()
+	deck_search_overlay.open(
+		matching,
+		all_cards,
+		_resolve_translated_text(prompt),
+		allow_skip,
+		_match_stacked_view,
+		_show_card_zoom,
+		_resolve_deck_search_local,
+		_on_deck_search_view_board,
+	)
 
 
 func _on_deck_search_view_board() -> void:
-	deck_search_overlay.visible = false
 	_view_board_source_overlay = deck_search_overlay
 	show_cards_button.visible = true
 
@@ -5068,24 +4746,10 @@ func _on_show_cards_pressed() -> void:
 		deck_search_overlay.visible = true
 
 
-func _on_deck_search_card_clicked(card: Control) -> void:
-	var selected: Dictionary = card.card_data if "card_data" in card else {}
-	_hide_deck_search()
-	_resolve_deck_search_local(selected)
-
-
-func _on_deck_search_skip() -> void:
-	_hide_deck_search()
-	_resolve_deck_search_local({})
-
-
 func _hide_deck_search() -> void:
-	deck_search_overlay.visible = false
+	# Defensive helper used by ESC handlers — overlay handles its own state.
+	deck_search_overlay.close()
 	show_cards_button.visible = false
-	_clear_grid(deck_search_grid, _on_deck_search_card_clicked)
-	_deck_search_matching = []
-	_deck_search_all = []
-	_deck_search_matching_ids.clear()
 
 
 # --- Deck arrange overlay UI ---
@@ -5100,216 +4764,29 @@ func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("deck_arrange_requested", cards_json.length() + prompt.length())
-				_rpc_deck_arrange_requested.rpc_id(peer_id, cards_json, prompt)
+				multiplayer_sync._rpc_deck_arrange_requested.rpc_id(peer_id, cards_json, prompt)
 		return
 	_show_deck_arrange(cards, prompt)
 
 
 func _show_deck_arrange(cards: Array[Dictionary], prompt: String) -> void:
-	_arrange_keep = cards.duplicate()
-	_arrange_discard = []
-	deck_arrange_prompt.text = _resolve_translated_text(prompt)
-	deck_arrange_overlay.visible = true
-	_refresh_deck_arrange()
-
-
-func _refresh_deck_arrange() -> void:
-	# Clear existing cards
-	for child in deck_arrange_keep_cards.get_children():
-		if child.drag_started.is_connected(_on_arrange_card_drag_started):
-			child.drag_started.disconnect(_on_arrange_card_drag_started)
-		if child.drag_ended.is_connected(_on_arrange_card_drag_ended):
-			child.drag_ended.disconnect(_on_arrange_card_drag_ended)
-		child.queue_free()
-	for child in deck_arrange_discard_cards.get_children():
-		if child.drag_started.is_connected(_on_arrange_card_drag_started):
-			child.drag_started.disconnect(_on_arrange_card_drag_started)
-		if child.drag_ended.is_connected(_on_arrange_card_drag_ended):
-			child.drag_ended.disconnect(_on_arrange_card_drag_ended)
-		child.queue_free()
-
-	# Populate keep area
-	for i in range(_arrange_keep.size()):
-		var card_data := _arrange_keep[i]
-		var card: Control = _create_arrange_card(card_data)
-		card.drag_started.connect(_on_arrange_card_drag_started.bind(card, "keep", i))
-		card.drag_ended.connect(_on_arrange_card_drag_ended.bind(card))
-		deck_arrange_keep_cards.add_child(card)
-		_add_position_badge(card, i + 1)
-
-	# Populate discard area
-	for i in range(_arrange_discard.size()):
-		var card_data := _arrange_discard[i]
-		var card: Control = _create_arrange_card(card_data)
-		card.drag_started.connect(_on_arrange_card_drag_started.bind(card, "discard", i))
-		card.drag_ended.connect(_on_arrange_card_drag_ended.bind(card))
-		deck_arrange_discard_cards.add_child(card)
-
-
-func _create_arrange_card(card_data: Dictionary) -> Control:
-	var card: Control = card_scene.instantiate()
-	if card.has_method("set_card_data_dict"):
-		card.set_card_data_dict(card_data)
-	card.custom_minimum_size = Vector2(100, 140)
-	card.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	card.drag_enabled = true
-	card.is_selectable = false
-	_set_gallery_hover(card)
-	card.card_right_clicked.connect(_on_card_long_press_zoom)
-	return card
-
-
-func _on_arrange_card_drag_started(card: Control, source: String, index: int) -> void:
-	_arrange_dragging_card = card
-	_arrange_drag_source = source
-	_arrange_drag_index = index
-	# Kill hover tween — it keeps running after reparent and overrides position
-	if card.tween and card.tween.is_valid():
-		card.tween.kill()
-	card.scale = Vector2.ONE
-	# Create drop indicator (positioned absolutely over the overlay, not inside the grid)
-	_arrange_drop_indicator = ColorRect.new()
-	_arrange_drop_indicator.custom_minimum_size = Vector2(3, 140)
-	_arrange_drop_indicator.size = Vector2(3, 140)
-	_arrange_drop_indicator.color = Color(0.4, 0.7, 1.0, 0.9)
-	_arrange_drop_indicator.visible = false
-	deck_arrange_overlay.add_child(_arrange_drop_indicator)
-	# Capture position before reparenting out of grid
-	var gpos := card.global_position
-	card.get_parent().remove_child(card)
-	deck_arrange_overlay.add_child(card)
-	# Zero anchors left over from grid layout and restore position
-	card.anchor_left = 0.0
-	card.anchor_top = 0.0
-	card.anchor_right = 0.0
-	card.anchor_bottom = 0.0
-	card.size = Vector2(100, 140)
-	card.global_position = gpos
-
-
-func _on_arrange_card_drag_ended(card: Control) -> void:
-	var card_center := card.global_position + card.size * card.scale / 2.0
-	var keep_rect := deck_arrange_keep_panel.get_global_rect()
-	var discard_rect := deck_arrange_discard_panel.get_global_rect()
-
-	if keep_rect.has_point(card_center):
-		var card_data: Dictionary
-		if _arrange_drag_source == "keep":
-			card_data = _arrange_keep[_arrange_drag_index]
-			_arrange_keep.remove_at(_arrange_drag_index)
-		else:
-			card_data = _arrange_discard[_arrange_drag_index]
-			_arrange_discard.remove_at(_arrange_drag_index)
-		var insert_idx := _get_arrange_insert_index(card_center, "keep")
-		insert_idx = clampi(insert_idx, 0, _arrange_keep.size())
-		_arrange_keep.insert(insert_idx, card_data)
-	elif discard_rect.has_point(card_center):
-		var card_data: Dictionary
-		if _arrange_drag_source == "keep":
-			card_data = _arrange_keep[_arrange_drag_index]
-			_arrange_keep.remove_at(_arrange_drag_index)
-		else:
-			card_data = _arrange_discard[_arrange_drag_index]
-			_arrange_discard.remove_at(_arrange_drag_index)
-		var insert_idx := _get_arrange_insert_index(card_center, "discard")
-		insert_idx = clampi(insert_idx, 0, _arrange_discard.size())
-		_arrange_discard.insert(insert_idx, card_data)
-	# else: dropped outside both panels — no change
-
-	if _arrange_drop_indicator and is_instance_valid(_arrange_drop_indicator):
-		_arrange_drop_indicator.queue_free()
-		_arrange_drop_indicator = null
-	card.queue_free()
-	_arrange_dragging_card = null
-	_refresh_deck_arrange()
-
-
-func _get_arrange_insert_index(drop_pos: Vector2, target: String) -> int:
-	var container: GridContainer = deck_arrange_keep_cards if target == "keep" else deck_arrange_discard_cards
-	var best_idx := container.get_child_count()
-	var best_dist := INF
-	for i in range(container.get_child_count()):
-		var child: Control = container.get_child(i) as Control
-		var child_center := child.global_position + child.size * child.scale / 2.0
-		var dist: float = drop_pos.distance_squared_to(child_center)
-		if dist < best_dist:
-			best_dist = dist
-			if drop_pos.x < child_center.x:
-				best_idx = i
-			else:
-				best_idx = i + 1
-	return best_idx
-
-
-func _update_arrange_drop_indicator() -> void:
-	if not _arrange_drop_indicator or not is_instance_valid(_arrange_drop_indicator):
-		return
-	var card_center := _arrange_dragging_card.global_position + _arrange_dragging_card.size * _arrange_dragging_card.scale / 2.0
-	var keep_rect := deck_arrange_keep_panel.get_global_rect()
-	var discard_rect := deck_arrange_discard_panel.get_global_rect()
-
-	var container: GridContainer = null
-	var target_name := ""
-	if keep_rect.has_point(card_center):
-		container = deck_arrange_keep_cards
-		target_name = "keep"
-	elif discard_rect.has_point(card_center):
-		container = deck_arrange_discard_cards
-		target_name = "discard"
-
-	if container == null or container.get_child_count() == 0:
-		_arrange_drop_indicator.visible = false
-		return
-
-	var insert_idx := _get_arrange_insert_index(card_center, target_name)
-	insert_idx = clampi(insert_idx, 0, container.get_child_count())
-
-	# Get the reference card for positioning (the card at or just before the insert point)
-	var ref_child: Control
-	var line_x: float
-	if insert_idx < container.get_child_count():
-		ref_child = container.get_child(insert_idx) as Control
-		line_x = ref_child.global_position.x - 2.0
-	else:
-		ref_child = container.get_child(container.get_child_count() - 1) as Control
-		line_x = ref_child.global_position.x + ref_child.size.x * ref_child.scale.x + 2.0
-
-	_arrange_drop_indicator.global_position = Vector2(line_x, ref_child.global_position.y)
-	_arrange_drop_indicator.size.y = ref_child.size.y * ref_child.scale.y
-	_arrange_drop_indicator.visible = true
-
-
-func _add_position_badge(card: Control, pos: int) -> void:
-	var badge := Label.new()
-	badge.name = "PositionBadge"
-	badge.text = str(pos)
-	badge.add_theme_font_size_override("font_size", 16)
-	badge.add_theme_color_override("font_color", Color.WHITE)
-	badge.add_theme_color_override("font_outline_color", Color.BLACK)
-	badge.add_theme_constant_override("outline_size", 4)
-	badge.position = Vector2(8, 8)
-	card.add_child(badge)
+	deck_arrange_overlay.open(
+		cards,
+		_resolve_translated_text(prompt),
+		_show_card_zoom,
+		_on_deck_arrange_resolved,
+		_on_deck_arrange_view_board,
+	)
 
 
 func _on_deck_arrange_view_board() -> void:
-	deck_arrange_overlay.visible = false
 	_view_board_source_overlay = deck_arrange_overlay
 	show_cards_button.visible = true
 
 
-func _on_deck_arrange_confirm() -> void:
-	deck_arrange_overlay.visible = false
+func _on_deck_arrange_resolved(keep: Array, discard: Array) -> void:
 	show_cards_button.visible = false
 	_view_board_source_overlay = null
-	var keep := _arrange_keep.duplicate()
-	var discard := _arrange_discard.duplicate()
-	_arrange_keep.clear()
-	_arrange_discard.clear()
-	# Clear card instances
-	for child in deck_arrange_keep_cards.get_children():
-		child.queue_free()
-	for child in deck_arrange_discard_cards.get_children():
-		child.queue_free()
 	_resolve_deck_arrange_local(keep, discard)
 
 
@@ -5326,204 +4803,38 @@ func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary]
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("card_select_requested", matching_json.length() + all_json.length() + prompt.length())
-				_rpc_card_select_requested.rpc_id(peer_id, matching_json, all_json, prompt, min_count, max_count)
+				multiplayer_sync._rpc_card_select_requested.rpc_id(peer_id, matching_json, all_json, prompt, min_count, max_count)
 		return
 	_show_card_select(matching_cards, all_cards, prompt, min_count, max_count)
 
 
 func _show_card_select(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int) -> void:
-	_card_select_matching = matching
-	_card_select_all = all_cards
-	_card_select_matching_ids.clear()
-	for card_data in matching:
-		_card_select_matching_ids[card_data.get("id", "")] = true
-	_card_select_selected = []
-	_card_select_min_count = min_count
-	_card_select_max_count = max_count
-
-	card_pool_select_prompt.text = _resolve_translated_text(prompt)
-	card_pool_select_show_all.set_pressed_no_signal(matching.is_empty())
-	card_pool_select_stacked.set_pressed_no_signal(_match_stacked_view)
-	card_pool_select_overlay.visible = true
-
-	_refresh_card_select()
-
-
-func _refresh_card_select() -> void:
-	_refresh_card_select_pool()
-	_refresh_card_select_selection()
-	_update_card_select_buttons()
-
-
-func _get_card_select_pool() -> Array[Dictionary]:
-	var show_all := card_pool_select_show_all.button_pressed
-	var source: Array[Dictionary] = _card_select_all if show_all else _card_select_matching
-	# Remove selected cards from pool by unique ID (count-aware)
-	var selected_ids: Dictionary = {}
-	for card in _card_select_selected:
-		var id: String = card.get("id", "")
-		selected_ids[id] = selected_ids.get(id, 0) + 1
-	var pool: Array[Dictionary] = []
-	for card in source:
-		var id: String = card.get("id", "")
-		if selected_ids.get(id, 0) > 0:
-			selected_ids[id] -= 1
-		else:
-			pool.append(card)
-	return pool
-
-
-func _refresh_card_select_pool() -> void:
-	var stacked := card_pool_select_stacked.button_pressed
-	var show_all := card_pool_select_show_all.button_pressed
-	var pool := _get_card_select_pool()
-	var all_selectable: bool = not show_all
-	var at_limit: bool = _card_select_selected.size() >= _card_select_max_count
-
-	# Get pool filter from effect handler if available
 	var pool_filter := Callable()
 	if turn_manager:
 		pool_filter = turn_manager.action_handler.effect_handler._card_select_pool_filter
-
-	_clear_grid(card_pool_select_pool_grid, _on_card_select_pool_clicked)
-
-	var card_size := Vector2(120, 168)
-	if stacked:
-		var groups := _group_cards(pool, _card_select_matching_ids)
-		for group in groups:
-			var card_data: Dictionary = group["card_data"]
-			var count: int = group["count"]
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.custom_minimum_size = card_size
-			card.size = card_size
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			var is_match: bool = all_selectable or group["has_match"]
-			var passes_filter: bool = not pool_filter.is_valid() or pool_filter.call(card_data, _card_select_selected)
-			var can_select: bool = is_match and not at_limit and passes_filter
-			card.is_selectable = can_select
-			card.click_on_release = true
-			if can_select:
-				card.card_clicked.connect(_on_card_select_pool_clicked)
-			else:
-				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			card_pool_select_pool_grid.add_child(card)
-			_add_count_badge(card, count)
-	else:
-		for card_data in pool:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.custom_minimum_size = card_size
-			card.size = card_size
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			var is_match: bool = all_selectable or _card_select_matching_ids.has(card_data.get("id", ""))
-			var passes_filter: bool = not pool_filter.is_valid() or pool_filter.call(card_data, _card_select_selected)
-			var can_select: bool = is_match and not at_limit and passes_filter
-			card.is_selectable = can_select
-			card.click_on_release = true
-			if can_select:
-				card.card_clicked.connect(_on_card_select_pool_clicked)
-			else:
-				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			card_pool_select_pool_grid.add_child(card)
-
-
-func _refresh_card_select_selection() -> void:
-	_clear_grid(card_pool_select_selection_grid, _on_card_select_selection_clicked)
-
-	for card_data in _card_select_selected:
-		var card: Control = card_scene.instantiate()
-		if card.has_method("set_card_data_dict"):
-			card.set_card_data_dict(card_data)
-		card.custom_minimum_size = Vector2(120, 168)
-		card.size = Vector2(120, 168)
-		card.drag_enabled = false
-		card.is_selectable = true
-		card.click_on_release = true
-		_set_gallery_hover(card)
-		card.card_clicked.connect(_on_card_select_selection_clicked)
-		card.card_right_clicked.connect(_on_card_long_press_zoom)
-		card_pool_select_selection_grid.add_child(card)
-
-	card_pool_select_selection_label.text = tr("STR_GB_SELECTED_FMT").replace("{N}", str(_card_select_selected.size())).replace("{MAX}", str(_card_select_max_count))
-
-
-func _update_card_select_buttons() -> void:
-	var count := _card_select_selected.size()
-	card_pool_select_confirm.disabled = count < _card_select_min_count or count > _card_select_max_count
-	card_pool_select_confirm.text = tr("STR_GB_CONFIRM_COUNT_FMT").replace("{N}", str(count)).replace("{MAX}", str(_card_select_max_count))
-
-
-func _on_card_select_pool_clicked(card: Control) -> void:
-	var card_data: Dictionary = card.card_data if "card_data" in card else {}
-	if card_data.is_empty() or _card_select_selected.size() >= _card_select_max_count:
-		return
-
-	var pool := _get_card_select_pool()
-	var target_tid := _get_card_template_id(card_data)
-	for pool_card in pool:
-		if _get_card_template_id(pool_card) == target_tid and _card_select_matching_ids.has(pool_card.get("id", "")):
-			_card_select_selected.append(pool_card)
-			break
-
-	_refresh_card_select()
-
-
-func _on_card_select_selection_clicked(card: Control) -> void:
-	var card_data: Dictionary = card.card_data if "card_data" in card else {}
-	if card_data.is_empty():
-		return
-
-	var card_id: String = card_data.get("id", "")
-	for i in range(_card_select_selected.size()):
-		if _card_select_selected[i].get("id", "") == card_id:
-			_card_select_selected.remove_at(i)
-			break
-
-	_refresh_card_select()
-
-
-func _on_card_select_toggled(_value: bool) -> void:
-	_match_stacked_view = card_pool_select_stacked.button_pressed
-	_refresh_card_select()
+	card_pool_select_overlay.open(
+		matching,
+		all_cards,
+		_resolve_translated_text(prompt),
+		min_count,
+		max_count,
+		_match_stacked_view,
+		_show_card_zoom,
+		_resolve_card_select_local,
+		_on_card_pool_select_view_board,
+		pool_filter,
+	)
 
 
 func _on_card_pool_select_view_board() -> void:
-	card_pool_select_overlay.visible = false
 	_view_board_source_overlay = card_pool_select_overlay
 	show_cards_button.visible = true
 
 
-func _on_card_pool_select_skip() -> void:
-	_hide_card_select()
-	_resolve_card_select_local([])
-
-
-func _on_card_pool_select_confirm() -> void:
-	var sel_count := _card_select_selected.size()
-	if sel_count < _card_select_min_count or sel_count > _card_select_max_count:
-		return
-	var selected := _card_select_selected.duplicate()
-	_hide_card_select()
-	_resolve_card_select_local(selected)
-
-
 func _hide_card_select() -> void:
-	card_pool_select_overlay.visible = false
+	card_pool_select_overlay.close()
 	show_cards_button.visible = false
 	_view_board_source_overlay = null
-	_clear_grid(card_pool_select_pool_grid, _on_card_select_pool_clicked)
-	_clear_grid(card_pool_select_selection_grid, _on_card_select_selection_clicked)
-	_card_select_matching = []
-	_card_select_all = []
-	_card_select_matching_ids.clear()
-	_card_select_selected = []
 
 
 # --- Hand discard selection UI ---
@@ -5537,7 +4848,7 @@ func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_discard_requested", 4)
-				_rpc_hand_discard_requested.rpc_id(peer_id, discard_count)
+				multiplayer_sync._rpc_hand_discard_requested.rpc_id(peer_id, discard_count)
 		return
 	_play_action_required_if_not_turn_player(player_id)
 	_show_hand_discard_selection(player_id, discard_count)
@@ -5627,7 +4938,7 @@ func _confirm_hand_discard() -> void:
 		# Client sends choice to host
 		var indices_json := JSON.stringify(hand_indices)
 		RpcLogger.log_send("hand_discard_resolved", indices_json.length())
-		_rpc_hand_discard_resolved.rpc_id(NetworkManager.host_peer_id, indices_json)
+		multiplayer_sync._rpc_hand_discard_resolved.rpc_id(NetworkManager.host_peer_id, indices_json)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_hand_discard(_discard_player_id, hand_indices)
 
@@ -5665,7 +4976,7 @@ func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int]
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
-				_rpc_hand_card_selection_requested.rpc_id(peer_id, indices_json, prompt, allow_skip)
+				multiplayer_sync._rpc_hand_card_selection_requested.rpc_id(peer_id, indices_json, prompt, allow_skip)
 		return
 	_play_action_required_if_not_turn_player(player_id)
 	_show_hand_card_selection(player_id, valid_indices, prompt, allow_skip)
@@ -5720,7 +5031,7 @@ func _on_hand_card_clicked(card: Control, _index: int) -> void:
 		return
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("hand_card_selection_resolved", 4)
-		_rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, hand_index)
+		multiplayer_sync._rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, hand_index)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
 
@@ -5733,7 +5044,7 @@ func _skip_hand_card_selection() -> void:
 		return
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("hand_card_selection_resolved", 4)
-		_rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, -1)
+		multiplayer_sync._rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, -1)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(-1)
 
@@ -5761,7 +5072,7 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
-				_rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt, allow_skip)
+				multiplayer_sync._rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt, allow_skip)
 		return
 	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt, allow_skip)
 
@@ -5825,7 +5136,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("zone_target_resolved", 4)
-		_rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_idx)
+		multiplayer_sync._rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_idx)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_zone_target(zone_idx)
 
@@ -5842,7 +5153,7 @@ func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("strategy_target_requested", 4 + indices_json.length() + prompt.length())
-				_rpc_strategy_target_requested.rpc_id(peer_id, target_player_id, indices_json, prompt)
+				multiplayer_sync._rpc_strategy_target_requested.rpc_id(peer_id, target_player_id, indices_json, prompt)
 		return
 	_show_strategy_target_selection(player_id, target_player_id, valid_indices, prompt)
 
@@ -5893,7 +5204,7 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("strategy_target_resolved", 4)
-		_rpc_strategy_target_resolved.rpc_id(NetworkManager.host_peer_id, strategy_idx)
+		multiplayer_sync._rpc_strategy_target_resolved.rpc_id(NetworkManager.host_peer_id, strategy_idx)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_idx)
 
@@ -5910,7 +5221,7 @@ func _on_choice_requested(player_id: int, options: Array[String], prompt: String
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("choice_requested", options_json.length() + prompt.length())
-				_rpc_choice_requested.rpc_id(peer_id, options_json, prompt)
+				multiplayer_sync._rpc_choice_requested.rpc_id(peer_id, options_json, prompt)
 		return
 	_show_choice_selection(player_id, options, prompt)
 
@@ -5925,41 +5236,10 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
-	# Create a container for choice buttons
-	_choice_container = VBoxContainer.new()
-	_choice_container.name = "ChoiceContainer"
-	if _is_mobile_layout:
-		# On mobile, wrap in a panel anchored to the right side above the bottom bar
-		_choice_panel = PanelContainer.new()
-		_choice_panel.anchor_left = 1.0
-		_choice_panel.anchor_right = 1.0
-		_choice_panel.anchor_top = 1.0
-		_choice_panel.anchor_bottom = 1.0
-		# Grow upward from the bottom spacer area
-		_choice_panel.offset_left = -350.0
-		_choice_panel.offset_right = -6.0
-		_choice_panel.offset_top = -130.0 - options.size() * 50.0
-		_choice_panel.offset_bottom = -130.0
-		_choice_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-		_choice_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
-		_choice_panel.z_index = 56
-		_choice_panel.add_child(_choice_container)
-		add_child(_choice_panel)
-	else:
-		action_panel.add_child(_choice_container)
-
-	for i in range(options.size()):
-		var btn := Button.new()
-		btn.text = _resolve_translated_text(options[i])
-		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		btn.custom_minimum_size.x = 325
-		btn.custom_minimum_size.y = 60 if _is_mobile_layout else 0
-		btn.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
-		if _is_mobile_layout:
-			btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
-		btn.pressed.connect(_on_choice_button_pressed.bind(i))
-		_choice_container.add_child(btn)
-		_choice_buttons.append(btn)
+	var translated: Array[String] = []
+	for opt in options:
+		translated.append(_resolve_translated_text(opt))
+	_choice_overlay.open(self, action_panel, translated, _is_mobile_layout, _on_choice_button_pressed)
 
 
 func _on_choice_button_pressed(index: int) -> void:
@@ -5969,25 +5249,15 @@ func _on_choice_button_pressed(index: int) -> void:
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("choice_resolved", 4)
-		_rpc_choice_resolved.rpc_id(NetworkManager.host_peer_id, index)
+		multiplayer_sync._rpc_choice_resolved.rpc_id(NetworkManager.host_peer_id, index)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_choice(index)
 
 
 func _cleanup_choice_selection() -> void:
 	_choice_selecting = false
-	_choice_buttons.clear()
-	if _choice_container:
-		# On mobile, the container is inside a wrapper panel — free it immediately
-		# so a subsequent choice_requested in the same frame gets a clean state.
-		if _choice_panel:
-			_choice_panel.remove_child(_choice_container)
-			_choice_panel.queue_free()
-			_choice_panel = null
-		_choice_container.queue_free()
-		_choice_container = null
+	_choice_overlay.close()
 	action_prompt_panel.visible = false
-	# Restore normal action button rows
 	_set_action_buttons_visible(true)
 
 
@@ -5996,7 +5266,7 @@ func _on_effect_zone_highlighted(pid: int, zone_index: int) -> void:
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == pid:
 				RpcLogger.log_send("effect_zone_highlighted", 8)
-				_rpc_effect_zone_highlighted.rpc_id(peer_id, pid, zone_index)
+				multiplayer_sync._rpc_effect_zone_highlighted.rpc_id(peer_id, pid, zone_index)
 		return
 	_apply_zone_highlight(pid, zone_index, true)
 
@@ -6006,7 +5276,7 @@ func _on_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == pid:
 				RpcLogger.log_send("effect_zone_unhighlighted", 8)
-				_rpc_effect_zone_unhighlighted.rpc_id(peer_id, pid, zone_index)
+				multiplayer_sync._rpc_effect_zone_unhighlighted.rpc_id(peer_id, pid, zone_index)
 		return
 	_apply_zone_highlight(pid, zone_index, false)
 
@@ -6026,7 +5296,7 @@ func _on_effect_card_highlighted(pid: int, card_id: String) -> void:
 		for peer_id in NetworkManager.peer_player_map:
 			if peer_id != multiplayer.get_unique_id():
 				RpcLogger.log_send("effect_card_highlighted", 4 + card_id.length())
-				_rpc_effect_card_highlighted.rpc_id(peer_id, pid, card_id)
+				multiplayer_sync._rpc_effect_card_highlighted.rpc_id(peer_id, pid, card_id)
 	_apply_card_highlight(pid, card_id, true)
 
 
@@ -6035,7 +5305,7 @@ func _on_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 		for peer_id in NetworkManager.peer_player_map:
 			if peer_id != multiplayer.get_unique_id():
 				RpcLogger.log_send("effect_card_unhighlighted", 4 + card_id.length())
-				_rpc_effect_card_unhighlighted.rpc_id(peer_id, pid, card_id)
+				multiplayer_sync._rpc_effect_card_unhighlighted.rpc_id(peer_id, pid, card_id)
 	_apply_card_highlight(pid, card_id, false)
 
 
@@ -6064,133 +5334,27 @@ func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void
 			return
 
 
-# --- Discard view UI ---
+# --- Discard view UI (DiscardViewOverlay.tscn handles render/dismiss internally) ---
 
 func _on_discard_clicked(pid: int) -> void:
 	var player := _get_player_state(pid)
-	_discard_view_cards = player.discard_pile.duplicate(true)
-	_discard_view_cards.reverse()
+	var cards := player.discard_pile.duplicate(true)
+	cards.reverse()
 	var pname := GameLog.player_name(pid)
-	var title := tr("STR_GB_DISCARD_TITLE_FMT") % [pname, _discard_view_cards.size()]
-	discard_view_title.text = title
-	discard_view_stacked.set_pressed_no_signal(_match_stacked_view)
-	discard_view_overlay.visible = true
-	_refresh_discard_view_grid()
+	var title := tr("STR_GB_DISCARD_TITLE_FMT") % [pname, cards.size()]
+	discard_view_overlay.open(cards, title, _match_stacked_view, _show_card_zoom)
 
 
-func _refresh_discard_view_grid() -> void:
-	var stacked := discard_view_stacked.button_pressed
-
-	for child in discard_view_grid.get_children():
-		child.queue_free()
-
-	if _discard_view_cards.is_empty():
-		var empty_label := Label.new()
-		empty_label.text = tr("STR_GB_NO_DISCARD")
-		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		discard_view_grid.add_child(empty_label)
-		return
-
-	if stacked:
-		var groups := _group_cards(_discard_view_cards)
-		for group in groups:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(group["card_data"])
-			card.is_selectable = false
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			discard_view_grid.add_child(card)
-			_add_count_badge(card, group["count"])
-	else:
-		for card_data in _discard_view_cards:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.is_selectable = false
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			discard_view_grid.add_child(card)
-
-
-func _on_discard_view_stacked_toggled(_value: bool) -> void:
-	_match_stacked_view = discard_view_stacked.button_pressed
-	_refresh_discard_view_grid()
-
-
-func _hide_discard_view() -> void:
-	discard_view_overlay.visible = false
-	for child in discard_view_grid.get_children():
-		child.queue_free()
-	_discard_view_cards.clear()
-
-
-# --- Monster deck view UI ---
+# --- Monster deck view (MonsterDeckViewOverlay.tscn handles render/dismiss) ---
 
 func _on_monster_deck_clicked(pid: int) -> void:
 	# Only allow viewing your own monster deck
 	if is_multiplayer_game and pid != local_player_id:
 		return
 	var player := _get_player_state(pid)
-	_monster_deck_view_cards = player.monster_deck.duplicate(true)
-	var title := tr("STR_GB_MONSTER_DECK_TITLE_FMT") % _monster_deck_view_cards.size()
-	monster_deck_view_title.text = title
-	monster_deck_view_stacked.set_pressed_no_signal(_match_stacked_view)
-	monster_deck_view_overlay.visible = true
-	_refresh_monster_deck_view_grid()
-
-
-func _refresh_monster_deck_view_grid() -> void:
-	var stacked := monster_deck_view_stacked.button_pressed
-
-	for child in monster_deck_view_grid.get_children():
-		child.queue_free()
-
-	if _monster_deck_view_cards.is_empty():
-		var empty_label := Label.new()
-		empty_label.text = tr("STR_GB_NO_MONSTER_DECK")
-		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		monster_deck_view_grid.add_child(empty_label)
-		return
-
-	if stacked:
-		var groups := _group_cards(_monster_deck_view_cards)
-		for group in groups:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(group["card_data"])
-			card.is_selectable = false
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			monster_deck_view_grid.add_child(card)
-			_add_count_badge(card, group["count"])
-	else:
-		for card_data in _monster_deck_view_cards:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.is_selectable = false
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			monster_deck_view_grid.add_child(card)
-
-
-func _on_monster_deck_view_stacked_toggled(_value: bool) -> void:
-	_match_stacked_view = monster_deck_view_stacked.button_pressed
-	_refresh_monster_deck_view_grid()
-
-
-func _hide_monster_deck_view() -> void:
-	if _rankup_selecting:
-		return # Cannot dismiss during mandatory rank-up selection
-	monster_deck_view_overlay.visible = false
-	for child in monster_deck_view_grid.get_children():
-		child.queue_free()
-	_monster_deck_view_cards.clear()
+	var cards := player.monster_deck.duplicate(true)
+	var title := tr("STR_GB_MONSTER_DECK_TITLE_FMT") % cards.size()
+	monster_deck_view_overlay.open_view(cards, title, _match_stacked_view, _show_card_zoom)
 
 
 # --- Monster rank-up selection UI ---
@@ -6206,7 +5370,7 @@ func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], v
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("monster_rankup_requested", monsters_json.length() + indices_json.length() + prompt.length())
-				_rpc_monster_rankup_requested.rpc_id(peer_id, monsters_json, indices_json, prompt)
+				multiplayer_sync._rpc_monster_rankup_requested.rpc_id(peer_id, monsters_json, indices_json, prompt)
 		return
 	_play_action_required_if_not_turn_player(player_id)
 	_show_monster_rankup_selection(player_id, monsters, valid_indices, prompt)
@@ -6223,44 +5387,23 @@ func _show_monster_rankup_selection(player_id: int, monsters: Array[Dictionary],
 	_rankup_valid_indices = valid_indices
 
 	_disable_all_buttons()
-
-	# Show monster deck overlay with selectable cards
-	monster_deck_view_title.text = _resolve_translated_text(prompt)
-	monster_deck_view_close.visible = false
-	monster_deck_view_stacked.visible = false
-
-	for child in monster_deck_view_grid.get_children():
-		child.queue_free()
-
-	for i in range(monsters.size()):
-		var card_data := monsters[i]
-		var card: Control = card_scene.instantiate()
-		if card.has_method("set_card_data_dict"):
-			card.set_card_data_dict(card_data)
-		card.drag_enabled = false
-		_set_gallery_hover(card)
-
-		if i in valid_indices:
-			card.is_selectable = true
-			card.card_clicked.connect(_on_rankup_card_clicked.bind(i))
-		else:
-			card.is_selectable = false
-			card.modulate = Color(0.5, 0.5, 0.5, 1.0)
-
-		card.card_right_clicked.connect(_on_card_long_press_zoom)
-		monster_deck_view_grid.add_child(card)
-
-	monster_deck_view_overlay.visible = true
+	monster_deck_view_overlay.open_rankup(
+		monsters,
+		valid_indices,
+		_resolve_translated_text(prompt),
+		_show_card_zoom,
+		_resolve_rankup,
+	)
 
 
-func _on_rankup_card_clicked(_card: Control, index: int) -> void:
+func _resolve_rankup(index: int) -> void:
 	if not _rankup_selecting:
 		return
 	_cleanup_rankup_selection()
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("monster_rankup_resolved", 4)
-		_rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, index)
+		multiplayer_sync._rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, index)
 	else:
 		turn_manager.action_handler.resolve_monster_rankup(index)
 
@@ -6268,13 +5411,7 @@ func _on_rankup_card_clicked(_card: Control, index: int) -> void:
 func _cleanup_rankup_selection() -> void:
 	_rankup_selecting = false
 	_rankup_valid_indices.clear()
-
-	monster_deck_view_overlay.visible = false
-	monster_deck_view_close.visible = true
-	monster_deck_view_stacked.visible = true
-	for child in monster_deck_view_grid.get_children():
-		child.queue_free()
-
+	monster_deck_view_overlay.dismiss_rankup()
 	btn_confirm.disabled = true
 
 
@@ -6288,44 +5425,39 @@ func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
 	if zone_idx < 0 or zone_idx >= 8:
 		return
 	var stack: Array = player.get_zone_stack(zone_idx)
-	# Include the monster card if this is the monster's zone
 	var has_monster: bool = not player.current_monster.is_empty() and (player.monster_zone - 1) == zone_idx
 	if stack.is_empty() and not has_monster:
 		return
-	_zone_stack_view_cards.clear()
+	var cards: Array = []
 	if has_monster:
-		_zone_stack_view_cards.append(player.current_monster)
+		cards.append(player.current_monster)
 		for m in player.monster_stack:
-			_zone_stack_view_cards.append(m)
+			cards.append(m)
 	for card_data in stack:
-		_zone_stack_view_cards.append(card_data)
-	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = tr("STR_GB_ZONE_HEADER_FMT").replace("{N}", str(zone_num)).replace("{C}", str(total))
-	zone_stack_view_overlay.visible = true
-	_refresh_zone_stack_view_grid()
+		cards.append(card_data)
+	var title := tr("STR_GB_ZONE_HEADER_FMT").replace("{N}", str(zone_num)).replace("{C}", str(cards.size()))
+	zone_stack_view_overlay.open(cards, title, _show_card_zoom)
 
 
-func _refresh_zone_stack_view_grid() -> void:
-	for child in zone_stack_view_grid.get_children():
-		child.queue_free()
+func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
+	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _strategy_target_selecting:
+		return
+	var player := _get_player_state(pid)
+	if strategy_idx < 0 or strategy_idx >= player.strategy_zones.size():
+		return
+	var card_data: Dictionary = player.strategy_zones[strategy_idx]
+	if card_data.is_empty():
+		return
+	var stack: Array = []
+	if strategy_idx < player.strategy_zone_stacks.size():
+		stack = player.strategy_zone_stacks[strategy_idx]
+	var cards: Array = [card_data]
+	cards.append_array(stack)
+	var title := tr("STR_GB_STRATEGY_HEADER_FMT").replace("{N}", str(strategy_idx + 1)).replace("{C}", str(cards.size()))
+	zone_stack_view_overlay.open(cards, title, _show_card_zoom)
 
-	for i in range(_zone_stack_view_cards.size()):
-		var card_data: Dictionary = _zone_stack_view_cards[i]
-		var card: Control = card_scene.instantiate()
-		if card.has_method("set_card_data_dict"):
-			card.set_card_data_dict(card_data)
-		card.is_selectable = false
-		card.drag_enabled = false
-		_set_gallery_hover(card)
-		card.card_right_clicked.connect(_on_card_long_press_zoom)
-		zone_stack_view_grid.add_child(card)
 
-
-func _hide_zone_stack_view() -> void:
-	zone_stack_view_overlay.visible = false
-	for child in zone_stack_view_grid.get_children():
-		child.queue_free()
-	_zone_stack_view_cards.clear()
+func _on_zone_stack_view_closed() -> void:
 	if _cards_revealed_active:
 		_cards_revealed_active = false
 		turn_manager.action_handler.effect_handler.resolve_cards_revealed()
@@ -6334,13 +5466,9 @@ func _hide_zone_stack_view() -> void:
 func _on_cards_revealed_requested(player_id: int, cards: Array[Dictionary], title: String) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
-	_zone_stack_view_cards.clear()
-	_zone_stack_view_cards.append_array(cards)
-	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = tr("STR_GB_TITLE_COUNT_FMT").replace("{TITLE}", title).replace("{C}", str(total))
-	zone_stack_view_overlay.visible = true
+	var labelled := tr("STR_GB_TITLE_COUNT_FMT").replace("{TITLE}", title).replace("{C}", str(cards.size()))
+	zone_stack_view_overlay.open(cards, labelled, _show_card_zoom)
 	_cards_revealed_active = true
-	_refresh_zone_stack_view_grid()
 
 
 # --- Card zoom (right-click) UI ---
@@ -6371,34 +5499,6 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 	_show_card_zoom(card_data)
 
 
-func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
-	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _strategy_target_selecting:
-		return
-	var player := _get_player_state(pid)
-	if strategy_idx < 0 or strategy_idx >= player.strategy_zones.size():
-		return
-	var card_data: Dictionary = player.strategy_zones[strategy_idx]
-	if card_data.is_empty():
-		return
-	var stack: Array = []
-	if strategy_idx < player.strategy_zone_stacks.size():
-		stack = player.strategy_zone_stacks[strategy_idx]
-	_zone_stack_view_cards.clear()
-	_zone_stack_view_cards.append(card_data)
-	for c in stack:
-		_zone_stack_view_cards.append(c)
-	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = tr("STR_GB_STRATEGY_HEADER_FMT").replace("{N}", str(strategy_idx + 1)).replace("{C}", str(total))
-	zone_stack_view_overlay.visible = true
-	_refresh_zone_stack_view_grid()
-
-
-func _on_card_long_press_zoom(card: Control) -> void:
-	if "card_data" in card and not card.card_data.is_empty():
-		var mod: int = card.get_play_cost_modifier() if card.has_method("get_play_cost_modifier") else 0
-		_show_card_zoom(card.card_data, mod)
-
-
 func _on_hand_card_right_clicked(card: Control, _hand_player_id: int) -> void:
 	if "card_data" in card and not card.card_data.is_empty():
 		var mod: int = card.get_play_cost_modifier() if card.has_method("get_play_cost_modifier") else 0
@@ -6406,83 +5506,19 @@ func _on_hand_card_right_clicked(card: Control, _hand_player_id: int) -> void:
 
 
 func _show_card_zoom(card_data: Dictionary, play_cost_modifier: int = 0) -> void:
-	# Clear any existing zoomed card
-	for child in card_zoom_container.get_children():
-		child.queue_free()
-	var card: Control = card_scene.instantiate()
-	if card.has_method("set_card_data_dict"):
-		card.set_card_data_dict(card_data)
-	if card.has_method("set_play_cost_modifier"):
-		card.set_play_cost_modifier(play_cost_modifier)
-	card.is_selectable = false
-	card.drag_enabled = false
-	card.hover_scale = 1.0
-	card.hover_lift = 0.0
-	card.mouse_filter = Control.MOUSE_FILTER_PASS
-	var is_strategy: bool = card_data.get("card_type") == CardEnums.CardType.STRATEGY
-	if is_strategy:
-		# Strategy card: portrait 405x567 rotated -90° to appear as landscape 567x405.
-		# Use a wrapper sized to the landscape dimensions so CenterContainer centers correctly.
-		var portrait_size := Vector2(405, 567)
-		var wrapper := Control.new()
-		wrapper.custom_minimum_size = Vector2(portrait_size.y, portrait_size.x) # 567x405
-		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card_zoom_container.add_child(wrapper)
-		card.custom_minimum_size = Vector2.ZERO
-		card.size = portrait_size
-		card.pivot_offset = portrait_size / 2.0
-		card.rotation = deg_to_rad(-90)
-		# Center the portrait card within the landscape wrapper
-		card.position = Vector2(
-			(wrapper.custom_minimum_size.x - portrait_size.x) / 2.0,
-			(wrapper.custom_minimum_size.y - portrait_size.y) / 2.0
-		)
-		wrapper.add_child(card)
-	else:
-		card.custom_minimum_size = Vector2(405, 567)
-		card_zoom_container.add_child(card)
-	# Re-orient the badge after rotation was set above (strategy zoom rotates -90°).
-	if card.has_method("update_play_cost_badge_layout"):
-		card.update_play_cost_badge_layout()
-	card_zoom_overlay.visible = true
-	_zoom_shown_frame = Engine.get_process_frames()
+	card_zoom_overlay.show_card(card_data, play_cost_modifier)
 
 
-func _on_overlay_background_clicked(event: InputEvent, hide_func: Callable) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		hide_func.call()
-
-
-func _on_card_zoom_overlay_input(event: InputEvent) -> void:
-	if TouchHelper.is_touch_device():
-		return # Touch dismiss handled by _input ScreenTouch handler
-	if (Engine.get_process_frames() - _zoom_shown_frame) <= 2:
-		return
-	if event is InputEventMouseButton and event.pressed:
-		_hide_card_zoom()
-		get_viewport().set_input_as_handled()
-
-
-func _hide_card_zoom() -> void:
-	card_zoom_overlay.visible = false
-	card_zoom_container.scale = Vector2.ONE
-	card_zoom_container.position = Vector2.ZERO
-	_pinch_touches.clear()
-	_pinch_active = false
-	_pinch_used = false
-	_zoom_dragging = false
-	for child in card_zoom_container.get_children():
-		child.queue_free()
-	# Reset all slot input state so no timers or pending clicks carry over
+func _reset_all_zone_slot_input() -> void:
+	## Called by CardZoomOverlay.close() so no slot-hover timers carry over.
 	for board in [player1_board, player2_board]:
 		for slot in board.zone_slots:
 			slot.reset_input_state()
 
 
-func _apply_card_zoom(factor: float) -> void:
-	var new_scale: float = clampf(card_zoom_container.scale.x * factor, 1.0, PINCH_MAX_SCALE)
-	card_zoom_container.scale = Vector2(new_scale, new_scale)
-	card_zoom_container.pivot_offset = card_zoom_container.size / 2.0
+func _on_overlay_background_clicked(event: InputEvent, hide_func: Callable) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		hide_func.call()
 
 
 # --- Card hover preview ---
@@ -6588,75 +5624,10 @@ func _set_mouse_filter_ignore_recursive(node: Control) -> void:
 
 # --- Card grid helpers ---
 
-func _set_gallery_hover(card: Control) -> void:
-	card.hover_scale = 1.05
-	card.hover_lift = 0.0
-	card.gui_input.connect(_on_gallery_card_input.bind(card))
-
-
-func _on_gallery_card_input(event: InputEvent, card: Control) -> void:
-	if not (event is InputEventMouseButton and event.pressed):
-		return
-	if event.button_index == MOUSE_BUTTON_RIGHT:
-		if "card_data" in card and not card.card_data.is_empty():
-			_show_card_zoom(card.card_data)
-	elif event.button_index == MOUSE_BUTTON_LEFT and event.double_click:
-		# Only treat as double-click if the same card instance was clicked both times.
-		# _last_clicked_card is a static var set in card._gui_input (which runs AFTER
-		# this signal handler), so it holds the card from the PREVIOUS click.
-		var last_card = card._last_clicked_card
-		if is_instance_valid(last_card) and last_card == card:
-			if "card_data" in card and not card.card_data.is_empty():
-				_show_card_zoom(card.card_data)
-
-
-func _get_card_template_id(card_data: Dictionary) -> String:
-	## Extract the template card number from an instance ID.
-	## Instance IDs: "EBP01-001_1_0" -> "EBP01-001", Monster IDs: "EBP01-001" -> "EBP01-001"
-	var id: String = card_data.get("id", "")
-	var parts := id.split("_")
-	return parts[0] if not parts.is_empty() else id
-
-
-func _group_cards(cards: Array[Dictionary], matching_ids: Dictionary = {}) -> Array[Dictionary]:
-	## Group cards by template ID. Returns Array of {card_data, count, has_match}.
-	var groups: Dictionary = {} # template_id -> {card_data, count, has_match}
-	var order: Array[String] = [] # Preserve first-seen order
-	for card_data in cards:
-		var tid := _get_card_template_id(card_data)
-		if groups.has(tid):
-			groups[tid]["count"] += 1
-			if matching_ids.has(card_data.get("id", "")):
-				groups[tid]["has_match"] = true
-		else:
-			groups[tid] = {
-				"card_data": card_data,
-				"count": 1,
-				"has_match": matching_ids.has(card_data.get("id", "")),
-			}
-			order.append(tid)
-
-	var result: Array[Dictionary] = []
-	for tid in order:
-		result.append(groups[tid])
-	return result
-
-
-func _add_count_badge(card: Control, count: int) -> void:
-	if count <= 1:
-		return
-	var badge := Label.new()
-	badge.text = "x%d" % count
-	badge.add_theme_font_size_override("font_size", 16)
-	badge.add_theme_color_override("font_color", Color.YELLOW)
-	badge.add_theme_color_override("font_outline_color", Color.BLACK)
-	badge.add_theme_constant_override("outline_size", 4)
-	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	badge.offset_left = -40
-	badge.offset_right = -4
-	badge.offset_top = 10
-	card.add_child(badge)
+# _get_card_template_id, _group_cards, _add_count_badge, _set_gallery_hover,
+# _on_gallery_card_input moved to scripts/util/card_grid_utils.gd. Use
+# CardUtils.base_id() / CardGridUtils.{group_cards, add_count_badge,
+# wire_gallery_card} instead.
 
 
 func _clear_grid(grid: GridContainer, click_handler: Callable) -> void:
@@ -6671,7 +5642,7 @@ func _resolve_deck_search_local(selected: Dictionary) -> void:
 		# Client sends selection back to host
 		var _search_json := JSON.stringify(selected)
 		RpcLogger.log_send("deck_search_resolved", _search_json.length())
-		_rpc_deck_search_resolved.rpc_id(NetworkManager.host_peer_id, _search_json)
+		multiplayer_sync._rpc_deck_search_resolved.rpc_id(NetworkManager.host_peer_id, _search_json)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
 
@@ -6681,7 +5652,7 @@ func _resolve_deck_arrange_local(keep: Array[Dictionary], discard: Array[Diction
 		var _keep_json := JSON.stringify(keep)
 		var _discard_json := JSON.stringify(discard)
 		RpcLogger.log_send("deck_arrange_resolved", _keep_json.length() + _discard_json.length())
-		_rpc_deck_arrange_resolved.rpc_id(NetworkManager.host_peer_id, _keep_json, _discard_json)
+		multiplayer_sync._rpc_deck_arrange_resolved.rpc_id(NetworkManager.host_peer_id, _keep_json, _discard_json)
 	else:
 		turn_manager.action_handler.effect_handler.resolve_deck_arrange(keep, discard)
 
@@ -6690,7 +5661,7 @@ func _resolve_card_select_local(selected: Array) -> void:
 	if is_multiplayer_game and not NetworkManager.is_host():
 		var selected_json := JSON.stringify(_cards_to_ids(selected))
 		RpcLogger.log_send("card_select_resolved", selected_json.length())
-		_rpc_card_select_resolved.rpc_id(NetworkManager.host_peer_id, selected_json)
+		multiplayer_sync._rpc_card_select_resolved.rpc_id(NetworkManager.host_peer_id, selected_json)
 	else:
 		var typed: Array[Dictionary] = []
 		for card in selected:
@@ -6759,7 +5730,7 @@ func _do_broadcast() -> void:
 			push_warning("[BROADCAST] Large state packet: %d bytes (v=%d, full=%s)" % [
 				state_bytes.size(), _state_version, str(_last_sent_state.is_empty())])
 		RpcLogger.log_send("receive_state", state_bytes.size())
-		_rpc_receive_state.rpc_id(peer_id, state_bytes)
+		multiplayer_sync._rpc_receive_state.rpc_id(peer_id, state_bytes)
 	_pending_log_tokens.clear()
 	_pending_sound_events.clear()
 
@@ -7076,7 +6047,7 @@ func _compute_playable_data() -> Dictionary:
 # --- Multiplayer RPCs ---
 
 ## Client -> Host: submit an action
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_submit_action(action_type: int, params_json: String) -> void:
 	RpcLogger.log_receive("submit_action", 4 + params_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7102,7 +6073,7 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 
 
 ## Host -> Client: full game state update
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	RpcLogger.log_receive("receive_state", state_bytes.size())
 	if state_bytes.is_empty():
@@ -7236,7 +6207,7 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 			if not _client_players[i].current_monster.is_empty():
 				board.apply_monster_gradient(_client_players[i].current_monster)
 		RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
-		_rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
+		multiplayer_sync._rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
 
 	# Sync player names from host (disambiguate from client's perspective)
 	var host_names: Array = data.get("player_names", [])
@@ -7284,11 +6255,11 @@ func _request_resync_throttled() -> void:
 		return # Too soon — skip this resync request
 	_last_resync_request_ms = now
 	RpcLogger.log_send("request_resync", 0)
-	_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
+	multiplayer_sync._rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
 
 
 ## Client -> Host: request full state resend (delta base version mismatch or hash mismatch)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_request_resync() -> void:
 	if not NetworkManager.is_host():
 		return
@@ -7305,27 +6276,27 @@ func _rpc_request_resync() -> void:
 		if peer_id > 0:
 			match method:
 				"action_context":
-					_rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
+					multiplayer_sync._rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
 				"deck_search":
-					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
+					multiplayer_sync._rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
 				"deck_arrange":
-					_rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
+					multiplayer_sync._rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
 				"card_select":
-					_rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4])
+					multiplayer_sync._rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4])
 				"hand_discard":
-					_rpc_hand_discard_requested.rpc_id(peer_id, args[0])
+					multiplayer_sync._rpc_hand_discard_requested.rpc_id(peer_id, args[0])
 				"hand_card_selection":
-					_rpc_hand_card_selection_requested.rpc_id(peer_id, args[0], args[1], args[2])
+					multiplayer_sync._rpc_hand_card_selection_requested.rpc_id(peer_id, args[0], args[1], args[2])
 				"zone_target":
-					_rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
+					multiplayer_sync._rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
 				"strategy_target":
-					_rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2])
+					multiplayer_sync._rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2])
 				"choice":
-					_rpc_choice_requested.rpc_id(peer_id, args[0], args[1])
+					multiplayer_sync._rpc_choice_requested.rpc_id(peer_id, args[0], args[1])
 				"confirmation":
-					_rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
+					multiplayer_sync._rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
 				"monster_rankup":
-					_rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
+					multiplayer_sync._rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
 	elif turn_manager and not turn_manager.is_game_over:
 		# Re-prompt whoever's turn it is
 		# (_on_awaiting_action handles both host and client turn cases)
@@ -7335,7 +6306,7 @@ func _rpc_request_resync() -> void:
 
 
 ## Host -> Client: valid actions and playable indices
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_receive_action_context(actions_json: String, playable_json: String) -> void:
 	RpcLogger.log_receive("receive_action_context", actions_json.length() + playable_json.length())
 	_action_pending = false
@@ -7360,7 +6331,7 @@ func _rpc_receive_action_context(actions_json: String, playable_json: String) ->
 
 
 ## Host -> Client: log message (legacy raw-string path; kept for compatibility)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_receive_log(text: String) -> void:
 	RpcLogger.log_receive("receive_log", text.length())
 	_log_tokens.append(text)
@@ -7370,7 +6341,7 @@ func _rpc_receive_log(text: String) -> void:
 
 
 ## Any peer -> Any peer: chat message
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
 	RpcLogger.log_receive("receive_chat", 4 + text.length())
 	if sender_player_id < 0 or sender_player_id > 1:
@@ -7385,7 +6356,7 @@ func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
 
 
 ## Host -> Client: deck search request (player must choose a card)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt: String, allow_skip: bool = true) -> void:
 	RpcLogger.log_receive("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
@@ -7394,7 +6365,7 @@ func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt:
 
 
 ## Client -> Host: deck search resolved (player chose a card or skipped)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_deck_search_resolved(selected_json: String) -> void:
 	RpcLogger.log_receive("deck_search_resolved", selected_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7409,7 +6380,7 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 
 
 ## Host -> Client: deck arrange request (player must reorder/discard cards)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_deck_arrange_requested(cards_json: String, prompt: String) -> void:
 	RpcLogger.log_receive("deck_arrange_requested", cards_json.length() + prompt.length())
 	if NetworkManager.is_host():
@@ -7419,7 +6390,7 @@ func _rpc_deck_arrange_requested(cards_json: String, prompt: String) -> void:
 
 
 ## Client -> Host: deck arrange resolved (player arranged cards)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void:
 	RpcLogger.log_receive("deck_arrange_resolved", keep_json.length() + discard_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7439,7 +6410,7 @@ func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void
 
 
 ## Host -> Client: card select request (player must select N cards from pool)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_card_select_requested(matching_json: String, all_json: String, prompt: String, min_count: int, max_count: int) -> void:
 	RpcLogger.log_receive("card_select_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
@@ -7448,7 +6419,7 @@ func _rpc_card_select_requested(matching_json: String, all_json: String, prompt:
 
 
 ## Client -> Host: card select resolved (player selected cards or skipped)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_card_select_resolved(selected_json: String) -> void:
 	RpcLogger.log_receive("card_select_resolved", selected_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7464,7 +6435,7 @@ func _rpc_card_select_resolved(selected_json: String) -> void:
 
 
 ## Host -> Client: hand card selection request (player must choose a card from hand)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool) -> void:
 	RpcLogger.log_receive("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
 	if NetworkManager.is_host():
@@ -7479,7 +6450,7 @@ func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, al
 
 
 ## Client -> Host: hand card selection resolved
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 	RpcLogger.log_receive("hand_card_selection_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7489,20 +6460,20 @@ func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 
 
 ## Host -> Client: confirmation request (draw / next turn)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_confirmation_requested(prompt: String, setting: String) -> void:
 	RpcLogger.log_receive("confirmation_requested", prompt.length() + setting.length())
 	if NetworkManager.is_host():
 		return
 	if _player_settings[local_player_id].get(setting, false):
 		RpcLogger.log_send("confirmation_resolved", 0)
-		_rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
+		multiplayer_sync._rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
 		return
 	_show_confirmation(prompt)
 
 
 ## Client -> Host: confirmation resolved
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_confirmation_resolved() -> void:
 	RpcLogger.log_receive("confirmation_resolved", 0)
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7512,7 +6483,7 @@ func _rpc_confirmation_resolved() -> void:
 
 
 ## Client -> Host: send player name
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_send_player_name(pname: String) -> void:
 	RpcLogger.log_receive("send_player_name", pname.length())
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7531,7 +6502,7 @@ func _rpc_send_player_name(pname: String) -> void:
 
 
 ## Host -> Client: hand discard request (player must choose cards to discard)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_hand_discard_requested(discard_count: int) -> void:
 	RpcLogger.log_receive("hand_discard_requested", 4)
 	if NetworkManager.is_host():
@@ -7542,7 +6513,7 @@ func _rpc_hand_discard_requested(discard_count: int) -> void:
 
 
 ## Client -> Host: hand discard resolved (player chose cards)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_hand_discard_resolved(indices_json: String) -> void:
 	RpcLogger.log_receive("hand_discard_resolved", indices_json.length())
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7558,7 +6529,7 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 
 
 ## Host -> Client: zone target request (player must choose a zone)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool) -> void:
 	RpcLogger.log_receive("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
 	if NetworkManager.is_host():
@@ -7571,7 +6542,7 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 
 
 ## Client -> Host: zone target resolved (player chose a zone)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_zone_target_resolved(zone_index: int) -> void:
 	RpcLogger.log_receive("zone_target_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7581,7 +6552,7 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 
 
 ## Host -> Client: strategy target request (player must choose a strategy zone)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String) -> void:
 	RpcLogger.log_receive("strategy_target_requested", 4 + indices_json.length() + prompt.length())
 	if NetworkManager.is_host():
@@ -7594,7 +6565,7 @@ func _rpc_strategy_target_requested(target_player_id: int, indices_json: String,
 
 
 ## Client -> Host: strategy target resolved (player chose a strategy zone)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_strategy_target_resolved(strategy_index: int) -> void:
 	RpcLogger.log_receive("strategy_target_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7604,7 +6575,7 @@ func _rpc_strategy_target_resolved(strategy_index: int) -> void:
 
 
 ## Host -> Client: choice request (player must choose ability order)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_choice_requested(options_json: String, prompt: String) -> void:
 	RpcLogger.log_receive("choice_requested", options_json.length() + prompt.length())
 	if NetworkManager.is_host():
@@ -7617,7 +6588,7 @@ func _rpc_choice_requested(options_json: String, prompt: String) -> void:
 
 
 ## Client -> Host: choice resolved (player chose an option)
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_choice_resolved(index: int) -> void:
 	RpcLogger.log_receive("choice_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7627,7 +6598,7 @@ func _rpc_choice_resolved(index: int) -> void:
 
 
 ## Host -> Client: prompt monster rank-up selection
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, prompt: String) -> void:
 	RpcLogger.log_receive("monster_rankup_requested", monsters_json.length() + indices_json.length() + prompt.length())
 	if NetworkManager.is_host():
@@ -7643,7 +6614,7 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 
 
 ## Client -> Host: resolve monster rank-up selection
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_monster_rankup_resolved(index: int) -> void:
 	RpcLogger.log_receive("monster_rankup_resolved", 4)
 	if not NetworkManager.is_host() or not turn_manager:
@@ -7653,7 +6624,7 @@ func _rpc_monster_rankup_resolved(index: int) -> void:
 
 
 ## Host -> Client: highlight a zone card during effect resolution
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_effect_zone_highlighted(pid: int, zone_index: int) -> void:
 	RpcLogger.log_receive("effect_zone_highlighted", 8)
 	if NetworkManager.is_host():
@@ -7662,7 +6633,7 @@ func _rpc_effect_zone_highlighted(pid: int, zone_index: int) -> void:
 
 
 ## Host -> Client: unhighlight a zone card after effect resolution
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
 	RpcLogger.log_receive("effect_zone_unhighlighted", 8)
 	if NetworkManager.is_host():
@@ -7671,7 +6642,7 @@ func _rpc_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
 
 
 ## Host -> Client: highlight the source card of an active effect
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_effect_card_highlighted(pid: int, card_id: String) -> void:
 	RpcLogger.log_receive("effect_card_highlighted", 4 + card_id.length())
 	if NetworkManager.is_host():
@@ -7680,7 +6651,7 @@ func _rpc_effect_card_highlighted(pid: int, card_id: String) -> void:
 
 
 ## Host -> Client: unhighlight the source card after effect resolves
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 	RpcLogger.log_receive("effect_card_unhighlighted", 4 + card_id.length())
 	if NetworkManager.is_host():
@@ -7689,7 +6660,7 @@ func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 
 
 ## Host -> Client: game over
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_receive_game_ended(winner_id: int, reason_key: String) -> void:
 	RpcLogger.log_receive("receive_game_ended", 4 + reason_key.length())
 	SfxManager.play("game_win" if winner_id == local_player_id else "game_lose")
@@ -7710,7 +6681,7 @@ func _rpc_receive_game_ended(winner_id: int, reason_key: String) -> void:
 	RpcLogger.print_summary()
 
 
-@rpc("any_peer", "call_remote", "reliable")
+# Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_receive_replay(compressed: PackedByteArray) -> void:
 	RpcLogger.log_receive("receive_replay", compressed.size())
 	var json_bytes := compressed.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
@@ -7940,9 +6911,9 @@ func _attempt_client_reconnect() -> void:
 			# The host already tried to resync during the relay handshake,
 			# but those RPCs may have arrived before the connection was fully ready.
 			RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
-			_rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
+			multiplayer_sync._rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
 			RpcLogger.log_send("request_resync", 0)
-			_rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
+			multiplayer_sync._rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
 			return
 		# Failed — wait 2s and retry
 		_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RETRYING")
@@ -7973,7 +6944,7 @@ func _on_opponent_reconnected(_peer_id: int) -> void:
 		if not is_inside_tree():
 			return
 		RpcLogger.log_send("receive_game_ended", 4 + len("STR_LOG_REASON_OPPONENT_DISCONNECTED"))
-		_rpc_receive_game_ended.rpc(local_player_id, "STR_LOG_REASON_OPPONENT_DISCONNECTED")
+		multiplayer_sync._rpc_receive_game_ended.rpc(local_player_id, "STR_LOG_REASON_OPPONENT_DISCONNECTED")
 		# Show rematch button now that opponent is back
 		btn_rematch.visible = true
 		btn_rematch.disabled = false
@@ -7998,37 +6969,37 @@ func _resync_reconnected_client() -> void:
 			match method:
 				"action_context":
 					RpcLogger.log_send("receive_action_context", args[0].length() + args[1].length())
-					_rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
+					multiplayer_sync._rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
 				"deck_search":
 					RpcLogger.log_send("deck_search_requested", args[0].length() + args[1].length() + args[2].length())
-					_rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
+					multiplayer_sync._rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
 				"deck_arrange":
 					RpcLogger.log_send("deck_arrange_requested", args[0].length() + args[1].length())
-					_rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
+					multiplayer_sync._rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
 				"card_select":
 					RpcLogger.log_send("card_select_requested", args[0].length() + args[1].length() + args[2].length())
-					_rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4])
+					multiplayer_sync._rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4])
 				"hand_discard":
 					RpcLogger.log_send("hand_discard_requested", 4)
-					_rpc_hand_discard_requested.rpc_id(peer_id, args[0])
+					multiplayer_sync._rpc_hand_discard_requested.rpc_id(peer_id, args[0])
 				"hand_card_selection":
 					RpcLogger.log_send("hand_card_selection_requested", args[0].length() + args[1].length() + 1)
-					_rpc_hand_card_selection_requested.rpc_id(peer_id, args[0], args[1], args[2])
+					multiplayer_sync._rpc_hand_card_selection_requested.rpc_id(peer_id, args[0], args[1], args[2])
 				"zone_target":
 					RpcLogger.log_send("zone_target_requested", 4 + args[1].length() + args[2].length() + 1)
-					_rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
+					multiplayer_sync._rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
 				"strategy_target":
 					RpcLogger.log_send("strategy_target_requested", 4 + args[1].length() + args[2].length())
-					_rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2])
+					multiplayer_sync._rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2])
 				"choice":
 					RpcLogger.log_send("choice_requested", args[0].length() + args[1].length())
-					_rpc_choice_requested.rpc_id(peer_id, args[0], args[1])
+					multiplayer_sync._rpc_choice_requested.rpc_id(peer_id, args[0], args[1])
 				"confirmation":
 					RpcLogger.log_send("confirmation_requested", args[0].length() + args[1].length())
-					_rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
+					multiplayer_sync._rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
 				"monster_rankup":
 					RpcLogger.log_send("monster_rankup_requested", args[0].length() + args[1].length() + args[2].length())
-					_rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
+					multiplayer_sync._rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
 	elif turn_manager and not turn_manager.is_game_over:
 		# No pending interaction — re-prompt whoever's turn it is
 		# (_on_awaiting_action handles both host and client turn cases)

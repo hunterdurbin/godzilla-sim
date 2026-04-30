@@ -24,16 +24,16 @@ config/icon="res://assets/icons/game_icon.png"
 [autoload]
 
 CardData="*res://data/card_data.gd"
-ArtworkDownloader="*res://scripts/artwork_downloader.gd"
+ArtworkDownloader="*res://scripts/util/artwork_downloader.gd"
 DecklistManager="*res://data/decklist_manager.gd"
-NetworkManager="*res://scripts/network_manager.gd"
+NetworkManager="*res://scripts/network/network_manager.gd"
 GameSettings="*res://data/game_settings.gd"
-StatsUploader="*res://scripts/stats_uploader.gd"
-UpdateChecker="*res://scripts/update_checker.gd"
-RpcLogger="*res://scripts/rpc_logger.gd"
-TouchHelper="*res://scripts/touch_helper.gd"
-SfxManager="*res://scripts/sfx_manager.gd"
-MusicManager="*res://scripts/music_manager.gd"
+StatsUploader="*res://scripts/network/stats_uploader.gd"
+UpdateChecker="*res://scripts/util/update_checker.gd"
+RpcLogger="*res://scripts/network/rpc_logger.gd"
+TouchHelper="*res://scripts/util/touch_helper.gd"
+SfxManager="*res://scripts/audio/sfx_manager.gd"
+MusicManager="*res://scripts/audio/music_manager.gd"
 
 [debug]
 

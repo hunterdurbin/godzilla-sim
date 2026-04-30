@@ -1,0 +1,88 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/new_game_board.gd" id="1_ngb"]
+[ext_resource type="Script" path="res://scripts/session/game_session.gd" id="2_gs"]
+[ext_resource type="Script" path="res://scripts/session/multiplayer_sync.gd" id="3_ms"]
+[ext_resource type="Script" path="res://scripts/session/effect_ui_router.gd" id="4_eur"]
+
+[node name="NewGameBoard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ngb")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0.06, 0.12, 1)
+
+[node name="GameSession" type="Node" parent="."]
+script = ExtResource("2_gs")
+
+[node name="MultiplayerSync" type="Node" parent="GameSession"]
+script = ExtResource("3_ms")
+
+[node name="EffectUIRouter" type="Node" parent="GameSession"]
+script = ExtResource("4_eur")
+
+[node name="StatusBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -360.0
+offset_top = -260.0
+offset_right = 360.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="Label" parent="StatusBox"]
+layout_mode = 2
+text = "NewGameBoard — GameSession seam smoke test"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+
+[node name="TurnLabel" type="Label" parent="StatusBox"]
+layout_mode = 2
+text = "Turn: —"
+horizontal_alignment = 1
+
+[node name="PlayerLabel" type="Label" parent="StatusBox"]
+layout_mode = 2
+text = "Active: —"
+horizontal_alignment = 1
+
+[node name="PhaseLabel" type="Label" parent="StatusBox"]
+layout_mode = 2
+text = "Phase: —"
+horizontal_alignment = 1
+
+[node name="EndMainButton" type="Button" parent="StatusBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+custom_minimum_size = Vector2(160, 40)
+text = "End Main Phase"
+
+[node name="Log" type="RichTextLabel" parent="StatusBox"]
+layout_mode = 2
+size_flags_vertical = 3
+custom_minimum_size = Vector2(700, 240)
+bbcode_enabled = true
+scroll_following = true
+
+[node name="MenuButton" type="Button" parent="StatusBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+custom_minimum_size = Vector2(160, 32)
+text = "Return to Menu"
