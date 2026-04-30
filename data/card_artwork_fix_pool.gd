@@ -15,6 +15,10 @@ const ENTRIES := {
 		"description": "Corrected EBP04-013 / EBP04-021 / EBP04-028 / EBP04-082 effect translations",
 		"card_ids": ["EBP04-013", "EBP04-021", "EBP04-028", "EBP04-082"],
 	},
+	"v0.1.12-unstable.3_ebp04_moguera_trait_fix": {
+		"description": "Correct EBP04-053 Weapon trait",
+		"card_ids": ["EBP04-053"],
+	},
 }
 
 

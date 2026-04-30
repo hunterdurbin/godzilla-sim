@@ -3560,7 +3560,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 7,
 		"colors": [CardEnums.CardColor.BLUE],
-		"traits": [CardEnums.CardTrait.MOGUERA],
+		"traits": [CardEnums.CardTrait.MOGUERA, CardEnums.CardTrait.WEAPON],
 		"counter_power": 7000,
 		"invasion_icon": 1,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_053.gd",
