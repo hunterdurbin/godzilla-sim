@@ -38,7 +38,7 @@ func bot_can_fulfill_threat_level(owner: PlayerState, _opponent: PlayerState) ->
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var monster_count: int = ctx.effect_handler.count_monsters_in_discard(ctx.owner)
+	var monster_count: int = CardUtils.count_monsters_in_discard(ctx.owner.discard_pile)
 	if monster_count < 5:
 		return
 
@@ -48,6 +48,6 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:
-	if ctx.effect_handler.count_monsters_in_discard(ctx.owner) >= 10:
+	if CardUtils.count_monsters_in_discard(ctx.owner.discard_pile) >= 10:
 		return 10000
 	return 0

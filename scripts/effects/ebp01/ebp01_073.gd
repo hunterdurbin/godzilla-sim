@@ -25,7 +25,7 @@ func get_bot_tags() -> Array[String]:
 
 func can_be_played(ctx: EffectContext) -> bool:
 	# Cannot be played if 7 or fewer monster cards in discard pile (need 8+)
-	return ctx.effect_handler.count_monsters_in_discard(ctx.owner) > 7
+	return CardUtils.count_monsters_in_discard(ctx.owner.discard_pile) > 7
 
 
 func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zone: int, _to_zone: int) -> void:

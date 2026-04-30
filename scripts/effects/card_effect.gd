@@ -52,6 +52,12 @@ extends RefCounted
 ##                EBP04-046 Rodan, EBP04-076 Dormancy, EBP01-075 Godzilla KOTM,
 ##                EBP04-048 Little Godzilla); false = owner's own effect.
 ##                Rules-based actions (no active effect) match neither value.
+##   "target_is_owner": bool — only meaningful for get_strategy_hand_rank_modifier;
+##                gates by whose hand the modified strategy is in. true = only
+##                fire when the watcher itself owns the targeted strategy
+##                (e.g. EBP04-068 reduces ranks of strategies in your own hand);
+##                false = only fire when the opponent owns it (e.g. EBP04-028,
+##                EBP04-066 raise ranks of strategies in the opponent's hand).
 ##
 ## Empty per-method dict or missing entry = always fire (backward compatible).
 ## See EffectHandler.get_trigger_filter / _passes_trigger_filter for the dispatcher side.

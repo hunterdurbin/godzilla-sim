@@ -2974,15 +2974,6 @@ func get_zone_rank_modifiers(player_id: int) -> Array:
 	return modifiers
 
 
-func count_monsters_in_discard(player: PlayerState) -> int:
-	## Count monster cards in discard pile. Includes cards with counts_as_monster_in_discard flag.
-	var count: int = 0
-	for card in player.discard_pile:
-		if card.get("card_type") == CardEnums.CardType.MONSTER or card.get("counts_as_monster_in_discard", false):
-			count += 1
-	return count
-
-
 # --- Helpers for card placement and movement ---
 
 func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1) -> int:
@@ -3184,23 +3175,52 @@ func is_invade1_cost_blocked(invading_player_id: int) -> bool:
 	return false
 
 
+func _passes_strategy_hand_rank_modifier_filter(
+	card_data: Dictionary, watcher_player_id: int, target_player_id: int
+) -> bool:
+	## Evaluate TRIGGER_FILTERS["get_strategy_hand_rank_modifier"] for the
+	## passive-query rank modifier. Authors can gate by turn ownership or by
+	## whose hand the modified strategy is in:
+	## "own_turn": bool — gate by watcher's turn ownership.
+	## "target_is_owner": bool — gate by whose hand is being modified. true =
+	##   only fire when the watcher itself owns the strategy being modified.
+	var filter: Dictionary = get_trigger_filter(card_data, "get_strategy_hand_rank_modifier")
+	if filter.is_empty():
+		return true
+	if filter.has("own_turn"):
+		var is_own_turn: bool = (game_state.current_player_id == watcher_player_id)
+		if filter.own_turn != is_own_turn:
+			return false
+	if filter.has("target_is_owner"):
+		var target_is_owner: bool = (target_player_id == watcher_player_id)
+		if filter.target_is_owner != target_is_owner:
+			return false
+	return true
+
+
 func get_strategy_hand_rank_modifier(player_id: int, card: Dictionary) -> int:
 	## Sum rank modifiers applied to a strategy card while held in player_id's hand.
 	## Queries all cards from both players so effects can target owner, opponent, or both.
+	## TRIGGER_FILTERS keys: own_turn, target_is_owner.
 	var total: int = 0
 	for source_id in range(2):
 		var source := game_state.players[source_id]
-		var effect := get_effect(source.current_monster)
-		if effect:
-			total += effect.get_strategy_hand_rank_modifier(
-				_build_context(source_id, source.current_monster), card, player_id)
+		if not source.current_monster.is_empty() \
+				and _passes_strategy_hand_rank_modifier_filter(source.current_monster, source_id, player_id):
+			var effect := get_effect(source.current_monster)
+			if effect:
+				total += effect.get_strategy_hand_rank_modifier(
+					_build_context(source_id, source.current_monster), card, player_id)
 		for i in range(8):
 			var zone_card := source.get_zone_top_card(i)
-			if not zone_card.is_empty():
-				var ze := get_effect(zone_card)
-				if ze:
-					total += ze.get_strategy_hand_rank_modifier(
-						_build_context(source_id, zone_card), card, player_id)
+			if zone_card.is_empty():
+				continue
+			if not _passes_strategy_hand_rank_modifier_filter(zone_card, source_id, player_id):
+				continue
+			var ze := get_effect(zone_card)
+			if ze:
+				total += ze.get_strategy_hand_rank_modifier(
+					_build_context(source_id, zone_card), card, player_id)
 	return total
 
 

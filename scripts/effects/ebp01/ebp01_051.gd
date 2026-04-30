@@ -17,6 +17,6 @@ func get_bot_tags() -> Array[String]:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	if ctx.effect_handler.count_monsters_in_discard(ctx.owner) >= 5:
+	if CardUtils.count_monsters_in_discard(ctx.owner.discard_pile) >= 5:
 		return 3000
 	return 0
