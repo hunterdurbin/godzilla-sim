@@ -17,10 +17,9 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var revealed := await ctx.effect_handler.reveal_deck_top(ctx.owner.player_id, 3)
+	var revealed := await ctx.mill(3)
 	if revealed.is_empty():
 		return
-	ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)
 
 	var matching_ranks: Array[int] = []
 	for card in revealed:
@@ -36,9 +35,33 @@ func on_enter(ctx: EffectContext) -> void:
 		if ctx.opponent.zone_has_cards(zone_idx):
 			zones_to_destroy.append(zone_idx)
 
-	if not zones_to_destroy.is_empty():
-		await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
+	var can_retreat: bool = (
+		ctx.opponent.monster_zone in matching_ranks and ctx.opponent.monster_zone > 1
+	)
 
-	# If opponent monster is in a matching zone, retreat 1
-	if ctx.opponent.monster_zone in matching_ranks and ctx.opponent.monster_zone > 1:
-		await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
+	# Apply destroy + retreat in player-chosen order. When both apply, prompt
+	# for the order; if only one applies, run it directly.
+	var destroy_first: bool = true
+	if not zones_to_destroy.is_empty() and can_retreat:
+		var zone_list: String = ", ".join(zones_to_destroy.map(func(z): return str(z + 1)))
+		var chosen: int = await ctx.effect_handler.select_choice(
+			ctx.owner.player_id,
+			[
+				tr("STR_EFF_DESTROY_THEN_RETREAT_FMT") % zone_list,
+				tr("STR_EFF_RETREAT_THEN_DESTROY_FMT") % zone_list,
+			],
+			tr("STR_EFF_CHOOSE_ORDER"))
+		destroy_first = chosen != 1
+
+	if destroy_first:
+		if not zones_to_destroy.is_empty():
+			await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
+		if can_retreat and ctx.opponent.monster_zone > 1:
+			await ctx.effect_handler.retreat_monster_to_zone(
+				ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
+	else:
+		if can_retreat and ctx.opponent.monster_zone > 1:
+			await ctx.effect_handler.retreat_monster_to_zone(
+				ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
+		if not zones_to_destroy.is_empty():
+			await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)

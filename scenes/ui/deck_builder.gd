@@ -4,7 +4,9 @@ const CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 const CARD_SCALE := 0.42
 const CARD_SIZE := Vector2(150, 210)
 const SCALED_SIZE := CARD_SIZE * CARD_SCALE
-const GRID_COLUMNS := 7
+const ZOOM_MIN_COLUMNS := 5 # most zoomed in (largest cards)
+const ZOOM_MAX_COLUMNS := 12 # most zoomed out (smallest cards)
+const ZOOM_DEFAULT_COLUMNS := 7
 
 # --- Left panel ---
 var deck_name_edit: LineEdit
@@ -18,11 +20,16 @@ var deck_stats_label: RichTextLabel
 var validation_label: RichTextLabel
 var back_button: Button
 var format_option: OptionButton
+var format_info_button: Button
 var default_mode_check: CheckBox
 
 # --- Right panel: deck section ---
 var monster_tab_button: Button
 var main_tab_button: Button
+var deck_zoom_in_button: Button
+var deck_zoom_out_button: Button
+var pool_zoom_in_button: Button
+var pool_zoom_out_button: Button
 var deck_grid: GridContainer
 var deck_scroll: ScrollContainer
 
@@ -42,6 +49,9 @@ var pool_scroll: ScrollContainer
 var unsaved_dialog: ConfirmationDialog
 var delete_dialog: ConfirmationDialog
 var empty_save_dialog: ConfirmationDialog
+var clear_dialog: ConfirmationDialog
+var format_info_dialog: AcceptDialog
+var format_info_body: VBoxContainer
 
 # --- State ---
 var _monster_entries: Array = []
@@ -49,23 +59,25 @@ var _main_entries: Array = []
 var _current_deck_name: String = ""
 var _has_unsaved_changes: bool = false
 var _showing_monster_tab: bool = true
+var _deck_zoom_columns: int = ZOOM_DEFAULT_COLUMNS
+var _pool_zoom_columns: int = ZOOM_DEFAULT_COLUMNS
 
 var _all_pool_cards: Array[Dictionary] = []
 var _filtered_pool_cards: Array[Dictionary] = []
 
 var _search_text: String = ""
-var _search_criteria: Array = []  # Parsed criteria from _search_text; each is a Dict
-var _type_filter: int = -1  # -1 = all
+var _search_criteria: Array = [] # Parsed criteria from _search_text; each is a Dict
+var _type_filter: int = -1 # -1 = all
 var _color_filters: Array[int] = []
-var _invasion_filter: int = -1  # -1 = all, 1 = step 1, 2 = step 2
-var _sort_mode: int = 0  # 0=ID, 1=Name, 2=Rank, 3=Type
+var _invasion_filter: int = -1 # -1 = all, 1 = step 1, 2 = step 2
+var _sort_mode: int = 0 # 0=ID, 1=Name, 2=Rank, 3=Type
 
 var _pending_action: Callable
 var _invalid_cards: Dictionary = {} # card_number -> true
 var _game_mode: String = "rumble_west"
-var _pool_load_generation: int = 0  # Incremented to cancel stale batched loads
-var _deck_list_touch_scrolled: bool = false  # Track if ItemList was scrolled on touch
-var _pending_deck_list_index: int = -1  # Deferred selection index for touch
+var _pool_load_generation: int = 0 # Incremented to cancel stale batched loads
+var _deck_list_touch_scrolled: bool = false # Track if ItemList was scrolled on touch
+var _pending_deck_list_index: int = -1 # Deferred selection index for touch
 
 # --- Preview ---
 var _preview_card: Control
@@ -93,6 +105,7 @@ func _ready() -> void:
 	_refresh_pool_display()
 	_refresh_deck_display()
 	_update_deck_stats()
+	_update_zoom_buttons()
 
 
 # ============================================================
@@ -228,10 +241,23 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	format_col.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	stats_row.add_child(format_col)
 
+	var format_row := HBoxContainer.new()
+	format_row.add_theme_constant_override("separation", 4)
+	format_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	format_col.add_child(format_row)
+
+	format_info_button = Button.new()
+	format_info_button.text = "i"
+	format_info_button.tooltip_text = tr("STR_DB_FORMAT_INFO_TOOLTIP")
+	format_info_button.custom_minimum_size = Vector2(28, 28)
+	format_info_button.focus_mode = Control.FOCUS_NONE
+	format_row.add_child(format_info_button)
+
 	format_option = OptionButton.new()
+	format_option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for i in range(GameModeValidator.MODES.size()):
 		format_option.add_item(tr(GameModeValidator.MODES[i]["label"]), i)
-	format_col.add_child(format_option)
+	format_row.add_child(format_option)
 
 	default_mode_check = CheckBox.new()
 	default_mode_check.text = tr("STR_DB_SET_AS_DEFAULT")
@@ -301,6 +327,22 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	main_tab_button.toggle_mode = true
 	header.add_child(main_tab_button)
 
+	deck_zoom_out_button = _make_zoom_button("−", "Zoom out deck")
+	header.add_child(deck_zoom_out_button)
+
+	deck_zoom_in_button = _make_zoom_button("+", "Zoom in deck")
+	header.add_child(deck_zoom_in_button)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_child(spacer)
+
+	var clear_button := Button.new()
+	clear_button.text = tr("STR_COMMON_CLEAR")
+	clear_button.pressed.connect(_on_clear_pressed)
+	header.add_child(clear_button)
+
 	# Scroll + grid
 	deck_scroll = ScrollContainer.new()
 	deck_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -310,7 +352,7 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	section.add_child(deck_scroll)
 
 	deck_grid = GridContainer.new()
-	deck_grid.columns = GRID_COLUMNS
+	deck_grid.columns = _deck_zoom_columns
 	deck_grid.add_theme_constant_override("h_separation", 4)
 	deck_grid.add_theme_constant_override("v_separation", 4)
 	deck_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -431,6 +473,12 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 	pool_count_label.add_theme_color_override("font_color", Color(0.7, 0.6, 0.5, 1))
 	header.add_child(pool_count_label)
 
+	pool_zoom_out_button = _make_zoom_button("−", "Zoom out pool")
+	header.add_child(pool_zoom_out_button)
+
+	pool_zoom_in_button = _make_zoom_button("+", "Zoom in pool")
+	header.add_child(pool_zoom_in_button)
+
 	# Scroll + grid
 	pool_scroll = ScrollContainer.new()
 	pool_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -440,7 +488,7 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 	section.add_child(pool_scroll)
 
 	pool_grid = GridContainer.new()
-	pool_grid.columns = GRID_COLUMNS
+	pool_grid.columns = _pool_zoom_columns
 	pool_grid.add_theme_constant_override("h_separation", 4)
 	pool_grid.add_theme_constant_override("v_separation", 4)
 	pool_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -468,6 +516,28 @@ func _build_dialogs() -> void:
 	empty_save_dialog.ok_button_text = tr("STR_DB_EMPTY_SAVE_OK")
 	empty_save_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	add_child(empty_save_dialog)
+
+	clear_dialog = ConfirmationDialog.new()
+	clear_dialog.title = tr("STR_DB_CLEAR_TITLE")
+	clear_dialog.dialog_text = tr("STR_DB_CLEAR_TEXT")
+	clear_dialog.ok_button_text = tr("STR_COMMON_CLEAR")
+	clear_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
+	add_child(clear_dialog)
+
+	format_info_dialog = AcceptDialog.new()
+	format_info_dialog.min_size = Vector2(560, 540)
+	var info_scroll := ScrollContainer.new()
+	info_scroll.custom_minimum_size = Vector2(520, 480)
+	info_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	info_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	format_info_dialog.add_child(info_scroll)
+
+	format_info_body = VBoxContainer.new()
+	format_info_body.add_theme_constant_override("separation", 8)
+	format_info_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_scroll.add_child(format_info_body)
+	add_child(format_info_dialog)
 
 
 func _apply_panel_style(panel: PanelContainer) -> void:
@@ -497,6 +567,10 @@ func _connect_signals() -> void:
 	# Deck tabs
 	monster_tab_button.pressed.connect(_on_monster_tab_pressed)
 	main_tab_button.pressed.connect(_on_main_tab_pressed)
+	deck_zoom_in_button.pressed.connect(_on_deck_zoom_in_pressed)
+	deck_zoom_out_button.pressed.connect(_on_deck_zoom_out_pressed)
+	pool_zoom_in_button.pressed.connect(_on_pool_zoom_in_pressed)
+	pool_zoom_out_button.pressed.connect(_on_pool_zoom_out_pressed)
 
 	# Filters
 	search_edit.text_changed.connect(_on_search_changed)
@@ -508,12 +582,14 @@ func _connect_signals() -> void:
 		invasion_buttons[i].pressed.connect(_on_invasion_button_pressed.bind(i))
 	sort_option.item_selected.connect(_on_sort_changed)
 	format_option.item_selected.connect(_on_format_changed)
+	format_info_button.pressed.connect(_show_format_info)
 	default_mode_check.toggled.connect(_on_default_mode_toggled)
 
 	# Dialogs
 	unsaved_dialog.confirmed.connect(_on_unsaved_confirmed)
 	delete_dialog.confirmed.connect(_on_delete_confirmed)
 	empty_save_dialog.confirmed.connect(_on_empty_save_confirmed)
+	clear_dialog.confirmed.connect(_on_clear_confirmed)
 
 
 # ============================================================
@@ -766,7 +842,7 @@ func _load_pool_cards_batched(cards: Array[Dictionary], gen: int) -> void:
 	var i := 0
 	while i < cards.size():
 		if gen != _pool_load_generation:
-			return  # A newer refresh was triggered; abort this one
+			return # A newer refresh was triggered; abort this one
 		var batch_end := mini(i + POOL_BATCH_SIZE, cards.size())
 		while i < batch_end:
 			var wrapper := _create_card_wrapper(cards[i], true)
@@ -984,7 +1060,7 @@ func _position_preview() -> void:
 		if CARD_SIZE.x * s > vp.y:
 			s = vp.y / CARD_SIZE.x
 		_preview_card.scale = Vector2(s, s)
-		_preview_card.rotation = -PI / 2.0
+		_preview_card.rotation = - PI / 2.0
 		_preview_card.position.x = 105.0 * s - 75.0
 		_preview_card.position.y = 75.0 * s - 105.0
 	else:
@@ -1321,6 +1397,62 @@ func _on_main_tab_pressed() -> void:
 	_refresh_deck_display()
 
 
+func _make_zoom_button(label: String, tooltip: String) -> Button:
+	var btn := Button.new()
+	btn.text = label
+	btn.tooltip_text = tooltip
+	btn.custom_minimum_size = Vector2(28, 28)
+	btn.focus_mode = Control.FOCUS_NONE
+	return btn
+
+
+func _on_deck_zoom_in_pressed() -> void:
+	_set_deck_zoom_columns(_deck_zoom_columns - 1)
+
+
+func _on_deck_zoom_out_pressed() -> void:
+	_set_deck_zoom_columns(_deck_zoom_columns + 1)
+
+
+func _on_pool_zoom_in_pressed() -> void:
+	_set_pool_zoom_columns(_pool_zoom_columns - 1)
+
+
+func _on_pool_zoom_out_pressed() -> void:
+	_set_pool_zoom_columns(_pool_zoom_columns + 1)
+
+
+func _set_deck_zoom_columns(cols: int) -> void:
+	cols = clamp(cols, ZOOM_MIN_COLUMNS, ZOOM_MAX_COLUMNS)
+	if cols == _deck_zoom_columns:
+		_update_zoom_buttons()
+		return
+	SfxManager.play("ui_click")
+	_deck_zoom_columns = cols
+	deck_grid.columns = _deck_zoom_columns
+	_update_zoom_buttons()
+	_refresh_deck_display()
+
+
+func _set_pool_zoom_columns(cols: int) -> void:
+	cols = clamp(cols, ZOOM_MIN_COLUMNS, ZOOM_MAX_COLUMNS)
+	if cols == _pool_zoom_columns:
+		_update_zoom_buttons()
+		return
+	SfxManager.play("ui_click")
+	_pool_zoom_columns = cols
+	pool_grid.columns = _pool_zoom_columns
+	_update_zoom_buttons()
+	_refresh_pool_display()
+
+
+func _update_zoom_buttons() -> void:
+	deck_zoom_in_button.disabled = _deck_zoom_columns <= ZOOM_MIN_COLUMNS
+	deck_zoom_out_button.disabled = _deck_zoom_columns >= ZOOM_MAX_COLUMNS
+	pool_zoom_in_button.disabled = _pool_zoom_columns <= ZOOM_MIN_COLUMNS
+	pool_zoom_out_button.disabled = _pool_zoom_columns >= ZOOM_MAX_COLUMNS
+
+
 # ============================================================
 # Filter Handlers
 # ============================================================
@@ -1382,7 +1514,7 @@ func _on_color_button_pressed(_index: int) -> void:
 
 func _on_invasion_button_pressed(index: int) -> void:
 	# Radio-style: only one can be active, pressing active one deselects
-	var step := index + 1  # 0 → step 1, 1 → step 2
+	var step := index + 1 # 0 → step 1, 1 → step 2
 	if _invasion_filter == step:
 		_invasion_filter = -1
 		invasion_buttons[index].button_pressed = false
@@ -1423,6 +1555,107 @@ func _index_of_mode(mode_id: String) -> int:
 		if GameModeValidator.MODES[i]["id"] == mode_id:
 			return i
 	return 0
+
+
+# ============================================================
+# Format Info Modal
+# ============================================================
+
+func _show_format_info() -> void:
+	SfxManager.play("ui_click")
+	_populate_format_info(_game_mode)
+	format_info_dialog.popup_centered()
+
+
+func _populate_format_info(mode_id: String) -> void:
+	for child in format_info_body.get_children():
+		child.queue_free()
+
+	var mode := GameModeValidator.get_mode(mode_id)
+	if mode.is_empty():
+		return
+
+	format_info_dialog.title = tr("STR_DB_FORMAT_INFO_TITLE_FMT") % tr(mode.get("label", ""))
+
+	_add_info_heading(tr("STR_DB_FORMAT_INFO_DESCRIPTION"))
+	_add_info_paragraph(tr(mode.get("desc", "")))
+
+	if not mode.has("card_pool"):
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_ALL_ALLOWED"))
+		return
+
+	var pool: Dictionary = mode["card_pool"]
+
+	var sets: Array = pool.get("include_sets", [])
+	if not sets.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_INCLUDED_SETS"))
+		var packed := PackedStringArray()
+		for s in sets:
+			packed.append(s)
+		_add_info_paragraph(", ".join(packed))
+
+	var includes: Array = pool.get("include_cards", [])
+	if not includes.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_INCLUDED_CARDS"))
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_INCLUDED_CARDS_SUMMARY_FMT") % includes.size())
+
+	var excludes: Array = pool.get("exclude_cards", [])
+	if not excludes.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_EXCLUDED_CARDS"))
+		_add_info_paragraph(_format_card_list(excludes))
+
+	var restricted: Array = pool.get("restricted", [])
+	if not restricted.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_RESTRICTED"))
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_RESTRICTED_RULE"))
+		_add_info_paragraph(_format_card_list(restricted))
+
+	var pairs: Array = pool.get("choice_restricted", [])
+	if not pairs.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_CHOICE_RESTRICTED"))
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_CHOICE_RULE"))
+		var lines := PackedStringArray()
+		for pair in pairs:
+			lines.append("%s  ⇄  %s" % [_format_card_line(pair[0]), _format_card_line(pair[1])])
+		_add_info_paragraph("\n".join(lines))
+
+
+func _add_info_heading(text: String) -> void:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", Color(0.9, 0.3, 0.1, 1))
+	format_info_body.add_child(label)
+
+
+func _add_info_paragraph(text: String) -> void:
+	var label := RichTextLabel.new()
+	label.bbcode_enabled = true
+	label.fit_content = true
+	label.scroll_active = false
+	label.selection_enabled = true
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.text = text
+	format_info_body.add_child(label)
+
+
+func _format_card_list(card_ids: Array) -> String:
+	var lines := PackedStringArray()
+	for cid in card_ids:
+		lines.append(_format_card_line(cid))
+	return "\n".join(lines)
+
+
+func _format_card_line(card_id: String) -> String:
+	var key := "CARD_%s_NAME" % card_id
+	var translated := TranslationServer.translate(key)
+	var card_name: String
+	if translated != key:
+		card_name = translated
+	else:
+		card_name = CardData.CARD_TEMPLATES.get(card_id, {}).get("name", card_id)
+	return "%s · %s" % [card_id, card_name]
 
 
 # ============================================================
@@ -1537,6 +1770,22 @@ func _on_delete_confirmed() -> void:
 	var deck_name: String = deck_list.get_item_text(selected[0])
 	DecklistManager.delete_decklist(deck_name)
 	_refresh_deck_list()
+
+
+func _on_clear_pressed() -> void:
+	SfxManager.play("ui_click")
+	if _monster_entries.is_empty() and _main_entries.is_empty():
+		return
+	clear_dialog.popup_centered()
+
+
+func _on_clear_confirmed() -> void:
+	_monster_entries.clear()
+	_main_entries.clear()
+	_has_unsaved_changes = true
+	_refresh_deck_display()
+	_refresh_pool_display()
+	_update_deck_stats()
 
 
 func _refresh_deck_list() -> void:

@@ -35,6 +35,7 @@ var _client_threat_modifiers: Array = [0, 0]
 var _client_zone_cp_mods: Array = [[], []]
 var _client_strategy_cp_mods: Array = [[], []]
 var _client_zone_rank_mods: Array = [[], []]
+var _client_hand_rank_mods: Array = [[], []]
 var _client_monster_cp_mods: Array = [0, 0]
 var _client_gradients_applied: bool = false
 # Client-side stats snapshot (synced from host for disconnect reporting)
@@ -2842,7 +2843,7 @@ func _on_confirmation_requested(prompt: String, setting: String) -> void:
 func _show_confirmation(prompt: String) -> void:
 	_awaiting_confirmation = true
 	_disable_all_buttons()
-	btn_confirm.text = prompt
+	btn_confirm.text = _resolve_translated_text(prompt)
 	_fit_button_text(btn_confirm)
 	btn_confirm.disabled = false
 	await btn_confirm.pressed
@@ -2881,7 +2882,24 @@ func _on_log_message(message) -> void:
 func _render_log_entry(entry) -> String:
 	if typeof(entry) == TYPE_DICTIONARY:
 		return GameLog.render(entry)
-	return str(entry)
+	return _resolve_translated_text(str(entry))
+
+
+## Defensive client-side fallback: log lines and prompts ship from the host
+## as already-translated strings (host's `tr()` baked the result into the RPC
+## payload). If the host's `tr()` ever returns the key literally — e.g. a
+## transient TranslationServer state or a build/version drift — the client
+## otherwise displays "STR_..." verbatim. Re-running `tr()` on the local side
+## resolves it when the key exists in our translation table.
+func _resolve_translated_text(text: String) -> String:
+	if not text.begins_with("STR_"):
+		return text
+	# tr() expects no leading/trailing whitespace to find a match
+	var stripped := text.strip_edges()
+	var translated := tr(stripped)
+	if translated == stripped:
+		return text
+	return text.replace(stripped, translated)
 
 
 func _on_chat_submitted(text: String) -> void:
@@ -3381,6 +3399,7 @@ func _execute_rematch() -> void:
 	_client_zone_cp_mods = [[], []]
 	_client_strategy_cp_mods = [[], []]
 	_client_zone_rank_mods = [[], []]
+	_client_hand_rank_mods = [[], []]
 	_client_monster_cp_mods = [0, 0]
 
 	# 7. Clear game log
@@ -3777,7 +3796,7 @@ func _cancel_pass_confirmation() -> void:
 
 func _enter_card_selection(prompt_text: String, valid_indices: Array[int]) -> void:
 	waiting_for_card_select = true
-	card_select_prompt.text = prompt_text
+	card_select_prompt.text = _resolve_translated_text(prompt_text)
 	action_prompt_panel.visible = true
 	_disable_all_buttons()
 	btn_cancel.text = tr("STR_GB_CANCEL")
@@ -4202,15 +4221,17 @@ func _sync_boards() -> void:
 		var threat_mod_1: int = eh.get_threat_level_modifier(1) if eh else 0
 		var zone_rank_0: Array = eh.get_zone_rank_modifiers(0) if eh else []
 		var zone_rank_1: Array = eh.get_zone_rank_modifiers(1) if eh else []
+		var hand_rank_0: Array = _compute_hand_rank_mods(state.players[0]) if eh else []
+		var hand_rank_1: Array = _compute_hand_rank_mods(state.players[1]) if eh else []
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0)
+			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0, hand_rank_0)
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1)
+			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1, hand_rank_1)
 	elif not _client_players.is_empty():
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0])
+			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0], _client_hand_rank_mods[0])
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1], _client_monster_cp_mods[1])
+			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1], _client_monster_cp_mods[1], _client_hand_rank_mods[1])
 	if _is_mobile_layout:
 		_sync_mobile_cp_tray()
 	call_deferred("_position_hands")
@@ -4545,7 +4566,7 @@ func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary]
 	for card_data in matching:
 		_deck_search_matching_ids[card_data.get("id", "")] = true
 
-	deck_search_prompt.text = prompt
+	deck_search_prompt.text = _resolve_translated_text(prompt)
 	deck_search_skip.visible = allow_skip
 	deck_search_show_all.set_pressed_no_signal(matching.is_empty())
 	deck_search_stacked.set_pressed_no_signal(_match_stacked_view)
@@ -5087,7 +5108,7 @@ func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt
 func _show_deck_arrange(cards: Array[Dictionary], prompt: String) -> void:
 	_arrange_keep = cards.duplicate()
 	_arrange_discard = []
-	deck_arrange_prompt.text = prompt
+	deck_arrange_prompt.text = _resolve_translated_text(prompt)
 	deck_arrange_overlay.visible = true
 	_refresh_deck_arrange()
 
@@ -5320,7 +5341,7 @@ func _show_card_select(matching: Array[Dictionary], all_cards: Array[Dictionary]
 	_card_select_min_count = min_count
 	_card_select_max_count = max_count
 
-	card_pool_select_prompt.text = prompt
+	card_pool_select_prompt.text = _resolve_translated_text(prompt)
 	card_pool_select_show_all.set_pressed_no_signal(matching.is_empty())
 	card_pool_select_stacked.set_pressed_no_signal(_match_stacked_view)
 	card_pool_select_overlay.visible = true
@@ -5668,7 +5689,7 @@ func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt
 		hand_mgr.card_selected.connect(_on_hand_card_clicked)
 
 	_disable_all_buttons()
-	card_select_prompt.text = prompt
+	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
 	if allow_skip:
@@ -5753,7 +5774,7 @@ func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zo
 	_zone_target_allow_skip = allow_skip
 
 	_disable_all_buttons()
-	card_select_prompt.text = prompt
+	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
 	if allow_skip:
@@ -5833,7 +5854,7 @@ func _show_strategy_target_selection(player_id: int, target_player_id: int, vali
 	_strategy_target_valid_indices = valid_indices
 
 	_disable_all_buttons()
-	card_select_prompt.text = prompt
+	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
 	# Highlight valid strategy slots on the target player's board
@@ -5901,7 +5922,7 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	_disable_all_buttons()
 	# Hide the normal action button rows so only choice buttons show
 	_set_action_buttons_visible(false)
-	card_select_prompt.text = prompt
+	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
 	# Create a container for choice buttons
@@ -5929,7 +5950,7 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 
 	for i in range(options.size()):
 		var btn := Button.new()
-		btn.text = options[i]
+		btn.text = _resolve_translated_text(options[i])
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		btn.custom_minimum_size.x = 325
 		btn.custom_minimum_size.y = 60 if _is_mobile_layout else 0
@@ -6204,7 +6225,7 @@ func _show_monster_rankup_selection(player_id: int, monsters: Array[Dictionary],
 	_disable_all_buttons()
 
 	# Show monster deck overlay with selectable cards
-	monster_deck_view_title.text = prompt
+	monster_deck_view_title.text = _resolve_translated_text(prompt)
 	monster_deck_view_close.visible = false
 	monster_deck_view_stacked.visible = false
 
@@ -6374,21 +6395,25 @@ func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
 
 func _on_card_long_press_zoom(card: Control) -> void:
 	if "card_data" in card and not card.card_data.is_empty():
-		_show_card_zoom(card.card_data)
+		var mod: int = card.get_play_cost_modifier() if card.has_method("get_play_cost_modifier") else 0
+		_show_card_zoom(card.card_data, mod)
 
 
 func _on_hand_card_right_clicked(card: Control, _hand_player_id: int) -> void:
 	if "card_data" in card and not card.card_data.is_empty():
-		_show_card_zoom(card.card_data)
+		var mod: int = card.get_play_cost_modifier() if card.has_method("get_play_cost_modifier") else 0
+		_show_card_zoom(card.card_data, mod)
 
 
-func _show_card_zoom(card_data: Dictionary) -> void:
+func _show_card_zoom(card_data: Dictionary, play_cost_modifier: int = 0) -> void:
 	# Clear any existing zoomed card
 	for child in card_zoom_container.get_children():
 		child.queue_free()
 	var card: Control = card_scene.instantiate()
 	if card.has_method("set_card_data_dict"):
 		card.set_card_data_dict(card_data)
+	if card.has_method("set_play_cost_modifier"):
+		card.set_play_cost_modifier(play_cost_modifier)
 	card.is_selectable = false
 	card.drag_enabled = false
 	card.hover_scale = 1.0
@@ -6416,6 +6441,9 @@ func _show_card_zoom(card_data: Dictionary) -> void:
 	else:
 		card.custom_minimum_size = Vector2(405, 567)
 		card_zoom_container.add_child(card)
+	# Re-orient the badge after rotation was set above (strategy zoom rotates -90°).
+	if card.has_method("update_play_cost_badge_layout"):
+		card.update_play_cost_badge_layout()
 	card_zoom_overlay.visible = true
 	_zoom_shown_frame = Engine.get_process_frames()
 
@@ -6459,17 +6487,22 @@ func _apply_card_zoom(factor: float) -> void:
 
 # --- Card hover preview ---
 
-func _show_card_preview(data: Dictionary) -> void:
+func _show_card_preview(data: Dictionary, play_cost_modifier: int = 0) -> void:
 	if _is_mobile_layout:
 		return # Mobile uses tap-to-zoom instead of hover preview
 	if data.is_empty():
 		return
 	_preview_card.set_card_data_dict(data)
+	if _preview_card.has_method("set_play_cost_modifier"):
+		_preview_card.set_play_cost_modifier(play_cost_modifier)
 	var is_strategy: bool = data.get("card_type", -1) == CardEnums.CardType.STRATEGY
 	if is_strategy:
 		_show_strategy_preview()
 	else:
 		_show_normal_preview()
+	# Re-orient the badge after preview rotation/size was applied above.
+	if _preview_card.has_method("update_play_cost_badge_layout"):
+		_preview_card.update_play_cost_badge_layout()
 
 
 func _show_normal_preview() -> void:
@@ -6757,6 +6790,7 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 		"zone_cp_modifiers": [zone_cp_0, zone_cp_1],
 		"strategy_cp_modifiers": [strat_cp_0, strat_cp_1],
 		"zone_rank_modifiers": [eh.get_zone_rank_modifiers(0) if eh else [], eh.get_zone_rank_modifiers(1) if eh else []],
+		"hand_rank_modifiers": [_compute_hand_rank_mods(gs.players[0]) if eh else [], _compute_hand_rank_mods(gs.players[1]) if eh else []],
 		"monster_cp_modifiers": [eh.get_monster_cp_modifier(0) if eh else 0, eh.get_monster_cp_modifier(1) if eh else 0],
 		"player_names": Array(gs.player_names),
 		"first_player_id": _first_player_id,
@@ -6999,6 +7033,23 @@ func _compute_client_state_hash(turn_number: int, current_player_id: int, phase:
 	return "".join(parts).hash()
 
 
+## Compute the net play-cost modifier for each card in the given player's hand.
+## Returned array is parallel to player.hand. Returns [] if no effect handler.
+func _compute_hand_rank_mods(player: PlayerState) -> Array:
+	var out: Array = []
+	if not turn_manager:
+		return out
+	var eh: EffectHandler = turn_manager.effect_handler
+	if not eh:
+		return out
+	for card in player.hand:
+		var mod: int = eh.get_play_rank_modifier(player.player_id, card)
+		if card.get("card_type") == CardEnums.CardType.STRATEGY:
+			mod += eh.get_strategy_hand_rank_modifier(player.player_id, card)
+		out.append(mod)
+	return out
+
+
 func _compute_playable_data() -> Dictionary:
 	var gs := turn_manager.game_state
 	var player := gs.get_current_player()
@@ -7138,6 +7189,12 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 		_client_zone_rank_mods = data["zone_rank_modifiers"]
 		for i in range(_client_zone_rank_mods.size()):
 			var arr: Array = _client_zone_rank_mods[i]
+			for j in range(arr.size()):
+				arr[j] = int(arr[j])
+	if data.has("hand_rank_modifiers"):
+		_client_hand_rank_mods = data["hand_rank_modifiers"]
+		for i in range(_client_hand_rank_mods.size()):
+			var arr: Array = _client_hand_rank_mods[i]
 			for j in range(arr.size()):
 				arr[j] = int(arr[j])
 	if data.has("monster_cp_modifiers"):

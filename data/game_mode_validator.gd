@@ -17,6 +17,7 @@ const MODES: Array[Dictionary] = [
 	{
 		"id": "rumble_west",
 		"label": "STR_MODE_RUMBLE_WEST",
+		"desc": "STR_MODE_RUMBLE_WEST_DESC",
 		# West format lags the Japanese release by one booster. Update
 		# `include_sets` below as new sets reach the Western release.
 		"card_pool": {
@@ -30,6 +31,7 @@ const MODES: Array[Dictionary] = [
 	{
 		"id": "rumble_east",
 		"label": "STR_MODE_RUMBLE_EAST",
+		"desc": "STR_MODE_RUMBLE_EAST_DESC",
 		# East format tracks the latest Japanese release. Contains every
 		# currently-implemented set.
 		"card_pool": {
@@ -43,11 +45,13 @@ const MODES: Array[Dictionary] = [
 	{
 		"id": "no_rules",
 		"label": "STR_MODE_NO_RULES",
+		"desc": "STR_MODE_NO_RULES_DESC",
 		# No `card_pool` → every card is valid and no per-pool checks run.
 	},
 	{
 		"id": "bulkzilla",
 		"label": "STR_MODE_BULKZILLA",
+		"desc": "STR_MODE_BULKZILLA_DESC",
 		# BULKZILLA: starter decks plus any common/uncommon booster cards.
 		# The individual allow list lives in `data/bulkzilla_card_pool.gd`
 		# (rarity-annotated for readability) and is spliced in at runtime

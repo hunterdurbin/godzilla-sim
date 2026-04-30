@@ -3075,7 +3075,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"threat_level": 24000,
 		"invasion_icon": 2,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_013.gd",
-		"description": "<Enter> If you have 5 or more monster cards in your discard pile, reveal and discard the top 3 cards of your deck. Of the revealed cards' ranks, <Destroy> all of your opponent's battle cards in the same zone number or retreat your opponent's monster card in the same zone number backwards by 1 zone."
+		"description": "<Enter> If you have 5 or more monster cards in your discard pile, reveal and discard the top 3 cards of your deck. Of the revealed cards' ranks, <Destroy> all of your opponent's battle cards in the same zone number and retreat your opponent's monster card in the same zone number backwards by 1 zone."
 	},
 	{
 		"id": "EBP04-014",
@@ -3171,7 +3171,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"threat_level": 5000,
 		"invasion_icon": 1,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_021.gd",
-		"description": "At the beginning of your counter phase, you may discard the top card of your deck. If that card is a green battle card, your opponent discards until they have 4 cards in hand."
+		"description": "At the beginning of your counter phase, discard the top card of your deck. If that card is a green battle card, your opponent discards until they have 4 cards in hand."
 	},
 	{
 		"id": "EBP04-022",
@@ -3255,7 +3255,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"threat_level": 13000,
 		"invasion_icon": 1,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_028.gd",
-		"description": "<Opponent's Turn> All strategy cards of your opponent gain +3 in rank. (After play, they are returned to their original ranks)\n<Opponent's Turn> Each time your opponent plays a battle card from their main deck, your opponent discards until they have 1 card remaining in their hand."
+		"description": "<Opponent's Turn> All strategy cards of your opponent gain +3 in rank. (After play, they are returned to their original ranks)\n<Opponent's Turn> Each time your opponent plays a battle card from their main deck, your opponent discards 1 card from their hand."
 	},
 	{
 		"id": "EBP04-029",
@@ -3740,7 +3740,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"name": "Kaiser Ghidorah",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 8,
-		"colors": [CardEnums.CardColor.RED, CardEnums.CardColor.BLUE, CardEnums.CardColor.GREEN],
+		"colors": [CardEnums.CardColor.GREEN],
 		"traits": [CardEnums.CardTrait.KAISER_GHIDORAH, CardEnums.CardTrait.FINAL_WARS],
 		"counter_power": 11000,
 		"invasion_icon": 1,

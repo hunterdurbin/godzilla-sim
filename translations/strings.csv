@@ -455,10 +455,26 @@ STR_PUBLIC_STARTING_GAME,Starting game...,ゲームを開始します...
 STR_PUBLIC_LOBBIES,Public Lobbies,公開ロビー
 STR_GAME_MODE,GAME MODE,ゲームモード
 STR_CREATE_LOBBY,Create Lobby,ロビー作成
-STR_MODE_RUMBLE_WEST,Rumble (West),ランブル (西)
-STR_MODE_RUMBLE_EAST,Rumble (East),ランブル (東)
-STR_MODE_NO_RULES,No Rules,ルールなし
+STR_MODE_RUMBLE_WEST,Rumble (West),攻防戦 (西)
+STR_MODE_RUMBLE_EAST,Rumble (East),攻防戦 (東)
+STR_MODE_NO_RULES,No Rules,その他
 STR_MODE_BULKZILLA,BULKZILLA,BULKZILLA
+STR_MODE_RUMBLE_WEST_DESC,Western tournament format. Lags the Japanese release by one booster; uses every Western-released set with a small banlist.,西部トーナメント形式。日本版より1ブースター遅れています。西部で発売済みの全セットと少数の禁止カードを含みます。
+STR_MODE_RUMBLE_EAST_DESC,Tracks the latest Japanese release. Includes every currently-implemented set with a small banlist.,最新の日本版リリースに準拠。現在実装されている全セットと少数の禁止カードを含みます。
+STR_MODE_NO_RULES_DESC,Casual play with no restrictions. Every implemented card is legal.,制限なしのカジュアルプレイ。実装済みのすべてのカードが使用可能です。
+STR_MODE_BULKZILLA_DESC,Budget format. Starter decks plus common and uncommon booster cards. The full allow list is shown below.,低予算形式。スターターデッキに加え、コモンとアンコモンのブースターカードが使用可能。許可リストの全体は下に表示されます。
+STR_DB_FORMAT_INFO_TOOLTIP,Show format rules,形式のルールを表示
+STR_DB_FORMAT_INFO_TITLE_FMT,Format Info — %s,形式情報 — %s
+STR_DB_FORMAT_INFO_ALL_ALLOWED,All cards are allowed in this format.,この形式ではすべてのカードが使用可能です。
+STR_DB_FORMAT_INFO_DESCRIPTION,Description,説明
+STR_DB_FORMAT_INFO_INCLUDED_SETS,Included Sets,含まれるセット
+STR_DB_FORMAT_INFO_INCLUDED_CARDS,Included Cards,含まれるカード
+STR_DB_FORMAT_INFO_INCLUDED_CARDS_SUMMARY_FMT,%d additional cards beyond the included sets.,含まれるセット以外に追加の %d 枚のカード。
+STR_DB_FORMAT_INFO_EXCLUDED_CARDS,Excluded Cards,除外カード
+STR_DB_FORMAT_INFO_RESTRICTED,Restricted Cards,制限カード
+STR_DB_FORMAT_INFO_CHOICE_RESTRICTED,Choice-Restricted Cards,選択制限カード
+STR_DB_FORMAT_INFO_RESTRICTED_RULE,Limit of 1 copy per deck.,1デッキにつき1枚まで。
+STR_DB_FORMAT_INFO_CHOICE_RULE,Paired cards cannot be used in the same deck.,ペアのカードは同じデッキで使用できません。
 STR_DS_SELECT_DECK,SELECT DECK,デッキを選択
 STR_DS_SELECT_YOUR_DECK,SELECT YOUR DECK,あなたのデッキを選択
 STR_DS_P1_DECK,PLAYER 1 DECK,プレイヤー1のデッキ
@@ -509,8 +525,8 @@ STR_DB_TAB_MAIN,Main,メイン
 STR_DB_CARD_POOL,CARD POOL,カードプール
 "STR_DB_SEARCH_PLACEHOLDER","Search... e.g. godzilla, cp>1000, r=3","検索... 例: ゴジラ, cp>1000, r=3"
 STR_DB_FILTER_ALL,All,全て
-STR_DB_INVASION_STEP1,Step 1,ステップ1
-STR_DB_INVASION_STEP2,Step 2,ステップ2
+STR_DB_INVASION_STEP1,Step 1,進行：1
+STR_DB_INVASION_STEP2,Step 2,進行：2
 STR_DB_SORT_ID,Sort: ID,並び替え: ID
 STR_DB_SORT_NAME,Sort: Name,並び替え: 名前
 STR_DB_SORT_RANK,Sort: Rank,並び替え: ランク
@@ -527,6 +543,8 @@ STR_DB_UNSAVED_DISCARD,Discard,破棄
 STR_DB_DELETE_TITLE,Delete Deck,デッキを削除
 STR_DB_DELETE_OK,Delete,削除
 STR_DB_DELETE_PROMPT,"Delete ""%s""?","「%s」を削除しますか?"
+STR_DB_CLEAR_TITLE,Clear Deck,デッキをクリア
+STR_DB_CLEAR_TEXT,"Remove all cards from this deck? Monster and main deck entries will be cleared.","このデッキの全てのカードを削除しますか? 怪獣デッキとメインデッキの両方がクリアされます。"
 STR_DB_MONSTER_DECK,Monster Deck:,怪獣デッキ:
 STR_DB_MAIN_DECK,Main Deck:,メインデッキ:
 STR_DB_STEP2_CARDS,Step-2 Cards:,足2カード:
@@ -602,6 +620,9 @@ STR_LOG_CLAIMED_WIN_DISCONNECT,Claimed win due to opponent disconnect.,対戦相
 STR_EFF_CHOOSE_ONE,Choose one:,ひとつ選ぶ:
 STR_EFF_CHOOSE_EFFECT,Choose an effect:,効果を選ぶ:
 STR_EFF_CHOOSE_ABILITY,Choose which ability to resolve:,発動する能力を選ぶ:
+STR_EFF_CHOOSE_ORDER,Choose effect order:,効果の解決順を選ぶ:
+STR_EFF_DESTROY_THEN_RETREAT_FMT,"Destroy zones %s first, then retreat","先にエリア%sを<破壊>、次に後退"
+STR_EFF_RETREAT_THEN_DESTROY_FMT,"Retreat first, then destroy zones %s","先に後退、次にエリア%sを<破壊>"
 STR_EFF_REVEALED_CARDS,Revealed cards:,公開されたカード:
 STR_EFF_REVEALED_FROM_DECK_TOP,Revealed from deck top:,山札の上から公開:
 STR_EFF_DECK_REVEAL,Revealed from deck (select any to confirm):,山札から公開 (どれか選んで確定):
@@ -714,10 +735,7 @@ STR_EFF_EBP04_009_PROMPT,Discard a strategy card to Destroy all opponent Rank 6 
 STR_EFF_EBP04_010_PROMPT,Rage would reset to 0. Discard 2 cards to keep rage at 2?,<怒り>が0にリセットされます。2枚捨てて<怒り>を2にしますか?
 STR_EFF_EBP04_010_CHOICE_A,Discard 2 cards (set rage to 2),2枚捨てる (<怒り>を2に)
 STR_EFF_EBP04_010_CHOICE_B,Let rage reset to 0,<怒り>を0にする
-STR_EFF_EBP04_013_PROMPT_FMT,Choose an effect for revealed ranks %s:,公開された等級%sの効果を選ぶ:
 STR_EFF_EBP04_014_PROMPT,"Discard a battle card: this card cannot be countered by 30,000 or less CP this turn (or skip):",交戦カードを1枚捨てる: このターン、撃退力30000以下では撃退されない (またはスキップ):
-STR_EFF_EBP04_021_PROMPT,May discard the top card of your deck:,山札の上のカードを捨てる:
-STR_EFF_EBP04_021_CHOICE,Discard top of deck,山札の上を捨てる
 STR_EFF_EBP04_027_PROMPT,Discard an Invade 2 card to counter this Gigan (or skip):,<足2>のカードを捨ててこの<ガイガン>を撃退 (またはスキップ):
 STR_EFF_EBP04_039_PROMPT,Zilla: Move to a zone adjacent to your monster (or skip):,「ジラ」: あなたの怪獣の隣接エリアへ移動 (またはスキップ):
 STR_EFF_EBP04_045_PROMPT,Discard a non-blue battle card (play cost for Manda -2 rank):,青以外の交戦カードを1枚捨てる (「マンダ」の出現コスト等級-2):
@@ -806,7 +824,5 @@ STR_GB_LEAVE_OK,Leave,退出
 STR_GB_REPORT_BUG,Report Bug,バグ報告
 STR_GB_CONCEDE,Concede,降参
 STR_GB_MAIN_MENU,Main Menu,メインメニュー
-STR_EFF_EBP04_013_DESTROY_FMT,"Destroy opponent battle cards in zones: %s","エリア%sにいる相手の交戦カードを<破壊>"
-STR_EFF_EBP04_013_RETREAT,Retreat opponent's monster 1 zone,相手の怪獣を1エリア後退させる
 STR_EFF_EBP04_078_BLOCKED,Crawling Calamity: Opponent's monster move is blocked by an effect.,「這い寄る災厄」: 相手の怪獣の移動は効果で阻止されました。
 STR_EFF_EBP04_078_TELEPORT_FMT,Crawling Calamity: Opponent's monster teleported from zone %d to zone %d.,「這い寄る災厄」: 相手の怪獣がエリア%dからエリア%dへ転移しました。

@@ -38,15 +38,15 @@ static func _find_custom_file(dir_path: String, card_number: String) -> String:
 	return ""
 
 # Static texture cache shared across all Card instances
-static var _texture_cache: Dictionary = {}  # card_number -> ImageTexture
-static var _strategy_texture_cache: Dictionary = {}  # card_number -> ImageTexture (rotated)
-static var _custom_texture_cache: Dictionary = {}  # card_number -> ImageTexture (custom art)
-static var _custom_strategy_texture_cache: Dictionary = {}  # card_number -> ImageTexture (custom rotated)
+static var _texture_cache: Dictionary = {} # card_number -> ImageTexture
+static var _strategy_texture_cache: Dictionary = {} # card_number -> ImageTexture (rotated)
+static var _custom_texture_cache: Dictionary = {} # card_number -> ImageTexture (custom art)
+static var _custom_strategy_texture_cache: Dictionary = {} # card_number -> ImageTexture (custom rotated)
 static var _default_card_back_texture: Texture2D = null
-static var _custom_card_back_texture: Texture2D = null  # null means no custom file found
+static var _custom_card_back_texture: Texture2D = null # null means no custom file found
 static var _card_back_loaded: bool = false
 static var _rage_marker_default_texture: Texture2D = null
-static var _rage_marker_custom_texture: Texture2D = null  # null means no custom file found
+static var _rage_marker_custom_texture: Texture2D = null # null means no custom file found
 static var _rage_marker_loaded: bool = false
 
 # Signals
@@ -63,19 +63,19 @@ signal card_hover_ended(card_ctrl: Control)
 @export var hover_scale: float = 1.15
 @export var hover_scale_in_slot: float = 1.5
 @export var hover_lift: float = 40.0
-@export var invert_hover: bool = false  # When true, hover moves card down instead of up
+@export var invert_hover: bool = false # When true, hover moves card down instead of up
 @export var scale_duration: float = 0.2
 
 # Card data
 var card_data: Dictionary = {}
-var card_effect: RefCounted = null  # CardEffect instance loaded from effect_script
+var card_effect: RefCounted = null # CardEffect instance loaded from effect_script
 var is_face_down: bool = false
 var is_selectable: bool = false
-var click_on_release: bool = false  # When true, defer card_clicked to mouse release with deadzone
+var click_on_release: bool = false # When true, defer card_clicked to mouse release with deadzone
 var in_landscape_slot: bool = false
 var use_custom_art: bool = true
-var skip_effect_load: bool = false  # Skip loading effect scripts (e.g. in deck builder)
-var owner_player_id: int = -1  # -1 = unset (shows custom art), 0/1 = player ID
+var skip_effect_load: bool = false # Skip loading effect scripts (e.g. in deck builder)
+var owner_player_id: int = -1 # -1 = unset (shows custom art), 0/1 = player ID
 
 # Drag state
 var is_dragging: bool = false
@@ -129,14 +129,14 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			if not is_face_down:
-				card_right_clicked.emit(self)
+				card_right_clicked.emit(self )
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			if event.double_click:
 				if is_instance_valid(_last_clicked_card) and _last_clicked_card == self:
 					_last_clicked_card = null
 					if not is_face_down:
-						card_right_clicked.emit(self)
+						card_right_clicked.emit(self )
 					return
 				# Different card or freed — treat as a normal single press
 				_last_clicked_card = self
@@ -166,7 +166,7 @@ func _on_mouse_press() -> void:
 		if click_on_release:
 			_mouse_press_start_pos = get_global_mouse_position()
 			return
-		card_clicked.emit(self)
+		card_clicked.emit(self )
 		return
 	if not drag_enabled or is_face_down:
 		return
@@ -181,7 +181,7 @@ func _on_mouse_release() -> void:
 	if click_on_release and is_selectable:
 		var dist := get_global_mouse_position().distance_to(_mouse_press_start_pos)
 		if dist < TOUCH_DRAG_THRESHOLD:
-			card_clicked.emit(self)
+			card_clicked.emit(self )
 		return
 	if not is_dragging:
 		return
@@ -211,7 +211,7 @@ func _on_long_press() -> void:
 	_touch_press_pending = false
 	_long_press_triggered = true
 	_long_press_timer = null
-	card_right_clicked.emit(self)
+	card_right_clicked.emit(self )
 
 
 ## Touch: release — emit tap (card_clicked) or end drag
@@ -225,7 +225,7 @@ func _on_touch_release() -> void:
 		# Only treat as tap if finger didn't drift (e.g. parent ScrollContainer scrolled)
 		var dist := get_global_mouse_position().distance_to(_touch_press_start_pos)
 		if dist < TOUCH_DRAG_THRESHOLD and is_selectable:
-			card_clicked.emit(self)
+			card_clicked.emit(self )
 		return
 	# Was dragging — end drag
 	if is_dragging:
@@ -289,11 +289,11 @@ func _on_mouse_entered() -> void:
 		z_index = 50
 		_animate_hover(true)
 	if not is_face_down and not card_data.is_empty():
-		card_hover_started.emit(self)
+		card_hover_started.emit(self )
 
 
 func _on_mouse_exited() -> void:
-	card_hover_ended.emit(self)
+	card_hover_ended.emit(self )
 	if not is_dragging and not is_snap_previewing and not is_locked_in_zone and _hover_active:
 		z_index = _pre_hover_z_index
 		_animate_hover(false)
@@ -313,14 +313,14 @@ func _animate_hover(entering: bool) -> void:
 	var in_slot := _is_in_slot()
 	if entering:
 		var target_hover_scale := hover_scale_in_slot if in_slot else hover_scale
-		tween.tween_property(self, "scale", original_scale * target_hover_scale, scale_duration)
+		tween.tween_property(self , "scale", original_scale * target_hover_scale, scale_duration)
 		if not in_slot:
 			var lift_dir := 1.0 if invert_hover else -1.0
-			tween.tween_property(self, "position", _pre_hover_position + Vector2(0, lift_dir * hover_lift), scale_duration)
+			tween.tween_property(self , "position", _pre_hover_position + Vector2(0, lift_dir * hover_lift), scale_duration)
 	else:
-		tween.tween_property(self, "scale", original_scale, scale_duration)
+		tween.tween_property(self , "scale", original_scale, scale_duration)
 		if not in_slot:
-			tween.tween_property(self, "position", _pre_hover_position, scale_duration)
+			tween.tween_property(self , "position", _pre_hover_position, scale_duration)
 		tween.chain().tween_callback(func(): _hover_active = false)
 
 
@@ -331,7 +331,7 @@ func _scale_card(target_scale: float) -> void:
 	tween = create_tween()
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_CUBIC)
-	tween.tween_property(self, "scale", original_scale * target_scale, scale_duration)
+	tween.tween_property(self , "scale", original_scale * target_scale, scale_duration)
 
 
 ## Set card data from a dictionary (TCG format)
@@ -389,8 +389,8 @@ func return_to_position(target_pos: Vector2, duration: float = 0.3) -> void:
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_CUBIC)
 	tween.set_parallel(true)
-	tween.tween_property(self, "position", target_pos, duration)
-	tween.tween_property(self, "scale", original_scale, duration)
+	tween.tween_property(self , "position", target_pos, duration)
+	tween.tween_property(self , "scale", original_scale, duration)
 
 
 func start_snap_preview(target_pos: Vector2, target_scale: Vector2) -> void:
@@ -401,8 +401,8 @@ func start_snap_preview(target_pos: Vector2, target_scale: Vector2) -> void:
 	tween.set_ease(Tween.EASE_OUT)
 	tween.set_trans(Tween.TRANS_CUBIC)
 	tween.set_parallel(true)
-	tween.tween_property(self, "global_position", target_pos, 0.15)
-	tween.tween_property(self, "scale", target_scale, 0.15)
+	tween.tween_property(self , "global_position", target_pos, 0.15)
+	tween.tween_property(self , "scale", target_scale, 0.15)
 
 
 func end_snap_preview() -> void:
@@ -410,6 +410,83 @@ func end_snap_preview() -> void:
 	if tween:
 		tween.kill()
 	scale = original_scale
+
+
+var _play_cost_modifier: int = 0
+
+
+## Show a "+N" / "-N" badge near the card's printed cost. Modifier 0 → no badge.
+## Card-local position works for all four cases (battle/monster portrait, strategy
+## in-hand portrait with pre-rotated texture, and either type in zoom where the
+## Card itself is rotated -90°): top-left in card-local always lines up next to
+## the visible rank.
+func set_play_cost_modifier(modifier: int) -> void:
+	_play_cost_modifier = modifier
+	var badge := get_node_or_null("PlayCostModifierBadge") as Label
+	if modifier == 0:
+		if badge:
+			badge.queue_free()
+		return
+	if not badge:
+		badge = Label.new()
+		badge.name = "PlayCostModifierBadge"
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		add_child(badge)
+		if not resized.is_connected(_layout_play_cost_badge):
+			resized.connect(_layout_play_cost_badge)
+	badge.text = "%+d" % modifier
+	if modifier < 0:
+		badge.add_theme_color_override("font_color", Color(0.45, 1.0, 0.45))
+	else:
+		badge.add_theme_color_override("font_color", Color(1.0, 0.55, 0.55))
+	badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	_layout_play_cost_badge()
+
+
+func get_play_cost_modifier() -> int:
+	return _play_cost_modifier
+
+
+## Public — call this after changing the card's rotation (e.g. strategy zoom
+## flips the card -90°) so the badge re-orients to read upright.
+func update_play_cost_badge_layout() -> void:
+	_layout_play_cost_badge()
+
+
+func _layout_play_cost_badge() -> void:
+	var badge := get_node_or_null("PlayCostModifierBadge") as Label
+	if not badge:
+		return
+	var w: float = size.x if size.x > 0.0 else custom_minimum_size.x
+	if w <= 0.0:
+		w = 150.0
+	var scale_factor: float = w / 150.0
+	var bsize := Vector2(34, 22) * scale_factor
+	badge.size = bsize
+	badge.pivot_offset = bsize / 2.0
+	# The rank prints at different visual spots depending on whether the card
+	# is rotated for strategy zoom/preview. Pick a card-local center that lands
+	# next to the rank in both cases.
+	#   - Unrotated (battle/monster portrait, or strategy in hand whose texture
+	#     is pre-rotated CW): rank lives at the displayed top-left, badge at
+	#     card-local (50, 13) sits just right of it.
+	#   - Rotated -90° CCW (strategy zoom/preview): the card-local origin maps
+	#     to landscape bottom-left where the rank prints, so we move the badge
+	#     down/right in card-local to land just right of the rank in landscape.
+	var center: Vector2
+	if abs(rotation - (-PI / 2.0)) < 0.05:
+		center = Vector2(14, 28) * scale_factor
+	else:
+		center = Vector2(30, 13) * scale_factor
+	badge.position = center - bsize / 2.0
+	# Counter the parent card's rotation so the text reads upright. With the
+	# pivot at the badge's center, the visual center stays put after both
+	# rotations compose to zero.
+	badge.rotation = - rotation
+	badge.add_theme_font_size_override("font_size", int(round(16.0 * scale_factor)))
+	badge.add_theme_constant_override("outline_size", maxi(2, int(round(4.0 * scale_factor))))
 
 
 func set_highlight(enabled: bool) -> void:
