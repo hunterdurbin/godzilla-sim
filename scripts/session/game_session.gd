@@ -15,11 +15,76 @@ var turn_manager: TurnManager
 var bot_player: BotPlayer
 var replay_recorder: ReplayRecorder
 
+# Typed forwarders for the most-frequented members of `turn_manager`.
+# Set during start_host_session() so the presentation scene can reach into
+# `session.effect_handler` / `session.game_state` / etc. without chaining
+# through `turn_manager.action_handler.effect_handler`.
+var action_handler: ActionHandler
+var effect_handler: EffectHandler
+var rules_engine: RulesEngine
+var game_state: GameState
+
 var _board: Node
 
 
 func _ready() -> void:
 	_board = get_parent()
+
+
+## Snapshot accessors for properties that change as the game progresses.
+## These read live state — call after the host session is started.
+func current_player_id() -> int:
+	return game_state.current_player_id if game_state else -1
+
+
+func current_phase() -> CardEnums.GamePhase:
+	return game_state.current_phase if game_state else CardEnums.GamePhase.START
+
+
+## Returns the PlayerState for a given player id (0 or 1), or null if the
+## game state isn't ready.
+func get_player(player_id: int) -> PlayerState:
+	if game_state == null or player_id < 0 or player_id >= game_state.players.size():
+		return null
+	return game_state.players[player_id]
+
+
+## True once the host session has been built and the game is running.
+func is_running() -> bool:
+	return turn_manager != null
+
+
+func is_game_over() -> bool:
+	return turn_manager != null and turn_manager.is_game_over
+
+
+# --- Verb forwarders into TurnManager. The presentation scene only needs to
+# know about GameSession; these stand in for direct turn_manager calls. ---
+
+func start_game(first_player_id: int) -> void:
+	if turn_manager:
+		turn_manager.start_game(first_player_id)
+
+
+func resume_to_main_phase(player_id: int, resolve_effects: bool) -> void:
+	if turn_manager:
+		turn_manager.resume_to_main_phase(player_id, resolve_effects)
+
+
+func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> void:
+	if turn_manager:
+		turn_manager.submit_action(action, params)
+
+
+func confirm() -> void:
+	if turn_manager:
+		turn_manager.confirm()
+
+
+## Forces the game-over flow (used by concede / disconnect claim-win paths).
+func end_game(winner_id: int, reason_key: String) -> void:
+	if turn_manager:
+		turn_manager._on_game_over(winner_id, reason_key)
 
 
 ## Construct a fresh TurnManager for the host/solo path.
@@ -37,6 +102,13 @@ func start_host_session(card_data_node: Node, local_player_id: int, loaded_save:
 
 	turn_manager.game_state.player_names[local_player_id] = GameSettings.player_name
 	GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+
+	# Wire forwarders so callers can reach session.effect_handler / game_state /
+	# rules_engine / action_handler directly (no chaining through turn_manager).
+	action_handler = turn_manager.action_handler
+	effect_handler = turn_manager.action_handler.effect_handler
+	rules_engine = turn_manager.rules_engine
+	game_state = turn_manager.game_state
 
 	return turn_manager
 

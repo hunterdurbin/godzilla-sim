@@ -4,7 +4,9 @@ extends Control
 ## In multiplayer, the host runs TurnManager and broadcasts state to the client.
 ## The client receives state via RPC and sends actions back to the host.
 
-var turn_manager: TurnManager # Only exists on host/solo
+# turn_manager (and the rest of the runtime) lives on `session` — see
+# scripts/session/game_session.gd. Use `session.is_running()` as the
+# host/solo guard and `session.X` for any reach-throughs.
 const CardScript := preload("res://scenes/cards/card.gd")
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
@@ -458,13 +460,13 @@ func _ready() -> void:
 			_loaded_from_save = true
 			_first_player_id = GameSerializer.pending_load.get("first_player_id", 0)
 			GameSerializer.pending_load = {}
-		turn_manager = session.start_host_session(CardData, local_player_id, loaded_save)
+		session.start_host_session(CardData, local_player_id, loaded_save)
 
 		for i in range(2):
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
-		_connect_game_signals(turn_manager)
+		_connect_game_signals(session.turn_manager)
 
 		# Set up replay recorder
 		_setup_replay_recorder()
@@ -658,7 +660,7 @@ func _ready() -> void:
 		_apply_desktop_hand_button_stacks()
 
 	# Initial board sync and start (host/solo only)
-	if turn_manager:
+	if session.is_running():
 		call_deferred("_start_game")
 	else:
 		_disable_all_buttons()
@@ -829,13 +831,13 @@ func _start_game() -> void:
 		_loaded_from_save = false
 		_apply_gradients_and_sync()
 		SfxManager.play("game_setup")
-		var saved_pid: int = turn_manager.game_state.current_player_id
-		var saved_phase: CardEnums.GamePhase = turn_manager.game_state.current_phase
-		var saved_sub: int = turn_manager.game_state.current_sub_phase
+		var saved_pid: int = session.game_state.current_player_id
+		var saved_phase: CardEnums.GamePhase = session.game_state.current_phase
+		var saved_sub: int = session.game_state.current_sub_phase
 		# If already past main-phase resolve effects, skip to player actions.
 		# Otherwise run main-phase resolve effects from the start of the sub-phase.
 		var skip_effects: bool = saved_phase == CardEnums.GamePhase.MAIN and saved_sub >= 1
-		turn_manager.resume_to_main_phase(saved_pid, not skip_effects)
+		session.resume_to_main_phase(saved_pid, not skip_effects)
 		return
 
 	if is_bot_game:
@@ -854,7 +856,7 @@ func _start_game() -> void:
 		_first_player_id = _first_player_result
 		_apply_gradients_and_sync()
 		SfxManager.play("game_setup")
-		turn_manager.start_game(_first_player_result)
+		session.start_game(_first_player_result)
 		return
 
 	if not is_multiplayer_game:
@@ -862,7 +864,7 @@ func _start_game() -> void:
 		_first_player_id = 0
 		_apply_gradients_and_sync()
 		SfxManager.play("game_setup")
-		turn_manager.start_game(0)
+		session.start_game(0)
 		return
 
 	# Multiplayer: randomly select which player gets to choose who goes first
@@ -898,7 +900,7 @@ func _start_game() -> void:
 	_first_player_id = _first_player_result
 	_on_log_message(GameLog.first_player_chose(_first_player_result, true))
 	SfxManager.play("game_start")
-	turn_manager.start_game(_first_player_result)
+	session.start_game(_first_player_result)
 
 
 func _setup_replay_recorder() -> void:
@@ -954,7 +956,7 @@ func _setup_save_button() -> void:
 
 
 func _on_save_game_pressed() -> void:
-	if not turn_manager or not turn_manager.game_state:
+	if not session.is_running() or not session.game_state:
 		return
 	SfxManager.play("ui_click")
 	var mode_str: String
@@ -971,7 +973,7 @@ func _on_save_game_pressed() -> void:
 	# deterministic bot behavior (the original seed is stale — RNG has advanced).
 	var save_seed: int = randi()
 	print("[Save] Capturing game_seed=%d for save file" % save_seed)
-	var data := GameSerializer.serialize_game_state(turn_manager.game_state, _first_player_id, mode_str, diff_str, d_names, save_seed)
+	var data := GameSerializer.serialize_game_state(session.game_state, _first_player_id, mode_str, diff_str, d_names, save_seed)
 	var path := GameSerializer.save_game_to_file(data)
 	if not path.is_empty():
 		_save_game_button.text = tr("STR_GB_SAVED")
@@ -985,8 +987,8 @@ func _on_save_game_pressed() -> void:
 
 
 func _apply_gradients_and_sync() -> void:
-	for i in range(turn_manager.game_state.players.size()):
-		var player: PlayerState = turn_manager.game_state.players[i]
+	for i in range(session.game_state.players.size()):
+		var player: PlayerState = session.game_state.players[i]
 		var board = player1_board if i == 0 else player2_board
 		if not player.current_monster.is_empty():
 			board.apply_monster_gradient(player.current_monster)
@@ -2108,10 +2110,10 @@ func _sync_mobile_cp_tray() -> void:
 	var states: Array[PlayerState] = [null, null]
 	var cp_mods: Array[int] = [0, 0]
 	var threat_mods: Array[int] = [0, 0]
-	if turn_manager and turn_manager.game_state:
-		states[0] = turn_manager.game_state.players[0]
-		states[1] = turn_manager.game_state.players[1]
-		var eh := turn_manager.effect_handler
+	if session.is_running() and session.game_state:
+		states[0] = session.game_state.players[0]
+		states[1] = session.game_state.players[1]
+		var eh := session.effect_handler
 		if eh:
 			for pid in 2:
 				cp_mods[pid] += eh.get_monster_cp_modifier(pid)
@@ -2476,14 +2478,14 @@ func _retry_safe_area_insets() -> void:
 # --- State access helpers (work for both host and client) ---
 
 func _get_current_pid() -> int:
-	if turn_manager:
-		return turn_manager.game_state.current_player_id
+	if session.is_running():
+		return session.game_state.current_player_id
 	return _client_current_player_id
 
 
 func _get_player_state(pid: int) -> PlayerState:
-	if turn_manager:
-		return turn_manager.game_state.players[pid]
+	if session.is_running():
+		return session.game_state.players[pid]
 	return _client_players[pid]
 
 
@@ -2505,7 +2507,7 @@ func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> vo
 	# RPC so a clicked-then-played card kept its yellow HighlightOverlay forever.
 	_clear_card_highlight()
 	if not is_multiplayer_game or NetworkManager.is_host():
-		turn_manager.submit_action(action, params)
+		session.submit_action(action, params)
 	else:
 		var params_json := JSON.stringify(params) if not params.is_empty() else ""
 		RpcLogger.log_send("submit_action", 4 + params_json.length())
@@ -2546,7 +2548,7 @@ func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: 
 	var active_header_color := Color(1.0, 1.0, 1.0, 1.0) # White for active player
 	var inactive_header_color := Color(0.6, 0.6, 0.7, 1.0) # Dim for inactive player
 	# Update turn number label
-	var gs: GameState = turn_manager.game_state if turn_manager else null
+	var gs: GameState = session.game_state if session.is_running() else null
 	var turn_num: int = gs.turn_number if gs else _client_turn_number
 	_turn_label.text = tr("STR_GB_TURN_FMT").replace("{N}", str(turn_num))
 	var phase_idx := int(phase)
@@ -2579,7 +2581,7 @@ func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: 
 
 func _on_phase_started(phase: CardEnums.GamePhase) -> void:
 	_current_sub_phase = 0
-	_update_turn_tracker(turn_manager.game_state.current_player_id, phase, _current_sub_phase)
+	_update_turn_tracker(session.game_state.current_player_id, phase, _current_sub_phase)
 	_sync_boards()
 	_broadcast_state()
 
@@ -2592,8 +2594,8 @@ func _on_phase_ended(_phase: CardEnums.GamePhase) -> void:
 func _on_sub_phase_changed(sub_index: int) -> void:
 	_current_sub_phase = sub_index
 	_update_turn_tracker(
-		turn_manager.game_state.current_player_id,
-		turn_manager.game_state.current_phase,
+		session.game_state.current_player_id,
+		session.game_state.current_phase,
 		sub_index)
 	_broadcast_state()
 
@@ -2627,7 +2629,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 	if is_multiplayer_game:
 		_broadcast_state()
 		_flush_broadcast() # Action context must arrive after state
-		var active_id := turn_manager.game_state.current_player_id
+		var active_id := session.game_state.current_player_id
 
 		# Compute playable indices for the active player
 		var playable := _compute_playable_data()
@@ -2665,7 +2667,7 @@ func _on_game_ended(winner_id: int, reason_key: String) -> void:
 	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
 	if win_label:
 		var reason_text := GameLog.render_reason(reason_key)
-		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", turn_manager.game_state.player_names[winner_id]) + "\n" + reason_text
+		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", session.game_state.player_names[winner_id]) + "\n" + reason_text
 	btn_rematch.visible = true
 	btn_rematch.disabled = false
 	btn_rematch.text = tr("STR_GB_REMATCH")
@@ -2693,7 +2695,7 @@ func _on_game_ended(winner_id: int, reason_key: String) -> void:
 
 
 func _on_confirmation_requested(prompt: String, setting: String) -> void:
-	var current_pid: int = turn_manager.game_state.current_player_id
+	var current_pid: int = session.game_state.current_player_id
 	if is_bot_game and current_pid == bot_player.bot_player_id:
 		return
 	if is_multiplayer_game and current_pid != local_player_id:
@@ -2706,7 +2708,7 @@ func _on_confirmation_requested(prompt: String, setting: String) -> void:
 		return
 	# Local player: check their per-player settings
 	if _player_settings[current_pid].get(setting, false):
-		turn_manager.confirm()
+		session.confirm()
 		return
 	_show_confirmation(prompt)
 
@@ -2721,8 +2723,8 @@ func _show_confirmation(prompt: String) -> void:
 	_awaiting_confirmation = false
 	btn_confirm.disabled = true
 	btn_confirm.add_theme_font_size_override("font_size", 18)
-	if turn_manager:
-		turn_manager.confirm()
+	if session.is_running():
+		session.confirm()
 	elif is_multiplayer_game:
 		RpcLogger.log_send("confirmation_resolved", 0)
 		multiplayer_sync._rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
@@ -3004,7 +3006,7 @@ func _build_bug_report_body() -> String:
 		var diff_names := {BotConfig.Difficulty.EASY: "Easy", BotConfig.Difficulty.NORMAL: "Normal", BotConfig.Difficulty.HARD: "Hard"}
 		lines.append("- **Bot Difficulty:** %s" % diff_names.get(NetworkManager.bot_difficulty, "Unknown"))
 		lines.append("- **Bot Seed:** %d" % NetworkManager.bot_seed)
-	var gs: GameState = turn_manager.game_state if turn_manager else null
+	var gs: GameState = session.game_state if session.is_running() else null
 	var turn_num: int = gs.turn_number if gs else _client_turn_number
 	var phase: CardEnums.GamePhase = gs.current_phase if gs else _client_phase
 	var cur_pid: int = gs.current_player_id if gs else _client_current_player_id
@@ -3079,19 +3081,19 @@ func _on_concede_pressed() -> void:
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("concede", 0)
 		multiplayer_sync._rpc_concede.rpc_id(NetworkManager.host_peer_id)
-	elif turn_manager:
-		turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
+	elif session.is_running():
+		session.end_game(winner_id, GameLog.concede_reason_key(loser_id))
 
 
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_concede() -> void:
 	RpcLogger.log_receive("concede", 0)
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
 	var loser_id := 1 if sender_id != 1 else 0
 	var winner_id := 1 - loser_id
-	turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
+	session.end_game(winner_id, GameLog.concede_reason_key(loser_id))
 
 
 func _on_main_menu_pressed() -> void:
@@ -3106,12 +3108,12 @@ func _on_main_menu_pressed() -> void:
 			if connected:
 				RpcLogger.log_send("rematch_declined", 0)
 				multiplayer_sync._rpc_rematch_declined.rpc()
-		elif connected and turn_manager and not turn_manager.is_game_over:
+		elif connected and session.is_running() and not session.is_game_over():
 			# Mid-game exit counts as concession
 			if NetworkManager.is_host():
 				var loser_id := local_player_id
 				var winner_id := 1 - loser_id
-				turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
+				session.end_game(winner_id, GameLog.concede_reason_key(loser_id))
 			else:
 				RpcLogger.log_send("concede", 0)
 				multiplayer_sync._rpc_concede.rpc_id(NetworkManager.host_peer_id)
@@ -3286,7 +3288,6 @@ func _execute_rematch() -> void:
 	# 9. Recreate TurnManager (host/solo only)
 	if not is_multiplayer_game or NetworkManager.is_host():
 		# Drop old TurnManager reference (RefCounted — will be GC'd)
-		turn_manager = null
 		session.turn_manager = null
 		await get_tree().process_frame
 
@@ -3296,13 +3297,13 @@ func _execute_rematch() -> void:
 				NetworkManager.bot_seed = -1
 			_apply_bot_seed()
 
-		turn_manager = session.start_host_session(CardData, local_player_id)
+		session.start_host_session(CardData, local_player_id)
 
 		for i in range(2):
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
-		_connect_game_signals(turn_manager)
+		_connect_game_signals(session.turn_manager)
 
 		# Reconnect bot player for Solo v Bot mode
 		if is_bot_game:
@@ -3466,9 +3467,9 @@ func _on_play_battle_pressed() -> void:
 		return
 
 	var playable: Array[int] = []
-	if turn_manager:
-		var state := turn_manager.game_state
-		playable = turn_manager.rules_engine.get_playable_battle_cards(state.get_current_player(), state.get_opponent_of_current())
+	if session.is_running():
+		var state := session.game_state
+		playable = session.rules_engine.get_playable_battle_cards(state.get_current_player(), state.get_opponent_of_current())
 	else:
 		playable.assign(_client_playable.get("battle_cards", []))
 	if playable.is_empty():
@@ -3483,8 +3484,8 @@ func _on_play_strategy_pressed() -> void:
 		return
 
 	var playable: Array[int] = []
-	if turn_manager:
-		playable = turn_manager.rules_engine.get_playable_strategy_cards(turn_manager.game_state.get_current_player())
+	if session.is_running():
+		playable = session.rules_engine.get_playable_strategy_cards(session.game_state.get_current_player())
 	else:
 		playable.assign(_client_playable.get("strategy_cards", []))
 	if playable.is_empty():
@@ -3499,8 +3500,8 @@ func _on_gain_rage_pressed() -> void:
 		return
 
 	var playable: Array[int] = []
-	if turn_manager:
-		playable = turn_manager.rules_engine.get_monster_cards_for_rage(turn_manager.game_state.get_current_player())
+	if session.is_running():
+		playable = session.rules_engine.get_monster_cards_for_rage(session.game_state.get_current_player())
 	else:
 		playable.assign(_client_playable.get("rage_cards", []))
 	if playable.is_empty():
@@ -3515,8 +3516,8 @@ func _on_play_monster_pressed() -> void:
 		return
 
 	var playable: Array[int] = []
-	if turn_manager:
-		playable = turn_manager.rules_engine.get_playable_monsters(turn_manager.game_state.get_current_player())
+	if session.is_running():
+		playable = session.rules_engine.get_playable_monsters(session.game_state.get_current_player())
 	else:
 		playable.assign(_client_playable.get("monster_cards", []))
 	if playable.is_empty():
@@ -3531,8 +3532,8 @@ func _on_invade_pressed() -> void:
 		return
 
 	var playable: Array[int] = []
-	if turn_manager:
-		playable = turn_manager.rules_engine.get_discardable_cards_for_invade(turn_manager.game_state.get_current_player(), turn_manager.game_state.get_opponent_of_current())
+	if session.is_running():
+		playable = session.rules_engine.get_discardable_cards_for_invade(session.game_state.get_current_player(), session.game_state.get_opponent_of_current())
 	else:
 		playable.assign(_client_playable.get("invade_cards", []))
 	if playable.is_empty():
@@ -3578,8 +3579,8 @@ func _on_cancel_pressed() -> void:
 	if waiting_for_card_select or waiting_for_zone_select:
 		_clear_card_highlight()
 		_cancel_selection()
-		if turn_manager:
-			_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
+		if session.is_running():
+			_update_action_buttons(session.rules_engine.get_valid_actions(session.game_state))
 		else:
 			_update_action_buttons(_client_playable.get("valid_actions", []))
 		return
@@ -3601,8 +3602,8 @@ func _cancel_pass_confirmation() -> void:
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
 	btn_cancel.disabled = true
-	if turn_manager:
-		_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
+	if session.is_running():
+		_update_action_buttons(session.rules_engine.get_valid_actions(session.game_state))
 	else:
 		_update_action_buttons(_client_playable.get("valid_actions", []))
 
@@ -3672,14 +3673,14 @@ func _enter_zone_selection() -> void:
 		_temporarily_collapse_hand()
 
 	var valid_zones: Array[int] = []
-	if turn_manager:
-		var state := turn_manager.game_state
+	if session.is_running():
+		var state := session.game_state
 		var player := state.get_current_player()
 		var opponent := state.get_opponent_of_current()
 		if not _selected_card_data.is_empty():
-			valid_zones = turn_manager.rules_engine.get_valid_zones_for_card(_selected_card_data, player, opponent)
+			valid_zones = session.rules_engine.get_valid_zones_for_card(_selected_card_data, player, opponent)
 		else:
-			valid_zones = turn_manager.rules_engine.get_valid_zones_for_battle_card(player, opponent)
+			valid_zones = session.rules_engine.get_valid_zones_for_battle_card(player, opponent)
 	else:
 		var card_id: String = _selected_card_data.get("id", "")
 		var zones_data = _client_playable.get("battle_zones", {})
@@ -3853,8 +3854,8 @@ func _input(event: InputEvent) -> void:
 		elif waiting_for_card_select or waiting_for_zone_select:
 			_clear_card_highlight()
 			_cancel_selection()
-			if turn_manager:
-				_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
+			if session.is_running():
+				_update_action_buttons(session.rules_engine.get_valid_actions(session.game_state))
 			else:
 				_update_action_buttons(_client_playable.get("valid_actions", []))
 		elif _confirming_pass:
@@ -3935,9 +3936,9 @@ func _sync_boards() -> void:
 	# to avoid rebuilding the hand and invalidating selected card references
 	var skip_p1 := _discard_selecting and _discard_player_id == 0
 	var skip_p2 := _discard_selecting and _discard_player_id == 1
-	if turn_manager and turn_manager.game_state:
-		var state := turn_manager.game_state
-		var eh := turn_manager.effect_handler
+	if session.is_running() and session.game_state:
+		var state := session.game_state
+		var eh := session.effect_handler
 		var zone_cp_0: Array = eh.get_zone_cp_modifiers(0) if eh else []
 		var zone_cp_1: Array = eh.get_zone_cp_modifiers(1) if eh else []
 		var strat_cp_0: Array = eh.get_strategy_cp_modifiers(0) if eh else []
@@ -4093,10 +4094,10 @@ func _on_hand_drag_started(card: Control) -> void:
 		if hand_idx >= 0:
 			var playable_battle: Array[int] = []
 			var valid_zones: Array[int] = []
-			if turn_manager:
-				var opponent := turn_manager.game_state.get_opponent_of_current()
-				playable_battle = turn_manager.rules_engine.get_playable_battle_cards(player, opponent)
-				valid_zones = turn_manager.rules_engine.get_valid_zones_for_card(card_data, player, opponent)
+			if session.is_running():
+				var opponent := session.game_state.get_opponent_of_current()
+				playable_battle = session.rules_engine.get_playable_battle_cards(player, opponent)
+				valid_zones = session.rules_engine.get_valid_zones_for_card(card_data, player, opponent)
 			else:
 				playable_battle.assign(_client_playable.get("battle_cards", []))
 				var zones_data = _client_playable.get("battle_zones", {})
@@ -4114,8 +4115,8 @@ func _on_hand_drag_started(card: Control) -> void:
 		if hand_idx >= 0:
 			# Check if this monster can be played onto the current monster
 			var playable_monsters: Array[int] = []
-			if turn_manager:
-				playable_monsters = turn_manager.rules_engine.get_playable_monsters(player)
+			if session.is_running():
+				playable_monsters = session.rules_engine.get_playable_monsters(player)
 			else:
 				playable_monsters.assign(_client_playable.get("monster_cards", []))
 			if hand_idx in playable_monsters:
@@ -4125,8 +4126,8 @@ func _on_hand_drag_started(card: Control) -> void:
 					_drag_action = CardEnums.ActionType.PLAY_MONSTER
 			# Any monster card can also be discarded for rage
 			var rage_cards: Array[int] = []
-			if turn_manager:
-				rage_cards = turn_manager.rules_engine.get_monster_cards_for_rage(player)
+			if session.is_running():
+				rage_cards = session.rules_engine.get_monster_cards_for_rage(player)
 			else:
 				rage_cards.assign(_client_playable.get("rage_cards", []))
 			if hand_idx in rage_cards:
@@ -4137,8 +4138,8 @@ func _on_hand_drag_started(card: Control) -> void:
 		var hand_idx := _find_hand_index_by_id(card_id)
 		if hand_idx >= 0:
 			var playable_strategy: Array[int] = []
-			if turn_manager:
-				playable_strategy = turn_manager.rules_engine.get_playable_strategy_cards(player)
+			if session.is_running():
+				playable_strategy = session.rules_engine.get_playable_strategy_cards(player)
 			else:
 				playable_strategy.assign(_client_playable.get("strategy_cards", []))
 			if hand_idx in playable_strategy:
@@ -4150,8 +4151,8 @@ func _on_hand_drag_started(card: Control) -> void:
 		var hand_idx := _find_hand_index_by_id(card_id)
 		if hand_idx >= 0:
 			var invade_cards: Array[int] = []
-			if turn_manager:
-				invade_cards = turn_manager.rules_engine.get_discardable_cards_for_invade(player, turn_manager.game_state.get_opponent_of_current())
+			if session.is_running():
+				invade_cards = session.rules_engine.get_discardable_cards_for_invade(player, session.game_state.get_opponent_of_current())
 			else:
 				invade_cards.assign(_client_playable.get("invade_cards", []))
 			if hand_idx in invade_cards:
@@ -4810,8 +4811,8 @@ func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary]
 
 func _show_card_select(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int) -> void:
 	var pool_filter := Callable()
-	if turn_manager:
-		pool_filter = turn_manager.action_handler.effect_handler._card_select_pool_filter
+	if session.is_running():
+		pool_filter = session.effect_handler._card_select_pool_filter
 	card_pool_select_overlay.open(
 		matching,
 		all_cards,
@@ -4940,7 +4941,7 @@ func _confirm_hand_discard() -> void:
 		RpcLogger.log_send("hand_discard_resolved", indices_json.length())
 		multiplayer_sync._rpc_hand_discard_resolved.rpc_id(NetworkManager.host_peer_id, indices_json)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_hand_discard(_discard_player_id, hand_indices)
+		session.effect_handler.resolve_hand_discard(_discard_player_id, hand_indices)
 
 
 func _force_cleanup_discard_selection() -> void:
@@ -5033,7 +5034,7 @@ func _on_hand_card_clicked(card: Control, _index: int) -> void:
 		RpcLogger.log_send("hand_card_selection_resolved", 4)
 		multiplayer_sync._rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, hand_index)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
+		session.effect_handler.resolve_hand_card_selection(hand_index)
 
 
 func _skip_hand_card_selection() -> void:
@@ -5046,7 +5047,7 @@ func _skip_hand_card_selection() -> void:
 		RpcLogger.log_send("hand_card_selection_resolved", 4)
 		multiplayer_sync._rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, -1)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(-1)
+		session.effect_handler.resolve_hand_card_selection(-1)
 
 
 func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
@@ -5138,7 +5139,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 		RpcLogger.log_send("zone_target_resolved", 4)
 		multiplayer_sync._rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_idx)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_zone_target(zone_idx)
+		session.effect_handler.resolve_zone_target(zone_idx)
 
 
 # --- Strategy target selection UI ---
@@ -5206,7 +5207,7 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 		RpcLogger.log_send("strategy_target_resolved", 4)
 		multiplayer_sync._rpc_strategy_target_resolved.rpc_id(NetworkManager.host_peer_id, strategy_idx)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_idx)
+		session.effect_handler.resolve_strategy_target(strategy_idx)
 
 
 # --- Standby ability order choice UI ---
@@ -5251,7 +5252,7 @@ func _on_choice_button_pressed(index: int) -> void:
 		RpcLogger.log_send("choice_resolved", 4)
 		multiplayer_sync._rpc_choice_resolved.rpc_id(NetworkManager.host_peer_id, index)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_choice(index)
+		session.effect_handler.resolve_choice(index)
 
 
 func _cleanup_choice_selection() -> void:
@@ -5377,7 +5378,7 @@ func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], v
 
 
 func _play_action_required_if_not_turn_player(player_id: int) -> void:
-	if turn_manager and player_id != turn_manager.game_state.current_player_id:
+	if session.is_running() and player_id != session.game_state.current_player_id:
 		SfxManager.play("action_required")
 
 
@@ -5405,7 +5406,7 @@ func _resolve_rankup(index: int) -> void:
 		RpcLogger.log_send("monster_rankup_resolved", 4)
 		multiplayer_sync._rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, index)
 	else:
-		turn_manager.action_handler.resolve_monster_rankup(index)
+		session.action_handler.resolve_monster_rankup(index)
 
 
 func _cleanup_rankup_selection() -> void:
@@ -5460,7 +5461,7 @@ func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
 func _on_zone_stack_view_closed() -> void:
 	if _cards_revealed_active:
 		_cards_revealed_active = false
-		turn_manager.action_handler.effect_handler.resolve_cards_revealed()
+		session.effect_handler.resolve_cards_revealed()
 
 
 func _on_cards_revealed_requested(player_id: int, cards: Array[Dictionary], title: String) -> void:
@@ -5644,7 +5645,7 @@ func _resolve_deck_search_local(selected: Dictionary) -> void:
 		RpcLogger.log_send("deck_search_resolved", _search_json.length())
 		multiplayer_sync._rpc_deck_search_resolved.rpc_id(NetworkManager.host_peer_id, _search_json)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
+		session.effect_handler.resolve_deck_search(selected)
 
 
 func _resolve_deck_arrange_local(keep: Array[Dictionary], discard: Array[Dictionary]) -> void:
@@ -5654,7 +5655,7 @@ func _resolve_deck_arrange_local(keep: Array[Dictionary], discard: Array[Diction
 		RpcLogger.log_send("deck_arrange_resolved", _keep_json.length() + _discard_json.length())
 		multiplayer_sync._rpc_deck_arrange_resolved.rpc_id(NetworkManager.host_peer_id, _keep_json, _discard_json)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_deck_arrange(keep, discard)
+		session.effect_handler.resolve_deck_arrange(keep, discard)
 
 
 func _resolve_card_select_local(selected: Array) -> void:
@@ -5666,7 +5667,7 @@ func _resolve_card_select_local(selected: Array) -> void:
 		var typed: Array[Dictionary] = []
 		for card in selected:
 			typed.append(card)
-		turn_manager.action_handler.effect_handler.resolve_card_select(typed)
+		session.effect_handler.resolve_card_select(typed)
 
 
 # --- Multiplayer: State broadcast (host -> client) ---
@@ -5674,7 +5675,7 @@ func _resolve_card_select_local(selected: Array) -> void:
 func _broadcast_state() -> void:
 	if not is_multiplayer_game or not NetworkManager.is_host():
 		return
-	if not turn_manager or not turn_manager.game_state:
+	if not session.is_running() or not session.game_state:
 		return
 	if not _broadcast_pending:
 		_broadcast_pending = true
@@ -5692,7 +5693,7 @@ func _do_broadcast() -> void:
 	_broadcast_pending = false
 	if not is_multiplayer_game or not NetworkManager.is_host():
 		return
-	if not turn_manager or not turn_manager.game_state:
+	if not session.is_running() or not session.game_state:
 		return
 
 	_state_version += 1
@@ -5736,8 +5737,8 @@ func _do_broadcast() -> void:
 
 
 func _serialize_game_state(viewer_id: int) -> Dictionary:
-	var gs := turn_manager.game_state
-	var eh := turn_manager.effect_handler
+	var gs := session.game_state
+	var eh := session.effect_handler
 	var zone_cp_0: Array = eh.get_zone_cp_modifiers(0) if eh else []
 	var zone_cp_1: Array = eh.get_zone_cp_modifiers(1) if eh else []
 	var strat_cp_0: Array = eh.get_strategy_cp_modifiers(0) if eh else []
@@ -5754,7 +5755,7 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 		"current_phase": int(gs.current_phase),
 		"current_sub_phase": _current_sub_phase,
 		"turn_number": gs.turn_number,
-		"is_game_over": turn_manager.is_game_over,
+		"is_game_over": session.is_game_over(),
 		"players": [],
 		"cp_modifiers": [cp_total_0, cp_total_1],
 		"threat_modifiers": [eh.get_threat_level_modifier(0) if eh else 0, eh.get_threat_level_modifier(1) if eh else 0],
@@ -6008,9 +6009,9 @@ func _compute_client_state_hash(turn_number: int, current_player_id: int, phase:
 ## Returned array is parallel to player.hand. Returns [] if no effect handler.
 func _compute_hand_rank_mods(player: PlayerState) -> Array:
 	var out: Array = []
-	if not turn_manager:
+	if not session.is_running():
 		return out
-	var eh: EffectHandler = turn_manager.effect_handler
+	var eh: EffectHandler = session.effect_handler
 	if not eh:
 		return out
 	for card in player.hand:
@@ -6022,10 +6023,10 @@ func _compute_hand_rank_mods(player: PlayerState) -> Array:
 
 
 func _compute_playable_data() -> Dictionary:
-	var gs := turn_manager.game_state
+	var gs := session.game_state
 	var player := gs.get_current_player()
 	var opponent := gs.get_opponent_of_current()
-	var rules := turn_manager.rules_engine
+	var rules := session.rules_engine
 	var playable_battle := rules.get_playable_battle_cards(player, opponent)
 	var battle_zones_per_card: Dictionary = {}
 	for idx in playable_battle:
@@ -6050,12 +6051,12 @@ func _compute_playable_data() -> Dictionary:
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_submit_action(action_type: int, params_json: String) -> void:
 	RpcLogger.log_receive("submit_action", 4 + params_json.length())
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 
 	var sender_id := multiplayer.get_remote_sender_id()
 	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
-	if sender_player_id != turn_manager.game_state.current_player_id:
+	if sender_player_id != session.game_state.current_player_id:
 		return # Not their turn
 	_pending_interaction = {}
 
@@ -6069,7 +6070,7 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 		if params.has("zone_index"):
 			params["zone_index"] = int(params["zone_index"])
 
-	turn_manager.submit_action(action, params)
+	session.submit_action(action, params)
 
 
 ## Host -> Client: full game state update
@@ -6297,10 +6298,10 @@ func _rpc_request_resync() -> void:
 					multiplayer_sync._rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
 				"monster_rankup":
 					multiplayer_sync._rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
-	elif turn_manager and not turn_manager.is_game_over:
+	elif session.is_running() and not session.is_game_over():
 		# Re-prompt whoever's turn it is
 		# (_on_awaiting_action handles both host and client turn cases)
-		var valid_actions := turn_manager.rules_engine.get_valid_actions(turn_manager.game_state)
+		var valid_actions := session.rules_engine.get_valid_actions(session.game_state)
 		if not valid_actions.is_empty():
 			_on_awaiting_action(valid_actions)
 
@@ -6368,7 +6369,7 @@ func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt:
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_deck_search_resolved(selected_json: String) -> void:
 	RpcLogger.log_receive("deck_search_resolved", selected_json.length())
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	_pending_interaction = {}
 	var selected: Dictionary = {}
@@ -6376,7 +6377,7 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 		selected = JSON.parse_string(selected_json)
 		if selected == null:
 			selected = {}
-	turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
+	session.effect_handler.resolve_deck_search(selected)
 
 
 ## Host -> Client: deck arrange request (player must reorder/discard cards)
@@ -6393,7 +6394,7 @@ func _rpc_deck_arrange_requested(cards_json: String, prompt: String) -> void:
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void:
 	RpcLogger.log_receive("deck_arrange_resolved", keep_json.length() + discard_json.length())
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	_pending_interaction = {}
 	var keep: Array[Dictionary] = []
@@ -6406,7 +6407,7 @@ func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void
 	if parsed_discard:
 		for c in parsed_discard:
 			discard.append(c)
-	turn_manager.action_handler.effect_handler.resolve_deck_arrange(keep, discard)
+	session.effect_handler.resolve_deck_arrange(keep, discard)
 
 
 ## Host -> Client: card select request (player must select N cards from pool)
@@ -6422,7 +6423,7 @@ func _rpc_card_select_requested(matching_json: String, all_json: String, prompt:
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_card_select_resolved(selected_json: String) -> void:
 	RpcLogger.log_receive("card_select_resolved", selected_json.length())
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	_pending_interaction = {}
 	var selected: Array[Dictionary] = []
@@ -6431,7 +6432,7 @@ func _rpc_card_select_resolved(selected_json: String) -> void:
 		if parsed:
 			for id in parsed:
 				selected.append({"id": str(id)})
-	turn_manager.action_handler.effect_handler.resolve_card_select(selected)
+	session.effect_handler.resolve_card_select(selected)
 
 
 ## Host -> Client: hand card selection request (player must choose a card from hand)
@@ -6453,10 +6454,10 @@ func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, al
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 	RpcLogger.log_receive("hand_card_selection_resolved", 4)
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	_pending_interaction = {}
-	turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
+	session.effect_handler.resolve_hand_card_selection(hand_index)
 
 
 ## Host -> Client: confirmation request (draw / next turn)
@@ -6476,23 +6477,23 @@ func _rpc_confirmation_requested(prompt: String, setting: String) -> void:
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_confirmation_resolved() -> void:
 	RpcLogger.log_receive("confirmation_resolved", 0)
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	_pending_interaction = {}
-	turn_manager.confirm()
+	session.confirm()
 
 
 ## Client -> Host: send player name
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_send_player_name(pname: String) -> void:
 	RpcLogger.log_receive("send_player_name", pname.length())
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	var sender_id := multiplayer.get_remote_sender_id()
 	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
 	if sender_player_id >= 0 and sender_player_id < 2:
-		turn_manager.game_state.player_names[sender_player_id] = pname
-		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+		session.game_state.player_names[sender_player_id] = pname
+		GameLog.player_names = GameLog.disambiguate(session.game_state.player_names, local_player_id)
 		# Update host UI (disambiguation may affect both labels)
 		for i in range(2):
 			if i < _turn_tracker_headers.size():
@@ -6516,7 +6517,7 @@ func _rpc_hand_discard_requested(discard_count: int) -> void:
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_hand_discard_resolved(indices_json: String) -> void:
 	RpcLogger.log_receive("hand_discard_resolved", indices_json.length())
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	_pending_interaction = {}
 	var parsed: Array = JSON.parse_string(indices_json)
@@ -6525,7 +6526,7 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 		hand_indices.append(int(v))
 	var sender_id := multiplayer.get_remote_sender_id()
 	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
-	turn_manager.action_handler.effect_handler.resolve_hand_discard(sender_player_id, hand_indices)
+	session.effect_handler.resolve_hand_discard(sender_player_id, hand_indices)
 
 
 ## Host -> Client: zone target request (player must choose a zone)
@@ -6545,10 +6546,10 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_zone_target_resolved(zone_index: int) -> void:
 	RpcLogger.log_receive("zone_target_resolved", 4)
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	_pending_interaction = {}
-	turn_manager.action_handler.effect_handler.resolve_zone_target(zone_index)
+	session.effect_handler.resolve_zone_target(zone_index)
 
 
 ## Host -> Client: strategy target request (player must choose a strategy zone)
@@ -6568,10 +6569,10 @@ func _rpc_strategy_target_requested(target_player_id: int, indices_json: String,
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_strategy_target_resolved(strategy_index: int) -> void:
 	RpcLogger.log_receive("strategy_target_resolved", 4)
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	_pending_interaction = {}
-	turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_index)
+	session.effect_handler.resolve_strategy_target(strategy_index)
 
 
 ## Host -> Client: choice request (player must choose ability order)
@@ -6591,10 +6592,10 @@ func _rpc_choice_requested(options_json: String, prompt: String) -> void:
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_choice_resolved(index: int) -> void:
 	RpcLogger.log_receive("choice_resolved", 4)
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	_pending_interaction = {}
-	turn_manager.action_handler.effect_handler.resolve_choice(index)
+	session.effect_handler.resolve_choice(index)
 
 
 ## Host -> Client: prompt monster rank-up selection
@@ -6617,10 +6618,10 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 # Forwarded by MultiplayerSync (scripts/session/multiplayer_sync.gd)
 func _rpc_monster_rankup_resolved(index: int) -> void:
 	RpcLogger.log_receive("monster_rankup_resolved", 4)
-	if not NetworkManager.is_host() or not turn_manager:
+	if not NetworkManager.is_host() or not session.is_running():
 		return
 	_pending_interaction = {}
-	turn_manager.action_handler.resolve_monster_rankup(index)
+	session.action_handler.resolve_monster_rankup(index)
 
 
 ## Host -> Client: highlight a zone card during effect resolution
@@ -6790,8 +6791,8 @@ func _upload_stats(winner_id: int, reason: String, is_disconnect: bool) -> void:
 
 	# Host uses turn_manager directly; client reconstructs from synced state
 	var gs: GameState
-	if turn_manager:
-		gs = turn_manager.game_state
+	if session.is_running():
+		gs = session.game_state
 	else:
 		gs = GameState.new()
 		gs.players = _client_players
@@ -7000,10 +7001,10 @@ func _resync_reconnected_client() -> void:
 				"monster_rankup":
 					RpcLogger.log_send("monster_rankup_requested", args[0].length() + args[1].length() + args[2].length())
 					multiplayer_sync._rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
-	elif turn_manager and not turn_manager.is_game_over:
+	elif session.is_running() and not session.is_game_over():
 		# No pending interaction — re-prompt whoever's turn it is
 		# (_on_awaiting_action handles both host and client turn cases)
-		var valid_actions := turn_manager.rules_engine.get_valid_actions(turn_manager.game_state)
+		var valid_actions := session.rules_engine.get_valid_actions(session.game_state)
 		if not valid_actions.is_empty():
 			_on_awaiting_action(valid_actions)
 
