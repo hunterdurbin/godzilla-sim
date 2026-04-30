@@ -3255,7 +3255,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"threat_level": 13000,
 		"invasion_icon": 1,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_028.gd",
-		"description": "<Opponent's Turn> All strategy cards of your opponent gain +3 in rank. (After play, they are returned to their original ranks)\n<Opponent's Turn> Each time your opponent plays a battle card from their main deck, your opponent discards until they have 1 card remaining in their hand."
+		"description": "<Opponent's Turn> All strategy cards of your opponent gain +3 in rank. (After play, they are returned to their original ranks)\n<Opponent's Turn> Each time your opponent plays a battle card from their main deck, your opponent discards 1 card from their hand."
 	},
 	{
 		"id": "EBP04-029",

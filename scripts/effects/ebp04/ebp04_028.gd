@@ -3,8 +3,7 @@ extends CardEffect
 ## <Opponent's Turn> All strategy cards of your opponent gain +3 in rank. (After
 ## play, they are returned to their original ranks)
 ## <Opponent's Turn> Each time your opponent plays a battle card from their
-## main deck, your opponent discards until they have 1 card remaining in their
-## hand.
+## main deck, your opponent discards 1 card from their hand.
 ##
 ## Tested: Yes
 ## Known issues: None
@@ -37,4 +36,6 @@ func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, targ
 
 
 func on_battle_card_played(ctx: EffectContext, _zone_index: int, _played_from_deck: bool = false) -> void:
-	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 1)
+	# Discard exactly 1 card from opponent's hand. discard_hand_to handles the
+	# "hand smaller than target" case (no-op if hand is empty).
+	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, ctx.opponent.hand.size() - 1)
