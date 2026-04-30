@@ -1049,15 +1049,7 @@ CARD_ESD01-013_DESC,"<Your Turn> Whenever your monster card's <Rage> is increase
 CARD_ESD01-014_NAME,Godzilla Emerges,ゴジラ出現
 CARD_ESD01-014_DESC,"If your monster card has 2 or more <Rage> , search your deck for up to 1 battle card named ãGodzilla(2023)ã, play it, then shuffle your deck.",あなたの怪獣カードの<怒り>が２以上なら、あなたの山札から「ゴジラ(2023)」の交戦カードを１枚まで探して出現させ、山札をシャッフルする。
 CARD_ESD01-015_NAME,Operation Wadatsumi,海神作戦
-CARD_ESD01-015_DESC,Your opponent discards cards until they have 2 cards remaining in their hand.,"相手は自分の手札を２枚になるよう捨てる。
-
-=== Rage-GZ30 |  ===
-
-
-=== Rage-GZ30+ |  ===
-
-
-=== Rage-GZ30++ |  ==="
+CARD_ESD01-015_DESC,Your opponent discards cards until they have 2 cards remaining in their hand.,"相手は自分の手札を２枚になるよう捨てる。"
 CARD_ESD01-016_NAME,Heat Ray,
 CARD_ESD01-016_DESC,<Destroy> all of your opponent's battle cards in the same column as your monster card.,
 CARD_ESD02-001_NAME,Godzilla(1984),ゴジラ(1984)
