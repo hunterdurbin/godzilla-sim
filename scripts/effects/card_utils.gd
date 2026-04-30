@@ -52,3 +52,42 @@ static func rank_at_least(card: Dictionary, rank: int) -> bool:
 
 static func rank_at_most(card: Dictionary, rank: int) -> bool:
 	return card.get("rank", 0) <= rank
+
+
+# --- Aggregations over card arrays ---
+
+static func count(cards: Array, filter: Callable) -> int:
+	## Count cards in `cards` for which `filter(card) -> bool` returns true.
+	## Use a composed filter to handle "counts_as_X" semantics, e.g. when
+	## counting monster cards in the discard pile EBP03-071 (Godzilla's
+	## Skeleton) declares "counts_as_monster_in_discard" and should be
+	## included via:
+	##   func(c): return CardUtils.is_monster(c) or c.get("counts_as_monster_in_discard", false)
+	var n: int = 0
+	for card in cards:
+		if filter.call(card):
+			n += 1
+	return n
+
+
+static func count_monsters_in_discard(discard_pile: Array) -> int:
+	## Count monster cards in a discard pile. Includes cards with the
+	## "counts_as_monster_in_discard" flag (e.g. EBP03-071 Godzilla's Skeleton).
+	return count(discard_pile,
+		func(c: Dictionary) -> bool:
+			return is_monster(c) or c.get("counts_as_monster_in_discard", false))
+
+
+static func count_distinct_colors(cards: Array, filter: Callable = Callable()) -> int:
+	## Count distinct colors across cards matching `filter`. When `filter` is
+	## an empty Callable (default), every card is considered. Used by effects
+	## like EBP04-032 (threat = colors × 10000) and EBP04-068 (strategy rank
+	## reduction = -colors among battle cards in discard).
+	var colors: Array[int] = []
+	for card in cards:
+		if filter.is_valid() and not filter.call(card):
+			continue
+		for c: int in card.get("colors", []):
+			if c not in colors:
+				colors.append(c)
+	return colors.size()

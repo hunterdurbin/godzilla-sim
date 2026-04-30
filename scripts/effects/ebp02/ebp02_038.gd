@@ -29,7 +29,7 @@ func on_enter(ctx: EffectContext) -> void:
 		option_ids.append(0)
 
 	# Option 1: Destroy zone 8 card (requires 10+ monster cards in discard)
-	var monster_count: int = ctx.effect_handler.count_monsters_in_discard(ctx.owner)
+	var monster_count: int = CardUtils.count_monsters_in_discard(ctx.owner.discard_pile)
 	if monster_count >= 10:
 		var opp_z8 := ctx.opponent.get_zone_top_card(7)
 		if not opp_z8.is_empty():

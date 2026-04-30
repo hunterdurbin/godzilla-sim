@@ -7,6 +7,7 @@ STR_MENU_LAN,LAN Multiplayer,LANマルチプレイ
 STR_MENU_ONLINE,Online Multiplayer,オンラインマルチプレイ
 STR_MENU_DECK_BUILDER,Deck Builder,デッキビルダー
 STR_MENU_EXTRAS,Extras,その他
+STR_MENU_DISCORD,Join the Discord to discuss the sim,Discordに参加してシムについて話そう
 STR_MENU_OPTIONS,Options,設定
 STR_MENU_UPDATE_AVAILABLE,Update Available,アップデートあり
 STR_MENU_SOUND_FMT,Sound: {VAL},音量: {VAL}
@@ -269,7 +270,7 @@ STR_TYPE_MONSTER,Monster,怪獣
 STR_TYPE_BATTLE,Battle,交戦
 STR_TYPE_STRATEGY,Strategy,戦略
 STR_TYPE_RAGE,Rage,怒り
-STR_PHASE_START,Start Phase,開始フェイズ
+STR_PHASE_START,Start Phase,スタートフェイズ
 STR_PHASE_MAIN,Main Phase,メインフェイズ
 STR_PHASE_COUNTER,Counter Phase,撃退フェイズ
 STR_PHASE_END,End Phase,エンドフェイズ
@@ -497,7 +498,7 @@ STR_RV_CLOSE,Close,閉じる
 STR_RV_STACKED,Stacked,重ねる
 STR_RV_NO_REPLAY_DATA,No replay data,リプレイデータなし
 STR_RV_NO_CARDS,No cards.,カードなし。
-STR_RV_PHASE_START,Start,開始
+STR_RV_PHASE_START,Start,スタート
 STR_RV_PHASE_MAIN,Main,メイン
 STR_RV_PHASE_COUNTER,Counter,撃退
 STR_RV_PHASE_END,End,エンド
@@ -570,7 +571,7 @@ STR_VALIDATE_RESTRICTED_FMT,"%s is restricted (max 1 copy, has %d)","%s は制�
 STR_VALIDATE_CHOICE_RESTRICTED_FMT,%s and %s are choice restricted (only one allowed),%s と %s は選択制限カードです (どちらか1枚のみ)
 STR_VALIDATE_NOT_IN_FORMAT_FMT,"%s [%s] is not allowed in %s","%s [%s] は %s では使用できません"
 STR_LOG_TURN_START_FMT,--- Turn {N}: {PLAYER} ---,--- ターン {N}: {PLAYER} ---
-STR_LOG_START_PHASE_DRAW_FMT,Start Phase: Drawing {N} card(s),開始フェイズ: {N}枚ドロー
+STR_LOG_START_PHASE_DRAW_FMT,Start Phase: Drawing {N} card(s),スタートフェイズ: {N}枚ドロー
 STR_LOG_PLAYER_PASS_FMT,[b]{PLAYER}[/b] passes.,[b]{PLAYER}[/b] パス。
 STR_LOG_PLAYED_BATTLE_FMT,[b]{PLAYER}[/b]: Played {CARD} to Zone {ZONE},[b]{PLAYER}[/b]: {CARD} をエリア{ZONE}に出現
 STR_LOG_PLAYED_BATTLE_ENTER_FMT,[b]{PLAYER}[/b]: {ENTER_ICON} {CARD} to Zone {ZONE},[b]{PLAYER}[/b]: {ENTER_ICON} {CARD} をエリア{ZONE}に出現

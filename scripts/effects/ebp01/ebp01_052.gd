@@ -30,6 +30,6 @@ func can_be_destroyed(ctx: EffectContext) -> bool:
 	if zone_idx < 0 or zone_idx > 4:
 		return true
 	# Need 5+ monster cards in discard
-	if ctx.effect_handler.count_monsters_in_discard(ctx.owner) >= 5:
+	if CardUtils.count_monsters_in_discard(ctx.owner.discard_pile) >= 5:
 		return false
 	return true

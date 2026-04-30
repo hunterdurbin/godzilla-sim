@@ -39,5 +39,5 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	if ctx.effect_handler.count_monsters_in_discard(ctx.owner) >= 5:
+	if CardUtils.count_monsters_in_discard(ctx.owner.discard_pile) >= 5:
 		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))

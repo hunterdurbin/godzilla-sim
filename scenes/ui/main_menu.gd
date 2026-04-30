@@ -12,6 +12,7 @@ extends Control
 @onready var sound_button: Button = $SoundButton
 @onready var music_button: Button = $MusicButton
 @onready var patreon_button: TextureButton = $PatreonButton
+@onready var discord_button: TextureButton = $DiscordButton
 @onready var version_label: Label = $VersionLabel
 @onready var update_button: Button = $UpdateButton
 @onready var deck_select_p1: VBoxContainer = $CenterContainer/VBoxContainer/DeckRow/DeckSelectP1
@@ -37,6 +38,7 @@ func _ready() -> void:
 	_update_sound_button()
 	_update_music_button()
 	patreon_button.pressed.connect(_on_patreon_pressed)
+	discord_button.pressed.connect(_on_discord_pressed)
 
 	version_label.text = "v" + ProjectSettings.get_setting("application/config/version", "")
 
@@ -539,6 +541,11 @@ func _on_extras_pressed() -> void:
 func _on_patreon_pressed() -> void:
 	SfxManager.play("ui_click")
 	OS.shell_open("https://www.patreon.com/cw/sodabomber/membership")
+
+
+func _on_discord_pressed() -> void:
+	SfxManager.play("ui_click")
+	OS.shell_open("https://discord.gg/fwCaYzWbPw")
 
 
 const _VOLUME_LABELS := ["STR_VOL_OFF", "25%", "50%", "75%", "100%"]

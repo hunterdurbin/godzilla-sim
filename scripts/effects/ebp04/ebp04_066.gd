@@ -12,6 +12,11 @@ extends CardEffect
 ## Implementation notes: None
 
 
+const TRIGGER_FILTERS = {
+	"get_strategy_hand_rank_modifier": {"own_turn": false, "target_is_owner": false},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["weakens_opponent"]
 
@@ -20,11 +25,8 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 	return [CardEnums.EffectCategory.CONTINUOUS]
 
 
-func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, target_player_id: int) -> int:
-	if ctx.is_owner(target_player_id):
-		return 0
-	if not ctx.is_turn(target_player_id):
-		return 0
+func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, _target_player_id: int) -> int:
+	# Turn ownership and target-hand-owner guards live in TRIGGER_FILTERS.
 	var has_non_green_battle: bool = ctx.owner.has_zone_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.is_battle(c) and not CardUtils.has_color(c, CardEnums.CardColor.GREEN))
