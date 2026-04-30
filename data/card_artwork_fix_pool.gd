@@ -11,7 +11,7 @@ extends RefCounted
 ##
 ## Convention: "<version>_<short-summary>"
 const ENTRIES := {
-	"v0.1.13-unstable.2_ebp04_translation_fixes": {
+	"v0.1.12-unstable.2_ebp04_translation_fixes": {
 		"description": "Corrected EBP04-021 / EBP04-028 / EBP04-082 effect translations",
 		"card_ids": ["EBP04-021", "EBP04-028", "EBP04-082"],
 	},
