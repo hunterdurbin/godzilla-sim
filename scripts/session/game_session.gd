@@ -11,10 +11,15 @@ extends Node
 ## The presentation scene reads `turn_manager` off this node (or via a typed
 ## accessor added in Phase 4) and connects to its signals.
 
-## Fired once start_host_session() has wired turn_manager + forwarders.
-## Modules that need to subscribe to PlayerState signals or read game_state
-## should listen for this — PlayerBoard's auto-bind uses it.
+## Fired once the session is ready for module binding. On host/solo this
+## fires at the end of start_host_session(). On client/spectator the host
+## scene's RPC handler calls `mark_client_started()` after populating
+## client_players for the first time, which fires the same signal —
+## modules can subscribe once and bind regardless of mode.
 signal session_started
+
+## True once `session_started` has emitted (host or client/spectator path).
+var _client_started: bool = false
 
 var turn_manager: TurnManager
 var bot_player: BotPlayer
@@ -79,6 +84,17 @@ func get_player(player_id: int) -> PlayerState:
 	if player_id < client_players.size():
 		return client_players[player_id]
 	return null
+
+
+## Called by the host scene's RPC state handler after the first state
+## broadcast has populated client_players. Emits session_started once
+## (idempotent) so modules can bind on either host or client/spectator
+## paths via a single signal.
+func mark_client_started() -> void:
+	if _client_started:
+		return
+	_client_started = true
+	session_started.emit()
 
 
 ## True once the host session has been built and the game is running.

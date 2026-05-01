@@ -108,10 +108,19 @@ func _try_bind_to_session() -> void:
 	var seat := BoardModule.find_seat(self)
 	if seat:
 		player_id = seat.get_player_id()
-	if session.is_running():
+		if not seat.role_changed.is_connected(_on_seat_role_changed):
+			seat.role_changed.connect(_on_seat_role_changed)
+	if session.is_running() or not session.client_players.is_empty():
 		_bind_to_session(session)
 	else:
 		session.session_started.connect(func(): _bind_to_session(session), CONNECT_ONE_SHOT)
+
+
+func _on_seat_role_changed(new_player_id: int) -> void:
+	player_id = new_player_id
+	var session := BoardModule.find_session(self)
+	if session and session.is_running():
+		_bind_to_session(session)
 
 
 func _bind_to_session(session: GameSession) -> void:
@@ -120,15 +129,39 @@ func _bind_to_session(session: GameSession) -> void:
 		return
 	if _bound_player == p:
 		return
+	_disconnect_bound_player()
 	_bound_player = p
 	p.hand_changed.connect(_on_bound_state_changed)
 	p.zones_changed.connect(_on_bound_state_changed)
-	p.rage_changed.connect(_on_bound_state_changed.unbind(1))
+	p.rage_changed.connect(_on_rage_changed)
 	p.monster_changed.connect(_on_bound_state_changed)
 	p.discard_changed.connect(_on_bound_state_changed)
 	p.deck_changed.connect(_on_bound_state_changed)
 	p.strategy_zones_changed.connect(_on_bound_state_changed)
 	_on_bound_state_changed()
+
+
+func _on_rage_changed(_new_rage: int) -> void:
+	_on_bound_state_changed()
+
+
+func _disconnect_bound_player() -> void:
+	if _bound_player == null:
+		return
+	if _bound_player.hand_changed.is_connected(_on_bound_state_changed):
+		_bound_player.hand_changed.disconnect(_on_bound_state_changed)
+	if _bound_player.zones_changed.is_connected(_on_bound_state_changed):
+		_bound_player.zones_changed.disconnect(_on_bound_state_changed)
+	if _bound_player.rage_changed.is_connected(_on_rage_changed):
+		_bound_player.rage_changed.disconnect(_on_rage_changed)
+	if _bound_player.monster_changed.is_connected(_on_bound_state_changed):
+		_bound_player.monster_changed.disconnect(_on_bound_state_changed)
+	if _bound_player.discard_changed.is_connected(_on_bound_state_changed):
+		_bound_player.discard_changed.disconnect(_on_bound_state_changed)
+	if _bound_player.deck_changed.is_connected(_on_bound_state_changed):
+		_bound_player.deck_changed.disconnect(_on_bound_state_changed)
+	if _bound_player.strategy_zones_changed.is_connected(_on_bound_state_changed):
+		_bound_player.strategy_zones_changed.disconnect(_on_bound_state_changed)
 
 
 func _on_bound_state_changed() -> void:

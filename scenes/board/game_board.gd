@@ -5654,9 +5654,13 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 		"player_names": Array(gs.player_names),
 		"first_player_id": _first_player_id,
 	}
+	# viewer_id < 0 (spectator: NetworkManager.SPECTATOR_PID) gets full
+	# visibility into both players — the seated-opponent hand-strip rule
+	# doesn't apply.
+	var spectator_view: bool = viewer_id < 0
 	for i in range(2):
 		var pd := _serialize_player_state(gs.players[i])
-		if i != viewer_id:
+		if not spectator_view and i != viewer_id:
 			# Strip hand and monster deck data for opponent — only send counts
 			# (full hand kept in stats_opponent_hand for disconnect reporting)
 			pd["stats_hand"] = pd["hand"].duplicate(true)
@@ -6094,8 +6098,14 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 			var board = player1_board if i == 0 else player2_board
 			if not session.client_players[i].current_monster.is_empty():
 				board.apply_monster_gradient(session.client_players[i].current_monster)
-		RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
-		multiplayer_sync._rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
+		# Spectators don't have a player name to send (they're not seated).
+		if not NetworkManager.is_spectator():
+			RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
+			multiplayer_sync._rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
+		# Notify any auto-bind modules that the client/spectator session is
+		# now ready (client_players populated). Modules subscribed to
+		# session.session_started fire their _bind paths.
+		session.mark_client_started()
 
 	# Sync player names from host (disambiguate from client's perspective)
 	var host_names: Array = data.get("player_names", [])

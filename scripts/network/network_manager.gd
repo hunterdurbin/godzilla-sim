@@ -5,7 +5,13 @@ extends Node
 ## Registered as an autoload singleton. Contains no game logic —
 ## just connection lifecycle, player assignment, and session state.
 
-enum Mode {SOLO, SOLO_BOT, HOST, CLIENT, ONLINE_HOST, ONLINE_CLIENT}
+enum Mode {SOLO, SOLO_BOT, HOST, CLIENT, ONLINE_HOST, ONLINE_CLIENT, SPECTATOR}
+
+## Sentinel pid stored in `peer_player_map` for connected spectator peers.
+## Player ids are 0/1; spectators map to this value, which lets the existing
+## "send to player X" broadcast loops naturally exclude them while the host's
+## global broadcast loop (which iterates the whole map) still reaches them.
+const SPECTATOR_PID: int = -1
 
 signal player_connected(peer_id: int)
 signal player_disconnected(peer_id: int)
@@ -87,6 +93,46 @@ func join_game(ip: String, port: int = DEFAULT_PORT) -> Error:
 	mode = Mode.CLIENT
 	host_peer_id = 1
 	return OK
+
+
+## Connect to a host as a non-playing spectator. Same connection plumbing
+## as `join_game` but the peer announces its spectator role on connect so
+## the host maps it to SPECTATOR_PID instead of seating it as the opponent.
+## Spectator's `local_player_id` stays at -1; they receive state broadcasts
+## but their action submissions are rejected by the existing pid-validation.
+func join_as_spectator(ip: String, port: int = DEFAULT_PORT) -> Error:
+	var peer := ENetMultiplayerPeer.new()
+	var err := peer.create_client(ip, port)
+	if err != OK:
+		return err
+
+	multiplayer.multiplayer_peer = peer
+	multiplayer.connected_to_server.connect(_on_connected_to_server_as_spectator)
+	multiplayer.connection_failed.connect(_on_connection_failed)
+	multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+	mode = Mode.SPECTATOR
+	host_peer_id = 1
+	return OK
+
+
+func _on_connected_to_server_as_spectator() -> void:
+	# Tell host we're a spectator before any seat-assignment RPCs run.
+	_rpc_register_as_spectator.rpc_id(host_peer_id)
+	_on_connected_to_server()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_register_as_spectator() -> void:
+	if not is_host():
+		return
+	var sender_id := multiplayer.get_remote_sender_id()
+	# Override whatever seat assignment _on_peer_connected made — this peer
+	# is a spectator, not the opponent.
+	peer_player_map[sender_id] = SPECTATOR_PID
+	# Spectators don't count as "opponent connected" for game-start gating.
+	# If a real opponent already connected separately, leave that flag alone.
+	# (For MVP we assume the opponent connects first; multi-spectator is fine.)
 
 
 # --- Online (WebSocket relay) ---
@@ -262,6 +308,10 @@ func is_multiplayer() -> bool:
 
 func is_host() -> bool:
 	return mode == Mode.HOST or mode == Mode.ONLINE_HOST
+
+
+func is_spectator() -> bool:
+	return mode == Mode.SPECTATOR
 
 
 func is_local_player_turn(current_player_id: int) -> bool:

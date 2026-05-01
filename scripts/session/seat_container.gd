@@ -32,12 +32,22 @@ enum Role {
 	PLAYER_1,   # explicit player 1
 }
 
-@export var role: Role = Role.LOCAL
+## Fired when the seat's role changes after _ready (e.g. spectator
+## clicks a "swap sides" button). Modules subscribe in their _try_bind()
+## and re-resolve / re-bind. Carries the newly-resolved player_id.
+signal role_changed(new_player_id: int)
+
+@export var role: Role = Role.LOCAL:
+	set(value):
+		if role == value:
+			return
+		role = value
+		role_changed.emit(get_player_id())
 
 
 ## Resolve this seat's role to a concrete player_id at the current
-## NetworkManager state. Modules typically call this once during their
-## `_try_bind()` and cache the result on `self.player_id`.
+## NetworkManager state. Modules call this in `_try_bind()` to set their
+## initial `player_id`, then re-call from `role_changed` to update.
 func get_player_id() -> int:
 	var local: int = NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0
 	match role:
@@ -46,3 +56,20 @@ func get_player_id() -> int:
 		Role.PLAYER_0: return 0
 		Role.PLAYER_1: return 1
 	return 0
+
+
+## Programmatic setter (equivalent to assigning `role = ...` but more
+## explicit at call sites that swap sides). Triggers the role_changed
+## signal so modules re-resolve.
+func set_role(new_role: Role) -> void:
+	role = new_role
+
+
+## Convenience for spectator UIs: swap PLAYER_0 ↔ PLAYER_1, or LOCAL ↔
+## OPPONENT. No-op for already-symmetric configurations.
+func swap() -> void:
+	match role:
+		Role.LOCAL: role = Role.OPPONENT
+		Role.OPPONENT: role = Role.LOCAL
+		Role.PLAYER_0: role = Role.PLAYER_1
+		Role.PLAYER_1: role = Role.PLAYER_0

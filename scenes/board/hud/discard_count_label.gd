@@ -17,10 +17,19 @@ func _try_bind() -> void:
 	var seat := BoardModule.find_seat(self)
 	if seat:
 		player_id = seat.get_player_id()
+		if not seat.role_changed.is_connected(_on_seat_role_changed):
+			seat.role_changed.connect(_on_seat_role_changed)
 	if session.is_running() or not session.client_players.is_empty():
 		_bind(session)
 	else:
 		session.session_started.connect(func(): _bind(session), CONNECT_ONE_SHOT)
+
+
+func _on_seat_role_changed(new_player_id: int) -> void:
+	player_id = new_player_id
+	var session := BoardModule.find_session(self)
+	if session:
+		_bind(session)
 
 
 func _bind(session: GameSession) -> void:
@@ -29,6 +38,8 @@ func _bind(session: GameSession) -> void:
 		return
 	if _bound_player == p:
 		return
+	if _bound_player and _bound_player.discard_changed.is_connected(_refresh):
+		_bound_player.discard_changed.disconnect(_refresh)
 	_bound_player = p
 	p.discard_changed.connect(_refresh)
 	_refresh()

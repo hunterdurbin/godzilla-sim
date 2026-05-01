@@ -165,7 +165,398 @@ Any other custom module can opt in by adding a single block to its
 var seat := BoardModule.find_seat(self)
 if seat:
     player_id = seat.get_player_id()
+    seat.role_changed.connect(_on_seat_role_changed)
 ```
+
+The `role_changed` signal is what makes runtime swap work — when the
+seat's role flips, modules re-resolve and re-bind to the new player's
+state.
+
+#### Dynamic seat swap (spectator UIs)
+
+`SeatContainer.set_role(role)` and `SeatContainer.swap()` change the
+role at runtime and emit `role_changed(new_player_id)`. All modules
+under that seat automatically rebind to the new player's
+`PlayerState`.
+
+Typical use: a spectator scene with two seats `LeftSeat` (role=PLAYER_0)
+and `RightSeat` (role=PLAYER_1) plus a "Swap sides" button:
+
+```gdscript
+func _on_swap_pressed() -> void:
+    $LeftSeat.swap()
+    $RightSeat.swap()
+```
+
+After the press, all modules under both seats re-resolve and the
+visible player on each side flips.
+
+### Building a regular-play scene — step by step
+
+For a normal play scene (not spectator) the pattern is the same shape
+as the spectator tutorial below, just with `LOCAL`/`OPPONENT` seat
+roles plus an action panel for the seated player.
+
+**1. Create the scene from the base template.**
+
+   - Right-click `scenes/board/GameBoardBase.tscn` in the FileSystem
+     dock → `Open in New Scene` (or open it and `Scene → Save As…`).
+   - Save as e.g. `scenes/board/MobileGameBoard.tscn` or
+     `DesktopGameBoard.tscn`. Keep the root node named `GameBoard`.
+   - Replace the script reference on the root with your own controller
+     script (or `extends "res://scenes/board/game_board_base.gd"`).
+
+**2. Configure the two seat containers.**
+
+   The base template ships with `OpponentSeat` (top half, `role=OPPONENT`)
+   and `LocalSeat` (bottom half, `role=LOCAL`). Resize/anchor them to
+   match your visual layout. Rename them if you prefer (cosmetic only).
+
+   You can put `LOCAL` at the top and `OPPONENT` at the bottom — the
+   seat's `role` resolves to a player_id at runtime regardless of
+   visual placement. Use `is_mirrored` on each PlayerBoard to flip
+   orientation independently.
+
+**3. Drop core modules into each seat.**
+
+   Inside `LocalSeat`:
+
+   - `scenes/board/PlayerBoard.tscn` — set `auto_bind = true`. Set
+     `is_mirrored` based on whether this seat is at the top of the
+     screen (mirrored) or bottom (not mirrored).
+   - `scenes/managers/CardManager.tscn` — for the local player's hand.
+     Set `PlayerBoard.hand_manager_path` to point at it.
+   - HUD primitives as needed: `RageDisplay`, `ThreatDisplay`,
+     `DeckCountLabel`, `DiscardCountLabel`. None need `player_id` —
+     the seat resolves it.
+
+   Repeat in `OpponentSeat`. The opponent's CardManager renders cards
+   face-down by default (CardManager handles face-down based on hand
+   visibility — game_board's `_update_hand_visibility` is the
+   reference).
+
+**4. Add global modules outside the seats.**
+
+   These don't belong to a single player:
+
+   - `scenes/board/hud/TurnTrackerView.tscn`
+   - `scenes/board/hud/TurnNumberLabel.tscn`
+   - `scenes/board/hud/PhaseLabel.tscn`
+   - `scenes/board/hud/LogPanel.tscn`
+   - `scenes/board/hud/EndGamePanel.tscn`
+   - `scenes/board/hud/BoardSfx.tscn` — drop-in audio.
+
+   `DefaultOverlayPack` is already inherited from the base, so the
+   modal overlays (DeckSearch, CardSelect, DeckArrange, CardZoom,
+   etc.) are wired automatically.
+
+**5. Build an action panel — current state requires hand-rolling.**
+
+   This is the largest gap right now. The seated player needs buttons
+   for `Play Battle / Play Strategy / Gain Rage / Play Monster /
+   Invade / End Main / Cancel / Confirm` plus the selection-mode flow
+   (click button → click hand card → click target zone → submit).
+
+   **Three options today:**
+
+   a. **Borrow from the existing GameBoard.tscn**: open the existing
+      scene, copy the `ActionPanel` subtree + the relevant button
+      handlers + selection-mode logic from `game_board.gd` into your
+      controller script. Brittle but fast.
+
+   b. **Implement from scratch**: build any node that fulfills the
+      action-panel contract (see "Action panel contract" earlier in
+      this doc) and write your own selection-mode flow that listens
+      to its `action_pressed` signal and dispatches via
+      `session.submit_action(...)`.
+
+   c. **Use the existing GameBoard.tscn whole and re-skin it**: rather
+      than starting from `GameBoardBase.tscn`, copy `GameBoard.tscn`
+      → `MyGameBoard.tscn` and replace visuals while keeping the
+      controller script. Heaviest starting point but everything works
+      out of the box.
+
+   A drop-in `ActionPanel.tscn` + `SelectionModeController` is on the
+   roadmap (see Phase 6 / "SelectionModeController" mention earlier).
+   When that lands, this step becomes "drop ActionPanel.tscn into
+   LocalSeat, set inspector knobs, done."
+
+**6. Override the visual hooks in your controller.**
+
+   `game_board_base.gd` exposes protected hooks. Override the ones
+   you care about for visuals:
+
+   ```gdscript
+   extends "res://scenes/board/game_board_base.gd"
+
+   @onready var _phase_label: Label = $HUD/PhaseLabel
+   @onready var _turn_label: Label = $HUD/TurnNumberLabel
+
+   func _on_phase_started(phase: CardEnums.GamePhase) -> void:
+       # PhaseLabel auto-binds; this hook is for any *additional*
+       # custom logic (e.g. play a phase-transition animation).
+       _animate_phase_change(phase)
+
+   func _on_turn_started(player_id: int) -> void:
+       _flash_turn_indicator(player_id)
+   ```
+
+   You don't need to wire HUD primitives manually — they auto-bind.
+   These hooks are only for custom visuals on top of that.
+
+**7. Wire the launcher.**
+
+   The existing main menu launches games via
+   `NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")`.
+   To launch your new scene, either:
+
+   a. Edit `scenes/ui/main_menu.gd` to point at your scene file
+      (replace the path in `_on_start_pressed`, `_on_solo_bot_pressed`,
+      etc.).
+
+   b. Add a parallel "Use new GameBoard" toggle behind a debug flag
+      that switches the path. Lets the existing scene stay as a
+      fallback during iteration.
+
+   The mode flags (`SOLO`, `SOLO_BOT`, `HOST`, etc.) and deck
+   selections still flow through `NetworkManager` and
+   `DecklistManager` exactly as before — the new scene just consumes
+   them via `GameBoardBase._ready`.
+
+**8. Verify.**
+
+   - F6 the scene with `NetworkManager.mode = Mode.SOLO_BOT` set in
+     the scene's `_ready` for a quick standalone test (or set it from
+     a launcher and use `change_scene`).
+   - Open menu → press your launcher → game starts → bot takes its
+     turn → you press End Main on your turn → next turn fires.
+   - Trigger an effect that opens an overlay (e.g. a card with deck
+     search) → confirm the overlay appears.
+   - Online host+client: launch two peers, both loading your new
+     scene. Confirm the seat resolution flips between host and client
+     (LOCAL on host = pid 0; LOCAL on client = pid 1).
+
+**9. Iterate on visuals.**
+
+   With everything wired, you can spend your time on what actually
+   matters: card animations, board art, themes, mobile gestures,
+   layouts. The wiring stays put.
+
+#### Regular-play scene template
+
+A minimal controller script:
+
+```gdscript
+extends "res://scenes/board/game_board_base.gd"
+
+# Refs to whatever visual elements your scene adds beyond the base.
+@onready var _action_panel: Control = $ActionPanel  # your contract-conforming panel
+
+func _on_host_ready() -> void:
+    # Wire your action panel to the session. The action_panel emits
+    # `action_pressed(action: CardEnums.ActionType)` per the contract;
+    # you handle the selection-mode flow here.
+    _action_panel.action_pressed.connect(_on_action_pressed)
+
+func _on_action_pressed(action: CardEnums.ActionType) -> void:
+    # Selection-mode logic — see existing game_board.gd for reference,
+    # or use a future SelectionModeController helper.
+    match action:
+        CardEnums.ActionType.PASS:
+            session.submit_action(action, {})
+        # ... other actions enter selection mode, prompt for card +
+        # zone, then submit.
+
+func _on_phase_started(phase: CardEnums.GamePhase) -> void:
+    # Custom animations, etc.
+    pass
+```
+
+That's the shell. The base script handles bootstrap, signal wiring,
+session lifecycle, and overlay routing. Your code is just visual
+customization + the action-panel contract.
+
+### Spectator network support
+
+A peer can join a host as a spectator instead of as the second seated
+player. Spectators receive the full state broadcast (both hands
+visible) but their action submissions are rejected by the existing pid
+validation, so no client-side enforcement is needed.
+
+#### Joining as a spectator (LAN)
+
+```gdscript
+NetworkManager.join_as_spectator("192.168.x.y", NetworkManager.DEFAULT_PORT)
+NetworkManager.change_scene("res://scenes/board/MySpectatorBoard.tscn")
+```
+
+`join_as_spectator()` mirrors `join_game()` but on connection sends a
+`_rpc_register_as_spectator` RPC to the host. The host overrides the
+peer's seat assignment in `peer_player_map` to
+`NetworkManager.SPECTATOR_PID` (`-1`).
+
+`NetworkManager.is_spectator()` is the runtime check. `mode` is
+`Mode.SPECTATOR`. `local_player_id` stays `-1`.
+
+#### Spectator scene contract
+
+The same `GameBoardBase` works as the spectator's scene root — the
+multiplayer/spectator branch in `_ready` already handles the no-host
+case by deferring to `_on_client_ready()`. What you change is the seat
+container roles inside `BoardLayoutSlot`:
+
+```
+GameBoard (spectator scene)
+├── GameSession ...
+└── BoardLayoutSlot
+    ├── LeftSeat   (SeatContainer, role=PLAYER_0)
+    └── RightSeat  (SeatContainer, role=PLAYER_1)
+```
+
+PlayerBoard auto-bind (`auto_bind=true`) is required — it walks up to
+the seat, resolves the explicit player_id, subscribes to the
+broadcast-cached PlayerState in `session.client_players`, and refreshes
+when the host's state arrives.
+
+#### What works today
+
+- Spectator joins before or after the game starts (state broadcasts on
+  every state change include all connected peers).
+- Both hands face-up, full visibility into modifiers, log, etc.
+- Multiple spectators per host (each peer just gets a SPECTATOR_PID
+  entry in `peer_player_map`).
+- Action submissions from a spectator are rejected by the host's
+  `_rpc_submit_action` handler (sender_pid != current_player_id).
+
+#### What's not yet supported
+
+- Rejoining mid-game with an authoritative state snapshot (resync
+  works only for seated players today).
+- A built-in "spectate this room" UI in the main menu — designer
+  builds their own spectator entry point.
+- Dynamic role re-assignment by the host (e.g., promote spectator to
+  seated opponent if the original opponent disconnects).
+
+#### Building a spectator scene — step by step
+
+**1. Create the scene from the base template.**
+
+   - In the FileSystem dock, right-click `scenes/board/GameBoardBase.tscn`
+     → `Open in New Scene` (or open it and `Scene → Save As…`).
+   - Save as `scenes/board/SpectatorBoard.tscn`. Leave the root node
+     named `GameBoard` — the cross-scene multiplayer contract requires
+     it.
+
+**2. Reconfigure the two seat containers.**
+
+   - Click `BoardLayoutSlot/OpponentSeat` in the scene tree.
+     - Inspector → `Role`: change from `OPPONENT` to `PLAYER_0`.
+     - Rename the node to `LeftSeat` (cosmetic; doesn't affect logic).
+   - Click `BoardLayoutSlot/LocalSeat` in the scene tree.
+     - Inspector → `Role`: change from `LOCAL` to `PLAYER_1`.
+     - Rename to `RightSeat`.
+
+**3. Drop modules into each seat.**
+
+   Inside `LeftSeat` (now PLAYER_0), instance:
+
+   - `scenes/board/PlayerBoard.tscn` — set `auto_bind = true` and
+     `is_mirrored = false`.
+   - `scenes/board/hud/RageDisplay.tscn` — leave `player_id`
+     untouched; the seat resolves it.
+   - Whatever else makes sense (`DeckCountLabel`, `ThreatDisplay`,
+     etc.).
+
+   Inside `RightSeat` (now PLAYER_1), instance the same modules. Set
+   `is_mirrored = true` on its PlayerBoard if you want the opponent at
+   the top of the screen.
+
+**4. (Optional) Add a swap-sides button.**
+
+   Add a `Button` somewhere in the scene with text "Swap Sides". In
+   the scene's controller script, connect its `pressed` signal to:
+
+   ```gdscript
+   func _on_swap_pressed() -> void:
+       $BoardLayoutSlot/LeftSeat.swap()
+       $BoardLayoutSlot/RightSeat.swap()
+   ```
+
+   Each `swap()` call flips the seat's role (PLAYER_0 ↔ PLAYER_1) and
+   emits `role_changed(new_player_id)`. All modules under that seat
+   re-resolve and re-bind to the new player. No reload, no flicker —
+   the next state broadcast hits the freshly bound modules.
+
+**5. Wire a launcher.**
+
+   In whichever menu/lobby will spawn spectators, set the scene mode
+   and load the spectator board:
+
+   ```gdscript
+   func _on_spectate_button_pressed() -> void:
+       var ip := "192.168.x.y"  # collected from the user
+       var err := NetworkManager.join_as_spectator(ip)
+       if err != OK:
+           push_error("Spectate connect failed: %d" % err)
+           return
+       NetworkManager.change_scene("res://scenes/board/SpectatorBoard.tscn")
+   ```
+
+   For online relay, replace `join_as_spectator` with the relay
+   equivalent once you wire one (today only LAN is in place — the
+   relay path follows the same `_rpc_register_as_spectator` handshake
+   and is a small extension to `network_manager.gd`).
+
+**6. (Optional) Hide unused HUD pieces.**
+
+   Spectators don't need:
+
+   - The action panel / Play Battle / Play Strategy / etc. buttons —
+     spectators can't act.
+   - The chat input (unless you want spectator chat — separate
+     feature).
+   - Concede / rematch buttons (handled by the seated players).
+
+   Either delete those nodes from the spectator scene or set
+   `visible = false`.
+
+**7. Verify.**
+
+   - Run the scene with `NetworkManager.mode = Mode.SPECTATOR` set
+     manually for an editor-only smoke test (no real connection — the
+     scene boots, modules find no session state yet, labels show 0).
+   - For a real test: launch one host, one client, one spectator.
+     Expected: spectator sees both hands face-up, labels update on
+     every state change, swap button flips sides, action submissions
+     from the spectator are silently rejected.
+
+#### Spectator scene template
+
+A minimal `spectator_board.gd` that extends `GameBoardBase`:
+
+```gdscript
+extends "res://scenes/board/game_board_base.gd"
+
+@onready var _btn_swap: Button = $SwapSidesButton
+@onready var _left_seat: SeatContainer = $BoardLayoutSlot/LeftSeat
+@onready var _right_seat: SeatContainer = $BoardLayoutSlot/RightSeat
+
+
+func _on_client_ready() -> void:
+    # Spectator-specific setup. Called by GameBoardBase._ready when the
+    # peer is not the host. For seated clients this is also where you'd
+    # add their UI; here it's the spectator's setup.
+    _btn_swap.pressed.connect(_on_swap_pressed)
+
+
+func _on_swap_pressed() -> void:
+    _left_seat.swap()
+    _right_seat.swap()
+```
+
+That's it — module auto-bind handles everything else. Phase signals,
+log messages, end-game panel, etc. are all wired by the inherited
+`GameBoardBase`.
 
 ### Ready-made HUD primitives
 

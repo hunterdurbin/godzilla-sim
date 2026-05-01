@@ -22,10 +22,18 @@ func _try_bind() -> void:
 	var seat := BoardModule.find_seat(self)
 	if seat:
 		player_id = seat.get_player_id()
+		if not seat.role_changed.is_connected(_on_seat_role_changed):
+			seat.role_changed.connect(_on_seat_role_changed)
 	if _session.is_running() or not _session.client_players.is_empty():
 		_bind(_session)
 	else:
 		_session.session_started.connect(func(): _bind(_session), CONNECT_ONE_SHOT)
+
+
+func _on_seat_role_changed(new_player_id: int) -> void:
+	player_id = new_player_id
+	if _session:
+		_bind(_session)
 
 
 func _bind(session: GameSession) -> void:
@@ -34,12 +42,22 @@ func _bind(session: GameSession) -> void:
 		return
 	if _bound_player == p:
 		return
+	# Disconnect previous bindings (rebind path for seat swap).
+	if _bound_player:
+		if _bound_player.rage_changed.is_connected(_on_rage_changed):
+			_bound_player.rage_changed.disconnect(_on_rage_changed)
+		if _bound_player.zones_changed.is_connected(_refresh):
+			_bound_player.zones_changed.disconnect(_refresh)
+		if _bound_player.strategy_zones_changed.is_connected(_refresh):
+			_bound_player.strategy_zones_changed.disconnect(_refresh)
 	_bound_player = p
-	# Threat depends on rage + modifiers (which can change on many events).
-	# Subscribe to the most relevant signals; refresh on any of them.
-	p.rage_changed.connect(_refresh.unbind(1))
+	p.rage_changed.connect(_on_rage_changed)
 	p.zones_changed.connect(_refresh)
 	p.strategy_zones_changed.connect(_refresh)
+	_refresh()
+
+
+func _on_rage_changed(_new_rage: int) -> void:
 	_refresh()
 
 
