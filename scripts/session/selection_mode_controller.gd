@@ -62,6 +62,11 @@ var _drag_valid_zones: Array[int] = []
 var _drag_can_rage: bool = false
 var _drag_can_invade: bool = false
 
+# Snap preview: while dragging, the card animates into the slot under
+# the cursor at the slot's content scale. _snap_preview_slot is the
+# currently-previewed target (null when no valid hover).
+var _snap_preview_slot: Node = null
+
 
 func _init(session: GameSession, action_panel: Control, board_root: Node) -> void:
 	_session = session
@@ -390,12 +395,89 @@ func _on_hand_drag_ended(card: Control, player_board: Node) -> void:
 
 
 func _reset_drag_state() -> void:
+	_end_snap_preview()
 	_drag_card = null
 	_drag_player_board = null
 	_drag_action = CardEnums.ActionType.PASS
 	_drag_valid_zones.clear()
 	_drag_can_rage = false
 	_drag_can_invade = false
+
+
+# --- Snap preview (drag-time visual feedback) ---
+
+## Called once per frame from GameBoardBase._process. While a hand card
+## is being dragged, animates it into the slot under the cursor at the
+## slot's content scale. Idempotent — bails out early when no drag is
+## active.
+func update_snap_preview() -> void:
+	if _drag_card == null or not is_instance_valid(_drag_card) or not _drag_card.is_dragging:
+		if _snap_preview_slot:
+			_end_snap_preview()
+		return
+	if _drag_player_board == null:
+		return
+	var mouse_pos: Vector2 = _drag_player_board.get_global_mouse_position()
+	var hovered_slot: Node = _find_hovered_drop_target(mouse_pos, _drag_player_board)
+	if hovered_slot == _snap_preview_slot:
+		return
+	if _snap_preview_slot and hovered_slot != _snap_preview_slot:
+		_end_snap_preview()
+	if hovered_slot:
+		_start_snap_preview(hovered_slot)
+
+
+func _find_hovered_drop_target(mouse_pos: Vector2, board) -> Node:
+	# Mirrors the drop-detection logic in _on_hand_drag_ended.
+	for i in _drag_valid_zones:
+		if i < 0 or i >= board.zone_slots.size():
+			continue
+		var slot = board.zone_slots[i]
+		if slot and Rect2(slot.global_position, slot.size).has_point(mouse_pos):
+			return slot
+	if _drag_action == CardEnums.ActionType.PLAY_STRATEGY:
+		for slot in board.strategy_slots:
+			if slot and not slot.has_card() and Rect2(slot.global_position, slot.size).has_point(mouse_pos):
+				return slot
+	if _drag_can_rage and "rage_display" in board and board.rage_display:
+		if Rect2(board.rage_display.global_position, board.rage_display.size).has_point(mouse_pos):
+			return board.rage_display
+	if _drag_can_invade and "discard_display" in board and board.discard_display:
+		if Rect2(board.discard_display.global_position, board.discard_display.size).has_point(mouse_pos):
+			return board.discard_display
+	return null
+
+
+func _start_snap_preview(target: Node) -> void:
+	if _drag_card == null:
+		return
+	_snap_preview_slot = target
+	# Compute target rect: slots have a content_rect (card aspect area);
+	# rage/discard zones use their full rect.
+	var target_rect: Rect2
+	if target is Slot and "_content_rect" in target:
+		var content_rect: Rect2 = target._content_rect
+		target_rect = Rect2(target.global_position + content_rect.position, content_rect.size)
+	else:
+		target_rect = Rect2(target.global_position, target.size)
+	# Scale card to fit while preserving aspect.
+	var card_size: Vector2 = _drag_card.size
+	if card_size.x <= 0 or card_size.y <= 0:
+		return
+	var fit_scale := minf(target_rect.size.x / card_size.x, target_rect.size.y / card_size.y)
+	var target_scale := Vector2(fit_scale, fit_scale)
+	# Center the scaled card in the target rect.
+	var scaled_size := card_size * fit_scale
+	var target_pos := target_rect.position + (target_rect.size - scaled_size) / 2.0
+	if _drag_card.has_method("start_snap_preview"):
+		_drag_card.start_snap_preview(target_pos, target_scale)
+
+
+func _end_snap_preview() -> void:
+	_snap_preview_slot = null
+	if _drag_card and is_instance_valid(_drag_card) and "is_snap_previewing" in _drag_card and _drag_card.is_snap_previewing:
+		if _drag_card.has_method("end_snap_preview"):
+			_drag_card.end_snap_preview()
 
 
 # --- Card selection ---

@@ -710,6 +710,7 @@ auto-bind pattern. Drop one in, configure via the inspector, done.
 | `ActionPanel.tscn` | — | drop-in 6-action panel + Cancel/Confirm + prompt; auto-wires to SelectionModeController via GameBoardBase |
 | `HandSortButton.tscn` | `player_id` (overridden by SeatContainer) | sort the seat's hand using GameSettings sort order on press |
 | `HandSlot.tscn` | `auto_bind`, `anchor_edge`, `width_pct` | drop into a SeatContainer next to a PlayerBoard — auto-attaches as the board's `hand_manager` and anchors to the seat's bottom (LOCAL) / top (OPPONENT) edge |
+| `HoverPreview.tscn` | `auto_bind`, `hide_on_mobile` | subscribes to every PlayerBoard's `card_preview_requested/cleared` signals; renders a magnified card with strategy/normal layouts. Anchor anywhere — the Control's own size + position drive the preview's bounds. |
 
 These are small and intentionally minimal — they're starting points,
 not the final visual. To customize, copy the .gd, change the visuals,

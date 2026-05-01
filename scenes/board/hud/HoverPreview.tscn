@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/hover_preview.gd" id="1_hp"]
+
+[node name="HoverPreview" type="Control"]
+z_index = 100
+mouse_filter = 2
+script = ExtResource("1_hp")

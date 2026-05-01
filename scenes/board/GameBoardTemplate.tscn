@@ -1,4 +1,4 @@
-[gd_scene load_steps=13 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/board/GameBoardBase.tscn" id="1_base"]
 [ext_resource type="Script" path="res://scenes/board/game_board_template.gd" id="2_tpl"]
@@ -13,6 +13,10 @@
 [ext_resource type="PackedScene" path="res://scenes/board/hud/ActionPanel.tscn" id="11_ap"]
 [ext_resource type="PackedScene" path="res://scenes/board/hud/LogPanel.tscn" id="12_lp"]
 [ext_resource type="PackedScene" path="res://scenes/board/hud/HandSlot.tscn" id="13_hs"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/BoardSfx.tscn" id="14_sfx"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/TurnTrackerView.tscn" id="15_ttv"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/EndGamePanel.tscn" id="16_egp"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/HoverPreview.tscn" id="17_hov"]
 
 [node name="GameBoard" instance=ExtResource("1_base")]
 script = ExtResource("2_tpl")
@@ -141,3 +145,33 @@ offset_right = -16.0
 offset_bottom = -16.0
 grow_horizontal = 0
 grow_vertical = 0
+
+[node name="BoardSfx" parent="." instance=ExtResource("14_sfx")]
+
+[node name="TurnTrackerView" parent="TopBar" index="2" instance=ExtResource("15_ttv")]
+layout_mode = 2
+
+[node name="EndGamePanel" parent="." instance=ExtResource("16_egp")]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -210.0
+offset_top = -110.0
+offset_right = 210.0
+offset_bottom = 110.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HoverPreview" parent="." instance=ExtResource("17_hov")]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -240.0
+offset_top = 60.0
+offset_right = -16.0
+offset_bottom = 380.0
+grow_horizontal = 0

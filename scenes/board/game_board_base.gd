@@ -89,6 +89,13 @@ func _ready() -> void:
 		session.start_game(0)
 
 
+func _process(_delta: float) -> void:
+	# Drive per-frame snap-preview animation while a hand card is dragged.
+	# Cheap when no drag is active (early-out).
+	if selection_controller:
+		selection_controller.update_snap_preview()
+
+
 ## Override to set custom visual updates.
 func _on_phase_started(_phase: CardEnums.GamePhase) -> void: pass
 func _on_phase_ended(_phase: CardEnums.GamePhase) -> void: pass
