@@ -38,7 +38,7 @@ func _on_pressed() -> void:
 	var pb := _find_player_board()
 	if pb == null or pb.hand_manager == null:
 		return
-	var hand_mgr := pb.hand_manager
+	var hand_mgr: Node = pb.hand_manager
 	if hand_mgr.managed_cards.size() <= 1:
 		return
 

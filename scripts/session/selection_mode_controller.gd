@@ -315,7 +315,7 @@ func _on_hand_drag_ended(card: Control, player_board: Node) -> void:
 		return
 
 	# Detect the dropped target by mouse position
-	var mouse_pos := player_board.get_global_mouse_position()
+	var mouse_pos: Vector2 = player_board.get_global_mouse_position()
 	var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
 	var hand_idx: int = _find_hand_index_by_id(card_id)
 	if hand_idx < 0:
