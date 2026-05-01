@@ -19,6 +19,9 @@ extends ColorRect
 signal stacked_toggled(stacked: bool)
 signal closed
 
+@export var prompt_key: String = "card_select"
+@export var auto_register: bool = true
+
 const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 const _CARD_SIZE := Vector2(120, 168)
 
@@ -55,6 +58,22 @@ func _ready() -> void:
 	_view_board_btn.pressed.connect(_on_view_board_pressed)
 	if GameSettings.use_mobile_layout:
 		_apply_mobile_sizing()
+	if auto_register:
+		var router := BoardModule.find_router(self)
+		if router:
+			router.register_handler(prompt_key, _on_router_show)
+
+
+func _on_router_show(matching: Array, all_cards: Array, prompt: String, min_count: int, max_count: int, pool_filter: Callable, resolve_cb: Callable) -> void:
+	var router := BoardModule.find_router(self)
+	var stacked := router.match_stacked_view if router else true
+	open(matching, all_cards, prompt, min_count, max_count, stacked, router.card_zoom_request, resolve_cb, _ask_host_to_view_board, pool_filter)
+
+
+func _ask_host_to_view_board() -> void:
+	var router := BoardModule.find_router(self)
+	if router and router.on_view_board_request.is_valid():
+		router.on_view_board_request.call(self)
 
 
 func _apply_mobile_sizing() -> void:

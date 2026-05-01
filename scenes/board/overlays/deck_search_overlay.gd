@@ -22,6 +22,14 @@ extends ColorRect
 signal stacked_toggled(stacked: bool)
 signal closed
 
+## Drop this scene anywhere under a GameBoard root and it self-registers
+## with the EffectUIRouter using `prompt_key`. To override the default
+## handler with a custom variant, place a second overlay scene with the
+## same `prompt_key` — last-registered wins. Set `auto_register = false`
+## if the host scene wants explicit control.
+@export var prompt_key: String = "deck_search"
+@export var auto_register: bool = true
+
 const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 
 @onready var _prompt: Label = $DeckSearchPanel/VBox/PromptLabel
@@ -49,6 +57,22 @@ func _ready() -> void:
 	_view_board_btn.pressed.connect(_on_view_board_pressed)
 	if GameSettings.use_mobile_layout:
 		_apply_mobile_sizing()
+	if auto_register:
+		var router := BoardModule.find_router(self)
+		if router:
+			router.register_handler(prompt_key, _on_router_show)
+
+
+func _on_router_show(matching: Array, all_cards: Array, prompt: String, allow_skip: bool, resolve_cb: Callable) -> void:
+	var router := BoardModule.find_router(self)
+	var stacked := router.match_stacked_view if router else true
+	open(matching, all_cards, prompt, allow_skip, stacked, router.card_zoom_request, resolve_cb, _ask_host_to_view_board)
+
+
+func _ask_host_to_view_board() -> void:
+	var router := BoardModule.find_router(self)
+	if router and router.on_view_board_request.is_valid():
+		router.on_view_board_request.call(self)
 
 
 func _apply_mobile_sizing() -> void:

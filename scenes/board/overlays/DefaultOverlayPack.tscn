@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/CardZoomOverlay.tscn" id="1_cz"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckSearchOverlay.tscn" id="2_dso"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/CardSelectOverlay.tscn" id="3_cso"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckArrangeOverlay.tscn" id="4_dao"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/DiscardViewOverlay.tscn" id="5_dv"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/MonsterDeckViewOverlay.tscn" id="6_mdv"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/ZoneStackViewOverlay.tscn" id="7_zsv"]
+
+[node name="DefaultOverlayPack" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CardZoomOverlay" parent="." instance=ExtResource("1_cz")]
+[node name="DeckSearchOverlay" parent="." instance=ExtResource("2_dso")]
+[node name="CardSelectOverlay" parent="." instance=ExtResource("3_cso")]
+[node name="DeckArrangeOverlay" parent="." instance=ExtResource("4_dao")]
+[node name="DiscardViewOverlay" parent="." instance=ExtResource("5_dv")]
+[node name="MonsterDeckViewOverlay" parent="." instance=ExtResource("6_mdv")]
+[node name="ZoneStackViewOverlay" parent="." instance=ExtResource("7_zsv")]

@@ -188,7 +188,7 @@ var _preview_bg: Panel
 var _preview_card: Control
 
 # Stored zone stack view data
-var _cards_revealed_active: bool = false
+var _cards_revealed_resolve: Callable = Callable()
 
 # Tracks the Card node that received the most recent effect-card highlight so
 # unhighlight can clear it by reference even if its card_data later mutates
@@ -467,6 +467,7 @@ func _ready() -> void:
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
 		_connect_game_signals(session.turn_manager)
+		_wire_effect_router()
 
 		# Set up replay recorder
 		_setup_replay_recorder()
@@ -677,6 +678,29 @@ const _SETTING_KEYS: Array[String] = [
 ]
 
 
+## Wire effect-prompt show handlers + the router's contextual callbacks once
+## the session is running. Called from _ready and the rematch path. The
+## router itself owns the dispatch logic — game_board just provides the
+## "show this overlay" callbacks.
+func _wire_effect_router() -> void:
+	effect_ui_router.card_zoom_request = _show_card_zoom
+	effect_ui_router.translate_prompt = _resolve_translated_text
+	effect_ui_router.on_pre_remote_dispatch = _flush_broadcast
+	effect_ui_router.on_pending_interaction = _set_pending_interaction
+	effect_ui_router.match_stacked_view = _match_stacked_view
+	effect_ui_router.register_handler("deck_search", _show_deck_search_overlay)
+	effect_ui_router.register_handler("deck_arrange", _show_deck_arrange_overlay)
+	effect_ui_router.register_handler("card_select", _show_card_select_overlay)
+	effect_ui_router.register_handler("choice", _show_choice_overlay)
+	effect_ui_router.register_handler("cards_revealed", _show_cards_revealed_overlay)
+	effect_ui_router.register_handler("monster_rankup", _show_monster_rankup_overlay)
+	effect_ui_router.bind(session, multiplayer_sync, local_player_id)
+
+
+func _set_pending_interaction(method: String, args: Array) -> void:
+	_pending_interaction = {"method": method, "args": args}
+
+
 ## Wire signals from a freshly-constructed TurnManager into game_board's
 ## handlers. Called from initial _ready setup and from the rematch path so
 ## the two paths share identical wiring.
@@ -706,13 +730,12 @@ func _connect_game_signals(tm: TurnManager) -> void:
 	ah.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
 	ah.counter_prevented.connect(_on_counter_prevented)
 	ah.monster_countered.connect(_on_monster_countered)
-	ah.monster_rankup_requested.connect(_on_monster_rankup_requested)
+	# monster_rankup_requested + the prompt signals on effect_handler are
+	# routed through EffectUIRouter — see _wire_effect_router().
 
-	# Effect handler — player choice prompts and visual highlights
+	# Effect handler — inline interactions, highlights, and logs that are
+	# NOT auto-routed by EffectUIRouter (those live on the router itself).
 	var eh := ah.effect_handler
-	eh.deck_search_requested.connect(_on_deck_search_requested)
-	eh.deck_arrange_requested.connect(_on_deck_arrange_requested)
-	eh.card_select_requested.connect(_on_card_select_requested)
 	eh.hand_discard_requested.connect(_on_hand_discard_requested)
 	eh.hand_card_selection_requested.connect(_on_hand_card_selection_requested)
 	eh.zone_target_requested.connect(_on_zone_target_requested)
@@ -721,8 +744,6 @@ func _connect_game_signals(tm: TurnManager) -> void:
 	eh.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
 	eh.effect_card_highlighted.connect(_on_effect_card_highlighted)
 	eh.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
-	eh.choice_requested.connect(_on_choice_requested)
-	eh.cards_revealed_requested.connect(_on_cards_revealed_requested)
 	eh.log_message.connect(_on_log_message)
 	eh.card_evolved.connect(_on_card_evolved)
 	eh.card_destroyed.connect(_on_card_destroyed)
@@ -3304,6 +3325,7 @@ func _execute_rematch() -> void:
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
 
 		_connect_game_signals(session.turn_manager)
+		_wire_effect_router()
 
 		# Reconnect bot player for Solo v Bot mode
 		if is_bot_game:
@@ -3831,12 +3853,12 @@ func _input(event: InputEvent) -> void:
 		elif deck_arrange_overlay.visible:
 			pass # Mandatory — must confirm
 		elif card_pool_select_overlay.visible:
-			_resolve_card_select_local([])
+			effect_ui_router.resolve_card_select([])
 			card_pool_select_overlay.close()
 		elif deck_search_overlay.visible:
 			# ESC dismisses only when skip is allowed; otherwise the prompt is mandatory.
 			if deck_search_overlay.skip_visible():
-				_resolve_deck_search_local({})
+				effect_ui_router.resolve_deck_search({})
 				deck_search_overlay.close()
 		elif discard_view_overlay.visible:
 			discard_view_overlay.close()
@@ -4276,31 +4298,15 @@ func _on_hand_drag_ended(card: Control) -> void:
 
 # --- Deck search UI ---
 
-func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, allow_skip: bool = true) -> void:
-	if is_bot_game and player_id == bot_player.bot_player_id:
-		return
-	if is_multiplayer_game and player_id != local_player_id:
-		_flush_broadcast() # Client needs up-to-date state before search
-		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
-		var all_json := JSON.stringify(_cards_to_ids(all_cards))
-		_pending_interaction = {"method": "deck_search", "args": [matching_json, all_json, prompt, allow_skip]}
-		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == player_id:
-				RpcLogger.log_send("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
-				multiplayer_sync._rpc_deck_search_requested.rpc_id(peer_id, matching_json, all_json, prompt, allow_skip)
-		return
-	_show_deck_search(matching_cards, all_cards, prompt, allow_skip)
-
-
-func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, allow_skip: bool = true) -> void:
+func _show_deck_search_overlay(matching: Array, all_cards: Array, prompt: String, allow_skip: bool, resolve_cb: Callable) -> void:
 	deck_search_overlay.open(
 		matching,
 		all_cards,
-		_resolve_translated_text(prompt),
+		prompt,  # already translated by router
 		allow_skip,
 		_match_stacked_view,
 		_show_card_zoom,
-		_resolve_deck_search_local,
+		resolve_cb,
 		_on_deck_search_view_board,
 	)
 
@@ -4755,27 +4761,15 @@ func _hide_deck_search() -> void:
 
 # --- Deck arrange overlay UI ---
 
-func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt: String) -> void:
-	if is_bot_game and player_id == bot_player.bot_player_id:
-		return
-	if is_multiplayer_game and player_id != local_player_id:
-		_flush_broadcast()
-		var cards_json := JSON.stringify(_cards_to_ids(cards))
-		_pending_interaction = {"method": "deck_arrange", "args": [cards_json, prompt]}
-		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == player_id:
-				RpcLogger.log_send("deck_arrange_requested", cards_json.length() + prompt.length())
-				multiplayer_sync._rpc_deck_arrange_requested.rpc_id(peer_id, cards_json, prompt)
-		return
-	_show_deck_arrange(cards, prompt)
-
-
-func _show_deck_arrange(cards: Array[Dictionary], prompt: String) -> void:
+func _show_deck_arrange_overlay(cards: Array, prompt: String, resolve_cb: Callable) -> void:
 	deck_arrange_overlay.open(
 		cards,
-		_resolve_translated_text(prompt),
+		prompt,
 		_show_card_zoom,
-		_on_deck_arrange_resolved,
+		func(keep: Array, discard: Array):
+			show_cards_button.visible = false
+			_view_board_source_overlay = null
+			resolve_cb.call(keep, discard),
 		_on_deck_arrange_view_board,
 	)
 
@@ -4785,43 +4779,18 @@ func _on_deck_arrange_view_board() -> void:
 	show_cards_button.visible = true
 
 
-func _on_deck_arrange_resolved(keep: Array, discard: Array) -> void:
-	show_cards_button.visible = false
-	_view_board_source_overlay = null
-	_resolve_deck_arrange_local(keep, discard)
-
-
 # --- Card select overlay UI ---
 
-func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int) -> void:
-	if is_bot_game and player_id == bot_player.bot_player_id:
-		return
-	if is_multiplayer_game and player_id != local_player_id:
-		_flush_broadcast()
-		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
-		var all_json := JSON.stringify(_cards_to_ids(all_cards))
-		_pending_interaction = {"method": "card_select", "args": [matching_json, all_json, prompt, min_count, max_count]}
-		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == player_id:
-				RpcLogger.log_send("card_select_requested", matching_json.length() + all_json.length() + prompt.length())
-				multiplayer_sync._rpc_card_select_requested.rpc_id(peer_id, matching_json, all_json, prompt, min_count, max_count)
-		return
-	_show_card_select(matching_cards, all_cards, prompt, min_count, max_count)
-
-
-func _show_card_select(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int) -> void:
-	var pool_filter := Callable()
-	if session.is_running():
-		pool_filter = session.effect_handler._card_select_pool_filter
+func _show_card_select_overlay(matching: Array, all_cards: Array, prompt: String, min_count: int, max_count: int, pool_filter: Callable, resolve_cb: Callable) -> void:
 	card_pool_select_overlay.open(
 		matching,
 		all_cards,
-		_resolve_translated_text(prompt),
+		prompt,
 		min_count,
 		max_count,
 		_match_stacked_view,
 		_show_card_zoom,
-		_resolve_card_select_local,
+		resolve_cb,
 		_on_card_pool_select_view_board,
 		pool_filter,
 	)
@@ -5212,47 +5181,24 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 
 # --- Standby ability order choice UI ---
 
-func _on_choice_requested(player_id: int, options: Array[String], prompt: String) -> void:
-	if is_bot_game and player_id == bot_player.bot_player_id:
-		return
-	if is_multiplayer_game and player_id != local_player_id:
-		_flush_broadcast()
-		var options_json := JSON.stringify(options)
-		_pending_interaction = {"method": "choice", "args": [options_json, prompt]}
-		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == player_id:
-				RpcLogger.log_send("choice_requested", options_json.length() + prompt.length())
-				multiplayer_sync._rpc_choice_requested.rpc_id(peer_id, options_json, prompt)
-		return
-	_show_choice_selection(player_id, options, prompt)
-
-
-func _show_choice_selection(player_id: int, options: Array[String], prompt: String) -> void:
+func _show_choice_overlay(options: Array, prompt: String, resolve_cb: Callable) -> void:
 	_choice_selecting = true
-	_choice_player_id = player_id
+	_choice_player_id = local_player_id
 
 	_disable_all_buttons()
-	# Hide the normal action button rows so only choice buttons show
 	_set_action_buttons_visible(false)
-	card_select_prompt.text = _resolve_translated_text(prompt)
+	card_select_prompt.text = prompt
 	action_prompt_panel.visible = true
 
-	var translated: Array[String] = []
+	var typed_options: Array[String] = []
 	for opt in options:
-		translated.append(_resolve_translated_text(opt))
-	_choice_overlay.open(self, action_panel, translated, _is_mobile_layout, _on_choice_button_pressed)
-
-
-func _on_choice_button_pressed(index: int) -> void:
-	if not _choice_selecting:
-		return
-	_cleanup_choice_selection()
-
-	if is_multiplayer_game and not NetworkManager.is_host():
-		RpcLogger.log_send("choice_resolved", 4)
-		multiplayer_sync._rpc_choice_resolved.rpc_id(NetworkManager.host_peer_id, index)
-	else:
-		session.effect_handler.resolve_choice(index)
+		typed_options.append(str(opt))
+	_choice_overlay.open(self, action_panel, typed_options, _is_mobile_layout,
+		func(index: int):
+			if not _choice_selecting:
+				return
+			_cleanup_choice_selection()
+			resolve_cb.call(index))
 
 
 func _cleanup_choice_selection() -> void:
@@ -5360,53 +5306,27 @@ func _on_monster_deck_clicked(pid: int) -> void:
 
 # --- Monster rank-up selection UI ---
 
-func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
-	if is_bot_game and player_id == bot_player.bot_player_id:
-		return
-	if is_multiplayer_game and player_id != local_player_id:
-		_flush_broadcast()
-		var monsters_json := JSON.stringify(_cards_to_ids(monsters))
-		var indices_json := JSON.stringify(valid_indices)
-		_pending_interaction = {"method": "monster_rankup", "args": [monsters_json, indices_json, prompt]}
-		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == player_id:
-				RpcLogger.log_send("monster_rankup_requested", monsters_json.length() + indices_json.length() + prompt.length())
-				multiplayer_sync._rpc_monster_rankup_requested.rpc_id(peer_id, monsters_json, indices_json, prompt)
-		return
-	_play_action_required_if_not_turn_player(player_id)
-	_show_monster_rankup_selection(player_id, monsters, valid_indices, prompt)
-
-
 func _play_action_required_if_not_turn_player(player_id: int) -> void:
 	if session.is_running() and player_id != session.game_state.current_player_id:
 		SfxManager.play("action_required")
 
 
-func _show_monster_rankup_selection(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
+func _show_monster_rankup_overlay(monsters: Array, valid_indices: Array[int], prompt: String, resolve_cb: Callable) -> void:
 	_rankup_selecting = true
-	_rankup_player_id = player_id
+	_rankup_player_id = local_player_id
 	_rankup_valid_indices = valid_indices
 
 	_disable_all_buttons()
 	monster_deck_view_overlay.open_rankup(
 		monsters,
 		valid_indices,
-		_resolve_translated_text(prompt),
+		prompt,
 		_show_card_zoom,
-		_resolve_rankup,
-	)
-
-
-func _resolve_rankup(index: int) -> void:
-	if not _rankup_selecting:
-		return
-	_cleanup_rankup_selection()
-
-	if is_multiplayer_game and not NetworkManager.is_host():
-		RpcLogger.log_send("monster_rankup_resolved", 4)
-		multiplayer_sync._rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, index)
-	else:
-		session.action_handler.resolve_monster_rankup(index)
+		func(index: int):
+			if not _rankup_selecting:
+				return
+			_cleanup_rankup_selection()
+			resolve_cb.call(index))
 
 
 func _cleanup_rankup_selection() -> void:
@@ -5459,17 +5379,16 @@ func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
 
 
 func _on_zone_stack_view_closed() -> void:
-	if _cards_revealed_active:
-		_cards_revealed_active = false
-		session.effect_handler.resolve_cards_revealed()
+	if _cards_revealed_resolve.is_valid():
+		var cb := _cards_revealed_resolve
+		_cards_revealed_resolve = Callable()
+		cb.call()
 
 
-func _on_cards_revealed_requested(player_id: int, cards: Array[Dictionary], title: String) -> void:
-	if is_bot_game and player_id == bot_player.bot_player_id:
-		return
+func _show_cards_revealed_overlay(cards: Array, title: String, resolve_cb: Callable) -> void:
 	var labelled := tr("STR_GB_TITLE_COUNT_FMT").replace("{TITLE}", title).replace("{C}", str(cards.size()))
 	zone_stack_view_overlay.open(cards, labelled, _show_card_zoom)
-	_cards_revealed_active = true
+	_cards_revealed_resolve = resolve_cb
 
 
 # --- Card zoom (right-click) UI ---
@@ -5638,36 +5557,8 @@ func _clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 		child.queue_free()
 
 
-func _resolve_deck_search_local(selected: Dictionary) -> void:
-	if is_multiplayer_game and not NetworkManager.is_host():
-		# Client sends selection back to host
-		var _search_json := JSON.stringify(selected)
-		RpcLogger.log_send("deck_search_resolved", _search_json.length())
-		multiplayer_sync._rpc_deck_search_resolved.rpc_id(NetworkManager.host_peer_id, _search_json)
-	else:
-		session.effect_handler.resolve_deck_search(selected)
-
-
-func _resolve_deck_arrange_local(keep: Array[Dictionary], discard: Array[Dictionary]) -> void:
-	if is_multiplayer_game and not NetworkManager.is_host():
-		var _keep_json := JSON.stringify(keep)
-		var _discard_json := JSON.stringify(discard)
-		RpcLogger.log_send("deck_arrange_resolved", _keep_json.length() + _discard_json.length())
-		multiplayer_sync._rpc_deck_arrange_resolved.rpc_id(NetworkManager.host_peer_id, _keep_json, _discard_json)
-	else:
-		session.effect_handler.resolve_deck_arrange(keep, discard)
-
-
-func _resolve_card_select_local(selected: Array) -> void:
-	if is_multiplayer_game and not NetworkManager.is_host():
-		var selected_json := JSON.stringify(_cards_to_ids(selected))
-		RpcLogger.log_send("card_select_resolved", selected_json.length())
-		multiplayer_sync._rpc_card_select_resolved.rpc_id(NetworkManager.host_peer_id, selected_json)
-	else:
-		var typed: Array[Dictionary] = []
-		for card in selected:
-			typed.append(card)
-		session.effect_handler.resolve_card_select(typed)
+# _resolve_X_local helpers moved to EffectUIRouter._resolve_X — the router
+# handles host vs client RPC routing internally for every prompt key.
 
 
 # --- Multiplayer: State broadcast (host -> client) ---
@@ -6362,7 +6253,7 @@ func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt:
 	RpcLogger.log_receive("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
 	var all_ids: Array = JSON.parse_string(all_json)
-	_show_deck_search(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt, allow_skip)
+	effect_ui_router.show_deck_search(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt, allow_skip)
 
 
 ## Client -> Host: deck search resolved (player chose a card or skipped)
@@ -6387,7 +6278,7 @@ func _rpc_deck_arrange_requested(cards_json: String, prompt: String) -> void:
 	if NetworkManager.is_host():
 		return
 	var card_ids: Array = JSON.parse_string(cards_json)
-	_show_deck_arrange(_ids_to_cards(card_ids), prompt)
+	effect_ui_router.show_deck_arrange(_ids_to_cards(card_ids), prompt)
 
 
 ## Client -> Host: deck arrange resolved (player arranged cards)
@@ -6416,7 +6307,7 @@ func _rpc_card_select_requested(matching_json: String, all_json: String, prompt:
 	RpcLogger.log_receive("card_select_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
 	var all_ids: Array = JSON.parse_string(all_json)
-	_show_card_select(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt, min_count, max_count)
+	effect_ui_router.show_card_select(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt, min_count, max_count)
 
 
 ## Client -> Host: card select resolved (player selected cards or skipped)
@@ -6585,7 +6476,7 @@ func _rpc_choice_requested(options_json: String, prompt: String) -> void:
 	var options: Array[String] = []
 	for v in parsed:
 		options.append(str(v))
-	_show_choice_selection(local_player_id, options, prompt)
+	effect_ui_router.show_choice(options, prompt)
 
 
 ## Client -> Host: choice resolved (player chose an option)
@@ -6611,7 +6502,7 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 	for v in parsed_indices:
 		valid_indices.append(int(v))
 	SfxManager.play("action_required")
-	_show_monster_rankup_selection(local_player_id, monsters, valid_indices, prompt)
+	effect_ui_router.show_monster_rankup(monsters, valid_indices, prompt)
 
 
 ## Client -> Host: resolve monster rank-up selection

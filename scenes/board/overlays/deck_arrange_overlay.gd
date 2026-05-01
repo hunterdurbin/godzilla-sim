@@ -22,6 +22,9 @@ extends ColorRect
 
 signal closed
 
+@export var prompt_key: String = "deck_arrange"
+@export var auto_register: bool = true
+
 const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 const _CARD_SIZE := Vector2(100, 140)
 
@@ -53,6 +56,21 @@ func _ready() -> void:
 	_confirm_btn.pressed.connect(_on_confirm)
 	if GameSettings.use_mobile_layout:
 		_apply_mobile_sizing()
+	if auto_register:
+		var router := BoardModule.find_router(self)
+		if router:
+			router.register_handler(prompt_key, _on_router_show)
+
+
+func _on_router_show(cards: Array, prompt: String, resolve_cb: Callable) -> void:
+	var router := BoardModule.find_router(self)
+	open(cards, prompt, router.card_zoom_request, resolve_cb, _ask_host_to_view_board)
+
+
+func _ask_host_to_view_board() -> void:
+	var router := BoardModule.find_router(self)
+	if router and router.on_view_board_request.is_valid():
+		router.on_view_board_request.call(self)
 
 
 func _apply_mobile_sizing() -> void:

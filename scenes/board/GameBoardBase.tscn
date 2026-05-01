@@ -1,0 +1,36 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/game_board_base.gd" id="1_gbb"]
+[ext_resource type="Script" path="res://scripts/session/game_session.gd" id="2_gs"]
+[ext_resource type="Script" path="res://scripts/session/multiplayer_sync.gd" id="3_ms"]
+[ext_resource type="Script" path="res://scripts/session/effect_ui_router.gd" id="4_eur"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/DefaultOverlayPack.tscn" id="5_dop"]
+
+[node name="GameBoard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gbb")
+
+[node name="GameSession" type="Node" parent="."]
+script = ExtResource("2_gs")
+
+[node name="MultiplayerSync" type="Node" parent="GameSession"]
+script = ExtResource("3_ms")
+
+[node name="EffectUIRouter" type="Node" parent="GameSession"]
+script = ExtResource("4_eur")
+
+[node name="DefaultOverlayPack" parent="." instance=ExtResource("5_dop")]
+
+[node name="BoardLayoutSlot" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

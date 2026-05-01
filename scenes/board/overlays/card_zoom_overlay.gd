@@ -15,6 +15,11 @@ extends ColorRect
 
 signal closed
 
+## Drop this scene anywhere under a GameBoard root and it self-registers
+## as the router's card_zoom_request handler. Other overlays automatically
+## get a working zoom callback without the host wiring it.
+@export var auto_register: bool = true
+
 const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 const _PINCH_MAX_SCALE: float = 3.0
 const _ZOOM_DRAG_DEADZONE: float = 20.0
@@ -37,6 +42,10 @@ func _ready() -> void:
 	visible = false
 	z_index = 200
 	gui_input.connect(_on_overlay_gui_input)
+	if auto_register:
+		var router := BoardModule.find_router(self)
+		if router:
+			router.card_zoom_request = show_card
 
 
 func show_card(card_data: Dictionary, play_cost_modifier: int = 0) -> void:

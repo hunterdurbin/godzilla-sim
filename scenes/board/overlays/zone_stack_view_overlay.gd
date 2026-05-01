@@ -9,6 +9,12 @@ extends ColorRect
 
 signal closed
 
+## Routes the "cards_revealed" effect prompt by default. The host scene's
+## click-to-view-zone-stack flow uses `open()` directly, which doesn't
+## involve the router.
+@export var prompt_key: String = "cards_revealed"
+@export var auto_register: bool = true
+
 const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 
 @onready var _title: Label = $ZoneStackViewPanel/VBox/TitleLabel
@@ -26,6 +32,27 @@ func _ready() -> void:
 	gui_input.connect(_on_background_input)
 	if GameSettings.use_mobile_layout:
 		_apply_mobile_sizing()
+	if auto_register:
+		var router := BoardModule.find_router(self)
+		if router:
+			router.register_handler(prompt_key, _on_router_show)
+			closed.connect(_on_router_closed)
+
+
+var _pending_resolve: Callable = Callable()
+
+
+func _on_router_show(cards: Array, title: String, resolve_cb: Callable) -> void:
+	var router := BoardModule.find_router(self)
+	open(cards, title, router.card_zoom_request)
+	_pending_resolve = resolve_cb
+
+
+func _on_router_closed() -> void:
+	if _pending_resolve.is_valid():
+		var cb := _pending_resolve
+		_pending_resolve = Callable()
+		cb.call()
 
 
 func _apply_mobile_sizing() -> void:

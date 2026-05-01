@@ -1,17 +1,27 @@
 extends Control
 
-## Stub presentation scene — PROVES the GameSession API is sufficient to drive
-## a game with no inline runtime construction. Intentionally ugly: the only
-## job is to demonstrate that a fresh scene wired against `GameSession` /
-## `MultiplayerSync` / `EffectUIRouter` can run the existing logic layer.
+## Stub presentation scene + designer template for a new GameBoard.
 ##
-## Future polished GameBoard scenes use this as the contract template.
-##
-## Required scene-tree contract (any GameBoard scene that wants multiplayer
-## must include these named children at the same NodePath on host and client):
+## Required scene-tree contract — any GameBoard scene that wants the full
+## logic + multiplayer + effect-prompt routing must include these named
+## children at the same NodePath on host and client:
 ##   - GameSession             (Node + game_session.gd)
 ##     - MultiplayerSync       (Node + multiplayer_sync.gd)
 ##     - EffectUIRouter        (Node + effect_ui_router.gd)
+##
+## Optional scene children (registered with the EffectUIRouter):
+##   - DiscardViewOverlay, MonsterDeckViewOverlay, ZoneStackViewOverlay,
+##     CardZoomOverlay, DeckSearchOverlay, DeckArrangeOverlay,
+##     CardSelectOverlay
+##   - Plus a ChoiceOverlay controller instance (no .tscn — see choice_overlay.gd)
+##
+## Designer wiring summary (the bare minimum to get a running game):
+##   1. session.start_host_session(CardData, local_player_id)
+##   2. session.setup_bot(local_player_id) if is_bot_game
+##   3. session.start_game(first_player_id)
+##   4. effect_ui_router.bind(session, multiplayer_sync, local_player_id)
+##      after registering your overlay-show handlers.
+##   5. Connect to session.turn_manager signals for phase/turn/log updates.
 
 @onready var session: GameSession = $GameSession
 @onready var multiplayer_sync: MultiplayerSync = $GameSession/MultiplayerSync
@@ -45,9 +55,11 @@ func _ready() -> void:
 
 
 func _start_host_or_solo() -> void:
-	print("[NewGameBoard] start_host_or_solo: calling session.start_host_session")
-	var tm := session.start_host_session(CardData, local_player_id)
-	print("[NewGameBoard] turn_manager constructed: %s" % tm)
+	session.start_host_session(CardData, local_player_id)
+
+	# Wire game-loop signals (these are TurnManager signals — GameSession
+	# does not yet re-emit them; bind directly to session.turn_manager).
+	var tm := session.turn_manager
 	tm.phase_started.connect(_on_phase_started)
 	tm.turn_started.connect(_on_turn_started)
 	tm.awaiting_player_action.connect(_on_awaiting_action)
@@ -57,12 +69,18 @@ func _start_host_or_solo() -> void:
 
 	if is_bot_game:
 		session.setup_bot(local_player_id)
-		print("[NewGameBoard] bot configured")
 
-	# Auto-pick first player so the loop doesn't stall on coin flip
-	tm.start_game(0)
-	print("[NewGameBoard] start_game(0) returned")
+	# A real GameBoard scene would register overlay handlers here:
+	#   effect_ui_router.register_handler("deck_search", _show_my_deck_search)
+	#   effect_ui_router.register_handler("card_select", _show_my_card_select)
+	#   ... etc.
+	# Then call effect_ui_router.bind(session, multiplayer_sync, local_player_id).
+	# This stub skips overlay registration — effect prompts will silently
+	# auto-resolve or warn in the log.
+
+	session.start_game(0)
 	_log("Game started (host/solo).")
+	print("[NewGameBoard] start_game(0) returned")
 
 
 func _on_phase_started(phase: CardEnums.GamePhase) -> void:
@@ -70,14 +88,12 @@ func _on_phase_started(phase: CardEnums.GamePhase) -> void:
 
 
 func _on_turn_started(player_id: int) -> void:
-	status_turn.text = "Turn: %d" % session.turn_manager.game_state.turn_number
+	status_turn.text = "Turn: %d" % session.game_state.turn_number
 	status_player.text = "Active: %s" % GameLog.player_name(player_id)
 
 
 func _on_awaiting_action(_valid_actions: Array) -> void:
-	# Local player's turn — enable End Main; bot turn stays disabled.
-	var current_pid := session.turn_manager.game_state.current_player_id
-	var local_turn := current_pid == local_player_id
+	var local_turn := session.current_player_id() == local_player_id
 	btn_end.disabled = not local_turn or is_bot_game
 
 
@@ -94,13 +110,12 @@ func _on_log_message(token) -> void:
 
 
 func _on_confirmation_requested(_prompt: String, _setting: String) -> void:
-	# Stub auto-confirms anything (no UI for prompts yet).
-	session.turn_manager.confirm()
+	# Stub auto-confirms anything (no prompt UI yet).
+	session.confirm()
 
 
 func _on_end_main_pressed() -> void:
-	if session.turn_manager:
-		session.turn_manager.submit_action(CardEnums.ActionType.PASS, {})
+	session.submit_action(CardEnums.ActionType.PASS, {})
 
 
 func _on_menu_pressed() -> void:

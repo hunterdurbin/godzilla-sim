@@ -29,6 +29,12 @@ var _board: Node
 
 func _ready() -> void:
 	_board = get_parent()
+	# Cross-scene multiplayer contract: every GameBoard scene's root node
+	# must be named "GameBoard" so MultiplayerSync's NodePath is identical
+	# on host and client even when they load different .tscn files (mobile
+	# vs desktop, etc.). Catching this at startup beats a silent RPC break.
+	if _board and _board.name != "GameBoard":
+		push_error("[GameSession] Parent node is named '%s' — must be named 'GameBoard' for cross-scene multiplayer to work. See docs/new_game_board.md." % _board.name)
 
 
 ## Snapshot accessors for properties that change as the game progresses.

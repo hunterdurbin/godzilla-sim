@@ -16,6 +16,11 @@ extends ColorRect
 signal stacked_toggled(stacked: bool)
 signal closed
 
+## Auto-routes the "monster_rankup" effect prompt. The user-initiated
+## "view monster deck" flow uses `open_view()` directly without the router.
+@export var prompt_key: String = "monster_rankup"
+@export var auto_register: bool = true
+
 const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 
 @onready var _title: Label = $MonsterDeckViewPanel/VBox/TitleLabel
@@ -38,6 +43,15 @@ func _ready() -> void:
 	_stacked_toggle.toggled.connect(_on_stacked_toggled)
 	if GameSettings.use_mobile_layout:
 		_apply_mobile_sizing()
+	if auto_register:
+		var router := BoardModule.find_router(self)
+		if router:
+			router.register_handler(prompt_key, _on_router_show)
+
+
+func _on_router_show(monsters: Array, valid_indices: Array[int], prompt: String, resolve_cb: Callable) -> void:
+	var router := BoardModule.find_router(self)
+	open_rankup(monsters, valid_indices, prompt, router.card_zoom_request, resolve_cb)
 
 
 func _apply_mobile_sizing() -> void:
