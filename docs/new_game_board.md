@@ -277,11 +277,32 @@ roles plus an action panel for the seated player.
    `hide_prompt()`). GameBoardBase finds the first descendant with the
    `action_pressed` signal — your custom panel just needs that.
 
-   **Drag-to-zone is not yet supported**: the default
-   SelectionModeController is click-only. If you want drag input
-   layered on top, override `selection_controller` in your subclass'
-   `_on_host_ready()` and roll your own — `game_board.gd` is the
-   reference for the drag flow (~200 lines around `_drag_*` state).
+   **Drag-to-zone is built in.** SelectionModeController also listens
+   to each PlayerBoard's `hand_manager.hand_card_drag_started` /
+   `_drag_ended` signals. On drag-start it queries the rules engine
+   for valid drop targets (zones, strategy slots, rage zone, discard
+   zone) and highlights them on the active PlayerBoard. On drag-end
+   it submits the matching action based on which target the mouse
+   is over. Click and drag both work; the click flow stays available
+   for keyboard-only / accessibility paths.
+
+   Snap-preview animation while dragging is **not** included — the
+   default just highlights and submits. Designer can layer that on
+   per-scene if they want (see `game_board.gd._update_snap_preview`
+   for the reference implementation).
+
+   **Pass-confirmation** is settings-gated. If
+   `GameSettings.confirm_main_phase_pass` is on, pressing End Main
+   shows a "End your turn?" prompt on the action panel; press Confirm
+   to submit, Cancel to back out.
+
+   **Auto-confirm overlays** for engine confirmation prompts (draw
+   cards, discard strategies, etc.) are also settings-gated. If the
+   relevant `GameSettings.auto_X` flag is on, the engine's
+   `confirmation_requested` is auto-acknowledged. Otherwise the
+   action panel shows a Confirm/Cancel prompt and the local player
+   decides. Spectators and bot turns auto-confirm regardless (no UI
+   to ask).
 
 **6. Override the visual hooks in your controller.**
 
@@ -573,6 +594,7 @@ auto-bind pattern. Drop one in, configure via the inspector, done.
 | `EndGamePanel.tscn` | — | `TurnManager.game_ended`; emits `rematch_pressed` / `menu_pressed` |
 | `BoardSfx.tscn` | `sound_for_local_player_id` | every action / effect / turn signal → SfxManager |
 | `ActionPanel.tscn` | — | drop-in 6-action panel + Cancel/Confirm + prompt; auto-wires to SelectionModeController via GameBoardBase |
+| `HandSortButton.tscn` | `player_id` (overridden by SeatContainer) | sort the seat's hand using GameSettings sort order on press |
 
 These are small and intentionally minimal — they're starting points,
 not the final visual. To customize, copy the .gd, change the visuals,

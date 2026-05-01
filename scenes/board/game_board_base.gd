@@ -82,9 +82,33 @@ func _on_turn_started(_player_id: int) -> void: pass
 func _on_awaiting_action(_valid_actions: Array) -> void: pass
 func _on_game_ended(_winner_id: int, _reason_key: String) -> void: pass
 func _on_log_message(_token) -> void: pass
-func _on_confirmation_requested(_prompt: String, setting: String) -> void:
-	# Default: auto-confirm anything. Subclasses override to show a UI.
+func _on_confirmation_requested(prompt: String, setting: String) -> void:
+	# Settings-gated auto-confirm. If GameSettings.X is on, fire the
+	# host's confirm() immediately. Otherwise prompt the local player
+	# via the action panel (when one is wired) and confirm only if
+	# they press Confirm. Spectator and AI-only scenes fall through to
+	# auto-confirm since they have no UI to ask.
+	var auto_on: bool = false
+	if setting != "" and setting in GameSettings:
+		auto_on = bool(GameSettings.get(setting))
+	if auto_on:
+		session.confirm()
+		return
+	if selection_controller and _action_panel_visible_for_local_turn():
+		selection_controller.prompt_confirmation(prompt, session.confirm)
+		return
+	# No UI available — keep the engine moving.
 	session.confirm()
+
+
+func _action_panel_visible_for_local_turn() -> bool:
+	# Only prompt the local seated player. Bot's turn or spectator: skip.
+	if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
+		if session.current_player_id() != local_player_id:
+			return false
+	if NetworkManager.is_spectator():
+		return false
+	return true
 
 
 ## Override for client-side bootstrap (e.g. show a "waiting for host" panel).
