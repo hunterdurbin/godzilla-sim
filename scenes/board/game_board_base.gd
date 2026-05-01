@@ -60,6 +60,7 @@ func _ready() -> void:
 
 	_wire_effect_router()
 	_connect_session_signals()
+	_wire_player_boards()
 	_on_host_ready()
 
 	# Auto-pick first player so the loop doesn't stall on coin flip in solo
@@ -121,6 +122,54 @@ func _resolve_translated_text(text: String) -> String:
 
 
 # --- Internal wiring ---
+
+## Find every PlayerBoard descendant in the scene tree and wire its
+## snapshot_provider so it can self-refresh from session state. Designers
+## who want different behavior can disable a board's `auto_bind` in the
+## inspector or override this method.
+func _wire_player_boards() -> void:
+	for board in _find_descendants_of_class("PlayerBoard"):
+		if board.auto_bind and not board.snapshot_provider.is_valid():
+			board.snapshot_provider = _player_snapshot
+
+
+## Default snapshot provider for host mode. Reads modifiers off
+## session.effect_handler. Designer subclasses can override for client
+## mode (where modifiers come from broadcast state).
+func _player_snapshot(pid: int) -> Dictionary:
+	if not session.is_running() or session.game_state == null:
+		return {}
+	var eh := session.effect_handler
+	var zone_cp: Array = eh.get_zone_cp_modifiers(pid) if eh else []
+	var strat_cp: Array = eh.get_strategy_cp_modifiers(pid) if eh else []
+	var monster_cp: int = eh.get_monster_cp_modifier(pid) if eh else 0
+	var cp_mod: int = monster_cp
+	for v in zone_cp: cp_mod += v
+	for v in strat_cp: cp_mod += v
+	return {
+		"state": session.game_state.players[pid],
+		"cp_mod": cp_mod,
+		"threat_mod": eh.get_threat_level_modifier(pid) if eh else 0,
+		"zone_cp_mods": zone_cp,
+		"strategy_cp_mods": strat_cp,
+		"zone_rank_mods": eh.get_zone_rank_modifiers(pid) if eh else [],
+		"monster_cp_mod": monster_cp,
+		"hand_rank_mods": [],  # subclass can override to populate from EffectHandler
+	}
+
+
+func _find_descendants_of_class(class_name_str: String) -> Array:
+	var out: Array = []
+	_walk_for_class(self, class_name_str, out)
+	return out
+
+
+func _walk_for_class(node: Node, class_name_str: String, out: Array) -> void:
+	for child in node.get_children():
+		if child.get_class() == class_name_str or (child.get_script() != null and str(child.get_script().get_global_name()) == class_name_str):
+			out.append(child)
+		_walk_for_class(child, class_name_str, out)
+
 
 func _wire_effect_router() -> void:
 	effect_ui_router.translate_prompt = _resolve_translated_text

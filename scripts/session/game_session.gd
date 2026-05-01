@@ -11,6 +11,11 @@ extends Node
 ## The presentation scene reads `turn_manager` off this node (or via a typed
 ## accessor added in Phase 4) and connects to its signals.
 
+## Fired once start_host_session() has wired turn_manager + forwarders.
+## Modules that need to subscribe to PlayerState signals or read game_state
+## should listen for this — PlayerBoard's auto-bind uses it.
+signal session_started
+
 var turn_manager: TurnManager
 var bot_player: BotPlayer
 var replay_recorder: ReplayRecorder
@@ -116,6 +121,7 @@ func start_host_session(card_data_node: Node, local_player_id: int, loaded_save:
 	rules_engine = turn_manager.rules_engine
 	game_state = turn_manager.game_state
 
+	session_started.emit()
 	return turn_manager
 
 

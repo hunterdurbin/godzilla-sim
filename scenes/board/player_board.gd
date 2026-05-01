@@ -19,6 +19,25 @@ signal card_preview_cleared()
 @export var player_id: int = 0
 @export var is_mirrored: bool = false # True for player 2 (top of screen)
 
+## Auto-bind to GameSession via tree-walk (BoardModule). When true, the
+## board subscribes to its PlayerState's mutation signals and refreshes
+## itself — no `sync_to_state()` push call needed from the host scene.
+##
+## Default false to preserve existing GameBoard.tscn behavior (game_board.gd
+## explicitly drives sync_to_state). New scenes built on GameBoardBase set
+## this to true (and provide a `snapshot_provider`) for drop-in modularity.
+@export var auto_bind: bool = false
+
+## Callable that returns a snapshot Dictionary for a player_id. Used by
+## auto-bind mode to fetch state + modifiers without coupling PlayerBoard
+## to host-vs-client mode logic. Signature: `(pid: int) -> Dictionary`.
+## Expected dict keys (all optional with sensible defaults):
+##   state, cp_mod, threat_mod, zone_cp_mods, strategy_cp_mods,
+##   zone_rank_mods, monster_cp_mod, hand_rank_mods
+var snapshot_provider: Callable = Callable()
+
+var _bound_player: PlayerState = null
+
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
 # SVG viewBox dimensions for aspect ratio calculation
@@ -63,6 +82,58 @@ func _ready() -> void:
 	_apply_custom_playmat()
 	resized.connect(_update_layout)
 	_update_layout()
+	if auto_bind:
+		_try_bind_to_session()
+
+
+# --- Auto-bind to GameSession (drop-in modular usage) ---
+
+func _try_bind_to_session() -> void:
+	var session := BoardModule.find_session(self)
+	if session == null:
+		return
+	if session.is_running():
+		_bind_to_session(session)
+	else:
+		session.session_started.connect(func(): _bind_to_session(session), CONNECT_ONE_SHOT)
+
+
+func _bind_to_session(session: GameSession) -> void:
+	var p := session.get_player(player_id)
+	if p == null:
+		return
+	if _bound_player == p:
+		return
+	_bound_player = p
+	p.hand_changed.connect(_on_bound_state_changed)
+	p.zones_changed.connect(_on_bound_state_changed)
+	p.rage_changed.connect(_on_bound_state_changed.unbind(1))
+	p.monster_changed.connect(_on_bound_state_changed)
+	p.discard_changed.connect(_on_bound_state_changed)
+	p.deck_changed.connect(_on_bound_state_changed)
+	p.strategy_zones_changed.connect(_on_bound_state_changed)
+	_on_bound_state_changed()
+
+
+func _on_bound_state_changed() -> void:
+	if _bound_player == null:
+		return
+	if snapshot_provider.is_valid():
+		var snap = snapshot_provider.call(player_id)
+		if typeof(snap) == TYPE_DICTIONARY and not snap.is_empty():
+			sync_to_state(
+				snap.get("state", _bound_player),
+				int(snap.get("cp_mod", 0)),
+				int(snap.get("threat_mod", 0)),
+				snap.get("zone_cp_mods", []),
+				snap.get("strategy_cp_mods", []),
+				snap.get("zone_rank_mods", []),
+				int(snap.get("monster_cp_mod", 0)),
+				snap.get("hand_rank_mods", []))
+			return
+	# No snapshot_provider — refresh with no modifiers (sensible default for
+	# scenes that don't yet have effect-modifier rendering).
+	sync_to_state(_bound_player)
 
 
 func _update_layout() -> void:
