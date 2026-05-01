@@ -19,6 +19,9 @@ func _try_bind() -> void:
 	_session = BoardModule.find_session(self)
 	if _session == null:
 		return
+	var seat := BoardModule.find_seat(self)
+	if seat:
+		player_id = seat.get_player_id()
 	if _session.is_running() or not _session.client_players.is_empty():
 		_bind(_session)
 	else:

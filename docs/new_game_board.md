@@ -101,6 +101,72 @@ If you want absolute control, set `auto_register = false` on the default
 overlay's instance and explicitly call `router.register_handler()` from
 your scene's script.
 
+### Seat containers — assign players to sides without per-module config
+
+A `SeatContainer` (`scenes/board/SeatContainer.tscn`) is a Control with
+a `role` property (`LOCAL` / `OPPONENT` / `PLAYER_0` / `PLAYER_1`). Any
+module dropped under it auto-resolves its `player_id` from the seat
+instead of needing the inspector to be set per-module.
+
+This is the canonical way to build a player-portable scene. The same
+saved scene file works whether the local player is 0 (host) or 1
+(client) — `LOCAL` resolves to `NetworkManager.local_player_id` at
+scene-load.
+
+`GameBoardBase.tscn` already includes two seat containers as
+scaffolding:
+
+```
+GameBoard
+├── GameSession ...
+└── BoardLayoutSlot
+    ├── OpponentSeat   (SeatContainer, role=OPPONENT, top half)
+    └── LocalSeat      (SeatContainer, role=LOCAL,    bottom half)
+```
+
+Drop a `PlayerBoard.tscn` (with `auto_bind=true`) plus any HUD
+primitives inside `LocalSeat` — they'll resolve to the local player's
+id at runtime. Same for `OpponentSeat`. **Designer never sets
+`player_id` per module.**
+
+```
+LocalSeat
+├── PlayerBoard         (auto_bind=true; resolves via seat)
+├── RageDisplay         (resolves via seat)
+├── ThreatDisplay
+└── DiscardCountLabel
+```
+
+If a module is *not* under any SeatContainer (e.g., a `LogPanel` or
+a global `TurnNumberLabel` floating outside both seats), it falls back
+to its own `@export player_id` — the seat lookup is opt-in by
+placement.
+
+#### Roles
+
+| Role | Resolves to |
+| --- | --- |
+| `LOCAL` | `NetworkManager.local_player_id` |
+| `OPPONENT` | `1 - NetworkManager.local_player_id` |
+| `PLAYER_0` | `0` (always) — for spectator / replay scenes |
+| `PLAYER_1` | `1` (always) |
+
+`is_mirrored` on PlayerBoard remains independent — orientation is a
+visual decision, not a seat decision. A scene can put `LOCAL` at the
+top with mirroring on if the layout calls for it.
+
+#### Modules that honor SeatContainer
+
+PlayerBoard, RageDisplay, ThreatDisplay, DeckCountLabel, DiscardCountLabel.
+Any other custom module can opt in by adding a single block to its
+`_try_bind()`:
+
+```gdscript
+var seat := BoardModule.find_seat(self)
+if seat:
+    player_id = seat.get_player_id()
+```
+
 ### Ready-made HUD primitives
 
 `scenes/board/hud/` ships drop-in HUD scenes that all follow the

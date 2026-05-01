@@ -5,6 +5,7 @@
 [ext_resource type="Script" path="res://scripts/session/multiplayer_sync.gd" id="3_ms"]
 [ext_resource type="Script" path="res://scripts/session/effect_ui_router.gd" id="4_eur"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DefaultOverlayPack.tscn" id="5_dop"]
+[ext_resource type="Script" path="res://scripts/session/seat_container.gd" id="6_seat"]
 
 [node name="GameBoard" type="Control"]
 layout_mode = 3
@@ -34,3 +35,24 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
+
+[node name="OpponentSeat" type="Control" parent="BoardLayoutSlot"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+anchor_bottom = 0.5
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("6_seat")
+role = 1
+
+[node name="LocalSeat" type="Control" parent="BoardLayoutSlot"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("6_seat")
+role = 0

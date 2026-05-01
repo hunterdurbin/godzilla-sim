@@ -103,6 +103,11 @@ func _try_bind_to_session() -> void:
 	var session := BoardModule.find_session(self)
 	if session == null:
 		return
+	# SeatContainer ancestor wins over the inspector @export player_id.
+	# Drop a PlayerBoard under LocalSeat or OpponentSeat and it auto-resolves.
+	var seat := BoardModule.find_seat(self)
+	if seat:
+		player_id = seat.get_player_id()
 	if session.is_running():
 		_bind_to_session(session)
 	else:

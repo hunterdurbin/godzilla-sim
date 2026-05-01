@@ -50,3 +50,19 @@ static func find_multiplayer_sync(node: Node) -> MultiplayerSync:
 	if session == null:
 		return null
 	return session.get_node_or_null("MultiplayerSync") as MultiplayerSync
+
+
+## Walk up to the nearest SeatContainer ancestor. If found, the module
+## should use `seat.get_player_id()` instead of its own `@export player_id`.
+## Returns null if no SeatContainer is in the ancestor chain — module
+## then falls back to its inspector-configured player_id.
+##
+## Walks up the parent chain (NOT through find_parent("GameBoard")) — seat
+## containers can be at any depth under the board root.
+static func find_seat(node: Node) -> SeatContainer:
+	var n := node.get_parent()
+	while n:
+		if n is SeatContainer:
+			return n as SeatContainer
+		n = n.get_parent()
+	return null

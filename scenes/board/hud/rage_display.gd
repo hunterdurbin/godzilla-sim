@@ -17,6 +17,12 @@ func _try_bind() -> void:
 	var session := BoardModule.find_session(self)
 	if session == null:
 		return
+	# If under a SeatContainer, the seat dictates which player we display —
+	# overrides the local @export. Designer drops the module under
+	# LocalSeat / OpponentSeat and never touches player_id by hand.
+	var seat := BoardModule.find_seat(self)
+	if seat:
+		player_id = seat.get_player_id()
 	if session.is_running() or not session.client_players.is_empty():
 		_bind(session)
 	else:
