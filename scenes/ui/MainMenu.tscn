@@ -53,21 +53,39 @@ layout_mode = 2
 layout_mode = 2
 persist_key = "last_selected_deck_p2"
 
-[node name="StartButton" type="Button" parent="CenterContainer/VBoxContainer"]
-custom_minimum_size = Vector2(200, 50)
+[node name="SoloSelfRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
+theme_override_constants/separation = 10
+
+[node name="TestSelfButton" type="Button" parent="CenterContainer/VBoxContainer/SoloSelfRow"]
+custom_minimum_size = Vector2(50, 50)
+layout_mode = 2
+tooltip_text = "Test Solo v Self in alternate board scene"
+text = "🧪"
+theme_override_font_sizes/font_size = 22
+
+[node name="StartButton" type="Button" parent="CenterContainer/VBoxContainer/SoloSelfRow"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
 text = "STR_MENU_PLAY_SELF"
 theme_override_font_sizes/font_size = 22
+
+[node name="RightSpacer" type="Control" parent="CenterContainer/VBoxContainer/SoloSelfRow"]
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
 
 [node name="SoloBotRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4
 theme_override_constants/separation = 10
 
-[node name="LeftSpacer" type="Control" parent="CenterContainer/VBoxContainer/SoloBotRow"]
-custom_minimum_size = Vector2(50, 0)
+[node name="TestBotButton" type="Button" parent="CenterContainer/VBoxContainer/SoloBotRow"]
+custom_minimum_size = Vector2(50, 50)
 layout_mode = 2
+tooltip_text = "Test Solo v Bot in alternate board scene"
+text = "🧪"
+theme_override_font_sizes/font_size = 22
 
 [node name="SoloBotButton" type="Button" parent="CenterContainer/VBoxContainer/SoloBotRow"]
 custom_minimum_size = Vector2(200, 50)

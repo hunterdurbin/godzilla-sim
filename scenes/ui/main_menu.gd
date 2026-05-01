@@ -1,8 +1,17 @@
 extends Control
 
 
-@onready var start_button: Button = $CenterContainer/VBoxContainer/StartButton
+## Path to an alternate GameBoard scene used by the 🧪 test buttons.
+## Create a scene at this path (or change the constant) to enable the
+## buttons. Designer-friendly: the scene must satisfy the cross-scene
+## multiplayer contract (root node named "GameBoard" with a
+## GameSession/MultiplayerSync subtree). See docs/new_game_board.md.
+const TEST_BOARD_PATH := "res://scenes/board/EnhancedGameBoard.tscn"
+
+@onready var start_button: Button = $CenterContainer/VBoxContainer/SoloSelfRow/StartButton
+@onready var test_self_button: Button = $CenterContainer/VBoxContainer/SoloSelfRow/TestSelfButton
 @onready var solo_bot_button: Button = $CenterContainer/VBoxContainer/SoloBotRow/SoloBotButton
+@onready var test_bot_button: Button = $CenterContainer/VBoxContainer/SoloBotRow/TestBotButton
 @onready var bot_config_button: Button = $CenterContainer/VBoxContainer/SoloBotRow/BotConfigButton
 @onready var lan_button: Button = $CenterContainer/VBoxContainer/LanButton
 @onready var online_button: Button = $CenterContainer/VBoxContainer/OnlineButton
@@ -27,6 +36,11 @@ func _ready() -> void:
 	start_button.disabled = true
 	solo_bot_button.pressed.connect(_on_solo_bot_pressed)
 	solo_bot_button.disabled = true
+	test_self_button.pressed.connect(_on_test_self_pressed)
+	test_self_button.disabled = true
+	test_bot_button.pressed.connect(_on_test_bot_pressed)
+	test_bot_button.disabled = true
+	_configure_test_buttons()
 	bot_config_button.pressed.connect(_on_bot_config_pressed)
 	lan_button.pressed.connect(_on_lan_pressed)
 	online_button.pressed.connect(_on_online_pressed)
@@ -79,10 +93,25 @@ func _on_p2_deck_selected(deck_name: String) -> void:
 
 
 func _update_start_button() -> void:
-	start_button.disabled = not (_p1_ready and _p2_ready)
-	solo_bot_button.disabled = not (_p1_ready and _p2_ready)
+	var ready: bool = _p1_ready and _p2_ready
+	start_button.disabled = not ready
+	solo_bot_button.disabled = not ready
+	var test_scene_present: bool = ResourceLoader.exists(TEST_BOARD_PATH)
+	test_self_button.disabled = not (ready and test_scene_present)
+	test_bot_button.disabled = not (ready and test_scene_present)
 	if not start_button.disabled:
 		start_button.grab_focus()
+
+
+func _configure_test_buttons() -> void:
+	# Wire tooltips per state so a missing scene is debuggable from the UI.
+	if not ResourceLoader.exists(TEST_BOARD_PATH):
+		var msg := "Create %s to enable" % TEST_BOARD_PATH
+		test_self_button.tooltip_text = msg
+		test_bot_button.tooltip_text = msg
+	else:
+		test_self_button.tooltip_text = "Test Solo v Self in %s" % TEST_BOARD_PATH.get_file()
+		test_bot_button.tooltip_text = "Test Solo v Bot in %s" % TEST_BOARD_PATH.get_file()
 
 
 func _on_start_pressed() -> void:
@@ -120,6 +149,31 @@ func _on_solo_bot_pressed() -> void:
 func _on_bot_config_pressed() -> void:
 	SfxManager.play("ui_click")
 	_show_bot_config_popup()
+
+
+func _on_test_self_pressed() -> void:
+	SfxManager.play("ui_click")
+	NetworkManager.mode = NetworkManager.Mode.SOLO
+	NetworkManager.local_player_id = 0
+	NetworkManager.change_scene(TEST_BOARD_PATH)
+
+
+func _on_test_bot_pressed() -> void:
+	SfxManager.play("ui_click")
+	_reconcile_bot_deck_weights()
+	NetworkManager.set_bot_difficulty(GameSettings.bot_difficulty)
+	if GameSettings.bot_speed_value > 0:
+		NetworkManager.bot_config.action_delay = GameSettings.bot_speed_value * 0.1
+	NetworkManager.bot_config.forced_playstyle = GameSettings.bot_playstyle_value - 1
+	var seed_text := GameSettings.bot_seed_text.strip_edges()
+	NetworkManager.bot_seed = seed_text.to_int() if seed_text.is_valid_int() else -1
+	if GameSettings.bot_random_deck_enabled:
+		var picked := _pick_weighted_random_deck()
+		if not picked.is_empty():
+			DecklistManager.select_deck_for_player(1, picked)
+	NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
+	NetworkManager.local_player_id = 0
+	NetworkManager.change_scene(TEST_BOARD_PATH)
 
 
 const _WEIGHT_MIN := 1
