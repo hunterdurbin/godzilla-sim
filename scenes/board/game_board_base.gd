@@ -39,6 +39,11 @@ var is_multiplayer_game: bool = false
 # `dismiss_view_board()`).
 var _view_board_source: Control = null
 
+# Built lazily during _on_host_ready when an ActionPanel descendant is
+# present in the scene. Designer can replace by setting `selection_controller`
+# in their subclass before the base's _on_host_ready runs.
+var selection_controller: SelectionModeController = null
+
 
 func _ready() -> void:
 	is_multiplayer_game = NetworkManager.is_multiplayer()
@@ -61,6 +66,7 @@ func _ready() -> void:
 	_wire_effect_router()
 	_connect_session_signals()
 	_wire_player_boards()
+	_wire_action_panel()
 	_on_host_ready()
 
 	# Auto-pick first player so the loop doesn't stall on coin flip in solo
@@ -122,6 +128,34 @@ func _resolve_translated_text(text: String) -> String:
 
 
 # --- Internal wiring ---
+
+## If the scene has an ActionPanel descendant, instantiate a
+## SelectionModeController over it so click-to-select and submit_action
+## flow Just Work. Designer who wants custom behavior can override
+## `selection_controller` before _on_host_ready runs (or set
+## auto_bind=false on the action panel — currently no such flag, so
+## just don't include an ActionPanel if you want to drive the flow
+## yourself).
+func _wire_action_panel() -> void:
+	if selection_controller != null:
+		return  # subclass already provided one
+	var action_panel := _find_first_descendant_with_signal("action_pressed")
+	if action_panel == null:
+		return  # no ActionPanel in tree — designer drives actions another way
+	selection_controller = SelectionModeController.new(session, action_panel, self)
+	selection_controller.bind()
+
+
+func _find_first_descendant_with_signal(signal_name: String) -> Node:
+	var queue: Array[Node] = [self]
+	while not queue.is_empty():
+		var node: Node = queue.pop_front()
+		if node != self and node.has_signal(signal_name):
+			return node
+		for child in node.get_children():
+			queue.append(child)
+	return null
+
 
 ## Find every PlayerBoard descendant in the scene tree and wire its
 ## snapshot_provider so it can self-refresh from session state. Designers

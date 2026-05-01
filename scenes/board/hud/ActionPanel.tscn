@@ -1,0 +1,89 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/action_panel.gd" id="1_ap"]
+
+[node name="ActionPanel" type="Control"]
+layout_mode = 3
+custom_minimum_size = Vector2(360, 180)
+script = ExtResource("1_ap")
+
+[node name="Rows" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 6
+
+[node name="Row0" type="HBoxContainer" parent="Rows"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 12
+
+[node name="Cancel" type="Button" parent="Rows/Row0"]
+layout_mode = 2
+custom_minimum_size = Vector2(110, 36)
+text = "STR_GB_CANCEL"
+
+[node name="Confirm" type="Button" parent="Rows/Row0"]
+layout_mode = 2
+custom_minimum_size = Vector2(110, 36)
+text = "STR_GB_CONFIRM"
+
+[node name="Row1" type="HBoxContainer" parent="Rows"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="PlayBattle" type="Button" parent="Rows/Row1"]
+layout_mode = 2
+custom_minimum_size = Vector2(110, 40)
+text = "STR_GB_PLAY_BATTLE"
+
+[node name="PlayStrategy" type="Button" parent="Rows/Row1"]
+layout_mode = 2
+custom_minimum_size = Vector2(110, 40)
+text = "STR_GB_PLAY_STRATEGY"
+
+[node name="GainRage" type="Button" parent="Rows/Row1"]
+layout_mode = 2
+custom_minimum_size = Vector2(110, 40)
+text = "STR_GB_GAIN_RAGE"
+
+[node name="Row2" type="HBoxContainer" parent="Rows"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="PlayMonster" type="Button" parent="Rows/Row2"]
+layout_mode = 2
+custom_minimum_size = Vector2(110, 40)
+text = "STR_GB_PLAY_MONSTER"
+
+[node name="Invade" type="Button" parent="Rows/Row2"]
+layout_mode = 2
+custom_minimum_size = Vector2(110, 40)
+text = "STR_GB_INVADE"
+
+[node name="EndMain" type="Button" parent="Rows/Row2"]
+layout_mode = 2
+custom_minimum_size = Vector2(110, 40)
+text = "STR_GB_END_MAIN"
+
+[node name="PromptPanel" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -180.0
+offset_top = -56.0
+offset_right = 180.0
+offset_bottom = -16.0
+grow_horizontal = 2
+
+[node name="PromptLabel" type="Label" parent="PromptPanel"]
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 2

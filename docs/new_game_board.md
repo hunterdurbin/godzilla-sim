@@ -250,36 +250,38 @@ roles plus an action panel for the seated player.
    modal overlays (DeckSearch, CardSelect, DeckArrange, CardZoom,
    etc.) are wired automatically.
 
-**5. Build an action panel — current state requires hand-rolling.**
+**5. Drop in the action panel.**
 
-   This is the largest gap right now. The seated player needs buttons
-   for `Play Battle / Play Strategy / Gain Rage / Play Monster /
-   Invade / End Main / Cancel / Confirm` plus the selection-mode flow
-   (click button → click hand card → click target zone → submit).
+   Instance `scenes/board/hud/ActionPanel.tscn` into your scene
+   (typically inside `LocalSeat` or near it). It ships with the 6
+   action buttons (Play Battle / Play Strategy / Gain Rage / Play
+   Monster / Invade / End Main) plus Cancel/Confirm and a prompt
+   label.
 
-   **Three options today:**
+   `GameBoardBase` auto-detects the ActionPanel descendant and creates
+   a `SelectionModeController` that:
 
-   a. **Borrow from the existing GameBoard.tscn**: open the existing
-      scene, copy the `ActionPanel` subtree + the relevant button
-      handlers + selection-mode logic from `game_board.gd` into your
-      controller script. Brittle but fast.
+   - Listens for the panel's `action_pressed(action)` signal.
+   - Validates turn ownership + queries the rules engine for playable
+     hand indices.
+   - Enters card selection mode on the active player's hand_manager.
+   - For PLAY_BATTLE, follows up with zone selection (click-only).
+   - Submits the chosen action via `session.submit_action(...)`.
+   - Listens for `awaiting_player_action` to enable / disable buttons
+     per turn and per the rules-engine valid set.
 
-   b. **Implement from scratch**: build any node that fulfills the
-      action-panel contract (see "Action panel contract" earlier in
-      this doc) and write your own selection-mode flow that listens
-      to its `action_pressed` signal and dispatches via
-      `session.submit_action(...)`.
+   **Custom action panels**: you can replace the default with any
+   node that fulfills the contract (`signal action_pressed(action)`,
+   `signal cancel_pressed`, `signal confirm_pressed`,
+   `set_button_enabled(action, bool)`, `show_prompt(text)`,
+   `hide_prompt()`). GameBoardBase finds the first descendant with the
+   `action_pressed` signal — your custom panel just needs that.
 
-   c. **Use the existing GameBoard.tscn whole and re-skin it**: rather
-      than starting from `GameBoardBase.tscn`, copy `GameBoard.tscn`
-      → `MyGameBoard.tscn` and replace visuals while keeping the
-      controller script. Heaviest starting point but everything works
-      out of the box.
-
-   A drop-in `ActionPanel.tscn` + `SelectionModeController` is on the
-   roadmap (see Phase 6 / "SelectionModeController" mention earlier).
-   When that lands, this step becomes "drop ActionPanel.tscn into
-   LocalSeat, set inspector knobs, done."
+   **Drag-to-zone is not yet supported**: the default
+   SelectionModeController is click-only. If you want drag input
+   layered on top, override `selection_controller` in your subclass'
+   `_on_host_ready()` and roll your own — `game_board.gd` is the
+   reference for the drag flow (~200 lines around `_drag_*` state).
 
 **6. Override the visual hooks in your controller.**
 
@@ -349,32 +351,27 @@ A minimal controller script:
 ```gdscript
 extends "res://scenes/board/game_board_base.gd"
 
-# Refs to whatever visual elements your scene adds beyond the base.
-@onready var _action_panel: Control = $ActionPanel  # your contract-conforming panel
-
-func _on_host_ready() -> void:
-    # Wire your action panel to the session. The action_panel emits
-    # `action_pressed(action: CardEnums.ActionType)` per the contract;
-    # you handle the selection-mode flow here.
-    _action_panel.action_pressed.connect(_on_action_pressed)
-
-func _on_action_pressed(action: CardEnums.ActionType) -> void:
-    # Selection-mode logic — see existing game_board.gd for reference,
-    # or use a future SelectionModeController helper.
-    match action:
-        CardEnums.ActionType.PASS:
-            session.submit_action(action, {})
-        # ... other actions enter selection mode, prompt for card +
-        # zone, then submit.
+# All wiring is automatic. The base script:
+#   - Boots GameSession + bot + replay
+#   - Connects effect-prompt routing through DefaultOverlayPack
+#   - Auto-binds PlayerBoards via SeatContainers
+#   - Auto-creates a SelectionModeController over the ActionPanel
+#
+# You only override the visual hooks for your custom UX.
 
 func _on_phase_started(phase: CardEnums.GamePhase) -> void:
     # Custom animations, etc.
     pass
+
+func _on_turn_started(player_id: int) -> void:
+    # Flash a turn indicator, play a custom sound, etc.
+    pass
 ```
 
-That's the shell. The base script handles bootstrap, signal wiring,
-session lifecycle, and overlay routing. Your code is just visual
-customization + the action-panel contract.
+That's the shell. With ActionPanel + DefaultOverlayPack + seat
+containers all auto-wired, the controller script is purely visual
+customization. The full play loop works without any selection-mode
+code.
 
 ### Spectator network support
 
@@ -575,6 +572,7 @@ auto-bind pattern. Drop one in, configure via the inspector, done.
 | `LogPanel.tscn` | `max_lines` | `log_message` from TurnManager + EffectHandler |
 | `EndGamePanel.tscn` | — | `TurnManager.game_ended`; emits `rematch_pressed` / `menu_pressed` |
 | `BoardSfx.tscn` | `sound_for_local_player_id` | every action / effect / turn signal → SfxManager |
+| `ActionPanel.tscn` | — | drop-in 6-action panel + Cancel/Confirm + prompt; auto-wires to SelectionModeController via GameBoardBase |
 
 These are small and intentionally minimal — they're starting points,
 not the final visual. To customize, copy the .gd, change the visuals,
