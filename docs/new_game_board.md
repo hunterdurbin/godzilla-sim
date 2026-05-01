@@ -101,9 +101,32 @@ If you want absolute control, set `auto_register = false` on the default
 overlay's instance and explicitly call `router.register_handler()` from
 your scene's script.
 
-### HUD components — recommended pattern
+### Ready-made HUD primitives
 
-For HUD components (turn tracker, rage display, threat counter, etc.):
+`scenes/board/hud/` ships drop-in HUD scenes that all follow the
+auto-bind pattern. Drop one in, configure via the inspector, done.
+
+| Scene | Inspector | Binds to |
+| --- | --- | --- |
+| `RageDisplay.tscn` | `player_id`, `format_string` | `PlayerState.rage_changed` |
+| `ThreatDisplay.tscn` | `player_id`, `format_string` | `rage_changed` + modifier signals |
+| `DeckCountLabel.tscn` | `player_id`, `format_string` | `PlayerState.deck_changed` |
+| `DiscardCountLabel.tscn` | `player_id`, `format_string` | `PlayerState.discard_changed` |
+| `TurnNumberLabel.tscn` | `format_string` | `TurnManager.turn_started` |
+| `PhaseLabel.tscn` | `format_string` | `TurnManager.phase_started` |
+| `TurnTrackerView.tscn` | — | turn + phase signals; both players |
+| `LogPanel.tscn` | `max_lines` | `log_message` from TurnManager + EffectHandler |
+| `EndGamePanel.tscn` | — | `TurnManager.game_ended`; emits `rematch_pressed` / `menu_pressed` |
+| `BoardSfx.tscn` | `sound_for_local_player_id` | every action / effect / turn signal → SfxManager |
+
+These are small and intentionally minimal — they're starting points,
+not the final visual. To customize, copy the .gd, change the visuals,
+keep the `_ready()` auto-bind block.
+
+### HUD components — building your own
+
+For HUD components beyond the primitives above (custom rage meter,
+themed threat display, animated deck stack, etc.):
 
 ```gdscript
 extends Label  # or whatever control type
