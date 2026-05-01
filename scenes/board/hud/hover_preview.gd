@@ -21,6 +21,18 @@ extends Control
 ## via CardZoomOverlay instead).
 @export var hide_on_mobile: bool = true
 
+@export_group("Card layout")
+## Card aspect ratio (width:height). Default 5:7 matches the standard
+## Card.tscn proportions.
+@export var card_aspect_ratio: Vector2 = Vector2(5, 7)
+## Outer padding around the card, in pixels.
+@export_range(0.0, 32.0, 0.5) var padding: float = 6.0
+## Strategy cards render rotated 90° CCW (matches the in-zone landscape
+## layout). Set false for boards that don't differentiate strategy
+## cards.
+@export var rotate_strategy: bool = true
+@export_group("")
+
 var _card: Control = null
 var _bg: ColorRect = null
 
@@ -69,7 +81,7 @@ func _on_card_preview_requested(data: Dictionary, play_cost_modifier: int) -> vo
 	if _card.has_method("set_play_cost_modifier"):
 		_card.set_play_cost_modifier(play_cost_modifier)
 	var is_strategy: bool = data.get("card_type", -1) == CardEnums.CardType.STRATEGY
-	if is_strategy:
+	if is_strategy and rotate_strategy:
 		_layout_strategy()
 	else:
 		_layout_normal()
@@ -82,16 +94,22 @@ func _on_card_preview_cleared() -> void:
 	visible = false
 
 
+func _ratio() -> float:
+	# Avoid divide-by-zero if designer sets a zero component.
+	if card_aspect_ratio.y <= 0.0 or card_aspect_ratio.x <= 0.0:
+		return 5.0 / 7.0
+	return card_aspect_ratio.x / card_aspect_ratio.y
+
+
 func _layout_normal() -> void:
 	var container_size := size
-	const CARD_RATIO := 5.0 / 7.0
+	var ratio := _ratio()
 	var card_w := container_size.x
-	var card_h := card_w / CARD_RATIO
+	var card_h := card_w / ratio
 	if card_h > container_size.y:
 		card_h = container_size.y
-		card_w = card_h * CARD_RATIO
+		card_w = card_h * ratio
 	var card_pos := Vector2((container_size.x - card_w) / 2.0, (container_size.y - card_h) / 2.0)
-	var padding := 6.0
 	_bg.position = card_pos - Vector2(padding, padding)
 	_bg.size = Vector2(card_w, card_h) + Vector2(padding * 2, padding * 2)
 	_card.size = Vector2(card_w, card_h)
@@ -103,13 +121,13 @@ func _layout_normal() -> void:
 
 func _layout_strategy() -> void:
 	var container_size := size
-	const CARD_RATIO := 5.0 / 7.0
+	var ratio := _ratio()
 	var visual_h := container_size.y
 	var card_w := visual_h
-	var card_h := card_w / CARD_RATIO
+	var card_h := card_w / ratio
 	if card_h > container_size.x:
 		card_h = container_size.x
-		card_w = card_h * CARD_RATIO
+		card_w = card_h * ratio
 		visual_h = card_w
 	var visual_w := card_h
 	var card_pos := Vector2(
@@ -121,7 +139,6 @@ func _layout_strategy() -> void:
 	_card.rotation = -PI / 2.0
 	_card.scale = Vector2.ONE
 	_card.position = card_pos + Vector2((visual_w - card_w) / 2.0, (visual_h - card_h) / 2.0)
-	var padding := 6.0
 	_bg.position = card_pos - Vector2(padding, padding)
 	_bg.size = Vector2(visual_w, visual_h) + Vector2(padding * 2, padding * 2)
 

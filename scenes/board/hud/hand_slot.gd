@@ -19,14 +19,22 @@ extends CardManager
 
 @export_group("Auto-bind")
 ## When true, attaches itself to the seat's PlayerBoard as its
-## hand_manager and positions relative to the seat's edge.
+## hand_manager and (if auto_position is also true) positions
+## relative to the seat's edge.
 @export var auto_bind: bool = true
 
 @export_group("Positioning")
+## When true (default), runtime sets `global_position` and `max_width`
+## from the seat's rect every frame. When false, the editor's
+## Node2D position + CardManager.max_width are preserved — designer
+## drives placement entirely from the editor.
+@export var auto_position: bool = true
 ## Auto: LOCAL seat → bottom edge, OPPONENT seat → top edge.
 ## Override when your variant wants a non-standard placement.
+## Only used when auto_position is true.
 @export_enum("Auto", "Bottom", "Top") var anchor_edge: int = 0
 ## Hand's max width as a fraction of the seat's width.
+## Only used when auto_position is true.
 @export_range(0.1, 1.0, 0.05) var width_pct: float = 0.95
 
 var _bound_seat: SeatContainer = null
@@ -86,6 +94,9 @@ func _attach_and_position() -> void:
 
 func _position_to_seat() -> void:
 	if _bound_seat == null:
+		return
+	if not auto_position:
+		# Designer-driven placement — preserve editor values.
 		return
 	var rect := _bound_seat.get_global_rect()
 	if rect.size == Vector2.ZERO:

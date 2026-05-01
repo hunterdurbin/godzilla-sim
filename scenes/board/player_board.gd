@@ -46,9 +46,46 @@ var _bound_player: PlayerState = null
 
 @export var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
-# SVG viewBox dimensions for aspect ratio calculation
-const SVG_W := 1728.0
-const SVG_H := 1008.0
+@export_group("Layout fitting")
+## When true (default), LayoutContainer / board_bg / gradient_overlay are
+## auto-positioned every frame to maintain the playmat's aspect ratio
+## (legacy behavior). When false, the editor anchors on those nodes are
+## respected as-is — pure designer-driven layout.
+@export var maintain_aspect: bool = true
+## Aspect ratio of the playmat artwork (defaults to zones.svg's
+## 1728:1008). Only used when maintain_aspect is true.
+@export var aspect_ratio: Vector2 = Vector2(1728, 1008)
+## SVG content rectangle in normalized [0..1] vertical space — defines
+## what fraction of the playmat is "playable" vs empty padding. The
+## non-mirrored variant is used for LOCAL seats; mirrored for OPPONENT
+## seats (after _apply_mirror flips the layout).
+##   x = content_top, y = content_bottom
+@export var content_rect_normal: Vector2 = Vector2(0.18, 0.97)
+@export var content_rect_mirrored: Vector2 = Vector2(0.03, 0.82)
+@export_group("")
+
+@export_group("Count badges")
+## Font size for the deck/discard/monster-deck count labels.
+@export_range(8, 32) var count_badge_font_size: int = 14
+@export var count_badge_color: Color = Color.WHITE
+@export var count_badge_outline_color: Color = Color(0, 0, 0, 1)
+@export_range(0, 10) var count_badge_outline_size: int = 4
+@export_group("")
+
+@export_group("Info zone borders")
+## Border drawn around the deck / discard / monster-info Control areas.
+@export var info_border_color: Color = Color(0.45, 0.45, 0.55, 0.9)
+@export_range(0.0, 8.0, 0.5) var info_border_width: float = 2.0
+@export_group("")
+
+@export_group("Deck stack")
+## Maximum number of card-back layer panels to create. The visible
+## stack height grows with deck size up to this cap.
+@export_range(1, 60) var deck_stack_max_layers: int = 20
+## Vertical pixel shift between successive deck-stack layers. Stack
+## visually grows upward as the deck grows.
+@export_range(0.0, 8.0, 0.25) var deck_stack_layer_shift: float = 1.0
+@export_group("")
 
 ## Inspector-wired references to PlayerBoard's internal nodes.
 ## PlayerBoardTemplate.tscn ships with all of these pre-populated, so a
@@ -229,24 +266,25 @@ func _on_bound_state_changed() -> void:
 
 
 func _update_layout() -> void:
-	# Crop into the zone content area of the SVG, removing empty top/bottom space.
-	# Non-mirrored: content at ~0.20-0.95 in SVG space (top is empty).
-	# Mirrored: content at ~0.05-0.80 in SVG space (bottom is empty after flip).
-	var content_top: float
-	var content_bottom: float
-	if is_mirrored:
-		content_top = 0.03
-		content_bottom = 0.82
-	else:
-		content_top = 0.18
-		content_bottom = 0.97
+	# Designer opt-out: when maintain_aspect is false the LayoutContainer /
+	# board_bg / gradient_overlay use their editor-set anchors as-is.
+	if not maintain_aspect:
+		return
+	# Crop into the zone content area of the playmat, removing empty top/
+	# bottom space. content_rect_normal/mirrored are @export so designers
+	# can tune the visible content band per orientation.
+	var rect: Vector2 = content_rect_mirrored if is_mirrored else content_rect_normal
+	var content_top: float = rect.x
+	var content_bottom: float = rect.y
 
 	var content_span := content_bottom - content_top
 	var lc_height := size.y / content_span
 
-	# Preserve SVG aspect ratio: constrain width or height so the board
-	# never stretches in either direction.
-	var lc_width := lc_height * (SVG_W / SVG_H)
+	# Preserve aspect ratio: constrain width or height so the board never
+	# stretches in either direction.
+	var ar_x: float = aspect_ratio.x if aspect_ratio.x > 0.0 else 1728.0
+	var ar_y: float = aspect_ratio.y if aspect_ratio.y > 0.0 else 1008.0
+	var lc_width := lc_height * (ar_x / ar_y)
 	var actual_width := minf(lc_width, size.x)
 	var x_offset := maxf(0.0, (size.x - actual_width) / 2.0)
 
@@ -254,7 +292,7 @@ func _update_layout() -> void:
 	# the clamped width so zones and info areas keep their aspect ratio
 	# instead of stretching vertically.
 	if actual_width < lc_width:
-		lc_height = actual_width / (SVG_W / SVG_H)
+		lc_height = actual_width / (ar_x / ar_y)
 
 	# Center the visible content area vertically within the available space.
 	var visible_height := content_span * lc_height
@@ -1278,7 +1316,7 @@ func _add_border(control: Control) -> void:
 
 func _draw_border(control: Control) -> void:
 	var rect := Rect2(Vector2.ZERO, control.size)
-	control.draw_rect(rect, Color(0.45, 0.45, 0.55, 0.9), false, 2.0)
+	control.draw_rect(rect, info_border_color, false, info_border_width)
 
 
 # --- Formatting helpers ---
@@ -1364,13 +1402,15 @@ func _create_card_back_panel() -> Panel:
 	return panel
 
 
-func _create_deck_stack(parent: Control, stack_arr: Array[Control], max_layers: int = 20) -> void:
+func _create_deck_stack(parent: Control, stack_arr: Array[Control], max_layers: int = -1) -> void:
 	## Create a stack of card-back panels that grows/shrinks with deck size.
-	## Each layer pushes the card on top up by 1px from the bottom.
-	for i in range(max_layers):
+	## Each layer pushes the card on top up by `deck_stack_layer_shift` from
+	## the bottom. Pass max_layers=-1 (default) to use the @export config.
+	var layers: int = max_layers if max_layers >= 0 else deck_stack_max_layers
+	for i in range(layers):
 		var panel := _create_card_back_panel()
 		panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		var shift := float(i)  # 1px per layer, upward from bottom
+		var shift := float(i) * deck_stack_layer_shift
 		panel.offset_top = -shift
 		panel.offset_bottom = -shift
 		panel.visible = false
@@ -1395,10 +1435,10 @@ func _create_count_badge() -> Label:
 	var badge := Label.new()
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge.add_theme_font_size_override("font_size", 14)
-	badge.add_theme_color_override("font_color", Color.WHITE)
-	badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	badge.add_theme_constant_override("outline_size", 4)
+	badge.add_theme_font_size_override("font_size", count_badge_font_size)
+	badge.add_theme_color_override("font_color", count_badge_color)
+	badge.add_theme_color_override("font_outline_color", count_badge_outline_color)
+	badge.add_theme_constant_override("outline_size", count_badge_outline_size)
 	badge.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 	badge.offset_top = -24
 	badge.offset_bottom = 0

@@ -15,6 +15,14 @@ extends Control
 @export var prompt_key: String = "choice"
 @export var auto_register: bool = true
 
+@export_group("Buttons")
+## Minimum size for each option button. Inspector-tunable so a designer
+## can match the variant's button style.
+@export var button_min_size: Vector2 = Vector2(280, 44)
+## Vertical spacing between buttons inside the VBoxContainer.
+@export_range(0, 32) var button_separation: int = 8
+@export_group("")
+
 @onready var _bg: ColorRect = $Bg
 @onready var _panel: PanelContainer = $Panel
 @onready var _prompt: Label = $Panel/VBox/Prompt
@@ -39,13 +47,14 @@ func _on_router_show(options: Array, prompt: String, resolve_cb: Callable) -> vo
 	print("[ChoicePromptOverlay] _on_router_show called with %d options: %s" % [options.size(), prompt])
 	_resolve = resolve_cb
 	_prompt.text = prompt
+	_buttons.add_theme_constant_override("separation", button_separation)
 	# Clear any leftover buttons from a prior choice.
 	for child in _buttons.get_children():
 		child.queue_free()
 	for i in range(options.size()):
 		var btn := Button.new()
 		btn.text = str(options[i])
-		btn.custom_minimum_size = Vector2(280, 44)
+		btn.custom_minimum_size = button_min_size
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		btn.pressed.connect(_on_button_pressed.bind(i))
 		_buttons.add_child(btn)
