@@ -48,7 +48,9 @@ func _on_log_message(token) -> void:
 	_output.append_text(rendered + "\n")
 	# Cap the buffer so very long games don't blow memory.
 	if max_lines > 0 and _output.get_line_count() > max_lines:
-		_output.text = _output.text.split("\n", false).slice(-max_lines).reduce(func(acc, s): return acc + s + "\n", "")
+		var lines := _output.text.split("\n", false)
+		var trimmed: PackedStringArray = lines.slice(-max_lines)
+		_output.text = "\n".join(trimmed) + "\n"
 
 
 func _on_game_ended(winner_id: int, reason_key: String) -> void:
