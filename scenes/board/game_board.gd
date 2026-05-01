@@ -27,18 +27,14 @@ var is_multiplayer_game: bool = false
 var local_player_id: int = 0 # 0 for host/solo, 1 for client
 
 # Client-side state (populated from host RPCs)
-var _client_players: Array[PlayerState] = []
+# Modifier caches and the players array now live on `session` so any
+# scene's modules (PlayerBoard auto-bind, custom HUD components) can
+# read them without coupling to game_board.gd. See
+# scripts/session/game_session.gd `client_*` fields.
 var _client_current_player_id: int = 0
 var _client_turn_number: int = 0
 var _client_phase: CardEnums.GamePhase = CardEnums.GamePhase.START
 var _client_playable: Dictionary = {} # Playable card/zone indices from host
-var _client_cp_modifiers: Array = [0, 0]
-var _client_threat_modifiers: Array = [0, 0]
-var _client_zone_cp_mods: Array = [[], []]
-var _client_strategy_cp_mods: Array = [[], []]
-var _client_zone_rank_mods: Array = [[], []]
-var _client_hand_rank_mods: Array = [[], []]
-var _client_monster_cp_mods: Array = [0, 0]
 var _client_gradients_applied: bool = false
 # Client-side stats snapshot (synced from host for disconnect reporting)
 var _client_stats_elapsed_ms: Array[int] = [0, 0]
@@ -477,7 +473,7 @@ func _ready() -> void:
 			_setup_bot()
 	else:
 		# Client: initialize empty client state, wait for host RPCs
-		_client_players = [PlayerState.new(0), PlayerState.new(1)]
+		session.client_players = [PlayerState.new(0), PlayerState.new(1)]
 		GameLog.player_names[local_player_id] = GameSettings.player_name
 		# If this is a reconnect (is_in_game was set before scene load), the host
 		# already sent state before this scene existed — request a fresh broadcast.
@@ -2143,13 +2139,13 @@ func _sync_mobile_cp_tray() -> void:
 				for v in zone_cp: cp_mods[pid] += v
 				for v in strat_cp: cp_mods[pid] += v
 				threat_mods[pid] = eh.get_threat_level_modifier(pid)
-	elif not _client_players.is_empty():
-		states[0] = _client_players[0]
-		states[1] = _client_players[1]
-		cp_mods[0] = _client_cp_modifiers[0]
-		cp_mods[1] = _client_cp_modifiers[1]
-		threat_mods[0] = _client_threat_modifiers[0]
-		threat_mods[1] = _client_threat_modifiers[1]
+	elif not session.client_players.is_empty():
+		states[0] = session.client_players[0]
+		states[1] = session.client_players[1]
+		cp_mods[0] = session.client_cp_modifiers[0]
+		cp_mods[1] = session.client_cp_modifiers[1]
+		threat_mods[0] = session.client_threat_modifiers[0]
+		threat_mods[1] = session.client_threat_modifiers[1]
 	var lid: int = local_player_id
 	var oid: int = 1 - lid
 	if states[lid]:
@@ -2507,7 +2503,7 @@ func _get_current_pid() -> int:
 func _get_player_state(pid: int) -> PlayerState:
 	if session.is_running():
 		return session.game_state.players[pid]
-	return _client_players[pid]
+	return session.client_players[pid]
 
 
 func _get_current_player() -> PlayerState:
@@ -3283,18 +3279,18 @@ func _execute_rematch() -> void:
 	card_zoom_overlay.visible = false
 
 	# 6. Reset client state
-	_client_players = [PlayerState.new(0), PlayerState.new(1)]
+	session.client_players = [PlayerState.new(0), PlayerState.new(1)]
 	_client_current_player_id = 0
 	_client_turn_number = 0
 	_client_phase = CardEnums.GamePhase.START
 	_client_playable = {}
-	_client_cp_modifiers = [0, 0]
-	_client_threat_modifiers = [0, 0]
-	_client_zone_cp_mods = [[], []]
-	_client_strategy_cp_mods = [[], []]
-	_client_zone_rank_mods = [[], []]
-	_client_hand_rank_mods = [[], []]
-	_client_monster_cp_mods = [0, 0]
+	session.client_cp_modifiers = [0, 0]
+	session.client_threat_modifiers = [0, 0]
+	session.client_zone_cp_mods = [[], []]
+	session.client_strategy_cp_mods = [[], []]
+	session.client_zone_rank_mods = [[], []]
+	session.client_hand_rank_mods = [[], []]
+	session.client_monster_cp_mods = [0, 0]
 
 	# 7. Clear game log
 	_log_tokens.clear()
@@ -3983,11 +3979,11 @@ func _sync_boards() -> void:
 			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0, hand_rank_0)
 		if player2_board and not skip_p2:
 			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1, hand_rank_1)
-	elif not _client_players.is_empty():
+	elif not session.client_players.is_empty():
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0], _client_hand_rank_mods[0])
+			player1_board.sync_to_state(session.client_players[0], session.client_cp_modifiers[0], session.client_threat_modifiers[0], session.client_zone_cp_mods[0], session.client_strategy_cp_mods[0], session.client_zone_rank_mods[0], session.client_monster_cp_mods[0], session.client_hand_rank_mods[0])
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1], _client_monster_cp_mods[1], _client_hand_rank_mods[1])
+			player2_board.sync_to_state(session.client_players[1], session.client_cp_modifiers[1], session.client_threat_modifiers[1], session.client_zone_cp_mods[1], session.client_strategy_cp_mods[1], session.client_zone_rank_mods[1], session.client_monster_cp_mods[1], session.client_hand_rank_mods[1])
 	if _is_mobile_layout:
 		_sync_mobile_cp_tray()
 	call_deferred("_position_hands")
@@ -5874,13 +5870,13 @@ func _compute_state_hash(gs: GameState) -> int:
 
 
 func _compute_client_state_hash(turn_number: int, current_player_id: int, phase: int) -> int:
-	## Client-side hash using reconstructed _client_players state.
+	## Client-side hash using reconstructed session.client_players state.
 	var parts: PackedStringArray = []
 	parts.append("t%d" % turn_number)
 	parts.append("p%d" % current_player_id)
 	parts.append("ph%d" % phase)
 	for i in range(2):
-		var ps: PlayerState = _client_players[i]
+		var ps: PlayerState = session.client_players[i]
 		parts.append("m%d:%d" % [i, ps.monster_zone])
 		parts.append("r%d:%d" % [i, ps.rage])
 		parts.append("d%d:%d" % [i, ps.main_deck.size()])
@@ -6029,41 +6025,41 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 
 	# Extract effect modifiers
 	if data.has("cp_modifiers"):
-		_client_cp_modifiers = data["cp_modifiers"]
-		for j in range(_client_cp_modifiers.size()):
-			_client_cp_modifiers[j] = int(_client_cp_modifiers[j])
+		session.client_cp_modifiers = data["cp_modifiers"]
+		for j in range(session.client_cp_modifiers.size()):
+			session.client_cp_modifiers[j] = int(session.client_cp_modifiers[j])
 	if data.has("threat_modifiers"):
-		_client_threat_modifiers = data["threat_modifiers"]
-		for j in range(_client_threat_modifiers.size()):
-			_client_threat_modifiers[j] = int(_client_threat_modifiers[j])
+		session.client_threat_modifiers = data["threat_modifiers"]
+		for j in range(session.client_threat_modifiers.size()):
+			session.client_threat_modifiers[j] = int(session.client_threat_modifiers[j])
 	if data.has("zone_cp_modifiers"):
-		_client_zone_cp_mods = data["zone_cp_modifiers"]
-		for i in range(_client_zone_cp_mods.size()):
-			var arr: Array = _client_zone_cp_mods[i]
+		session.client_zone_cp_mods = data["zone_cp_modifiers"]
+		for i in range(session.client_zone_cp_mods.size()):
+			var arr: Array = session.client_zone_cp_mods[i]
 			for j in range(arr.size()):
 				arr[j] = int(arr[j])
 	if data.has("strategy_cp_modifiers"):
-		_client_strategy_cp_mods = data["strategy_cp_modifiers"]
-		for i in range(_client_strategy_cp_mods.size()):
-			var arr: Array = _client_strategy_cp_mods[i]
+		session.client_strategy_cp_mods = data["strategy_cp_modifiers"]
+		for i in range(session.client_strategy_cp_mods.size()):
+			var arr: Array = session.client_strategy_cp_mods[i]
 			for j in range(arr.size()):
 				arr[j] = int(arr[j])
 	if data.has("zone_rank_modifiers"):
-		_client_zone_rank_mods = data["zone_rank_modifiers"]
-		for i in range(_client_zone_rank_mods.size()):
-			var arr: Array = _client_zone_rank_mods[i]
+		session.client_zone_rank_mods = data["zone_rank_modifiers"]
+		for i in range(session.client_zone_rank_mods.size()):
+			var arr: Array = session.client_zone_rank_mods[i]
 			for j in range(arr.size()):
 				arr[j] = int(arr[j])
 	if data.has("hand_rank_modifiers"):
-		_client_hand_rank_mods = data["hand_rank_modifiers"]
-		for i in range(_client_hand_rank_mods.size()):
-			var arr: Array = _client_hand_rank_mods[i]
+		session.client_hand_rank_mods = data["hand_rank_modifiers"]
+		for i in range(session.client_hand_rank_mods.size()):
+			var arr: Array = session.client_hand_rank_mods[i]
 			for j in range(arr.size()):
 				arr[j] = int(arr[j])
 	if data.has("monster_cp_modifiers"):
-		_client_monster_cp_mods = data["monster_cp_modifiers"]
-		for j in range(_client_monster_cp_mods.size()):
-			_client_monster_cp_mods[j] = int(_client_monster_cp_mods[j])
+		session.client_monster_cp_mods = data["monster_cp_modifiers"]
+		for j in range(session.client_monster_cp_mods.size()):
+			session.client_monster_cp_mods[j] = int(session.client_monster_cp_mods[j])
 
 	# Reconstruct PlayerState objects
 	var players_data: Array = data["players"]
@@ -6073,7 +6069,7 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 		return
 	for i in range(2):
 		var pd: Dictionary = players_data[i]
-		_client_players[i] = _dict_to_player_state(pd, i == local_player_id)
+		session.client_players[i] = _dict_to_player_state(pd, i == local_player_id)
 		# Store stats fields for disconnect reporting
 		if pd.has("stats_deck_name"):
 			_client_stats_deck_names[i] = str(pd["stats_deck_name"])
@@ -6096,8 +6092,8 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 		_client_gradients_applied = true
 		for i in range(2):
 			var board = player1_board if i == 0 else player2_board
-			if not _client_players[i].current_monster.is_empty():
-				board.apply_monster_gradient(_client_players[i].current_monster)
+			if not session.client_players[i].current_monster.is_empty():
+				board.apply_monster_gradient(session.client_players[i].current_monster)
 		RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
 		multiplayer_sync._rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
 
@@ -6686,7 +6682,7 @@ func _upload_stats(winner_id: int, reason: String, is_disconnect: bool) -> void:
 		gs = session.game_state
 	else:
 		gs = GameState.new()
-		gs.players = _client_players
+		gs.players = session.client_players
 		gs.current_player_id = _client_current_player_id
 		gs.turn_number = _client_turn_number
 		gs.current_phase = _client_phase

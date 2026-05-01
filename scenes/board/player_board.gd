@@ -36,6 +36,11 @@ signal card_preview_cleared()
 ##   zone_rank_mods, monster_cp_mod, hand_rank_mods
 var snapshot_provider: Callable = Callable()
 
+## Optional path to a sibling/external CardManager that hosts this
+## player's hand. Resolved on _ready when set; assigning `hand_manager`
+## directly from script still works as a fallback.
+@export var hand_manager_path: NodePath
+
 var _bound_player: PlayerState = null
 
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
@@ -82,6 +87,12 @@ func _ready() -> void:
 	_apply_custom_playmat()
 	resized.connect(_update_layout)
 	_update_layout()
+	# Resolve hand_manager from the inspector NodePath if set and not
+	# already assigned by script.
+	if hand_manager == null and not hand_manager_path.is_empty():
+		var node := get_node_or_null(hand_manager_path)
+		if node and node is CardManager:
+			hand_manager = node
 	if auto_bind:
 		_try_bind_to_session()
 

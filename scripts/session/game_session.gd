@@ -20,6 +20,20 @@ var turn_manager: TurnManager
 var bot_player: BotPlayer
 var replay_recorder: ReplayRecorder
 
+# Client-mode cache. Populated by the host scene's RPC handler on each
+# state broadcast. On client peers turn_manager / game_state are null —
+# `get_player()` falls back to client_players, and modules that want
+# modifier data should read these arrays directly. Host peers never use
+# these (turn_manager is authoritative).
+var client_players: Array[PlayerState] = []
+var client_cp_modifiers: Array = [0, 0]
+var client_threat_modifiers: Array = [0, 0]
+var client_zone_cp_mods: Array = [[], []]
+var client_strategy_cp_mods: Array = [[], []]
+var client_zone_rank_mods: Array = [[], []]
+var client_hand_rank_mods: Array = [[], []]
+var client_monster_cp_mods: Array = [0, 0]
+
 # Typed forwarders for the most-frequented members of `turn_manager`.
 # Set during start_host_session() so the presentation scene can reach into
 # `session.effect_handler` / `session.game_state` / etc. without chaining
@@ -52,12 +66,19 @@ func current_phase() -> CardEnums.GamePhase:
 	return game_state.current_phase if game_state else CardEnums.GamePhase.START
 
 
-## Returns the PlayerState for a given player id (0 or 1), or null if the
-## game state isn't ready.
+## Returns the PlayerState for a given player id (0 or 1).
+## On host/solo peers reads from turn_manager.game_state. On client peers
+## (where turn_manager is null) falls back to the broadcast-state cache
+## populated by the host RPC handler. Returns null only if neither source
+## has data yet.
 func get_player(player_id: int) -> PlayerState:
-	if game_state == null or player_id < 0 or player_id >= game_state.players.size():
+	if player_id < 0 or player_id > 1:
 		return null
-	return game_state.players[player_id]
+	if game_state and player_id < game_state.players.size():
+		return game_state.players[player_id]
+	if player_id < client_players.size():
+		return client_players[player_id]
+	return null
 
 
 ## True once the host session has been built and the game is running.

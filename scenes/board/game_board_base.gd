@@ -133,29 +133,42 @@ func _wire_player_boards() -> void:
 			board.snapshot_provider = _player_snapshot
 
 
-## Default snapshot provider for host mode. Reads modifiers off
-## session.effect_handler. Designer subclasses can override for client
-## mode (where modifiers come from broadcast state).
+## Default snapshot provider. Works for both host (reads
+## session.effect_handler live) and client (reads session.client_* cache
+## populated by RPC) modes. Designer subclasses can override for custom
+## modifier sources or to add hand_rank_mods etc.
 func _player_snapshot(pid: int) -> Dictionary:
-	if not session.is_running() or session.game_state == null:
-		return {}
-	var eh := session.effect_handler
-	var zone_cp: Array = eh.get_zone_cp_modifiers(pid) if eh else []
-	var strat_cp: Array = eh.get_strategy_cp_modifiers(pid) if eh else []
-	var monster_cp: int = eh.get_monster_cp_modifier(pid) if eh else 0
-	var cp_mod: int = monster_cp
-	for v in zone_cp: cp_mod += v
-	for v in strat_cp: cp_mod += v
-	return {
-		"state": session.game_state.players[pid],
-		"cp_mod": cp_mod,
-		"threat_mod": eh.get_threat_level_modifier(pid) if eh else 0,
-		"zone_cp_mods": zone_cp,
-		"strategy_cp_mods": strat_cp,
-		"zone_rank_mods": eh.get_zone_rank_modifiers(pid) if eh else [],
-		"monster_cp_mod": monster_cp,
-		"hand_rank_mods": [],  # subclass can override to populate from EffectHandler
-	}
+	if session.is_running() and session.game_state:
+		var eh := session.effect_handler
+		var zone_cp: Array = eh.get_zone_cp_modifiers(pid) if eh else []
+		var strat_cp: Array = eh.get_strategy_cp_modifiers(pid) if eh else []
+		var monster_cp: int = eh.get_monster_cp_modifier(pid) if eh else 0
+		var cp_mod: int = monster_cp
+		for v in zone_cp: cp_mod += v
+		for v in strat_cp: cp_mod += v
+		return {
+			"state": session.game_state.players[pid],
+			"cp_mod": cp_mod,
+			"threat_mod": eh.get_threat_level_modifier(pid) if eh else 0,
+			"zone_cp_mods": zone_cp,
+			"strategy_cp_mods": strat_cp,
+			"zone_rank_mods": eh.get_zone_rank_modifiers(pid) if eh else [],
+			"monster_cp_mod": monster_cp,
+			"hand_rank_mods": [],
+		}
+	# Client mode: read from broadcast cache.
+	if pid < session.client_players.size() and session.client_players[pid]:
+		return {
+			"state": session.client_players[pid],
+			"cp_mod": session.client_cp_modifiers[pid] if pid < session.client_cp_modifiers.size() else 0,
+			"threat_mod": session.client_threat_modifiers[pid] if pid < session.client_threat_modifiers.size() else 0,
+			"zone_cp_mods": session.client_zone_cp_mods[pid] if pid < session.client_zone_cp_mods.size() else [],
+			"strategy_cp_mods": session.client_strategy_cp_mods[pid] if pid < session.client_strategy_cp_mods.size() else [],
+			"zone_rank_mods": session.client_zone_rank_mods[pid] if pid < session.client_zone_rank_mods.size() else [],
+			"monster_cp_mod": session.client_monster_cp_mods[pid] if pid < session.client_monster_cp_mods.size() else 0,
+			"hand_rank_mods": session.client_hand_rank_mods[pid] if pid < session.client_hand_rank_mods.size() else [],
+		}
+	return {}
 
 
 func _find_descendants_of_class(class_name_str: String) -> Array:
