@@ -22,8 +22,11 @@ signal closed
 @export var prompt_key: String = "card_select"
 @export var auto_register: bool = true
 
-const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 const _CARD_SIZE := Vector2(120, 168)
+
+
+func _card_scene() -> PackedScene:
+	return BoardModule.get_card_scene(self)
 
 @onready var _prompt: Label = $CardSelectPanel/VBox/PromptLabel
 @onready var _show_all_toggle: CheckButton = $CardSelectPanel/VBox/ToggleRow/ShowAllToggle
@@ -223,7 +226,7 @@ func _refresh_pool() -> void:
 
 
 func _make_pool_card(card_data: Dictionary, can_select: bool) -> Control:
-	var card: Control = _CARD_SCENE.instantiate()
+	var card: Control = _card_scene().instantiate()
 	if card.has_method("set_card_data_dict"):
 		card.set_card_data_dict(card_data)
 	card.custom_minimum_size = _CARD_SIZE
@@ -244,7 +247,7 @@ func _refresh_selection() -> void:
 	for child in _selection_grid.get_children():
 		child.queue_free()
 	for card_data in _selected:
-		var card: Control = _CARD_SCENE.instantiate()
+		var card: Control = _card_scene().instantiate()
 		if card.has_method("set_card_data_dict"):
 			card.set_card_data_dict(card_data)
 		card.custom_minimum_size = _CARD_SIZE

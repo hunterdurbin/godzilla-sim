@@ -34,6 +34,9 @@ var hand_sort_type_order: int = 0  # 0-5 index into type permutations
 var hand_sort_rank_ascending: bool = true
 var stacked_view: bool = true  # Remembered stacked toggle for overlays
 var default_game_mode: String = "rumble_west"
+## Last test-board scene picked from the MainMenu picker. Persists so a
+## designer iterating on a single variant doesn't re-pick it every run.
+var last_test_board_path: String = ""
 
 # Visual settings
 var custom_playmat_enabled: bool = false
@@ -142,6 +145,7 @@ func _save() -> void:
 	config.set_value("gameplay", "hand_sort_rank_ascending", hand_sort_rank_ascending)
 	config.set_value("gameplay", "stacked_view", stacked_view)
 	config.set_value("gameplay", "default_game_mode", default_game_mode)
+	config.set_value("developer", "last_test_board_path", last_test_board_path)
 	config.set_value("visual", "custom_playmat_enabled", custom_playmat_enabled)
 	config.set_value("visual", "custom_playmat_opponent", custom_playmat_opponent)
 	config.set_value("visual", "color_overlay_mode", color_overlay_mode)
@@ -191,6 +195,7 @@ func _load() -> void:
 	hand_sort_rank_ascending = config.get_value("gameplay", "hand_sort_rank_ascending", true)
 	stacked_view = config.get_value("gameplay", "stacked_view", true)
 	default_game_mode = config.get_value("gameplay", "default_game_mode", "rumble_west")
+	last_test_board_path = config.get_value("developer", "last_test_board_path", "")
 	custom_playmat_enabled = config.get_value("visual", "custom_playmat_enabled", false)
 	custom_playmat_opponent = config.get_value("visual", "custom_playmat_opponent", false)
 	color_overlay_mode = config.get_value("visual", "color_overlay_mode", 3)

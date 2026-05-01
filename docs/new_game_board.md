@@ -5,17 +5,64 @@ GameBoard scene (mobile, desktop, VR, themed variants, etc.). It covers the
 cross-scene multiplayer contract, the module composition pattern, and how
 to add new variants of overlays / HUD / action panels.
 
-## TL;DR
+## Quick start (3 steps)
 
-1. Copy `scenes/board/GameBoardBase.tscn` (or extend it via scene
-   inheritance) as your starting point.
-2. Add visual layout into the `BoardLayoutSlot` Control.
-3. Override the `_on_X` hooks in your scene's script to update visuals
-   when game signals fire.
-4. Drop overlay scenes / HUD components / action panels anywhere in the
-   tree — they self-bind via tree-walk.
-5. Save your scene with the root node named `GameBoard` (this is mandatory
-   — see "Cross-scene multiplayer contract" below).
+1. **File → New Inherited Scene → `scenes/board/GameBoardTemplate.tscn`.**
+   You get a fully populated working board (both seats with PlayerBoard
+   + HUD, ActionPanel, LogPanel, TopBar with TurnNumber/Phase/Menu).
+2. **Save as `scenes/board/MyGameBoard.tscn`.** The root node MUST stay
+   named `GameBoard` (multiplayer contract — see below).
+3. **Edit visuals.** Drag inherited children to reposition, change
+   colors / fonts / sizes, swap HUD primitives. Do NOT remove
+   `GameSession`, `MultiplayerSync`, `EffectUIRouter`, or the seats.
+
+That's it. Run the scene via the 🧪 button in the main menu — any
+`*GameBoard.tscn` file dropped in `scenes/board/` (except the template,
+base, and legacy production scene) is auto-discovered and added to the
+picker.
+
+### Going off-template
+
+If you want a more minimal starting point — say, a fresh layout that
+doesn't share the template's BoardLayoutSlot structure — inherit from
+`scenes/board/GameBoardBase.tscn` instead. You get just the engine
+subtree (GameSession + MultiplayerSync + EffectUIRouter) and an empty
+`BoardLayoutSlot` with two seat containers. You'll need to drop in
+your own PlayerBoard, HUD primitives, ActionPanel, etc. — all of them
+self-bind via tree-walk so no controller wiring is needed.
+
+## Anatomy of GameBoardTemplate.tscn
+
+The template ships with this structure (children of the inherited base
+in **bold**, new in the template italicized):
+
+```
+GameBoard                            (Control, game_board_template.gd)
+├── **GameSession**                  (engine; do not remove)
+│   ├── **MultiplayerSync**
+│   └── **EffectUIRouter**
+├── **DefaultOverlayPack**           (7 modal overlays — auto-register)
+├── **BoardLayoutSlot**
+│   ├── **OpponentSeat** (role=OPPONENT)
+│   │   └── *OpponentVBox*
+│   │       ├── *HUDBar* (RageDisplay, ThreatDisplay, DeckCountLabel,
+│   │       │              DiscardCountLabel)
+│   │       └── *PlayerBoard* (auto_bind=true, is_mirrored=true)
+│   └── **LocalSeat** (role=LOCAL)
+│       └── *LocalVBox*
+│           ├── *PlayerBoard* (auto_bind=true)
+│           └── *HUDBar* (RageDisplay, ThreatDisplay, DeckCountLabel,
+│                          DiscardCountLabel, HandSortButton)
+├── *TopBar* (TurnNumberLabel, PhaseLabel, MenuButton)
+├── *ActionPanel* (auto-detected by GameBoardBase via signal probe)
+└── *LogPanel*
+```
+
+Each HUD primitive resolves its `player_id` from the surrounding
+`SeatContainer` automatically — no per-module configuration. Modals
+(`DefaultOverlayPack`) self-register with the `EffectUIRouter` on
+`_ready`. The script (`game_board_template.gd`) only wires the
+Return-to-Menu button; everything else is inherited.
 
 ## Cross-scene multiplayer contract
 

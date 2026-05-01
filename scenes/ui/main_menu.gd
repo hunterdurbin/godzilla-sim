@@ -1,18 +1,29 @@
 extends Control
 
 
-## Path to an alternate GameBoard scene used by the 🧪 test buttons.
-## Create a scene at this path (or change the constant) to enable the
-## buttons. Designer-friendly: the scene must satisfy the cross-scene
-## multiplayer contract (root node named "GameBoard" with a
-## GameSession/MultiplayerSync subtree). See docs/new_game_board.md.
-const TEST_BOARD_PATH := "res://scenes/board/EnhancedGameBoard.tscn"
+## Directory scanned by the 🧪 test buttons. Any *GameBoard.tscn file
+## here (excluding the entries in TEST_BOARD_EXCLUDE) becomes a launch
+## target. Drop a new variant in the folder → it appears in the menu
+## without code edits. Each scene must satisfy the cross-scene
+## multiplayer contract: root node named "GameBoard" with a
+## GameSession/MultiplayerSync subtree. See docs/new_game_board.md.
+const TEST_BOARD_DIR := "res://scenes/board/"
+const TEST_BOARD_EXCLUDE := [
+	"GameBoardBase.tscn",       # minimal engine-only base
+	"GameBoardTemplate.tscn",   # populated starter; designer inherits
+	"GameBoard.tscn",           # legacy production scene
+	"NewGameBoard.tscn",        # phase-6 GameSession smoke test
+]
 
 @onready var start_button: Button = $CenterContainer/VBoxContainer/SoloSelfRow/StartButton
 @onready var test_self_button: Button = $CenterContainer/VBoxContainer/SoloSelfRow/TestSelfButton
 @onready var solo_bot_button: Button = $CenterContainer/VBoxContainer/SoloBotRow/SoloBotButton
 @onready var test_bot_button: Button = $CenterContainer/VBoxContainer/SoloBotRow/TestBotButton
 @onready var bot_config_button: Button = $CenterContainer/VBoxContainer/SoloBotRow/BotConfigButton
+@onready var test_board_row: HBoxContainer = $CenterContainer/VBoxContainer/TestBoardRow
+@onready var test_board_picker: OptionButton = $CenterContainer/VBoxContainer/TestBoardRow/TestBoardPicker
+
+var _test_board_paths: Array[String] = []
 @onready var lan_button: Button = $CenterContainer/VBoxContainer/LanButton
 @onready var online_button: Button = $CenterContainer/VBoxContainer/OnlineButton
 @onready var deck_builder_button: Button = $CenterContainer/VBoxContainer/DeckBuilderButton
@@ -40,6 +51,8 @@ func _ready() -> void:
 	test_self_button.disabled = true
 	test_bot_button.pressed.connect(_on_test_bot_pressed)
 	test_bot_button.disabled = true
+	test_board_picker.item_selected.connect(_on_test_board_picker_changed)
+	_scan_test_boards()
 	_configure_test_buttons()
 	bot_config_button.pressed.connect(_on_bot_config_pressed)
 	lan_button.pressed.connect(_on_lan_pressed)
@@ -96,22 +109,68 @@ func _update_start_button() -> void:
 	var ready: bool = _p1_ready and _p2_ready
 	start_button.disabled = not ready
 	solo_bot_button.disabled = not ready
-	var test_scene_present: bool = ResourceLoader.exists(TEST_BOARD_PATH)
+	var test_scene_present: bool = not _test_board_paths.is_empty()
 	test_self_button.disabled = not (ready and test_scene_present)
 	test_bot_button.disabled = not (ready and test_scene_present)
 	if not start_button.disabled:
 		start_button.grab_focus()
 
 
+## Scan TEST_BOARD_DIR for *GameBoard.tscn files (minus exclusions).
+## Populates the picker dropdown and restores the last persisted choice.
+## Hides the picker row when only 0 or 1 scene exists (keeps menu tidy).
+func _scan_test_boards() -> void:
+	_test_board_paths.clear()
+	test_board_picker.clear()
+	var dir := DirAccess.open(TEST_BOARD_DIR)
+	if dir:
+		dir.list_dir_begin()
+		var fname := dir.get_next()
+		while fname != "":
+			if not dir.current_is_dir() \
+					and fname.ends_with("GameBoard.tscn") \
+					and fname not in TEST_BOARD_EXCLUDE:
+				_test_board_paths.append(TEST_BOARD_DIR + fname)
+			fname = dir.get_next()
+		dir.list_dir_end()
+	_test_board_paths.sort()
+	for path in _test_board_paths:
+		test_board_picker.add_item(path.get_file().trim_suffix(".tscn"))
+	# Restore persisted selection.
+	var persisted := GameSettings.last_test_board_path
+	var idx: int = _test_board_paths.find(persisted)
+	if idx >= 0:
+		test_board_picker.select(idx)
+	# Picker visible only when 2+ scenes exist (single scene needs no choice).
+	test_board_row.visible = _test_board_paths.size() >= 2
+
+
+func _current_test_board_path() -> String:
+	if _test_board_paths.is_empty():
+		return ""
+	var idx: int = test_board_picker.selected
+	if idx < 0 or idx >= _test_board_paths.size():
+		idx = 0
+	return _test_board_paths[idx]
+
+
+func _on_test_board_picker_changed(idx: int) -> void:
+	if idx >= 0 and idx < _test_board_paths.size():
+		GameSettings.last_test_board_path = _test_board_paths[idx]
+		GameSettings.save()
+	_configure_test_buttons()
+
+
 func _configure_test_buttons() -> void:
 	# Wire tooltips per state so a missing scene is debuggable from the UI.
-	if not ResourceLoader.exists(TEST_BOARD_PATH):
-		var msg := "Create %s to enable" % TEST_BOARD_PATH
+	if _test_board_paths.is_empty():
+		var msg := "Drop a *GameBoard.tscn into %s to enable" % TEST_BOARD_DIR
 		test_self_button.tooltip_text = msg
 		test_bot_button.tooltip_text = msg
 	else:
-		test_self_button.tooltip_text = "Test Solo v Self in %s" % TEST_BOARD_PATH.get_file()
-		test_bot_button.tooltip_text = "Test Solo v Bot in %s" % TEST_BOARD_PATH.get_file()
+		var fname := _current_test_board_path().get_file()
+		test_self_button.tooltip_text = "Test Solo v Self in %s" % fname
+		test_bot_button.tooltip_text = "Test Solo v Bot in %s" % fname
 
 
 func _on_start_pressed() -> void:
@@ -152,13 +211,19 @@ func _on_bot_config_pressed() -> void:
 
 
 func _on_test_self_pressed() -> void:
+	var path := _current_test_board_path()
+	if path.is_empty():
+		return
 	SfxManager.play("ui_click")
 	NetworkManager.mode = NetworkManager.Mode.SOLO
 	NetworkManager.local_player_id = 0
-	NetworkManager.change_scene(TEST_BOARD_PATH)
+	NetworkManager.change_scene(path)
 
 
 func _on_test_bot_pressed() -> void:
+	var path := _current_test_board_path()
+	if path.is_empty():
+		return
 	SfxManager.play("ui_click")
 	_reconcile_bot_deck_weights()
 	NetworkManager.set_bot_difficulty(GameSettings.bot_difficulty)
@@ -173,7 +238,7 @@ func _on_test_bot_pressed() -> void:
 			DecklistManager.select_deck_for_player(1, picked)
 	NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
 	NetworkManager.local_player_id = 0
-	NetworkManager.change_scene(TEST_BOARD_PATH)
+	NetworkManager.change_scene(path)
 
 
 const _WEIGHT_MIN := 1

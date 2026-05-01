@@ -44,6 +44,19 @@ signal role_changed(new_player_id: int)
 		role = value
 		role_changed.emit(get_player_id())
 
+## Optional explicit references for the two main module classes a seat
+## typically contains. Populating these in the inspector documents the
+## seat's contents at design-time. The base scene script doesn't read
+## these (modules still self-bind via tree-walk), but a designer-built
+## controller can use them to drive seat-specific behavior.
+@export_group("Wiring (optional — for designer reference)")
+## The PlayerBoard rendering this seat's player.
+@export var player_board: Node
+## The HUD container (HBox/VBox) holding RageDisplay, ThreatDisplay,
+## DeckCountLabel, etc. for this seat.
+@export var hud_bar: Node
+@export_group("")
+
 
 ## Resolve this seat's role to a concrete player_id at the current
 ## NetworkManager state. Modules call this in `_try_bind()` to set their

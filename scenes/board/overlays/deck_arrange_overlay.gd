@@ -25,8 +25,11 @@ signal closed
 @export var prompt_key: String = "deck_arrange"
 @export var auto_register: bool = true
 
-const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 const _CARD_SIZE := Vector2(100, 140)
+
+
+func _card_scene() -> PackedScene:
+	return BoardModule.get_card_scene(self)
 
 @onready var _prompt: Label = $DeckArrangePanel/VBox/PromptLabel
 @onready var _keep_panel: PanelContainer = $DeckArrangePanel/VBox/ArrangeContainer/KeepPanel
@@ -170,7 +173,7 @@ func _refresh() -> void:
 
 
 func _create_card(card_data: Dictionary) -> Control:
-	var card: Control = _CARD_SCENE.instantiate()
+	var card: Control = _card_scene().instantiate()
 	if card.has_method("set_card_data_dict"):
 		card.set_card_data_dict(card_data)
 	card.custom_minimum_size = _CARD_SIZE

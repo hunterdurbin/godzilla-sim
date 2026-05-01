@@ -15,7 +15,8 @@ signal closed
 @export var prompt_key: String = "cards_revealed"
 @export var auto_register: bool = true
 
-const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
+func _card_scene() -> PackedScene:
+	return BoardModule.get_card_scene(self)
 
 @onready var _title: Label = $ZoneStackViewPanel/VBox/TitleLabel
 @onready var _grid: GridContainer = $ZoneStackViewPanel/VBox/ScrollContainer/CardGrid
@@ -91,7 +92,7 @@ func _clear_grid() -> void:
 func _render_grid() -> void:
 	_clear_grid()
 	for card_data in _cards:
-		var card: Control = _CARD_SCENE.instantiate()
+		var card: Control = _card_scene().instantiate()
 		if card.has_method("set_card_data_dict"):
 			card.set_card_data_dict(card_data)
 		card.is_selectable = false

@@ -66,3 +66,17 @@ static func find_seat(node: Node) -> SeatContainer:
 			return n as SeatContainer
 		n = n.get_parent()
 	return null
+
+
+## Locate the Card prefab to instantiate for any module that renders cards
+## (overlays, hand managers, etc.). Reads from the GameBoard's PlayerBoard
+## descendant — `card_scene` is `@export`-able there so a designer can swap
+## prefabs per-board variant. Falls back to the default Card.tscn when no
+## PlayerBoard is reachable (spectator scene, ReplayViewer, etc.).
+static func get_card_scene(node: Node) -> PackedScene:
+	var board := node.find_parent("GameBoard")
+	if board:
+		for child in board.find_children("*", "PlayerBoard", true, false):
+			if "card_scene" in child and child.card_scene:
+				return child.card_scene
+	return preload("res://scenes/cards/Card.tscn")

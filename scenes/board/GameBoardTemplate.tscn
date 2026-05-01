@@ -1,0 +1,138 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/board/GameBoardBase.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scenes/board/game_board_template.gd" id="2_tpl"]
+[ext_resource type="PackedScene" path="res://scenes/board/PlayerBoard.tscn" id="3_pb"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/RageDisplay.tscn" id="4_rd"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/ThreatDisplay.tscn" id="5_td"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/DeckCountLabel.tscn" id="6_dcl"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/DiscardCountLabel.tscn" id="7_dis"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/HandSortButton.tscn" id="8_hsb"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/TurnNumberLabel.tscn" id="9_tn"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/PhaseLabel.tscn" id="10_pl"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/ActionPanel.tscn" id="11_ap"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/LogPanel.tscn" id="12_lp"]
+
+[node name="GameBoard" instance=ExtResource("1_base")]
+script = ExtResource("2_tpl")
+
+[node name="OpponentVBox" type="VBoxContainer" parent="BoardLayoutSlot/OpponentSeat"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="HUDBar" type="HBoxContainer" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="RageDisplay" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/HUDBar" instance=ExtResource("4_rd")]
+layout_mode = 2
+
+[node name="ThreatDisplay" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/HUDBar" instance=ExtResource("5_td")]
+layout_mode = 2
+
+[node name="DeckCountLabel" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/HUDBar" instance=ExtResource("6_dcl")]
+layout_mode = 2
+
+[node name="DiscardCountLabel" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/HUDBar" instance=ExtResource("7_dis")]
+layout_mode = 2
+
+[node name="PlayerBoard" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox" instance=ExtResource("3_pb")]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+auto_bind = true
+is_mirrored = true
+
+[node name="LocalVBox" type="VBoxContainer" parent="BoardLayoutSlot/LocalSeat"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="PlayerBoard" parent="BoardLayoutSlot/LocalSeat/LocalVBox" instance=ExtResource("3_pb")]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+auto_bind = true
+
+[node name="HUDBar" type="HBoxContainer" parent="BoardLayoutSlot/LocalSeat/LocalVBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="RageDisplay" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("4_rd")]
+layout_mode = 2
+
+[node name="ThreatDisplay" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("5_td")]
+layout_mode = 2
+
+[node name="DeckCountLabel" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("6_dcl")]
+layout_mode = 2
+
+[node name="DiscardCountLabel" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("7_dis")]
+layout_mode = 2
+
+[node name="HandSortButton" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("8_hsb")]
+layout_mode = 2
+
+[node name="TopBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 8.0
+offset_right = -12.0
+offset_bottom = 44.0
+grow_horizontal = 2
+theme_override_constants/separation = 16
+mouse_filter = 2
+
+[node name="TurnNumberLabel" parent="TopBar" instance=ExtResource("9_tn")]
+layout_mode = 2
+
+[node name="PhaseLabel" parent="TopBar" instance=ExtResource("10_pl")]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MenuButton" type="Button" parent="TopBar"]
+custom_minimum_size = Vector2(140, 32)
+layout_mode = 2
+text = "Return to Menu"
+
+[node name="ActionPanel" parent="." instance=ExtResource("11_ap")]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -180.0
+offset_top = -200.0
+offset_right = 180.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="LogPanel" parent="." instance=ExtResource("12_lp")]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -380.0
+offset_top = -220.0
+offset_right = -16.0
+offset_bottom = -16.0
+grow_horizontal = 0
+grow_vertical = 0

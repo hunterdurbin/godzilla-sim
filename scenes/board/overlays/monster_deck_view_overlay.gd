@@ -21,7 +21,8 @@ signal closed
 @export var prompt_key: String = "monster_rankup"
 @export var auto_register: bool = true
 
-const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
+func _card_scene() -> PackedScene:
+	return BoardModule.get_card_scene(self)
 
 @onready var _title: Label = $MonsterDeckViewPanel/VBox/TitleLabel
 @onready var _stacked_toggle: CheckButton = $MonsterDeckViewPanel/VBox/StackedToggle
@@ -147,7 +148,7 @@ func _refresh_view_grid() -> void:
 
 
 func _make_view_card(card_data: Dictionary) -> Control:
-	var card: Control = _CARD_SCENE.instantiate()
+	var card: Control = _card_scene().instantiate()
 	if card.has_method("set_card_data_dict"):
 		card.set_card_data_dict(card_data)
 	card.is_selectable = false
@@ -161,7 +162,7 @@ func _render_rankup_grid() -> void:
 	_clear_grid()
 	for i in range(_cards.size()):
 		var card_data: Dictionary = _cards[i]
-		var card: Control = _CARD_SCENE.instantiate()
+		var card: Control = _card_scene().instantiate()
 		if card.has_method("set_card_data_dict"):
 			card.set_card_data_dict(card_data)
 		card.drag_enabled = false

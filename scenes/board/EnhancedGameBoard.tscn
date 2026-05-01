@@ -1,9 +1,9 @@
 [gd_scene load_steps=3 format=3 uid="uid://dsm2qdahhdvck"]
 
-[ext_resource type="PackedScene" path="res://scenes/board/GameBoardBase.tscn" id="1_1oqbl"]
+[ext_resource type="PackedScene" path="res://scenes/board/GameBoardTemplate.tscn" id="1_tpl"]
 [ext_resource type="Script" path="res://scenes/board/enhanced_game_board.gd" id="2_egb"]
 
-[node name="GameBoard" unique_id=700941796 instance=ExtResource("1_1oqbl")]
+[node name="GameBoard" instance=ExtResource("1_tpl")]
 script = ExtResource("2_egb")
 
 [node name="Background" type="ColorRect" parent="." index="0"]
@@ -15,38 +15,3 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.04, 0.05, 0.1, 1)
 mouse_filter = 2
-
-[node name="DefaultOverlayPack" parent="." index="2"]
-layout_mode = 1
-
-[node name="OpponentSeat" parent="BoardLayoutSlot" index="0"]
-anchors_preset = -1
-
-[node name="LocalSeat" parent="BoardLayoutSlot" index="1"]
-anchors_preset = -1
-grow_vertical = 0
-
-[node name="TopBar" type="HBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 16.0
-offset_top = 12.0
-offset_right = -16.0
-offset_bottom = 56.0
-grow_horizontal = 2
-theme_override_constants/separation = 12
-mouse_filter = 2
-
-[node name="Banner" type="Label" parent="TopBar"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "EnhancedGameBoard — designer test scene"
-vertical_alignment = 1
-theme_override_font_sizes/font_size = 18
-theme_override_colors/font_color = Color(0.9, 0.6, 0.2, 1)
-
-[node name="MenuButton" type="Button" parent="TopBar"]
-custom_minimum_size = Vector2(160, 32)
-layout_mode = 2
-text = "Return to Menu"

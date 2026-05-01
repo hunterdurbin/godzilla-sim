@@ -43,7 +43,7 @@ var snapshot_provider: Callable = Callable()
 
 var _bound_player: PlayerState = null
 
-var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
+@export var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
 # SVG viewBox dimensions for aspect ratio calculation
 const SVG_W := 1728.0

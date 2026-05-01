@@ -30,7 +30,8 @@ signal closed
 @export var prompt_key: String = "deck_search"
 @export var auto_register: bool = true
 
-const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
+func _card_scene() -> PackedScene:
+	return BoardModule.get_card_scene(self)
 
 @onready var _prompt: Label = $DeckSearchPanel/VBox/PromptLabel
 @onready var _show_all_toggle: CheckButton = $DeckSearchPanel/VBox/ToggleRow/ShowAllToggle
@@ -183,7 +184,7 @@ func _refresh_grid() -> void:
 
 
 func _make_card(card_data: Dictionary, is_selectable: bool) -> Control:
-	var card: Control = _CARD_SCENE.instantiate()
+	var card: Control = _card_scene().instantiate()
 	if card.has_method("set_card_data_dict"):
 		card.set_card_data_dict(card_data)
 	card.drag_enabled = false

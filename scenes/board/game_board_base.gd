@@ -26,8 +26,20 @@ extends Control
 @onready var session: GameSession = $GameSession
 @onready var multiplayer_sync: MultiplayerSync = $GameSession/MultiplayerSync
 @onready var effect_ui_router: EffectUIRouter = $GameSession/EffectUIRouter
-@onready var overlay_pack: Control = $DefaultOverlayPack
 @onready var board_layout_slot: Control = $BoardLayoutSlot
+
+## Wiring slots — set these in the inspector for explicit composition.
+## When unset, the base resolves them via tree-walk in `_ready` so legacy
+## scenes keep working. Drag a node from the scene tree into each slot
+## to make the wiring visible in the editor.
+@export_group("Wiring (optional — falls back to tree-walk if unset)")
+@export var overlay_pack: Control
+@export var local_seat: SeatContainer
+@export var opponent_seat: SeatContainer
+## Any node that emits `action_pressed(action: CardEnums.ActionType)`.
+## When unset, the base scans descendants for the signal.
+@export var action_panel: Node
+@export_group("")
 
 var local_player_id: int = 0
 var is_bot_game: bool = false
@@ -50,6 +62,8 @@ func _ready() -> void:
 	is_bot_game = NetworkManager.mode == NetworkManager.Mode.SOLO_BOT
 	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game \
 		else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
+
+	_resolve_wiring_slots()
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		# Client: wait for host RPCs to populate state. Subclasses that need
@@ -153,17 +167,34 @@ func _resolve_translated_text(text: String) -> String:
 
 # --- Internal wiring ---
 
-## If the scene has an ActionPanel descendant, instantiate a
-## SelectionModeController over it so click-to-select and submit_action
-## flow Just Work. Designer who wants custom behavior can override
-## `selection_controller` before _on_host_ready runs (or set
-## auto_bind=false on the action panel — currently no such flag, so
-## just don't include an ActionPanel if you want to drive the flow
-## yourself).
+## Resolve the optional `@export Node` wiring slots from the scene tree
+## when the inspector hasn't populated them. Keeps legacy scenes working
+## while letting new scenes opt into explicit wiring.
+func _resolve_wiring_slots() -> void:
+	if overlay_pack == null:
+		overlay_pack = get_node_or_null("DefaultOverlayPack") as Control
+	if local_seat == null or opponent_seat == null:
+		var seats := _find_descendants_of_class("SeatContainer")
+		for s in seats:
+			match s.role:
+				SeatContainer.Role.LOCAL:
+					if local_seat == null: local_seat = s
+				SeatContainer.Role.OPPONENT:
+					if opponent_seat == null: opponent_seat = s
+				SeatContainer.Role.PLAYER_0:
+					if local_seat == null: local_seat = s
+				SeatContainer.Role.PLAYER_1:
+					if opponent_seat == null: opponent_seat = s
+	if action_panel == null:
+		action_panel = _find_first_descendant_with_signal("action_pressed")
+
+
+## Builds a SelectionModeController over the configured action_panel if
+## one is present. Designer who wants custom behavior can override
+## `selection_controller` before _on_host_ready runs.
 func _wire_action_panel() -> void:
 	if selection_controller != null:
 		return  # subclass already provided one
-	var action_panel := _find_first_descendant_with_signal("action_pressed")
 	if action_panel == null:
 		return  # no ActionPanel in tree — designer drives actions another way
 	selection_controller = SelectionModeController.new(session, action_panel, self)

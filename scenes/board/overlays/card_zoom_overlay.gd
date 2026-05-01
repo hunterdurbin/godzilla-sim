@@ -20,8 +20,11 @@ signal closed
 ## get a working zoom callback without the host wiring it.
 @export var auto_register: bool = true
 
-const _CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 const _PINCH_MAX_SCALE: float = 3.0
+
+
+func _card_scene() -> PackedScene:
+	return BoardModule.get_card_scene(self)
 const _ZOOM_DRAG_DEADZONE: float = 20.0
 
 @onready var _container: CenterContainer = $CardContainer
@@ -50,7 +53,7 @@ func _ready() -> void:
 
 func show_card(card_data: Dictionary, play_cost_modifier: int = 0) -> void:
 	_clear_container()
-	var card: Control = _CARD_SCENE.instantiate()
+	var card: Control = _card_scene().instantiate()
 	if card.has_method("set_card_data_dict"):
 		card.set_card_data_dict(card_data)
 	if card.has_method("set_play_cost_modifier"):

@@ -100,6 +100,22 @@ tooltip_text = "STR_MENU_BOT_CONFIG"
 text = "⚙"
 theme_override_font_sizes/font_size = 22
 
+[node name="TestBoardRow" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 8
+
+[node name="TestBoardLabel" type="Label" parent="CenterContainer/VBoxContainer/TestBoardRow"]
+layout_mode = 2
+text = "🧪 Test Board:"
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+
+[node name="TestBoardPicker" type="OptionButton" parent="CenterContainer/VBoxContainer/TestBoardRow"]
+custom_minimum_size = Vector2(200, 32)
+layout_mode = 2
+
 [node name="LanButton" type="Button" parent="CenterContainer/VBoxContainer"]
 custom_minimum_size = Vector2(200, 50)
 layout_mode = 2
