@@ -126,6 +126,7 @@ func bind(p_session: GameSession, p_multiplayer_sync: MultiplayerSync, p_local_p
 		_connect_once(eh.card_select_requested, _on_card_select_requested)
 		_connect_once(eh.choice_requested, _on_choice_requested)
 		_connect_once(eh.cards_revealed_requested, _on_cards_revealed_requested)
+		_connect_once(eh.zone_target_requested, _on_zone_target_requested)
 	var ah := session.action_handler
 	if ah:
 		_connect_once(ah.monster_rankup_requested, _on_monster_rankup_requested)
@@ -242,7 +243,9 @@ func _on_card_select_requested(player_id: int, matching: Array, all_cards: Array
 
 
 func _on_choice_requested(player_id: int, options: Array, prompt: String) -> void:
+	print("[EffectUIRouter] _on_choice_requested player=%d options=%d prompt=%s" % [player_id, options.size(), prompt])
 	if is_bot_game and player_id == bot_player_id:
+		print("[EffectUIRouter] Skipping — bot's choice (player_id == bot_player_id %d)" % bot_player_id)
 		return
 	if is_multiplayer and player_id != local_player_id:
 		var options_json := JSON.stringify(options)
@@ -279,6 +282,22 @@ func _on_cards_revealed_requested(player_id: int, cards: Array, title: String) -
 		return
 	# Cards revealed always shows on local — no remote routing.
 	show_cards_revealed(cards, title)
+
+
+func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array, prompt: String, allow_skip: bool) -> void:
+	if is_bot_game and player_id == bot_player_id:
+		return  # Bot handles via its own listener
+	if is_multiplayer and player_id != local_player_id:
+		var zones_json := JSON.stringify(valid_zones)
+		_set_pending("zone_target", [target_player_id, zones_json, prompt, allow_skip])
+		_send_to_remote(player_id, func(peer):
+			RpcLogger.log_send("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
+			multiplayer_sync._rpc_zone_target_requested.rpc_id(peer, target_player_id, zones_json, prompt, allow_skip))
+		return
+	var typed_zones: Array[int] = []
+	for v in valid_zones:
+		typed_zones.append(int(v))
+	show_zone_target(target_player_id, typed_zones, prompt, allow_skip)
 
 
 # --- Local-display entry points (also called by RPC handlers on the client side) ---
@@ -319,6 +338,100 @@ func show_choice(options: Array, prompt: String) -> void:
 		handler.call(translated, _translate(prompt), resolve_choice)
 	else:
 		push_warning("[EffectUIRouter] No handler registered for 'choice'")
+
+
+## Built-in zone-target flow: when a designer hasn't registered a custom
+## "zone_target" handler, the router highlights the valid zones on the
+## target PlayerBoard, listens for slot_clicked, and resolves with the
+## chosen zone index. Skip is wired through ActionPanel's prompt panel
+## when allow_skip is true and a SelectionModeController is present.
+var _zone_target_active: bool = false
+var _zone_target_valid: Array[int] = []
+var _zone_target_board: Node = null
+
+
+func show_zone_target(target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> void:
+	var handler: Callable = _handlers.get("zone_target", Callable())
+	if handler.is_valid():
+		handler.call(target_player_id, valid_zones, _translate(prompt), allow_skip, resolve_zone_target)
+		return
+	# Built-in default. Find the target PlayerBoard, highlight valid zones,
+	# wire each slot to call resolve_zone_target on click.
+	var board := _find_player_board(target_player_id)
+	if board == null:
+		push_warning("[EffectUIRouter] No PlayerBoard found for player_id=%d — auto-skipping zone target." % target_player_id)
+		resolve_zone_target(-1)
+		return
+	_zone_target_active = true
+	_zone_target_valid = valid_zones
+	_zone_target_board = board
+	board.highlight_valid_zones(valid_zones)
+	for i in range(board.zone_slots.size()):
+		var slot = board.zone_slots[i]
+		if slot and i in valid_zones:
+			slot.in_selection_mode = true
+			if not slot.slot_clicked.is_connected(_on_zone_target_slot_clicked):
+				slot.slot_clicked.connect(_on_zone_target_slot_clicked)
+	# Show the prompt + (optional) skip button via SelectionModeController
+	# when one is reachable through the GameBoard root. Designer-built
+	# scenes without an ActionPanel just see the highlighted zones; the
+	# skip path is then unavailable (effect engine won't let allow_skip
+	# stalls happen — the engine-side fallback only triggers when the
+	# signal has no listeners; we ARE listening, so it'll wait for click).
+	if _board:
+		var sc = _board.get("selection_controller") if "selection_controller" in _board else null
+		if sc and sc.has_method("prompt_confirmation"):
+			# Reuse prompt_confirmation as a "skip" button when allow_skip,
+			# else just show the prompt without a confirm button.
+			if allow_skip:
+				sc.prompt_confirmation(_translate(prompt), _on_zone_target_skip)
+			else:
+				# Show prompt without confirm/skip — disable confirm.
+				if "_action_panel" in sc and sc._action_panel and sc._action_panel.has_method("show_prompt"):
+					sc._action_panel.show_prompt(_translate(prompt), false)
+
+
+func _find_player_board(target_player_id: int) -> Node:
+	if _board == null:
+		return null
+	for pb in _board.find_children("*", "PlayerBoard", true, false):
+		if "player_id" in pb and pb.player_id == target_player_id:
+			return pb
+	return null
+
+
+func _on_zone_target_slot_clicked(zone_num: int, _pid: int) -> void:
+	if not _zone_target_active:
+		return
+	var zone_idx: int = zone_num - 1
+	if zone_idx not in _zone_target_valid:
+		return
+	resolve_zone_target(zone_idx)
+
+
+func _on_zone_target_skip() -> void:
+	if not _zone_target_active:
+		return
+	resolve_zone_target(-1)
+
+
+func _cleanup_zone_target() -> void:
+	if _zone_target_board:
+		_zone_target_board.clear_highlights()
+		for i in range(_zone_target_board.zone_slots.size()):
+			var slot = _zone_target_board.zone_slots[i]
+			if slot:
+				slot.in_selection_mode = false
+				if slot.slot_clicked.is_connected(_on_zone_target_slot_clicked):
+					slot.slot_clicked.disconnect(_on_zone_target_slot_clicked)
+	_zone_target_active = false
+	_zone_target_valid.clear()
+	_zone_target_board = null
+	# Hide the prompt panel via SelectionModeController if present.
+	if _board:
+		var sc = _board.get("selection_controller") if "selection_controller" in _board else null
+		if sc and "_action_panel" in sc and sc._action_panel and sc._action_panel.has_method("hide_prompt"):
+			sc._action_panel.hide_prompt()
 
 
 func show_cards_revealed(cards: Array, title: String) -> void:
@@ -396,3 +509,12 @@ func resolve_monster_rankup(index: int) -> void:
 		multiplayer_sync._rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, index)
 	elif session and session.action_handler:
 		session.action_handler.resolve_monster_rankup(index)
+
+
+func resolve_zone_target(zone_index: int) -> void:
+	_cleanup_zone_target()
+	if is_multiplayer and not NetworkManager.is_host():
+		RpcLogger.log_send("zone_target_resolved", 4)
+		multiplayer_sync._rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_index)
+	elif session and session.effect_handler:
+		session.effect_handler.resolve_zone_target(zone_index)

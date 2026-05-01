@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DiscardViewOverlay.tscn" id="5_dv"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/MonsterDeckViewOverlay.tscn" id="6_mdv"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/ZoneStackViewOverlay.tscn" id="7_zsv"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/ChoicePromptOverlay.tscn" id="8_cpo"]
 
 [node name="DefaultOverlayPack" type="Control"]
 layout_mode = 3
@@ -24,3 +25,4 @@ mouse_filter = 2
 [node name="DiscardViewOverlay" parent="." instance=ExtResource("5_dv")]
 [node name="MonsterDeckViewOverlay" parent="." instance=ExtResource("6_mdv")]
 [node name="ZoneStackViewOverlay" parent="." instance=ExtResource("7_zsv")]
+[node name="ChoicePromptOverlay" parent="." instance=ExtResource("8_cpo")]
