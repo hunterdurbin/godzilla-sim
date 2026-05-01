@@ -711,6 +711,11 @@ auto-bind pattern. Drop one in, configure via the inspector, done.
 | `HandSortButton.tscn` | `player_id` (overridden by SeatContainer) | sort the seat's hand using GameSettings sort order on press |
 | `HandSlot.tscn` | `auto_bind`, `anchor_edge`, `width_pct` | drop into a SeatContainer next to a PlayerBoard — auto-attaches as the board's `hand_manager` and anchors to the seat's bottom (LOCAL) / top (OPPONENT) edge |
 | `HoverPreview.tscn` | `auto_bind`, `hide_on_mobile` | subscribes to every PlayerBoard's `card_preview_requested/cleared` signals; renders a magnified card with strategy/normal layouts. Anchor anywhere — the Control's own size + position drive the preview's bounds. |
+| `FirstPlayerOverlay.tscn` | — | coin-flip / first-player choice modal. Public API: `show_choice(chooser_id)`, `show_waiting()`, `hide_choice()`. Emits `choice_made(chosen_player_id)`. Template controller drives it for SOLO_BOT mode; designer wires multiplayer RPCs. |
+| `SaveButton.tscn` | `auto_bind` | save current game state via GameSerializer. Captures first-player from the first `turn_started` event for replay determinism. |
+| `SettingsTray.tscn` | `show_*` flags per setting | toggleable list of auto-behaviors (auto-draw, auto-counter, …) bound to GameSettings; persists on click. |
+| `ReconnectOverlay.tscn` | — | listens to `NetworkManager.player_disconnected/reconnected`. Host: claim-win countdown. Client: reconnecting timer. Emits `claim_win_pressed` / `return_to_menu_pressed`. |
+| `ChatInput.tscn` | `max_length` | drop into a LogPanel/VBox. Submits a `chat` token to LogPanel.append_log + (in multiplayer) MultiplayerSync._rpc_receive_chat. ChatFilter applied. |
 
 These are small and intentionally minimal — they're starting points,
 not the final visual. To customize, copy the .gd, change the visuals,

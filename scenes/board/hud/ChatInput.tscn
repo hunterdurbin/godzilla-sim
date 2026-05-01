@@ -1,0 +1,19 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/chat_input.gd" id="1_ci"]
+
+[node name="ChatInput" type="HBoxContainer"]
+theme_override_constants/separation = 8
+script = ExtResource("1_ci")
+
+[node name="Input" type="LineEdit" parent="."]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "STR_GB_CHAT_PLACEHOLDER"
+max_length = 200
+
+[node name="CharCount" type="Label" parent="."]
+layout_mode = 2
+text = "200"
+theme_override_font_sizes/font_size = 10
+theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)

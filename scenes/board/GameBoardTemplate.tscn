@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/board/GameBoardBase.tscn" id="1_base"]
 [ext_resource type="Script" path="res://scenes/board/game_board_template.gd" id="2_tpl"]
@@ -17,6 +17,11 @@
 [ext_resource type="PackedScene" path="res://scenes/board/hud/TurnTrackerView.tscn" id="15_ttv"]
 [ext_resource type="PackedScene" path="res://scenes/board/hud/EndGamePanel.tscn" id="16_egp"]
 [ext_resource type="PackedScene" path="res://scenes/board/hud/HoverPreview.tscn" id="17_hov"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/FirstPlayerOverlay.tscn" id="18_fpo"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/SaveButton.tscn" id="19_sav"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/SettingsTray.tscn" id="20_set"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/ReconnectOverlay.tscn" id="21_rec"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/ChatInput.tscn" id="22_chat"]
 
 [node name="GameBoard" instance=ExtResource("1_base")]
 script = ExtResource("2_tpl")
@@ -113,6 +118,9 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="SaveButton" parent="TopBar" instance=ExtResource("19_sav")]
+layout_mode = 2
+
 [node name="MenuButton" type="Button" parent="TopBar"]
 custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
@@ -175,3 +183,27 @@ offset_top = 60.0
 offset_right = -16.0
 offset_bottom = 380.0
 grow_horizontal = 0
+
+[node name="FirstPlayerOverlay" parent="." instance=ExtResource("18_fpo")]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="SettingsTray" parent="." instance=ExtResource("20_set")]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 0.0
+anchor_bottom = 0.0
+offset_left = 16.0
+offset_top = 60.0
+offset_right = 236.0
+offset_bottom = 280.0
+grow_vertical = 1
+
+[node name="ReconnectOverlay" parent="." instance=ExtResource("21_rec")]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="ChatInput" parent="LogPanel/VBox" index="2" instance=ExtResource("22_chat")]
+layout_mode = 2

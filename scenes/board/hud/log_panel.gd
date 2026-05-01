@@ -33,13 +33,15 @@ func _try_bind() -> void:
 func _bind() -> void:
 	if _session == null or _session.turn_manager == null:
 		return
-	_session.turn_manager.log_message.connect(_on_log_message)
+	_session.turn_manager.log_message.connect(append_log)
 	if _session.effect_handler:
-		_session.effect_handler.log_message.connect(_on_log_message)
+		_session.effect_handler.log_message.connect(append_log)
 	_session.turn_manager.game_ended.connect(_on_game_ended)
 
 
-func _on_log_message(token) -> void:
+## Public hook so components like ChatInput can post their own tokens
+## without owning the rendering / scrollback logic.
+func append_log(token) -> void:
 	var rendered: String
 	if token is Dictionary:
 		rendered = GameLog.render(token)

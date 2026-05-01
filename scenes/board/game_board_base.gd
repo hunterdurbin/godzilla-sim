@@ -84,9 +84,16 @@ func _ready() -> void:
 	_on_host_ready()
 
 	# Auto-pick first player so the loop doesn't stall on coin flip in solo
-	# mode. Subclasses can override _on_host_ready() to delay or customize.
-	if not is_multiplayer_game:
+	# mode. Subclasses that want a coin-flip UI override this hook.
+	if not is_multiplayer_game and auto_start_first_player:
 		session.start_game(0)
+
+
+## Set false in a subclass that wants to drive `session.start_game()`
+## itself — e.g. after a coin-flip overlay resolves the first player.
+## Default true preserves the legacy GameBoardBase behavior of starting
+## solo / solo-bot games immediately with player 0 going first.
+var auto_start_first_player: bool = true
 
 
 func _process(_delta: float) -> void:

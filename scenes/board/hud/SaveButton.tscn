@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/save_button.gd" id="1_sb"]
+
+[node name="SaveButton" type="Button"]
+custom_minimum_size = Vector2(120, 32)
+text = "STR_GB_SAVE_GAME"
+script = ExtResource("1_sb")

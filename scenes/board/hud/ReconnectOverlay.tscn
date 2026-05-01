@@ -1,0 +1,53 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/reconnect_overlay.gd" id="1_ro"]
+
+[node name="ReconnectOverlay" type="ColorRect"]
+visible = false
+z_index = 200
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 0
+color = Color(0, 0, 0, 0.75)
+script = ExtResource("1_ro")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -130.0
+offset_right = 200.0
+offset_bottom = 130.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="Label" type="Label" parent="VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+text = "STR_GB_OPPONENT_DISCONNECTED_WAIT"
+
+[node name="TimerLabel" type="Label" parent="VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 18
+theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
+
+[node name="ClaimBtn" type="Button" parent="VBox"]
+visible = false
+custom_minimum_size = Vector2(200, 44)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "STR_GB_CLAIM_WIN"
+
+[node name="MenuBtn" type="Button" parent="VBox"]
+custom_minimum_size = Vector2(200, 44)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "STR_GB_RETURN_TO_MENU"

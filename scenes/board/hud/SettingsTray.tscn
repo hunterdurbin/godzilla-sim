@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/settings_tray.gd" id="1_st"]
+
+[node name="SettingsTray" type="VBoxContainer"]
+custom_minimum_size = Vector2(220, 0)
+theme_override_constants/separation = 4
+script = ExtResource("1_st")
