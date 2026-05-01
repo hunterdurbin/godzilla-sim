@@ -46,16 +46,67 @@ signal role_changed(new_player_id: int)
 
 ## Optional explicit references for the two main module classes a seat
 ## typically contains. Populating these in the inspector documents the
-## seat's contents at design-time. The base scene script doesn't read
-## these (modules still self-bind via tree-walk), but a designer-built
-## controller can use them to drive seat-specific behavior.
+## seat's contents at design-time.
 @export_group("Wiring (optional — for designer reference)")
-## The PlayerBoard rendering this seat's player.
+## The PlayerBoard rendering this seat's player. Auto-resolved at
+## _ready: prefers a manually-dropped PlayerBoard child (WYSIWYG),
+## otherwise falls back to instantiating `player_board_scene` below.
 @export var player_board: Node
 ## The HUD container (HBox/VBox) holding RageDisplay, ThreatDisplay,
 ## DeckCountLabel, etc. for this seat.
 @export var hud_bar: Node
 @export_group("")
+
+## PlayerBoard scene to instantiate at runtime when this seat has no
+## manually-dropped PlayerBoard child. Set per-seat (LocalSeat vs
+## OpponentSeat) to use a different variant per side.
+##
+## Default points at the standard PlayerBoard.tscn so out-of-the-box
+## seats just work. Set to null if you want this seat to remain empty
+## until something else populates it.
+##
+## A manually-dropped PlayerBoard child takes priority — designer who
+## wants WYSIWYG editing can keep an inspector-visible child and ignore
+## this slot.
+@export_group("Auto-instantiation")
+@export var player_board_scene: PackedScene = preload("res://scenes/board/PlayerBoard.tscn")
+@export_group("")
+
+
+func _ready() -> void:
+	call_deferred("_auto_instantiate_player_board")
+
+
+## If the seat has no PlayerBoard descendant, instantiate one from
+## `player_board_scene`. Sets `auto_bind=true` and seat-derived
+## `is_mirrored` / `player_id` so the new board self-resolves into the
+## session without further wiring. Designer-dropped PlayerBoard children
+## skip this entirely — the explicit child wins.
+func _auto_instantiate_player_board() -> void:
+	if player_board_scene == null:
+		return
+	# Existing PlayerBoard child wins (WYSIWYG path).
+	var existing := find_children("*", "PlayerBoard", true, false)
+	if not existing.is_empty():
+		if player_board == null:
+			player_board = existing[0]
+		return
+	var pb: Node = player_board_scene.instantiate()
+	# Set fields BEFORE add_child so the child's _ready (which runs the
+	# moment it enters the tree) sees the seat-derived values.
+	if "auto_bind" in pb:
+		pb.auto_bind = true
+	if "player_id" in pb:
+		pb.player_id = get_player_id()
+	if "is_mirrored" in pb:
+		pb.is_mirrored = (role == Role.OPPONENT)
+	# Position the runtime-instantiated board to fill the seat. Designer
+	# can override by manually placing a PlayerBoard child instead.
+	if pb is Control:
+		var c := pb as Control
+		c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(pb)
+	player_board = pb
 
 
 ## Resolve this seat's role to a concrete player_id at the current

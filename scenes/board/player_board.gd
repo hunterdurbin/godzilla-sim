@@ -1,3 +1,4 @@
+class_name PlayerBoard
 extends Control
 
 ## Visual representation of one player's side of the board.

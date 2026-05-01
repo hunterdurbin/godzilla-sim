@@ -31,6 +31,73 @@ subtree (GameSession + MultiplayerSync + EffectUIRouter) and an empty
 your own PlayerBoard, HUD primitives, ActionPanel, etc. — all of them
 self-bind via tree-walk so no controller wiring is needed.
 
+## Per-seat PlayerBoard variants
+
+Each `SeatContainer` exposes a **PlayerBoard slot** that lets you
+assign a different scene per side without editing scripts:
+
+```
+LocalSeat (SeatContainer)        OpponentSeat (SeatContainer)
+  player_board_scene              player_board_scene
+  └── PlayerBoard.tscn ▼          └── PlayerBoard.tscn ▼
+```
+
+Two ways to configure a seat:
+
+1. **Manual child (WYSIWYG)** — drag a `PlayerBoard` (or your own
+   variant) into the seat as a child node. The seat detects an
+   existing `PlayerBoard` descendant and skips auto-instantiation.
+   Tweak position, anchors, sub-component layout right in the editor.
+   This is what `GameBoardTemplate.tscn` ships with.
+2. **Inspector slot (declarative)** — leave the seat childless and
+   set `player_board_scene` to your custom .tscn. At runtime,
+   SeatContainer instantiates the scene as a child, sets
+   `auto_bind=true`, derives `player_id` from the seat's role, and
+   sets `is_mirrored=true` for OPPONENT seats. Designer changes one
+   inspector field per seat to use a different variant — no script
+   edit needed.
+
+Both paths coexist. A manually-dropped child always wins.
+
+### Building a PlayerBoard variant
+
+The simplest way to make a custom PlayerBoard (e.g.
+`OpponentPlayerBoard.tscn` with a summary view of the opponent's
+state):
+
+1. **File → New Inherited Scene → `scenes/board/PlayerBoard.tscn`**.
+2. Save as `scenes/board/MyPlayerBoard.tscn`.
+3. Edit the inherited tree — move zones, change colors, hide /
+   re-skin sub-components.
+4. Set the variant on a seat: open your GameBoard scene, click the
+   target SeatContainer, set `player_board_scene` to your .tscn.
+
+#### Required node names
+
+`player_board.gd` looks up children by name (`find_child`). To stay
+compatible, your variant must keep these node names somewhere in its
+subtree:
+
+| Name | Type | Role |
+| --- | --- | --- |
+| `LayoutContainer` | Control | Direct child of PlayerBoard root |
+| `Zone1`–`Zone8` | Slot | Battle zones |
+| `Strategy1`–`Strategy3` | Slot | Strategy zones |
+| `RageDisplay` | VBoxContainer | Rage / Threat block (top-left) |
+| `RageLabel` / `RageThreatLabel` / `RageTitle` / `RageBg` | various | Rage sub-elements |
+| `ThreatRow` / `ThreatTitle` / `ThreatLabel` | various | Threat sub-elements |
+| `CPDisplay` / `CPRow` / `CPTitle` / `CPLabel` | various | CP block |
+| `DeckInfo` / `DiscardInfo` / `MonsterInfo` | Control | Deck / discard / monster info zones |
+
+You can move these around, restyle, resize, hide, or wrap them in
+extra containers. You **cannot** rename them or the script's
+`find_child` lookups silently return null and the board becomes
+non-functional.
+
+A future refactor may convert these to `@export Node` slots so the
+contract is editable in the inspector. For now, treat the node names
+as the contract.
+
 ## Anatomy of GameBoardTemplate.tscn
 
 The template ships with this structure (children of the inherited base
