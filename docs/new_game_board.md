@@ -709,10 +709,30 @@ auto-bind pattern. Drop one in, configure via the inspector, done.
 | `BoardSfx.tscn` | `sound_for_local_player_id` | every action / effect / turn signal → SfxManager |
 | `ActionPanel.tscn` | — | drop-in 6-action panel + Cancel/Confirm + prompt; auto-wires to SelectionModeController via GameBoardBase |
 | `HandSortButton.tscn` | `player_id` (overridden by SeatContainer) | sort the seat's hand using GameSettings sort order on press |
+| `HandSlot.tscn` | `auto_bind`, `anchor_edge`, `width_pct` | drop into a SeatContainer next to a PlayerBoard — auto-attaches as the board's `hand_manager` and anchors to the seat's bottom (LOCAL) / top (OPPONENT) edge |
 
 These are small and intentionally minimal — they're starting points,
 not the final visual. To customize, copy the .gd, change the visuals,
 keep the `_ready()` auto-bind block.
+
+#### Building a HandSlot variant
+
+`HandSlot` extends `CardManager`, so any custom hand variant inherits
+the existing arc layout / drag / right-click behavior. To make one:
+
+1. **File → New Inherited Scene → `scenes/board/hud/HandSlot.tscn`**.
+2. Save as `scenes/board/hud/MyHandSlot.tscn`.
+3. Tweak `arc_radius`, `arc_angle`, `vertical_offset`, `card_spacing`,
+   etc. in the inspector. Or override `_compute_slot_positions()` /
+   `arrange_cards()` for a fully custom layout.
+4. Drop into a SeatContainer in your GameBoard scene. It auto-resolves
+   the seat role and wires itself to the PlayerBoard inside the same
+   seat — no controller code required.
+
+The contract: HandSlot subclasses must call `super()` from `_ready()`
+and not break the `auto_bind` flow. Card spawning is driven by
+`PlayerBoard.sync_to_state` — HandSlot only handles wiring +
+positioning.
 
 ### HUD components — building your own
 

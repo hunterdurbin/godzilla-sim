@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="PackedScene" path="res://scenes/board/GameBoardBase.tscn" id="1_base"]
 [ext_resource type="Script" path="res://scenes/board/game_board_template.gd" id="2_tpl"]
@@ -12,6 +12,7 @@
 [ext_resource type="PackedScene" path="res://scenes/board/hud/PhaseLabel.tscn" id="10_pl"]
 [ext_resource type="PackedScene" path="res://scenes/board/hud/ActionPanel.tscn" id="11_ap"]
 [ext_resource type="PackedScene" path="res://scenes/board/hud/LogPanel.tscn" id="12_lp"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/HandSlot.tscn" id="13_hs"]
 
 [node name="GameBoard" instance=ExtResource("1_base")]
 script = ExtResource("2_tpl")
@@ -48,6 +49,8 @@ size_flags_vertical = 3
 auto_bind = true
 is_mirrored = true
 
+[node name="HandSlot" parent="BoardLayoutSlot/OpponentSeat" instance=ExtResource("13_hs")]
+
 [node name="LocalVBox" type="VBoxContainer" parent="BoardLayoutSlot/LocalSeat"]
 layout_mode = 1
 anchors_preset = 15
@@ -81,6 +84,8 @@ layout_mode = 2
 
 [node name="HandSortButton" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("8_hsb")]
 layout_mode = 2
+
+[node name="HandSlot" parent="BoardLayoutSlot/LocalSeat" instance=ExtResource("13_hs")]
 
 [node name="TopBar" type="HBoxContainer" parent="."]
 layout_mode = 1
