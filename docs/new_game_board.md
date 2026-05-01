@@ -602,8 +602,69 @@ keep the `_ready()` auto-bind block.
 
 ### HUD components — building your own
 
-For HUD components beyond the primitives above (custom rage meter,
-themed threat display, animated deck stack, etc.):
+For most player-bound HUD labels, **extend `BoundLabel`** instead of
+rolling your own auto-bind code. BoundLabel handles all the
+session/seat resolution, signal subscription, host-vs-client timing,
+seat-role-swap rebinding, and teardown. Subclass overrides one method:
+
+```gdscript
+extends BoundLabel
+
+@export var format_string: String = "Rage: %d"
+
+func _refresh(_session: GameSession, player: PlayerState) -> void:
+    text = format_string % player.rage
+```
+
+That's a complete `RageDisplay` — about 5 lines.
+
+For displays that need session-level data beyond a single PlayerState
+(modifier sums, current_phase, etc.), the same `_refresh` callback
+also receives the GameSession:
+
+```gdscript
+extends BoundLabel
+
+@export var format_string: String = "Threat: %d"
+
+func _refresh(session: GameSession, player: PlayerState) -> void:
+    var base_threat: int = player.current_monster.get("threat", 0) if not player.current_monster.is_empty() else 0
+    var threat: int = base_threat + player.rage * 5000
+    if session.is_running() and session.effect_handler:
+        threat += session.effect_handler.get_threat_level_modifier(player.player_id)
+    text = format_string % threat
+```
+
+Inspector exposes a `Bindings` group with:
+- `session_path: NodePath` — optional explicit session reference (else
+  tree-walk via `BoardModule`)
+- `player_id: int` — overridden by ancestor `SeatContainer` when
+  present
+
+For session-level state that isn't tied to a specific player (turn
+number, phase banner, current-player indicator), extend
+**`SessionBoundLabel`** instead. Same lookup + timing affordances,
+no `player_id` / seat resolution, and the subclass wires whichever
+session signals it cares about in `_bind(session)`:
+
+```gdscript
+extends SessionBoundLabel
+
+@export var format_string: String = "Turn: %d"
+
+func _bind(session: GameSession) -> void:
+    session.turn_manager.turn_started.connect(_on_turn_started)
+    _refresh()
+
+func _on_turn_started(_pid: int) -> void: _refresh()
+
+func _refresh() -> void:
+    if _session and _session.game_state:
+        text = format_string % _session.game_state.turn_number
+```
+
+For HUD components that aren't labels (custom widgets, animated
+elements, multi-line UIs):
 
 ```gdscript
 extends Label  # or whatever control type
