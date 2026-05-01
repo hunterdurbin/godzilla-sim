@@ -1,0 +1,39 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/end_game_panel.gd" id="1_egp"]
+
+[node name="EndGamePanel" type="PanelContainer"]
+visible = false
+custom_minimum_size = Vector2(420, 220)
+script = ExtResource("1_egp")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="Header" type="Label" parent="VBox"]
+layout_mode = 2
+text = "STR_GB_GAME_OVER"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 22
+
+[node name="WinLabel" type="Label" parent="VBox"]
+layout_mode = 2
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+autowrap_mode = 2
+
+[node name="ButtonRow" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 24
+
+[node name="RematchButton" type="Button" parent="VBox/ButtonRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 40)
+text = "STR_GB_REMATCH"
+
+[node name="MenuButton" type="Button" parent="VBox/ButtonRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(140, 40)
+text = "STR_GB_MAIN_MENU"

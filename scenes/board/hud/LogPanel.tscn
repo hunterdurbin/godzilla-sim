@@ -1,0 +1,27 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/log_panel.gd" id="1_lp"]
+
+[node name="LogPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(360, 200)
+script = ExtResource("1_lp")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Header" type="Label" parent="VBox"]
+layout_mode = 2
+text = "Game Log"
+theme_override_font_sizes/font_size = 14
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="LogOutput" type="RichTextLabel" parent="VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+fit_content = true
+scroll_active = false

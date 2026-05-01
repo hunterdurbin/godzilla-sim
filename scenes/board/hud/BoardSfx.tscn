@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/board_sfx.gd" id="1_bsfx"]
+
+[node name="BoardSfx" type="Node"]
+script = ExtResource("1_bsfx")

@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/turn_number_label.gd" id="1_tn"]
+
+[node name="TurnNumberLabel" type="Label"]
+text = "Turn: 0"
+script = ExtResource("1_tn")
