@@ -43,6 +43,9 @@ cp_label = NodePath("LayoutContainer/CPDisplay/CPRow/CPLabel")
 deck_display = NodePath("LayoutContainer/DeckInfo")
 discard_display = NodePath("LayoutContainer/DiscardInfo")
 monster_info_display = NodePath("LayoutContainer/MonsterInfo")
+deck_count_badge = NodePath("LayoutContainer/DeckInfo/CountBadge")
+discard_count_badge = NodePath("LayoutContainer/DiscardInfo/CountBadge")
+monster_deck_count_badge = NodePath("LayoutContainer/MonsterInfo/CountBadge")
 
 [node name="BoardBg" type="TextureRect" parent="."]
 layout_mode = 1
@@ -300,6 +303,28 @@ offset_right = 0.0
 offset_bottom = 0.0
 mouse_filter = 1
 
+[node name="CountBadge" type="Label" parent="LayoutContainer/DeckInfo"]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -24.0
+offset_right = 20.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+
 [node name="MonsterInfo" type="Control" parent="LayoutContainer"]
 layout_mode = 1
 anchors_preset = 0
@@ -312,6 +337,28 @@ offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
 mouse_filter = 1
+
+[node name="CountBadge" type="Label" parent="LayoutContainer/MonsterInfo"]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -24.0
+offset_right = 20.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
 
 [node name="Zone1" parent="LayoutContainer" instance=ExtResource("2_slot")]
 layout_mode = 1
@@ -391,3 +438,25 @@ offset_right = 0.0
 offset_bottom = 0.0
 clip_contents = true
 mouse_filter = 1
+
+[node name="CountBadge" type="Label" parent="LayoutContainer/DiscardInfo"]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -20.0
+offset_top = -24.0
+offset_right = 20.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 14
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4

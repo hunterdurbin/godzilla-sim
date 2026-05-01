@@ -79,12 +79,20 @@ var _bound_player: PlayerState = null
 @export_group("")
 
 @export_group("Info zone borders")
+## When true (default), runtime draws a border around each info zone
+## via the _draw_border callback. Toggle off when the designer wants
+## to use their own panel styling (StyleBoxFlat on the Control, etc.).
+@export var enable_info_borders: bool = true
 ## Border drawn around the deck / discard / monster-info Control areas.
 @export var info_border_color: Color = Color(0.45, 0.45, 0.55, 0.9)
 @export_range(0.0, 8.0, 0.5) var info_border_width: float = 2.0
 @export_group("")
 
 @export_group("Deck stack")
+## When true (default), runtime creates card-back panels under
+## DeckInfo / MonsterInfo to visualize the deck's height. Toggle off
+## for variants that use a different visualization.
+@export var enable_deck_stack: bool = true
 ## Maximum number of card-back layer panels to create. The visible
 ## stack height grows with deck size up to this cap.
 @export_range(1, 60) var deck_stack_max_layers: int = 20
@@ -141,6 +149,14 @@ var _bound_player: PlayerState = null
 @export var deck_display: Control
 @export var discard_display: Control
 @export var monster_info_display: Control
+## Optional editor-placed count Labels inside each info zone. When set,
+## the runtime skips programmatic Label.new() construction and uses the
+## designer's Label as the badge — full WYSIWYG control over font,
+## color, position, etc. When null, falls back to creating one with the
+## "Count badges" group's defaults.
+@export var deck_count_badge: Label
+@export var discard_count_badge: Label
+@export var monster_deck_count_badge: Label
 @export_group("")
 
 # Runtime state — populated dynamically.
@@ -152,13 +168,10 @@ var monster_card_zone: int = -1 # Zone index (0-7) where monster card is current
 
 # Card-based info display caches
 var _deck_card_backs: Array[Control] = []
-var _deck_count_badge: Label = null
 var _discard_card: Control = null
 var _discard_empty_label: Label = null
 var _discard_last_id: String = ""  # Track last shown card to avoid redundant updates
-var _discard_count_badge: Label = null
 var _monster_deck_card_backs: Array[Control] = []
-var _monster_deck_count_badge: Label = null
 
 # Card back texture cache (shared across instances)
 const _DEFAULT_CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
@@ -450,11 +463,14 @@ func _setup_references() -> void:
 
 	# Deck: dynamic stack of face-down cards (height reflects card count) + hover count badge
 	if deck_display:
-		_create_deck_stack(deck_display, _deck_card_backs)
-		_deck_count_badge = _create_count_badge()
-		deck_display.add_child(_deck_count_badge)
-		deck_display.mouse_entered.connect(_deck_count_badge.show)
-		deck_display.mouse_exited.connect(_deck_count_badge.hide)
+		if enable_deck_stack:
+			_create_deck_stack(deck_display, _deck_card_backs)
+		# Editor-placed badge wins; fall back to programmatic construction.
+		if deck_count_badge == null:
+			deck_count_badge = _create_count_badge()
+			deck_display.add_child(deck_count_badge)
+		deck_display.mouse_entered.connect(deck_count_badge.show)
+		deck_display.mouse_exited.connect(deck_count_badge.hide)
 		deck_display.mouse_filter = Control.MOUSE_FILTER_STOP
 		deck_display.gui_input.connect(_on_deck_gui_input)
 
@@ -481,16 +497,19 @@ func _setup_references() -> void:
 		if bg:
 			bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-		_discard_count_badge = _create_count_badge()
-		discard_display.add_child(_discard_count_badge)
+		if discard_count_badge == null:
+			discard_count_badge = _create_count_badge()
+			discard_display.add_child(discard_count_badge)
 
 	# Monster deck: dynamic stack of face-down cards + hover count badge + player label
 	if monster_info_display:
-		_create_deck_stack(monster_info_display, _monster_deck_card_backs)
-		_monster_deck_count_badge = _create_count_badge()
-		monster_info_display.add_child(_monster_deck_count_badge)
-		monster_info_display.mouse_entered.connect(_monster_deck_count_badge.show)
-		monster_info_display.mouse_exited.connect(_monster_deck_count_badge.hide)
+		if enable_deck_stack:
+			_create_deck_stack(monster_info_display, _monster_deck_card_backs)
+		if monster_deck_count_badge == null:
+			monster_deck_count_badge = _create_count_badge()
+			monster_info_display.add_child(monster_deck_count_badge)
+		monster_info_display.mouse_entered.connect(monster_deck_count_badge.show)
+		monster_info_display.mouse_exited.connect(monster_deck_count_badge.hide)
 
 	# Make discard area clickable + hover preview/badge
 	if discard_display:
@@ -504,10 +523,11 @@ func _setup_references() -> void:
 		monster_info_display.mouse_filter = Control.MOUSE_FILTER_STOP
 		monster_info_display.gui_input.connect(_on_monster_info_gui_input)
 
-	# Add borders to info areas
-	for area in [deck_display, discard_display, monster_info_display]:
-		if area:
-			_add_border(area)
+	# Add borders to info areas (designer can disable to use their own styling)
+	if enable_info_borders:
+		for area in [deck_display, discard_display, monster_info_display]:
+			if area:
+				_add_border(area)
 
 
 ## Fall back to find_child by name for any @export slot the inherited
@@ -889,16 +909,16 @@ func _hand_set_matches(visual_cards: Array[Control], state_hand: Array) -> bool:
 func _sync_info(state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0) -> void:
 	# Deck: show/hide card backs proportional to remaining cards
 	var deck_size: int = state.main_deck.size()
-	if _deck_count_badge:
-		_deck_count_badge.text = "%d" % deck_size
+	if deck_count_badge:
+		deck_count_badge.text = "%d" % deck_size
 	var visible_count: int = mini(deck_size, _deck_card_backs.size())
 	for i in range(_deck_card_backs.size()):
 		_deck_card_backs[i].visible = i < visible_count
 
 	# Discard: show top card face-up, update count badge
 	var discard_size: int = state.discard_pile.size()
-	if _discard_count_badge:
-		_discard_count_badge.text = "%d" % discard_size
+	if discard_count_badge:
+		discard_count_badge.text = "%d" % discard_size
 	if discard_size > 0:
 		var top_card: Dictionary = state.discard_pile.back()
 		var top_id: String = top_card.get("id", "")
@@ -918,8 +938,8 @@ func _sync_info(state: PlayerState, cp_modifier: int = 0, threat_modifier: int =
 
 	# Monster deck: show/hide card backs proportional to remaining cards
 	var monster_deck_size: int = state.monster_deck.size()
-	if _monster_deck_count_badge:
-		_monster_deck_count_badge.text = "%d" % monster_deck_size
+	if monster_deck_count_badge:
+		monster_deck_count_badge.text = "%d" % monster_deck_size
 	var monster_visible: int = mini(monster_deck_size, _monster_deck_card_backs.size())
 	for i in range(_monster_deck_card_backs.size()):
 		_monster_deck_card_backs[i].visible = i < monster_visible
@@ -1425,15 +1445,15 @@ func _create_deck_stack(parent: Control, stack_arr: Array[Control], max_layers: 
 
 
 func _on_discard_hover_started() -> void:
-	if _discard_count_badge:
-		_discard_count_badge.show()
+	if discard_count_badge:
+		discard_count_badge.show()
 	if _discard_card and _discard_card.visible and not _discard_card.card_data.is_empty():
 		card_preview_requested.emit(_discard_card.card_data, 0)
 
 
 func _on_discard_hover_ended() -> void:
-	if _discard_count_badge:
-		_discard_count_badge.hide()
+	if discard_count_badge:
+		discard_count_badge.hide()
 	card_preview_cleared.emit()
 
 

@@ -22,14 +22,19 @@ extends Control
 @export var hide_on_mobile: bool = true
 
 @export_group("Card layout")
+## When true (default), the runtime sizes the inner Card to fit this
+## Control's rect at `card_aspect_ratio`. When false, the designer sets
+## the Card child's anchors directly in the editor — pure WYSIWYG.
+@export var auto_layout: bool = true
 ## Card aspect ratio (width:height). Default 5:7 matches the standard
-## Card.tscn proportions.
+## Card.tscn proportions. Only used when auto_layout is true.
 @export var card_aspect_ratio: Vector2 = Vector2(5, 7)
-## Outer padding around the card, in pixels.
+## Outer padding around the card, in pixels. Only used when
+## auto_layout is true.
 @export_range(0.0, 32.0, 0.5) var padding: float = 6.0
 ## Strategy cards render rotated 90° CCW (matches the in-zone landscape
 ## layout). Set false for boards that don't differentiate strategy
-## cards.
+## cards. Only used when auto_layout is true.
 @export var rotate_strategy: bool = true
 @export_group("")
 
@@ -81,10 +86,11 @@ func _on_card_preview_requested(data: Dictionary, play_cost_modifier: int) -> vo
 	if _card.has_method("set_play_cost_modifier"):
 		_card.set_play_cost_modifier(play_cost_modifier)
 	var is_strategy: bool = data.get("card_type", -1) == CardEnums.CardType.STRATEGY
-	if is_strategy and rotate_strategy:
-		_layout_strategy()
-	else:
-		_layout_normal()
+	if auto_layout:
+		if is_strategy and rotate_strategy:
+			_layout_strategy()
+		else:
+			_layout_normal()
 	if _card.has_method("update_play_cost_badge_layout"):
 		_card.update_play_cost_badge_layout()
 	visible = true
