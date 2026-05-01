@@ -2,7 +2,7 @@
 
 [ext_resource type="PackedScene" path="res://scenes/board/GameBoardBase.tscn" id="1_base"]
 [ext_resource type="Script" path="res://scenes/board/game_board_template.gd" id="2_tpl"]
-[ext_resource type="PackedScene" path="res://scenes/board/PlayerBoard.tscn" id="3_pb"]
+[ext_resource type="PackedScene" path="res://scenes/board/PlayerBoardTemplate.tscn" id="3_pb"]
 [ext_resource type="PackedScene" path="res://scenes/board/hud/RageDisplay.tscn" id="4_rd"]
 [ext_resource type="PackedScene" path="res://scenes/board/hud/ThreatDisplay.tscn" id="5_td"]
 [ext_resource type="PackedScene" path="res://scenes/board/hud/DeckCountLabel.tscn" id="6_dcl"]

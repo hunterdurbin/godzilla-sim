@@ -39,7 +39,7 @@ assign a different scene per side without editing scripts:
 ```
 LocalSeat (SeatContainer)        OpponentSeat (SeatContainer)
   player_board_scene              player_board_scene
-  └── PlayerBoard.tscn ▼          └── PlayerBoard.tscn ▼
+  └── PlayerBoardTemplate.tscn ▼  └── PlayerBoardTemplate.tscn ▼
 ```
 
 Two ways to configure a seat:
@@ -65,38 +65,38 @@ The simplest way to make a custom PlayerBoard (e.g.
 `OpponentPlayerBoard.tscn` with a summary view of the opponent's
 state):
 
-1. **File → New Inherited Scene → `scenes/board/PlayerBoard.tscn`**.
+1. **File → New Inherited Scene → `scenes/board/PlayerBoardTemplate.tscn`**.
 2. Save as `scenes/board/MyPlayerBoard.tscn`.
 3. Edit the inherited tree — move zones, change colors, hide /
    re-skin sub-components.
 4. Set the variant on a seat: open your GameBoard scene, click the
    target SeatContainer, set `player_board_scene` to your .tscn.
 
-#### Required node names
+#### The inspector contract
 
-`player_board.gd` looks up children by name (`find_child`). To stay
-compatible, your variant must keep these node names somewhere in its
-subtree:
+`player_board.gd` declares **21 `@export Node` slots** grouped under
+*Layout / Battle zones / Strategy slots / Rage block / Threat block /
+CP block / Info zones* in the inspector. `PlayerBoardTemplate.tscn`
+ships with all of them pre-wired, so an inherited scene that doesn't
+restructure anything works out of the box.
 
-| Name | Type | Role |
-| --- | --- | --- |
-| `LayoutContainer` | Control | Direct child of PlayerBoard root |
-| `Zone1`–`Zone8` | Slot | Battle zones |
-| `Strategy1`–`Strategy3` | Slot | Strategy zones |
-| `RageDisplay` | VBoxContainer | Rage / Threat block (top-left) |
-| `RageLabel` / `RageThreatLabel` / `RageTitle` / `RageBg` | various | Rage sub-elements |
-| `ThreatRow` / `ThreatTitle` / `ThreatLabel` | various | Threat sub-elements |
-| `CPDisplay` / `CPRow` / `CPTitle` / `CPLabel` | various | CP block |
-| `DeckInfo` / `DiscardInfo` / `MonsterInfo` | Control | Deck / discard / monster info zones |
+If you do restructure (rename a node, move it deeper, wrap it in an
+extra container), the inherited scene's `@export` slot still points
+at the renamed/moved node — Godot scene inheritance preserves the
+NodePath. So drag-and-drop variants stay working without any
+inspector touchup.
 
-You can move these around, restyle, resize, hide, or wrap them in
-extra containers. You **cannot** rename them or the script's
-`find_child` lookups silently return null and the board becomes
-non-functional.
+If you **delete** a node and re-add it under a different name, the
+`@export` slot becomes empty. Either:
 
-A future refactor may convert these to `@export Node` slots so the
-contract is editable in the inspector. For now, treat the node names
-as the contract.
+- Drag the new node into the matching `@export` slot in the
+  inspector, **or**
+- Keep the original node name (`Zone1`, `RageDisplay`, etc.) and
+  let the script's `find_child` fallback resolve it — `_setup_references`
+  resolves any null `@export` by looking up the original name.
+
+So both paths work: the `@export` is the *primary* contract; the
+historical `find_child` names are the *fallback*.
 
 ## Anatomy of GameBoardTemplate.tscn
 
@@ -238,7 +238,7 @@ GameBoard
     └── LocalSeat      (SeatContainer, role=LOCAL,    bottom half)
 ```
 
-Drop a `PlayerBoard.tscn` (with `auto_bind=true`) plus any HUD
+Drop a `PlayerBoardTemplate.tscn` (with `auto_bind=true`) plus any HUD
 primitives inside `LocalSeat` — they'll resolve to the local player's
 id at runtime. Same for `OpponentSeat`. **Designer never sets
 `player_id` per module.**
@@ -335,8 +335,8 @@ roles plus an action panel for the seated player.
 
    Inside `LocalSeat`:
 
-   - `scenes/board/PlayerBoard.tscn` — set `auto_bind = true`. Set
-     `is_mirrored` based on whether this seat is at the top of the
+   - `scenes/board/PlayerBoardTemplate.tscn` — set `auto_bind = true`.
+     Set `is_mirrored` based on whether this seat is at the top of the
      screen (mirrored) or bottom (not mirrored).
    - `scenes/managers/CardManager.tscn` — for the local player's hand.
      Set `PlayerBoard.hand_manager_path` to point at it.
@@ -592,8 +592,8 @@ when the host's state arrives.
 
    Inside `LeftSeat` (now PLAYER_0), instance:
 
-   - `scenes/board/PlayerBoard.tscn` — set `auto_bind = true` and
-     `is_mirrored = false`.
+   - `scenes/board/PlayerBoardTemplate.tscn` — set `auto_bind = true`
+     and `is_mirrored = false`.
    - `scenes/board/hud/RageDisplay.tscn` — leave `player_id`
      untouched; the seat resolves it.
    - Whatever else makes sense (`DeckCountLabel`, `ThreatDisplay`,

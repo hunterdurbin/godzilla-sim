@@ -50,22 +50,64 @@ var _bound_player: PlayerState = null
 const SVG_W := 1728.0
 const SVG_H := 1008.0
 
-# Node references (set in _ready)
+## Inspector-wired references to PlayerBoard's internal nodes.
+## PlayerBoardTemplate.tscn ships with all of these pre-populated, so a
+## designer inheriting from it gets the wiring for free. _setup_references()
+## falls back to find_child by name when a slot is null — meaning a designer
+## who keeps the original node names doesn't have to touch the inspector.
+@export_group("Layout")
+@export var layout_container: Control
+@export var board_bg: TextureRect
+@export var gradient_overlay: ColorRect
+@export var inner_background: TextureRect  # the LayoutContainer/Background TextureRect
+
+@export_group("Battle zones")
+@export var zone1_slot: Slot
+@export var zone2_slot: Slot
+@export var zone3_slot: Slot
+@export var zone4_slot: Slot
+@export var zone5_slot: Slot
+@export var zone6_slot: Slot
+@export var zone7_slot: Slot
+@export var zone8_slot: Slot
+
+@export_group("Strategy slots")
+@export var strategy1_slot: Slot
+@export var strategy2_slot: Slot
+@export var strategy3_slot: Slot
+
+@export_group("Rage block")
+@export var rage_display: Control
+@export var rage_bg: Panel
+@export var rage_title: Label
+@export var rage_label: Label
+@export var rage_threat_label: Label
+
+@export_group("Threat block")
+@export var threat_row: Container
+@export var threat_title: Label
+@export var threat_label: Label
+
+@export_group("CP block")
+@export var cp_display: Container
+@export var cp_row: Container
+@export var cp_title: Label
+@export var cp_label: Label
+
+@export_group("Info zones")
+@export var deck_display: Control
+@export var discard_display: Control
+@export var monster_info_display: Control
+@export_group("")
+
+# Runtime state — populated dynamically.
 var zone_slots: Array[Slot] = []
 var strategy_slots: Array[Slot] = []
 var hand_manager: CardManager # Set externally by GameBoard
 var monster_card: Control
 var monster_card_zone: int = -1 # Zone index (0-7) where monster card is currently placed
-var rage_label: Label
-var rage_threat_label: Label
-var rage_display: Control
-var discard_display: Control
-var monster_info_display: Control
-var cp_label: Label
-var threat_label: Label
 
-# Card-based info displays
-var _deck_display: Control = null
+# Card-based info display caches
 var _deck_card_backs: Array[Control] = []
 var _deck_count_badge: Label = null
 var _discard_card: Control = null
@@ -218,28 +260,31 @@ func _update_layout() -> void:
 	var visible_height := content_span * lc_height
 	var y_offset := (size.y - visible_height) / 2.0
 
-	var lc := $LayoutContainer
-	lc.offset_left = x_offset
-	lc.offset_top = y_offset - content_top * lc_height
-	lc.offset_right = x_offset + actual_width
-	lc.offset_bottom = lc.offset_top + lc_height
+	if layout_container == null:
+		# _update_layout can fire from `resized` before _setup_references finishes
+		# resolving exports; bail out — _setup_references calls _update_layout again.
+		return
+	layout_container.offset_left = x_offset
+	layout_container.offset_top = y_offset - content_top * lc_height
+	layout_container.offset_right = x_offset + actual_width
+	layout_container.offset_bottom = layout_container.offset_top + lc_height
 
 	# Constrain playmat background and overlay to match the LayoutContainer width
-	var board_bg := $BoardBg as TextureRect
-	board_bg.anchor_left = 0.0
-	board_bg.anchor_right = 0.0
-	board_bg.anchor_top = 0.0
-	board_bg.anchor_bottom = 1.0
-	board_bg.offset_left = x_offset
-	board_bg.offset_right = x_offset + actual_width
+	if board_bg:
+		board_bg.anchor_left = 0.0
+		board_bg.anchor_right = 0.0
+		board_bg.anchor_top = 0.0
+		board_bg.anchor_bottom = 1.0
+		board_bg.offset_left = x_offset
+		board_bg.offset_right = x_offset + actual_width
 
-	var overlay := $GradientOverlay as ColorRect
-	overlay.anchor_left = 0.0
-	overlay.anchor_right = 0.0
-	overlay.anchor_top = 0.0
-	overlay.anchor_bottom = 1.0
-	overlay.offset_left = x_offset
-	overlay.offset_right = x_offset + actual_width
+	if gradient_overlay:
+		gradient_overlay.anchor_left = 0.0
+		gradient_overlay.anchor_right = 0.0
+		gradient_overlay.anchor_top = 0.0
+		gradient_overlay.anchor_bottom = 1.0
+		gradient_overlay.offset_left = x_offset
+		gradient_overlay.offset_right = x_offset + actual_width
 
 	# On mobile, bump label font sizes so they're readable on smaller boards.
 	# The LayoutContainer scales via anchors but font sizes are fixed pixels,
@@ -249,24 +294,16 @@ func _update_layout() -> void:
 
 
 var _mobile_labels_applied := false
-
-# Cached label references for mobile font scaling
-var _cp_title: Label
-var _threat_title: Label
-var _rage_title: Label
 var _target_value_font_size: int = 14
 
 func _apply_mobile_labels() -> void:
 	if _mobile_labels_applied:
 		return
 	_mobile_labels_applied = true
-	var lc := $LayoutContainer
-	_cp_title = lc.find_child("CPTitle", true, false) as Label
-	_threat_title = lc.find_child("ThreatTitle", true, false) as Label
-	if _threat_title:
-		_threat_title.text = tr("STR_PB_THREAT_SHORT")  # Abbreviate to save horizontal space
-	if _cp_title:
-		_cp_title.text = tr("STR_PB_CP")
+	if threat_title:
+		threat_title.text = tr("STR_PB_THREAT_SHORT")  # Abbreviate to save horizontal space
+	if cp_title:
+		cp_title.text = tr("STR_PB_CP")
 	if cp_label:
 		cp_label.custom_minimum_size.x = 0.0
 		cp_label.clip_text = true
@@ -279,7 +316,6 @@ func _apply_mobile_labels() -> void:
 		threat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		threat_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		threat_label.resized.connect(func(): _apply_autofit(threat_label, 8))
-	_rage_title = lc.find_child("RageTitle", true, false) as Label
 	# Apply default (balanced) font sizes
 	apply_mobile_label_scale(1.0)
 
@@ -291,17 +327,17 @@ func apply_mobile_label_scale(label_scale: float) -> void:
 	var value_size := maxi(12, int(18 * label_scale))
 	var rage_size := maxi(14, int(28 * label_scale))
 	var rage_threat_size := maxi(10, int(18 * label_scale))
-	if _cp_title:
-		_cp_title.add_theme_font_size_override("font_size", title_size)
-	if _threat_title:
-		_threat_title.add_theme_font_size_override("font_size", title_size)
+	if cp_title:
+		cp_title.add_theme_font_size_override("font_size", title_size)
+	if threat_title:
+		threat_title.add_theme_font_size_override("font_size", title_size)
 	_target_value_font_size = value_size
 	if cp_label:
 		cp_label.add_theme_font_size_override("font_size", value_size)
 	if threat_label:
 		threat_label.add_theme_font_size_override("font_size", value_size)
-	if _rage_title:
-		_rage_title.add_theme_font_size_override("font_size", title_size)
+	if rage_title:
+		rage_title.add_theme_font_size_override("font_size", title_size)
 	if rage_label:
 		rage_label.add_theme_font_size_override("font_size", rage_size)
 	if rage_threat_label:
@@ -309,6 +345,8 @@ func apply_mobile_label_scale(label_scale: float) -> void:
 
 
 func _setup_references() -> void:
+	_resolve_export_fallbacks()
+
 	# Mirror for player 2: flip all child anchors and background
 	if is_mirrored:
 		_apply_mirror()
@@ -317,74 +355,64 @@ func _setup_references() -> void:
 	var local_id := NetworkManager.get_local_player_id() if NetworkManager.is_multiplayer() else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	var is_local := player_id == local_id
 
-	var rage := $LayoutContainer.find_child("RageDisplay", false, false) as VBoxContainer
-	if rage:
+	if rage_display:
 		if is_local:
 			# Local player: move RageTitle to the bottom of the VBox
-			var rage_title := rage.find_child("RageTitle", false, false)
 			if rage_title:
-				rage.move_child(rage_title, rage.get_child_count() - 1)
+				rage_display.move_child(rage_title, rage_display.get_child_count() - 1)
 		else:
 			# Opponent: move ThreatRow to bottom (closest to center divider)
-			var threat_row := rage.find_child("ThreatRow", false, false)
 			if threat_row:
-				rage.move_child(threat_row, rage.get_child_count() - 1)
+				rage_display.move_child(threat_row, rage_display.get_child_count() - 1)
 
-	var cp_disp := $LayoutContainer.find_child("CPDisplay", false, false) as VBoxContainer
-	if cp_disp and not is_local:
+	if cp_display and not is_local and cp_display is BoxContainer:
 		# Opponent: align CPRow to bottom (closest to center divider)
-		cp_disp.alignment = BoxContainer.ALIGNMENT_END
+		(cp_display as BoxContainer).alignment = BoxContainer.ALIGNMENT_END
 
-	# Zone slots (find by name so layout doesn't matter)
+	# Zone slots (use @export references; fallback handled in _resolve_export_fallbacks)
 	zone_slots.resize(8)
-
-	for i in range(1, 9):
-		var slot := find_child("Zone%d" % i, true, false) as Slot
+	var zone_exports: Array = [
+		zone1_slot, zone2_slot, zone3_slot, zone4_slot,
+		zone5_slot, zone6_slot, zone7_slot, zone8_slot,
+	]
+	for i in range(8):
+		var slot: Slot = zone_exports[i]
 		if slot:
-			slot.zone_number = i
+			slot.zone_number = i + 1
 			slot.slot_type = "battle_zone"
 			slot.player_id = player_id
 			slot.slot_clicked.connect(_on_zone_slot_clicked)
 			slot.slot_right_clicked.connect(_on_zone_slot_right_clicked)
 			slot.slot_hover_preview.connect(_on_slot_hover_preview)
 			slot.slot_hover_preview_cleared.connect(_on_slot_hover_cleared)
-			zone_slots[i - 1] = slot
+			zone_slots[i] = slot
 
 	# Strategy slots (landscape orientation)
-	for i in range(1, 4):
-		var slot := find_child("Strategy%d" % i, true, false) as Slot
+	var strategy_exports: Array = [strategy1_slot, strategy2_slot, strategy3_slot]
+	for i in range(strategy_exports.size()):
+		var slot: Slot = strategy_exports[i]
 		if slot:
 			slot.zone_number = 0
 			slot.slot_type = "strategy_zone"
 			slot.player_id = player_id
 			slot.landscape = true
-			slot.slot_clicked.connect(_on_strategy_slot_clicked.bind(i - 1))
-			slot.slot_right_clicked.connect(_on_strategy_slot_right_clicked.bind(i - 1))
+			slot.slot_clicked.connect(_on_strategy_slot_clicked.bind(i))
+			slot.slot_right_clicked.connect(_on_strategy_slot_right_clicked.bind(i))
 			slot.slot_hover_preview.connect(_on_slot_hover_preview)
 			slot.slot_hover_preview_cleared.connect(_on_slot_hover_cleared)
 			strategy_slots.append(slot)
 
-	# Info nodes
-	rage_label = find_child("RageLabel", true, false) as Label
-	rage_threat_label = find_child("RageThreatLabel", true, false) as Label
-	rage_display = find_child("RageDisplay", true, false) as Control
 	_style_rage_bg()
-	_deck_display = find_child("DeckInfo", true, false) as Control
-	discard_display = find_child("DiscardInfo", true, false) as Control
-	monster_info_display = find_child("MonsterInfo", true, false) as Control
-
-	cp_label = find_child("CPLabel", true, false) as Label
-	threat_label = find_child("ThreatLabel", true, false) as Label
 
 	# Deck: dynamic stack of face-down cards (height reflects card count) + hover count badge
-	if _deck_display:
-		_create_deck_stack(_deck_display, _deck_card_backs)
+	if deck_display:
+		_create_deck_stack(deck_display, _deck_card_backs)
 		_deck_count_badge = _create_count_badge()
-		_deck_display.add_child(_deck_count_badge)
-		_deck_display.mouse_entered.connect(_deck_count_badge.show)
-		_deck_display.mouse_exited.connect(_deck_count_badge.hide)
-		_deck_display.mouse_filter = Control.MOUSE_FILTER_STOP
-		_deck_display.gui_input.connect(_on_deck_gui_input)
+		deck_display.add_child(_deck_count_badge)
+		deck_display.mouse_entered.connect(_deck_count_badge.show)
+		deck_display.mouse_exited.connect(_deck_count_badge.hide)
+		deck_display.mouse_filter = Control.MOUSE_FILTER_STOP
+		deck_display.gui_input.connect(_on_deck_gui_input)
 
 	# Discard: face-up top card + empty placeholder + hover count badge
 	if discard_display:
@@ -433,9 +461,47 @@ func _setup_references() -> void:
 		monster_info_display.gui_input.connect(_on_monster_info_gui_input)
 
 	# Add borders to info areas
-	for area in [_deck_display, discard_display, monster_info_display]:
+	for area in [deck_display, discard_display, monster_info_display]:
 		if area:
 			_add_border(area)
+
+
+## Fall back to find_child by name for any @export slot the inherited
+## scene didn't populate. Lets a designer who keeps the original node
+## names skip wiring everything in the inspector while still letting a
+## restructured / renamed scene wire its own references explicitly.
+func _resolve_export_fallbacks() -> void:
+	if layout_container == null: layout_container = find_child("LayoutContainer", true, false) as Control
+	if board_bg == null: board_bg = find_child("BoardBg", true, false) as TextureRect
+	if gradient_overlay == null: gradient_overlay = find_child("GradientOverlay", true, false) as ColorRect
+	if inner_background == null and layout_container:
+		inner_background = layout_container.find_child("Background", false, false) as TextureRect
+	if zone1_slot == null: zone1_slot = find_child("Zone1", true, false) as Slot
+	if zone2_slot == null: zone2_slot = find_child("Zone2", true, false) as Slot
+	if zone3_slot == null: zone3_slot = find_child("Zone3", true, false) as Slot
+	if zone4_slot == null: zone4_slot = find_child("Zone4", true, false) as Slot
+	if zone5_slot == null: zone5_slot = find_child("Zone5", true, false) as Slot
+	if zone6_slot == null: zone6_slot = find_child("Zone6", true, false) as Slot
+	if zone7_slot == null: zone7_slot = find_child("Zone7", true, false) as Slot
+	if zone8_slot == null: zone8_slot = find_child("Zone8", true, false) as Slot
+	if strategy1_slot == null: strategy1_slot = find_child("Strategy1", true, false) as Slot
+	if strategy2_slot == null: strategy2_slot = find_child("Strategy2", true, false) as Slot
+	if strategy3_slot == null: strategy3_slot = find_child("Strategy3", true, false) as Slot
+	if rage_display == null: rage_display = find_child("RageDisplay", true, false) as Control
+	if rage_bg == null: rage_bg = find_child("RageBg", true, false) as Panel
+	if rage_title == null: rage_title = find_child("RageTitle", true, false) as Label
+	if rage_label == null: rage_label = find_child("RageLabel", true, false) as Label
+	if rage_threat_label == null: rage_threat_label = find_child("RageThreatLabel", true, false) as Label
+	if threat_row == null: threat_row = find_child("ThreatRow", true, false) as Container
+	if threat_title == null: threat_title = find_child("ThreatTitle", true, false) as Label
+	if threat_label == null: threat_label = find_child("ThreatLabel", true, false) as Label
+	if cp_display == null: cp_display = find_child("CPDisplay", true, false) as Container
+	if cp_row == null: cp_row = find_child("CPRow", true, false) as Container
+	if cp_title == null: cp_title = find_child("CPTitle", true, false) as Label
+	if cp_label == null: cp_label = find_child("CPLabel", true, false) as Label
+	if deck_display == null: deck_display = find_child("DeckInfo", true, false) as Control
+	if discard_display == null: discard_display = find_child("DiscardInfo", true, false) as Control
+	if monster_info_display == null: monster_info_display = find_child("MonsterInfo", true, false) as Control
 
 
 ## Case-insensitive file search for custom assets (iOS filesystem is case-sensitive).
@@ -465,7 +531,6 @@ func _apply_custom_playmat() -> void:
 		var image := Image.load_from_file(image_path)
 		if image:
 			var tex := ImageTexture.create_from_image(image)
-			var board_bg := $BoardBg as TextureRect
 			if board_bg:
 				board_bg.texture = tex
 
@@ -481,7 +546,7 @@ func apply_monster_gradient(monster_data: Dictionary) -> void:
 		return
 	if not is_self and GameSettings.color_overlay_mode == 1:
 		return
-	var overlay := $GradientOverlay as ColorRect
+	var overlay := gradient_overlay
 	if not overlay:
 		return
 	var colors: Array = monster_data.get("colors", [])
@@ -846,7 +911,6 @@ func highlight_strategy_zones() -> void:
 
 
 func _style_rage_bg() -> void:
-	var rage_bg := find_child("RageBg", true, false) as Panel
 	if rage_bg:
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color(0.2, 0.2, 0.3, 0.0)
@@ -917,11 +981,10 @@ func reset_visuals() -> void:
 		_restore_strategy_slot_anchors()
 
 	# Clear gradient overlay children (TextureRects created by apply_monster_gradient)
-	var overlay := $GradientOverlay as ColorRect
-	if overlay:
-		for child in overlay.get_children():
+	if gradient_overlay:
+		for child in gradient_overlay.get_children():
 			child.queue_free()
-		overlay.color = Color(0, 0, 0, 0)
+		gradient_overlay.color = Color(0, 0, 0, 0)
 
 	# Reset discard card display
 	if _discard_card:
@@ -935,19 +998,18 @@ func reset_visuals() -> void:
 
 
 func _apply_mirror() -> void:
-	var bg := $LayoutContainer/Background as TextureRect
-	if bg:
-		bg.flip_h = true
-		bg.flip_v = true
-	var board_bg := $BoardBg as TextureRect
+	if inner_background:
+		inner_background.flip_h = true
+		inner_background.flip_v = true
 	if board_bg:
 		board_bg.flip_h = true
 		board_bg.flip_v = true
-	for child in $LayoutContainer.get_children():
-		if child is TextureRect:
-			continue
-		if child is Control:
-			_flip_node_anchors(child)
+	if layout_container:
+		for child in layout_container.get_children():
+			if child is TextureRect:
+				continue
+			if child is Control:
+				_flip_node_anchors(child)
 
 
 func _flip_node_anchors(node: Control) -> void:
@@ -969,16 +1031,15 @@ func _flip_node_anchors(node: Control) -> void:
 func toggle_mirrored() -> void:
 	is_mirrored = !is_mirrored
 	# Flip all child anchors (flipping twice = identity, so this toggles)
-	for child in $LayoutContainer.get_children():
-		if child is TextureRect:
-			continue
-		if child is Control:
-			_flip_node_anchors(child)
-	var bg := $LayoutContainer/Background as TextureRect
-	if bg:
-		bg.flip_h = is_mirrored
-		bg.flip_v = is_mirrored
-	var board_bg := $BoardBg as TextureRect
+	if layout_container:
+		for child in layout_container.get_children():
+			if child is TextureRect:
+				continue
+			if child is Control:
+				_flip_node_anchors(child)
+	if inner_background:
+		inner_background.flip_h = is_mirrored
+		inner_background.flip_v = is_mirrored
 	if board_bg:
 		board_bg.flip_h = is_mirrored
 		board_bg.flip_v = is_mirrored

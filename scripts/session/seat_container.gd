@@ -69,7 +69,7 @@ signal role_changed(new_player_id: int)
 ## wants WYSIWYG editing can keep an inspector-visible child and ignore
 ## this slot.
 @export_group("Auto-instantiation")
-@export var player_board_scene: PackedScene = preload("res://scenes/board/PlayerBoard.tscn")
+@export var player_board_scene: PackedScene = preload("res://scenes/board/PlayerBoardTemplate.tscn")
 @export_group("")
 
 

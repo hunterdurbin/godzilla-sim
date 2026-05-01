@@ -9,7 +9,7 @@ var _snapshot_index: int = 0
 var _auto_playing: bool = false
 var _auto_timer: float = 0.0
 
-var player_board_scene: PackedScene = preload("res://scenes/board/PlayerBoard.tscn")
+var player_board_scene: PackedScene = preload("res://scenes/board/PlayerBoardTemplate.tscn")
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 var player1_board: Control
 var player2_board: Control

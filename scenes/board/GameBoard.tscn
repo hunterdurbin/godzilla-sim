@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://cmvhjmnm4rien"]
 
 [ext_resource type="Script" uid="uid://dml6j5e7cos4r" path="res://scenes/board/game_board.gd" id="1_gb"]
-[ext_resource type="PackedScene" path="res://scenes/board/PlayerBoard.tscn" id="2_pb"]
+[ext_resource type="PackedScene" path="res://scenes/board/PlayerBoardTemplate.tscn" id="2_pb"]
 [ext_resource type="Script" uid="uid://b04w0nnwbu55m" path="res://scenes/managers/card_manager.gd" id="3_cm"]
 [ext_resource type="Script" path="res://scripts/session/multiplayer_sync.gd" id="4_ms"]
 [ext_resource type="Script" path="res://scripts/session/game_session.gd" id="5_gs"]
