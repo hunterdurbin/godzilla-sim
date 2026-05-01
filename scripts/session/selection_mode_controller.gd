@@ -79,13 +79,33 @@ func bind() -> void:
 		_session.turn_manager.awaiting_player_action.connect(_on_awaiting_action)
 		_session.turn_manager.phase_ended.connect(_on_phase_ended)
 	_collect_player_boards(_board_root)
-	# Connect drag signals on each player board's hand_manager (if present).
+	# Hand managers (HandSlot etc.) attach themselves to PlayerBoard via
+	# call_deferred from their _ready, so they may not yet be set when bind()
+	# runs synchronously from GameBoardBase._ready. Defer the drag wiring so
+	# we pick them up on the next frame.
+	call_deferred("_wire_hand_managers")
+
+
+## Connect drag signals on each PlayerBoard's hand_manager. Idempotent
+## (`is_connected` checks) — safe to call again after a HandSlot
+## hot-attaches. Public so HandSlot can call back into us when it
+## finishes wiring.
+func _wire_hand_managers() -> void:
 	for pb in _player_boards:
-		if pb.hand_manager:
-			if not pb.hand_manager.hand_card_drag_started.is_connected(_on_hand_drag_started):
-				pb.hand_manager.hand_card_drag_started.connect(_on_hand_drag_started.bind(pb))
-			if not pb.hand_manager.hand_card_drag_ended.is_connected(_on_hand_drag_ended):
-				pb.hand_manager.hand_card_drag_ended.connect(_on_hand_drag_ended.bind(pb))
+		wire_hand_manager(pb)
+
+
+## Public hook: connect drag signals for a single PlayerBoard's
+## hand_manager. HandSlot calls this when it attaches itself, so the
+## wiring works even when the SelectionModeController.bind() ran
+## before HandSlot was ready.
+func wire_hand_manager(pb: Node) -> void:
+	if pb == null or pb.hand_manager == null:
+		return
+	if not pb.hand_manager.hand_card_drag_started.is_connected(_on_hand_drag_started):
+		pb.hand_manager.hand_card_drag_started.connect(_on_hand_drag_started.bind(pb))
+	if not pb.hand_manager.hand_card_drag_ended.is_connected(_on_hand_drag_ended):
+		pb.hand_manager.hand_card_drag_ended.connect(_on_hand_drag_ended.bind(pb))
 
 
 # --- Discovery ---

@@ -72,6 +72,15 @@ func _attach_and_position() -> void:
 				ps = session.client_players[pb.player_id]
 			if ps:
 				pb.sync_to_state(ps)
+		# Wire drag-to-zone via the GameBoard's SelectionModeController
+		# (set up by GameBoardBase). Belt-and-suspenders: bind() also
+		# defers a _wire_hand_managers() pass, but calling here too keeps
+		# the wiring correct if HandSlot attaches after bind() ran.
+		var board_root := find_parent("GameBoard")
+		if board_root and "selection_controller" in board_root:
+			var ctrl = board_root.selection_controller
+			if ctrl and ctrl.has_method("wire_hand_manager"):
+				ctrl.wire_hand_manager(pb)
 	_position_to_seat()
 
 
