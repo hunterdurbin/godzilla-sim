@@ -116,23 +116,14 @@ func _update_start_button() -> void:
 		start_button.grab_focus()
 
 
-## Scan TEST_BOARD_DIR for *GameBoard.tscn files (minus exclusions).
-## Populates the picker dropdown and restores the last persisted choice.
-## Hides the picker row when only 0 or 1 scene exists (keeps menu tidy).
+## Scan TEST_BOARD_DIR (recursive) for *GameBoard.tscn files (minus
+## exclusions). Populates the picker dropdown and restores the last
+## persisted choice. Hides the picker row when only 0 or 1 scene
+## exists (keeps menu tidy).
 func _scan_test_boards() -> void:
 	_test_board_paths.clear()
 	test_board_picker.clear()
-	var dir := DirAccess.open(TEST_BOARD_DIR)
-	if dir:
-		dir.list_dir_begin()
-		var fname := dir.get_next()
-		while fname != "":
-			if not dir.current_is_dir() \
-					and fname.ends_with("GameBoard.tscn") \
-					and fname not in TEST_BOARD_EXCLUDE:
-				_test_board_paths.append(TEST_BOARD_DIR + fname)
-			fname = dir.get_next()
-		dir.list_dir_end()
+	_scan_test_boards_in(TEST_BOARD_DIR)
 	_test_board_paths.sort()
 	for path in _test_board_paths:
 		test_board_picker.add_item(path.get_file().trim_suffix(".tscn"))
@@ -143,6 +134,25 @@ func _scan_test_boards() -> void:
 		test_board_picker.select(idx)
 	# Picker visible only when 2+ scenes exist (single scene needs no choice).
 	test_board_row.visible = _test_board_paths.size() >= 2
+
+
+## Recursive helper: walks `dir_path` (a `res://...` directory) and
+## appends any *GameBoard.tscn whose filename isn't in TEST_BOARD_EXCLUDE.
+## Designer can drop a variant into a subfolder (e.g. `scenes/board/designer/`)
+## without code changes — it'll appear in the picker.
+func _scan_test_boards_in(dir_path: String) -> void:
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var fname := dir.get_next()
+	while fname != "":
+		if dir.current_is_dir() and not fname.begins_with("."):
+			_scan_test_boards_in(dir_path.path_join(fname))
+		elif fname.ends_with("GameBoard.tscn") and fname not in TEST_BOARD_EXCLUDE:
+			_test_board_paths.append(dir_path.path_join(fname))
+		fname = dir.get_next()
+	dir.list_dir_end()
 
 
 func _current_test_board_path() -> String:

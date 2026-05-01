@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/board/PlayerBoardTemplate.tscn" id="1_pb"]
+
+[node name="PlayerBoard" instance=ExtResource("1_pb")]
