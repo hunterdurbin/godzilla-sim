@@ -47,11 +47,17 @@ var _bound_player: PlayerState = null
 @export var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
 @export_group("Layout fitting")
-## When true (default), LayoutContainer / board_bg / gradient_overlay are
+## When true, LayoutContainer / board_bg / gradient_overlay are
 ## auto-positioned every frame to maintain the playmat's aspect ratio
-## (legacy behavior). When false, the editor anchors on those nodes are
-## respected as-is — pure designer-driven layout.
-@export var maintain_aspect: bool = true
+## (legacy behavior — used by production GameBoard.tscn for the
+## zones.svg playmat).
+##
+## **Default false** — the template ships scene-driven: LayoutContainer
+## fills its parent via editor anchors, no runtime offset stomping.
+## Designer-built boards see WYSIWYG positioning out of the box.
+## Production scenes that need aspect-fit override this to true on
+## their PlayerBoard instances in the inspector.
+@export var maintain_aspect: bool = false
 ## Aspect ratio of the playmat artwork (defaults to zones.svg's
 ## 1728:1008). Only used when maintain_aspect is true.
 @export var aspect_ratio: Vector2 = Vector2(1728, 1008)

@@ -55,6 +55,7 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+maintain_aspect = true
 auto_bind = true
 is_mirrored = true
 
@@ -73,6 +74,7 @@ mouse_filter = 2
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+maintain_aspect = true
 auto_bind = true
 
 [node name="HUDBar" type="HBoxContainer" parent="BoardLayoutSlot/LocalSeat/LocalVBox"]

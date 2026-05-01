@@ -69,6 +69,7 @@ layout_mode = 2
 [node name="Player2Board" parent="VBoxContainer/BoardArea/BoardColumn" unique_id=1123405052 instance=ExtResource("2_pb")]
 layout_mode = 2
 size_flags_vertical = 3
+maintain_aspect = true
 player_id = 1
 is_mirrored = true
 
@@ -80,6 +81,7 @@ color = Color(0.5, 0.5, 0.6, 0.8)
 [node name="Player1Board" parent="VBoxContainer/BoardArea/BoardColumn" unique_id=426822273 instance=ExtResource("2_pb")]
 layout_mode = 2
 size_flags_vertical = 3
+maintain_aspect = true
 
 [node name="Player1HandSpace" type="Control" parent="VBoxContainer/BoardArea/BoardColumn" unique_id=1286720020]
 custom_minimum_size = Vector2(0, 10)
