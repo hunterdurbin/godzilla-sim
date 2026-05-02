@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/board/player_board.gd" id="1_pb"]
 [ext_resource type="PackedScene" path="res://scenes/slots/Slot.tscn" id="2_slot"]
 [ext_resource type="Texture2D" uid="uid://bi5c4b4txk6wa" path="res://assets/board/zones.svg" id="3_bg"]
 [ext_resource type="Texture2D" path="res://assets/board/default_board.png" id="4_board_bg"]
+[ext_resource type="Script" path="res://scripts/board/mock_state_preview.gd" id="5_mock"]
 
 [node name="PlayerBoard" type="Control"]
 layout_mode = 3
@@ -460,3 +461,8 @@ theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
+
+
+[node name="MockStatePreview" type="Node" parent="."]
+script = ExtResource("5_mock")
+
