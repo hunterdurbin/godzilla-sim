@@ -976,12 +976,7 @@ func highlight_strategy_zones() -> void:
 
 func _style_rage_bg() -> void:
 	if rage_bg:
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.2, 0.2, 0.3, 0.0)
-		style.border_color = Color(1, 1, 1, 0.0)
-		style.set_border_width_all(0)
-		style.set_corner_radius_all(0)
-		rage_bg.add_theme_stylebox_override("panel", style)
+		PlayerBoardHelpers.style_rage_bg(rage_bg)
 
 
 func highlight_rage_zone(highlight: bool) -> void:
@@ -1335,14 +1330,7 @@ func _update_monster_cp_badge(card: Control, modifier: int) -> void:
 
 
 func _add_border(control: Control) -> void:
-	control.draw.connect(_draw_border.bind(control))
-	control.resized.connect(control.queue_redraw)
-	control.queue_redraw()
-
-
-func _draw_border(control: Control) -> void:
-	var rect := Rect2(Vector2.ZERO, control.size)
-	control.draw_rect(rect, info_border_color, false, info_border_width)
+	PlayerBoardHelpers.add_border(control, info_border_color, info_border_width)
 
 
 # --- Formatting helpers ---
@@ -1406,42 +1394,11 @@ func _should_use_custom_back() -> bool:
 	return player_id == local_id
 
 
-func _create_card_back_panel() -> Panel:
-	var panel := Panel.new()
-	panel.clip_children = CanvasItem.CLIP_CHILDREN_AND_DRAW
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.18, 0.18, 0.24, 1)
-	style.set_border_width_all(1)
-	style.border_color = Color(0.4, 0.4, 0.5, 1)
-	style.set_corner_radius_all(6)
-	panel.add_theme_stylebox_override("panel", style)
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
-	var tex_rect := TextureRect.new()
-	tex_rect.texture = _get_card_back_texture()
-	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	tex_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(tex_rect)
-
-	return panel
-
-
 func _create_deck_stack(parent: Control, stack_arr: Array[Control], max_layers: int = -1) -> void:
 	## Create a stack of card-back panels that grows/shrinks with deck size.
-	## Each layer pushes the card on top up by `deck_stack_layer_shift` from
-	## the bottom. Pass max_layers=-1 (default) to use the @export config.
+	## Pass max_layers=-1 (default) to use the @export config.
 	var layers: int = max_layers if max_layers >= 0 else deck_stack_max_layers
-	for i in range(layers):
-		var panel := _create_card_back_panel()
-		panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		var shift := float(i) * deck_stack_layer_shift
-		panel.offset_top = -shift
-		panel.offset_bottom = -shift
-		panel.visible = false
-		parent.add_child(panel)
-		stack_arr.append(panel)
+	PlayerBoardHelpers.create_deck_stack(parent, stack_arr, layers, deck_stack_layer_shift, _get_card_back_texture())
 
 
 func _on_discard_hover_started() -> void:
@@ -1458,18 +1415,9 @@ func _on_discard_hover_ended() -> void:
 
 
 func _create_count_badge() -> Label:
-	var badge := Label.new()
-	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge.add_theme_font_size_override("font_size", count_badge_font_size)
-	badge.add_theme_color_override("font_color", count_badge_color)
-	badge.add_theme_color_override("font_outline_color", count_badge_outline_color)
-	badge.add_theme_constant_override("outline_size", count_badge_outline_size)
-	badge.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	badge.offset_top = -24
-	badge.offset_bottom = 0
-	badge.offset_left = -20
-	badge.offset_right = 20
-	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge.visible = false
-	return badge
+	return PlayerBoardHelpers.create_count_badge(
+		count_badge_font_size,
+		count_badge_color,
+		count_badge_outline_color,
+		count_badge_outline_size,
+	)
