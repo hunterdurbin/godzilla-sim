@@ -1,112 +1,131 @@
 [gd_scene load_steps=22 format=3]
 
-[ext_resource type="PackedScene" path="res://scenes/board/GameBoardBase.tscn" id="1_base"]
-[ext_resource type="Script" path="res://scenes/board/game_board_template.gd" id="2_tpl"]
-[ext_resource type="PackedScene" path="res://scenes/board/PlayerBoardTemplate.tscn" id="3_pb"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/RageDisplay.tscn" id="4_rd"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/ThreatDisplay.tscn" id="5_td"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/DeckCountLabel.tscn" id="6_dcl"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/DiscardCountLabel.tscn" id="7_dis"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/HandSortButton.tscn" id="8_hsb"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/TurnNumberLabel.tscn" id="9_tn"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/PhaseLabel.tscn" id="10_pl"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/ActionPanel.tscn" id="11_ap"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/LogPanel.tscn" id="12_lp"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/HandSlot.tscn" id="13_hs"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/BoardSfx.tscn" id="14_sfx"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/TurnTrackerView.tscn" id="15_ttv"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/EndGamePanel.tscn" id="16_egp"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/HoverPreview.tscn" id="17_hov"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/FirstPlayerOverlay.tscn" id="18_fpo"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/SaveButton.tscn" id="19_sav"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/SettingsTray.tscn" id="20_set"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/ReconnectOverlay.tscn" id="21_rec"]
-[ext_resource type="PackedScene" path="res://scenes/board/hud/ChatInput.tscn" id="22_chat"]
+[ext_resource type="Script" path="res://scenes/board/game_board_template.gd" id="1_tpl"]
+[ext_resource type="Script" path="res://scripts/session/game_session.gd" id="2_gs"]
+[ext_resource type="Script" path="res://scripts/session/multiplayer_sync.gd" id="3_ms"]
+[ext_resource type="Script" path="res://scripts/session/effect_ui_router.gd" id="4_eur"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/DefaultOverlayPack.tscn" id="5_dop"]
+[ext_resource type="Script" path="res://scripts/session/seat_container.gd" id="6_seat"]
+[ext_resource type="PackedScene" path="res://scenes/board/PlayerBoardTemplate.tscn" id="7_pb"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/HUDBar.tscn" id="8_hud"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/HandSlot.tscn" id="9_hs"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/TurnNumberLabel.tscn" id="10_tn"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/PhaseLabel.tscn" id="11_pl"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/TurnTrackerView.tscn" id="12_ttv"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/SaveButton.tscn" id="13_sav"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/ActionPanel.tscn" id="14_ap"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/LogPanel.tscn" id="15_lp"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/ChatInput.tscn" id="16_chat"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/BoardSfx.tscn" id="17_sfx"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/EndGamePanel.tscn" id="18_egp"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/HoverPreview.tscn" id="19_hov"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/FirstPlayerOverlay.tscn" id="20_fpo"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/SettingsTray.tscn" id="21_set"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/ReconnectOverlay.tscn" id="22_rec"]
 
-[node name="GameBoard" instance=ExtResource("1_base")]
-script = ExtResource("2_tpl")
-
-[node name="OpponentVBox" type="VBoxContainer" parent="BoardLayoutSlot/OpponentSeat"]
-layout_mode = 1
+[node name="GameBoard" type="Control"]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_tpl")
+
+[node name="GameSession" type="Node" parent="."]
+script = ExtResource("2_gs")
+
+[node name="MultiplayerSync" type="Node" parent="GameSession"]
+script = ExtResource("3_ms")
+
+[node name="EffectUIRouter" type="Node" parent="GameSession"]
+script = ExtResource("4_eur")
+
+[node name="DefaultOverlayPack" parent="." instance=ExtResource("5_dop")]
+
+[node name="OpponentSeat" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+anchor_bottom = 0.5
+grow_horizontal = 2
 mouse_filter = 2
+script = ExtResource("6_seat")
+role = 1
 
-[node name="HUDBar" type="HBoxContainer" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox"]
-layout_mode = 2
-theme_override_constants/separation = 16
+[node name="HUDBar" parent="OpponentSeat" instance=ExtResource("8_hud")]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 8.0
+offset_right = -16.0
+offset_bottom = 44.0
+grow_horizontal = 2
 
-[node name="RageDisplay" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/HUDBar" instance=ExtResource("4_rd")]
-layout_mode = 2
+[node name="HandSortButton" parent="OpponentSeat/HUDBar" index="4"]
+visible = false
 
-[node name="ThreatDisplay" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/HUDBar" instance=ExtResource("5_td")]
-layout_mode = 2
-
-[node name="DeckCountLabel" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/HUDBar" instance=ExtResource("6_dcl")]
-layout_mode = 2
-
-[node name="DiscardCountLabel" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/HUDBar" instance=ExtResource("7_dis")]
-layout_mode = 2
-
-[node name="PlayerBoardAspect" type="AspectRatioContainer" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
+[node name="PlayerBoardAspect" type="AspectRatioContainer" parent="OpponentSeat"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 52.0
+grow_horizontal = 2
+grow_vertical = 2
 mouse_filter = 2
 ratio = 1.7142857
 stretch_mode = 2
 
-[node name="PlayerBoard" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/PlayerBoardAspect" instance=ExtResource("3_pb")]
+[node name="PlayerBoard" parent="OpponentSeat/PlayerBoardAspect" instance=ExtResource("7_pb")]
 layout_mode = 2
 auto_bind = true
 is_mirrored = true
 
-[node name="HandSlot" parent="BoardLayoutSlot/OpponentSeat" instance=ExtResource("13_hs")]
+[node name="HandSlot" parent="OpponentSeat" instance=ExtResource("9_hs")]
 
-[node name="LocalVBox" type="VBoxContainer" parent="BoardLayoutSlot/LocalSeat"]
+[node name="LocalSeat" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+mouse_filter = 2
+script = ExtResource("6_seat")
+role = 0
+
+[node name="PlayerBoardAspect" type="AspectRatioContainer" parent="LocalSeat"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_bottom = -52.0
 grow_horizontal = 2
 grow_vertical = 2
-mouse_filter = 2
-
-[node name="PlayerBoardAspect" type="AspectRatioContainer" parent="BoardLayoutSlot/LocalSeat/LocalVBox"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 mouse_filter = 2
 ratio = 1.7142857
 stretch_mode = 2
 
-[node name="PlayerBoard" parent="BoardLayoutSlot/LocalSeat/LocalVBox/PlayerBoardAspect" instance=ExtResource("3_pb")]
+[node name="PlayerBoard" parent="LocalSeat/PlayerBoardAspect" instance=ExtResource("7_pb")]
 layout_mode = 2
 auto_bind = true
 
-[node name="HUDBar" type="HBoxContainer" parent="BoardLayoutSlot/LocalSeat/LocalVBox"]
-layout_mode = 2
-theme_override_constants/separation = 16
+[node name="HUDBar" parent="LocalSeat" instance=ExtResource("8_hud")]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = -44.0
+offset_right = -16.0
+offset_bottom = -8.0
+grow_horizontal = 2
+grow_vertical = 0
 
-[node name="RageDisplay" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("4_rd")]
-layout_mode = 2
-
-[node name="ThreatDisplay" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("5_td")]
-layout_mode = 2
-
-[node name="DeckCountLabel" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("6_dcl")]
-layout_mode = 2
-
-[node name="DiscardCountLabel" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("7_dis")]
-layout_mode = 2
-
-[node name="HandSortButton" parent="BoardLayoutSlot/LocalSeat/LocalVBox/HUDBar" instance=ExtResource("8_hsb")]
-layout_mode = 2
-
-[node name="HandSlot" parent="BoardLayoutSlot/LocalSeat" instance=ExtResource("13_hs")]
+[node name="HandSlot" parent="LocalSeat" instance=ExtResource("9_hs")]
 
 [node name="TopBar" type="HBoxContainer" parent="."]
 layout_mode = 1
@@ -120,17 +139,20 @@ grow_horizontal = 2
 theme_override_constants/separation = 16
 mouse_filter = 2
 
-[node name="TurnNumberLabel" parent="TopBar" instance=ExtResource("9_tn")]
+[node name="TurnNumberLabel" parent="TopBar" instance=ExtResource("10_tn")]
 layout_mode = 2
 
-[node name="PhaseLabel" parent="TopBar" instance=ExtResource("10_pl")]
+[node name="PhaseLabel" parent="TopBar" instance=ExtResource("11_pl")]
+layout_mode = 2
+
+[node name="TurnTrackerView" parent="TopBar" instance=ExtResource("12_ttv")]
 layout_mode = 2
 
 [node name="Spacer" type="Control" parent="TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="SaveButton" parent="TopBar" instance=ExtResource("19_sav")]
+[node name="SaveButton" parent="TopBar" instance=ExtResource("13_sav")]
 layout_mode = 2
 
 [node name="MenuButton" type="Button" parent="TopBar"]
@@ -138,7 +160,7 @@ custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
 text = "Return to Menu"
 
-[node name="ActionPanel" parent="." instance=ExtResource("11_ap")]
+[node name="ActionPanel" parent="." instance=ExtResource("14_ap")]
 layout_mode = 1
 anchors_preset = 7
 anchor_left = 0.5
@@ -152,7 +174,7 @@ offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 0
 
-[node name="LogPanel" parent="." instance=ExtResource("12_lp")]
+[node name="LogPanel" parent="." instance=ExtResource("15_lp")]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -166,12 +188,12 @@ offset_bottom = -16.0
 grow_horizontal = 0
 grow_vertical = 0
 
-[node name="BoardSfx" parent="." instance=ExtResource("14_sfx")]
-
-[node name="TurnTrackerView" parent="TopBar" index="2" instance=ExtResource("15_ttv")]
+[node name="ChatInput" parent="LogPanel/VBox" index="2" instance=ExtResource("16_chat")]
 layout_mode = 2
 
-[node name="EndGamePanel" parent="." instance=ExtResource("16_egp")]
+[node name="BoardSfx" parent="." instance=ExtResource("17_sfx")]
+
+[node name="EndGamePanel" parent="." instance=ExtResource("18_egp")]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -185,7 +207,7 @@ offset_bottom = 110.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="HoverPreview" parent="." instance=ExtResource("17_hov")]
+[node name="HoverPreview" parent="." instance=ExtResource("19_hov")]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -196,12 +218,12 @@ offset_right = -16.0
 offset_bottom = 380.0
 grow_horizontal = 0
 
-[node name="FirstPlayerOverlay" parent="." instance=ExtResource("18_fpo")]
+[node name="FirstPlayerOverlay" parent="." instance=ExtResource("20_fpo")]
 layout_mode = 1
 anchor_right = 1.0
 anchor_bottom = 1.0
 
-[node name="SettingsTray" parent="." instance=ExtResource("20_set")]
+[node name="SettingsTray" parent="." instance=ExtResource("21_set")]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 0.0
@@ -212,10 +234,7 @@ offset_right = 236.0
 offset_bottom = 280.0
 grow_vertical = 1
 
-[node name="ReconnectOverlay" parent="." instance=ExtResource("21_rec")]
+[node name="ReconnectOverlay" parent="." instance=ExtResource("22_rec")]
 layout_mode = 1
 anchor_right = 1.0
 anchor_bottom = 1.0
-
-[node name="ChatInput" parent="LogPanel/VBox" index="2" instance=ExtResource("22_chat")]
-layout_mode = 2

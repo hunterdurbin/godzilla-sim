@@ -13,7 +13,7 @@ extends Control
 ##    gets the same tree + script. Override the protected hooks below
 ##    (`_on_phase_started`, `_on_turn_started`, `_on_log_message`,
 ##    `_on_game_ended`, etc.) to update your visual layout. Drop your
-##    layout into `BoardLayoutSlot`.
+##    layout into the inherited seat containers.
 ##
 ## B) **Instance this scene** as a child of your own root and call
 ##    `start()` from your script. Subscribe to the same signals on
@@ -26,7 +26,6 @@ extends Control
 @onready var session: GameSession = $GameSession
 @onready var multiplayer_sync: MultiplayerSync = $GameSession/MultiplayerSync
 @onready var effect_ui_router: EffectUIRouter = $GameSession/EffectUIRouter
-@onready var board_layout_slot: Control = $BoardLayoutSlot
 
 ## Wiring slots — set these in the inspector for explicit composition.
 ## When unset, the base resolves them via tree-walk in `_ready` so legacy

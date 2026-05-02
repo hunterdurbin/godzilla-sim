@@ -9,8 +9,7 @@ extends Control
 ## GameSession/MultiplayerSync subtree. See docs/new_game_board.md.
 const TEST_BOARD_DIR := "res://scenes/board/"
 const TEST_BOARD_EXCLUDE := [
-	"GameBoardBase.tscn",       # minimal engine-only base
-	"GameBoardTemplate.tscn",   # populated starter; designer inherits
+	"GameBoardTemplate.tscn",   # canonical starter; designer inherits
 	"GameBoard.tscn",           # legacy production scene
 	"NewGameBoard.tscn",        # phase-6 GameSession smoke test
 ]

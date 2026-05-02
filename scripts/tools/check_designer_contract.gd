@@ -17,7 +17,6 @@ extends SceneTree
 const _BOARD_DIR := "res://scenes/board/"
 const _EXCLUDE := [
 	# Templates aren't meant to be runnable on their own.
-	"GameBoardBase.tscn",
 	"GameBoardTemplate.tscn",
 ]
 
