@@ -51,11 +51,16 @@ layout_mode = 2
 [node name="DiscardCountLabel" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/HUDBar" instance=ExtResource("7_dis")]
 layout_mode = 2
 
-[node name="PlayerBoard" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox" instance=ExtResource("3_pb")]
+[node name="PlayerBoardAspect" type="AspectRatioContainer" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-maintain_aspect = true
+mouse_filter = 2
+ratio = 1.7142857
+stretch_mode = 2
+
+[node name="PlayerBoard" parent="BoardLayoutSlot/OpponentSeat/OpponentVBox/PlayerBoardAspect" instance=ExtResource("3_pb")]
+layout_mode = 2
 auto_bind = true
 is_mirrored = true
 
@@ -70,11 +75,16 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="PlayerBoard" parent="BoardLayoutSlot/LocalSeat/LocalVBox" instance=ExtResource("3_pb")]
+[node name="PlayerBoardAspect" type="AspectRatioContainer" parent="BoardLayoutSlot/LocalSeat/LocalVBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-maintain_aspect = true
+mouse_filter = 2
+ratio = 1.7142857
+stretch_mode = 2
+
+[node name="PlayerBoard" parent="BoardLayoutSlot/LocalSeat/LocalVBox/PlayerBoardAspect" instance=ExtResource("3_pb")]
+layout_mode = 2
 auto_bind = true
 
 [node name="HUDBar" type="HBoxContainer" parent="BoardLayoutSlot/LocalSeat/LocalVBox"]
