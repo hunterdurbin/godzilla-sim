@@ -127,6 +127,9 @@ func bind(p_session: GameSession, p_multiplayer_sync: MultiplayerSync, p_local_p
 		_connect_once(eh.choice_requested, _on_choice_requested)
 		_connect_once(eh.cards_revealed_requested, _on_cards_revealed_requested)
 		_connect_once(eh.zone_target_requested, _on_zone_target_requested)
+		_connect_once(eh.hand_discard_requested, _on_hand_discard_requested)
+		_connect_once(eh.hand_card_selection_requested, _on_hand_card_selection_requested)
+		_connect_once(eh.strategy_target_requested, _on_strategy_target_requested)
 	var ah := session.action_handler
 	if ah:
 		_connect_once(ah.monster_rankup_requested, _on_monster_rankup_requested)
@@ -427,11 +430,243 @@ func _cleanup_zone_target() -> void:
 	_zone_target_active = false
 	_zone_target_valid.clear()
 	_zone_target_board = null
-	# Hide the prompt panel via SelectionModeController if present.
-	if _board:
-		var sc = _board.get("selection_controller") if "selection_controller" in _board else null
-		if sc and "_action_panel" in sc and sc._action_panel and sc._action_panel.has_method("hide_prompt"):
-			sc._action_panel.hide_prompt()
+	_hide_prompt_panel()
+
+
+# --- Hand discard (pick N cards from the player's hand to discard) ---
+
+var _hand_discard_active: bool = false
+var _hand_discard_player_id: int = -1
+var _hand_discard_count: int = 0
+var _hand_discard_picked: Array[int] = []
+var _hand_discard_manager: Node = null
+
+
+func _on_hand_discard_requested(player_id: int, count: int) -> void:
+	if is_bot_game and player_id == bot_player_id:
+		return
+	if is_multiplayer and player_id != local_player_id:
+		_set_pending("hand_discard", [count])
+		_send_to_remote(player_id, func(peer):
+			RpcLogger.log_send("hand_discard_requested", 4)
+			multiplayer_sync._rpc_hand_discard_requested.rpc_id(peer, count))
+		return
+	show_hand_discard(player_id, count)
+
+
+func show_hand_discard(player_id: int, count: int) -> void:
+	var handler: Callable = _handlers.get("hand_discard", Callable())
+	if handler.is_valid():
+		handler.call(player_id, count, resolve_hand_discard)
+		return
+	var pb := _find_player_board(player_id)
+	if pb == null or pb.hand_manager == null:
+		push_warning("[EffectUIRouter] No PlayerBoard/hand_manager for player_id=%d — auto-discarding from end of hand." % player_id)
+		var ps := session.get_player(player_id) if session and session.is_running() else null
+		if ps:
+			var indices: Array[int] = []
+			var hand_size: int = ps.hand.size()
+			for i in range(hand_size - count, hand_size):
+				if i >= 0:
+					indices.append(i)
+			resolve_hand_discard(player_id, indices)
+		return
+	_hand_discard_active = true
+	_hand_discard_player_id = player_id
+	_hand_discard_count = count
+	_hand_discard_picked = []
+	_hand_discard_manager = pb.hand_manager
+	pb.hand_manager.enter_selection_mode([])
+	if not pb.hand_manager.card_selected.is_connected(_on_hand_discard_picked):
+		pb.hand_manager.card_selected.connect(_on_hand_discard_picked)
+	_show_prompt(tr("STR_GB_DISCARD_N_FMT").replace("{N}", str(count)))
+
+
+func _on_hand_discard_picked(_card: Control, index: int) -> void:
+	if not _hand_discard_active or index in _hand_discard_picked:
+		return
+	_hand_discard_picked.append(index)
+	if _hand_discard_picked.size() >= _hand_discard_count:
+		var picked := _hand_discard_picked
+		var pid := _hand_discard_player_id
+		_cleanup_hand_discard()
+		resolve_hand_discard(pid, picked)
+
+
+func _cleanup_hand_discard() -> void:
+	if _hand_discard_manager:
+		if _hand_discard_manager.card_selected.is_connected(_on_hand_discard_picked):
+			_hand_discard_manager.card_selected.disconnect(_on_hand_discard_picked)
+		if _hand_discard_manager.has_method("exit_selection_mode"):
+			_hand_discard_manager.exit_selection_mode()
+	_hand_discard_active = false
+	_hand_discard_player_id = -1
+	_hand_discard_count = 0
+	_hand_discard_picked = []
+	_hand_discard_manager = null
+	_hide_prompt_panel()
+
+
+# --- Hand card selection (pick one valid hand card, optionally skip) ---
+
+var _hand_select_active: bool = false
+var _hand_select_manager: Node = null
+
+
+func _on_hand_card_selection_requested(player_id: int, valid_indices: Array, prompt: String, allow_skip: bool) -> void:
+	if is_bot_game and player_id == bot_player_id:
+		return
+	if is_multiplayer and player_id != local_player_id:
+		var indices_json := JSON.stringify(valid_indices)
+		_set_pending("hand_card_select", [indices_json, prompt, allow_skip])
+		_send_to_remote(player_id, func(peer):
+			RpcLogger.log_send("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
+			multiplayer_sync._rpc_hand_card_selection_requested.rpc_id(peer, indices_json, prompt, allow_skip))
+		return
+	var typed: Array[int] = []
+	for v in valid_indices:
+		typed.append(int(v))
+	show_hand_card_selection(player_id, typed, prompt, allow_skip)
+
+
+func show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool) -> void:
+	var handler: Callable = _handlers.get("hand_card_select", Callable())
+	if handler.is_valid():
+		handler.call(player_id, valid_indices, _translate(prompt), allow_skip, resolve_hand_card_selection)
+		return
+	var pb := _find_player_board(player_id)
+	if pb == null or pb.hand_manager == null:
+		push_warning("[EffectUIRouter] No PlayerBoard/hand_manager for player_id=%d — auto-skipping hand select." % player_id)
+		resolve_hand_card_selection(-1)
+		return
+	_hand_select_active = true
+	_hand_select_manager = pb.hand_manager
+	pb.hand_manager.enter_selection_mode(valid_indices)
+	if not pb.hand_manager.card_selected.is_connected(_on_hand_select_picked):
+		pb.hand_manager.card_selected.connect(_on_hand_select_picked)
+	if allow_skip:
+		_show_skip_prompt(_translate(prompt), _on_hand_select_skip)
+	else:
+		_show_prompt(_translate(prompt))
+
+
+func _on_hand_select_picked(_card: Control, index: int) -> void:
+	if not _hand_select_active:
+		return
+	_cleanup_hand_select()
+	resolve_hand_card_selection(index)
+
+
+func _on_hand_select_skip() -> void:
+	if not _hand_select_active:
+		return
+	_cleanup_hand_select()
+	resolve_hand_card_selection(-1)
+
+
+func _cleanup_hand_select() -> void:
+	if _hand_select_manager:
+		if _hand_select_manager.card_selected.is_connected(_on_hand_select_picked):
+			_hand_select_manager.card_selected.disconnect(_on_hand_select_picked)
+		if _hand_select_manager.has_method("exit_selection_mode"):
+			_hand_select_manager.exit_selection_mode()
+	_hand_select_active = false
+	_hand_select_manager = null
+	_hide_prompt_panel()
+
+
+# --- Strategy target (pick a strategy slot on a target board) ---
+
+var _strategy_target_active: bool = false
+var _strategy_target_valid: Array[int] = []
+var _strategy_target_board: Node = null
+
+
+func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array, prompt: String) -> void:
+	if is_bot_game and player_id == bot_player_id:
+		return
+	if is_multiplayer and player_id != local_player_id:
+		var indices_json := JSON.stringify(valid_indices)
+		_set_pending("strategy_target", [target_player_id, indices_json, prompt])
+		_send_to_remote(player_id, func(peer):
+			RpcLogger.log_send("strategy_target_requested", indices_json.length() + prompt.length())
+			multiplayer_sync._rpc_strategy_target_requested.rpc_id(peer, target_player_id, indices_json, prompt))
+		return
+	var typed: Array[int] = []
+	for v in valid_indices:
+		typed.append(int(v))
+	show_strategy_target(target_player_id, typed, prompt)
+
+
+func show_strategy_target(target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
+	var handler: Callable = _handlers.get("strategy_target", Callable())
+	if handler.is_valid():
+		handler.call(target_player_id, valid_indices, _translate(prompt), resolve_strategy_target)
+		return
+	var pb := _find_player_board(target_player_id)
+	if pb == null:
+		push_warning("[EffectUIRouter] No PlayerBoard for target_player_id=%d — auto-resolving strategy target with index 0." % target_player_id)
+		resolve_strategy_target(valid_indices[0] if not valid_indices.is_empty() else 0)
+		return
+	_strategy_target_active = true
+	_strategy_target_valid = valid_indices
+	_strategy_target_board = pb
+	for i in range(pb.strategy_slots.size()):
+		var slot = pb.strategy_slots[i]
+		if slot and i in valid_indices:
+			slot.set_highlighted(true)
+			slot.in_selection_mode = true
+			if not slot.slot_clicked.is_connected(_on_strategy_target_slot_clicked.bind(i)):
+				slot.slot_clicked.connect(_on_strategy_target_slot_clicked.bind(i))
+	_show_prompt(_translate(prompt))
+
+
+func _on_strategy_target_slot_clicked(_zone_num: int, _pid: int, slot_index: int) -> void:
+	if not _strategy_target_active:
+		return
+	if slot_index not in _strategy_target_valid:
+		return
+	resolve_strategy_target(slot_index)
+
+
+func _cleanup_strategy_target() -> void:
+	if _strategy_target_board:
+		for i in range(_strategy_target_board.strategy_slots.size()):
+			var slot = _strategy_target_board.strategy_slots[i]
+			if slot:
+				slot.set_highlighted(false)
+				slot.in_selection_mode = false
+				# Disconnect any matching bound handler.
+				for conn in slot.slot_clicked.get_connections():
+					if conn["callable"].get_method() == "_on_strategy_target_slot_clicked":
+						slot.slot_clicked.disconnect(conn["callable"])
+	_strategy_target_active = false
+	_strategy_target_valid.clear()
+	_strategy_target_board = null
+	_hide_prompt_panel()
+
+
+# --- Shared prompt-panel helpers ---
+
+func _show_prompt(text: String) -> void:
+	if _board == null: return
+	var sc = _board.get("selection_controller") if "selection_controller" in _board else null
+	if sc and "_action_panel" in sc and sc._action_panel and sc._action_panel.has_method("show_prompt"):
+		sc._action_panel.show_prompt(text, false)
+
+
+func _show_skip_prompt(text: String, on_skip: Callable) -> void:
+	if _board == null: return
+	var sc = _board.get("selection_controller") if "selection_controller" in _board else null
+	if sc and sc.has_method("prompt_confirmation"):
+		sc.prompt_confirmation(text, on_skip)
+
+
+func _hide_prompt_panel() -> void:
+	if _board == null: return
+	var sc = _board.get("selection_controller") if "selection_controller" in _board else null
+	if sc and "_action_panel" in sc and sc._action_panel and sc._action_panel.has_method("hide_prompt"):
+		sc._action_panel.hide_prompt()
 
 
 func show_cards_revealed(cards: Array, title: String) -> void:
@@ -518,3 +753,36 @@ func resolve_zone_target(zone_index: int) -> void:
 		multiplayer_sync._rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_index)
 	elif session and session.effect_handler:
 		session.effect_handler.resolve_zone_target(zone_index)
+
+
+func resolve_hand_discard(player_id: int, indices) -> void:
+	_cleanup_hand_discard()
+	# `indices` may arrive as Array (from typed local) or PackedInt32Array
+	# (from JSON). Coerce to Array[int].
+	var typed: Array[int] = []
+	for v in indices:
+		typed.append(int(v))
+	if is_multiplayer and not NetworkManager.is_host():
+		var indices_json := JSON.stringify(typed)
+		RpcLogger.log_send("hand_discard_resolved", indices_json.length())
+		multiplayer_sync._rpc_hand_discard_resolved.rpc_id(NetworkManager.host_peer_id, indices_json)
+	elif session and session.effect_handler:
+		session.effect_handler.resolve_hand_discard(player_id, typed)
+
+
+func resolve_hand_card_selection(hand_index: int) -> void:
+	_cleanup_hand_select()
+	if is_multiplayer and not NetworkManager.is_host():
+		RpcLogger.log_send("hand_card_selection_resolved", 4)
+		multiplayer_sync._rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, hand_index)
+	elif session and session.effect_handler:
+		session.effect_handler.resolve_hand_card_selection(hand_index)
+
+
+func resolve_strategy_target(strategy_index: int) -> void:
+	_cleanup_strategy_target()
+	if is_multiplayer and not NetworkManager.is_host():
+		RpcLogger.log_send("strategy_target_resolved", 4)
+		multiplayer_sync._rpc_strategy_target_resolved.rpc_id(NetworkManager.host_peer_id, strategy_index)
+	elif session and session.effect_handler:
+		session.effect_handler.resolve_strategy_target(strategy_index)
