@@ -66,6 +66,9 @@ func _try_bind() -> void:
 	if _session == null:
 		_session = BoardModule.find_session(self)
 	if _session == null:
+		# BoardModule.find_session already pushed a warning if the
+		# GameBoard ancestor wasn't found. Silent return — the label
+		# stays at its initial text (typically the format_string).
 		return
 	# Resolve seat-driven player_id when an ancestor SeatContainer exists.
 	var seat := BoardModule.find_seat(self)

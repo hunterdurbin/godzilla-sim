@@ -58,9 +58,13 @@ func _ready() -> void:
 func _wire_player_boards() -> void:
 	var board := find_parent("GameBoard")
 	if board == null:
-		push_warning("[HoverPreview] No GameBoard ancestor.")
+		push_warning("[HoverPreview] No 'GameBoard' ancestor — root must be named 'GameBoard'. See docs/new_game_board.md.")
 		return
-	for pb in board.find_children("*", "PlayerBoard", true, false):
+	var pbs := board.find_children("*", "PlayerBoard", true, false)
+	if pbs.is_empty():
+		push_warning("[HoverPreview] No PlayerBoard descendants found — preview will never trigger. Drop one inside a SeatContainer or wire seat.player_board_scene.")
+		return
+	for pb in pbs:
 		if not pb.card_preview_requested.is_connected(_on_card_preview_requested):
 			pb.card_preview_requested.connect(_on_card_preview_requested)
 		if not pb.card_preview_cleared.is_connected(_on_card_preview_cleared):

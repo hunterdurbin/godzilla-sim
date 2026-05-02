@@ -71,6 +71,7 @@ func _ready() -> void:
 
 	# Create player boards
 	player2_board = player_board_scene.instantiate()
+	player2_board.auto_bind = false  # Replay viewer drives sync_to_state explicitly.
 	player2_board.player_id = 1
 	player2_board.is_mirrored = true
 	player2_board.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -82,6 +83,7 @@ func _ready() -> void:
 	board_column.add_child(divider)
 
 	player1_board = player_board_scene.instantiate()
+	player1_board.auto_bind = false  # Replay viewer drives sync_to_state explicitly.
 	player1_board.player_id = 0
 	player1_board.is_mirrored = false
 	player1_board.size_flags_vertical = Control.SIZE_EXPAND_FILL

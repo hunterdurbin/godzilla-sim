@@ -59,6 +59,13 @@ func _ready() -> void:
 	# vs desktop, etc.). Catching this at startup beats a silent RPC break.
 	if _board and _board.name != "GameBoard":
 		push_error("[GameSession] Parent node is named '%s' — must be named 'GameBoard' for cross-scene multiplayer to work. See docs/new_game_board.md." % _board.name)
+	# Structural assertion: MultiplayerSync must be a named child for the
+	# RPC NodePath contract. EffectUIRouter is recommended but not strictly
+	# required (scenes without effect prompts can omit it).
+	if get_node_or_null("MultiplayerSync") == null:
+		push_error("[GameSession] No 'MultiplayerSync' child node — multiplayer RPCs will not route. See docs/new_game_board.md § 'Cross-scene multiplayer contract'.")
+	if get_node_or_null("EffectUIRouter") == null:
+		push_warning("[GameSession] No 'EffectUIRouter' child node — effect prompts will silently auto-resolve. Add one if your scene plays cards with effects.")
 
 
 ## Snapshot accessors for properties that change as the game progresses.

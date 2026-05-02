@@ -24,10 +24,12 @@ signal card_preview_cleared()
 ## board subscribes to its PlayerState's mutation signals and refreshes
 ## itself — no `sync_to_state()` push call needed from the host scene.
 ##
-## Default false to preserve existing GameBoard.tscn behavior (game_board.gd
-## explicitly drives sync_to_state). New scenes built on GameBoardBase set
-## this to true (and provide a `snapshot_provider`) for drop-in modularity.
-@export var auto_bind: bool = false
+## **Default true** — consistent with the other auto-binding components
+## (HandSlot, BoundLabel-derived HUD primitives, BoardSfx). Production
+## `GameBoard.tscn` overrides this to false on its two PlayerBoard
+## instances because `game_board.gd` explicitly drives `sync_to_state`
+## with full modifier data.
+@export var auto_bind: bool = true
 
 ## Callable that returns a snapshot Dictionary for a player_id. Used by
 ## auto-bind mode to fetch state + modifiers without coupling PlayerBoard

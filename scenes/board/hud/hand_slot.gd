@@ -68,27 +68,30 @@ func _attach_and_position() -> void:
 	# re-sync so existing cards appear (PlayerBoard's first sync_to_state
 	# would have run with hand_manager == null and skipped card spawning).
 	var pbs := _bound_seat.find_children("*", "PlayerBoard", true, false)
-	if not pbs.is_empty():
-		var pb: PlayerBoard = pbs[0]
-		pb.hand_manager = self
-		var session := BoardModule.find_session(self)
-		if session:
-			var ps: PlayerState = null
-			if session.is_running():
-				ps = session.get_player(pb.player_id)
-			elif pb.player_id < session.client_players.size():
-				ps = session.client_players[pb.player_id]
-			if ps:
-				pb.sync_to_state(ps)
-		# Wire drag-to-zone via the GameBoard's SelectionModeController
-		# (set up by GameBoardBase). Belt-and-suspenders: bind() also
-		# defers a _wire_hand_managers() pass, but calling here too keeps
-		# the wiring correct if HandSlot attaches after bind() ran.
-		var board_root := find_parent("GameBoard")
-		if board_root and "selection_controller" in board_root:
-			var ctrl = board_root.selection_controller
-			if ctrl and ctrl.has_method("wire_hand_manager"):
-				ctrl.wire_hand_manager(pb)
+	if pbs.is_empty():
+		push_warning("[HandSlot] No PlayerBoard found inside seat '%s'. Drop a PlayerBoard child or set seat.player_board_scene." % _bound_seat.name)
+		_position_to_seat()
+		return
+	var pb: PlayerBoard = pbs[0]
+	pb.hand_manager = self
+	var session := BoardModule.find_session(self)
+	if session:
+		var ps: PlayerState = null
+		if session.is_running():
+			ps = session.get_player(pb.player_id)
+		elif pb.player_id < session.client_players.size():
+			ps = session.client_players[pb.player_id]
+		if ps:
+			pb.sync_to_state(ps)
+	# Wire drag-to-zone via the GameBoard's SelectionModeController
+	# (set up by GameBoardBase). Belt-and-suspenders: bind() also
+	# defers a _wire_hand_managers() pass, but calling here too keeps
+	# the wiring correct if HandSlot attaches after bind() ran.
+	var board_root := find_parent("GameBoard")
+	if board_root and "selection_controller" in board_root:
+		var ctrl = board_root.selection_controller
+		if ctrl and ctrl.has_method("wire_hand_manager"):
+			ctrl.wire_hand_manager(pb)
 	_position_to_seat()
 
 
