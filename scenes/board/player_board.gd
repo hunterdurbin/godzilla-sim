@@ -478,27 +478,10 @@ func _setup_references() -> void:
 
 	# Discard: face-up top card + empty placeholder + hover count badge
 	if discard_display:
-		_discard_empty_label = Label.new()
-		_discard_empty_label.text = tr("STR_PB_DISCARD")
-		_discard_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_discard_empty_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		_discard_empty_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_discard_empty_label.add_theme_font_size_override("font_size", 9)
-		_discard_empty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		discard_display.add_child(_discard_empty_label)
-
 		_discard_card = _create_card({})
-		_discard_card.drag_enabled = false
-		_discard_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_discard_card.custom_minimum_size = Vector2.ZERO
-		_discard_card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		_discard_card.visible = false
-		discard_display.add_child(_discard_card)
-		# Also ignore mouse on the card's background panel
-		var bg := _discard_card.get_node_or_null("Background") as Control
-		if bg:
-			bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
+		_discard_empty_label = PlayerBoardHelpers.setup_discard_zone(
+			discard_display, _discard_card, tr("STR_PB_DISCARD")
+		)
 		if discard_count_badge == null:
 			discard_count_badge = _create_count_badge()
 			discard_display.add_child(discard_count_badge)

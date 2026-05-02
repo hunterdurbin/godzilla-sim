@@ -107,3 +107,34 @@ static func style_rage_bg(rage_bg_panel: Panel) -> void:
 	style.set_border_width_all(0)
 	style.set_corner_radius_all(0)
 	rage_bg_panel.add_theme_stylebox_override("panel", style)
+
+
+## Wire up a discard-zone Control: spawn an "empty" Label that shows
+## when the discard pile is empty + parent the supplied `top_card`
+## (already-instantiated Card scene) full-rect, set its mouse filter +
+## drag flags so it doesn't interfere with hover/zone clicks. Returns
+## the empty Label so the caller can show/hide it as the pile fills.
+static func setup_discard_zone(
+	parent: Control,
+	top_card: Control,
+	empty_label_text: String
+) -> Label:
+	var empty := Label.new()
+	empty.text = empty_label_text
+	empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	empty.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	empty.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	empty.add_theme_font_size_override("font_size", 9)
+	empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(empty)
+	if "drag_enabled" in top_card:
+		top_card.drag_enabled = false
+	top_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_card.custom_minimum_size = Vector2.ZERO
+	top_card.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	top_card.visible = false
+	parent.add_child(top_card)
+	var bg := top_card.get_node_or_null("Background") as Control
+	if bg:
+		bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return empty

@@ -8,3 +8,6 @@
 # Export builds
 /build/
 .vscode/settings.json
+
+# Claude Code session state
+.claude/
