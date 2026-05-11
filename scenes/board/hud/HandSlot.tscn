@@ -4,3 +4,9 @@
 
 [node name="HandSlot" type="Node2D"]
 script = ExtResource("1_hs")
+
+[node name="LeftAnchor" type="Marker2D" parent="."]
+position = Vector2(-820, 0)
+
+[node name="RightAnchor" type="Marker2D" parent="."]
+position = Vector2(820, 0)

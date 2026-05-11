@@ -115,5 +115,22 @@ func _position_to_seat() -> void:
 	else:  # bottom
 		anchor_y = rect.position.y + rect.size.y
 	global_position = Vector2(rect.position.x + rect.size.x / 2.0, anchor_y)
-	max_width = rect.size.x * width_pct
+	# Anchor markers are the source of truth for hand width. Ratchet their
+	# LOCAL X to match the seat's current width so the legacy "scale with
+	# seat" behavior keeps working without overriding max_width (which the
+	# CardManager would prefer over anchors anyway).
+	#
+	# Markers are children of HandSlot, so they travel with global_position;
+	# only their local X needs adjusting per resize.
+	var half_width: float = rect.size.x * width_pct / 2.0
+	var l := get_node_or_null("LeftAnchor") as Node2D
+	var r := get_node_or_null("RightAnchor") as Node2D
+	if l:
+		l.position.x = -half_width
+	if r:
+		r.position.x = half_width
+	# Fallback for HandSlots that don't have anchor children — keep the
+	# legacy max_width path working.
+	if l == null or r == null:
+		max_width = rect.size.x * width_pct
 	arrange_cards(false)

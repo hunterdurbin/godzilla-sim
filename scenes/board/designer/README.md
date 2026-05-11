@@ -76,6 +76,29 @@ Each HUD scene under `scenes/board/hud/` has its own knobs:
 - **`HandSlot.tscn`**: `auto_position` (default `false`), `anchor_edge`,
   `width_pct`. With `auto_position = false`, the editor-placed
   Node2D coordinates are preserved.
+- **`CardManager` (HandSlot extends this)** — the layout knobs:
+  - **Hand bounds → `left_anchor` / `right_anchor`**: two ways to
+    set them:
+    1. Drag two `Marker2D` (or any `Node2D`) into these inspector
+       slots, OR
+    2. Add two `Marker2D` children named exactly `LeftAnchor` and
+	   `RightAnchor` — they're auto-detected, no inspector wiring
+	   needed.
+	The hand fills the span between their global X positions. Editor
+	draws a cyan rectangle showing the bounds live. **Anchors win
+	over `max_width`** when both are present.
+  - **`hand_alignment`** (LEFT / CENTER / END): when cards fit
+	comfortably, this controls where the cluster sits within the
+	bounds. Orange dot in the editor marks the reference edge.
+  - **`card_spacing`**: pixel gap between adjacent card centers when
+	they fit comfortably.
+  - **`min_card_gap`**: floor for the gap when cards must overlap
+	(defaults negative so cards visibly stack).
+  - **`card_scale`**: uniform scale applied to incoming cards. Use
+	e.g. `Vector2(0.7, 0.7)` for an opponent-style smaller hand.
+  - **`default_face_down`**: mark every added card face-down. For
+	opponent hand displays.
+  - **`draw_bounds_in_editor`**: toggle the debug rect visualization.
 - **`HoverPreview.tscn`**: `auto_layout`, `card_aspect_ratio`,
   `padding`, `rotate_strategy`. Disable `auto_layout` for fully
   scene-driven card preview placement.
@@ -148,8 +171,8 @@ camera shake on counter-success, etc.)?
    extends "res://scenes/board/game_board_template.gd"
 
    func _on_turn_started(player_id: int) -> void:
-       super(player_id)
-       # your custom turn-start animation / SFX trigger
+	   super(player_id)
+	   # your custom turn-start animation / SFX trigger
    ```
 
 2. Open `DesignerGameBoard.tscn` root → inspector → set the script

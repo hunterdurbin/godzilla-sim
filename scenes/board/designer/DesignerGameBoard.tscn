@@ -1,5 +1,36 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3 uid="uid://y3hsc0w2t776"]
 
 [ext_resource type="PackedScene" path="res://scenes/board/GameBoardTemplate.tscn" id="1_tpl"]
 
-[node name="GameBoard" instance=ExtResource("1_tpl")]
+[node name="GameBoard" unique_id=916621886 instance=ExtResource("1_tpl")]
+
+[node name="DefaultOverlayPack" parent="." index="1"]
+layout_mode = 1
+
+[node name="OpponentSeat" parent="." index="2"]
+anchors_preset = -1
+
+[node name="LocalSeat" parent="." index="3"]
+anchors_preset = -1
+grow_vertical = 0
+
+[node name="HandSlot" parent="LocalSeat" index="2" node_paths=PackedStringArray("left_anchor", "right_anchor")]
+position = Vector2(376, 312)
+auto_position = false
+layout_mode = 3
+left_anchor = NodePath("LeftAnchor")
+right_anchor = NodePath("RightAnchor")
+
+[node name="LeftAnchor" type="Marker2D" parent="LocalSeat/HandSlot" index="0" unique_id=2060395900]
+
+[node name="RightAnchor" type="Marker2D" parent="LocalSeat/HandSlot" index="1" unique_id=356927354]
+position = Vector2(520, 48)
+
+[node name="FirstPlayerOverlay" parent="." index="10"]
+anchors_preset = 15
+
+[node name="SettingsTray" parent="." index="11"]
+anchors_preset = 0
+
+[node name="ReconnectOverlay" parent="." index="12"]
+anchors_preset = 15

@@ -1,7 +1,12 @@
+@tool
 extends Node2D
 class_name CardManager
 
-## Manages a collection of Card nodes with automatic layout and positioning
+## Manages a collection of Card nodes with automatic layout and positioning.
+##
+## At edit time (@tool), draws a debug rectangle showing the configured
+## hand bounds so designers can size and align the layout area visually
+## before running the game.
 
 # Signals
 signal card_added(card: Control)
@@ -22,24 +27,110 @@ enum LayoutMode {
 }
 
 # Export variables
+## How cards lay themselves out within the manager.
+##   HAND_ARC   — fanned arc, typical player hand
+##   GRID       — uniform grid, see grid_* settings below
+##   STACK      — all cards at origin, top one visible
+##   HORIZONTAL — single row, alignment-aware
+##   VERTICAL   — single column
 @export var layout_mode: LayoutMode = LayoutMode.HAND_ARC
+
+## Pixel gap between adjacent cards' centers when they fit
+## comfortably inside the bounds. Used by HAND_ARC + HORIZONTAL.
+## When the hand has too many cards to fit at this spacing, the
+## layout compresses toward `min_card_gap`.
 @export var card_spacing: float = 20.0
-@export var max_cards: int = 0  # 0 = unlimited
+
+## Hard cap on card count (0 = unlimited). Calls to `add_card`
+## past this limit emit a push_warning and no-op. Set this for a
+## fixed-size hand (e.g. 7-card draft) where exceeding the cap
+## should be a bug.
+@export var max_cards: int = 0
+
+## When true (default), `arrange_cards` is called automatically
+## after every add/remove/reorder. Set false if you batch many
+## changes and want to call `arrange_cards()` once at the end.
 @export var auto_arrange: bool = true
+
+## How long the per-card position/rotation tween takes when
+## `arrange_cards(animate=true)` runs. 0 = snap instantly.
 @export_range(0.0, 1.0) var arrange_duration: float = 0.3
-@export var max_width: float = 0.0  # Maximum total width for card layout (0 = unlimited)
+
+## Maximum total width for the card cluster. 0 means unlimited.
+## Ignored when `left_anchor` + `right_anchor` are both set
+## (anchors take precedence and define a more flexible span).
+@export var max_width: float = 0.0
+
+# --- Hand bounds + alignment ---
+enum HandAlignment { LEFT, CENTER, END }
+
+@export_group("Hand bounds")
+## Optional left edge of the hand layout area. Read via .global_position.
+## Together with right_anchor, defines the span cards lay out within —
+## designer drags two Marker2Ds (or any Node2D) into the inspector slots
+## and the cards fill the area between them. When unset, falls back to
+## the legacy `max_width` / centered-on-origin behavior.
+@export var left_anchor: Node2D:
+	set(value):
+		left_anchor = value
+		_redraw_in_editor()
+## Right edge of the hand layout area; pairs with `left_anchor`. Read
+## via .global_position.x at runtime — designer can move the markers
+## freely (or anchor them to dynamic Controls) and the hand updates.
+@export var right_anchor: Node2D:
+	set(value):
+		right_anchor = value
+		_redraw_in_editor()
+## How cards align within the bounded area when they don't need to
+## overlap (i.e., total card width + gaps fits inside the bounds).
+##   LEFT — first card's left edge sits at left_anchor
+##   CENTER — cards are centered between anchors (default)
+##   END — last card's right edge sits at right_anchor
+@export var hand_alignment: HandAlignment = HandAlignment.CENTER:
+	set(value):
+		hand_alignment = value
+		_redraw_in_editor()
+## Minimum gap between adjacent cards when they DO need to overlap.
+## When hand has lots of cards, gap shrinks toward zero but never
+## smaller than this. Negative values let cards overlap themselves.
+@export_range(-100.0, 100.0) var min_card_gap: float = -40.0
+
+@export_group("Card appearance")
+## Uniform scale applied to cards when added. Use Vector2(0.7, 0.7) for
+## an opponent-style smaller hand. Default ONE.
+@export var card_scale: Vector2 = Vector2.ONE
+## Mark cards face_down=true when added. For opponent hand displays.
+@export var default_face_down: bool = false
+
+@export_group("Editor preview")
+## Draw a debug rectangle showing the hand bounds at edit time.
+@export var draw_bounds_in_editor: bool = true
 
 # Hand arc specific settings
 @export_group("Hand Arc Settings")
+## Imagined circle radius the cards arc along. Larger = flatter
+## fan; smaller = tighter curve. Try values 400–800 for typical
+## hand displays.
 @export var arc_radius: float = 600.0
-@export var arc_angle: float = 60.0  # Total angle span in degrees
-@export var vertical_offset: float = 150.0  # How much lower cards are at the edges
+## Total angle span (in degrees) of the arc when many cards are
+## present. The runtime auto-shrinks this when cards would overflow
+## `max_width` / the bounds, so this is the *maximum* spread.
+@export var arc_angle: float = 60.0
+## How much lower cards at the edge of the arc sit relative to the
+## center card. 0 = perfectly straight horizontal arc; positive
+## values curve the edges down.
+@export var vertical_offset: float = 150.0
 
 # Grid specific settings
 @export_group("Grid Settings")
+## Cards per row when `layout_mode = GRID`. Subsequent cards wrap
+## to a new row.
 @export var grid_columns: int = 5
+## Vertical pixel distance between row centers in GRID mode.
 @export var grid_row_spacing: float = 250.0
+## Horizontal pixel distance between column centers in GRID mode.
 @export var grid_column_spacing: float = 170.0
+@export_group("")
 
 # Internal state
 var managed_cards: Array[Control] = []
@@ -55,6 +146,10 @@ var _drag_preview_index: int = -1  # Where the dragged card would be inserted
 
 
 func _ready() -> void:
+	if Engine.is_editor_hint():
+		# Edit time: just queue a redraw of the bounds preview.
+		queue_redraw()
+		return
 	# Set up initial cards if any children exist
 	for child in get_children():
 		if child is Control:
@@ -65,12 +160,59 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	if Engine.is_editor_hint():
+		return
 	if not dragged_card or not is_instance_valid(dragged_card):
 		return
 	var new_index := _calculate_insertion_index(dragged_card)
 	if new_index != _drag_preview_index:
 		_drag_preview_index = new_index
 		_arrange_with_drag_gap(new_index)
+
+
+func _redraw_in_editor() -> void:
+	if Engine.is_editor_hint():
+		queue_redraw()
+
+
+func _draw() -> void:
+	if not Engine.is_editor_hint():
+		return
+	if not draw_bounds_in_editor:
+		return
+	# Resolve which bounds source to draw: anchors first, else max_width.
+	# Uses _resolve_bounds() so editor preview matches the runtime layout
+	# math (including auto-detected children named LeftAnchor/RightAnchor).
+	var local_l: float
+	var local_r: float
+	var color: Color
+	var l_node: Node2D = left_anchor
+	var r_node: Node2D = right_anchor
+	if l_node == null:
+		l_node = get_node_or_null("LeftAnchor") as Node2D
+	if r_node == null:
+		r_node = get_node_or_null("RightAnchor") as Node2D
+	if l_node != null and r_node != null:
+		local_l = to_local(l_node.global_position).x
+		local_r = to_local(r_node.global_position).x
+		color = Color(0.3, 0.7, 1.0, 0.85)  # cyan = anchor-driven
+	elif max_width > 0.0:
+		local_l = -max_width / 2.0
+		local_r = max_width / 2.0
+		color = Color(0.7, 0.7, 0.3, 0.6)  # yellow = legacy max_width
+	else:
+		return
+	if local_r <= local_l:
+		return
+	var width: float = local_r - local_l
+	draw_rect(Rect2(local_l, -120.0, width, 240.0), color, false, 2.0)
+	# Alignment marker dot — shows where the cluster's reference edge sits.
+	var marker_x: float
+	match hand_alignment:
+		HandAlignment.LEFT: marker_x = local_l
+		HandAlignment.END: marker_x = local_r
+		_: marker_x = (local_l + local_r) / 2.0
+	draw_circle(Vector2(marker_x, 0.0), 6.0, Color(1.0, 0.7, 0.3, 0.95))
 
 
 ## Add a card to the manager
@@ -83,6 +225,14 @@ func add_card(card: Control, animate: bool = true) -> void:
 		if card.get_parent():
 			card.get_parent().remove_child(card)
 		add_child(card)
+
+	# Apply manager-wide visual policy: scale + face-down.
+	if card_scale != Vector2.ONE:
+		card.scale = card_scale
+		if "original_scale" in card:
+			card.original_scale = card_scale
+	if default_face_down and card.has_method("set_face_down"):
+		card.set_face_down(true)
 
 	_register_card(card)
 	card_added.emit(card)
@@ -208,37 +358,11 @@ func _arrange_hand_arc(animate: bool) -> void:
 	var count = managed_cards.size()
 	if count == 0:
 		return
-
-	# Clamp arc angle so total width stays within max_width
-	var effective_angle = arc_angle
-	if max_width > 0 and count > 1:
-		# The rightmost card x = sin(half_angle) * arc_radius
-		# Total width ≈ 2 * sin(half_angle) * arc_radius + card_width
-		var card_width: float = 150.0
-		if not managed_cards.is_empty() and managed_cards[0].size.x > 0:
-			card_width = managed_cards[0].size.x * managed_cards[0].scale.x
-		var available = max_width - card_width
-		if available > 0:
-			var max_half_angle = rad_to_deg(asin(clampf(available / (2.0 * arc_radius), 0.0, 1.0)))
-			effective_angle = minf(arc_angle, max_half_angle * 2.0)
-
-	var angle_step = effective_angle / max(1, count - 1) if count > 1 else 0
-	var start_angle = -effective_angle / 2.0
-
+	# Delegate to the alignment-aware shared layout so anchors + alignment
+	# are honored on every arrange call (not just during drag).
+	var positions := _compute_slot_positions(count)
 	for i in range(count):
-		var card = managed_cards[i]
-		var angle = start_angle + (angle_step * i)
-		var angle_rad = deg_to_rad(angle)
-
-		# Calculate position on arc
-		var x = sin(angle_rad) * arc_radius
-		var half_angle = effective_angle / 2.0 if effective_angle > 0 else 1.0
-		var y = -cos(angle_rad) * arc_radius + arc_radius - vertical_offset * abs(angle / half_angle)
-
-		var target_pos = Vector2(x, y)
-		var target_rotation = 0.0  # Keep cards upright (no rotation)
-
-		_move_card_to_position(card, target_pos, target_rotation, animate, i)
+		_move_card_to_position(managed_cards[i], positions[i], 0.0, animate, i)
 
 
 ## Compute slot positions for a given count using the current layout mode
@@ -246,45 +370,145 @@ func _compute_slot_positions(count: int) -> Array[Vector2]:
 	var positions: Array[Vector2] = []
 	if count == 0:
 		return positions
+	# Resolve the layout span: anchors win over max_width.
+	var bounds := _resolve_bounds()
+	var bound_left: float = bounds.x
+	var bound_right: float = bounds.y
+	var span: float = bound_right - bound_left
+	# Card width (assume uniform). Pick a stable reference card —
+	# skip the dragged one, since its scale is inflated by hover/drag
+	# tweens and would make the layout grow/shrink each frame.
+	var card_width: float = _measure_card_width()
+
 	match layout_mode:
 		LayoutMode.HAND_ARC:
 			var effective_angle = arc_angle
-			if max_width > 0 and count > 1:
-				var card_width: float = 150.0
-				if not managed_cards.is_empty() and managed_cards[0].size.x > 0:
-					card_width = managed_cards[0].size.x * managed_cards[0].scale.x
-				var available = max_width - card_width
+			if span > 0 and count > 1:
+				var available: float = span - card_width
 				if available > 0:
 					var max_half_angle = rad_to_deg(asin(clampf(available / (2.0 * arc_radius), 0.0, 1.0)))
 					effective_angle = minf(arc_angle, max_half_angle * 2.0)
 			var angle_step = effective_angle / max(1, count - 1) if count > 1 else 0
 			var start_angle = -effective_angle / 2.0
+			# Native arc is centered on (0, 0); we translate the whole cluster
+			# to honor the alignment + bounds.
+			var arc_extent: float = _arc_horizontal_extent(count, effective_angle)
+			var visible_width: float = arc_extent + card_width
+			var shift: float = _cluster_shift(visible_width, bound_left, bound_right)
 			for i in range(count):
 				var angle = start_angle + (angle_step * i)
 				var angle_rad = deg_to_rad(angle)
-				var x = sin(angle_rad) * arc_radius
+				var x = shift + sin(angle_rad) * arc_radius
 				var half_angle = effective_angle / 2.0 if effective_angle > 0 else 1.0
 				var y = -cos(angle_rad) * arc_radius + arc_radius - vertical_offset * abs(angle / half_angle)
 				positions.append(Vector2(x, y))
 		LayoutMode.HORIZONTAL:
-			var effective_spacing = card_spacing
-			if max_width > 0 and count > 1:
-				var card_width: float = 150.0
-				if not managed_cards.is_empty() and managed_cards[0].size.x > 0:
-					card_width = managed_cards[0].size.x * managed_cards[0].scale.x
-				var max_spacing = (max_width - card_width) / (count - 1)
+			# When cards fit comfortably, use card_spacing as the center-to-
+			# center distance. When they overflow, compress to fit, but never
+			# below min_card_gap.
+			var effective_spacing: float = card_spacing
+			if span > 0 and count > 1:
+				var max_spacing: float = (span - card_width) / float(count - 1)
 				effective_spacing = minf(card_spacing, max_spacing)
-			var total_width = (count - 1) * effective_spacing
-			var start_x = -total_width / 2.0
+				effective_spacing = maxf(effective_spacing, min_card_gap)
+				# Defensive: if min_card_gap pushed us back above the ceiling,
+				# re-clamp so the cluster never extends past the bounds.
+				if (count - 1) * effective_spacing + card_width > span:
+					effective_spacing = max_spacing
+			var total_width: float = (count - 1) * effective_spacing
+			var visible_width: float = total_width + card_width
+			var shift: float = _cluster_shift(visible_width, bound_left, bound_right)
 			for i in range(count):
-				positions.append(Vector2(start_x + i * effective_spacing, 0))
+				positions.append(Vector2(shift - total_width / 2.0 + i * effective_spacing, 0))
 		_:
-			# Fallback: horizontal with card_spacing
-			var total_width = (count - 1) * card_spacing
-			var start_x = -total_width / 2.0
+			# Fallback: horizontal with card_spacing, alignment-aware.
+			var total_width: float = (count - 1) * card_spacing
+			var visible_width: float = total_width + card_width
+			var shift: float = _cluster_shift(visible_width, bound_left, bound_right)
 			for i in range(count):
-				positions.append(Vector2(start_x + i * card_spacing, 0))
+				positions.append(Vector2(shift - total_width / 2.0 + i * card_spacing, 0))
 	return positions
+
+
+## Resolve [left_x, right_x] in CardManager local space. Anchors take
+## priority — both the @export slots AND auto-detected children named
+## "LeftAnchor" / "RightAnchor" (any Node2D). Falls back to max_width
+## centered on origin, or an unbounded wide span if neither is set.
+##
+## Uses to_local() so the conversion is correct even when CardManager
+## lives under a scaled parent (e.g. an AspectRatioContainer fitting
+## a playmat into a non-matching window) — raw global-x subtraction
+## would return world-space deltas, which differ from local deltas
+## under any non-1.0 ancestor scale.
+func _resolve_bounds() -> Vector2:
+	var l_node: Node2D = left_anchor
+	var r_node: Node2D = right_anchor
+	if l_node == null:
+		l_node = get_node_or_null("LeftAnchor") as Node2D
+	if r_node == null:
+		r_node = get_node_or_null("RightAnchor") as Node2D
+	if l_node and r_node:
+		var l: float = to_local(l_node.global_position).x
+		var r: float = to_local(r_node.global_position).x
+		if r > l:
+			return Vector2(l, r)
+		push_warning("[CardManager] Anchors are not in left-to-right order (l=%.1f, r=%.1f). Swap them in the editor." % [l, r])
+	if max_width > 0:
+		return Vector2(-max_width / 2.0, max_width / 2.0)
+	# Unbounded — wide nominal span so layout doesn't try to compress.
+	return Vector2(-9999.0, 9999.0)
+
+
+## Compute where the cluster center should sit given the visible
+## cluster width (last card's right edge minus first card's left edge)
+## and the bounds. Returns the X offset to translate a "centered on 0"
+## cluster to its alignment-correct position.
+##
+## Unbounded fall-through preserves legacy behavior — cluster stays
+## centered on origin (shift = 0) regardless of alignment, since
+## without bounds there's no reference edge to align to.
+func _cluster_shift(visible_width: float, bound_left: float, bound_right: float) -> float:
+	var span: float = bound_right - bound_left
+	if span >= 9998.0:
+		return 0.0
+	match hand_alignment:
+		HandAlignment.LEFT:
+			return bound_left + visible_width / 2.0
+		HandAlignment.END:
+			return bound_right - visible_width / 2.0
+		_:
+			return (bound_left + bound_right) / 2.0
+
+
+## Stable reference card width for layout math. Skips the dragged
+## card (its scale is inflated by drag/hover tweens) and the visually-
+## hovered card if we can detect it. Falls back to the configured
+## card_scale × default size, then a hard 150px default.
+func _measure_card_width() -> float:
+	for c in managed_cards:
+		if c == dragged_card:
+			continue
+		if c.size.x <= 0:
+			continue
+		var s: Vector2 = c.scale
+		# If the card exposes original_scale, prefer it — drag/hover
+		# tweens leave the live scale inflated.
+		if "original_scale" in c:
+			var orig = c.get("original_scale")
+			if orig is Vector2 and (orig as Vector2).x > 0:
+				s = orig
+		return c.size.x * s.x
+	# Fallback when no card has been added yet (or all are dragged).
+	return 150.0 * card_scale.x
+
+
+## Approximate horizontal extent of the arc layout (last card's center
+## minus first card's center). Used by alignment math.
+func _arc_horizontal_extent(count: int, effective_angle: float) -> float:
+	if count <= 1:
+		return 0.0
+	var half := effective_angle / 2.0
+	return 2.0 * sin(deg_to_rad(half)) * arc_radius
 
 
 ## Arrange non-dragged cards with a gap at gap_index to preview reorder
@@ -341,22 +565,11 @@ func _arrange_horizontal(animate: bool) -> void:
 	var count = managed_cards.size()
 	if count == 0:
 		return
-
-	var effective_spacing = card_spacing
-	if max_width > 0 and count > 1:
-		var card_width: float = 150.0
-		if not managed_cards.is_empty() and managed_cards[0].size.x > 0:
-			card_width = managed_cards[0].size.x * managed_cards[0].scale.x
-		var max_spacing = (max_width - card_width) / (count - 1)
-		effective_spacing = minf(card_spacing, max_spacing)
-
-	var total_width = (count - 1) * effective_spacing
-	var start_x = -total_width / 2.0
-
+	# Delegate to the alignment-aware shared layout so anchors + alignment
+	# are honored on every arrange call (not just during drag).
+	var positions := _compute_slot_positions(count)
 	for i in range(count):
-		var card = managed_cards[i]
-		var target_pos = Vector2(start_x + i * effective_spacing, 0)
-		_move_card_to_position(card, target_pos, 0.0, animate, i)
+		_move_card_to_position(managed_cards[i], positions[i], 0.0, animate, i)
 
 
 func _arrange_vertical(animate: bool) -> void:
