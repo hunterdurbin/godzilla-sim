@@ -3267,7 +3267,7 @@ func _on_rematch_pressed() -> void:
 	# Multiplayer: notify opponent, wait for them
 	btn_rematch.disabled = true
 	btn_rematch.text = tr("STR_GB_WAITING")
-	_rematch_deck_select.deck_dropdown.disabled = true
+	_rematch_deck_select.set_disabled(true)
 
 	if _rematch_deck_changed and not _rematch_deck_name.is_empty():
 		# Send deck data so opponent/host can apply it
@@ -3296,7 +3296,7 @@ func _execute_rematch() -> void:
 	_opponent_rematch_requested = false
 	_game_ended_by_disconnect = false
 	_rematch_deck_select.visible = false
-	_rematch_deck_select.deck_dropdown.disabled = false
+	_rematch_deck_select.set_disabled(false)
 	_rematch_deck_changed = false
 	_rematch_deck_name = ""
 	_reconnect_cumulative_seconds = 0.0
@@ -3515,7 +3515,7 @@ func _setup_rematch_deck_select() -> void:
 	if _save_game_button:
 		y_pos = _save_game_button.position.y + _save_game_button.custom_minimum_size.y + 4
 	_rematch_deck_select.position = Vector2(10, y_pos)
-	_rematch_deck_select.header_label.visible = false
+	_rematch_deck_select.set_header_visible(false)
 	_rematch_deck_select.visible = false
 	_rematch_deck_select.deck_selected.connect(_on_rematch_deck_selected)
 
@@ -3523,18 +3523,15 @@ func _setup_rematch_deck_select() -> void:
 func _populate_rematch_deck_select() -> void:
 	_rematch_deck_changed = false
 	_rematch_deck_name = ""
-	var dropdown: OptionButton = _rematch_deck_select.deck_dropdown
-	dropdown.clear()
-	dropdown.disabled = false
+	_rematch_deck_select.set_disabled(false)
 
 	var current_deck := DecklistManager.get_player_deck_name(local_player_id)
 	var all_decks := DecklistManager.get_all_decklists()
-	var valid_decks: Array[String] = []
-
+	var valid_set: Dictionary = {}
 	var skip_validation := not is_multiplayer_game
 	for deck_name in all_decks:
 		if skip_validation:
-			valid_decks.append(deck_name)
+			valid_set[deck_name] = true
 			continue
 		var data := DecklistManager.load_decklist(deck_name)
 		if data.is_empty():
@@ -3545,21 +3542,16 @@ func _populate_rematch_deck_select() -> void:
 			data.get("main", []),
 		)
 		if errors.is_empty():
-			valid_decks.append(deck_name)
+			valid_set[deck_name] = true
 
-	if valid_decks.size() <= 1:
-		# No alternative decks to choose from — hide the dropdown
+	if valid_set.size() <= 1:
 		_rematch_deck_select.visible = false
 		return
 
-	var select_idx := 0
-	for i in range(valid_decks.size()):
-		dropdown.add_item(valid_decks[i])
-		if valid_decks[i] == current_deck:
-			select_idx = i
-
-	dropdown.select(select_idx)
-	_rematch_deck_select.current_selection = valid_decks[select_idx]
+	_rematch_deck_select.set_filter(func(name): return valid_set.has(name))
+	_rematch_deck_select.refresh()
+	if valid_set.has(current_deck):
+		_rematch_deck_select.select_deck(current_deck)
 	_rematch_deck_select.visible = true
 
 

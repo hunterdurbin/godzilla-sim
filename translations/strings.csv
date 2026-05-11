@@ -855,3 +855,15 @@ STR_GB_CONCEDE,Concede,降参
 STR_GB_MAIN_MENU,Main Menu,メインメニュー
 STR_EFF_EBP04_078_BLOCKED,Crawling Calamity: Opponent's monster move is blocked by an effect.,「這い寄る災厄」: 相手の怪獣の移動は効果で阻止されました。
 STR_EFF_EBP04_078_TELEPORT_FMT,Crawling Calamity: Opponent's monster teleported from zone %d to zone %d.,「這い寄る災厄」: 相手の怪獣がエリア%dからエリア%dへ転移しました。
+STR_DLV_SEARCH_PLACEHOLDER,Search decks…,デッキを検索…
+STR_DB_MOVE,Move to…,移動…
+STR_DLV_ROOT,(Root),(ルート)
+STR_DLV_NEW_FOLDER,+ New folder…,+ 新規フォルダ…
+STR_DLV_NEW_FOLDER_PROMPT,Folder name:,フォルダ名:
+STR_DLV_MOVE_TITLE,Move Deck,デッキを移動
+STR_DLV_MOVE_INFO,"Move ""%s"" to which folder?","「%s」をどのフォルダに移動しますか?"
+STR_DLV_FOLDER_EXISTS,A deck with that name already exists in the target folder.,移動先のフォルダに同名のデッキが既に存在します。
+STR_DLV_NO_DECKS,No decks match.,一致するデッキはありません。
+STR_DLV_TOGGLE_DENSITY,Toggle compact view,コンパクト表示を切替
+STR_DLV_EXPAND,Expanded view,拡大表示
+STR_DLV_EXPANDED_TITLE,DECKS,デッキ一覧
