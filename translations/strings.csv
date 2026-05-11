@@ -646,7 +646,7 @@ STR_EFF_DESTROY_OPP_BEFORE_ZONE_FMT,Choose an opponent's battle card at or befor
 STR_EFF_DESTROY_OPP_RANK_LEFT_COL,Choose a battle card to destroy from the leftmost column:,最も左の縦列から<破壊>する交戦カードを選ぶ:
 STR_EFF_DESTROY_OPP_RANK_RIGHT_COL,Choose a battle card to destroy from the rightmost column:,最も右の縦列から<破壊>する交戦カードを選ぶ:
 STR_EFF_DESTROY_OPP_CP_LEQ_FMT,Destroy an opponent's battle card with 6000 or less CP in zones 1-5 (%d left):,エリア1〜5にいる撃退力6000以下の相手の交戦カードを<破壊> (残り%d):
-STR_EFF_DESTROY_OPP_REMAINING_RANKS_FMT,Destroy an opponent's battle card (total remaining ranks must reach %d or less):,相手の交戦カードを<破壊>する (残り等級合計が%d以下になるまで):
+STR_EFF_EBP04_024_DESTROY_FMT,Destroy an opponent's battle card (rank budget remaining: %d) (or skip):,相手の交戦カードを<破壊>する (残り等級コスト%d) (またはスキップ):
 STR_EFF_DESTROY_OWN_RANK_HIGHER_FMT,Destroy 1 of your rank %d or higher battle cards:,あなたの等級%d以上の交戦カードを1枚<破壊>する:
 STR_EFF_DESTROY_OWN_RANK_LOWER_FMT,Choose a rank %d or lower battle card to destroy:,等級%d以下の交戦カードを選んで<破壊>:
 STR_EFF_DESTROY_OPP_RANK_LOWER_LIST_FMT,Destroy %d opponent rank %d or lower battle card:,相手の等級%d以下の交戦カードを%d枚<破壊>する:

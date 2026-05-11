@@ -3207,7 +3207,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"threat_level": 26000,
 		"invasion_icon": 1,
 		"effect_script": "res://scripts/effects/ebp04/ebp04_024.gd",
-		"description": "<Enter> If you have 10 or more green battle cards in your discard pile, <Destroy> a desired number of your opponent's battle cards until their total Ranks equal 7 or less combined.\nFor each green battle card in your discard pile this card gains 1,000 threat."
+		"description": "<Enter> If you have 10 or more green battle cards in your discard pile, you may <Destroy> any number of your opponent's battle cards whose total ranks add up to 7 or less.\nThis card gains +1000 threat level for each green battle card in your discard pile."
 	},
 	{
 		"id": "EBP04-025",
