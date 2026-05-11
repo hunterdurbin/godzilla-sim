@@ -46,10 +46,10 @@ func on_enter(ctx: EffectContext) -> void:
 	var options: Array[String] = []
 	var option_ids: Array[String] = []
 	if can_destroy_strategy:
-		options.append("Destroy 1 opponent strategy")
+		options.append(tr("STR_EFF_EBP03_046_CHOICE_A"))
 		option_ids.append("destroy")
 	if can_reduce_rage:
-		options.append("Reduce opponent rage by 1")
+		options.append(tr("STR_EFF_EBP03_046_CHOICE_B"))
 		option_ids.append("rage")
 
 	var chosen_idx := await ctx.effect_handler.select_choice(

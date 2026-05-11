@@ -274,10 +274,10 @@ STR_PHASE_START,Start Phase,スタートフェイズ
 STR_PHASE_MAIN,Main Phase,メインフェイズ
 STR_PHASE_COUNTER,Counter Phase,撃退フェイズ
 STR_PHASE_END,End Phase,エンドフェイズ
-STR_PB_THREAT,Threat:,脅威:
+STR_PB_THREAT,Threat:,脅威度:
 STR_PB_THREAT_SHORT,T:,脅:
-STR_PB_RAGE_ZONE,Rage Zone,怒りゾーン
-STR_PB_CP,CP:,CP:
+STR_PB_RAGE_ZONE,Rage Zone,怒り置き場
+STR_PB_CP,CP:,撃退力:
 STR_PB_DISCARD,Discard,捨て札
 STR_GB_TURN_FMT,Turn: {N},ターン: {N}
 STR_GB_TURN_HEADER_FMT,Turn {N} | {PLAYER} - {PHASE},ターン {N} | {PLAYER} - {PHASE}
@@ -339,9 +339,14 @@ STR_GB_COIN_FLIP_WON,You won the coin flip! Go first or second?,コイントス�
 STR_GB_GO_FIRST,Go First,先攻
 STR_GB_GO_SECOND,Go Second,後攻
 STR_GB_LOG,Log,ログ
-STR_GB_CP,CP,CP
+STR_GB_CP,CP,撃退力
 STR_GB_TURNS,Turns,ターン
 STR_GB_SELECT_ZONE,Select a ZONE to place the battle card:,交戦カードを置くエリアを選択:
+STR_GB_SELECT_BATTLE_TO_PLAY,Select a BATTLE card to play:,出現させる交戦カードを選択:
+STR_GB_SELECT_MONSTER_TO_PLAY,Select a MONSTER card to play:,出現させる怪獣カードを選択:
+STR_GB_SELECT_STRATEGY_TO_ACTIVATE,Select a STRATEGY card to activate:,発動する戦略カードを選択:
+STR_GB_SELECT_RAGE_CARD,Select a MONSTER card to discard for Rage:,<怒り>のため捨てる怪獣カードを選択:
+STR_GB_SELECT_INVASION_CARD,Select a card to discard for Invasion:,進攻のため捨てるカードを選択:
 STR_GB_NO_DISCARD,No cards in discard pile.,捨て札にカードがありません。
 STR_GB_NO_MONSTER_DECK,No cards remaining in monster deck.,怪獣デッキにカードが残っていません。
 STR_GB_ZONE_HEADER_FMT,Zone {N} ({C} cards),エリア {N} ({C}枚)
@@ -758,9 +763,26 @@ STR_EFF_EBP04_077_FROM_DECK,Choose 1 Mechagodzilla battle card to add to hand:,�
 STR_EFF_EBP04_077_PLACE_8,Place in Area 8,エリア8に置く
 STR_EFF_EBP04_077_PLACE_HAND,Add to hand,手札に加える
 STR_EFF_EBP04_079_PICK,Choose the next Final Wars battle card to play:,次に出す<ファイナルウォーズ>の交戦カードを選ぶ:
-STR_EFF_EBP03_029_CHOICE_A,Destroy all battle cards of both players,両プレイヤーの交戦カードをすべて<破壊>
-STR_EFF_EBP03_029_CHOICE_B,Each player discards to 2 cards in hand,両プレイヤーは手札を2枚になるよう捨てる
-STR_EFF_EBP03_029_CHOICE_C,Reduce each player's Rage by 2,両プレイヤーの<怒り>を2減らす
+STR_EFF_EBP03_029_CHOICE_A,Destroy all battle cards of both players,各プレイヤーの交戦カードをすべて<破壊>
+STR_EFF_EBP03_029_CHOICE_B,Each player discards to 2 cards in hand,各プレイヤーは手札を2枚になるよう捨てる
+STR_EFF_EBP03_029_CHOICE_C,Reduce each player's Rage by 2,各プレイヤーの<怒り>を2減らす
+STR_EFF_EBP01_064_CHOICE_A,Destroy 1 of opponent's rank 4 or lower battle cards,相手の等級4以下の交戦カードを1枚<破壊>
+STR_EFF_EBP01_064_CHOICE_B,Choose a zone and destroy all cards there and in adjacent zones,エリアを選び、そのエリアと隣接エリアのすべてのカードを<破壊>
+STR_EFF_EBP02_038_CHOICE_A,Destroy 1 of opponent's rank 5 or lower battle cards,相手の等級5以下の交戦カードを1枚<破壊>
+STR_EFF_EBP02_038_CHOICE_B,Destroy opponent's battle card in zone 8,エリア8にいる相手の交戦カードを<破壊>
+STR_EFF_EBP02_049_CHOICE_A,Destroy 3 of opponent's rank 5 or lower battle cards,相手の等級5以下の交戦カードを3枚<破壊>
+STR_EFF_EBP02_049_CHOICE_B,Opponent discards to 3 cards in hand,相手は手札を3枚になるよう捨てる
+STR_EFF_EBP02_049_CHOICE_C,Send top 3 cards of your deck to discard,山札の上から3枚を捨て札に送る
+STR_EFF_EBP02_050_CHOICE_A,Destroy 3 of opponent's rank 6 or lower battle cards,相手の等級6以下の交戦カードを3枚<破壊>
+STR_EFF_EBP02_050_CHOICE_B,Opponent discards to 2 cards in hand,相手は手札を2枚になるよう捨てる
+STR_EFF_EBP02_050_CHOICE_C,Increase Rage by 3,<怒り>を3増やす
+STR_EFF_EBP02_071_CHOICE_A,Destroy 3 of opponent's rank 4 or lower battle cards,相手の等級4以下の交戦カードを3枚<破壊>
+STR_EFF_EBP02_071_CHOICE_B,Awakening6: Destroy 2 of opponent's rank 6 or lower battle cards,<覚醒6>: 相手の等級6以下の交戦カードを2枚<破壊>
+STR_EFF_EBP02_071_CHOICE_C,Awakening8: Destroy 1 of opponent's battle cards,<覚醒8>: 相手の交戦カードを1枚<破壊>
+STR_EFF_EBP03_046_CHOICE_A,Destroy 1 opponent strategy,相手の戦略カードを1枚<破壊>
+STR_EFF_EBP03_046_CHOICE_B,Reduce opponent rage by 1,相手の<怒り>を1減らす
+STR_EFF_EBP03_077_CHOICE_A,Return R2 or lower monster,等級2以下の怪獣カードを戻す
+STR_EFF_EBP03_077_CHOICE_B,Return any monster (5+ under),怪獣カードを戻す (このカードの下に5枚以上)
 STR_EFF_ESD01_002_SEARCH,Search for a Rank III Godzilla(2023) with Burst,<強襲>を持つ等級3の「ゴジラ(2023)」を探す
 STR_EFF_ESD01_012_PROMPT,Choose an empty zone to move this card to:,このカードを移動する空きエリアを選ぶ:
 STR_EFF_ESD01_014_SEARCH,Search for a Godzilla(2023) battle card to play,出す「ゴジラ(2023)」の交戦カードを探す

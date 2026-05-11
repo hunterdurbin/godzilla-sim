@@ -1531,8 +1531,8 @@ func _apply_mobile_action_panel() -> void:
 		btn_gain_rage, btn_invade
 	]
 	var btn_labels_text: Array = [
-		"Battle", "Monster", "Strategy",
-		"Rage", "Invade"
+		tr("STR_TYPE_BATTLE"), tr("STR_TYPE_MONSTER"), tr("STR_TYPE_STRATEGY"),
+		tr("STR_TYPE_RAGE"), tr("STR_GB_INVADE")
 	]
 	var btn_textures: Array[Texture2D] = [
 		load("res://assets/buttons/battle.png"),
@@ -3660,7 +3660,7 @@ func _on_play_battle_pressed() -> void:
 		return
 
 	pending_action = CardEnums.ActionType.PLAY_BATTLE
-	_enter_card_selection("Select a BATTLE card to play:", playable)
+	_enter_card_selection(tr("STR_GB_SELECT_BATTLE_TO_PLAY"), playable)
 
 
 func _on_play_strategy_pressed() -> void:
@@ -3676,7 +3676,7 @@ func _on_play_strategy_pressed() -> void:
 		return
 
 	pending_action = CardEnums.ActionType.PLAY_STRATEGY
-	_enter_card_selection("Select a STRATEGY card to activate:", playable)
+	_enter_card_selection(tr("STR_GB_SELECT_STRATEGY_TO_ACTIVATE"), playable)
 
 
 func _on_gain_rage_pressed() -> void:
@@ -3692,7 +3692,7 @@ func _on_gain_rage_pressed() -> void:
 		return
 
 	pending_action = CardEnums.ActionType.GAIN_RAGE
-	_enter_card_selection("Select a MONSTER card to discard for Rage:", playable)
+	_enter_card_selection(tr("STR_GB_SELECT_RAGE_CARD"), playable)
 
 
 func _on_play_monster_pressed() -> void:
@@ -3708,7 +3708,7 @@ func _on_play_monster_pressed() -> void:
 		return
 
 	pending_action = CardEnums.ActionType.PLAY_MONSTER
-	_enter_card_selection("Select a MONSTER card to play:", playable)
+	_enter_card_selection(tr("STR_GB_SELECT_MONSTER_TO_PLAY"), playable)
 
 
 func _on_invade_pressed() -> void:
@@ -3724,7 +3724,7 @@ func _on_invade_pressed() -> void:
 		return
 
 	pending_action = CardEnums.ActionType.INVADE
-	_enter_card_selection("Select a card to discard for Invasion:", playable)
+	_enter_card_selection(tr("STR_GB_SELECT_INVASION_CARD"), playable)
 
 
 func _on_end_main_pressed() -> void:

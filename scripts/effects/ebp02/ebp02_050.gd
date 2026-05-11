@@ -37,16 +37,16 @@ func on_enter(ctx: EffectContext) -> void:
 	# Option 0: Destroy 3 R6- battle cards
 	var has_r6_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 6).is_empty()
 	if has_r6_targets:
-		options.append("Destroy 3 of opponent's rank 6 or lower battle cards")
+		options.append(tr("STR_EFF_EBP02_050_CHOICE_A"))
 		option_ids.append(0)
 
 	# Option 1: Opponent discards to 2
 	if ctx.opponent.hand.size() > 2:
-		options.append("Opponent discards to 2 cards in hand")
+		options.append(tr("STR_EFF_EBP02_050_CHOICE_B"))
 		option_ids.append(1)
 
 	# Option 2: +3 rage (always available)
-	options.append("Increase Rage by 3")
+	options.append(tr("STR_EFF_EBP02_050_CHOICE_C"))
 	option_ids.append(2)
 
 	var chosen_id: int

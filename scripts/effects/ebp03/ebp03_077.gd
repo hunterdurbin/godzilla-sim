@@ -49,10 +49,10 @@ func on_enter(ctx: EffectContext) -> void:
 	var options: Array[String] = []
 	var option_ids: Array[String] = []
 	if has_low_rank_monster:
-		options.append("Return R2 or lower monster")
+		options.append(tr("STR_EFF_EBP03_077_CHOICE_A"))
 		option_ids.append("low_rank")
 	if has_five_under and has_any_monster:
-		options.append("Return any monster (5+ under)")
+		options.append(tr("STR_EFF_EBP03_077_CHOICE_B"))
 		option_ids.append("any_monster")
 
 	if options.size() == 1:
