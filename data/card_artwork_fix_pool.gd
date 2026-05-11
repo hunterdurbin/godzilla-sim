@@ -59,6 +59,11 @@ const ENTRIES := {
 		],
 		"locales": ["en"],
 	},
+	"v0.1.12-unstable.5_ebp04_ja_fix_godzilla_earth": {
+		"description": "Fix orientation for EBP04-067",
+		"card_ids": ["EBP04-067"],
+		"locales": ["ja"]
+	}
 }
 
 

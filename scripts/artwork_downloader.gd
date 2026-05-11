@@ -136,6 +136,35 @@ func artwork_exists(card_number: String, locale: String) -> bool:
 	return false
 
 
+func count_cards_pending_update(locale: String) -> int:
+	## Number of unique cards whose artwork for `locale` is either:
+	##   (a) not on disk yet (cache miss), or
+	##   (b) cached but queued for re-fetch via an unapplied
+	##       CardArtworkFixPool entry whose `locales` includes this locale.
+	## Used by Options to prompt the user after a locale switch.
+	## De-duplicated — a card that's both missing AND in a pending fix-pool
+	## entry counts once.
+	locale = _resolve_locale(locale)
+	var pending := {}  # set of card_id
+	for card_id in CardData.CARD_TEMPLATES:
+		var template: Dictionary = CardData.CARD_TEMPLATES[card_id]
+		if template.get("card_type", -1) == CardEnums.CardType.RAGE:
+			continue
+		if not artwork_exists(card_id, locale):
+			pending[card_id] = true
+	var entries := CardArtworkFixPool.unapplied_entries(GameSettings.applied_artwork_fixes)
+	for entry in entries:
+		var entry_locales: Array = entry.locales
+		if not (locale in entry_locales):
+			continue
+		for card_id in entry.card_ids:
+			# Only count cards we actually know about — guards against a
+			# fix-pool entry referencing a card that's since been removed.
+			if CardData.CARD_TEMPLATES.has(card_id):
+				pending[card_id] = true
+	return pending.size()
+
+
 func get_cached_count(locale: String) -> int:
 	## Count how many card templates have at least one image cached on disk
 	## for the given locale. Used by Options to render per-locale status.

@@ -81,6 +81,10 @@ STR_OPTIONS_ART_MATCH_TITLE,Switch Card Artwork?,カードアートを切り替�
 STR_OPTIONS_ART_MATCH_PROMPT_FMT,Also switch card artwork to {LANG}?,カードアートも {LANG} に切り替えますか？
 STR_OPTIONS_ART_MATCH_YES,"Yes, switch",はい、切り替える
 STR_OPTIONS_ART_MATCH_NO,Keep current,このまま
+STR_OPTIONS_ART_UPDATE_TITLE,Download Card Artwork?,カードアートをダウンロードしますか？
+STR_OPTIONS_ART_UPDATE_PROMPT_FMT,{N} card image(s) aren't downloaded for {LANG}. Download now?,{LANG} のカード画像が {N} 枚ダウンロードされていません。今ダウンロードしますか？
+STR_OPTIONS_ART_UPDATE_DOWNLOAD,"Yes, download",はい、ダウンロード
+STR_OPTIONS_ART_UPDATE_SKIP,Not now,後で
 STR_OPTIONS_AUTOMATION_TITLE,Automation,自動化
 STR_OPTIONS_CUSTOMIZE_TITLE,Customize,カスタマイズ
 STR_OPTIONS_ADVANCED_TITLE,Advanced,詳細
