@@ -31,11 +31,13 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	var colors: Array[int] = []
-	var battle_tops: Array[Dictionary] = ctx.owner.get_zone_top_cards_matching(
-		func(c: Dictionary) -> bool: return CardUtils.is_battle(c))
-	for zone_card in battle_tops:
-		for c: int in zone_card.get("colors", []):
-			if c not in colors:
-				colors.append(c)
-	return colors.size() * 3000
+	# Rule says "other battle cards in your zones" — exclude self's zone.
+	var self_zone: int = find_zone_of_card(ctx)
+	var others: Array[Dictionary] = []
+	for i in range(8):
+		if i == self_zone:
+			continue
+		var top: Dictionary = ctx.owner.get_zone_top_card(i)
+		if not top.is_empty() and CardUtils.is_battle(top):
+			others.append(top)
+	return CardUtils.count_distinct_colors(others) * 3000
