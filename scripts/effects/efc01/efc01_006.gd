@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## EFC01-006: King Ghidorah's Defense - Strategy Rank 3 (White)
-## <Opponent's Turn> If your opponent has 2 or fewer battle cards in zones,
-## your battle cards cannot be destroyed by your opponent's effects.
+## <Opponent's Turn> If the opponent has 2 or less battle cards in their zones, none of
+## the battle cards in your zones can be destroyed by your opponent's effects.
 ##
 ## Tested: No
 ## Known issues: None

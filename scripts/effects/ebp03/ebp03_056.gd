@@ -1,6 +1,7 @@
 extends CardEffect
 # Manda(2004) (Battle R3)
-# If same column as opponent monster, +3000 CP.
+# If this card is in the same column as your opponent’s monster card, this card gains
+# +3000 counter power.
 #
 # Tested: No
 # Known issues: None

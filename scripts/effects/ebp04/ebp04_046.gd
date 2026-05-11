@@ -1,8 +1,9 @@
 extends CardEffect
 ## EBP04-046: Rodan (2004) - Battle Rank 4 (Blue)
-## When this card is discarded from your hand by your opponent's effect you
-## may play this card.
-## <Awakening 6> This gains +3000 counter power.
+## When this card is discarded from your hand by your opponent’s effect, you may play
+## this card.
+## <Awakening 6> This card gains +3000 counter power. (Active if your monster card is in
+## zone 6 or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

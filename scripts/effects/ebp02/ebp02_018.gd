@@ -1,8 +1,10 @@
 extends CardEffect
 
 ## EBP02-018: Despair - Strategy Rank 3 (Red)
-## If your monster card has 2 or more <Rage>, <Destroy> 1 of your opponent's battle cards
-## that is occupying a zone at or before the zone your monster card currently occupies.
+## If your monster card has 2 or more <Rage> , <Destroy> 1 of your opponent's battle
+## cards that is occupying a zone at or before the zone your monster card currently
+## occupies. (If your monster card is in Zone 4, you can select battle cards in your
+## opponent's zone 1, 2, 3, or 4.)
 ##
 ## Tested: Yes
 ## Known issues: None

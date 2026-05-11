@@ -1,8 +1,9 @@
 extends CardEffect
 
 ## EBP03-062: Baragon(2001) - Battle Rank 6 (Green)
-## When your opponent's monster card invades, Destroy this card.
-## <Revenge> Return up to 1 Sacred Guardian Beast monster card from your discard pile to your hand.
+## When your opponent’s monster card invades, <Destroy> this card.
+## <Revenge> Return up to 1 <《Sacred Guardian Beasts》> monster card from your discard pile to your hand.
+## (Activates when destroyed by a card effect or monster card movement.)
 ##
 ## Tested: No
 ## Known issues: None

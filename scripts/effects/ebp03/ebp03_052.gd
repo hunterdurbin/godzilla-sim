@@ -1,10 +1,10 @@
 extends CardEffect
 
 ## EBP03-052: M.O.G.U.E.R.A. - Battle Rank 7 (Blue)
-## When this card would be Destroyed by an opponent's effect, add all cards under this
+## When this card would be <Destroy> by an opponent’s effect, add all cards under this
 ## card to your hand.
 ## <Awakening6> <Enter> If there are no cards under this card, search your deck for up
-## to 1 card named "Land Moguera" and up to 1 card named "Star Falcon", place them under
+## to 1 card named “Land Moguera” and up to 1 card named “Star Falcon”, place them under
 ## this card, then shuffle your deck.
 ##
 ## Tested: No

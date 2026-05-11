@@ -1,11 +1,12 @@
 extends CardEffect
 ## EBP04-089: Inherited Life - Strategy Rank 1 (White)
-##
-## Do not move this to your discard pile at the beginning of your start phase.
-## <Your Turn> When you decrease your Monster card's <Rage>, put them underneath
-## this. On the 15th card <Destroy> all of your opponent's battle cards. On the
-## 22nd card your opponent discards their entire hand. On the 30th card you win
-## the game.
+## During your start phase, this card is not sent to the discard pile.
+## <Your Turn> Whenever your monster card’s <Rage> is reduced, place that many
+## <Rage> under this card.
+## When you place the 15th card under this card, <Destroy> all of your opponent’s
+## battle cards.
+## When you place the 22nd card, your opponent discards their entire hand.
+## When you place the 30th card, you win the game.
 ##
 ## Tested: Yes
 ## Known issues: None

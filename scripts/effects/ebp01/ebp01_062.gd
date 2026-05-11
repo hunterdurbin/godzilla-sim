@@ -1,7 +1,7 @@
 extends CardEffect
 
 ## EBP01-062: Godzilla vs. Destoroyah - Strategy Rank 3 (Blue)
-## <Your Turn> If you have a <Destoroyah> battle card in your zones, increase your
+## <Your Turn> If you have a <《Destoroyah》> battle card in your zones, increase your
 ## total counter power by +10,000.
 ##
 ## Tested: Yes

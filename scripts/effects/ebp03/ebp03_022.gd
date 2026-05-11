@@ -1,6 +1,6 @@
 extends CardEffect
 # Aqua Mothra R4
-# If you have a card with <Base> in play, +10000 threat level.
+# If you have a card with <Base> in play, this card gains +10,000 threat level.
 #
 # Tested: No
 # Known issues: None

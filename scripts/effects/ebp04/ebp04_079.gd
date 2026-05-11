@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-079: Godzilla Final Wars - Strategy Rank 7 (Red)
-## Reveal the top 7 cards of your deck, play all <Final Wars> battle cards among
-## them and discard the rest.
+## Reveal the top 7 cards of your deck, play all  《Final Wars》 battle cards from among
+## them, then send the rest to your discard pile.
 ##
 ## Tested: Yes
 ## Known issues: None

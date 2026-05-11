@@ -1,8 +1,9 @@
 extends CardEffect
 # Rebirth of Mothra 3 (Strategy R4)
 # Choose one:
-# - Return 1 R2 or lower monster card from discard to hand.
-# - If 5+ cards under your monster, return 1 monster card from discard to hand.
+# ・Return 1 rank II or lower monster card from your discard pile to your hand.
+# ・If there are 5 or more cards under your monster card, return 1 monster card from
+# your discard pile to your hand.
 #
 # Tested: No
 # Known issues: None

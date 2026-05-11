@@ -1,8 +1,9 @@
 extends CardEffect
 
 ## EBP02-020: Operation Yashiori -Conductorless train bombers- - Strategy Rank 6 (Red)
-## <Enter> If you have 5 or more strategy cards in your discard pile, create
-## "Conductorless Train Bombers" tokens in each of your unoccupied zones.
+## If you have 5 or more strategy cards in your discard pile, create “Conductorless
+## train bombers” tokens in each of your unoccupied zones. (Tokens are prepared
+## separately from your main deck.)
 ##
 ## Tested: Yes
 ## Known issues: None

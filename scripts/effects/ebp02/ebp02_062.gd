@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## EBP02-062: SpaceGodzilla - Battle Rank 5 (Green)
-## <Revenge> Return up to 1 <SpaceGodzilla> monster card from your discard pile
-## to your hand.
+## <Revenge> Return up to 1 <《SpaceGodzilla》> monster card from your discard pile to
+## your hand. (Activates when destroyed by a card effect or monster card movement.)
 ##
 ## Tested: No
 ## Known issues: None

@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## EBP02-023: Godzilla(1999) - Monster Rank 4 (Blue)
-## <Enter> If you have 5 or more monster cards in your discard pile, 1 of your opponent's
-## monster cards with 50,000 or less threat level retreats back by 1 zone.
-## If you have 10 or more monster cards in your discard pile, this card gains +10,000 TL.
+## <Enter> If you have 5 or more monster cards in your discard pile, 1 of your
+## opponent's monster cards with 50,000 or less threat level retreats back by 1 zone.
+## If you have 10 or more monster cards in your discard pile, this card gains +10,000
+## threat level.
 ##
 ## Tested: Yes
 ## Known issues: None

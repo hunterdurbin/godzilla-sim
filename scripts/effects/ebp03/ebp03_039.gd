@@ -2,7 +2,9 @@ extends CardEffect
 
 ## EBP03-039: Godzilla(2016) 4th Form - Battle Rank 7 (Red)
 ## Whenever your card is sent from a strategy zone to the discard pile, draw 1 card.
-## If there are 5 or more strategy cards in your discard pile, this card gains +5000 CP.
+## (Also triggers when a strategy card is destroyed)
+## If there are 5 or more strategy cards in your discard pile, this card gains +5000
+## counter power.
 ##
 ## Tested: No
 ## Known issues: None

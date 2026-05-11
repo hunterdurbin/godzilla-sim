@@ -1,9 +1,9 @@
 extends CardEffect
 ## EBP04-052: Mothra Imago (1992) - Battle Rank 7 (Blue)
-## When this card is discarded from your hand by your opponent's effect and
-## their monster card is in zones 4-8 you may play this card.
-## Any time you discard cards from your hand by your opponent's effects, and
-## this is in area 8, increase your <Rage> by 2.
+## When this card is discarded from your hand by your opponent’s effect, if your
+## opponent’s monster card is in zones 4–8, you may play this card.
+## Whenever your opponent’s effect causes you to discard cards from your hand, if this
+## card is in zone 8, increase your monster card’s <Rage> by 2.
 ##
 ## Tested: Yes
 ## Known issues: None

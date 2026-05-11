@@ -1,6 +1,7 @@
 extends CardEffect
 # Petit Railgun (Strategy R1)
-# Destroy all opponent battle cards in same column as your monster.
+# [Destroy] all of your opponent's battle cards in the same column as your monster
+# card.
 #
 # Tested: No, Looks good at glance
 # Known issues: None

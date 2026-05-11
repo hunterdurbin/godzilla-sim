@@ -1,7 +1,8 @@
 extends CardEffect
 # Zilla (Battle R4)
-# End phase start: move to an adjacent horizontal zone (overloads if occupied).
-# Then if adjacent to your monster, Destroy this card.
+# At the beginning of your end phase, move this card to an adjacent zone horizontal to
+# the zone this card currently occupies. Then, if this card is in a zone adjacent to
+# your monster card, <Destroy> this card..
 #
 # Tested: No
 # Known issues: None

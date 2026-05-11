@@ -1,10 +1,11 @@
 extends CardEffect
 
 ## EBP01-010: Godzilla(2023) - Monster Rank 4
-## Whenever this card's <Rage> is increased, <Destroy> all of your opponent's battle cards
-## in the same column as this card.
-## <Opponent's Turn> At the beginning of the counter phase, if this card has 3 or more <Rage>,
-## <Destroy> all of your opponent's battle cards in the same column as this card.
+## Whenever this card's <Rage> is increased, <Destroy> all of your opponent’s battle
+## cards in the same column as this card.
+## <Opponent’s Turn> At the beginning of the counter phase, if this card has 3 or more
+## <Rage> , <Destroy> all of your opponent’s battle cards in the same column as this
+## card.
 ##
 ## Tested: Yes
 ## Known issues: None

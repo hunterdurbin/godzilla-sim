@@ -1,8 +1,9 @@
 extends CardEffect
 ## EBP04-033: Kaiser Ghidorah - Monster Rank 3 (Red, Blue, Green)
-## You can play this on top of a <Monster X> monster card in your zones.
-## <Enter> If you have 3 or more colors of battle cards in your discard pile,
-## decrease your opponent's <Rage> by 1.
+## This card can be played by placing it on top of a monster card with 《Monster X》 in
+## your zones.
+## <Enter> If there are 3 or more different colors among battle cards in your discard
+## pile, reduce your opponent’s <Rage> by 1.
 ##
 ## Tested: Yes
 ## Known issues: None

@@ -1,12 +1,11 @@
 extends CardEffect
 ## EBP04-005: Godzilla 2004 - Monster Rank 4 (Red)
-## <Enter> If you have 1 or fewer strategy cards in your strategy zones, search
-## your deck for 1 Rank 1 Strategy card, reveal it and place it in your strategy
-## zones, shuffle your deck, and resolve the placed card's effect.
-## Every time you <Destroy> an opponent's battle card in the same column as this,
-## if you have 3 or more Rank 1 strategy cards in your discard pile, <Destroy>
-## all of your opponent's battle cards equal to or less than the Rank of the
-## battle card you <Destroy>.
+## <Enter> If you have 1 or fewer strategy cards in play, search your deck for up to 1
+## rank 1 strategy card, put it into play, shuffle your deck, then activate it.
+## Whenever an opponent’s battle card in the same column as this card is <Destroy>, if
+## you have 3 or more rank 1 strategy cards in your discard pile, <Destroy> all of your
+## opponent’s battle cards with rank equal to or lower than the rank of the card that
+## was <Destroy> in the same column as this card.
 ##
 ## Tested: Yes
 ## Known issues: None

@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## EBP01-038: Godzilla(1995) - Monster Rank 4 (Blue)
-## <Opponent's Turn> <Awakening6> This card cannot be countered by 50,000 or lower
-## counter power, instead, it only moves as though it were countered.
-## (Do not play the next monster card from your monster deck.)
+## <Opponent’s Turn> <Awakening6> This card cannot be countered by 50,000 or lower
+## counter power, instead, it only moves as though it were countered. (Do not play the
+## next monster card from your monster deck.) (Active if this card is in zone 6 or
+## beyond, and the opponent’s total counter power is 50,000 or lower.)
 ##
 ## Tested: Yes
 ## Known issues: None

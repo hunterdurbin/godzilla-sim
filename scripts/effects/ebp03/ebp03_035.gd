@@ -1,6 +1,8 @@
 extends CardEffect
 # Satsuma (Battle R5)
-# <Enter> If same column as opponent monster, discard 1 strategy from hand, advance own monster to zone 6.
+# <Enter> If this card is in the same column as your opponent’s monster card, you may
+# discard 1 strategy card from your hand. If you do, advance your monster card to zone
+# 6.
 #
 # Tested: No
 # Known issues: None

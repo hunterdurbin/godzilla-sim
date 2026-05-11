@@ -1,6 +1,8 @@
 extends CardEffect
 # Space Beam (Strategy R4)
-# Opponent discards to 4. If Mechagodzilla in your zone 8, Destroy all opponent R5-.
+# Your opponent discards cards until they have 4 cards remaining in their hand. Then,
+# if there is a <《Mechagodzilla》> card in your zone 8, <Destroy> all opponent’s rank 5
+# or lower battle cards.
 #
 # Tested: No
 # Known issues: None

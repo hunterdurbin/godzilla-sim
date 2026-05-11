@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-063: Godzilla Filius - Battle Rank 5 (Green)
-## <Revenge> Return up to 1 [Godzilla Earth] battle card from your discard pile
-## to your hand.
+## <Revenge> Return up to 1 battle card named "Godzilla Earth" from your discard pile to
+## your hand. (Activates when destroyed by a card effect or monster card movement.)
 ##
 ## Tested: Yes
 ## Known issues: None

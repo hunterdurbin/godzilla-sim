@@ -1,7 +1,9 @@
 extends CardEffect
 # Garuda (Battle R5)
-# Counter start: if same column as opponent monster, discard 1 Weapon/Mech from hand,
-# search deck for "Super Mechagodzilla", play on top of this card.
+# At the beginning of your counter phase, if this card is in the same column as your
+# opponent’s monster card, you may discard 1 battle card with <《Weapon》> or <《Mech》>
+# from your hand. If you do, search your deck for up to 1 battle card named “Super
+# Mechagodzilla”, play it on top of this card, then shuffle your deck.
 #
 # Tested: No
 # Known issues: None

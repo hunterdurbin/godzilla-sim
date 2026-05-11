@@ -1,8 +1,10 @@
 extends CardEffect
 ## EBP04-047: Monster X - Battle Rank 5 (Blue)
-## This card's counter power X is equal to 3000 times the number of different
-## colors among battle cards in your zones (white included).
-## <Evolution 8> <Kaiser Ghidorah>
+## This card’s counter power X is equal to 3000 multiplied by the number of different
+## colors among other battle cards in your zones. (White also counts as a color.)
+## <Evolution 8> 《Kaizer Ghidorah》 (At the beginning of your main phase, you may play a
+## rank 8 or lower 《Kaizer Ghidorah》 battle card from your deck by placing it on top of
+## this card.)
 ##
 ## Tested: Yes
 ## Known issues: None

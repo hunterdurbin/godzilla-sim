@@ -1,10 +1,10 @@
 extends CardEffect
 
 ## ESD01-010: City of Tokyo - Battle Rank 6
-## If your monster card has 2 or more <Rage>, your other battle card in zone 8
-## gains +5000 counter power.
-## <Awakening6> Your other battle card in zone 8 gains +5000 counter power.
-## (Active if your monster card is in zone 6 or beyond.)
+## If your monster card has 2 or more <Rage> , your other battle card in zone 8 gains
+## +5000 counter power.
+## <Awakening6> Your other battle card in zone 8 gains +5000 counter power. (Active if
+## your monster card is in zone 6 or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

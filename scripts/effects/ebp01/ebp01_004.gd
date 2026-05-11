@@ -1,7 +1,9 @@
 extends CardEffect
 
 ## EBP01-004: Godzilla(1954) - Monster Rank 4 (Burst III)
-## <Burst3> When this card reaches zone 8, <Destroy> all battle cards in each player's zones.
+## <Burst3> (You can play this card from rank III. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
+## When this card reaches zone 8, <Destroy> all battle cards in each player's zones.
 ##
 ## Tested: Yes
 ## Known issues: None

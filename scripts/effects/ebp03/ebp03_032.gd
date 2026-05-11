@@ -1,6 +1,8 @@
 extends CardEffect
 # Mechagodzilla(1974) (Battle R4)
-# Counter phase start: if adjacent to monster, may discard all hand for +1000 CP per card.
+# At the beginning of your counter phase, if this card is in a zone adjacent to your
+# monster card, you may discard all the cards in your hand. If you do, for the rest of
+# the turn, this card gains +1000 counter power for each card discarded this way.
 #
 # Tested: No
 # Known issues: None

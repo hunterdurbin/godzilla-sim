@@ -1,7 +1,8 @@
 extends CardEffect
 
 ## EBP02-067: M.O.G.U.E.R.A. - Battle Rank 8 (Green)
-## If your opponent has a <Godzilla> card in their zones, this card gains +5000 CP.
+## If your opponent has a <《Godzilla》> card in their zones, this card gains +5000
+## counter power.
 ##
 ## Tested: Yes
 ## Known issues: None

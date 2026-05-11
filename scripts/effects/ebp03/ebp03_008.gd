@@ -1,7 +1,10 @@
 extends CardEffect
 # Multi-purpose Fighting System-3 R3
-# <Enter> If blue battle card in your zones, Destroy 1 opponent R5-.
-# <Opponent's Turn> Counter start: if red battle in your zones, Destroy 1 opponent R5- in same column.
+# <Enter> If there is a blue battle card in your zones, <Destroy> 1 of your opponent’s
+# rank 5 or lower battle cards.
+# <Opponent’s Turn> At the beginning of the counter phase, if there is a red battle
+# card in your zones, <Destroy> 1 of your opponent’s rank 5 or lower battle cards in
+# the same column as this card.
 #
 # Tested: No
 # Known issues: None

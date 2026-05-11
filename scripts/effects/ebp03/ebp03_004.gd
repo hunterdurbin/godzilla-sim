@@ -2,8 +2,8 @@ extends CardEffect
 # Godzilla(2001) - Monster Rank 4 (Red)
 # When this card invades, you may send the top card of your deck to your discard pile
 # instead of discarding a card from your hand.
-# <Opponent's Turn> <Awakening4> This card's Rage cannot be reduced by your opponent's
-# effects. (Active if this is in zone 4 or beyond.)
+# <Opponent’s Turn> <Awakening4> This card’s <Rage> cannot be reduced by your
+# opponent’s effects. (Active if this is in zone 4 or beyond.)
 #
 # Tested: No
 # Known issues: None

@@ -2,9 +2,9 @@ extends CardEffect
 
 ## EBP02-049: King Ghidorah(1991) - Monster Rank 3 (Green)
 ## <Enter> If there are 3 or more cards under this card, choose one of the following:
-## - <Destroy> 3 of your opponent's rank 5 or lower battle cards.
-## - Your opponent discards cards until they have 3 cards remaining in their hand.
-## - Send the top 3 cards of your deck to your discard pile.
+## ・ <Destroy> 3 of your opponent's rank 5 or lower battle cards.
+## ・Your opponent discards cards until they have 3 cards remaining in their hand.
+## ・Send the top 3 cards of your deck to your discard pile.
 ##
 ## Tested: Yes
 ## Known issues: None

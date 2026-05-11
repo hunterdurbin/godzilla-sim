@@ -1,7 +1,8 @@
 extends CardEffect
 # Multi-purpose Fighting System-3 R2
-# <When Invading> Reveal N cards from top of deck (N = opponent monster rank),
-# add 1 red or blue battle card to hand, discard rest.
+# <When Invading> Reveal from the top of your deck a number of cards equal to the rank
+# of your opponent’s monster card. Add 1 red or blue battle card among them to your
+# hand, then send the rest to your discard pile.
 #
 # Tested: No
 # Known issues: None

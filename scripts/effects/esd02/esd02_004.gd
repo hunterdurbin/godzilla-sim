@@ -1,9 +1,8 @@
 extends CardEffect
 
 ## ESD02-004: Godzilla(1994) - Monster Rank 4
-## <When Invading> Discard 1 battle card from your hand:
-## <Destroy> all of your opponent's battle cards with a rank equal to or lower
-## than the discarded card's rank.
+## <When Invading> Discard 1 battle card from your hand： <Destroy> all of your
+## opponent's battle cards with a rank equal to or lower than the discarded card’s rank.
 ##
 ## Tested: Yes
 ## Known issues: None

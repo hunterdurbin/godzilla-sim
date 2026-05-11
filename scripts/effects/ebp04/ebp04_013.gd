@@ -1,9 +1,9 @@
 extends CardEffect
 ## EBP04-013: Godzilla (2000) - Monster Rank 3 (Blue)
-## <Enter> If you have 5 or more monster cards in your discard pile, reveal and
-## discard the top 3 cards of your deck. Of the revealed cards' ranks, <Destroy>
-## all of your opponent's battle cards in the same zone number and retreat your
-## opponent's monster card in the same zone number backwards by 1 zone.
+## <Enter> If you have 5 or more monster cards in your discard pile, reveal the top 3
+## cards of your deck and send them to your discard pile. <Destroy> all battle cards in
+## your opponent’s zones with numbers matching the ranks of the revealed cards, and
+## retreat your opponent’s monster card in those zones backward by 1 zone.
 ##
 ## Tested: Yes
 ## Known issues: None

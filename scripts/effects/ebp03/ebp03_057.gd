@@ -1,7 +1,8 @@
 extends CardEffect
 # Desghidorah (Battle R4)
-# <Enter> If opponent has 3+ empty zones, Destroy 1 opponent strategy.
-# If opponent has no strategy cards in play, +3000 CP.
+# <Enter> If your opponent has 3 or more unoccupied zones, <Destroy> 1 of your
+# opponent’s strategy cards.
+# If your opponent has no strategy cards in play, this card gains +3000 counter power.
 #
 # Tested: No
 # Known issues: None

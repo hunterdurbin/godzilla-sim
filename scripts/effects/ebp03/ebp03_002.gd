@@ -1,7 +1,10 @@
 extends CardEffect
 # Godzilla(2001) R2
-# <Opponent's Turn> <Awakening4> Counter start: discard R5+ battle for +1 rage.
-# <Awakening8> Your counter start: discard R5+ battle for +2 rage.
+# <Opponent’s Turn> <Awakening4> At the beginning of the counter phase, you may discard
+# 1 rank 5 or higher battle card from your hand. If you do, increase this card’s <Rage>
+# by 1.
+# <Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or
+# higher battle card from your hand. If you do, increase this card’s <Rage> by 2.
 #
 # Tested: No
 # Known issues: None

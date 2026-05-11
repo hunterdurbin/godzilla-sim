@@ -2,9 +2,9 @@ extends CardEffect
 
 ## EBP03-026: Mothra(imago)(2001) - Monster Rank 3 (Green)
 ## <Your Turn> If there are 3 or more cards under this card, reduce the rank of all
-## battle cards in your opponent's zones by 2.
-## <Enter> You may place 2 monster cards from your discard pile under this card.
-## If you do, reduce your opponent's Rage by 1.
+## battle cards in your opponent’s zones by 2.
+## <Enter> You may place 2 monster cards from your discard pile under this card. If you
+## do, reduce your opponent’s <Rage> by 1.
 ##
 ## Tested: No
 ## Known issues: None

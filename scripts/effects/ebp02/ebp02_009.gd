@@ -1,10 +1,12 @@
 extends CardEffect
 
 ## EBP02-009: Godzilla(2023) - Monster Rank 4 (Red)
-## <Burst3>
+## <Burst3> (You can play this card from rank III. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
 ## When this card is discarded by the effect of Burst, return this card from your
 ## discard pile to your hand.
-## <When Invading> Your opponent discards cards until they have 3 cards remaining.
+## <When Invading> Your opponent discards cards until they have 3 cards remaining in
+## their hand.
 ##
 ## Tested: Yes
 ## Known issues: None

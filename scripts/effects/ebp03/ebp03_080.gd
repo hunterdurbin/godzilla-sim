@@ -1,7 +1,9 @@
 extends CardEffect
 # Odo Island (Strategy R6)
-# <Base>
-# <Your Turn> Counter start: play up to 1 Godzilla battle card from hand.
+# <Base> When any monster card invades into zones 6–8, <Destroy> this card. (Cards with
+# Base are not sent to the discard pile at the start phase.)
+# <Your Turn> At the beginning of your counter phase, you may play up to 1 <《Godzilla》>
+# battle card from your hand.
 #
 # Tested: Yes
 # Known issues: None

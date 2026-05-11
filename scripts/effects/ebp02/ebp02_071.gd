@@ -2,9 +2,9 @@ extends CardEffect
 
 ## EBP02-071: Godzilla vs. King Ghidorah - Strategy Rank 4 (Green)
 ## Choose one of the following:
-## - <Destroy> 3 of your opponent's rank 4 or lower battle cards.
-## - <Awakening6> <Destroy> 2 of your opponent's rank 6 or lower battle cards.
-## - <Awakening8> <Destroy> 1 of your opponent's battle cards.
+## ・ <Destroy> 3 of your opponent's rank 4 or lower battle cards.
+## ・ <Awakening6> <Destroy> 2 of your opponent's rank 6 or lower battle cards.
+## ・ <Awakening8> <Destroy> 1 of your opponent's battle cards.
 ##
 ## Tested: No
 ## Known issues: None

@@ -2,8 +2,10 @@ extends CardEffect
 
 ## EBP03-043: Star Falcon - Battle Rank 3 (Blue)
 ## <Awakening4> At the beginning of your counter phase, you may place this card under a
-## card named "Land Moguera" in your zones. If you do, search your deck for up to 1
-## Moguera battle card, play it on top of the "Land Moguera" you chose, then shuffle.
+## card named “Land Moguera” in your zones. If you do, search your deck for up to 1
+## <《Moguera》> battle card, play it on top of the card named “Land Moguera” you chose for
+## this effect, then shuffle your deck. (Active if your monster card is in zone 4 or
+## beyond.)
 ##
 ## Tested: No
 ## Known issues: None

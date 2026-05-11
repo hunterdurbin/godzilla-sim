@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-043: Multi-purpose Fighting System-3 - Battle Rank 7 (Red)
-## At the beginning of your counter phase, you may place a <Invade 2> card
-## from your Strategy Zones under this.
+## At the beginning of your counter phase, you may place a card with 1 <Step 2> from
+## your strategy zone under this card.
 ## If there is a card under this card, this card gains +10,000 counter power.
 ##
 ## Tested: Yes

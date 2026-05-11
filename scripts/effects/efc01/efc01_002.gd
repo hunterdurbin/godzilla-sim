@@ -1,9 +1,9 @@
 extends CardEffect
 
 ## EFC01-002: Gigan(Gojika Festival) - Battle Rank 5 (White)
-## <Enter> If this card is in a zone adjacent to your monster card, send the top card
-## of your deck to your discard pile. If it is a battle card, you may return up to 1
-## monster card from your discard pile to your hand.
+## <Enter> If this is in the adjacent area of your monster card, discard a card from the
+## top of your deck. If it is a battle card, return up to one of your monster cards from
+## your discard pile.
 ##
 ## Tested: No
 ## Known issues: None

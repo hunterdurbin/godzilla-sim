@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-030: Modified Gigan - Monster Rank 4 (Green)
-## <Opponent's Turn> Your opponent cannot draw cards during their end phase.
-## <Enter> <Destroy> 1 of your opponent's battle cards in zones 1-5.
+## <Opponent’s Turn> During the end phase, your opponent cannot draw cards.
+## <Enter> <Destroy> 1 of your opponent’s battle cards in zones 1–5.
 ##
 ## Tested: Yes
 ## Known issues: None

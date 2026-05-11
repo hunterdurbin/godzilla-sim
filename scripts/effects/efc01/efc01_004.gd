@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## EFC01-004: Hedorah(2021) - Battle Rank 8 (Red)
-## When playing this card from your hand, this card's rank is reduced by 1 for each
-## of your opponent's battle cards in zones. (Rank stays 8 on the field.)
+## When playing this card from your hand, you can reduce its rank by 1 for each battle
+## card in your opponent's zones. (After being played this card is rank 8)
 ##
 ## Tested: No
 ## Known issues: None

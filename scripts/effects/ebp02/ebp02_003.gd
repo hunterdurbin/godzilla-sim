@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## EBP02-003: Godzilla(2016) 2nd Form - Monster Rank 2 (Red)
-## <Burst3>
-## <Enter> If there is a card named "Giant Unknown Creature" under this card,
-## you may discard 1 strategy card from your hand to advance this card by 1 zone.
+## <Burst3> (You can play this card from rank III. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
+## <Enter> If there is a card named “Giant Unknown Creature” under this card, you may
+## discard 1 strategy card from your hand to advance this card by 1 zone.
 ##
 ## Tested: Yes
 ## Known issues: None

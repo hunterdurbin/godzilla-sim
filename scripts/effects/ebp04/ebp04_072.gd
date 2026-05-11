@@ -1,8 +1,8 @@
 extends CardEffect
 ## EBP04-072: Sanda - Battle Rank 5 (White)
-## <Opponent's Turn> Each time your opponent plays a card from their deck, if
-## this is in area 5, search your deck for up to 1 card, add it to your hand,
-## and shuffle your deck.
+## <Opponent’s Turn> Whenever your opponent plays a battle card from their deck, if this
+## card is in zone 5, you may search your deck for up to 1 card, add it to your hand,
+## then shuffle your deck.
 ##
 ## Tested: Yes
 ## Known issues: None

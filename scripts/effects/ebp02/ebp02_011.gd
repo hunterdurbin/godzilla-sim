@@ -1,7 +1,7 @@
 extends CardEffect
 
 ## EBP02-011: Gabara - Battle Rank 3 (Red)
-## If your monster card has 2 or more <Rage>, this card gains +3000 counter power.
+## If your monster card has 2 or more <Rage> , this card gains +3000 counter power.
 ##
 ## Tested: Yes
 ## Known issues: None

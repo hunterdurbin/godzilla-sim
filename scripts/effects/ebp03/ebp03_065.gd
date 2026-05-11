@@ -1,6 +1,7 @@
 extends CardEffect
 # King Ghidorah(1998) (Battle R7)
-# If 5+ cards under your monster card, +3000 CP.
+# If there are 5 or more cards under your monster card, this card gains +3000 counter
+# power.
 #
 # Tested: No
 # Known issues: None

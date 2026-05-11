@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-020: Aqua Mothra - Monster Rank 4 (Blue, Green)
-## <Enter> If you have a Base in play, <Destroy> all battle cards adjacent to
-## your opponent's monster card.
+## <Enter> If you have a <Base> in play, <Destroy> all of your opponent’s battle cards
+## in zones adjacent to your opponent’s monster card.
 ##
 ## Tested: Yes
 ## Known issues: None

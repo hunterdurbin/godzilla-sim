@@ -2,7 +2,7 @@ extends CardEffect
 
 ## EBP01-020: Anguirus(1968) - Battle Rank 3
 ## If this card is in zone 8, whenever your monster card invades, you may reduce its
-## <Rage> by 1 to search your deck for up to 1 monster card with <Burst>, reveal it,
+## <Rage> by 1 to search your deck for up to 1 monster card with <Burst> , reveal it,
 ## add it to your hand, then shuffle your deck.
 ##
 ## Tested: Yes

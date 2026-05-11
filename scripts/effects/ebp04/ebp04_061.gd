@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-061: Mechagodzilla (2018) - Battle Rank 5 (Green)
-## <Enter> If you have 4 or more other green battle cards in your zones, you may
-## discard 1 green card from your deck and then shuffle your deck.
+## <Enter> If you have 4 or more other green battle cards in your zones, search your
+## deck for up to 1 green card, send it to your discard pile, then shuffle your deck.
 ##
 ## Tested: Yes
 ## Known issues: None

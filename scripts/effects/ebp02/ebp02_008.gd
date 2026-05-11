@@ -1,7 +1,8 @@
 extends CardEffect
 
 ## EBP02-008: Godzilla(1969) - Monster Rank 3 (Red)
-## <Burst4>
+## <Burst4> (You can play this card from rank Ⅳ. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
 ## Whenever this card's <Rage> is increased, <Destroy> all of your opponent's rank 6 or
 ## lower battle cards in the zone with the same number as the zone this card occupies.
 ##

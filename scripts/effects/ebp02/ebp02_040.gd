@@ -1,7 +1,7 @@
 extends CardEffect
 
 ## EBP02-040: Interception Operation - Strategy Rank 7 (Blue)
-## If you have 5 or more <Weapon> battle cards with "MB" in their name in your zones,
+## If you have 5 or more <《Weapon》> battle cards with “MB” in their name in your zones,
 ## discard your hand and draw 5 cards.
 ##
 ## Tested: Yes

@@ -1,6 +1,7 @@
 extends CardEffect
 # Mothra(larva)(2003) (Battle R4)
-# If adjacent to your monster card, +3000 CP.
+# If this card is in a zone adjacent to your monster card, this card gains +3000
+# counter power.
 #
 # Tested: No
 # Known issues: None

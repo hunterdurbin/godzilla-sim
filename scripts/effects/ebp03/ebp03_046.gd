@@ -1,8 +1,8 @@
 extends CardEffect
 # Land Moguera (Battle R5)
-# <Awakening4> <Enter> If "Star Falcon" is in your zones, choose:
-# - Destroy 1 opponent strategy card, OR
-# - Reduce opponent rage by 1.
+# <Awakening4> <Enter> If “Star Falcon” is in your zones, choose one:
+# ・ <Destroy> 1 of your opponent’s strategy cards.
+# ・Reduce your opponent’s <Rage> by 1.
 #
 # Tested: No
 # Known issues: None

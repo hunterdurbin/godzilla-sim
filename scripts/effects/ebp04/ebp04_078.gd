@@ -1,7 +1,8 @@
 extends CardEffect
 ## EBP04-078: Crawling Calamity - Strategy Rank 5 (Red)
-## Move your opponent's Monster card in areas 3-5 vertically. (3->8, 4->7, 5->6.
-## Do not destroy battle cards in areas in between)
+## Move an opponent’s monster card in zones 3–5 vertically. (Move it from zone 3 to zone
+## 8, from zone 4 to zone 7, or from zone 5 to zone 6. Battle cards in zones between
+## them are not <Destroy>.)
 ##
 ## Tested: Yes
 ## Known issues: None

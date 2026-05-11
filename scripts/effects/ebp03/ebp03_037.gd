@@ -1,7 +1,7 @@
 extends CardEffect
 # Godzilla(2001) (Battle R6)
-# <Awakening8> <Enter> +1 rage.
-# <Awakening8> +5000 CP.
+# <Awakening8> <Enter> Increase your monster card’s <Rage> by 1.
+# <Awakening8> This card gains +5000 counter power.
 #
 # Tested: No
 # Known issues: None

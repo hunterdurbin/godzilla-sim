@@ -2,7 +2,8 @@ extends CardEffect
 
 ## EBP02-025: Biollante Rose Form - Monster Rank 2 (Blue)
 ## This card cannot advance nor invade.
-## <Enter> Play 1 "Tentacles" token in a zone adjacent to this card.
+## <Enter> Play 1 “Tentacles” token in a zone adjacent to this card. (Tokens are
+## prepared separately from your main deck.)
 ##
 ## Tested: Yes
 ## Known issues: None

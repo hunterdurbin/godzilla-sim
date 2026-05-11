@@ -1,6 +1,7 @@
 extends CardEffect
 # Godzilla(2002) R1
-# At the beginning of your end phase, you may discard 1 battle card from hand. If you do, draw 1.
+# At the beginning of your end phase, you may discard 1 battle card from your hand. If
+# you do, draw 1 card.
 #
 # Tested: No
 # Known issues: None

@@ -1,8 +1,9 @@
 extends CardEffect
 
 ## EBP01-058: Biollante Plant Beast Form - Battle Rank 7 (Blue)
-## If you have a <Biollante> card with <Evolution> in your discard pile, you can play
-## this from your hand with its rank reduced by 2. (After being played, this card is rank 7.)
+## If you have a <《Biollante》> card with <Evolution> in your discard pile, you can play
+## this from your hand with its rank reduced by 2. (After being played, this card is
+## rank 7.)
 ## <Enter> Return all cards in your discard pile to your deck then shuffle.
 ##
 ## Tested: No

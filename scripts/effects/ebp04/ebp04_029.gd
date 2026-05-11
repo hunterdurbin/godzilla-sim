@@ -1,8 +1,8 @@
 extends CardEffect
 ## EBP04-029: Gigan (2004) - Monster Rank 3 (Green)
-## Your opponent cannot discard a <Invade 1> card to invade.
-## <Enter> If your opponent's monster card is in Zones 1-5, you may return up to
-## 1 <Gigan> monster card from your discard pile to your hand.
+## Your opponent cannot discard cards with <Step 1> from their hand for invade actions.
+## <Enter> If your opponent’s monster card is in zones 1–5, you may return up to 1
+## 《Gigan》 monster card from your discard pile to your hand.
 ##
 ## Tested: Yes
 ## Known issues: None

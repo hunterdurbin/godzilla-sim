@@ -1,9 +1,9 @@
 extends CardEffect
 
 ## EBP01-019: Kamacuras(1967) - Battle Rank 3
-## <Awakening6> <Enter> If this card was played from your hand, search your deck for
-## up to 2 <Kamacuras> battle cards, play them, then shuffle your deck.
-## (Active if your monster card is in zone 6 or beyond.)
+## <Awakening6> <Enter> If this card was played from your hand, search your deck for up
+## to 2 <《Kamacuras》> battle cards, play them, then shuffle your deck. (Active if your
+## monster card is in zone 6 or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

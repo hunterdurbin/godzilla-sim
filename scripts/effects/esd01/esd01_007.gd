@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## ESD01-007: Godzilla(2023) - Monster Rank 4 (Burst III)
-## <Burst3> You can play this card from rank III. If you do, send this card to your
-## discard pile at the beginning of your next end phase.
-## <Enter> <Destroy> all of your opponent's battle cards in the same column as this card.
+## <Burst3> (You can play this card from rank III. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
+## <Enter> <Destroy> all of your opponent’s battle cards in the same column as this
+## card.
 ##
 ## Tested: Yes
 ## Known issues: None

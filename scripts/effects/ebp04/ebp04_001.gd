@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-001: Godzilla (2004) - Monster Rank 1 (Red)
-## <Opponent's Turn> At the beginning of their counter phase, if there are no
-## battle cards in the same column as this card, this card gains +1 <Rage>.
+## <Opponent’s Turn> At the beginning of the counter phase, if your opponent has no
+## battle cards in the same column as this card, increase this card’s <Rage> by 1.
 ##
 ## Tested: Yes
 ## Known issues: None

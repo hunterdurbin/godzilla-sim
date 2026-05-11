@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## EBP02-039: Lake Ashi Monster - Strategy Rank 5 (Blue)
-## <Your Turn> You can play battle cards with <Biollante> from your hand with
-## their rank reduced by 3. (They return to their original rank after being played.)
+## <Your Turn> You can play battle cards with <《Biollante》> from your hand with their
+## rank reduced by 3. (They return to their original rank after being played.)
 ##
 ## Tested: Yes
 ## Known issues: None

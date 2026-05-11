@@ -1,6 +1,7 @@
 extends CardEffect
 # Moguera (Battle R6)
-# <Enter> If played from hand and in zone 8, search deck for 1 Moguera battle card, play it.
+# <Enter> If this card was played from your hand and is in zone 8, search your deck for
+# up to 1 <《Moguera》> battle card, play it, then shuffle your deck.
 #
 # Tested: No
 # Known issues: None

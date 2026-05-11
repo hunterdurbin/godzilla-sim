@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-011: Type 3 Kiryu (Modified) - Monster Rank 4 (Red, Blue)
-## If you have 1 or more Blue and Red battle cards each in your zones, this
-## gains +10,000 threat.
+## If you have at least 1 red battle card and at least 1 blue battle card in your zones,
+## this card gains +10,000 threat level.
 ##
 ## Tested: Yes
 ## Known issues: None

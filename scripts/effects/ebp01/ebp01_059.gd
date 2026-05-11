@@ -2,7 +2,8 @@ extends CardEffect
 
 ## EBP01-059: Fire Rodan - Battle Rank 7 (Blue)
 ## When this card is discarded from your hand by your opponent's effect, and their
-## monster card is in zones 4-8, you may play this card.
+## monster card is in zones 4-8, you may play this card. (Regardless of what zone your
+## opponent's monster card is occupying.)
 ## If this card is in zone 8, this card gains +3000 counter power.
 ##
 ## Tested: No

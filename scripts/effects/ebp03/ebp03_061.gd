@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## EBP03-061: Dagahra - Battle Rank 6 (Green)
-## When you discard this card from your hand for your monster card's invasion, you may
+## When you discard this card from your hand for your monster card’s invasion, you may
 ## play this card from your discard pile.
-## <Awakening6> This card gains +3000 counter power.
+## <Awakening6> This card gains +3000 counter power. (Active if your monster card is in
+## zone 6 or beyond.)
 ##
 ## Tested: No
 ## Known issues: None

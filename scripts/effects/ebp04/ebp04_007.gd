@@ -1,7 +1,8 @@
 extends CardEffect
 ## EBP04-007: Godzilla (1962) - Monster Rank 4 (Red)
-## <Burst III>
-## When you invade with <Invade 1>, this advances 2 zones.
+## <Burst 3> (You can play this card from rank III. If you do, send this card to your
+## discard pile at the beginning of that turn’s end phase.)
+## When this card invades with <Step 1>, it advances 2 zones.
 ##
 ## Tested: Yes
 ## Known issues: None

@@ -1,9 +1,9 @@
 extends CardEffect
 
 ## ESD01-002: Godzilla(2023) - Monster Rank 2
-## <When Invading> Search your deck for up to 1 rank III card named Godzilla(2023)
-## with <Burst>, reveal it, add it to your hand, then shuffle your deck.
-## (If you invaded 2 zones, activate this effect 2 times)
+## <When Invading> Search your deck for up to 1 rank Ⅲ card named 「Godzilla(2023)」 with
+## <Burst> , reveal it, add it to your hand, then shuffle your deck. (If you invaded 2
+## zones, activate this effect 2 times)
 ##
 ## Tested: Yes
 ## Known issues: None

@@ -1,7 +1,8 @@
 extends CardEffect
 # Godzilla(2001) R1
-# <Awakening4> At the beginning of your end phase, discard 1 R5+ battle card to advance 1 zone.
-# <Awakening6> +5000 threat level.
+# <Awakening4> At the beginning of your end phase, you may discard 1 rank 5 or higher
+# battle card from your hand. If you do, this card advances 1 zone.
+# <Awakening6> This card gains +5000 threat level.
 #
 # Tested: No
 # Known issues: None

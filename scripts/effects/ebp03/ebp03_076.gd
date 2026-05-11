@@ -1,7 +1,9 @@
 extends CardEffect
 # The Battle at Fukuoka Tower (Strategy R4)
-# <Base>
-# <Opponent's Turn> +5000 TL for each monster or battle card in your zones 1, 5, and 8.
+# <Base> When any monster card invades into zones 6–8, <Destroy> this card. (Cards with
+# Base are not sent to the discard pile at the start phase.)
+# <Opponent’s Turn> For each monster or battle card in your zones 1, 5, and 8, your
+# monster card gains +5000 threat level.
 #
 # Tested: No
 # Known issues: None

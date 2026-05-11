@@ -1,7 +1,8 @@
 extends CardEffect
 # Multi-purpose Fighting System-3 R3
-# <Enter> If 2+ battle cards in your zones, opponent discards to 4.
-# If a battle card was discarded this way, +1 rage.
+# <Enter> If there are 2 or more battle cards in your zones, your opponent discards
+# cards until they have 4 cards remaining in their hand. If a battle card is discarded
+# this way, increase this card’s <Rage> by 1.
 #
 # Tested: No
 # Known issues: None

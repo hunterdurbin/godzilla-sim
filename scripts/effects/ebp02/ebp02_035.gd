@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## EBP02-035: Biollante Plant Beast Form - Battle Rank 7 (Blue)
-## <Enter> If you have 2 or more cards with <Biollante> in your discard pile, return all
+## <Enter> If you have 2 or more cards with <《Biollante》> in your discard pile, return all
 ## cards in your opponent's discard pile to their deck then shuffle.
-## <Enter> Play 2 "Tentacles" tokens in zones adjacent to this card.
+## <Enter> Play 2 “Tentacles” tokens in zones adjacent to this card. (Tokens are
+## prepared separately from your main deck.)
 ##
 ## Tested: Yes
 ## Known issues: None
@@ -15,7 +16,6 @@ extends CardEffect
 
 func get_bot_tags() -> Array[String]:
 	return ["heals_deck"]
-
 
 
 func on_enter(ctx: EffectContext) -> void:

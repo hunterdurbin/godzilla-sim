@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## EBP03-019: Mothra(larva)(1996) - Monster Rank 2 (Blue)
-## When you successfully counter your opponent's monster card, if you have a card
-## with <Base> in play, increase this card's Rage by 2.
+## When you successfully counter your opponent’s monster card, if you have a card with
+## <Base> in play, increase this card’s <Rage> by 2.
 ##
 ## Tested: No
 ## Known issues: None

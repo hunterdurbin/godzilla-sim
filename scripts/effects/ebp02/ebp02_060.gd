@@ -1,10 +1,11 @@
 extends CardEffect
 
 ## EBP02-060: Gigan(2004) - Battle Rank 4 (Green)
-## If this card is in the same column as your opponent's monster card,
-## this card gains +3000 counter power.
-## <Revenge> If your opponent's monster card is in zones 1-5, you may return this card
-## from your discard pile to your hand.
+## If this card is in the same column as your opponent's monster card, this card gains
+## +3000 counter power.
+## <Revenge> If your opponent's monster card is in zones 1–5, you may return this card
+## from your discard pile to your hand. (Activates when destroyed by a card effect or
+## monster card movement.)
 ##
 ## Tested: Yes
 ## Known issues: None

@@ -1,7 +1,8 @@
 extends CardEffect
 
 ## EBP02-066: King Ghidorah(1964) - Battle Rank 7 (Green)
-## <Awakening6> This card gains +3000 counter power.
+## <Awakening6> This card gains +3000 counter power. (Active if your monster card is in
+## zone 6 or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

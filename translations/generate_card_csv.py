@@ -101,8 +101,36 @@ def en_id_to_jp_id(en_id: str) -> str:
 
 
 def unescape_gdscript(s: str) -> str:
-    """Convert GDScript string escapes to actual characters."""
-    return s.encode("utf-8").decode("unicode_escape")
+    """Convert GDScript string escapes (\\n, \\t, \\", \\\\) to actual characters.
+    Avoids unicode_escape because it mangles real UTF-8 chars like U+2019 (’).
+    """
+    out: list[str] = []
+    i = 0
+    while i < len(s):
+        c = s[i]
+        if c == "\\" and i + 1 < len(s):
+            nxt = s[i + 1]
+            if nxt == "n":
+                out.append("\n")
+            elif nxt == "t":
+                out.append("\t")
+            elif nxt == "r":
+                out.append("\r")
+            elif nxt == '"':
+                out.append('"')
+            elif nxt == "'":
+                out.append("'")
+            elif nxt == "\\":
+                out.append("\\")
+            else:
+                # Unknown escape — preserve literally.
+                out.append(c)
+                out.append(nxt)
+            i += 2
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
 
 
 def main() -> None:

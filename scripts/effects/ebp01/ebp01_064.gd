@@ -2,9 +2,9 @@ extends CardEffect
 
 ## EBP01-064: Godzilla vs. Megaguirus - Strategy Rank 5 (Blue)
 ## Choose one of the following:
-## - <Destroy> 1 of your opponent's rank 4 or lower battle cards.
-## - If you have 4 or more battle cards in your zones, choose 1 of your opponent's
-##   zones and <Destroy> all battle cards in that zone and zones adjacent to it.
+## ・ <Destroy> 1 of your opponent’s rank 4 or lower battle cards.
+## ・If you have 4 or more battle cards in your zones, choose 1 of your opponent’s zones
+## and <Destroy> all battle cards in that zone and zones adjacent to it.
 ##
 ## Tested: Yes
 ## Known issues: None

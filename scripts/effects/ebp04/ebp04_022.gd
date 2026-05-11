@@ -1,8 +1,8 @@
 extends CardEffect
 ## EBP04-022: Godzilla Amphibia - Monster Rank 2 (Green)
-## When this card is successfully countered, reveal 5 cards from the top of
-## your deck. For each green battle card revealed, <Destroy> 1 6000 or less
-## counter power battle card in your opponent's areas 1-5.
+## When this card is countered, reveal the top 5 cards of your deck and send them to
+## your discard pile. For each green battle card revealed this way, <Destroy> 1 of your
+## opponent’s battle cards with 6000 or lower counter power in zones 1–5.
 ##
 ## Tested: Yes
 ## Known issues: None

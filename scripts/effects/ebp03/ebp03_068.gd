@@ -2,8 +2,8 @@ extends CardEffect
 
 ## EBP03-068: Godzilla Flies - Strategy Rank 3 (Red)
 ## <Your Turn> Your monster card cannot invade.
-## Move your rank III or higher monster card in zone 3 vertically to zone 8.
-## (Your battle cards in zones 4-7 will not be Destroyed by this movement.)
+## Move your rank III or higher monster card in zone 3 vertically to zone 8. (Your
+## battle cards in zones 4–7 will not be <Destroy> by this movement.)
 ##
 ## Tested: No
 ## Known issues: None

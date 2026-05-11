@@ -1,7 +1,8 @@
 extends CardEffect
 ## EBP04-070: Ganimes - Battle Rank 4 (White)
-## <Awakening 4> If this is in the same column as your opponent's green monster
-## card, this gains +5000 counter power.
+## <Awakening 4> If this card is in the same column as your opponent’s green monster
+## card, this card gains +5000 counter power. (Active if your monster card is in zone 4
+## or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

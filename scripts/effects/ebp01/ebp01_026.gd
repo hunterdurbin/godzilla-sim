@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## EBP01-026: Jet Jaguar(2023) - Battle Rank 7
-## At the beginning of your counter phase, you may place 1 card with both <Gigan>
-## and <Fest> from your discard pile under this card.
+## At the beginning of your counter phase, you may place 1 card with both <《Gigan》> and
+## <《Fest》> from your discard pile under this card.
 ## If there is a card under this card, this card gains +5000 counter power.
 ##
 ## Tested: Yes

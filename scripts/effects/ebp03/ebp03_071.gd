@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## EBP03-071: Godzilla's Skeleton - Strategy Rank 8 (Red)
-## When counting monster cards in your discard pile, treat this card as a monster card.
-## Look at the top 4 cards of your deck, put any number of them on top in any order,
-## send the rest to your discard pile, then draw 2 cards.
+## When counting monster cards in your discard pile, treat this card as a monster card
+## as well.
+## Look at the top 4 cards of your deck, put any number of them on top of your deck in
+## any order, send the rest to your discard pile, then draw 2 cards.
 ##
 ## Note: "counts_as_monster_in_discard" flag is set in card_data.gd.
 ##

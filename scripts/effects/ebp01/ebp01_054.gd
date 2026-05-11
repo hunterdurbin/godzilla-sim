@@ -1,9 +1,11 @@
 extends CardEffect
 
 ## EBP01-054: Destoroyah Flying Form - Battle Rank 6 (Blue)
-## <Evolution8> <Destoroyah> At the beginning of your main phase, you may play a rank 8
-## or lower <Destoroyah> battle card from your deck by placing it on top of this card.
-## <Enter> If this card was played through evolution, draw 2 cards, then discard 2 cards.
+## <Evolution8> <《Destoroyah》> (At the beginning of your main phase, you may play a rank
+## 8 or lower <《Destoroyah》> battle card from your deck by placing it on top of this
+## card.)
+## <Enter> If this card was played through evolution, draw 2 cards, then discard 2
+## cards.
 ##
 ## Tested: Yes
 ## Known issues: None

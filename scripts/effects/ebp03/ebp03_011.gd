@@ -1,7 +1,10 @@
 extends CardEffect
 # Multi-purpose Fighting System-3 R4
-# <Burst3>
-# <Enter> Reveal N cards (N = opponent monster rank), add up to 1 red + 1 blue battle card, discard rest.
+# <Burst3> (You can play this card from rank III. If you do, send this card to your
+# discard pile at the beginning of your next end phase.)
+# <Enter> Reveal from the top of your deck a number of cards equal to the rank of your
+# opponent’s monster card. Add up to 1 red battle card and up to 1 blue battle card
+# among them to your hand, then send the rest to your discard pile.
 #
 # Tested: Yes
 # Known issues: None

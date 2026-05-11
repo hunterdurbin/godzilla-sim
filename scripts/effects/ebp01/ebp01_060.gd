@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## EBP01-060: Destoroyah Perfect Form - Battle Rank 8 (Blue)
-## <Enter> If this card was played through evolution, choose up to 1 strategy card
-## named "Godzilla vs. Destoroyah" in your discard pile.
+## <Enter> If this card was played through evolution, choose up to 1 strategy card named
+## 「Godzilla vs. Destoroyah」in your discard pile.
 ## If you have 1 or fewer strategy cards in play, play and activate the chosen card.
+## (Regardless of rank.)
 ##
 ## Tested: Yes
 ## Known issues: None

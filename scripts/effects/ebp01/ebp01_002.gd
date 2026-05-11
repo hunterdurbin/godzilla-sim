@@ -1,8 +1,10 @@
 extends CardEffect
 
 ## EBP01-002: Godzilla(1954) - Monster Rank 2 (Burst I)
-## <Burst1> <When Invading> Send the top card of your deck to your discard pile.
-## If it is a monster card, <Destroy> 1 of your opponent's rank 5 or lower battle cards.
+## <Burst1> (You can play this card from rank I. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
+## <When Invading> Send the top card of your deck to your discard pile. If it is a
+## monster card, <Destroy> 1 of your opponent’s rank 5 or lower battle cards.
 ##
 ## Tested: Yes
 ## Known issues: None

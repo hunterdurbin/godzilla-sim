@@ -1,10 +1,10 @@
 extends CardEffect
 
 ## EBP03-017: Godzilla(2003) - Monster Rank 4 (Blue)
-## Whenever you discard a battle card from your hand, reduce your opponent's Rage by 1.
-## If your opponent's Rage is 0, increase this card's Rage by 1 instead.
-## <Enter> You may discard 1 battle card from your hand. If you do, Destroy 1 of your
-## opponent's rank 6 or lower battle cards.
+## Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by
+## 1. If your opponent’s <Rage> is 0, increase this card’s <Rage> by 1 instead.
+## <Enter> You may discard 1 battle card from your hand. If you do, <Destroy> 1 of your
+## opponent’s rank 6 or lower battle cards.
 ##
 ## Tested: No
 ## Known issues: None

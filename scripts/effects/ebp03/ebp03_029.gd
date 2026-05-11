@@ -2,11 +2,11 @@ extends CardEffect
 
 ## EBP03-029: Thousand-Year Dragon King Ghidorah - Monster Rank 4 (Green)
 ## <Your Turn> If there are 5 or more cards under this card, reduce the rank of all
-## battle cards in your opponent's zones by 3.
+## battle cards in your opponent’s zones by 3.
 ## <When Invading> If there are 7 or more cards under this card, choose one:
-## - Destroy all battle cards of both players.
-## - Each player discards cards until they have 2 cards remaining in their hand.
-## - Reduce each player's monster card's Rage by 2.
+## ・ <Destroy> all battle cards of both players.
+## ・Each player discards cards until they have 2 cards remaining in their hand.
+## ・Reduce each player’s monster card’s <Rage> by 2.
 ##
 ## Tested: No
 ## Known issues: None

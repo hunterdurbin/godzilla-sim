@@ -1,8 +1,8 @@
 extends CardEffect
 ## EBP04-025: Godzilla Ultima - Monster Rank 4 (Green)
-## <Enter> <Destroy> 1 of your opponent's strategy cards.
-## <When Invading> If you have 10 or more green battle cards in your discard
-## pile, your opponent discards until they have 3 cards in hand.
+## <Enter> <Destroy> 1 of your opponent’s strategy cards.
+## <When Invading> If you have 10 or more green battle cards in your discard pile, your
+## opponent discards cards until they have 3 cards remaining in their hand.
 ##
 ## Tested: Yes
 ## Known issues: None

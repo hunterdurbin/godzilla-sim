@@ -1,8 +1,8 @@
 extends CardEffect
 ## EBP04-067: Godzilla Earth - Battle Rank 7 (Green)
-## You can only play this card in Area 8.
-## <Enter> Play 1 [Godzilla Earth] Token in your area 3. 
-## If this card and the token are not in an area, or they are moved, <Destroy> both.
+## This card can only be played in zone 8.
+## <Enter> Play 1 “Godzilla Earth” token in your zone 3.
+## If either this card or that token leave their zone or move, <Destroy> both of them.
 ##
 ## Tested: Yes
 ## Known issues: None

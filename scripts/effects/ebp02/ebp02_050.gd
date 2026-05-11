@@ -2,9 +2,9 @@ extends CardEffect
 
 ## EBP02-050: Mecha-King Ghidorah - Monster Rank 4 (Green)
 ## <Enter> If there are 5 or more cards under this card, choose one of the following:
-## - <Destroy> 3 of your opponent's rank 6 or lower battle cards.
-## - Your opponent discards cards until they have 2 cards remaining in their hand.
-## - Increase this card's <Rage> by 3.
+## ・ <Destroy> 3 of your opponent's rank 6 or lower battle cards.
+## ・Your opponent discards cards until they have 2 cards remaining in their hand.
+## ・Increase this card's <Rage> by 3.
 ##
 ## Tested: No
 ## Known issues: None

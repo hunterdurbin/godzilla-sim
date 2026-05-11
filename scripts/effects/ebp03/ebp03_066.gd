@@ -1,7 +1,8 @@
 extends CardEffect
 # Thousand-Year Dragon King Ghidorah (Battle R8)
-# If opponent has 2+ strategy cards, play with rank reduced by 2 (self-modifier).
-# <Enter> Destroy 1 opponent strategy card.
+# If your opponent has 2 or more strategy cards in play, you may play this card from
+# your hand with its rank reduced by 2. (After being played, this card is rank 8.)
+# <Enter> <Destroy> 1 of your opponent’s strategy cards.
 #
 # Tested: No
 # Known issues: None

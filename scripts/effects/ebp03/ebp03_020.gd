@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## EBP03-020: Mothra Leo - Monster Rank 3 (Blue)
-## When you successfully counter your opponent's monster card, if you have a card
-## with <Base> in play, Destroy 1 opponent's rank 7 or lower battle card.
+## When you successfully counter your opponent’s monster card, if you have a card with
+## <Base> in play, <Destroy> 1 opponent’s rank 7 or lower battle card.
 ##
 ## Tested: No
 ## Known issues: None

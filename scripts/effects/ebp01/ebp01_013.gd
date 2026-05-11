@@ -1,8 +1,10 @@
 extends CardEffect
 
 ## EBP01-013: Godzilla(Fest Godzilla) - Monster Rank 3 (Burst II)
-## <Burst2> <Enter> If you have 4 or more battle cards in your zones,
-## reduce your opponent's <Rage> by 1.
+## <Burst2> (You can play this card from rank II. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
+## <Enter> If you have 4 or more battle cards in your zones, reduce your opponent’s
+## <Rage> by 1.
 ##
 ## Tested: Yes
 ## Known issues: None

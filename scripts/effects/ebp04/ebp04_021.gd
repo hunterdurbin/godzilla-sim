@@ -1,8 +1,8 @@
 extends CardEffect
 ## EBP04-021: Godzilla Aquatilius - Monster Rank 1 (Green)
-## At the beginning of your counter phase, discard the top card of your deck.
-## If that card is a green battle card, your opponent discards until they have
-## 4 cards in hand.
+## At the beginning of your counter phase, send the top card of your deck to your
+## discard pile. If it is a green battle card, your opponent discards cards until they
+## have 4 cards remaining in their hand.
 ##
 ## Tested: Yes
 ## Known issues: None

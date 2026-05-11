@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## EBP02-052: SpaceGodzilla Flying Form - Monster Rank 1 (Green)
-## <When Invading> You may discard 1 card from your hand, if you do,
-## play 1 "Crystals" token.
+## <When Invading> You may discard 1 card from your hand, if you do, play 1 “Crystals”
+## token. (Tokens are prepared separately from your deck.)
 ##
 ## Tested: No
 ## Known issues: None

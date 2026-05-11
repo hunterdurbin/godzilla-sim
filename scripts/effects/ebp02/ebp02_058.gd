@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## EBP02-058: Dorat - Battle Rank 2 (Green)
-## <Revenge> Return up to 1 <King Ghidorah> monster card from your discard pile
-## to your hand.
+## <Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to
+## your hand. (Activates when destroyed by a card effect or monster card movement.)
 ##
 ## Tested: Yes
 ## Known issues: None

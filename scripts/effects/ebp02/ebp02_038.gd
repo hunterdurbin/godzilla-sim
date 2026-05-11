@@ -2,9 +2,14 @@ extends CardEffect
 
 ## EBP02-038: Godzilla 2000: Millennium - Strategy Rank 2 (Blue)
 ## Choose one of the following:
-## - <Destroy> 1 of your opponent's rank 5 or lower battle cards.
-## - If you have 10 or more monster cards in your discard pile,
-##   <Destroy> 1 of your opponent's battle cards in zone 8.
+##
+## ・ <Destroy> 1 of your opponent's rank 5 or lower battle cards.
+## ・If you have 10 or more monster cards in your discard pile, <Destroy> 1 of your
+## opponent's battle cards in zone 8.
+##
+## ・ <Destroy> 1 of your opponent's rank 5 or lower battle cards.
+## ・If you have 10 or more monster cards in your discard pile, <Destroy> 1 of your
+## opponent's battle cards in zone 8.
 ##
 ## Tested: Yes
 ## Known issues: None

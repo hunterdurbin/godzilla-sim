@@ -1,9 +1,9 @@
 extends CardEffect
 ## EBP04-086: Mechagodzilla City - Strategy Rank 4 (Green)
-## <Base>
-## <Your Turn> At the beginning of the counter phase, for each 5 green battle
-## cards in your discard pile, play 1 [Valkyrie] battle card from your discard
-## pile.
+## <Base>When any monster card invades into zones 6–8,  <Destroy> this card.  (Cards
+## with Base are not sent to the discard pile at the start phase.)
+## <Your Turn> At the beginning of your counter phase, for every 5 green battle cards in
+## your discard pile, play 1 “Vulture” from your discard pile.
 ##
 ## Tested: Yes
 ## Known issues: None

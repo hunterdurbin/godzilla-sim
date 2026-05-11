@@ -2,7 +2,8 @@ extends CardEffect
 
 ## EBP02-005: Godzilla(2016) 3rd Form - Monster Rank 3 (Red)
 ## <Your Turn> <Awakening6> Whenever this card's <Rage> is increased, if you have a
-## strategy card in play, your opponent discards cards until they have 3 cards remaining.
+## strategy card in play, your opponent discards cards until they have 3 cards remaining
+## in their hand.
 ##
 ## Tested: Yes
 ## Known issues: None

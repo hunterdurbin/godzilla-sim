@@ -1,9 +1,9 @@
 extends CardEffect
 ## EBP04-049: Ebirah (2004) - Battle Rank 5 (Blue)
-## At the beginning of your counter phase, if you have a Rank 8 or higher
-## battle card in play, reveal and discard 1 card from the top of your deck.
-## If it is a non-blue card decrease your opponent's <Rage> by -2. If it's a
-## blue card <Destroy> 1 of your rank 8 or higher battle cards.
+## At the beginning of your counter phase, if you have a rank 8 or higher battle card in
+## your zones, reveal the top card of your deck and send it to your discard pile. If the
+## revealed card is blue, <Destroy> 1 of your rank 8 or higher battle cards. If it is
+## not blue, reduce your opponent’s <Rage> by 2.
 ##
 ## Tested: Yes
 ## Known issues: None

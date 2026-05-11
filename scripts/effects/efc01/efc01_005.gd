@@ -1,9 +1,9 @@
 extends CardEffect
 
 ## EFC01-005: Godzilla Appears in Godzilla Festival - Strategy Rank 6 (Red)
-## <Your Turn> When you play a monster card, reveal the top 5 cards of your deck.
-## Add all cards with <Fest> to your hand and discard the rest.
-## At the beginning of your counter phase, discard your hand.
+## 《Your Turn》 When your monster card enters, reveal the top 5 cards of your deck. Add
+## all 《Festival Godzilla》 cards to your hand and discard the rest. At the beginning of
+## your counter phase, discard your hand.
 ##
 ## Tested: No
 ## Known issues: None

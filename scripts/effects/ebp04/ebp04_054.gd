@@ -1,9 +1,7 @@
 extends CardEffect
 ## EBP04-054: Destoroyah Perfect Form - Battle Rank 8 (Blue)
-## For each Strategy Card you have in play, this card gains 5000 counter
-## power.
-## For each strategy card your opponent has in play, this card loses 5000
-## counter power.
+## For each strategy card you have in play, this card gains +5000 counter power.
+## For each strategy card your opponent has in play, this card gets −5000 counter power.
 ##
 ## Tested: Yes
 ## Known issues: None

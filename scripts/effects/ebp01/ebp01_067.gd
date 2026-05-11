@@ -1,7 +1,8 @@
 extends CardEffect
 
 ## EBP01-067: Gorosaurus - Battle Rank 2 (White)
-## <Awakening4> This card gains +3000 counter power.
+## <Awakening4> This card gains +3000 counter power. (Active if your monster card is in
+## zone 4 or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

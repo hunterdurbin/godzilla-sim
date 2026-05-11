@@ -1,7 +1,7 @@
 extends CardEffect
 
 ## EBP01-077: Oxygen Destroyer - Strategy Rank 4 (White)
-## If your opponent has 2 or fewer <Rage>, move your opponent's monster card as though
+## If your opponent has 2 or fewer <Rage> , move your opponent's monster card as though
 ## it were countered. (Do not play the next monster card from your monster deck.)
 ##
 ## "As though it were countered" means a counter-retreat teleport (8→3, 7→4, 6→5)

@@ -1,8 +1,9 @@
 extends CardEffect
 ## EBP04-076: Dormancy - Strategy Rank 2 (Red)
-## <Base>
-## Your monster card cannot be moved by any of your opponent's effects. (Move
-## when you are countered)
+## <Base>When any monster card invades into zones 6–8,  <Destroy> this card.  (Cards
+## with Base are not sent to the discard pile at the start phase.)
+## Your monster card cannot be moved by your opponent’s effects. (It still moves when
+## countered.)
 ##
 ## Tested: Yes
 ## Known issues: None

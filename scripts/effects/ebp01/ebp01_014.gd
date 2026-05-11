@@ -1,9 +1,9 @@
 extends CardEffect
 
 ## EBP01-014: Godzilla(Fest Godzilla) - Monster Rank 4
-## <Opponent's Turn> <Awakening4> If you have 2 or more battle cards in your zones,
-## all of your opponent's rank 5 or lower battle cards cannot engage with this card.
-## (Their counter power is not included in the total during the counter phase.)
+## <Opponent’s Turn> <Awakening4> If you have 2 or more battle cards in your zones, all
+## of your opponent’s rank 5 or lower battle cards cannot engage with this card. (Their
+## counter power is not included in the total counter power during the counter phase.)
 ##
 ## Tested: Yes
 ## Known issues: None

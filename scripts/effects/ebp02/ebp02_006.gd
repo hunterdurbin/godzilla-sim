@@ -1,9 +1,9 @@
 extends CardEffect
 
 ## EBP02-006: Godzilla(2016) 4th Form - Monster Rank 4 (Red)
-## <When Invading> If there is a card with <3rd Form> under this card,
-## <Destroy> all of your opponent's rank 6 or lower battle cards.
-## If there is a <4th Form> card under this card, this card gains +10,000 threat level
+## <When Invading> If there is a card with <《3rd Form》> under this card, <Destroy> all
+## of your opponent's rank 6 or lower battle cards.
+## If there is a <《4th Form》> card under this card, this card gains +10,000 threat level
 ## for each strategy card in your strategy zone.
 ##
 ## Tested: Yes
