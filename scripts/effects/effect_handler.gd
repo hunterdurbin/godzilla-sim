@@ -2776,7 +2776,18 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 	player.strategy_zones[zone_index] = {}
 
 	var intercept_zone := get_strategy_discard_interceptor(player_id)
-	if intercept_zone >= 0:
+	var intercepted: bool = intercept_zone >= 0
+	if intercepted:
+		# Let the interceptor card opt out of the replacement (e.g. EBP02-012
+		# Frozen Godzilla prompts the player). Default returns true so cards
+		# without an override keep mandatory-replacement semantics.
+		var interceptor_card: Dictionary = player.get_zone_top_card(intercept_zone)
+		var effect := get_effect(interceptor_card)
+		if effect:
+			intercepted = await effect.should_intercept_strategy_discard(
+				_build_context(player_id, interceptor_card), card)
+
+	if intercepted:
 		player.zones[intercept_zone].append(card)
 		player.zones_changed.emit()
 	else:
@@ -2785,7 +2796,7 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 	player.strategy_zones_changed.emit()
 
 	# Replacement means it wasn't truly discarded — skip discard triggers
-	if intercept_zone < 0:
+	if not intercepted:
 		if deferred_entries != null:
 			deferred_entries.append_array(collect_strategy_discarded_entries(player_id, card))
 		else:

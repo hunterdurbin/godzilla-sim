@@ -629,6 +629,7 @@ STR_EFF_CHOOSE_ABILITY,Choose which ability to resolve:,発動する能力を選
 STR_EFF_CHOOSE_ORDER,Choose effect order:,効果の解決順を選ぶ:
 STR_EFF_DESTROY_THEN_RETREAT_FMT,"Destroy zones %s first, then retreat","先にエリア%sを<破壊>、次に後退"
 STR_EFF_RETREAT_THEN_DESTROY_FMT,"Retreat first, then destroy zones %s","先に後退、次にエリア%sを<破壊>"
+STR_EFF_EBP02_012_PROMPT_FMT,Place %s under %s instead of sending it to discard?,%sを捨て札に送らず%sの下に置く?
 STR_EFF_REVEALED_CARDS,Revealed cards:,公開されたカード:
 STR_EFF_REVEALED_FROM_DECK_TOP,Revealed from deck top:,山札の上から公開:
 STR_EFF_DECK_REVEAL,Revealed from deck (select any to confirm):,山札から公開 (どれか選んで確定):

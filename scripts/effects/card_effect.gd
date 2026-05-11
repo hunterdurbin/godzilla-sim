@@ -373,6 +373,14 @@ func can_intercept_strategy_discard(_ctx: EffectContext) -> bool:
 	return false
 
 
+func should_intercept_strategy_discard(_ctx: EffectContext, _discarded_card: Dictionary) -> bool:
+	## Hook for "may" intercept semantics. Called after can_intercept_strategy_discard
+	## has selected this card as the interceptor; return false to let the strategy
+	## proceed to the discard pile instead. Default true preserves mandatory
+	## replacement. Async-capable so overrides may prompt the player.
+	return true
+
+
 func get_blocked_opponent_zones(_ctx: EffectContext) -> Array[int]:
 	## Return opponent zone indices where the opponent cannot play battle cards.
 	## Used by cards like SpaceGodzilla R3 (EBP02-055) for column blocking.
