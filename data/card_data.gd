@@ -1393,7 +1393,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BIOLLANTE],
 		"counter_power": 5000,
 		"invasion_icon": 2,
-		"description": "<Enter> If you have 2 or more cards with ⁅《ビオランテ＠》⁆ in your discard pile, return all cards in your opponent's discard pile to their deck then shuffle.\n<Enter> Play 2 “Tentacles” tokens in zones adjacent to this card. (Tokens are prepared separately from your main deck.)",
+		"description": "<Enter> If you have 2 or more cards with <《Biollante》> in your discard pile, return all cards in your opponent's discard pile to their deck then shuffle.\n<Enter> Play 2 “Tentacles” tokens in zones adjacent to this card. (Tokens are prepared separately from your main deck.)",
 		"effect_script": "res://scripts/effects/ebp02/ebp02_035.gd"
 	},
 	{
@@ -2258,7 +2258,7 @@ var EBP03_CARDS: Array[Dictionary] = [
 			"main_monster_required_traits": [CardEnums.CardTrait.SACRED_GUARDIAN_BEASTS],
 			"main_battle_min_rank": 5,
 		},
-		"description": "<Resonance> Green/Red\n・Monster cards in your deck must have ⁅《護国聖獣》＠⁆ .\n・Battle cards in your deck must be Rank 5 or higher.\n(You can mix green, red, and white, but your monster deck and main deck must satisfy the above.)"
+		"description": "<Resonance> Green/Red\n・Monster cards in your deck must have <《Sacred Guardian Beasts》> .\n・Battle cards in your deck must be Rank 5 or higher.\n(You can mix green, red, and white, but your monster deck and main deck must satisfy the above.)"
 	},
 	{
 		"id": "EBP03-025",
@@ -2403,7 +2403,7 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"counter_power": 4000,
 		"invasion_icon": 2,
 		"effect_script": "res://scripts/effects/ebp03/ebp03_036.gd",
-		"description": "<Enter> If this card was played from your hand and is in zone 8, search your deck for up to 1 ⁅《モゲラ》＠⁆ battle card, play it, then shuffle your deck."
+		"description": "<Enter> If this card was played from your hand and is in zone 8, search your deck for up to 1 <《Moguera》> battle card, play it, then shuffle your deck."
 	},
 	{
 		"id": "EBP03-037",
@@ -2486,7 +2486,7 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.WEAPON],
 		"counter_power": 2000,
 		"invasion_icon": 1,
-		"description": "<Awakening4> At the beginning of your counter phase, you may place this card under a card named “Land Moguera” in your zones. If you do, search your deck for up to 1 ⁅《モゲラ》＠⁆ battle card, play it on top of the card named “Land Moguera” you chose for this effect, then shuffle your deck. (Active if your monster card is in zone 4 or beyond.)",
+		"description": "<Awakening4> At the beginning of your counter phase, you may place this card under a card named “Land Moguera” in your zones. If you do, search your deck for up to 1 <《Moguera》> battle card, play it on top of the card named “Land Moguera” you chose for this effect, then shuffle your deck. (Active if your monster card is in zone 4 or beyond.)",
 		"effect_script": "res://scripts/effects/ebp03/ebp03_043.gd"
 	},
 	{
@@ -2718,7 +2718,7 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.BARAGON, CardEnums.CardTrait.SACRED_GUARDIAN_BEASTS],
 		"counter_power": 5000,
 		"invasion_icon": 1,
-		"description": "When your opponent’s monster card invades, <Destroy> this card.\n<Revenge> Return up to 1 ⁅《護国聖獣》＠⁆ monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)",
+		"description": "When your opponent’s monster card invades, <Destroy> this card.\n<Revenge> Return up to 1 <《Sacred Guardian Beasts》> monster card from your discard pile to your hand. (Activates when destroyed by a card effect or monster card movement.)",
 		"effect_script": "res://scripts/effects/ebp03/ebp03_062.gd"
 	},
 	{
