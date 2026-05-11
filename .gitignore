@@ -8,3 +8,4 @@
 # Export builds
 /build/
 .vscode/settings.json
+.claude/scheduled_tasks.lock
