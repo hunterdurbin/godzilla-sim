@@ -559,6 +559,7 @@ STR_DB_WARNINGS,Warnings,警告
 STR_VALIDATE_UNKNOWN_CARD_FMT,Unknown card: %s,不明なカード: %s
 STR_VALIDATE_NOT_MONSTER_FMT,%s is not a monster card,%s は怪獣カードではありません
 STR_VALIDATE_TOKEN_IN_DECK_FMT,%s has Token trait (not allowed in decks),%s はトークン特徴を持っています (デッキに入れられません)
+STR_VALIDATE_RAGE_IN_DECK_FMT,%s is a Rage marker (not allowed in decks),%s は怒りマーカーです (デッキに入れられません)
 STR_VALIDATE_DUPLICATE_RANK_FMT,Duplicate monster rank %d,等級 %d の怪獣が重複しています
 STR_VALIDATE_MONSTER_COUNT_FMT,Monster deck must have exactly 4 cards (has %d),怪獣デッキはちょうど4枚必要です (現在 %d 枚)
 STR_VALIDATE_MISSING_RANK_FMT,Monster deck missing rank %d,怪獣デッキに等級 %d がありません

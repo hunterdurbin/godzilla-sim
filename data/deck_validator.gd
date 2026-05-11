@@ -5,6 +5,7 @@ class_name DeckValidator
 const ERR_UNKNOWN_CARD := "STR_VALIDATE_UNKNOWN_CARD_FMT"
 const ERR_NOT_MONSTER := "STR_VALIDATE_NOT_MONSTER_FMT"
 const ERR_TOKEN_IN_DECK := "STR_VALIDATE_TOKEN_IN_DECK_FMT"
+const ERR_RAGE_IN_DECK := "STR_VALIDATE_RAGE_IN_DECK_FMT"
 const ERR_DUPLICATE_RANK := "STR_VALIDATE_DUPLICATE_RANK_FMT"
 const ERR_MONSTER_COUNT := "STR_VALIDATE_MONSTER_COUNT_FMT"
 const ERR_MISSING_RANK := "STR_VALIDATE_MISSING_RANK_FMT"
@@ -99,6 +100,9 @@ static func validate(monster_entries: Array, main_entries: Array) -> Array[Strin
 		if CardEnums.CardTrait.TOKEN in template.get("traits", []):
 			errors.append(Loc.t(ERR_TOKEN_IN_DECK) % cn)
 
+		if template.get("card_type") == CardEnums.CardType.RAGE:
+			errors.append(Loc.t(ERR_RAGE_IN_DECK) % cn)
+
 		if template.get("invasion_icon", 0) >= 2:
 			invasion2_count += qty
 
@@ -181,6 +185,8 @@ static func get_invalid_cards(monster_entries: Array, main_entries: Array) -> Di
 			invalid[cn] = true
 			continue
 		if CardEnums.CardTrait.TOKEN in tmpl.get("traits", []):
+			invalid[cn] = true
+		if tmpl.get("card_type") == CardEnums.CardType.RAGE:
 			invalid[cn] = true
 		if allowed_colors.size() > 1 and not _has_allowed_color(tmpl, allowed_colors):
 			invalid[cn] = true

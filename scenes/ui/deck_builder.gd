@@ -600,6 +600,8 @@ func _build_pool_card_list() -> void:
 	_all_pool_cards.clear()
 	for card_id in CardData.CARD_TEMPLATES:
 		var card: Dictionary = CardData.CARD_TEMPLATES[card_id]
+		if card.get("card_type") == CardEnums.CardType.RAGE:
+			continue
 		_all_pool_cards.append(card)
 	_all_pool_cards.sort_custom(_sort_by_id)
 
