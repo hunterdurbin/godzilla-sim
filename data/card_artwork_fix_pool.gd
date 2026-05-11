@@ -9,15 +9,31 @@ extends RefCounted
 ## Keys are arbitrary stable strings — once shipped, do NOT rename them
 ## (existing clients track which keys they've already applied).
 ##
-## Convention: "<version>_<short-summary>"
+## Entry shape:
+##   "<key>": {
+##       "description": String,         # for logs / human reference
+##       "card_ids": Array[String],     # card numbers like "EBP04-021"
+##       "locales": Array[String],      # optional; defaults to DEFAULT_LOCALES
+##                                      # (["en"]). Set explicitly to ["en", "ja"]
+##                                      # etc. when the corrected art was
+##                                      # republished for multiple language packs.
+##   }
+##
+## Convention for keys: "<version>_<short-summary>"
+
+const DEFAULT_LOCALES: Array[String] = ["en"]
+
+
 const ENTRIES := {
 	"v0.1.12-unstable.2_ebp04_translation_fixes": {
 		"description": "Corrected EBP04-013 / EBP04-021 / EBP04-028 / EBP04-082 effect translations",
 		"card_ids": ["EBP04-013", "EBP04-021", "EBP04-028", "EBP04-082"],
+		"locales": ["en"],
 	},
 	"v0.1.12-unstable.3_ebp04_moguera_trait_fix": {
 		"description": "Correct EBP04-053 Weapon trait",
 		"card_ids": ["EBP04-053"],
+		"locales": ["en"],
 	},
 	"v0.1.12-unstable.5_ebp04_full_en_set": {
 		"description": "EBP04 full set republished in English",
@@ -41,6 +57,7 @@ const ENTRIES := {
 			"EBP04-081", "EBP04-082", "EBP04-083", "EBP04-084", "EBP04-085",
 			"EBP04-086", "EBP04-087", "EBP04-088", "EBP04-089", "EBP04-T01",
 		],
+		"locales": ["en"],
 	},
 }
 
@@ -52,17 +69,31 @@ static func all_keys() -> Array[String]:
 	return keys
 
 
-static func card_ids_for_unapplied(applied: Array) -> Array[String]:
-	## Returns the union of card_ids across every entry whose key is NOT in
-	## `applied`. De-duplicated, in insertion order.
-	var seen := {}
-	var out: Array[String] = []
+static func unapplied_entries(applied: Array) -> Array[Dictionary]:
+	## Returns one dict per fix-pool entry whose key is NOT in `applied`.
+	## Each dict has: { "key": String, "card_ids": Array[String],
+	## "locales": Array[String] }. The `locales` field is the entry's
+	## explicit value if set, otherwise DEFAULT_LOCALES.
+	var out: Array[Dictionary] = []
 	for key in ENTRIES.keys():
 		if applied.has(key):
 			continue
 		var entry: Dictionary = ENTRIES[key]
-		for cid in entry.get("card_ids", []):
-			if not seen.has(cid):
-				seen[cid] = true
-				out.append(cid)
+		var card_ids: Array[String] = []
+		for c in entry.get("card_ids", []):
+			if c is String:
+				card_ids.append(c)
+		var locales: Array[String] = []
+		var raw_locales: Variant = entry.get("locales", null)
+		if raw_locales is Array:
+			for l in raw_locales:
+				if l is String and not (l as String).is_empty():
+					locales.append(l)
+		if locales.is_empty():
+			locales = DEFAULT_LOCALES.duplicate()
+		out.append({
+			"key": key,
+			"card_ids": card_ids,
+			"locales": locales,
+		})
 	return out
