@@ -172,10 +172,12 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	deck_name_edit.placeholder_text = tr("STR_DB_DECK_NAME")
 	vbox.add_child(deck_name_edit)
 
-	# Deck list — fuzzy search + folder structure + thumbnails.
+	# Compact picker: selected deck preview + folder subtitle + Move to…
+	# button. The full deck list lives behind the picker click (modal).
 	deck_list_view = DeckListView.new()
-	deck_list_view.compact = false
-	deck_list_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	deck_list_view.compact = true
+	deck_list_view.allow_move = true
+	deck_list_view.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	vbox.add_child(deck_list_view)
 
 	# Save / Load / Delete

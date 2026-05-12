@@ -56,6 +56,7 @@ var _picker_button: Button
 var _picker_thumb: TextureRect
 var _picker_placeholder: Label
 var _picker_label: Label
+var _picker_folder_label: Label
 
 
 func _ready() -> void:
@@ -107,13 +108,18 @@ func _build_ui() -> void:
 
 
 func _build_picker_ui() -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	add_child(row)
+
 	_picker_button = Button.new()
 	_picker_button.custom_minimum_size.y = 60
 	_picker_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_picker_button.clip_text = true
 	_picker_button.text = ""
 	_picker_button.pressed.connect(_on_picker_pressed)
-	add_child(_picker_button)
+	row.add_child(_picker_button)
 
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 8)
@@ -155,15 +161,27 @@ func _build_picker_ui() -> void:
 	_picker_thumb.visible = false
 	thumb_holder.add_child(_picker_thumb)
 
+	var name_col := VBoxContainer.new()
+	name_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	name_col.add_theme_constant_override("separation", 0)
+	name_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.add_child(name_col)
+
 	_picker_label = Label.new()
-	_picker_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_picker_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	_picker_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_picker_label.clip_text = true
 	_picker_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_picker_label.add_theme_font_size_override("font_size", 16)
 	_picker_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hbox.add_child(_picker_label)
+	name_col.add_child(_picker_label)
+
+	_picker_folder_label = Label.new()
+	_picker_folder_label.clip_text = true
+	_picker_folder_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_picker_folder_label.add_theme_font_size_override("font_size", 11)
+	_picker_folder_label.add_theme_color_override("font_color", Color(0.65, 0.5, 0.35, 1))
+	_picker_folder_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_col.add_child(_picker_folder_label)
 
 	var chevron := Label.new()
 	chevron.text = "▾"
@@ -171,6 +189,16 @@ func _build_picker_ui() -> void:
 	chevron.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	chevron.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(chevron)
+
+	# Move… button (deck builder only). Expand is unnecessary in compact mode —
+	# the picker button itself opens the full list modal.
+	if allow_move:
+		_move_button = Button.new()
+		_move_button.text = tr("STR_DB_MOVE")
+		_move_button.disabled = true
+		_move_button.custom_minimum_size.y = 60
+		_move_button.pressed.connect(_on_move_pressed)
+		row.add_child(_move_button)
 
 	_update_picker_button()
 
@@ -463,12 +491,20 @@ func _update_picker_button() -> void:
 	if _picker_button == null:
 		return
 	if _selected_deck.is_empty():
-		_picker_label.text = tr("STR_DLV_PICKER_PLACEHOLDER")
+		_picker_label.text = tr("STR_DLV_PICKER_EMPTY")
+		_picker_folder_label.text = ""
+		_picker_folder_label.visible = false
 		_picker_thumb.visible = false
 		_picker_thumb.texture = null
 		_picker_placeholder.text = "?"
 		return
 	_picker_label.text = _selected_deck
+	var folder := DecklistManager.get_deck_folder(_selected_deck)
+	if folder.is_empty():
+		_picker_folder_label.text = tr("STR_DLV_ROOT")
+	else:
+		_picker_folder_label.text = folder
+	_picker_folder_label.visible = true
 	var thumb_id := DecklistManager.get_decklist_thumbnail_card_id(_selected_deck)
 	var tex := DeckRow.resolve_thumbnail_texture(thumb_id, _texture_cache)
 	if tex != null:

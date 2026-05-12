@@ -868,6 +868,7 @@ STR_DLV_TOGGLE_DENSITY,Toggle compact view,コンパクト表示を切替
 STR_DLV_EXPAND,Expanded view,拡大表示
 STR_DLV_EXPANDED_TITLE,DECKS,デッキ一覧
 STR_DLV_PICKER_PLACEHOLDER,(Select a deck),(デッキを選択)
+STR_DLV_PICKER_EMPTY,(empty),(空)
 STR_DLV_MOVE_TO_FOLDER,Move to folder…,フォルダへ移動…
 STR_MENU_BOT_POOL_SEARCH,Search decks…,デッキを検索…
 STR_MENU_BOT_FOLDER_TIP,Folder includes all decks inside (uniform random),フォルダ内の全デッキを含む（均等にランダム選択）

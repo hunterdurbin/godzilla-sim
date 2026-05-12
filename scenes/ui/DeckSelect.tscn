@@ -11,3 +11,4 @@ script = ExtResource("1_ds")
 header_text = "STR_DS_SELECT_DECK"
 persist_key = "last_selected_deck"
 compact = true
+allow_move = false
