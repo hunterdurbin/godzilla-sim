@@ -381,7 +381,7 @@ func _show_bot_config_popup() -> void:
 
 	edit_pool_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		_show_deck_pool_popup(pending, random_deck_check.button_pressed)
+		_show_deck_pool_popup(popup, pending, random_deck_check.button_pressed)
 	)
 
 	vbox.add_child(HSeparator.new())
@@ -431,9 +431,13 @@ func _show_bot_config_popup() -> void:
 	popup.popup_centered()
 
 
-func _show_deck_pool_popup(pending: Dictionary, random_enabled: bool) -> void:
+func _show_deck_pool_popup(parent_popup: Window, pending: Dictionary, random_enabled: bool) -> void:
+	# Nested PopupPanel parented to the Bot Config popup, so it's a child Window
+	# of that popup (correct z-ordering and lifecycle). exclusive=true means ESC
+	# / clicking outside dismisses only the inner.
 	var popup := PopupPanel.new()
 	popup.exclusive = true
+	popup.transient = true
 
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(820, 720)
@@ -468,8 +472,6 @@ func _show_deck_pool_popup(pending: Dictionary, random_enabled: bool) -> void:
 	pool_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	pool_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(pool_view)
-	pool_view.setup(pending["deck_weights"].duplicate(), pending["folder_weights"].duplicate())
-	pool_view.set_random_enabled(random_enabled)
 
 	vbox.add_child(HSeparator.new())
 
@@ -484,8 +486,16 @@ func _show_deck_pool_popup(pending: Dictionary, random_enabled: bool) -> void:
 	save_btn.add_theme_color_override("font_color", Color(0.3, 0.8, 0.3))
 	save_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		pending["deck_weights"] = pool_view.get_deck_weights()
-		pending["folder_weights"] = pool_view.get_folder_weights()
+		var dw := pool_view.get_deck_weights()
+		var fw := pool_view.get_folder_weights()
+		# Stage into the outer Bot Config's pending dict so its Save sees the
+		# same values; also commit to GameSettings immediately so the changes
+		# survive even if the user dismisses Bot Config via Cancel.
+		pending["deck_weights"] = dw
+		pending["folder_weights"] = fw
+		GameSettings.bot_deck_weights = dw
+		GameSettings.bot_folder_weights = fw
+		GameSettings.save()
 		popup.hide()
 	)
 	btn_box.add_child(save_btn)
@@ -494,14 +504,24 @@ func _show_deck_pool_popup(pending: Dictionary, random_enabled: bool) -> void:
 	cancel_btn.text = tr("STR_COMMON_CANCEL")
 	cancel_btn.custom_minimum_size = Vector2(140, 40)
 	cancel_btn.add_theme_font_size_override("font_size", 18)
-	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	cancel_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+	)
 	btn_box.add_child(cancel_btn)
 
 	vbox.add_child(btn_box)
 	popup.add_child(panel)
 
-	add_child(popup)
+	# Parent to the bot config popup so Godot treats it as a child Window
+	# (proper z-order, won't accidentally close the parent).
+	parent_popup.add_child(popup)
+	popup.popup_hide.connect(popup.queue_free)
 	popup.popup_centered()
+
+	# Setup AFTER the popup is in the tree so BotPoolView._ready has run.
+	pool_view.setup(pending["deck_weights"].duplicate(), pending["folder_weights"].duplicate())
+	pool_view.set_random_enabled(random_enabled)
 
 
 func _on_lan_pressed() -> void:

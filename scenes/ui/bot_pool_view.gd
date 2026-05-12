@@ -119,10 +119,12 @@ func _populate() -> void:
 
 
 func get_deck_weights() -> Dictionary:
+	_commit_all_pending_edits()
 	return _deck_weights.duplicate()
 
 
 func get_folder_weights() -> Dictionary:
+	_commit_all_pending_edits()
 	# Strip disabled (weight=0) entries — they're not meaningful to persist.
 	var out: Dictionary = {}
 	for fp in _folder_weights:
@@ -174,8 +176,11 @@ func _rebuild() -> void:
 		var visible_entries := _filter_entries(folder_entries, folder)
 		if visible_entries.is_empty() and not _folder_name_matches(folder):
 			continue
+		var should_render_header := folder != "" or has_subfolders
 		var collapsed: bool = _collapsed_folders.get(folder, false)
-		if folder != "" or has_subfolders:
+		if not should_render_header:
+			collapsed = false
+		if should_render_header:
 			_add_folder_header(folder, visible_entries.size(), collapsed)
 		if not collapsed:
 			for entry in visible_entries:
@@ -416,13 +421,25 @@ func _on_search_changed(text: String) -> void:
 
 
 func _apply_filter() -> void:
+	_commit_all_pending_edits()
 	_rebuild()
 
 
 func _on_folder_arrow_pressed(folder: String) -> void:
+	# Flush any unsubmitted stepper edits before tearing down the rows.
+	_commit_all_pending_edits()
 	_collapsed_folders[folder] = not _collapsed_folders.get(folder, false)
 	_save_state()
 	_rebuild()
+
+
+func _commit_all_pending_edits() -> void:
+	for dn in _deck_rows.keys():
+		_persist_deck_weight(dn)
+	for fp in _folder_rows.keys():
+		var ui: Dictionary = _folder_rows[fp]
+		if ui.has("check"):
+			_persist_folder_weight(fp)
 
 
 func _on_folder_check_toggled(_pressed: bool, folder: String) -> void:
@@ -543,11 +560,13 @@ func _is_folder_enabled(folder: String) -> bool:
 
 
 func _apply_folder_takeover_to_all() -> void:
-	# When a folder is enabled, hide its deck rows entirely (the folder handles them).
+	# When a folder is enabled, dim its deck rows (folder takes over) but keep
+	# them visible so users can still see what's inside.
 	for dn in _deck_rows:
 		var ui: Dictionary = _deck_rows[dn]
-		var hidden := _is_folder_enabled(ui["folder"])
-		(ui["container"] as Control).visible = not hidden
+		(ui["container"] as Control).visible = true
+		var dimmed := _is_folder_enabled(ui["folder"])
+		_set_row_dimmed(ui, dimmed)
 	_refresh_all_percentages()
 
 

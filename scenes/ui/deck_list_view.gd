@@ -37,6 +37,7 @@ var _entries: Array[Dictionary] = []
 var _folder_order: Array[String] = []
 var _entry_filter: Callable = Callable()  # Optional programmatic filter — (deck_name) -> bool
 var _compact_rows: bool = false
+var _active_overlay: Control = null
 
 var _header_label: Label
 var _search_edit: LineEdit
@@ -78,6 +79,15 @@ func _ready() -> void:
 		var last := _load_last_selected()
 		if not last.is_empty():
 			select_deck(last)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _active_overlay == null:
+		return
+	if event.is_action_pressed("ui_cancel"):
+		_active_overlay.queue_free()
+		_active_overlay = null
+		get_viewport().set_input_as_handled()
 
 
 func _build_ui() -> void:
@@ -340,8 +350,12 @@ func _rebuild() -> void:
 		var visible_entries := _filter_entries(folder_entries)
 		if visible_entries.is_empty():
 			continue
+		var should_render_header := folder != "" or has_subfolders
 		var collapsed: bool = _collapsed_folders.get(folder, false)
-		if folder != "" or has_subfolders:
+		# No header → no way to expand back, so force rows visible.
+		if not should_render_header:
+			collapsed = false
+		if should_render_header:
 			_add_folder_header(folder, visible_entries.size(), collapsed)
 		if not collapsed:
 			for entry in visible_entries:
@@ -474,6 +488,8 @@ func _open_expanded_overlay() -> void:
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.z_index = 100
 	get_tree().root.add_child(overlay)
+	_active_overlay = overlay
+	overlay.tree_exiting.connect(func(): if _active_overlay == overlay: _active_overlay = null)
 	# Click outside the panel dismisses.
 	overlay.gui_input.connect(func(event):
 		if event is InputEventMouseButton and event.pressed:

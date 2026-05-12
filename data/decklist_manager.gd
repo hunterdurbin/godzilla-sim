@@ -245,7 +245,9 @@ func delete_decklist(deck_name: String) -> bool:
 	var path := _find_decklist_path(deck_name)
 	if path.is_empty():
 		return false
+	var folder := get_deck_folder(deck_name)
 	DirAccess.remove_absolute(path)
+	_cleanup_empty_folder_chain(folder)
 	for i in range(2):
 		if _player_decks[i] != null and _player_decks[i]["deck_name"] == deck_name:
 			_player_decks[i] = null
@@ -261,6 +263,7 @@ func move_decklist(deck_name: String, target_folder: String) -> bool:
 	var src := _find_decklist_path(deck_name)
 	if src.is_empty():
 		return false
+	var source_folder := get_deck_folder(deck_name)
 	var sanitized_folder := _sanitize_folder_path(target_folder)
 	var dst := _build_deck_path(deck_name, sanitized_folder)
 	if src == dst:
@@ -271,7 +274,43 @@ func move_decklist(deck_name: String, target_folder: String) -> bool:
 	if not sanitized_folder.is_empty():
 		DirAccess.make_dir_recursive_absolute(DECKLIST_DIR + sanitized_folder)
 	var err := DirAccess.rename_absolute(src, dst)
+	if err == OK and source_folder != sanitized_folder:
+		_cleanup_empty_folder_chain(source_folder)
 	return err == OK
+
+
+func _cleanup_empty_folder_chain(folder_path: String) -> void:
+	## Walks up from folder_path toward DECKLIST_DIR removing any empty
+	## directories. Stops at the first non-empty parent.
+	var current := folder_path
+	while not current.is_empty():
+		var full := DECKLIST_DIR + current
+		if not DirAccess.dir_exists_absolute(full):
+			break
+		if not _is_dir_empty(full):
+			break
+		DirAccess.remove_absolute(full)
+		# Also drop any bot folder weight pinned to this folder.
+		if GameSettings.bot_folder_weights.has(current):
+			GameSettings.bot_folder_weights.erase(current)
+			GameSettings.save()
+		var slash := current.rfind("/")
+		if slash < 0:
+			break
+		current = current.substr(0, slash)
+
+
+static func _is_dir_empty(dir_path: String) -> bool:
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		return true
+	dir.list_dir_begin()
+	var f := dir.get_next()
+	while f != "":
+		if f != "." and f != "..":
+			return false
+		f = dir.get_next()
+	return true
 
 
 func rename_folder(old_path: String, new_path: String) -> bool:
