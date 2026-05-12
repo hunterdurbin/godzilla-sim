@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-052: Mothra Imago (1992) - Battle Rank 7 (Blue)
+## EBP04-052: Mothra(imago)(1992) - Battle Rank 7 (Blue)
 ## When this card is discarded from your hand by your opponent’s effect, if your
 ## opponent’s monster card is in zones 4–8, you may play this card.
 ## Whenever your opponent’s effect causes you to discard cards from your hand, if this

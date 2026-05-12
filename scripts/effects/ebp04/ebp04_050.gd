@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-050: Battra Larva - Battle Rank 6 (Blue)
+## EBP04-050: Battra(larva) - Battle Rank 6 (Blue)
 ## Whenever your monster card invades, if this card is in zone 8, choose one:
 ## ・Draw 1 card, then discard 1 card.
 ## ・Discard 1 card from your hand. If you do, reduce your opponent’s <Rage> by 1.

@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-077: First Kiryu Commander Yashiro Akane - Strategy Rank 4 (Red)
+## EBP04-077: Akane Yashiro, The MFS-3 Unit - Strategy Rank 4 (Red)
 ## Reveal the top 3 cards of your deck. Add up to 1 《Mechagodzilla》 battle card from
 ## among them to your hand, and send the rest to your discard pile.
 ## If you added “Multi-purpose Fighting System-3” or “Godzilla Against Mechagodzilla”,

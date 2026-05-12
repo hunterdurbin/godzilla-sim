@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-068: Kaiser Ghidorah - Battle Rank 8 (Green)
+## EBP04-068: Kaizer Ghidorah - Battle Rank 8 (Green)
 ## <Your Turn> If you have no strategy cards in play, all strategy cards in your hand
 ## gain −1 rank for each different color among battle cards in your discard pile. (They
 ## return to their original rank after being played.)

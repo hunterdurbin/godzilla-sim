@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-075: Hyper Spiral Beam - Strategy Rank 1 (Red)
+## EBP04-075: Spiral heat ray - Strategy Rank 1 (Red)
 ## <Opponent’s Turn> At the beginning of the counter phase, send the top card of your
 ## deck to your discard pile. If it is a monster card, <Destroy> 1 of your opponent’s
 ## battle cards in the same column as your monster card.

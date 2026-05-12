@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-084: Atomic Beam - Strategy Rank 1 (Green)
+## EBP04-084: Atomic Breath - Strategy Rank 1 (Green)
 ## <Destroy> all of your opponent's battle cards in the same column as your
 ## monster card.
 ##

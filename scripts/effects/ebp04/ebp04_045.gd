@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-045: Manda (2004) - Battle Rank 3 (Blue)
+## EBP04-045: Manda(2004) - Battle Rank 3 (Blue)
 ## When playing this card from your hand, you may discard 1 non-blue battle card from
 ## your hand to play this card with its rank reduced by 2. (After being played, this
 ## card is rank 3.)

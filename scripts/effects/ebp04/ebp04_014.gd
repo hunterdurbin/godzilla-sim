@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-014: Godzilla (2002) - Monster Rank 2 (Blue)
+## EBP04-014: Godzilla(2002) - Monster Rank 2 (Blue)
 ## Whenever you discard a battle card from your hand, if your opponent’s <Rage> is 0,
 ## <Destroy> 1 of your opponent’s rank 4 or lower battle cards.
 ## <Opponent’s Turn> <Awakening 6> At the beginning of the counter phase, if you have 2

@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-076: Dormancy - Strategy Rank 2 (Red)
+## EBP04-076: Godzilla's Dormancy - Strategy Rank 2 (Red)
 ## <Base>When any monster card invades into zones 6–8,  <Destroy> this card.  (Cards
 ## with Base are not sent to the discard pile at the start phase.)
 ## Your monster card cannot be moved by your opponent’s effects. (It still moves when

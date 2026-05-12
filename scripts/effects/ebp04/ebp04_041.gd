@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-041: New Gotengo - Battle Rank 5 (Red)
+## EBP04-041: The New Gotengo - Battle Rank 5 (Red)
 ## At the beginning of your counter phase, if this card is in zone 8, trigger all
 ## <Enter> abilities of your monster card.
 ## <Awakening 6> This card gains +3000 counter power. (Active if your monster card is in

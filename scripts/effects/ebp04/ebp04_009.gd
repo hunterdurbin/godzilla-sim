@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-009: Godzilla (2016) 3rd Form - Monster Rank 3 (Red)
+## EBP04-009: Godzilla(2016) 3rd Form - Monster Rank 3 (Red)
 ## <Opponent’s Turn> At the beginning of the counter phase, you may discard 1 strategy
 ## card from your hand. If you do, <Destroy> all of your opponent’s rank 6 or lower
 ## battle cards in the same column as this card.

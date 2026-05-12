@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-006: Godzilla (2004) - Monster Rank 4 (Red)
+## EBP04-006: Godzilla(2004) - Monster Rank 4 (Red)
 ## <Opponent’s Turn> If you have 3 or more rank 1 strategy cards in your discard pile,
 ## all of your opponent’s rank 5 or lower battle cards cannot engage with this card.
 ## (Their counter power is not included in the total during the counter phase.)

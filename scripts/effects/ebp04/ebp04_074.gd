@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-074: Rodan (1956) - Battle Rank 6 (White)
+## EBP04-074: Rodan(1956) - Battle Rank 6 (White)
 ## <Enter> <Destroy> 1 of your opponent's strategy cards.
 ##
 ## Tested: Yes

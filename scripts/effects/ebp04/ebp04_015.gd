@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-015: Godzilla (2003) - Monster Rank 4 (Blue)
+## EBP04-015: Godzilla(2003) - Monster Rank 4 (Blue)
 ## Whenever you discard a battle card from your hand, if your opponent’s <Rage> is 0,
 ## <Destroy> 1 of your opponent’s rank 6 or lower battle cards.
 ##

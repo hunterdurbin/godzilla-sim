@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-005: Godzilla 2004 - Monster Rank 4 (Red)
+## EBP04-005: Godzilla(2004) - Monster Rank 4 (Red)
 ## <Enter> If you have 1 or fewer strategy cards in play, search your deck for up to 1
 ## rank 1 strategy card, put it into play, shuffle your deck, then activate it.
 ## Whenever an opponent’s battle card in the same column as this card is <Destroy>, if

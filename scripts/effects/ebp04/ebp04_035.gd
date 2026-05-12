@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-035: Kaiser Ghidorah - Monster Rank 4 (Red, Blue, Green)
+## EBP04-035: Kaizer Ghidorah - Monster Rank 4 (Red, Blue, Green)
 ## <Enter> Starting with the battle card in your opponent’s zone with the lowest number,
 ## <Destroy> battle cards one by one up to the number of different colors among battle
 ## cards in your discard pile.

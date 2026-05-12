@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-016: Godzilla (Fest Godzilla II) - Monster Rank 1 (Blue)
+## EBP04-016: Godzilla(Fest GodzillaⅡ) - Monster Rank 1 (Blue)
 ## If the number of the zone this card is in is equal to or greater than the number of
 ## the zone the opponent’s monster card is in, this card gains +3000 threat level.
 ##

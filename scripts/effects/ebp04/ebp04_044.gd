@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-044: Hedorah (2004) - Battle Rank 8 (Red)
+## EBP04-044: Hedorah(2004) - Battle Rank 8 (Red)
 ## <Awakening 4> You can play this card from your hand with its rank reduced by 2 for
 ## each non-red battle card in your zones. (Active if your monster card is in zone 4 or
 ## beyond. After being played, this card is rank 8.)

@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-060: Valkyrie - Battle Rank 4 (Green)
+## EBP04-060: Vulture - Battle Rank 4 (Green)
 ## If you have a card named “Mechagodzilla City” in play, this card gains +3000 counter
 ## power.
 ##
