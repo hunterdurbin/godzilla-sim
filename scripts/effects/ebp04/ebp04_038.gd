@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-038: Kamacuras - Battle Rank 3 (Red)
+## EBP04-038: Kamacuras(2004) - Battle Rank 3 (Red)
 ## If you have 2 or more other battle cards in your zones, this card gains +3000 counter
 ## power.
 ##

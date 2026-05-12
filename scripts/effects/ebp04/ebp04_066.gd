@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-066: Gigan (2004) - Battle Rank 7 (Green)
+## EBP04-066: Gigan(2004) - Battle Rank 7 (Green)
 ## <Opponent’s Turn> If you have any non-green battle cards in your zones, all strategy
 ## cards in your opponent’s hand gain +2 rank. (They return to their original rank after
 ## being played.)

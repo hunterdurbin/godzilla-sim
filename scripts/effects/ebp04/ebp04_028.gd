@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-028: Gigan (2004) - Monster Rank 2 (Green)
+## EBP04-028: Gigan(2004) - Monster Rank 2 (Green)
 ## <Opponent’s Turn> All strategy cards in your opponent’s hand gain +3 rank. (They
 ## return to their original rank after being played.)
 ## <Opponent’s Turn> Whenever your opponent plays a battle card from their deck, your

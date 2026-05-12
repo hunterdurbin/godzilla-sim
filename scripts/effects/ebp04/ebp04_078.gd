@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-078: Crawling Calamity - Strategy Rank 5 (Red)
+## EBP04-078: The Slithering Disaster - Strategy Rank 5 (Red)
 ## Move an opponent’s monster card in zones 3–5 vertically. (Move it from zone 3 to zone
 ## 8, from zone 4 to zone 7, or from zone 5 to zone 6. Battle cards in zones between
 ## them are not <Destroy>.)
@@ -32,7 +32,7 @@ func on_enter(ctx: EffectContext) -> void:
 		5: target_zone = 6
 		_: return
 
-	# teleport_monster respects EBP04-076 (Dormancy) via the
+	# teleport_monster respects EBP04-076 (Godzilla's Dormancy) via the
 	# prevents_opponent_monster_move filter — returns false if blocked.
 	var moved: bool = ctx.effect_handler.teleport_monster(ctx.opponent.player_id, target_zone)
 	if not moved:

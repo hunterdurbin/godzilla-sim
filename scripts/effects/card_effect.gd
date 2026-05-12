@@ -49,7 +49,7 @@ extends RefCounted
 ##                prevents_opponent_monster_move, can_be_destroyed, and
 ##                protects_card_from_destruction; gates by which player's active
 ##                effect caused the action. true = opponent's effect (e.g.
-##                EBP04-046 Rodan, EBP04-076 Dormancy, EBP01-075 Godzilla KOTM,
+##                EBP04-046 Rodan, EBP04-076 Godzilla's Dormancy, EBP01-075 Godzilla KOTM,
 ##                EBP04-048 Little Godzilla); false = owner's own effect.
 ##                Rules-based actions (no active effect) match neither value.
 ##   "target_is_owner": bool — only meaningful for get_strategy_hand_rank_modifier;
@@ -436,7 +436,7 @@ func blocks_invade1_invasion_cost(_ctx: EffectContext) -> bool:
 
 func prevents_opponent_monster_move(_ctx: EffectContext) -> bool:
 	## Return true if this card prevents the opponent from moving this player's monster via effects.
-	## Used by EBP04-076 (Dormancy base strategy).
+	## Used by EBP04-076 (Godzilla's Dormancy base strategy).
 	return false
 
 
@@ -457,7 +457,7 @@ func on_ally_zone_card_destroyed(_ctx: EffectContext, _destroyed_card: Dictionar
 
 func on_opponent_zone_card_destroyed(_ctx: EffectContext, _destroyed_card: Dictionary, _zone_idx: int) -> void:
 	## Called on the opponent of the player whose battle card was destroyed.
-	## Used by EBP04-002 (Godzilla 2004): triggers when opponent's card in same column is destroyed.
+	## Used by EBP04-002 (Godzilla(2004)): triggers when opponent's card in same column is destroyed.
 	pass
 
 

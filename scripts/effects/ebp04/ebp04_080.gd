@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-080: Mothra Familial Bonds - Strategy Rank 2 (Blue)
+## EBP04-080: The Bond Between Mothra and its Child - Strategy Rank 2 (Blue)
 ## Evolve all of your rank 3 or lower battle cards with <Evolution> in your zones 1–5.
 ##
 ## Tested: Yes

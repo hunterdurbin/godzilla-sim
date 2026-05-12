@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-087: Beginning of the Two - Strategy Rank 5 (Green)
+## EBP04-087: Together / The Two of the Beginning - Strategy Rank 5 (Green)
 ## <Destroy> up to 1 red, 1 blue, 1 green, and 1 white battle card in your opponent’s
 ## zones 1–5.
 ##

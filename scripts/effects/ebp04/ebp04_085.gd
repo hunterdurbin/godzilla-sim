@@ -43,7 +43,7 @@ func on_strategy_discarded(ctx: EffectContext, strategy_card: Dictionary) -> voi
 
 func protects_card_from_destruction(_ctx: EffectContext, card_data: Dictionary, zone_idx: int) -> bool:
 	# Turn / cause-by-opponent gating handled by TRIGGER_FILTERS.
-	# Protect Higher Dimensional Monster Ghidorah in zones 1-5.
+	# Protect Void Ghidorah in zones 1-5.
 	if zone_idx >= 5:
 		return false
 	return CardUtils.has_trait(card_data, CardEnums.CardTrait.HIGHER_DIMENSIONAL)

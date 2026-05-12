@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-026: Spacegodzilla - Monster Rank 4 (Green)
+## EBP04-026: SpaceGodzilla - Monster Rank 4 (Green)
 ## <When Invading> Play 3 “Crystals” tokens. (Tokens are prepared separately from your
 ## deck.)
 ## <Awakening 6> If there are 3 or more “Crystals” in your zones, increase your total

@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-036: Kaiser Ghidorah - Monster Rank 4 (Red, Blue, Green)
+## EBP04-036: Kaizer Ghidorah - Monster Rank 4 (Red, Blue, Green)
 ## For each different color among battle cards in your discard pile, this card gains
 ## +5000 threat level.
 ##

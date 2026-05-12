@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-027: Gigan (2004) - Monster Rank 1 (Green)
+## EBP04-027: Gigan(2004) - Monster Rank 1 (Green)
 ## This card cannot advance nor invade.
 ## <Your Turn> At the beginning of your main phase, you may discard 1 card with <Step 2>
 ## from your hand. If you do, counter this card.

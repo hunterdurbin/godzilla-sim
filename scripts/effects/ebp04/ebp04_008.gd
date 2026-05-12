@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-008: Godzilla (2001) - Monster Rank 3 (Red)
+## EBP04-008: Godzilla(2001) - Monster Rank 3 (Red)
 ## <Burst 2> (You can play this card from rank II. If you do, send this card to your
 ## discard pile at the beginning of that turn’s end phase.)
 ## <Awakening 8> At the beginning of your counter phase, your opponent discards cards

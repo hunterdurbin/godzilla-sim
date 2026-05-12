@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-082: X-Aliens' Mother Ship - Strategy Rank 5 (Blue)
+## EBP04-082: Xilien Mothership - Strategy Rank 5 (Blue)
 ## <Base>When any monster card invades into zones 6–8,  <Destroy> this card.  (Cards
 ## with Base are not sent to the discard pile at the start phase.)
 ## <Your Turn> All of your non-blue battle cards in zones adjacent to your monster card

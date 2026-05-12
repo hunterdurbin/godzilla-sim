@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-064: Jet Jaguar (2021) - Battle Rank 6 (Green)
+## EBP04-064: Jet Jaguar(2021) - Battle Rank 6 (Green)
 ## At the beginning of your counter phase, if you have 10 or more green battle cards in
 ## your discard pile, you may <Destroy> this card. If you do, reduce your opponent’s
 ## <Rage> by 3.

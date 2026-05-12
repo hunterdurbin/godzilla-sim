@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-017: Godzilla (Fest Godzilla II) - Monster Rank 2 (Blue)
+## EBP04-017: Godzilla(Fest GodzillaⅡ) - Monster Rank 2 (Blue)
 ## If the number of the zone this card is in is equal to or greater than the number of
 ## the zone the opponent’s monster card is in, increase your total counter power by
 ## +5000.

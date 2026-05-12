@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-059: Rodan (2021) - Battle Rank 4 (Green)
+## EBP04-059: Rodan(2021) - Battle Rank 4 (Green)
 ## You may have any number of this card in your deck.
 ## <Revenge> If you have 5 or more green battle cards in your discard pile, you may
 ## return up to 1 battle card with 《Rodan》 from your discard pile to your hand.

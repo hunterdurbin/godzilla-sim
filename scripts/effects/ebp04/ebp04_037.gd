@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-037: Minilla (2004) - Battle Rank 3 (Red)
+## EBP04-037: Minilla(2004) - Battle Rank 3 (Red)
 ## If you have a rank 1 strategy card in play, this card gains +3000 counter
 ## power.
 ##

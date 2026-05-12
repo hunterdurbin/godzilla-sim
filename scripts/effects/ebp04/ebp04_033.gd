@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-033: Kaiser Ghidorah - Monster Rank 3 (Red, Blue, Green)
+## EBP04-033: Kaizer Ghidorah - Monster Rank 3 (Red, Blue, Green)
 ## This card can be played by placing it on top of a monster card with 《Monster X》 in
 ## your zones.
 ## <Enter> If there are 3 or more different colors among battle cards in your discard

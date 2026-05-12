@@ -773,7 +773,7 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## collecting on_monster_advance entries per step, resolving them
 	## after all movement completes (deferred, like ActionHandler).
 	## Effect-driven move — blocked by `prevents_opponent_monster_move`
-	## (e.g. EBP04-076 Dormancy when caller is the opponent's effect).
+	## (e.g. EBP04-076 Godzilla's Dormancy when caller is the opponent's effect).
 	# Check if monster is blocked from advancing (e.g. Biollante Rose Form)
 	if is_monster_advance_blocked(player_id):
 		return
@@ -798,7 +798,7 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## Retreat does NOT trigger on_monster_advance effects.
 	## Crush/revenge effects are deferred until after all movement completes.
 	## Effect-driven move — blocked by `prevents_opponent_monster_move`
-	## (e.g. EBP04-076 Dormancy when caller is the opponent's effect).
+	## (e.g. EBP04-076 Godzilla's Dormancy when caller is the opponent's effect).
 	if is_opponent_monster_move_blocked(player_id):
 		return
 	var player := game_state.players[player_id]
@@ -815,9 +815,9 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 func teleport_monster(player_id: int, target_zone: int) -> bool:
 	## Move a player's monster directly to target_zone without crushing
 	## intermediate-zone battle cards. Used for "move vertically" effects
-	## (e.g. EBP04-078 Crawling Calamity) and the counter-retreat helper.
+	## (e.g. EBP04-078 The Slithering Disaster) and the counter-retreat helper.
 	## Effect-driven move — blocked by `prevents_opponent_monster_move`
-	## (e.g. EBP04-076 Dormancy). Returns true if the move happened.
+	## (e.g. EBP04-076 Godzilla's Dormancy). Returns true if the move happened.
 	if not action_handler:
 		return false
 	if is_opponent_monster_move_blocked(player_id):
@@ -840,7 +840,7 @@ func move_monster_as_countered(player_id: int) -> void:
 	## (which also forces a rank-up). Used for "moves as though it were
 	## countered" rule wording (e.g. EBP01-077 Oxygen Destroyer).
 	## Effect-driven move — blocked by `prevents_opponent_monster_move`
-	## (e.g. EBP04-076 Dormancy). The counter-immunity branch in
+	## (e.g. EBP04-076 Godzilla's Dormancy). The counter-immunity branch in
 	## resolve_counter is a rule action and bypasses this helper.
 	var player := game_state.players[player_id]
 	var retreat_zone: int = ActionHandler.get_counter_retreat_zone(player.monster_zone)
@@ -2336,7 +2336,7 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 			if zone_idx >= 0 and zone_idx < 8:
 				modifiers[zone_idx] += monster_field_mods[zone_idx]
 
-	# Strategy card field CP modifiers (e.g. EBP04-082 X-Aliens' Mother Ship)
+	# Strategy card field CP modifiers (e.g. EBP04-082 Xilien Mothership)
 	for sz_card in player.strategy_zones:
 		if sz_card.is_empty():
 			continue
@@ -3236,7 +3236,7 @@ func get_strategy_hand_rank_modifier(player_id: int, card: Dictionary) -> int:
 
 
 func trigger_all_monster_enter_abilities(player_id: int) -> void:
-	## Re-trigger the on_enter ability of the topmost monster card. Used by EBP04-041 (New Gotengo).
+	## Re-trigger the on_enter ability of the topmost monster card. Used by EBP04-041 (The New Gotengo).
 	var player := game_state.players[player_id]
 	if player.current_monster.is_empty():
 		return

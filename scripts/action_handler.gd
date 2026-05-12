@@ -272,7 +272,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 
 	# Build valid indices (monsters that match rank + trait requirements).
 	# Also accept monsters whose can_play_as_monster() alternate bridge is satisfied
-	# (e.g. EBP04-033/034 "play on top of Monster X" — their [Kaiser Ghidorah] trait
+	# (e.g. EBP04-033/034 "play on top of Monster X" — their [Kaizer Ghidorah] trait
 	# does not overlap [Monster X] but rank-up is still permitted by the alternate cost).
 	var valid_indices: Array[int] = []
 	for i in range(opponent.monster_deck.size()):

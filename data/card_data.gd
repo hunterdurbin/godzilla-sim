@@ -2923,7 +2923,7 @@ var EBP03_CARDS: Array[Dictionary] = [
 var EBP04_CARDS: Array[Dictionary] = [
 	{
 		"id": "EBP04-001",
-		"name": "Godzilla (2004)",
+		"name": "Godzilla(2004)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 1,
 		"colors": [CardEnums.CardColor.RED],
@@ -2935,7 +2935,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-002",
-		"name": "Godzilla (2004)",
+		"name": "Godzilla(2004)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 2,
 		"colors": [CardEnums.CardColor.RED],
@@ -2947,7 +2947,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-003",
-		"name": "Godzilla (2004)",
+		"name": "Godzilla(2004)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.RED],
@@ -2959,7 +2959,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-004",
-		"name": "Godzilla (2004)",
+		"name": "Godzilla(2004)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.RED],
@@ -2971,7 +2971,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-005",
-		"name": "Godzilla 2004",
+		"name": "Godzilla(2004)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.RED],
@@ -2983,7 +2983,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-006",
-		"name": "Godzilla (2004)",
+		"name": "Godzilla(2004)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.RED],
@@ -2995,7 +2995,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-007",
-		"name": "Godzilla (1962)",
+		"name": "Godzilla(1962)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.RED],
@@ -3007,7 +3007,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-008",
-		"name": "Godzilla (2001)",
+		"name": "Godzilla(2001)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.RED],
@@ -3019,7 +3019,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-009",
-		"name": "Godzilla (2016) 3rd Form",
+		"name": "Godzilla(2016) 3rd Form",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.RED],
@@ -3031,7 +3031,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-010",
-		"name": "Godzilla (2023)",
+		"name": "Godzilla(2023)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 2,
 		"colors": [CardEnums.CardColor.RED],
@@ -3043,7 +3043,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-011",
-		"name": "Type 3 Kiryu (Modified)",
+		"name": "Multi-purpose Fighting System-3",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.RED, CardEnums.CardColor.BLUE],
@@ -3067,7 +3067,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-013",
-		"name": "Godzilla (2000)",
+		"name": "Godzilla(2000)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3079,7 +3079,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-014",
-		"name": "Godzilla (2002)",
+		"name": "Godzilla(2002)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 2,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3091,7 +3091,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-015",
-		"name": "Godzilla (2003)",
+		"name": "Godzilla(2003)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3103,7 +3103,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-016",
-		"name": "Godzilla (Fest Godzilla II)",
+		"name": "Godzilla(Fest GodzillaⅡ)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 1,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3115,7 +3115,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-017",
-		"name": "Godzilla (Fest Godzilla II)",
+		"name": "Godzilla(Fest GodzillaⅡ)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 2,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3127,7 +3127,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-018",
-		"name": "Godzilla (Fest Godzilla II)",
+		"name": "Godzilla(Fest GodzillaⅡ)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3139,7 +3139,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-019",
-		"name": "Godzilla (Fest Godzilla II)",
+		"name": "Godzilla(Fest GodzillaⅡ)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3163,7 +3163,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-021",
-		"name": "Godzilla Aquatilius",
+		"name": "Godzilla Aquatilis",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 1,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3187,7 +3187,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-023",
-		"name": "Godzilla Telestorius",
+		"name": "Godzilla Terrestris",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3223,7 +3223,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-026",
-		"name": "Spacegodzilla",
+		"name": "SpaceGodzilla",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3235,7 +3235,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-027",
-		"name": "Gigan (2004)",
+		"name": "Gigan(2004)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 1,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3247,7 +3247,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-028",
-		"name": "Gigan (2004)",
+		"name": "Gigan(2004)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 2,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3259,7 +3259,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-029",
-		"name": "Gigan (2004)",
+		"name": "Gigan(2004)",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3313,7 +3313,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-033",
-		"name": "Kaiser Ghidorah",
+		"name": "Kaizer Ghidorah",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.RED, CardEnums.CardColor.BLUE, CardEnums.CardColor.GREEN],
@@ -3325,7 +3325,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-034",
-		"name": "Kaiser Ghidorah",
+		"name": "Kaizer Ghidorah",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.RED, CardEnums.CardColor.BLUE, CardEnums.CardColor.GREEN],
@@ -3337,7 +3337,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-035",
-		"name": "Kaiser Ghidorah",
+		"name": "Kaizer Ghidorah",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.RED, CardEnums.CardColor.BLUE, CardEnums.CardColor.GREEN],
@@ -3349,7 +3349,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-036",
-		"name": "Kaiser Ghidorah",
+		"name": "Kaizer Ghidorah",
 		"card_type": CardEnums.CardType.MONSTER,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.RED, CardEnums.CardColor.BLUE, CardEnums.CardColor.GREEN],
@@ -3361,7 +3361,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-037",
-		"name": "Minilla (2004)",
+		"name": "Minilla(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.RED],
@@ -3373,7 +3373,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-038",
-		"name": "Kamacuras",
+		"name": "Kamacuras(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.RED],
@@ -3397,7 +3397,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-040",
-		"name": "Anguirus (2004)",
+		"name": "Anguirus(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.RED],
@@ -3409,7 +3409,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-041",
-		"name": "New Gotengo",
+		"name": "The New Gotengo",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.RED],
@@ -3421,7 +3421,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-042",
-		"name": "Mothra Imago (2004)",
+		"name": "Mothra(imago)(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 7,
 		"colors": [CardEnums.CardColor.RED],
@@ -3445,7 +3445,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-044",
-		"name": "Hedorah (2004)",
+		"name": "Hedorah(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 8,
 		"colors": [CardEnums.CardColor.RED],
@@ -3457,7 +3457,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-045",
-		"name": "Manda (2004)",
+		"name": "Manda(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3469,7 +3469,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-046",
-		"name": "Rodan (2004)",
+		"name": "Rodan(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3508,7 +3508,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-049",
-		"name": "Ebirah (2004)",
+		"name": "Ebirah(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3520,7 +3520,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-050",
-		"name": "Battra Larva",
+		"name": "Battra(larva)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 6,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3544,7 +3544,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-052",
-		"name": "Mothra Imago (1992)",
+		"name": "Mothra(imago)(1992)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 7,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3556,7 +3556,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-053",
-		"name": "MOGERA",
+		"name": "M.O.G.U.E.R.A.",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 7,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3580,7 +3580,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-055",
-		"name": "Higher Dimensional Monster Ghidorah",
+		"name": "Void Ghidorah",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 1,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3592,7 +3592,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-056",
-		"name": "Kumonga (2004)",
+		"name": "Kumonga(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 2,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3604,7 +3604,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-057",
-		"name": "King Caesar (2004)",
+		"name": "King Caesar(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3628,7 +3628,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-059",
-		"name": "Rodan (2021)",
+		"name": "Rodan(2021)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3641,7 +3641,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-060",
-		"name": "Valkyrie",
+		"name": "Vulture",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3653,7 +3653,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-061",
-		"name": "Mechagodzilla (2018)",
+		"name": "Mechagodzilla(2018)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3665,7 +3665,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-062",
-		"name": "Anguirus (2021)",
+		"name": "Anguirus(2021)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3689,7 +3689,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-064",
-		"name": "Jet Jaguar (2021)",
+		"name": "Jet Jaguar(2021)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 6,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3713,7 +3713,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-066",
-		"name": "Gigan (2004)",
+		"name": "Gigan(2004)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 7,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3737,7 +3737,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-068",
-		"name": "Kaiser Ghidorah",
+		"name": "Kaizer Ghidorah",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 8,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3773,7 +3773,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-071",
-		"name": "Kamoebas (1970)",
+		"name": "Kamoebas(1970)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.WHITE],
@@ -3809,7 +3809,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-074",
-		"name": "Rodan (1956)",
+		"name": "Rodan(1956)",
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 6,
 		"colors": [CardEnums.CardColor.WHITE],
@@ -3821,7 +3821,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-075",
-		"name": "Hyper Spiral Beam",
+		"name": "Spiral heat ray",
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 1,
 		"colors": [CardEnums.CardColor.RED],
@@ -3831,7 +3831,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-076",
-		"name": "Dormancy",
+		"name": "Godzilla's Dormancy",
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 2,
 		"colors": [CardEnums.CardColor.RED],
@@ -3842,7 +3842,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-077",
-		"name": "First Kiryu Commander Yashiro Akane",
+		"name": "Akane Yashiro, The MFS-3 Unit",
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 4,
 		"colors": [CardEnums.CardColor.RED],
@@ -3852,7 +3852,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-078",
-		"name": "Crawling Calamity",
+		"name": "The Slithering Disaster",
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.RED],
@@ -3872,7 +3872,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-080",
-		"name": "Mothra Familial Bonds",
+		"name": "The Bond Between Mothra and its Child",
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 2,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3882,7 +3882,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-081",
-		"name": "Twisting Terror",
+		"name": "Entangling Fear",
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 3,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3892,7 +3892,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-082",
-		"name": "X-Aliens' Mother Ship",
+		"name": "Xilien Mothership",
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.BLUE],
@@ -3913,7 +3913,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-084",
-		"name": "Atomic Beam",
+		"name": "Atomic Breath",
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 1,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3944,7 +3944,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-087",
-		"name": "Beginning of the Two",
+		"name": "Together / The Two of the Beginning",
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 5,
 		"colors": [CardEnums.CardColor.GREEN],
@@ -3954,7 +3954,7 @@ var EBP04_CARDS: Array[Dictionary] = [
 	},
 	{
 		"id": "EBP04-088",
-		"name": "Kidnapped Monsters",
+		"name": "Abducted Monsters",
 		"card_type": CardEnums.CardType.STRATEGY,
 		"rank": 8,
 		"colors": [CardEnums.CardColor.GREEN],

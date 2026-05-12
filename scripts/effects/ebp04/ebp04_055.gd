@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-055: Higher Dimensional Monster Ghidorah - Battle Rank 1 (Green)
+## EBP04-055: Void Ghidorah - Battle Rank 1 (Green)
 ## <Enter> You may <Destroy> 4 of your other green battle cards in your zones. If you do
 ## not, <Destroy> this card.
 ##

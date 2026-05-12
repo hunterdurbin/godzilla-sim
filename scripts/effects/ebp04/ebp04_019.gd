@@ -1,5 +1,5 @@
 extends CardEffect
-## EBP04-019: Godzilla (Fest Godzilla II) - Monster Rank 4 (Blue)
+## EBP04-019: Godzilla(Fest GodzillaⅡ) - Monster Rank 4 (Blue)
 ## If the number of the zone this card occupies is greater than or equal to the number
 ## of the zone the opponent’s monster card occupies, and you have 5 or more monster
 ## cards in your discard pile, this card gains +10,000 threat level, and your total
