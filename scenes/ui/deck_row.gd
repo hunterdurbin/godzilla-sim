@@ -136,10 +136,16 @@ func set_compact_mode(value: bool) -> void:
 		custom_minimum_size.y = ROW_HEIGHT_COMPACT
 		_thumb_holder.visible = false
 		_name_label.add_theme_font_size_override("font_size", 13)
+		if _actions_button != null:
+			_actions_button.custom_minimum_size = Vector2(28, 22)
+			_actions_button.add_theme_font_size_override("font_size", 12)
 	else:
 		custom_minimum_size.y = ROW_HEIGHT
 		_thumb_holder.visible = true
 		_name_label.remove_theme_font_size_override("font_size")
+		if _actions_button != null:
+			_actions_button.custom_minimum_size = Vector2(32, 32)
+			_actions_button.remove_theme_font_size_override("font_size")
 
 
 func _apply_selection_style() -> void:
