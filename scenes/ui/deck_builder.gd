@@ -552,6 +552,7 @@ func _connect_signals() -> void:
 	back_button.pressed.connect(_on_back_pressed)
 	deck_list_view.deck_selected.connect(_on_deck_list_selected)
 	deck_list_view.deck_activated.connect(_load_deck)
+	deck_name_edit.text_changed.connect(_on_deck_name_text_changed)
 
 	# Deck tabs
 	monster_tab_button.pressed.connect(_on_monster_tab_pressed)
@@ -1675,12 +1676,11 @@ func _on_empty_save_confirmed() -> void:
 
 
 func _perform_save(deck_name: String) -> void:
-	# New decks adopt the currently-selected deck's folder (else root); existing
-	# decks keep their current folder via DecklistManager's default behavior.
+	# New decks adopt the last-loaded deck's folder (else root); existing decks
+	# keep their current folder via DecklistManager's default behavior.
 	var target_folder := ""
-	var selected := deck_list_view.get_selected_deck()
-	if not selected.is_empty() and selected != deck_name:
-		target_folder = DecklistManager.get_deck_folder(selected)
+	if not _current_deck_name.is_empty() and _current_deck_name != deck_name:
+		target_folder = DecklistManager.get_deck_folder(_current_deck_name)
 	DecklistManager.save_decklist(deck_name, _monster_entries, _main_entries, target_folder)
 	_current_deck_name = deck_name
 	_has_unsaved_changes = false
@@ -1719,6 +1719,17 @@ func _load_deck(deck_name: String) -> void:
 
 func _on_deck_list_selected(deck_name: String) -> void:
 	deck_name_edit.text = deck_name
+
+
+func _on_deck_name_text_changed(new_text: String) -> void:
+	var trimmed := new_text.strip_edges()
+	if trimmed.is_empty():
+		deck_list_view.clear_selection()
+		return
+	if trimmed in DecklistManager.get_all_decklists():
+		deck_list_view.select_deck(trimmed)
+	else:
+		deck_list_view.clear_selection()
 
 
 func _on_delete_pressed() -> void:

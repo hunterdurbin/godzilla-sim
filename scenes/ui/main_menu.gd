@@ -122,54 +122,75 @@ func _on_bot_config_pressed() -> void:
 	_show_bot_config_popup()
 
 
-const _WEIGHT_MIN := 1
-const _WEIGHT_MAX := 100
-
-
-static func _read_weight(input: LineEdit) -> int:
-	var t := input.text.strip_edges()
-	if not t.is_valid_int():
-		return _WEIGHT_MIN
-	return clampi(t.to_int(), _WEIGHT_MIN, _WEIGHT_MAX)
-
-
-static func _write_weight(input: LineEdit, val: int) -> void:
-	input.text = str(clampi(val, _WEIGHT_MIN, _WEIGHT_MAX))
-
-
 func _reconcile_bot_deck_weights() -> void:
-	# Prune entries pointing at decks that no longer exist on disk so the
-	# saved cfg stays in sync with the actual deck list.
-	var current := {}
+	# Prune entries pointing at decks/folders that no longer exist on disk so
+	# the saved cfg stays in sync with the actual deck list.
+	var current_decks := {}
 	for d in DecklistManager.get_all_decklists():
-		current[d] = true
+		current_decks[d] = true
+	var current_folders := {}
+	for f in DecklistManager.get_all_folders():
+		current_folders[f] = true
 	var changed := false
 	for key in GameSettings.bot_deck_weights.keys():
-		if not current.has(key):
+		if not current_decks.has(key):
 			GameSettings.bot_deck_weights.erase(key)
+			changed = true
+	for key in GameSettings.bot_folder_weights.keys():
+		if not current_folders.has(key):
+			GameSettings.bot_folder_weights.erase(key)
 			changed = true
 	if changed:
 		GameSettings.save()
 
 
 func _pick_weighted_random_deck() -> String:
-	var all_decks := DecklistManager.get_all_decklists()
+	## Two-stage sampler: each pool entry is either a single deck OR a whole
+	## folder (uniform pick inside it). Folder-enabled decks are NOT also
+	## listed individually — the folder takes over.
+	var entries := DecklistManager.get_all_deck_entries()
+	var enabled_folders: Dictionary = {}
+	for fp in GameSettings.bot_folder_weights:
+		var fw := int(GameSettings.bot_folder_weights[fp])
+		if fw > 0:
+			enabled_folders[fp] = fw
+
 	var pool: Array = []
 	var total := 0
-	for d in all_decks:
-		var w := int(GameSettings.bot_deck_weights.get(d, 1))
+	for fp in enabled_folders:
+		pool.append({"kind": "folder", "name": fp, "weight": enabled_folders[fp]})
+		total += int(enabled_folders[fp])
+
+	for entry in entries:
+		if enabled_folders.has(entry["folder"]):
+			continue
+		var deck_name: String = entry["name"]
+		var has_entry: bool = GameSettings.bot_deck_weights.has(deck_name)
+		var w: int = 1
+		if has_entry:
+			w = int(GameSettings.bot_deck_weights[deck_name])
 		if w > 0:
-			pool.append({"name": d, "weight": w})
+			pool.append({"kind": "deck", "name": deck_name, "weight": w})
 			total += w
+
 	if total <= 0 or pool.is_empty():
 		return ""
+
 	var r := randi() % total
 	var acc := 0
-	for entry in pool:
-		acc += entry["weight"]
+	for e in pool:
+		acc += int(e["weight"])
 		if r < acc:
-			return entry["name"]
-	return pool[-1]["name"]
+			if e["kind"] == "folder":
+				var folder_decks: Array[String] = []
+				for entry in entries:
+					if entry["folder"] == e["name"]:
+						folder_decks.append(entry["name"])
+				if folder_decks.is_empty():
+					return ""
+				return folder_decks[randi() % folder_decks.size()]
+			return e["name"]
+	return ""
 
 
 func _show_bot_config_popup() -> void:
@@ -343,130 +364,25 @@ func _show_bot_config_popup() -> void:
 	deck_header_row.add_child(random_deck_check)
 	right_col.add_child(deck_header_row)
 
-	# Select/Unselect-all + Reset Weights buttons (right-aligned, above the scrolling list)
-	var select_all_row := HBoxContainer.new()
-	select_all_row.alignment = BoxContainer.ALIGNMENT_END
-	select_all_row.add_theme_constant_override("separation", 6)
-	var select_all_btn := Button.new()
-	select_all_btn.add_theme_font_size_override("font_size", 14)
-	select_all_row.add_child(select_all_btn)
-	var reset_weights_btn := Button.new()
-	reset_weights_btn.text = tr("STR_MENU_DECK_RESET_WEIGHTS")
-	reset_weights_btn.add_theme_font_size_override("font_size", 14)
-	select_all_row.add_child(reset_weights_btn)
-	right_col.add_child(select_all_row)
+	# Staged weights — the Edit Deck Pool modal mutates these; main Save commits.
+	var pending := {
+		"deck_weights": GameSettings.bot_deck_weights.duplicate(),
+		"folder_weights": GameSettings.bot_folder_weights.duplicate(),
+	}
 
-	var deck_scroll := ScrollContainer.new()
-	deck_scroll.custom_minimum_size = Vector2(0, 280)
-	deck_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	deck_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var deck_list := VBoxContainer.new()
-	deck_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	deck_list.add_theme_constant_override("separation", 4)
+	var edit_pool_btn := Button.new()
+	edit_pool_btn.text = tr("STR_MENU_BOT_EDIT_POOL")
+	edit_pool_btn.custom_minimum_size = Vector2(0, 44)
+	edit_pool_btn.add_theme_font_size_override("font_size", 16)
+	edit_pool_btn.disabled = not random_deck_check.button_pressed
+	right_col.add_child(edit_pool_btn)
 
-	# Per-deck rows (CheckBox + [−] [input] [+] stepper for mobile-friendly tapping)
-	var deck_rows: Array = []
-	for deck_name in DecklistManager.get_all_decklists():
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		var has_entry: bool = GameSettings.bot_deck_weights.has(deck_name)
-		var saved_weight: int = int(GameSettings.bot_deck_weights.get(deck_name, 1))
-		var enabled: bool = (not has_entry) or saved_weight > 0
-		var weight: int = saved_weight if (has_entry and saved_weight > 0) else max(saved_weight, 1)
+	random_deck_check.toggled.connect(func(p): edit_pool_btn.disabled = not p)
 
-		var row_check := CheckBox.new()
-		row_check.text = deck_name
-		row_check.tooltip_text = deck_name
-		row_check.button_pressed = enabled
-		row_check.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row_check.clip_text = true
-		row.add_child(row_check)
-
-		var stepper := HBoxContainer.new()
-		stepper.add_theme_constant_override("separation", 2)
-
-		var dec_btn := Button.new()
-		dec_btn.text = "−"
-		dec_btn.custom_minimum_size = Vector2(36, 36)
-		dec_btn.add_theme_font_size_override("font_size", 18)
-		stepper.add_child(dec_btn)
-
-		var weight_input := LineEdit.new()
-		weight_input.alignment = HORIZONTAL_ALIGNMENT_CENTER
-		weight_input.custom_minimum_size = Vector2(50, 36)
-		weight_input.add_theme_font_size_override("font_size", 14)
-		weight_input.max_length = 3
-		_write_weight(weight_input, weight)
-		stepper.add_child(weight_input)
-
-		var inc_btn := Button.new()
-		inc_btn.text = "+"
-		inc_btn.custom_minimum_size = Vector2(36, 36)
-		inc_btn.add_theme_font_size_override("font_size", 18)
-		stepper.add_child(inc_btn)
-
-		dec_btn.pressed.connect(func():
-			SfxManager.play("ui_click")
-			_write_weight(weight_input, _read_weight(weight_input) - 1)
-		)
-		inc_btn.pressed.connect(func():
-			SfxManager.play("ui_click")
-			_write_weight(weight_input, _read_weight(weight_input) + 1)
-		)
-		# Re-clamp typed input on commit / focus loss
-		weight_input.text_submitted.connect(func(_t): _write_weight(weight_input, _read_weight(weight_input)))
-		weight_input.focus_exited.connect(func(): _write_weight(weight_input, _read_weight(weight_input)))
-
-		row.add_child(stepper)
-		deck_list.add_child(row)
-		deck_rows.append({"name": deck_name, "check": row_check, "input": weight_input, "dec": dec_btn, "inc": inc_btn})
-
-	deck_scroll.add_child(deck_list)
-	right_col.add_child(deck_scroll)
-
-	# Select/Unselect-all logic — label flips based on whether every row is checked
-	var refresh_select_all_label := func():
-		var all_checked := true
-		for r in deck_rows:
-			if not r["check"].button_pressed:
-				all_checked = false
-				break
-		select_all_btn.text = tr("STR_MENU_DECK_UNSELECT_ALL") if all_checked else tr("STR_MENU_DECK_SELECT_ALL")
-	select_all_btn.pressed.connect(func():
+	edit_pool_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		var any_unchecked := false
-		for r in deck_rows:
-			if not r["check"].button_pressed:
-				any_unchecked = true
-				break
-		var new_state: bool = any_unchecked  # any unchecked → select all; else unselect all
-		for r in deck_rows:
-			r["check"].set_pressed_no_signal(new_state)
-		refresh_select_all_label.call()
+		_show_deck_pool_popup(pending, random_deck_check.button_pressed)
 	)
-	for r in deck_rows:
-		r["check"].toggled.connect(func(_v): refresh_select_all_label.call())
-	refresh_select_all_label.call()
-
-	# Reset all per-deck weights back to 1
-	reset_weights_btn.pressed.connect(func():
-		SfxManager.play("ui_click")
-		for r in deck_rows:
-			_write_weight(r["input"], 1)
-	)
-
-	# Enable/disable deck row widgets + helper buttons in sync with master toggle
-	var update_deck_widgets := func():
-		var on: bool = random_deck_check.button_pressed
-		select_all_btn.disabled = not on
-		reset_weights_btn.disabled = not on
-		for r in deck_rows:
-			r["check"].disabled = not on
-			r["input"].editable = on
-			r["dec"].disabled = not on
-			r["inc"].disabled = not on
-	random_deck_check.toggled.connect(func(_v): update_deck_widgets.call())
-	update_deck_widgets.call()
 
 	vbox.add_child(HSeparator.new())
 
@@ -490,13 +406,10 @@ func _show_bot_config_popup() -> void:
 		GameSettings.bot_seed_text = seed_input.text.strip_edges()
 		GameSettings.bot_speed_value = int(speed_slider.value)
 		GameSettings.bot_playstyle_value = int(playstyle_slider.value)
-		# Deck weights
+		# Deck + folder weights (staged via the Edit Deck Pool modal)
 		GameSettings.bot_random_deck_enabled = random_deck_check.button_pressed
-		var weights := {}
-		for r in deck_rows:
-			var w := _read_weight(r["input"]) if r["check"].button_pressed else 0
-			weights[r["name"]] = w
-		GameSettings.bot_deck_weights = weights
+		GameSettings.bot_deck_weights = pending["deck_weights"]
+		GameSettings.bot_folder_weights = pending["folder_weights"]
 		GameSettings.save()
 		popup.hide()
 	)
@@ -512,6 +425,79 @@ func _show_bot_config_popup() -> void:
 	vbox.add_child(btn_box)
 	margin.add_child(vbox)
 	panel.add_child(margin)
+	popup.add_child(panel)
+
+	add_child(popup)
+	popup.popup_centered()
+
+
+func _show_deck_pool_popup(pending: Dictionary, random_enabled: bool) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(820, 720)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	panel.add_child(margin)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	margin.add_child(vbox)
+
+	var title := Label.new()
+	title.text = tr("STR_MENU_BOT_DECK")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1.0))
+	vbox.add_child(title)
+
+	vbox.add_child(HSeparator.new())
+
+	var pool_view := BotPoolView.new()
+	pool_view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pool_view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(pool_view)
+	pool_view.setup(pending["deck_weights"].duplicate(), pending["folder_weights"].duplicate())
+	pool_view.set_random_enabled(random_enabled)
+
+	vbox.add_child(HSeparator.new())
+
+	var btn_box := HBoxContainer.new()
+	btn_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_box.add_theme_constant_override("separation", 12)
+
+	var save_btn := Button.new()
+	save_btn.text = tr("STR_COMMON_SAVE")
+	save_btn.custom_minimum_size = Vector2(140, 40)
+	save_btn.add_theme_font_size_override("font_size", 18)
+	save_btn.add_theme_color_override("font_color", Color(0.3, 0.8, 0.3))
+	save_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		pending["deck_weights"] = pool_view.get_deck_weights()
+		pending["folder_weights"] = pool_view.get_folder_weights()
+		popup.hide()
+	)
+	btn_box.add_child(save_btn)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(140, 40)
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	btn_box.add_child(cancel_btn)
+
+	vbox.add_child(btn_box)
 	popup.add_child(panel)
 
 	add_child(popup)

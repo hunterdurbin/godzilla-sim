@@ -3,12 +3,14 @@ extends Button
 ## One row in DeckListView: thumbnail of the highest-rank monster + deck name.
 
 const _CardScript := preload("res://scenes/cards/card.gd")
-const THUMB_SIZE := Vector2i(40, 56)
+const THUMB_SIZE := Vector2i(48, 48)
+const THUMB_CROP_Y_RATIO := 0.08
 const ROW_HEIGHT := 60
 const ROW_HEIGHT_COMPACT := 26
 
 signal selected(deck_name: String)
 signal activated(deck_name: String)  ## Double-click / Enter
+signal action_requested(deck_name: String, anchor_position: Vector2)  ## ⋯ button clicked
 
 var deck_name: String = ""
 var folder_path: String = ""
@@ -19,6 +21,7 @@ var _thumb_holder: Control
 var _thumb: TextureRect
 var _placeholder: Label
 var _name_label: Label
+var _actions_button: Button
 var _last_click_time: int = -1
 
 
@@ -84,6 +87,15 @@ func _init() -> void:
 	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(_name_label)
 
+	_actions_button = Button.new()
+	_actions_button.text = "⋯"
+	_actions_button.focus_mode = Control.FOCUS_NONE
+	_actions_button.custom_minimum_size = Vector2(32, 32)
+	_actions_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_actions_button.visible = false
+	_actions_button.pressed.connect(_on_actions_pressed)
+	box.add_child(_actions_button)
+
 	pressed.connect(_on_pressed)
 
 
@@ -106,6 +118,16 @@ func set_selected(value: bool) -> void:
 		return
 	_is_selected = value
 	_apply_selection_style()
+
+
+func set_actions_visible(value: bool) -> void:
+	if _actions_button != null:
+		_actions_button.visible = value
+
+
+func _on_actions_pressed() -> void:
+	var anchor := _actions_button.global_position + Vector2(0, _actions_button.size.y)
+	action_requested.emit(deck_name, anchor)
 
 
 func set_compact_mode(value: bool) -> void:
@@ -157,7 +179,8 @@ func _on_pressed() -> void:
 
 
 static func resolve_thumbnail_texture(card_id: String, cache: Dictionary) -> Texture2D:
-	## Resolves a Texture2D for the highest-rank monster card id, using a shared cache.
+	## Returns a square AtlasTexture cropped from the source artwork
+	## (top edge offset by THUMB_CROP_Y_RATIO of source height).
 	if card_id.is_empty():
 		return null
 	if cache.has(card_id):
@@ -167,11 +190,19 @@ static func resolve_thumbnail_texture(card_id: String, cache: Dictionary) -> Tex
 	if path.is_empty():
 		cache[card_id] = null
 		return null
-	var tex := ImageTexture.new()
 	var img := Image.new()
-	if img.load(path) == OK:
-		tex.set_image(img)
-		cache[card_id] = tex
-		return tex
-	cache[card_id] = null
-	return null
+	if img.load(path) != OK:
+		cache[card_id] = null
+		return null
+	var base := ImageTexture.create_from_image(img)
+	var w := img.get_width()
+	var h := img.get_height()
+	var side := mini(w, h)
+	var y_offset := int(h * THUMB_CROP_Y_RATIO)
+	if y_offset + side > h:
+		y_offset = maxi(0, h - side)
+	var atlas := AtlasTexture.new()
+	atlas.atlas = base
+	atlas.region = Rect2(0, y_offset, side, side)
+	cache[card_id] = atlas
+	return atlas

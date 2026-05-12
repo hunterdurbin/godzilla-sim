@@ -7,13 +7,17 @@ signal deck_selected(deck_name: String)   ## Single click / tap.
 signal deck_activated(deck_name: String)  ## Double-click / Enter — used by builder for Load.
 
 const STATE_PATH := "user://deck_list_state.cfg"
-const ROOT_KEY := "(Root)"
 const ROW_INDENT := 18
 
-## When true, hides the Move… button (DeckSelect pre-game picker).
+## When true, render as a picker button that opens the full list in a modal.
+## When false, render the full inline list with search + folders.
 @export var compact: bool = false
+## When false, hides the Move… button (used inside the expand modal + picker mode).
+@export var allow_move: bool = true
 ## When false, hides the Expand button (used for the inner list inside the expanded overlay).
 @export var allow_expand: bool = true
+## When true, each row displays a ⋯ menu (Move to folder…, etc.). Used by the expand overlay.
+@export var show_row_actions: bool = false
 ## Optional header label shown above the search bar.
 @export var header_text: String = ""
 ## Optional persist key — when set, last-selected deck is remembered across scenes.
@@ -46,11 +50,20 @@ var _search_timer: Timer
 var _row_buttons: Dictionary = {}  # deck_name → DeckRow
 var _folder_headers: Dictionary = {}  # folder_path → Button
 
+# Picker-mode widgets (when compact=true)
+var _picker_button: Button
+var _picker_thumb: TextureRect
+var _picker_placeholder: Label
+var _picker_label: Label
+
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 6)
 	size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	size_flags_vertical = Control.SIZE_EXPAND_FILL
+	if compact:
+		size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	else:
+		size_flags_vertical = Control.SIZE_EXPAND_FILL
 
 	_search_timer = Timer.new()
 	_search_timer.one_shot = true
@@ -77,6 +90,82 @@ func _build_ui() -> void:
 		_header_label.text = tr(header_text)
 	add_child(_header_label)
 
+	if compact:
+		_build_picker_ui()
+	else:
+		_build_full_ui()
+
+
+func _build_picker_ui() -> void:
+	_picker_button = Button.new()
+	_picker_button.custom_minimum_size.y = 60
+	_picker_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_picker_button.clip_text = true
+	_picker_button.text = ""
+	_picker_button.pressed.connect(_on_picker_pressed)
+	add_child(_picker_button)
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	hbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	hbox.offset_left = 8
+	hbox.offset_right = -8
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_picker_button.add_child(hbox)
+
+	var thumb_holder := Control.new()
+	thumb_holder.custom_minimum_size = Vector2(DeckRow.THUMB_SIZE.x, DeckRow.THUMB_SIZE.y)
+	thumb_holder.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	thumb_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	thumb_holder.clip_contents = true
+	hbox.add_child(thumb_holder)
+
+	_picker_placeholder = Label.new()
+	_picker_placeholder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_picker_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_picker_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_picker_placeholder.add_theme_font_size_override("font_size", 18)
+	_picker_placeholder.add_theme_color_override("font_color", Color(0.9, 0.5, 0.3, 1))
+	_picker_placeholder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var ph_style := StyleBoxFlat.new()
+	ph_style.bg_color = Color(0.18, 0.10, 0.07, 1)
+	ph_style.set_corner_radius_all(3)
+	var ph_panel := PanelContainer.new()
+	ph_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ph_panel.add_theme_stylebox_override("panel", ph_style)
+	ph_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ph_panel.add_child(_picker_placeholder)
+	thumb_holder.add_child(ph_panel)
+
+	_picker_thumb = TextureRect.new()
+	_picker_thumb.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_picker_thumb.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_picker_thumb.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_picker_thumb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_picker_thumb.visible = false
+	thumb_holder.add_child(_picker_thumb)
+
+	_picker_label = Label.new()
+	_picker_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_picker_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_picker_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_picker_label.clip_text = true
+	_picker_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_picker_label.add_theme_font_size_override("font_size", 16)
+	_picker_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.add_child(_picker_label)
+
+	var chevron := Label.new()
+	chevron.text = "▾"
+	chevron.add_theme_color_override("font_color", Color(0.9, 0.5, 0.3, 1))
+	chevron.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	chevron.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.add_child(chevron)
+
+	_update_picker_button()
+
+
+func _build_full_ui() -> void:
 	var top_row := HBoxContainer.new()
 	top_row.add_theme_constant_override("separation", 4)
 	add_child(top_row)
@@ -109,7 +198,7 @@ func _build_ui() -> void:
 	_move_button = Button.new()
 	_move_button.text = tr("STR_DB_MOVE")
 	_move_button.disabled = true
-	_move_button.visible = not compact
+	_move_button.visible = allow_move
 	_move_button.pressed.connect(_on_move_pressed)
 	top_row.add_child(_move_button)
 
@@ -149,6 +238,7 @@ func refresh() -> void:
 	_compute_folder_order()
 	_rebuild()
 	_update_move_button()
+	_update_picker_button()
 
 
 func select_deck(deck_name: String) -> void:
@@ -159,6 +249,7 @@ func select_deck(deck_name: String) -> void:
 		var row: DeckRow = _row_buttons[n]
 		row.set_selected(n == deck_name)
 	_update_move_button()
+	_update_picker_button()
 	if not persist_key.is_empty() and not deck_name.is_empty():
 		_save_last_selected(deck_name)
 
@@ -172,6 +263,7 @@ func clear_selection() -> void:
 	for n in _row_buttons:
 		(_row_buttons[n] as DeckRow).set_selected(false)
 	_update_move_button()
+	_update_picker_button()
 
 
 func set_header(text: String) -> void:
@@ -195,6 +287,8 @@ func set_filter(callable: Callable) -> void:
 
 func set_disabled(value: bool) -> void:
 	## Disables interaction (used by lobbies during host/connect transitions).
+	if _picker_button != null:
+		_picker_button.disabled = value
 	if _search_edit != null:
 		_search_edit.editable = not value
 	if _move_button != null:
@@ -227,6 +321,8 @@ func _compute_folder_order() -> void:
 
 
 func _rebuild() -> void:
+	if compact:
+		return  # Picker mode has no inline list to rebuild.
 	if _list_vbox == null:
 		return  # Not built yet — refresh() will be called again from _ready.
 	for child in _list_vbox.get_children():
@@ -236,15 +332,17 @@ func _rebuild() -> void:
 	_folder_headers.clear()
 
 	var any_visible := false
+	# Skip the root header entirely when there are no subfolders to group against —
+	# a flat list shouldn't display an "Uncategorized" header.
+	var has_subfolders := _folder_order.size() > 1
 	for folder in _folder_order:
 		var folder_entries := _entries_in_folder(folder)
 		var visible_entries := _filter_entries(folder_entries)
 		if visible_entries.is_empty():
 			continue
 		var collapsed: bool = _collapsed_folders.get(folder, false)
-		if not _search_text.is_empty():
-			collapsed = false
-		_add_folder_header(folder, visible_entries.size(), collapsed)
+		if folder != "" or has_subfolders:
+			_add_folder_header(folder, visible_entries.size(), collapsed)
 		if not collapsed:
 			for entry in visible_entries:
 				_add_deck_row(entry)
@@ -296,7 +394,7 @@ func _add_folder_header(folder: String, count: int, collapsed: bool) -> void:
 	btn.add_theme_font_size_override("font_size", 14)
 	btn.add_theme_color_override("font_color", Color(0.85, 0.55, 0.35, 1))
 	var arrow := "▾" if not collapsed else "▸"
-	var label := ROOT_KEY if folder.is_empty() else folder
+	var label := tr("STR_DLV_ROOT") if folder.is_empty() else folder
 	if collapsed:
 		btn.text = "%s %s (%d)" % [arrow, label, count]
 	else:
@@ -315,8 +413,10 @@ func _add_deck_row(entry: Dictionary) -> void:
 	row.set_data(entry["name"], entry["folder"], tex)
 	row.selected.connect(_on_row_selected)
 	row.activated.connect(_on_row_activated)
+	row.action_requested.connect(_on_row_action_requested)
 	_list_vbox.add_child(row)
 	row.set_compact_mode(_compact_rows)
+	row.set_actions_visible(show_row_actions)
 	_row_buttons[entry["name"]] = row
 	if entry["name"] == _selected_deck:
 		row.set_selected(true)
@@ -338,6 +438,33 @@ func _on_density_toggled(pressed: bool) -> void:
 func _on_expand_pressed() -> void:
 	SfxManager.play("ui_click")
 	_open_expanded_overlay()
+
+
+func _on_picker_pressed() -> void:
+	SfxManager.play("ui_click")
+	_open_expanded_overlay()
+
+
+func _update_picker_button() -> void:
+	if _picker_button == null:
+		return
+	if _selected_deck.is_empty():
+		_picker_label.text = tr("STR_DLV_PICKER_PLACEHOLDER")
+		_picker_thumb.visible = false
+		_picker_thumb.texture = null
+		_picker_placeholder.text = "?"
+		return
+	_picker_label.text = _selected_deck
+	var thumb_id := DecklistManager.get_decklist_thumbnail_card_id(_selected_deck)
+	var tex := DeckRow.resolve_thumbnail_texture(thumb_id, _texture_cache)
+	if tex != null:
+		_picker_thumb.texture = tex
+		_picker_thumb.visible = true
+		_picker_placeholder.text = ""
+	else:
+		_picker_thumb.texture = null
+		_picker_thumb.visible = false
+		_picker_placeholder.text = _selected_deck.substr(0, 1).to_upper()
 
 
 func _open_expanded_overlay() -> void:
@@ -399,8 +526,10 @@ func _open_expanded_overlay() -> void:
 	header_row.add_child(close_btn)
 
 	var inner := DeckListView.new()
-	inner.compact = compact
+	inner.compact = false
+	inner.allow_move = false
 	inner.allow_expand = false
+	inner.show_row_actions = true
 	inner.persist_key = persist_key
 	inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inner.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -410,10 +539,14 @@ func _open_expanded_overlay() -> void:
 	if not _selected_deck.is_empty():
 		inner.select_deck(_selected_deck)
 
-	# Single-click selection mirrors back to parent + closes.
+	# Picker-mode (lobby-style): single click selects and closes.
+	# Full-mode (DeckBuilder): single click selects, double-click activates and closes.
+	var close_on_select := compact
 	inner.deck_selected.connect(func(deck_name):
 		select_deck(deck_name)
 		deck_selected.emit(deck_name)
+		if close_on_select:
+			overlay.queue_free()
 	)
 	inner.deck_activated.connect(func(deck_name):
 		select_deck(deck_name)
@@ -447,27 +580,44 @@ func _on_move_pressed() -> void:
 	if _selected_deck.is_empty():
 		return
 	SfxManager.play("ui_click")
+	_open_folder_picker(_selected_deck)
+
+
+func _on_row_action_requested(deck_name: String, anchor: Vector2) -> void:
+	SfxManager.play("ui_click")
+	var menu := PopupMenu.new()
+	menu.add_item(tr("STR_DLV_MOVE_TO_FOLDER"), 0)
+	add_child(menu)
+	menu.position = Vector2i(anchor)
+	menu.popup()
+	menu.id_pressed.connect(func(id):
+		if id == 0:
+			_open_folder_picker(deck_name)
+		menu.queue_free()
+	)
+	menu.popup_hide.connect(menu.queue_free)
+
+
+func _open_folder_picker(deck_name: String) -> void:
 	var picker := preload("res://scenes/ui/folder_picker_dialog.gd").new()
 	add_child(picker)
-	var current_folder := DecklistManager.get_deck_folder(_selected_deck)
-	picker.show_for(_selected_deck, current_folder)
-	picker.folder_chosen.connect(_on_folder_chosen)
+	var current_folder := DecklistManager.get_deck_folder(deck_name)
+	picker.show_for(deck_name, current_folder)
+	picker.folder_chosen.connect(_on_folder_chosen.bind(deck_name))
 
 
-func _on_folder_chosen(target_folder: String) -> void:
-	if _selected_deck.is_empty():
+func _on_folder_chosen(target_folder: String, deck_name: String) -> void:
+	if deck_name.is_empty():
 		return
-	var ok := DecklistManager.move_decklist(_selected_deck, target_folder)
+	var ok := DecklistManager.move_decklist(deck_name, target_folder)
 	if not ok:
-		# Surface a brief error via the empty label; not critical to add a dialog here.
 		_empty_label.text = tr("STR_DLV_FOLDER_EXISTS")
 		_empty_label.visible = true
 		await get_tree().create_timer(2.0).timeout
 		_empty_label.text = tr("STR_DLV_NO_DECKS")
 		return
-	var remember := _selected_deck
 	refresh()
-	select_deck(remember)
+	select_deck(deck_name)
 
 
 func _update_move_button() -> void:

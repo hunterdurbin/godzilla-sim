@@ -3,9 +3,9 @@
 [ext_resource type="Script" path="res://scenes/ui/deck_select.gd" id="1_ds"]
 
 [node name="DeckSelect" type="VBoxContainer"]
-custom_minimum_size = Vector2(240, 220)
+custom_minimum_size = Vector2(240, 0)
 size_flags_horizontal = 3
-size_flags_vertical = 3
+size_flags_vertical = 4
 theme_override_constants/separation = 6
 script = ExtResource("1_ds")
 header_text = "STR_DS_SELECT_DECK"
