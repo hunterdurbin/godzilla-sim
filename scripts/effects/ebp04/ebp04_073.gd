@@ -1,8 +1,8 @@
 extends CardEffect
 ## EBP04-073: Gaira - Battle Rank 5 (White)
-## <Opponent's Turn> Each time your opponent returns a card from their discard
-## pile to their hand, if this is in area 1, return up to 1 card from your
-## discard pile to your hand.
+## <Opponent’s Turn> Whenever your opponent returns a card from their discard pile to
+## their hand, if this card is in zone 1, you may return up to 1 card from your discard
+## pile to your hand.
 ##
 ## Tested: Yes
 ## Known issues: None

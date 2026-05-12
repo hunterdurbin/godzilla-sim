@@ -1,7 +1,8 @@
 extends CardEffect
 
 ## EBP02-007: Godzilla(2016) 4th Form - Monster Rank 4 (Red)
-## <Burst3>
+## <Burst3> (You can play this card from rank III. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
 ## <Enter> You may discard 1 strategy card from your hand. If you do, reveal the top 5
 ## cards of your deck, add 1 monster card from among them to your hand, then send the
 ## rest to your discard pile.

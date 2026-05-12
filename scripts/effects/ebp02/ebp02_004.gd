@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## EBP02-004: Godzilla(2016) 3rd Form - Monster Rank 3 (Red)
-## <Burst2>
-## <Enter> If there is a <2nd Form> card under this card, <Destroy> 1 of your opponent's
-## rank 6 or lower battle cards for each strategy card in your strategy zone.
+## <Burst2> (You can play this card from rank II. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
+## <Enter> If there is a <《2nd Form》> card under this card, <Destroy> 1 of your
+## opponent's rank 6 or lower battle cards for each strategy card in your strategy zone.
 ##
 ## Tested: Yes
 ## Known issues: None

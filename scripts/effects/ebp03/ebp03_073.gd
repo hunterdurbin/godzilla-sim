@@ -1,8 +1,9 @@
 extends CardEffect
 # All-Weapon Attack (Strategy R4)
-# Reveal top 3 of deck, send to discard.
-# Destroy all opponent battle cards in zones whose numbers match the revealed ranks.
-# If opponent monster is in a matching zone, retreat 1.
+# Reveal the top 3 cards of your deck and send them to your discard pile; <Destroy> all
+# of your opponent’s battle cards in zones whose numbers match the ranks of the
+# revealed cards, if your opponent's monster card occupies 1 of those zones, your
+# opponent’s monster card retreats backward by 1 zone.
 #
 # Tested: No
 # Known issues: None

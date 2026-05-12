@@ -1,9 +1,9 @@
 extends CardEffect
 
 ## EBP02-054: SpaceGodzilla - Monster Rank 3 (Green)
-## <Enter> Play 2 "Crystals" tokens.
-## Whenever this card's <Rage> is increased, <Destroy> 1 of your opponent's
-## rank 5 or lower battle cards for each "Crystals" in your zones.
+## <Enter> Play 2 “Crystals” tokens. (Tokens are prepared separately from your deck.)
+## Whenever this card's <Rage> is increased, <Destroy> 1 of your opponent's rank 5 or
+## lower battle cards for each “Crystals” in your zones.
 ##
 ## Tested: No
 ## Known issues: None

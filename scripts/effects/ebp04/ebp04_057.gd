@@ -1,6 +1,6 @@
 extends CardEffect
 ## EBP04-057: King Caesar (2004) - Battle Rank 3 (Green)
-## If there is a non-green battle card in your zones, this gains +3000 counter
+## If you have any non-green battle cards in your zones, this card gains +3000 counter
 ## power.
 ##
 ## Tested: Yes

@@ -1,8 +1,9 @@
 extends CardEffect
 
 ## EBP02-044: Modified Gigan - Monster Rank 4 (Green)
-## <When Invading> If your opponent's monster card is in zones 6-8, reduce their <Rage> by 2.
-## At the beginning of your end phase, if your opponent's monster card is in zones 1-5,
+## <When Invading> If your opponent's monster card is in zones 6–8, reduce their <Rage>
+## by 2.
+## At the beginning of your end phase, if your opponent's monster card is in zones 1–5,
 ## increase this card's <Rage> by 2.
 ##
 ## Tested: Yes

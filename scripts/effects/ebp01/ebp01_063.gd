@@ -1,7 +1,7 @@
 extends CardEffect
 
 ## EBP01-063: Guardians Awaken - Strategy Rank 4 (Blue)
-## Evolve all of your rank 4 or lower battle cards with <Evolution>.
+## Evolve all of your rank 4 or lower battle cards with <Evolution> .
 ##
 ## Tested: Yes
 ## Known issues: None

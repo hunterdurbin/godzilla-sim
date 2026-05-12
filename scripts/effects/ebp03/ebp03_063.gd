@@ -2,7 +2,7 @@ extends CardEffect
 
 ## EBP03-063: King Ghidorah(1998) - Battle Rank 6 (Green)
 ## <Your Turn> <Awakening4> When your monster card is played, you may play this card
-## from your discard pile.
+## from your discard pile. (Active if your monster card is in zone 4 or beyond.)
 ##
 ## Tested: No
 ## Known issues: None

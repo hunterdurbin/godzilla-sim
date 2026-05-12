@@ -14,6 +14,11 @@ const API_BASE := "https://api.godzillatcg.com"
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 const IMAGE_EXTENSIONS := ["png", "jpg", "jpeg", "webp"]
 const LEGACY_BASE_PATH := "user://CardContent/Artwork"  # pre-locale layout, read-only fallback
+## Locale codes recognised by the API + on-disk layout. Anything else is
+## coerced to "en" by _resolve_locale() at the boundary — catches stale
+## settings.cfg values (e.g. a stray "ten") and fix-pool typos before they
+## spawn orphan folders under ARTWORK_BASE_PATH.
+const VALID_LOCALES: Array[String] = ["en", "ja"]
 
 var _is_running: bool = false
 var _http: HTTPRequest
@@ -29,6 +34,18 @@ func _ready() -> void:
 
 func base_path_for_locale(locale: String) -> String:
 	return ARTWORK_BASE_PATH.path_join(locale)
+
+
+func _resolve_locale(locale: String) -> String:
+	## Coerce an arbitrary locale string into one of VALID_LOCALES, falling
+	## back to "en" with a warning when the input is unknown. Apply at every
+	## public/external boundary (start_download, apply_fix_pool, the public
+	## artwork_exists/get_cached_count/clear_downloaded_artwork API) so a bad
+	## value never reaches the API URL or disk-write path.
+	if locale in VALID_LOCALES:
+		return locale
+	push_warning("[ArtworkDownloader] Unknown locale '%s' — falling back to 'en'" % locale)
+	return "en"
 
 
 func _migrate_legacy_artwork() -> void:
@@ -103,6 +120,7 @@ func _merge_dir_into(src: String, dst: String) -> bool:
 
 
 func artwork_exists(card_number: String, locale: String) -> bool:
+	locale = _resolve_locale(locale)
 	var base_dir := base_path_for_locale(locale).path_join(_get_set_number(card_number))
 	for ext in IMAGE_EXTENSIONS:
 		if FileAccess.file_exists(base_dir.path_join("%s.%s" % [card_number, ext])):
@@ -118,11 +136,41 @@ func artwork_exists(card_number: String, locale: String) -> bool:
 	return false
 
 
+func count_cards_pending_update(locale: String) -> int:
+	## Number of unique cards whose artwork for `locale` is either:
+	##   (a) not on disk yet (cache miss), or
+	##   (b) cached but queued for re-fetch via an unapplied
+	##       CardArtworkFixPool entry whose `locales` includes this locale.
+	## Used by Options to prompt the user after a locale switch.
+	## De-duplicated — a card that's both missing AND in a pending fix-pool
+	## entry counts once.
+	locale = _resolve_locale(locale)
+	var pending := {}  # set of card_id
+	for card_id in CardData.CARD_TEMPLATES:
+		var template: Dictionary = CardData.CARD_TEMPLATES[card_id]
+		if template.get("card_type", -1) == CardEnums.CardType.RAGE:
+			continue
+		if not artwork_exists(card_id, locale):
+			pending[card_id] = true
+	var entries := CardArtworkFixPool.unapplied_entries(GameSettings.applied_artwork_fixes)
+	for entry in entries:
+		var entry_locales: Array = entry.locales
+		if not (locale in entry_locales):
+			continue
+		for card_id in entry.card_ids:
+			# Only count cards we actually know about — guards against a
+			# fix-pool entry referencing a card that's since been removed.
+			if CardData.CARD_TEMPLATES.has(card_id):
+				pending[card_id] = true
+	return pending.size()
+
+
 func get_cached_count(locale: String) -> int:
 	## Count how many card templates have at least one image cached on disk
 	## for the given locale. Used by Options to render per-locale status.
 	## SYSTEM placeholders (e.g. RAGE-MARKER) ship with built-in art and
 	## aren't tracked by the downloader.
+	locale = _resolve_locale(locale)
 	var count := 0
 	for card_id in CardData.CARD_TEMPLATES:
 		var template: Dictionary = CardData.CARD_TEMPLATES[card_id]
@@ -140,6 +188,7 @@ func clear_downloaded_artwork(locale: String = "") -> void:
 		_clear_tree(ARTWORK_BASE_PATH)
 		print("[ArtworkDownloader] Cleared all downloaded artwork from %s" % ARTWORK_BASE_PATH)
 	else:
+		locale = _resolve_locale(locale)
 		var locale_root := base_path_for_locale(locale)
 		_clear_tree(locale_root)
 		# artwork_exists() treats the legacy flat layout as the EN pack, so
@@ -194,61 +243,79 @@ func _remove_dir_contents(path: String) -> void:
 	dir.list_dir_end()
 
 
-func apply_fix_pool() -> void:
+func apply_fix_pool() -> Dictionary:
 	## Invalidate locally-cached artwork for any cards listed in
 	## CardArtworkFixPool entries that haven't been applied yet on this
-	## install. Files are deleted from every locale subfolder (and the
-	## legacy flat layout) so a later switch to another locale also re-fetches
-	## the corrected version. start_download() picks the now-missing cards
-	## back up in its normal scan.
-	var unapplied := CardArtworkFixPool.card_ids_for_unapplied(GameSettings.applied_artwork_fixes)
-	if unapplied.is_empty():
-		return
+	## install. Each entry's `locales` field controls which language packs
+	## are touched — most fixes are EN-only (the default), but an entry can
+	## opt into multiple locales when the same art was republished across
+	## packs.
+	##
+	## Returns a map `{ locale: Array[String] of card_numbers }` for every
+	## non-active locale where we actually deleted a file. start_download()
+	## consumes this to re-fetch those locales — otherwise start_download's
+	## normal scan only covers the active locale and the deleted non-active
+	## files would stay missing.
+	var entries := CardArtworkFixPool.unapplied_entries(GameSettings.applied_artwork_fixes)
+	if entries.is_empty():
+		return {}
+
+	var active_locale: String = _resolve_locale(GameSettings.card_art_locale)
+	var post_fix: Dictionary = {}  # locale -> Array[String]
 	var deleted := 0
-	for card_number in unapplied:
-		deleted += _delete_card_artwork_all_locations(card_number)
-	# Mark every entry applied — even if no file existed (fresh install,
-	# already up-to-date). Idempotent; future runs no-op.
-	for key in CardArtworkFixPool.all_keys():
-		if not GameSettings.applied_artwork_fixes.has(key):
-			GameSettings.applied_artwork_fixes.append(key)
+
+	for entry in entries:
+		var card_ids: Array = entry.card_ids
+		var locales: Array = entry.locales
+		for card_number in card_ids:
+			for raw_loc in locales:
+				var loc := _resolve_locale(raw_loc)
+				var n := _delete_card_artwork_for_locale(card_number, loc)
+				deleted += n
+				# Only queue for post-fix re-fetch if we actually deleted
+				# something AND the locale isn't the active one (which
+				# start_download already handles via its missing-file scan).
+				if n > 0 and loc != active_locale:
+					var bucket: Array = post_fix.get(loc, [])
+					if not bucket.has(card_number):
+						bucket.append(card_number)
+						post_fix[loc] = bucket
+
+	# Mark every entry applied — even if nothing was on disk to delete
+	# (fresh install, locale not cached, etc.). Idempotent; future runs no-op.
+	for entry in entries:
+		if not GameSettings.applied_artwork_fixes.has(entry.key):
+			GameSettings.applied_artwork_fixes.append(entry.key)
 	GameSettings.save()
-	print("[ArtworkDownloader] Fix pool: invalidated %d file(s) across %d card(s)" % [
-		deleted, unapplied.size()
+
+	var post_count := 0
+	for k in post_fix.keys():
+		post_count += (post_fix[k] as Array).size()
+	print("[ArtworkDownloader] Fix pool: %d entr(ies) applied; deleted %d file(s); %d non-active card-locale pair(s) queued for re-fetch" % [
+		entries.size(), deleted, post_count
 	])
+	return post_fix
 
 
-func _delete_card_artwork_all_locations(card_number: String) -> int:
-	## Returns the count of files actually deleted (0 if nothing was cached).
-	## Walks every direct child folder of ARTWORK_BASE_PATH so both the
-	## locale layout (en/<set>/, ja/<set>/) and the pre-locale flat layout
-	## (<set>/) get cleaned.
+func _delete_card_artwork_for_locale(card_number: String, locale: String) -> int:
+	## Delete cached image files for `card_number` in `locale`. Returns the
+	## number of files removed (0 if nothing was cached). For "en" we also
+	## clean the pre-locale legacy flat layout (ARTWORK_BASE_PATH/<set>/...)
+	## defensively in case _migrate_legacy_artwork left something behind.
 	var set_number := _get_set_number(card_number)
-	var dir := DirAccess.open(ARTWORK_BASE_PATH)
-	if dir == null:
-		return 0
-	var subfolders: Array[String] = []
-	dir.list_dir_begin()
-	var entry := dir.get_next()
-	while not entry.is_empty():
-		if dir.current_is_dir() and entry != "." and entry != "..":
-			subfolders.append(entry)
-		entry = dir.get_next()
-	dir.list_dir_end()
-
 	var deleted := 0
-	for sub in subfolders:
-		var card_dir: String
-		if sub == set_number:
-			# Legacy flat layout: ARTWORK_BASE_PATH/<set>/<card>.<ext>
-			card_dir = ARTWORK_BASE_PATH.path_join(sub)
-		else:
-			# Locale layout: ARTWORK_BASE_PATH/<locale>/<set>/<card>.<ext>
-			card_dir = ARTWORK_BASE_PATH.path_join(sub).path_join(set_number)
+	var card_dir := base_path_for_locale(locale).path_join(set_number)
+	for ext in IMAGE_EXTENSIONS:
+		var path := card_dir.path_join("%s.%s" % [card_number, ext])
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(path)
+			deleted += 1
+	if locale == "en":
+		var legacy_dir := ARTWORK_BASE_PATH.path_join(set_number)
 		for ext in IMAGE_EXTENSIONS:
-			var path := card_dir.path_join("%s.%s" % [card_number, ext])
-			if FileAccess.file_exists(path):
-				DirAccess.remove_absolute(path)
+			var legacy_path := legacy_dir.path_join("%s.%s" % [card_number, ext])
+			if FileAccess.file_exists(legacy_path):
+				DirAccess.remove_absolute(legacy_path)
 				deleted += 1
 	return deleted
 
@@ -266,14 +333,17 @@ func start_download() -> void:
 
 	# Invalidate any cached files for cards listed in unapplied fix-pool
 	# entries before the existence scan, so they're picked up as missing.
-	apply_fix_pool()
+	# The returned map tells us which non-active locales also had files
+	# wiped — start_download only fetches for the active locale on its own,
+	# so we run targeted re-fetches for those locales at the end.
+	var post_fix_by_locale := apply_fix_pool()
 
 	# Flip the StatusLabel off "Preparing..." immediately. Without this, the
 	# file-existence scan below leaves the bar idle until _download_batch's
 	# polling loop fires, which can feel like a hang to users.
 	download_bytes_updated.emit(0, 0)
 
-	var locale: String = GameSettings.card_art_locale
+	var locale: String = _resolve_locale(GameSettings.card_art_locale)
 	var all_card_numbers := _get_all_card_numbers()
 	var missing: Array[String] = []
 	var skipped := 0
@@ -288,11 +358,6 @@ func start_download() -> void:
 		locale, all_card_numbers.size(), skipped, missing.size()
 	])
 
-	if missing.is_empty():
-		_is_running = false
-		download_complete.emit(0, skipped, 0)
-		return
-
 	var downloaded := 0
 	var failed := 0
 
@@ -303,16 +368,49 @@ func start_download() -> void:
 			downloaded = 1
 		else:
 			failed = 1
-	else:
+	elif missing.size() > 1:
 		var result := await _download_batch(missing, locale)
 		downloaded = result.downloaded
 		failed = result.failed
+
+	# Post-fix-pool catchup: re-fetch fix-pool cards for any non-active
+	# locales that had cached files before apply_fix_pool() wiped them.
+	# We deliberately fetch ONLY the specific deleted cards, not all missing
+	# cards in the locale, so a user who's only partially downloaded that
+	# locale doesn't get force-pulled into a full pack download here.
+	for other_locale in post_fix_by_locale.keys():
+		var cards_to_refetch: Array[String] = []
+		for c in post_fix_by_locale[other_locale]:
+			if c is String:
+				cards_to_refetch.append(c)
+		if cards_to_refetch.is_empty():
+			continue
+		var pass_stats := await _redownload_cards_for_locale(cards_to_refetch, other_locale)
+		downloaded += pass_stats.downloaded
+		failed += pass_stats.failed
 
 	_is_running = false
 	print("[ArtworkDownloader] Done! locale=%s Downloaded: %d, Skipped: %d, Failed: %d" % [
 		locale, downloaded, skipped, failed
 	])
 	download_complete.emit(downloaded, skipped, failed)
+
+
+func _redownload_cards_for_locale(card_numbers: Array[String], locale: String) -> Dictionary:
+	## Targeted re-fetch of a specific card list in `locale`. Used as the
+	## post-fix-pool catchup pass so non-active locales (e.g. ja while the
+	## user is on en) refresh the cards we just invalidated.
+	print("[ArtworkDownloader] Post-fix re-fetch: %d card(s) in locale=%s" % [
+		card_numbers.size(), locale
+	])
+	if card_numbers.is_empty():
+		return {"downloaded": 0, "failed": 0}
+	if card_numbers.size() == 1:
+		progress_updated.emit(1, 1, card_numbers[0])
+		if await _download_single(card_numbers[0], locale):
+			return {"downloaded": 1, "failed": 0}
+		return {"downloaded": 0, "failed": 1}
+	return await _download_batch(card_numbers, locale)
 
 
 func _get_all_card_numbers() -> Array[String]:

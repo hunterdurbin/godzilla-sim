@@ -1,8 +1,8 @@
 extends CardEffect
 # Godzilla(2000) - Monster Rank 4 (Blue)
-# <Awakening4> When you successfully counter your opponent's monster card, if you have
-# 5 or more monster cards in your discard pile, <Destroy> all of your opponent's
-# rank 6 or lower battle cards. (Active if this is in zone 4 or beyond.)
+# <Awakening4> When you successfully counter your opponent’s monster card, if you have
+# 5 or more monster cards in your discard pile, <Destroy> all of your opponent’s rank 6
+# or lower battle cards. (Active if this card is in zone 4 or beyond.)
 #
 # Tested: Yes
 # Known issues: None

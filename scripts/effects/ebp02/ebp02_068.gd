@@ -1,11 +1,11 @@
 extends CardEffect
 
 ## EBP02-068: Mecha-King Ghidorah - Battle Rank 23 (Green)
-## You can play this card from your hand with its rank reduced by 2 for each
-## non-rank 23 <King Ghidorah> card in your discard pile.
-## (This card's rank returns to 23 after being played.)
-## If this card is in the same column as your opponent's monster card,
-## they cannot invade, and this card gains +3000 counter power.
+## You can play this card from your hand with its rank reduced by 2 for each non-rank 23
+## <《King Ghidorah》> card in your discard pile. (This card's rank returns to 23 after
+## being played.)
+## If this card is in the same column as your opponent's monster card, they cannot
+## invade, and this card gains +3000 counter power.
 ##
 ## Tested: Yes
 ## Known issues: None

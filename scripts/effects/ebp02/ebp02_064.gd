@@ -1,10 +1,10 @@
 extends CardEffect
 
 ## EBP02-064: Gigan(1972) - Battle Rank 6 (Green)
-## If there is a card with <King Ghidorah> or <Megalon> in your zones,
-## this card gains +3000 counter power.
-## <Revenge> Return up to 1 <King Ghidorah> monster card from your discard pile
-## to your hand.
+## If there is a card with <《King Ghidorah》> or <《Megalon》> in your zones, this card
+## gains +3000 counter power.
+## <Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to
+## your hand. (Activates when destroyed by a card effect or monster movement.)
 ##
 ## Tested: No
 ## Known issues: None

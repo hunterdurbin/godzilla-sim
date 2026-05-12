@@ -1,9 +1,9 @@
 extends CardEffect
 
 ## EBP03-023: Armor Mothra - Monster Rank 4 (Blue)
-## <Enter> Evolve all of your Mothra battle cards with Evolution.
-## When you successfully counter your opponent's monster card, if you have a card
-## with <Base> in play, retreat your opponent's monster card back to zone 1.
+## <Enter> Evolve all of your <《Mothra》> battle cards with <Evolution> .
+## When you successfully counter your opponent’s monster card, if you have a card with
+## <Base> in play, retreat your opponent’s monster card back to zone 1.
 ##
 ## Tested: No
 ## Known issues: None

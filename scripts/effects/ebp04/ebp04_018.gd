@@ -1,9 +1,10 @@
 extends CardEffect
 ## EBP04-018: Godzilla (Fest Godzilla II) - Monster Rank 3 (Blue)
-## <Enter> If you have 5 or more monster cards in your discard pile, <Destroy>
-## 1 of your opponents Rank 6 or lower battle cards.
-## If this is in a zone equal to or greater than your opponent's monster card's,
-## increase this card's threat by +10000.
+## <Enter> If you have 5 or more monster cards in your discard pile, <Destroy> 1 of your
+## opponent’s rank 6 or lower battle cards.
+## If the number of the zone this card occupies is greater than or equal to the number
+## of the zone the opponent’s monster card occupies, this card gains +10,000 threat
+## level.
 ##
 ## Tested: Yes
 ## Known issues: None

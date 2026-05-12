@@ -1,10 +1,10 @@
 extends CardEffect
 ## EBP04-085: The Golden Demise - Strategy Rank 1 (Green)
-## When this is moved from your strategy zones to your discard pile, if you have
-## 2 or more green battle cards in your zones you may return this from your
-## discard pile to your hand.
-## <Opponent's Turn> [Higher Dimensional Monster Ghidorah] in your zones 1-5
-## cannot be <Destroy> by your opponent's effects.
+## When this card is sent from the strategy zone to your discard pile, if you have 2 or
+## more green battle cards in your zones, you may return this card from your discard
+## pile to your hand.
+## <Opponent’s Turn> “Void Ghidorah” in your zones 1–5 cannot be <Destroy> by your
+## opponent’s effects.
 ##
 ## Tested: Yes
 ## Known issues: None

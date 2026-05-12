@@ -1,11 +1,11 @@
 extends CardEffect
 ## EBP04-014: Godzilla (2002) - Monster Rank 2 (Blue)
-## Each time you discard a battle card from your hand and your opponent has 0
-## <Rage>, <Destroy> 1 of your opponent's rank 4 or lower battle cards.
-## <Opponent's Turn> <Awakening 6> At the beginning of the counter phase, if
-## you have 2 or more cards in your zones you may discard 1 battle card from
-## your hand so that during the turn this card cannot be countered by 30,000 or
-## less counter power.
+## Whenever you discard a battle card from your hand, if your opponent’s <Rage> is 0,
+## <Destroy> 1 of your opponent’s rank 4 or lower battle cards.
+## <Opponent’s Turn> <Awakening 6> At the beginning of the counter phase, if you have 2
+## or more battle cards in your zones, you may discard 1 battle card from your hand. If
+## you do, this card cannot be countered by 30,000 or lower counter power this turn. (It
+## will not retreat.)
 ##
 ## Tested: Yes
 ## Known issues: None

@@ -2,7 +2,8 @@ extends CardEffect
 
 ## EBP03-042: Ghogo - Battle Rank 2 (Blue)
 ## When your monster card invades, if this is in zone 8, you may put this card under one
-## of your Mothra battle cards with Evolution. If you do, evolve that Mothra battle card.
+## of your <《Mothra》> battle cards with <Evolution> . If you do, evolve that <《Mothra》>
+## battle card.
 ##
 ## Tested: No
 ## Known issues: None

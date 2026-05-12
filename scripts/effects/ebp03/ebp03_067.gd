@@ -2,10 +2,10 @@ extends CardEffect
 
 ## EBP03-067: Monster X - Battle Rank 5 (White)
 ## <Your Turn> When this card is discarded from your hand, if there are 2 or more colors
-## among battle cards in your zones, play this card and Destroy up to 1 of your opponent's
-## lowest ranked battle cards.
-## This card's counter power X = 3000 * number of different colors among other battle
-## cards in your zones.
+## among battle cards in your zones, play this card and <Destroy> up to 1 of your
+## opponent’s lowest ranked battle cards in their zones.
+## This card’s counter power X is equal to 3000 multiplied by the number of different
+## colors among other battle cards in your zones. (White also counts as a color.)
 ##
 ## Tested: No
 ## Known issues: None

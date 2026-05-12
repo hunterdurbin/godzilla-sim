@@ -2,9 +2,14 @@ extends CardEffect
 
 ## EBP02-038: Godzilla 2000: Millennium - Strategy Rank 2 (Blue)
 ## Choose one of the following:
-## - <Destroy> 1 of your opponent's rank 5 or lower battle cards.
-## - If you have 10 or more monster cards in your discard pile,
-##   <Destroy> 1 of your opponent's battle cards in zone 8.
+##
+## ・ <Destroy> 1 of your opponent's rank 5 or lower battle cards.
+## ・If you have 10 or more monster cards in your discard pile, <Destroy> 1 of your
+## opponent's battle cards in zone 8.
+##
+## ・ <Destroy> 1 of your opponent's rank 5 or lower battle cards.
+## ・If you have 10 or more monster cards in your discard pile, <Destroy> 1 of your
+## opponent's battle cards in zone 8.
 ##
 ## Tested: Yes
 ## Known issues: None
@@ -25,7 +30,7 @@ func on_enter(ctx: EffectContext) -> void:
 	# Option 0: Destroy 1 rank 5 or lower (if targets exist)
 	var has_r5_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 5).is_empty()
 	if has_r5_targets:
-		options.append("Destroy 1 of opponent's rank 5 or lower battle cards")
+		options.append(tr("STR_EFF_EBP02_038_CHOICE_A"))
 		option_ids.append(0)
 
 	# Option 1: Destroy zone 8 card (requires 10+ monster cards in discard)
@@ -33,7 +38,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if monster_count >= 10:
 		var opp_z8 := ctx.opponent.get_zone_top_card(7)
 		if not opp_z8.is_empty():
-			options.append("Destroy opponent's battle card in zone 8")
+			options.append(tr("STR_EFF_EBP02_038_CHOICE_B"))
 			option_ids.append(1)
 
 	if options.is_empty():

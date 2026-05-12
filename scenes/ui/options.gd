@@ -84,10 +84,56 @@ func _prompt_card_art_switch(target_locale: String) -> void:
 		GameSettings.save()
 		_CardScript.clear_texture_cache()
 		popup.hide()
-		# If art isn't cached yet, jump to LoadingScreen so it downloads now.
-		if ArtworkDownloader.get_cached_count(target_locale) == 0:
-			NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn"))
+		# If any card images for the new locale need work — missing files OR
+		# unapplied fix-pool entries that target this locale — ask whether
+		# to download them now. Previously this only triggered on zero
+		# cached files, silently leaving users on stale art for partial-
+		# cache locales and stale-translation locales.
+		var pending: int = ArtworkDownloader.count_cards_pending_update(target_locale)
+		if pending > 0:
+			_prompt_card_art_download(target_locale, pending))
 	btn_row.add_child(yes_btn)
+
+	vbox.add_child(btn_row)
+	_show_modal(popup)
+
+
+func _prompt_card_art_download(target_locale: String, missing_count: int) -> void:
+	var parts := _create_modal(tr("STR_OPTIONS_ART_UPDATE_TITLE"))
+	var popup: PopupPanel = parts[0]
+	var vbox: VBoxContainer = parts[1]
+
+	var lang_name := tr("STR_LANG_" + target_locale.to_upper())
+	var prompt := Label.new()
+	prompt.text = tr("STR_OPTIONS_ART_UPDATE_PROMPT_FMT") \
+		.replace("{N}", str(missing_count)) \
+		.replace("{LANG}", lang_name)
+	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt.add_theme_font_size_override("font_size", 16)
+	vbox.add_child(prompt)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
+
+	var skip_btn := Button.new()
+	skip_btn.text = tr("STR_OPTIONS_ART_UPDATE_SKIP")
+	skip_btn.custom_minimum_size = Vector2(140, 40)
+	skip_btn.add_theme_font_size_override("font_size", 16)
+	skip_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide())
+	btn_row.add_child(skip_btn)
+
+	var dl_btn := Button.new()
+	dl_btn.text = tr("STR_OPTIONS_ART_UPDATE_DOWNLOAD")
+	dl_btn.custom_minimum_size = Vector2(140, 40)
+	dl_btn.add_theme_font_size_override("font_size", 16)
+	dl_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+		NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn"))
+	btn_row.add_child(dl_btn)
 
 	vbox.add_child(btn_row)
 	_show_modal(popup)

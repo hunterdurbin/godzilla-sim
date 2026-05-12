@@ -1,10 +1,11 @@
 extends CardEffect
 
 ## EBP03-064: Mothra(imago)(2001) - Battle Rank 7 (Green)
-## <Enter> If an opponent's battle card was Destroyed this turn, you may place 1 battle
+## <Enter> If an opponent's battle card was <Destroy> this turn, you may place 1 battle
 ## card from your discard pile under this card.
 ## <Awakening4> If there is a card under this card, this card gains +3000 counter power.
-## <Awakening6> If there is a card under this card, this card gains an additional +3000 CP.
+## <Awakening6> If there is a card under this card, this card gains an additional +3000
+## counter power.
 ##
 ## Tested: No
 ## Known issues: None

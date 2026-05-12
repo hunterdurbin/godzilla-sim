@@ -10,7 +10,7 @@ const ZOOM_DEFAULT_COLUMNS := 7
 
 # --- Left panel ---
 var deck_name_edit: LineEdit
-var deck_list: ItemList
+var deck_list_view: DeckListView
 var save_button: Button
 var load_button: Button
 var delete_button: Button
@@ -76,8 +76,6 @@ var _pending_action: Callable
 var _invalid_cards: Dictionary = {} # card_number -> true
 var _game_mode: String = "rumble_west"
 var _pool_load_generation: int = 0 # Incremented to cancel stale batched loads
-var _deck_list_touch_scrolled: bool = false # Track if ItemList was scrolled on touch
-var _pending_deck_list_index: int = -1 # Deferred selection index for touch
 
 # --- Preview ---
 var _preview_card: Control
@@ -174,20 +172,13 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	deck_name_edit.placeholder_text = tr("STR_DB_DECK_NAME")
 	vbox.add_child(deck_name_edit)
 
-	# Deck list (wrapped in ScrollContainer for touch scrolling)
-	var deck_list_scroll := ScrollContainer.new()
-	deck_list_scroll.custom_minimum_size.y = 120
-	deck_list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	deck_list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	deck_list_scroll.scroll_deadzone = 20
-	deck_list_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
-	vbox.add_child(deck_list_scroll)
-
-	deck_list = ItemList.new()
-	deck_list.auto_height = true
-	deck_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	deck_list.mouse_filter = Control.MOUSE_FILTER_PASS
-	deck_list_scroll.add_child(deck_list)
+	# Compact picker: selected deck preview + folder subtitle + Move to…
+	# button. The full deck list lives behind the picker click (modal).
+	deck_list_view = DeckListView.new()
+	deck_list_view.compact = true
+	deck_list_view.allow_move = true
+	deck_list_view.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	vbox.add_child(deck_list_view)
 
 	# Save / Load / Delete
 	var btn_row := HBoxContainer.new()
@@ -561,8 +552,9 @@ func _connect_signals() -> void:
 	import_button.pressed.connect(_on_import_pressed)
 	export_button.pressed.connect(_on_export_pressed)
 	back_button.pressed.connect(_on_back_pressed)
-	deck_list.item_selected.connect(_on_deck_list_selected)
-	deck_list.gui_input.connect(_on_deck_list_gui_input)
+	deck_list_view.deck_selected.connect(_on_deck_list_selected)
+	deck_list_view.deck_activated.connect(_load_deck)
+	deck_name_edit.text_changed.connect(_on_deck_name_text_changed)
 
 	# Deck tabs
 	monster_tab_button.pressed.connect(_on_monster_tab_pressed)
@@ -600,6 +592,8 @@ func _build_pool_card_list() -> void:
 	_all_pool_cards.clear()
 	for card_id in CardData.CARD_TEMPLATES:
 		var card: Dictionary = CardData.CARD_TEMPLATES[card_id]
+		if card.get("card_type") == CardEnums.CardType.RAGE:
+			continue
 		_all_pool_cards.append(card)
 	_all_pool_cards.sort_custom(_sort_by_id)
 
@@ -1684,23 +1678,23 @@ func _on_empty_save_confirmed() -> void:
 
 
 func _perform_save(deck_name: String) -> void:
-	DecklistManager.save_decklist(deck_name, _monster_entries, _main_entries)
+	# New decks adopt the last-loaded deck's folder (else root); existing decks
+	# keep their current folder via DecklistManager's default behavior.
+	var target_folder := ""
+	if not _current_deck_name.is_empty() and _current_deck_name != deck_name:
+		target_folder = DecklistManager.get_deck_folder(_current_deck_name)
+	DecklistManager.save_decklist(deck_name, _monster_entries, _main_entries, target_folder)
 	_current_deck_name = deck_name
 	_has_unsaved_changes = false
-	_refresh_deck_list()
-	# Select saved deck in list
-	for i in range(deck_list.item_count):
-		if deck_list.get_item_text(i) == deck_name:
-			deck_list.select(i)
-			break
+	deck_list_view.refresh()
+	deck_list_view.select_deck(deck_name)
 
 
 func _on_load_pressed() -> void:
 	SfxManager.play("ui_click")
-	var selected := deck_list.get_selected_items()
-	if selected.is_empty():
+	var deck_name := deck_list_view.get_selected_deck()
+	if deck_name.is_empty():
 		return
-	var deck_name: String = deck_list.get_item_text(selected[0])
 	if _has_unsaved_changes:
 		_pending_action = _load_deck.bind(deck_name)
 		unsaved_dialog.popup_centered()
@@ -1725,51 +1719,37 @@ func _load_deck(deck_name: String) -> void:
 	_update_deck_stats()
 
 
-func _on_deck_list_gui_input(event: InputEvent) -> void:
-	if not TouchHelper.is_touch_device():
+func _on_deck_list_selected(deck_name: String) -> void:
+	deck_name_edit.text = deck_name
+
+
+func _on_deck_name_text_changed(new_text: String) -> void:
+	var trimmed := new_text.strip_edges()
+	if trimmed.is_empty():
+		deck_list_view.clear_selection()
 		return
-	if not (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT):
-		return
-	if event.pressed:
-		deck_list.set_meta("_press_pos", event.global_position)
-		_deck_list_touch_scrolled = false
-		_pending_deck_list_index = -1
+	if trimmed in DecklistManager.get_all_decklists():
+		deck_list_view.select_deck(trimmed)
 	else:
-		var press_pos: Vector2 = deck_list.get_meta("_press_pos", event.global_position)
-		if event.global_position.distance_to(press_pos) >= 20:
-			_deck_list_touch_scrolled = true
-			deck_list.deselect_all()
-			_pending_deck_list_index = -1
-		elif _pending_deck_list_index >= 0:
-			# Finger stayed still — treat as tap, apply deferred selection
-			deck_name_edit.text = deck_list.get_item_text(_pending_deck_list_index)
-
-
-func _on_deck_list_selected(index: int) -> void:
-	if TouchHelper.is_touch_device():
-		# Defer until release so we can distinguish scroll from tap
-		_pending_deck_list_index = index
-		return
-	deck_name_edit.text = deck_list.get_item_text(index)
+		deck_list_view.clear_selection()
 
 
 func _on_delete_pressed() -> void:
 	SfxManager.play("ui_click")
-	var selected := deck_list.get_selected_items()
-	if selected.is_empty():
+	var deck_name := deck_list_view.get_selected_deck()
+	if deck_name.is_empty():
 		return
-	var deck_name: String = deck_list.get_item_text(selected[0])
 	delete_dialog.dialog_text = tr("STR_DB_DELETE_PROMPT") % deck_name
 	delete_dialog.popup_centered()
 
 
 func _on_delete_confirmed() -> void:
-	var selected := deck_list.get_selected_items()
-	if selected.is_empty():
+	var deck_name := deck_list_view.get_selected_deck()
+	if deck_name.is_empty():
 		return
-	var deck_name: String = deck_list.get_item_text(selected[0])
 	DecklistManager.delete_decklist(deck_name)
-	_refresh_deck_list()
+	deck_list_view.clear_selection()
+	deck_list_view.refresh()
 
 
 func _on_clear_pressed() -> void:
@@ -1789,10 +1769,7 @@ func _on_clear_confirmed() -> void:
 
 
 func _refresh_deck_list() -> void:
-	deck_list.clear()
-	var names := DecklistManager.get_all_decklists()
-	for deck_name in names:
-		deck_list.add_item(deck_name)
+	deck_list_view.refresh()
 
 
 # ============================================================

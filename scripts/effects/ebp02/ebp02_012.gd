@@ -37,6 +37,18 @@ func can_intercept_strategy_discard(ctx: EffectContext) -> bool:
 	return zone_idx == 7
 
 
+func should_intercept_strategy_discard(ctx: EffectContext, discarded_card: Dictionary) -> bool:
+	# "May" — prompt the controller to place the strategy under this card or
+	# let it go to discard.
+	var card_name: String = ctx.card_data.get("name", "card")
+	var strategy_name: String = discarded_card.get("name", "card")
+	var chosen: int = await ctx.effect_handler.select_choice(
+		ctx.owner.player_id,
+		[tr("STR_EFF_BTN_YES"), tr("STR_EFF_BTN_NO")],
+		tr("STR_EFF_EBP02_012_PROMPT_FMT") % [strategy_name, card_name])
+	return chosen == 0
+
+
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	# Awakening4: monster must be in zone 4+
 	if not ctx.is_awakening(4):

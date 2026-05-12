@@ -1,7 +1,7 @@
 extends CardEffect
 
 ## ESD02-003: Godzilla(1992) - Monster Rank 3
-## <Enter> Play up to 2 rank 4 or lower battle cards with <Evolution> from your discard pile
+## <Enter> :Play 2 rank 4 or lower battle cards with <Evolution> from your discard pile
 ## in zones adjacent to this card.
 ## (For example, if this card is in zone 7, the adjacent zones are 4, 6, and 8.)
 ##

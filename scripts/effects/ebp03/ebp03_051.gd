@@ -1,7 +1,9 @@
 extends CardEffect
 # Godzilla Jr. (Battle R7)
-# If played on top of Little Godzilla, rank reduced by 2 (self-modifier).
-# +5000 CP per card under this card.
+# If you would play this card on top of your <《Little Godzilla》> battle card, you may
+# play this from your hand with its rank reduced by 2. (After being played, this card
+# is rank 7.)
+# This card gains +5000 counter power for each card under it.
 #
 # Tested: No
 # Known issues: None

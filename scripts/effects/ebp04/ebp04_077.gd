@@ -1,9 +1,9 @@
 extends CardEffect
 ## EBP04-077: First Kiryu Commander Yashiro Akane - Strategy Rank 4 (Red)
-## Reveal the top 3 cards of your deck, among those add 1 <Mechagodzilla> battle
-## card and discard the rest. If the card you add to your hand is
-## [Multi-purpose Fighting System-3] or [Godzilla Against Mechagodzilla] you
-## may instead place it in Area 8.
+## Reveal the top 3 cards of your deck. Add up to 1 《Mechagodzilla》 battle card from
+## among them to your hand, and send the rest to your discard pile.
+## If you added “Multi-purpose Fighting System-3” or “Godzilla Against Mechagodzilla”,
+## you may play it in zone 8 instead.
 ##
 ## Tested: Yes
 ## Known issues: None

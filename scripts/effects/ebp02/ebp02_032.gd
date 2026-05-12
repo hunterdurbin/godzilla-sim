@@ -1,8 +1,9 @@
 extends CardEffect
 
 ## EBP02-032: Biollante Rose Form - Battle Rank 4 (Blue)
-## <Evolution7> <Biollante> At the beginning of your main phase, you may play a rank 7
-## or lower <Biollante> battle card from your deck by placing it on top of this card.
+## <Evolution7> <《Biollante》> (At the beginning of your main phase, you may play a rank
+## 7 or lower <《Biollante》> battle card from your deck by placing it on top of this
+## card.)
 ##
 ## Tested: Yes
 ## Known issues: None

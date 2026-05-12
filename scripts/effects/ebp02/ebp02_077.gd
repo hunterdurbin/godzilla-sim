@@ -1,9 +1,11 @@
 extends CardEffect
 
 ## EBP02-077: Chibi Godzilla - Battle Rank 6 (White)
-## At the beginning of your main phase, send the top 2 cards of your deck
-## to your discard pile. If a <Godzilla> card was sent to your discard pile
-## this way, <Destroy> this card and play a "Chibi Godzilla 2nd Form" token.
+## At the beginning of your main phase, send the top 2 cards of your deck to your
+## discard pile.
+## If a <《Godzilla》> card was sent to your discard pile this way, <Destroy> this card
+## and play a “Chibi Godzilla 2nd Form” token. (Tokens are prepared separately from your
+## deck.)
 ##
 ## Tested: No
 ## Known issues: None

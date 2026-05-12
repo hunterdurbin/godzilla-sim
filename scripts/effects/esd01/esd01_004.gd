@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## ESD01-004: Godzilla(2023) - Monster Rank 4
-## <When Invading> If this card has 2 or more <Rage>, your opponent discards
-## cards until they have 2 cards remaining in their hand.
+## <When Invading> If this card has 2 or more <Rage> , your opponent discards cards
+## until they have 2 cards remaining in their hand.
 ##
 ## Tested: Yes
 ## Known issues: None

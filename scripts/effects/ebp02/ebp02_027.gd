@@ -1,10 +1,9 @@
 extends CardEffect
 
 ## EBP02-027: Biollante Plant Beast Form - Monster Rank 3 (Blue)
-## <Opponent's Turn> <Awakening6> If your opponent has a strategy card in play,
-## this card cannot be countered by 40,000 or lower counter power. Instead, it
-## only moves as though it were countered. (Do not play the next Monster Card
-## from your monster deck.) (Opponent must still have enough counter power to pseudo counter)
+## <Opponent’s Turn> <Awakening6> If your opponent has a strategy card in play, this
+## card cannot be countered by 40,000 or lower counter power. Instead, it only moves as
+## though it were countered. (Do not play the next Monster Card from your monster deck.)
 ##
 ## Tested: Yes
 ## Known issues: None

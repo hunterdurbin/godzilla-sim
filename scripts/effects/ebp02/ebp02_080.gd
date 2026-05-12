@@ -1,8 +1,9 @@
 extends CardEffect
 
 ## EBP02-080: Joint Struggle - Strategy Rank 6 (White)
-## Reveal the top 2 cards of your deck. If they differ in at least 1 trait,
-## add them to your hand; otherwise, send them to the discard pile.
+## Reveal the top 2 cards of your deck. If they differ in at least 1 trait, add them to
+## your hand; otherwise, send them to the discard pile. (Example if one is <《Mech》> and
+## the other is <《Mechagodzilla》> and <《Mech》> , you may add them to your hand.)
 ##
 ## Tested: Yes
 ## Known issues: None

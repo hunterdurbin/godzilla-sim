@@ -1,6 +1,8 @@
 extends CardEffect
 # Multi-purpose Fighting System-3 R4
-# <Enter> Choose 1 opponent zone in same column, Destroy all opponent R6- in that zone + adjacent.
+# <Enter> Choose 1 of your opponent’s zones in the same column as this card, then
+# <Destroy> all of your opponent’s rank 6 or lower battle cards in that zone and zones
+# adjacent to it.
 #
 # Tested: Yes
 # Known issues: None

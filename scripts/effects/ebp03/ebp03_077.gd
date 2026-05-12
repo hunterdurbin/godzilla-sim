@@ -1,8 +1,9 @@
 extends CardEffect
 # Rebirth of Mothra 3 (Strategy R4)
 # Choose one:
-# - Return 1 R2 or lower monster card from discard to hand.
-# - If 5+ cards under your monster, return 1 monster card from discard to hand.
+# ・Return 1 rank II or lower monster card from your discard pile to your hand.
+# ・If there are 5 or more cards under your monster card, return 1 monster card from
+# your discard pile to your hand.
 #
 # Tested: No
 # Known issues: None
@@ -49,10 +50,10 @@ func on_enter(ctx: EffectContext) -> void:
 	var options: Array[String] = []
 	var option_ids: Array[String] = []
 	if has_low_rank_monster:
-		options.append("Return R2 or lower monster")
+		options.append(tr("STR_EFF_EBP03_077_CHOICE_A"))
 		option_ids.append("low_rank")
 	if has_five_under and has_any_monster:
-		options.append("Return any monster (5+ under)")
+		options.append(tr("STR_EFF_EBP03_077_CHOICE_B"))
 		option_ids.append("any_monster")
 
 	if options.size() == 1:

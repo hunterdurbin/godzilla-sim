@@ -1,7 +1,11 @@
 extends CardEffect
 # Godzilla(2001) R3
-# <Burst2>
-# <Awakening8> Your counter start: discard R5+ battle for +2 rage, then Destroy all opponent R6-.
+# <Burst2> (You can play this card from rank II. If you do, send this card to your
+# discard pile at the beginning of your next end phase.)
+# <Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or
+# higher battle card from your hand. If you do, increase this card’s <Rage> by 2, then
+# <Destroy> all of your opponent’s rank 6 or lower battle cards. (Active if this card
+# is in zone 8.)
 #
 # Tested: No
 # Known issues: None

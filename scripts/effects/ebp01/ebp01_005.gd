@@ -1,7 +1,9 @@
 extends CardEffect
 
 ## EBP01-005: Godzilla(1955) - Monster Rank 4 (Burst III)
-## <Burst3> <Enter> Your opponent discards cards until they have 4 cards remaining in their hand.
+## <Burst3> (You can play this card from rank III. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
+## <Enter> Your opponent discards cards until they have 4 cards remaining in their hand.
 ##
 ## Tested: Yes
 ## Known issues: None

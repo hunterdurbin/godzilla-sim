@@ -1,8 +1,10 @@
 extends CardEffect
 
 ## ESD02-008: Battra(larva) - Battle Rank 3
-## <Evolution6> <Battra> At the beginning of your main phase, you may search your deck
-## for a rank 6 or lower <Battra> battle card and play it by stacking it on top of this card.
+## <Evolution6> <《Battra》> (At the beginning of your main phase, you may search your
+## deck for a rank 6 or lower <《Battra》> battle card and play it by stacking it on top
+## of this card. Search for 「Battra(imago)」 rank 6 counter power 5000 and you may place
+## it on top of this card.)
 ##
 ## Tested: Yes
 ## Known issues: None

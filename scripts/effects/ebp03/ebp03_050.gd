@@ -1,7 +1,9 @@
 extends CardEffect
 # Rainbow Mothra (Battle R7)
-# <Enter> If Base in play, opponent monster with TL <= 20000 retreats 1 zone.
-# <Evolution8> <Mothra>
+# <Enter> If you have a card with <Base> in play, an opponent’s monster card with
+# 20,000 or less threat level retreats backward by 1 zone.
+# <Evolution8> <《Mothra》> (At the beginning of your main phase, you may play a rank 8
+# or lower <《Mothra》> battle card from your deck by placing it on top of this card.)
 #
 # Tested: No
 # Known issues: None

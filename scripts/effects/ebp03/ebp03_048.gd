@@ -1,6 +1,7 @@
 extends CardEffect
 # Mechagodzilla(1993) (Battle R6)
-# <Enter> If 2+ other battle cards in your zones, reduce opponent rage by 1.
+# <Enter> If there are 2 or more other battle cards in your zones, reduce your
+# opponent’s <Rage> by 1.
 #
 # Tested: No
 # Known issues: None

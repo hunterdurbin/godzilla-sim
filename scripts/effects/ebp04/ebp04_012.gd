@@ -1,9 +1,11 @@
 extends CardEffect
 ## EBP04-012: Biollante Plant Beast Form - Monster Rank 3 (Blue)
-## You may place 1 Rank III monster card from your monster deck underneath your
-## Rank II <Biollante> card to play this card from your hand.
-## <Enter> Place [Tentacle] tokens in every area adjacent to this card (Maximum
-## is 3).
+## You may play this card from your hand by placing 1 rank III card from your monster
+## deck under one of your rank II  《Biollante》 monster cards. (You may play this card
+## from rank II.)
+## <Enter> Play “Tentacles” tokens in all zones adjacent to this card. (Tokens are
+## prepared separately from your deck and must be played as many as possible. Maximum of
+## 3.)
 ##
 ## Tested: Yes
 ## Known issues: None

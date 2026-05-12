@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## EBP03-053: Super Mechagodzilla - Battle Rank 8 (Blue)
-## While your opponent's Rage is 0, this card cannot be Destroyed by opponent's effects.
-## If this card is in the same column as your opponent's monster card, this card gains
-## +3000 counter power for each of your opponent's Rage.
+## While your opponent’s <Rage> is 0, this card cannot be <Destroy> by opponent’s
+## effects.
+## If this card is in the same column as your opponent’s monster card, this card gains
+## +3000 counter power for each of your opponent’s <Rage> .
 ##
 ## Tested: No
 ## Known issues: None

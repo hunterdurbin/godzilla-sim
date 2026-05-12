@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-056: Kumonga (2004) - Battle Rank 2 (Green)
-## If this card is in the same column as your opponent's monster card, and
-## the opponent has 0 <Rage>, your opponent cannot invade.
+## If this card is in the same column as your opponent’s monster card and your
+## opponent’s <Rage> is 0, your opponent cannot invade.
 ##
 ## Tested: Yes
 ## Known issues: None

@@ -1,9 +1,9 @@
 extends CardEffect
 
 ## EBP01-015: Godzilla(Fest Godzilla) - Monster Rank 4
-## <Your Turn> <Enter> Reveal the top 5 cards of your deck and send them to your discard pile.
-## For each monster card revealed this way, increase this card's <Rage> by 1.
-## If a card with <Step2> (invasion_icon >= 2) is revealed this way, this card advances to zone 6.
+## <Your Turn> <Enter> Reveal the top 5 cards of your deck and send them to your discard
+## pile. For each monster card revealed this way, increase this card's <Rage> by 1. If a
+## card with <Step2> is revealed this way, this card advances to zone 6.
 ##
 ## Tested: Yes
 ## Known issues: None

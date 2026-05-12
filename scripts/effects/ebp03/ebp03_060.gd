@@ -1,6 +1,7 @@
 extends CardEffect
 # Mothra(imago)(1961) (Battle R5)
-# <Revenge> Reduce opponent rage by 1.
+# <Revenge> Reduce your opponent’s <Rage> by 1. (Activates when destroyed by a card
+# effect or monster card movement.)
 #
 # Tested: No
 # Known issues: None

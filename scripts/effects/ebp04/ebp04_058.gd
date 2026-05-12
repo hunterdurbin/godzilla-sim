@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-058: Servum - Battle Rank 3 (Green)
-## <Awakening 4> If this card is in an area adjacent to your monster card,
-## this card gains +3000 counter power.
+## <Awakening 4> If this card is in a zone adjacent to your monster card, this card
+## gains +3000 counter power. (Active if your monster card is in zone 4 or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

@@ -57,6 +57,7 @@ var bot_speed_value: int = 0               # 0=Auto, 1-10 = 0.1s..1.0s delay
 var bot_playstyle_value: int = 0           # 0=Auto, 1=Invasion, 2=Counter, 3=Balanced
 var bot_random_deck_enabled: bool = false
 var bot_deck_weights: Dictionary = {}      # {deck_name: int weight, 0=disabled, >=1=weight}
+var bot_folder_weights: Dictionary = {}    # {folder_path: int weight, 0/missing=disabled}
 
 # Update settings
 var skipped_version: String = ""
@@ -156,6 +157,7 @@ func _save() -> void:
 	config.set_value("bot", "playstyle_value", bot_playstyle_value)
 	config.set_value("bot", "random_deck_enabled", bot_random_deck_enabled)
 	config.set_value("bot", "deck_weights", bot_deck_weights)
+	config.set_value("bot", "folder_weights", bot_folder_weights)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
 	config.set_value("updates", "skipped_version", skipped_version)
 	config.set_value("cache", "applied_artwork_fixes", applied_artwork_fixes)
@@ -214,6 +216,7 @@ func _load() -> void:
 	bot_playstyle_value = config.get_value("bot", "playstyle_value", 0)
 	bot_random_deck_enabled = config.get_value("bot", "random_deck_enabled", false)
 	bot_deck_weights = config.get_value("bot", "deck_weights", {})
+	bot_folder_weights = config.get_value("bot", "folder_weights", {})
 	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	use_mobile_layout = config.get_value("advanced", "use_mobile_layout", _mobile_default)
 	skipped_version = config.get_value("updates", "skipped_version", "")

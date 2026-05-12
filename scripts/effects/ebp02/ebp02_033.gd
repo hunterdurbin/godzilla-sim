@@ -1,7 +1,8 @@
 extends CardEffect
 
 ## EBP02-033: Little Godzilla - Battle Rank 5 (Blue)
-## <Awakening4> This card gains +3000 counter power.
+## <Awakening4> This card gains +3000 counter power. (Active if your monster card is in
+## zone 4 or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

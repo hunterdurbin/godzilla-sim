@@ -1,7 +1,7 @@
 extends CardEffect
 
 ## EBP01-023: Mechagodzilla(1975) - Battle Rank 5
-## If your monster card has 2 or more <Rage>, this card gains +3000 counter power.
+## If your monster card has 2 or more <Rage> , this card gains +3000 counter power.
 ##
 ## Tested: Yes
 ## Known issues: None

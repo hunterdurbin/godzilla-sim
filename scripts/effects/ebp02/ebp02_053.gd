@@ -1,8 +1,9 @@
 extends CardEffect
 
 ## EBP02-053: SpaceGodzilla - Monster Rank 2 (Green)
-## <When Invading> Play 1 "Crystals" token.
-## If there is a "Crystals" in your zones, this card gains +5000 threat level.
+## <When Invading> Play 1 “Crystals” token. (Tokens are prepared separately from your
+## deck.)
+## If there is a “Crystals” in your zones, this card gains +5000 threat level.
 ##
 ## Tested: No
 ## Known issues: None

@@ -1,6 +1,7 @@
 extends CardEffect
 # Jet Jaguar(1973) (Battle R5)
-# <Enter> Discard 1 strategy card from hand, reduce opponent rage by 1.
+# <Enter> You may discard 1 strategy card from your hand. If you do, reduce your
+# opponent’s <Rage> by 1.
 #
 # Tested: No
 # Known issues: None

@@ -1,10 +1,11 @@
 extends CardEffect
 
 ## EBP01-066: Godzilla vs. Biollante - Strategy Rank 7 (Blue)
-## When this card is discarded from your hand by your opponent's effect, increase
-## your monster card's <Rage> by 2.
-## <Opponent's Turn> Your monster card cannot be countered by 40,000 or lower counter
-## power. Instead, it only moves as though it were countered.
+## When this card is discarded from your hand by your opponent's effect, increase your
+## monster card’s <Rage> by 2.
+## <Opponent’s Turn> Your monster card cannot be countered by 40,000 or lower counter
+## power. Instead, it only moves as though it were countered. (Do not play the next
+## monster card from your monster deck.)
 ##
 ## Tested: Yes
 ## Known issues: None

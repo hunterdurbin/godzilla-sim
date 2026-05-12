@@ -1,7 +1,8 @@
 extends CardEffect
 ## EBP04-051: Super Mechagodzilla - Battle Rank 6 (Blue)
-## <Enter> If this is in the same column as your opponent's monster card,
-## your opponent's 30,000 or less threat monster card retreats back 1 zone.
+## <Enter> If this card is in the same column as your opponent’s monster card, retreat 1
+## of your opponent’s monster cards with 30,000 or lower threat level backward by 1
+## zone.
 ##
 ## Tested: Yes
 ## Known issues: None

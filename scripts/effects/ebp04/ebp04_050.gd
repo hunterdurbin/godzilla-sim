@@ -1,9 +1,8 @@
 extends CardEffect
 ## EBP04-050: Battra Larva - Battle Rank 6 (Blue)
-## Any time your monster card invades and this is in Area 8, enact 1 of the
-## following:
-## - Draw 1 card and discard 1 card from your hand.
-## - Discard 1 card from your hand to decrease your opponent's <Rage> by 1.
+## Whenever your monster card invades, if this card is in zone 8, choose one:
+## ・Draw 1 card, then discard 1 card.
+## ・Discard 1 card from your hand. If you do, reduce your opponent’s <Rage> by 1.
 ##
 ## Tested: Yes
 ## Known issues: None

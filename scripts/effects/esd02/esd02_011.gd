@@ -1,8 +1,8 @@
 extends CardEffect
 
 ## ESD02-011: Battra(imago) - Battle Rank 6
-## <Awakening6> This card gains +3000 counter power.
-## (Active if your monster card is in zone 6 or beyond.)
+## <Awakening6> This card gains ＋3000 counter power. (Active if your monster card is in
+## zone 6 or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

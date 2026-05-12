@@ -1,9 +1,9 @@
 extends CardEffect
 
 ## EBP03-041: Godzilla(2023) - Battle Rank 8 (Red)
-## <Enter> If this is in the same column as your opponent's monster card and your monster
-## card has 2 or more Rage, reduce your opponent's Rage by 2.
-## When this card would be Destroyed, put this card on the bottom of your deck instead.
+## <Enter> If this is in the same column as your opponent’s monster card and your
+## monster card has 2 or more <Rage> , reduce your opponent’s <Rage> by 2.
+## When this card would be <Destroy> , put this card on the bottom of your deck instead.
 ##
 ## Tested: No
 ## Known issues: None

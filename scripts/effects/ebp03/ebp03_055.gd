@@ -1,6 +1,7 @@
 extends CardEffect
 # Primitive Mothra (Battle R3)
-# <Enter> Put up to 1 Mothra battle card from discard on top of deck.
+# <Enter> You may put up to 1 <《Mothra》> battle card from your discard pile on top of
+# your deck.
 #
 # Tested: No
 # Known issues: None

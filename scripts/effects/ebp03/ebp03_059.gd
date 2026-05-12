@@ -1,6 +1,7 @@
 extends CardEffect
 # Cretaceous King Ghidorah(1998) (Battle R5)
-# <Revenge> Return up to 1 King Ghidorah monster card from discard to hand.
+# <Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to
+# your hand. (Activates when destroyed by a card effect or monster card movement.)
 #
 # Tested: No
 # Known issues: None

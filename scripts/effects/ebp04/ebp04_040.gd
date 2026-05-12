@@ -1,7 +1,8 @@
 extends CardEffect
 ## EBP04-040: Anguirus (2004) - Battle Rank 5 (Red)
-## <Awakening 6> <Enter> If you have 1 or more <Rodan> and <King Caesar>
-## battle cards each in your zones, increase your monster card's <Rage> by 3.
+## <Awakening 6> <Enter> If you have at least 1 《Rodan》 battle card and at least 1 《King
+## Caesar》 battle card in your zones, increase your monster card’s <Rage> by 3. (Active
+## if your monster card is in zone 6 or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

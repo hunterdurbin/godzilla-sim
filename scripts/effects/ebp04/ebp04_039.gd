@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-039: Zilla - Battle Rank 4 (Red)
-## <Opponent's Turn> Each time one of your non-red battle cards are <Destroy>,
-## move this card to an area adjacent to your monster card.
+## <Opponent’s Turn> Whenever one of your non-red battle cards is <Destroy>, move this
+## card to a zone adjacent to your monster card.
 ##
 ## Tested: Yes
 ## Known issues: None

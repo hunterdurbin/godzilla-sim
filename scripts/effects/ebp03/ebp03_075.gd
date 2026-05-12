@@ -1,7 +1,9 @@
 extends CardEffect
 # Yakusugi (Strategy R3)
-# <Base>
-# <Your Turn> Counter start: evolve 1 of your R4 or lower battle cards with Evolution.
+# <Base> When any monster card invades into zones 6–8, <Destroy> this card. (Cards with
+# Base are not sent to the discard pile at the start phase.)
+# <Your Turn> At the beginning of your counter phase, evolve 1 of your rank 4 or lower
+# battle cards with <Evolution> .
 #
 # Tested: No, Looks good at glance
 # Known issues: None

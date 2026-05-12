@@ -2,8 +2,8 @@ extends CardEffect
 
 ## EBP03-074: A Journey of 130 Million Years - Strategy Rank 6 (Blue)
 ## If your monster card is rank III or lower, play 1 monster card from your monster deck
-## that shares a trait with it, whose rank is 1 higher than your monster card's current rank.
-## (This play does not increase Rage.)
+## that shares a trait with it, whose its rank is 1 higher than your monster card's
+## current rank. (This play does not increase <Rage> .)
 ##
 ## Tested: No
 ## Known issues: None

@@ -92,7 +92,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp02/ebp02_009.gd": ["on_when_invading","on_burst_discard","get_burst_rank"],
 	"res://scripts/effects/ebp02/ebp02_010.gd": ["on_enter"],
 	"res://scripts/effects/ebp02/ebp02_011.gd": ["get_counter_power_modifier"],
-	"res://scripts/effects/ebp02/ebp02_012.gd": ["on_phase_start","can_intercept_strategy_discard","get_effect_categories"],
+	"res://scripts/effects/ebp02/ebp02_012.gd": ["on_phase_start","can_intercept_strategy_discard","should_intercept_strategy_discard","get_effect_categories"],
 	"res://scripts/effects/ebp02/ebp02_013.gd": ["on_enter"],
 	"res://scripts/effects/ebp02/ebp02_014.gd": ["on_enter"],
 	"res://scripts/effects/ebp02/ebp02_015.gd": ["get_counter_power_modifier"],

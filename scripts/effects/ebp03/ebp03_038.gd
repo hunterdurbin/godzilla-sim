@@ -1,6 +1,7 @@
 extends CardEffect
 # Multi-purpose Fighting System-3 (Battle R6)
-# Counter start: if opponent has 2+ rage, Destroy all your battle cards adjacent to this.
+# At the beginning of your counter phase, if your opponent has 2 or more <Rage> ,
+# <Destroy> all of your battle cards in zones adjacent to this card.
 #
 # Tested: No
 # Known issues: None

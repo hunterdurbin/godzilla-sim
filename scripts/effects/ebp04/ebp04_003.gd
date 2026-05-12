@@ -1,8 +1,9 @@
 extends CardEffect
 ## EBP04-003: Godzilla (2004) - Monster Rank 3 (Red)
-## <Burst II>
-## <Enter> If you have a Rank 1 strategy card in play, <Destroy> one of your
-## opponent's Rank 6 or lower battle cards.
+## <Burst 2> (You can play this card from rank II. If you do, send this card to your
+## discard pile at the beginning of that turn’s end phase.)
+## <Enter> If you have a rank 1 strategy card in play, <Destroy> 1 of your opponent’s
+## rank 6 or lower battle cards.
 ##
 ## Tested: Yes
 ## Known issues: None

@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-023: Godzilla Telestorius - Monster Rank 3 (Green)
-## For each of your opponent's battle cards in the same column as this card,
-## this card gains +10,000 threat.
+## This card gains +10,000 threat level for each battle card your opponent has in the
+## same column as this card.
 ##
 ## Tested: Yes
 ## Known issues: None

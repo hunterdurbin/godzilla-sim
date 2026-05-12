@@ -1,8 +1,9 @@
 extends CardEffect
 ## EBP04-019: Godzilla (Fest Godzilla II) - Monster Rank 4 (Blue)
-## If this is in a zone equal to or greater than your opponent's monster card's
-## and you have 5 or more monster cards in your discard pile, increase this
-## card's threat by +10000 and add +10000 to your total counter power.
+## If the number of the zone this card occupies is greater than or equal to the number
+## of the zone the opponent’s monster card occupies, and you have 5 or more monster
+## cards in your discard pile, this card gains +10,000 threat level, and your total
+## counter power is increased by +10,000.
 ##
 ## Tested: Yes
 ## Known issues: None

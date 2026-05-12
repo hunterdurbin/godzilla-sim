@@ -1,7 +1,7 @@
 extends CardEffect
 ## EBP04-042: Mothra Imago (2004) - Battle Rank 7 (Red)
-## <Enter> If you have 3 or more rank 1 strategy cards in your discard pile,
-## decrease your opponent's <Rage> by 1.
+## <Enter> If you have 3 or more rank 1 strategy cards in your discard pile, reduce your
+## opponent’s <Rage> by 1.
 ##
 ## Tested: Yes
 ## Known issues: None

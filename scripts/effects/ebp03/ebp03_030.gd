@@ -1,7 +1,7 @@
 extends CardEffect
 # SHIRASAGI : AC-3 (Battle R2)
-# Your Mechagodzilla battle cards in zone 8 get +3000 CP.
-# <Enter> Move 1 other battle card in your zones to an unoccupied zone.
+# Your <《Mechagodzilla》> battle cards in your zone 8 gain +3000 counter power.
+# <Enter> You may move 1 other battle card in your zones to an unoccupied zone.
 #
 # Tested: No
 # Known issues: None

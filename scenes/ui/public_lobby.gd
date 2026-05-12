@@ -151,7 +151,7 @@ func _on_create_pressed() -> void:
 	refresh_button.disabled = true
 	_is_hosting = true
 	_set_join_buttons_disabled(true)
-	deck_select.deck_dropdown.disabled = true
+	deck_select.set_disabled(true)
 	mode_dropdown.disabled = true
 	status_label.text = tr("STR_PUBLIC_CREATING")
 
@@ -162,7 +162,7 @@ func _on_create_pressed() -> void:
 		refresh_button.disabled = false
 		_is_hosting = false
 		_set_join_buttons_disabled(not _deck_valid)
-		deck_select.deck_dropdown.disabled = false
+		deck_select.set_disabled(false)
 		mode_dropdown.disabled = false
 		return
 
@@ -179,7 +179,7 @@ func _on_join_room(code: String) -> void:
 	refresh_button.disabled = true
 	_is_joining = true
 	_set_join_buttons_disabled(true)
-	deck_select.deck_dropdown.disabled = true
+	deck_select.set_disabled(true)
 	mode_dropdown.disabled = true
 	status_label.text = tr("STR_PUBLIC_JOINING_FMT") % code
 
@@ -190,7 +190,7 @@ func _on_join_room(code: String) -> void:
 		refresh_button.disabled = false
 		_is_joining = false
 		_set_join_buttons_disabled(not _deck_valid)
-		deck_select.deck_dropdown.disabled = false
+		deck_select.set_disabled(false)
 		mode_dropdown.disabled = false
 		_fetch_rooms()
 		return
@@ -230,7 +230,7 @@ func _on_player_disconnected(_peer_id: int) -> void:
 	_is_hosting = false
 	_is_joining = false
 	_set_join_buttons_disabled(not _deck_valid)
-	deck_select.deck_dropdown.disabled = false
+	deck_select.set_disabled(false)
 	mode_dropdown.disabled = false
 
 
@@ -241,7 +241,7 @@ func _on_connection_failed() -> void:
 	_is_hosting = false
 	_is_joining = false
 	_set_join_buttons_disabled(not _deck_valid)
-	deck_select.deck_dropdown.disabled = false
+	deck_select.set_disabled(false)
 	mode_dropdown.disabled = false
 
 
@@ -253,7 +253,7 @@ func _on_version_mismatch(local_version: String, remote_version: String) -> void
 	_is_hosting = false
 	_is_joining = false
 	_set_join_buttons_disabled(not _deck_valid)
-	deck_select.deck_dropdown.disabled = false
+	deck_select.set_disabled(false)
 	mode_dropdown.disabled = false
 
 

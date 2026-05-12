@@ -1,8 +1,8 @@
 extends CardEffect
 ## EBP04-035: Kaiser Ghidorah - Monster Rank 4 (Red, Blue, Green)
-## <Enter> <Destroy> one card at a time, in order, from your opponents lowest
-## numbered area with a battle card up to the number of cards equal to the
-## number of colors of battle cards in your discard pile.
+## <Enter> Starting with the battle card in your opponent’s zone with the lowest number,
+## <Destroy> battle cards one by one up to the number of different colors among battle
+## cards in your discard pile.
 ##
 ## Tested: Yes
 ## Known issues: None

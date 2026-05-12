@@ -2,9 +2,9 @@ extends CardEffect
 
 ## EBP01-064: Godzilla vs. Megaguirus - Strategy Rank 5 (Blue)
 ## Choose one of the following:
-## - <Destroy> 1 of your opponent's rank 4 or lower battle cards.
-## - If you have 4 or more battle cards in your zones, choose 1 of your opponent's
-##   zones and <Destroy> all battle cards in that zone and zones adjacent to it.
+## ・ <Destroy> 1 of your opponent’s rank 4 or lower battle cards.
+## ・If you have 4 or more battle cards in your zones, choose 1 of your opponent’s zones
+## and <Destroy> all battle cards in that zone and zones adjacent to it.
 ##
 ## Tested: Yes
 ## Known issues: None
@@ -26,14 +26,14 @@ func on_enter(ctx: EffectContext) -> void:
 	var has_r4_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(
 		ctx.opponent.player_id, -1, 4).is_empty()
 	if has_r4_targets:
-		options.append("Destroy 1 of opponent's rank 4 or lower battle cards")
+		options.append(tr("STR_EFF_EBP01_064_CHOICE_A"))
 		option_ids.append(0)
 
 	# Option 1: Destroy zone + adjacent (requires 4+ own battle cards)
 	if ctx.owner.get_battle_card_zone_indices().size() >= 4:
 		var has_opp_cards: bool = not ctx.opponent.get_battle_card_zone_indices().is_empty()
 		if has_opp_cards:
-			options.append("Choose a zone and destroy all cards there and in adjacent zones")
+			options.append(tr("STR_EFF_EBP01_064_CHOICE_B"))
 			option_ids.append(1)
 
 	if options.is_empty():

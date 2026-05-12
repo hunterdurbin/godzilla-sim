@@ -1,8 +1,9 @@
 extends CardEffect
 
 ## EBP01-052: Megaguirus - Battle Rank 5 (Blue)
-## <Awakening4> If this card is in zones 1-5 and you have 5 or more monster cards
-## in your discard pile, this card cannot be <Destroy> by your opponent's effects.
+## <Awakening4> If this card is in zones 1-5 and you have 5 or more monster cards in
+## your discard pile, this card cannot be <Destroy> by your opponent's effects. (Active
+## if your monster card is in zone 4 or beyond.)
 ##
 ## Tested: Yes
 ## Known issues: None

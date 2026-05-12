@@ -1,8 +1,8 @@
 extends CardEffect
 ## EBP04-002: Godzilla (2004) - Monster Rank 2 (Red)
-## Each time you <Destroy> an opponent's battle card in the same column as this
-## card, if you have a Rank 1 strategy card in play, your opponent discards until
-## they have 2 cards in hand.
+## Whenever an opponent’s battle card in the same column as this card is <Destroy>, if
+## you have a rank 1 strategy card in play, your opponent discards cards until they have
+## 2 cards remaining in their hand.
 ##
 ## Tested: Yes
 ## Known issues: None

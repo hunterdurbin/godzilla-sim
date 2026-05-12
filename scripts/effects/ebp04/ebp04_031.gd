@@ -1,10 +1,12 @@
 extends CardEffect
 ## EBP04-031: Monster X - Monster Rank 1 (Red, Blue, Green)
-## This card's X Threat increases by +3000 for each color of battle card in
-## your zones. In addition, if the opponent has 1 or less battle cards in
-## their zones, they cannot counter this.
-## <Resonance> Red, Blue, Green.
-## - You may only use Battle Cards with <Final Wars>.
+## This card’s threat level X is equal to 3000 times the number of different colors
+## among battle cards in your zones. If your opponent’s zones have 1 or fewer battle
+## cards, this card cannot be countered.
+## <Resonance> Red/Blue/Green
+## ・Battle cards must be 《Final Wars》 only.
+## (Red, blue, green, and white may be mixed, but your monster deck and main deck must
+## be constructed to satisfy the above conditions.)
 ##
 ## Tested: Yes
 ## Known issues: None

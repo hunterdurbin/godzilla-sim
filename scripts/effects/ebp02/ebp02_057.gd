@@ -1,9 +1,10 @@
 extends CardEffect
 
 ## EBP02-057: SpaceGodzilla Flying Form - Monster Rank 4 (Green)
-## <Enter> Move 1 of your opponent's battle cards in the same column as this card
-## to an unoccupied zone.
-## Whenever this card's <Rage> is increased, play 2 "Crystals" tokens.
+## <Enter> Move 1 of your opponent's battle cards in the same column as this card to an
+## unoccupied zone.
+## Whenever this card's <Rage> is increased, play 2 “Crystals” tokens. (Tokens are
+## prepared separately from your deck.)
 ##
 ## Tested: No
 ## Known issues: None

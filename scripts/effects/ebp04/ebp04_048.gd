@@ -1,6 +1,6 @@
 extends CardEffect
 ## EBP04-048: Little Godzilla - Battle Rank 5 (Blue)
-## Your in play strategy cards cannot be <Destroy> by your opponents effects.
+## Your strategy cards in play cannot be <Destroy> by your opponent’s effects.
 ##
 ## Tested: Yes
 ## Known issues: None

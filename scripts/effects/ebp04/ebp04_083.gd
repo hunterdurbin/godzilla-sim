@@ -1,6 +1,6 @@
 extends CardEffect
 ## EBP04-083: Godzilla vs. Destoroyah - Strategy Rank 6 (Blue)
-## <Destroy> all of your opponent's battle cards in zones 6-8.
+## <Destroy> all of your opponent’s battle cards in zones 6–8.
 ##
 ## Tested: Yes
 ## Known issues: None

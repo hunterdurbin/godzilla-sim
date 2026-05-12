@@ -1,7 +1,8 @@
 extends CardEffect
 
 ## EBP02-013: Minilla(1969) - Battle Rank 5 (Red)
-## <Enter> If your monster card has 2 or more <Rage>, advance your monster card to zone 5.
+## <Enter> If your monster card has 2 or more <Rage> , advance your monster card to zone
+## 5.
 ##
 ## Tested: Yes
 ## Known issues: None

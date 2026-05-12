@@ -81,6 +81,10 @@ STR_OPTIONS_ART_MATCH_TITLE,Switch Card Artwork?,カードアートを切り替�
 STR_OPTIONS_ART_MATCH_PROMPT_FMT,Also switch card artwork to {LANG}?,カードアートも {LANG} に切り替えますか？
 STR_OPTIONS_ART_MATCH_YES,"Yes, switch",はい、切り替える
 STR_OPTIONS_ART_MATCH_NO,Keep current,このまま
+STR_OPTIONS_ART_UPDATE_TITLE,Download Card Artwork?,カードアートをダウンロードしますか？
+STR_OPTIONS_ART_UPDATE_PROMPT_FMT,{N} card image(s) aren't downloaded for {LANG}. Download now?,{LANG} のカード画像が {N} 枚ダウンロードされていません。今ダウンロードしますか？
+STR_OPTIONS_ART_UPDATE_DOWNLOAD,"Yes, download",はい、ダウンロード
+STR_OPTIONS_ART_UPDATE_SKIP,Not now,後で
 STR_OPTIONS_AUTOMATION_TITLE,Automation,自動化
 STR_OPTIONS_CUSTOMIZE_TITLE,Customize,カスタマイズ
 STR_OPTIONS_ADVANCED_TITLE,Advanced,詳細
@@ -274,10 +278,10 @@ STR_PHASE_START,Start Phase,スタートフェイズ
 STR_PHASE_MAIN,Main Phase,メインフェイズ
 STR_PHASE_COUNTER,Counter Phase,撃退フェイズ
 STR_PHASE_END,End Phase,エンドフェイズ
-STR_PB_THREAT,Threat:,脅威:
+STR_PB_THREAT,Threat:,脅威度:
 STR_PB_THREAT_SHORT,T:,脅:
-STR_PB_RAGE_ZONE,Rage Zone,怒りゾーン
-STR_PB_CP,CP:,CP:
+STR_PB_RAGE_ZONE,Rage Zone,怒り置き場
+STR_PB_CP,CP:,撃退力:
 STR_PB_DISCARD,Discard,捨て札
 STR_GB_TURN_FMT,Turn: {N},ターン: {N}
 STR_GB_TURN_HEADER_FMT,Turn {N} | {PLAYER} - {PHASE},ターン {N} | {PLAYER} - {PHASE}
@@ -339,9 +343,14 @@ STR_GB_COIN_FLIP_WON,You won the coin flip! Go first or second?,コイントス�
 STR_GB_GO_FIRST,Go First,先攻
 STR_GB_GO_SECOND,Go Second,後攻
 STR_GB_LOG,Log,ログ
-STR_GB_CP,CP,CP
+STR_GB_CP,CP,撃退力
 STR_GB_TURNS,Turns,ターン
 STR_GB_SELECT_ZONE,Select a ZONE to place the battle card:,交戦カードを置くエリアを選択:
+STR_GB_SELECT_BATTLE_TO_PLAY,Select a BATTLE card to play:,出現させる交戦カードを選択:
+STR_GB_SELECT_MONSTER_TO_PLAY,Select a MONSTER card to play:,出現させる怪獣カードを選択:
+STR_GB_SELECT_STRATEGY_TO_ACTIVATE,Select a STRATEGY card to activate:,発動する戦略カードを選択:
+STR_GB_SELECT_RAGE_CARD,Select a MONSTER card to discard for Rage:,<怒り>のため捨てる怪獣カードを選択:
+STR_GB_SELECT_INVASION_CARD,Select a card to discard for Invasion:,進攻のため捨てるカードを選択:
 STR_GB_NO_DISCARD,No cards in discard pile.,捨て札にカードがありません。
 STR_GB_NO_MONSTER_DECK,No cards remaining in monster deck.,怪獣デッキにカードが残っていません。
 STR_GB_ZONE_HEADER_FMT,Zone {N} ({C} cards),エリア {N} ({C}枚)
@@ -554,6 +563,7 @@ STR_DB_WARNINGS,Warnings,警告
 STR_VALIDATE_UNKNOWN_CARD_FMT,Unknown card: %s,不明なカード: %s
 STR_VALIDATE_NOT_MONSTER_FMT,%s is not a monster card,%s は怪獣カードではありません
 STR_VALIDATE_TOKEN_IN_DECK_FMT,%s has Token trait (not allowed in decks),%s はトークン特徴を持っています (デッキに入れられません)
+STR_VALIDATE_RAGE_IN_DECK_FMT,%s is a Rage marker (not allowed in decks),%s は怒りマーカーです (デッキに入れられません)
 STR_VALIDATE_DUPLICATE_RANK_FMT,Duplicate monster rank %d,等級 %d の怪獣が重複しています
 STR_VALIDATE_MONSTER_COUNT_FMT,Monster deck must have exactly 4 cards (has %d),怪獣デッキはちょうど4枚必要です (現在 %d 枚)
 STR_VALIDATE_MISSING_RANK_FMT,Monster deck missing rank %d,怪獣デッキに等級 %d がありません
@@ -624,6 +634,7 @@ STR_EFF_CHOOSE_ABILITY,Choose which ability to resolve:,発動する能力を選
 STR_EFF_CHOOSE_ORDER,Choose effect order:,効果の解決順を選ぶ:
 STR_EFF_DESTROY_THEN_RETREAT_FMT,"Destroy zones %s first, then retreat","先にエリア%sを<破壊>、次に後退"
 STR_EFF_RETREAT_THEN_DESTROY_FMT,"Retreat first, then destroy zones %s","先に後退、次にエリア%sを<破壊>"
+STR_EFF_EBP02_012_PROMPT_FMT,Place %s under %s instead of sending it to discard?,%sを捨て札に送らず%sの下に置く?
 STR_EFF_REVEALED_CARDS,Revealed cards:,公開されたカード:
 STR_EFF_REVEALED_FROM_DECK_TOP,Revealed from deck top:,山札の上から公開:
 STR_EFF_DECK_REVEAL,Revealed from deck (select any to confirm):,山札から公開 (どれか選んで確定):
@@ -641,7 +652,7 @@ STR_EFF_DESTROY_OPP_BEFORE_ZONE_FMT,Choose an opponent's battle card at or befor
 STR_EFF_DESTROY_OPP_RANK_LEFT_COL,Choose a battle card to destroy from the leftmost column:,最も左の縦列から<破壊>する交戦カードを選ぶ:
 STR_EFF_DESTROY_OPP_RANK_RIGHT_COL,Choose a battle card to destroy from the rightmost column:,最も右の縦列から<破壊>する交戦カードを選ぶ:
 STR_EFF_DESTROY_OPP_CP_LEQ_FMT,Destroy an opponent's battle card with 6000 or less CP in zones 1-5 (%d left):,エリア1〜5にいる撃退力6000以下の相手の交戦カードを<破壊> (残り%d):
-STR_EFF_DESTROY_OPP_REMAINING_RANKS_FMT,Destroy an opponent's battle card (total remaining ranks must reach %d or less):,相手の交戦カードを<破壊>する (残り等級合計が%d以下になるまで):
+STR_EFF_EBP04_024_DESTROY_FMT,Destroy an opponent's battle card (rank budget remaining: %d) (or skip):,相手の交戦カードを<破壊>する (残り等級コスト%d) (またはスキップ):
 STR_EFF_DESTROY_OWN_RANK_HIGHER_FMT,Destroy 1 of your rank %d or higher battle cards:,あなたの等級%d以上の交戦カードを1枚<破壊>する:
 STR_EFF_DESTROY_OWN_RANK_LOWER_FMT,Choose a rank %d or lower battle card to destroy:,等級%d以下の交戦カードを選んで<破壊>:
 STR_EFF_DESTROY_OPP_RANK_LOWER_LIST_FMT,Destroy %d opponent rank %d or lower battle card:,相手の等級%d以下の交戦カードを%d枚<破壊>する:
@@ -758,9 +769,26 @@ STR_EFF_EBP04_077_FROM_DECK,Choose 1 Mechagodzilla battle card to add to hand:,�
 STR_EFF_EBP04_077_PLACE_8,Place in Area 8,エリア8に置く
 STR_EFF_EBP04_077_PLACE_HAND,Add to hand,手札に加える
 STR_EFF_EBP04_079_PICK,Choose the next Final Wars battle card to play:,次に出す<ファイナルウォーズ>の交戦カードを選ぶ:
-STR_EFF_EBP03_029_CHOICE_A,Destroy all battle cards of both players,両プレイヤーの交戦カードをすべて<破壊>
-STR_EFF_EBP03_029_CHOICE_B,Each player discards to 2 cards in hand,両プレイヤーは手札を2枚になるよう捨てる
-STR_EFF_EBP03_029_CHOICE_C,Reduce each player's Rage by 2,両プレイヤーの<怒り>を2減らす
+STR_EFF_EBP03_029_CHOICE_A,Destroy all battle cards of both players,各プレイヤーの交戦カードをすべて<破壊>
+STR_EFF_EBP03_029_CHOICE_B,Each player discards to 2 cards in hand,各プレイヤーは手札を2枚になるよう捨てる
+STR_EFF_EBP03_029_CHOICE_C,Reduce each player's Rage by 2,各プレイヤーの<怒り>を2減らす
+STR_EFF_EBP01_064_CHOICE_A,Destroy 1 of opponent's rank 4 or lower battle cards,相手の等級4以下の交戦カードを1枚<破壊>
+STR_EFF_EBP01_064_CHOICE_B,Choose a zone and destroy all cards there and in adjacent zones,エリアを選び、そのエリアと隣接エリアのすべてのカードを<破壊>
+STR_EFF_EBP02_038_CHOICE_A,Destroy 1 of opponent's rank 5 or lower battle cards,相手の等級5以下の交戦カードを1枚<破壊>
+STR_EFF_EBP02_038_CHOICE_B,Destroy opponent's battle card in zone 8,エリア8にいる相手の交戦カードを<破壊>
+STR_EFF_EBP02_049_CHOICE_A,Destroy 3 of opponent's rank 5 or lower battle cards,相手の等級5以下の交戦カードを3枚<破壊>
+STR_EFF_EBP02_049_CHOICE_B,Opponent discards to 3 cards in hand,相手は手札を3枚になるよう捨てる
+STR_EFF_EBP02_049_CHOICE_C,Send top 3 cards of your deck to discard,山札の上から3枚を捨て札に送る
+STR_EFF_EBP02_050_CHOICE_A,Destroy 3 of opponent's rank 6 or lower battle cards,相手の等級6以下の交戦カードを3枚<破壊>
+STR_EFF_EBP02_050_CHOICE_B,Opponent discards to 2 cards in hand,相手は手札を2枚になるよう捨てる
+STR_EFF_EBP02_050_CHOICE_C,Increase Rage by 3,<怒り>を3増やす
+STR_EFF_EBP02_071_CHOICE_A,Destroy 3 of opponent's rank 4 or lower battle cards,相手の等級4以下の交戦カードを3枚<破壊>
+STR_EFF_EBP02_071_CHOICE_B,Awakening6: Destroy 2 of opponent's rank 6 or lower battle cards,<覚醒6>: 相手の等級6以下の交戦カードを2枚<破壊>
+STR_EFF_EBP02_071_CHOICE_C,Awakening8: Destroy 1 of opponent's battle cards,<覚醒8>: 相手の交戦カードを1枚<破壊>
+STR_EFF_EBP03_046_CHOICE_A,Destroy 1 opponent strategy,相手の戦略カードを1枚<破壊>
+STR_EFF_EBP03_046_CHOICE_B,Reduce opponent rage by 1,相手の<怒り>を1減らす
+STR_EFF_EBP03_077_CHOICE_A,Return R2 or lower monster,等級2以下の怪獣カードを戻す
+STR_EFF_EBP03_077_CHOICE_B,Return any monster (5+ under),怪獣カードを戻す (このカードの下に5枚以上)
 STR_EFF_ESD01_002_SEARCH,Search for a Rank III Godzilla(2023) with Burst,<強襲>を持つ等級3の「ゴジラ(2023)」を探す
 STR_EFF_ESD01_012_PROMPT,Choose an empty zone to move this card to:,このカードを移動する空きエリアを選ぶ:
 STR_EFF_ESD01_014_SEARCH,Search for a Godzilla(2023) battle card to play,出す「ゴジラ(2023)」の交戦カードを探す
@@ -827,3 +855,21 @@ STR_GB_CONCEDE,Concede,降参
 STR_GB_MAIN_MENU,Main Menu,メインメニュー
 STR_EFF_EBP04_078_BLOCKED,Crawling Calamity: Opponent's monster move is blocked by an effect.,「這い寄る災厄」: 相手の怪獣の移動は効果で阻止されました。
 STR_EFF_EBP04_078_TELEPORT_FMT,Crawling Calamity: Opponent's monster teleported from zone %d to zone %d.,「這い寄る災厄」: 相手の怪獣がエリア%dからエリア%dへ転移しました。
+STR_DLV_SEARCH_PLACEHOLDER,Search decks…,デッキを検索…
+STR_DB_MOVE,Move to…,移動…
+STR_DLV_ROOT,Decks,デッキ
+STR_DLV_NEW_FOLDER,+ New folder…,+ 新規フォルダ…
+STR_DLV_NEW_FOLDER_PROMPT,Folder name:,フォルダ名:
+STR_DLV_MOVE_TITLE,Move Deck,デッキを移動
+STR_DLV_MOVE_INFO,"Move ""%s"" to which folder?","「%s」をどのフォルダに移動しますか?"
+STR_DLV_FOLDER_EXISTS,A deck with that name already exists in the target folder.,移動先のフォルダに同名のデッキが既に存在します。
+STR_DLV_NO_DECKS,No decks match.,一致するデッキはありません。
+STR_DLV_TOGGLE_DENSITY,Toggle compact view,コンパクト表示を切替
+STR_DLV_EXPAND,Expanded view,拡大表示
+STR_DLV_EXPANDED_TITLE,DECKS,デッキ一覧
+STR_DLV_PICKER_PLACEHOLDER,(Select a deck),(デッキを選択)
+STR_DLV_PICKER_EMPTY,(empty),(空)
+STR_DLV_MOVE_TO_FOLDER,Move to folder…,フォルダへ移動…
+STR_MENU_BOT_POOL_SEARCH,Search decks…,デッキを検索…
+STR_MENU_BOT_FOLDER_TIP,Folder includes all decks inside (uniform random),フォルダ内の全デッキを含む（均等にランダム選択）
+STR_MENU_BOT_EDIT_POOL,Edit Deck Pool…,デッキプールを編集…

@@ -2,9 +2,9 @@ extends CardEffect
 
 ## EBP02-071: Godzilla vs. King Ghidorah - Strategy Rank 4 (Green)
 ## Choose one of the following:
-## - <Destroy> 3 of your opponent's rank 4 or lower battle cards.
-## - <Awakening6> <Destroy> 2 of your opponent's rank 6 or lower battle cards.
-## - <Awakening8> <Destroy> 1 of your opponent's battle cards.
+## ・ <Destroy> 3 of your opponent's rank 4 or lower battle cards.
+## ・ <Awakening6> <Destroy> 2 of your opponent's rank 6 or lower battle cards.
+## ・ <Awakening8> <Destroy> 1 of your opponent's battle cards.
 ##
 ## Tested: No
 ## Known issues: None
@@ -33,21 +33,21 @@ func on_enter(ctx: EffectContext) -> void:
 	# Option 0: Destroy 3 rank 4 or lower (if targets exist)
 	var has_r4_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 4).is_empty()
 	if has_r4_targets:
-		options.append("Destroy 3 of opponent's rank 4 or lower battle cards")
+		options.append(tr("STR_EFF_EBP02_071_CHOICE_A"))
 		option_ids.append(0)
 
 	# Option 1: Awakening6 — Destroy 2 rank 6 or lower
 	if ctx.is_awakening(6):
 		var has_r6_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 6).is_empty()
 		if has_r6_targets:
-			options.append("Awakening6: Destroy 2 of opponent's rank 6 or lower battle cards")
+			options.append(tr("STR_EFF_EBP02_071_CHOICE_B"))
 			option_ids.append(1)
 
 	# Option 2: Awakening8 — Destroy 1 any battle card
 	if ctx.is_awakening(8):
 		var has_any_target: bool = not ctx.opponent.get_battle_card_zone_indices().is_empty()
 		if has_any_target:
-			options.append("Awakening8: Destroy 1 of opponent's battle cards")
+			options.append(tr("STR_EFF_EBP02_071_CHOICE_C"))
 			option_ids.append(2)
 
 	if options.is_empty():

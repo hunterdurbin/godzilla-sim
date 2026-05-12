@@ -1,8 +1,9 @@
 extends CardEffect
 
 ## EBP01-049: Destoroyah Aggregate Form - Battle Rank 4 (Blue)
-## <Evolution6> <Destoroyah> At the beginning of your main phase, you may play a rank 6
-## or lower <Destoroyah> battle card from your deck by placing it on top of this card.
+## <Evolution6> <《Destoroyah》> (At the beginning of your main phase, you may play a rank
+## 6 or lower <《Destoroyah》> battle card from your deck by placing it on top of this
+## card.)
 ##
 ## Tested: Yes
 ## Known issues: None

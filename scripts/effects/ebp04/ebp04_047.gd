@@ -1,8 +1,10 @@
 extends CardEffect
 ## EBP04-047: Monster X - Battle Rank 5 (Blue)
-## This card's counter power X is equal to 3000 times the number of different
-## colors among battle cards in your zones (white included).
-## <Evolution 8> <Kaiser Ghidorah>
+## This card’s counter power X is equal to 3000 multiplied by the number of different
+## colors among other battle cards in your zones. (White also counts as a color.)
+## <Evolution 8> 《Kaizer Ghidorah》 (At the beginning of your main phase, you may play a
+## rank 8 or lower 《Kaizer Ghidorah》 battle card from your deck by placing it on top of
+## this card.)
 ##
 ## Tested: Yes
 ## Known issues: None
@@ -29,11 +31,13 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	var colors: Array[int] = []
-	var battle_tops: Array[Dictionary] = ctx.owner.get_zone_top_cards_matching(
-		func(c: Dictionary) -> bool: return CardUtils.is_battle(c))
-	for zone_card in battle_tops:
-		for c: int in zone_card.get("colors", []):
-			if c not in colors:
-				colors.append(c)
-	return colors.size() * 3000
+	# Rule says "other battle cards in your zones" — exclude self's zone.
+	var self_zone: int = find_zone_of_card(ctx)
+	var others: Array[Dictionary] = []
+	for i in range(8):
+		if i == self_zone:
+			continue
+		var top: Dictionary = ctx.owner.get_zone_top_card(i)
+		if not top.is_empty() and CardUtils.is_battle(top):
+			others.append(top)
+	return CardUtils.count_distinct_colors(others) * 3000

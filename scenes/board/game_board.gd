@@ -1531,8 +1531,8 @@ func _apply_mobile_action_panel() -> void:
 		btn_gain_rage, btn_invade
 	]
 	var btn_labels_text: Array = [
-		"Battle", "Monster", "Strategy",
-		"Rage", "Invade"
+		tr("STR_TYPE_BATTLE"), tr("STR_TYPE_MONSTER"), tr("STR_TYPE_STRATEGY"),
+		tr("STR_TYPE_RAGE"), tr("STR_GB_INVADE")
 	]
 	var btn_textures: Array[Texture2D] = [
 		load("res://assets/buttons/battle.png"),
@@ -3267,7 +3267,7 @@ func _on_rematch_pressed() -> void:
 	# Multiplayer: notify opponent, wait for them
 	btn_rematch.disabled = true
 	btn_rematch.text = tr("STR_GB_WAITING")
-	_rematch_deck_select.deck_dropdown.disabled = true
+	_rematch_deck_select.set_disabled(true)
 
 	if _rematch_deck_changed and not _rematch_deck_name.is_empty():
 		# Send deck data so opponent/host can apply it
@@ -3296,7 +3296,7 @@ func _execute_rematch() -> void:
 	_opponent_rematch_requested = false
 	_game_ended_by_disconnect = false
 	_rematch_deck_select.visible = false
-	_rematch_deck_select.deck_dropdown.disabled = false
+	_rematch_deck_select.set_disabled(false)
 	_rematch_deck_changed = false
 	_rematch_deck_name = ""
 	_reconnect_cumulative_seconds = 0.0
@@ -3515,7 +3515,7 @@ func _setup_rematch_deck_select() -> void:
 	if _save_game_button:
 		y_pos = _save_game_button.position.y + _save_game_button.custom_minimum_size.y + 4
 	_rematch_deck_select.position = Vector2(10, y_pos)
-	_rematch_deck_select.header_label.visible = false
+	_rematch_deck_select.set_header_visible(false)
 	_rematch_deck_select.visible = false
 	_rematch_deck_select.deck_selected.connect(_on_rematch_deck_selected)
 
@@ -3523,18 +3523,15 @@ func _setup_rematch_deck_select() -> void:
 func _populate_rematch_deck_select() -> void:
 	_rematch_deck_changed = false
 	_rematch_deck_name = ""
-	var dropdown: OptionButton = _rematch_deck_select.deck_dropdown
-	dropdown.clear()
-	dropdown.disabled = false
+	_rematch_deck_select.set_disabled(false)
 
 	var current_deck := DecklistManager.get_player_deck_name(local_player_id)
 	var all_decks := DecklistManager.get_all_decklists()
-	var valid_decks: Array[String] = []
-
+	var valid_set: Dictionary = {}
 	var skip_validation := not is_multiplayer_game
 	for deck_name in all_decks:
 		if skip_validation:
-			valid_decks.append(deck_name)
+			valid_set[deck_name] = true
 			continue
 		var data := DecklistManager.load_decklist(deck_name)
 		if data.is_empty():
@@ -3545,21 +3542,16 @@ func _populate_rematch_deck_select() -> void:
 			data.get("main", []),
 		)
 		if errors.is_empty():
-			valid_decks.append(deck_name)
+			valid_set[deck_name] = true
 
-	if valid_decks.size() <= 1:
-		# No alternative decks to choose from — hide the dropdown
+	if valid_set.size() <= 1:
 		_rematch_deck_select.visible = false
 		return
 
-	var select_idx := 0
-	for i in range(valid_decks.size()):
-		dropdown.add_item(valid_decks[i])
-		if valid_decks[i] == current_deck:
-			select_idx = i
-
-	dropdown.select(select_idx)
-	_rematch_deck_select.current_selection = valid_decks[select_idx]
+	_rematch_deck_select.set_filter(func(name): return valid_set.has(name))
+	_rematch_deck_select.refresh()
+	if valid_set.has(current_deck):
+		_rematch_deck_select.select_deck(current_deck)
 	_rematch_deck_select.visible = true
 
 
@@ -3660,7 +3652,7 @@ func _on_play_battle_pressed() -> void:
 		return
 
 	pending_action = CardEnums.ActionType.PLAY_BATTLE
-	_enter_card_selection("Select a BATTLE card to play:", playable)
+	_enter_card_selection(tr("STR_GB_SELECT_BATTLE_TO_PLAY"), playable)
 
 
 func _on_play_strategy_pressed() -> void:
@@ -3676,7 +3668,7 @@ func _on_play_strategy_pressed() -> void:
 		return
 
 	pending_action = CardEnums.ActionType.PLAY_STRATEGY
-	_enter_card_selection("Select a STRATEGY card to activate:", playable)
+	_enter_card_selection(tr("STR_GB_SELECT_STRATEGY_TO_ACTIVATE"), playable)
 
 
 func _on_gain_rage_pressed() -> void:
@@ -3692,7 +3684,7 @@ func _on_gain_rage_pressed() -> void:
 		return
 
 	pending_action = CardEnums.ActionType.GAIN_RAGE
-	_enter_card_selection("Select a MONSTER card to discard for Rage:", playable)
+	_enter_card_selection(tr("STR_GB_SELECT_RAGE_CARD"), playable)
 
 
 func _on_play_monster_pressed() -> void:
@@ -3708,7 +3700,7 @@ func _on_play_monster_pressed() -> void:
 		return
 
 	pending_action = CardEnums.ActionType.PLAY_MONSTER
-	_enter_card_selection("Select a MONSTER card to play:", playable)
+	_enter_card_selection(tr("STR_GB_SELECT_MONSTER_TO_PLAY"), playable)
 
 
 func _on_invade_pressed() -> void:
@@ -3724,7 +3716,7 @@ func _on_invade_pressed() -> void:
 		return
 
 	pending_action = CardEnums.ActionType.INVADE
-	_enter_card_selection("Select a card to discard for Invasion:", playable)
+	_enter_card_selection(tr("STR_GB_SELECT_INVASION_CARD"), playable)
 
 
 func _on_end_main_pressed() -> void:

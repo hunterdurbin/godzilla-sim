@@ -1,7 +1,8 @@
 extends CardEffect
 ## EBP04-082: X-Aliens' Mother Ship - Strategy Rank 5 (Blue)
-## <Base>
-## <Your Turn> All non-blue battle cards in zones adjacent to your monster card
+## <Base>When any monster card invades into zones 6–8,  <Destroy> this card.  (Cards
+## with Base are not sent to the discard pile at the start phase.)
+## <Your Turn> All of your non-blue battle cards in zones adjacent to your monster card
 ## gain +3000 counter power.
 ##
 ## Tested: Yes

@@ -1,7 +1,8 @@
 extends CardEffect
 # Mechagodzilla(1975) (Battle R7)
-# Counter start: may move this card to an unoccupied zone.
-# If same column as opponent monster, +3000 CP.
+# At the beginning of your counter phase, you may move this card to an unoccupied zone.
+# If this is in the same column as your opponent’s monster card, this card gains +3000
+# counter power.
 #
 # Tested: No
 # Known issues: None

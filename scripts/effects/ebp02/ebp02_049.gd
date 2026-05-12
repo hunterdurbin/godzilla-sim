@@ -2,9 +2,9 @@ extends CardEffect
 
 ## EBP02-049: King Ghidorah(1991) - Monster Rank 3 (Green)
 ## <Enter> If there are 3 or more cards under this card, choose one of the following:
-## - <Destroy> 3 of your opponent's rank 5 or lower battle cards.
-## - Your opponent discards cards until they have 3 cards remaining in their hand.
-## - Send the top 3 cards of your deck to your discard pile.
+## ・ <Destroy> 3 of your opponent's rank 5 or lower battle cards.
+## ・Your opponent discards cards until they have 3 cards remaining in their hand.
+## ・Send the top 3 cards of your deck to your discard pile.
 ##
 ## Tested: Yes
 ## Known issues: None
@@ -37,17 +37,17 @@ func on_enter(ctx: EffectContext) -> void:
 	# Option 0: Destroy 3 R5- battle cards
 	var has_r5_targets: bool = not ctx.effect_handler.get_zones_in_rank_range(ctx.opponent.player_id, -1, 5).is_empty()
 	if has_r5_targets:
-		options.append("Destroy 3 of opponent's rank 5 or lower battle cards")
+		options.append(tr("STR_EFF_EBP02_049_CHOICE_A"))
 		option_ids.append(0)
 
 	# Option 1: Opponent discards to 3
 	if ctx.opponent.hand.size() > 3:
-		options.append("Opponent discards to 3 cards in hand")
+		options.append(tr("STR_EFF_EBP02_049_CHOICE_B"))
 		option_ids.append(1)
 
 	# Option 2: Mill 3 from own deck
 	if not ctx.owner.main_deck.is_empty():
-		options.append("Send top 3 cards of your deck to discard")
+		options.append(tr("STR_EFF_EBP02_049_CHOICE_C"))
 		option_ids.append(2)
 
 	if options.is_empty():

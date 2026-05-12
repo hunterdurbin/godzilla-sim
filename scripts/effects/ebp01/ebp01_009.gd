@@ -1,8 +1,10 @@
 extends CardEffect
 
 ## EBP01-009: Godzilla(2023) - Monster Rank 3 (Burst II)
-## <Burst2> <When Invading> If this card has 2 or more <Rage>, <Destroy> 1 of your
-## opponent's rank 6 or lower battle cards.
+## <Burst2> (You can play this card from rank II. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
+## <When Invading> If this card has 2 or more <Rage> , <Destroy> 1 of your opponent’s
+## rank 6 or lower battle cards.
 ##
 ## Tested: Yes
 ## Known issues: None

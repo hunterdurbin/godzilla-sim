@@ -1,8 +1,10 @@
 extends CardEffect
 
 ## EBP01-007: Godzilla(1975) - Monster Rank 4 (Burst III)
-## <Burst3> <When Invading> When this card <Destroy> your battle cards,
-## reduce your opponent's <Rage> by 2.
+## <Burst3> (You can play this card from rank III. If you do, send this card to your
+## discard pile at the beginning of your next end phase.)
+## <When Invading> When this card <Destroy> your battle cards, reduce your opponent's
+## <Rage> by 2.
 ##
 ## Tested: Yes
 ## Known issues: None

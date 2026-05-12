@@ -1,6 +1,7 @@
 extends CardEffect
 # Eternal Mothra (Battle R8)
-# <Enter> If in zone 8 and Base in play, opponent monster with TL <= 60000 retreats 1.
+# <Enter> If this card is in zone 8 and you have a card with <Base> in play, an
+# opponent’s monster card with 60,000 or less threat level retreats backward by 1 zone.
 #
 # Tested: No
 # Known issues: None

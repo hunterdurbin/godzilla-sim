@@ -1,6 +1,7 @@
 extends CardEffect
 # Godzilla(1993) R2
-# <Enter> If you have 1 or fewer strategy cards in play, place up to 1 blue R6- strategy from hand.
+# <Enter> If you have 1 or fewer strategy cards in play, you may place up to 1 blue
+# rank 6 or lower strategy card from your hand into your strategy zone and activate it.
 #
 # Tested: No
 # Known issues: None

@@ -1,6 +1,8 @@
 extends CardEffect
 # MBT-MB90 (Battle R3)
-# <Enter> Look at the top card of your deck. You may send it to discard or put back on top.
+# You may have any number of this card in your deck.
+# <Enter> Look at the top card of your deck. You may send it to your discard pile or
+# place it back on top of your deck.
 #
 # Tested: No
 # Known issues: None
