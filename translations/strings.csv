@@ -30,6 +30,9 @@ STR_MENU_BOT_CONFIG,Bot Config,ボット設定
 STR_MENU_BOT_DECK,Bot Deck,ボットデッキ
 STR_MENU_BOT_DECK_RANDOM,Use Random Deck,ランダムデッキを使用
 STR_MENU_BOT_DECK_RANDOM_REMATCH,Re-pick on rematch,対戦ごとに再抽選
+STR_MENU_BOT_FORMAT,Format,フォーマット
+STR_MENU_FORMAT_ANY,Any,すべて
+STR_MENU_BOT_DECK_NOT_IN_FORMAT,Not legal in current format,現在のフォーマットでは使用不可
 STR_MENU_DECK_SELECT_ALL,Select All,すべて選択
 STR_MENU_DECK_UNSELECT_ALL,Unselect All,すべて解除
 STR_MENU_DECK_RESET_WEIGHTS,Reset Weights,重みをリセット
@@ -878,6 +881,7 @@ STR_DLV_MOVE_INFO,"Move ""%s"" to which folder?","「%s」をどのフォルダ�
 STR_DLV_FOLDER_EXISTS,A deck with that name already exists in the target folder.,移動先のフォルダに同名のデッキが既に存在します。
 STR_DLV_NO_DECKS,No decks match.,一致するデッキはありません。
 STR_DLV_TOGGLE_DENSITY,Toggle compact view,コンパクト表示を切替
+STR_DLV_FORMAT_TOOLTIP,Grey out decks not legal in the chosen format,選択フォーマットでは使えないデッキをグレーアウト
 STR_DLV_EXPAND,Expanded view,拡大表示
 STR_DLV_EXPANDED_TITLE,DECKS,デッキ一覧
 STR_DLV_PICKER_PLACEHOLDER,(Select a deck),(デッキを選択)

@@ -143,6 +143,17 @@ func validate_decklist(deck_name: String) -> Array[String]:
 	return DeckValidator.validate(data["monster"], data["main"])
 
 
+func is_decklist_valid_for_mode(deck_name: String, mode_id: String) -> bool:
+	## Empty mode_id = "Any" → always true. Otherwise loads the deck and runs
+	## GameModeValidator.validate; missing/unloadable decks count as ineligible.
+	if mode_id.is_empty():
+		return true
+	var data := load_decklist(deck_name)
+	if data.is_empty():
+		return false
+	return GameModeValidator.validate(mode_id, data["monster"], data["main"]).is_empty()
+
+
 func get_decklist_warnings(deck_name: String) -> Array[String]:
 	## Returns an array of warning strings (e.g. no valid rank-up path).
 	var data := load_decklist(deck_name)
