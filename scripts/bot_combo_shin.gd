@@ -96,7 +96,7 @@ func check(player: PlayerState, opponent: PlayerState, bot) -> Dictionary:
 	# Counter-retreat path: rank-up monster with "advances_opponent" in monster deck.
 	# Getting countered auto-plays it, pushing opponent forward and crushing their z8.
 	# This replaces the need for a hand advancement card AND destroy card.
-	var counter_retreat_path: bool = _has_counter_retreat_path(player, opponent, bot)
+	var counter_retreat_path: bool = _has_counter_retreat_path(player, bot)
 
 	# Determine combo state
 	var z8_can_clear: bool = z8_clear or destroy_idx >= 0 or not crush_indices.is_empty() \
@@ -184,7 +184,7 @@ func check(player: PlayerState, opponent: PlayerState, bot) -> Dictionary:
 	return partial_plan
 
 
-func should_prioritize_cycling(plan: Dictionary, player: PlayerState,
+func should_prioritize_cycling(plan: Dictionary, _player: PlayerState,
 		opponent: PlayerState) -> bool:
 	# Shin combo cycles hand to find pieces rather than building board.
 	# Prioritize rage gain (discard monster → draw at end of turn) when:
@@ -425,8 +425,8 @@ func get_partial_reserved_indices(plan: Dictionary) -> Array[int]:
 	return critical
 
 
-func get_rankup_bonus(plan: Dictionary, monster: Dictionary,
-		player: PlayerState, opponent: PlayerState, bot) -> int:
+func get_rankup_bonus(_plan: Dictionary, monster: Dictionary,
+		_player: PlayerState, opponent: PlayerState, bot) -> int:
 	# Strongly prefer rank 3 "advances_opponent" monster — getting countered into
 	# this monster pushes the opponent forward and crushes their z8 defense.
 	var effect: CardEffect = bot.effect_handler.get_effect(monster)
@@ -838,7 +838,7 @@ func _get_threat_surplus(player: PlayerState, opponent: PlayerState) -> int:
 
 # --- Counter-retreat path ---
 
-func _has_counter_retreat_path(player: PlayerState, opponent: PlayerState, bot) -> bool:
+func _has_counter_retreat_path(player: PlayerState, bot) -> bool:
 	## Check if the monster deck has a rank 3+ monster with "advances_opponent" on_enter.
 	## If so, getting countered will auto-play it, pushing the opponent forward.
 	var cur_rank: int = player.current_monster.get("rank", 0)

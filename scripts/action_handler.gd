@@ -448,7 +448,7 @@ func _resolve_illegal_cards(player: PlayerState) -> bool:
 	return changed
 
 
-func _resolve_overloaded_cards(player: PlayerState) -> bool:
+func _resolve_overloaded_cards(_player: PlayerState) -> bool:
 	## Rule 11.5 - Overloaded Cards (non-interrupt rule action).
 	## If any zone has multiple battle cards not in a stack, or any strategy zone has
 	## multiple strategy cards, keep the last placed and destroy the rest.

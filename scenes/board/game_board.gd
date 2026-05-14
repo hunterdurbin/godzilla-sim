@@ -20,6 +20,22 @@ var _bot_seed_was_explicit: bool = false
 var _bot_cards_visible: bool = false
 var _bot_visibility_button: Button
 
+# Lobby-bot state (Play vs Bot While You Wait)
+var _is_lobby_bot: bool = false
+var _lobby_banner: Control = null
+var _lobby_banner_label: Label = null
+var _lobby_banner_start_msec: int = 0
+
+# In-flight action feedback (multiplayer client only)
+var _pending_indicator: Panel = null
+var _pending_indicator_label: Label = null
+var _pending_indicator_visible_since_ms: int = 0
+const PENDING_INDICATOR_GRACE_MS: int = 500  ## avoid flicker for fast roundtrips
+var _opponent_found_dialog: AcceptDialog = null
+var _opponent_found_timer: Timer = null
+var _opponent_found_remaining: int = 0
+var _opponent_found_handled: bool = false
+
 # Multiplayer state
 var is_multiplayer_game: bool = false
 var local_player_id: int = 0 # 0 for host/solo, 1 for client
@@ -319,6 +335,11 @@ var _reconnect_current_start_ms: int = 0
 var _waiting_for_reconnect: bool = false
 var _reconnect_attempting: bool = false # Guard for client reconnect loop
 const RECONNECT_CLAIM_WIN_SECONDS: float = 10.0
+## State envelopes above this size get gzipped on the wire (typical save: 50-70%).
+## Below it, the gzip header overhead would outweigh the bandwidth savings.
+const STATE_COMPRESS_THRESHOLD: int = 1024
+const STATE_FLAG_RAW: int = 0x00
+const STATE_FLAG_GZIP: int = 0x01
 var _pending_interaction: Dictionary = {} # {method: String, args: Array}
 # Reconnect overlay nodes (built in code)
 var _reconnect_overlay: ColorRect = null
@@ -487,6 +508,7 @@ func _ready() -> void:
 
 	is_multiplayer_game = NetworkManager.is_multiplayer()
 	is_bot_game = NetworkManager.mode == NetworkManager.Mode.SOLO_BOT
+	_is_lobby_bot = NetworkManager.is_lobby_bot_game()
 	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
 	_match_stacked_view = _match_stacked_view
 
@@ -669,6 +691,14 @@ func _ready() -> void:
 	# Bot card visibility toggle
 	if is_bot_game:
 		_setup_bot_visibility_toggle()
+
+	# Lobby-bot mode: show waiting banner + listen for arriving opponent
+	if _is_lobby_bot:
+		_setup_lobby_bot_ui()
+
+	# In-flight action indicator (only used by the client; host applies actions locally)
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_setup_pending_indicator()
 
 	# Save game button (solo/bot only)
 	if not is_multiplayer_game:
@@ -1116,6 +1146,31 @@ func _show_first_player_waiting() -> void:
 	_set_action_buttons_visible(false)
 	card_select_prompt.text = tr("STR_GB_COIN_FLIP_WAITING")
 	action_prompt_panel.visible = true
+	_show_local_starter_monster()
+
+
+## Render only the local player's rank 1 monster into its starting zone so the
+## player has visual context during the first/second choice. Does NOT sync hands,
+## decks, or any other game state — those become visible once the game starts.
+func _show_local_starter_monster() -> void:
+	var monster_deck: Array = DecklistManager.get_player_monster_deck(local_player_id)
+	var rank1: Dictionary = {}
+	for m in monster_deck:
+		if m.get("rank", 0) == 1:
+			rank1 = m
+			break
+	if rank1.is_empty():
+		return
+	var local_board: Control = player1_board if local_player_id == 0 else player2_board
+	if not local_board:
+		return
+	if local_board.has_method("apply_monster_gradient"):
+		local_board.apply_monster_gradient(rank1)
+	var temp_state := PlayerState.new(local_player_id)
+	temp_state.current_monster = rank1
+	temp_state.monster_zone = int(rank1.get("start_zone", 1))
+	if local_board.has_method("_sync_monster"):
+		local_board._sync_monster(temp_state, 0, 0)
 
 
 func _cleanup_first_player_ui() -> void:
@@ -1135,6 +1190,7 @@ func _show_first_player_choice() -> void:
 	_set_action_buttons_visible(false)
 	card_select_prompt.text = tr("STR_GB_COIN_FLIP_WON")
 	action_prompt_panel.visible = true
+	_show_local_starter_monster()
 
 	var container := VBoxContainer.new()
 	container.name = "FirstPlayerContainer"
@@ -3228,6 +3284,11 @@ func _on_main_menu_pressed() -> void:
 	_reconnect_attempting = false
 	if _reconnect_overlay:
 		_reconnect_overlay.visible = false
+	# Lobby-bot mode: keep the relay alive and return to PublicLobby instead of MainMenu.
+	if _is_lobby_bot:
+		NetworkManager.exit_lobby_bot_game()
+		NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
+		return
 	if is_multiplayer_game:
 		var connected := multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
 		if end_game_panel.visible:
@@ -3423,6 +3484,12 @@ func _execute_rematch() -> void:
 			if not _bot_seed_was_explicit:
 				NetworkManager.bot_seed = -1
 			_apply_bot_seed()
+			# Re-pick the bot's deck from its random pool, if configured.
+			# Empty pool → picker returns "" and we keep the previous deck.
+			if GameSettings.bot_random_deck_enabled and GameSettings.bot_random_deck_on_rematch:
+				var picked := GameSettings.pick_weighted_random_deck()
+				if not picked.is_empty():
+					DecklistManager.select_deck_for_player(1, picked)
 
 		turn_manager = TurnManager.new()
 		turn_manager.setup(CardData)
@@ -3548,7 +3615,7 @@ func _populate_rematch_deck_select() -> void:
 		_rematch_deck_select.visible = false
 		return
 
-	_rematch_deck_select.set_filter(func(name): return valid_set.has(name))
+	_rematch_deck_select.set_filter(func(deck_name): return valid_set.has(deck_name))
 	_rematch_deck_select.refresh()
 	if valid_set.has(current_deck):
 		_rematch_deck_select.select_deck(current_deck)
@@ -3889,6 +3956,8 @@ func _on_zone_hover_clicked(_zone_index: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	_process_lobby_banner_tick()
+	_process_pending_indicator()
 	# Reconnect overlay display
 	if _waiting_for_reconnect and _reconnect_overlay.visible:
 		var elapsed_ms := Time.get_ticks_msec() - _reconnect_current_start_ms
@@ -4229,7 +4298,7 @@ func _sync_boards() -> void:
 	call_deferred("_position_hands")
 
 
-func _update_hand_visibility(active_player_id: int) -> void:
+func _update_hand_visibility(_active_player_id: int) -> void:
 	if is_multiplayer_game:
 		# Multiplayer: local player always face-up, opponent always face-down
 		if player1_board:
@@ -6746,12 +6815,13 @@ func _do_broadcast() -> void:
 		_last_sent_state = state_dict.duplicate(true)
 		_last_sent_version = _state_version
 
-		var state_bytes := var_to_bytes(envelope)
-		if state_bytes.size() > 32768:
+		var raw_bytes := var_to_bytes(envelope)
+		if raw_bytes.size() > 32768:
 			push_warning("[BROADCAST] Large state packet: %d bytes (v=%d, full=%s)" % [
-				state_bytes.size(), _state_version, str(_last_sent_state.is_empty())])
-		RpcLogger.log_send("receive_state", state_bytes.size())
-		_rpc_receive_state.rpc_id(peer_id, state_bytes)
+				raw_bytes.size(), _state_version, str(_last_sent_state.is_empty())])
+		var wire_bytes := _wrap_state_payload(raw_bytes)
+		RpcLogger.log_send("receive_state", wire_bytes.size())
+		_rpc_receive_state.rpc_id(peer_id, wire_bytes)
 	_pending_log_tokens.clear()
 	_pending_sound_events.clear()
 
@@ -7094,14 +7164,49 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 
 
 ## Host -> Client: full game state update
+## Prefix raw state bytes with a 1-byte compression flag; gzip if above threshold.
+## Wire format: [flag: u8][payload...]  where flag is STATE_FLAG_RAW or STATE_FLAG_GZIP.
+func _wrap_state_payload(raw_bytes: PackedByteArray) -> PackedByteArray:
+	var out := PackedByteArray()
+	if raw_bytes.size() >= STATE_COMPRESS_THRESHOLD:
+		var compressed := raw_bytes.compress(FileAccess.COMPRESSION_GZIP)
+		out.append(STATE_FLAG_GZIP)
+		out.append_array(compressed)
+	else:
+		out.append(STATE_FLAG_RAW)
+		out.append_array(raw_bytes)
+	return out
+
+
+## Inverse of _wrap_state_payload. Returns empty PackedByteArray on failure.
+func _unwrap_state_payload(wire_bytes: PackedByteArray) -> PackedByteArray:
+	if wire_bytes.is_empty():
+		return PackedByteArray()
+	var flag := wire_bytes[0]
+	var payload := wire_bytes.slice(1)
+	match flag:
+		STATE_FLAG_RAW:
+			return payload
+		STATE_FLAG_GZIP:
+			return payload.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+		_:
+			push_warning("[STATE] Unknown compression flag: %d" % flag)
+			return PackedByteArray()
+
+
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	RpcLogger.log_receive("receive_state", state_bytes.size())
 	if state_bytes.is_empty():
 		return
-	var decoded: Variant = bytes_to_var(state_bytes)
+	var raw_bytes := _unwrap_state_payload(state_bytes)
+	if raw_bytes.is_empty():
+		push_warning("[STATE] Payload unwrap failed (wire size=%d)" % state_bytes.size())
+		_request_resync_throttled()
+		return
+	var decoded: Variant = bytes_to_var(raw_bytes)
 	if decoded == null or not decoded is Dictionary:
-		push_warning("[STATE] bytes_to_var failed or returned non-Dictionary (size=%d)" % state_bytes.size())
+		push_warning("[STATE] bytes_to_var failed or returned non-Dictionary (raw size=%d)" % raw_bytes.size())
 		_request_resync_throttled()
 		return
 	var envelope: Dictionary = decoded
@@ -8049,3 +8154,178 @@ func _on_reconnect_claim_win() -> void:
 	_disable_all_buttons()
 	_upload_stats(local_player_id, "Opponent disconnected", true)
 	_on_log_message(GameLog.claimed_win_disconnect())
+
+
+# --- Play vs Bot While Waiting (lobby-bot mode) ---
+
+func _setup_lobby_bot_ui() -> void:
+	_lobby_banner_start_msec = Time.get_ticks_msec()
+	# Park the banner under the chat row inside the log panel so cards/board
+	# elements never cover it.
+	var log_vbox: VBoxContainer = $LogPanel/LogVBox
+	var hbox := HBoxContainer.new()
+	hbox.name = "LobbyWaitingBanner"
+	hbox.add_theme_constant_override("separation", 8)
+
+	_lobby_banner_label = Label.new()
+	_lobby_banner_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_lobby_banner_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_lobby_banner_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_lobby_banner_label.add_theme_font_size_override("font_size", 11)
+	_lobby_banner_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.3, 1))
+	hbox.add_child(_lobby_banner_label)
+
+	var return_btn := Button.new()
+	return_btn.text = tr("STR_GB_RETURN_TO_LOBBY")
+	return_btn.add_theme_font_size_override("font_size", 10)
+	return_btn.pressed.connect(_on_lobby_banner_return_pressed)
+	hbox.add_child(return_btn)
+
+	log_vbox.add_child(hbox)
+	_lobby_banner = hbox
+	_update_lobby_banner_label()
+
+	NetworkManager.player_connected.connect(_on_lobby_opponent_connected)
+	NetworkManager.player_disconnected.connect(_on_lobby_opponent_disconnected)
+	tree_exiting.connect(_disconnect_lobby_bot_signals)
+
+
+func _disconnect_lobby_bot_signals() -> void:
+	if NetworkManager.player_connected.is_connected(_on_lobby_opponent_connected):
+		NetworkManager.player_connected.disconnect(_on_lobby_opponent_connected)
+	if NetworkManager.player_disconnected.is_connected(_on_lobby_opponent_disconnected):
+		NetworkManager.player_disconnected.disconnect(_on_lobby_opponent_disconnected)
+
+
+func _on_lobby_opponent_disconnected(_peer_id: int) -> void:
+	# Opponent gave up while we kept playing bot. Reset so a future joiner re-triggers the dialog.
+	_opponent_found_handled = false
+	_cleanup_opponent_found_dialog()
+
+
+func _process_lobby_banner_tick() -> void:
+	if _is_lobby_bot and is_instance_valid(_lobby_banner_label):
+		_update_lobby_banner_label()
+
+
+func _update_lobby_banner_label() -> void:
+	var elapsed: int = int((Time.get_ticks_msec() - _lobby_banner_start_msec) / 1000.0)
+	_lobby_banner_label.text = tr("STR_GB_LOBBY_WAITING_BANNER_FMT") % [int(elapsed / 60.0), elapsed % 60]
+
+
+func _on_lobby_banner_return_pressed() -> void:
+	SfxManager.play("ui_click")
+	NetworkManager.exit_lobby_bot_game()
+	NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
+
+
+func _on_lobby_opponent_connected(_peer_id: int) -> void:
+	if not _is_lobby_bot or _opponent_found_handled:
+		return
+	_opponent_found_handled = true
+	_show_opponent_found_dialog()
+
+
+func _show_opponent_found_dialog() -> void:
+	SfxManager.play("action_required")
+	_opponent_found_dialog = AcceptDialog.new()
+	_opponent_found_dialog.title = tr("STR_GB_OPPONENT_FOUND_TITLE")
+	_opponent_found_dialog.dialog_text = tr("STR_GB_OPPONENT_FOUND_BODY")
+	_opponent_found_dialog.get_ok_button().text = tr("STR_GB_OPPONENT_FOUND_START")
+	_opponent_found_dialog.add_button(tr("STR_GB_OPPONENT_FOUND_KEEP_BOT"), false, "keep_bot")
+	_opponent_found_dialog.confirmed.connect(_on_opponent_found_start)
+	_opponent_found_dialog.custom_action.connect(_on_opponent_found_custom_action)
+	add_child(_opponent_found_dialog)
+	_opponent_found_dialog.popup_centered()
+
+	_opponent_found_remaining = 20
+	_opponent_found_timer = Timer.new()
+	_opponent_found_timer.wait_time = 1.0
+	_opponent_found_timer.one_shot = false
+	_opponent_found_timer.timeout.connect(_on_opponent_found_timer_tick)
+	add_child(_opponent_found_timer)
+	_opponent_found_timer.start()
+	_update_opponent_found_countdown()
+
+
+func _on_opponent_found_timer_tick() -> void:
+	_opponent_found_remaining -= 1
+	if _opponent_found_remaining <= 0:
+		_on_opponent_found_start()
+		return
+	_update_opponent_found_countdown()
+
+
+func _update_opponent_found_countdown() -> void:
+	if not is_instance_valid(_opponent_found_dialog):
+		return
+	_opponent_found_dialog.dialog_text = "%s\n\n%s" % [
+		tr("STR_GB_OPPONENT_FOUND_BODY"),
+		tr("STR_GB_OPPONENT_FOUND_AUTO_FMT") % _opponent_found_remaining,
+	]
+
+
+func _on_opponent_found_start() -> void:
+	_cleanup_opponent_found_dialog()
+	NetworkManager.exit_lobby_bot_game()
+	NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
+
+
+func _on_opponent_found_custom_action(action: StringName) -> void:
+	if action == "keep_bot":
+		_cleanup_opponent_found_dialog()
+		# Tell the joined client we're declining so they can drop and find another lobby
+		# rather than sitting indefinitely on a "Waiting for game to start" screen.
+		NetworkManager.notify_match_declined()
+
+
+func _cleanup_opponent_found_dialog() -> void:
+	if is_instance_valid(_opponent_found_timer):
+		_opponent_found_timer.stop()
+		_opponent_found_timer.queue_free()
+		_opponent_found_timer = null
+	if is_instance_valid(_opponent_found_dialog):
+		_opponent_found_dialog.queue_free()
+		_opponent_found_dialog = null
+
+
+# --- In-flight action indicator (multiplayer client) ---
+
+func _setup_pending_indicator() -> void:
+	_pending_indicator = Panel.new()
+	_pending_indicator.name = "PendingIndicator"
+	_pending_indicator.anchor_right = 1.0
+	_pending_indicator.anchor_bottom = 1.0
+	_pending_indicator.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pending_indicator.visible = false
+
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.05, 0.03, 0.02, 0.85)
+	bg.set_corner_radius_all(4)
+	_pending_indicator.add_theme_stylebox_override("panel", bg)
+
+	_pending_indicator_label = Label.new()
+	_pending_indicator_label.anchor_right = 1.0
+	_pending_indicator_label.anchor_bottom = 1.0
+	_pending_indicator_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pending_indicator_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_pending_indicator_label.text = tr("STR_GB_ACTION_SENDING")
+	_pending_indicator_label.add_theme_font_size_override("font_size", 16)
+	_pending_indicator_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.3, 1))
+	_pending_indicator.add_child(_pending_indicator_label)
+
+	action_panel.add_child(_pending_indicator)
+
+
+func _process_pending_indicator() -> void:
+	if not _pending_indicator:
+		return
+	if _action_pending:
+		if _pending_indicator_visible_since_ms == 0:
+			_pending_indicator_visible_since_ms = Time.get_ticks_msec()
+		# Only show after a short grace period so snappy roundtrips don't flicker.
+		var elapsed := Time.get_ticks_msec() - _pending_indicator_visible_since_ms
+		_pending_indicator.visible = elapsed >= PENDING_INDICATOR_GRACE_MS
+	else:
+		_pending_indicator_visible_since_ms = 0
+		_pending_indicator.visible = false

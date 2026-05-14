@@ -88,6 +88,14 @@ func _handle_control(msg: String) -> void:
 			if _other_connected:
 				_other_connected = false
 				emit_signal("peer_disconnected", _other_peer_id)
+		"K":
+			pass  # idle keepalive — relay may echo, ignore
+
+
+## Send a no-op text frame to keep the relay's TCP path warm while idling.
+func send_keepalive() -> void:
+	if _ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
+		_ws.send_text("K")
 
 
 # --- PacketPeer ---

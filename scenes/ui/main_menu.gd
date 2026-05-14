@@ -109,7 +109,7 @@ func _on_solo_bot_pressed() -> void:
 	NetworkManager.bot_seed = seed_text.to_int() if seed_text.is_valid_int() else -1
 	# Random deck override (replaces P2 dropdown selection if a deck pool is configured)
 	if GameSettings.bot_random_deck_enabled:
-		var picked := _pick_weighted_random_deck()
+		var picked := GameSettings.pick_weighted_random_deck()
 		if not picked.is_empty():
 			DecklistManager.select_deck_for_player(1, picked)
 	NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
@@ -142,55 +142,6 @@ func _reconcile_bot_deck_weights() -> void:
 			changed = true
 	if changed:
 		GameSettings.save()
-
-
-func _pick_weighted_random_deck() -> String:
-	## Two-stage sampler: each pool entry is either a single deck OR a whole
-	## folder (uniform pick inside it). Folder-enabled decks are NOT also
-	## listed individually — the folder takes over.
-	var entries := DecklistManager.get_all_deck_entries()
-	var enabled_folders: Dictionary = {}
-	for fp in GameSettings.bot_folder_weights:
-		var fw := int(GameSettings.bot_folder_weights[fp])
-		if fw > 0:
-			enabled_folders[fp] = fw
-
-	var pool: Array = []
-	var total := 0
-	for fp in enabled_folders:
-		pool.append({"kind": "folder", "name": fp, "weight": enabled_folders[fp]})
-		total += int(enabled_folders[fp])
-
-	for entry in entries:
-		if enabled_folders.has(entry["folder"]):
-			continue
-		var deck_name: String = entry["name"]
-		var has_entry: bool = GameSettings.bot_deck_weights.has(deck_name)
-		var w: int = 1
-		if has_entry:
-			w = int(GameSettings.bot_deck_weights[deck_name])
-		if w > 0:
-			pool.append({"kind": "deck", "name": deck_name, "weight": w})
-			total += w
-
-	if total <= 0 or pool.is_empty():
-		return ""
-
-	var r := randi() % total
-	var acc := 0
-	for e in pool:
-		acc += int(e["weight"])
-		if r < acc:
-			if e["kind"] == "folder":
-				var folder_decks: Array[String] = []
-				for entry in entries:
-					if entry["folder"] == e["name"]:
-						folder_decks.append(entry["name"])
-				if folder_decks.is_empty():
-					return ""
-				return folder_decks[randi() % folder_decks.size()]
-			return e["name"]
-	return ""
 
 
 func _show_bot_config_popup() -> void:
@@ -342,9 +293,34 @@ func _show_bot_config_popup() -> void:
 		diff_row.add_child(btn)
 		diff_buttons.append(btn)
 
-	# Assemble left column in display order: difficulty → speed → playstyle → seed
+	# Format selector (dropdown) — filters the bot's random deck pool by format
+	var format_row := VBoxContainer.new()
+	format_row.add_theme_constant_override("separation", 4)
+	var format_label := Label.new()
+	format_label.text = tr("STR_MENU_BOT_FORMAT")
+	format_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	format_label.add_theme_font_size_override("font_size", 16)
+	format_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	format_row.add_child(format_label)
+	var format_option := OptionButton.new()
+	format_option.add_theme_font_size_override("font_size", 16)
+	format_option.custom_minimum_size = Vector2(280, 0)
+	# Head row is "Any" (empty mode id, no filtering); rest mirror GameModeValidator.MODES.
+	format_option.add_item(tr("STR_MENU_FORMAT_ANY"), 0)
+	format_option.set_item_metadata(0, "")
+	for i in range(GameModeValidator.MODES.size()):
+		var mode: Dictionary = GameModeValidator.MODES[i]
+		var idx := format_option.item_count
+		format_option.add_item(tr(mode["label"]), idx)
+		format_option.set_item_metadata(idx, mode["id"])
+		if String(mode["id"]) == GameSettings.bot_random_deck_format:
+			format_option.select(idx)
+	format_row.add_child(format_option)
+
+	# Assemble left column in display order: difficulty → format → speed → playstyle → seed
 	left_col.add_child(diff_label)
 	left_col.add_child(diff_row)
+	left_col.add_child(format_row)
 	left_col.add_child(speed_row)
 	left_col.add_child(playstyle_row)
 	left_col.add_child(seed_row)
@@ -365,10 +341,23 @@ func _show_bot_config_popup() -> void:
 	right_col.add_child(deck_header_row)
 
 	# Staged weights — the Edit Deck Pool modal mutates these; main Save commits.
+	# Format is also staged here so the deck-pool view receives the pending
+	# value (not the saved one) when the user opens it from this popup.
 	var pending := {
 		"deck_weights": GameSettings.bot_deck_weights.duplicate(),
 		"folder_weights": GameSettings.bot_folder_weights.duplicate(),
+		"format": GameSettings.bot_random_deck_format,
 	}
+	format_option.item_selected.connect(func(_idx):
+		SfxManager.play("ui_click")
+		pending["format"] = String(format_option.get_selected_metadata())
+	)
+
+	var rematch_check := CheckBox.new()
+	rematch_check.text = tr("STR_MENU_BOT_DECK_RANDOM_REMATCH")
+	rematch_check.button_pressed = GameSettings.bot_random_deck_on_rematch
+	rematch_check.disabled = not random_deck_check.button_pressed
+	right_col.add_child(rematch_check)
 
 	var edit_pool_btn := Button.new()
 	edit_pool_btn.text = tr("STR_MENU_BOT_EDIT_POOL")
@@ -377,7 +366,10 @@ func _show_bot_config_popup() -> void:
 	edit_pool_btn.disabled = not random_deck_check.button_pressed
 	right_col.add_child(edit_pool_btn)
 
-	random_deck_check.toggled.connect(func(p): edit_pool_btn.disabled = not p)
+	random_deck_check.toggled.connect(func(p):
+		edit_pool_btn.disabled = not p
+		rematch_check.disabled = not p
+	)
 
 	edit_pool_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
@@ -408,6 +400,8 @@ func _show_bot_config_popup() -> void:
 		GameSettings.bot_playstyle_value = int(playstyle_slider.value)
 		# Deck + folder weights (staged via the Edit Deck Pool modal)
 		GameSettings.bot_random_deck_enabled = random_deck_check.button_pressed
+		GameSettings.bot_random_deck_on_rematch = rematch_check.button_pressed
+		GameSettings.bot_random_deck_format = pending["format"]
 		GameSettings.bot_deck_weights = pending["deck_weights"]
 		GameSettings.bot_folder_weights = pending["folder_weights"]
 		GameSettings.save()
@@ -522,6 +516,7 @@ func _show_deck_pool_popup(parent_popup: Window, pending: Dictionary, random_ena
 	# Setup AFTER the popup is in the tree so BotPoolView._ready has run.
 	pool_view.setup(pending["deck_weights"].duplicate(), pending["folder_weights"].duplicate())
 	pool_view.set_random_enabled(random_enabled)
+	pool_view.set_format(String(pending.get("format", "")))
 
 
 func _on_lan_pressed() -> void:

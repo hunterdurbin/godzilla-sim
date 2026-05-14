@@ -5,7 +5,6 @@ extends Control
 ## The LayoutContainer maintains the SVG's 1728:1008 aspect ratio within the available space.
 ## Mirroring for Player 2 flips all child anchors and the background texture.
 
-signal zone_card_dropped(zone_index: int, card: Control)
 signal deck_clicked(player_id: int)
 signal discard_clicked(player_id: int)
 signal monster_deck_clicked(player_id: int)

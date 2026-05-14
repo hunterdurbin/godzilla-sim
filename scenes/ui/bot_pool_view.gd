@@ -26,6 +26,8 @@ var _folder_order: Array[String] = []
 var _search_text: String = ""
 var _random_enabled: bool = true
 var _setup_called: bool = false
+var _format_id: String = ""               # GameModeValidator mode id; "" = Any
+var _eligibility: Dictionary = {}         # deck_name → bool (populated when _format_id set)
 
 # UI references
 var _search_edit: LineEdit
@@ -114,6 +116,7 @@ func setup(deck_weights: Dictionary, folder_weights: Dictionary) -> void:
 func _populate() -> void:
 	_entries = DecklistManager.get_all_deck_entries()
 	_compute_folder_order()
+	_rebuild_eligibility()
 	_rebuild()
 	_refresh_select_all_label()
 
@@ -137,6 +140,16 @@ func get_folder_weights() -> Dictionary:
 func set_random_enabled(value: bool) -> void:
 	_random_enabled = value
 	_apply_random_enabled_to_all()
+
+
+func set_format(mode_id: String) -> void:
+	## Filter the visible pool by format eligibility. Empty = "Any" (no filter).
+	## Storage (deck/folder weights) is left untouched — re-selecting "Any"
+	## restores the previous view with no data loss.
+	_format_id = mode_id
+	_rebuild_eligibility()
+	_apply_folder_takeover_to_all()
+	_refresh_select_all_label()
 
 
 # --- Internals ---
@@ -170,7 +183,6 @@ func _rebuild() -> void:
 	_folder_rows.clear()
 
 	var has_subfolders := _folder_order.size() > 1
-	var any_visible := false
 	for folder in _folder_order:
 		var folder_entries := _entries_in_folder(folder)
 		var visible_entries := _filter_entries(folder_entries, folder)
@@ -181,11 +193,10 @@ func _rebuild() -> void:
 		if not should_render_header:
 			collapsed = false
 		if should_render_header:
-			_add_folder_header(folder, visible_entries.size(), collapsed)
+			_add_folder_header(folder, collapsed)
 		if not collapsed:
 			for entry in visible_entries:
 				_add_deck_row(entry)
-		any_visible = true
 
 	_apply_folder_takeover_to_all()
 	_apply_random_enabled_to_all()
@@ -229,7 +240,7 @@ func _folder_name_matches(folder: String) -> bool:
 	return FuzzyMatch.score(_search_text, folder) >= 0
 
 
-func _add_folder_header(folder: String, deck_count: int, collapsed: bool) -> void:
+func _add_folder_header(folder: String, collapsed: bool) -> void:
 	var row := HBoxContainer.new()
 	row.custom_minimum_size.y = ROW_HEIGHT_FOLDER
 	row.add_theme_constant_override("separation", 6)
@@ -498,8 +509,10 @@ func _refresh_folder_count(folder: String) -> void:
 	for entry in _entries:
 		if entry["folder"] != folder:
 			continue
-		total += 1
 		var dn: String = entry["name"]
+		if not _is_deck_eligible(dn):
+			continue
+		total += 1
 		var has_entry: bool = _deck_weights.has(dn)
 		var w: int = int(_deck_weights.get(dn, 1))
 		if (not has_entry) or w > 0:
@@ -559,14 +572,48 @@ func _is_folder_enabled(folder: String) -> bool:
 	return (ui["check"] as CheckBox).button_pressed
 
 
+# --- Format eligibility ---
+
+func _rebuild_eligibility() -> void:
+	_eligibility.clear()
+	if _format_id.is_empty():
+		return
+	for entry in _entries:
+		var dn: String = entry["name"]
+		_eligibility[dn] = DecklistManager.is_decklist_valid_for_mode(dn, _format_id)
+
+
+func _is_deck_eligible(deck_name: String) -> bool:
+	if _format_id.is_empty():
+		return true
+	return bool(_eligibility.get(deck_name, true))
+
+
+func _folder_has_any_eligible(folder: String) -> bool:
+	if _format_id.is_empty():
+		return true
+	for entry in _entries:
+		if entry["folder"] == folder and _is_deck_eligible(entry["name"]):
+			return true
+	return false
+
+
 func _apply_folder_takeover_to_all() -> void:
 	# When a folder is enabled, dim its deck rows (folder takes over) but keep
-	# them visible so users can still see what's inside.
+	# them visible so users can still see what's inside. Also dim rows that
+	# fail the current format filter, and dim folders whose every deck is
+	# ineligible.
 	for dn in _deck_rows:
 		var ui: Dictionary = _deck_rows[dn]
 		(ui["container"] as Control).visible = true
-		var dimmed := _is_folder_enabled(ui["folder"])
+		var eligible := _is_deck_eligible(dn)
+		var dimmed := _is_folder_enabled(ui["folder"]) or not eligible
 		_set_row_dimmed(ui, dimmed)
+		if ui.has("check"):
+			(ui["check"] as CheckBox).tooltip_text = tr("STR_MENU_BOT_DECK_NOT_IN_FORMAT") if not eligible else dn
+	for fp in _folder_rows:
+		var ui: Dictionary = _folder_rows[fp]
+		_set_row_dimmed(ui, not _folder_has_any_eligible(fp))
 	_refresh_all_percentages()
 
 
@@ -585,17 +632,21 @@ func _set_row_dimmed(ui: Dictionary, dimmed: bool) -> void:
 
 func _compute_total_weight() -> int:
 	var total := 0
-	# Enabled folders contribute their weight.
+	# Enabled folders contribute their weight — but only if at least one deck
+	# inside is eligible under the current format filter.
 	for fp in _folder_weights:
 		var fw := int(_folder_weights[fp])
-		if fw > 0:
+		if fw > 0 and _folder_has_any_eligible(fp):
 			total += fw
-	# Individual decks contribute only when their folder is NOT enabled.
+	# Individual decks contribute only when their folder is NOT enabled AND
+	# they're eligible.
 	for entry in _entries:
 		var f: String = entry["folder"]
 		if int(_folder_weights.get(f, 0)) > 0:
 			continue
 		var dn: String = entry["name"]
+		if not _is_deck_eligible(dn):
+			continue
 		var has_entry: bool = _deck_weights.has(dn)
 		var w: int = 1
 		if has_entry:
@@ -607,18 +658,20 @@ func _compute_total_weight() -> int:
 
 func _refresh_all_percentages() -> void:
 	var total := _compute_total_weight()
-	# Folder rows: show pct only when folder is enabled.
+	# Folder rows: show pct only when folder is enabled AND it has at least
+	# one deck eligible under the current format filter.
 	for fp in _folder_rows:
 		var ui: Dictionary = _folder_rows[fp]
 		if not ui.has("pct_label"):
 			continue
 		var label: Label = ui["pct_label"]
 		var fw := int(_folder_weights.get(fp, 0))
-		if fw > 0 and total > 0:
+		if fw > 0 and total > 0 and _folder_has_any_eligible(fp):
 			label.text = "%.2f%%" % (100.0 * float(fw) / float(total))
 		else:
 			label.text = ""
-	# Deck rows: show pct only when its folder is NOT enabled and deck is enabled.
+	# Deck rows: show pct only when its folder is NOT enabled, the deck is
+	# enabled, AND the deck is eligible under the current format filter.
 	for dn in _deck_rows:
 		var ui: Dictionary = _deck_rows[dn]
 		if not ui.has("pct_label"):
@@ -626,6 +679,9 @@ func _refresh_all_percentages() -> void:
 		var label: Label = ui["pct_label"]
 		var folder: String = ui.get("folder", "")
 		if int(_folder_weights.get(folder, 0)) > 0:
+			label.text = ""
+			continue
+		if not _is_deck_eligible(dn):
 			label.text = ""
 			continue
 		var has_entry: bool = _deck_weights.has(dn)
@@ -647,22 +703,9 @@ func _apply_random_enabled_to_all() -> void:
 		_reset_weights_btn.disabled = not _random_enabled
 	if _search_edit != null:
 		_search_edit.editable = _random_enabled
-	# Apply to deck rows (respecting folder takeover)
-	for dn in _deck_rows:
-		var ui: Dictionary = _deck_rows[dn]
-		var dimmed := _is_folder_enabled(ui["folder"])
-		_set_row_dimmed(ui, dimmed)
-	# Apply to folder rows
-	for fp in _folder_rows:
-		var ui: Dictionary = _folder_rows[fp]
-		if ui.has("check"):
-			(ui["check"] as CheckBox).disabled = not _random_enabled
-		if ui.has("dec"):
-			(ui["dec"] as Button).disabled = not _random_enabled
-		if ui.has("inc"):
-			(ui["inc"] as Button).disabled = not _random_enabled
-		if ui.has("inp"):
-			(ui["inp"] as LineEdit).editable = _random_enabled
+	# Row dim state is the canonical "folder takeover OR ineligible" + the
+	# _random_enabled gate baked into _set_row_dimmed; delegate the whole pass.
+	_apply_folder_takeover_to_all()
 
 
 func _refresh_select_all_label() -> void:

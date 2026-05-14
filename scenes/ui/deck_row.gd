@@ -120,6 +120,13 @@ func set_selected(value: bool) -> void:
 	_apply_selection_style()
 
 
+func set_dimmed(value: bool) -> void:
+	## Visually grey the row without disabling it — used by DeckListView's format
+	## filter to indicate decks not legal in the selected format. Row stays
+	## clickable so the user can still inspect / edit / select it.
+	modulate = Color(1, 1, 1, 0.45) if value else Color(1, 1, 1, 1)
+
+
 func set_actions_visible(value: bool) -> void:
 	if _actions_button != null:
 		_actions_button.visible = value
@@ -167,10 +174,10 @@ func _apply_selection_style() -> void:
 		hover.bg_color = Color(0.20, 0.10, 0.06, 0.6)
 		hover.set_corner_radius_all(3)
 		add_theme_stylebox_override("hover", hover)
-		var pressed := StyleBoxFlat.new()
-		pressed.bg_color = Color(0.25, 0.12, 0.07, 0.8)
-		pressed.set_corner_radius_all(3)
-		add_theme_stylebox_override("pressed", pressed)
+		var pressed_style := StyleBoxFlat.new()
+		pressed_style.bg_color = Color(0.25, 0.12, 0.07, 0.8)
+		pressed_style.set_corner_radius_all(3)
+		add_theme_stylebox_override("pressed", pressed_style)
 		remove_theme_color_override("font_color")
 
 

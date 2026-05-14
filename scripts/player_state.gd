@@ -2,9 +2,17 @@ class_name PlayerState
 extends RefCounted
 
 signal hand_changed()
+## Emitted by action_handler when battle zones change; subscribed by game_board.
+@warning_ignore("unused_signal")
 signal zones_changed()
+## Emitted by action_handler / effect_handler when current_monster changes; subscribed by game_board.
+@warning_ignore("unused_signal")
 signal monster_changed()
+## Emitted by action_handler when rage changes; subscribed by game_board.
+@warning_ignore("unused_signal")
 signal rage_changed(new_rage: int)
+## Emitted by action_handler when strategy zones change; subscribed by game_board.
+@warning_ignore("unused_signal")
 signal strategy_zones_changed()
 signal deck_changed()
 signal discard_changed()

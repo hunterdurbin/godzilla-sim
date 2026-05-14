@@ -18,6 +18,10 @@ const ROW_INDENT := 18
 @export var allow_expand: bool = true
 ## When true, each row displays a ⋯ menu (Move to folder…, etc.). Used by the expand overlay.
 @export var show_row_actions: bool = false
+## When true, render a Format dropdown next to the search bar. The dropdown
+## greys out decks that aren't legal in the chosen format; selection persists
+## via `GameSettings.deck_list_format`.
+@export var show_format_filter: bool = false
 ## Optional header label shown above the search bar.
 @export var header_text: String = ""
 ## Optional persist key — when set, last-selected deck is remembered across scenes.
@@ -38,9 +42,12 @@ var _folder_order: Array[String] = []
 var _entry_filter: Callable = Callable()  # Optional programmatic filter — (deck_name) -> bool
 var _compact_rows: bool = false
 var _active_overlay: Control = null
+var _format_id: String = ""              # GameModeValidator mode id; "" = Any
+var _eligibility: Dictionary = {}        # deck_name → bool (populated when _format_id set)
 
 var _header_label: Label
 var _search_edit: LineEdit
+var _format_option: OptionButton
 var _density_button: Button
 var _expand_button: Button
 var _move_button: Button
@@ -215,6 +222,23 @@ func _build_full_ui() -> void:
 	_search_edit.text_changed.connect(_on_search_changed)
 	top_row.add_child(_search_edit)
 
+	if show_format_filter:
+		_format_option = OptionButton.new()
+		_format_option.focus_mode = Control.FOCUS_NONE
+		_format_option.tooltip_text = tr("STR_DLV_FORMAT_TOOLTIP")
+		_format_option.add_item(tr("STR_MENU_FORMAT_ANY"), 0)
+		_format_option.set_item_metadata(0, "")
+		_format_id = GameSettings.deck_list_format
+		for i in range(GameModeValidator.MODES.size()):
+			var mode: Dictionary = GameModeValidator.MODES[i]
+			var idx := _format_option.item_count
+			_format_option.add_item(tr(mode["label"]), idx)
+			_format_option.set_item_metadata(idx, mode["id"])
+			if String(mode["id"]) == _format_id:
+				_format_option.select(idx)
+		_format_option.item_selected.connect(_on_format_selected)
+		top_row.add_child(_format_option)
+
 	_density_button = Button.new()
 	_density_button.toggle_mode = true
 	_density_button.focus_mode = Control.FOCUS_NONE
@@ -274,6 +298,7 @@ func _build_full_ui() -> void:
 func refresh() -> void:
 	_entries = DecklistManager.get_all_deck_entries()
 	_compute_folder_order()
+	_rebuild_eligibility()
 	_rebuild()
 	_update_move_button()
 	_update_picker_button()
@@ -459,6 +484,7 @@ func _add_deck_row(entry: Dictionary) -> void:
 	_list_vbox.add_child(row)
 	row.set_compact_mode(_compact_rows)
 	row.set_actions_visible(show_row_actions)
+	row.set_dimmed(not _is_deck_eligible(entry["name"]))
 	_row_buttons[entry["name"]] = row
 	if entry["name"] == _selected_deck:
 		row.set_selected(true)
@@ -475,6 +501,37 @@ func _on_density_toggled(pressed: bool) -> void:
 	for n in _row_buttons:
 		(_row_buttons[n] as DeckRow).set_compact_mode(_compact_rows)
 	_save_state()
+
+
+func _on_format_selected(_idx: int) -> void:
+	SfxManager.play("ui_click")
+	if _format_option == null:
+		return
+	_format_id = String(_format_option.get_selected_metadata())
+	GameSettings.deck_list_format = _format_id
+	GameSettings.save()
+	_rebuild_eligibility()
+	_apply_eligibility_to_rows()
+
+
+func _rebuild_eligibility() -> void:
+	_eligibility.clear()
+	if _format_id.is_empty():
+		return
+	for entry in _entries:
+		var dn: String = entry["name"]
+		_eligibility[dn] = DecklistManager.is_decklist_valid_for_mode(dn, _format_id)
+
+
+func _is_deck_eligible(deck_name: String) -> bool:
+	if _format_id.is_empty():
+		return true
+	return bool(_eligibility.get(deck_name, true))
+
+
+func _apply_eligibility_to_rows() -> void:
+	for dn in _row_buttons:
+		(_row_buttons[dn] as DeckRow).set_dimmed(not _is_deck_eligible(dn))
 
 
 func _on_expand_pressed() -> void:
@@ -582,6 +639,7 @@ func _open_expanded_overlay() -> void:
 	inner.allow_move = false
 	inner.allow_expand = false
 	inner.show_row_actions = true
+	inner.show_format_filter = true
 	inner.persist_key = persist_key
 	inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inner.size_flags_vertical = Control.SIZE_EXPAND_FILL

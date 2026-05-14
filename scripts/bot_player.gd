@@ -384,8 +384,8 @@ func _try_gain_rage(player: PlayerState) -> Array:
 	# Invasion playstyle with only monsters: keep best invasion card, discard worst
 	if playstyle == Playstyle.INVASION and _all_hand_cards_are_monsters(player):
 		if safe_rage_cards.size() > 1 or _find_best_invade_card(player) < 0:
-			var worst_idx := _find_worst_invade_card(safe_rage_cards, player)
-			return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": worst_idx}]
+			var worst_invade_idx := _find_worst_invade_card(safe_rage_cards, player)
+			return [CardEnums.ActionType.GAIN_RAGE, {"hand_index": worst_invade_idx}]
 		return []
 
 	# Discard the least valuable monster — preserve rank-up matches and high-CP cards
@@ -440,13 +440,13 @@ func _decide_best_card_play(valid_actions: Array, player: PlayerState, opponent:
 				continue
 			var b_score := _score_card(b_card, player, opponent, near_winning, z8_blocked)
 			var b_cp: int = b_card.get("counter_power", 0)
-			b_score += b_cp / config.cp_bonus_divisor
+			b_score += int(b_cp / float(config.cp_bonus_divisor))
 			# Scale CP bonus with how far behind we are
 			if cp_gap > 0:
-				b_score += b_cp * mini(cp_gap, 20000) / 10000
+				b_score += int(b_cp * mini(cp_gap, 20000) / 10000.0)
 			# Emergency CP: when opponent at z7+, heavily weight CP to survive invasion
 			if opponent.monster_zone >= 7:
-				b_score += b_cp / 200
+				b_score += int(b_cp / 200.0)
 
 			# Synergy enabler bonus: if playing this card first would enable synergies
 			# for other cards in hand, boost score so it gets played first
@@ -1978,7 +1978,7 @@ func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary]
 
 # --- Hand card selection ---
 
-func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int], _prompt: String, allow_skip: bool) -> void:
+func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int], _prompt: String, _allow_skip: bool) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()

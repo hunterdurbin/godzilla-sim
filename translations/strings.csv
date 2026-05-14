@@ -29,6 +29,10 @@ STR_MENU_PLAYSTYLE_BALANCED,Balanced,バランス型
 STR_MENU_BOT_CONFIG,Bot Config,ボット設定
 STR_MENU_BOT_DECK,Bot Deck,ボットデッキ
 STR_MENU_BOT_DECK_RANDOM,Use Random Deck,ランダムデッキを使用
+STR_MENU_BOT_DECK_RANDOM_REMATCH,Re-pick on rematch,対戦ごとに再抽選
+STR_MENU_BOT_FORMAT,Format,フォーマット
+STR_MENU_FORMAT_ANY,Any,すべて
+STR_MENU_BOT_DECK_NOT_IN_FORMAT,Not legal in current format,現在のフォーマットでは使用不可
 STR_MENU_DECK_SELECT_ALL,Select All,すべて選択
 STR_MENU_DECK_UNSELECT_ALL,Unselect All,すべて解除
 STR_MENU_DECK_RESET_WEIGHTS,Reset Weights,重みをリセット
@@ -462,6 +466,17 @@ STR_PUBLIC_CONNECTION_FAILED,Connection failed.,接続に失敗しました。
 STR_PUBLIC_DECK_OK,Deck selected. Create or join a lobby!,デッキを選択しました。ロビーを作成または参加してください!
 STR_PUBLIC_DECK_INVALID_FMT,"Deck invalid for %s: %s","%s には無効なデッキ: %s"
 STR_PUBLIC_STARTING_GAME,Starting game...,ゲームを開始します...
+STR_PUBLIC_QUEUE_TIMER_FMT,Waiting: %02d:%02d,待機中: %02d:%02d
+STR_PUBLIC_PLAY_BOT_WHILE_WAITING,Play vs Bot While Waiting,待機中にボットと対戦
+STR_GB_LOBBY_WAITING_BANNER_FMT,Lobby active — Waiting: %02d:%02d,ロビー有効 — 待機中: %02d:%02d
+STR_GB_RETURN_TO_LOBBY,Return to lobby,ロビーに戻る
+STR_GB_OPPONENT_FOUND_TITLE,Opponent found!,対戦相手が見つかりました!
+STR_GB_OPPONENT_FOUND_BODY,Start match now? Your bot match will be abandoned.,今すぐ対戦を開始しますか? ボット対戦は中止されます。
+STR_GB_OPPONENT_FOUND_START,Start match,対戦開始
+STR_GB_OPPONENT_FOUND_KEEP_BOT,Keep playing bot,ボット対戦を続ける
+STR_GB_OPPONENT_FOUND_AUTO_FMT,Auto-start in %ds...,%d 秒後に自動開始...
+STR_GB_ACTION_SENDING,Syncing…,同期中…
+STR_PUBLIC_HOST_DECLINED_MATCH,Host is busy in a bot match. Please join another lobby.,ホストはボット対戦中です。別のロビーに参加してください。
 STR_PUBLIC_LOBBIES,Public Lobbies,公開ロビー
 STR_GAME_MODE,GAME MODE,ゲームモード
 STR_CREATE_LOBBY,Create Lobby,ロビー作成
@@ -526,8 +541,20 @@ STR_DB_SAVE,Save,保存
 STR_DB_LOAD,Load,読み込み
 STR_DB_DELETE,Delete,削除
 STR_DB_IMPORT,Import from Clipboard,クリップボードから読み込み
+STR_DB_IMPORT_DECKLOG,Import from Decklog,Decklogから読み込み
 STR_DB_EXPORT,Export to Clipboard,クリップボードに書き出し
 STR_DB_COPIED,Copied!,コピーしました!
+STR_DB_DECKLOG_TITLE,Import from Decklog,Decklogから読み込み
+STR_DB_DECKLOG_HELPER,Paste a Decklog URL or deck code.,DecklogのURLまたはデッキコードを貼り付けてください。
+STR_DB_DECKLOG_PLACEHOLDER,https://decklog-en.bushiroad.com/view/XXXXX,https://decklog-en.bushiroad.com/view/XXXXX
+STR_DB_DECKLOG_FETCH,Import,読み込み
+STR_DB_DECKLOG_FETCHING,Fetching…,読み込み中…
+"STR_DB_DECKLOG_REGION_TOOLTIP","Decklog region. Only matters when entering a bare code; full URLs detect the region automatically.","Decklogの地域。コードのみ入力する場合に使用。完全なURLでは地域を自動検出します。"
+STR_DB_DECKLOG_ERR_BAD_INPUT,Not a valid Decklog URL or code.,Decklog URLまたはコードが無効です。
+"STR_DB_DECKLOG_ERR_NETWORK","Could not reach Decklog. Check your internet connection.","Decklogに接続できません。インターネット接続を確認してください。"
+"STR_DB_DECKLOG_ERR_NOT_FOUND","Decklog returned no data — is the code correct?","Decklogからデータが返されませんでした。コードが正しいか確認してください。"
+STR_DB_DECKLOG_ERR_PARSE,Could not parse Decklog response.,Decklogの応答を解析できませんでした。
+"STR_DB_DECKLOG_ERR_WRONG_GAME_FMT","Not a Godzilla deck (game id=%d).","ゴジラデッキではありません (game id=%d)。"
 STR_DB_BACK,Back to Menu,メニューに戻る
 STR_DB_SET_AS_DEFAULT,Set as default,デフォルトに設定
 STR_DB_DECK,DECK,デッキ
@@ -865,6 +892,7 @@ STR_DLV_MOVE_INFO,"Move ""%s"" to which folder?","「%s」をどのフォルダ�
 STR_DLV_FOLDER_EXISTS,A deck with that name already exists in the target folder.,移動先のフォルダに同名のデッキが既に存在します。
 STR_DLV_NO_DECKS,No decks match.,一致するデッキはありません。
 STR_DLV_TOGGLE_DENSITY,Toggle compact view,コンパクト表示を切替
+STR_DLV_FORMAT_TOOLTIP,Grey out decks not legal in the chosen format,選択フォーマットでは使えないデッキをグレーアウト
 STR_DLV_EXPAND,Expanded view,拡大表示
 STR_DLV_EXPANDED_TITLE,DECKS,デッキ一覧
 STR_DLV_PICKER_PLACEHOLDER,(Select a deck),(デッキを選択)

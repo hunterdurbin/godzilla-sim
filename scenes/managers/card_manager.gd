@@ -319,7 +319,7 @@ func _arrange_grid(animate: bool) -> void:
 	for i in range(count):
 		var card = managed_cards[i]
 		var col = i % grid_columns
-		var row = i / grid_columns
+		var row = int(i / float(grid_columns))
 
 		var target_pos = Vector2(
 			start_x + col * grid_column_spacing,

@@ -34,6 +34,7 @@ var hand_sort_type_order: int = 0  # 0-5 index into type permutations
 var hand_sort_rank_ascending: bool = true
 var stacked_view: bool = true  # Remembered stacked toggle for overlays
 var default_game_mode: String = "rumble_west"
+var deck_list_format: String = ""  # DeckListView format filter; "" = Any (grey ineligible decks)
 
 # Visual settings
 var custom_playmat_enabled: bool = false
@@ -56,6 +57,8 @@ var bot_seed_text: String = ""             # raw text; if valid int, used as see
 var bot_speed_value: int = 0               # 0=Auto, 1-10 = 0.1s..1.0s delay
 var bot_playstyle_value: int = 0           # 0=Auto, 1=Invasion, 2=Counter, 3=Balanced
 var bot_random_deck_enabled: bool = false
+var bot_random_deck_on_rematch: bool = true  # When random deck is enabled, re-pick from the pool on each rematch
+var bot_random_deck_format: String = ""    # GameModeValidator mode id, "" = Any
 var bot_deck_weights: Dictionary = {}      # {deck_name: int weight, 0=disabled, >=1=weight}
 var bot_folder_weights: Dictionary = {}    # {folder_path: int weight, 0/missing=disabled}
 
@@ -143,6 +146,7 @@ func _save() -> void:
 	config.set_value("gameplay", "hand_sort_rank_ascending", hand_sort_rank_ascending)
 	config.set_value("gameplay", "stacked_view", stacked_view)
 	config.set_value("gameplay", "default_game_mode", default_game_mode)
+	config.set_value("gameplay", "deck_list_format", deck_list_format)
 	config.set_value("visual", "custom_playmat_enabled", custom_playmat_enabled)
 	config.set_value("visual", "custom_playmat_opponent", custom_playmat_opponent)
 	config.set_value("visual", "color_overlay_mode", color_overlay_mode)
@@ -156,6 +160,8 @@ func _save() -> void:
 	config.set_value("bot", "speed_value", bot_speed_value)
 	config.set_value("bot", "playstyle_value", bot_playstyle_value)
 	config.set_value("bot", "random_deck_enabled", bot_random_deck_enabled)
+	config.set_value("bot", "random_deck_on_rematch", bot_random_deck_on_rematch)
+	config.set_value("bot", "random_deck_format", bot_random_deck_format)
 	config.set_value("bot", "deck_weights", bot_deck_weights)
 	config.set_value("bot", "folder_weights", bot_folder_weights)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
@@ -193,6 +199,7 @@ func _load() -> void:
 	hand_sort_rank_ascending = config.get_value("gameplay", "hand_sort_rank_ascending", true)
 	stacked_view = config.get_value("gameplay", "stacked_view", true)
 	default_game_mode = config.get_value("gameplay", "default_game_mode", "rumble_west")
+	deck_list_format = config.get_value("gameplay", "deck_list_format", "")
 	custom_playmat_enabled = config.get_value("visual", "custom_playmat_enabled", false)
 	custom_playmat_opponent = config.get_value("visual", "custom_playmat_opponent", false)
 	color_overlay_mode = config.get_value("visual", "color_overlay_mode", 3)
@@ -215,6 +222,8 @@ func _load() -> void:
 	bot_speed_value = config.get_value("bot", "speed_value", 0)
 	bot_playstyle_value = config.get_value("bot", "playstyle_value", 0)
 	bot_random_deck_enabled = config.get_value("bot", "random_deck_enabled", false)
+	bot_random_deck_on_rematch = config.get_value("bot", "random_deck_on_rematch", true)
+	bot_random_deck_format = config.get_value("bot", "random_deck_format", "")
 	bot_deck_weights = config.get_value("bot", "deck_weights", {})
 	bot_folder_weights = config.get_value("bot", "folder_weights", {})
 	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
@@ -231,3 +240,79 @@ func _load() -> void:
 	reconnect_is_host = config.get_value("reconnect", "is_host", false)
 	reconnect_game_mode = config.get_value("reconnect", "game_mode", "")
 	reconnect_is_public = config.get_value("reconnect", "is_public", false)
+
+
+func pick_weighted_random_deck() -> String:
+	## Two-stage sampler: each pool entry is either a single deck OR a whole
+	## folder (uniform pick inside it). Folder-enabled decks are NOT also
+	## listed individually — the folder takes over. Honors bot_random_deck_format
+	## by skipping decks not legal in that mode (folders contribute weight only
+	## when at least one of their decks is legal). Returns "" when no pool is
+	## configured / nothing eligible; caller should leave the previous deck
+	## selection in place.
+	var entries := DecklistManager.get_all_deck_entries()
+	var format_id := bot_random_deck_format
+	var eligibility_cache: Dictionary = {}
+	var is_eligible := func(deck_name: String) -> bool:
+		if format_id.is_empty():
+			return true
+		if eligibility_cache.has(deck_name):
+			return bool(eligibility_cache[deck_name])
+		var ok := DecklistManager.is_decklist_valid_for_mode(deck_name, format_id)
+		eligibility_cache[deck_name] = ok
+		return ok
+
+	var enabled_folders: Dictionary = {}
+	for fp in bot_folder_weights:
+		var fw := int(bot_folder_weights[fp])
+		if fw > 0:
+			enabled_folders[fp] = fw
+
+	# Pre-expand each enabled folder to the set of *eligible* decks inside it.
+	# Folders with zero eligible decks are skipped entirely (don't contribute
+	# weight, can't be picked).
+	var folder_eligible_decks: Dictionary = {}
+	for fp in enabled_folders:
+		var legal: Array[String] = []
+		for entry in entries:
+			if entry["folder"] == fp and is_eligible.call(entry["name"]):
+				legal.append(entry["name"])
+		if not legal.is_empty():
+			folder_eligible_decks[fp] = legal
+
+	var pool: Array = []
+	var total := 0
+	for fp in enabled_folders:
+		if not folder_eligible_decks.has(fp):
+			continue
+		pool.append({"kind": "folder", "name": fp, "weight": enabled_folders[fp]})
+		total += int(enabled_folders[fp])
+
+	for entry in entries:
+		if enabled_folders.has(entry["folder"]):
+			continue
+		var deck_name: String = entry["name"]
+		var has_entry: bool = bot_deck_weights.has(deck_name)
+		var w: int = 1
+		if has_entry:
+			w = int(bot_deck_weights[deck_name])
+		if w <= 0:
+			continue
+		if not is_eligible.call(deck_name):
+			continue
+		pool.append({"kind": "deck", "name": deck_name, "weight": w})
+		total += w
+
+	if total <= 0 or pool.is_empty():
+		return ""
+
+	var r := randi() % total
+	var acc := 0
+	for e in pool:
+		acc += int(e["weight"])
+		if r < acc:
+			if e["kind"] == "folder":
+				var folder_decks: Array[String] = folder_eligible_decks[e["name"]]
+				return folder_decks[randi() % folder_decks.size()]
+			return e["name"]
+	return ""
