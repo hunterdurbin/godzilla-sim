@@ -194,8 +194,8 @@ static func first_player_chose(player_id: int, went_first: bool) -> Dictionary:
 	return {"type": "first_player_chose", "player_id": player_id, "went_first": went_first}
 
 
-static func seed_announce(seed: int) -> Dictionary:
-	return {"type": "seed", "seed": seed}
+static func seed_announce(seed_value: int) -> Dictionary:
+	return {"type": "seed", "seed": seed_value}
 
 
 static func opponent_wants_rematch(new_deck: bool = false) -> Dictionary:
@@ -318,7 +318,7 @@ static func render(token: Dictionary) -> String:
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"game_over":
 			var reason_key: String = token.get("reason_key", "")
-			var reason: String = TranslationServer.translate(reason_key) if not reason_key.is_empty() else ""
+			var reason: String = String(TranslationServer.translate(reason_key)) if not reason_key.is_empty() else ""
 			return TranslationServer.translate("STR_LOG_GAME_OVER_FMT") \
 				.replace("{PLAYER}", player_name(token.get("winner_id", 0))) \
 				.replace("{REASON}", reason)

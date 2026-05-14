@@ -34,20 +34,20 @@ func get_monster_play_rules(plan: Dictionary, _player: PlayerState, _bot) -> Dic
 	return plan.get("monster_play_rules", {})
 
 
-func should_suppress_invasion(plan: Dictionary, player: PlayerState, opponent: PlayerState) -> bool:
+func should_suppress_invasion(_plan: Dictionary, _player: PlayerState, _opponent: PlayerState) -> bool:
 	## Override: return true to suppress non-win invasion this decision frame.
 	## Default: no suppression (reserved indices are still excluded from searches).
 	return false
 
 
-func should_prioritize_cycling(plan: Dictionary, player: PlayerState,
-		opponent: PlayerState) -> bool:
+func should_prioritize_cycling(_plan: Dictionary, _player: PlayerState,
+		_opponent: PlayerState) -> bool:
 	## Override: return true to cycle hand (gain rage) before playing cards.
 	## Used by combos that need to dig for pieces rather than build board.
 	return false
 
 
-func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: PlayerState) -> Dictionary:
+func get_invasion_preference(_plan: Dictionary, _player: PlayerState, _opponent: PlayerState) -> Dictionary:
 	## Override: return invasion guidance for combo-aware invasion targeting.
 	## Keys: preferred_steps (1 or 2, 0=no pref), max_zone (-1=no limit),
 	##        target_zone (-1=no target).
@@ -55,14 +55,14 @@ func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: Pl
 
 
 func adjust_card_score(plan: Dictionary, hand_idx: int, base_score: int,
-		player: PlayerState, opponent: PlayerState) -> int:
+		_player: PlayerState, _opponent: PlayerState) -> int:
 	## Override: return context-aware score adjustment for a card.
 	## Default delegates to get_score_adjustment() for backward compatibility.
 	return base_score + get_score_adjustment(plan, hand_idx)
 
 
-func get_execution_action(plan: Dictionary, valid_actions: Array,
-		player: PlayerState, opponent: PlayerState, bot) -> Array:
+func get_execution_action(_plan: Dictionary, _valid_actions: Array,
+		_player: PlayerState, _opponent: PlayerState, _bot) -> Array:
 	## Override: when combo pieces are playable, return the next action in sequence.
 	## Returns [action_type, params] or [] if no combo action to take.
 	return []
@@ -78,14 +78,14 @@ func get_partial_reserved_indices(plan: Dictionary) -> Array[int]:
 	return critical
 
 
-func get_rankup_bonus(plan: Dictionary, monster: Dictionary,
-		player: PlayerState, opponent: PlayerState, bot) -> int:
+func get_rankup_bonus(_plan: Dictionary, _monster: Dictionary,
+		_player: PlayerState, _opponent: PlayerState, _bot) -> int:
 	## Override: return score bonus for choosing this monster during rank-up.
 	## Positive = prefer, negative = avoid, 0 = no opinion.
 	return 0
 
 
-func get_battle_zone_avoidance(plan: Dictionary, player: PlayerState) -> Array[int]:
+func get_battle_zone_avoidance(_plan: Dictionary, _player: PlayerState) -> Array[int]:
 	## Override: return 0-indexed zones where battle cards should NOT be placed
 	## (bot's monster will crush them during combo execution).
 	return []

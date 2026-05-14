@@ -390,6 +390,8 @@ func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = fa
 		return
 
 	_set_active_effect(player_id, card_data)
+	# CardEffect.on_enter is non-coroutine in the base, but per-card overrides may be — await is required.
+	@warning_ignore("redundant_await")
 	await effect.on_enter(_build_context(player_id, card_data))
 	_clear_active_effect()
 
@@ -407,6 +409,7 @@ func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void
 	var effect := get_effect(player.current_monster)
 	if effect:
 		_set_active_effect(player_id, player.current_monster)
+		@warning_ignore("redundant_await")
 		await effect.on_when_invading(_build_context(player_id, player.current_monster), from_zone, to_zone)
 		_clear_active_effect()
 
@@ -433,6 +436,7 @@ func trigger_crush(player_id: int, card_data: Dictionary) -> void:
 		var saved_player_id: int = _active_effect_player_id
 		var saved_card: Dictionary = _active_effect_card
 		_set_active_effect(player_id, card_data)
+		@warning_ignore("redundant_await")
 		await effect.on_crush(_build_context(player_id, card_data))
 		if saved_card.is_empty():
 			_clear_active_effect()
@@ -448,6 +452,7 @@ func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 		var saved_player_id: int = _active_effect_player_id
 		var saved_card: Dictionary = _active_effect_card
 		_set_active_effect(player_id, card_data)
+		@warning_ignore("redundant_await")
 		await effect.on_revenge(_build_context(player_id, card_data))
 		if saved_card.is_empty():
 			_clear_active_effect()
@@ -467,8 +472,10 @@ func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) ->
 		var effect := get_effect(card_data)
 		var ctx := _build_context(player_id, card_data)
 		var combined_cb := func():
+			@warning_ignore("redundant_await")
 			await effect.on_crush(ctx)
 			log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
+			@warning_ignore("redundant_await")
 			await effect.on_revenge(ctx)
 		entries.append({"player_id": player_id, "card_data": card_data, "callback": combined_cb, "skip_active_check": true})
 	elif has_crush:
@@ -480,6 +487,7 @@ func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) ->
 		var ctx := _build_context(player_id, card_data)
 		var revenge_cb := func():
 			log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
+			@warning_ignore("redundant_await")
 			await effect.on_revenge(ctx)
 		entries.append({"player_id": player_id, "card_data": card_data, "callback": revenge_cb, "skip_active_check": true})
 	return entries
@@ -521,6 +529,7 @@ func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 		var saved_player_id: int = _active_effect_player_id
 		var saved_card: Dictionary = _active_effect_card
 		_set_active_effect(player_id, card_data)
+		@warning_ignore("redundant_await")
 		await effect.on_discard_from_hand(_build_context(player_id, card_data))
 		if saved_card.is_empty():
 			_clear_active_effect()
@@ -576,6 +585,7 @@ func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
 	var effect := get_effect(card_data)
 	if effect:
 		_set_active_effect(player_id, card_data)
+		@warning_ignore("redundant_await")
 		await effect.on_burst_discard(_build_context(player_id, card_data))
 		_clear_active_effect()
 
@@ -1860,6 +1870,7 @@ func trigger_leave_play(player_id: int, leaving_card: Dictionary, zone_index: in
 		return
 	var effect := get_effect(leaving_card)
 	if effect:
+		@warning_ignore("redundant_await")
 		await effect.on_leave_play(_build_context(player_id, leaving_card), zone_index)
 
 
@@ -1892,11 +1903,11 @@ func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, 
 	if chosen < 0:
 		return {}
 
-	var zone_card := target.get_zone_top_card(chosen)
-	if zone_card.is_empty():
+	var chosen_card := target.get_zone_top_card(chosen)
+	if chosen_card.is_empty():
 		return {}
 
-	return await _execute_destroy_zone(target, chosen, zone_card)
+	return await _execute_destroy_zone(target, chosen, chosen_card)
 
 
 func destroy_chosen_zone(player_id: int, target: PlayerState, valid_zones: Array[int], prompt: String) -> Dictionary:
@@ -2112,6 +2123,7 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 	card_destroyed.emit(target.player_id, zone_idx)
 	if has_trigger(top_card, "on_destroy"):
 		var d_effect := get_effect(top_card)
+		@warning_ignore("redundant_await")
 		await d_effect.on_destroy(_build_context(target.player_id, top_card), zone_idx)
 	# Destroy is one way to leave play — fire the generic hook for linked-card
 	# effects that don't care whether removal was via <Destroy> or overload.
@@ -2122,6 +2134,7 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 			var ctx := _build_context(target.player_id, top_card)
 			var revenge_cb := func():
 				log_message.emit(GameLog.revenge_triggered(target.player_id, top_card.get("id", "")))
+				@warning_ignore("redundant_await")
 				await rev_effect.on_revenge(ctx)
 			deferred_entries.append({"player_id": target.player_id, "card_data": top_card, "callback": revenge_cb, "skip_active_check": true})
 		deferred_entries.append_array(collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
@@ -2237,6 +2250,7 @@ func apply_play_cost(player_id: int, card_data: Dictionary, zone_index: int) -> 
 	if not has_trigger(card_data, "apply_play_cost"):
 		return true
 	var ctx := _build_context(player_id, card_data)
+	@warning_ignore("redundant_await")
 	return await effect.apply_play_cost(ctx, zone_index)
 
 
@@ -2784,6 +2798,7 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 		var interceptor_card: Dictionary = player.get_zone_top_card(intercept_zone)
 		var effect := get_effect(interceptor_card)
 		if effect:
+			@warning_ignore("redundant_await")
 			intercepted = await effect.should_intercept_strategy_discard(
 				_build_context(player_id, interceptor_card), card)
 
@@ -2874,6 +2889,7 @@ func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
 	await trigger_leave_play(player.player_id, overloaded_top, to_zone)
 	if not moved_top.is_empty() and has_trigger(moved_top, "on_zone_changed"):
 		var me := get_effect(moved_top)
+		@warning_ignore("redundant_await")
 		await me.on_zone_changed(_build_context(player.player_id, moved_top), from_zone, to_zone)
 
 
@@ -2888,9 +2904,11 @@ func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
 	player.zones_changed.emit()
 	if not top_a.is_empty() and has_trigger(top_a, "on_zone_changed"):
 		var eff := get_effect(top_a)
+		@warning_ignore("redundant_await")
 		await eff.on_zone_changed(_build_context(player.player_id, top_a), zone_a, zone_b)
 	if not top_b.is_empty() and has_trigger(top_b, "on_zone_changed"):
 		var eff := get_effect(top_b)
+		@warning_ignore("redundant_await")
 		await eff.on_zone_changed(_build_context(player.player_id, top_b), zone_b, zone_a)
 
 

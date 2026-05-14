@@ -3600,7 +3600,7 @@ func _populate_rematch_deck_select() -> void:
 		_rematch_deck_select.visible = false
 		return
 
-	_rematch_deck_select.set_filter(func(name): return valid_set.has(name))
+	_rematch_deck_select.set_filter(func(deck_name): return valid_set.has(deck_name))
 	_rematch_deck_select.refresh()
 	if valid_set.has(current_deck):
 		_rematch_deck_select.select_deck(current_deck)
@@ -4282,7 +4282,7 @@ func _sync_boards() -> void:
 	call_deferred("_position_hands")
 
 
-func _update_hand_visibility(active_player_id: int) -> void:
+func _update_hand_visibility(_active_player_id: int) -> void:
 	if is_multiplayer_game:
 		# Multiplayer: local player always face-up, opponent always face-down
 		if player1_board:
@@ -8157,8 +8157,8 @@ func _process_lobby_banner_tick() -> void:
 
 
 func _update_lobby_banner_label() -> void:
-	var elapsed := (Time.get_ticks_msec() - _lobby_banner_start_msec) / 1000
-	_lobby_banner_label.text = tr("STR_GB_LOBBY_WAITING_BANNER_FMT") % [int(elapsed) / 60, int(elapsed) % 60]
+	var elapsed: int = int((Time.get_ticks_msec() - _lobby_banner_start_msec) / 1000.0)
+	_lobby_banner_label.text = tr("STR_GB_LOBBY_WAITING_BANNER_FMT") % [int(elapsed / 60.0), elapsed % 60]
 
 
 func _on_lobby_banner_return_pressed() -> void:
@@ -8179,7 +8179,7 @@ func _show_opponent_found_dialog() -> void:
 	_opponent_found_dialog.title = tr("STR_GB_OPPONENT_FOUND_TITLE")
 	_opponent_found_dialog.dialog_text = tr("STR_GB_OPPONENT_FOUND_BODY")
 	_opponent_found_dialog.get_ok_button().text = tr("STR_GB_OPPONENT_FOUND_START")
-	var keep_btn := _opponent_found_dialog.add_button(tr("STR_GB_OPPONENT_FOUND_KEEP_BOT"), false, "keep_bot")
+	_opponent_found_dialog.add_button(tr("STR_GB_OPPONENT_FOUND_KEEP_BOT"), false, "keep_bot")
 	_opponent_found_dialog.confirmed.connect(_on_opponent_found_start)
 	_opponent_found_dialog.custom_action.connect(_on_opponent_found_custom_action)
 	add_child(_opponent_found_dialog)

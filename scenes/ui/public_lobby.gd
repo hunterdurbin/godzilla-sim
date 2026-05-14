@@ -421,5 +421,5 @@ func _process(_delta: float) -> void:
 
 
 func _update_queue_timer_label() -> void:
-	var elapsed := (Time.get_ticks_msec() - _queue_start_msec) / 1000
-	queue_timer_label.text = tr("STR_PUBLIC_QUEUE_TIMER_FMT") % [int(elapsed) / 60, int(elapsed) % 60]
+	var elapsed: int = int((Time.get_ticks_msec() - _queue_start_msec) / 1000.0)
+	queue_timer_label.text = tr("STR_PUBLIC_QUEUE_TIMER_FMT") % [int(elapsed / 60.0), elapsed % 60]

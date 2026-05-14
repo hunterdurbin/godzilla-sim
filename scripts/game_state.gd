@@ -1,8 +1,8 @@
 class_name GameState
 extends RefCounted
 
-signal phase_changed(phase: CardEnums.GamePhase)
-signal turn_changed(player_id: int)
+## Emitted by action_handler when a player wins; subscribed by turn_manager.
+@warning_ignore("unused_signal")
 signal game_over(winner_id: int, reason: String)
 
 var players: Array[PlayerState] = []

@@ -183,7 +183,6 @@ func _rebuild() -> void:
 	_folder_rows.clear()
 
 	var has_subfolders := _folder_order.size() > 1
-	var any_visible := false
 	for folder in _folder_order:
 		var folder_entries := _entries_in_folder(folder)
 		var visible_entries := _filter_entries(folder_entries, folder)
@@ -194,11 +193,10 @@ func _rebuild() -> void:
 		if not should_render_header:
 			collapsed = false
 		if should_render_header:
-			_add_folder_header(folder, visible_entries.size(), collapsed)
+			_add_folder_header(folder, collapsed)
 		if not collapsed:
 			for entry in visible_entries:
 				_add_deck_row(entry)
-		any_visible = true
 
 	_apply_folder_takeover_to_all()
 	_apply_random_enabled_to_all()
@@ -242,7 +240,7 @@ func _folder_name_matches(folder: String) -> bool:
 	return FuzzyMatch.score(_search_text, folder) >= 0
 
 
-func _add_folder_header(folder: String, deck_count: int, collapsed: bool) -> void:
+func _add_folder_header(folder: String, collapsed: bool) -> void:
 	var row := HBoxContainer.new()
 	row.custom_minimum_size.y = ROW_HEIGHT_FOLDER
 	row.add_theme_constant_override("separation", 6)

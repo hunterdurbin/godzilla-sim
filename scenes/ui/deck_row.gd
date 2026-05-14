@@ -174,10 +174,10 @@ func _apply_selection_style() -> void:
 		hover.bg_color = Color(0.20, 0.10, 0.06, 0.6)
 		hover.set_corner_radius_all(3)
 		add_theme_stylebox_override("hover", hover)
-		var pressed := StyleBoxFlat.new()
-		pressed.bg_color = Color(0.25, 0.12, 0.07, 0.8)
-		pressed.set_corner_radius_all(3)
-		add_theme_stylebox_override("pressed", pressed)
+		var pressed_style := StyleBoxFlat.new()
+		pressed_style.bg_color = Color(0.25, 0.12, 0.07, 0.8)
+		pressed_style.set_corner_radius_all(3)
+		add_theme_stylebox_override("pressed", pressed_style)
 		remove_theme_color_override("font_color")
 
 
