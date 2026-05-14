@@ -466,6 +466,15 @@ STR_PUBLIC_CONNECTION_FAILED,Connection failed.,接続に失敗しました。
 STR_PUBLIC_DECK_OK,Deck selected. Create or join a lobby!,デッキを選択しました。ロビーを作成または参加してください!
 STR_PUBLIC_DECK_INVALID_FMT,"Deck invalid for %s: %s","%s には無効なデッキ: %s"
 STR_PUBLIC_STARTING_GAME,Starting game...,ゲームを開始します...
+STR_PUBLIC_QUEUE_TIMER_FMT,Waiting: %02d:%02d,待機中: %02d:%02d
+STR_PUBLIC_PLAY_BOT_WHILE_WAITING,Play vs Bot While Waiting,待機中にボットと対戦
+STR_GB_LOBBY_WAITING_BANNER_FMT,Lobby active — Waiting: %02d:%02d,ロビー有効 — 待機中: %02d:%02d
+STR_GB_RETURN_TO_LOBBY,Return to lobby,ロビーに戻る
+STR_GB_OPPONENT_FOUND_TITLE,Opponent found!,対戦相手が見つかりました!
+STR_GB_OPPONENT_FOUND_BODY,Start match now? Your bot match will be abandoned.,今すぐ対戦を開始しますか? ボット対戦は中止されます。
+STR_GB_OPPONENT_FOUND_START,Start match,対戦開始
+STR_GB_OPPONENT_FOUND_KEEP_BOT,Keep playing bot,ボット対戦を続ける
+STR_GB_OPPONENT_FOUND_AUTO_FMT,Auto-start in %ds...,%d 秒後に自動開始...
 STR_PUBLIC_LOBBIES,Public Lobbies,公開ロビー
 STR_GAME_MODE,GAME MODE,ゲームモード
 STR_CREATE_LOBBY,Create Lobby,ロビー作成

@@ -2,7 +2,9 @@ extends Control
 
 @onready var create_button: Button = $CenterContainer/VBoxContainer/ActionRow/CreateButton
 @onready var refresh_button: Button = $CenterContainer/VBoxContainer/ActionRow/RefreshButton
+@onready var play_bot_button: Button = $CenterContainer/VBoxContainer/ActionRow/PlayBotButton
 @onready var status_label: Label = $CenterContainer/VBoxContainer/StatusLabel
+@onready var queue_timer_label: Label = $CenterContainer/VBoxContainer/QueueTimerLabel
 @onready var room_list: VBoxContainer = $CenterContainer/VBoxContainer/RoomScroll/RoomList
 @onready var deck_select: VBoxContainer = $CenterContainer/VBoxContainer/SettingsRow/DeckSelect
 @onready var mode_dropdown: OptionButton = $CenterContainer/VBoxContainer/SettingsRow/ModeSelect/ModeDropdown
@@ -17,10 +19,14 @@ var _is_joining: bool = false
 var _deck_valid: bool = false
 var _validation_errors: Array[String] = []
 
+var _queue_timer_active: bool = false
+var _queue_start_msec: int = 0
+
 
 func _ready() -> void:
 	create_button.pressed.connect(_on_create_pressed)
 	refresh_button.pressed.connect(_on_refresh_pressed)
+	play_bot_button.pressed.connect(_on_play_bot_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	deck_select.deck_selected.connect(_on_deck_selected)
 
@@ -40,6 +46,20 @@ func _ready() -> void:
 	NetworkManager.connection_failed.connect(_on_connection_failed)
 	NetworkManager.version_mismatch.connect(_on_version_mismatch)
 	NetworkManager.version_verified_ok.connect(_try_auto_start)
+
+	# Detect re-entry from an in-lobby bot match. NetworkManager keeps the relay
+	# peer + room state alive across that scene change, so we resume waiting
+	# without clearing the previously-selected deck.
+	var resuming_as_host := NetworkManager.is_public_room and NetworkManager.is_host() and DecklistManager.has_player_deck(0)
+	if resuming_as_host:
+		_resume_hosting_state()
+		if NetworkManager.opponent_connected:
+			# Opponent joined while we were in the bot game. Their initial deck RPC
+			# was dropped (no listener), so ask them to re-send it now.
+			status_label.text = tr("STR_PUBLIC_OPPONENT_CONNECTED_STARTING")
+			_request_client_deck()
+		_fetch_rooms()
+		return
 
 	DecklistManager.clear_selections()
 
@@ -168,6 +188,8 @@ func _on_create_pressed() -> void:
 
 	_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_select.current_selection)
 	status_label.text = tr("STR_PUBLIC_LOBBY_CREATED")
+	play_bot_button.visible = true
+	_start_queue_timer()
 
 
 func _on_join_room(code: String) -> void:
@@ -204,19 +226,25 @@ func _on_player_connected(_peer_id: int) -> void:
 		_try_auto_start()
 	else:
 		# Client: send deck immediately
-		var data := DecklistManager.load_decklist(deck_select.current_selection)
-		if data.is_empty():
-			return
-		var payload := JSON.stringify({
-			"deck_name": deck_select.current_selection,
-			"monster": data["monster"],
-			"main": data["main"],
-		})
-		_rpc_send_deck_data.rpc_id(NetworkManager.host_peer_id, payload)
+		_send_deck_to_host()
 		status_label.text = tr("STR_PUBLIC_CONNECTED_WAITING")
+		_start_queue_timer()
+
+
+func _send_deck_to_host() -> void:
+	var data := DecklistManager.load_decklist(deck_select.current_selection)
+	if data.is_empty():
+		return
+	var payload := JSON.stringify({
+		"deck_name": deck_select.current_selection,
+		"monster": data["monster"],
+		"main": data["main"],
+	})
+	_rpc_send_deck_data.rpc_id(NetworkManager.host_peer_id, payload)
 
 
 func _on_player_disconnected(_peer_id: int) -> void:
+	_stop_queue_timer()
 	if _version_mismatch_shown:
 		return
 	if not NetworkManager.version_verified:
@@ -229,6 +257,7 @@ func _on_player_disconnected(_peer_id: int) -> void:
 	_client_deck_name = ""
 	_is_hosting = false
 	_is_joining = false
+	play_bot_button.visible = false
 	_set_join_buttons_disabled(not _deck_valid)
 	deck_select.set_disabled(false)
 	mode_dropdown.disabled = false
@@ -236,10 +265,12 @@ func _on_player_disconnected(_peer_id: int) -> void:
 
 func _on_connection_failed() -> void:
 	status_label.text = tr("STR_PUBLIC_CONNECTION_FAILED")
+	_stop_queue_timer()
 	create_button.disabled = not _deck_valid
 	refresh_button.disabled = false
 	_is_hosting = false
 	_is_joining = false
+	play_bot_button.visible = false
 	_set_join_buttons_disabled(not _deck_valid)
 	deck_select.set_disabled(false)
 	mode_dropdown.disabled = false
@@ -247,11 +278,13 @@ func _on_connection_failed() -> void:
 
 func _on_version_mismatch(local_version: String, remote_version: String) -> void:
 	_version_mismatch_shown = true
+	_stop_queue_timer()
 	status_label.text = tr("STR_LAN_VERSION_MISMATCH_FMT") % [local_version, remote_version]
 	create_button.disabled = not _deck_valid
 	refresh_button.disabled = false
 	_is_hosting = false
 	_is_joining = false
+	play_bot_button.visible = false
 	_set_join_buttons_disabled(not _deck_valid)
 	deck_select.set_disabled(false)
 	mode_dropdown.disabled = false
@@ -293,6 +326,7 @@ func _try_auto_start() -> void:
 		return
 	if NetworkManager.opponent_connected and NetworkManager.version_verified and _host_deck_ready and _client_deck_received:
 		status_label.text = tr("STR_PUBLIC_STARTING_GAME")
+		_stop_queue_timer()
 		NetworkManager.start_lan_game()
 
 
@@ -317,3 +351,73 @@ func _rpc_send_deck_data(payload_json: String) -> void:
 	DecklistManager.set_player_deck_from_entries(1, _client_deck_name, monster_entries, main_entries)
 	_client_deck_received = true
 	_try_auto_start()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_request_deck() -> void:
+	# Host returned from a bot game and may have missed our initial deck send.
+	# Re-send so the auto-start handshake can complete.
+	if NetworkManager.is_host():
+		return
+	_send_deck_to_host()
+
+
+# --- Play vs Bot While Waiting ---
+
+func _on_play_bot_pressed() -> void:
+	SfxManager.play("ui_click")
+	if not _is_hosting:
+		return
+	NetworkManager.enter_lobby_bot_game(GameSettings.bot_difficulty)
+	NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
+
+
+func _resume_hosting_state() -> void:
+	_is_hosting = true
+	_host_deck_ready = true
+	create_button.disabled = true
+	refresh_button.disabled = true
+	deck_select.set_disabled(true)
+	mode_dropdown.disabled = true
+	play_bot_button.visible = true
+	status_label.text = tr("STR_PUBLIC_LOBBY_CREATED")
+	_start_queue_timer()
+
+
+func _request_client_deck() -> void:
+	# Find the joined client's peer id from NetworkManager.peer_player_map.
+	var client_peer := 0
+	for peer_id in NetworkManager.peer_player_map.keys():
+		if peer_id != multiplayer.get_unique_id():
+			client_peer = peer_id
+			break
+	if client_peer != 0:
+		_rpc_request_deck.rpc_id(client_peer)
+
+
+# --- Queue timer ---
+
+func _start_queue_timer() -> void:
+	if _queue_timer_active:
+		return
+	_queue_timer_active = true
+	_queue_start_msec = Time.get_ticks_msec()
+	queue_timer_label.visible = true
+	_update_queue_timer_label()
+	set_process(true)
+
+
+func _stop_queue_timer() -> void:
+	_queue_timer_active = false
+	queue_timer_label.visible = false
+	set_process(false)
+
+
+func _process(_delta: float) -> void:
+	if _queue_timer_active:
+		_update_queue_timer_label()
+
+
+func _update_queue_timer_label() -> void:
+	var elapsed := (Time.get_ticks_msec() - _queue_start_msec) / 1000
+	queue_timer_label.text = tr("STR_PUBLIC_QUEUE_TIMER_FMT") % [int(elapsed) / 60, int(elapsed) % 60]

@@ -22,6 +22,7 @@ var GAME_VERSION: String = ProjectSettings.get_setting("application/config/versi
 const RELAY_HOST: String = "godzillatcg.com"
 const RELAY_PORT: int = 12090
 const WS_CONNECT_TIMEOUT: float = 10.0
+const KEEPALIVE_INTERVAL: float = 25.0  ## Idle keepalive; stays under typical 30–60s proxy timeouts
 
 var mode: Mode = Mode.SOLO
 var local_player_id: int = -1
@@ -37,10 +38,63 @@ var bot_config: BotConfig = BotConfig.normal()
 var bot_difficulty: BotConfig.Difficulty = BotConfig.Difficulty.NORMAL
 var bot_seed: int = -1  ## Deterministic RNG seed for bot games (-1 = auto-generate)
 
+# --- Lobby-bot game state (Play vs Bot While You Wait) ---
+var _lobby_resume_mode: Mode = Mode.SOLO
+var _lobby_resume_pid: int = -1
+var _lobby_resume_active: bool = false
+var _lobby_queued_deck_name: String = ""  ## Deck the host queued with; restored on exit so bot-rematch deck swaps don't leak into PvP
+var _keepalive_elapsed: float = 0.0
+
 
 func set_bot_difficulty(difficulty: BotConfig.Difficulty) -> void:
 	bot_difficulty = difficulty
 	bot_config = BotConfig.from_difficulty(difficulty)
+
+
+# --- Lobby-bot game (Play vs Bot While You Wait) ---
+
+## Switch to SOLO_BOT mode for an in-lobby bot match. The relay peer, room code,
+## and host state are intentionally preserved so the lobby keeps accepting joins.
+func enter_lobby_bot_game(difficulty: BotConfig.Difficulty) -> void:
+	_lobby_resume_mode = mode
+	_lobby_resume_pid = local_player_id
+	_lobby_queued_deck_name = DecklistManager.get_player_deck_name(local_player_id)
+	_lobby_resume_active = true
+	mode = Mode.SOLO_BOT
+	local_player_id = 0
+	set_bot_difficulty(difficulty)
+
+
+## Restore the saved lobby state. Does NOT touch the relay peer or room state —
+## the lobby remains live across the bot match. Also restores the host's queued
+## deck so any deck swaps during bot rematches don't carry into the PvP match.
+func exit_lobby_bot_game() -> void:
+	if not _lobby_resume_active:
+		return
+	mode = _lobby_resume_mode
+	local_player_id = _lobby_resume_pid
+	if not _lobby_queued_deck_name.is_empty():
+		DecklistManager.select_deck_for_player(_lobby_resume_pid, _lobby_queued_deck_name)
+	_lobby_resume_active = false
+	_lobby_resume_mode = Mode.SOLO
+	_lobby_resume_pid = -1
+	_lobby_queued_deck_name = ""
+
+
+func is_lobby_bot_game() -> bool:
+	return _lobby_resume_active
+
+
+func _process(delta: float) -> void:
+	# Idle keepalive — send a no-op text frame while waiting for an opponent so
+	# the relay's TCP path doesn't get killed by an idle proxy timeout.
+	if multiplayer.multiplayer_peer is RelayMultiplayerPeer and not opponent_connected:
+		_keepalive_elapsed += delta
+		if _keepalive_elapsed >= KEEPALIVE_INTERVAL:
+			_keepalive_elapsed = 0.0
+			(multiplayer.multiplayer_peer as RelayMultiplayerPeer).send_keepalive()
+	else:
+		_keepalive_elapsed = 0.0
 
 
 func change_scene(path: String) -> void:
@@ -254,6 +308,11 @@ func disconnect_game() -> void:
 	_room_code = ""
 	game_mode = ""
 	is_public_room = false
+	_lobby_resume_active = false
+	_lobby_resume_mode = Mode.SOLO
+	_lobby_resume_pid = -1
+	_lobby_queued_deck_name = ""
+	_keepalive_elapsed = 0.0
 
 
 func is_multiplayer() -> bool:
