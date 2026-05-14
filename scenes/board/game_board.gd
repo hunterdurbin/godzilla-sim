@@ -1131,6 +1131,31 @@ func _show_first_player_waiting() -> void:
 	_set_action_buttons_visible(false)
 	card_select_prompt.text = tr("STR_GB_COIN_FLIP_WAITING")
 	action_prompt_panel.visible = true
+	_show_local_starter_monster()
+
+
+## Render only the local player's rank 1 monster into its starting zone so the
+## player has visual context during the first/second choice. Does NOT sync hands,
+## decks, or any other game state — those become visible once the game starts.
+func _show_local_starter_monster() -> void:
+	var monster_deck: Array = DecklistManager.get_player_monster_deck(local_player_id)
+	var rank1: Dictionary = {}
+	for m in monster_deck:
+		if m.get("rank", 0) == 1:
+			rank1 = m
+			break
+	if rank1.is_empty():
+		return
+	var local_board: Control = player1_board if local_player_id == 0 else player2_board
+	if not local_board:
+		return
+	if local_board.has_method("apply_monster_gradient"):
+		local_board.apply_monster_gradient(rank1)
+	var temp_state := PlayerState.new(local_player_id)
+	temp_state.current_monster = rank1
+	temp_state.monster_zone = int(rank1.get("start_zone", 1))
+	if local_board.has_method("_sync_monster"):
+		local_board._sync_monster(temp_state, 0, 0)
 
 
 func _cleanup_first_player_ui() -> void:
@@ -1150,6 +1175,7 @@ func _show_first_player_choice() -> void:
 	_set_action_buttons_visible(false)
 	card_select_prompt.text = tr("STR_GB_COIN_FLIP_WON")
 	action_prompt_panel.visible = true
+	_show_local_starter_monster()
 
 	var container := VBoxContainer.new()
 	container.name = "FirstPlayerContainer"
