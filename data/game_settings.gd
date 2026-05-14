@@ -56,6 +56,7 @@ var bot_seed_text: String = ""             # raw text; if valid int, used as see
 var bot_speed_value: int = 0               # 0=Auto, 1-10 = 0.1s..1.0s delay
 var bot_playstyle_value: int = 0           # 0=Auto, 1=Invasion, 2=Counter, 3=Balanced
 var bot_random_deck_enabled: bool = false
+var bot_random_deck_on_rematch: bool = true  # When random deck is enabled, re-pick from the pool on each rematch
 var bot_deck_weights: Dictionary = {}      # {deck_name: int weight, 0=disabled, >=1=weight}
 var bot_folder_weights: Dictionary = {}    # {folder_path: int weight, 0/missing=disabled}
 
@@ -156,6 +157,7 @@ func _save() -> void:
 	config.set_value("bot", "speed_value", bot_speed_value)
 	config.set_value("bot", "playstyle_value", bot_playstyle_value)
 	config.set_value("bot", "random_deck_enabled", bot_random_deck_enabled)
+	config.set_value("bot", "random_deck_on_rematch", bot_random_deck_on_rematch)
 	config.set_value("bot", "deck_weights", bot_deck_weights)
 	config.set_value("bot", "folder_weights", bot_folder_weights)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
@@ -215,6 +217,7 @@ func _load() -> void:
 	bot_speed_value = config.get_value("bot", "speed_value", 0)
 	bot_playstyle_value = config.get_value("bot", "playstyle_value", 0)
 	bot_random_deck_enabled = config.get_value("bot", "random_deck_enabled", false)
+	bot_random_deck_on_rematch = config.get_value("bot", "random_deck_on_rematch", true)
 	bot_deck_weights = config.get_value("bot", "deck_weights", {})
 	bot_folder_weights = config.get_value("bot", "folder_weights", {})
 	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
@@ -231,3 +234,53 @@ func _load() -> void:
 	reconnect_is_host = config.get_value("reconnect", "is_host", false)
 	reconnect_game_mode = config.get_value("reconnect", "game_mode", "")
 	reconnect_is_public = config.get_value("reconnect", "is_public", false)
+
+
+func pick_weighted_random_deck() -> String:
+	## Two-stage sampler: each pool entry is either a single deck OR a whole
+	## folder (uniform pick inside it). Folder-enabled decks are NOT also
+	## listed individually — the folder takes over. Returns "" when no pool
+	## is configured; caller should leave the previous deck selection in place.
+	var entries := DecklistManager.get_all_deck_entries()
+	var enabled_folders: Dictionary = {}
+	for fp in bot_folder_weights:
+		var fw := int(bot_folder_weights[fp])
+		if fw > 0:
+			enabled_folders[fp] = fw
+
+	var pool: Array = []
+	var total := 0
+	for fp in enabled_folders:
+		pool.append({"kind": "folder", "name": fp, "weight": enabled_folders[fp]})
+		total += int(enabled_folders[fp])
+
+	for entry in entries:
+		if enabled_folders.has(entry["folder"]):
+			continue
+		var deck_name: String = entry["name"]
+		var has_entry: bool = bot_deck_weights.has(deck_name)
+		var w: int = 1
+		if has_entry:
+			w = int(bot_deck_weights[deck_name])
+		if w > 0:
+			pool.append({"kind": "deck", "name": deck_name, "weight": w})
+			total += w
+
+	if total <= 0 or pool.is_empty():
+		return ""
+
+	var r := randi() % total
+	var acc := 0
+	for e in pool:
+		acc += int(e["weight"])
+		if r < acc:
+			if e["kind"] == "folder":
+				var folder_decks: Array[String] = []
+				for entry in entries:
+					if entry["folder"] == e["name"]:
+						folder_decks.append(entry["name"])
+				if folder_decks.is_empty():
+					return ""
+				return folder_decks[randi() % folder_decks.size()]
+			return e["name"]
+	return ""

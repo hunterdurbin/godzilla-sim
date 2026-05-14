@@ -29,6 +29,7 @@ STR_MENU_PLAYSTYLE_BALANCED,Balanced,バランス型
 STR_MENU_BOT_CONFIG,Bot Config,ボット設定
 STR_MENU_BOT_DECK,Bot Deck,ボットデッキ
 STR_MENU_BOT_DECK_RANDOM,Use Random Deck,ランダムデッキを使用
+STR_MENU_BOT_DECK_RANDOM_REMATCH,Re-pick on rematch,対戦ごとに再抽選
 STR_MENU_DECK_SELECT_ALL,Select All,すべて選択
 STR_MENU_DECK_UNSELECT_ALL,Unselect All,すべて解除
 STR_MENU_DECK_RESET_WEIGHTS,Reset Weights,重みをリセット

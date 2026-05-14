@@ -109,7 +109,7 @@ func _on_solo_bot_pressed() -> void:
 	NetworkManager.bot_seed = seed_text.to_int() if seed_text.is_valid_int() else -1
 	# Random deck override (replaces P2 dropdown selection if a deck pool is configured)
 	if GameSettings.bot_random_deck_enabled:
-		var picked := _pick_weighted_random_deck()
+		var picked := GameSettings.pick_weighted_random_deck()
 		if not picked.is_empty():
 			DecklistManager.select_deck_for_player(1, picked)
 	NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
@@ -142,55 +142,6 @@ func _reconcile_bot_deck_weights() -> void:
 			changed = true
 	if changed:
 		GameSettings.save()
-
-
-func _pick_weighted_random_deck() -> String:
-	## Two-stage sampler: each pool entry is either a single deck OR a whole
-	## folder (uniform pick inside it). Folder-enabled decks are NOT also
-	## listed individually — the folder takes over.
-	var entries := DecklistManager.get_all_deck_entries()
-	var enabled_folders: Dictionary = {}
-	for fp in GameSettings.bot_folder_weights:
-		var fw := int(GameSettings.bot_folder_weights[fp])
-		if fw > 0:
-			enabled_folders[fp] = fw
-
-	var pool: Array = []
-	var total := 0
-	for fp in enabled_folders:
-		pool.append({"kind": "folder", "name": fp, "weight": enabled_folders[fp]})
-		total += int(enabled_folders[fp])
-
-	for entry in entries:
-		if enabled_folders.has(entry["folder"]):
-			continue
-		var deck_name: String = entry["name"]
-		var has_entry: bool = GameSettings.bot_deck_weights.has(deck_name)
-		var w: int = 1
-		if has_entry:
-			w = int(GameSettings.bot_deck_weights[deck_name])
-		if w > 0:
-			pool.append({"kind": "deck", "name": deck_name, "weight": w})
-			total += w
-
-	if total <= 0 or pool.is_empty():
-		return ""
-
-	var r := randi() % total
-	var acc := 0
-	for e in pool:
-		acc += int(e["weight"])
-		if r < acc:
-			if e["kind"] == "folder":
-				var folder_decks: Array[String] = []
-				for entry in entries:
-					if entry["folder"] == e["name"]:
-						folder_decks.append(entry["name"])
-				if folder_decks.is_empty():
-					return ""
-				return folder_decks[randi() % folder_decks.size()]
-			return e["name"]
-	return ""
 
 
 func _show_bot_config_popup() -> void:
@@ -370,6 +321,12 @@ func _show_bot_config_popup() -> void:
 		"folder_weights": GameSettings.bot_folder_weights.duplicate(),
 	}
 
+	var rematch_check := CheckBox.new()
+	rematch_check.text = tr("STR_MENU_BOT_DECK_RANDOM_REMATCH")
+	rematch_check.button_pressed = GameSettings.bot_random_deck_on_rematch
+	rematch_check.disabled = not random_deck_check.button_pressed
+	right_col.add_child(rematch_check)
+
 	var edit_pool_btn := Button.new()
 	edit_pool_btn.text = tr("STR_MENU_BOT_EDIT_POOL")
 	edit_pool_btn.custom_minimum_size = Vector2(0, 44)
@@ -377,7 +334,10 @@ func _show_bot_config_popup() -> void:
 	edit_pool_btn.disabled = not random_deck_check.button_pressed
 	right_col.add_child(edit_pool_btn)
 
-	random_deck_check.toggled.connect(func(p): edit_pool_btn.disabled = not p)
+	random_deck_check.toggled.connect(func(p):
+		edit_pool_btn.disabled = not p
+		rematch_check.disabled = not p
+	)
 
 	edit_pool_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
@@ -408,6 +368,7 @@ func _show_bot_config_popup() -> void:
 		GameSettings.bot_playstyle_value = int(playstyle_slider.value)
 		# Deck + folder weights (staged via the Edit Deck Pool modal)
 		GameSettings.bot_random_deck_enabled = random_deck_check.button_pressed
+		GameSettings.bot_random_deck_on_rematch = rematch_check.button_pressed
 		GameSettings.bot_deck_weights = pending["deck_weights"]
 		GameSettings.bot_folder_weights = pending["folder_weights"]
 		GameSettings.save()

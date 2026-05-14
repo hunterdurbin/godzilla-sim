@@ -3423,6 +3423,12 @@ func _execute_rematch() -> void:
 			if not _bot_seed_was_explicit:
 				NetworkManager.bot_seed = -1
 			_apply_bot_seed()
+			# Re-pick the bot's deck from its random pool, if configured.
+			# Empty pool → picker returns "" and we keep the previous deck.
+			if GameSettings.bot_random_deck_enabled and GameSettings.bot_random_deck_on_rematch:
+				var picked := GameSettings.pick_weighted_random_deck()
+				if not picked.is_empty():
+					DecklistManager.select_deck_for_player(1, picked)
 
 		turn_manager = TurnManager.new()
 		turn_manager.setup(CardData)
