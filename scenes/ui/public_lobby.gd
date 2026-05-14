@@ -46,6 +46,7 @@ func _ready() -> void:
 	NetworkManager.connection_failed.connect(_on_connection_failed)
 	NetworkManager.version_mismatch.connect(_on_version_mismatch)
 	NetworkManager.version_verified_ok.connect(_try_auto_start)
+	NetworkManager.match_declined.connect(_on_match_declined)
 
 	# Detect re-entry from an in-lobby bot match. NetworkManager keeps the relay
 	# peer + room state alive across that scene change, so we resume waiting
@@ -237,6 +238,10 @@ func _send_deck_to_host() -> void:
 	var data := DecklistManager.load_decklist(deck_select.current_selection)
 	if data.is_empty():
 		return
+	# Mirror our own deck into DecklistManager so client-side lookups
+	# (e.g. _show_local_starter_monster on GameBoard) work without a state RPC.
+	if NetworkManager.local_player_id >= 0:
+		DecklistManager.select_deck_for_player(NetworkManager.local_player_id, deck_select.current_selection)
 	var payload := JSON.stringify({
 		"deck_name": deck_select.current_selection,
 		"monster": data["monster"],
@@ -353,6 +358,28 @@ func _rpc_send_deck_data(payload_json: String) -> void:
 	DecklistManager.set_player_deck_from_entries(1, _client_deck_name, monster_entries, main_entries)
 	_client_deck_received = true
 	_try_auto_start()
+
+
+func _on_match_declined() -> void:
+	# Host kept their bot match — disconnect us from this lobby so we can find
+	# another. The host's lobby stays alive on the relay and remains listed.
+	_stop_queue_timer()
+	NetworkManager.disconnect_game()
+	_is_joining = false
+	_is_hosting = false
+	_client_deck_received = false
+	_client_deck_name = ""
+	status_label.text = tr("STR_PUBLIC_HOST_DECLINED_MATCH")
+	create_button.disabled = not _deck_valid
+	refresh_button.disabled = false
+	deck_select.set_disabled(false)
+	mode_dropdown.disabled = false
+	play_bot_button.visible = false
+	# Defer auto-refresh so the decline message stays visible long enough to read.
+	# _fetch_rooms() is async; once the HTTP response lands it overwrites status_label.
+	await get_tree().create_timer(4.0).timeout
+	if status_label.text == tr("STR_PUBLIC_HOST_DECLINED_MATCH"):
+		_fetch_rooms()
 
 
 @rpc("any_peer", "call_remote", "reliable")

@@ -8175,6 +8175,7 @@ func _on_lobby_opponent_connected(_peer_id: int) -> void:
 
 
 func _show_opponent_found_dialog() -> void:
+	SfxManager.play("action_required")
 	_opponent_found_dialog = AcceptDialog.new()
 	_opponent_found_dialog.title = tr("STR_GB_OPPONENT_FOUND_TITLE")
 	_opponent_found_dialog.dialog_text = tr("STR_GB_OPPONENT_FOUND_BODY")
@@ -8221,9 +8222,9 @@ func _on_opponent_found_start() -> void:
 func _on_opponent_found_custom_action(action: StringName) -> void:
 	if action == "keep_bot":
 		_cleanup_opponent_found_dialog()
-		# Stay in the bot game. When it ends, _on_main_menu_pressed will route us
-		# back to PublicLobby, where _try_auto_start can still pick up the waiting
-		# opponent if they haven't given up.
+		# Tell the joined client we're declining so they can drop and find another lobby
+		# rather than sitting indefinitely on a "Waiting for game to start" screen.
+		NetworkManager.notify_match_declined()
 
 
 func _cleanup_opponent_found_dialog() -> void:

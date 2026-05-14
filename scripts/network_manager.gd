@@ -14,6 +14,7 @@ signal connection_failed()
 signal game_starting()
 signal version_mismatch(local_version: String, remote_version: String)
 signal version_verified_ok()
+signal match_declined()  ## emitted on the joined client when the host declined to start the match
 
 const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 2
@@ -513,6 +514,21 @@ func _rpc_peer_leaving() -> void:
 func notify_leaving() -> void:
 	if multiplayer.multiplayer_peer and opponent_connected:
 		_rpc_peer_leaving.rpc()
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_decline_match() -> void:
+	match_declined.emit()
+
+
+## Host-side: tell the joined client we're not starting the match.
+func notify_match_declined() -> void:
+	if not multiplayer.multiplayer_peer or not opponent_connected:
+		return
+	for peer_id in peer_player_map.keys():
+		if peer_id != multiplayer.get_unique_id():
+			_rpc_decline_match.rpc_id(peer_id)
+			break
 
 
 @rpc("any_peer", "call_remote", "reliable")
