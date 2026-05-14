@@ -475,6 +475,7 @@ STR_GB_OPPONENT_FOUND_BODY,Start match now? Your bot match will be abandoned.,�
 STR_GB_OPPONENT_FOUND_START,Start match,対戦開始
 STR_GB_OPPONENT_FOUND_KEEP_BOT,Keep playing bot,ボット対戦を続ける
 STR_GB_OPPONENT_FOUND_AUTO_FMT,Auto-start in %ds...,%d 秒後に自動開始...
+STR_GB_ACTION_SENDING,Syncing…,同期中…
 STR_PUBLIC_HOST_DECLINED_MATCH,Host is busy in a bot match. Please join another lobby.,ホストはボット対戦中です。別のロビーに参加してください。
 STR_PUBLIC_LOBBIES,Public Lobbies,公開ロビー
 STR_GAME_MODE,GAME MODE,ゲームモード

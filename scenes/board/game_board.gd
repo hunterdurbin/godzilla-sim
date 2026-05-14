@@ -25,6 +25,12 @@ var _is_lobby_bot: bool = false
 var _lobby_banner: Control = null
 var _lobby_banner_label: Label = null
 var _lobby_banner_start_msec: int = 0
+
+# In-flight action feedback (multiplayer client only)
+var _pending_indicator: Panel = null
+var _pending_indicator_label: Label = null
+var _pending_indicator_visible_since_ms: int = 0
+const PENDING_INDICATOR_GRACE_MS: int = 500  ## avoid flicker for fast roundtrips
 var _opponent_found_dialog: AcceptDialog = null
 var _opponent_found_timer: Timer = null
 var _opponent_found_remaining: int = 0
@@ -329,6 +335,11 @@ var _reconnect_current_start_ms: int = 0
 var _waiting_for_reconnect: bool = false
 var _reconnect_attempting: bool = false # Guard for client reconnect loop
 const RECONNECT_CLAIM_WIN_SECONDS: float = 10.0
+## State envelopes above this size get gzipped on the wire (typical save: 50-70%).
+## Below it, the gzip header overhead would outweigh the bandwidth savings.
+const STATE_COMPRESS_THRESHOLD: int = 1024
+const STATE_FLAG_RAW: int = 0x00
+const STATE_FLAG_GZIP: int = 0x01
 var _pending_interaction: Dictionary = {} # {method: String, args: Array}
 # Reconnect overlay nodes (built in code)
 var _reconnect_overlay: ColorRect = null
@@ -684,6 +695,10 @@ func _ready() -> void:
 	# Lobby-bot mode: show waiting banner + listen for arriving opponent
 	if _is_lobby_bot:
 		_setup_lobby_bot_ui()
+
+	# In-flight action indicator (only used by the client; host applies actions locally)
+	if is_multiplayer_game and not NetworkManager.is_host():
+		_setup_pending_indicator()
 
 	# Save game button (solo/bot only)
 	if not is_multiplayer_game:
@@ -3942,6 +3957,7 @@ func _on_zone_hover_clicked(_zone_index: int) -> void:
 
 func _process(_delta: float) -> void:
 	_process_lobby_banner_tick()
+	_process_pending_indicator()
 	# Reconnect overlay display
 	if _waiting_for_reconnect and _reconnect_overlay.visible:
 		var elapsed_ms := Time.get_ticks_msec() - _reconnect_current_start_ms
@@ -6799,12 +6815,13 @@ func _do_broadcast() -> void:
 		_last_sent_state = state_dict.duplicate(true)
 		_last_sent_version = _state_version
 
-		var state_bytes := var_to_bytes(envelope)
-		if state_bytes.size() > 32768:
+		var raw_bytes := var_to_bytes(envelope)
+		if raw_bytes.size() > 32768:
 			push_warning("[BROADCAST] Large state packet: %d bytes (v=%d, full=%s)" % [
-				state_bytes.size(), _state_version, str(_last_sent_state.is_empty())])
-		RpcLogger.log_send("receive_state", state_bytes.size())
-		_rpc_receive_state.rpc_id(peer_id, state_bytes)
+				raw_bytes.size(), _state_version, str(_last_sent_state.is_empty())])
+		var wire_bytes := _wrap_state_payload(raw_bytes)
+		RpcLogger.log_send("receive_state", wire_bytes.size())
+		_rpc_receive_state.rpc_id(peer_id, wire_bytes)
 	_pending_log_tokens.clear()
 	_pending_sound_events.clear()
 
@@ -7147,14 +7164,49 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 
 
 ## Host -> Client: full game state update
+## Prefix raw state bytes with a 1-byte compression flag; gzip if above threshold.
+## Wire format: [flag: u8][payload...]  where flag is STATE_FLAG_RAW or STATE_FLAG_GZIP.
+func _wrap_state_payload(raw_bytes: PackedByteArray) -> PackedByteArray:
+	var out := PackedByteArray()
+	if raw_bytes.size() >= STATE_COMPRESS_THRESHOLD:
+		var compressed := raw_bytes.compress(FileAccess.COMPRESSION_GZIP)
+		out.append(STATE_FLAG_GZIP)
+		out.append_array(compressed)
+	else:
+		out.append(STATE_FLAG_RAW)
+		out.append_array(raw_bytes)
+	return out
+
+
+## Inverse of _wrap_state_payload. Returns empty PackedByteArray on failure.
+func _unwrap_state_payload(wire_bytes: PackedByteArray) -> PackedByteArray:
+	if wire_bytes.is_empty():
+		return PackedByteArray()
+	var flag := wire_bytes[0]
+	var payload := wire_bytes.slice(1)
+	match flag:
+		STATE_FLAG_RAW:
+			return payload
+		STATE_FLAG_GZIP:
+			return payload.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+		_:
+			push_warning("[STATE] Unknown compression flag: %d" % flag)
+			return PackedByteArray()
+
+
 @rpc("any_peer", "call_remote", "reliable")
 func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 	RpcLogger.log_receive("receive_state", state_bytes.size())
 	if state_bytes.is_empty():
 		return
-	var decoded: Variant = bytes_to_var(state_bytes)
+	var raw_bytes := _unwrap_state_payload(state_bytes)
+	if raw_bytes.is_empty():
+		push_warning("[STATE] Payload unwrap failed (wire size=%d)" % state_bytes.size())
+		_request_resync_throttled()
+		return
+	var decoded: Variant = bytes_to_var(raw_bytes)
 	if decoded == null or not decoded is Dictionary:
-		push_warning("[STATE] bytes_to_var failed or returned non-Dictionary (size=%d)" % state_bytes.size())
+		push_warning("[STATE] bytes_to_var failed or returned non-Dictionary (raw size=%d)" % raw_bytes.size())
 		_request_resync_throttled()
 		return
 	var envelope: Dictionary = decoded
@@ -8235,3 +8287,45 @@ func _cleanup_opponent_found_dialog() -> void:
 	if is_instance_valid(_opponent_found_dialog):
 		_opponent_found_dialog.queue_free()
 		_opponent_found_dialog = null
+
+
+# --- In-flight action indicator (multiplayer client) ---
+
+func _setup_pending_indicator() -> void:
+	_pending_indicator = Panel.new()
+	_pending_indicator.name = "PendingIndicator"
+	_pending_indicator.anchor_right = 1.0
+	_pending_indicator.anchor_bottom = 1.0
+	_pending_indicator.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pending_indicator.visible = false
+
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.05, 0.03, 0.02, 0.85)
+	bg.set_corner_radius_all(4)
+	_pending_indicator.add_theme_stylebox_override("panel", bg)
+
+	_pending_indicator_label = Label.new()
+	_pending_indicator_label.anchor_right = 1.0
+	_pending_indicator_label.anchor_bottom = 1.0
+	_pending_indicator_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_pending_indicator_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_pending_indicator_label.text = tr("STR_GB_ACTION_SENDING")
+	_pending_indicator_label.add_theme_font_size_override("font_size", 16)
+	_pending_indicator_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.3, 1))
+	_pending_indicator.add_child(_pending_indicator_label)
+
+	action_panel.add_child(_pending_indicator)
+
+
+func _process_pending_indicator() -> void:
+	if not _pending_indicator:
+		return
+	if _action_pending:
+		if _pending_indicator_visible_since_ms == 0:
+			_pending_indicator_visible_since_ms = Time.get_ticks_msec()
+		# Only show after a short grace period so snappy roundtrips don't flicker.
+		var elapsed := Time.get_ticks_msec() - _pending_indicator_visible_since_ms
+		_pending_indicator.visible = elapsed >= PENDING_INDICATOR_GRACE_MS
+	else:
+		_pending_indicator_visible_since_ms = 0
+		_pending_indicator.visible = false
