@@ -220,13 +220,15 @@ func _on_join_room(code: String) -> void:
 	status_label.text = tr("STR_ONLINE_CONNECTING_HOST")
 
 
-func _on_player_connected(_peer_id: int) -> void:
+func _on_player_connected(peer_id: int) -> void:
 	if NetworkManager.is_host():
 		status_label.text = tr("STR_PUBLIC_OPPONENT_CONNECTED_STARTING")
+		# Host-initiated deck pull: avoids the case where the client RPCs the deck
+		# while we're elsewhere (e.g. mid-bot-game) and the node isn't loaded.
+		_rpc_request_deck.rpc_id(peer_id)
 		_try_auto_start()
 	else:
-		# Client: send deck immediately
-		_send_deck_to_host()
+		# Client: wait for host to request the deck — see _rpc_request_deck.
 		status_label.text = tr("STR_PUBLIC_CONNECTED_WAITING")
 		_start_queue_timer()
 
