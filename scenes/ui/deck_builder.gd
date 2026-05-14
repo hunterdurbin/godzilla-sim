@@ -15,6 +15,7 @@ var save_button: Button
 var load_button: Button
 var delete_button: Button
 var import_button: Button
+var import_decklog_button: Button
 var export_button: Button
 var deck_stats_label: RichTextLabel
 var validation_label: RichTextLabel
@@ -52,6 +53,12 @@ var empty_save_dialog: ConfirmationDialog
 var clear_dialog: ConfirmationDialog
 var format_info_dialog: AcceptDialog
 var format_info_body: VBoxContainer
+var decklog_dialog: AcceptDialog
+var decklog_url_edit: LineEdit
+var decklog_region_btn: OptionButton
+var decklog_import_btn: Button
+var decklog_status_label: Label
+var _decklog_importer: DecklogImporter
 
 # --- State ---
 var _monster_entries: Array = []
@@ -206,6 +213,10 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	import_button = Button.new()
 	import_button.text = tr("STR_DB_IMPORT")
 	vbox.add_child(import_button)
+
+	import_decklog_button = Button.new()
+	import_decklog_button.text = tr("STR_DB_IMPORT_DECKLOG")
+	vbox.add_child(import_decklog_button)
 
 	export_button = Button.new()
 	export_button.text = tr("STR_DB_EXPORT")
@@ -530,6 +541,51 @@ func _build_dialogs() -> void:
 	info_scroll.add_child(format_info_body)
 	add_child(format_info_dialog)
 
+	decklog_dialog = AcceptDialog.new()
+	decklog_dialog.title = tr("STR_DB_DECKLOG_TITLE")
+	decklog_dialog.dialog_hide_on_ok = false
+	decklog_dialog.get_ok_button().hide()
+	decklog_dialog.add_cancel_button(tr("STR_COMMON_CANCEL"))
+	var decklog_vbox := VBoxContainer.new()
+	decklog_vbox.add_theme_constant_override("separation", 8)
+	decklog_vbox.custom_minimum_size = Vector2(500, 0)
+	decklog_dialog.add_child(decklog_vbox)
+
+	var decklog_helper := Label.new()
+	decklog_helper.text = tr("STR_DB_DECKLOG_HELPER")
+	decklog_vbox.add_child(decklog_helper)
+
+	var url_row := HBoxContainer.new()
+	url_row.add_theme_constant_override("separation", 8)
+	decklog_vbox.add_child(url_row)
+
+	decklog_url_edit = LineEdit.new()
+	decklog_url_edit.placeholder_text = tr("STR_DB_DECKLOG_PLACEHOLDER")
+	decklog_url_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	url_row.add_child(decklog_url_edit)
+
+	decklog_region_btn = OptionButton.new()
+	decklog_region_btn.add_item("EN", 0)
+	decklog_region_btn.add_item("JP", 1)
+	decklog_region_btn.selected = 0
+	decklog_region_btn.tooltip_text = tr("STR_DB_DECKLOG_REGION_TOOLTIP")
+	url_row.add_child(decklog_region_btn)
+
+	var decklog_row := HBoxContainer.new()
+	decklog_row.add_theme_constant_override("separation", 8)
+	decklog_vbox.add_child(decklog_row)
+
+	decklog_status_label = Label.new()
+	decklog_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	decklog_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	decklog_row.add_child(decklog_status_label)
+
+	decklog_import_btn = Button.new()
+	decklog_import_btn.text = tr("STR_DB_DECKLOG_FETCH")
+	decklog_row.add_child(decklog_import_btn)
+
+	add_child(decklog_dialog)
+
 
 func _apply_panel_style(panel: PanelContainer) -> void:
 	var style := StyleBoxFlat.new()
@@ -550,7 +606,11 @@ func _connect_signals() -> void:
 	load_button.pressed.connect(_on_load_pressed)
 	delete_button.pressed.connect(_on_delete_pressed)
 	import_button.pressed.connect(_on_import_pressed)
+	import_decklog_button.pressed.connect(_on_import_decklog_pressed)
 	export_button.pressed.connect(_on_export_pressed)
+	decklog_import_btn.pressed.connect(_on_decklog_fetch_pressed)
+	decklog_url_edit.text_submitted.connect(func(_t): _on_decklog_fetch_pressed())
+	decklog_dialog.about_to_popup.connect(_prefill_decklog_input)
 	back_button.pressed.connect(_on_back_pressed)
 	deck_list_view.deck_selected.connect(_on_deck_list_selected)
 	deck_list_view.deck_activated.connect(_load_deck)
@@ -1803,6 +1863,90 @@ func _import_from_clipboard() -> void:
 	_sort_main_entries()
 	_has_unsaved_changes = true
 	_showing_monster_tab = true
+	_refresh_deck_display()
+	_refresh_pool_display()
+	_update_deck_stats()
+
+
+func _on_import_decklog_pressed() -> void:
+	SfxManager.play("ui_click")
+	if _has_unsaved_changes:
+		_pending_action = _open_decklog_dialog
+		unsaved_dialog.popup_centered()
+		return
+	_open_decklog_dialog()
+
+
+func _open_decklog_dialog() -> void:
+	decklog_dialog.popup_centered(Vector2(520, 180))
+
+
+func _prefill_decklog_input() -> void:
+	decklog_url_edit.editable = true
+	decklog_import_btn.disabled = false
+	decklog_status_label.text = ""
+	var clip := DisplayServer.clipboard_get().strip_edges()
+	var parsed := DecklogImporter.parse_input(clip) if not clip.is_empty() else {}
+	if not parsed.is_empty():
+		decklog_url_edit.text = clip
+		# If the clipboard was a full URL, sync the region toggle to its host.
+		if parsed.get("host") == DecklogImporter.HOST_JP and clip.contains("://"):
+			decklog_region_btn.selected = 1
+		elif parsed.get("host") == DecklogImporter.HOST_EN and clip.contains("://"):
+			decklog_region_btn.selected = 0
+	else:
+		decklog_url_edit.text = ""
+	decklog_url_edit.call_deferred("grab_focus")
+
+
+func _on_decklog_fetch_pressed() -> void:
+	var raw := decklog_url_edit.text
+	var host := _selected_decklog_host()
+	if DecklogImporter.parse_input(raw, host).is_empty():
+		_show_decklog_status(DecklogImporter.ERR_BAD_INPUT, {})
+		return
+	if _decklog_importer == null:
+		_decklog_importer = DecklogImporter.new()
+		add_child(_decklog_importer)
+		_decklog_importer.completed.connect(_on_decklog_result)
+	decklog_import_btn.disabled = true
+	decklog_url_edit.editable = false
+	decklog_status_label.modulate = Color.WHITE
+	decklog_status_label.text = tr("STR_DB_DECKLOG_FETCHING")
+	_decklog_importer.fetch(raw, host)
+
+
+func _selected_decklog_host() -> String:
+	return DecklogImporter.HOST_JP if decklog_region_btn.selected == 1 else DecklogImporter.HOST_EN
+
+
+func _on_decklog_result(success: bool, payload: Dictionary, error_key: String) -> void:
+	decklog_import_btn.disabled = false
+	decklog_url_edit.editable = true
+	if not success:
+		_show_decklog_status(error_key, payload)
+		return
+	decklog_dialog.hide()
+	_apply_decklog_payload(payload)
+
+
+func _show_decklog_status(error_key: String, payload: Dictionary) -> void:
+	var msg := tr(error_key)
+	if error_key.ends_with("_FMT") and payload.has("game_title_id"):
+		msg = msg % int(payload["game_title_id"])
+	decklog_status_label.modulate = Color(1.0, 0.45, 0.45)
+	decklog_status_label.text = msg
+
+
+func _apply_decklog_payload(payload: Dictionary) -> void:
+	_monster_entries = payload["monster_entries"]
+	_main_entries = payload["main_entries"]
+	_sort_monster_entries()
+	_sort_main_entries()
+	_has_unsaved_changes = true
+	_showing_monster_tab = true
+	if deck_name_edit.text.strip_edges().is_empty():
+		deck_name_edit.text = String(payload.get("title", ""))
 	_refresh_deck_display()
 	_refresh_pool_display()
 	_update_deck_stats()

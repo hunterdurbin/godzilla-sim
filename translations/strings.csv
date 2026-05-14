@@ -526,8 +526,20 @@ STR_DB_SAVE,Save,保存
 STR_DB_LOAD,Load,読み込み
 STR_DB_DELETE,Delete,削除
 STR_DB_IMPORT,Import from Clipboard,クリップボードから読み込み
+STR_DB_IMPORT_DECKLOG,Import from Decklog,Decklogから読み込み
 STR_DB_EXPORT,Export to Clipboard,クリップボードに書き出し
 STR_DB_COPIED,Copied!,コピーしました!
+STR_DB_DECKLOG_TITLE,Import from Decklog,Decklogから読み込み
+STR_DB_DECKLOG_HELPER,Paste a Decklog URL or deck code.,DecklogのURLまたはデッキコードを貼り付けてください。
+STR_DB_DECKLOG_PLACEHOLDER,https://decklog-en.bushiroad.com/view/XXXXX,https://decklog-en.bushiroad.com/view/XXXXX
+STR_DB_DECKLOG_FETCH,Import,読み込み
+STR_DB_DECKLOG_FETCHING,Fetching…,読み込み中…
+"STR_DB_DECKLOG_REGION_TOOLTIP","Decklog region. Only matters when entering a bare code; full URLs detect the region automatically.","Decklogの地域。コードのみ入力する場合に使用。完全なURLでは地域を自動検出します。"
+STR_DB_DECKLOG_ERR_BAD_INPUT,Not a valid Decklog URL or code.,Decklog URLまたはコードが無効です。
+"STR_DB_DECKLOG_ERR_NETWORK","Could not reach Decklog. Check your internet connection.","Decklogに接続できません。インターネット接続を確認してください。"
+"STR_DB_DECKLOG_ERR_NOT_FOUND","Decklog returned no data — is the code correct?","Decklogからデータが返されませんでした。コードが正しいか確認してください。"
+STR_DB_DECKLOG_ERR_PARSE,Could not parse Decklog response.,Decklogの応答を解析できませんでした。
+"STR_DB_DECKLOG_ERR_WRONG_GAME_FMT","Not a Godzilla deck (game id=%d).","ゴジラデッキではありません (game id=%d)。"
 STR_DB_BACK,Back to Menu,メニューに戻る
 STR_DB_SET_AS_DEFAULT,Set as default,デフォルトに設定
 STR_DB_DECK,DECK,デッキ
