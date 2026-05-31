@@ -1673,6 +1673,19 @@ func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: 
 		deck_search_requested.emit(player_id, options, all_visible, prompt, allow_skip)
 		await _deck_search_resolved
 		_unhighlight_active_effect()
+		# Re-map the resolved selection back to the caller's own dict. In
+		# multiplayer the client's pick round-trips through JSON, which converts
+		# enums/ints to floats — the returned dict would no longer == the
+		# originals, breaking callers that erase()/compare it (e.g. EBP04-079's
+		# play-all loop). Match by id so we hand back the canonical reference.
+		if not _deck_search_result.is_empty():
+			var selected_id: String = _deck_search_result.get("id", "")
+			for card in options:
+				if card.get("id") == selected_id:
+					return card
+			for card in all_visible:
+				if card.get("id") == selected_id:
+					return card
 		return _deck_search_result
 	else:
 		return options[0]
