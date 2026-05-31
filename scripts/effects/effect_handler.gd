@@ -2502,6 +2502,12 @@ func get_engagement_restriction(attacker_player_id: int) -> int:
 	## Get the engagement restriction from the attacker's monster and strategy effects.
 	## Returns the max rank of opponent battle cards that cannot engage (-1 = no restriction).
 	## If multiple sources restrict, the highest restriction wins.
+	## Restriction only applies during the counter phase — the rule text excludes the
+	## restricted cards' CP "during the counter phase" only. Outside it, those cards
+	## report their normal counter power (e.g. EBP01-014), so effects that read power
+	## in other phases aren't affected.
+	if game_state.current_phase != CardEnums.GamePhase.COUNTER:
+		return -1
 	var player := game_state.players[attacker_player_id]
 	var max_rank: int = -1
 
