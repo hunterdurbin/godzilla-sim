@@ -2801,6 +2801,11 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 	if not bypass_protection and not _can_destroy_card(player, card):
 		return {}
 	player.strategy_zones[zone_index] = {}
+	# Clear any cards stacked under this strategy (e.g. EBP04-089's RAGE markers).
+	# RAGE markers never enter the discard pile, so they are dropped, not discarded;
+	# the only other under-stack user (EBP03-013) never places real cards there.
+	if zone_index < player.strategy_zone_stacks.size():
+		player.strategy_zone_stacks[zone_index] = []
 
 	var intercept_zone := get_strategy_discard_interceptor(player_id)
 	var intercepted: bool = intercept_zone >= 0

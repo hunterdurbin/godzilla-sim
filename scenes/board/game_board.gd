@@ -7026,6 +7026,11 @@ func _serialize_player_state(ps: PlayerState) -> Dictionary:
 	var strat_ids: Array = []
 	for s in ps.strategy_zones:
 		strat_ids.append(_card_to_id(s) if s is Dictionary else "")
+	# Cards stacked under each strategy (e.g. EBP04-089 RAGE markers). Public info —
+	# the count must reach the client so the player who placed it can see their tally.
+	var strat_stack_ids: Array = []
+	for stack in ps.strategy_zone_stacks:
+		strat_stack_ids.append(_cards_to_ids(stack) if stack is Array else [])
 	return {
 		"player_id": ps.player_id,
 		"monster_zone": ps.monster_zone,
@@ -7033,6 +7038,7 @@ func _serialize_player_state(ps: PlayerState) -> Dictionary:
 		"current_monster": _card_to_id(ps.current_monster),
 		"zones": zone_ids,
 		"strategy_zones": strat_ids,
+		"strategy_zone_stacks": strat_stack_ids,
 		"hand": _cards_to_ids(ps.hand),
 		"hand_count": ps.hand.size(),
 		"main_deck_count": ps.main_deck.size(),
@@ -7864,6 +7870,20 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 		ps.strategy_zone_turn_placed.resize(sz_data.size())
 	for i in range(sz_data.size()):
 		ps.strategy_zones[i] = _id_to_card(str(sz_data[i]))
+
+	# Cards stacked under each strategy (EBP04-089 RAGE markers) — needed so the
+	# client can show the under-count when inspecting the strategy zone.
+	var szs_data: Array = data.get("strategy_zone_stacks", [])
+	if szs_data.size() > ps.strategy_zone_stacks.size():
+		ps.strategy_zone_stacks.resize(szs_data.size())
+	for i in range(ps.strategy_zone_stacks.size()):
+		var under: Array = []
+		if i < szs_data.size():
+			for card_id in szs_data[i]:
+				var c := _id_to_card(str(card_id))
+				if not c.is_empty():
+					under.append(c)
+		ps.strategy_zone_stacks[i] = under
 
 	# Hand: IDs for local player, face-down placeholders for opponent
 	if is_local and data.has("hand"):
