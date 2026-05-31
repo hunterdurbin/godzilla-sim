@@ -484,7 +484,7 @@ STR_MODE_RUMBLE_WEST,Rumble (West),攻防戦 (西)
 STR_MODE_RUMBLE_EAST,Rumble (East),攻防戦 (東)
 STR_MODE_NO_RULES,No Rules,その他
 STR_MODE_BULKZILLA,BULKZILLA,BULKZILLA
-STR_MODE_RUMBLE_WEST_DESC,Western tournament format. Lags the Japanese release by one booster; uses every Western-released set with a small banlist.,西部トーナメント形式。日本版より1ブースター遅れています。西部で発売済みの全セットと少数の禁止カードを含みます。
+STR_MODE_RUMBLE_WEST_DESC,Western tournament format. Uses every Western-released set with a small banlist.,西部トーナメント形式。西部で発売済みの全セットと少数の禁止カードを含みます。
 STR_MODE_RUMBLE_EAST_DESC,Tracks the latest Japanese release. Includes every currently-implemented set with a small banlist.,最新の日本版リリースに準拠。現在実装されている全セットと少数の禁止カードを含みます。
 STR_MODE_NO_RULES_DESC,Casual play with no restrictions. Every implemented card is legal.,制限なしのカジュアルプレイ。実装済みのすべてのカードが使用可能です。
 STR_MODE_BULKZILLA_DESC,Budget format. Starter decks plus common and uncommon booster cards. The full allow list is shown below.,低予算形式。スターターデッキに加え、コモンとアンコモンのブースターカードが使用可能。許可リストの全体は下に表示されます。

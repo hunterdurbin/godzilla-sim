@@ -18,10 +18,10 @@ const MODES: Array[Dictionary] = [
 		"id": "rumble_west",
 		"label": "STR_MODE_RUMBLE_WEST",
 		"desc": "STR_MODE_RUMBLE_WEST_DESC",
-		# West format lags the Japanese release by one booster. Update
-		# `include_sets` below as new sets reach the Western release.
+		# West format tracks the Western release. Update `include_sets`
+		# below as new sets reach the Western release.
 		"card_pool": {
-			"include_sets": ["EBP01", "EBP02", "EBP03", "EFC01", "ESD01", "ESD02", "EPR", "ESC01"],
+			"include_sets": ["EBP01", "EBP02", "EBP03", "EBP04", "EFC01", "ESD01", "ESD02", "EPR", "ESC01"],
 			"include_cards": [],
 			"exclude_cards": ["EPR-004"],
 			"restricted": ["EBP01-077"],
