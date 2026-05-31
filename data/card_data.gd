@@ -33,6 +33,44 @@ func _build_card_templates() -> void:
 		CARD_TEMPLATES[card["id"]] = card.duplicate()
 
 
+# --- Per-printing card overrides ---
+# A card may declare optional `<field>_by_printing` maps (e.g. `traits_by_printing`)
+# holding alternate values per printing. The English release ("en") is the canonical
+# base value; some formats swap in an alternate (currently only Rumble East → "ja",
+# which corrects the EBP02-015 trait misprint). Overrides are resolved per-match in
+# TurnManager.setup() — NOT baked into CARD_TEMPLATES — because the active format can
+# change between games without restarting.
+
+## Maps a game mode id to the card printing it uses. Rumble East uses the Japanese
+## printing; every other format (and private/LAN "") uses English.
+func printing_for_mode(game_mode: String) -> String:
+	return "ja" if GameModeValidator.normalize_mode_id(game_mode) == "rumble_east" else "en"
+
+
+## Read-only: returns `card`'s value for `field` under `printing`, falling back to the
+## base field (or `default` when the base field is absent too). Does not mutate the card.
+## Safe to call on shared templates (e.g. from the deck builder / validators).
+func get_printed_field(card: Dictionary, field: String, printing: String, default: Variant = null) -> Variant:
+	var overrides: Dictionary = card.get(field + "_by_printing", {})
+	if overrides.has(printing):
+		return overrides[printing]
+	return card.get(field, default)
+
+
+## Mutates `card` in place: applies every `<field>_by_printing` override for the given
+## printing onto its base field, then strips the helper keys so they never leak to
+## consumers or serialization. Call only on per-match instances, never on a template.
+func apply_printing(card: Dictionary, printing: String) -> void:
+	for key in card.keys():  # keys() returns a snapshot, so erasing during iteration is safe
+		if not (key is String and key.ends_with("_by_printing")):
+			continue
+		var overrides: Dictionary = card[key]
+		if overrides.has(printing):
+			var value: Variant = overrides[printing]
+			card[key.trim_suffix("_by_printing")] = value.duplicate() if value is Array or value is Dictionary else value
+		card.erase(key)
+
+
 # --- EBP01: Booster Pack 01 ---
 var EBP01_CARDS: Array[Dictionary] = [
 	{
@@ -1151,7 +1189,12 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 6,
 		"colors": [CardEnums.CardColor.RED],
-		"traits": [CardEnums.CardTrait.RODAN, CardEnums.CardTrait.WEAPON],
+		"traits": [CardEnums.CardTrait.RODAN, CardEnums.CardTrait.WEAPON],  # EN printing (misprint, no errata)
+		# The EN release misprints this card's trait as Weapon; the JP printing
+		# has Final Wars. Only Rumble East uses the JP printing (see apply_printing).
+		"traits_by_printing": {
+			"ja": [CardEnums.CardTrait.RODAN, CardEnums.CardTrait.FINAL_WARS],
+		},
 		"counter_power": 4000,
 		"invasion_icon": 1,
 		"description": "If this card is in a zone with the same number as the zone that your opponent's monster card occupies, this card gains +3000 counter power.",

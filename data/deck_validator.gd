@@ -21,8 +21,9 @@ const ERR_STRATEGY_COUNT := "STR_VALIDATE_STRATEGY_COUNT_FMT"
 const WARN_NO_SHARED_TRAITS := "STR_VALIDATE_NO_SHARED_TRAITS_FMT"
 
 
-static func validate(monster_entries: Array, main_entries: Array) -> Array[String]:
+static func validate(monster_entries: Array, main_entries: Array, printing := "en") -> Array[String]:
 	## Returns an array of error strings. Empty array = valid deck.
+	## `printing` selects the card printing for trait checks (see CardData.apply_printing).
 	var errors: Array[String] = []
 	var card_number_counts: Dictionary = {} # base card_number -> total count
 
@@ -126,13 +127,14 @@ static func validate(monster_entries: Array, main_entries: Array) -> Array[Strin
 
 	# --- Resonance requirements ---
 	if not resonance.is_empty():
-		errors.append_array(_validate_resonance(resonance, main_entries))
+		errors.append_array(_validate_resonance(resonance, main_entries, printing))
 
 	return errors
 
 
-static func get_invalid_cards(monster_entries: Array, main_entries: Array) -> Dictionary:
+static func get_invalid_cards(monster_entries: Array, main_entries: Array, printing := "en") -> Dictionary:
 	## Returns a Dictionary of card_number -> true for cards with per-card errors.
+	## `printing` selects the card printing for trait checks (see CardData.apply_printing).
 	var invalid: Dictionary = {}
 
 	# Derive allowed colors and resonance from rank 1 monster
@@ -194,7 +196,7 @@ static func get_invalid_cards(monster_entries: Array, main_entries: Array) -> Di
 		if card_number_counts.get(base, 0) > 4 and not tmpl.get("unlimited_copies", false):
 			invalid[cn] = true
 		var card_type: int = tmpl.get("card_type", -1)
-		var traits: Array = tmpl.get("traits", [])
+		var traits: Array = CardData.get_printed_field(tmpl, "traits", printing, [])
 		if card_type == CardEnums.CardType.MONSTER and not req_monster_traits.is_empty():
 			if not _has_any_trait(traits, req_monster_traits):
 				invalid[cn] = true
@@ -284,7 +286,7 @@ static func _trait_names_string(traits: Array) -> String:
 	return Loc.t("STR_VALIDATE_OR_SEPARATOR").join(names)
 
 
-static func _validate_resonance(resonance: Dictionary, main_entries: Array) -> Array[String]:
+static func _validate_resonance(resonance: Dictionary, main_entries: Array, printing := "en") -> Array[String]:
 	var errors: Array[String] = []
 	var req_monster_traits: Array = resonance.get("main_monster_required_traits", [])
 	var req_battle_traits: Array = resonance.get("main_battle_required_traits", [])
@@ -297,7 +299,7 @@ static func _validate_resonance(resonance: Dictionary, main_entries: Array) -> A
 		if tmpl.is_empty():
 			continue
 		var card_type: int = tmpl.get("card_type", -1)
-		var traits: Array = tmpl.get("traits", [])
+		var traits: Array = CardData.get_printed_field(tmpl, "traits", printing, [])
 		var card_label: Array = [tmpl.get("name", entry["card_number"]), entry["card_number"]]
 
 		if card_type == CardEnums.CardType.STRATEGY:

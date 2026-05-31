@@ -138,7 +138,7 @@ static func validate(game_mode: String, monster_entries: Array, main_entries: Ar
 	if normalized == "no_rules":
 		var empty: Array[String] = []
 		return empty
-	var errors := DeckValidator.validate(monster_entries, main_entries)
+	var errors := DeckValidator.validate(monster_entries, main_entries, CardData.printing_for_mode(game_mode))
 	var m := get_mode(game_mode)
 	if not m.is_empty() and m.has("card_pool"):
 		errors.append_array(_validate_pool_restrictions(m, monster_entries, main_entries))
@@ -150,7 +150,7 @@ static func get_invalid_cards(game_mode: String, monster_entries: Array, main_en
 	var normalized := normalize_mode_id(game_mode)
 	if normalized == "no_rules":
 		return {}
-	var invalid := DeckValidator.get_invalid_cards(monster_entries, main_entries)
+	var invalid := DeckValidator.get_invalid_cards(monster_entries, main_entries, CardData.printing_for_mode(game_mode))
 	var m := get_mode(game_mode)
 	if not m.is_empty() and m.has("card_pool"):
 		_flag_pool_invalid(m.card_pool, game_mode, monster_entries, main_entries, invalid)
