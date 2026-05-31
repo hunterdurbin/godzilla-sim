@@ -95,6 +95,7 @@ var action_handler  # ActionHandler reference (set by TurnManager)
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
 var _filters_cache: Dictionary = {}  # script_path -> TRIGGER_FILTERS dict (declarative trigger gating)
 var _deck_search_result: Dictionary = {}
+var _hand_discard_result: Array[Dictionary] = []  # Cards discarded by the last resolve_hand_discard / discard_hand_to
 var _deck_arrange_keep: Array[Dictionary] = []
 var _deck_arrange_discard: Array[Dictionary] = []
 var _card_select_result: Array[Dictionary] = []
@@ -1376,23 +1377,28 @@ func resolve_deferred_entries(entries: Array) -> void:
 
 # --- Player choice helpers ---
 
-func discard_hand_to(player_id: int, target_count: int) -> void:
+func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 	## Force a player to discard cards until they have target_count remaining.
 	## If hand_discard_requested is connected (UI present), the player chooses which cards.
 	## Otherwise falls back to discarding from the back of hand.
+	## Returns the cards that were actually discarded, so callers can react to what
+	## left the hand (e.g. EBP03-010 gains rage if a battle card was discarded) without
+	## a fragile before/after hand diff.
 	var player := game_state.players[player_id]
 	var to_discard: int = player.hand.size() - target_count
 	if to_discard <= 0:
-		return
+		return []
 
 	if hand_discard_requested.get_connections().size() > 0:
 		var saved_player_id: int = _active_effect_player_id
 		var saved_card_id: String = _active_effect_card.get("id", "")
+		_hand_discard_result = []
 		_highlight_active_effect()
 		hand_discard_requested.emit(player_id, to_discard)
 		await _hand_discard_resolved
 		if not saved_card_id.is_empty() and saved_player_id >= 0:
 			effect_card_unhighlighted.emit(saved_player_id, saved_card_id)
+		return _hand_discard_result.duplicate()
 	else:
 		# Fallback: discard from back of hand
 		var discarded_cards: Array[Dictionary] = []
@@ -1405,6 +1411,7 @@ func discard_hand_to(player_id: int, target_count: int) -> void:
 		player.hand_changed.emit()
 		player.discard_changed.emit()
 		await trigger_hand_cards_discarded_batch(player_id, discarded_cards)
+		return discarded_cards
 
 
 func resolve_hand_discard(player_id: int, hand_indices: Array[int]) -> void:
@@ -1423,6 +1430,8 @@ func resolve_hand_discard(player_id: int, hand_indices: Array[int]) -> void:
 			discarded_cards.append(card)
 	player.hand_changed.emit()
 	player.discard_changed.emit()
+	# Record what was discarded so discard_hand_to can return it to its caller.
+	_hand_discard_result = discarded_cards.duplicate()
 	# Bundle all simultaneously-discarded triggers into one standby batch so
 	# the player can choose resolution order when 2+ cards trigger (10.4.3).
 	await trigger_hand_cards_discarded_batch(player_id, discarded_cards)

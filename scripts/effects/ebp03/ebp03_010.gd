@@ -24,20 +24,14 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.get_battle_card_zone_indices().size() < 2:
 		return
 
-	# Track opponent hand before discard
-	var hand_before: Array[Dictionary] = []
-	for card in ctx.opponent.hand:
-		hand_before.append(card)
+	var discarded := await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 4)
 
-	await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 4)
-
-	# Check if any battle card was discarded
+	# Gain 1 rage if a battle card was among the cards discarded this way.
 	var battle_discarded := false
-	for card in hand_before:
-		if card not in ctx.opponent.hand:
-			if CardUtils.is_battle(card):
-				battle_discarded = true
-				break
+	for card in discarded:
+		if CardUtils.is_battle(card):
+			battle_discarded = true
+			break
 
 	if battle_discarded:
 		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))
