@@ -583,9 +583,13 @@ func _open_expanded_overlay() -> void:
 	get_tree().root.add_child(overlay)
 	_active_overlay = overlay
 	overlay.tree_exiting.connect(func(): if _active_overlay == overlay: _active_overlay = null)
-	# Click outside the panel dismisses.
+	# Click outside the panel dismisses. Only react to real click buttons —
+	# mouse-wheel events are also InputEventMouseButton (pressed == true) and
+	# bubble up here when the ScrollContainer can't scroll any further, which
+	# would otherwise close the list when scrolling past the top/bottom.
 	overlay.gui_input.connect(func(event):
-		if event is InputEventMouseButton and event.pressed:
+		if event is InputEventMouseButton and event.pressed and \
+				event.button_index in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT, MOUSE_BUTTON_MIDDLE]:
 			overlay.queue_free()
 	)
 
