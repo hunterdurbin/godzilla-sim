@@ -3085,14 +3085,17 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 	return await play_from_discard(player_id, card_data, zone_idx)
 
 
-func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int) -> void:
+func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int, stack_on_top: bool = false) -> void:
 	## Place a battle card directly from the deck into a zone, then fire enter and
 	## on_battle_card_played (with played_from_deck=true) in the correct order.
 	## Handles zone overload. Use this instead of manual push+trigger_enter+trigger_battle_card_played
 	## so that standby entry ordering is correct when called from within effect callbacks.
+	## Pass stack_on_top=true for "play on top of" effects (e.g. Star Falcon placing a
+	## Moguera card on top of Land Moguera) so the existing stack is preserved instead of
+	## overloaded/discarded.
 	var player := game_state.players[player_id]
 	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(zone_idx):
+	if player.zone_has_cards(zone_idx) and not stack_on_top:
 		overloaded_top = player.get_zone_top_card(zone_idx)
 		var destroyed_stack: Array = player.clear_zone(zone_idx)
 		banish_or_discard(player, destroyed_stack)

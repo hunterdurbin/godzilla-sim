@@ -74,4 +74,6 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		tr("STR_EFF_EBP03_043_SEARCH"))
 
 	if not selected.is_empty():
-		await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, selected, chosen)
+		# Stack on top of the chosen Land Moguera (keep it + Star Falcon underneath)
+		# rather than overloading the zone, per "play it on top of ... Land Moguera".
+		await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, selected, chosen, true)
