@@ -13,8 +13,8 @@ signal monster_countered(player_id: int, old_monster: Dictionary, new_monster: D
 signal battle_card_crushed(player_id: int, zone_index: int, card: Dictionary)
 signal cards_drawn(player_id: int, count: int)
 signal strategy_cleared(player_id: int, cards: Array)
-signal counter_failed(player_id: int, total_cp: int, threat: int)
-signal counter_succeeded(player_id: int, total_cp: int, threat: int)
+signal counter_failed(player_id: int, total_cp: int, threat: int, rage_threat: int, effect_threat: int)
+signal counter_succeeded(player_id: int, total_cp: int, threat: int, rage_threat: int, effect_threat: int)
 signal counter_immunity_triggered(player_id: int, total_cp: int, threshold: int)
 signal counter_prevented(player_id: int)
 signal play_cancelled(player_id: int)
@@ -185,10 +185,15 @@ func resolve_counter(state: GameState) -> void:
 	var opponent := state.get_opponent_of_current()
 	var total_cp: int = player.get_total_counter_power()
 	var threat: int = opponent.get_threat_level()
+	# Threat breakdown for the log (base printed threat + rage + effect modifiers).
+	# rage_threat is the universal +5000-per-Rage term every monster carries.
+	var rage_threat: int = opponent.rage * 5000
+	var effect_threat: int = 0
 	# Apply effect modifiers
 	if effect_handler:
 		total_cp += effect_handler.get_counter_power_modifier(player.player_id)
-		threat += effect_handler.get_threat_level_modifier(opponent.player_id)
+		effect_threat = effect_handler.get_threat_level_modifier(opponent.player_id)
+		threat += effect_threat
 		# Subtract base CP of cards restricted from engaging by opponent's monster
 		total_cp -= effect_handler.get_engagement_restricted_cp(player.player_id)
 
@@ -218,7 +223,7 @@ func resolve_counter(state: GameState) -> void:
 			monster_advanced.emit(opponent.player_id, old_zone, opponent.monster_zone)
 			opponent.monster_changed.emit()
 	elif total_cp >= threat:
-		counter_succeeded.emit(player.player_id, total_cp, threat)
+		counter_succeeded.emit(player.player_id, total_cp, threat, rage_threat, effect_threat)
 
 		# Counter retreat: only zones 6-8 move back (5.15.1.1)
 		var retreat_zone: int = get_counter_retreat_zone(opponent.monster_zone)
@@ -237,7 +242,7 @@ func resolve_counter(state: GameState) -> void:
 		# Opponent must rank up their monster
 		await _rank_up_monster(state, opponent, player.player_id)
 	else:
-		counter_failed.emit(player.player_id, total_cp, threat)
+		counter_failed.emit(player.player_id, total_cp, threat, rage_threat, effect_threat)
 
 
 func force_counter(state: GameState, target_player_id: int) -> void:

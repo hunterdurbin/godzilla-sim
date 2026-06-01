@@ -170,12 +170,12 @@ static func battle_card_crushed(card_id: String, player_id: int, zone_index: int
 	return {"type": "battle_card_crushed", "card_id": card_id, "player_id": player_id, "zone_index": zone_index}
 
 
-static func counter_succeeded(player_id: int, total_cp: int, threat: int) -> Dictionary:
-	return {"type": "counter_succeeded", "player_id": player_id, "total_cp": total_cp, "threat": threat}
+static func counter_succeeded(player_id: int, total_cp: int, threat: int, rage_threat: int = 0, effect_threat: int = 0) -> Dictionary:
+	return {"type": "counter_succeeded", "player_id": player_id, "total_cp": total_cp, "threat": threat, "threat_rage": rage_threat, "threat_effects": effect_threat}
 
 
-static func counter_failed(player_id: int, total_cp: int, threat: int) -> Dictionary:
-	return {"type": "counter_failed", "player_id": player_id, "total_cp": total_cp, "threat": threat}
+static func counter_failed(player_id: int, total_cp: int, threat: int, rage_threat: int = 0, effect_threat: int = 0) -> Dictionary:
+	return {"type": "counter_failed", "player_id": player_id, "total_cp": total_cp, "threat": threat, "threat_rage": rage_threat, "threat_effects": effect_threat}
 
 
 static func counter_immunity(player_id: int, total_cp: int, threshold: int) -> Dictionary:
@@ -184,6 +184,22 @@ static func counter_immunity(player_id: int, total_cp: int, threshold: int) -> D
 
 static func counter_prevented(player_id: int) -> Dictionary:
 	return {"type": "counter_prevented", "player_id": player_id}
+
+
+static func _threat_breakdown_suffix(token: Dictionary) -> String:
+	## Append a "(base X + rage Y + effects Z)" breakdown to counter logs, but only
+	## when rage or effects contribute — so the common case (printed threat only)
+	## stays uncluttered. int() coercion guards against JSON float round-trip on MP
+	## clients. base is derived so it always reconciles with the displayed threat.
+	var rage: int = int(token.get("threat_rage", 0))
+	var effects: int = int(token.get("threat_effects", 0))
+	if rage == 0 and effects == 0:
+		return ""
+	var base: int = int(token.get("threat", 0)) - rage - effects
+	return TranslationServer.translate("STR_LOG_THREAT_BREAKDOWN_FMT") \
+		.replace("{BASE}", str(base)) \
+		.replace("{RAGE}", str(rage)) \
+		.replace("{EFFECTS}", str(effects))
 
 
 static func coin_flip_won(player_id: int) -> Dictionary:
@@ -403,12 +419,14 @@ static func render(token: Dictionary) -> String:
 			return TranslationServer.translate("STR_LOG_COUNTER_SUCCESS_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{CP}", str(token.get("total_cp", 0))) \
-				.replace("{THREAT}", str(token.get("threat", 0)))
+				.replace("{THREAT}", str(token.get("threat", 0))) \
+				+ _threat_breakdown_suffix(token)
 		"counter_failed":
 			return TranslationServer.translate("STR_LOG_COUNTER_FAIL_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{CP}", str(token.get("total_cp", 0))) \
-				.replace("{THREAT}", str(token.get("threat", 0)))
+				.replace("{THREAT}", str(token.get("threat", 0))) \
+				+ _threat_breakdown_suffix(token)
 		"counter_immunity":
 			return TranslationServer.translate("STR_LOG_COUNTER_IMMUNE_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
@@ -489,6 +507,9 @@ static func to_plain_text(bbcode: String) -> String:
 	text = regex.sub(text, "$1", true)
 	# Strip [b]...[/b] keeping inner text
 	regex.compile("\\[b\\](.*?)\\[/b\\]")
+	text = regex.sub(text, "$1", true)
+	# Strip [i]...[/i] keeping inner text
+	regex.compile("\\[i\\](.*?)\\[/i\\]")
 	text = regex.sub(text, "$1", true)
 	# Strip [color=...]...[/color] keeping inner text
 	regex.compile("\\[color=[^\\]]*\\](.*?)\\[/color\\]")

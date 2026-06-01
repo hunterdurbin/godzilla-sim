@@ -3058,16 +3058,16 @@ func _on_battle_card_crushed(player_id: int, zone_index: int, card: Dictionary) 
 	_broadcast_state()
 
 
-func _on_counter_succeeded(player_id: int, total_cp: int, threat: int) -> void:
+func _on_counter_succeeded(player_id: int, total_cp: int, threat: int, rage_threat: int, effect_threat: int) -> void:
 	_queue_sound("counter_success")
-	_on_log_message(GameLog.counter_succeeded(player_id, total_cp, threat))
+	_on_log_message(GameLog.counter_succeeded(player_id, total_cp, threat, rage_threat, effect_threat))
 	_sync_boards()
 	_broadcast_state()
 
 
-func _on_counter_failed(player_id: int, total_cp: int, threat: int) -> void:
+func _on_counter_failed(player_id: int, total_cp: int, threat: int, rage_threat: int, effect_threat: int) -> void:
 	_queue_sound("counter_fail")
-	_on_log_message(GameLog.counter_failed(player_id, total_cp, threat))
+	_on_log_message(GameLog.counter_failed(player_id, total_cp, threat, rage_threat, effect_threat))
 
 
 func _on_counter_immunity_triggered(player_id: int, total_cp: int, threshold: int) -> void:
@@ -3076,6 +3076,16 @@ func _on_counter_immunity_triggered(player_id: int, total_cp: int, threshold: in
 
 func _on_counter_prevented(player_id: int) -> void:
 	_on_log_message(GameLog.counter_prevented(player_id))
+
+
+func _threat_mod_for(pid: int) -> int:
+	## Effect-driven threat modifier for a player, working on both host (live
+	## effect handler) and client (synced modifiers from the last broadcast).
+	if turn_manager and turn_manager.effect_handler:
+		return turn_manager.effect_handler.get_threat_level_modifier(pid)
+	if pid >= 0 and pid < _client_threat_modifiers.size():
+		return int(_client_threat_modifiers[pid])
+	return 0
 
 
 func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
@@ -3204,7 +3214,11 @@ func _build_bug_report_body() -> String:
 		lines.append("- **Monster:** %s (Zone %d)" % [monster_name, ps.monster_zone])
 		lines.append("- **Rage:** %d" % ps.rage)
 		lines.append("- **Counter Power:** %d" % ps.get_total_counter_power())
-		lines.append("- **Threat Level:** %d" % ps.get_threat_level())
+		var threat_mod: int = _threat_mod_for(pid)
+		if threat_mod != 0:
+			lines.append("- **Threat Level:** %d (%d + %d effects)" % [ps.get_threat_level() + threat_mod, ps.get_threat_level(), threat_mod])
+		else:
+			lines.append("- **Threat Level:** %d" % ps.get_threat_level())
 		lines.append("- **Deck:** %d cards" % ps.main_deck.size())
 		lines.append("- **Discard:** %d cards" % ps.discard_pile.size())
 		lines.append("- **Hand:** %d cards" % ps.hand.size())
