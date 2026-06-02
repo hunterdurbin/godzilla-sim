@@ -95,6 +95,7 @@ var action_handler  # ActionHandler reference (set by TurnManager)
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
 var _filters_cache: Dictionary = {}  # script_path -> TRIGGER_FILTERS dict (declarative trigger gating)
 var _deck_search_result: Dictionary = {}
+var _hand_discard_result: Array[Dictionary] = []  # Cards discarded by the last resolve_hand_discard / discard_hand_to
 var _deck_arrange_keep: Array[Dictionary] = []
 var _deck_arrange_discard: Array[Dictionary] = []
 var _card_select_result: Array[Dictionary] = []
@@ -1376,23 +1377,28 @@ func resolve_deferred_entries(entries: Array) -> void:
 
 # --- Player choice helpers ---
 
-func discard_hand_to(player_id: int, target_count: int) -> void:
+func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 	## Force a player to discard cards until they have target_count remaining.
 	## If hand_discard_requested is connected (UI present), the player chooses which cards.
 	## Otherwise falls back to discarding from the back of hand.
+	## Returns the cards that were actually discarded, so callers can react to what
+	## left the hand (e.g. EBP03-010 gains rage if a battle card was discarded) without
+	## a fragile before/after hand diff.
 	var player := game_state.players[player_id]
 	var to_discard: int = player.hand.size() - target_count
 	if to_discard <= 0:
-		return
+		return []
 
 	if hand_discard_requested.get_connections().size() > 0:
 		var saved_player_id: int = _active_effect_player_id
 		var saved_card_id: String = _active_effect_card.get("id", "")
+		_hand_discard_result = []
 		_highlight_active_effect()
 		hand_discard_requested.emit(player_id, to_discard)
 		await _hand_discard_resolved
 		if not saved_card_id.is_empty() and saved_player_id >= 0:
 			effect_card_unhighlighted.emit(saved_player_id, saved_card_id)
+		return _hand_discard_result.duplicate()
 	else:
 		# Fallback: discard from back of hand
 		var discarded_cards: Array[Dictionary] = []
@@ -1405,6 +1411,7 @@ func discard_hand_to(player_id: int, target_count: int) -> void:
 		player.hand_changed.emit()
 		player.discard_changed.emit()
 		await trigger_hand_cards_discarded_batch(player_id, discarded_cards)
+		return discarded_cards
 
 
 func resolve_hand_discard(player_id: int, hand_indices: Array[int]) -> void:
@@ -1423,6 +1430,8 @@ func resolve_hand_discard(player_id: int, hand_indices: Array[int]) -> void:
 			discarded_cards.append(card)
 	player.hand_changed.emit()
 	player.discard_changed.emit()
+	# Record what was discarded so discard_hand_to can return it to its caller.
+	_hand_discard_result = discarded_cards.duplicate()
 	# Bundle all simultaneously-discarded triggers into one standby batch so
 	# the player can choose resolution order when 2+ cards trigger (10.4.3).
 	await trigger_hand_cards_discarded_batch(player_id, discarded_cards)
@@ -1673,6 +1682,19 @@ func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: 
 		deck_search_requested.emit(player_id, options, all_visible, prompt, allow_skip)
 		await _deck_search_resolved
 		_unhighlight_active_effect()
+		# Re-map the resolved selection back to the caller's own dict. In
+		# multiplayer the client's pick round-trips through JSON, which converts
+		# enums/ints to floats — the returned dict would no longer == the
+		# originals, breaking callers that erase()/compare it (e.g. EBP04-079's
+		# play-all loop). Match by id so we hand back the canonical reference.
+		if not _deck_search_result.is_empty():
+			var selected_id: String = _deck_search_result.get("id", "")
+			for card in options:
+				if card.get("id") == selected_id:
+					return card
+			for card in all_visible:
+				if card.get("id") == selected_id:
+					return card
 		return _deck_search_result
 	else:
 		return options[0]
@@ -2489,6 +2511,12 @@ func get_engagement_restriction(attacker_player_id: int) -> int:
 	## Get the engagement restriction from the attacker's monster and strategy effects.
 	## Returns the max rank of opponent battle cards that cannot engage (-1 = no restriction).
 	## If multiple sources restrict, the highest restriction wins.
+	## Restriction only applies during the counter phase — the rule text excludes the
+	## restricted cards' CP "during the counter phase" only. Outside it, those cards
+	## report their normal counter power (e.g. EBP01-014), so effects that read power
+	## in other phases aren't affected.
+	if game_state.current_phase != CardEnums.GamePhase.COUNTER:
+		return -1
 	var player := game_state.players[attacker_player_id]
 	var max_rank: int = -1
 
@@ -2788,6 +2816,11 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 	if not bypass_protection and not _can_destroy_card(player, card):
 		return {}
 	player.strategy_zones[zone_index] = {}
+	# Clear any cards stacked under this strategy (e.g. EBP04-089's RAGE markers).
+	# RAGE markers never enter the discard pile, so they are dropped, not discarded;
+	# the only other under-stack user (EBP03-013) never places real cards there.
+	if zone_index < player.strategy_zone_stacks.size():
+		player.strategy_zone_stacks[zone_index] = []
 
 	var intercept_zone := get_strategy_discard_interceptor(player_id)
 	var intercepted: bool = intercept_zone >= 0
@@ -3072,14 +3105,17 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 	return await play_from_discard(player_id, card_data, zone_idx)
 
 
-func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int) -> void:
+func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int, stack_on_top: bool = false) -> void:
 	## Place a battle card directly from the deck into a zone, then fire enter and
 	## on_battle_card_played (with played_from_deck=true) in the correct order.
 	## Handles zone overload. Use this instead of manual push+trigger_enter+trigger_battle_card_played
 	## so that standby entry ordering is correct when called from within effect callbacks.
+	## Pass stack_on_top=true for "play on top of" effects (e.g. Star Falcon placing a
+	## Moguera card on top of Land Moguera) so the existing stack is preserved instead of
+	## overloaded/discarded.
 	var player := game_state.players[player_id]
 	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(zone_idx):
+	if player.zone_has_cards(zone_idx) and not stack_on_top:
 		overloaded_top = player.get_zone_top_card(zone_idx)
 		var destroyed_stack: Array = player.clear_zone(zone_idx)
 		banish_or_discard(player, destroyed_stack)
@@ -3410,3 +3446,30 @@ func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
 	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
 	log_message.emit(GameLog.effect_returned_card_to_hand(player_id, source_id, card.get("id", "")))
 	await trigger_card_returned_from_discard(player_id, card)
+
+
+func put_card_on_top_of_deck(player_id: int, card: Dictionary) -> void:
+	## Place a card on top of (the front of) a player's main deck and log it,
+	## attributed to whichever effect is currently active. Safe to call when the
+	## card has already been popped from discard (e.g. by search_discard) — the
+	## erase becomes a no-op. Fires deck_changed (and discard_changed when the card
+	## was still in the discard pile). Use this instead of a raw main_deck.push_front
+	## so the placement is visible in the game log.
+	var player := game_state.players[player_id]
+	if card in player.discard_pile:
+		player.discard_pile.erase(card)
+		player.discard_changed.emit()
+	player.main_deck.push_front(card)
+	player.deck_changed.emit()
+	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	log_message.emit(GameLog.effect_put_card_on_top_of_deck(player_id, source_id, card.get("id", "")))
+
+
+func shuffle_discard_into_deck(player_id: int) -> int:
+	## Return every card from a player's discard pile to their main deck and shuffle.
+	## Discard is public and the deck is private, so the move must be logged for both
+	## players. Delegates to PlayerState._reshuffle_discard so the move is token-safe
+	## and emits the same discard_reshuffled signal as an empty-deck draw — the board's
+	## handler produces the single (clickable) log entry. Returns cards moved.
+	## Use this instead of a raw main_deck.append_array + discard_pile.clear.
+	return game_state.players[player_id]._reshuffle_discard().size()

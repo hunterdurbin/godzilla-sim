@@ -35,6 +35,14 @@ func _await_confirmation(prompt: String, setting: String) -> void:
 		await Engine.get_main_loop().process_frame
 
 
+func _active_game_mode() -> String:
+	# Public/online MP syncs the chosen format into NetworkManager.game_mode; solo-bot
+	# games leave it empty and instead use the player's saved default format.
+	if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
+		return GameSettings.default_game_mode
+	return NetworkManager.game_mode
+
+
 func setup(card_data_node: Node) -> void:
 	game_state = GameState.new()
 	rules_engine = RulesEngine.new()
@@ -55,6 +63,15 @@ func setup(card_data_node: Node) -> void:
 			player.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
 			player.main_deck = card_data_node.get_main_deck(i)
 		player.main_deck.shuffle()
+
+	# Apply per-format card printing (e.g. Rumble East uses the JP traits). Resolved
+	# here, per-match, because the active format isn't known when decks are built.
+	var printing := CardData.printing_for_mode(_active_game_mode())
+	for player in game_state.players:
+		for c in player.monster_deck:
+			CardData.apply_printing(c, printing)
+		for c in player.main_deck:
+			CardData.apply_printing(c, printing)
 
 	# Place Rank I monsters as invading monsters at zone 1
 	for player in game_state.players:

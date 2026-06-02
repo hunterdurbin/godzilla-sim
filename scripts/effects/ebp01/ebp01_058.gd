@@ -30,11 +30,4 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.owner.discard_pile.is_empty():
-		return
-
-	ctx.owner.main_deck.append_array(ctx.owner.discard_pile)
-	ctx.owner.discard_pile.clear()
-	ctx.owner.main_deck.shuffle()
-	ctx.owner.deck_changed.emit()
-	ctx.owner.discard_changed.emit()
+	ctx.effect_handler.shuffle_discard_into_deck(ctx.owner.player_id)

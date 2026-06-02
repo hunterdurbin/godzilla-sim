@@ -834,7 +834,7 @@ func _card_matches_fuzzy(card: Dictionary, needle: String) -> bool:
 		return true
 	if card.get("description", "").to_lower().contains(needle):
 		return true
-	for t in card.get("traits", []):
+	for t in CardData.get_printed_field(card, "traits", CardData.printing_for_mode(_game_mode), []):
 		if CardEnums.trait_to_string(t).to_lower().contains(needle):
 			return true
 	for cn in card.get("common_names", []):

@@ -438,6 +438,11 @@ var _safe_left: float = 0.0
 var _safe_right: float = 0.0
 var _safe_top: float = 0.0
 var _safe_bottom: float = 0.0
+# Floating chat input bar that docks above the on-screen keyboard (mobile only)
+var _mobile_chat_bar: PanelContainer = null
+var _mobile_chat_input: LineEdit = null
+var _mobile_chat_char_count: Label = null
+var _mobile_chat_bar_lift: float = 0.0
 
 
 func _set_action_buttons_visible(vis: bool) -> void:
@@ -613,7 +618,7 @@ func _ready() -> void:
 			player.discard_changed.connect(_on_state_changed)
 			player.deck_changed.connect(_on_state_changed)
 			player.strategy_zones_changed.connect(_on_state_changed)
-			player.discard_reshuffled.connect(_on_discard_reshuffled)
+			player.discard_reshuffled.connect(_on_discard_reshuffled.bind(player.player_id))
 	else:
 		# Client: initialize empty client state, wait for host RPCs
 		_client_players = [PlayerState.new(0), PlayerState.new(1)]
@@ -740,6 +745,7 @@ func _ready() -> void:
 	log_output.meta_underlined = false
 	log_output.meta_hover_started.connect(_on_log_meta_hover_started)
 	log_output.meta_hover_ended.connect(_on_log_meta_hover_ended)
+	log_output.meta_clicked.connect(_on_log_meta_clicked)
 	chat_input.text_submitted.connect(_on_chat_submitted)
 	chat_input.text_changed.connect(_on_chat_text_changed)
 
@@ -1474,6 +1480,9 @@ func _apply_mobile_layout() -> void:
 	# --- 5. Log panel as slide-out tray on the left ---
 	_setup_mobile_log_tray()
 
+	# --- 5a. Floating chat input bar that docks above the on-screen keyboard ---
+	_setup_mobile_chat_bar()
+
 	# --- 5b. CP/Threat tray above log button ---
 	_setup_mobile_cp_tray()
 
@@ -2110,6 +2119,103 @@ func _setup_mobile_log_tray() -> void:
 	_mobile_log_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mobile_log_badge.visible = false
 	_mobile_log_toggle_btn.add_child(_mobile_log_badge)
+
+
+func _setup_mobile_chat_bar() -> void:
+	# Only worth doing where the OS shows a virtual keyboard that would cover the
+	# in-tray chat field. With a hardware keyboard (or the mobile layout forced on
+	# desktop), leave the tray field editable and skip the floating bar entirely.
+	if not DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+		return
+
+	# An editable chat field at the bottom of the tray would sit behind the OS
+	# keyboard, so on mobile the in-tray field becomes a tap target that opens a
+	# floating input bar which docks just above the keyboard instead.
+	chat_input.editable = false
+	chat_input.gui_input.connect(_on_tray_chat_tapped)
+
+	_mobile_chat_bar = PanelContainer.new()
+	var bar_bg := StyleBoxFlat.new()
+	bar_bg.bg_color = Color(0.08, 0.08, 0.12, 0.98)
+	bar_bg.content_margin_left = 10
+	bar_bg.content_margin_right = 10
+	bar_bg.content_margin_top = 8
+	bar_bg.content_margin_bottom = 8
+	_mobile_chat_bar.add_theme_stylebox_override("panel", bar_bg)
+	# Full-width strip pinned to the bottom edge, growing upward.
+	_mobile_chat_bar.anchor_left = 0.0
+	_mobile_chat_bar.anchor_right = 1.0
+	_mobile_chat_bar.anchor_top = 1.0
+	_mobile_chat_bar.anchor_bottom = 1.0
+	_mobile_chat_bar.offset_left = 0.0
+	_mobile_chat_bar.offset_right = 0.0
+	_mobile_chat_bar.offset_top = -64.0
+	_mobile_chat_bar.offset_bottom = 0.0
+	_mobile_chat_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_mobile_chat_bar.z_index = 200
+	_mobile_chat_bar.visible = false
+	add_child(_mobile_chat_bar)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	_mobile_chat_bar.add_child(row)
+
+	_mobile_chat_input = LineEdit.new()
+	_mobile_chat_input.placeholder_text = tr("STR_GB_CHAT_PLACEHOLDER")
+	_mobile_chat_input.max_length = chat_input.max_length
+	_mobile_chat_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_mobile_chat_input.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_mobile_chat_input.text_submitted.connect(_on_mobile_chat_submitted)
+	_mobile_chat_input.text_changed.connect(_on_mobile_chat_text_changed)
+	_mobile_chat_input.focus_exited.connect(_close_mobile_chat_bar)
+	row.add_child(_mobile_chat_input)
+
+	_mobile_chat_char_count = Label.new()
+	_mobile_chat_char_count.text = str(_mobile_chat_input.max_length)
+	_mobile_chat_char_count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_mobile_chat_char_count.add_theme_font_size_override("font_size", 13)
+	_mobile_chat_char_count.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	row.add_child(_mobile_chat_char_count)
+
+
+func _on_tray_chat_tapped(event: InputEvent) -> void:
+	var tapped := false
+	if event is InputEventScreenTouch and event.pressed:
+		tapped = true
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		tapped = true
+	if tapped:
+		_open_mobile_chat_bar()
+
+
+func _open_mobile_chat_bar() -> void:
+	if _mobile_chat_bar == null:
+		return
+	_mobile_chat_input.text = ""
+	_mobile_chat_char_count.text = str(_mobile_chat_input.max_length)
+	_mobile_chat_bar_lift = 0.0
+	_mobile_chat_bar.position.y = 0.0
+	_mobile_chat_bar.visible = true
+	_mobile_chat_input.grab_focus()  # triggers the OS keyboard
+
+
+func _close_mobile_chat_bar() -> void:
+	if _mobile_chat_bar == null or not _mobile_chat_bar.visible:
+		return
+	_mobile_chat_bar.visible = false
+	if _mobile_chat_input.has_focus():
+		_mobile_chat_input.release_focus()
+
+
+func _on_mobile_chat_submitted(text: String) -> void:
+	_dispatch_chat(text)
+	_mobile_chat_input.clear()
+	_mobile_chat_char_count.text = str(_mobile_chat_input.max_length)
+	# Keep focus so the player can send several messages without re-tapping.
+
+
+func _on_mobile_chat_text_changed(new_text: String) -> void:
+	_mobile_chat_char_count.text = str(_mobile_chat_input.max_length - new_text.length())
 
 
 func _notify_mobile_log_chat() -> void:
@@ -2962,6 +3068,13 @@ func _on_chat_submitted(text: String) -> void:
 	chat_input.clear()
 	chat_input.release_focus()
 	get_tree().create_timer(0.0).timeout.connect(chat_input.grab_focus)
+	chat_char_count.text = str(chat_input.max_length)
+	_dispatch_chat(text)
+
+
+# Filter, log, and broadcast a chat line. Shared by the desktop field and the
+# mobile floating chat bar.
+func _dispatch_chat(text: String) -> void:
 	var trimmed := text.strip_edges()
 	if trimmed.is_empty():
 		return
@@ -2974,7 +3087,6 @@ func _on_chat_submitted(text: String) -> void:
 	if is_multiplayer_game:
 		RpcLogger.log_send("receive_chat", 4 + filtered.length())
 		_rpc_receive_chat.rpc(local_player_id, filtered)
-	chat_char_count.text = str(chat_input.max_length)
 
 
 func _on_chat_text_changed(new_text: String) -> void:
@@ -2996,8 +3108,15 @@ func _on_card_discarded(_player_id: int, _card: Dictionary) -> void:
 	_queue_sound("card_discard")
 
 
-func _on_discard_reshuffled() -> void:
+func _on_discard_reshuffled(moved_cards: Array, player_id: int) -> void:
 	_queue_sound("deck_shuffle")
+	# Discard (public) → deck (private): log the move for both players, with a
+	# clickable snapshot of what was shuffled in. Fires for effect-driven shuffles
+	# and for the automatic reshuffle when drawing from an empty deck.
+	var ids: Array = []
+	for card in moved_cards:
+		ids.append(CardUtils.base_id(card))
+	_on_log_message(GameLog.effect_shuffled_discard_into_deck(player_id, ids))
 
 
 func _on_rage_gained(_player_id: int, _new_rage: int) -> void:
@@ -3058,16 +3177,16 @@ func _on_battle_card_crushed(player_id: int, zone_index: int, card: Dictionary) 
 	_broadcast_state()
 
 
-func _on_counter_succeeded(player_id: int, total_cp: int, threat: int) -> void:
+func _on_counter_succeeded(player_id: int, total_cp: int, threat: int, rage_threat: int, effect_threat: int) -> void:
 	_queue_sound("counter_success")
-	_on_log_message(GameLog.counter_succeeded(player_id, total_cp, threat))
+	_on_log_message(GameLog.counter_succeeded(player_id, total_cp, threat, rage_threat, effect_threat))
 	_sync_boards()
 	_broadcast_state()
 
 
-func _on_counter_failed(player_id: int, total_cp: int, threat: int) -> void:
+func _on_counter_failed(player_id: int, total_cp: int, threat: int, rage_threat: int, effect_threat: int) -> void:
 	_queue_sound("counter_fail")
-	_on_log_message(GameLog.counter_failed(player_id, total_cp, threat))
+	_on_log_message(GameLog.counter_failed(player_id, total_cp, threat, rage_threat, effect_threat))
 
 
 func _on_counter_immunity_triggered(player_id: int, total_cp: int, threshold: int) -> void:
@@ -3076,6 +3195,16 @@ func _on_counter_immunity_triggered(player_id: int, total_cp: int, threshold: in
 
 func _on_counter_prevented(player_id: int) -> void:
 	_on_log_message(GameLog.counter_prevented(player_id))
+
+
+func _threat_mod_for(pid: int) -> int:
+	## Effect-driven threat modifier for a player, working on both host (live
+	## effect handler) and client (synced modifiers from the last broadcast).
+	if turn_manager and turn_manager.effect_handler:
+		return turn_manager.effect_handler.get_threat_level_modifier(pid)
+	if pid >= 0 and pid < _client_threat_modifiers.size():
+		return int(_client_threat_modifiers[pid])
+	return 0
 
 
 func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monster: Dictionary) -> void:
@@ -3204,7 +3333,11 @@ func _build_bug_report_body() -> String:
 		lines.append("- **Monster:** %s (Zone %d)" % [monster_name, ps.monster_zone])
 		lines.append("- **Rage:** %d" % ps.rage)
 		lines.append("- **Counter Power:** %d" % ps.get_total_counter_power())
-		lines.append("- **Threat Level:** %d" % ps.get_threat_level())
+		var threat_mod: int = _threat_mod_for(pid)
+		if threat_mod != 0:
+			lines.append("- **Threat Level:** %d (%d + %d effects)" % [ps.get_threat_level() + threat_mod, ps.get_threat_level(), threat_mod])
+		else:
+			lines.append("- **Threat Level:** %d" % ps.get_threat_level())
 		lines.append("- **Deck:** %d cards" % ps.main_deck.size())
 		lines.append("- **Discard:** %d cards" % ps.discard_pile.size())
 		lines.append("- **Hand:** %d cards" % ps.hand.size())
@@ -3558,7 +3691,7 @@ func _execute_rematch() -> void:
 			player.discard_changed.connect(_on_state_changed)
 			player.deck_changed.connect(_on_state_changed)
 			player.strategy_zones_changed.connect(_on_state_changed)
-			player.discard_reshuffled.connect(_on_discard_reshuffled)
+			player.discard_reshuffled.connect(_on_discard_reshuffled.bind(player.player_id))
 
 		# Set up replay recorder for the new game
 		_setup_replay_recorder()
@@ -3956,6 +4089,7 @@ func _on_zone_hover_clicked(_zone_index: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	_update_mobile_chat_bar()
 	_process_lobby_banner_tick()
 	_process_pending_indicator()
 	# Reconnect overlay display
@@ -3981,6 +4115,26 @@ func _process(_delta: float) -> void:
 			_end_snap_preview()
 		return
 	_update_snap_preview()
+
+
+# Keep the floating chat bar docked just above the on-screen keyboard while it is visible.
+func _update_mobile_chat_bar() -> void:
+	if _mobile_chat_bar == null or not _mobile_chat_bar.visible:
+		return
+	var kb_native := DisplayServer.virtual_keyboard_get_height()
+	var kb_view := 0.0
+	if kb_native > 0:
+		var viewport_size := get_viewport().get_visible_rect().size
+		var screen_size := DisplayServer.screen_get_size()
+		kb_view = float(kb_native)
+		if screen_size.y > 0:
+			kb_view = kb_native * (viewport_size.y / float(screen_size.y))
+	# The bar is anchored to the bottom edge; lift it by the keyboard height.
+	if absf(_mobile_chat_bar_lift - kb_view) < 1.0:
+		_mobile_chat_bar_lift = kb_view
+	else:
+		_mobile_chat_bar_lift = lerpf(_mobile_chat_bar_lift, kb_view, 0.3)
+	_mobile_chat_bar.position.y = -_mobile_chat_bar_lift
 
 
 func _update_snap_preview() -> void:
@@ -4064,6 +4218,11 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and chat_input.has_focus():
 		if not chat_input.get_global_rect().has_point(event.global_position):
 			chat_input.release_focus()
+
+	# Tap outside the floating mobile chat bar dismisses it.
+	if _mobile_chat_bar and _mobile_chat_bar.visible and event is InputEventMouseButton and event.pressed:
+		if not _mobile_chat_bar.get_global_rect().has_point(event.global_position):
+			_close_mobile_chat_bar()
 
 	var _zoom_fresh := card_zoom_overlay.visible and (Engine.get_process_frames() - _zoom_shown_frame) <= 2
 
@@ -6640,6 +6799,29 @@ func _on_log_meta_hover_ended(_meta: Variant) -> void:
 	_hide_card_preview()
 
 
+func _on_log_meta_clicked(meta: Variant) -> void:
+	var m: String = str(meta)
+	if m.begins_with("reshuffle:"):
+		_hide_card_preview()
+		_show_reshuffle_snapshot(m.substr("reshuffle:".length()))
+
+
+func _show_reshuffle_snapshot(ids_csv: String) -> void:
+	## Reuse the discard-view overlay to show a read-only snapshot of the cards that
+	## were shuffled from the discard pile back into the deck. ids_csv is the
+	## comma-joined base card ids encoded in the log line's meta.
+	var cards: Array[Dictionary] = []
+	for id in ids_csv.split(",", false):
+		var data: Dictionary = CardData.get_card_by_id(id)
+		if not data.is_empty():
+			cards.append(data.duplicate(true))
+	_discard_view_cards = cards
+	discard_view_title.text = tr("STR_GB_RESHUFFLE_SNAPSHOT_TITLE_FMT") % cards.size()
+	discard_view_stacked.set_pressed_no_signal(_match_stacked_view)
+	discard_view_overlay.visible = true
+	_refresh_discard_view_grid()
+
+
 func _set_mouse_filter_ignore_recursive(node: Control) -> void:
 	node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for child in node.get_children():
@@ -7026,6 +7208,11 @@ func _serialize_player_state(ps: PlayerState) -> Dictionary:
 	var strat_ids: Array = []
 	for s in ps.strategy_zones:
 		strat_ids.append(_card_to_id(s) if s is Dictionary else "")
+	# Cards stacked under each strategy (e.g. EBP04-089 RAGE markers). Public info —
+	# the count must reach the client so the player who placed it can see their tally.
+	var strat_stack_ids: Array = []
+	for stack in ps.strategy_zone_stacks:
+		strat_stack_ids.append(_cards_to_ids(stack) if stack is Array else [])
 	return {
 		"player_id": ps.player_id,
 		"monster_zone": ps.monster_zone,
@@ -7033,6 +7220,7 @@ func _serialize_player_state(ps: PlayerState) -> Dictionary:
 		"current_monster": _card_to_id(ps.current_monster),
 		"zones": zone_ids,
 		"strategy_zones": strat_ids,
+		"strategy_zone_stacks": strat_stack_ids,
 		"hand": _cards_to_ids(ps.hand),
 		"hand_count": ps.hand.size(),
 		"main_deck_count": ps.main_deck.size(),
@@ -7864,6 +8052,20 @@ func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
 		ps.strategy_zone_turn_placed.resize(sz_data.size())
 	for i in range(sz_data.size()):
 		ps.strategy_zones[i] = _id_to_card(str(sz_data[i]))
+
+	# Cards stacked under each strategy (EBP04-089 RAGE markers) — needed so the
+	# client can show the under-count when inspecting the strategy zone.
+	var szs_data: Array = data.get("strategy_zone_stacks", [])
+	if szs_data.size() > ps.strategy_zone_stacks.size():
+		ps.strategy_zone_stacks.resize(szs_data.size())
+	for i in range(ps.strategy_zone_stacks.size()):
+		var under: Array = []
+		if i < szs_data.size():
+			for card_id in szs_data[i]:
+				var c := _id_to_card(str(card_id))
+				if not c.is_empty():
+					under.append(c)
+		ps.strategy_zone_stacks[i] = under
 
 	# Hand: IDs for local player, face-down placeholders for opponent
 	if is_local and data.has("hand"):

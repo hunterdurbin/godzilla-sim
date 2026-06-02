@@ -47,6 +47,10 @@ static func serialize_player_state(ps: PlayerState) -> Dictionary:
 	var strat_ids: Array = []
 	for s in ps.strategy_zones:
 		strat_ids.append(card_to_id(s) if s is Dictionary else "")
+	# Cards stacked under each strategy (e.g. EBP04-089 RAGE markers).
+	var strat_stack_ids: Array = []
+	for stack in ps.strategy_zone_stacks:
+		strat_stack_ids.append(cards_to_ids(stack) if stack is Array else [])
 	return {
 		"player_id": ps.player_id,
 		"monster_zone": ps.monster_zone,
@@ -54,6 +58,7 @@ static func serialize_player_state(ps: PlayerState) -> Dictionary:
 		"current_monster": card_to_id(ps.current_monster),
 		"zones": zone_ids,
 		"strategy_zones": strat_ids,
+		"strategy_zone_stacks": strat_stack_ids,
 		"hand": cards_to_ids(ps.hand),
 		"hand_count": ps.hand.size(),
 		"main_deck": cards_to_ids(ps.main_deck),
@@ -113,6 +118,12 @@ static func deserialize_to_player_state(data: Dictionary) -> PlayerState:
 	ps.strategy_zone_turn_placed.resize(strat_count)
 	for i in range(strat_count):
 		ps.strategy_zone_turn_placed[i] = sztp[i] if i < sztp.size() else 0
+
+	# Cards stacked under each strategy (EBP04-089 RAGE markers)
+	var szs_data: Array = data.get("strategy_zone_stacks", [])
+	ps.strategy_zone_stacks.resize(strat_count)
+	for i in range(strat_count):
+		ps.strategy_zone_stacks[i] = Array(ids_to_cards(szs_data[i])) if i < szs_data.size() else []
 
 	return ps
 

@@ -944,22 +944,25 @@ func _add_stack_badge(card: Control, count: int) -> void:
 
 
 func _update_stack_badge(card: Control, count: int) -> void:
-	var badge := card.get_node_or_null("StackBadge")
+	# Shown/hidden, never queue_free'd — see _update_modifier_badge for why.
+	var badge := card.get_node_or_null("StackBadge") as Label
 	if count <= 1:
 		if badge:
-			badge.queue_free()
+			badge.visible = false
 	else:
 		if not badge:
 			_add_stack_badge(card, count)
 		else:
+			badge.visible = true
 			badge.text = "x%d" % count
 
 
 func _update_strategy_modifier_badge(card: Control, modifier: int) -> void:
-	var badge := card.get_node_or_null("ModifierBadge")
+	# Shown/hidden, never queue_free'd — see _update_modifier_badge for why.
+	var badge := card.get_node_or_null("ModifierBadge") as Label
 	if modifier == 0:
 		if badge:
-			badge.queue_free()
+			badge.visible = false
 		return
 	if not badge:
 		badge = Label.new()
@@ -970,6 +973,7 @@ func _update_strategy_modifier_badge(card: Control, modifier: int) -> void:
 		badge.add_theme_color_override("font_outline_color", Color.BLACK)
 		badge.add_theme_constant_override("outline_size", 3)
 		card.add_child(badge)
+	badge.visible = true
 	# Card is portrait in local space; slot rotates -90° CCW for landscape display.
 	# Portrait bottom-center → visual middle-right of landscape.
 	# Counter-rotate badge +90° so text reads horizontally on screen.
@@ -988,10 +992,15 @@ func _update_modifier_badge(card: Control, modifier: int) -> void:
 	# Battle-card CP modifier badge — sits in the lower band so the green CP
 	# label lines up with monster cards' green threat label (also lower).
 	# Strategy cards use _update_strategy_modifier_badge instead.
-	var badge := card.get_node_or_null("ModifierBadge")
+	# NOTE: the badge is created once and then shown/hidden — never queue_free'd.
+	# queue_free() is deferred to end-of-frame, but get_node_or_null() keeps
+	# returning the dying node on syncs within the same frame, so a free+recreate
+	# races with the deferred deletion and the badge can vanish (e.g. when an
+	# engagement restriction briefly zeroes the modifier during the counter phase).
+	var badge := card.get_node_or_null("ModifierBadge") as Label
 	if modifier == 0:
 		if badge:
-			badge.queue_free()
+			badge.visible = false
 		return
 	if not badge:
 		badge = Label.new()
@@ -1006,6 +1015,7 @@ func _update_modifier_badge(card: Control, modifier: int) -> void:
 		badge.anchor_top = 0.72
 		badge.anchor_bottom = 0.84
 		card.add_child(badge)
+	badge.visible = true
 	var prefix := "+" if modifier > 0 else ""
 	badge.text = "%s%d" % [prefix, modifier]
 	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
@@ -1014,10 +1024,10 @@ func _update_modifier_badge(card: Control, modifier: int) -> void:
 func _update_threat_modifier_badge(card: Control, modifier: int) -> void:
 	# Monster threat modifier badge — bottom-right band, distinct node name so it
 	# can coexist with the CP modifier badge that sits one band above it.
-	var badge := card.get_node_or_null("ThreatModifierBadge")
+	var badge := card.get_node_or_null("ThreatModifierBadge") as Label
 	if modifier == 0:
 		if badge:
-			badge.queue_free()
+			badge.visible = false
 		return
 	if not badge:
 		badge = Label.new()
@@ -1032,16 +1042,17 @@ func _update_threat_modifier_badge(card: Control, modifier: int) -> void:
 		badge.anchor_top = 0.72
 		badge.anchor_bottom = 0.84
 		card.add_child(badge)
+	badge.visible = true
 	var prefix := "+" if modifier > 0 else ""
 	badge.text = "%s%d" % [prefix, modifier]
 	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
 
 
 func _update_rank_modifier_badge(card: Control, modifier: int) -> void:
-	var badge := card.get_node_or_null("RankModifierBadge")
+	var badge := card.get_node_or_null("RankModifierBadge") as Label
 	if modifier == 0:
 		if badge:
-			badge.queue_free()
+			badge.visible = false
 		return
 	if not badge:
 		badge = Label.new()
@@ -1056,6 +1067,7 @@ func _update_rank_modifier_badge(card: Control, modifier: int) -> void:
 		badge.anchor_top = 0.04
 		badge.anchor_bottom = 0.16
 		card.add_child(badge)
+	badge.visible = true
 	var prefix := "+" if modifier > 0 else ""
 	badge.text = "%s%d" % [prefix, modifier]
 	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
@@ -1064,10 +1076,10 @@ func _update_rank_modifier_badge(card: Control, modifier: int) -> void:
 func _update_monster_cp_badge(card: Control, modifier: int) -> void:
 	# Monster CP modifier badge — sits one band above the threat modifier so that
 	# a monster card with both CP and threat bonuses doesn't collide.
-	var badge := card.get_node_or_null("MonsterCPBadge")
+	var badge := card.get_node_or_null("MonsterCPBadge") as Label
 	if modifier == 0:
 		if badge:
-			badge.queue_free()
+			badge.visible = false
 		return
 	if not badge:
 		badge = Label.new()
@@ -1082,6 +1094,7 @@ func _update_monster_cp_badge(card: Control, modifier: int) -> void:
 		badge.anchor_top = 0.52
 		badge.anchor_bottom = 0.64
 		card.add_child(badge)
+	badge.visible = true
 	var prefix := "+" if modifier > 0 else ""
 	badge.text = "CP %s%d" % [prefix, modifier]
 	badge.add_theme_color_override("font_color", Color(0.3, 0.6, 1.0, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))

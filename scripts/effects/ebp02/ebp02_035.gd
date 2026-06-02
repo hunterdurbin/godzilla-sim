@@ -27,12 +27,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	if bio_count >= 2:
 		# Return all opponent discard to deck and shuffle
-		if not ctx.opponent.discard_pile.is_empty():
-			ctx.opponent.main_deck.append_array(ctx.opponent.discard_pile)
-			ctx.opponent.discard_pile.clear()
-			ctx.opponent.main_deck.shuffle()
-			ctx.opponent.deck_changed.emit()
-			ctx.opponent.discard_changed.emit()
+		ctx.effect_handler.shuffle_discard_into_deck(ctx.opponent.player_id)
 
 	# Play 2 Tentacles tokens in adjacent zones (player chooses)
 	var zone_idx := find_zone_of_card(ctx)
