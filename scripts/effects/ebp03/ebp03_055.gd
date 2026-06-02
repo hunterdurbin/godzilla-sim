@@ -31,5 +31,4 @@ func on_enter(ctx: EffectContext) -> void:
 		tr("STR_EFF_EBP03_055_PROMPT")
 	)
 	if not selected.is_empty():
-		ctx.owner.main_deck.push_front(selected)
-		ctx.owner.deck_changed.emit()
+		ctx.effect_handler.put_card_on_top_of_deck(ctx.owner.player_id, selected)

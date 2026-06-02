@@ -166,6 +166,14 @@ static func effect_returned_card_to_hand(player_id: int, effect_source_id: Strin
 	return {"type": "effect_returned_card_to_hand", "player_id": player_id, "source_id": effect_source_id, "returned_id": returned_id}
 
 
+static func effect_put_card_on_top_of_deck(player_id: int, effect_source_id: String, card_id: String) -> Dictionary:
+	return {"type": "effect_put_card_on_top_of_deck", "player_id": player_id, "source_id": effect_source_id, "card_id": card_id}
+
+
+static func effect_shuffled_discard_into_deck(player_id: int, card_ids: Array) -> Dictionary:
+	return {"type": "effect_shuffled_discard_into_deck", "player_id": player_id, "cards": card_ids}
+
+
 static func battle_card_crushed(card_id: String, player_id: int, zone_index: int) -> Dictionary:
 	return {"type": "battle_card_crushed", "card_id": card_id, "player_id": player_id, "zone_index": zone_index}
 
@@ -409,6 +417,21 @@ static func render(token: Dictionary) -> String:
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
 				.replace("{RETURNED_CARD}", card_link(token.get("returned_id", "")))
+		"effect_put_card_on_top_of_deck":
+			return TranslationServer.translate("STR_LOG_EFFECT_TOP_OF_DECK_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{CARD}", card_link(token.get("card_id", "")))
+		"effect_shuffled_discard_into_deck":
+			var shuffled_ids: Array = token.get("cards", [])
+			# Encode the card ids into the meta so the log line is clickable and shows
+			# a snapshot of what was shuffled in — stateless, so it works identically
+			# on host and client without a separate registry.
+			var snapshot_meta := "reshuffle:" + ",".join(PackedStringArray(shuffled_ids))
+			return TranslationServer.translate("STR_LOG_EFFECT_SHUFFLE_DISCARD_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{IDS}", snapshot_meta) \
+				.replace("{N}", str(shuffled_ids.size()))
 		"battle_card_crushed":
 			return TranslationServer.translate("STR_LOG_CARD_CRUSHED_FMT") \
 				.replace("{DESTROY_ICON}", _icon(40, "others", "Destroy.png")) \

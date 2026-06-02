@@ -16,7 +16,7 @@ signal rage_changed(new_rage: int)
 signal strategy_zones_changed()
 signal deck_changed()
 signal discard_changed()
-signal discard_reshuffled()
+signal discard_reshuffled(moved_cards: Array)
 
 var player_id: int = 0
 var monster_deck: Array[Dictionary] = []  # Rank I-IV, ordered
@@ -284,9 +284,12 @@ func count_zone_tokens_by_id(token_id: String) -> int:
 	return count
 
 
-func _reshuffle_discard() -> void:
+func _reshuffle_discard() -> Array[Dictionary]:
+	## Move the discard pile into the deck and shuffle. Returns the cards that were
+	## moved (token/marker-filtered), so listeners can log/snapshot them. Returns an
+	## empty array when there was nothing to reshuffle.
 	if discard_pile.is_empty():
-		return
+		return []
 	# Safety: filter out tokens and engine-internal markers (e.g. RAGE-MARKER)
 	# that leaked into the discard pile — they must never reach the deck.
 	var deckable: Array[Dictionary] = []
@@ -301,4 +304,5 @@ func _reshuffle_discard() -> void:
 	main_deck.shuffle()
 	deck_changed.emit()
 	discard_changed.emit()
-	discard_reshuffled.emit()
+	discard_reshuffled.emit(deckable)
+	return deckable

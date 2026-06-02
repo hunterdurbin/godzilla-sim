@@ -633,6 +633,8 @@ STR_LOG_EFFECT_RAGE_FROM_MILL_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} x{N
 STR_LOG_EFFECT_RAGE_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} +{AMOUNT} (now x{N}),[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} +{AMOUNT} (現在 x{N})
 STR_LOG_EFFECT_DESTROYED_FMT,{DESTROY_ICON} [b]{SOURCE_PLAYER}[/b] {SOURCE_CARD}: [b]{TARGET_PLAYER}[/b] Zone {ZONE} {DESTROYED_CARD},{DESTROY_ICON} [b]{SOURCE_PLAYER}[/b] {SOURCE_CARD}: [b]{TARGET_PLAYER}[/b] エリア{ZONE} {DESTROYED_CARD}
 STR_LOG_EFFECT_RETURNED_TO_HAND_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: returned {RETURNED_CARD} to hand,[b]{PLAYER}[/b] {SOURCE_CARD}: {RETURNED_CARD}を手札に戻す
+STR_LOG_EFFECT_TOP_OF_DECK_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: put {CARD} on top of deck,[b]{PLAYER}[/b] {SOURCE_CARD}: {CARD}をデッキの上に置く
+STR_LOG_EFFECT_SHUFFLE_DISCARD_FMT,[b]{PLAYER}[/b] shuffled discard pile into deck ([url={IDS}]{N} cards[/url]),[b]{PLAYER}[/b] 捨て札をデッキに戻してシャッフル ([url={IDS}]{N}枚[/url])
 STR_LOG_CARD_CRUSHED_FMT,{DESTROY_ICON} [b]{PLAYER}[/b] Zone {ZONE}: {CARD} crushed!,{DESTROY_ICON} [b]{PLAYER}[/b] エリア{ZONE}: {CARD} 撃破!
 STR_LOG_COUNTER_SUCCESS_FMT,Counter SUCCESS! [b]{PLAYER}[/b] CP {CP} >= Threat {THREAT},撃退成功! [b]{PLAYER}[/b] 撃退力 {CP} >= 脅威度 {THREAT}
 STR_LOG_COUNTER_FAIL_FMT,Counter failed. [b]{PLAYER}[/b] CP {CP} < Threat {THREAT},撃退失敗。 [b]{PLAYER}[/b] 撃退力 {CP} < 脅威度 {THREAT}
@@ -874,6 +876,7 @@ STR_AH_INVADE_COST_PROMPT,Choose invasion cost method:,進攻コストの方法�
 STR_AH_INVADE_COST_MILL,Send top deck card to discard,山札の上を捨て札へ
 STR_AH_INVADE_COST_HAND,Discard from hand,手札から捨てる
 STR_GB_DISCARD_TITLE_FMT,%s Discard Pile (%d),%s の捨て札 (%d)
+STR_GB_RESHUFFLE_SNAPSHOT_TITLE_FMT,Shuffled into Deck (%d),デッキに戻したカード (%d)
 STR_GB_MONSTER_DECK_TITLE_FMT,Monster Deck (%d),怪獣デッキ (%d)
 STR_GB_LEAVE_TITLE,Leave Game,ゲームを退出
 STR_GB_LEAVE_PROMPT,Leave the current game?,現在のゲームを退出しますか?

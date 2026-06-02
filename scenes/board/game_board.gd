@@ -613,7 +613,7 @@ func _ready() -> void:
 			player.discard_changed.connect(_on_state_changed)
 			player.deck_changed.connect(_on_state_changed)
 			player.strategy_zones_changed.connect(_on_state_changed)
-			player.discard_reshuffled.connect(_on_discard_reshuffled)
+			player.discard_reshuffled.connect(_on_discard_reshuffled.bind(player.player_id))
 	else:
 		# Client: initialize empty client state, wait for host RPCs
 		_client_players = [PlayerState.new(0), PlayerState.new(1)]
@@ -740,6 +740,7 @@ func _ready() -> void:
 	log_output.meta_underlined = false
 	log_output.meta_hover_started.connect(_on_log_meta_hover_started)
 	log_output.meta_hover_ended.connect(_on_log_meta_hover_ended)
+	log_output.meta_clicked.connect(_on_log_meta_clicked)
 	chat_input.text_submitted.connect(_on_chat_submitted)
 	chat_input.text_changed.connect(_on_chat_text_changed)
 
@@ -2996,8 +2997,15 @@ func _on_card_discarded(_player_id: int, _card: Dictionary) -> void:
 	_queue_sound("card_discard")
 
 
-func _on_discard_reshuffled() -> void:
+func _on_discard_reshuffled(moved_cards: Array, player_id: int) -> void:
 	_queue_sound("deck_shuffle")
+	# Discard (public) → deck (private): log the move for both players, with a
+	# clickable snapshot of what was shuffled in. Fires for effect-driven shuffles
+	# and for the automatic reshuffle when drawing from an empty deck.
+	var ids: Array = []
+	for card in moved_cards:
+		ids.append(CardUtils.base_id(card))
+	_on_log_message(GameLog.effect_shuffled_discard_into_deck(player_id, ids))
 
 
 func _on_rage_gained(_player_id: int, _new_rage: int) -> void:
@@ -3572,7 +3580,7 @@ func _execute_rematch() -> void:
 			player.discard_changed.connect(_on_state_changed)
 			player.deck_changed.connect(_on_state_changed)
 			player.strategy_zones_changed.connect(_on_state_changed)
-			player.discard_reshuffled.connect(_on_discard_reshuffled)
+			player.discard_reshuffled.connect(_on_discard_reshuffled.bind(player.player_id))
 
 		# Set up replay recorder for the new game
 		_setup_replay_recorder()
@@ -6652,6 +6660,29 @@ func _on_log_meta_hover_started(meta: Variant) -> void:
 
 func _on_log_meta_hover_ended(_meta: Variant) -> void:
 	_hide_card_preview()
+
+
+func _on_log_meta_clicked(meta: Variant) -> void:
+	var m: String = str(meta)
+	if m.begins_with("reshuffle:"):
+		_hide_card_preview()
+		_show_reshuffle_snapshot(m.substr("reshuffle:".length()))
+
+
+func _show_reshuffle_snapshot(ids_csv: String) -> void:
+	## Reuse the discard-view overlay to show a read-only snapshot of the cards that
+	## were shuffled from the discard pile back into the deck. ids_csv is the
+	## comma-joined base card ids encoded in the log line's meta.
+	var cards: Array[Dictionary] = []
+	for id in ids_csv.split(",", false):
+		var data: Dictionary = CardData.get_card_by_id(id)
+		if not data.is_empty():
+			cards.append(data.duplicate(true))
+	_discard_view_cards = cards
+	discard_view_title.text = tr("STR_GB_RESHUFFLE_SNAPSHOT_TITLE_FMT") % cards.size()
+	discard_view_stacked.set_pressed_no_signal(_match_stacked_view)
+	discard_view_overlay.visible = true
+	_refresh_discard_view_grid()
 
 
 func _set_mouse_filter_ignore_recursive(node: Control) -> void:

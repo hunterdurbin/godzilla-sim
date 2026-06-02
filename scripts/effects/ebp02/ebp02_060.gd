@@ -37,8 +37,5 @@ func on_revenge(ctx: EffectContext) -> void:
 	var card_id: String = ctx.card_data.get("id", "")
 	for i in range(ctx.owner.discard_pile.size() - 1, -1, -1):
 		if ctx.owner.discard_pile[i].get("id", "") == card_id:
-			var card: Dictionary = ctx.owner.discard_pile.pop_at(i)
-			ctx.owner.hand.append(card)
-			ctx.owner.hand_changed.emit()
-			ctx.owner.discard_changed.emit()
+			await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, ctx.owner.discard_pile[i])
 			break

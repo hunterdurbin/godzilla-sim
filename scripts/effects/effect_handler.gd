@@ -3446,3 +3446,30 @@ func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
 	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
 	log_message.emit(GameLog.effect_returned_card_to_hand(player_id, source_id, card.get("id", "")))
 	await trigger_card_returned_from_discard(player_id, card)
+
+
+func put_card_on_top_of_deck(player_id: int, card: Dictionary) -> void:
+	## Place a card on top of (the front of) a player's main deck and log it,
+	## attributed to whichever effect is currently active. Safe to call when the
+	## card has already been popped from discard (e.g. by search_discard) — the
+	## erase becomes a no-op. Fires deck_changed (and discard_changed when the card
+	## was still in the discard pile). Use this instead of a raw main_deck.push_front
+	## so the placement is visible in the game log.
+	var player := game_state.players[player_id]
+	if card in player.discard_pile:
+		player.discard_pile.erase(card)
+		player.discard_changed.emit()
+	player.main_deck.push_front(card)
+	player.deck_changed.emit()
+	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	log_message.emit(GameLog.effect_put_card_on_top_of_deck(player_id, source_id, card.get("id", "")))
+
+
+func shuffle_discard_into_deck(player_id: int) -> int:
+	## Return every card from a player's discard pile to their main deck and shuffle.
+	## Discard is public and the deck is private, so the move must be logged for both
+	## players. Delegates to PlayerState._reshuffle_discard so the move is token-safe
+	## and emits the same discard_reshuffled signal as an empty-deck draw — the board's
+	## handler produces the single (clickable) log entry. Returns cards moved.
+	## Use this instead of a raw main_deck.append_array + discard_pile.clear.
+	return game_state.players[player_id]._reshuffle_discard().size()
