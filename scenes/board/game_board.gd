@@ -438,6 +438,11 @@ var _safe_left: float = 0.0
 var _safe_right: float = 0.0
 var _safe_top: float = 0.0
 var _safe_bottom: float = 0.0
+# Floating chat input bar that docks above the on-screen keyboard (mobile only)
+var _mobile_chat_bar: PanelContainer = null
+var _mobile_chat_input: LineEdit = null
+var _mobile_chat_char_count: Label = null
+var _mobile_chat_bar_lift: float = 0.0
 
 
 func _set_action_buttons_visible(vis: bool) -> void:
@@ -1475,6 +1480,9 @@ func _apply_mobile_layout() -> void:
 	# --- 5. Log panel as slide-out tray on the left ---
 	_setup_mobile_log_tray()
 
+	# --- 5a. Floating chat input bar that docks above the on-screen keyboard ---
+	_setup_mobile_chat_bar()
+
 	# --- 5b. CP/Threat tray above log button ---
 	_setup_mobile_cp_tray()
 
@@ -2111,6 +2119,103 @@ func _setup_mobile_log_tray() -> void:
 	_mobile_log_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_mobile_log_badge.visible = false
 	_mobile_log_toggle_btn.add_child(_mobile_log_badge)
+
+
+func _setup_mobile_chat_bar() -> void:
+	# Only worth doing where the OS shows a virtual keyboard that would cover the
+	# in-tray chat field. With a hardware keyboard (or the mobile layout forced on
+	# desktop), leave the tray field editable and skip the floating bar entirely.
+	if not DisplayServer.has_feature(DisplayServer.FEATURE_VIRTUAL_KEYBOARD):
+		return
+
+	# An editable chat field at the bottom of the tray would sit behind the OS
+	# keyboard, so on mobile the in-tray field becomes a tap target that opens a
+	# floating input bar which docks just above the keyboard instead.
+	chat_input.editable = false
+	chat_input.gui_input.connect(_on_tray_chat_tapped)
+
+	_mobile_chat_bar = PanelContainer.new()
+	var bar_bg := StyleBoxFlat.new()
+	bar_bg.bg_color = Color(0.08, 0.08, 0.12, 0.98)
+	bar_bg.content_margin_left = 10
+	bar_bg.content_margin_right = 10
+	bar_bg.content_margin_top = 8
+	bar_bg.content_margin_bottom = 8
+	_mobile_chat_bar.add_theme_stylebox_override("panel", bar_bg)
+	# Full-width strip pinned to the bottom edge, growing upward.
+	_mobile_chat_bar.anchor_left = 0.0
+	_mobile_chat_bar.anchor_right = 1.0
+	_mobile_chat_bar.anchor_top = 1.0
+	_mobile_chat_bar.anchor_bottom = 1.0
+	_mobile_chat_bar.offset_left = 0.0
+	_mobile_chat_bar.offset_right = 0.0
+	_mobile_chat_bar.offset_top = -64.0
+	_mobile_chat_bar.offset_bottom = 0.0
+	_mobile_chat_bar.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_mobile_chat_bar.z_index = 200
+	_mobile_chat_bar.visible = false
+	add_child(_mobile_chat_bar)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	_mobile_chat_bar.add_child(row)
+
+	_mobile_chat_input = LineEdit.new()
+	_mobile_chat_input.placeholder_text = tr("STR_GB_CHAT_PLACEHOLDER")
+	_mobile_chat_input.max_length = chat_input.max_length
+	_mobile_chat_input.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_mobile_chat_input.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_mobile_chat_input.text_submitted.connect(_on_mobile_chat_submitted)
+	_mobile_chat_input.text_changed.connect(_on_mobile_chat_text_changed)
+	_mobile_chat_input.focus_exited.connect(_close_mobile_chat_bar)
+	row.add_child(_mobile_chat_input)
+
+	_mobile_chat_char_count = Label.new()
+	_mobile_chat_char_count.text = str(_mobile_chat_input.max_length)
+	_mobile_chat_char_count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_mobile_chat_char_count.add_theme_font_size_override("font_size", 13)
+	_mobile_chat_char_count.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	row.add_child(_mobile_chat_char_count)
+
+
+func _on_tray_chat_tapped(event: InputEvent) -> void:
+	var tapped := false
+	if event is InputEventScreenTouch and event.pressed:
+		tapped = true
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		tapped = true
+	if tapped:
+		_open_mobile_chat_bar()
+
+
+func _open_mobile_chat_bar() -> void:
+	if _mobile_chat_bar == null:
+		return
+	_mobile_chat_input.text = ""
+	_mobile_chat_char_count.text = str(_mobile_chat_input.max_length)
+	_mobile_chat_bar_lift = 0.0
+	_mobile_chat_bar.position.y = 0.0
+	_mobile_chat_bar.visible = true
+	_mobile_chat_input.grab_focus()  # triggers the OS keyboard
+
+
+func _close_mobile_chat_bar() -> void:
+	if _mobile_chat_bar == null or not _mobile_chat_bar.visible:
+		return
+	_mobile_chat_bar.visible = false
+	if _mobile_chat_input.has_focus():
+		_mobile_chat_input.release_focus()
+
+
+func _on_mobile_chat_submitted(text: String) -> void:
+	_dispatch_chat(text)
+	_mobile_chat_input.clear()
+	_mobile_chat_char_count.text = str(_mobile_chat_input.max_length)
+	# Keep focus so the player can send several messages without re-tapping.
+
+
+func _on_mobile_chat_text_changed(new_text: String) -> void:
+	_mobile_chat_char_count.text = str(_mobile_chat_input.max_length - new_text.length())
 
 
 func _notify_mobile_log_chat() -> void:
@@ -2963,6 +3068,13 @@ func _on_chat_submitted(text: String) -> void:
 	chat_input.clear()
 	chat_input.release_focus()
 	get_tree().create_timer(0.0).timeout.connect(chat_input.grab_focus)
+	chat_char_count.text = str(chat_input.max_length)
+	_dispatch_chat(text)
+
+
+# Filter, log, and broadcast a chat line. Shared by the desktop field and the
+# mobile floating chat bar.
+func _dispatch_chat(text: String) -> void:
 	var trimmed := text.strip_edges()
 	if trimmed.is_empty():
 		return
@@ -2975,7 +3087,6 @@ func _on_chat_submitted(text: String) -> void:
 	if is_multiplayer_game:
 		RpcLogger.log_send("receive_chat", 4 + filtered.length())
 		_rpc_receive_chat.rpc(local_player_id, filtered)
-	chat_char_count.text = str(chat_input.max_length)
 
 
 func _on_chat_text_changed(new_text: String) -> void:
@@ -3978,6 +4089,7 @@ func _on_zone_hover_clicked(_zone_index: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	_update_mobile_chat_bar()
 	_process_lobby_banner_tick()
 	_process_pending_indicator()
 	# Reconnect overlay display
@@ -4003,6 +4115,26 @@ func _process(_delta: float) -> void:
 			_end_snap_preview()
 		return
 	_update_snap_preview()
+
+
+# Keep the floating chat bar docked just above the on-screen keyboard while it is visible.
+func _update_mobile_chat_bar() -> void:
+	if _mobile_chat_bar == null or not _mobile_chat_bar.visible:
+		return
+	var kb_native := DisplayServer.virtual_keyboard_get_height()
+	var kb_view := 0.0
+	if kb_native > 0:
+		var viewport_size := get_viewport().get_visible_rect().size
+		var screen_size := DisplayServer.screen_get_size()
+		kb_view = float(kb_native)
+		if screen_size.y > 0:
+			kb_view = kb_native * (viewport_size.y / float(screen_size.y))
+	# The bar is anchored to the bottom edge; lift it by the keyboard height.
+	if absf(_mobile_chat_bar_lift - kb_view) < 1.0:
+		_mobile_chat_bar_lift = kb_view
+	else:
+		_mobile_chat_bar_lift = lerpf(_mobile_chat_bar_lift, kb_view, 0.3)
+	_mobile_chat_bar.position.y = -_mobile_chat_bar_lift
 
 
 func _update_snap_preview() -> void:
@@ -4086,6 +4218,11 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and chat_input.has_focus():
 		if not chat_input.get_global_rect().has_point(event.global_position):
 			chat_input.release_focus()
+
+	# Tap outside the floating mobile chat bar dismisses it.
+	if _mobile_chat_bar and _mobile_chat_bar.visible and event is InputEventMouseButton and event.pressed:
+		if not _mobile_chat_bar.get_global_rect().has_point(event.global_position):
+			_close_mobile_chat_bar()
 
 	var _zoom_fresh := card_zoom_overlay.visible and (Engine.get_process_frames() - _zoom_shown_frame) <= 2
 
