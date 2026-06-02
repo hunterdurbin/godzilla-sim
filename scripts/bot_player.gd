@@ -1234,16 +1234,29 @@ func _find_worst_invade_card(indices: Array, player: PlayerState) -> int:
 
 func _find_best_invade_card(player: PlayerState, exclude: Array = []) -> int:
 	# Prefer 2-step invasion cards, then 1-step
+	var block1 := _is_invade1_cost_blocked(player)
 	var best_idx: int = -1
 	var best_icon: int = 0
 	for i in range(player.hand.size()):
 		if i in exclude:
 			continue
 		var icon: int = player.hand[i].get("invasion_icon", 0)
+		# Invade 1 cards are unusable while the opponent blocks them as cost
+		# (e.g. EBP04-029 Gigan R3) — picking one would just cancel and re-loop.
+		if block1 and icon == 1:
+			continue
 		if icon > best_icon:
 			best_icon = icon
 			best_idx = i
 	return best_idx
+
+
+func _is_invade1_cost_blocked(player: PlayerState) -> bool:
+	## True when the opponent prevents this player from spending Invade 1 cards as
+	## invasion cost (EBP04-029 Gigan R3). The bot must treat invasion_icon == 1
+	## cards as non-invadable, or it loops forever trying a move ActionHandler
+	## immediately cancels.
+	return effect_handler != null and effect_handler.is_invade1_cost_blocked(player.player_id)
 
 
 func _ensure_combo_plan() -> void:
@@ -1482,10 +1495,16 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 
 
 func find_invade_card_with_steps(player: PlayerState, steps: int, exclude: Array = []) -> int:
+	var block1 := _is_invade1_cost_blocked(player)
 	for i in range(player.hand.size()):
 		if i in exclude:
 			continue
-		if player.hand[i].get("invasion_icon", 0) >= steps:
+		var icon: int = player.hand[i].get("invasion_icon", 0)
+		# Skip Invade 1 cards when the opponent blocks them as invasion cost — they
+		# can't actually be played, so returning one just loops (EBP04-029 Gigan R3).
+		if block1 and icon == 1:
+			continue
+		if icon >= steps:
 			return i
 	return -1
 
