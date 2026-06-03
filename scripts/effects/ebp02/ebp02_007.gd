@@ -58,10 +58,9 @@ func on_enter(ctx: EffectContext) -> void:
 		var card_id: String = chosen.get("id", "")
 		for i in range(monsters.size()):
 			if monsters[i].get("id", "") == card_id:
-				ctx.owner.hand.append(monsters[i])
+				ctx.effect_handler.add_card_to_hand(ctx.owner.player_id, monsters[i])
 				monsters.remove_at(i)
 				break
-		ctx.owner.hand_changed.emit()
 
 	rest.append_array(monsters)
 	ctx.owner.discard_pile.append_array(rest)

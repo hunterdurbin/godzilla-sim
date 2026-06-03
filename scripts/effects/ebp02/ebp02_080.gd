@@ -46,7 +46,6 @@ func on_enter(ctx: EffectContext) -> void:
 					break
 
 	if differ:
-		ctx.owner.hand.append_array(revealed)
-		ctx.owner.hand_changed.emit()
+		ctx.effect_handler.add_cards_to_hand(ctx.owner.player_id, revealed)
 	else:
 		ctx.effect_handler.discard_cards(ctx.owner.player_id, revealed)

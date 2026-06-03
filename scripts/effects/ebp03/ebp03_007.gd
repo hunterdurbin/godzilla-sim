@@ -45,9 +45,8 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	# Add chosen to hand, discard rest
 	for card in revealed:
 		if not chosen.is_empty() and card.get("id") == chosen.get("id"):
-			ctx.owner.hand.append(card)
+			ctx.effect_handler.add_card_to_hand(ctx.owner.player_id, card)
 		else:
 			ctx.owner.discard_pile.append(card)
 
-	ctx.owner.hand_changed.emit()
 	ctx.owner.discard_changed.emit()

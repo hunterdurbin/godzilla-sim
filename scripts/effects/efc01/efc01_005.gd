@@ -55,10 +55,7 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 	ctx.owner.deck_changed.emit()
 
 	# Add Fest cards to hand
-	for card in fest_cards:
-		ctx.owner.hand.append(card)
-	if not fest_cards.is_empty():
-		ctx.owner.hand_changed.emit()
+	ctx.effect_handler.add_cards_to_hand(ctx.owner.player_id, fest_cards)
 
 	# Discard the rest
 	for card in discard_cards:

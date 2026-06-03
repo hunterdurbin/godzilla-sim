@@ -37,5 +37,4 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		tr("STR_EFF_EBP03_070_SEARCH")
 	)
 	if not found.is_empty():
-		ctx.owner.hand.append(found)
-		ctx.owner.hand_changed.emit()
+		ctx.effect_handler.add_card_to_hand(ctx.owner.player_id, found)
