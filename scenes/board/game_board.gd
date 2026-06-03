@@ -6500,6 +6500,17 @@ func _cleanup_rankup_selection() -> void:
 
 # --- Zone stack view UI ---
 
+func _stack_view_header(single_key: String, under_key: String, n: int, total: int) -> String:
+	## Build a stack view title. When the stack has cards under the top card,
+	## use the "{U} Under" variant so the top-vs-under split is explicit.
+	if total > 1:
+		return tr(under_key) \
+			.replace("{N}", str(n)) \
+			.replace("{C}", str(total)) \
+			.replace("{U}", str(total - 1))
+	return tr(single_key).replace("{N}", str(n)).replace("{C}", str(total))
+
+
 func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
 	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting:
 		return
@@ -6520,7 +6531,8 @@ func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
 	for card_data in stack:
 		_zone_stack_view_cards.append(card_data)
 	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = tr("STR_GB_ZONE_HEADER_FMT").replace("{N}", str(zone_num)).replace("{C}", str(total))
+	zone_stack_view_title.text = _stack_view_header(
+		"STR_GB_ZONE_HEADER_FMT", "STR_GB_ZONE_HEADER_UNDER_FMT", zone_num, total)
 	zone_stack_view_overlay.visible = true
 	_refresh_zone_stack_view_grid()
 
@@ -6608,7 +6620,8 @@ func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
 	for c in stack:
 		_zone_stack_view_cards.append(c)
 	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = tr("STR_GB_STRATEGY_HEADER_FMT").replace("{N}", str(strategy_idx + 1)).replace("{C}", str(total))
+	zone_stack_view_title.text = _stack_view_header(
+		"STR_GB_STRATEGY_HEADER_FMT", "STR_GB_STRATEGY_HEADER_UNDER_FMT", strategy_idx + 1, total)
 	zone_stack_view_overlay.visible = true
 	_refresh_zone_stack_view_grid()
 
