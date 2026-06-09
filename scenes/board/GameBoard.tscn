@@ -11,6 +11,8 @@
 [ext_resource type="Script" path="res://scenes/board/modules/first_player_ui.gd" id="9_fp"]
 [ext_resource type="Script" path="res://scenes/board/modules/end_game_controller.gd" id="10_eg"]
 [ext_resource type="Script" path="res://scenes/board/modules/reconnect_controller.gd" id="11_rc"]
+[ext_resource type="Script" path="res://scripts/session/effect_ui_router.gd" id="12_er"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckSearchOverlay.tscn" id="13_dso"]
 
 [node name="GameBoard" type="Control" unique_id=1722697301]
 layout_mode = 3
@@ -26,6 +28,9 @@ script = ExtResource("4_gs")
 
 [node name="MultiplayerSync" type="Node" parent="GameSession"]
 script = ExtResource("5_ms")
+
+[node name="EffectUIRouter" type="Node" parent="GameSession"]
+script = ExtResource("12_er")
 
 [node name="BoardSfx" type="Node" parent="."]
 script = ExtResource("6_sfx")
@@ -533,77 +538,7 @@ script = ExtResource("3_cm")
 layout_mode = 3
 card_spacing = 120.0
 
-[node name="DeckSearchOverlay" type="ColorRect" parent="." unique_id=733695876]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
-
-[node name="DeckSearchPanel" type="PanelContainer" parent="DeckSearchOverlay" unique_id=660930292]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -350.0
-offset_right = 350.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="DeckSearchOverlay/DeckSearchPanel" unique_id=1069037139]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="PromptLabel" type="Label" parent="DeckSearchOverlay/DeckSearchPanel/VBox" unique_id=2043065905]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_SEARCH_YOUR_DECK"
-horizontal_alignment = 1
-
-[node name="ToggleRow" type="HBoxContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox" unique_id=706326209]
-layout_mode = 2
-theme_override_constants/separation = 20
-alignment = 2
-
-[node name="ShowAllToggle" type="CheckButton" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow" unique_id=1561789456]
-layout_mode = 2
-text = "STR_GB_SHOW_ALL"
-
-[node name="StackedToggle" type="CheckButton" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow" unique_id=838319594]
-layout_mode = 2
-text = "STR_GB_STACKED"
-
-[node name="Spacer" type="Control" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow" unique_id=1241003146]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="ViewBoardButton" type="Button" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow" unique_id=1081316664]
-layout_mode = 2
-text = "STR_GB_VIEW_BOARD"
-
-[node name="ScrollContainer" type="ScrollContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox" unique_id=1985525137]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="CardGrid" type="GridContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ScrollContainer" unique_id=1765882031]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 4
-
-[node name="SkipButton" type="Button" parent="DeckSearchOverlay/DeckSearchPanel/VBox" unique_id=886682311]
-custom_minimum_size = Vector2(100, 36)
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_SKIP"
+[node name="DeckSearchOverlay" parent="." instance=ExtResource("13_dso")]
 
 [node name="DiscardViewOverlay" type="ColorRect" parent="." unique_id=778566577]
 visible = false

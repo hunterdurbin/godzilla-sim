@@ -121,6 +121,7 @@ var _client_stats_decklists: Array:
 @onready var _first_player: FirstPlayerUI = $FirstPlayerUI
 @onready var _end_game: EndGameController = $EndGameController
 @onready var _reconnect: ReconnectController = $ReconnectController
+@onready var _router: EffectUIRouter = $GameSession/EffectUIRouter
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -169,9 +170,9 @@ var _pending_sound_events: PackedStringArray:
 @onready var btn_confirm: Button = $ActionPanel/Row0/Confirm
 
 # Deck search UI references
-@onready var deck_search_overlay: Control = $DeckSearchOverlay
-@onready var deck_search_prompt: Label = $DeckSearchOverlay/DeckSearchPanel/VBox/PromptLabel
-@onready var deck_search_grid: GridContainer = $DeckSearchOverlay/DeckSearchPanel/VBox/ScrollContainer/CardGrid
+@onready var deck_search_overlay: DeckSearchOverlayUI = $DeckSearchOverlay
+# Internal deck-search widget refs kept ONLY for the mobile styling pass
+# (logic lives in deck_search_overlay.gd now)
 @onready var deck_search_skip: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/SkipButton
 @onready var deck_search_show_all: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ShowAllToggle
 @onready var deck_search_stacked: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/StackedToggle
@@ -213,12 +214,9 @@ var _pending_sound_events: PackedStringArray:
 @onready var discard_view_stacked: CheckButton = $DiscardViewOverlay/DiscardViewPanel/VBox/StackedToggle
 
 # In-game stacked preference (initialized from GameSettings, remembered for the match)
-var _match_stacked_view: bool = true
-
-# Stored deck search data for toggling between matching/all/stacked
-var _deck_search_matching: Array[Dictionary] = []
-var _deck_search_all: Array[Dictionary] = []
-var _deck_search_matching_ids: Dictionary = {} # card id -> true, for highlighting
+var _match_stacked_view: bool:
+	get: return _router.match_stacked_view
+	set(v): _router.match_stacked_view = v
 
 # Stored discard view data for stacked toggle
 var _discard_view_cards: Array[Dictionary] = []
@@ -492,7 +490,6 @@ func _ready() -> void:
 	is_bot_game = NetworkManager.mode == NetworkManager.Mode.SOLO_BOT
 	_is_lobby_bot = NetworkManager.is_lobby_bot_game()
 	local_player_id = NetworkManager.get_local_player_id() if is_multiplayer_game else (NetworkManager.local_player_id if NetworkManager.local_player_id >= 0 else 0)
-	_match_stacked_view = _match_stacked_view
 
 	# Wire hand CardManagers to PlayerBoards
 	player1_board.hand_manager = player1_hand
@@ -503,6 +500,16 @@ func _ready() -> void:
 
 	# Make turn tracker labels clickable to toggle auto settings
 	_tracker.setup_settings_toggles()
+
+	# Effect prompt router: hooks + per-prompt handlers must be registered
+	# BEFORE the session starts so the router binds them on session_started.
+	_router.translate_prompt = _resolve_translated_text
+	_router.on_pre_remote_dispatch = _flush_broadcast
+	_router.on_pending_interaction = func(method: String, args: Array) -> void:
+		_pending_interaction = {"method": method, "args": args}
+	_router.on_view_board_request = _on_overlay_view_board
+	_router.card_zoom_request = _show_card_zoom
+	_router.register_handler("deck_search", deck_search_overlay.show_prompt)
 
 	if not is_multiplayer_game or NetworkManager.is_host():
 		# Seed RNG: use saved seed if loading, otherwise bot_seed for bot games
@@ -549,7 +556,6 @@ func _ready() -> void:
 		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
 		# Connect effect handler signals for player choice UIs
-		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
 		turn_manager.action_handler.effect_handler.deck_arrange_requested.connect(_on_deck_arrange_requested)
 		turn_manager.action_handler.effect_handler.card_select_requested.connect(_on_card_select_requested)
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
@@ -635,10 +641,6 @@ func _ready() -> void:
 			)
 
 	# Connect deck search buttons
-	deck_search_skip.pressed.connect(_on_deck_search_skip)
-	deck_search_show_all.toggled.connect(_on_deck_search_toggled)
-	deck_search_stacked.toggled.connect(_on_deck_search_toggled)
-	deck_search_view_board.pressed.connect(_on_deck_search_view_board)
 	deck_arrange_view_board.pressed.connect(_on_deck_arrange_view_board)
 	deck_arrange_confirm.pressed.connect(_on_deck_arrange_confirm)
 	card_pool_select_skip.pressed.connect(_on_card_pool_select_skip)
@@ -710,7 +712,6 @@ func _ready() -> void:
 	# Hide overlays and prompts
 	end_game_panel.visible = false
 	action_prompt_panel.visible = false
-	deck_search_overlay.visible = false
 	card_pool_select_overlay.visible = false
 	show_cards_button.visible = false
 	discard_view_overlay.visible = false
@@ -720,7 +721,6 @@ func _ready() -> void:
 
 	# Ensure overlays render above hand cards (which have incrementing z_index)
 	card_zoom_overlay.z_index = 200
-	deck_search_overlay.z_index = 100
 	deck_arrange_overlay.z_index = 100
 	card_pool_select_overlay.z_index = 100
 	discard_view_overlay.z_index = 100
@@ -3107,7 +3107,6 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
 		# Reconnect effect handler signals
-		turn_manager.action_handler.effect_handler.deck_search_requested.connect(_on_deck_search_requested)
 		turn_manager.action_handler.effect_handler.deck_arrange_requested.connect(_on_deck_arrange_requested)
 		turn_manager.action_handler.effect_handler.card_select_requested.connect(_on_card_select_requested)
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
@@ -3645,8 +3644,7 @@ func _input(event: InputEvent) -> void:
 			_on_card_pool_select_skip()
 		elif deck_search_overlay.visible:
 			# ESC dismisses only when skip is allowed; otherwise the prompt is mandatory.
-			if deck_search_skip.visible:
-				_on_deck_search_skip()
+			deck_search_overlay.try_skip()
 		elif discard_view_overlay.visible:
 			_hide_discard_view()
 		elif monster_deck_view_overlay.visible:
@@ -4089,95 +4087,6 @@ func _on_hand_drag_ended(card: Control) -> void:
 
 # --- Deck search UI ---
 
-func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, allow_skip: bool = true) -> void:
-	if is_bot_game and player_id == bot_player.bot_player_id:
-		return
-	if is_multiplayer_game and player_id != local_player_id:
-		_flush_broadcast() # Client needs up-to-date state before search
-		var matching_json := JSON.stringify(StateCodec.cards_to_ids(matching_cards))
-		var all_json := JSON.stringify(StateCodec.cards_to_ids(all_cards))
-		_pending_interaction = {"method": "deck_search", "args": [matching_json, all_json, prompt, allow_skip]}
-		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == player_id:
-				RpcLogger.log_send("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
-				_sync._rpc_deck_search_requested.rpc_id(peer_id, matching_json, all_json, prompt, allow_skip)
-		return
-	_show_deck_search(matching_cards, all_cards, prompt, allow_skip)
-
-
-func _show_deck_search(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, allow_skip: bool = true) -> void:
-	# Store data for toggling
-	_deck_search_matching = matching
-	_deck_search_all = all_cards
-	_deck_search_matching_ids.clear()
-	for card_data in matching:
-		_deck_search_matching_ids[card_data.get("id", "")] = true
-
-	deck_search_prompt.text = _resolve_translated_text(prompt)
-	deck_search_skip.visible = allow_skip
-	deck_search_show_all.set_pressed_no_signal(matching.is_empty())
-	deck_search_stacked.set_pressed_no_signal(_match_stacked_view)
-	deck_search_overlay.visible = true
-
-	_refresh_deck_search_grid()
-
-
-func _refresh_deck_search_grid() -> void:
-	var show_all := deck_search_show_all.button_pressed
-	var stacked := deck_search_stacked.button_pressed
-	var cards: Array[Dictionary] = _deck_search_all if show_all else _deck_search_matching
-	var all_selectable: bool = not show_all
-
-	# Clear previous cards
-	_clear_grid(deck_search_grid, _on_deck_search_card_clicked)
-
-	if stacked:
-		var groups := _group_cards(cards, _deck_search_matching_ids)
-		for group in groups:
-			var card_data: Dictionary = group["card_data"]
-			var count: int = group["count"]
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			var is_match: bool = all_selectable or group["has_match"]
-			card.is_selectable = is_match
-			if is_match:
-				card.card_clicked.connect(_on_deck_search_card_clicked)
-			else:
-				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			deck_search_grid.add_child(card)
-			_add_count_badge(card, count)
-	else:
-		for card_data in cards:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			var is_match: bool = all_selectable or _deck_search_matching_ids.has(card_data.get("id", ""))
-			card.is_selectable = is_match
-			if is_match:
-				card.card_clicked.connect(_on_deck_search_card_clicked)
-			else:
-				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			deck_search_grid.add_child(card)
-
-
-func _on_deck_search_toggled(_value: bool) -> void:
-	_match_stacked_view = deck_search_stacked.button_pressed
-	_refresh_deck_search_grid()
-
-
-func _on_deck_search_view_board() -> void:
-	deck_search_overlay.visible = false
-	_view_board_source_overlay = deck_search_overlay
-	show_cards_button.visible = true
-
-
 # --- FAB (Floating Action Button) ---
 
 
@@ -4607,32 +4516,18 @@ func _clear_card_highlight() -> void:
 	_highlighted_card = null
 
 
+## Router view-board hook: stash the overlay so ShowCards can re-show it.
+func _on_overlay_view_board(overlay: Control) -> void:
+	_view_board_source_overlay = overlay
+	show_cards_button.visible = true
+
+
 func _on_show_cards_pressed() -> void:
 	show_cards_button.visible = false
 	if _view_board_source_overlay:
 		_view_board_source_overlay.visible = true
 	else:
 		deck_search_overlay.visible = true
-
-
-func _on_deck_search_card_clicked(card: Control) -> void:
-	var selected: Dictionary = card.card_data if "card_data" in card else {}
-	_hide_deck_search()
-	_resolve_deck_search_local(selected)
-
-
-func _on_deck_search_skip() -> void:
-	_hide_deck_search()
-	_resolve_deck_search_local({})
-
-
-func _hide_deck_search() -> void:
-	deck_search_overlay.visible = false
-	show_cards_button.visible = false
-	_clear_grid(deck_search_grid, _on_deck_search_card_clicked)
-	_deck_search_matching = []
-	_deck_search_all = []
-	_deck_search_matching_ids.clear()
 
 
 # --- Deck arrange overlay UI ---
@@ -6249,16 +6144,6 @@ func _clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 		child.queue_free()
 
 
-func _resolve_deck_search_local(selected: Dictionary) -> void:
-	if is_multiplayer_game and not NetworkManager.is_host():
-		# Client sends selection back to host
-		var _search_json := JSON.stringify(selected)
-		RpcLogger.log_send("deck_search_resolved", _search_json.length())
-		_sync._rpc_deck_search_resolved.rpc_id(NetworkManager.host_peer_id, _search_json)
-	else:
-		turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
-
-
 func _resolve_deck_arrange_local(keep: Array[Dictionary], discard: Array[Dictionary]) -> void:
 	if is_multiplayer_game and not NetworkManager.is_host():
 		var _keep_json := JSON.stringify(keep)
@@ -6363,7 +6248,7 @@ func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt:
 	RpcLogger.log_receive("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
 	var all_ids: Array = JSON.parse_string(all_json)
-	_show_deck_search(StateCodec.ids_to_cards(matching_ids), StateCodec.ids_to_cards(all_ids), prompt, allow_skip)
+	_router.show_deck_search(StateCodec.ids_to_cards(matching_ids), StateCodec.ids_to_cards(all_ids), prompt, allow_skip)
 
 
 ## Client -> Host: deck search resolved (player chose a card or skipped)
