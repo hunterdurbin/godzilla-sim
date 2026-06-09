@@ -119,6 +119,7 @@ var _client_stats_decklists: Array:
 @onready var _log_chat: LogChat = $LogChat
 @onready var _tracker: TurnTrackerModule = $TurnTrackerModule
 @onready var _first_player: FirstPlayerUI = $FirstPlayerUI
+@onready var _end_game: EndGameController = $EndGameController
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -330,13 +331,24 @@ var _strategy_target_valid_indices: Array[int] = []
 # First-player choice state
 var _first_player_id: int = 0 # Which player went first (for * indicator)
 
-# Rematch state
-var _rematch_requested: bool = false
-var _opponent_rematch_requested: bool = false
+# Rematch state — owned by EndGameController (forwarding properties for the
+# board-side rematch reset and the reconnect cluster during extraction)
+var _rematch_requested: bool:
+	get: return _end_game.rematch_requested
+	set(v): _end_game.rematch_requested = v
+var _opponent_rematch_requested: bool:
+	get: return _end_game.opponent_rematch_requested
+	set(v): _end_game.opponent_rematch_requested = v
 var _game_ended_by_disconnect: bool = false
-var _rematch_deck_select: VBoxContainer = null
-var _rematch_deck_changed: bool = false
-var _rematch_deck_name: String = ""
+var _rematch_deck_select: VBoxContainer:
+	get: return _end_game.rematch_deck_select
+	set(v): _end_game.rematch_deck_select = v
+var _rematch_deck_changed: bool:
+	get: return _end_game.rematch_deck_changed
+	set(v): _end_game.rematch_deck_changed = v
+var _rematch_deck_name: String:
+	get: return _end_game.rematch_deck_name
+	set(v): _end_game.rematch_deck_name = v
 
 # Reconnect state
 var _reconnect_cumulative_seconds: float = 0.0 # Cumulative across all disconnects
@@ -360,7 +372,9 @@ var _reconnect_menu_btn: Button = null
 var _player_elapsed_ms: Array[int] = [0, 0]
 var _turn_start_time_ms: int = 0
 var _game_start_time_ms: int = 0
-var _stats_uploaded: bool = false
+var _stats_uploaded: bool:
+	get: return _end_game.stats_uploaded
+	set(v): _end_game.stats_uploaded = v
 
 # Standby choice selection state (for choosing ability resolution order)
 var _choice_selecting: bool = false
@@ -564,7 +578,6 @@ func _ready() -> void:
 		turn_manager.sub_phase_changed.connect(_on_sub_phase_changed)
 		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
 		turn_manager.turn_started.connect(_on_turn_started)
-		turn_manager.game_ended.connect(_on_game_ended)
 		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Connect action handler signals for visual feedback
@@ -2610,45 +2623,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 
 
 func _on_game_ended(winner_id: int, reason_key: String) -> void:
-	SfxManager.play("game_win" if winner_id == local_player_id else "game_lose")
-	_action_pending = false
-	_game_ended_by_disconnect = false
-	# Defensive: hide reconnect overlay if game ends normally
-	if _waiting_for_reconnect:
-		_waiting_for_reconnect = false
-		if _reconnect_overlay:
-			_reconnect_overlay.visible = false
-	_rematch_requested = false
-	_opponent_rematch_requested = false
-	end_game_panel.visible = true
-	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
-	if win_label:
-		var reason_text := GameLog.render_reason(reason_key)
-		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", turn_manager.game_state.player_names[winner_id]) + "\n" + reason_text
-	btn_rematch.visible = true
-	btn_rematch.disabled = false
-	btn_rematch.text = tr("STR_GB_REMATCH")
-	_populate_rematch_deck_select()
-	_disable_all_buttons()
-	if is_multiplayer_game and NetworkManager.is_host():
-		# Flush any buffered logs before game end
-		if not _pending_log_tokens.is_empty():
-			_broadcast_state()
-			_flush_broadcast()
-		RpcLogger.log_send("receive_game_ended", 4 + reason_key.length())
-		_sync._rpc_receive_game_ended.rpc(winner_id, reason_key)
-	# Save replay (host)
-	if replay_recorder:
-		replay_recorder.finish(winner_id, reason_key, _first_player_id)
-		replay_recorder.save()
-		# Send replay to client so they get a complete copy
-		if is_multiplayer_game and NetworkManager.is_host():
-			var replay_json := JSON.stringify(replay_recorder._replay.to_dict())
-			var compressed := replay_json.to_utf8_buffer().compress(FileAccess.COMPRESSION_GZIP)
-			print("[Replay] Sending replay to client (%d bytes compressed)" % compressed.size())
-			_sync._rpc_receive_replay.rpc(compressed)
-	RpcLogger.print_summary()
-	_upload_stats(winner_id, reason_key, false)
+	_end_game.on_game_ended(winner_id, reason_key)
 
 
 func _on_confirmation_requested(prompt: String, setting: String) -> void:
@@ -2983,23 +2958,11 @@ func _build_bug_report_body() -> String:
 # --- Concede / Main Menu ---
 
 func _on_concede_pressed() -> void:
-	var loser_id := local_player_id
-	var winner_id := 1 - loser_id
-	if is_multiplayer_game and not NetworkManager.is_host():
-		RpcLogger.log_send("concede", 0)
-		_sync._rpc_concede.rpc_id(NetworkManager.host_peer_id)
-	elif turn_manager:
-		turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
+	_end_game.on_concede_pressed()
 
 
 func _rpc_concede() -> void:
-	RpcLogger.log_receive("concede", 0)
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	var sender_id := multiplayer.get_remote_sender_id()
-	var loser_id := 1 if sender_id != 1 else 0
-	var winner_id := 1 - loser_id
-	turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
+	_end_game.rpc_concede()
 
 
 func _on_main_menu_pressed() -> void:
@@ -3035,42 +2998,7 @@ func _on_main_menu_pressed() -> void:
 
 
 func _on_rematch_pressed() -> void:
-	if _game_ended_by_disconnect:
-		return
-
-	# Apply local deck change before rematch
-	if _rematch_deck_changed and not _rematch_deck_name.is_empty():
-		DecklistManager.select_deck_for_player(local_player_id, _rematch_deck_name)
-
-	_rematch_requested = true
-
-	if not is_multiplayer_game:
-		_execute_rematch()
-		return
-
-	# Multiplayer: notify opponent, wait for them
-	btn_rematch.disabled = true
-	btn_rematch.text = tr("STR_GB_WAITING")
-	_rematch_deck_select.set_disabled(true)
-
-	if _rematch_deck_changed and not _rematch_deck_name.is_empty():
-		# Send deck data so opponent/host can apply it
-		var data := DecklistManager.load_decklist(_rematch_deck_name)
-		var payload := JSON.stringify({
-			"deck_name": _rematch_deck_name,
-			"monster": data.get("monster", []),
-			"main": data.get("main", []),
-		})
-		RpcLogger.log_send("rematch_with_deck", payload.length())
-		_sync._rpc_rematch_with_deck.rpc(payload)
-	else:
-		RpcLogger.log_send("rematch_requested", 0)
-		_sync._rpc_rematch_requested.rpc()
-
-	if _opponent_rematch_requested and NetworkManager.is_host():
-		_execute_rematch()
-		RpcLogger.log_send("execute_rematch", 0)
-		_sync._rpc_execute_rematch.rpc()
+	_end_game.on_rematch_pressed()
 
 
 func _execute_rematch() -> void:
@@ -3213,7 +3141,6 @@ func _execute_rematch() -> void:
 		turn_manager.sub_phase_changed.connect(_on_sub_phase_changed)
 		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
 		turn_manager.turn_started.connect(_on_turn_started)
-		turn_manager.game_ended.connect(_on_game_ended)
 		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Reconnect action handler signals
@@ -3271,130 +3198,31 @@ func _execute_rematch() -> void:
 # --- Rematch deck select ---
 
 func _setup_rematch_deck_select() -> void:
-	var scene := preload("res://scenes/ui/DeckSelect.tscn")
-	_rematch_deck_select = scene.instantiate()
-	_rematch_deck_select.persist_key = "rematch_deck"
-	# Add as direct child of game board, positioned below Save Game button
-	add_child(_rematch_deck_select)
-	var y_pos := 130.0
-	if _save_game_button:
-		y_pos = _save_game_button.position.y + _save_game_button.custom_minimum_size.y + 4
-	_rematch_deck_select.position = Vector2(10, y_pos)
-	_rematch_deck_select.set_header_visible(false)
-	_rematch_deck_select.visible = false
-	_rematch_deck_select.deck_selected.connect(_on_rematch_deck_selected)
+	_end_game.setup_rematch_deck_select()
 
 
 func _populate_rematch_deck_select() -> void:
-	_rematch_deck_changed = false
-	_rematch_deck_name = ""
-	_rematch_deck_select.set_disabled(false)
+	_end_game.populate_rematch_deck_select()
 
-	var current_deck := DecklistManager.get_player_deck_name(local_player_id)
-	var all_decks := DecklistManager.get_all_decklists()
-	var valid_set: Dictionary = {}
-	var skip_validation := not is_multiplayer_game
-	for deck_name in all_decks:
-		if skip_validation:
-			valid_set[deck_name] = true
-			continue
-		var data := DecklistManager.load_decklist(deck_name)
-		if data.is_empty():
-			continue
-		var errors := GameModeValidator.validate(
-			NetworkManager.game_mode,
-			data.get("monster", []),
-			data.get("main", []),
-		)
-		if errors.is_empty():
-			valid_set[deck_name] = true
-
-	if valid_set.size() <= 1:
-		_rematch_deck_select.visible = false
-		return
-
-	_rematch_deck_select.set_filter(func(deck_name): return valid_set.has(deck_name))
-	_rematch_deck_select.refresh()
-	if valid_set.has(current_deck):
-		_rematch_deck_select.select_deck(current_deck)
-	_rematch_deck_select.visible = true
-
-
-func _on_rematch_deck_selected(deck_name: String) -> void:
-	var current_deck := DecklistManager.get_player_deck_name(local_player_id)
-	_rematch_deck_changed = deck_name != current_deck
-	_rematch_deck_name = deck_name
 
 
 # --- Rematch RPCs ---
 
-## Peer -> Peer: signal that this player wants a rematch
+## Rematch RPC shims — bodies live on EndGameController
 func _rpc_rematch_requested() -> void:
-	RpcLogger.log_receive("rematch_requested", 0)
-	_opponent_rematch_requested = true
-	_on_log_message(GameLog.opponent_wants_rematch(false))
-
-	if _rematch_requested and NetworkManager.is_host():
-		_execute_rematch()
-		RpcLogger.log_send("execute_rematch", 0)
-		_sync._rpc_execute_rematch.rpc()
+	_end_game.rpc_rematch_requested()
 
 
-## Peer -> Peer: rematch request with a changed deck
 func _rpc_rematch_with_deck(payload_json: String) -> void:
-	RpcLogger.log_receive("rematch_with_deck", payload_json.length())
-	var json := JSON.new()
-	if json.parse(payload_json) != OK:
-		push_warning("[Rematch] Failed to parse deck payload")
-		return
-	var payload: Dictionary = json.data
-	var deck_name: String = payload.get("deck_name", "")
-	var monster_entries: Array = payload.get("monster", [])
-	var main_entries: Array = payload.get("main", [])
-
-	# Validate the deck for the current game mode
-	var errors := GameModeValidator.validate(NetworkManager.game_mode, monster_entries, main_entries)
-	if not errors.is_empty():
-		push_warning("[Rematch] Opponent's deck is invalid for mode '%s': %s" % [NetworkManager.game_mode, str(errors)])
-		return
-
-	# Determine sender's player_id from RPC sender peer
-	var sender_peer := multiplayer.get_remote_sender_id()
-	var sender_pid: int = -1
-	for peer_id in NetworkManager.peer_player_map:
-		if peer_id == sender_peer:
-			sender_pid = NetworkManager.peer_player_map[peer_id]
-			break
-	if sender_pid == -1:
-		push_warning("[Rematch] Could not determine sender player_id")
-		return
-
-	DecklistManager.set_player_deck_from_entries(sender_pid, deck_name, monster_entries, main_entries)
-	_opponent_rematch_requested = true
-	_on_log_message(GameLog.opponent_wants_rematch(true))
-
-	if _rematch_requested and NetworkManager.is_host():
-		_execute_rematch()
-		RpcLogger.log_send("execute_rematch", 0)
-		_sync._rpc_execute_rematch.rpc()
+	_end_game.rpc_rematch_with_deck(payload_json)
 
 
-## Host -> Client: instruct client to execute the rematch reset
 func _rpc_execute_rematch() -> void:
-	RpcLogger.log_receive("execute_rematch", 0)
-	if NetworkManager.is_host():
-		return
-	_execute_rematch()
+	_end_game.rpc_execute_rematch()
 
 
-## Peer -> Peer: opponent declined rematch (chose Main Menu)
 func _rpc_rematch_declined() -> void:
-	RpcLogger.log_receive("rematch_declined", 0)
-	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
-	if win_label:
-		win_label.text = win_label.text + "\nOpponent returned to menu."
-	btn_rematch.visible = false
-	_rematch_deck_select.visible = false
+	_end_game.rpc_rematch_declined()
 
 
 # --- Button handlers ---
@@ -6873,46 +6701,11 @@ func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 
 ## Host -> Client: game over
 func _rpc_receive_game_ended(winner_id: int, reason_key: String) -> void:
-	RpcLogger.log_receive("receive_game_ended", 4 + reason_key.length())
-	SfxManager.play("game_win" if winner_id == local_player_id else "game_lose")
-	_action_pending = false
-	_game_ended_by_disconnect = false
-	_rematch_requested = false
-	_opponent_rematch_requested = false
-	end_game_panel.visible = true
-	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
-	if win_label:
-		var reason_text := GameLog.render_reason(reason_key)
-		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", GameLog.player_name(winner_id)) + "\n" + reason_text
-	btn_rematch.visible = true
-	btn_rematch.disabled = false
-	btn_rematch.text = tr("STR_GB_REMATCH")
-	_populate_rematch_deck_select()
-	_disable_all_buttons()
-	RpcLogger.print_summary()
+	_end_game.rpc_receive_game_ended(winner_id, reason_key)
 
 
 func _rpc_receive_replay(compressed: PackedByteArray) -> void:
-	RpcLogger.log_receive("receive_replay", compressed.size())
-	var json_bytes := compressed.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
-	if json_bytes.is_empty():
-		push_warning("[Replay] Failed to decompress replay data")
-		return
-	var json := JSON.new()
-	if json.parse(json_bytes.get_string_from_utf8()) != OK:
-		push_warning("[Replay] Failed to parse replay JSON")
-		return
-	var replay := ReplayData.new()
-	replay.from_dict(json.data)
-	var ver := ReplayData._get_game_version()
-	var fname := "replay_%s.json" % replay.timestamp.replace(" ", "_").replace(":", "").replace("-", "")
-	var path := ReplayData.get_version_recent_dir(ver) + fname
-	var err := ReplayData.save_to_file(replay, path)
-	if err == OK:
-		print("[Replay] Client saved replay to %s (%d snapshots)" % [path, replay.snapshots.size()])
-		ReplayData.prune_recent(ver)
-	else:
-		push_warning("[Replay] Client failed to save replay (error %d)" % err)
+	_end_game.rpc_receive_replay(compressed)
 
 
 # --- Multiplayer: State deserialization (client) ---
@@ -6920,60 +6713,7 @@ func _rpc_receive_replay(compressed: PackedByteArray) -> void:
 # --- Stats upload ---
 
 func _upload_stats(winner_id: int, reason: String, is_disconnect: bool) -> void:
-	# Only upload for online games, and only once per match
-	if _stats_uploaded:
-		return
-	if NetworkManager.mode != NetworkManager.Mode.ONLINE_HOST and NetworkManager.mode != NetworkManager.Mode.ONLINE_CLIENT:
-		return
-	# Host is primary reporter; client only reports on disconnect
-	if not is_disconnect and not NetworkManager.is_host():
-		return
-	_stats_uploaded = true
-
-	# Host uses turn_manager directly; client reconstructs from synced state
-	var gs: GameState
-	if turn_manager:
-		gs = turn_manager.game_state
-	else:
-		gs = GameState.new()
-		gs.players = _client_players
-		gs.current_player_id = _client_current_player_id
-		gs.turn_number = _client_turn_number
-		gs.current_phase = _client_phase
-		gs.player_names = Array(GameLog.player_names) as Array[String]
-		# Restore opponent's hand from stats snapshot
-		var opponent_id := 1 - local_player_id
-		if not _client_stats_opponent_hand.is_empty():
-			gs.players[opponent_id].hand.assign(StateCodec.ids_to_cards(_client_stats_opponent_hand))
-		# Populate DecklistManager with synced decklist data
-		for i in range(2):
-			if _client_stats_decklists[i] != null and not DecklistManager.has_player_deck(i):
-				var dl: Dictionary = _client_stats_decklists[i]
-				DecklistManager._player_decks[i] = {
-					"deck_name": _client_stats_deck_names[i],
-					"monster_deck": dl.get("monster_deck", []),
-					"main_entries": dl.get("main_entries", []),
-				}
-		# Use host-synced elapsed times
-		_player_elapsed_ms = _client_stats_elapsed_ms.duplicate()
-		_game_start_time_ms = _client_stats_game_start_ms
-		_turn_start_time_ms = _client_stats_turn_start_ms
-
-	# Finalize active player's elapsed time
-	if _turn_start_time_ms > 0:
-		var now := Time.get_ticks_msec()
-		var active_pid := gs.current_player_id
-		_player_elapsed_ms[active_pid] += now - _turn_start_time_ms
-	var total_elapsed := Time.get_ticks_msec() - _game_start_time_ms if _game_start_time_ms > 0 else 0
-	StatsUploader.upload_game_result(
-		gs,
-		winner_id,
-		reason,
-		_first_player_id,
-		_player_elapsed_ms,
-		total_elapsed,
-		is_disconnect,
-	)
+	_end_game.upload_stats(winner_id, reason, is_disconnect)
 
 
 # --- Multiplayer: Disconnect handling ---
