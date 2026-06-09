@@ -115,6 +115,7 @@ var _client_stats_decklists: Array:
 # and client; its methods forward back here while extraction is in progress.
 @onready var _session: GameSession = $GameSession
 @onready var _sync: MultiplayerSync = $GameSession/MultiplayerSync
+@onready var _board_sfx: BoardSfx = $BoardSfx
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -127,7 +128,11 @@ var _client_stats_decklists: Array:
 ## (legacy/system messages that render as-is). See `_on_log_message`.
 var _log_tokens: Array = []
 var _pending_log_tokens: Array = [] # Buffered for next broadcast
-var _pending_sound_events: PackedStringArray = [] # Sound events buffered for client
+# Sound events buffered for client — owned by BoardSfx (forwarding property;
+# MultiplayerSync drains it at broadcast time)
+var _pending_sound_events: PackedStringArray:
+	get: return _board_sfx._pending_sound_events
+	set(v): _board_sfx._pending_sound_events = v
 @onready var end_game_panel: Control = $EndGamePanel
 @onready var btn_rematch: Button = $EndGamePanel/VBox/ButtonRow/RematchButton
 @onready var btn_end_menu: Button = $EndGamePanel/VBox/ButtonRow/MenuButton
@@ -606,10 +611,6 @@ func _ready() -> void:
 		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Connect action handler signals for visual feedback
-		turn_manager.action_handler.cards_drawn.connect(_on_cards_drawn)
-		turn_manager.action_handler.card_discarded.connect(_on_card_discarded)
-		turn_manager.action_handler.rage_gained.connect(_on_rage_gained)
-		turn_manager.action_handler.strategy_card_played.connect(_on_strategy_card_played)
 		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
 		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
 		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
@@ -636,8 +637,6 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
 		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
-		turn_manager.action_handler.effect_handler.card_evolved.connect(_on_card_evolved)
-		turn_manager.action_handler.effect_handler.card_destroyed.connect(_on_card_destroyed)
 
 		# Set up replay recorder
 		_setup_replay_recorder()
@@ -2879,7 +2878,6 @@ func _on_sub_phase_changed(sub_index: int) -> void:
 
 
 func _on_turn_started(player_id: int) -> void:
-	_queue_sound("turn_start")
 	_current_sub_phase = 0
 	_sync_boards()
 	_update_hand_visibility(player_id)
@@ -3082,23 +3080,7 @@ func _on_chat_text_changed(new_text: String) -> void:
 	chat_char_count.text = str(chat_input.max_length - new_text.length())
 
 
-## Queue a sound event for broadcast to the client.
-func _queue_sound(sound_name: String) -> void:
-	SfxManager.play(sound_name)
-	if is_multiplayer_game and NetworkManager.is_host():
-		_pending_sound_events.append(sound_name)
-
-
-func _on_cards_drawn(_player_id: int, _count: int) -> void:
-	_queue_sound("card_draw")
-
-
-func _on_card_discarded(_player_id: int, _card: Dictionary) -> void:
-	_queue_sound("card_discard")
-
-
 func _on_discard_reshuffled(moved_cards: Array, player_id: int) -> void:
-	_queue_sound("deck_shuffle")
 	# Discard (public) → deck (private): log the move for both players, with a
 	# clickable snapshot of what was shuffled in. Fires for effect-driven shuffles
 	# and for the automatic reshuffle when drawing from an empty deck.
@@ -3106,22 +3088,6 @@ func _on_discard_reshuffled(moved_cards: Array, player_id: int) -> void:
 	for card in moved_cards:
 		ids.append(CardUtils.base_id(card))
 	_on_log_message(GameLog.effect_shuffled_discard_into_deck(player_id, ids))
-
-
-func _on_rage_gained(_player_id: int, _new_rage: int) -> void:
-	_queue_sound("gain_rage")
-
-
-func _on_card_evolved(_player_id: int, _card: Dictionary, _zone_index: int) -> void:
-	_queue_sound("card_evolve")
-
-
-func _on_card_destroyed(_player_id: int, _zone_index: int) -> void:
-	_queue_sound("card_destroy")
-
-
-func _on_strategy_card_played(_player_id: int, _card: Dictionary, _strategy_index: int) -> void:
-	_queue_sound("card_play")
 
 
 # --- Action handler visual feedback ---
@@ -3148,33 +3114,28 @@ func _on_play_cancelled(player_id: int) -> void:
 
 
 func _on_battle_card_played(_player_id: int, _card: Dictionary, _zone_index: int) -> void:
-	_queue_sound("card_play")
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_monster_advanced(_player_id: int, _from_zone: int, _to_zone: int) -> void:
-	_queue_sound("monster_advance")
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_battle_card_crushed(player_id: int, zone_index: int, card: Dictionary) -> void:
-	_queue_sound("card_destroy")
 	_on_log_message(GameLog.battle_card_crushed(card.get("id", ""), player_id, zone_index))
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_counter_succeeded(player_id: int, total_cp: int, threat: int, rage_threat: int, effect_threat: int) -> void:
-	_queue_sound("counter_success")
 	_on_log_message(GameLog.counter_succeeded(player_id, total_cp, threat, rage_threat, effect_threat))
 	_sync_boards()
 	_broadcast_state()
 
 
 func _on_counter_failed(player_id: int, total_cp: int, threat: int, rage_threat: int, effect_threat: int) -> void:
-	_queue_sound("counter_fail")
 	_on_log_message(GameLog.counter_failed(player_id, total_cp, threat, rage_threat, effect_threat))
 
 
@@ -3623,10 +3584,6 @@ func _execute_rematch() -> void:
 		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Reconnect action handler signals
-		turn_manager.action_handler.cards_drawn.connect(_on_cards_drawn)
-		turn_manager.action_handler.card_discarded.connect(_on_card_discarded)
-		turn_manager.action_handler.rage_gained.connect(_on_rage_gained)
-		turn_manager.action_handler.strategy_card_played.connect(_on_strategy_card_played)
 		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
 		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
 		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
@@ -3653,8 +3610,6 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
 		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
-		turn_manager.action_handler.effect_handler.card_evolved.connect(_on_card_evolved)
-		turn_manager.action_handler.effect_handler.card_destroyed.connect(_on_card_destroyed)
 
 		# Reconnect bot player for Solo v Bot mode
 		if is_bot_game:

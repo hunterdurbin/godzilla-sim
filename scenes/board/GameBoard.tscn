@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://b04w0nnwbu55m" path="res://scenes/managers/card_manager.gd" id="3_cm"]
 [ext_resource type="Script" path="res://scripts/session/game_session.gd" id="4_gs"]
 [ext_resource type="Script" path="res://scripts/session/multiplayer_sync.gd" id="5_ms"]
+[ext_resource type="Script" path="res://scenes/board/modules/board_sfx.gd" id="6_sfx"]
 
 [node name="GameBoard" type="Control" unique_id=1722697301]
 layout_mode = 3
@@ -20,6 +21,9 @@ script = ExtResource("4_gs")
 
 [node name="MultiplayerSync" type="Node" parent="GameSession"]
 script = ExtResource("5_ms")
+
+[node name="BoardSfx" type="Node" parent="."]
+script = ExtResource("6_sfx")
 
 [node name="Background" type="ColorRect" parent="." unique_id=1737832110]
 layout_mode = 1
