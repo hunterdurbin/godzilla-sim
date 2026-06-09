@@ -92,6 +92,24 @@ func is_running() -> bool:
 	return turn_manager != null
 
 
+## Compute the net play-cost modifier for each card in the given player's hand.
+## Returned array is parallel to player.hand. Returns [] if no effect handler.
+## Used by the board's hand display (host side) and the state broadcast.
+func compute_hand_rank_mods(player: PlayerState) -> Array:
+	var out: Array = []
+	if not turn_manager:
+		return out
+	var eh: EffectHandler = turn_manager.effect_handler
+	if not eh:
+		return out
+	for card in player.hand:
+		var mod: int = eh.get_play_rank_modifier(player.player_id, card)
+		if card.get("card_type") == CardEnums.CardType.STRATEGY:
+			mod += eh.get_strategy_hand_rank_modifier(player.player_id, card)
+		out.append(mod)
+	return out
+
+
 ## Construct a fresh TurnManager for the host/solo path: runs setup() or
 ## setup_from_save(), seeds the local player name, wires the typed
 ## forwarders, and emits session_started. Single source of truth for

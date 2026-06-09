@@ -347,15 +347,6 @@ var _hand_card_allow_skip: bool = false
 # Action blocking — prevents input while an action is being processed
 var _action_pending: bool = false
 
-# State versioning for desync detection
-var _state_version: int = 0 # Incremented on each broadcast (host only)
-var _client_state_version: int = 0 # Last received version (client only)
-var _broadcast_pending: bool = false # Debounce flag for frame-based coalescing
-var _last_sent_state: Dictionary = {} # Host: last serialized state sent to client
-var _last_sent_version: int = 0 # Host: version of _last_sent_state
-var _client_full_state: Dictionary = {} # Client: accumulated full state from deltas
-var _last_resync_request_ms: int = 0 # Client: rate-limit resync requests
-
 # Zone target selection state (for effects that let the player pick a zone)
 var _zone_target_selecting: bool = false
 var _zone_target_player_id: int = -1 # Who is choosing
@@ -389,12 +380,11 @@ var _reconnect_current_start_ms: int = 0
 var _waiting_for_reconnect: bool = false
 var _reconnect_attempting: bool = false # Guard for client reconnect loop
 const RECONNECT_CLAIM_WIN_SECONDS: float = 10.0
-## State envelopes above this size get gzipped on the wire (typical save: 50-70%).
-## Below it, the gzip header overhead would outweigh the bandwidth savings.
-const STATE_COMPRESS_THRESHOLD: int = 1024
-const STATE_FLAG_RAW: int = 0x00
-const STATE_FLAG_GZIP: int = 0x01
-var _pending_interaction: Dictionary = {} # {method: String, args: Array}
+## In-flight host->client prompt, owned by MultiplayerSync (forwarding
+## property — overlay request senders still write it during extraction).
+var _pending_interaction: Dictionary:
+	get: return _sync._pending_interaction
+	set(v): _sync._pending_interaction = v
 # Reconnect overlay nodes (built in code)
 var _reconnect_overlay: ColorRect = null
 var _reconnect_label: Label = null
@@ -2920,7 +2910,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 		var active_id := turn_manager.game_state.current_player_id
 
 		# Compute playable indices for the active player
-		var playable := _compute_playable_data()
+		var playable := _sync.compute_playable_data()
 		var actions_json := JSON.stringify(valid_actions)
 		var playable_json := JSON.stringify(playable)
 
@@ -3553,12 +3543,7 @@ func _execute_rematch() -> void:
 	_tracker_draining = false
 	_tracker_last_phase = -1
 	_tracker_last_player = -1
-	_state_version = 0
-	_client_state_version = 0
-	_broadcast_pending = false
-	_last_sent_state = {}
-	_last_sent_version = 0
-	_client_full_state = {}
+	_sync.reset_for_rematch()
 	_client_gradients_applied = false
 	pending_action = CardEnums.ActionType.PASS
 	_player_elapsed_ms = [0, 0]
@@ -4430,8 +4415,8 @@ func _sync_boards() -> void:
 		var threat_mod_1: int = eh.get_threat_level_modifier(1) if eh else 0
 		var zone_rank_0: Array = eh.get_zone_rank_modifiers(0) if eh else []
 		var zone_rank_1: Array = eh.get_zone_rank_modifiers(1) if eh else []
-		var hand_rank_0: Array = _compute_hand_rank_mods(state.players[0]) if eh else []
-		var hand_rank_1: Array = _compute_hand_rank_mods(state.players[1]) if eh else []
+		var hand_rank_0: Array = _session.compute_hand_rank_mods(state.players[0]) if eh else []
+		var hand_rank_1: Array = _session.compute_hand_rank_mods(state.players[1]) if eh else []
 		if player1_board and not skip_p1:
 			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0, hand_rank_0)
 		if player2_board and not skip_p2:
@@ -4756,8 +4741,8 @@ func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary]
 		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast() # Client needs up-to-date state before search
-		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
-		var all_json := JSON.stringify(_cards_to_ids(all_cards))
+		var matching_json := JSON.stringify(StateCodec.cards_to_ids(matching_cards))
+		var all_json := JSON.stringify(StateCodec.cards_to_ids(all_cards))
 		_pending_interaction = {"method": "deck_search", "args": [matching_json, all_json, prompt, allow_skip]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
@@ -5304,7 +5289,7 @@ func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt
 		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
-		var cards_json := JSON.stringify(_cards_to_ids(cards))
+		var cards_json := JSON.stringify(StateCodec.cards_to_ids(cards))
 		_pending_interaction = {"method": "deck_arrange", "args": [cards_json, prompt]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
@@ -5529,8 +5514,8 @@ func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary]
 		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
-		var matching_json := JSON.stringify(_cards_to_ids(matching_cards))
-		var all_json := JSON.stringify(_cards_to_ids(all_cards))
+		var matching_json := JSON.stringify(StateCodec.cards_to_ids(matching_cards))
+		var all_json := JSON.stringify(StateCodec.cards_to_ids(all_cards))
 		_pending_interaction = {"method": "card_select", "args": [matching_json, all_json, prompt, min_count, max_count]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
@@ -6409,7 +6394,7 @@ func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], v
 		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
-		var monsters_json := JSON.stringify(_cards_to_ids(monsters))
+		var monsters_json := JSON.stringify(StateCodec.cards_to_ids(monsters))
 		var indices_json := JSON.stringify(valid_indices)
 		_pending_interaction = {"method": "monster_rankup", "args": [monsters_json, indices_json, prompt]}
 		for peer_id in NetworkManager.peer_player_map:
@@ -6933,7 +6918,7 @@ func _resolve_deck_arrange_local(keep: Array[Dictionary], discard: Array[Diction
 
 func _resolve_card_select_local(selected: Array) -> void:
 	if is_multiplayer_game and not NetworkManager.is_host():
-		var selected_json := JSON.stringify(_cards_to_ids(selected))
+		var selected_json := JSON.stringify(StateCodec.cards_to_ids(selected))
 		RpcLogger.log_send("card_select_resolved", selected_json.length())
 		_sync._rpc_card_select_resolved.rpc_id(NetworkManager.host_peer_id, selected_json)
 	else:
@@ -6945,677 +6930,48 @@ func _resolve_card_select_local(selected: Array) -> void:
 
 # --- Multiplayer: State broadcast (host -> client) ---
 
+## Sync shims — state broadcast machinery lives on MultiplayerSync.
+## Kept under the old names because dozens of handlers call them (and
+## _on_state_changed connects per-PlayerState signals to this path).
 func _broadcast_state() -> void:
-	if not is_multiplayer_game or not NetworkManager.is_host():
-		return
-	if not turn_manager or not turn_manager.game_state:
-		return
-	if not _broadcast_pending:
-		_broadcast_pending = true
-		_do_broadcast.call_deferred()
+	_sync.broadcast_state()
 
 
-## Force any pending broadcast to send immediately.
-## Call before sending RPCs that depend on the client having up-to-date state.
 func _flush_broadcast() -> void:
-	if _broadcast_pending:
-		_do_broadcast()
+	_sync.flush_broadcast()
 
 
-func _do_broadcast() -> void:
-	_broadcast_pending = false
-	if not is_multiplayer_game or not NetworkManager.is_host():
-		return
-	if not turn_manager or not turn_manager.game_state:
-		return
+# --- Hooks called by MultiplayerSync while applying received state ---
 
-	_state_version += 1
-	for peer_id in NetworkManager.peer_player_map:
-		if peer_id == 1:
-			continue # Don't send to self (server peer ID is 1)
-		var viewer_id: int = NetworkManager.peer_player_map[peer_id]
-		var state_dict := _serialize_game_state(viewer_id)
-
-		var envelope: Dictionary
-		if _last_sent_state.is_empty():
-			# First broadcast or after resync: send full state
-			envelope = {"v": _state_version, "bv": - 1, "d": state_dict}
-		else:
-			var delta := _compute_delta(_last_sent_state, state_dict)
-			if delta.is_empty() and _pending_log_tokens.is_empty() and _pending_sound_events.is_empty():
-				# Nothing changed, no logs, no sounds — skip broadcast entirely
-				_state_version -= 1
-				continue
-			envelope = {"v": _state_version, "bv": _last_sent_version, "d": delta}
-
-		# Piggyback buffered log tokens on the envelope (dicts + legacy strings)
-		if not _pending_log_tokens.is_empty():
-			envelope["log"] = _pending_log_tokens.duplicate()
-
-		# Piggyback buffered sound events on the envelope
-		if not _pending_sound_events.is_empty():
-			envelope["sfx"] = Array(_pending_sound_events)
-
-		_last_sent_state = state_dict.duplicate(true)
-		_last_sent_version = _state_version
-
-		var raw_bytes := var_to_bytes(envelope)
-		if raw_bytes.size() > 32768:
-			push_warning("[BROADCAST] Large state packet: %d bytes (v=%d, full=%s)" % [
-				raw_bytes.size(), _state_version, str(_last_sent_state.is_empty())])
-		var wire_bytes := _wrap_state_payload(raw_bytes)
-		RpcLogger.log_send("receive_state", wire_bytes.size())
-		_sync._rpc_receive_state.rpc_id(peer_id, wire_bytes)
-	_pending_log_tokens.clear()
-	_pending_sound_events.clear()
+## Append a broadcast log entry (token Dictionary or legacy String) to the
+## local log view.
+func _append_log_entry(entry) -> void:
+	_log_tokens.append(entry)
+	if log_output:
+		log_output.append_text(_render_log_entry(entry) + "\n")
+		log_output.scroll_to_line(log_output.get_line_count() - 1)
 
 
-func _serialize_game_state(viewer_id: int) -> Dictionary:
-	var gs := turn_manager.game_state
-	var eh := turn_manager.effect_handler
-	var zone_cp_0: Array = eh.get_zone_cp_modifiers(0) if eh else []
-	var zone_cp_1: Array = eh.get_zone_cp_modifiers(1) if eh else []
-	var strat_cp_0: Array = eh.get_strategy_cp_modifiers(0) if eh else []
-	var strat_cp_1: Array = eh.get_strategy_cp_modifiers(1) if eh else []
-	var cp_total_0: int = eh.get_monster_cp_modifier(0) if eh else 0
-	var cp_total_1: int = eh.get_monster_cp_modifier(1) if eh else 0
-	for v in zone_cp_0: cp_total_0 += v
-	for v in zone_cp_1: cp_total_1 += v
-	for v in strat_cp_0: cp_total_0 += v
-	for v in strat_cp_1: cp_total_1 += v
-	var data := {
-		"state_version": _state_version,
-		"current_player_id": gs.current_player_id,
-		"current_phase": int(gs.current_phase),
-		"current_sub_phase": _current_sub_phase,
-		"turn_number": gs.turn_number,
-		"is_game_over": turn_manager.is_game_over,
-		"players": [],
-		"cp_modifiers": [cp_total_0, cp_total_1],
-		"threat_modifiers": [eh.get_threat_level_modifier(0) if eh else 0, eh.get_threat_level_modifier(1) if eh else 0],
-		"zone_cp_modifiers": [zone_cp_0, zone_cp_1],
-		"strategy_cp_modifiers": [strat_cp_0, strat_cp_1],
-		"zone_rank_modifiers": [eh.get_zone_rank_modifiers(0) if eh else [], eh.get_zone_rank_modifiers(1) if eh else []],
-		"hand_rank_modifiers": [_compute_hand_rank_mods(gs.players[0]) if eh else [], _compute_hand_rank_mods(gs.players[1]) if eh else []],
-		"monster_cp_modifiers": [eh.get_monster_cp_modifier(0) if eh else 0, eh.get_monster_cp_modifier(1) if eh else 0],
-		"player_names": Array(gs.player_names),
-		"first_player_id": _first_player_id,
-	}
+## Apply monster color gradients from the client-side state cache (first
+## state receive on the client).
+func _apply_client_monster_gradients() -> void:
 	for i in range(2):
-		var pd := _serialize_player_state(gs.players[i])
-		if i != viewer_id:
-			# Strip hand and monster deck data for opponent — only send counts
-			# (full hand kept in stats_opponent_hand for disconnect reporting)
-			pd["stats_hand"] = pd["hand"].duplicate(true)
-			pd.erase("hand")
-			pd["monster_deck_count"] = pd["monster_deck"].size()
-			pd.erase("monster_deck")
-		data["players"].append(pd)
-	# Stats data for client disconnect reporting
-	data["stats_elapsed_ms"] = Array(_player_elapsed_ms)
-	data["stats_game_start_ms"] = _game_start_time_ms
-	data["stats_turn_start_ms"] = _turn_start_time_ms
+		var board = player1_board if i == 0 else player2_board
+		if not _client_players[i].current_monster.is_empty():
+			board.apply_monster_gradient(_client_players[i].current_monster)
+
+
+## Sync player names from host (disambiguate from client's perspective).
+func _apply_remote_player_names(host_names: Array) -> void:
+	if host_names.size() != 2:
+		return
+	var canonical: Array[String] = []
 	for i in range(2):
-		var deck_name := DecklistManager.get_player_deck_name(i)
-		data["players"][i]["stats_deck_name"] = deck_name
-		var deck_data = DecklistManager._player_decks[i]
-		if deck_data != null:
-			data["players"][i]["stats_decklist"] = {
-				"main_entries": deck_data["main_entries"],
-				"monster_deck": deck_data["monster_deck"],
-			}
-	# Include hash of shared game state for desync detection
-	data["state_hash"] = _compute_state_hash(gs)
-	return data
-
-
-func _card_to_id(card: Dictionary) -> String:
-	return card.get("id", "")
-
-
-func _cards_to_ids(cards: Array) -> Array:
-	var ids: Array = []
-	for c in cards:
-		ids.append(c.get("id", "") if c is Dictionary else "")
-	return ids
-
-
-func _id_to_card(instance_id: String) -> Dictionary:
-	if instance_id.is_empty():
-		return {}
-	var base_id := instance_id
-	var underscore_pos := instance_id.find("_")
-	if underscore_pos != -1:
-		base_id = instance_id.substr(0, underscore_pos)
-	var template := CardData.get_card_by_id(base_id)
-	if template.is_empty():
-		return {}
-	var card := template.duplicate()
-	card["id"] = instance_id
-	return card
-
-
-func _ids_to_cards(ids: Array) -> Array[Dictionary]:
-	var cards: Array[Dictionary] = []
-	for id in ids:
-		var card := _id_to_card(str(id))
-		if not card.is_empty():
-			cards.append(card)
-	return cards
-
-
-# --- Delta state encoding helpers ---
-
-func _deep_equals(a: Variant, b: Variant) -> bool:
-	if typeof(a) != typeof(b):
-		return false
-	if a is Array:
-		if a.size() != b.size():
-			return false
-		for i in range(a.size()):
-			if not _deep_equals(a[i], b[i]):
-				return false
-		return true
-	if a is Dictionary:
-		if a.size() != b.size():
-			return false
-		for key in a:
-			if not b.has(key) or not _deep_equals(a[key], b[key]):
-				return false
-		return true
-	return a == b
-
-
-func _compute_delta(old_state: Dictionary, new_state: Dictionary) -> Dictionary:
-	var delta := {}
-	# Compare top-level fields (excluding "players" which is handled separately)
-	for key in new_state:
-		if key == "players":
-			continue
-		if not old_state.has(key) or not _deep_equals(old_state[key], new_state[key]):
-			delta[key] = new_state[key]
-	# Compare per-player state
-	var old_players: Array = old_state.get("players", [])
-	var new_players: Array = new_state.get("players", [])
-	for i in range(new_players.size()):
-		var new_pd: Dictionary = new_players[i]
-		if i >= old_players.size():
-			delta["p%d" % i] = new_pd
-			continue
-		var player_delta := _compute_player_delta(old_players[i], new_pd)
-		if not player_delta.is_empty():
-			delta["p%d" % i] = player_delta
-	return delta
-
-
-func _compute_player_delta(old_pd: Dictionary, new_pd: Dictionary) -> Dictionary:
-	var delta := {}
-	for key in new_pd:
-		if key == "zones":
-			# Compare each zone stack individually for sparse encoding
-			var old_zones: Array = old_pd.get("zones", [])
-			var new_zones: Array = new_pd.get("zones", [])
-			var zones_delta := {}
-			for z in range(maxi(old_zones.size(), new_zones.size())):
-				var old_z: Array = old_zones[z] if z < old_zones.size() else []
-				var new_z: Array = new_zones[z] if z < new_zones.size() else []
-				if not _deep_equals(old_z, new_z):
-					zones_delta[z] = new_z
-			if not zones_delta.is_empty():
-				delta["zones"] = zones_delta
-		else:
-			if not old_pd.has(key) or not _deep_equals(old_pd[key], new_pd[key]):
-				delta[key] = new_pd[key]
-	return delta
-
-
-func _apply_delta(full_state: Dictionary, delta: Dictionary) -> Dictionary:
-	var result := full_state.duplicate(true)
-	# Apply top-level fields
-	for key in delta:
-		if key == "p0" or key == "p1":
-			continue
-		result[key] = delta[key]
-	# Apply per-player deltas
-	var players: Array = result.get("players", [ {}, {}])
+		canonical.append(str(host_names[i]))
+	GameLog.player_names = GameLog.disambiguate(canonical, local_player_id)
 	for i in range(2):
-		var pkey := "p%d" % i
-		if not delta.has(pkey):
-			continue
-		var pd: Dictionary = delta[pkey]
-		if i >= players.size():
-			players.append(pd)
-			continue
-		var existing: Dictionary = players[i]
-		for field in pd:
-			if field == "zones" and pd[field] is Dictionary:
-				# Sparse zone update: merge individual zone indices
-				var zone_delta: Dictionary = pd[field]
-				var zones: Array = existing.get("zones", [])
-				for z_key in zone_delta:
-					var z_idx: int = int(z_key)
-					if z_idx < zones.size():
-						zones[z_idx] = zone_delta[z_key]
-				existing["zones"] = zones
-			else:
-				existing[field] = pd[field]
-	result["players"] = players
-	return result
-
-
-func _serialize_player_state(ps: PlayerState) -> Dictionary:
-	var zone_ids: Array = []
-	for zone_stack in ps.zones:
-		zone_ids.append(_cards_to_ids(zone_stack))
-	var strat_ids: Array = []
-	for s in ps.strategy_zones:
-		strat_ids.append(_card_to_id(s) if s is Dictionary else "")
-	# Cards stacked under each strategy (e.g. EBP04-089 RAGE markers). Public info —
-	# the count must reach the client so the player who placed it can see their tally.
-	var strat_stack_ids: Array = []
-	for stack in ps.strategy_zone_stacks:
-		strat_stack_ids.append(_cards_to_ids(stack) if stack is Array else [])
-	return {
-		"player_id": ps.player_id,
-		"monster_zone": ps.monster_zone,
-		"rage": ps.rage,
-		"current_monster": _card_to_id(ps.current_monster),
-		"zones": zone_ids,
-		"strategy_zones": strat_ids,
-		"strategy_zone_stacks": strat_stack_ids,
-		"hand": _cards_to_ids(ps.hand),
-		"hand_count": ps.hand.size(),
-		"main_deck_count": ps.main_deck.size(),
-		"discard_pile": _cards_to_ids(ps.discard_pile),
-		"discard_pile_count": ps.discard_pile.size(),
-		"has_invaded_this_turn": ps.has_invaded_this_turn,
-		"has_played_monster_this_turn": ps.has_played_monster_this_turn,
-		"monster_stack": _cards_to_ids(ps.monster_stack),
-		"burst_monster": _card_to_id(ps.burst_monster),
-		"pre_burst_monster": _card_to_id(ps.pre_burst_monster),
-		"monster_deck": _cards_to_ids(ps.monster_deck),
-	}
-
-
-func _compute_state_hash(gs: GameState) -> int:
-	## Hash shared (visible to both players) game state for desync detection.
-	var parts: PackedStringArray = []
-	parts.append("t%d" % gs.turn_number)
-	parts.append("p%d" % gs.current_player_id)
-	parts.append("ph%d" % int(gs.current_phase))
-	for i in range(2):
-		var ps: PlayerState = gs.players[i]
-		parts.append("m%d:%d" % [i, ps.monster_zone])
-		parts.append("r%d:%d" % [i, ps.rage])
-		parts.append("d%d:%d" % [i, ps.main_deck.size()])
-		parts.append("h%d:%d" % [i, ps.hand.size()])
-		parts.append("dp%d:%d" % [i, ps.discard_pile.size()])
-		# Hash zone top card IDs
-		for z in range(8):
-			var top := ps.get_zone_top_card(z)
-			if not top.is_empty():
-				parts.append("z%d_%d:%s" % [i, z, top.get("id", "")])
-		# Hash strategy zones
-		for s in range(ps.strategy_zones.size()):
-			if not ps.strategy_zones[s].is_empty():
-				parts.append("s%d_%d:%s" % [i, s, ps.strategy_zones[s].get("id", "")])
-	return "".join(parts).hash()
-
-
-func _compute_client_state_hash(turn_number: int, current_player_id: int, phase: int) -> int:
-	## Client-side hash using reconstructed _client_players state.
-	var parts: PackedStringArray = []
-	parts.append("t%d" % turn_number)
-	parts.append("p%d" % current_player_id)
-	parts.append("ph%d" % phase)
-	for i in range(2):
-		var ps: PlayerState = _client_players[i]
-		parts.append("m%d:%d" % [i, ps.monster_zone])
-		parts.append("r%d:%d" % [i, ps.rage])
-		parts.append("d%d:%d" % [i, ps.main_deck.size()])
-		parts.append("h%d:%d" % [i, ps.hand.size()])
-		parts.append("dp%d:%d" % [i, ps.discard_pile.size()])
-		for z in range(8):
-			var top := ps.get_zone_top_card(z)
-			if not top.is_empty():
-				parts.append("z%d_%d:%s" % [i, z, top.get("id", "")])
-		for s in range(ps.strategy_zones.size()):
-			if not ps.strategy_zones[s].is_empty():
-				parts.append("s%d_%d:%s" % [i, s, ps.strategy_zones[s].get("id", "")])
-	return "".join(parts).hash()
-
-
-## Compute the net play-cost modifier for each card in the given player's hand.
-## Returned array is parallel to player.hand. Returns [] if no effect handler.
-func _compute_hand_rank_mods(player: PlayerState) -> Array:
-	var out: Array = []
-	if not turn_manager:
-		return out
-	var eh: EffectHandler = turn_manager.effect_handler
-	if not eh:
-		return out
-	for card in player.hand:
-		var mod: int = eh.get_play_rank_modifier(player.player_id, card)
-		if card.get("card_type") == CardEnums.CardType.STRATEGY:
-			mod += eh.get_strategy_hand_rank_modifier(player.player_id, card)
-		out.append(mod)
-	return out
-
-
-func _compute_playable_data() -> Dictionary:
-	var gs := turn_manager.game_state
-	var player := gs.get_current_player()
-	var opponent := gs.get_opponent_of_current()
-	var rules := turn_manager.rules_engine
-	var playable_battle := rules.get_playable_battle_cards(player, opponent)
-	var battle_zones_per_card: Dictionary = {}
-	for idx in playable_battle:
-		var card: Dictionary = player.hand[idx]
-		var card_id: String = card.get("id", "")
-		if not card_id.is_empty():
-			battle_zones_per_card[card_id] = rules.get_valid_zones_for_card(card, player, opponent)
-	return {
-		"valid_actions": rules.get_valid_actions(gs),
-		"battle_cards": playable_battle,
-		"battle_zones": battle_zones_per_card,
-		"strategy_cards": rules.get_playable_strategy_cards(player),
-		"monster_cards": rules.get_playable_monsters(player),
-		"rage_cards": rules.get_monster_cards_for_rage(player),
-		"invade_cards": rules.get_discardable_cards_for_invade(player, opponent),
-	}
-
-
-# --- Multiplayer RPCs ---
-
-## Client -> Host: submit an action
-func _rpc_submit_action(action_type: int, params_json: String) -> void:
-	RpcLogger.log_receive("submit_action", 4 + params_json.length())
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-
-	var sender_id := multiplayer.get_remote_sender_id()
-	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
-	if sender_player_id != turn_manager.game_state.current_player_id:
-		return # Not their turn
-	_pending_interaction = {}
-
-	var action: CardEnums.ActionType = action_type as CardEnums.ActionType
-	var params: Dictionary = {}
-	if not params_json.is_empty():
-		params = JSON.parse_string(params_json)
-		# JSON parses ints as floats — convert known fields
-		if params.has("hand_index"):
-			params["hand_index"] = int(params["hand_index"])
-		if params.has("zone_index"):
-			params["zone_index"] = int(params["zone_index"])
-
-	turn_manager.submit_action(action, params)
-
-
-## Host -> Client: full game state update
-## Prefix raw state bytes with a 1-byte compression flag; gzip if above threshold.
-## Wire format: [flag: u8][payload...]  where flag is STATE_FLAG_RAW or STATE_FLAG_GZIP.
-func _wrap_state_payload(raw_bytes: PackedByteArray) -> PackedByteArray:
-	var out := PackedByteArray()
-	if raw_bytes.size() >= STATE_COMPRESS_THRESHOLD:
-		var compressed := raw_bytes.compress(FileAccess.COMPRESSION_GZIP)
-		out.append(STATE_FLAG_GZIP)
-		out.append_array(compressed)
-	else:
-		out.append(STATE_FLAG_RAW)
-		out.append_array(raw_bytes)
-	return out
-
-
-## Inverse of _wrap_state_payload. Returns empty PackedByteArray on failure.
-func _unwrap_state_payload(wire_bytes: PackedByteArray) -> PackedByteArray:
-	if wire_bytes.is_empty():
-		return PackedByteArray()
-	var flag := wire_bytes[0]
-	var payload := wire_bytes.slice(1)
-	match flag:
-		STATE_FLAG_RAW:
-			return payload
-		STATE_FLAG_GZIP:
-			return payload.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
-		_:
-			push_warning("[STATE] Unknown compression flag: %d" % flag)
-			return PackedByteArray()
-
-
-func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
-	RpcLogger.log_receive("receive_state", state_bytes.size())
-	if state_bytes.is_empty():
-		return
-	var raw_bytes := _unwrap_state_payload(state_bytes)
-	if raw_bytes.is_empty():
-		push_warning("[STATE] Payload unwrap failed (wire size=%d)" % state_bytes.size())
-		_request_resync_throttled()
-		return
-	var decoded: Variant = bytes_to_var(raw_bytes)
-	if decoded == null or not decoded is Dictionary:
-		push_warning("[STATE] bytes_to_var failed or returned non-Dictionary (raw size=%d)" % raw_bytes.size())
-		_request_resync_throttled()
-		return
-	var envelope: Dictionary = decoded
-	if envelope.is_empty():
-		return
-
-	# Extract piggybacked log entries (tokens rendered in local locale)
-	if envelope.has("log"):
-		for entry in envelope["log"]:
-			_log_tokens.append(entry)
-			if log_output:
-				log_output.append_text(_render_log_entry(entry) + "\n")
-				log_output.scroll_to_line(log_output.get_line_count() - 1)
-
-	# Play piggybacked sound events from host
-	if envelope.has("sfx"):
-		for sfx_name in envelope["sfx"]:
-			SfxManager.play(str(sfx_name))
-
-	var version: int = int(envelope.get("v", 0))
-	var base_version: int = int(envelope.get("bv", -1))
-	var payload: Dictionary = envelope.get("d", {})
-
-	# Unwrap envelope: full state or delta
-	var data: Dictionary
-	if base_version == -1:
-		# Full state
-		data = payload
-		_client_full_state = data.duplicate(true)
-	else:
-		if _client_state_version != base_version:
-			push_warning("[DELTA] Base version mismatch: have %d, got bv=%d. Requesting resync." % [_client_state_version, base_version])
-			_request_resync_throttled()
-			return
-		_client_full_state = _apply_delta(_client_full_state, payload)
-		data = _client_full_state
-
-	# Validate that the data has required fields before processing
-	if not data.has("current_player_id") or not data.has("players"):
-		push_warning("[STATE] Received state missing required fields — requesting resync")
-		_request_resync_throttled()
-		return
-
-	# Track state version for desync detection
-	if version > 0 and _client_state_version > 0 and version < _client_state_version:
-		push_warning("[DESYNC] Received state version %d but already at %d — out-of-order delivery" % [version, _client_state_version])
-	_client_state_version = version
-
-	_client_current_player_id = int(data["current_player_id"])
-	_client_turn_number = int(data.get("turn_number", 0))
-	_client_phase = int(data.get("current_phase", 0)) as CardEnums.GamePhase
-	_first_player_id = int(data.get("first_player_id", 0))
-
-
-	# Extract effect modifiers
-	if data.has("cp_modifiers"):
-		_client_cp_modifiers = data["cp_modifiers"]
-		for j in range(_client_cp_modifiers.size()):
-			_client_cp_modifiers[j] = int(_client_cp_modifiers[j])
-	if data.has("threat_modifiers"):
-		_client_threat_modifiers = data["threat_modifiers"]
-		for j in range(_client_threat_modifiers.size()):
-			_client_threat_modifiers[j] = int(_client_threat_modifiers[j])
-	if data.has("zone_cp_modifiers"):
-		_client_zone_cp_mods = data["zone_cp_modifiers"]
-		for i in range(_client_zone_cp_mods.size()):
-			var arr: Array = _client_zone_cp_mods[i]
-			for j in range(arr.size()):
-				arr[j] = int(arr[j])
-	if data.has("strategy_cp_modifiers"):
-		_client_strategy_cp_mods = data["strategy_cp_modifiers"]
-		for i in range(_client_strategy_cp_mods.size()):
-			var arr: Array = _client_strategy_cp_mods[i]
-			for j in range(arr.size()):
-				arr[j] = int(arr[j])
-	if data.has("zone_rank_modifiers"):
-		_client_zone_rank_mods = data["zone_rank_modifiers"]
-		for i in range(_client_zone_rank_mods.size()):
-			var arr: Array = _client_zone_rank_mods[i]
-			for j in range(arr.size()):
-				arr[j] = int(arr[j])
-	if data.has("hand_rank_modifiers"):
-		_client_hand_rank_mods = data["hand_rank_modifiers"]
-		for i in range(_client_hand_rank_mods.size()):
-			var arr: Array = _client_hand_rank_mods[i]
-			for j in range(arr.size()):
-				arr[j] = int(arr[j])
-	if data.has("monster_cp_modifiers"):
-		_client_monster_cp_mods = data["monster_cp_modifiers"]
-		for j in range(_client_monster_cp_mods.size()):
-			_client_monster_cp_mods[j] = int(_client_monster_cp_mods[j])
-
-	# Reconstruct PlayerState objects
-	var players_data: Array = data["players"]
-	if players_data.size() < 2:
-		push_warning("[STATE] players array too small: %d" % players_data.size())
-		_request_resync_throttled()
-		return
-	for i in range(2):
-		var pd: Dictionary = players_data[i]
-		_client_players[i] = _dict_to_player_state(pd, i == local_player_id)
-		# Store stats fields for disconnect reporting
-		if pd.has("stats_deck_name"):
-			_client_stats_deck_names[i] = str(pd["stats_deck_name"])
-		if pd.has("stats_decklist"):
-			_client_stats_decklists[i] = pd["stats_decklist"]
-		if pd.has("stats_hand") and i != local_player_id:
-			_client_stats_opponent_hand = pd["stats_hand"]
-
-	# Stats timing from host
-	if data.has("stats_elapsed_ms"):
-		var arr: Array = data["stats_elapsed_ms"]
-		_client_stats_elapsed_ms = [int(arr[0]), int(arr[1])] as Array[int]
-	if data.has("stats_game_start_ms"):
-		_client_stats_game_start_ms = int(data["stats_game_start_ms"])
-	if data.has("stats_turn_start_ms"):
-		_client_stats_turn_start_ms = int(data["stats_turn_start_ms"])
-
-	# Apply monster color gradient and send player name on first state receive
-	if not _client_gradients_applied:
-		_client_gradients_applied = true
-		for i in range(2):
-			var board = player1_board if i == 0 else player2_board
-			if not _client_players[i].current_monster.is_empty():
-				board.apply_monster_gradient(_client_players[i].current_monster)
-		RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
-		_sync._rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
-
-	# Sync player names from host (disambiguate from client's perspective)
-	var host_names: Array = data.get("player_names", [])
-	if host_names.size() == 2:
-		var canonical: Array[String] = []
-		for i in range(2):
-			canonical.append(str(host_names[i]))
-		GameLog.player_names = GameLog.disambiguate(canonical, local_player_id)
-		for i in range(2):
-			if i < _turn_tracker_headers.size():
-				_turn_tracker_headers[i].text = GameLog.player_name(i)
-
-	# Desync detection: compare state hash from host with locally reconstructed state
-	if data.has("state_hash"):
-		var host_hash: int = int(data["state_hash"])
-		var local_hash: int = _compute_client_state_hash(
-			int(data.get("turn_number", 0)),
-			_client_current_player_id,
-			int(data.get("current_phase", 0)))
-		if host_hash != local_hash:
-			push_warning("[DESYNC] State hash mismatch at version %d (turn %d, phase %d) — host=%d local=%d" % [
-				_client_state_version,
-				int(data.get("turn_number", 0)),
-				int(data.get("current_phase", 0)),
-				host_hash, local_hash])
-			# Auto-resync if this was a delta (full state hash mismatch is a real desync)
-			if base_version >= 0:
-				push_warning("[DELTA] Hash mismatch after delta apply — requesting resync")
-				_request_resync_throttled()
-
-	# Update UI
-	var client_phase := int(data["current_phase"]) as CardEnums.GamePhase
-	var client_sub_phase: int = int(data.get("current_sub_phase", 0))
-	_update_turn_tracker(_client_current_player_id, client_phase, client_sub_phase)
-	_sync_boards()
-	_update_hand_visibility(_client_current_player_id)
-
-
-## Rate-limited resync request (client only). Prevents flooding the host with
-## resync RPCs when multiple deltas fail in quick succession.
-const RESYNC_COOLDOWN_MS: int = 2000
-func _request_resync_throttled() -> void:
-	var now := Time.get_ticks_msec()
-	if now - _last_resync_request_ms < RESYNC_COOLDOWN_MS:
-		return # Too soon — skip this resync request
-	_last_resync_request_ms = now
-	RpcLogger.log_send("request_resync", 0)
-	_sync._rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
-
-
-## Client -> Host: request full state resend (delta base version mismatch or hash mismatch)
-func _rpc_request_resync() -> void:
-	if not NetworkManager.is_host():
-		return
-	RpcLogger.log_receive("request_resync", 0)
-	_last_sent_state = {}
-	_last_sent_version = 0
-	_broadcast_state()
-	_flush_broadcast()
-	# Re-send pending interaction if the host was waiting for client input
-	if not _pending_interaction.is_empty():
-		var method: String = _pending_interaction.get("method", "")
-		var args: Array = _pending_interaction.get("args", [])
-		var peer_id := multiplayer.get_remote_sender_id()
-		if peer_id > 0:
-			match method:
-				"action_context":
-					_sync._rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
-				"deck_search":
-					_sync._rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
-				"deck_arrange":
-					_sync._rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
-				"card_select":
-					_sync._rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4])
-				"hand_discard":
-					_sync._rpc_hand_discard_requested.rpc_id(peer_id, args[0])
-				"hand_card_selection":
-					_sync._rpc_hand_card_selection_requested.rpc_id(peer_id, args[0], args[1], args[2])
-				"zone_target":
-					_sync._rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
-				"strategy_target":
-					_sync._rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2])
-				"choice":
-					_sync._rpc_choice_requested.rpc_id(peer_id, args[0], args[1])
-				"confirmation":
-					_sync._rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
-				"monster_rankup":
-					_sync._rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
-	elif turn_manager and not turn_manager.is_game_over:
-		# Re-prompt whoever's turn it is
-		# (_on_awaiting_action handles both host and client turn cases)
-		var valid_actions := turn_manager.rules_engine.get_valid_actions(turn_manager.game_state)
-		if not valid_actions.is_empty():
-			_on_awaiting_action(valid_actions)
+		if i < _turn_tracker_headers.size():
+			_turn_tracker_headers[i].text = GameLog.player_name(i)
 
 
 ## Host -> Client: valid actions and playable indices
@@ -7670,7 +7026,7 @@ func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt:
 	RpcLogger.log_receive("deck_search_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
 	var all_ids: Array = JSON.parse_string(all_json)
-	_show_deck_search(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt, allow_skip)
+	_show_deck_search(StateCodec.ids_to_cards(matching_ids), StateCodec.ids_to_cards(all_ids), prompt, allow_skip)
 
 
 ## Client -> Host: deck search resolved (player chose a card or skipped)
@@ -7693,7 +7049,7 @@ func _rpc_deck_arrange_requested(cards_json: String, prompt: String) -> void:
 	if NetworkManager.is_host():
 		return
 	var card_ids: Array = JSON.parse_string(cards_json)
-	_show_deck_arrange(_ids_to_cards(card_ids), prompt)
+	_show_deck_arrange(StateCodec.ids_to_cards(card_ids), prompt)
 
 
 ## Client -> Host: deck arrange resolved (player arranged cards)
@@ -7720,7 +7076,7 @@ func _rpc_card_select_requested(matching_json: String, all_json: String, prompt:
 	RpcLogger.log_receive("card_select_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
 	var all_ids: Array = JSON.parse_string(all_json)
-	_show_card_select(_ids_to_cards(matching_ids), _ids_to_cards(all_ids), prompt, min_count, max_count)
+	_show_card_select(StateCodec.ids_to_cards(matching_ids), StateCodec.ids_to_cards(all_ids), prompt, min_count, max_count)
 
 
 ## Client -> Host: card select resolved (player selected cards or skipped)
@@ -7894,7 +7250,7 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 	if NetworkManager.is_host():
 		return
 	var monster_ids: Array = JSON.parse_string(monsters_json)
-	var monsters: Array[Dictionary] = _ids_to_cards(monster_ids)
+	var monsters: Array[Dictionary] = StateCodec.ids_to_cards(monster_ids)
 	var parsed_indices: Array = JSON.parse_string(indices_json)
 	var valid_indices: Array[int] = []
 	for v in parsed_indices:
@@ -7990,88 +7346,6 @@ func _rpc_receive_replay(compressed: PackedByteArray) -> void:
 
 # --- Multiplayer: State deserialization (client) ---
 
-func _dict_to_player_state(data: Dictionary, is_local: bool) -> PlayerState:
-	var ps := PlayerState.new(int(data["player_id"]))
-	ps.monster_zone = int(data["monster_zone"])
-	ps.rage = int(data["rage"])
-	ps.current_monster = _id_to_card(str(data.get("current_monster", "")))
-	ps.has_invaded_this_turn = data.get("has_invaded_this_turn", false)
-	ps.has_played_monster_this_turn = data.get("has_played_monster_this_turn", false)
-	for m in data.get("monster_stack", []):
-		var card := _id_to_card(str(m))
-		if not card.is_empty():
-			ps.monster_stack.append(card)
-	ps.burst_monster = _id_to_card(str(data.get("burst_monster", "")))
-	ps.pre_burst_monster = _id_to_card(str(data.get("pre_burst_monster", "")))
-
-	# Zones: each zone is an array of card IDs
-	var zones_data: Array = data.get("zones", [])
-	for i in range(mini(zones_data.size(), 8)):
-		var zone_stack: Array[Dictionary] = []
-		for card_id in zones_data[i]:
-			var card := _id_to_card(str(card_id))
-			if not card.is_empty():
-				zone_stack.append(card)
-		ps.zones[i] = zone_stack
-
-	# Strategy zones (may be 2 or 3): each is a card ID string
-	var sz_data: Array = data.get("strategy_zones", [])
-	if sz_data.size() > ps.strategy_zones.size():
-		ps.strategy_zones.resize(sz_data.size())
-		ps.strategy_zone_turn_placed.resize(sz_data.size())
-	for i in range(sz_data.size()):
-		ps.strategy_zones[i] = _id_to_card(str(sz_data[i]))
-
-	# Cards stacked under each strategy (EBP04-089 RAGE markers) — needed so the
-	# client can show the under-count when inspecting the strategy zone.
-	var szs_data: Array = data.get("strategy_zone_stacks", [])
-	if szs_data.size() > ps.strategy_zone_stacks.size():
-		ps.strategy_zone_stacks.resize(szs_data.size())
-	for i in range(ps.strategy_zone_stacks.size()):
-		var under: Array = []
-		if i < szs_data.size():
-			for card_id in szs_data[i]:
-				var c := _id_to_card(str(card_id))
-				if not c.is_empty():
-					under.append(c)
-		ps.strategy_zone_stacks[i] = under
-
-	# Hand: IDs for local player, face-down placeholders for opponent
-	if is_local and data.has("hand"):
-		ps.hand.assign(_ids_to_cards(data["hand"]))
-	else:
-		var count: int = int(data.get("hand_count", 0))
-		ps.hand.clear()
-		for j in range(count):
-			ps.hand.append({"face_down": true, "id": "opponent_%d" % j})
-
-	# Monster deck: IDs for local player, placeholder count for opponent
-	if is_local and data.has("monster_deck"):
-		ps.monster_deck.assign(_ids_to_cards(data["monster_deck"]))
-	else:
-		var md_count: int = int(data.get("monster_deck_count", 0))
-		ps.monster_deck.resize(md_count)
-		for j in range(md_count):
-			ps.monster_deck[j] = {}
-
-	# Deck: only counts needed for display labels
-	var deck_count: int = int(data.get("main_deck_count", 0))
-	ps.main_deck.resize(deck_count)
-	for j in range(deck_count):
-		ps.main_deck[j] = {}
-
-	# Discard pile: card IDs
-	if data.has("discard_pile"):
-		ps.discard_pile.assign(_ids_to_cards(data["discard_pile"]))
-	else:
-		var discard_count: int = int(data.get("discard_pile_count", 0))
-		ps.discard_pile.resize(discard_count)
-		for j in range(discard_count):
-			ps.discard_pile[j] = {}
-
-	return ps
-
-
 # --- Stats upload ---
 
 func _upload_stats(winner_id: int, reason: String, is_disconnect: bool) -> void:
@@ -8099,7 +7373,7 @@ func _upload_stats(winner_id: int, reason: String, is_disconnect: bool) -> void:
 		# Restore opponent's hand from stats snapshot
 		var opponent_id := 1 - local_player_id
 		if not _client_stats_opponent_hand.is_empty():
-			gs.players[opponent_id].hand.assign(_ids_to_cards(_client_stats_opponent_hand))
+			gs.players[opponent_id].hand.assign(StateCodec.ids_to_cards(_client_stats_opponent_hand))
 		# Populate DecklistManager with synced decklist data
 		for i in range(2):
 			if _client_stats_decklists[i] != null and not DecklistManager.has_player_deck(i):
@@ -8195,9 +7469,7 @@ func _attempt_client_reconnect() -> void:
 			_reconnect_attempting = false
 			_reconnect_overlay.visible = false
 			# Reset delta state so next broadcast is treated as full state
-			_client_full_state = {}
-			_client_state_version = 0
-			_last_resync_request_ms = 0
+			_sync.reset_client_stream()
 			_action_pending = false
 			_on_log_message(GameLog.reconnected())
 			# Wait a frame for the connection to stabilize before sending RPCs
@@ -8251,58 +7523,8 @@ func _on_opponent_reconnected(_peer_id: int) -> void:
 
 
 func _resync_reconnected_client() -> void:
-	# Force full state broadcast by clearing last sent state
-	_last_sent_state = {}
-	_last_sent_version = 0
-	_broadcast_state()
-	_flush_broadcast()
-
-	# Re-send pending interaction if the host was waiting for client input
-	if not _pending_interaction.is_empty():
-		var method: String = _pending_interaction.get("method", "")
-		var args: Array = _pending_interaction.get("args", [])
-		var peer_id := _get_client_peer_id()
-		if peer_id > 0:
-			match method:
-				"action_context":
-					RpcLogger.log_send("receive_action_context", args[0].length() + args[1].length())
-					_sync._rpc_receive_action_context.rpc_id(peer_id, args[0], args[1])
-				"deck_search":
-					RpcLogger.log_send("deck_search_requested", args[0].length() + args[1].length() + args[2].length())
-					_sync._rpc_deck_search_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
-				"deck_arrange":
-					RpcLogger.log_send("deck_arrange_requested", args[0].length() + args[1].length())
-					_sync._rpc_deck_arrange_requested.rpc_id(peer_id, args[0], args[1])
-				"card_select":
-					RpcLogger.log_send("card_select_requested", args[0].length() + args[1].length() + args[2].length())
-					_sync._rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4])
-				"hand_discard":
-					RpcLogger.log_send("hand_discard_requested", 4)
-					_sync._rpc_hand_discard_requested.rpc_id(peer_id, args[0])
-				"hand_card_selection":
-					RpcLogger.log_send("hand_card_selection_requested", args[0].length() + args[1].length() + 1)
-					_sync._rpc_hand_card_selection_requested.rpc_id(peer_id, args[0], args[1], args[2])
-				"zone_target":
-					RpcLogger.log_send("zone_target_requested", 4 + args[1].length() + args[2].length() + 1)
-					_sync._rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3])
-				"strategy_target":
-					RpcLogger.log_send("strategy_target_requested", 4 + args[1].length() + args[2].length())
-					_sync._rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2])
-				"choice":
-					RpcLogger.log_send("choice_requested", args[0].length() + args[1].length())
-					_sync._rpc_choice_requested.rpc_id(peer_id, args[0], args[1])
-				"confirmation":
-					RpcLogger.log_send("confirmation_requested", args[0].length() + args[1].length())
-					_sync._rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
-				"monster_rankup":
-					RpcLogger.log_send("monster_rankup_requested", args[0].length() + args[1].length() + args[2].length())
-					_sync._rpc_monster_rankup_requested.rpc_id(peer_id, args[0], args[1], args[2])
-	elif turn_manager and not turn_manager.is_game_over:
-		# No pending interaction — re-prompt whoever's turn it is
-		# (_on_awaiting_action handles both host and client turn cases)
-		var valid_actions := turn_manager.rules_engine.get_valid_actions(turn_manager.game_state)
-		if not valid_actions.is_empty():
-			_on_awaiting_action(valid_actions)
+	# Full-state resync + in-flight prompt replay (or re-prompt) lives on sync
+	_sync.resync_client(_get_client_peer_id())
 
 
 func _get_client_peer_id() -> int:
