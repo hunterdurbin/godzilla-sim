@@ -10,6 +10,7 @@
 [ext_resource type="Script" path="res://scenes/board/modules/turn_tracker.gd" id="8_tt"]
 [ext_resource type="Script" path="res://scenes/board/modules/first_player_ui.gd" id="9_fp"]
 [ext_resource type="Script" path="res://scenes/board/modules/end_game_controller.gd" id="10_eg"]
+[ext_resource type="Script" path="res://scenes/board/modules/reconnect_controller.gd" id="11_rc"]
 
 [node name="GameBoard" type="Control" unique_id=1722697301]
 layout_mode = 3
@@ -40,6 +41,9 @@ script = ExtResource("9_fp")
 
 [node name="EndGameController" type="Node" parent="."]
 script = ExtResource("10_eg")
+
+[node name="ReconnectController" type="Node" parent="."]
+script = ExtResource("11_rc")
 
 [node name="Background" type="ColorRect" parent="." unique_id=1737832110]
 layout_mode = 1

@@ -120,6 +120,7 @@ var _client_stats_decklists: Array:
 @onready var _tracker: TurnTrackerModule = $TurnTrackerModule
 @onready var _first_player: FirstPlayerUI = $FirstPlayerUI
 @onready var _end_game: EndGameController = $EndGameController
+@onready var _reconnect: ReconnectController = $ReconnectController
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -350,23 +351,25 @@ var _rematch_deck_name: String:
 	get: return _end_game.rematch_deck_name
 	set(v): _end_game.rematch_deck_name = v
 
-# Reconnect state
-var _reconnect_cumulative_seconds: float = 0.0 # Cumulative across all disconnects
-var _reconnect_current_start_ms: int = 0
-var _waiting_for_reconnect: bool = false
-var _reconnect_attempting: bool = false # Guard for client reconnect loop
-const RECONNECT_CLAIM_WIN_SECONDS: float = 10.0
+# Reconnect state — owned by ReconnectController (forwarding properties for
+# the main-menu exit, rematch reset, and EndGameController during extraction)
+var _reconnect_cumulative_seconds: float:
+	get: return _reconnect.cumulative_seconds
+	set(v): _reconnect.cumulative_seconds = v
+var _waiting_for_reconnect: bool:
+	get: return _reconnect.waiting_for_reconnect
+	set(v): _reconnect.waiting_for_reconnect = v
+var _reconnect_attempting: bool:
+	get: return _reconnect.attempting
+	set(v): _reconnect.attempting = v
 ## In-flight host->client prompt, owned by MultiplayerSync (forwarding
 ## property — overlay request senders still write it during extraction).
 var _pending_interaction: Dictionary:
 	get: return _sync._pending_interaction
 	set(v): _sync._pending_interaction = v
-# Reconnect overlay nodes (built in code)
-var _reconnect_overlay: ColorRect = null
-var _reconnect_label: Label = null
-var _reconnect_timer_label: Label = null
-var _reconnect_claim_btn: Button = null
-var _reconnect_menu_btn: Button = null
+# Reconnect overlay — owned by ReconnectController
+var _reconnect_overlay: ColorRect:
+	get: return _reconnect.overlay
 
 # Stats time tracking
 var _player_elapsed_ms: Array[int] = [0, 0]
@@ -479,53 +482,6 @@ func _set_action_buttons_visible(vis: bool) -> void:
 		btn_cancel.disabled = true
 		if not vis:
 			_collapse_fab_instant()
-
-
-func _build_reconnect_overlay() -> void:
-	_reconnect_overlay = ColorRect.new()
-	_reconnect_overlay.color = Color(0, 0, 0, 0.75)
-	_reconnect_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_reconnect_overlay.z_index = 200
-	_reconnect_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	_reconnect_overlay.visible = false
-
-	var vbox := VBoxContainer.new()
-	vbox.set_anchors_preset(Control.PRESET_CENTER)
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 16)
-	vbox.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	vbox.grow_vertical = Control.GROW_DIRECTION_BOTH
-
-	_reconnect_label = Label.new()
-	_reconnect_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_reconnect_label.add_theme_font_size_override("font_size", 24)
-	vbox.add_child(_reconnect_label)
-
-	_reconnect_timer_label = Label.new()
-	_reconnect_timer_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_reconnect_timer_label.add_theme_font_size_override("font_size", 20)
-	_reconnect_timer_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-	vbox.add_child(_reconnect_timer_label)
-
-	_reconnect_claim_btn = Button.new()
-	_reconnect_claim_btn.text = tr("STR_GB_CLAIM_WIN")
-	_reconnect_claim_btn.custom_minimum_size = Vector2(200, 45)
-	_reconnect_claim_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_reconnect_claim_btn.add_theme_font_size_override("font_size", 20)
-	_reconnect_claim_btn.visible = false
-	_reconnect_claim_btn.pressed.connect(_on_reconnect_claim_win)
-	vbox.add_child(_reconnect_claim_btn)
-
-	_reconnect_menu_btn = Button.new()
-	_reconnect_menu_btn.text = tr("STR_GB_RETURN_TO_MENU")
-	_reconnect_menu_btn.custom_minimum_size = Vector2(200, 45)
-	_reconnect_menu_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	_reconnect_menu_btn.add_theme_font_size_override("font_size", 20)
-	_reconnect_menu_btn.pressed.connect(_on_main_menu_pressed)
-	vbox.add_child(_reconnect_menu_btn)
-
-	_reconnect_overlay.add_child(vbox)
-	add_child(_reconnect_overlay)
 
 
 func _ready() -> void:
@@ -667,10 +623,8 @@ func _ready() -> void:
 
 	# Listen for disconnects in multiplayer
 	if is_multiplayer_game:
-		NetworkManager.player_disconnected.connect(_on_opponent_disconnected)
-		NetworkManager.player_reconnected.connect(_on_opponent_reconnected)
 		NetworkManager.is_in_game = true
-		_build_reconnect_overlay()
+		_reconnect.setup()
 		# Save reconnect session for app-restart recovery (online only)
 		if NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]:
 			GameSettings.save_reconnect_session(
@@ -2966,10 +2920,7 @@ func _rpc_concede() -> void:
 
 
 func _on_main_menu_pressed() -> void:
-	_waiting_for_reconnect = false
-	_reconnect_attempting = false
-	if _reconnect_overlay:
-		_reconnect_overlay.visible = false
+	_reconnect.hide_overlay()
 	# Lobby-bot mode: keep the relay alive and return to PublicLobby instead of MainMenu.
 	if _is_lobby_bot:
 		NetworkManager.exit_lobby_bot_game()
@@ -3482,21 +3433,8 @@ func _process(_delta: float) -> void:
 	_process_lobby_banner_tick()
 	_process_pending_indicator()
 	# Reconnect overlay display
-	if _waiting_for_reconnect and _reconnect_overlay.visible:
-		var elapsed_ms := Time.get_ticks_msec() - _reconnect_current_start_ms
-		var total_seconds := _reconnect_cumulative_seconds + elapsed_ms / 1000.0
-		if NetworkManager.is_host():
-			# Host: show countdown until "Claim Win" becomes available
-			var remaining := RECONNECT_CLAIM_WIN_SECONDS - total_seconds
-			if remaining > 0:
-				_reconnect_timer_label.text = tr("STR_GB_CLAIM_WIN_TIMER_FMT").replace("{N}", str(ceili(remaining)))
-			else:
-				_reconnect_timer_label.text = ""
-				if not _reconnect_claim_btn.visible:
-					_reconnect_claim_btn.visible = true
-		else:
-			# Client: show elapsed time reconnecting
-			_reconnect_timer_label.text = tr("STR_GB_RECONNECTING_FMT").replace("{N}", str(int(total_seconds)))
+	_reconnect.process_tick()
+	if _reconnect.is_overlay_active():
 		return # Skip normal drag processing while overlay is showing
 
 	if not _drag_card or not _drag_card.is_dragging:
@@ -6717,148 +6655,6 @@ func _upload_stats(winner_id: int, reason: String, is_disconnect: bool) -> void:
 
 
 # --- Multiplayer: Disconnect handling ---
-
-func _on_opponent_disconnected(_peer_id: int) -> void:
-	_disable_all_buttons()
-	# If the game was already over (normal end), just hide the rematch button
-	if end_game_panel.visible:
-		btn_rematch.visible = false
-		_rematch_deck_select.visible = false
-		return
-
-	var is_online := NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]
-
-	# LAN games: immediate disconnect (no reconnect possible)
-	if not is_online:
-		_handle_final_disconnect()
-		return
-
-	# Online HOST side: show overlay and wait for reconnect
-	if NetworkManager.is_host():
-		_on_log_message(GameLog.opponent_disconnected_waiting())
-		_waiting_for_reconnect = true
-		_reconnect_current_start_ms = Time.get_ticks_msec()
-		_reconnect_label.text = tr("STR_GB_OPPONENT_DISCONNECTED_WAIT")
-		_reconnect_timer_label.text = tr("STR_GB_CLAIM_WIN_TIMER_FMT").replace("{N}", str(int(RECONNECT_CLAIM_WIN_SECONDS)))
-		_reconnect_claim_btn.visible = false
-		_reconnect_overlay.visible = true
-		return
-
-	# Online CLIENT side: attempt to reconnect to the host via relay
-	_on_log_message(GameLog.connection_lost_reconnecting())
-	_waiting_for_reconnect = true
-	_reconnect_current_start_ms = Time.get_ticks_msec()
-	_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RECONNECTING")
-	_reconnect_timer_label.text = ""
-	_reconnect_claim_btn.visible = false
-	_reconnect_menu_btn.visible = true
-	_reconnect_overlay.visible = true
-	if not _reconnect_attempting:
-		_attempt_client_reconnect()
-
-
-func _handle_final_disconnect() -> void:
-	_game_ended_by_disconnect = true
-	end_game_panel.visible = true
-	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
-	if win_label:
-		win_label.text = tr("STR_GB_OPPONENT_DISCONNECTED")
-	btn_rematch.visible = false
-	_upload_stats(local_player_id, "Opponent disconnected", true)
-
-
-func _attempt_client_reconnect() -> void:
-	_reconnect_attempting = true
-	var room_code := NetworkManager.get_game_code()
-	while _waiting_for_reconnect and is_inside_tree():
-		_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RECONNECTING")
-		var err: Error = await NetworkManager.attempt_reconnect(room_code)
-		if err == OK:
-			# Reconnected — clear overlay and reset ALL client delta state
-			_reconnect_cumulative_seconds += (Time.get_ticks_msec() - _reconnect_current_start_ms) / 1000.0
-			_waiting_for_reconnect = false
-			_reconnect_attempting = false
-			_reconnect_overlay.visible = false
-			# Reset delta state so next broadcast is treated as full state
-			_sync.reset_client_stream()
-			_action_pending = false
-			_on_log_message(GameLog.reconnected())
-			# Wait a frame for the connection to stabilize before sending RPCs
-			await get_tree().process_frame
-			if not is_inside_tree():
-				return
-			# Re-send player name and request full state resync from host.
-			# The host already tried to resync during the relay handshake,
-			# but those RPCs may have arrived before the connection was fully ready.
-			RpcLogger.log_send("send_player_name", GameSettings.player_name.length())
-			_sync._rpc_send_player_name.rpc_id(NetworkManager.host_peer_id, GameSettings.player_name)
-			RpcLogger.log_send("request_resync", 0)
-			_sync._rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
-			return
-		# Failed — wait 2s and retry
-		_reconnect_label.text = tr("STR_GB_CONNECTION_LOST_RETRYING")
-		await get_tree().create_timer(2.0).timeout
-	_reconnect_attempting = false
-
-
-func _on_opponent_reconnected(_peer_id: int) -> void:
-	if not _waiting_for_reconnect:
-		return
-
-	# Accumulate elapsed wait time
-	_reconnect_cumulative_seconds += (Time.get_ticks_msec() - _reconnect_current_start_ms) / 1000.0
-	_waiting_for_reconnect = false
-	_reconnect_overlay.visible = false
-
-	if not end_game_panel.visible:
-		# Game is still in progress — resync the client after a brief delay
-		# to let the connection stabilize before sending large state RPCs
-		_on_log_message(GameLog.opponent_reconnected())
-		await get_tree().create_timer(0.2).timeout
-		if not is_inside_tree():
-			return
-		_resync_reconnected_client()
-	else:
-		# Game ended while they were gone (win was claimed) — re-send result
-		await get_tree().create_timer(0.2).timeout
-		if not is_inside_tree():
-			return
-		RpcLogger.log_send("receive_game_ended", 4 + len("STR_LOG_REASON_OPPONENT_DISCONNECTED"))
-		_sync._rpc_receive_game_ended.rpc(local_player_id, "STR_LOG_REASON_OPPONENT_DISCONNECTED")
-		# Show rematch button now that opponent is back
-		btn_rematch.visible = true
-		btn_rematch.disabled = false
-		btn_rematch.text = tr("STR_GB_REMATCH")
-		_game_ended_by_disconnect = false
-		_populate_rematch_deck_select()
-
-
-func _resync_reconnected_client() -> void:
-	# Full-state resync + in-flight prompt replay (or re-prompt) lives on sync
-	_sync.resync_client(_get_client_peer_id())
-
-
-func _get_client_peer_id() -> int:
-	for peer_id in NetworkManager.peer_player_map:
-		if peer_id != 1 and NetworkManager.peer_player_map[peer_id] != local_player_id:
-			return peer_id
-	return -1
-
-
-func _on_reconnect_claim_win() -> void:
-	_waiting_for_reconnect = false
-	_reconnect_overlay.visible = false
-	# End the game with local player as winner
-	_game_ended_by_disconnect = true
-	end_game_panel.visible = true
-	var win_label: Label = end_game_panel.get_node_or_null("VBox/WinLabel")
-	if win_label:
-		win_label.text = tr("STR_GB_YOU_WIN_OPP_DISC")
-	btn_rematch.visible = false
-	_disable_all_buttons()
-	_upload_stats(local_player_id, "Opponent disconnected", true)
-	_on_log_message(GameLog.claimed_win_disconnect())
-
 
 # --- Play vs Bot While Waiting (lobby-bot mode) ---
 
