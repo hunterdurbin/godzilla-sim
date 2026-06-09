@@ -26,6 +26,11 @@ func on_enter(ctx: EffectContext) -> void:
 	if chosen_mech.is_empty():
 		return
 
+	# Rules sequencing: the searched card always goes deck -> hand first (logged),
+	# even when it is then played in zone 8 — future effects may care about the
+	# hand stop. Playing it is a separate, logged hand -> zone step below.
+	ctx.effect_handler.add_card_to_hand(ctx.owner.player_id, chosen_mech)
+
 	var card_name: String = chosen_mech.get("name", "")
 	var is_eligible_card: bool = (
 		card_name == "Multi-purpose Fighting System-3"
@@ -33,7 +38,7 @@ func on_enter(ctx: EffectContext) -> void:
 	)
 	# Honor the chosen card's own play restrictions: can_be_played (e.g. EBP01-073
 	# needs 8+ monsters in discard) and any required-zone restriction. Playing
-	# over an existing battle card in zone 8 is allowed — play_from_discard
+	# over an existing battle card in zone 8 is allowed — play_battle_card_from_hand
 	# handles overload by destroying the previous stack.
 	var required_zones: Array[int] = ctx.effect_handler.get_card_required_play_zones(
 		ctx.owner.player_id, chosen_mech)
@@ -53,11 +58,4 @@ func on_enter(ctx: EffectContext) -> void:
 			ctx.owner.player_id, options,
 			tr("STR_EFF_EBP04_077_PROMPT_FMT") % card_name)
 		if place_chosen == 0:
-			# Stage in discard so play_from_discard can remove+place+trigger enter cleanly.
-			ctx.owner.discard_pile.append(chosen_mech)
-			ctx.owner.discard_changed.emit()
-			await ctx.effect_handler.play_from_discard(ctx.owner.player_id, chosen_mech, 7)
-			return
-
-	ctx.owner.hand.append(chosen_mech)
-	ctx.owner.hand_changed.emit()
+			await ctx.effect_handler.play_battle_card_from_hand(ctx.owner.player_id, chosen_mech, 7)

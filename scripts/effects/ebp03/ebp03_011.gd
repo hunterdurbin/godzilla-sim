@@ -74,11 +74,12 @@ func on_enter(ctx: EffectContext) -> void:
 		chosen_ids.append(card.get("id", ""))
 
 	# Add chosen to hand, discard rest
+	var to_hand: Array[Dictionary] = []
 	for card in revealed:
 		if card.get("id", "") in chosen_ids:
-			ctx.owner.hand.append(card)
+			to_hand.append(card)
 		else:
 			ctx.owner.discard_pile.append(card)
 
-	ctx.owner.hand_changed.emit()
+	ctx.effect_handler.add_cards_to_hand(ctx.owner.player_id, to_hand)
 	ctx.owner.discard_changed.emit()

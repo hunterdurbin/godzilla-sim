@@ -166,6 +166,21 @@ static func effect_returned_card_to_hand(player_id: int, effect_source_id: Strin
 	return {"type": "effect_returned_card_to_hand", "player_id": player_id, "source_id": effect_source_id, "returned_id": returned_id}
 
 
+static func effect_added_card_to_hand(player_id: int, effect_source_id: String, card_id: String) -> Dictionary:
+	return {"type": "effect_added_card_to_hand", "player_id": player_id, "source_id": effect_source_id, "card_id": card_id}
+
+
+static func effect_added_cards_to_hand(player_id: int, effect_source_id: String, cards: Array[Dictionary]) -> Dictionary:
+	var card_ids: Array[String] = []
+	for card in cards:
+		card_ids.append(card.get("id", ""))
+	return {"type": "effect_added_cards_to_hand", "player_id": player_id, "source_id": effect_source_id, "card_ids": card_ids}
+
+
+static func effect_played_card(player_id: int, effect_source_id: String, card_id: String, zone: int) -> Dictionary:
+	return {"type": "effect_played_card", "player_id": player_id, "source_id": effect_source_id, "card_id": card_id, "zone": zone}
+
+
 static func effect_put_card_on_top_of_deck(player_id: int, effect_source_id: String, card_id: String) -> Dictionary:
 	return {"type": "effect_put_card_on_top_of_deck", "player_id": player_id, "source_id": effect_source_id, "card_id": card_id}
 
@@ -417,6 +432,26 @@ static func render(token: Dictionary) -> String:
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
 				.replace("{RETURNED_CARD}", card_link(token.get("returned_id", "")))
+		"effect_added_card_to_hand":
+			return TranslationServer.translate("STR_LOG_EFFECT_ADDED_TO_HAND_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{CARD}", card_link(token.get("card_id", "")))
+		"effect_added_cards_to_hand":
+			var added_ids: Array = token.get("card_ids", [])
+			var added_links: Array[String] = []
+			for aid in added_ids:
+				added_links.append(card_link(str(aid)))
+			return TranslationServer.translate("STR_LOG_EFFECT_ADDED_TO_HAND_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{CARD}", ", ".join(added_links))
+		"effect_played_card":
+			return TranslationServer.translate("STR_LOG_EFFECT_PLAYED_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{CARD}", card_link(token.get("card_id", ""))) \
+				.replace("{ZONE}", str(int(token.get("zone", 0)) + 1))
 		"effect_put_card_on_top_of_deck":
 			return TranslationServer.translate("STR_LOG_EFFECT_TOP_OF_DECK_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \

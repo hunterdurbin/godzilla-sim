@@ -357,9 +357,11 @@ STR_GB_SELECT_RAGE_CARD,Select a MONSTER card to discard for Rage:,<怒り>の�
 STR_GB_SELECT_INVASION_CARD,Select a card to discard for Invasion:,進攻のため捨てるカードを選択:
 STR_GB_NO_DISCARD,No cards in discard pile.,捨て札にカードがありません。
 STR_GB_NO_MONSTER_DECK,No cards remaining in monster deck.,怪獣デッキにカードが残っていません。
-STR_GB_ZONE_HEADER_FMT,Zone {N} ({C} cards),エリア {N} ({C}枚)
-STR_GB_STRATEGY_HEADER_FMT,Strategy {N} ({C} cards),戦略 {N} ({C}枚)
-STR_GB_TITLE_COUNT_FMT,{TITLE} ({C} cards),{TITLE} ({C}枚)
+STR_GB_ZONE_HEADER_FMT,Zone {N} ({C} Cards),エリア {N} ({C}枚)
+STR_GB_ZONE_HEADER_UNDER_FMT,"Zone {N} ({C} Cards, {U} Under)",エリア {N} ({C}枚、下に{U}枚)
+STR_GB_STRATEGY_HEADER_FMT,Strategy {N} ({C} Cards),戦略 {N} ({C}枚)
+STR_GB_STRATEGY_HEADER_UNDER_FMT,"Strategy {N} ({C} Cards, {U} Under)",戦略 {N} ({C}枚、下に{U}枚)
+STR_GB_TITLE_COUNT_FMT,{TITLE} ({C} Cards),{TITLE} ({C}枚)
 STR_GB_WINS_FMT,{NAME} Wins!,{NAME} の勝利!
 STR_GB_SELECT_DISCARD_FMT,Select {N} cards to discard:,捨てるカードを {N} 枚選択:
 STR_GB_SELECT_MORE_DISCARD_FMT,Select {N} more cards to discard:,あと {N} 枚捨てるカードを選択:
@@ -633,6 +635,8 @@ STR_LOG_EFFECT_RAGE_FROM_MILL_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} x{N
 STR_LOG_EFFECT_RAGE_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} +{AMOUNT} (now x{N}),[b]{PLAYER}[/b] {SOURCE_CARD}: {RAGE_ICON} +{AMOUNT} (現在 x{N})
 STR_LOG_EFFECT_DESTROYED_FMT,{DESTROY_ICON} [b]{SOURCE_PLAYER}[/b] {SOURCE_CARD}: [b]{TARGET_PLAYER}[/b] Zone {ZONE} {DESTROYED_CARD},{DESTROY_ICON} [b]{SOURCE_PLAYER}[/b] {SOURCE_CARD}: [b]{TARGET_PLAYER}[/b] エリア{ZONE} {DESTROYED_CARD}
 STR_LOG_EFFECT_RETURNED_TO_HAND_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: returned {RETURNED_CARD} to hand,[b]{PLAYER}[/b] {SOURCE_CARD}: {RETURNED_CARD}を手札に戻す
+STR_LOG_EFFECT_ADDED_TO_HAND_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: added {CARD} to hand,[b]{PLAYER}[/b] {SOURCE_CARD}: {CARD}を手札に加える
+STR_LOG_EFFECT_PLAYED_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: played {CARD} to Zone {ZONE},[b]{PLAYER}[/b] {SOURCE_CARD}: {CARD}をエリア{ZONE}に出現
 STR_LOG_EFFECT_TOP_OF_DECK_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: put {CARD} on top of deck,[b]{PLAYER}[/b] {SOURCE_CARD}: {CARD}をデッキの上に置く
 STR_LOG_EFFECT_SHUFFLE_DISCARD_FMT,[b]{PLAYER}[/b] shuffled discard pile into deck ([url={IDS}]{N} cards[/url]),[b]{PLAYER}[/b] 捨て札をデッキに戻してシャッフル ([url={IDS}]{N}枚[/url])
 STR_LOG_CARD_CRUSHED_FMT,{DESTROY_ICON} [b]{PLAYER}[/b] Zone {ZONE}: {CARD} crushed!,{DESTROY_ICON} [b]{PLAYER}[/b] エリア{ZONE}: {CARD} 撃破!

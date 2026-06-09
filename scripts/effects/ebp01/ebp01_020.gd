@@ -54,5 +54,4 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 		tr("STR_EFF_EBP01_020_SEARCH")
 	)
 	if not selected.is_empty():
-		ctx.owner.hand.append(selected)
-		ctx.owner.hand_changed.emit()
+		ctx.effect_handler.add_card_to_hand(ctx.owner.player_id, selected)

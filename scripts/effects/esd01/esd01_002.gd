@@ -34,5 +34,4 @@ func _search_for_burst_godzilla(ctx: EffectContext) -> void:
 		tr("STR_EFF_ESD01_002_SEARCH")
 	)
 	if not selected.is_empty():
-		player.hand.append(selected)
-		player.hand_changed.emit()
+		ctx.effect_handler.add_card_to_hand(player.player_id, selected)

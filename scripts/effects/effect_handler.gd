@@ -1672,14 +1672,17 @@ func resolve_hand_card_selection(hand_index: int) -> void:
 func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: Array[Dictionary], prompt: String, allow_skip: bool = true) -> Dictionary:
 	## Present a set of revealed cards to the player and let them choose one.
 	## Uses the deck_search UI but does NOT modify the deck or shuffle.
-	## When `allow_skip` is false the player must pick a card unless `options`
-	## is empty (then returns {}). Returns the chosen card, or empty dict if
-	## no options or (allow_skip) the player skipped.
-	if options.is_empty():
+	## When `options` is empty the reveal is still shown (the UI defaults to
+	## "Show All" and skip is forced so the player can dismiss it) — "reveal"
+	## effects must display the cards even with no valid targets. When
+	## `allow_skip` is false the player must pick a card unless `options` is
+	## empty. Returns the chosen card, or empty dict if no options or
+	## (allow_skip) the player skipped.
+	if all_visible.is_empty():
 		return {}
 	if deck_search_requested.get_connections().size() > 0:
 		_highlight_active_effect()
-		deck_search_requested.emit(player_id, options, all_visible, prompt, allow_skip)
+		deck_search_requested.emit(player_id, options, all_visible, prompt, allow_skip or options.is_empty())
 		await _deck_search_resolved
 		_unhighlight_active_effect()
 		# Re-map the resolved selection back to the caller's own dict. In
@@ -1697,7 +1700,7 @@ func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: 
 					return card
 		return _deck_search_result
 	else:
-		return options[0]
+		return options[0] if not options.is_empty() else {}
 
 
 func select_choice(player_id: int, options: Array[String], prompt: String) -> int:
@@ -3105,6 +3108,36 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 	return await play_from_discard(player_id, card_data, zone_idx)
 
 
+func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx: int) -> void:
+	## Play a battle card from the player's hand into a zone via an effect, then
+	## fire enter and on_battle_card_played in the correct order. Handles zone
+	## overload and logs the play attributed to the active effect. Use for
+	## "add it to your hand... you may play it" effects (e.g. EBP04-077) so the
+	## card's hand stop stays observable to sequencing-sensitive triggers —
+	## don't stage the card in the discard pile to reuse play_from_discard.
+	var player := game_state.players[player_id]
+	var card_id: String = card_data.get("id", "")
+	for i in range(player.hand.size() - 1, -1, -1):
+		if player.hand[i].get("id", "") == card_id:
+			player.hand.remove_at(i)
+			break
+	player.hand_changed.emit()
+
+	var overloaded_top: Dictionary = {}
+	if player.zone_has_cards(zone_idx):
+		overloaded_top = player.get_zone_top_card(zone_idx)
+		var destroyed_stack: Array = player.clear_zone(zone_idx)
+		banish_or_discard(player, destroyed_stack)
+		player.discard_changed.emit()
+	player.push_zone_card(zone_idx, card_data)
+	player.zones_changed.emit()
+	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	log_message.emit(GameLog.effect_played_card(player_id, source_id, card_id, zone_idx))
+	await trigger_leave_play(player_id, overloaded_top, zone_idx)
+	await trigger_enter(player_id, card_data, true)
+	await trigger_battle_card_played(player_id, card_data, zone_idx)
+
+
 func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int, stack_on_top: bool = false) -> void:
 	## Place a battle card directly from the deck into a zone, then fire enter and
 	## on_battle_card_played (with played_from_deck=true) in the correct order.
@@ -3446,6 +3479,32 @@ func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
 	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
 	log_message.emit(GameLog.effect_returned_card_to_hand(player_id, source_id, card.get("id", "")))
 	await trigger_card_returned_from_discard(player_id, card)
+
+
+func add_card_to_hand(player_id: int, card: Dictionary) -> void:
+	## Add a card to a player's hand and log it, attributed to whichever effect is
+	## currently active. The card must already be removed from wherever it came from
+	## (deck top reveal, search result, etc.). Use this instead of a raw hand.append
+	## so the add is visible in the game log. For returns from the discard pile use
+	## return_discard_to_hand instead — it also fires on_card_returned_from_discard.
+	var player := game_state.players[player_id]
+	player.hand.append(card)
+	player.hand_changed.emit()
+	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	log_message.emit(GameLog.effect_added_card_to_hand(player_id, source_id, card.get("id", "")))
+
+
+func add_cards_to_hand(player_id: int, cards: Array[Dictionary]) -> void:
+	## Batch variant of add_card_to_hand: append a set of simultaneously-added cards
+	## to a player's hand and log them as a single combined line. No-op when empty.
+	if cards.is_empty():
+		return
+	var player := game_state.players[player_id]
+	for card in cards:
+		player.hand.append(card)
+	player.hand_changed.emit()
+	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	log_message.emit(GameLog.effect_added_cards_to_hand(player_id, source_id, cards))
 
 
 func put_card_on_top_of_deck(player_id: int, card: Dictionary) -> void:

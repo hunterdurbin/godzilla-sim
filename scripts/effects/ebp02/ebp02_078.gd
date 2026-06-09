@@ -39,7 +39,5 @@ func on_enter(ctx: EffectContext) -> void:
 		else:
 			to_discard.append(card)
 
-	if not to_hand.is_empty():
-		ctx.owner.hand.append_array(to_hand)
-		ctx.owner.hand_changed.emit()
+	ctx.effect_handler.add_cards_to_hand(ctx.owner.player_id, to_hand)
 	ctx.effect_handler.discard_cards(ctx.owner.player_id, to_discard)

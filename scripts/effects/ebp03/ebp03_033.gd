@@ -32,5 +32,4 @@ func on_enter(ctx: EffectContext) -> void:
 		tr("STR_EFF_EBP03_033_SEARCH")
 	)
 	if not found.is_empty():
-		ctx.owner.hand.append(found)
-		ctx.owner.hand_changed.emit()
+		ctx.effect_handler.add_card_to_hand(ctx.owner.player_id, found)
