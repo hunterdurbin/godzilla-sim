@@ -116,6 +116,7 @@ var _client_stats_decklists: Array:
 @onready var _session: GameSession = $GameSession
 @onready var _sync: MultiplayerSync = $GameSession/MultiplayerSync
 @onready var _board_sfx: BoardSfx = $BoardSfx
+@onready var _log_chat: LogChat = $LogChat
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -124,10 +125,13 @@ var _client_stats_decklists: Array:
 @onready var log_output: RichTextLabel = $LogPanel/LogVBox/LogOutput
 @onready var chat_input: LineEdit = $LogPanel/LogVBox/ChatRow/ChatInput
 @onready var chat_char_count: Label = $LogPanel/LogVBox/ChatRow/CharCount
-## Log entries are Dictionaries (tokens rendered by GameLog.render) or Strings
-## (legacy/system messages that render as-is). See `_on_log_message`.
-var _log_tokens: Array = []
-var _pending_log_tokens: Array = [] # Buffered for next broadcast
+## Log entries — owned by LogChat (forwarding properties during extraction)
+var _log_tokens: Array:
+	get: return _log_chat.log_tokens
+	set(v): _log_chat.log_tokens = v
+var _pending_log_tokens: Array:
+	get: return _log_chat.pending_log_tokens
+	set(v): _log_chat.pending_log_tokens = v
 # Sound events buffered for client — owned by BoardSfx (forwarding property;
 # MultiplayerSync drains it at broadcast time)
 var _pending_sound_events: PackedStringArray:
@@ -607,7 +611,6 @@ func _ready() -> void:
 		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
 		turn_manager.turn_started.connect(_on_turn_started)
 		turn_manager.game_ended.connect(_on_game_ended)
-		turn_manager.log_message.connect(_on_log_message)
 		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Connect action handler signals for visual feedback
@@ -636,7 +639,6 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
 		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
-		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 
 		# Set up replay recorder
 		_setup_replay_recorder()
@@ -783,8 +785,6 @@ func _ready() -> void:
 	log_output.meta_hover_started.connect(_on_log_meta_hover_started)
 	log_output.meta_hover_ended.connect(_on_log_meta_hover_ended)
 	log_output.meta_clicked.connect(_on_log_meta_clicked)
-	chat_input.text_submitted.connect(_on_chat_submitted)
-	chat_input.text_changed.connect(_on_chat_text_changed)
 
 	# Hide overlays and prompts
 	end_game_panel.visible = false
@@ -3016,22 +3016,7 @@ func _on_state_changed() -> void:
 
 
 func _on_log_message(message) -> void:
-	## Accepts a GameLog token Dictionary or a raw String (pre-formatted
-	## system messages like reconnect status). Tokens render in the local
-	## locale via GameLog.render; strings append as-is.
-	_log_tokens.append(message)
-	var rendered := _render_log_entry(message)
-	if log_output:
-		log_output.append_text(rendered + "\n")
-		log_output.scroll_to_line(log_output.get_line_count() - 1)
-	if is_multiplayer_game and NetworkManager.is_host():
-		_pending_log_tokens.append(message)
-
-
-func _render_log_entry(entry) -> String:
-	if typeof(entry) == TYPE_DICTIONARY:
-		return GameLog.render(entry)
-	return _resolve_translated_text(str(entry))
+	_log_chat.append_message(message)
 
 
 ## Defensive client-side fallback: log lines and prompts ship from the host
@@ -3051,33 +3036,8 @@ func _resolve_translated_text(text: String) -> String:
 	return text.replace(stripped, translated)
 
 
-func _on_chat_submitted(text: String) -> void:
-	chat_input.clear()
-	chat_input.release_focus()
-	get_tree().create_timer(0.0).timeout.connect(chat_input.grab_focus)
-	chat_char_count.text = str(chat_input.max_length)
-	_dispatch_chat(text)
-
-
-# Filter, log, and broadcast a chat line. Shared by the desktop field and the
-# mobile floating chat bar.
 func _dispatch_chat(text: String) -> void:
-	var trimmed := text.strip_edges()
-	if trimmed.is_empty():
-		return
-	var filtered := ChatFilter.filter(trimmed)
-	var token := {"type": "chat", "sender_id": local_player_id, "text": filtered}
-	_log_tokens.append(token)
-	if log_output:
-		log_output.append_text(GameLog.render(token) + "\n")
-		log_output.scroll_to_line(log_output.get_line_count() - 1)
-	if is_multiplayer_game:
-		RpcLogger.log_send("receive_chat", 4 + filtered.length())
-		_sync._rpc_receive_chat.rpc(local_player_id, filtered)
-
-
-func _on_chat_text_changed(new_text: String) -> void:
-	chat_char_count.text = str(chat_input.max_length - new_text.length())
+	_log_chat.dispatch_chat(text)
 
 
 func _on_discard_reshuffled(moved_cards: Array, player_id: int) -> void:
@@ -3580,7 +3540,6 @@ func _execute_rematch() -> void:
 		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
 		turn_manager.turn_started.connect(_on_turn_started)
 		turn_manager.game_ended.connect(_on_game_ended)
-		turn_manager.log_message.connect(_on_log_message)
 		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Reconnect action handler signals
@@ -3609,7 +3568,6 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
 		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
-		turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 
 		# Reconnect bot player for Solo v Bot mode
 		if is_bot_game:
@@ -6901,10 +6859,7 @@ func _flush_broadcast() -> void:
 ## Append a broadcast log entry (token Dictionary or legacy String) to the
 ## local log view.
 func _append_log_entry(entry) -> void:
-	_log_tokens.append(entry)
-	if log_output:
-		log_output.append_text(_render_log_entry(entry) + "\n")
-		log_output.scroll_to_line(log_output.get_line_count() - 1)
+	_log_chat.append_remote_entry(entry)
 
 
 ## Apply monster color gradients from the client-side state cache (first
@@ -6955,25 +6910,12 @@ func _rpc_receive_action_context(actions_json: String, playable_json: String) ->
 
 ## Host -> Client: log message (legacy raw-string path; kept for compatibility)
 func _rpc_receive_log(text: String) -> void:
-	RpcLogger.log_receive("receive_log", text.length())
-	_log_tokens.append(text)
-	if log_output:
-		log_output.append_text(text + "\n")
-		log_output.scroll_to_line(log_output.get_line_count() - 1)
+	_log_chat.receive_log(text)
 
 
 ## Any peer -> Any peer: chat message
 func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
-	RpcLogger.log_receive("receive_chat", 4 + text.length())
-	if sender_player_id < 0 or sender_player_id > 1:
-		return
-	var filtered := ChatFilter.filter(text)
-	var token := {"type": "chat", "sender_id": sender_player_id, "text": filtered}
-	_log_tokens.append(token)
-	if log_output:
-		log_output.append_text(GameLog.render(token) + "\n")
-		log_output.scroll_to_line(log_output.get_line_count() - 1)
-	_notify_mobile_log_chat()
+	_log_chat.receive_chat(sender_player_id, text)
 
 
 ## Host -> Client: deck search request (player must choose a card)
