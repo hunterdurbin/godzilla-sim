@@ -118,6 +118,7 @@ var _client_stats_decklists: Array:
 @onready var _board_sfx: BoardSfx = $BoardSfx
 @onready var _log_chat: LogChat = $LogChat
 @onready var _tracker: TurnTrackerModule = $TurnTrackerModule
+@onready var _first_player: FirstPlayerUI = $FirstPlayerUI
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -327,9 +328,6 @@ var _strategy_target_board_pid: int = -1
 var _strategy_target_valid_indices: Array[int] = []
 
 # First-player choice state
-var _first_player_choosing: bool = false
-var _first_player_chooser_id: int = -1 # Player who gets to decide
-var _first_player_result: int = -1 # Resolved first player id (-1 = pending)
 var _first_player_id: int = 0 # Which player went first (for * indicator)
 
 # Rematch state
@@ -850,21 +848,17 @@ func _start_game() -> void:
 
 	if is_bot_game:
 		# Solo v Bot: let the human choose who goes first
-		_first_player_chooser_id = 0
-		_first_player_result = -1
-		_first_player_choosing = true
 		SfxManager.play("game_start")
-		_show_first_player_choice()
+		_first_player.start_choice(0)
 
-		while _first_player_result < 0:
+		while _first_player.result < 0:
 			await Engine.get_main_loop().process_frame
 
-		_first_player_choosing = false
-		_cleanup_first_player_ui()
-		_first_player_id = _first_player_result
+		_first_player.finish()
+		_first_player_id = _first_player.result
 		_apply_gradients_and_sync()
 		SfxManager.play("game_setup")
-		turn_manager.start_game(_first_player_result)
+		turn_manager.start_game(_first_player.result)
 		return
 
 	if not is_multiplayer_game:
@@ -876,39 +870,37 @@ func _start_game() -> void:
 		return
 
 	# Multiplayer: randomly select which player gets to choose who goes first
-	_first_player_chooser_id = randi() % 2
-	_first_player_result = -1
-	_first_player_choosing = true
+	var chooser_id := randi() % 2
 
-	_on_log_message(GameLog.coin_flip_won(_first_player_chooser_id))
+	_on_log_message(GameLog.coin_flip_won(chooser_id))
 
-	if _first_player_chooser_id != local_player_id:
+	if chooser_id != local_player_id:
 		# The chooser is the remote client — send RPC, show waiting state locally
-		_show_first_player_waiting()
+		_first_player.start_waiting()
+		_first_player.chooser_id = chooser_id
 		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == _first_player_chooser_id:
+			if NetworkManager.peer_player_map[peer_id] == chooser_id:
 				RpcLogger.log_send("first_player_choice_requested", 0)
 				_sync._rpc_first_player_choice_requested.rpc_id(peer_id)
 	else:
 		# Host is the chooser — tell the client to wait
-		_show_first_player_choice()
+		_first_player.start_choice(chooser_id)
 		RpcLogger.log_send("first_player_waiting", 0)
 		_sync._rpc_first_player_waiting.rpc()
 
 	# Wait for the choice to resolve
-	while _first_player_result < 0:
+	while _first_player.result < 0:
 		await Engine.get_main_loop().process_frame
 
-	_first_player_choosing = false
-	_cleanup_first_player_ui()
+	_first_player.finish()
 	# Tell the client to restore its action panel (waiting client never gets cleanup)
 	RpcLogger.log_send("cleanup_first_player", 0)
 	_sync._rpc_cleanup_first_player.rpc()
 	_apply_gradients_and_sync()
-	_first_player_id = _first_player_result
-	_on_log_message(GameLog.first_player_chose(_first_player_result, true))
+	_first_player_id = _first_player.result
+	_on_log_message(GameLog.first_player_chose(_first_player.result, true))
 	SfxManager.play("game_start")
-	turn_manager.start_game(_first_player_result)
+	turn_manager.start_game(_first_player.result)
 
 
 func _setup_replay_recorder() -> void:
@@ -1003,135 +995,21 @@ func _apply_gradients_and_sync() -> void:
 	_sync_boards()
 
 
-func _show_first_player_waiting() -> void:
-	_disable_all_buttons()
-	btn_concede.disabled = true
-	_set_action_buttons_visible(false)
-	card_select_prompt.text = tr("STR_GB_COIN_FLIP_WAITING")
-	action_prompt_panel.visible = true
-	_show_local_starter_monster()
-
-
-## Render only the local player's rank 1 monster into its starting zone so the
-## player has visual context during the first/second choice. Does NOT sync hands,
-## decks, or any other game state — those become visible once the game starts.
-func _show_local_starter_monster() -> void:
-	var monster_deck: Array = DecklistManager.get_player_monster_deck(local_player_id)
-	var rank1: Dictionary = {}
-	for m in monster_deck:
-		if m.get("rank", 0) == 1:
-			rank1 = m
-			break
-	if rank1.is_empty():
-		return
-	var local_board: Control = player1_board if local_player_id == 0 else player2_board
-	if not local_board:
-		return
-	if local_board.has_method("apply_monster_gradient"):
-		local_board.apply_monster_gradient(rank1)
-	var temp_state := PlayerState.new(local_player_id)
-	temp_state.current_monster = rank1
-	temp_state.monster_zone = int(rank1.get("start_zone", 1))
-	if local_board.has_method("_sync_monster"):
-		local_board._sync_monster(temp_state, 0, 0)
-
-
-func _cleanup_first_player_ui() -> void:
-	var container := action_panel.get_node_or_null("FirstPlayerContainer")
-	if not container:
-		container = get_node_or_null("FirstPlayerContainer")
-	if container:
-		container.queue_free()
-	action_prompt_panel.visible = false
-	_set_action_buttons_visible(true)
-	btn_concede.disabled = false
-
-
-func _show_first_player_choice() -> void:
-	_disable_all_buttons()
-	btn_concede.disabled = true
-	_set_action_buttons_visible(false)
-	card_select_prompt.text = tr("STR_GB_COIN_FLIP_WON")
-	action_prompt_panel.visible = true
-	_show_local_starter_monster()
-
-	var container := VBoxContainer.new()
-	container.name = "FirstPlayerContainer"
-	if _is_mobile_layout:
-		container.anchor_left = 0.3
-		container.anchor_right = 0.7
-		container.anchor_top = 1.0
-		container.anchor_bottom = 1.0
-		container.offset_top = -90.0
-		container.offset_bottom = -4.0
-		container.z_index = 55
-		add_child(container)
-	else:
-		action_panel.add_child(container)
-
-	var btn_first := Button.new()
-	btn_first.text = tr("STR_GB_GO_FIRST")
-	btn_first.custom_minimum_size.x = 325
-	btn_first.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
-	btn_first.pressed.connect(_on_first_player_chosen.bind(true))
-	container.add_child(btn_first)
-
-	var btn_second := Button.new()
-	btn_second.text = tr("STR_GB_GO_SECOND")
-	btn_second.custom_minimum_size.x = 325
-	btn_second.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
-	btn_second.pressed.connect(_on_first_player_chosen.bind(false))
-	container.add_child(btn_second)
-
-
-func _on_first_player_chosen(go_first: bool) -> void:
-	if not _first_player_choosing:
-		return
-	_cleanup_first_player_ui()
-
-	var chosen_id: int = _first_player_chooser_id if go_first else (1 - _first_player_chooser_id)
-
-	if is_multiplayer_game and not NetworkManager.is_host():
-		RpcLogger.log_send("first_player_choice_resolved", 4)
-		_sync._rpc_first_player_choice_resolved.rpc_id(NetworkManager.host_peer_id, chosen_id)
-	else:
-		_first_player_result = chosen_id
-
-
-## Host -> Client: tell the client to wait while the host chooses
+# First-player RPC shims — bodies live on FirstPlayerUI
 func _rpc_first_player_waiting() -> void:
-	RpcLogger.log_receive("first_player_waiting", 0)
-	if NetworkManager.is_host():
-		return
-	_first_player_choosing = true
-	_show_first_player_waiting()
+	_first_player.rpc_waiting()
 
 
-## Host -> Client: ask the client to choose first/second
 func _rpc_first_player_choice_requested() -> void:
-	RpcLogger.log_receive("first_player_choice_requested", 0)
-	if NetworkManager.is_host():
-		return
-	_first_player_choosing = true
-	_first_player_chooser_id = local_player_id
-	_show_first_player_choice()
+	_first_player.rpc_choice_requested()
 
 
-## Client -> Host: resolve the first-player choice
 func _rpc_first_player_choice_resolved(chosen_id: int) -> void:
-	RpcLogger.log_receive("first_player_choice_resolved", 4)
-	if not NetworkManager.is_host():
-		return
-	_first_player_result = chosen_id
+	_first_player.rpc_choice_resolved(chosen_id)
 
 
-## Host -> Client: tell waiting client to restore action panel after coin flip
 func _rpc_cleanup_first_player() -> void:
-	RpcLogger.log_receive("cleanup_first_player", 0)
-	if NetworkManager.is_host():
-		return
-	_first_player_choosing = false
-	_cleanup_first_player_ui()
+	_first_player.rpc_cleanup()
 
 
 func _arrange_for_local_player() -> void:
@@ -3246,9 +3124,9 @@ func _execute_rematch() -> void:
 	_strategy_target_valid_indices.clear()
 	_choice_selecting = false
 	_choice_player_id = -1
-	_first_player_choosing = false
-	_first_player_chooser_id = -1
-	_first_player_result = -1
+	_first_player.choosing = false
+	_first_player.chooser_id = -1
+	_first_player.result = -1
 	_first_player_id = 0
 	waiting_for_card_select = false
 	waiting_for_zone_select = false
@@ -3271,7 +3149,7 @@ func _execute_rematch() -> void:
 	_stats_uploaded = false
 
 	# 5. Restore action panel and hide overlays
-	_cleanup_first_player_ui()
+	_first_player.finish()
 	_cleanup_choice_selection()
 	_set_action_buttons_visible(true)
 	action_prompt_panel.visible = false
