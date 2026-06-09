@@ -7,6 +7,7 @@
 [ext_resource type="Script" path="res://scripts/session/multiplayer_sync.gd" id="5_ms"]
 [ext_resource type="Script" path="res://scenes/board/modules/board_sfx.gd" id="6_sfx"]
 [ext_resource type="Script" path="res://scenes/board/modules/log_chat.gd" id="7_log"]
+[ext_resource type="Script" path="res://scenes/board/modules/turn_tracker.gd" id="8_tt"]
 
 [node name="GameBoard" type="Control" unique_id=1722697301]
 layout_mode = 3
@@ -28,6 +29,9 @@ script = ExtResource("6_sfx")
 
 [node name="LogChat" type="Node" parent="."]
 script = ExtResource("7_log")
+
+[node name="TurnTrackerModule" type="Node" parent="."]
+script = ExtResource("8_tt")
 
 [node name="Background" type="ColorRect" parent="." unique_id=1737832110]
 layout_mode = 1

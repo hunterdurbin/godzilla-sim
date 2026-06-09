@@ -117,6 +117,7 @@ var _client_stats_decklists: Array:
 @onready var _sync: MultiplayerSync = $GameSession/MultiplayerSync
 @onready var _board_sfx: BoardSfx = $BoardSfx
 @onready var _log_chat: LogChat = $LogChat
+@onready var _tracker: TurnTrackerModule = $TurnTrackerModule
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -269,54 +270,10 @@ const PINCH_MAX_SCALE: float = 3.0
 const ZOOM_DRAG_DEADZONE: float = 20.0
 
 # Turn tracker: main phase labels [player_id][phase_index]
-@onready var _turn_tracker_phases: Array = [
-	[ # Player 1
-		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1Start,
-		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1Main,
-		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1Counter,
-		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1End,
-	],
-	[ # Player 2
-		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2Start,
-		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2Main,
-		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2Counter,
-		$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2End,
-	],
-]
-# Turn tracker: sub-phase labels [player_id][phase_index] -> Array of Labels
-@onready var _turn_tracker_subs: Array = [
-	[ # Player 1
-		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1StartEffects,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1StartDraw,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1StartDiscard,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1StartReset],
-		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1MainEffects,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1MainActions],
-		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1CounterEffects,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1CounterCheck],
-		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1EndEffects,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1EndAdvance,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1EndRefill],
-	],
-	[ # Player 2
-		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2StartEffects,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2StartDraw,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2StartDiscard,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2StartReset],
-		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2MainEffects,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2MainActions],
-		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2CounterEffects,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2CounterCheck],
-		[$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2EndEffects,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2EndAdvance,
-		 $VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2EndRefill],
-	],
-]
-@onready var _turn_tracker_headers: Array = [
-	$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P1Header,
-	$VBoxContainer/BoardArea/RightSpacer/TurnTracker/P2Header,
-]
-@onready var _turn_label: Label = $VBoxContainer/BoardArea/RightSpacer/TurnLabelMargin/TurnLabel
+# Turn tracker labels — owned by TurnTrackerModule (forwarding property for
+# the header name updates that remain on the board during extraction)
+var _turn_tracker_headers: Array:
+	get: return _tracker.headers
 
 # Card hover preview
 var _preview_container: Control
@@ -430,14 +387,13 @@ var _snap_preview_slot = null # Slot or Control currently being snap-previewed
 var _highlighted_card: Control = null # Card with selection highlight border
 
 # Turn tracker sub-phase index
-var _current_sub_phase: int = 0
+# Owned by TurnTrackerModule (forwarding property — MultiplayerSync reads it
+# while serializing, several board paths still write it)
+var _current_sub_phase: int:
+	get: return _tracker.current_sub_phase
+	set(v): _tracker.current_sub_phase = v
 
 # Turn tracker transition queue (delays between phase changes)
-const PHASE_TRANSITION_DELAY: float = 0.0
-var _tracker_queue: Array[Dictionary] = []
-var _tracker_draining: bool = false
-var _tracker_last_phase: int = -1
-var _tracker_last_player: int = -1
 
 # Hand expand toggle
 var _hand_expanded: bool = false
@@ -578,7 +534,7 @@ func _ready() -> void:
 	_arrange_for_local_player()
 
 	# Make turn tracker labels clickable to toggle auto settings
-	_setup_settings_toggles()
+	_tracker.setup_settings_toggles()
 
 	if not is_multiplayer_game or NetworkManager.is_host():
 		# Seed RNG: use saved seed if loading, otherwise bot_seed for bot games
@@ -871,101 +827,10 @@ func _ready() -> void:
 		_disable_all_buttons()
 
 
-# Per-player auto settings (initialized from GameSettings, toggled independently)
-var _player_settings: Array[Dictionary] = []
-var _setting_labels: Dictionary = {} # setting_name -> Array[Label]
-
-const _SETTING_KEYS: Array[String] = [
-	"auto_draw", "auto_phase_advance", "auto_discard_strategies",
-	"auto_reset_rage", "auto_counter_check", "auto_advance",
-	"confirm_main_phase_pass",
-]
-
-
-func _setup_settings_toggles() -> void:
-	# Initialize per-player settings from GameSettings defaults
-	for pid in range(2):
-		var d := {}
-		for key in _SETTING_KEYS:
-			d[key] = GameSettings.get(key)
-		_player_settings.append(d)
-
-	# Sub-phase label → setting mappings: [phase_idx, sub_idx, setting_name]
-	var mappings: Array[Array] = [
-		[0, 1, "auto_draw"], # Start > Draw Cards
-		[0, 2, "auto_discard_strategies"], # Start > Discard Strategies
-		[0, 3, "auto_reset_rage"], # Start > Reset Rage
-		[1, 1, "confirm_main_phase_pass"], # Main > Player Actions
-		[2, 1, "auto_counter_check"], # Counter > Counter Check
-		[3, 1, "auto_advance"], # End > Advance
-		[3, 2, "auto_draw"], # End > Refill Hand
-	]
-
-	for pid in range(2):
-		# In multiplayer, only make the local player's labels clickable
-		if is_multiplayer_game and pid != local_player_id:
-			continue
-		for m in mappings:
-			_wire_setting_label(_turn_tracker_subs[pid][m[0]][m[1]], m[2], pid)
-		for i in range(4):
-			_wire_setting_label(_turn_tracker_phases[pid][i], "auto_phase_advance", pid)
-
-	_update_all_setting_indicators()
-
-
-func _wire_setting_label(label: Label, setting: String, pid: int) -> void:
-	label.mouse_filter = Control.MOUSE_FILTER_STOP
-	label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	label.set_meta("setting", setting)
-	label.set_meta("player_id", pid)
-	label.set_meta("base_text", label.text)
-	label.gui_input.connect(_on_setting_label_input.bind(label))
-	if not _setting_labels.has(setting):
-		_setting_labels[setting] = []
-	_setting_labels[setting].append(label)
-
-
-func _on_setting_label_input(event: InputEvent, label: Label) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var setting: String = label.get_meta("setting")
-		var pid: int = label.get_meta("player_id")
-		_player_settings[pid][setting] = not _player_settings[pid][setting]
-		_update_all_setting_indicators()
-		# Re-apply turn tracker so phase label indicators refresh immediately
-		if _tracker_last_phase >= 0:
-			_apply_turn_tracker(_tracker_last_player, _tracker_last_phase as CardEnums.GamePhase, _current_sub_phase)
-
-
-func _is_setting_auto(setting: String, pid: int) -> bool:
-	# For most settings, true = auto. For confirm_main_phase_pass, true = manual.
-	if _player_settings.is_empty():
-		return setting != "confirm_main_phase_pass"
-	var value: bool = _player_settings[pid].get(setting, false)
-	if setting == "confirm_main_phase_pass":
-		return not value
-	return value
-
-
-func _update_all_setting_indicators() -> void:
-	for setting in _setting_labels:
-		for label in _setting_labels[setting]:
-			var pid: int = label.get_meta("player_id")
-			if label in _turn_tracker_phases[0] or label in _turn_tracker_phases[1]:
-				continue # Phase labels are updated in _apply_turn_tracker
-			var base: String = label.get_meta("base_text")
-			# `base` is captured from .tscn (raw STR_* key). The auto branch can
-			# assign it back as-is and let Godot auto-translate at render time.
-			# The manual branch composes a new string ("● " + …) that's not a
-			# known translation key, so we must resolve it ourselves first.
-			if not _is_setting_auto(setting, pid):
-				var resolved := tr(base)
-				var stripped := resolved.strip_edges(true, false)
-				var indent_len := resolved.length() - stripped.length()
-				label.text = resolved.left(maxi(indent_len - 2, 0)) + "● " + stripped
-				label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
-			else:
-				label.text = base
-				label.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_INHERIT
+# Per-player auto settings — owned by TurnTrackerModule (forwarding property
+# for the confirmation-flow readers)
+var _player_settings: Array[Dictionary]:
+	get: return _tracker.player_settings
 
 
 func _start_game() -> void:
@@ -2791,74 +2656,15 @@ func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> vo
 		_sync._rpc_submit_action.rpc_id(NetworkManager.host_peer_id, int(action), params_json)
 
 
+## Tracker shim — display logic lives on TurnTrackerModule (sync and a few
+## board paths still call this).
 func _update_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: int = 0) -> void:
-	var phase_int := int(phase)
-	# Collapse: if last queued entry has same player+phase, just update its sub_phase
-	if _tracker_queue.size() > 0:
-		var last := _tracker_queue[_tracker_queue.size() - 1]
-		if last.player_id == player_id and last.phase == phase_int:
-			last.sub_phase = sub_phase
-			return
-	_tracker_queue.append({"player_id": player_id, "phase": phase_int, "sub_phase": sub_phase})
-	if not _tracker_draining:
-		_drain_tracker_queue()
-
-
-func _drain_tracker_queue() -> void:
-	_tracker_draining = true
-	while _tracker_queue.size() > 0:
-		var entry := _tracker_queue[0]
-		_tracker_queue.remove_at(0)
-		var phase_changed: bool = _tracker_last_phase >= 0 and (entry.phase != _tracker_last_phase or entry.player_id != _tracker_last_player)
-		_tracker_last_phase = entry.phase
-		_tracker_last_player = entry.player_id
-		if phase_changed:
-			await get_tree().create_timer(PHASE_TRANSITION_DELAY).timeout
-		_apply_turn_tracker(entry.player_id, entry.phase as CardEnums.GamePhase, entry.sub_phase)
-	_tracker_draining = false
-
-
-func _apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: int = 0) -> void:
-	var active_color := Color(1.0, 0.9, 0.3, 1.0) # Gold for active phase/sub
-	var inactive_color := Color(0.4, 0.4, 0.5, 1.0) # Dim for inactive phases
-	var inactive_sub_color := Color(0.35, 0.35, 0.4, 1.0) # Dimmer for inactive sub-phases
-	var active_header_color := Color(1.0, 1.0, 1.0, 1.0) # White for active player
-	var inactive_header_color := Color(0.6, 0.6, 0.7, 1.0) # Dim for inactive player
-	# Update turn number label
-	var gs: GameState = turn_manager.game_state if turn_manager else null
-	var turn_num: int = gs.turn_number if gs else _client_turn_number
-	_turn_label.text = tr("STR_GB_TURN_FMT").replace("{N}", str(turn_num))
-	var phase_idx := int(phase)
-	for pid in range(2):
-		var first_marker := "* " if pid == _first_player_id else "  "
-		_turn_tracker_headers[pid].text = first_marker + GameLog.player_name(pid)
-		_turn_tracker_headers[pid].add_theme_color_override(
-			"font_color", active_header_color if pid == player_id else inactive_header_color)
-		for i in range(4):
-			var is_active_phase := pid == player_id and i == phase_idx
-			var label: Label = _turn_tracker_phases[pid][i]
-			label.add_theme_color_override("font_color", active_color if is_active_phase else inactive_color)
-			var show_stop := (not is_multiplayer_game or pid == local_player_id) and not _is_setting_auto("auto_phase_advance", pid)
-			var auto_indicator := "● " if show_stop else "  "
-			label.text = ("► " if is_active_phase else "  ") + auto_indicator + CardEnums.phase_to_string(i as CardEnums.GamePhase)
-			var subs: Array = _turn_tracker_subs[pid][i]
-			for si in range(subs.size()):
-				var sub_label: Label = subs[si]
-				var is_active_sub := is_active_phase and si == sub_phase
-				sub_label.add_theme_color_override("font_color", active_color if is_active_sub else inactive_sub_color)
-
-	# Update compact mobile phase indicator
-	if _mobile_phase_label:
-		var phase_name := CardEnums.phase_to_string(phase)
-		var pname := GameLog.player_name(player_id)
-		_mobile_phase_label.text = tr("STR_GB_TURN_HEADER_FMT").replace("{N}", str(turn_num)).replace("{PLAYER}", pname).replace("{PHASE}", phase_name)
+	_tracker.update_turn_tracker(player_id, phase, sub_phase)
 
 
 # --- Signal handlers from TurnManager (host/solo only) ---
 
-func _on_phase_started(phase: CardEnums.GamePhase) -> void:
-	_current_sub_phase = 0
-	_update_turn_tracker(turn_manager.game_state.current_player_id, phase, _current_sub_phase)
+func _on_phase_started(_phase: CardEnums.GamePhase) -> void:
 	_sync_boards()
 	_broadcast_state()
 
@@ -2868,17 +2674,14 @@ func _on_phase_ended(_phase: CardEnums.GamePhase) -> void:
 	_broadcast_state()
 
 
-func _on_sub_phase_changed(sub_index: int) -> void:
-	_current_sub_phase = sub_index
-	_update_turn_tracker(
-		turn_manager.game_state.current_player_id,
-		turn_manager.game_state.current_phase,
-		sub_index)
+func _on_sub_phase_changed(_sub_index: int) -> void:
+	# TurnTrackerModule updates current_sub_phase + display via its own
+	# subscription (connected before this handler, so the broadcast below
+	# serializes the new sub-phase).
 	_broadcast_state()
 
 
 func _on_turn_started(player_id: int) -> void:
-	_current_sub_phase = 0
 	_sync_boards()
 	_update_hand_visibility(player_id)
 	# Don't broadcast here — current_phase is still END from the previous turn.
@@ -3459,11 +3262,6 @@ func _execute_rematch() -> void:
 	_drag_can_invade = false
 	_hand_expanded = false
 	_opponent_hand_expanded = false
-	_current_sub_phase = 0
-	_tracker_queue.clear()
-	_tracker_draining = false
-	_tracker_last_phase = -1
-	_tracker_last_player = -1
 	_sync.reset_for_rematch()
 	_client_gradients_applied = false
 	pending_action = CardEnums.ActionType.PASS
@@ -3506,9 +3304,7 @@ func _execute_rematch() -> void:
 		log_output.clear()
 
 	# 8. Reset turn tracker display
-	_tracker_queue.clear()
-	_tracker_draining = false
-	_apply_turn_tracker(0, CardEnums.GamePhase.START, 0)
+	_tracker.reset_for_rematch()
 
 	# 9. Recreate TurnManager (host/solo only)
 	if not is_multiplayer_game or NetworkManager.is_host():
