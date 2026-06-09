@@ -4,17 +4,26 @@ extends Control
 ## In multiplayer, the host runs TurnManager and broadcasts state to the client.
 ## The client receives state via RPC and sends actions back to the host.
 
-var turn_manager: TurnManager # Only exists on host/solo
+## Forwarding property into GameSession (session owns it; only exists on
+## host/solo). Kept under the old name during extraction so existing code
+## keeps working — reads/writes go through _session.
+var turn_manager: TurnManager:
+	get: return _session.turn_manager
+	set(v): _session.turn_manager = v
 const CardScript := preload("res://scenes/cards/card.gd")
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
-# Replay recording
-var replay_recorder: ReplayRecorder
+# Replay recording (owned by GameSession; forwarding property)
+var replay_recorder: ReplayRecorder:
+	get: return _session.replay_recorder
+	set(v): _session.replay_recorder = v
 var _save_game_button: Button
 var _loaded_from_save: bool = false
 
-# Bot state
-var bot_player: BotPlayer
+# Bot state (bot_player owned by GameSession; forwarding property)
+var bot_player: BotPlayer:
+	get: return _session.bot_player
+	set(v): _session.bot_player = v
 var is_bot_game: bool = false
 var _bot_seed_was_explicit: bool = false
 var _bot_cards_visible: bool = false
@@ -40,27 +49,66 @@ var _opponent_found_handled: bool = false
 var is_multiplayer_game: bool = false
 var local_player_id: int = 0 # 0 for host/solo, 1 for client
 
-# Client-side state (populated from host RPCs)
-var _client_players: Array[PlayerState] = []
-var _client_current_player_id: int = 0
-var _client_turn_number: int = 0
-var _client_phase: CardEnums.GamePhase = CardEnums.GamePhase.START
-var _client_playable: Dictionary = {} # Playable card/zone indices from host
-var _client_cp_modifiers: Array = [0, 0]
-var _client_threat_modifiers: Array = [0, 0]
-var _client_zone_cp_mods: Array = [[], []]
-var _client_strategy_cp_mods: Array = [[], []]
-var _client_zone_rank_mods: Array = [[], []]
-var _client_hand_rank_mods: Array = [[], []]
-var _client_monster_cp_mods: Array = [0, 0]
-var _client_gradients_applied: bool = false
+# Client-side state (populated from host RPCs). Owned by GameSession;
+# forwarding properties under the old names during extraction.
+var _client_players: Array[PlayerState]:
+	get: return _session.client_players
+	set(v): _session.client_players = v
+var _client_current_player_id: int:
+	get: return _session.client_current_player_id
+	set(v): _session.client_current_player_id = v
+var _client_turn_number: int:
+	get: return _session.client_turn_number
+	set(v): _session.client_turn_number = v
+var _client_phase: CardEnums.GamePhase:
+	get: return _session.client_phase
+	set(v): _session.client_phase = v
+var _client_playable: Dictionary: # Playable card/zone indices from host
+	get: return _session.client_playable
+	set(v): _session.client_playable = v
+var _client_cp_modifiers: Array:
+	get: return _session.client_cp_modifiers
+	set(v): _session.client_cp_modifiers = v
+var _client_threat_modifiers: Array:
+	get: return _session.client_threat_modifiers
+	set(v): _session.client_threat_modifiers = v
+var _client_zone_cp_mods: Array:
+	get: return _session.client_zone_cp_mods
+	set(v): _session.client_zone_cp_mods = v
+var _client_strategy_cp_mods: Array:
+	get: return _session.client_strategy_cp_mods
+	set(v): _session.client_strategy_cp_mods = v
+var _client_zone_rank_mods: Array:
+	get: return _session.client_zone_rank_mods
+	set(v): _session.client_zone_rank_mods = v
+var _client_hand_rank_mods: Array:
+	get: return _session.client_hand_rank_mods
+	set(v): _session.client_hand_rank_mods = v
+var _client_monster_cp_mods: Array:
+	get: return _session.client_monster_cp_mods
+	set(v): _session.client_monster_cp_mods = v
+var _client_gradients_applied: bool:
+	get: return _session.client_gradients_applied
+	set(v): _session.client_gradients_applied = v
 # Client-side stats snapshot (synced from host for disconnect reporting)
-var _client_stats_elapsed_ms: Array[int] = [0, 0]
-var _client_stats_game_start_ms: int = 0
-var _client_stats_turn_start_ms: int = 0
-var _client_stats_opponent_hand: Array = []
-var _client_stats_deck_names: Array[String] = ["", ""]
-var _client_stats_decklists: Array = [null, null]
+var _client_stats_elapsed_ms: Array[int]:
+	get: return _session.client_stats_elapsed_ms
+	set(v): _session.client_stats_elapsed_ms = v
+var _client_stats_game_start_ms: int:
+	get: return _session.client_stats_game_start_ms
+	set(v): _session.client_stats_game_start_ms = v
+var _client_stats_turn_start_ms: int:
+	get: return _session.client_stats_turn_start_ms
+	set(v): _session.client_stats_turn_start_ms = v
+var _client_stats_opponent_hand: Array:
+	get: return _session.client_stats_opponent_hand
+	set(v): _session.client_stats_opponent_hand = v
+var _client_stats_deck_names: Array[String]:
+	get: return _session.client_stats_deck_names
+	set(v): _session.client_stats_deck_names = v
+var _client_stats_decklists: Array:
+	get: return _session.client_stats_decklists
+	set(v): _session.client_stats_decklists = v
 
 # Session layer. _sync owns the @rpc contract at a stable NodePath
 # (GameBoard/GameSession/MultiplayerSync) so RPCs route identically on host
@@ -546,19 +594,13 @@ func _ready() -> void:
 			seed(loaded_seed)
 			print("[GameBoard._ready] Seeded RNG with %d (non-bot mode)" % loaded_seed)
 
-		# Host / solo: create and run TurnManager
-		turn_manager = TurnManager.new()
-		if not GameSerializer.pending_load.is_empty():
-			turn_manager.setup_from_save(GameSerializer.pending_load)
+		# Host / solo: create and run TurnManager (construction owned by session)
+		var pending_load: Dictionary = GameSerializer.pending_load
+		if not pending_load.is_empty():
 			_loaded_from_save = true
-			_first_player_id = GameSerializer.pending_load.get("first_player_id", 0)
+			_first_player_id = pending_load.get("first_player_id", 0)
 			GameSerializer.pending_load = {}
-		else:
-			turn_manager.setup(CardData)
-
-		# Set player names from settings
-		turn_manager.game_state.player_names[local_player_id] = GameSettings.player_name
-		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+		_session.start_host_session(CardData, local_player_id, pending_load)
 		for i in range(2):
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
@@ -1016,23 +1058,7 @@ func _start_game() -> void:
 
 
 func _setup_replay_recorder() -> void:
-	replay_recorder = ReplayRecorder.new()
-	var seed_val: int = NetworkManager.bot_seed if NetworkManager.bot_seed >= 0 else 0
-	var mode_str: String
-	match NetworkManager.mode:
-		NetworkManager.Mode.SOLO: mode_str = "solo"
-		NetworkManager.Mode.SOLO_BOT: mode_str = "solo_bot"
-		NetworkManager.Mode.HOST, NetworkManager.Mode.CLIENT: mode_str = "lan"
-		NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT: mode_str = "online"
-		_: mode_str = "unknown"
-	var diff_str: String = BotConfig.Difficulty.keys()[NetworkManager.bot_difficulty] if is_bot_game else ""
-	var d_names: Array[String] = [
-		DecklistManager.get_player_deck_name(0),
-		DecklistManager.get_player_deck_name(1),
-	]
-	replay_recorder.start(turn_manager.game_state, seed_val, mode_str, diff_str, d_names, get_tree())
-	turn_manager.log_message.connect(replay_recorder.on_log_message)
-	turn_manager.sub_phase_changed.connect(replay_recorder.on_phase_boundary)
+	_session.setup_replay_recorder(is_bot_game)
 
 
 func _apply_bot_seed() -> void:
@@ -1050,36 +1076,7 @@ func _apply_bot_seed() -> void:
 
 
 func _setup_bot() -> void:
-	bot_player = BotPlayer.new()
-	bot_player.config = NetworkManager.bot_config
-	bot_player.bot_player_id = 1
-	bot_player.game_state = turn_manager.game_state
-	bot_player.rules_engine = turn_manager.rules_engine
-	bot_player.turn_manager = turn_manager
-	bot_player.action_handler = turn_manager.action_handler
-	bot_player.effect_handler = turn_manager.action_handler.effect_handler
-	bot_player.scene_tree = get_tree()
-
-	# Connect bot to all decision signals
-	turn_manager.awaiting_player_action.connect(bot_player._on_awaiting_action)
-	turn_manager.confirmation_requested.connect(bot_player._on_confirmation_requested)
-	turn_manager.action_handler.monster_rankup_requested.connect(bot_player._on_monster_rankup_requested)
-	bot_player.effect_handler.choice_requested.connect(bot_player._on_choice_requested)
-	bot_player.effect_handler.hand_discard_requested.connect(bot_player._on_hand_discard_requested)
-	bot_player.effect_handler.deck_search_requested.connect(bot_player._on_deck_search_requested)
-	bot_player.effect_handler.deck_arrange_requested.connect(bot_player._on_deck_arrange_requested)
-	bot_player.effect_handler.card_select_requested.connect(bot_player._on_card_select_requested)
-	bot_player.effect_handler.hand_card_selection_requested.connect(bot_player._on_hand_card_selection_requested)
-	bot_player.effect_handler.zone_target_requested.connect(bot_player._on_zone_target_requested)
-	bot_player.effect_handler.strategy_target_requested.connect(bot_player._on_strategy_target_requested)
-	bot_player.effect_handler.cards_revealed_requested.connect(bot_player._on_cards_revealed_requested)
-
-	# Analyze deck to determine playstyle
-	bot_player.analyze_deck()
-
-	# Set bot player name
-	turn_manager.game_state.player_names[1] = "Bot"
-	GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+	_session.setup_bot(local_player_id)
 	for i in range(2):
 		if i < _turn_tracker_headers.size():
 			_turn_tracker_headers[i].text = GameLog.player_name(i)
@@ -3625,12 +3622,7 @@ func _execute_rematch() -> void:
 				if not picked.is_empty():
 					DecklistManager.select_deck_for_player(1, picked)
 
-		turn_manager = TurnManager.new()
-		turn_manager.setup(CardData)
-
-		turn_manager.game_state.player_names[local_player_id] = GameSettings.player_name
-		GameLog.player_names = GameLog.disambiguate(
-			turn_manager.game_state.player_names, local_player_id)
+		_session.start_host_session(CardData, local_player_id)
 		for i in range(2):
 			if i < _turn_tracker_headers.size():
 				_turn_tracker_headers[i].text = GameLog.player_name(i)
