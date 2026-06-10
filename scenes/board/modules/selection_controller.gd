@@ -1313,10 +1313,10 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	# scrolls when there are more options than fit.
 	_choice_panel = PanelContainer.new()
 	_choice_panel.name = "ChoicePanel"
+	# Transparent background — the player can see the board behind the
+	# action buttons; only the buttons themselves are visible.
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.09, 0.09, 0.12, 0.97)
-	panel_style.border_color = Color(0.45, 0.45, 0.55, 1.0)
-	panel_style.set_border_width_all(1)
+	panel_style.bg_color = Color(0, 0, 0, 0)
 	panel_style.set_corner_radius_all(6)
 	panel_style.content_margin_left = 6
 	panel_style.content_margin_right = 6
