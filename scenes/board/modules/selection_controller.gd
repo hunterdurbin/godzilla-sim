@@ -918,7 +918,7 @@ func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 		return
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
-		_pending_interaction = {"method": "hand_discard", "args": [discard_count]}
+		_pending_interaction = {"method": "hand_discard", "args": [discard_count], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_discard_requested", 4)
@@ -1044,7 +1044,7 @@ func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int]
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
-		_pending_interaction = {"method": "hand_card_selection", "args": [indices_json, prompt, allow_skip]}
+		_pending_interaction = {"method": "hand_card_selection", "args": [indices_json, prompt, allow_skip], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
@@ -1138,7 +1138,7 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var zones_json := JSON.stringify(valid_zones)
-		_pending_interaction = {"method": "zone_target", "args": [target_player_id, zones_json, prompt, allow_skip]}
+		_pending_interaction = {"method": "zone_target", "args": [target_player_id, zones_json, prompt, allow_skip], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
@@ -1217,7 +1217,7 @@ func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
-		_pending_interaction = {"method": "strategy_target", "args": [target_player_id, indices_json, prompt]}
+		_pending_interaction = {"method": "strategy_target", "args": [target_player_id, indices_json, prompt], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("strategy_target_requested", 4 + indices_json.length() + prompt.length())
@@ -1288,7 +1288,7 @@ func _on_choice_requested(player_id: int, options: Array[String], prompt: String
 		_flush_broadcast()
 		var options_json := JSON.stringify(options)
 		var card_ids_json := JSON.stringify(card_ids)
-		_pending_interaction = {"method": "choice", "args": [options_json, prompt, card_ids_json]}
+		_pending_interaction = {"method": "choice", "args": [options_json, prompt, card_ids_json], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("choice_requested", options_json.length() + prompt.length())
