@@ -568,6 +568,15 @@ func _rpc_receive_chat(sender_player_id: int, text: String) -> void:
 		_board._rpc_receive_chat(sender_player_id, text)
 
 
+## Host -> Client: which ability the NEXT prompt belongs to (sent reliably
+## just before the prompt RPC, so ordering is guaranteed).
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_ability_banner(card_id: String, label: String) -> void:
+	var router: EffectUIRouter = get_node_or_null("../EffectUIRouter")
+	if router:
+		router.set_remote_banner(card_id, label)
+
+
 # --- Effect overlay request/resolve pairs ---
 
 @rpc("any_peer", "call_remote", "reliable")

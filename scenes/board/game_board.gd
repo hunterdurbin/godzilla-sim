@@ -122,6 +122,7 @@ var _client_stats_decklists: Array:
 @onready var _end_game: EndGameController = $EndGameController
 @onready var _reconnect: ReconnectController = $ReconnectController
 @onready var _router: EffectUIRouter = $GameSession/EffectUIRouter
+@onready var _ability_banner: ActiveAbilityBanner = $ActiveAbilityBanner
 @onready var _hand: HandController = $HandController
 @onready var _selection: SelectionController = $SelectionController
 @onready var _mobile: MobileLayout = $MobileLayout
@@ -447,6 +448,8 @@ func _ready() -> void:
 		_pending_interaction = {"method": method, "args": args}
 	_router.on_view_board_request = _on_overlay_view_board
 	_router.card_zoom_request = _show_card_zoom
+	_router.ability_banner_show = _ability_banner.show_ability
+	_router.ability_banner_hide = _ability_banner.hide_banner
 	card_zoom_overlay.on_hidden = _on_card_zoom_hidden
 	_router.register_handler("deck_search", deck_search_overlay.show_prompt)
 	_router.register_handler("deck_arrange", deck_arrange_overlay.show_prompt)

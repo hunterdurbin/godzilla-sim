@@ -67,6 +67,18 @@ var translate_prompt: Callable = Callable()
 ## it, hide it, and re-show it later. Signature: (overlay: Control) -> void
 var on_view_board_request: Callable = Callable()
 
+## Active-ability banner hooks: shown above gallery prompts while an ability
+## resolves. Signatures: show(card_id: String, label: String), hide().
+var ability_banner_show: Callable = Callable()
+var ability_banner_hide: Callable = Callable()
+
+## Banner data for the prompt currently shown on THIS peer when it arrived
+## via RPC (client peers have no effect handler to ask).
+var _remote_banner: Dictionary = {}
+
+## Prompt keys that show a gallery modal and get the ability banner.
+const _BANNER_KEYS := ["deck_search", "deck_arrange", "card_select", "cards_revealed", "monster_rankup"]
+
 ## In-game "stacked" gallery preference, shared by all card-grid overlays
 ## (initialized from GameSettings by the scene, remembered for the match).
 var match_stacked_view: bool = true
@@ -150,8 +162,39 @@ func _send_to_remote(player_id: int, method: String, args: Array, dispatcher: Ca
 		if NetworkManager.peer_player_map[peer_id] == player_id:
 			if on_pre_remote_dispatch.is_valid():
 				on_pre_remote_dispatch.call()
+			if method in _BANNER_KEYS:
+				var summary := _active_summary()
+				multiplayer_sync._rpc_ability_banner.rpc_id(peer_id, summary.get("card_id", ""), summary.get("label", ""))
 			dispatcher.call(peer_id)
 			return
+
+
+func _active_summary() -> Dictionary:
+	if session.effect_handler:
+		return session.effect_handler.get_active_effect_summary()
+	return _remote_banner
+
+
+## Client peers: store the banner data for the incoming prompt (set via the
+## ability-banner RPC just before the prompt RPC).
+func set_remote_banner(card_id: String, label: String) -> void:
+	_remote_banner = {} if card_id.is_empty() and label.is_empty() else {"card_id": card_id, "label": label}
+
+
+func _show_banner() -> void:
+	if not ability_banner_show.is_valid():
+		return
+	var summary := _active_summary()
+	if summary.is_empty():
+		_hide_banner()
+		return
+	ability_banner_show.call(summary.get("card_id", ""), summary.get("label", ""))
+
+
+func _hide_banner() -> void:
+	_remote_banner = {}
+	if ability_banner_hide.is_valid():
+		ability_banner_hide.call()
 
 
 func _translate(raw: String) -> String:
@@ -292,14 +335,17 @@ func _show(key: String, args: Array) -> void:
 
 
 func show_deck_search(matching: Array, all_cards: Array, prompt: String, allow_skip: bool) -> void:
+	_show_banner()
 	_show("deck_search", [matching, all_cards, _translate(prompt), allow_skip, resolve_deck_search])
 
 
 func show_deck_arrange(cards: Array, prompt: String) -> void:
+	_show_banner()
 	_show("deck_arrange", [cards, _translate(prompt), resolve_deck_arrange])
 
 
 func show_card_select(matching: Array, all_cards: Array, prompt: String, min_count: int, max_count: int) -> void:
+	_show_banner()
 	_show("card_select", [matching, all_cards, _translate(prompt), min_count, max_count, resolve_card_select])
 
 
@@ -313,12 +359,14 @@ func show_choice(options: Array, prompt: String) -> void:
 func show_cards_revealed(cards: Array, title: String) -> void:
 	var handler: Callable = _handlers.get("cards_revealed", Callable())
 	if handler.is_valid():
+		_show_banner()
 		handler.call(cards, _translate(title), resolve_cards_revealed)
 	else:
 		resolve_cards_revealed() # Don't stall the engine
 
 
 func show_monster_rankup(monsters: Array, valid_indices: Array, prompt: String) -> void:
+	_show_banner()
 	var typed: Array[int] = []
 	for v in valid_indices:
 		typed.append(int(v))
@@ -353,6 +401,7 @@ func show_strategy_target(target_player_id: int, valid_indices: Array, prompt: S
 # --- Resolve callbacks: one place for the host-vs-client RPC dance ---
 
 func resolve_deck_search(selected: Dictionary) -> void:
+	_hide_banner()
 	if is_multiplayer and not NetworkManager.is_host():
 		var json := JSON.stringify(selected)
 		RpcLogger.log_send("deck_search_resolved", json.length())
@@ -362,6 +411,7 @@ func resolve_deck_search(selected: Dictionary) -> void:
 
 
 func resolve_deck_arrange(keep: Array, discard: Array) -> void:
+	_hide_banner()
 	if is_multiplayer and not NetworkManager.is_host():
 		var keep_json := JSON.stringify(keep)
 		var discard_json := JSON.stringify(discard)
@@ -378,6 +428,7 @@ func resolve_deck_arrange(keep: Array, discard: Array) -> void:
 
 
 func resolve_card_select(selected: Array) -> void:
+	_hide_banner()
 	if is_multiplayer and not NetworkManager.is_host():
 		var json := JSON.stringify(StateCodec.cards_to_ids(selected))
 		RpcLogger.log_send("card_select_resolved", json.length())
@@ -398,11 +449,13 @@ func resolve_choice(index: int) -> void:
 
 
 func resolve_cards_revealed() -> void:
+	_hide_banner()
 	if session.effect_handler:
 		session.effect_handler.resolve_cards_revealed()
 
 
 func resolve_monster_rankup(index: int) -> void:
+	_hide_banner()
 	if is_multiplayer and not NetworkManager.is_host():
 		RpcLogger.log_send("monster_rankup_resolved", 4)
 		multiplayer_sync._rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, index)

@@ -15,6 +15,7 @@
 [ext_resource type="Script" path="res://scenes/board/modules/hand_controller.gd" id="20_hc"]
 [ext_resource type="Script" path="res://scenes/board/modules/selection_controller.gd" id="21_sc"]
 [ext_resource type="Script" path="res://scenes/board/modules/mobile_layout.gd" id="22_ml"]
+[ext_resource type="Script" path="res://scenes/board/overlays/active_ability_banner.gd" id="23_ab"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckSearchOverlay.tscn" id="13_dso"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckArrangeOverlay.tscn" id="14_dao"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/CardSelectOverlay.tscn" id="15_cso"]
@@ -67,6 +68,11 @@ script = ExtResource("21_sc")
 
 [node name="MobileLayout" type="Node" parent="."]
 script = ExtResource("22_ml")
+
+[node name="ActiveAbilityBanner" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("23_ab")
 
 [node name="Background" type="ColorRect" parent="." unique_id=1737832110]
 layout_mode = 1

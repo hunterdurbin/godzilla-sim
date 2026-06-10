@@ -205,6 +205,18 @@ func _set_active_effect(player_id: int, card_data: Dictionary) -> void:
 	_active_effect_card = card_data
 
 
+## {card_id, label} for the ability currently resolving ({} if none) — the
+## UI shows this above effect prompt overlays. card_id is the base id; label
+## matches the resolution-order choice option text.
+func get_active_effect_summary() -> Dictionary:
+	if _active_effect_card.is_empty():
+		return {}
+	return {
+		"card_id": CardUtils.base_id(_active_effect_card),
+		"label": _get_card_location_label(_active_effect_player_id, _active_effect_card),
+	}
+
+
 func _clear_active_effect() -> void:
 	# Defensive: emit unhighlight when clearing, in case the leaf function that
 	# emitted the matching highlight didn't reach its own _unhighlight call.
