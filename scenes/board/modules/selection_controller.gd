@@ -1325,16 +1325,13 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	_choice_panel.add_theme_stylebox_override("panel", panel_style)
 	_choice_panel.z_index = 56
 
-	# Bottom edge: clear the mobile bottom bar, or sit above the hand
-	# toggle/sort button stack on desktop.
+	# Bottom edge: clear the mobile bottom bar AND always sit above the hand
+	# toggle/sort button stack (both layouts position that stack differently).
 	var viewport_h: float = _board.get_viewport_rect().size.y
-	var bottom_y: float = viewport_h - 12.0
-	if _is_mobile_layout:
-		bottom_y = viewport_h - 130.0
-	else:
-		var hand_stack: Control = _board.get_node_or_null("HandButtonStack")
-		if hand_stack and hand_stack.visible:
-			bottom_y = minf(bottom_y, hand_stack.get_global_rect().position.y - 8.0)
+	var bottom_y: float = viewport_h - (130.0 if _is_mobile_layout else 12.0)
+	var hand_stack: Control = _board.get_node_or_null("HandButtonStack")
+	if hand_stack and hand_stack.visible:
+		bottom_y = minf(bottom_y, hand_stack.get_global_rect().position.y - 8.0)
 	# Grow up-left from the bottom-right anchor point.
 	_choice_panel.anchor_left = 1.0
 	_choice_panel.anchor_right = 1.0
@@ -1354,6 +1351,9 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	var max_height: float = bottom_y - 56.0 # keep the prompt text visible above
 	scroll.custom_minimum_size = Vector2(360.0, minf(est_height, max_height))
 	_choice_panel.add_child(scroll)
+	# After the first layout pass, shrink-wrap the scroll to the buttons'
+	# real (wrapped) height so there's no empty gap under the last button.
+	_fit_choice_panel.call_deferred(scroll, max_height)
 
 	_choice_container = VBoxContainer.new()
 	_choice_container.name = "ChoiceContainer"
@@ -1383,6 +1383,15 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 		btn.pressed.connect(_on_choice_button_pressed.bind(i))
 		_choice_container.add_child(btn)
 		_choice_buttons.append(btn)
+
+
+## Deferred: match the scroll viewport to the laid-out button column so the
+## panel hugs its content (capped at max_height — beyond that it scrolls).
+func _fit_choice_panel(scroll: ScrollContainer, max_height: float) -> void:
+	if not is_instance_valid(scroll) or _choice_container == null or not is_instance_valid(_choice_container):
+		return
+	var content_h: float = _choice_container.size.y + 2.0
+	scroll.custom_minimum_size.y = minf(content_h, max_height)
 
 
 func _on_choice_button_pressed(index: int) -> void:
