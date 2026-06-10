@@ -1326,12 +1326,15 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	_choice_panel.z_index = 56
 
 	# Bottom edge: clear the mobile bottom bar AND always sit above the hand
-	# toggle/sort button stack (both layouts position that stack differently).
+	# toggle/sort buttons. Check the BUTTONS themselves — the desktop layout
+	# hides HandButtonStack and reparents the buttons to the board root, so
+	# the container's rect says nothing about where they actually are.
 	var viewport_h: float = _board.get_viewport_rect().size.y
 	var bottom_y: float = viewport_h - (130.0 if _is_mobile_layout else 12.0)
-	var hand_stack: Control = _board.get_node_or_null("HandButtonStack")
-	if hand_stack and hand_stack.visible:
-		bottom_y = minf(bottom_y, hand_stack.get_global_rect().position.y - 8.0)
+	for hb in [_board.hand_toggle_button, _board.sort_hand_button]:
+		var hb_btn := hb as Control
+		if hb_btn and is_instance_valid(hb_btn) and hb_btn.visible:
+			bottom_y = minf(bottom_y, hb_btn.get_global_rect().position.y - 8.0)
 	# Explicitly position the rect with its BOTTOM edge at bottom_y — do not
 	# rely on grow directions (a min-size overflow expands DOWNWARD from the
 	# anchor point, which is how the panel ended up over/below the screen).
@@ -1391,11 +1394,15 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 ## panel hugs its content (capped at max_height — beyond that it scrolls),
 ## keeping the BOTTOM edge pinned at bottom_y so the panel grows upward.
 func _fit_choice_panel(scroll: ScrollContainer, bottom_y: float, max_height: float) -> void:
+	# Wait for a layout pass so the buttons have real (wrapped) sizes; the
+	# combined minimum size is the floor in case layout hasn't settled.
+	await get_tree().process_frame
 	if not is_instance_valid(scroll) or _choice_container == null or not is_instance_valid(_choice_container):
 		return
 	if _choice_panel == null or not is_instance_valid(_choice_panel):
 		return
-	var content_h: float = minf(_choice_container.size.y + 2.0, max_height)
+	var measured: float = maxf(_choice_container.size.y, _choice_container.get_combined_minimum_size().y)
+	var content_h: float = minf(measured + 2.0, max_height)
 	scroll.custom_minimum_size.y = content_h
 	_choice_panel.offset_top = bottom_y - (content_h + 12.0)
 	_choice_panel.offset_bottom = bottom_y
