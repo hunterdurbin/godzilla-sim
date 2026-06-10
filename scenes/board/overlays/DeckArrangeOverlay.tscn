@@ -1,0 +1,99 @@
+[gd_scene load_steps=2 format=3 uid="uid://overlay_deckarrange1"]
+
+[ext_resource type="Script" path="res://scenes/board/overlays/deck_arrange_overlay.gd" id="1_da"]
+
+[node name="DeckArrangeOverlay" type="ColorRect"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+script = ExtResource("1_da")
+
+[node name="DeckArrangePanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.125
+anchor_right = 0.5
+anchor_bottom = 0.875
+offset_left = -450.0
+offset_right = 450.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="DeckArrangePanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PromptLabel" type="Label" parent="DeckArrangePanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "STR_GB_ARRANGE_CARDS"
+horizontal_alignment = 1
+
+[node name="ArrangeContainer" type="HBoxContainer" parent="DeckArrangePanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+
+[node name="KeepPanel" type="PanelContainer" parent="DeckArrangePanel/VBox/ArrangeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="KeepVBox" type="VBoxContainer" parent="DeckArrangePanel/VBox/ArrangeContainer/KeepPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="KeepLabel" type="Label" parent="DeckArrangePanel/VBox/ArrangeContainer/KeepPanel/KeepVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "STR_GB_KEEP_ON_DECK"
+horizontal_alignment = 1
+
+[node name="KeepCards" type="GridContainer" parent="DeckArrangePanel/VBox/ArrangeContainer/KeepPanel/KeepVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 4
+
+[node name="DiscardPanel" type="PanelContainer" parent="DeckArrangePanel/VBox/ArrangeContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.0
+
+[node name="DiscardVBox" type="VBoxContainer" parent="DeckArrangePanel/VBox/ArrangeContainer/DiscardPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="DiscardLabel" type="Label" parent="DeckArrangePanel/VBox/ArrangeContainer/DiscardPanel/DiscardVBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "STR_GB_SEND_TO_DISCARD"
+horizontal_alignment = 1
+
+[node name="DiscardCards" type="GridContainer" parent="DeckArrangePanel/VBox/ArrangeContainer/DiscardPanel/DiscardVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 4
+
+[node name="ButtonRow" type="HBoxContainer" parent="DeckArrangePanel/VBox"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="ViewBoardButton" type="Button" parent="DeckArrangePanel/VBox/ButtonRow"]
+custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
+text = "STR_GB_VIEW_BOARD"
+
+[node name="ConfirmButton" type="Button" parent="DeckArrangePanel/VBox/ButtonRow"]
+custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
+text = "STR_GB_CONFIRM"
