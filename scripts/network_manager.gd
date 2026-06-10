@@ -106,14 +106,15 @@ func is_lobby_bot_game() -> bool:
 func _process(delta: float) -> void:
 	# Idle keepalive — send a no-op text frame while idling so the relay/server
 	# TCP path doesn't get killed by an idle proxy timeout. Relay: while
-	# waiting for an opponent. Dedicated server: any time we're not in the
-	# real match (lobby wait AND lobby-bot games, where no game traffic flows).
+	# waiting for an opponent. Dedicated server: always (the server enforces
+	# an idle timeout, so the heartbeat must keep flowing even mid-match
+	# during long opponent turns).
 	var peer := multiplayer.multiplayer_peer
 	var idle := false
 	if peer is RelayMultiplayerPeer:
 		idle = not opponent_connected
 	elif peer is GameServerPeer:
-		idle = not is_in_game
+		idle = true
 	if idle:
 		_keepalive_elapsed += delta
 		if _keepalive_elapsed >= KEEPALIVE_INTERVAL:

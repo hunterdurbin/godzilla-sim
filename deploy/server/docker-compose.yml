@@ -1,0 +1,12 @@
+# Dedicated game server — run standalone, or copy the service block into the
+# relay's compose file to soak both side by side during the cutover.
+#
+# The Discord status bot can be retargeted by pointing its RELAY_SERVER_URL
+# at http://game-server:12092 (same "N active rooms" status text contract).
+services:
+  game-server:
+    image: ${IMAGE:-godzilla-tcg-server}
+    restart: unless-stopped
+    ports:
+      - "12091:12091" # game (WebSocket)
+      - "12092:12092" # HTTP status + public room listing

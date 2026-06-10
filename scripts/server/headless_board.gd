@@ -29,6 +29,7 @@ var _game_start_time_ms: int = 0
 var _session: GameSession
 var _sync: MultiplayerSync
 var _first_player_result: int = -1
+var _first_player_chooser_peer: int = -1
 
 
 func _ready() -> void:
@@ -69,7 +70,35 @@ func start_match(config: SessionConfig) -> void:
 		player.deck_changed.connect(_on_state_changed)
 		player.strategy_zones_changed.connect(_on_state_changed)
 
+	_start_stall_watchdog()
 	await _start_first_player_flow()
+
+
+## Diagnostics: if the engine goes quiet for a long stretch mid-match, log
+## its await-state flags so a stuck await is identifiable from server logs.
+var _last_activity_ms: int = 0
+
+func _start_stall_watchdog() -> void:
+	_last_activity_ms = Time.get_ticks_msec()
+	var timer := Timer.new()
+	timer.wait_time = 30.0
+	timer.timeout.connect(_check_stall)
+	add_child(timer)
+	timer.start()
+
+
+func _check_stall() -> void:
+	var tm: TurnManager = _session.turn_manager
+	if tm == null or tm.is_game_over:
+		return
+	var quiet_s := (Time.get_ticks_msec() - _last_activity_ms) / 1000.0
+	if quiet_s < 60.0:
+		return
+	print("[HeadlessBoard %s] Quiet %.0fs: phase=%d processing=%s waiting_input=%s confirm_pending=%s pending=%s" % [
+		room.code if room else "?", quiet_s,
+		int(tm.game_state.current_phase),
+		tm._processing_action, tm._waiting_for_input, tm._confirmation_pending,
+		str(_sync._pending_interaction).left(160)])
 
 
 ## Coin flip + remote first-player choice (ported from game_board's
@@ -83,6 +112,7 @@ func _start_first_player_flow() -> void:
 	_sync.flush_broadcast()
 	var chooser_peer: int = room.peer_for_player(chooser_id)
 	var other_peer: int = room.peer_for_player(1 - chooser_id)
+	_first_player_chooser_peer = chooser_peer
 	if other_peer > 0:
 		_sync._rpc_first_player_waiting.rpc_id(other_peer)
 	if chooser_peer > 0:
@@ -124,6 +154,7 @@ func _on_turn_started(player_id: int) -> void:
 
 
 func _on_state_changed() -> void:
+	_last_activity_ms = Time.get_ticks_msec()
 	_sync.broadcast_state()
 
 
@@ -143,6 +174,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 	var playable_json := JSON.stringify(playable)
 	_sync._pending_interaction = {"method": "action_context", "args": [actions_json, playable_json], "player": active_id}
 	var peer: int = room.peer_for_player(active_id)
+	print("[HeadlessBoard %s] action context -> player %d (peer %d)" % [room.code, active_id, peer])
 	if peer > 0:
 		RpcLogger.log_send("receive_action_context", actions_json.length() + playable_json.length())
 		_sync._rpc_receive_action_context.rpc_id(peer, actions_json, playable_json)
@@ -171,8 +203,12 @@ func _on_game_ended(winner_id: int, reason_key: String) -> void:
 
 ## Chooser's client answered the first-player prompt.
 func _rpc_first_player_choice_resolved(chosen_id: int) -> void:
+	if _sync.multiplayer.get_remote_sender_id() != _first_player_chooser_peer:
+		push_warning("[HeadlessBoard] Rejected first-player choice: sender is not the chooser")
+		return
 	if chosen_id == 0 or chosen_id == 1:
 		_first_player_result = chosen_id
+		_first_player_chooser_peer = -1
 
 
 ## Claim-win validation — delegates to the room's seat/grace state.

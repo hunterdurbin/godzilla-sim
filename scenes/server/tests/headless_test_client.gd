@@ -44,8 +44,11 @@ var conceded := false
 # reconnect with the seat token and resume (reconnect drill).
 # --drop-forever: drop and never return (claim-win drill — the opponent waits
 # out the grace period and claims; pass --grace=N to the server).
+# --malicious: interleave invalid/forged RPCs with normal play; the server
+# must reject them all and the game must still complete cleanly.
 var drop_after := 0
 var drop_forever := false
+var malicious := false
 var _did_drop := false
 var _reconnecting := false
 var _my_room := ""
@@ -64,6 +67,8 @@ func _ready() -> void:
 			drop_after = int(arg.get_slice("=", 1))
 		elif arg == "--drop-forever":
 			drop_forever = true
+		elif arg == "--malicious":
+			malicious = true
 	if is_creator and FileAccess.file_exists(CODE_FILE):
 		DirAccess.remove_absolute(CODE_FILE)
 
@@ -265,6 +270,9 @@ func _on_action_context(actions: Array, playable: Dictionary) -> void:
 		sync_node._rpc_concede.rpc_id(1)
 		return
 
+	if malicious:
+		_send_garbage()
+
 	var action := int(actions[rng.randi() % actions.size()])
 	var params := _params_for(action, playable)
 	if params.is_empty() and action != CardEnums.ActionType.PASS:
@@ -317,6 +325,24 @@ func _claim_win_after(grace_s: float) -> void:
 	if match_over or not is_inside_tree():
 		return
 	print("[TestClient %s] Claiming win after grace" % _tag())
+	sync_node._rpc_claim_win.rpc_id(1)
+
+
+## Fire a battery of invalid RPCs the server must reject without crashing:
+## out-of-range action params, unsolicited prompt resolutions, premature
+## claim-win, and malformed payloads.
+var _garbage_volleys := 0
+
+func _send_garbage() -> void:
+	_garbage_volleys += 1
+	print("[TestClient %s] garbage volley #%d" % [_tag(), _garbage_volleys])
+	sync_node._rpc_submit_action.rpc_id(1, CardEnums.ActionType.PLAY_BATTLE, JSON.stringify({"hand_index": 99, "zone_index": 42}))
+	sync_node._rpc_submit_action.rpc_id(1, CardEnums.ActionType.INVADE, "not json at all")
+	sync_node._rpc_choice_resolved.rpc_id(1, 7)
+	sync_node._rpc_monster_rankup_resolved.rpc_id(1, 3)
+	sync_node._rpc_hand_discard_resolved.rpc_id(1, "[0,0,99]")
+	sync_node._rpc_zone_target_resolved.rpc_id(1, 5)
+	sync_node._rpc_deck_search_resolved.rpc_id(1, JSON.stringify({"id": "EBP01-001"}))
 	sync_node._rpc_claim_win.rpc_id(1)
 
 

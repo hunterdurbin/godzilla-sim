@@ -157,9 +157,8 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 	for i in range(2):
 		var pd := StateCodec.serialize_player_state(gs.players[i])
 		if i != viewer_id:
-			# Strip hand and monster deck data for opponent — only send counts
-			# (full hand kept in stats_opponent_hand for disconnect reporting)
-			pd["stats_hand"] = pd["hand"].duplicate(true)
+			# Strip hand and monster deck data for opponent — hand_count /
+			# monster_deck_count (already serialized) carry the sizes
 			pd.erase("hand")
 			pd["monster_deck_count"] = pd["monster_deck"].size()
 			pd.erase("monster_deck")
@@ -258,6 +257,32 @@ func _pending_interaction_owned_by_peer(peer_id: int) -> bool:
 	if owner_pid < 0:
 		return true
 	return net.peer_player_map.get(peer_id, -1) == owner_pid
+
+
+## Parse a JSON int-array prompt argument back to real ints. JSON numbers
+## parse as floats and Array.has() compares types strictly, so validating a
+## client's int answer against the raw parse would always reject.
+static func _json_int_array(json: String) -> Array:
+	var out: Array = []
+	var parsed: Variant = JSON.parse_string(json)
+	if parsed is Array:
+		for v in parsed:
+			out.append(int(v))
+	return out
+
+
+## Host-side gate for *_resolved RPCs: there must be a pending prompt of this
+## kind and the sender must be the player it was sent to. On rejection the
+## pending prompt is left intact (the engine keeps waiting for a valid
+## answer); honest clients never hit this.
+func _pending_matches(method: String) -> bool:
+	if _pending_interaction.get("method", "") != method:
+		push_warning("[Sync] Rejected %s_resolved: no matching pending prompt" % method)
+		return false
+	if not _pending_interaction_owned_by_peer(multiplayer.get_remote_sender_id()):
+		push_warning("[Sync] Rejected %s_resolved: sender %d doesn't own the prompt" % [method, multiplayer.get_remote_sender_id()])
+		return false
+	return true
 
 
 func _resend_pending_interaction(peer_id: int) -> void:
@@ -381,17 +406,26 @@ func _rpc_submit_action(action_type: int, params_json: String) -> void:
 	var sender_player_id: int = net.peer_player_map.get(sender_id, -1)
 	if sender_player_id != _session.turn_manager.game_state.current_player_id:
 		return # Not their turn
-	_pending_interaction = {}
 
 	var action: CardEnums.ActionType = action_type as CardEnums.ActionType
 	var params: Dictionary = {}
 	if not params_json.is_empty():
-		params = JSON.parse_string(params_json)
+		var parsed: Variant = JSON.parse_string(params_json)
+		if not parsed is Dictionary:
+			return
+		params = parsed
 		# JSON parses ints as floats — convert known fields
 		if params.has("hand_index"):
 			params["hand_index"] = int(params["hand_index"])
 		if params.has("zone_index"):
 			params["zone_index"] = int(params["zone_index"])
+
+	if not _session.turn_manager.rules_engine.validate_action(_session.turn_manager.game_state, action, params):
+		# Invalid for the current state — ignore; the action context stays
+		# pending so an honest-but-stale client can still answer correctly.
+		push_warning("[Sync] Rejected invalid action %d from player %d (params=%s)" % [action_type, sender_player_id, params_json])
+		return
+	_pending_interaction = {}
 
 	_session.turn_manager.submit_action(action, params)
 
@@ -512,8 +546,6 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 			_session.client_stats_deck_names[i] = str(pd["stats_deck_name"])
 		if pd.has("stats_decklist"):
 			_session.client_stats_decklists[i] = pd["stats_decklist"]
-		if pd.has("stats_hand") and i != _board.local_player_id:
-			_session.client_stats_opponent_hand = pd["stats_hand"]
 
 	# Stats timing from host
 	if data.has("stats_elapsed_ms"):
@@ -616,12 +648,24 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 	RpcLogger.log_receive("deck_search_resolved", selected_json.length())
 	if not net.is_host() or not _session.turn_manager:
 		return
-	_pending_interaction = {}
+	if not _pending_matches("deck_search"):
+		return
+	var pargs: Array = _pending_interaction["args"]
 	var selected: Dictionary = {}
 	if not selected_json.is_empty():
-		selected = JSON.parse_string(selected_json)
-		if selected == null:
-			selected = {}
+		var parsed: Variant = JSON.parse_string(selected_json)
+		if parsed is Dictionary:
+			selected = parsed
+	# Must be a skip (when allowed) or one of the offered cards.
+	var matching: Array = JSON.parse_string(pargs[0])
+	if selected.is_empty():
+		if not bool(pargs[3]):
+			push_warning("[Sync] Rejected deck_search skip: skipping not allowed")
+			return
+	elif not matching.has(str(selected.get("id", ""))):
+		push_warning("[Sync] Rejected deck_search: card not offered")
+		return
+	_pending_interaction = {}
 	_session.turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
 
 
@@ -637,7 +681,9 @@ func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void
 	RpcLogger.log_receive("deck_arrange_resolved", keep_json.length() + discard_json.length())
 	if not net.is_host() or not _session.turn_manager:
 		return
-	_pending_interaction = {}
+	if not _pending_matches("deck_arrange"):
+		return
+	var pargs: Array = _pending_interaction["args"]
 	var keep: Array[Dictionary] = []
 	var discard: Array[Dictionary] = []
 	var parsed_keep: Array = JSON.parse_string(keep_json)
@@ -648,6 +694,21 @@ func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void
 	if parsed_discard:
 		for c in parsed_discard:
 			discard.append(c)
+	# Returned cards must be exactly the offered cards, just rearranged.
+	var offered: Array = []
+	for v in JSON.parse_string(pargs[0]):
+		offered.append(str(v))
+	var returned: Array = []
+	for c in keep:
+		returned.append(str(c.get("id", "")))
+	for c in discard:
+		returned.append(str(c.get("id", "")))
+	offered.sort()
+	returned.sort()
+	if returned != offered:
+		push_warning("[Sync] Rejected deck_arrange: returned cards don't match offered set")
+		return
+	_pending_interaction = {}
 	_session.turn_manager.action_handler.effect_handler.resolve_deck_arrange(keep, discard)
 
 
@@ -663,13 +724,29 @@ func _rpc_card_select_resolved(selected_json: String) -> void:
 	RpcLogger.log_receive("card_select_resolved", selected_json.length())
 	if not net.is_host() or not _session.turn_manager:
 		return
-	_pending_interaction = {}
+	if not _pending_matches("card_select"):
+		return
+	var pargs: Array = _pending_interaction["args"]
 	var selected: Array[Dictionary] = []
 	if not selected_json.is_empty():
-		var parsed: Array = JSON.parse_string(selected_json)
-		if parsed:
+		var parsed: Variant = JSON.parse_string(selected_json)
+		if parsed is Array:
 			for id in parsed:
 				selected.append({"id": str(id)})
+	# Picks must come from the offered set (multiset — duplicates consume)
+	# and respect the requested count ([] = skip stays allowed).
+	if not selected.is_empty():
+		if selected.size() < int(pargs[3]) or selected.size() > int(pargs[4]):
+			push_warning("[Sync] Rejected card_select: count out of range")
+			return
+		var pool: Array = JSON.parse_string(pargs[0]).duplicate()
+		for c in selected:
+			var idx := pool.find(str(c["id"]))
+			if idx < 0:
+				push_warning("[Sync] Rejected card_select: card not offered")
+				return
+			pool.remove_at(idx)
+	_pending_interaction = {}
 	_session.turn_manager.action_handler.effect_handler.resolve_card_select(selected)
 
 
@@ -684,6 +761,16 @@ func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, al
 func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 	RpcLogger.log_receive("hand_card_selection_resolved", 4)
 	if not net.is_host() or not _session.turn_manager:
+		return
+	if not _pending_matches("hand_card_selection"):
+		return
+	var pargs: Array = _pending_interaction["args"]
+	if hand_index == -1:
+		if not bool(pargs[2]):
+			push_warning("[Sync] Rejected hand_card_selection skip: skipping not allowed")
+			return
+	elif not _json_int_array(pargs[0]).has(hand_index):
+		push_warning("[Sync] Rejected hand_card_selection: index not offered")
 		return
 	_pending_interaction = {}
 	_session.turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
@@ -700,6 +787,8 @@ func _rpc_confirmation_requested(prompt: String, setting: String) -> void:
 func _rpc_confirmation_resolved() -> void:
 	RpcLogger.log_receive("confirmation_resolved", 0)
 	if not net.is_host() or not _session.turn_manager:
+		return
+	if not _pending_matches("confirmation"):
 		return
 	_pending_interaction = {}
 	_session.turn_manager.confirm()
@@ -733,13 +822,29 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 	RpcLogger.log_receive("hand_discard_resolved", indices_json.length())
 	if not net.is_host() or not _session.turn_manager:
 		return
-	_pending_interaction = {}
-	var parsed: Array = JSON.parse_string(indices_json)
+	if not _pending_matches("hand_discard"):
+		return
+	var parsed: Variant = JSON.parse_string(indices_json)
+	if not parsed is Array:
+		return
 	var hand_indices: Array[int] = []
 	for v in parsed:
 		hand_indices.append(int(v))
+	# Distinct in-range indices, exactly the requested count (capped by hand).
 	var sender_id := multiplayer.get_remote_sender_id()
 	var sender_player_id: int = net.peer_player_map.get(sender_id, -1)
+	var hand_size: int = _session.turn_manager.game_state.players[sender_player_id].hand.size()
+	var requested: int = int(_pending_interaction["args"][0])
+	var seen := {}
+	for v in hand_indices:
+		if v < 0 or v >= hand_size or seen.has(v):
+			push_warning("[Sync] Rejected hand_discard: bad index %d" % v)
+			return
+		seen[v] = true
+	if hand_indices.size() != mini(requested, hand_size):
+		push_warning("[Sync] Rejected hand_discard: wrong count %d (requested %d, hand %d)" % [hand_indices.size(), requested, hand_size])
+		return
+	_pending_interaction = {}
 	_session.turn_manager.action_handler.effect_handler.resolve_hand_discard(sender_player_id, hand_indices)
 
 
@@ -754,6 +859,16 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 func _rpc_zone_target_resolved(zone_index: int) -> void:
 	RpcLogger.log_receive("zone_target_resolved", 4)
 	if not net.is_host() or not _session.turn_manager:
+		return
+	if not _pending_matches("zone_target"):
+		return
+	var pargs: Array = _pending_interaction["args"]
+	if zone_index == -1:
+		if not bool(pargs[3]):
+			push_warning("[Sync] Rejected zone_target skip: skipping not allowed")
+			return
+	elif not _json_int_array(pargs[1]).has(zone_index):
+		push_warning("[Sync] Rejected zone_target: zone not offered")
 		return
 	_pending_interaction = {}
 	_session.turn_manager.action_handler.effect_handler.resolve_zone_target(zone_index)
@@ -771,6 +886,12 @@ func _rpc_strategy_target_resolved(strategy_index: int) -> void:
 	RpcLogger.log_receive("strategy_target_resolved", 4)
 	if not net.is_host() or not _session.turn_manager:
 		return
+	if not _pending_matches("strategy_target"):
+		return
+	var pargs: Array = _pending_interaction["args"]
+	if strategy_index != -1 and not _json_int_array(pargs[1]).has(strategy_index):
+		push_warning("[Sync] Rejected strategy_target: index not offered")
+		return
 	_pending_interaction = {}
 	_session.turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_index)
 
@@ -787,6 +908,12 @@ func _rpc_choice_resolved(index: int) -> void:
 	RpcLogger.log_receive("choice_resolved", 4)
 	if not net.is_host() or not _session.turn_manager:
 		return
+	if not _pending_matches("choice"):
+		return
+	var options: Array = JSON.parse_string(_pending_interaction["args"][0])
+	if index < 0 or index >= options.size():
+		push_warning("[Sync] Rejected choice: index %d out of range" % index)
+		return
 	_pending_interaction = {}
 	_session.turn_manager.action_handler.effect_handler.resolve_choice(index)
 
@@ -802,6 +929,11 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 func _rpc_monster_rankup_resolved(index: int) -> void:
 	RpcLogger.log_receive("monster_rankup_resolved", 4)
 	if not net.is_host() or not _session.turn_manager:
+		return
+	if not _pending_matches("monster_rankup"):
+		return
+	if index != -1 and not _json_int_array(_pending_interaction["args"][1]).has(index):
+		push_warning("[Sync] Rejected monster_rankup: index not offered")
 		return
 	_pending_interaction = {}
 	_session.turn_manager.action_handler.resolve_monster_rankup(index)

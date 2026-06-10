@@ -19,9 +19,22 @@ signal connection_closed(conn_id: int)
 
 const BUFFER_SIZE := 1048576 # 1 MB — default 64 KB is too small for game state
 
+# Per-connection inbound rate limit (frames per rolling second). The RPC
+# stream is reliable-ordered, so we must never drop individual frames — a
+# silently dropped frame corrupts the protocol (an eaten action submit
+# stalls the match invisibly). Floods get the connection CLOSED instead;
+# an honest client reconnects through the normal token path. Burst traffic
+# from dense turns measures ~30-60 frames/s, so the kick threshold sits
+# well above legitimate play.
+const KICK_FRAMES_PER_S := 300
+
+# Clients heartbeat every 25s whenever connected; a connection silent for
+# this long is dead or hostile (also reaps sockets that never sent HELLO).
+const IDLE_TIMEOUT_MS := 75000
+
 var _tcp := TCPServer.new()
 var _next_conn_id: int = 2 # 1 is reserved for the server itself on room APIs
-var _conns: Dictionary = {} # conn_id -> {ws: WebSocketPeer, open: bool}
+var _conns: Dictionary = {} # conn_id -> {ws: WebSocketPeer, open: bool, frames: int, window_ms: int}
 
 
 func listen(port: int) -> Error:
@@ -72,7 +85,8 @@ func _process(_delta: float) -> void:
 			continue
 		var conn_id := _next_conn_id
 		_next_conn_id += 1
-		_conns[conn_id] = {"ws": ws, "open": false}
+		var now_ms := Time.get_ticks_msec()
+		_conns[conn_id] = {"ws": ws, "open": false, "frames": 0, "window_ms": now_ms, "last_ms": now_ms}
 
 	var closed: Array = []
 	for conn_id in _conns:
@@ -80,8 +94,19 @@ func _process(_delta: float) -> void:
 		var ws: WebSocketPeer = conn["ws"]
 		ws.poll()
 
+		var now := Time.get_ticks_msec()
+		if now - conn["window_ms"] >= 1000:
+			conn["window_ms"] = now
+			conn["frames"] = 0
+
 		while ws.get_available_packet_count() > 0:
 			var pkt := ws.get_packet()
+			conn["last_ms"] = now
+			conn["frames"] += 1
+			if conn["frames"] > KICK_FRAMES_PER_S:
+				push_warning("[ConnMgr] Connection %d flooding (%d frames/s) — closing" % [conn_id, conn["frames"]])
+				ws.close(4008, "Rate limit")
+				break
 			if ws.was_string_packet():
 				var text := pkt.get_string_from_utf8()
 				if text == "K":
@@ -99,6 +124,9 @@ func _process(_delta: float) -> void:
 				if not conn["open"]:
 					conn["open"] = true
 					print("[ConnMgr] Connection %d open" % conn_id)
+				elif now - conn["last_ms"] > IDLE_TIMEOUT_MS:
+					print("[ConnMgr] Connection %d idle %.0fs — closing" % [conn_id, (now - conn["last_ms"]) / 1000.0])
+					ws.close(4009, "Idle timeout")
 			WebSocketPeer.STATE_CLOSED:
 				closed.append(conn_id)
 			_:

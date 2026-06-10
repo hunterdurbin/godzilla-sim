@@ -48,6 +48,7 @@ func is_seated(conn_id: int) -> bool:
 ## connection seated in this room.
 func push_packet(sender_conn_id: int, pkt: PackedByteArray) -> void:
 	if not _seated.has(sender_conn_id):
+		push_warning("[RoomPeer] Dropping frame from unseated conn %d (%d bytes)" % [sender_conn_id, pkt.size()])
 		return # Stale frame from an unseated connection — drop
 	_incoming.append({"sender": sender_conn_id, "pkt": pkt})
 
@@ -153,6 +154,9 @@ func _close() -> void:
 
 
 func _disconnect_peer(p_peer: int, _p_force: bool) -> void:
+	# SceneMultiplayer calls this itself when a peer's RPC fails validation
+	# (bad node path / method / args) — log it, it silently kills the seat.
+	push_warning("[RoomPeer] _disconnect_peer(%d) called by the multiplayer API" % p_peer)
 	unseat_peer(p_peer)
 
 

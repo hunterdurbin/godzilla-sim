@@ -6,6 +6,12 @@ extends Control
 
 
 func _ready() -> void:
+	# Dedicated server entry: the server export (dedicated_server feature tag)
+	# or `--headless -- --server` skips the whole client boot path.
+	if OS.has_feature("dedicated_server") or "--server" in OS.get_cmdline_user_args():
+		get_tree().change_scene_to_file.call_deferred("res://scenes/server/ServerMain.tscn")
+		return
+
 	skip_button.pressed.connect(_go_to_main_menu)
 	ArtworkDownloader.progress_updated.connect(_on_progress_updated)
 	ArtworkDownloader.download_complete.connect(_on_download_complete)
