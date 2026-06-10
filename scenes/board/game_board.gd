@@ -122,6 +122,7 @@ var _client_stats_decklists: Array:
 @onready var _end_game: EndGameController = $EndGameController
 @onready var _reconnect: ReconnectController = $ReconnectController
 @onready var _router: EffectUIRouter = $GameSession/EffectUIRouter
+@onready var _hand: HandController = $HandController
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -362,13 +363,16 @@ var _current_sub_phase: int:
 # Turn tracker transition queue (delays between phase changes)
 
 # Hand expand toggle
-var _hand_expanded: bool = false
-var _hand_tween: Tween = null
+# Hand expand state — owned by HandController (forwarding properties for
+# _position_hands and the rematch reset during extraction)
+var _hand_expanded: bool:
+	get: return _hand.hand_expanded
+	set(v): _hand.hand_expanded = v
 const HAND_EXPAND_OFFSET: float = 160.0
 
-# Opponent hand expand toggle (solo only)
-var _opponent_hand_expanded: bool = false
-var _opponent_hand_tween: Tween = null
+var _opponent_hand_expanded: bool:
+	get: return _hand.opponent_hand_expanded
+	set(v): _hand.opponent_hand_expanded = v
 const OPPONENT_HAND_EXPAND_OFFSET: float = 195.0
 
 # Mobile layout
@@ -596,10 +600,7 @@ func _ready() -> void:
 
 	# Connect deck search buttons
 	show_cards_button.pressed.connect(_on_show_cards_pressed)
-	hand_toggle_button.pressed.connect(_on_hand_toggle_pressed)
-	sort_hand_button.pressed.connect(_on_sort_hand_pressed)
-	opponent_hand_toggle_button.pressed.connect(_on_opponent_hand_toggle_pressed)
-	opponent_sort_hand_button.pressed.connect(_on_opponent_sort_hand_pressed)
+	_hand.setup()
 	opponent_hand_button_stack.visible = not is_multiplayer_game
 
 	# Bot card visibility toggle
@@ -4187,152 +4188,20 @@ func _draw_icon_invade(btn: Button) -> void:
 	btn.draw_line(Vector2(s.x - pad, cy), Vector2(s.x - pad - 10, cy + 8), color, 2.5)
 
 
-func _on_hand_toggle_pressed() -> void:
-	_hand_expanded = not _hand_expanded
-	hand_toggle_button.text = "\u25bc" if _hand_expanded else "\u25b2"
-
-	# Determine which hand is the local player's
-	var local_hand: Node2D = player1_hand if local_player_id == 0 else player2_hand
-	var local_space: Control = player1_hand_space if local_player_id == 0 else player2_hand_space
-	if not local_space or not local_hand:
-		return
-
-	var rect := local_space.get_global_rect()
-	var expand_offset := 120.0 if _is_mobile_layout else HAND_EXPAND_OFFSET
-	var y_offset := -expand_offset if _hand_expanded else 0.0
-	var target_y := rect.position.y + rect.size.y / 2.0 + y_offset
-
-	_tween_hand_to(local_hand, target_y)
-
-
-func _on_opponent_hand_toggle_pressed() -> void:
-	_opponent_hand_expanded = not _opponent_hand_expanded
-	opponent_hand_toggle_button.text = "\u25b2" if _opponent_hand_expanded else "\u25bc"
-
-	var opponent_id := 1 - local_player_id
-	var opp_hand: Node2D = player1_hand if opponent_id == 0 else player2_hand
-	var opp_space: Control = player1_hand_space if opponent_id == 0 else player2_hand_space
-	if not opp_space or not opp_hand:
-		return
-
-	var rect := opp_space.get_global_rect()
-	var base_y := rect.position.y - OPPONENT_HAND_EXPAND_OFFSET
-	var target_y := base_y + (OPPONENT_HAND_EXPAND_OFFSET if _opponent_hand_expanded else 0.0)
-	_tween_opponent_hand_to(opp_hand, target_y)
-
-
-const HAND_SORT_TYPE_ORDERS: Array = [
-	[0, 1, 2], # Monster, Battle, Strategy
-	[0, 2, 1], # Monster, Strategy, Battle
-	[1, 0, 2], # Battle, Monster, Strategy
-	[1, 2, 0], # Battle, Strategy, Monster
-	[2, 0, 1], # Strategy, Monster, Battle
-	[2, 1, 0], # Strategy, Battle, Monster
-]
-
-
-func _on_sort_hand_pressed() -> void:
-	_sort_player_hand(local_player_id)
-
-
-func _on_opponent_sort_hand_pressed() -> void:
-	_sort_player_hand(1 - local_player_id)
-
-
-func _sort_player_hand(player_id: int) -> void:
-	var hand_mgr: CardManager = player1_hand if player_id == 0 else player2_hand
-	if not hand_mgr or hand_mgr.managed_cards.size() <= 1:
-		return
-
-	var order: Array = HAND_SORT_TYPE_ORDERS[clampi(GameSettings.hand_sort_type_order, 0, 5)]
-	var type_priority := {}
-	for i in range(order.size()):
-		type_priority[order[i]] = i
-
-	var rank_asc: bool = GameSettings.hand_sort_rank_ascending
-
-	hand_mgr.managed_cards.sort_custom(func(a: Control, b: Control) -> bool:
-		var ad: Dictionary = a.card_data if "card_data" in a else {}
-		var bd: Dictionary = b.card_data if "card_data" in b else {}
-		var pa: int = type_priority.get(int(ad.get("card_type", 0)), 0)
-		var pb: int = type_priority.get(int(bd.get("card_type", 0)), 0)
-		if pa != pb:
-			return pa < pb
-		var ra: int = int(ad.get("rank", 0))
-		var rb: int = int(bd.get("rank", 0))
-		if ra != rb:
-			return (ra < rb) if rank_asc else (ra > rb)
-		return ad.get("id", "") < bd.get("id", "")
-	)
-
-	hand_mgr.arrange_cards(true)
-
-
 func _temporarily_collapse_hand() -> void:
-	if not _hand_expanded:
-		return
-	var local_hand: Node2D = player1_hand if local_player_id == 0 else player2_hand
-	var local_space: Control = player1_hand_space if local_player_id == 0 else player2_hand_space
-	if not local_space or not local_hand:
-		return
-	var rect := local_space.get_global_rect()
-	_tween_hand_to(local_hand, rect.position.y + rect.size.y / 2.0)
+	_hand.temporarily_collapse_hand()
 
 
 func _restore_expanded_hand() -> void:
-	if not _hand_expanded:
-		return
-	var local_hand: Node2D = player1_hand if local_player_id == 0 else player2_hand
-	var local_space: Control = player1_hand_space if local_player_id == 0 else player2_hand_space
-	if not local_space or not local_hand:
-		return
-	var rect := local_space.get_global_rect()
-	var expand_offset := 120.0 if _is_mobile_layout else HAND_EXPAND_OFFSET
-	_tween_hand_to(local_hand, rect.position.y + rect.size.y / 2.0 - expand_offset)
+	_hand.restore_expanded_hand()
 
 
 func _temporarily_collapse_opponent_hand() -> void:
-	if not _opponent_hand_expanded or is_multiplayer_game:
-		return
-	var opponent_id := 1 - local_player_id
-	var opp_hand: Node2D = player1_hand if opponent_id == 0 else player2_hand
-	var opp_space: Control = player1_hand_space if opponent_id == 0 else player2_hand_space
-	if not opp_space or not opp_hand:
-		return
-	var rect := opp_space.get_global_rect()
-	var base_y := rect.position.y - OPPONENT_HAND_EXPAND_OFFSET
-	_tween_opponent_hand_to(opp_hand, base_y)
+	_hand.temporarily_collapse_opponent_hand()
 
 
 func _restore_expanded_opponent_hand() -> void:
-	if not _opponent_hand_expanded or is_multiplayer_game:
-		return
-	var opponent_id := 1 - local_player_id
-	var opp_hand: Node2D = player1_hand if opponent_id == 0 else player2_hand
-	var opp_space: Control = player1_hand_space if opponent_id == 0 else player2_hand_space
-	if not opp_space or not opp_hand:
-		return
-	var rect := opp_space.get_global_rect()
-	var base_y := rect.position.y - OPPONENT_HAND_EXPAND_OFFSET
-	_tween_opponent_hand_to(opp_hand, base_y + OPPONENT_HAND_EXPAND_OFFSET)
-
-
-func _tween_hand_to(hand: Node2D, target_y: float) -> void:
-	if _hand_tween and _hand_tween.is_valid():
-		_hand_tween.kill()
-	_hand_tween = create_tween()
-	_hand_tween.set_ease(Tween.EASE_OUT)
-	_hand_tween.set_trans(Tween.TRANS_CUBIC)
-	_hand_tween.tween_property(hand, "global_position:y", target_y, 0.2)
-
-
-func _tween_opponent_hand_to(hand: Node2D, target_y: float) -> void:
-	if _opponent_hand_tween and _opponent_hand_tween.is_valid():
-		_opponent_hand_tween.kill()
-	_opponent_hand_tween = create_tween()
-	_opponent_hand_tween.set_ease(Tween.EASE_OUT)
-	_opponent_hand_tween.set_trans(Tween.TRANS_CUBIC)
-	_opponent_hand_tween.tween_property(hand, "global_position:y", target_y, 0.2)
+	_hand.restore_expanded_opponent_hand()
 
 
 func _set_card_highlight(card: Control) -> void:
