@@ -770,6 +770,25 @@ func _show_reconnect_dialog() -> void:
 		reconnect_btn.text = tr("STR_MENU_CONNECTING")
 		status_label.text = tr("STR_MENU_RECONNECT_CONNECTING")
 		status_label.visible = true
+
+		# Dedicated-server session (seat token saved): rejoin via RECONNECT.
+		if not GameSettings.reconnect_token.is_empty():
+			print("[Reconnect] Resuming dedicated-server session '%s'" % saved_code)
+			var resume_err: Error = await NetworkManager.resume_online_session(
+				saved_code,
+				GameSettings.reconnect_token,
+				GameSettings.reconnect_game_mode,
+				GameSettings.reconnect_is_public,
+			)
+			if resume_err == OK:
+				popup.hide()
+			else:
+				var resume_msg := tr("STR_MENU_ERR_TIMEOUT") if resume_err == ERR_TIMEOUT else tr("STR_MENU_ERR_CODE_FMT") % resume_err
+				status_label.text = tr("STR_MENU_RECONNECT_FAILED_FMT") % resume_msg
+				reconnect_btn.text = tr("STR_MENU_RETRY")
+				reconnect_btn.disabled = false
+			return
+
 		print("[Reconnect] Attempting join_online('%s')" % saved_code)
 		# Restore game mode/public state before joining
 		NetworkManager.game_mode = GameSettings.reconnect_game_mode

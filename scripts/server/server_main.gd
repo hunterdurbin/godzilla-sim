@@ -18,17 +18,24 @@ extends Node
 ## Discord bot) and "/rooms?mode=X" (public room list JSON) — same contract
 ## as the relay's HTTP endpoint.
 ##
+## Reconnect: C->S RECONNECT {room, token} re-seats a returning player (the
+## token from SEATED is the credential); the client then requests a resync
+## through the normal MultiplayerSync path. A periodic sweep GCs rooms whose
+## players are all gone past the hold window.
+##
 ## Run: godot --headless --path . scenes/server/ServerMain.tscn -- --port 12091
-## TODO(M2): room GC sweep for abandoned lobby rooms.
-## TODO(M3): RECONNECT {room, token}, grace timers, claim win.
 
 const DEFAULT_PORT := 12091
 const ROOM_CODE_CHARS := "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const SWEEP_INTERVAL_S := 30.0
+const MID_GAME_HOLD_S := 600.0 # both players gone mid-match: hold 10 min for reconnect
+const POST_GAME_HOLD_S := 300.0 # game over, both gone: hold 5 min (rematch grace)
 
 var GAME_VERSION: String = ProjectSettings.get_setting("application/config/version", "unknown")
 
 var conn_mgr: ServerConnectionManager
 var rooms: Dictionary = {} # code -> GameRoom
+var _grace_override: float = -1.0
 var _conn_room: Dictionary = {} # conn_id -> room code
 var _conn_hello: Dictionary = {} # conn_id -> {name, version}
 
@@ -40,6 +47,8 @@ func _ready() -> void:
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--port="):
 			port = int(arg.get_slice("=", 1))
+		elif arg.begins_with("--grace="): # test runs: shorten the claim-win grace
+			_grace_override = float(arg.get_slice("=", 1))
 	conn_mgr = ServerConnectionManager.new()
 	conn_mgr.name = "ConnectionManager"
 	add_child(conn_mgr)
@@ -87,6 +96,22 @@ func _on_control(conn_id: int, msg: Dictionary) -> void:
 				conn_mgr.send_control(conn_id, {"type": "ERROR", "code": "full"})
 				return
 			_seat(conn_id, room)
+		"RECONNECT":
+			var room: GameRoom = rooms.get(str(msg.get("room", "")).to_upper(), null)
+			if room == null:
+				conn_mgr.send_control(conn_id, {"type": "ERROR", "code": "not_found"})
+				return
+			var seat := room.reconnect_player(conn_id, str(msg.get("token", "")))
+			if seat.is_empty():
+				conn_mgr.send_control(conn_id, {"type": "ERROR", "code": "bad_token"})
+				return
+			_conn_room[conn_id] = room.code
+			conn_mgr.send_control(conn_id, {
+				"type": "SEATED",
+				"room": room.code,
+				"player_id": seat["player_id"],
+				"token": seat["token"],
+			})
 		"DECK":
 			var room := _room_for(conn_id)
 			if room:
@@ -146,6 +171,8 @@ func _create_room(mode: String, is_public: bool) -> GameRoom:
 	rooms_node.add_child(room)
 	room.setup(code, mode, conn_mgr)
 	room.is_public = is_public
+	if _grace_override > 0:
+		room.grace_seconds = _grace_override
 	room.emptied.connect(_on_room_emptied.bind(code))
 	rooms[code] = room
 	print("[Server] Room %s created (mode='%s' public=%s, %d total)" % [code, mode, is_public, rooms.size()])
@@ -171,6 +198,18 @@ func _generate_room_code() -> String:
 	return "" # unreachable
 
 
+## GC rooms whose players are all gone past the hold window (mid-match rooms
+## are held longer so a double-drop can still reconnect).
+func _sweep_rooms() -> void:
+	var now := Time.get_ticks_msec()
+	for code in rooms.keys():
+		var room: GameRoom = rooms[code]
+		if room.is_abandoned(now, MID_GAME_HOLD_S, POST_GAME_HOLD_S):
+			rooms.erase(code)
+			room.teardown()
+			print("[Server] Room %s swept (abandoned; %d remain)" % [code, rooms.size()])
+
+
 # --- HTTP status + public room listing (relay-compatible contract) ---
 
 var _http := TCPServer.new()
@@ -192,7 +231,15 @@ func get_public_rooms(mode_filter: String) -> Array:
 	return out
 
 
-func _process(_delta: float) -> void:
+var _sweep_elapsed: float = 0.0
+
+
+func _process(delta: float) -> void:
+	_sweep_elapsed += delta
+	if _sweep_elapsed >= SWEEP_INTERVAL_S:
+		_sweep_elapsed = 0.0
+		_sweep_rooms()
+
 	while _http.is_connection_available():
 		_http_conns.append({"tcp": _http.take_connection(), "buf": "", "started_ms": Time.get_ticks_msec()})
 

@@ -19,6 +19,7 @@ signal server_seated(room: String, player_id: int)  ## dedicated server assigned
 signal server_room_created(code: String)  ## dedicated server created our room
 signal server_error(code: String)  ## dedicated server rejected a request
 signal server_lobby_update(info: Dictionary)  ## pre-match seat/deck status from the dedicated server
+signal server_peer_present(player_id: int, connected: bool, grace_s: float)  ## opponent dropped/returned mid-match (dedicated server)
 
 const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 2
@@ -390,6 +391,8 @@ func connect_to_server() -> Error:
 	multiplayer.multiplayer_peer = peer
 	mode = Mode.ONLINE
 	host_peer_id = 1
+	if not multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+		multiplayer.server_disconnected.connect(_on_server_disconnected)
 
 	err = await _wait_for_relay_connection(peer)
 	if err != OK:
@@ -400,6 +403,84 @@ func connect_to_server() -> Error:
 		return err
 	version_verified = true
 	print("[NetworkManager] Connected to dedicated server as peer %d" % multiplayer.get_unique_id())
+	return OK
+
+
+## Mid-game reconnect to the dedicated server: fresh bridge + RECONNECT with
+## the seat token issued at SEATED. Preserves mode, player id, and in-game
+## state. Returns OK once re-seated (SEATED received), or an error.
+func reconnect_to_server() -> Error:
+	if room_token.is_empty() or _room_code.is_empty():
+		return ERR_UNCONFIGURED
+	if multiplayer.multiplayer_peer:
+		multiplayer.multiplayer_peer.close()
+		multiplayer.multiplayer_peer = null
+	server_peer = null
+
+	var peer := GameServerPeer.new()
+	var url := "ws://%s:%d/" % [server_host, server_port]
+	var err := peer.connect_to_server(url, GameSettings.player_name, GAME_VERSION)
+	if err != OK:
+		return err
+	server_peer = peer
+	peer.control_received.connect(_on_server_control)
+	multiplayer.multiplayer_peer = peer
+	mode = Mode.ONLINE # No-op for in-session reconnects; needed after app restart
+	host_peer_id = 1
+	if not multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+		multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+	err = await _wait_for_relay_connection(peer)
+	if err != OK:
+		multiplayer.multiplayer_peer = null
+		server_peer = null
+		return err
+
+	# Re-seat with the token, then wait for SEATED (or an error/timeout).
+	var outcome := {"done": false, "ok": false}
+	var on_seated := func(_room: String, _pid: int) -> void:
+		outcome["done"] = true
+		outcome["ok"] = true
+	var on_error := func(_code: String) -> void:
+		outcome["done"] = true
+	server_seated.connect(on_seated)
+	server_error.connect(on_error)
+	peer.send_control({"type": "RECONNECT", "room": _room_code, "token": room_token})
+	var elapsed := 0.0
+	while not outcome["done"] and elapsed < WS_CONNECT_TIMEOUT:
+		await get_tree().create_timer(0.1).timeout
+		elapsed += 0.1
+	server_seated.disconnect(on_seated)
+	server_error.disconnect(on_error)
+	if not outcome["ok"]:
+		return ERR_CANT_CONNECT
+	print("[NetworkManager] Reconnected to room %s as player %d" % [_room_code, local_player_id])
+	return OK
+
+
+## App-restart recovery: rejoin a dedicated-server match from a persisted
+## session (room code + seat token). On success, loads the game board and
+## pulls a full resync once the board chain exists.
+func resume_online_session(room_code: String, token: String, p_game_mode: String, p_is_public: bool) -> Error:
+	_room_code = room_code
+	room_token = token
+	game_mode = p_game_mode
+	is_public_room = p_is_public
+	var err := await reconnect_to_server()
+	if err != OK:
+		return err
+	opponent_connected = true
+	is_in_game = true
+	change_scene("res://scenes/board/GameBoard.tscn")
+	while true:
+		var sync_node := get_node_or_null("/root/GameBoard/GameSession/MultiplayerSync")
+		if sync_node != null:
+			await get_tree().process_frame
+			sync_node._rpc_request_resync.rpc_id(host_peer_id)
+			break
+		if server_peer == null:
+			break
+		await get_tree().process_frame
 	return OK
 
 
@@ -457,7 +538,10 @@ func _on_server_control(msg: Dictionary) -> void:
 			opponent_connected = bool(msg.get("opponent_connected", false))
 			server_lobby_update.emit(msg)
 		"PEER_PRESENT":
-			pass # TODO(M3): drive the opponent-disconnected overlay from this
+			server_peer_present.emit(
+				int(msg.get("player_id", -1)),
+				bool(msg.get("connected", false)),
+				float(msg.get("grace_remaining_s", 0.0)))
 		_:
 			pass # WELCOME is consumed by GameServerPeer itself
 

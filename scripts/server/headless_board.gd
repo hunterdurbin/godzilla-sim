@@ -175,6 +175,11 @@ func _rpc_first_player_choice_resolved(chosen_id: int) -> void:
 		_first_player_result = chosen_id
 
 
+## Claim-win validation — delegates to the room's seat/grace state.
+func can_claim_win(sender_conn_id: int) -> bool:
+	return room != null and room.can_claim_win(sender_conn_id)
+
+
 ## Client conceded mid-game.
 func _rpc_concede() -> void:
 	var sender_id: int = _sync.multiplayer.get_remote_sender_id()

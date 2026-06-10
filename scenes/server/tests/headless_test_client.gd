@@ -40,6 +40,17 @@ var match_over := false
 var actions_submitted := 0
 var conceded := false
 
+# --drop-after=N: hard-drop the connection after N of our actions, then
+# reconnect with the seat token and resume (reconnect drill).
+# --drop-forever: drop and never return (claim-win drill — the opponent waits
+# out the grace period and claims; pass --grace=N to the server).
+var drop_after := 0
+var drop_forever := false
+var _did_drop := false
+var _reconnecting := false
+var _my_room := ""
+var _my_token := ""
+
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -49,6 +60,10 @@ func _ready() -> void:
 	for arg in args:
 		if arg.begins_with("--seed="):
 			rng.seed = int(arg.get_slice("=", 1)) + (0 if is_creator else 1)
+		elif arg.begins_with("--drop-after="):
+			drop_after = int(arg.get_slice("=", 1))
+		elif arg == "--drop-forever":
+			drop_forever = true
 	if is_creator and FileAccess.file_exists(CODE_FILE):
 		DirAccess.remove_absolute(CODE_FILE)
 
@@ -106,6 +121,9 @@ func _build_client_chain() -> void:
 
 func _on_control(msg: Dictionary) -> void:
 	match str(msg.get("type", "")):
+		"WELCOME":
+			if _reconnecting:
+				peer.send_control({"type": "RECONNECT", "room": _my_room, "token": _my_token})
 		"ROOM_CREATED":
 			var code := str(msg.get("room", ""))
 			print("[TestClient %s] Room created: %s" % [_tag(), code])
@@ -115,7 +133,15 @@ func _on_control(msg: Dictionary) -> void:
 		"SEATED":
 			my_pid = int(msg.get("player_id", -1))
 			board.local_player_id = my_pid
-			print("[TestClient %s] Seated as player %d (token=%s...)" % [_tag(), my_pid, str(msg.get("token", "")).left(8)])
+			_my_room = str(msg.get("room", ""))
+			_my_token = str(msg.get("token", ""))
+			print("[TestClient %s] Seated as player %d (token=%s...)" % [_tag(), my_pid, _my_token.left(8)])
+			if _reconnecting:
+				_reconnecting = false
+				print("[TestClient %s] RECONNECTED — requesting resync" % _tag())
+				sync_node.reset_client_stream()
+				sync_node._rpc_request_resync.rpc_id.call_deferred(1)
+				return
 			var decks := DecklistManager.get_all_decklists()
 			if decks.is_empty():
 				_fail("no decklists available")
@@ -128,6 +154,12 @@ func _on_control(msg: Dictionary) -> void:
 			print("[TestClient %s] START received (pid=%d mode='%s' vs '%s')" % [
 				_tag(), int(msg.get("player_id", -1)), str(msg.get("mode", "")), str(msg.get("opponent_name", ""))])
 			peer.send_control({"type": "BOARD_READY"})
+		"PEER_PRESENT":
+			var opp_connected: bool = bool(msg.get("connected", false))
+			var grace: float = float(msg.get("grace_remaining_s", 0.0))
+			print("[TestClient %s] PEER_PRESENT connected=%s grace=%.0fs" % [_tag(), opp_connected, grace])
+			if play_mode and not opp_connected:
+				_claim_win_after(grace)
 		"ERROR":
 			_fail("server error: %s" % str(msg.get("code", "")))
 
@@ -219,6 +251,13 @@ func _on_action_context(actions: Array, playable: Dictionary) -> void:
 	if match_over:
 		return
 
+	# Reconnect drill: hard-drop right after receiving our action context (the
+	# server holds it as the pending interaction and must replay it on resync).
+	if drop_after > 0 and actions_submitted >= drop_after and not _did_drop:
+		_did_drop = true
+		_drop_and_reconnect()
+		return
+
 	# Past the turn cap, the creator concedes to exercise the game-end path.
 	if session_node.client_turn_number > MAX_TURNS and is_creator and not conceded:
 		conceded = true
@@ -269,6 +308,39 @@ func _hand_index_params(playable: Dictionary, key: String) -> Dictionary:
 	if cards.is_empty():
 		return {}
 	return {"hand_index": int(cards[rng.randi() % cards.size()])}
+
+
+## Survivor side of the claim-win drill: send the claim once (and a beat
+## after) the server's grace window has elapsed, then expect game-ended.
+func _claim_win_after(grace_s: float) -> void:
+	await get_tree().create_timer(grace_s + 1.5).timeout
+	if match_over or not is_inside_tree():
+		return
+	print("[TestClient %s] Claiming win after grace" % _tag())
+	sync_node._rpc_claim_win.rpc_id(1)
+
+
+func _drop_and_reconnect() -> void:
+	print("[TestClient %s] DROPPING connection (after %d actions)" % [_tag(), actions_submitted])
+	multiplayer.multiplayer_peer.close()
+	multiplayer.multiplayer_peer = null
+	if drop_forever:
+		print("[TestClient %s] Staying dropped (claim-win drill) — exiting" % _tag())
+		await get_tree().create_timer(1.0).timeout
+		get_tree().quit(0)
+		return
+	await get_tree().create_timer(2.0).timeout
+
+	_reconnecting = true
+	peer = GameServerPeer.new()
+	peer.control_received.connect(_on_control)
+	var version: String = ProjectSettings.get_setting("application/config/version", "unknown")
+	var err := peer.connect_to_server("ws://127.0.0.1:12091/", _tag(), version)
+	if err != OK:
+		_fail("reconnect: connect error %d" % err)
+		return
+	multiplayer.multiplayer_peer = peer
+	# WELCOME triggers the RECONNECT control message; SEATED resumes play.
 
 
 # --- Exit conditions ---

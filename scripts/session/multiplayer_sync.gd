@@ -807,6 +807,25 @@ func _rpc_monster_rankup_resolved(index: int) -> void:
 	_session.turn_manager.action_handler.resolve_monster_rankup(index)
 
 
+## Client -> Server (dedicated only): claim the win after the opponent's
+## reconnect grace period expired. Validated against the room's seat state;
+## the legacy host-client path keeps its local claim-win flow instead.
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_claim_win() -> void:
+	RpcLogger.log_receive("claim_win", 0)
+	if not net.is_host() or not _session.turn_manager or _session.turn_manager.is_game_over:
+		return
+	if not _board.has_method("can_claim_win"):
+		return # Not a dedicated-server board
+	var sender_id := multiplayer.get_remote_sender_id()
+	if not _board.can_claim_win(sender_id):
+		return
+	var winner_id: int = net.peer_player_map.get(sender_id, -1)
+	if winner_id < 0:
+		return
+	_session.turn_manager._on_game_over(winner_id, "STR_LOG_REASON_OPPONENT_DISCONNECTED")
+
+
 # --- Effect highlights ---
 
 @rpc("any_peer", "call_remote", "reliable")

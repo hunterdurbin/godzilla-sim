@@ -76,6 +76,7 @@ var reconnect_timestamp_sec: int = 0  # Unix time (persists across restarts)
 var reconnect_is_host: bool = false
 var reconnect_game_mode: String = ""
 var reconnect_is_public: bool = false
+var reconnect_token: String = ""  # Dedicated-server seat token ("" = legacy relay session)
 const RECONNECT_TIMEOUT_SEC: int = 90 * 60  # 90 minutes
 
 
@@ -105,12 +106,13 @@ func save() -> void:
 	_save()
 
 
-func save_reconnect_session(room_code: String, is_host: bool, p_game_mode: String, p_is_public: bool) -> void:
+func save_reconnect_session(room_code: String, is_host: bool, p_game_mode: String, p_is_public: bool, p_token: String = "") -> void:
 	reconnect_room_code = room_code
 	reconnect_timestamp_sec = int(Time.get_unix_time_from_system())
 	reconnect_is_host = is_host
 	reconnect_game_mode = p_game_mode
 	reconnect_is_public = p_is_public
+	reconnect_token = p_token
 	_save()
 
 
@@ -120,6 +122,7 @@ func clear_reconnect_session() -> void:
 	reconnect_is_host = false
 	reconnect_game_mode = ""
 	reconnect_is_public = false
+	reconnect_token = ""
 	_save()
 
 
@@ -172,6 +175,7 @@ func _save() -> void:
 	config.set_value("reconnect", "is_host", reconnect_is_host)
 	config.set_value("reconnect", "game_mode", reconnect_game_mode)
 	config.set_value("reconnect", "is_public", reconnect_is_public)
+	config.set_value("reconnect", "token", reconnect_token)
 	config.save(SETTINGS_PATH)
 
 
@@ -240,6 +244,7 @@ func _load() -> void:
 	reconnect_is_host = config.get_value("reconnect", "is_host", false)
 	reconnect_game_mode = config.get_value("reconnect", "game_mode", "")
 	reconnect_is_public = config.get_value("reconnect", "is_public", false)
+	reconnect_token = config.get_value("reconnect", "token", "")
 
 
 func pick_weighted_random_deck() -> String:

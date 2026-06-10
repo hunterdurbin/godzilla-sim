@@ -556,12 +556,13 @@ func _ready() -> void:
 		NetworkManager.is_in_game = true
 		_reconnect.setup()
 		# Save reconnect session for app-restart recovery (online only)
-		if NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]:
+		if NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT, NetworkManager.Mode.ONLINE]:
 			GameSettings.save_reconnect_session(
 				NetworkManager.get_game_code(),
 				NetworkManager.is_host(),
 				NetworkManager.game_mode,
 				NetworkManager.is_public_room,
+				NetworkManager.room_token,
 			)
 
 	# Connect deck search buttons
@@ -1542,12 +1543,13 @@ func _execute_rematch() -> void:
 	_reconnect_cumulative_seconds = 0.0
 	_pending_interaction = {}
 	# Re-save session with fresh timestamp for the new game
-	if is_multiplayer_game and NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]:
+	if is_multiplayer_game and NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT, NetworkManager.Mode.ONLINE]:
 		GameSettings.save_reconnect_session(
 			NetworkManager.get_game_code(),
 			NetworkManager.is_host(),
 			NetworkManager.game_mode,
 			NetworkManager.is_public_room,
+			NetworkManager.room_token,
 		)
 
 	# 2. Clear visual state on both boards

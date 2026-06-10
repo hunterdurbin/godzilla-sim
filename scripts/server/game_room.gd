@@ -11,6 +11,13 @@ extends Node
 ## Both seats disconnected or match over — ServerMain can GC the room.
 signal emptied
 
+## Seconds a disconnected player's seat is protected before the opponent may
+## claim the win. The seat itself survives until room GC.
+const GRACE_SECONDS: float = 90.0
+
+## Per-room override (ServerMain sets this from --grace= for test runs).
+var grace_seconds: float = GRACE_SECONDS
+
 const HEADLESS_BOARD := preload("res://scripts/server/headless_board.gd")
 const GAME_SESSION := preload("res://scripts/session/game_session.gd")
 const MULTIPLAYER_SYNC := preload("res://scripts/session/multiplayer_sync.gd")
@@ -92,6 +99,7 @@ func seat_player(conn_id: int, pname: String) -> Dictionary:
 				"deck_name": "",
 				"decklist": null,
 				"connected": true,
+				"disconnected_at_ms": 0,
 				"board_ready": false,
 				# False while the player is away in a lobby-bot game (BUSY/READY
 				# control messages) — the match won't be announced until both
@@ -222,6 +230,7 @@ func on_connection_closed(conn_id: int) -> void:
 	if pid < 0:
 		return
 	seats[pid]["connected"] = false
+	seats[pid]["disconnected_at_ms"] = Time.get_ticks_msec()
 	virtual_peer.unseat_peer(conn_id)
 	peer_player_map.erase(conn_id)
 	print("[Room %s] Player %d disconnected" % [code, pid])
@@ -229,17 +238,77 @@ func on_connection_closed(conn_id: int) -> void:
 		# Pre-match: free the seat entirely so someone else can take it.
 		seats[pid] = null
 		broadcast_lobby_state()
+		if peer_for_player(0) < 0 and peer_for_player(1) < 0:
+			emptied.emit()
 	else:
-		# TODO(M3): grace timer + claim win; for now just inform the other player.
+		# Mid-match the seat is held for reconnect (room GC'd by ServerMain's
+		# sweep if nobody returns); tell the survivor the grace clock started.
 		var other_peer := peer_for_player(1 - pid)
 		if other_peer > 0:
 			conn_mgr.send_control(other_peer, {
 				"type": "PEER_PRESENT",
 				"player_id": pid,
 				"connected": false,
+				"grace_remaining_s": grace_seconds,
 			})
-	if peer_for_player(0) < 0 and peer_for_player(1) < 0:
-		emptied.emit()
+
+
+## Re-seat a returning player by reconnect token. Returns the seat record or
+## {} if the token matches no seat.
+func reconnect_player(conn_id: int, token: String) -> Dictionary:
+	for pid in range(2):
+		var seat = seats[pid]
+		if seat == null or seat["token"] != token:
+			continue
+		if seat["connected"]:
+			# Old connection still lingering (e.g. died without FIN) — the new
+			# one takes over the seat.
+			var old_conn: int = seat["conn_id"]
+			virtual_peer.unseat_peer(old_conn)
+			peer_player_map.erase(old_conn)
+			conn_mgr.close_connection(old_conn, 4003, "Replaced by reconnect")
+		seat["conn_id"] = conn_id
+		seat["connected"] = true
+		seat["disconnected_at_ms"] = 0
+		peer_player_map[conn_id] = pid
+		virtual_peer.seat_peer(conn_id)
+		print("[Room %s] Player %d reconnected" % [code, pid])
+		var other_peer := peer_for_player(1 - pid)
+		if other_peer > 0:
+			conn_mgr.send_control(other_peer, {
+				"type": "PEER_PRESENT",
+				"player_id": pid,
+				"connected": true,
+			})
+		return seat
+	return {}
+
+
+## True when the seated player at sender_conn may claim the win: the match is
+## live, their opponent is disconnected, and the grace period has elapsed.
+func can_claim_win(sender_conn: int) -> bool:
+	if not match_started or match_over:
+		return false
+	var pid := player_for_peer(sender_conn)
+	if pid < 0:
+		return false
+	var opp = seats[1 - pid]
+	if opp == null or opp["connected"]:
+		return false
+	var down_ms: int = opp["disconnected_at_ms"]
+	return down_ms > 0 and (Time.get_ticks_msec() - down_ms) / 1000.0 >= grace_seconds
+
+
+## True when this room can be garbage-collected by the periodic sweep.
+func is_abandoned(now_ms: int, mid_game_hold_s: float, post_game_hold_s: float) -> bool:
+	if peer_for_player(0) > 0 or peer_for_player(1) > 0:
+		return false
+	var last_seen_ms := 0
+	for seat in seats:
+		if seat != null:
+			last_seen_ms = maxi(last_seen_ms, int(seat["disconnected_at_ms"]))
+	var hold_s := post_game_hold_s if match_over else mid_game_hold_s
+	return (now_ms - last_seen_ms) / 1000.0 >= hold_s
 
 
 func on_match_ended(winner_id: int, reason_key: String) -> void:
