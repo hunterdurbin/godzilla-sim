@@ -225,20 +225,8 @@ var _view_board_source_overlay: Control = null
 @onready var zone_stack_view_close: Button = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/CloseButton
 
 # Card zoom overlay
-@onready var card_zoom_overlay: Control = $CardZoomOverlay
-@onready var card_zoom_container: CenterContainer = $CardZoomOverlay/CardContainer
+@onready var card_zoom_overlay: CardZoomOverlayUI = $CardZoomOverlay
 
-# Pinch-to-zoom / pan state for card zoom overlay (touch only)
-var _pinch_active: bool = false
-var _pinch_used: bool = false # True after any pinch — suppress dismiss until next fresh tap
-var _pinch_start_distance: float = 0.0
-var _pinch_start_scale: float = 1.0
-var _pinch_touches: Dictionary = {} # index → position
-var _zoom_shown_frame: int = -1 # Frame when overlay was shown (ignore dismiss for 2 frames)
-var _zoom_dragging: bool = false # Single-finger drag active
-var _zoom_drag_start: Vector2 = Vector2.ZERO # Touch start position for deadzone check
-const PINCH_MAX_SCALE: float = 3.0
-const ZOOM_DRAG_DEADZONE: float = 20.0
 
 # Turn tracker: main phase labels [player_id][phase_index]
 # Turn tracker labels — owned by TurnTrackerModule (forwarding property for
@@ -474,6 +462,7 @@ func _ready() -> void:
 		_pending_interaction = {"method": method, "args": args}
 	_router.on_view_board_request = _on_overlay_view_board
 	_router.card_zoom_request = _show_card_zoom
+	card_zoom_overlay.on_hidden = _on_card_zoom_hidden
 	_router.register_handler("deck_search", deck_search_overlay.show_prompt)
 	_router.register_handler("deck_arrange", deck_arrange_overlay.show_prompt)
 	_router.register_handler("card_select", card_pool_select_overlay.show_prompt)
@@ -650,7 +639,6 @@ func _ready() -> void:
 	player2_board.zone_slot_right_clicked.connect(_on_zone_slot_right_clicked)
 	player1_board.strategy_slot_right_clicked.connect(_on_strategy_slot_right_clicked)
 	player2_board.strategy_slot_right_clicked.connect(_on_strategy_slot_right_clicked)
-	card_zoom_overlay.gui_input.connect(_on_card_zoom_overlay_input)
 
 	# Enable BBCode on log for hoverable card links (no underline)
 	log_output.bbcode_enabled = true
@@ -663,10 +651,8 @@ func _ready() -> void:
 	end_game_panel.visible = false
 	action_prompt_panel.visible = false
 	show_cards_button.visible = false
-	card_zoom_overlay.visible = false
 
 	# Ensure overlays render above hand cards (which have incrementing z_index)
-	card_zoom_overlay.z_index = 200
 	end_game_panel.z_index = 100
 
 	# Leave game confirmation dialog
@@ -3487,86 +3473,8 @@ func _input(event: InputEvent) -> void:
 		if not _mobile_chat_bar.get_global_rect().has_point(event.global_position):
 			_close_mobile_chat_bar()
 
-	var _zoom_fresh := card_zoom_overlay.visible and (Engine.get_process_frames() - _zoom_shown_frame) <= 2
-
-	# Pinch-to-zoom and drag-to-pan on card zoom overlay (touch only)
-	if card_zoom_overlay.visible and event is InputEventScreenTouch:
-		if event.pressed:
-			if _zoom_fresh:
-				get_viewport().set_input_as_handled()
-			else:
-				_pinch_touches[event.index] = event.position
-				if _pinch_touches.size() == 1:
-					_zoom_drag_start = event.position
-					_zoom_dragging = false
-				elif _pinch_touches.size() == 2:
-					_zoom_dragging = false
-					var points: Array = _pinch_touches.values()
-					_pinch_start_distance = (points[0] as Vector2).distance_to(points[1] as Vector2)
-					_pinch_start_scale = card_zoom_container.scale.x
-					_pinch_active = true
-					_pinch_used = true
-				get_viewport().set_input_as_handled()
-		else:
-			if not _pinch_touches.has(event.index):
-				get_viewport().set_input_as_handled()
-			else:
-				_pinch_touches.erase(event.index)
-				if _pinch_active:
-					_pinch_active = _pinch_touches.size() >= 2
-				elif _pinch_touches.is_empty():
-					if _pinch_used or _zoom_dragging:
-						_pinch_used = false
-						_zoom_dragging = false
-					else:
-						_hide_card_zoom()
-				get_viewport().set_input_as_handled()
-		return
-
-	if card_zoom_overlay.visible and event is InputEventScreenDrag:
-		var old_pos: Vector2 = _pinch_touches.get(event.index, event.position)
-		_pinch_touches[event.index] = event.position
-		if _pinch_active and _pinch_touches.size() >= 2:
-			# Two-finger pinch zoom + pan simultaneously
-			var points: Array = _pinch_touches.values()
-			var old_midpoint := old_pos
-			# Compute old midpoint from the other finger's current pos and this finger's old pos
-			var keys: Array = _pinch_touches.keys()
-			var other_idx: int = keys[0] if keys[1] == event.index else keys[1]
-			var other_pos: Vector2 = _pinch_touches[other_idx]
-			old_midpoint = (old_pos + other_pos) / 2.0
-			var new_midpoint: Vector2 = (_pinch_touches[event.index] + other_pos) / 2.0
-			# Pan by midpoint delta
-			card_zoom_container.position += new_midpoint - old_midpoint
-			# Zoom by distance change
-			var dist: float = (points[0] as Vector2).distance_to(points[1] as Vector2)
-			if _pinch_start_distance > 0.0:
-				var new_scale: float = clampf(_pinch_start_scale * dist / _pinch_start_distance, 1.0, PINCH_MAX_SCALE)
-				card_zoom_container.scale = Vector2(new_scale, new_scale)
-				card_zoom_container.pivot_offset = card_zoom_container.size / 2.0
-		elif _pinch_touches.size() == 1:
-			# Single-finger drag to pan (with deadzone)
-			if not _zoom_dragging:
-				if event.position.distance_to(_zoom_drag_start) > ZOOM_DRAG_DEADZONE:
-					_zoom_dragging = true
-			if _zoom_dragging:
-				card_zoom_container.position += event.position - old_pos
-		get_viewport().set_input_as_handled()
-		return
-
-	# Magnify gesture (trackpad pinch) — scales card zoom
-	if card_zoom_overlay.visible and event is InputEventMagnifyGesture:
-		_apply_card_zoom(event.factor)
-		get_viewport().set_input_as_handled()
-		return
-
-	# Dismiss card zoom on any click (must be first — blocks input from reaching overlays behind)
-	# Skip emulated mouse events on touch — ScreenTouch handler above covers dismiss
-	if card_zoom_overlay.visible and not _zoom_fresh and event is InputEventMouseButton and event.pressed:
-		if TouchHelper.is_touch_device():
-			get_viewport().set_input_as_handled()
-			return
-		_hide_card_zoom()
+	# Card zoom: pinch/pan/magnify/dismiss handling lives on the overlay
+	if card_zoom_overlay.handle_input(event):
 		get_viewport().set_input_as_handled()
 		return
 
@@ -3574,7 +3482,7 @@ func _input(event: InputEvent) -> void:
 	# Uses ui_cancel (ESC on keyboard, B/Circle on controller)
 	if event.is_action_pressed("ui_cancel"):
 		if card_zoom_overlay.visible:
-			_hide_card_zoom()
+			card_zoom_overlay.hide_zoom()
 		elif deck_arrange_overlay.visible:
 			pass # Mandatory — must confirm
 		elif card_pool_select_overlay.visible:
@@ -5128,80 +5036,18 @@ func _on_hand_card_right_clicked(card: Control, _hand_player_id: int) -> void:
 		_show_card_zoom(card.card_data, mod)
 
 
+## Zoom shim — display lives on CardZoomOverlayUI (router hook + several
+## long-press/right-click callers).
 func _show_card_zoom(card_data: Dictionary, play_cost_modifier: int = 0) -> void:
-	# Clear any existing zoomed card
-	for child in card_zoom_container.get_children():
-		child.queue_free()
-	var card: Control = card_scene.instantiate()
-	if card.has_method("set_card_data_dict"):
-		card.set_card_data_dict(card_data)
-	if card.has_method("set_play_cost_modifier"):
-		card.set_play_cost_modifier(play_cost_modifier)
-	card.is_selectable = false
-	card.drag_enabled = false
-	card.hover_scale = 1.0
-	card.hover_lift = 0.0
-	card.mouse_filter = Control.MOUSE_FILTER_PASS
-	var is_strategy: bool = card_data.get("card_type") == CardEnums.CardType.STRATEGY
-	if is_strategy:
-		# Strategy card: portrait 405x567 rotated -90° to appear as landscape 567x405.
-		# Use a wrapper sized to the landscape dimensions so CenterContainer centers correctly.
-		var portrait_size := Vector2(405, 567)
-		var wrapper := Control.new()
-		wrapper.custom_minimum_size = Vector2(portrait_size.y, portrait_size.x) # 567x405
-		wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card_zoom_container.add_child(wrapper)
-		card.custom_minimum_size = Vector2.ZERO
-		card.size = portrait_size
-		card.pivot_offset = portrait_size / 2.0
-		card.rotation = deg_to_rad(-90)
-		# Center the portrait card within the landscape wrapper
-		card.position = Vector2(
-			(wrapper.custom_minimum_size.x - portrait_size.x) / 2.0,
-			(wrapper.custom_minimum_size.y - portrait_size.y) / 2.0
-		)
-		wrapper.add_child(card)
-	else:
-		card.custom_minimum_size = Vector2(405, 567)
-		card_zoom_container.add_child(card)
-	# Re-orient the badge after rotation was set above (strategy zoom rotates -90°).
-	if card.has_method("update_play_cost_badge_layout"):
-		card.update_play_cost_badge_layout()
-	card_zoom_overlay.visible = true
-	_zoom_shown_frame = Engine.get_process_frames()
+	card_zoom_overlay.show_card(card_data, play_cost_modifier)
 
 
-func _on_card_zoom_overlay_input(event: InputEvent) -> void:
-	if TouchHelper.is_touch_device():
-		return # Touch dismiss handled by _input ScreenTouch handler
-	if (Engine.get_process_frames() - _zoom_shown_frame) <= 2:
-		return
-	if event is InputEventMouseButton and event.pressed:
-		_hide_card_zoom()
-		get_viewport().set_input_as_handled()
-
-
-func _hide_card_zoom() -> void:
-	card_zoom_overlay.visible = false
-	card_zoom_container.scale = Vector2.ONE
-	card_zoom_container.position = Vector2.ZERO
-	_pinch_touches.clear()
-	_pinch_active = false
-	_pinch_used = false
-	_zoom_dragging = false
-	for child in card_zoom_container.get_children():
-		child.queue_free()
-	# Reset all slot input state so no timers or pending clicks carry over
+## Overlay on_hidden hook: reset all slot input state so no timers or
+## pending clicks carry over.
+func _on_card_zoom_hidden() -> void:
 	for board in [player1_board, player2_board]:
 		for slot in board.zone_slots:
 			slot.reset_input_state()
-
-
-func _apply_card_zoom(factor: float) -> void:
-	var new_scale: float = clampf(card_zoom_container.scale.x * factor, 1.0, PINCH_MAX_SCALE)
-	card_zoom_container.scale = Vector2(new_scale, new_scale)
-	card_zoom_container.pivot_offset = card_zoom_container.size / 2.0
-
 
 # --- Card hover preview ---
 
