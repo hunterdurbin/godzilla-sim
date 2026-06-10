@@ -15,6 +15,9 @@
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckSearchOverlay.tscn" id="13_dso"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckArrangeOverlay.tscn" id="14_dao"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/CardSelectOverlay.tscn" id="15_cso"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/DiscardViewOverlay.tscn" id="16_dvo"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/MonsterDeckViewOverlay.tscn" id="17_mdo"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/ZoneStackViewOverlay.tscn" id="18_zso"]
 
 [node name="GameBoard" type="Control" unique_id=1722697301]
 layout_mode = 3
@@ -542,168 +545,11 @@ card_spacing = 120.0
 
 [node name="DeckSearchOverlay" parent="." instance=ExtResource("13_dso")]
 
-[node name="DiscardViewOverlay" type="ColorRect" parent="." unique_id=778566577]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
+[node name="DiscardViewOverlay" parent="." instance=ExtResource("16_dvo")]
 
-[node name="DiscardViewPanel" type="PanelContainer" parent="DiscardViewOverlay" unique_id=73043265]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -350.0
-offset_right = 350.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="MonsterDeckViewOverlay" parent="." instance=ExtResource("17_mdo")]
 
-[node name="VBox" type="VBoxContainer" parent="DiscardViewOverlay/DiscardViewPanel" unique_id=1241130303]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="TitleLabel" type="Label" parent="DiscardViewOverlay/DiscardViewPanel/VBox" unique_id=628669903]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_DISCARD_PILE"
-horizontal_alignment = 1
-
-[node name="StackedToggle" type="CheckButton" parent="DiscardViewOverlay/DiscardViewPanel/VBox" unique_id=740336234]
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_STACKED"
-
-[node name="ScrollContainer" type="ScrollContainer" parent="DiscardViewOverlay/DiscardViewPanel/VBox" unique_id=494765189]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="CardGrid" type="GridContainer" parent="DiscardViewOverlay/DiscardViewPanel/VBox/ScrollContainer" unique_id=1045351002]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 4
-
-[node name="CloseButton" type="Button" parent="DiscardViewOverlay/DiscardViewPanel/VBox" unique_id=1187178682]
-custom_minimum_size = Vector2(100, 36)
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_CLOSE"
-
-[node name="MonsterDeckViewOverlay" type="ColorRect" parent="." unique_id=1274372105]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
-
-[node name="MonsterDeckViewPanel" type="PanelContainer" parent="MonsterDeckViewOverlay" unique_id=317633118]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -350.0
-offset_right = 350.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel" unique_id=1954534819]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="TitleLabel" type="Label" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox" unique_id=307134534]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_MONSTER_DECK"
-horizontal_alignment = 1
-
-[node name="StackedToggle" type="CheckButton" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox" unique_id=1952612739]
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_STACKED"
-
-[node name="ScrollContainer" type="ScrollContainer" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox" unique_id=732098287]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="CardGrid" type="GridContainer" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/ScrollContainer" unique_id=549177241]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 4
-
-[node name="CloseButton" type="Button" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox" unique_id=2118037417]
-custom_minimum_size = Vector2(100, 36)
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_CLOSE"
-
-[node name="ZoneStackViewOverlay" type="ColorRect" parent="." unique_id=481206165]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
-
-[node name="ZoneStackViewPanel" type="PanelContainer" parent="ZoneStackViewOverlay" unique_id=299704508]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -350.0
-offset_right = 350.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="ZoneStackViewOverlay/ZoneStackViewPanel" unique_id=1533084540]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="TitleLabel" type="Label" parent="ZoneStackViewOverlay/ZoneStackViewPanel/VBox" unique_id=1778754529]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_ZONE_STACK"
-horizontal_alignment = 1
-
-[node name="ScrollContainer" type="ScrollContainer" parent="ZoneStackViewOverlay/ZoneStackViewPanel/VBox" unique_id=1118408588]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="CardGrid" type="GridContainer" parent="ZoneStackViewOverlay/ZoneStackViewPanel/VBox/ScrollContainer" unique_id=396343001]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 4
-
-[node name="CloseButton" type="Button" parent="ZoneStackViewOverlay/ZoneStackViewPanel/VBox" unique_id=744930460]
-custom_minimum_size = Vector2(100, 36)
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_CLOSE"
+[node name="ZoneStackViewOverlay" parent="." instance=ExtResource("18_zso")]
 
 [node name="CardZoomOverlay" type="ColorRect" parent="." unique_id=1135435089]
 visible = false

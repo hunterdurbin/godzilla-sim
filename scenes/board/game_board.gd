@@ -200,9 +200,8 @@ var _pending_sound_events: PackedStringArray:
 @onready var card_pool_select_confirm: Button = $CardSelectOverlay/CardSelectPanel/VBox/ButtonRow/ConfirmButton
 
 # Discard view UI references
-@onready var discard_view_overlay: Control = $DiscardViewOverlay
-@onready var discard_view_title: Label = $DiscardViewOverlay/DiscardViewPanel/VBox/TitleLabel
-@onready var discard_view_grid: GridContainer = $DiscardViewOverlay/DiscardViewPanel/VBox/ScrollContainer/CardGrid
+@onready var discard_view_overlay: CardGridViewerUI = $DiscardViewOverlay
+# Internal refs kept ONLY for the mobile styling pass
 @onready var discard_view_close: Button = $DiscardViewOverlay/DiscardViewPanel/VBox/CloseButton
 @onready var discard_view_stacked: CheckButton = $DiscardViewOverlay/DiscardViewPanel/VBox/StackedToggle
 
@@ -211,26 +210,18 @@ var _match_stacked_view: bool:
 	get: return _router.match_stacked_view
 	set(v): _router.match_stacked_view = v
 
-# Stored discard view data for stacked toggle
-var _discard_view_cards: Array[Dictionary] = []
-
 
 var _view_board_source_overlay: Control = null
 
 # Monster deck view UI references
-@onready var monster_deck_view_overlay: Control = $MonsterDeckViewOverlay
-@onready var monster_deck_view_title: Label = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/TitleLabel
-@onready var monster_deck_view_grid: GridContainer = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/ScrollContainer/CardGrid
+@onready var monster_deck_view_overlay: CardGridViewerUI = $MonsterDeckViewOverlay
+# Internal refs kept ONLY for the mobile styling pass
 @onready var monster_deck_view_close: Button = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/CloseButton
 @onready var monster_deck_view_stacked: CheckButton = $MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/StackedToggle
 
-# Stored monster deck view data for stacked toggle
-var _monster_deck_view_cards: Array[Dictionary] = []
-
 # Zone stack view UI references
-@onready var zone_stack_view_overlay: Control = $ZoneStackViewOverlay
-@onready var zone_stack_view_title: Label = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/TitleLabel
-@onready var zone_stack_view_grid: GridContainer = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/ScrollContainer/CardGrid
+@onready var zone_stack_view_overlay: CardGridViewerUI = $ZoneStackViewOverlay
+# Internal ref kept ONLY for the mobile styling pass
 @onready var zone_stack_view_close: Button = $ZoneStackViewOverlay/ZoneStackViewPanel/VBox/CloseButton
 
 # Card zoom overlay
@@ -260,9 +251,6 @@ var _preview_container: Control
 var _preview_bg: Panel
 var _preview_card: Control
 
-# Stored zone stack view data
-var _zone_stack_view_cards: Array[Dictionary] = []
-var _cards_revealed_active: bool = false
 
 # Tracks the Card node that received the most recent effect-card highlight so
 # unhighlight can clear it by reference even if its card_data later mutates
@@ -364,9 +352,7 @@ var _choice_container: VBoxContainer = null
 var _choice_panel: PanelContainer = null # Mobile wrapper panel
 
 # Monster rank-up selection state
-var _rankup_selecting: bool = false
-var _rankup_player_id: int = -1
-var _rankup_valid_indices: Array[int] = []
+
 
 # Drag-to-zone state
 var _drag_card: Control = null
@@ -491,6 +477,8 @@ func _ready() -> void:
 	_router.register_handler("deck_search", deck_search_overlay.show_prompt)
 	_router.register_handler("deck_arrange", deck_arrange_overlay.show_prompt)
 	_router.register_handler("card_select", card_pool_select_overlay.show_prompt)
+	_router.register_handler("monster_rankup", _show_monster_rankup)
+	_router.register_handler("cards_revealed", zone_stack_view_overlay.show_revealed)
 
 	if not is_multiplayer_game or NetworkManager.is_host():
 		# Seed RNG: use saved seed if loading, otherwise bot_seed for bot games
@@ -534,7 +522,6 @@ func _ready() -> void:
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
 		turn_manager.action_handler.counter_prevented.connect(_on_counter_prevented)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
-		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
 		# Connect effect handler signals for player choice UIs
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
@@ -546,7 +533,6 @@ func _ready() -> void:
 		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
 		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
-		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 
 		# Set up replay recorder
 		_setup_replay_recorder()
@@ -648,24 +634,16 @@ func _ready() -> void:
 	# Connect discard view
 	player1_board.discard_clicked.connect(_on_discard_clicked)
 	player2_board.discard_clicked.connect(_on_discard_clicked)
-	discard_view_close.pressed.connect(_hide_discard_view)
-	discard_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_discard_view))
-	discard_view_stacked.toggled.connect(_on_discard_view_stacked_toggled)
 
 	# Connect monster deck view
 	player1_board.monster_deck_clicked.connect(_on_monster_deck_clicked)
 	player2_board.monster_deck_clicked.connect(_on_monster_deck_clicked)
-	monster_deck_view_close.pressed.connect(_hide_monster_deck_view)
-	monster_deck_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_monster_deck_view))
-	monster_deck_view_stacked.toggled.connect(_on_monster_deck_view_stacked_toggled)
 
 	# Connect zone stack view
 	player1_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
 	player2_board.zone_slot_clicked.connect(_on_zone_slot_clicked)
 	player1_board.strategy_slot_clicked.connect(_on_strategy_slot_clicked)
 	player2_board.strategy_slot_clicked.connect(_on_strategy_slot_clicked)
-	zone_stack_view_close.pressed.connect(_hide_zone_stack_view)
-	zone_stack_view_overlay.gui_input.connect(_on_overlay_background_clicked.bind(_hide_zone_stack_view))
 
 	# Connect card zoom (right-click)
 	player1_board.zone_slot_right_clicked.connect(_on_zone_slot_right_clicked)
@@ -685,16 +663,10 @@ func _ready() -> void:
 	end_game_panel.visible = false
 	action_prompt_panel.visible = false
 	show_cards_button.visible = false
-	discard_view_overlay.visible = false
-	monster_deck_view_overlay.visible = false
-	zone_stack_view_overlay.visible = false
 	card_zoom_overlay.visible = false
 
 	# Ensure overlays render above hand cards (which have incrementing z_index)
 	card_zoom_overlay.z_index = 200
-	discard_view_overlay.z_index = 100
-	monster_deck_view_overlay.z_index = 100
-	zone_stack_view_overlay.z_index = 100
 	end_game_panel.z_index = 100
 
 	# Leave game confirmation dialog
@@ -3073,7 +3045,6 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
 		turn_manager.action_handler.counter_prevented.connect(_on_counter_prevented)
 		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
-		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
 		# Reconnect effect handler signals
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
@@ -3085,7 +3056,6 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.effect_handler.effect_card_highlighted.connect(_on_effect_card_highlighted)
 		turn_manager.action_handler.effect_handler.effect_card_unhighlighted.connect(_on_effect_card_unhighlighted)
 		turn_manager.action_handler.effect_handler.choice_requested.connect(_on_choice_requested)
-		turn_manager.action_handler.effect_handler.cards_revealed_requested.connect(_on_cards_revealed_requested)
 
 		# Reconnect bot player for Solo v Bot mode
 		if is_bot_game:
@@ -3613,14 +3583,11 @@ func _input(event: InputEvent) -> void:
 			# ESC dismisses only when skip is allowed; otherwise the prompt is mandatory.
 			deck_search_overlay.try_skip()
 		elif discard_view_overlay.visible:
-			_hide_discard_view()
+			discard_view_overlay.try_close()
 		elif monster_deck_view_overlay.visible:
-			if _rankup_selecting:
-				pass # Mandatory — must pick a monster
-			else:
-				_hide_monster_deck_view()
+			monster_deck_view_overlay.try_close() # Refused during mandatory rank-up
 		elif zone_stack_view_overlay.visible:
-			_hide_zone_stack_view()
+			zone_stack_view_overlay.try_close()
 		elif _choice_selecting:
 			pass # Mandatory — must pick an option
 		elif _hand_card_selecting and _hand_card_allow_skip:
@@ -5033,63 +5000,10 @@ func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void
 
 func _on_discard_clicked(pid: int) -> void:
 	var player := _get_player_state(pid)
-	_discard_view_cards = player.discard_pile.duplicate(true)
-	_discard_view_cards.reverse()
+	var cards: Array[Dictionary] = player.discard_pile.duplicate(true)
+	cards.reverse()
 	var pname := GameLog.player_name(pid)
-	var title := tr("STR_GB_DISCARD_TITLE_FMT") % [pname, _discard_view_cards.size()]
-	discard_view_title.text = title
-	discard_view_stacked.set_pressed_no_signal(_match_stacked_view)
-	discard_view_overlay.visible = true
-	_refresh_discard_view_grid()
-
-
-func _refresh_discard_view_grid() -> void:
-	var stacked := discard_view_stacked.button_pressed
-
-	for child in discard_view_grid.get_children():
-		child.queue_free()
-
-	if _discard_view_cards.is_empty():
-		var empty_label := Label.new()
-		empty_label.text = tr("STR_GB_NO_DISCARD")
-		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		discard_view_grid.add_child(empty_label)
-		return
-
-	if stacked:
-		var groups := _group_cards(_discard_view_cards)
-		for group in groups:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(group["card_data"])
-			card.is_selectable = false
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			discard_view_grid.add_child(card)
-			_add_count_badge(card, group["count"])
-	else:
-		for card_data in _discard_view_cards:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.is_selectable = false
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			discard_view_grid.add_child(card)
-
-
-func _on_discard_view_stacked_toggled(_value: bool) -> void:
-	_match_stacked_view = discard_view_stacked.button_pressed
-	_refresh_discard_view_grid()
-
-
-func _hide_discard_view() -> void:
-	discard_view_overlay.visible = false
-	for child in discard_view_grid.get_children():
-		child.queue_free()
-	_discard_view_cards.clear()
+	discard_view_overlay.show_cards(cards, tr("STR_GB_DISCARD_TITLE_FMT") % [pname, cards.size()])
 
 
 # --- Monster deck view UI ---
@@ -5099,148 +5013,24 @@ func _on_monster_deck_clicked(pid: int) -> void:
 	if is_multiplayer_game and pid != local_player_id:
 		return
 	var player := _get_player_state(pid)
-	_monster_deck_view_cards = player.monster_deck.duplicate(true)
-	var title := tr("STR_GB_MONSTER_DECK_TITLE_FMT") % _monster_deck_view_cards.size()
-	monster_deck_view_title.text = title
-	monster_deck_view_stacked.set_pressed_no_signal(_match_stacked_view)
-	monster_deck_view_overlay.visible = true
-	_refresh_monster_deck_view_grid()
-
-
-func _refresh_monster_deck_view_grid() -> void:
-	var stacked := monster_deck_view_stacked.button_pressed
-
-	for child in monster_deck_view_grid.get_children():
-		child.queue_free()
-
-	if _monster_deck_view_cards.is_empty():
-		var empty_label := Label.new()
-		empty_label.text = tr("STR_GB_NO_MONSTER_DECK")
-		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		monster_deck_view_grid.add_child(empty_label)
-		return
-
-	if stacked:
-		var groups := _group_cards(_monster_deck_view_cards)
-		for group in groups:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(group["card_data"])
-			card.is_selectable = false
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			monster_deck_view_grid.add_child(card)
-			_add_count_badge(card, group["count"])
-	else:
-		for card_data in _monster_deck_view_cards:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.is_selectable = false
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			monster_deck_view_grid.add_child(card)
-
-
-func _on_monster_deck_view_stacked_toggled(_value: bool) -> void:
-	_match_stacked_view = monster_deck_view_stacked.button_pressed
-	_refresh_monster_deck_view_grid()
-
-
-func _hide_monster_deck_view() -> void:
-	if _rankup_selecting:
-		return # Cannot dismiss during mandatory rank-up selection
-	monster_deck_view_overlay.visible = false
-	for child in monster_deck_view_grid.get_children():
-		child.queue_free()
-	_monster_deck_view_cards.clear()
+	var cards: Array[Dictionary] = player.monster_deck.duplicate(true)
+	monster_deck_view_overlay.show_cards(cards, tr("STR_GB_MONSTER_DECK_TITLE_FMT") % cards.size())
 
 
 # --- Monster rank-up selection UI ---
-
-func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
-	if is_bot_game and player_id == bot_player.bot_player_id:
-		return
-	if is_multiplayer_game and player_id != local_player_id:
-		_flush_broadcast()
-		var monsters_json := JSON.stringify(StateCodec.cards_to_ids(monsters))
-		var indices_json := JSON.stringify(valid_indices)
-		_pending_interaction = {"method": "monster_rankup", "args": [monsters_json, indices_json, prompt]}
-		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == player_id:
-				RpcLogger.log_send("monster_rankup_requested", monsters_json.length() + indices_json.length() + prompt.length())
-				_sync._rpc_monster_rankup_requested.rpc_id(peer_id, monsters_json, indices_json, prompt)
-		return
-	_play_action_required_if_not_turn_player(player_id)
-	_show_monster_rankup_selection(player_id, monsters, valid_indices, prompt)
-
 
 func _play_action_required_if_not_turn_player(player_id: int) -> void:
 	if turn_manager and player_id != turn_manager.game_state.current_player_id:
 		SfxManager.play("action_required")
 
 
-func _show_monster_rankup_selection(player_id: int, monsters: Array[Dictionary], valid_indices: Array[int], prompt: String) -> void:
-	_rankup_selecting = true
-	_rankup_player_id = player_id
-	_rankup_valid_indices = valid_indices
-
+## Router handler for monster rank-up: board-side button state wraps the
+## viewer's mandatory selection mode.
+func _show_monster_rankup(monsters: Array, valid_indices: Array[int], prompt: String, resolve_cb: Callable) -> void:
 	_disable_all_buttons()
-
-	# Show monster deck overlay with selectable cards
-	monster_deck_view_title.text = _resolve_translated_text(prompt)
-	monster_deck_view_close.visible = false
-	monster_deck_view_stacked.visible = false
-
-	for child in monster_deck_view_grid.get_children():
-		child.queue_free()
-
-	for i in range(monsters.size()):
-		var card_data := monsters[i]
-		var card: Control = card_scene.instantiate()
-		if card.has_method("set_card_data_dict"):
-			card.set_card_data_dict(card_data)
-		card.drag_enabled = false
-		_set_gallery_hover(card)
-
-		if i in valid_indices:
-			card.is_selectable = true
-			card.card_clicked.connect(_on_rankup_card_clicked.bind(i))
-		else:
-			card.is_selectable = false
-			card.modulate = Color(0.5, 0.5, 0.5, 1.0)
-
-		card.card_right_clicked.connect(_on_card_long_press_zoom)
-		monster_deck_view_grid.add_child(card)
-
-	monster_deck_view_overlay.visible = true
-
-
-func _on_rankup_card_clicked(_card: Control, index: int) -> void:
-	if not _rankup_selecting:
-		return
-	_cleanup_rankup_selection()
-
-	if is_multiplayer_game and not NetworkManager.is_host():
-		RpcLogger.log_send("monster_rankup_resolved", 4)
-		_sync._rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, index)
-	else:
-		turn_manager.action_handler.resolve_monster_rankup(index)
-
-
-func _cleanup_rankup_selection() -> void:
-	_rankup_selecting = false
-	_rankup_valid_indices.clear()
-
-	monster_deck_view_overlay.visible = false
-	monster_deck_view_close.visible = true
-	monster_deck_view_stacked.visible = true
-	for child in monster_deck_view_grid.get_children():
-		child.queue_free()
-
-	btn_confirm.disabled = true
+	monster_deck_view_overlay.show_rankup(monsters, valid_indices, prompt, func(index: int) -> void:
+		btn_confirm.disabled = true
+		resolve_cb.call(index))
 
 
 # --- Zone stack view UI ---
@@ -5268,56 +5058,15 @@ func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
 	var has_monster: bool = not player.current_monster.is_empty() and (player.monster_zone - 1) == zone_idx
 	if stack.is_empty() and not has_monster:
 		return
-	_zone_stack_view_cards.clear()
+	var cards: Array[Dictionary] = []
 	if has_monster:
-		_zone_stack_view_cards.append(player.current_monster)
+		cards.append(player.current_monster)
 		for m in player.monster_stack:
-			_zone_stack_view_cards.append(m)
+			cards.append(m)
 	for card_data in stack:
-		_zone_stack_view_cards.append(card_data)
-	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = _stack_view_header(
-		"STR_GB_ZONE_HEADER_FMT", "STR_GB_ZONE_HEADER_UNDER_FMT", zone_num, total)
-	zone_stack_view_overlay.visible = true
-	_refresh_zone_stack_view_grid()
-
-
-func _refresh_zone_stack_view_grid() -> void:
-	for child in zone_stack_view_grid.get_children():
-		child.queue_free()
-
-	for i in range(_zone_stack_view_cards.size()):
-		var card_data: Dictionary = _zone_stack_view_cards[i]
-		var card: Control = card_scene.instantiate()
-		if card.has_method("set_card_data_dict"):
-			card.set_card_data_dict(card_data)
-		card.is_selectable = false
-		card.drag_enabled = false
-		_set_gallery_hover(card)
-		card.card_right_clicked.connect(_on_card_long_press_zoom)
-		zone_stack_view_grid.add_child(card)
-
-
-func _hide_zone_stack_view() -> void:
-	zone_stack_view_overlay.visible = false
-	for child in zone_stack_view_grid.get_children():
-		child.queue_free()
-	_zone_stack_view_cards.clear()
-	if _cards_revealed_active:
-		_cards_revealed_active = false
-		turn_manager.action_handler.effect_handler.resolve_cards_revealed()
-
-
-func _on_cards_revealed_requested(player_id: int, cards: Array[Dictionary], title: String) -> void:
-	if is_bot_game and player_id == bot_player.bot_player_id:
-		return
-	_zone_stack_view_cards.clear()
-	_zone_stack_view_cards.append_array(cards)
-	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = tr("STR_GB_TITLE_COUNT_FMT").replace("{TITLE}", title).replace("{C}", str(total))
-	zone_stack_view_overlay.visible = true
-	_cards_revealed_active = true
-	_refresh_zone_stack_view_grid()
+		cards.append(card_data)
+	zone_stack_view_overlay.show_cards(cards, _stack_view_header(
+		"STR_GB_ZONE_HEADER_FMT", "STR_GB_ZONE_HEADER_UNDER_FMT", zone_num, cards.size()))
 
 
 # --- Card zoom (right-click) UI ---
@@ -5360,15 +5109,11 @@ func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
 	var stack: Array = []
 	if strategy_idx < player.strategy_zone_stacks.size():
 		stack = player.strategy_zone_stacks[strategy_idx]
-	_zone_stack_view_cards.clear()
-	_zone_stack_view_cards.append(card_data)
+	var cards: Array[Dictionary] = [card_data]
 	for c in stack:
-		_zone_stack_view_cards.append(c)
-	var total: int = _zone_stack_view_cards.size()
-	zone_stack_view_title.text = _stack_view_header(
-		"STR_GB_STRATEGY_HEADER_FMT", "STR_GB_STRATEGY_HEADER_UNDER_FMT", strategy_idx + 1, total)
-	zone_stack_view_overlay.visible = true
-	_refresh_zone_stack_view_grid()
+		cards.append(c)
+	zone_stack_view_overlay.show_cards(cards, _stack_view_header(
+		"STR_GB_STRATEGY_HEADER_FMT", "STR_GB_STRATEGY_HEADER_UNDER_FMT", strategy_idx + 1, cards.size()))
 
 
 func _on_card_long_press_zoom(card: Control) -> void:
@@ -5424,11 +5169,6 @@ func _show_card_zoom(card_data: Dictionary, play_cost_modifier: int = 0) -> void
 		card.update_play_cost_badge_layout()
 	card_zoom_overlay.visible = true
 	_zoom_shown_frame = Engine.get_process_frames()
-
-
-func _on_overlay_background_clicked(event: InputEvent, hide_func: Callable) -> void:
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		hide_func.call()
 
 
 func _on_card_zoom_overlay_input(event: InputEvent) -> void:
@@ -5573,11 +5313,7 @@ func _show_reshuffle_snapshot(ids_csv: String) -> void:
 		var data: Dictionary = CardData.get_card_by_id(id)
 		if not data.is_empty():
 			cards.append(data.duplicate(true))
-	_discard_view_cards = cards
-	discard_view_title.text = tr("STR_GB_RESHUFFLE_SNAPSHOT_TITLE_FMT") % cards.size()
-	discard_view_stacked.set_pressed_no_signal(_match_stacked_view)
-	discard_view_overlay.visible = true
-	_refresh_discard_view_grid()
+	discard_view_overlay.show_cards(cards, tr("STR_GB_RESHUFFLE_SNAPSHOT_TITLE_FMT") % cards.size())
 
 
 func _set_mouse_filter_ignore_recursive(node: Control) -> void:
@@ -5971,13 +5707,9 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 	if NetworkManager.is_host():
 		return
 	var monster_ids: Array = JSON.parse_string(monsters_json)
-	var monsters: Array[Dictionary] = StateCodec.ids_to_cards(monster_ids)
 	var parsed_indices: Array = JSON.parse_string(indices_json)
-	var valid_indices: Array[int] = []
-	for v in parsed_indices:
-		valid_indices.append(int(v))
 	SfxManager.play("action_required")
-	_show_monster_rankup_selection(local_player_id, monsters, valid_indices, prompt)
+	_router.show_monster_rankup(StateCodec.ids_to_cards(monster_ids), parsed_indices, prompt)
 
 
 ## Client -> Host: resolve monster rank-up selection
