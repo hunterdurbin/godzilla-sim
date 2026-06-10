@@ -1280,19 +1280,24 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 func _on_choice_requested(player_id: int, options: Array[String], prompt: String) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
+	# Card art behind each option (parallel to options; "" = text-only).
+	var card_ids: Array[String] = []
+	if turn_manager:
+		card_ids = turn_manager.action_handler.effect_handler.choice_card_ids
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var options_json := JSON.stringify(options)
-		_pending_interaction = {"method": "choice", "args": [options_json, prompt]}
+		var card_ids_json := JSON.stringify(card_ids)
+		_pending_interaction = {"method": "choice", "args": [options_json, prompt, card_ids_json]}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("choice_requested", options_json.length() + prompt.length())
-				_sync._rpc_choice_requested.rpc_id(peer_id, options_json, prompt)
+				_sync._rpc_choice_requested.rpc_id(peer_id, options_json, prompt, card_ids_json)
 		return
-	_show_choice_selection(player_id, options, prompt)
+	_show_choice_selection(player_id, options, prompt, card_ids)
 
 
-func _show_choice_selection(player_id: int, options: Array[String], prompt: String) -> void:
+func _show_choice_selection(player_id: int, options: Array[String], prompt: String, card_ids: Array[String] = []) -> void:
 	_choice_selecting = true
 	_choice_player_id = player_id
 
@@ -1334,6 +1339,15 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 		btn.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
 		if _is_mobile_layout:
 			btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+		# Card art thumb (deck-list-style top crop; strategy = upright center
+		# square) so the player can see WHICH card each ability belongs to.
+		if i < card_ids.size() and not card_ids[i].is_empty():
+			var thumb := OverlayGridUtil.get_choice_thumb(card_ids[i])
+			if thumb:
+				btn.icon = thumb
+				btn.expand_icon = true
+				btn.add_theme_constant_override("icon_max_width", 48)
+				btn.custom_minimum_size.y = maxf(btn.custom_minimum_size.y, 56.0)
 		btn.pressed.connect(_on_choice_button_pressed.bind(i))
 		_choice_container.add_child(btn)
 		_choice_buttons.append(btn)

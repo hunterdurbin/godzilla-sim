@@ -2718,7 +2718,7 @@ func _rpc_strategy_target_resolved(strategy_index: int) -> void:
 
 
 ## Host -> Client: choice request (player must choose ability order)
-func _rpc_choice_requested(options_json: String, prompt: String) -> void:
+func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]") -> void:
 	RpcLogger.log_receive("choice_requested", options_json.length() + prompt.length())
 	if NetworkManager.is_host():
 		return
@@ -2726,7 +2726,12 @@ func _rpc_choice_requested(options_json: String, prompt: String) -> void:
 	var options: Array[String] = []
 	for v in parsed:
 		options.append(str(v))
-	_selection._show_choice_selection(local_player_id, options, prompt)
+	var parsed_ids = JSON.parse_string(card_ids_json)
+	var card_ids: Array[String] = []
+	if parsed_ids is Array:
+		for v in parsed_ids:
+			card_ids.append(str(v))
+	_selection._show_choice_selection(local_player_id, options, prompt, card_ids)
 
 
 ## Client -> Host: choice resolved (player chose an option)

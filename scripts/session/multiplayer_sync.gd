@@ -265,7 +265,7 @@ func _resend_pending_interaction(peer_id: int) -> void:
 			_rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2])
 		"choice":
 			RpcLogger.log_send("choice_requested", args[0].length() + args[1].length())
-			_rpc_choice_requested.rpc_id(peer_id, args[0], args[1])
+			_rpc_choice_requested.rpc_id(peer_id, args[0], args[1], args[2] if args.size() > 2 else "[]")
 		"confirmation":
 			RpcLogger.log_send("confirmation_requested", args[0].length() + args[1].length())
 			_rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
@@ -673,9 +673,9 @@ func _rpc_strategy_target_resolved(strategy_index: int) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_choice_requested(options_json: String, prompt: String) -> void:
+func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]") -> void:
 	if _board:
-		_board._rpc_choice_requested(options_json, prompt)
+		_board._rpc_choice_requested(options_json, prompt, card_ids_json)
 
 
 @rpc("any_peer", "call_remote", "reliable")

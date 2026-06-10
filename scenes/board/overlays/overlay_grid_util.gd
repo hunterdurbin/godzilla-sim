@@ -62,6 +62,60 @@ static func clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 		child.queue_free()
 
 
+const _CardScript := preload("res://scenes/cards/card.gd")
+## Same top-crop offset the deck list rows use (DeckRow.THUMB_CROP_Y_RATIO).
+const THUMB_CROP_Y_RATIO := 0.08
+
+static var _thumb_cache: Dictionary = {} # base card id -> Texture2D (or null)
+
+
+## Square thumbnail of a card's artwork for choice buttons, matching the
+## deck-list row crop: battle/monster cards show the TOP of the card
+## (offset by THUMB_CROP_Y_RATIO). Strategy cards appear sideways in play
+## (card.gd rotates their landscape scans CLOCKWISE onto the portrait card
+## node), so showing the scan as-is equals rotating the in-game card 90°
+## counter-clockwise back to readable — the square is taken from the
+## CENTER of that upright image.
+## `card_id` must be a base id ("EBP04-067", no per-copy suffix).
+static func get_choice_thumb(card_id: String) -> Texture2D:
+	if card_id.is_empty():
+		return null
+	if _thumb_cache.has(card_id):
+		return _thumb_cache[card_id]
+	var set_number := card_id.split("-")[0]
+	var path: String = _CardScript._find_artwork_path(set_number, card_id)
+	if path.is_empty():
+		_thumb_cache[card_id] = null
+		return null
+	var img := Image.new()
+	if img.load(path) != OK:
+		_thumb_cache[card_id] = null
+		return null
+
+	var data: Dictionary = CardData.get_card_by_id(card_id)
+	var is_strategy: bool = data.get("card_type") == CardEnums.CardType.STRATEGY
+
+	var base := ImageTexture.create_from_image(img)
+	var w := img.get_width()
+	var h := img.get_height()
+	var side := mini(w, h)
+	var region: Rect2
+	if is_strategy:
+		# Center square of the upright strategy card
+		region = Rect2((w - side) / 2.0, (h - side) / 2.0, side, side)
+	else:
+		# Top portion, same offset as the deck list thumbnails
+		var y_offset := int(h * THUMB_CROP_Y_RATIO)
+		if y_offset + side > h:
+			y_offset = maxi(0, h - side)
+		region = Rect2(0, y_offset, side, side)
+	var atlas := AtlasTexture.new()
+	atlas.atlas = base
+	atlas.region = region
+	_thumb_cache[card_id] = atlas
+	return atlas
+
+
 ## Gallery hover + zoom wiring: subtle hover scale, right-click or
 ## double-click calls zoom_request(card_data, 0).
 static func set_gallery_hover(card: Control, zoom_request: Callable) -> void:
