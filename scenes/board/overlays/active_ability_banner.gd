@@ -58,7 +58,8 @@ func _ready() -> void:
 	_label = Label.new()
 	_label.add_theme_font_size_override("font_size", 20)
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	# No overrun trimming: with TRIM_ELLIPSIS a Label's minimum width
+	# collapses to ~0 and the size-hugging panel renders no text at all.
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(_label)
 
