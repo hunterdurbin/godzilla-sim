@@ -1307,36 +1307,68 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
-	# Create a container for choice buttons
+	# Choice buttons live in their own OPAQUE panel so they never visually
+	# bleed into the turn tracker behind them, anchored above the hand
+	# toggle/sort buttons so they never cover those either. The button list
+	# scrolls when there are more options than fit.
+	_choice_panel = PanelContainer.new()
+	_choice_panel.name = "ChoicePanel"
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.09, 0.09, 0.12, 0.97)
+	panel_style.border_color = Color(0.45, 0.45, 0.55, 1.0)
+	panel_style.set_border_width_all(1)
+	panel_style.set_corner_radius_all(6)
+	panel_style.content_margin_left = 6
+	panel_style.content_margin_right = 6
+	panel_style.content_margin_top = 6
+	panel_style.content_margin_bottom = 6
+	_choice_panel.add_theme_stylebox_override("panel", panel_style)
+	_choice_panel.z_index = 56
+
+	# Bottom edge: clear the mobile bottom bar, or sit above the hand
+	# toggle/sort button stack on desktop.
+	var viewport_h: float = _board.get_viewport_rect().size.y
+	var bottom_y: float = viewport_h - 12.0
+	if _is_mobile_layout:
+		bottom_y = viewport_h - 130.0
+	else:
+		var hand_stack: Control = _board.get_node_or_null("HandButtonStack")
+		if hand_stack and hand_stack.visible:
+			bottom_y = minf(bottom_y, hand_stack.get_global_rect().position.y - 8.0)
+	# Grow up-left from the bottom-right anchor point.
+	_choice_panel.anchor_left = 1.0
+	_choice_panel.anchor_right = 1.0
+	_choice_panel.anchor_top = 0.0
+	_choice_panel.anchor_bottom = 0.0
+	_choice_panel.offset_left = -6.0
+	_choice_panel.offset_right = -6.0
+	_choice_panel.offset_top = bottom_y
+	_choice_panel.offset_bottom = bottom_y
+	_choice_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_choice_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var per_btn: float = 64.0
+	var est_height: float = options.size() * per_btn + 12.0
+	var max_height: float = bottom_y - 56.0 # keep the prompt text visible above
+	scroll.custom_minimum_size = Vector2(360.0, minf(est_height, max_height))
+	_choice_panel.add_child(scroll)
+
 	_choice_container = VBoxContainer.new()
 	_choice_container.name = "ChoiceContainer"
-	if _is_mobile_layout:
-		# On mobile, wrap in a panel anchored to the right side above the bottom bar
-		_choice_panel = PanelContainer.new()
-		_choice_panel.anchor_left = 1.0
-		_choice_panel.anchor_right = 1.0
-		_choice_panel.anchor_top = 1.0
-		_choice_panel.anchor_bottom = 1.0
-		# Grow upward from the bottom spacer area
-		_choice_panel.offset_left = -350.0
-		_choice_panel.offset_right = -6.0
-		_choice_panel.offset_top = -130.0 - options.size() * 50.0
-		_choice_panel.offset_bottom = -130.0
-		_choice_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-		_choice_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
-		_choice_panel.z_index = 56
-		_choice_panel.add_child(_choice_container)
-		add_child(_choice_panel)
-	else:
-		action_panel.add_child(_choice_container)
+	_choice_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_choice_container.add_theme_constant_override("separation", 4)
+	scroll.add_child(_choice_container)
+	add_child(_choice_panel)
 
 	for i in range(options.size()):
 		var btn := Button.new()
 		btn.text = _resolve_translated_text(options[i])
 		btn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		btn.custom_minimum_size.x = 325
+		btn.custom_minimum_size.x = 340
 		btn.custom_minimum_size.y = 60 if _is_mobile_layout else 0
-		btn.size_flags_horizontal = Control.SIZE_SHRINK_END if not _is_mobile_layout else Control.SIZE_EXPAND_FILL
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		if _is_mobile_layout:
 			btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 		# Card art thumb (deck-list-style top crop; strategy = upright center
@@ -1368,13 +1400,14 @@ func _on_choice_button_pressed(index: int) -> void:
 func _cleanup_choice_selection() -> void:
 	_choice_selecting = false
 	_choice_buttons.clear()
-	if _choice_container:
-		# On mobile, the container is inside a wrapper panel — free it immediately
-		# so a subsequent choice_requested in the same frame gets a clean state.
-		if _choice_panel:
-			_choice_panel.remove_child(_choice_container)
-			_choice_panel.queue_free()
-			_choice_panel = null
+	if _choice_panel:
+		# Reparent-free immediately so a subsequent choice_requested in the
+		# same frame gets a clean state.
+		remove_child(_choice_panel)
+		_choice_panel.queue_free()
+		_choice_panel = null
+		_choice_container = null
+	elif _choice_container:
 		_choice_container.queue_free()
 		_choice_container = null
 	action_prompt_panel.visible = false
