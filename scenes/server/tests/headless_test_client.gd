@@ -20,7 +20,7 @@ extends Node
 const STUB_BOARD := preload("res://scenes/server/tests/stub_client_board.gd")
 const GAME_SESSION := preload("res://scripts/session/game_session.gd")
 const MULTIPLAYER_SYNC := preload("res://scripts/session/multiplayer_sync.gd")
-const CODE_FILE := "/tmp/godzilla_test_room_code.txt"
+const DEFAULT_CODE_FILE := "/tmp/godzilla_test_room_code.txt"
 const HANDSHAKE_TIMEOUT_S := 30.0
 const PLAY_TIMEOUT_S := 600.0
 const MAX_TURNS := 100
@@ -53,6 +53,8 @@ var drop_forever := false
 var malicious := false
 var do_rematch := false
 var matches_completed := 0
+# --codefile=PATH: room-code handoff file (override for concurrent pairs)
+var code_file := DEFAULT_CODE_FILE
 var _did_drop := false
 var _reconnecting := false
 var _my_room := ""
@@ -75,8 +77,10 @@ func _ready() -> void:
 			malicious = true
 		elif arg == "--rematch":
 			do_rematch = true
-	if is_creator and FileAccess.file_exists(CODE_FILE):
-		DirAccess.remove_absolute(CODE_FILE)
+		elif arg.begins_with("--codefile="):
+			code_file = arg.get_slice("=", 1)
+	if is_creator and FileAccess.file_exists(code_file):
+		DirAccess.remove_absolute(code_file)
 
 	_build_client_chain()
 	await get_tree().process_frame
@@ -137,7 +141,7 @@ func _on_control(msg: Dictionary) -> void:
 		"ROOM_CREATED":
 			var code := str(msg.get("room", ""))
 			print("[TestClient %s] Room created: %s" % [_tag(), code])
-			var f := FileAccess.open(CODE_FILE, FileAccess.WRITE)
+			var f := FileAccess.open(code_file, FileAccess.WRITE)
 			f.store_string(code)
 			f.close()
 		"SEATED":
@@ -421,8 +425,8 @@ func _run_watchdog() -> void:
 func _wait_for_code_file() -> String:
 	var elapsed := 0.0
 	while elapsed < HANDSHAKE_TIMEOUT_S:
-		if FileAccess.file_exists(CODE_FILE):
-			var f := FileAccess.open(CODE_FILE, FileAccess.READ)
+		if FileAccess.file_exists(code_file):
+			var f := FileAccess.open(code_file, FileAccess.READ)
 			var code := f.get_as_text().strip_edges()
 			f.close()
 			if not code.is_empty():
