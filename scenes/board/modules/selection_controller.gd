@@ -1332,28 +1332,30 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	var hand_stack: Control = _board.get_node_or_null("HandButtonStack")
 	if hand_stack and hand_stack.visible:
 		bottom_y = minf(bottom_y, hand_stack.get_global_rect().position.y - 8.0)
-	# Grow up-left from the bottom-right anchor point.
+	# Explicitly position the rect with its BOTTOM edge at bottom_y — do not
+	# rely on grow directions (a min-size overflow expands DOWNWARD from the
+	# anchor point, which is how the panel ended up over/below the screen).
+	var panel_width := 372.0 # 360 scroll + 12 stylebox margins
+	var panel_margins := 12.0
+	var per_btn: float = 64.0
+	var max_height: float = bottom_y - 56.0 # keep the prompt text visible above
+	var est_height: float = minf(options.size() * per_btn + 12.0, max_height)
 	_choice_panel.anchor_left = 1.0
 	_choice_panel.anchor_right = 1.0
 	_choice_panel.anchor_top = 0.0
 	_choice_panel.anchor_bottom = 0.0
-	_choice_panel.offset_left = -6.0
+	_choice_panel.offset_left = -6.0 - panel_width
 	_choice_panel.offset_right = -6.0
-	_choice_panel.offset_top = bottom_y
+	_choice_panel.offset_top = bottom_y - (est_height + panel_margins)
 	_choice_panel.offset_bottom = bottom_y
-	_choice_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	_choice_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	var per_btn: float = 64.0
-	var est_height: float = options.size() * per_btn + 12.0
-	var max_height: float = bottom_y - 56.0 # keep the prompt text visible above
-	scroll.custom_minimum_size = Vector2(360.0, minf(est_height, max_height))
+	scroll.custom_minimum_size = Vector2(360.0, est_height)
 	_choice_panel.add_child(scroll)
-	# After the first layout pass, shrink-wrap the scroll to the buttons'
-	# real (wrapped) height so there's no empty gap under the last button.
-	_fit_choice_panel.call_deferred(scroll, max_height)
+	# After the first layout pass, shrink-wrap to the buttons' real (wrapped)
+	# height — no gap under the last button — and re-pin the bottom edge.
+	_fit_choice_panel.call_deferred(scroll, bottom_y, max_height)
 
 	_choice_container = VBoxContainer.new()
 	_choice_container.name = "ChoiceContainer"
@@ -1386,12 +1388,17 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 
 
 ## Deferred: match the scroll viewport to the laid-out button column so the
-## panel hugs its content (capped at max_height — beyond that it scrolls).
-func _fit_choice_panel(scroll: ScrollContainer, max_height: float) -> void:
+## panel hugs its content (capped at max_height — beyond that it scrolls),
+## keeping the BOTTOM edge pinned at bottom_y so the panel grows upward.
+func _fit_choice_panel(scroll: ScrollContainer, bottom_y: float, max_height: float) -> void:
 	if not is_instance_valid(scroll) or _choice_container == null or not is_instance_valid(_choice_container):
 		return
-	var content_h: float = _choice_container.size.y + 2.0
-	scroll.custom_minimum_size.y = minf(content_h, max_height)
+	if _choice_panel == null or not is_instance_valid(_choice_panel):
+		return
+	var content_h: float = minf(_choice_container.size.y + 2.0, max_height)
+	scroll.custom_minimum_size.y = content_h
+	_choice_panel.offset_top = bottom_y - (content_h + 12.0)
+	_choice_panel.offset_bottom = bottom_y
 
 
 func _on_choice_button_pressed(index: int) -> void:
