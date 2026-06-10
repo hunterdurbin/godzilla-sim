@@ -1,0 +1,26 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/board/hud/RageDisplay.tscn" id="1_rd"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/ThreatDisplay.tscn" id="2_td"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/DeckCountLabel.tscn" id="3_dcl"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/DiscardCountLabel.tscn" id="4_dis"]
+[ext_resource type="PackedScene" path="res://scenes/board/hud/HandSortButton.tscn" id="5_hsb"]
+
+[node name="HUDBar" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 32)
+theme_override_constants/separation = 16
+
+[node name="RageDisplay" parent="." instance=ExtResource("1_rd")]
+layout_mode = 2
+
+[node name="ThreatDisplay" parent="." instance=ExtResource("2_td")]
+layout_mode = 2
+
+[node name="DeckCountLabel" parent="." instance=ExtResource("3_dcl")]
+layout_mode = 2
+
+[node name="DiscardCountLabel" parent="." instance=ExtResource("4_dis")]
+layout_mode = 2
+
+[node name="HandSortButton" parent="." instance=ExtResource("5_hsb")]
+layout_mode = 2

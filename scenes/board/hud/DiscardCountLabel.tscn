@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/discard_count_label.gd" id="1_dis"]
+
+[node name="DiscardCountLabel" type="Label"]
+text = "Discard: 0"
+script = ExtResource("1_dis")

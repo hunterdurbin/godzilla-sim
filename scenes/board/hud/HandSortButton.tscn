@@ -1,0 +1,8 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/hand_sort_button.gd" id="1_hsb"]
+
+[node name="HandSortButton" type="Button"]
+custom_minimum_size = Vector2(82, 32)
+text = "STR_GB_SORT"
+script = ExtResource("1_hsb")
