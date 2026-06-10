@@ -17,6 +17,11 @@ extends Node
 ## client_players — modules can subscribe once and bind regardless of mode.
 signal session_started
 
+## Fired by MultiplayerSync after every applied state broadcast (client
+## peers only). Client-side PlayerState objects are rebuilt per receive,
+## so bound HUD components rebind + refresh on this signal.
+signal client_state_applied
+
 var turn_manager: TurnManager # Only exists on host/solo
 var bot_player: BotPlayer
 var replay_recorder: ReplayRecorder

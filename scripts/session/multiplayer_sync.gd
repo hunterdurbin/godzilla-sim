@@ -537,6 +537,7 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 
 	# First successful apply: session is ready for client-side module binding
 	_session.mark_client_started()
+	_session.client_state_applied.emit()
 
 
 ## Client -> Host: request full state resend (delta base version mismatch or
