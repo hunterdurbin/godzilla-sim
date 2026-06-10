@@ -191,11 +191,8 @@ var _pending_sound_events: PackedStringArray:
 @onready var deck_arrange_confirm: Button = $DeckArrangeOverlay/DeckArrangePanel/VBox/ButtonRow/ConfirmButton
 
 # Card select overlay UI references
-@onready var card_pool_select_overlay: Control = $CardSelectOverlay
-@onready var card_pool_select_prompt: Label = $CardSelectOverlay/CardSelectPanel/VBox/PromptLabel
-@onready var card_pool_select_pool_grid: GridContainer = $CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/PoolPanel/PoolVBox/ScrollContainer/PoolGrid
-@onready var card_pool_select_selection_grid: GridContainer = $CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel/SelectionVBox/ScrollContainer/SelectionGrid
-@onready var card_pool_select_selection_label: Label = $CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel/SelectionVBox/SelectionLabel
+@onready var card_pool_select_overlay: CardSelectOverlayUI = $CardSelectOverlay
+# Internal refs kept ONLY for the mobile styling pass
 @onready var card_pool_select_show_all: CheckButton = $CardSelectOverlay/CardSelectPanel/VBox/ToggleRow/ShowAllToggle
 @onready var card_pool_select_stacked: CheckButton = $CardSelectOverlay/CardSelectPanel/VBox/ToggleRow/StackedToggle
 @onready var card_pool_select_view_board: Button = $CardSelectOverlay/CardSelectPanel/VBox/ToggleRow/ViewBoardButton
@@ -218,13 +215,6 @@ var _match_stacked_view: bool:
 var _discard_view_cards: Array[Dictionary] = []
 
 
-# Card select data
-var _card_select_matching: Array[Dictionary] = []
-var _card_select_all: Array[Dictionary] = []
-var _card_select_matching_ids: Dictionary = {} # card id -> true
-var _card_select_selected: Array[Dictionary] = []
-var _card_select_min_count: int = 0
-var _card_select_max_count: int = 0
 var _view_board_source_overlay: Control = null
 
 # Monster deck view UI references
@@ -500,6 +490,7 @@ func _ready() -> void:
 	_router.card_zoom_request = _show_card_zoom
 	_router.register_handler("deck_search", deck_search_overlay.show_prompt)
 	_router.register_handler("deck_arrange", deck_arrange_overlay.show_prompt)
+	_router.register_handler("card_select", card_pool_select_overlay.show_prompt)
 
 	if not is_multiplayer_game or NetworkManager.is_host():
 		# Seed RNG: use saved seed if loading, otherwise bot_seed for bot games
@@ -546,7 +537,6 @@ func _ready() -> void:
 		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
 		# Connect effect handler signals for player choice UIs
-		turn_manager.action_handler.effect_handler.card_select_requested.connect(_on_card_select_requested)
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
 		turn_manager.action_handler.effect_handler.hand_card_selection_requested.connect(_on_hand_card_selection_requested)
 		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
@@ -630,11 +620,6 @@ func _ready() -> void:
 			)
 
 	# Connect deck search buttons
-	card_pool_select_skip.pressed.connect(_on_card_pool_select_skip)
-	card_pool_select_confirm.pressed.connect(_on_card_pool_select_confirm)
-	card_pool_select_show_all.toggled.connect(_on_card_select_toggled)
-	card_pool_select_stacked.toggled.connect(_on_card_select_toggled)
-	card_pool_select_view_board.pressed.connect(_on_card_pool_select_view_board)
 	show_cards_button.pressed.connect(_on_show_cards_pressed)
 	hand_toggle_button.pressed.connect(_on_hand_toggle_pressed)
 	sort_hand_button.pressed.connect(_on_sort_hand_pressed)
@@ -699,7 +684,6 @@ func _ready() -> void:
 	# Hide overlays and prompts
 	end_game_panel.visible = false
 	action_prompt_panel.visible = false
-	card_pool_select_overlay.visible = false
 	show_cards_button.visible = false
 	discard_view_overlay.visible = false
 	monster_deck_view_overlay.visible = false
@@ -708,7 +692,6 @@ func _ready() -> void:
 
 	# Ensure overlays render above hand cards (which have incrementing z_index)
 	card_zoom_overlay.z_index = 200
-	card_pool_select_overlay.z_index = 100
 	discard_view_overlay.z_index = 100
 	monster_deck_view_overlay.z_index = 100
 	zone_stack_view_overlay.z_index = 100
@@ -3093,7 +3076,6 @@ func _execute_rematch() -> void:
 		turn_manager.action_handler.monster_rankup_requested.connect(_on_monster_rankup_requested)
 
 		# Reconnect effect handler signals
-		turn_manager.action_handler.effect_handler.card_select_requested.connect(_on_card_select_requested)
 		turn_manager.action_handler.effect_handler.hand_discard_requested.connect(_on_hand_discard_requested)
 		turn_manager.action_handler.effect_handler.hand_card_selection_requested.connect(_on_hand_card_selection_requested)
 		turn_manager.action_handler.effect_handler.zone_target_requested.connect(_on_zone_target_requested)
@@ -3626,7 +3608,7 @@ func _input(event: InputEvent) -> void:
 		elif deck_arrange_overlay.visible:
 			pass # Mandatory — must confirm
 		elif card_pool_select_overlay.visible:
-			_on_card_pool_select_skip()
+			card_pool_select_overlay.try_skip()
 		elif deck_search_overlay.visible:
 			# ESC dismisses only when skip is allowed; otherwise the prompt is mandatory.
 			deck_search_overlay.try_skip()
@@ -4508,217 +4490,6 @@ func _on_show_cards_pressed() -> void:
 # --- Deck arrange overlay UI ---
 
 # --- Card select overlay UI ---
-
-func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int) -> void:
-	if is_bot_game and player_id == bot_player.bot_player_id:
-		return
-	if is_multiplayer_game and player_id != local_player_id:
-		_flush_broadcast()
-		var matching_json := JSON.stringify(StateCodec.cards_to_ids(matching_cards))
-		var all_json := JSON.stringify(StateCodec.cards_to_ids(all_cards))
-		_pending_interaction = {"method": "card_select", "args": [matching_json, all_json, prompt, min_count, max_count]}
-		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == player_id:
-				RpcLogger.log_send("card_select_requested", matching_json.length() + all_json.length() + prompt.length())
-				_sync._rpc_card_select_requested.rpc_id(peer_id, matching_json, all_json, prompt, min_count, max_count)
-		return
-	_show_card_select(matching_cards, all_cards, prompt, min_count, max_count)
-
-
-func _show_card_select(matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int) -> void:
-	_card_select_matching = matching
-	_card_select_all = all_cards
-	_card_select_matching_ids.clear()
-	for card_data in matching:
-		_card_select_matching_ids[card_data.get("id", "")] = true
-	_card_select_selected = []
-	_card_select_min_count = min_count
-	_card_select_max_count = max_count
-
-	card_pool_select_prompt.text = _resolve_translated_text(prompt)
-	card_pool_select_show_all.set_pressed_no_signal(matching.is_empty())
-	card_pool_select_stacked.set_pressed_no_signal(_match_stacked_view)
-	card_pool_select_overlay.visible = true
-
-	_refresh_card_select()
-
-
-func _refresh_card_select() -> void:
-	_refresh_card_select_pool()
-	_refresh_card_select_selection()
-	_update_card_select_buttons()
-
-
-func _get_card_select_pool() -> Array[Dictionary]:
-	var show_all := card_pool_select_show_all.button_pressed
-	var source: Array[Dictionary] = _card_select_all if show_all else _card_select_matching
-	# Remove selected cards from pool by unique ID (count-aware)
-	var selected_ids: Dictionary = {}
-	for card in _card_select_selected:
-		var id: String = card.get("id", "")
-		selected_ids[id] = selected_ids.get(id, 0) + 1
-	var pool: Array[Dictionary] = []
-	for card in source:
-		var id: String = card.get("id", "")
-		if selected_ids.get(id, 0) > 0:
-			selected_ids[id] -= 1
-		else:
-			pool.append(card)
-	return pool
-
-
-func _refresh_card_select_pool() -> void:
-	var stacked := card_pool_select_stacked.button_pressed
-	var show_all := card_pool_select_show_all.button_pressed
-	var pool := _get_card_select_pool()
-	var all_selectable: bool = not show_all
-	var at_limit: bool = _card_select_selected.size() >= _card_select_max_count
-
-	# Get pool filter from effect handler if available
-	var pool_filter := Callable()
-	if turn_manager:
-		pool_filter = turn_manager.action_handler.effect_handler._card_select_pool_filter
-
-	_clear_grid(card_pool_select_pool_grid, _on_card_select_pool_clicked)
-
-	var card_size := Vector2(120, 168)
-	if stacked:
-		var groups := _group_cards(pool, _card_select_matching_ids)
-		for group in groups:
-			var card_data: Dictionary = group["card_data"]
-			var count: int = group["count"]
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.custom_minimum_size = card_size
-			card.size = card_size
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			var is_match: bool = all_selectable or group["has_match"]
-			var passes_filter: bool = not pool_filter.is_valid() or pool_filter.call(card_data, _card_select_selected)
-			var can_select: bool = is_match and not at_limit and passes_filter
-			card.is_selectable = can_select
-			card.click_on_release = true
-			if can_select:
-				card.card_clicked.connect(_on_card_select_pool_clicked)
-			else:
-				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			card_pool_select_pool_grid.add_child(card)
-			_add_count_badge(card, count)
-	else:
-		for card_data in pool:
-			var card: Control = card_scene.instantiate()
-			if card.has_method("set_card_data_dict"):
-				card.set_card_data_dict(card_data)
-			card.custom_minimum_size = card_size
-			card.size = card_size
-			card.drag_enabled = false
-			_set_gallery_hover(card)
-			var is_match: bool = all_selectable or _card_select_matching_ids.has(card_data.get("id", ""))
-			var passes_filter: bool = not pool_filter.is_valid() or pool_filter.call(card_data, _card_select_selected)
-			var can_select: bool = is_match and not at_limit and passes_filter
-			card.is_selectable = can_select
-			card.click_on_release = true
-			if can_select:
-				card.card_clicked.connect(_on_card_select_pool_clicked)
-			else:
-				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
-			card.card_right_clicked.connect(_on_card_long_press_zoom)
-			card_pool_select_pool_grid.add_child(card)
-
-
-func _refresh_card_select_selection() -> void:
-	_clear_grid(card_pool_select_selection_grid, _on_card_select_selection_clicked)
-
-	for card_data in _card_select_selected:
-		var card: Control = card_scene.instantiate()
-		if card.has_method("set_card_data_dict"):
-			card.set_card_data_dict(card_data)
-		card.custom_minimum_size = Vector2(120, 168)
-		card.size = Vector2(120, 168)
-		card.drag_enabled = false
-		card.is_selectable = true
-		card.click_on_release = true
-		_set_gallery_hover(card)
-		card.card_clicked.connect(_on_card_select_selection_clicked)
-		card.card_right_clicked.connect(_on_card_long_press_zoom)
-		card_pool_select_selection_grid.add_child(card)
-
-	card_pool_select_selection_label.text = tr("STR_GB_SELECTED_FMT").replace("{N}", str(_card_select_selected.size())).replace("{MAX}", str(_card_select_max_count))
-
-
-func _update_card_select_buttons() -> void:
-	var count := _card_select_selected.size()
-	card_pool_select_confirm.disabled = count < _card_select_min_count or count > _card_select_max_count
-	card_pool_select_confirm.text = tr("STR_GB_CONFIRM_COUNT_FMT").replace("{N}", str(count)).replace("{MAX}", str(_card_select_max_count))
-
-
-func _on_card_select_pool_clicked(card: Control) -> void:
-	var card_data: Dictionary = card.card_data if "card_data" in card else {}
-	if card_data.is_empty() or _card_select_selected.size() >= _card_select_max_count:
-		return
-
-	var pool := _get_card_select_pool()
-	var target_tid := _get_card_template_id(card_data)
-	for pool_card in pool:
-		if _get_card_template_id(pool_card) == target_tid and _card_select_matching_ids.has(pool_card.get("id", "")):
-			_card_select_selected.append(pool_card)
-			break
-
-	_refresh_card_select()
-
-
-func _on_card_select_selection_clicked(card: Control) -> void:
-	var card_data: Dictionary = card.card_data if "card_data" in card else {}
-	if card_data.is_empty():
-		return
-
-	var card_id: String = card_data.get("id", "")
-	for i in range(_card_select_selected.size()):
-		if _card_select_selected[i].get("id", "") == card_id:
-			_card_select_selected.remove_at(i)
-			break
-
-	_refresh_card_select()
-
-
-func _on_card_select_toggled(_value: bool) -> void:
-	_match_stacked_view = card_pool_select_stacked.button_pressed
-	_refresh_card_select()
-
-
-func _on_card_pool_select_view_board() -> void:
-	card_pool_select_overlay.visible = false
-	_view_board_source_overlay = card_pool_select_overlay
-	show_cards_button.visible = true
-
-
-func _on_card_pool_select_skip() -> void:
-	_hide_card_select()
-	_resolve_card_select_local([])
-
-
-func _on_card_pool_select_confirm() -> void:
-	var sel_count := _card_select_selected.size()
-	if sel_count < _card_select_min_count or sel_count > _card_select_max_count:
-		return
-	var selected := _card_select_selected.duplicate()
-	_hide_card_select()
-	_resolve_card_select_local(selected)
-
-
-func _hide_card_select() -> void:
-	card_pool_select_overlay.visible = false
-	show_cards_button.visible = false
-	_view_board_source_overlay = null
-	_clear_grid(card_pool_select_pool_grid, _on_card_select_pool_clicked)
-	_clear_grid(card_pool_select_selection_grid, _on_card_select_selection_clicked)
-	_card_select_matching = []
-	_card_select_all = []
-	_card_select_matching_ids.clear()
-	_card_select_selected = []
-
 
 # --- Hand discard selection UI ---
 
@@ -5896,18 +5667,6 @@ func _clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 		child.queue_free()
 
 
-func _resolve_card_select_local(selected: Array) -> void:
-	if is_multiplayer_game and not NetworkManager.is_host():
-		var selected_json := JSON.stringify(StateCodec.cards_to_ids(selected))
-		RpcLogger.log_send("card_select_resolved", selected_json.length())
-		_sync._rpc_card_select_resolved.rpc_id(NetworkManager.host_peer_id, selected_json)
-	else:
-		var typed: Array[Dictionary] = []
-		for card in selected:
-			typed.append(card)
-		turn_manager.action_handler.effect_handler.resolve_card_select(typed)
-
-
 # --- Multiplayer: State broadcast (host -> client) ---
 
 ## Sync shims — state broadcast machinery lives on MultiplayerSync.
@@ -6033,12 +5792,12 @@ func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void
 	turn_manager.action_handler.effect_handler.resolve_deck_arrange(keep, discard)
 
 
-## Host -> Client: card select request (player must select N cards from pool)
+## Host -> Client: card select request
 func _rpc_card_select_requested(matching_json: String, all_json: String, prompt: String, min_count: int, max_count: int) -> void:
 	RpcLogger.log_receive("card_select_requested", matching_json.length() + all_json.length() + prompt.length())
 	var matching_ids: Array = JSON.parse_string(matching_json)
 	var all_ids: Array = JSON.parse_string(all_json)
-	_show_card_select(StateCodec.ids_to_cards(matching_ids), StateCodec.ids_to_cards(all_ids), prompt, min_count, max_count)
+	_router.show_card_select(StateCodec.ids_to_cards(matching_ids), StateCodec.ids_to_cards(all_ids), prompt, min_count, max_count)
 
 
 ## Client -> Host: card select resolved (player selected cards or skipped)

@@ -14,6 +14,7 @@
 [ext_resource type="Script" path="res://scripts/session/effect_ui_router.gd" id="12_er"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckSearchOverlay.tscn" id="13_dso"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckArrangeOverlay.tscn" id="14_dao"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/CardSelectOverlay.tscn" id="15_cso"]
 
 [node name="GameBoard" type="Control" unique_id=1722697301]
 layout_mode = 3
@@ -765,146 +766,7 @@ text = "STR_GB_MAIN_MENU"
 
 [node name="DeckArrangeOverlay" parent="." instance=ExtResource("14_dao")]
 
-[node name="CardSelectOverlay" type="ColorRect" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
-
-[node name="CardSelectPanel" type="PanelContainer" parent="CardSelectOverlay"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -450.0
-offset_right = 450.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="CardSelectOverlay/CardSelectPanel"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="PromptLabel" type="Label" parent="CardSelectOverlay/CardSelectPanel/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_SELECT_CARDS"
-horizontal_alignment = 1
-
-[node name="ToggleRow" type="HBoxContainer" parent="CardSelectOverlay/CardSelectPanel/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 20
-alignment = 2
-
-[node name="ShowAllToggle" type="CheckButton" parent="CardSelectOverlay/CardSelectPanel/VBox/ToggleRow"]
-layout_mode = 2
-text = "STR_GB_SHOW_ALL"
-
-[node name="StackedToggle" type="CheckButton" parent="CardSelectOverlay/CardSelectPanel/VBox/ToggleRow"]
-layout_mode = 2
-text = "STR_GB_STACKED"
-
-[node name="Spacer" type="Control" parent="CardSelectOverlay/CardSelectPanel/VBox/ToggleRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="ViewBoardButton" type="Button" parent="CardSelectOverlay/CardSelectPanel/VBox/ToggleRow"]
-layout_mode = 2
-text = "STR_GB_VIEW_BOARD"
-
-[node name="ContentContainer" type="HBoxContainer" parent="CardSelectOverlay/CardSelectPanel/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 16
-
-[node name="PoolPanel" type="Panel" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.0
-clip_contents = true
-
-[node name="PoolVBox" type="VBoxContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/PoolPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 8
-
-[node name="PoolLabel" type="Label" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/PoolPanel/PoolVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "STR_GB_AVAILABLE_CARDS"
-horizontal_alignment = 1
-
-[node name="ScrollContainer" type="ScrollContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/PoolPanel/PoolVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="PoolGrid" type="GridContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/PoolPanel/PoolVBox/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 3
-
-[node name="SelectionPanel" type="Panel" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.0
-clip_contents = true
-
-[node name="SelectionVBox" type="VBoxContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 8
-
-[node name="SelectionLabel" type="Label" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel/SelectionVBox"]
-auto_translate_mode = 2
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-horizontal_alignment = 1
-
-[node name="ScrollContainer" type="ScrollContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel/SelectionVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="SelectionGrid" type="GridContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel/SelectionVBox/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 3
-
-[node name="ButtonRow" type="HBoxContainer" parent="CardSelectOverlay/CardSelectPanel/VBox"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 20
-
-[node name="SkipButton" type="Button" parent="CardSelectOverlay/CardSelectPanel/VBox/ButtonRow"]
-custom_minimum_size = Vector2(120, 36)
-layout_mode = 2
-text = "STR_GB_SKIP"
-
-[node name="ConfirmButton" type="Button" parent="CardSelectOverlay/CardSelectPanel/VBox/ButtonRow"]
-auto_translate_mode = 2
-custom_minimum_size = Vector2(120, 36)
-layout_mode = 2
+[node name="CardSelectOverlay" parent="." instance=ExtResource("15_cso")]
 
 [node name="ShowCardsButton" type="Button" parent="." unique_id=1068049084]
 visible = false
