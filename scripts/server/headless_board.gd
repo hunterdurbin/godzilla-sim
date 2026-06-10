@@ -21,7 +21,14 @@ var local_player_id: int = -1 # No local player — every prompt routes remote
 var _current_sub_phase: int = 0
 var _first_player_id: int = 0
 var _pending_log_tokens: Array = []
-var _pending_sound_events: PackedStringArray = []
+# Sound events buffered for broadcast — owned by the BoardSfx child (same
+# forwarding-property pattern as game_board.gd; MultiplayerSync drains it).
+var _board_sfx: Node
+var _pending_sound_events: PackedStringArray:
+	get: return _board_sfx._pending_sound_events if _board_sfx else PackedStringArray()
+	set(v):
+		if _board_sfx:
+			_board_sfx._pending_sound_events = v
 var _player_elapsed_ms: Array[int] = [0, 0]
 var _turn_start_time_ms: int = 0
 var _game_start_time_ms: int = 0
@@ -32,9 +39,17 @@ var _first_player_result: int = -1
 var _first_player_chooser_peer: int = -1
 
 
+const BOARD_SFX := preload("res://scenes/board/modules/board_sfx.gd")
+
+
 func _ready() -> void:
 	_session = get_node("GameSession")
 	_sync = get_node("GameSession/MultiplayerSync")
+	# Sound concern: SfxManager is inert headless, but BoardSfx's buffering
+	# feeds the broadcast envelope so clients hear opponent actions.
+	_board_sfx = BOARD_SFX.new()
+	_board_sfx.name = "BoardSfx"
+	add_child(_board_sfx)
 
 
 ## Build the authoritative session and run the match. Called by GameRoom once
@@ -78,8 +93,13 @@ func start_match(config: SessionConfig) -> void:
 ## its await-state flags so a stuck await is identifiable from server logs.
 var _last_activity_ms: int = 0
 
+var _stall_watchdog_started := false
+
 func _start_stall_watchdog() -> void:
 	_last_activity_ms = Time.get_ticks_msec()
+	if _stall_watchdog_started:
+		return # rematch re-enters start_match; one timer is enough
+	_stall_watchdog_started = true
 	var timer := Timer.new()
 	timer.wait_time = 30.0
 	timer.timeout.connect(_check_stall)
@@ -195,8 +215,52 @@ func _on_game_ended(winner_id: int, reason_key: String) -> void:
 	_sync.broadcast_state()
 	_sync.flush_broadcast()
 	_sync._rpc_receive_game_ended.rpc(winner_id, reason_key)
+	_upload_stats(winner_id, reason_key)
 	if room and room.has_method("on_match_ended"):
 		room.on_match_ended(winner_id, reason_key)
+
+
+## Server-side stats report (the clients' upload paths are relay-only).
+## Per-room context goes in via overrides — the singletons the uploader
+## falls back to are per-process and would bleed across rooms.
+func _upload_stats(winner_id: int, reason_key: String) -> void:
+	if room == null or not room.stats_enabled:
+		return
+	var now := Time.get_ticks_msec()
+	if _turn_start_time_ms > 0:
+		var active_pid: int = _session.turn_manager.game_state.current_player_id
+		_player_elapsed_ms[active_pid] += now - _turn_start_time_ms
+		_turn_start_time_ms = 0
+	var total_elapsed: int = now - _game_start_time_ms if _game_start_time_ms > 0 else 0
+	var cfg: SessionConfig = _session.turn_manager.session_config
+	var deck_names: Array = []
+	var decklists: Array = []
+	for i in range(2):
+		deck_names.append(str(cfg.deck_names[i]) if cfg else "")
+		var dl = cfg.decklists[i] if cfg else null
+		if dl != null:
+			decklists.append({
+				"monster": StatsUploader._entries_from_monster_deck(dl.get("monster_deck", [])),
+				"main": dl.get("main_entries", []),
+			})
+		else:
+			decklists.append({"monster": [], "main": []})
+	StatsUploader.upload_game_result(
+		_session.turn_manager.game_state,
+		winner_id,
+		reason_key,
+		_first_player_id,
+		_player_elapsed_ms,
+		total_elapsed,
+		reason_key == "STR_LOG_REASON_OPPONENT_DISCONNECTED",
+		{
+			"game_mode": room.game_mode,
+			"is_public": room.is_public,
+			"reporter": "server",
+			"deck_names": deck_names,
+			"decklists": decklists,
+		},
+	)
 
 
 # --- RPC handlers forwarded from MultiplayerSync ---
@@ -252,8 +316,69 @@ func _rpc_effect_card_highlighted(_a: int, _b: String) -> void: pass
 func _rpc_effect_card_unhighlighted(_a: int, _b: String) -> void: pass
 func _rpc_receive_game_ended(_a: int, _b: String) -> void: pass
 func _rpc_receive_replay(_a: PackedByteArray) -> void: pass
-# TODO(M2): real rematch flow on the dedicated server
-func _rpc_rematch_requested() -> void: pass
-func _rpc_rematch_with_deck(_payload: String) -> void: pass
-func _rpc_execute_rematch() -> void: pass
-func _rpc_rematch_declined() -> void: pass
+func _rpc_execute_rematch() -> void: pass # server-issued; ignore echoes
+
+
+# --- Rematch (server-mediated) ---
+# Clients broadcast their rematch request (the opposing client shows it as a
+# peer signal); the server tracks both seats and restarts the match when both
+# have asked. A decline resets the negotiation.
+
+var _rematch_wants: Array[bool] = [false, false]
+
+
+func _rpc_rematch_requested() -> void:
+	_mark_rematch_want(_sender_pid())
+
+
+func _rpc_rematch_with_deck(payload_json: String) -> void:
+	var pid := _sender_pid()
+	if pid < 0:
+		return
+	var parsed: Variant = JSON.parse_string(payload_json)
+	if not parsed is Dictionary:
+		return
+	var monster_entries: Array = parsed.get("monster", [])
+	var main_entries: Array = parsed.get("main", [])
+	var errors := GameModeValidator.validate(room.game_mode, monster_entries, main_entries)
+	if not errors.is_empty():
+		push_warning("[HeadlessBoard] Rejected rematch deck from player %d: %s" % [pid, str(errors)])
+		return
+	room.update_seat_deck(pid, str(parsed.get("deck_name", "")), monster_entries, main_entries)
+	_mark_rematch_want(pid)
+
+
+func _rpc_rematch_declined() -> void:
+	_rematch_wants = [false, false]
+
+
+func _mark_rematch_want(pid: int) -> void:
+	if pid < 0 or _session.turn_manager == null or not _session.turn_manager.is_game_over:
+		return
+	_rematch_wants[pid] = true
+	if _rematch_wants[0] and _rematch_wants[1]:
+		_execute_server_rematch()
+
+
+func _execute_server_rematch() -> void:
+	print("[HeadlessBoard %s] Rematch: rebuilding session" % room.code)
+	_rematch_wants = [false, false]
+	_pending_log_tokens.clear()
+	if _board_sfx:
+		_board_sfx._pending_sound_events.clear()
+	_player_elapsed_ms = [0, 0]
+	_turn_start_time_ms = 0
+	_game_start_time_ms = 0
+	_current_sub_phase = 0
+	_first_player_id = 0
+	_first_player_result = -1
+	_sync.reset_for_rematch()
+	room.match_over = false
+	# Clients reset their boards first (ordered RPC stream guarantees this
+	# lands before the new match's first-player prompts).
+	_sync._rpc_execute_rematch.rpc()
+	start_match(room.build_session_config())
+
+
+func _sender_pid() -> int:
+	return room.player_for_peer(_sync.multiplayer.get_remote_sender_id()) if room else -1

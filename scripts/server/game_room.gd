@@ -26,6 +26,8 @@ const EFFECT_UI_ROUTER := preload("res://scripts/session/effect_ui_router.gd")
 var code: String = ""
 var game_mode: String = ""
 var is_public: bool = false
+## Report match results to the stats API (off for test/harness runs).
+var stats_enabled: bool = true
 var conn_mgr: ServerConnectionManager
 var virtual_peer: RoomVirtualPeer
 var api: SceneMultiplayer
@@ -208,6 +210,13 @@ func _maybe_start_match() -> void:
 			return
 	match_started = true
 
+	var config := build_session_config()
+	print("[Room %s] Starting match: %s vs %s" % [code, config.player_names[0], config.player_names[1]])
+	board.start_match(config)
+
+
+## Build a SessionConfig from the current seats (initial start and rematch).
+func build_session_config() -> SessionConfig:
 	var config := SessionConfig.new()
 	config.game_mode = game_mode
 	for pid in range(2):
@@ -215,8 +224,20 @@ func _maybe_start_match() -> void:
 		config.decks[pid] = seats[pid]["deck"]
 		config.deck_names[pid] = seats[pid]["deck_name"]
 		config.decklists[pid] = seats[pid]["decklist"]
-	print("[Room %s] Starting match: %s vs %s" % [code, config.player_names[0], config.player_names[1]])
-	board.start_match(config)
+	return config
+
+
+## Swap a seat's deck (rematch deck change). Entries are assumed validated.
+func update_seat_deck(pid: int, deck_name: String, monster_entries: Array, main_entries: Array) -> void:
+	if seats[pid] == null:
+		return
+	var built := DecklistManager.build_deck_from_entries(pid, monster_entries, main_entries)
+	seats[pid]["deck"] = built
+	seats[pid]["deck_name"] = deck_name
+	seats[pid]["decklist"] = {
+		"main_entries": main_entries,
+		"monster_deck": built["monster_deck"],
+	}
 
 
 # --- Connection lifecycle ---

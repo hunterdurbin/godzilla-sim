@@ -36,6 +36,7 @@ var GAME_VERSION: String = ProjectSettings.get_setting("application/config/versi
 var conn_mgr: ServerConnectionManager
 var rooms: Dictionary = {} # code -> GameRoom
 var _grace_override: float = -1.0
+var _stats_enabled: bool = true
 var _conn_room: Dictionary = {} # conn_id -> room code
 var _conn_hello: Dictionary = {} # conn_id -> {name, version}
 
@@ -49,6 +50,8 @@ func _ready() -> void:
 			port = int(arg.get_slice("=", 1))
 		elif arg.begins_with("--grace="): # test runs: shorten the claim-win grace
 			_grace_override = float(arg.get_slice("=", 1))
+		elif arg == "--no-stats": # test runs: never POST results to the stats API
+			_stats_enabled = false
 	conn_mgr = ServerConnectionManager.new()
 	conn_mgr.name = "ConnectionManager"
 	add_child(conn_mgr)
@@ -171,6 +174,7 @@ func _create_room(mode: String, is_public: bool) -> GameRoom:
 	rooms_node.add_child(room)
 	room.setup(code, mode, conn_mgr)
 	room.is_public = is_public
+	room.stats_enabled = _stats_enabled
 	if _grace_override > 0:
 		room.grace_seconds = _grace_override
 	room.emptied.connect(_on_room_emptied.bind(code))

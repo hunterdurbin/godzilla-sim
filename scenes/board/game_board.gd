@@ -2643,6 +2643,17 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 	_router.show_monster_rankup(StateCodec.ids_to_cards(monster_ids), parsed_indices, prompt)
 
 
+## Server -> Client (dedicated only): display-only cards-revealed overlay
+## (the server already resolved the effect; dismissing changes nothing).
+func _rpc_cards_revealed_shown(cards_json: String, title: String) -> void:
+	if NetworkManager.is_host():
+		return
+	var ids: Variant = JSON.parse_string(cards_json)
+	if not ids is Array or ids.is_empty():
+		return
+	zone_stack_view_overlay.show_revealed(StateCodec.ids_to_cards(ids), _resolve_translated_text(title), Callable())
+
+
 ## Host -> Client: highlight a zone card during effect resolution
 func _rpc_effect_zone_highlighted(pid: int, zone_index: int) -> void:
 	RpcLogger.log_receive("effect_zone_highlighted", 8)

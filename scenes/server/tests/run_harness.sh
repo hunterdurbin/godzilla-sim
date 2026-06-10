@@ -19,7 +19,7 @@ cleanup() {
 trap cleanup EXIT
 
 cleanup; sleep 1
-"$GODOT" --headless --path . scenes/server/ServerMain.tscn -- --port=$PORT > "$LOGDIR/server.log" 2>&1 &
+"$GODOT" --headless --path . scenes/server/ServerMain.tscn -- --port=$PORT --no-stats > "$LOGDIR/server.log" 2>&1 &
 sleep 5
 if ! grep -q "Listening on port" "$LOGDIR/server.log"; then
   echo "FAIL: server did not start"; cat "$LOGDIR/server.log"; exit 1
@@ -35,7 +35,7 @@ for i in $(seq 1 "$GAMES"); do
   CB=$!
   wait $CA; EA=$?
   wait $CB; EB=$?
-  RESULT=$(grep -h "Match ended" "$LOGDIR/g${i}_a.log" | head -1)
+  RESULT=$(grep -hE "Match [0-9]+ ended" "$LOGDIR/g${i}_a.log" | head -1)
   echo "  exits: creator=$EA joiner=$EB | $RESULT"
   if [ "$EA" -ne 0 ] || [ "$EB" -ne 0 ]; then
     FAIL=1

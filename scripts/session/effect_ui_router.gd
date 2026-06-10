@@ -271,11 +271,15 @@ func _on_cards_revealed_requested(player_id: int, cards: Array, title: String) -
 		session.effect_handler.resolve_cards_revealed()
 		return
 	if local_player_id < 0:
-		# Dedicated server: nobody local to show it to — auto-resolve so the
-		# engine continues. Deferred: resolving synchronously during this emit
-		# would fire the resolved signal before reveal_cards() reaches its
-		# await, hanging the effect forever. TODO(M2): broadcast a
-		# display-only RPC so both clients still see the reveal overlay.
+		# Dedicated server: push a display-only copy to the owning player,
+		# then auto-resolve so the engine continues. Deferred: resolving
+		# synchronously during this emit would fire the resolved signal
+		# before reveal_cards() reaches its await, hanging the effect.
+		for peer_id in net.peer_player_map:
+			if net.peer_player_map[peer_id] == player_id:
+				var ids_json := JSON.stringify(StateCodec.cards_to_ids(cards))
+				multiplayer_sync._rpc_cards_revealed_shown.rpc_id(peer_id, ids_json, title)
+				break
 		session.effect_handler.resolve_cards_revealed.call_deferred()
 		return
 	# Cards revealed always shows on local — no remote routing.

@@ -958,6 +958,15 @@ func _rpc_claim_win() -> void:
 	_session.turn_manager._on_game_over(winner_id, "STR_LOG_REASON_OPPONENT_DISCONNECTED")
 
 
+## Server -> Client (dedicated only): display-only copy of a cards-revealed
+## overlay the server auto-resolved (e.g. milled cards). Fire-and-forget —
+## dismissing it resolves nothing.
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_cards_revealed_shown(cards_json: String, title: String) -> void:
+	if _board and _board.has_method("_rpc_cards_revealed_shown"):
+		_board._rpc_cards_revealed_shown(cards_json, title)
+
+
 # --- Effect highlights ---
 
 @rpc("any_peer", "call_remote", "reliable")

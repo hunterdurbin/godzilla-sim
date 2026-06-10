@@ -46,9 +46,13 @@ var conceded := false
 # out the grace period and claims; pass --grace=N to the server).
 # --malicious: interleave invalid/forged RPCs with normal play; the server
 # must reject them all and the game must still complete cleanly.
+# --rematch: after the first match ends, request a rematch and play a second
+# full game (both clients must pass the flag).
 var drop_after := 0
 var drop_forever := false
 var malicious := false
+var do_rematch := false
+var matches_completed := 0
 var _did_drop := false
 var _reconnecting := false
 var _my_room := ""
@@ -69,6 +73,8 @@ func _ready() -> void:
 			drop_forever = true
 		elif arg == "--malicious":
 			malicious = true
+		elif arg == "--rematch":
+			do_rematch = true
 	if is_creator and FileAccess.file_exists(CODE_FILE):
 		DirAccess.remove_absolute(CODE_FILE)
 
@@ -119,9 +125,8 @@ func _build_client_chain() -> void:
 	board.prompt_received.connect(_on_prompt)
 	board.action_context_received.connect(_on_action_context)
 	board.state_applied.connect(func() -> void: got_state = true)
-	board.match_ended.connect(func(w: int, r: String) -> void:
-		print("[TestClient %s] Match ended: winner=%d reason=%s (after %d actions)" % [_tag(), w, r, actions_submitted])
-		match_over = true)
+	board.match_ended.connect(_on_match_ended)
+	board.rematch_executed.connect(_on_rematch_executed)
 
 
 func _on_control(msg: Dictionary) -> void:
@@ -177,8 +182,8 @@ func _on_prompt(kind: String, args: Array) -> void:
 		"first_player_choice":
 			answered_first_player = true
 			sync_node._rpc_first_player_choice_resolved.rpc_id(1, rng.randi() % 2)
-		"first_player_waiting":
-			pass
+		"first_player_waiting", "cards_revealed_shown":
+			pass # display-only
 		"confirmation":
 			sync_node._rpc_confirmation_resolved.rpc_id(1)
 		"hand_discard":
@@ -316,6 +321,25 @@ func _hand_index_params(playable: Dictionary, key: String) -> Dictionary:
 	if cards.is_empty():
 		return {}
 	return {"hand_index": int(cards[rng.randi() % cards.size()])}
+
+
+func _on_match_ended(winner_id: int, reason_key: String) -> void:
+	matches_completed += 1
+	print("[TestClient %s] Match %d ended: winner=%d reason=%s (after %d actions)" % [
+		_tag(), matches_completed, winner_id, reason_key, actions_submitted])
+	if do_rematch and matches_completed == 1:
+		print("[TestClient %s] Requesting rematch" % _tag())
+		await get_tree().create_timer(1.0).timeout
+		sync_node._rpc_rematch_requested.rpc()
+		return
+	match_over = true
+
+
+## Server told us to reset for the rematch — mirror the real client's reset.
+func _on_rematch_executed() -> void:
+	print("[TestClient %s] Rematch executing — resetting client state" % _tag())
+	session_node.client_players = [PlayerState.new(0), PlayerState.new(1)]
+	sync_node.reset_for_rematch()
 
 
 ## Survivor side of the claim-win drill: send the claim once (and a beat

@@ -10,6 +10,7 @@ signal action_context_received(actions: Array, playable: Dictionary)
 signal prompt_received(kind: String, args: Array)
 signal state_applied
 signal match_ended(winner_id: int, reason_key: String)
+signal rematch_executed
 
 var is_multiplayer_game: bool = true
 var is_bot_game: bool = false
@@ -92,6 +93,10 @@ func _rpc_receive_game_ended(winner_id: int, reason_key: String) -> void:
 	match_ended.emit(winner_id, reason_key)
 
 
+func _rpc_cards_revealed_shown(cards_json: String, title: String) -> void:
+	prompt_received.emit("cards_revealed_shown", [cards_json, title])
+
+
 func _rpc_first_player_choice_resolved(_id: int) -> void: pass
 func _rpc_cleanup_first_player() -> void: pass
 func _rpc_receive_log(_text: String) -> void: pass
@@ -104,6 +109,9 @@ func _rpc_effect_card_unhighlighted(_p: int, _c: String) -> void: pass
 func _rpc_concede() -> void: pass
 func _rpc_rematch_requested() -> void: pass
 func _rpc_rematch_with_deck(_p: String) -> void: pass
-func _rpc_execute_rematch() -> void: pass
 func _rpc_rematch_declined() -> void: pass
+
+
+func _rpc_execute_rematch() -> void:
+	rematch_executed.emit()
 func _on_awaiting_action(_valid_actions: Array) -> void: pass
