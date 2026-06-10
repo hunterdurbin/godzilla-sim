@@ -389,19 +389,20 @@ const OPPONENT_HAND_EXPAND_OFFSET: float = 195.0
 
 # Mobile layout — owned by MobileLayout (forwarding properties for the
 # paths that still read mobile state during extraction)
+# (null-guarded: _notification can fire before @onready assigns _mobile)
 var _is_mobile_layout: bool:
-	get: return _mobile.is_mobile_layout
+	get: return _mobile != null and _mobile.is_mobile_layout
 	set(v): _mobile.is_mobile_layout = v
 var _mobile_phase_label: Label:
-	get: return _mobile._mobile_phase_label
+	get: return _mobile._mobile_phase_label if _mobile else null
 var _mobile_chat_bar: PanelContainer:
-	get: return _mobile._mobile_chat_bar
+	get: return _mobile._mobile_chat_bar if _mobile else null
 var _fab_main_btn: Button:
-	get: return _mobile._fab_main_btn
+	get: return _mobile._fab_main_btn if _mobile else null
 var _fab_container: Control:
-	get: return _mobile._fab_container
+	get: return _mobile._fab_container if _mobile else null
 var _fab_action_btns: Array[Button]:
-	get: return _mobile._fab_action_btns
+	get: return _mobile._fab_action_btns if _mobile else []
 
 
 func _set_action_buttons_visible(vis: bool) -> void:
