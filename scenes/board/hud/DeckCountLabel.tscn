@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/deck_count_label.gd" id="1_dcl"]
+
+[node name="DeckCountLabel" type="Label"]
+text = "Deck: 0"
+script = ExtResource("1_dcl")

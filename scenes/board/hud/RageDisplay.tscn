@@ -1,0 +1,7 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scenes/board/hud/rage_display.gd" id="1_rd"]
+
+[node name="RageDisplay" type="Label"]
+text = "Rage: 0"
+script = ExtResource("1_rd")

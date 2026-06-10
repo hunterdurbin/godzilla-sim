@@ -1,0 +1,75 @@
+[gd_scene load_steps=2 format=3 uid="uid://overlay_decksearch1"]
+
+[ext_resource type="Script" path="res://scenes/board/overlays/deck_search_overlay.gd" id="1_ds"]
+
+[node name="DeckSearchOverlay" type="ColorRect"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+script = ExtResource("1_ds")
+
+[node name="DeckSearchPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.125
+anchor_right = 0.5
+anchor_bottom = 0.875
+offset_left = -350.0
+offset_right = 350.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="DeckSearchPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="PromptLabel" type="Label" parent="DeckSearchPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "STR_GB_SEARCH_YOUR_DECK"
+horizontal_alignment = 1
+
+[node name="ToggleRow" type="HBoxContainer" parent="DeckSearchPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 20
+alignment = 2
+
+[node name="ShowAllToggle" type="CheckButton" parent="DeckSearchPanel/VBox/ToggleRow"]
+layout_mode = 2
+text = "STR_GB_SHOW_ALL"
+
+[node name="StackedToggle" type="CheckButton" parent="DeckSearchPanel/VBox/ToggleRow"]
+layout_mode = 2
+text = "STR_GB_STACKED"
+
+[node name="Spacer" type="Control" parent="DeckSearchPanel/VBox/ToggleRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ViewBoardButton" type="Button" parent="DeckSearchPanel/VBox/ToggleRow"]
+layout_mode = 2
+text = "STR_GB_VIEW_BOARD"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="DeckSearchPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+scroll_deadzone = 20
+
+[node name="CardGrid" type="GridContainer" parent="DeckSearchPanel/VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 4
+
+[node name="SkipButton" type="Button" parent="DeckSearchPanel/VBox"]
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "STR_GB_SKIP"

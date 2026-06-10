@@ -1,0 +1,61 @@
+[gd_scene load_steps=2 format=3 uid="uid://overlay_monsterdeck1"]
+
+[ext_resource type="Script" path="res://scenes/board/overlays/card_grid_viewer.gd" id="1_v"]
+
+[node name="MonsterDeckViewOverlay" type="ColorRect"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+script = ExtResource("1_v")
+panel_name = "MonsterDeckViewPanel"
+empty_text_key = "STR_GB_NO_MONSTER_DECK"
+
+[node name="MonsterDeckViewPanel" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.125
+anchor_right = 0.5
+anchor_bottom = 0.875
+offset_left = -350.0
+offset_right = 350.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="MonsterDeckViewPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TitleLabel" type="Label" parent="MonsterDeckViewPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "STR_GB_MONSTER_DECK"
+horizontal_alignment = 1
+
+[node name="StackedToggle" type="CheckButton" parent="MonsterDeckViewPanel/VBox"]
+layout_mode = 2
+size_flags_horizontal = 4
+text = "STR_GB_STACKED"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MonsterDeckViewPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+scroll_deadzone = 20
+
+[node name="CardGrid" type="GridContainer" parent="MonsterDeckViewPanel/VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 4
+
+[node name="CloseButton" type="Button" parent="MonsterDeckViewPanel/VBox"]
+custom_minimum_size = Vector2(100, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "STR_GB_CLOSE"

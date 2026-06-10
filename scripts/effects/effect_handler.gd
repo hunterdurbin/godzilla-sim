@@ -205,6 +205,18 @@ func _set_active_effect(player_id: int, card_data: Dictionary) -> void:
 	_active_effect_card = card_data
 
 
+## {card_id, label} for the ability currently resolving ({} if none) — the
+## UI shows this above effect prompt overlays. card_id is the base id; label
+## matches the resolution-order choice option text.
+func get_active_effect_summary() -> Dictionary:
+	if _active_effect_card.is_empty():
+		return {}
+	return {
+		"card_id": CardUtils.base_id(_active_effect_card),
+		"label": _get_card_location_label(_active_effect_player_id, _active_effect_card),
+	}
+
+
 func _clear_active_effect() -> void:
 	# Defensive: emit unhighlight when clearing, in case the leaf function that
 	# emitted the matching highlight didn't reach its own _unhighlight call.
@@ -317,9 +329,11 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 		else:
 			# Multiple abilities in standby — player chooses order (10.6.3.1)
 			var options: Array[String] = []
+			var option_card_ids: Array[String] = []
 			for e in entries:
 				options.append(_get_card_location_label(e.player_id, e.card_data))
-			var chosen: int = await select_choice(player_id, options, tr("STR_EFF_CHOOSE_ABILITY"))
+				option_card_ids.append(CardUtils.base_id(e.card_data))
+			var chosen: int = await select_choice(player_id, options, tr("STR_EFF_CHOOSE_ABILITY"), option_card_ids)
 			if chosen < 0 or chosen >= entries.size():
 				chosen = 0
 			entry = entries.pop_at(chosen)
@@ -1703,17 +1717,27 @@ func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: 
 		return options[0] if not options.is_empty() else {}
 
 
-func select_choice(player_id: int, options: Array[String], prompt: String) -> int:
+## Base card ids parallel to the most recent select_choice options ("" for
+## options without a card). The choice UI reads this to show an artwork
+## thumbnail on each button; cleared when the choice resolves.
+var choice_card_ids: Array[String] = []
+
+
+func select_choice(player_id: int, options: Array[String], prompt: String, card_ids: Array[String] = []) -> int:
 	## Present multiple text options to the player and let them choose one.
 	## Returns the chosen index (0-based), or 0 as fallback if no UI connected.
+	## `card_ids` (optional) gives the base card id behind each option so the
+	## UI can show the card's art next to the text.
 	if options.is_empty():
 		return -1
 
 	if choice_requested.get_connections().size() > 0:
+		choice_card_ids = card_ids
 		_highlight_active_effect()
 		choice_requested.emit(player_id, options, prompt)
 		await _choice_resolved
 		_unhighlight_active_effect()
+		choice_card_ids = []
 		return _choice_result
 	else:
 		# Fallback: auto-pick first option
@@ -1865,11 +1889,13 @@ func evolve_zones_in_order(player_id: int, eligible_zones: Array[int]) -> void:
 			zi = remaining.pop_back()
 		else:
 			var options: Array[String] = []
+			var option_card_ids: Array[String] = []
 			for ez in remaining:
 				var card := player.get_zone_top_card(ez)
 				options.append(tr("STR_EFF_ZONE_OPTION_FMT") % [ez + 1, card.get("name", "?")])
+				option_card_ids.append(CardUtils.base_id(card))
 			var chosen: int = await select_choice(
-				player_id, options, tr("STR_EFF_CHOOSE_EVOLVE_ZONE"))
+				player_id, options, tr("STR_EFF_CHOOSE_EVOLVE_ZONE"), option_card_ids)
 			zi = remaining.pop_at(chosen)
 		await perform_evolution(player_id, zi)
 

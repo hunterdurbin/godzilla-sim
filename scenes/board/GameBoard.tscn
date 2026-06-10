@@ -3,6 +3,26 @@
 [ext_resource type="Script" uid="uid://dml6j5e7cos4r" path="res://scenes/board/game_board.gd" id="1_gb"]
 [ext_resource type="PackedScene" path="res://scenes/board/PlayerBoard.tscn" id="2_pb"]
 [ext_resource type="Script" uid="uid://b04w0nnwbu55m" path="res://scenes/managers/card_manager.gd" id="3_cm"]
+[ext_resource type="Script" path="res://scripts/session/game_session.gd" id="4_gs"]
+[ext_resource type="Script" path="res://scripts/session/multiplayer_sync.gd" id="5_ms"]
+[ext_resource type="Script" path="res://scenes/board/modules/board_sfx.gd" id="6_sfx"]
+[ext_resource type="Script" path="res://scenes/board/modules/log_chat.gd" id="7_log"]
+[ext_resource type="Script" path="res://scenes/board/modules/turn_tracker.gd" id="8_tt"]
+[ext_resource type="Script" path="res://scenes/board/modules/first_player_ui.gd" id="9_fp"]
+[ext_resource type="Script" path="res://scenes/board/modules/end_game_controller.gd" id="10_eg"]
+[ext_resource type="Script" path="res://scenes/board/modules/reconnect_controller.gd" id="11_rc"]
+[ext_resource type="Script" path="res://scripts/session/effect_ui_router.gd" id="12_er"]
+[ext_resource type="Script" path="res://scenes/board/modules/hand_controller.gd" id="20_hc"]
+[ext_resource type="Script" path="res://scenes/board/modules/selection_controller.gd" id="21_sc"]
+[ext_resource type="Script" path="res://scenes/board/modules/mobile_layout.gd" id="22_ml"]
+[ext_resource type="Script" path="res://scenes/board/overlays/active_ability_banner.gd" id="23_ab"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckSearchOverlay.tscn" id="13_dso"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckArrangeOverlay.tscn" id="14_dao"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/CardSelectOverlay.tscn" id="15_cso"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/DiscardViewOverlay.tscn" id="16_dvo"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/MonsterDeckViewOverlay.tscn" id="17_mdo"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/ZoneStackViewOverlay.tscn" id="18_zso"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/CardZoomOverlay.tscn" id="19_czo"]
 
 [node name="GameBoard" type="Control" unique_id=1722697301]
 layout_mode = 3
@@ -12,6 +32,47 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_gb")
+
+[node name="GameSession" type="Node" parent="."]
+script = ExtResource("4_gs")
+
+[node name="MultiplayerSync" type="Node" parent="GameSession"]
+script = ExtResource("5_ms")
+
+[node name="EffectUIRouter" type="Node" parent="GameSession"]
+script = ExtResource("12_er")
+
+[node name="BoardSfx" type="Node" parent="."]
+script = ExtResource("6_sfx")
+
+[node name="LogChat" type="Node" parent="."]
+script = ExtResource("7_log")
+
+[node name="TurnTrackerModule" type="Node" parent="."]
+script = ExtResource("8_tt")
+
+[node name="FirstPlayerUI" type="Node" parent="."]
+script = ExtResource("9_fp")
+
+[node name="EndGameController" type="Node" parent="."]
+script = ExtResource("10_eg")
+
+[node name="ReconnectController" type="Node" parent="."]
+script = ExtResource("11_rc")
+
+[node name="HandController" type="Node" parent="."]
+script = ExtResource("20_hc")
+
+[node name="SelectionController" type="Node" parent="."]
+script = ExtResource("21_sc")
+
+[node name="MobileLayout" type="Node" parent="."]
+script = ExtResource("22_ml")
+
+[node name="ActiveAbilityBanner" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("23_ab")
 
 [node name="Background" type="ColorRect" parent="." unique_id=1737832110]
 layout_mode = 1
@@ -501,259 +562,15 @@ script = ExtResource("3_cm")
 layout_mode = 3
 card_spacing = 120.0
 
-[node name="DeckSearchOverlay" type="ColorRect" parent="." unique_id=733695876]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
+[node name="DeckSearchOverlay" parent="." instance=ExtResource("13_dso")]
 
-[node name="DeckSearchPanel" type="PanelContainer" parent="DeckSearchOverlay" unique_id=660930292]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -350.0
-offset_right = 350.0
-grow_horizontal = 2
-grow_vertical = 2
+[node name="DiscardViewOverlay" parent="." instance=ExtResource("16_dvo")]
 
-[node name="VBox" type="VBoxContainer" parent="DeckSearchOverlay/DeckSearchPanel" unique_id=1069037139]
-layout_mode = 2
-theme_override_constants/separation = 10
+[node name="MonsterDeckViewOverlay" parent="." instance=ExtResource("17_mdo")]
 
-[node name="PromptLabel" type="Label" parent="DeckSearchOverlay/DeckSearchPanel/VBox" unique_id=2043065905]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_SEARCH_YOUR_DECK"
-horizontal_alignment = 1
+[node name="ZoneStackViewOverlay" parent="." instance=ExtResource("18_zso")]
 
-[node name="ToggleRow" type="HBoxContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox" unique_id=706326209]
-layout_mode = 2
-theme_override_constants/separation = 20
-alignment = 2
-
-[node name="ShowAllToggle" type="CheckButton" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow" unique_id=1561789456]
-layout_mode = 2
-text = "STR_GB_SHOW_ALL"
-
-[node name="StackedToggle" type="CheckButton" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow" unique_id=838319594]
-layout_mode = 2
-text = "STR_GB_STACKED"
-
-[node name="Spacer" type="Control" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow" unique_id=1241003146]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="ViewBoardButton" type="Button" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow" unique_id=1081316664]
-layout_mode = 2
-text = "STR_GB_VIEW_BOARD"
-
-[node name="ScrollContainer" type="ScrollContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox" unique_id=1985525137]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="CardGrid" type="GridContainer" parent="DeckSearchOverlay/DeckSearchPanel/VBox/ScrollContainer" unique_id=1765882031]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 4
-
-[node name="SkipButton" type="Button" parent="DeckSearchOverlay/DeckSearchPanel/VBox" unique_id=886682311]
-custom_minimum_size = Vector2(100, 36)
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_SKIP"
-
-[node name="DiscardViewOverlay" type="ColorRect" parent="." unique_id=778566577]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
-
-[node name="DiscardViewPanel" type="PanelContainer" parent="DiscardViewOverlay" unique_id=73043265]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -350.0
-offset_right = 350.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="DiscardViewOverlay/DiscardViewPanel" unique_id=1241130303]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="TitleLabel" type="Label" parent="DiscardViewOverlay/DiscardViewPanel/VBox" unique_id=628669903]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_DISCARD_PILE"
-horizontal_alignment = 1
-
-[node name="StackedToggle" type="CheckButton" parent="DiscardViewOverlay/DiscardViewPanel/VBox" unique_id=740336234]
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_STACKED"
-
-[node name="ScrollContainer" type="ScrollContainer" parent="DiscardViewOverlay/DiscardViewPanel/VBox" unique_id=494765189]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="CardGrid" type="GridContainer" parent="DiscardViewOverlay/DiscardViewPanel/VBox/ScrollContainer" unique_id=1045351002]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 4
-
-[node name="CloseButton" type="Button" parent="DiscardViewOverlay/DiscardViewPanel/VBox" unique_id=1187178682]
-custom_minimum_size = Vector2(100, 36)
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_CLOSE"
-
-[node name="MonsterDeckViewOverlay" type="ColorRect" parent="." unique_id=1274372105]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
-
-[node name="MonsterDeckViewPanel" type="PanelContainer" parent="MonsterDeckViewOverlay" unique_id=317633118]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -350.0
-offset_right = 350.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel" unique_id=1954534819]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="TitleLabel" type="Label" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox" unique_id=307134534]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_MONSTER_DECK"
-horizontal_alignment = 1
-
-[node name="StackedToggle" type="CheckButton" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox" unique_id=1952612739]
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_STACKED"
-
-[node name="ScrollContainer" type="ScrollContainer" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox" unique_id=732098287]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="CardGrid" type="GridContainer" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox/ScrollContainer" unique_id=549177241]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 4
-
-[node name="CloseButton" type="Button" parent="MonsterDeckViewOverlay/MonsterDeckViewPanel/VBox" unique_id=2118037417]
-custom_minimum_size = Vector2(100, 36)
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_CLOSE"
-
-[node name="ZoneStackViewOverlay" type="ColorRect" parent="." unique_id=481206165]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
-
-[node name="ZoneStackViewPanel" type="PanelContainer" parent="ZoneStackViewOverlay" unique_id=299704508]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -350.0
-offset_right = 350.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="ZoneStackViewOverlay/ZoneStackViewPanel" unique_id=1533084540]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="TitleLabel" type="Label" parent="ZoneStackViewOverlay/ZoneStackViewPanel/VBox" unique_id=1778754529]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_ZONE_STACK"
-horizontal_alignment = 1
-
-[node name="ScrollContainer" type="ScrollContainer" parent="ZoneStackViewOverlay/ZoneStackViewPanel/VBox" unique_id=1118408588]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="CardGrid" type="GridContainer" parent="ZoneStackViewOverlay/ZoneStackViewPanel/VBox/ScrollContainer" unique_id=396343001]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 4
-
-[node name="CloseButton" type="Button" parent="ZoneStackViewOverlay/ZoneStackViewPanel/VBox" unique_id=744930460]
-custom_minimum_size = Vector2(100, 36)
-layout_mode = 2
-size_flags_horizontal = 4
-text = "STR_GB_CLOSE"
-
-[node name="CardZoomOverlay" type="ColorRect" parent="." unique_id=1135435089]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.7)
-
-[node name="CardContainer" type="CenterContainer" parent="CardZoomOverlay" unique_id=2139678046]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
+[node name="CardZoomOverlay" parent="." instance=ExtResource("19_czo")]
 
 [node name="EndGamePanel" type="PanelContainer" parent="." unique_id=926981509]
 visible = false
@@ -795,242 +612,9 @@ layout_mode = 2
 custom_minimum_size = Vector2(120, 0)
 text = "STR_GB_MAIN_MENU"
 
-[node name="DeckArrangeOverlay" type="ColorRect" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
+[node name="DeckArrangeOverlay" parent="." instance=ExtResource("14_dao")]
 
-[node name="DeckArrangePanel" type="PanelContainer" parent="DeckArrangeOverlay"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -450.0
-offset_right = 450.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="DeckArrangeOverlay/DeckArrangePanel"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="PromptLabel" type="Label" parent="DeckArrangeOverlay/DeckArrangePanel/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_ARRANGE_CARDS"
-horizontal_alignment = 1
-
-[node name="ArrangeContainer" type="HBoxContainer" parent="DeckArrangeOverlay/DeckArrangePanel/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 16
-
-[node name="KeepPanel" type="PanelContainer" parent="DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.0
-
-[node name="KeepVBox" type="VBoxContainer" parent="DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/KeepPanel"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="KeepLabel" type="Label" parent="DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/KeepPanel/KeepVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "STR_GB_KEEP_ON_DECK"
-horizontal_alignment = 1
-
-[node name="KeepCards" type="GridContainer" parent="DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/KeepPanel/KeepVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 4
-
-[node name="DiscardPanel" type="PanelContainer" parent="DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.0
-
-[node name="DiscardVBox" type="VBoxContainer" parent="DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/DiscardPanel"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="DiscardLabel" type="Label" parent="DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/DiscardPanel/DiscardVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "STR_GB_SEND_TO_DISCARD"
-horizontal_alignment = 1
-
-[node name="DiscardCards" type="GridContainer" parent="DeckArrangeOverlay/DeckArrangePanel/VBox/ArrangeContainer/DiscardPanel/DiscardVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 4
-
-[node name="ButtonRow" type="HBoxContainer" parent="DeckArrangeOverlay/DeckArrangePanel/VBox"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 20
-
-[node name="ViewBoardButton" type="Button" parent="DeckArrangeOverlay/DeckArrangePanel/VBox/ButtonRow"]
-custom_minimum_size = Vector2(120, 36)
-layout_mode = 2
-text = "STR_GB_VIEW_BOARD"
-
-[node name="ConfirmButton" type="Button" parent="DeckArrangeOverlay/DeckArrangePanel/VBox/ButtonRow"]
-custom_minimum_size = Vector2(120, 36)
-layout_mode = 2
-text = "STR_GB_CONFIRM"
-
-[node name="CardSelectOverlay" type="ColorRect" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 0.6)
-
-[node name="CardSelectPanel" type="PanelContainer" parent="CardSelectOverlay"]
-layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.5
-anchor_top = 0.125
-anchor_right = 0.5
-anchor_bottom = 0.875
-offset_left = -450.0
-offset_right = 450.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBox" type="VBoxContainer" parent="CardSelectOverlay/CardSelectPanel"]
-layout_mode = 2
-theme_override_constants/separation = 10
-
-[node name="PromptLabel" type="Label" parent="CardSelectOverlay/CardSelectPanel/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 16
-text = "STR_GB_SELECT_CARDS"
-horizontal_alignment = 1
-
-[node name="ToggleRow" type="HBoxContainer" parent="CardSelectOverlay/CardSelectPanel/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 20
-alignment = 2
-
-[node name="ShowAllToggle" type="CheckButton" parent="CardSelectOverlay/CardSelectPanel/VBox/ToggleRow"]
-layout_mode = 2
-text = "STR_GB_SHOW_ALL"
-
-[node name="StackedToggle" type="CheckButton" parent="CardSelectOverlay/CardSelectPanel/VBox/ToggleRow"]
-layout_mode = 2
-text = "STR_GB_STACKED"
-
-[node name="Spacer" type="Control" parent="CardSelectOverlay/CardSelectPanel/VBox/ToggleRow"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="ViewBoardButton" type="Button" parent="CardSelectOverlay/CardSelectPanel/VBox/ToggleRow"]
-layout_mode = 2
-text = "STR_GB_VIEW_BOARD"
-
-[node name="ContentContainer" type="HBoxContainer" parent="CardSelectOverlay/CardSelectPanel/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 16
-
-[node name="PoolPanel" type="Panel" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.0
-clip_contents = true
-
-[node name="PoolVBox" type="VBoxContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/PoolPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 8
-
-[node name="PoolLabel" type="Label" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/PoolPanel/PoolVBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-text = "STR_GB_AVAILABLE_CARDS"
-horizontal_alignment = 1
-
-[node name="ScrollContainer" type="ScrollContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/PoolPanel/PoolVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="PoolGrid" type="GridContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/PoolPanel/PoolVBox/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 3
-
-[node name="SelectionPanel" type="Panel" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.0
-clip_contents = true
-
-[node name="SelectionVBox" type="VBoxContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 8
-
-[node name="SelectionLabel" type="Label" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel/SelectionVBox"]
-auto_translate_mode = 2
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-horizontal_alignment = 1
-
-[node name="ScrollContainer" type="ScrollContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel/SelectionVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-scroll_deadzone = 20
-
-[node name="SelectionGrid" type="GridContainer" parent="CardSelectOverlay/CardSelectPanel/VBox/ContentContainer/SelectionPanel/SelectionVBox/ScrollContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/h_separation = 8
-theme_override_constants/v_separation = 8
-columns = 3
-
-[node name="ButtonRow" type="HBoxContainer" parent="CardSelectOverlay/CardSelectPanel/VBox"]
-layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 20
-
-[node name="SkipButton" type="Button" parent="CardSelectOverlay/CardSelectPanel/VBox/ButtonRow"]
-custom_minimum_size = Vector2(120, 36)
-layout_mode = 2
-text = "STR_GB_SKIP"
-
-[node name="ConfirmButton" type="Button" parent="CardSelectOverlay/CardSelectPanel/VBox/ButtonRow"]
-auto_translate_mode = 2
-custom_minimum_size = Vector2(120, 36)
-layout_mode = 2
+[node name="CardSelectOverlay" parent="." instance=ExtResource("15_cso")]
 
 [node name="ShowCardsButton" type="Button" parent="." unique_id=1068049084]
 visible = false
