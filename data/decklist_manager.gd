@@ -531,6 +531,27 @@ func _parse_decklist(content: String) -> Dictionary:
 	return result
 
 
+## Build deck card arrays straight from wire entries without touching the
+## per-process _player_decks slots. Used by the dedicated server, where each
+## room carries its own decks (player_id only seeds the per-copy instance-id
+## suffix). Returns {"monster_deck": Array, "main_deck": Array}.
+func build_deck_from_entries(player_id: int, monster_entries: Array, main_entries: Array) -> Dictionary:
+	var main_deck: Array[Dictionary] = []
+	for entry in main_entries:
+		var template: Dictionary = CardData.CARD_TEMPLATES.get(entry["card_number"], {})
+		if template.is_empty():
+			push_warning("DecklistManager: card not found in registry: %s" % entry["card_number"])
+			continue
+		for i in range(entry["quantity"]):
+			var card := template.duplicate()
+			card["id"] = "%s_%d_%d" % [entry["card_number"], player_id, i]
+			main_deck.append(card)
+	return {
+		"monster_deck": _build_monster_deck(monster_entries),
+		"main_deck": main_deck,
+	}
+
+
 func _build_monster_deck(entries: Array) -> Array[Dictionary]:
 	var deck: Array[Dictionary] = []
 	for entry in entries:

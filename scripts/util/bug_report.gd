@@ -32,6 +32,7 @@ static func build_body(board: Node) -> String:
 		NetworkManager.Mode.CLIENT: "LAN (Client)",
 		NetworkManager.Mode.ONLINE_HOST: "Online (Host)",
 		NetworkManager.Mode.ONLINE_CLIENT: "Online (Client)",
+		NetworkManager.Mode.ONLINE: "Online (Dedicated)",
 	}
 	lines.append("- **Version:** %s" % NetworkManager.GAME_VERSION)
 	lines.append("- **Mode:** %s" % mode_names.get(NetworkManager.mode, "Unknown"))

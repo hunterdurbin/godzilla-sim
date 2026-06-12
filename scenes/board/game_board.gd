@@ -444,8 +444,8 @@ func _ready() -> void:
 	# BEFORE the session starts so the router binds them on session_started.
 	_router.translate_prompt = _resolve_translated_text
 	_router.on_pre_remote_dispatch = _flush_broadcast
-	_router.on_pending_interaction = func(method: String, args: Array) -> void:
-		_pending_interaction = {"method": method, "args": args}
+	_router.on_pending_interaction = func(method: String, args: Array, player_id: int) -> void:
+		_pending_interaction = {"method": method, "args": args, "player": player_id}
 	_router.on_view_board_request = _on_overlay_view_board
 	_router.card_zoom_request = _show_card_zoom
 	_router.ability_banner_show = _ability_banner.show_ability
@@ -556,12 +556,13 @@ func _ready() -> void:
 		NetworkManager.is_in_game = true
 		_reconnect.setup()
 		# Save reconnect session for app-restart recovery (online only)
-		if NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]:
+		if NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT, NetworkManager.Mode.ONLINE]:
 			GameSettings.save_reconnect_session(
 				NetworkManager.get_game_code(),
 				NetworkManager.is_host(),
 				NetworkManager.game_mode,
 				NetworkManager.is_public_room,
+				NetworkManager.room_token,
 			)
 
 	# Connect deck search buttons
@@ -1246,7 +1247,7 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 		else:
 			# Client's turn — send context, disable host buttons
 			_disable_all_buttons()
-			_pending_interaction = {"method": "action_context", "args": [actions_json, playable_json]}
+			_pending_interaction = {"method": "action_context", "args": [actions_json, playable_json], "player": active_id}
 			for peer_id in NetworkManager.peer_player_map:
 				if NetworkManager.peer_player_map[peer_id] == active_id:
 					RpcLogger.log_send("receive_action_context", actions_json.length() + playable_json.length())
@@ -1265,7 +1266,7 @@ func _on_confirmation_requested(prompt: String, setting: String) -> void:
 		return
 	if is_multiplayer_game and current_pid != local_player_id:
 		_flush_broadcast()
-		_pending_interaction = {"method": "confirmation", "args": [prompt, setting]}
+		_pending_interaction = {"method": "confirmation", "args": [prompt, setting], "player": current_pid}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == current_pid:
 				RpcLogger.log_send("confirmation_requested", prompt.length() + setting.length())
@@ -1542,12 +1543,13 @@ func _execute_rematch() -> void:
 	_reconnect_cumulative_seconds = 0.0
 	_pending_interaction = {}
 	# Re-save session with fresh timestamp for the new game
-	if is_multiplayer_game and NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]:
+	if is_multiplayer_game and NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT, NetworkManager.Mode.ONLINE]:
 		GameSettings.save_reconnect_session(
 			NetworkManager.get_game_code(),
 			NetworkManager.is_host(),
 			NetworkManager.game_mode,
 			NetworkManager.is_public_room,
+			NetworkManager.room_token,
 		)
 
 	# 2. Clear visual state on both boards
@@ -2528,44 +2530,11 @@ func _rpc_deck_search_requested(matching_json: String, all_json: String, prompt:
 	_router.show_deck_search(StateCodec.ids_to_cards(matching_ids), StateCodec.ids_to_cards(all_ids), prompt, allow_skip)
 
 
-## Client -> Host: deck search resolved (player chose a card or skipped)
-func _rpc_deck_search_resolved(selected_json: String) -> void:
-	RpcLogger.log_receive("deck_search_resolved", selected_json.length())
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	_pending_interaction = {}
-	var selected: Dictionary = {}
-	if not selected_json.is_empty():
-		selected = JSON.parse_string(selected_json)
-		if selected == null:
-			selected = {}
-	turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
-
-
 ## Host -> Client: deck arrange request (player must reorder/discard cards)
 func _rpc_deck_arrange_requested(cards_json: String, prompt: String) -> void:
 	RpcLogger.log_receive("deck_arrange_requested", cards_json.length() + prompt.length())
 	var ids: Array = JSON.parse_string(cards_json)
 	_router.show_deck_arrange(StateCodec.ids_to_cards(ids), prompt)
-
-
-## Client -> Host: deck arrange resolved (player arranged cards)
-func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void:
-	RpcLogger.log_receive("deck_arrange_resolved", keep_json.length() + discard_json.length())
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	_pending_interaction = {}
-	var keep: Array[Dictionary] = []
-	var discard: Array[Dictionary] = []
-	var parsed_keep: Array = JSON.parse_string(keep_json)
-	if parsed_keep:
-		for c in parsed_keep:
-			keep.append(c)
-	var parsed_discard: Array = JSON.parse_string(discard_json)
-	if parsed_discard:
-		for c in parsed_discard:
-			discard.append(c)
-	turn_manager.action_handler.effect_handler.resolve_deck_arrange(keep, discard)
 
 
 ## Host -> Client: card select request
@@ -2574,21 +2543,6 @@ func _rpc_card_select_requested(matching_json: String, all_json: String, prompt:
 	var matching_ids: Array = JSON.parse_string(matching_json)
 	var all_ids: Array = JSON.parse_string(all_json)
 	_router.show_card_select(StateCodec.ids_to_cards(matching_ids), StateCodec.ids_to_cards(all_ids), prompt, min_count, max_count)
-
-
-## Client -> Host: card select resolved (player selected cards or skipped)
-func _rpc_card_select_resolved(selected_json: String) -> void:
-	RpcLogger.log_receive("card_select_resolved", selected_json.length())
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	_pending_interaction = {}
-	var selected: Array[Dictionary] = []
-	if not selected_json.is_empty():
-		var parsed: Array = JSON.parse_string(selected_json)
-		if parsed:
-			for id in parsed:
-				selected.append({"id": str(id)})
-	turn_manager.action_handler.effect_handler.resolve_card_select(selected)
 
 
 ## Host -> Client: hand card selection request (player must choose a card from hand)
@@ -2605,15 +2559,6 @@ func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, al
 	_selection._show_hand_card_selection(local_player_id, valid_indices, prompt, allow_skip)
 
 
-## Client -> Host: hand card selection resolved
-func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
-	RpcLogger.log_receive("hand_card_selection_resolved", 4)
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	_pending_interaction = {}
-	turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
-
-
 ## Host -> Client: confirmation request (draw / next turn)
 func _rpc_confirmation_requested(prompt: String, setting: String) -> void:
 	RpcLogger.log_receive("confirmation_requested", prompt.length() + setting.length())
@@ -2626,31 +2571,14 @@ func _rpc_confirmation_requested(prompt: String, setting: String) -> void:
 	_show_confirmation(prompt)
 
 
-## Client -> Host: confirmation resolved
-func _rpc_confirmation_resolved() -> void:
-	RpcLogger.log_receive("confirmation_resolved", 0)
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	_pending_interaction = {}
-	turn_manager.confirm()
-
-
-## Client -> Host: send player name
-func _rpc_send_player_name(pname: String) -> void:
-	RpcLogger.log_receive("send_player_name", pname.length())
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	var sender_id := multiplayer.get_remote_sender_id()
-	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
-	if sender_player_id >= 0 and sender_player_id < 2:
-		turn_manager.game_state.player_names[sender_player_id] = pname
-		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
-		# Update host UI (disambiguation may affect both labels)
-		for i in range(2):
-			if i < _turn_tracker_headers.size():
-				_turn_tracker_headers[i].text = GameLog.player_name(i)
-		# Re-broadcast so client gets the updated names
-		_broadcast_state()
+## Host UI refresh after a remote player's name landed in game_state
+## (called from MultiplayerSync._rpc_send_player_name).
+func _on_player_names_updated() -> void:
+	GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+	# Update host UI (disambiguation may affect both labels)
+	for i in range(2):
+		if i < _turn_tracker_headers.size():
+			_turn_tracker_headers[i].text = GameLog.player_name(i)
 
 
 ## Host -> Client: hand discard request (player must choose cards to discard)
@@ -2661,21 +2589,6 @@ func _rpc_hand_discard_requested(discard_count: int) -> void:
 	if _client_current_player_id != local_player_id:
 		SfxManager.play("action_required")
 	_selection._show_hand_discard_selection(local_player_id, discard_count)
-
-
-## Client -> Host: hand discard resolved (player chose cards)
-func _rpc_hand_discard_resolved(indices_json: String) -> void:
-	RpcLogger.log_receive("hand_discard_resolved", indices_json.length())
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	_pending_interaction = {}
-	var parsed: Array = JSON.parse_string(indices_json)
-	var hand_indices: Array[int] = []
-	for v in parsed:
-		hand_indices.append(int(v))
-	var sender_id := multiplayer.get_remote_sender_id()
-	var sender_player_id: int = NetworkManager.peer_player_map.get(sender_id, -1)
-	turn_manager.action_handler.effect_handler.resolve_hand_discard(sender_player_id, hand_indices)
 
 
 ## Host -> Client: zone target request (player must choose a zone)
@@ -2690,15 +2603,6 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 	_selection._show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt, allow_skip)
 
 
-## Client -> Host: zone target resolved (player chose a zone)
-func _rpc_zone_target_resolved(zone_index: int) -> void:
-	RpcLogger.log_receive("zone_target_resolved", 4)
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	_pending_interaction = {}
-	turn_manager.action_handler.effect_handler.resolve_zone_target(zone_index)
-
-
 ## Host -> Client: strategy target request (player must choose a strategy zone)
 func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String) -> void:
 	RpcLogger.log_receive("strategy_target_requested", 4 + indices_json.length() + prompt.length())
@@ -2709,15 +2613,6 @@ func _rpc_strategy_target_requested(target_player_id: int, indices_json: String,
 	for v in parsed:
 		valid_indices.append(int(v))
 	_selection._show_strategy_target_selection(local_player_id, target_player_id, valid_indices, prompt)
-
-
-## Client -> Host: strategy target resolved (player chose a strategy zone)
-func _rpc_strategy_target_resolved(strategy_index: int) -> void:
-	RpcLogger.log_receive("strategy_target_resolved", 4)
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	_pending_interaction = {}
-	turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_index)
 
 
 ## Host -> Client: choice request (player must choose ability order)
@@ -2737,15 +2632,6 @@ func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: 
 	_selection._show_choice_selection(local_player_id, options, prompt, card_ids)
 
 
-## Client -> Host: choice resolved (player chose an option)
-func _rpc_choice_resolved(index: int) -> void:
-	RpcLogger.log_receive("choice_resolved", 4)
-	if not NetworkManager.is_host() or not turn_manager:
-		return
-	_pending_interaction = {}
-	turn_manager.action_handler.effect_handler.resolve_choice(index)
-
-
 ## Host -> Client: prompt monster rank-up selection
 func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, prompt: String) -> void:
 	RpcLogger.log_receive("monster_rankup_requested", monsters_json.length() + indices_json.length() + prompt.length())
@@ -2757,13 +2643,15 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 	_router.show_monster_rankup(StateCodec.ids_to_cards(monster_ids), parsed_indices, prompt)
 
 
-## Client -> Host: resolve monster rank-up selection
-func _rpc_monster_rankup_resolved(index: int) -> void:
-	RpcLogger.log_receive("monster_rankup_resolved", 4)
-	if not NetworkManager.is_host() or not turn_manager:
+## Server -> Client (dedicated only): display-only cards-revealed overlay
+## (the server already resolved the effect; dismissing changes nothing).
+func _rpc_cards_revealed_shown(cards_json: String, title: String) -> void:
+	if NetworkManager.is_host():
 		return
-	_pending_interaction = {}
-	turn_manager.action_handler.resolve_monster_rankup(index)
+	var ids: Variant = JSON.parse_string(cards_json)
+	if not ids is Array or ids.is_empty():
+		return
+	zone_stack_view_overlay.show_revealed(StateCodec.ids_to_cards(ids), _resolve_translated_text(title), Callable())
 
 
 ## Host -> Client: highlight a zone card during effect resolution

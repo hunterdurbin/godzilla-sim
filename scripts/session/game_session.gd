@@ -119,15 +119,22 @@ func compute_hand_rank_mods(player: PlayerState) -> Array:
 ## setup_from_save(), seeds the local player name, wires the typed
 ## forwarders, and emits session_started. Single source of truth for
 ## host-side TurnManager construction (initial start and rematch).
-func start_host_session(card_data_node: Node, local_player_id: int, loaded_save: Dictionary = {}) -> TurnManager:
+func start_host_session(card_data_node: Node, local_player_id: int, loaded_save: Dictionary = {}, config: SessionConfig = null) -> TurnManager:
+	var cfg := config if config else SessionConfig.from_singletons()
 	turn_manager = TurnManager.new()
 	if loaded_save.is_empty():
-		turn_manager.setup(card_data_node)
+		turn_manager.setup(card_data_node, cfg)
 	else:
 		turn_manager.setup_from_save(loaded_save)
+		turn_manager.session_config = cfg
 
-	turn_manager.game_state.player_names[local_player_id] = GameSettings.player_name
-	GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+	if local_player_id >= 0 and not cfg.local_player_name.is_empty():
+		turn_manager.game_state.player_names[local_player_id] = cfg.local_player_name
+	if local_player_id >= 0:
+		# GameLog is display-only and process-global; a dedicated server
+		# (local_player_id -1) must not touch it — clients disambiguate names
+		# themselves when applying state broadcasts.
+		GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
 
 	action_handler = turn_manager.action_handler
 	effect_handler = turn_manager.action_handler.effect_handler
@@ -182,7 +189,7 @@ func setup_replay_recorder(is_bot_game: bool) -> ReplayRecorder:
 		NetworkManager.Mode.SOLO: mode_str = "solo"
 		NetworkManager.Mode.SOLO_BOT: mode_str = "solo_bot"
 		NetworkManager.Mode.HOST, NetworkManager.Mode.CLIENT: mode_str = "lan"
-		NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT: mode_str = "online"
+		NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT, NetworkManager.Mode.ONLINE: mode_str = "online"
 		_: mode_str = "unknown"
 	var diff_str: String = BotConfig.Difficulty.keys()[NetworkManager.bot_difficulty] if is_bot_game else ""
 	var d_names: Array[String] = [

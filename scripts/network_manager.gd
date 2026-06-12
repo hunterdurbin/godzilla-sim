@@ -5,7 +5,7 @@ extends Node
 ## Registered as an autoload singleton. Contains no game logic —
 ## just connection lifecycle, player assignment, and session state.
 
-enum Mode {SOLO, SOLO_BOT, HOST, CLIENT, ONLINE_HOST, ONLINE_CLIENT}
+enum Mode {SOLO, SOLO_BOT, HOST, CLIENT, ONLINE_HOST, ONLINE_CLIENT, ONLINE} # ONLINE = dedicated server (neither player is host)
 
 signal player_connected(peer_id: int)
 signal player_disconnected(peer_id: int)
@@ -15,13 +15,33 @@ signal game_starting()
 signal version_mismatch(local_version: String, remote_version: String)
 signal version_verified_ok()
 signal match_declined()  ## emitted on the joined client when the host declined to start the match
+signal server_seated(room: String, player_id: int)  ## dedicated server assigned us a seat
+signal server_room_created(code: String)  ## dedicated server created our room
+signal server_error(code: String)  ## dedicated server rejected a request
+signal server_lobby_update(info: Dictionary)  ## pre-match seat/deck status from the dedicated server
+signal server_peer_present(player_id: int, connected: bool, grace_s: float)  ## opponent dropped/returned mid-match (dedicated server)
 
 const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 2
 const VERSION_TIMEOUT: float = 5.0
 var GAME_VERSION: String = ProjectSettings.get_setting("application/config/version", "unknown")
+## Master switch for online play's backend. false = the WebSocket relay
+## (host-client, today's production behavior). true = the dedicated game
+## server (authoritative, validated, reconnectable) — flip once the server
+## is deployed. The lobbies, room listing, and reconnect flows all branch
+## on this; LAN is unaffected either way.
+const USE_DEDICATED_SERVER: bool = false
+
 const RELAY_HOST: String = "godzillatcg.com"
 const RELAY_PORT: int = 12090
+## Dedicated game server (replaces the relay for online play). One server
+## runs per release channel — the HELLO handshake version-gates clients, so
+## each build targets its own channel's port. Variables so tests/dev can
+## retarget localhost (see --server-host/--server-port in _ready).
+const SERVER_PORT_STABLE: int = 12101
+const SERVER_PORT_UNSTABLE: int = 12111
+var server_host: String = "godzillatcg.com"
+var server_port: int = SERVER_PORT_UNSTABLE if GAME_VERSION.contains("unstable") else SERVER_PORT_STABLE
 const WS_CONNECT_TIMEOUT: float = 10.0
 const KEEPALIVE_INTERVAL: float = 25.0  ## Idle keepalive; stays under typical 30–60s proxy timeouts
 
@@ -38,6 +58,8 @@ var is_public_room: bool = false
 var bot_config: BotConfig = BotConfig.normal()
 var bot_difficulty: BotConfig.Difficulty = BotConfig.Difficulty.NORMAL
 var bot_seed: int = -1  ## Deterministic RNG seed for bot games (-1 = auto-generate)
+var server_peer: GameServerPeer  ## Live bridge to the dedicated server (Mode.ONLINE)
+var room_token: String = ""  ## Reconnect credential issued by the dedicated server
 
 # --- Lobby-bot game state (Play vs Bot While You Wait) ---
 var _lobby_resume_mode: Mode = Mode.SOLO
@@ -64,6 +86,9 @@ func enter_lobby_bot_game(difficulty: BotConfig.Difficulty) -> void:
 	mode = Mode.SOLO_BOT
 	local_player_id = 0
 	set_bot_difficulty(difficulty)
+	# Dedicated server: gate the room so the match can't start while we're away.
+	if server_peer != null:
+		server_peer.send_control({"type": "BUSY"})
 
 
 ## Restore the saved lobby state. Does NOT touch the relay peer or room state —
@@ -80,20 +105,45 @@ func exit_lobby_bot_game() -> void:
 	_lobby_resume_mode = Mode.SOLO
 	_lobby_resume_pid = -1
 	_lobby_queued_deck_name = ""
+	# Dedicated server: we're back in the lobby — allow the match to start.
+	if mode == Mode.ONLINE and server_peer != null:
+		server_peer.send_control({"type": "READY"})
 
 
 func is_lobby_bot_game() -> bool:
 	return _lobby_resume_active
 
 
+func _ready() -> void:
+	# Dev/test overrides for the dedicated server target, e.g. editor
+	# Run Instances with "-- --server-host=127.0.0.1" to playtest against a
+	# locally running server.
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--server-host="):
+			server_host = arg.get_slice("=", 1)
+			print("[NetworkManager] server_host override: %s" % server_host)
+		elif arg.begins_with("--server-port="):
+			server_port = int(arg.get_slice("=", 1))
+			print("[NetworkManager] server_port override: %d" % server_port)
+
+
 func _process(delta: float) -> void:
-	# Idle keepalive — send a no-op text frame while waiting for an opponent so
-	# the relay's TCP path doesn't get killed by an idle proxy timeout.
-	if multiplayer.multiplayer_peer is RelayMultiplayerPeer and not opponent_connected:
+	# Idle keepalive — send a no-op text frame while idling so the relay/server
+	# TCP path doesn't get killed by an idle proxy timeout. Relay: while
+	# waiting for an opponent. Dedicated server: always (the server enforces
+	# an idle timeout, so the heartbeat must keep flowing even mid-match
+	# during long opponent turns).
+	var peer := multiplayer.multiplayer_peer
+	var idle := false
+	if peer is RelayMultiplayerPeer:
+		idle = not opponent_connected
+	elif peer is GameServerPeer:
+		idle = true
+	if idle:
 		_keepalive_elapsed += delta
 		if _keepalive_elapsed >= KEEPALIVE_INTERVAL:
 			_keepalive_elapsed = 0.0
-			(multiplayer.multiplayer_peer as RelayMultiplayerPeer).send_keepalive()
+			peer.send_keepalive()
 	else:
 		_keepalive_elapsed = 0.0
 
@@ -214,14 +264,20 @@ func host_public(p_game_mode: String = "rumble_west") -> Error:
 	return OK
 
 
-## Fetch the list of public rooms from the relay server.
+## Fetch the public room list — from the relay (which filters by the version
+## param) or the dedicated server's HTTP endpoint on server_port + 1
+## (versions are gated at HELLO there), depending on USE_DEDICATED_SERVER.
 ## Returns an Array of Dictionaries: [{"code": "ABC123", "players": 1, "mode": "rumble_west"}, ...]
 ## Returns an empty Array on failure.
 ## p_game_mode: filter to a specific mode, or "" for all modes.
 func fetch_public_rooms(p_game_mode: String = "") -> Array:
 	var http := HTTPRequest.new()
 	add_child(http)
-	var url := "http://%s:%d/rooms?version=%s" % [RELAY_HOST, RELAY_PORT, GAME_VERSION]
+	var url: String
+	if USE_DEDICATED_SERVER:
+		url = "http://%s:%d/rooms?version=%s" % [server_host, server_port + 1, GAME_VERSION]
+	else:
+		url = "http://%s:%d/rooms?version=%s" % [RELAY_HOST, RELAY_PORT, GAME_VERSION]
 	if not p_game_mode.is_empty():
 		url += "&mode=%s" % p_game_mode.uri_encode()
 	var err := http.request(url)
@@ -302,6 +358,8 @@ func disconnect_game() -> void:
 	mode = Mode.SOLO
 	host_peer_id = 1
 	local_player_id = -1
+	server_peer = null
+	room_token = ""
 	peer_player_map.clear()
 	opponent_connected = false
 	version_verified = false
@@ -345,6 +403,189 @@ func start_lan_game() -> void:
 	game_starting.emit()
 	_rpc_start_game.rpc()
 	get_tree().change_scene_to_file("res://scenes/board/GameBoard.tscn")
+
+
+# --- Online (dedicated server) ---
+
+## Connect the control-plane bridge to the dedicated server. The server
+## version-gates at HELLO, so a successful WELCOME implies version_verified.
+func connect_to_server() -> Error:
+	var peer := GameServerPeer.new()
+	var url := "ws://%s:%d/" % [server_host, server_port]
+	var err := peer.connect_to_server(url, GameSettings.player_name, GAME_VERSION)
+	if err != OK:
+		return err
+
+	server_peer = peer
+	peer.control_received.connect(_on_server_control)
+	multiplayer.multiplayer_peer = peer
+	mode = Mode.ONLINE
+	host_peer_id = 1
+	if not multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+		multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+	err = await _wait_for_relay_connection(peer)
+	if err != OK:
+		print("[NetworkManager] connect_to_server failed: %d" % err)
+		multiplayer.multiplayer_peer = null
+		server_peer = null
+		mode = Mode.SOLO
+		return err
+	version_verified = true
+	print("[NetworkManager] Connected to dedicated server as peer %d" % multiplayer.get_unique_id())
+	return OK
+
+
+## Mid-game reconnect to the dedicated server: fresh bridge + RECONNECT with
+## the seat token issued at SEATED. Preserves mode, player id, and in-game
+## state. Returns OK once re-seated (SEATED received), or an error.
+func reconnect_to_server() -> Error:
+	if room_token.is_empty() or _room_code.is_empty():
+		return ERR_UNCONFIGURED
+	if multiplayer.multiplayer_peer:
+		multiplayer.multiplayer_peer.close()
+		multiplayer.multiplayer_peer = null
+	server_peer = null
+
+	var peer := GameServerPeer.new()
+	var url := "ws://%s:%d/" % [server_host, server_port]
+	var err := peer.connect_to_server(url, GameSettings.player_name, GAME_VERSION)
+	if err != OK:
+		return err
+	server_peer = peer
+	peer.control_received.connect(_on_server_control)
+	multiplayer.multiplayer_peer = peer
+	mode = Mode.ONLINE # No-op for in-session reconnects; needed after app restart
+	host_peer_id = 1
+	if not multiplayer.server_disconnected.is_connected(_on_server_disconnected):
+		multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+	err = await _wait_for_relay_connection(peer)
+	if err != OK:
+		multiplayer.multiplayer_peer = null
+		server_peer = null
+		return err
+
+	# Re-seat with the token, then wait for SEATED (or an error/timeout).
+	var outcome := {"done": false, "ok": false}
+	var on_seated := func(_room: String, _pid: int) -> void:
+		outcome["done"] = true
+		outcome["ok"] = true
+	var on_error := func(_code: String) -> void:
+		outcome["done"] = true
+	server_seated.connect(on_seated)
+	server_error.connect(on_error)
+	peer.send_control({"type": "RECONNECT", "room": _room_code, "token": room_token})
+	var elapsed := 0.0
+	while not outcome["done"] and elapsed < WS_CONNECT_TIMEOUT:
+		await get_tree().create_timer(0.1).timeout
+		elapsed += 0.1
+	server_seated.disconnect(on_seated)
+	server_error.disconnect(on_error)
+	if not outcome["ok"]:
+		return ERR_CANT_CONNECT
+	print("[NetworkManager] Reconnected to room %s as player %d" % [_room_code, local_player_id])
+	return OK
+
+
+## App-restart recovery: rejoin a dedicated-server match from a persisted
+## session (room code + seat token). On success, loads the game board and
+## pulls a full resync once the board chain exists.
+func resume_online_session(room_code: String, token: String, p_game_mode: String, p_is_public: bool) -> Error:
+	_room_code = room_code
+	room_token = token
+	game_mode = p_game_mode
+	is_public_room = p_is_public
+	var err := await reconnect_to_server()
+	if err != OK:
+		return err
+	opponent_connected = true
+	is_in_game = true
+	change_scene("res://scenes/board/GameBoard.tscn")
+	while true:
+		var sync_node := get_node_or_null("/root/GameBoard/GameSession/MultiplayerSync")
+		if sync_node != null:
+			await get_tree().process_frame
+			sync_node._rpc_request_resync.rpc_id(host_peer_id)
+			break
+		if server_peer == null:
+			break
+		await get_tree().process_frame
+	return OK
+
+
+func create_room(p_public: bool = false, p_mode: String = "") -> void:
+	game_mode = p_mode
+	is_public_room = p_public
+	server_peer.send_control({"type": "CREATE", "public": p_public, "mode": p_mode})
+
+
+func join_room(p_code: String) -> void:
+	server_peer.send_control({"type": "JOIN", "room": p_code})
+
+
+## Load a local decklist and submit it to the server for this match.
+func send_deck_to_server(deck_name: String) -> bool:
+	var data := DecklistManager.load_decklist(deck_name)
+	if data.is_empty():
+		return false
+	server_peer.send_control({
+		"type": "DECK",
+		"deck_name": deck_name,
+		"monster": data["monster"],
+		"main": data["main"],
+	})
+	return true
+
+
+func _on_server_control(msg: Dictionary) -> void:
+	match str(msg.get("type", "")):
+		"SEATED":
+			local_player_id = int(msg.get("player_id", -1))
+			_room_code = str(msg.get("room", ""))
+			room_token = str(msg.get("token", ""))
+			peer_player_map[multiplayer.get_unique_id()] = local_player_id
+			server_seated.emit(_room_code, local_player_id)
+		"ROOM_CREATED":
+			server_room_created.emit(str(msg.get("room", "")))
+		"START":
+			if is_lobby_bot_game():
+				# Safety: the BUSY gate should prevent this; never yank the
+				# player out of a bot game mid-match.
+				push_warning("[NetworkManager] START received during lobby-bot game — ignoring")
+				return
+			game_mode = str(msg.get("mode", ""))
+			opponent_connected = true
+			is_in_game = true
+			game_starting.emit()
+			_start_online_game()
+		"ERROR":
+			push_warning("[NetworkManager] Server error: %s" % str(msg.get("code", "")))
+			if str(msg.get("code", "")) == "version":
+				version_mismatch.emit(GAME_VERSION, str(msg.get("server_version", "unknown")))
+			server_error.emit(str(msg.get("code", "")))
+		"LOBBY":
+			opponent_connected = bool(msg.get("opponent_connected", false))
+			server_lobby_update.emit(msg)
+		"PEER_PRESENT":
+			server_peer_present.emit(
+				int(msg.get("player_id", -1)),
+				bool(msg.get("connected", false)),
+				float(msg.get("grace_remaining_s", 0.0)))
+		_:
+			pass # WELCOME is consumed by GameServerPeer itself
+
+
+## Load the board, then tell the server it can start firing prompts — the
+## server has no scene-load delay, so without this gate its first-player RPCs
+## would arrive before the client's MultiplayerSync node exists.
+func _start_online_game() -> void:
+	change_scene("res://scenes/board/GameBoard.tscn")
+	while get_node_or_null("/root/GameBoard/GameSession/MultiplayerSync") == null:
+		if server_peer == null:
+			return
+		await get_tree().process_frame
+	server_peer.send_control({"type": "BOARD_READY"})
 
 
 # --- Reconnect ---
@@ -411,10 +652,10 @@ func _generate_room_code() -> String:
 	return code
 
 
-## Waits for the RelayMultiplayerPeer to reach CONNECTION_CONNECTED.
-## For the host, this happens when the WebSocket opens.
-## For the client, this happens when the relay confirms the host is present.
-func _wait_for_relay_connection(relay_peer: RelayMultiplayerPeer) -> Error:
+## Waits for a relay/server peer to reach CONNECTION_CONNECTED.
+## Relay host: when the WebSocket opens. Relay client: when the relay
+## confirms the host is present. Dedicated server: when WELCOME arrives.
+func _wait_for_relay_connection(relay_peer: MultiplayerPeer) -> Error:
 	var elapsed := 0.0
 	var last_status := -1
 	while elapsed < WS_CONNECT_TIMEOUT:

@@ -47,6 +47,11 @@ const _OVERLAY_KEYS := [
 var session: GameSession
 var multiplayer_sync: MultiplayerSync
 
+## Connection context (host identity + seat map). Defaults to the
+## NetworkManager-backed singleton view; a dedicated-server room injects its
+## own per-room context before the node enters the tree.
+var net: NetContext = NetContext.new()
+
 ## Set by the scene to its card-zoom display function. Overlays use this for
 ## right-click / long-press / double-click zoom.
 ## Signature: (card_data: Dictionary, play_cost_modifier: int) -> void
@@ -57,7 +62,7 @@ var card_zoom_request: Callable = Callable()
 var on_pre_remote_dispatch: Callable = Callable()
 
 ## Records the in-flight prompt for reconnect/resync replay.
-## Signature: (method: String, args: Array) -> void
+## Signature: (method: String, args: Array, player_id: int) -> void
 var on_pending_interaction: Callable = Callable()
 
 ## Optional translator for prompt text (defaults to TranslationServer).
@@ -86,6 +91,10 @@ var match_stacked_view: bool = true
 var local_player_id: int = 0
 var is_multiplayer: bool = false
 var is_bot_game: bool = false
+
+## Dedicated server: connect every prompt signal even without registered
+## handlers (there is no local UI — every prompt routes to a remote peer).
+var bind_all_prompts: bool = false
 
 var _handlers: Dictionary = {}
 var _board: Node
@@ -116,8 +125,8 @@ func register_handler(key: String, handler: Callable) -> void:
 ## receiving them during the incremental extraction.
 func _bind() -> void:
 	local_player_id = _board.local_player_id
-	is_multiplayer = NetworkManager.is_multiplayer()
-	is_bot_game = NetworkManager.mode == NetworkManager.Mode.SOLO_BOT
+	is_multiplayer = net.is_multiplayer()
+	is_bot_game = net.is_bot_game()
 	if not session.is_running():
 		return # Client peer: prompts arrive via MultiplayerSync RPCs
 
@@ -135,7 +144,8 @@ func _bind() -> void:
 		"zone_target": [eh.zone_target_requested, _on_zone_target_requested],
 		"strategy_target": [eh.strategy_target_requested, _on_strategy_target_requested],
 	}
-	for key in _handlers:
+	var keys := signal_map.keys() if bind_all_prompts else _handlers.keys()
+	for key in keys:
 		if not signal_map.has(key):
 			continue
 		var sig: Signal = signal_map[key][0]
@@ -157,9 +167,9 @@ func _is_bot_target(player_id: int) -> bool:
 
 func _send_to_remote(player_id: int, method: String, args: Array, dispatcher: Callable) -> void:
 	if on_pending_interaction.is_valid():
-		on_pending_interaction.call(method, args)
-	for peer_id in NetworkManager.peer_player_map:
-		if NetworkManager.peer_player_map[peer_id] == player_id:
+		on_pending_interaction.call(method, args, player_id)
+	for peer_id in net.peer_player_map:
+		if net.peer_player_map[peer_id] == player_id:
 			if on_pre_remote_dispatch.is_valid():
 				on_pre_remote_dispatch.call()
 			if method in _BANNER_KEYS:
@@ -259,6 +269,18 @@ func _on_cards_revealed_requested(player_id: int, cards: Array, title: String) -
 	if _is_bot_target(player_id):
 		# Bot handles via its own listener; auto-resolve so the engine continues.
 		session.effect_handler.resolve_cards_revealed()
+		return
+	if local_player_id < 0:
+		# Dedicated server: push a display-only copy to the owning player,
+		# then auto-resolve so the engine continues. Deferred: resolving
+		# synchronously during this emit would fire the resolved signal
+		# before reveal_cards() reaches its await, hanging the effect.
+		for peer_id in net.peer_player_map:
+			if net.peer_player_map[peer_id] == player_id:
+				var ids_json := JSON.stringify(StateCodec.cards_to_ids(cards))
+				multiplayer_sync._rpc_cards_revealed_shown.rpc_id(peer_id, ids_json, title)
+				break
+		session.effect_handler.resolve_cards_revealed.call_deferred()
 		return
 	# Cards revealed always shows on local — no remote routing.
 	show_cards_revealed(cards, title)
@@ -402,21 +424,21 @@ func show_strategy_target(target_player_id: int, valid_indices: Array, prompt: S
 
 func resolve_deck_search(selected: Dictionary) -> void:
 	_hide_banner()
-	if is_multiplayer and not NetworkManager.is_host():
+	if is_multiplayer and not net.is_host():
 		var json := JSON.stringify(selected)
 		RpcLogger.log_send("deck_search_resolved", json.length())
-		multiplayer_sync._rpc_deck_search_resolved.rpc_id(NetworkManager.host_peer_id, json)
+		multiplayer_sync._rpc_deck_search_resolved.rpc_id(net.host_peer_id, json)
 	elif session.effect_handler:
 		session.effect_handler.resolve_deck_search(selected)
 
 
 func resolve_deck_arrange(keep: Array, discard: Array) -> void:
 	_hide_banner()
-	if is_multiplayer and not NetworkManager.is_host():
+	if is_multiplayer and not net.is_host():
 		var keep_json := JSON.stringify(keep)
 		var discard_json := JSON.stringify(discard)
 		RpcLogger.log_send("deck_arrange_resolved", keep_json.length() + discard_json.length())
-		multiplayer_sync._rpc_deck_arrange_resolved.rpc_id(NetworkManager.host_peer_id, keep_json, discard_json)
+		multiplayer_sync._rpc_deck_arrange_resolved.rpc_id(net.host_peer_id, keep_json, discard_json)
 	elif session.effect_handler:
 		var keep_typed: Array[Dictionary] = []
 		for c in keep:
@@ -429,10 +451,10 @@ func resolve_deck_arrange(keep: Array, discard: Array) -> void:
 
 func resolve_card_select(selected: Array) -> void:
 	_hide_banner()
-	if is_multiplayer and not NetworkManager.is_host():
+	if is_multiplayer and not net.is_host():
 		var json := JSON.stringify(StateCodec.cards_to_ids(selected))
 		RpcLogger.log_send("card_select_resolved", json.length())
-		multiplayer_sync._rpc_card_select_resolved.rpc_id(NetworkManager.host_peer_id, json)
+		multiplayer_sync._rpc_card_select_resolved.rpc_id(net.host_peer_id, json)
 	elif session.effect_handler:
 		var typed: Array[Dictionary] = []
 		for c in selected:
@@ -441,9 +463,9 @@ func resolve_card_select(selected: Array) -> void:
 
 
 func resolve_choice(index: int) -> void:
-	if is_multiplayer and not NetworkManager.is_host():
+	if is_multiplayer and not net.is_host():
 		RpcLogger.log_send("choice_resolved", 4)
-		multiplayer_sync._rpc_choice_resolved.rpc_id(NetworkManager.host_peer_id, index)
+		multiplayer_sync._rpc_choice_resolved.rpc_id(net.host_peer_id, index)
 	elif session.effect_handler:
 		session.effect_handler.resolve_choice(index)
 
@@ -456,9 +478,9 @@ func resolve_cards_revealed() -> void:
 
 func resolve_monster_rankup(index: int) -> void:
 	_hide_banner()
-	if is_multiplayer and not NetworkManager.is_host():
+	if is_multiplayer and not net.is_host():
 		RpcLogger.log_send("monster_rankup_resolved", 4)
-		multiplayer_sync._rpc_monster_rankup_resolved.rpc_id(NetworkManager.host_peer_id, index)
+		multiplayer_sync._rpc_monster_rankup_resolved.rpc_id(net.host_peer_id, index)
 	elif session.action_handler:
 		session.action_handler.resolve_monster_rankup(index)
 
@@ -468,33 +490,33 @@ func resolve_hand_discard(player_id: int, indices) -> void:
 	var typed: Array[int] = []
 	for v in indices:
 		typed.append(int(v))
-	if is_multiplayer and not NetworkManager.is_host():
+	if is_multiplayer and not net.is_host():
 		var indices_json := JSON.stringify(typed)
 		RpcLogger.log_send("hand_discard_resolved", indices_json.length())
-		multiplayer_sync._rpc_hand_discard_resolved.rpc_id(NetworkManager.host_peer_id, indices_json)
+		multiplayer_sync._rpc_hand_discard_resolved.rpc_id(net.host_peer_id, indices_json)
 	elif session.effect_handler:
 		session.effect_handler.resolve_hand_discard(player_id, typed)
 
 
 func resolve_hand_card_selection(hand_index: int) -> void:
-	if is_multiplayer and not NetworkManager.is_host():
+	if is_multiplayer and not net.is_host():
 		RpcLogger.log_send("hand_card_selection_resolved", 4)
-		multiplayer_sync._rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, hand_index)
+		multiplayer_sync._rpc_hand_card_selection_resolved.rpc_id(net.host_peer_id, hand_index)
 	elif session.effect_handler:
 		session.effect_handler.resolve_hand_card_selection(hand_index)
 
 
 func resolve_zone_target(zone_index: int) -> void:
-	if is_multiplayer and not NetworkManager.is_host():
+	if is_multiplayer and not net.is_host():
 		RpcLogger.log_send("zone_target_resolved", 4)
-		multiplayer_sync._rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_index)
+		multiplayer_sync._rpc_zone_target_resolved.rpc_id(net.host_peer_id, zone_index)
 	elif session.effect_handler:
 		session.effect_handler.resolve_zone_target(zone_index)
 
 
 func resolve_strategy_target(strategy_index: int) -> void:
-	if is_multiplayer and not NetworkManager.is_host():
+	if is_multiplayer and not net.is_host():
 		RpcLogger.log_send("strategy_target_resolved", 4)
-		multiplayer_sync._rpc_strategy_target_resolved.rpc_id(NetworkManager.host_peer_id, strategy_index)
+		multiplayer_sync._rpc_strategy_target_resolved.rpc_id(net.host_peer_id, strategy_index)
 	elif session.effect_handler:
 		session.effect_handler.resolve_strategy_target(strategy_index)

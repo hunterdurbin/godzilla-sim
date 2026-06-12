@@ -36,6 +36,35 @@ func get_valid_actions(state: GameState) -> Array:
 	return actions
 
 
+## Server-side parameter validation for a submitted action: the action must
+## be in the current valid set and its indices must match what the same
+## queries the action context was built from would allow. Pure — no side
+## effects, safe to call before ActionHandler.execute().
+func validate_action(state: GameState, action: CardEnums.ActionType, params: Dictionary) -> bool:
+	if not get_valid_actions(state).has(action):
+		return false
+	var player := state.get_current_player()
+	var opponent := state.get_opponent_of_current()
+	var hand_index: int = int(params.get("hand_index", -1))
+	match action:
+		CardEnums.ActionType.PASS:
+			return true
+		CardEnums.ActionType.PLAY_BATTLE:
+			if not get_playable_battle_cards(player, opponent).has(hand_index):
+				return false
+			var card: Dictionary = player.hand[hand_index]
+			return get_valid_zones_for_card(card, player, opponent).has(int(params.get("zone_index", -1)))
+		CardEnums.ActionType.PLAY_STRATEGY:
+			return get_playable_strategy_cards(player).has(hand_index)
+		CardEnums.ActionType.GAIN_RAGE:
+			return get_monster_cards_for_rage(player).has(hand_index)
+		CardEnums.ActionType.PLAY_MONSTER:
+			return get_playable_monsters(player).has(hand_index)
+		CardEnums.ActionType.INVADE:
+			return get_discardable_cards_for_invade(player, opponent).has(hand_index)
+	return false
+
+
 func get_playable_battle_cards(player: PlayerState, opponent: PlayerState) -> Array[int]:
 	## Returns hand indices of battle cards that can be played
 	var indices: Array[int] = []

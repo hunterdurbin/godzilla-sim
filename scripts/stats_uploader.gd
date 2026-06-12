@@ -5,6 +5,9 @@ const API_BASE := "https://api.godzillatcg.com"
 const ENDPOINT := "/game-results"
 
 
+## `overrides` lets the dedicated server supply per-room context instead of
+## the NetworkManager/DecklistManager singletons (which are per-process):
+## {game_mode, is_public, reporter, deck_names: [..], decklists: [{monster, main}, ..]}
 func upload_game_result(
 	game_state: GameState,
 	winner_id: int,
@@ -13,8 +16,9 @@ func upload_game_result(
 	elapsed_times: Array[int],
 	total_elapsed_ms: int,
 	is_disconnect: bool,
+	overrides: Dictionary = {},
 ) -> void:
-	var payload := _build_payload(game_state, winner_id, reason, first_player_id, elapsed_times, total_elapsed_ms, is_disconnect)
+	var payload := _build_payload(game_state, winner_id, reason, first_player_id, elapsed_times, total_elapsed_ms, is_disconnect, overrides)
 	var json_str := JSON.stringify(payload)
 	print("[StatsUploader] Uploading game result (%d bytes)..." % json_str.length())
 	_post(json_str)
@@ -59,8 +63,9 @@ func _build_payload(
 	elapsed_times: Array[int],
 	total_elapsed_ms: int,
 	is_disconnect: bool,
+	overrides: Dictionary = {},
 ) -> Dictionary:
-	var gm: String = NetworkManager.game_mode
+	var gm: String = overrides.get("game_mode", NetworkManager.game_mode)
 	if gm.is_empty():
 		gm = "rumble_west"
 	gm = GameModeValidator.normalize_mode_id(gm)
@@ -68,20 +73,20 @@ func _build_payload(
 	var payload := {
 		"game_version": NetworkManager.GAME_VERSION,
 		"game_mode": gm,
-		"is_public": NetworkManager.is_public_room,
+		"is_public": overrides.get("is_public", NetworkManager.is_public_room),
 		"winner": winner_id,
 		"win_condition": _normalize_win_condition(reason, is_disconnect),
 		"turn_count": game_state.turn_number,
 		"starting_player": first_player_id,
 		"is_disconnect": is_disconnect,
 		"elapsed_time_ms": total_elapsed_ms,
-		"reporter": "host" if NetworkManager.is_host() else "client",
+		"reporter": overrides.get("reporter", "host" if NetworkManager.is_host() else "client"),
 		"players": [],
 	}
 
 	for i in range(2):
 		var ps: PlayerState = game_state.players[i]
-		payload["players"].append(_build_player_data(i, ps, game_state, elapsed_times))
+		payload["players"].append(_build_player_data(i, ps, game_state, elapsed_times, overrides))
 
 	return payload
 
@@ -91,6 +96,7 @@ func _build_player_data(
 	ps: PlayerState,
 	game_state: GameState,
 	elapsed_times: Array[int],
+	overrides: Dictionary = {},
 ) -> Dictionary:
 	# Build zone card stacks
 	var zones_data: Array[Dictionary] = []
@@ -118,8 +124,8 @@ func _build_player_data(
 	return {
 		"player_index": player_index,
 		"player_name": game_state.player_names[player_index],
-		"deck_name": DecklistManager.get_player_deck_name(player_index),
-		"decklist_json": _get_decklist(player_index),
+		"deck_name": overrides.get("deck_names", [])[player_index] if overrides.has("deck_names") else DecklistManager.get_player_deck_name(player_index),
+		"decklist_json": overrides.get("decklists", [])[player_index] if overrides.has("decklists") else _get_decklist(player_index),
 		"elapsed_time_ms": elapsed_times[player_index] if player_index < elapsed_times.size() else 0,
 		"final_monster_zone": ps.monster_zone,
 		"final_rage": ps.rage,

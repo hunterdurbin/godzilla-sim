@@ -31,11 +31,12 @@ func _ready() -> void:
 	_session.session_started.connect(_bind)
 
 
-## Play a sound locally; on the multiplayer host also buffer it for the
-## next state broadcast to the client.
+## Play a sound locally; on the authoritative side (multiplayer host or
+## dedicated server, where local_player_id is -1) also buffer it for the
+## next state broadcast so remote clients hear it.
 func play(sound_name: String) -> void:
 	SfxManager.play(sound_name)
-	if _board.is_multiplayer_game and NetworkManager.is_host():
+	if _board.is_multiplayer_game and (NetworkManager.is_host() or _board.local_player_id < 0):
 		_pending_sound_events.append(sound_name)
 
 

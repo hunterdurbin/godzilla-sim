@@ -18,6 +18,7 @@ var game_state: GameState
 var rules_engine: RulesEngine
 var action_handler: ActionHandler
 var effect_handler: EffectHandler
+var session_config: SessionConfig
 var is_game_over: bool = false
 var _processing_action: bool = false
 var _waiting_for_input: bool = false
@@ -35,15 +36,8 @@ func _await_confirmation(prompt: String, setting: String) -> void:
 		await Engine.get_main_loop().process_frame
 
 
-func _active_game_mode() -> String:
-	# Public/online MP syncs the chosen format into NetworkManager.game_mode; solo-bot
-	# games leave it empty and instead use the player's saved default format.
-	if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
-		return GameSettings.default_game_mode
-	return NetworkManager.game_mode
-
-
-func setup(card_data_node: Node) -> void:
+func setup(card_data_node: Node, config: SessionConfig = null) -> void:
+	session_config = config if config else SessionConfig.from_singletons()
 	game_state = GameState.new()
 	rules_engine = RulesEngine.new()
 	action_handler = ActionHandler.new()
@@ -53,12 +47,16 @@ func setup(card_data_node: Node) -> void:
 	action_handler.effect_handler = effect_handler
 	rules_engine.effect_handler = effect_handler
 
+	for i in range(2):
+		game_state.player_names[i] = str(session_config.player_names[i])
+
 	# Set up each player's deck (per-player selection or fallback)
 	for i in range(2):
 		var player := game_state.players[i]
-		if DecklistManager.has_player_deck(i):
-			player.monster_deck = DecklistManager.get_player_monster_deck(i).duplicate(true)
-			player.main_deck = DecklistManager.build_main_deck_for_player(i)
+		var deck: Dictionary = session_config.decks[i]
+		if not deck.is_empty():
+			player.monster_deck = deck["monster_deck"].duplicate(true)
+			player.main_deck = deck["main_deck"].duplicate(true)
 		else:
 			player.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
 			player.main_deck = card_data_node.get_main_deck(i)
@@ -66,7 +64,7 @@ func setup(card_data_node: Node) -> void:
 
 	# Apply per-format card printing (e.g. Rumble East uses the JP traits). Resolved
 	# here, per-match, because the active format isn't known when decks are built.
-	var printing := CardData.printing_for_mode(_active_game_mode())
+	var printing := CardData.printing_for_mode(session_config.game_mode)
 	for player in game_state.players:
 		for c in player.monster_deck:
 			CardData.apply_printing(c, printing)

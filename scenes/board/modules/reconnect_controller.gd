@@ -2,8 +2,16 @@ class_name ReconnectController
 extends Node
 
 ## Disconnect/reconnect concern for multiplayer games: the blocking overlay,
-## the host-side claim-win countdown, the client-side reconnect retry loop,
-## and the resync handoff once the peer returns.
+## the claim-win countdown, the reconnect retry loop, and the resync handoff
+## once the peer returns.
+##
+## Three flavors:
+## - LAN: disconnect ends the game immediately.
+## - Relay (legacy): host shows claim-win countdown; client retries the relay.
+## - Dedicated server (Mode.ONLINE): symmetric. Your own drop runs the
+##   reconnect loop (token re-seat + resync); your opponent's drop arrives as
+##   a PEER_PRESENT message with the server's grace window, and claim-win is
+##   an RPC the server validates.
 ##
 ## setup() is called from game_board._ready (multiplayer only). The board's
 ## _process delegates the per-frame timer update via process_tick() and uses
@@ -13,6 +21,9 @@ const CLAIM_WIN_SECONDS: float = 10.0
 
 var _board: Node
 var _session: GameSession
+
+# Dedicated server: when the opponent's grace period ends (survivor side).
+var _grace_deadline_ms: int = 0
 
 var waiting_for_reconnect: bool = false
 var attempting: bool = false # Guard for client reconnect loop
@@ -37,6 +48,8 @@ func setup() -> void:
 	_build_overlay()
 	NetworkManager.player_disconnected.connect(_on_opponent_disconnected)
 	NetworkManager.player_reconnected.connect(_on_opponent_reconnected)
+	if NetworkManager.mode == NetworkManager.Mode.ONLINE:
+		NetworkManager.server_peer_present.connect(_on_peer_present)
 
 
 func is_overlay_active() -> bool:
@@ -56,8 +69,18 @@ func process_tick() -> void:
 		return
 	var elapsed_ms := Time.get_ticks_msec() - _current_start_ms
 	var total_seconds := cumulative_seconds + elapsed_ms / 1000.0
-	if NetworkManager.is_host():
-		# Host: show countdown until "Claim Win" becomes available
+	if _grace_deadline_ms > 0:
+		# Dedicated server, survivor side: countdown from the server's grace
+		# window until "Claim Win" becomes available.
+		var remaining := (_grace_deadline_ms - Time.get_ticks_msec()) / 1000.0
+		if remaining > 0:
+			_timer_label.text = tr("STR_GB_CLAIM_WIN_TIMER_FMT").replace("{N}", str(ceili(remaining)))
+		else:
+			_timer_label.text = ""
+			if not _claim_btn.visible:
+				_claim_btn.visible = true
+	elif NetworkManager.is_host():
+		# Relay host: show countdown until "Claim Win" becomes available
 		var remaining := CLAIM_WIN_SECONDS - total_seconds
 		if remaining > 0:
 			_timer_label.text = tr("STR_GB_CLAIM_WIN_TIMER_FMT").replace("{N}", str(ceili(remaining)))
@@ -66,7 +89,7 @@ func process_tick() -> void:
 			if not _claim_btn.visible:
 				_claim_btn.visible = true
 	else:
-		# Client: show elapsed time reconnecting
+		# Reconnecting side: show elapsed time
 		_timer_label.text = tr("STR_GB_RECONNECTING_FMT").replace("{N}", str(int(total_seconds)))
 
 
@@ -123,6 +146,23 @@ func _on_opponent_disconnected(_peer_id: int) -> void:
 	if _board.end_game_panel.visible:
 		_board.btn_rematch.visible = false
 		_board._rematch_deck_select.visible = false
+		return
+
+	# Dedicated server: player_disconnected here means OUR link to the server
+	# dropped (the opponent's drop arrives as PEER_PRESENT instead) — run the
+	# token reconnect loop.
+	if NetworkManager.mode == NetworkManager.Mode.ONLINE:
+		_board._on_log_message(GameLog.connection_lost_reconnecting())
+		waiting_for_reconnect = true
+		_current_start_ms = Time.get_ticks_msec()
+		_grace_deadline_ms = 0
+		_label.text = tr("STR_GB_CONNECTION_LOST_RECONNECTING")
+		_timer_label.text = ""
+		_claim_btn.visible = false
+		_menu_btn.visible = true
+		overlay.visible = true
+		if not attempting:
+			_attempt_server_reconnect()
 		return
 
 	var is_online: bool = NetworkManager.mode in [NetworkManager.Mode.ONLINE_HOST, NetworkManager.Mode.ONLINE_CLIENT]
@@ -200,6 +240,63 @@ func _attempt_client_reconnect() -> void:
 	attempting = false
 
 
+## Dedicated server: reconnect with the seat token, then pull a fresh full
+## state through the normal resync path.
+func _attempt_server_reconnect() -> void:
+	attempting = true
+	while waiting_for_reconnect and is_inside_tree():
+		_label.text = tr("STR_GB_CONNECTION_LOST_RECONNECTING")
+		var err: Error = await NetworkManager.reconnect_to_server()
+		if err == OK:
+			cumulative_seconds += (Time.get_ticks_msec() - _current_start_ms) / 1000.0
+			waiting_for_reconnect = false
+			attempting = false
+			overlay.visible = false
+			_board._sync.reset_client_stream()
+			_board._action_pending = false
+			_board._on_log_message(GameLog.reconnected())
+			await get_tree().process_frame
+			if not is_inside_tree():
+				return
+			RpcLogger.log_send("request_resync", 0)
+			_board._sync._rpc_request_resync.rpc_id(NetworkManager.host_peer_id)
+			return
+		if not waiting_for_reconnect or not is_inside_tree():
+			break
+		_label.text = tr("STR_GB_CONNECTION_LOST_RETRYING")
+		await get_tree().create_timer(2.0).timeout
+	attempting = false
+
+
+## Dedicated server: the opponent dropped or returned (our own link is fine).
+func _on_peer_present(player_id: int, connected: bool, grace_s: float) -> void:
+	if player_id == _board.local_player_id:
+		return
+	if connected:
+		if not waiting_for_reconnect:
+			return
+		cumulative_seconds += (Time.get_ticks_msec() - _current_start_ms) / 1000.0
+		waiting_for_reconnect = false
+		_grace_deadline_ms = 0
+		overlay.visible = false
+		_board._on_log_message(GameLog.opponent_reconnected())
+		return
+	_board._disable_all_buttons()
+	if _board.end_game_panel.visible:
+		_board.btn_rematch.visible = false
+		_board._rematch_deck_select.visible = false
+		return
+	_board._on_log_message(GameLog.opponent_disconnected_waiting())
+	waiting_for_reconnect = true
+	_current_start_ms = Time.get_ticks_msec()
+	_grace_deadline_ms = Time.get_ticks_msec() + int(grace_s * 1000.0)
+	_label.text = tr("STR_GB_OPPONENT_DISCONNECTED_WAIT")
+	_timer_label.text = tr("STR_GB_CLAIM_WIN_TIMER_FMT").replace("{N}", str(int(grace_s)))
+	_claim_btn.visible = false
+	_menu_btn.visible = true
+	overlay.visible = true
+
+
 func _on_opponent_reconnected(_peer_id: int) -> void:
 	if not waiting_for_reconnect:
 		return
@@ -240,6 +337,15 @@ func _get_client_peer_id() -> int:
 
 
 func _on_claim_win() -> void:
+	if NetworkManager.mode == NetworkManager.Mode.ONLINE:
+		# Dedicated server validates grace and ends the game; the result
+		# arrives via the normal game-ended RPC.
+		waiting_for_reconnect = false
+		_grace_deadline_ms = 0
+		overlay.visible = false
+		RpcLogger.log_send("claim_win", 0)
+		_board._sync._rpc_claim_win.rpc_id(NetworkManager.host_peer_id)
+		return
 	waiting_for_reconnect = false
 	overlay.visible = false
 	# End the game with local player as winner
