@@ -42,7 +42,9 @@ pins the exact image tag, so the previous version comes back as-is.
 
 GitHub repo settings:
 - Secrets: `DEPLOY_SSH_HOST`, `DEPLOY_SSH_USER`, `DEPLOY_SSH_KEY` (private
-  key for a deploy user on the host).
+  key for a deploy user on the host). Optional `DEPLOY_SSH_PORT` if the
+  host's sshd isn't on 22 (note: GitLab's git-SSH on 2222 is unrelated —
+  target the machine's real sshd).
 - Environment `production` with yourself as a required reviewer (gates the
   stable deploy job).
 - GHCR package visibility: after the first push, set the
