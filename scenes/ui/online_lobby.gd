@@ -1,12 +1,15 @@
 extends Control
 
-## Private online lobby — runs against the dedicated game server.
+## Private online lobby. Two backends, branched on
+## NetworkManager.USE_DEDICATED_SERVER:
 ##
-## Flow is symmetric (neither player is "the host" of the game session):
-## one player creates a room and shares the code, the other joins with it,
-## both submit a deck, and the SERVER starts the match once both decks are
-## in (the scene change is driven by NetworkManager on the START message —
-## there is no start button).
+## Relay (default): host-client over the WebSocket relay — the host creates
+## a room code, the client joins and sends its deck to the host, and the
+## HOST presses Start.
+##
+## Dedicated server: symmetric — one player creates a room and shares the
+## code, the other joins, both submit a deck, and the SERVER starts the
+## match (scene change driven by NetworkManager on START; no start button).
 
 @onready var host_button: Button = $CenterContainer/VBoxContainer/HostPanel/HostButton
 @onready var code_label: Label = $CenterContainer/VBoxContainer/HostPanel/CodeLabel
@@ -18,8 +21,14 @@ extends Control
 @onready var start_button: Button = $CenterContainer/VBoxContainer/StartButton
 @onready var back_button: Button = $CenterContainer/VBoxContainer/BackButton
 
+# Relay-mode state
+var _host_deck_ready: bool = false
+var _client_deck_received: bool = false
+var _client_deck_name: String = ""
+# Dedicated-server state
 var _seated: bool = false
 var _deck_sent: bool = false
+
 var _version_mismatch_shown: bool = false
 
 
@@ -27,19 +36,24 @@ func _ready() -> void:
 	host_button.pressed.connect(_on_host_pressed)
 	join_button.pressed.connect(_on_join_pressed)
 	copy_button.pressed.connect(_on_copy_pressed)
+	start_button.pressed.connect(_on_start_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	deck_select.deck_selected.connect(_on_deck_selected)
 
-	NetworkManager.server_room_created.connect(_on_room_created)
-	NetworkManager.server_seated.connect(_on_seated)
-	NetworkManager.server_lobby_update.connect(_on_lobby_update)
-	NetworkManager.server_error.connect(_on_server_error)
 	NetworkManager.connection_failed.connect(_on_connection_failed)
 	NetworkManager.version_mismatch.connect(_on_version_mismatch)
+	if NetworkManager.USE_DEDICATED_SERVER:
+		NetworkManager.server_room_created.connect(_on_room_created)
+		NetworkManager.server_seated.connect(_on_seated)
+		NetworkManager.server_lobby_update.connect(_on_lobby_update)
+		NetworkManager.server_error.connect(_on_server_error)
+	else:
+		NetworkManager.player_connected.connect(_on_player_connected)
+		NetworkManager.player_disconnected.connect(_on_player_disconnected)
+		NetworkManager.version_verified_ok.connect(_update_start_button)
 
 	DecklistManager.clear_selections()
 
-	# Match start is server-driven; there is no host-side start button.
 	start_button.visible = false
 	copy_button.visible = false
 	code_label.text = ""
@@ -48,9 +62,29 @@ func _ready() -> void:
 
 func _on_host_pressed() -> void:
 	SfxManager.play("ui_click")
-	if not await _ensure_connected():
+	if NetworkManager.USE_DEDICATED_SERVER:
+		if not await _ensure_connected():
+			return
+		NetworkManager.create_room(false, "")
 		return
-	NetworkManager.create_room(false, "")
+
+	_set_buttons_locked(true)
+	status_label.text = tr("STR_ONLINE_CONNECTING_RELAY")
+
+	var err := await NetworkManager.host_online()
+	if err != OK:
+		status_label.text = tr("STR_ONLINE_RELAY_FAILED_FMT") % err
+		_set_buttons_locked(false)
+		return
+
+	code_label.text = NetworkManager.get_game_code()
+	copy_button.visible = true
+
+	# Register the already-selected deck now that we know we're the host
+	if not deck_select.current_selection.is_empty():
+		_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_select.current_selection)
+
+	status_label.text = tr("STR_ONLINE_SHARE_CODE")
 
 
 func _on_join_pressed() -> void:
@@ -59,10 +93,112 @@ func _on_join_pressed() -> void:
 	if code.is_empty():
 		status_label.text = tr("STR_ONLINE_ENTER_CODE")
 		return
-	if not await _ensure_connected():
-		return
-	NetworkManager.join_room(code)
 
+	if NetworkManager.USE_DEDICATED_SERVER:
+		if not await _ensure_connected():
+			return
+		NetworkManager.join_room(code)
+		return
+
+	_set_buttons_locked(true)
+	status_label.text = tr("STR_ONLINE_CONNECTING_RELAY")
+
+	var err := await NetworkManager.join_online(code)
+	if err != OK:
+		status_label.text = tr("STR_ONLINE_CONNECT_FAILED_FMT") % err
+		_set_buttons_locked(false)
+		return
+
+	status_label.text = tr("STR_ONLINE_CONNECTING_HOST")
+
+
+func _on_deck_selected(deck_name: String) -> void:
+	if deck_name.is_empty():
+		return
+
+	if NetworkManager.USE_DEDICATED_SERVER:
+		if _seated:
+			_send_deck(deck_name)
+		return
+
+	if NetworkManager.is_host():
+		_host_deck_ready = DecklistManager.select_deck_for_player(0, deck_name)
+		_update_start_button()
+	elif NetworkManager.is_multiplayer():
+		var data := DecklistManager.load_decklist(deck_name)
+		if data.is_empty():
+			return
+		var payload := JSON.stringify({
+			"deck_name": deck_name,
+			"monster": data["monster"],
+			"main": data["main"],
+		})
+		_rpc_send_deck_data.rpc_id(NetworkManager.host_peer_id, payload)
+		status_label.text = tr("STR_LAN_DECK_SENT_FMT") % deck_name
+
+
+# --- Relay flow (host-client) ---
+
+func _on_player_connected(_peer_id: int) -> void:
+	if NetworkManager.is_host():
+		status_label.text = tr("STR_LAN_OPPONENT_CONNECTED_HOST")
+		_update_start_button()
+	else:
+		deck_select.set_header(tr("STR_DS_SELECT_YOUR_DECK"))
+		if not deck_select.current_selection.is_empty():
+			_on_deck_selected(deck_select.current_selection)
+		else:
+			status_label.text = tr("STR_LAN_CONNECTED_SELECT_DECK")
+
+
+func _on_player_disconnected(_peer_id: int) -> void:
+	if _version_mismatch_shown:
+		return
+	if not NetworkManager.version_verified:
+		status_label.text = tr("STR_LAN_OPPONENT_DIFFERENT_VERSION_FMT") % NetworkManager.GAME_VERSION
+	else:
+		status_label.text = tr("STR_LAN_OPPONENT_DISCONNECTED")
+	_set_buttons_locked(false)
+	start_button.visible = false
+	_client_deck_received = false
+	_client_deck_name = ""
+
+
+func _on_start_pressed() -> void:
+	SfxManager.play("ui_click")
+	if not NetworkManager.is_host():
+		return
+	NetworkManager.start_lan_game()
+
+
+func _update_start_button() -> void:
+	if not NetworkManager.is_host():
+		start_button.visible = false
+		return
+	var can_start: bool = NetworkManager.opponent_connected and NetworkManager.version_verified and _host_deck_ready and _client_deck_received
+	start_button.visible = can_start
+	start_button.disabled = not can_start
+	if can_start:
+		status_label.text = tr("STR_LAN_OPPONENT_DECK_READY")
+
+
+## Client sends their deck data to host (relay/LAN host-client only)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_send_deck_data(payload_json: String) -> void:
+	if not NetworkManager.is_host():
+		return
+	var data: Dictionary = JSON.parse_string(payload_json)
+	if data.is_empty():
+		return
+	_client_deck_name = data.get("deck_name", "Unknown")
+	var monster_entries: Array = data.get("monster", [])
+	var main_entries: Array = data.get("main", [])
+	DecklistManager.set_player_deck_from_entries(1, _client_deck_name, monster_entries, main_entries)
+	_client_deck_received = true
+	_update_start_button()
+
+
+# --- Dedicated-server flow (symmetric) ---
 
 ## Connect the control-plane bridge (idempotent). Returns false on failure
 ## with the UI restored.
@@ -93,12 +229,6 @@ func _on_seated(_room: String, _player_id: int) -> void:
 	elif not copy_button.visible:
 		# Joiner without a deck picked yet
 		status_label.text = tr("STR_LAN_CONNECTED_SELECT_DECK")
-
-
-func _on_deck_selected(deck_name: String) -> void:
-	if deck_name.is_empty() or not _seated:
-		return
-	_send_deck(deck_name)
 
 
 func _send_deck(deck_name: String) -> void:
@@ -136,6 +266,8 @@ func _on_server_error(code: String) -> void:
 			_set_buttons_locked(false)
 
 
+# --- Shared ---
+
 func _on_connection_failed() -> void:
 	status_label.text = tr("STR_ONLINE_CONNECTION_FAILED_RETRY")
 	_set_buttons_locked(false)
@@ -145,6 +277,7 @@ func _on_version_mismatch(local_version: String, remote_version: String) -> void
 	_version_mismatch_shown = true
 	status_label.text = tr("STR_LAN_VERSION_MISMATCH_FMT") % [local_version, remote_version]
 	_set_buttons_locked(false)
+	start_button.visible = false
 
 
 func _set_buttons_locked(locked: bool) -> void:
@@ -155,7 +288,8 @@ func _set_buttons_locked(locked: bool) -> void:
 
 func _on_copy_pressed() -> void:
 	SfxManager.play("ui_click")
-	DisplayServer.clipboard_set(code_label.text)
+	var code := code_label.text if NetworkManager.USE_DEDICATED_SERVER else NetworkManager.get_game_code()
+	DisplayServer.clipboard_set(code)
 	copy_button.text = tr("STR_COMMON_COPIED")
 	await get_tree().create_timer(1.5).timeout
 	copy_button.text = tr("STR_COMMON_COPY")

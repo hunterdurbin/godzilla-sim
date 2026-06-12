@@ -234,9 +234,13 @@ jobs:
           docker push "$IMAGE_NAME:${{ github.ref_name }}"
           docker push "$IMAGE_NAME:$CHANNEL"
 
+  # Deploys are dormant until the DEPLOY_SERVER_ENABLED repo variable is set
+  # to 'true' (Settings -> Secrets and variables -> Actions -> Variables).
+  # The host blocks inbound SSH today; see deploy/server/README.md for the
+  # pull-based options when enabling.
   deploy-server-unstable:
     name: Deploy Server (unstable)
-    if: contains(github.ref_name, 'unstable')
+    if: ${{ contains(github.ref_name, 'unstable') && vars.DEPLOY_SERVER_ENABLED == 'true' }}
     needs: [build-server-image]
     runs-on: ubuntu-latest
     steps:
@@ -258,7 +262,7 @@ jobs:
 
   deploy-server-stable:
     name: Deploy Server (stable)
-    if: ${{ !contains(github.ref_name, 'unstable') }}
+    if: ${{ !contains(github.ref_name, 'unstable') && vars.DEPLOY_SERVER_ENABLED == 'true' }}
     needs: [build-server-image]
     runs-on: ubuntu-latest
     # Requires the "production" GitHub environment with a required reviewer —

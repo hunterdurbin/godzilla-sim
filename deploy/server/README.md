@@ -1,5 +1,16 @@
 # Dedicated Game Server — Deploy & Channels
 
+> **Status: dormant.** Online play currently runs on the relay —
+> `NetworkManager.USE_DEDICATED_SERVER` is `false` and the CI deploy jobs
+> are skipped until the `DEPLOY_SERVER_ENABLED` repo variable is `'true'`.
+> Flipping to the dedicated server = set the const to `true`, enable the
+> variable, and complete the one-time setup below.
+>
+> **Note on deploys:** the host blocks inbound SSH (by design), so the
+> shipped SSH deploy jobs need a reachable sshd OR a pull-based replacement
+> (GitLab pipeline trigger on the existing shell runner, a self-hosted
+> GitHub runner, or Watchtower) before enabling.
+
 The dedicated server replaces the relay for online play: it runs the
 authoritative game logic headless, validates every action, and lets either
 player reconnect mid-match (seat tokens, 90s claim-win grace).

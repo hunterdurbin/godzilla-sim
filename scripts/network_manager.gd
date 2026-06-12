@@ -25,6 +25,13 @@ const DEFAULT_PORT: int = 7777
 const MAX_PLAYERS: int = 2
 const VERSION_TIMEOUT: float = 5.0
 var GAME_VERSION: String = ProjectSettings.get_setting("application/config/version", "unknown")
+## Master switch for online play's backend. false = the WebSocket relay
+## (host-client, today's production behavior). true = the dedicated game
+## server (authoritative, validated, reconnectable) — flip once the server
+## is deployed. The lobbies, room listing, and reconnect flows all branch
+## on this; LAN is unaffected either way.
+const USE_DEDICATED_SERVER: bool = false
+
 const RELAY_HOST: String = "godzillatcg.com"
 const RELAY_PORT: int = 12090
 ## Dedicated game server (replaces the relay for online play). One server
@@ -257,15 +264,20 @@ func host_public(p_game_mode: String = "rumble_west") -> Error:
 	return OK
 
 
-## Fetch the list of public rooms from the dedicated game server (HTTP
-## endpoint on server_port + 1; versions are gated at HELLO, not here).
+## Fetch the public room list — from the relay (which filters by the version
+## param) or the dedicated server's HTTP endpoint on server_port + 1
+## (versions are gated at HELLO there), depending on USE_DEDICATED_SERVER.
 ## Returns an Array of Dictionaries: [{"code": "ABC123", "players": 1, "mode": "rumble_west"}, ...]
 ## Returns an empty Array on failure.
 ## p_game_mode: filter to a specific mode, or "" for all modes.
 func fetch_public_rooms(p_game_mode: String = "") -> Array:
 	var http := HTTPRequest.new()
 	add_child(http)
-	var url := "http://%s:%d/rooms?version=%s" % [server_host, server_port + 1, GAME_VERSION]
+	var url: String
+	if USE_DEDICATED_SERVER:
+		url = "http://%s:%d/rooms?version=%s" % [server_host, server_port + 1, GAME_VERSION]
+	else:
+		url = "http://%s:%d/rooms?version=%s" % [RELAY_HOST, RELAY_PORT, GAME_VERSION]
 	if not p_game_mode.is_empty():
 		url += "&mode=%s" % p_game_mode.uri_encode()
 	var err := http.request(url)
