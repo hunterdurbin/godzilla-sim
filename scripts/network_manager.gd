@@ -103,6 +103,19 @@ func is_lobby_bot_game() -> bool:
 	return _lobby_resume_active
 
 
+func _ready() -> void:
+	# Dev/test overrides for the dedicated server target, e.g. editor
+	# Run Instances with "-- --server-host=127.0.0.1" to playtest against a
+	# locally running server.
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--server-host="):
+			server_host = arg.get_slice("=", 1)
+			print("[NetworkManager] server_host override: %s" % server_host)
+		elif arg.begins_with("--server-port="):
+			server_port = int(arg.get_slice("=", 1))
+			print("[NetworkManager] server_port override: %d" % server_port)
+
+
 func _process(delta: float) -> void:
 	# Idle keepalive — send a no-op text frame while idling so the relay/server
 	# TCP path doesn't get killed by an idle proxy timeout. Relay: while
