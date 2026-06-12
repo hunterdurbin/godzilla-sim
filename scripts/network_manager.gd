@@ -27,10 +27,14 @@ const VERSION_TIMEOUT: float = 5.0
 var GAME_VERSION: String = ProjectSettings.get_setting("application/config/version", "unknown")
 const RELAY_HOST: String = "godzillatcg.com"
 const RELAY_PORT: int = 12090
-## Dedicated game server (replaces the relay for online play). Variables so
-## tests/dev can retarget localhost.
+## Dedicated game server (replaces the relay for online play). One server
+## runs per release channel — the HELLO handshake version-gates clients, so
+## each build targets its own channel's port. Variables so tests/dev can
+## retarget localhost (see --server-host/--server-port in _ready).
+const SERVER_PORT_STABLE: int = 12101
+const SERVER_PORT_UNSTABLE: int = 12111
 var server_host: String = "godzillatcg.com"
-var server_port: int = 12091
+var server_port: int = SERVER_PORT_UNSTABLE if GAME_VERSION.contains("unstable") else SERVER_PORT_STABLE
 const WS_CONNECT_TIMEOUT: float = 10.0
 const KEEPALIVE_INTERVAL: float = 25.0  ## Idle keepalive; stays under typical 30–60s proxy timeouts
 

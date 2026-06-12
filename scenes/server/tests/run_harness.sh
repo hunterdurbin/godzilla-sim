@@ -8,7 +8,7 @@
 set -u
 GAMES="${1:-3}"
 GODOT="${2:-godot}"
-PORT=12091
+PORT="${PORT:-12091}"
 LOGDIR="$(mktemp -d /tmp/godzilla_harness.XXXXXX)"
 FAIL=0
 
@@ -28,10 +28,10 @@ fi
 for i in $(seq 1 "$GAMES"); do
   SEED=$((1000 + i))
   echo "=== Game $i (seed $SEED) ==="
-  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --create --play --seed=$SEED > "$LOGDIR/g${i}_a.log" 2>&1 &
+  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --port=$PORT --create --play --seed=$SEED > "$LOGDIR/g${i}_a.log" 2>&1 &
   CA=$!
   sleep 2
-  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --join --play --seed=$SEED > "$LOGDIR/g${i}_b.log" 2>&1 &
+  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --port=$PORT --join --play --seed=$SEED > "$LOGDIR/g${i}_b.log" 2>&1 &
   CB=$!
   wait $CA; EA=$?
   wait $CB; EB=$?

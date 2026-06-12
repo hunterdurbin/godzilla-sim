@@ -55,6 +55,8 @@ var do_rematch := false
 var matches_completed := 0
 # --codefile=PATH: room-code handoff file (override for concurrent pairs)
 var code_file := DEFAULT_CODE_FILE
+# --port=N: server port (harness passes $PORT through)
+var server_port := 12091
 var _did_drop := false
 var _reconnecting := false
 var _my_room := ""
@@ -79,6 +81,8 @@ func _ready() -> void:
 			do_rematch = true
 		elif arg.begins_with("--codefile="):
 			code_file = arg.get_slice("=", 1)
+		elif arg.begins_with("--port="):
+			server_port = int(arg.get_slice("=", 1))
 	if is_creator and FileAccess.file_exists(code_file):
 		DirAccess.remove_absolute(code_file)
 
@@ -89,7 +93,7 @@ func _ready() -> void:
 	peer.control_received.connect(_on_control)
 	var version: String = ProjectSettings.get_setting("application/config/version", "unknown")
 	var pname := "Creator" if is_creator else "Joiner"
-	var err := peer.connect_to_server("ws://127.0.0.1:12091/", pname, version)
+	var err := peer.connect_to_server("ws://127.0.0.1:%d/" % server_port, pname, version)
 	if err != OK:
 		_fail("connect error %d" % err)
 		return
@@ -389,7 +393,7 @@ func _drop_and_reconnect() -> void:
 	peer = GameServerPeer.new()
 	peer.control_received.connect(_on_control)
 	var version: String = ProjectSettings.get_setting("application/config/version", "unknown")
-	var err := peer.connect_to_server("ws://127.0.0.1:12091/", _tag(), version)
+	var err := peer.connect_to_server("ws://127.0.0.1:%d/" % server_port, _tag(), version)
 	if err != OK:
 		_fail("reconnect: connect error %d" % err)
 		return

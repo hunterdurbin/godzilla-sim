@@ -1,0 +1,10 @@
+# Unstable-channel game server. Lives at /opt/godzilla-game-server/unstable/
+# on the host as docker-compose.yml; IMAGE is written into .env by the
+# deploy-server-unstable job.
+services:
+  game-server:
+    image: ${IMAGE}
+    restart: unless-stopped
+    ports:
+      - "12111:12091" # game (WebSocket)
+      - "12112:12092" # HTTP status + public room listing

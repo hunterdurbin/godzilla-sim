@@ -283,8 +283,9 @@ func _answer_http(tcp: StreamPeerTCP, request: String) -> void:
 		body = JSON.stringify(get_public_rooms(mode_filter))
 		content_type = "application/json"
 	else:
-		# Keep the "N active rooms" phrasing — the Discord status bot regexes it.
-		body = "Godzilla TCG server running. %d active rooms.\n" % rooms.size()
+		# Keep the "N active rooms" phrasing — the Discord status bot regexes
+		# it. The version makes deploys verifiable with a curl.
+		body = "Godzilla TCG server v%s running. %d active rooms.\n" % [GAME_VERSION, rooms.size()]
 		content_type = "text/plain"
 	var response := "HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s" % [
 		content_type, body.to_utf8_buffer().size(), body]

@@ -1,0 +1,11 @@
+# Stable-channel game server. Lives at /opt/godzilla-game-server/stable/
+# on the host as docker-compose.yml; IMAGE is written into .env by the
+# deploy-server-stable job (exact version tag, so rollback = re-running an
+# older tag's deploy job).
+services:
+  game-server:
+    image: ${IMAGE}
+    restart: unless-stopped
+    ports:
+      - "12101:12091" # game (WebSocket)
+      - "12102:12092" # HTTP status + public room listing

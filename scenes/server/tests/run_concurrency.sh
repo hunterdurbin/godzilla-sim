@@ -8,7 +8,7 @@
 set -u
 GAMES="${1:-4}"
 GODOT="${2:-godot}"
-PORT=12091
+PORT="${PORT:-12091}"
 LOGDIR="$(mktemp -d /tmp/godzilla_conc.XXXXXX)"
 FAIL=0
 
@@ -31,10 +31,10 @@ PIDS=""
 for i in $(seq 1 "$GAMES"); do
   SEED=$((4000 + i))
   CF="$LOGDIR/code_$i.txt"
-  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --create --play --seed=$SEED --codefile="$CF" > "$LOGDIR/g${i}_a.log" 2>&1 &
+  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --port=$PORT --create --play --seed=$SEED --codefile="$CF" > "$LOGDIR/g${i}_a.log" 2>&1 &
   PIDS="$PIDS $!"
   sleep 0.5
-  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --join --play --seed=$SEED --codefile="$CF" > "$LOGDIR/g${i}_b.log" 2>&1 &
+  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --port=$PORT --join --play --seed=$SEED --codefile="$CF" > "$LOGDIR/g${i}_b.log" 2>&1 &
   PIDS="$PIDS $!"
 done
 echo "=== $GAMES games launched concurrently ($((GAMES * 2)) clients) ==="
