@@ -46,6 +46,7 @@ var rules_engine: RulesEngine
 var turn_manager: TurnManager
 var action_handler: ActionHandler
 var effect_handler: EffectHandler
+var player_input: SignalPlayerInput
 var scene_tree: SceneTree
 
 
@@ -1515,7 +1516,7 @@ func _on_confirmation_requested(_prompt: String, _setting: String) -> void:
 	if not is_bot_turn():
 		return
 	await _delay()
-	turn_manager.confirm()
+	player_input.resolve_confirmation()
 
 
 # --- Monster rank-up ---
@@ -1526,7 +1527,7 @@ func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], v
 	await _delay()
 	_combo_log_state("RANKUP")
 	var best := _score_rankup_candidates(monsters, valid_indices)
-	action_handler.resolve_monster_rankup(best)
+	player_input.resolve_monster_rankup(best)
 
 
 func _score_rankup_candidates(monsters: Array[Dictionary], valid_indices: Array[int]) -> int:
@@ -1601,7 +1602,7 @@ func _on_choice_requested(player_id: int, options: Array[String], _prompt: Strin
 			pick = randi() % options.size()
 		_:
 			pick = _score_choice_options(options)
-	effect_handler.resolve_choice(pick)
+	player_input.resolve_choice(pick)
 
 
 func _score_choice_options(options: Array[String]) -> int:
@@ -1723,7 +1724,7 @@ func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 	await _delay()
 	var player := game_state.players[bot_player_id]
 	var indices: Array[int] = _pick_discard_indices(player, discard_count)
-	effect_handler.resolve_hand_discard(bot_player_id, indices)
+	player_input.resolve_hand_discard(bot_player_id, indices)
 
 
 func _pick_discard_indices(player: PlayerState, count: int) -> Array[int]:
@@ -1928,7 +1929,7 @@ func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary]
 	else:
 		# Default: pick best matching card by CP/threat then lowest rank
 		selected = _pick_best_card(matching_cards)
-	effect_handler.resolve_deck_search(selected)
+	player_input.resolve_deck_search(selected)
 
 
 # --- Deck arrange ---
@@ -1978,7 +1979,7 @@ func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], _promp
 	keep.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return _card_sort_value(a) > _card_sort_value(b))
 
-	effect_handler.resolve_deck_arrange(keep, discard)
+	player_input.resolve_deck_arrange(keep, discard)
 
 
 # --- Card select ---
@@ -1992,7 +1993,7 @@ func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary]
 	var selected: Array[Dictionary] = []
 	for i in range(mini(min_count, sorted.size())):
 		selected.append(sorted[i])
-	effect_handler.resolve_card_select(selected)
+	player_input.resolve_card_select(selected)
 
 
 # --- Hand card selection ---
@@ -2002,7 +2003,7 @@ func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int]
 		return
 	await _delay()
 	if valid_indices.is_empty():
-		effect_handler.resolve_hand_card_selection(-1)
+		player_input.resolve_hand_card_selection(-1)
 		return
 	var player := game_state.players[bot_player_id]
 	# Protect combo pieces: recompute reserved indices fresh (hand may have changed
@@ -2027,7 +2028,7 @@ func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int]
 		if val > best_val:
 			best_val = val
 			best_idx = idx
-	effect_handler.resolve_hand_card_selection(best_idx)
+	player_input.resolve_hand_card_selection(best_idx)
 
 
 func _is_last_two_step_card(player: PlayerState, hand_idx: int) -> bool:
@@ -2048,19 +2049,19 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 		return
 	await _delay()
 	if valid_zones.is_empty() and allow_skip:
-		effect_handler.resolve_zone_target(-1)
+		player_input.resolve_zone_target(-1)
 	elif not valid_zones.is_empty():
 		var player := game_state.players[bot_player_id]
 		var opponent := game_state.players[1 - bot_player_id]
 
 		if target_player_id != bot_player_id:
 			# Targeting opponent's zones — pick strategically
-			effect_handler.resolve_zone_target(_pick_opponent_zone_target(valid_zones, player, opponent))
+			player_input.resolve_zone_target(_pick_opponent_zone_target(valid_zones, player, opponent))
 		else:
 			# Targeting own zones — use existing priority logic
-			effect_handler.resolve_zone_target(_pick_own_zone_target(valid_zones, player))
+			player_input.resolve_zone_target(_pick_own_zone_target(valid_zones, player))
 	else:
-		effect_handler.resolve_zone_target(-1)
+		player_input.resolve_zone_target(-1)
 
 
 func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, opponent: PlayerState) -> int:
@@ -2132,7 +2133,7 @@ func _on_strategy_target_requested(player_id: int, _target_player_id: int, valid
 		return
 	await _delay()
 	if not valid_indices.is_empty():
-		effect_handler.resolve_strategy_target(valid_indices[0])
+		player_input.resolve_strategy_target(valid_indices[0])
 
 
 # --- Cards revealed ---
@@ -2141,4 +2142,4 @@ func _on_cards_revealed_requested(player_id: int, _cards: Array[Dictionary], _ti
 	if player_id != bot_player_id:
 		return
 	await _delay()
-	effect_handler.resolve_cards_revealed()
+	player_input.resolve_cards_revealed()

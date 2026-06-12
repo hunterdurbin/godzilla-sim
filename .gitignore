@@ -7,5 +7,8 @@
 
 # Export builds
 /build/
+
+# gdUnit4 test reports
+/reports/
 .vscode/settings.json
 .claude/scheduled_tasks.lock

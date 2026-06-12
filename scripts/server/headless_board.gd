@@ -72,7 +72,7 @@ func start_match(config: SessionConfig) -> void:
 	tm.sub_phase_changed.connect(_on_sub_phase_changed)
 	tm.awaiting_player_action.connect(_on_awaiting_action)
 	tm.turn_started.connect(_on_turn_started)
-	tm.confirmation_requested.connect(_on_confirmation_requested)
+	tm.player_input.confirmation_requested.connect(_on_confirmation_requested)
 	tm.game_ended.connect(_on_game_ended)
 	tm.log_message.connect(_on_log_message)
 
@@ -114,10 +114,11 @@ func _check_stall() -> void:
 	var quiet_s := (Time.get_ticks_msec() - _last_activity_ms) / 1000.0
 	if quiet_s < 60.0:
 		return
-	print("[HeadlessBoard %s] Quiet %.0fs: phase=%d processing=%s waiting_input=%s confirm_pending=%s pending=%s" % [
+	var pin: SignalPlayerInput = tm.player_input
+	print("[HeadlessBoard %s] Quiet %.0fs: phase=%d flow=%s awaiting_decisions=%s pending=%s" % [
 		room.code if room else "?", quiet_s,
 		int(tm.game_state.current_phase),
-		tm._processing_action, tm._waiting_for_input, tm._confirmation_pending,
+		TurnManager.FlowState.keys()[tm.flow_state], str(pin.pending_kinds()),
 		str(_sync._pending_interaction).left(160)])
 
 

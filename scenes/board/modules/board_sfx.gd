@@ -44,18 +44,18 @@ func _bind() -> void:
 	var tm: TurnManager = _session.turn_manager
 	if tm == null:
 		return # Client peer: sounds arrive via the state broadcast envelope
-	var ah: ActionHandler = tm.action_handler
-	var eh: EffectHandler = ah.effect_handler
+	var ev: GameEvents = tm.events
+	var eh: EffectHandler = tm.effect_handler
 	_connect_once(tm.turn_started, _on_turn_started)
-	_connect_once(ah.cards_drawn, _on_cards_drawn)
-	_connect_once(ah.card_discarded, _on_card_discarded)
-	_connect_once(ah.rage_gained, _on_rage_gained)
-	_connect_once(ah.strategy_card_played, _on_strategy_card_played)
-	_connect_once(ah.battle_card_played, _on_battle_card_played)
-	_connect_once(ah.monster_advanced, _on_monster_advanced)
-	_connect_once(ah.battle_card_crushed, _on_battle_card_crushed)
-	_connect_once(ah.counter_succeeded, _on_counter_succeeded)
-	_connect_once(ah.counter_failed, _on_counter_failed)
+	_connect_once(ev.cards_drawn, _on_cards_drawn)
+	_connect_once(ev.card_discarded, _on_card_discarded)
+	_connect_once(ev.rage_gained, _on_rage_gained)
+	_connect_once(ev.strategy_card_played, _on_strategy_card_played)
+	_connect_once(ev.battle_card_played, _on_battle_card_played)
+	_connect_once(ev.monster_advanced, _on_monster_advanced)
+	_connect_once(ev.battle_card_crushed, _on_battle_card_crushed)
+	_connect_once(ev.counter_succeeded, _on_counter_succeeded)
+	_connect_once(ev.counter_failed, _on_counter_failed)
 	_connect_once(eh.card_evolved, _on_card_evolved)
 	_connect_once(eh.card_destroyed, _on_card_destroyed)
 	for player in tm.game_state.players:

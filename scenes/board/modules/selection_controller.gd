@@ -129,12 +129,12 @@ func _bind_session() -> void:
 	var tm: TurnManager = _session.turn_manager
 	if tm == null:
 		return # Client peer: prompts arrive via the MultiplayerSync forwarders
-	var eh: EffectHandler = tm.action_handler.effect_handler
-	_connect_once(eh.hand_discard_requested, _on_hand_discard_requested)
-	_connect_once(eh.hand_card_selection_requested, _on_hand_card_selection_requested)
-	_connect_once(eh.zone_target_requested, _on_zone_target_requested)
-	_connect_once(eh.strategy_target_requested, _on_strategy_target_requested)
-	_connect_once(eh.choice_requested, _on_choice_requested)
+	var pin: SignalPlayerInput = tm.player_input
+	_connect_once(pin.hand_discard_requested, _on_hand_discard_requested)
+	_connect_once(pin.hand_card_selection_requested, _on_hand_card_selection_requested)
+	_connect_once(pin.zone_target_requested, _on_zone_target_requested)
+	_connect_once(pin.strategy_target_requested, _on_strategy_target_requested)
+	_connect_once(pin.choice_requested, _on_choice_requested)
 
 
 func _connect_once(sig: Signal, callback: Callable) -> void:
@@ -1014,7 +1014,7 @@ func _confirm_hand_discard() -> void:
 		RpcLogger.log_send("hand_discard_resolved", indices_json.length())
 		_sync._rpc_hand_discard_resolved.rpc_id(NetworkManager.host_peer_id, indices_json)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_hand_discard(_discard_player_id, hand_indices)
+		_session.player_input.resolve_hand_discard(_discard_player_id, hand_indices)
 
 
 func _force_cleanup_discard_selection() -> void:
@@ -1105,7 +1105,7 @@ func _on_hand_card_clicked(card: Control, _index: int) -> void:
 		RpcLogger.log_send("hand_card_selection_resolved", 4)
 		_sync._rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, hand_index)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
+		_session.player_input.resolve_hand_card_selection(hand_index)
 
 
 func _skip_hand_card_selection() -> void:
@@ -1118,7 +1118,7 @@ func _skip_hand_card_selection() -> void:
 		RpcLogger.log_send("hand_card_selection_resolved", 4)
 		_sync._rpc_hand_card_selection_resolved.rpc_id(NetworkManager.host_peer_id, -1)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_hand_card_selection(-1)
+		_session.player_input.resolve_hand_card_selection(-1)
 
 
 func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
@@ -1208,7 +1208,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 		RpcLogger.log_send("zone_target_resolved", 4)
 		_sync._rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_idx)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_zone_target(zone_idx)
+		_session.player_input.resolve_zone_target(zone_idx)
 
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
@@ -1274,7 +1274,7 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 		RpcLogger.log_send("strategy_target_resolved", 4)
 		_sync._rpc_strategy_target_resolved.rpc_id(NetworkManager.host_peer_id, strategy_idx)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_idx)
+		_session.player_input.resolve_strategy_target(strategy_idx)
 
 
 func _on_choice_requested(player_id: int, options: Array[String], prompt: String) -> void:
@@ -1417,7 +1417,7 @@ func _on_choice_button_pressed(index: int) -> void:
 		RpcLogger.log_send("choice_resolved", 4)
 		_sync._rpc_choice_resolved.rpc_id(NetworkManager.host_peer_id, index)
 	else:
-		turn_manager.action_handler.effect_handler.resolve_choice(index)
+		_session.player_input.resolve_choice(index)
 
 
 func _cleanup_choice_selection() -> void:

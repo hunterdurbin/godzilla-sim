@@ -32,6 +32,8 @@ var action_handler: ActionHandler
 var effect_handler: EffectHandler
 var rules_engine: RulesEngine
 var game_state: GameState
+var player_input: SignalPlayerInput
+var events: GameEvents
 
 # Client-mode cache. Populated by the board's RPC state handler on each
 # broadcast. On client peers turn_manager is null — get_player() falls back
@@ -140,6 +142,8 @@ func start_host_session(card_data_node: Node, local_player_id: int, loaded_save:
 	effect_handler = turn_manager.action_handler.effect_handler
 	rules_engine = turn_manager.rules_engine
 	game_state = turn_manager.game_state
+	player_input = turn_manager.player_input
+	events = turn_manager.events
 
 	session_started.emit()
 	return turn_manager
@@ -157,20 +161,22 @@ func setup_bot(local_player_id: int) -> BotPlayer:
 	bot_player.turn_manager = turn_manager
 	bot_player.action_handler = turn_manager.action_handler
 	bot_player.effect_handler = turn_manager.action_handler.effect_handler
+	bot_player.player_input = turn_manager.player_input
 	bot_player.scene_tree = get_tree()
 
 	turn_manager.awaiting_player_action.connect(bot_player._on_awaiting_action)
-	turn_manager.confirmation_requested.connect(bot_player._on_confirmation_requested)
-	turn_manager.action_handler.monster_rankup_requested.connect(bot_player._on_monster_rankup_requested)
-	bot_player.effect_handler.choice_requested.connect(bot_player._on_choice_requested)
-	bot_player.effect_handler.hand_discard_requested.connect(bot_player._on_hand_discard_requested)
-	bot_player.effect_handler.deck_search_requested.connect(bot_player._on_deck_search_requested)
-	bot_player.effect_handler.deck_arrange_requested.connect(bot_player._on_deck_arrange_requested)
-	bot_player.effect_handler.card_select_requested.connect(bot_player._on_card_select_requested)
-	bot_player.effect_handler.hand_card_selection_requested.connect(bot_player._on_hand_card_selection_requested)
-	bot_player.effect_handler.zone_target_requested.connect(bot_player._on_zone_target_requested)
-	bot_player.effect_handler.strategy_target_requested.connect(bot_player._on_strategy_target_requested)
-	bot_player.effect_handler.cards_revealed_requested.connect(bot_player._on_cards_revealed_requested)
+	var pin: SignalPlayerInput = turn_manager.player_input
+	pin.confirmation_requested.connect(bot_player._on_confirmation_requested)
+	pin.monster_rankup_requested.connect(bot_player._on_monster_rankup_requested)
+	pin.choice_requested.connect(bot_player._on_choice_requested)
+	pin.hand_discard_requested.connect(bot_player._on_hand_discard_requested)
+	pin.deck_search_requested.connect(bot_player._on_deck_search_requested)
+	pin.deck_arrange_requested.connect(bot_player._on_deck_arrange_requested)
+	pin.card_select_requested.connect(bot_player._on_card_select_requested)
+	pin.hand_card_selection_requested.connect(bot_player._on_hand_card_selection_requested)
+	pin.zone_target_requested.connect(bot_player._on_zone_target_requested)
+	pin.strategy_target_requested.connect(bot_player._on_strategy_target_requested)
+	pin.cards_revealed_requested.connect(bot_player._on_cards_revealed_requested)
 
 	bot_player.analyze_deck()
 
