@@ -6,7 +6,7 @@ extends CardEffect
 ## opponent's monster card is occupying.)
 ## If this card is in zone 8, this card gains +3000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

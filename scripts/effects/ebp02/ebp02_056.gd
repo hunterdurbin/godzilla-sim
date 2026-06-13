@@ -5,7 +5,7 @@ extends CardEffect
 ## <Your Turn> When this card advances during the end phase, it advances 1 additional
 ## zone for each "Crystals" in your zones.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

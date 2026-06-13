@@ -4,7 +4,7 @@ extends CardEffect
 ## When playing this card from your hand, you can reduce its rank by 1 for each battle
 ## card in your opponent's zones. (After being played this card is rank 8)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

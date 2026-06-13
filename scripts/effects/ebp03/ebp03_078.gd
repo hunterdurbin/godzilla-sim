@@ -3,7 +3,7 @@ extends CardEffect
 # If there are 3 or more battle cards in your opponent’s zones, 
 # <Destroy> 1 battle card from the rightmost and 1 from the leftmost position from among them (from your perspective).
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

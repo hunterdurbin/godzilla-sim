@@ -5,7 +5,7 @@ extends CardEffect
 # <Opponent’s Turn> For each monster or battle card in your zones 1, 5, and 8, your
 # monster card gains +5000 threat level.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

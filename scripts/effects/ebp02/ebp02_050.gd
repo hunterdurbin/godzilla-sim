@@ -6,7 +6,7 @@ extends CardEffect
 ## ・Your opponent discards cards until they have 2 cards remaining in their hand.
 ## ・Increase this card's <Rage> by 3.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -7,7 +7,7 @@ extends CardEffect
 ## <Awakening6> If there is a card under this card, this card gains an additional +3000
 ## counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -3,7 +3,7 @@ extends CardEffect
 # [Destroy] all of your opponent's battle cards in the same column as your monster
 # card.
 #
-# Tested: No, Looks good at glance
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

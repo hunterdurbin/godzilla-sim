@@ -4,7 +4,7 @@ extends CardEffect
 ## Whenever you discard a battle card from your hand, reduce your opponent’s <Rage> by
 ## 1. If your opponent’s <Rage> is 0, increase this card’s <Rage> by 1 instead.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

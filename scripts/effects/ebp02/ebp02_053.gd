@@ -5,7 +5,7 @@ extends CardEffect
 ## deck.)
 ## If there is a “Crystals” in your zones, this card gains +5000 threat level.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

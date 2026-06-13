@@ -6,7 +6,7 @@ extends CardEffect
 ## <Enter> You may discard 1 battle card from your hand. If you do, <Destroy> 1 of your
 ## opponent’s rank 6 or lower battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

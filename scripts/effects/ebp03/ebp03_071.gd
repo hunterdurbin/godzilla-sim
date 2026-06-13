@@ -8,7 +8,7 @@ extends CardEffect
 ##
 ## Note: "counts_as_monster_in_discard" flag is set in card_data.gd.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

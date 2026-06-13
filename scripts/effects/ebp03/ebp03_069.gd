@@ -4,7 +4,7 @@ extends CardEffect
 # if there is a <《Mechagodzilla》> card in your zone 8, <Destroy> all opponent’s rank 5
 # or lower battle cards.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

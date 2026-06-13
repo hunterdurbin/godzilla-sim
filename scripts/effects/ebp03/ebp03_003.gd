@@ -7,7 +7,7 @@ extends CardEffect
 # <Destroy> all of your opponent’s rank 6 or lower battle cards. (Active if this card
 # is in zone 8.)
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

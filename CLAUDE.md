@@ -87,6 +87,13 @@ example-tcg-game/
 - Unit tests (gdUnit4): `./tests/run_unit_tests.sh [godot_binary]` — runs
   headless; suites live in `tests/unit/`, fixtures in `tests/fixtures/`
   (hand-built card dicts; no CardData dependency for core tests).
+- Per-card effect tests: `tests/unit/effects/cards/` — smoke/consistency
+  suite over all effect scripts (incl. trigger_map.gd currency check),
+  parameterized cluster suites, and per-set bespoke suites; cluster/bespoke
+  membership ledger in `classification.md` there. Real card dicts come from
+  `tests/fixtures/real_cards.gd` (`Real.instance(id)` — never use raw
+  CardData templates). New/changed card effects need their tests updated;
+  the smoke suite fails if trigger_map.gd is stale.
 - Bot stress: `godot --headless --path . res://scenes/simulation/BotSimulationRunner.tscn`
   (set `base_seed` + per-game `[SimResult]` lines enable seed-matched
   behavioral diffs between branches).

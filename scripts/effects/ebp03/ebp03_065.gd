@@ -3,7 +3,7 @@ extends CardEffect
 # If there are 5 or more cards under your monster card, this card gains +3000 counter
 # power.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

@@ -4,7 +4,7 @@ extends CardEffect
 ## When you successfully counter your opponent’s monster card, if you have a card with
 ## <Base> in play, <Destroy> 1 opponent’s rank 7 or lower battle card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

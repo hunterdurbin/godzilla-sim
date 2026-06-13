@@ -6,7 +6,7 @@ extends CardEffect
 ## <Revenge> Return up to 1 <《King Ghidorah》> monster card from your discard pile to
 ## your hand. (Activates when destroyed by a card effect or monster movement.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

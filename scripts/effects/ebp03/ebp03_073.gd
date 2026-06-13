@@ -5,7 +5,7 @@ extends CardEffect
 # revealed cards, if your opponent's monster card occupies 1 of those zones, your
 # opponent’s monster card retreats backward by 1 zone.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

@@ -4,7 +4,7 @@ extends CardEffect
 # opponent’s strategy cards.
 # If your opponent has no strategy cards in play, this card gains +3000 counter power.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

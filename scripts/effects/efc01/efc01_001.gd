@@ -4,7 +4,7 @@ extends CardEffect
 ## <Burst3> If every area adjacent to this has a Battle Card with <Festival Godzilla>,
 ## add +10,000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

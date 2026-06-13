@@ -5,7 +5,7 @@ extends CardEffect
 ## When you successfully counter your opponent’s monster card, if you have a card with
 ## <Base> in play, retreat your opponent’s monster card back to zone 1.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

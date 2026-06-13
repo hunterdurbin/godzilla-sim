@@ -3,7 +3,7 @@ extends CardEffect
 # <Enter> If you have 1 or fewer strategy cards in play, you may place up to 1 blue
 # rank 6 or lower strategy card from your hand into your strategy zone and activate it.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

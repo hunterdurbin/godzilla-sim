@@ -5,7 +5,7 @@ extends CardEffect
 ## all 《Festival Godzilla》 cards to your hand and discard the rest. At the beginning of
 ## your counter phase, discard your hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -6,7 +6,7 @@ extends CardEffect
 ## <When Invading> If there are 5 or more cards under this card, your opponent discards
 ## cards until they have 4 cards remaining in their hand.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

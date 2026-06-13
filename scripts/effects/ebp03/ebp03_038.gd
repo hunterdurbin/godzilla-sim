@@ -3,7 +3,7 @@ extends CardEffect
 # At the beginning of your counter phase, if your opponent has 2 or more <Rage> ,
 # <Destroy> all of your battle cards in zones adjacent to this card.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

@@ -4,7 +4,7 @@ extends CardEffect
 ## When you successfully counter your opponent’s monster card, if you have a card with
 ## <Base> in play, increase this card’s <Rage> by 2.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

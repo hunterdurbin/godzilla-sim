@@ -5,7 +5,7 @@ extends CardEffect
 # ・If there are 5 or more cards under your monster card, return 1 monster card from
 # your discard pile to your hand.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

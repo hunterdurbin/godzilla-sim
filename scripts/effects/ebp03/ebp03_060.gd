@@ -3,7 +3,7 @@ extends CardEffect
 # <Revenge> Reduce your opponent’s <Rage> by 1. (Activates when destroyed by a card
 # effect or monster card movement.)
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

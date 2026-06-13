@@ -3,7 +3,7 @@ extends CardEffect
 # <Awakening8> <Enter> Increase your monster card’s <Rage> by 1.
 # <Awakening8> This card gains +5000 counter power.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

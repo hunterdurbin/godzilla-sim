@@ -3,7 +3,7 @@ extends CardEffect
 # <Enter> If there are 2 or more other battle cards in your zones, reduce your
 # opponent’s <Rage> by 1.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

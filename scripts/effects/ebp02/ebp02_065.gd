@@ -5,7 +5,7 @@ extends CardEffect
 ## +5000 counter power. If there are 5 or more, this card gains an additional +5000
 ## counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

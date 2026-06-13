@@ -2,7 +2,7 @@ extends CardEffect
 # Godzilla Captured! (Strategy R7)
 # Set your opponent’s <Rage> to 0.
 #
-# Tested: No, Looks good at glance
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

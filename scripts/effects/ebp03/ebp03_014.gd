@@ -3,7 +3,7 @@ extends CardEffect
 # At the beginning of your end phase, you may discard 1 battle card from your hand. If
 # you do, draw 1 card.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

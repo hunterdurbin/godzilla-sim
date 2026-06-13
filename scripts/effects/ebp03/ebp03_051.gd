@@ -5,7 +5,7 @@ extends CardEffect
 # is rank 7.)
 # This card gains +5000 counter power for each card under it.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

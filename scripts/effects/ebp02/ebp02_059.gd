@@ -5,7 +5,7 @@ extends CardEffect
 ## named “Godzilla(1991)” from your discard pile to your hand. (Activates when destroyed
 ## by a card effect or monster card movement.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

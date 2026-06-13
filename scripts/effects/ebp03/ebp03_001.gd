@@ -4,7 +4,7 @@ extends CardEffect
 # battle card from your hand. If you do, this card advances 1 zone.
 # <Awakening6> This card gains +5000 threat level.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

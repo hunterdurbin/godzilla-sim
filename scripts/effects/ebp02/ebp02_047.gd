@@ -3,7 +3,7 @@ extends CardEffect
 ## EBP02-047: King Ghidorah(1991) - Monster Rank 1 (Green)
 ## Whenever this card advances, send the top card of your deck to your discard pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

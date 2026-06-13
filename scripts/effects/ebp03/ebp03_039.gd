@@ -6,7 +6,7 @@ extends CardEffect
 ## If there are 5 or more strategy cards in your discard pile, this card gains +5000
 ## counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -2,7 +2,7 @@ extends CardEffect
 # Rainbow Mothra R3
 # <Enter> Return 1 strategy card with <Base> from your discard pile to your hand.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

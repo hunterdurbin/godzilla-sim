@@ -3,7 +3,7 @@ extends CardEffect
 # <Enter> If this card is in zone 8 and you have a card with <Base> in play, an
 # opponent’s monster card with 60,000 or less threat level retreats backward by 1 zone.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

@@ -7,7 +7,7 @@ extends CardEffect
 ## <Awakening8> You can play this card with its rank reduced by 4. (Active if your
 ## monster card is in zone 8. After being played, this card is rank 8.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -4,7 +4,7 @@ extends CardEffect
 ## If this card is in a zone adjacent to your monster card,
 ## this card gains +3000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

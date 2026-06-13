@@ -4,7 +4,7 @@ extends CardEffect
 # <Enter> Look at the top card of your deck. You may send it to your discard pile or
 # place it back on top of your deck.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None
