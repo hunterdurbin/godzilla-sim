@@ -573,12 +573,12 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	return await mover.create_token_in_zone(player, token_id, zone_index)
 
 
-func create_tokens_in_zones(player: PlayerState, token_id: String, count: int) -> int:
-	return await mover.create_tokens_in_zones(player, token_id, count)
+func create_tokens_in_zones(player: PlayerState, token_id: String, count: int, candidate_zones: Array[int] = [], prompt_key: String = "STR_EFF_TOKEN_ZONE_FMT") -> int:
+	return await mover.create_tokens_in_zones(player, token_id, count, candidate_zones, prompt_key)
 
 
-func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], pick_prompt: String) -> Array[Dictionary]:
-	return await mover.play_battle_cards_in_zones(player, cards, pick_prompt)
+func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], pick_prompt: String, candidate_zones: Array[int] = [], from_discard: bool = false, max_count: int = -1) -> Array[Dictionary]:
+	return await mover.play_battle_cards_in_zones(player, cards, pick_prompt, candidate_zones, from_discard, max_count)
 
 
 func return_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:

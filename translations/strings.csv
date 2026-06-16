@@ -735,7 +735,7 @@ STR_EFF_EBP02_003_PROMPT,Discard a strategy card to advance by 1 zone (or skip):
 STR_EFF_EBP02_007_PROMPT,Discard a strategy card to search top 5 for a monster (or skip):,戦略カードを1枚捨てて山札の上5枚から怪獣を探す (またはスキップ):
 STR_EFF_EBP02_007_SELECT,Choose a monster card to add to your hand:,手札に加える怪獣カードを選ぶ:
 STR_EFF_EBP02_025_PROMPT,Choose an adjacent zone for a Tentacles token:,「触手」トークンを置く隣接エリアを選ぶ:
-STR_EFF_EBP02_028_SELECT_FMT,Choose a battle card with Evolution to play (%d of up to 3):,<進化>を持つ交戦カードを選んで出す (最大3枚中%d枚目):
+STR_EFF_EBP02_028_SELECT,Choose an Evolution battle card to play:,出す<進化>交戦カードを選ぶ:
 STR_EFF_EBP02_028_ZONE_FMT,Choose an adjacent zone to play %s:,%sを置く隣接エリアを選ぶ:
 STR_EFF_EBP02_035_TOKEN_FMT,Choose a zone for Tentacles token (%d remaining):,「触手」トークンを置くエリアを選ぶ (残り%d):
 STR_EFF_EBP02_042_PROMPT,Discard a King Ghidorah or Megalon card to reduce opponent's rage by 2 (or skip):,<キングギドラ>または<メガロ>を捨てて相手の<怒り>を2減らす (またはスキップ):

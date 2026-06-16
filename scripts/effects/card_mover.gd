@@ -384,26 +384,28 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 
 
 
-func create_tokens_in_zones(player: PlayerState, token_id: String, count: int) -> int:
-	## Let the player select zones to place up to count tokens.
-	## Tokens can overload occupied zones. When placing multiple tokens from
-	## one effect, each must go to a different zone.
-	## Returns the number of tokens actually placed.
+func create_tokens_in_zones(player: PlayerState, token_id: String, count: int, candidate_zones: Array[int] = [], prompt_key: String = "STR_EFF_TOKEN_ZONE_FMT") -> int:
+	## Let the player select zones to place up to count tokens. Tokens can overload
+	## occupied zones; when placing multiple from one effect each must go to a different
+	## zone (rule 5.11.1.3). candidate_zones restricts the offered zones (e.g. adjacency);
+	## when empty, any non-monster zone is allowed. prompt_key is a tr() key formatted with
+	## the number of tokens still to place. Returns the number of tokens actually placed.
+	var base_zones: Array[int] = candidate_zones if not candidate_zones.is_empty() else CardEffect.get_effect_play_zones(player)
 	var placed: int = 0
 	var used_zones: Array[int] = []
 	for _i in range(count):
 		var valid: Array[int] = []
-		for i in range(8):
-			if i == player.monster_zone - 1:
+		for z in base_zones:
+			if z == player.monster_zone - 1:
 				continue
-			if i in used_zones:
+			if z in used_zones:
 				continue
-			valid.append(i)
+			valid.append(z)
 		if valid.is_empty():
 			break
 		var chosen: int = await h.select_zone_target(
 			player.player_id, player.player_id, valid,
-			tr("STR_EFF_TOKEN_ZONE_FMT") % (count - placed))
+			tr(prompt_key) % (count - placed))
 		if chosen < 0:
 			break
 		used_zones.append(chosen)
@@ -414,19 +416,27 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int) -
 
 
 
-func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], pick_prompt: String) -> Array[Dictionary]:
-	## Play each battle card from `cards` into a DIFFERENT zone (rule 5.11.1.3).
-	## The player chooses which card to play next (when >1 remain) and its zone.
-	## Cards may overload occupied zones; the monster zone is never offered, and no
-	## zone is reused within this call. Stops when no available zone remains.
-	## Returns the cards that could not be played (caller decides their fate).
+func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], pick_prompt: String, candidate_zones: Array[int] = [], from_discard: bool = false, max_count: int = -1) -> Array[Dictionary]:
+	## Play battle cards from `cards`, each into a DIFFERENT zone (rule 5.11.1.3).
+	## The player chooses which card to play next (when >1 remain) and its zone; the zone
+	## prompt lists the still-available zones. Cards may overload occupied zones, but no
+	## zone is reused within this call. candidate_zones restricts the offered zones (e.g.
+	## adjacency); empty means any non-monster zone. from_discard plays each card out of
+	## the discard pile (play_from_discard) instead of the deck. max_count caps how many
+	## are played (-1 = no cap). Stops when no available zone remains.
+	## Returns the cards that were not played (caller decides their fate).
+	var base_zones: Array[int] = candidate_zones if not candidate_zones.is_empty() else CardEffect.get_effect_play_zones(player)
 	var remaining := cards.duplicate()
 	var used_zones: Array[int] = []
-	while not remaining.is_empty():
+	var played: int = 0
+	while not remaining.is_empty() and (max_count < 0 or played < max_count):
 		var valid: Array[int] = []
-		for z in CardEffect.get_effect_play_zones(player):
-			if z not in used_zones:
-				valid.append(z)
+		for z in base_zones:
+			if z == player.monster_zone - 1:
+				continue
+			if z in used_zones:
+				continue
+			valid.append(z)
 		if valid.is_empty():
 			break
 		var card: Dictionary = remaining[0]
@@ -441,7 +451,11 @@ func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], p
 		if chosen < 0:
 			chosen = valid[0]         # mandatory placement — fall back to first available
 		used_zones.append(chosen)
-		await h.play_battle_card_from_deck(player.player_id, card, chosen)
+		if from_discard:
+			await h.play_from_discard(player.player_id, card, chosen)
+		else:
+			await h.play_battle_card_from_deck(player.player_id, card, chosen)
+		played += 1
 	return remaining
 
 

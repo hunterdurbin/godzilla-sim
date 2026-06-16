@@ -57,18 +57,8 @@ func on_enter(ctx: EffectContext) -> void:
 	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(ctx.owner, monster_idx)
 	if valid_adjacent.is_empty():
 		return
-	# Player chooses an adjacent zone for each Tentacles token (max 3, capped by
-	# the natural adjacency count). Mirrors the pattern in EBP02-035.
-	var to_place: int = mini(valid_adjacent.size(), 3)
-	for _i in range(to_place):
-		if valid_adjacent.is_empty():
-			break
-		var remaining: int = to_place - _i
-		var chosen: int = await ctx.effect_handler.select_zone_target(
-			ctx.owner.player_id, ctx.owner.player_id, valid_adjacent,
-			tr("STR_EFF_EBP02_035_TOKEN_FMT") % remaining)
-		if chosen < 0:
-			break
-		await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T02", chosen)
-		# Rule 5.11.1.3: must play to different zones if possible
-		valid_adjacent.erase(chosen)
+	# Play a Tentacles token into each adjacent zone (max 3, capped by the natural
+	# adjacency count), each in a different zone per rule 5.11.1.3.
+	await ctx.effect_handler.create_tokens_in_zones(
+		ctx.owner, "EBP02-T02", mini(valid_adjacent.size(), 3), valid_adjacent,
+		"STR_EFF_EBP02_035_TOKEN_FMT")

@@ -55,22 +55,14 @@ func on_enter(ctx: EffectContext) -> void:
 		if selected.is_empty():
 			break
 
-		# Let player choose which adjacent zone to place it in
+		# Let player choose which adjacent zone to place it in (each card in a
+		# different zone per rule 5.11.1.3).
 		var target_zone: int = await ctx.effect_handler.select_zone_target(
 			player.player_id, player.player_id, valid_adjacent,
 			tr("STR_EFF_ESD02_003_PROMPT"))
 		if target_zone < 0:
 			break
 
-		# Handle overload if zone occupied
-		if player.zone_has_cards(target_zone):
-			var destroyed_stack: Array = player.clear_zone(target_zone)
-			EffectHandler.banish_or_discard(player, destroyed_stack)
-			player.discard_changed.emit()
-
-		player.push_zone_card(target_zone, selected)
-		player.zones_changed.emit()
-		await ctx.effect_handler.trigger_enter(player.player_id, selected, true)
-
-		# Rule 5.11.1.3: must play to different zones if possible
+		# play_from_discard handles overload (incl. leave-play triggers) and enter.
+		await ctx.effect_handler.play_from_discard(player.player_id, selected, target_zone)
 		valid_adjacent.erase(target_zone)
