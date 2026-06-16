@@ -5,7 +5,7 @@ extends CardEffect
 ## Move your rank III or higher monster card in zone 3 vertically to zone 8. (Your
 ## battle cards in zones 4–7 will not be <Destroy> by this movement.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

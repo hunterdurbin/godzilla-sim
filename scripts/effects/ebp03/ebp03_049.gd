@@ -2,7 +2,7 @@ extends CardEffect
 # Godzilla(2002) (Battle R6)
 # <Enter> If this card is in zone 8, draw 2 cards, then discard 2 cards.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

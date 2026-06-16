@@ -4,7 +4,7 @@ extends CardEffect
 # search your deck for up to 1 card named “Space Beam”, reveal it, add it to your hand,
 # then shuffle your deck.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

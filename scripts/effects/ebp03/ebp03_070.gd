@@ -6,7 +6,7 @@ extends CardEffect
 # battle card with <《Weapon》> or <《Mech》> , reveal it, add it to your hand, then
 # shuffle your deck.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

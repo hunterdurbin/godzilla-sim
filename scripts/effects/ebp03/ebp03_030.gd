@@ -3,7 +3,7 @@ extends CardEffect
 # Your <《Mechagodzilla》> battle cards in your zone 8 gain +3000 counter power.
 # <Enter> You may move 1 other battle card in your zones to an unoccupied zone.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

@@ -6,7 +6,7 @@ extends CardEffect
 ## rank 7.)
 ## <Enter> Return all cards in your discard pile to your deck then shuffle.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

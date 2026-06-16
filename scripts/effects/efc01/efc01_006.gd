@@ -4,7 +4,7 @@ extends CardEffect
 ## <Opponent's Turn> If the opponent has 2 or less battle cards in their zones, none of
 ## the battle cards in your zones can be destroyed by your opponent's effects.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

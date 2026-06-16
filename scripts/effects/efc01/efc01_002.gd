@@ -5,7 +5,7 @@ extends CardEffect
 ## top of your deck. If it is a battle card, return up to one of your monster cards from
 ## your discard pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

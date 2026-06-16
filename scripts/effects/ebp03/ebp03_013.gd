@@ -6,7 +6,7 @@ extends CardEffect
 ## <Opponent's Turn> At the beginning of the counter phase, if there are no cards in
 ## your strategy zones, you lose the game.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

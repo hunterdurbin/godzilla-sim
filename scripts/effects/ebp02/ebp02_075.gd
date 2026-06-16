@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> If a card named "Chibi Mechagodzilla" is in your zones,
 ## reduce your opponent's <Rage> by 1.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

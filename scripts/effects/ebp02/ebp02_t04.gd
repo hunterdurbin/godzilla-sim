@@ -5,7 +5,7 @@ extends CardEffect
 ## named "Chibi Godzilla" from your discard pile.
 ## (Tokens cannot be added to the deck. They are banished when removed from zones.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

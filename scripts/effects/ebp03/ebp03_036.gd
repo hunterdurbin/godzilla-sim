@@ -3,7 +3,7 @@ extends CardEffect
 # <Enter> If this card was played from your hand and is in zone 8, search your deck for
 # up to 1 <《Moguera》> battle card, play it, then shuffle your deck.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

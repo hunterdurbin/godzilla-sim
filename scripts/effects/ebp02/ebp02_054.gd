@@ -5,7 +5,7 @@ extends CardEffect
 ## Whenever this card's <Rage> is increased, <Destroy> 1 of your opponent's rank 5 or
 ## lower battle cards for each “Crystals” in your zones.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

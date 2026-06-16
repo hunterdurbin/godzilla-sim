@@ -4,7 +4,7 @@ extends CardEffect
 # of your opponent’s monster card. Add 1 red or blue battle card among them to your
 # hand, then send the rest to your discard pile.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

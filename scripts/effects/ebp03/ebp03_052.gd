@@ -7,7 +7,7 @@ extends CardEffect
 ## to 1 card named “Land Moguera” and up to 1 card named “Star Falcon”, place them under
 ## this card, then shuffle your deck.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

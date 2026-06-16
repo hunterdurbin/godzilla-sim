@@ -5,7 +5,7 @@ extends CardEffect
 # <Opponent’s Turn> <Awakening4> This card’s <Rage> cannot be reduced by your
 # opponent’s effects. (Active if this is in zone 4 or beyond.)
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

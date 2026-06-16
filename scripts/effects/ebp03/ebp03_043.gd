@@ -7,7 +7,7 @@ extends CardEffect
 ## this effect, then shuffle your deck. (Active if your monster card is in zone 4 or
 ## beyond.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -7,7 +7,7 @@ extends CardEffect
 ## and play a “Chibi Godzilla 2nd Form” token. (Tokens are prepared separately from your
 ## deck.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

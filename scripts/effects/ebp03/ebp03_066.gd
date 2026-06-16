@@ -4,7 +4,7 @@ extends CardEffect
 # your hand with its rank reduced by 2. (After being played, this card is rank 8.)
 # <Enter> <Destroy> 1 of your opponent’s strategy cards.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

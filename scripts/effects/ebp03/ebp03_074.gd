@@ -5,7 +5,7 @@ extends CardEffect
 ## that shares a trait with it, whose its rank is 1 higher than your monster card's
 ## current rank. (This play does not increase <Rage> .)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

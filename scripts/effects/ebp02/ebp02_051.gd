@@ -4,7 +4,7 @@ extends CardEffect
 ## If there are 5 or more cards under this card, this card gains +3000 threat level
 ## for each of your opponent's unoccupied zones.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -9,7 +9,7 @@ extends Node
 ## Owns outright: state broadcast (debounced, versioned, delta+gzip encoded
 ## via StateCodec), client-side receive/apply, resync + pending-interaction
 ## replay, action submission, and the host-side *_resolved bodies (thin
-## parse -> effect_handler.resolve_* calls). Effect-prompt *request* RPCs are
+## parse -> player_input.resolve_* calls). Effect-prompt *request* RPCs are
 ## still forwarders into game_board.gd (they drive overlays); presentation
 ## updates on receive go through small _board hooks (_append_log_entry,
 ## _apply_remote_player_names, _update_turn_tracker, ...).
@@ -666,7 +666,7 @@ func _rpc_deck_search_resolved(selected_json: String) -> void:
 		push_warning("[Sync] Rejected deck_search: card not offered")
 		return
 	_pending_interaction = {}
-	_session.turn_manager.action_handler.effect_handler.resolve_deck_search(selected)
+	_session.player_input.resolve_deck_search(selected)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -709,7 +709,7 @@ func _rpc_deck_arrange_resolved(keep_json: String, discard_json: String) -> void
 		push_warning("[Sync] Rejected deck_arrange: returned cards don't match offered set")
 		return
 	_pending_interaction = {}
-	_session.turn_manager.action_handler.effect_handler.resolve_deck_arrange(keep, discard)
+	_session.player_input.resolve_deck_arrange(keep, discard)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -747,7 +747,7 @@ func _rpc_card_select_resolved(selected_json: String) -> void:
 				return
 			pool.remove_at(idx)
 	_pending_interaction = {}
-	_session.turn_manager.action_handler.effect_handler.resolve_card_select(selected)
+	_session.player_input.resolve_card_select(selected)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -773,7 +773,7 @@ func _rpc_hand_card_selection_resolved(hand_index: int) -> void:
 		push_warning("[Sync] Rejected hand_card_selection: index not offered")
 		return
 	_pending_interaction = {}
-	_session.turn_manager.action_handler.effect_handler.resolve_hand_card_selection(hand_index)
+	_session.player_input.resolve_hand_card_selection(hand_index)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -791,7 +791,7 @@ func _rpc_confirmation_resolved() -> void:
 	if not _pending_matches("confirmation"):
 		return
 	_pending_interaction = {}
-	_session.turn_manager.confirm()
+	_session.player_input.resolve_confirmation()
 
 
 ## Client -> Host: send player name
@@ -845,7 +845,7 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 		push_warning("[Sync] Rejected hand_discard: wrong count %d (requested %d, hand %d)" % [hand_indices.size(), requested, hand_size])
 		return
 	_pending_interaction = {}
-	_session.turn_manager.action_handler.effect_handler.resolve_hand_discard(sender_player_id, hand_indices)
+	_session.player_input.resolve_hand_discard(sender_player_id, hand_indices)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -871,7 +871,7 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 		push_warning("[Sync] Rejected zone_target: zone not offered")
 		return
 	_pending_interaction = {}
-	_session.turn_manager.action_handler.effect_handler.resolve_zone_target(zone_index)
+	_session.player_input.resolve_zone_target(zone_index)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -893,7 +893,7 @@ func _rpc_strategy_target_resolved(strategy_index: int) -> void:
 		push_warning("[Sync] Rejected strategy_target: index not offered")
 		return
 	_pending_interaction = {}
-	_session.turn_manager.action_handler.effect_handler.resolve_strategy_target(strategy_index)
+	_session.player_input.resolve_strategy_target(strategy_index)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -915,7 +915,7 @@ func _rpc_choice_resolved(index: int) -> void:
 		push_warning("[Sync] Rejected choice: index %d out of range" % index)
 		return
 	_pending_interaction = {}
-	_session.turn_manager.action_handler.effect_handler.resolve_choice(index)
+	_session.player_input.resolve_choice(index)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -936,7 +936,7 @@ func _rpc_monster_rankup_resolved(index: int) -> void:
 		push_warning("[Sync] Rejected monster_rankup: index not offered")
 		return
 	_pending_interaction = {}
-	_session.turn_manager.action_handler.resolve_monster_rankup(index)
+	_session.player_input.resolve_monster_rankup(index)
 
 
 ## Client -> Server (dedicated only): claim the win after the opponent's

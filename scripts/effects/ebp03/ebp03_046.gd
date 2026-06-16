@@ -4,7 +4,7 @@ extends CardEffect
 # ・ <Destroy> 1 of your opponent’s strategy cards.
 # ・Reduce your opponent’s <Rage> by 1.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

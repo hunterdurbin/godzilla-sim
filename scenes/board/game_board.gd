@@ -487,18 +487,18 @@ func _ready() -> void:
 		turn_manager.sub_phase_changed.connect(_on_sub_phase_changed)
 		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
 		turn_manager.turn_started.connect(_on_turn_started)
-		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
+		turn_manager.player_input.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Connect action handler signals for visual feedback
-		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
-		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
-		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
-		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
-		turn_manager.action_handler.play_cancelled.connect(_on_play_cancelled)
-		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
-		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
-		turn_manager.action_handler.counter_prevented.connect(_on_counter_prevented)
-		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
+		turn_manager.events.battle_card_played.connect(_on_battle_card_played)
+		turn_manager.events.monster_advanced.connect(_on_monster_advanced)
+		turn_manager.events.battle_card_crushed.connect(_on_battle_card_crushed)
+		turn_manager.events.counter_succeeded.connect(_on_counter_succeeded)
+		turn_manager.events.play_cancelled.connect(_on_play_cancelled)
+		turn_manager.events.counter_failed.connect(_on_counter_failed)
+		turn_manager.events.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
+		turn_manager.events.counter_prevented.connect(_on_counter_prevented)
+		turn_manager.events.monster_countered.connect(_on_monster_countered)
 
 		# Connect effect handler signals for player choice UIs
 		turn_manager.action_handler.effect_handler.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
@@ -1274,7 +1274,7 @@ func _on_confirmation_requested(prompt: String, setting: String) -> void:
 		return
 	# Local player: check their per-player settings
 	if _player_settings[current_pid].get(setting, false):
-		turn_manager.confirm()
+		_session.player_input.resolve_confirmation()
 		return
 	_show_confirmation(prompt)
 
@@ -1290,7 +1290,7 @@ func _show_confirmation(prompt: String) -> void:
 	btn_confirm.disabled = true
 	btn_confirm.add_theme_font_size_override("font_size", 18)
 	if turn_manager:
-		turn_manager.confirm()
+		_session.player_input.resolve_confirmation()
 	elif is_multiplayer_game:
 		RpcLogger.log_send("confirmation_resolved", 0)
 		_sync._rpc_confirmation_resolved.rpc_id(NetworkManager.host_peer_id)
@@ -1642,18 +1642,18 @@ func _execute_rematch() -> void:
 		turn_manager.sub_phase_changed.connect(_on_sub_phase_changed)
 		turn_manager.awaiting_player_action.connect(_on_awaiting_action)
 		turn_manager.turn_started.connect(_on_turn_started)
-		turn_manager.confirmation_requested.connect(_on_confirmation_requested)
+		turn_manager.player_input.confirmation_requested.connect(_on_confirmation_requested)
 
 		# Reconnect action handler signals
-		turn_manager.action_handler.battle_card_played.connect(_on_battle_card_played)
-		turn_manager.action_handler.monster_advanced.connect(_on_monster_advanced)
-		turn_manager.action_handler.battle_card_crushed.connect(_on_battle_card_crushed)
-		turn_manager.action_handler.counter_succeeded.connect(_on_counter_succeeded)
-		turn_manager.action_handler.play_cancelled.connect(_on_play_cancelled)
-		turn_manager.action_handler.counter_failed.connect(_on_counter_failed)
-		turn_manager.action_handler.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
-		turn_manager.action_handler.counter_prevented.connect(_on_counter_prevented)
-		turn_manager.action_handler.monster_countered.connect(_on_monster_countered)
+		turn_manager.events.battle_card_played.connect(_on_battle_card_played)
+		turn_manager.events.monster_advanced.connect(_on_monster_advanced)
+		turn_manager.events.battle_card_crushed.connect(_on_battle_card_crushed)
+		turn_manager.events.counter_succeeded.connect(_on_counter_succeeded)
+		turn_manager.events.play_cancelled.connect(_on_play_cancelled)
+		turn_manager.events.counter_failed.connect(_on_counter_failed)
+		turn_manager.events.counter_immunity_triggered.connect(_on_counter_immunity_triggered)
+		turn_manager.events.counter_prevented.connect(_on_counter_prevented)
+		turn_manager.events.monster_countered.connect(_on_monster_countered)
 
 		# Reconnect effect handler signals
 		turn_manager.action_handler.effect_handler.effect_zone_highlighted.connect(_on_effect_zone_highlighted)

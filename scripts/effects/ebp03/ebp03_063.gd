@@ -4,7 +4,7 @@ extends CardEffect
 ## <Your Turn> <Awakening4> When your monster card is played, you may play this card
 ## from your discard pile. (Active if your monster card is in zone 4 or beyond.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

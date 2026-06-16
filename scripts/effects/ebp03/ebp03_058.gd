@@ -4,7 +4,7 @@ extends CardEffect
 # the zone this card currently occupies. Then, if this card is in a zone adjacent to
 # your monster card, <Destroy> this card..
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: Occupied destination zone is overloaded (not destroyed)
 # Rules: None

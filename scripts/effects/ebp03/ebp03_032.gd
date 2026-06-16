@@ -4,7 +4,7 @@ extends CardEffect
 # monster card, you may discard all the cards in your hand. If you do, for the rest of
 # the turn, this card gains +1000 counter power for each card discarded this way.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

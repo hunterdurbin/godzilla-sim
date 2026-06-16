@@ -4,7 +4,7 @@ extends CardEffect
 ## <Your Turn> Whenever you play a battle card, <Destroy> all of your opponent's
 ## rank 6 or lower battle cards in the same column as that battle card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

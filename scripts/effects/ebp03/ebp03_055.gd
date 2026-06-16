@@ -3,7 +3,7 @@ extends CardEffect
 # <Enter> You may put up to 1 <《Mothra》> battle card from your discard pile on top of
 # your deck.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

@@ -6,7 +6,7 @@ extends CardEffect
 ## Whenever this card's <Rage> is increased, play 2 “Crystals” tokens. (Tokens are
 ## prepared separately from your deck.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -78,22 +78,23 @@ func _start_next_game() -> void:
 
 	# Instant confirmation — resolve synchronously (no await, no frame wait).
 	# Must be connected BEFORE bot handlers so it fires first.
-	var tm := _current_turn_manager
-	tm.confirmation_requested.connect(func(_p: String, _s: String) -> void: tm.confirm())
+	var pin: SignalPlayerInput = _current_turn_manager.player_input
+	pin.confirmation_requested.connect(func(_p: String, _s: String) -> void: pin.resolve_confirmation())
 
-	# Connect signals for both bots (same pattern as game_board._setup_bot)
+	# Connect signals for both bots (same pattern as game_session.setup_bot)
 	for bot in _current_bots:
+		bot.player_input = pin
 		_current_turn_manager.awaiting_player_action.connect(bot._on_awaiting_action)
-		_current_turn_manager.action_handler.monster_rankup_requested.connect(bot._on_monster_rankup_requested)
-		bot.effect_handler.choice_requested.connect(bot._on_choice_requested)
-		bot.effect_handler.hand_discard_requested.connect(bot._on_hand_discard_requested)
-		bot.effect_handler.deck_search_requested.connect(bot._on_deck_search_requested)
-		bot.effect_handler.deck_arrange_requested.connect(bot._on_deck_arrange_requested)
-		bot.effect_handler.card_select_requested.connect(bot._on_card_select_requested)
-		bot.effect_handler.hand_card_selection_requested.connect(bot._on_hand_card_selection_requested)
-		bot.effect_handler.zone_target_requested.connect(bot._on_zone_target_requested)
-		bot.effect_handler.strategy_target_requested.connect(bot._on_strategy_target_requested)
-		bot.effect_handler.cards_revealed_requested.connect(bot._on_cards_revealed_requested)
+		pin.monster_rankup_requested.connect(bot._on_monster_rankup_requested)
+		pin.choice_requested.connect(bot._on_choice_requested)
+		pin.hand_discard_requested.connect(bot._on_hand_discard_requested)
+		pin.deck_search_requested.connect(bot._on_deck_search_requested)
+		pin.deck_arrange_requested.connect(bot._on_deck_arrange_requested)
+		pin.card_select_requested.connect(bot._on_card_select_requested)
+		pin.hand_card_selection_requested.connect(bot._on_hand_card_selection_requested)
+		pin.zone_target_requested.connect(bot._on_zone_target_requested)
+		pin.strategy_target_requested.connect(bot._on_strategy_target_requested)
+		pin.cards_revealed_requested.connect(bot._on_cards_revealed_requested)
 
 	# Analyze decks / init combos
 	bot1.analyze_deck()
@@ -141,6 +142,7 @@ func _record_result(winner_id: int, reason: String) -> void:
 		"p1_combo_log": _current_bots[0].combo_log.duplicate(),
 	}
 	_results.append(result)
+	print("[SimResult] game=%d winner=%d turns=%d p1z=%d p2z=%d reason=%s" % [_games_completed + 1, winner_id, gs.turn_number, gs.players[0].monster_zone, gs.players[1].monster_zone, reason])
 	_games_completed += 1
 	if _games_completed % 10 == 0 or _games_completed == num_games:
 		print("[Sim] %d/%d games complete" % [_games_completed, num_games])

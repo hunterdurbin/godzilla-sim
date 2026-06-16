@@ -5,7 +5,7 @@ extends CardEffect
 ## monster card has 2 or more <Rage> , reduce your opponent’s <Rage> by 2.
 ## When this card would be <Destroy> , put this card on the bottom of your deck instead.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

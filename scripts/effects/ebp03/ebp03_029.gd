@@ -8,7 +8,7 @@ extends CardEffect
 ## ・Each player discards cards until they have 2 cards remaining in their hand.
 ## ・Reduce each player’s monster card’s <Rage> by 2.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

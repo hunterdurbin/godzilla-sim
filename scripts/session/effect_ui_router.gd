@@ -130,19 +130,18 @@ func _bind() -> void:
 	if not session.is_running():
 		return # Client peer: prompts arrive via MultiplayerSync RPCs
 
-	var eh: EffectHandler = session.effect_handler
-	var ah: ActionHandler = session.action_handler
+	var pin: SignalPlayerInput = session.player_input
 	var signal_map := {
-		"deck_search": [eh.deck_search_requested, _on_deck_search_requested],
-		"deck_arrange": [eh.deck_arrange_requested, _on_deck_arrange_requested],
-		"card_select": [eh.card_select_requested, _on_card_select_requested],
-		"choice": [eh.choice_requested, _on_choice_requested],
-		"cards_revealed": [eh.cards_revealed_requested, _on_cards_revealed_requested],
-		"monster_rankup": [ah.monster_rankup_requested, _on_monster_rankup_requested],
-		"hand_discard": [eh.hand_discard_requested, _on_hand_discard_requested],
-		"hand_card_select": [eh.hand_card_selection_requested, _on_hand_card_selection_requested],
-		"zone_target": [eh.zone_target_requested, _on_zone_target_requested],
-		"strategy_target": [eh.strategy_target_requested, _on_strategy_target_requested],
+		"deck_search": [pin.deck_search_requested, _on_deck_search_requested],
+		"deck_arrange": [pin.deck_arrange_requested, _on_deck_arrange_requested],
+		"card_select": [pin.card_select_requested, _on_card_select_requested],
+		"choice": [pin.choice_requested, _on_choice_requested],
+		"cards_revealed": [pin.cards_revealed_requested, _on_cards_revealed_requested],
+		"monster_rankup": [pin.monster_rankup_requested, _on_monster_rankup_requested],
+		"hand_discard": [pin.hand_discard_requested, _on_hand_discard_requested],
+		"hand_card_select": [pin.hand_card_selection_requested, _on_hand_card_selection_requested],
+		"zone_target": [pin.zone_target_requested, _on_zone_target_requested],
+		"strategy_target": [pin.strategy_target_requested, _on_strategy_target_requested],
 	}
 	var keys := signal_map.keys() if bind_all_prompts else _handlers.keys()
 	for key in keys:
@@ -268,7 +267,7 @@ func _on_choice_requested(player_id: int, options: Array, prompt: String) -> voi
 func _on_cards_revealed_requested(player_id: int, cards: Array, title: String) -> void:
 	if _is_bot_target(player_id):
 		# Bot handles via its own listener; auto-resolve so the engine continues.
-		session.effect_handler.resolve_cards_revealed()
+		session.player_input.resolve_cards_revealed()
 		return
 	if local_player_id < 0:
 		# Dedicated server: push a display-only copy to the owning player,
@@ -280,7 +279,7 @@ func _on_cards_revealed_requested(player_id: int, cards: Array, title: String) -
 				var ids_json := JSON.stringify(StateCodec.cards_to_ids(cards))
 				multiplayer_sync._rpc_cards_revealed_shown.rpc_id(peer_id, ids_json, title)
 				break
-		session.effect_handler.resolve_cards_revealed.call_deferred()
+		session.player_input.resolve_cards_revealed.call_deferred()
 		return
 	# Cards revealed always shows on local — no remote routing.
 	show_cards_revealed(cards, title)
@@ -428,8 +427,8 @@ func resolve_deck_search(selected: Dictionary) -> void:
 		var json := JSON.stringify(selected)
 		RpcLogger.log_send("deck_search_resolved", json.length())
 		multiplayer_sync._rpc_deck_search_resolved.rpc_id(net.host_peer_id, json)
-	elif session.effect_handler:
-		session.effect_handler.resolve_deck_search(selected)
+	elif session.player_input:
+		session.player_input.resolve_deck_search(selected)
 
 
 func resolve_deck_arrange(keep: Array, discard: Array) -> void:
@@ -439,14 +438,14 @@ func resolve_deck_arrange(keep: Array, discard: Array) -> void:
 		var discard_json := JSON.stringify(discard)
 		RpcLogger.log_send("deck_arrange_resolved", keep_json.length() + discard_json.length())
 		multiplayer_sync._rpc_deck_arrange_resolved.rpc_id(net.host_peer_id, keep_json, discard_json)
-	elif session.effect_handler:
+	elif session.player_input:
 		var keep_typed: Array[Dictionary] = []
 		for c in keep:
 			keep_typed.append(c)
 		var discard_typed: Array[Dictionary] = []
 		for c in discard:
 			discard_typed.append(c)
-		session.effect_handler.resolve_deck_arrange(keep_typed, discard_typed)
+		session.player_input.resolve_deck_arrange(keep_typed, discard_typed)
 
 
 func resolve_card_select(selected: Array) -> void:
@@ -455,25 +454,25 @@ func resolve_card_select(selected: Array) -> void:
 		var json := JSON.stringify(StateCodec.cards_to_ids(selected))
 		RpcLogger.log_send("card_select_resolved", json.length())
 		multiplayer_sync._rpc_card_select_resolved.rpc_id(net.host_peer_id, json)
-	elif session.effect_handler:
+	elif session.player_input:
 		var typed: Array[Dictionary] = []
 		for c in selected:
 			typed.append(c)
-		session.effect_handler.resolve_card_select(typed)
+		session.player_input.resolve_card_select(typed)
 
 
 func resolve_choice(index: int) -> void:
 	if is_multiplayer and not net.is_host():
 		RpcLogger.log_send("choice_resolved", 4)
 		multiplayer_sync._rpc_choice_resolved.rpc_id(net.host_peer_id, index)
-	elif session.effect_handler:
-		session.effect_handler.resolve_choice(index)
+	elif session.player_input:
+		session.player_input.resolve_choice(index)
 
 
 func resolve_cards_revealed() -> void:
 	_hide_banner()
 	if session.effect_handler:
-		session.effect_handler.resolve_cards_revealed()
+		session.player_input.resolve_cards_revealed()
 
 
 func resolve_monster_rankup(index: int) -> void:
@@ -481,8 +480,8 @@ func resolve_monster_rankup(index: int) -> void:
 	if is_multiplayer and not net.is_host():
 		RpcLogger.log_send("monster_rankup_resolved", 4)
 		multiplayer_sync._rpc_monster_rankup_resolved.rpc_id(net.host_peer_id, index)
-	elif session.action_handler:
-		session.action_handler.resolve_monster_rankup(index)
+	elif session.player_input:
+		session.player_input.resolve_monster_rankup(index)
 
 
 func resolve_hand_discard(player_id: int, indices) -> void:
@@ -494,29 +493,29 @@ func resolve_hand_discard(player_id: int, indices) -> void:
 		var indices_json := JSON.stringify(typed)
 		RpcLogger.log_send("hand_discard_resolved", indices_json.length())
 		multiplayer_sync._rpc_hand_discard_resolved.rpc_id(net.host_peer_id, indices_json)
-	elif session.effect_handler:
-		session.effect_handler.resolve_hand_discard(player_id, typed)
+	elif session.player_input:
+		session.player_input.resolve_hand_discard(player_id, typed)
 
 
 func resolve_hand_card_selection(hand_index: int) -> void:
 	if is_multiplayer and not net.is_host():
 		RpcLogger.log_send("hand_card_selection_resolved", 4)
 		multiplayer_sync._rpc_hand_card_selection_resolved.rpc_id(net.host_peer_id, hand_index)
-	elif session.effect_handler:
-		session.effect_handler.resolve_hand_card_selection(hand_index)
+	elif session.player_input:
+		session.player_input.resolve_hand_card_selection(hand_index)
 
 
 func resolve_zone_target(zone_index: int) -> void:
 	if is_multiplayer and not net.is_host():
 		RpcLogger.log_send("zone_target_resolved", 4)
 		multiplayer_sync._rpc_zone_target_resolved.rpc_id(net.host_peer_id, zone_index)
-	elif session.effect_handler:
-		session.effect_handler.resolve_zone_target(zone_index)
+	elif session.player_input:
+		session.player_input.resolve_zone_target(zone_index)
 
 
 func resolve_strategy_target(strategy_index: int) -> void:
 	if is_multiplayer and not net.is_host():
 		RpcLogger.log_send("strategy_target_resolved", 4)
 		multiplayer_sync._rpc_strategy_target_resolved.rpc_id(net.host_peer_id, strategy_index)
-	elif session.effect_handler:
-		session.effect_handler.resolve_strategy_target(strategy_index)
+	elif session.player_input:
+		session.player_input.resolve_strategy_target(strategy_index)

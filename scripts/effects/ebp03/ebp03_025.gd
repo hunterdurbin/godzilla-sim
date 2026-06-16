@@ -5,7 +5,7 @@ extends CardEffect
 ## <Enter> You may place 1 monster card from your discard pile under this card.
 ## If you do, advance your opponent's monster card to zone 5.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

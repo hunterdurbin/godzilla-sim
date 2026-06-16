@@ -7,7 +7,7 @@ extends CardEffect
 ## cards from your discard pile under this card. If you do, <Destroy> all rank 5 or
 ## lower battle cards in your opponent’s zones 1–5.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

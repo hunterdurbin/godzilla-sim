@@ -4,7 +4,7 @@ extends CardEffect
 # discard 1 strategy card from your hand. If you do, advance your monster card to zone
 # 6.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

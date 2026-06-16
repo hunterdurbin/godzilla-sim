@@ -5,7 +5,7 @@ extends CardEffect
 ## of your <《Mothra》> battle cards with <Evolution> . If you do, evolve that <《Mothra》>
 ## battle card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -5,7 +5,7 @@ extends CardEffect
 # from your hand. If you do, search your deck for up to 1 battle card named “Super
 # Mechagodzilla”, play it on top of this card, then shuffle your deck.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

@@ -5,7 +5,7 @@ extends CardEffect
 ## reveal the top 2 cards of your deck. Add all rank 5 or lower battle cards among
 ## them to your hand and send the rest into your discard pile.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -4,7 +4,7 @@ extends CardEffect
 ## <Enter> Choose 2 battle cards in your zones, you may swap their positions.
 ## Your rank 5 or lower battle cards in zones adjacent to this card gain +3000 counter power.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

@@ -5,7 +5,7 @@ extends CardEffect
 # <Your Turn> At the beginning of your counter phase, evolve 1 of your rank 4 or lower
 # battle cards with <Evolution> .
 #
-# Tested: No, Looks good at glance
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

@@ -7,7 +7,7 @@ extends CardEffect
 ## 1 - <Destroy> all of your opponent's rank 4 or lower battle cards.
 ## 2 - <Destroy> all of your opponent's rank 6 or lower battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

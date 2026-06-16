@@ -5,7 +5,7 @@ extends CardEffect
 ## hand. If you do, search your deck for 1 <Weapon> or <Mech> battle card with <Invade
 ## 2>. Reveal it, add it to your hand and shuffle the deck.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

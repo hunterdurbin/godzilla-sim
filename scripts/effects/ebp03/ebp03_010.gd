@@ -4,7 +4,7 @@ extends CardEffect
 # cards until they have 4 cards remaining in their hand. If a battle card is discarded
 # this way, increase this card’s <Rage> by 1.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

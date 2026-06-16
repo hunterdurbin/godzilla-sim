@@ -5,7 +5,7 @@ extends CardEffect
 ## cannot play battle cards in zones in the same column as this card.
 ## (Does not destroy cards already there.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

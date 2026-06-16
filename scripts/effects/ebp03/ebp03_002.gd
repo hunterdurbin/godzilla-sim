@@ -6,7 +6,7 @@ extends CardEffect
 # <Awakening8> At the beginning of your counter phase, you may discard 1 rank 5 or
 # higher battle card from your hand. If you do, increase this card’s <Rage> by 2.
 #
-# Tested: No
+# Tested: Yes
 # Known issues: None
 # Edge cases: None
 # Rules: None

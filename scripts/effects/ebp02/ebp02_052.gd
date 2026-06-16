@@ -4,7 +4,7 @@ extends CardEffect
 ## <When Invading> You may discard 1 card from your hand, if you do, play 1 “Crystals”
 ## token. (Tokens are prepared separately from your deck.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

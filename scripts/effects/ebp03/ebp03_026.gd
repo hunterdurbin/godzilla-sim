@@ -6,7 +6,7 @@ extends CardEffect
 ## <Enter> You may place 2 monster cards from your discard pile under this card. If you
 ## do, reduce your opponent’s <Rage> by 1.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

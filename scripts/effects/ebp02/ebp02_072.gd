@@ -4,7 +4,7 @@ extends CardEffect
 ## <Your Turn> If you have 3 or more "Crystals" in your zones, your total
 ## counter power is increased by 20,000.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

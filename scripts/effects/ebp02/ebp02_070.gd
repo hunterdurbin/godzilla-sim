@@ -7,7 +7,7 @@ extends CardEffect
 ## cards until they have 5 cards remaining in their hand. If they discard at least
 ## 1 card, <Destroy> this card.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

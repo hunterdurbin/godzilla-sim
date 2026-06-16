@@ -6,7 +6,7 @@ extends CardEffect
 ## ・ <Awakening6> <Destroy> 2 of your opponent's rank 6 or lower battle cards.
 ## ・ <Awakening8> <Destroy> 1 of your opponent's battle cards.
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None

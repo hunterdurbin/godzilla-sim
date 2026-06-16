@@ -7,7 +7,7 @@ extends CardEffect
 ## This card’s counter power X is equal to 3000 multiplied by the number of different
 ## colors among other battle cards in your zones. (White also counts as a color.)
 ##
-## Tested: No
+## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
