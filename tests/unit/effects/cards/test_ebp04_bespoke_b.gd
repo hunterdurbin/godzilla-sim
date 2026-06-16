@@ -734,7 +734,8 @@ func test_ebp04_079_plays_all_final_wars_cards_from_reveal() -> void:
 	state.players[0].strategy_zones[0] = card
 	var input := ScriptedPlayerInput.new()
 	input.answers = {
-		"search_cards": [{"id": zilla.get("id")}, {"id": anguirus.get("id")}],
+		# Only the first card needs an order pick; the last card plays automatically.
+		"search_cards": [{"id": zilla.get("id")}],
 		"select_zone": [1, 2],
 	}
 	var s := States.make_session(state, input)
@@ -746,6 +747,34 @@ func test_ebp04_079_plays_all_final_wars_cards_from_reveal() -> void:
 	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal(str(anguirus.get("id")))
 	assert_int(p0.discard_pile.size()).is_equal(3)
 	assert_int(p0.main_deck.size()).is_equal(0)
+
+
+func test_ebp04_079_plays_cards_into_different_zones_per_rule_5_11_1_3() -> void:
+	var card := Real.instance("EBP04-079")
+	var zilla := Real.instance("EBP04-039")     # Final Wars battle
+	var anguirus := Real.instance("EBP04-040")  # Final Wars battle
+	var state := States.make_state({"p0": {
+		"main_deck": [zilla, anguirus, Cards.battle(2, 2000, "N1")],
+	}})
+	state.players[0].strategy_zones[0] = card
+	var input := ScriptedPlayerInput.new()
+	input.answers = {
+		"search_cards": [{"id": zilla.get("id")}],
+		"select_zone": [3, 5],
+	}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	var p0 := state.players[0]
+	# Both Final Wars cards survive in two distinct zones — neither overloaded the other.
+	assert_str(str(p0.get_zone_top_card(3).get("id"))).is_equal(str(zilla.get("id")))
+	assert_str(str(p0.get_zone_top_card(5).get("id"))).is_equal(str(anguirus.get("id")))
+
+	# The second placement must not be offered the zone the first card took (rule 5.11.1.3).
+	var zone_calls: Array = input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zone")
+	assert_int(zone_calls.size()).is_equal(2)
+	assert_bool(zone_calls[1]["valid"].has(3)).is_false()
 
 
 func test_ebp04_079_discards_everything_when_nothing_is_final_wars() -> void:

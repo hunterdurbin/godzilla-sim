@@ -414,6 +414,46 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int) -
 
 
 
+func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], pick_prompt: String) -> Array[Dictionary]:
+	## Play each battle card from `cards` into a DIFFERENT zone (rule 5.11.1.3).
+	## The player chooses which card to play next (when >1 remain) and its zone.
+	## Cards may overload occupied zones; the monster zone is never offered, and no
+	## zone is reused within this call. Stops when no available zone remains.
+	## Returns the cards that could not be played (caller decides their fate).
+	var remaining := cards.duplicate()
+	var used_zones: Array[int] = []
+	while not remaining.is_empty():
+		var valid: Array[int] = []
+		for z in CardEffect.get_effect_play_zones(player):
+			if z not in used_zones:
+				valid.append(z)
+		if valid.is_empty():
+			break
+		var card: Dictionary = remaining[0]
+		if remaining.size() > 1:
+			card = await h.select_from_cards(player.player_id, remaining, remaining, pick_prompt, false)
+			if card.is_empty():
+				card = remaining[0]   # mandatory pick — fall back to first
+		remaining.erase(card)
+		var chosen: int = await h.select_zone_target(
+			player.player_id, player.player_id, valid,
+			tr("STR_EFF_PLAY_ZONES_FMT") % [card.get("name", "card"), _format_zone_list(valid)])
+		if chosen < 0:
+			chosen = valid[0]         # mandatory placement — fall back to first available
+		used_zones.append(chosen)
+		await h.play_battle_card_from_deck(player.player_id, card, chosen)
+	return remaining
+
+
+func _format_zone_list(zones: Array[int]) -> String:
+	var labels: Array[String] = []
+	for z in zones:
+		labels.append(str(z + 1))
+	return ", ".join(labels)
+
+
+
+
 func return_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
 	## Move a card from discard pile to the bottom of the player's deck.
 	## Used by cards with "place on bottom of deck instead of discard" effects.

@@ -577,6 +577,10 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int) -
 	return await mover.create_tokens_in_zones(player, token_id, count)
 
 
+func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], pick_prompt: String) -> Array[Dictionary]:
+	return await mover.play_battle_cards_in_zones(player, cards, pick_prompt)
+
+
 func return_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
 	mover.return_to_deck_bottom(player, card_data)
 

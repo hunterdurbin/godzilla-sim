@@ -715,6 +715,7 @@ STR_EFF_PLAY_FROM_DISCARD_FMT,Play %s from discard?,%sを捨て札から出し�
 STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT,Choose a zone to play %s from discard:,%sを捨て札から置くエリアを選ぶ:
 STR_EFF_PLACE_DISCARD_FMT,Play %s from discard to a zone (or skip):,%sを捨て札からエリアに置く (またはスキップ):
 STR_EFF_TOKEN_ZONE_FMT,Choose a zone for a token (%d remaining):,トークンを置くエリアを選ぶ (残り%d):
+STR_EFF_PLAY_ZONES_FMT,Play %s — choose a zone (available: %s):,%sを置く — エリアを選ぶ（空き: %s）:
 STR_EFF_SEARCH_EVOLVE_FMT,Search for a rank %d or lower battle card to evolve into:,進化先の等級%d以下の交戦カードを探す:
 STR_EFF_SEARCH_DECK_OR_SKIP,Search your deck for a card to add to your hand (or skip):,山札からカードを探して手札に加える (またはスキップ):
 STR_EFF_CHOOSE_EVOLVE_ZONE,Choose which zone to evolve next:,次に進化させるエリアを選ぶ:
