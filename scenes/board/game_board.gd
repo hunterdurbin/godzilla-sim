@@ -163,6 +163,7 @@ var _pending_sound_events: PackedStringArray:
 @onready var btn_main_menu: Button = $MainMenuButton
 @onready var btn_sound_toggle: Button = $SoundToggleButton
 @onready var btn_music_toggle: Button = $MusicToggleButton
+@onready var btn_export_log: Button = $ExportLogButton
 
 # Hand references
 @onready var player1_hand: Node2D = $Player1Hand
@@ -557,6 +558,7 @@ func _ready() -> void:
 	btn_main_menu.pressed.connect(_on_main_menu_pressed)
 	btn_sound_toggle.gui_input.connect(_on_sound_gui_input)
 	btn_music_toggle.gui_input.connect(_on_music_gui_input)
+	btn_export_log.pressed.connect(_on_export_log_pressed)
 	_update_sound_button_text()
 	_update_music_button_text()
 	btn_rematch.pressed.connect(_on_rematch_pressed)
@@ -1501,6 +1503,19 @@ func _on_bug_report_pressed() -> void:
 
 func _build_bug_report_body() -> String:
 	return BugReport.build_body(self)
+
+
+# --- Export game log ---
+
+func _on_export_log_pressed() -> void:
+	SfxManager.play("ui_click")
+	var path := GameLogExport.export_log(_log_tokens)
+	if path.is_empty():
+		_log_chat.append_remote_entry("STR_LOG_EXPORT_FAILED")
+		return
+	# Local-only notification: append_remote_entry never enters the MP
+	# broadcast buffer, so the opponent's log is unaffected.
+	_log_chat.append_remote_entry(GameLog.log_exported(local_player_id, path.get_file()))
 
 
 # --- Concede / Main Menu ---

@@ -3,6 +3,7 @@ extends Control
 @onready var watch_replay_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/WatchReplayButton
 @onready var load_game_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LoadGameButton
 @onready var load_game_online_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LoadGameOnlineButton
+@onready var game_logs_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GameLogsButton
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
 
 var _replay_popup: PopupPanel = null
@@ -31,6 +32,7 @@ func _ready() -> void:
 	watch_replay_button.pressed.connect(_on_watch_replay_pressed)
 	load_game_button.pressed.connect(_on_load_game_pressed)
 	load_game_online_button.pressed.connect(_on_load_game_online_pressed)
+	game_logs_button.pressed.connect(_on_game_logs_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 
 
@@ -55,6 +57,15 @@ func _on_load_game_pressed() -> void:
 		_show_message(tr("STR_EXTRAS_NO_SAVES"))
 		return
 	_show_save_list(saves)
+
+
+func _on_game_logs_pressed() -> void:
+	SfxManager.play("ui_click")
+	var logs := GameLogExport.list_logs()
+	if logs.is_empty():
+		_show_message(tr("STR_EXTRAS_NO_GAME_LOGS"))
+		return
+	_show_game_log_list(logs)
 
 
 func _on_load_game_online_pressed() -> void:
@@ -1252,3 +1263,171 @@ func _launch_load_game(path: String) -> void:
 			NetworkManager.set_bot_difficulty(diff)
 		_: NetworkManager.mode = NetworkManager.Mode.SOLO
 	NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
+
+
+func _show_game_log_list(logs: Array[Dictionary]) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(700, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+
+	var title := Label.new()
+	title.text = tr("STR_EXTRAS_GAME_LOGS")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vbox.add_child(title)
+	vbox.add_child(HSeparator.new())
+
+	# Toolbar row
+	var toolbar := HBoxContainer.new()
+	toolbar.add_theme_constant_override("separation", 8)
+
+	var open_folder_btn := Button.new()
+	open_folder_btn.text = tr("STR_EXTRAS_OPEN_FOLDER")
+	open_folder_btn.custom_minimum_size = Vector2(110, 32)
+	open_folder_btn.add_theme_font_size_override("font_size", 14)
+	open_folder_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		OS.shell_open(GameLogExport.get_log_base_dir())
+	)
+	toolbar.add_child(open_folder_btn)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toolbar.add_child(spacer)
+
+	var count_label := Label.new()
+	count_label.text = str(logs.size())
+	count_label.add_theme_font_size_override("font_size", 14)
+	count_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	toolbar.add_child(count_label)
+
+	vbox.add_child(toolbar)
+
+	# Scroll area
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 350)
+	var list_vbox := VBoxContainer.new()
+	list_vbox.add_theme_constant_override("separation", 6)
+	list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for entry in logs:
+		list_vbox.add_child(_build_game_log_row(entry))
+	scroll.add_child(list_vbox)
+	vbox.add_child(scroll)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(200, 40)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	vbox.add_child(cancel_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+	popup.popup_centered()
+
+
+func _build_game_log_row(entry: Dictionary) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+
+	var name_label := Label.new()
+	name_label.text = str(entry.get("filename", ""))
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.add_theme_font_size_override("font_size", 15)
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	row.add_child(name_label)
+
+	var date_label := Label.new()
+	date_label.text = ReplayData.local_datetime_string_from_unix(float(entry.get("modified_unix", 0)))
+	date_label.add_theme_font_size_override("font_size", 14)
+	date_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	row.add_child(date_label)
+
+	var view_btn := Button.new()
+	view_btn.text = tr("STR_EXTRAS_VIEW")
+	view_btn.custom_minimum_size = Vector2(80, 32)
+	view_btn.add_theme_font_size_override("font_size", 14)
+	view_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_show_game_log_content(str(entry.get("path", "")))
+	)
+	row.add_child(view_btn)
+
+	return row
+
+
+func _show_game_log_content(path: String) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+
+	var panel := PanelContainer.new()
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+
+	var title := Label.new()
+	title.text = path.get_file()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vbox.add_child(title)
+	vbox.add_child(HSeparator.new())
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(720, 420)
+	var text_label := Label.new()
+	text_label.text = GameLogExport.load_log_text(path)
+	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_label.add_theme_font_size_override("font_size", 14)
+	scroll.add_child(text_label)
+	vbox.add_child(scroll)
+
+	var close_btn := Button.new()
+	close_btn.text = tr("STR_COMMON_CANCEL")
+	close_btn.custom_minimum_size = Vector2(200, 40)
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	close_btn.add_theme_font_size_override("font_size", 18)
+	close_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	vbox.add_child(close_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+	popup.popup_centered()

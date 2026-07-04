@@ -261,6 +261,10 @@ static func claimed_win_disconnect() -> Dictionary:
 	return {"type": "claimed_win_disconnect"}
 
 
+static func log_exported(player_id: int, filename: String) -> Dictionary:
+	return {"type": "log_exported", "player_id": player_id, "file": filename}
+
+
 static func concede_reason_key(loser_id: int) -> String:
 	## Build a reason key with player-id parameter for concede game-over.
 	## Rendered by `render_reason` via the `|player=N` suffix.
@@ -522,6 +526,10 @@ static func render(token: Dictionary) -> String:
 			return TranslationServer.translate("STR_LOG_OPPONENT_RECONNECTED")
 		"claimed_win_disconnect":
 			return TranslationServer.translate("STR_LOG_CLAIMED_WIN_DISCONNECT")
+		"log_exported":
+			return TranslationServer.translate("STR_LOG_EXPORTED_FMT") \
+				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
+				.replace("{FILE}", str(token.get("file", "")))
 		_:
 			return ""
 

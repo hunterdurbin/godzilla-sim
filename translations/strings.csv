@@ -936,3 +936,9 @@ STR_ZOOM_MOD_DOUBLED,doubled,2倍
 STR_ZOOM_MOD_OWN_EFFECT,own effect,自身の効果
 STR_ZOOM_MOD_BASE_POWER,Base power,基本カウンターパワー
 STR_ZOOM_MOD_BASE_THREAT,Base threat level,基本脅威レベル
+STR_GB_EXPORT_LOG,Export Log,ログ出力
+STR_LOG_EXPORTED_FMT,{PLAYER} exported the game log ({FILE}).,{PLAYER}がゲームログを出力しました（{FILE}）。
+STR_LOG_EXPORT_FAILED,Failed to export the game log.,ゲームログの出力に失敗しました。
+STR_EXTRAS_GAME_LOGS,Game Logs,ゲームログ
+STR_EXTRAS_NO_GAME_LOGS,No exported game logs found.,出力されたゲームログが見つかりません。
+STR_EXTRAS_VIEW,View,表示

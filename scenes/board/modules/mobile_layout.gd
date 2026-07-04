@@ -111,6 +111,8 @@ var btn_sound_toggle: Button:
 	get: return _board.btn_sound_toggle
 var btn_music_toggle: Button:
 	get: return _board.btn_music_toggle
+var btn_export_log: Button:
+	get: return _board.btn_export_log
 var btn_rematch: Button:
 	get: return _board.btn_rematch
 var btn_end_menu: Button:
@@ -172,6 +174,9 @@ func _on_bug_report_pressed() -> void:
 
 func _on_concede_pressed() -> void:
 	_board._on_concede_pressed()
+
+func _on_export_log_pressed() -> void:
+	_board._on_export_log_pressed()
 
 func _dispatch_chat(text: String) -> void:
 	_board._dispatch_chat(text)
@@ -534,6 +539,7 @@ func _apply_mobile_utility_buttons() -> void:
 	btn_main_menu.visible = false
 	btn_sound_toggle.visible = false
 	btn_music_toggle.visible = false
+	btn_export_log.visible = false
 
 	# Create a styled menu button in the top-right corner
 	_mobile_menu_btn = Button.new()
@@ -583,14 +589,14 @@ func _apply_mobile_utility_buttons() -> void:
 	_mobile_menu_panel.offset_left = - (menu_pad_r + panel_w)
 	_mobile_menu_panel.offset_right = - menu_pad_r
 	_mobile_menu_panel.offset_top = panel_top
-	_mobile_menu_panel.offset_bottom = panel_top + (btn_h + gap) * 3.0
+	_mobile_menu_panel.offset_bottom = panel_top + (btn_h + gap) * 4.0
 	_mobile_menu_panel.add_theme_constant_override("separation", int(gap))
 	_mobile_menu_panel.z_index = 56
 	_mobile_menu_panel.visible = false
 	_mobile_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_mobile_menu_panel)
 
-	for item in [[tr("STR_GB_REPORT_BUG"), _on_bug_report_pressed], [tr("STR_GB_CONCEDE"), _on_concede_pressed], [tr("STR_GB_MAIN_MENU"), _on_main_menu_pressed]]:
+	for item in [[tr("STR_GB_REPORT_BUG"), _on_bug_report_pressed], [tr("STR_GB_CONCEDE"), _on_concede_pressed], [tr("STR_GB_MAIN_MENU"), _on_main_menu_pressed], [tr("STR_GB_EXPORT_LOG"), _on_export_log_pressed]]:
 		var btn := Button.new()
 		btn.text = item[0]
 		btn.custom_minimum_size.y = btn_h
