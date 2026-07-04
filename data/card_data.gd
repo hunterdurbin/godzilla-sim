@@ -1129,7 +1129,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 2,
 		"colors": [CardEnums.CardColor.RED],
-		"traits": [CardEnums.CardTrait.FINAL_WARS],
+		"traits": [CardEnums.CardTrait.KING_CAESAR, CardEnums.CardTrait.FINAL_WARS],
 		"counter_power": 1000,
 		"invasion_icon": 1,
 		"description": "<Enter> Move 1 of your other battle cards in your zones to an unoccupied zone.",
