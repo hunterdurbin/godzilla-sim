@@ -12,7 +12,36 @@ const ZOOM_DRAG_DEADZONE: float = 20.0
 
 @onready var _container: CenterContainer = $CardContainer
 @onready var _sources_panel: PanelContainer = $ModifierSourcesPanel
-@onready var _sources_list: VBoxContainer = $ModifierSourcesPanel/Margin/ModifierList
+@onready var _sources_header: Label = $ModifierSourcesPanel/Margin/Layout/Header
+@onready var _sources_scroll: ScrollContainer = $ModifierSourcesPanel/Margin/Layout/Scroll
+@onready var _sources_list: VBoxContainer = $ModifierSourcesPanel/Margin/Layout/Scroll/ModifierList
+
+const SOURCE_PREVIEW_SIZE := Vector2(72, 101)
+const PANEL_BG := Color(0.06, 0.07, 0.10, 0.9)
+const ROW_BG := Color(1.0, 1.0, 1.0, 0.04)
+const ROW_BG_OPPONENT := Color(0.5, 0.3, 0.7, 0.22)
+const HEADER_COLOR := Color(0.85, 0.85, 0.9)
+const SECTION_COLOR := Color(0.55, 0.58, 0.68)
+const NAME_COLOR := Color(0.72, 0.72, 0.8)
+const NAME_COLOR_OPPONENT := Color(0.78, 0.62, 0.95)
+const AMOUNT_GOOD := Color(0.4, 0.9, 0.5)
+const AMOUNT_BAD := Color(0.95, 0.45, 0.4)
+
+## Sections in display order: [tr key, stats included].
+const SECTIONS := [
+	["STR_ZOOM_MOD_SEC_POWER", ["cp", "cp_double"]],
+	["STR_ZOOM_MOD_SEC_COST", ["play_rank", "zone_play_rank"]],
+	["STR_ZOOM_MOD_SEC_RANK", ["field_rank"]],
+	["STR_ZOOM_MOD_SEC_THREAT", ["threat"]],
+]
+
+## Set by the board: called with a source template id when a modifier row is
+## clicked, so the zoom can re-target onto the source card.
+var on_source_clicked: Callable = Callable()
+
+# Row hitboxes for manual click routing (the panel is MOUSE_FILTER_IGNORE so
+# the overlay's dismiss/pinch input priority stays untouched).
+var _source_rows: Array = [] # of {"control": Control, "source": String}
 
 ## Set by the board: called after the zoom closes (resets slot input state
 ## so no timers or pending clicks carry over).
@@ -33,6 +62,13 @@ func _ready() -> void:
 	visible = false
 	z_index = 200
 	gui_input.connect(_on_gui_input)
+	# Panel styling matches the effect-stack/choice panels (dark navy, radius 8).
+	var style := StyleBoxFlat.new()
+	style.bg_color = PANEL_BG
+	style.set_corner_radius_all(8)
+	_sources_panel.add_theme_stylebox_override("panel", style)
+	_sources_header.add_theme_font_size_override("font_size", 15)
+	_sources_header.add_theme_color_override("font_color", HEADER_COLOR)
 
 
 func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entries: Array = []) -> void:
@@ -98,55 +134,223 @@ func hide_zoom() -> void:
 
 func _clear_modifier_sources() -> void:
 	_sources_panel.visible = false
+	_source_rows.clear()
 	for child in _sources_list.get_children():
-		if child.name != "Header":
-			child.queue_free()
+		child.queue_free()
 
 
 func _populate_modifier_sources(card_data: Dictionary, entries: Array) -> void:
 	_clear_modifier_sources()
 	if entries.is_empty():
 		return
-	if TouchHelper.is_touch_device():
+	var is_touch := TouchHelper.is_touch_device()
+	if is_touch:
 		# Bottom-center on touch so the panel doesn't fight the pinch-zoomed card.
 		_sources_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
 		_sources_panel.offset_top = -16.0
 	var own_template: String = ModifierBreakdown.template_id(card_data)
-	for e in entries:
-		var label := Label.new()
-		label.text = _format_modifier_entry(e, own_template)
-		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_sources_list.add_child(label)
+	var row_count: int = 0
+	var section_count: int = 0
+	for section in SECTIONS:
+		var groups := _grouped_section_entries(entries, section[1])
+		if groups.is_empty():
+			continue
+		section_count += 1
+		_sources_list.add_child(_make_section_header(section[0]))
+		for group in groups:
+			_sources_list.add_child(_make_modifier_row(group, own_template))
+			row_count += 1
+	# Cap the scrollable height so long lists don't overflow the screen.
+	var max_h: float = get_viewport_rect().size.y * (0.4 if is_touch else 0.6)
+	var est_h: float = row_count * (SOURCE_PREVIEW_SIZE.y + 14.0) + section_count * 22.0
+	_sources_scroll.custom_minimum_size = Vector2(0, minf(est_h, max_h))
+	_sources_scroll.scroll_vertical = 0
 	_sources_panel.visible = true
 
 
-func _format_modifier_entry(entry: Dictionary, own_template: String) -> String:
-	var source: String = str(entry.get("source", ""))
-	var source_name: String
-	if source == own_template:
-		source_name = tr("STR_ZOOM_MOD_OWN_EFFECT")
+## A section's entries as display groups: {stat, amount, source, source_name,
+## opp, zones: Array[int]}. Every entry is its own row — each contribution
+## (including multiple copies of the same card) must stay visible — EXCEPT
+## zone_play_rank, where the per-zone entries are one card's alternative
+## zone-specific costs, not cumulative, and merge into a single row.
+func _grouped_section_entries(entries: Array, stats: Array) -> Array:
+	var groups: Array = []
+	var by_key: Dictionary = {}
+	for e in entries:
+		var stat: String = str(e.get("stat", ""))
+		if not stat in stats:
+			continue
+		var zone: int = int(e.get("zone", -1))
+		if stat == "zone_play_rank":
+			var key := "%s|%s|%d" % [stat, e.get("source", ""), int(e.get("amount", 0))]
+			if by_key.has(key):
+				if zone >= 0:
+					(by_key[key]["zones"] as Array).append(zone)
+				continue
+		var group := {
+			"stat": stat,
+			"amount": int(e.get("amount", 0)),
+			"source": str(e.get("source", "")),
+			"source_name": str(e.get("source_name", "")),
+			"opp": bool(e.get("opp", false)),
+			"src_loc": str(e.get("src_loc", "")),
+			"zones": [],
+		}
+		if zone >= 0:
+			(group["zones"] as Array).append(zone)
+		if stat == "zone_play_rank":
+			by_key["%s|%s|%d" % [stat, e.get("source", ""), int(e.get("amount", 0))]] = group
+		groups.append(group)
+	return groups
+
+
+func _make_section_header(tr_key: String) -> Label:
+	var label := Label.new()
+	label.text = tr(tr_key).to_upper()
+	label.add_theme_font_size_override("font_size", 11)
+	label.add_theme_color_override("font_color", SECTION_COLOR)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
+
+func _make_modifier_row(group: Dictionary, own_template: String) -> Control:
+	var row := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = ROW_BG_OPPONENT if group["opp"] else ROW_BG
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 6
+	style.content_margin_right = 8
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	row.add_theme_stylebox_override("panel", style)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 8)
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(hbox)
+
+	var preview := _make_source_preview(str(group["source"]))
+	if preview:
+		hbox.add_child(preview)
+
+	var text_box := VBoxContainer.new()
+	text_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_box.add_theme_constant_override("separation", 1)
+	text_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.add_child(text_box)
+
+	var amount := Label.new()
+	amount.text = "%+d" % int(group["amount"])
+	amount.add_theme_font_size_override("font_size", 16)
+	amount.add_theme_color_override("font_color",
+		AMOUNT_GOOD if _is_beneficial(str(group["stat"]), int(group["amount"])) else AMOUNT_BAD)
+	amount.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_box.add_child(amount)
+
+	var name_label := Label.new()
+	if str(group["source"]) == own_template:
+		name_label.text = tr("STR_ZOOM_MOD_OWN_EFFECT")
 	else:
-		source_name = _tr_fallback("CARD_%s_NAME" % source, str(entry.get("source_name", "")))
-	var args := {
-		"AMT": "%+d" % int(entry.get("amount", 0)),
-		"SRC": source_name,
-		"ZONE": int(entry.get("zone", -1)) + 1,
-	}
-	match str(entry.get("stat", "")):
-		"cp":
-			return tr("STR_ZOOM_MOD_POWER_FMT").format(args)
-		"cp_double":
-			return tr("STR_ZOOM_MOD_POWER_DOUBLE_FMT").format(args)
-		"threat":
-			return tr("STR_ZOOM_MOD_THREAT_FMT").format(args)
-		"zone_play_rank":
-			return tr("STR_ZOOM_MOD_COST_ZONE_FMT").format(args)
-		"play_rank":
-			return tr("STR_ZOOM_MOD_COST_FMT").format(args)
-		"field_rank":
-			return tr("STR_ZOOM_MOD_RANK_FMT").format(args)
-	return "%s — %s" % [args["AMT"], source_name]
+		name_label.text = _tr_fallback("CARD_%s_NAME" % group["source"], str(group["source_name"]))
+	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_color_override("font_color",
+		NAME_COLOR_OPPONENT if group["opp"] else NAME_COLOR)
+	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	text_box.add_child(name_label)
+
+	var detail := _row_detail_text(group)
+	if not detail.is_empty():
+		var detail_label := Label.new()
+		detail_label.text = detail
+		detail_label.add_theme_font_size_override("font_size", 10)
+		detail_label.add_theme_color_override("font_color", SECTION_COLOR)
+		detail_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		text_box.add_child(detail_label)
+
+	_source_rows.append({"control": row, "source": str(group["source"])})
+	return row
+
+
+## Mini render of the source card next to its modifier (same pattern as the
+## effect-prompt previews). Returns null when the template id is unknown.
+func _make_source_preview(base_id: String) -> Control:
+	var dict: Dictionary = CardData.get_card_by_id(base_id)
+	if dict.is_empty():
+		return null
+	var card: Control = CARD_SCENE.instantiate()
+	card.skip_effect_load = true
+	card.drag_enabled = false
+	card.is_selectable = false
+	card.hover_scale = 1.0
+	card.hover_lift = 0.0
+	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if card.has_method("set_card_data_dict"):
+		card.set_card_data_dict(dict.duplicate(true))
+	card.custom_minimum_size = SOURCE_PREVIEW_SIZE
+	card.size = SOURCE_PREVIEW_SIZE
+	return card
+
+
+## Detail line under the source name: doubling tag, applicable-zone list for
+## zone-specific costs, and the source card's board location.
+func _row_detail_text(group: Dictionary) -> String:
+	var parts: Array[String] = []
+	if group["stat"] == "cp_double":
+		parts.append(tr("STR_ZOOM_MOD_DOUBLED"))
+	var zones: Array = group["zones"]
+	if group["stat"] == "zone_play_rank" and not zones.is_empty():
+		# Zones this cost applies in.
+		if zones.size() == 1:
+			parts.append(tr("STR_ZOOM_MOD_ZONE_FMT").format({"N": int(zones[0]) + 1}))
+		else:
+			var nums: Array[String] = []
+			for z in zones:
+				nums.append(str(int(z) + 1))
+			parts.append(tr("STR_ZOOM_MOD_ZONES_FMT").format({"LIST": ", ".join(nums)}))
+	var loc := _source_location_text(str(group["src_loc"]))
+	if not loc.is_empty():
+		parts.append(loc)
+	return " · ".join(parts)
+
+
+## "z<idx>" / "monster" / "strategy" -> localized board-location text.
+func _source_location_text(src_loc: String) -> String:
+	if src_loc.begins_with("z") and src_loc.length() > 1 and src_loc.substr(1).is_valid_int():
+		return tr("STR_ZOOM_MOD_ZONE_FMT").format({"N": src_loc.substr(1).to_int() + 1})
+	match src_loc:
+		"monster":
+			return tr("STR_ZOOM_MOD_SRC_MONSTER")
+		"strategy":
+			return tr("STR_ZOOM_MOD_SRC_STRATEGY")
+	return ""
+
+
+## Whether the modifier helps the zoomed card's owner (colors the amount).
+## Cost reductions are good; power/threat/field-rank reductions are bad.
+func _is_beneficial(stat: String, amount: int) -> bool:
+	match stat:
+		"play_rank", "zone_play_rank":
+			return amount < 0
+		_:
+			return amount >= 0
+
+
+## Route a click/tap at a screen position to a modifier row. Returns true when
+## the point is inside the panel (the event is consumed either way so clicks
+## on the panel never dismiss the zoom).
+func _handle_panel_press(pos: Vector2) -> bool:
+	if not _sources_panel.visible or not _sources_panel.get_global_rect().has_point(pos):
+		return false
+	for r in _source_rows:
+		var control: Control = r["control"]
+		if is_instance_valid(control) and control.get_global_rect().has_point(pos):
+			if on_source_clicked.is_valid():
+				on_source_clicked.call(r["source"])
+			break
+	return true
 
 
 static func _tr_fallback(key: String, fallback: String) -> String:
@@ -187,7 +391,7 @@ func handle_input(event: InputEvent) -> bool:
 					if _pinch_used or _dragging:
 						_pinch_used = false
 						_dragging = false
-					else:
+					elif not _handle_panel_press(event.position):
 						hide_zoom()
 		return true
 
@@ -227,6 +431,15 @@ func handle_input(event: InputEvent) -> bool:
 	# Dismiss card zoom on any click (must be first — blocks input from reaching overlays behind)
 	# Skip emulated mouse events on touch — ScreenTouch handler above covers dismiss
 	if not zoom_fresh and event is InputEventMouseButton and event.pressed:
+		# Wheel over the modifier panel scrolls it instead of dismissing.
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			if _sources_panel.visible and _sources_panel.get_global_rect().has_point(event.position):
+				var dir: int = 1 if event.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1
+				_sources_scroll.scroll_vertical += dir * 40
+				return true
+		# Clicks on the modifier panel navigate to the source, never dismiss.
+		if _handle_panel_press(event.position):
+			return true
 		if not TouchHelper.is_touch_device():
 			hide_zoom()
 		return true
@@ -246,5 +459,8 @@ func _on_gui_input(event: InputEvent) -> void:
 	if (Engine.get_process_frames() - _shown_frame) <= 2:
 		return
 	if event is InputEventMouseButton and event.pressed:
+		if _handle_panel_press(event.global_position):
+			get_viewport().set_input_as_handled()
+			return
 		hide_zoom()
 		get_viewport().set_input_as_handled()

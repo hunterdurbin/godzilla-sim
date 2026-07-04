@@ -461,6 +461,7 @@ func _ready() -> void:
 	_router.ability_banner_show = _ability_banner.show_ability
 	_router.ability_banner_hide = _ability_banner.hide_banner
 	card_zoom_overlay.on_hidden = _on_card_zoom_hidden
+	card_zoom_overlay.on_source_clicked = _zoom_to_source
 	_router.register_handler("deck_search", deck_search_overlay.show_prompt)
 	_router.register_handler("deck_arrange", deck_arrange_overlay.show_prompt)
 	_router.register_handler("card_select", card_pool_select_overlay.show_prompt)
@@ -2447,6 +2448,28 @@ func _infer_zoom_ctx(card_data: Dictionary) -> Dictionary:
 	return {}
 
 
+## Modifier-panel row click: re-target the zoom onto the source card.
+## Prefer the actual in-play copy (its own modifiers then show via the
+## instance-id inference); fall back to the bare template for display.
+func _zoom_to_source(template_id: String) -> void:
+	for pid in range(2):
+		var player := _zoom_player_state(pid)
+		if player == null:
+			continue
+		var candidates: Array = [player.current_monster]
+		for i in range(8):
+			candidates.append(player.get_zone_top_card(i))
+		for sz_card in player.strategy_zones:
+			candidates.append(sz_card)
+		for card in candidates:
+			if not card.is_empty() and CardUtils.base_id(card) == template_id:
+				_show_card_zoom(card)
+				return
+	var template: Dictionary = CardData.get_card_by_id(template_id)
+	if not template.is_empty():
+		_show_card_zoom(template.duplicate(true))
+
+
 ## Resolve a zoom context to modifier-source entries. Host/solo builds them
 ## on demand from the effect handler; clients read the breakdowns packed
 ## into the state broadcast (mirrors the threat_display host/client split).
@@ -2456,9 +2479,20 @@ func _zoom_entries_for(zoom_ctx: Dictionary) -> Array:
 	var pid: int = zoom_ctx.get("player_id", -1)
 	var location: String = zoom_ctx.get("location", "")
 	var index: int = zoom_ctx.get("index", -1)
+	var raw: Array
 	if turn_manager and turn_manager.effect_handler:
-		return _host_zoom_entries(pid, location, index)
-	return ModifierBreakdown.collect(_session.client_modifier_breakdowns, pid, location, index)
+		raw = _host_zoom_entries(pid, location, index)
+	else:
+		raw = ModifierBreakdown.collect(_session.client_modifier_breakdowns, pid, location, index)
+	# Tag opponent-controlled sources for display (duplicate — the client
+	# entries live in the synced cache and must not be mutated).
+	var out: Array = []
+	for e in raw:
+		var tagged: Dictionary = e.duplicate()
+		var owner: int = int(e.get("owner", -1))
+		tagged["opp"] = owner >= 0 and owner != pid
+		out.append(tagged)
+	return out
 
 
 func _host_zoom_entries(pid: int, location: String, index: int) -> Array:
@@ -2471,12 +2505,12 @@ func _host_zoom_entries(pid: int, location: String, index: int) -> Array:
 				out.append_array(eh.get_zone_cp_breakdown(pid)[index])
 				out.append_array(eh.get_field_rank_breakdown(pid)[index])
 		"monster":
-			ModifierBreakdown.append(out, "cp", eh.get_monster_cp_modifier(pid), player.current_monster)
+			ModifierBreakdown.append(out, "cp", eh.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
 			out.append_array(eh.get_threat_level_breakdown(pid))
 		"strategy":
 			var mods: Array = eh.get_strategy_cp_modifiers(pid)
 			if index >= 0 and index < mods.size() and index < player.strategy_zones.size():
-				ModifierBreakdown.append(out, "cp", int(mods[index]), player.strategy_zones[index])
+				ModifierBreakdown.append(out, "cp", int(mods[index]), player.strategy_zones[index], -1, pid, "strategy")
 		"hand":
 			if index >= 0 and index < player.hand.size():
 				out = ModifierBreakdown.hand_entries(eh, pid, player.hand[index])

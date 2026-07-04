@@ -29,7 +29,7 @@ anchor_left = 1.0
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
-offset_left = -380.0
+offset_left = -344.0
 offset_right = -20.0
 grow_horizontal = 0
 grow_vertical = 2
@@ -43,10 +43,23 @@ theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 10
 mouse_filter = 2
 
-[node name="ModifierList" type="VBoxContainer" parent="ModifierSourcesPanel/Margin"]
+[node name="Layout" type="VBoxContainer" parent="ModifierSourcesPanel/Margin"]
 layout_mode = 2
+theme_override_constants/separation = 6
 mouse_filter = 2
 
-[node name="Header" type="Label" parent="ModifierSourcesPanel/Margin/ModifierList"]
+[node name="Header" type="Label" parent="ModifierSourcesPanel/Margin/Layout"]
 layout_mode = 2
 text = "STR_ZOOM_MOD_HEADER"
+
+[node name="Scroll" type="ScrollContainer" parent="ModifierSourcesPanel/Margin/Layout"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 3
+mouse_filter = 2
+
+[node name="ModifierList" type="VBoxContainer" parent="ModifierSourcesPanel/Margin/Layout/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+mouse_filter = 2

@@ -922,10 +922,13 @@ STR_GB_STACK_RESOLVING,Resolving,解決中
 STR_GB_EFFECT_STACK_TITLE,Pending Effects,待機中の効果
 STR_GB_STACK_OPPONENT,Opponent,相手
 STR_ZOOM_MOD_HEADER,Active modifiers,適用中の効果
-STR_ZOOM_MOD_POWER_FMT,Power {AMT} — {SRC},カウンターパワー {AMT} — {SRC}
-STR_ZOOM_MOD_POWER_DOUBLE_FMT,Power doubled ({AMT}) — {SRC},カウンターパワー2倍 ({AMT}) — {SRC}
-STR_ZOOM_MOD_THREAT_FMT,Threat {AMT} — {SRC},脅威レベル {AMT} — {SRC}
-STR_ZOOM_MOD_COST_FMT,Cost {AMT} — {SRC},コスト {AMT} — {SRC}
-STR_ZOOM_MOD_COST_ZONE_FMT,Cost {AMT} in Zone {ZONE} — {SRC},コスト {AMT} (エリア{ZONE}) — {SRC}
-STR_ZOOM_MOD_RANK_FMT,Rank {AMT} — {SRC},ランク {AMT} — {SRC}
+STR_ZOOM_MOD_SEC_POWER,Power,カウンターパワー
+STR_ZOOM_MOD_SEC_COST,Cost,コスト
+STR_ZOOM_MOD_SEC_RANK,Rank,ランク
+STR_ZOOM_MOD_SEC_THREAT,Threat,脅威レベル
+STR_ZOOM_MOD_ZONE_FMT,Zone {N},エリア{N}
+STR_ZOOM_MOD_ZONES_FMT,Zones {LIST},エリア {LIST}
+STR_ZOOM_MOD_SRC_MONSTER,Monster zone,怪獣エリア
+STR_ZOOM_MOD_SRC_STRATEGY,Strategy zone,戦略エリア
+STR_ZOOM_MOD_DOUBLED,doubled,2倍
 STR_ZOOM_MOD_OWN_EFFECT,own effect,自身の効果

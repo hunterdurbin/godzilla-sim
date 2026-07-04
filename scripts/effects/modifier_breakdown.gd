@@ -7,7 +7,10 @@ extends RefCounted
 ##     "amount": int,          # signed contribution
 ##     "source": String,       # template id of the granting card ("" = none)
 ##     "source_name": String,  # display-name fallback when the tr key is missing
-##     "zone": int }           # affected zone index for per-zone stats, -1 otherwise
+##     "zone": int,            # affected zone index for per-zone stats, -1 otherwise
+##     "owner": int,           # player id controlling the source card, -1 unknown
+##     "src_loc": String }     # source card's board location: "z<idx>", "monster",
+##                             # "strategy", or "" (hand/self/unknown)
 ##
 ## Only nonzero entries are ever created (append() skips zeros), so
 ## sum(entries) always equals the corresponding EffectQueries aggregate.
@@ -26,21 +29,23 @@ static func template_id(card_data: Dictionary) -> String:
 	return parts[0] if not parts.is_empty() else id
 
 
-static func entry(stat: String, amount: int, source_card: Dictionary, zone: int = -1) -> Dictionary:
+static func entry(stat: String, amount: int, source_card: Dictionary, zone: int = -1, owner: int = -1, src_loc: String = "") -> Dictionary:
 	return {
 		"stat": stat,
 		"amount": amount,
 		"source": template_id(source_card),
 		"source_name": str(source_card.get("name", "")),
 		"zone": zone,
+		"owner": owner,
+		"src_loc": src_loc,
 	}
 
 
-static func append(list: Array, stat: String, amount: int, source_card: Dictionary, zone: int = -1) -> void:
+static func append(list: Array, stat: String, amount: int, source_card: Dictionary, zone: int = -1, owner: int = -1, src_loc: String = "") -> void:
 	## Append an entry unless the contribution is zero.
 	if amount == 0:
 		return
-	list.append(entry(stat, amount, source_card, zone))
+	list.append(entry(stat, amount, source_card, zone, owner, src_loc))
 
 
 static func sum(entries: Array) -> int:
@@ -79,7 +84,7 @@ static func build_all(eh: EffectHandler, gs: GameState, viewer_id: int) -> Dicti
 		threat.append(eh.get_threat_level_breakdown(pid))
 
 		var monster_entries: Array = []
-		append(monster_entries, "cp", eh.get_monster_cp_modifier(pid), player.current_monster)
+		append(monster_entries, "cp", eh.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
 		monster_cp.append(monster_entries)
 
 		var strategy_slots: Array = []
@@ -87,7 +92,7 @@ static func build_all(eh: EffectHandler, gs: GameState, viewer_id: int) -> Dicti
 		for si in range(strategy_mods.size()):
 			var slot_entries: Array = []
 			if si < player.strategy_zones.size():
-				append(slot_entries, "cp", int(strategy_mods[si]), player.strategy_zones[si])
+				append(slot_entries, "cp", int(strategy_mods[si]), player.strategy_zones[si], -1, pid, "strategy")
 			strategy_slots.append(slot_entries)
 		strategy_cp.append(strategy_slots)
 
@@ -140,6 +145,7 @@ static func _normalize_value(value: Variant) -> void:
 	elif value is Dictionary and value.has("amount"):
 		value["amount"] = int(value.get("amount", 0))
 		value["zone"] = int(value.get("zone", -1))
+		value["owner"] = int(value.get("owner", -1))
 
 
 static func _per_player(breakdowns: Dictionary, key: String, player_id: int) -> Array:

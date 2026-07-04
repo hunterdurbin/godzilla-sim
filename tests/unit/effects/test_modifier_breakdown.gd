@@ -15,11 +15,17 @@ func _wire(state: GameState) -> EffectHandler:
 	return States.make_session(state)["effect_handler"]
 
 
-func _assert_entry(e: Dictionary, stat: String, amount: int, source: String, zone: int = -1) -> void:
+## owner -2 / src_loc "|skip|" = don't check (entries assembled outside the
+## queries layer).
+func _assert_entry(e: Dictionary, stat: String, amount: int, source: String, zone: int = -1, owner: int = -2, src_loc: String = "|skip|") -> void:
 	assert_str(str(e.get("stat"))).is_equal(stat)
 	assert_int(int(e.get("amount"))).is_equal(amount)
 	assert_str(str(e.get("source"))).is_equal(source)
 	assert_int(int(e.get("zone"))).is_equal(zone)
+	if owner != -2:
+		assert_int(int(e.get("owner", -1))).is_equal(owner)
+	if src_loc != "|skip|":
+		assert_str(str(e.get("src_loc", ""))).is_equal(src_loc)
 
 
 func _assert_zone_cp_sums_match(handler: EffectHandler, player_id: int) -> void:
@@ -42,7 +48,7 @@ func test_zone_cp_own_effect_source() -> void:
 
 	var breakdown: Array = handler.get_zone_cp_breakdown(0)
 	assert_int(breakdown[7].size()).is_equal(1)
-	_assert_entry(breakdown[7][0], "cp", 3000, "EBP01-017", 7)
+	_assert_entry(breakdown[7][0], "cp", 3000, "EBP01-017", 7, 0, "z7")
 	for i in range(7):
 		assert_int(breakdown[i].size()).is_equal(0)
 	_assert_zone_cp_sums_match(handler, 0)
@@ -61,7 +67,7 @@ func test_zone_cp_field_source_from_strategy() -> void:
 
 	var breakdown: Array = handler.get_zone_cp_breakdown(0)
 	assert_int(breakdown[1].size()).is_equal(1)
-	_assert_entry(breakdown[1][0], "cp", 3000, "EBP04-082", 1)
+	_assert_entry(breakdown[1][0], "cp", 3000, "EBP04-082", 1, 0, "strategy")
 	_assert_zone_cp_sums_match(handler, 0)
 
 	# Not active on the opponent's turn — entry disappears.
@@ -85,8 +91,8 @@ func test_zone_cp_doubling_after_additive() -> void:
 
 	var breakdown: Array = handler.get_zone_cp_breakdown(0)
 	assert_int(breakdown[2].size()).is_equal(2)
-	_assert_entry(breakdown[2][0], "cp", 3000, "EBP02-068", 2)
-	_assert_entry(breakdown[2][1], "cp_double", base_cp + 3000, "EBP02-029", 2)
+	_assert_entry(breakdown[2][0], "cp", 3000, "EBP02-068", 2, 0)
+	_assert_entry(breakdown[2][1], "cp_double", base_cp + 3000, "EBP02-029", 2, 1)
 	_assert_zone_cp_sums_match(handler, 0)
 	# Doubling total = 2 * (base + mod).
 	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(2 * (base_cp + 3000))
@@ -129,7 +135,7 @@ func test_threat_breakdown_monster_source() -> void:
 
 	var entries: Array = handler.get_threat_level_breakdown(0)
 	assert_int(entries.size()).is_equal(1)
-	_assert_entry(entries[0], "threat", 5000, "EBP02-002")
+	_assert_entry(entries[0], "threat", 5000, "EBP02-002", -1, 0)
 	assert_int(ModifierBreakdown.sum(entries)).is_equal(handler.get_threat_level_modifier(0))
 
 	state.players[0].strategy_zones[0] = {}
@@ -203,13 +209,42 @@ func test_strategy_hand_rank_source_and_filter() -> void:
 
 	var entries: Array = handler.get_strategy_hand_rank_breakdown(0, held)
 	assert_int(entries.size()).is_equal(1)
-	_assert_entry(entries[0], "play_rank", 3, "EBP04-028")
+	_assert_entry(entries[0], "play_rank", 3, "EBP04-028", -1, 1, "monster")
 	assert_int(ModifierBreakdown.sum(entries)) \
 		.is_equal(handler.get_strategy_hand_rank_modifier(0, held))
 
 	# On P1's own turn the own_turn=false filter drops the source.
 	state.current_player_id = 1
 	assert_int(handler.get_strategy_hand_rank_breakdown(0, held).size()).is_equal(0)
+
+
+func test_strategy_hand_rank_one_entry_per_copy() -> void:
+	# EBP04-068 (Kaizer Ghidorah) <Your Turn>: strategies in hand get -1 per
+	# distinct battle color in the discard, PER COPY in play. Three copies
+	# must each produce their own entry with their own board location — the
+	# UI shows every instance as a separate source.
+	var held := Cards.strategy(6, "HELD-1")
+	var state := States.make_state({"p0": {
+		"hand": [held],
+		"zone_cards": {
+			1: Real.instance("EBP04-068", 0),
+			3: Real.instance("EBP04-068", 1),
+			5: Real.instance("EBP04-068", 2),
+		},
+	}})
+	state.players[0].discard_pile.append(Cards.battle(2, 1000, "D-RED"))
+	var green := Cards.battle(2, 1000, "D-GRN")
+	green["colors"] = [CardEnums.CardColor.GREEN]
+	state.players[0].discard_pile.append(green)
+	var handler := _wire(state)
+
+	var entries: Array = handler.get_strategy_hand_rank_breakdown(0, held)
+	assert_int(entries.size()).is_equal(3)
+	_assert_entry(entries[0], "play_rank", -2, "EBP04-068", -1, 0, "z1")
+	_assert_entry(entries[1], "play_rank", -2, "EBP04-068", -1, 0, "z3")
+	_assert_entry(entries[2], "play_rank", -2, "EBP04-068", -1, 0, "z5")
+	assert_int(ModifierBreakdown.sum(entries)).is_equal(-6)
+	assert_int(handler.get_strategy_hand_rank_modifier(0, held)).is_equal(-6)
 
 
 # --- Field rank breakdown ---
@@ -227,7 +262,7 @@ func test_field_rank_opponent_monster_source_with_clamp() -> void:
 
 	var breakdown: Array = handler.get_field_rank_breakdown(0)
 	assert_int(breakdown[0].size()).is_equal(1)
-	_assert_entry(breakdown[0][0], "field_rank", -1, "EBP03-025", 0)
+	_assert_entry(breakdown[0][0], "field_rank", -1, "EBP03-025", 0, 1)
 	assert_int(breakdown[4].size()).is_equal(0)
 	var sums: Array = handler.get_zone_rank_modifiers(0)
 	for i in range(8):
@@ -288,7 +323,7 @@ func test_collect_selects_by_location() -> void:
 func test_normalize_casts_float_amounts() -> void:
 	# JSON-coerced floats (client armor) must come back as ints.
 	var packed := {
-		"threat": [[{"stat": "threat", "amount": 5000.0, "source": "M", "source_name": "M", "zone": -1.0}], []],
+		"threat": [[{"stat": "threat", "amount": 5000.0, "source": "M", "source_name": "M", "zone": -1.0, "owner": 1.0}], []],
 	}
 	var normalized := ModifierBreakdown.normalize(packed)
 	var e: Dictionary = normalized["threat"][0][0]
@@ -296,3 +331,5 @@ func test_normalize_casts_float_amounts() -> void:
 	assert_int(e["amount"]).is_equal(5000)
 	assert_bool(e["zone"] is int).is_true()
 	assert_int(e["zone"]).is_equal(-1)
+	assert_bool(e["owner"] is int).is_true()
+	assert_int(e["owner"]).is_equal(1)
