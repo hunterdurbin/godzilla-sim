@@ -151,6 +151,7 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 		"zone_rank_modifiers": [eh.get_zone_rank_modifiers(0) if eh else [], eh.get_zone_rank_modifiers(1) if eh else []],
 		"hand_rank_modifiers": [_session.compute_hand_rank_mods(gs.players[0]) if eh else [], _session.compute_hand_rank_mods(gs.players[1]) if eh else []],
 		"monster_cp_modifiers": [eh.get_monster_cp_modifier(0) if eh else 0, eh.get_monster_cp_modifier(1) if eh else 0],
+		"modifier_breakdowns": ModifierBreakdown.build_all(eh, gs, viewer_id) if eh else {},
 		"player_names": Array(gs.player_names),
 		"first_player_id": _board._first_player_id,
 	}
@@ -531,6 +532,8 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 		_session.client_monster_cp_mods = data["monster_cp_modifiers"]
 		for j in range(_session.client_monster_cp_mods.size()):
 			_session.client_monster_cp_mods[j] = int(_session.client_monster_cp_mods[j])
+	if data.has("modifier_breakdowns"):
+		_session.client_modifier_breakdowns = ModifierBreakdown.normalize(data["modifier_breakdowns"])
 
 	# Reconstruct PlayerState objects
 	var players_data: Array = data["players"]

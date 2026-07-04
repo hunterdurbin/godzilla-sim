@@ -51,6 +51,7 @@ var client_strategy_cp_mods: Array = [[], []]
 var client_zone_rank_mods: Array = [[], []]
 var client_hand_rank_mods: Array = [[], []]
 var client_monster_cp_mods: Array = [0, 0]
+var client_modifier_breakdowns: Dictionary = {} # ModifierBreakdown.build_all shape
 var client_gradients_applied: bool = false
 # Client-side stats snapshot (synced from host for disconnect reporting)
 var client_stats_elapsed_ms: Array[int] = [0, 0]

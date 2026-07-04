@@ -710,6 +710,30 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 	return queries.get_zone_cp_modifiers(player_id)
 
 
+func get_zone_cp_breakdown(player_id: int) -> Array:
+	return queries.get_zone_cp_breakdown(player_id)
+
+
+func get_threat_level_breakdown(player_id: int) -> Array:
+	return queries.get_threat_level_breakdown(player_id)
+
+
+func get_play_rank_breakdown(player_id: int, card: Dictionary) -> Array:
+	return queries.get_play_rank_breakdown(player_id, card)
+
+
+func get_strategy_hand_rank_breakdown(player_id: int, card: Dictionary) -> Array:
+	return queries.get_strategy_hand_rank_breakdown(player_id, card)
+
+
+func get_field_rank_breakdown(player_id: int) -> Array:
+	return queries.get_field_rank_breakdown(player_id)
+
+
+func get_zone_play_rank_breakdown(player_id: int, card: Dictionary) -> Array:
+	return queries.get_zone_play_rank_breakdown(player_id, card)
+
+
 func get_threat_level_modifier(player_id: int) -> int:
 	return queries.get_threat_level_modifier(player_id)
 

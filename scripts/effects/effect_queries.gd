@@ -108,10 +108,27 @@ func get_strategy_cp_modifiers(player_id: int) -> Array[int]:
 
 func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 	## Get per-zone counter power modifiers from battle card effects.
-	var player := game_state.players[player_id]
+	## Sum of get_zone_cp_breakdown — the per-source logic lives there.
+	var breakdown := get_zone_cp_breakdown(player_id)
 	var modifiers: Array[int] = []
 	modifiers.resize(8)
-	modifiers.fill(0)
+	for i in range(8):
+		modifiers[i] = ModifierBreakdown.sum(breakdown[i])
+	return modifiers
+
+
+
+
+func get_zone_cp_breakdown(player_id: int) -> Array:
+	## Per-zone counter power modifiers with source attribution: Array of 8
+	## Arrays of ModifierBreakdown entries. Entry order matters — the doubling
+	## entry's amount is base CP + the running total of everything before it,
+	## so sum(entries) stays exact.
+	var player := game_state.players[player_id]
+	var breakdown: Array = []
+	breakdown.resize(8)
+	for i in range(8):
+		breakdown[i] = []
 
 	# Get engagement restrictions from opponent's monster
 	var opponent_id: int = 1 - player_id
@@ -130,12 +147,12 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 					if card_rank > 0 and card_rank <= max_restricted_rank:
 						can_card_engage = false
 				if can_card_engage:
-					modifiers[i] += effect.get_counter_power_modifier(ctx)
+					ModifierBreakdown.append(breakdown[i], "cp", effect.get_counter_power_modifier(ctx), zone_card, i)
 				# Collect field modifiers (bonuses this card grants to other zones)
 				var field_mods: Dictionary = effect.get_field_cp_modifiers(ctx)
 				for zone_idx in field_mods:
 					if zone_idx >= 0 and zone_idx < 8:
-						modifiers[zone_idx] += field_mods[zone_idx]
+						ModifierBreakdown.append(breakdown[zone_idx], "cp", field_mods[zone_idx], zone_card, zone_idx)
 
 	# Monster card field CP modifiers (e.g. EBP02-021, 041, 043)
 	var monster_effect := get_effect(player.current_monster)
@@ -144,7 +161,7 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 		var monster_field_mods: Dictionary = monster_effect.get_field_cp_modifiers(monster_ctx)
 		for zone_idx in monster_field_mods:
 			if zone_idx >= 0 and zone_idx < 8:
-				modifiers[zone_idx] += monster_field_mods[zone_idx]
+				ModifierBreakdown.append(breakdown[zone_idx], "cp", monster_field_mods[zone_idx], player.current_monster, zone_idx)
 
 	# Strategy card field CP modifiers (e.g. EBP04-082 Xilien Mothership)
 	for sz_card in player.strategy_zones:
@@ -157,40 +174,51 @@ func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 		var sz_field_mods: Dictionary = sz_effect.get_field_cp_modifiers(sz_ctx)
 		for zone_idx in sz_field_mods:
 			if zone_idx >= 0 and zone_idx < 8:
-				modifiers[zone_idx] += sz_field_mods[zone_idx]
+				ModifierBreakdown.append(breakdown[zone_idx], "cp", sz_field_mods[zone_idx], sz_card, zone_idx)
 
 	# Opponent's monster CP modifiers that affect this player's zones —
 	# additive bonuses first, then doubling (so the doubling sees base + all
 	# other modifiers and doubles the running total, not just base CP).
-	var opp_monster_effect := get_effect(game_state.players[opponent_id].current_monster)
+	var opp_monster: Dictionary = game_state.players[opponent_id].current_monster
+	var opp_monster_effect := get_effect(opp_monster)
 	if opp_monster_effect:
-		var opp_ctx := _build_context(opponent_id, game_state.players[opponent_id].current_monster)
+		var opp_ctx := _build_context(opponent_id, opp_monster)
 		var opp_mods: Dictionary = opp_monster_effect.get_opponent_zone_cp_modifiers(opp_ctx)
 		for zone_idx in opp_mods:
 			if zone_idx >= 0 and zone_idx < 8:
-				modifiers[zone_idx] += opp_mods[zone_idx]
+				ModifierBreakdown.append(breakdown[zone_idx], "cp", opp_mods[zone_idx], opp_monster, zone_idx)
 		var doubled_zones: Array[int] = opp_monster_effect.get_opponent_doubled_zones(opp_ctx)
 		for zone_idx in doubled_zones:
 			if zone_idx >= 0 and zone_idx < 8:
 				var base_cp: int = player.get_zone_top_card(zone_idx).get("counter_power", 0)
 				# Doubling total = 2 * (base + mod). Add the existing total to
 				# turn modifier into base + 2 * modifier.
-				modifiers[zone_idx] += base_cp + modifiers[zone_idx]
+				ModifierBreakdown.append(breakdown[zone_idx], "cp_double",
+					base_cp + ModifierBreakdown.sum(breakdown[zone_idx]), opp_monster, zone_idx)
 
-	return modifiers
+	return breakdown
 
 
 
 
 func get_threat_level_modifier(player_id: int) -> int:
 	## Get threat level modifier from all active effects (monster, zones, strategies).
-	var total: int = 0
+	return ModifierBreakdown.sum(get_threat_level_breakdown(player_id))
+
+
+
+
+func get_threat_level_breakdown(player_id: int) -> Array:
+	## Threat level modifiers with source attribution (monster, zones, strategies).
+	var entries: Array = []
 	var player := game_state.players[player_id]
 
 	# Monster card
 	var me := get_effect(player.current_monster)
 	if me:
-		total += me.get_threat_level_modifier(_build_context(player_id, player.current_monster))
+		ModifierBreakdown.append(entries, "threat",
+			me.get_threat_level_modifier(_build_context(player_id, player.current_monster)),
+			player.current_monster)
 
 	# Battle cards in zones (e.g. Crystal tokens grant +1000 TL)
 	for i in range(8):
@@ -198,16 +226,18 @@ func get_threat_level_modifier(player_id: int) -> int:
 		if not zone_card.is_empty():
 			var ze := get_effect(zone_card)
 			if ze:
-				total += ze.get_threat_level_modifier(_build_context(player_id, zone_card))
+				ModifierBreakdown.append(entries, "threat",
+					ze.get_threat_level_modifier(_build_context(player_id, zone_card)), zone_card, i)
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty():
 			var se := get_effect(sz_card)
 			if se:
-				total += se.get_threat_level_modifier(_build_context(player_id, sz_card))
+				ModifierBreakdown.append(entries, "threat",
+					se.get_threat_level_modifier(_build_context(player_id, sz_card)), sz_card)
 
-	return total
+	return entries
 
 
 
@@ -223,7 +253,15 @@ func get_effective_threat_level(player_id: int) -> int:
 func get_play_rank_modifier(player_id: int, card: Dictionary) -> int:
 	## Get total play rank modifier for a card being played from hand.
 	## Checks the card's own effect (self-modifier) and active strategy cards.
-	var total: int = 0
+	return ModifierBreakdown.sum(get_play_rank_breakdown(player_id, card))
+
+
+
+
+func get_play_rank_breakdown(player_id: int, card: Dictionary) -> Array:
+	## Play rank modifiers for a card being played from hand, with source
+	## attribution (the card's own effect + active strategy cards).
+	var entries: Array = []
 	var player := game_state.players[player_id]
 
 	# Check the card's own effect (self-modifier, e.g. EBP02-068)
@@ -238,16 +276,18 @@ func get_play_rank_modifier(player_id: int, card: Dictionary) -> int:
 				uses_stacking = true
 				break
 		if not uses_stacking:
-			total += card_effect.get_play_rank_modifier_for_card(ctx, card)
+			ModifierBreakdown.append(entries, "play_rank",
+				card_effect.get_play_rank_modifier_for_card(ctx, card), card)
 
 	# Check active strategy cards (e.g. EBP02-039)
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty():
 			var effect := get_effect(sz_card)
 			if effect:
-				total += effect.get_play_rank_modifier_for_card(_build_context(player_id, sz_card), card)
+				ModifierBreakdown.append(entries, "play_rank",
+					effect.get_play_rank_modifier_for_card(_build_context(player_id, sz_card), card), sz_card)
 
-	return total
+	return entries
 
 
 
@@ -275,6 +315,19 @@ func get_zone_play_rank_modifier(player_id: int, card: Dictionary, zone_index: i
 	if zone_mod == 0 and effect.stacks_on_play(ctx, zone_index):
 		zone_mod = effect.get_play_rank_modifier_for_card(ctx, card)
 	return zone_mod
+
+
+
+
+func get_zone_play_rank_breakdown(player_id: int, card: Dictionary) -> Array:
+	## Zone-specific play rank modifiers for a card, one self-sourced entry
+	## per zone with a nonzero modifier (covers stacks_on_play self-mods that
+	## get_play_rank_breakdown intentionally skips).
+	var entries: Array = []
+	for zone_index in range(8):
+		ModifierBreakdown.append(entries, "zone_play_rank",
+			get_zone_play_rank_modifier(player_id, card, zone_index), card, zone_index)
+	return entries
 
 
 
@@ -700,21 +753,37 @@ func get_zones_in_cp_range(player_id: int, min_cp: int = -1, max_cp: int = -1) -
 func get_zone_rank_modifiers(player_id: int) -> Array:
 	## Get per-zone rank modifier for display. Returns Array of 8 ints.
 	## Each value is the difference between effective rank and base rank for the zone's card.
+	var breakdown := get_field_rank_breakdown(player_id)
 	var modifiers: Array = []
 	modifiers.resize(8)
-	modifiers.fill(0)
+	for i in range(8):
+		modifiers[i] = ModifierBreakdown.sum(breakdown[i])
+	return modifiers
+
+
+
+
+func get_field_rank_breakdown(player_id: int) -> Array:
+	## Per-zone field rank modifiers with source attribution: Array of 8
+	## Arrays of entries. Sole source is the opponent's current monster;
+	## amounts are the clamped effective-minus-base delta per occupied zone.
+	var breakdown: Array = []
+	breakdown.resize(8)
+	for i in range(8):
+		breakdown[i] = []
 	var player := game_state.players[player_id]
 	var opponent_id: int = 1 - player_id
 	var rank_mod: int = get_opponent_field_rank_modifier(opponent_id)
 	if rank_mod == 0:
-		return modifiers
+		return breakdown
+	var opp_monster: Dictionary = game_state.players[opponent_id].current_monster
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
 			var base_rank: int = zone_card.get("rank", 0)
 			var effective: int = maxi(1, base_rank + rank_mod)
-			modifiers[i] = effective - base_rank
-	return modifiers
+			ModifierBreakdown.append(breakdown[i], "field_rank", effective - base_rank, opp_monster, i)
+	return breakdown
 
 
 
@@ -813,15 +882,25 @@ func get_strategy_hand_rank_modifier(player_id: int, card: Dictionary) -> int:
 	## Sum rank modifiers applied to a strategy card while held in player_id's hand.
 	## Queries all cards from both players so effects can target owner, opponent, or both.
 	## TRIGGER_FILTERS keys: own_turn, target_is_owner.
-	var total: int = 0
+	return ModifierBreakdown.sum(get_strategy_hand_rank_breakdown(player_id, card))
+
+
+
+
+func get_strategy_hand_rank_breakdown(player_id: int, card: Dictionary) -> Array:
+	## Rank modifiers applied to a strategy card while held in player_id's
+	## hand, with source attribution (both players' monster + zone cards).
+	var entries: Array = []
 	for source_id in range(2):
 		var source := game_state.players[source_id]
 		if not source.current_monster.is_empty() \
 				and _passes_strategy_hand_rank_modifier_filter(source.current_monster, source_id, player_id):
 			var effect := get_effect(source.current_monster)
 			if effect:
-				total += effect.get_strategy_hand_rank_modifier(
-					_build_context(source_id, source.current_monster), card, player_id)
+				ModifierBreakdown.append(entries, "play_rank",
+					effect.get_strategy_hand_rank_modifier(
+						_build_context(source_id, source.current_monster), card, player_id),
+					source.current_monster)
 		for i in range(8):
 			var zone_card := source.get_zone_top_card(i)
 			if zone_card.is_empty():
@@ -830,6 +909,8 @@ func get_strategy_hand_rank_modifier(player_id: int, card: Dictionary) -> int:
 				continue
 			var ze := get_effect(zone_card)
 			if ze:
-				total += ze.get_strategy_hand_rank_modifier(
-					_build_context(source_id, zone_card), card, player_id)
-	return total
+				ModifierBreakdown.append(entries, "play_rank",
+					ze.get_strategy_hand_rank_modifier(
+						_build_context(source_id, zone_card), card, player_id),
+					zone_card)
+	return entries

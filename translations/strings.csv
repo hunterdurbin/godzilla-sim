@@ -921,3 +921,11 @@ STR_GB_TURN_CHIP_FMT,Turn {N} · {PHASE},ターン{N}・{PHASE}
 STR_GB_STACK_RESOLVING,Resolving,解決中
 STR_GB_EFFECT_STACK_TITLE,Pending Effects,待機中の効果
 STR_GB_STACK_OPPONENT,Opponent,相手
+STR_ZOOM_MOD_HEADER,Active modifiers,適用中の効果
+STR_ZOOM_MOD_POWER_FMT,Power {AMT} — {SRC},カウンターパワー {AMT} — {SRC}
+STR_ZOOM_MOD_POWER_DOUBLE_FMT,Power doubled ({AMT}) — {SRC},カウンターパワー2倍 ({AMT}) — {SRC}
+STR_ZOOM_MOD_THREAT_FMT,Threat {AMT} — {SRC},脅威レベル {AMT} — {SRC}
+STR_ZOOM_MOD_COST_FMT,Cost {AMT} — {SRC},コスト {AMT} — {SRC}
+STR_ZOOM_MOD_COST_ZONE_FMT,Cost {AMT} in Zone {ZONE} — {SRC},コスト {AMT} (エリア{ZONE}) — {SRC}
+STR_ZOOM_MOD_RANK_FMT,Rank {AMT} — {SRC},ランク {AMT} — {SRC}
+STR_ZOOM_MOD_OWN_EFFECT,own effect,自身の効果

@@ -11,6 +11,8 @@ const PINCH_MAX_SCALE: float = 3.0
 const ZOOM_DRAG_DEADZONE: float = 20.0
 
 @onready var _container: CenterContainer = $CardContainer
+@onready var _sources_panel: PanelContainer = $ModifierSourcesPanel
+@onready var _sources_list: VBoxContainer = $ModifierSourcesPanel/Margin/ModifierList
 
 ## Set by the board: called after the zoom closes (resets slot input state
 ## so no timers or pending clicks carry over).
@@ -33,10 +35,11 @@ func _ready() -> void:
 	gui_input.connect(_on_gui_input)
 
 
-func show_card(card_data: Dictionary, play_cost_modifier: int = 0) -> void:
+func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entries: Array = []) -> void:
 	# Clear any existing zoomed card
 	for child in _container.get_children():
 		child.queue_free()
+	_populate_modifier_sources(card_data, modifier_entries)
 	var card: Control = CARD_SCENE.instantiate()
 	if card.has_method("set_card_data_dict"):
 		card.set_card_data_dict(card_data)
@@ -86,8 +89,69 @@ func hide_zoom() -> void:
 	_dragging = false
 	for child in _container.get_children():
 		child.queue_free()
+	_clear_modifier_sources()
 	if on_hidden.is_valid():
 		on_hidden.call()
+
+
+# --- Modifier sources panel ---
+
+func _clear_modifier_sources() -> void:
+	_sources_panel.visible = false
+	for child in _sources_list.get_children():
+		if child.name != "Header":
+			child.queue_free()
+
+
+func _populate_modifier_sources(card_data: Dictionary, entries: Array) -> void:
+	_clear_modifier_sources()
+	if entries.is_empty():
+		return
+	if TouchHelper.is_touch_device():
+		# Bottom-center on touch so the panel doesn't fight the pinch-zoomed card.
+		_sources_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+		_sources_panel.offset_top = -16.0
+	var own_template: String = ModifierBreakdown.template_id(card_data)
+	for e in entries:
+		var label := Label.new()
+		label.text = _format_modifier_entry(e, own_template)
+		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_sources_list.add_child(label)
+	_sources_panel.visible = true
+
+
+func _format_modifier_entry(entry: Dictionary, own_template: String) -> String:
+	var source: String = str(entry.get("source", ""))
+	var source_name: String
+	if source == own_template:
+		source_name = tr("STR_ZOOM_MOD_OWN_EFFECT")
+	else:
+		source_name = _tr_fallback("CARD_%s_NAME" % source, str(entry.get("source_name", "")))
+	var args := {
+		"AMT": "%+d" % int(entry.get("amount", 0)),
+		"SRC": source_name,
+		"ZONE": int(entry.get("zone", -1)) + 1,
+	}
+	match str(entry.get("stat", "")):
+		"cp":
+			return tr("STR_ZOOM_MOD_POWER_FMT").format(args)
+		"cp_double":
+			return tr("STR_ZOOM_MOD_POWER_DOUBLE_FMT").format(args)
+		"threat":
+			return tr("STR_ZOOM_MOD_THREAT_FMT").format(args)
+		"zone_play_rank":
+			return tr("STR_ZOOM_MOD_COST_ZONE_FMT").format(args)
+		"play_rank":
+			return tr("STR_ZOOM_MOD_COST_FMT").format(args)
+		"field_rank":
+			return tr("STR_ZOOM_MOD_RANK_FMT").format(args)
+	return "%s — %s" % [args["AMT"], source_name]
+
+
+static func _tr_fallback(key: String, fallback: String) -> String:
+	var translated: String = TranslationServer.translate(key)
+	return fallback if translated == key else translated
 
 
 ## Board _input hook. Returns true when the event was consumed (the board
