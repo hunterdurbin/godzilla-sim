@@ -1621,8 +1621,12 @@ func _score_choice_options(options: Array[String]) -> int:
 		var opt: String = options[i].to_lower()
 		var score: int = 0
 
+		# Self-destruction is a cost, not a payoff — only worth it if the
+		# rest of the option text scores enough benefit to offset it.
+		var is_self_destroy: bool = "destroy this card" in opt
+
 		# Destruction — more valuable when opponent has lots of cards on field
-		if "destroy" in opt:
+		if "destroy" in opt and not is_self_destroy:
 			var opp_zone_count: int = 0
 			for z in range(8):
 				if opponent.zone_has_cards(z):
@@ -1663,9 +1667,11 @@ func _score_choice_options(options: Array[String]) -> int:
 				if can_counter_opponent():
 					score += 10  # Already ahead on CP, rage builds threat
 
-		# Rage reduction for opponent — good when opponent has high rage
+		# Rage reduction for opponent — good when opponent has high rage,
+		# worthless when they have none
 		if "reduce" in opt and ("opponent" in opt or "each" in opt) and "rage" in opt:
-			score += 10 + opponent.rage * 3
+			if opponent.rage > 0:
+				score += 10 + opponent.rage * 3
 
 		# Strategy destruction
 		if "destroy" in opt and "strategy" in opt:
@@ -1686,6 +1692,9 @@ func _score_choice_options(options: Array[String]) -> int:
 			score += 20
 			if "any monster" in opt:
 				score += 10  # Broader target = better
+
+		if is_self_destroy:
+			score -= 15
 
 		if score > best_score:
 			best_score = score
