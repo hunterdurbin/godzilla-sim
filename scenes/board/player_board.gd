@@ -49,6 +49,49 @@ var _discard_count_badge: Label = null
 var _monster_deck_card_backs: Array[Control] = []
 var _monster_deck_count_badge: Label = null
 
+# Active-turn glow (pulsing border around the playmat, color from settings)
+const GLOW_INSET := 6.0 # keeps the outward shadow inside the clipped rect
+var _active_glow: Panel = null
+var _glow_style: StyleBoxFlat = null
+var _glow_tween: Tween = null
+
+# "Radial" outline effect: a bright segment sweeping around the border.
+# StyleBoxFlat can't vary alpha along its length, so a shader fades the drawn
+# border pixels by their perimeter position (arc length, not angle — angle
+# would make the highlight crawl through the corners of a wide rect) minus
+# TIME. Each pixel maps to its nearest edge to get a 0..1 lap coordinate.
+const _RADIAL_SHADER_CODE := "
+shader_type canvas_item;
+uniform float speed = 0.2;      // laps per second
+uniform vec2 rect_size = vec2(1.0, 1.0);
+
+varying vec2 local_pos;
+
+void vertex() {
+	local_pos = VERTEX;
+}
+
+void fragment() {
+	vec2 p = local_pos;
+	float w = rect_size.x;
+	float h = rect_size.y;
+	float m = min(min(p.y, w - p.x), min(h - p.y, p.x));
+	float s;
+	if (m == p.y) {
+		s = p.x;                        // top edge, left-to-right
+	} else if (m == w - p.x) {
+		s = w + p.y;                    // right edge, downward
+	} else if (m == h - p.y) {
+		s = w + h + (w - p.x);          // bottom edge, right-to-left
+	} else {
+		s = 2.0 * w + h + (h - p.y);    // left edge, upward
+	}
+	float phase = fract(s / (2.0 * (w + h)) - TIME * speed);
+	COLOR.a *= 0.7 + 0.3 * pow(1.0 - phase, 3.0);
+}
+"
+static var _radial_shader: Shader = null
+
 # Card back texture cache (shared across instances)
 const _DEFAULT_CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
 static var _card_back_cache_loaded: bool = false
@@ -119,11 +162,79 @@ func _update_layout() -> void:
 	overlay.offset_left = x_offset
 	overlay.offset_right = x_offset + actual_width
 
+	if _active_glow:
+		_active_glow.position = Vector2(x_offset + GLOW_INSET, GLOW_INSET)
+		_active_glow.size = Vector2(actual_width - GLOW_INSET * 2.0, size.y - GLOW_INSET * 2.0)
+		var glow_mat := _active_glow.material as ShaderMaterial
+		if glow_mat:
+			glow_mat.set_shader_parameter("rect_size", _active_glow.size)
+
 	# On mobile, bump label font sizes so they're readable on smaller boards.
 	# The LayoutContainer scales via anchors but font sizes are fixed pixels,
 	# so we set explicit sizes that work at phone scale.
 	if GameSettings.use_mobile_layout:
 		_apply_mobile_labels()
+
+
+## Pulsing gold border marking this playmat as the active player's. The panel
+## sits above the playmat art/gradient but below LayoutContainer (slots/cards)
+## and ignores mouse input, so it can never cover a card or intercept a click.
+func set_active_glow(on: bool) -> void:
+	if not on:
+		if _glow_tween:
+			_glow_tween.kill()
+			_glow_tween = null
+		if _active_glow:
+			_active_glow.visible = false
+		return
+	if _active_glow == null:
+		_active_glow = Panel.new()
+		_active_glow.name = "ActiveGlow"
+		_active_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_glow_style = StyleBoxFlat.new()
+		_glow_style.draw_center = false
+		_glow_style.set_border_width_all(4)
+		_glow_style.set_corner_radius_all(10)
+		_glow_style.anti_aliasing = true
+		_glow_style.shadow_size = 6
+		_active_glow.add_theme_stylebox_override("panel", _glow_style)
+		add_child(_active_glow)
+		move_child(_active_glow, $GradientOverlay.get_index() + 1)
+		_update_layout()
+	var glow_color: Color = GameSettings.turn_indicator_color
+	_glow_style.border_color = Color(glow_color, 0.9)
+	_glow_style.shadow_color = Color(glow_color, 0.4)
+	if _glow_tween:
+		_glow_tween.kill()
+		_glow_tween = null
+	_active_glow.modulate.a = 1.0
+	_active_glow.visible = true
+	# 0-2=breath slow/med/fast, 3-5=radial slow/med/fast, 6=solid
+	var effect: int = GameSettings.turn_outline_effect
+	if effect >= 3 and effect <= 5:
+		_apply_radial_glow([0.09, 0.18, 0.35][effect - 3])
+	else:
+		_active_glow.material = null
+		if effect >= 0 and effect <= 2:
+			var half_period: float = [4.8, 2.4, 1.2][effect]
+			_glow_tween = create_tween().set_loops()
+			_glow_tween.tween_property(_active_glow, "modulate:a", 0.55, half_period) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			_glow_tween.tween_property(_active_glow, "modulate:a", 1.0, half_period) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+func _apply_radial_glow(speed: float) -> void:
+	if _radial_shader == null:
+		_radial_shader = Shader.new()
+		_radial_shader.code = _RADIAL_SHADER_CODE
+	var mat := _active_glow.material as ShaderMaterial
+	if mat == null:
+		mat = ShaderMaterial.new()
+		mat.shader = _radial_shader
+		_active_glow.material = mat
+	mat.set_shader_parameter("speed", speed)
+	mat.set_shader_parameter("rect_size", _active_glow.size)
 
 
 var _mobile_labels_applied := false
@@ -825,6 +936,7 @@ func reset_visuals() -> void:
 
 	highlight_rage_zone(false)
 	highlight_discard_zone(false)
+	set_active_glow(false)
 
 
 func _apply_mirror() -> void:

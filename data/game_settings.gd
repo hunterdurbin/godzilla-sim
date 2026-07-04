@@ -43,6 +43,10 @@ var color_overlay_mode: int = 3  # 0=none, 1=self only, 2=opponent only, 3=both
 var custom_card_art_enabled: bool = false
 var custom_card_back_mode: int = 0  # 0=disabled, 1=myself only, 2=both players
 var custom_rage_marker_enabled: bool = false
+var turn_outline_mode: int = 0  # 0=own turn, 1=opponent's turn, 2=both, 3=none
+var turn_outline_effect: int = 0  # 0-2=breath slow/med/fast, 3-5=radial slow/med/fast, 6=solid
+var turn_alert_mode: int = 0  # same values as turn_outline_mode
+var turn_indicator_color: Color = Color(1.0, 0.9, 0.3)
 
 # Audio settings
 var sound_volume: int = 1  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
@@ -156,6 +160,10 @@ func _save() -> void:
 	config.set_value("visual", "custom_card_art_enabled", custom_card_art_enabled)
 	config.set_value("visual", "custom_card_back_mode", custom_card_back_mode)
 	config.set_value("visual", "custom_rage_marker_enabled", custom_rage_marker_enabled)
+	config.set_value("visual", "turn_outline_mode", turn_outline_mode)
+	config.set_value("visual", "turn_outline_effect", turn_outline_effect)
+	config.set_value("visual", "turn_alert_mode", turn_alert_mode)
+	config.set_value("visual", "turn_indicator_color", turn_indicator_color)
 	config.set_value("audio", "sound_volume", sound_volume)
 	config.set_value("audio", "music_volume", music_volume)
 	config.set_value("bot", "difficulty", bot_difficulty)
@@ -210,6 +218,10 @@ func _load() -> void:
 	custom_card_art_enabled = config.get_value("visual", "custom_card_art_enabled", false)
 	custom_card_back_mode = config.get_value("visual", "custom_card_back_mode", 0)
 	custom_rage_marker_enabled = config.get_value("visual", "custom_rage_marker_enabled", false)
+	turn_outline_mode = config.get_value("visual", "turn_outline_mode", 0)
+	turn_outline_effect = config.get_value("visual", "turn_outline_effect", 0)
+	turn_alert_mode = config.get_value("visual", "turn_alert_mode", 0)
+	turn_indicator_color = config.get_value("visual", "turn_indicator_color", Color(1.0, 0.9, 0.3))
 	# Migrate old bool sound_enabled to new int sound_volume
 	var _old_sound: Variant = config.get_value("audio", "sound_enabled", "") if config.has_section_key("audio", "sound_enabled") else ""
 	if _old_sound is bool:

@@ -137,6 +137,22 @@ STR_OPTIONS_CUSTOM_CARD_BACK,Custom Card Back,カード裏面のカスタム
 STR_OPTIONS_BACK_DISABLED,Disabled,無効
 STR_OPTIONS_BACK_SELF,Enabled (myself),有効 (自分)
 STR_OPTIONS_BACK_BOTH,Enabled (both),有効 (両方)
+STR_OPTIONS_NOTIFICATIONS_HEADER,Notifications,通知
+STR_OPTIONS_TURN_OUTLINE,Turn Player Board Outline,ターンプレイヤーの盤面枠
+STR_OPTIONS_TURN_ALERT,Turn Player Alert,ターンプレイヤーの通知
+STR_OPTIONS_TURN_COLOR,Outline/Alert Color,枠/通知の色
+STR_OPTIONS_OUTLINE_EFFECT,Outline Effect,枠のエフェクト
+STR_OPTIONS_EFFECT_BREATH_SLOW,Breath (Slow),明滅（遅い）
+STR_OPTIONS_EFFECT_BREATH_MEDIUM,Breath (Medium),明滅（普通）
+STR_OPTIONS_EFFECT_BREATH_FAST,Breath (Fast),明滅（速い）
+STR_OPTIONS_EFFECT_RADIAL_SLOW,Radial (Slow),回転（遅い）
+STR_OPTIONS_EFFECT_RADIAL_MEDIUM,Radial (Medium),回転（普通）
+STR_OPTIONS_EFFECT_RADIAL_FAST,Radial (Fast),回転（速い）
+STR_OPTIONS_EFFECT_SOLID,Solid,固定
+STR_OPTIONS_TURN_OWN,Own Turn,自分のターン
+STR_OPTIONS_TURN_OPPONENT,Opponent's Turn,相手のターン
+STR_OPTIONS_TURN_BOTH,Both,両方
+STR_OPTIONS_TURN_NONE,None,なし
 STR_OPTIONS_USE_MOBILE_LAYOUT,Use Mobile Layout,モバイルレイアウトを使用
 STR_OPTIONS_REDOWNLOAD_ASSETS,Re-download Card Assets,カードアセットを再ダウンロード
 STR_OPTIONS_SOUND_EFFECTS,Sound Effects,効果音
@@ -289,6 +305,8 @@ STR_PB_CP,CP:,撃退力:
 STR_PB_DISCARD,Discard,捨て札
 STR_GB_TURN_FMT,Turn: {N},ターン: {N}
 STR_GB_TURN_HEADER_FMT,Turn {N} | {PLAYER} - {PHASE},ターン {N} | {PLAYER} - {PHASE}
+STR_GB_YOUR_TURN,Your turn,あなたのターン
+STR_GB_OPPONENT_TURN,Opponent's turn,相手のターン
 STR_GB_PHASE_SUB_RESOLVE_EFFECTS,"      Resolve Effects","      効果解決"
 STR_GB_PHASE_SUB_DRAW_CARDS,"      Draw Cards","      ドロー"
 STR_GB_PHASE_SUB_DISCARD_STRATEGIES,"      Discard Strategies","      戦略カード廃棄"

@@ -169,6 +169,26 @@ func _on_custom_card_back_selected(index: int) -> void:
 	GameSettings.save()
 
 
+func _on_turn_outline_selected(index: int) -> void:
+	GameSettings.turn_outline_mode = index
+	GameSettings.save()
+
+
+func _on_turn_outline_effect_selected(index: int) -> void:
+	GameSettings.turn_outline_effect = index
+	GameSettings.save()
+
+
+func _on_turn_alert_selected(index: int) -> void:
+	GameSettings.turn_alert_mode = index
+	GameSettings.save()
+
+
+func _on_turn_indicator_color_changed(color: Color) -> void:
+	GameSettings.turn_indicator_color = color
+	GameSettings.save()
+
+
 # --- Shared modal helpers ---
 
 func _create_modal(title_text: String, min_width: float = 460.0) -> Array:
@@ -245,7 +265,19 @@ func _on_automation_pressed() -> void:
 	SfxManager.play("ui_click")
 	var parts := _create_modal(tr("STR_OPTIONS_AUTOMATION_TITLE"))
 	var popup: PopupPanel = parts[0]
-	var vbox: VBoxContainer = parts[1]
+	var outer: VBoxContainer = parts[1]
+
+	# The row list outgrew short windows once the Notifications section was
+	# added — scroll the rows, keep the title and Close button pinned.
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var max_rows_height := get_viewport_rect().size.y - 220.0
+	scroll.custom_minimum_size = Vector2(436, minf(620.0, max_rows_height))
+	outer.add_child(scroll)
+	var vbox := VBoxContainer.new()
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.add_theme_constant_override("separation", 16)
+	scroll.add_child(vbox)
 
 	_add_toggle_row(vbox, tr("STR_OPTIONS_AUTO_DRAW"), "auto_draw")
 	_add_toggle_row(vbox, tr("STR_OPTIONS_AUTO_PHASE"), "auto_phase_advance")
@@ -295,8 +327,82 @@ func _on_automation_pressed() -> void:
 	rank_row.add_child(rank_option)
 	vbox.add_child(rank_row)
 
-	_add_close_button(vbox, popup)
+	vbox.add_child(HSeparator.new())
+
+	# Notifications: turn indicator (playmat outline + toast) gating and color
+	var notif_header := Label.new()
+	notif_header.text = tr("STR_OPTIONS_NOTIFICATIONS_HEADER")
+	notif_header.add_theme_font_size_override("font_size", 20)
+	vbox.add_child(notif_header)
+
+	var turn_mode_keys: Array[String] = ["STR_OPTIONS_TURN_OWN",
+		"STR_OPTIONS_TURN_OPPONENT", "STR_OPTIONS_TURN_BOTH", "STR_OPTIONS_TURN_NONE"]
+	_add_option_row(vbox, tr("STR_OPTIONS_TURN_OUTLINE"), turn_mode_keys,
+		GameSettings.turn_outline_mode, _on_turn_outline_selected)
+	_add_option_row(vbox, tr("STR_OPTIONS_OUTLINE_EFFECT"),
+		["STR_OPTIONS_EFFECT_BREATH_SLOW", "STR_OPTIONS_EFFECT_BREATH_MEDIUM",
+		"STR_OPTIONS_EFFECT_BREATH_FAST", "STR_OPTIONS_EFFECT_RADIAL_SLOW",
+		"STR_OPTIONS_EFFECT_RADIAL_MEDIUM", "STR_OPTIONS_EFFECT_RADIAL_FAST",
+		"STR_OPTIONS_EFFECT_SOLID"],
+		GameSettings.turn_outline_effect, _on_turn_outline_effect_selected)
+	_add_option_row(vbox, tr("STR_OPTIONS_TURN_ALERT"), turn_mode_keys,
+		GameSettings.turn_alert_mode, _on_turn_alert_selected)
+
+	var color_row := HBoxContainer.new()
+	var color_label := Label.new()
+	color_label.text = tr("STR_OPTIONS_TURN_COLOR")
+	color_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	color_label.add_theme_font_size_override("font_size", 18)
+	var color_btn := ColorPickerButton.new()
+	color_btn.custom_minimum_size = Vector2(80, 32)
+	color_btn.edit_alpha = false
+	color_btn.color = GameSettings.turn_indicator_color
+	color_btn.color_changed.connect(_on_turn_indicator_color_changed)
+	# Trim the picker to just the color-choice area (shape + hue bar)
+	var picker := color_btn.get_picker()
+	picker.sampler_visible = false
+	picker.color_modes_visible = false
+	picker.sliders_visible = false
+	picker.hex_visible = false
+	picker.presets_visible = false
+	picker.can_add_swatches = false
+	if "edit_intensity" in picker:
+		picker.edit_intensity = false
+	_hide_link_buttons(picker)
+	color_row.add_child(color_label)
+	color_row.add_child(color_btn)
+	vbox.add_child(color_row)
+
+	_add_close_button(outer, popup)
 	_show_modal(popup)
+
+
+## The ColorPicker's macOS "Screen Recording permission missing!" eyedropper
+## warning is an internal LinkButton that sampler_visible doesn't cover.
+func _hide_link_buttons(node: Node) -> void:
+	for child in node.get_children(true):
+		if child is LinkButton:
+			child.visible = false
+		else:
+			_hide_link_buttons(child)
+
+
+## Label + dropdown row (item index == GameSettings value).
+func _add_option_row(vbox: VBoxContainer, label_text: String, option_keys: Array[String], current: int, handler: Callable) -> void:
+	var row := HBoxContainer.new()
+	var label := Label.new()
+	label.text = label_text
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", 18)
+	var option := OptionButton.new()
+	option.custom_minimum_size = Vector2(220, 0)
+	for key in option_keys:
+		option.add_item(tr(key))
+	option.selected = current
+	option.item_selected.connect(handler)
+	row.add_child(label)
+	row.add_child(option)
+	vbox.add_child(row)
 
 
 # --- Customize modal ---

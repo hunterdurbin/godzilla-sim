@@ -40,6 +40,11 @@ var _tracker_draining: bool = false
 var _tracker_last_phase: int = -1
 var _tracker_last_player: int = -1
 
+# Set by the board before a save-load resume so the first tracker apply never
+# toasts (the turn-number check below already covers saves past turn 1; this
+# also covers a save made on turn 1).
+var suppress_first_toast: bool = false
+
 # Label references [player_id][phase_index] (resolved at _ready)
 var headers: Array = []
 var _phases: Array = []
@@ -169,12 +174,16 @@ func _drain_tracker_queue() -> void:
 	while _tracker_queue.size() > 0:
 		var entry := _tracker_queue[0]
 		_tracker_queue.remove_at(0)
+		var first_apply := _tracker_last_player < 0
+		var player_changed: bool = entry.player_id != _tracker_last_player
 		var phase_changed: bool = _tracker_last_phase >= 0 and (entry.phase != _tracker_last_phase or entry.player_id != _tracker_last_player)
 		_tracker_last_phase = entry.phase
 		_tracker_last_player = entry.player_id
 		if phase_changed:
 			await get_tree().create_timer(PHASE_TRANSITION_DELAY).timeout
 		apply_turn_tracker(entry.player_id, entry.phase as CardEnums.GamePhase, entry.sub_phase)
+		if player_changed:
+			_maybe_show_turn_toast(entry.player_id, first_apply)
 	_tracker_draining = false
 
 
@@ -212,6 +221,45 @@ func apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: i
 		var phase_name := CardEnums.phase_to_string(phase)
 		var pname := GameLog.player_name(player_id)
 		_board._mobile_phase_label.text = tr("STR_GB_TURN_HEADER_FMT").replace("{N}", str(turn_num)).replace("{PLAYER}", pname).replace("{PHASE}", phase_name)
+
+	# Active-turn playmat glow. player1_board is always pid 0 regardless of
+	# visual position, so glow-by-pid survives the local-player reordering.
+	if _board.player1_board:
+		var glow_on := _indicator_applies(GameSettings.turn_outline_mode, player_id)
+		_board.player1_board.set_active_glow(glow_on and player_id == 0)
+		_board.player2_board.set_active_glow(glow_on and player_id == 1)
+
+
+## Whether a turn indicator configured with `mode` (0=own turn, 1=opponent's
+## turn, 2=both, 3=none) should show for `pid`'s turn. In hotseat the local
+## player id is 0, so "own turn" means Player 1's turn there.
+func _indicator_applies(mode: int, pid: int) -> bool:
+	match mode:
+		0: return pid == _board.local_player_id
+		1: return pid != _board.local_player_id
+		2: return true
+		_: return false
+
+
+## Brief center-screen announcement on a real turn change. `first_apply` is
+## the tracker's very first entry after (re)start: a genuine game start
+## (turn 1) should toast, but a save-load resume or reconnect resync landing
+## mid-game must not.
+func _maybe_show_turn_toast(pid: int, first_apply: bool) -> void:
+	if first_apply:
+		var was_suppressed := suppress_first_toast
+		suppress_first_toast = false
+		var gs: GameState = _session.turn_manager.game_state if _session.turn_manager else null
+		var turn_num: int = gs.turn_number if gs else _session.client_turn_number
+		if was_suppressed or turn_num > 1:
+			return
+	if not _indicator_applies(GameSettings.turn_alert_mode, pid):
+		return
+	var toast: Node = _board.get_node_or_null("TurnToast")
+	if toast == null:
+		return
+	var text: String = tr("STR_GB_YOUR_TURN") if pid == _board.local_player_id else tr("STR_GB_OPPONENT_TURN")
+	toast.show_turn_toast(text)
 
 
 # --- Per-player auto setting toggles (live on the tracker labels) ---

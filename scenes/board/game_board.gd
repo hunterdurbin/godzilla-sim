@@ -693,6 +693,7 @@ func _start_game() -> void:
 	# Loaded from save: skip first-player choice, resume at the saved boundary
 	if _loaded_from_save:
 		_loaded_from_save = false
+		_tracker.suppress_first_toast = true
 		_apply_gradients_and_sync()
 		SfxManager.play("game_setup")
 		turn_manager.resume_game()
