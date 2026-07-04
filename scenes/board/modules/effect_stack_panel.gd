@@ -55,6 +55,16 @@ func has_rows() -> bool:
 	return not _rows.is_empty()
 
 
+## Base ids of the rows currently displayed (hover-slot pruning and
+## choice-option routing check membership against this).
+func stack_base_ids() -> Array:
+	var ids: Array = []
+	for row in _rows:
+		if row is Dictionary:
+			ids.append(str((row as Dictionary).get("base_id", "")))
+	return ids
+
+
 ## Clear + hide for a rematch reset.
 func reset() -> void:
 	_rows = []
@@ -66,9 +76,10 @@ func reset() -> void:
 func show_stack(rows: Array) -> void:
 	_rows = rows
 	# Rebuilding frees any hovered row before its mouse_exited can fire, so
-	# drop a lingering attention pulse / hover preview here.
+	# drop a lingering attention pulse here. The hover preview is sticky by
+	# design; it only goes away when its row leaves the stack.
 	_board.set_card_attention({}, false)
-	_board._selection.clear_stack_hover_preview()
+	_board._selection.prune_stack_hover_preview(stack_base_ids())
 	if rows.is_empty():
 		if _panel and is_instance_valid(_panel):
 			_panel.visible = false
@@ -187,9 +198,9 @@ func _make_row(row: Dictionary) -> Control:
 		hbox.mouse_entered.connect(func() -> void:
 			_board.set_card_attention(loc, true)
 			_board._selection.show_stack_hover_preview(base_id))
+		# Hover-exit keeps the preview: it sticks until the row leaves the stack
 		hbox.mouse_exited.connect(func() -> void:
-			_board.set_card_attention(loc, false)
-			_board._selection.clear_stack_hover_preview())
+			_board.set_card_attention(loc, false))
 
 	if not is_opponent:
 		return hbox

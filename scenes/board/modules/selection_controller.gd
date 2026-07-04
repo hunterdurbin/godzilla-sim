@@ -55,7 +55,8 @@ var _zone_target_valid_zones: Array[int] = []
 var _zone_target_allow_skip: bool = false
 var _prompt_preview_root: Control = null # Mini previews above the helper text (effect source / card being placed)
 var _prompt_preview_card: Control = null # The placed-card preview node (choice hover retargets it)
-var _stack_hover_preview: Control = null # Transient bottom-left preview for hovered effect-stack rows
+var _stack_hover_preview: Control = null # Sticky preview for the last hovered effect-stack row (joins the prompt row when one is up, else bottom-left); stays until its row leaves the stack
+var _stack_hover_id: String = "" # Base id shown in _stack_hover_preview
 
 # Strategy target selection state
 var _strategy_target_selecting: bool = false
@@ -1265,23 +1266,27 @@ func _show_prompt_previews(source_id: String, placed_id: String) -> void:
 	row.name = "PromptPreviews"
 	row.add_theme_constant_override("separation", 8)
 	row.z_index = 56
+	# Hidden until the deferred positioner pins it (no top-left flash)
+	row.visible = false
 	if source_ok:
 		var source_card := _make_card_preview(source_id, ZONE_PREVIEW_SIZE)
 		# Caption only needed to disambiguate when the placed card also shows.
 		if placed_ok:
-			source_card.add_child(_make_effect_source_caption())
+			source_card.add_child(_make_preview_caption("STR_GB_EFFECT_SOURCE"))
 		row.add_child(source_card)
 	if placed_ok:
 		_prompt_preview_card = _make_card_preview(placed_id, ZONE_PREVIEW_SIZE)
 		row.add_child(_prompt_preview_card)
 	add_child(row)
 	_prompt_preview_root = row
+	# A sticky pending-effect slot joins the new row as its last slot
+	_mount_stack_hover_slot()
 	_position_prompt_previews.call_deferred()
 
 
-func _make_effect_source_caption() -> Label:
+func _make_preview_caption(text_key: String) -> Label:
 	var caption := Label.new()
-	caption.text = tr("STR_GB_EFFECT_SOURCE")
+	caption.text = tr(text_key)
 	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	caption.add_theme_font_size_override("font_size", 10)
@@ -1306,10 +1311,17 @@ func _position_prompt_previews() -> void:
 	var rect: Rect2 = action_prompt_panel.get_global_rect()
 	_prompt_preview_root.global_position = Vector2(
 		rect.position.x, rect.position.y - _prompt_preview_root.size.y - 6.0)
+	_prompt_preview_root.visible = true
 
 
 func _cleanup_prompt_previews() -> void:
 	if _prompt_preview_root and is_instance_valid(_prompt_preview_root):
+		# A sticky pending-effect slot riding in the row dies with it; remount
+		# it afterwards (deferred no-ops if a new prompt row re-adopted it).
+		if _stack_hover_preview and is_instance_valid(_stack_hover_preview) \
+				and _stack_hover_preview.get_parent() == _prompt_preview_root:
+			_stack_hover_preview = null
+			_mount_stack_hover_slot.call_deferred()
 		_prompt_preview_root.queue_free()
 		# A preview freed mid-hover never fires mouse_exited
 		_board._hide_card_preview()
@@ -1317,41 +1329,112 @@ func _cleanup_prompt_previews() -> void:
 	_prompt_preview_card = null
 
 
-## Bottom-left mini preview for a hovered effect-stack row. While a prompt's
-## own preview is up, retarget that instead of stacking a second card in the
-## same corner (the prompt's cleanup owns it, so hover-exit leaves it alone).
+## Sticky mini preview for the last hovered effect-stack row. While a
+## prompt's own previews are up, it joins their row as an extra captioned
+## slot (never retargeting the placed-card slot); otherwise it pins a
+## standalone card bottom-left. It is NOT cleared on hover-exit — it stays
+## until its row leaves the stack (prune_stack_hover_preview).
 func show_stack_hover_preview(base_id: String) -> void:
 	if base_id.is_empty():
 		return
-	if _prompt_preview_card and is_instance_valid(_prompt_preview_card):
-		_on_choice_option_focused(base_id)
+	var dict := _resolve_choice_card(base_id)
+	if dict.is_empty():
 		return
-	clear_stack_hover_preview()
-	if _resolve_choice_card(base_id).is_empty():
+	_stack_hover_id = base_id
+	# Swap the card data in place when the slot is already mounted — a
+	# destroy/respawn here would flash at (0,0) on every hover move.
+	if _stack_hover_mounted_in_place():
+		_stack_hover_preview.set_card_data_dict(dict)
 		return
-	var card := _make_card_preview(base_id, ZONE_PREVIEW_SIZE)
-	card.z_index = 56
-	add_child(card)
+	_free_stack_hover_node()
+	_mount_stack_hover_slot()
+
+
+## Whether the hover slot exists and sits in the correct container for the
+## current state: the prompt-preview row when one is up, else the wrapper box.
+func _stack_hover_mounted_in_place() -> bool:
+	if _stack_hover_preview == null or not is_instance_valid(_stack_hover_preview) \
+			or _stack_hover_preview.is_queued_for_deletion():
+		return false
+	var in_row := _prompt_preview_root != null and is_instance_valid(_prompt_preview_root)
+	var parent := _stack_hover_preview.get_parent()
+	if in_row:
+		return parent == _prompt_preview_root
+	return parent != null and parent.has_meta("stack_hover_box")
+
+
+## (Re)creates the slot for _stack_hover_id in the current container: the
+## prompt-preview row when one is up, else standalone above the prompt panel.
+## No-op when the slot already sits in the right place.
+func _mount_stack_hover_slot() -> void:
+	if _stack_hover_mounted_in_place():
+		return
+	_free_stack_hover_node()
+	if _stack_hover_id.is_empty() or _resolve_choice_card(_stack_hover_id).is_empty():
+		return
+	var card := _make_card_preview(_stack_hover_id, ZONE_PREVIEW_SIZE)
+	card.add_child(_make_preview_caption("STR_GB_PENDING_EFFECT"))
+	if _prompt_preview_root != null and is_instance_valid(_prompt_preview_root):
+		_prompt_preview_root.add_child(card)
+	else:
+		# A bare Card control re-derives its default 150x210 size when it
+		# enters the tree outside a container; a wrapper box re-forces the
+		# mini slot size the same way the prompt row does. Hidden until the
+		# deferred positioner pins it, so it never draws at (0,0).
+		var box := HBoxContainer.new()
+		box.name = "StackHoverBox" # May be auto-renamed; identity is the meta
+		box.set_meta("stack_hover_box", true)
+		box.z_index = 56
+		box.visible = false
+		box.add_child(card)
+		add_child(box)
+		_position_stack_hover_preview.call_deferred()
 	_stack_hover_preview = card
-	_position_stack_hover_preview.call_deferred()
 
 
-## Deferred one frame so the preview has a laid-out size to pin by.
-func _position_stack_hover_preview() -> void:
-	await get_tree().process_frame
+## The node to position/free for the hover slot: the standalone wrapper box
+## when mounted alone, else the card itself (parented in the prompt row).
+func _stack_hover_root() -> Control:
 	if _stack_hover_preview == null or not is_instance_valid(_stack_hover_preview):
-		return
-	var rect: Rect2 = action_prompt_panel.get_global_rect()
-	_stack_hover_preview.global_position = Vector2(
-		rect.position.x, rect.position.y - _stack_hover_preview.size.y - 6.0)
+		return null
+	var parent := _stack_hover_preview.get_parent()
+	if parent is Control and parent.has_meta("stack_hover_box"):
+		return parent
+	return _stack_hover_preview
 
 
-func clear_stack_hover_preview() -> void:
-	if _stack_hover_preview and is_instance_valid(_stack_hover_preview):
-		_stack_hover_preview.queue_free()
+func _free_stack_hover_node() -> void:
+	var node := _stack_hover_root()
+	if node:
+		node.queue_free()
 		# A preview freed mid-hover never fires mouse_exited
 		_board._hide_card_preview()
 	_stack_hover_preview = null
+
+
+## Deferred one frame so the preview has a laid-out size to pin by; created
+## hidden, so it first draws already in place (no top-left flash).
+func _position_stack_hover_preview() -> void:
+	await get_tree().process_frame
+	var node := _stack_hover_root()
+	if node == null or node.get_parent() != self:
+		return # Gone, or riding in the prompt row (which positions itself)
+	var rect: Rect2 = action_prompt_panel.get_global_rect()
+	node.global_position = Vector2(
+		rect.position.x, rect.position.y - node.size.y - 6.0)
+	node.visible = true
+
+
+## Drop the slot when its row is no longer in the stack (effect resolved or
+## the stack emptied). Called by EffectStackPanel on every stack rebuild.
+func prune_stack_hover_preview(base_ids: Array) -> void:
+	if not _stack_hover_id.is_empty() and not base_ids.has(_stack_hover_id):
+		clear_stack_hover_preview()
+
+
+func clear_stack_hover_preview() -> void:
+	_free_stack_hover_node()
+	_stack_hover_id = ""
 
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
@@ -1498,7 +1581,12 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 		if not cid.is_empty():
 			first_card_id = cid
 			break
-	_show_prompt_previews("", first_card_id)
+	if _stack_has(first_card_id):
+		# Pending-ability options seed the sticky pending-effect slot instead
+		# of the placed-card slot; hover/focus keeps it in sync from there.
+		show_stack_hover_preview(first_card_id)
+	else:
+		_show_prompt_previews("", first_card_id)
 
 	var max_height: float = bottom_y - 120.0 # room for the header + top margin
 	var est_height: float = minf(options.size() * per_btn + 12.0, max_height)
@@ -1625,7 +1713,21 @@ func _resolve_choice_card(base_id: String) -> Dictionary:
 	return dict
 
 
+## Whether base_id is currently a row in the pending-effects stack panel.
+func _stack_has(base_id: String) -> bool:
+	if base_id.is_empty():
+		return false
+	var stack = _board._effect_stack
+	return stack != null and stack.stack_base_ids().has(base_id)
+
+
 func _on_choice_option_focused(base_id: String) -> void:
+	# Options that are pending abilities (the "choose which ability to
+	# resolve" prompt) preview in the sticky pending-effect slot, exactly
+	# like hovering their stack row.
+	if _stack_has(base_id):
+		show_stack_hover_preview(base_id)
+		return
 	if _prompt_preview_card == null or not is_instance_valid(_prompt_preview_card):
 		return
 	var dict := _resolve_choice_card(base_id)
