@@ -80,6 +80,16 @@ func test_invade_validates_invasion_icon_index() -> void:
 	assert_bool(rules.validate_action(state, CardEnums.ActionType.INVADE, {"hand_index": 0})).is_false()
 
 
+func test_invade_valid_at_defended_zone_8() -> void:
+	# Discard-only invade: monster at 8 with an opponent zone-8 battle card.
+	var state := States.make_state({
+		"p0": {"hand": [Cards.battle(1)], "monster_zone": 8},
+		"p1": {"zone_cards": {7: Cards.battle(1, 5000, "DEF")}},
+	})
+	rules = States.make_rules(state)
+	assert_bool(rules.validate_action(state, CardEnums.ActionType.INVADE, {"hand_index": 0})).is_true()
+
+
 func test_action_not_in_valid_set_rejected() -> void:
 	# Empty hand: only PASS is valid, every other action must be rejected.
 	var state := States.make_state()

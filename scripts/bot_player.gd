@@ -1409,7 +1409,10 @@ func _decide_invade(player: PlayerState, opponent: PlayerState) -> Array:
 		return []
 
 	# Skip the discard-only cycle invade — bot shouldn't burn its invade just to
-	# cycle a card when no zones can be crossed.
+	# cycle a card when no zones can be crossed. The rules engine does allow it
+	# (a legal hand-cycle: cost paid, no advancement, no movement triggers), so
+	# this could become an opportunistic play — e.g. dumping a dead invade card
+	# when the bot would otherwise PASS — but is deliberately skipped for now.
 	if player.monster_zone >= 8 and opponent.zone_has_battle_card(7):
 		return []
 

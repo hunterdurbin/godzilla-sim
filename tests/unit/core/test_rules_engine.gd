@@ -123,17 +123,16 @@ func test_invade_with_no_icon_card_unavailable() -> void:
 	assert_array(rules.get_valid_actions(state)).not_contains([CardEnums.ActionType.INVADE])
 
 
-func test_invade_action_blocked_at_zone_8_with_defender() -> void:
-	## _can_invade refuses monster at zone 8 facing an opponent zone-8 battle
-	## card, while get_discardable_cards_for_invade still allows the discard-only
-	## invade. Pinned as-is: validate_action requires both, so the action is
-	## effectively unavailable.
+func test_invade_allowed_at_zone_8_with_defender_as_discard_only() -> void:
+	## A monster at zone 8 facing an opponent zone-8 battle card can still
+	## invade: the action stays available as a discard-only invade (the
+	## invasion resolver leaves the monster in place — no advancement, no win).
 	var state := States.make_state({
 		"p0": {"hand": [Cards.battle(1)], "monster_zone": 8},
 		"p1": {"zone_cards": {7: Cards.battle(1, 5000, "DEF")}},
 	})
 	rules = States.make_rules(state)
-	assert_array(rules.get_valid_actions(state)).not_contains([CardEnums.ActionType.INVADE])
+	assert_array(rules.get_valid_actions(state)).contains([CardEnums.ActionType.INVADE])
 	assert_array(rules.get_discardable_cards_for_invade(state.players[0], state.players[1])).contains_exactly([0])
 
 
