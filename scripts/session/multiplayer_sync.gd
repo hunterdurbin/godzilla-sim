@@ -315,7 +315,7 @@ func _resend_pending_interaction(peer_id: int) -> void:
 			_rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3] if args.size() > 3 else "")
 		"choice":
 			RpcLogger.log_send("choice_requested", args[0].length() + args[1].length())
-			_rpc_choice_requested.rpc_id(peer_id, args[0], args[1], args[2] if args.size() > 2 else "[]")
+			_rpc_choice_requested.rpc_id(peer_id, args[0], args[1], args[2] if args.size() > 2 else "[]", args[3] if args.size() > 3 else "[]")
 		"confirmation":
 			RpcLogger.log_send("confirmation_requested", args[0].length() + args[1].length())
 			_rpc_confirmation_requested.rpc_id(peer_id, args[0], args[1])
@@ -897,9 +897,9 @@ func _rpc_strategy_target_resolved(strategy_index: int) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]") -> void:
+func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]", source_refs_json: String = "[]") -> void:
 	if _board:
-		_board._rpc_choice_requested(options_json, prompt, card_ids_json)
+		_board._rpc_choice_requested(options_json, prompt, card_ids_json, source_refs_json)
 
 
 ## Client -> Host: choice resolved (player chose an option)
@@ -991,6 +991,12 @@ func _rpc_effect_card_highlighted(pid: int, card_id: String) -> void:
 func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 	if _board:
 		_board._rpc_effect_card_unhighlighted(pid, card_id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_effect_stack_changed(stack_json: String) -> void:
+	if _board:
+		_board._rpc_effect_stack_changed(stack_json)
 
 
 # --- Game end / replay ---

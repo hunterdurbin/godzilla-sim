@@ -24,3 +24,7 @@ signal counter_succeeded(player_id: int, total_cp: int, threat: int, rage_threat
 signal counter_immunity_triggered(player_id: int, total_cp: int, threshold: int)
 signal counter_prevented(player_id: int)
 signal play_cancelled(player_id: int)
+## Pending standby-effect stack snapshot (see StandbyResolver._publish_stack).
+## Rows: { player_id, base_id, label, status: "resolving"|"pending", location }.
+## Emitted with [] when the stack drains.
+signal effect_stack_changed(stack: Array)

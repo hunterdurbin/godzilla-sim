@@ -98,6 +98,7 @@ static func _build_components(tm: TurnManager) -> void:
 	tm.action_handler.effect_handler = tm.effect_handler
 	tm.action_handler.input = tm.player_input
 	tm.action_handler.events = tm.events
+	tm.effect_handler.events = tm.events
 	tm.rules_engine.queries = tm.effect_handler.queries
 
 

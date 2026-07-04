@@ -71,6 +71,8 @@ var _choice_buttons: Array[Button] = []
 var _choice_container: VBoxContainer = null
 var _choice_panel: PanelContainer = null # Mobile wrapper panel
 var _choice_card_dicts: Dictionary = {} # base id -> duplicated card dict cache
+var _choice_option_card_ids: Array[String] = [] # base ids parallel to the open options
+var _choice_source_refs: Array = [] # card_location_ref dicts parallel to the open options
 
 # --- Board bridge: widgets ---
 var action_panel: Control
@@ -169,6 +171,8 @@ func reset_for_rematch() -> void:
 	_strategy_target_valid_indices.clear()
 	_choice_selecting = false
 	_choice_player_id = -1
+	_choice_option_card_ids = []
+	_choice_source_refs = []
 	waiting_for_card_select = false
 	waiting_for_zone_select = false
 	selected_card_id = ""
@@ -1383,48 +1387,50 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 func _on_choice_requested(player_id: int, options: Array[String], prompt: String) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
-	# Card art behind each option (parallel to options; "" = text-only).
+	# Card art + source location behind each option (parallel to options;
+	# ""/{} = text-only option with no board card to point at).
 	var card_ids: Array[String] = []
+	var source_refs: Array = []
 	if turn_manager:
 		card_ids = turn_manager.action_handler.effect_handler.choice_card_ids
+		source_refs = turn_manager.action_handler.effect_handler.choice_source_refs
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var options_json := JSON.stringify(options)
 		var card_ids_json := JSON.stringify(card_ids)
-		_pending_interaction = {"method": "choice", "args": [options_json, prompt, card_ids_json], "player": player_id}
+		var source_refs_json := JSON.stringify(source_refs)
+		_pending_interaction = {"method": "choice", "args": [options_json, prompt, card_ids_json, source_refs_json], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("choice_requested", options_json.length() + prompt.length())
-				_sync._rpc_choice_requested.rpc_id(peer_id, options_json, prompt, card_ids_json)
+				_sync._rpc_choice_requested.rpc_id(peer_id, options_json, prompt, card_ids_json, source_refs_json)
 		return
-	_show_choice_selection(player_id, options, prompt, card_ids)
+	_show_choice_selection(player_id, options, prompt, card_ids, source_refs)
 
 
-func _show_choice_selection(player_id: int, options: Array[String], prompt: String, card_ids: Array[String] = []) -> void:
+func _show_choice_selection(player_id: int, options: Array[String], prompt: String, card_ids: Array[String] = [], source_refs: Array = []) -> void:
 	_choice_selecting = true
 	_choice_player_id = player_id
+	_choice_option_card_ids = card_ids
+	_choice_source_refs = source_refs
 
 	_disable_all_buttons()
 	# Hide the normal action button rows so only choice buttons show
 	_set_action_buttons_visible(false)
-	card_select_prompt.text = _resolve_translated_text(prompt)
-	action_prompt_panel.visible = true
 
-	# Choice buttons live in their own OPAQUE panel so they never visually
-	# bleed into the turn tracker behind them, anchored above the hand
-	# toggle/sort buttons so they never cover those either. The button list
-	# scrolls when there are more options than fit.
+	# One unified panel on the right edge: opaque background with the prompt
+	# header INSIDE it (no more helper text split off to the bottom-left),
+	# anchored above the hand toggle/sort buttons. The button list scrolls
+	# when there are more options than fit.
 	_choice_panel = PanelContainer.new()
 	_choice_panel.name = "ChoicePanel"
-	# Transparent background — the player can see the board behind the
-	# action buttons; only the buttons themselves are visible.
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0, 0, 0, 0)
-	panel_style.set_corner_radius_all(6)
-	panel_style.content_margin_left = 6
-	panel_style.content_margin_right = 6
-	panel_style.content_margin_top = 6
-	panel_style.content_margin_bottom = 6
+	panel_style.bg_color = Color(0.06, 0.07, 0.10, 0.9)
+	panel_style.set_corner_radius_all(8)
+	panel_style.content_margin_left = 10
+	panel_style.content_margin_right = 10
+	panel_style.content_margin_top = 10
+	panel_style.content_margin_bottom = 10
 	_choice_panel.add_theme_stylebox_override("panel", panel_style)
 	_choice_panel.z_index = 56
 
@@ -1441,8 +1447,9 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	# Explicitly position the rect with its BOTTOM edge at bottom_y — do not
 	# rely on grow directions (a min-size overflow expands DOWNWARD from the
 	# anchor point, which is how the panel ended up over/below the screen).
-	var panel_width := 372.0 # 360 scroll + 12 stylebox margins
-	var panel_margins := 12.0
+	var panel_width := 380.0 # 360 scroll + 20 stylebox margins
+	var panel_margins := 20.0
+	var header_est := 30.0
 	var per_btn: float = 64.0
 
 	# Small preview above the helper text of the card the choice belongs to,
@@ -1454,7 +1461,7 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 			break
 	_show_prompt_previews("", first_card_id)
 
-	var max_height: float = bottom_y - 56.0 # keep the prompt text visible above
+	var max_height: float = bottom_y - 120.0 # room for the header + top margin
 	var est_height: float = minf(options.size() * per_btn + 12.0, max_height)
 	_choice_panel.anchor_left = 1.0
 	_choice_panel.anchor_right = 1.0
@@ -1462,13 +1469,26 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	_choice_panel.anchor_bottom = 0.0
 	_choice_panel.offset_left = -6.0 - panel_width
 	_choice_panel.offset_right = -6.0
-	_choice_panel.offset_top = bottom_y - (est_height + panel_margins)
+	_choice_panel.offset_top = bottom_y - (est_height + header_est + panel_margins)
 	_choice_panel.offset_bottom = bottom_y
+
+	var inner := VBoxContainer.new()
+	inner.name = "ChoiceInner"
+	inner.add_theme_constant_override("separation", 6)
+	_choice_panel.add_child(inner)
+
+	var header := Label.new()
+	header.name = "ChoiceHeader"
+	header.text = _resolve_translated_text(prompt)
+	header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	header.add_theme_font_size_override("font_size", 15)
+	header.add_theme_color_override("font_color", Color(1.0, 1.0, 0.5))
+	inner.add_child(header)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.custom_minimum_size = Vector2(360.0, est_height)
-	_choice_panel.add_child(scroll)
+	inner.add_child(scroll)
 	# After the first layout pass, shrink-wrap to the buttons' real (wrapped)
 	# height — no gap under the last button — and re-pin the bottom edge.
 	_fit_choice_panel.call_deferred(scroll, bottom_y, max_height)
@@ -1479,6 +1499,8 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	_choice_container.add_theme_constant_override("separation", 4)
 	scroll.add_child(_choice_container)
 	add_child(_choice_panel)
+	_board._update_tracker_collapse()
+	_board.set_log_prompt_dim(true)
 
 	for i in range(options.size()):
 		var btn := Button.new()
@@ -1498,9 +1520,12 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 				btn.expand_icon = true
 				btn.add_theme_constant_override("icon_max_width", 48)
 				btn.custom_minimum_size.y = maxf(btn.custom_minimum_size.y, 56.0)
-			# The preview above the helper text follows the hovered/focused option.
-			btn.mouse_entered.connect(_on_choice_option_focused.bind(card_ids[i]))
-			btn.focus_entered.connect(_on_choice_option_focused.bind(card_ids[i]))
+		# Preview retarget + board attention pulse follow the hovered/focused
+		# option (both no-op when the option has no card/location behind it).
+		btn.mouse_entered.connect(_on_choice_option_hovered.bind(i))
+		btn.focus_entered.connect(_on_choice_option_hovered.bind(i))
+		btn.mouse_exited.connect(_on_choice_option_unhovered.bind(i))
+		btn.focus_exited.connect(_on_choice_option_unhovered.bind(i))
 		btn.pressed.connect(_on_choice_button_pressed.bind(i))
 		_choice_container.add_child(btn)
 		_choice_buttons.append(btn)
@@ -1520,7 +1545,10 @@ func _fit_choice_panel(scroll: ScrollContainer, bottom_y: float, max_height: flo
 	var measured: float = maxf(_choice_container.size.y, _choice_container.get_combined_minimum_size().y)
 	var content_h: float = minf(measured + 2.0, max_height)
 	scroll.custom_minimum_size.y = content_h
-	_choice_panel.offset_top = bottom_y - (content_h + 12.0)
+	# Panel height = header + scroll content + margins/separation, all covered
+	# by the PanelContainer's combined minimum once the scroll min is set.
+	var panel_h: float = _choice_panel.get_combined_minimum_size().y
+	_choice_panel.offset_top = bottom_y - panel_h
 	_choice_panel.offset_bottom = bottom_y
 
 
@@ -1566,6 +1594,27 @@ func _on_choice_option_focused(base_id: String) -> void:
 		_prompt_preview_card.set_card_data_dict(dict)
 
 
+func _choice_source_ref(index: int) -> Dictionary:
+	if index < 0 or index >= _choice_source_refs.size():
+		return {}
+	var ref = _choice_source_refs[index]
+	return ref if ref is Dictionary else {}
+
+
+func _on_choice_option_hovered(index: int) -> void:
+	if index < _choice_option_card_ids.size() and not _choice_option_card_ids[index].is_empty():
+		_on_choice_option_focused(_choice_option_card_ids[index])
+	var ref := _choice_source_ref(index)
+	if not ref.is_empty():
+		_board.set_card_attention(ref, true)
+
+
+func _on_choice_option_unhovered(index: int) -> void:
+	var ref := _choice_source_ref(index)
+	if not ref.is_empty():
+		_board.set_card_attention(ref, false)
+
+
 func _on_choice_button_pressed(index: int) -> void:
 	if not _choice_selecting:
 		return
@@ -1581,6 +1630,8 @@ func _on_choice_button_pressed(index: int) -> void:
 func _cleanup_choice_selection() -> void:
 	_choice_selecting = false
 	_choice_buttons.clear()
+	_choice_option_card_ids = []
+	_choice_source_refs = []
 	if _choice_panel:
 		# Reparent-free immediately so a subsequent choice_requested in the
 		# same frame gets a clean state.
@@ -1594,5 +1645,8 @@ func _cleanup_choice_selection() -> void:
 	_cleanup_prompt_previews()
 	_choice_card_dicts.clear()
 	action_prompt_panel.visible = false
+	_board.set_card_attention({}, false)
+	_board._update_tracker_collapse()
+	_board.set_log_prompt_dim(false)
 	# Restore normal action button rows
 	_set_action_buttons_visible(true)

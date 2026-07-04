@@ -152,6 +152,20 @@ func _bind() -> void:
 		if not sig.is_connected(cb):
 			sig.connect(cb)
 
+	# Dedicated server only: mirror the pending-effect stack to every client.
+	# Local boards (solo / P2P host) broadcast it themselves via
+	# EffectStackPanel, which doesn't exist on the headless server.
+	if bind_all_prompts and session.events:
+		if not session.events.effect_stack_changed.is_connected(_on_effect_stack_changed):
+			session.events.effect_stack_changed.connect(_on_effect_stack_changed)
+
+
+func _on_effect_stack_changed(stack: Array) -> void:
+	var stack_json := JSON.stringify(stack)
+	for peer_id in net.peer_player_map:
+		RpcLogger.log_send("effect_stack_changed", stack_json.length())
+		multiplayer_sync._rpc_effect_stack_changed.rpc_id(peer_id, stack_json)
+
 
 # --- Routing helpers ---
 
@@ -257,9 +271,16 @@ func _on_choice_requested(player_id: int, options: Array, prompt: String) -> voi
 		return
 	if is_multiplayer and player_id != local_player_id:
 		var options_json := JSON.stringify(options)
-		_send_to_remote(player_id, "choice", [options_json, prompt], func(peer):
+		var card_ids: Array[String] = []
+		var source_refs: Array = []
+		if session.effect_handler:
+			card_ids = session.effect_handler.choice_card_ids
+			source_refs = session.effect_handler.choice_source_refs
+		var card_ids_json := JSON.stringify(card_ids)
+		var source_refs_json := JSON.stringify(source_refs)
+		_send_to_remote(player_id, "choice", [options_json, prompt, card_ids_json, source_refs_json], func(peer):
 			RpcLogger.log_send("choice_requested", options_json.length() + prompt.length())
-			multiplayer_sync._rpc_choice_requested.rpc_id(peer, options_json, prompt))
+			multiplayer_sync._rpc_choice_requested.rpc_id(peer, options_json, prompt, card_ids_json, source_refs_json))
 		return
 	show_choice(options, prompt)
 

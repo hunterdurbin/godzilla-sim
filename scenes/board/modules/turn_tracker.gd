@@ -45,6 +45,8 @@ var headers: Array = []
 var _phases: Array = []
 var _subs: Array = []
 var _turn_label: Label
+var _tracker_root: Control
+var _collapsed: bool = false
 
 
 func _ready() -> void:
@@ -57,6 +59,7 @@ func _ready() -> void:
 	_session.session_started.connect(_bind_session)
 
 	var t := _board.get_node("VBoxContainer/BoardArea/RightSpacer/TurnTracker")
+	_tracker_root = t
 	headers = [t.get_node("P1Header"), t.get_node("P2Header")]
 	_turn_label = _board.get_node("VBoxContainer/BoardArea/RightSpacer/TurnLabelMargin/TurnLabel")
 	_phases = []
@@ -107,6 +110,37 @@ func _on_turn_started(_player_id: int) -> void:
 	current_sub_phase = 0
 
 
+## Collapse the phase list to just the turn chip (the TurnLabel line) while
+## a prompt panel occupies the right edge. No-op on mobile, where the whole
+## tracker column is hidden by the mobile layout.
+func set_collapsed(on: bool) -> void:
+	if _board._is_mobile_layout:
+		on = false
+	if on == _collapsed:
+		return
+	_collapsed = on
+	if _tracker_root:
+		_tracker_root.visible = not on
+	_refresh_turn_label()
+
+
+## Update the TurnLabel line: plain turn number normally, a compact
+## "Turn N · Phase" chip while collapsed (so the phase stays visible).
+func _refresh_turn_label(phase_hint: int = -1) -> void:
+	if _turn_label == null:
+		return
+	var gs: GameState = _session.turn_manager.game_state if _session.turn_manager else null
+	var turn_num: int = gs.turn_number if gs else _session.client_turn_number
+	if _collapsed:
+		var phase_idx: int = phase_hint
+		if phase_idx < 0:
+			phase_idx = _tracker_last_phase if _tracker_last_phase >= 0 else (int(gs.current_phase) if gs else 0)
+		var phase_name := CardEnums.phase_to_string(phase_idx as CardEnums.GamePhase)
+		_turn_label.text = tr("STR_GB_TURN_CHIP_FMT").replace("{N}", str(turn_num)).replace("{PHASE}", phase_name)
+	else:
+		_turn_label.text = tr("STR_GB_TURN_FMT").replace("{N}", str(turn_num))
+
+
 ## Reset queue + indicator state for a rematch.
 func reset_for_rematch() -> void:
 	current_sub_phase = 0
@@ -150,10 +184,10 @@ func apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: i
 	var inactive_sub_color := Color(0.35, 0.35, 0.4, 1.0) # Dimmer for inactive sub-phases
 	var active_header_color := Color(1.0, 1.0, 1.0, 1.0) # White for active player
 	var inactive_header_color := Color(0.6, 0.6, 0.7, 1.0) # Dim for inactive player
-	# Update turn number label
+	# Update turn number label (chip form while collapsed)
 	var gs: GameState = _session.turn_manager.game_state if _session.turn_manager else null
 	var turn_num: int = gs.turn_number if gs else _session.client_turn_number
-	_turn_label.text = tr("STR_GB_TURN_FMT").replace("{N}", str(turn_num))
+	_refresh_turn_label(int(phase))
 	var phase_idx := int(phase)
 	for pid in range(2):
 		var first_marker := "* " if pid == _board._first_player_id else "  "

@@ -309,12 +309,13 @@ func _rpc_confirmation_requested(_a: String, _b: String) -> void: pass
 func _rpc_hand_discard_requested(_a: int, _b: String = "") -> void: pass
 func _rpc_zone_target_requested(_a: int, _b: String, _c: String, _d: bool, _e: String = "", _f: String = "") -> void: pass
 func _rpc_strategy_target_requested(_a: int, _b: String, _c: String, _d: String = "") -> void: pass
-func _rpc_choice_requested(_a: String, _b: String, _c: String = "[]") -> void: pass
+func _rpc_choice_requested(_a: String, _b: String, _c: String = "[]", _d: String = "[]") -> void: pass
 func _rpc_monster_rankup_requested(_a: String, _b: String, _c: String) -> void: pass
 func _rpc_effect_zone_highlighted(_a: int, _b: int) -> void: pass
 func _rpc_effect_zone_unhighlighted(_a: int, _b: int) -> void: pass
 func _rpc_effect_card_highlighted(_a: int, _b: String) -> void: pass
 func _rpc_effect_card_unhighlighted(_a: int, _b: String) -> void: pass
+func _rpc_effect_stack_changed(_a: String) -> void: pass
 func _rpc_receive_game_ended(_a: int, _b: String) -> void: pass
 func _rpc_receive_replay(_a: PackedByteArray) -> void: pass
 func _rpc_execute_rematch() -> void: pass # server-issued; ignore echoes

@@ -81,7 +81,7 @@ func _rpc_strategy_target_requested(target_pid: int, indices_json: String, promp
 	prompt_received.emit("strategy_target", [target_pid, indices_json, prompt])
 
 
-func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]") -> void:
+func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]", _source_refs_json: String = "[]") -> void:
 	prompt_received.emit("choice", [options_json, prompt, card_ids_json])
 
 
@@ -106,6 +106,7 @@ func _rpc_effect_zone_highlighted(_p: int, _z: int) -> void: pass
 func _rpc_effect_zone_unhighlighted(_p: int, _z: int) -> void: pass
 func _rpc_effect_card_highlighted(_p: int, _c: String) -> void: pass
 func _rpc_effect_card_unhighlighted(_p: int, _c: String) -> void: pass
+func _rpc_effect_stack_changed(_stack_json: String) -> void: pass
 func _rpc_concede() -> void: pass
 func _rpc_rematch_requested() -> void: pass
 func _rpc_rematch_with_deck(_p: String) -> void: pass

@@ -18,6 +18,14 @@ var game_state: GameState
 var exec: EffectExecutionState
 var handler: EffectHandler
 
+## Snapshot state for the effect_stack_changed notification: the entry whose
+## callback is executing, the current player's remaining orderable batch, and
+## the other player's batch waiting behind it (aliases of the live arrays —
+## rows are composed fresh at each publish).
+var _stack_active: Dictionary = {}
+var _stack_remaining: Array = []
+var _other_player_batch: Array = []
+
 
 func resolve_entries(entries: Array) -> void:
 	## Resolve collected standby automatic abilities per rules 10.4.3 ordering.
@@ -33,6 +41,7 @@ func resolve_entries(entries: Array) -> void:
 	# would run immediately instead of deferring behind the active effect's enter.
 	if exec.should_defer():
 		exec.pending_standby_entries.append_array(entries)
+		_publish_stack()
 		return
 
 	exec.in_standby_resolution = true
@@ -51,7 +60,9 @@ func resolve_entries(entries: Array) -> void:
 				non_turn_entries.append(entry)
 
 		# Resolve turn player's abilities first (10.4.3.2), then non-turn player's (10.4.3.3)
+		_other_player_batch = non_turn_entries
 		await _resolve_player_standby(turn_pid, turn_entries)
+		_other_player_batch = []
 		await _resolve_player_standby(1 - turn_pid, non_turn_entries)
 
 		# Drain any entries that accumulated during this batch
@@ -59,6 +70,10 @@ func resolve_entries(entries: Array) -> void:
 		exec.pending_standby_entries = []
 
 	exec.in_standby_resolution = false
+	_stack_active = {}
+	_stack_remaining = []
+	_other_player_batch = []
+	_publish_stack()
 
 
 func resolve_deferred_entries(entries: Array) -> void:
@@ -88,29 +103,54 @@ func is_card_still_active(player_id: int, card_data: Dictionary) -> bool:
 
 static func card_location_label(state: GameState, player_id: int, card_data: Dictionary) -> String:
 	## Return a display label like "Card Name (Zone 3)" for standby choice prompts.
-	## Uses a temporary marker key to find the exact dictionary reference, since
-	## multiple cards can share the same ID (e.g. tokens).
+	return card_location_ref(state, player_id, card_data)["label"]
+
+
+static func card_location_ref(state: GameState, player_id: int, card_data: Dictionary) -> Dictionary:
+	## Locate a card's current position as a structured ref for the UI:
+	## { player_id, kind: "monster"|"zone"|"strategy"|"discard"|"", index,
+	##   instance_id, base_id, label }. index is 0-based (-1 when kind has no
+	## index). Uses a temporary marker key to find the exact dictionary
+	## reference, since multiple cards can share the same ID (e.g. tokens).
 	var player := state.players[player_id]
 	var card_name: String = card_data.get("name", "Unknown")
+	var ref := {
+		"player_id": player_id,
+		"kind": "",
+		"index": -1,
+		"instance_id": card_data.get("id", ""),
+		"base_id": CardUtils.base_id(card_data),
+		"label": card_name,
+	}
 	if not player.current_monster.is_empty() and player.current_monster.get("id", "") == card_data.get("id", ""):
-		return card_name + " (Monster)"
+		ref["kind"] = "monster"
+		ref["label"] = card_name + " (Monster)"
+		return ref
 	var _marker := "__ref_marker"
 	card_data[_marker] = true
 	for i in range(8):
 		var top := player.get_zone_top_card(i)
 		if not top.is_empty() and top.has(_marker):
 			card_data.erase(_marker)
-			return card_name + " (Zone %d)" % (i + 1)
+			ref["kind"] = "zone"
+			ref["index"] = i
+			ref["label"] = card_name + " (Zone %d)" % (i + 1)
+			return ref
 	for i in range(player.strategy_zones.size()):
 		if not player.strategy_zones[i].is_empty() and player.strategy_zones[i].has(_marker):
 			card_data.erase(_marker)
-			return card_name + " (Strategy %d)" % (i + 1)
+			ref["kind"] = "strategy"
+			ref["index"] = i
+			ref["label"] = card_name + " (Strategy %d)" % (i + 1)
+			return ref
 	for discard_card in player.discard_pile:
 		if discard_card.has(_marker):
 			card_data.erase(_marker)
-			return card_name + " (Discard)"
+			ref["kind"] = "discard"
+			ref["label"] = card_name + " (Discard)"
+			return ref
 	card_data.erase(_marker)
-	return card_name
+	return ref
 
 
 func _resolve_player_standby(player_id: int, entries: Array) -> void:
@@ -121,6 +161,12 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 		if handler.action_handler:
 			await handler.action_handler.resolve_check_timing(game_state)
 
+		# Publish the full batch as pending so the stack UI shows it during
+		# the order-choice prompt.
+		_stack_active = {}
+		_stack_remaining = entries
+		_publish_stack()
+
 		var entry: Dictionary
 		if entries.size() == 1:
 			entry = entries.pop_back()
@@ -128,13 +174,22 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 			# Multiple abilities in standby — player chooses order (10.6.3.1)
 			var options: Array[String] = []
 			var option_card_ids: Array[String] = []
+			var source_refs: Array[Dictionary] = []
 			for e in entries:
-				options.append(card_location_label(game_state, e.player_id, e.card_data))
+				var ref := card_location_ref(game_state, e.player_id, e.card_data)
+				options.append(ref["label"])
 				option_card_ids.append(CardUtils.base_id(e.card_data))
+				source_refs.append(ref)
+			handler.choice_source_refs = source_refs
 			var chosen: int = await handler.select_choice(player_id, options, tr("STR_EFF_CHOOSE_ABILITY"), option_card_ids)
 			if chosen < 0 or chosen >= entries.size():
 				chosen = 0
 			entry = entries.pop_at(chosen)
+
+		# Keep the chosen entry visible as "resolving" through any nested
+		# prompts its callback opens.
+		_stack_active = entry
+		_publish_stack()
 
 		var saved_player_id: int = exec.active_player_id
 		var saved_card: Dictionary = exec.active_card
@@ -156,3 +211,35 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 			else:
 				remaining.append(p)
 		exec.pending_standby_entries = remaining
+
+		_stack_active = {}
+		_publish_stack()
+
+
+func _publish_stack() -> void:
+	## Emit the current pending-effect stack (resolving entry first) via
+	## GameEvents so the UI can keep the player informed mid-resolution.
+	## Pure notification — nothing awaits it; no-op without a wired bus.
+	if handler == null or handler.events == null:
+		return
+	var rows: Array = []
+	if not _stack_active.is_empty():
+		rows.append(_stack_row(_stack_active, "resolving"))
+	for e in _stack_remaining:
+		rows.append(_stack_row(e, "pending"))
+	for e in _other_player_batch:
+		rows.append(_stack_row(e, "pending"))
+	for e in exec.pending_standby_entries:
+		rows.append(_stack_row(e, "pending"))
+	handler.events.effect_stack_changed.emit(rows)
+
+
+func _stack_row(entry: Dictionary, status: String) -> Dictionary:
+	var loc := card_location_ref(game_state, entry.player_id, entry.card_data)
+	return {
+		"player_id": entry.player_id,
+		"base_id": loc["base_id"],
+		"label": loc["label"],
+		"status": status,
+		"location": loc,
+	}

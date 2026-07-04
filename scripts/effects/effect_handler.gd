@@ -25,6 +25,7 @@ signal card_destroyed(player_id: int, zone_index: int)
 var game_state: GameState
 var action_handler  # ActionHandler reference (set by TurnManager)
 var input: PlayerInput
+var events: GameEvents = null  # Notification bus (wired by MatchFactory; null in bare tests)
 var registry := EffectRegistry.new()
 var exec := EffectExecutionState.new()
 var standby: StandbyResolver
@@ -39,6 +40,12 @@ var _card_select_pool_filter: Callable = Callable()  # Optional: func(card, sele
 ## options without a card). The choice UI reads this to show an artwork
 ## thumbnail on each button; cleared when the choice resolves.
 var choice_card_ids: Array[String] = []
+
+## Structured source locations parallel to the most recent select_choice
+## options (see StandbyResolver.card_location_ref). The choice UI reads this
+## to highlight the source card on the board while an option is hovered.
+## Empty for generic effect choices; cleared when the choice resolves.
+var choice_source_refs: Array[Dictionary] = []
 
 ## Base id of the card being placed by the most recent select_zone_target
 ## ("" when the prompt is zone-only, e.g. destroy). The zone-target UI reads
@@ -307,6 +314,7 @@ func select_choice(player_id: int, options: Array[String], prompt: String, card_
 	var index: int = await input.choose_option(player_id, options, prompt)
 	_unhighlight_active_effect()
 	choice_card_ids = []
+	choice_source_refs = []
 	return index
 
 

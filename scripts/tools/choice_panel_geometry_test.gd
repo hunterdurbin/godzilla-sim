@@ -38,9 +38,18 @@ func _ready() -> void:
 			var br: Rect2 = hb.get_global_rect()
 			assert(pr.end.y <= br.position.y + 0.5, "panel overlaps hand button: panel=%s btn=%s" % [pr, br])
 
-	# No big gap under the buttons: panel height ~= content + margins
-	var content_h: float = sel._choice_container.size.y
-	assert(absf(pr.size.y - (content_h + 14.0)) <= 12.0, "gap mismatch: panel_h=%f content=%f" % [pr.size.y, content_h])
+	# The prompt header lives INSIDE the panel now — the bottom-left
+	# ActionPrompt must stay hidden during a choice.
+	var header: Label = panel.get_node("ChoiceInner/ChoiceHeader")
+	assert(header != null and header.visible, "no header inside choice panel")
+	assert(header.text == "Choose ability", "header text mismatch: %s" % header.text)
+	var action_prompt: Control = board.get_node("ActionPrompt")
+	assert(not action_prompt.visible, "ActionPrompt visible during choice")
+
+	# No big gap under the buttons: panel height ~= header + content + margins
+	# (20 stylebox margins + 6 separation between header and scroll).
+	var content_h: float = sel._choice_container.size.y + header.size.y + 26.0
+	assert(absf(pr.size.y - content_h) <= 12.0, "gap mismatch: panel_h=%f content=%f" % [pr.size.y, content_h])
 
 	print("CHOICE_GEOM_TEST_PASS")
 	get_tree().quit(0)

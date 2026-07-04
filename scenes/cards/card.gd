@@ -515,6 +515,48 @@ func set_highlight(enabled: bool) -> void:
 		overlay.queue_free()
 
 
+var _attention_tween: Tween = null
+
+
+func set_attention_highlight(enabled: bool) -> void:
+	## Pulsing cyan border used to point this card out on the board (e.g. while
+	## the matching effect-prompt option is hovered). Independent of
+	## set_highlight's gold border and of modulate-based effect tints, so all
+	## three visuals can coexist without stomping each other's reset.
+	var overlay := get_node_or_null("AttentionOverlay") as Panel
+	if _attention_tween:
+		_attention_tween.kill()
+		_attention_tween = null
+	if enabled:
+		if not overlay:
+			overlay = Panel.new()
+			overlay.name = "AttentionOverlay"
+			overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			overlay.z_index = 3
+			var style := StyleBoxFlat.new()
+			style.bg_color = Color(0, 0, 0, 0)
+			style.border_width_left = 4
+			style.border_width_top = 4
+			style.border_width_right = 4
+			style.border_width_bottom = 4
+			style.border_color = Color(0.25, 0.85, 1.0, 1.0)
+			style.corner_radius_top_left = 6
+			style.corner_radius_top_right = 6
+			style.corner_radius_bottom_right = 6
+			style.corner_radius_bottom_left = 6
+			overlay.add_theme_stylebox_override("panel", style)
+			add_child(overlay)
+		overlay.visible = true
+		overlay.modulate.a = 1.0
+		_attention_tween = create_tween().set_loops()
+		_attention_tween.set_trans(Tween.TRANS_SINE)
+		_attention_tween.tween_property(overlay, "modulate:a", 0.4, 0.4)
+		_attention_tween.tween_property(overlay, "modulate:a", 1.0, 0.4)
+	elif overlay:
+		overlay.queue_free()
+
+
 func _update_display() -> void:
 	if not is_node_ready():
 		return

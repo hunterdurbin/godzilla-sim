@@ -126,6 +126,7 @@ var _client_stats_decklists: Array:
 @onready var _hand: HandController = $HandController
 @onready var _selection: SelectionController = $SelectionController
 @onready var _mobile: MobileLayout = $MobileLayout
+@onready var _effect_stack: EffectStackPanel = $EffectStackPanel
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -248,6 +249,12 @@ var _preview_card: Control
 # unhighlight can clear it by reference even if its card_data later mutates
 # (e.g. evolution stacks a new card via set_card_data_dict on the same node).
 var _highlighted_effect_card_node: Control = null
+
+# Tracks the pulsing attention highlight (hovered effect-prompt / stack row).
+# Separate from _highlighted_effect_card_node so the two visuals never stomp
+# each other's reset.
+var _attention_card_node: Control = null
+var _attention_discard_pid: int = -1
 
 # State tracking
 # Selection state — owned by SelectionController (forwarding properties for
@@ -1588,6 +1595,9 @@ func _execute_rematch() -> void:
 	_first_player.finish()
 	_cleanup_choice_selection()
 	_selection._cleanup_prompt_previews()
+	_effect_stack.reset()
+	_clear_card_attention()
+	_update_tracker_collapse()
 	_set_action_buttons_visible(true)
 	action_prompt_panel.visible = false
 	deck_search_overlay.visible = false
@@ -2138,6 +2148,99 @@ func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void
 			return
 
 
+# --- Prompt-driven chrome: tracker collapse + log dim ---
+
+## Collapse the turn tracker to its one-line chip while the choice prompt or
+## the effect-stack panel occupies the right edge.
+func _update_tracker_collapse() -> void:
+	_tracker.set_collapsed(_selection._choice_selecting or _effect_stack.has_rows())
+
+
+func set_log_prompt_dim(active: bool) -> void:
+	_log_chat.set_prompt_dim(active)
+
+
+# --- Attention highlight (hovered effect-prompt / stack row) ---
+
+func set_card_attention(loc: Dictionary, on: bool) -> void:
+	## Pulse the attention border on the board card described by `loc`
+	## (StandbyResolver.card_location_ref shape). Turning it off with a
+	## non-empty loc only clears when that loc still matches the tracked
+	## target, so a stale mouse_exited from one row can't kill the highlight
+	## a newer row just turned on.
+	if not on:
+		if not loc.is_empty():
+			if str(loc.get("kind", "")) == "discard":
+				if _attention_discard_pid >= 0 and _attention_discard_pid != int(loc.get("player_id", -1)):
+					return
+			elif _attention_card_node and is_instance_valid(_attention_card_node):
+				var node := _resolve_attention_card(loc)
+				if node != null and node != _attention_card_node:
+					return
+		_clear_card_attention()
+		return
+
+	_clear_card_attention()
+	if loc.is_empty():
+		return
+	var pid: int = int(loc.get("player_id", -1))
+	if pid < 0 or pid > 1:
+		return
+	if str(loc.get("kind", "")) == "discard":
+		var board: Control = player1_board if pid == 0 else player2_board
+		board.highlight_discard_zone(true)
+		_attention_discard_pid = pid
+		return
+	var target := _resolve_attention_card(loc)
+	if target and target.has_method("set_attention_highlight"):
+		target.set_attention_highlight(true)
+		_attention_card_node = target
+
+
+func _clear_card_attention() -> void:
+	if _attention_card_node and is_instance_valid(_attention_card_node):
+		_attention_card_node.set_attention_highlight(false)
+	_attention_card_node = null
+	if _attention_discard_pid >= 0:
+		var board: Control = player1_board if _attention_discard_pid == 0 else player2_board
+		board.highlight_discard_zone(false)
+		_attention_discard_pid = -1
+
+
+func _resolve_attention_card(loc: Dictionary) -> Control:
+	## Resolve a card_location_ref to its on-board Card node, verifying the
+	## per-copy instance id and falling back to an id scan when the recorded
+	## index went stale (the card moved since the ref was built).
+	var pid: int = int(loc.get("player_id", -1))
+	if pid < 0 or pid > 1:
+		return null
+	var board: Control = player1_board if pid == 0 else player2_board
+	var index: int = int(loc.get("index", -1))
+	var instance_id: String = str(loc.get("instance_id", ""))
+	match str(loc.get("kind", "")):
+		"monster":
+			return board.monster_card
+		"zone":
+			if index >= 0 and index < board.zone_slots.size():
+				var slot: Slot = board.zone_slots[index]
+				if slot and slot.held_card and (instance_id.is_empty() or slot.held_card.card_data.get("id", "") == instance_id):
+					return slot.held_card
+		"strategy":
+			if index >= 0 and index < board.strategy_slots.size():
+				var strat_slot: Slot = board.strategy_slots[index]
+				if strat_slot and strat_slot.held_card and (instance_id.is_empty() or strat_slot.held_card.card_data.get("id", "") == instance_id):
+					return strat_slot.held_card
+	if instance_id.is_empty():
+		return null
+	for slot in board.zone_slots:
+		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == instance_id:
+			return slot.held_card
+	for slot in board.strategy_slots:
+		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == instance_id:
+			return slot.held_card
+	return null
+
+
 # --- Discard view UI ---
 
 func _on_discard_clicked(pid: int) -> void:
@@ -2654,7 +2757,7 @@ func _rpc_strategy_target_requested(target_player_id: int, indices_json: String,
 
 
 ## Host -> Client: choice request (player must choose ability order)
-func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]") -> void:
+func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]", source_refs_json: String = "[]") -> void:
 	RpcLogger.log_receive("choice_requested", options_json.length() + prompt.length())
 	if NetworkManager.is_host():
 		return
@@ -2667,7 +2770,17 @@ func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: 
 	if parsed_ids is Array:
 		for v in parsed_ids:
 			card_ids.append(str(v))
-	_selection._show_choice_selection(local_player_id, options, prompt, card_ids)
+	var parsed_refs = JSON.parse_string(source_refs_json)
+	var source_refs: Array = []
+	if parsed_refs is Array:
+		for v in parsed_refs:
+			# JSON turns ints into floats — re-coerce the numeric fields.
+			var ref: Dictionary = v if v is Dictionary else {}
+			if not ref.is_empty():
+				ref["player_id"] = int(ref.get("player_id", -1))
+				ref["index"] = int(ref.get("index", -1))
+			source_refs.append(ref)
+	_selection._show_choice_selection(local_player_id, options, prompt, card_ids, source_refs)
 
 
 ## Host -> Client: prompt monster rank-up selection
@@ -2722,6 +2835,29 @@ func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 	if NetworkManager.is_host():
 		return
 	_apply_card_highlight(pid, card_id, false)
+
+
+## Host/Server -> Client: pending standby-effect stack snapshot
+func _rpc_effect_stack_changed(stack_json: String) -> void:
+	RpcLogger.log_receive("effect_stack_changed", stack_json.length())
+	if NetworkManager.is_host():
+		return
+	var parsed = JSON.parse_string(stack_json)
+	var rows: Array = []
+	if parsed is Array:
+		for v in parsed:
+			var row: Dictionary = v if v is Dictionary else {}
+			if row.is_empty():
+				continue
+			# JSON turns ints into floats — re-coerce the numeric fields.
+			row["player_id"] = int(row.get("player_id", -1))
+			var loc = row.get("location", {})
+			if loc is Dictionary and not loc.is_empty():
+				loc["player_id"] = int(loc.get("player_id", -1))
+				loc["index"] = int(loc.get("index", -1))
+			rows.append(row)
+	if _effect_stack:
+		_effect_stack.show_stack(rows)
 
 
 ## Host -> Client: game over
