@@ -932,3 +932,5 @@ STR_ZOOM_MOD_SRC_MONSTER,Monster zone,怪獣エリア
 STR_ZOOM_MOD_SRC_STRATEGY,Strategy zone,戦略エリア
 STR_ZOOM_MOD_DOUBLED,doubled,2倍
 STR_ZOOM_MOD_OWN_EFFECT,own effect,自身の効果
+STR_ZOOM_MOD_BASE_POWER,Base power,基本カウンターパワー
+STR_ZOOM_MOD_BASE_THREAT,Base threat level,基本脅威レベル

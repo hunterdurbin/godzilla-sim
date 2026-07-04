@@ -3,7 +3,8 @@ extends RefCounted
 
 ## Per-source modifier attribution for the card zoom overlay. Entries are
 ## plain Dictionaries so they survive var_to_bytes and the state delta codec:
-##   { "stat": "cp"|"cp_double"|"threat"|"play_rank"|"zone_play_rank"|"field_rank",
+##   { "stat": "cp"|"cp_double"|"threat"|"play_rank"|"zone_play_rank"|"field_rank"
+##             |"cp_var_base"|"threat_var_base",
 ##     "amount": int,          # signed contribution
 ##     "source": String,       # template id of the granting card ("" = none)
 ##     "source_name": String,  # display-name fallback when the tr key is missing
@@ -12,7 +13,13 @@ extends RefCounted
 ##     "src_loc": String }     # source card's board location: "z<idx>", "monster",
 ##                             # "strategy", or "" (hand/self/unknown)
 ##
-## Only nonzero entries are ever created (append() skips zeros), so
+## "cp_var_base"/"threat_var_base" are variable printed BASE stats ("this
+## card's counter power X is ..."): they count toward the same sums as
+## modifiers (the card dict stores 0) but render unsigned as the base value,
+## and are appended even when 0 (X = 0 is a real value, not "no modifier").
+##
+## Only nonzero entries are ever created (append() skips zeros; the
+## *_var_base kinds via append_base() are the one exception), so
 ## sum(entries) always equals the corresponding EffectQueries aggregate.
 ##
 ## "cp_double" is order-dependent: its amount is base CP + the running total
@@ -48,6 +55,28 @@ static func append(list: Array, stat: String, amount: int, source_card: Dictiona
 	list.append(entry(stat, amount, source_card, zone, owner, src_loc))
 
 
+static func append_base(list: Array, stat: String, amount: int, source_card: Dictionary, zone: int = -1, owner: int = -1, src_loc: String = "") -> void:
+	## Like append() but keeps zero amounts — variable printed bases must stay
+	## visible (X = 0 is a real value, not "no modifier").
+	list.append(entry(stat, amount, source_card, zone, owner, src_loc))
+
+
+static func variable_base(entries: Array, stat: String) -> int:
+	## Amount of the first stat-matching entry; -1 = no variable base present.
+	for e in entries:
+		if e.get("stat", "") == stat:
+			return int(e.get("amount", 0))
+	return -1
+
+
+static func variable_zone_bases(zone_breakdown: Array) -> Array:
+	## Per-zone "cp_var_base" amounts (-1 for zones without a variable base).
+	var out: Array = []
+	for zone_entries in zone_breakdown:
+		out.append(variable_base(zone_entries if zone_entries is Array else [], "cp_var_base"))
+	return out
+
+
 static func sum(entries: Array) -> int:
 	var total: int = 0
 	for e in entries:
@@ -67,6 +96,9 @@ static func hand_entries(eh: EffectHandler, player_id: int, card: Dictionary) ->
 		out.append_array(eh.get_strategy_hand_rank_breakdown(player_id, card))
 	out.append_array(eh.get_zone_play_rank_breakdown(player_id, card))
 	append(out, "cp", eh.get_hand_cp_preview(player_id, card), card, -1, player_id)
+	var var_base_cp: int = eh.get_hand_variable_base_cp(player_id, card)
+	if var_base_cp >= 0:
+		append_base(out, "cp_var_base", var_base_cp, card, -1, player_id)
 	return out
 
 

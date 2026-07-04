@@ -394,17 +394,21 @@ func apply_monster_gradient(monster_data: Dictionary) -> void:
 	overlay.color = Color(0, 0, 0, 0) # Keep parent transparent
 
 
-## Sync the entire board display to match a PlayerState
-func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = [], zone_rank_mods: Array = [], monster_cp_mod: int = 0, hand_rank_mods: Array = [], hand_power_mods: Array = []) -> void:
-	_sync_zones(player_state, zone_cp_mods, zone_rank_mods)
+## Sync the entire board display to match a PlayerState.
+## variable_bases: {"zone_cp": Array (8 per-zone resolved "counter power X"
+## values, -1 = not variable), "threat": int (resolved "threat level X",
+## -1 = not variable)} — cards whose printed stat is a variable X show the
+## resolved base as a plain value instead of a "+N" modifier badge.
+func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = [], zone_rank_mods: Array = [], monster_cp_mod: int = 0, hand_rank_mods: Array = [], hand_power_mods: Array = [], variable_bases: Dictionary = {}) -> void:
+	_sync_zones(player_state, zone_cp_mods, zone_rank_mods, variable_bases.get("zone_cp", []))
 	_sync_strategy_zones(player_state, strategy_cp_mods)
-	_sync_monster(player_state, threat_modifier, monster_cp_mod)
+	_sync_monster(player_state, threat_modifier, monster_cp_mod, int(variable_bases.get("threat", -1)))
 	_sync_hand(player_state)
 	_sync_hand_badges(player_state, hand_rank_mods, hand_power_mods)
 	_sync_info(player_state, cp_modifier, threat_modifier)
 
 
-func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: Array = []) -> void:
+func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: Array = [], zone_var_bases: Array = []) -> void:
 	for i in range(mini(zone_slots.size(), 8)):
 		var slot := zone_slots[i]
 		if not slot:
@@ -424,6 +428,7 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: A
 		var stack_size: int = state.get_zone_stack(i).size()
 		var cp_mod: int = zone_cp_mods[i] if i < zone_cp_mods.size() else 0
 		var rank_mod: int = zone_rank_mods[i] if i < zone_rank_mods.size() else 0
+		var var_base: int = int(zone_var_bases[i]) if i < zone_var_bases.size() else -1
 
 		# Update card in slot
 		if zone_data.is_empty() and slot.has_card() and slot.get_card() != monster_card:
@@ -434,7 +439,7 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: A
 			slot.place_card(card, false)
 			if stack_size > 1:
 				_add_stack_badge(card, stack_size)
-			_update_modifier_badge(card, cp_mod)
+			_update_modifier_badge(card, cp_mod, var_base)
 			_update_rank_modifier_badge(card, rank_mod)
 			_clear_power_preview(card)
 		elif not zone_data.is_empty() and slot.has_card():
@@ -442,7 +447,7 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: A
 			if card.has_method("set_card_data_dict"):
 				card.set_card_data_dict(zone_data)
 			_update_stack_badge(card, stack_size)
-			_update_modifier_badge(card, cp_mod)
+			_update_modifier_badge(card, cp_mod, var_base)
 			_update_rank_modifier_badge(card, rank_mod)
 			_clear_power_preview(card)
 
@@ -519,7 +524,7 @@ func _restore_strategy_slot_anchors() -> void:
 		slot.offset_bottom = 0
 
 
-func _sync_monster(state: PlayerState, threat_mod: int = 0, cp_mod: int = 0) -> void:
+func _sync_monster(state: PlayerState, threat_mod: int = 0, cp_mod: int = 0, threat_var_base: int = -1) -> void:
 	var m: Dictionary = state.current_monster
 	var target_zone: int = mini(state.monster_zone - 1, zone_slots.size() - 1) # 0-indexed, clamped to zone 8
 
@@ -545,7 +550,7 @@ func _sync_monster(state: PlayerState, threat_mod: int = 0, cp_mod: int = 0) -> 
 					new_slot.place_card(monster_card, false)
 			monster_card_zone = target_zone
 
-		_update_threat_modifier_badge(monster_card, threat_mod)
+		_update_threat_modifier_badge(monster_card, threat_mod, threat_var_base)
 		_update_monster_cp_badge(monster_card, cp_mod)
 
 	if rage_label:
@@ -1006,17 +1011,20 @@ func _update_strategy_modifier_badge(card: Control, modifier: int) -> void:
 	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
 
 
-func _update_modifier_badge(card: Control, modifier: int) -> void:
+func _update_modifier_badge(card: Control, modifier: int, var_base: int = -1) -> void:
 	# Battle-card CP modifier badge — sits in the lower band so the green CP
 	# label lines up with monster cards' green threat label (also lower).
 	# Strategy cards use _update_strategy_modifier_badge instead.
+	# var_base >= 0: the card's printed CP is a variable X — the badge shows
+	# the resolved base as a plain value (always visible, the art reads "X")
+	# with any extra modifiers appended as "+N".
 	# NOTE: the badge is created once and then shown/hidden — never queue_free'd.
 	# queue_free() is deferred to end-of-frame, but get_node_or_null() keeps
 	# returning the dying node on syncs within the same frame, so a free+recreate
 	# races with the deferred deletion and the badge can vanish (e.g. when an
 	# engagement restriction briefly zeroes the modifier during the counter phase).
 	var badge := card.get_node_or_null("ModifierBadge") as Label
-	if modifier == 0:
+	if modifier == 0 and var_base < 0:
 		if badge:
 			badge.visible = false
 		return
@@ -1034,16 +1042,15 @@ func _update_modifier_badge(card: Control, modifier: int) -> void:
 		badge.anchor_bottom = 0.84
 		card.add_child(badge)
 	badge.visible = true
-	var prefix := "+" if modifier > 0 else ""
-	badge.text = "%s%d" % [prefix, modifier]
-	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
+	_apply_stat_badge_text(badge, modifier, var_base)
 
 
-func _update_threat_modifier_badge(card: Control, modifier: int) -> void:
+func _update_threat_modifier_badge(card: Control, modifier: int, var_base: int = -1) -> void:
 	# Monster threat modifier badge — bottom-right band, distinct node name so it
 	# can coexist with the CP modifier badge that sits one band above it.
+	# var_base >= 0: printed threat is a variable X — see _update_modifier_badge.
 	var badge := card.get_node_or_null("ThreatModifierBadge") as Label
-	if modifier == 0:
+	if modifier == 0 and var_base < 0:
 		if badge:
 			badge.visible = false
 		return
@@ -1061,9 +1068,26 @@ func _update_threat_modifier_badge(card: Control, modifier: int) -> void:
 		badge.anchor_bottom = 0.84
 		card.add_child(badge)
 	badge.visible = true
-	var prefix := "+" if modifier > 0 else ""
-	badge.text = "%s%d" % [prefix, modifier]
-	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
+	_apply_stat_badge_text(badge, modifier, var_base)
+
+
+## Shared CP/threat badge formatting. modifier is the full in-sum total for
+## the stat (includes the resolved variable base when there is one).
+func _apply_stat_badge_text(badge: Label, modifier: int, var_base: int) -> void:
+	if var_base < 0:
+		var prefix := "+" if modifier > 0 else ""
+		badge.text = "%s%d" % [prefix, modifier]
+		badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
+		return
+	# Variable printed base: show the resolved X plainly, extras as a delta.
+	var extra: int = modifier - var_base
+	badge.text = ("%d" % var_base) if extra == 0 else ("%d%+d" % [var_base, extra])
+	var color := Color(0.92, 0.92, 0.95, 1)
+	if modifier > 0:
+		color = Color(0.3, 1.0, 0.3, 1)
+	elif modifier < 0:
+		color = Color(1.0, 0.3, 0.3, 1)
+	badge.add_theme_color_override("font_color", color)
 
 
 func _update_rank_modifier_badge(card: Control, modifier: int) -> void:

@@ -16,6 +16,9 @@ extends CardEffect
 ## Interactions: None
 ## Implementation notes: Trigger-time gate lives in discard_from_hand_condition
 ##   (collect-time hook); the play/destroy body still resolves post-movement.
+##   Counter power X is a variable BASE stat (get_variable_counter_power), not
+##   a modifier — it shows as "Base power" in breakdowns and is not
+##   engagement-gated.
 
 
 func get_bot_tags() -> Array[String]:
@@ -48,7 +51,7 @@ func on_discard_from_hand(ctx: EffectContext) -> void:
 			tr("STR_EFF_DESTROY_OPP_LOWEST_OR_SKIP"))
 
 
-func get_counter_power_modifier(ctx: EffectContext) -> int:
+func get_variable_counter_power(ctx: EffectContext) -> int:
 	# CP = 3000 * number of different colors among OTHER battle cards in zones
 	var colors: Array[int] = []
 	var my_zone: int = find_zone_of_card(ctx)

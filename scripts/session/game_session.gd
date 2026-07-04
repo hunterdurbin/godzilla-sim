@@ -121,8 +121,11 @@ func compute_hand_rank_mods(player: PlayerState) -> Array:
 
 ## Compute the counter-power preview for each card in the given player's hand
 ## (placement-independent CP modifiers only — see
-## EffectQueries.get_hand_cp_preview). Parallel to player.hand; [] if no
-## effect handler.
+## EffectQueries.get_hand_cp_preview). Variable-base cards ("counter power X",
+## e.g. EBP03-067) preview their resolved X instead — the badge renders it
+## unsigned (card.gd detects the variable base from the trigger map). The two
+## never combine: no variable-base card declares HAND_CP_PREVIEW.
+## Parallel to player.hand; [] if no effect handler.
 func compute_hand_power_mods(player: PlayerState) -> Array:
 	var out: Array = []
 	if not turn_manager:
@@ -131,7 +134,8 @@ func compute_hand_power_mods(player: PlayerState) -> Array:
 	if not eh:
 		return out
 	for card in player.hand:
-		out.append(eh.get_hand_cp_preview(player.player_id, card))
+		var var_base: int = eh.get_hand_variable_base_cp(player.player_id, card)
+		out.append(var_base if var_base >= 0 else eh.get_hand_cp_preview(player.player_id, card))
 	return out
 
 

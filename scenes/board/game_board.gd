@@ -1952,17 +1952,41 @@ func _sync_boards() -> void:
 		var hand_power_0: Array = _session.compute_hand_power_mods(state.players[0]) if eh else []
 		var hand_power_1: Array = _session.compute_hand_power_mods(state.players[1]) if eh else []
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0, hand_rank_0, hand_power_0)
+			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0, hand_rank_0, hand_power_0, _host_variable_bases(0))
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1, hand_rank_1, hand_power_1)
+			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1, hand_rank_1, hand_power_1, _host_variable_bases(1))
 	elif not _client_players.is_empty():
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0], _client_hand_rank_mods[0], _client_hand_power_mods[0])
+			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0], _client_hand_rank_mods[0], _client_hand_power_mods[0], _client_variable_bases(0))
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1], _client_monster_cp_mods[1], _client_hand_rank_mods[1], _client_hand_power_mods[1])
+			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1], _client_monster_cp_mods[1], _client_hand_rank_mods[1], _client_hand_power_mods[1], _client_variable_bases(1))
 	if _is_mobile_layout:
 		_sync_mobile_cp_tray()
 	call_deferred("_position_hands")
+
+
+## Resolved variable printed bases ("counter power / threat level X") for the
+## plain-value badges — see PlayerBoard.sync_to_state. Host reads the effect
+## handler directly; clients derive the same values from the breakdowns
+## already packed into the state broadcast (no extra sync fields).
+func _host_variable_bases(pid: int) -> Dictionary:
+	var eh := turn_manager.effect_handler
+	if not eh:
+		return {}
+	return {
+		"zone_cp": ModifierBreakdown.variable_zone_bases(eh.get_zone_cp_breakdown(pid)),
+		"threat": ModifierBreakdown.variable_base(eh.get_threat_level_breakdown(pid), "threat_var_base"),
+	}
+
+
+func _client_variable_bases(pid: int) -> Dictionary:
+	var breakdowns: Dictionary = _session.client_modifier_breakdowns
+	var zone_cp: Array = breakdowns.get("zone_cp", [])
+	var threat: Array = breakdowns.get("threat", [])
+	return {
+		"zone_cp": ModifierBreakdown.variable_zone_bases(zone_cp[pid] if pid < zone_cp.size() else []),
+		"threat": ModifierBreakdown.variable_base(threat[pid] if pid < threat.size() else [], "threat_var_base"),
+	}
 
 
 func _update_hand_visibility(_active_player_id: int) -> void:
@@ -2393,7 +2417,15 @@ func _on_hand_card_right_clicked(card: Control, hand_player_id: int) -> void:
 func _show_card_zoom(card_data: Dictionary, play_cost_modifier: int = 0, zoom_ctx: Dictionary = {}, power_preview: int = 0) -> void:
 	if zoom_ctx.is_empty():
 		zoom_ctx = _infer_zoom_ctx(card_data)
-	card_zoom_overlay.show_card(card_data, play_cost_modifier, _zoom_entries_for(zoom_ctx), power_preview)
+	var entries := _zoom_entries_for(zoom_ctx)
+	# Variable printed bases ("counter power / threat level X"): surface the
+	# resolved value as a badge on the zoomed card itself, not just as a
+	# panel row. CP rides the power-preview badge (0 = hidden sentinel).
+	var cp_base: int = ModifierBreakdown.variable_base(entries, "cp_var_base")
+	if power_preview == 0 and cp_base > 0:
+		power_preview = cp_base
+	card_zoom_overlay.show_card(card_data, play_cost_modifier, entries, power_preview,
+		ModifierBreakdown.variable_base(entries, "threat_var_base"))
 
 
 ## PlayerState for zoom lookups that must not assume either mode is ready
@@ -2494,7 +2526,20 @@ func _zoom_entries_for(zoom_ctx: Dictionary) -> Array:
 		var owner: int = int(e.get("owner", -1))
 		tagged["opp"] = owner >= 0 and owner != pid
 		out.append(tagged)
+	_front_load_variable_base(out)
 	return out
+
+
+## Move a variable-base entry (resolved printed "X") to the front so it reads
+## as the base line above the modifiers. Cards without a variable base get no
+## base row — their printed stat is already on the card art.
+func _front_load_variable_base(out: Array) -> void:
+	for i in range(out.size()):
+		var stat: String = str(out[i].get("stat", ""))
+		if stat == "cp_var_base" or stat == "threat_var_base":
+			if i > 0:
+				out.insert(0, out.pop_at(i))
+			return
 
 
 func _host_zoom_entries(pid: int, location: String, index: int) -> Array:
@@ -2536,8 +2581,17 @@ func _show_card_preview(data: Dictionary, play_cost_modifier: int = 0, power_pre
 	_preview_card.set_card_data_dict(data)
 	if _preview_card.has_method("set_play_cost_modifier"):
 		_preview_card.set_play_cost_modifier(play_cost_modifier)
+	# Variable printed bases: slot hovers emit no power value, so locate the
+	# hovered copy and pull the resolved X from its breakdown entries. -1
+	# threat clears the persistent preview card's badge between hovers.
+	var entries := _zoom_entries_for(_infer_zoom_ctx(data))
+	var cp_base: int = ModifierBreakdown.variable_base(entries, "cp_var_base")
+	if power_preview == 0 and cp_base > 0:
+		power_preview = cp_base
 	if _preview_card.has_method("set_power_preview"):
 		_preview_card.set_power_preview(power_preview)
+	if _preview_card.has_method("set_threat_preview"):
+		_preview_card.set_threat_preview(ModifierBreakdown.variable_base(entries, "threat_var_base"))
 	var is_strategy: bool = data.get("card_type", -1) == CardEnums.CardType.STRATEGY
 	if is_strategy:
 		_show_strategy_preview()

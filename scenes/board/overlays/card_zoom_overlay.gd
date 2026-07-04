@@ -26,14 +26,24 @@ const NAME_COLOR := Color(0.72, 0.72, 0.8)
 const NAME_COLOR_OPPONENT := Color(0.78, 0.62, 0.95)
 const AMOUNT_GOOD := Color(0.4, 0.9, 0.5)
 const AMOUNT_BAD := Color(0.95, 0.45, 0.4)
+const AMOUNT_NEUTRAL := Color(0.88, 0.88, 0.93)
 
 ## Sections in display order: [tr key, stats included].
 const SECTIONS := [
-	["STR_ZOOM_MOD_SEC_POWER", ["cp", "cp_double"]],
+	["STR_ZOOM_MOD_SEC_POWER", ["cp_var_base", "cp", "cp_double"]],
 	["STR_ZOOM_MOD_SEC_COST", ["play_rank", "zone_play_rank"]],
 	["STR_ZOOM_MOD_SEC_RANK", ["field_rank"]],
-	["STR_ZOOM_MOD_SEC_THREAT", ["threat"]],
+	["STR_ZOOM_MOD_SEC_THREAT", ["threat_var_base", "threat"]],
 ]
+
+## Variable-base rows ("this card's counter power/threat level X is ..."):
+## rendered unsigned and neutral (they state the base value, not a delta),
+## labeled by stat instead of source, no source-card thumbnail. Cards with a
+## fixed printed stat get no base row — that value is on the card art.
+const BASE_STATS := {
+	"cp_var_base": "STR_ZOOM_MOD_BASE_POWER",
+	"threat_var_base": "STR_ZOOM_MOD_BASE_THREAT",
+}
 
 ## Set by the board: called with a source template id when a modifier row is
 ## clicked, so the zoom can re-target onto the source card.
@@ -46,6 +56,17 @@ var _source_rows: Array = [] # of {"control": Control, "source": String}
 ## Set by the board: called after the zoom closes (resets slot input state
 ## so no timers or pending clicks carry over).
 var on_hidden: Callable = Callable()
+
+# Badge-hide toggle: an eyeball button above the "Active modifiers" panel
+# that clears the on-card badges (play cost, base power/threat) so the
+# printed card text stays readable. Resets to visible on every new zoom.
+# The sources panel itself is unaffected.
+const EYE_OPEN_ICON: Texture2D = preload("res://assets/icons/eye_open.svg")
+const EYE_CLOSED_ICON: Texture2D = preload("res://assets/icons/eye_closed.svg")
+var _badge_toggle: PanelContainer
+var _badge_toggle_icon: TextureRect
+var _badges_hidden: bool = false
+var _zoomed_card: Control = null
 
 # Pinch-to-zoom / pan state (touch only)
 var _pinch_active: bool = false
@@ -69,9 +90,50 @@ func _ready() -> void:
 	_sources_panel.add_theme_stylebox_override("panel", style)
 	_sources_header.add_theme_font_size_override("font_size", 15)
 	_sources_header.add_theme_color_override("font_color", HEADER_COLOR)
+	_build_badge_toggle()
 
 
-func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entries: Array = [], power_preview: int = 0) -> void:
+## Eyeball pill that toggles the zoomed card's badges. MOUSE_FILTER_IGNORE
+## like the rest of the overlay — presses are routed manually (see
+## _handle_toggle_press) so the dismiss/pinch input priority stays untouched.
+func _build_badge_toggle() -> void:
+	_badge_toggle = PanelContainer.new()
+	_badge_toggle.visible = false
+	_badge_toggle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var style := StyleBoxFlat.new()
+	style.bg_color = PANEL_BG
+	style.set_corner_radius_all(8)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	_badge_toggle.add_theme_stylebox_override("panel", style)
+	_badge_toggle_icon = TextureRect.new()
+	_badge_toggle_icon.texture = EYE_OPEN_ICON
+	_badge_toggle_icon.custom_minimum_size = Vector2(24, 24)
+	_badge_toggle_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_badge_toggle_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_badge_toggle.add_child(_badge_toggle_icon)
+	add_child(_badge_toggle)
+
+
+## Sit the eyeball directly above the "Active modifiers" panel (left-aligned
+## with it); with no panel (badges but no modifier entries), fall back to the
+## panel's usual right-edge spot. Deferred from show_card so the panel's
+## dynamic height has settled.
+func _position_badge_toggle() -> void:
+	if not _badge_toggle.visible:
+		return
+	_badge_toggle.reset_size()
+	var tsize := _badge_toggle.size
+	if _sources_panel.visible:
+		var rect := _sources_panel.get_global_rect()
+		_badge_toggle.global_position = Vector2(rect.position.x, rect.position.y - tsize.y - 8.0)
+	else:
+		_badge_toggle.global_position = Vector2(size.x - tsize.x - 20.0, (size.y - tsize.y) / 2.0)
+
+
+func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entries: Array = [], power_preview: int = 0, threat_preview: int = -1) -> void:
 	# Clear any existing zoomed card
 	for child in _container.get_children():
 		child.queue_free()
@@ -83,6 +145,8 @@ func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entr
 		card.set_play_cost_modifier(play_cost_modifier)
 	if card.has_method("set_power_preview"):
 		card.set_power_preview(power_preview)
+	if card.has_method("set_threat_preview"):
+		card.set_threat_preview(threat_preview)
 	card.is_selectable = false
 	card.drag_enabled = false
 	card.hover_scale = 1.0
@@ -113,6 +177,13 @@ func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entr
 	# Re-orient the badge after rotation was set above (strategy zoom rotates -90°).
 	if card.has_method("update_play_cost_badge_layout"):
 		card.update_play_cost_badge_layout()
+	# Badge-hide toggle: fresh zooms always start with badges visible; only
+	# offer the button when there is a badge to hide.
+	_zoomed_card = card
+	_badges_hidden = false
+	_badge_toggle_icon.texture = EYE_OPEN_ICON
+	_badge_toggle.visible = play_cost_modifier != 0 or power_preview != 0 or threat_preview >= 0
+	call_deferred("_position_badge_toggle")
 	visible = true
 	_shown_frame = Engine.get_process_frames()
 
@@ -125,6 +196,8 @@ func hide_zoom() -> void:
 	_pinch_active = false
 	_pinch_used = false
 	_dragging = false
+	_zoomed_card = null
+	_badge_toggle.visible = false
 	for child in _container.get_children():
 		child.queue_free()
 	_clear_modifier_sources()
@@ -232,9 +305,11 @@ func _make_modifier_row(group: Dictionary, own_template: String) -> Control:
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(hbox)
 
-	var preview := _make_source_preview(str(group["source"]))
-	if preview:
-		hbox.add_child(preview)
+	var is_base_row: bool = BASE_STATS.has(str(group["stat"]))
+	if not is_base_row:
+		var preview := _make_source_preview(str(group["source"]))
+		if preview:
+			hbox.add_child(preview)
 
 	var text_box := VBoxContainer.new()
 	text_box.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -244,15 +319,21 @@ func _make_modifier_row(group: Dictionary, own_template: String) -> Control:
 	hbox.add_child(text_box)
 
 	var amount := Label.new()
-	amount.text = "%+d" % int(group["amount"])
+	if is_base_row:
+		amount.text = "%d" % int(group["amount"])
+		amount.add_theme_color_override("font_color", AMOUNT_NEUTRAL)
+	else:
+		amount.text = "%+d" % int(group["amount"])
+		amount.add_theme_color_override("font_color",
+			AMOUNT_GOOD if _is_beneficial(str(group["stat"]), int(group["amount"])) else AMOUNT_BAD)
 	amount.add_theme_font_size_override("font_size", 16)
-	amount.add_theme_color_override("font_color",
-		AMOUNT_GOOD if _is_beneficial(str(group["stat"]), int(group["amount"])) else AMOUNT_BAD)
 	amount.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	text_box.add_child(amount)
 
 	var name_label := Label.new()
-	if str(group["source"]) == own_template:
+	if is_base_row:
+		name_label.text = tr(BASE_STATS[str(group["stat"])])
+	elif str(group["source"]) == own_template:
 		name_label.text = tr("STR_ZOOM_MOD_OWN_EFFECT")
 	else:
 		name_label.text = _tr_fallback("CARD_%s_NAME" % group["source"], str(group["source_name"]))
@@ -302,6 +383,10 @@ func _row_detail_text(group: Dictionary) -> String:
 	var parts: Array[String] = []
 	if group["stat"] == "cp_double":
 		parts.append(tr("STR_ZOOM_MOD_DOUBLED"))
+	if group["stat"] in ["cp_var_base", "threat_var_base"]:
+		# Variable printed base ("X") — resolved by the card's own effect.
+		parts.append(tr("STR_ZOOM_MOD_OWN_EFFECT"))
+		return " · ".join(parts)
 	var zones: Array = group["zones"]
 	if group["stat"] == "zone_play_rank" and not zones.is_empty():
 		# Zones this cost applies in.
@@ -355,6 +440,18 @@ func _handle_panel_press(pos: Vector2) -> bool:
 	return true
 
 
+## Route a click/tap to the badge-hide toggle. Returns true when the point is
+## on the pill (the press is consumed and never dismisses the zoom).
+func _handle_toggle_press(pos: Vector2) -> bool:
+	if not _badge_toggle.visible or not _badge_toggle.get_global_rect().has_point(pos):
+		return false
+	_badges_hidden = not _badges_hidden
+	if is_instance_valid(_zoomed_card) and _zoomed_card.has_method("set_stat_badges_visible"):
+		_zoomed_card.set_stat_badges_visible(not _badges_hidden)
+	_badge_toggle_icon.texture = EYE_CLOSED_ICON if _badges_hidden else EYE_OPEN_ICON
+	return true
+
+
 static func _tr_fallback(key: String, fallback: String) -> String:
 	var translated: String = TranslationServer.translate(key)
 	return fallback if translated == key else translated
@@ -393,6 +490,8 @@ func handle_input(event: InputEvent) -> bool:
 					if _pinch_used or _dragging:
 						_pinch_used = false
 						_dragging = false
+					elif _handle_toggle_press(event.position):
+						pass
 					elif not _handle_panel_press(event.position):
 						hide_zoom()
 		return true
@@ -439,7 +538,9 @@ func handle_input(event: InputEvent) -> bool:
 				var dir: int = 1 if event.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1
 				_sources_scroll.scroll_vertical += dir * 40
 				return true
-		# Clicks on the modifier panel navigate to the source, never dismiss.
+		# Clicks on the badge toggle or the modifier panel never dismiss.
+		if _handle_toggle_press(event.position):
+			return true
 		if _handle_panel_press(event.position):
 			return true
 		if not TouchHelper.is_touch_device():
@@ -461,6 +562,9 @@ func _on_gui_input(event: InputEvent) -> void:
 	if (Engine.get_process_frames() - _shown_frame) <= 2:
 		return
 	if event is InputEventMouseButton and event.pressed:
+		if _handle_toggle_press(event.global_position):
+			get_viewport().set_input_as_handled()
+			return
 		if _handle_panel_press(event.global_position):
 			get_viewport().set_input_as_handled()
 			return

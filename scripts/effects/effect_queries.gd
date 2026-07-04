@@ -140,6 +140,12 @@ func get_zone_cp_breakdown(player_id: int) -> Array:
 			var effect := get_effect(zone_card)
 			if effect:
 				var ctx := _build_context(player_id, zone_card)
+				# Variable printed base ("counter power X is ..."): counted in
+				# the same sum (the card dict stores 0) but never engagement-
+				# gated — restriction is handled by get_engagement_restricted_cp.
+				if has_trigger(zone_card, "get_variable_counter_power"):
+					ModifierBreakdown.append_base(breakdown[i], "cp_var_base",
+						effect.get_variable_counter_power(ctx), zone_card, i, player_id, "z%d" % i)
 				var can_card_engage := effect.can_engage(ctx)
 				# Check engagement restriction from opponent's monster
 				if can_card_engage and max_restricted_rank >= 0:
@@ -192,7 +198,8 @@ func get_zone_cp_breakdown(player_id: int) -> Array:
 			if zone_idx >= 0 and zone_idx < 8:
 				var base_cp: int = player.get_zone_top_card(zone_idx).get("counter_power", 0)
 				# Doubling total = 2 * (base + mod). Add the existing total to
-				# turn modifier into base + 2 * modifier.
+				# turn modifier into base + 2 * modifier. A cp_var_base entry is
+				# already in the running sum, so variable-X bases double too.
 				ModifierBreakdown.append(breakdown[zone_idx], "cp_double",
 					base_cp + ModifierBreakdown.sum(breakdown[zone_idx]), opp_monster, zone_idx, opponent_id, "monster")
 
@@ -216,8 +223,15 @@ func get_threat_level_breakdown(player_id: int) -> Array:
 	# Monster card
 	var me := get_effect(player.current_monster)
 	if me:
+		var monster_ctx := _build_context(player_id, player.current_monster)
+		# Variable printed base ("threat level X is ..."): same sum as
+		# modifiers (dict stores 0), kept even when 0.
+		if has_trigger(player.current_monster, "get_variable_threat_level"):
+			ModifierBreakdown.append_base(entries, "threat_var_base",
+				me.get_variable_threat_level(monster_ctx),
+				player.current_monster, -1, player_id, "monster")
 		ModifierBreakdown.append(entries, "threat",
-			me.get_threat_level_modifier(_build_context(player_id, player.current_monster)),
+			me.get_threat_level_modifier(monster_ctx),
 			player.current_monster, -1, player_id, "monster")
 
 	# Battle cards in zones (e.g. Crystal tokens grant +1000 TL)
@@ -396,8 +410,20 @@ func get_engagement_restricted_cp(defender_player_id: int) -> int:
 		if not zone_card.is_empty():
 			var card_rank: int = get_effective_field_rank(zone_card, defender_player_id)
 			if card_rank > 0 and card_rank <= max_restricted_rank:
-				total_restricted += zone_card.get("counter_power", 0)
+				total_restricted += zone_card.get("counter_power", 0) + _variable_base_cp(defender_player_id, zone_card)
 	return total_restricted
+
+
+func _variable_base_cp(player_id: int, card: Dictionary) -> int:
+	## Resolved variable printed CP base ("counter power X"), 0 for cards
+	## without one. The variable base joins the modifier sums un-gated, so
+	## engagement restriction must subtract it alongside the printed base.
+	if not has_trigger(card, "get_variable_counter_power"):
+		return 0
+	var effect := get_effect(card)
+	if effect == null:
+		return 0
+	return effect.get_variable_counter_power(_build_context(player_id, card))
 
 
 
@@ -731,6 +757,23 @@ func get_hand_cp_preview(player_id: int, card: Dictionary) -> int:
 	if effect == null:
 		return 0
 	return effect.get_counter_power_modifier(_build_context(player_id, card))
+
+
+
+
+func get_hand_variable_base_cp(player_id: int, card: Dictionary) -> int:
+	## Preview of a battle card's variable printed CP base ("counter power X")
+	## while it is still in hand; -1 when the card has no variable base. In
+	## hand find_zone_of_card() is -1, so self-excluding formulas count every
+	## zone — the correct pre-placement preview.
+	if not CardUtils.is_battle(card):
+		return -1
+	if not has_trigger(card, "get_variable_counter_power"):
+		return -1
+	var effect := get_effect(card)
+	if effect == null:
+		return -1
+	return effect.get_variable_counter_power(_build_context(player_id, card))
 
 
 

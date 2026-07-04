@@ -6,6 +6,7 @@ const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 const CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
 const RAGE_MARKER_DEFAULT_PATH := "res://assets/rage/default.png"
 const RAGE_MARKER_CUSTOM_DIR := "rage"
+const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
 
 static var _custom_art_base: String = ""
 static var _custom_card_back_base: String = ""
@@ -456,7 +457,7 @@ func get_play_cost_modifier() -> int:
 ## flips the card -90°) so the badges re-orient to read upright.
 func update_play_cost_badge_layout() -> void:
 	_layout_play_cost_badge()
-	_layout_power_preview_badge()
+	_layout_stat_badges()
 
 
 var _power_preview: int = 0
@@ -465,6 +466,8 @@ var _power_preview: int = 0
 ## Show a "+N" power badge over the card's printed CP while it sits in hand —
 ## a preview of the card's own placement-independent CP modifier (see
 ## EffectQueries.get_hand_cp_preview). Amount 0 → badge hidden.
+## Variable-base cards ("counter power X", e.g. EBP03-067): amount is the
+## resolved X itself, rendered unsigned/neutral — it IS the power, not a bonus.
 func set_power_preview(amount: int) -> void:
 	_power_preview = amount
 	var badge := get_node_or_null("PowerPreviewBadge") as Label
@@ -473,6 +476,7 @@ func set_power_preview(amount: int) -> void:
 		# same-frame syncs races with the dying node (badge reuse gotcha).
 		if badge:
 			badge.visible = false
+		_layout_stat_badges()
 		return
 	if not badge:
 		badge = Label.new()
@@ -481,23 +485,101 @@ func set_power_preview(amount: int) -> void:
 		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		add_child(badge)
-		if not resized.is_connected(_layout_power_preview_badge):
-			resized.connect(_layout_power_preview_badge)
+		if not resized.is_connected(_layout_stat_badges):
+			resized.connect(_layout_stat_badges)
 	badge.visible = true
-	badge.text = "%+d" % amount
 	badge.add_theme_color_override("font_color",
-		Color(0.3, 1.0, 0.3) if amount > 0 else Color(1.0, 0.4, 0.4))
+		Color(0.3, 1.0, 0.3) if _has_variable_base_cp() or amount > 0 else Color(1.0, 0.4, 0.4))
 	badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
-	_layout_power_preview_badge()
+	_layout_stat_badges()
+
+
+## Whether this card's printed counter power is a variable X resolved by its
+## own effect (get_variable_counter_power in the pre-generated trigger map —
+## runtime introspection is unreliable in export builds).
+func _has_variable_base_cp() -> bool:
+	var script_path: String = card_data.get("effect_script", "")
+	if script_path.is_empty():
+		return false
+	return "get_variable_counter_power" in (_TriggerMap.TRIGGERS.get(script_path, []) as Array)
 
 
 func get_power_preview() -> int:
 	return _power_preview
 
 
-func _layout_power_preview_badge() -> void:
-	var badge := get_node_or_null("PowerPreviewBadge") as Label
+var _threat_preview: int = -1
+
+
+## Show the resolved variable threat level ("threat level X", e.g. EBP04-031)
+## on a preview/zoomed monster card — plain green value in the same band the
+## board's ThreatModifierBadge occupies. -1 → badge hidden (fixed printed
+## threat is on the art). Unlike the CP preview, 0 stays visible: X = 0 is a
+## resolved value the art can't show.
+func set_threat_preview(amount: int) -> void:
+	_threat_preview = amount
+	var badge := get_node_or_null("ThreatPreviewBadge") as Label
+	if amount < 0:
+		# Hide, never free — queue_free is deferred, so a free+recreate on
+		# same-frame syncs races with the dying node (badge reuse gotcha).
+		if badge:
+			badge.visible = false
+		_layout_stat_badges()
+		return
 	if not badge:
+		badge = Label.new()
+		badge.name = "ThreatPreviewBadge"
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		add_child(badge)
+		if not resized.is_connected(_layout_stat_badges):
+			resized.connect(_layout_stat_badges)
+	badge.visible = true
+	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+	badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	_layout_stat_badges()
+
+
+func get_threat_preview() -> int:
+	return _threat_preview
+
+
+## Zoom-overlay hook: hide every badge drawn over the card art so the printed
+## text stays readable; restore from the stored values when re-shown.
+func set_stat_badges_visible(shown: bool) -> void:
+	if shown:
+		set_play_cost_modifier(_play_cost_modifier)
+		set_power_preview(_power_preview)
+		set_threat_preview(_threat_preview)
+		return
+	for badge_name in ["PlayCostModifierBadge", "PowerPreviewBadge", "ThreatPreviewBadge"]:
+		var badge := get_node_or_null(badge_name) as Label
+		if badge:
+			badge.visible = false
+
+
+func _layout_stat_badges() -> void:
+	# Power and threat previews share one anchor: the "Counter Power" strip at
+	# the card's bottom-right (directly above the printed value). When both are
+	# visible they stack upward from it and gain "CP"/"Threat" prefixes so the
+	# two values stay distinguishable; alone, each shows the bare number.
+	var entries: Array = []
+	var power_badge := get_node_or_null("PowerPreviewBadge") as Label
+	if power_badge and power_badge.visible:
+		entries.append({
+			"badge": power_badge,
+			"text": ("%d" % _power_preview) if _has_variable_base_cp() else ("%+d" % _power_preview),
+			"prefix": "CP",
+		})
+	var threat_badge := get_node_or_null("ThreatPreviewBadge") as Label
+	if threat_badge and threat_badge.visible:
+		entries.append({
+			"badge": threat_badge,
+			"text": "%d" % _threat_preview,
+			"prefix": tr("STR_ZOOM_MOD_SEC_THREAT"),
+		})
+	if entries.is_empty():
 		return
 	var w: float = size.x if size.x > 0.0 else custom_minimum_size.x
 	if w <= 0.0:
@@ -507,15 +589,17 @@ func _layout_power_preview_badge() -> void:
 	if h <= 0.0:
 		h = 210.0 * scale_factor
 	var bsize := Vector2(64, 20) * scale_factor
-	badge.size = bsize
-	badge.pivot_offset = bsize / 2.0
-	# Land on the "Counter Power" strip at the card's bottom-right, directly
-	# above the printed CP value. Only battle cards carry this badge, so no
-	# rotated-position special case; counter-rotate anyway for safety.
-	badge.position = Vector2(w * 0.865, h * 0.886) - bsize / 2.0
-	badge.rotation = - rotation
-	badge.add_theme_font_size_override("font_size", int(round(15.0 * scale_factor)))
-	badge.add_theme_constant_override("outline_size", maxi(2, int(round(4.0 * scale_factor))))
+	var gap: float = 4.0 * scale_factor
+	for i in range(entries.size()):
+		var badge: Label = entries[i]["badge"]
+		badge.text = ("%s %s" % [entries[i]["prefix"], entries[i]["text"]]) if entries.size() > 1 else str(entries[i]["text"])
+		badge.size = bsize
+		badge.pivot_offset = bsize / 2.0
+		# Counter-rotate for safety (mirrors the other badges).
+		badge.position = Vector2(w * 0.865, h * 0.886) - bsize / 2.0 - Vector2(0, (bsize.y + gap) * i)
+		badge.rotation = - rotation
+		badge.add_theme_font_size_override("font_size", int(round(15.0 * scale_factor)))
+		badge.add_theme_constant_override("outline_size", maxi(2, int(round(4.0 * scale_factor))))
 
 
 func _layout_play_cost_badge() -> void:

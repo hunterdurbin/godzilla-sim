@@ -2815,7 +2815,6 @@ var EBP03_CARDS: Array[Dictionary] = [
 		"colors": [CardEnums.CardColor.WHITE],
 		"traits": [CardEnums.CardTrait.MONSTER_X, CardEnums.CardTrait.FINAL_WARS],
 		"counter_power": 0,
-		"counter_power_variable": true,
 		"invasion_icon": 1,
 		"description": "<Your Turn> When this card is discarded from your hand, if there are 2 or more colors among battle cards in your zones, play this card and <Destroy> up to 1 of your opponent’s lowest ranked battle cards in their zones.\nThis card’s counter power X is equal to 3000 multiplied by the number of different colors among other battle cards in your zones. (White also counts as a color.)",
 		"effect_script": "res://scripts/effects/ebp03/ebp03_067.gd"
@@ -3525,7 +3524,6 @@ var EBP04_CARDS: Array[Dictionary] = [
 		"colors": [CardEnums.CardColor.BLUE],
 		"traits": [CardEnums.CardTrait.MONSTER_X, CardEnums.CardTrait.FINAL_WARS],
 		"counter_power": 0,
-		"counter_power_variable": true,
 		"invasion_icon": 2,
 		"evolution_rank": 8,
 		"evolution_trait": CardEnums.CardTrait.KAISER_GHIDORAH,

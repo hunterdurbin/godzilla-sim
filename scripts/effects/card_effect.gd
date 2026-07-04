@@ -287,6 +287,19 @@ func get_threat_level_modifier(_ctx: EffectContext) -> int:
 	return 0
 
 
+func get_variable_counter_power(_ctx: EffectContext) -> int:
+	## Return this card's printed counter power X ("this card's counter power X
+	## is equal to ..."). A variable BASE stat, not a modifier: never gated by
+	## engagement, and reported in breakdowns even when 0.
+	return 0
+
+
+func get_variable_threat_level(_ctx: EffectContext) -> int:
+	## Return this monster's printed threat level X. Variable base stat, not a
+	## modifier (see get_variable_counter_power).
+	return 0
+
+
 func can_engage(_ctx: EffectContext) -> bool:
 	## Return false if this card "cannot engage" with the monster.
 	## Its counter power won't be included in the total.

@@ -320,6 +320,130 @@ func test_hand_entries_include_cp_preview() -> void:
 	_assert_entry(cp_entries[0], "cp", 6000, "EBP01-075", -1, 0)
 
 
+# --- Variable printed bases ("counter power / threat level X") ---
+
+
+func _colored_battle(color: int, id: String, rank: int = 2, cp: int = 2000) -> Dictionary:
+	var card := Cards.battle(rank, cp, id)
+	card["colors"] = [color]
+	return card
+
+
+func test_zone_cp_variable_base_entry() -> void:
+	# EBP04-047: counter power X = 3000 x distinct colors among OTHER battle
+	# cards — a variable BASE (cp_var_base), not a "cp" modifier.
+	var card := Real.instance("EBP04-047")
+	var state := States.make_state({"p0": {"zone_cards": {
+		2: card,
+		1: _colored_battle(CardEnums.CardColor.RED, "C-R"),
+		3: _colored_battle(CardEnums.CardColor.GREEN, "C-G"),
+		4: _colored_battle(CardEnums.CardColor.WHITE, "C-W"),
+	}}})
+	var handler := _wire(state)
+
+	var breakdown: Array = handler.get_zone_cp_breakdown(0)
+	assert_int(breakdown[2].size()).is_equal(1)
+	_assert_entry(breakdown[2][0], "cp_var_base", 9000, "EBP04-047", 2, 0, "z2")
+	_assert_zone_cp_sums_match(handler, 0)
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(9000)
+	assert_int(ModifierBreakdown.variable_zone_bases(breakdown)[2]).is_equal(9000)
+	assert_int(ModifierBreakdown.variable_zone_bases(breakdown)[1]).is_equal(-1)
+
+
+func test_zone_cp_variable_base_zero_still_reported() -> void:
+	# Alone on the board X = 0 — the entry must survive (X = 0 is a real
+	# value the UI shows, not "no modifier").
+	var card := Real.instance("EBP04-047")
+	var state := States.make_state({"p0": {"zone_cards": {2: card}}})
+	var handler := _wire(state)
+
+	var breakdown: Array = handler.get_zone_cp_breakdown(0)
+	assert_int(breakdown[2].size()).is_equal(1)
+	_assert_entry(breakdown[2][0], "cp_var_base", 0, "EBP04-047", 2, 0, "z2")
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(0)
+	assert_int(ModifierBreakdown.variable_zone_bases(breakdown)[2]).is_equal(0)
+
+
+func test_variable_base_survives_engagement_gating_and_is_restricted() -> void:
+	# EBP01-014 (P1 monster) restricts rank <=5 from engaging in the counter
+	# phase. The cp_var_base entry is a printed base, so it stays in the
+	# breakdown — the exclusion happens via get_engagement_restricted_cp,
+	# which must subtract the resolved X alongside printed bases. Net CP: 0.
+	var card := Real.instance("EBP04-047")
+	var state := States.make_state({
+		"p0": {"zone_cards": {
+			2: card,
+			1: _colored_battle(CardEnums.CardColor.RED, "C-R"),
+			3: _colored_battle(CardEnums.CardColor.GREEN, "C-G"),
+			4: _colored_battle(CardEnums.CardColor.WHITE, "C-W"),
+		}},
+		"p1": {
+			"current_monster": Real.instance("EBP01-014"),
+			"monster_zone": 4,
+			"zone_cards": {0: Cards.battle(2, 1000, "F-1"), 1: Cards.battle(2, 1000, "F-2")},
+		},
+	})
+	state.current_phase = CardEnums.GamePhase.COUNTER
+	var handler := _wire(state)
+
+	var breakdown: Array = handler.get_zone_cp_breakdown(0)
+	assert_int(breakdown[2].size()).is_equal(1)
+	_assert_entry(breakdown[2][0], "cp_var_base", 9000, "EBP04-047", 2, 0, "z2")
+	# Restricted subtraction: 3 x 2000 printed + 9000 resolved X.
+	assert_int(handler.get_engagement_restricted_cp(0)).is_equal(15000)
+	# Counter math (base total + modifiers - restricted) nets to zero.
+	var net: int = state.players[0].get_total_counter_power() \
+		+ handler.get_counter_power_modifier(0) - handler.get_engagement_restricted_cp(0)
+	assert_int(net).is_equal(0)
+
+
+func test_threat_variable_base_entry() -> void:
+	# EBP04-031: threat level X = 3000 x distinct colors among own battle
+	# cards — a variable BASE (threat_var_base), not a "threat" modifier.
+	var state := States.make_state({"p0": {
+		"current_monster": Real.instance("EBP04-031"),
+		"zone_cards": {
+			0: _colored_battle(CardEnums.CardColor.RED, "C-R"),
+			1: _colored_battle(CardEnums.CardColor.BLUE, "C-B"),
+		},
+	}})
+	var handler := _wire(state)
+
+	var entries: Array = handler.get_threat_level_breakdown(0)
+	assert_int(entries.size()).is_equal(1)
+	_assert_entry(entries[0], "threat_var_base", 6000, "EBP04-031", -1, 0, "monster")
+	assert_int(handler.get_threat_level_modifier(0)).is_equal(6000)
+	assert_int(handler.get_effective_threat_level(0)) \
+		.is_equal(state.players[0].get_threat_level() + 6000)
+	assert_int(ModifierBreakdown.variable_base(entries, "threat_var_base")).is_equal(6000)
+
+	# No battle cards -> X = 0, entry stays.
+	state.players[0].clear_zone(0)
+	state.players[0].clear_zone(1)
+	var zeroed: Array = handler.get_threat_level_breakdown(0)
+	assert_int(zeroed.size()).is_equal(1)
+	_assert_entry(zeroed[0], "threat_var_base", 0, "EBP04-031", -1, 0, "monster")
+
+
+func test_hand_entries_include_variable_base_preview() -> void:
+	# EBP03-067 in hand: X counts every zone (no self-zone to exclude yet).
+	var card := Real.instance("EBP03-067")
+	var state := States.make_state({"p0": {
+		"hand": [card],
+		"zone_cards": {
+			0: _colored_battle(CardEnums.CardColor.RED, "C-R"),
+			1: _colored_battle(CardEnums.CardColor.GREEN, "C-G"),
+		},
+	}})
+	var handler := _wire(state)
+
+	assert_int(handler.get_hand_variable_base_cp(0, card)).is_equal(6000)
+	var entries: Array = ModifierBreakdown.hand_entries(handler, 0, card)
+	var vb: Array = entries.filter(func(e: Dictionary) -> bool: return e.get("stat") == "cp_var_base")
+	assert_int(vb.size()).is_equal(1)
+	_assert_entry(vb[0], "cp_var_base", 6000, "EBP03-067", -1, 0)
+
+
 # --- build_all / collect / normalize (multiplayer packing helpers) ---
 
 
