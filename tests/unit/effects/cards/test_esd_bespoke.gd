@@ -284,14 +284,45 @@ func test_esd02_014_evolves_chosen_battle_card() -> void:
 	var input := ScriptedPlayerInput.new()
 	input.answers = {"select_zone": [2], "search_cards": [{"id": imago.get("id")}]}
 	var s := States.make_session(state, input)
+	var log_tokens: Array[Dictionary] = []
+	var handler: EffectHandler = s["effect_handler"]
+	handler.log_message.connect(func(t: Dictionary) -> void: log_tokens.append(t))
 
-	await s["effect_handler"].trigger_enter(0, card)
+	await handler.trigger_enter(0, card)
 
 	var p0 := state.players[0]
 	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal(str(imago.get("id")))
 	assert_int(p0.get_zone_stack(2).size()).is_equal(2)
 	# ESD02-010's own enter ("if evolved, draw 1") fires via the evolution.
 	assert_int(p0.hand.size()).is_equal(1)
+	# The evolution log token carries the Enter marker for the evolved card.
+	var evo_tokens := log_tokens.filter(func(t: Dictionary) -> bool: return t.get("type") == "evolution")
+	assert_int(evo_tokens.size()).is_equal(1)
+	assert_bool(evo_tokens[0].get("has_enter", false)).is_true()
+
+
+func test_esd02_014_evolution_log_has_no_enter_for_plain_target() -> void:
+	var card := Real.instance("ESD02-014")
+	var larva := Real.instance("ESD02-007")   # Evolution5 <Mothra>
+	var plain := Cards.battle(5, 2000, "PLAIN-MOTHRA", [CardEnums.CardTrait.MOTHRA])
+	var state := States.make_state({"p0": {
+		"zone_cards": {2: larva},
+		"main_deck": [Cards.battle(1, 2000, "D1"), plain],
+	}})
+	state.players[0].strategy_zones[0] = card
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [2], "search_cards": [{"id": "PLAIN-MOTHRA"}]}
+	var s := States.make_session(state, input)
+	var log_tokens: Array[Dictionary] = []
+	var handler: EffectHandler = s["effect_handler"]
+	handler.log_message.connect(func(t: Dictionary) -> void: log_tokens.append(t))
+
+	await handler.trigger_enter(0, card)
+
+	assert_str(str(state.players[0].get_zone_top_card(2).get("id"))).is_equal("PLAIN-MOTHRA")
+	var evo_tokens := log_tokens.filter(func(t: Dictionary) -> bool: return t.get("type") == "evolution")
+	assert_int(evo_tokens.size()).is_equal(1)
+	assert_bool(evo_tokens[0].get("has_enter", false)).is_false()
 
 
 # --- EFC01-002: adjacent to monster → mill 1; if battle, recover a monster ---

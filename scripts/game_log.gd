@@ -135,8 +135,8 @@ static func awakening_triggered(player_id: int, card_id: String, awakening_level
 	return {"type": "awakening_triggered", "player_id": player_id, "card_id": card_id, "awakening_level": awakening_level}
 
 
-static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: String, to_id: String) -> Dictionary:
-	return {"type": "evolution", "player_id": player_id, "zone_idx": zone_idx, "evo_rank": evo_rank, "from_id": from_id, "to_id": to_id}
+static func evolution(player_id: int, zone_idx: int, evo_rank: int, from_id: String, to_id: String, has_enter: bool = false) -> Dictionary:
+	return {"type": "evolution", "player_id": player_id, "zone_idx": zone_idx, "evo_rank": evo_rank, "from_id": from_id, "to_id": to_id, "has_enter": has_enter}
 
 
 static func effect_milled_card(player_id: int, effect_source_id: String, milled_id: String) -> Dictionary:
@@ -385,10 +385,12 @@ static func render(token: Dictionary) -> String:
 		"evolution":
 			var evo_rank: int = int(token.get("evo_rank", 0))
 			var evo_prefix := _icon_or_fallback("res://assets/effectIcons/%s/evolutions/Evolution%d.png" % [_icon_locale_dir(), evo_rank], "STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT", evo_rank)
-			return TranslationServer.translate("STR_LOG_EVOLUTION_FMT") \
+			var evo_key := "STR_LOG_EVOLUTION_ENTER_FMT" if token.get("has_enter", false) else "STR_LOG_EVOLUTION_FMT"
+			return TranslationServer.translate(evo_key) \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{ZONE}", str(int(token.get("zone_idx", 0)) + 1)) \
 				.replace("{EVO_PREFIX}", evo_prefix) \
+				.replace("{ENTER_ICON}", _icon(20, "others", "Enter.png")) \
 				.replace("{FROM_CARD}", card_link(token.get("from_id", ""))) \
 				.replace("{TO_CARD}", card_link(token.get("to_id", "")))
 		"effect_milled_card":

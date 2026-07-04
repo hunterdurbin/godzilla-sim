@@ -313,7 +313,8 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 		return false
 
 	# Log the evolution
-	h.log_message.emit(GameLog.evolution(player_id, zone_idx, evo_rank, zone_card.get("id", ""), selected.get("id", "")))
+	var has_enter := h.has_trigger(selected, "on_enter")
+	h.log_message.emit(GameLog.evolution(player_id, zone_idx, evo_rank, zone_card.get("id", ""), selected.get("id", ""), has_enter))
 
 	h.card_evolved.emit(player_id, selected, zone_idx)
 	# Mark as played through evolution for enter effects (e.g. ESD02-010)
