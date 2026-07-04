@@ -1189,7 +1189,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 6,
 		"colors": [CardEnums.CardColor.RED],
-		"traits": [CardEnums.CardTrait.RODAN, CardEnums.CardTrait.FINAL_WARS], # EN printing (misprint, no errata)
+		"traits": [CardEnums.CardTrait.RODAN, CardEnums.CardTrait.FINAL_WARS],
 		"counter_power": 4000,
 		"invasion_icon": 1,
 		"description": "If this card is in a zone with the same number as the zone that your opponent's monster card occupies, this card gains +3000 counter power.",
