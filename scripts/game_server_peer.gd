@@ -24,6 +24,10 @@ var _refuse: bool = false
 
 var _incoming: Array[PackedByteArray] = []
 
+## Ticks-msec of the last packet (control or RPC) received from the server.
+## Any traffic proves the server is alive; consumers use this to detect stalls.
+var last_received_ms: int = 0
+
 
 func connect_to_server(url: String, player_name: String, version: String) -> Error:
 	_hello = {"type": "HELLO", "version": version, "name": player_name}
@@ -54,6 +58,7 @@ func _poll() -> void:
 		_ws.send_text(JSON.stringify(_hello))
 
 	while _ws.get_available_packet_count() > 0:
+		last_received_ms = Time.get_ticks_msec()
 		var pkt := _ws.get_packet()
 		if _ws.was_string_packet():
 			_handle_control(pkt.get_string_from_utf8())

@@ -38,6 +38,7 @@ var has_monster_marker: bool = false
 var in_selection_mode: bool = false  # When true, allows highlighting even if occupied
 var _is_hovered: bool = false
 var _content_rect: Rect2 = Rect2()
+var _highlight_overlay: Panel = null  # Outline drawn above the held card
 var _pending_slot_click: bool = false
 var _long_press_timer: SceneTreeTimer = null
 var _long_press_cooldown: float = 0.0
@@ -266,6 +267,40 @@ func _update_visual_state() -> void:
 			lbl.visible = true
 		else:
 			lbl.visible = not is_occupied
+
+	_update_highlight_overlay()
+
+
+func _update_highlight_overlay() -> void:
+	# The Background tint is hidden when a card occupies the slot (the card is
+	# drawn on top of it), so highlighted zones also get a border-only outline
+	# drawn ABOVE the held card. This keeps valid zones visible for effect
+	# placements that may overload occupied zones.
+	if not is_highlighted:
+		if _highlight_overlay:
+			_highlight_overlay.visible = false
+		return
+
+	if not _highlight_overlay:
+		_highlight_overlay = Panel.new()
+		_highlight_overlay.name = "HighlightOverlay"
+		_highlight_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_highlight_overlay.z_index = 2  # Held cards are placed with z_index = 0
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0, 0, 0, 0)  # Outline only — keep the card visible
+		style.set_border_width_all(4)
+		style.set_corner_radius_all(8)
+		_highlight_overlay.add_theme_stylebox_override("panel", style)
+		add_child(_highlight_overlay)
+
+	_highlight_overlay.position = _content_rect.position
+	_highlight_overlay.size = _content_rect.size
+	var overlay_style: StyleBoxFlat = _highlight_overlay.get_theme_stylebox("panel")
+	if _is_hovered:
+		overlay_style.border_color = Color(highlight_color.r, highlight_color.g, highlight_color.b, 1.0)
+	else:
+		overlay_style.border_color = Color(highlight_color.r, highlight_color.g, highlight_color.b, 0.85)
+	_highlight_overlay.visible = true
 
 
 func _on_mouse_entered() -> void:

@@ -38,8 +38,8 @@ var _lobby_banner_start_msec: int = 0
 # In-flight action feedback (multiplayer client only)
 var _pending_indicator: Panel = null
 var _pending_indicator_label: Label = null
-var _pending_indicator_visible_since_ms: int = 0
-const PENDING_INDICATOR_GRACE_MS: int = 500  ## avoid flicker for fast roundtrips
+var _action_submitted_ms: int = 0
+const PENDING_INDICATOR_STALL_MS: int = 3000  ## silence after a submit before we call the server unresponsive
 var _opponent_found_dialog: AcceptDialog = null
 var _opponent_found_timer: Timer = null
 var _opponent_found_remaining: int = 0
@@ -578,8 +578,9 @@ func _ready() -> void:
 	if _is_lobby_bot:
 		_setup_lobby_bot_ui()
 
-	# In-flight action indicator (only used by the client; host applies actions locally)
-	if is_multiplayer_game and not NetworkManager.is_host():
+	# Server-stall indicator (dedicated server only; relay/LAN games route
+	# through a player-host and disconnects are covered by ReconnectController)
+	if NetworkManager.mode == NetworkManager.Mode.ONLINE:
 		_setup_pending_indicator()
 
 	# Save game button (solo/bot only)
@@ -1168,6 +1169,7 @@ func _get_opponent_player() -> PlayerState:
 
 func _submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> void:
 	_action_pending = true
+	_action_submitted_ms = Time.get_ticks_msec()
 	_disable_all_buttons()
 	# Clear the hand-card selection border on every submission. In multiplayer the
 	# host's _rpc_receive_action_context handles this, but solo never gets that
@@ -2843,8 +2845,6 @@ func _cleanup_opponent_found_dialog() -> void:
 func _setup_pending_indicator() -> void:
 	_pending_indicator = Panel.new()
 	_pending_indicator.name = "PendingIndicator"
-	_pending_indicator.anchor_right = 1.0
-	_pending_indicator.anchor_bottom = 1.0
 	_pending_indicator.mouse_filter = Control.MOUSE_FILTER_STOP
 	_pending_indicator.visible = false
 
@@ -2863,18 +2863,23 @@ func _setup_pending_indicator() -> void:
 	_pending_indicator_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.3, 1))
 	_pending_indicator.add_child(_pending_indicator_label)
 
-	action_panel.add_child(_pending_indicator)
+	# Sibling overlay, not a VBox child: adding it inside ActionPanel would give
+	# it its own layout row and bounce the button rows every time it toggles.
+	add_child(_pending_indicator)
 
 
 func _process_pending_indicator() -> void:
 	if not _pending_indicator:
 		return
-	if _action_pending:
-		if _pending_indicator_visible_since_ms == 0:
-			_pending_indicator_visible_since_ms = Time.get_ticks_msec()
-		# Only show after a short grace period so snappy roundtrips don't flicker.
-		var elapsed := Time.get_ticks_msec() - _pending_indicator_visible_since_ms
-		_pending_indicator.visible = elapsed >= PENDING_INDICATOR_GRACE_MS
-	else:
-		_pending_indicator_visible_since_ms = 0
-		_pending_indicator.visible = false
+	# Show only when the dedicated server looks unresponsive: we submitted an
+	# action and NOTHING (state, prompts, even keepalives) has arrived since.
+	# Any inbound packet bumps last_received_ms and hides the indicator.
+	var stalled := false
+	if _action_pending and action_panel.visible and NetworkManager.server_peer:
+		var silent_ms := Time.get_ticks_msec() - _action_submitted_ms
+		stalled = silent_ms >= PENDING_INDICATOR_STALL_MS \
+			and NetworkManager.server_peer.last_received_ms < _action_submitted_ms
+	_pending_indicator.visible = stalled
+	if stalled:
+		_pending_indicator.global_position = action_panel.global_position
+		_pending_indicator.size = action_panel.size

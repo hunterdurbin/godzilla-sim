@@ -270,19 +270,24 @@ func _on_cards_revealed_requested(player_id: int, cards: Array, title: String) -
 		session.player_input.resolve_cards_revealed()
 		return
 	if local_player_id < 0:
-		# Dedicated server: push a display-only copy to the owning player,
-		# then auto-resolve so the engine continues. Deferred: resolving
-		# synchronously during this emit would fire the resolved signal
+		# Dedicated server: a reveal is public, so push a display-only copy to
+		# every player, then auto-resolve so the engine continues. Deferred:
+		# resolving synchronously during this emit would fire the resolved signal
 		# before reveal_cards() reaches its await, hanging the effect.
+		var ids_json := JSON.stringify(StateCodec.cards_to_ids(cards))
 		for peer_id in net.peer_player_map:
-			if net.peer_player_map[peer_id] == player_id:
-				var ids_json := JSON.stringify(StateCodec.cards_to_ids(cards))
-				multiplayer_sync._rpc_cards_revealed_shown.rpc_id(peer_id, ids_json, title)
-				break
+			multiplayer_sync._rpc_cards_revealed_shown.rpc_id(peer_id, ids_json, title)
 		session.player_input.resolve_cards_revealed.call_deferred()
 		return
-	# Cards revealed always shows on local — no remote routing.
+	# A reveal is public: show it on the local board (blocking — dismissing
+	# resolves the engine) and push a display-only copy to each remote player so
+	# both sides see the revealed cards.
 	show_cards_revealed(cards, title)
+	if is_multiplayer:
+		var revealed_json := JSON.stringify(StateCodec.cards_to_ids(cards))
+		for peer_id in net.peer_player_map:
+			if net.peer_player_map[peer_id] != local_player_id:
+				multiplayer_sync._rpc_cards_revealed_shown.rpc_id(peer_id, revealed_json, title)
 
 
 func _on_monster_rankup_requested(player_id: int, monsters: Array, valid_indices: Array, prompt: String) -> void:

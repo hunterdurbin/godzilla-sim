@@ -41,31 +41,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if matching.is_empty():
 		return
 
-	# Play as many as possible to adjacent zones (max 3)
-	var placed: int = 0
-	while placed < 3 and not matching.is_empty():
-		# Let player choose which card to play
-		var card: Dictionary
-		if matching.size() == 1:
-			card = matching[0]
-		else:
-			card = await ctx.effect_handler.select_from_cards(
-				ctx.owner.player_id, matching, matching,
-				tr("STR_EFF_EBP02_028_SELECT_FMT") % (placed + 1))
-			if card.is_empty():
-				break
-
-		# Let player choose which adjacent zone
-		var zone_idx: int
-		if adjacent.size() == 1:
-			zone_idx = adjacent[0]
-		else:
-			zone_idx = await ctx.effect_handler.select_zone_target(
-				ctx.owner.player_id, ctx.owner.player_id, adjacent,
-				tr("STR_EFF_PLAY_ADJ_ZONE_NAMED_FMT") % card.get("name", "card"))
-			if zone_idx < 0:
-				break
-
-		matching.erase(card)
-		await ctx.effect_handler.play_from_discard(ctx.owner.player_id, card, zone_idx)
-		placed += 1
+	# Play as many as possible (max 3) from discard into adjacent zones, each in a
+	# different zone per rule 5.11.1.3.
+	await ctx.effect_handler.play_battle_cards_in_zones(
+		ctx.owner, matching, tr("STR_EFF_EBP02_028_SELECT"), adjacent, true, 3)
