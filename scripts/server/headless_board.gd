@@ -304,11 +304,11 @@ func _rpc_receive_chat(_pid: int, _text: String) -> void: pass
 func _rpc_deck_search_requested(_a: String, _b: String, _c: String, _d: bool = true) -> void: pass
 func _rpc_deck_arrange_requested(_a: String, _b: String) -> void: pass
 func _rpc_card_select_requested(_a: String, _b: String, _c: String, _d: int, _e: int) -> void: pass
-func _rpc_hand_card_selection_requested(_a: String, _b: String, _c: bool) -> void: pass
+func _rpc_hand_card_selection_requested(_a: String, _b: String, _c: bool, _d: String = "") -> void: pass
 func _rpc_confirmation_requested(_a: String, _b: String) -> void: pass
-func _rpc_hand_discard_requested(_a: int) -> void: pass
-func _rpc_zone_target_requested(_a: int, _b: String, _c: String, _d: bool, _e: String = "") -> void: pass
-func _rpc_strategy_target_requested(_a: int, _b: String, _c: String) -> void: pass
+func _rpc_hand_discard_requested(_a: int, _b: String = "") -> void: pass
+func _rpc_zone_target_requested(_a: int, _b: String, _c: String, _d: bool, _e: String = "", _f: String = "") -> void: pass
+func _rpc_strategy_target_requested(_a: int, _b: String, _c: String, _d: String = "") -> void: pass
 func _rpc_choice_requested(_a: String, _b: String, _c: String = "[]") -> void: pass
 func _rpc_monster_rankup_requested(_a: String, _b: String, _c: String) -> void: pass
 func _rpc_effect_zone_highlighted(_a: int, _b: int) -> void: pass

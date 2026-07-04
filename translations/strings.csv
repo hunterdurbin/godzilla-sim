@@ -336,6 +336,7 @@ STR_GB_AVAILABLE_CARDS,Available Cards,利用可能なカード
 STR_GB_SELECTED_FMT,Selected ({N}/{MAX}),選択済み ({N}/{MAX})
 STR_GB_CONFIRM_COUNT_FMT,Confirm ({N}/{MAX}),決定 ({N}/{MAX})
 STR_GB_SHOW_CARDS,Show Cards,カードを表示
+STR_GB_EFFECT_SOURCE,Effect source,効果の発生源
 STR_GB_MINIMIZED_CHIP_FMT,▸ {TITLE} ({N}),▸ {TITLE}（{N}）
 STR_GB_MINIMIZED_CHIP_NO_COUNT_FMT,▸ {TITLE},▸ {TITLE}
 STR_GB_HIDE_CARDS,Hide Cards,カードを隠す

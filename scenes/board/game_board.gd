@@ -1587,7 +1587,7 @@ func _execute_rematch() -> void:
 	# 5. Restore action panel and hide overlays
 	_first_player.finish()
 	_cleanup_choice_selection()
-	_selection._cleanup_zone_target_preview()
+	_selection._cleanup_prompt_previews()
 	_set_action_buttons_visible(true)
 	action_prompt_panel.visible = false
 	deck_search_overlay.visible = false
@@ -2584,7 +2584,7 @@ func _rpc_card_select_requested(matching_json: String, all_json: String, prompt:
 
 
 ## Host -> Client: hand card selection request (player must choose a card from hand)
-func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool) -> void:
+func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool, source_id: String = "") -> void:
 	RpcLogger.log_receive("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
 	if NetworkManager.is_host():
 		return
@@ -2594,7 +2594,7 @@ func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, al
 		valid_indices.append(int(v))
 	if _client_current_player_id != local_player_id:
 		SfxManager.play("action_required")
-	_selection._show_hand_card_selection(local_player_id, valid_indices, prompt, allow_skip)
+	_selection._show_hand_card_selection(local_player_id, valid_indices, prompt, allow_skip, source_id)
 
 
 ## Host -> Client: confirmation request (draw / next turn)
@@ -2620,17 +2620,17 @@ func _on_player_names_updated() -> void:
 
 
 ## Host -> Client: hand discard request (player must choose cards to discard)
-func _rpc_hand_discard_requested(discard_count: int) -> void:
+func _rpc_hand_discard_requested(discard_count: int, source_id: String = "") -> void:
 	RpcLogger.log_receive("hand_discard_requested", 4)
 	if NetworkManager.is_host():
 		return # Safety: this RPC is only for clients
 	if _client_current_player_id != local_player_id:
 		SfxManager.play("action_required")
-	_selection._show_hand_discard_selection(local_player_id, discard_count)
+	_selection._show_hand_discard_selection(local_player_id, discard_count, source_id)
 
 
 ## Host -> Client: zone target request (player must choose a zone)
-func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool, card_id: String = "") -> void:
+func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool, card_id: String = "", source_id: String = "") -> void:
 	RpcLogger.log_receive("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
 	if NetworkManager.is_host():
 		return
@@ -2638,11 +2638,11 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 	var valid_zones: Array[int] = []
 	for v in parsed:
 		valid_zones.append(int(v))
-	_selection._show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt, allow_skip, card_id)
+	_selection._show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt, allow_skip, card_id, source_id)
 
 
 ## Host -> Client: strategy target request (player must choose a strategy zone)
-func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String) -> void:
+func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String, source_id: String = "") -> void:
 	RpcLogger.log_receive("strategy_target_requested", 4 + indices_json.length() + prompt.length())
 	if NetworkManager.is_host():
 		return
@@ -2650,7 +2650,7 @@ func _rpc_strategy_target_requested(target_player_id: int, indices_json: String,
 	var valid_indices: Array[int] = []
 	for v in parsed:
 		valid_indices.append(int(v))
-	_selection._show_strategy_target_selection(local_player_id, target_player_id, valid_indices, prompt)
+	_selection._show_strategy_target_selection(local_player_id, target_player_id, valid_indices, prompt, source_id)
 
 
 ## Host -> Client: choice request (player must choose ability order)

@@ -303,16 +303,16 @@ func _resend_pending_interaction(peer_id: int) -> void:
 			_rpc_card_select_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4])
 		"hand_discard":
 			RpcLogger.log_send("hand_discard_requested", 4)
-			_rpc_hand_discard_requested.rpc_id(peer_id, args[0])
+			_rpc_hand_discard_requested.rpc_id(peer_id, args[0], args[1] if args.size() > 1 else "")
 		"hand_card_selection":
 			RpcLogger.log_send("hand_card_selection_requested", args[0].length() + args[1].length() + 1)
-			_rpc_hand_card_selection_requested.rpc_id(peer_id, args[0], args[1], args[2])
+			_rpc_hand_card_selection_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3] if args.size() > 3 else "")
 		"zone_target":
 			RpcLogger.log_send("zone_target_requested", 4 + args[1].length() + args[2].length() + 1)
-			_rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4] if args.size() > 4 else "")
+			_rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4] if args.size() > 4 else "", args[5] if args.size() > 5 else "")
 		"strategy_target":
 			RpcLogger.log_send("strategy_target_requested", 4 + args[1].length() + args[2].length())
-			_rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2])
+			_rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3] if args.size() > 3 else "")
 		"choice":
 			RpcLogger.log_send("choice_requested", args[0].length() + args[1].length())
 			_rpc_choice_requested.rpc_id(peer_id, args[0], args[1], args[2] if args.size() > 2 else "[]")
@@ -751,9 +751,9 @@ func _rpc_card_select_resolved(selected_json: String) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool) -> void:
+func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool, source_id: String = "") -> void:
 	if _board:
-		_board._rpc_hand_card_selection_requested(indices_json, prompt, allow_skip)
+		_board._rpc_hand_card_selection_requested(indices_json, prompt, allow_skip, source_id)
 
 
 ## Client -> Host: hand card selection resolved
@@ -811,9 +811,9 @@ func _rpc_send_player_name(pname: String) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_hand_discard_requested(discard_count: int) -> void:
+func _rpc_hand_discard_requested(discard_count: int, source_id: String = "") -> void:
 	if _board:
-		_board._rpc_hand_discard_requested(discard_count)
+		_board._rpc_hand_discard_requested(discard_count, source_id)
 
 
 ## Client -> Host: hand discard resolved (player chose cards)
@@ -849,9 +849,9 @@ func _rpc_hand_discard_resolved(indices_json: String) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool, card_id: String = "") -> void:
+func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool, card_id: String = "", source_id: String = "") -> void:
 	if _board:
-		_board._rpc_zone_target_requested(target_player_id, zones_json, prompt, allow_skip, card_id)
+		_board._rpc_zone_target_requested(target_player_id, zones_json, prompt, allow_skip, card_id, source_id)
 
 
 ## Client -> Host: zone target resolved (player chose a zone)
@@ -875,9 +875,9 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String) -> void:
+func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String, source_id: String = "") -> void:
 	if _board:
-		_board._rpc_strategy_target_requested(target_player_id, indices_json, prompt)
+		_board._rpc_strategy_target_requested(target_player_id, indices_json, prompt, source_id)
 
 
 ## Client -> Host: strategy target resolved (player chose a strategy zone)

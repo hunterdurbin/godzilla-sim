@@ -53,7 +53,7 @@ var _zone_target_player_id: int = -1 # Who is choosing
 var _zone_target_board_pid: int = -1 # Whose board the zones are on
 var _zone_target_valid_zones: Array[int] = []
 var _zone_target_allow_skip: bool = false
-var _zone_target_preview: Control = null # Card.tscn render of the card being placed
+var _prompt_preview_root: Control = null # Mini previews above the helper text (effect source / card being placed)
 
 # Strategy target selection state
 var _strategy_target_selecting: bool = false
@@ -921,22 +921,33 @@ func _clear_card_highlight() -> void:
 	_highlighted_card = null
 
 
+## Base id of the resolving effect's source card ("" when no effect is
+## active — e.g. turn-flow prompts — or on the multiplayer client, which
+## receives the id via the prompt RPC instead).
+func _get_effect_source_id() -> String:
+	if turn_manager == null:
+		return ""
+	var summary: Dictionary = turn_manager.action_handler.effect_handler.get_active_effect_summary()
+	return summary.get("card_id", "")
+
+
 func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
+	var source_id := _get_effect_source_id()
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
-		_pending_interaction = {"method": "hand_discard", "args": [discard_count], "player": player_id}
+		_pending_interaction = {"method": "hand_discard", "args": [discard_count, source_id], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_discard_requested", 4)
-				_sync._rpc_hand_discard_requested.rpc_id(peer_id, discard_count)
+				_sync._rpc_hand_discard_requested.rpc_id(peer_id, discard_count, source_id)
 		return
 	_play_action_required_if_not_turn_player(player_id)
-	_show_hand_discard_selection(player_id, discard_count)
+	_show_hand_discard_selection(player_id, discard_count, source_id)
 
 
-func _show_hand_discard_selection(player_id: int, discard_count: int) -> void:
+func _show_hand_discard_selection(player_id: int, discard_count: int, source_id: String = "") -> void:
 	_discard_selecting = true
 	_discard_player_id = player_id
 	_discard_count = discard_count
@@ -958,6 +969,7 @@ func _show_hand_discard_selection(player_id: int, discard_count: int) -> void:
 	_disable_all_buttons()
 	card_select_prompt.text = tr("STR_GB_SELECT_DISCARD_FMT").replace("{N}", str(discard_count))
 	action_prompt_panel.visible = true
+	_show_prompt_previews(source_id, "")
 	btn_confirm.disabled = true
 
 
@@ -1010,6 +1022,7 @@ func _confirm_hand_discard() -> void:
 		hand_mgr.card_selected.disconnect(_on_discard_card_selected)
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
+	_cleanup_prompt_previews()
 
 	# Restore hand visibility
 	_update_hand_visibility(_get_current_pid())
@@ -1042,6 +1055,7 @@ func _force_cleanup_discard_selection() -> void:
 
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
+	_cleanup_prompt_previews()
 
 	_update_hand_visibility(_get_current_pid())
 
@@ -1049,20 +1063,21 @@ func _force_cleanup_discard_selection() -> void:
 func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
+	var source_id := _get_effect_source_id()
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
-		_pending_interaction = {"method": "hand_card_selection", "args": [indices_json, prompt, allow_skip], "player": player_id}
+		_pending_interaction = {"method": "hand_card_selection", "args": [indices_json, prompt, allow_skip, source_id], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
-				_sync._rpc_hand_card_selection_requested.rpc_id(peer_id, indices_json, prompt, allow_skip)
+				_sync._rpc_hand_card_selection_requested.rpc_id(peer_id, indices_json, prompt, allow_skip, source_id)
 		return
 	_play_action_required_if_not_turn_player(player_id)
-	_show_hand_card_selection(player_id, valid_indices, prompt, allow_skip)
+	_show_hand_card_selection(player_id, valid_indices, prompt, allow_skip, source_id)
 
 
-func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool) -> void:
+func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool, source_id: String = "") -> void:
 	_hand_card_selecting = true
 	_hand_card_player_id = player_id
 	_hand_card_allow_skip = allow_skip
@@ -1082,6 +1097,7 @@ func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt
 	_disable_all_buttons()
 	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
+	_show_prompt_previews(source_id, "")
 
 	if allow_skip:
 		btn_confirm.text = tr("STR_GB_SKIP")
@@ -1137,6 +1153,7 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 	action_prompt_panel.visible = false
 	btn_confirm.text = tr("STR_GB_CONFIRM")
 	btn_confirm.disabled = true
+	_cleanup_prompt_previews()
 	_update_hand_visibility(_get_current_pid())
 
 
@@ -1147,19 +1164,20 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 	var card_id := ""
 	if turn_manager:
 		card_id = turn_manager.action_handler.effect_handler.zone_target_card_id
+	var source_id := _get_effect_source_id()
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var zones_json := JSON.stringify(valid_zones)
-		_pending_interaction = {"method": "zone_target", "args": [target_player_id, zones_json, prompt, allow_skip, card_id], "player": player_id}
+		_pending_interaction = {"method": "zone_target", "args": [target_player_id, zones_json, prompt, allow_skip, card_id, source_id], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
-				_sync._rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt, allow_skip, card_id)
+				_sync._rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt, allow_skip, card_id, source_id)
 		return
-	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt, allow_skip, card_id)
+	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt, allow_skip, card_id, source_id)
 
 
-func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false, card_id: String = "") -> void:
+func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false, card_id: String = "", source_id: String = "") -> void:
 	_zone_target_selecting = true
 	_zone_target_player_id = player_id
 	_zone_target_board_pid = target_player_id
@@ -1170,15 +1188,7 @@ func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zo
 	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
 
-	# Small preview of the card being placed (it's off-screen in deck/discard),
-	# shown just above the prompt text; hover mirrors it to the big right-side
-	# preview, click/tap zooms.
-	_cleanup_zone_target_preview()
-	if not card_id.is_empty() and not _resolve_choice_card(card_id).is_empty():
-		_zone_target_preview = _make_card_preview(card_id, ZONE_PREVIEW_SIZE)
-		_zone_target_preview.z_index = 56
-		add_child(_zone_target_preview)
-		_position_zone_target_preview.call_deferred()
+	_show_prompt_previews(source_id, card_id)
 
 	if allow_skip:
 		btn_confirm.text = tr("STR_GB_SKIP")
@@ -1225,7 +1235,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 	_zone_target_allow_skip = false
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
-	_cleanup_zone_target_preview()
+	_cleanup_prompt_previews()
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("zone_target_resolved", 4)
@@ -1234,42 +1244,91 @@ func _finish_zone_target(zone_idx: int) -> void:
 		_session.player_input.resolve_zone_target(zone_idx)
 
 
-## Pin the preview's bottom-left just above the prompt panel (deferred one
+## Small previews above the helper text: the resolving effect's source card
+## and/or the card being placed (both off-screen otherwise). When both show,
+## the source sits on the LEFT with an "Effect source" caption and the card
+## being placed on the RIGHT. Hover mirrors either to the big right-side
+## preview; click/tap zooms. Identical ids collapse to a single preview.
+func _show_prompt_previews(source_id: String, placed_id: String) -> void:
+	_cleanup_prompt_previews()
+	if source_id == placed_id:
+		source_id = ""
+	var source_ok := not source_id.is_empty() and not _resolve_choice_card(source_id).is_empty()
+	var placed_ok := not placed_id.is_empty() and not _resolve_choice_card(placed_id).is_empty()
+	if not source_ok and not placed_ok:
+		return
+
+	var row := HBoxContainer.new()
+	row.name = "PromptPreviews"
+	row.add_theme_constant_override("separation", 8)
+	row.z_index = 56
+	if source_ok:
+		var source_card := _make_card_preview(source_id, ZONE_PREVIEW_SIZE)
+		# Caption only needed to disambiguate when the placed card also shows.
+		if placed_ok:
+			source_card.add_child(_make_effect_source_caption())
+		row.add_child(source_card)
+	if placed_ok:
+		row.add_child(_make_card_preview(placed_id, ZONE_PREVIEW_SIZE))
+	add_child(row)
+	_prompt_preview_root = row
+	_position_prompt_previews.call_deferred()
+
+
+func _make_effect_source_caption() -> Label:
+	var caption := Label.new()
+	caption.text = tr("STR_GB_EFFECT_SOURCE")
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	caption.add_theme_font_size_override("font_size", 10)
+	caption.add_theme_color_override("font_color", Color.WHITE)
+	caption.add_theme_color_override("font_outline_color", Color.BLACK)
+	caption.add_theme_constant_override("outline_size", 4)
+	# Full-width strip across the top of the mini card
+	caption.anchor_left = 0.0
+	caption.anchor_right = 1.0
+	caption.offset_top = 2.0
+	caption.z_index = 1
+	return caption
+
+
+## Pin the previews' bottom-left just above the prompt panel (deferred one
 ## frame so the panel's rect reflects the new prompt text and any mobile
 ## re-anchoring).
-func _position_zone_target_preview() -> void:
+func _position_prompt_previews() -> void:
 	await get_tree().process_frame
-	if _zone_target_preview == null or not is_instance_valid(_zone_target_preview):
+	if _prompt_preview_root == null or not is_instance_valid(_prompt_preview_root):
 		return
 	var rect: Rect2 = action_prompt_panel.get_global_rect()
-	_zone_target_preview.global_position = Vector2(
-		rect.position.x, rect.position.y - _zone_target_preview.size.y - 6.0)
+	_prompt_preview_root.global_position = Vector2(
+		rect.position.x, rect.position.y - _prompt_preview_root.size.y - 6.0)
 
 
-func _cleanup_zone_target_preview() -> void:
-	if _zone_target_preview and is_instance_valid(_zone_target_preview):
-		_zone_target_preview.queue_free()
+func _cleanup_prompt_previews() -> void:
+	if _prompt_preview_root and is_instance_valid(_prompt_preview_root):
+		_prompt_preview_root.queue_free()
 		# A preview freed mid-hover never fires mouse_exited
 		_board._hide_card_preview()
-	_zone_target_preview = null
+	_prompt_preview_root = null
 
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
+	var source_id := _get_effect_source_id()
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
-		_pending_interaction = {"method": "strategy_target", "args": [target_player_id, indices_json, prompt], "player": player_id}
+		_pending_interaction = {"method": "strategy_target", "args": [target_player_id, indices_json, prompt, source_id], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("strategy_target_requested", 4 + indices_json.length() + prompt.length())
-				_sync._rpc_strategy_target_requested.rpc_id(peer_id, target_player_id, indices_json, prompt)
+				_sync._rpc_strategy_target_requested.rpc_id(peer_id, target_player_id, indices_json, prompt, source_id)
 		return
-	_show_strategy_target_selection(player_id, target_player_id, valid_indices, prompt)
+	_show_strategy_target_selection(player_id, target_player_id, valid_indices, prompt, source_id)
 
 
-func _show_strategy_target_selection(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
+func _show_strategy_target_selection(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String, source_id: String = "") -> void:
 	_strategy_target_selecting = true
 	_strategy_target_player_id = player_id
 	_strategy_target_board_pid = target_player_id
@@ -1278,6 +1337,7 @@ func _show_strategy_target_selection(player_id: int, target_player_id: int, vali
 	_disable_all_buttons()
 	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
+	_show_prompt_previews(source_id, "")
 
 	# Highlight valid strategy slots on the target player's board
 	var board: Control = player1_board if target_player_id == 0 else player2_board
@@ -1312,6 +1372,7 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 	_strategy_target_selecting = false
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
+	_cleanup_prompt_previews()
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("strategy_target_resolved", 4)
