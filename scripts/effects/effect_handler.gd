@@ -734,6 +734,10 @@ func get_zone_play_rank_breakdown(player_id: int, card: Dictionary) -> Array:
 	return queries.get_zone_play_rank_breakdown(player_id, card)
 
 
+func get_hand_cp_preview(player_id: int, card: Dictionary) -> int:
+	return queries.get_hand_cp_preview(player_id, card)
+
+
 func get_threat_level_modifier(player_id: int) -> int:
 	return queries.get_threat_level_modifier(player_id)
 

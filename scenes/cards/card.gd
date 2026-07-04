@@ -424,8 +424,10 @@ func set_play_cost_modifier(modifier: int) -> void:
 	_play_cost_modifier = modifier
 	var badge := get_node_or_null("PlayCostModifierBadge") as Label
 	if modifier == 0:
+		# Hide, never free — queue_free is deferred, so a free+recreate on
+		# same-frame syncs races with the dying node (badge reuse gotcha).
 		if badge:
-			badge.queue_free()
+			badge.visible = false
 		return
 	if not badge:
 		badge = Label.new()
@@ -436,6 +438,7 @@ func set_play_cost_modifier(modifier: int) -> void:
 		add_child(badge)
 		if not resized.is_connected(_layout_play_cost_badge):
 			resized.connect(_layout_play_cost_badge)
+	badge.visible = true
 	badge.text = "%+d" % modifier
 	if modifier < 0:
 		badge.add_theme_color_override("font_color", Color(0.45, 1.0, 0.45))
@@ -450,9 +453,69 @@ func get_play_cost_modifier() -> int:
 
 
 ## Public — call this after changing the card's rotation (e.g. strategy zoom
-## flips the card -90°) so the badge re-orients to read upright.
+## flips the card -90°) so the badges re-orient to read upright.
 func update_play_cost_badge_layout() -> void:
 	_layout_play_cost_badge()
+	_layout_power_preview_badge()
+
+
+var _power_preview: int = 0
+
+
+## Show a "+N" power badge over the card's printed CP while it sits in hand —
+## a preview of the card's own placement-independent CP modifier (see
+## EffectQueries.get_hand_cp_preview). Amount 0 → badge hidden.
+func set_power_preview(amount: int) -> void:
+	_power_preview = amount
+	var badge := get_node_or_null("PowerPreviewBadge") as Label
+	if amount == 0:
+		# Hide, never free — queue_free is deferred, so a free+recreate on
+		# same-frame syncs races with the dying node (badge reuse gotcha).
+		if badge:
+			badge.visible = false
+		return
+	if not badge:
+		badge = Label.new()
+		badge.name = "PowerPreviewBadge"
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		add_child(badge)
+		if not resized.is_connected(_layout_power_preview_badge):
+			resized.connect(_layout_power_preview_badge)
+	badge.visible = true
+	badge.text = "%+d" % amount
+	badge.add_theme_color_override("font_color",
+		Color(0.3, 1.0, 0.3) if amount > 0 else Color(1.0, 0.4, 0.4))
+	badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	_layout_power_preview_badge()
+
+
+func get_power_preview() -> int:
+	return _power_preview
+
+
+func _layout_power_preview_badge() -> void:
+	var badge := get_node_or_null("PowerPreviewBadge") as Label
+	if not badge:
+		return
+	var w: float = size.x if size.x > 0.0 else custom_minimum_size.x
+	if w <= 0.0:
+		w = 150.0
+	var scale_factor: float = w / 150.0
+	var h: float = size.y if size.y > 0.0 else custom_minimum_size.y
+	if h <= 0.0:
+		h = 210.0 * scale_factor
+	var bsize := Vector2(64, 20) * scale_factor
+	badge.size = bsize
+	badge.pivot_offset = bsize / 2.0
+	# Land on the "Counter Power" strip at the card's bottom-right, directly
+	# above the printed CP value. Only battle cards carry this badge, so no
+	# rotated-position special case; counter-rotate anyway for safety.
+	badge.position = Vector2(w * 0.865, h * 0.886) - bsize / 2.0
+	badge.rotation = - rotation
+	badge.add_theme_font_size_override("font_size", int(round(15.0 * scale_factor)))
+	badge.add_theme_constant_override("outline_size", maxi(2, int(round(4.0 * scale_factor))))
 
 
 func _layout_play_cost_badge() -> void:

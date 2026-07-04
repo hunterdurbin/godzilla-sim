@@ -150,6 +150,7 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 		"strategy_cp_modifiers": [strat_cp_0, strat_cp_1],
 		"zone_rank_modifiers": [eh.get_zone_rank_modifiers(0) if eh else [], eh.get_zone_rank_modifiers(1) if eh else []],
 		"hand_rank_modifiers": [_session.compute_hand_rank_mods(gs.players[0]) if eh else [], _session.compute_hand_rank_mods(gs.players[1]) if eh else []],
+		"hand_power_modifiers": [_session.compute_hand_power_mods(gs.players[0]) if eh else [], _session.compute_hand_power_mods(gs.players[1]) if eh else []],
 		"monster_cp_modifiers": [eh.get_monster_cp_modifier(0) if eh else 0, eh.get_monster_cp_modifier(1) if eh else 0],
 		"modifier_breakdowns": ModifierBreakdown.build_all(eh, gs, viewer_id) if eh else {},
 		"player_names": Array(gs.player_names),
@@ -526,6 +527,12 @@ func _rpc_receive_state(state_bytes: PackedByteArray) -> void:
 		_session.client_hand_rank_mods = data["hand_rank_modifiers"]
 		for i in range(_session.client_hand_rank_mods.size()):
 			var arr: Array = _session.client_hand_rank_mods[i]
+			for j in range(arr.size()):
+				arr[j] = int(arr[j])
+	if data.has("hand_power_modifiers"):
+		_session.client_hand_power_mods = data["hand_power_modifiers"]
+		for i in range(_session.client_hand_power_mods.size()):
+			var arr: Array = _session.client_hand_power_mods[i]
 			for j in range(arr.size()):
 				arr[j] = int(arr[j])
 	if data.has("monster_cp_modifiers"):

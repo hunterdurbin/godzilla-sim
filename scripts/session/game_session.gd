@@ -50,6 +50,7 @@ var client_zone_cp_mods: Array = [[], []]
 var client_strategy_cp_mods: Array = [[], []]
 var client_zone_rank_mods: Array = [[], []]
 var client_hand_rank_mods: Array = [[], []]
+var client_hand_power_mods: Array = [[], []]
 var client_monster_cp_mods: Array = [0, 0]
 var client_modifier_breakdowns: Dictionary = {} # ModifierBreakdown.build_all shape
 var client_gradients_applied: bool = false
@@ -115,6 +116,22 @@ func compute_hand_rank_mods(player: PlayerState) -> Array:
 		if card.get("card_type") == CardEnums.CardType.STRATEGY:
 			mod += eh.get_strategy_hand_rank_modifier(player.player_id, card)
 		out.append(mod)
+	return out
+
+
+## Compute the counter-power preview for each card in the given player's hand
+## (placement-independent CP modifiers only — see
+## EffectQueries.get_hand_cp_preview). Parallel to player.hand; [] if no
+## effect handler.
+func compute_hand_power_mods(player: PlayerState) -> Array:
+	var out: Array = []
+	if not turn_manager:
+		return out
+	var eh: EffectHandler = turn_manager.effect_handler
+	if not eh:
+		return out
+	for card in player.hand:
+		out.append(eh.get_hand_cp_preview(player.player_id, card))
 	return out
 
 

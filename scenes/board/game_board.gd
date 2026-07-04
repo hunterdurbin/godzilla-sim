@@ -84,6 +84,9 @@ var _client_zone_rank_mods: Array:
 var _client_hand_rank_mods: Array:
 	get: return _session.client_hand_rank_mods
 	set(v): _session.client_hand_rank_mods = v
+var _client_hand_power_mods: Array:
+	get: return _session.client_hand_power_mods
+	set(v): _session.client_hand_power_mods = v
 var _client_monster_cp_mods: Array:
 	get: return _session.client_monster_cp_mods
 	set(v): _session.client_monster_cp_mods = v
@@ -1625,6 +1628,7 @@ func _execute_rematch() -> void:
 	_client_strategy_cp_mods = [[], []]
 	_client_zone_rank_mods = [[], []]
 	_client_hand_rank_mods = [[], []]
+	_client_hand_power_mods = [[], []]
 	_client_monster_cp_mods = [0, 0]
 	_client_modifier_breakdowns = {}
 
@@ -1951,15 +1955,17 @@ func _sync_boards() -> void:
 		var zone_rank_1: Array = eh.get_zone_rank_modifiers(1) if eh else []
 		var hand_rank_0: Array = _session.compute_hand_rank_mods(state.players[0]) if eh else []
 		var hand_rank_1: Array = _session.compute_hand_rank_mods(state.players[1]) if eh else []
+		var hand_power_0: Array = _session.compute_hand_power_mods(state.players[0]) if eh else []
+		var hand_power_1: Array = _session.compute_hand_power_mods(state.players[1]) if eh else []
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0, hand_rank_0)
+			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0, hand_rank_0, hand_power_0)
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1, hand_rank_1)
+			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1, hand_rank_1, hand_power_1)
 	elif not _client_players.is_empty():
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0], _client_hand_rank_mods[0])
+			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0], _client_hand_rank_mods[0], _client_hand_power_mods[0])
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1], _client_monster_cp_mods[1], _client_hand_rank_mods[1])
+			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1], _client_monster_cp_mods[1], _client_hand_rank_mods[1], _client_hand_power_mods[1])
 	if _is_mobile_layout:
 		_sync_mobile_cp_tray()
 	call_deferred("_position_hands")
@@ -2375,23 +2381,25 @@ func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
 func _on_card_long_press_zoom(card: Control) -> void:
 	if "card_data" in card and not card.card_data.is_empty():
 		var mod: int = card.get_play_cost_modifier() if card.has_method("get_play_cost_modifier") else 0
-		_show_card_zoom(card.card_data, mod)
+		var power: int = card.get_power_preview() if card.has_method("get_power_preview") else 0
+		_show_card_zoom(card.card_data, mod, {}, power)
 
 
 func _on_hand_card_right_clicked(card: Control, hand_player_id: int) -> void:
 	if "card_data" in card and not card.card_data.is_empty():
 		var mod: int = card.get_play_cost_modifier() if card.has_method("get_play_cost_modifier") else 0
-		_show_card_zoom(card.card_data, mod, _hand_zoom_ctx(card.card_data, hand_player_id))
+		var power: int = card.get_power_preview() if card.has_method("get_power_preview") else 0
+		_show_card_zoom(card.card_data, mod, _hand_zoom_ctx(card.card_data, hand_player_id), power)
 
 
 ## Zoom shim — display lives on CardZoomOverlayUI (router hook + several
 ## long-press/right-click callers). Callers with board context pass zoom_ctx
 ## ({player_id, location: "zone"|"monster"|"strategy"|"hand", index}); the
 ## rest fall back to locating the exact copy by its per-copy instance id.
-func _show_card_zoom(card_data: Dictionary, play_cost_modifier: int = 0, zoom_ctx: Dictionary = {}) -> void:
+func _show_card_zoom(card_data: Dictionary, play_cost_modifier: int = 0, zoom_ctx: Dictionary = {}, power_preview: int = 0) -> void:
 	if zoom_ctx.is_empty():
 		zoom_ctx = _infer_zoom_ctx(card_data)
-	card_zoom_overlay.show_card(card_data, play_cost_modifier, _zoom_entries_for(zoom_ctx))
+	card_zoom_overlay.show_card(card_data, play_cost_modifier, _zoom_entries_for(zoom_ctx), power_preview)
 
 
 ## PlayerState for zoom lookups that must not assume either mode is ready
@@ -2526,7 +2534,7 @@ func _on_card_zoom_hidden() -> void:
 
 # --- Card hover preview ---
 
-func _show_card_preview(data: Dictionary, play_cost_modifier: int = 0) -> void:
+func _show_card_preview(data: Dictionary, play_cost_modifier: int = 0, power_preview: int = 0) -> void:
 	if _is_mobile_layout:
 		return # Mobile uses tap-to-zoom instead of hover preview
 	if data.is_empty():
@@ -2534,6 +2542,8 @@ func _show_card_preview(data: Dictionary, play_cost_modifier: int = 0) -> void:
 	_preview_card.set_card_data_dict(data)
 	if _preview_card.has_method("set_play_cost_modifier"):
 		_preview_card.set_play_cost_modifier(play_cost_modifier)
+	if _preview_card.has_method("set_power_preview"):
+		_preview_card.set_power_preview(power_preview)
 	var is_strategy: bool = data.get("card_type", -1) == CardEnums.CardType.STRATEGY
 	if is_strategy:
 		_show_strategy_preview()

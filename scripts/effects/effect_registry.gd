@@ -9,6 +9,7 @@ const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
 
 var _effect_cache: Dictionary = {}  # script_path -> CardEffect instance
 var _filters_cache: Dictionary = {}  # script_path -> TRIGGER_FILTERS dict (declarative trigger gating)
+var _hand_preview_cache: Dictionary = {}  # script_path -> bool (HAND_CP_PREVIEW const)
 var _test_triggers: Dictionary = {}  # script_path -> Array[String] (test-registered override list)
 
 
@@ -62,6 +63,22 @@ func get_trigger_filter(card_data: Dictionary, method_name: String) -> Dictionar
 		_filters_cache[script_path] = consts.get("TRIGGER_FILTERS", {})
 	var all_filters: Dictionary = _filters_cache[script_path]
 	return all_filters.get(method_name, {})
+
+
+func has_hand_cp_preview(card_data: Dictionary) -> bool:
+	## Whether the card's effect script opts into the hand-time counter power
+	## preview via a class-level `const HAND_CP_PREVIEW := true`. Only effects
+	## whose get_counter_power_modifier is placement-independent (rage,
+	## awakening, discard counts, ...) should declare it — the value must be
+	## correct when evaluated for a card still in hand.
+	var script_path: String = card_data.get("effect_script", "")
+	if script_path.is_empty():
+		return false
+	if not _hand_preview_cache.has(script_path):
+		var script: Script = load(script_path)
+		var consts: Dictionary = script.get_script_constant_map() if script else {}
+		_hand_preview_cache[script_path] = bool(consts.get("HAND_CP_PREVIEW", false))
+	return _hand_preview_cache[script_path]
 
 
 func register_for_test(script_path: String, effect: CardEffect, triggers: Array = [], filters: Dictionary = {}) -> void:

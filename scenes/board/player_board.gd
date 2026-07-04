@@ -12,7 +12,7 @@ signal zone_slot_clicked(zone_number: int, player_id: int)
 signal zone_slot_right_clicked(zone_number: int, player_id: int)
 signal strategy_slot_clicked(strategy_index: int, player_id: int)
 signal strategy_slot_right_clicked(strategy_index: int, player_id: int)
-signal card_preview_requested(data: Dictionary, play_cost_modifier: int)
+signal card_preview_requested(data: Dictionary, play_cost_modifier: int, power_preview: int)
 signal card_preview_cleared()
 
 @export var player_id: int = 0
@@ -395,12 +395,12 @@ func apply_monster_gradient(monster_data: Dictionary) -> void:
 
 
 ## Sync the entire board display to match a PlayerState
-func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = [], zone_rank_mods: Array = [], monster_cp_mod: int = 0, hand_rank_mods: Array = []) -> void:
+func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = [], zone_rank_mods: Array = [], monster_cp_mod: int = 0, hand_rank_mods: Array = [], hand_power_mods: Array = []) -> void:
 	_sync_zones(player_state, zone_cp_mods, zone_rank_mods)
 	_sync_strategy_zones(player_state, strategy_cp_mods)
 	_sync_monster(player_state, threat_modifier, monster_cp_mod)
 	_sync_hand(player_state)
-	_sync_hand_badges(player_state, hand_rank_mods)
+	_sync_hand_badges(player_state, hand_rank_mods, hand_power_mods)
 	_sync_info(player_state, cp_modifier, threat_modifier)
 
 
@@ -436,6 +436,7 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: A
 				_add_stack_badge(card, stack_size)
 			_update_modifier_badge(card, cp_mod)
 			_update_rank_modifier_badge(card, rank_mod)
+			_clear_power_preview(card)
 		elif not zone_data.is_empty() and slot.has_card():
 			var card := slot.get_card()
 			if card.has_method("set_card_data_dict"):
@@ -443,6 +444,7 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: A
 			_update_stack_badge(card, stack_size)
 			_update_modifier_badge(card, cp_mod)
 			_update_rank_modifier_badge(card, rank_mod)
+			_clear_power_preview(card)
 
 
 func _sync_strategy_zones(state: PlayerState, strategy_cp_mods: Array = []) -> void:
@@ -610,11 +612,12 @@ func _sync_hand(state: PlayerState) -> void:
 	hand_manager.arrange_cards(true)
 
 
-## Apply per-card play-cost modifier badges to the hand. Runs unconditionally
-## (badges can change even when the hand-set hasn't, e.g. when a strategy is
-## played that buffs/nerfs cost). Face-down hands skip the badge to avoid
-## leaking info to the opponent.
-func _sync_hand_badges(state: PlayerState, hand_rank_mods: Array) -> void:
+## Apply per-card play-cost and power-preview badges to the hand. Runs
+## unconditionally (badges can change even when the hand-set hasn't, e.g.
+## when a strategy is played that buffs/nerfs cost, or rage changes a CP
+## preview). Face-down hands skip the badges to avoid leaking info to the
+## opponent.
+func _sync_hand_badges(state: PlayerState, hand_rank_mods: Array, hand_power_mods: Array = []) -> void:
 	if not hand_manager:
 		return
 	var visual_cards := hand_manager.get_cards()
@@ -624,21 +627,28 @@ func _sync_hand_badges(state: PlayerState, hand_rank_mods: Array) -> void:
 	var pool: Array = []
 	for i in range(state.hand.size()):
 		var mod: int = hand_rank_mods[i] if i < hand_rank_mods.size() else 0
-		pool.append({"id": state.hand[i].get("id", ""), "mod": mod})
+		var power: int = hand_power_mods[i] if i < hand_power_mods.size() else 0
+		pool.append({"id": state.hand[i].get("id", ""), "mod": mod, "power": power})
 	for card in visual_cards:
 		if not card.has_method("set_play_cost_modifier"):
 			continue
 		if "is_face_down" in card and card.is_face_down:
 			card.set_play_cost_modifier(0)
+			if card.has_method("set_power_preview"):
+				card.set_power_preview(0)
 			continue
 		var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
 		var matched_mod := 0
+		var matched_power := 0
 		for j in range(pool.size()):
 			if pool[j]["id"] == card_id:
 				matched_mod = pool[j]["mod"]
+				matched_power = pool[j]["power"]
 				pool.remove_at(j)
 				break
 		card.set_play_cost_modifier(matched_mod)
+		if card.has_method("set_power_preview"):
+			card.set_power_preview(matched_power)
 
 
 func _hand_set_matches(visual_cards: Array[Control], state_hand: Array) -> bool:
@@ -908,7 +918,7 @@ func _create_card(data: Dictionary) -> Control:
 
 
 func _on_slot_hover_preview(data: Dictionary) -> void:
-	card_preview_requested.emit(data, 0)
+	card_preview_requested.emit(data, 0, 0)
 
 
 func _on_slot_hover_cleared() -> void:
@@ -918,11 +928,19 @@ func _on_slot_hover_cleared() -> void:
 func _on_card_hover_started(card_ctrl: Control) -> void:
 	if "card_data" in card_ctrl and not card_ctrl.card_data.is_empty():
 		var mod: int = card_ctrl.get_play_cost_modifier() if card_ctrl.has_method("get_play_cost_modifier") else 0
-		card_preview_requested.emit(card_ctrl.card_data, mod)
+		var power: int = card_ctrl.get_power_preview() if card_ctrl.has_method("get_power_preview") else 0
+		card_preview_requested.emit(card_ctrl.card_data, mod, power)
 
 
 func _on_card_hover_ended(_card_ctrl: Control) -> void:
 	card_preview_cleared.emit()
+
+
+## A Card control reused from the hand (played onto the board) must not keep
+## its hand-time power-preview badge — the zone ModifierBadge takes over.
+func _clear_power_preview(card: Control) -> void:
+	if card.has_method("set_power_preview"):
+		card.set_power_preview(0)
 
 
 func _add_stack_badge(card: Control, count: int) -> void:
@@ -1212,7 +1230,7 @@ func _on_discard_hover_started() -> void:
 	if _discard_count_badge:
 		_discard_count_badge.show()
 	if _discard_card and _discard_card.visible and not _discard_card.card_data.is_empty():
-		card_preview_requested.emit(_discard_card.card_data, 0)
+		card_preview_requested.emit(_discard_card.card_data, 0, 0)
 
 
 func _on_discard_hover_ended() -> void:

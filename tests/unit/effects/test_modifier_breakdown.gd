@@ -269,6 +269,57 @@ func test_field_rank_opponent_monster_source_with_clamp() -> void:
 		assert_int(ModifierBreakdown.sum(breakdown[i])).is_equal(sums[i])
 
 
+# --- Hand-time counter power preview (HAND_CP_PREVIEW opt-in) ---
+
+
+func test_hand_cp_preview_rage_scaling() -> void:
+	# EBP01-075: +3000 CP per own rage — placement-independent, tagged.
+	var kotm := Real.instance("EBP01-075")
+	var state := States.make_state({"p0": {"hand": [kotm], "rage": 2}})
+	var handler := _wire(state)
+
+	assert_int(handler.get_hand_cp_preview(0, kotm)).is_equal(6000)
+
+	state.players[0].rage = 0
+	assert_int(handler.get_hand_cp_preview(0, kotm)).is_equal(0)
+
+
+func test_hand_cp_preview_awakening() -> void:
+	# EBP01-046: +3000 at Awakening6 — knowable from hand via monster_zone.
+	var card := Real.instance("EBP01-046")
+	var state := States.make_state({"p0": {"hand": [card], "monster_zone": 6}})
+	var handler := _wire(state)
+
+	assert_int(handler.get_hand_cp_preview(0, card)).is_equal(3000)
+
+	state.players[0].monster_zone = 5
+	assert_int(handler.get_hand_cp_preview(0, card)).is_equal(0)
+
+
+func test_hand_cp_preview_excludes_untagged_and_non_battle() -> void:
+	# EBP01-017's CP mod is zone-dependent (zone 8) — not tagged, so no
+	# preview even though the effect would return 0 from hand anyway.
+	var zone_card := Real.instance("EBP01-017")
+	# Strategy cards never get a CP preview.
+	var strategy := Real.instance("EBP02-039")
+	var state := States.make_state({"p0": {"hand": [zone_card, strategy], "rage": 3}})
+	var handler := _wire(state)
+
+	assert_int(handler.get_hand_cp_preview(0, zone_card)).is_equal(0)
+	assert_int(handler.get_hand_cp_preview(0, strategy)).is_equal(0)
+
+
+func test_hand_entries_include_cp_preview() -> void:
+	var kotm := Real.instance("EBP01-075")
+	var state := States.make_state({"p0": {"hand": [kotm], "rage": 2}})
+	var handler := _wire(state)
+
+	var entries: Array = ModifierBreakdown.hand_entries(handler, 0, kotm)
+	var cp_entries: Array = entries.filter(func(e: Dictionary) -> bool: return e.get("stat") == "cp")
+	assert_int(cp_entries.size()).is_equal(1)
+	_assert_entry(cp_entries[0], "cp", 6000, "EBP01-075", -1, 0)
+
+
 # --- build_all / collect / normalize (multiplayer packing helpers) ---
 
 

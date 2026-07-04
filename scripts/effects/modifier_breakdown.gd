@@ -56,14 +56,17 @@ static func sum(entries: Array) -> int:
 
 
 static func hand_entries(eh: EffectHandler, player_id: int, card: Dictionary) -> Array:
-	## All cost/rank entries for a card held in hand: global play-rank sources,
-	## strategy hand-rank sources (strategy cards only), and per-zone stacking
-	## modifiers. The play_rank + strategy portion matches
-	## GameSession.compute_hand_rank_mods so the panel agrees with the badge.
+	## All entries for a card held in hand: global play-rank sources, strategy
+	## hand-rank sources (strategy cards only), per-zone stacking modifiers,
+	## and the placement-independent counter-power preview. The play_rank +
+	## strategy portion matches GameSession.compute_hand_rank_mods and the cp
+	## entry matches compute_hand_power_mods, so the panel agrees with the
+	## hand badges.
 	var out: Array = eh.get_play_rank_breakdown(player_id, card)
 	if card.get("card_type") == CardEnums.CardType.STRATEGY:
 		out.append_array(eh.get_strategy_hand_rank_breakdown(player_id, card))
 	out.append_array(eh.get_zone_play_rank_breakdown(player_id, card))
+	append(out, "cp", eh.get_hand_cp_preview(player_id, card), card, -1, player_id)
 	return out
 
 

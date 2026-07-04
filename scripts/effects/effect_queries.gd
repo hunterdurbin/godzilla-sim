@@ -716,6 +716,25 @@ func get_zones_in_rank_range(player_id: int, min_rank: int = -1, max_rank: int =
 
 
 
+func get_hand_cp_preview(player_id: int, card: Dictionary) -> int:
+	## Preview of a battle card's own counter power modifier while it is
+	## still in hand. Only effects tagged with `const HAND_CP_PREVIEW := true`
+	## (placement-independent modifiers: rage, awakening, discard counts, ...)
+	## are evaluated — everything else returns 0. Deliberately ignores
+	## field-CP grants from other cards and engagement gating: it previews
+	## the card's OWN bonus, not the final on-board total.
+	if not CardUtils.is_battle(card):
+		return 0
+	if not h.registry.has_hand_cp_preview(card):
+		return 0
+	var effect := get_effect(card)
+	if effect == null:
+		return 0
+	return effect.get_counter_power_modifier(_build_context(player_id, card))
+
+
+
+
 func get_effective_zone_cp(player_id: int, zone_idx: int) -> int:
 	## Get the effective counter power of the top battle card in a zone, including
 	## per-zone CP modifiers from active effects. Returns 0 if the zone is empty.

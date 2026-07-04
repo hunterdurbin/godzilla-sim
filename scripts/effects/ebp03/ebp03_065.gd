@@ -11,6 +11,10 @@ extends CardEffect
 # Implementation notes: None
 
 
+## CP modifier is placement-independent — safe to preview while in hand.
+const HAND_CP_PREVIEW := true
+
+
 func get_bot_tags() -> Array[String]:
 	return ["boosts_cp"]
 

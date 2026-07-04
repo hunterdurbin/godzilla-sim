@@ -71,7 +71,7 @@ func _ready() -> void:
 	_sources_header.add_theme_color_override("font_color", HEADER_COLOR)
 
 
-func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entries: Array = []) -> void:
+func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entries: Array = [], power_preview: int = 0) -> void:
 	# Clear any existing zoomed card
 	for child in _container.get_children():
 		child.queue_free()
@@ -81,6 +81,8 @@ func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entr
 		card.set_card_data_dict(card_data)
 	if card.has_method("set_play_cost_modifier"):
 		card.set_play_cost_modifier(play_cost_modifier)
+	if card.has_method("set_power_preview"):
+		card.set_power_preview(power_preview)
 	card.is_selectable = false
 	card.drag_enabled = false
 	card.hover_scale = 1.0

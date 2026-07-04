@@ -284,7 +284,7 @@ func _build_preview_container() -> void:
 	_set_mouse_filter_ignore_recursive(_preview_card)
 
 
-func _show_card_preview(data: Dictionary) -> void:
+func _show_card_preview(data: Dictionary, _play_cost_modifier: int = 0, _power_preview: int = 0) -> void:
 	if data.is_empty():
 		return
 	_preview_card.set_card_data_dict(data)
