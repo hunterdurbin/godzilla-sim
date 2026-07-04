@@ -2193,7 +2193,10 @@ func set_card_attention(loc: Dictionary, on: bool) -> void:
 		return
 	var target := _resolve_attention_card(loc)
 	if target and target.has_method("set_attention_highlight"):
-		target.set_attention_highlight(true)
+		# Ownership color language: cyan for the viewer's own effects, purple
+		# for the opponent's (matches the stack panel's purple rows).
+		var border := Color(0.7, 0.4, 1.0) if pid != local_player_id else Color(0.25, 0.85, 1.0)
+		target.set_attention_highlight(true, border)
 		_attention_card_node = target
 
 

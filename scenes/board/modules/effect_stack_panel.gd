@@ -140,6 +140,7 @@ func _make_row(row: Dictionary) -> Control:
 	hbox.mouse_filter = Control.MOUSE_FILTER_STOP
 	hbox.add_theme_constant_override("separation", 6)
 	var resolving: bool = str(row.get("status", "")) == "resolving"
+	var is_opponent: bool = int(row.get("player_id", -1)) != _board.local_player_id
 
 	var base_id: String = str(row.get("base_id", ""))
 	if not base_id.is_empty():
@@ -153,6 +154,15 @@ func _make_row(row: Dictionary) -> Control:
 			icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			hbox.add_child(icon)
 
+	if is_opponent:
+		var tag := Label.new()
+		tag.text = tr("STR_GB_STACK_OPPONENT")
+		tag.add_theme_font_size_override("font_size", 11)
+		tag.add_theme_color_override("font_color", Color(0.78, 0.6, 1.0))
+		tag.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hbox.add_child(tag)
+
 	var label := Label.new()
 	var text: String = str(row.get("label", ""))
 	label.text = ("▶ " + text) if resolving else text
@@ -161,8 +171,12 @@ func _make_row(row: Dictionary) -> Control:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override(
-		"font_color", Color(1.0, 0.9, 0.3) if resolving else Color(0.72, 0.72, 0.8))
+	var name_color := Color(0.72, 0.72, 0.8)
+	if resolving:
+		name_color = Color(1.0, 0.9, 0.3)
+	elif is_opponent:
+		name_color = Color(0.78, 0.62, 0.95)
+	label.add_theme_color_override("font_color", name_color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(label)
 
@@ -170,4 +184,19 @@ func _make_row(row: Dictionary) -> Control:
 	if loc is Dictionary and not (loc as Dictionary).is_empty():
 		hbox.mouse_entered.connect(func() -> void: _board.set_card_attention(loc, true))
 		hbox.mouse_exited.connect(func() -> void: _board.set_card_attention(loc, false))
-	return hbox
+
+	if not is_opponent:
+		return hbox
+	# Opponent rows sit on a subtle purple tint so ownership reads at a glance.
+	var wrapper := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.5, 0.3, 0.7, 0.22)
+	style.set_corner_radius_all(4)
+	style.content_margin_left = 4
+	style.content_margin_right = 4
+	style.content_margin_top = 2
+	style.content_margin_bottom = 2
+	wrapper.add_theme_stylebox_override("panel", style)
+	wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrapper.add_child(hbox)
+	return wrapper

@@ -920,3 +920,4 @@ STR_ONLINE_WAITING_OPPONENT_DECK,Waiting for your opponent's deck...,対戦相�
 STR_GB_TURN_CHIP_FMT,Turn {N} · {PHASE},ターン{N}・{PHASE}
 STR_GB_STACK_RESOLVING,Resolving,解決中
 STR_GB_EFFECT_STACK_TITLE,Pending Effects,待機中の効果
+STR_GB_STACK_OPPONENT,Opponent,相手

@@ -518,11 +518,12 @@ func set_highlight(enabled: bool) -> void:
 var _attention_tween: Tween = null
 
 
-func set_attention_highlight(enabled: bool) -> void:
-	## Pulsing cyan border used to point this card out on the board (e.g. while
-	## the matching effect-prompt option is hovered). Independent of
-	## set_highlight's gold border and of modulate-based effect tints, so all
-	## three visuals can coexist without stomping each other's reset.
+func set_attention_highlight(enabled: bool, border_color: Color = Color(0.25, 0.85, 1.0)) -> void:
+	## Pulsing border used to point this card out on the board (e.g. while the
+	## matching effect-prompt option is hovered) — cyan for the viewer's own
+	## effects, purple for the opponent's. Independent of set_highlight's gold
+	## border and of modulate-based effect tints, so all three visuals can
+	## coexist without stomping each other's reset.
 	var overlay := get_node_or_null("AttentionOverlay") as Panel
 	if _attention_tween:
 		_attention_tween.kill()
@@ -540,13 +541,17 @@ func set_attention_highlight(enabled: bool) -> void:
 			style.border_width_top = 4
 			style.border_width_right = 4
 			style.border_width_bottom = 4
-			style.border_color = Color(0.25, 0.85, 1.0, 1.0)
 			style.corner_radius_top_left = 6
 			style.corner_radius_top_right = 6
 			style.corner_radius_bottom_right = 6
 			style.corner_radius_bottom_left = 6
 			overlay.add_theme_stylebox_override("panel", style)
 			add_child(overlay)
+		# Re-color even a cached overlay — the last highlight may have used a
+		# different ownership color.
+		var box := overlay.get_theme_stylebox("panel") as StyleBoxFlat
+		if box:
+			box.border_color = border_color
 		overlay.visible = true
 		overlay.modulate.a = 1.0
 		_attention_tween = create_tween().set_loops()
