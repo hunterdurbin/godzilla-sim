@@ -734,7 +734,8 @@ func test_ebp04_079_plays_all_final_wars_cards_from_reveal() -> void:
 	state.players[0].strategy_zones[0] = card
 	var input := ScriptedPlayerInput.new()
 	input.answers = {
-		# Only the first card needs an order pick; the last card plays automatically.
+		# Pick zilla first; the remaining card (anguirus) auto-resolves via the
+		# single-option fallback in the picker.
 		"search_cards": [{"id": zilla.get("id")}],
 		"select_zone": [1, 2],
 	}

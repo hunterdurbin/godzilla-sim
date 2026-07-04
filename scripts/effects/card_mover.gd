@@ -403,9 +403,10 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int, c
 			valid.append(z)
 		if valid.is_empty():
 			break
+		var prompt: String = tr(prompt_key) % (count - placed)
+		prompt += " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % _format_zone_list(valid)
 		var chosen: int = await h.select_zone_target(
-			player.player_id, player.player_id, valid,
-			tr(prompt_key) % (count - placed))
+			player.player_id, player.player_id, valid, prompt)
 		if chosen < 0:
 			break
 		used_zones.append(chosen)
@@ -418,8 +419,9 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int, c
 
 func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], pick_prompt: String, candidate_zones: Array[int] = [], from_discard: bool = false, max_count: int = -1) -> Array[Dictionary]:
 	## Play battle cards from `cards`, each into a DIFFERENT zone (rule 5.11.1.3).
-	## The player chooses which card to play next (when >1 remain) and its zone; the zone
-	## prompt lists the still-available zones. Cards may overload occupied zones, but no
+	## The player is shown the card picker for each card (including the last, so they see
+	## what they are placing) and chooses its zone; the zone prompt lists the still-
+	## available zones. Cards may overload occupied zones, but no
 	## zone is reused within this call. candidate_zones restricts the offered zones (e.g.
 	## adjacency); empty means any non-monster zone. from_discard plays each card out of
 	## the discard pile (play_from_discard) instead of the deck. max_count caps how many
@@ -439,15 +441,16 @@ func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], p
 			valid.append(z)
 		if valid.is_empty():
 			break
-		var card: Dictionary = remaining[0]
-		if remaining.size() > 1:
-			card = await h.select_from_cards(player.player_id, remaining, remaining, pick_prompt, false)
-			if card.is_empty():
-				card = remaining[0]   # mandatory pick — fall back to first
+		# Always present the card picker — even for the final card — so the player
+		# sees which card they are about to place.
+		var card: Dictionary = await h.select_from_cards(player.player_id, remaining, remaining, pick_prompt, false)
+		if card.is_empty():
+			card = remaining[0]   # mandatory pick — fall back to first
 		remaining.erase(card)
+		var prompt: String = tr("STR_EFF_PLAY_ZONES_FMT") % card.get("name", "card")
+		prompt += " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % _format_zone_list(valid)
 		var chosen: int = await h.select_zone_target(
-			player.player_id, player.player_id, valid,
-			tr("STR_EFF_PLAY_ZONES_FMT") % [card.get("name", "card"), _format_zone_list(valid)])
+			player.player_id, player.player_id, valid, prompt)
 		if chosen < 0:
 			chosen = valid[0]         # mandatory placement — fall back to first available
 		used_zones.append(chosen)
