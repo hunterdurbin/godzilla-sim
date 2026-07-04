@@ -305,6 +305,9 @@ func rpc_receive_replay(compressed: PackedByteArray) -> void:
 		return
 	var replay := ReplayData.new()
 	replay.from_dict(json.data)
+	if replay.timestamp_unix > 0.0:
+		# Rewrite the host's local-time string into this client's timezone
+		replay.timestamp = ReplayData.local_datetime_string_from_unix(replay.timestamp_unix)
 	var ver := ReplayData._get_game_version()
 	var fname := "replay_%s.json" % replay.timestamp.replace(" ", "_").replace(":", "").replace("-", "")
 	var path := ReplayData.get_version_recent_dir(ver) + fname

@@ -23,6 +23,7 @@ func start(game_state: GameState, seed_val: int, mode: String, bot_difficulty: S
 	_replay = ReplayData.new()
 	_replay.game_version = ProjectSettings.get_setting("application/config/version", "")
 	_replay.timestamp = Time.get_datetime_string_from_system(false, true).replace("T", " ")
+	_replay.timestamp_unix = Time.get_unix_time_from_system()
 	_replay.game_seed = seed_val
 	_replay.mode = mode
 	_replay.bot_difficulty = bot_difficulty
