@@ -181,7 +181,6 @@ var _pending_sound_events: PackedStringArray:
 @onready var deck_search_show_all: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ShowAllToggle
 @onready var deck_search_stacked: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/StackedToggle
 @onready var deck_search_view_board: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ViewBoardButton
-@onready var show_cards_button: Button = $ShowCardsButton
 @onready var hand_toggle_button: Button = $HandButtonStack/HandToggleButton
 @onready var sort_hand_button: Button = $HandButtonStack/SortHandButton
 @onready var opponent_hand_button_stack: HBoxContainer = $OpponentHandButtonStack
@@ -216,6 +215,7 @@ var _match_stacked_view: bool:
 
 
 var _view_board_source_overlay: Control = null
+var _minimize_chip: MinimizeChip = null
 
 # Monster deck view UI references
 @onready var monster_deck_view_overlay: CardGridViewerUI = $MonsterDeckViewOverlay
@@ -565,8 +565,14 @@ func _ready() -> void:
 				NetworkManager.room_token,
 			)
 
-	# Connect deck search buttons
-	show_cards_button.pressed.connect(_on_show_cards_pressed)
+	# Minimize chip: restores a "View Board"-minimized selection overlay
+	_minimize_chip = MinimizeChip.new()
+	_minimize_chip.pressed.connect(_on_minimize_chip_pressed)
+	add_child(_minimize_chip)
+	# Prompt overlays die silently on game end — drop the chip with them
+	end_game_panel.visibility_changed.connect(func() -> void:
+		if end_game_panel.visible:
+			_clear_minimize_chip())
 	_hand.setup()
 	opponent_hand_button_stack.visible = not is_multiplayer_game
 
@@ -619,7 +625,6 @@ func _ready() -> void:
 	# Hide overlays and prompts
 	end_game_panel.visible = false
 	action_prompt_panel.visible = false
-	show_cards_button.visible = false
 
 	# Ensure overlays render above hand cards (which have incrementing z_index)
 	end_game_panel.z_index = 100
@@ -1582,12 +1587,13 @@ func _execute_rematch() -> void:
 	# 5. Restore action panel and hide overlays
 	_first_player.finish()
 	_cleanup_choice_selection()
+	_selection._cleanup_zone_target_preview()
 	_set_action_buttons_visible(true)
 	action_prompt_panel.visible = false
 	deck_search_overlay.visible = false
 	deck_arrange_overlay.visible = false
 	card_pool_select_overlay.visible = false
-	show_cards_button.visible = false
+	_clear_minimize_chip()
 	discard_view_overlay.visible = false
 	monster_deck_view_overlay.visible = false
 	zone_stack_view_overlay.visible = false
@@ -1771,6 +1777,8 @@ func _input(event: InputEvent) -> void:
 			monster_deck_view_overlay.try_close() # Refused during mandatory rank-up
 		elif zone_stack_view_overlay.visible:
 			zone_stack_view_overlay.try_close()
+		elif _minimize_chip.visible:
+			_restore_minimized_overlay()
 		elif _choice_selecting:
 			pass # Mandatory — must pick an option
 		elif _hand_card_selecting and _hand_card_allow_skip:
@@ -1998,16 +2006,44 @@ func _restore_expanded_opponent_hand() -> void:
 
 ## Router view-board hook: stash the overlay so ShowCards can re-show it.
 func _on_overlay_view_board(overlay: Control) -> void:
+	# One minimized overlay at a time: re-show any previously stashed one.
+	if _view_board_source_overlay and _view_board_source_overlay != overlay:
+		_restore_minimized_overlay()
 	_view_board_source_overlay = overlay
-	show_cards_button.visible = true
+	var info: Dictionary = overlay.get_minimize_info() if overlay.has_method("get_minimize_info") else {}
+	var title: String = str(info.get("title", ""))
+	if title.is_empty():
+		title = tr("STR_GB_SHOW_CARDS")
+	_minimize_chip.show_chip(title, int(info.get("count", 0)), _is_mobile_layout)
+	# If the overlay becomes visible by ANY path (chip restore, reconnect
+	# re-prompt, a second reveal reusing the same overlay), clear the chip.
+	if not overlay.visibility_changed.is_connected(_on_minimized_overlay_visibility_changed):
+		overlay.visibility_changed.connect(_on_minimized_overlay_visibility_changed)
 
 
-func _on_show_cards_pressed() -> void:
-	show_cards_button.visible = false
-	if _view_board_source_overlay:
-		_view_board_source_overlay.visible = true
-	else:
-		deck_search_overlay.visible = true
+func _on_minimize_chip_pressed() -> void:
+	_restore_minimized_overlay()
+
+
+func _restore_minimized_overlay() -> void:
+	var overlay := _view_board_source_overlay
+	_clear_minimize_chip()
+	if overlay and is_instance_valid(overlay):
+		overlay.visible = true
+
+
+func _on_minimized_overlay_visibility_changed() -> void:
+	if _view_board_source_overlay and _view_board_source_overlay.visible:
+		_clear_minimize_chip()
+
+
+func _clear_minimize_chip() -> void:
+	if _minimize_chip:
+		_minimize_chip.hide_chip()
+	if _view_board_source_overlay and is_instance_valid(_view_board_source_overlay) \
+			and _view_board_source_overlay.visibility_changed.is_connected(_on_minimized_overlay_visibility_changed):
+		_view_board_source_overlay.visibility_changed.disconnect(_on_minimized_overlay_visibility_changed)
+	_view_board_source_overlay = null
 
 
 # --- Deck arrange overlay UI ---
@@ -2594,7 +2630,7 @@ func _rpc_hand_discard_requested(discard_count: int) -> void:
 
 
 ## Host -> Client: zone target request (player must choose a zone)
-func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool) -> void:
+func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool, card_id: String = "") -> void:
 	RpcLogger.log_receive("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
 	if NetworkManager.is_host():
 		return
@@ -2602,7 +2638,7 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 	var valid_zones: Array[int] = []
 	for v in parsed:
 		valid_zones.append(int(v))
-	_selection._show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt, allow_skip)
+	_selection._show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt, allow_skip, card_id)
 
 
 ## Host -> Client: strategy target request (player must choose a strategy zone)

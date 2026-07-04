@@ -53,6 +53,7 @@ var _zone_target_player_id: int = -1 # Who is choosing
 var _zone_target_board_pid: int = -1 # Whose board the zones are on
 var _zone_target_valid_zones: Array[int] = []
 var _zone_target_allow_skip: bool = false
+var _zone_target_preview: Control = null # Card.tscn render of the card being placed
 
 # Strategy target selection state
 var _strategy_target_selecting: bool = false
@@ -61,11 +62,18 @@ var _strategy_target_board_pid: int = -1
 var _strategy_target_valid_indices: Array[int] = []
 
 # Choice button selection state
+const CHOICE_CARD_SCENE := preload("res://scenes/cards/Card.tscn")
+const CHOICE_PREVIEW_SIZE := Vector2(180, 252)
+const CHOICE_PREVIEW_SIZE_MOBILE := Vector2(120, 168)
+const ZONE_PREVIEW_SIZE := Vector2(72, 101) # Small; hover mirrors to the big right-side preview
 var _choice_selecting: bool = false
 var _choice_player_id: int = -1
 var _choice_buttons: Array[Button] = []
 var _choice_container: VBoxContainer = null
 var _choice_panel: PanelContainer = null # Mobile wrapper panel
+var _choice_preview: Control = null # Card.tscn render of the hovered option's card
+var _choice_preview_slot: CenterContainer = null
+var _choice_card_dicts: Dictionary = {} # base id -> duplicated card dict cache
 
 # --- Board bridge: widgets ---
 var action_panel: Control
@@ -1135,19 +1143,23 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
+	# Base id of the card being placed ("" for zone-only prompts like destroy).
+	var card_id := ""
+	if turn_manager:
+		card_id = turn_manager.action_handler.effect_handler.zone_target_card_id
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var zones_json := JSON.stringify(valid_zones)
-		_pending_interaction = {"method": "zone_target", "args": [target_player_id, zones_json, prompt, allow_skip], "player": player_id}
+		_pending_interaction = {"method": "zone_target", "args": [target_player_id, zones_json, prompt, allow_skip, card_id], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
-				_sync._rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt, allow_skip)
+				_sync._rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt, allow_skip, card_id)
 		return
-	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt, allow_skip)
+	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt, allow_skip, card_id)
 
 
-func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false) -> void:
+func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false, card_id: String = "") -> void:
 	_zone_target_selecting = true
 	_zone_target_player_id = player_id
 	_zone_target_board_pid = target_player_id
@@ -1157,6 +1169,16 @@ func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zo
 	_disable_all_buttons()
 	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
+
+	# Small preview of the card being placed (it's off-screen in deck/discard),
+	# shown just above the prompt text; hover mirrors it to the big right-side
+	# preview, click/tap zooms.
+	_cleanup_zone_target_preview()
+	if not card_id.is_empty() and not _resolve_choice_card(card_id).is_empty():
+		_zone_target_preview = _make_card_preview(card_id, ZONE_PREVIEW_SIZE)
+		_zone_target_preview.z_index = 56
+		add_child(_zone_target_preview)
+		_position_zone_target_preview.call_deferred()
 
 	if allow_skip:
 		btn_confirm.text = tr("STR_GB_SKIP")
@@ -1203,12 +1225,33 @@ func _finish_zone_target(zone_idx: int) -> void:
 	_zone_target_allow_skip = false
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
+	_cleanup_zone_target_preview()
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("zone_target_resolved", 4)
 		_sync._rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_idx)
 	else:
 		_session.player_input.resolve_zone_target(zone_idx)
+
+
+## Pin the preview's bottom-left just above the prompt panel (deferred one
+## frame so the panel's rect reflects the new prompt text and any mobile
+## re-anchoring).
+func _position_zone_target_preview() -> void:
+	await get_tree().process_frame
+	if _zone_target_preview == null or not is_instance_valid(_zone_target_preview):
+		return
+	var rect: Rect2 = action_prompt_panel.get_global_rect()
+	_zone_target_preview.global_position = Vector2(
+		rect.position.x, rect.position.y - _zone_target_preview.size.y - 6.0)
+
+
+func _cleanup_zone_target_preview() -> void:
+	if _zone_target_preview and is_instance_valid(_zone_target_preview):
+		_zone_target_preview.queue_free()
+		# A preview freed mid-hover never fires mouse_exited
+		_board._hide_card_preview()
+	_zone_target_preview = null
 
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
@@ -1341,7 +1384,26 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	var panel_width := 372.0 # 360 scroll + 12 stylebox margins
 	var panel_margins := 12.0
 	var per_btn: float = 64.0
-	var max_height: float = bottom_y - 56.0 # keep the prompt text visible above
+
+	# Readable card preview above the buttons so the player can inspect the
+	# card each option belongs to. Shrinks (then drops) if vertical space is
+	# too tight for the button list.
+	var first_card_id := ""
+	for cid in card_ids:
+		if not cid.is_empty():
+			first_card_id = cid
+			break
+	var preview_size := CHOICE_PREVIEW_SIZE_MOBILE if _is_mobile_layout else CHOICE_PREVIEW_SIZE
+	var preview_block: float = 0.0
+	if not first_card_id.is_empty() and not _resolve_choice_card(first_card_id).is_empty():
+		preview_block = preview_size.y + 6.0
+		if bottom_y - 56.0 - preview_block < per_btn * 2.0:
+			preview_size = CHOICE_PREVIEW_SIZE_MOBILE
+			preview_block = preview_size.y + 6.0
+			if bottom_y - 56.0 - preview_block < per_btn * 2.0:
+				preview_block = 0.0
+
+	var max_height: float = bottom_y - 56.0 - preview_block # keep the prompt text visible above
 	var est_height: float = minf(options.size() * per_btn + 12.0, max_height)
 	_choice_panel.anchor_left = 1.0
 	_choice_panel.anchor_right = 1.0
@@ -1349,16 +1411,28 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	_choice_panel.anchor_bottom = 0.0
 	_choice_panel.offset_left = -6.0 - panel_width
 	_choice_panel.offset_right = -6.0
-	_choice_panel.offset_top = bottom_y - (est_height + panel_margins)
+	_choice_panel.offset_top = bottom_y - (est_height + preview_block + panel_margins)
 	_choice_panel.offset_bottom = bottom_y
+
+	var vbox := VBoxContainer.new()
+	vbox.name = "ChoiceVBox"
+	vbox.add_theme_constant_override("separation", 6)
+	_choice_panel.add_child(vbox)
+
+	if preview_block > 0.0:
+		_choice_preview_slot = CenterContainer.new()
+		_choice_preview_slot.name = "PreviewSlot"
+		_choice_preview = _make_card_preview(first_card_id, preview_size)
+		_choice_preview_slot.add_child(_choice_preview)
+		vbox.add_child(_choice_preview_slot)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.custom_minimum_size = Vector2(360.0, est_height)
-	_choice_panel.add_child(scroll)
+	vbox.add_child(scroll)
 	# After the first layout pass, shrink-wrap to the buttons' real (wrapped)
 	# height — no gap under the last button — and re-pin the bottom edge.
-	_fit_choice_panel.call_deferred(scroll, bottom_y, max_height)
+	_fit_choice_panel.call_deferred(scroll, bottom_y, max_height, preview_block)
 
 	_choice_container = VBoxContainer.new()
 	_choice_container.name = "ChoiceContainer"
@@ -1385,6 +1459,9 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 				btn.expand_icon = true
 				btn.add_theme_constant_override("icon_max_width", 48)
 				btn.custom_minimum_size.y = maxf(btn.custom_minimum_size.y, 56.0)
+			# The big preview follows the hovered/focused option.
+			btn.mouse_entered.connect(_on_choice_option_focused.bind(card_ids[i]))
+			btn.focus_entered.connect(_on_choice_option_focused.bind(card_ids[i]))
 		btn.pressed.connect(_on_choice_button_pressed.bind(i))
 		_choice_container.add_child(btn)
 		_choice_buttons.append(btn)
@@ -1393,7 +1470,7 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 ## Deferred: match the scroll viewport to the laid-out button column so the
 ## panel hugs its content (capped at max_height — beyond that it scrolls),
 ## keeping the BOTTOM edge pinned at bottom_y so the panel grows upward.
-func _fit_choice_panel(scroll: ScrollContainer, bottom_y: float, max_height: float) -> void:
+func _fit_choice_panel(scroll: ScrollContainer, bottom_y: float, max_height: float, preview_block: float = 0.0) -> void:
 	# Wait for a layout pass so the buttons have real (wrapped) sizes; the
 	# combined minimum size is the floor in case layout hasn't settled.
 	await get_tree().process_frame
@@ -1404,8 +1481,50 @@ func _fit_choice_panel(scroll: ScrollContainer, bottom_y: float, max_height: flo
 	var measured: float = maxf(_choice_container.size.y, _choice_container.get_combined_minimum_size().y)
 	var content_h: float = minf(measured + 2.0, max_height)
 	scroll.custom_minimum_size.y = content_h
-	_choice_panel.offset_top = bottom_y - (content_h + 12.0)
+	_choice_panel.offset_top = bottom_y - (content_h + preview_block + 12.0)
 	_choice_panel.offset_bottom = bottom_y
+
+
+## Display-only Card.tscn instance for the choice / zone-target previews;
+## click/tap (or the gallery right-click/double-click wiring) opens the
+## full-screen zoom.
+func _make_card_preview(base_id: String, preview_size: Vector2) -> Control:
+	var card: Control = CHOICE_CARD_SCENE.instantiate()
+	card.skip_effect_load = true
+	card.drag_enabled = false
+	card.click_on_release = true
+	card.is_selectable = true
+	if card.has_method("set_card_data_dict"):
+		card.set_card_data_dict(_resolve_choice_card(base_id))
+	card.custom_minimum_size = preview_size
+	card.size = preview_size
+	OverlayGridUtil.set_gallery_hover(card, _board._show_card_zoom)
+	card.card_clicked.connect(func(c: Control) -> void:
+		_board._show_card_zoom(c.card_data, 0))
+	# Hover mirrors the card to the big right-side preview panel (no-op on
+	# mobile, which uses tap-to-zoom instead).
+	card.mouse_entered.connect(func() -> void:
+		_board._show_card_preview(card.card_data, 0))
+	card.mouse_exited.connect(_board._hide_card_preview)
+	return card
+
+
+## Base id -> full card dict (duplicated — CardData templates are shared).
+func _resolve_choice_card(base_id: String) -> Dictionary:
+	if _choice_card_dicts.has(base_id):
+		return _choice_card_dicts[base_id]
+	var dict: Dictionary = CardData.get_card_by_id(base_id)
+	dict = dict.duplicate(true) if not dict.is_empty() else {}
+	_choice_card_dicts[base_id] = dict
+	return dict
+
+
+func _on_choice_option_focused(base_id: String) -> void:
+	if _choice_preview == null or not is_instance_valid(_choice_preview):
+		return
+	var dict := _resolve_choice_card(base_id)
+	if not dict.is_empty():
+		_choice_preview.set_card_data_dict(dict)
 
 
 func _on_choice_button_pressed(index: int) -> void:
@@ -1433,6 +1552,13 @@ func _cleanup_choice_selection() -> void:
 	elif _choice_container:
 		_choice_container.queue_free()
 		_choice_container = null
+	if _choice_preview and is_instance_valid(_choice_preview):
+		# The preview is freed with the panel; a mid-hover free never fires
+		# mouse_exited, so drop the right-side preview explicitly.
+		_board._hide_card_preview()
+	_choice_preview = null
+	_choice_preview_slot = null
+	_choice_card_dicts.clear()
 	action_prompt_panel.visible = false
 	# Restore normal action button rows
 	_set_action_buttons_visible(true)

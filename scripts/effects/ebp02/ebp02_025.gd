@@ -31,7 +31,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var chosen: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid,
-		tr("STR_EFF_EBP02_025_PROMPT"))
+		tr("STR_EFF_EBP02_025_PROMPT"), false, "EBP02-T02")
 	if chosen < 0:
 		return
 

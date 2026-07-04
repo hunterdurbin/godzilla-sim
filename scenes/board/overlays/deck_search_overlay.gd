@@ -115,6 +115,11 @@ func _on_view_board() -> void:
 		_router.on_view_board_request.call(self)
 
 
+## Label data for the minimize chip shown while this overlay is hidden.
+func get_minimize_info() -> Dictionary:
+	return {"title": _prompt.text, "count": _matching.size()}
+
+
 func _on_card_zoom(card: Control) -> void:
 	if _router and _router.card_zoom_request.is_valid() and "card_data" in card:
 		_router.card_zoom_request.call(card.card_data, 0)

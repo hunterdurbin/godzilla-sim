@@ -406,7 +406,7 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int, c
 		var prompt: String = tr(prompt_key) % (count - placed)
 		prompt += " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % _format_zone_list(valid)
 		var chosen: int = await h.select_zone_target(
-			player.player_id, player.player_id, valid, prompt)
+			player.player_id, player.player_id, valid, prompt, false, token_id)
 		if chosen < 0:
 			break
 		used_zones.append(chosen)
@@ -450,7 +450,7 @@ func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], p
 		var prompt: String = tr("STR_EFF_PLAY_ZONES_FMT") % card.get("name", "card")
 		prompt += " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % _format_zone_list(valid)
 		var chosen: int = await h.select_zone_target(
-			player.player_id, player.player_id, valid, prompt)
+			player.player_id, player.player_id, valid, prompt, false, CardUtils.base_id(card))
 		if chosen < 0:
 			chosen = valid[0]         # mandatory placement — fall back to first available
 		used_zones.append(chosen)
@@ -595,7 +595,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 			if i != player.monster_zone - 1:  # Can't play in own monster zone
 				valid_zones.append(i)
 		var card_name: String = card_data.get("name", "card")
-		zone_idx = await h.select_zone_target(player_id, player_id, valid_zones, tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_name)
+		zone_idx = await h.select_zone_target(player_id, player_id, valid_zones, tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_name, false, CardUtils.base_id(card_data))
 		if zone_idx < 0:
 			# Can't skip — put back in discard as fallback
 			player.discard_pile.append(card_data)
@@ -637,7 +637,7 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 	if valid_zones.is_empty():
 		return -1
 	var zone_idx: int = await h.select_zone_target(
-		player_id, player_id, valid_zones, prompt, true)
+		player_id, player_id, valid_zones, prompt, true, CardUtils.base_id(card_data))
 	if zone_idx < 0:
 		return -1
 	return await play_from_discard(player_id, card_data, zone_idx)

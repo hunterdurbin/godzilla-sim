@@ -24,6 +24,7 @@ var _title: Label
 var _grid: GridContainer
 var _close: Button
 var _stacked: CheckButton # null when the viewer has no stacked toggle
+var _view_board: Button # Minimize; only shown for the blocking modes below
 
 var cards: Array[Dictionary] = []
 
@@ -49,6 +50,14 @@ func _ready() -> void:
 	gui_input.connect(_on_background_clicked)
 	if _stacked:
 		_stacked.toggled.connect(_on_stacked_toggled)
+	# View Board (minimize) — passive viewers close freely, so it only shows
+	# for the blocking modes (rank-up pick, cards revealed).
+	_view_board = Button.new()
+	_view_board.text = tr("STR_GB_VIEW_BOARD")
+	_view_board.visible = false
+	_view_board.pressed.connect(_on_view_board)
+	vbox.add_child(_view_board)
+	vbox.move_child(_view_board, _close.get_index())
 
 
 ## Passive view of a card list with a pre-translated title.
@@ -57,6 +66,7 @@ func show_cards(p_cards: Array, title: String) -> void:
 	_title.text = title
 	if _stacked:
 		_stacked.set_pressed_no_signal(_router.match_stacked_view if _router else true)
+	_view_board.visible = false
 	visible = true
 	_refresh()
 
@@ -70,6 +80,7 @@ func show_rankup(monsters: Array, valid_indices: Array[int], prompt: String, res
 	_close.visible = false
 	if _stacked:
 		_stacked.visible = false
+	_view_board.visible = true
 
 	for child in _grid.get_children():
 		child.queue_free()
@@ -100,6 +111,7 @@ func show_revealed(p_cards: Array, title: String, resolve_cb: Callable) -> void:
 	_revealed_resolve = resolve_cb
 	cards.assign(p_cards)
 	_title.text = tr("STR_GB_TITLE_COUNT_FMT").replace("{TITLE}", title).replace("{C}", str(cards.size()))
+	_view_board.visible = true
 	visible = true
 	_refresh()
 
@@ -110,6 +122,7 @@ func try_close() -> void:
 	if rankup_selecting:
 		return
 	visible = false
+	_view_board.visible = false
 	for child in _grid.get_children():
 		child.queue_free()
 	cards.clear()
@@ -119,6 +132,19 @@ func try_close() -> void:
 		_revealed_resolve = Callable()
 		if cb.is_valid():
 			cb.call()
+
+
+func _on_view_board() -> void:
+	visible = false
+	if _router and _router.on_view_board_request.is_valid():
+		_router.on_view_board_request.call(self)
+
+
+## Label data for the minimize chip shown while this overlay is hidden.
+func get_minimize_info() -> Dictionary:
+	# Rank-up mode fills _grid directly and leaves `cards` empty.
+	var count: int = _grid.get_child_count() if rankup_selecting else cards.size()
+	return {"title": _title.text, "count": count}
 
 
 func _refresh() -> void:
@@ -190,5 +216,6 @@ func cleanup_rankup() -> void:
 	_close.visible = true
 	if _stacked:
 		_stacked.visible = true
+	_view_board.visible = false
 	for child in _grid.get_children():
 		child.queue_free()

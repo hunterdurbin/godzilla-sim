@@ -54,7 +54,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 			valid_zones.append(i)
 	var target_zone: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-		tr("STR_EFF_EBP02_T04_PROMPT"))
+		tr("STR_EFF_EBP02_T04_PROMPT"), false, "EBP02-T04")
 	if target_zone < 0:
 		target_zone = zone_idx
 	await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T04", target_zone)

@@ -125,8 +125,6 @@ var opponent_hand_toggle_button: Button:
 	get: return _board.opponent_hand_toggle_button
 var opponent_sort_hand_button: Button:
 	get: return _board.opponent_sort_hand_button
-var show_cards_button: Button:
-	get: return _board.show_cards_button
 var player1_board: Control:
 	get: return _board.player1_board
 var player2_board: Control:
@@ -640,10 +638,8 @@ func _apply_mobile_utility_buttons() -> void:
 		btn.custom_minimum_size.y = 60
 		btn.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 
-	# ShowCards button
-	show_cards_button.custom_minimum_size.y = 62
-	show_cards_button.add_theme_font_size_override("font_size", 22)
-	show_cards_button.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
+	# Minimize chip — fire on touch-down (sizing/clearance handled in show_chip)
+	_board._minimize_chip.action_mode = BaseButton.ACTION_MODE_BUTTON_PRESS
 
 	# End game buttons
 	btn_rematch.custom_minimum_size.y = 60

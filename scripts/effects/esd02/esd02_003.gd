@@ -60,7 +60,8 @@ func on_enter(ctx: EffectContext) -> void:
 		var zone_list: String = ", ".join(valid_adjacent.map(func(z): return str(z + 1)))
 		var target_zone: int = await ctx.effect_handler.select_zone_target(
 			player.player_id, player.player_id, valid_adjacent,
-			tr("STR_EFF_ESD02_003_PROMPT") + " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % zone_list)
+			tr("STR_EFF_ESD02_003_PROMPT") + " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % zone_list,
+			false, CardUtils.base_id(selected))
 		if target_zone < 0:
 			break
 

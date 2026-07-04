@@ -66,7 +66,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 
 			var dest := await ctx.effect_handler.select_zone_target(
 				ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-				tr("STR_EFF_PLAY_BATTLE_ZONE"))
+				tr("STR_EFF_PLAY_BATTLE_ZONE"), false, CardUtils.base_id(card))
 			if dest < 0:
 				ctx.owner.discard_pile.append(card)
 				ctx.owner.discard_changed.emit()

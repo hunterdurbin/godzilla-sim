@@ -38,7 +38,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var target_zone: int = await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_adjacent,
-		tr("STR_EFF_PLAY_ADJ_ZONE"))
+		tr("STR_EFF_PLAY_ADJ_ZONE"), false, CardUtils.base_id(selected))
 	if target_zone < 0:
 		return
 

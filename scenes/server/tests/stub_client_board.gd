@@ -73,7 +73,7 @@ func _rpc_card_select_requested(matching_json: String, all_json: String, prompt:
 	prompt_received.emit("card_select", [matching_json, all_json, prompt, min_count, max_count])
 
 
-func _rpc_zone_target_requested(target_pid: int, zones_json: String, prompt: String, allow_skip: bool) -> void:
+func _rpc_zone_target_requested(target_pid: int, zones_json: String, prompt: String, allow_skip: bool, _card_id: String = "") -> void:
 	prompt_received.emit("zone_target", [target_pid, zones_json, prompt, allow_skip])
 
 

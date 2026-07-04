@@ -40,6 +40,11 @@ var _card_select_pool_filter: Callable = Callable()  # Optional: func(card, sele
 ## thumbnail on each button; cleared when the choice resolves.
 var choice_card_ids: Array[String] = []
 
+## Base id of the card being placed by the most recent select_zone_target
+## ("" when the prompt is zone-only, e.g. destroy). The zone-target UI reads
+## this to show a preview of the card; cleared when the target resolves.
+var zone_target_card_id: String = ""
+
 ## Forwarders into the shared EffectExecutionState — internal call sites and
 ## external readers (bot, UI) keep the historical names.
 var pending_destroy_max_rank: int:  # Set before the zone-target prompt for bot rank filtering
@@ -254,16 +259,20 @@ func resolve_deferred_entries(entries: Array) -> void:
 
 
 
-func select_zone_target(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false) -> int:
+func select_zone_target(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false, card_id: String = "") -> int:
 	## Ask a player to choose one of the valid zones on the target player's board.
 	## If allow_skip is true, the player can decline (returns -1).
+	## `card_id` (optional) gives the base id of the card being placed so the
+	## UI can show a preview of it next to the prompt.
 	## Returns the chosen zone index, or -1 if no valid zones or skipped.
 	if valid_zones.is_empty():
 		return -1
 
+	zone_target_card_id = card_id
 	_highlight_active_effect()
 	var zone_index: int = await input.select_zone(player_id, target_player_id, valid_zones, prompt, allow_skip)
 	_unhighlight_active_effect()
+	zone_target_card_id = ""
 	return zone_index
 
 
