@@ -61,7 +61,7 @@ func get_printed_field(card: Dictionary, field: String, printing: String, defaul
 ## printing onto its base field, then strips the helper keys so they never leak to
 ## consumers or serialization. Call only on per-match instances, never on a template.
 func apply_printing(card: Dictionary, printing: String) -> void:
-	for key in card.keys():  # keys() returns a snapshot, so erasing during iteration is safe
+	for key in card.keys(): # keys() returns a snapshot, so erasing during iteration is safe
 		if not (key is String and key.ends_with("_by_printing")):
 			continue
 		var overrides: Dictionary = card[key]
@@ -1189,12 +1189,7 @@ var EBP02_CARDS: Array[Dictionary] = [
 		"card_type": CardEnums.CardType.BATTLE,
 		"rank": 6,
 		"colors": [CardEnums.CardColor.RED],
-		"traits": [CardEnums.CardTrait.RODAN, CardEnums.CardTrait.WEAPON],  # EN printing (misprint, no errata)
-		# The EN release misprints this card's trait as Weapon; the JP printing
-		# has Final Wars. Only Rumble East uses the JP printing (see apply_printing).
-		"traits_by_printing": {
-			"ja": [CardEnums.CardTrait.RODAN, CardEnums.CardTrait.FINAL_WARS],
-		},
+		"traits": [CardEnums.CardTrait.RODAN, CardEnums.CardTrait.FINAL_WARS], # EN printing (misprint, no errata)
 		"counter_power": 4000,
 		"invasion_icon": 1,
 		"description": "If this card is in a zone with the same number as the zone that your opponent's monster card occupies, this card gains +3000 counter power.",
