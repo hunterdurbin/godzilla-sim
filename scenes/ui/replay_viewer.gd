@@ -817,6 +817,7 @@ func _on_play_from_here_pressed() -> void:
 		"mode": "solo",
 		"bot_difficulty": "",
 		"deck_names": Array(_replay.deck_names),
+		"game_seed": _replay.game_seed,
 		"players": snap.get("players", []),
 	}
 	NetworkManager.mode = NetworkManager.Mode.SOLO

@@ -714,18 +714,12 @@ var _player_settings: Array[Dictionary]:
 
 
 func _start_game() -> void:
-	# Loaded from save: skip first-player choice, jump to saved turn
+	# Loaded from save: skip first-player choice, resume at the saved boundary
 	if _loaded_from_save:
 		_loaded_from_save = false
 		_apply_gradients_and_sync()
 		SfxManager.play("game_setup")
-		var saved_pid: int = turn_manager.game_state.current_player_id
-		var saved_phase: CardEnums.GamePhase = turn_manager.game_state.current_phase
-		var saved_sub: int = turn_manager.game_state.current_sub_phase
-		# If already past main-phase resolve effects, skip to player actions.
-		# Otherwise run main-phase resolve effects from the start of the sub-phase.
-		var skip_effects: bool = saved_phase == CardEnums.GamePhase.MAIN and saved_sub >= 1
-		turn_manager.resume_to_main_phase(saved_pid, not skip_effects)
+		turn_manager.resume_game()
 		return
 
 	if is_bot_game:

@@ -58,7 +58,7 @@ static func setup_from_save(tm: TurnManager, data: Dictionary) -> void:
 	_build_components(tm)
 
 	# Restore game-level state
-	tm.game_state.turn_number = data.get("turn_number", 1) - 1  # Will be incremented by _begin_turn or resume_to_main_phase
+	tm.game_state.turn_number = data.get("turn_number", 1)
 	tm.game_state.current_player_id = data.get("current_player_id", 0)
 	tm.game_state.current_phase = data.get("current_phase", CardEnums.GamePhase.START) as CardEnums.GamePhase
 	tm.game_state.current_sub_phase = data.get("current_sub_phase", 0)

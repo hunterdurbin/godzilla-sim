@@ -73,6 +73,8 @@ static func serialize_player_state(ps: PlayerState) -> Dictionary:
 		"monster_deck": cards_to_ids(ps.monster_deck),
 		"strategy_zone_turn_placed": ps.strategy_zone_turn_placed.duplicate(),
 		"invasion_zones_crossed": ps.invasion_zones_crossed,
+		"last_invasion_card": card_to_id(ps.last_invasion_card),
+		"cards_destroyed_this_turn": cards_to_ids(ps.cards_destroyed_this_turn),
 	}
 
 
@@ -94,6 +96,8 @@ static func deserialize_to_player_state(data: Dictionary) -> PlayerState:
 	ps.discard_pile = Array(ids_to_cards(data.get("discard_pile", [])), TYPE_DICTIONARY, "", null)
 	ps.monster_deck = Array(ids_to_cards(data.get("monster_deck", [])), TYPE_DICTIONARY, "", null)
 	ps.monster_stack = Array(ids_to_cards(data.get("monster_stack", [])), TYPE_DICTIONARY, "", null)
+	ps.last_invasion_card = id_to_card(str(data.get("last_invasion_card", "")))
+	ps.cards_destroyed_this_turn = Array(ids_to_cards(data.get("cards_destroyed_this_turn", [])), TYPE_DICTIONARY, "", null)
 
 	# Zones: array of 8 zone stacks
 	var zone_ids: Array = data.get("zones", [])

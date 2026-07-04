@@ -124,6 +124,8 @@ func test_save_restore_resume_round_trip() -> void:
 	var state := GameState.new()
 	state.turn_number = 4
 	state.current_player_id = 1
+	state.current_phase = CardEnums.GamePhase.MAIN
+	state.current_sub_phase = 1
 	for pid in range(2):
 		var p := state.players[pid]
 		p.current_monster = g1.duplicate(true)
@@ -132,6 +134,8 @@ func test_save_restore_resume_round_trip() -> void:
 		p.hand.append(battle.duplicate(true))
 		p.main_deck.append(battle.duplicate(true))
 		p.push_zone_card(2, battle.duplicate(true))
+		p.cards_destroyed_this_turn.append(battle.duplicate(true))
+		p.last_invasion_card = battle.duplicate(true)
 
 	var deck_names: Array[String] = ["A", "B"]
 	var save := GameSerializer.serialize_game_state(state, 0, "solo", "", deck_names)
@@ -140,6 +144,8 @@ func test_save_restore_resume_round_trip() -> void:
 	tm.player_input = ScriptedPlayerInput.new()
 	tm.setup_from_save(save)
 
+	# Restored verbatim — no turn-number offset.
+	assert_int(tm.game_state.turn_number).is_equal(4)
 	for pid in range(2):
 		var restored := tm.game_state.players[pid]
 		assert_str(str(restored.current_monster.get("id"))).contains("ESD01-001")
@@ -147,10 +153,15 @@ func test_save_restore_resume_round_trip() -> void:
 		assert_int(restored.rage).is_equal(pid + 1)
 		assert_int(restored.hand.size()).is_equal(1)
 		assert_bool(restored.zone_has_cards(2)).is_true()
+		assert_int(restored.cards_destroyed_this_turn.size()).is_equal(1)
+		assert_str(str(restored.last_invasion_card.get("id"))).contains("ESD01-005")
 
-	# Resume into the saved player's main phase and accept an action.
-	tm.resume_to_main_phase(1)
+	# Resume at the saved MAIN / player-actions boundary.
+	tm.resume_game()
 	assert_int(tm.game_state.turn_number).is_equal(4)
 	assert_int(tm.game_state.current_player_id).is_equal(1)
 	assert_int(tm.game_state.current_phase).is_equal(CardEnums.GamePhase.MAIN)
 	assert_int(tm.flow_state).is_equal(TurnManager.FlowState.AWAITING_ACTION)
+	# Resuming mid-main must not re-run the start phase: no draw, no rage reset.
+	assert_int(tm.game_state.players[1].hand.size()).is_equal(1)
+	assert_int(tm.game_state.players[1].rage).is_equal(2)
