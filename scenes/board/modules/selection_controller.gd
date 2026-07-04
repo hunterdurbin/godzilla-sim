@@ -54,6 +54,7 @@ var _zone_target_board_pid: int = -1 # Whose board the zones are on
 var _zone_target_valid_zones: Array[int] = []
 var _zone_target_allow_skip: bool = false
 var _prompt_preview_root: Control = null # Mini previews above the helper text (effect source / card being placed)
+var _prompt_preview_card: Control = null # The placed-card preview node (choice hover retargets it)
 
 # Strategy target selection state
 var _strategy_target_selecting: bool = false
@@ -63,16 +64,12 @@ var _strategy_target_valid_indices: Array[int] = []
 
 # Choice button selection state
 const CHOICE_CARD_SCENE := preload("res://scenes/cards/Card.tscn")
-const CHOICE_PREVIEW_SIZE := Vector2(180, 252)
-const CHOICE_PREVIEW_SIZE_MOBILE := Vector2(120, 168)
 const ZONE_PREVIEW_SIZE := Vector2(72, 101) # Small; hover mirrors to the big right-side preview
 var _choice_selecting: bool = false
 var _choice_player_id: int = -1
 var _choice_buttons: Array[Button] = []
 var _choice_container: VBoxContainer = null
 var _choice_panel: PanelContainer = null # Mobile wrapper panel
-var _choice_preview: Control = null # Card.tscn render of the hovered option's card
-var _choice_preview_slot: CenterContainer = null
 var _choice_card_dicts: Dictionary = {} # base id -> duplicated card dict cache
 
 # --- Board bridge: widgets ---
@@ -1269,7 +1266,8 @@ func _show_prompt_previews(source_id: String, placed_id: String) -> void:
 			source_card.add_child(_make_effect_source_caption())
 		row.add_child(source_card)
 	if placed_ok:
-		row.add_child(_make_card_preview(placed_id, ZONE_PREVIEW_SIZE))
+		_prompt_preview_card = _make_card_preview(placed_id, ZONE_PREVIEW_SIZE)
+		row.add_child(_prompt_preview_card)
 	add_child(row)
 	_prompt_preview_root = row
 	_position_prompt_previews.call_deferred()
@@ -1310,6 +1308,7 @@ func _cleanup_prompt_previews() -> void:
 		# A preview freed mid-hover never fires mouse_exited
 		_board._hide_card_preview()
 	_prompt_preview_root = null
+	_prompt_preview_card = null
 
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
@@ -1446,25 +1445,16 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	var panel_margins := 12.0
 	var per_btn: float = 64.0
 
-	# Readable card preview above the buttons so the player can inspect the
-	# card each option belongs to. Shrinks (then drops) if vertical space is
-	# too tight for the button list.
+	# Small preview above the helper text of the card the choice belongs to,
+	# following the hovered/focused option (same widget as the other prompts).
 	var first_card_id := ""
 	for cid in card_ids:
 		if not cid.is_empty():
 			first_card_id = cid
 			break
-	var preview_size := CHOICE_PREVIEW_SIZE_MOBILE if _is_mobile_layout else CHOICE_PREVIEW_SIZE
-	var preview_block: float = 0.0
-	if not first_card_id.is_empty() and not _resolve_choice_card(first_card_id).is_empty():
-		preview_block = preview_size.y + 6.0
-		if bottom_y - 56.0 - preview_block < per_btn * 2.0:
-			preview_size = CHOICE_PREVIEW_SIZE_MOBILE
-			preview_block = preview_size.y + 6.0
-			if bottom_y - 56.0 - preview_block < per_btn * 2.0:
-				preview_block = 0.0
+	_show_prompt_previews("", first_card_id)
 
-	var max_height: float = bottom_y - 56.0 - preview_block # keep the prompt text visible above
+	var max_height: float = bottom_y - 56.0 # keep the prompt text visible above
 	var est_height: float = minf(options.size() * per_btn + 12.0, max_height)
 	_choice_panel.anchor_left = 1.0
 	_choice_panel.anchor_right = 1.0
@@ -1472,28 +1462,16 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	_choice_panel.anchor_bottom = 0.0
 	_choice_panel.offset_left = -6.0 - panel_width
 	_choice_panel.offset_right = -6.0
-	_choice_panel.offset_top = bottom_y - (est_height + preview_block + panel_margins)
+	_choice_panel.offset_top = bottom_y - (est_height + panel_margins)
 	_choice_panel.offset_bottom = bottom_y
-
-	var vbox := VBoxContainer.new()
-	vbox.name = "ChoiceVBox"
-	vbox.add_theme_constant_override("separation", 6)
-	_choice_panel.add_child(vbox)
-
-	if preview_block > 0.0:
-		_choice_preview_slot = CenterContainer.new()
-		_choice_preview_slot.name = "PreviewSlot"
-		_choice_preview = _make_card_preview(first_card_id, preview_size)
-		_choice_preview_slot.add_child(_choice_preview)
-		vbox.add_child(_choice_preview_slot)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.custom_minimum_size = Vector2(360.0, est_height)
-	vbox.add_child(scroll)
+	_choice_panel.add_child(scroll)
 	# After the first layout pass, shrink-wrap to the buttons' real (wrapped)
 	# height — no gap under the last button — and re-pin the bottom edge.
-	_fit_choice_panel.call_deferred(scroll, bottom_y, max_height, preview_block)
+	_fit_choice_panel.call_deferred(scroll, bottom_y, max_height)
 
 	_choice_container = VBoxContainer.new()
 	_choice_container.name = "ChoiceContainer"
@@ -1520,7 +1498,7 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 				btn.expand_icon = true
 				btn.add_theme_constant_override("icon_max_width", 48)
 				btn.custom_minimum_size.y = maxf(btn.custom_minimum_size.y, 56.0)
-			# The big preview follows the hovered/focused option.
+			# The preview above the helper text follows the hovered/focused option.
 			btn.mouse_entered.connect(_on_choice_option_focused.bind(card_ids[i]))
 			btn.focus_entered.connect(_on_choice_option_focused.bind(card_ids[i]))
 		btn.pressed.connect(_on_choice_button_pressed.bind(i))
@@ -1531,7 +1509,7 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 ## Deferred: match the scroll viewport to the laid-out button column so the
 ## panel hugs its content (capped at max_height — beyond that it scrolls),
 ## keeping the BOTTOM edge pinned at bottom_y so the panel grows upward.
-func _fit_choice_panel(scroll: ScrollContainer, bottom_y: float, max_height: float, preview_block: float = 0.0) -> void:
+func _fit_choice_panel(scroll: ScrollContainer, bottom_y: float, max_height: float) -> void:
 	# Wait for a layout pass so the buttons have real (wrapped) sizes; the
 	# combined minimum size is the floor in case layout hasn't settled.
 	await get_tree().process_frame
@@ -1542,7 +1520,7 @@ func _fit_choice_panel(scroll: ScrollContainer, bottom_y: float, max_height: flo
 	var measured: float = maxf(_choice_container.size.y, _choice_container.get_combined_minimum_size().y)
 	var content_h: float = minf(measured + 2.0, max_height)
 	scroll.custom_minimum_size.y = content_h
-	_choice_panel.offset_top = bottom_y - (content_h + preview_block + 12.0)
+	_choice_panel.offset_top = bottom_y - (content_h + 12.0)
 	_choice_panel.offset_bottom = bottom_y
 
 
@@ -1581,11 +1559,11 @@ func _resolve_choice_card(base_id: String) -> Dictionary:
 
 
 func _on_choice_option_focused(base_id: String) -> void:
-	if _choice_preview == null or not is_instance_valid(_choice_preview):
+	if _prompt_preview_card == null or not is_instance_valid(_prompt_preview_card):
 		return
 	var dict := _resolve_choice_card(base_id)
 	if not dict.is_empty():
-		_choice_preview.set_card_data_dict(dict)
+		_prompt_preview_card.set_card_data_dict(dict)
 
 
 func _on_choice_button_pressed(index: int) -> void:
@@ -1613,12 +1591,7 @@ func _cleanup_choice_selection() -> void:
 	elif _choice_container:
 		_choice_container.queue_free()
 		_choice_container = null
-	if _choice_preview and is_instance_valid(_choice_preview):
-		# The preview is freed with the panel; a mid-hover free never fires
-		# mouse_exited, so drop the right-side preview explicitly.
-		_board._hide_card_preview()
-	_choice_preview = null
-	_choice_preview_slot = null
+	_cleanup_prompt_previews()
 	_choice_card_dicts.clear()
 	action_prompt_panel.visible = false
 	# Restore normal action button rows
