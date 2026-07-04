@@ -10,24 +10,25 @@ extends CardEffect
 ## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
-## Rules: None
+## Rules: The 2-color condition is checked once, at the moment this card is
+##   discarded (e.g. as an invasion cost) — it is NOT re-checked after invasion
+##   movement/crush. Only the counter power X reads the board continuously.
 ## Interactions: None
-## Implementation notes: None
+## Implementation notes: Trigger-time gate lives in discard_from_hand_condition
+##   (collect-time hook); the play/destroy body still resolves post-movement.
 
 
 func get_bot_tags() -> Array[String]:
 	return ["plays_from_discard", "destroys_zone", "boosts_cp"]
 
 
+func discard_from_hand_condition(ctx: EffectContext) -> bool:
+	# <Your Turn> + 2-color check, evaluated once at discard time (e.g. as
+	# invasion cost); not re-checked after invasion movement/crush.
+	return ctx.is_own_turn() and _count_zone_colors(ctx) >= 2
+
+
 func on_discard_from_hand(ctx: EffectContext) -> void:
-	# Only on your turn
-	if ctx.is_opponent_turn():
-		return
-
-	var color_count: int = _count_zone_colors(ctx)
-	if color_count < 2:
-		return
-
 	# Play self from discard
 	await ctx.effect_handler.play_from_discard(ctx.owner.player_id, ctx.card_data)
 

@@ -973,6 +973,84 @@ func test_ebp03_067_stays_in_discard_on_opponent_turn() -> void:
 	assert_int(state.players[0].discard_pile.size()).is_equal(1)
 
 
+func test_ebp03_067_invasion_crush_does_not_recheck_color_condition() -> void:
+	# Ruling: the 2-color condition is checked once, when the card is discarded
+	# as the invasion cost — NOT re-checked after movement/crush. Here the
+	# invasion crushes RED (one of the two colors), and Monster X still plays.
+	var card := Real.instance("EBP03-067")
+	var blue := Cards.battle(2, 2000, "BLUE")
+	blue["colors"] = [CardEnums.CardColor.BLUE]
+	var state := States.make_state({
+		"p0": {
+			"hand": [card],
+			"monster_zone": 1,
+			"zone_cards": {1: Cards.battle(2, 2000, "RED"), 3: blue},  # RED in crush path (zone 2)
+		},
+		"p1": {"zone_cards": {1: Cards.battle(3, 3000, "OPP")}},
+	})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [4, 1]}
+	var s := States.make_session(state, input)
+
+	await s["action_handler"].execute(CardEnums.ActionType.INVADE, {"hand_index": 0}, state)
+
+	var p0 := state.players[0]
+	assert_int(p0.monster_zone).is_equal(2)
+	assert_bool(p0.zone_has_cards(1)).is_false()  # RED crushed during movement
+	# Only 1 color remained post-crush, yet Monster X plays from discard.
+	assert_str(str(p0.get_zone_top_card(4).get("id"))).is_equal(str(card.get("id")))
+	assert_int(p0.discard_pile.size()).is_equal(1)  # crushed RED only
+	assert_bool(state.players[1].zone_has_cards(1)).is_false()  # lowest rank destroyed
+
+
+func test_ebp03_067_invasion_discard_with_one_color_stays_in_discard() -> void:
+	# Condition still enforced at discard time: only one color in zones.
+	var card := Real.instance("EBP03-067")
+	var state := States.make_state({
+		"p0": {
+			"hand": [card],
+			"monster_zone": 1,
+			"zone_cards": {3: Cards.battle(2, 2000, "RED")},
+		},
+		"p1": {"zone_cards": {1: Cards.battle(3, 3000, "OPP")}},
+	})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["action_handler"].execute(CardEnums.ActionType.INVADE, {"hand_index": 0}, state)
+
+	assert_int(state.players[0].monster_zone).is_equal(2)
+	assert_int(input.count_calls("select_zone")).is_equal(0)
+	assert_int(state.players[0].discard_pile.size()).is_equal(1)  # Monster X stays
+	assert_bool(state.players[1].zone_has_cards(1)).is_true()
+
+
+func test_ebp03_067_invasion_discard_plays_when_no_color_crushed() -> void:
+	# Deferred invasion path, positive case with no crush interference.
+	var card := Real.instance("EBP03-067")
+	var blue := Cards.battle(2, 2000, "BLUE")
+	blue["colors"] = [CardEnums.CardColor.BLUE]
+	var state := States.make_state({
+		"p0": {
+			"hand": [card],
+			"monster_zone": 1,
+			"zone_cards": {3: Cards.battle(2, 2000, "RED"), 4: blue},
+		},
+		"p1": {"zone_cards": {1: Cards.battle(3, 3000, "OPP")}},
+	})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [6, 1]}
+	var s := States.make_session(state, input)
+
+	await s["action_handler"].execute(CardEnums.ActionType.INVADE, {"hand_index": 0}, state)
+
+	var p0 := state.players[0]
+	assert_int(p0.monster_zone).is_equal(2)
+	assert_str(str(p0.get_zone_top_card(6).get("id"))).is_equal(str(card.get("id")))
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_bool(state.players[1].zone_has_cards(1)).is_false()
+
+
 # --- EBP03-068: Godzilla Flies — own-turn invade lock; moves rank III+ monster zone 3 → 8 ---
 
 

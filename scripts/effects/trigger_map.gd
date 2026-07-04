@@ -226,7 +226,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/ebp03/ebp03_064.gd": ["on_enter","get_counter_power_modifier"],
 	"res://scripts/effects/ebp03/ebp03_065.gd": ["get_counter_power_modifier"],
 	"res://scripts/effects/ebp03/ebp03_066.gd": ["on_enter","get_play_rank_modifier_for_card"],
-	"res://scripts/effects/ebp03/ebp03_067.gd": ["on_discard_from_hand","get_counter_power_modifier"],
+	"res://scripts/effects/ebp03/ebp03_067.gd": ["on_discard_from_hand","discard_from_hand_condition","get_counter_power_modifier"],
 	"res://scripts/effects/ebp03/ebp03_068.gd": ["on_enter","can_monster_invade","get_effect_categories"],
 	"res://scripts/effects/ebp03/ebp03_069.gd": ["on_enter"],
 	"res://scripts/effects/ebp03/ebp03_070.gd": ["on_phase_start","is_base_strategy"],

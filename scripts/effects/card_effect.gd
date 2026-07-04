@@ -90,6 +90,15 @@ func on_discard_from_hand(_ctx: EffectContext) -> void:
 	pass
 
 
+func discard_from_hand_condition(_ctx: EffectContext) -> bool:
+	## Trigger-time gate for on_discard_from_hand, evaluated at the MOMENT the
+	## card is discarded — before invasion movement/crush mutate the board —
+	## and never re-checked when the deferred entry resolves.
+	## MUST stay synchronous (no await): both dispatcher paths call it inline.
+	## The card is already in the discard pile when this runs.
+	return true
+
+
 func on_burst_discard(_ctx: EffectContext) -> void:
 	## Called when this card is discarded by the Burst mechanic at end of turn.
 	## The card is already in the discard pile when this triggers.
