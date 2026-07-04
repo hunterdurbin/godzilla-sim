@@ -38,6 +38,12 @@ func _ready() -> void:
 		add_child(player)
 		_players.append(player)
 
+	# Handle window-close ourselves: a playback still registered with the
+	# AudioServer at quit is reported as a leaked instance, and stop() only
+	# releases it on the NEXT audio mix pass — so stop everything, give the
+	# mixer one pass, then quit.
+	get_tree().auto_accept_quit = false
+
 	for sound_name in SOUND_NAMES:
 		var path: String = SFX_DIR + sound_name + ".wav"
 		var stream: AudioStream = load(path)
@@ -45,6 +51,32 @@ func _ready() -> void:
 			_sounds[sound_name] = stream
 		else:
 			push_warning("SfxManager: failed to load %s" % path)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_quit_after_audio_flush()
+
+
+func _quit_after_audio_flush() -> void:
+	stop_all()
+	var music: Node = get_node_or_null("/root/MusicManager")
+	if music:
+		music.stop_playback()
+	await get_tree().create_timer(0.05).timeout
+	get_tree().quit()
+
+
+func stop_all() -> void:
+	for player in _players:
+		player.stop()
+		player.stream = null
+
+
+func _exit_tree() -> void:
+	# Fallback for quit paths that bypass the WM_CLOSE handler
+	# (e.g. --quit-after); racy but better than nothing.
+	stop_all()
 
 
 ## Volume level (0-4) to dB mapping.

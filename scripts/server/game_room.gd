@@ -175,12 +175,12 @@ func broadcast_lobby_state() -> void:
 
 
 ## Away/back from a lobby-bot game while waiting in this room.
-func set_lobby_ready(conn_id: int, ready: bool) -> void:
+func set_lobby_ready(conn_id: int, is_ready: bool) -> void:
 	var pid := player_for_peer(conn_id)
 	if pid < 0 or match_started:
 		return
-	seats[pid]["lobby_ready"] = ready
-	if ready:
+	seats[pid]["lobby_ready"] = is_ready
+	if is_ready:
 		_maybe_announce_start()
 
 

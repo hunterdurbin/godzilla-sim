@@ -32,6 +32,17 @@ signal confirmation_requested(prompt: String, setting: String)
 var _pending: Dictionary = {}
 signal _answer_delivered()
 
+## Set by teardown(): late resolve_*() calls (e.g. bot SceneTreeTimer
+## callbacks outliving the match) become silent no-ops instead of resuming
+## engine coroutines into torn-down objects.
+var _torn_down: bool = false
+
+
+## Drop pending decisions at match teardown. Idempotent.
+func teardown() -> void:
+	_torn_down = true
+	_pending.clear()
+
 
 # --- Decision methods (engine-facing) ---
 
@@ -186,6 +197,10 @@ func _open(key: String) -> void:
 
 
 func _deliver(key: String, value: Variant) -> void:
+	if _torn_down:
+		# Late resolve after match teardown (e.g. a bot SceneTreeTimer that
+		# outlived the scene) — expected, drop silently.
+		return
 	if not _pending.has(key):
 		push_warning("[PlayerInput] Unsolicited resolve for '%s' ignored" % key)
 		return

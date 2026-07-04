@@ -24,6 +24,7 @@ var _pending_log_tokens: Array = []
 # Sound events buffered for broadcast — owned by the BoardSfx child (same
 # forwarding-property pattern as game_board.gd; MultiplayerSync drains it).
 var _board_sfx: Node
+@warning_ignore("unused_private_class_variable") # read via _board._x by MultiplayerSync
 var _pending_sound_events: PackedStringArray:
 	get: return _board_sfx._pending_sound_events if _board_sfx else PackedStringArray()
 	set(v):

@@ -15,6 +15,8 @@ signal rematch_executed
 var is_multiplayer_game: bool = true
 var is_bot_game: bool = false
 var local_player_id: int = -1
+# Polymorphic `_board` fields written by MultiplayerSync, not read locally.
+@warning_ignore_start("unused_private_class_variable")
 var _first_player_id: int = 0
 var _current_sub_phase: int = 0
 var _client_playable: Dictionary = {}
@@ -23,6 +25,7 @@ var _pending_sound_events: PackedStringArray = []
 var _player_elapsed_ms: Array[int] = [0, 0]
 var _game_start_time_ms: int = 0
 var _turn_start_time_ms: int = 0
+@warning_ignore_restore("unused_private_class_variable")
 
 
 # --- Client receive-path hooks (no UI) ---

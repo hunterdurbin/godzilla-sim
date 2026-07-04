@@ -31,6 +31,14 @@ func _ready() -> void:
 
 
 func _start_next_game() -> void:
+	# Break the previous match's reference cycles so each game's engine graph
+	# can be freed (otherwise every game leaks until process exit). Runs via
+	# call_deferred, so the finished game's coroutine stack has unwound.
+	if _current_turn_manager:
+		_current_turn_manager.teardown()
+		_current_turn_manager = null
+	_current_bots = []
+
 	if _games_completed >= num_games:
 		_print_summary()
 		get_tree().quit()
@@ -77,9 +85,11 @@ func _start_next_game() -> void:
 	_current_bots = [bot1, bot2]
 
 	# Instant confirmation — resolve synchronously (no await, no frame wait).
-	# Must be connected BEFORE bot handlers so it fires first.
+	# Must be connected BEFORE bot handlers so it fires first. Uses a named
+	# method: a lambda capturing `pin` would store a strong self-reference on
+	# the pin's own signal and leak one SignalPlayerInput per game.
 	var pin: SignalPlayerInput = _current_turn_manager.player_input
-	pin.confirmation_requested.connect(func(_p: String, _s: String) -> void: pin.resolve_confirmation())
+	pin.confirmation_requested.connect(_on_sim_confirmation)
 
 	# Connect signals for both bots (same pattern as game_session.setup_bot)
 	for bot in _current_bots:
@@ -108,6 +118,11 @@ func _start_next_game() -> void:
 
 	_game_running = true
 	_current_turn_manager.start_game(_games_completed % 2) # Alternate starting player
+
+
+func _on_sim_confirmation(_prompt: String, _setting: String) -> void:
+	if _current_turn_manager and _current_turn_manager.player_input:
+		_current_turn_manager.player_input.resolve_confirmation()
 
 
 func _on_turn_started(_player_id: int) -> void:

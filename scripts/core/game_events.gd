@@ -9,6 +9,9 @@ extends RefCounted
 ## state changes in response. PlayerState's fine-grained change signals
 ## (hand_changed, zones_changed, ...) remain the state-diff layer.
 
+# Bus signals: emitted by the logic layer via `events.<signal>.emit(...)`,
+# never from this class — silence the per-class unused_signal analysis.
+@warning_ignore_start("unused_signal")
 signal battle_card_played(player_id: int, card: Dictionary, zone_index: int)
 signal strategy_card_played(player_id: int, card: Dictionary, strategy_index: int)
 signal monster_advanced(player_id: int, from_zone: int, to_zone: int)

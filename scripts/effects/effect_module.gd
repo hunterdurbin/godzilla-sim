@@ -16,15 +16,19 @@ var input: PlayerInput:
 	get: return h.input
 var action_handler: Variant:
 	get: return h.action_handler
+@warning_ignore("unused_private_class_variable") # used by module subclasses
 var _active_effect_player_id: int:
 	get: return h.exec.active_player_id
 	set(v): h.exec.active_player_id = v
+@warning_ignore("unused_private_class_variable")
 var _active_effect_card: Dictionary:
 	get: return h.exec.active_card
 	set(v): h.exec.active_card = v
+@warning_ignore("unused_private_class_variable")
 var _in_standby_resolution: bool:
 	get: return h.exec.in_standby_resolution
 	set(v): h.exec.in_standby_resolution = v
+@warning_ignore("unused_private_class_variable")
 var _pending_standby_entries: Array:
 	get: return h.exec.pending_standby_entries
 	set(v): h.exec.pending_standby_entries = v

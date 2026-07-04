@@ -20,6 +20,7 @@ signal session_started
 ## Fired by MultiplayerSync after every applied state broadcast (client
 ## peers only). Client-side PlayerState objects are rebuilt per receive,
 ## so bound HUD components rebind + refresh on this signal.
+@warning_ignore("unused_signal") # emitted by MultiplayerSync, not this class
 signal client_state_applied
 
 var turn_manager: TurnManager # Only exists on host/solo
@@ -72,6 +73,23 @@ func _ready() -> void:
 		push_error("[GameSession] Parent node is named '%s' — must be named 'GameBoard' for cross-scene multiplayer to work." % _board.name)
 	if get_node_or_null("MultiplayerSync") == null:
 		push_error("[GameSession] No 'MultiplayerSync' child node — multiplayer RPCs will not route.")
+
+
+func _exit_tree() -> void:
+	# Break the match's RefCounted reference cycles; without this every match
+	# leaks its entire engine graph (reported as "ObjectDB instances leaked
+	# at exit").
+	if turn_manager:
+		turn_manager.teardown()
+	turn_manager = null
+	action_handler = null
+	effect_handler = null
+	rules_engine = null
+	game_state = null
+	player_input = null
+	events = null
+	bot_player = null
+	replay_recorder = null
 
 
 ## Returns the PlayerState for a given player id (0 or 1).
@@ -145,6 +163,10 @@ func compute_hand_power_mods(player: PlayerState) -> Array:
 ## host-side TurnManager construction (initial start and rematch).
 func start_host_session(card_data_node: Node, local_player_id: int, loaded_save: Dictionary = {}, config: SessionConfig = null) -> TurnManager:
 	var cfg := config if config else SessionConfig.from_singletons()
+	if turn_manager:
+		# Rematch path: break the previous match's reference cycles so it
+		# doesn't leak when we drop the reference below.
+		turn_manager.teardown()
 	turn_manager = TurnManager.new()
 	if loaded_save.is_empty():
 		turn_manager.setup(card_data_node, cfg)

@@ -1329,7 +1329,7 @@ func _show_game_log_list(logs: Array[Dictionary]) -> void:
 	list_vbox.add_theme_constant_override("separation", 6)
 	list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for entry in logs:
-		list_vbox.add_child(_build_game_log_row(entry))
+		list_vbox.add_child(_build_game_log_row(entry, popup))
 	scroll.add_child(list_vbox)
 	vbox.add_child(scroll)
 
@@ -1338,7 +1338,11 @@ func _show_game_log_list(logs: Array[Dictionary]) -> void:
 	cancel_btn.custom_minimum_size = Vector2(200, 40)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 18)
-	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	cancel_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+		popup.queue_free()
+	)
 	vbox.add_child(cancel_btn)
 
 	margin.add_child(vbox)
@@ -1348,7 +1352,7 @@ func _show_game_log_list(logs: Array[Dictionary]) -> void:
 	popup.popup_centered()
 
 
-func _build_game_log_row(entry: Dictionary) -> HBoxContainer:
+func _build_game_log_row(entry: Dictionary, list_popup: PopupPanel) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 4)
 
@@ -1371,17 +1375,24 @@ func _build_game_log_row(entry: Dictionary) -> HBoxContainer:
 	view_btn.add_theme_font_size_override("font_size", 14)
 	view_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		_show_game_log_content(str(entry.get("path", "")))
+		# Only one exclusive child window is allowed per parent — hide the
+		# list before opening the content popup; it is re-shown on close.
+		list_popup.hide()
+		_show_game_log_content(str(entry.get("path", "")), list_popup)
 	)
 	row.add_child(view_btn)
 
 	return row
 
 
-func _show_game_log_content(path: String) -> void:
+func _show_game_log_content(path: String, list_popup: PopupPanel) -> void:
 	var popup := PopupPanel.new()
 	popup.exclusive = true
 	popup.popup_window = false
+	popup.popup_hide.connect(func():
+		popup.queue_free()
+		list_popup.popup_centered()
+	)
 
 	var panel := PanelContainer.new()
 	var panel_style := StyleBoxFlat.new()

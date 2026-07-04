@@ -22,6 +22,8 @@ func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 		return []
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var hand_indices: Array[int] = await input.choose_hand_discards(player_id, to_discard, player.hand.size())
 	_unhighlight_active_effect()
 
@@ -56,6 +58,8 @@ func search_deck(player_id: int, filter: Callable, prompt: String, allow_skip: b
 			matching.append(card)
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var selected: Dictionary = await input.search_cards(player_id, matching, player.main_deck.duplicate(), prompt, allow_skip)
 	_unhighlight_active_effect()
 
@@ -83,6 +87,8 @@ func arrange_deck_cards(player_id: int, cards: Array[Dictionary], prompt: String
 		return {"keep": [], "discard": []}
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var result: Dictionary = await input.arrange_deck(player_id, cards, prompt)
 	_unhighlight_active_effect()
 	return result
@@ -105,6 +111,8 @@ func select_cards_from_pool(player_id: int, matching: Array[Dictionary], all_car
 
 	h._card_select_pool_filter = pool_filter
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var result: Array[Dictionary] = await input.select_cards(player_id, matching, all_cards, prompt, min_count, max_count)
 	_unhighlight_active_effect()
 	h._card_select_pool_filter = Callable()
@@ -129,6 +137,8 @@ func search_discard(player_id: int, filter: Callable, prompt: String, allow_skip
 	var effective_skip: bool = allow_skip or matching.is_empty()
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var selected: Dictionary = await input.search_cards(player_id, matching, player.discard_pile.duplicate(), prompt, effective_skip)
 	_unhighlight_active_effect()
 
@@ -160,6 +170,8 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 		return {}
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var chosen_index: int = await input.select_hand_card(player_id, valid_indices, prompt, allow_skip)
 	_unhighlight_active_effect()
 
@@ -189,6 +201,8 @@ func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: 
 	if all_visible.is_empty():
 		return {}
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var selected: Dictionary = await input.search_cards(player_id, options, all_visible, prompt, allow_skip or options.is_empty())
 	_unhighlight_active_effect()
 	# Re-map the resolved selection back to the caller's own dict. In

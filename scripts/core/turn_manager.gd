@@ -12,6 +12,8 @@ signal sub_phase_changed(sub_index: int)
 signal awaiting_player_action(valid_actions: Array)
 signal turn_started(player_id: int)
 signal turn_ended(player_id: int)
+# Emitted by MatchFactory at the end of setup, not from this class.
+@warning_ignore("unused_signal")
 signal game_started()
 signal game_ended(winner_id: int, reason_key: String)
 signal log_message(token: Dictionary)
@@ -49,6 +51,32 @@ func setup(card_data_node: Node, config: SessionConfig = null) -> void:
 func setup_from_save(data: Dictionary) -> void:
 	## Restore a game from a saved state dictionary.
 	MatchFactory.setup_from_save(self, data)
+
+
+func teardown() -> void:
+	## Break the match's internal RefCounted reference cycles so the whole
+	## component graph can be freed once the owner drops its reference —
+	## without this, EffectHandler <-> modules / ActionHandler <-> resolvers
+	## keep every match object alive forever ("ObjectDB instances leaked at
+	## exit"). Idempotent; safe with suspended effect coroutines (flags are
+	## set first so anything that still resumes bails on the existing
+	## is_game_over guards, and the PlayerInput drops pending decisions so
+	## late resolve_*() calls become no-ops).
+	is_game_over = true
+	flow_state = FlowState.GAME_OVER
+	if player_input:
+		player_input.teardown()
+	if effect_handler:
+		effect_handler.teardown()
+	if action_handler:
+		action_handler.teardown()
+	effect_handler = null
+	action_handler = null
+	rules_engine = null
+	events = null
+	player_input = null
+	# game_state intentionally kept: session forwarders may still read it
+	# during the frame the owning scene exits.
 
 
 # --- Game flow ---
@@ -123,6 +151,8 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 # --- Internal phase machine ---
 
 func _await_confirmation(prompt: String, setting: String) -> void:
+	# Not redundant: SignalPlayerInput's confirm_step override is a coroutine.
+	@warning_ignore("redundant_await")
 	await player_input.confirm_step(game_state.current_player_id, prompt, setting)
 
 

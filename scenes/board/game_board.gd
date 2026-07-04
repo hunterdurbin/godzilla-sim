@@ -96,26 +96,6 @@ var _client_modifier_breakdowns: Dictionary:
 var _client_gradients_applied: bool:
 	get: return _session.client_gradients_applied
 	set(v): _session.client_gradients_applied = v
-# Client-side stats snapshot (synced from host for disconnect reporting)
-var _client_stats_elapsed_ms: Array[int]:
-	get: return _session.client_stats_elapsed_ms
-	set(v): _session.client_stats_elapsed_ms = v
-var _client_stats_game_start_ms: int:
-	get: return _session.client_stats_game_start_ms
-	set(v): _session.client_stats_game_start_ms = v
-var _client_stats_turn_start_ms: int:
-	get: return _session.client_stats_turn_start_ms
-	set(v): _session.client_stats_turn_start_ms = v
-var _client_stats_opponent_hand: Array:
-	get: return _session.client_stats_opponent_hand
-	set(v): _session.client_stats_opponent_hand = v
-var _client_stats_deck_names: Array[String]:
-	get: return _session.client_stats_deck_names
-	set(v): _session.client_stats_deck_names = v
-var _client_stats_decklists: Array:
-	get: return _session.client_stats_decklists
-	set(v): _session.client_stats_decklists = v
-
 # Session layer. _sync owns the @rpc contract at a stable NodePath
 # (GameBoard/GameSession/MultiplayerSync) so RPCs route identically on host
 # and client; its methods forward back here while extraction is in progress.
@@ -145,11 +125,13 @@ var _client_stats_decklists: Array:
 var _log_tokens: Array:
 	get: return _log_chat.log_tokens
 	set(v): _log_chat.log_tokens = v
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _pending_log_tokens: Array:
 	get: return _log_chat.pending_log_tokens
 	set(v): _log_chat.pending_log_tokens = v
 # Sound events buffered for client — owned by BoardSfx (forwarding property;
 # MultiplayerSync drains it at broadcast time)
+@warning_ignore("unused_private_class_variable")
 var _pending_sound_events: PackedStringArray:
 	get: return _board_sfx._pending_sound_events
 	set(v): _board_sfx._pending_sound_events = v
@@ -216,12 +198,6 @@ var _pending_sound_events: PackedStringArray:
 @onready var discard_view_close: Button = $DiscardViewOverlay/DiscardViewPanel/VBox/CloseButton
 @onready var discard_view_stacked: CheckButton = $DiscardViewOverlay/DiscardViewPanel/VBox/StackedToggle
 
-# In-game stacked preference (initialized from GameSettings, remembered for the match)
-var _match_stacked_view: bool:
-	get: return _router.match_stacked_view
-	set(v): _router.match_stacked_view = v
-
-
 var _view_board_source_overlay: Control = null
 var _minimize_chip: MinimizeChip = null
 
@@ -278,6 +254,7 @@ var waiting_for_zone_select: bool:
 var selected_card_id: String:
 	get: return _selection.selected_card_id
 	set(v): _selection.selected_card_id = v
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _selected_card_data: Dictionary:
 	get: return _selection._selected_card_data
 	set(v): _selection._selected_card_data = v
@@ -301,20 +278,13 @@ var _choice_selecting: bool:
 var _zone_select_valid: Array[int]:
 	get: return _selection._zone_select_valid
 	set(v): _selection._zone_select_valid = v
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _drag_card: Control:
 	get: return _selection._drag_card
 	set(v): _selection._drag_card = v
+@warning_ignore("unused_private_class_variable")
 var _drag_valid_zones: Array[int]:
 	get: return _selection._drag_valid_zones
-var _drag_action: CardEnums.ActionType:
-	get: return _selection._drag_action
-	set(v): _selection._drag_action = v
-var _drag_can_rage: bool:
-	get: return _selection._drag_can_rage
-	set(v): _selection._drag_can_rage = v
-var _drag_can_invade: bool:
-	get: return _selection._drag_can_invade
-	set(v): _selection._drag_can_invade = v
 var _confirming_pass: bool:
 	get: return _selection._confirming_pass
 	set(v): _selection._confirming_pass = v
@@ -352,18 +322,17 @@ var _rematch_deck_name: String:
 var _reconnect_cumulative_seconds: float:
 	get: return _reconnect.cumulative_seconds
 	set(v): _reconnect.cumulative_seconds = v
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _waiting_for_reconnect: bool:
 	get: return _reconnect.waiting_for_reconnect
 	set(v): _reconnect.waiting_for_reconnect = v
-var _reconnect_attempting: bool:
-	get: return _reconnect.attempting
-	set(v): _reconnect.attempting = v
 ## In-flight host->client prompt, owned by MultiplayerSync (forwarding
 ## property — overlay request senders still write it during extraction).
 var _pending_interaction: Dictionary:
 	get: return _sync._pending_interaction
 	set(v): _sync._pending_interaction = v
 # Reconnect overlay — owned by ReconnectController
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _reconnect_overlay: ColorRect:
 	get: return _reconnect.overlay
 
@@ -383,6 +352,7 @@ var _stats_uploaded: bool:
 # Turn tracker sub-phase index
 # Owned by TurnTrackerModule (forwarding property — MultiplayerSync reads it
 # while serializing, several board paths still write it)
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _current_sub_phase: int:
 	get: return _tracker.current_sub_phase
 	set(v): _tracker.current_sub_phase = v
@@ -408,14 +378,17 @@ const OPPONENT_HAND_EXPAND_OFFSET: float = 195.0
 var _is_mobile_layout: bool:
 	get: return _mobile != null and _mobile.is_mobile_layout
 	set(v): _mobile.is_mobile_layout = v
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _mobile_phase_label: Label:
 	get: return _mobile._mobile_phase_label if _mobile else null
 var _mobile_chat_bar: PanelContainer:
 	get: return _mobile._mobile_chat_bar if _mobile else null
 var _fab_main_btn: Button:
 	get: return _mobile._fab_main_btn if _mobile else null
+@warning_ignore("unused_private_class_variable")
 var _fab_container: Control:
 	get: return _mobile._fab_container if _mobile else null
+@warning_ignore("unused_private_class_variable")
 var _fab_action_btns: Array[Button]:
 	get: return _mobile._fab_action_btns if _mobile else []
 
@@ -2539,8 +2512,8 @@ func _zoom_entries_for(zoom_ctx: Dictionary) -> Array:
 	var out: Array = []
 	for e in raw:
 		var tagged: Dictionary = e.duplicate()
-		var owner: int = int(e.get("owner", -1))
-		tagged["opp"] = owner >= 0 and owner != pid
+		var owner_pid: int = int(e.get("owner", -1))
+		tagged["opp"] = owner_pid >= 0 and owner_pid != pid
 		out.append(tagged)
 	_front_load_variable_base(out)
 	return out
