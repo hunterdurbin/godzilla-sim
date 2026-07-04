@@ -463,6 +463,7 @@ func _ready() -> void:
 	_router.card_zoom_request = _show_card_zoom
 	_router.ability_banner_show = _ability_banner.show_ability
 	_router.ability_banner_hide = _ability_banner.hide_banner
+	_ability_banner.zoom_requested = _show_card_zoom
 	card_zoom_overlay.on_hidden = _on_card_zoom_hidden
 	card_zoom_overlay.on_source_clicked = _zoom_to_source
 	_router.register_handler("deck_search", deck_search_overlay.show_prompt)

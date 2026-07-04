@@ -157,6 +157,13 @@ func _make_row(row: Dictionary) -> Control:
 
 	var base_id: String = str(row.get("base_id", ""))
 	if not base_id.is_empty():
+		# Right-click a row for the enlarged card view
+		hbox.gui_input.connect(func(event: InputEvent) -> void:
+			if event is InputEventMouseButton and event.pressed \
+					and event.button_index == MOUSE_BUTTON_RIGHT:
+				var dict: Dictionary = CardData.get_card_by_id(base_id)
+				if not dict.is_empty():
+					_board._show_card_zoom(dict.duplicate(true), 0))
 		var thumb := OverlayGridUtil.get_choice_thumb(base_id)
 		if thumb:
 			var icon := TextureRect.new()
