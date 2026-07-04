@@ -60,13 +60,15 @@ func reset() -> void:
 	_rows = []
 	if _panel and is_instance_valid(_panel):
 		_panel.visible = false
+	_board._selection.clear_stack_hover_preview()
 
 
 func show_stack(rows: Array) -> void:
 	_rows = rows
 	# Rebuilding frees any hovered row before its mouse_exited can fire, so
-	# drop a lingering attention pulse here.
+	# drop a lingering attention pulse / hover preview here.
 	_board.set_card_attention({}, false)
+	_board._selection.clear_stack_hover_preview()
 	if rows.is_empty():
 		if _panel and is_instance_valid(_panel):
 			_panel.visible = false
@@ -182,8 +184,12 @@ func _make_row(row: Dictionary) -> Control:
 
 	var loc = row.get("location", {})
 	if loc is Dictionary and not (loc as Dictionary).is_empty():
-		hbox.mouse_entered.connect(func() -> void: _board.set_card_attention(loc, true))
-		hbox.mouse_exited.connect(func() -> void: _board.set_card_attention(loc, false))
+		hbox.mouse_entered.connect(func() -> void:
+			_board.set_card_attention(loc, true)
+			_board._selection.show_stack_hover_preview(base_id))
+		hbox.mouse_exited.connect(func() -> void:
+			_board.set_card_attention(loc, false)
+			_board._selection.clear_stack_hover_preview())
 
 	if not is_opponent:
 		return hbox

@@ -55,6 +55,7 @@ var _zone_target_valid_zones: Array[int] = []
 var _zone_target_allow_skip: bool = false
 var _prompt_preview_root: Control = null # Mini previews above the helper text (effect source / card being placed)
 var _prompt_preview_card: Control = null # The placed-card preview node (choice hover retargets it)
+var _stack_hover_preview: Control = null # Transient bottom-left preview for hovered effect-stack rows
 
 # Strategy target selection state
 var _strategy_target_selecting: bool = false
@@ -173,6 +174,7 @@ func reset_for_rematch() -> void:
 	_choice_player_id = -1
 	_choice_option_card_ids = []
 	_choice_source_refs = []
+	clear_stack_hover_preview()
 	waiting_for_card_select = false
 	waiting_for_zone_select = false
 	selected_card_id = ""
@@ -1313,6 +1315,43 @@ func _cleanup_prompt_previews() -> void:
 		_board._hide_card_preview()
 	_prompt_preview_root = null
 	_prompt_preview_card = null
+
+
+## Bottom-left mini preview for a hovered effect-stack row. While a prompt's
+## own preview is up, retarget that instead of stacking a second card in the
+## same corner (the prompt's cleanup owns it, so hover-exit leaves it alone).
+func show_stack_hover_preview(base_id: String) -> void:
+	if base_id.is_empty():
+		return
+	if _prompt_preview_card and is_instance_valid(_prompt_preview_card):
+		_on_choice_option_focused(base_id)
+		return
+	clear_stack_hover_preview()
+	if _resolve_choice_card(base_id).is_empty():
+		return
+	var card := _make_card_preview(base_id, ZONE_PREVIEW_SIZE)
+	card.z_index = 56
+	add_child(card)
+	_stack_hover_preview = card
+	_position_stack_hover_preview.call_deferred()
+
+
+## Deferred one frame so the preview has a laid-out size to pin by.
+func _position_stack_hover_preview() -> void:
+	await get_tree().process_frame
+	if _stack_hover_preview == null or not is_instance_valid(_stack_hover_preview):
+		return
+	var rect: Rect2 = action_prompt_panel.get_global_rect()
+	_stack_hover_preview.global_position = Vector2(
+		rect.position.x, rect.position.y - _stack_hover_preview.size.y - 6.0)
+
+
+func clear_stack_hover_preview() -> void:
+	if _stack_hover_preview and is_instance_valid(_stack_hover_preview):
+		_stack_hover_preview.queue_free()
+		# A preview freed mid-hover never fires mouse_exited
+		_board._hide_card_preview()
+	_stack_hover_preview = null
 
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
