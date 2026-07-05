@@ -14,10 +14,10 @@ extends Node
 ## The runner script greps the logs for [DESYNC] / SCRIPT ERROR afterwards.
 ##
 ## Run (two processes, after starting ServerMain):
-##   godot --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --create [--play] [--seed=N]
-##   godot --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --join [--play] [--seed=N]
+##   godot --headless --path . tests/harness/HeadlessTestClient.tscn -- --create [--play] [--seed=N]
+##   godot --headless --path . tests/harness/HeadlessTestClient.tscn -- --join [--play] [--seed=N]
 
-const STUB_BOARD := preload("res://scenes/server/tests/stub_client_board.gd")
+const STUB_BOARD := preload("res://tests/harness/stub_client_board.gd")
 const GAME_SESSION := preload("res://scripts/session/game_session.gd")
 const MULTIPLAYER_SYNC := preload("res://scripts/session/multiplayer_sync.gd")
 const DEFAULT_CODE_FILE := "/tmp/godzilla_test_room_code.txt"

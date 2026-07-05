@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/server/tests/branch_rpc_spike.gd" id="1"]
+[ext_resource type="Script" path="res://tests/harness/branch_rpc_spike.gd" id="1"]
 
 [node name="Spike" type="Node"]
 script = ExtResource("1")

@@ -3,7 +3,7 @@
 # SAME TIME (the sequential harness never exercises multi-room coexistence).
 # Reports per-game results, peak server memory, and error/desync counts.
 #
-# Usage: ./scenes/server/tests/run_concurrency.sh [num_concurrent_games] [godot_binary]
+# Usage: ./tests/harness/run_concurrency.sh [num_concurrent_games] [godot_binary]
 
 set -u
 GAMES="${1:-4}"
@@ -31,10 +31,10 @@ PIDS=""
 for i in $(seq 1 "$GAMES"); do
   SEED=$((4000 + i))
   CF="$LOGDIR/code_$i.txt"
-  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --port=$PORT --create --play --seed=$SEED --codefile="$CF" > "$LOGDIR/g${i}_a.log" 2>&1 &
+  "$GODOT" --headless --path . tests/harness/HeadlessTestClient.tscn -- --port=$PORT --create --play --seed=$SEED --codefile="$CF" > "$LOGDIR/g${i}_a.log" 2>&1 &
   PIDS="$PIDS $!"
   sleep 0.5
-  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --port=$PORT --join --play --seed=$SEED --codefile="$CF" > "$LOGDIR/g${i}_b.log" 2>&1 &
+  "$GODOT" --headless --path . tests/harness/HeadlessTestClient.tscn -- --port=$PORT --join --play --seed=$SEED --codefile="$CF" > "$LOGDIR/g${i}_b.log" 2>&1 &
   PIDS="$PIDS $!"
 done
 echo "=== $GAMES games launched concurrently ($((GAMES * 2)) clients) ==="

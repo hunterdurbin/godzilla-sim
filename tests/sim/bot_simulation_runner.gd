@@ -1,7 +1,7 @@
 extends Node
 
 ## Runs N bot-vs-bot games headlessly and prints summary statistics.
-## Usage: godot --headless --path . scenes/simulation/BotSimulationRunner.tscn
+## Usage: godot --headless --path . tests/sim/BotSimulationRunner.tscn
 
 @export var num_games: int = 200
 @export var p1_difficulty: BotConfig.Difficulty = BotConfig.Difficulty.HARD

@@ -84,7 +84,7 @@ before quitting — `user://settings.cfg` is the user's real config.
 
 ## Multiplayer harness
 
-`./scenes/server/tests/run_harness.sh 3 <godot>` defaults to port 12091,
+`./tests/harness/run_harness.sh 3 <godot>` defaults to port 12091,
 which collides with the user's editor-launched dev server if one is running
 (`lsof -nP -iTCP:12091 -sTCP:LISTEN` to check). Run `PORT=12191 ./scenes/...`
 instead of killing anything — the user's processes are not yours to stop.

@@ -7,8 +7,8 @@ extends Control
 ## (state applied, no SCRIPT ERRORs) since the board then waits for input.
 ##
 ## Run (after ServerMain):
-##   godot --headless --path . scenes/server/tests/RealClientSmoke.tscn -- --create
-##   godot --headless --path . scenes/server/tests/RealClientSmoke.tscn -- --join
+##   godot --headless --path . tests/harness/RealClientSmoke.tscn -- --create
+##   godot --headless --path . tests/harness/RealClientSmoke.tscn -- --join
 
 const CODE_FILE := "/tmp/godzilla_test_room_code.txt"
 

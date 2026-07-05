@@ -83,9 +83,9 @@ godot --headless --path . scenes/server/ServerMain.tscn -- --port=12091 --no-sta
 # optional flags: --grace=N (shorten claim-win window), --port=N
 
 # full random games over the wire (boots its own server on $PORT, default 12091)
-./scenes/server/tests/run_harness.sh 3
+./tests/harness/run_harness.sh 3
 # concurrency drill: N games at once in one server process
-./scenes/server/tests/run_concurrency.sh 5
+./tests/harness/run_concurrency.sh 5
 
 # build the image locally (mirrors CI)
 godot --headless --path . --export-release "Linux Server" build/server/godzilla_tcg_server.x86_64

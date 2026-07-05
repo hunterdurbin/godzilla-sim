@@ -3,7 +3,7 @@
 # N full random games (two headless clients per game) and checks every log
 # for desync warnings and script errors.
 #
-# Usage: ./scenes/server/tests/run_harness.sh [num_games] [godot_binary]
+# Usage: ./tests/harness/run_harness.sh [num_games] [godot_binary]
 
 set -u
 GAMES="${1:-3}"
@@ -28,10 +28,10 @@ fi
 for i in $(seq 1 "$GAMES"); do
   SEED=$((1000 + i))
   echo "=== Game $i (seed $SEED) ==="
-  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --port=$PORT --create --play --seed=$SEED > "$LOGDIR/g${i}_a.log" 2>&1 &
+  "$GODOT" --headless --path . tests/harness/HeadlessTestClient.tscn -- --port=$PORT --create --play --seed=$SEED > "$LOGDIR/g${i}_a.log" 2>&1 &
   CA=$!
   sleep 2
-  "$GODOT" --headless --path . scenes/server/tests/HeadlessTestClient.tscn -- --port=$PORT --join --play --seed=$SEED > "$LOGDIR/g${i}_b.log" 2>&1 &
+  "$GODOT" --headless --path . tests/harness/HeadlessTestClient.tscn -- --port=$PORT --join --play --seed=$SEED > "$LOGDIR/g${i}_b.log" 2>&1 &
   CB=$!
   wait $CA; EA=$?
   wait $CB; EB=$?

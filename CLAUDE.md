@@ -94,10 +94,10 @@ example-tcg-game/
   `tests/fixtures/real_cards.gd` (`Real.instance(id)` — never use raw
   CardData templates). New/changed card effects need their tests updated;
   the smoke suite fails if trigger_map.gd is stale.
-- Bot stress: `godot --headless --path . res://scenes/simulation/BotSimulationRunner.tscn`
+- Bot stress: `godot --headless --path . res://tests/sim/BotSimulationRunner.tscn`
   (set `base_seed` + per-game `[SimResult]` lines enable seed-matched
   behavioral diffs between branches).
-- Multiplayer integration: `./scenes/server/tests/run_harness.sh 3 <godot>`
+- Multiplayer integration: `./tests/harness/run_harness.sh 3 <godot>`
   (greps for DESYNC / SCRIPT ERROR across server + client logs).
 - Test scenes in isolation before integrating; create debug scenes for rapid iteration
 - Use `@tool` annotation for editor-time scripts when appropriate

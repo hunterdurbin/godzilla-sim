@@ -5,11 +5,11 @@ extends Node
 ## encoded relative to each API's root_path. This is the keystone mechanism
 ## for the dedicated server's per-room routing (one room = one branch API).
 ##
-## Run: godot --headless --path . res://scenes/server/tests/BranchRpcSpike.tscn
+## Run: godot --headless --path . res://tests/harness/BranchRpcSpike.tscn
 ## Exits 0 on PASS, 1 on FAIL.
 
 const PORT := 34567
-const SYNC_SCRIPT := preload("res://scenes/server/tests/spike_sync.gd")
+const SYNC_SCRIPT := preload("res://tests/harness/spike_sync.gd")
 
 var _server_got := false
 var _client_got := false

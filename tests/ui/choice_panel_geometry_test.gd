@@ -6,7 +6,7 @@ extends Node
 ## and hugs its content height (no gap under the last button).
 ##
 ## Run:
-##   godot --headless --quit-after 1800 res://scenes/board/tests/ChoicePanelGeometryTest.tscn
+##   godot --headless --quit-after 1800 res://tests/ui/ChoicePanelGeometryTest.tscn
 
 func _ready() -> void:
 	await get_tree().process_frame

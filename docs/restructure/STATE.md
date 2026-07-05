@@ -6,8 +6,10 @@ BEFORE each commit.
 
 ## Current position
 
-- **Current phase:** 2 (Phases 0–1 complete)
-- **Next action:** execute `phase-2-test-harnesses.md`
+- **Current phase:** 3 (Phases 0–2 complete)
+- **Next action:** execute `phase-3-scripts-reslice.md`
+- **Path flip in effect:** sim = `res://tests/sim/BotSimulationRunner.tscn`,
+  harness = `./tests/harness/run_harness.sh` (old scenes/ locations retired)
 - **Branch:** `feature/restructure`
 - **Baseline commit (pre-restructure):** `7f9fe3ba52ad2943aa71c1b6140a9a8902061cc7`
 
@@ -34,7 +36,7 @@ it to `tests/sim/BotSimulationRunner.tscn`.)
 |---|---|---|---|
 | 0 — plan docs + baselines | **done** | (this commit) | unit 901/901 · sim deterministic · harness PASS |
 | 1 — cleanup | **done** | (phase-1 commit) | unit 901/901 · headless boot smoke clean · orphan grep: refs only internal to deleted files |
-| 2 — test harnesses → tests/ | pending | | |
+| 2 — test harnesses → tests/ | **done** | (phase-2 commit) | unit 901/901 · sim `[SimResult]` byte-identical · harness PASS (0 desync, 0 script error) · grep sweep zero hits |
 | 3 — scripts/ re-slice | pending | | |
 | 4 — scenes/ re-slice | pending | | |
 | 5 — assets/ | pending | | |
