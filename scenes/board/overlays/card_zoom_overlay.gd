@@ -134,6 +134,7 @@ func _position_badge_toggle() -> void:
 
 
 func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entries: Array = [], power_preview: int = 0, threat_preview: int = -1) -> void:
+	OverlayGridUtil.ensure_full_rect(self)
 	# Clear any existing zoomed card
 	for child in _container.get_children():
 		child.queue_free()

@@ -42,6 +42,7 @@ func _ready() -> void:
 
 ## Router handler entry point — `prompt` arrives already translated.
 func show_prompt(matching: Array, all_cards: Array, prompt: String, min_count: int, max_count: int, resolve_cb: Callable) -> void:
+	OverlayGridUtil.ensure_full_rect(self)
 	_matching = matching
 	_all = all_cards
 	_matching_ids.clear()
