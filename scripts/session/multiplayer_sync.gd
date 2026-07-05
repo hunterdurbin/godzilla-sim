@@ -291,6 +291,11 @@ func _pending_matches(method: String) -> bool:
 func _resend_pending_interaction(peer_id: int) -> void:
 	var method: String = _pending_interaction.get("method", "")
 	var args: Array = _pending_interaction.get("args", [])
+	# Gallery prompts carry the active-ability banner; replay it before the
+	# prompt RPC just like the original dispatch (_send_to_remote) did.
+	var router: EffectUIRouter = get_node_or_null("../EffectUIRouter")
+	if router:
+		router.resend_banner(method, peer_id)
 	match method:
 		"action_context":
 			RpcLogger.log_send("receive_action_context", args[0].length() + args[1].length())
@@ -979,6 +984,14 @@ func _rpc_claim_win() -> void:
 func _rpc_cards_revealed_shown(cards_json: String, title: String) -> void:
 	if _board and _board.has_method("_rpc_cards_revealed_shown"):
 		_board._rpc_cards_revealed_shown(cards_json, title)
+
+
+## Host -> Client: a pending play was cancelled (cost declined / invasion
+## aborted) — the acting client restores its dragged card to the hand.
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_play_cancelled(player_id: int) -> void:
+	if _board and _board.has_method("_rpc_play_cancelled"):
+		_board._rpc_play_cancelled(player_id)
 
 
 # --- Effect highlights ---
