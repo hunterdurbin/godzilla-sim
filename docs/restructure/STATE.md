@@ -6,8 +6,8 @@ BEFORE each commit.
 
 ## Current position
 
-- **Current phase:** 1 (Phase 0 complete)
-- **Next action:** execute `phase-1-cleanup.md`
+- **Current phase:** 2 (Phases 0–1 complete)
+- **Next action:** execute `phase-2-test-harnesses.md`
 - **Branch:** `feature/restructure`
 - **Baseline commit (pre-restructure):** `7f9fe3ba52ad2943aa71c1b6140a9a8902061cc7`
 
@@ -33,7 +33,7 @@ it to `tests/sim/BotSimulationRunner.tscn`.)
 | Phase | Status | Commit | Gate results |
 |---|---|---|---|
 | 0 — plan docs + baselines | **done** | (this commit) | unit 901/901 · sim deterministic · harness PASS |
-| 1 — cleanup | pending | | |
+| 1 — cleanup | **done** | (phase-1 commit) | unit 901/901 · headless boot smoke clean · orphan grep: refs only internal to deleted files |
 | 2 — test harnesses → tests/ | pending | | |
 | 3 — scripts/ re-slice | pending | | |
 | 4 — scenes/ re-slice | pending | | |

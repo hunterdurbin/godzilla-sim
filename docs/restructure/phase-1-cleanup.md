@@ -8,13 +8,13 @@ moves; nothing behavioral changes.
 Orphaned early-prototype scenes at `scenes/` root (verified unreferenced by
 any `.gd`/`.tscn`/`.cfg`; main scene is `res://scenes/ui/LoadingScreen.tscn`):
 
-- [ ] `scenes/CardTest.tscn`
-- [ ] `scenes/DeckTest.tscn`
-- [ ] `scenes/SlotTest.tscn`
-- [ ] `scenes/deck_test_controller.gd` + `.uid`
-- [ ] `scenes/Main.tscn` (4th orphan, found during planning — only
+- [x] `scenes/CardTest.tscn`
+- [x] `scenes/DeckTest.tscn`
+- [x] `scenes/SlotTest.tscn`
+- [x] `scenes/deck_test_controller.gd` + `.uid`
+- [x] `scenes/Main.tscn` (4th orphan, found during planning — only
       instantiates Card/CardManager, nothing references it)
-- [ ] `rm -rf reports/` (20 stale gdUnit4 HTML report dirs; git-ignored, so
+- [x] `rm -rf reports/` (20 stale gdUnit4 HTML report dirs; git-ignored, so
       plain `rm`, not `git rm`; keep the `.gitignore` entry)
 
 ## Pre-delete safety grep (re-verify each before `git rm`)
