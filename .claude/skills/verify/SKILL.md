@@ -77,7 +77,7 @@ GameSerializer.load_save_file(path)` then instantiate a fresh GameBoard.
 ## Other scenes
 
 Menu scenes are directly launchable the same way — e.g. instantiate
-`res://scenes/ui/Options.tscn` in the driver and emit its buttons
+`res://scenes/menus/Options.tscn` in the driver and emit its buttons
 (`options.automation_button.pressed.emit()`). If a driver mutates
 GameSettings for a test, snapshot the original values and restore + `save()`
 before quitting — `user://settings.cfg` is the user's real config.

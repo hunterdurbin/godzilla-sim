@@ -152,7 +152,7 @@ def unescape_gdscript(s: str) -> str:
 
 def main() -> None:
     cards = parse_card_data()
-    print(f"Parsed {len(cards)} cards from card_data.gd")
+    print(f"Parsed {len(cards)} cards from the set files")
 
     jp_index = build_jp_index(JA_SOURCES)
     print(f"Indexed {len(jp_index)} JP entries from scrape files")

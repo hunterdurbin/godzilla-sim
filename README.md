@@ -75,9 +75,7 @@ iOS requires sideloading since the app is not available on the App Store. See th
 
 ## Development
 
-**Engine:** Godot 4.6
-**Language:** GDScript
-**Renderer:** GL Compatibility
+**Engine:** Godot 4.6 · **Language:** GDScript · **Renderer:** GL Compatibility
 
 ### Running from Source
 
@@ -85,3 +83,31 @@ iOS requires sideloading since the app is not available on the App Store. See th
 2. Clone this repository
 3. Open the project in Godot
 4. Press F5 to run
+
+### Project layout
+
+Every subsystem directory contains a `README.md` documenting it — start at
+[scripts/README.md](scripts/README.md) (logic layer) and
+[scenes/README.md](scenes/README.md) (presentation layer).
+
+| Dir | What lives there |
+|---|---|
+| `scripts/` | Logic layer: pure match engine (`core/`), per-card effects (`effects/`), card database (`cards/`), bot AI (`bot/`), session/multiplayer glue (`session/`), dedicated server (`server/`), transport (`net/`), replays/saves (`replay/`), audio, app services, settings |
+| `scenes/` | Presentation: game board (`board/`), cards/deck/slots, app screens (`menus/`), multiplayer lobbies (`lobby/`), deck builder, replay viewer |
+| `tests/` | All test tiers: gdUnit4 unit suites, multiplayer harness, bot-sim — see [tests/README.md](tests/README.md) |
+| `assets/` | Art/audio/fonts in snake_case domain buckets |
+| `translations/` | en/ja localization CSVs + generator |
+| `data-free zones` | `docs/` (cross-cutting docs + architecture graphs), `comprehensive_rules/` (official rules PDF), `deploy/`, `flatpak/` (packaging) |
+
+### Testing
+
+```bash
+# Unit tests (gdUnit4, also run by CI):
+./tests/run_unit_tests.sh <godot-binary>
+
+# Multiplayer integration harness (server + 2 headless clients, desync grep):
+./tests/harness/run_harness.sh 3 <godot-binary>
+
+# Bot self-play simulation:
+<godot-binary> --headless --path . res://tests/sim/BotSimulationRunner.tscn
+```

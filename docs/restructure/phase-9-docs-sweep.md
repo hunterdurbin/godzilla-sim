@@ -38,16 +38,16 @@ whatever is still missing and rewrites the roots. Content specs:
 
 ## Steps
 
-- [ ] Audit: `find . -name README.md -not -path './build/*' -not -path './.godot/*' -not -path './addons/*'`
+- [x] Audit: `find . -name README.md -not -path './build/*' -not -path './.godot/*' -not -path './addons/*'`
       vs the table; write the missing ones.
-- [ ] Rewrite root `README.md` and `CLAUDE.md`.
-- [ ] Optional (ASK USER first): `.editorconfig` GDScript indent rules (tabs)
+- [x] Rewrite root `README.md` and `CLAUDE.md`.
+- [x] Optional (ASK USER first): `.editorconfig` GDScript indent rules (tabs)
       + gdlint config — new-file-only enforcement, no reformat diff bomb.
-- [ ] Final full gate.
-- [ ] Global retired-path grep (all must be zero outside docs/restructure/):
+- [x] Final full gate.
+- [x] Global retired-path grep (all must be zero outside docs/restructure/):
       `res://scenes/ui/`, `res://scenes/managers/`, `res://scenes/simulation/`,
       `scenes/server/tests`, `res://data/`, `res://icons/`, `cardBacks`,
       `effectIcons`, `card_data.gd`, every Phase-3 moved filename at its old
       `res://scripts/<name>.gd` path.
-- [ ] Close out STATE.md: all phases done, final gate results, final SHA.
-- [ ] Commit: `restructure(phase-9): documentation sweep + closeout`.
+- [x] Close out STATE.md: all phases done, final gate results, final SHA.
+- [x] Commit: `restructure(phase-9): documentation sweep + closeout`.
