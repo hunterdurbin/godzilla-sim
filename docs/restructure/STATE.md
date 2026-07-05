@@ -6,8 +6,8 @@ BEFORE each commit.
 
 ## Current position
 
-- **Current phase:** 4 (Phases 0–3 complete)
-- **Next action:** execute `phase-4-scenes-reslice.md`
+- **Current phase:** 5 (Phases 0–4 complete)
+- **Next action:** execute `phase-5-assets.md`
 - **Path flip in effect:** sim = `res://tests/sim/BotSimulationRunner.tscn`,
   harness = `./tests/harness/run_harness.sh` (old scenes/ locations retired)
 - **Branch:** `feature/restructure`
@@ -38,7 +38,7 @@ it to `tests/sim/BotSimulationRunner.tscn`.)
 | 1 — cleanup | **done** | (phase-1 commit) | unit 901/901 · headless boot smoke clean · orphan grep: refs only internal to deleted files |
 | 2 — test harnesses → tests/ | **done** | (phase-2 commit) | unit 901/901 · sim `[SimResult]` byte-identical · harness PASS (0 desync, 0 script error) · grep sweep zero hits |
 | 3 — scripts/ re-slice | **done** | (phase-3 commit) | unit 901/901 · sim `[SimResult]` byte-identical · harness PASS · retired-path sweep zero hits · 16 READMEs added |
-| 4 — scenes/ re-slice | pending | | |
+| 4 — scenes/ re-slice | **done** | (phase-4 commit) | unit 901/901 · sim byte-identical · harness PASS · sweep zero hits · headful driver loaded all 13 nav targets + rendered MainMenu/GameBoard screenshots |
 | 5 — assets/ | pending | | |
 | 6 — split card_data.gd | pending | | |
 | 7 — split bot_player.gd (7a–7d) | pending | | |

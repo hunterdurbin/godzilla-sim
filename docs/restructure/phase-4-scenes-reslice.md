@@ -19,7 +19,7 @@ the same domain vocabulary as `scripts/`.
 
 ## project.godot
 
-- [ ] `run/main_scene="res://scenes/menus/LoadingScreen.tscn"`
+- [x] `run/main_scene="res://scenes/menus/LoadingScreen.tscn"`
 
 ## Path-literal fixes (~40 expected)
 

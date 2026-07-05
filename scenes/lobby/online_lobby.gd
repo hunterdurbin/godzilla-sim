@@ -304,4 +304,4 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_back_pressed() -> void:
 	SfxManager.play("ui_click")
 	NetworkManager.disconnect_game()
-	NetworkManager.change_scene("res://scenes/ui/OnlinePlay.tscn")
+	NetworkManager.change_scene("res://scenes/lobby/OnlinePlay.tscn")

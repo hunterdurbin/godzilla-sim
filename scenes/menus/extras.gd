@@ -38,7 +38,7 @@ func _ready() -> void:
 
 func _on_back_pressed() -> void:
 	SfxManager.play("ui_click")
-	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
+	NetworkManager.change_scene("res://scenes/menus/MainMenu.tscn")
 
 
 func _on_watch_replay_pressed() -> void:
@@ -846,7 +846,7 @@ func _launch_replay(path: String) -> void:
 		_show_message(tr("STR_EXTRAS_LOAD_REPLAY_FAILED"))
 		return
 	ReplayData.pending_replay = replay
-	NetworkManager.change_scene("res://scenes/ui/ReplayViewer.tscn")
+	NetworkManager.change_scene("res://scenes/replay/ReplayViewer.tscn")
 
 
 func _show_save_list(saves: Array[Dictionary]) -> void:

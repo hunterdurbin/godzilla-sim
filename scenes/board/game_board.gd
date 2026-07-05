@@ -1518,7 +1518,7 @@ func _on_main_menu_pressed() -> void:
 	# Lobby-bot mode: keep the relay alive and return to PublicLobby instead of MainMenu.
 	if _is_lobby_bot:
 		NetworkManager.exit_lobby_bot_game()
-		NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
+		NetworkManager.change_scene("res://scenes/lobby/PublicLobby.tscn")
 		return
 	if is_multiplayer_game:
 		var connected := multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
@@ -1539,7 +1539,7 @@ func _on_main_menu_pressed() -> void:
 		GameSettings.clear_reconnect_session()
 		NetworkManager.is_in_game = false
 		NetworkManager.disconnect_game()
-	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
+	NetworkManager.change_scene("res://scenes/menus/MainMenu.tscn")
 
 
 func _on_rematch_pressed() -> void:
@@ -3156,7 +3156,7 @@ func _update_lobby_banner_label() -> void:
 func _on_lobby_banner_return_pressed() -> void:
 	SfxManager.play("ui_click")
 	NetworkManager.exit_lobby_bot_game()
-	NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
+	NetworkManager.change_scene("res://scenes/lobby/PublicLobby.tscn")
 
 
 func _on_lobby_opponent_connected(_peer_id: int) -> void:
@@ -3208,7 +3208,7 @@ func _update_opponent_found_countdown() -> void:
 func _on_opponent_found_start() -> void:
 	_cleanup_opponent_found_dialog()
 	NetworkManager.exit_lobby_bot_game()
-	NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
+	NetworkManager.change_scene("res://scenes/lobby/PublicLobby.tscn")
 
 
 func _on_opponent_found_custom_action(action: StringName) -> void:

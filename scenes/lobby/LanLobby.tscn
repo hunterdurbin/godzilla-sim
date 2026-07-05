@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://scenes/ui/lan_lobby.gd" id="1_ll"]
-[ext_resource type="PackedScene" path="res://scenes/ui/DeckSelect.tscn" id="2_ds"]
+[ext_resource type="Script" path="res://scenes/lobby/lan_lobby.gd" id="1_ll"]
+[ext_resource type="PackedScene" path="res://scenes/deck_builder/DeckSelect.tscn" id="2_ds"]
 
 [node name="LanLobby" type="Control"]
 layout_mode = 3

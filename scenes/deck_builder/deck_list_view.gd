@@ -713,7 +713,7 @@ func _on_row_action_requested(deck_name: String, anchor: Vector2) -> void:
 
 
 func _open_folder_picker(deck_name: String) -> void:
-	var picker := preload("res://scenes/ui/folder_picker_dialog.gd").new()
+	var picker := preload("res://scenes/deck_builder/folder_picker_dialog.gd").new()
 	add_child(picker)
 	var current_folder := DecklistManager.get_deck_folder(deck_name)
 	picker.show_for(deck_name, current_folder)

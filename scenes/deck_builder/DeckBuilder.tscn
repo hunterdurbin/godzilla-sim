@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/ui/deck_builder.gd" id="1_db"]
+[ext_resource type="Script" path="res://scenes/deck_builder/deck_builder.gd" id="1_db"]
 
 [node name="DeckBuilder" type="Control"]
 layout_mode = 3

@@ -170,7 +170,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_back_pressed() -> void:
 	SfxManager.play("ui_click")
 	NetworkManager.disconnect_game()
-	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
+	NetworkManager.change_scene("res://scenes/menus/MainMenu.tscn")
 
 
 func _update_start_button() -> void:

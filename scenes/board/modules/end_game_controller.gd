@@ -107,7 +107,7 @@ func rpc_concede() -> void:
 # --- Rematch deck select ---
 
 func setup_rematch_deck_select() -> void:
-	var scene := preload("res://scenes/ui/DeckSelect.tscn")
+	var scene := preload("res://scenes/deck_builder/DeckSelect.tscn")
 	rematch_deck_select = scene.instantiate()
 	rematch_deck_select.persist_key = "rematch_deck"
 	# Add as direct child of game board, positioned below Save Game button

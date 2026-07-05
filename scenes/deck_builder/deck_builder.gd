@@ -1986,7 +1986,7 @@ func _on_back_pressed() -> void:
 
 
 func _go_to_menu() -> void:
-	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
+	NetworkManager.change_scene("res://scenes/menus/MainMenu.tscn")
 
 
 func _on_unsaved_confirmed() -> void:

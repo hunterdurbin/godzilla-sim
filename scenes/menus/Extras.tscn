@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/ui/extras.gd" id="1_ext"]
+[ext_resource type="Script" path="res://scenes/menus/extras.gd" id="1_ext"]
 
 [node name="Extras" type="Control"]
 layout_mode = 3

@@ -521,22 +521,22 @@ func _show_deck_pool_popup(parent_popup: Window, pending: Dictionary, random_ena
 
 func _on_lan_pressed() -> void:
 	SfxManager.play("ui_click")
-	NetworkManager.change_scene("res://scenes/ui/LanLobby.tscn")
+	NetworkManager.change_scene("res://scenes/lobby/LanLobby.tscn")
 
 
 func _on_online_pressed() -> void:
 	SfxManager.play("ui_click")
-	NetworkManager.change_scene("res://scenes/ui/OnlinePlay.tscn")
+	NetworkManager.change_scene("res://scenes/lobby/OnlinePlay.tscn")
 
 
 func _on_deck_builder_pressed() -> void:
 	SfxManager.play("ui_click")
-	NetworkManager.change_scene("res://scenes/ui/DeckBuilder.tscn")
+	NetworkManager.change_scene("res://scenes/deck_builder/DeckBuilder.tscn")
 
 
 func _on_extras_pressed() -> void:
 	SfxManager.play("ui_click")
-	NetworkManager.change_scene("res://scenes/ui/Extras.tscn")
+	NetworkManager.change_scene("res://scenes/menus/Extras.tscn")
 
 
 func _on_patreon_pressed() -> void:
@@ -589,7 +589,7 @@ func _update_music_button() -> void:
 
 func _on_options_pressed() -> void:
 	SfxManager.play("ui_click")
-	NetworkManager.change_scene("res://scenes/ui/Options.tscn")
+	NetworkManager.change_scene("res://scenes/menus/Options.tscn")
 
 
 func _unhandled_input(event: InputEvent) -> void:

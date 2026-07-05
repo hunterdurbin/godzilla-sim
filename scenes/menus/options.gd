@@ -132,7 +132,7 @@ func _prompt_card_art_download(target_locale: String, missing_count: int) -> voi
 	dl_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
 		popup.hide()
-		NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn"))
+		NetworkManager.change_scene("res://scenes/menus/LoadingScreen.tscn"))
 	btn_row.add_child(dl_btn)
 
 	vbox.add_child(btn_row)
@@ -1218,7 +1218,7 @@ func _build_locale_row(art_locale: String, popup: PopupPanel) -> HBoxContainer:
 		ArtworkDownloader.clear_downloaded_artwork(art_locale)
 		_CardScript.clear_texture_cache()
 		popup.hide()
-		NetworkManager.change_scene("res://scenes/ui/LoadingScreen.tscn"))
+		NetworkManager.change_scene("res://scenes/menus/LoadingScreen.tscn"))
 	row.add_child(action_btn)
 
 	return row
@@ -1293,4 +1293,4 @@ func _on_audio_pressed() -> void:
 
 func _on_back_pressed() -> void:
 	SfxManager.play("ui_click")
-	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
+	NetworkManager.change_scene("res://scenes/menus/MainMenu.tscn")

@@ -827,4 +827,4 @@ func _on_play_from_here_pressed() -> void:
 
 func _on_exit_pressed() -> void:
 	SfxManager.play("ui_click")
-	NetworkManager.change_scene("res://scenes/ui/Extras.tscn")
+	NetworkManager.change_scene("res://scenes/menus/Extras.tscn")

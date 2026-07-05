@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://scenes/ui/deck_select.gd" id="1_ds"]
+[ext_resource type="Script" path="res://scenes/deck_builder/deck_select.gd" id="1_ds"]
 
 [node name="DeckSelect" type="VBoxContainer"]
 custom_minimum_size = Vector2(240, 0)
