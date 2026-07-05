@@ -1,0 +1,463 @@
+Godot Engine v4.6.stable.official.89cea1439 - https://godotengine.org
+
+=== Bot Simulation Starting (50 games, seed=424242) ===
+P1: HARD  |  P2: HARD
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[UpdateChecker] No update available
+[SimResult] game=1 winner=1 turns=16 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=2 winner=0 turns=14 p1z=9 p2z=6 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=3 winner=0 turns=21 p1z=9 p2z=6 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=4 winner=1 turns=17 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=5 winner=1 turns=16 p1z=4 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=6 winner=1 turns=15 p1z=4 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=7 winner=1 turns=20 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=8 winner=1 turns=13 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=9 winner=1 turns=18 p1z=4 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=10 winner=1 turns=17 p1z=3 p2z=5 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Sim] 10/50 games complete
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=11 winner=0 turns=13 p1z=9 p2z=6 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=12 winner=1 turns=13 p1z=7 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=13 winner=0 turns=17 p1z=9 p2z=7 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=14 winner=1 turns=23 p1z=4 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=15 winner=1 turns=20 p1z=5 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=16 winner=1 turns=11 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=17 winner=1 turns=20 p1z=3 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=18 winner=1 turns=15 p1z=4 p2z=5 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=19 winner=0 turns=19 p1z=9 p2z=6 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=20 winner=1 turns=9 p1z=5 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Sim] 20/50 games complete
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=21 winner=1 turns=16 p1z=8 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=22 winner=1 turns=17 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=23 winner=1 turns=16 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=24 winner=1 turns=23 p1z=3 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=25 winner=1 turns=14 p1z=4 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=26 winner=0 turns=18 p1z=6 p2z=5 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=27 winner=1 turns=18 p1z=5 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=28 winner=1 turns=17 p1z=5 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=29 winner=1 turns=18 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=30 winner=0 turns=14 p1z=6 p2z=5 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Sim] 30/50 games complete
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=31 winner=1 turns=18 p1z=5 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=32 winner=1 turns=13 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=33 winner=1 turns=10 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=34 winner=1 turns=21 p1z=8 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=35 winner=1 turns=14 p1z=5 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=36 winner=0 turns=16 p1z=9 p2z=7 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=37 winner=1 turns=18 p1z=3 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=38 winner=1 turns=17 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=39 winner=1 turns=16 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=40 winner=1 turns=15 p1z=5 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Sim] 40/50 games complete
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=41 winner=1 turns=14 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=42 winner=0 turns=20 p1z=6 p2z=4 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=43 winner=1 turns=10 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=44 winner=1 turns=19 p1z=5 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=45 winner=1 turns=18 p1z=5 p2z=5 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=46 winner=1 turns=21 p1z=3 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=47 winner=0 turns=25 p1z=6 p2z=4 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=48 winner=1 turns=13 p1z=6 p2z=9 reason=STR_LOG_REASON_INVASION_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=49 winner=1 turns=22 p1z=3 p2z=8 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 51.0, counter: 70.0, playstyle: BALANCED
+[Bot] Shin combo skipped — deck lacks key pieces
+[Bot] Deck analysis — invasion: 67.5, counter: 68.0, playstyle: BALANCED
+[SimResult] game=50 winner=1 turns=15 p1z=4 p2z=6 reason=STR_LOG_REASON_COUNTER_VICTORY
+[Sim] 50/50 games complete
+
+=== Bot Simulation Results (50 games) ===
+P1 (HARD) wins: 10  |  P2 (HARD) wins: 40  |  Draws: 0
+Avg turns: 16.7
+
+P1 Combo Stats:
+  Detected: 0/50 games  |  Full: 0/50  |  Executed: 0/50
+P2 Combo Stats:
+  Detected: 0/50 games  |  Full: 0/50  |  Executed: 0/50
+
+Win reasons:
+  P2: STR_LOG_REASON_INVASION_VICTORY: 25
+  P1: STR_LOG_REASON_INVASION_VICTORY: 6
+  P2: STR_LOG_REASON_COUNTER_VICTORY: 15
+  P1: STR_LOG_REASON_COUNTER_VICTORY: 4
+
+=== Per-Game Combo Log (P1) ===
+Game 1: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T16 z6 r4 | full=0 exec=0 viab=0
+  T8 RANKUP | z5(r1) hand=5 strats=3 rage=0 CP=5000 threat=6000 | opp z6 CP=16000 threat=6000 | combo=none viab=0
+  T12 RANKUP | z4(r2) hand=5 strats=4 rage=1 CP=8000 threat=13000 | opp z5 CP=21000 threat=15000 | combo=none viab=0
+  T14 RANKUP | z5(r3) hand=5 strats=4 rage=0 CP=3000 threat=23000 | opp z6 CP=23000 threat=30000 | combo=none viab=0
+Game 2: P1 WIN (STR_LOG_REASON_INVASION_VICTORY) | T14 z9 r4 | full=0 exec=0 viab=0
+  T5 RANKUP | z3(r1) hand=5 strats=2 rage=1 CP=2000 threat=11000 | opp z3 CP=12000 threat=11000 | combo=none viab=0
+  T7 RANKUP | z4(r2) hand=5 strats=2 rage=1 CP=7000 threat=17000 | opp z6 CP=29000 threat=6000 | combo=none viab=0
+  T9 RANKUP | z5(r3) hand=5 strats=3 rage=0 CP=12000 threat=23000 | opp z6 CP=26000 threat=15000 | combo=none viab=0
+Game 3: P1 WIN (STR_LOG_REASON_INVASION_VICTORY) | T21 z9 r4 | full=0 exec=0 viab=0
+  T6 RANKUP | z4(r1) hand=6 strats=3 rage=0 CP=2000 threat=6000 | opp z3 CP=10000 threat=6000 | combo=none viab=0
+  T10 RANKUP | z3(r2) hand=5 strats=2 rage=1 CP=3000 threat=17000 | opp z5 CP=23000 threat=15000 | combo=none viab=0
+Game 4: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T17 z6 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=5 strats=1 rage=0 CP=5000 threat=6000 | opp z6 CP=19000 threat=11000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=2 rage=0 CP=13000 threat=8000 | opp z6 CP=16000 threat=20000 | combo=none viab=0
+  T13 RANKUP | z4(r3) hand=5 strats=2 rage=0 CP=29000 threat=23000 | opp z5 CP=23000 threat=50000 | combo=none viab=0
+Game 5: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T16 z4 r4 | full=0 exec=0 viab=0
+  T6 RANKUP | z4(r1) hand=7 strats=3 rage=0 CP=0 threat=6000 | opp z3 CP=8000 threat=11000 | combo=none viab=0
+  T8 RANKUP | z5(r2) hand=5 strats=2 rage=0 CP=10000 threat=8000 | opp z6 CP=8000 threat=11000 | combo=none viab=0
+  T14 RANKUP | z3(r3) hand=5 strats=2 rage=2 CP=25000 threat=33000 | opp z5 CP=45000 threat=56000 | combo=none viab=0
+Game 6: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T15 z4 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=6 strats=3 rage=0 CP=5000 threat=6000 | opp z6 CP=8000 threat=6000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=3 rage=0 CP=20000 threat=8000 | opp z4 CP=15000 threat=20000 | combo=none viab=0
+  T11 RANKUP | z5(r3) hand=5 strats=3 rage=1 CP=22000 threat=28000 | opp z5 CP=29000 threat=23000 | combo=none viab=0
+Game 7: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T20 z6 r4 | full=0 exec=0 viab=0
+  T8 RANKUP | z4(r1) hand=5 strats=0 rage=0 CP=10000 threat=6000 | opp z4 CP=13000 threat=20000 | combo=none viab=0
+  T12 RANKUP | z5(r2) hand=5 strats=2 rage=0 CP=18000 threat=8000 | opp z6 CP=8000 threat=20000 | combo=none viab=0
+  T16 RANKUP | z4(r3) hand=5 strats=4 rage=0 CP=31000 threat=23000 | opp z5 CP=34000 threat=35000 | combo=none viab=0
+Game 8: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T13 z6 r3 | full=0 exec=0 viab=0
+  T9 RANKUP | z4(r1) hand=5 strats=3 rage=0 CP=3000 threat=6000 | opp z5 CP=25000 threat=15000 | combo=none viab=0
+  T11 RANKUP | z5(r2) hand=5 strats=4 rage=0 CP=6000 threat=8000 | opp z6 CP=34000 threat=15000 | combo=none viab=0
+Game 9: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T18 z4 r4 | full=0 exec=0 viab=0
+  T8 RANKUP | z5(r1) hand=5 strats=1 rage=0 CP=5000 threat=6000 | opp z6 CP=13000 threat=6000 | combo=none viab=0
+  T10 RANKUP | z5(r2) hand=5 strats=1 rage=0 CP=25000 threat=8000 | opp z6 CP=13000 threat=15000 | combo=none viab=0
+  T16 RANKUP | z3(r3) hand=5 strats=4 rage=0 CP=15000 threat=23000 | opp z6 CP=38000 threat=40000 | combo=none viab=0
+Game 10: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T17 z3 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=6 strats=2 rage=0 CP=2000 threat=6000 | opp z6 CP=32000 threat=11000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=4 rage=0 CP=16000 threat=8000 | opp z4 CP=19000 threat=30000 | combo=none viab=0
+  T11 RANKUP | z5(r3) hand=5 strats=4 rage=0 CP=20000 threat=23000 | opp z5 CP=24000 threat=25000 | combo=none viab=0
+Game 11: P1 WIN (STR_LOG_REASON_INVASION_VICTORY) | T13 z9 r3 | full=0 exec=0 viab=0
+  T4 RANKUP | z3(r1) hand=6 strats=3 rage=0 CP=0 threat=6000 | opp z2 CP=6000 threat=11000 | combo=none viab=0
+  T6 RANKUP | z4(r2) hand=5 strats=2 rage=0 CP=2000 threat=8000 | opp z3 CP=8000 threat=21000 | combo=none viab=0
+Game 12: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T13 z7 r3 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=5 strats=4 rage=0 CP=5000 threat=6000 | opp z6 CP=8000 threat=6000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=4 rage=0 CP=12000 threat=8000 | opp z6 CP=8000 threat=20000 | combo=none viab=0
+Game 13: P1 WIN (STR_LOG_REASON_INVASION_VICTORY) | T17 z9 r4 | full=0 exec=0 viab=0
+  T6 RANKUP | z4(r1) hand=6 strats=2 rage=0 CP=2000 threat=6000 | opp z3 CP=8000 threat=6000 | combo=none viab=0
+  T8 RANKUP | z5(r2) hand=6 strats=1 rage=0 CP=2000 threat=8000 | opp z6 CP=11000 threat=6000 | combo=none viab=0
+  T12 RANKUP | z4(r3) hand=5 strats=0 rage=2 CP=16000 threat=33000 | opp z5 CP=35000 threat=18000 | combo=none viab=0
+Game 14: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T23 z4 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=5 strats=2 rage=0 CP=7000 threat=6000 | opp z6 CP=24000 threat=11000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=2 rage=0 CP=10000 threat=8000 | opp z8 CP=21000 threat=26000 | combo=none viab=0
+  T15 RANKUP | z3(r3) hand=5 strats=2 rage=0 CP=5000 threat=23000 | opp z5 CP=25000 threat=20000 | combo=none viab=0
+Game 15: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T20 z5 r4 | full=0 exec=0 viab=0
+  T8 RANKUP | z4(r1) hand=5 strats=1 rage=0 CP=9000 threat=6000 | opp z4 CP=28000 threat=20000 | combo=none viab=0
+  T10 RANKUP | z5(r2) hand=5 strats=2 rage=1 CP=13000 threat=13000 | opp z5 CP=25000 threat=30000 | combo=none viab=0
+  T16 RANKUP | z3(r3) hand=5 strats=3 rage=0 CP=14000 threat=23000 | opp z5 CP=31000 threat=18000 | combo=none viab=0
+Game 16: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T11 z6 r4 | full=0 exec=0 viab=0
+  T5 RANKUP | z3(r1) hand=6 strats=2 rage=0 CP=0 threat=6000 | opp z3 CP=9000 threat=6000 | combo=none viab=0
+  T7 RANKUP | z4(r2) hand=6 strats=1 rage=0 CP=0 threat=8000 | opp z6 CP=16000 threat=6000 | combo=none viab=0
+  T9 RANKUP | z5(r3) hand=5 strats=4 rage=0 CP=23000 threat=23000 | opp z6 CP=26000 threat=30000 | combo=none viab=0
+Game 17: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T20 z3 r4 | full=0 exec=0 viab=0
+  T10 RANKUP | z5(r1) hand=5 strats=1 rage=0 CP=6000 threat=6000 | opp z5 CP=12000 threat=15000 | combo=none viab=0
+  T12 RANKUP | z5(r2) hand=5 strats=3 rage=1 CP=14000 threat=17000 | opp z6 CP=24000 threat=15000 | combo=none viab=0
+  T14 RANKUP | z5(r3) hand=5 strats=3 rage=0 CP=28000 threat=23000 | opp z6 CP=32000 threat=23000 | combo=none viab=0
+Game 18: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T15 z4 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=6 strats=3 rage=0 CP=0 threat=6000 | opp z6 CP=11000 threat=6000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=3 rage=0 CP=20000 threat=8000 | opp z4 CP=13000 threat=20000 | combo=none viab=0
+  T13 RANKUP | z4(r3) hand=5 strats=3 rage=2 CP=28000 threat=33000 | opp z5 CP=35000 threat=18000 | combo=none viab=0
+Game 19: P1 WIN (STR_LOG_REASON_INVASION_VICTORY) | T19 z9 r4 | full=0 exec=0 viab=0
+  T8 RANKUP | z4(r1) hand=5 strats=2 rage=0 CP=2000 threat=6000 | opp z4 CP=13000 threat=20000 | combo=none viab=0
+  T12 RANKUP | z5(r2) hand=5 strats=3 rage=1 CP=8000 threat=17000 | opp z6 CP=24000 threat=15000 | combo=none viab=0
+  T16 RANKUP | z4(r3) hand=5 strats=2 rage=1 CP=15000 threat=28000 | opp z5 CP=28000 threat=23000 | combo=none viab=0
+Game 20: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T9 z5 r3 | full=0 exec=0 viab=0
+  T5 RANKUP | z3(r1) hand=6 strats=3 rage=0 CP=0 threat=6000 | opp z3 CP=8000 threat=6000 | combo=none viab=0
+  T7 RANKUP | z4(r2) hand=6 strats=4 rage=0 CP=5000 threat=8000 | opp z6 CP=21000 threat=11000 | combo=none viab=0
+Game 21: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T16 z8 r3 | full=0 exec=0 viab=0
+  T6 RANKUP | z4(r1) hand=6 strats=1 rage=0 CP=0 threat=6000 | opp z3 CP=10000 threat=6000 | combo=none viab=0
+  T8 RANKUP | z5(r2) hand=5 strats=1 rage=0 CP=5000 threat=8000 | opp z6 CP=16000 threat=11000 | combo=none viab=0
+Game 22: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T17 z6 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=5 strats=2 rage=0 CP=0 threat=6000 | opp z6 CP=21000 threat=6000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=2 rage=0 CP=20000 threat=8000 | opp z4 CP=13000 threat=20000 | combo=none viab=0
+  T13 RANKUP | z4(r3) hand=5 strats=5 rage=1 CP=22000 threat=28000 | opp z5 CP=30000 threat=50000 | combo=none viab=0
+Game 23: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T16 z6 r4 | full=0 exec=0 viab=0
+  T4 RANKUP | z3(r1) hand=5 strats=2 rage=0 CP=2000 threat=6000 | opp z2 CP=7000 threat=6000 | combo=none viab=0
+  T8 RANKUP | z5(r2) hand=5 strats=2 rage=0 CP=7000 threat=8000 | opp z6 CP=13000 threat=6000 | combo=none viab=0
+  T12 RANKUP | z4(r3) hand=5 strats=4 rage=0 CP=17000 threat=23000 | opp z5 CP=32000 threat=25000 | combo=none viab=0
+Game 24: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T23 z3 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=5 strats=3 rage=0 CP=10000 threat=6000 | opp z6 CP=11000 threat=15000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=4 rage=1 CP=12000 threat=13000 | opp z8 CP=16000 threat=15000 | combo=none viab=0
+  T13 RANKUP | z4(r3) hand=5 strats=4 rage=1 CP=16000 threat=28000 | opp z4 CP=28000 threat=30000 | combo=none viab=0
+Game 25: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T14 z4 r4 | full=0 exec=0 viab=0
+  T6 RANKUP | z4(r1) hand=6 strats=2 rage=0 CP=0 threat=6000 | opp z3 CP=13000 threat=6000 | combo=none viab=0
+  T8 RANKUP | z5(r2) hand=5 strats=1 rage=1 CP=0 threat=17000 | opp z6 CP=22000 threat=11000 | combo=none viab=0
+  T10 RANKUP | z5(r3) hand=5 strats=2 rage=0 CP=10000 threat=23000 | opp z4 CP=26000 threat=25000 | combo=none viab=0
+Game 26: P1 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T18 z6 r3 | full=0 exec=0 viab=0
+  T13 RANKUP | z4(r1) hand=5 strats=1 rage=1 CP=11000 threat=11000 | opp z6 CP=14000 threat=15000 | combo=none viab=0
+  T15 RANKUP | z5(r2) hand=5 strats=3 rage=2 CP=32000 threat=18000 | opp z6 CP=26000 threat=23000 | combo=none viab=0
+Game 27: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T18 z5 r4 | full=0 exec=0 viab=0
+  T6 RANKUP | z4(r1) hand=7 strats=4 rage=0 CP=0 threat=6000 | opp z3 CP=8000 threat=11000 | combo=none viab=0
+  T8 RANKUP | z5(r2) hand=6 strats=3 rage=0 CP=5000 threat=8000 | opp z6 CP=16000 threat=11000 | combo=none viab=0
+  T14 RANKUP | z3(r3) hand=5 strats=3 rage=0 CP=5000 threat=23000 | opp z6 CP=40000 threat=18000 | combo=none viab=0
+Game 28: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T17 z5 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=5 strats=2 rage=0 CP=2000 threat=6000 | opp z6 CP=16000 threat=11000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=3 rage=0 CP=13000 threat=8000 | opp z4 CP=15000 threat=25000 | combo=none viab=0
+  T13 RANKUP | z4(r3) hand=5 strats=3 rage=2 CP=29000 threat=33000 | opp z5 CP=36000 threat=23000 | combo=none viab=0
+Game 29: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T18 z6 r4 | full=0 exec=0 viab=0
+  T8 RANKUP | z5(r1) hand=7 strats=3 rage=0 CP=0 threat=6000 | opp z6 CP=18000 threat=6000 | combo=none viab=0
+  T10 RANKUP | z5(r2) hand=5 strats=4 rage=0 CP=3000 threat=8000 | opp z4 CP=21000 threat=20000 | combo=none viab=0
+  T14 RANKUP | z4(r3) hand=5 strats=5 rage=1 CP=8000 threat=28000 | opp z6 CP=40000 threat=25000 | combo=none viab=0
+Game 30: P1 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T14 z6 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=5 strats=2 rage=0 CP=5000 threat=6000 | opp z6 CP=12000 threat=6000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=3 rage=0 CP=13000 threat=8000 | opp z6 CP=17000 threat=20000 | combo=none viab=0
+  T11 RANKUP | z5(r3) hand=5 strats=4 rage=1 CP=25000 threat=28000 | opp z4 CP=35000 threat=28000 | combo=none viab=0
+Game 31: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T18 z5 r4 | full=0 exec=0 viab=0
+  T6 RANKUP | z4(r1) hand=6 strats=2 rage=0 CP=2000 threat=6000 | opp z3 CP=8000 threat=11000 | combo=none viab=0
+  T8 RANKUP | z5(r2) hand=6 strats=2 rage=0 CP=7000 threat=8000 | opp z6 CP=13000 threat=16000 | combo=none viab=0
+  T14 RANKUP | z3(r3) hand=5 strats=2 rage=2 CP=25000 threat=38000 | opp z5 CP=46000 threat=51000 | combo=none viab=0
+Game 32: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T13 z6 r3 | full=0 exec=0 viab=0
+  T9 RANKUP | z4(r1) hand=5 strats=3 rage=0 CP=5000 threat=6000 | opp z5 CP=23000 threat=15000 | combo=none viab=0
+  T11 RANKUP | z5(r2) hand=5 strats=3 rage=0 CP=10000 threat=8000 | opp z6 CP=28000 threat=30000 | combo=none viab=0
+Game 33: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T10 z6 r2 | full=0 exec=0 viab=0
+  T8 RANKUP | z5(r1) hand=5 strats=3 rage=0 CP=6000 threat=6000 | opp z6 CP=11000 threat=15000 | combo=none viab=0
+Game 34: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T21 z8 r4 | full=0 exec=0 viab=0
+  T5 RANKUP | z3(r1) hand=6 strats=2 rage=0 CP=0 threat=6000 | opp z3 CP=7000 threat=6000 | combo=none viab=0
+  T7 RANKUP | z4(r2) hand=5 strats=2 rage=0 CP=5000 threat=8000 | opp z6 CP=8000 threat=6000 | combo=none viab=0
+  T13 RANKUP | z4(r3) hand=5 strats=3 rage=1 CP=4000 threat=28000 | opp z6 CP=37000 threat=20000 | combo=none viab=0
+Game 35: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T14 z5 r3 | full=0 exec=0 viab=0
+  T6 RANKUP | z4(r1) hand=6 strats=2 rage=0 CP=4000 threat=6000 | opp z3 CP=8000 threat=6000 | combo=none viab=0
+  T10 RANKUP | z3(r2) hand=5 strats=3 rage=1 CP=8000 threat=13000 | opp z5 CP=30000 threat=20000 | combo=none viab=0
+Game 36: P1 WIN (STR_LOG_REASON_INVASION_VICTORY) | T16 z9 r3 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=5 strats=3 rage=0 CP=7000 threat=6000 | opp z6 CP=8000 threat=20000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=3 rage=0 CP=22000 threat=8000 | opp z6 CP=10000 threat=23000 | combo=none viab=0
+Game 37: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T18 z3 r4 | full=0 exec=0 viab=0
+  T8 RANKUP | z4(r1) hand=5 strats=2 rage=0 CP=4000 threat=6000 | opp z4 CP=31000 threat=15000 | combo=none viab=0
+  T10 RANKUP | z5(r2) hand=5 strats=3 rage=1 CP=9000 threat=13000 | opp z5 CP=20000 threat=25000 | combo=none viab=0
+  T12 RANKUP | z5(r3) hand=5 strats=3 rage=0 CP=12000 threat=23000 | opp z6 CP=23000 threat=20000 | combo=none viab=0
+Game 38: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T17 z6 r4 | full=0 exec=0 viab=0
+  T11 RANKUP | z5(r1) hand=5 strats=2 rage=1 CP=2000 threat=11000 | opp z5 CP=15000 threat=20000 | combo=none viab=0
+  T13 RANKUP | z5(r2) hand=5 strats=2 rage=2 CP=2000 threat=22000 | opp z6 CP=22000 threat=15000 | combo=none viab=0
+  T15 RANKUP | z5(r3) hand=5 strats=3 rage=0 CP=28000 threat=23000 | opp z6 CP=27000 threat=38000 | combo=none viab=0
+Game 39: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T16 z6 r4 | full=0 exec=0 viab=0
+  T4 RANKUP | z3(r1) hand=6 strats=4 rage=0 CP=0 threat=6000 | opp z2 CP=7000 threat=11000 | combo=none viab=0
+  T12 RANKUP | z4(r2) hand=5 strats=2 rage=0 CP=3000 threat=12000 | opp z6 CP=31000 threat=11000 | combo=none viab=0
+  T14 RANKUP | z5(r3) hand=5 strats=3 rage=0 CP=17000 threat=23000 | opp z6 CP=24000 threat=20000 | combo=none viab=0
+Game 40: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T15 z5 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=5 strats=2 rage=0 CP=12000 threat=6000 | opp z6 CP=16000 threat=6000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=4 rage=0 CP=25000 threat=8000 | opp z6 CP=18000 threat=20000 | combo=none viab=0
+  T13 RANKUP | z4(r3) hand=5 strats=3 rage=1 CP=19000 threat=28000 | opp z5 CP=36000 threat=25000 | combo=none viab=0
+Game 41: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T14 z6 r3 | full=0 exec=0 viab=0
+  T10 RANKUP | z5(r1) hand=5 strats=1 rage=0 CP=6000 threat=6000 | opp z5 CP=18000 threat=15000 | combo=none viab=0
+  T12 RANKUP | z5(r2) hand=5 strats=1 rage=1 CP=13000 threat=13000 | opp z6 CP=26000 threat=30000 | combo=none viab=0
+Game 42: P1 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T20 z6 r4 | full=0 exec=0 viab=0
+  T11 RANKUP | z5(r1) hand=5 strats=2 rage=1 CP=6000 threat=11000 | opp z5 CP=12000 threat=15000 | combo=none viab=0
+  T15 RANKUP | z4(r2) hand=5 strats=5 rage=1 CP=17000 threat=17000 | opp z4 CP=20000 threat=18000 | combo=none viab=0
+Game 43: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T10 z6 r3 | full=0 exec=0 viab=0
+  T6 RANKUP | z4(r1) hand=6 strats=3 rage=0 CP=0 threat=6000 | opp z3 CP=8000 threat=16000 | combo=none viab=0
+  T8 RANKUP | z5(r2) hand=6 strats=3 rage=0 CP=0 threat=8000 | opp z6 CP=16000 threat=11000 | combo=none viab=0
+Game 44: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T19 z5 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=5 strats=3 rage=0 CP=10000 threat=6000 | opp z6 CP=13000 threat=11000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=4 rage=0 CP=18000 threat=8000 | opp z6 CP=13000 threat=25000 | combo=none viab=0
+  T15 RANKUP | z3(r3) hand=5 strats=1 rage=0 CP=17000 threat=23000 | opp z5 CP=38000 threat=45000 | combo=none viab=0
+Game 45: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T18 z5 r4 | full=0 exec=0 viab=0
+  T10 RANKUP | z5(r1) hand=5 strats=1 rage=0 CP=10000 threat=6000 | opp z5 CP=8000 threat=20000 | combo=none viab=0
+  T12 RANKUP | z5(r2) hand=5 strats=2 rage=2 CP=15000 threat=22000 | opp z6 CP=26000 threat=15000 | combo=none viab=0
+  T16 RANKUP | z4(r3) hand=5 strats=4 rage=1 CP=23000 threat=28000 | opp z4 CP=32000 threat=56000 | combo=none viab=0
+Game 46: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T21 z3 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=6 strats=2 rage=0 CP=5000 threat=6000 | opp z6 CP=11000 threat=6000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=4 rage=0 CP=6000 threat=8000 | opp z4 CP=13000 threat=20000 | combo=none viab=0
+  T13 RANKUP | z4(r3) hand=5 strats=5 rage=0 CP=12000 threat=23000 | opp z5 CP=28000 threat=25000 | combo=none viab=0
+Game 47: P1 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T25 z6 r4 | full=0 exec=0 viab=0
+  T10 RANKUP | z5(r1) hand=5 strats=2 rage=0 CP=6000 threat=6000 | opp z5 CP=10000 threat=15000 | combo=none viab=0
+  T14 RANKUP | z4(r2) hand=5 strats=2 rage=1 CP=20000 threat=17000 | opp z4 CP=34000 threat=18000 | combo=none viab=0
+  T20 RANKUP | z4(r3) hand=5 strats=3 rage=0 CP=29000 threat=23000 | opp z4 CP=23000 threat=51000 | combo=none viab=0
+Game 48: P2 WIN (STR_LOG_REASON_INVASION_VICTORY) | T13 z6 r3 | full=0 exec=0 viab=0
+  T9 RANKUP | z5(r1) hand=5 strats=2 rage=1 CP=3000 threat=11000 | opp z5 CP=15000 threat=15000 | combo=none viab=0
+  T11 RANKUP | z5(r2) hand=5 strats=3 rage=1 CP=8000 threat=13000 | opp z6 CP=15000 threat=25000 | combo=none viab=0
+Game 49: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T22 z3 r4 | full=0 exec=0 viab=0
+  T8 RANKUP | z5(r1) hand=5 strats=2 rage=0 CP=0 threat=6000 | opp z6 CP=15000 threat=6000 | combo=none viab=0
+  T10 RANKUP | z5(r2) hand=5 strats=5 rage=0 CP=10000 threat=8000 | opp z4 CP=16000 threat=20000 | combo=none viab=0
+  T14 RANKUP | z4(r3) hand=5 strats=3 rage=1 CP=18000 threat=28000 | opp z6 CP=34000 threat=25000 | combo=none viab=0
+Game 50: P2 WIN (STR_LOG_REASON_COUNTER_VICTORY) | T15 z4 r4 | full=0 exec=0 viab=0
+  T7 RANKUP | z4(r1) hand=6 strats=2 rage=0 CP=0 threat=6000 | opp z6 CP=11000 threat=6000 | combo=none viab=0
+  T9 RANKUP | z5(r2) hand=5 strats=4 rage=0 CP=23000 threat=8000 | opp z4 CP=18000 threat=20000 | combo=none viab=0
+  T11 RANKUP | z5(r3) hand=5 strats=4 rage=0 CP=33000 threat=23000 | opp z5 CP=30000 threat=23000 | combo=none viab=0
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+     at: cleanup (core/object/object.cpp:2641)
