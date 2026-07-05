@@ -62,6 +62,12 @@ func _ready() -> void:
 
 ## Passive view of a card list with a pre-translated title.
 func show_cards(p_cards: Array, title: String) -> void:
+	if rankup_selecting:
+		# A mandatory rank-up pick is pending (possibly minimized): never let
+		# the passive viewer overwrite the blocking prompt — just restore it.
+		visible = true
+		return
+	OverlayGridUtil.ensure_full_rect(self)
 	cards.assign(p_cards)
 	_title.text = title
 	if _stacked:
@@ -81,6 +87,10 @@ func show_rankup(monsters: Array, valid_indices: Array[int], prompt: String, res
 	if _stacked:
 		_stacked.visible = false
 	_view_board.visible = true
+	# Present before populating: a script error while instantiating cards must
+	# not strand the game behind a fully hidden blocking prompt.
+	OverlayGridUtil.ensure_full_rect(self)
+	visible = true
 
 	for child in _grid.get_children():
 		child.queue_free()
@@ -102,11 +112,10 @@ func show_rankup(monsters: Array, valid_indices: Array[int], prompt: String, res
 		card.card_right_clicked.connect(_on_card_zoom)
 		_grid.add_child(card)
 
-	visible = true
-
 
 ## Dismissable reveal (zone stack viewer): closing resolves the effect.
 func show_revealed(p_cards: Array, title: String, resolve_cb: Callable) -> void:
+	OverlayGridUtil.ensure_full_rect(self)
 	_revealed_active = true
 	_revealed_resolve = resolve_cb
 	cards.assign(p_cards)

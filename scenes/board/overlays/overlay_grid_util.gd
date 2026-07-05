@@ -55,6 +55,17 @@ static func add_count_badge(card: Control, count: int) -> void:
 	card.add_child(badge)
 
 
+## Full-screen prompt overlays must span the viewport; re-assert geometry at
+## show time (a degenerate rect was observed in an exported build — the dim
+## layer drew nothing and the panel collapsed to the top-left corner).
+static func ensure_full_rect(overlay: Control) -> void:
+	var parent := overlay.get_parent_control()
+	if parent and overlay.size != parent.size:
+		push_warning("Overlay %s had degenerate rect %s (parent %s); re-anchoring"
+				% [overlay.name, overlay.size, parent.size])
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+
 static func clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 	for child in grid.get_children():
 		if "card_clicked" in child and child.card_clicked.is_connected(click_handler):
