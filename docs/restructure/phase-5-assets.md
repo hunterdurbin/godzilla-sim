@@ -4,30 +4,30 @@
 
 ## Moves (git mv; move `.import` sidecars with every asset)
 
-- [ ] `assets/cardBacks/` → `assets/cards/backs/`
-- [ ] `assets/effectIcons/` → `assets/effects/icons/` (keeps `en/`/`ja/` subdirs)
-- [ ] `assets/music/` → `assets/audio/music/`
-- [ ] `assets/sfx/` → `assets/audio/sfx/`
-- [ ] `assets/buttons/` → `assets/ui/buttons/`
-- [ ] `assets/fonts/` → `assets/ui/fonts/` (contains `default_theme.tres` —
+- [x] `assets/cardBacks/` → `assets/cards/backs/`
+- [x] `assets/effectIcons/` → `assets/effects/icons/` (keeps `en/`/`ja/` subdirs)
+- [x] `assets/music/` → `assets/audio/music/`
+- [x] `assets/sfx/` → `assets/audio/sfx/`
+- [x] `assets/buttons/` → `assets/ui/buttons/`
+- [x] `assets/fonts/` → `assets/ui/fonts/` (contains `default_theme.tres` —
       referenced by project.godot `gui/theme/custom`)
-- [ ] root `icons/` (Android adaptive icons) → `assets/icons/android/`;
+- [x] root `icons/` (Android adaptive icons) → `assets/icons/android/`;
       delete root `icons/`
-- [ ] unchanged: `assets/board/`, `assets/icons/`, `assets/patreon/`, `assets/rage/`
+- [x] unchanged: `assets/board/`, `assets/icons/`, `assets/patreon/`, `assets/rage/`
 
 ## Config/path fixes
 
-- [ ] `project.godot`: `gui/theme/custom` → `res://assets/ui/fonts/default_theme.tres`
+- [x] `project.godot`: `gui/theme/custom` → `res://assets/ui/fonts/default_theme.tres`
       (verify exact key by grepping `assets/fonts` in project.godot).
-- [ ] `export_presets.cfg`: 3× `res://icons/*.png` →
+- [x] `export_presets.cfg`: 3× `res://icons/*.png` →
       `res://assets/icons/android/*.png` (Android preset);
       `res://assets/icons/game_icon.png` unchanged.
-- [ ] **Dynamically built paths** — full-literal greps MISS these:
+- [x] **Dynamically built paths** — full-literal greps MISS these:
       `sfx_manager.gd` / `music_manager.gd` concatenate
       `"res://assets/sfx/" + name`-style strings. Read both files and fix
       every prefix. Check for other builders:
       `grep -rn '"res://assets/' scripts scenes --include='*.gd'`.
-- [ ] `.tscn`/`.tres` ext_resource `path=` fallbacks (uid carries; fix text):
+- [x] `.tscn`/`.tres` ext_resource `path=` fallbacks (uid carries; fix text):
       `grep -rn 'assets/cardBacks\|assets/effectIcons\|assets/music\|assets/sfx\|assets/buttons\|assets/fonts' scenes scripts tests --include='*.tscn' --include='*.tres' --include='*.gd'`.
 
 ## Grep sweep (zero hits)

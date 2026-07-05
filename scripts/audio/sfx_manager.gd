@@ -4,7 +4,7 @@ extends Node
 ## through a small pool of AudioStreamPlayer nodes.
 ## To replace a sound, swap the corresponding .wav file in assets/sfx/.
 
-const SFX_DIR := "res://assets/sfx/"
+const SFX_DIR := "res://assets/audio/sfx/"
 const POOL_SIZE := 4
 
 const SOUND_NAMES := [

@@ -6,8 +6,8 @@ BEFORE each commit.
 
 ## Current position
 
-- **Current phase:** 5 (Phases 0–4 complete)
-- **Next action:** execute `phase-5-assets.md`
+- **Current phase:** 6 (Phases 0–5 complete)
+- **Next action:** execute `phase-6-split-card-data.md`
 - **Path flip in effect:** sim = `res://tests/sim/BotSimulationRunner.tscn`,
   harness = `./tests/harness/run_harness.sh` (old scenes/ locations retired)
 - **Branch:** `feature/restructure`
@@ -39,7 +39,7 @@ it to `tests/sim/BotSimulationRunner.tscn`.)
 | 2 — test harnesses → tests/ | **done** | (phase-2 commit) | unit 901/901 · sim `[SimResult]` byte-identical · harness PASS (0 desync, 0 script error) · grep sweep zero hits |
 | 3 — scripts/ re-slice | **done** | (phase-3 commit) | unit 901/901 · sim `[SimResult]` byte-identical · harness PASS · retired-path sweep zero hits · 16 READMEs added |
 | 4 — scenes/ re-slice | **done** | (phase-4 commit) | unit 901/901 · sim byte-identical · harness PASS · sweep zero hits · headful driver loaded all 13 nav targets + rendered MainMenu/GameBoard screenshots |
-| 5 — assets/ | pending | | |
+| 5 — assets/ | **done** | (phase-5 commit) | unit 901/901 · sim byte-identical · harness PASS · sweep zero hits (incl. .import sidecars, null-safe for CJK names) · headful board render + sfx OK |
 | 6 — split card_data.gd | pending | | |
 | 7 — split bot_player.gd (7a–7d) | pending | | |
 | 8 — split game_board.gd (8a–8f) | pending | | |

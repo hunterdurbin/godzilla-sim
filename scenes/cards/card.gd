@@ -3,7 +3,7 @@ extends Control
 ## Card node with hover scaling, drag functionality, and TCG card image display
 
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
-const CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
+const CARD_BACK_PATH := "res://assets/cards/backs/default.jpeg"
 const RAGE_MARKER_DEFAULT_PATH := "res://assets/rage/default.png"
 const RAGE_MARKER_CUSTOM_DIR := "rage"
 const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")

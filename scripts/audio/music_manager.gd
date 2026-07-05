@@ -3,7 +3,7 @@ extends Node
 ## Background music manager. Plays a looping track across all scenes.
 ## Respects GameSettings.music_volume and responds to changes at runtime.
 
-const MUSIC_PATH := "res://assets/music/background.wav"
+const MUSIC_PATH := "res://assets/audio/music/background.wav"
 
 ## Volume level (0-4) to dB mapping.
 const _VOLUME_DB := [

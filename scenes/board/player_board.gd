@@ -93,7 +93,7 @@ void fragment() {
 static var _radial_shader: Shader = null
 
 # Card back texture cache (shared across instances)
-const _DEFAULT_CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
+const _DEFAULT_CARD_BACK_PATH := "res://assets/cards/backs/default.jpeg"
 static var _card_back_cache_loaded: bool = false
 static var _default_card_back_tex: Texture2D = null
 static var _custom_card_back_tex: Texture2D = null  # null = no custom file found

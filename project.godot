@@ -55,7 +55,7 @@ enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
 
 [gui]
 
-theme/custom="res://assets/fonts/default_theme.tres"
+theme/custom="res://assets/ui/fonts/default_theme.tres"
 
 [input_devices]
 

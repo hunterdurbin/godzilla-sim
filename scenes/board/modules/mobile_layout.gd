@@ -362,11 +362,11 @@ func _apply_mobile_action_panel() -> void:
 		tr("STR_TYPE_RAGE"), tr("STR_GB_INVADE")
 	]
 	var btn_textures: Array[Texture2D] = [
-		load("res://assets/buttons/battle.png"),
-		load("res://assets/buttons/monster.png"),
-		load("res://assets/buttons/strategy.png"),
-		load("res://assets/buttons/rage.png"),
-		load("res://assets/buttons/invasion.png"),
+		load("res://assets/ui/buttons/battle.png"),
+		load("res://assets/ui/buttons/monster.png"),
+		load("res://assets/ui/buttons/strategy.png"),
+		load("res://assets/ui/buttons/rage.png"),
+		load("res://assets/ui/buttons/invasion.png"),
 	]
 
 	var grid_left := (container_w - grid_w) / 2.0

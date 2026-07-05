@@ -18,7 +18,7 @@ static func _icon_locale_dir() -> String:
 
 
 static func _icon(size: int, category: String, filename: String) -> String:
-	return "[img=%d]res://assets/effectIcons/%s/%s/%s[/img]" % [size, _icon_locale_dir(), category, filename]
+	return "[img=%d]res://assets/effects/icons/%s/%s/%s[/img]" % [size, _icon_locale_dir(), category, filename]
 
 
 static func disambiguate(names: Array[String], local_id: int) -> Array[String]:
@@ -367,7 +367,7 @@ static func render(token: Dictionary) -> String:
 				.replace("{REASON}", reason)
 		"burst_played":
 			var rank: int = int(token.get("burst_rank", 0))
-			var prefix := _icon_or_fallback("res://assets/effectIcons/%s/bursts/Burst%d.png" % [_icon_locale_dir(), rank], "STR_LOG_BURST_FALLBACK_PREFIX_FMT", rank)
+			var prefix := _icon_or_fallback("res://assets/effects/icons/%s/bursts/Burst%d.png" % [_icon_locale_dir(), rank], "STR_LOG_BURST_FALLBACK_PREFIX_FMT", rank)
 			return TranslationServer.translate("STR_LOG_BURST_PLAYED_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{BURST_PREFIX}", prefix) \
@@ -381,14 +381,14 @@ static func render(token: Dictionary) -> String:
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"awakening_triggered":
 			var level: int = int(token.get("awakening_level", 0))
-			var awk_prefix := _icon_or_fallback("res://assets/effectIcons/%s/awakenings/Awakening%d.png" % [_icon_locale_dir(), level], "STR_LOG_AWAKENING_FALLBACK_PREFIX_FMT", level)
+			var awk_prefix := _icon_or_fallback("res://assets/effects/icons/%s/awakenings/Awakening%d.png" % [_icon_locale_dir(), level], "STR_LOG_AWAKENING_FALLBACK_PREFIX_FMT", level)
 			return TranslationServer.translate("STR_LOG_AWAKENING_FMT") \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
 				.replace("{AWK_PREFIX}", awk_prefix) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
 		"evolution":
 			var evo_rank: int = int(token.get("evo_rank", 0))
-			var evo_prefix := _icon_or_fallback("res://assets/effectIcons/%s/evolutions/Evolution%d.png" % [_icon_locale_dir(), evo_rank], "STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT", evo_rank)
+			var evo_prefix := _icon_or_fallback("res://assets/effects/icons/%s/evolutions/Evolution%d.png" % [_icon_locale_dir(), evo_rank], "STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT", evo_rank)
 			var evo_key := "STR_LOG_EVOLUTION_ENTER_FMT" if token.get("has_enter", false) else "STR_LOG_EVOLUTION_FMT"
 			return TranslationServer.translate(evo_key) \
 				.replace("{PLAYER}", player_name(token.get("player_id", 0))) \
