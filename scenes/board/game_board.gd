@@ -18,7 +18,6 @@ var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 var replay_recorder: ReplayRecorder:
 	get: return _session.replay_recorder
 	set(v): _session.replay_recorder = v
-var _save_game_button: Button
 var _loaded_from_save: bool = false
 
 # Bot state (bot_player owned by GameSession; forwarding property)
@@ -107,6 +106,7 @@ var _client_gradients_applied: bool:
 @onready var _selection: SelectionController = $SelectionController
 @onready var _mobile: MobileLayout = $MobileLayout
 @onready var _effect_stack: EffectStackPanel = $EffectStackPanel
+@onready var _sys_menu: SystemMenuController = $SystemMenuController
 @onready var _layout: BoardLayoutController = $BoardLayoutController
 @onready var _fx_highlight: EffectHighlightController = $EffectHighlightController
 @onready var _zoom_ctl: CardZoomController = $CardZoomController
@@ -791,45 +791,11 @@ func _on_bot_visibility_toggled(toggled_on: bool) -> void:
 
 
 func _setup_save_button() -> void:
-	_save_game_button = Button.new()
-	_save_game_button.text = tr("STR_GB_SAVE_GAME")
-	_save_game_button.custom_minimum_size = Vector2(120, 36)
-	_save_game_button.add_theme_font_size_override("font_size", 14)
-	_save_game_button.pressed.connect(_on_save_game_pressed)
-	add_child(_save_game_button)
-	# Position below concede button
-	_save_game_button.position = Vector2(10, 90)
+	_sys_menu._setup_save_button()
 
 
 func _on_save_game_pressed() -> void:
-	if not turn_manager or not turn_manager.game_state:
-		return
-	SfxManager.play("ui_click")
-	var mode_str: String
-	match NetworkManager.mode:
-		NetworkManager.Mode.SOLO: mode_str = "solo"
-		NetworkManager.Mode.SOLO_BOT: mode_str = "solo_bot"
-		_: mode_str = "solo"
-	var diff_str: String = BotConfig.Difficulty.keys()[NetworkManager.bot_difficulty] if is_bot_game else ""
-	var d_names: Array[String] = [
-		DecklistManager.get_player_deck_name(0),
-		DecklistManager.get_player_deck_name(1),
-	]
-	# Capture a seed from the current RNG state so loading this save produces
-	# deterministic bot behavior (the original seed is stale — RNG has advanced).
-	var save_seed: int = randi()
-	print("[Save] Capturing game_seed=%d for save file" % save_seed)
-	var data := GameSerializer.serialize_game_state(turn_manager.game_state, _first_player_id, mode_str, diff_str, d_names, save_seed)
-	var path := GameSerializer.save_game_to_file(data)
-	if not path.is_empty():
-		_save_game_button.text = tr("STR_GB_SAVED")
-		_save_game_button.disabled = true
-		# Re-enable after 2 seconds
-		get_tree().create_timer(2.0).timeout.connect(func():
-			if is_instance_valid(_save_game_button):
-				_save_game_button.text = tr("STR_GB_SAVE_GAME")
-				_save_game_button.disabled = false
-		)
+	_sys_menu._on_save_game_pressed()
 
 
 func _apply_gradients_and_sync() -> void:
@@ -1179,93 +1145,43 @@ func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monst
 const _VOLUME_VALUE_KEYS := ["STR_VOL_OFF", "25%", "50%", "75%", "100%"]
 
 func _on_sound_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			GameSettings.sound_volume = (GameSettings.sound_volume + 1) % 5
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			GameSettings.sound_volume = (GameSettings.sound_volume + 4) % 5
-		else:
-			return
-		GameSettings.save()
-		_update_sound_button_text()
-		SfxManager.play("ui_click")
+	_sys_menu._on_sound_gui_input(event)
 
 
 func _on_sound_toggle_pressed() -> void:
-	GameSettings.sound_volume = (GameSettings.sound_volume + 1) % 5
-	GameSettings.save()
-	_update_sound_button_text()
+	_sys_menu._on_sound_toggle_pressed()
 
 
 func _update_sound_button_text() -> void:
-	var label: String = tr("STR_GB_SOUND_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.sound_volume]))
-	if btn_sound_toggle:
-		btn_sound_toggle.text = label
-	if _mobile._mobile_sound_button:
-		_mobile._mobile_sound_button.text = label
-
-
-# --- Music toggle ---
+	_sys_menu._update_sound_button_text()
 
 
 func _on_music_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			GameSettings.music_volume = (GameSettings.music_volume + 1) % 5
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			GameSettings.music_volume = (GameSettings.music_volume + 4) % 5
-		else:
-			return
-		SfxManager.play("ui_click")
-		GameSettings.save()
-		MusicManager.set_volume(GameSettings.music_volume)
-		_update_music_button_text()
+	_sys_menu._on_music_gui_input(event)
 
 
 func _on_music_toggle_pressed() -> void:
-	GameSettings.music_volume = (GameSettings.music_volume + 1) % 5
-	GameSettings.save()
-	MusicManager.set_volume(GameSettings.music_volume)
-	_update_music_button_text()
+	_sys_menu._on_music_toggle_pressed()
 
 
 func _update_music_button_text() -> void:
-	var label: String = tr("STR_GB_MUSIC_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.music_volume]))
-	if btn_music_toggle:
-		btn_music_toggle.text = label
-	if _mobile._mobile_music_button:
-		_mobile._mobile_music_button.text = label
+	_sys_menu._update_music_button_text()
 
-
-# --- Bug report ---
 
 func _on_bug_report_pressed() -> void:
-	var body := _build_bug_report_body()
-	var url := "https://github.com/hunterdurbin/godzilla-sim/issues/new?labels=bug&title=Bug+Report&body=" + body.uri_encode()
-	OS.shell_open(url)
+	_sys_menu._on_bug_report_pressed()
 
 
 func _build_bug_report_body() -> String:
-	return BugReport.build_body(self)
+	return _sys_menu._build_bug_report_body()
 
-
-# --- Export game log ---
 
 func _on_export_log_pressed() -> void:
-	SfxManager.play("ui_click")
-	var path := GameLogExport.export_log(_log_tokens)
-	if path.is_empty():
-		_log_chat.append_remote_entry("STR_LOG_EXPORT_FAILED")
-		return
-	# Local-only notification: append_remote_entry never enters the MP
-	# broadcast buffer, so the opponent's log is unaffected.
-	_log_chat.append_remote_entry(GameLog.log_exported(local_player_id, path.get_file()))
+	_sys_menu._on_export_log_pressed()
 
-
-# --- Concede / Main Menu ---
 
 func _on_concede_pressed() -> void:
-	_end_game.on_concede_pressed()
+	_sys_menu._on_concede_pressed()
 
 
 func _rpc_concede() -> void:
@@ -1273,32 +1189,7 @@ func _rpc_concede() -> void:
 
 
 func _on_main_menu_pressed() -> void:
-	_reconnect.hide_overlay()
-	# Lobby-bot mode: keep the relay alive and return to PublicLobby instead of MainMenu.
-	if _is_lobby_bot:
-		NetworkManager.exit_lobby_bot_game()
-		NetworkManager.change_scene("res://scenes/lobby/PublicLobby.tscn")
-		return
-	if is_multiplayer_game:
-		var connected := multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
-		if end_game_panel.visible:
-			# Game already over — notify rematch declined
-			if connected:
-				RpcLogger.log_send("rematch_declined", 0)
-				_sync._rpc_rematch_declined.rpc()
-		elif connected and turn_manager and not turn_manager.is_game_over:
-			# Mid-game exit counts as concession
-			if NetworkManager.is_host():
-				var loser_id := local_player_id
-				var winner_id := 1 - loser_id
-				turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
-			else:
-				RpcLogger.log_send("concede", 0)
-				_sync._rpc_concede.rpc_id(NetworkManager.host_peer_id)
-		GameSettings.clear_reconnect_session()
-		NetworkManager.is_in_game = false
-		NetworkManager.disconnect_game()
-	NetworkManager.change_scene("res://scenes/menus/MainMenu.tscn")
+	_sys_menu._on_main_menu_pressed()
 
 
 func _on_rematch_pressed() -> void:

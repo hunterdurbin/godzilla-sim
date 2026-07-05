@@ -53,7 +53,7 @@ Run **headfully** (viewport capture needs rendering):
 - Press real buttons via `btn.pressed.emit()` — this exercises the same
   handlers as a click (including `await btn.pressed` confirmation flows).
 - Use the board's **@onready refs** (`board.btn_end_main`, `board.btn_confirm`,
-  `board._save_game_button`), NOT node paths — the mobile layout reparents
+  `board._sys_menu._save_game_button`), NOT node paths — the mobile layout reparents
   the action panel, so `ActionPanel/Row2/EndMain` paths break there.
 - Read state via `board._get_current_pid()`, `board.turn_manager.game_state`
   (turn_number/current_phase/current_sub_phase), and the game log tail:
@@ -67,7 +67,7 @@ Run **headfully** (viewport capture needs rendering):
 
 ## Save/load probe
 
-`board._save_game_button.pressed.emit()` writes to
+`board._sys_menu._save_game_button.pressed.emit()` writes to
 `user://saves/<version>/recent/` (macOS:
 `~/Library/Application Support/Godot/app_userdata/Unofficial Godzilla Sim/saves/`).
 To reload in-process: `GameSerializer.pending_load =

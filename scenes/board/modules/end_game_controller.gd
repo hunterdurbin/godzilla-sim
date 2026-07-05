@@ -113,8 +113,8 @@ func setup_rematch_deck_select() -> void:
 	# Add as direct child of game board, positioned below Save Game button
 	_board.add_child(rematch_deck_select)
 	var y_pos := 130.0
-	if _board._save_game_button:
-		y_pos = _board._save_game_button.position.y + _board._save_game_button.custom_minimum_size.y + 4
+	if _board._sys_menu._save_game_button:
+		y_pos = _board._sys_menu._save_game_button.position.y + _board._sys_menu._save_game_button.custom_minimum_size.y + 4
 	rematch_deck_select.position = Vector2(10, y_pos)
 	rematch_deck_select.set_header_visible(false)
 	rematch_deck_select.visible = false

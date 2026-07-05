@@ -17,9 +17,24 @@ reads the board's forwarded `_board._x` state.
 | `turn_tracker.gd` | Turn/phase tracker panel |
 | `log_chat.gd` | Game log + chat panel |
 | `board_sfx.gd` | GameEvents → SfxManager bridge |
+| `lobby_bot_controller.gd` | Public-lobby bot fallback: waiting banner, opponent found/disconnected dialogs, countdown |
+| `card_zoom_controller.gd` | Card zoom overlay + hover/long-press previews, zoom-source inference |
+| `effect_highlight_controller.gd` | Effect-driven zone/card highlights + card-attention pulse |
+| `board_layout_controller.gd` | Desktop layout: local-player mirroring, hand positioning, button stacks, hand collapse |
+| `system_menu_controller.gd` | Sound/music toggles, bug report, log export, save button, concede/main-menu |
 
-(Phase 8 of `docs/restructure/` will add: rematch, lobby-bot, card-zoom,
-effect-highlight, board-layout, and system-menu controllers.)
+Rematch negotiation lives in `end_game_controller.gd`; the board-wide
+rematch reset (`_execute_rematch`) intentionally stays on game_board.gd —
+it touches state owned across modules.
+
+## Extraction lessons (Phase 8 — read before extracting more)
+
+Moved bodies run on the MODULE node, so anything implicitly bound to the
+board must be redirected: bare `$Path` → `_board.get_node("Path")`,
+`add_child(x)` → `_board.add_child(x)`, `reparent(self)` →
+`reparent(_board)`, `self` passed as "the board" → `_board`. The unit suite
+and multiplayer harness do NOT execute the real GameBoard's `_ready` (they
+use stub/headless boards) — only a headful run catches these.
 
 ## Adding a module
 

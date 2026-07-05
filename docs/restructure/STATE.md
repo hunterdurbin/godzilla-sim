@@ -6,8 +6,8 @@ BEFORE each commit.
 
 ## Current position
 
-- **Current phase:** 8 (Phases 0–7 complete)
-- **Next action:** execute `phase-8-split-game-board.md`
+- **Current phase:** 9 (Phases 0–8 complete)
+- **Next action:** execute `phase-9-docs-sweep.md`
 - **Path flip in effect:** sim = `res://tests/sim/BotSimulationRunner.tscn`,
   harness = `./tests/harness/run_harness.sh` (old scenes/ locations retired)
 - **Branch:** `feature/restructure`
@@ -42,7 +42,7 @@ it to `tests/sim/BotSimulationRunner.tscn`.)
 | 5 — assets/ | **done** | (phase-5 commit) | unit 901/901 · sim byte-identical · harness PASS · sweep zero hits (incl. .import sidecars, null-safe for CJK names) · headful board render + sfx OK |
 | 6 — split card_data.gd | **done** | (phase-6 commit) | CARD_TEMPLATES=388 pre & post · regenerated cards.csv byte-identical · unit 901/901 · sim byte-identical · harness PASS. card_database.gd 184 lines + 10 set files |
 | 7 — split bot_player.gd (7a–7d) | **done** | 4 sub-commits | each sub-commit: unit 901/901 + sim byte-identical; phase-end harness PASS. bot_player 2,157→1,085 lines; helpers: scoring(9), zone_picker(7), invasion(8), selections(2) methods. Deviation: `_on_*` handler bodies stayed on BotPlayer whole (small, all contain awaits) — only pure sync decision methods moved |
-| 8 — split game_board.gd (8a–8f) | pending | | |
+| 8 — split game_board.gd (8a–8f) | **done** | 5 sub-commits (8b–8f) | per sub-commit: contract grep 61=61, unit 901/901, harness PASS; phase-end sim byte-identical + headful zoom/sound/layout/bug-report checks. game_board 3,274→~2,474 lines. Deviations: 8a skipped (rematch already in end_game_controller pre-restructure; `_execute_rematch` intentionally board-owned); adds `class_name GameBoard`. Headful checks found+fixed module-binding bugs: bare `$Path`/`add_child`/`reparent(self)`/`BugReport.build_body(self)` — see modules/README.md "Extraction lessons" |
 | 9 — docs sweep + closeout | pending | | |
 
 ## Standing decisions

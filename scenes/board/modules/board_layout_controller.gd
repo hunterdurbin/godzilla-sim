@@ -17,7 +17,7 @@ func _arrange_for_local_player() -> void:
 	if _board.local_player_id != 1:
 		return
 
-	var board_column := $VBoxContainer/BoardArea/BoardColumn
+	var board_column := _board.get_node("VBoxContainer/BoardArea/BoardColumn")
 
 	# Swap hand spaces and boards: local (P2) to bottom, opponent (P1) to top
 	# Default order: P2HandSpace(0), P2Board(1), Divider(2), P1Board(3), P1HandSpace(4)
@@ -34,7 +34,7 @@ func _arrange_for_local_player() -> void:
 	_board.player2_board.toggle_mirrored()
 
 	# Swap turn tracker: local player (P2) to bottom, opponent (P1) to top
-	var tracker := $VBoxContainer/BoardArea/RightSpacer/TurnTracker
+	var tracker := _board.get_node("VBoxContainer/BoardArea/RightSpacer/TurnTracker")
 	var children: Array[Node] = []
 	for child in tracker.get_children():
 		children.append(child)
@@ -100,7 +100,7 @@ func _position_hands() -> void:
 
 		# Position local hand button stack at the bottom, left of the max-width hand edge
 		if _board._is_mobile_layout and not local_hand.managed_cards.is_empty():
-			var hand_stack := $HandButtonStack as HBoxContainer
+			var hand_stack := _board.get_node("HandButtonStack") as HBoxContainer
 			var stack_w := 150.0
 			var stack_h := 60.0
 			var cards_left: float = center_x - width / 2.0
@@ -143,7 +143,7 @@ func _position_hands() -> void:
 
 	# Position opponent hand button stack at top of screen, left of the max-width hand edge
 	if _board._is_mobile_layout and opponent_hand and not opponent_hand.managed_cards.is_empty():
-		var opp_stack := $OpponentHandButtonStack as HBoxContainer
+		var opp_stack := _board.get_node("OpponentHandButtonStack") as HBoxContainer
 		var stack_w := 150.0
 		var stack_h := 60.0
 		var opp_width: float = opponent_hand.max_width
@@ -197,8 +197,8 @@ func _fit_button_text(btn: Button, base_size: int = 18, min_size: int = 10) -> v
 func _apply_desktop_hand_button_stacks() -> void:
 	# Stack buttons vertically on desktop between the hand and action panel.
 	# Hide the HBoxContainers and reparent buttons to GameBoard for free positioning.
-	$HandButtonStack.visible = false
-	$OpponentHandButtonStack.visible = false
+	_board.get_node("HandButtonStack").visible = false
+	_board.get_node("OpponentHandButtonStack").visible = false
 
 	var btn_w := 55.0
 	var btn_h := 32.0
@@ -206,10 +206,10 @@ func _apply_desktop_hand_button_stacks() -> void:
 	var right_margin := 300.0 # Action panel left edge is at -270
 
 	# Reparent to GameBoard so HBoxContainer can't override layout
-	_board.hand_toggle_button.reparent(self )
-	_board.sort_hand_button.reparent(self )
-	_board.opponent_hand_toggle_button.reparent(self )
-	_board.opponent_sort_hand_button.reparent(self )
+	_board.hand_toggle_button.reparent(_board)
+	_board.sort_hand_button.reparent(_board)
+	_board.opponent_hand_toggle_button.reparent(_board)
+	_board.opponent_sort_hand_button.reparent(_board)
 
 	# Reset minimum sizes from .tscn so offset-based sizing works
 	for btn: Button in [_board.hand_toggle_button, _board.sort_hand_button,

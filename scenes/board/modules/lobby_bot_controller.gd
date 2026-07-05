@@ -25,7 +25,7 @@ func _setup_lobby_bot_ui() -> void:
 	_lobby_banner_start_msec = Time.get_ticks_msec()
 	# Park the banner under the chat row inside the log panel so cards/board
 	# elements never cover it.
-	var log_vbox: VBoxContainer = $LogPanel/LogVBox
+	var log_vbox: VBoxContainer = _board.get_node("LogPanel/LogVBox")
 	var hbox := HBoxContainer.new()
 	hbox.name = "LobbyWaitingBanner"
 	hbox.add_theme_constant_override("separation", 8)
@@ -98,7 +98,7 @@ func _show_opponent_found_dialog() -> void:
 	_opponent_found_dialog.add_button(tr("STR_GB_OPPONENT_FOUND_KEEP_BOT"), false, "keep_bot")
 	_opponent_found_dialog.confirmed.connect(_board._on_opponent_found_start)
 	_opponent_found_dialog.custom_action.connect(_board._on_opponent_found_custom_action)
-	add_child(_opponent_found_dialog)
+	_board.add_child(_opponent_found_dialog)
 	_opponent_found_dialog.popup_centered()
 
 	_opponent_found_remaining = 20
@@ -106,7 +106,7 @@ func _show_opponent_found_dialog() -> void:
 	_opponent_found_timer.wait_time = 1.0
 	_opponent_found_timer.one_shot = false
 	_opponent_found_timer.timeout.connect(_board._on_opponent_found_timer_tick)
-	add_child(_opponent_found_timer)
+	_board.add_child(_opponent_found_timer)
 	_opponent_found_timer.start()
 	_board._update_opponent_found_countdown()
 
