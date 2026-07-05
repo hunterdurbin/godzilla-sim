@@ -28,8 +28,8 @@ func _ready() -> void:
 
 func _build_card_templates() -> void:
 	# Index all cards by their ID (set data lives in sets/card_set_*.gd)
-	for set_script in _SET_SCRIPTS:
-		for card in set_script.new().CARDS:
+	for card_set in _SET_SCRIPTS:
+		for card in card_set.new().CARDS:
 			CARD_TEMPLATES[card["id"]] = card.duplicate()
 
 

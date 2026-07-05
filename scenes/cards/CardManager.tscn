@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3 uid="uid://bvnx8q7w3yk2m"]
+[gd_scene format=3 uid="uid://bvnx8q7w3yk2m"]
 
 [ext_resource type="Script" path="res://scenes/cards/card_manager.gd" id="1_manager"]
 
