@@ -240,6 +240,17 @@ func _on_prompt(kind: String, args: Array) -> void:
 				sync_node._rpc_zone_target_resolved.rpc_id(1, -1)
 			else:
 				sync_node._rpc_zone_target_resolved.rpc_id(1, int(zones[rng.randi() % zones.size()]))
+		"zones_target":
+			var zones: Array = JSON.parse_string(args[1])
+			var count := int(args[2])
+			var up_to: bool = args[3]
+			zones.shuffle()
+			var take := rng.randi_range(0, mini(count, zones.size())) if up_to \
+				else mini(count, zones.size())
+			var picks: Array = []
+			for i in range(take):
+				picks.append(int(zones[i]))
+			sync_node._rpc_zones_target_resolved.rpc_id(1, JSON.stringify(picks))
 		"strategy_target":
 			var indices: Array = JSON.parse_string(args[1])
 			if indices.is_empty():

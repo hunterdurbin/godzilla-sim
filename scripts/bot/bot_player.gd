@@ -1060,6 +1060,28 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 		player_input.resolve_zone_target(-1)
 
 
+func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, _up_to: bool, _prompt: String) -> void:
+	if player_id != bot_player_id:
+		return
+	await _delay()
+	# Greedy: repeatedly take the best zone from the shrinking pool. Always
+	# picks the max even in up-to mode — fine while every caller destroys
+	# opponent zones; revisit if the primitive ever targets the bot's own board.
+	var player := game_state.players[bot_player_id]
+	var opponent := game_state.players[1 - bot_player_id]
+	var pool := valid_zones.duplicate()
+	var picks: Array[int] = []
+	while picks.size() < count and not pool.is_empty():
+		var zone: int = _pick_opponent_zone_target(pool, player, opponent) \
+			if target_player_id != bot_player_id \
+			else _pick_own_zone_target(pool, player)
+		if zone < 0:
+			break
+		picks.append(zone)
+		pool.erase(zone)
+	player_input.resolve_zones_target(picks)
+
+
 func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, opponent: PlayerState) -> int:
 	return _zones._pick_opponent_zone_target(valid_zones, player, opponent)
 

@@ -318,6 +318,9 @@ func _resend_pending_interaction(peer_id: int) -> void:
 		"zone_target":
 			RpcLogger.log_send("zone_target_requested", 4 + args[1].length() + args[2].length() + 1)
 			_rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4] if args.size() > 4 else "", args[5] if args.size() > 5 else "")
+		"zones_target":
+			RpcLogger.log_send("zones_target_requested", 4 + args[1].length() + args[4].length() + 2)
+			_rpc_zones_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4], args[5] if args.size() > 5 else "")
 		"strategy_target":
 			RpcLogger.log_send("strategy_target_requested", 4 + args[1].length() + args[2].length())
 			_rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3] if args.size() > 3 else "")
@@ -891,6 +894,47 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 		return
 	_pending_interaction = {}
 	_session.player_input.resolve_zone_target(zone_index)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_zones_target_requested(target_player_id: int, zones_json: String, count: int, up_to: bool, prompt: String, source_id: String = "") -> void:
+	if _board:
+		_board._rpc_zones_target_requested(target_player_id, zones_json, count, up_to, prompt, source_id)
+
+
+## Client -> Host: multi-zone target resolved (player chose zones + confirmed)
+@rpc("any_peer", "call_remote", "reliable")
+func _rpc_zones_target_resolved(zones_json: String) -> void:
+	RpcLogger.log_receive("zones_target_resolved", zones_json.length())
+	if not net.is_host() or not _session.turn_manager:
+		return
+	if not _pending_matches("zones_target"):
+		return
+	var parsed: Variant = JSON.parse_string(zones_json)
+	if not parsed is Array:
+		return
+	var pargs: Array = _pending_interaction["args"]
+	var offered: Array = _json_int_array(pargs[1])
+	var count: int = int(pargs[2])
+	var up_to: bool = bool(pargs[3])
+	# Distinct offered zones, count per mode: up-to allows 0..count, exact
+	# requires count (already clamped to offered.size() by the engine).
+	var zone_indices: Array[int] = []
+	var seen := {}
+	for v in parsed:
+		var zi := int(v)
+		if not offered.has(zi) or seen.has(zi):
+			push_warning("[Sync] Rejected zones_target: bad zone %d" % zi)
+			return
+		seen[zi] = true
+		zone_indices.append(zi)
+	var valid_size: bool = zone_indices.size() <= count if up_to \
+		else zone_indices.size() == mini(count, offered.size())
+	if not valid_size:
+		push_warning("[Sync] Rejected zones_target: wrong count %d (requested %d, offered %d)" % [zone_indices.size(), count, offered.size()])
+		return
+	_pending_interaction = {}
+	_session.player_input.resolve_zones_target(zone_indices)
 
 
 @rpc("any_peer", "call_remote", "reliable")

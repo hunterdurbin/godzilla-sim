@@ -66,17 +66,15 @@ func on_enter(ctx: EffectContext) -> void:
 
 	match chosen_id:
 		0:
-			for _i in range(3):
-				await ctx.effect_handler.destroy_zone_target(
-					ctx.owner.player_id, ctx.opponent,
-					func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 4,
-					tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 4)
+			await ctx.effect_handler.destroy_zone_targets(
+				ctx.owner.player_id, ctx.opponent,
+				func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 4,
+				3, tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 4)
 		1:
-			for _i in range(2):
-				await ctx.effect_handler.destroy_zone_target(
-					ctx.owner.player_id, ctx.opponent,
-					func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 6,
-					tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 6)
+			await ctx.effect_handler.destroy_zone_targets(
+				ctx.owner.player_id, ctx.opponent,
+				func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 6,
+				2, tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 6)
 		2:
 			await ctx.effect_handler.destroy_zone_target(
 				ctx.owner.player_id, ctx.opponent,

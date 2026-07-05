@@ -25,8 +25,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	for _i in range(3):
-		await ctx.effect_handler.destroy_zone_target(
-			ctx.owner.player_id, ctx.opponent,
-			func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 4,
-			tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 4)
+	await ctx.effect_handler.destroy_zone_targets(
+		ctx.owner.player_id, ctx.opponent,
+		func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 4,
+		3, tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 4)

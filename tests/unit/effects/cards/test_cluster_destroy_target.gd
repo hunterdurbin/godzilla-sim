@@ -215,18 +215,18 @@ func test_ebp02_004_destroys_one_per_strategy_in_play() -> void:
 	})
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
-	input.answers = {"select_zone": [0, 3]}
+	input.answers = {"select_zones": [[0, 3]]}
 
 	await _fire(s, "enter")
 
 	assert_bool(_opp_discard_has(state, t1)).is_true()
 	assert_bool(_opp_discard_has(state, t2)).is_true()
 	assert_str(state.players[1].get_zone_top_card(5).get("id", "")).is_equal(above["id"])
-	assert_int(input.count_calls("select_zone")).is_equal(2)
-	# Second prompt must no longer offer the already-destroyed zone.
-	var zone_calls: Array = input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zone")
+	# One batch prompt for both destroys, count = strategies in play.
+	assert_int(input.count_calls("select_zones")).is_equal(1)
+	var zone_calls: Array = input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zones")
 	assert_array(zone_calls[0]["valid"]).contains_exactly_in_any_order([0, 3])
-	assert_array(zone_calls[1]["valid"]).contains_exactly([3])
+	assert_int(int(zone_calls[0]["count"])).is_equal(2)
 
 
 # --- Destroy all in a fixed zone band ---

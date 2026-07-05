@@ -219,6 +219,7 @@ func setup_bot(local_player_id: int) -> BotPlayer:
 	pin.card_select_requested.connect(bot_player._on_card_select_requested)
 	pin.hand_card_selection_requested.connect(bot_player._on_hand_card_selection_requested)
 	pin.zone_target_requested.connect(bot_player._on_zone_target_requested)
+	pin.zones_target_requested.connect(bot_player._on_zones_target_requested)
 	pin.strategy_target_requested.connect(bot_player._on_strategy_target_requested)
 	pin.cards_revealed_requested.connect(bot_player._on_cards_revealed_requested)
 

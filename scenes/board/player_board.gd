@@ -880,6 +880,7 @@ func clear_highlights() -> void:
 	for slot in zone_slots:
 		if slot:
 			slot.set_highlighted(false)
+			slot.set_selected(false)
 	for slot in strategy_slots:
 		if slot:
 			slot.set_highlighted(false)
@@ -895,6 +896,7 @@ func reset_visuals() -> void:
 			if slot.has_card() and slot.get_card() != monster_card:
 				slot.remove_card(true)
 			slot.set_highlighted(false)
+			slot.set_selected(false)
 			slot.set_monster_marker(false)
 
 	# Remove monster card

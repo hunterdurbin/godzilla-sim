@@ -8,7 +8,7 @@ board: session lifecycle, multiplayer state sync, and effect-UI routing.
 | File | Role |
 |---|---|
 | `game_session.gd` | `GameSession` — owns the TurnManager/engine graph for one match, exposes `events` (GameEvents bus); the node a board parents to drive a game |
-| `multiplayer_sync.gd` | **The sole `@rpc` surface (all 47 RPCs).** Serializes state/actions between host and clients; calls into the board via the duck-typed `_board` contract |
+| `multiplayer_sync.gd` | **The sole `@rpc` surface (all 49 RPCs).** Serializes state/actions between host and clients; calls into the board via the duck-typed `_board` contract |
 | `effect_ui_router.gd` | Routes effect-driven UI requests (choices, zone targets, highlights) between engine PlayerInput signals and board UI / RPCs |
 | `board_module.gd` | `BoardModule` base — helpers for board submodules to find the session/board via the named "GameBoard" subtree |
 | `seat_container.gd` | Seat/player-slot mapping helper for board layouts |

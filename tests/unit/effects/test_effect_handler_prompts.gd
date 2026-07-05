@@ -119,3 +119,48 @@ func test_select_zone_target_empty_zones_short_circuits() -> void:
 	var empty: Array[int] = []
 	assert_int(await handler.select_zone_target(0, 1, empty, "p")).is_equal(-1)
 	assert_int(input.calls.size()).is_equal(0)  # input never consulted
+
+
+func test_select_zones_target_empty_zones_short_circuits() -> void:
+	var state := States.make_state()
+	var input := ScriptedPlayerInput.new()
+	var handler := _make_handler(state, input)
+	var empty: Array[int] = []
+	assert_array(await handler.select_zones_target(0, 1, empty, 3, "p")).is_empty()
+	assert_array(await handler.select_zones_target(0, 1, [2] as Array[int], 0, "p")).is_empty()
+	assert_int(input.calls.size()).is_equal(0)  # input never consulted
+
+
+func test_destroy_zone_targets_up_to_decline_destroys_nothing() -> void:
+	var state := States.make_state({"p1": {"zone_cards": {
+		1: Cards.battle(3, 3000, "A"), 4: Cards.battle(2, 2000, "B"),
+	}}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zones": [[]]}  # Up-to: confirming 0 declines
+	var handler := _make_handler(state, input)
+	var any_filter := func(_card: Dictionary) -> bool: return true
+
+	var destroyed: Array[Dictionary] = await handler.destroy_zone_targets(
+		0, state.players[1], any_filter, 2, "p", true)
+
+	assert_array(destroyed).is_empty()
+	assert_bool(state.players[1].zone_has_cards(1)).is_true()
+	assert_bool(state.players[1].zone_has_cards(4)).is_true()
+
+
+func test_destroy_zone_targets_rejects_invalid_and_duplicate_picks() -> void:
+	var state := States.make_state({"p1": {"zone_cards": {
+		1: Cards.battle(3, 3000, "A"), 4: Cards.battle(2, 2000, "B"),
+	}}})
+	var input := ScriptedPlayerInput.new()
+	# Zone 6 was never offered; the duplicate 1 must count once.
+	input.answers = {"select_zones": [[1, 1, 6]]}
+	var handler := _make_handler(state, input)
+	var any_filter := func(_card: Dictionary) -> bool: return true
+
+	var destroyed: Array[Dictionary] = await handler.destroy_zone_targets(
+		0, state.players[1], any_filter, 2, "p")
+
+	assert_int(destroyed.size()).is_equal(1)
+	assert_bool(state.players[1].zone_has_cards(1)).is_false()
+	assert_bool(state.players[1].zone_has_cards(4)).is_true()

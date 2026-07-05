@@ -62,6 +62,17 @@ func select_zone(_player_id: int, _target_player_id: int, valid_zones: Array[int
 	return valid_zones[0] if not valid_zones.is_empty() else -1
 
 
+## Choose multiple zones (0-7) on target_player_id's board. In exact mode
+## (up_to = false) the caller passes count already clamped to the number of
+## valid zones and expects exactly that many; in up-to mode (up_to = true) any
+## 0..count zones are acceptable and [] declines the effect entirely.
+func select_zones(_player_id: int, _target_player_id: int, valid_zones: Array[int], count: int, _up_to: bool, _prompt: String) -> Array[int]:
+	var result: Array[int] = []
+	for i in range(mini(count, valid_zones.size())):
+		result.append(valid_zones[i])
+	return result
+
+
 ## Choose one of `valid_indices` strategy zones on target_player_id's board.
 func select_strategy(_player_id: int, _target_player_id: int, valid_indices: Array[int], _prompt: String) -> int:
 	return valid_indices[0] if not valid_indices.is_empty() else -1

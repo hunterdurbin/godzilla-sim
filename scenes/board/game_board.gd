@@ -258,6 +258,8 @@ var _zone_target_selecting: bool:
 	get: return _selection._zone_target_selecting
 var _zone_target_allow_skip: bool:
 	get: return _selection._zone_target_allow_skip
+var _zones_target_selecting: bool:
+	get: return _selection._zones_target_selecting
 var _strategy_target_selecting: bool:
 	get: return _selection._strategy_target_selecting
 var _choice_selecting: bool:
@@ -1444,6 +1446,8 @@ func _input(event: InputEvent) -> void:
 			_skip_hand_card_selection()
 		elif _zone_target_selecting and _zone_target_allow_skip:
 			_skip_zone_target()
+		elif _zones_target_selecting:
+			pass # Mandatory — up-to prompts decline via Confirm, not ESC
 		elif waiting_for_card_select or waiting_for_zone_select:
 			_clear_card_highlight()
 			_cancel_selection()
@@ -1818,7 +1822,7 @@ func _stack_view_header(single_key: String, under_key: String, n: int, total: in
 
 
 func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
-	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting:
+	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _zones_target_selecting:
 		return
 	var player := _get_player_state(pid)
 	var zone_idx: int = zone_num - 1
@@ -1872,7 +1876,7 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 
 
 func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
-	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _strategy_target_selecting:
+	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _zones_target_selecting or _strategy_target_selecting:
 		return
 	var player := _get_player_state(pid)
 	if strategy_idx < 0 or strategy_idx >= player.strategy_zones.size():
@@ -2223,6 +2227,20 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 	for v in parsed:
 		valid_zones.append(int(v))
 	_selection._show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt, allow_skip, card_id, source_id)
+
+
+## Host -> Client: multi-zone target request (player must choose zones + confirm)
+func _rpc_zones_target_requested(target_player_id: int, zones_json: String, count: int, up_to: bool, prompt: String, source_id: String = "") -> void:
+	RpcLogger.log_receive("zones_target_requested", 4 + zones_json.length() + prompt.length() + 2)
+	if NetworkManager.is_host():
+		return
+	if _client_current_player_id != local_player_id:
+		SfxManager.play("action_required")
+	var parsed: Array = JSON.parse_string(zones_json)
+	var valid_zones: Array[int] = []
+	for v in parsed:
+		valid_zones.append(int(v))
+	_selection._show_zones_target_selection(local_player_id, target_player_id, valid_zones, count, up_to, prompt, source_id)
 
 
 ## Host -> Client: strategy target request (player must choose a strategy zone)

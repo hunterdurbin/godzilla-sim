@@ -53,6 +53,17 @@ var _zone_target_player_id: int = -1 # Who is choosing
 var _zone_target_board_pid: int = -1 # Whose board the zones are on
 var _zone_target_valid_zones: Array[int] = []
 var _zone_target_allow_skip: bool = false
+
+# Multi-zone target selection state (batch destroy prompts): click toggles a
+# zone between valid (blue) and selected (red); Confirm commits the batch.
+var _zones_target_selecting: bool = false
+var _zones_target_player_id: int = -1 # Who is choosing
+var _zones_target_board_pid: int = -1 # Whose board the zones are on
+var _zones_target_valid_zones: Array[int] = []
+var _zones_target_count: int = 0 # Required picks (exact) or max picks (up_to)
+var _zones_target_up_to: bool = false
+var _zones_target_selected: Array[int] = []
+var _zones_target_prompt: String = ""
 var _prompt_preview_root: Control = null # Mini previews above the helper text (effect source / card being placed)
 var _prompt_preview_card: Control = null # The placed-card preview node (choice hover retargets it)
 var _stack_hover_preview: Control = null # Sticky preview for the last hovered effect-stack row (joins the prompt row when one is up, else bottom-left); stays until its row leaves the stack
@@ -142,6 +153,7 @@ func _bind_session() -> void:
 	_connect_once(pin.hand_discard_requested, _on_hand_discard_requested)
 	_connect_once(pin.hand_card_selection_requested, _on_hand_card_selection_requested)
 	_connect_once(pin.zone_target_requested, _on_zone_target_requested)
+	_connect_once(pin.zones_target_requested, _on_zones_target_requested)
 	_connect_once(pin.strategy_target_requested, _on_strategy_target_requested)
 	_connect_once(pin.choice_requested, _on_choice_requested)
 
@@ -167,6 +179,14 @@ func reset_for_rematch() -> void:
 	_zone_target_board_pid = -1
 	_zone_target_valid_zones.clear()
 	_zone_target_allow_skip = false
+	_zones_target_selecting = false
+	_zones_target_player_id = -1
+	_zones_target_board_pid = -1
+	_zones_target_valid_zones.clear()
+	_zones_target_count = 0
+	_zones_target_up_to = false
+	_zones_target_selected.clear()
+	_zones_target_prompt = ""
 	_strategy_target_selecting = false
 	_strategy_target_player_id = -1
 	_strategy_target_board_pid = -1
@@ -386,6 +406,10 @@ func _on_confirm_pressed() -> void:
 		return
 	if _zone_target_selecting and _zone_target_allow_skip:
 		_skip_zone_target()
+		return
+	if _zones_target_selecting:
+		if _zones_target_up_to or _zones_target_selected.size() == _zones_target_count:
+			_finish_zones_target()
 		return
 	if _discard_selecting and _discard_selected_cards.size() == _discard_count:
 		_confirm_hand_discard()
@@ -1246,6 +1270,107 @@ func _finish_zone_target(zone_idx: int) -> void:
 		_sync._rpc_zone_target_resolved.rpc_id(NetworkManager.host_peer_id, zone_idx)
 	else:
 		_session.player_input.resolve_zone_target(zone_idx)
+
+
+func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String) -> void:
+	if is_bot_game and player_id == bot_player.bot_player_id:
+		return
+	var source_id := _get_effect_source_id()
+	if is_multiplayer_game and player_id != local_player_id:
+		_flush_broadcast()
+		var zones_json := JSON.stringify(valid_zones)
+		_pending_interaction = {"method": "zones_target", "args": [target_player_id, zones_json, count, up_to, prompt, source_id], "player": player_id}
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				RpcLogger.log_send("zones_target_requested", 4 + zones_json.length() + prompt.length() + 2)
+				_sync._rpc_zones_target_requested.rpc_id(peer_id, target_player_id, zones_json, count, up_to, prompt, source_id)
+		return
+	_show_zones_target_selection(player_id, target_player_id, valid_zones, count, up_to, prompt, source_id)
+
+
+func _show_zones_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String, source_id: String = "") -> void:
+	_zones_target_selecting = true
+	_zones_target_player_id = player_id
+	_zones_target_board_pid = target_player_id
+	_zones_target_valid_zones = valid_zones
+	_zones_target_count = count
+	_zones_target_up_to = up_to
+	_zones_target_selected = []
+	_zones_target_prompt = _resolve_translated_text(prompt)
+
+	_disable_all_buttons()
+	action_prompt_panel.visible = true
+
+	_show_prompt_previews(source_id, "")
+
+	# Highlight valid zones on the target player's board
+	var board: Control = player1_board if target_player_id == 0 else player2_board
+	board.highlight_valid_zones(valid_zones)
+	for i in range(board.zone_slots.size()):
+		var slot: Slot = board.zone_slots[i]
+		if slot and i in valid_zones:
+			slot.in_selection_mode = true
+			if not slot.slot_clicked.is_connected(_on_zones_target_slot_clicked):
+				slot.slot_clicked.connect(_on_zones_target_slot_clicked)
+	_update_zones_target_confirm()
+
+
+func _on_zones_target_slot_clicked(zone_num: int, _pid: int) -> void:
+	if not _zones_target_selecting:
+		return
+	var zone_idx: int = zone_num - 1
+	if zone_idx not in _zones_target_valid_zones:
+		return
+	var board: Control = player1_board if _zones_target_board_pid == 0 else player2_board
+	var slot: Slot = board.zone_slots[zone_idx]
+	if zone_idx in _zones_target_selected:
+		_zones_target_selected.erase(zone_idx)
+		slot.set_selected(false)
+	elif _zones_target_selected.size() < _zones_target_count:
+		_zones_target_selected.append(zone_idx)
+		slot.set_selected(true)
+	# At-cap clicks on unselected zones are ignored — unselect one first.
+	_update_zones_target_confirm()
+
+
+func _update_zones_target_confirm() -> void:
+	var status := tr("STR_GB_SELECTED_FMT") \
+		.replace("{N}", str(_zones_target_selected.size())) \
+		.replace("{MAX}", str(_zones_target_count))
+	card_select_prompt.text = _zones_target_prompt + "\n" + status
+	btn_confirm.text = tr("STR_GB_CONFIRM")
+	btn_confirm.disabled = not _zones_target_up_to \
+		and _zones_target_selected.size() != _zones_target_count
+
+
+func _finish_zones_target() -> void:
+	var selected := _zones_target_selected.duplicate()
+	# Clean up UI
+	var board: Control = player1_board if _zones_target_board_pid == 0 else player2_board
+	board.clear_highlights()
+	for i in range(board.zone_slots.size()):
+		var slot: Slot = board.zone_slots[i]
+		if slot:
+			slot.in_selection_mode = false
+			if slot.slot_clicked.is_connected(_on_zones_target_slot_clicked):
+				slot.slot_clicked.disconnect(_on_zones_target_slot_clicked)
+
+	_zones_target_selecting = false
+	_zones_target_valid_zones = []
+	_zones_target_count = 0
+	_zones_target_up_to = false
+	_zones_target_selected = []
+	_zones_target_prompt = ""
+	action_prompt_panel.visible = false
+	btn_confirm.disabled = true
+	_cleanup_prompt_previews()
+
+	if is_multiplayer_game and not NetworkManager.is_host():
+		var zones_json := JSON.stringify(selected)
+		RpcLogger.log_send("zones_target_resolved", 4 + zones_json.length())
+		_sync._rpc_zones_target_resolved.rpc_id(NetworkManager.host_peer_id, zones_json)
+	else:
+		_session.player_input.resolve_zones_target(selected)
 
 
 ## Small previews above the helper text: the resolving effect's source card

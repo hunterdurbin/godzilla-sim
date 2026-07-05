@@ -38,8 +38,8 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var strategy_count: int = ctx.owner.count_strategies_in_play()
 
-	for _i in range(strategy_count):
-		await ctx.effect_handler.destroy_zone_target(
-			ctx.owner.player_id, ctx.opponent,
-			func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 6,
-			tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 6)
+	# Destroy 1 per strategy card (exact-N, clamped to available targets)
+	await ctx.effect_handler.destroy_zone_targets(
+		ctx.owner.player_id, ctx.opponent,
+		func(card: Dictionary) -> bool: return ctx.field_rank(card, ctx.opponent.player_id) <= 6,
+		strategy_count, tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 6)

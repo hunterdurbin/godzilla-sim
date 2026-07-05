@@ -318,6 +318,25 @@ func select_zone_target(player_id: int, target_player_id: int, valid_zones: Arra
 
 
 
+func select_zones_target(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, prompt: String, up_to: bool = false) -> Array[int]:
+	## Ask a player to choose multiple zones on the target player's board.
+	## Exact mode (up_to = false): the player must pick exactly `count` zones —
+	## callers pass count already clamped to valid_zones.size().
+	## Up-to mode (up_to = true): the player may pick any 0..count zones and an
+	## empty result declines the effect.
+	if valid_zones.is_empty() or count <= 0:
+		return []
+
+	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
+	var zones: Array[int] = await input.select_zones(player_id, target_player_id, valid_zones, count, up_to, prompt)
+	_unhighlight_active_effect()
+	return zones
+
+
+
+
 func select_strategy_target(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> int:
 	## Ask a player to choose one of the valid strategy zones on the target player's board.
 	## Always prompts when at least one valid index exists so the player can see
@@ -535,6 +554,10 @@ func trigger_card_returned_from_discard(returning_player_id: int, card: Dictiona
 
 func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, prompt: String) -> Dictionary:
 	return await destruction.destroy_zone_target(player_id, target, filter, prompt)
+
+
+func destroy_zone_targets(player_id: int, target: PlayerState, filter: Callable, count: int, prompt: String, up_to: bool = false) -> Array[Dictionary]:
+	return await destruction.destroy_zone_targets(player_id, target, filter, count, prompt, up_to)
 
 
 func destroy_chosen_zone(player_id: int, target: PlayerState, valid_zones: Array[int], prompt: String) -> Dictionary:

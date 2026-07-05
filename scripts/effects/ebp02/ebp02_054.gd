@@ -35,12 +35,9 @@ func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void
 	if crystal_count <= 0:
 		return
 
-	# Destroy up to crystal_count of opponent's rank 5 or lower battle cards
-	for _i in range(crystal_count):
-		var destroyed: Dictionary = await ctx.effect_handler.destroy_zone_target(
-			ctx.owner.player_id, ctx.opponent,
-			func(card: Dictionary) -> bool:
-				return ctx.field_rank(card, ctx.opponent.player_id) <= 5,
-			tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 5)
-		if destroyed.is_empty():
-			break
+	# Destroy 1 per Crystal (exact-N, clamped to available rank-5-or-lower targets)
+	await ctx.effect_handler.destroy_zone_targets(
+		ctx.owner.player_id, ctx.opponent,
+		func(card: Dictionary) -> bool:
+			return ctx.field_rank(card, ctx.opponent.player_id) <= 5,
+		crystal_count, tr("STR_EFF_DESTROY_OPP_RANK_LOWER_FMT") % 5)
