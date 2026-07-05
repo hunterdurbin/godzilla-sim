@@ -90,6 +90,15 @@ func on_discard_from_hand(_ctx: EffectContext) -> void:
 	pass
 
 
+func discard_from_hand_condition(_ctx: EffectContext) -> bool:
+	## Trigger-time gate for on_discard_from_hand, evaluated at the MOMENT the
+	## card is discarded — before invasion movement/crush mutate the board —
+	## and never re-checked when the deferred entry resolves.
+	## MUST stay synchronous (no await): both dispatcher paths call it inline.
+	## The card is already in the discard pile when this runs.
+	return true
+
+
 func on_burst_discard(_ctx: EffectContext) -> void:
 	## Called when this card is discarded by the Burst mechanic at end of turn.
 	## The card is already in the discard pile when this triggers.
@@ -275,6 +284,19 @@ func get_field_cp_modifiers(_ctx: EffectContext) -> Dictionary:
 
 func get_threat_level_modifier(_ctx: EffectContext) -> int:
 	## Return additional threat level for this monster card (e.g., conditional TL boosts).
+	return 0
+
+
+func get_variable_counter_power(_ctx: EffectContext) -> int:
+	## Return this card's printed counter power X ("this card's counter power X
+	## is equal to ..."). A variable BASE stat, not a modifier: never gated by
+	## engagement, and reported in breakdowns even when 0.
+	return 0
+
+
+func get_variable_threat_level(_ctx: EffectContext) -> int:
+	## Return this monster's printed threat level X. Variable base stat, not a
+	## modifier (see get_variable_counter_power).
 	return 0
 
 

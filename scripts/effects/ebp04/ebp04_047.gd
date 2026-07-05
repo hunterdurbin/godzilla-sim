@@ -11,7 +11,9 @@ extends CardEffect
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
-## Implementation notes: None
+## Implementation notes: Counter power X is a variable BASE stat
+##   (get_variable_counter_power), not a modifier — shows as "Base power" in
+##   breakdowns and is not engagement-gated.
 
 
 const TRIGGER_FILTERS = {
@@ -30,7 +32,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	await ctx.effect_handler.perform_evolution(ctx.owner.player_id, zone_idx)
 
 
-func get_counter_power_modifier(ctx: EffectContext) -> int:
+func get_variable_counter_power(ctx: EffectContext) -> int:
 	# Rule says "other battle cards in your zones" — exclude self's zone.
 	var self_zone: int = find_zone_of_card(ctx)
 	var others: Array[Dictionary] = []

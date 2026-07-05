@@ -13,14 +13,16 @@ extends CardEffect
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
-## Implementation notes: None
+## Implementation notes: Threat level X is a variable BASE stat
+##   (get_variable_threat_level), not a modifier — shows as "Base threat" in
+##   breakdowns.
 
 
 func get_bot_tags() -> Array[String]:
 	return ["boosts_threat"]
 
 
-func get_threat_level_modifier(ctx: EffectContext) -> int:
+func get_variable_threat_level(ctx: EffectContext) -> int:
 	return _count_zone_colors(ctx) * 3000
 
 

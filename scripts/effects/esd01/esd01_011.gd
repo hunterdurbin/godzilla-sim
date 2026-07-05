@@ -8,7 +8,8 @@ extends CardEffect
 ## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
-## Rules: None
+## Rules: Replacement effect — the card never counts as destroyed (no revenge);
+## applies to effect destroys, crush (11.3), and overload (11.5).
 ## Interactions: None
 ## Implementation notes: None
 
@@ -26,9 +27,6 @@ func on_enter(ctx: EffectContext) -> void:
 		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
 
 
-func on_revenge(ctx: EffectContext) -> void:
-	ctx.effect_handler.return_to_deck_bottom(ctx.owner, ctx.card_data)
-
-
-func on_crush(ctx: EffectContext) -> void:
-	ctx.effect_handler.return_to_deck_bottom(ctx.owner, ctx.card_data)
+func on_would_be_destroyed(_ctx: EffectContext) -> bool:
+	# Move to deck bottom instead of being destroyed
+	return true

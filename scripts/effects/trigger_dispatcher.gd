@@ -182,6 +182,14 @@ func _passes_discard_from_hand_filter(card_data: Dictionary, player_id: int) -> 
 		game_state.current_player_id == player_id, _active_effect_player_id, player_id)
 
 
+func _passes_discard_condition(effect: CardEffect, card_data: Dictionary, ctx: EffectContext) -> bool:
+	## Card-specific trigger-time gate (e.g. EBP03-067's 2-color check), checked
+	## once at discard time; NOT re-evaluated when a deferred entry resolves.
+	if not has_trigger(card_data, "discard_from_hand_condition"):
+		return true
+	return effect.discard_from_hand_condition(ctx)
+
+
 
 
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
@@ -190,11 +198,14 @@ func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 		return
 	var effect := get_effect(card_data)
 	if effect:
+		var ctx := _build_context(player_id, card_data)
+		if not _passes_discard_condition(effect, card_data, ctx):
+			return
 		var saved_player_id: int = _active_effect_player_id
 		var saved_card: Dictionary = _active_effect_card
 		_set_active_effect(player_id, card_data)
 		@warning_ignore("redundant_await")
-		await effect.on_discard_from_hand(_build_context(player_id, card_data))
+		await effect.on_discard_from_hand(ctx)
 		if saved_card.is_empty():
 			_clear_active_effect()
 		else:
@@ -209,7 +220,8 @@ func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) ->
 	if has_trigger(card_data, "on_discard_from_hand") and _passes_discard_from_hand_filter(card_data, player_id):
 		var effect := get_effect(card_data)
 		var ctx := _build_context(player_id, card_data)
-		entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_discard_from_hand.bind(ctx), "skip_active_check": true})
+		if _passes_discard_condition(effect, card_data, ctx):
+			entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_discard_from_hand.bind(ctx), "skip_active_check": true})
 	return entries
 
 

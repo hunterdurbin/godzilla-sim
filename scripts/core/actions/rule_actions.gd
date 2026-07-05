@@ -45,21 +45,31 @@ func _check_crush_for_player(state: GameState, player_id: int, deferred_entries:
 	var monster_zone_idx: int = player.monster_zone - 1  # 0-indexed
 	if monster_zone_idx >= 0 and monster_zone_idx < 8:
 		if player.zone_has_cards(monster_zone_idx):
-			var crushed_stack: Array = player.clear_zone(monster_zone_idx)
-			EffectHandler.banish_or_discard(player, crushed_stack)
-			player.cards_destroyed_this_turn.append(crushed_stack[0])
-			events.battle_card_crushed.emit(player_id, monster_zone_idx, crushed_stack[0])
-			player.zones_changed.emit()
-			player.discard_changed.emit()
+			# Crush is <Destroy> (11.3.3), so on_would_be_destroyed replacements
+			# apply; a replaced card never counts as destroyed and skips
+			# crush/revenge, but still fires on_leave_play below.
+			var top_card := player.get_zone_top_card(monster_zone_idx)
+			var replaced := false
+			if effect_handler:
+				replaced = effect_handler.try_destroy_replacement(player, monster_zone_idx)
+			if not replaced:
+				var crushed_stack: Array = player.clear_zone(monster_zone_idx)
+				EffectHandler.banish_or_discard(player, crushed_stack)
+				player.cards_destroyed_this_turn.append(crushed_stack[0])
+				events.battle_card_crushed.emit(player_id, monster_zone_idx, crushed_stack[0])
+				player.zones_changed.emit()
+				player.discard_changed.emit()
 			if effect_handler:
 				# Linked-card cleanup (rule-agnostic) fires immediately so partner
 				# cards see the removal regardless of deferred standby resolution.
-				await effect_handler.trigger_leave_play(player_id, crushed_stack[0], monster_zone_idx)
+				await effect_handler.trigger_leave_play(player_id, top_card, monster_zone_idx)
+				if replaced:
+					return true
 				if deferred_entries != null:
-					deferred_entries.append_array(effect_handler.collect_crush_and_revenge_entries(player_id, crushed_stack[0]))
+					deferred_entries.append_array(effect_handler.collect_crush_and_revenge_entries(player_id, top_card))
 				else:
-					await effect_handler.trigger_crush(player_id, crushed_stack[0])
-					await effect_handler.trigger_revenge(player_id, crushed_stack[0])
+					await effect_handler.trigger_crush(player_id, top_card)
+					await effect_handler.trigger_revenge(player_id, top_card)
 			return true
 	return false
 

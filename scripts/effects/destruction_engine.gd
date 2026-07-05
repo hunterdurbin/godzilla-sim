@@ -147,6 +147,68 @@ func _passes_can_be_destroyed_filter(card_data: Dictionary, watcher_player_id: i
 
 
 
+func _passes_would_be_destroyed_filter(card_data: Dictionary, watcher_player_id: int) -> bool:
+	## Evaluate TRIGGER_FILTERS["on_would_be_destroyed"]. When the filter doesn't
+	## pass, the card's replacement hook is skipped (normal destruction proceeds).
+	## Same keys as can_be_destroyed: "caused_by_opponent" gates on the opponent's
+	## active effect causing the destruction (rule-driven overload/crush have no
+	## active effect, so such hooks stay silent there), "own_turn" gates by turn.
+	return TriggerFilters.passes_destruction_gate(
+		get_trigger_filter(card_data, "on_would_be_destroyed"),
+		game_state.current_player_id == watcher_player_id, _active_effect_player_id, watcher_player_id)
+
+
+
+
+func try_destroy_replacement(target: PlayerState, zone_idx: int) -> bool:
+	## Apply a <Destroy> replacement effect (on_would_be_destroyed) for the top
+	## card of a zone about to be destroyed by a rule action (overload 11.5,
+	## crush 11.3). If the hook fires and returns true, the top card moves to
+	## the deck bottom instead — it never counts as destroyed — and any cards
+	## stacked under it go to the discard (not "destroyed" per 5.12.1.1).
+	## Returns true when the destruction was replaced; the zone is left
+	## untouched otherwise.
+	var top_card := target.get_zone_top_card(zone_idx)
+	if top_card.is_empty():
+		return false
+	var effect := get_effect(top_card)
+	if not effect or not _passes_would_be_destroyed_filter(top_card, target.player_id):
+		return false
+	if not effect.on_would_be_destroyed(_build_context(target.player_id, top_card)):
+		return false
+	var replaced_stack: Array = target.clear_zone(zone_idx)
+	if replaced_stack.size() > 1:
+		EffectHandler.banish_or_discard(target, replaced_stack.slice(1))
+	target.main_deck.append(top_card)
+	target.zones_changed.emit()
+	target.deck_changed.emit()
+	target.discard_changed.emit()
+	return true
+
+
+
+
+func overload_zone(target: PlayerState, zone_idx: int) -> Dictionary:
+	## Rule 11.5 overload: destroy a zone's stack to make room for an incoming
+	## card. Overload IS <Destroy> (11.5.1), so on_would_be_destroyed replacement
+	## effects apply and non-replaced top cards count as destroyed this turn.
+	## Revenge never fires — 12.7.2 excludes duplicate-card processing.
+	## Returns the overloaded top card ({} if the zone was empty); the caller
+	## pushes the incoming card and then fires trigger_leave_play on the result.
+	var top_card := target.get_zone_top_card(zone_idx)
+	if top_card.is_empty():
+		return {}
+	if try_destroy_replacement(target, zone_idx):
+		return top_card
+	var stack: Array = target.clear_zone(zone_idx)
+	EffectHandler.banish_or_discard(target, stack)
+	target.cards_destroyed_this_turn.append(top_card)
+	target.discard_changed.emit()
+	return top_card
+
+
+
+
 func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	## Check if a card can be destroyed (respects destroy prevention effects).
 	## Scans the owner's monster, battle zones, and strategy zones for any
@@ -216,7 +278,9 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 	## instead of resolving immediately (used when destroying multiple zones).
 	## Returns the destroyed/replaced card, or empty dict on failure.
 	var effect := get_effect(top_card)
-	if effect and effect.on_would_be_destroyed(_build_context(target.player_id, top_card)):
+	if effect \
+			and _passes_would_be_destroyed_filter(top_card, target.player_id) \
+			and effect.on_would_be_destroyed(_build_context(target.player_id, top_card)):
 		# Replacement: move to deck bottom instead of discard (skip revenge)
 		var replaced_stack: Array = target.clear_zone(zone_idx)
 		if replaced_stack.size() > 1:

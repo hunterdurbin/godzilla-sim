@@ -84,32 +84,18 @@ var _client_zone_rank_mods: Array:
 var _client_hand_rank_mods: Array:
 	get: return _session.client_hand_rank_mods
 	set(v): _session.client_hand_rank_mods = v
+var _client_hand_power_mods: Array:
+	get: return _session.client_hand_power_mods
+	set(v): _session.client_hand_power_mods = v
 var _client_monster_cp_mods: Array:
 	get: return _session.client_monster_cp_mods
 	set(v): _session.client_monster_cp_mods = v
+var _client_modifier_breakdowns: Dictionary:
+	get: return _session.client_modifier_breakdowns
+	set(v): _session.client_modifier_breakdowns = v
 var _client_gradients_applied: bool:
 	get: return _session.client_gradients_applied
 	set(v): _session.client_gradients_applied = v
-# Client-side stats snapshot (synced from host for disconnect reporting)
-var _client_stats_elapsed_ms: Array[int]:
-	get: return _session.client_stats_elapsed_ms
-	set(v): _session.client_stats_elapsed_ms = v
-var _client_stats_game_start_ms: int:
-	get: return _session.client_stats_game_start_ms
-	set(v): _session.client_stats_game_start_ms = v
-var _client_stats_turn_start_ms: int:
-	get: return _session.client_stats_turn_start_ms
-	set(v): _session.client_stats_turn_start_ms = v
-var _client_stats_opponent_hand: Array:
-	get: return _session.client_stats_opponent_hand
-	set(v): _session.client_stats_opponent_hand = v
-var _client_stats_deck_names: Array[String]:
-	get: return _session.client_stats_deck_names
-	set(v): _session.client_stats_deck_names = v
-var _client_stats_decklists: Array:
-	get: return _session.client_stats_decklists
-	set(v): _session.client_stats_decklists = v
-
 # Session layer. _sync owns the @rpc contract at a stable NodePath
 # (GameBoard/GameSession/MultiplayerSync) so RPCs route identically on host
 # and client; its methods forward back here while extraction is in progress.
@@ -126,6 +112,7 @@ var _client_stats_decklists: Array:
 @onready var _hand: HandController = $HandController
 @onready var _selection: SelectionController = $SelectionController
 @onready var _mobile: MobileLayout = $MobileLayout
+@onready var _effect_stack: EffectStackPanel = $EffectStackPanel
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -138,11 +125,13 @@ var _client_stats_decklists: Array:
 var _log_tokens: Array:
 	get: return _log_chat.log_tokens
 	set(v): _log_chat.log_tokens = v
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _pending_log_tokens: Array:
 	get: return _log_chat.pending_log_tokens
 	set(v): _log_chat.pending_log_tokens = v
 # Sound events buffered for client — owned by BoardSfx (forwarding property;
 # MultiplayerSync drains it at broadcast time)
+@warning_ignore("unused_private_class_variable")
 var _pending_sound_events: PackedStringArray:
 	get: return _board_sfx._pending_sound_events
 	set(v): _board_sfx._pending_sound_events = v
@@ -156,6 +145,7 @@ var _pending_sound_events: PackedStringArray:
 @onready var btn_main_menu: Button = $MainMenuButton
 @onready var btn_sound_toggle: Button = $SoundToggleButton
 @onready var btn_music_toggle: Button = $MusicToggleButton
+@onready var btn_export_log: Button = $ExportLogButton
 
 # Hand references
 @onready var player1_hand: Node2D = $Player1Hand
@@ -181,7 +171,6 @@ var _pending_sound_events: PackedStringArray:
 @onready var deck_search_show_all: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ShowAllToggle
 @onready var deck_search_stacked: CheckButton = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/StackedToggle
 @onready var deck_search_view_board: Button = $DeckSearchOverlay/DeckSearchPanel/VBox/ToggleRow/ViewBoardButton
-@onready var show_cards_button: Button = $ShowCardsButton
 @onready var hand_toggle_button: Button = $HandButtonStack/HandToggleButton
 @onready var sort_hand_button: Button = $HandButtonStack/SortHandButton
 @onready var opponent_hand_button_stack: HBoxContainer = $OpponentHandButtonStack
@@ -209,13 +198,8 @@ var _pending_sound_events: PackedStringArray:
 @onready var discard_view_close: Button = $DiscardViewOverlay/DiscardViewPanel/VBox/CloseButton
 @onready var discard_view_stacked: CheckButton = $DiscardViewOverlay/DiscardViewPanel/VBox/StackedToggle
 
-# In-game stacked preference (initialized from GameSettings, remembered for the match)
-var _match_stacked_view: bool:
-	get: return _router.match_stacked_view
-	set(v): _router.match_stacked_view = v
-
-
 var _view_board_source_overlay: Control = null
+var _minimize_chip: MinimizeChip = null
 
 # Monster deck view UI references
 @onready var monster_deck_view_overlay: CardGridViewerUI = $MonsterDeckViewOverlay
@@ -249,6 +233,12 @@ var _preview_card: Control
 # (e.g. evolution stacks a new card via set_card_data_dict on the same node).
 var _highlighted_effect_card_node: Control = null
 
+# Tracks the pulsing attention highlight (hovered effect-prompt / stack row).
+# Separate from _highlighted_effect_card_node so the two visuals never stomp
+# each other's reset.
+var _attention_card_node: Control = null
+var _attention_discard_pid: int = -1
+
 # State tracking
 # Selection state — owned by SelectionController (forwarding properties for
 # the board _input path, mobile cluster, sync, and rematch reset)
@@ -264,6 +254,7 @@ var waiting_for_zone_select: bool:
 var selected_card_id: String:
 	get: return _selection.selected_card_id
 	set(v): _selection.selected_card_id = v
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _selected_card_data: Dictionary:
 	get: return _selection._selected_card_data
 	set(v): _selection._selected_card_data = v
@@ -287,20 +278,13 @@ var _choice_selecting: bool:
 var _zone_select_valid: Array[int]:
 	get: return _selection._zone_select_valid
 	set(v): _selection._zone_select_valid = v
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _drag_card: Control:
 	get: return _selection._drag_card
 	set(v): _selection._drag_card = v
+@warning_ignore("unused_private_class_variable")
 var _drag_valid_zones: Array[int]:
 	get: return _selection._drag_valid_zones
-var _drag_action: CardEnums.ActionType:
-	get: return _selection._drag_action
-	set(v): _selection._drag_action = v
-var _drag_can_rage: bool:
-	get: return _selection._drag_can_rage
-	set(v): _selection._drag_can_rage = v
-var _drag_can_invade: bool:
-	get: return _selection._drag_can_invade
-	set(v): _selection._drag_can_invade = v
 var _confirming_pass: bool:
 	get: return _selection._confirming_pass
 	set(v): _selection._confirming_pass = v
@@ -338,18 +322,17 @@ var _rematch_deck_name: String:
 var _reconnect_cumulative_seconds: float:
 	get: return _reconnect.cumulative_seconds
 	set(v): _reconnect.cumulative_seconds = v
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _waiting_for_reconnect: bool:
 	get: return _reconnect.waiting_for_reconnect
 	set(v): _reconnect.waiting_for_reconnect = v
-var _reconnect_attempting: bool:
-	get: return _reconnect.attempting
-	set(v): _reconnect.attempting = v
 ## In-flight host->client prompt, owned by MultiplayerSync (forwarding
 ## property — overlay request senders still write it during extraction).
 var _pending_interaction: Dictionary:
 	get: return _sync._pending_interaction
 	set(v): _sync._pending_interaction = v
 # Reconnect overlay — owned by ReconnectController
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _reconnect_overlay: ColorRect:
 	get: return _reconnect.overlay
 
@@ -369,6 +352,7 @@ var _stats_uploaded: bool:
 # Turn tracker sub-phase index
 # Owned by TurnTrackerModule (forwarding property — MultiplayerSync reads it
 # while serializing, several board paths still write it)
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _current_sub_phase: int:
 	get: return _tracker.current_sub_phase
 	set(v): _tracker.current_sub_phase = v
@@ -394,14 +378,17 @@ const OPPONENT_HAND_EXPAND_OFFSET: float = 195.0
 var _is_mobile_layout: bool:
 	get: return _mobile != null and _mobile.is_mobile_layout
 	set(v): _mobile.is_mobile_layout = v
+@warning_ignore("unused_private_class_variable") # read via _board._x by modules
 var _mobile_phase_label: Label:
 	get: return _mobile._mobile_phase_label if _mobile else null
 var _mobile_chat_bar: PanelContainer:
 	get: return _mobile._mobile_chat_bar if _mobile else null
 var _fab_main_btn: Button:
 	get: return _mobile._fab_main_btn if _mobile else null
+@warning_ignore("unused_private_class_variable")
 var _fab_container: Control:
 	get: return _mobile._fab_container if _mobile else null
+@warning_ignore("unused_private_class_variable")
 var _fab_action_btns: Array[Button]:
 	get: return _mobile._fab_action_btns if _mobile else []
 
@@ -450,7 +437,9 @@ func _ready() -> void:
 	_router.card_zoom_request = _show_card_zoom
 	_router.ability_banner_show = _ability_banner.show_ability
 	_router.ability_banner_hide = _ability_banner.hide_banner
+	_ability_banner.zoom_requested = _show_card_zoom
 	card_zoom_overlay.on_hidden = _on_card_zoom_hidden
+	card_zoom_overlay.on_source_clicked = _zoom_to_source
 	_router.register_handler("deck_search", deck_search_overlay.show_prompt)
 	_router.register_handler("deck_arrange", deck_arrange_overlay.show_prompt)
 	_router.register_handler("card_select", card_pool_select_overlay.show_prompt)
@@ -542,6 +531,7 @@ func _ready() -> void:
 	btn_main_menu.pressed.connect(_on_main_menu_pressed)
 	btn_sound_toggle.gui_input.connect(_on_sound_gui_input)
 	btn_music_toggle.gui_input.connect(_on_music_gui_input)
+	btn_export_log.pressed.connect(_on_export_log_pressed)
 	_update_sound_button_text()
 	_update_music_button_text()
 	btn_rematch.pressed.connect(_on_rematch_pressed)
@@ -565,8 +555,14 @@ func _ready() -> void:
 				NetworkManager.room_token,
 			)
 
-	# Connect deck search buttons
-	show_cards_button.pressed.connect(_on_show_cards_pressed)
+	# Minimize chip: restores a "View Board"-minimized selection overlay
+	_minimize_chip = MinimizeChip.new()
+	_minimize_chip.pressed.connect(_on_minimize_chip_pressed)
+	add_child(_minimize_chip)
+	# Prompt overlays die silently on game end — drop the chip with them
+	end_game_panel.visibility_changed.connect(func() -> void:
+		if end_game_panel.visible:
+			_clear_minimize_chip())
 	_hand.setup()
 	opponent_hand_button_stack.visible = not is_multiplayer_game
 
@@ -619,7 +615,6 @@ func _ready() -> void:
 	# Hide overlays and prompts
 	end_game_panel.visible = false
 	action_prompt_panel.visible = false
-	show_cards_button.visible = false
 
 	# Ensure overlays render above hand cards (which have incrementing z_index)
 	end_game_panel.z_index = 100
@@ -695,18 +690,13 @@ var _player_settings: Array[Dictionary]:
 
 
 func _start_game() -> void:
-	# Loaded from save: skip first-player choice, jump to saved turn
+	# Loaded from save: skip first-player choice, resume at the saved boundary
 	if _loaded_from_save:
 		_loaded_from_save = false
+		_tracker.suppress_first_toast = true
 		_apply_gradients_and_sync()
 		SfxManager.play("game_setup")
-		var saved_pid: int = turn_manager.game_state.current_player_id
-		var saved_phase: CardEnums.GamePhase = turn_manager.game_state.current_phase
-		var saved_sub: int = turn_manager.game_state.current_sub_phase
-		# If already past main-phase resolve effects, skip to player actions.
-		# Otherwise run main-phase resolve effects from the start of the sub-phase.
-		var skip_effects: bool = saved_phase == CardEnums.GamePhase.MAIN and saved_sub >= 1
-		turn_manager.resume_to_main_phase(saved_pid, not skip_effects)
+		turn_manager.resume_game()
 		return
 
 	if is_bot_game:
@@ -1489,6 +1479,19 @@ func _build_bug_report_body() -> String:
 	return BugReport.build_body(self)
 
 
+# --- Export game log ---
+
+func _on_export_log_pressed() -> void:
+	SfxManager.play("ui_click")
+	var path := GameLogExport.export_log(_log_tokens)
+	if path.is_empty():
+		_log_chat.append_remote_entry("STR_LOG_EXPORT_FAILED")
+		return
+	# Local-only notification: append_remote_entry never enters the MP
+	# broadcast buffer, so the opponent's log is unaffected.
+	_log_chat.append_remote_entry(GameLog.log_exported(local_player_id, path.get_file()))
+
+
 # --- Concede / Main Menu ---
 
 func _on_concede_pressed() -> void:
@@ -1582,12 +1585,16 @@ func _execute_rematch() -> void:
 	# 5. Restore action panel and hide overlays
 	_first_player.finish()
 	_cleanup_choice_selection()
+	_selection._cleanup_prompt_previews()
+	_effect_stack.reset()
+	_clear_card_attention()
+	_update_tracker_collapse()
 	_set_action_buttons_visible(true)
 	action_prompt_panel.visible = false
 	deck_search_overlay.visible = false
 	deck_arrange_overlay.visible = false
 	card_pool_select_overlay.visible = false
-	show_cards_button.visible = false
+	_clear_minimize_chip()
 	discard_view_overlay.visible = false
 	monster_deck_view_overlay.visible = false
 	zone_stack_view_overlay.visible = false
@@ -1605,7 +1612,9 @@ func _execute_rematch() -> void:
 	_client_strategy_cp_mods = [[], []]
 	_client_zone_rank_mods = [[], []]
 	_client_hand_rank_mods = [[], []]
+	_client_hand_power_mods = [[], []]
 	_client_monster_cp_mods = [0, 0]
+	_client_modifier_breakdowns = {}
 
 	# 7. Clear game log
 	_log_tokens.clear()
@@ -1771,6 +1780,8 @@ func _input(event: InputEvent) -> void:
 			monster_deck_view_overlay.try_close() # Refused during mandatory rank-up
 		elif zone_stack_view_overlay.visible:
 			zone_stack_view_overlay.try_close()
+		elif _minimize_chip.visible:
+			_restore_minimized_overlay()
 		elif _choice_selecting:
 			pass # Mandatory — must pick an option
 		elif _hand_card_selecting and _hand_card_allow_skip:
@@ -1928,18 +1939,44 @@ func _sync_boards() -> void:
 		var zone_rank_1: Array = eh.get_zone_rank_modifiers(1) if eh else []
 		var hand_rank_0: Array = _session.compute_hand_rank_mods(state.players[0]) if eh else []
 		var hand_rank_1: Array = _session.compute_hand_rank_mods(state.players[1]) if eh else []
+		var hand_power_0: Array = _session.compute_hand_power_mods(state.players[0]) if eh else []
+		var hand_power_1: Array = _session.compute_hand_power_mods(state.players[1]) if eh else []
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0, hand_rank_0)
+			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0, hand_rank_0, hand_power_0, _host_variable_bases(0))
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1, hand_rank_1)
+			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1, hand_rank_1, hand_power_1, _host_variable_bases(1))
 	elif not _client_players.is_empty():
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0], _client_hand_rank_mods[0])
+			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0], _client_hand_rank_mods[0], _client_hand_power_mods[0], _client_variable_bases(0))
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1], _client_monster_cp_mods[1], _client_hand_rank_mods[1])
+			player2_board.sync_to_state(_client_players[1], _client_cp_modifiers[1], _client_threat_modifiers[1], _client_zone_cp_mods[1], _client_strategy_cp_mods[1], _client_zone_rank_mods[1], _client_monster_cp_mods[1], _client_hand_rank_mods[1], _client_hand_power_mods[1], _client_variable_bases(1))
 	if _is_mobile_layout:
 		_sync_mobile_cp_tray()
 	call_deferred("_position_hands")
+
+
+## Resolved variable printed bases ("counter power / threat level X") for the
+## plain-value badges — see PlayerBoard.sync_to_state. Host reads the effect
+## handler directly; clients derive the same values from the breakdowns
+## already packed into the state broadcast (no extra sync fields).
+func _host_variable_bases(pid: int) -> Dictionary:
+	var eh := turn_manager.effect_handler
+	if not eh:
+		return {}
+	return {
+		"zone_cp": ModifierBreakdown.variable_zone_bases(eh.get_zone_cp_breakdown(pid)),
+		"threat": ModifierBreakdown.variable_base(eh.get_threat_level_breakdown(pid), "threat_var_base"),
+	}
+
+
+func _client_variable_bases(pid: int) -> Dictionary:
+	var breakdowns: Dictionary = _session.client_modifier_breakdowns
+	var zone_cp: Array = breakdowns.get("zone_cp", [])
+	var threat: Array = breakdowns.get("threat", [])
+	return {
+		"zone_cp": ModifierBreakdown.variable_zone_bases(zone_cp[pid] if pid < zone_cp.size() else []),
+		"threat": ModifierBreakdown.variable_base(threat[pid] if pid < threat.size() else [], "threat_var_base"),
+	}
 
 
 func _update_hand_visibility(_active_player_id: int) -> void:
@@ -1998,16 +2035,44 @@ func _restore_expanded_opponent_hand() -> void:
 
 ## Router view-board hook: stash the overlay so ShowCards can re-show it.
 func _on_overlay_view_board(overlay: Control) -> void:
+	# One minimized overlay at a time: re-show any previously stashed one.
+	if _view_board_source_overlay and _view_board_source_overlay != overlay:
+		_restore_minimized_overlay()
 	_view_board_source_overlay = overlay
-	show_cards_button.visible = true
+	var info: Dictionary = overlay.get_minimize_info() if overlay.has_method("get_minimize_info") else {}
+	var title: String = str(info.get("title", ""))
+	if title.is_empty():
+		title = tr("STR_GB_SHOW_CARDS")
+	_minimize_chip.show_chip(title, int(info.get("count", 0)), _is_mobile_layout)
+	# If the overlay becomes visible by ANY path (chip restore, reconnect
+	# re-prompt, a second reveal reusing the same overlay), clear the chip.
+	if not overlay.visibility_changed.is_connected(_on_minimized_overlay_visibility_changed):
+		overlay.visibility_changed.connect(_on_minimized_overlay_visibility_changed)
 
 
-func _on_show_cards_pressed() -> void:
-	show_cards_button.visible = false
-	if _view_board_source_overlay:
-		_view_board_source_overlay.visible = true
-	else:
-		deck_search_overlay.visible = true
+func _on_minimize_chip_pressed() -> void:
+	_restore_minimized_overlay()
+
+
+func _restore_minimized_overlay() -> void:
+	var overlay := _view_board_source_overlay
+	_clear_minimize_chip()
+	if overlay and is_instance_valid(overlay):
+		overlay.visible = true
+
+
+func _on_minimized_overlay_visibility_changed() -> void:
+	if _view_board_source_overlay and _view_board_source_overlay.visible:
+		_clear_minimize_chip()
+
+
+func _clear_minimize_chip() -> void:
+	if _minimize_chip:
+		_minimize_chip.hide_chip()
+	if _view_board_source_overlay and is_instance_valid(_view_board_source_overlay) \
+			and _view_board_source_overlay.visibility_changed.is_connected(_on_minimized_overlay_visibility_changed):
+		_view_board_source_overlay.visibility_changed.disconnect(_on_minimized_overlay_visibility_changed)
+	_view_board_source_overlay = null
 
 
 # --- Deck arrange overlay UI ---
@@ -2102,6 +2167,102 @@ func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void
 			return
 
 
+# --- Prompt-driven chrome: tracker collapse + log dim ---
+
+## Collapse the turn tracker to its one-line chip while the choice prompt or
+## the effect-stack panel occupies the right edge.
+func _update_tracker_collapse() -> void:
+	_tracker.set_collapsed(_selection._choice_selecting or _effect_stack.has_rows())
+
+
+func set_log_prompt_dim(active: bool) -> void:
+	_log_chat.set_prompt_dim(active)
+
+
+# --- Attention highlight (hovered effect-prompt / stack row) ---
+
+func set_card_attention(loc: Dictionary, on: bool) -> void:
+	## Pulse the attention border on the board card described by `loc`
+	## (StandbyResolver.card_location_ref shape). Turning it off with a
+	## non-empty loc only clears when that loc still matches the tracked
+	## target, so a stale mouse_exited from one row can't kill the highlight
+	## a newer row just turned on.
+	if not on:
+		if not loc.is_empty():
+			if str(loc.get("kind", "")) == "discard":
+				if _attention_discard_pid >= 0 and _attention_discard_pid != int(loc.get("player_id", -1)):
+					return
+			elif _attention_card_node and is_instance_valid(_attention_card_node):
+				var node := _resolve_attention_card(loc)
+				if node != null and node != _attention_card_node:
+					return
+		_clear_card_attention()
+		return
+
+	_clear_card_attention()
+	if loc.is_empty():
+		return
+	var pid: int = int(loc.get("player_id", -1))
+	if pid < 0 or pid > 1:
+		return
+	if str(loc.get("kind", "")) == "discard":
+		var board: Control = player1_board if pid == 0 else player2_board
+		board.highlight_discard_zone(true)
+		_attention_discard_pid = pid
+		return
+	var target := _resolve_attention_card(loc)
+	if target and target.has_method("set_attention_highlight"):
+		# Ownership color language: cyan for the viewer's own effects, purple
+		# for the opponent's (matches the stack panel's purple rows).
+		var border := Color(0.7, 0.4, 1.0) if pid != local_player_id else Color(0.25, 0.85, 1.0)
+		target.set_attention_highlight(true, border)
+		_attention_card_node = target
+
+
+func _clear_card_attention() -> void:
+	if _attention_card_node and is_instance_valid(_attention_card_node):
+		_attention_card_node.set_attention_highlight(false)
+	_attention_card_node = null
+	if _attention_discard_pid >= 0:
+		var board: Control = player1_board if _attention_discard_pid == 0 else player2_board
+		board.highlight_discard_zone(false)
+		_attention_discard_pid = -1
+
+
+func _resolve_attention_card(loc: Dictionary) -> Control:
+	## Resolve a card_location_ref to its on-board Card node, verifying the
+	## per-copy instance id and falling back to an id scan when the recorded
+	## index went stale (the card moved since the ref was built).
+	var pid: int = int(loc.get("player_id", -1))
+	if pid < 0 or pid > 1:
+		return null
+	var board: Control = player1_board if pid == 0 else player2_board
+	var index: int = int(loc.get("index", -1))
+	var instance_id: String = str(loc.get("instance_id", ""))
+	match str(loc.get("kind", "")):
+		"monster":
+			return board.monster_card
+		"zone":
+			if index >= 0 and index < board.zone_slots.size():
+				var slot: Slot = board.zone_slots[index]
+				if slot and slot.held_card and (instance_id.is_empty() or slot.held_card.card_data.get("id", "") == instance_id):
+					return slot.held_card
+		"strategy":
+			if index >= 0 and index < board.strategy_slots.size():
+				var strat_slot: Slot = board.strategy_slots[index]
+				if strat_slot and strat_slot.held_card and (instance_id.is_empty() or strat_slot.held_card.card_data.get("id", "") == instance_id):
+					return strat_slot.held_card
+	if instance_id.is_empty():
+		return null
+	for slot in board.zone_slots:
+		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == instance_id:
+			return slot.held_card
+	for slot in board.strategy_slots:
+		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == instance_id:
+			return slot.held_card
+	return null
+
+
 # --- Discard view UI ---
 
 func _on_discard_clicked(pid: int) -> void:
@@ -2184,13 +2345,16 @@ func _on_zone_slot_right_clicked(zone_num: int, pid: int) -> void:
 		return
 	# Show the monster card if this is the monster's zone, otherwise the top battle card
 	var card_data: Dictionary = {}
+	var zoom_ctx: Dictionary = {}
 	if not player.current_monster.is_empty() and (player.monster_zone - 1) == zone_idx:
 		card_data = player.current_monster
+		zoom_ctx = {"player_id": pid, "location": "monster"}
 	elif player.zone_has_cards(zone_idx):
 		card_data = player.get_zone_top_card(zone_idx)
+		zoom_ctx = {"player_id": pid, "location": "zone", "index": zone_idx}
 	if card_data.is_empty():
 		return
-	_show_card_zoom(card_data)
+	_show_card_zoom(card_data, 0, zoom_ctx)
 
 
 func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
@@ -2200,7 +2364,7 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 	var card_data: Dictionary = player.strategy_zones[strategy_idx]
 	if card_data.is_empty():
 		return
-	_show_card_zoom(card_data)
+	_show_card_zoom(card_data, 0, {"player_id": pid, "location": "strategy", "index": strategy_idx})
 
 
 func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
@@ -2225,19 +2389,169 @@ func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
 func _on_card_long_press_zoom(card: Control) -> void:
 	if "card_data" in card and not card.card_data.is_empty():
 		var mod: int = card.get_play_cost_modifier() if card.has_method("get_play_cost_modifier") else 0
-		_show_card_zoom(card.card_data, mod)
+		var power: int = card.get_power_preview() if card.has_method("get_power_preview") else 0
+		_show_card_zoom(card.card_data, mod, {}, power)
 
 
-func _on_hand_card_right_clicked(card: Control, _hand_player_id: int) -> void:
+func _on_hand_card_right_clicked(card: Control, hand_player_id: int) -> void:
 	if "card_data" in card and not card.card_data.is_empty():
 		var mod: int = card.get_play_cost_modifier() if card.has_method("get_play_cost_modifier") else 0
-		_show_card_zoom(card.card_data, mod)
+		var power: int = card.get_power_preview() if card.has_method("get_power_preview") else 0
+		_show_card_zoom(card.card_data, mod, _hand_zoom_ctx(card.card_data, hand_player_id), power)
 
 
 ## Zoom shim — display lives on CardZoomOverlayUI (router hook + several
-## long-press/right-click callers).
-func _show_card_zoom(card_data: Dictionary, play_cost_modifier: int = 0) -> void:
-	card_zoom_overlay.show_card(card_data, play_cost_modifier)
+## long-press/right-click callers). Callers with board context pass zoom_ctx
+## ({player_id, location: "zone"|"monster"|"strategy"|"hand", index}); the
+## rest fall back to locating the exact copy by its per-copy instance id.
+func _show_card_zoom(card_data: Dictionary, play_cost_modifier: int = 0, zoom_ctx: Dictionary = {}, power_preview: int = 0) -> void:
+	if zoom_ctx.is_empty():
+		zoom_ctx = _infer_zoom_ctx(card_data)
+	var entries := _zoom_entries_for(zoom_ctx)
+	# Variable printed bases ("counter power / threat level X"): surface the
+	# resolved value as a badge on the zoomed card itself, not just as a
+	# panel row. CP rides the power-preview badge (0 = hidden sentinel).
+	var cp_base: int = ModifierBreakdown.variable_base(entries, "cp_var_base")
+	if power_preview == 0 and cp_base > 0:
+		power_preview = cp_base
+	card_zoom_overlay.show_card(card_data, play_cost_modifier, entries, power_preview,
+		ModifierBreakdown.variable_base(entries, "threat_var_base"))
+
+
+## PlayerState for zoom lookups that must not assume either mode is ready
+## (returns null instead of indexing an unpopulated client cache).
+func _zoom_player_state(pid: int) -> PlayerState:
+	if pid < 0 or pid > 1:
+		return null
+	if turn_manager and turn_manager.game_state:
+		return turn_manager.game_state.players[pid]
+	if pid < _client_players.size():
+		return _client_players[pid]
+	return null
+
+
+func _hand_zoom_ctx(card_data: Dictionary, hand_player_id: int) -> Dictionary:
+	var player := _zoom_player_state(hand_player_id)
+	if player == null:
+		return {}
+	var card_id: String = card_data.get("id", "")
+	for hi in range(player.hand.size()):
+		if player.hand[hi].get("id", "") == card_id:
+			return {"player_id": hand_player_id, "location": "hand", "index": hi}
+	return {}
+
+
+## Locate the zoomed copy for context-free callers (overlay grids, gallery,
+## long-press). In-play locations are searched before hands: monster ids are
+## bare template ids, so an in-play hit must win over a same-template hand
+## copy. A miss means no modifiers apply to this exact copy (deck/discard/
+## gallery duplicates) and the sources panel stays hidden.
+func _infer_zoom_ctx(card_data: Dictionary) -> Dictionary:
+	var card_id: String = card_data.get("id", "")
+	if card_id.is_empty():
+		return {}
+	for pid in range(2):
+		var player := _zoom_player_state(pid)
+		if player == null:
+			continue
+		if player.current_monster.get("id", "") == card_id:
+			return {"player_id": pid, "location": "monster"}
+		for i in range(8):
+			if player.get_zone_top_card(i).get("id", "") == card_id:
+				return {"player_id": pid, "location": "zone", "index": i}
+		for si in range(player.strategy_zones.size()):
+			if player.strategy_zones[si].get("id", "") == card_id:
+				return {"player_id": pid, "location": "strategy", "index": si}
+	for pid in range(2):
+		var player := _zoom_player_state(pid)
+		if player == null:
+			continue
+		for hi in range(player.hand.size()):
+			if player.hand[hi].get("id", "") == card_id:
+				return {"player_id": pid, "location": "hand", "index": hi}
+	return {}
+
+
+## Modifier-panel row click: re-target the zoom onto the source card.
+## Prefer the actual in-play copy (its own modifiers then show via the
+## instance-id inference); fall back to the bare template for display.
+func _zoom_to_source(template_id: String) -> void:
+	for pid in range(2):
+		var player := _zoom_player_state(pid)
+		if player == null:
+			continue
+		var candidates: Array = [player.current_monster]
+		for i in range(8):
+			candidates.append(player.get_zone_top_card(i))
+		for sz_card in player.strategy_zones:
+			candidates.append(sz_card)
+		for card in candidates:
+			if not card.is_empty() and CardUtils.base_id(card) == template_id:
+				_show_card_zoom(card)
+				return
+	var template: Dictionary = CardData.get_card_by_id(template_id)
+	if not template.is_empty():
+		_show_card_zoom(template.duplicate(true))
+
+
+## Resolve a zoom context to modifier-source entries. Host/solo builds them
+## on demand from the effect handler; clients read the breakdowns packed
+## into the state broadcast (mirrors the threat_display host/client split).
+func _zoom_entries_for(zoom_ctx: Dictionary) -> Array:
+	if zoom_ctx.is_empty():
+		return []
+	var pid: int = zoom_ctx.get("player_id", -1)
+	var location: String = zoom_ctx.get("location", "")
+	var index: int = zoom_ctx.get("index", -1)
+	var raw: Array
+	if turn_manager and turn_manager.effect_handler:
+		raw = _host_zoom_entries(pid, location, index)
+	else:
+		raw = ModifierBreakdown.collect(_session.client_modifier_breakdowns, pid, location, index)
+	# Tag opponent-controlled sources for display (duplicate — the client
+	# entries live in the synced cache and must not be mutated).
+	var out: Array = []
+	for e in raw:
+		var tagged: Dictionary = e.duplicate()
+		var owner_pid: int = int(e.get("owner", -1))
+		tagged["opp"] = owner_pid >= 0 and owner_pid != pid
+		out.append(tagged)
+	_front_load_variable_base(out)
+	return out
+
+
+## Move a variable-base entry (resolved printed "X") to the front so it reads
+## as the base line above the modifiers. Cards without a variable base get no
+## base row — their printed stat is already on the card art.
+func _front_load_variable_base(out: Array) -> void:
+	for i in range(out.size()):
+		var stat: String = str(out[i].get("stat", ""))
+		if stat == "cp_var_base" or stat == "threat_var_base":
+			if i > 0:
+				out.insert(0, out.pop_at(i))
+			return
+
+
+func _host_zoom_entries(pid: int, location: String, index: int) -> Array:
+	var eh: EffectHandler = turn_manager.effect_handler
+	var player: PlayerState = turn_manager.game_state.players[pid]
+	var out: Array = []
+	match location:
+		"zone":
+			if index >= 0 and index < 8:
+				out.append_array(eh.get_zone_cp_breakdown(pid)[index])
+				out.append_array(eh.get_field_rank_breakdown(pid)[index])
+		"monster":
+			ModifierBreakdown.append(out, "cp", eh.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
+			out.append_array(eh.get_threat_level_breakdown(pid))
+		"strategy":
+			var mods: Array = eh.get_strategy_cp_modifiers(pid)
+			if index >= 0 and index < mods.size() and index < player.strategy_zones.size():
+				ModifierBreakdown.append(out, "cp", int(mods[index]), player.strategy_zones[index], -1, pid, "strategy")
+		"hand":
+			if index >= 0 and index < player.hand.size():
+				out = ModifierBreakdown.hand_entries(eh, pid, player.hand[index])
+	return out
 
 
 ## Overlay on_hidden hook: reset all slot input state so no timers or
@@ -2249,7 +2563,7 @@ func _on_card_zoom_hidden() -> void:
 
 # --- Card hover preview ---
 
-func _show_card_preview(data: Dictionary, play_cost_modifier: int = 0) -> void:
+func _show_card_preview(data: Dictionary, play_cost_modifier: int = 0, power_preview: int = 0) -> void:
 	if _is_mobile_layout:
 		return # Mobile uses tap-to-zoom instead of hover preview
 	if data.is_empty():
@@ -2257,6 +2571,17 @@ func _show_card_preview(data: Dictionary, play_cost_modifier: int = 0) -> void:
 	_preview_card.set_card_data_dict(data)
 	if _preview_card.has_method("set_play_cost_modifier"):
 		_preview_card.set_play_cost_modifier(play_cost_modifier)
+	# Variable printed bases: slot hovers emit no power value, so locate the
+	# hovered copy and pull the resolved X from its breakdown entries. -1
+	# threat clears the persistent preview card's badge between hovers.
+	var entries := _zoom_entries_for(_infer_zoom_ctx(data))
+	var cp_base: int = ModifierBreakdown.variable_base(entries, "cp_var_base")
+	if power_preview == 0 and cp_base > 0:
+		power_preview = cp_base
+	if _preview_card.has_method("set_power_preview"):
+		_preview_card.set_power_preview(power_preview)
+	if _preview_card.has_method("set_threat_preview"):
+		_preview_card.set_threat_preview(ModifierBreakdown.variable_base(entries, "threat_var_base"))
 	var is_strategy: bool = data.get("card_type", -1) == CardEnums.CardType.STRATEGY
 	if is_strategy:
 		_show_strategy_preview()
@@ -2548,7 +2873,7 @@ func _rpc_card_select_requested(matching_json: String, all_json: String, prompt:
 
 
 ## Host -> Client: hand card selection request (player must choose a card from hand)
-func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool) -> void:
+func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool, source_id: String = "") -> void:
 	RpcLogger.log_receive("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
 	if NetworkManager.is_host():
 		return
@@ -2558,7 +2883,7 @@ func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, al
 		valid_indices.append(int(v))
 	if _client_current_player_id != local_player_id:
 		SfxManager.play("action_required")
-	_selection._show_hand_card_selection(local_player_id, valid_indices, prompt, allow_skip)
+	_selection._show_hand_card_selection(local_player_id, valid_indices, prompt, allow_skip, source_id)
 
 
 ## Host -> Client: confirmation request (draw / next turn)
@@ -2584,17 +2909,17 @@ func _on_player_names_updated() -> void:
 
 
 ## Host -> Client: hand discard request (player must choose cards to discard)
-func _rpc_hand_discard_requested(discard_count: int) -> void:
+func _rpc_hand_discard_requested(discard_count: int, source_id: String = "") -> void:
 	RpcLogger.log_receive("hand_discard_requested", 4)
 	if NetworkManager.is_host():
 		return # Safety: this RPC is only for clients
 	if _client_current_player_id != local_player_id:
 		SfxManager.play("action_required")
-	_selection._show_hand_discard_selection(local_player_id, discard_count)
+	_selection._show_hand_discard_selection(local_player_id, discard_count, source_id)
 
 
 ## Host -> Client: zone target request (player must choose a zone)
-func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool) -> void:
+func _rpc_zone_target_requested(target_player_id: int, zones_json: String, prompt: String, allow_skip: bool, card_id: String = "", source_id: String = "") -> void:
 	RpcLogger.log_receive("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
 	if NetworkManager.is_host():
 		return
@@ -2602,11 +2927,11 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 	var valid_zones: Array[int] = []
 	for v in parsed:
 		valid_zones.append(int(v))
-	_selection._show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt, allow_skip)
+	_selection._show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt, allow_skip, card_id, source_id)
 
 
 ## Host -> Client: strategy target request (player must choose a strategy zone)
-func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String) -> void:
+func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String, source_id: String = "") -> void:
 	RpcLogger.log_receive("strategy_target_requested", 4 + indices_json.length() + prompt.length())
 	if NetworkManager.is_host():
 		return
@@ -2614,11 +2939,11 @@ func _rpc_strategy_target_requested(target_player_id: int, indices_json: String,
 	var valid_indices: Array[int] = []
 	for v in parsed:
 		valid_indices.append(int(v))
-	_selection._show_strategy_target_selection(local_player_id, target_player_id, valid_indices, prompt)
+	_selection._show_strategy_target_selection(local_player_id, target_player_id, valid_indices, prompt, source_id)
 
 
 ## Host -> Client: choice request (player must choose ability order)
-func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]") -> void:
+func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]", source_refs_json: String = "[]") -> void:
 	RpcLogger.log_receive("choice_requested", options_json.length() + prompt.length())
 	if NetworkManager.is_host():
 		return
@@ -2631,7 +2956,17 @@ func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: 
 	if parsed_ids is Array:
 		for v in parsed_ids:
 			card_ids.append(str(v))
-	_selection._show_choice_selection(local_player_id, options, prompt, card_ids)
+	var parsed_refs = JSON.parse_string(source_refs_json)
+	var source_refs: Array = []
+	if parsed_refs is Array:
+		for v in parsed_refs:
+			# JSON turns ints into floats — re-coerce the numeric fields.
+			var ref: Dictionary = v if v is Dictionary else {}
+			if not ref.is_empty():
+				ref["player_id"] = int(ref.get("player_id", -1))
+				ref["index"] = int(ref.get("index", -1))
+			source_refs.append(ref)
+	_selection._show_choice_selection(local_player_id, options, prompt, card_ids, source_refs)
 
 
 ## Host -> Client: prompt monster rank-up selection
@@ -2686,6 +3021,29 @@ func _rpc_effect_card_unhighlighted(pid: int, card_id: String) -> void:
 	if NetworkManager.is_host():
 		return
 	_apply_card_highlight(pid, card_id, false)
+
+
+## Host/Server -> Client: pending standby-effect stack snapshot
+func _rpc_effect_stack_changed(stack_json: String) -> void:
+	RpcLogger.log_receive("effect_stack_changed", stack_json.length())
+	if NetworkManager.is_host():
+		return
+	var parsed = JSON.parse_string(stack_json)
+	var rows: Array = []
+	if parsed is Array:
+		for v in parsed:
+			var row: Dictionary = v if v is Dictionary else {}
+			if row.is_empty():
+				continue
+			# JSON turns ints into floats — re-coerce the numeric fields.
+			row["player_id"] = int(row.get("player_id", -1))
+			var loc = row.get("location", {})
+			if loc is Dictionary and not loc.is_empty():
+				loc["player_id"] = int(loc.get("player_id", -1))
+				loc["index"] = int(loc.get("index", -1))
+			rows.append(row)
+	if _effect_stack:
+		_effect_stack.show_stack(rows)
 
 
 ## Host -> Client: game over

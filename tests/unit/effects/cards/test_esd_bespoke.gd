@@ -83,9 +83,81 @@ func test_esd01_011_destroyed_goes_to_deck_bottom_instead_of_discard() -> void:
 	assert_str(str(p0.main_deck.back().get("id"))) \
 		.override_failure_message("ESD01-011 should sit at the deck bottom after destruction") \
 		.is_equal(str(card.get("id")))
+	# Replacement: the card never counts as destroyed.
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
+
+
+func test_esd01_011_overloaded_by_play_goes_to_deck_bottom() -> void:
+	# Overload IS <Destroy> (11.5.1), so the replacement applies when a card
+	# is played over ESD01-011.
+	var card := Real.instance("ESD01-011")
+	var attacker := Cards.battle(2, 2000, "OVER")
+	var state := States.make_state({"p0": {
+		"hand": [attacker],
+		"zone_cards": {2: card},
+		"main_deck": [Cards.battle(1, 2000, "D1"), Cards.battle(1, 2000, "D2")],
+	}})
+	var s := _session(state)
+
+	await s["action_handler"].execute(
+		CardEnums.ActionType.PLAY_BATTLE, {"hand_index": 0, "zone_index": 2}, state)
+
+	var p0 := state.players[0]
+	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal("OVER")
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_str(str(p0.main_deck.back().get("id"))) \
+		.override_failure_message("ESD01-011 should sit at the deck bottom after being overloaded") \
+		.is_equal(str(card.get("id")))
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
+
+
+func test_esd01_011_crushed_goes_to_deck_bottom_without_crush_event() -> void:
+	# Crush IS <Destroy> (11.3.3): replaced instead — no destroy count, no
+	# battle_card_crushed emission.
+	var card := Real.instance("ESD01-011")
+	var state := States.make_state({"p0": {
+		"monster_zone": 3,
+		"zone_cards": {2: card},
+		"main_deck": [Cards.battle(1, 2000, "D1")],
+	}})
+	var s := _session(state)
+	var crushed: Array = []
+	s["events"].battle_card_crushed.connect(func(_pid: int, _z: int, c: Dictionary) -> void:
+		crushed.append(c))
+
+	await s["action_handler"].resolve_check_timing(state)
+
+	var p0 := state.players[0]
+	assert_bool(p0.zone_has_cards(2)).is_false()
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_str(str(p0.main_deck.back().get("id"))) \
+		.override_failure_message("ESD01-011 should sit at the deck bottom after being crushed") \
+		.is_equal(str(card.get("id")))
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
+	assert_array(crushed).is_empty()
 
 
 # --- ESD01-012: move to empty zone on own monster played; +3000 CP in zone 8 ---
+
+
+func test_esd01_012_destroyed_goes_to_deck_bottom_instead_of_discard() -> void:
+	var card := Real.instance("ESD01-012")
+	var state := States.make_state({"p0": {
+		"zone_cards": {4: card},
+		"main_deck": [Cards.battle(1, 2000, "D1"), Cards.battle(1, 2000, "D2")],
+	}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.destroy_zones(state.players[0], [4])
+
+	var p0 := state.players[0]
+	assert_bool(p0.zone_has_cards(4)).is_false()
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_str(str(p0.main_deck.back().get("id"))) \
+		.override_failure_message("ESD01-012 should sit at the deck bottom after destruction") \
+		.is_equal(str(card.get("id")))
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
 
 
 func test_esd01_012_moves_to_chosen_empty_zone_on_own_monster_played() -> void:
@@ -284,14 +356,45 @@ func test_esd02_014_evolves_chosen_battle_card() -> void:
 	var input := ScriptedPlayerInput.new()
 	input.answers = {"select_zone": [2], "search_cards": [{"id": imago.get("id")}]}
 	var s := States.make_session(state, input)
+	var log_tokens: Array[Dictionary] = []
+	var handler: EffectHandler = s["effect_handler"]
+	handler.log_message.connect(func(t: Dictionary) -> void: log_tokens.append(t))
 
-	await s["effect_handler"].trigger_enter(0, card)
+	await handler.trigger_enter(0, card)
 
 	var p0 := state.players[0]
 	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal(str(imago.get("id")))
 	assert_int(p0.get_zone_stack(2).size()).is_equal(2)
 	# ESD02-010's own enter ("if evolved, draw 1") fires via the evolution.
 	assert_int(p0.hand.size()).is_equal(1)
+	# The evolution log token carries the Enter marker for the evolved card.
+	var evo_tokens := log_tokens.filter(func(t: Dictionary) -> bool: return t.get("type") == "evolution")
+	assert_int(evo_tokens.size()).is_equal(1)
+	assert_bool(evo_tokens[0].get("has_enter", false)).is_true()
+
+
+func test_esd02_014_evolution_log_has_no_enter_for_plain_target() -> void:
+	var card := Real.instance("ESD02-014")
+	var larva := Real.instance("ESD02-007")   # Evolution5 <Mothra>
+	var plain := Cards.battle(5, 2000, "PLAIN-MOTHRA", [CardEnums.CardTrait.MOTHRA])
+	var state := States.make_state({"p0": {
+		"zone_cards": {2: larva},
+		"main_deck": [Cards.battle(1, 2000, "D1"), plain],
+	}})
+	state.players[0].strategy_zones[0] = card
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [2], "search_cards": [{"id": "PLAIN-MOTHRA"}]}
+	var s := States.make_session(state, input)
+	var log_tokens: Array[Dictionary] = []
+	var handler: EffectHandler = s["effect_handler"]
+	handler.log_message.connect(func(t: Dictionary) -> void: log_tokens.append(t))
+
+	await handler.trigger_enter(0, card)
+
+	assert_str(str(state.players[0].get_zone_top_card(2).get("id"))).is_equal("PLAIN-MOTHRA")
+	var evo_tokens := log_tokens.filter(func(t: Dictionary) -> bool: return t.get("type") == "evolution")
+	assert_int(evo_tokens.size()).is_equal(1)
+	assert_bool(evo_tokens[0].get("has_enter", false)).is_false()
 
 
 # --- EFC01-002: adjacent to monster → mill 1; if battle, recover a monster ---
@@ -480,3 +583,298 @@ func test_esc01_001_returns_to_deck_bottom_on_counter_success() -> void:
 	var p0 := state.players[0]
 	assert_bool(p0.zone_has_cards(2)).is_false()
 	assert_str(str(p0.main_deck.back().get("id"))).is_equal(str(card.get("id")))
+
+
+# --- ESC01-002: enter plays rank<=3 Evolution battle card from discard, evolves it ---
+
+
+func test_esc01_002_plays_from_discard_and_evolves() -> void:
+	var card := Real.instance("ESC01-002")
+	var evo := Cards.battle(3, 3000, "EVO")
+	evo["evolution_rank"] = 5
+	evo["evolution_trait"] = CardEnums.CardTrait.GODZILLA
+	var big := Cards.battle(5, 8000, "BIG", [CardEnums.CardTrait.GODZILLA])
+	var state := States.make_state({"p0": {"current_monster": card, "main_deck": [big]}})
+	state.players[0].discard_pile.append(evo)
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"search_cards": [evo, big], "select_zone": [2]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	var p0 := state.players[0]
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_str(str(p0.get_zone_top_card(2).get("id"))) \
+		.override_failure_message("evolved card should sit on top of the played one") \
+		.is_equal("BIG")
+	assert_int(p0.main_deck.size()).is_equal(0)
+
+
+func test_esc01_002_offers_only_rank3_or_lower_evolution_battle_cards() -> void:
+	var card := Real.instance("ESC01-002")
+	var too_big := Cards.battle(4, 3000, "R4")
+	too_big["evolution_rank"] = 5
+	too_big["evolution_trait"] = CardEnums.CardTrait.GODZILLA
+	var plain := Cards.battle(3, 3000, "R3P")
+	var state := States.make_state({"p0": {"current_monster": card}})
+	state.players[0].discard_pile.append(too_big)
+	state.players[0].discard_pile.append(plain)
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(state.players[0].discard_pile.size()).is_equal(2)
+	var matching: Array = input.calls[0]["matching"]
+	assert_bool(matching.is_empty()) \
+		.override_failure_message("rank 4 / non-Evolution cards must not be selectable") \
+		.is_true()
+
+
+func test_esc01_002_may_skip() -> void:
+	var card := Real.instance("ESC01-002")
+	var evo := Cards.battle(2, 3000, "EVO")
+	evo["evolution_rank"] = 5
+	evo["evolution_trait"] = CardEnums.CardTrait.GODZILLA
+	var state := States.make_state({"p0": {"current_monster": card}})
+	state.players[0].discard_pile.append(evo)
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"search_cards": [{}]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(state.players[0].discard_pile.size()).is_equal(1)
+
+
+# --- ESC01-003: enter in zone 8 after invading — discard strategy to advance ---
+
+
+func test_esc01_003_advances_monster_from_zone_8_after_invading() -> void:
+	var card := Real.instance("ESC01-003")
+	var state := States.make_state({"p0": {
+		"zone_cards": {7: card},
+		"hand": [Cards.strategy(2, "S")],
+		"monster_zone": 3,
+		"has_invaded_this_turn": true,
+	}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_hand_card": [0]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	var p0 := state.players[0]
+	assert_int(p0.monster_zone).is_equal(4)
+	assert_int(p0.hand.size()).is_equal(0)
+	assert_str(str(p0.discard_pile.back().get("id"))).is_equal("S")
+
+
+func test_esc01_003_silent_without_invasion_or_outside_zone_8() -> void:
+	# Monster did not invade this turn: no prompt.
+	var card := Real.instance("ESC01-003")
+	var state := States.make_state({"p0": {
+		"zone_cards": {7: card}, "hand": [Cards.strategy(2, "S")], "monster_zone": 3}})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+	await s["effect_handler"].trigger_enter(0, card)
+	assert_int(state.players[0].monster_zone).is_equal(3)
+	assert_int(input.count_calls("select_hand_card")).is_equal(0)
+
+	# Entered zone 6 instead of zone 8: no prompt either.
+	var card2 := Real.instance("ESC01-003", 1)
+	var state2 := States.make_state({"p0": {
+		"zone_cards": {5: card2}, "hand": [Cards.strategy(2, "S2")], "monster_zone": 3,
+		"has_invaded_this_turn": true}})
+	var input2 := ScriptedPlayerInput.new()
+	var s2 := States.make_session(state2, input2)
+	await s2["effect_handler"].trigger_enter(0, card2)
+	assert_int(state2.players[0].monster_zone).is_equal(3)
+	assert_int(input2.count_calls("select_hand_card")).is_equal(0)
+
+
+func test_esc01_003_skipping_the_discard_does_not_advance() -> void:
+	var card := Real.instance("ESC01-003")
+	var state := States.make_state({"p0": {
+		"zone_cards": {7: card},
+		"hand": [Cards.strategy(2, "S")],
+		"monster_zone": 3,
+		"has_invaded_this_turn": true,
+	}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_hand_card": [-1]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(state.players[0].monster_zone).is_equal(3)
+	assert_int(state.players[0].hand.size()).is_equal(1)
+
+
+# --- ESC01-004: +5000 CP at rage>=3; destroyed → deck bottom ---
+
+
+func test_esc01_004_gains_5000_cp_only_with_rage_3() -> void:
+	var card := Real.instance("ESC01-004")
+	var base: int = card.get("counter_power", 0)
+	var state := States.make_state({"p0": {"zone_cards": {2: card}}})
+	var s := _session(state)
+
+	assert_int(s["effect_handler"].get_effective_zone_cp(0, 2)).is_equal(base)
+	state.players[0].rage = 2
+	assert_int(s["effect_handler"].get_effective_zone_cp(0, 2)).is_equal(base)
+	state.players[0].rage = 3
+	assert_int(s["effect_handler"].get_effective_zone_cp(0, 2)).is_equal(base + 5000)
+
+
+func test_esc01_004_destroyed_goes_to_deck_bottom_instead_of_discard() -> void:
+	var card := Real.instance("ESC01-004")
+	var state := States.make_state({"p0": {
+		"zone_cards": {2: card},
+		"main_deck": [Cards.battle(1, 2000, "D1"), Cards.battle(1, 2000, "D2")],
+	}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.destroy_zones(state.players[0], [2])
+
+	var p0 := state.players[0]
+	assert_bool(p0.zone_has_cards(2)).is_false()
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_str(str(p0.main_deck.back().get("id"))) \
+		.override_failure_message("ESC01-004 should sit at the deck bottom after destruction") \
+		.is_equal(str(card.get("id")))
+
+
+func test_esc01_004_overloaded_goes_to_deck_bottom() -> void:
+	# Overload IS <Destroy> (11.5.1) — effect-driven plays over ESC01-004 also
+	# send it to the deck bottom instead of the discard.
+	var card := Real.instance("ESC01-004")
+	var incoming := Cards.battle(3, 2000, "OVER")
+	var state := States.make_state({"p0": {
+		"hand": [incoming],
+		"zone_cards": {5: card},
+		"main_deck": [Cards.battle(1, 2000, "D1")],
+	}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.play_battle_card_from_hand(0, incoming, 5)
+
+	var p0 := state.players[0]
+	assert_str(str(p0.get_zone_top_card(5).get("id"))).is_equal("OVER")
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_str(str(p0.main_deck.back().get("id"))) \
+		.override_failure_message("ESC01-004 should sit at the deck bottom after being overloaded") \
+		.is_equal(str(card.get("id")))
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
+
+
+# --- ESC01-005: when invading with 3+ stacked — reveal top, destroy <= its rank ---
+
+
+func test_esc01_005_reveals_top_card_and_destroys_lower_rank_battle_card() -> void:
+	var card := Real.instance("ESC01-005")
+	var state := States.make_state({
+		"p0": {"current_monster": card, "monster_zone": 2,
+			"main_deck": [Cards.battle(4, 1000, "REV")]},
+		"p1": {"zone_cards": {1: Cards.battle(4, 3000, "T4"), 3: Cards.battle(6, 3000, "T6")}},
+	})
+	for i in range(3):
+		state.players[0].monster_stack.append(Cards.monster(1, 5000, [], "UNDER-%d" % i))
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [1]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_when_invading(0, 1, 2)
+
+	assert_str(str(state.players[0].discard_pile.back().get("id"))).is_equal("REV")
+	assert_bool(state.players[1].zone_has_cards(1)).is_false()
+	assert_bool(state.players[1].zone_has_cards(3)) \
+		.override_failure_message("rank 6 > revealed rank 4 must not be targetable") \
+		.is_true()
+
+
+func test_esc01_005_requires_3_cards_under_the_monster() -> void:
+	var card := Real.instance("ESC01-005")
+	var state := States.make_state({
+		"p0": {"current_monster": card, "monster_zone": 2,
+			"main_deck": [Cards.battle(4, 1000, "REV")]},
+		"p1": {"zone_cards": {1: Cards.battle(2, 3000, "T2")}},
+	})
+	for i in range(2):
+		state.players[0].monster_stack.append(Cards.monster(1, 5000, [], "UNDER-%d" % i))
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_when_invading(0, 1, 2)
+
+	assert_int(state.players[0].main_deck.size()).is_equal(1)
+	assert_bool(state.players[1].zone_has_cards(1)).is_true()
+
+
+func test_esc01_005_still_mills_when_no_target_qualifies() -> void:
+	var card := Real.instance("ESC01-005")
+	var state := States.make_state({
+		"p0": {"current_monster": card, "monster_zone": 2,
+			"main_deck": [Cards.battle(1, 1000, "REV1")]},
+		"p1": {"zone_cards": {1: Cards.battle(5, 3000, "T5")}},
+	})
+	for i in range(3):
+		state.players[0].monster_stack.append(Cards.monster(1, 5000, [], "UNDER-%d" % i))
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_when_invading(0, 1, 2)
+
+	assert_str(str(state.players[0].discard_pile.back().get("id"))).is_equal("REV1")
+	assert_bool(state.players[1].zone_has_cards(1)).is_true()
+
+
+# --- ESC01-006: enter may discard whole hand — +1 rage per strategy discarded ---
+
+
+func test_esc01_006_discards_hand_and_gains_rage_per_strategy() -> void:
+	var card := Real.instance("ESC01-006")
+	var state := States.make_state({"p0": {
+		"zone_cards": {2: card},
+		"hand": [Cards.strategy(2, "S1"), Cards.strategy(3, "S2"), Cards.battle(2, 2000, "B1")],
+	}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"choose_option": [0]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	var p0 := state.players[0]
+	assert_int(p0.hand.size()).is_equal(0)
+	assert_int(p0.discard_pile.size()).is_equal(3)
+	assert_int(p0.rage).is_equal(2)
+
+
+func test_esc01_006_declining_keeps_hand_and_rage() -> void:
+	var card := Real.instance("ESC01-006")
+	var state := States.make_state({"p0": {
+		"zone_cards": {2: card},
+		"hand": [Cards.strategy(2, "S1"), Cards.battle(2, 2000, "B1")],
+	}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"choose_option": [1]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(state.players[0].hand.size()).is_equal(2)
+	assert_int(state.players[0].rage).is_equal(0)
+
+
+func test_esc01_006_silent_with_empty_hand() -> void:
+	var card := Real.instance("ESC01-006")
+	var state := States.make_state({"p0": {"zone_cards": {2: card}}})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(input.count_calls("choose_option")).is_equal(0)
+	assert_int(state.players[0].rage).is_equal(0)

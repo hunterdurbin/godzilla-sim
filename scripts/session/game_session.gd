@@ -20,6 +20,7 @@ signal session_started
 ## Fired by MultiplayerSync after every applied state broadcast (client
 ## peers only). Client-side PlayerState objects are rebuilt per receive,
 ## so bound HUD components rebind + refresh on this signal.
+@warning_ignore("unused_signal") # emitted by MultiplayerSync, not this class
 signal client_state_applied
 
 var turn_manager: TurnManager # Only exists on host/solo
@@ -50,7 +51,9 @@ var client_zone_cp_mods: Array = [[], []]
 var client_strategy_cp_mods: Array = [[], []]
 var client_zone_rank_mods: Array = [[], []]
 var client_hand_rank_mods: Array = [[], []]
+var client_hand_power_mods: Array = [[], []]
 var client_monster_cp_mods: Array = [0, 0]
+var client_modifier_breakdowns: Dictionary = {} # ModifierBreakdown.build_all shape
 var client_gradients_applied: bool = false
 # Client-side stats snapshot (synced from host for disconnect reporting)
 var client_stats_elapsed_ms: Array[int] = [0, 0]
@@ -70,6 +73,23 @@ func _ready() -> void:
 		push_error("[GameSession] Parent node is named '%s' — must be named 'GameBoard' for cross-scene multiplayer to work." % _board.name)
 	if get_node_or_null("MultiplayerSync") == null:
 		push_error("[GameSession] No 'MultiplayerSync' child node — multiplayer RPCs will not route.")
+
+
+func _exit_tree() -> void:
+	# Break the match's RefCounted reference cycles; without this every match
+	# leaks its entire engine graph (reported as "ObjectDB instances leaked
+	# at exit").
+	if turn_manager:
+		turn_manager.teardown()
+	turn_manager = null
+	action_handler = null
+	effect_handler = null
+	rules_engine = null
+	game_state = null
+	player_input = null
+	events = null
+	bot_player = null
+	replay_recorder = null
 
 
 ## Returns the PlayerState for a given player id (0 or 1).
@@ -117,12 +137,36 @@ func compute_hand_rank_mods(player: PlayerState) -> Array:
 	return out
 
 
+## Compute the counter-power preview for each card in the given player's hand
+## (placement-independent CP modifiers only — see
+## EffectQueries.get_hand_cp_preview). Variable-base cards ("counter power X",
+## e.g. EBP03-067) preview their resolved X instead — the badge renders it
+## unsigned (card.gd detects the variable base from the trigger map). The two
+## never combine: no variable-base card declares HAND_CP_PREVIEW.
+## Parallel to player.hand; [] if no effect handler.
+func compute_hand_power_mods(player: PlayerState) -> Array:
+	var out: Array = []
+	if not turn_manager:
+		return out
+	var eh: EffectHandler = turn_manager.effect_handler
+	if not eh:
+		return out
+	for card in player.hand:
+		var var_base: int = eh.get_hand_variable_base_cp(player.player_id, card)
+		out.append(var_base if var_base >= 0 else eh.get_hand_cp_preview(player.player_id, card))
+	return out
+
+
 ## Construct a fresh TurnManager for the host/solo path: runs setup() or
 ## setup_from_save(), seeds the local player name, wires the typed
 ## forwarders, and emits session_started. Single source of truth for
 ## host-side TurnManager construction (initial start and rematch).
 func start_host_session(card_data_node: Node, local_player_id: int, loaded_save: Dictionary = {}, config: SessionConfig = null) -> TurnManager:
 	var cfg := config if config else SessionConfig.from_singletons()
+	if turn_manager:
+		# Rematch path: break the previous match's reference cycles so it
+		# doesn't leak when we drop the reference below.
+		turn_manager.teardown()
 	turn_manager = TurnManager.new()
 	if loaded_save.is_empty():
 		turn_manager.setup(card_data_node, cfg)

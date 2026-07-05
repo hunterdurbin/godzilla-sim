@@ -25,6 +25,22 @@ func _init() -> void:
 	phases.ah = self
 
 
+func teardown() -> void:
+	## Break the resolver back-refs (resolver.ah -> self) and cross-refs so
+	## the match component graph can be freed. Idempotent.
+	for r in [plays, invasion, counter, rule_actions, phases]:
+		if r:
+			r.ah = null
+	plays = null
+	invasion = null
+	counter = null
+	rule_actions = null
+	phases = null
+	effect_handler = null
+	events = null
+	input = null
+
+
 func execute(action: CardEnums.ActionType, params: Dictionary, state: GameState) -> void:
 	match action:
 		CardEnums.ActionType.PLAY_BATTLE:

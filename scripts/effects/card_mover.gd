@@ -22,6 +22,8 @@ func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 		return []
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var hand_indices: Array[int] = await input.choose_hand_discards(player_id, to_discard, player.hand.size())
 	_unhighlight_active_effect()
 
@@ -56,6 +58,8 @@ func search_deck(player_id: int, filter: Callable, prompt: String, allow_skip: b
 			matching.append(card)
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var selected: Dictionary = await input.search_cards(player_id, matching, player.main_deck.duplicate(), prompt, allow_skip)
 	_unhighlight_active_effect()
 
@@ -83,6 +87,8 @@ func arrange_deck_cards(player_id: int, cards: Array[Dictionary], prompt: String
 		return {"keep": [], "discard": []}
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var result: Dictionary = await input.arrange_deck(player_id, cards, prompt)
 	_unhighlight_active_effect()
 	return result
@@ -105,6 +111,8 @@ func select_cards_from_pool(player_id: int, matching: Array[Dictionary], all_car
 
 	h._card_select_pool_filter = pool_filter
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var result: Array[Dictionary] = await input.select_cards(player_id, matching, all_cards, prompt, min_count, max_count)
 	_unhighlight_active_effect()
 	h._card_select_pool_filter = Callable()
@@ -129,6 +137,8 @@ func search_discard(player_id: int, filter: Callable, prompt: String, allow_skip
 	var effective_skip: bool = allow_skip or matching.is_empty()
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var selected: Dictionary = await input.search_cards(player_id, matching, player.discard_pile.duplicate(), prompt, effective_skip)
 	_unhighlight_active_effect()
 
@@ -160,6 +170,8 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 		return {}
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var chosen_index: int = await input.select_hand_card(player_id, valid_indices, prompt, allow_skip)
 	_unhighlight_active_effect()
 
@@ -189,6 +201,8 @@ func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: 
 	if all_visible.is_empty():
 		return {}
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var selected: Dictionary = await input.search_cards(player_id, options, all_visible, prompt, allow_skip or options.is_empty())
 	_unhighlight_active_effect()
 	# Re-map the resolved selection back to the caller's own dict. In
@@ -313,7 +327,8 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 		return false
 
 	# Log the evolution
-	h.log_message.emit(GameLog.evolution(player_id, zone_idx, evo_rank, zone_card.get("id", ""), selected.get("id", "")))
+	var has_enter := h.has_trigger(selected, "on_enter")
+	h.log_message.emit(GameLog.evolution(player_id, zone_idx, evo_rank, zone_card.get("id", ""), selected.get("id", ""), has_enter))
 
 	h.card_evolved.emit(player_id, selected, zone_idx)
 	# Mark as played through evolution for enter effects (e.g. ESD02-010)
@@ -364,13 +379,7 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	# Make a copy so each token instance is independent
 	token_data = token_data.duplicate()
 
-	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(zone_index):
-		overloaded_top = player.get_zone_top_card(zone_index)
-		var destroyed_stack: Array = player.clear_zone(zone_index)
-		EffectHandler.banish_or_discard(player, destroyed_stack)
-		player.discard_changed.emit()
-
+	var overloaded_top: Dictionary = h.overload_zone(player, zone_index)
 	player.push_zone_card(zone_index, token_data)
 	player.zones_changed.emit()
 	await h.trigger_leave_play(player.player_id, overloaded_top, zone_index)
@@ -406,7 +415,7 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int, c
 		var prompt: String = tr(prompt_key) % (count - placed)
 		prompt += " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % _format_zone_list(valid)
 		var chosen: int = await h.select_zone_target(
-			player.player_id, player.player_id, valid, prompt)
+			player.player_id, player.player_id, valid, prompt, false, token_id)
 		if chosen < 0:
 			break
 		used_zones.append(chosen)
@@ -450,7 +459,7 @@ func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], p
 		var prompt: String = tr("STR_EFF_PLAY_ZONES_FMT") % card.get("name", "card")
 		prompt += " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % _format_zone_list(valid)
 		var chosen: int = await h.select_zone_target(
-			player.player_id, player.player_id, valid, prompt)
+			player.player_id, player.player_id, valid, prompt, false, CardUtils.base_id(card))
 		if chosen < 0:
 			chosen = valid[0]         # mandatory placement — fall back to first available
 		used_zones.append(chosen)
@@ -528,18 +537,13 @@ func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
 		return
 	if not player.zone_has_cards(from_zone):
 		return
-	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(to_zone):
-		overloaded_top = player.get_zone_top_card(to_zone)
-		var overloaded: Array = player.clear_zone(to_zone)
-		EffectHandler.banish_or_discard(player, overloaded)
-		player.discard_changed.emit()
+	var overloaded_top: Dictionary = h.overload_zone(player, to_zone)
 	var moved_top: Dictionary = player.get_zone_top_card(from_zone)
 	var stack: Array = player.zones[from_zone]
 	player.zones[from_zone] = []
 	player.zones[to_zone] = stack
 	player.zones_changed.emit()
-	# Fire on_destroy for the overloaded card, then on_zone_changed for the
+	# Fire on_leave_play for the overloaded card, then on_zone_changed for the
 	# moved card — mirrors the linked-card semantics used by swap_zones and
 	# play_from_discard so cards like EBP04-067 can react to forced movement.
 	await h.trigger_leave_play(player.player_id, overloaded_top, to_zone)
@@ -595,7 +599,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 			if i != player.monster_zone - 1:  # Can't play in own monster zone
 				valid_zones.append(i)
 		var card_name: String = card_data.get("name", "card")
-		zone_idx = await h.select_zone_target(player_id, player_id, valid_zones, tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_name)
+		zone_idx = await h.select_zone_target(player_id, player_id, valid_zones, tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_name, false, CardUtils.base_id(card_data))
 		if zone_idx < 0:
 			# Can't skip — put back in discard as fallback
 			player.discard_pile.append(card_data)
@@ -603,13 +607,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 			return -1
 
 	# Handle overload if zone occupied
-	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(zone_idx):
-		overloaded_top = player.get_zone_top_card(zone_idx)
-		var destroyed_stack: Array = player.clear_zone(zone_idx)
-		EffectHandler.banish_or_discard(player, destroyed_stack)
-		player.discard_changed.emit()
-
+	var overloaded_top: Dictionary = h.overload_zone(player, zone_idx)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
 	await h.trigger_leave_play(player_id, overloaded_top, zone_idx)
@@ -637,7 +635,7 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 	if valid_zones.is_empty():
 		return -1
 	var zone_idx: int = await h.select_zone_target(
-		player_id, player_id, valid_zones, prompt, true)
+		player_id, player_id, valid_zones, prompt, true, CardUtils.base_id(card_data))
 	if zone_idx < 0:
 		return -1
 	return await play_from_discard(player_id, card_data, zone_idx)
@@ -660,12 +658,7 @@ func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx:
 			break
 	player.hand_changed.emit()
 
-	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(zone_idx):
-		overloaded_top = player.get_zone_top_card(zone_idx)
-		var destroyed_stack: Array = player.clear_zone(zone_idx)
-		EffectHandler.banish_or_discard(player, destroyed_stack)
-		player.discard_changed.emit()
+	var overloaded_top: Dictionary = h.overload_zone(player, zone_idx)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
 	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
@@ -687,11 +680,8 @@ func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx:
 	## overloaded/discarded.
 	var player := game_state.players[player_id]
 	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(zone_idx) and not stack_on_top:
-		overloaded_top = player.get_zone_top_card(zone_idx)
-		var destroyed_stack: Array = player.clear_zone(zone_idx)
-		EffectHandler.banish_or_discard(player, destroyed_stack)
-		player.discard_changed.emit()
+	if not stack_on_top:
+		overloaded_top = h.overload_zone(player, zone_idx)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
 	await h.trigger_leave_play(player_id, overloaded_top, zone_idx)

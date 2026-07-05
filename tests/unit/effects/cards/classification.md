@@ -57,7 +57,7 @@ Clusters:
 - stat_modifier: EBP04-006 011 016 017 019 023 031 032 036 037 038 044 048 054 056 057 058 060 065 066 068 069 070 071 081 082, ESD01-003 009, ESD02-006 011 012, EFC01-001 004 006
 - rage_trigger: ESD01-013 (own increase: destroy rank≤6), ESD02-005 (invading: reduce opp rage 1)
 - phase_trigger: EBP04-008 (counter start own awk8: opp discard to 3), ESD01-005 (enter: opp discard to 4), ESD01-015 (enter: opp discard to 2), ESD02-007 008 (main start own: evolution), ESD02-010 (enter if evolved: draw 1), ESD01-004 (invading rage≥2: opp discard to 2)
-- bespoke: EBP04-002 004 005 007 009 010 012 013 014 018 022 024 025 026 027 028 029 030 033 039 040 041 042 043 045 046 047 049 050 051 052 053 055 059 062 063 064 067 072 073 077 078 079 080 085 086 087 089 T01, ESD01-010 011 012 014, ESD02-003 004 009 014, EFC01-002 003 005, ESC01-001
+- bespoke: EBP04-002 004 005 007 009 010 012 013 014 018 022 024 025 026 027 028 029 030 033 039 040 041 042 043 045 046 047 049 050 051 052 053 055 059 062 063 064 067 072 073 077 078 079 080 085 086 087 089 T01, ESD01-010 011 012 014, ESD02-003 004 009 014, EFC01-002 003 005, ESC01-001 002 003 004 005 006
 - reclassified while writing suites: EBP04-001 → phase_trigger but NOT yet covered (pure on_phase_start counter/opp-turn rage gain) — cover in ebp04 bespoke; EBP04-002 → bespoke (on_opponent_zone_card_destroyed); EBP04-028 → bespoke (mixed card, excluded from stat suites — cover BOTH the get_strategy_hand_rank_modifier getter and the on_battle_card_played discard trigger in ebp04 bespoke); EBP02-001 → phase_trigger (covered in test_cluster_phase_triggers.gd)
 
 NOTE: agent-derived; numbers verified against scripts as rows land in suites.

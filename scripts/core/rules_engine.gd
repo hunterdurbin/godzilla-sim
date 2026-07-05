@@ -35,7 +35,7 @@ func get_valid_actions(state: GameState) -> Array:
 		actions.append(CardEnums.ActionType.PLAY_MONSTER)
 
 	# Can invade? (has any card to discard with invasion_icon > 0, hasn't invaded this turn)
-	if _can_invade(player, opponent):
+	if _can_invade(player):
 		# Check if opponent's cards block invasion (e.g. EBP02-068 column lock)
 		if not queries.is_invasion_blocked(opponent.player_id):
 			actions.append(CardEnums.ActionType.INVADE)
@@ -254,15 +254,14 @@ func _traits_overlap(traits_a: Array, traits_b: Array) -> bool:
 	return false
 
 
-func _can_invade(player: PlayerState, opponent: PlayerState) -> bool:
+func _can_invade(player: PlayerState) -> bool:
 	if player.has_invaded_this_turn:
 		return false
 	# Check if monster prevents its own invasion (e.g. Biollante Rose Form)
 	if queries.is_own_invasion_blocked(player.player_id):
 		return false
-	# Can't invade if already at zone 8 and blocked by opponent's battle card
-	if player.monster_zone >= 8 and opponent.zone_has_battle_card(7):
-		return false
+	# Note: a defended opponent zone 8 does NOT block the action — the invade
+	# still resolves as a discard-only invade (monster just doesn't advance).
 	for card in player.hand:
 		if card.get("invasion_icon", 0) > 0:
 			return true

@@ -16,6 +16,11 @@ extends RefCounted
 ## caller.
 
 
+## Drop any pending decision state at match teardown. Base is stateless.
+func teardown() -> void:
+	pass
+
+
 ## Choose one of `options` (parallel `prompt` text). Returns the 0-based index.
 func choose_option(_player_id: int, options: Array[String], _prompt: String) -> int:
 	return 0 if not options.is_empty() else -1

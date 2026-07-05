@@ -248,6 +248,11 @@ func _on_view_board() -> void:
 		_router.on_view_board_request.call(self)
 
 
+## Label data for the minimize chip shown while this overlay is hidden.
+func get_minimize_info() -> Dictionary:
+	return {"title": _prompt.text, "count": _keep.size() + _discard.size()}
+
+
 func _on_confirm() -> void:
 	visible = false
 	var keep := _keep.duplicate()

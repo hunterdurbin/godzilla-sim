@@ -12,7 +12,7 @@ signal zone_slot_clicked(zone_number: int, player_id: int)
 signal zone_slot_right_clicked(zone_number: int, player_id: int)
 signal strategy_slot_clicked(strategy_index: int, player_id: int)
 signal strategy_slot_right_clicked(strategy_index: int, player_id: int)
-signal card_preview_requested(data: Dictionary, play_cost_modifier: int)
+signal card_preview_requested(data: Dictionary, play_cost_modifier: int, power_preview: int)
 signal card_preview_cleared()
 
 @export var player_id: int = 0
@@ -48,6 +48,49 @@ var _discard_last_id: String = ""  # Track last shown card to avoid redundant up
 var _discard_count_badge: Label = null
 var _monster_deck_card_backs: Array[Control] = []
 var _monster_deck_count_badge: Label = null
+
+# Active-turn glow (pulsing border around the playmat, color from settings)
+const GLOW_INSET := 6.0 # keeps the outward shadow inside the clipped rect
+var _active_glow: Panel = null
+var _glow_style: StyleBoxFlat = null
+var _glow_tween: Tween = null
+
+# "Radial" outline effect: a bright segment sweeping around the border.
+# StyleBoxFlat can't vary alpha along its length, so a shader fades the drawn
+# border pixels by their perimeter position (arc length, not angle — angle
+# would make the highlight crawl through the corners of a wide rect) minus
+# TIME. Each pixel maps to its nearest edge to get a 0..1 lap coordinate.
+const _RADIAL_SHADER_CODE := "
+shader_type canvas_item;
+uniform float speed = 0.2;      // laps per second
+uniform vec2 rect_size = vec2(1.0, 1.0);
+
+varying vec2 local_pos;
+
+void vertex() {
+	local_pos = VERTEX;
+}
+
+void fragment() {
+	vec2 p = local_pos;
+	float w = rect_size.x;
+	float h = rect_size.y;
+	float m = min(min(p.y, w - p.x), min(h - p.y, p.x));
+	float s;
+	if (m == p.y) {
+		s = p.x;                        // top edge, left-to-right
+	} else if (m == w - p.x) {
+		s = w + p.y;                    // right edge, downward
+	} else if (m == h - p.y) {
+		s = w + h + (w - p.x);          // bottom edge, right-to-left
+	} else {
+		s = 2.0 * w + h + (h - p.y);    // left edge, upward
+	}
+	float phase = fract(s / (2.0 * (w + h)) - TIME * speed);
+	COLOR.a *= 0.7 + 0.3 * pow(1.0 - phase, 3.0);
+}
+"
+static var _radial_shader: Shader = null
 
 # Card back texture cache (shared across instances)
 const _DEFAULT_CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
@@ -119,11 +162,79 @@ func _update_layout() -> void:
 	overlay.offset_left = x_offset
 	overlay.offset_right = x_offset + actual_width
 
+	if _active_glow:
+		_active_glow.position = Vector2(x_offset + GLOW_INSET, GLOW_INSET)
+		_active_glow.size = Vector2(actual_width - GLOW_INSET * 2.0, size.y - GLOW_INSET * 2.0)
+		var glow_mat := _active_glow.material as ShaderMaterial
+		if glow_mat:
+			glow_mat.set_shader_parameter("rect_size", _active_glow.size)
+
 	# On mobile, bump label font sizes so they're readable on smaller boards.
 	# The LayoutContainer scales via anchors but font sizes are fixed pixels,
 	# so we set explicit sizes that work at phone scale.
 	if GameSettings.use_mobile_layout:
 		_apply_mobile_labels()
+
+
+## Pulsing gold border marking this playmat as the active player's. The panel
+## sits above the playmat art/gradient but below LayoutContainer (slots/cards)
+## and ignores mouse input, so it can never cover a card or intercept a click.
+func set_active_glow(on: bool) -> void:
+	if not on:
+		if _glow_tween:
+			_glow_tween.kill()
+			_glow_tween = null
+		if _active_glow:
+			_active_glow.visible = false
+		return
+	if _active_glow == null:
+		_active_glow = Panel.new()
+		_active_glow.name = "ActiveGlow"
+		_active_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_glow_style = StyleBoxFlat.new()
+		_glow_style.draw_center = false
+		_glow_style.set_border_width_all(4)
+		_glow_style.set_corner_radius_all(10)
+		_glow_style.anti_aliasing = true
+		_glow_style.shadow_size = 6
+		_active_glow.add_theme_stylebox_override("panel", _glow_style)
+		add_child(_active_glow)
+		move_child(_active_glow, $GradientOverlay.get_index() + 1)
+		_update_layout()
+	var glow_color: Color = GameSettings.turn_indicator_color
+	_glow_style.border_color = Color(glow_color, 0.9)
+	_glow_style.shadow_color = Color(glow_color, 0.4)
+	if _glow_tween:
+		_glow_tween.kill()
+		_glow_tween = null
+	_active_glow.modulate.a = 1.0
+	_active_glow.visible = true
+	# 0-2=breath slow/med/fast, 3-5=radial slow/med/fast, 6=solid
+	var effect: int = GameSettings.turn_outline_effect
+	if effect >= 3 and effect <= 5:
+		_apply_radial_glow([0.09, 0.18, 0.35][effect - 3])
+	else:
+		_active_glow.material = null
+		if effect >= 0 and effect <= 2:
+			var half_period: float = [4.8, 2.4, 1.2][effect]
+			_glow_tween = create_tween().set_loops()
+			_glow_tween.tween_property(_active_glow, "modulate:a", 0.55, half_period) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			_glow_tween.tween_property(_active_glow, "modulate:a", 1.0, half_period) \
+				.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+func _apply_radial_glow(speed: float) -> void:
+	if _radial_shader == null:
+		_radial_shader = Shader.new()
+		_radial_shader.code = _RADIAL_SHADER_CODE
+	var mat := _active_glow.material as ShaderMaterial
+	if mat == null:
+		mat = ShaderMaterial.new()
+		mat.shader = _radial_shader
+		_active_glow.material = mat
+	mat.set_shader_parameter("speed", speed)
+	mat.set_shader_parameter("rect_size", _active_glow.size)
 
 
 var _mobile_labels_applied := false
@@ -394,17 +505,21 @@ func apply_monster_gradient(monster_data: Dictionary) -> void:
 	overlay.color = Color(0, 0, 0, 0) # Keep parent transparent
 
 
-## Sync the entire board display to match a PlayerState
-func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = [], zone_rank_mods: Array = [], monster_cp_mod: int = 0, hand_rank_mods: Array = []) -> void:
-	_sync_zones(player_state, zone_cp_mods, zone_rank_mods)
+## Sync the entire board display to match a PlayerState.
+## variable_bases: {"zone_cp": Array (8 per-zone resolved "counter power X"
+## values, -1 = not variable), "threat": int (resolved "threat level X",
+## -1 = not variable)} — cards whose printed stat is a variable X show the
+## resolved base as a plain value instead of a "+N" modifier badge.
+func sync_to_state(player_state: PlayerState, cp_modifier: int = 0, threat_modifier: int = 0, zone_cp_mods: Array = [], strategy_cp_mods: Array = [], zone_rank_mods: Array = [], monster_cp_mod: int = 0, hand_rank_mods: Array = [], hand_power_mods: Array = [], variable_bases: Dictionary = {}) -> void:
+	_sync_zones(player_state, zone_cp_mods, zone_rank_mods, variable_bases.get("zone_cp", []))
 	_sync_strategy_zones(player_state, strategy_cp_mods)
-	_sync_monster(player_state, threat_modifier, monster_cp_mod)
+	_sync_monster(player_state, threat_modifier, monster_cp_mod, int(variable_bases.get("threat", -1)))
 	_sync_hand(player_state)
-	_sync_hand_badges(player_state, hand_rank_mods)
+	_sync_hand_badges(player_state, hand_rank_mods, hand_power_mods)
 	_sync_info(player_state, cp_modifier, threat_modifier)
 
 
-func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: Array = []) -> void:
+func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: Array = [], zone_var_bases: Array = []) -> void:
 	for i in range(mini(zone_slots.size(), 8)):
 		var slot := zone_slots[i]
 		if not slot:
@@ -424,6 +539,7 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: A
 		var stack_size: int = state.get_zone_stack(i).size()
 		var cp_mod: int = zone_cp_mods[i] if i < zone_cp_mods.size() else 0
 		var rank_mod: int = zone_rank_mods[i] if i < zone_rank_mods.size() else 0
+		var var_base: int = int(zone_var_bases[i]) if i < zone_var_bases.size() else -1
 
 		# Update card in slot
 		if zone_data.is_empty() and slot.has_card() and slot.get_card() != monster_card:
@@ -434,15 +550,17 @@ func _sync_zones(state: PlayerState, zone_cp_mods: Array = [], zone_rank_mods: A
 			slot.place_card(card, false)
 			if stack_size > 1:
 				_add_stack_badge(card, stack_size)
-			_update_modifier_badge(card, cp_mod)
+			_update_modifier_badge(card, cp_mod, var_base)
 			_update_rank_modifier_badge(card, rank_mod)
+			_clear_power_preview(card)
 		elif not zone_data.is_empty() and slot.has_card():
 			var card := slot.get_card()
 			if card.has_method("set_card_data_dict"):
 				card.set_card_data_dict(zone_data)
 			_update_stack_badge(card, stack_size)
-			_update_modifier_badge(card, cp_mod)
+			_update_modifier_badge(card, cp_mod, var_base)
 			_update_rank_modifier_badge(card, rank_mod)
+			_clear_power_preview(card)
 
 
 func _sync_strategy_zones(state: PlayerState, strategy_cp_mods: Array = []) -> void:
@@ -517,7 +635,7 @@ func _restore_strategy_slot_anchors() -> void:
 		slot.offset_bottom = 0
 
 
-func _sync_monster(state: PlayerState, threat_mod: int = 0, cp_mod: int = 0) -> void:
+func _sync_monster(state: PlayerState, threat_mod: int = 0, cp_mod: int = 0, threat_var_base: int = -1) -> void:
 	var m: Dictionary = state.current_monster
 	var target_zone: int = mini(state.monster_zone - 1, zone_slots.size() - 1) # 0-indexed, clamped to zone 8
 
@@ -543,7 +661,7 @@ func _sync_monster(state: PlayerState, threat_mod: int = 0, cp_mod: int = 0) -> 
 					new_slot.place_card(monster_card, false)
 			monster_card_zone = target_zone
 
-		_update_threat_modifier_badge(monster_card, threat_mod)
+		_update_threat_modifier_badge(monster_card, threat_mod, threat_var_base)
 		_update_monster_cp_badge(monster_card, cp_mod)
 
 	if rage_label:
@@ -610,11 +728,12 @@ func _sync_hand(state: PlayerState) -> void:
 	hand_manager.arrange_cards(true)
 
 
-## Apply per-card play-cost modifier badges to the hand. Runs unconditionally
-## (badges can change even when the hand-set hasn't, e.g. when a strategy is
-## played that buffs/nerfs cost). Face-down hands skip the badge to avoid
-## leaking info to the opponent.
-func _sync_hand_badges(state: PlayerState, hand_rank_mods: Array) -> void:
+## Apply per-card play-cost and power-preview badges to the hand. Runs
+## unconditionally (badges can change even when the hand-set hasn't, e.g.
+## when a strategy is played that buffs/nerfs cost, or rage changes a CP
+## preview). Face-down hands skip the badges to avoid leaking info to the
+## opponent.
+func _sync_hand_badges(state: PlayerState, hand_rank_mods: Array, hand_power_mods: Array = []) -> void:
 	if not hand_manager:
 		return
 	var visual_cards := hand_manager.get_cards()
@@ -624,21 +743,28 @@ func _sync_hand_badges(state: PlayerState, hand_rank_mods: Array) -> void:
 	var pool: Array = []
 	for i in range(state.hand.size()):
 		var mod: int = hand_rank_mods[i] if i < hand_rank_mods.size() else 0
-		pool.append({"id": state.hand[i].get("id", ""), "mod": mod})
+		var power: int = hand_power_mods[i] if i < hand_power_mods.size() else 0
+		pool.append({"id": state.hand[i].get("id", ""), "mod": mod, "power": power})
 	for card in visual_cards:
 		if not card.has_method("set_play_cost_modifier"):
 			continue
 		if "is_face_down" in card and card.is_face_down:
 			card.set_play_cost_modifier(0)
+			if card.has_method("set_power_preview"):
+				card.set_power_preview(0)
 			continue
 		var card_id: String = card.card_data.get("id", "") if "card_data" in card else ""
 		var matched_mod := 0
+		var matched_power := 0
 		for j in range(pool.size()):
 			if pool[j]["id"] == card_id:
 				matched_mod = pool[j]["mod"]
+				matched_power = pool[j]["power"]
 				pool.remove_at(j)
 				break
 		card.set_play_cost_modifier(matched_mod)
+		if card.has_method("set_power_preview"):
+			card.set_power_preview(matched_power)
 
 
 func _hand_set_matches(visual_cards: Array[Control], state_hand: Array) -> bool:
@@ -810,6 +936,7 @@ func reset_visuals() -> void:
 
 	highlight_rage_zone(false)
 	highlight_discard_zone(false)
+	set_active_glow(false)
 
 
 func _apply_mirror() -> void:
@@ -908,7 +1035,7 @@ func _create_card(data: Dictionary) -> Control:
 
 
 func _on_slot_hover_preview(data: Dictionary) -> void:
-	card_preview_requested.emit(data, 0)
+	card_preview_requested.emit(data, 0, 0)
 
 
 func _on_slot_hover_cleared() -> void:
@@ -918,11 +1045,19 @@ func _on_slot_hover_cleared() -> void:
 func _on_card_hover_started(card_ctrl: Control) -> void:
 	if "card_data" in card_ctrl and not card_ctrl.card_data.is_empty():
 		var mod: int = card_ctrl.get_play_cost_modifier() if card_ctrl.has_method("get_play_cost_modifier") else 0
-		card_preview_requested.emit(card_ctrl.card_data, mod)
+		var power: int = card_ctrl.get_power_preview() if card_ctrl.has_method("get_power_preview") else 0
+		card_preview_requested.emit(card_ctrl.card_data, mod, power)
 
 
 func _on_card_hover_ended(_card_ctrl: Control) -> void:
 	card_preview_cleared.emit()
+
+
+## A Card control reused from the hand (played onto the board) must not keep
+## its hand-time power-preview badge — the zone ModifierBadge takes over.
+func _clear_power_preview(card: Control) -> void:
+	if card.has_method("set_power_preview"):
+		card.set_power_preview(0)
 
 
 func _add_stack_badge(card: Control, count: int) -> void:
@@ -988,17 +1123,20 @@ func _update_strategy_modifier_badge(card: Control, modifier: int) -> void:
 	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
 
 
-func _update_modifier_badge(card: Control, modifier: int) -> void:
+func _update_modifier_badge(card: Control, modifier: int, var_base: int = -1) -> void:
 	# Battle-card CP modifier badge — sits in the lower band so the green CP
 	# label lines up with monster cards' green threat label (also lower).
 	# Strategy cards use _update_strategy_modifier_badge instead.
+	# var_base >= 0: the card's printed CP is a variable X — the badge shows
+	# the resolved base as a plain value (always visible, the art reads "X")
+	# with any extra modifiers appended as "+N".
 	# NOTE: the badge is created once and then shown/hidden — never queue_free'd.
 	# queue_free() is deferred to end-of-frame, but get_node_or_null() keeps
 	# returning the dying node on syncs within the same frame, so a free+recreate
 	# races with the deferred deletion and the badge can vanish (e.g. when an
 	# engagement restriction briefly zeroes the modifier during the counter phase).
 	var badge := card.get_node_or_null("ModifierBadge") as Label
-	if modifier == 0:
+	if modifier == 0 and var_base < 0:
 		if badge:
 			badge.visible = false
 		return
@@ -1016,16 +1154,15 @@ func _update_modifier_badge(card: Control, modifier: int) -> void:
 		badge.anchor_bottom = 0.84
 		card.add_child(badge)
 	badge.visible = true
-	var prefix := "+" if modifier > 0 else ""
-	badge.text = "%s%d" % [prefix, modifier]
-	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
+	_apply_stat_badge_text(badge, modifier, var_base)
 
 
-func _update_threat_modifier_badge(card: Control, modifier: int) -> void:
+func _update_threat_modifier_badge(card: Control, modifier: int, var_base: int = -1) -> void:
 	# Monster threat modifier badge — bottom-right band, distinct node name so it
 	# can coexist with the CP modifier badge that sits one band above it.
+	# var_base >= 0: printed threat is a variable X — see _update_modifier_badge.
 	var badge := card.get_node_or_null("ThreatModifierBadge") as Label
-	if modifier == 0:
+	if modifier == 0 and var_base < 0:
 		if badge:
 			badge.visible = false
 		return
@@ -1043,9 +1180,26 @@ func _update_threat_modifier_badge(card: Control, modifier: int) -> void:
 		badge.anchor_bottom = 0.84
 		card.add_child(badge)
 	badge.visible = true
-	var prefix := "+" if modifier > 0 else ""
-	badge.text = "%s%d" % [prefix, modifier]
-	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
+	_apply_stat_badge_text(badge, modifier, var_base)
+
+
+## Shared CP/threat badge formatting. modifier is the full in-sum total for
+## the stat (includes the resolved variable base when there is one).
+func _apply_stat_badge_text(badge: Label, modifier: int, var_base: int) -> void:
+	if var_base < 0:
+		var prefix := "+" if modifier > 0 else ""
+		badge.text = "%s%d" % [prefix, modifier]
+		badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3, 1) if modifier > 0 else Color(1.0, 0.3, 0.3, 1))
+		return
+	# Variable printed base: show the resolved X plainly, extras as a delta.
+	var extra: int = modifier - var_base
+	badge.text = ("%d" % var_base) if extra == 0 else ("%d%+d" % [var_base, extra])
+	var color := Color(0.92, 0.92, 0.95, 1)
+	if modifier > 0:
+		color = Color(0.3, 1.0, 0.3, 1)
+	elif modifier < 0:
+		color = Color(1.0, 0.3, 0.3, 1)
+	badge.add_theme_color_override("font_color", color)
 
 
 func _update_rank_modifier_badge(card: Control, modifier: int) -> void:
@@ -1212,7 +1366,7 @@ func _on_discard_hover_started() -> void:
 	if _discard_count_badge:
 		_discard_count_badge.show()
 	if _discard_card and _discard_card.visible and not _discard_card.card_data.is_empty():
-		card_preview_requested.emit(_discard_card.card_data, 0)
+		card_preview_requested.emit(_discard_card.card_data, 0, 0)
 
 
 func _on_discard_hover_ended() -> void:

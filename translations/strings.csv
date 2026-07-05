@@ -137,6 +137,22 @@ STR_OPTIONS_CUSTOM_CARD_BACK,Custom Card Back,カード裏面のカスタム
 STR_OPTIONS_BACK_DISABLED,Disabled,無効
 STR_OPTIONS_BACK_SELF,Enabled (myself),有効 (自分)
 STR_OPTIONS_BACK_BOTH,Enabled (both),有効 (両方)
+STR_OPTIONS_NOTIFICATIONS_HEADER,Notifications,通知
+STR_OPTIONS_TURN_OUTLINE,Turn Player Board Outline,ターンプレイヤーの盤面枠
+STR_OPTIONS_TURN_ALERT,Turn Player Alert,ターンプレイヤーの通知
+STR_OPTIONS_TURN_COLOR,Outline/Alert Color,枠/通知の色
+STR_OPTIONS_OUTLINE_EFFECT,Outline Effect,枠のエフェクト
+STR_OPTIONS_EFFECT_BREATH_SLOW,Breath (Slow),明滅（遅い）
+STR_OPTIONS_EFFECT_BREATH_MEDIUM,Breath (Medium),明滅（普通）
+STR_OPTIONS_EFFECT_BREATH_FAST,Breath (Fast),明滅（速い）
+STR_OPTIONS_EFFECT_RADIAL_SLOW,Radial (Slow),回転（遅い）
+STR_OPTIONS_EFFECT_RADIAL_MEDIUM,Radial (Medium),回転（普通）
+STR_OPTIONS_EFFECT_RADIAL_FAST,Radial (Fast),回転（速い）
+STR_OPTIONS_EFFECT_SOLID,Solid,固定
+STR_OPTIONS_TURN_OWN,Own Turn,自分のターン
+STR_OPTIONS_TURN_OPPONENT,Opponent's Turn,相手のターン
+STR_OPTIONS_TURN_BOTH,Both,両方
+STR_OPTIONS_TURN_NONE,None,なし
 STR_OPTIONS_USE_MOBILE_LAYOUT,Use Mobile Layout,モバイルレイアウトを使用
 STR_OPTIONS_REDOWNLOAD_ASSETS,Re-download Card Assets,カードアセットを再ダウンロード
 STR_OPTIONS_SOUND_EFFECTS,Sound Effects,効果音
@@ -289,6 +305,8 @@ STR_PB_CP,CP:,撃退力:
 STR_PB_DISCARD,Discard,捨て札
 STR_GB_TURN_FMT,Turn: {N},ターン: {N}
 STR_GB_TURN_HEADER_FMT,Turn {N} | {PLAYER} - {PHASE},ターン {N} | {PLAYER} - {PHASE}
+STR_GB_YOUR_TURN,Your turn,あなたのターン
+STR_GB_OPPONENT_TURN,Opponent's turn,相手のターン
 STR_GB_PHASE_SUB_RESOLVE_EFFECTS,"      Resolve Effects","      効果解決"
 STR_GB_PHASE_SUB_DRAW_CARDS,"      Draw Cards","      ドロー"
 STR_GB_PHASE_SUB_DISCARD_STRATEGIES,"      Discard Strategies","      戦略カード廃棄"
@@ -336,6 +354,10 @@ STR_GB_AVAILABLE_CARDS,Available Cards,利用可能なカード
 STR_GB_SELECTED_FMT,Selected ({N}/{MAX}),選択済み ({N}/{MAX})
 STR_GB_CONFIRM_COUNT_FMT,Confirm ({N}/{MAX}),決定 ({N}/{MAX})
 STR_GB_SHOW_CARDS,Show Cards,カードを表示
+STR_GB_EFFECT_SOURCE,Effect source,効果の発生源
+STR_GB_PENDING_EFFECT,Pending effect,保留中の効果
+STR_GB_MINIMIZED_CHIP_FMT,▸ {TITLE} ({N}),▸ {TITLE}（{N}）
+STR_GB_MINIMIZED_CHIP_NO_COUNT_FMT,▸ {TITLE},▸ {TITLE}
 STR_GB_HIDE_CARDS,Hide Cards,カードを隠す
 STR_GB_SORT,Sort,並び替え
 STR_GB_SHOW_BOT_CARDS,Show Bot Cards,ボットのカードを表示
@@ -628,6 +650,7 @@ STR_LOG_REVENGE_FMT,[b]{PLAYER}[/b]: {REVENGE_ICON} {CARD},[b]{PLAYER}[/b]: {REV
 STR_LOG_AWAKENING_FMT,[b]{PLAYER}[/b]: {AWK_PREFIX} {CARD},[b]{PLAYER}[/b]: {AWK_PREFIX} {CARD}
 STR_LOG_AWAKENING_FALLBACK_PREFIX_FMT,Awakening {N}:,覚醒 {N}:
 STR_LOG_EVOLUTION_FMT,[b]{PLAYER}[/b] Zone {ZONE}: {EVO_PREFIX} {FROM_CARD} => {TO_CARD},[b]{PLAYER}[/b] エリア{ZONE}: {EVO_PREFIX} {FROM_CARD} => {TO_CARD}
+STR_LOG_EVOLUTION_ENTER_FMT,[b]{PLAYER}[/b] Zone {ZONE}: {EVO_PREFIX} {FROM_CARD} => {ENTER_ICON} {TO_CARD},[b]{PLAYER}[/b] エリア{ZONE}: {EVO_PREFIX} {FROM_CARD} => {ENTER_ICON} {TO_CARD}
 STR_LOG_EVOLUTION_FALLBACK_PREFIX_FMT,Evolution {N}:,進化 {N}:
 STR_LOG_MILLED_CARD_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: Sent {MILLED_CARD} to discard pile,[b]{PLAYER}[/b] {SOURCE_CARD}: {MILLED_CARD} を捨て札に送る
 STR_LOG_MILLED_CARDS_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: Sent {MILLED_CARDS} to discard pile,[b]{PLAYER}[/b] {SOURCE_CARD}: {MILLED_CARDS} を捨て札に送る
@@ -833,6 +856,10 @@ STR_EFF_ESD02_004_PROMPT,Discard a battle card from hand to destroy opponent's c
 STR_EFF_EFC01_003_PROMPT,Discard a Gigan+Fest card to search for a Weapon/Mech battle card (or skip):,<ガイガン>+<フェス・ゴジラ>を捨てて<兵器>/<機械>の交戦カードを探す (またはスキップ):
 STR_EFF_EFC01_003_SEARCH,Choose a Weapon or Mech battle card with invasion icon 2:,<足2>の<兵器>/<機械>の交戦カードを選ぶ:
 STR_EFF_ESC01_001_PROMPT,Discard a Godzilla card to play at -4 rank:,<ゴジラ>のカードを捨てて等級-4で出す:
+STR_EFF_ESC01_002_PROMPT,Choose a rank 3 or lower battle card with Evolution from your discard pile:,捨て札から<進化>を持つ等級3以下の交戦カードを選ぶ:
+STR_EFF_ESC01_003_PROMPT,Discard a strategy card to advance your monster by 1 zone (or skip):,戦略カードを1枚捨てて怪獣カードを1エリア前進 (またはスキップ):
+STR_EFF_ESC01_006_CHOICE_A,Discard your entire hand (+1 Rage per strategy card),手札をすべて捨てる (戦略カード1枚につき<怒り>+1)
+STR_EFF_ESC01_006_CHOICE_B,Skip,スキップ
 STR_EFF_EBP02_018_FMT,Choose an opponent's battle card at or before zone %d to destroy:,エリア%d以前にいる相手の交戦カードを選んで<破壊>:
 STR_EFF_EBP02_022_PROMPT_FMT,Play %s from discard to a zone (or skip):,%sを捨て札からエリアに置く (またはスキップ):
 STR_EFF_EBP02_057_PROMPT,Choose an opponent's battle card in the same column to move:,同じ縦列にいる相手の交戦カードを移動:
@@ -914,3 +941,26 @@ STR_MENU_BOT_EDIT_POOL,Edit Deck Pool…,デッキプールを編集…
 STR_ONLINE_ROOM_NOT_FOUND,Room not found — check the code and try again.,ルームが見つかりません。コードを確認してもう一度お試しください。
 STR_ONLINE_ROOM_FULL,That room is already full.,そのルームはすでに満員です。
 STR_ONLINE_WAITING_OPPONENT_DECK,Waiting for your opponent's deck...,対戦相手のデッキを待っています...
+STR_GB_TURN_CHIP_FMT,Turn {N} · {PHASE},ターン{N}・{PHASE}
+STR_GB_STACK_RESOLVING,Resolving,解決中
+STR_GB_EFFECT_STACK_TITLE,Pending Effects,待機中の効果
+STR_GB_STACK_OPPONENT,Opponent,相手
+STR_ZOOM_MOD_HEADER,Active modifiers,適用中の効果
+STR_ZOOM_MOD_SEC_POWER,Power,カウンターパワー
+STR_ZOOM_MOD_SEC_COST,Cost,コスト
+STR_ZOOM_MOD_SEC_RANK,Rank,ランク
+STR_ZOOM_MOD_SEC_THREAT,Threat,脅威レベル
+STR_ZOOM_MOD_ZONE_FMT,Zone {N},エリア{N}
+STR_ZOOM_MOD_ZONES_FMT,Zones {LIST},エリア {LIST}
+STR_ZOOM_MOD_SRC_MONSTER,Monster zone,怪獣エリア
+STR_ZOOM_MOD_SRC_STRATEGY,Strategy zone,戦略エリア
+STR_ZOOM_MOD_DOUBLED,doubled,2倍
+STR_ZOOM_MOD_OWN_EFFECT,own effect,自身の効果
+STR_ZOOM_MOD_BASE_POWER,Base power,基本カウンターパワー
+STR_ZOOM_MOD_BASE_THREAT,Base threat level,基本脅威レベル
+STR_GB_EXPORT_LOG,Export Log,ログ出力
+STR_LOG_EXPORTED_FMT,{PLAYER} exported the game log ({FILE}).,{PLAYER}がゲームログを出力しました（{FILE}）。
+STR_LOG_EXPORT_FAILED,Failed to export the game log.,ゲームログの出力に失敗しました。
+STR_EXTRAS_GAME_LOGS,Game Logs,ゲームログ
+STR_EXTRAS_NO_GAME_LOGS,No exported game logs found.,出力されたゲームログが見つかりません。
+STR_EXTRAS_VIEW,View,表示

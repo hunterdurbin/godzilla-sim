@@ -12,6 +12,8 @@ signal sub_phase_changed(sub_index: int)
 signal awaiting_player_action(valid_actions: Array)
 signal turn_started(player_id: int)
 signal turn_ended(player_id: int)
+# Emitted by MatchFactory at the end of setup, not from this class.
+@warning_ignore("unused_signal")
 signal game_started()
 signal game_ended(winner_id: int, reason_key: String)
 signal log_message(token: Dictionary)
@@ -51,35 +53,63 @@ func setup_from_save(data: Dictionary) -> void:
 	MatchFactory.setup_from_save(self, data)
 
 
+func teardown() -> void:
+	## Break the match's internal RefCounted reference cycles so the whole
+	## component graph can be freed once the owner drops its reference —
+	## without this, EffectHandler <-> modules / ActionHandler <-> resolvers
+	## keep every match object alive forever ("ObjectDB instances leaked at
+	## exit"). Idempotent; safe with suspended effect coroutines (flags are
+	## set first so anything that still resumes bails on the existing
+	## is_game_over guards, and the PlayerInput drops pending decisions so
+	## late resolve_*() calls become no-ops).
+	is_game_over = true
+	flow_state = FlowState.GAME_OVER
+	if player_input:
+		player_input.teardown()
+	if effect_handler:
+		effect_handler.teardown()
+	if action_handler:
+		action_handler.teardown()
+	effect_handler = null
+	action_handler = null
+	rules_engine = null
+	events = null
+	player_input = null
+	# game_state intentionally kept: session forwarders may still read it
+	# during the frame the owning scene exits.
+
+
 # --- Game flow ---
 
 func start_game(first_player_id: int = 0) -> void:
 	_begin_turn(first_player_id)
 
 
-func resume_to_main_phase(player_id: int, resolve_effects: bool = false) -> void:
-	## Resume a loaded game into the main phase.
-	## When resolve_effects is true, runs trigger_phase_start and
-	## resolve_check_timing before prompting (snapshot was before main-phase
-	## effects fired).  When false, skips straight to the player action prompt.
-	game_state.current_player_id = player_id
-	game_state.turn_number += 1  # Was decremented by 1 in setup_from_save
-	game_state.current_phase = CardEnums.GamePhase.MAIN
+func resume_game() -> void:
+	## Resume a loaded game at the restored (phase, sub_phase) boundary.
+	## Boundary snapshots are captured at sub-phase ENTRY, before the step
+	## runs — resume executes the saved sub-phase's step and everything after,
+	## then flows naturally into later phases/turns.
+	## Saves taken mid-sub-phase re-run that sub-phase from its entry, so
+	## partially resolved effects may re-apply; turn-scoped effect-handler
+	## state (e.g. "until end of turn" modifiers) is not serialized.
+	var from_sub: int = game_state.current_sub_phase
+	flow_state = FlowState.ADVANCING_PHASES
 
-	log_message.emit(GameLog.turn_start(game_state.turn_number, player_id))
-	turn_started.emit(player_id)
-	phase_started.emit(CardEnums.GamePhase.MAIN)
+	log_message.emit(GameLog.turn_start(game_state.turn_number, game_state.current_player_id))
+	turn_started.emit(game_state.current_player_id)
 
-	if resolve_effects:
-		flow_state = FlowState.ADVANCING_PHASES
-		game_state.current_sub_phase = 0
-		sub_phase_changed.emit(0) # Resolve Effects
-		await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
-		await action_handler.resolve_check_timing(game_state)
-
-	game_state.current_sub_phase = 1
-	sub_phase_changed.emit(1) # Player Actions
-	_prompt_player_actions()
+	match game_state.current_phase:
+		CardEnums.GamePhase.START:
+			await _execute_start_phase(from_sub)
+		CardEnums.GamePhase.MAIN:
+			await _begin_main_phase(from_sub)
+		CardEnums.GamePhase.COUNTER:
+			await _begin_counter_phase(from_sub)
+		CardEnums.GamePhase.END:
+			await _begin_end_phase(from_sub)
+		_:
+			await _execute_start_phase()
 
 
 func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> void:
@@ -121,6 +151,8 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 # --- Internal phase machine ---
 
 func _await_confirmation(prompt: String, setting: String) -> void:
+	# Not redundant: SignalPlayerInput's confirm_step override is a coroutine.
+	@warning_ignore("redundant_await")
 	await player_input.confirm_step(game_state.current_player_id, prompt, setting)
 
 
@@ -138,34 +170,39 @@ func _begin_turn(player_id: int) -> void:
 	await _execute_start_phase()
 
 
-func _execute_start_phase() -> void:
+func _execute_start_phase(from_sub: int = 0) -> void:
 	if is_game_over:
 		return
 
 	game_state.current_phase = CardEnums.GamePhase.START
 	phase_started.emit(CardEnums.GamePhase.START)
-	game_state.current_sub_phase = 0
-	sub_phase_changed.emit(0) # Resolve Effects
-	await effect_handler.trigger_phase_start(CardEnums.GamePhase.START)
-	await action_handler.resolve_check_timing(game_state) # 7.2.1
+
+	if from_sub <= 0:
+		game_state.current_sub_phase = 0
+		sub_phase_changed.emit(0) # Resolve Effects
+		await effect_handler.trigger_phase_start(CardEnums.GamePhase.START)
+		await action_handler.resolve_check_timing(game_state) # 7.2.1
 
 	var opponent := game_state.get_opponent_of_current()
 
-	game_state.current_sub_phase = 1
-	sub_phase_changed.emit(1) # Draw Cards
-	await _await_confirmation("Draw %d card(s)" % opponent.get_monster_rank(), "auto_draw")
-	log_message.emit(GameLog.start_phase_draw(opponent.get_monster_rank()))
-	action_handler.execute_start_phase_draw(game_state)
+	if from_sub <= 1:
+		game_state.current_sub_phase = 1
+		sub_phase_changed.emit(1) # Draw Cards
+		await _await_confirmation("Draw %d card(s)" % opponent.get_monster_rank(), "auto_draw")
+		log_message.emit(GameLog.start_phase_draw(opponent.get_monster_rank()))
+		action_handler.execute_start_phase_draw(game_state)
 
-	game_state.current_sub_phase = 2
-	sub_phase_changed.emit(2) # Discard Strategies
-	await _await_confirmation("Discard Strategies", "auto_discard_strategies")
-	await action_handler.execute_start_phase_discard(game_state)
+	if from_sub <= 2:
+		game_state.current_sub_phase = 2
+		sub_phase_changed.emit(2) # Discard Strategies
+		await _await_confirmation("Discard Strategies", "auto_discard_strategies")
+		await action_handler.execute_start_phase_discard(game_state)
 
-	game_state.current_sub_phase = 3
-	sub_phase_changed.emit(3) # Reset Rage
-	await _await_confirmation("Reset Rage", "auto_reset_rage")
-	await action_handler.execute_start_phase_reset(game_state)
+	if from_sub <= 3:
+		game_state.current_sub_phase = 3
+		sub_phase_changed.emit(3) # Reset Rage
+		await _await_confirmation("Reset Rage", "auto_reset_rage")
+		await action_handler.execute_start_phase_reset(game_state)
 
 	await action_handler.resolve_check_timing(game_state) # 7.2.5
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.START)
@@ -174,16 +211,18 @@ func _execute_start_phase() -> void:
 	_begin_main_phase()
 
 
-func _begin_main_phase() -> void:
+func _begin_main_phase(from_sub: int = 0) -> void:
 	if is_game_over:
 		return
 
 	game_state.current_phase = CardEnums.GamePhase.MAIN
 	phase_started.emit(CardEnums.GamePhase.MAIN)
-	game_state.current_sub_phase = 0
-	sub_phase_changed.emit(0) # Resolve Effects
-	await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
-	await action_handler.resolve_check_timing(game_state) # 7.3.1
+
+	if from_sub <= 0:
+		game_state.current_sub_phase = 0
+		sub_phase_changed.emit(0) # Resolve Effects
+		await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
+		await action_handler.resolve_check_timing(game_state) # 7.3.1
 
 	game_state.current_sub_phase = 1
 	sub_phase_changed.emit(1) # Player Actions
@@ -199,21 +238,24 @@ func _prompt_player_actions() -> void:
 	awaiting_player_action.emit(valid_actions)
 
 
-func _begin_counter_phase() -> void:
+func _begin_counter_phase(from_sub: int = 0) -> void:
 	if is_game_over:
 		return
 
 	game_state.current_phase = CardEnums.GamePhase.COUNTER
 	phase_started.emit(CardEnums.GamePhase.COUNTER)
-	game_state.current_sub_phase = 0
-	sub_phase_changed.emit(0) # Resolve Effects
-	await effect_handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
-	await action_handler.resolve_check_timing(game_state) # 7.4.1
 
-	game_state.current_sub_phase = 1
-	sub_phase_changed.emit(1) # Counter Check
-	await _await_confirmation("Counter Check", "auto_counter_check")
-	await action_handler.resolve_counter(game_state)
+	if from_sub <= 0:
+		game_state.current_sub_phase = 0
+		sub_phase_changed.emit(0) # Resolve Effects
+		await effect_handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+		await action_handler.resolve_check_timing(game_state) # 7.4.1
+
+	if from_sub <= 1:
+		game_state.current_sub_phase = 1
+		sub_phase_changed.emit(1) # Counter Check
+		await _await_confirmation("Counter Check", "auto_counter_check")
+		await action_handler.resolve_counter(game_state)
 
 	if is_game_over:
 		return
@@ -225,44 +267,48 @@ func _begin_counter_phase() -> void:
 	_begin_end_phase()
 
 
-func _begin_end_phase() -> void:
+func _begin_end_phase(from_sub: int = 0) -> void:
 	if is_game_over:
 		return
 
 	game_state.current_phase = CardEnums.GamePhase.END
 	phase_started.emit(CardEnums.GamePhase.END)
-	game_state.current_sub_phase = 0
-	sub_phase_changed.emit(0) # Resolve Effects
-	await effect_handler.trigger_phase_start(CardEnums.GamePhase.END)
-	await action_handler.resolve_check_timing(game_state) # 7.5.1
+
+	if from_sub <= 0:
+		game_state.current_sub_phase = 0
+		sub_phase_changed.emit(0) # Resolve Effects
+		await effect_handler.trigger_phase_start(CardEnums.GamePhase.END)
+		await action_handler.resolve_check_timing(game_state) # 7.5.1
 
 	var player := game_state.get_current_player()
 
-	# Burst discard, then advance (7.5.2)
-	game_state.current_sub_phase = 1
-	sub_phase_changed.emit(1) # Advance
-	await _await_confirmation("Advance", "auto_advance")
-	await action_handler.execute_end_phase_burst_discard(game_state)
-	await action_handler.execute_end_phase_advance(game_state)
+	if from_sub <= 1:
+		# Burst discard, then advance (7.5.2)
+		game_state.current_sub_phase = 1
+		sub_phase_changed.emit(1) # Advance
+		await _await_confirmation("Advance", "auto_advance")
+		await action_handler.execute_end_phase_burst_discard(game_state)
+		await action_handler.execute_end_phase_advance(game_state)
 
-	# Check win from end-phase advance
-	if is_game_over:
-		return
+		# Check win from end-phase advance
+		if is_game_over:
+			return
 
-	var winner := rules_engine.check_win_condition(game_state)
-	if winner >= 0:
-		_on_game_over(winner, "STR_LOG_REASON_INVASION_VICTORY")
-		return
+		var winner := rules_engine.check_win_condition(game_state)
+		if winner >= 0:
+			_on_game_over(winner, "STR_LOG_REASON_INVASION_VICTORY")
+			return
 
-	await action_handler.resolve_check_timing(game_state) # 7.5.3
+		await action_handler.resolve_check_timing(game_state) # 7.5.3
 
-	# Draw up to 5 cards (7.5.4)
-	game_state.current_sub_phase = 2
-	sub_phase_changed.emit(2) # Refill Hand
-	var draw_count := 5 - player.hand.size()
-	if draw_count > 0:
-		await _await_confirmation("Draw %d card(s)" % draw_count, "auto_draw")
-	action_handler.execute_end_phase_draw(game_state)
+	if from_sub <= 2:
+		# Draw up to 5 cards (7.5.4)
+		game_state.current_sub_phase = 2
+		sub_phase_changed.emit(2) # Refill Hand
+		var draw_count := 5 - player.hand.size()
+		if draw_count > 0:
+			await _await_confirmation("Draw %d card(s)" % draw_count, "auto_draw")
+		action_handler.execute_end_phase_draw(game_state)
 
 	await action_handler.resolve_check_timing(game_state) # 7.5.5
 

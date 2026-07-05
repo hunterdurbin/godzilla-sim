@@ -24,6 +24,7 @@ var _pending_log_tokens: Array = []
 # Sound events buffered for broadcast — owned by the BoardSfx child (same
 # forwarding-property pattern as game_board.gd; MultiplayerSync drains it).
 var _board_sfx: Node
+@warning_ignore("unused_private_class_variable") # read via _board._x by MultiplayerSync
 var _pending_sound_events: PackedStringArray:
 	get: return _board_sfx._pending_sound_events if _board_sfx else PackedStringArray()
 	set(v):
@@ -304,17 +305,18 @@ func _rpc_receive_chat(_pid: int, _text: String) -> void: pass
 func _rpc_deck_search_requested(_a: String, _b: String, _c: String, _d: bool = true) -> void: pass
 func _rpc_deck_arrange_requested(_a: String, _b: String) -> void: pass
 func _rpc_card_select_requested(_a: String, _b: String, _c: String, _d: int, _e: int) -> void: pass
-func _rpc_hand_card_selection_requested(_a: String, _b: String, _c: bool) -> void: pass
+func _rpc_hand_card_selection_requested(_a: String, _b: String, _c: bool, _d: String = "") -> void: pass
 func _rpc_confirmation_requested(_a: String, _b: String) -> void: pass
-func _rpc_hand_discard_requested(_a: int) -> void: pass
-func _rpc_zone_target_requested(_a: int, _b: String, _c: String, _d: bool) -> void: pass
-func _rpc_strategy_target_requested(_a: int, _b: String, _c: String) -> void: pass
-func _rpc_choice_requested(_a: String, _b: String, _c: String = "[]") -> void: pass
+func _rpc_hand_discard_requested(_a: int, _b: String = "") -> void: pass
+func _rpc_zone_target_requested(_a: int, _b: String, _c: String, _d: bool, _e: String = "", _f: String = "") -> void: pass
+func _rpc_strategy_target_requested(_a: int, _b: String, _c: String, _d: String = "") -> void: pass
+func _rpc_choice_requested(_a: String, _b: String, _c: String = "[]", _d: String = "[]") -> void: pass
 func _rpc_monster_rankup_requested(_a: String, _b: String, _c: String) -> void: pass
 func _rpc_effect_zone_highlighted(_a: int, _b: int) -> void: pass
 func _rpc_effect_zone_unhighlighted(_a: int, _b: int) -> void: pass
 func _rpc_effect_card_highlighted(_a: int, _b: String) -> void: pass
 func _rpc_effect_card_unhighlighted(_a: int, _b: String) -> void: pass
+func _rpc_effect_stack_changed(_a: String) -> void: pass
 func _rpc_receive_game_ended(_a: int, _b: String) -> void: pass
 func _rpc_receive_replay(_a: PackedByteArray) -> void: pass
 func _rpc_execute_rematch() -> void: pass # server-issued; ignore echoes

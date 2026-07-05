@@ -6,9 +6,12 @@ extends Control
 ## resolution-order choice buttons) plus its location label, so the player
 ## always knows WHICH ability the modal belongs to.
 
+var zoom_requested: Callable # Board's _show_card_zoom; wired like the router callbacks
+
 var _panel: PanelContainer
 var _thumb: TextureRect
 var _label: Label
+var _card_id: String = ""
 
 
 func _ready() -> void:
@@ -26,6 +29,9 @@ func _ready() -> void:
 	offset_bottom = 70.0
 
 	_panel = PanelContainer.new()
+	# Right-click zoom is handled in _input: the banner sits early in the
+	# board's tree, so GUI picking (tree order, not z_index) would route
+	# clicks to the board drawn beneath it instead of this panel.
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.05, 0.05, 0.08, 0.85)
@@ -71,6 +77,7 @@ func show_ability(card_id: String, label: String) -> void:
 	if card_id.is_empty() and label.is_empty():
 		hide_banner()
 		return
+	_card_id = card_id
 	_thumb.texture = OverlayGridUtil.get_choice_thumb(card_id)
 	_thumb.visible = _thumb.texture != null
 	_label.text = label
@@ -81,3 +88,30 @@ func hide_banner() -> void:
 	visible = false
 	_thumb.texture = null
 	_label.text = ""
+	_card_id = ""
+
+
+## The banner draws above everything (z 110) but early tree order means GUI
+## picking would never deliver events to it — so catch right-clicks on its
+## rect here and stop them from reaching whatever sits underneath.
+func _input(event: InputEvent) -> void:
+	if not visible or _card_id.is_empty():
+		return
+	if event is InputEventMouseButton and event.pressed \
+			and event.button_index == MOUSE_BUTTON_RIGHT:
+		# make_input_local resolves the stretch/canvas transforms so the hit
+		# test is right regardless of window scaling.
+		var local_event: InputEvent = _panel.make_input_local(event)
+		if Rect2(Vector2.ZERO, _panel.size).has_point(local_event.position):
+			_request_zoom()
+			get_viewport().set_input_as_handled()
+
+
+## Enlarged card view for the resolving ability's source card.
+func _request_zoom() -> void:
+	if _card_id.is_empty() or not zoom_requested.is_valid():
+		return
+	var dict: Dictionary = CardData.get_card_by_id(_card_id)
+	if dict.is_empty():
+		return
+	zoom_requested.call(dict.duplicate(true), 0)

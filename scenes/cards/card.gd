@@ -6,6 +6,7 @@ const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
 const CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
 const RAGE_MARKER_DEFAULT_PATH := "res://assets/rage/default.png"
 const RAGE_MARKER_CUSTOM_DIR := "rage"
+const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
 
 static var _custom_art_base: String = ""
 static var _custom_card_back_base: String = ""
@@ -424,8 +425,10 @@ func set_play_cost_modifier(modifier: int) -> void:
 	_play_cost_modifier = modifier
 	var badge := get_node_or_null("PlayCostModifierBadge") as Label
 	if modifier == 0:
+		# Hide, never free — queue_free is deferred, so a free+recreate on
+		# same-frame syncs races with the dying node (badge reuse gotcha).
 		if badge:
-			badge.queue_free()
+			badge.visible = false
 		return
 	if not badge:
 		badge = Label.new()
@@ -436,6 +439,7 @@ func set_play_cost_modifier(modifier: int) -> void:
 		add_child(badge)
 		if not resized.is_connected(_layout_play_cost_badge):
 			resized.connect(_layout_play_cost_badge)
+	badge.visible = true
 	badge.text = "%+d" % modifier
 	if modifier < 0:
 		badge.add_theme_color_override("font_color", Color(0.45, 1.0, 0.45))
@@ -450,9 +454,152 @@ func get_play_cost_modifier() -> int:
 
 
 ## Public — call this after changing the card's rotation (e.g. strategy zoom
-## flips the card -90°) so the badge re-orients to read upright.
+## flips the card -90°) so the badges re-orient to read upright.
 func update_play_cost_badge_layout() -> void:
 	_layout_play_cost_badge()
+	_layout_stat_badges()
+
+
+var _power_preview: int = 0
+
+
+## Show a "+N" power badge over the card's printed CP while it sits in hand —
+## a preview of the card's own placement-independent CP modifier (see
+## EffectQueries.get_hand_cp_preview). Amount 0 → badge hidden.
+## Variable-base cards ("counter power X", e.g. EBP03-067): amount is the
+## resolved X itself, rendered unsigned/neutral — it IS the power, not a bonus.
+func set_power_preview(amount: int) -> void:
+	_power_preview = amount
+	var badge := get_node_or_null("PowerPreviewBadge") as Label
+	if amount == 0:
+		# Hide, never free — queue_free is deferred, so a free+recreate on
+		# same-frame syncs races with the dying node (badge reuse gotcha).
+		if badge:
+			badge.visible = false
+		_layout_stat_badges()
+		return
+	if not badge:
+		badge = Label.new()
+		badge.name = "PowerPreviewBadge"
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		add_child(badge)
+		if not resized.is_connected(_layout_stat_badges):
+			resized.connect(_layout_stat_badges)
+	badge.visible = true
+	badge.add_theme_color_override("font_color",
+		Color(0.3, 1.0, 0.3) if _has_variable_base_cp() or amount > 0 else Color(1.0, 0.4, 0.4))
+	badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	_layout_stat_badges()
+
+
+## Whether this card's printed counter power is a variable X resolved by its
+## own effect (get_variable_counter_power in the pre-generated trigger map —
+## runtime introspection is unreliable in export builds).
+func _has_variable_base_cp() -> bool:
+	var script_path: String = card_data.get("effect_script", "")
+	if script_path.is_empty():
+		return false
+	return "get_variable_counter_power" in (_TriggerMap.TRIGGERS.get(script_path, []) as Array)
+
+
+func get_power_preview() -> int:
+	return _power_preview
+
+
+var _threat_preview: int = -1
+
+
+## Show the resolved variable threat level ("threat level X", e.g. EBP04-031)
+## on a preview/zoomed monster card — plain green value in the same band the
+## board's ThreatModifierBadge occupies. -1 → badge hidden (fixed printed
+## threat is on the art). Unlike the CP preview, 0 stays visible: X = 0 is a
+## resolved value the art can't show.
+func set_threat_preview(amount: int) -> void:
+	_threat_preview = amount
+	var badge := get_node_or_null("ThreatPreviewBadge") as Label
+	if amount < 0:
+		# Hide, never free — queue_free is deferred, so a free+recreate on
+		# same-frame syncs races with the dying node (badge reuse gotcha).
+		if badge:
+			badge.visible = false
+		_layout_stat_badges()
+		return
+	if not badge:
+		badge = Label.new()
+		badge.name = "ThreatPreviewBadge"
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		add_child(badge)
+		if not resized.is_connected(_layout_stat_badges):
+			resized.connect(_layout_stat_badges)
+	badge.visible = true
+	badge.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+	badge.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))
+	_layout_stat_badges()
+
+
+func get_threat_preview() -> int:
+	return _threat_preview
+
+
+## Zoom-overlay hook: hide every badge drawn over the card art so the printed
+## text stays readable; restore from the stored values when re-shown.
+func set_stat_badges_visible(shown: bool) -> void:
+	if shown:
+		set_play_cost_modifier(_play_cost_modifier)
+		set_power_preview(_power_preview)
+		set_threat_preview(_threat_preview)
+		return
+	for badge_name in ["PlayCostModifierBadge", "PowerPreviewBadge", "ThreatPreviewBadge"]:
+		var badge := get_node_or_null(badge_name) as Label
+		if badge:
+			badge.visible = false
+
+
+func _layout_stat_badges() -> void:
+	# Power and threat previews share one anchor: the "Counter Power" strip at
+	# the card's bottom-right (directly above the printed value). When both are
+	# visible they stack upward from it and gain "CP"/"Threat" prefixes so the
+	# two values stay distinguishable; alone, each shows the bare number.
+	var entries: Array = []
+	var power_badge := get_node_or_null("PowerPreviewBadge") as Label
+	if power_badge and power_badge.visible:
+		entries.append({
+			"badge": power_badge,
+			"text": ("%d" % _power_preview) if _has_variable_base_cp() else ("%+d" % _power_preview),
+			"prefix": "CP",
+		})
+	var threat_badge := get_node_or_null("ThreatPreviewBadge") as Label
+	if threat_badge and threat_badge.visible:
+		entries.append({
+			"badge": threat_badge,
+			"text": "%d" % _threat_preview,
+			"prefix": tr("STR_ZOOM_MOD_SEC_THREAT"),
+		})
+	if entries.is_empty():
+		return
+	var w: float = size.x if size.x > 0.0 else custom_minimum_size.x
+	if w <= 0.0:
+		w = 150.0
+	var scale_factor: float = w / 150.0
+	var h: float = size.y if size.y > 0.0 else custom_minimum_size.y
+	if h <= 0.0:
+		h = 210.0 * scale_factor
+	var bsize := Vector2(64, 20) * scale_factor
+	var gap: float = 4.0 * scale_factor
+	for i in range(entries.size()):
+		var badge: Label = entries[i]["badge"]
+		badge.text = ("%s %s" % [entries[i]["prefix"], entries[i]["text"]]) if entries.size() > 1 else str(entries[i]["text"])
+		badge.size = bsize
+		badge.pivot_offset = bsize / 2.0
+		# Counter-rotate for safety (mirrors the other badges).
+		badge.position = Vector2(w * 0.865, h * 0.886) - bsize / 2.0 - Vector2(0, (bsize.y + gap) * i)
+		badge.rotation = - rotation
+		badge.add_theme_font_size_override("font_size", int(round(15.0 * scale_factor)))
+		badge.add_theme_constant_override("outline_size", maxi(2, int(round(4.0 * scale_factor))))
 
 
 func _layout_play_cost_badge() -> void:
@@ -511,6 +658,53 @@ func set_highlight(enabled: bool) -> void:
 			overlay.add_theme_stylebox_override("panel", style)
 			add_child(overlay)
 		overlay.visible = true
+	elif overlay:
+		overlay.queue_free()
+
+
+var _attention_tween: Tween = null
+
+
+func set_attention_highlight(enabled: bool, border_color: Color = Color(0.25, 0.85, 1.0)) -> void:
+	## Pulsing border used to point this card out on the board (e.g. while the
+	## matching effect-prompt option is hovered) — cyan for the viewer's own
+	## effects, purple for the opponent's. Independent of set_highlight's gold
+	## border and of modulate-based effect tints, so all three visuals can
+	## coexist without stomping each other's reset.
+	var overlay := get_node_or_null("AttentionOverlay") as Panel
+	if _attention_tween:
+		_attention_tween.kill()
+		_attention_tween = null
+	if enabled:
+		if not overlay:
+			overlay = Panel.new()
+			overlay.name = "AttentionOverlay"
+			overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			overlay.z_index = 3
+			var style := StyleBoxFlat.new()
+			style.bg_color = Color(0, 0, 0, 0)
+			style.border_width_left = 4
+			style.border_width_top = 4
+			style.border_width_right = 4
+			style.border_width_bottom = 4
+			style.corner_radius_top_left = 6
+			style.corner_radius_top_right = 6
+			style.corner_radius_bottom_right = 6
+			style.corner_radius_bottom_left = 6
+			overlay.add_theme_stylebox_override("panel", style)
+			add_child(overlay)
+		# Re-color even a cached overlay — the last highlight may have used a
+		# different ownership color.
+		var box := overlay.get_theme_stylebox("panel") as StyleBoxFlat
+		if box:
+			box.border_color = border_color
+		overlay.visible = true
+		overlay.modulate.a = 1.0
+		_attention_tween = create_tween().set_loops()
+		_attention_tween.set_trans(Tween.TRANS_SINE)
+		_attention_tween.tween_property(overlay, "modulate:a", 0.4, 0.4)
+		_attention_tween.tween_property(overlay, "modulate:a", 1.0, 0.4)
 	elif overlay:
 		overlay.queue_free()
 

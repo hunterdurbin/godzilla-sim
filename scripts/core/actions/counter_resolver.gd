@@ -134,6 +134,8 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 	var prompt := tr("STR_AH_CHOOSE_RANKUP_FMT") % next_rank
 	var monsters: Array[Dictionary] = []
 	monsters.assign(opponent.monster_deck)
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var chosen_index: int = await input.choose_rankup(opponent.player_id, monsters, valid_indices, prompt)
 
 	if chosen_index >= 0 and chosen_index < opponent.monster_deck.size():

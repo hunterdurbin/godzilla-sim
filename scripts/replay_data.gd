@@ -11,6 +11,7 @@ const MAX_RECENT_REPLAYS := 50
 var version: int = REPLAY_VERSION
 var game_version: String = ""
 var timestamp: String = ""
+var timestamp_unix: float = 0.0  # UTC unix seconds; 0 = unknown (legacy replay)
 var game_seed: int = 0
 var player_names: Array[String] = ["Player 1", "Player 2"]
 var deck_names: Array[String] = ["", ""]
@@ -33,6 +34,7 @@ func to_dict() -> Dictionary:
 		"version": version,
 		"game_version": game_version,
 		"timestamp": timestamp,
+		"timestamp_unix": timestamp_unix,
 		"game_seed": game_seed,
 		"player_names": Array(player_names),
 		"deck_names": Array(deck_names),
@@ -51,6 +53,7 @@ func from_dict(data: Dictionary) -> void:
 	version = data.get("version", 1)
 	game_version = data.get("game_version", "")
 	timestamp = data.get("timestamp", "")
+	timestamp_unix = data.get("timestamp_unix", 0.0)
 	game_seed = data.get("game_seed", 0)
 	var pn: Array = data.get("player_names", ["Player 1", "Player 2"])
 	player_names = [str(pn[0]) if pn.size() > 0 else "Player 1", str(pn[1]) if pn.size() > 1 else "Player 2"]
@@ -67,6 +70,13 @@ func from_dict(data: Dictionary) -> void:
 	snapshots = []
 	for s in raw_snaps:
 		snapshots.append(s)
+
+
+static func local_datetime_string_from_unix(unix: float) -> String:
+	## Converts a UTC unix timestamp to a "YYYY-MM-DD HH:MM:SS" string in the
+	## local timezone (matching the format used by ReplayRecorder).
+	var bias_seconds: int = Time.get_time_zone_from_system().bias * 60
+	return Time.get_datetime_string_from_unix_time(int(unix) + bias_seconds).replace("T", " ")
 
 
 # -- Versioned directory helpers --

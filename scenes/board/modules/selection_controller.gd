@@ -53,6 +53,10 @@ var _zone_target_player_id: int = -1 # Who is choosing
 var _zone_target_board_pid: int = -1 # Whose board the zones are on
 var _zone_target_valid_zones: Array[int] = []
 var _zone_target_allow_skip: bool = false
+var _prompt_preview_root: Control = null # Mini previews above the helper text (effect source / card being placed)
+var _prompt_preview_card: Control = null # The placed-card preview node (choice hover retargets it)
+var _stack_hover_preview: Control = null # Sticky preview for the last hovered effect-stack row (joins the prompt row when one is up, else bottom-left); stays until its row leaves the stack
+var _stack_hover_id: String = "" # Base id shown in _stack_hover_preview
 
 # Strategy target selection state
 var _strategy_target_selecting: bool = false
@@ -61,11 +65,16 @@ var _strategy_target_board_pid: int = -1
 var _strategy_target_valid_indices: Array[int] = []
 
 # Choice button selection state
+const CHOICE_CARD_SCENE := preload("res://scenes/cards/Card.tscn")
+const ZONE_PREVIEW_SIZE := Vector2(72, 101) # Small; hover mirrors to the big right-side preview
 var _choice_selecting: bool = false
 var _choice_player_id: int = -1
 var _choice_buttons: Array[Button] = []
 var _choice_container: VBoxContainer = null
 var _choice_panel: PanelContainer = null # Mobile wrapper panel
+var _choice_card_dicts: Dictionary = {} # base id -> duplicated card dict cache
+var _choice_option_card_ids: Array[String] = [] # base ids parallel to the open options
+var _choice_source_refs: Array = [] # card_location_ref dicts parallel to the open options
 
 # --- Board bridge: widgets ---
 var action_panel: Control
@@ -164,6 +173,9 @@ func reset_for_rematch() -> void:
 	_strategy_target_valid_indices.clear()
 	_choice_selecting = false
 	_choice_player_id = -1
+	_choice_option_card_ids = []
+	_choice_source_refs = []
+	clear_stack_hover_preview()
 	waiting_for_card_select = false
 	waiting_for_zone_select = false
 	selected_card_id = ""
@@ -913,22 +925,33 @@ func _clear_card_highlight() -> void:
 	_highlighted_card = null
 
 
+## Base id of the resolving effect's source card ("" when no effect is
+## active — e.g. turn-flow prompts — or on the multiplayer client, which
+## receives the id via the prompt RPC instead).
+func _get_effect_source_id() -> String:
+	if turn_manager == null:
+		return ""
+	var summary: Dictionary = turn_manager.action_handler.effect_handler.get_active_effect_summary()
+	return summary.get("card_id", "")
+
+
 func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
+	var source_id := _get_effect_source_id()
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
-		_pending_interaction = {"method": "hand_discard", "args": [discard_count], "player": player_id}
+		_pending_interaction = {"method": "hand_discard", "args": [discard_count, source_id], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_discard_requested", 4)
-				_sync._rpc_hand_discard_requested.rpc_id(peer_id, discard_count)
+				_sync._rpc_hand_discard_requested.rpc_id(peer_id, discard_count, source_id)
 		return
 	_play_action_required_if_not_turn_player(player_id)
-	_show_hand_discard_selection(player_id, discard_count)
+	_show_hand_discard_selection(player_id, discard_count, source_id)
 
 
-func _show_hand_discard_selection(player_id: int, discard_count: int) -> void:
+func _show_hand_discard_selection(player_id: int, discard_count: int, source_id: String = "") -> void:
 	_discard_selecting = true
 	_discard_player_id = player_id
 	_discard_count = discard_count
@@ -950,6 +973,7 @@ func _show_hand_discard_selection(player_id: int, discard_count: int) -> void:
 	_disable_all_buttons()
 	card_select_prompt.text = tr("STR_GB_SELECT_DISCARD_FMT").replace("{N}", str(discard_count))
 	action_prompt_panel.visible = true
+	_show_prompt_previews(source_id, "")
 	btn_confirm.disabled = true
 
 
@@ -1002,6 +1026,7 @@ func _confirm_hand_discard() -> void:
 		hand_mgr.card_selected.disconnect(_on_discard_card_selected)
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
+	_cleanup_prompt_previews()
 
 	# Restore hand visibility
 	_update_hand_visibility(_get_current_pid())
@@ -1034,6 +1059,7 @@ func _force_cleanup_discard_selection() -> void:
 
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
+	_cleanup_prompt_previews()
 
 	_update_hand_visibility(_get_current_pid())
 
@@ -1041,20 +1067,21 @@ func _force_cleanup_discard_selection() -> void:
 func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
+	var source_id := _get_effect_source_id()
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
-		_pending_interaction = {"method": "hand_card_selection", "args": [indices_json, prompt, allow_skip], "player": player_id}
+		_pending_interaction = {"method": "hand_card_selection", "args": [indices_json, prompt, allow_skip, source_id], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("hand_card_selection_requested", indices_json.length() + prompt.length() + 1)
-				_sync._rpc_hand_card_selection_requested.rpc_id(peer_id, indices_json, prompt, allow_skip)
+				_sync._rpc_hand_card_selection_requested.rpc_id(peer_id, indices_json, prompt, allow_skip, source_id)
 		return
 	_play_action_required_if_not_turn_player(player_id)
-	_show_hand_card_selection(player_id, valid_indices, prompt, allow_skip)
+	_show_hand_card_selection(player_id, valid_indices, prompt, allow_skip, source_id)
 
 
-func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool) -> void:
+func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool, source_id: String = "") -> void:
 	_hand_card_selecting = true
 	_hand_card_player_id = player_id
 	_hand_card_allow_skip = allow_skip
@@ -1074,6 +1101,7 @@ func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt
 	_disable_all_buttons()
 	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
+	_show_prompt_previews(source_id, "")
 
 	if allow_skip:
 		btn_confirm.text = tr("STR_GB_SKIP")
@@ -1129,25 +1157,31 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 	action_prompt_panel.visible = false
 	btn_confirm.text = tr("STR_GB_CONFIRM")
 	btn_confirm.disabled = true
+	_cleanup_prompt_previews()
 	_update_hand_visibility(_get_current_pid())
 
 
 func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
+	# Base id of the card being placed ("" for zone-only prompts like destroy).
+	var card_id := ""
+	if turn_manager:
+		card_id = turn_manager.action_handler.effect_handler.zone_target_card_id
+	var source_id := _get_effect_source_id()
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var zones_json := JSON.stringify(valid_zones)
-		_pending_interaction = {"method": "zone_target", "args": [target_player_id, zones_json, prompt, allow_skip], "player": player_id}
+		_pending_interaction = {"method": "zone_target", "args": [target_player_id, zones_json, prompt, allow_skip, card_id, source_id], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("zone_target_requested", 4 + zones_json.length() + prompt.length() + 1)
-				_sync._rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt, allow_skip)
+				_sync._rpc_zone_target_requested.rpc_id(peer_id, target_player_id, zones_json, prompt, allow_skip, card_id, source_id)
 		return
-	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt, allow_skip)
+	_show_zone_target_selection(player_id, target_player_id, valid_zones, prompt, allow_skip, card_id, source_id)
 
 
-func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false) -> void:
+func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false, card_id: String = "", source_id: String = "") -> void:
 	_zone_target_selecting = true
 	_zone_target_player_id = player_id
 	_zone_target_board_pid = target_player_id
@@ -1157,6 +1191,8 @@ func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zo
 	_disable_all_buttons()
 	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
+
+	_show_prompt_previews(source_id, card_id)
 
 	if allow_skip:
 		btn_confirm.text = tr("STR_GB_SKIP")
@@ -1203,6 +1239,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 	_zone_target_allow_skip = false
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
+	_cleanup_prompt_previews()
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("zone_target_resolved", 4)
@@ -1211,22 +1248,212 @@ func _finish_zone_target(zone_idx: int) -> void:
 		_session.player_input.resolve_zone_target(zone_idx)
 
 
+## Small previews above the helper text: the resolving effect's source card
+## and/or the card being placed (both off-screen otherwise). When both show,
+## the source sits on the LEFT with an "Effect source" caption and the card
+## being placed on the RIGHT. Hover mirrors either to the big right-side
+## preview; click/tap zooms. Identical ids collapse to a single preview.
+func _show_prompt_previews(source_id: String, placed_id: String) -> void:
+	_cleanup_prompt_previews()
+	if source_id == placed_id:
+		source_id = ""
+	var source_ok := not source_id.is_empty() and not _resolve_choice_card(source_id).is_empty()
+	var placed_ok := not placed_id.is_empty() and not _resolve_choice_card(placed_id).is_empty()
+	if not source_ok and not placed_ok:
+		return
+
+	var row := HBoxContainer.new()
+	row.name = "PromptPreviews"
+	row.add_theme_constant_override("separation", 8)
+	row.z_index = 56
+	# Hidden until the deferred positioner pins it (no top-left flash)
+	row.visible = false
+	if source_ok:
+		var source_card := _make_card_preview(source_id, ZONE_PREVIEW_SIZE)
+		# Caption only needed to disambiguate when the placed card also shows.
+		if placed_ok:
+			source_card.add_child(_make_preview_caption("STR_GB_EFFECT_SOURCE"))
+		row.add_child(source_card)
+	if placed_ok:
+		_prompt_preview_card = _make_card_preview(placed_id, ZONE_PREVIEW_SIZE)
+		row.add_child(_prompt_preview_card)
+	add_child(row)
+	_prompt_preview_root = row
+	# A sticky pending-effect slot joins the new row as its last slot
+	_mount_stack_hover_slot()
+	_position_prompt_previews.call_deferred()
+
+
+func _make_preview_caption(text_key: String) -> Label:
+	var caption := Label.new()
+	caption.text = tr(text_key)
+	caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	caption.add_theme_font_size_override("font_size", 10)
+	caption.add_theme_color_override("font_color", Color.WHITE)
+	caption.add_theme_color_override("font_outline_color", Color.BLACK)
+	caption.add_theme_constant_override("outline_size", 4)
+	# Full-width strip across the top of the mini card
+	caption.anchor_left = 0.0
+	caption.anchor_right = 1.0
+	caption.offset_top = 2.0
+	caption.z_index = 1
+	return caption
+
+
+## Pin the previews' bottom-left just above the prompt panel (deferred one
+## frame so the panel's rect reflects the new prompt text and any mobile
+## re-anchoring).
+func _position_prompt_previews() -> void:
+	await get_tree().process_frame
+	if _prompt_preview_root == null or not is_instance_valid(_prompt_preview_root):
+		return
+	var rect: Rect2 = action_prompt_panel.get_global_rect()
+	_prompt_preview_root.global_position = Vector2(
+		rect.position.x, rect.position.y - _prompt_preview_root.size.y - 6.0)
+	_prompt_preview_root.visible = true
+
+
+func _cleanup_prompt_previews() -> void:
+	if _prompt_preview_root and is_instance_valid(_prompt_preview_root):
+		# A sticky pending-effect slot riding in the row dies with it; remount
+		# it afterwards (deferred no-ops if a new prompt row re-adopted it).
+		if _stack_hover_preview and is_instance_valid(_stack_hover_preview) \
+				and _stack_hover_preview.get_parent() == _prompt_preview_root:
+			_stack_hover_preview = null
+			_mount_stack_hover_slot.call_deferred()
+		_prompt_preview_root.queue_free()
+		# A preview freed mid-hover never fires mouse_exited
+		_board._hide_card_preview()
+	_prompt_preview_root = null
+	_prompt_preview_card = null
+
+
+## Sticky mini preview for the last hovered effect-stack row. While a
+## prompt's own previews are up, it joins their row as an extra captioned
+## slot (never retargeting the placed-card slot); otherwise it pins a
+## standalone card bottom-left. It is NOT cleared on hover-exit — it stays
+## until its row leaves the stack (prune_stack_hover_preview).
+func show_stack_hover_preview(base_id: String) -> void:
+	if base_id.is_empty():
+		return
+	var dict := _resolve_choice_card(base_id)
+	if dict.is_empty():
+		return
+	_stack_hover_id = base_id
+	# Swap the card data in place when the slot is already mounted — a
+	# destroy/respawn here would flash at (0,0) on every hover move.
+	if _stack_hover_mounted_in_place():
+		_stack_hover_preview.set_card_data_dict(dict)
+		return
+	_free_stack_hover_node()
+	_mount_stack_hover_slot()
+
+
+## Whether the hover slot exists and sits in the correct container for the
+## current state: the prompt-preview row when one is up, else the wrapper box.
+func _stack_hover_mounted_in_place() -> bool:
+	if _stack_hover_preview == null or not is_instance_valid(_stack_hover_preview) \
+			or _stack_hover_preview.is_queued_for_deletion():
+		return false
+	var in_row := _prompt_preview_root != null and is_instance_valid(_prompt_preview_root)
+	var parent := _stack_hover_preview.get_parent()
+	if in_row:
+		return parent == _prompt_preview_root
+	return parent != null and parent.has_meta("stack_hover_box")
+
+
+## (Re)creates the slot for _stack_hover_id in the current container: the
+## prompt-preview row when one is up, else standalone above the prompt panel.
+## No-op when the slot already sits in the right place.
+func _mount_stack_hover_slot() -> void:
+	if _stack_hover_mounted_in_place():
+		return
+	_free_stack_hover_node()
+	if _stack_hover_id.is_empty() or _resolve_choice_card(_stack_hover_id).is_empty():
+		return
+	var card := _make_card_preview(_stack_hover_id, ZONE_PREVIEW_SIZE)
+	card.add_child(_make_preview_caption("STR_GB_PENDING_EFFECT"))
+	if _prompt_preview_root != null and is_instance_valid(_prompt_preview_root):
+		_prompt_preview_root.add_child(card)
+	else:
+		# A bare Card control re-derives its default 150x210 size when it
+		# enters the tree outside a container; a wrapper box re-forces the
+		# mini slot size the same way the prompt row does. Hidden until the
+		# deferred positioner pins it, so it never draws at (0,0).
+		var box := HBoxContainer.new()
+		box.name = "StackHoverBox" # May be auto-renamed; identity is the meta
+		box.set_meta("stack_hover_box", true)
+		box.z_index = 56
+		box.visible = false
+		box.add_child(card)
+		add_child(box)
+		_position_stack_hover_preview.call_deferred()
+	_stack_hover_preview = card
+
+
+## The node to position/free for the hover slot: the standalone wrapper box
+## when mounted alone, else the card itself (parented in the prompt row).
+func _stack_hover_root() -> Control:
+	if _stack_hover_preview == null or not is_instance_valid(_stack_hover_preview):
+		return null
+	var parent := _stack_hover_preview.get_parent()
+	if parent is Control and parent.has_meta("stack_hover_box"):
+		return parent
+	return _stack_hover_preview
+
+
+func _free_stack_hover_node() -> void:
+	var node := _stack_hover_root()
+	if node:
+		node.queue_free()
+		# A preview freed mid-hover never fires mouse_exited
+		_board._hide_card_preview()
+	_stack_hover_preview = null
+
+
+## Deferred one frame so the preview has a laid-out size to pin by; created
+## hidden, so it first draws already in place (no top-left flash).
+func _position_stack_hover_preview() -> void:
+	await get_tree().process_frame
+	var node := _stack_hover_root()
+	if node == null or node.get_parent() != self:
+		return # Gone, or riding in the prompt row (which positions itself)
+	var rect: Rect2 = action_prompt_panel.get_global_rect()
+	node.global_position = Vector2(
+		rect.position.x, rect.position.y - node.size.y - 6.0)
+	node.visible = true
+
+
+## Drop the slot when its row is no longer in the stack (effect resolved or
+## the stack emptied). Called by EffectStackPanel on every stack rebuild.
+func prune_stack_hover_preview(base_ids: Array) -> void:
+	if not _stack_hover_id.is_empty() and not base_ids.has(_stack_hover_id):
+		clear_stack_hover_preview()
+
+
+func clear_stack_hover_preview() -> void:
+	_free_stack_hover_node()
+	_stack_hover_id = ""
+
+
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
+	var source_id := _get_effect_source_id()
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var indices_json := JSON.stringify(valid_indices)
-		_pending_interaction = {"method": "strategy_target", "args": [target_player_id, indices_json, prompt], "player": player_id}
+		_pending_interaction = {"method": "strategy_target", "args": [target_player_id, indices_json, prompt, source_id], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("strategy_target_requested", 4 + indices_json.length() + prompt.length())
-				_sync._rpc_strategy_target_requested.rpc_id(peer_id, target_player_id, indices_json, prompt)
+				_sync._rpc_strategy_target_requested.rpc_id(peer_id, target_player_id, indices_json, prompt, source_id)
 		return
-	_show_strategy_target_selection(player_id, target_player_id, valid_indices, prompt)
+	_show_strategy_target_selection(player_id, target_player_id, valid_indices, prompt, source_id)
 
 
-func _show_strategy_target_selection(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> void:
+func _show_strategy_target_selection(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String, source_id: String = "") -> void:
 	_strategy_target_selecting = true
 	_strategy_target_player_id = player_id
 	_strategy_target_board_pid = target_player_id
@@ -1235,6 +1462,7 @@ func _show_strategy_target_selection(player_id: int, target_player_id: int, vali
 	_disable_all_buttons()
 	card_select_prompt.text = _resolve_translated_text(prompt)
 	action_prompt_panel.visible = true
+	_show_prompt_previews(source_id, "")
 
 	# Highlight valid strategy slots on the target player's board
 	var board: Control = player1_board if target_player_id == 0 else player2_board
@@ -1269,6 +1497,7 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 	_strategy_target_selecting = false
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
+	_cleanup_prompt_previews()
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("strategy_target_resolved", 4)
@@ -1280,48 +1509,50 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 func _on_choice_requested(player_id: int, options: Array[String], prompt: String) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
-	# Card art behind each option (parallel to options; "" = text-only).
+	# Card art + source location behind each option (parallel to options;
+	# ""/{} = text-only option with no board card to point at).
 	var card_ids: Array[String] = []
+	var source_refs: Array = []
 	if turn_manager:
 		card_ids = turn_manager.action_handler.effect_handler.choice_card_ids
+		source_refs = turn_manager.action_handler.effect_handler.choice_source_refs
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var options_json := JSON.stringify(options)
 		var card_ids_json := JSON.stringify(card_ids)
-		_pending_interaction = {"method": "choice", "args": [options_json, prompt, card_ids_json], "player": player_id}
+		var source_refs_json := JSON.stringify(source_refs)
+		_pending_interaction = {"method": "choice", "args": [options_json, prompt, card_ids_json, source_refs_json], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
 				RpcLogger.log_send("choice_requested", options_json.length() + prompt.length())
-				_sync._rpc_choice_requested.rpc_id(peer_id, options_json, prompt, card_ids_json)
+				_sync._rpc_choice_requested.rpc_id(peer_id, options_json, prompt, card_ids_json, source_refs_json)
 		return
-	_show_choice_selection(player_id, options, prompt, card_ids)
+	_show_choice_selection(player_id, options, prompt, card_ids, source_refs)
 
 
-func _show_choice_selection(player_id: int, options: Array[String], prompt: String, card_ids: Array[String] = []) -> void:
+func _show_choice_selection(player_id: int, options: Array[String], prompt: String, card_ids: Array[String] = [], source_refs: Array = []) -> void:
 	_choice_selecting = true
 	_choice_player_id = player_id
+	_choice_option_card_ids = card_ids
+	_choice_source_refs = source_refs
 
 	_disable_all_buttons()
 	# Hide the normal action button rows so only choice buttons show
 	_set_action_buttons_visible(false)
-	card_select_prompt.text = _resolve_translated_text(prompt)
-	action_prompt_panel.visible = true
 
-	# Choice buttons live in their own OPAQUE panel so they never visually
-	# bleed into the turn tracker behind them, anchored above the hand
-	# toggle/sort buttons so they never cover those either. The button list
-	# scrolls when there are more options than fit.
+	# One unified panel on the right edge: opaque background with the prompt
+	# header INSIDE it (no more helper text split off to the bottom-left),
+	# anchored above the hand toggle/sort buttons. The button list scrolls
+	# when there are more options than fit.
 	_choice_panel = PanelContainer.new()
 	_choice_panel.name = "ChoicePanel"
-	# Transparent background — the player can see the board behind the
-	# action buttons; only the buttons themselves are visible.
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(0, 0, 0, 0)
-	panel_style.set_corner_radius_all(6)
-	panel_style.content_margin_left = 6
-	panel_style.content_margin_right = 6
-	panel_style.content_margin_top = 6
-	panel_style.content_margin_bottom = 6
+	panel_style.bg_color = Color(0.06, 0.07, 0.10, 0.9)
+	panel_style.set_corner_radius_all(8)
+	panel_style.content_margin_left = 10
+	panel_style.content_margin_right = 10
+	panel_style.content_margin_top = 10
+	panel_style.content_margin_bottom = 10
 	_choice_panel.add_theme_stylebox_override("panel", panel_style)
 	_choice_panel.z_index = 56
 
@@ -1338,10 +1569,26 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	# Explicitly position the rect with its BOTTOM edge at bottom_y — do not
 	# rely on grow directions (a min-size overflow expands DOWNWARD from the
 	# anchor point, which is how the panel ended up over/below the screen).
-	var panel_width := 372.0 # 360 scroll + 12 stylebox margins
-	var panel_margins := 12.0
+	var panel_width := 380.0 # 360 scroll + 20 stylebox margins
+	var panel_margins := 20.0
+	var header_est := 30.0
 	var per_btn: float = 64.0
-	var max_height: float = bottom_y - 56.0 # keep the prompt text visible above
+
+	# Small preview above the helper text of the card the choice belongs to,
+	# following the hovered/focused option (same widget as the other prompts).
+	var first_card_id := ""
+	for cid in card_ids:
+		if not cid.is_empty():
+			first_card_id = cid
+			break
+	if _stack_has(first_card_id):
+		# Pending-ability options seed the sticky pending-effect slot instead
+		# of the placed-card slot; hover/focus keeps it in sync from there.
+		show_stack_hover_preview(first_card_id)
+	else:
+		_show_prompt_previews("", first_card_id)
+
+	var max_height: float = bottom_y - 120.0 # room for the header + top margin
 	var est_height: float = minf(options.size() * per_btn + 12.0, max_height)
 	_choice_panel.anchor_left = 1.0
 	_choice_panel.anchor_right = 1.0
@@ -1349,13 +1596,26 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	_choice_panel.anchor_bottom = 0.0
 	_choice_panel.offset_left = -6.0 - panel_width
 	_choice_panel.offset_right = -6.0
-	_choice_panel.offset_top = bottom_y - (est_height + panel_margins)
+	_choice_panel.offset_top = bottom_y - (est_height + header_est + panel_margins)
 	_choice_panel.offset_bottom = bottom_y
+
+	var inner := VBoxContainer.new()
+	inner.name = "ChoiceInner"
+	inner.add_theme_constant_override("separation", 6)
+	_choice_panel.add_child(inner)
+
+	var header := Label.new()
+	header.name = "ChoiceHeader"
+	header.text = _resolve_translated_text(prompt)
+	header.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	header.add_theme_font_size_override("font_size", 15)
+	header.add_theme_color_override("font_color", Color(1.0, 1.0, 0.5))
+	inner.add_child(header)
 
 	var scroll := ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.custom_minimum_size = Vector2(360.0, est_height)
-	_choice_panel.add_child(scroll)
+	inner.add_child(scroll)
 	# After the first layout pass, shrink-wrap to the buttons' real (wrapped)
 	# height — no gap under the last button — and re-pin the bottom edge.
 	_fit_choice_panel.call_deferred(scroll, bottom_y, max_height)
@@ -1366,6 +1626,8 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	_choice_container.add_theme_constant_override("separation", 4)
 	scroll.add_child(_choice_container)
 	add_child(_choice_panel)
+	_board._update_tracker_collapse()
+	_board.set_log_prompt_dim(true)
 
 	for i in range(options.size()):
 		var btn := Button.new()
@@ -1385,6 +1647,12 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 				btn.expand_icon = true
 				btn.add_theme_constant_override("icon_max_width", 48)
 				btn.custom_minimum_size.y = maxf(btn.custom_minimum_size.y, 56.0)
+		# Preview retarget + board attention pulse follow the hovered/focused
+		# option (both no-op when the option has no card/location behind it).
+		btn.mouse_entered.connect(_on_choice_option_hovered.bind(i))
+		btn.focus_entered.connect(_on_choice_option_hovered.bind(i))
+		btn.mouse_exited.connect(_on_choice_option_unhovered.bind(i))
+		btn.focus_exited.connect(_on_choice_option_unhovered.bind(i))
 		btn.pressed.connect(_on_choice_button_pressed.bind(i))
 		_choice_container.add_child(btn)
 		_choice_buttons.append(btn)
@@ -1404,8 +1672,88 @@ func _fit_choice_panel(scroll: ScrollContainer, bottom_y: float, max_height: flo
 	var measured: float = maxf(_choice_container.size.y, _choice_container.get_combined_minimum_size().y)
 	var content_h: float = minf(measured + 2.0, max_height)
 	scroll.custom_minimum_size.y = content_h
-	_choice_panel.offset_top = bottom_y - (content_h + 12.0)
+	# Panel height = header + scroll content + margins/separation, all covered
+	# by the PanelContainer's combined minimum once the scroll min is set.
+	var panel_h: float = _choice_panel.get_combined_minimum_size().y
+	_choice_panel.offset_top = bottom_y - panel_h
 	_choice_panel.offset_bottom = bottom_y
+
+
+## Display-only Card.tscn instance for the choice / zone-target previews;
+## click/tap (or the gallery right-click/double-click wiring) opens the
+## full-screen zoom.
+func _make_card_preview(base_id: String, preview_size: Vector2) -> Control:
+	var card: Control = CHOICE_CARD_SCENE.instantiate()
+	card.skip_effect_load = true
+	card.drag_enabled = false
+	card.click_on_release = true
+	card.is_selectable = true
+	if card.has_method("set_card_data_dict"):
+		card.set_card_data_dict(_resolve_choice_card(base_id))
+	card.custom_minimum_size = preview_size
+	card.size = preview_size
+	OverlayGridUtil.set_gallery_hover(card, _board._show_card_zoom)
+	card.card_clicked.connect(func(c: Control) -> void:
+		_board._show_card_zoom(c.card_data, 0))
+	# Hover mirrors the card to the big right-side preview panel (no-op on
+	# mobile, which uses tap-to-zoom instead).
+	card.mouse_entered.connect(func() -> void:
+		_board._show_card_preview(card.card_data, 0))
+	card.mouse_exited.connect(_board._hide_card_preview)
+	return card
+
+
+## Base id -> full card dict (duplicated — CardData templates are shared).
+func _resolve_choice_card(base_id: String) -> Dictionary:
+	if _choice_card_dicts.has(base_id):
+		return _choice_card_dicts[base_id]
+	var dict: Dictionary = CardData.get_card_by_id(base_id)
+	dict = dict.duplicate(true) if not dict.is_empty() else {}
+	_choice_card_dicts[base_id] = dict
+	return dict
+
+
+## Whether base_id is currently a row in the pending-effects stack panel.
+func _stack_has(base_id: String) -> bool:
+	if base_id.is_empty():
+		return false
+	var stack = _board._effect_stack
+	return stack != null and stack.stack_base_ids().has(base_id)
+
+
+func _on_choice_option_focused(base_id: String) -> void:
+	# Options that are pending abilities (the "choose which ability to
+	# resolve" prompt) preview in the sticky pending-effect slot, exactly
+	# like hovering their stack row.
+	if _stack_has(base_id):
+		show_stack_hover_preview(base_id)
+		return
+	if _prompt_preview_card == null or not is_instance_valid(_prompt_preview_card):
+		return
+	var dict := _resolve_choice_card(base_id)
+	if not dict.is_empty():
+		_prompt_preview_card.set_card_data_dict(dict)
+
+
+func _choice_source_ref(index: int) -> Dictionary:
+	if index < 0 or index >= _choice_source_refs.size():
+		return {}
+	var ref = _choice_source_refs[index]
+	return ref if ref is Dictionary else {}
+
+
+func _on_choice_option_hovered(index: int) -> void:
+	if index < _choice_option_card_ids.size() and not _choice_option_card_ids[index].is_empty():
+		_on_choice_option_focused(_choice_option_card_ids[index])
+	var ref := _choice_source_ref(index)
+	if not ref.is_empty():
+		_board.set_card_attention(ref, true)
+
+
+func _on_choice_option_unhovered(index: int) -> void:
+	var ref := _choice_source_ref(index)
+	if not ref.is_empty():
+		_board.set_card_attention(ref, false)
 
 
 func _on_choice_button_pressed(index: int) -> void:
@@ -1423,6 +1771,8 @@ func _on_choice_button_pressed(index: int) -> void:
 func _cleanup_choice_selection() -> void:
 	_choice_selecting = false
 	_choice_buttons.clear()
+	_choice_option_card_ids = []
+	_choice_source_refs = []
 	if _choice_panel:
 		# Reparent-free immediately so a subsequent choice_requested in the
 		# same frame gets a clean state.
@@ -1433,6 +1783,11 @@ func _cleanup_choice_selection() -> void:
 	elif _choice_container:
 		_choice_container.queue_free()
 		_choice_container = null
+	_cleanup_prompt_previews()
+	_choice_card_dicts.clear()
 	action_prompt_panel.visible = false
+	_board.set_card_attention({}, false)
+	_board._update_tracker_collapse()
+	_board.set_log_prompt_dim(false)
 	# Restore normal action button rows
 	_set_action_buttons_visible(true)

@@ -15,6 +15,8 @@ signal rematch_executed
 var is_multiplayer_game: bool = true
 var is_bot_game: bool = false
 var local_player_id: int = -1
+# Polymorphic `_board` fields written by MultiplayerSync, not read locally.
+@warning_ignore_start("unused_private_class_variable")
 var _first_player_id: int = 0
 var _current_sub_phase: int = 0
 var _client_playable: Dictionary = {}
@@ -23,6 +25,7 @@ var _pending_sound_events: PackedStringArray = []
 var _player_elapsed_ms: Array[int] = [0, 0]
 var _game_start_time_ms: int = 0
 var _turn_start_time_ms: int = 0
+@warning_ignore_restore("unused_private_class_variable")
 
 
 # --- Client receive-path hooks (no UI) ---
@@ -53,11 +56,11 @@ func _rpc_confirmation_requested(prompt: String, setting: String) -> void:
 	prompt_received.emit("confirmation", [prompt, setting])
 
 
-func _rpc_hand_discard_requested(count: int) -> void:
+func _rpc_hand_discard_requested(count: int, _source_id: String = "") -> void:
 	prompt_received.emit("hand_discard", [count])
 
 
-func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool) -> void:
+func _rpc_hand_card_selection_requested(indices_json: String, prompt: String, allow_skip: bool, _source_id: String = "") -> void:
 	prompt_received.emit("hand_card_selection", [indices_json, prompt, allow_skip])
 
 
@@ -73,15 +76,15 @@ func _rpc_card_select_requested(matching_json: String, all_json: String, prompt:
 	prompt_received.emit("card_select", [matching_json, all_json, prompt, min_count, max_count])
 
 
-func _rpc_zone_target_requested(target_pid: int, zones_json: String, prompt: String, allow_skip: bool) -> void:
+func _rpc_zone_target_requested(target_pid: int, zones_json: String, prompt: String, allow_skip: bool, _card_id: String = "", _source_id: String = "") -> void:
 	prompt_received.emit("zone_target", [target_pid, zones_json, prompt, allow_skip])
 
 
-func _rpc_strategy_target_requested(target_pid: int, indices_json: String, prompt: String) -> void:
+func _rpc_strategy_target_requested(target_pid: int, indices_json: String, prompt: String, _source_id: String = "") -> void:
 	prompt_received.emit("strategy_target", [target_pid, indices_json, prompt])
 
 
-func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]") -> void:
+func _rpc_choice_requested(options_json: String, prompt: String, card_ids_json: String = "[]", _source_refs_json: String = "[]") -> void:
 	prompt_received.emit("choice", [options_json, prompt, card_ids_json])
 
 
@@ -106,6 +109,7 @@ func _rpc_effect_zone_highlighted(_p: int, _z: int) -> void: pass
 func _rpc_effect_zone_unhighlighted(_p: int, _z: int) -> void: pass
 func _rpc_effect_card_highlighted(_p: int, _c: String) -> void: pass
 func _rpc_effect_card_unhighlighted(_p: int, _c: String) -> void: pass
+func _rpc_effect_stack_changed(_stack_json: String) -> void: pass
 func _rpc_concede() -> void: pass
 func _rpc_rematch_requested() -> void: pass
 func _rpc_rematch_with_deck(_p: String) -> void: pass

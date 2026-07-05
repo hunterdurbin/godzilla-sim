@@ -44,7 +44,7 @@ func _resolve_locale(locale: String) -> String:
 	## value never reaches the API URL or disk-write path.
 	if locale in VALID_LOCALES:
 		return locale
-	push_warning("[ArtworkDownloader] Unknown locale '%s' — falling back to 'en'" % locale)
+	print("[ArtworkDownloader] Unknown locale '%s' — falling back to 'en'" % locale)
 	return "en"
 
 
@@ -451,7 +451,8 @@ func _download_single(card_number: String, locale: String) -> bool:
 
 	var err := _http.request(url)
 	if err != OK:
-		push_error("[ArtworkDownloader] HTTP request error for %s: %d" % [card_number, err])
+		# Network failures are routine (offline play) — not error-channel.
+		print("[ArtworkDownloader] HTTP request error for %s: %d" % [card_number, err])
 		return false
 
 	var response: Array = await _http.request_completed
@@ -461,7 +462,8 @@ func _download_single(card_number: String, locale: String) -> bool:
 	var body: PackedByteArray = response[3]
 
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
-		push_error("[ArtworkDownloader] Failed to download %s (result=%d, code=%d)" % [
+		# Network failures are routine (offline play) — not error-channel.
+		print("[ArtworkDownloader] Failed to download %s (result=%d, code=%d)" % [
 			card_number, result, response_code
 		])
 		return false
@@ -496,7 +498,8 @@ func _download_batch(card_numbers: Array[String], locale: String) -> Dictionary:
 
 	var err := _http.request(url, request_headers, HTTPClient.METHOD_POST, json_body)
 	if err != OK:
-		push_error("[ArtworkDownloader] Batch HTTP request error: %d" % err)
+		# Network failures are routine (offline play) — not error-channel.
+		print("[ArtworkDownloader] Batch HTTP request error: %d" % err)
 		_http.download_file = ""
 		return {"downloaded": 0, "failed": card_numbers.size()}
 
@@ -510,7 +513,8 @@ func _download_batch(card_numbers: Array[String], locale: String) -> Dictionary:
 	_http.download_file = ""
 
 	if _batch_result != HTTPRequest.RESULT_SUCCESS or _batch_response_code != 200:
-		push_error("[ArtworkDownloader] Batch download failed (result=%d, code=%d)" % [
+		# Network failures are routine (offline play) — not error-channel.
+		print("[ArtworkDownloader] Batch download failed (result=%d, code=%d)" % [
 			_batch_result, _batch_response_code
 		])
 		DirAccess.remove_absolute(temp_path)

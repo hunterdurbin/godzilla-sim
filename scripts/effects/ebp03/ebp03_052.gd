@@ -15,6 +15,13 @@ extends CardEffect
 ## Implementation notes: None
 
 
+## The would-be-destroyed rescue only applies to destruction by an opponent's
+## effect — not crush or overload (rule-driven destroys have no active effect).
+const TRIGGER_FILTERS = {
+	"on_would_be_destroyed": {"caused_by_opponent": true},
+}
+
+
 func get_bot_tags() -> Array[String]:
 	return ["searches_deck", "draws_cards"]
 

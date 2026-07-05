@@ -40,11 +40,18 @@ var _tracker_draining: bool = false
 var _tracker_last_phase: int = -1
 var _tracker_last_player: int = -1
 
+# Set by the board before a save-load resume so the first tracker apply never
+# toasts (the turn-number check below already covers saves past turn 1; this
+# also covers a save made on turn 1).
+var suppress_first_toast: bool = false
+
 # Label references [player_id][phase_index] (resolved at _ready)
 var headers: Array = []
 var _phases: Array = []
 var _subs: Array = []
 var _turn_label: Label
+var _tracker_root: Control
+var _collapsed: bool = false
 
 
 func _ready() -> void:
@@ -57,6 +64,7 @@ func _ready() -> void:
 	_session.session_started.connect(_bind_session)
 
 	var t := _board.get_node("VBoxContainer/BoardArea/RightSpacer/TurnTracker")
+	_tracker_root = t
 	headers = [t.get_node("P1Header"), t.get_node("P2Header")]
 	_turn_label = _board.get_node("VBoxContainer/BoardArea/RightSpacer/TurnLabelMargin/TurnLabel")
 	_phases = []
@@ -107,6 +115,37 @@ func _on_turn_started(_player_id: int) -> void:
 	current_sub_phase = 0
 
 
+## Collapse the phase list to just the turn chip (the TurnLabel line) while
+## a prompt panel occupies the right edge. No-op on mobile, where the whole
+## tracker column is hidden by the mobile layout.
+func set_collapsed(on: bool) -> void:
+	if _board._is_mobile_layout:
+		on = false
+	if on == _collapsed:
+		return
+	_collapsed = on
+	if _tracker_root:
+		_tracker_root.visible = not on
+	_refresh_turn_label()
+
+
+## Update the TurnLabel line: plain turn number normally, a compact
+## "Turn N · Phase" chip while collapsed (so the phase stays visible).
+func _refresh_turn_label(phase_hint: int = -1) -> void:
+	if _turn_label == null:
+		return
+	var gs: GameState = _session.turn_manager.game_state if _session.turn_manager else null
+	var turn_num: int = gs.turn_number if gs else _session.client_turn_number
+	if _collapsed:
+		var phase_idx: int = phase_hint
+		if phase_idx < 0:
+			phase_idx = _tracker_last_phase if _tracker_last_phase >= 0 else (int(gs.current_phase) if gs else 0)
+		var phase_name := CardEnums.phase_to_string(phase_idx as CardEnums.GamePhase)
+		_turn_label.text = tr("STR_GB_TURN_CHIP_FMT").replace("{N}", str(turn_num)).replace("{PHASE}", phase_name)
+	else:
+		_turn_label.text = tr("STR_GB_TURN_FMT").replace("{N}", str(turn_num))
+
+
 ## Reset queue + indicator state for a rematch.
 func reset_for_rematch() -> void:
 	current_sub_phase = 0
@@ -135,12 +174,16 @@ func _drain_tracker_queue() -> void:
 	while _tracker_queue.size() > 0:
 		var entry := _tracker_queue[0]
 		_tracker_queue.remove_at(0)
+		var first_apply := _tracker_last_player < 0
+		var player_changed: bool = entry.player_id != _tracker_last_player
 		var phase_changed: bool = _tracker_last_phase >= 0 and (entry.phase != _tracker_last_phase or entry.player_id != _tracker_last_player)
 		_tracker_last_phase = entry.phase
 		_tracker_last_player = entry.player_id
 		if phase_changed:
 			await get_tree().create_timer(PHASE_TRANSITION_DELAY).timeout
 		apply_turn_tracker(entry.player_id, entry.phase as CardEnums.GamePhase, entry.sub_phase)
+		if player_changed:
+			_maybe_show_turn_toast(entry.player_id, first_apply)
 	_tracker_draining = false
 
 
@@ -150,10 +193,10 @@ func apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: i
 	var inactive_sub_color := Color(0.35, 0.35, 0.4, 1.0) # Dimmer for inactive sub-phases
 	var active_header_color := Color(1.0, 1.0, 1.0, 1.0) # White for active player
 	var inactive_header_color := Color(0.6, 0.6, 0.7, 1.0) # Dim for inactive player
-	# Update turn number label
+	# Update turn number label (chip form while collapsed)
 	var gs: GameState = _session.turn_manager.game_state if _session.turn_manager else null
 	var turn_num: int = gs.turn_number if gs else _session.client_turn_number
-	_turn_label.text = tr("STR_GB_TURN_FMT").replace("{N}", str(turn_num))
+	_refresh_turn_label(int(phase))
 	var phase_idx := int(phase)
 	for pid in range(2):
 		var first_marker := "* " if pid == _board._first_player_id else "  "
@@ -178,6 +221,45 @@ func apply_turn_tracker(player_id: int, phase: CardEnums.GamePhase, sub_phase: i
 		var phase_name := CardEnums.phase_to_string(phase)
 		var pname := GameLog.player_name(player_id)
 		_board._mobile_phase_label.text = tr("STR_GB_TURN_HEADER_FMT").replace("{N}", str(turn_num)).replace("{PLAYER}", pname).replace("{PHASE}", phase_name)
+
+	# Active-turn playmat glow. player1_board is always pid 0 regardless of
+	# visual position, so glow-by-pid survives the local-player reordering.
+	if _board.player1_board:
+		var glow_on := _indicator_applies(GameSettings.turn_outline_mode, player_id)
+		_board.player1_board.set_active_glow(glow_on and player_id == 0)
+		_board.player2_board.set_active_glow(glow_on and player_id == 1)
+
+
+## Whether a turn indicator configured with `mode` (0=own turn, 1=opponent's
+## turn, 2=both, 3=none) should show for `pid`'s turn. In hotseat the local
+## player id is 0, so "own turn" means Player 1's turn there.
+func _indicator_applies(mode: int, pid: int) -> bool:
+	match mode:
+		0: return pid == _board.local_player_id
+		1: return pid != _board.local_player_id
+		2: return true
+		_: return false
+
+
+## Brief center-screen announcement on a real turn change. `first_apply` is
+## the tracker's very first entry after (re)start: a genuine game start
+## (turn 1) should toast, but a save-load resume or reconnect resync landing
+## mid-game must not.
+func _maybe_show_turn_toast(pid: int, first_apply: bool) -> void:
+	if first_apply:
+		var was_suppressed := suppress_first_toast
+		suppress_first_toast = false
+		var gs: GameState = _session.turn_manager.game_state if _session.turn_manager else null
+		var turn_num: int = gs.turn_number if gs else _session.client_turn_number
+		if was_suppressed or turn_num > 1:
+			return
+	if not _indicator_applies(GameSettings.turn_alert_mode, pid):
+		return
+	var toast: Node = _board.get_node_or_null("TurnToast")
+	if toast == null:
+		return
+	var text: String = tr("STR_GB_YOUR_TURN") if pid == _board.local_player_id else tr("STR_GB_OPPONENT_TURN")
+	toast.show_turn_toast(text)
 
 
 # --- Per-player auto setting toggles (live on the tracker labels) ---

@@ -19,12 +19,16 @@ signal effect_card_unhighlighted(player_id: int, card_id: String)
 
 ## Emitted to send a message to the game log.
 signal log_message(token: Dictionary)
+# Emitted by the modules via `h.card_evolved.emit(...)`, not from this class.
+@warning_ignore("unused_signal")
 signal card_evolved(player_id: int, card: Dictionary, zone_index: int)
+@warning_ignore("unused_signal")
 signal card_destroyed(player_id: int, zone_index: int)
 
 var game_state: GameState
 var action_handler  # ActionHandler reference (set by TurnManager)
 var input: PlayerInput
+var events: GameEvents = null  # Notification bus (wired by MatchFactory; null in bare tests)
 var registry := EffectRegistry.new()
 var exec := EffectExecutionState.new()
 var standby: StandbyResolver
@@ -33,27 +37,43 @@ var destruction: DestructionEngine
 var mover: CardMover
 var monster_mover: MonsterMover
 var queries: EffectQueries
-var _card_select_pool_filter: Callable = Callable()  # Optional: func(card, selection) -> bool; read by the card-select UI
+@warning_ignore("unused_private_class_variable") # written by effects, read by the card-select UI
+var _card_select_pool_filter: Callable = Callable()  # Optional: func(card, selection) -> bool
 
 ## Base card ids parallel to the most recent select_choice options ("" for
 ## options without a card). The choice UI reads this to show an artwork
 ## thumbnail on each button; cleared when the choice resolves.
 var choice_card_ids: Array[String] = []
 
+## Structured source locations parallel to the most recent select_choice
+## options (see StandbyResolver.card_location_ref). The choice UI reads this
+## to highlight the source card on the board while an option is hovered.
+## Empty for generic effect choices; cleared when the choice resolves.
+var choice_source_refs: Array[Dictionary] = []
+
+## Base id of the card being placed by the most recent select_zone_target
+## ("" when the prompt is zone-only, e.g. destroy). The zone-target UI reads
+## this to show a preview of the card; cleared when the target resolves.
+var zone_target_card_id: String = ""
+
 ## Forwarders into the shared EffectExecutionState — internal call sites and
 ## external readers (bot, UI) keep the historical names.
 var pending_destroy_max_rank: int:  # Set before the zone-target prompt for bot rank filtering
 	get: return exec.pending_destroy_max_rank
 	set(v): exec.pending_destroy_max_rank = v
+@warning_ignore("unused_private_class_variable") # read via handler._x by modules/effects
 var _active_effect_player_id: int:
 	get: return exec.active_player_id
 	set(v): exec.active_player_id = v
+@warning_ignore("unused_private_class_variable")
 var _active_effect_card: Dictionary:
 	get: return exec.active_card
 	set(v): exec.active_card = v
+@warning_ignore("unused_private_class_variable")
 var _in_standby_resolution: bool:
 	get: return exec.in_standby_resolution
 	set(v): exec.in_standby_resolution = v
+@warning_ignore("unused_private_class_variable")
 var _pending_standby_entries: Array:
 	get: return exec.pending_standby_entries
 	set(v): exec.pending_standby_entries = v
@@ -77,6 +97,29 @@ func setup(p_game_state: GameState, p_input: PlayerInput = null) -> void:
 	monster_mover.h = self
 	queries = EffectQueries.new()
 	queries.h = self
+
+
+func teardown() -> void:
+	## Break the internal RefCounted reference cycles (module.h -> self,
+	## action_handler <-> self) so the match component graph can be freed
+	## once the owner drops its reference. Idempotent.
+	for m in [dispatcher, destruction, mover, monster_mover, queries]:
+		if m:
+			m.h = null
+	if standby:
+		standby.handler = null
+	standby = null
+	dispatcher = null
+	destruction = null
+	mover = null
+	monster_mover = null
+	queries = null
+	action_handler = null
+	events = null
+	input = null
+	game_state = null
+	# Pending standby entries hold Callables that capture effects/contexts.
+	exec.pending_standby_entries.clear()
 
 
 
@@ -254,16 +297,22 @@ func resolve_deferred_entries(entries: Array) -> void:
 
 
 
-func select_zone_target(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false) -> int:
+func select_zone_target(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false, card_id: String = "") -> int:
 	## Ask a player to choose one of the valid zones on the target player's board.
 	## If allow_skip is true, the player can decline (returns -1).
+	## `card_id` (optional) gives the base id of the card being placed so the
+	## UI can show a preview of it next to the prompt.
 	## Returns the chosen zone index, or -1 if no valid zones or skipped.
 	if valid_zones.is_empty():
 		return -1
 
+	zone_target_card_id = card_id
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var zone_index: int = await input.select_zone(player_id, target_player_id, valid_zones, prompt, allow_skip)
 	_unhighlight_active_effect()
+	zone_target_card_id = ""
 	return zone_index
 
 
@@ -278,6 +327,8 @@ func select_strategy_target(player_id: int, target_player_id: int, valid_indices
 		return -1
 
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var strategy_index: int = await input.select_strategy(player_id, target_player_id, valid_indices, prompt)
 	_unhighlight_active_effect()
 	return strategy_index
@@ -295,9 +346,12 @@ func select_choice(player_id: int, options: Array[String], prompt: String, card_
 
 	choice_card_ids = card_ids
 	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	var index: int = await input.choose_option(player_id, options, prompt)
 	_unhighlight_active_effect()
 	choice_card_ids = []
+	choice_source_refs = []
 	return index
 
 
@@ -307,6 +361,8 @@ func reveal_cards(player_id: int, cards: Array[Dictionary], title: String) -> vo
 	## Show a set of cards to the player and wait for them to dismiss the overlay.
 	if cards.is_empty():
 		return
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
 	await input.acknowledge_reveal(player_id, cards, title)
 
 
@@ -491,6 +547,14 @@ func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dicti
 
 func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones: Array[int], prompt: String, max_rank: int = -1) -> Array[Dictionary]:
 	return await destruction.destroy_zone_and_adjacent(player_id, target, valid_zones, prompt, max_rank)
+
+
+func try_destroy_replacement(target: PlayerState, zone_idx: int) -> bool:
+	return destruction.try_destroy_replacement(target, zone_idx)
+
+
+func overload_zone(target: PlayerState, zone_idx: int) -> Dictionary:
+	return destruction.overload_zone(target, zone_idx)
 
 
 func can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
@@ -691,6 +755,38 @@ func get_strategy_cp_modifiers(player_id: int) -> Array[int]:
 
 func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 	return queries.get_zone_cp_modifiers(player_id)
+
+
+func get_zone_cp_breakdown(player_id: int) -> Array:
+	return queries.get_zone_cp_breakdown(player_id)
+
+
+func get_threat_level_breakdown(player_id: int) -> Array:
+	return queries.get_threat_level_breakdown(player_id)
+
+
+func get_play_rank_breakdown(player_id: int, card: Dictionary) -> Array:
+	return queries.get_play_rank_breakdown(player_id, card)
+
+
+func get_strategy_hand_rank_breakdown(player_id: int, card: Dictionary) -> Array:
+	return queries.get_strategy_hand_rank_breakdown(player_id, card)
+
+
+func get_field_rank_breakdown(player_id: int) -> Array:
+	return queries.get_field_rank_breakdown(player_id)
+
+
+func get_zone_play_rank_breakdown(player_id: int, card: Dictionary) -> Array:
+	return queries.get_zone_play_rank_breakdown(player_id, card)
+
+
+func get_hand_cp_preview(player_id: int, card: Dictionary) -> int:
+	return queries.get_hand_cp_preview(player_id, card)
+
+
+func get_hand_variable_base_cp(player_id: int, card: Dictionary) -> int:
+	return queries.get_hand_variable_base_cp(player_id, card)
 
 
 func get_threat_level_modifier(player_id: int) -> int:

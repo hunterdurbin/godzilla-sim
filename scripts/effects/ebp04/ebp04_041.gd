@@ -13,6 +13,10 @@ extends CardEffect
 ## Implementation notes: None
 
 
+## CP modifier is placement-independent — safe to preview while in hand.
+const HAND_CP_PREVIEW := true
+
+
 const TRIGGER_FILTERS = {
 	"on_phase_start": {"phase": CardEnums.GamePhase.COUNTER, "own_turn": true},
 }

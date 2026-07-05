@@ -8,14 +8,15 @@ OUTPUT="$EFFECTS_DIR/trigger_map.gd"
 # All virtual/overridable methods from CardEffect
 # NOTE: Update this list whenever a new overridable method is added to card_effect.gd
 METHODS=(
-	on_enter on_when_invading on_revenge on_crush on_discard_from_hand
+	on_enter on_when_invading on_revenge on_crush on_discard_from_hand discard_from_hand_condition
 	on_burst_discard on_rage_changed on_opponent_rage_changed on_monster_advance
 	on_phase_start on_phase_end on_monster_played on_battle_card_played
 	on_hand_card_discarded on_counter_success on_self_countered on_strategy_discarded
 	on_invasion_observed on_discarded_for_invasion on_would_be_destroyed
 	can_be_destroyed prevents_rage_reduction protects_card_from_destruction can_be_played apply_play_cost get_required_play_zones
 	get_counter_power_modifier get_total_cp_modifier get_field_cp_modifiers
-	get_threat_level_modifier can_engage get_engagement_restriction
+	get_threat_level_modifier get_variable_counter_power get_variable_threat_level
+	can_engage get_engagement_restriction
 	get_play_rank_modifier_for_card prevents_counter
 	stacks_on_play get_zone_play_rank_modifier prevents_opponent_invasion
 	can_monster_advance can_monster_invade get_counter_immunity_threshold

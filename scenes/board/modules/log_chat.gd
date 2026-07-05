@@ -22,6 +22,13 @@ var _log_output: RichTextLabel
 var _chat_input: LineEdit
 var _chat_char_count: Label
 
+# Prompt-active dim: the log fades to half opacity while a prompt is up so it
+# doesn't compete for attention; hovering it restores full opacity.
+var _log_panel: Control
+var _prompt_dim_active: bool = false
+var _dim_target: float = 1.0
+var _dim_tween: Tween
+
 
 func _ready() -> void:
 	_board = get_parent()
@@ -37,6 +44,46 @@ func _ready() -> void:
 	if _chat_input:
 		_chat_input.text_submitted.connect(_on_chat_submitted)
 		_chat_input.text_changed.connect(_on_chat_text_changed)
+	_log_panel = _board.get_node_or_null("LogPanel")
+	set_process(false)
+	# Zone/strategy/hand prompts all toggle the ActionPrompt panel; mirror its
+	# visibility into the dim state (choice prompts drive set_prompt_dim
+	# directly since they no longer use ActionPrompt).
+	var action_prompt: Control = _board.get_node_or_null("ActionPrompt")
+	if action_prompt:
+		action_prompt.visibility_changed.connect(
+			func() -> void: set_prompt_dim(action_prompt.visible))
+
+
+func set_prompt_dim(active: bool) -> void:
+	if _board._is_mobile_layout:
+		active = false # Mobile log lives in a slide-out tray — never dim it
+	if active == _prompt_dim_active:
+		return
+	_prompt_dim_active = active
+	set_process(active)
+	_tween_log_alpha(0.5 if active else 1.0)
+
+
+func _process(_delta: float) -> void:
+	if not _prompt_dim_active or _log_panel == null:
+		return
+	# PanelContainer children swallow mouse_exited, so poll the rect instead
+	# of relying on hover signals.
+	var inside: bool = _log_panel.get_global_rect().has_point(_log_panel.get_global_mouse_position())
+	var target: float = 1.0 if inside else 0.5
+	if target != _dim_target:
+		_tween_log_alpha(target)
+
+
+func _tween_log_alpha(target: float) -> void:
+	if _log_panel == null:
+		return
+	_dim_target = target
+	if _dim_tween:
+		_dim_tween.kill()
+	_dim_tween = create_tween()
+	_dim_tween.tween_property(_log_panel, "modulate:a", target, 0.2)
 
 
 func _bind_session() -> void:

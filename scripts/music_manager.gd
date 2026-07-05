@@ -34,6 +34,18 @@ func _ready() -> void:
 		_player.play()
 
 
+func stop_playback() -> void:
+	# Called by SfxManager's window-close handler (and _exit_tree as a
+	# fallback) so the playback isn't reported as leaked at exit.
+	if _player:
+		_player.stop()
+		_player.stream = null
+
+
+func _exit_tree() -> void:
+	stop_playback()
+
+
 func set_volume(level: int) -> void:
 	if level <= 0:
 		_player.stop()

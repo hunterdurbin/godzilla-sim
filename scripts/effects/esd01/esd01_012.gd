@@ -9,7 +9,8 @@ extends CardEffect
 ## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
-## Rules: None
+## Rules: Replacement effect — the card never counts as destroyed (no revenge);
+## applies to effect destroys, crush (11.3), and overload (11.5).
 ## Interactions: None
 ## Implementation notes: None
 
@@ -62,9 +63,6 @@ func get_counter_power_modifier(ctx: EffectContext) -> int:
 	return 0
 
 
-func on_revenge(ctx: EffectContext) -> void:
-	ctx.effect_handler.return_to_deck_bottom(ctx.owner, ctx.card_data)
-
-
-func on_crush(ctx: EffectContext) -> void:
-	ctx.effect_handler.return_to_deck_bottom(ctx.owner, ctx.card_data)
+func on_would_be_destroyed(_ctx: EffectContext) -> bool:
+	# Move to deck bottom instead of being destroyed
+	return true
