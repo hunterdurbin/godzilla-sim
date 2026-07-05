@@ -11,7 +11,7 @@ class_name GameModeValidator
 ## Modes without a `card_pool` (e.g. no_rules) accept every card and run no
 ## per-pool checks.
 
-const _BULKZILLA_POOL = preload("res://data/bulkzilla_card_pool.gd")
+const _BULKZILLA_POOL = preload("res://scripts/cards/pools/bulkzilla_card_pool.gd")
 
 const MODES: Array[Dictionary] = [
 	{
@@ -53,7 +53,7 @@ const MODES: Array[Dictionary] = [
 		"label": "STR_MODE_BULKZILLA",
 		"desc": "STR_MODE_BULKZILLA_DESC",
 		# BULKZILLA: starter decks plus any common/uncommon booster cards.
-		# The individual allow list lives in `data/bulkzilla_card_pool.gd`
+		# The individual allow list lives in `scripts/cards/pools/bulkzilla_card_pool.gd`
 		# (rarity-annotated for readability) and is spliced in at runtime
 		# via `_get_resolved_modes`. Keep this `include_cards` slot empty.
 		"card_pool": {

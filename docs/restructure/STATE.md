@@ -6,8 +6,8 @@ BEFORE each commit.
 
 ## Current position
 
-- **Current phase:** 3 (Phases 0–2 complete)
-- **Next action:** execute `phase-3-scripts-reslice.md`
+- **Current phase:** 4 (Phases 0–3 complete)
+- **Next action:** execute `phase-4-scenes-reslice.md`
 - **Path flip in effect:** sim = `res://tests/sim/BotSimulationRunner.tscn`,
   harness = `./tests/harness/run_harness.sh` (old scenes/ locations retired)
 - **Branch:** `feature/restructure`
@@ -37,7 +37,7 @@ it to `tests/sim/BotSimulationRunner.tscn`.)
 | 0 — plan docs + baselines | **done** | (this commit) | unit 901/901 · sim deterministic · harness PASS |
 | 1 — cleanup | **done** | (phase-1 commit) | unit 901/901 · headless boot smoke clean · orphan grep: refs only internal to deleted files |
 | 2 — test harnesses → tests/ | **done** | (phase-2 commit) | unit 901/901 · sim `[SimResult]` byte-identical · harness PASS (0 desync, 0 script error) · grep sweep zero hits |
-| 3 — scripts/ re-slice | pending | | |
+| 3 — scripts/ re-slice | **done** | (phase-3 commit) | unit 901/901 · sim `[SimResult]` byte-identical · harness PASS · retired-path sweep zero hits · 16 READMEs added |
 | 4 — scenes/ re-slice | pending | | |
 | 5 — assets/ | pending | | |
 | 6 — split card_data.gd | pending | | |
@@ -60,4 +60,16 @@ it to `tests/sim/BotSimulationRunner.tscn`.)
 
 - 2026-07-05: Unit-test baseline is 901 cases (older project notes said 818 —
   the suite grew; 901 is authoritative).
-- (none else yet)
+- 2026-07-05 (Phase 2→3): the Phase-2 seed-pin revert (`git checkout --`)
+  clobbered the UNSTAGED script-path fix in `tests/sim/BotSimulationRunner.tscn`,
+  so Phase 2 committed a stale `res://scenes/simulation/…` reference (the
+  .tscn has no `uid=` attribute to rescue it). Symptom: sim scene loaded
+  scriptless and hung forever. Repaired in Phase 3. Rule added to
+  conventions.md: `git add` path fixes BEFORE pinning the seed.
+- 2026-07-05 (Phase 3): after out-of-editor moves, headless runs fail with
+  `Could not find script for class "X"` until `<godot> --headless --path . --import`
+  rebuilds the class-name cache. Added to conventions.md as a required
+  post-move step.
+- 2026-07-05 (Phase 3): two non-res:// parsers of card_data.gd found and
+  fixed (`translations/generate_card_csv.py`, `scripts/tools/check_missing_cards.sh`)
+  — both must be updated AGAIN in Phase 6 (noted in phase-6 file).

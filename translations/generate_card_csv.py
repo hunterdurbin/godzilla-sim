@@ -13,7 +13,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
-CARD_DATA_GD = REPO / "data" / "card_data.gd"
+CARD_DATA_GD = REPO / "scripts" / "cards" / "card_data.gd"
 JA_SOURCES = HERE / "ja_sources"
 OUT_CSV = HERE / "cards.csv"
 

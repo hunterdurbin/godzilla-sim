@@ -23,17 +23,17 @@ config/icon="res://assets/icons/game_icon.png"
 
 [autoload]
 
-CardData="*res://data/card_data.gd"
-ArtworkDownloader="*res://scripts/artwork_downloader.gd"
-DecklistManager="*res://data/decklist_manager.gd"
-NetworkManager="*res://scripts/network_manager.gd"
-GameSettings="*res://data/game_settings.gd"
-StatsUploader="*res://scripts/stats_uploader.gd"
-UpdateChecker="*res://scripts/update_checker.gd"
-RpcLogger="*res://scripts/rpc_logger.gd"
-TouchHelper="*res://scripts/touch_helper.gd"
-SfxManager="*res://scripts/sfx_manager.gd"
-MusicManager="*res://scripts/music_manager.gd"
+CardData="*res://scripts/cards/card_data.gd"
+ArtworkDownloader="*res://scripts/services/artwork_downloader.gd"
+DecklistManager="*res://scripts/cards/decklist_manager.gd"
+NetworkManager="*res://scripts/net/network_manager.gd"
+GameSettings="*res://scripts/settings/game_settings.gd"
+StatsUploader="*res://scripts/services/stats_uploader.gd"
+UpdateChecker="*res://scripts/services/update_checker.gd"
+RpcLogger="*res://scripts/net/rpc_logger.gd"
+TouchHelper="*res://scripts/services/touch_helper.gd"
+SfxManager="*res://scripts/audio/sfx_manager.gd"
+MusicManager="*res://scripts/audio/music_manager.gd"
 
 [debug]
 

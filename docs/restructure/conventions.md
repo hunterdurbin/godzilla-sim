@@ -75,6 +75,15 @@ build/                       # UNTOUCHED (1GB git-ignored export artifacts)
 
 1. **`.uid` twin rule**: every `git mv` of a `.gd`/`.tscn`/asset moves its
    `.uid` / `.import` sidecar in the same commit.
+   **After any move phase, run `<godot> --headless --path . --import` once**
+   — the global class_name cache in `.godot/` still points at old paths and
+   headless runs will otherwise fail with
+   `Could not find script for class "X"` (learned in Phase 3).
+   **Seed-pin revert hazard**: `git checkout -- <tscn>` reverts to the INDEX
+   — if you have unstaged path fixes in that .tscn, `git add` them BEFORE
+   pinning the seed, or the checkout silently destroys them (bit us in
+   Phase 2: the sim .tscn's script path fix was clobbered and committed
+   stale; repaired in Phase 3).
 2. **Byte-for-byte body moves**: god-file splits (Phases 6–8) move code
    verbatim. No refactoring, renaming, or "improvements" while moving —
    behavior diffs must stay attributable to structure alone.

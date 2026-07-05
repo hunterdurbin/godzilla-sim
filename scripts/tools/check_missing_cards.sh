@@ -5,7 +5,7 @@
 set -euo pipefail
 
 API_BASE="https://api.godzillatcg.com"
-CARD_DATA="$(dirname "$0")/../../data/card_data.gd"
+CARD_DATA="$(dirname "$0")/../cards/card_data.gd"
 
 if [ ! -f "$CARD_DATA" ]; then
     echo "Error: card_data.gd not found at $CARD_DATA"

@@ -52,6 +52,15 @@ unchanged autoload surface. Lowest-risk split — do it first.
 - [ ] `grep -rn 'card_data.gd' --exclude-dir=docs` → zero hits (uid sidecar
       renamed too).
 
+## External parsers of card_data.gd (found in Phase 3 — MUST update here)
+
+- `translations/generate_card_csv.py` — `CARD_DATA_GD = REPO / "scripts" / "cards" / "card_data.gd"`
+  regex-parses the card dicts. After the split, point it at
+  `scripts/cards/sets/*.gd` (glob all set files) and verify
+  `python3 translations/generate_card_csv.py` still parses the same card count.
+- `scripts/tools/check_missing_cards.sh` — `CARD_DATA="$(dirname "$0")/../cards/card_data.gd"`
+  greps `"id":` lines. Point it at the sets dir (e.g. `grep -h '"id":' ../cards/sets/*.gd`).
+
 ## Gate (full) + Commit
 
 Standard gate. Commit:
