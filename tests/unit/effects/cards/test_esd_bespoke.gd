@@ -83,9 +83,81 @@ func test_esd01_011_destroyed_goes_to_deck_bottom_instead_of_discard() -> void:
 	assert_str(str(p0.main_deck.back().get("id"))) \
 		.override_failure_message("ESD01-011 should sit at the deck bottom after destruction") \
 		.is_equal(str(card.get("id")))
+	# Replacement: the card never counts as destroyed.
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
+
+
+func test_esd01_011_overloaded_by_play_goes_to_deck_bottom() -> void:
+	# Overload IS <Destroy> (11.5.1), so the replacement applies when a card
+	# is played over ESD01-011.
+	var card := Real.instance("ESD01-011")
+	var attacker := Cards.battle(2, 2000, "OVER")
+	var state := States.make_state({"p0": {
+		"hand": [attacker],
+		"zone_cards": {2: card},
+		"main_deck": [Cards.battle(1, 2000, "D1"), Cards.battle(1, 2000, "D2")],
+	}})
+	var s := _session(state)
+
+	await s["action_handler"].execute(
+		CardEnums.ActionType.PLAY_BATTLE, {"hand_index": 0, "zone_index": 2}, state)
+
+	var p0 := state.players[0]
+	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal("OVER")
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_str(str(p0.main_deck.back().get("id"))) \
+		.override_failure_message("ESD01-011 should sit at the deck bottom after being overloaded") \
+		.is_equal(str(card.get("id")))
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
+
+
+func test_esd01_011_crushed_goes_to_deck_bottom_without_crush_event() -> void:
+	# Crush IS <Destroy> (11.3.3): replaced instead — no destroy count, no
+	# battle_card_crushed emission.
+	var card := Real.instance("ESD01-011")
+	var state := States.make_state({"p0": {
+		"monster_zone": 3,
+		"zone_cards": {2: card},
+		"main_deck": [Cards.battle(1, 2000, "D1")],
+	}})
+	var s := _session(state)
+	var crushed: Array = []
+	s["events"].battle_card_crushed.connect(func(_pid: int, _z: int, c: Dictionary) -> void:
+		crushed.append(c))
+
+	await s["action_handler"].resolve_check_timing(state)
+
+	var p0 := state.players[0]
+	assert_bool(p0.zone_has_cards(2)).is_false()
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_str(str(p0.main_deck.back().get("id"))) \
+		.override_failure_message("ESD01-011 should sit at the deck bottom after being crushed") \
+		.is_equal(str(card.get("id")))
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
+	assert_array(crushed).is_empty()
 
 
 # --- ESD01-012: move to empty zone on own monster played; +3000 CP in zone 8 ---
+
+
+func test_esd01_012_destroyed_goes_to_deck_bottom_instead_of_discard() -> void:
+	var card := Real.instance("ESD01-012")
+	var state := States.make_state({"p0": {
+		"zone_cards": {4: card},
+		"main_deck": [Cards.battle(1, 2000, "D1"), Cards.battle(1, 2000, "D2")],
+	}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.destroy_zones(state.players[0], [4])
+
+	var p0 := state.players[0]
+	assert_bool(p0.zone_has_cards(4)).is_false()
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_str(str(p0.main_deck.back().get("id"))) \
+		.override_failure_message("ESD01-012 should sit at the deck bottom after destruction") \
+		.is_equal(str(card.get("id")))
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
 
 
 func test_esd01_012_moves_to_chosen_empty_zone_on_own_monster_played() -> void:
@@ -672,6 +744,30 @@ func test_esc01_004_destroyed_goes_to_deck_bottom_instead_of_discard() -> void:
 	assert_str(str(p0.main_deck.back().get("id"))) \
 		.override_failure_message("ESC01-004 should sit at the deck bottom after destruction") \
 		.is_equal(str(card.get("id")))
+
+
+func test_esc01_004_overloaded_goes_to_deck_bottom() -> void:
+	# Overload IS <Destroy> (11.5.1) — effect-driven plays over ESC01-004 also
+	# send it to the deck bottom instead of the discard.
+	var card := Real.instance("ESC01-004")
+	var incoming := Cards.battle(3, 2000, "OVER")
+	var state := States.make_state({"p0": {
+		"hand": [incoming],
+		"zone_cards": {5: card},
+		"main_deck": [Cards.battle(1, 2000, "D1")],
+	}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.play_battle_card_from_hand(0, incoming, 5)
+
+	var p0 := state.players[0]
+	assert_str(str(p0.get_zone_top_card(5).get("id"))).is_equal("OVER")
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	assert_str(str(p0.main_deck.back().get("id"))) \
+		.override_failure_message("ESC01-004 should sit at the deck bottom after being overloaded") \
+		.is_equal(str(card.get("id")))
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
 
 
 # --- ESC01-005: when invading with 3+ stacked — reveal top, destroy <= its rank ---

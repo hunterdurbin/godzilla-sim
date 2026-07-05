@@ -380,7 +380,7 @@ func test_ebp03_051_gains_5000_cp_per_card_under_it() -> void:
 # --- EBP03-052: M.O.G.U.E.R.A. — destroyed: under-cards to hand; Awk6 enter: tuck Land Moguera + Star Falcon ---
 
 
-func test_ebp03_052_destroyed_returns_under_cards_to_hand() -> void:
+func test_ebp03_052_destroyed_by_opponent_effect_returns_under_cards_to_hand() -> void:
 	var card := Real.instance("EBP03-052")
 	var state := States.make_state({"p0": {"zone_cards": {3: Cards.battle(2, 2000, "U2")}}})
 	var p0 := state.players[0]
@@ -388,6 +388,8 @@ func test_ebp03_052_destroyed_returns_under_cards_to_hand() -> void:
 	p0.push_zone_card(3, card)
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
+	# The rescue is gated on "by an opponent's effect" — simulate one active.
+	handler.exec.active_player_id = 1
 
 	await handler.destroy_zones(p0, [3])
 
@@ -396,6 +398,31 @@ func test_ebp03_052_destroyed_returns_under_cards_to_hand() -> void:
 	# Only M.O.G.U.E.R.A. itself reaches the discard (destruction proceeds).
 	assert_int(p0.discard_pile.size()).is_equal(1)
 	assert_str(str(p0.discard_pile[0].get("id"))).is_equal(str(card.get("id")))
+
+
+func test_ebp03_052_overloaded_does_not_rescue_under_cards() -> void:
+	# Overload (11.5) is a rule-driven destroy, not an opponent's effect —
+	# the under-card rescue must stay silent and the whole stack is discarded.
+	var card := Real.instance("EBP03-052")
+	var incoming := Cards.battle(2, 2000, "OVER")
+	var state := States.make_state({"p0": {
+		"hand": [incoming],
+		"zone_cards": {3: Cards.battle(2, 2000, "U2")},
+	}})
+	var p0 := state.players[0]
+	p0.push_zone_card(3, Cards.battle(3, 2000, "U1"))
+	p0.push_zone_card(3, card)
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.play_battle_card_from_hand(0, incoming, 3)
+
+	assert_str(str(p0.get_zone_top_card(3).get("id"))).is_equal("OVER")
+	assert_int(p0.hand.size()).is_equal(0)
+	assert_int(p0.discard_pile.size()).is_equal(3)
+	# The overloaded top card counts as destroyed (11.5.1).
+	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(1)
+	assert_str(str(p0.cards_destroyed_this_turn[0].get("id"))).is_equal(str(card.get("id")))
 
 
 func test_ebp03_052_awakening6_enter_tucks_land_moguera_and_star_falcon() -> void:

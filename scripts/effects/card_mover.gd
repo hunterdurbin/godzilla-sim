@@ -379,13 +379,7 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	# Make a copy so each token instance is independent
 	token_data = token_data.duplicate()
 
-	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(zone_index):
-		overloaded_top = player.get_zone_top_card(zone_index)
-		var destroyed_stack: Array = player.clear_zone(zone_index)
-		EffectHandler.banish_or_discard(player, destroyed_stack)
-		player.discard_changed.emit()
-
+	var overloaded_top: Dictionary = h.overload_zone(player, zone_index)
 	player.push_zone_card(zone_index, token_data)
 	player.zones_changed.emit()
 	await h.trigger_leave_play(player.player_id, overloaded_top, zone_index)
@@ -543,18 +537,13 @@ func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
 		return
 	if not player.zone_has_cards(from_zone):
 		return
-	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(to_zone):
-		overloaded_top = player.get_zone_top_card(to_zone)
-		var overloaded: Array = player.clear_zone(to_zone)
-		EffectHandler.banish_or_discard(player, overloaded)
-		player.discard_changed.emit()
+	var overloaded_top: Dictionary = h.overload_zone(player, to_zone)
 	var moved_top: Dictionary = player.get_zone_top_card(from_zone)
 	var stack: Array = player.zones[from_zone]
 	player.zones[from_zone] = []
 	player.zones[to_zone] = stack
 	player.zones_changed.emit()
-	# Fire on_destroy for the overloaded card, then on_zone_changed for the
+	# Fire on_leave_play for the overloaded card, then on_zone_changed for the
 	# moved card — mirrors the linked-card semantics used by swap_zones and
 	# play_from_discard so cards like EBP04-067 can react to forced movement.
 	await h.trigger_leave_play(player.player_id, overloaded_top, to_zone)
@@ -618,13 +607,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 			return -1
 
 	# Handle overload if zone occupied
-	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(zone_idx):
-		overloaded_top = player.get_zone_top_card(zone_idx)
-		var destroyed_stack: Array = player.clear_zone(zone_idx)
-		EffectHandler.banish_or_discard(player, destroyed_stack)
-		player.discard_changed.emit()
-
+	var overloaded_top: Dictionary = h.overload_zone(player, zone_idx)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
 	await h.trigger_leave_play(player_id, overloaded_top, zone_idx)
@@ -675,12 +658,7 @@ func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx:
 			break
 	player.hand_changed.emit()
 
-	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(zone_idx):
-		overloaded_top = player.get_zone_top_card(zone_idx)
-		var destroyed_stack: Array = player.clear_zone(zone_idx)
-		EffectHandler.banish_or_discard(player, destroyed_stack)
-		player.discard_changed.emit()
+	var overloaded_top: Dictionary = h.overload_zone(player, zone_idx)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
 	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
@@ -702,11 +680,8 @@ func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx:
 	## overloaded/discarded.
 	var player := game_state.players[player_id]
 	var overloaded_top: Dictionary = {}
-	if player.zone_has_cards(zone_idx) and not stack_on_top:
-		overloaded_top = player.get_zone_top_card(zone_idx)
-		var destroyed_stack: Array = player.clear_zone(zone_idx)
-		EffectHandler.banish_or_discard(player, destroyed_stack)
-		player.discard_changed.emit()
+	if not stack_on_top:
+		overloaded_top = h.overload_zone(player, zone_idx)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
 	await h.trigger_leave_play(player_id, overloaded_top, zone_idx)

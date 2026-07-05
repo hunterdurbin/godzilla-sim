@@ -549,6 +549,14 @@ func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones:
 	return await destruction.destroy_zone_and_adjacent(player_id, target, valid_zones, prompt, max_rank)
 
 
+func try_destroy_replacement(target: PlayerState, zone_idx: int) -> bool:
+	return destruction.try_destroy_replacement(target, zone_idx)
+
+
+func overload_zone(target: PlayerState, zone_idx: int) -> Dictionary:
+	return destruction.overload_zone(target, zone_idx)
+
+
 func can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	return destruction.can_destroy_card(target, card_data)
 
