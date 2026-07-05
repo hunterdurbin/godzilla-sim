@@ -18,6 +18,7 @@
 [ext_resource type="Script" path="res://scenes/board/modules/effect_stack_panel.gd" id="24_es"]
 [ext_resource type="Script" path="res://scenes/board/overlays/active_ability_banner.gd" id="23_ab"]
 [ext_resource type="Script" path="res://scenes/board/overlays/turn_toast.gd" id="25_tt"]
+[ext_resource type="Script" path="res://scenes/board/modules/lobby_bot_controller.gd" id="m_lobbybotcontroller"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckSearchOverlay.tscn" id="13_dso"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckArrangeOverlay.tscn" id="14_dao"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/CardSelectOverlay.tscn" id="15_cso"]
@@ -84,6 +85,9 @@ script = ExtResource("22_ml")
 
 [node name="EffectStackPanel" type="Node" parent="."]
 script = ExtResource("24_es")
+
+[node name="LobbyBotController" type="Node" parent="."]
+script = ExtResource("m_lobbybotcontroller")
 
 [node name="ActiveAbilityBanner" type="Control" parent="."]
 layout_mode = 3
