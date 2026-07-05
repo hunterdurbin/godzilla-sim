@@ -6,8 +6,8 @@ BEFORE each commit.
 
 ## Current position
 
-- **Current phase:** 7 (Phases 0–6 complete)
-- **Next action:** execute `phase-7-split-bot-player.md`
+- **Current phase:** 8 (Phases 0–7 complete)
+- **Next action:** execute `phase-8-split-game-board.md`
 - **Path flip in effect:** sim = `res://tests/sim/BotSimulationRunner.tscn`,
   harness = `./tests/harness/run_harness.sh` (old scenes/ locations retired)
 - **Branch:** `feature/restructure`
@@ -41,7 +41,7 @@ it to `tests/sim/BotSimulationRunner.tscn`.)
 | 4 — scenes/ re-slice | **done** | (phase-4 commit) | unit 901/901 · sim byte-identical · harness PASS · sweep zero hits · headful driver loaded all 13 nav targets + rendered MainMenu/GameBoard screenshots |
 | 5 — assets/ | **done** | (phase-5 commit) | unit 901/901 · sim byte-identical · harness PASS · sweep zero hits (incl. .import sidecars, null-safe for CJK names) · headful board render + sfx OK |
 | 6 — split card_data.gd | **done** | (phase-6 commit) | CARD_TEMPLATES=388 pre & post · regenerated cards.csv byte-identical · unit 901/901 · sim byte-identical · harness PASS. card_database.gd 184 lines + 10 set files |
-| 7 — split bot_player.gd (7a–7d) | pending | | |
+| 7 — split bot_player.gd (7a–7d) | **done** | 4 sub-commits | each sub-commit: unit 901/901 + sim byte-identical; phase-end harness PASS. bot_player 2,157→1,085 lines; helpers: scoring(9), zone_picker(7), invasion(8), selections(2) methods. Deviation: `_on_*` handler bodies stayed on BotPlayer whole (small, all contain awaits) — only pure sync decision methods moved |
 | 8 — split game_board.gd (8a–8f) | pending | | |
 | 9 — docs sweep + closeout | pending | | |
 

@@ -4,7 +4,11 @@
 
 | File | Role |
 |---|---|
-| `bot_player.gd` | `BotPlayer` — the decision brain. Subscribes to the same `SignalPlayerInput` request signals a human UI uses and resolves them; scores and picks main-phase actions, counters, discards, deck-search picks. (Planned split into scoring/zone/invasion/selection helpers — see `docs/restructure/phase-7-split-bot-player.md`) |
+| `bot_player.gd` | `BotPlayer` — the decision brain. Subscribes to the same `SignalPlayerInput` request signals a human UI uses and resolves them (`_on_*` handlers), orchestrates main-phase action choice, owns combo integration. Delegates detail work to the helpers below |
+| `bot_scoring.gd` | Card/trigger/synergy scoring, rank-up + choice-option scoring, card sort/pick utilities |
+| `bot_zone_picker.gd` | Battle-zone priority and own/opponent zone-target picking |
+| `bot_invasion.gd` | Invade decisions: which card, when blocked by rage/cost, best/worst invade picks |
+| `bot_selections.gd` | Discard-index and evolution-card picking |
 | `bot_config.gd` | `BotConfig` — difficulty presets (`Difficulty` enum) and tuning knobs |
 | `bot_combo.gd` | Combo planning base (multi-turn play sequences) |
 | `bot_combo_shin.gd` | The Shin counter-retreat setup combo (see `docs/combos/shin-combo-paths.md`) |
@@ -18,6 +22,12 @@ action choice runs through card scoring (`_score_card` + trigger/synergy
 bonuses), invasion decisions, and zone priority; combos override greedy
 choices when a plan is viable. Decision-path diagrams:
 `docs/bot-decisioning-paths/`.
+
+Helper pattern: each helper is `RefCounted` holding a **weakref**-backed
+`_bot: BotPlayer` property (a strong back-ref would form an uncollectable
+RefCounted cycle with the bot's strong ref to the helper). Method bodies were
+moved verbatim; `bot_player.gd` keeps one-line delegates, so every call site
+— and therefore the global-RNG call order — is unchanged.
 
 ## Behavioral invariants
 
