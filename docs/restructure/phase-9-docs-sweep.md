@@ -41,8 +41,9 @@ whatever is still missing and rewrites the roots. Content specs:
 - [x] Audit: `find . -name README.md -not -path './build/*' -not -path './.godot/*' -not -path './addons/*'`
       vs the table; write the missing ones.
 - [x] Rewrite root `README.md` and `CLAUDE.md`.
-- [x] Optional (ASK USER first): `.editorconfig` GDScript indent rules (tabs)
-      + gdlint config — new-file-only enforcement, no reformat diff bomb.
+- [ ] ~~Optional~~ SKIPPED (needs user sign-off): `.editorconfig` GDScript
+      indent rules (tabs) + gdlint config — recorded as a follow-up in
+      STATE.md.
 - [x] Final full gate.
 - [x] Global retired-path grep (all must be zero outside docs/restructure/):
       `res://scenes/ui/`, `res://scenes/managers/`, `res://scenes/simulation/`,
