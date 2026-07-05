@@ -856,6 +856,10 @@ STR_EFF_ESD02_004_PROMPT,Discard a battle card from hand to destroy opponent's c
 STR_EFF_EFC01_003_PROMPT,Discard a Gigan+Fest card to search for a Weapon/Mech battle card (or skip):,<ガイガン>+<フェス・ゴジラ>を捨てて<兵器>/<機械>の交戦カードを探す (またはスキップ):
 STR_EFF_EFC01_003_SEARCH,Choose a Weapon or Mech battle card with invasion icon 2:,<足2>の<兵器>/<機械>の交戦カードを選ぶ:
 STR_EFF_ESC01_001_PROMPT,Discard a Godzilla card to play at -4 rank:,<ゴジラ>のカードを捨てて等級-4で出す:
+STR_EFF_ESC01_002_PROMPT,Choose a rank 3 or lower battle card with Evolution from your discard pile:,捨て札から<進化>を持つ等級3以下の交戦カードを選ぶ:
+STR_EFF_ESC01_003_PROMPT,Discard a strategy card to advance your monster by 1 zone (or skip):,戦略カードを1枚捨てて怪獣カードを1エリア前進 (またはスキップ):
+STR_EFF_ESC01_006_CHOICE_A,Discard your entire hand (+1 Rage per strategy card),手札をすべて捨てる (戦略カード1枚につき<怒り>+1)
+STR_EFF_ESC01_006_CHOICE_B,Skip,スキップ
 STR_EFF_EBP02_018_FMT,Choose an opponent's battle card at or before zone %d to destroy:,エリア%d以前にいる相手の交戦カードを選んで<破壊>:
 STR_EFF_EBP02_022_PROMPT_FMT,Play %s from discard to a zone (or skip):,%sを捨て札からエリアに置く (またはスキップ):
 STR_EFF_EBP02_057_PROMPT,Choose an opponent's battle card in the same column to move:,同じ縦列にいる相手の交戦カードを移動:

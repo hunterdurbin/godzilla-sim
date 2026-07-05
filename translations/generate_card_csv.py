@@ -26,6 +26,11 @@ CARD_DESC_RE = re.compile(r'"description"\s*:\s*"((?:[^"\\]|\\.)*)"')
 # JP scrape header: === BP01-001 | ゴジラ(1954) === (also matches PR-005, SC01-001, BP02-T01)
 JP_HEADER_RE = re.compile(r'^===\s+([A-Z]+\d*-(?:T\d+|\d+)\+?)\s*\|\s*(.+?)\s*===\s*$')
 
+# Any other "=== ... ===" line is a non-card boundary (e.g. the "Rage-GZ30"
+# rage-token entries at the tail of scrape files). It must close the current
+# entry so its lines don't leak into the previous card's description.
+JP_BOUNDARY_RE = re.compile(r'^===.*===\s*$')
+
 
 def parse_card_data() -> list[dict]:
     """Return list of {id, name, description} for every card in card_data.gd."""
@@ -71,6 +76,11 @@ def parse_jp_file(path: Path) -> list[tuple[str, str, str]]:
             current_id = m.group(1)
             current_name = m.group(2)
             current_lines = []
+            continue
+        if JP_BOUNDARY_RE.match(raw):
+            if current_id:
+                entries.append((current_id, current_name, "\n".join(current_lines).strip()))
+            current_id = None
             continue
         if current_id is not None:
             current_lines.append(raw)
