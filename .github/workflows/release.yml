@@ -43,6 +43,9 @@ jobs:
       - name: Create build directory
         run: mkdir -p build/windows
 
+      - name: Disable editor plugins for export (godotengine/godot#99284 workaround)
+        run: sed -i 's|^enabled=PackedStringArray(.*)$|enabled=PackedStringArray()|' project.godot
+
       - name: Export Windows
         env:
           PRESET: ${{ contains(github.ref_name, 'unstable') && 'Windows Desktop Unstable' || 'Windows Desktop' }}
@@ -78,6 +81,9 @@ jobs:
       - name: Create build directory
         run: mkdir -p build/linux
 
+      - name: Disable editor plugins for export (godotengine/godot#99284 workaround)
+        run: sed -i 's|^enabled=PackedStringArray(.*)$|enabled=PackedStringArray()|' project.godot
+
       - name: Export Linux
         env:
           PRESET: ${{ contains(github.ref_name, 'unstable') && 'Linux Unstable' || 'Linux' }}
@@ -112,6 +118,9 @@ jobs:
 
       - name: Create build directory
         run: mkdir -p build/macos
+
+      - name: Disable editor plugins for export (godotengine/godot#99284 workaround)
+        run: sed -i 's|^enabled=PackedStringArray(.*)$|enabled=PackedStringArray()|' project.godot
 
       - name: Export macOS
         env:
@@ -167,6 +176,9 @@ jobs:
       - name: Create build directory
         run: mkdir -p build/android
 
+      - name: Disable editor plugins for export (godotengine/godot#99284 workaround)
+        run: sed -i 's|^enabled=PackedStringArray(.*)$|enabled=PackedStringArray()|' project.godot
+
       - name: Export Android
         env:
           PRESET: ${{ contains(github.ref_name, 'unstable') && 'Android Unstable' || 'Android' }}
@@ -201,6 +213,9 @@ jobs:
 
       - name: Create build directory
         run: mkdir -p build/server
+
+      - name: Disable editor plugins for export (godotengine/godot#99284 workaround)
+        run: sed -i 's|^enabled=PackedStringArray(.*)$|enabled=PackedStringArray()|' project.godot
 
       # One preset serves both channels — the release channel is baked into
       # the version string, and the server version-gates clients at HELLO.
