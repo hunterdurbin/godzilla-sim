@@ -23,7 +23,7 @@ config/icon="res://assets/icons/game_icon.png"
 
 [autoload]
 
-CardData="*res://scripts/cards/card_data.gd"
+CardData="*res://scripts/cards/card_database.gd"
 ArtworkDownloader="*res://scripts/services/artwork_downloader.gd"
 DecklistManager="*res://scripts/cards/decklist_manager.gd"
 NetworkManager="*res://scripts/net/network_manager.gd"

@@ -13,7 +13,14 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
-CARD_DATA_GD = REPO / "scripts" / "cards" / "card_data.gd"
+# Per-set data files, in the same order card_data.gd used to declare them
+# (keeps cards.csv row order stable).
+CARD_SETS_DIR = REPO / "scripts" / "cards" / "sets"
+CARD_SET_FILES = [
+    CARD_SETS_DIR / f"card_set_{s}.gd"
+    for s in ["ebp01", "ebp02", "ebp03", "ebp04", "epr",
+              "esd01", "esd02", "esc01", "efc01", "system"]
+]
 JA_SOURCES = HERE / "ja_sources"
 OUT_CSV = HERE / "cards.csv"
 
@@ -33,8 +40,8 @@ JP_BOUNDARY_RE = re.compile(r'^===.*===\s*$')
 
 
 def parse_card_data() -> list[dict]:
-    """Return list of {id, name, description} for every card in card_data.gd."""
-    text = CARD_DATA_GD.read_text(encoding="utf-8")
+    """Return list of {id, name, description} for every card in the set files."""
+    text = "\n".join(p.read_text(encoding="utf-8") for p in CARD_SET_FILES)
     cards = []
     # Walk through each braced card block by splitting on '"id":' as a coarse anchor.
     # Simpler: iterate line-based, collecting id→(name, desc) per logical block.

@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
-# Compares cards from the Godzilla TCG API against card_data.gd
+# Compares cards from the Godzilla TCG API against the card set files
 # and reports any missing cards, grouped by set.
 
 set -euo pipefail
 
 API_BASE="https://api.godzillatcg.com"
-CARD_DATA="$(dirname "$0")/../cards/card_data.gd"
+CARD_SETS_DIR="$(dirname "$0")/../cards/sets"
 
-if [ ! -f "$CARD_DATA" ]; then
-    echo "Error: card_data.gd not found at $CARD_DATA"
+if [ ! -d "$CARD_SETS_DIR" ]; then
+    echo "Error: card set dir not found at $CARD_SETS_DIR"
     exit 1
 fi
 
-# Extract existing card IDs from card_data.gd
-echo "Reading existing cards from card_data.gd..."
-EXISTING=$(grep -o '"id": "[^"]*"' "$CARD_DATA" | sed 's/"id": "//;s/"//' | sort -u)
+# Extract existing card IDs from the per-set data files
+echo "Reading existing cards from scripts/cards/sets/..."
+EXISTING=$(grep -oh '"id": "[^"]*"' "$CARD_SETS_DIR"/card_set_*.gd | sed 's/"id": "//;s/"//' | sort -u)
 EXISTING_COUNT=$(echo "$EXISTING" | wc -l | tr -d ' ')
-echo "Found $EXISTING_COUNT cards in card_data.gd"
+echo "Found $EXISTING_COUNT cards in the card set files"
 
 # Fetch all cards from API (paginated, max 100 per request)
 echo ""
@@ -95,7 +95,7 @@ done <<< "$ALL_API_CARDS"
 
 if [ "$MISSING_COUNT" -eq 0 ]; then
     echo ""
-    echo "All API cards are present in card_data.gd!"
+    echo "All API cards are present in the card set files!"
     exit 0
 fi
 
@@ -110,7 +110,7 @@ echo "$MISSING" | sort | while IFS='|' read -r card_number name ctype rank color
 
     if [ "$SET_ID" != "$CURRENT_SET" ]; then
         CURRENT_SET="$SET_ID"
-        # Check if this is a new set not in card_data.gd
+        # Check if this is a new set not in the card set files
         if grep -q "${SET_ID}_CARDS" "$CARD_DATA"; then
             echo ""
             echo "--- $SET_ID (existing set) ---"
@@ -128,7 +128,7 @@ echo ""
 echo "============================================"
 echo "  SUMMARY"
 echo "============================================"
-echo "Cards in card_data.gd: $EXISTING_COUNT"
+echo "Cards in the card set files: $EXISTING_COUNT"
 echo "Cards in API:          $API_COUNT"
 echo "Missing cards:         $MISSING_COUNT"
 
@@ -141,7 +141,7 @@ done)
 
 if [ -n "$NEW_SETS" ]; then
     echo ""
-    echo "New sets to create in card_data.gd:"
+    echo "New sets to create in the card set files:"
     echo "$NEW_SETS" | while read -r set_id; do
         COUNT=$(echo "$MISSING" | grep "^${set_id}-" | wc -l | tr -d ' ')
         echo "  - ${set_id}_CARDS ($COUNT cards)"

@@ -16,7 +16,7 @@ unchanged autoload surface. Lowest-risk split — do it first.
 
 ## Target decomposition (all in `scripts/cards/`, post-Phase-3 location)
 
-- [ ] `sets/card_set_ebp01.gd` … `sets/card_set_ebp04.gd`,
+- [x] `sets/card_set_ebp01.gd` … `sets/card_set_ebp04.gd`,
       `sets/card_set_epr.gd`, `sets/card_set_esd01.gd`,
       `sets/card_set_esd02.gd`, `sets/card_set_esc01.gd`,
       `sets/card_set_efc01.gd`, `sets/card_set_system.gd` — each:
@@ -33,23 +33,23 @@ unchanged autoload surface. Lowest-risk split — do it first.
       literals keep working via class_name. Adjust set list to whatever
       arrays actually exist in the file — enumerate them first with
       `grep -n '^const .*_CARDS' card_data.gd`.)
-- [ ] `card_database.gd` — rename of the remaining card_data.gd. Keeps:
+- [x] `card_database.gd` — rename of the remaining card_data.gd. Keeps:
       `CARD_TEMPLATES`, `_build_card_templates()` now iterating
       `const _SETS := [preload("sets/card_set_ebp01.gd"), …]`, every existing
       public method. Rewire `get_esd01_main_deck`'s direct array reference to
       the set class. **Autoload NAME stays `CardData`.**
-- [ ] `project.godot`: `CardData="*res://scripts/cards/card_database.gd"`.
-- [ ] `tests/fixtures/real_cards.gd` keeps working via the autoload — verify,
+- [x] `project.godot`: `CardData="*res://scripts/cards/card_database.gd"`.
+- [x] `tests/fixtures/real_cards.gd` keeps working via the autoload — verify,
       don't touch.
 
 ## Invariants to check
 
-- [ ] `CARD_TEMPLATES.size()` identical pre/post (print it in a scratch run
+- [x] `CARD_TEMPLATES.size()` identical pre/post (print it in a scratch run
       before and after, or add a temporary assertion in a scratch script —
       do not commit scratch).
-- [ ] Effect smoke suite passes (it loads every card + effect script and
+- [x] Effect smoke suite passes (it loads every card + effect script and
       fails on trigger_map staleness).
-- [ ] `grep -rn 'card_data.gd' --exclude-dir=docs` → zero hits (uid sidecar
+- [x] `grep -rn 'card_data.gd' --exclude-dir=docs` → zero hits (uid sidecar
       renamed too).
 
 ## External parsers of card_data.gd (found in Phase 3 — MUST update here)

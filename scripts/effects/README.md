@@ -1,6 +1,6 @@
 # scripts/effects/ — the card-effect system
 
-⚠️ **This directory is PATH-FROZEN.** `card_data.gd` embeds ~368
+⚠️ **This directory is PATH-FROZEN.** The card set files (`scripts/cards/sets/`) embed ~368
 `"effect_script": "res://scripts/effects/…"` strings and the generated
 `trigger_map.gd` embeds the same set; EffectRegistry loads by these strings
 and the pre-commit hook / codegen reference this path. Never move or rename

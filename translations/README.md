@@ -16,7 +16,7 @@ Registered in project.godot `[internationalization]`; runtime helper:
 ## Workflow
 
 ```
-scripts/cards/card_data.gd  ─┐
+scripts/cards/sets/card_set_*.gd ─┐
                              ├─→ python3 translations/generate_card_csv.py ─→ cards.csv
 ja_sources/*_card_effects_ja.txt ─┘
 strings.csv  (hand-edited)
@@ -26,10 +26,10 @@ strings.csv  (hand-edited)
 - **Adding a UI/log string:** add the `STR_*` row to `strings.csv` (en + ja),
   reference it via `tr()` / `Loc.t()`. Game-log events also need a token
   constructor in `scripts/replay/game_log.gd`.
-- **Adding/changing card text:** edit the card in
-  `scripts/cards/card_data.gd` (and JP source file if applicable), then run
-  `python3 translations/generate_card_csv.py` (it regex-parses card_data.gd —
-  update `CARD_DATA_GD` there if the database file layout changes).
+- **Adding/changing card text:** edit the card in its set file under
+  `scripts/cards/sets/` (and the JP source file if applicable), then run
+  `python3 translations/generate_card_csv.py` (it regex-parses the set files
+  listed in its `CARD_SET_FILES` — update that list when sets are added).
 - ID mapping: English `EBP01-001` ↔ JP `BP01-001`; the generator prefers
   non-`+` reprint variants.
 - Open the project in the editor once after regenerating so the CSVs

@@ -28,7 +28,7 @@ presentation layer (`scenes/`) depends on this layer, never the reverse.
 
 | Name | Path | Responsibility |
 |---|---|---|
-| `CardData` | `scripts/cards/card_data.gd` | Card template database (`CARD_TEMPLATES`, deck builders) |
+| `CardData` | `scripts/cards/card_database.gd` | Card template database (`CARD_TEMPLATES`, deck builders) |
 | `DecklistManager` | `scripts/cards/decklist_manager.gd` | `.deck` files under `user://decklists/`, per-player deck selection |
 | `GameSettings` | `scripts/settings/game_settings.gd` | User prefs, locale, reconnect session |
 | `NetworkManager` | `scripts/net/network_manager.gd` | Connection lifecycle (LAN/relay/dedicated), scene handoff |
