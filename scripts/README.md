@@ -32,7 +32,6 @@ presentation layer (`scenes/`) depends on this layer, never the reverse.
 | `DecklistManager` | `scripts/cards/decklist_manager.gd` | `.deck` files under `user://decklists/`, per-player deck selection |
 | `GameSettings` | `scripts/settings/game_settings.gd` | User prefs, locale, reconnect session |
 | `NetworkManager` | `scripts/net/network_manager.gd` | Connection lifecycle (LAN/relay/dedicated), scene handoff |
-| `RpcLogger` | `scripts/net/rpc_logger.gd` | Debug per-RPC byte tallies |
 | `ArtworkDownloader` | `scripts/services/artwork_downloader.gd` | Card art cache (`user://CardContent/Artwork`) |
 | `StatsUploader` | `scripts/services/stats_uploader.gd` | Game-result POST to api.godzillatcg.com |
 | `UpdateChecker` | `scripts/services/update_checker.gd` | GitHub release check |
@@ -40,9 +39,12 @@ presentation layer (`scenes/`) depends on this layer, never the reverse.
 | `SfxManager` | `scripts/audio/sfx_manager.gd` | Sound effects |
 | `MusicManager` | `scripts/audio/music_manager.gd` | Background music |
 
-Keep autoloads at these 11 — new globals need a strong reason (candidates for
-future demotion: RpcLogger, TouchHelper). Autoload scripts live in their
-domain dir; this table is the index.
+Keep autoloads at these 10 — new globals need a strong reason. Autoload
+scripts live in their domain dir; this table is the index. Demotion outcomes
+(2026-07): `RpcLogger` became a static class (`class_name`, no Node
+features needed); `TouchHelper` stays an autoload deliberately — it needs
+tree membership for `_input` tracking and the Android back-button
+notification.
 
 ## Layering rules
 

@@ -6,12 +6,21 @@ BEFORE each commit.
 
 ## Current position
 
-- **Status:** ✅ **COMPLETE** — all 10 phases done (2026-07-05)
-- **Follow-ups (out of scope, not started):** `.editorconfig` GDScript indent
-  rules + gdlint config (skipped — needs user sign-off to avoid a reformat
-  diff bomb); autoload demotion candidates (RpcLogger, TouchHelper);
-  further game_board extraction (8a `_execute_rematch` remains board-owned
-  by design)
+- **Status:** ✅ **COMPLETE** — all 10 phases done (2026-07-05), follow-ups resolved same day
+- **Follow-up outcomes (user approved "do what makes sense"):**
+  - `.editorconfig`: DONE — indent rules added (gd=tabs, py/sh=4-space,
+    yml=2-space, final newline). Editor-applied on touched files only; no
+    reformat sweep.
+  - gdlint/gdformat config: SKIPPED — gdtoolkit is not installed here and
+    nothing runs it in CI; a config would be dead weight. Revisit if the
+    toolchain ever adopts it.
+  - `RpcLogger`: DEMOTED — now a static class (`class_name RpcLogger extends
+    Object`, static vars/funcs); autoload removed (10 remain). Zero call-site
+    changes; harness PASS confirms the live RPC logging paths.
+  - `TouchHelper`: KEPT as autoload deliberately — needs tree membership for
+    `_input` touch/mouse tracking and the Android back-button notification.
+    Rationale recorded in scripts/README.md.
+  - 8a `_execute_rematch`: remains board-owned by design (unchanged).
 - **Path flip in effect:** sim = `res://tests/sim/BotSimulationRunner.tscn`,
   harness = `./tests/harness/run_harness.sh` (old scenes/ locations retired)
 - **Branch:** `feature/restructure`
