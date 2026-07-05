@@ -226,12 +226,6 @@ var _preview_bg: Panel
 var _preview_card: Control
 
 
-# Tracks the Card node that received the most recent effect-card highlight so
-# unhighlight can clear it by reference even if its card_data later mutates
-# (e.g. evolution stacks a new card via set_card_data_dict on the same node).
-var _highlighted_effect_card_node: Control = null
-
-
 # State tracking
 # Selection state — owned by SelectionController (forwarding properties for
 # the board _input path, mobile cluster, sync, and rematch reset)
