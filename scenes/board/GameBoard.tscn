@@ -21,6 +21,7 @@
 [ext_resource type="Script" path="res://scenes/board/modules/lobby_bot_controller.gd" id="m_lobbybotcontroller"]
 [ext_resource type="Script" path="res://scenes/board/modules/card_zoom_controller.gd" id="m_cardzoomcontroller"]
 [ext_resource type="Script" path="res://scenes/board/modules/effect_highlight_controller.gd" id="m_effecthighlightcontroller"]
+[ext_resource type="Script" path="res://scenes/board/modules/board_layout_controller.gd" id="m_boardlayoutcontroller"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckSearchOverlay.tscn" id="13_dso"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckArrangeOverlay.tscn" id="14_dao"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/CardSelectOverlay.tscn" id="15_cso"]
@@ -87,6 +88,9 @@ script = ExtResource("22_ml")
 
 [node name="EffectStackPanel" type="Node" parent="."]
 script = ExtResource("24_es")
+
+[node name="BoardLayoutController" type="Node" parent="."]
+script = ExtResource("m_boardlayoutcontroller")
 
 [node name="EffectHighlightController" type="Node" parent="."]
 script = ExtResource("m_effecthighlightcontroller")
