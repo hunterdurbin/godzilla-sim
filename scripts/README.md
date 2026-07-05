@@ -36,15 +36,18 @@ presentation layer (`scenes/`) depends on this layer, never the reverse.
 | `StatsUploader` | `scripts/services/stats_uploader.gd` | Game-result POST to api.godzillatcg.com |
 | `UpdateChecker` | `scripts/services/update_checker.gd` | GitHub release check |
 | `TouchHelper` | `scripts/services/touch_helper.gd` | Touch-vs-mouse detection, Android back button |
+| `GamepadInput` | `scripts/input/gamepad_input.gd` | Physical→logical controller action translation, rebinding, glyph lookup (see input/README.md) |
+| `GamepadHelper` | `scripts/services/gamepad_helper.gd` | Gamepad-vs-pointer device tracking, focus-context stack |
 | `SfxManager` | `scripts/audio/sfx_manager.gd` | Sound effects |
 | `MusicManager` | `scripts/audio/music_manager.gd` | Background music |
 
-Keep autoloads at these 10 — new globals need a strong reason. Autoload
+Keep autoloads at these 12 — new globals need a strong reason. Autoload
 scripts live in their domain dir; this table is the index. Demotion outcomes
 (2026-07): `RpcLogger` became a static class (`class_name`, no Node
 features needed); `TouchHelper` stays an autoload deliberately — it needs
 tree membership for `_input` tracking and the Android back-button
-notification.
+notification. `GamepadInput`/`GamepadHelper` need tree membership for the
+same reason (`_unhandled_input`/`_input` + `_process` injection).
 
 ## Layering rules
 

@@ -112,6 +112,31 @@ func _ready() -> void:
 	_update_deck_stats()
 	_update_zoom_buttons()
 
+	GamepadHelper.push_focus_context(self, _first_focusable)
+
+
+func _exit_tree() -> void:
+	GamepadHelper.pop_focus_context(self)
+
+
+func _first_focusable() -> Control:
+	# make_pad_focusable controls only become FOCUS_ALL in gamepad mode, so
+	# resolve lazily at refocus time.
+	var root: Control = self
+	return _find_focusable(root)
+
+
+func _find_focusable(node: Node) -> Control:
+	if node is Control:
+		var control := node as Control
+		if control.focus_mode == Control.FOCUS_ALL and control.is_visible_in_tree():
+			return control
+	for child in node.get_children():
+		var found := _find_focusable(child)
+		if found != null:
+			return found
+	return null
+
 
 # ============================================================
 # UI Construction
@@ -252,7 +277,7 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	format_info_button.text = "i"
 	format_info_button.tooltip_text = tr("STR_DB_FORMAT_INFO_TOOLTIP")
 	format_info_button.custom_minimum_size = Vector2(28, 28)
-	format_info_button.focus_mode = Control.FOCUS_NONE
+	GamepadHelper.make_pad_focusable(format_info_button)
 	format_row.add_child(format_info_button)
 
 	format_option = OptionButton.new()
@@ -1456,7 +1481,7 @@ func _make_zoom_button(label: String, tooltip: String) -> Button:
 	btn.text = label
 	btn.tooltip_text = tooltip
 	btn.custom_minimum_size = Vector2(28, 28)
-	btn.focus_mode = Control.FOCUS_NONE
+	GamepadHelper.make_pad_focusable(btn)
 	return btn
 
 

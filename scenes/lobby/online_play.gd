@@ -10,6 +10,11 @@ func _ready() -> void:
 	rumble_button.pressed.connect(_on_rumble_pressed)
 	private_button.pressed.connect(_on_private_pressed)
 	back_button.pressed.connect(_on_back_pressed)
+	GamepadHelper.push_focus_context(self, func() -> Control: return rumble_button)
+
+
+func _exit_tree() -> void:
+	GamepadHelper.pop_focus_context(self)
 
 
 func _on_rumble_pressed() -> void:

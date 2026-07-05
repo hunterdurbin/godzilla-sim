@@ -160,6 +160,18 @@ func _gui_input(event: InputEvent) -> void:
 		elif is_dragging:
 			_apply_drag_motion()
 
+	# Controller: overlay-grid cards receive focus (focus_mode set by
+	# OverlayGridUtil.wire_grid_focus) and non-mouse events route to the focus
+	# owner — confirm activates like a click, inspect like a right-click.
+	# Board/hand cards never get focus (GamepadBoardNav cursors them instead).
+	elif has_focus():
+		if event.is_action_pressed("ui_accept") and is_selectable:
+			accept_event()
+			card_clicked.emit(self)
+		elif event.is_action_pressed("pad_inspect") and not is_face_down:
+			accept_event()
+			card_right_clicked.emit(self)
+
 
 ## Desktop: left-click press — immediate select or drag start
 func _on_mouse_press() -> void:

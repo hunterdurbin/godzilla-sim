@@ -559,3 +559,16 @@ func _on_card_clicked(card: Control) -> void:
 	var index = managed_cards.find(card)
 	if index >= 0:
 		card_selected.emit(card, index)
+
+
+## Programmatic selection (controller navigation): emits card_selected
+## exactly like a click on a selectable card, honoring selection mode and
+## the valid-indices filter.
+func select_card_at(index: int) -> void:
+	if not selection_mode:
+		return
+	if index < 0 or index >= managed_cards.size():
+		return
+	if not selectable_indices.is_empty() and index not in selectable_indices:
+		return
+	card_selected.emit(managed_cards[index], index)

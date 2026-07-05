@@ -5,6 +5,7 @@ extends Control
 @onready var customize_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CustomizeButton
 @onready var advanced_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AdvancedButton
 @onready var audio_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AudioButton
+@onready var controller_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/ControllerButton
 @onready var language_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LanguageRow/LanguageButton
 @onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
 
@@ -18,9 +19,15 @@ func _ready() -> void:
 	customize_button.pressed.connect(_on_customize_pressed)
 	advanced_button.pressed.connect(_on_advanced_pressed)
 	audio_button.pressed.connect(_on_audio_pressed)
+	controller_button.pressed.connect(_on_controller_pressed)
 	language_button.pressed.connect(_on_language_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	_refresh_language_button()
+	GamepadHelper.push_focus_context(self, func() -> Control: return automation_button)
+
+
+func _exit_tree() -> void:
+	GamepadHelper.pop_focus_context(self)
 
 
 func _refresh_language_button() -> void:
@@ -257,6 +264,22 @@ func _show_modal(popup: PopupPanel) -> void:
 	# from prior layout passes and stretch vertically.
 	popup.reset_size()
 	popup.popup_centered()
+	# Controller: the modal owns focus while open; drop back to this screen's
+	# context when it closes (all runtime-built modals funnel through here).
+	GamepadHelper.push_focus_context(popup, _find_first_focusable.bind(popup))
+	popup.popup_hide.connect(GamepadHelper.pop_focus_context.bind(popup))
+
+
+func _find_first_focusable(root: Node) -> Control:
+	if root is Control:
+		var control := root as Control
+		if control.focus_mode == Control.FOCUS_ALL and control.is_visible_in_tree():
+			return control
+	for child in root.get_children():
+		var found := _find_first_focusable(child)
+		if found != null:
+			return found
+	return null
 
 
 # --- Automation modal ---
@@ -1289,6 +1312,84 @@ func _on_audio_pressed() -> void:
 
 	_add_close_button(vbox, popup)
 	_show_modal(popup)
+
+
+# --- Controller modal ---
+
+func _on_controller_pressed() -> void:
+	SfxManager.play("ui_click")
+	var parts := _create_modal(tr("STR_OPTIONS_CONTROLLER_TITLE"), 520.0)
+	var popup: PopupPanel = parts[0]
+	var vbox: VBoxContainer = parts[1]
+	popup.popup_hide.connect(GamepadInput.cancel_capture)
+
+	if Input.get_connected_joypads().is_empty():
+		var hint := Label.new()
+		hint.text = tr("STR_CONTROLLER_NONE_DETECTED")
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hint.add_theme_font_size_override("font_size", 14)
+		hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		vbox.add_child(hint)
+
+	for logical: StringName in GamepadInput.get_rebindable_actions():
+		vbox.add_child(_build_rebind_row(logical))
+
+	var reset_btn := Button.new()
+	reset_btn.text = tr("STR_CONTROLLER_RESET")
+	reset_btn.custom_minimum_size = Vector2(180, 36)
+	reset_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	reset_btn.add_theme_font_size_override("font_size", 16)
+	reset_btn.pressed.connect(func() -> void:
+		GamepadInput.cancel_capture()
+		GamepadInput.reset_to_defaults()
+	)
+	vbox.add_child(reset_btn)
+
+	_add_close_button(vbox, popup)
+	_show_modal(popup)
+
+
+func _build_rebind_row(logical: StringName) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+
+	var label := Label.new()
+	label.text = tr("STR_" + String(logical).to_upper())
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", 18)
+	row.add_child(label)
+
+	var glyph := ControllerGlyph.new()
+	glyph.action = logical
+	glyph.always_visible = true
+	glyph.custom_minimum_size = Vector2(34, 34)
+	row.add_child(glyph)
+
+	var rebind_btn := Button.new()
+	rebind_btn.text = tr("STR_CONTROLLER_REBIND")
+	rebind_btn.custom_minimum_size = Vector2(150, 36)
+	rebind_btn.add_theme_font_size_override("font_size", 14)
+	rebind_btn.pressed.connect(_on_rebind_pressed.bind(logical, rebind_btn))
+	row.add_child(rebind_btn)
+	return row
+
+
+func _on_rebind_pressed(logical: StringName, btn: Button) -> void:
+	SfxManager.play("ui_click")
+	# Restarting capture from another row implicitly cancels the previous one;
+	# reset every row's button text first.
+	GamepadInput.cancel_capture()
+	var siblings := btn.get_parent().get_parent().find_children("*", "Button", true, false)
+	for sibling in siblings:
+		if sibling != btn and (sibling as Button).text == tr("STR_CONTROLLER_PRESS_BUTTON"):
+			(sibling as Button).text = tr("STR_CONTROLLER_REBIND")
+	btn.text = tr("STR_CONTROLLER_PRESS_BUTTON")
+	GamepadInput.begin_capture(func(physical: StringName) -> void:
+		if physical != &"":
+			GamepadInput.rebind(logical, physical)
+		if is_instance_valid(btn):
+			btn.text = tr("STR_CONTROLLER_REBIND")
+	)
 
 
 func _on_back_pressed() -> void:

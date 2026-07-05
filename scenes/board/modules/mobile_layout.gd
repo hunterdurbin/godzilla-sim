@@ -1511,6 +1511,34 @@ func _expand_fab() -> void:
 
 	_fab_main_btn.queue_redraw()
 
+	# Controller: dpad walks the expanded grid (row 0: 0-1-2 / row 1: 3-4),
+	# starting from the first enabled action.
+	_wire_fab_focus()
+	if GamepadHelper.is_using_gamepad():
+		for btn: Button in _fab_action_btns:
+			if not btn.disabled:
+				btn.grab_focus.call_deferred()
+				break
+
+
+## Focus mesh for the expanded FAB grid; the main FAB button closes the loop
+## downward so B isn't the only way back.
+func _wire_fab_focus() -> void:
+	var btns := _fab_action_btns
+	if btns.size() != 5:
+		return
+	var row0: Array[Button] = [btns[0], btns[1], btns[2]]
+	var row1: Array[Button] = [btns[3], btns[4]]
+	for i in range(row0.size()):
+		row0[i].focus_neighbor_left = row0[i].get_path_to(row0[(i + 2) % 3])
+		row0[i].focus_neighbor_right = row0[i].get_path_to(row0[(i + 1) % 3])
+		row0[i].focus_neighbor_bottom = row0[i].get_path_to(row1[mini(i, 1)])
+	for i in range(row1.size()):
+		row1[i].focus_neighbor_left = row1[i].get_path_to(row1[(i + 1) % 2])
+		row1[i].focus_neighbor_right = row1[i].get_path_to(row1[(i + 1) % 2])
+		row1[i].focus_neighbor_top = row1[i].get_path_to(row0[i])
+		row1[i].focus_neighbor_bottom = row1[i].get_path_to(_fab_main_btn)
+
 
 func _collapse_fab() -> void:
 	if not _fab_expanded:
@@ -1553,6 +1581,7 @@ func _collapse_fab() -> void:
 		btn_end_main.visible = true
 		btn_confirm.visible = true
 		btn_cancel.visible = true
+		GamepadHelper.refocus()
 	)
 
 	_fab_main_btn.queue_redraw()
@@ -1581,6 +1610,15 @@ func _collapse_fab_instant() -> void:
 	btn_end_main.visible = true
 	btn_confirm.visible = true
 	btn_cancel.visible = true
+	GamepadHelper.refocus()
+
+
+func fab_expanded() -> bool:
+	return _fab_expanded
+
+
+func fab_main_button() -> Button:
+	return _fab_main_btn
 
 
 func _on_fab_backdrop_input(event: InputEvent) -> void:

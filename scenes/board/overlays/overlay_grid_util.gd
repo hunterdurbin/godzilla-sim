@@ -73,6 +73,40 @@ static func clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 		child.queue_free()
 
 
+## Controller navigation for overlay card grids: makes every live card
+## focusable and wires a wrapping focus_neighbor mesh (row-major, matching
+## GridContainer layout), then focuses the first card in gamepad mode. Cards
+## handle ui_accept / pad_inspect themselves while focused (card.gd).
+static func wire_grid_focus(grid: GridContainer) -> void:
+	var cards: Array[Control] = []
+	for child in grid.get_children():
+		if child is Control and not child.is_queued_for_deletion() \
+				and child.has_signal("card_clicked"):
+			cards.append(child)
+	if cards.is_empty():
+		return
+	var cols: int = maxi(grid.columns, 1)
+	var count := cards.size()
+	var rows: int = ceili(float(count) / float(cols))
+	for i in range(count):
+		var card := cards[i]
+		card.focus_mode = Control.FOCUS_ALL
+		var row: int = i / cols
+		var col: int = i % cols
+		var row_start: int = row * cols
+		var row_end: int = mini(row_start + cols, count) - 1
+		var left: int = i - 1 if i > row_start else row_end
+		var right: int = i + 1 if i < row_end else row_start
+		var up: int = i - cols if row > 0 else mini((rows - 1) * cols + col, count - 1)
+		var down: int = i + cols if i + cols < count else col
+		card.focus_neighbor_left = card.get_path_to(cards[left])
+		card.focus_neighbor_right = card.get_path_to(cards[right])
+		card.focus_neighbor_top = card.get_path_to(cards[up])
+		card.focus_neighbor_bottom = card.get_path_to(cards[mini(down, count - 1)])
+	if GamepadHelper.is_using_gamepad():
+		cards[0].grab_focus.call_deferred()
+
+
 const _CardScript := preload("res://scenes/cards/card.gd")
 ## Same top-crop offset the deck list rows use (DeckRow.THUMB_CROP_Y_RATIO).
 const THUMB_CROP_Y_RATIO := 0.08

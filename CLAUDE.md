@@ -9,7 +9,7 @@ per-area docs. This file is the map plus the rules that span subsystems.
 ## Layout
 
 ```
-scripts/                 # LOGIC LAYER (see scripts/README.md — incl. the 11-autoload registry)
+scripts/                 # LOGIC LAYER (see scripts/README.md — incl. the 12-autoload registry)
 ├── core/                #   pure match engine: GameState, RulesEngine, TurnManager,
 │                        #   MatchFactory, GameEvents bus, actions/ resolvers,
 │                        #   input/ PlayerInput port (Signal/Scripted variants)
@@ -18,6 +18,8 @@ scripts/                 # LOGIC LAYER (see scripts/README.md — incl. the 11-a
 ├── cards/               #   card_database.gd (autoload CardData) + sets/card_set_*.gd
 │                        #   (one data file per set), enums, deck validation, decklists
 ├── bot/                 #   BotPlayer + scoring/zone/invasion/selection helpers, combos
+├── input/               #   controller support: GamepadInput autoload, GlyphDB,
+│                        #   ControllerGlyph (@tool WYSIWYG glyph) — see input/README.md
 ├── session/             #   GameSession, MultiplayerSync (ALL 47 @rpc), EffectUIRouter
 ├── server/              #   dedicated headless server (rooms, HeadlessBoard)
 ├── net/ replay/ audio/ services/ localization/ settings/ util/ tools/

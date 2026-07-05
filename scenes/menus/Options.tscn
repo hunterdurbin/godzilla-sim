@@ -102,6 +102,13 @@ size_flags_horizontal = 4
 text = "STR_OPTIONS_AUDIO"
 theme_override_font_sizes/font_size = 22
 
+[node name="ControllerButton" type="Button" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "STR_OPTIONS_CONTROLLER"
+theme_override_font_sizes/font_size = 22
+
 [node name="LanguageRow" type="HBoxContainer" parent="CenterContainer/PanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 4

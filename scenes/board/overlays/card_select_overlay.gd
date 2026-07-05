@@ -137,6 +137,7 @@ func _refresh_pool() -> void:
 			else:
 				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
 			_pool_grid.add_child(card)
+	OverlayGridUtil.wire_grid_focus(_pool_grid)
 
 
 func _make_card(card_data: Dictionary, zoom: Callable) -> Control:

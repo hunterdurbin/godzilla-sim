@@ -39,6 +39,7 @@ func _ready() -> void:
 	start_button.pressed.connect(_on_start_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	deck_select.deck_selected.connect(_on_deck_selected)
+	GamepadHelper.push_focus_context(self, func() -> Control: return host_button)
 
 	NetworkManager.connection_failed.connect(_on_connection_failed)
 	NetworkManager.version_mismatch.connect(_on_version_mismatch)
@@ -58,6 +59,10 @@ func _ready() -> void:
 	copy_button.visible = false
 	code_label.text = ""
 	status_label.text = ""
+
+
+func _exit_tree() -> void:
+	GamepadHelper.pop_focus_context(self)
 
 
 func _on_host_pressed() -> void:

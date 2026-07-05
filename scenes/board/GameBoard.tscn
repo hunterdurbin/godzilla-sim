@@ -23,6 +23,8 @@
 [ext_resource type="Script" path="res://scenes/board/modules/effect_highlight_controller.gd" id="m_effecthighlightcontroller"]
 [ext_resource type="Script" path="res://scenes/board/modules/board_layout_controller.gd" id="m_boardlayoutcontroller"]
 [ext_resource type="Script" path="res://scenes/board/modules/system_menu_controller.gd" id="m_systemmenucontroller"]
+[ext_resource type="Script" path="res://scenes/board/modules/gamepad_board_nav.gd" id="m_gamepadboardnav"]
+[ext_resource type="Script" path="res://scripts/input/controller_glyph.gd" id="m_controllerglyph"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckSearchOverlay.tscn" id="13_dso"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckArrangeOverlay.tscn" id="14_dao"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/CardSelectOverlay.tscn" id="15_cso"]
@@ -92,6 +94,9 @@ script = ExtResource("24_es")
 
 [node name="SystemMenuController" type="Node" parent="."]
 script = ExtResource("m_systemmenucontroller")
+
+[node name="GamepadBoardNav" type="Node" parent="."]
+script = ExtResource("m_gamepadboardnav")
 
 [node name="BoardLayoutController" type="Node" parent="."]
 script = ExtResource("m_boardlayoutcontroller")
@@ -432,11 +437,37 @@ layout_mode = 2
 disabled = true
 text = "STR_GB_CANCEL"
 
+[node name="CancelGlyph" type="TextureRect" parent="ActionPanel/Row0/Cancel"]
+layout_mode = 1
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -9.0
+offset_right = 10.0
+offset_bottom = 9.0
+grow_vertical = 2
+script = ExtResource("m_controllerglyph")
+action = &"pad_cancel"
+custom_minimum_size = Vector2(18, 18)
+
 [node name="Confirm" type="Button" parent="ActionPanel/Row0"]
 custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 disabled = true
 text = "STR_GB_CONFIRM"
+
+[node name="ConfirmGlyph" type="TextureRect" parent="ActionPanel/Row0/Confirm"]
+layout_mode = 1
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -9.0
+offset_right = 10.0
+offset_bottom = 9.0
+grow_vertical = 2
+script = ExtResource("m_controllerglyph")
+action = &"pad_confirm"
+custom_minimum_size = Vector2(18, 18)
 
 [node name="Row1" type="HBoxContainer" parent="ActionPanel" unique_id=446663055]
 layout_mode = 2
@@ -477,6 +508,19 @@ text = "STR_GB_INVADE"
 custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 text = "STR_GB_END_MAIN"
+
+[node name="EndMainGlyph" type="TextureRect" parent="ActionPanel/Row2/EndMain"]
+layout_mode = 1
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -9.0
+offset_right = 10.0
+offset_bottom = 9.0
+grow_vertical = 2
+script = ExtResource("m_controllerglyph")
+action = &"pad_end_main"
+custom_minimum_size = Vector2(18, 18)
 
 [node name="BugReportButton" type="Button" parent="." unique_id=1953231602]
 layout_mode = 1

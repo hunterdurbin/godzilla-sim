@@ -15,6 +15,14 @@ extends Node
 ## rematch-safe). The board's _input/_process keep their exact event
 ## ordering and delegate into this controller.
 
+## Controller navigation (GamepadBoardNav) listens to this to point its
+## cursor at whatever the active prompt selects from. mode: "none" |
+## "hand_select" | "hand_discard" | "card_to_zone" | "zone_target" |
+## "zones_target" | "strategy_target" | "choice" | "confirm".
+## valid = selectable indices (visual hand indices or 0-based zone/strategy
+## indices); board_pid = whose board the zones are on; hand_pid = whose hand.
+signal selection_context_changed(ctx: Dictionary)
+
 var _board: Node
 var _session: GameSession
 
@@ -161,6 +169,12 @@ func _bind_session() -> void:
 func _connect_once(sig: Signal, callback: Callable) -> void:
 	if not sig.is_connected(callback):
 		sig.connect(callback)
+
+
+func _emit_ctx(mode: String, valid: Array[int] = [], board_pid: int = -1, hand_pid: int = -1) -> void:
+	selection_context_changed.emit({
+		"mode": mode, "valid": valid, "board_pid": board_pid, "hand_pid": hand_pid,
+	})
 
 
 ## Reset all selection state for a rematch (called from the board's
@@ -416,6 +430,31 @@ func _on_confirm_pressed() -> void:
 		return
 
 
+## Controller path for the card→zone placement step: mirrors the mouse
+## hit-test branch in game_board._input (same submit, same cleanup).
+func play_selected_card_to_zone(zone_index: int) -> bool:
+	if not waiting_for_zone_select or zone_index not in _zone_select_valid:
+		return false
+	var hand_idx := _find_hand_index_by_id(selected_card_id)
+	_cancel_selection()
+	if hand_idx < 0:
+		return false
+	_submit_action(CardEnums.ActionType.PLAY_BATTLE, {
+		"hand_index": hand_idx,
+		"zone_index": zone_index,
+	})
+	return true
+
+
+## The single button pad_end_main maps to: Confirm while a prompt shows one,
+## otherwise End Main.
+func press_primary_button() -> void:
+	if btn_confirm.visible and not btn_confirm.disabled:
+		btn_confirm.pressed.emit()
+	elif btn_end_main.visible and not btn_end_main.disabled:
+		btn_end_main.pressed.emit()
+
+
 func _on_cancel_pressed() -> void:
 	if _confirming_pass:
 		_cancel_pass_confirmation()
@@ -439,6 +478,7 @@ func _enter_pass_confirmation() -> void:
 	btn_confirm.disabled = false
 	btn_cancel.text = tr("STR_GB_CANCEL")
 	btn_cancel.disabled = false
+	_emit_ctx("confirm")
 
 
 func _cancel_pass_confirmation() -> void:
@@ -446,6 +486,7 @@ func _cancel_pass_confirmation() -> void:
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
 	btn_cancel.disabled = true
+	_emit_ctx("none")
 	if turn_manager:
 		_update_action_buttons(turn_manager.rules_engine.get_valid_actions(turn_manager.game_state))
 	else:
@@ -466,6 +507,7 @@ func _enter_card_selection(prompt_text: String, valid_indices: Array[int]) -> vo
 		board.hand_manager.enter_selection_mode(visual_indices)
 		if not board.hand_manager.card_selected.is_connected(_on_hand_card_selected):
 			board.hand_manager.card_selected.connect(_on_hand_card_selected)
+		_emit_ctx("hand_select", visual_indices, -1, _get_current_pid())
 
 
 func _on_hand_card_selected(card: Control, _visual_index: int) -> void:
@@ -546,6 +588,7 @@ func _enter_zone_selection() -> void:
 					slot.card_placed.connect(_board_zone_slot_clicked_cb().bind(i))
 				if not slot.hover_started.is_connected(_on_zone_hover_clicked):
 					slot.hover_started.connect(_on_zone_hover_clicked.bind(i))
+	_emit_ctx("card_to_zone", valid_zones, active_pid)
 
 
 func _on_zone_hover_clicked(_zone_index: int) -> void:
@@ -634,6 +677,7 @@ func _end_snap_preview() -> void:
 func _cancel_selection() -> void:
 	waiting_for_card_select = false
 	waiting_for_zone_select = false
+	_emit_ctx("none")
 	selected_card_id = ""
 	_selected_card_data = {}
 	_zone_select_valid = []
@@ -675,6 +719,9 @@ func _update_action_buttons(valid_actions: Array) -> void:
 	if _fab_container:
 		for btn: Button in _fab_action_btns:
 			btn.queue_redraw()
+	# Controller focus follows the freshly enabled/disabled button set
+	# (no-op unless the gamepad is the active device).
+	GamepadHelper.refocus()
 
 
 func _disable_all_buttons() -> void:
@@ -999,6 +1046,7 @@ func _show_hand_discard_selection(player_id: int, discard_count: int, source_id:
 	action_prompt_panel.visible = true
 	_show_prompt_previews(source_id, "")
 	btn_confirm.disabled = true
+	_emit_ctx("hand_discard", all_indices, -1, player_id)
 
 
 func _on_discard_card_selected(card: Control, _index: int) -> void:
@@ -1051,6 +1099,7 @@ func _confirm_hand_discard() -> void:
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
 	_cleanup_prompt_previews()
+	_emit_ctx("none")
 
 	# Restore hand visibility
 	_update_hand_visibility(_get_current_pid())
@@ -1084,6 +1133,7 @@ func _force_cleanup_discard_selection() -> void:
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
 	_cleanup_prompt_previews()
+	_emit_ctx("none")
 
 	_update_hand_visibility(_get_current_pid())
 
@@ -1132,6 +1182,7 @@ func _show_hand_card_selection(player_id: int, valid_indices: Array[int], prompt
 		btn_confirm.disabled = false
 	else:
 		btn_confirm.disabled = true
+	_emit_ctx("hand_select", visual_indices, -1, player_id)
 
 
 func _on_hand_card_clicked(card: Control, _index: int) -> void:
@@ -1175,6 +1226,7 @@ func _skip_hand_card_selection() -> void:
 
 func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 	_hand_card_selecting = false
+	_emit_ctx("none")
 	hand_mgr.exit_selection_mode()
 	if hand_mgr.card_selected.is_connected(_on_hand_card_clicked):
 		hand_mgr.card_selected.disconnect(_on_hand_card_clicked)
@@ -1233,6 +1285,7 @@ func _show_zone_target_selection(player_id: int, target_player_id: int, valid_zo
 			slot.in_selection_mode = true
 			if not slot.slot_clicked.is_connected(_on_zone_target_slot_clicked):
 				slot.slot_clicked.connect(_on_zone_target_slot_clicked)
+	_emit_ctx("zone_target", valid_zones, target_player_id)
 
 
 func _on_zone_target_slot_clicked(zone_num: int, _pid: int) -> void:
@@ -1264,6 +1317,7 @@ func _finish_zone_target(zone_idx: int) -> void:
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
 	_cleanup_prompt_previews()
+	_emit_ctx("none")
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("zone_target_resolved", 4)
@@ -1313,6 +1367,7 @@ func _show_zones_target_selection(player_id: int, target_player_id: int, valid_z
 			if not slot.slot_clicked.is_connected(_on_zones_target_slot_clicked):
 				slot.slot_clicked.connect(_on_zones_target_slot_clicked)
 	_update_zones_target_confirm()
+	_emit_ctx("zones_target", valid_zones, target_player_id)
 
 
 func _on_zones_target_slot_clicked(zone_num: int, _pid: int) -> void:
@@ -1364,6 +1419,7 @@ func _finish_zones_target() -> void:
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
 	_cleanup_prompt_previews()
+	_emit_ctx("none")
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		var zones_json := JSON.stringify(selected)
@@ -1598,6 +1654,7 @@ func _show_strategy_target_selection(player_id: int, target_player_id: int, vali
 			slot.in_selection_mode = true
 			if not slot.slot_clicked.is_connected(_on_strategy_target_slot_clicked):
 				slot.slot_clicked.connect(_on_strategy_target_slot_clicked.bind(i))
+	_emit_ctx("strategy_target", valid_indices, target_player_id)
 
 
 func _on_strategy_target_slot_clicked(_zone_num: int, _pid: int, strategy_idx: int) -> void:
@@ -1623,6 +1680,7 @@ func _finish_strategy_target(strategy_idx: int) -> void:
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
 	_cleanup_prompt_previews()
+	_emit_ctx("none")
 
 	if is_multiplayer_game and not NetworkManager.is_host():
 		RpcLogger.log_send("strategy_target_resolved", 4)
@@ -1782,6 +1840,11 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 		_choice_container.add_child(btn)
 		_choice_buttons.append(btn)
 
+	_emit_ctx("choice")
+	# Controller: dpad walks the option column natively once one has focus.
+	if GamepadHelper.is_using_gamepad() and not _choice_buttons.is_empty():
+		_choice_buttons[0].grab_focus.call_deferred()
+
 
 ## Deferred: match the scroll viewport to the laid-out button column so the
 ## panel hugs its content (capped at max_height — beyond that it scrolls),
@@ -1916,3 +1979,4 @@ func _cleanup_choice_selection() -> void:
 	_board.set_log_prompt_dim(false)
 	# Restore normal action button rows
 	_set_action_buttons_visible(true)
+	_emit_ctx("none")

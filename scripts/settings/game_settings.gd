@@ -55,6 +55,14 @@ var music_volume: int = 0  # 0=OFF, 1=25%, 2=50%, 3=75%, 4=100%
 # Advanced settings
 var use_mobile_layout: bool = false
 
+# Controller settings — logical pad_* action name -> physical controller_*
+# action name (String -> String). Empty dict = defaults (GlyphDB.default_map).
+# Bindings are per controller type: controller_mapping_type records which
+# glyph set ("xbox"/"playstation"/"switch"/"generic") they were saved for and
+# GamepadInput discards them when a different controller type is detected.
+var controller_bindings: Dictionary = {}
+var controller_mapping_type: String = ""
+
 # Bot settings
 var bot_difficulty: int = BotConfig.Difficulty.NORMAL  # 0=Easy, 1=Normal, 2=Hard
 var bot_seed_text: String = ""             # raw text; if valid int, used as seed; "" = auto
@@ -176,6 +184,8 @@ func _save() -> void:
 	config.set_value("bot", "deck_weights", bot_deck_weights)
 	config.set_value("bot", "folder_weights", bot_folder_weights)
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
+	config.set_value("controller", "bindings", controller_bindings)
+	config.set_value("controller", "mapping_type", controller_mapping_type)
 	config.set_value("updates", "skipped_version", skipped_version)
 	config.set_value("cache", "applied_artwork_fixes", applied_artwork_fixes)
 	config.set_value("reconnect", "room_code", reconnect_room_code)
@@ -244,6 +254,8 @@ func _load() -> void:
 	bot_folder_weights = config.get_value("bot", "folder_weights", {})
 	var _mobile_default := OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	use_mobile_layout = config.get_value("advanced", "use_mobile_layout", _mobile_default)
+	controller_bindings = config.get_value("controller", "bindings", {})
+	controller_mapping_type = config.get_value("controller", "mapping_type", "")
 	skipped_version = config.get_value("updates", "skipped_version", "")
 	# ConfigFile returns a generic Array; defensively rebuild as Array[String].
 	var raw_fixes: Array = config.get_value("cache", "applied_artwork_fixes", [])

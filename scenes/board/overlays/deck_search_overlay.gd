@@ -102,6 +102,7 @@ func _refresh_grid() -> void:
 				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
 			card.card_right_clicked.connect(_on_card_zoom)
 			_grid.add_child(card)
+	OverlayGridUtil.wire_grid_focus(_grid)
 
 
 func _on_toggled(_value: bool) -> void:

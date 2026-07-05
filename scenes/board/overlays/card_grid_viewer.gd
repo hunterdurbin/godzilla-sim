@@ -111,6 +111,7 @@ func show_rankup(monsters: Array, valid_indices: Array[int], prompt: String, res
 			card.modulate = Color(0.5, 0.5, 0.5, 1.0)
 		card.card_right_clicked.connect(_on_card_zoom)
 		_grid.add_child(card)
+	OverlayGridUtil.wire_grid_focus(_grid)
 
 
 ## Dismissable reveal (zone stack viewer): closing resolves the effect.
@@ -179,6 +180,7 @@ func _refresh() -> void:
 	else:
 		for card_data in cards:
 			_grid.add_child(_make_card(card_data, zoom))
+	OverlayGridUtil.wire_grid_focus(_grid)
 
 
 func _make_card(card_data: Dictionary, zoom: Callable) -> Control:

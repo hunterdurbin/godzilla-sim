@@ -224,7 +224,7 @@ func _build_full_ui() -> void:
 
 	if show_format_filter:
 		_format_option = OptionButton.new()
-		_format_option.focus_mode = Control.FOCUS_NONE
+		GamepadHelper.make_pad_focusable(_format_option)
 		_format_option.tooltip_text = tr("STR_DLV_FORMAT_TOOLTIP")
 		_format_option.add_item(tr("STR_MENU_FORMAT_ANY"), 0)
 		_format_option.set_item_metadata(0, "")
@@ -241,7 +241,7 @@ func _build_full_ui() -> void:
 
 	_density_button = Button.new()
 	_density_button.toggle_mode = true
-	_density_button.focus_mode = Control.FOCUS_NONE
+	GamepadHelper.make_pad_focusable(_density_button)
 	_density_button.custom_minimum_size.x = 32
 	_density_button.tooltip_text = tr("STR_DLV_TOGGLE_DENSITY")
 	_density_button.text = "≡"
@@ -249,7 +249,7 @@ func _build_full_ui() -> void:
 	top_row.add_child(_density_button)
 
 	_expand_button = Button.new()
-	_expand_button.focus_mode = Control.FOCUS_NONE
+	GamepadHelper.make_pad_focusable(_expand_button)
 	_expand_button.custom_minimum_size.x = 32
 	_expand_button.tooltip_text = tr("STR_DLV_EXPAND")
 	_expand_button.text = "⛶"
@@ -456,7 +456,7 @@ func _add_folder_header(folder: String, count: int, collapsed: bool) -> void:
 	btn.button_pressed = not collapsed
 	btn.flat = true
 	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	btn.focus_mode = Control.FOCUS_NONE
+	GamepadHelper.make_pad_focusable(btn)
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.add_theme_font_size_override("font_size", 14)
 	btn.add_theme_color_override("font_color", Color(0.85, 0.55, 0.35, 1))
@@ -634,7 +634,7 @@ func _open_expanded_overlay() -> void:
 	var close_btn := Button.new()
 	close_btn.text = "✕"
 	close_btn.custom_minimum_size = Vector2(32, 32)
-	close_btn.focus_mode = Control.FOCUS_NONE
+	GamepadHelper.make_pad_focusable(close_btn)
 	close_btn.pressed.connect(overlay.queue_free)
 	header_row.add_child(close_btn)
 

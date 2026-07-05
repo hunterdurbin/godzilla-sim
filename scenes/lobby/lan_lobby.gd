@@ -22,6 +22,7 @@ func _ready() -> void:
 	start_button.pressed.connect(_on_start_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	deck_select.deck_selected.connect(_on_deck_selected)
+	GamepadHelper.push_focus_context(self, func() -> Control: return host_button)
 
 	NetworkManager.player_connected.connect(_on_player_connected)
 	NetworkManager.player_disconnected.connect(_on_player_disconnected)
@@ -37,6 +38,10 @@ func _ready() -> void:
 	# If a deck is already selected, keep it
 	if not deck_select.current_selection.is_empty():
 		_on_deck_selected(deck_select.current_selection)
+
+
+func _exit_tree() -> void:
+	GamepadHelper.pop_focus_context(self)
 
 
 func _on_host_pressed() -> void:

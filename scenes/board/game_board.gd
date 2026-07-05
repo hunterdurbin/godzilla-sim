@@ -1440,6 +1440,8 @@ func _input(event: InputEvent) -> void:
 			zone_stack_view_overlay.try_close()
 		elif _minimize_chip.visible:
 			_restore_minimized_overlay()
+		elif _is_mobile_layout and _mobile.fab_expanded():
+			_collapse_fab_instant()
 		elif _choice_selecting:
 			pass # Mandatory — must pick an option
 		elif _hand_card_selecting and _hand_card_allow_skip:

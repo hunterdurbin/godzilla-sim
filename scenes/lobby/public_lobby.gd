@@ -42,6 +42,7 @@ func _ready() -> void:
 	play_bot_button.pressed.connect(_on_play_bot_pressed)
 	back_button.pressed.connect(_on_back_pressed)
 	deck_select.deck_selected.connect(_on_deck_selected)
+	GamepadHelper.push_focus_context(self, func() -> Control: return create_button)
 
 	# Populate game mode dropdown from centralized list
 	for gm in GameModeValidator.MODES:
@@ -456,6 +457,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		_on_back_pressed()
+
+
+func _exit_tree() -> void:
+	GamepadHelper.pop_focus_context(self)
 
 
 func _on_back_pressed() -> void:

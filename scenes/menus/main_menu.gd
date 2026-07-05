@@ -67,6 +67,19 @@ func _ready() -> void:
 	if GameSettings.has_valid_reconnect_session() and not GameSettings.reconnect_is_host:
 		_show_reconnect_dialog()
 
+	GamepadHelper.push_focus_context(self, _default_focus_control)
+
+
+func _exit_tree() -> void:
+	GamepadHelper.pop_focus_context(self)
+
+
+func _default_focus_control() -> Control:
+	for btn: Button in [solo_bot_button, start_button, lan_button, online_button, deck_builder_button]:
+		if btn.visible and not btn.disabled:
+			return btn
+	return options_button
+
 
 func _on_p1_deck_selected(deck_name: String) -> void:
 	_p1_ready = not deck_name.is_empty() and DecklistManager.select_deck_for_player(0, deck_name)

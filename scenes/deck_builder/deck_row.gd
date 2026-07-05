@@ -29,7 +29,7 @@ func _init() -> void:
 	toggle_mode = false
 	custom_minimum_size.y = ROW_HEIGHT
 	flat = false
-	focus_mode = Control.FOCUS_NONE
+	GamepadHelper.make_pad_focusable(self)
 	clip_text = true
 	text = ""
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -89,7 +89,7 @@ func _init() -> void:
 
 	_actions_button = Button.new()
 	_actions_button.text = "⋯"
-	_actions_button.focus_mode = Control.FOCUS_NONE
+	GamepadHelper.make_pad_focusable(_actions_button)
 	_actions_button.custom_minimum_size = Vector2(32, 32)
 	_actions_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_actions_button.visible = false

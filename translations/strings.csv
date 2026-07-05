@@ -964,3 +964,19 @@ STR_LOG_EXPORT_FAILED,Failed to export the game log.,ゲームログの出力に
 STR_EXTRAS_GAME_LOGS,Game Logs,ゲームログ
 STR_EXTRAS_NO_GAME_LOGS,No exported game logs found.,出力されたゲームログが見つかりません。
 STR_EXTRAS_VIEW,View,表示
+STR_OPTIONS_CONTROLLER,Controller...,コントローラー...
+STR_CONTROLLER_REBIND,Rebind,変更
+STR_CONTROLLER_PRESS_BUTTON,Press a button...,ボタンを押してください…
+STR_CONTROLLER_RESET,Reset to Defaults,デフォルトに戻す
+STR_CONTROLLER_NONE_DETECTED,No controller detected,コントローラーが検出されていません
+STR_PAD_CONFIRM,Confirm / Select,決定／選択
+STR_PAD_CANCEL,Cancel / Back,キャンセル／戻る
+STR_PAD_INSPECT,Inspect Card,カードを拡大
+STR_PAD_END_MAIN,Phase Button,フェーズボタン
+STR_PAD_REGION_PREV,Previous Board Region,前のボードエリア
+STR_PAD_REGION_NEXT,Next Board Region,次のボードエリア
+STR_PAD_VIEW_DISCARD,View Your Discard,自分の捨て札を見る
+STR_PAD_VIEW_OPP_DISCARD,View Opponent's Discard,相手の捨て札を見る
+STR_PAD_MENU,System Menu,システムメニュー
+STR_PAD_CHAT,Chat,チャット
+STR_OPTIONS_CONTROLLER_TITLE,Controller,コントローラー

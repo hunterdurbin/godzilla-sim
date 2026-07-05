@@ -248,7 +248,7 @@ func _add_folder_header(folder: String, collapsed: bool) -> void:
 
 	var arrow_btn := Button.new()
 	arrow_btn.flat = true
-	arrow_btn.focus_mode = Control.FOCUS_NONE
+	GamepadHelper.make_pad_focusable(arrow_btn)
 	arrow_btn.custom_minimum_size = Vector2(24, ROW_HEIGHT_FOLDER)
 	arrow_btn.add_theme_font_size_override("font_size", 14)
 	arrow_btn.text = "▾" if not collapsed else "▸"

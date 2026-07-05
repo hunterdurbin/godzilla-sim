@@ -216,6 +216,14 @@ func set_selected(selected: bool) -> void:
 	_update_visual_state()
 
 
+## Programmatic activation (controller navigation): emits the same signal a
+## pointer click produces while the slot is selectable.
+func simulate_click() -> void:
+	if not in_selection_mode:
+		return
+	slot_clicked.emit(zone_number, player_id)
+
+
 func set_monster_marker(is_marked: bool) -> void:
 	has_monster_marker = is_marked
 	_update_visual_state()
