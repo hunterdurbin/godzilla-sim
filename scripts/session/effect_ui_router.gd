@@ -198,6 +198,16 @@ func _active_summary() -> Dictionary:
 	return _remote_banner
 
 
+## Reconnect support: re-send the ability banner ahead of a replayed prompt
+## so the client's gallery modal comes back with its "which ability" header.
+## No-op for prompt methods that don't carry the banner.
+func resend_banner(method: String, peer_id: int) -> void:
+	if method not in _BANNER_KEYS:
+		return
+	var summary := _active_summary()
+	multiplayer_sync._rpc_ability_banner.rpc_id(peer_id, summary.get("card_id", ""), summary.get("label", ""))
+
+
 ## Client peers: store the banner data for the incoming prompt (set via the
 ## ability-banner RPC just before the prompt RPC).
 func set_remote_banner(card_id: String, label: String) -> void:
@@ -296,7 +306,9 @@ func _on_cards_revealed_requested(player_id: int, cards: Array, title: String) -
 		# resolving synchronously during this emit would fire the resolved signal
 		# before reveal_cards() reaches its await, hanging the effect.
 		var ids_json := JSON.stringify(StateCodec.cards_to_ids(cards))
+		var summary := _active_summary()
 		for peer_id in net.peer_player_map:
+			multiplayer_sync._rpc_ability_banner.rpc_id(peer_id, summary.get("card_id", ""), summary.get("label", ""))
 			multiplayer_sync._rpc_cards_revealed_shown.rpc_id(peer_id, ids_json, title)
 		session.player_input.resolve_cards_revealed.call_deferred()
 		return
@@ -306,8 +318,10 @@ func _on_cards_revealed_requested(player_id: int, cards: Array, title: String) -
 	show_cards_revealed(cards, title)
 	if is_multiplayer:
 		var revealed_json := JSON.stringify(StateCodec.cards_to_ids(cards))
+		var summary := _active_summary()
 		for peer_id in net.peer_player_map:
 			if net.peer_player_map[peer_id] != local_player_id:
+				multiplayer_sync._rpc_ability_banner.rpc_id(peer_id, summary.get("card_id", ""), summary.get("label", ""))
 				multiplayer_sync._rpc_cards_revealed_shown.rpc_id(peer_id, revealed_json, title)
 
 

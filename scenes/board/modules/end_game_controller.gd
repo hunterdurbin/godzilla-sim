@@ -43,6 +43,7 @@ func on_game_ended(winner_id: int, reason_key: String) -> void:
 	SfxManager.play("game_win" if winner_id == _board.local_player_id else "game_lose")
 	_board._action_pending = false
 	_board._game_ended_by_disconnect = false
+	_board.hide_ability_banner()
 	# Defensive: hide reconnect overlay if game ends normally
 	if _board._waiting_for_reconnect:
 		_board._waiting_for_reconnect = false
@@ -278,6 +279,7 @@ func rpc_receive_game_ended(winner_id: int, reason_key: String) -> void:
 	SfxManager.play("game_win" if winner_id == _board.local_player_id else "game_lose")
 	_board._action_pending = false
 	_board._game_ended_by_disconnect = false
+	_board.hide_ability_banner()
 	rematch_requested = false
 	opponent_rematch_requested = false
 	_board.end_game_panel.visible = true

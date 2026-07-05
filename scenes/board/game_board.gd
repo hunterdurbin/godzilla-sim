@@ -1335,6 +1335,19 @@ func _on_discard_reshuffled(moved_cards: Array, player_id: int) -> void:
 # --- Action handler visual feedback ---
 
 func _on_play_cancelled(player_id: int) -> void:
+	if is_multiplayer_game and player_id != local_player_id:
+		# The acting player's dragged card lives on their screen — tell that
+		# peer to restore it (board state arrives via the snapshot broadcast).
+		for peer_id in NetworkManager.peer_player_map:
+			if NetworkManager.peer_player_map[peer_id] == player_id:
+				RpcLogger.log_send("play_cancelled", 4)
+				_sync._rpc_play_cancelled.rpc_id(peer_id, player_id)
+	_restore_cancelled_play(player_id)
+	# Sync boards in case the cost prompt changed hand/discard state
+	_sync_boards()
+
+
+func _restore_cancelled_play(player_id: int) -> void:
 	# Reset the dragged card's scale/state and tween it back to its slot.
 	_clear_card_highlight()
 	var board: Control = player1_board if player_id == 0 else player2_board
@@ -1351,8 +1364,6 @@ func _on_play_cancelled(player_id: int) -> void:
 		# at its drop position. Move only that card back to its slot — leave
 		# the rest of the player's hand order untouched.
 		board.hand_manager.restore_drop_handled_card_position()
-	# Sync boards in case the cost prompt changed hand/discard state
-	_sync_boards()
 
 
 func _on_battle_card_played(_player_id: int, _card: Dictionary, _zone_index: int) -> void:
@@ -1599,6 +1610,7 @@ func _execute_rematch() -> void:
 	monster_deck_view_overlay.visible = false
 	zone_stack_view_overlay.visible = false
 	card_zoom_overlay.visible = false
+	hide_ability_banner()
 
 	# 6. Reset client state
 	_client_players = [PlayerState.new(0), PlayerState.new(1)]
@@ -2291,9 +2303,17 @@ func _play_action_required_if_not_turn_player(player_id: int) -> void:
 		SfxManager.play("action_required")
 
 
+## Hide the active-ability banner and drop any stale remote-banner data
+## (game end and rematch cleanup — a mid-effect banner must not persist).
+func hide_ability_banner() -> void:
+	_router.set_remote_banner("", "")
+	_ability_banner.hide_banner()
+
+
 ## Router handler for monster rank-up: board-side button state wraps the
 ## viewer's mandatory selection mode.
 func _show_monster_rankup(monsters: Array, valid_indices: Array[int], prompt: String, resolve_cb: Callable) -> void:
+	_play_action_required_if_not_turn_player(local_player_id)
 	_disable_all_buttons()
 	monster_deck_view_overlay.show_rankup(monsters, valid_indices, prompt, func(index: int) -> void:
 		btn_confirm.disabled = true
@@ -2976,19 +2996,30 @@ func _rpc_monster_rankup_requested(monsters_json: String, indices_json: String, 
 		return
 	var monster_ids: Array = JSON.parse_string(monsters_json)
 	var parsed_indices: Array = JSON.parse_string(indices_json)
-	SfxManager.play("action_required")
+	if _client_current_player_id != local_player_id:
+		SfxManager.play("action_required")
 	_router.show_monster_rankup(StateCodec.ids_to_cards(monster_ids), parsed_indices, prompt)
 
 
-## Server -> Client (dedicated only): display-only cards-revealed overlay
-## (the server already resolved the effect; dismissing changes nothing).
+## Host/Server -> Client: display-only cards-revealed overlay (the host
+## already resolves the effect; dismissing only hides the local overlay).
+## Routed through the router so the ability banner shows above it.
 func _rpc_cards_revealed_shown(cards_json: String, title: String) -> void:
 	if NetworkManager.is_host():
 		return
 	var ids: Variant = JSON.parse_string(cards_json)
 	if not ids is Array or ids.is_empty():
 		return
-	zone_stack_view_overlay.show_revealed(StateCodec.ids_to_cards(ids), _resolve_translated_text(title), Callable())
+	_router.show_cards_revealed(StateCodec.ids_to_cards(ids), title)
+
+
+## Host -> Client: a pending play was cancelled (cost declined / invasion
+## aborted) — restore the card this client dragged onto a zone to its hand.
+func _rpc_play_cancelled(player_id: int) -> void:
+	RpcLogger.log_receive("play_cancelled", 4)
+	if NetworkManager.is_host():
+		return
+	_restore_cancelled_play(player_id)
 
 
 ## Host -> Client: highlight a zone card during effect resolution
