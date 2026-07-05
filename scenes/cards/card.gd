@@ -659,7 +659,9 @@ func set_highlight(enabled: bool) -> void:
 			add_child(overlay)
 		overlay.visible = true
 	elif overlay:
-		overlay.queue_free()
+		# Hide, never queue_free(): a same-frame re-enable would fetch the
+		# queued-for-deletion node and the highlight would silently vanish.
+		overlay.visible = false
 
 
 var _attention_tween: Tween = null
@@ -706,7 +708,13 @@ func set_attention_highlight(enabled: bool, border_color: Color = Color(0.25, 0.
 		_attention_tween.tween_property(overlay, "modulate:a", 0.4, 0.4)
 		_attention_tween.tween_property(overlay, "modulate:a", 1.0, 0.4)
 	elif overlay:
-		overlay.queue_free()
+		# Hide, never queue_free(): moving the mouse between two stack rows
+		# that target the same card disables and re-enables this highlight in
+		# the same frame, so a freed overlay would be picked up again above and
+		# the looping tween would target a dead node ("Infinite loop detected"
+		# in tween.cpp once every tweener turns invalid).
+		overlay.visible = false
+		overlay.modulate.a = 1.0
 
 
 func _update_display() -> void:
