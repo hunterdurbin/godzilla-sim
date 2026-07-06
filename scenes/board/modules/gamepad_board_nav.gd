@@ -50,9 +50,6 @@ var _cursor_card: Control = null
 ## Hand card currently raised by the cursor (drives the same hover tween the
 ## mouse uses via card._on_mouse_entered/_on_mouse_exited).
 var _hovered_card: Control = null
-## Browsing the hand pops it up like the toggle button does; leaving restores
-## it — but only when WE expanded it, never clobbering a manual expand.
-var _auto_expanded_hand := false
 
 
 func _ready() -> void:
@@ -182,7 +179,6 @@ func _on_gamepad_detected() -> void:
 
 
 func _on_pointer_detected() -> void:
-	_leave_hand_browse()
 	_region = Region.NONE
 	_hide_cursor()
 
@@ -225,7 +221,6 @@ func _apply_context() -> void:
 				_enter_element(first)
 		"choice", "confirm":
 			# Real focus takes over (choice buttons / the Confirm button).
-			_leave_hand_browse()
 			_region = Region.NONE
 			_hide_cursor()
 			if _mode == "confirm":
@@ -341,7 +336,6 @@ func _move_hand(dir: int) -> void:
 
 
 func _enter_action_panel() -> void:
-	_leave_hand_browse()
 	_region = Region.ACTION_PANEL
 	_hide_cursor()
 	GamepadHelper.refocus()
@@ -353,8 +347,6 @@ func _enter_hand() -> void:
 	# The module owns input in virtual regions; no control may hold focus or
 	# the mirrored ui_* events would double-drive it.
 	get_viewport().gui_release_focus()
-	if _mode == "none":
-		_auto_expand_hand()
 	var valid := _hand_valid_indices()
 	if valid.is_empty():
 		_hide_cursor()
@@ -365,7 +357,6 @@ func _enter_hand() -> void:
 
 func _enter_element(id: String) -> void:
 	_clear_preview()
-	_leave_hand_browse()
 	_region = Region.BOARD
 	_element = id
 	_map.push_visited(id)
@@ -392,19 +383,6 @@ func _hand_valid_indices() -> Array[int]:
 	for i in range(hand.managed_cards.size()):
 		out.append(i)
 	return out
-
-
-func _auto_expand_hand() -> void:
-	if not _board._hand.hand_expanded:
-		_board._hand.set_hand_expanded(true)
-		_auto_expanded_hand = true
-
-
-func _leave_hand_browse() -> void:
-	if _auto_expanded_hand:
-		_auto_expanded_hand = false
-		if _board._hand.hand_expanded:
-			_board._hand.set_hand_expanded(false)
 
 
 # --- Element resolution ---
@@ -568,10 +546,36 @@ func _on_hand_reordered(hand: CardManager) -> void:
 			_hand_index = idx
 			_update_cursor()
 			return
-	# Card left the hand (played/discarded): snap to the first valid index.
+	# The cursor's card left the hand (played/discarded): move to the card on
+	# its LEFT, else the one that slid into its slot from the right, else
+	# hand over to the Sort button.
 	var valid := _hand_valid_indices()
-	_hand_index = valid[0] if not valid.is_empty() else 0
+	if valid.is_empty():
+		_focus_sort_button()
+		return
+	var left := _hand_index - 1
+	while left >= 0 and left not in valid:
+		left -= 1
+	if left >= 0:
+		_hand_index = left
+	else:
+		var right := _hand_index
+		while right < hand.managed_cards.size() and right not in valid:
+			right += 1
+		_hand_index = right if right in valid else valid[0]
 	_update_cursor()
+
+
+## Empty hand fallback: real focus lands on the Sort button so A still does
+## something sensible next to where the cursor was.
+func _focus_sort_button() -> void:
+	_hide_cursor()
+	_region = Region.ACTION_PANEL
+	var btn: Button = _board.sort_hand_button
+	if btn and btn.is_visible_in_tree() and not btn.disabled:
+		btn.grab_focus()
+	else:
+		GamepadHelper.refocus()
 
 
 func _update_cursor() -> void:
@@ -612,15 +616,20 @@ func _set_hovered_card(card: Control) -> void:
 		card._on_mouse_entered()
 
 
-## Hand cards tween into place over ~0.3s after a reorder — land the cursor
-## on the card's arrange TARGET instead of chasing the mid-flight rect.
 func _target_rect(target: Control) -> Rect2:
-	if _region == Region.HAND:
-		var hand := _hand_mgr()
-		if hand and hand.card_target_positions.has(target):
-			var pos: Vector2 = hand.to_global(hand.card_target_positions[target])
-			return Rect2(pos, target.get_global_rect().size)
 	return target.get_global_rect()
+
+
+## Hand cards move under the cursor (hover raise, sort/arrange tweens) —
+## track the ring to the card's live rect every frame.
+func _process(_delta: float) -> void:
+	if _region != Region.HAND or _cursor == null or not _cursor.visible:
+		return
+	if not is_instance_valid(_cursor_card):
+		return
+	var rect := _cursor_card.get_global_rect()
+	_cursor.global_position = rect.position - Vector2(CURSOR_PAD, CURSOR_PAD)
+	_cursor.size = rect.size + Vector2(CURSOR_PAD, CURSOR_PAD) * 2.0
 
 
 func _hide_cursor() -> void:

@@ -111,12 +111,11 @@ func _ready() -> void:
 	await _tap(&"pad_nav_down")
 	assert(nav._region == nav.Region.HAND, "bot_z4 down should enter the hand")
 	var hand_ctl: Node = board.get_node("HandController")
-	assert(hand_ctl.hand_expanded, "hand did not auto-expand for browsing")
+	assert(not hand_ctl.hand_expanded, "hand browsing must not auto-expand the hand")
 	await _tap(&"pad_nav_up")
 	assert(nav._element == "bot_z4", "hand up should return to bot_z4 (history): %s" % nav._element)
 	nav._enter_action_panel()
 	await _tick(1)
-	assert(not hand_ctl.hand_expanded, "hand did not restore after leaving browse")
 
 	# --- Sorted hand keeps the same card under the cursor ---
 	var hand: CardManager = board.player1_hand
@@ -223,11 +222,11 @@ func _ready() -> void:
 		_inject_action(&"pad_nav_down", false)
 		await _tick(1)
 	assert(nav._region == nav.Region.HAND, "panel down edge did not hop to the hand group")
-	nav._leave_hand_browse()
 
 	# --- Direct play from hand browse (A dispatches by card type) ---
 	nav._enter_hand()
 	await _tick(1)
+	var hand_size_before: int = hand.managed_cards.size()
 	var play_card: Control = nav._hand_card(nav._hand_index)
 	assert(play_card != null, "no hand card to play")
 	await _tap(&"pad_confirm")
@@ -240,6 +239,14 @@ func _ready() -> void:
 		# cancel out and confirm nothing is stuck.
 		await _tap(&"pad_cancel")
 		assert(not sel.waiting_for_zone_select, "cancel did not exit zone selection")
+	elif hand.managed_cards.size() < hand_size_before:
+		# Card left the hand from index 0: no left neighbor, so the cursor
+		# lands on the card that slid into its slot (index 0).
+		assert(nav._region == nav.Region.HAND, "cursor left the hand after play")
+		assert(nav._hand_index == 0,
+			"cursor should land on the right neighbor after playing index 0: %d" % nav._hand_index)
+		assert(is_instance_valid(nav._cursor_card) and nav._cursor_card == hand.managed_cards[0],
+			"cursor card not rebound after play")
 	assert(nav._is_active(), "module wedged after direct play")
 
 	print("GAMEPAD_NAV_TEST_PASS")

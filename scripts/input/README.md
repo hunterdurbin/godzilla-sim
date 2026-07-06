@@ -42,10 +42,12 @@ Related pieces elsewhere:
   to their valid elements — skip-through keeps movement spatial, and a
   sorted-cycle fallback on left/right guarantees sparse valid sets stay
   fully reachable. Free browse covers every mapped stop (zones, strategy,
-  rage, decks, discards, both boards) with live top-card preview; the hand
-  auto-expands (dpad-down from the action panel enters it) and the cursor
-  follows its card ref across sorts (`cards_reordered` + CardManager's
-  `selectable_indices` resync).
+  rage, decks, discards, both boards) with live top-card preview; hovering
+  a hand card raises it via the card's own mouse-hover handlers (the ring
+  tracks the raised card per frame), and the cursor follows its card ref
+  across sorts (`cards_reordered` + CardManager's `selectable_indices`
+  resync). When the hovered card is played, the cursor moves to the card on
+  its left, else its right, else the Sort button.
 - `scripts/tools/glyph_audit.gd` — EditorScript (File > Run on an open
   scene): lists/audits every ControllerGlyph and batch-switches previews.
 - Glyph art: `assets/ui/input_glyphs/<type>/<position>.png` (Kenney Input
