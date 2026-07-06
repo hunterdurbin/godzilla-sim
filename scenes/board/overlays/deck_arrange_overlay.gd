@@ -36,6 +36,118 @@ func _ready() -> void:
 	_router = get_node_or_null("../GameSession/EffectUIRouter")
 	_view_board.pressed.connect(_on_view_board)
 	_confirm.pressed.connect(_on_confirm)
+	# Controller: take a focus context while visible (suspends the board
+	# cursor, restores it on close/minimize) and keep the chrome free of
+	# pointer-mode focus rings.
+	GamepadHelper.register_modal(self, _pad_focus_provider)
+	GamepadHelper.make_pad_focusable(_view_board)
+	GamepadHelper.make_pad_focusable(_confirm)
+	var hints := OverlayHintRow.new()
+	hints.set_hints([
+		{"action": &"pad_confirm", "text": tr("STR_GB_HINT_MOVE")},
+		{"action": &"pad_focus_log", "action2": &"pad_focus_tracker",
+				"text": tr("STR_GB_HINT_REORDER")},
+		{"action": &"pad_inspect", "text": tr("STR_GB_HINT_INSPECT")},
+	])
+	$DeckArrangePanel/VBox.add_child(hints)
+
+
+## Initial pad focus: first Keep card, else first Discard card, else chrome.
+func _pad_focus_provider() -> Control:
+	for grid in [_keep_cards, _discard_cards]:
+		var grid_cards := OverlayGridUtil.grid_cards(grid)
+		if not grid_cards.is_empty():
+			return grid_cards[0]
+	return GamepadHelper.find_first_focusable(self)
+
+
+## Controller model (mouse drag stays untouched): A moves the focused card to
+## the end of the other pile; LB/RB shift a focused Keep card one slot
+## left/right. The bumper actions (pad_focus_log / pad_focus_tracker) are free
+## here — GamepadBoardNav suspends while any overlay is open — and follow the
+## user's rebinds automatically. Listen to ui_accept only: GamepadInput
+## mirrors pad_confirm onto it, so handling both would double-fire.
+func _unhandled_input(event: InputEvent) -> void:
+	if not visible or not GamepadHelper.is_top_context(self):
+		return
+	var loc := _focused_card_loc()
+	if loc.is_empty():
+		return
+	var source: String = loc["source"]
+	var index: int = loc["index"]
+	if event.is_action_pressed("ui_accept"):
+		_pad_toggle(source, index)
+	elif event.is_action_pressed("pad_focus_log") and source == "keep":
+		_pad_shift(index, -1)
+	elif event.is_action_pressed("pad_focus_tracker") and source == "keep":
+		_pad_shift(index, +1)
+	else:
+		return
+	accept_event()
+
+
+## {source: "keep"/"discard", index: int} of the focused card, {} if focus is
+## elsewhere (chrome, nothing).
+func _focused_card_loc() -> Dictionary:
+	var focus := get_viewport().gui_get_focus_owner()
+	if focus == null:
+		return {}
+	var idx := OverlayGridUtil.grid_cards(_keep_cards).find(focus)
+	if idx >= 0:
+		return {"source": "keep", "index": idx}
+	idx = OverlayGridUtil.grid_cards(_discard_cards).find(focus)
+	if idx >= 0:
+		return {"source": "discard", "index": idx}
+	return {}
+
+
+func _pad_toggle(source: String, index: int) -> void:
+	if not pad_toggle(_keep, _discard, source, index):
+		return
+	_refresh()
+	# Stay in place — same pile, same clamped index — so repeated A drains a
+	# pile; when it empties, follow the card into the other pile.
+	var grid := _keep_cards if source == "keep" else _discard_cards
+	var other := _discard_cards if source == "keep" else _keep_cards
+	var fallback: Control = _confirm
+	var other_cards := OverlayGridUtil.grid_cards(other)
+	if not other_cards.is_empty():
+		fallback = other_cards.back()
+	OverlayGridUtil.focus_index(grid, index, fallback)
+
+
+func _pad_shift(index: int, delta: int) -> void:
+	var new_idx := pad_shift(_keep, index, delta)
+	if new_idx < 0:
+		return
+	_refresh()
+	# Focus follows the card to its new slot.
+	OverlayGridUtil.focus_index(_keep_cards, new_idx, _confirm)
+
+
+## Pure pile math for the pad model (unit-tested). Moves the source pile's
+## card at `index` to the end of the other pile; false when out of range.
+static func pad_toggle(keep: Array[Dictionary], discard: Array[Dictionary],
+		source: String, index: int) -> bool:
+	var from := keep if source == "keep" else discard
+	var to := discard if source == "keep" else keep
+	if index < 0 or index >= from.size():
+		return false
+	to.append(from[index])
+	from.remove_at(index)
+	return true
+
+
+## Shifts cards[index] by delta; returns the new index, or -1 for a no-op
+## (edge of the pile / bad index).
+static func pad_shift(cards: Array[Dictionary], index: int, delta: int) -> int:
+	var target := index + delta
+	if index < 0 or index >= cards.size() or target < 0 or target >= cards.size():
+		return -1
+	var card: Dictionary = cards[index]
+	cards.remove_at(index)
+	cards.insert(target, card)
+	return target
 
 
 ## Router handler entry point — `prompt` arrives already translated.
@@ -91,6 +203,8 @@ func _refresh() -> void:
 		card.drag_started.connect(_on_card_drag_started.bind(card, "discard", i))
 		card.drag_ended.connect(_on_card_drag_ended.bind(card))
 		_discard_cards.add_child(card)
+
+	OverlayGridUtil.wire_two_grid_focus(_keep_cards, _discard_cards, [], [_view_board, _confirm])
 
 
 func _create_card(card_data: Dictionary) -> Control:

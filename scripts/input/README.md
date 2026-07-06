@@ -73,6 +73,13 @@ Related pieces elsewhere:
   HUD). In the editor, check `editor_preview` on the GameBoard.tscn node to
   render the static tables. `scripts/tools/nav_graph_audit.gd` (File > Run)
   lints the tables for dangling/one-way/unreachable edges.
+- `scenes/board/overlays/` — every in-game modal overlay is pad-navigable:
+  card grids + their chrome (toggles / Skip / Confirm / Close) mesh into one
+  focus_neighbor cycle via `OverlayGridUtil.wire_overlay_focus`, each
+  overlay is a registered modal (focus context suspends the board cursor,
+  View Board minimize pops it, B restores via the chip), deck arrange has an
+  A-toggle + LB/RB-reorder model, and the card zoom routes dpad/A/Y
+  manually. Details: `scenes/board/overlays/README.md`.
 - `scripts/tools/glyph_audit.gd` — EditorScript (File > Run on an open
   scene): lists/audits every ControllerGlyph and batch-switches previews.
 - Glyph art: `assets/ui/input_glyphs/<type>/<position>.png` (Kenney Input

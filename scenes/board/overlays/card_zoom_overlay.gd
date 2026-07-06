@@ -22,6 +22,8 @@ const ROW_BG := Color(1.0, 1.0, 1.0, 0.04)
 const ROW_BG_OPPONENT := Color(0.5, 0.3, 0.7, 0.22)
 const HEADER_COLOR := Color(0.85, 0.85, 0.9)
 const SECTION_COLOR := Color(0.55, 0.58, 0.68)
+## Controller row-highlight border (matches the card attention highlight).
+const HIGHLIGHT_BORDER := Color(0.25, 0.85, 1.0)
 const NAME_COLOR := Color(0.72, 0.72, 0.8)
 const NAME_COLOR_OPPONENT := Color(0.78, 0.62, 0.95)
 const AMOUNT_GOOD := Color(0.4, 0.9, 0.5)
@@ -51,7 +53,12 @@ var on_source_clicked: Callable = Callable()
 
 # Row hitboxes for manual click routing (the panel is MOUSE_FILTER_IGNORE so
 # the overlay's dismiss/pinch input priority stays untouched).
-var _source_rows: Array = [] # of {"control": Control, "source": String}
+var _source_rows: Array = [] # of {"control": Control, "source": String, "style": StyleBoxFlat}
+
+# Controller cursor over _source_rows (-1 = none); same manual-routing style
+# as the mouse hitboxes — rows never take real focus, so the grid card behind
+# the zoom keeps its focus for when the zoom closes.
+var _row_highlight: int = -1
 
 ## Set by the board: called after the zoom closes (resets slot input state
 ## so no timers or pending clicks carry over).
@@ -79,10 +86,16 @@ var _dragging: bool = false # Single-finger drag active
 var _drag_start: Vector2 = Vector2.ZERO # Touch start position for deadzone check
 
 
+var _hints: OverlayHintRow
+
+
 func _ready() -> void:
 	visible = false
 	z_index = 200
 	gui_input.connect(_on_gui_input)
+	_hints = OverlayHintRow.new()
+	_hints.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_hints)
 	# Panel styling matches the effect-stack/choice panels (dark navy, radius 8).
 	var style := StyleBoxFlat.new()
 	style.bg_color = PANEL_BG
@@ -185,8 +198,25 @@ func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entr
 	_badge_toggle_icon.texture = EYE_OPEN_ICON
 	_badge_toggle.visible = play_cost_modifier != 0 or power_preview != 0 or threat_preview >= 0
 	call_deferred("_position_badge_toggle")
+	_refresh_hints()
 	visible = true
 	_shown_frame = Engine.get_process_frames()
+
+
+## Contextual pad hints, pinned bottom-center over the dim layer.
+func _refresh_hints() -> void:
+	var hints: Array[Dictionary] = []
+	if _sources_panel.visible:
+		hints.append({"action": &"pad_confirm", "text": tr("STR_GB_HINT_SOURCE")})
+	if _badge_toggle.visible:
+		hints.append({"action": &"pad_inspect", "text": tr("STR_GB_HINT_BADGES")})
+	hints.append({"action": &"pad_cancel", "text": tr("STR_GB_HINT_CLOSE")})
+	_hints.set_hints(hints)
+	_hints.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	_hints.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_hints.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_hints.offset_bottom = -16.0
+	move_child(_hints, get_child_count() - 1)
 
 
 func hide_zoom() -> void:
@@ -211,6 +241,7 @@ func hide_zoom() -> void:
 func _clear_modifier_sources() -> void:
 	_sources_panel.visible = false
 	_source_rows.clear()
+	_row_highlight = -1
 	for child in _sources_list.get_children():
 		child.queue_free()
 
@@ -354,8 +385,27 @@ func _make_modifier_row(group: Dictionary, own_template: String) -> Control:
 		detail_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		text_box.add_child(detail_label)
 
-	_source_rows.append({"control": row, "source": str(group["source"])})
+	_source_rows.append({"control": row, "source": str(group["source"]), "style": style})
 	return row
+
+
+## Move the controller cursor to row `idx` (-1 clears): swap the row's panel
+## stylebox for a bordered copy and keep it scrolled into view.
+func _set_row_highlight(idx: int) -> void:
+	if idx == _row_highlight:
+		return
+	if _row_highlight >= 0 and _row_highlight < _source_rows.size():
+		var old: Dictionary = _source_rows[_row_highlight]
+		(old["control"] as PanelContainer).add_theme_stylebox_override("panel", old["style"])
+	_row_highlight = idx
+	if idx < 0 or idx >= _source_rows.size():
+		return
+	var r: Dictionary = _source_rows[idx]
+	var hl := (r["style"] as StyleBoxFlat).duplicate() as StyleBoxFlat
+	hl.border_color = HIGHLIGHT_BORDER
+	hl.set_border_width_all(2)
+	(r["control"] as PanelContainer).add_theme_stylebox_override("panel", hl)
+	_sources_scroll.ensure_control_visible(r["control"])
 
 
 ## Mini render of the source card next to its modifier (same pattern as the
@@ -446,11 +496,15 @@ func _handle_panel_press(pos: Vector2) -> bool:
 func _handle_toggle_press(pos: Vector2) -> bool:
 	if not _badge_toggle.visible or not _badge_toggle.get_global_rect().has_point(pos):
 		return false
+	_toggle_badges()
+	return true
+
+
+func _toggle_badges() -> void:
 	_badges_hidden = not _badges_hidden
 	if is_instance_valid(_zoomed_card) and _zoomed_card.has_method("set_stat_badges_visible"):
 		_zoomed_card.set_stat_badges_visible(not _badges_hidden)
 	_badge_toggle_icon.texture = EYE_CLOSED_ICON if _badges_hidden else EYE_OPEN_ICON
-	return true
 
 
 static func _tr_fallback(key: String, fallback: String) -> String:
@@ -463,6 +517,40 @@ static func _tr_fallback(key: String, fallback: String) -> String:
 func handle_input(event: InputEvent) -> bool:
 	if not visible:
 		return false
+
+	# Controller path. Only GamepadInput-injected InputEventActions arrive
+	# here (keyboard comes in as InputEventKey), so this branch is pad-only:
+	# dpad up/down browses the modifier-source rows, A retargets the zoom
+	# onto the highlighted source, Y toggles the badge eye. The pad_* twin
+	# acts and the mirrored ui_* twin is swallowed — and directions are
+	# consumed even when unused, because the grid card behind the zoom still
+	# holds real focus and the ui_* mirror would crawl its mesh through the
+	# zoom. B/ui_cancel is deliberately NOT consumed: the board's cancel
+	# ladder is what closes the zoom (game_board._input).
+	if event is InputEventAction and event.pressed:
+		match event.action:
+			&"pad_nav_up":
+				if _sources_panel.visible and not _source_rows.is_empty():
+					var prev := _source_rows.size() - 1 if _row_highlight < 0 else maxi(_row_highlight - 1, 0)
+					_set_row_highlight(prev)
+				return true
+			&"pad_nav_down":
+				if _sources_panel.visible and not _source_rows.is_empty():
+					_set_row_highlight(mini(_row_highlight + 1, _source_rows.size() - 1))
+				return true
+			&"pad_confirm":
+				if _row_highlight >= 0 and _row_highlight < _source_rows.size() \
+						and on_source_clicked.is_valid():
+					on_source_clicked.call(_source_rows[_row_highlight]["source"])
+				return true
+			&"pad_inspect":
+				if _badge_toggle.visible:
+					_toggle_badges()
+				return true
+			&"pad_nav_left", &"pad_nav_right", \
+			&"ui_up", &"ui_down", &"ui_left", &"ui_right", &"ui_accept":
+				return true
+
 	var zoom_fresh := (Engine.get_process_frames() - _shown_frame) <= 2
 
 	# Pinch-to-zoom and drag-to-pan on card zoom overlay (touch only)

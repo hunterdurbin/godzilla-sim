@@ -1,8 +1,10 @@
 # scenes/board/overlays/ — modal card UIs
 
 Overlays pop over the board for card-level interactions. Shared plumbing:
-`overlay_grid_util.gd` (grid sizing) and `minimize_chip.gd` (collapse an
-overlay to a chip so the player can inspect the board underneath).
+`overlay_grid_util.gd` (grid sizing + the controller focus meshes),
+`overlay_hint_row.gd` (glyph+label pad-hint cluster, gamepad-mode-only) and
+`minimize_chip.gd` (collapse an overlay to a chip so the player can inspect
+the board underneath; shows a B glyph in gamepad mode — B restores).
 
 | Overlay | Purpose |
 |---|---|
@@ -23,3 +25,34 @@ Conventions:
   snaps to 150×210; tag wrapper nodes with meta, not names.
 - Multiplayer: client-side pick results arrive as JSON (int enums → floats)
   — re-map to canonical dicts by id before use.
+
+Controller navigation (see `scripts/input/README.md` for the architecture):
+
+- Every card-grid overlay calls `GamepadHelper.register_modal(self,
+  _pad_focus_provider)` in `_ready` — showing it pushes a focus context
+  (suspends the board cursor), hiding pops it (View Board minimize included).
+  Providers are LAZY (first selectable live card, else
+  `find_first_focusable`) — grid cards are rebuilt every refresh, never
+  capture them.
+- `OverlayGridUtil.wire_overlay_focus(grid, top_chrome, bottom_chrome)` /
+  `wire_two_grid_focus(...)` mesh the grid AND the chrome rows into one
+  focus_neighbor cycle (toggles above, Skip/Confirm/Close below; hidden
+  chrome is filtered per refresh). Chrome buttons are
+  `make_pad_focusable`'d so pointer users never see focus rings.
+- Rebuilds preserve the pad cursor: capture
+  `OverlayGridUtil.focused_index(grid)` BEFORE clearing, restore with
+  `focus_index(grid, idx, fallback)` (deferred + revalidated) after.
+- Deck arrange pad model: A moves the focused card to the other pile, LB/RB
+  (`pad_focus_log`/`pad_focus_tracker` — free while the board cursor is
+  suspended) reorder within Keep; pure pile math in the `pad_toggle`/
+  `pad_shift` statics.
+- Card zoom is NOT a registered modal: it manually routes pad actions in
+  `handle_input` (dpad browses modifier rows, A retargets, Y toggles
+  badges) and swallows the mirrored ui_* directions so the grid focus mesh
+  behind it can't move; B falls through to the board's cancel ladder.
+- Cards show the pad cursor via `focus_entered` (attention border + hover
+  raise, gamepad mode only — `card.gd`); overlay ScrollContainers bake
+  `follow_focus = true` in the .tscn.
+- Regression tests: `tests/unit/gamepad/test_overlay_grid_focus.gd` (mesh
+  edges), `tests/ui/GamepadOverlayNavTest.tscn` (full pad drive of viewer /
+  deck search / zoom / card select / deck arrange).

@@ -124,6 +124,10 @@ func _ready() -> void:
 	# Connect mouse signals
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
+	# Controller cursor visual (overlay grids are the only place cards get
+	# focus — see OverlayGridUtil)
+	focus_entered.connect(_on_focus_entered)
+	focus_exited.connect(_on_focus_exited)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -310,6 +314,23 @@ func _on_mouse_exited() -> void:
 	if not is_dragging and not is_snap_previewing and not is_locked_in_zone and _hover_active:
 		z_index = _pre_hover_z_index
 		_animate_hover(false)
+
+
+## Controller cursor visual: mirror the mouse hover raise and add the pulsing
+## attention border so the pad position is visible even where hover_scale is
+## ~1.0 (overlay galleries). Gated on gamepad mode because pointer clicks also
+## grab focus on FOCUS_ALL cards — mouse users must never see the border.
+func _on_focus_entered() -> void:
+	if not GamepadHelper.is_using_gamepad():
+		return
+	set_attention_highlight(true)
+	_on_mouse_entered()
+
+
+func _on_focus_exited() -> void:
+	set_attention_highlight(false)
+	if _hover_active:
+		_on_mouse_exited()
 
 
 func _is_in_slot() -> bool:

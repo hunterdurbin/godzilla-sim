@@ -25,6 +25,7 @@ var _grid: GridContainer
 var _close: Button
 var _stacked: CheckButton # null when the viewer has no stacked toggle
 var _view_board: Button # Minimize; only shown for the blocking modes below
+var _hints: OverlayHintRow
 
 var cards: Array[Dictionary] = []
 
@@ -58,6 +59,28 @@ func _ready() -> void:
 	_view_board.pressed.connect(_on_view_board)
 	vbox.add_child(_view_board)
 	vbox.move_child(_view_board, _close.get_index())
+	# Controller: take a focus context while visible (suspends the board
+	# cursor, restores it on close/minimize) and keep the chrome free of
+	# pointer-mode focus rings.
+	GamepadHelper.register_modal(self, _pad_focus_provider)
+	GamepadHelper.make_pad_focusable(_close)
+	GamepadHelper.make_pad_focusable(_view_board)
+	if _stacked:
+		GamepadHelper.make_pad_focusable(_stacked)
+	_hints = OverlayHintRow.new()
+	vbox.add_child(_hints)
+
+
+## Initial pad focus: first selectable card (rank-up's valid monsters), else
+## any card, else the chrome (Close on passive views).
+func _pad_focus_provider() -> Control:
+	var grid_cards := OverlayGridUtil.grid_cards(_grid)
+	for card in grid_cards:
+		if card.is_selectable:
+			return card
+	if not grid_cards.is_empty():
+		return grid_cards[0]
+	return GamepadHelper.find_first_focusable(self)
 
 
 ## Passive view of a card list with a pre-translated title.
@@ -73,6 +96,7 @@ func show_cards(p_cards: Array, title: String) -> void:
 	if _stacked:
 		_stacked.set_pressed_no_signal(_router.match_stacked_view if _router else true)
 	_view_board.visible = false
+	_set_close_hints()
 	visible = true
 	_refresh()
 
@@ -87,6 +111,10 @@ func show_rankup(monsters: Array, valid_indices: Array[int], prompt: String, res
 	if _stacked:
 		_stacked.visible = false
 	_view_board.visible = true
+	_hints.set_hints([
+		{"action": &"pad_confirm", "text": tr("STR_GB_HINT_SELECT")},
+		{"action": &"pad_inspect", "text": tr("STR_GB_HINT_INSPECT")},
+	])
 	# Present before populating: a script error while instantiating cards must
 	# not strand the game behind a fully hidden blocking prompt.
 	OverlayGridUtil.ensure_full_rect(self)
@@ -111,7 +139,7 @@ func show_rankup(monsters: Array, valid_indices: Array[int], prompt: String, res
 			card.modulate = Color(0.5, 0.5, 0.5, 1.0)
 		card.card_right_clicked.connect(_on_card_zoom)
 		_grid.add_child(card)
-	OverlayGridUtil.wire_grid_focus(_grid)
+	_wire_focus()
 
 
 ## Dismissable reveal (zone stack viewer): closing resolves the effect.
@@ -122,8 +150,17 @@ func show_revealed(p_cards: Array, title: String, resolve_cb: Callable) -> void:
 	cards.assign(p_cards)
 	_title.text = tr("STR_GB_TITLE_COUNT_FMT").replace("{TITLE}", title).replace("{C}", str(cards.size()))
 	_view_board.visible = true
+	_set_close_hints()
 	visible = true
 	_refresh()
+
+
+## Hints for the dismissable modes (passive view, cards revealed).
+func _set_close_hints() -> void:
+	_hints.set_hints([
+		{"action": &"pad_inspect", "text": tr("STR_GB_HINT_INSPECT")},
+		{"action": &"pad_cancel", "text": tr("STR_GB_HINT_CLOSE")},
+	])
 
 
 ## Close request (button, ESC, background click). Refused during the
@@ -158,6 +195,8 @@ func get_minimize_info() -> Dictionary:
 
 
 func _refresh() -> void:
+	# Preserve the pad cursor across rebuilds (stacked toggle flips).
+	var focus_idx := OverlayGridUtil.focused_index(_grid)
 	for child in _grid.get_children():
 		child.queue_free()
 
@@ -167,6 +206,7 @@ func _refresh() -> void:
 			empty_label.text = tr(empty_text_key)
 			empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			_grid.add_child(empty_label)
+		_wire_focus()
 		return
 
 	var zoom: Callable = _router.card_zoom_request if _router else Callable()
@@ -180,7 +220,18 @@ func _refresh() -> void:
 	else:
 		for card_data in cards:
 			_grid.add_child(_make_card(card_data, zoom))
-	OverlayGridUtil.wire_grid_focus(_grid)
+	_wire_focus()
+	if focus_idx >= 0:
+		OverlayGridUtil.focus_index(_grid, focus_idx, _close)
+
+
+## Grid + chrome mesh: stacked toggle above, View Board / Close below (each
+## filtered by visibility — rank-up mode hides Close and the toggle).
+func _wire_focus() -> void:
+	var top_chrome: Array[Control] = []
+	if _stacked:
+		top_chrome.append(_stacked)
+	OverlayGridUtil.wire_overlay_focus(_grid, top_chrome, [_view_board, _close])
 
 
 func _make_card(card_data: Dictionary, zoom: Callable) -> Control:
