@@ -249,5 +249,73 @@ func _ready() -> void:
 			"cursor card not rebound after play")
 	assert(nav._is_active(), "module wedged after direct play")
 
+	# --- Post-play cursor rule: left neighbor -> right neighbor -> Sort ---
+	# Case A: context clears while the card is still in the hand (visual
+	# removal lags the submit) — cursor returns onto the origin card, then
+	# the reorder rule moves it to the LEFT neighbor when the card leaves.
+	if hand.managed_cards.size() >= 3:
+		nav._enter_hand()
+		await _tick(1)
+		nav._hand_index = 1
+		nav._update_cursor()
+		await _tick(1)
+		var played: Control = hand.managed_cards[1]
+		nav._pending_hand_return = true
+		nav._play_origin_index = 1
+		nav._play_origin_card = played
+		nav._enter_action_panel() # simulate the cursor being pulled away mid-play
+		await _tick(1)
+		sel._emit_ctx("none")
+		await _tick(1)
+		assert(nav._region == nav.Region.HAND, "cursor did not return to hand after play")
+		assert(nav._hand_index == 1, "cursor should sit on the origin card while it remains")
+		hand.remove_card(played, false)
+		played.queue_free()
+		hand.arrange_cards(false)
+		await _tick(1)
+		assert(nav._hand_index == 0,
+			"cursor should land on the LEFT neighbor after the card leaves: %d" % nav._hand_index)
+
+	# Case B: context clears after the card already left (index 0 played —
+	# no left neighbor, the right neighbor slid into slot 0).
+	if hand.managed_cards.size() >= 2:
+		var played_b: Control = hand.managed_cards[0]
+		nav._pending_hand_return = true
+		nav._play_origin_index = 0
+		nav._play_origin_card = played_b
+		nav._enter_action_panel()
+		await _tick(1)
+		hand.remove_card(played_b, false)
+		played_b.queue_free()
+		hand.arrange_cards(false)
+		await _tick(1)
+		sel._emit_ctx("none")
+		await _tick(1)
+		assert(nav._region == nav.Region.HAND, "cursor did not return to hand (case B)")
+		assert(nav._hand_index == 0,
+			"cursor should land on the right neighbor at slot 0: %d" % nav._hand_index)
+
+	# Case C: last card played -> Sort button takes focus.
+	while hand.managed_cards.size() > 1:
+		var extra: Control = hand.managed_cards.back()
+		hand.remove_card(extra, false)
+		extra.queue_free()
+	hand.arrange_cards(false)
+	await _tick(1)
+	nav._enter_hand()
+	await _tick(1)
+	var last_card: Control = hand.managed_cards[0]
+	nav._pending_hand_return = true
+	nav._play_origin_index = 0
+	nav._play_origin_card = last_card
+	hand.remove_card(last_card, false)
+	last_card.queue_free()
+	hand.arrange_cards(false)
+	await _tick(1)
+	sel._emit_ctx("none")
+	await _tick(2)
+	assert(board.sort_hand_button.has_focus(),
+		"empty hand should hand focus to the Sort button")
+
 	print("GAMEPAD_NAV_TEST_PASS")
 	get_tree().quit(0)

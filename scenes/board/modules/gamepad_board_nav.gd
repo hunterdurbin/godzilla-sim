@@ -50,6 +50,12 @@ var _cursor_card: Control = null
 ## Hand card currently raised by the cursor (drives the same hover tween the
 ## mouse uses via card._on_mouse_entered/_on_mouse_exited).
 var _hovered_card: Control = null
+## Armed by a hand-initiated play: when the selection context clears, the
+## cursor returns to the hand (left neighbor -> right neighbor -> Sort)
+## instead of defaulting to the action panel.
+var _pending_hand_return := false
+var _play_origin_index := 0
+var _play_origin_card: Control = null
 
 
 func _ready() -> void:
@@ -179,6 +185,7 @@ func _on_gamepad_detected() -> void:
 
 
 func _on_pointer_detected() -> void:
+	_pending_hand_return = false
 	_region = Region.NONE
 	_hide_cursor()
 
@@ -226,7 +233,11 @@ func _apply_context() -> void:
 			if _mode == "confirm":
 				GamepadHelper.refocus()
 		_:
-			_enter_action_panel()
+			if _pending_hand_return:
+				_pending_hand_return = false
+				_return_cursor_to_hand_after_play()
+			else:
+				_enter_action_panel()
 
 
 func _first_ctx_element() -> String:
@@ -455,7 +466,11 @@ func _try_play_hovered(action: CardEnums.ActionType) -> void:
 		return
 	# Unhover before any reparent the play may trigger (hover tween gotcha).
 	_set_hovered_card(null)
-	if not _board._selection.play_card_from_hand(card, action):
+	if _board._selection.play_card_from_hand(card, action):
+		_pending_hand_return = true
+		_play_origin_index = _hand_index
+		_play_origin_card = card
+	else:
 		_update_cursor() # rejected: re-hover in place
 
 
@@ -564,6 +579,29 @@ func _on_hand_reordered(hand: CardManager) -> void:
 			right += 1
 		_hand_index = right if right in valid else valid[0]
 	_update_cursor()
+
+
+## After a hand-initiated play resolves: back into the hand on the played
+## card's LEFT neighbor, else the card that slid into its slot, else the
+## Sort button. If the card is somehow still in the hand (play cancelled or
+## the visual removal lags), the cursor sits back on it and the
+## cards_reordered rule finishes the job when it actually leaves.
+func _return_cursor_to_hand_after_play() -> void:
+	var hand := _hand_mgr()
+	if hand == null:
+		_enter_action_panel()
+		return
+	var idx := hand.managed_cards.find(_play_origin_card) if is_instance_valid(_play_origin_card) else -1
+	if idx >= 0:
+		_hand_index = idx
+	elif hand.managed_cards.is_empty():
+		_focus_sort_button()
+		return
+	elif _play_origin_index > 0:
+		_hand_index = mini(_play_origin_index - 1, hand.managed_cards.size() - 1)
+	else:
+		_hand_index = mini(_play_origin_index, hand.managed_cards.size() - 1)
+	_enter_hand()
 
 
 ## Empty hand fallback: real focus lands on the Sort button so A still does
