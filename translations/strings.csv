@@ -980,3 +980,9 @@ STR_PAD_VIEW_OPP_DISCARD,View Opponent's Discard,相手の捨て札を見る
 STR_PAD_MENU,System Menu,システムメニュー
 STR_PAD_CHAT,Chat,チャット
 STR_OPTIONS_CONTROLLER_TITLE,Controller,コントローラー
+STR_CONTROLLER_GLYPH_STYLE,Button Icons,ボタンアイコン
+STR_GLYPH_STYLE_AUTO,Auto,自動
+STR_GLYPH_STYLE_XBOX,Xbox,Xbox
+STR_GLYPH_STYLE_PLAYSTATION,PlayStation,PlayStation
+STR_GLYPH_STYLE_SWITCH,Switch,Switch
+STR_GLYPH_STYLE_GENERIC,Generic,汎用

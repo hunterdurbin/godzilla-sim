@@ -702,6 +702,7 @@ func _on_row_action_requested(deck_name: String, anchor: Vector2) -> void:
 	var menu := PopupMenu.new()
 	menu.add_item(tr("STR_DLV_MOVE_TO_FOLDER"), 0)
 	add_child(menu)
+	GamepadHelper.register_modal(menu)
 	menu.position = Vector2i(anchor)
 	menu.popup()
 	menu.id_pressed.connect(func(id):

@@ -263,23 +263,10 @@ func _show_modal(popup: PopupPanel) -> void:
 	# before centering. Without it, embedded popups can keep a stale size
 	# from prior layout passes and stretch vertically.
 	popup.reset_size()
+	# Controller: the modal owns focus while open; drops back to this
+	# screen's context when it closes (all runtime modals funnel through here).
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
-	# Controller: the modal owns focus while open; drop back to this screen's
-	# context when it closes (all runtime-built modals funnel through here).
-	GamepadHelper.push_focus_context(popup, _find_first_focusable.bind(popup))
-	popup.popup_hide.connect(GamepadHelper.pop_focus_context.bind(popup))
-
-
-func _find_first_focusable(root: Node) -> Control:
-	if root is Control:
-		var control := root as Control
-		if control.focus_mode == Control.FOCUS_ALL and control.is_visible_in_tree():
-			return control
-	for child in root.get_children():
-		var found := _find_first_focusable(child)
-		if found != null:
-			return found
-	return null
 
 
 # --- Automation modal ---
@@ -1331,6 +1318,8 @@ func _on_controller_pressed() -> void:
 		hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
 		vbox.add_child(hint)
 
+	vbox.add_child(_build_glyph_style_row())
+
 	for logical: StringName in GamepadInput.get_rebindable_actions():
 		vbox.add_child(_build_rebind_row(logical))
 
@@ -1347,6 +1336,41 @@ func _on_controller_pressed() -> void:
 
 	_add_close_button(vbox, popup)
 	_show_modal(popup)
+
+
+## Glyph art override for devices whose real hardware is masked (Steam Input
+## virtual gamepads report "Steam Virtual Gamepad" regardless of the pad).
+func _build_glyph_style_row() -> HBoxContainer:
+	const STYLES: Array[String] = ["auto", "xbox", "playstation", "switch", "generic"]
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+
+	var label := Label.new()
+	label.text = tr("STR_CONTROLLER_GLYPH_STYLE")
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", 18)
+	row.add_child(label)
+
+	var glyph := ControllerGlyph.new()
+	glyph.action = &"pad_confirm"
+	glyph.always_visible = true
+	glyph.custom_minimum_size = Vector2(34, 34)
+	row.add_child(glyph)
+
+	var cycle_btn := Button.new()
+	cycle_btn.custom_minimum_size = Vector2(150, 36)
+	cycle_btn.add_theme_font_size_override("font_size", 14)
+	var refresh := func() -> void:
+		cycle_btn.text = tr("STR_GLYPH_STYLE_" + GameSettings.controller_glyph_style.to_upper())
+	refresh.call()
+	cycle_btn.pressed.connect(func() -> void:
+		SfxManager.play("ui_click")
+		var idx := STYLES.find(GameSettings.controller_glyph_style)
+		GamepadInput.set_glyph_style(STYLES[(idx + 1) % STYLES.size()])
+		refresh.call()
+	)
+	row.add_child(cycle_btn)
+	return row
 
 
 func _build_rebind_row(logical: StringName) -> HBoxContainer:

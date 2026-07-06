@@ -51,6 +51,10 @@ var drop_handled: bool = false  # Set by external listeners to prevent reorderin
 var _drop_handled_card: Control = null  # Last drag whose drop was handled externally
 var selection_mode: bool = false  # When true, clicking selects instead of dragging
 var selectable_indices: Array[int] = []  # Which card indices are selectable
+# Selection validity as card REFS — the source of truth that survives
+# reorders (sorting rewrites managed_cards order, which stales the index
+# list); [] mirrors selectable_indices' "all selectable" sentinel.
+var _selectable_cards: Array[Control] = []
 var _drag_preview_index: int = -1  # Where the dragged card would be inserted
 
 
@@ -173,6 +177,8 @@ func arrange_cards(animate: bool = true) -> void:
 	for i in range(managed_cards.size()):
 		if managed_cards[i].get_index() != i:
 			move_child(managed_cards[i], i)
+
+	_resync_selectable_indices()
 
 	match layout_mode:
 		LayoutMode.HAND_ARC:
@@ -461,6 +467,7 @@ func _on_card_drag_ended(card: Control) -> void:
 		# Insert at new position
 		managed_cards.insert(new_index, card)
 
+		_resync_selectable_indices()
 		# Emit reordered signal
 		cards_reordered.emit()
 
@@ -523,6 +530,10 @@ func _calculate_insertion_index(card: Control) -> int:
 func enter_selection_mode(valid_indices: Array[int] = []) -> void:
 	selection_mode = true
 	selectable_indices = valid_indices
+	_selectable_cards.clear()
+	for idx in valid_indices:
+		if idx >= 0 and idx < managed_cards.size():
+			_selectable_cards.append(managed_cards[idx])
 	for i in range(managed_cards.size()):
 		var card = managed_cards[i]
 		var is_valid = valid_indices.is_empty() or i in valid_indices
@@ -540,6 +551,7 @@ func enter_selection_mode(valid_indices: Array[int] = []) -> void:
 func exit_selection_mode() -> void:
 	selection_mode = false
 	selectable_indices = []
+	_selectable_cards.clear()
 	for card in managed_cards:
 		if "is_selectable" in card:
 			card.is_selectable = false
@@ -559,6 +571,21 @@ func _on_card_clicked(card: Control) -> void:
 	var index = managed_cards.find(card)
 	if index >= 0:
 		card_selected.emit(card, index)
+
+
+## Rebuild the index-based validity list from the surviving card refs after
+## any managed_cards reorder (sort, drag reorder, removal) so index-driven
+## consumers (controller navigation) stay aligned with what the player sees.
+func _resync_selectable_indices() -> void:
+	if not selection_mode or _selectable_cards.is_empty():
+		return
+	var fresh: Array[int] = []
+	for card in _selectable_cards:
+		var idx := managed_cards.find(card)
+		if idx >= 0:
+			fresh.append(idx)
+	fresh.sort()
+	selectable_indices = fresh
 
 
 ## Programmatic selection (controller navigation): emits card_selected

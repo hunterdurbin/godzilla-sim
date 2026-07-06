@@ -24,11 +24,12 @@ func test_controller_modal_opens_with_a_row_per_rebindable_action() -> void:
 
 	var glyphs := popup.find_children("*", "ControllerGlyph", true, false)
 	var expected: Array[StringName] = GamepadInput.get_rebindable_actions()
+	# +1: the glyph-style row at the top carries its own preview glyph.
 	assert_int(glyphs.size()) \
-		.override_failure_message("Expected one glyph per rebindable action") \
-		.is_equal(expected.size())
-	for i in range(glyphs.size()):
-		assert_that((glyphs[i] as ControllerGlyph).action).is_equal(expected[i])
+		.override_failure_message("Expected one glyph per rebindable action plus the style row") \
+		.is_equal(expected.size() + 1)
+	for i in range(expected.size()):
+		assert_that((glyphs[i + 1] as ControllerGlyph).action).is_equal(expected[i])
 
 
 func test_rebindable_actions_match_default_map() -> void:

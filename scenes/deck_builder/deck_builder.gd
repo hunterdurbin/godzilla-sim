@@ -611,6 +611,10 @@ func _build_dialogs() -> void:
 
 	add_child(decklog_dialog)
 
+	for dialog: Window in [unsaved_dialog, delete_dialog, empty_save_dialog,
+			clear_dialog, format_info_dialog, decklog_dialog]:
+		GamepadHelper.register_modal(dialog)
+
 
 func _apply_panel_style(panel: PanelContainer) -> void:
 	var style := StyleBoxFlat.new()

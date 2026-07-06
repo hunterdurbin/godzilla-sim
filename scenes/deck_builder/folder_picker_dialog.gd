@@ -27,6 +27,7 @@ func _ready() -> void:
 	title = tr("STR_DLV_MOVE_TITLE")
 	ok_button_text = tr("STR_COMMON_OK")
 	size = Vector2i(360, 280)
+	GamepadHelper.register_modal(self)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

@@ -89,6 +89,7 @@ func _prompt_language() -> void:
 		vbox.add_child(btn)
 
 	add_child(overlay)
+	GamepadHelper.register_modal(overlay)
 
 
 func _on_download_bytes_updated(downloaded_bytes: int, total_bytes: int) -> void:

@@ -62,6 +62,9 @@ var use_mobile_layout: bool = false
 # GamepadInput discards them when a different controller type is detected.
 var controller_bindings: Dictionary = {}
 var controller_mapping_type: String = ""
+# Glyph art override for devices whose real hardware is masked (Steam Input
+# virtual gamepads): "auto" follows detection; else a GlyphDB.TYPES value.
+var controller_glyph_style: String = "auto"
 
 # Bot settings
 var bot_difficulty: int = BotConfig.Difficulty.NORMAL  # 0=Easy, 1=Normal, 2=Hard
@@ -186,6 +189,7 @@ func _save() -> void:
 	config.set_value("advanced", "use_mobile_layout", use_mobile_layout)
 	config.set_value("controller", "bindings", controller_bindings)
 	config.set_value("controller", "mapping_type", controller_mapping_type)
+	config.set_value("controller", "glyph_style", controller_glyph_style)
 	config.set_value("updates", "skipped_version", skipped_version)
 	config.set_value("cache", "applied_artwork_fixes", applied_artwork_fixes)
 	config.set_value("reconnect", "room_code", reconnect_room_code)
@@ -256,6 +260,7 @@ func _load() -> void:
 	use_mobile_layout = config.get_value("advanced", "use_mobile_layout", _mobile_default)
 	controller_bindings = config.get_value("controller", "bindings", {})
 	controller_mapping_type = config.get_value("controller", "mapping_type", "")
+	controller_glyph_style = config.get_value("controller", "glyph_style", "auto")
 	skipped_version = config.get_value("updates", "skipped_version", "")
 	# ConfigFile returns a generic Array; defensively rebuild as Array[String].
 	var raw_fixes: Array = config.get_value("cache", "applied_artwork_fixes", [])

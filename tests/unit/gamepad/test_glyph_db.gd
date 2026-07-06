@@ -36,6 +36,24 @@ func test_detect_type_known_names() -> void:
 	assert_str(GlyphDB.detect_type("")).is_equal("generic")
 
 
+func test_detect_type_steam_input() -> void:
+	# Steam masks the joy name; the vendor id recovers the real hardware.
+	assert_str(GlyphDB.detect_type("Steam Virtual Gamepad", {"vendor_id": 0x054C})) \
+		.is_equal("playstation")
+	assert_str(GlyphDB.detect_type("Steam Virtual Gamepad", {"vendor_id": 0x057E})) \
+		.is_equal("switch")
+	assert_str(GlyphDB.detect_type("Steam Virtual Gamepad", {"vendor_id": 0x045E})) \
+		.is_equal("xbox")
+	# Unknown/absent vendor: Steam emulates XInput, so xbox prompts match
+	# what the emulation layer presents — never accidentally generic.
+	assert_str(GlyphDB.detect_type("Steam Virtual Gamepad")).is_equal("xbox")
+	assert_str(GlyphDB.detect_type("Steam Controller", {"vendor_id": 0})).is_equal("xbox")
+	# Steam Deck gets the generic set (which IS the Kenney Steam Deck art),
+	# regardless of any vendor id it reports.
+	assert_str(GlyphDB.detect_type("Steam Deck Controller", {"vendor_id": 0x054C})) \
+		.is_equal("generic")
+
+
 func test_default_map_targets_are_capturable_physicals() -> void:
 	var map := GlyphDB.default_map()
 	assert_bool(map.is_empty()).is_false()

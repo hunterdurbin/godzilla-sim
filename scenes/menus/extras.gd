@@ -182,6 +182,7 @@ func _show_save_list_for_online(saves: Array[Dictionary]) -> void:
 	add_child(popup)
 
 	_populate_save_list_for_online(saves)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 
@@ -361,6 +362,7 @@ func _show_online_load_lobby() -> void:
 	panel.add_child(mg)
 	popup.add_child(panel)
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 	# Start hosting
@@ -459,6 +461,7 @@ func _show_message(text: String) -> void:
 	panel.add_child(margin)
 	popup.add_child(panel)
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 
@@ -584,6 +587,7 @@ func _show_replay_list(replays: Array[Dictionary]) -> void:
 	add_child(popup)
 
 	_populate_replay_list(replays)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 
@@ -776,6 +780,7 @@ func _show_label_dialog(path: String, current_label: String) -> void:
 	panel.add_child(mg)
 	popup.add_child(panel)
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 	line_edit.grab_focus()
 
@@ -837,6 +842,7 @@ func _show_confirm(text: String, on_confirm: Callable) -> void:
 	panel.add_child(mg)
 	popup.add_child(panel)
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 
@@ -971,6 +977,7 @@ func _show_save_list(saves: Array[Dictionary]) -> void:
 	add_child(popup)
 
 	_populate_save_list(saves)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 
@@ -1162,6 +1169,7 @@ func _show_save_label_dialog(path: String, current_label: String) -> void:
 	panel.add_child(mg)
 	popup.add_child(panel)
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 	line_edit.grab_focus()
 
@@ -1234,6 +1242,7 @@ func _show_player_choice_dialog(names: Array, on_chosen: Callable) -> void:
 	panel.add_child(margin)
 	popup.add_child(panel)
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 
@@ -1349,6 +1358,7 @@ func _show_game_log_list(logs: Array[Dictionary]) -> void:
 	panel.add_child(margin)
 	popup.add_child(panel)
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 
@@ -1391,6 +1401,7 @@ func _show_game_log_content(path: String, list_popup: PopupPanel) -> void:
 	popup.popup_window = false
 	popup.popup_hide.connect(func():
 		popup.queue_free()
+		GamepadHelper.register_modal(list_popup)
 		list_popup.popup_centered()
 	)
 
@@ -1441,4 +1452,5 @@ func _show_game_log_content(path: String, list_popup: PopupPanel) -> void:
 	panel.add_child(margin)
 	popup.add_child(panel)
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()

@@ -89,6 +89,17 @@ func test_rebind_emits_input_rebound() -> void:
 	await assert_signal(monitor).is_emitted("input_rebound")
 
 
+func test_glyph_style_override() -> void:
+	var saved: String = GameSettings.controller_glyph_style
+	GameSettings.controller_glyph_style = "playstation"
+	assert_str(_pad.glyph_type()).is_equal("playstation")
+	GameSettings.controller_glyph_style = "auto"
+	assert_str(_pad.glyph_type()).is_equal(_pad.controller_type)
+	GameSettings.controller_glyph_style = "bogus"
+	assert_str(_pad.glyph_type()).is_equal(_pad.controller_type)
+	GameSettings.controller_glyph_style = saved
+
+
 func test_ui_mirror_covers_nav_and_confirm_cancel() -> void:
 	var mirror: Dictionary = _pad.UI_MIRROR
 	assert_that(mirror[&"pad_confirm"]).is_equal(&"ui_accept")

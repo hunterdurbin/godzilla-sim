@@ -616,6 +616,8 @@ func _ready() -> void:
 	_leave_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	_leave_dialog.confirmed.connect(_on_main_menu_pressed)
 	add_child(_leave_dialog)
+	GamepadHelper.register_modal(_leave_dialog)
+	GamepadHelper.register_modal(end_game_panel, func() -> Control: return btn_rematch)
 
 	# Card hover preview panel (right side of screen)
 	_preview_container = Control.new()

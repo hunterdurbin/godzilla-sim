@@ -94,11 +94,88 @@ func _check_for_pointer(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 		if not (event is InputEventMouseMotion):
 			get_viewport().warp_mouse(_last_mouse_pos)
-	var focus_owner := get_viewport().gui_get_focus_owner()
+	var focus_owner := gui_focus_owner()
 	if focus_owner != null:
 		focus_owner.release_focus()
 	_apply_pad_focusables()
 	pointer_detected.emit()
+
+
+const _MODAL_META := &"_gamepad_modal"
+
+
+## One-liner modal registration: pushes a focus context while `surface` is
+## visible and pops it on hide and on free. `surface` may be a Window
+## (ConfirmationDialog/AcceptDialog/PopupPanel/PopupMenu — all embedded
+## subwindows in this project) or an in-canvas Control prompt. Idempotent;
+## callable before or after the surface is first shown. With no provider, a
+## sensible default button is resolved lazily at push time.
+func register_modal(surface: Node, provider := Callable()) -> void:
+	if surface.has_meta(_MODAL_META):
+		return
+	surface.set_meta(_MODAL_META, true)
+	var resolved := provider if provider.is_valid() else _default_modal_provider(surface)
+	surface.visibility_changed.connect(_on_modal_visibility.bind(surface, resolved))
+	surface.tree_exiting.connect(pop_focus_context.bind(surface))
+	if _modal_visible(surface):
+		push_focus_context(surface, resolved)
+
+
+func _on_modal_visibility(surface: Node, provider: Callable) -> void:
+	if _modal_visible(surface):
+		push_focus_context(surface, provider)
+	else:
+		pop_focus_context(surface)
+
+
+func _modal_visible(surface: Node) -> bool:
+	if surface is Window:
+		return (surface as Window).visible
+	if surface is Control:
+		return (surface as Control).is_visible_in_tree()
+	return false
+
+
+func _default_modal_provider(surface: Node) -> Callable:
+	# Destructive confirms (leave game, delete deck, ...) must not put A on
+	# the destructive action — land on Cancel; dpad reaches OK, B closes.
+	if surface is ConfirmationDialog:
+		return func() -> Control: return (surface as ConfirmationDialog).get_cancel_button()
+	if surface is AcceptDialog:
+		return func() -> Control:
+			var ok := (surface as AcceptDialog).get_ok_button()
+			return ok if ok.visible else find_first_focusable(surface)
+	if surface is PopupMenu:
+		# PopupMenu navigates its items internally once its window has focus;
+		# grabbing a Control would fight it. The context push still suspends
+		# the layer beneath and refocuses it on close.
+		return func() -> Control: return null
+	return find_first_focusable.bind(surface)
+
+
+## Depth-first first visible focusable control under root.
+func find_first_focusable(root: Node) -> Control:
+	if root is Control:
+		var control := root as Control
+		if control.focus_mode == Control.FOCUS_ALL and control.is_visible_in_tree():
+			return control
+	for child in root.get_children():
+		var found := find_first_focusable(child)
+		if found != null:
+			return found
+	return null
+
+
+## Focus owner that sees inside embedded dialog Windows: each embedded
+## Window is its own Viewport, so the root viewport's gui_get_focus_owner()
+## returns null while a dialog child (e.g. a rename LineEdit) is focused.
+func gui_focus_owner() -> Control:
+	_prune_focus_stack()
+	if not _focus_stack.is_empty():
+		var top_owner: Variant = _focus_stack[-1]["owner"]
+		if top_owner is Window and (top_owner as Window).visible:
+			return (top_owner as Window).gui_get_focus_owner()
+	return get_viewport().gui_get_focus_owner()
 
 
 ## Registers a control that should be reachable by controller navigation but

@@ -85,8 +85,25 @@ func get_physical(logical: StringName) -> StringName:
 	return &""
 
 
+## Glyph art set actually shown: the user's manual override when set (for
+## devices whose real hardware is masked, e.g. behind Steam Input), else the
+## detected controller type.
+func glyph_type() -> String:
+	var style: String = GameSettings.controller_glyph_style
+	if style.is_empty() or style == "auto" or style not in GlyphDB.TYPES:
+		return controller_type
+	return style
+
+
+func set_glyph_style(style: String) -> void:
+	GameSettings.controller_glyph_style = style
+	GameSettings.save()
+	controller_type_changed.emit(glyph_type())
+	input_rebound.emit()
+
+
 func get_glyph(logical: StringName) -> Texture2D:
-	return GlyphDB.get_texture(controller_type, get_physical(logical))
+	return GlyphDB.get_texture(glyph_type(), get_physical(logical))
 
 
 func is_capturing() -> bool:
@@ -133,21 +150,26 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _capture_cb.is_valid():
 		_handle_capture(event)
 		return
+	# While a text field is editing, no pad action fires. B, the chat toggle,
+	# and ANY dpad press ESCAPE the field instead (release focus, swallow the
+	# event so the ui_cancel ladder never sees it, hand focus back to the
+	# screen's context) — a controller can't type, so a focused field with a
+	# dead dpad reads as stuck input.
+	if _is_text_editing():
+		if _is_text_escape_event(event):
+			_escape_text_field()
+		return
 	# Rebindable actions.
-	var text_editing := _is_text_editing()
 	for logical: StringName in _map:
 		var physical: StringName = _map[logical]
 		if event.is_action_pressed(physical):
-			if text_editing and logical != &"pad_cancel":
-				continue
 			_inject(logical, true)
 		elif event.is_action_released(physical):
 			_inject(logical, false)
 	# Fixed dpad navigation (stick handled in _process).
 	for physical: StringName in NAV_PHYSICAL:
 		if event.is_action_pressed(physical):
-			if not text_editing:
-				_inject(NAV_PHYSICAL[physical], true)
+			_inject(NAV_PHYSICAL[physical], true)
 			_nav_held[physical] = 0.0
 		elif event.is_action_released(physical):
 			_inject(NAV_PHYSICAL[physical], false)
@@ -172,8 +194,11 @@ func _process(delta: float) -> void:
 	# Left stick -> nav actions (spire's GodotControllerInputStrategy).
 	for physical: StringName in STICK_PHYSICAL:
 		if Input.is_action_just_pressed(physical):
-			if not text_editing:
-				_inject(STICK_PHYSICAL[physical], true)
+			if text_editing:
+				# Stick nav exits a focused text field like the dpad does.
+				_escape_text_field()
+				return
+			_inject(STICK_PHYSICAL[physical], true)
 			_nav_held[physical] = 0.0
 		elif Input.is_action_just_released(physical):
 			_inject(STICK_PHYSICAL[physical], false)
@@ -215,10 +240,31 @@ func _inject(logical: StringName, pressed: bool) -> void:
 		Input.parse_input_event(mirror)
 
 
-## While a text field is being edited, only pad_cancel goes through (port of
+func _is_text_escape_event(event: InputEvent) -> bool:
+	if event.is_action_pressed(_map.get(&"pad_cancel", &"controller_face_east")):
+		return true
+	if event.is_action_pressed(_map.get(&"pad_chat", &"controller_select")):
+		return true
+	for physical: StringName in NAV_PHYSICAL:
+		if event.is_action_pressed(physical):
+			return true
+	return false
+
+
+func _escape_text_field() -> void:
+	var field := GamepadHelper.gui_focus_owner()
+	if field != null:
+		field.release_focus()
+	get_viewport().set_input_as_handled()
+	GamepadHelper.refocus()
+
+
+## While a text field is being edited, pad actions must not fire (port of
 ## spire's NHotkeyManager LineEdit guard) so face buttons type, not act.
+## Embedded-window aware: dialogs (decklog URL, folder rename) hold focus in
+## their own viewport, invisible to the root viewport's focus owner.
 func _is_text_editing() -> bool:
-	var owner_control := get_viewport().gui_get_focus_owner()
+	var owner_control := GamepadHelper.gui_focus_owner()
 	if owner_control is LineEdit:
 		return (owner_control as LineEdit).editable
 	if owner_control is TextEdit:
@@ -232,7 +278,9 @@ func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 
 func _detect_controller_type() -> void:
 	var pads := Input.get_connected_joypads()
-	var detected := "generic" if pads.is_empty() else GlyphDB.detect_type(Input.get_joy_name(pads[0]))
+	var detected := "generic"
+	if not pads.is_empty():
+		detected = GlyphDB.detect_type(Input.get_joy_name(pads[0]), Input.get_joy_info(pads[0]))
 	if detected == controller_type:
 		return
 	controller_type = detected

@@ -99,6 +99,7 @@ func _show_opponent_found_dialog() -> void:
 	_opponent_found_dialog.confirmed.connect(_board._on_opponent_found_start)
 	_opponent_found_dialog.custom_action.connect(_board._on_opponent_found_custom_action)
 	_board.add_child(_opponent_found_dialog)
+	GamepadHelper.register_modal(_opponent_found_dialog)
 	_opponent_found_dialog.popup_centered()
 
 	_opponent_found_remaining = 20

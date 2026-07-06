@@ -44,6 +44,10 @@ func _ready() -> void:
 	if _chat_input:
 		_chat_input.text_submitted.connect(_on_chat_submitted)
 		_chat_input.text_changed.connect(_on_chat_text_changed)
+		# Click (or the controller's pad_chat button) only — dpad focus
+		# navigation must never wander into the chat field, where the pad
+		# goes dead until an escape press.
+		_chat_input.focus_mode = Control.FOCUS_CLICK
 	_log_panel = _board.get_node_or_null("LogPanel")
 	set_process(false)
 	# Zone/strategy/hand prompts all toggle the ActionPrompt panel; mirror its

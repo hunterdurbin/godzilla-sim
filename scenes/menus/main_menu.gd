@@ -435,6 +435,7 @@ func _show_bot_config_popup() -> void:
 	popup.add_child(panel)
 
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 
@@ -524,6 +525,7 @@ func _show_deck_pool_popup(parent_popup: Window, pending: Dictionary, random_ena
 	# (proper z-order, won't accidentally close the parent).
 	parent_popup.add_child(popup)
 	popup.popup_hide.connect(popup.queue_free)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 	# Setup AFTER the popup is in the tree so BotPoolView._ready has run.
@@ -718,6 +720,7 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	popup.add_child(panel)
 
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
 
 
@@ -855,4 +858,5 @@ func _show_reconnect_dialog() -> void:
 	popup.add_child(panel)
 
 	add_child(popup)
+	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
