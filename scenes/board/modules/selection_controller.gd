@@ -807,6 +807,56 @@ func _find_hand_index_by_id(card_id: String) -> int:
 	return -1
 
 
+## Actions the hovered hand card can take right now — drives the gamepad
+## hand-hint cluster (HandHintBar). Empty unless the local side is awaiting
+## a main-phase action with nothing pending (mirrors the guards of the
+## _on_*_pressed handlers; the button-enabled map encodes valid_actions).
+func hand_card_hint_actions(card: Control) -> Array[int]:
+	if card == null or not "card_data" in card:
+		return []
+	if _action_pending or _awaiting_confirmation or _confirming_pass \
+			or waiting_for_card_select or waiting_for_zone_select:
+		return []
+	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+		return []
+	if is_bot_game and bot_player and _get_current_pid() == bot_player.bot_player_id:
+		return []
+	var card_data: Dictionary = card.card_data
+	var logical := _find_hand_index_by_id(str(card_data.get("id", "")))
+	return HandHintBar.compute_hint_actions(
+		int(card_data.get("card_type", -1)), logical, _hint_playable_lists(), {
+			CardEnums.ActionType.PLAY_BATTLE: not btn_play_battle.disabled,
+			CardEnums.ActionType.PLAY_STRATEGY: not btn_play_strategy.disabled,
+			CardEnums.ActionType.PLAY_MONSTER: not btn_play_monster.disabled,
+			CardEnums.ActionType.GAIN_RAGE: not btn_gain_rage.disabled,
+			CardEnums.ActionType.INVADE: not btn_invade.disabled,
+		})
+
+
+## The five playable-index lists (logical hand indices) — rules engine on
+## the host/solo side, the synced _client_playable snapshot on clients.
+func _hint_playable_lists() -> Dictionary:
+	if turn_manager:
+		var state := turn_manager.game_state
+		var player := state.get_current_player()
+		var opponent := state.get_opponent_of_current()
+		var rules := turn_manager.rules_engine
+		return {
+			"battle": rules.get_playable_battle_cards(player, opponent),
+			"strategy": rules.get_playable_strategy_cards(player),
+			"monster": rules.get_playable_monsters(player),
+			"rage": rules.get_monster_cards_for_rage(player),
+			"invade": rules.get_discardable_cards_for_invade(player, opponent),
+		}
+	return {
+		"battle": _client_playable.get("battle_cards", []),
+		"strategy": _client_playable.get("strategy_cards", []),
+		"monster": _client_playable.get("monster_cards", []),
+		"rage": _client_playable.get("rage_cards", []),
+		"invade": _client_playable.get("invade_cards", []),
+	}
+
+
 func _on_hand_drag_started(card: Control) -> void:
 	if _action_pending:
 		return

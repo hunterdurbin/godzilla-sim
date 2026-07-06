@@ -972,6 +972,15 @@ func _choice_buttons() -> Array[Button]:
 	return selection._choice_buttons
 
 
+## The hand card hovered in free browse; null while the cursor is jailed to
+## a prompt, parked off the hand, or the module is suspended. Consumed by
+## HandHintBar.
+func browse_hovered_hand_card() -> Control:
+	if _mode != "none" or not _element.begins_with("hand_") or not _is_active():
+		return null
+	return _hand_card(_hand_index())
+
+
 # --- Debug accessors (read-only; consumed by NavDebugOverlay) ---
 
 func debug_state() -> Dictionary:

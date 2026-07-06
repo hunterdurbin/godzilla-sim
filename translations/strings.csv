@@ -322,6 +322,9 @@ STR_GB_PLAY_STRATEGY,Strategy,戦略
 STR_GB_GAIN_RAGE,Gain Rage,怒り獲得
 STR_GB_PLAY_MONSTER,Play Monster,怪獣出現
 STR_GB_INVADE,Invade,進攻
+STR_GB_HINT_PLAY,Play,プレイ
+STR_GB_HINT_RAGE,Rage,怒り
+STR_GB_HINT_INVADE,Invade,進攻
 STR_GB_END_MAIN,End Main,メイン終了
 STR_GB_END_MAIN_QUESTION,End Main Phase?,メインフェイズを終了？
 STR_GB_SKIP,Skip,スキップ

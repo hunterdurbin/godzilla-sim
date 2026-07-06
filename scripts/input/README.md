@@ -60,6 +60,13 @@ Related pieces elsewhere:
   its right, else the Sort button; when the button under the cursor
   disables (`action_buttons_changed`), it relocates deterministically
   (history → spatial neighbor → End Main → Z2).
+- `scenes/board/modules/hand_hint_bar.gd` — **HandHintBar**: bottom-left
+  glyph+label cluster (A Play / LT Rage / RT Invade) while the cursor
+  free-browses a hand card on the local player's action; rows filtered per
+  card through `SelectionController.hand_card_hint_actions()` (button-enabled
+  state doubles as the "awaiting main-phase action" gate, so pending
+  effects/prompts and the opponent's turn blank it). Hidden on mobile and in
+  pointer mode.
 - `scenes/board/modules/nav_debug_overlay.gd` — **NavDebugOverlay**: F3 in
   a debug build paints the live graph over the board (green = cursor,
   blue = valid, red = prompt-jailed, gray = hidden; edge arrows + state

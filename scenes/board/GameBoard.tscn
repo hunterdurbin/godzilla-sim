@@ -33,6 +33,7 @@
 [ext_resource type="Script" uid="uid://evjjrjsbhbdr" path="res://scripts/input/controller_glyph.gd" id="m_controllerglyph"]
 [ext_resource type="Script" uid="uid://gmyqvccux85k" path="res://scenes/board/modules/effect_highlight_controller.gd" id="m_effecthighlightcontroller"]
 [ext_resource type="Script" uid="uid://66aen2iglstg" path="res://scenes/board/modules/gamepad_board_nav.gd" id="m_gamepadboardnav"]
+[ext_resource type="Script" path="res://scenes/board/modules/hand_hint_bar.gd" id="m_handhintbar"]
 [ext_resource type="Script" uid="uid://m46qb8jpvrth" path="res://scenes/board/modules/lobby_bot_controller.gd" id="m_lobbybotcontroller"]
 [ext_resource type="Script" path="res://scenes/board/modules/nav_debug_overlay.gd" id="m_navdebugoverlay"]
 [ext_resource type="Script" path="res://scenes/board/modules/system_menu_controller.gd" id="m_systemmenucontroller"]
@@ -101,6 +102,9 @@ script = ExtResource("m_systemmenucontroller")
 
 [node name="GamepadBoardNav" type="Node" parent="." unique_id=421617144]
 script = ExtResource("m_gamepadboardnav")
+
+[node name="HandHintBar" type="Node" parent="." unique_id=733481919]
+script = ExtResource("m_handhintbar")
 
 [node name="BoardLayoutController" type="Node" parent="." unique_id=1805338226]
 script = ExtResource("m_boardlayoutcontroller")
@@ -635,6 +639,77 @@ layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.5, 1)
 theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
+
+[node name="HandHintCluster" type="PanelContainer" parent="." unique_id=733481920]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -40.0
+offset_right = 120.0
+offset_bottom = -10.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_prompt")
+
+[node name="VBox" type="VBoxContainer" parent="HandHintCluster" unique_id=733481921]
+layout_mode = 2
+
+[node name="RowPlay" type="HBoxContainer" parent="HandHintCluster/VBox" unique_id=733481922]
+layout_mode = 2
+
+[node name="Glyph" type="TextureRect" parent="HandHintCluster/VBox/RowPlay" unique_id=733481923]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("m_controllerglyph")
+action = &"pad_confirm"
+
+[node name="Label" type="Label" parent="HandHintCluster/VBox/RowPlay" unique_id=733481924]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "STR_GB_HINT_PLAY"
+vertical_alignment = 1
+
+[node name="RowRage" type="HBoxContainer" parent="HandHintCluster/VBox" unique_id=733481925]
+layout_mode = 2
+
+[node name="Glyph" type="TextureRect" parent="HandHintCluster/VBox/RowRage" unique_id=733481926]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("m_controllerglyph")
+action = &"pad_play_card_rage"
+
+[node name="Label" type="Label" parent="HandHintCluster/VBox/RowRage" unique_id=733481927]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "STR_GB_HINT_RAGE"
+vertical_alignment = 1
+
+[node name="RowInvade" type="HBoxContainer" parent="HandHintCluster/VBox" unique_id=733481928]
+layout_mode = 2
+
+[node name="Glyph" type="TextureRect" parent="HandHintCluster/VBox/RowInvade" unique_id=733481929]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+mouse_filter = 2
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("m_controllerglyph")
+action = &"pad_play_card_invasion"
+
+[node name="Label" type="Label" parent="HandHintCluster/VBox/RowInvade" unique_id=733481930]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "STR_GB_HINT_INVADE"
+vertical_alignment = 1
 
 [node name="LogPanel" type="PanelContainer" parent="." unique_id=1472588009]
 layout_mode = 1

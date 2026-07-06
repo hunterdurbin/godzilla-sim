@@ -91,6 +91,8 @@ func _ready() -> void:
 	assert(nav._mode == "zones_target", "module missed selection context: %s" % nav._mode)
 	assert(nav._element == "bot_z2", "cursor not on first valid zone: %s" % nav._element)
 	assert(nav._cursor != null and nav._cursor.visible, "no visible cursor")
+	var hint_cluster: Control = board.get_node("HandHintCluster")
+	assert(not hint_cluster.visible, "hand-hint cluster visible during a prompt")
 
 	await _tap(&"pad_confirm")
 	assert(sel._zones_target_selected == [1], "confirm did not select zone 2: %s" % str(sel._zones_target_selected))
@@ -300,6 +302,25 @@ func _ready() -> void:
 	var hovered: Control = nav._hovered_card
 	assert(hovered != null and hovered == nav._cursor_card, "cursor did not hover its card")
 	assert(hovered.z_index == 50, "hovered card not raised (z_index %d)" % hovered.z_index)
+
+	# --- Hand-hint cluster mirrors hand_card_hint_actions() while hovering ---
+	assert(hovered == nav.browse_hovered_hand_card(),
+		"browse_hovered_hand_card disagrees with the hover state")
+	var hints: Array[int] = sel.hand_card_hint_actions(hovered)
+	assert(hint_cluster.visible == (not hints.is_empty()),
+		"hint cluster visibility diverged from hint actions: %s" % str(hints))
+	assert(board.get_node("HandHintCluster/VBox/RowPlay").visible == (
+			hints.has(CardEnums.ActionType.PLAY_MONSTER)
+			or hints.has(CardEnums.ActionType.PLAY_BATTLE)
+			or hints.has(CardEnums.ActionType.PLAY_STRATEGY)),
+		"Play hint row diverged from hint actions: %s" % str(hints))
+	assert(board.get_node("HandHintCluster/VBox/RowRage").visible
+			== hints.has(CardEnums.ActionType.GAIN_RAGE),
+		"Rage hint row diverged from hint actions: %s" % str(hints))
+	assert(board.get_node("HandHintCluster/VBox/RowInvade").visible
+			== hints.has(CardEnums.ActionType.INVADE),
+		"Invade hint row diverged from hint actions: %s" % str(hints))
+
 	if hand.managed_cards.size() >= 2:
 		await _tap(&"pad_nav_right")
 		assert(nav._hovered_card != hovered, "hover did not move with the cursor")
@@ -308,6 +329,7 @@ func _ready() -> void:
 	nav._enter_element("ap_end_main")
 	await _tick(1)
 	assert(nav._hovered_card == null, "leaving the hand did not unhover")
+	assert(not hint_cluster.visible, "hint cluster stayed visible after leaving the hand")
 
 	# --- Button churn: the element under the cursor disabling relocates the
 	# cursor deterministically, with no focus stolen ---
@@ -346,6 +368,11 @@ func _ready() -> void:
 			await _press_b()
 			assert(not sel.waiting_for_zone_select, "cancel did not exit zone selection")
 		assert(nav._is_active(), "module wedged after direct play")
+		await _tick(2)
+		if nav._element.begins_with("hand_") and not sel.hand_card_hint_actions(
+				nav.browse_hovered_hand_card()).is_empty():
+			assert(hint_cluster.visible,
+				"hint cluster did not re-show after cancel returned the cursor to the hand")
 
 	# --- Post-play cursor rule: left neighbor -> right neighbor -> Sort ---
 	# Case A: context clears while the card is still in the hand (visual
