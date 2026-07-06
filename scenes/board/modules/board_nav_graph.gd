@@ -97,23 +97,28 @@ const PLAYMAT := {
 
 ## Desktop action panel (bottom-right 3-row grid), hand-button stacks and the
 ## corner utility column. Rows: Cancel|Confirm / Battle|Strategy|Rage /
-## Monster|Invade|EndMain; the hand toggle/sort pair sits below the panel,
-## between it and the hand.
+## Monster|Invade|EndMain; the hand toggle/sort pair is a vertical column
+## (toggle above sort) immediately left of the panel — toggle level with the
+## Battle row, sort level with the Monster row.
 const DESKTOP_UI := {
 	"ap_cancel": {"up": ["tracker"], "right": ["ap_confirm"], "down": ["ap_play_battle", "ap_play_strategy"], "left": ["bot_discard"]},
 	"ap_confirm": {"up": ["tracker"], "right": [], "down": ["ap_gain_rage", "ap_play_strategy"], "left": ["ap_cancel"]},
-	"ap_play_battle": {"up": ["ap_cancel"], "right": ["ap_play_strategy"], "down": ["ap_play_monster"], "left": ["bot_discard"]},
+	"ap_play_battle": {"up": ["ap_cancel"], "right": ["ap_play_strategy"], "down": ["ap_play_monster"], "left": ["ap_hand_toggle", "bot_discard"]},
 	"ap_play_strategy": {"up": ["ap_cancel", "ap_confirm"], "right": ["ap_gain_rage"], "down": ["ap_invade"], "left": ["ap_play_battle"]},
 	"ap_gain_rage": {"up": ["ap_confirm"], "right": [], "down": ["ap_end_main"], "left": ["ap_play_strategy"]},
-	"ap_play_monster": {"up": ["ap_play_battle"], "right": ["ap_invade"], "down": ["ap_hand_toggle"], "left": ["hand"]},
-	"ap_invade": {"up": ["ap_play_strategy"], "right": ["ap_end_main"], "down": ["ap_sort_hand"], "left": ["ap_play_monster"]},
-	"ap_end_main": {"up": ["ap_gain_rage"], "right": [], "down": ["ap_sort_hand"], "left": ["ap_invade"]},
-	"ap_hand_toggle": {"up": ["ap_play_monster"], "right": ["ap_sort_hand"], "down": [], "left": ["hand"]},
-	"ap_sort_hand": {"up": ["ap_invade", "ap_end_main"], "right": [], "down": [], "left": ["ap_hand_toggle"]},
+	"ap_play_monster": {"up": ["ap_play_battle"], "right": ["ap_invade"], "down": ["hand"], "left": ["ap_sort_hand", "hand"]},
+	"ap_invade": {"up": ["ap_play_strategy"], "right": ["ap_end_main"], "down": ["hand"], "left": ["ap_play_monster"]},
+	"ap_end_main": {"up": ["ap_gain_rage"], "right": [], "down": ["hand"], "left": ["ap_invade"]},
+	# Hand-button stack (reparented into a VERTICAL column on desktop): toggle
+	# sits directly above sort, immediately left of the action panel — toggle
+	# level with row1 (Play Battle), sort level with row2 (Play Monster).
+	"ap_hand_toggle": {"up": ["ap_cancel"], "right": ["ap_play_battle"], "down": ["ap_sort_hand"], "left": ["hand"]},
+	"ap_sort_hand": {"up": ["ap_hand_toggle"], "right": ["ap_play_monster"], "down": [], "left": ["hand"]},
 
-	# Opponent hand stack (hotseat only; hidden -> traversed through).
-	"ap_opp_hand_toggle": {"up": [], "right": ["ap_opp_sort_hand"], "down": ["top_strategy_1"], "left": ["top_monster_deck"]},
-	"ap_opp_sort_hand": {"up": [], "right": ["sys_bug_report"], "down": ["top_strategy_1"], "left": ["ap_opp_hand_toggle"]},
+	# Opponent hand stack (hotseat only; hidden -> traversed through). Also a
+	# vertical column, top-right: toggle above sort.
+	"ap_opp_hand_toggle": {"up": [], "right": ["sys_bug_report"], "down": ["ap_opp_sort_hand"], "left": ["top_monster_deck"]},
+	"ap_opp_sort_hand": {"up": ["ap_opp_hand_toggle"], "right": ["sys_bug_report"], "down": ["top_strategy_1"], "left": ["top_monster_deck"]},
 
 	# Corner utility column (top-right edge, top to bottom).
 	"sys_bug_report": {"up": [], "right": [], "down": ["sys_concede"], "left": ["ap_opp_sort_hand", "top_monster_deck"]},
@@ -227,7 +232,7 @@ static func _merge(base: Dictionary, extra: Dictionary) -> Dictionary:
 
 
 static func _add_hand_row(map: Dictionary, count: int, mobile: bool) -> void:
-	var right_exit: Array = ["ap_hand_toggle"] if not mobile else ["ap_sort_hand", "ap_cancel"]
+	var right_exit: Array = ["ap_sort_hand"] if not mobile else ["ap_sort_hand", "ap_cancel"]
 	for i in range(count):
 		map["hand_%d" % i] = {
 			"up": HAND_EXITS.duplicate(),

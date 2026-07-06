@@ -66,8 +66,25 @@ func test_hand_row_chains_left_to_right() -> void:
 	assert_that(map["hand_0"]["left"]).is_equal([])
 	assert_that(map["hand_0"]["right"]).is_equal(["hand_1"])
 	assert_that(map["hand_1"]["left"]).is_equal(["hand_0"])
-	assert_that(map["hand_2"]["right"]).is_equal(["ap_hand_toggle"])
+	assert_that(map["hand_2"]["right"]).is_equal(["ap_sort_hand"])
 	assert_that(map["hand_1"]["up"]).is_equal(BoardNavGraph.HAND_EXITS)
+
+
+func test_desktop_hand_buttons_are_stacked_vertically() -> void:
+	# Desktop reparents toggle/sort into a vertical column (toggle above sort);
+	# the graph must link them up/down, not left/right.
+	var map := _build(3)
+	assert_that(map["ap_hand_toggle"]["down"]).is_equal(["ap_sort_hand"])
+	assert_that(map["ap_sort_hand"]["up"]).is_equal(["ap_hand_toggle"])
+	assert_that(map["ap_hand_toggle"]["right"]).not_contains(["ap_sort_hand"])
+	assert_that(map["ap_sort_hand"]["left"]).not_contains(["ap_hand_toggle"])
+
+
+func test_mobile_hand_buttons_stay_side_by_side() -> void:
+	# Mobile keeps the pair in an HBox split pill — horizontal wiring stands.
+	var map := _build(3, true)
+	assert_that(map["ap_hand_toggle"]["right"]).is_equal(["ap_sort_hand"])
+	assert_that(map["ap_sort_hand"]["left"]).is_equal(["ap_hand_toggle"])
 
 
 func test_hand_entry_picks_nearest_card_by_x() -> void:
