@@ -928,9 +928,9 @@ func _hand_index() -> int:
 
 
 func _my_pid() -> int:
-	if _board.is_multiplayer_game:
+	if _board.is_multiplayer_game or _board.is_bot_game:
 		return _board.local_player_id
-	return _board._get_current_pid()
+	return _board._get_current_pid() # hotseat: the shared pad follows the active seat
 
 
 func _hand_pid() -> int:

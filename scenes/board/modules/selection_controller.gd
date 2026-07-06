@@ -322,7 +322,7 @@ func _set_action_buttons_visible(vis: bool) -> void:
 # --- Moved bodies (verbatim from game_board.gd) ---
 
 func _on_play_battle_pressed() -> void:
-	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+	if not NetworkManager.is_local_player_turn(_get_current_pid()):
 		return
 
 	var playable: Array[int] = []
@@ -339,7 +339,7 @@ func _on_play_battle_pressed() -> void:
 
 
 func _on_play_strategy_pressed() -> void:
-	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+	if not NetworkManager.is_local_player_turn(_get_current_pid()):
 		return
 
 	var playable: Array[int] = []
@@ -355,7 +355,7 @@ func _on_play_strategy_pressed() -> void:
 
 
 func _on_gain_rage_pressed() -> void:
-	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+	if not NetworkManager.is_local_player_turn(_get_current_pid()):
 		return
 
 	var playable: Array[int] = []
@@ -371,7 +371,7 @@ func _on_gain_rage_pressed() -> void:
 
 
 func _on_play_monster_pressed() -> void:
-	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+	if not NetworkManager.is_local_player_turn(_get_current_pid()):
 		return
 
 	var playable: Array[int] = []
@@ -387,7 +387,7 @@ func _on_play_monster_pressed() -> void:
 
 
 func _on_invade_pressed() -> void:
-	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+	if not NetworkManager.is_local_player_turn(_get_current_pid()):
 		return
 
 	var playable: Array[int] = []
@@ -817,9 +817,7 @@ func hand_card_hint_actions(card: Control) -> Array[int]:
 	if _action_pending or _awaiting_confirmation or _confirming_pass \
 			or waiting_for_card_select or waiting_for_zone_select:
 		return []
-	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
-		return []
-	if is_bot_game and bot_player and _get_current_pid() == bot_player.bot_player_id:
+	if not NetworkManager.is_local_player_turn(_get_current_pid()):
 		return []
 	var card_data: Dictionary = card.card_data
 	var logical := _find_hand_index_by_id(str(card_data.get("id", "")))
@@ -862,7 +860,7 @@ func _on_hand_drag_started(card: Control) -> void:
 		return
 	if waiting_for_card_select or waiting_for_zone_select:
 		return
-	if is_multiplayer_game and not NetworkManager.is_local_player_turn(_get_current_pid()):
+	if not NetworkManager.is_local_player_turn(_get_current_pid()):
 		return
 
 	var card_data: Dictionary = card.card_data if "card_data" in card else {}
