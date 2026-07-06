@@ -446,6 +446,40 @@ func play_selected_card_to_zone(zone_index: int) -> bool:
 	return true
 
 
+## Direct play for controller hand-hover: runs the exact flow of pressing
+## the matching action button and then clicking the card, so every gating
+## rule (turn, multiplayer, playable lists) is reused. Returns false — with
+## the action panel restored — when the card isn't playable for `action`.
+func play_card_from_hand(card: Control, action: CardEnums.ActionType) -> bool:
+	if waiting_for_card_select or waiting_for_zone_select or _confirming_pass:
+		return false
+	match action:
+		CardEnums.ActionType.PLAY_BATTLE:
+			_on_play_battle_pressed()
+		CardEnums.ActionType.PLAY_STRATEGY:
+			_on_play_strategy_pressed()
+		CardEnums.ActionType.GAIN_RAGE:
+			_on_gain_rage_pressed()
+		CardEnums.ActionType.PLAY_MONSTER:
+			_on_play_monster_pressed()
+		CardEnums.ActionType.INVADE:
+			_on_invade_pressed()
+		_:
+			return false
+	if not waiting_for_card_select:
+		return false # Gated out (not your turn / nothing playable)
+	var board := _get_active_player_board()
+	if board == null or board.hand_manager == null:
+		return false
+	var hand_mgr: CardManager = board.hand_manager
+	var idx := hand_mgr.managed_cards.find(card)
+	if idx < 0 or not ("is_selectable" in card and card.is_selectable):
+		_on_cancel_pressed()
+		return false
+	hand_mgr.select_card_at(idx)
+	return true
+
+
 ## The single button pad_end_main maps to: Confirm while a prompt shows one,
 ## otherwise End Main.
 func press_primary_button() -> void:

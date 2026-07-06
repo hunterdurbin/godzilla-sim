@@ -100,8 +100,8 @@ static func default_map() -> Dictionary:
 		&"pad_end_main": &"controller_face_west",
 		&"pad_region_prev": &"controller_bumper_l",
 		&"pad_region_next": &"controller_bumper_r",
-		&"pad_view_discard": &"controller_trigger_l",
-		&"pad_view_opp_discard": &"controller_trigger_r",
+		&"pad_play_card_rage": &"controller_trigger_l",
+		&"pad_play_card_invasion": &"controller_trigger_r",
 		&"pad_menu": &"controller_start",
 		&"pad_chat": &"controller_select",
 	}

@@ -188,5 +188,59 @@ func _ready() -> void:
 	Input.parse_input_event(b_up)
 	await _tick(1)
 
+	# --- Hover-raise: the cursor drives the mouse hover tween ---
+	nav._enter_hand()
+	await _tick(2)
+	var hovered: Control = nav._hovered_card
+	assert(hovered != null and hovered == nav._cursor_card, "cursor did not hover its card")
+	assert(hovered.z_index == 50, "hovered card not raised (z_index %d)" % hovered.z_index)
+	if hand.managed_cards.size() >= 2:
+		await _tap(&"pad_nav_right")
+		assert(nav._hovered_card != hovered, "hover did not move with the cursor")
+		assert(hovered.z_index != 50 or hovered == nav._hovered_card,
+			"previous card kept its raised z_index")
+	nav._enter_action_panel()
+	await _tick(1)
+	assert(nav._hovered_card == null, "leaving the hand did not unhover")
+
+	# --- Group hops ---
+	# Board group has no right edge: the cursor stays put at bot_deck.
+	nav._enter_element("bot_deck")
+	await _tick(1)
+	await _tap(&"pad_nav_right")
+	assert(nav._element == "bot_deck", "board right edge should be a wall: %s" % nav._element)
+	# Hand -> up uses element edges; ACTION_PANEL left/down edge -> hand group.
+	nav._enter_action_panel()
+	await _tick(1)
+	_inject_action(&"pad_nav_down")
+	await _tick(2)
+	_inject_action(&"pad_nav_down", false)
+	await _tick(1)
+	if nav._region != nav.Region.HAND:
+		# Focus may have moved within the panel first; press again from the edge.
+		_inject_action(&"pad_nav_down")
+		await _tick(2)
+		_inject_action(&"pad_nav_down", false)
+		await _tick(1)
+	assert(nav._region == nav.Region.HAND, "panel down edge did not hop to the hand group")
+	nav._leave_hand_browse()
+
+	# --- Direct play from hand browse (A dispatches by card type) ---
+	nav._enter_hand()
+	await _tick(1)
+	var play_card: Control = nav._hand_card(nav._hand_index)
+	assert(play_card != null, "no hand card to play")
+	await _tap(&"pad_confirm")
+	await _tick(3)
+	var entered_zone_select: bool = sel.waiting_for_zone_select
+	var entered_card_select: bool = sel.waiting_for_card_select
+	assert(not entered_card_select, "direct play left card selection dangling")
+	if entered_zone_select:
+		# Battle card: zone selection started with the card preselected —
+		# cancel out and confirm nothing is stuck.
+		await _tap(&"pad_cancel")
+		assert(not sel.waiting_for_zone_select, "cancel did not exit zone selection")
+	assert(nav._is_active(), "module wedged after direct play")
+
 	print("GAMEPAD_NAV_TEST_PASS")
 	get_tree().quit(0)

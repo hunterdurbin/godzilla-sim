@@ -241,11 +241,11 @@ pad_region_next={
 "deadzone": 0.5,
 "events": []
 }
-pad_view_discard={
+pad_play_card_invasion={
 "deadzone": 0.5,
 "events": []
 }
-pad_view_opp_discard={
+pad_play_card_rage={
 "deadzone": 0.5,
 "events": []
 }

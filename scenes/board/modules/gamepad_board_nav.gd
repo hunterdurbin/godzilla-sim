@@ -34,7 +34,8 @@ var _region: int = Region.NONE
 var _element: String = DEFAULT_ELEMENT
 ## Card index within the hand while in Region.HAND.
 var _hand_index: int = 0
-var _map: CursorMap = CursorMap.new(BoardCursorMap.MAP)
+var _map: CursorMap = CursorMap.new(
+	BoardCursorMap.MAP, BoardCursorMap.GROUPS, BoardCursorMap.MEMBERSHIP)
 var _mode: String = "none"
 var _ctx_valid: Array[int] = []
 var _ctx_board_pid: int = -1
@@ -46,6 +47,9 @@ var _previewing_card: bool = false
 ## Card under the HAND cursor — survives reorders (sorting rewrites the
 ## numeric index but the card ref stays valid).
 var _cursor_card: Control = null
+## Hand card currently raised by the cursor (drives the same hover tween the
+## mouse uses via card._on_mouse_entered/_on_mouse_exited).
+var _hovered_card: Control = null
 ## Browsing the hand pops it up like the toggle button does; leaving restores
 ## it — but only when WE expanded it, never clobbering a manual expand.
 var _auto_expanded_hand := false
@@ -83,10 +87,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		_cycle_region(-1)
 	elif event.is_action_pressed("pad_end_main"):
 		_board._selection.press_primary_button()
-	elif event.is_action_pressed("pad_view_discard"):
-		_board._on_discard_clicked(_my_pid())
-	elif event.is_action_pressed("pad_view_opp_discard"):
-		_board._on_discard_clicked(1 - _my_pid())
+	elif event.is_action_pressed("pad_play_card_invasion"):
+		_try_play_hovered(CardEnums.ActionType.INVADE)
+	elif event.is_action_pressed("pad_play_card_rage"):
+		_try_play_hovered(CardEnums.ActionType.GAIN_RAGE)
 	elif event.is_action_pressed("pad_menu"):
 		if _board._leave_dialog:
 			_board._leave_dialog.popup_centered()
@@ -107,27 +111,44 @@ func _unhandled_input(event: InputEvent) -> void:
 			_inspect()
 		else:
 			return
-	elif _region == Region.ACTION_PANEL and event.is_action_pressed("pad_nav_down") \
-			and _mode == "none" and _panel_focus_at_bottom_edge():
-		# Dpad-down past the bottom action row drops into hand browsing.
-		_enter_hand()
+	elif _region == Region.ACTION_PANEL and _mode == "none":
+		# Dpad past the panel's edge hops to the neighboring GROUP
+		# (down/left both reach the hand per BoardCursorMap.GROUPS).
+		var dir := ""
+		for candidate in ["up", "right", "down", "left"]:
+			if event.is_action_pressed("pad_nav_" + candidate):
+				dir = candidate
+				break
+		if dir == "" or not _panel_focus_at_edge(dir):
+			return
+		var group := _map.next_group("action_panel", dir)
+		if group == "":
+			return
+		_enter_group(group)
 	else:
 		return
 	get_viewport().set_input_as_handled()
 
 
-## Whether the focused action button has no downward focus target inside the
-## action panel/FAB — i.e. the mirrored ui_down has nowhere sensible to go,
-## so dpad-down should hand over to hand browsing instead.
-func _panel_focus_at_bottom_edge() -> bool:
+## Whether the focused action button has no focus target inside the action
+## panel/FAB in that direction — i.e. the mirrored ui_* has nowhere sensible
+## to go, so the dpad press should hop groups instead.
+func _panel_focus_at_edge(dir: String) -> bool:
+	const SIDES := {"up": SIDE_TOP, "right": SIDE_RIGHT, "down": SIDE_BOTTOM, "left": SIDE_LEFT}
 	var focus_owner := get_viewport().gui_get_focus_owner()
 	if focus_owner == null:
 		return true
-	var neighbor := focus_owner.find_valid_focus_neighbor(SIDE_BOTTOM)
+	var neighbor := focus_owner.find_valid_focus_neighbor(SIDES[dir])
 	if neighbor == null:
 		return true
 	var panel: Control = _board.action_panel
-	return panel == null or not panel.is_ancestor_of(neighbor)
+	if panel and panel.is_ancestor_of(neighbor):
+		return false
+	if _board._is_mobile_layout:
+		var mobile: Node = _board.get_node_or_null("MobileLayout")
+		if mobile and mobile.fab_container() and mobile.fab_container().is_ancestor_of(neighbor):
+			return false
+	return true
 
 
 func _is_active() -> bool:
@@ -254,13 +275,16 @@ func _last_board_element() -> String:
 
 func _move(dir: String) -> void:
 	if _region == Region.HAND:
-		# Left/right walk the fanned cards; up/down travel the map.
-		if dir == "left" or dir == "right":
+		# Left/right walk the fanned cards; up/down travel the map. An empty
+		# hand (or a dead-end direction) falls through to the GROUP edges.
+		if (dir == "left" or dir == "right") and not _hand_valid_indices().is_empty():
 			_move_hand(-1 if dir == "left" else 1)
 			return
 		var exit_id := _map.next("hand", dir, _element_valid)
 		if exit_id != "":
 			_enter_element(exit_id)
+		elif _ctx_elements.is_empty():
+			_enter_group(_map.next_group("hand", dir))
 		return
 	var target := _map.next(_element, dir, _element_valid)
 	if target == "" and not _ctx_elements.is_empty() and (dir == "left" or dir == "right"):
@@ -268,12 +292,32 @@ func _move(dir: String) -> void:
 		# (e.g. Z2/Z4/Z6 span both rows). Left/right then cycle the valid
 		# elements so every legal target stays reachable.
 		target = _ctx_cycle(1 if dir == "right" else -1)
+	if target == "" and _ctx_elements.is_empty():
+		# Group boundary: hop to the neighboring module per GROUPS.
+		_enter_group(_map.next_group(_map.group_of(_element), dir))
+		return
 	if target == "":
 		return
 	if target == "hand":
 		_enter_hand()
 	else:
 		_enter_element(target)
+
+
+## Enter a neighboring group at its most recently visited element (history),
+## falling back to each group's natural default. "" is a no-op.
+func _enter_group(group: String) -> void:
+	match group:
+		"hand":
+			_enter_hand()
+		"action_panel":
+			_enter_action_panel()
+		"board":
+			var el := _map.last_in_group("board")
+			if el == "" or not _element_valid(el):
+				el = DEFAULT_ELEMENT
+			if _element_valid(el):
+				_enter_element(el)
 
 
 func _ctx_cycle(dir: int) -> String:
@@ -422,11 +466,37 @@ func _resolve_control(id: String) -> Control:
 
 # --- Activation ---
 
+## Play the hovered hand card via the given action — same flow as pressing
+## the action button and clicking the card (SelectionController does all
+## gating). No-op outside hand browsing.
+func _try_play_hovered(action: CardEnums.ActionType) -> void:
+	if _region != Region.HAND or _mode != "none":
+		return
+	var card := _hand_card(_hand_index)
+	if card == null:
+		return
+	# Unhover before any reparent the play may trigger (hover tween gotcha).
+	_set_hovered_card(null)
+	if not _board._selection.play_card_from_hand(card, action):
+		_update_cursor() # rejected: re-hover in place
+
+
 func _confirm() -> void:
 	if _region == Region.HAND:
 		var hand := _hand_mgr()
 		if hand and hand.selection_mode:
 			hand.select_card_at(_hand_index)
+		elif _mode == "none":
+			# Browse: A plays the hovered card according to its type.
+			var card := _hand_card(_hand_index)
+			if card and "card_data" in card:
+				match int(card.card_data.get("card_type", -1)):
+					CardEnums.CardType.MONSTER:
+						_try_play_hovered(CardEnums.ActionType.PLAY_MONSTER)
+					CardEnums.CardType.BATTLE:
+						_try_play_hovered(CardEnums.ActionType.PLAY_BATTLE)
+					CardEnums.CardType.STRATEGY:
+						_try_play_hovered(CardEnums.ActionType.PLAY_STRATEGY)
 		return
 	var entry := _resolve(_element)
 	if entry.is_empty():
@@ -489,6 +559,9 @@ func _open_chat() -> void:
 func _on_hand_reordered(hand: CardManager) -> void:
 	if _region != Region.HAND or hand != _hand_mgr():
 		return
+	# arrange_cards re-stamps fan z-indexes over the raised card — drop the
+	# hover so _update_cursor re-applies it cleanly on the rebound card.
+	_set_hovered_card(null)
 	if is_instance_valid(_cursor_card):
 		var idx := hand.managed_cards.find(_cursor_card)
 		if idx >= 0:
@@ -519,11 +592,24 @@ func _update_cursor() -> void:
 		_cursor.z_index = 100
 		_board.add_child(_cursor)
 	_cursor_card = target if _region == Region.HAND else null
+	_set_hovered_card(_cursor_card)
 	var rect := _target_rect(target)
 	_cursor.visible = true
 	_cursor.global_position = rect.position - Vector2(CURSOR_PAD, CURSOR_PAD)
 	_cursor.size = rect.size + Vector2(CURSOR_PAD, CURSOR_PAD) * 2.0
 	_refresh_preview()
+
+
+## The controller cursor raises the hovered hand card exactly like the mouse
+## does — same enter/exit handlers, same tween, same restore.
+func _set_hovered_card(card: Control) -> void:
+	if card == _hovered_card:
+		return
+	if is_instance_valid(_hovered_card):
+		_hovered_card._on_mouse_exited()
+	_hovered_card = card
+	if is_instance_valid(card):
+		card._on_mouse_entered()
 
 
 ## Hand cards tween into place over ~0.3s after a reorder — land the cursor
@@ -539,6 +625,7 @@ func _target_rect(target: Control) -> Rect2:
 
 func _hide_cursor() -> void:
 	_clear_preview()
+	_set_hovered_card(null)
 	if _cursor:
 		_cursor.visible = false
 
@@ -564,11 +651,7 @@ func _refresh_preview() -> void:
 
 
 func _cursor_preview_data() -> Dictionary:
-	if _region == Region.HAND:
-		var card := _hand_card(_hand_index)
-		if card and "card_data" in card:
-			return card.card_data
-		return {}
+	# Hand cards raise in place instead of using the side preview panel.
 	if _region != Region.BOARD:
 		return {}
 	var entry := _resolve(_element)

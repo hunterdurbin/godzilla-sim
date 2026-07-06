@@ -54,11 +54,14 @@ Related pieces elsewhere:
 
 ## Default mapping
 
-A/south = confirm · B/east = cancel · Y/north = inspect/zoom · X/west =
-primary phase button · bumpers = board region / overlay paging · triggers =
-own/opponent discard viewers · start = system menu · select = chat ·
-dpad + left stick = navigation (fixed). Everything except nav is rebindable
-in Options → Controller.
+A/south = confirm (and, on a hovered hand card, PLAYS it by its type —
+monster/battle/strategy) · B/east = cancel · Y/north = inspect/zoom ·
+X/west = primary phase button · bumpers = group cycle · LT =
+pad_play_card_rage (discard hovered monster for rage) · RT =
+pad_play_card_invasion (discard hovered card to invade) · start = system
+menu · select = chat · dpad + left stick = navigation (fixed). Everything
+except nav is rebindable in Options → Controller. Discard piles are cursor
+stops on the board map — confirm on one opens its viewer.
 
 ## Testing
 

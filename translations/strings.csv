@@ -975,8 +975,6 @@ STR_PAD_INSPECT,Inspect Card,カードを拡大
 STR_PAD_END_MAIN,Phase Button,フェーズボタン
 STR_PAD_REGION_PREV,Previous Board Region,前のボードエリア
 STR_PAD_REGION_NEXT,Next Board Region,次のボードエリア
-STR_PAD_VIEW_DISCARD,View Your Discard,自分の捨て札を見る
-STR_PAD_VIEW_OPP_DISCARD,View Opponent's Discard,相手の捨て札を見る
 STR_PAD_MENU,System Menu,システムメニュー
 STR_PAD_CHAT,Chat,チャット
 STR_OPTIONS_CONTROLLER_TITLE,Controller,コントローラー
@@ -986,3 +984,5 @@ STR_GLYPH_STYLE_XBOX,Xbox,Xbox
 STR_GLYPH_STYLE_PLAYSTATION,PlayStation,PlayStation
 STR_GLYPH_STYLE_SWITCH,Switch,Switch
 STR_GLYPH_STYLE_GENERIC,Generic,汎用
+STR_PAD_PLAY_CARD_INVASION,Play for Invasion,侵略に使う
+STR_PAD_PLAY_CARD_RAGE,Discard for Rage,レイジに使う

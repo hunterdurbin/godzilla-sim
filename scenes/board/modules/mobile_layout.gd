@@ -1621,6 +1621,10 @@ func fab_main_button() -> Button:
 	return _fab_main_btn
 
 
+func fab_container() -> Control:
+	return _fab_container
+
+
 func _on_fab_backdrop_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		_collapse_fab()
