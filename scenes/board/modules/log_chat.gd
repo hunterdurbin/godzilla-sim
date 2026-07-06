@@ -28,6 +28,9 @@ var _log_panel: Control
 var _prompt_dim_active: bool = false
 var _dim_target: float = 1.0
 var _dim_tween: Tween
+# The controller cursor sitting on the panel counts as hover (the dim poll
+# only sees the real mouse, which is parked off-screen in gamepad mode).
+var _cursor_hover: bool = false
 
 
 func _ready() -> void:
@@ -74,10 +77,45 @@ func _process(_delta: float) -> void:
 		return
 	# PanelContainer children swallow mouse_exited, so poll the rect instead
 	# of relying on hover signals.
-	var inside: bool = _log_panel.get_global_rect().has_point(_log_panel.get_global_mouse_position())
+	var inside: bool = _cursor_hover \
+			or _log_panel.get_global_rect().has_point(_log_panel.get_global_mouse_position())
 	var target: float = 1.0 if inside else 0.5
 	if target != _dim_target:
 		_tween_log_alpha(target)
+
+
+## Controller-cursor equivalent of mouse hover: full opacity while the
+## cursor rests on the panel (GamepadBoardNav toggles this on LB focus).
+func set_cursor_hover(on: bool) -> void:
+	if on == _cursor_hover:
+		return
+	_cursor_hover = on
+	if _prompt_dim_active:
+		_tween_log_alpha(1.0 if on else 0.5)
+
+
+## Scroll the log text by `lines` (negative = up). Drives the RichTextLabel's
+## own scrollbar so it clamps and follows content exactly like the wheel.
+func scroll_log(lines: int) -> void:
+	if _log_output == null:
+		return
+	var font := _log_output.get_theme_font("normal_font")
+	var font_size := _log_output.get_theme_font_size("normal_font_size")
+	var line_height: float = font.get_height(font_size) if font else 20.0
+	_log_output.get_v_scroll_bar().value += lines * line_height
+
+
+## Put the caret in the chat entry — the desktop LineEdit (the one sanctioned
+## real-focus hole, fenced by GamepadInput's text-editing guard) or the
+## mobile floating chat bar. Shared by the pad_chat button and A on the
+## LB-focused log panel.
+func focus_chat() -> void:
+	if _board._is_mobile_layout:
+		var mobile: Node = _board.get_node_or_null("MobileLayout")
+		if mobile:
+			mobile._open_mobile_chat_bar()
+	elif _chat_input and _chat_input.is_visible_in_tree():
+		_chat_input.grab_focus()
 
 
 func _tween_log_alpha(target: float) -> void:

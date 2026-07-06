@@ -4,9 +4,11 @@ extends RefCounted
 ##
 ## A map is a Dictionary of element id -> {"up": [ids], "right": [ids],
 ## "down": [ids], "left": [ids]} — an explicit, hand-editable statement of
-## where the cursor travels from each element (see
-## scenes/board/modules/board_cursor_map.gd for the game-board map; menu/UI
-## maps plug into the same class).
+## where the cursor travels from each element (BoardNavGraph.build() in
+## scenes/board/modules/board_nav_graph.gd produces the game-board map;
+## menu/UI maps plug into the same class). set_map() swaps the edges while
+## keeping the visited history, so dynamic rebuilds don't lose the
+## "return where you came from" behavior.
 ##
 ## Direction lists may hold multiple candidates. Resolution:
 ##   1. the candidate visited most recently (last HISTORY_MAX elements)
@@ -20,22 +22,21 @@ extends RefCounted
 
 const HISTORY_MAX := 10
 const MAX_HOPS := 8
-const DEFAULT_GROUP := "board"
 
 var _map: Dictionary = {}
-## Group id -> {"up": [group ids], ...} — coarse module-to-module edges
-## consulted when element navigation dead-ends at a group boundary.
-var _groups: Dictionary = {}
-## Element id -> group id; unlisted elements belong to DEFAULT_GROUP.
-var _membership: Dictionary = {}
 ## Most recent LAST; unique entries (revisiting moves the id to the back).
 var _visited: Array[String] = []
 
 
-func _init(map: Dictionary, groups: Dictionary = {}, membership: Dictionary = {}) -> void:
+func _init(map: Dictionary) -> void:
 	_map = map
-	_groups = groups
-	_membership = membership
+
+
+## Swap the adjacency map in place, KEEPING the visited history — dynamic
+## rebuilds (hand size changed, prompt opened) must not amnesia the
+## "return where you came from" tie-break.
+func set_map(map: Dictionary) -> void:
+	_map = map
 
 
 func has_element(id: String) -> bool:
@@ -55,43 +56,6 @@ func visited() -> Array[String]:
 
 func clear_history() -> void:
 	_visited.clear()
-
-
-func group_of(id: String) -> String:
-	return _membership.get(id, DEFAULT_GROUP)
-
-
-## The neighboring GROUP when leaving `from_group` in `dir`, or "" when the
-## group has no edge that way. Same history tiebreak as elements, ranked by
-## the groups' most recently visited members.
-func next_group(from_group: String, dir: String) -> String:
-	var candidates: Array[String] = []
-	candidates.assign((_groups.get(from_group, {}) as Dictionary).get(dir, []))
-	if candidates.is_empty():
-		return ""
-	var best := candidates[0]
-	var best_rank := -1
-	for group in candidates:
-		var rank := _last_visit_rank_in_group(group)
-		if rank > best_rank:
-			best_rank = rank
-			best = group
-	return best
-
-
-## The most recently visited element belonging to `group` ("" if none yet).
-func last_in_group(group: String) -> String:
-	for i in range(_visited.size() - 1, -1, -1):
-		if group_of(_visited[i]) == group:
-			return _visited[i]
-	return ""
-
-
-func _last_visit_rank_in_group(group: String) -> int:
-	for i in range(_visited.size() - 1, -1, -1):
-		if group_of(_visited[i]) == group:
-			return i
-	return -1
 
 
 ## The element the cursor should move to from `from_id` in `dir`

@@ -973,8 +973,8 @@ STR_PAD_CONFIRM,Confirm / Select,決定／選択
 STR_PAD_CANCEL,Cancel / Back,キャンセル／戻る
 STR_PAD_INSPECT,Inspect Card,カードを拡大
 STR_PAD_END_MAIN,Phase Button,フェーズボタン
-STR_PAD_REGION_PREV,Previous Board Region,前のボードエリア
-STR_PAD_REGION_NEXT,Next Board Region,次のボードエリア
+STR_PAD_FOCUS_LOG,Game Log / Chat,ゲームログ／チャット
+STR_PAD_FOCUS_TRACKER,Turn Tracker,ターントラッカー
 STR_PAD_MENU,System Menu,システムメニュー
 STR_PAD_CHAT,Chat,チャット
 STR_OPTIONS_CONTROLLER_TITLE,Controller,コントローラー

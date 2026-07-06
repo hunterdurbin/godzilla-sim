@@ -31,23 +31,41 @@ Related pieces elsewhere:
   Multi-candidate directions tie-break by the **last-10-visited history**
   (the cursor returns where it came from), then list order; invalid/hidden
   elements are traversed *through* (same direction, bounded, cycle-guarded)
-  rather than blocking. Menu/UI maps plug into the same class later.
-- `scenes/board/modules/board_cursor_map.gd` — **the board map**: the
-  hand-editable adjacency table for both playmats (`bot_*`/`top_*` visual
-  ids + `hand`). To change where the cursor goes, edit this one table.
+  rather than blocking. `set_map()` swaps edges without losing history.
+  Menu/UI maps plug into the same class later.
+- `scenes/board/modules/board_nav_graph.gd` — **BoardNavGraph**: builds the
+  ONE graph covering everything the cursor can rest on — both playmats
+  (`bot_*`/`top_*` visual ids), hand cards (`hand_<i>`), action-panel
+  buttons + hand stacks (`ap_*`), the corner utility column (`sys_*`), the
+  log/chat panel (`log_panel`), tracker labels (`trk_<i>`) and choice
+  buttons (`choice_<i>`). To change where the cursor goes, edit its tables
+  (`PLAYMAT`, `DESKTOP_UI`, `MOBILE_UI`); the `"hand"`/`"tracker"`
+  sentinels expand at build time (nearest-card-by-X hand entry). @tool-safe
+  and pure — unit tests and the editor overlay feed it fake rects.
 - `scenes/board/modules/gamepad_board_nav.gd` — board cursor driven by the
-  map; consumes `pad_nav_*`/`pad_confirm` and synthesizes the pointer
-  path's signals (`CardManager.select_card_at`, `Slot.simulate_click`).
+  graph; consumes `pad_nav_*`/`pad_confirm` and synthesizes the pointer
+  path's signals (`CardManager.select_card_at`, `Slot.simulate_click`,
+  `Button.pressed`). **THE FOCUS INVARIANT**: while the board is the top
+  focus context, no control holds real focus (its provider answers null) —
+  mirrored `ui_*` events therefore can't double-drive anything; real focus
+  exists only inside registered modals and the chat LineEdit while typing.
   Prompts (`SelectionController.selection_context_changed`) jail the cursor
   to their valid elements — skip-through keeps movement spatial, and a
   sorted-cycle fallback on left/right guarantees sparse valid sets stay
-  fully reachable. Free browse covers every mapped stop (zones, strategy,
-  rage, decks, discards, both boards) with live top-card preview; hovering
-  a hand card raises it via the card's own mouse-hover handlers (the ring
-  tracks the raised card per frame), and the cursor follows its card ref
-  across sorts (`cards_reordered` + CardManager's `selectable_indices`
-  resync). When the hovered card is played, the cursor moves to the card on
-  its left, else its right, else the Sort button.
+  fully reachable; choice/confirm prompts jail onto the `choice_<i>` /
+  Confirm button nodes. Free browse covers every stop with live top-card
+  preview; hovering a hand card raises it via the card's own mouse-hover
+  handlers, and the cursor follows its card ref across sorts. When the
+  hovered card is played, the cursor moves to the card on its left, else
+  its right, else the Sort button; when the button under the cursor
+  disables (`action_buttons_changed`), it relocates deterministically
+  (history → spatial neighbor → End Main → Z2).
+- `scenes/board/modules/nav_debug_overlay.gd` — **NavDebugOverlay**: F3 in
+  a debug build paints the live graph over the board (green = cursor,
+  blue = valid, red = prompt-jailed, gray = hidden; edge arrows + state
+  HUD). In the editor, check `editor_preview` on the GameBoard.tscn node to
+  render the static tables. `scripts/tools/nav_graph_audit.gd` (File > Run)
+  lints the tables for dangling/one-way/unreachable edges.
 - `scripts/tools/glyph_audit.gd` — EditorScript (File > Run on an open
   scene): lists/audits every ControllerGlyph and batch-switches previews.
 - Glyph art: `assets/ui/input_glyphs/<type>/<position>.png` (Kenney Input
@@ -58,12 +76,19 @@ Related pieces elsewhere:
 
 A/south = confirm (and, on a hovered hand card, PLAYS it by its type —
 monster/battle/strategy) · B/east = cancel · Y/north = inspect/zoom ·
-X/west = primary phase button · bumpers = group cycle · LT =
-pad_play_card_rage (discard hovered monster for rage) · RT =
-pad_play_card_invasion (discard hovered card to invade) · start = system
-menu · select = chat · dpad + left stick = navigation (fixed). Everything
-except nav is rebindable in Options → Controller. Discard piles are cursor
-stops on the board map — confirm on one opens its viewer.
+X/west = primary phase button · **LB = focus game log/chat** (dpad scrolls,
+A enters the chat field, LB/B returns the cursor where it was) · **RB =
+focus turn tracker** (dpad walks the labels, A toggles that auto setting,
+RB/B returns) — both bumpers work DURING prompts (the jail is suspended
+inside the module and restored on return) and slide the matching tray open
+on mobile · LT = pad_play_card_rage (discard hovered monster for rage) ·
+RT = pad_play_card_invasion (discard hovered card to invade) · start =
+system menu · select = chat · dpad + left stick = navigation (fixed).
+There is NO region/group cycling — the screen layout IS the navigation:
+walking off any edge crosses into the neighboring area (board rows ↕ hand ↔
+hand buttons ↔ action panel; log panel left, tracker/system column right).
+Everything except nav is rebindable in Options → Controller. Discard piles
+are cursor stops on the board map — confirm on one opens its viewer.
 
 ## Testing
 

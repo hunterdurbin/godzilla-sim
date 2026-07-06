@@ -2,19 +2,27 @@ class_name GamepadBoardNav
 extends Node
 ## Controller navigation for the game board (presentation-only module).
 ##
-## Cards and slots keep their custom pointer picking and never receive Godot
-## focus — this module moves a visual cursor between named board ELEMENTS
-## following the explicit up/right/down/left adjacency table in
-## BoardCursorMap.MAP (CursorMap resolves it, tie-breaking multi-target
-## directions by the last-10-visited history). On pad_confirm it synthesizes
-## the exact signals the pointer path emits (CardManager.select_card_at,
-## Slot.simulate_click, SelectionController.play_selected_card_to_zone).
-## The ACTION_PANEL region hands control to Godot's real focus system so
-## ui_accept drives the buttons natively.
+## ONE directional graph, ONE cursor: playmat slots, hand cards, action-panel
+## buttons, hand-button stacks, system buttons, the log/chat panel, tracker
+## labels and choice buttons are all nodes of the BoardNavGraph adjacency map
+## (CursorMap resolves it, tie-breaking multi-target directions by the
+## last-10-visited history). Cards, slots AND buttons keep their pointer
+## picking and never receive Godot focus — on pad_confirm this module
+## synthesizes the exact signals the pointer path emits (select_card_at,
+## Slot.simulate_click, Button.pressed).
+##
+## THE FOCUS INVARIANT: while the board is the top focus context, NO control
+## holds real focus (the context provider always answers null) — otherwise
+## the mirrored ui_* events would double-drive the focused control. Real
+## focus exists only inside registered modals/menus and, deliberately, the
+## chat LineEdit while typing (fenced by GamepadInput's text-editing guard).
 ##
 ## SelectionController.selection_context_changed jails the cursor to the
-## active prompt's elements: the map's skip-through rule makes invalid
-## elements transparent, so movement between valid zones stays spatial.
+## active prompt's elements; the map's skip-through rule keeps movement
+## spatial between valid stops. The bumpers jump to the peripheral modules
+## (LB = game log/chat, RB = turn tracker) and work DURING prompts — the
+## jail is suspended while bumper focus is active and restored on return.
+##
 ## Overlays suspend the module (same visibility set as game_board's
 ## ui_cancel ladder); registered modal dialogs suspend it via the focus
 ## context stack.
@@ -22,50 +30,73 @@ extends Node
 ## Never loaded by the harness stub or headless server board — no RPC-surface
 ## impact.
 
-enum Region { NONE, HAND, BOARD, ACTION_PANEL }
+## Emitted on every cursor move, context change and bumper transition —
+## consumed by NavDebugOverlay and the UI tests.
+signal nav_state_changed
 
 const CURSOR_COLOR := Color(0.35, 1.0, 0.55, 0.95)
 const CURSOR_PAD := 4.0
 const DEFAULT_ELEMENT := "bot_z2"
+## Where the cursor first lands when the gamepad takes over in free browse.
+const BROWSE_DEFAULT := "ap_end_main"
+const ZONE_MODES: Array[String] = ["card_to_zone", "zone_target", "zones_target", "strategy_target"]
+const LOG_SCROLL_LINES := 3
+## Frames after the device flips to gamepad mode during which pad_* actions
+## are swallowed: the physical press that switched modes injects its logical
+## twin a frame later, which must not activate the element the cursor just
+## landed on (with buttons as graph nodes, that twin would e.g. press End
+## Main). The switching press only wakes the cursor.
+const TAKEOVER_GRACE_FRAMES := 2
 
 var _board: Node
-var _region: int = Region.NONE
-## Current board element id (BoardCursorMap key) while in Region.BOARD.
-var _element: String = DEFAULT_ELEMENT
-## Card index within the hand while in Region.HAND.
-var _hand_index: int = 0
-var _map: CursorMap = CursorMap.new(
-	BoardCursorMap.MAP, BoardCursorMap.GROUPS, BoardCursorMap.MEMBERSHIP)
+## Current graph node id ("" = cursor parked; pointer is the active device).
+var _element: String = ""
+var _map: CursorMap = CursorMap.new({})
 var _mode: String = "none"
 var _ctx_valid: Array[int] = []
 var _ctx_board_pid: int = -1
 var _ctx_hand_pid: int = -1
-## Prompt jail: element ids the cursor may rest on ({} = free browse).
+## Prompt jail for zone/strategy modes: element ids the cursor may rest on.
 var _ctx_elements: Dictionary = {}
 var _cursor: Panel = null
 var _previewing_card: bool = false
-## Card under the HAND cursor — survives reorders (sorting rewrites the
+## Card under the hand cursor — survives reorders (sorting rewrites the
 ## numeric index but the card ref stays valid).
 var _cursor_card: Control = null
 ## Hand card currently raised by the cursor (drives the same hover tween the
 ## mouse uses via card._on_mouse_entered/_on_mouse_exited).
 var _hovered_card: Control = null
+## Choice button under the cursor (synthesized mouse_entered/exited drive the
+## same preview-retarget handlers the pointer path uses).
+var _hovered_choice: Button = null
 ## Armed by a hand-initiated play: when the selection context clears, the
 ## cursor returns to the hand (left neighbor -> right neighbor -> Sort)
-## instead of defaulting to the action panel.
+## instead of staying on the action panel.
 var _pending_hand_return := false
 var _play_origin_index := 0
 var _play_origin_card: Control = null
+## Bumper focus state: {"element": id to return to, "target": "log"|"tracker"}.
+## Empty = no bumper focus active.
+var _bumper_return: Dictionary = {}
+## Whether RB temporarily un-collapsed a prompt-collapsed tracker.
+var _tracker_uncollapsed := false
+## Process frame of the last pointer->gamepad switch (see TAKEOVER_GRACE_FRAMES).
+var _takeover_frame := -TAKEOVER_GRACE_FRAMES - 1
 
 
 func _ready() -> void:
 	_board = get_parent()
 	GamepadHelper.gamepad_detected.connect(_on_gamepad_detected)
 	GamepadHelper.pointer_detected.connect(_on_pointer_detected)
-	GamepadHelper.push_focus_context(_board, _default_focus_control)
+	# THE FOCUS INVARIANT: the board's focus context always answers null.
+	GamepadHelper.push_focus_context(_board, func() -> Control: return null)
 	var selection: SelectionController = _board.get_node_or_null("SelectionController")
 	if selection:
 		selection.selection_context_changed.connect(_on_selection_context_changed)
+		selection.action_buttons_changed.connect(_on_action_buttons_changed)
+	var mobile: Node = _board.get_node_or_null("MobileLayout")
+	if mobile and mobile.has_signal("fab_toggled"):
+		mobile.fab_toggled.connect(_on_fab_toggled)
 	# The board's @onready hand refs resolve after this module's _ready
 	# (children ready first) — connect once the board has finished.
 	_connect_hand_signals.call_deferred()
@@ -84,10 +115,12 @@ func _exit_tree() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not _is_active():
 		return
-	if event.is_action_pressed("pad_region_next"):
-		_cycle_region(1)
-	elif event.is_action_pressed("pad_region_prev"):
-		_cycle_region(-1)
+	if int(Engine.get_process_frames()) <= _takeover_frame + TAKEOVER_GRACE_FRAMES:
+		return # The mode-switching press only wakes the cursor.
+	if event.is_action_pressed("pad_focus_log"):
+		_bumper("log")
+	elif event.is_action_pressed("pad_focus_tracker"):
+		_bumper("tracker")
 	elif event.is_action_pressed("pad_end_main"):
 		_board._selection.press_primary_button()
 	elif event.is_action_pressed("pad_play_card_invasion"):
@@ -99,59 +132,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			_board._leave_dialog.popup_centered()
 	elif event.is_action_pressed("pad_chat"):
 		_open_chat()
-	elif _region == Region.HAND or _region == Region.BOARD:
-		if event.is_action_pressed("pad_nav_left"):
-			_move("left")
-		elif event.is_action_pressed("pad_nav_right"):
-			_move("right")
-		elif event.is_action_pressed("pad_nav_up"):
-			_move("up")
-		elif event.is_action_pressed("pad_nav_down"):
-			_move("down")
-		elif event.is_action_pressed("pad_confirm"):
-			_confirm()
-		elif event.is_action_pressed("pad_inspect"):
-			_inspect()
-		else:
-			return
-	elif _region == Region.ACTION_PANEL and _mode == "none":
-		# Dpad past the panel's edge hops to the neighboring GROUP
-		# (down/left both reach the hand per BoardCursorMap.GROUPS).
-		var dir := ""
-		for candidate in ["up", "right", "down", "left"]:
-			if event.is_action_pressed("pad_nav_" + candidate):
-				dir = candidate
-				break
-		if dir == "" or not _panel_focus_at_edge(dir):
-			return
-		var group := _map.next_group("action_panel", dir)
-		if group == "":
-			return
-		_enter_group(group)
+	elif event.is_action_pressed("pad_nav_left"):
+		_move("left")
+	elif event.is_action_pressed("pad_nav_right"):
+		_move("right")
+	elif event.is_action_pressed("pad_nav_up"):
+		_move("up")
+	elif event.is_action_pressed("pad_nav_down"):
+		_move("down")
+	elif event.is_action_pressed("pad_confirm"):
+		_confirm()
+	elif event.is_action_pressed("pad_inspect"):
+		_inspect()
 	else:
 		return
 	get_viewport().set_input_as_handled()
-
-
-## Whether the focused action button has no focus target inside the action
-## panel/FAB in that direction — i.e. the mirrored ui_* has nowhere sensible
-## to go, so the dpad press should hop groups instead.
-func _panel_focus_at_edge(dir: String) -> bool:
-	const SIDES := {"up": SIDE_TOP, "right": SIDE_RIGHT, "down": SIDE_BOTTOM, "left": SIDE_LEFT}
-	var focus_owner := get_viewport().gui_get_focus_owner()
-	if focus_owner == null:
-		return true
-	var neighbor := focus_owner.find_valid_focus_neighbor(SIDES[dir])
-	if neighbor == null:
-		return true
-	var panel: Control = _board.action_panel
-	if panel and panel.is_ancestor_of(neighbor):
-		return false
-	if _board._is_mobile_layout:
-		var mobile: Node = _board.get_node_or_null("MobileLayout")
-		if mobile and mobile.fab_container() and mobile.fab_container().is_ancestor_of(neighbor):
-			return false
-	return true
 
 
 func _is_active() -> bool:
@@ -175,19 +170,45 @@ func _any_overlay_open() -> bool:
 	return false
 
 
+# --- Graph lifecycle ---
+
+## Rebuild the adjacency map from the live board (hand size, choice buttons,
+## layout). Cheap (~70 small dict entries), runs at the top of every input
+## action; CursorMap keeps its visited history across swaps.
+func _rebuild_map() -> void:
+	_map.set_map(BoardNavGraph.build({
+		"mobile": _board._is_mobile_layout,
+		"hand_count": _hand_mgr().managed_cards.size() if _hand_mgr() else 0,
+		"tracker_count": _tracker_labels().size(),
+		"choice_count": _choice_buttons().size(),
+		"rect_of": _rect_of,
+	}))
+
+
+func _rect_of(id: String) -> Rect2:
+	var control := _resolve_control(id)
+	return control.get_global_rect() if control and control.is_inside_tree() else Rect2()
+
+
 # --- Device / context transitions ---
 
 func _on_gamepad_detected() -> void:
+	_takeover_frame = int(Engine.get_process_frames())
+	_rebuild_map()
 	if _mode != "none":
 		_apply_context()
+	elif _element != "" and _element_valid(_element):
+		_update_cursor()
 	else:
-		_enter_action_panel()
+		_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
 
 
 func _on_pointer_detected() -> void:
 	_pending_hand_return = false
-	_region = Region.NONE
+	_bumper_return.clear()
+	_element = ""
 	_hide_cursor()
+	nav_state_changed.emit()
 
 
 func _on_selection_context_changed(ctx: Dictionary) -> void:
@@ -201,13 +222,40 @@ func _on_selection_context_changed(ctx: Dictionary) -> void:
 	_apply_context()
 
 
+## The action-button set changed under the cursor (enable/disable/visibility
+## churn after every action) — revalidate instead of yanking focus around.
+func _on_action_buttons_changed() -> void:
+	if not GamepadHelper.is_using_gamepad() or _element == "":
+		return
+	_rebuild_map()
+	if not _element_valid(_element):
+		_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
+	else:
+		_update_cursor()
+
+
+## Mobile FAB expand/collapse: the grid buttons are only mapped while
+## expanded — move the cursor in on expand, back out on collapse.
+func _on_fab_toggled(expanded: bool) -> void:
+	if not _is_active():
+		return
+	_rebuild_map()
+	if expanded:
+		for id in ["ap_play_battle", "ap_play_monster", "ap_play_strategy", "ap_gain_rage", "ap_invade"]:
+			if _element_valid(id):
+				_enter_element(id)
+				return
+		_enter_element("ap_fab_main")
+	elif not _element_valid(_element):
+		_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
+
+
 ## Translate the prompt context into the set of map elements the cursor may
-## rest on. Empty = free browse (visibility is the only gate).
+## rest on (zone/strategy modes only — the other modes jail by id prefix in
+## _jail_allows). Empty = free browse.
 func _rebuild_ctx_elements() -> void:
 	_ctx_elements.clear()
 	match _mode:
-		"hand_select", "hand_discard":
-			_ctx_elements["hand"] = true
 		"card_to_zone", "zone_target", "zones_target":
 			var side := _side_for_pid(_ctx_board_pid)
 			for zone_idx in _ctx_valid:
@@ -219,30 +267,43 @@ func _rebuild_ctx_elements() -> void:
 
 
 func _apply_context() -> void:
+	# A context change while bumper focus is active force-returns first — the
+	# new prompt's jail decides where the cursor may sit.
+	if not _bumper_return.is_empty():
+		_bumper_exit(false)
+	_rebuild_map()
 	match _mode:
 		"hand_select", "hand_discard":
-			_enter_hand()
+			var valid := _hand_valid_indices()
+			if valid.is_empty():
+				_hide_cursor()
+			elif _hand_index() in valid:
+				_update_cursor()
+			else:
+				_enter_element("hand_%d" % valid[0])
 		"card_to_zone", "zone_target", "zones_target", "strategy_target":
 			var first := _first_ctx_element()
 			if first != "":
 				_enter_element(first)
-		"choice", "confirm":
-			# Real focus takes over (choice buttons / the Confirm button).
-			_region = Region.NONE
-			_hide_cursor()
-			if _mode == "confirm":
-				GamepadHelper.refocus()
+		"choice":
+			if not _choice_buttons().is_empty():
+				_enter_element("choice_0")
+		"confirm":
+			_enter_element("ap_confirm")
 		_:
 			if _pending_hand_return:
 				_pending_hand_return = false
 				_return_cursor_to_hand_after_play()
+			elif _element == "" or not _element_valid(_element):
+				_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
 			else:
-				_enter_action_panel()
+				_update_cursor()
+	nav_state_changed.emit()
 
 
 func _first_ctx_element() -> String:
 	# Keep the cursor where it is when it's already on a valid element.
-	if _region == Region.BOARD and _ctx_elements.has(_element):
+	if _ctx_elements.has(_element):
 		return _element
 	var ids: Array = _ctx_elements.keys()
 	ids.sort()
@@ -252,78 +313,53 @@ func _first_ctx_element() -> String:
 	return ""
 
 
-# --- Regions & movement ---
-
-func _cycle_region(dir: int) -> void:
-	if _mode != "none":
-		return # Prompts jail the cursor
-	var order: Array[int] = [Region.ACTION_PANEL, Region.HAND, Region.BOARD]
-	var at := order.find(_region)
-	var next_region: int = order[(at + dir + order.size()) % order.size()] if at >= 0 else Region.HAND
-	match next_region:
-		Region.ACTION_PANEL:
-			_enter_action_panel()
-		Region.HAND:
-			_enter_hand()
-		Region.BOARD:
-			_enter_element(_last_board_element())
-
-
-## The board element to land on when re-entering the board without a
-## direction: the most recently visited valid one, else the default.
-func _last_board_element() -> String:
+## Deterministic relocation when the element under the cursor disappears:
+## most recent valid history entry, then any spatial neighbor, then the
+## given fallbacks. Never grabs real focus.
+func _relocate_cursor(fallbacks: Array) -> void:
 	var hist := _map.visited()
 	for i in range(hist.size() - 1, -1, -1):
-		if hist[i] != "hand" and _element_valid(hist[i]):
-			return hist[i]
-	return DEFAULT_ELEMENT if _element_valid(DEFAULT_ELEMENT) else _element
+		if hist[i] != _element and _element_valid(hist[i]):
+			_enter_element(hist[i])
+			return
+	if _element != "":
+		for dir in ["right", "left", "up", "down"]:
+			var target := _map.next(_element, dir, _element_valid)
+			if target != "":
+				_enter_element(target)
+				return
+	for id: String in fallbacks:
+		if _element_valid(id):
+			_enter_element(id)
+			return
+	_hide_cursor()
 
+
+# --- Movement ---
 
 func _move(dir: String) -> void:
-	if _region == Region.HAND:
-		# Left/right walk the fanned cards; up/down travel the map. An empty
-		# hand (or a dead-end direction) falls through to the GROUP edges.
-		if (dir == "left" or dir == "right") and not _hand_valid_indices().is_empty():
-			_move_hand(-1 if dir == "left" else 1)
-			return
-		var exit_id := _map.next("hand", dir, _element_valid)
-		if exit_id != "":
-			_enter_element(exit_id)
-		elif _ctx_elements.is_empty():
-			_enter_group(_map.next_group("hand", dir))
+	_rebuild_map()
+	if _element == "":
+		_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
+		return
+	# On the log panel the dpad scrolls the log text; left/right (and the
+	# graph edges) leave it.
+	if _element == "log_panel" and (dir == "up" or dir == "down"):
+		_board._log_chat.scroll_log(-LOG_SCROLL_LINES if dir == "up" else LOG_SCROLL_LINES)
 		return
 	var target := _map.next(_element, dir, _element_valid)
-	if target == "" and not _ctx_elements.is_empty() and (dir == "left" or dir == "right"):
+	if target == "" and (dir == "left" or dir == "right") and _mode in ZONE_MODES:
 		# Prompt jail: a sparse valid set can dead-end the spatial graph
 		# (e.g. Z2/Z4/Z6 span both rows). Left/right then cycle the valid
 		# elements so every legal target stays reachable.
 		target = _ctx_cycle(1 if dir == "right" else -1)
-	if target == "" and _ctx_elements.is_empty():
-		# Group boundary: hop to the neighboring module per GROUPS.
-		_enter_group(_map.next_group(_map.group_of(_element), dir))
-		return
 	if target == "":
 		return
-	if target == "hand":
-		_enter_hand()
-	else:
-		_enter_element(target)
-
-
-## Enter a neighboring group at its most recently visited element (history),
-## falling back to each group's natural default. "" is a no-op.
-func _enter_group(group: String) -> void:
-	match group:
-		"hand":
-			_enter_hand()
-		"action_panel":
-			_enter_action_panel()
-		"board":
-			var el := _map.last_in_group("board")
-			if el == "" or not _element_valid(el):
-				el = DEFAULT_ELEMENT
-			if _element_valid(el):
-				_enter_element(el)
+	# Walking out of the bumper region resumes normal browsing: B goes back
+	# to meaning "cancel". (Jailed prompts can't walk out — _jail_allows.)
+	if not _bumper_return.is_empty() and not _in_bumper_region(target):
+		_bumper_exit_cleanup()
+	_enter_element(target)
 
 
 func _ctx_cycle(dir: int) -> String:
@@ -337,51 +373,64 @@ func _ctx_cycle(dir: int) -> String:
 	return ids[(at + dir + ids.size()) % ids.size()]
 
 
-func _move_hand(dir: int) -> void:
-	var valid := _hand_valid_indices()
-	if valid.is_empty():
-		return
-	var at := valid.find(_hand_index)
-	_hand_index = valid[(at + dir + valid.size()) % valid.size()] if at >= 0 else valid[0]
-	_update_cursor()
-
-
-func _enter_action_panel() -> void:
-	_region = Region.ACTION_PANEL
-	_hide_cursor()
-	GamepadHelper.refocus()
-
-
-func _enter_hand() -> void:
-	_region = Region.HAND
-	_map.push_visited("hand")
-	# The module owns input in virtual regions; no control may hold focus or
-	# the mirrored ui_* events would double-drive it.
-	get_viewport().gui_release_focus()
-	var valid := _hand_valid_indices()
-	if valid.is_empty():
-		_hide_cursor()
-		return
-	_hand_index = valid[0] if _hand_index not in valid else _hand_index
-	_update_cursor()
-
-
 func _enter_element(id: String) -> void:
 	_clear_preview()
-	_region = Region.BOARD
 	_element = id
 	_map.push_visited(id)
-	get_viewport().gui_release_focus()
 	_update_cursor()
+	nav_state_changed.emit()
 
 
+# --- Validity ---
+
+## Whether the cursor may rest on `id`: the active jail (prompt mode or
+## bumper focus) first, then the element's own visibility/enabled state.
 func _element_valid(id: String) -> bool:
-	if not _ctx_elements.is_empty() and not _ctx_elements.has(id):
-		return false
-	if id == "hand":
-		return _hand_mgr() != null
+	return _jail_allows(id) and _element_usable(id)
+
+
+func _jail_allows(id: String) -> bool:
+	# Bumper focus suspends the prompt jail but restricts movement to the
+	# bumper region's own nodes; in free browse the rest of the graph stays
+	# open (walking out simply clears the return point).
+	if not _bumper_return.is_empty():
+		if _in_bumper_region(id):
+			return true
+		if _mode != "none":
+			return false
+	match _mode:
+		"hand_select", "hand_discard":
+			return id.begins_with("hand_")
+		"card_to_zone", "zone_target", "zones_target", "strategy_target":
+			return _ctx_elements.has(id)
+		"choice":
+			return id.begins_with("choice_")
+		"confirm":
+			return id == "ap_confirm" or id == "ap_cancel"
+	return true
+
+
+func _element_usable(id: String) -> bool:
+	if id.begins_with("hand_"):
+		return _id_index(id) in _hand_valid_indices()
+	if id.begins_with("trk_"):
+		var labels := _tracker_labels()
+		var i := _id_index(id)
+		return i < labels.size() and labels[i].is_visible_in_tree()
+	if id.begins_with("choice_"):
+		var buttons := _choice_buttons()
+		var i := _id_index(id)
+		return i < buttons.size() and buttons[i].is_visible_in_tree() and not buttons[i].disabled
+	if id == "log_panel":
+		# Mobile: always reachable — the bumper slides the tray in.
+		if _board._is_mobile_layout:
+			return true
 	var control := _resolve_control(id)
-	return control != null and control.is_visible_in_tree()
+	if control == null or not control.is_visible_in_tree():
+		return false
+	if control is BaseButton and (control as BaseButton).disabled:
+		return false
+	return true
 
 
 func _hand_valid_indices() -> Array[int]:
@@ -394,6 +443,100 @@ func _hand_valid_indices() -> Array[int]:
 	for i in range(hand.managed_cards.size()):
 		out.append(i)
 	return out
+
+
+# --- Bumper jumps (LB = log/chat, RB = turn tracker) ---
+
+func _bumper(target: String) -> void:
+	if not _bumper_return.is_empty():
+		if _bumper_return.get("target", "") == target:
+			_bumper_exit(true)
+			return
+		# The other bumper switches targets; the return point is preserved.
+		_bumper_return["target"] = target
+		_leave_bumper_region(_other_bumper(target))
+		_enter_bumper_region(target)
+		return
+	_bumper_return = {"element": _element, "target": target}
+	_enter_bumper_region(target)
+
+
+## B (via the board's ui_cancel ladder) returns the cursor from bumper focus.
+## Returns false when there is nothing to consume.
+func consume_cancel_for_bumper_return() -> bool:
+	if _bumper_return.is_empty() or not _is_active():
+		return false
+	_bumper_exit(true)
+	return true
+
+
+func _enter_bumper_region(target: String) -> void:
+	if target == "log":
+		if _board._is_mobile_layout:
+			_mobile().set_log_tray_open(true)
+		_board._log_chat.set_cursor_hover(true)
+		_rebuild_map()
+		_enter_element("log_panel")
+		return
+	# Turn tracker: temporarily un-collapse a prompt-collapsed tracker so RB
+	# never feels dead; restored on return.
+	if _board._is_mobile_layout:
+		_mobile().set_tracker_tray_open(true)
+	elif _board._tracker._collapsed:
+		_board._tracker.set_collapsed(false)
+		_tracker_uncollapsed = true
+	_rebuild_map()
+	var labels := _tracker_labels()
+	if labels.is_empty():
+		return
+	# Re-enter at the last visited label (history), else the top one.
+	var hist := _map.visited()
+	for i in range(hist.size() - 1, -1, -1):
+		if hist[i].begins_with("trk_") and _element_valid(hist[i]):
+			_enter_element(hist[i])
+			return
+	_enter_element("trk_0")
+
+
+func _bumper_exit(move_back: bool) -> void:
+	var back: String = _bumper_return.get("element", "")
+	_bumper_exit_cleanup()
+	if not move_back:
+		return
+	_rebuild_map()
+	if back != "" and _element_valid(back):
+		_enter_element(back)
+	else:
+		_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
+	nav_state_changed.emit()
+
+
+## Close trays / restore collapse without moving the cursor.
+func _bumper_exit_cleanup() -> void:
+	var target: String = _bumper_return.get("target", "")
+	_bumper_return.clear()
+	_leave_bumper_region(target)
+
+
+func _leave_bumper_region(target: String) -> void:
+	if target == "log":
+		_board._log_chat.set_cursor_hover(false)
+		if _board._is_mobile_layout:
+			_mobile().set_log_tray_open(false)
+	elif target == "tracker":
+		if _board._is_mobile_layout:
+			_mobile().set_tracker_tray_open(false)
+		elif _tracker_uncollapsed:
+			_tracker_uncollapsed = false
+			_board._update_tracker_collapse()
+
+
+func _in_bumper_region(id: String) -> bool:
+	return id == "log_panel" or id.begins_with("trk_")
+
+
+func _other_bumper(target: String) -> String:
+	return "tracker" if target == "log" else "log"
 
 
 # --- Element resolution ---
@@ -416,8 +559,27 @@ func _side_for_pid(pid: int) -> String:
 	return "bot" if board == _board_for_side("bot") else "top"
 
 
-## id -> {kind, control, idx, pid}; {} for hand/unknown ids.
+## id -> {kind, control, idx, pid}; {} for unknown ids. Playmat ids resolve
+## through the seat boards; UI ids through the board's button refs and the
+## module-owned dynamic lists (hand cards, tracker labels, choice buttons).
 func _resolve(id: String) -> Dictionary:
+	if id.begins_with("hand_"):
+		var card := _hand_card(_id_index(id))
+		return {"kind": "hand", "control": card, "idx": _id_index(id), "pid": _hand_pid()} if card else {}
+	if id.begins_with("trk_"):
+		var labels := _tracker_labels()
+		var i := _id_index(id)
+		return {"kind": "tracker", "control": labels[i], "idx": i, "pid": -1} if i < labels.size() else {}
+	if id.begins_with("choice_"):
+		var buttons := _choice_buttons()
+		var i := _id_index(id)
+		return {"kind": "choice", "control": buttons[i], "idx": i, "pid": -1} if i < buttons.size() else {}
+	if id == "log_panel":
+		var panel: Control = _board.get_node_or_null("LogPanel")
+		return {"kind": "log", "control": panel, "idx": 0, "pid": -1} if panel else {}
+	if id.begins_with("ap_") or id.begins_with("sys_"):
+		var btn := _ui_button(id)
+		return {"kind": "button", "control": btn, "idx": 0, "pid": -1} if btn else {}
 	var sep := id.find("_")
 	if sep <= 0:
 		return {}
@@ -449,6 +611,30 @@ func _resolve(id: String) -> Dictionary:
 	return {}
 
 
+func _ui_button(id: String) -> Control:
+	match id:
+		"ap_cancel": return _board.btn_cancel
+		"ap_confirm": return _board.btn_confirm
+		"ap_play_battle": return _board.btn_play_battle
+		"ap_play_strategy": return _board.btn_play_strategy
+		"ap_gain_rage": return _board.btn_gain_rage
+		"ap_play_monster": return _board.btn_play_monster
+		"ap_invade": return _board.btn_invade
+		"ap_end_main": return _board.btn_end_main
+		"ap_hand_toggle": return _board.hand_toggle_button
+		"ap_sort_hand": return _board.sort_hand_button
+		"ap_opp_hand_toggle": return _board.opponent_hand_toggle_button
+		"ap_opp_sort_hand": return _board.opponent_sort_hand_button
+		"ap_fab_main": return _mobile().fab_main_button() if _board._is_mobile_layout else null
+		"sys_bug_report": return _board.btn_bug_report
+		"sys_concede": return _board.btn_concede
+		"sys_main_menu": return _board.btn_main_menu
+		"sys_sound": return _board.btn_sound_toggle
+		"sys_music": return _board.btn_music_toggle
+		"sys_export_log": return _board.btn_export_log
+	return null
+
+
 func _resolve_control(id: String) -> Control:
 	return _resolve(id).get("control") as Control
 
@@ -457,31 +643,33 @@ func _resolve_control(id: String) -> Control:
 
 ## Play the hovered hand card via the given action — same flow as pressing
 ## the action button and clicking the card (SelectionController does all
-## gating). No-op outside hand browsing.
+## gating). No-op outside free hand browsing.
 func _try_play_hovered(action: CardEnums.ActionType) -> void:
-	if _region != Region.HAND or _mode != "none":
+	if not _element.begins_with("hand_") or _mode != "none":
 		return
-	var card := _hand_card(_hand_index)
+	var index := _hand_index()
+	var card := _hand_card(index)
 	if card == null:
 		return
 	# Unhover before any reparent the play may trigger (hover tween gotcha).
 	_set_hovered_card(null)
 	if _board._selection.play_card_from_hand(card, action):
 		_pending_hand_return = true
-		_play_origin_index = _hand_index
+		_play_origin_index = index
 		_play_origin_card = card
 	else:
 		_update_cursor() # rejected: re-hover in place
 
 
 func _confirm() -> void:
-	if _region == Region.HAND:
+	_rebuild_map()
+	if _element.begins_with("hand_"):
 		var hand := _hand_mgr()
 		if hand and hand.selection_mode:
-			hand.select_card_at(_hand_index)
+			hand.select_card_at(_hand_index())
 		elif _mode == "none":
 			# Browse: A plays the hovered card according to its type.
-			var card := _hand_card(_hand_index)
+			var card := _hand_card(_hand_index())
 			if card and "card_data" in card:
 				match int(card.card_data.get("card_type", -1)):
 					CardEnums.CardType.MONSTER:
@@ -494,6 +682,16 @@ func _confirm() -> void:
 	var entry := _resolve(_element)
 	if entry.is_empty():
 		return
+	match entry["kind"]:
+		"button", "choice":
+			_activate_button(entry["control"] as BaseButton)
+			return
+		"log":
+			_open_chat()
+			return
+		"tracker":
+			_board._tracker.toggle_label(entry["control"] as Label)
+			return
 	# Prompt modes: synthesize the pointer selection path.
 	if entry["kind"] == "zone":
 		if _mode == "card_to_zone":
@@ -520,9 +718,16 @@ func _confirm() -> void:
 			pass # rage/deck: nothing to activate (matches the mouse)
 
 
+## Press a button the way the pointer does — pressed.emit(), never
+## grab_focus (THE FOCUS INVARIANT).
+func _activate_button(btn: BaseButton) -> void:
+	if btn and btn.is_visible_in_tree() and not btn.disabled:
+		btn.pressed.emit()
+
+
 func _inspect() -> void:
-	if _region == Region.HAND:
-		var card := _hand_card(_hand_index)
+	if _element.begins_with("hand_"):
+		var card := _hand_card(_hand_index())
 		if card and "card_data" in card:
 			_board._show_card_zoom(card.card_data)
 		return
@@ -539,10 +744,7 @@ func _inspect() -> void:
 
 
 func _open_chat() -> void:
-	if _board._is_mobile_layout:
-		_board._notify_mobile_log_chat()
-	elif _board.chat_input and _board.chat_input.is_visible_in_tree():
-		_board.chat_input.grab_focus()
+	_board._log_chat.focus_chat()
 
 
 # --- Cursor visual ---
@@ -550,35 +752,38 @@ func _open_chat() -> void:
 ## Sorting/reordering rewrites managed_cards; keep the cursor on the SAME
 ## card by rebinding the numeric index to the remembered card ref.
 func _on_hand_reordered(hand: CardManager) -> void:
-	if _region != Region.HAND or hand != _hand_mgr():
+	if not _element.begins_with("hand_") or hand != _hand_mgr():
 		return
 	# arrange_cards re-stamps fan z-indexes over the raised card — drop the
 	# hover so _update_cursor re-applies it cleanly on the rebound card.
 	_set_hovered_card(null)
+	_rebuild_map()
 	if is_instance_valid(_cursor_card):
 		var idx := hand.managed_cards.find(_cursor_card)
 		if idx >= 0:
-			_hand_index = idx
+			_element = "hand_%d" % idx
+			_map.push_visited(_element)
 			_update_cursor()
+			nav_state_changed.emit()
 			return
 	# The cursor's card left the hand (played/discarded): move to the card on
-	# its LEFT, else the one that slid into its slot from the right, else
-	# hand over to the Sort button.
+	# its LEFT, else the one that slid into its slot from the right, else the
+	# Sort button.
 	var valid := _hand_valid_indices()
 	if valid.is_empty():
-		_focus_sort_button()
+		_enter_element("ap_sort_hand")
 		return
-	var left := _hand_index - 1
+	var origin := _hand_index()
+	var left := origin - 1
 	while left >= 0 and left not in valid:
 		left -= 1
 	if left >= 0:
-		_hand_index = left
-	else:
-		var right := _hand_index
-		while right < hand.managed_cards.size() and right not in valid:
-			right += 1
-		_hand_index = right if right in valid else valid[0]
-	_update_cursor()
+		_enter_element("hand_%d" % left)
+		return
+	var right := origin
+	while right < hand.managed_cards.size() and right not in valid:
+		right += 1
+	_enter_element("hand_%d" % (right if right in valid else valid[0]))
 
 
 ## After a hand-initiated play resolves: back into the hand on the played
@@ -588,32 +793,20 @@ func _on_hand_reordered(hand: CardManager) -> void:
 ## cards_reordered rule finishes the job when it actually leaves.
 func _return_cursor_to_hand_after_play() -> void:
 	var hand := _hand_mgr()
+	_rebuild_map()
 	if hand == null:
-		_enter_action_panel()
+		_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
 		return
 	var idx := hand.managed_cards.find(_play_origin_card) if is_instance_valid(_play_origin_card) else -1
-	if idx >= 0:
-		_hand_index = idx
-	elif hand.managed_cards.is_empty():
-		_focus_sort_button()
-		return
-	elif _play_origin_index > 0:
-		_hand_index = mini(_play_origin_index - 1, hand.managed_cards.size() - 1)
-	else:
-		_hand_index = mini(_play_origin_index, hand.managed_cards.size() - 1)
-	_enter_hand()
-
-
-## Empty hand fallback: real focus lands on the Sort button so A still does
-## something sensible next to where the cursor was.
-func _focus_sort_button() -> void:
-	_hide_cursor()
-	_region = Region.ACTION_PANEL
-	var btn: Button = _board.sort_hand_button
-	if btn and btn.is_visible_in_tree() and not btn.disabled:
-		btn.grab_focus()
-	else:
-		GamepadHelper.refocus()
+	if idx < 0:
+		if hand.managed_cards.is_empty():
+			_enter_element("ap_sort_hand")
+			return
+		if _play_origin_index > 0:
+			idx = mini(_play_origin_index - 1, hand.managed_cards.size() - 1)
+		else:
+			idx = mini(_play_origin_index, hand.managed_cards.size() - 1)
+	_enter_element("hand_%d" % idx)
 
 
 func _update_cursor() -> void:
@@ -633,9 +826,10 @@ func _update_cursor() -> void:
 		_cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_cursor.z_index = 100
 		_board.add_child(_cursor)
-	_cursor_card = target if _region == Region.HAND else null
+	_cursor_card = target if _element.begins_with("hand_") else null
 	_set_hovered_card(_cursor_card)
-	var rect := _target_rect(target)
+	_set_hovered_choice(target as Button if _element.begins_with("choice_") else null)
+	var rect := target.get_global_rect()
 	_cursor.visible = true
 	_cursor.global_position = rect.position - Vector2(CURSOR_PAD, CURSOR_PAD)
 	_cursor.size = rect.size + Vector2(CURSOR_PAD, CURSOR_PAD) * 2.0
@@ -654,14 +848,22 @@ func _set_hovered_card(card: Control) -> void:
 		card._on_mouse_entered()
 
 
-func _target_rect(target: Control) -> Rect2:
-	return target.get_global_rect()
+## Choice buttons keep their pointer hover handlers (preview retarget +
+## board pulse) — the cursor synthesizes the same enter/exit signals.
+func _set_hovered_choice(btn: Button) -> void:
+	if btn == _hovered_choice:
+		return
+	if is_instance_valid(_hovered_choice):
+		_hovered_choice.mouse_exited.emit()
+	_hovered_choice = btn
+	if is_instance_valid(btn):
+		btn.mouse_entered.emit()
 
 
 ## Hand cards move under the cursor (hover raise, sort/arrange tweens) —
 ## track the ring to the card's live rect every frame.
 func _process(_delta: float) -> void:
-	if _region != Region.HAND or _cursor == null or not _cursor.visible:
+	if not _element.begins_with("hand_") or _cursor == null or not _cursor.visible:
 		return
 	if not is_instance_valid(_cursor_card):
 		return
@@ -673,21 +875,18 @@ func _process(_delta: float) -> void:
 func _hide_cursor() -> void:
 	_clear_preview()
 	_set_hovered_card(null)
+	_set_hovered_choice(null)
 	if _cursor:
 		_cursor.visible = false
 
 
 func _cursor_target() -> Control:
-	if _region == Region.HAND:
-		return _hand_card(_hand_index)
-	if _region == Region.BOARD:
-		return _resolve_control(_element)
-	return null
+	return _resolve_control(_element) if _element != "" else null
 
 
 ## Mirror the pointer hover behavior: the card under the cursor shows in the
-## big right-side preview panel (hand cards, and the top card of zone /
-## strategy slots and the discard pile).
+## big right-side preview panel (top card of zone / strategy slots and the
+## discard pile; hand cards raise in place instead).
 func _refresh_preview() -> void:
 	var data := _cursor_preview_data()
 	if data.is_empty():
@@ -698,9 +897,6 @@ func _refresh_preview() -> void:
 
 
 func _cursor_preview_data() -> Dictionary:
-	# Hand cards raise in place instead of using the side preview panel.
-	if _region != Region.BOARD:
-		return {}
 	var entry := _resolve(_element)
 	match entry.get("kind", ""):
 		"zone", "strategy":
@@ -721,6 +917,15 @@ func _clear_preview() -> void:
 
 
 # --- Lookups ---
+
+func _id_index(id: String) -> int:
+	return id.get_slice("_", id.get_slice_count("_") - 1).to_int()
+
+
+## The hand index under the cursor (0 when the cursor is not on the hand).
+func _hand_index() -> int:
+	return _id_index(_element) if _element.begins_with("hand_") else 0
+
 
 func _my_pid() -> int:
 	if _board.is_multiplayer_game:
@@ -749,29 +954,54 @@ func _player_board(pid: int) -> Control:
 	return _board.player1_board if pid == 0 else _board.player2_board
 
 
-## Default focus for the board's focus context (used whenever real focus
-## should take over: action panel region, prompt confirm, refocus on device
-## switch). Returns null when nothing sensible is enabled.
-func _default_focus_control() -> Control:
-	# Virtual-region invariant: while the cursor owns the hand or board, no
-	# control may hold real focus (mirrored ui_* would double-drive it and
-	# stray refocus calls — e.g. _update_action_buttons after every action —
-	# would visibly yank focus onto End Main).
-	if _region == Region.HAND or _region == Region.BOARD:
-		return null
-	var candidates: Array = [
-		_board.btn_confirm, _board.btn_end_main, _board.btn_play_battle,
-		_board.btn_play_strategy, _board.btn_gain_rage, _board.btn_play_monster,
-		_board.btn_invade, _board.btn_cancel,
-	]
-	if _board._is_mobile_layout:
-		var mobile: Node = _board.get_node_or_null("MobileLayout")
-		if mobile:
-			# Mobile: the pills (confirm/end-main) still lead; the FAB main
-			# button is the fallback that opens the action grid.
-			candidates.insert(2, mobile.fab_main_button())
-	for btn: Variant in candidates:
-		var b := btn as Button
-		if b and b.is_visible_in_tree() and not b.disabled:
-			return b
-	return null
+func _mobile() -> Node:
+	return _board.get_node_or_null("MobileLayout")
+
+
+func _tracker_labels() -> Array[Label]:
+	var tracker: Node = _board.get_node_or_null("TurnTrackerModule")
+	if tracker == null:
+		return [] as Array[Label]
+	return tracker.interactive_labels()
+
+
+func _choice_buttons() -> Array[Button]:
+	var selection: Node = _board.get_node_or_null("SelectionController")
+	if selection == null:
+		return [] as Array[Button]
+	return selection._choice_buttons
+
+
+# --- Debug accessors (read-only; consumed by NavDebugOverlay) ---
+
+func debug_state() -> Dictionary:
+	return {
+		"element": _element,
+		"mode": _mode,
+		"ctx": _ctx_elements.keys(),
+		"pending_hand_return": _pending_hand_return,
+		"bumper_return": _bumper_return.duplicate(),
+		"active": _is_active(),
+	}
+
+
+## The live graph annotated per node with its rect and validity — everything
+## the overlay needs to paint without re-deriving nav rules.
+func debug_graph() -> Dictionary:
+	_rebuild_map()
+	var graph := BoardNavGraph.build({
+		"mobile": _board._is_mobile_layout,
+		"hand_count": _hand_mgr().managed_cards.size() if _hand_mgr() else 0,
+		"tracker_count": _tracker_labels().size(),
+		"choice_count": _choice_buttons().size(),
+		"rect_of": _rect_of,
+	})
+	var out := {}
+	for id: String in graph:
+		out[id] = {
+			"edges": graph[id],
+			"rect": _rect_of(id),
+			"usable": _element_usable(id),
+			"jailed_out": not _jail_allows(id),
+		}
+	return out

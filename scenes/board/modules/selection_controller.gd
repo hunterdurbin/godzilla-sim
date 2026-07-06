@@ -23,6 +23,11 @@ extends Node
 ## indices); board_pid = whose board the zones are on; hand_pid = whose hand.
 signal selection_context_changed(ctx: Dictionary)
 
+## Emitted whenever the action-button set is re-enabled/disabled — the
+## controller cursor revalidates the button it sits on instead of having
+## focus yanked around (the old refocus() path).
+signal action_buttons_changed
+
 var _board: Node
 var _session: GameSession
 
@@ -753,9 +758,7 @@ func _update_action_buttons(valid_actions: Array) -> void:
 	if _fab_container:
 		for btn: Button in _fab_action_btns:
 			btn.queue_redraw()
-	# Controller focus follows the freshly enabled/disabled button set
-	# (no-op unless the gamepad is the active device).
-	GamepadHelper.refocus()
+	action_buttons_changed.emit()
 
 
 func _disable_all_buttons() -> void:
@@ -770,6 +773,7 @@ func _disable_all_buttons() -> void:
 	if _fab_container:
 		for btn: Button in _fab_action_btns:
 			btn.queue_redraw()
+	action_buttons_changed.emit()
 
 
 func _get_active_player_board() -> Control:
@@ -1874,10 +1878,9 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 		_choice_container.add_child(btn)
 		_choice_buttons.append(btn)
 
+	# Controller: the ctx change jails the virtual cursor onto the option
+	# column (choice_0..n) — the buttons never take real focus.
 	_emit_ctx("choice")
-	# Controller: dpad walks the option column natively once one has focus.
-	if GamepadHelper.is_using_gamepad() and not _choice_buttons.is_empty():
-		_choice_buttons[0].grab_focus.call_deferred()
 
 
 ## Deferred: match the scroll viewport to the laid-out button column so the

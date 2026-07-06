@@ -22,6 +22,9 @@ reads the board's forwarded `_board._x` state.
 | `effect_highlight_controller.gd` | Effect-driven zone/card highlights + card-attention pulse |
 | `board_layout_controller.gd` | Desktop layout: local-player mirroring, hand positioning, button stacks, hand collapse |
 | `system_menu_controller.gd` | Sound/music toggles, bug report, log export, save button, concede/main-menu |
+| `board_nav_graph.gd` | Builds the ONE controller-navigation graph (playmat + hand + buttons + log + tracker + choice nodes); edit its tables to change cursor travel — see `scripts/input/README.md` |
+| `gamepad_board_nav.gd` | Controller cursor over that graph: prompt jails, bumper focus (LB log / RB tracker), post-play return, the null-focus invariant |
+| `nav_debug_overlay.gd` | F3 (debug builds) live nav-graph visualization; `editor_preview` renders the static tables over GameBoard.tscn in the editor |
 
 Rematch negotiation lives in `end_game_controller.gd`; the board-wide
 rematch reset (`_execute_rematch`) intentionally stays on game_board.gd —

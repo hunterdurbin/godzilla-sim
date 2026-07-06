@@ -84,59 +84,16 @@ func test_history_ring_caps_at_ten() -> void:
 	assert_str(hist[-1]).is_equal("id_14")
 
 
-const GROUPS := {
-	"board": {"down": ["hand"]},
-	"hand": {"up": ["board"], "right": ["action_panel"]},
-	"action_panel": {"left": ["hand"]},
-}
-const MEMBERSHIP := {"hand": "hand"}
-
-
-func _grouped_map() -> CursorMap:
-	return CursorMap.new(GRID, GROUPS, MEMBERSHIP)
-
-
-func test_group_membership_defaults_to_board() -> void:
-	var map := _grouped_map()
-	assert_str(map.group_of("a")).is_equal("board")
-	assert_str(map.group_of("hand")).is_equal("hand")
-
-
-func test_next_group_edges() -> void:
-	var map := _grouped_map()
-	assert_str(map.next_group("board", "down")).is_equal("hand")
-	assert_str(map.next_group("hand", "right")).is_equal("action_panel")
-	assert_str(map.next_group("action_panel", "left")).is_equal("hand")
-	assert_str(map.next_group("board", "up")).is_equal("")
-	assert_str(map.next_group("nonexistent", "down")).is_equal("")
-
-
-func test_last_in_group_tracks_history() -> void:
-	var map := _grouped_map()
-	assert_str(map.last_in_group("board")).is_equal("")
-	map.push_visited("a")
+func test_set_map_swaps_edges_but_keeps_history() -> void:
+	var map := _map()
+	map.push_visited("b")
 	map.push_visited("hand")
-	map.push_visited("c")
-	assert_str(map.last_in_group("board")).is_equal("c")
-	assert_str(map.last_in_group("hand")).is_equal("hand")
-
-
-func test_board_map_groups_are_closed() -> void:
-	for group: String in BoardCursorMap.GROUPS:
-		for dir in ["up", "right", "down", "left"]:
-			for target: String in BoardCursorMap.GROUPS[group].get(dir, []):
-				assert_bool(BoardCursorMap.GROUPS.has(target) or target == "action_panel") \
-					.override_failure_message("group %s.%s -> unknown '%s'" % [group, dir, target]) \
-					.is_true()
-
-
-func test_board_map_is_closed() -> void:
-	# Every id referenced by any direction of the shipped board map must be
-	# a mapped element itself — typos become test failures, not dead ends.
-	var board := BoardCursorMap.MAP
-	for id: String in board:
-		for dir in ["up", "right", "down", "left"]:
-			for target: String in board[id].get(dir, []):
-				assert_bool(board.has(target)) \
-					.override_failure_message("%s.%s -> unmapped '%s'" % [id, dir, target]) \
-					.is_true()
+	map.set_map({
+		"hand": {"up": ["a", "b"], "right": [], "down": [], "left": []},
+		"a": {"up": [], "right": [], "down": [], "left": []},
+		"b": {"up": [], "right": [], "down": [], "left": []},
+	})
+	# History survives the swap: up from the hand still returns to b.
+	assert_str(map.next("hand", "up")).is_equal("b")
+	# Old-map-only elements are gone.
+	assert_str(map.next("gap_start", "right")).is_equal("")

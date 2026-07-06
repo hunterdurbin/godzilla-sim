@@ -233,11 +233,11 @@ pad_end_main={
 "deadzone": 0.5,
 "events": []
 }
-pad_region_prev={
+pad_focus_log={
 "deadzone": 0.5,
 "events": []
 }
-pad_region_next={
+pad_focus_tracker={
 "deadzone": 0.5,
 "events": []
 }

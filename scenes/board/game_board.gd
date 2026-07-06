@@ -111,6 +111,7 @@ var _client_gradients_applied: bool:
 @onready var _fx_highlight: EffectHighlightController = $EffectHighlightController
 @onready var _zoom_ctl: CardZoomController = $CardZoomController
 @onready var _lobby_bot: LobbyBotController = $LobbyBotController
+@onready var _nav: GamepadBoardNav = $GamepadBoardNav
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -1425,6 +1426,11 @@ func _input(event: InputEvent) -> void:
 	# Dismiss overlays and skip optional prompts (priority order, topmost first)
 	# Uses ui_cancel (ESC on keyboard, B/Circle on controller)
 	if event.is_action_pressed("ui_cancel"):
+		# Bumper focus (LB log / RB tracker) returns the cursor first — the
+		# nav consumes B before the ladder can skip prompts or open dialogs.
+		if _nav and _nav.consume_cancel_for_bumper_return():
+			get_viewport().set_input_as_handled()
+			return
 		if card_zoom_overlay.visible:
 			card_zoom_overlay.hide_zoom()
 		elif deck_arrange_overlay.visible:

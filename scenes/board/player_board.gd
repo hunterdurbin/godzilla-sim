@@ -99,7 +99,7 @@ static var _default_card_back_tex: Texture2D = null
 static var _custom_card_back_tex: Texture2D = null  # null = no custom file found
 
 
-## The main-deck info control (a controller-cursor stop in BoardCursorMap).
+## The main-deck info control (a controller-cursor stop in BoardNavGraph).
 func deck_display() -> Control:
 	return _deck_display
 

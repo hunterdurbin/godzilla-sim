@@ -33,6 +33,7 @@ var current_sub_phase: int = 0
 # property.
 var player_settings: Array[Dictionary] = []
 var _setting_labels: Dictionary = {} # setting_name -> Array[Label]
+var _wired_labels: Array[Label] = [] # every clickable label, wiring order
 
 # Tracker transition queue
 var _tracker_queue: Array[Dictionary] = []
@@ -308,17 +309,39 @@ func _wire_setting_label(label: Label, setting: String, pid: int) -> void:
 	if not _setting_labels.has(setting):
 		_setting_labels[setting] = []
 	_setting_labels[setting].append(label)
+	_wired_labels.append(label)
 
 
 func _on_setting_label_input(event: InputEvent, label: Label) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-		var setting: String = label.get_meta("setting")
-		var pid: int = label.get_meta("player_id")
-		player_settings[pid][setting] = not player_settings[pid][setting]
-		_update_all_setting_indicators()
-		# Re-apply turn tracker so phase label indicators refresh immediately
-		if _tracker_last_phase >= 0:
-			apply_turn_tracker(_tracker_last_player, _tracker_last_phase as CardEnums.GamePhase, current_sub_phase)
+		toggle_label(label)
+
+
+## The clickable auto-setting labels, top to bottom on screen — the
+## controller cursor (RB focus) walks this list as trk_<i> graph nodes.
+func interactive_labels() -> Array[Label]:
+	var out: Array[Label] = []
+	for label in _wired_labels:
+		if is_instance_valid(label):
+			out.append(label)
+	out.sort_custom(func(a: Label, b: Label) -> bool:
+		return a.global_position.y < b.global_position.y)
+	return out
+
+
+## Flip the auto setting a wired label carries — the exact effect of
+## clicking it (the controller cursor calls this instead of synthesizing
+## mouse events).
+func toggle_label(label: Label) -> void:
+	if not label.has_meta("setting"):
+		return
+	var setting: String = label.get_meta("setting")
+	var pid: int = label.get_meta("player_id")
+	player_settings[pid][setting] = not player_settings[pid][setting]
+	_update_all_setting_indicators()
+	# Re-apply turn tracker so phase label indicators refresh immediately
+	if _tracker_last_phase >= 0:
+		apply_turn_tracker(_tracker_last_player, _tracker_last_phase as CardEnums.GamePhase, current_sub_phase)
 
 
 func is_setting_auto(setting: String, pid: int) -> bool:
