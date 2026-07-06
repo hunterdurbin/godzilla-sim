@@ -753,6 +753,12 @@ func _player_board(pid: int) -> Control:
 ## should take over: action panel region, prompt confirm, refocus on device
 ## switch). Returns null when nothing sensible is enabled.
 func _default_focus_control() -> Control:
+	# Virtual-region invariant: while the cursor owns the hand or board, no
+	# control may hold real focus (mirrored ui_* would double-drive it and
+	# stray refocus calls — e.g. _update_action_buttons after every action —
+	# would visibly yank focus onto End Main).
+	if _region == Region.HAND or _region == Region.BOARD:
+		return null
 	var candidates: Array = [
 		_board.btn_confirm, _board.btn_end_main, _board.btn_play_battle,
 		_board.btn_play_strategy, _board.btn_gain_rage, _board.btn_play_monster,

@@ -269,6 +269,13 @@ func _ready() -> void:
 		await _tick(1)
 		assert(nav._region == nav.Region.HAND, "cursor did not return to hand after play")
 		assert(nav._hand_index == 1, "cursor should sit on the origin card while it remains")
+		# The post-action button refresh calls refocus() — it must NOT steal
+		# focus onto End Main while the cursor owns the hand.
+		GamepadHelper.refocus()
+		await _tick(2)
+		assert(board.get_viewport().gui_get_focus_owner() == null,
+			"refocus stole real focus while the cursor was in the hand")
+		assert(nav._region == nav.Region.HAND, "refocus knocked the cursor out of the hand")
 		hand.remove_card(played, false)
 		played.queue_free()
 		hand.arrange_cards(false)
