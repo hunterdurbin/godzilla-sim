@@ -1,8 +1,9 @@
 extends GdUnitTestSuite
 
 ## BoardNavGraph — the unified controller-navigation graph builder: static
-## table closure, dynamic hand/tracker/choice rows, and the "hand"/"tracker"
-## sentinel expansion (nearest-by-X hand entry, full tracker column).
+## table closure, dynamic hand/tracker/choice rows, the "hand"/"tracker"
+## sentinel expansion (nearest-by-X hand entry, full tracker column), and the
+## zone-jail edge override (wrap-around z1-z8 rows during zone prompts).
 
 const DIRS := ["up", "right", "down", "left"]
 
@@ -28,13 +29,14 @@ func _rects(hand_count: int) -> Callable:
 		return Rect2(Vector2(500.0, 300.0), Vector2(100.0, 100.0))
 
 
-func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choice_count: int = 0, stack_count: int = 0) -> Dictionary:
+func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choice_count: int = 0, stack_count: int = 0, zone_jail_side: String = "") -> Dictionary:
 	return BoardNavGraph.build({
 		"mobile": mobile,
 		"hand_count": hand_count,
 		"tracker_count": tracker_count,
 		"choice_count": choice_count,
 		"stack_count": stack_count,
+		"zone_jail_side": zone_jail_side,
 		"rect_of": _rects(hand_count),
 	})
 
@@ -185,6 +187,87 @@ func test_desktop_log_panel_is_stitched_both_ways() -> void:
 	assert_that(map["log_panel"]["right"]).contains(["top_deck", "bot_strategy_0"])
 	assert_that(map["bot_strategy_0"]["left"]).contains(["log_panel"])
 	assert_that(map["top_discard"]["left"]).contains(["log_panel"])
+
+
+func test_no_zone_jail_keeps_free_browse_zone_edges() -> void:
+	var map := _build(3)
+	assert_that(map["bot_z1"]["up"]).is_equal(["bot_rage"])
+	assert_that(map["bot_z1"]["left"]).is_equal(["bot_monster_deck"])
+	assert_that(map["bot_z6"]["right"]).is_equal(["bot_deck"])
+	assert_that(map["bot_z5"]["down"][0]).is_equal("hand_2")
+
+
+func test_zone_jail_bot_rows_wrap_horizontally() -> void:
+	var map := _build(3, false, 0, 0, 0, "bot")
+	# Lower row z1..z5 chains and wraps at the ends.
+	assert_that(map["bot_z1"]["right"]).is_equal(["bot_z2"])
+	assert_that(map["bot_z1"]["left"]).is_equal(["bot_z5"])
+	assert_that(map["bot_z5"]["right"]).is_equal(["bot_z1"])
+	# Upper row z8|z7|z6 chains and wraps at the ends.
+	assert_that(map["bot_z8"]["left"]).is_equal(["bot_z6"])
+	assert_that(map["bot_z6"]["right"]).is_equal(["bot_z8"])
+	assert_that(map["bot_z8"]["right"]).is_equal(["bot_z7"])
+
+
+func test_zone_jail_bot_verticals_pair_and_wrap() -> void:
+	var map := _build(3, false, 0, 0, 0, "bot")
+	# Up AND down both reach the paired zone in the other row.
+	assert_that(map["bot_z3"]["up"]).is_equal(["bot_z8"])
+	assert_that(map["bot_z3"]["down"]).is_equal(["bot_z8"])
+	assert_that(map["bot_z8"]["up"]).is_equal(["bot_z3"])
+	assert_that(map["bot_z8"]["down"]).is_equal(["bot_z3"])
+	assert_that(map["bot_z4"]["up"]).is_equal(["bot_z7"])
+	assert_that(map["bot_z7"]["down"]).is_equal(["bot_z4"])
+	assert_that(map["bot_z6"]["up"]).is_equal(["bot_z5"])
+	assert_that(map["bot_z5"]["down"]).is_equal(["bot_z6"])
+	# z1/z2 route to z8 one-way — z8 only ever returns to z3.
+	assert_that(map["bot_z1"]["up"]).is_equal(["bot_z8"])
+	assert_that(map["bot_z1"]["down"]).is_equal(["bot_z8"])
+	assert_that(map["bot_z2"]["up"]).is_equal(["bot_z8"])
+
+
+func test_zone_jail_cuts_free_browse_exits() -> void:
+	var map := _build(3, false, 2, 0, 0, "bot")
+	# The jailed side's zones no longer reach rage/hand/deck/discard...
+	for zone_num in range(1, 9):
+		var entry: Dictionary = map["bot_z%d" % zone_num]
+		for dir: String in DIRS:
+			for target: String in entry.get(dir, []):
+				assert_bool(target.begins_with("bot_z")) \
+					.override_failure_message("bot_z%d.%s escapes jail to '%s'" % [zone_num, dir, target]) \
+					.is_true()
+	# ...while the other side keeps its free-browse rows untouched.
+	assert_that(map["top_z3"]["down"]).is_equal(["top_z8"])
+	assert_that(map["top_z1"]["right"]).is_equal(["top_monster_deck"])
+
+
+func test_zone_jail_top_side_flips_both_axes() -> void:
+	var map := _build(3, false, 0, 0, 0, "top")
+	# The top playmat is mirrored on both axes: left/right and up/down swap.
+	assert_that(map["top_z1"]["left"]).is_equal(["top_z2"])
+	assert_that(map["top_z1"]["right"]).is_equal(["top_z5"])
+	assert_that(map["top_z5"]["left"]).is_equal(["top_z1"])
+	assert_that(map["top_z6"]["left"]).is_equal(["top_z8"])
+	assert_that(map["top_z8"]["right"]).is_equal(["top_z6"])
+	# Verticals flip too (up/down symmetric in the jail table, so both point
+	# at the paired zone either way).
+	assert_that(map["top_z1"]["down"]).is_equal(["top_z8"])
+	assert_that(map["top_z1"]["up"]).is_equal(["top_z8"])
+	assert_that(map["top_z8"]["down"]).is_equal(["top_z3"])
+	assert_that(map["top_z8"]["up"]).is_equal(["top_z3"])
+	# Bottom board keeps free-browse edges.
+	assert_that(map["bot_z1"]["up"]).is_equal(["bot_rage"])
+
+
+func test_zone_jail_build_stays_closed() -> void:
+	for side in ["bot", "top"]:
+		var map := _build(5, false, 3, 2, 2, side)
+		for id: String in map:
+			for dir: String in DIRS:
+				for target: String in map[id].get(dir, []):
+					assert_bool(map.has(target)) \
+						.override_failure_message("[%s jail] %s.%s -> unmapped '%s'" % [side, id, dir, target]) \
+						.is_true()
 
 
 func test_set_map_preserves_history() -> void:

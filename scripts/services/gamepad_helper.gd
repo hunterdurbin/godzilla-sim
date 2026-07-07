@@ -71,6 +71,14 @@ func _check_for_gamepad(event: InputEvent) -> void:
 		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 		_skip_mouse_frames = 2
+	# A mouse click may have left real focus behind (the pointer flip releases
+	# BEFORE the click lands on its button), and the null-provider contexts
+	# (the board) never re-grab — the mirrored ui_* events would then drive a
+	# second focus ring next to the controller cursor. Release it; refocus()
+	# re-grabs the right control for provider-backed contexts.
+	var focus_owner := gui_focus_owner()
+	if focus_owner != null:
+		focus_owner.release_focus()
 	_apply_pad_focusables()
 	gamepad_detected.emit()
 	refocus()

@@ -40,7 +40,9 @@ Related pieces elsewhere:
   log/chat panel (`log_panel`), tracker labels (`trk_<i>`), choice
   buttons (`choice_<i>`) and pending-effect stack rows (`stack_<i>`, chained
   into `choice_0` while a choice is open). To change where the cursor goes,
-  edit its tables (`PLAYMAT`, `DESKTOP_UI`, `MOBILE_UI`); the
+  edit its tables (`PLAYMAT`, `DESKTOP_UI`, `MOBILE_UI`, and
+  `ZONE_JAIL_EDGES` for the wrap-around zone rows used during zone
+  prompts); the
   `"hand"`/`"tracker"` sentinels expand at build time (nearest-card-by-X
   hand entry). @tool-safe and pure — unit tests and the editor overlay feed
   it fake rects.
@@ -51,11 +53,23 @@ Related pieces elsewhere:
   focus context, no control holds real focus (its provider answers null) —
   mirrored `ui_*` events therefore can't double-drive anything; real focus
   exists only inside registered modals and the chat LineEdit while typing.
-  Prompts (`SelectionController.selection_context_changed`) jail the cursor
-  to their valid elements — skip-through keeps movement spatial, and a
-  sorted-cycle fallback on left/right guarantees sparse valid sets stay
-  fully reachable; choice/confirm prompts jail onto the `choice_<i>` /
-  Confirm button nodes (the choice jail also spans the `stack_<i>` rows).
+  Device takeover enforces it symmetrically (GamepadHelper): flipping to
+  pointer releases focus, and flipping back to gamepad releases whatever a
+  mouse click focused in between (the pointer-flip release runs BEFORE the
+  click lands on its button) — otherwise the `ui_*` mirrors walk a second
+  focus ring around the panel next to the cursor. Provider-backed contexts
+  re-grab via the deferred `refocus()`.
+  Prompts (`SelectionController.selection_context_changed`) jail the cursor.
+  Zone prompts (`card_to_zone`/`zone_target`/`zones_target`) jail to the
+  target board's FULL z1-z8 — the graph swaps that playmat's zone rows for
+  `BoardNavGraph.ZONE_JAIL_EDGES` (rows wrap at the ends, up/down always
+  reach the paired zone in the other row, z1/z2 route to z8 one-way), so
+  every zone is a cursor stop; the *valid* set only picks the landing zone
+  and gates confirm (A on a non-highlighted zone is a no-op). Other prompts
+  jail to their valid elements — hand modes to the valid cards,
+  `strategy_target` to the valid strategy slots, choice/confirm onto the
+  `choice_<i>` / Confirm button nodes (the choice jail also spans the
+  `stack_<i>` rows).
   **Select toggle**: while the effects area is up (choice prompt, or
   pending-effect rows in free browse), Select cycles the cursor between it
   and the board, remembering both sides; during a mandatory choice the

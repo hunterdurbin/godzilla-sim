@@ -46,6 +46,10 @@ const DEFAULT_ELEMENT := "bot_z2"
 ## Where the cursor first lands when the gamepad takes over in free browse.
 const BROWSE_DEFAULT := "ap_end_main"
 const ZONE_MODES: Array[String] = ["card_to_zone", "zone_target", "zones_target", "strategy_target"]
+## The subset of ZONE_MODES whose jail spans the target board's FULL z1-z8
+## (with BoardNavGraph.ZONE_JAIL_EDGES wired in) — validity gates confirm,
+## not movement.
+const ZONE_SLOT_MODES: Array[String] = ["card_to_zone", "zone_target", "zones_target"]
 const LOG_SCROLL_LINES := 3
 ## Frames after the device flips to gamepad mode during which pad_* actions
 ## are swallowed: the physical press that switched modes injects its logical
@@ -203,8 +207,14 @@ func _rebuild_map() -> void:
 		"tracker_count": _tracker_labels().size(),
 		"choice_count": _choice_buttons().size(),
 		"stack_count": _stack_row_count(),
+		"zone_jail_side": _zone_jail_side(),
 		"rect_of": _rect_of,
 	}))
+
+
+## Playmat side whose z1-z8 get the zone-jail edges ("" outside zone prompts).
+func _zone_jail_side() -> String:
+	return _side_for_pid(_ctx_board_pid) if _mode in ZONE_SLOT_MODES else ""
 
 
 func _rect_of(id: String) -> Rect2:
@@ -281,9 +291,12 @@ func _rebuild_ctx_elements() -> void:
 	_ctx_elements.clear()
 	match _mode:
 		"card_to_zone", "zone_target", "zones_target":
+			# The whole target board stays walkable — all eight zones join
+			# the jail; _ctx_valid only decides where the cursor first lands
+			# and (via the selection layer) which zones confirm acts on.
 			var side := _side_for_pid(_ctx_board_pid)
-			for zone_idx in _ctx_valid:
-				_ctx_elements["%s_z%d" % [side, zone_idx + 1]] = true
+			for zone_num in range(1, 9):
+				_ctx_elements["%s_z%d" % [side, zone_num]] = true
 		"strategy_target":
 			var side := _side_for_pid(_ctx_board_pid)
 			for strat_idx in _ctx_valid:
@@ -329,15 +342,30 @@ func _apply_context() -> void:
 
 
 func _first_ctx_element() -> String:
-	# Keep the cursor where it is when it's already on a valid element.
+	# Keep the cursor where it is when it's already inside the jail.
 	if _ctx_elements.has(_element):
 		return _element
-	var ids: Array = _ctx_elements.keys()
-	ids.sort()
-	for id: String in ids:
+	# Wake up on a prompt-actionable element first — the zone jail spans all
+	# eight zones, but landing on one the prompt rejects would read as broken.
+	var preferred: Array = _ctx_valid_ids()
+	preferred.sort()
+	var rest: Array = _ctx_elements.keys().filter(
+			func(id: String) -> bool: return id not in preferred)
+	rest.sort()
+	for id: String in preferred + rest:
 		if _element_valid(id):
 			return id
 	return ""
+
+
+## Element ids the prompt actually accepts — in zone modes a subset of the
+## jail (which spans the whole board); elsewhere the jail itself.
+func _ctx_valid_ids() -> Array:
+	if _mode not in ZONE_SLOT_MODES:
+		return _ctx_elements.keys()
+	var side := _side_for_pid(_ctx_board_pid)
+	return _ctx_valid.map(func(zone_idx: int) -> String:
+		return "%s_z%d" % [side, zone_idx + 1])
 
 
 ## Deterministic relocation when the element under the cursor disappears:
@@ -1214,6 +1242,7 @@ func debug_graph() -> Dictionary:
 		"tracker_count": _tracker_labels().size(),
 		"choice_count": _choice_buttons().size(),
 		"stack_count": _stack_row_count(),
+		"zone_jail_side": _zone_jail_side(),
 		"rect_of": _rect_of,
 	})
 	var out := {}

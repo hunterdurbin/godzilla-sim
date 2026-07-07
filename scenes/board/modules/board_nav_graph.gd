@@ -19,6 +19,10 @@ extends RefCounted
 ##                or ap_sort_hand when the hand is empty
 ##   "tracker" -> every trk_<i> label (history picks where you left off)
 ##
+## While a zone prompt jails the cursor (ctx key `zone_jail_side`), the
+## target playmat's z1-z8 swap to the ZONE_JAIL_EDGES table — wrap-around
+## rows so all eight zones stay reachable without the rage/hand/deck exits.
+##
 ## Element ids are VISUAL (seat-independent): `bot_*` = the bottom playmat,
 ## `top_*` = the opponent playmat at the top. Dynamic ids: hand_<i> (fanned
 ## cards, left to right), trk_<i> (turn-tracker labels, top to bottom),
@@ -97,6 +101,27 @@ const PLAYMAT := {
 	"bot_discard": {"up": ["bot_deck"], "right": ["tracker"], "down": ["hand"], "left": ["bot_z5"]},
 }
 
+## Zone-only edges swapped in while a zone prompt jails the cursor (ctx key
+## `zone_jail_side`): both zone rows chain with wrap-around at the ends
+## (z5<->z1, z6<->z8), and up/down always reach the paired zone in the other
+## row (z3<->z8, z4<->z7, z5<->z6) — z1/z2 route up/down to z8 one-way, z8
+## only ever returns to z3. The cursor never dead-ends in any direction, so
+## every zone stays reachable even though the jail cuts the rage/hand/deck
+## exits. Authored for the bottom playmat; the top playmat (mirrored on both
+## axes) gets the directions flipped.
+const ZONE_JAIL_EDGES := {
+	1: {"up": ["z8"], "right": ["z2"], "down": ["z8"], "left": ["z5"]},
+	2: {"up": ["z8"], "right": ["z3"], "down": ["z8"], "left": ["z1"]},
+	3: {"up": ["z8"], "right": ["z4"], "down": ["z8"], "left": ["z2"]},
+	4: {"up": ["z7"], "right": ["z5"], "down": ["z7"], "left": ["z3"]},
+	5: {"up": ["z6"], "right": ["z1"], "down": ["z6"], "left": ["z4"]},
+	6: {"up": ["z5"], "right": ["z8"], "down": ["z5"], "left": ["z7"]},
+	7: {"up": ["z4"], "right": ["z6"], "down": ["z4"], "left": ["z8"]},
+	8: {"up": ["z3"], "right": ["z7"], "down": ["z3"], "left": ["z6"]},
+}
+
+const _FLIP := {"up": "down", "right": "left", "down": "up", "left": "right"}
+
 ## Desktop action panel (bottom-right 3-row grid), hand-button stacks and the
 ## corner utility column. Rows: Cancel|Confirm / Battle|Strategy|Rage /
 ## Monster|Invade|EndMain; the hand toggle/sort pair is a vertical column
@@ -161,6 +186,10 @@ const MOBILE_UI := {
 ##   tracker_count: int (0)       — interactive turn-tracker labels
 ##   choice_count: int (0)        — visible choice-prompt buttons
 ##   stack_count: int (0)         — visible pending-effect rows
+##   zone_jail_side: String ("")  — "bot"/"top" while a zone prompt is up:
+##                                  that playmat's z1-z8 get the
+##                                  ZONE_JAIL_EDGES wrap-around edges instead
+##                                  of their free-browse rows
 ##   rect_of: Callable (invalid)  — id -> Rect2 (global), used to pick the
 ##                                  hand card nearest a "hand" edge's source;
 ##                                  invalid/missing rects fall back to list
@@ -171,9 +200,12 @@ static func build(ctx: Dictionary) -> Dictionary:
 	var tracker_count: int = ctx.get("tracker_count", 0)
 	var choice_count: int = ctx.get("choice_count", 0)
 	var stack_count: int = ctx.get("stack_count", 0)
+	var zone_jail_side: String = ctx.get("zone_jail_side", "")
 	var rect_of: Callable = ctx.get("rect_of", Callable())
 
 	var map := _merge(_copy_table(PLAYMAT), MOBILE_UI if mobile else DESKTOP_UI)
+	if zone_jail_side != "":
+		_apply_zone_jail(map, zone_jail_side)
 	_add_hand_row(map, hand_count, mobile)
 	_add_tracker_column(map, tracker_count, mobile)
 	_add_choice_column(map, choice_count, stack_count)
@@ -241,6 +273,23 @@ static func _merge(base: Dictionary, extra: Dictionary) -> Dictionary:
 				if target not in (entry[dir] as Array):
 					(entry[dir] as Array).append(target)
 	return base
+
+
+## Replace the eight `<side>_z*` entries with ZONE_JAIL_EDGES (directions
+## flipped on both axes for the mirrored top playmat). Replacement, not
+## merge: the free-browse exits (rage/hand/deck) must vanish so the wrap
+## edges are the ones a jailed left/right/up/down actually follows.
+static func _apply_zone_jail(map: Dictionary, side: String) -> void:
+	for zone: int in ZONE_JAIL_EDGES:
+		var edges: Dictionary = ZONE_JAIL_EDGES[zone]
+		var entry := {}
+		for dir: String in edges:
+			var out_dir: String = _FLIP[dir] if side == "top" else dir
+			var targets: Array = []
+			for target: String in edges[dir]:
+				targets.append("%s_%s" % [side, target])
+			entry[out_dir] = targets
+		map["%s_z%d" % [side, zone]] = entry
 
 
 static func _add_hand_row(map: Dictionary, count: int, mobile: bool) -> void:

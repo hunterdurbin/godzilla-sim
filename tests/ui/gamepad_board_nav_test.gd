@@ -3,8 +3,9 @@ extends Node
 ## Controller board-navigation regression test — ONE graph, ONE cursor.
 ## Boots a solo GameBoard, flips to gamepad mode with a synthetic joypad
 ## press, then drives the GamepadBoardNav cursor with injected pad_* actions:
-##   - zones_target prompt jails the cursor to valid zones (graph
-##     skip-through + sorted-cycle fallback), pad_confirm toggles through
+##   - zones_target prompt jails the cursor to the target board's FULL z1-z8
+##     (wrap-around ZONE_JAIL_EDGES rows; invalid zones are cursor stops,
+##     confirm on them is a no-op), pad_confirm toggles valid zones through
 ##     Slot.slot_clicked;
 ##   - free browse walks the map (board rows, hand, action-panel buttons,
 ##     log panel, tracker labels) with NO control ever holding real focus;
@@ -109,7 +110,8 @@ func _ready() -> void:
 	assert(nav._cursor != null and nav._cursor.visible, "gamepad mode did not place the cursor")
 	_assert_no_focus(board, "gamepad takeover")
 
-	# --- zones_target prompt rides the graph, jailed to valid zones ---
+	# --- zones_target prompt rides the zone-jail graph: ALL of z1-z8 are
+	# cursor stops, only valid zones act on confirm ---
 	# Valid zones Z2/Z4/Z6 on player 0's (bottom) board.
 	var valid: Array[int] = [1, 3, 5]
 	sel._show_zones_target_selection(0, 0, valid, 3, false, "pick zones")
@@ -123,18 +125,33 @@ func _ready() -> void:
 	await _tap(&"pad_confirm")
 	assert(sel._zones_target_selected == [1], "confirm did not select zone 2: %s" % str(sel._zones_target_selected))
 
-	# Right skips invalid Z3 via the graph and lands on Z4.
+	# Invalid Z3 is a cursor stop now, and confirm on it is a silent no-op.
 	await _tap(&"pad_nav_right")
-	assert(nav._element == "bot_z4", "right did not skip to bot_z4: %s" % nav._element)
+	assert(nav._element == "bot_z3", "right did not stop on invalid bot_z3: %s" % nav._element)
+	await _tap(&"pad_confirm")
+	assert(sel._zones_target_selected == [1], "confirm on an invalid zone selected something: %s" % str(sel._zones_target_selected))
+
+	await _tap(&"pad_nav_right")
+	assert(nav._element == "bot_z4", "right did not reach bot_z4: %s" % nav._element)
 	await _tap(&"pad_confirm")
 	assert(sel._zones_target_selected == [1, 3], "second confirm failed: %s" % str(sel._zones_target_selected))
 
-	# Z6 sits in the other row — the graph dead-ends rightward, so the
-	# sorted-cycle fallback must still reach it, then wrap to Z2.
+	# The jail rows wrap: z5 -> z1 horizontally, z1 jumps up to z8 (one-way),
+	# z8 wraps left to z6, and the vertical wrap lifts z6 back to z5.
 	await _tap(&"pad_nav_right")
-	assert(nav._element == "bot_z6", "fallback cycle did not reach bot_z6: %s" % nav._element)
+	assert(nav._element == "bot_z5", "right did not reach bot_z5: %s" % nav._element)
 	await _tap(&"pad_nav_right")
-	assert(nav._element == "bot_z2", "cycle did not wrap to bot_z2: %s" % nav._element)
+	assert(nav._element == "bot_z1", "lower row did not wrap z5 -> z1: %s" % nav._element)
+	await _tap(&"pad_nav_up")
+	assert(nav._element == "bot_z8", "z1 up did not jump to z8: %s" % nav._element)
+	await _tap(&"pad_nav_left")
+	assert(nav._element == "bot_z6", "upper row did not wrap z8 -> z6: %s" % nav._element)
+	await _tap(&"pad_nav_up")
+	assert(nav._element == "bot_z5", "z6 up did not wrap to z5: %s" % nav._element)
+	# Walk back to Z2 for the bumper leg below.
+	for i in range(3):
+		await _tap(&"pad_nav_left")
+	assert(nav._element == "bot_z2", "left walk did not return to bot_z2: %s" % nav._element)
 
 	# --- Bumpers work DURING the prompt: LB jumps to the log, movement is
 	# restricted to the bumper region, B returns and restores the jail ---
@@ -163,6 +180,35 @@ func _ready() -> void:
 	sel._finish_zones_target()
 	await _tick(2)
 	assert(nav._mode == "none", "context did not clear after prompt")
+
+	# --- Mixed input leaves no stray focus: a mouse click on a board button
+	# grabs REAL focus (the pointer flip releases before the click lands);
+	# the next pad press must clear it, or the mirrored ui_* events walk a
+	# second focus ring around the panel next to the cursor ---
+	var motion := InputEventMouseMotion.new()
+	motion.position = Vector2(400.0, 400.0)
+	motion.velocity = Vector2(60.0, 0.0)
+	motion.relative = Vector2(6.0, 0.0)
+	Input.parse_input_event(motion)
+	await _tick(2)
+	assert(not GamepadHelper.is_using_gamepad(), "mouse motion did not flip to pointer mode")
+	board.btn_end_main.grab_focus() # what a real click leaves behind
+	await _tick(1)
+	assert(board.get_viewport().gui_get_focus_owner() == board.btn_end_main,
+		"test setup: button did not take focus")
+	var retake := InputEventJoypadButton.new()
+	retake.button_index = JOY_BUTTON_DPAD_RIGHT
+	retake.pressed = true
+	Input.parse_input_event(retake)
+	await _tick(3)
+	var retake_up := InputEventJoypadButton.new()
+	retake_up.button_index = JOY_BUTTON_DPAD_RIGHT
+	retake_up.pressed = false
+	Input.parse_input_event(retake_up)
+	await _tick(2)
+	assert(GamepadHelper.is_using_gamepad(), "dpad press did not re-enter gamepad mode")
+	_assert_no_focus(board, "pad takeover after mouse click-focus")
+	assert(nav._cursor != null and nav._cursor.visible, "cursor missing after retakeover")
 
 	# --- Free browse: map round trip bottom -> top -> bottom (divider seams
 	# pair true screen columns: bot_z8 sits under top_z8) ---
