@@ -28,12 +28,13 @@ func _rects(hand_count: int) -> Callable:
 		return Rect2(Vector2(500.0, 300.0), Vector2(100.0, 100.0))
 
 
-func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choice_count: int = 0) -> Dictionary:
+func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choice_count: int = 0, stack_count: int = 0) -> Dictionary:
 	return BoardNavGraph.build({
 		"mobile": mobile,
 		"hand_count": hand_count,
 		"tracker_count": tracker_count,
 		"choice_count": choice_count,
+		"stack_count": stack_count,
 		"rect_of": _rects(hand_count),
 	})
 
@@ -41,7 +42,7 @@ func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choic
 func test_desktop_build_is_closed() -> void:
 	# Every id referenced by any direction must be a mapped element itself —
 	# typos in the hand-edited tables become test failures, not dead ends.
-	var map := _build(5, false, 3, 0)
+	var map := _build(5, false, 3, 2, 2)
 	for id: String in map:
 		for dir: String in DIRS:
 			for target: String in map[id].get(dir, []):
@@ -140,6 +141,35 @@ func test_choice_column_chains_vertically() -> void:
 	assert_that(map["choice_0"]["down"]).is_equal(["choice_1"])
 	assert_that(map["choice_2"]["up"]).is_equal(["choice_1"])
 	assert_that(map["choice_2"]["down"]).is_equal([])
+
+
+func test_stack_column_chains_and_seams_into_choice() -> void:
+	var map := _build(2, false, 0, 2, 3)
+	assert_that(map["stack_0"]["up"]).is_equal([])
+	assert_that(map["stack_0"]["down"]).is_equal(["stack_1"])
+	assert_that(map["stack_2"]["up"]).is_equal(["stack_1"])
+	# Bottom stack row chains into the choice column, and choice_0 back up.
+	assert_that(map["stack_2"]["down"]).is_equal(["choice_0"])
+	assert_that(map["choice_0"]["up"]).is_equal(["stack_2"])
+	# Free-browse exit: left walks onto the top board's right edge.
+	assert_that(map["stack_1"]["left"]).is_equal(["top_monster_deck", "top_z1"])
+
+
+func test_stack_column_without_choice_dead_ends_down() -> void:
+	var map := _build(2, false, 0, 0, 2)
+	assert_that(map["stack_1"]["down"]).is_equal([])
+	assert_bool(map.has("choice_0")).is_false()
+
+
+func test_no_stack_rows_leaves_right_edge_untouched() -> void:
+	# No board element points AT the stack: with zero rows the map has no
+	# stack ids and the choice column keeps its plain top edge.
+	var map := _build(2, false, 0, 2, 0)
+	assert_bool(map.has("stack_0")).is_false()
+	assert_that(map["choice_0"]["up"]).is_equal([])
+	for id: String in map:
+		for dir: String in DIRS:
+			assert_that(map[id].get(dir, [])).not_contains(["stack_0"])
 
 
 func test_mobile_fab_grid_edges() -> void:

@@ -333,6 +333,8 @@ STR_GB_HINT_MOVE,Move,移動
 STR_GB_HINT_REORDER,Reorder,並べ替え
 STR_GB_HINT_BADGES,Badges,バッジ切替
 STR_GB_HINT_SOURCE,View source,発生源を表示
+STR_GB_HINT_BOARD,Board,盤面
+STR_GB_HINT_EFFECTS,Effects,効果
 STR_GB_END_MAIN,End Main,メイン終了
 STR_GB_END_MAIN_QUESTION,End Main Phase?,メインフェイズを終了？
 STR_GB_SKIP,Skip,スキップ

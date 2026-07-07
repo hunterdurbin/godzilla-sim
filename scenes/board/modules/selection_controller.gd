@@ -99,6 +99,8 @@ var _choice_panel: PanelContainer = null # Mobile wrapper panel
 var _choice_card_dicts: Dictionary = {} # base id -> duplicated card dict cache
 var _choice_option_card_ids: Array[String] = [] # base ids parallel to the open options
 var _choice_source_refs: Array = [] # card_location_ref dicts parallel to the open options
+var _choice_hint_row: OverlayHintRow = null # Select-toggle glyph hint (freed with the panel)
+var _choice_hint_target: String = "?" # last rendered select_toggle_target()
 
 # --- Board bridge: widgets ---
 var action_panel: Control
@@ -123,6 +125,14 @@ func _ready() -> void:
 	if session_node:
 		_session = session_node
 		_session.session_started.connect(_bind_session)
+	# Sibling module — its _ready order is not guaranteed relative to ours.
+	_connect_nav.call_deferred()
+
+
+func _connect_nav() -> void:
+	var nav: Node = _board.get_node_or_null("GamepadBoardNav")
+	if nav:
+		nav.nav_state_changed.connect(_refresh_choice_select_hint)
 
 
 ## Resolve widget refs and wire the action buttons + hand drag signals.
@@ -1885,6 +1895,13 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.custom_minimum_size = Vector2(360.0, est_height)
 	inner.add_child(scroll)
+
+	# Controller affordance: Select cycles the cursor between the choice
+	# column and the board (self-hides in pointer/mobile mode).
+	_choice_hint_row = OverlayHintRow.new()
+	_choice_hint_row.name = "SelectHintRow"
+	inner.add_child(_choice_hint_row)
+	_choice_hint_target = "?"
 	# After the first layout pass, shrink-wrap to the buttons' real (wrapped)
 	# height — no gap under the last button — and re-pin the bottom edge.
 	_fit_choice_panel.call_deferred(scroll, bottom_y, max_height)
@@ -1927,8 +1944,28 @@ func _show_choice_selection(player_id: int, options: Array[String], prompt: Stri
 		_choice_buttons.append(btn)
 
 	# Controller: the ctx change jails the virtual cursor onto the option
-	# column (choice_0..n) — the buttons never take real focus.
+	# column (choice_0..n) — the buttons never take real focus. The nav's
+	# state change re-enters here and fills the Select hint row.
 	_emit_ctx("choice")
+
+
+## Keep the choice panel's Select glyph naming its DESTINATION ("Board" from
+## the choice column, "Effects" while roaming). Fired on every nav move —
+## only rebuild the row when the destination actually flips.
+func _refresh_choice_select_hint() -> void:
+	if _choice_hint_row == null or not is_instance_valid(_choice_hint_row):
+		return
+	var nav: Node = _board.get_node_or_null("GamepadBoardNav")
+	var target: String = nav.select_toggle_target() if nav else ""
+	if target == _choice_hint_target:
+		return
+	_choice_hint_target = target
+	if target.is_empty():
+		_choice_hint_row.set_hints([] as Array[Dictionary])
+		_choice_hint_row.visible = false
+		return
+	var key := "STR_GB_HINT_BOARD" if target == "board" else "STR_GB_HINT_EFFECTS"
+	_choice_hint_row.set_hints([{"action": &"pad_chat", "text": tr(key)}] as Array[Dictionary])
 
 
 ## Deferred: match the scroll viewport to the laid-out button column so the
@@ -2046,6 +2083,8 @@ func _cleanup_choice_selection() -> void:
 	_choice_buttons.clear()
 	_choice_option_card_ids = []
 	_choice_source_refs = []
+	_choice_hint_row = null # Freed with the panel below
+	_choice_hint_target = "?"
 	if _choice_panel:
 		# Reparent-free immediately so a subsequent choice_requested in the
 		# same frame gets a clean state.

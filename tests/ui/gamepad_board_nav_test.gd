@@ -15,7 +15,15 @@ extends Node
 ##     lands left neighbor -> right neighbor -> Sort button (as a cursor
 ##     stop, not focus);
 ##   - registered modal dialogs suspend the module; text fields release on
-##     any dpad press.
+##     any dpad press;
+##   - effects area: pending-stack rows are cursor stops, the choice jail
+##     spans choice+stack, Select cycles effects <-> board (inspect-only
+##     roam during a mandatory choice, B returns), the ring sits on the
+##     choice button's REAL rect from the first settled frame, and the
+##     Select hint rows name their destination.
+##
+## Set VERIFY_SHOT_DIR to capture screenshots at the effects-area steps
+## (headful runs only).
 ##
 ## Run:
 ##   godot --headless --quit-after 3000 res://tests/ui/GamepadBoardNavTest.tscn
@@ -37,6 +45,24 @@ func _tap(action: StringName) -> void:
 func _tick(frames: int) -> void:
 	for i in range(frames):
 		await get_tree().process_frame
+
+
+## Optional visual evidence for headful verification runs (no-op headless
+## or without VERIFY_SHOT_DIR).
+func _shot(shot_name: String) -> void:
+	var dir := OS.get_environment("VERIFY_SHOT_DIR")
+	if dir.is_empty() or DisplayServer.get_name() == "headless":
+		return
+	await get_tree().process_frame
+	get_viewport().get_texture().get_image().save_png(dir.path_join(shot_name + ".png"))
+
+
+## The single Label inside an OverlayHintRow (its glyph+label pairs).
+func _hint_text(row: Control) -> String:
+	for child in row.get_children():
+		if child is Label:
+			return (child as Label).text
+	return ""
 
 
 ## Physical B press — unlike an injected pad_cancel action, this runs the
@@ -209,9 +235,12 @@ func _ready() -> void:
 	assert(nav._cursor.visible, "action button is not a cursor stop")
 	_assert_no_focus(board, "cursor on End Main")
 	await _tap(&"pad_nav_down")
-	assert(nav._element == "ap_sort_hand", "End Main down should reach Sort: %s" % nav._element)
-	await _tap(&"pad_nav_left")
-	assert(nav._element == "ap_hand_toggle", "Sort left should reach the hand toggle: %s" % nav._element)
+	assert(nav._element.begins_with("hand_"), "End Main down should enter the hand: %s" % nav._element)
+	# Vertical Sort/Expand stack: toggle sits above sort, left of the panel.
+	nav._enter_element("ap_sort_hand")
+	await _tick(1)
+	await _tap(&"pad_nav_up")
+	assert(nav._element == "ap_hand_toggle", "Sort up should reach the hand toggle: %s" % nav._element)
 	await _tap(&"pad_nav_left")
 	assert(nav._element.begins_with("hand_"), "hand toggle left should enter the hand: %s" % nav._element)
 
@@ -445,6 +474,138 @@ func _ready() -> void:
 		"empty hand should park the cursor on the Sort button: %s" % nav._element)
 	assert(nav._cursor.visible, "Sort button cursor stop not visible")
 	_assert_no_focus(board, "empty-hand Sort stop")
+
+	# --- Effects area: stack rows as cursor stops + the Select toggle ---
+	var stack: Node = board.get_node("EffectStackPanel")
+	var local_pid: int = board.local_player_id
+	stack.show_stack([
+		{"base_id": "ESD01-016", "label": "Pending A", "player_id": local_pid, "status": "pending"},
+		{"base_id": "ESD01-016", "label": "Pending B", "player_id": local_pid + 1, "status": "pending"},
+	])
+	await _tick(2)
+	assert(stack.nav_row_count() == 2, "stack registry did not pick up the rows")
+
+	# Free browse: Select toggles board -> stack -> board, remembering both
+	# sides, and must NOT open chat while the effects area is up.
+	nav._enter_element("bot_z2")
+	await _tick(1)
+	await _tap(&"pad_chat")
+	assert(nav._element == "stack_0", "Select did not jump to the stack: %s" % nav._element)
+	assert(not board.chat_input.has_focus(), "Select opened chat while the effects area is up")
+	await _shot("01_stack_focus")
+	await _tap(&"pad_nav_down")
+	assert(nav._element == "stack_1", "down did not walk the stack column: %s" % nav._element)
+	await _tap(&"pad_chat")
+	assert(nav._element == "bot_z2", "Select did not return to the board origin: %s" % nav._element)
+	await _tap(&"pad_chat")
+	assert(nav._element == "stack_1", "Select forgot the effects element: %s" % nav._element)
+
+	# Y on a stack row opens the card zoom (same view as the row right-click).
+	await _tap(&"pad_inspect")
+	await _tick(2)
+	assert(board.card_zoom_overlay.visible, "Y on a stack row did not open the card zoom")
+	board.card_zoom_overlay.hide_zoom()
+	await _tick(2)
+
+	# Free-browse exit: left walks off the stack onto the top board.
+	nav._enter_element("stack_0")
+	await _tick(1)
+	await _tap(&"pad_nav_left")
+	assert(nav._element == "top_monster_deck",
+		"left off the stack should reach the top board: %s" % nav._element)
+
+	# Choice prompt: the cursor jails onto choice_0 and the ring must sit on
+	# the button's REAL rect once layout settles, without any cursor move —
+	# regression: the ring used to keep the pre-fit rect until the first dpad
+	# input (_fit_choice_panel moves the panel a frame after _emit_ctx).
+	var opts: Array[String] = ["Ability A", "Ability B"]
+	sel._show_choice_selection(0, opts, "Choose which ability to resolve:")
+	await _tick(1)
+	assert(nav._mode == "choice", "choice ctx did not reach the nav: %s" % nav._mode)
+	assert(nav._element == "choice_0", "cursor not jailed onto choice_0: %s" % nav._element)
+	await _tick(3) # _fit_choice_panel repositions the panel; the ring must follow
+	var btn0: Button = sel._choice_buttons[0]
+	var ring := Rect2(nav._cursor.global_position, nav._cursor.size)
+	var want: Rect2 = btn0.get_global_rect().grow(nav.CURSOR_PAD)
+	assert(ring.position.distance_to(want.position) < 1.0
+			and (ring.size - want.size).length() < 1.0,
+		"ring not on choice_0's settled rect: ring=%s want=%s" % [ring, want])
+	await _shot("02_choice_ring")
+
+	# The jail spans choice <-> stack, and nothing else.
+	await _tap(&"pad_nav_up")
+	assert(nav._element == "stack_1", "up from choice_0 should reach the bottom stack row: %s" % nav._element)
+	await _tap(&"pad_nav_left")
+	assert(nav._element == "stack_1", "choice jail let the cursor onto the board")
+	await _tap(&"pad_nav_down")
+	assert(nav._element == "choice_0", "down did not return to the choice: %s" % nav._element)
+	assert(nav.select_toggle_target() == "board", "hint should name the board from the effects area")
+	assert(_hint_text(sel._choice_hint_row) == tr("STR_GB_HINT_BOARD"),
+		"choice hint row shows '%s'" % _hint_text(sel._choice_hint_row))
+
+	# Select from the choice = inspect-only board roam: dpad + Y live,
+	# A / X / B-skip dead, and the choice stays pending throughout.
+	await _tap(&"pad_chat")
+	assert(nav._choice_roaming, "Select from the choice did not start a roam")
+	assert(not nav._in_effects_region(nav._element), "roam left the cursor on the effects area")
+	assert(sel._choice_selecting and nav._mode == "choice", "roam disturbed the pending choice")
+	assert(nav.select_toggle_target() == "effects", "hint should name the effects area while roaming")
+	assert(_hint_text(sel._choice_hint_row) == tr("STR_GB_HINT_EFFECTS"),
+		"choice hint row shows '%s' while roaming" % _hint_text(sel._choice_hint_row))
+	assert(_hint_text(stack._hint_row) == tr("STR_GB_HINT_EFFECTS"),
+		"stack hint row shows '%s' while roaming" % _hint_text(stack._hint_row))
+	await _shot("03_roam")
+	var roam_origin: String = nav._element
+	await _tap(&"pad_nav_right")
+	assert(nav._element != roam_origin, "dpad frozen during the roam")
+	await _tap(&"pad_confirm")
+	assert(sel._choice_selecting and nav._mode == "choice", "A during the roam activated something")
+	await _tap(&"pad_end_main")
+	assert(sel._choice_selecting and nav._mode == "choice", "X during the roam pressed End Main")
+
+	# B while roaming returns to the choice element left behind...
+	await _press_b()
+	assert(nav._element == "choice_0", "B did not return the roam to the choice: %s" % nav._element)
+	assert(not nav._choice_roaming, "roam flag survived the return")
+	assert(sel._choice_selecting, "roam B-return leaked into the prompt ladder")
+	# ...while B ON the choice stays refused (mandatory prompt).
+	await _press_b()
+	assert(sel._choice_selecting and nav._element == "choice_0",
+		"B on the choice was not refused")
+	await _shot("04_back_on_choice")
+
+	# Stack rebuild under the cursor clamps to the surviving row.
+	await _tap(&"pad_nav_up")
+	assert(nav._element == "stack_1", "setup: cursor not on the last stack row")
+	stack.show_stack([
+		{"base_id": "ESD01-016", "label": "Pending A", "player_id": local_pid, "status": "resolving"},
+	])
+	await _tick(2)
+	assert(nav._element == "stack_0", "cursor did not clamp after the rebuild: %s" % nav._element)
+
+	# Cleanup restores free browse; an empty stack relocates the cursor.
+	sel._cleanup_choice_selection()
+	await _tick(2)
+	assert(nav._mode == "none", "choice cleanup did not clear the ctx")
+	stack.show_stack([])
+	await _tick(2)
+	assert(not nav._element.begins_with("stack_"), "cursor stranded on an empty stack")
+	assert(nav._cursor.visible, "cursor lost after the stack emptied")
+
+	# With no effects area, Select opens chat again.
+	await _tap(&"pad_chat")
+	assert(board.chat_input.has_focus(), "Select should open chat with no effects area up")
+	var chat_escape := InputEventJoypadButton.new()
+	chat_escape.button_index = JOY_BUTTON_DPAD_LEFT
+	chat_escape.pressed = true
+	Input.parse_input_event(chat_escape)
+	await _tick(2)
+	chat_escape = InputEventJoypadButton.new()
+	chat_escape.button_index = JOY_BUTTON_DPAD_LEFT
+	chat_escape.pressed = false
+	Input.parse_input_event(chat_escape)
+	await _tick(1)
+	assert(not board.chat_input.has_focus(), "could not escape chat after the Select regression check")
 
 	# --- F3 debug overlay: paints without stealing input or focus ---
 	var debug_overlay: Node = board.get_node_or_null("NavDebugOverlay")

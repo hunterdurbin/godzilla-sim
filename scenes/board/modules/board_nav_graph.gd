@@ -22,9 +22,11 @@ extends RefCounted
 ## Element ids are VISUAL (seat-independent): `bot_*` = the bottom playmat,
 ## `top_*` = the opponent playmat at the top. Dynamic ids: hand_<i> (fanned
 ## cards, left to right), trk_<i> (turn-tracker labels, top to bottom),
-## choice_<i> (choice-prompt buttons, top to bottom). Button ids: ap_* =
-## action panel + hand stacks + mobile FAB, sys_* = the corner utility
-## column, log_panel = the game log/chat panel.
+## choice_<i> (choice-prompt buttons, top to bottom), stack_<i>
+## (pending-effect rows, top to bottom — chained to choice_0 when a choice
+## is open, otherwise entered via the Select toggle or from the top board).
+## Button ids: ap_* = action panel + hand stacks + mobile FAB, sys_* = the
+## corner utility column, log_panel = the game log/chat panel.
 ##
 ## @tool-safe and scene-free: build() is a pure function of the ctx
 ## Dictionary, so unit tests and the editor overlay feed it fake data.
@@ -158,6 +160,7 @@ const MOBILE_UI := {
 ##   hand_count: int (0)          — fanned cards in the local hand
 ##   tracker_count: int (0)       — interactive turn-tracker labels
 ##   choice_count: int (0)        — visible choice-prompt buttons
+##   stack_count: int (0)         — visible pending-effect rows
 ##   rect_of: Callable (invalid)  — id -> Rect2 (global), used to pick the
 ##                                  hand card nearest a "hand" edge's source;
 ##                                  invalid/missing rects fall back to list
@@ -167,12 +170,14 @@ static func build(ctx: Dictionary) -> Dictionary:
 	var hand_count: int = ctx.get("hand_count", 0)
 	var tracker_count: int = ctx.get("tracker_count", 0)
 	var choice_count: int = ctx.get("choice_count", 0)
+	var stack_count: int = ctx.get("stack_count", 0)
 	var rect_of: Callable = ctx.get("rect_of", Callable())
 
 	var map := _merge(_copy_table(PLAYMAT), MOBILE_UI if mobile else DESKTOP_UI)
 	_add_hand_row(map, hand_count, mobile)
 	_add_tracker_column(map, tracker_count, mobile)
-	_add_choice_column(map, choice_count)
+	_add_choice_column(map, choice_count, stack_count)
+	_add_stack_column(map, stack_count, choice_count)
 	# Mobile: the log panel and tracker live in slide-out trays — reachable
 	# via the bumpers only, never by walking off the board.
 	_expand_sentinels(map, hand_count, 0 if mobile else tracker_count, rect_of)
@@ -200,6 +205,13 @@ static func choice_ids(count: int) -> Array[String]:
 	var out: Array[String] = []
 	for i in range(count):
 		out.append("choice_%d" % i)
+	return out
+
+
+static func stack_ids(count: int) -> Array[String]:
+	var out: Array[String] = []
+	for i in range(count):
+		out.append("stack_%d" % i)
 	return out
 
 
@@ -253,13 +265,32 @@ static func _add_tracker_column(map: Dictionary, count: int, mobile: bool) -> vo
 		}
 
 
-static func _add_choice_column(map: Dictionary, count: int) -> void:
+static func _add_choice_column(map: Dictionary, count: int, stack_count: int = 0) -> void:
 	for i in range(count):
+		var up: Array = ["choice_%d" % (i - 1)] if i > 0 \
+				else (["stack_%d" % (stack_count - 1)] if stack_count > 0 else [])
 		map["choice_%d" % i] = {
-			"up": ["choice_%d" % (i - 1)] if i > 0 else [],
+			"up": up,
 			"right": [],
 			"down": ["choice_%d" % (i + 1)] if i < count - 1 else [],
 			"left": [],
+		}
+
+
+## Pending-effect rows: a vertical column on the top-right edge. The bottom
+## row chains into the choice column when a choice prompt is open; the only
+## other ways in are the Select toggle and walking left off the top board's
+## right edge (free browse) — no board element points AT the stack, so the
+## right-edge lanes are unchanged when no rows exist.
+static func _add_stack_column(map: Dictionary, count: int, choice_count: int) -> void:
+	for i in range(count):
+		var down: Array = ["stack_%d" % (i + 1)] if i < count - 1 \
+				else (["choice_0"] if choice_count > 0 else [])
+		map["stack_%d" % i] = {
+			"up": ["stack_%d" % (i - 1)] if i > 0 else [],
+			"right": [],
+			"down": down,
+			"left": ["top_monster_deck", "top_z1"],
 		}
 
 

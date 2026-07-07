@@ -37,11 +37,13 @@ Related pieces elsewhere:
   ONE graph covering everything the cursor can rest on — both playmats
   (`bot_*`/`top_*` visual ids), hand cards (`hand_<i>`), action-panel
   buttons + hand stacks (`ap_*`), the corner utility column (`sys_*`), the
-  log/chat panel (`log_panel`), tracker labels (`trk_<i>`) and choice
-  buttons (`choice_<i>`). To change where the cursor goes, edit its tables
-  (`PLAYMAT`, `DESKTOP_UI`, `MOBILE_UI`); the `"hand"`/`"tracker"`
-  sentinels expand at build time (nearest-card-by-X hand entry). @tool-safe
-  and pure — unit tests and the editor overlay feed it fake rects.
+  log/chat panel (`log_panel`), tracker labels (`trk_<i>`), choice
+  buttons (`choice_<i>`) and pending-effect stack rows (`stack_<i>`, chained
+  into `choice_0` while a choice is open). To change where the cursor goes,
+  edit its tables (`PLAYMAT`, `DESKTOP_UI`, `MOBILE_UI`); the
+  `"hand"`/`"tracker"` sentinels expand at build time (nearest-card-by-X
+  hand entry). @tool-safe and pure — unit tests and the editor overlay feed
+  it fake rects.
 - `scenes/board/modules/gamepad_board_nav.gd` — board cursor driven by the
   graph; consumes `pad_nav_*`/`pad_confirm` and synthesizes the pointer
   path's signals (`CardManager.select_card_at`, `Slot.simulate_click`,
@@ -53,7 +55,13 @@ Related pieces elsewhere:
   to their valid elements — skip-through keeps movement spatial, and a
   sorted-cycle fallback on left/right guarantees sparse valid sets stay
   fully reachable; choice/confirm prompts jail onto the `choice_<i>` /
-  Confirm button nodes. Free browse covers every stop with live top-card
+  Confirm button nodes (the choice jail also spans the `stack_<i>` rows).
+  **Select toggle**: while the effects area is up (choice prompt, or
+  pending-effect rows in free browse), Select cycles the cursor between it
+  and the board, remembering both sides; during a mandatory choice the
+  board side is an INSPECT-ONLY roam (dpad + Y; A/X/LT/RT dead, B or Select
+  returns) — `OverlayHintRow`s inside both panels show the Select glyph
+  naming the destination. Free browse covers every stop with live top-card
   preview; hovering a hand card raises it via the card's own mouse-hover
   handlers, and the cursor follows its card ref across sorts. When the
   hovered card is played, the cursor moves to the card on its left, else
@@ -97,7 +105,9 @@ RB/B returns) — both bumpers work DURING prompts (the jail is suspended
 inside the module and restored on return) and slide the matching tray open
 on mobile · LT = pad_play_card_rage (discard hovered monster for rage) ·
 RT = pad_play_card_invasion (discard hovered card to invade) · start =
-system menu · select = chat · dpad + left stick = navigation (fixed).
+system menu · select = chat, or — while the effects area (choice prompt /
+pending-effects panel) is up — cycles the cursor between it and the board
+(chat stays reachable via LB → A) · dpad + left stick = navigation (fixed).
 There is NO region/group cycling — the screen layout IS the navigation:
 walking off any edge crosses into the neighboring area (board rows ↕ hand ↔
 hand buttons ↔ action panel; log panel left, tracker/system column right).

@@ -2,7 +2,9 @@
 
 Overlays pop over the board for card-level interactions. Shared plumbing:
 `overlay_grid_util.gd` (grid sizing + the controller focus meshes),
-`overlay_hint_row.gd` (glyph+label pad-hint cluster, gamepad-mode-only) and
+`overlay_hint_row.gd` (glyph+label pad-hint cluster, gamepad-mode-only —
+also embedded in the board's choice and pending-effects panels as the
+Select-toggle hint) and
 `minimize_chip.gd` (collapse an overlay to a chip so the player can inspect
 the board underneath; shows a B glyph in gamepad mode — B restores).
 

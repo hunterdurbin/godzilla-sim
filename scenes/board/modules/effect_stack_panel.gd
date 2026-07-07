@@ -11,7 +11,13 @@ extends Node
 ## the board. Dedicated-server clients: fed by EffectUIRouter's broadcast.
 ##
 ## Rows are display-only except for hover, which pulses the source card on
-## the board via the board's set_card_attention.
+## the board via the board's set_card_attention. The controller cursor can
+## also rest on each row (nav ids stack_<i>, top to bottom): GamepadBoardNav
+## reads the registry below and synthesizes the same hover signals the mouse
+## emits. rows_changed tells the nav to re-resolve after a rebuild.
+
+## The visible row set was rebuilt (rows added/removed/re-created).
+signal rows_changed
 
 const PANEL_WIDTH := 300.0
 const ROW_HEIGHT_EST := 44.0
@@ -22,6 +28,12 @@ var _rows: Array = []
 var _panel: PanelContainer = null
 var _scroll: ScrollContainer = null
 var _list: VBoxContainer = null
+## Per visible row: {outer: Control (ring rect), hover: Control (the hbox
+## holding the mouse handlers), base_id: String}. Kept separately from
+## _list's children — queue_free()d rows linger there until end of frame.
+var _row_nodes: Array[Dictionary] = []
+var _hint_row: OverlayHintRow = null
+var _hint_target: String = "?"
 
 
 func _ready() -> void:
@@ -30,6 +42,14 @@ func _ready() -> void:
 	if session_node:
 		_session = session_node
 		_session.session_started.connect(_bind_session)
+	# Sibling module — its _ready order is not guaranteed relative to ours.
+	_connect_nav.call_deferred()
+
+
+func _connect_nav() -> void:
+	var nav: Node = _board.get_node_or_null("GamepadBoardNav")
+	if nav:
+		nav.nav_state_changed.connect(_refresh_select_hint)
 
 
 func _bind_session() -> void:
@@ -68,13 +88,16 @@ func stack_base_ids() -> Array:
 ## Clear + hide for a rematch reset.
 func reset() -> void:
 	_rows = []
+	_row_nodes.clear()
 	if _panel and is_instance_valid(_panel):
 		_panel.visible = false
 	_board._selection.clear_stack_hover_preview()
+	rows_changed.emit()
 
 
 func show_stack(rows: Array) -> void:
 	_rows = rows
+	_row_nodes.clear()
 	# Rebuilding frees any hovered row before its mouse_exited can fire, so
 	# drop a lingering attention pulse here. The hover preview is sticky by
 	# design; it only goes away when its row leaves the stack.
@@ -84,6 +107,7 @@ func show_stack(rows: Array) -> void:
 		if _panel and is_instance_valid(_panel):
 			_panel.visible = false
 		_board._update_tracker_collapse()
+		rows_changed.emit()
 		return
 	_ensure_panel()
 	for child in _list.get_children():
@@ -96,6 +120,38 @@ func show_stack(rows: Array) -> void:
 		_board.get_viewport_rect().size.y * 0.4)
 	_panel.visible = true
 	_board._update_tracker_collapse()
+	_refresh_select_hint()
+	rows_changed.emit()
+
+
+# --- Controller-cursor registry (nav ids stack_<i>) ---
+
+func nav_row_count() -> int:
+	return _row_nodes.size()
+
+
+func nav_row_control(i: int) -> Control:
+	if i < 0 or i >= _row_nodes.size():
+		return null
+	return _row_nodes[i]["outer"]
+
+
+func nav_row_hover(i: int) -> Control:
+	if i < 0 or i >= _row_nodes.size():
+		return null
+	return _row_nodes[i]["hover"]
+
+
+func nav_row_base_id(i: int) -> String:
+	if i < 0 or i >= _row_nodes.size():
+		return ""
+	return _row_nodes[i]["base_id"]
+
+
+func ensure_row_visible(i: int) -> void:
+	var outer := nav_row_control(i)
+	if outer and is_instance_valid(outer) and _scroll and is_instance_valid(_scroll):
+		_scroll.ensure_control_visible(outer)
 
 
 func _ensure_panel() -> void:
@@ -145,7 +201,34 @@ func _ensure_panel() -> void:
 	_list.add_theme_constant_override("separation", 2)
 	_scroll.add_child(_list)
 
+	# Controller affordance: Select cycles the cursor between the effects
+	# area and the board (self-hides in pointer/mobile mode).
+	_hint_row = OverlayHintRow.new()
+	_hint_row.name = "SelectHintRow"
+	vbox.add_child(_hint_row)
+	_hint_target = "?"
+	_refresh_select_hint()
+
 	_board.add_child(_panel)
+
+
+## Keep the Select glyph naming its DESTINATION ("Board" while the cursor is
+## on the effects area, "Effects" while it roams). Fired on every nav move —
+## only rebuild the row when the destination actually flips.
+func _refresh_select_hint() -> void:
+	if _hint_row == null or not is_instance_valid(_hint_row):
+		return
+	var nav: Node = _board.get_node_or_null("GamepadBoardNav")
+	var target: String = nav.select_toggle_target() if nav else ""
+	if target == _hint_target:
+		return
+	_hint_target = target
+	if target.is_empty():
+		_hint_row.set_hints([] as Array[Dictionary])
+		_hint_row.visible = false
+		return
+	var key := "STR_GB_HINT_BOARD" if target == "board" else "STR_GB_HINT_EFFECTS"
+	_hint_row.set_hints([{"action": &"pad_chat", "text": tr(key)}] as Array[Dictionary])
 
 
 func _make_row(row: Dictionary) -> Control:
@@ -210,6 +293,7 @@ func _make_row(row: Dictionary) -> Control:
 			_board.set_card_attention(loc, false))
 
 	if not is_opponent:
+		_row_nodes.append({"outer": hbox, "hover": hbox, "base_id": base_id})
 		return hbox
 	# Opponent rows sit on a subtle purple tint so ownership reads at a glance.
 	var wrapper := PanelContainer.new()
@@ -223,4 +307,5 @@ func _make_row(row: Dictionary) -> Control:
 	wrapper.add_theme_stylebox_override("panel", style)
 	wrapper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	wrapper.add_child(hbox)
+	_row_nodes.append({"outer": wrapper, "hover": hbox, "base_id": base_id})
 	return wrapper

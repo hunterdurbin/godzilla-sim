@@ -1431,6 +1431,12 @@ func _input(event: InputEvent) -> void:
 		if _nav and _nav.consume_cancel_for_bumper_return():
 			get_viewport().set_input_as_handled()
 			return
+		# Likewise a Select-toggle roam away from a mandatory choice: B
+		# returns the cursor to the choice instead of falling through (B ON
+		# the choice still hits the mandatory refusal below).
+		if _nav and _nav.consume_cancel_for_effects_return():
+			get_viewport().set_input_as_handled()
+			return
 		if card_zoom_overlay.visible:
 			card_zoom_overlay.hide_zoom()
 		elif deck_arrange_overlay.visible:

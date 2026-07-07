@@ -12,7 +12,7 @@ reads the board's forwarded `_board._x` state.
 | `mobile_layout.gd` | Mobile re-layout (reparents action panel etc.) |
 | `end_game_controller.gd` | Game-over UI, results, rematch entry |
 | `reconnect_controller.gd` | Mid-game reconnect flow |
-| `effect_stack_panel.gd` | Pending/active effect display |
+| `effect_stack_panel.gd` | Pending/active effect display; rows are controller-cursor stops (`stack_<i>` registry + `rows_changed` re-resolve, Select-hint row) |
 | `first_player_ui.gd` | First-player decision UI |
 | `turn_tracker.gd` | Turn/phase tracker panel |
 | `log_chat.gd` | Game log + chat panel |
@@ -22,8 +22,8 @@ reads the board's forwarded `_board._x` state.
 | `effect_highlight_controller.gd` | Effect-driven zone/card highlights + card-attention pulse |
 | `board_layout_controller.gd` | Desktop layout: local-player mirroring, hand positioning, button stacks, hand collapse |
 | `system_menu_controller.gd` | Sound/music toggles, bug report, log export, save button, concede/main-menu |
-| `board_nav_graph.gd` | Builds the ONE controller-navigation graph (playmat + hand + buttons + log + tracker + choice nodes); edit its tables to change cursor travel — see `scripts/input/README.md` |
-| `gamepad_board_nav.gd` | Controller cursor over that graph: prompt jails, bumper focus (LB log / RB tracker), post-play return, the null-focus invariant |
+| `board_nav_graph.gd` | Builds the ONE controller-navigation graph (playmat + hand + buttons + log + tracker + choice + stack nodes); edit its tables to change cursor travel — see `scripts/input/README.md` |
+| `gamepad_board_nav.gd` | Controller cursor over that graph: prompt jails, bumper focus (LB log / RB tracker), Select toggle (effects area ↔ board, inspect-only roam during a choice), post-play return, the null-focus invariant |
 | `nav_debug_overlay.gd` | F3 (debug builds) live nav-graph visualization; `editor_preview` renders the static tables over GameBoard.tscn in the editor |
 | `hand_hint_bar.gd` | Bottom-left glyph hints (A play / LT rage / RT invade) while the pad cursor free-browses a hand card on the local player's action; rows filtered per card via `SelectionController.hand_card_hint_actions()` |
 
