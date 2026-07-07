@@ -192,6 +192,11 @@ func arrange_cards(animate: bool = true) -> void:
 		LayoutMode.VERTICAL:
 			_arrange_vertical(animate)
 
+	# A layout pass during an active drag collapses the reorder gap; force
+	# _process to recompute the insertion index and re-open it next frame.
+	if dragged_card and is_instance_valid(dragged_card):
+		_drag_preview_index = -1
+
 	cards_reordered.emit()
 
 
@@ -399,30 +404,38 @@ func _move_card_to_position(card: Control, target_pos: Vector2, target_rotation:
 	card_target_positions[card] = target_pos
 	card_target_rotations[card] = target_rotation
 
+	if not (animate and arrange_duration > 0):
+		# Non-animated re-home: let the card reconcile with its own hover/drag
+		# state (multiplayer resyncs must not clobber the hover lift or a drag).
+		if card.has_method("set_home_position"):
+			card.set_home_position(target_pos, target_z)
+		else:
+			if target_z >= 0:
+				card.z_index = target_z
+			card.position = target_pos
+		card.rotation = target_rotation
+		return
+
 	# Set z_index immediately so input routing matches visual stacking order
 	# during the animation (not deferred via tween callback)
 	if target_z >= 0:
 		card.z_index = target_z
 
-	if animate and arrange_duration > 0:
-		# Use the card's built-in return_to_position if available
-		if card.has_method("return_to_position"):
-			card.return_to_position(target_pos, arrange_duration)
-			# Handle rotation separately
-			if target_rotation != 0:
-				var tween = create_tween()
-				tween.tween_property(card, "rotation", target_rotation, arrange_duration)
-		else:
+	# Use the card's built-in return_to_position if available
+	if card.has_method("return_to_position"):
+		card.return_to_position(target_pos, arrange_duration)
+		# Handle rotation separately
+		if target_rotation != 0:
 			var tween = create_tween()
-			tween.set_parallel(true)
-			tween.set_ease(Tween.EASE_OUT)
-			tween.set_trans(Tween.TRANS_CUBIC)
-			tween.tween_property(card, "position", target_pos, arrange_duration)
-			if target_rotation != 0:
-				tween.tween_property(card, "rotation", target_rotation, arrange_duration)
+			tween.tween_property(card, "rotation", target_rotation, arrange_duration)
 	else:
-		card.position = target_pos
-		card.rotation = target_rotation
+		var tween = create_tween()
+		tween.set_parallel(true)
+		tween.set_ease(Tween.EASE_OUT)
+		tween.set_trans(Tween.TRANS_CUBIC)
+		tween.tween_property(card, "position", target_pos, arrange_duration)
+		if target_rotation != 0:
+			tween.tween_property(card, "rotation", target_rotation, arrange_duration)
 
 
 ## Signal handlers
