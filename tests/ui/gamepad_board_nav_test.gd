@@ -325,9 +325,11 @@ func _ready() -> void:
 	board.discard_view_overlay.show_cards([], "test")
 	await _tick(1)
 	assert(not nav._is_active(), "module still active with overlay open")
+	assert(nav._element == "", "cursor not parked while overlay open")
 	board.discard_view_overlay.try_close()
 	await _tick(1)
 	assert(nav._is_active(), "module did not resume after overlay closed")
+	assert(nav._cursor and nav._cursor.visible, "cursor did not restore after overlay closed")
 
 	board._leave_dialog.popup_centered()
 	await _tick(2)
@@ -405,6 +407,52 @@ func _ready() -> void:
 	await _tick(1)
 	assert(nav._hovered_card == null, "leaving the hand did not unhover")
 	assert(not hint_cluster.visible, "hint cluster stayed visible after leaving the hand")
+
+	# --- Modals park the cursor and restore it to the same hand card ---
+	nav._enter_element("hand_0")
+	await _tick(2)
+	var parked_card: Control = nav._cursor_card
+	assert(parked_card != null, "no cursor card before the modal-park test")
+	board.zone_stack_view_overlay.show_cards([], "test")
+	await _tick(2)
+	assert(not nav._is_active(), "module still active under zone stack viewer")
+	assert(nav._element == "", "cursor not parked under zone stack viewer")
+	assert(nav._hovered_card == null, "hand card stayed hovered under the modal")
+	assert(parked_card.z_index != 50, "hand card stayed raised under the modal")
+	assert(not nav._cursor.visible, "cursor ring stayed visible under the modal")
+	assert(not hint_cluster.visible, "hint cluster stayed visible under the modal")
+	board.zone_stack_view_overlay.try_close()
+	await _tick(2)
+	assert(nav._is_active(), "module did not resume after zone stack viewer closed")
+	assert(nav._element == "hand_0", "cursor did not return to hand_0: %s" % nav._element)
+	assert(nav._cursor_card == parked_card and nav._hovered_card == parked_card,
+		"cursor did not restore onto the same hand card")
+	assert(nav._cursor.visible, "cursor ring did not restore after modal close")
+	_assert_no_focus(board, "after zone stack viewer close")
+
+	# Card zoom is the one suspending overlay WITHOUT register_modal — the
+	# direct visibility_changed hook must park/restore the same way.
+	await _tap(&"pad_inspect")
+	await _tick(2)
+	assert(board.card_zoom_overlay.visible, "inspect on a hand card did not open the zoom")
+	assert(nav._element == "" and nav._hovered_card == null,
+		"cursor not parked under the card zoom")
+	assert(not hint_cluster.visible, "hint cluster stayed visible under the card zoom")
+	board.card_zoom_overlay.hide_zoom()
+	await _tick(2)
+	assert(nav._element == "hand_0" and nav._hovered_card == parked_card,
+		"cursor did not restore after the card zoom closed")
+
+	# Window modal (leave dialog) over a non-hand element: element-string restore.
+	nav._enter_element("bot_z2")
+	await _tick(1)
+	board._leave_dialog.popup_centered()
+	await _tick(2)
+	assert(nav._element == "", "cursor not parked under the leave dialog")
+	assert(not nav._cursor.visible, "cursor ring stayed visible under the leave dialog")
+	board._leave_dialog.hide()
+	await _tick(2)
+	assert(nav._element == "bot_z2", "cursor did not return to bot_z2: %s" % nav._element)
 
 	# --- Button churn: the element under the cursor disabling relocates the
 	# cursor deterministically, with no focus stolen ---

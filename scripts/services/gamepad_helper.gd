@@ -20,6 +20,9 @@ extends Node
 signal gamepad_detected
 ## Emitted when mouse or touch becomes the active device again.
 signal pointer_detected
+## Emitted whenever the focus-context stack actually changes (push or pop).
+## Lets the board nav suspend/restore its cursor when a modal takes over.
+signal context_stack_changed
 
 ## Spire's mouse-motion guard: deliberate movement only (velocity² > 100),
 ## and not the huge relative jump produced by our own off-screen warp.
@@ -207,18 +210,28 @@ func _apply_pad_focusables() -> void:
 ## Registers/raises a focus context. provider is called (deferred) whenever
 ## this context should take focus and must return a Control or null.
 func push_focus_context(context_owner: Node, provider: Callable) -> void:
-	pop_focus_context(context_owner)
+	_remove_context(context_owner)
 	_focus_stack.append({"owner": context_owner, "provider": provider})
 	refocus()
+	context_stack_changed.emit()
 
 
 func pop_focus_context(context_owner: Node) -> void:
 	var was_top := is_top_context(context_owner)
+	if not _remove_context(context_owner):
+		return # Idempotent pop (e.g. tree_exiting after hide): no change, no emit.
+	if was_top:
+		refocus()
+	context_stack_changed.emit()
+
+
+func _remove_context(context_owner: Node) -> bool:
+	var removed := false
 	for i in range(_focus_stack.size() - 1, -1, -1):
 		if _focus_stack[i]["owner"] == context_owner:
 			_focus_stack.remove_at(i)
-	if was_top:
-		refocus()
+			removed = true
+	return removed
 
 
 func is_top_context(context_owner: Node) -> bool:

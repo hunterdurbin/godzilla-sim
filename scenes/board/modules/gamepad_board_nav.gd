@@ -58,6 +58,14 @@ const LOG_SCROLL_LINES := 3
 ## Main). The switching press only wakes the cursor.
 const TAKEOVER_GRACE_FRAMES := 2
 
+## Board overlay properties whose visibility suspends the module (same set as
+## the ui_cancel ladder in game_board._input). Most also register_modal; the
+## card zoom does not, so its visibility_changed is watched directly.
+const OVERLAY_PROPS: Array[String] = ["card_zoom_overlay", "deck_arrange_overlay",
+		"card_pool_select_overlay", "deck_search_overlay",
+		"discard_view_overlay", "monster_deck_view_overlay",
+		"zone_stack_view_overlay"]
+
 var _board: Node
 ## Current graph node id ("" = cursor parked; pointer is the active device).
 var _element: String = ""
@@ -97,6 +105,11 @@ var _play_origin_card: Control = null
 ## Bumper focus state: {"element": id to return to, "target": "log"|"tracker"}.
 ## Empty = no bumper focus active.
 var _bumper_return: Dictionary = {}
+## True while a modal/overlay blocks the board (focus context or overlay).
+var _modal_suspended := false
+## Where to restore the cursor when the modal closes:
+## {"element": String, "card": Control|null, "mode": String}. Empty = nothing saved.
+var _suspend_return: Dictionary = {}
 ## Whether RB temporarily un-collapsed a prompt-collapsed tracker.
 var _tracker_uncollapsed := false
 ## Process frame of the last pointer->gamepad switch (see TAKEOVER_GRACE_FRAMES).
@@ -107,6 +120,7 @@ func _ready() -> void:
 	_board = get_parent()
 	GamepadHelper.gamepad_detected.connect(_on_gamepad_detected)
 	GamepadHelper.pointer_detected.connect(_on_pointer_detected)
+	GamepadHelper.context_stack_changed.connect(_on_context_stack_changed)
 	# THE FOCUS INVARIANT: the board's focus context always answers null.
 	GamepadHelper.push_focus_context(_board, func() -> Control: return null)
 	var selection: SelectionController = _board.get_node_or_null("SelectionController")
@@ -128,6 +142,14 @@ func _connect_hand_signals() -> void:
 	for hand: CardManager in [_board.player1_hand, _board.player2_hand]:
 		if hand:
 			hand.cards_reordered.connect(_on_hand_reordered.bind(hand))
+	# The card zoom never registers a modal (no focus-context push), so watch
+	# every suspending overlay's visibility directly; for the registered ones
+	# this doubles the context-stack signal, which the transition guard eats.
+	for prop in OVERLAY_PROPS:
+		var overlay: CanvasItem = _board.get(prop)
+		if overlay:
+			overlay.visibility_changed.connect(_on_context_stack_changed)
+	_modal_suspended = _modal_blocked()
 
 
 func _exit_tree() -> void:
@@ -185,10 +207,7 @@ func _is_active() -> bool:
 ## Same overlay set (and priority meaning) as the ui_cancel ladder in
 ## game_board._input — any of these open means the board is not in control.
 func _any_overlay_open() -> bool:
-	for prop in ["card_zoom_overlay", "deck_arrange_overlay",
-			"card_pool_select_overlay", "deck_search_overlay",
-			"discard_view_overlay", "monster_deck_view_overlay",
-			"zone_stack_view_overlay"]:
+	for prop in OVERLAY_PROPS:
 		var overlay: CanvasItem = _board.get(prop)
 		if overlay and overlay.visible:
 			return true
@@ -226,6 +245,8 @@ func _rect_of(id: String) -> Rect2:
 
 func _on_gamepad_detected() -> void:
 	_takeover_frame = int(Engine.get_process_frames())
+	if _modal_suspended:
+		return # The modal's own context grabs focus; no ring behind it.
 	_rebuild_map()
 	if _mode != "none":
 		_apply_context()
@@ -240,9 +261,69 @@ func _on_pointer_detected() -> void:
 	_bumper_return.clear()
 	_select_return = ""
 	_choice_roaming = false
+	_suspend_return.clear()
 	_element = ""
 	_hide_cursor()
 	nav_state_changed.emit()
+
+
+## A modal took over or released the board (focus-context push/pop or one of
+## the suspending overlays toggling visibility): park the cursor on the way
+## in, restore it on the way out. Transition-guarded — nested modals and
+## duplicate notifications are no-ops.
+func _on_context_stack_changed() -> void:
+	if not is_inside_tree():
+		return # Teardown pop from _exit_tree.
+	var blocked := _modal_blocked()
+	if blocked == _modal_suspended:
+		return
+	_modal_suspended = blocked
+	if not GamepadHelper.is_using_gamepad():
+		_suspend_return.clear() # The pointer path parks/restores on its own.
+		return
+	if blocked:
+		_suspend_cursor()
+	else:
+		_resume_cursor()
+
+
+func _modal_blocked() -> bool:
+	return not GamepadHelper.is_top_context(_board) or _any_overlay_open()
+
+
+## Park like _on_pointer_detected, but keep the roam/bumper/select state —
+## the modal is temporary and the cursor comes back where it was.
+func _suspend_cursor() -> void:
+	if _element != "":
+		_suspend_return = {"element": _element, "card": _cursor_card, "mode": _mode}
+	_element = ""
+	_hide_cursor()
+	nav_state_changed.emit()
+
+
+func _resume_cursor() -> void:
+	var saved_element: String = _suspend_return.get("element", "")
+	var saved_card: Control = _suspend_return.get("card", null)
+	var saved_mode: String = _suspend_return.get("mode", "none")
+	_suspend_return.clear()
+	_rebuild_map()
+	# The selection context changed under the modal (an effect resolved behind
+	# a viewer): the saved spot is stale — let the new prompt place the cursor.
+	if saved_mode != _mode or (saved_element == "" and _mode != "none"):
+		_apply_context()
+		return
+	# Same trick as _on_hand_reordered: the hand may have been sorted or
+	# shrunk while suspended — rebind the index to the remembered card ref.
+	if saved_element.begins_with("hand_") and is_instance_valid(saved_card):
+		var hand := _hand_mgr()
+		var idx := hand.managed_cards.find(saved_card) if hand else -1
+		if idx >= 0 and _element_valid("hand_%d" % idx):
+			_enter_element("hand_%d" % idx)
+			return
+	if saved_element != "" and _element_valid(saved_element):
+		_enter_element(saved_element)
+		return
+	_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
 
 
 func _on_selection_context_changed(ctx: Dictionary) -> void:
@@ -251,7 +332,9 @@ func _on_selection_context_changed(ctx: Dictionary) -> void:
 	_ctx_board_pid = ctx.get("board_pid", -1)
 	_ctx_hand_pid = ctx.get("hand_pid", -1)
 	_rebuild_ctx_elements()
-	if not GamepadHelper.is_using_gamepad():
+	# While a modal is up, record the mode but don't repaint the ring behind
+	# it — _resume_cursor sees the mode mismatch on close and applies then.
+	if not GamepadHelper.is_using_gamepad() or _modal_suspended:
 		return
 	_apply_context()
 
