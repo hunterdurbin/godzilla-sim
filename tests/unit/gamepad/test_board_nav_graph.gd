@@ -83,6 +83,23 @@ func test_desktop_hand_buttons_are_stacked_vertically() -> void:
 	assert_that(map["ap_sort_hand"]["left"]).not_contains(["ap_hand_toggle"])
 
 
+func test_empty_hand_sort_buttons_can_return_to_board() -> void:
+	# With no hand cards, every bottom-row zone descends into the sort button
+	# (the empty-hand stand-in), so the sort/toggle pocket must carry the hand
+	# row's return exits back up to the board — otherwise the cursor is trapped.
+	var map := _build(0)
+	assert_that(map["bot_z2"]["down"]).is_equal(["ap_sort_hand"])
+	for board_exit: String in BoardNavGraph.HAND_EXITS:
+		assert_array(map["ap_sort_hand"]["up"]).contains([board_exit])
+		assert_array(map["ap_hand_toggle"]["up"]).contains([board_exit])
+
+
+func test_populated_hand_sort_button_up_is_unchanged() -> void:
+	# The escape edges only appear with an empty hand; the vertical column stands.
+	var map := _build(3)
+	assert_that(map["ap_sort_hand"]["up"]).is_equal(["ap_hand_toggle"])
+
+
 func test_mobile_hand_buttons_stay_side_by_side() -> void:
 	# Mobile keeps the pair in an HBox split pill — horizontal wiring stands.
 	var map := _build(3, true)

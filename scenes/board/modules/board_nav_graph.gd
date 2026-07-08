@@ -213,6 +213,8 @@ static func build(ctx: Dictionary) -> Dictionary:
 	# Mobile: the log panel and tracker live in slide-out trays — reachable
 	# via the bumpers only, never by walking off the board.
 	_expand_sentinels(map, hand_count, 0 if mobile else tracker_count, rect_of)
+	if hand_count <= 0:
+		_add_empty_hand_return(map)
 	if mobile:
 		_strip_target(map, "log_panel")
 	return map
@@ -301,6 +303,23 @@ static func _add_hand_row(map: Dictionary, count: int, mobile: bool) -> void:
 			"down": [],
 			"left": ["hand_%d" % (i - 1)] if i > 0 else [],
 		}
+
+
+## With an empty hand there are no hand cards to carry the cursor back up to
+## the board, yet _expand_sentinels made every bottom-row zone's "down" edge
+## land on ap_sort_hand. Give the sort/toggle pocket the hand row's return
+## exits (HAND_EXITS) so the cursor can climb back out instead of being
+## trapped on the two buttons (the action-panel play buttons to their right
+## are hidden during effect resolution). Appended, not prepended, so the
+## no-history default up-edge (sort -> toggle) stands.
+static func _add_empty_hand_return(map: Dictionary) -> void:
+	for id: String in ["ap_sort_hand", "ap_hand_toggle"]:
+		if not map.has(id):
+			continue
+		var up: Array = map[id]["up"]
+		for board_exit: String in HAND_EXITS:
+			if board_exit not in up:
+				up.append(board_exit)
 
 
 static func _add_tracker_column(map: Dictionary, count: int, mobile: bool) -> void:
