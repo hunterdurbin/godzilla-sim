@@ -26,6 +26,20 @@ Related pieces elsewhere:
   visible (default providers: ConfirmationDialog → Cancel, AcceptDialog →
   OK, PopupMenu → self-navigating). `gui_focus_owner()` is the
   embedded-window-aware focus lookup (dialogs are their own viewports).
+  For Window surfaces, `register_modal` also forwards `window_input` back
+  through the device tracker and `GamepadInput.translate_event` — a focused
+  embedded Window swallows input BEFORE the root viewport's
+  `_input`/`_unhandled_input` stages, so without the forwarding the pad is
+  dead inside every dialog. A on the focused button is the pad path out of
+  a dialog (`close_on_escape` only reacts to real key events, not the
+  mirrored `ui_cancel` action).
+- `scenes/deck_builder/` — the deck builder meshes both card grids and all
+  chrome with `OverlayGridUtil.wire_band_stack` (wrappers opt in via
+  `GRID_CARD_META`), LB/RB cycle left panel / deck / pool,
+  X (`pad_end_main`) is the contextual secondary (remove-all / To Main /
+  To Monster / remove-from-pool), and `DeckBuilderPadHints` feeds the
+  bottom hint row. Regression test:
+  `tests/ui/DeckBuilderPadNavTest.tscn` (headless).
 - `scripts/input/cursor_map.gd` — **CursorMap**: generic directional
   navigation graph (element id → up/right/down/left candidate lists).
   Multi-candidate directions tie-break by the **last-10-visited history**
