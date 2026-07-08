@@ -2271,6 +2271,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		_cycle_section(1)
 	elif event.is_action_pressed("ui_cancel"):
+		# Inert while a dialog owns the focus stack — a leaked cancel would
+		# otherwise re-raise the unsaved gate on top of itself.
+		if not GamepadHelper.is_top_context(self):
+			return
 		get_viewport().set_input_as_handled()
 		_on_back_pressed()
 

@@ -128,8 +128,25 @@ func register_modal(surface: Node, provider := Callable()) -> void:
 	var resolved := provider if provider.is_valid() else _default_modal_provider(surface)
 	surface.visibility_changed.connect(_on_modal_visibility.bind(surface, resolved))
 	surface.tree_exiting.connect(pop_focus_context.bind(surface))
+	if surface is Window:
+		# A focused embedded Window swallows input BEFORE the root viewport's
+		# _input/_unhandled_input stages (Viewport forwards to the focused
+		# subwindow first), starving the device-mode tracker and the pad
+		# translator — buttons would be dead inside every dialog. Re-run both
+		# on events surfacing inside the window.
+		(surface as Window).window_input.connect(_on_modal_window_input)
 	if _modal_visible(surface):
 		push_focus_context(surface, resolved)
+
+
+func _on_modal_window_input(event: InputEvent) -> void:
+	# Same order as the root pipeline: device-mode check (_input), then the
+	# pad translation (_unhandled_input). The injected pad_*/ui_* twins are
+	# routed back to the focused window by the same subwindow forwarding, so
+	# the dialog's focused button and its close-on-cancel keep working.
+	_input(event)
+	if event is InputEventJoypadButton or event is InputEventJoypadMotion:
+		GamepadInput.translate_event(event)
 
 
 func _on_modal_visibility(surface: Node, provider: Callable) -> void:

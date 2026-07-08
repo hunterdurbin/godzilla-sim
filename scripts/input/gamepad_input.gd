@@ -144,6 +144,14 @@ func reset_to_defaults() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	translate_event(event)
+
+
+## Physical joypad event -> logical pad_* + mirrored ui_* injection. Public
+## because embedded dialog Windows swallow input before the root viewport's
+## _unhandled_input stage runs — GamepadHelper.register_modal forwards their
+## window_input here so the pad keeps working inside dialogs.
+func translate_event(event: InputEvent) -> void:
 	if not (event is InputEventJoypadButton or event is InputEventJoypadMotion):
 		return
 	_detect_controller_type()
