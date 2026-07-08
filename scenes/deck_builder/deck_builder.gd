@@ -41,6 +41,8 @@ var _deck_header_band: Array[Control] = []
 var _filter_band: Array[Control] = []
 var _pool_header_band: Array[Control] = []
 var _left_bands: Array[Dictionary] = []
+var _pad_hint_row: OverlayHintRow
+var _section_memory: Dictionary = {} # section id -> last focused grid index
 
 # --- Right panel: filter bar ---
 var search_edit: LineEdit
@@ -123,12 +125,18 @@ func _ready() -> void:
 
 	GamepadHelper.push_focus_context(self, _first_focusable)
 	GamepadHelper.gamepad_detected.connect(_wire_pad_focus)
+	GamepadHelper.context_stack_changed.connect(_on_context_stack_changed)
+	get_viewport().gui_focus_changed.connect(_on_gui_focus_changed)
 
 
 func _exit_tree() -> void:
 	GamepadHelper.pop_focus_context(self)
 	if GamepadHelper.gamepad_detected.is_connected(_wire_pad_focus):
 		GamepadHelper.gamepad_detected.disconnect(_wire_pad_focus)
+	if GamepadHelper.context_stack_changed.is_connected(_on_context_stack_changed):
+		GamepadHelper.context_stack_changed.disconnect(_on_context_stack_changed)
+	if get_viewport().gui_focus_changed.is_connected(_on_gui_focus_changed):
+		get_viewport().gui_focus_changed.disconnect(_on_gui_focus_changed)
 
 
 func _first_focusable() -> Control:
@@ -200,6 +208,79 @@ func _link_left_panel_exits() -> void:
 		last.focus_neighbor_right = last.get_path_to(monster_tab_button)
 
 
+## LB/RB jump between the major areas (left panel / deck / pool), remembering
+## the grid spot you left so returning lands where you were.
+func _cycle_section(dir: int) -> void:
+	var current := _current_section()
+	if current == "deck":
+		var idx := OverlayGridUtil.focused_index(deck_grid)
+		if idx >= 0:
+			_section_memory["deck"] = idx
+	elif current == "pool":
+		var idx := OverlayGridUtil.focused_index(pool_grid)
+		if idx >= 0:
+			_section_memory["pool"] = idx
+	_focus_section(DeckBuilderPadHints.next_section(current, dir))
+
+
+func _current_section() -> String:
+	var focus_owner := get_viewport().gui_get_focus_owner()
+	if focus_owner == null:
+		return "deck"
+	if deck_grid.is_ancestor_of(focus_owner) or focus_owner in _deck_header_band:
+		return "deck"
+	if pool_grid.is_ancestor_of(focus_owner) or focus_owner in _pool_header_band \
+			or focus_owner in _filter_band:
+		return "pool"
+	return "left"
+
+
+func _focus_section(section: String) -> void:
+	match section:
+		"left":
+			var targets := deck_list_view.pad_focus_targets()
+			var target: Control = targets[0] if not targets.is_empty() else save_button
+			target.grab_focus()
+		"deck":
+			OverlayGridUtil.focus_index(deck_grid,
+					int(_section_memory.get("deck", 0)), monster_tab_button)
+		"pool":
+			OverlayGridUtil.focus_index(pool_grid,
+					int(_section_memory.get("pool", 0)), sort_option)
+
+
+func _on_gui_focus_changed(control: Control) -> void:
+	_refresh_pad_hints(control)
+
+
+func _on_context_stack_changed() -> void:
+	# A modal took over — its own buttons apply, not the screen hints. The row
+	# returns on close: refocus fires gui_focus_changed, which rebuilds it.
+	if _pad_hint_row != null and not GamepadHelper.is_top_context(self):
+		_pad_hint_row.visible = false
+
+
+func _refresh_pad_hints(focus_owner: Control) -> void:
+	if _pad_hint_row == null:
+		return
+	var ctx := {"area": "chrome", "monster_tab": _showing_monster_tab}
+	if focus_owner != null and focus_owner.get_parent() == deck_grid:
+		var card_node: Control = focus_owner.get_child(0)
+		var card_data: Dictionary = card_node.card_data
+		ctx["area"] = "deck"
+		ctx["is_monster_type"] = card_data.get("card_type", -1) == CardEnums.CardType.MONSTER
+		ctx["in_monster"] = _is_in_monster_deck(card_data.get("id", ""))
+	elif focus_owner != null and focus_owner.get_parent() == pool_grid:
+		ctx["area"] = "pool"
+	var hints: Array[Dictionary] = []
+	for h in DeckBuilderPadHints.compute(ctx):
+		var hint := {"action": h["action"], "text": tr(h["text_key"])}
+		if h.has("action2"):
+			hint["action2"] = h["action2"]
+		hints.append(hint)
+	_pad_hint_row.set_hints(hints)
+
+
 # ============================================================
 # UI Construction
 # ============================================================
@@ -233,6 +314,17 @@ func _build_ui() -> void:
 	_preview_card.z_index = 50
 	add_child(_preview_card)
 	get_tree().root.size_changed.connect(_position_preview)
+
+	# Controller hint row — bottom-center (the preview occupies bottom-left).
+	# OverlayHintRow hides itself in pointer mode and on mobile.
+	_pad_hint_row = OverlayHintRow.new()
+	_pad_hint_row.z_index = 60
+	add_child(_pad_hint_row)
+	_pad_hint_row.set_anchors_and_offsets_preset(
+			Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 10)
+	_pad_hint_row.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_pad_hint_row.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_refresh_pad_hints(null)
 
 
 func _build_left_panel(parent: HBoxContainer) -> void:
@@ -1105,6 +1197,26 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 	wrapper.focus_exited.connect(func() -> void:
 		card_node.set_attention_highlight(false)
 		_hide_preview())
+	# Non-mouse events route to the focus owner (card.gd does the same): A
+	# acts like a left click, X like the hover move button / right click.
+	# ui_accept only — GamepadInput mirrors pad_confirm onto it, so handling
+	# both would double-fire.
+	var pad_handler := func(event: InputEvent) -> void:
+		if not wrapper.has_focus():
+			return
+		if event.is_action_pressed("ui_accept"):
+			wrapper.accept_event()
+			if is_pool:
+				_on_pool_card_clicked(card_node)
+			else:
+				_on_deck_card_clicked(card_node)
+		elif event.is_action_pressed("pad_end_main"):
+			wrapper.accept_event()
+			if is_pool:
+				_on_pool_card_secondary(card_node)
+			else:
+				_on_deck_card_secondary(card_node)
+	wrapper.gui_input.connect(pad_handler)
 
 	# Quantity badge
 	if is_pool:
@@ -1338,6 +1450,52 @@ func _on_deck_card_right_clicked(card_node: Control) -> void:
 	else:
 		_remove_all_from_main_deck(card_id)
 
+	_has_unsaved_changes = true
+	_refresh_deck_display()
+	_update_pool_badge(card_id)
+	_update_deck_stats()
+
+
+## Controller X on a pool card: remove one copy from the active deck without
+## hopping to the deck grid (no pointer equivalent — mouse users click the
+## deck card instead).
+func _on_pool_card_secondary(card_node: Control) -> void:
+	var card_id: String = card_node.card_data.get("id", "")
+	if _showing_monster_tab:
+		if not _is_in_monster_deck(card_id):
+			return
+		_remove_from_monster_deck(card_id)
+	else:
+		var in_main := false
+		for entry in _main_entries:
+			if entry["card_number"] == card_id:
+				in_main = true
+				break
+		if not in_main:
+			return
+		_remove_from_main_deck(card_id)
+	_has_unsaved_changes = true
+	_refresh_deck_display()
+	_update_pool_badge(card_id)
+	_update_deck_stats()
+
+
+## Controller X on a deck card: the hover move button's action on
+## monster-type cards, right-click remove-all on everything else (mirrors
+## DeckBuilderPadHints._deck_secondary_key).
+func _on_deck_card_secondary(card_node: Control) -> void:
+	var card_data: Dictionary = card_node.card_data
+	var card_id: String = card_data.get("id", "")
+	if _showing_monster_tab:
+		_move_monster_to_main(card_id)
+		return
+	if card_data.get("card_type", -1) == CardEnums.CardType.MONSTER:
+		if _is_in_monster_deck(card_id):
+			_move_monster_to_main(card_id)
+		else:
+			_move_monster_to_monster(card_id)
+		return
+	_remove_all_from_main_deck(card_id)
 	_has_unsaved_changes = true
 	_refresh_deck_display()
 	_update_pool_badge(card_id)
@@ -2098,7 +2256,15 @@ func _on_export_pressed() -> void:
 # ============================================================
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
+	# Bumper section jumps only while no modal owns the focus stack — the
+	# actions are free here (GamepadBoardNav isn't running on this screen).
+	if event.is_action_pressed("pad_focus_log") and GamepadHelper.is_top_context(self):
+		get_viewport().set_input_as_handled()
+		_cycle_section(-1)
+	elif event.is_action_pressed("pad_focus_tracker") and GamepadHelper.is_top_context(self):
+		get_viewport().set_input_as_handled()
+		_cycle_section(1)
+	elif event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		_on_back_pressed()
 
