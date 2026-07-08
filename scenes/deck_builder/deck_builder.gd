@@ -771,6 +771,12 @@ func _build_dialogs() -> void:
 			clear_dialog, format_info_dialog, decklog_dialog]:
 		GamepadHelper.register_modal(dialog)
 
+	# OptionButton dropdowns are PopupMenus — focus contexts of their own, so
+	# B inside an open dropdown closes it instead of reaching the back
+	# handler, and focus is restored on close.
+	for opt: OptionButton in [format_option, sort_option, decklog_region_btn]:
+		GamepadHelper.register_modal(opt.get_popup())
+
 
 func _apply_panel_style(panel: PanelContainer) -> void:
 	var style := StyleBoxFlat.new()

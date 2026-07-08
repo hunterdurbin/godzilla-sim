@@ -238,6 +238,9 @@ func _build_full_ui() -> void:
 				_format_option.select(idx)
 		_format_option.item_selected.connect(_on_format_selected)
 		top_row.add_child(_format_option)
+		# The dropdown is a PopupMenu — a focus context of its own, so B
+		# inside it closes the popup instead of leaking to the screen.
+		GamepadHelper.register_modal(_format_option.get_popup())
 
 	_density_button = Button.new()
 	_density_button.toggle_mode = true
@@ -269,6 +272,7 @@ func _build_full_ui() -> void:
 	_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_scroll.scroll_deadzone = 20
+	_scroll.follow_focus = true
 	_scroll.custom_minimum_size.y = 180
 	add_child(_scroll)
 
@@ -346,6 +350,21 @@ func set_filter(callable: Callable) -> void:
 	## Pass an empty Callable to clear.
 	_entry_filter = callable
 	_rebuild()
+
+
+func first_row() -> Control:
+	## First list entry (deck row, else folder header) — the pad focus target
+	## for the expanded overlay's modal provider. Resolve lazily: rows are
+	## rebuilt on every refresh.
+	if _list_vbox == null:
+		return null
+	for child in _list_vbox.get_children():
+		if child is DeckRow and not child.is_queued_for_deletion():
+			return child
+	for child in _list_vbox.get_children():
+		if child is Button and not child.is_queued_for_deletion():
+			return child
+	return null
 
 
 func pad_focus_targets() -> Array[Control]:
@@ -505,6 +524,10 @@ func _on_folder_toggled(pressed: bool, folder: String) -> void:
 	_collapsed_folders[folder] = not pressed
 	_save_state()
 	_rebuild()
+	# The rebuild freed the focused header — A on a folder would otherwise
+	# strand pad focus. Regrab the same folder's fresh header.
+	if GamepadHelper.is_using_gamepad() and _folder_headers.has(folder):
+		(_folder_headers[folder] as Button).grab_focus.call_deferred()
 
 
 func _on_density_toggled(pressed: bool) -> void:
@@ -678,6 +701,14 @@ func _open_expanded_overlay() -> void:
 		deck_activated.emit(deck_name)
 		overlay.queue_free()
 	)
+
+	# Controller: the overlay takes a focus context while it lives (suspends
+	# the screen beneath, restores its focus on close — every close path goes
+	# through queue_free, which pops via tree_exiting). Lazy provider: rows
+	# are rebuilt by the inner list's refresh/search.
+	GamepadHelper.register_modal(overlay, func() -> Control:
+		var row := inner.first_row()
+		return row if row != null else close_btn)
 
 
 func _on_row_selected(deck_name: String) -> void:
