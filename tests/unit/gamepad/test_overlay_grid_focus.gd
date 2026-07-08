@@ -161,6 +161,101 @@ func test_two_grid_with_empty_side_keeps_own_wrap() -> void:
 	assert_object(_neighbor(l[2], "right")).is_same(l[0])
 
 
+func _make_meta_grid(count: int, cols: int) -> GridContainer:
+	# Deck-builder-style grid: plain wrappers opted in via GRID_CARD_META.
+	var grid := GridContainer.new()
+	grid.columns = cols
+	for i in range(count):
+		var wrapper := PanelContainer.new()
+		wrapper.set_meta(OverlayGridUtil.GRID_CARD_META, true)
+		grid.add_child(wrapper)
+	_root.add_child(grid)
+	return grid
+
+
+func test_grid_cards_accepts_meta_marked_wrappers() -> void:
+	var grid := _make_meta_grid(3, 3)
+	grid.add_child(Label.new()) # filler stays excluded
+	assert_int(OverlayGridUtil.grid_cards(grid).size()).is_equal(3)
+
+
+func test_band_stack_row_grid_row_cycle() -> void:
+	# header(2) / grid [0 1 2]/[3 4] / footer(1), wrapped.
+	var header := [_make_button(), _make_button()] as Array[Control]
+	var grid := _make_meta_grid(5, 3)
+	var footer := [_make_button()] as Array[Control]
+	OverlayGridUtil.wire_band_stack([
+		{"row": header}, {"grid": grid}, {"row": footer},
+	])
+	var cards := OverlayGridUtil.grid_cards(grid)
+	# Header enters the grid's top row column-wise; ↑ wraps onto the footer.
+	assert_object(_neighbor(header[0], "down")).is_same(cards[0])
+	assert_object(_neighbor(header[1], "down")).is_same(cards[1])
+	assert_object(_neighbor(header[1], "up")).is_same(footer[0])
+	# Grid exits: top row ↑ header (clamped), bottom row ↓ footer.
+	assert_object(_neighbor(cards[0], "up")).is_same(header[0])
+	assert_object(_neighbor(cards[2], "up")).is_same(header[1]) # col clamped
+	assert_object(_neighbor(cards[3], "down")).is_same(footer[0])
+	assert_object(_neighbor(cards[2], "down")).is_same(footer[0]) # short last row
+	# Footer: ↑ grid bottom row, ↓ wraps to header.
+	assert_object(_neighbor(footer[0], "up")).is_same(cards[3])
+	assert_object(_neighbor(footer[0], "down")).is_same(header[0])
+	# Interior grid edges untouched; rows mesh horizontally with wrap.
+	assert_object(_neighbor(cards[1], "down")).is_same(cards[4])
+	assert_object(_neighbor(header[1], "right")).is_same(header[0])
+
+
+func test_band_stack_two_grids_share_middle_row() -> void:
+	# The deck-builder shape: header / deck grid / filter row / pool grid.
+	var header := [_make_button()] as Array[Control]
+	var deck := _make_meta_grid(2, 3)
+	var filter := [_make_button(), _make_button()] as Array[Control]
+	var pool := _make_meta_grid(4, 3)
+	OverlayGridUtil.wire_band_stack([
+		{"row": header}, {"grid": deck}, {"row": filter}, {"grid": pool},
+	])
+	var d := OverlayGridUtil.grid_cards(deck)
+	var p := OverlayGridUtil.grid_cards(pool)
+	# The shared filter row bridges both grids without overwritten links.
+	assert_object(_neighbor(d[0], "down")).is_same(filter[0])
+	assert_object(_neighbor(d[1], "down")).is_same(filter[1])
+	assert_object(_neighbor(filter[0], "up")).is_same(d[0])
+	assert_object(_neighbor(filter[1], "down")).is_same(p[1])
+	assert_object(_neighbor(p[2], "up")).is_same(filter[1]) # col clamped
+	# Pool bottom row wraps onto the header.
+	assert_object(_neighbor(p[3], "down")).is_same(header[0])
+	assert_object(_neighbor(p[1], "down")).is_same(header[0]) # short last row
+	assert_object(_neighbor(header[0], "up")).is_same(p[3])
+
+
+func test_band_stack_skips_empty_bands() -> void:
+	var header := [_make_button()] as Array[Control]
+	var empty_grid := _make_meta_grid(0, 3)
+	var hidden := [_make_button(false)] as Array[Control]
+	var footer := [_make_button()] as Array[Control]
+	OverlayGridUtil.wire_band_stack([
+		{"row": header}, {"grid": empty_grid}, {"row": hidden}, {"row": footer},
+	])
+	assert_object(_neighbor(header[0], "down")).is_same(footer[0])
+	assert_object(_neighbor(footer[0], "up")).is_same(header[0])
+
+
+func test_band_stack_rows_only_without_wrap() -> void:
+	# Left-panel shape: button rows, outer edges pinned (self-loop, no wrap).
+	var top := [_make_button()] as Array[Control]
+	var mid := [_make_button(), _make_button()] as Array[Control]
+	var bottom := [_make_button()] as Array[Control]
+	OverlayGridUtil.wire_band_stack([
+		{"row": top}, {"row": mid}, {"row": bottom},
+	], false)
+	assert_object(_neighbor(top[0], "up")).is_same(top[0]) # pinned edge
+	assert_object(_neighbor(top[0], "down")).is_same(mid[0])
+	assert_object(_neighbor(mid[1], "up")).is_same(top[0]) # col clamped
+	assert_object(_neighbor(mid[1], "down")).is_same(bottom[0])
+	assert_object(_neighbor(bottom[0], "down")).is_same(bottom[0]) # pinned edge
+	assert_object(_neighbor(mid[0], "right")).is_same(mid[1])
+
+
 func test_focused_index_tracks_focus_owner() -> void:
 	var grid := _make_grid(3, 3)
 	OverlayGridUtil.wire_overlay_focus(grid, [], [])

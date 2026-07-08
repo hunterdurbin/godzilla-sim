@@ -86,13 +86,18 @@ static func clear_grid(grid: GridContainer, click_handler: Callable) -> void:
 ## job of the overlay's GamepadHelper.register_modal provider, NOT the mesh.
 
 
+## Non-Card grid children (e.g. the deck builder's PanelContainer card
+## wrappers) opt into grid_cards() and the focus meshes via this meta key.
+const GRID_CARD_META := &"pad_grid_card"
+
+
 ## Live focusable cards of a grid (skips queued-for-deletion children and
 ## non-card fillers like the empty-pile label).
 static func grid_cards(grid: GridContainer) -> Array[Control]:
 	var cards: Array[Control] = []
 	for child in grid.get_children():
 		if child is Control and not child.is_queued_for_deletion() \
-				and child.has_signal("card_clicked"):
+				and (child.has_signal("card_clicked") or child.has_meta(GRID_CARD_META)):
 			cards.append(child)
 	return cards
 
@@ -136,6 +141,56 @@ static func wire_two_grid_focus(left_grid: GridContainer, right_grid: GridContai
 	var anchor_cards := lcards if not lcards.is_empty() else rcards
 	var anchor_cols := lcols if not lcards.is_empty() else rcols
 	_link_chrome_vertical(above, below, anchor_cards, anchor_cols)
+
+
+## Vertical stack of alternating chrome rows and card grids joined into ONE
+## focus cycle — for full screens (deck builder) where several grids share
+## chrome rows. wire_overlay_focus closes a cycle per grid, so calling it once
+## per grid over a shared row would overwrite its own links. `bands` is
+## ordered top to bottom; each entry is {"row": Array[Control]} or
+## {"grid": GridContainer}. Empty bands (hidden chrome, cardless grids) are
+## skipped. With wrap_vertical the bottom band exits down into the top band;
+## without it the stack's outer edges self-loop (deliberately pinned so the
+## geometric auto-neighbor can't jump to unrelated controls).
+static func wire_band_stack(bands: Array[Dictionary], wrap_vertical := true) -> void:
+	var live: Array[Dictionary] = []
+	for band in bands:
+		if band.has("grid"):
+			var grid: GridContainer = band["grid"]
+			var cards := grid_cards(grid)
+			if cards.is_empty():
+				continue
+			var cols: int = maxi(grid.columns, 1)
+			var last_row_start: int = (ceili(float(cards.size()) / float(cols)) - 1) * cols
+			live.append({
+				"cards": cards,
+				"cols": cols,
+				"top": cards.slice(0, mini(cols, cards.size())),
+				"bottom": cards.slice(last_row_start),
+			})
+		else:
+			var row := _visible_controls(band["row"])
+			if row.is_empty():
+				continue
+			live.append({"row": row, "top": row, "bottom": row})
+	var n := live.size()
+	for i in range(n):
+		var band: Dictionary = live[i]
+		var above: Array[Control] = band["top"]
+		var below: Array[Control] = band["bottom"]
+		if wrap_vertical or i > 0:
+			above = live[(i - 1 + n) % n]["bottom"]
+		if wrap_vertical or i < n - 1:
+			below = live[(i + 1) % n]["top"]
+		if band.has("row"):
+			var row: Array[Control] = band["row"]
+			_mesh_chrome_row(row)
+			for j in range(row.size()):
+				var c := row[j]
+				c.focus_neighbor_top = c.get_path_to(above[mini(j, above.size() - 1)])
+				c.focus_neighbor_bottom = c.get_path_to(below[mini(j, below.size() - 1)])
+		else:
+			_mesh_cards(band["cards"], band["cols"], above, below)
 
 
 ## Index of the current focus owner among grid_cards(grid), -1 if elsewhere.
