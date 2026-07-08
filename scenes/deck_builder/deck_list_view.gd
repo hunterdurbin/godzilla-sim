@@ -348,6 +348,17 @@ func set_filter(callable: Callable) -> void:
 	_rebuild()
 
 
+func pad_focus_targets() -> Array[Control]:
+	## Controls the deck builder's left-panel pad mesh includes (compact
+	## picker mode): the picker itself plus the Move… button when present.
+	var targets: Array[Control] = []
+	if _picker_button != null:
+		targets.append(_picker_button)
+	if _move_button != null:
+		targets.append(_move_button)
+	return targets
+
+
 func set_disabled(value: bool) -> void:
 	## Disables interaction (used by lobbies during host/connect transitions).
 	if _picker_button != null:

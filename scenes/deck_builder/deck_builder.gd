@@ -27,12 +27,20 @@ var default_mode_check: CheckBox
 # --- Right panel: deck section ---
 var monster_tab_button: Button
 var main_tab_button: Button
+var clear_button: Button
 var deck_zoom_in_button: Button
 var deck_zoom_out_button: Button
 var pool_zoom_in_button: Button
 var pool_zoom_out_button: Button
 var deck_grid: GridContainer
 var deck_scroll: ScrollContainer
+
+# --- Controller navigation (band arrays feed OverlayGridUtil.wire_band_stack;
+# LineEdits stay out of the mesh — pad input is fenced while one is editable) ---
+var _deck_header_band: Array[Control] = []
+var _filter_band: Array[Control] = []
+var _pool_header_band: Array[Control] = []
+var _left_bands: Array[Dictionary] = []
 
 # --- Right panel: filter bar ---
 var search_edit: LineEdit
@@ -97,6 +105,7 @@ func _ready() -> void:
 	add_child(_search_timer)
 
 	_build_ui()
+	_init_pad_bands()
 	_connect_signals()
 	_build_pool_card_list()
 	_refresh_deck_list()
@@ -113,29 +122,82 @@ func _ready() -> void:
 	_update_zoom_buttons()
 
 	GamepadHelper.push_focus_context(self, _first_focusable)
+	GamepadHelper.gamepad_detected.connect(_wire_pad_focus)
 
 
 func _exit_tree() -> void:
 	GamepadHelper.pop_focus_context(self)
+	if GamepadHelper.gamepad_detected.is_connected(_wire_pad_focus):
+		GamepadHelper.gamepad_detected.disconnect(_wire_pad_focus)
 
 
 func _first_focusable() -> Control:
-	# make_pad_focusable controls only become FOCUS_ALL in gamepad mode, so
-	# resolve lazily at refocus time.
-	var root: Control = self
-	return _find_focusable(root)
+	# Resolve lazily at refocus time: card wrappers only become FOCUS_ALL in
+	# gamepad mode and the grids rebuild constantly. Land in the deck grid if
+	# it has cards, else the pool, else the deck-section chrome — never a
+	# LineEdit (pad input is fenced while one is editable).
+	var deck_cards := OverlayGridUtil.grid_cards(deck_grid)
+	if not deck_cards.is_empty():
+		return deck_cards[0]
+	var pool_cards := OverlayGridUtil.grid_cards(pool_grid)
+	if not pool_cards.is_empty():
+		return pool_cards[0]
+	return monster_tab_button
 
 
-func _find_focusable(node: Node) -> Control:
-	if node is Control:
-		var control := node as Control
-		if control.focus_mode == Control.FOCUS_ALL and control.is_visible_in_tree():
-			return control
-	for child in node.get_children():
-		var found := _find_focusable(child)
-		if found != null:
-			return found
-	return null
+# ============================================================
+# Controller Navigation
+# ============================================================
+
+func _init_pad_bands() -> void:
+	_deck_header_band = [monster_tab_button, main_tab_button,
+			deck_zoom_out_button, deck_zoom_in_button, clear_button]
+	_filter_band = []
+	_filter_band.append_array(type_buttons)
+	_filter_band.append_array(color_buttons)
+	_filter_band.append_array(invasion_buttons)
+	_filter_band.append(sort_option)
+	_pool_header_band = [pool_zoom_out_button, pool_zoom_in_button]
+	_left_bands = [
+		{"row": deck_list_view.pad_focus_targets()},
+		{"row": [save_button, load_button, delete_button] as Array[Control]},
+		{"row": [import_button] as Array[Control]},
+		{"row": [import_decklog_button] as Array[Control]},
+		{"row": [export_button] as Array[Control]},
+		{"row": [format_info_button, format_option] as Array[Control]},
+		{"row": [default_mode_check] as Array[Control]},
+		{"row": [back_button] as Array[Control]},
+	]
+
+
+## Rebuild the focus_neighbor mesh over both card grids and their chrome.
+## Called after every grid rebuild (incl. each pool batch) and on the
+## pointer→gamepad flip; pointer-mode rebuilds skip the cost — the wrappers
+## are FOCUS_NONE then anyway, and gamepad_detected re-wires.
+func _wire_pad_focus() -> void:
+	if not GamepadHelper.is_using_gamepad():
+		return
+	OverlayGridUtil.wire_band_stack([
+		{"row": _deck_header_band},
+		{"grid": deck_grid},
+		{"row": _filter_band},
+		{"row": _pool_header_band},
+		{"grid": pool_grid},
+	])
+	OverlayGridUtil.wire_band_stack(_left_bands, false)
+	_link_left_panel_exits()
+
+
+## dpad-→ from a left-panel row's last control crosses into the right column
+## at one predictable spot. The reverse route is the LB/RB section cycle —
+## the right column's rows keep their horizontal wrap.
+func _link_left_panel_exits() -> void:
+	for band in _left_bands:
+		var row: Array[Control] = band["row"]
+		if row.is_empty():
+			continue
+		var last := row[-1]
+		last.focus_neighbor_right = last.get_path_to(monster_tab_button)
 
 
 # ============================================================
@@ -365,7 +427,7 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	header.add_child(spacer)
 
-	var clear_button := Button.new()
+	clear_button = Button.new()
 	clear_button.text = tr("STR_COMMON_CLEAR")
 	clear_button.pressed.connect(_on_clear_pressed)
 	header.add_child(clear_button)
@@ -375,6 +437,7 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	deck_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	deck_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	deck_scroll.scroll_deadzone = 20
+	deck_scroll.follow_focus = true
 	deck_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	section.add_child(deck_scroll)
 
@@ -511,6 +574,7 @@ func _build_pool_section(parent: VBoxContainer) -> void:
 	pool_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pool_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	pool_scroll.scroll_deadzone = 20
+	pool_scroll.follow_focus = true
 	pool_scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	section.add_child(pool_scroll)
 
@@ -912,18 +976,21 @@ func _sort_by_type(a: Dictionary, b: Dictionary) -> bool:
 const POOL_BATCH_SIZE := 15
 
 func _refresh_pool_display() -> void:
+	# Ordinal focus position, captured BEFORE the clear — restored (clamped)
+	# once the first batch lands so a pad-triggered refresh keeps its place.
+	var focus_idx := OverlayGridUtil.focused_index(pool_grid)
 	_clear_grid(pool_grid)
 	_pool_load_generation += 1
 	var gen := _pool_load_generation
 	pool_count_label.text = tr("STR_DB_POOL_COUNT_FMT").replace("{N}", str(_filtered_pool_cards.size()))
 	# Snapshot the list so filter changes mid-load don't cause issues
 	var cards_to_load := _filtered_pool_cards.duplicate()
-	_load_pool_cards_batched(cards_to_load, gen)
+	_load_pool_cards_batched(cards_to_load, gen, focus_idx)
 
 
-func _load_pool_cards_batched(cards: Array[Dictionary], gen: int) -> void:
+func _load_pool_cards_batched(cards: Array[Dictionary], gen: int, restore_idx: int = -1) -> void:
 	var i := 0
-	while i < cards.size():
+	while true:
 		if gen != _pool_load_generation:
 			return # A newer refresh was triggered; abort this one
 		var batch_end := mini(i + POOL_BATCH_SIZE, cards.size())
@@ -931,10 +998,17 @@ func _load_pool_cards_batched(cards: Array[Dictionary], gen: int) -> void:
 			var wrapper := _create_card_wrapper(cards[i], true)
 			pool_grid.add_child(wrapper)
 			i += 1
-		if i < cards.size():
-			await get_tree().process_frame
-			if not is_inside_tree():
-				return
+		# Re-mesh after every batch so the pool stays navigable mid-load (and
+		# the other bands stop pointing at the freed previous wrappers).
+		_wire_pad_focus()
+		if restore_idx >= 0:
+			OverlayGridUtil.focus_index(pool_grid, restore_idx, sort_option)
+			restore_idx = -1
+		if i >= cards.size():
+			return
+		await get_tree().process_frame
+		if not is_inside_tree():
+			return
 
 
 func _update_pool_badge(card_id: String) -> void:
@@ -1018,6 +1092,19 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 	# Card preview on hover
 	wrapper.mouse_entered.connect(func(): _show_preview(card_data, is_pool))
 	wrapper.mouse_exited.connect(_hide_preview)
+
+	# Controller: the wrapper joins the pad focus mesh (grid_cards picks it up
+	# via the meta key) and pad focus mirrors hover — pulsing card border plus
+	# the big preview. The border draws inside the card rect, so the wrapper's
+	# clip_children doesn't shave it.
+	wrapper.set_meta(OverlayGridUtil.GRID_CARD_META, true)
+	GamepadHelper.make_pad_focusable(wrapper)
+	wrapper.focus_entered.connect(func() -> void:
+		card_node.set_attention_highlight(true)
+		_show_preview(card_data, is_pool))
+	wrapper.focus_exited.connect(func() -> void:
+		card_node.set_attention_highlight(false)
+		_hide_preview())
 
 	# Quantity badge
 	if is_pool:
@@ -1167,6 +1254,12 @@ func _hide_preview() -> void:
 # ============================================================
 
 func _refresh_deck_display() -> void:
+	# Ordinal focus position, captured BEFORE the clear. Pad-triggered
+	# rebuilds (A removes a copy under your own focus) restore to the same
+	# slot, clamped — the next card slides in, or the tail steps back; an
+	# emptied grid falls back onto the active tab button. idx -1 means focus
+	# was elsewhere (pool, chrome): no restore, the grid rewires beneath it.
+	var focus_idx := OverlayGridUtil.focused_index(deck_grid)
 	_clear_grid(deck_grid)
 	_invalid_cards = GameModeValidator.get_invalid_cards(_game_mode, _monster_entries, _main_entries)
 	var entries: Array = _monster_entries if _showing_monster_tab else _main_entries
@@ -1180,6 +1273,11 @@ func _refresh_deck_display() -> void:
 	# Update tab buttons
 	monster_tab_button.button_pressed = _showing_monster_tab
 	main_tab_button.button_pressed = not _showing_monster_tab
+
+	_wire_pad_focus()
+	if focus_idx >= 0:
+		OverlayGridUtil.focus_index(deck_grid, focus_idx,
+				monster_tab_button if _showing_monster_tab else main_tab_button)
 
 
 func _clear_grid(grid: GridContainer) -> void:
