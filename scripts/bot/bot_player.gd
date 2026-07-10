@@ -55,6 +55,10 @@ var _zones: RefCounted = null
 # Split-out decision helpers (see scripts/bot/README.md)
 var _scoring: RefCounted = null
 
+# KAIJU turn-plan search (scripts/bot/kaiju/), lazily created when
+# config.use_planner. Holds a weakref back to this bot.
+var _planner: RefCounted = null
+
 
 func _init() -> void:
 	_selections = preload("res://scripts/bot/bot_selections.gd").new(self)
@@ -216,7 +220,13 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 	if not is_bot_turn():
 		return
 	await _delay()
-	var action_params := _decide_main_action(valid_actions)
+	var action_params: Array
+	if config.use_planner:
+		if _planner == null:
+			_planner = KaijuPlanner.new(self)
+		action_params = await _planner.decide_action(valid_actions)
+	else:
+		action_params = _decide_main_action(valid_actions)
 	var action: CardEnums.ActionType = action_params[0]
 	var params: Dictionary = action_params[1]
 	turn_manager.submit_action(action, params)
@@ -943,7 +953,13 @@ func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], _promp
 	if player_id != bot_player_id:
 		return
 	await _delay()
+	var plan := _plan_deck_arrange(cards)
+	player_input.resolve_deck_arrange(plan["keep"], plan["discard"])
 
+
+## Pure keep/discard/reorder decision — shared by the live handler above and
+## the KAIJU rollout input.
+func _plan_deck_arrange(cards: Array[Dictionary]) -> Dictionary:
 	var player := game_state.players[bot_player_id]
 	var active := player.current_monster
 	var active_rank: int = active.get("rank", 0) if not active.is_empty() else -1
@@ -984,7 +1000,7 @@ func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], _promp
 	keep.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return _card_sort_value(a) > _card_sort_value(b))
 
-	player_input.resolve_deck_arrange(keep, discard)
+	return {"keep": keep, "discard": discard}
 
 
 # --- Card select ---

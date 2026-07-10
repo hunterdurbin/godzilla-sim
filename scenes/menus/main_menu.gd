@@ -288,6 +288,7 @@ func _show_bot_config_popup() -> void:
 		[tr("STR_MENU_DIFFICULTY_EASY"), BotConfig.Difficulty.EASY, Color(0.3, 0.8, 0.3)],
 		[tr("STR_MENU_DIFFICULTY_NORMAL"), BotConfig.Difficulty.NORMAL, Color(0.9, 0.7, 0.1)],
 		[tr("STR_MENU_DIFFICULTY_HARD"), BotConfig.Difficulty.HARD, Color(0.9, 0.3, 0.1)],
+		[tr("STR_MENU_DIFFICULTY_KAIJU"), BotConfig.Difficulty.KAIJU, Color(0.7, 0.3, 0.9)],
 	]
 	var diff_buttons: Array[Button] = []
 	for entry in difficulties:
@@ -295,7 +296,7 @@ func _show_bot_config_popup() -> void:
 		btn.text = entry[0]
 		btn.toggle_mode = true
 		btn.button_group = diff_group
-		btn.custom_minimum_size = Vector2(110, 40)
+		btn.custom_minimum_size = Vector2(96, 40)
 		btn.add_theme_font_size_override("font_size", 18)
 		btn.add_theme_color_override("font_color", entry[2])
 		var difficulty: int = entry[1]

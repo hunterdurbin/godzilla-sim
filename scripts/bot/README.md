@@ -9,9 +9,10 @@
 | `bot_zone_picker.gd` | Battle-zone priority and own/opponent zone-target picking |
 | `bot_invasion.gd` | Invade decisions: which card, when blocked by rage/cost, best/worst invade picks |
 | `bot_selections.gd` | Discard-index and evolution-card picking |
-| `bot_config.gd` | `BotConfig` — difficulty presets (`Difficulty` enum) and tuning knobs |
+| `bot_config.gd` | `BotConfig` — difficulty presets (`Difficulty` enum incl. `KAIJU`), tuning knobs, and the `kaiju_eval_weights` per-phase evaluation weights |
 | `bot_combo.gd` | Combo planning base (multi-turn play sequences) |
 | `bot_combo_shin.gd` | The Shin counter-retreat setup combo (see `docs/combos/shin-combo-paths.md`) |
+| `kaiju/` | KAIJU-tier turn-plan search: beam search over own-turn action sequences on cloned scratch matches (see `kaiju/README.md`). Gated on `config.use_planner`; EASY/NORMAL/HARD never enter it |
 
 ## How decisions flow
 
@@ -42,4 +43,12 @@ moved verbatim; `bot_player.gd` keeps one-line delegates, so every call site
 Seed-matched behavioral diff via `tests/sim/` (see its README): pin
 `base_seed`, run 50 games before/after, diff `[SimResult]` lines. Intentional
 behavior changes show as diffs to review; refactors must diff empty.
-Unit coverage: `tests/unit/test_bot_*.gd`.
+Unit coverage: `tests/unit/test_bot_*.gd` and `tests/unit/test_kaiju_*.gd`.
+
+KAIJU games are deterministic per seed too (diff two same-seed runs), but not
+comparable against HARD baselines — the planner re-seeds the RNG around each
+deliberation. `KAIJU_DEBUG=1` in the environment prints each deliberation
+(chosen plan, root candidates with depth-1 scores, counter numbers). Strength
+runs must use MIRRORED decks: the ESD02 starter beats ESD01 ~80/20 at equal
+difficulty, which otherwise swamps the difficulty signal. Weight tuning runs
+through the replay-stats loop (`scripts/tools/replay_stats/README.md`).

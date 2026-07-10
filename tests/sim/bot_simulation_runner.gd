@@ -9,12 +9,19 @@ extends Node
 @export var p1_deck_name: String = "ESD01 Starter"
 @export var p2_deck_name: String = "ESD02 Starter"
 @export var base_seed: int = 0
+## Record a replay JSON per game for the replay-stats tuning loop
+## (scripts/tools/replay_stats/). Off by default: recording consumes no RNG,
+## but baselines stay provably byte-identical this way.
+@export var record_replays: bool = false
+## Outside user://replays/<version>/recent/ so prune_recent never eats them.
+@export var replay_dir: String = "user://replays/sim/"
 
 var _games_completed: int = 0
 var _results: Array[Dictionary] = []
 var _current_turn_manager: TurnManager
 var _current_bots: Array = [] # [BotPlayer, BotPlayer]
 var _game_running: bool = false
+var _recorder: ReplayRecorder = null
 
 
 func _ready() -> void:
@@ -116,6 +123,30 @@ func _start_next_game() -> void:
 	# Safety: cap at 50 turns to avoid infinite loops
 	_current_turn_manager.turn_started.connect(_on_turn_started)
 
+	if record_replays:
+		_recorder = ReplayRecorder.new()
+		var deck_names: Array[String] = [p1_deck_name, p2_deck_name]
+		_recorder.start(_current_turn_manager.game_state, base_seed + _games_completed, "sim",
+				"%s_vs_%s" % [BotConfig.Difficulty.keys()[p1_difficulty], BotConfig.Difficulty.keys()[p2_difficulty]],
+				deck_names, get_tree())
+		_current_turn_manager.log_message.connect(_recorder.on_log_message)
+		# Effect-layer tokens (played_*, rage_gained, invaded, effect_*) are
+		# emitted on the effect handler, not the TurnManager.
+		_current_turn_manager.effect_handler.log_message.connect(_recorder.on_log_message)
+		# Counter tokens are synthesized from GameEvents in live games
+		# (game_board._on_counter_*) — mirror that here for threat-swing stats.
+		var ev: GameEvents = _current_turn_manager.events
+		ev.counter_succeeded.connect(func(pid: int, cp: int, threat: int, rage_t: int, eff_t: int) -> void:
+			if _recorder:
+				_recorder.on_log_message(GameLog.counter_succeeded(pid, cp, threat, rage_t, eff_t)))
+		ev.counter_failed.connect(func(pid: int, cp: int, threat: int, rage_t: int, eff_t: int) -> void:
+			if _recorder:
+				_recorder.on_log_message(GameLog.counter_failed(pid, cp, threat, rage_t, eff_t)))
+		_current_turn_manager.sub_phase_changed.connect(_recorder.on_phase_boundary)
+		_current_turn_manager.turn_started.connect(func(_pid: int) -> void:
+			if _recorder:
+				_recorder.on_state_changed())
+
 	_game_running = true
 	_current_turn_manager.start_game(_games_completed % 2) # Alternate starting player
 
@@ -146,6 +177,16 @@ func _record_result(winner_id: int, reason: String) -> void:
 	for i in range(2):
 		_current_bots[i].combo_stats["final_rank"] = gs.players[i].current_monster.get("rank", 0)
 		_current_bots[i].combo_stats["final_zone"] = gs.players[i].monster_zone
+	if _recorder:
+		var replay := _recorder.finish(winner_id, reason, _games_completed % 2)
+		DirAccess.make_dir_recursive_absolute(replay_dir)
+		var path := replay_dir.path_join("sim_g%03d_seed%d.json" % [_games_completed + 1, base_seed + _games_completed])
+		# Saved directly (not via ReplayRecorder.save) so the recent-replays
+		# pruning never touches sim output.
+		var err := ReplayData.save_to_file(replay, path)
+		if err != OK:
+			push_warning("[Sim] Failed to save replay %s (error %d)" % [path, err])
+		_recorder = null
 	var result := {
 		"winner": winner_id,
 		"reason": reason,

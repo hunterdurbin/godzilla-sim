@@ -3,7 +3,13 @@ extends RefCounted
 
 ## Holds all tunable bot parameters. Factory methods return difficulty presets.
 
-enum Difficulty {EASY, NORMAL, HARD}
+enum Difficulty {EASY, NORMAL, HARD, KAIJU}
+
+## How much of the opponent's private information the planner may use.
+## NONE: fixed pessimistic assumptions; COUNTS: hand/deck counts only;
+## DECKLIST: counts + hidden-pool composition (hand ∪ deck, unordered);
+## FULL: reads the opponent's actual hand and deck order.
+enum InfoVisibility {NONE, COUNTS, DECKLIST, FULL}
 
 # Timing
 var action_delay: float = 0.5
@@ -135,6 +141,88 @@ var enabled_combos: Array[String] = []
 # Deck analysis
 var playstyle_threshold: float = 0.6
 
+# --- KAIJU planner (turn-plan search) ---
+# Inert unless use_planner is true; only the kaiju() preset enables it.
+var use_planner: bool = false
+var kaiju_info_visibility: int = InfoVisibility.COUNTS
+var kaiju_beam_width: int = 6
+var kaiju_max_depth: int = 6 # actions per turn incl. the terminal stop
+var kaiju_node_budget: int = 400 # scratch-match expansions per deliberation
+var kaiju_time_budget_ms: int = 250
+var kaiju_battle_candidates: int = 4 # top-K battle cards per node
+var kaiju_zone_candidates: int = 2 # top-K zones per battle card
+var kaiju_strategy_candidates: int = 4
+
+# Phase-aware evaluation weights. Phases latch on the game's high-water mark
+# (max monster zone either player has reached, or turn count) — see
+# KaijuEvaluator.phase_key. Keys are feature names; the replay-tuning loop
+# edits these values (see scripts/tools/replay_stats/).
+var kaiju_eval_weights: Dictionary = {
+	"early": {
+		"zone_progress": 5.0,
+		"zone_diff": 5.0,
+		"rank": 12.0,
+		"rage": 20.0,
+		"latent_rage": 8.0,
+		"hand_diff": 10.0,
+		"board_cp": 0.008,
+		"threat_margin": 0.002,
+		"cp_pressure": 0.010,
+		"rankups_left": 40.0,
+		"countered_penalty": 120.0,
+		"counter_retreat_penalty": 60.0,
+		"counter_them_bonus": 120.0,
+		"opp_cp_growth": 1500.0,
+		"opp_invade_threat": 15.0,
+		"opp_rankup_threat": 10.0,
+		"zone8_defense": 40.0,
+		"opp_zone8_block": 30.0,
+		"fragile_cp_discount": 0.15,
+	},
+	"mid": {
+		"zone_progress": 25.0,
+		"zone_diff": 30.0,
+		"rank": 10.0,
+		"rage": 18.0,
+		"latent_rage": 6.0,
+		"hand_diff": 10.0,
+		"board_cp": 0.008,
+		"threat_margin": 0.003,
+		"cp_pressure": 0.012,
+		"rankups_left": 60.0,
+		"countered_penalty": 180.0,
+		"counter_retreat_penalty": 90.0,
+		"counter_them_bonus": 180.0,
+		"opp_cp_growth": 1800.0,
+		"opp_invade_threat": 25.0,
+		"opp_rankup_threat": 20.0,
+		"zone8_defense": 80.0,
+		"opp_zone8_block": 60.0,
+		"fragile_cp_discount": 0.15,
+	},
+	"late": {
+		"zone_progress": 70.0,
+		"zone_diff": 45.0,
+		"rank": 6.0,
+		"rage": 12.0,
+		"latent_rage": 2.0,
+		"hand_diff": 8.0,
+		"board_cp": 0.006,
+		"threat_margin": 0.004,
+		"cp_pressure": 0.012,
+		"rankups_left": 80.0,
+		"countered_penalty": 240.0,
+		"counter_retreat_penalty": 140.0,
+		"counter_them_bonus": 240.0,
+		"opp_cp_growth": 2000.0,
+		"opp_invade_threat": 45.0,
+		"opp_rankup_threat": 30.0,
+		"zone8_defense": 160.0,
+		"opp_zone8_block": 120.0,
+		"fragile_cp_discount": 0.15,
+	},
+}
+
 
 static func easy() -> BotConfig:
 	var c := BotConfig.new()
@@ -220,11 +308,20 @@ static func hard() -> BotConfig:
 	return c
 
 
+static func kaiju() -> BotConfig:
+	var c := hard()
+	c.action_delay = 0.2
+	c.use_planner = true
+	return c
+
+
 static func from_difficulty(difficulty: Difficulty) -> BotConfig:
 	match difficulty:
 		Difficulty.EASY:
 			return easy()
 		Difficulty.HARD:
 			return hard()
+		Difficulty.KAIJU:
+			return kaiju()
 		_:
 			return normal()

@@ -67,7 +67,7 @@ var controller_mapping_type: String = ""
 var controller_glyph_style: String = "auto"
 
 # Bot settings
-var bot_difficulty: int = BotConfig.Difficulty.NORMAL  # 0=Easy, 1=Normal, 2=Hard
+var bot_difficulty: int = BotConfig.Difficulty.NORMAL  # 0=Easy, 1=Normal, 2=Hard, 3=Kaiju
 var bot_seed_text: String = ""             # raw text; if valid int, used as seed; "" = auto
 var bot_speed_value: int = 0               # 0=Auto, 1-10 = 0.1s..1.0s delay
 var bot_playstyle_value: int = 0           # 0=Auto, 1=Invasion, 2=Counter, 3=Balanced
