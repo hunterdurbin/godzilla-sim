@@ -12,6 +12,8 @@ extends Node
 ##   - LB/RB cycle pool / deck / left panel, remembering the grid spot;
 ##   - A on the last deck card empties the grid and falls back onto the
 ##     active tab; X on a stacked deck card removes all copies;
+##   - the header band reaches the Max Counter Power button; A opens its
+##     dialog as a focus context and A on OK closes it back to the header;
 ##   - B raises the unsaved-changes dialog focused on Cancel, and B again
 ##     backs out of it.
 ##
@@ -174,6 +176,26 @@ func _ready() -> void:
 	await _press_button(JOY_BUTTON_X)
 	await _tick(3)
 	assert(builder._get_main_deck_total() == 0, "deck X did not remove all copies")
+
+	# The emptied grid fell back onto the active tab; dpad-right walks the
+	# header band to the Max Counter Power button (zoom -, zoom +, Max CP).
+	assert(builder.main_tab_button.has_focus(), "emptied deck did not fall back to the tab")
+	await _press_button(JOY_BUTTON_DPAD_RIGHT)
+	await _press_button(JOY_BUTTON_DPAD_RIGHT)
+	await _press_button(JOY_BUTTON_DPAD_RIGHT)
+	assert(builder.max_cp_button.has_focus(),
+		"dpad right did not reach the Max CP button: %s" % str(_focus_owner()))
+	await _press_button(JOY_BUTTON_A)
+	await _tick(3)
+	assert(builder.max_counter_dialog.visible, "A did not open the Max CP dialog")
+	assert(GamepadHelper.is_top_context(builder.max_counter_dialog),
+		"Max CP dialog did not take the focus context")
+	await _press_button(JOY_BUTTON_A)
+	await _tick(3)
+	assert(not builder.max_counter_dialog.visible, "A on OK did not close the Max CP dialog")
+	assert(GamepadHelper.is_top_context(builder),
+		"closing the Max CP dialog did not return the focus context to the builder")
+	assert(_focus_owner() != null, "closing the Max CP dialog dropped pad focus entirely")
 
 	# B raises the unsaved-changes gate; the modal lands on Cancel (never the
 	# destructive Discard). A on the focused Cancel closes it — exercising

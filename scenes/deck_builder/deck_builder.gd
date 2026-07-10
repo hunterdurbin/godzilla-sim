@@ -27,6 +27,7 @@ var default_mode_check: CheckBox
 # --- Right panel: deck section ---
 var monster_tab_button: Button
 var main_tab_button: Button
+var max_cp_button: Button
 var clear_button: Button
 var deck_zoom_in_button: Button
 var deck_zoom_out_button: Button
@@ -68,6 +69,7 @@ var decklog_url_edit: LineEdit
 var decklog_region_btn: OptionButton
 var decklog_import_btn: Button
 var decklog_status_label: Label
+var max_counter_dialog: MaxCounterDialog
 var _decklog_importer: DecklogImporter
 
 # --- State ---
@@ -159,7 +161,7 @@ func _first_focusable() -> Control:
 
 func _init_pad_bands() -> void:
 	_deck_header_band = [monster_tab_button, main_tab_button,
-			deck_zoom_out_button, deck_zoom_in_button, clear_button]
+			deck_zoom_out_button, deck_zoom_in_button, max_cp_button, clear_button]
 	_filter_band = []
 	_filter_band.append_array(type_buttons)
 	_filter_band.append_array(color_buttons)
@@ -519,6 +521,11 @@ func _build_deck_section(parent: VBoxContainer) -> void:
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	header.add_child(spacer)
 
+	max_cp_button = Button.new()
+	max_cp_button.text = tr("STR_DB_MAXCP")
+	max_cp_button.tooltip_text = tr("STR_DB_MAXCP_TITLE")
+	header.add_child(max_cp_button)
+
 	clear_button = Button.new()
 	clear_button.text = tr("STR_COMMON_CLEAR")
 	clear_button.pressed.connect(_on_clear_pressed)
@@ -767,8 +774,11 @@ func _build_dialogs() -> void:
 
 	add_child(decklog_dialog)
 
+	max_counter_dialog = MaxCounterDialog.new()
+	add_child(max_counter_dialog)
+
 	for dialog: Window in [unsaved_dialog, delete_dialog, empty_save_dialog,
-			clear_dialog, format_info_dialog, decklog_dialog]:
+			clear_dialog, format_info_dialog, decklog_dialog, max_counter_dialog]:
 		GamepadHelper.register_modal(dialog)
 
 	# OptionButton dropdowns are PopupMenus — focus contexts of their own, so
@@ -810,6 +820,7 @@ func _connect_signals() -> void:
 	# Deck tabs
 	monster_tab_button.pressed.connect(_on_monster_tab_pressed)
 	main_tab_button.pressed.connect(_on_main_tab_pressed)
+	max_cp_button.pressed.connect(_on_max_cp_pressed)
 	deck_zoom_in_button.pressed.connect(_on_deck_zoom_in_pressed)
 	deck_zoom_out_button.pressed.connect(_on_deck_zoom_out_pressed)
 	pool_zoom_in_button.pressed.connect(_on_pool_zoom_in_pressed)
@@ -1740,6 +1751,11 @@ func _on_main_tab_pressed() -> void:
 	SfxManager.play("ui_click")
 	_showing_monster_tab = false
 	_refresh_deck_display()
+
+
+func _on_max_cp_pressed() -> void:
+	SfxManager.play("ui_click")
+	max_counter_dialog.open(_monster_entries.duplicate(true), _main_entries.duplicate(true))
 
 
 func _make_zoom_button(label: String, tooltip: String) -> Button:

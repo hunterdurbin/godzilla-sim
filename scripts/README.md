@@ -13,6 +13,7 @@ presentation layer (`scenes/`) depends on this layer, never the reverse.
 | `effects/` | Per-card effect scripts + facade + registry + codegen (**path-frozen** — see its README) | [effects/README.md](effects/README.md) |
 | `cards/` | Card database, enums, deck validation/management, format pools | [cards/README.md](cards/README.md) |
 | `bot/` | Bot AI: decision pipeline, scoring, combos, difficulty config | [bot/README.md](bot/README.md) |
+| `deck_analysis/` | Decklist analysis run on real engine states (max counter power search) | [deck_analysis/README.md](deck_analysis/README.md) |
 | `session/` | GameSession glue: multiplayer sync (all `@rpc`s), effect-UI routing | [session/README.md](session/README.md) |
 | `server/` | Dedicated headless server (rooms, connections, headless board) | [server/README.md](server/README.md) |
 | `net/` | Transport: LAN/relay/dedicated peers, RPC byte logging, chat filter | [net/README.md](net/README.md) |

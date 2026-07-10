@@ -632,6 +632,22 @@ STR_DB_MAIN_DECK,Main Deck:,メインデッキ:
 STR_DB_STEP2_CARDS,Step-2 Cards:,足2カード:
 STR_DB_ERRORS,Errors,エラー
 STR_DB_WARNINGS,Warnings,警告
+STR_DB_MAXCP,Max Counter Power,最大カウンターパワー
+STR_DB_MAXCP_TITLE,Maximum Counter Power,最大カウンターパワー
+STR_DB_MAXCP_CALC,Calculating…,計算中…
+STR_DB_MAXCP_EMPTY,Add cards to the main deck to preview counter power.,メインデッキにカードを追加するとカウンターパワーを確認できます。
+STR_DB_MAXCP_ZONE_FMT,Zone {N},エリア {N}
+STR_DB_MAXCP_ASSUMPTIONS,"Assumes {RAGE} Rage, best-case setup, empty opponent board","{RAGE} 激昂、最良の展開、相手の場が空の想定"
+STR_DB_MAXCP_PARAM_ZONE,Monster zone:,怪獣エリア:
+STR_DB_MAXCP_PARAM_OPP,Opp. monster zone:,相手怪獣エリア:
+STR_DB_MAXCP_PARAM_RAGE,Rage:,激昂:
+STR_DB_MAXCP_ANY,Any,任意
+STR_DB_MAXCP_AUTO,Auto,自動
+STR_DB_MAXCP_PIN_RAGE,Rage pinned to {RAGE},激昂を {RAGE} に固定
+STR_DB_MAXCP_PIN_ZONE,Monster in zone {N},怪獣はエリア {N}
+STR_DB_MAXCP_PIN_OPP,Opponent monster in zone {N},相手怪獣はエリア {N}
+STR_DB_MAXCP_BEST_OPP,Best vs. opponent monster in zone {N},相手怪獣がエリア {N} の場合が最大
+STR_DB_MAXCP_UNDER,1 under,下に1枚
 STR_VALIDATE_UNKNOWN_CARD_FMT,Unknown card: %s,不明なカード: %s
 STR_VALIDATE_NOT_MONSTER_FMT,%s is not a monster card,%s は怪獣カードではありません
 STR_VALIDATE_TOKEN_IN_DECK_FMT,%s has Token trait (not allowed in decks),%s はトークン特徴を持っています (デッキに入れられません)
