@@ -75,8 +75,9 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	# refill before the diff (this is what makes cycling weak cards into
 	# fresh draws score fairly). The opponent's CURRENT hand is what fuels
 	# their reply, so their side stays unprojected.
+	var refill_ok: bool = not q.is_opponent_end_phase_draw_blocked(pid) and not p.main_deck.is_empty()
 	var our_hand: int = p.hand.size()
-	if not q.is_opponent_end_phase_draw_blocked(pid) and not p.main_deck.is_empty():
+	if refill_ok:
 		our_hand = maxi(our_hand, 5)
 	score += w["hand_diff"] * (our_hand - o.hand.size())
 	score += w["board_cp"] * _defensive_board_cp(q, pid, w["fragile_cp_discount"])
@@ -120,6 +121,11 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 		if race_w != 0.0 and p.monster_zone >= 6 and o.monster_zone >= 6 \
 				and p.monster_zone > o.monster_zone and _holds_invade_card(p):
 			score -= race_w
+	elif refill_ok:
+		# Not countering this turn (CP short of their threat): each card below
+		# a full hand is a fresh end-phase draw — the cycling filter value
+		# that the neutral refill projection can't price.
+		score += w.get("cycle_filter", 0.0) * clampf(5.0 - p.hand.size(), 0.0, 5.0)
 
 	# Rank-ups are lives: each forced rank-up from a counter burns one, and
 	# hitting the cap makes the next counter lethal. Graduated so the search
@@ -128,6 +134,10 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	# reverted: no effect on ESD02's counter-attrition losses — those are
 	# forced, not voluntary spends — and it cost tempo wins on ESD01.)
 	score += w["rankups_left"] * mini(_rankups_left(p), 2)
+	# Lives DIFFERENTIAL — win-condition proximity is relative: spending your
+	# last rank-up while the opponent holds two is a catastrophic exchange
+	# even when your own absolute count "only" dropped by one.
+	score += w.get("rankups_diff", 0.0) * (mini(_rankups_left(p), 2) - mini(_rankups_left(o), 2))
 
 	# --- THEIR next turn's counter phase: they counter US. Our rage-boosted
 	# threat persists until our own next start phase, but their board CP will
@@ -181,6 +191,12 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 		# to clear the blocker (the invasion win is structurally capped).
 		score -= w["opp_zone8_block"] \
 				* (1.0 + config.kaiju_block_clear_scale * (1.0 - clear_capability))
+		# Win-path availability (state-level, not deck-level): camped at z7+
+		# with their zone 8 occupied and NO destruction answer in hand or on
+		# board, the invasion win does not exist from this position — deep
+		# camping is pure exposure (observed 3 games running).
+		if p.monster_zone >= 7 and not _has_destroy_answer(rollout, p):
+			score -= w.get("z8_dead_end", 0.0)
 
 	# --- Combo assembly progress ---
 	# Reward states where a combo line (e.g. shin) is held together: full
@@ -238,6 +254,25 @@ static func _hand_bricks(p: PlayerState, o: PlayerState) -> float:
 		if rank > o.monster_zone + 1:
 			bricks += 2.0 if rank >= 7 and o.monster_zone < 6 else 1.0
 	return bricks
+
+
+## True if any card in hand or on our zones carries a destroys_zone effect —
+## the state-level answer to the opponent's zone-8 blocker (effect lookups
+## are registry-cached; cheap after the first evaluation).
+func _has_destroy_answer(rollout: KaijuRollout, p: PlayerState) -> bool:
+	var handler: EffectHandler = rollout.tm.effect_handler
+	for card in p.hand:
+		var effect := handler.get_effect(card)
+		if effect and "destroys_zone" in effect.get_bot_tags():
+			return true
+	for zone_idx in range(8):
+		var top: Dictionary = p.get_zone_top_card(zone_idx)
+		if top.is_empty():
+			continue
+		var effect := handler.get_effect(top)
+		if effect and "destroys_zone" in effect.get_bot_tags():
+			return true
+	return false
 
 
 func _holds_invade_card(p: PlayerState) -> bool:

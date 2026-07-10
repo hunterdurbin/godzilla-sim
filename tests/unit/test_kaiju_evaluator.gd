@@ -174,6 +174,60 @@ func test_hand_bricks_penalize_unplayable_cards() -> void:
 	assert_bool(_score_with(bricked, config) < _score_with(clean, config)).is_true()
 
 
+func _isolated_config(key: String, weight: float) -> BotConfig:
+	var config := BotConfig.kaiju()
+	var zeroed: Dictionary = {}
+	for k in config.kaiju_eval_weights["mid"]:
+		zeroed[k] = 0.0
+	zeroed[key] = weight
+	config.kaiju_eval_weights["mid"] = zeroed
+	return config
+
+
+func test_rankups_diff_prices_lives_exchange() -> void:
+	# Same board, but 0-vs-2 rank-ups must score below 2-vs-2: win-condition
+	# proximity is relative — the human tracks BOTH lives pools.
+	var config := _isolated_config("rankups_diff", 60.0)
+	var even := _build_state(5, 0, 0)
+	var spent := _build_state(5, 0, 0)
+	spent.players[1].monster_deck.clear()
+	assert_bool(_score_with(spent, config) < _score_with(even, config)).is_true()
+
+
+func test_z8_dead_end_penalizes_pathless_camping() -> void:
+	# Bot at z7 with the opponent's zone 8 occupied: without any destroys_zone
+	# answer the invasion win does not exist — with one in hand it does.
+	var config := _isolated_config("z8_dead_end", 150.0)
+	var battle: Dictionary = CardData.get_card_by_id(VANILLA_BATTLE)
+
+	var pathless := _build_state(7, 0, 0)
+	pathless.players[0].push_zone_card(7, battle.duplicate(true)) # their z8 blocker
+	var armed := _build_state(7, 0, 0)
+	armed.players[0].push_zone_card(7, battle.duplicate(true))
+	armed.players[1].hand.append(CardData.get_card_by_id("ESD01-006").duplicate(true)) # destroys_zone
+
+	assert_bool(_score_with(pathless, config) < _score_with(armed, config)).is_true()
+
+
+func test_cycle_filter_rewards_dumped_hand_on_non_counter_turns() -> void:
+	var config := _isolated_config("cycle_filter", 3.0)
+	var battle: Dictionary = CardData.get_card_by_id(VANILLA_BATTLE)
+
+	var full := _build_state(3, 0, 0)
+	var dumped := _build_state(3, 0, 0)
+	var starved := _build_state(3, 0, 0)
+	for state in [full, dumped, starved]:
+		state.players[1].hand.clear()
+		state.players[1].hand.append(battle.duplicate(true))
+	for i in range(4):
+		full.players[1].hand.append(battle.duplicate(true))
+	starved.players[1].main_deck.clear() # no refill → no filter value
+
+	# Cannot counter in all three states (board CP 0 vs threat) → gate open.
+	assert_bool(_score_with(dumped, config) > _score_with(full, config)).is_true()
+	assert_float(_score_with(starved, config)).is_equal_approx(_score_with(full, config), 0.01)
+
+
 func test_hand_diff_projects_end_phase_refill() -> void:
 	# Isolate hand_diff: a dumped hand refills to 5 in the imminent end phase
 	# (rule 7.5.4), so it must not score below a full hand while the deck can

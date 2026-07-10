@@ -76,6 +76,14 @@ derived value after. Consequences:
 - **Forced non-invade finalist**: the best line containing no INVADE always
   joins the opponent-ply re-scoring pass, so "play slow" is ply-tested even
   when invade lines fill the analytic pool.
+- **Win-condition proximity** (v1.3.1): advantage is relative and path-based,
+  not stat-margin-based. `rankups_diff` prices the LIVES DIFFERENTIAL
+  (spending your last rank-up while they hold two is catastrophic even
+  though your absolute count dropped by one); `z8_dead_end` recognizes that
+  at z7+ with the opponent's zone 8 occupied and no destroys_zone answer in
+  hand/board, the invasion win does not exist from that position — camping
+  is pure exposure. `cycle_filter` prices the fresh-draw value of a dumped
+  hand on non-counter turns.
 - **Cycling** (v1.3): when the bot isn't countering this turn anyway
   (`can_counter_opponent()` false), candidate enumeration adds a dump of the
   weakest playable battle card onto its own lowest-CP occupied zone —
