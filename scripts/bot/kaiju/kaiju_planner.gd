@@ -121,6 +121,16 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 	# lines that already ended the game.
 	var use_opp_ply: bool = config.kaiju_opponent_ply
 	var finalists: Array[Dictionary] = []
+	# Best line containing no INVADE action — forced into the reply pass when
+	# invade-heavy lines fill the pool, so "play slow" gets ply-tested. Only
+	# for LOW-viability decks: a deck that can finish the race should race
+	# (measured: forcing slow lines on a high-viability mirror costs ~16 win
+	# points vs HARD — the 1-turn reply horizon undervalues sustained tempo),
+	# while a deck that can't clear the zone-8 blocker needs the slow line
+	# in the comparison.
+	var viability: float = float(config.kaiju_deck_profile.get("invasion_viability", 1.0))
+	var force_slow_line: bool = use_opp_ply and viability < 0.5
+	var best_no_invade: Dictionary = {}
 
 	for depth in range(config.kaiju_max_depth):
 		var next_beam: Array[Dictionary] = []
@@ -136,6 +146,9 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 			if use_opp_ply and _finalist_qualifies(finalists, config, stop_score):
 				_offer_finalist(finalists, config,
 						{"steps": steps.duplicate(), "score": stop_score, "snap": rollout.capture()})
+			if force_slow_line and not _line_has_invade(steps) \
+					and (best_no_invade.is_empty() or stop_score > best_no_invade["score"]):
+				best_no_invade = {"steps": steps.duplicate(), "score": stop_score, "snap": rollout.capture()}
 
 			if out_of_budget or best_score >= KaijuEvaluator.WIN_SCORE:
 				continue
@@ -184,6 +197,15 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 	# the line by post-reply score. Catches one-turn opponent CP spikes and
 	# lethal counter setups the analytic leaf model underestimates.
 	if use_opp_ply and not finalists.is_empty() and best_score < KaijuEvaluator.WIN_SCORE:
+		# Guarantee at least one non-invade line gets ply-tested.
+		if not best_no_invade.is_empty():
+			var pool_has_no_invade := false
+			for f in finalists:
+				if not _line_has_invade(f["steps"]):
+					pool_has_no_invade = true
+					break
+			if not pool_has_no_invade:
+				finalists.append(best_no_invade) # one extra slot beyond the cap
 		var best_post: float = -INF
 		for f in finalists:
 			var post: float
@@ -226,6 +248,13 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 		"predicted_hash": check_hash, "card_id": "", "sub_decisions": [],
 	})
 	return best_steps
+
+
+func _line_has_invade(steps: Array[Dictionary]) -> bool:
+	for step in steps:
+		if step["action"] == CardEnums.ActionType.INVADE:
+			return true
+	return false
 
 
 ## Would a line with this analytic score enter the finalist pool? Checked
@@ -319,6 +348,39 @@ func _enumerate_candidates(rollout: KaijuRollout, pid: int, config: BotConfig) -
 				out.append(_candidate(CardEnums.ActionType.PLAY_BATTLE, {"hand_index": idx, "zone_index": zone}, player.hand[idx]))
 				remaining.erase(zone)
 
+	# Cycling: when we're not countering this turn anyway, dumping the weakest
+	# playable battle card onto an occupied own zone (overload, rule 11.5)
+	# converts a known-weak card into an end-phase refill draw — the human
+	# tempo technique of playing into the same zone to cycle into better
+	# cards. The zone picker never proposes occupied zones, so this is a
+	# genuinely new line; the refill-aware hand_diff lets it evaluate fairly
+	# and the search decides whether the fresh draw beats keeping the card.
+	if CardEnums.ActionType.PLAY_BATTLE in valid and not policy.can_counter_opponent():
+		var cycle_pool: Array[int] = []
+		cycle_pool.assign(re.get_playable_battle_cards(player, opponent).filter(
+				func(idx: int) -> bool: return idx not in combo_reserved))
+		if not cycle_pool.is_empty():
+			var dump_idx: int = cycle_pool[0]
+			for idx in cycle_pool:
+				if policy._card_sort_value(player.hand[idx]) < policy._card_sort_value(player.hand[dump_idx]):
+					dump_idx = idx
+			var dump_card: Dictionary = player.hand[dump_idx]
+			var queries: EffectQueries = rollout.queries()
+			var dump_zone: int = -1
+			var dump_zone_cp: int = 0
+			for z in re.get_valid_zones_for_card(dump_card, player, opponent):
+				if not player.zone_has_cards(z):
+					continue
+				if rollout.tm.effect_handler.should_stack_on_play(pid, dump_card, z):
+					continue # stacking keeps the old card — not a cycle
+				var cp: int = queries.get_effective_zone_cp(pid, z)
+				if dump_zone < 0 or cp < dump_zone_cp:
+					dump_zone = z
+					dump_zone_cp = cp
+			if dump_zone >= 0:
+				out.append(_candidate(CardEnums.ActionType.PLAY_BATTLE,
+						{"hand_index": dump_idx, "zone_index": dump_zone}, dump_card))
+
 	if CardEnums.ActionType.GAIN_RAGE in valid:
 		var rage_indices: Array[int] = []
 		rage_indices.assign(re.get_monster_cards_for_rage(player).filter(
@@ -339,7 +401,8 @@ func _enumerate_candidates(rollout: KaijuRollout, pid: int, config: BotConfig) -
 			for idx in invade_indices:
 				if mini(player.hand[idx].get("invasion_icon", 0), 2) != steps_wanted:
 					continue
-				if best_idx < 0 or policy._card_sort_value(player.hand[idx]) < policy._card_sort_value(player.hand[best_idx]):
+				if best_idx < 0 or _invade_cost_key(player.hand[idx], opponent, policy) \
+						< _invade_cost_key(player.hand[best_idx], opponent, policy):
 					best_idx = idx
 			if best_idx >= 0:
 				out.append(_candidate(CardEnums.ActionType.INVADE, {"hand_index": best_idx}, player.hand[best_idx]))
@@ -359,6 +422,16 @@ func _dedupe_candidates(candidates: Array[Dictionary]) -> Array[Dictionary]:
 		seen[key] = true
 		unique.append(cand)
 	return unique
+
+
+## Invade discard preference: bricked battle cards first (rank locked out by
+## the opponent monster's zone, rule 8.2 — invasion cost is their main
+## outlet since rage fodder must be monsters), then the classic lowest sort
+## value. Lower key = better cost.
+func _invade_cost_key(card: Dictionary, opponent: PlayerState, policy: BotPlayer) -> int:
+	var bricked: bool = card.get("card_type") == CardEnums.CardType.BATTLE \
+			and int(card.get("rank", 0)) > opponent.monster_zone + 1
+	return policy._card_sort_value(card) - (100000000 if bricked else 0)
 
 
 func _candidate(action: CardEnums.ActionType, params: Dictionary, card: Dictionary) -> Dictionary:

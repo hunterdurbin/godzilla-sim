@@ -227,7 +227,27 @@ func setup_bot(local_player_id: int) -> BotPlayer:
 
 	turn_manager.game_state.player_names[1] = "Bot"
 	GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+
+	# KAIJU only: adapt evaluation to this opponent's replay history.
+	# Fire-and-forget — the profile lands within a few frames and applies at
+	# the bot's next replan; never wired in headless sims (determinism).
+	if bot_player.config.use_planner:
+		_load_opponent_profile(bot_player)
 	return bot_player
+
+
+func _load_opponent_profile(bot: BotPlayer) -> void:
+	var opponent_id: int = 1 - bot.bot_player_id
+	var opponent_name: String = turn_manager.game_state.player_names[opponent_id]
+	var deck: String = DecklistManager.get_player_deck_name(opponent_id)
+	var profile: Dictionary = await KaijuOpponentProfile.build_for_opponent_async(
+			opponent_name, GameSerializer.id_to_card, get_tree(), deck)
+	if bot_player != bot or profile.is_empty():
+		return # session torn down / rematch rebuilt the bot, or nothing usable
+	bot.config.kaiju_opponent_profile = profile
+	print("[Kaiju] Opponent profile loaded — %d games, cp/card %.0f, invade %.2f, hoard %.1f" % [
+			profile["games"], profile.get("cp_per_card", 0.0),
+			profile.get("invade_tempo", 0.0), profile.get("hand_hoard", 0.0)])
 
 
 ## Construct + start ReplayRecorder. Caller must have already run

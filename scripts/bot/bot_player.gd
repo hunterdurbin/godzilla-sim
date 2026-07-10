@@ -97,22 +97,60 @@ func analyze_deck() -> void:
 	## Scan all cards in the bot's deck + hand to determine playstyle.
 	## Call after game setup when deck is populated.
 	init_combos()
-	if config.forced_playstyle >= 0:
-		playstyle = config.forced_playstyle as Playstyle
-		print("[Bot] Forced playstyle: %s" % Playstyle.keys()[playstyle])
-		return
 
 	var player := game_state.players[bot_player_id]
 	var all_cards: Array[Dictionary] = []
 	all_cards.append_array(player.hand)
 	all_cards.append_array(player.main_deck)
+	var scores := _scan_playstyle_scores(all_cards)
 
-	# Count tag occurrences and trigger map signals across all cards
+	# KAIJU deck-shape profile: computed before the forced-playstyle return so
+	# the evaluator's viability scaling works regardless of playstyle override.
+	if config.use_planner and not all_cards.is_empty():
+		config.kaiju_deck_profile = BotDeckProfile.compute(
+				all_cards, _bot_tags_for_card, scores["invasion"], scores["counter"])
+		var dp: Dictionary = config.kaiju_deck_profile
+		print("[Kaiju] Deck profile — viability %.2f (clear %.1f, destroys %d, adv %d, steps %d)" % [
+				dp["invasion_viability"], dp["clear_capability"], dp["destroy_count"],
+				dp["advance_opp_count"], dp["invade_steps"]])
+
+	if config.forced_playstyle >= 0:
+		playstyle = config.forced_playstyle as Playstyle
+		print("[Bot] Forced playstyle: %s" % Playstyle.keys()[playstyle])
+		return
+	if all_cards.is_empty():
+		return
+
+	var invasion_score: float = scores["invasion"]
+	var counter_score: float = scores["counter"]
+
+	# Determine playstyle from ratio
+	var total := invasion_score + counter_score
+	if total == 0:
+		playstyle = Playstyle.BALANCED
+	elif invasion_score / total >= config.playstyle_threshold:
+		playstyle = Playstyle.INVASION
+	elif counter_score / total >= config.playstyle_threshold:
+		playstyle = Playstyle.COUNTER
+	else:
+		playstyle = Playstyle.BALANCED
+
+	print("[Bot] Deck analysis — invasion: %.1f, counter: %.1f, playstyle: %s" % [
+		invasion_score, counter_score, Playstyle.keys()[playstyle]])
+
+
+func _bot_tags_for_card(card: Dictionary) -> Array[String]:
+	var effect := effect_handler.get_effect(card)
+	return effect.get_bot_tags() if effect else ([] as Array[String])
+
+
+## Tag/trigger scan behind analyze_deck — extracted verbatim so the KAIJU
+## deck profile can reuse the scores. Pure: no state writes, no prints.
+func _scan_playstyle_scores(all_cards: Array[Dictionary]) -> Dictionary:
 	var invasion_score: float = 0.0
 	var counter_score: float = 0.0
-	var card_count: int = all_cards.size()
-	if card_count == 0:
-		return
+	if all_cards.is_empty():
+		return {"invasion": 0.0, "counter": 0.0}
 
 	# Count monster cards (high monster count suggests aggressive play)
 	var monster_count: int = 0
@@ -195,19 +233,7 @@ func analyze_deck() -> void:
 		if "can_be_destroyed" in triggers or "on_would_be_destroyed" in triggers:
 			counter_score += 0.5
 
-	# Determine playstyle from ratio
-	var total := invasion_score + counter_score
-	if total == 0:
-		playstyle = Playstyle.BALANCED
-	elif invasion_score / total >= config.playstyle_threshold:
-		playstyle = Playstyle.INVASION
-	elif counter_score / total >= config.playstyle_threshold:
-		playstyle = Playstyle.COUNTER
-	else:
-		playstyle = Playstyle.BALANCED
-
-	print("[Bot] Deck analysis — invasion: %.1f, counter: %.1f, playstyle: %s" % [
-		invasion_score, counter_score, Playstyle.keys()[playstyle]])
+	return {"invasion": invasion_score, "counter": counter_score}
 
 
 func _delay() -> void:

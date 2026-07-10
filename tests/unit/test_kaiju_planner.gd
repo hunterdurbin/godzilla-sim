@@ -109,6 +109,66 @@ func test_plan_cache_replans_on_hash_mismatch() -> void:
 	assert_bool(params.get("hand_index", -1) == 99).is_false()
 
 
+func test_cycle_dump_candidate_when_not_countering() -> void:
+	# Bot board CP 0 vs opponent threat: cannot counter → the planner offers
+	# dumping the weakest playable battle card onto its own occupied zone
+	# (overload cycling). The zone picker never proposes occupied zones, so
+	# any occupied-zone PLAY_BATTLE candidate is the cycle line.
+	var state := _build_state()
+	var battle: Dictionary = CardData.get_card_by_id(VANILLA_BATTLE)
+	state.players[1].push_zone_card(0, battle.duplicate(true)) # occupied own zone
+	var bot := _make_bot(state)
+	var planner := KaijuPlanner.new(bot)
+	var rollout := KaijuRollout.new(KaijuRollout.snapshot(state), 1, bot.config)
+
+	assert_bool(rollout.policy.can_counter_opponent()).is_false()
+	var candidates := planner._enumerate_candidates(rollout, 1, bot.config)
+	var cycle_found := false
+	for cand in candidates:
+		if cand["action"] == CardEnums.ActionType.PLAY_BATTLE \
+				and rollout.state().players[1].zone_has_cards(cand["params"]["zone_index"]):
+			cycle_found = true
+	assert_bool(cycle_found).is_true()
+	rollout.release()
+
+
+func test_no_cycle_dump_when_counter_available() -> void:
+	# One occupied zone holding a 7000-CP card (>= opponent threat 6000 at
+	# rage 0, so the bot WILL counter). The classic picker never proposes it
+	# (overwriting 7000 CP with a 2000-CP card fails its no-loss filter), so
+	# an occupied-zone candidate can only come from the cycle line — which
+	# the counter gate must suppress here.
+	var state := _build_state()
+	state.players[0].rage = 0 # threat 6000: the 7000-CP wall counters it
+	state.players[1].push_zone_card(0, CardData.get_card_by_id("ESD01-012").duplicate(true))
+	var bot := _make_bot(state)
+	var planner := KaijuPlanner.new(bot)
+	var rollout := KaijuRollout.new(KaijuRollout.snapshot(state), 1, bot.config)
+
+	assert_bool(rollout.policy.can_counter_opponent()).is_true()
+	var candidates := planner._enumerate_candidates(rollout, 1, bot.config)
+	for cand in candidates:
+		if cand["action"] == CardEnums.ActionType.PLAY_BATTLE:
+			assert_bool(rollout.state().players[1].zone_has_cards(cand["params"]["zone_index"])).is_false()
+	rollout.release()
+
+
+func test_line_has_invade_detects_invade_steps() -> void:
+	var bot := _make_bot(_build_state())
+	var planner := KaijuPlanner.new(bot)
+	var invade_line: Array[Dictionary] = [
+		{"action": CardEnums.ActionType.PLAY_BATTLE, "params": {}},
+		{"action": CardEnums.ActionType.INVADE, "params": {}},
+	]
+	var slow_line: Array[Dictionary] = [
+		{"action": CardEnums.ActionType.PLAY_BATTLE, "params": {}},
+		{"action": CardEnums.ActionType.GAIN_RAGE, "params": {}},
+	]
+	assert_bool(planner._line_has_invade(invade_line)).is_true()
+	assert_bool(planner._line_has_invade(slow_line)).is_false()
+	assert_bool(planner._line_has_invade([] as Array[Dictionary])).is_false()
+
+
 func test_plan_cache_replans_when_hand_card_changed() -> void:
 	var bot := _make_bot(_build_state())
 	var planner := KaijuPlanner.new(bot)

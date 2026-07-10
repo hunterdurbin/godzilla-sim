@@ -159,6 +159,20 @@ var kaiju_opponent_ply: bool = true
 var kaiju_opponent_reply_actions: int = 10 # action cap per finalist reply
 var kaiju_finalists: int = 4 # beam leaves re-scored with the opponent ply
 
+# --- KAIJU deck / opponent profiles (planner-gated; inert elsewhere) ---
+# Deck-shape profile set once per match by BotPlayer.analyze_deck() when
+# use_planner (BotDeckProfile.compute). Empty = neutral (all evaluator scale
+# factors 1.0).
+var kaiju_deck_profile: Dictionary = {}
+# Viability shaping scalars read by KaijuEvaluator (tunable like weights):
+var kaiju_viability_zone_floor: float = 0.35 # zone terms scale lerp(floor, 1, viability)
+var kaiju_low_viability_counter_boost: float = 0.35 # counter terms ×(1 + boost×(1−viability))
+var kaiju_block_clear_scale: float = 0.5 # opp_zone8_block ×(1 + scale×(1−clear_capability))
+# Live-only opponent-tendency profile (KaijuOpponentProfile, wired by
+# game_session). Empty = disabled. NEVER set in headless sims — KAIJU seed
+# determinism depends on it staying empty there.
+var kaiju_opponent_profile: Dictionary = {}
+
 # Phase-aware evaluation weights. Phases latch on the game's high-water mark
 # (max monster zone either player has reached, or turn count) — see
 # KaijuEvaluator.phase_key. Keys are feature names; the replay-tuning loop
@@ -178,6 +192,9 @@ var kaiju_eval_weights: Dictionary = {
 		"countered_penalty": 120.0,
 		"counter_retreat_penalty": 60.0,
 		"counter_them_bonus": 120.0,
+		"race_counter_restraint": 0.0,
+		"draw_tempo": 4.0,
+		"hand_bricks": 6.0,
 		"opp_cp_growth": 1500.0,
 		"opp_invade_threat": 15.0,
 		"opp_rankup_threat": 10.0,
@@ -200,6 +217,9 @@ var kaiju_eval_weights: Dictionary = {
 		"countered_penalty": 180.0,
 		"counter_retreat_penalty": 90.0,
 		"counter_them_bonus": 180.0,
+		"race_counter_restraint": 300.0,
+		"draw_tempo": 3.0,
+		"hand_bricks": 8.0,
 		"opp_cp_growth": 1800.0,
 		"opp_invade_threat": 25.0,
 		"opp_rankup_threat": 20.0,
@@ -222,6 +242,9 @@ var kaiju_eval_weights: Dictionary = {
 		"countered_penalty": 240.0,
 		"counter_retreat_penalty": 140.0,
 		"counter_them_bonus": 240.0,
+		"race_counter_restraint": 420.0,
+		"draw_tempo": 1.5,
+		"hand_bricks": 10.0,
 		"opp_cp_growth": 2000.0,
 		"opp_invade_threat": 45.0,
 		"opp_rankup_threat": 30.0,

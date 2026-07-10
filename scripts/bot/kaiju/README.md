@@ -55,6 +55,42 @@ derived value after. Consequences:
 - KAIJU games are fully deterministic per `base_seed` — two identical runs
   diff empty — but KAIJU results are NOT comparable against HARD baselines.
 
+## Deck & opponent awareness (v1.2)
+
+- **Deck profile** (`BotDeckProfile.compute`, set on `config.kaiju_deck_profile`
+  by `analyze_deck` when `use_planner`): quantifies whether the deck can win
+  by invasion — zone-destruction count (the answer to the opponent's zone-8
+  blocker), invade-icon density, advances_opponent effects, playstyle scores.
+  The evaluator scales `zone_progress`/`zone_diff` down and the counter terms
+  up at low viability, and prices `opp_zone8_block` higher when the deck has
+  no destruction to clear it.
+- **Draw tempo** (`draw_tempo` weight): start-phase draws equal the OPPONENT
+  monster's rank (rule 7.2.2) — the term prices the card-economy side of
+  rank, so early own rank-ups stop looking like free value.
+- **Race counter restraint** (`race_counter_restraint` weight): countering is
+  MANDATORY at CP ≥ threat (rule 7.4.3); when both monsters are at zone 6+
+  and we lead the race with an invade card in hand, crossing the counter
+  threshold is scored net-negative so the beam keeps its deployed CP below
+  their threat (deployment restraint) instead of knocking them back,
+  re-locking our hand ranks, and gifting them a fresh monster.
+- **Forced non-invade finalist**: the best line containing no INVADE always
+  joins the opponent-ply re-scoring pass, so "play slow" is ply-tested even
+  when invade lines fill the analytic pool.
+- **Cycling** (v1.3): when the bot isn't countering this turn anyway
+  (`can_counter_opponent()` false), candidate enumeration adds a dump of the
+  weakest playable battle card onto its own lowest-CP occupied zone —
+  overload (rule 11.5) discards the old card, and the end-phase refill (rule
+  7.5.4) converts the play into a fresh draw. Paired with the refill-aware
+  `hand_diff` (the evaluator projects our imminent refill to 5, so a dumped
+  hand no longer reads as card loss).
+- **Opponent profile** (`KaijuOpponentProfile`, LIVE ONLY — wired by
+  game_session, never by the sim runner, keeping headless sims
+  seed-deterministic): scans the current version's replays for games against
+  this opponent (≥ 3 required), and blends measured tendencies into the
+  evaluator with a trust ramp — `cp_per_card` replaces the static
+  `opp_cp_growth` prior, `counters_per_turn` scales the defensive terms,
+  `invade_tempo`/`early_invader` scale invasion threat.
+
 ## Debugging
 
 Set `KAIJU_DEBUG=1` in the environment to print each deliberation: the root

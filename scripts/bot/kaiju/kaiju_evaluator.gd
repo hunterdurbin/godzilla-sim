@@ -49,14 +49,50 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	var w: Dictionary = config.kaiju_eval_weights.get(phase, config.kaiju_eval_weights["mid"])
 	var score: float = 0.0
 
+	# --- Deck-shape scaling (BotDeckProfile; empty profile = all factors 1.0).
+	# A deck that cannot clear the opponent's zone-8 blocker or sustain
+	# invasion tempo should not be paid full price for racing forward — and
+	# should value the counter game more instead.
+	var dp: Dictionary = config.kaiju_deck_profile
+	var viability: float = float(dp.get("invasion_viability", 1.0))
+	var clear_capability: float = float(dp.get("clear_capability", 1.0))
+	# Saturating: any deck at viability >= 0.8 races at full speed — the
+	# tempo/advance/style components keep even fully-capable decks below 1.0,
+	# and cutting their zone terms measurably weakens them in racing matchups.
+	# Only genuinely invasion-poor decks slow down and lean counter.
+	var race_readiness: float = clampf(viability / 0.8, 0.0, 1.0)
+	var zone_scale: float = lerpf(config.kaiju_viability_zone_floor, 1.0, race_readiness)
+	var counter_scale: float = 1.0 + config.kaiju_low_viability_counter_boost * (1.0 - race_readiness)
+
 	# --- Progress / material ---
-	score += w["zone_progress"] * p.monster_zone
-	score += w["zone_diff"] * (p.monster_zone - o.monster_zone)
+	score += w["zone_progress"] * p.monster_zone * zone_scale
+	score += w["zone_diff"] * (p.monster_zone - o.monster_zone) * zone_scale
 	score += w["rank"] * p.current_monster.get("rank", 1)
 	score += w["rage"] * p.rage
 	score += w["latent_rage"] * _monster_cards_in_hand(p)
-	score += w["hand_diff"] * (p.hand.size() - o.hand.size())
+	# Our end phase is imminent from this end-of-main state and refills the
+	# hand to 5 (rule 7.5.4), so a dumped hand is not card loss — project the
+	# refill before the diff (this is what makes cycling weak cards into
+	# fresh draws score fairly). The opponent's CURRENT hand is what fuels
+	# their reply, so their side stays unprojected.
+	var our_hand: int = p.hand.size()
+	if not q.is_opponent_end_phase_draw_blocked(pid) and not p.main_deck.is_empty():
+		our_hand = maxi(our_hand, 5)
+	score += w["hand_diff"] * (our_hand - o.hand.size())
 	score += w["board_cp"] * _defensive_board_cp(q, pid, w["fragile_cp_discount"])
+	# Start-phase draws equal the OPPONENT monster's rank (rule 7.2.2): each
+	# turn-pair we net (their rank − ours) cards. Prices the card-economy side
+	# of rank, opposing the flat "rank" reward — early own rank-ups feed the
+	# opponent's hand.
+	score += w.get("draw_tempo", 0.0) \
+			* (o.current_monster.get("rank", 1) - p.current_monster.get("rank", 1))
+	# Bricked hand cards: battle cards whose rank exceeds the opponent
+	# monster's zone by 2+ are dead weight (rule 8.2 gates playable rank on
+	# THEIR zone; one zone away still counts as a near-future card). They
+	# can't even be raged away (rage fodder must be monsters, rule 8.4) —
+	# invasion costs and effect discards are the outlets, so the search
+	# should prefer lines that spend them.
+	score -= w.get("hand_bricks", 0.0) * _hand_bricks(p, o)
 
 	# --- Upcoming counter phase (OUR turn): WE counter THEM when our board
 	# CP clears their threat (rule 5.15: current player counters opponent).
@@ -67,11 +103,23 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	var their_threat: int = q.get_effective_threat_level(1 - pid)
 	# Continuous pressure gradient so the search values every CP step toward
 	# a counter, not just the moment it lands.
-	score += w["cp_pressure"] * clampf(our_cp - their_threat, -15000.0, 15000.0)
+	score += w["cp_pressure"] * counter_scale * clampf(our_cp - their_threat, -15000.0, 15000.0)
 	if not q.is_counter_prevented(1 - pid, our_cp) and our_cp >= their_threat:
 		if not re.can_opponent_rank_up(o):
 			return WIN_SCORE * 0.5 # counter victory resolves this counter phase
-		score += w["counter_them_bonus"]
+		score += w["counter_them_bonus"] * counter_scale
+		# Race-aware counter restraint: countering while we lead the endgame
+		# race retreats their monster (re-locking our battle-card ranks, rule
+		# 8.2) and hands them a fresh higher-rank monster. Countering is
+		# MANDATORY when CP >= threat (rule 7.4.3) — the only legal way to
+		# avoid it is deployment restraint, so make crossing the threshold
+		# net-negative here (weight exceeds counter_them_bonus). Scaled by
+		# invasion viability: a deck that can't finish the race should still
+		# take counter progress.
+		var race_w: float = w.get("race_counter_restraint", 0.0) * viability
+		if race_w != 0.0 and p.monster_zone >= 6 and o.monster_zone >= 6 \
+				and p.monster_zone > o.monster_zone and _holds_invade_card(p):
+			score -= race_w
 
 	# Rank-ups are lives: each forced rank-up from a counter burns one, and
 	# hitting the cap makes the next counter lethal. Graduated so the search
@@ -86,16 +134,30 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	# have grown by a main phase of plays first. Battle-card rank playability
 	# follows OUR monster's zone number, so advancing unlocks their hand:
 	# growth ≈ hand size × CP-per-card × fraction of ranks our zone unlocks.
-	var growth: float = o.hand.size() * w["opp_cp_growth"] * clampf(p.monster_zone / 8.0, 0.0, 1.0)
+	# With an opponent profile (live games), the static per-card prior is
+	# blended toward this opponent's MEASURED deployment rate.
+	var op: Dictionary = config.kaiju_opponent_profile
+	var trust: float = _profile_trust(op)
+	var per_card: float = w["opp_cp_growth"]
+	if trust > 0.0:
+		per_card = lerpf(per_card, float(op.get("cp_per_card", per_card)), trust)
+	var growth: float = o.hand.size() * per_card * clampf(p.monster_zone / 8.0, 0.0, 1.0)
+	if trust > 0.0:
+		# Hoarders (large steady hand) realize less of their hand per turn.
+		growth *= lerpf(1.0, clampf(1.3 - 0.1 * float(op.get("hand_hoard", 3.0)), 0.7, 1.2), trust)
+	# Counter aggression: how often this opponent actually lands counters,
+	# vs a 0.25/turn neutral baseline.
+	var counter_aggression: float = lerpf(1.0,
+			clampf(float(op.get("counters_per_turn", 0.25)) / 0.25, 0.6, 1.6), trust)
 	var opp_cp: int = _effective_counter_cp(q, o) + int(growth)
 	var our_threat: int = q.get_effective_threat_level(pid)
 	# Continuous defense gradient: every rage point moves us away from the
 	# opponent's projected counter wall even before we're fully safe.
-	score += w["threat_margin"] * clampf(our_threat - opp_cp, -15000.0, 15000.0)
+	score += w["threat_margin"] * counter_aggression * clampf(our_threat - opp_cp, -15000.0, 15000.0)
 	if not q.is_counter_prevented(pid, opp_cp) and opp_cp >= our_threat:
 		# A successful counter always forces a rank-up, burning the finite
 		# monster line — flat penalty on top of the margin/retreat terms.
-		score -= w["countered_penalty"]
+		score -= w["countered_penalty"] * counter_aggression
 		var retreat_zone: int = ActionHandler.get_counter_retreat_zone(p.monster_zone)
 		score -= w["counter_retreat_penalty"] * (p.monster_zone - retreat_zone)
 		if not re.can_opponent_rank_up(p):
@@ -103,7 +165,10 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 
 	# --- Opponent threats under the info-visibility knob ---
 	if not q.is_invasion_blocked(pid):
-		score -= w["opp_invade_threat"] * _expected_opp_invade_steps(o)
+		var invade_factor: float = lerpf(1.0,
+				clampf(float(op.get("invade_tempo", 0.8)) / 0.8
+						+ 0.2 * float(op.get("early_invader", 0.0)), 0.6, 1.7), trust)
+		score -= w["opp_invade_threat"] * invade_factor * _expected_opp_invade_steps(o)
 	if not re.can_opponent_rank_up(o):
 		# They lose to a single successful counter — strong incentive to press.
 		score += w["opp_rankup_threat"]
@@ -112,7 +177,10 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	if p.zone_has_battle_card(7) and o.monster_zone >= 6:
 		score += w["zone8_defense"]
 	if o.zone_has_battle_card(7) and p.monster_zone >= 6:
-		score -= w["opp_zone8_block"]
+		# Being blocked at zone 8 costs more when the deck has no destruction
+		# to clear the blocker (the invasion win is structurally capped).
+		score -= w["opp_zone8_block"] \
+				* (1.0 + config.kaiju_block_clear_scale * (1.0 - clear_capability))
 
 	# --- Combo assembly progress ---
 	# Reward states where a combo line (e.g. shin) is held together: full
@@ -148,6 +216,35 @@ func _rankups_left(p: PlayerState) -> int:
 				n += 1
 				break
 	return n
+
+
+## How much to trust the opponent profile: ramps with usable game count,
+## capped at 0.8 so the static prior never fully vanishes. Empty profile → 0.
+func _profile_trust(op: Dictionary) -> float:
+	if op.is_empty():
+		return 0.0
+	return clampf((int(op.get("games", 0)) - KaijuOpponentProfile.MIN_GAMES + 1) / 5.0, 0.0, 0.8)
+
+
+## Battle cards in hand that are unplayable now and not close to unlocking
+## (rank > opponent monster zone + 1). Rank 7+ cards count double below the
+## endgame — they realistically never unlock.
+static func _hand_bricks(p: PlayerState, o: PlayerState) -> float:
+	var bricks: float = 0.0
+	for card in p.hand:
+		if card.get("card_type") != CardEnums.CardType.BATTLE:
+			continue
+		var rank: int = int(card.get("rank", 0))
+		if rank > o.monster_zone + 1:
+			bricks += 2.0 if rank >= 7 and o.monster_zone < 6 else 1.0
+	return bricks
+
+
+func _holds_invade_card(p: PlayerState) -> bool:
+	for card in p.hand:
+		if int(card.get("invasion_icon", 0)) >= 1:
+			return true
+	return false
 
 
 func _monster_cards_in_hand(p: PlayerState) -> int:
