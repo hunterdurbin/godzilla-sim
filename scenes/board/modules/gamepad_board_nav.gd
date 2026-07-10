@@ -172,9 +172,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		_try_play_hovered(CardEnums.ActionType.INVADE)
 	elif event.is_action_pressed("pad_play_card_rage"):
 		_try_play_hovered(CardEnums.ActionType.GAIN_RAGE)
-	elif event.is_action_pressed("pad_menu"):
-		if _board._leave_dialog:
-			_board._leave_dialog.popup_centered()
 	elif event.is_action_pressed("pad_chat"):
 		# Select cycles cursor <-> effects area when one is up; chat otherwise.
 		if not _handle_select_toggle():

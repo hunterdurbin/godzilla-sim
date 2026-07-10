@@ -1473,7 +1473,9 @@ func _input(event: InputEvent) -> void:
 				_update_action_buttons(_client_playable.get("valid_actions", []))
 		elif _confirming_pass:
 			_cancel_pass_confirmation()
-		else:
+		elif not GamepadHelper.is_using_gamepad():
+			# Controller has no path to the leave dialog (it can't be pad-navigated);
+			# pad users leave via the on-screen Main Menu button instead.
 			_leave_dialog.popup_centered()
 		get_viewport().set_input_as_handled()
 		return
