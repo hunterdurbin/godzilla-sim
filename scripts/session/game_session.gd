@@ -249,5 +249,19 @@ func setup_replay_recorder(is_bot_game: bool) -> ReplayRecorder:
 	]
 	replay_recorder.start(turn_manager.game_state, seed_val, mode_str, diff_str, d_names, get_tree())
 	turn_manager.log_message.connect(replay_recorder.on_log_message)
+	# Effect-layer tokens (played_*, rage_gained, invaded, evolution, effect_*)
+	# are emitted on the effect handler, not the TurnManager — without this the
+	# replay carries only turn boundaries and replay-stats metrics read zero.
+	turn_manager.effect_handler.log_message.connect(replay_recorder.on_log_message)
+	# Counter tokens: game_board synthesizes these for the chat log only, so
+	# mirror the sim runner and record them here (the only place effect-inclusive
+	# CP/threat breakdowns are available without re-running the engine).
+	var events: GameEvents = turn_manager.events
+	events.counter_succeeded.connect(func(pid: int, cp: int, threat: int, rage_t: int, eff_t: int) -> void:
+		if replay_recorder:
+			replay_recorder.on_log_message(GameLog.counter_succeeded(pid, cp, threat, rage_t, eff_t)))
+	events.counter_failed.connect(func(pid: int, cp: int, threat: int, rage_t: int, eff_t: int) -> void:
+		if replay_recorder:
+			replay_recorder.on_log_message(GameLog.counter_failed(pid, cp, threat, rage_t, eff_t)))
 	turn_manager.sub_phase_changed.connect(replay_recorder.on_phase_boundary)
 	return replay_recorder

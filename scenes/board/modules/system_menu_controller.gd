@@ -44,7 +44,7 @@ func _on_save_game_pressed() -> void:
 	# deterministic bot behavior (the original seed is stale — RNG has advanced).
 	var save_seed: int = randi()
 	print("[Save] Capturing game_seed=%d for save file" % save_seed)
-	var data := GameSerializer.serialize_game_state(_board.turn_manager.game_state, _board._first_player_id, mode_str, diff_str, d_names, save_seed)
+	var data := GameSerializer.serialize_game_state(_board.turn_manager.game_state, _board._first_player_id, mode_str, diff_str, d_names, save_seed, _board.turn_manager.effect_handler)
 	var path := GameSerializer.save_game_to_file(data)
 	if not path.is_empty():
 		_save_game_button.text = tr("STR_GB_SAVED")

@@ -59,6 +59,12 @@ var _scoring: RefCounted = null
 # config.use_planner. Holds a weakref back to this bot.
 var _planner: RefCounted = null
 
+# Sub-decisions the winning KAIJU rollout recorded for the current plan step
+# ({"m": kind, "v": value} entries, primed by KaijuPlanner.decide_action).
+# The _on_* handlers consume them in order so live play follows the planned
+# line instead of re-deriving heuristically. Always empty below KAIJU.
+var _scripted_decisions: Array[Dictionary] = []
+
 
 func _init() -> void:
 	_selections = preload("res://scripts/bot/bot_selections.gd").new(self)
@@ -68,9 +74,10 @@ func _init() -> void:
 
 
 
-func init_combos() -> void:
+func init_combos(quiet: bool = false) -> void:
 	## Initialize combo detectors based on difficulty config. Call after game setup.
 	## Only enables combos if the deck has the required pieces.
+	## quiet: suppress logging — KAIJU rollouts build a policy bot per clone.
 	_combos.clear()
 	var player := game_state.players[bot_player_id]
 	for combo_name in config.enabled_combos:
@@ -80,8 +87,9 @@ func init_combos() -> void:
 				if shin.is_deck_compatible(player, self):
 					shin.enabled = true
 					_combos.append(shin)
-					print("[Bot] Shin combo enabled — deck has counter-retreat path")
-				else:
+					if not quiet:
+						print("[Bot] Shin combo enabled — deck has counter-retreat path")
+				elif not quiet:
 					print("[Bot] Shin combo skipped — deck lacks key pieces")
 
 
@@ -230,6 +238,30 @@ func _on_awaiting_action(valid_actions: Array) -> void:
 	var action: CardEnums.ActionType = action_params[0]
 	var params: Dictionary = action_params[1]
 	turn_manager.submit_action(action, params)
+
+
+func _prime_scripted_decisions(decisions: Array) -> void:
+	## Replace the scripted sub-decision queue for the plan step about to run.
+	## An empty array (e.g. the terminal PASS step) clears any leftovers so
+	## stale answers never leak into later prompts.
+	_scripted_decisions = []
+	for entry in decisions:
+		if entry is Dictionary:
+			_scripted_decisions.append(entry)
+
+
+func _pop_scripted(kind: String) -> Variant:
+	## Next scripted sub-decision if its kind matches; null otherwise. A kind
+	## mismatch means the live effect chain diverged from the rollout — drop
+	## the rest of the script and fall back to heuristics (the planner's hash
+	## check replans on the next step). Callers still validate the value
+	## against the live prompt before using it.
+	if _scripted_decisions.is_empty():
+		return null
+	if _scripted_decisions[0].get("m", "") != kind:
+		_scripted_decisions.clear()
+		return null
+	return _scripted_decisions.pop_front().get("v")
 
 
 func _decide_main_action(valid_actions: Array) -> Array:
@@ -857,6 +889,10 @@ func _on_monster_rankup_requested(player_id: int, monsters: Array[Dictionary], v
 		return
 	await _delay()
 	_combo_log_state("RANKUP")
+	var scripted: Variant = _pop_scripted("rankup")
+	if scripted is int and scripted in valid_indices:
+		player_input.resolve_monster_rankup(scripted)
+		return
 	var best := _score_rankup_candidates(monsters, valid_indices)
 	player_input.resolve_monster_rankup(best)
 
@@ -884,6 +920,10 @@ func _on_choice_requested(player_id: int, options: Array[String], _prompt: Strin
 	if player_id != bot_player_id:
 		return
 	await _delay()
+	var scripted: Variant = _pop_scripted("choice")
+	if scripted is int and scripted >= 0 and scripted < options.size():
+		player_input.resolve_choice(scripted)
+		return
 	var pick: int
 	match config.choice_pick_mode:
 		0:
@@ -908,8 +948,26 @@ func _on_hand_discard_requested(player_id: int, discard_count: int) -> void:
 		return
 	await _delay()
 	var player := game_state.players[bot_player_id]
+	var scripted: Variant = _pop_scripted("hand_discard")
+	if scripted is Array and _valid_scripted_indices(scripted, discard_count, player.hand.size()):
+		var scripted_indices: Array[int] = []
+		scripted_indices.assign(scripted)
+		player_input.resolve_hand_discard(bot_player_id, scripted_indices)
+		return
 	var indices: Array[int] = _pick_discard_indices(player, discard_count)
 	player_input.resolve_hand_discard(bot_player_id, indices)
+
+
+## True if `values` is exactly `count` unique ints, all valid hand indices.
+func _valid_scripted_indices(values: Array, count: int, hand_size: int) -> bool:
+	if values.size() != count:
+		return false
+	var seen: Dictionary = {}
+	for v in values:
+		if not (v is int) or v < 0 or v >= hand_size or seen.has(v):
+			return false
+		seen[v] = true
+	return true
 
 
 func _pick_discard_indices(player: PlayerState, count: int) -> Array[int]:
@@ -932,10 +990,20 @@ func _sort_cards_by_value(cards: Array[Dictionary]) -> Array[Dictionary]:
 	return _scoring._sort_cards_by_value(cards)
 
 
-func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], prompt: String, _allow_skip: bool = true) -> void:
+func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], prompt: String, allow_skip: bool = true) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
+
+	var scripted: Variant = _pop_scripted("deck_search")
+	if scripted is String:
+		if scripted.is_empty() and allow_skip:
+			player_input.resolve_deck_search({})
+			return
+		var found := _find_card_by_id(matching_cards, scripted)
+		if not found.is_empty():
+			player_input.resolve_deck_search(found)
+			return
 
 	var selected: Dictionary
 	# Evolution search: only evolve if a candidate has >= CP, prefer highest rank
@@ -947,14 +1015,54 @@ func _on_deck_search_requested(player_id: int, matching_cards: Array[Dictionary]
 	player_input.resolve_deck_search(selected)
 
 
+## Find a card by exact instance id, falling back to another copy of the same
+## base card (rollout determinization can hand the plan a different copy).
+func _find_card_by_id(cards: Array[Dictionary], card_id: String) -> Dictionary:
+	for card in cards:
+		if str(card.get("id", "")) == card_id:
+			return card
+	for card in cards:
+		if CardUtils.base_id(card) == CardUtils.base_id({"id": card_id}):
+			return card
+	return {}
+
+
 # --- Deck arrange ---
 
 func _on_deck_arrange_requested(player_id: int, cards: Array[Dictionary], _prompt: String) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
+	var scripted: Variant = _pop_scripted("deck_arrange")
+	if scripted is Dictionary:
+		var arranged := _scripted_deck_arrange(cards, scripted)
+		if not arranged.is_empty():
+			player_input.resolve_deck_arrange(arranged["keep"], arranged["discard"])
+			return
 	var plan := _plan_deck_arrange(cards)
 	player_input.resolve_deck_arrange(plan["keep"], plan["discard"])
+
+
+## Rebuild a recorded keep/discard arrangement against the live card list.
+## Returns {} unless the recorded ids cover the live cards exactly.
+func _scripted_deck_arrange(cards: Array[Dictionary], scripted: Dictionary) -> Dictionary:
+	var pool: Array[Dictionary] = cards.duplicate()
+	var keep: Array[Dictionary] = []
+	var discard: Array[Dictionary] = []
+	for ids_key in ["keep", "discard"]:
+		var target: Array[Dictionary] = keep if ids_key == "keep" else discard
+		var ids: Variant = scripted.get(ids_key, [])
+		if not (ids is Array):
+			return {}
+		for card_id in ids:
+			var found := _find_card_by_id(pool, str(card_id))
+			if found.is_empty():
+				return {}
+			target.append(found)
+			pool.erase(found)
+	if not pool.is_empty():
+		return {}
+	return {"keep": keep, "discard": discard}
 
 
 ## Pure keep/discard/reorder decision — shared by the live handler above and
@@ -1005,10 +1113,24 @@ func _plan_deck_arrange(cards: Array[Dictionary]) -> Dictionary:
 
 # --- Card select ---
 
-func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], _prompt: String, min_count: int, _max_count: int) -> void:
+func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary], _all_cards: Array[Dictionary], _prompt: String, min_count: int, max_count: int) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
+	var scripted: Variant = _pop_scripted("card_select")
+	if scripted is Array and scripted.size() >= min_count and scripted.size() <= max_count:
+		var pool: Array[Dictionary] = matching_cards.duplicate()
+		var picks: Array[Dictionary] = []
+		for card_id in scripted:
+			var found := _find_card_by_id(pool, str(card_id))
+			if found.is_empty():
+				picks.clear()
+				break
+			picks.append(found)
+			pool.erase(found)
+		if picks.size() == scripted.size():
+			player_input.resolve_card_select(picks)
+			return
 	# Pick best N matching cards sorted by CP/threat then lowest rank
 	var sorted := _sort_cards_by_value(matching_cards)
 	var selected: Array[Dictionary] = []
@@ -1019,12 +1141,16 @@ func _on_card_select_requested(player_id: int, matching_cards: Array[Dictionary]
 
 # --- Hand card selection ---
 
-func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int], _prompt: String, _allow_skip: bool) -> void:
+func _on_hand_card_selection_requested(player_id: int, valid_indices: Array[int], _prompt: String, allow_skip: bool) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
 	if valid_indices.is_empty():
 		player_input.resolve_hand_card_selection(-1)
+		return
+	var scripted: Variant = _pop_scripted("hand_card")
+	if scripted is int and (scripted in valid_indices or (scripted == -1 and allow_skip)):
+		player_input.resolve_hand_card_selection(scripted)
 		return
 	var player := game_state.players[bot_player_id]
 	# Protect combo pieces: recompute reserved indices fresh (hand may have changed
@@ -1063,6 +1189,10 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 	if valid_zones.is_empty() and allow_skip:
 		player_input.resolve_zone_target(-1)
 	elif not valid_zones.is_empty():
+		var scripted: Variant = _pop_scripted("zone")
+		if scripted is int and (scripted in valid_zones or (scripted == -1 and allow_skip)):
+			player_input.resolve_zone_target(scripted)
+			return
 		var player := game_state.players[bot_player_id]
 		var opponent := game_state.players[1 - bot_player_id]
 
@@ -1076,10 +1206,16 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 		player_input.resolve_zone_target(-1)
 
 
-func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, _up_to: bool, _prompt: String) -> void:
+func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, _prompt: String) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
+	var scripted: Variant = _pop_scripted("zones")
+	if scripted is Array and _valid_scripted_zones(scripted, valid_zones, count, up_to):
+		var scripted_zones: Array[int] = []
+		scripted_zones.assign(scripted)
+		player_input.resolve_zones_target(scripted_zones)
+		return
 	# Greedy: repeatedly take the best zone from the shrinking pool. Always
 	# picks the max even in up-to mode — fine while every caller destroys
 	# opponent zones; revisit if the primitive ever targets the bot's own board.
@@ -1098,6 +1234,19 @@ func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zon
 	player_input.resolve_zones_target(picks)
 
 
+## True if `values` are unique valid zones honoring the count contract
+## (exactly `count` in exact mode, at most `count` in up-to mode).
+func _valid_scripted_zones(values: Array, valid_zones: Array[int], count: int, up_to: bool) -> bool:
+	if values.size() > count or (not up_to and values.size() != mini(count, valid_zones.size())):
+		return false
+	var seen: Dictionary = {}
+	for v in values:
+		if not (v is int) or v not in valid_zones or seen.has(v):
+			return false
+		seen[v] = true
+	return true
+
+
 func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, opponent: PlayerState) -> int:
 	return _zones._pick_opponent_zone_target(valid_zones, player, opponent)
 
@@ -1110,8 +1259,13 @@ func _on_strategy_target_requested(player_id: int, _target_player_id: int, valid
 	if player_id != bot_player_id:
 		return
 	await _delay()
-	if not valid_indices.is_empty():
-		player_input.resolve_strategy_target(valid_indices[0])
+	if valid_indices.is_empty():
+		return
+	var scripted: Variant = _pop_scripted("strategy")
+	if scripted is int and scripted in valid_indices:
+		player_input.resolve_strategy_target(scripted)
+		return
+	player_input.resolve_strategy_target(valid_indices[0])
 
 
 # --- Cards revealed ---

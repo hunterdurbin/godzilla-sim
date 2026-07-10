@@ -28,6 +28,11 @@ their global-RNG call order (and seed-matched sim diffs) are untouched.
   sources is discounted via the `modifier_breakdown` data.
 - `kaiju_planner.gd` — **KaijuPlanner**: beam search + per-turn plan cache,
   hooked from `BotPlayer._on_awaiting_action` when `config.use_planner`.
+  When `config.kaiju_opponent_ply` is on, the top `kaiju_finalists` end-of-
+  turn lines are re-scored by actually playing the turn boundary + a greedy
+  opponent reply on the scratch match (`KaijuRollout.play_opponent_reply`) —
+  this sees one-turn opponent CP spikes and lethal counter setups that the
+  analytic leaf model (`opp_cp_growth`-based) structurally cannot.
 
 ## Phases (early/mid/late)
 
@@ -58,11 +63,21 @@ the chosen plan, and cache hits/divergences.
 
 ## Known v1 limitations
 
-- Turn-scoped "until end of turn" effect-handler state is not serialized
-  (setup_from_save limitation), so rollouts drop it. All candidates lose it
-  equally; plans are computed at the first action of the turn to minimize
-  the window.
-- Mid-effect choices in the LIVE game still use the heuristic `_on_*`
-  handlers; the plan cache hash-checks each step and replans on divergence.
-- Combo plans (`bot_combo_*.gd`) are not consulted for main actions; the
-  evaluator has no combo-award feature yet.
+- ~~Turn-scoped "until end of turn" effect state is not serialized~~ FIXED:
+  `CardEffect.serialize_state`/`restore_state` round-trip effect member state
+  through `GameSerializer.serialize_player_state(ps, effect_handler)` →
+  `MatchFactory.setup_from_save` (`effect_state` sub-dict, keyed by card
+  instance id). Stateful effect scripts must override both hooks.
+- ~~Mid-effect choices in the LIVE game still use the heuristic `_on_*`
+  handlers~~ FIXED: the rollout input records every planner-side answer
+  (`KaijuRolloutInput.decision_log`, per-apply), the planner stores them on
+  each plan step (`sub_decisions`), and the live bot replays them through a
+  scripted-answer queue (`BotPlayer._pop_scripted`) with per-prompt
+  validation; any mismatch falls back to the heuristics and the hash check
+  replans.
+- ~~Combo plans are not consulted for main actions~~ FIXED: candidate
+  enumeration runs combo detection on the rollout's policy bot, injects the
+  combo's `get_execution_action` as the leading candidate, keeps reserved
+  pieces out of the rage/invade/battle/strategy pools, and the evaluator's
+  `combo_progress` feature (weights in `kaiju_eval_weights.*.combo_progress`)
+  rewards assembling the line.

@@ -76,6 +76,9 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	# Rank-ups are lives: each forced rank-up from a counter burns one, and
 	# hitting the cap makes the next counter lethal. Graduated so the search
 	# prices rank-life before the death cliff.
+	# (A flat "last_rankup_liability" penalty at 0 rank-ups was tried and
+	# reverted: no effect on ESD02's counter-attrition losses — those are
+	# forced, not voluntary spends — and it cost tempo wins on ESD01.)
 	score += w["rankups_left"] * mini(_rankups_left(p), 2)
 
 	# --- THEIR next turn's counter phase: they counter US. Our rage-boosted
@@ -110,6 +113,23 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 		score += w["zone8_defense"]
 	if o.zone_has_battle_card(7) and p.monster_zone >= 6:
 		score -= w["opp_zone8_block"]
+
+	# --- Combo assembly progress ---
+	# Reward states where a combo line (e.g. shin) is held together: full
+	# (all pieces in hand) counts the plan's viability, partial a fraction of
+	# it — mirroring BotCombo.get_score_adjustment's full-vs-reserved split.
+	# This is what lets the beam steer TOWARD assembling a combo instead of
+	# spending its pieces as generic value.
+	var combo_w: float = w.get("combo_progress", 0.0)
+	if combo_w != 0.0 and rollout.policy != null and not rollout.policy._combos.is_empty():
+		rollout.policy._active_combo_plan = {}
+		rollout.policy._ensure_combo_plan()
+		var plan: Dictionary = rollout.policy._active_combo_plan
+		if not plan.is_empty():
+			var progress: float = plan.get("viability", 0)
+			if plan.get("state") != "full":
+				progress *= 0.4
+			score += combo_w * progress
 
 	return score
 

@@ -48,6 +48,7 @@ func decide_action(_valid_actions: Array) -> Array:
 	if _plan_turn == gs.turn_number and not _plan.is_empty() \
 			and _plan[0]["predicted_hash"] == live_hash and _step_card_matches(bot, _plan[0]):
 		var step: Dictionary = _plan.pop_front()
+		bot._prime_scripted_decisions(step.get("sub_decisions", []))
 		if _debug:
 			print("[Kaiju] t%d CACHED -> %s %s" % [gs.turn_number, CardEnums.ActionType.keys()[step["action"]], step["params"]])
 		return [step["action"], step["params"]]
@@ -62,6 +63,7 @@ func decide_action(_valid_actions: Array) -> Array:
 
 	_plan_turn = gs.turn_number
 	var first: Dictionary = _plan.pop_front()
+	bot._prime_scripted_decisions(first.get("sub_decisions", []))
 	if _debug:
 		var names: Array = []
 		for s in _plan:
@@ -99,7 +101,7 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 	var use_time_budget: bool = bot.scene_tree != null and config.action_delay > 0.0
 	var expansions: int = 0
 
-	var snap := KaijuRollout.determinize(KaijuRollout.snapshot(gs), 1 - pid, config.kaiju_info_visibility)
+	var snap := KaijuRollout.determinize(KaijuRollout.snapshot(gs, bot.effect_handler), 1 - pid, config.kaiju_info_visibility)
 	var root := KaijuRollout.new(snap, pid, config, bot.playstyle)
 	if _debug:
 		var root_cands: Array = []
@@ -114,6 +116,11 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 	var best_steps: Array[Dictionary] = []
 	var best_score: float = -INF
 	var out_of_budget := false
+	# Top end-of-turn candidates kept for opponent-reply re-scoring:
+	# {"steps", "score", "snap"} — or {"steps", "score", "terminal": true} for
+	# lines that already ended the game.
+	var use_opp_ply: bool = config.kaiju_opponent_ply
+	var finalists: Array[Dictionary] = []
 
 	for depth in range(config.kaiju_max_depth):
 		var next_beam: Array[Dictionary] = []
@@ -126,6 +133,9 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 			if stop_score > best_score:
 				best_score = stop_score
 				best_steps = steps.duplicate()
+			if use_opp_ply and _finalist_qualifies(finalists, config, stop_score):
+				_offer_finalist(finalists, config,
+						{"steps": steps.duplicate(), "score": stop_score, "snap": rollout.capture()})
 
 			if out_of_budget or best_score >= KaijuEvaluator.WIN_SCORE:
 				continue
@@ -149,6 +159,10 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 					if score > best_score:
 						best_score = score
 						best_steps = branch_steps
+					if use_opp_ply and _finalist_qualifies(finalists, config, score):
+						# Game already over — no opponent reply exists.
+						_offer_finalist(finalists, config,
+								{"steps": branch_steps, "score": score, "terminal": true})
 					branch.release()
 					continue
 				next_beam.append({"rollout": branch, "steps": branch_steps, "score": score})
@@ -165,6 +179,39 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 			next_beam.pop_back()["rollout"].release()
 		beam = next_beam
 
+	# Opponent-reply pass: revive the top finalists, play out our PASS + a
+	# greedy opponent turn (incl. their counter phase against us), and pick
+	# the line by post-reply score. Catches one-turn opponent CP spikes and
+	# lethal counter setups the analytic leaf model underestimates.
+	if use_opp_ply and not finalists.is_empty() and best_score < KaijuEvaluator.WIN_SCORE:
+		var best_post: float = -INF
+		for f in finalists:
+			var post: float
+			if f.get("terminal", false):
+				post = f["score"]
+			else:
+				# Deliberately NOT gated on the node budget: the reply pass has
+				# its own deterministic bound (kaiju_finalists ×
+				# kaiju_opponent_reply_actions) and is the whole point of the
+				# search — a beam that ate the budget must not starve it. The
+				# wall-clock check still protects live-play responsiveness.
+				if use_time_budget and Time.get_ticks_msec() - start_ms > config.kaiju_time_budget_ms:
+					break # finalists are analytic-best-first; the tail loses by default
+				if bot.scene_tree != null and config.action_delay > 0.0:
+					await bot.scene_tree.process_frame
+				var reply := KaijuRollout.new(f["snap"], pid, config, bot.playstyle)
+				expansions += await reply.play_opponent_reply(config.kaiju_opponent_reply_actions)
+				post = _evaluator.evaluate(reply, pid, phase)
+				reply.release()
+			if _debug:
+				var step_names: Array = []
+				for s in f["steps"]:
+					step_names.append(CardEnums.ActionType.keys()[s["action"]])
+				print("[Kaiju]   finalist %s analytic=%.1f post=%.1f" % [step_names, f["score"], post])
+			if post > best_post:
+				best_post = post
+				best_steps = f["steps"]
+
 	# During search each step recorded the hash AFTER it executed; the cache
 	# check needs the hash expected BEFORE each step runs. Shift by one: step
 	# k is checked against the state after step k-1 (the live state for step
@@ -176,9 +223,26 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 		check_hash = after
 	best_steps.append({
 		"action": CardEnums.ActionType.PASS, "params": {},
-		"predicted_hash": check_hash, "card_id": "",
+		"predicted_hash": check_hash, "card_id": "", "sub_decisions": [],
 	})
 	return best_steps
+
+
+## Would a line with this analytic score enter the finalist pool? Checked
+## before the (comparatively expensive) state snapshot.
+func _finalist_qualifies(finalists: Array[Dictionary], config: BotConfig, score: float) -> bool:
+	var cap: int = maxi(1, config.kaiju_finalists)
+	return finalists.size() < cap or score > finalists[finalists.size() - 1]["score"]
+
+
+## Insert a finalist, keeping the pool sorted best-first and capped.
+func _offer_finalist(finalists: Array[Dictionary], config: BotConfig, entry: Dictionary) -> void:
+	var cap: int = maxi(1, config.kaiju_finalists)
+	finalists.append(entry)
+	finalists.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a["score"] > b["score"])
+	while finalists.size() > cap:
+		finalists.pop_back()
 
 
 func _make_step(cand: Dictionary, branch: KaijuRollout) -> Dictionary:
@@ -189,6 +253,9 @@ func _make_step(cand: Dictionary, branch: KaijuRollout) -> Dictionary:
 		# this one — recorded on the previous step's completion.
 		"predicted_hash": branch.state_hash(),
 		"card_id": cand.get("card_id", ""),
+		# Mid-effect answers the rollout gave while executing this action; the
+		# live bot replays them so the plan's line survives into the real game.
+		"sub_decisions": branch.decisions().duplicate(true),
 	}
 
 
@@ -206,18 +273,41 @@ func _enumerate_candidates(rollout: KaijuRollout, pid: int, config: BotConfig) -
 	var z8_blocked := opponent.zone_has_battle_card(7)
 	var out: Array[Dictionary] = []
 
+	# Combo awareness: inject the active combo's forced next action as the
+	# first candidate and keep its reserved pieces out of the generic pools
+	# (same protection the HARD ladder applies in _decide_main_action).
+	var combo_reserved: Array[int] = []
+	var invade_excludes: Array[int] = []
+	if not policy._combos.is_empty():
+		policy._active_combo_plan = {}
+		policy._ensure_combo_plan()
+		combo_reserved = policy._get_combo_reserved_indices()
+		invade_excludes = policy._get_combo_invasion_excludes()
+		var combo_action: Array = policy._get_combo_execution_action(valid, player, opponent)
+		if combo_action.size() == 2 and combo_action[0] in valid:
+			var combo_params: Dictionary = combo_action[1]
+			var combo_card: Dictionary = {}
+			var combo_idx: int = combo_params.get("hand_index", -1)
+			if combo_idx >= 0 and combo_idx < player.hand.size():
+				combo_card = player.hand[combo_idx]
+			out.append(_candidate(combo_action[0], combo_params, combo_card))
+
 	if CardEnums.ActionType.PLAY_MONSTER in valid:
 		for idx in re.get_playable_monsters(player):
 			out.append(_candidate(CardEnums.ActionType.PLAY_MONSTER, {"hand_index": idx}, player.hand[idx]))
 
 	if CardEnums.ActionType.PLAY_STRATEGY in valid:
-		var strategy_order := _score_hand_indices(re.get_playable_strategy_cards(player), policy, player, opponent, near_winning, z8_blocked)
+		var strategy_pool := re.get_playable_strategy_cards(player).filter(
+				func(idx: int) -> bool: return idx not in combo_reserved)
+		var strategy_order := _score_hand_indices(strategy_pool, policy, player, opponent, near_winning, z8_blocked)
 		for i in range(mini(config.kaiju_strategy_candidates, strategy_order.size())):
 			var idx: int = strategy_order[i]
 			out.append(_candidate(CardEnums.ActionType.PLAY_STRATEGY, {"hand_index": idx}, player.hand[idx]))
 
 	if CardEnums.ActionType.PLAY_BATTLE in valid:
-		var battle_order := _score_hand_indices(re.get_playable_battle_cards(player, opponent), policy, player, opponent, near_winning, z8_blocked)
+		var battle_pool := re.get_playable_battle_cards(player, opponent).filter(
+				func(idx: int) -> bool: return idx not in combo_reserved)
+		var battle_order := _score_hand_indices(battle_pool, policy, player, opponent, near_winning, z8_blocked)
 		for i in range(mini(config.kaiju_battle_candidates, battle_order.size())):
 			var idx: int = battle_order[i]
 			var zones: Array[int] = re.get_valid_zones_for_card(player.hand[idx], player, opponent)
@@ -230,7 +320,9 @@ func _enumerate_candidates(rollout: KaijuRollout, pid: int, config: BotConfig) -
 				remaining.erase(zone)
 
 	if CardEnums.ActionType.GAIN_RAGE in valid:
-		var rage_indices: Array[int] = re.get_monster_cards_for_rage(player)
+		var rage_indices: Array[int] = []
+		rage_indices.assign(re.get_monster_cards_for_rage(player).filter(
+				func(idx: int) -> bool: return idx not in combo_reserved))
 		if not rage_indices.is_empty():
 			var worst: int = rage_indices[0]
 			for idx in rage_indices:
@@ -239,7 +331,9 @@ func _enumerate_candidates(rollout: KaijuRollout, pid: int, config: BotConfig) -
 			out.append(_candidate(CardEnums.ActionType.GAIN_RAGE, {"hand_index": worst}, player.hand[worst]))
 
 	if CardEnums.ActionType.INVADE in valid:
-		var invade_indices: Array[int] = re.get_discardable_cards_for_invade(player, opponent)
+		var invade_indices: Array[int] = []
+		invade_indices.assign(re.get_discardable_cards_for_invade(player, opponent).filter(
+				func(idx: int) -> bool: return idx not in invade_excludes))
 		for steps_wanted in [2, 1]:
 			var best_idx: int = -1
 			for idx in invade_indices:
@@ -250,7 +344,21 @@ func _enumerate_candidates(rollout: KaijuRollout, pid: int, config: BotConfig) -
 			if best_idx >= 0:
 				out.append(_candidate(CardEnums.ActionType.INVADE, {"hand_index": best_idx}, player.hand[best_idx]))
 
-	return out
+	return _dedupe_candidates(out)
+
+
+## The combo's forced action can repeat a generic candidate; keep first
+## occurrence (order is deterministic, so this preserves reproducibility).
+func _dedupe_candidates(candidates: Array[Dictionary]) -> Array[Dictionary]:
+	var seen: Dictionary = {}
+	var unique: Array[Dictionary] = []
+	for cand in candidates:
+		var key := "%d|%s" % [cand["action"], cand["params"]]
+		if seen.has(key):
+			continue
+		seen[key] = true
+		unique.append(cand)
+	return unique
 
 
 func _candidate(action: CardEnums.ActionType, params: Dictionary, card: Dictionary) -> Dictionary:

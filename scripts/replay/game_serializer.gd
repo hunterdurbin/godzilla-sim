@@ -40,7 +40,7 @@ static func ids_to_cards(ids: Array) -> Array[Dictionary]:
 	return cards
 
 
-static func serialize_player_state(ps: PlayerState) -> Dictionary:
+static func serialize_player_state(ps: PlayerState, effect_handler: EffectHandler = null) -> Dictionary:
 	var zone_ids: Array = []
 	for zone_stack in ps.zones:
 		zone_ids.append(cards_to_ids(zone_stack))
@@ -51,7 +51,7 @@ static func serialize_player_state(ps: PlayerState) -> Dictionary:
 	var strat_stack_ids: Array = []
 	for stack in ps.strategy_zone_stacks:
 		strat_stack_ids.append(cards_to_ids(stack) if stack is Array else [])
-	return {
+	var data := {
 		"player_id": ps.player_id,
 		"monster_zone": ps.monster_zone,
 		"rage": ps.rage,
@@ -76,6 +76,37 @@ static func serialize_player_state(ps: PlayerState) -> Dictionary:
 		"last_invasion_card": card_to_id(ps.last_invasion_card),
 		"cards_destroyed_this_turn": cards_to_ids(ps.cards_destroyed_this_turn),
 	}
+	# Turn-scoped CardEffect member state (e.g. "until end of turn" modifiers)
+	# lives on effect instances, not card dicts — capture it when the caller
+	# can supply the handler (save games, KAIJU rollouts). Keyed by card
+	# instance id so restore targets the right copy.
+	if effect_handler != null:
+		var effect_state: Dictionary = {}
+		for card in _field_cards(ps):
+			var effect: CardEffect = effect_handler.get_effect(card)
+			if effect == null:
+				continue
+			var state: Dictionary = effect.serialize_state()
+			if not state.is_empty():
+				effect_state[card.get("id", "")] = state
+		if not effect_state.is_empty():
+			data["effect_state"] = effect_state
+	return data
+
+
+## Field cards that can carry effect state — mirrors the registration loop in
+## MatchFactory.setup_from_save (zone stacks, strategy zones, current monster).
+static func _field_cards(ps: PlayerState) -> Array[Dictionary]:
+	var cards: Array[Dictionary] = []
+	for zone_stack in ps.zones:
+		for card in zone_stack:
+			cards.append(card)
+	for strat in ps.strategy_zones:
+		if strat is Dictionary and not strat.is_empty():
+			cards.append(strat)
+	if not ps.current_monster.is_empty():
+		cards.append(ps.current_monster)
+	return cards
 
 
 static func deserialize_to_player_state(data: Dictionary) -> PlayerState:
@@ -141,7 +172,7 @@ const MAX_RECENT_SAVES := 50
 static var pending_load: Dictionary = {}
 
 
-static func serialize_game_state(gs: GameState, first_player_id: int, mode: String, bot_difficulty: String, deck_names: Array[String], game_seed: int = 0) -> Dictionary:
+static func serialize_game_state(gs: GameState, first_player_id: int, mode: String, bot_difficulty: String, deck_names: Array[String], game_seed: int = 0, effect_handler: EffectHandler = null) -> Dictionary:
 	return {
 		"version": 1,
 		"game_version": ProjectSettings.get_setting("application/config/version", ""),
@@ -158,8 +189,8 @@ static func serialize_game_state(gs: GameState, first_player_id: int, mode: Stri
 		"game_seed": game_seed,
 		"label": "",
 		"players": [
-			serialize_player_state(gs.players[0]),
-			serialize_player_state(gs.players[1]),
+			serialize_player_state(gs.players[0], effect_handler),
+			serialize_player_state(gs.players[1], effect_handler),
 		],
 	}
 

@@ -20,8 +20,10 @@ var _result: Dictionary
 
 ## The exact subset of GameSerializer.serialize_game_state that
 ## MatchFactory.setup_from_save reads. Card contents are id strings,
-## rehydrated to independent dicts on restore.
-static func snapshot(gs: GameState) -> Dictionary:
+## rehydrated to independent dicts on restore. Pass the position's
+## EffectHandler so turn-scoped effect member state (e.g. "until end of
+## turn" modifiers) rides along in "effect_state".
+static func snapshot(gs: GameState, effect_handler: EffectHandler = null) -> Dictionary:
 	return {
 		"turn_number": gs.turn_number,
 		"current_player_id": gs.current_player_id,
@@ -29,8 +31,8 @@ static func snapshot(gs: GameState) -> Dictionary:
 		"current_sub_phase": gs.current_sub_phase,
 		"player_names": gs.player_names.duplicate(),
 		"players": [
-			GameSerializer.serialize_player_state(gs.players[0]),
-			GameSerializer.serialize_player_state(gs.players[1]),
+			GameSerializer.serialize_player_state(gs.players[0], effect_handler),
+			GameSerializer.serialize_player_state(gs.players[1], effect_handler),
 		],
 	}
 
@@ -80,6 +82,7 @@ func _init(snap: Dictionary, pid: int, config: BotConfig, playstyle: int = BotPl
 	policy.turn_manager = tm
 	policy.action_handler = tm.action_handler
 	policy.effect_handler = tm.effect_handler
+	policy.init_combos(true) # combo detection drives planner candidates + evaluator progress
 	rollout_input.policy = policy
 	rollout_input.planner_player_id = pid
 
@@ -92,11 +95,66 @@ func valid_actions() -> Array:
 ## execute + check-timing + win-check sequence of TurnManager.submit_action).
 ## Returns false once the rollout game is over.
 func apply(action: CardEnums.ActionType, params: Dictionary) -> bool:
+	var input := tm.player_input as KaijuRolloutInput
+	if input:
+		input.decision_log.clear()
 	await tm.action_handler.execute(action, params, tm.game_state)
 	await tm.action_handler.resolve_check_timing(tm.game_state)
 	if tm.is_game_over:
 		return false
 	return tm.rules_engine.check_win_condition(tm.game_state) < 0
+
+
+## Sub-decisions the rollout input answered during the last apply() — the
+## planner stores these on the plan step so the live bot can replay them.
+func decisions() -> Array[Dictionary]:
+	var input := tm.player_input as KaijuRolloutInput
+	return input.decision_log if input else ([] as Array[Dictionary])
+
+
+## Play out the turn boundary and a greedy opponent reply on the scratch
+## match: our PASS (our counter + end phase), the opponent's start phase,
+## their main-phase actions chosen by a throwaway HARD-style greedy bot, and
+## their PASS (their counter phase against us) — landing at our next main
+## phase, or game over. The whole chain resolves synchronously because every
+## engine await goes through KaijuRolloutInput. Returns the number of actions
+## consumed (charged against the planner's node budget).
+func play_opponent_reply(max_actions: int) -> int:
+	var opp_id: int = 1 - planner_player_id
+	var opp_policy := BotPlayer.new()
+	opp_policy.bot_player_id = opp_id
+	opp_policy.config = BotConfig.hard()
+	opp_policy.game_state = tm.game_state
+	opp_policy.rules_engine = tm.rules_engine
+	opp_policy.turn_manager = tm
+	opp_policy.action_handler = tm.action_handler
+	opp_policy.effect_handler = tm.effect_handler
+	var input := tm.player_input as KaijuRolloutInput
+	if input:
+		input.opponent_policy = opp_policy
+
+	# Rollouts drive actions manually, so the flow machine is still IDLE;
+	# arm it so submit_action(PASS) runs the automated phase chain.
+	tm.flow_state = TurnManager.FlowState.AWAITING_ACTION
+	var used: int = 1
+	await tm.submit_action(CardEnums.ActionType.PASS)
+	while used < max_actions and not tm.is_game_over \
+			and tm.game_state.current_player_id == opp_id \
+			and tm.flow_state == TurnManager.FlowState.AWAITING_ACTION:
+		var valid: Array = tm.rules_engine.get_valid_actions(tm.game_state)
+		var decision: Array = opp_policy._decide_main_action(valid)
+		used += 1
+		await tm.submit_action(decision[0], decision[1])
+	# Cap reached mid-main: close the opponent's turn so their counter phase
+	# (the dangerous part for us) is always included in the evaluated state.
+	if not tm.is_game_over and tm.game_state.current_player_id == opp_id \
+			and tm.flow_state == TurnManager.FlowState.AWAITING_ACTION:
+		used += 1
+		await tm.submit_action(CardEnums.ActionType.PASS)
+
+	if input:
+		input.opponent_policy = null # break the tm -> input -> opp_policy -> tm cycle
+	return used
 
 
 ## Winner id if the rollout game ended, -1 otherwise.
@@ -126,9 +184,16 @@ func state_hash() -> int:
 	return StateCodec.compute_state_hash(tm.game_state)
 
 
+## Snapshot of the current rollout position (incl. turn-scoped effect state),
+## restorable later via KaijuRollout.new — used by the planner to revive beam
+## finalists for opponent-reply scoring without keeping rollouts alive.
+func capture() -> Dictionary:
+	return snapshot(tm.game_state, tm.effect_handler)
+
+
 ## Independent copy of the current rollout position (beam expansion).
 func clone() -> KaijuRollout:
-	return KaijuRollout.new(snapshot(tm.game_state), planner_player_id, policy.config, policy.playstyle)
+	return KaijuRollout.new(capture(), planner_player_id, policy.config, policy.playstyle)
 
 
 ## Break the scratch match's reference cycles. Idempotent; REQUIRED on every

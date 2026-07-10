@@ -3,6 +3,9 @@ extends RefCounted
 
 ## Base class for card effect scripts. Override trigger methods to define card abilities.
 ## Effect scripts are stateless — all state comes from the EffectContext passed to each call.
+## The rare exception is turn-scoped member state ("until end of turn" values that must
+## survive across trigger calls); such scripts MUST also override serialize_state /
+## restore_state so saves and KAIJU planner rollouts round-trip the value.
 ##
 ## # Declarative trigger filters
 ##
@@ -657,6 +660,25 @@ func prevents_self_start_phase_discard(_ctx: EffectContext) -> bool:
 	## invasion to zones 6-8 (12.9.2). Use for cards with custom anti-discard rule
 	## text rather than the <Base> keyword.
 	return false
+
+
+# --- Turn-scoped state serialization ---
+## Most effects are stateless; a few keep turn-scoped member vars (e.g. an
+## "until end of turn" CP bonus) that live on the effect instance, not the card
+## dict. These hooks let GameSerializer/MatchFactory round-trip that state for
+## save games and KAIJU planner rollouts. NOT trigger-dispatched — direct calls
+## only, so they are intentionally absent from generate_trigger_map.sh METHODS.
+
+func serialize_state() -> Dictionary:
+	## Return this effect's turn-scoped state, or {} if it has none (default).
+	## Values must be JSON-safe (restore_state may receive ints back as floats).
+	return {}
+
+
+func restore_state(_data: Dictionary) -> void:
+	## Restore state previously returned by serialize_state. Coerce numeric
+	## values with int()/float() — data may have round-tripped through JSON.
+	pass
 
 
 # --- Zone utilities ---

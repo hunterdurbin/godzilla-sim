@@ -152,6 +152,12 @@ var kaiju_time_budget_ms: int = 250
 var kaiju_battle_candidates: int = 4 # top-K battle cards per node
 var kaiju_zone_candidates: int = 2 # top-K zones per battle card
 var kaiju_strategy_candidates: int = 4
+# Roll out a greedy opponent reply (their whole next turn, incl. their counter
+# phase against us) at the top beam finalists and pick the plan by post-reply
+# score. Catches one-turn opponent CP spikes the analytic model misses.
+var kaiju_opponent_ply: bool = true
+var kaiju_opponent_reply_actions: int = 10 # action cap per finalist reply
+var kaiju_finalists: int = 4 # beam leaves re-scored with the opponent ply
 
 # Phase-aware evaluation weights. Phases latch on the game's high-water mark
 # (max monster zone either player has reached, or turn count) — see
@@ -178,6 +184,7 @@ var kaiju_eval_weights: Dictionary = {
 		"zone8_defense": 40.0,
 		"opp_zone8_block": 30.0,
 		"fragile_cp_discount": 0.15,
+		"combo_progress": 0.5,
 	},
 	"mid": {
 		"zone_progress": 25.0,
@@ -199,6 +206,7 @@ var kaiju_eval_weights: Dictionary = {
 		"zone8_defense": 80.0,
 		"opp_zone8_block": 60.0,
 		"fragile_cp_discount": 0.15,
+		"combo_progress": 0.8,
 	},
 	"late": {
 		"zone_progress": 70.0,
@@ -220,6 +228,7 @@ var kaiju_eval_weights: Dictionary = {
 		"zone8_defense": 160.0,
 		"opp_zone8_block": 120.0,
 		"fragile_cp_discount": 0.15,
+		"combo_progress": 1.0,
 	},
 }
 
