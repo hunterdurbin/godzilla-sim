@@ -304,6 +304,93 @@ func test_ebp04_043_strategy_tuck_costs_slot() -> void:
 	assert_bool(strategy_unders + filled <= 2).is_true()
 
 
+func test_crystal_tokens_feed_ebp02_072_flat_bonus() -> void:
+	# EBP02-072: +20000 total CP with 3+ Crystals (EBP02-T03, 0 CP). The
+	# SpaceGodzilla monsters generate 6 token candidates. With MORE than 7
+	# plain bodies competing for the slots (like the real deck), only the
+	# tokens-first seed fields the 0-CP enablers — their solo score is 0 and
+	# single replace swaps can't build the pile. Strategies then pick both
+	# 072 copies and the replace pass trims the crystals back to exactly 3:
+	# 4x5000 + 3x0 + 2x20000 = 60000 (vs 35000 for seven bodies).
+	var result := _run([
+		_entry("EBP02-052", 1), _entry("EBP02-053", 1),
+		_entry("EBP02-054", 1), _entry("EBP02-057", 1),
+	], [
+		_entry(VANILLA_5K_B, 4), _entry(VANILLA_5K, 4), _entry("EBP02-072", 2),
+	])
+	assert_int(result["total_cp"]).is_equal(60000)
+	var crystals := 0
+	for base in _zone_base_ids(result):
+		if base == "EBP02-T03":
+			crystals += 1
+	assert_int(crystals).override_failure_message(
+		"expected 3+ Crystals fielded, got %d" % crystals).is_greater_equal(3)
+	for sz in result["strategies"]:
+		assert_str(CardUtils.base_id(sz)).is_equal("EBP02-072")
+
+
+func test_mothra_deck_fields_all_ebp03_064_copies() -> void:
+	# Regression ("03 - Mothra" decklist bug): all three 6000-printed 064s
+	# must field with tucked eggs at 12000 each — scored bare they tied the
+	# underless seed comparison and two copies lost their slots to plain
+	# 6000 bodies. 3x12000 + 3x10000 (054) + 6000 (050) = 72000.
+	var result := _run([_entry("EBP03-022", 1)], [
+		_entry("EBP03-064", 3), _entry("EBP03-054", 3),
+		_entry("EBP03-050", 3), _entry("EBP01-044", 3),
+	])
+	assert_int(result["total_cp"]).is_equal(72000)
+	var copies := 0
+	for base in _zone_base_ids(result):
+		if base == "EBP03-064":
+			copies += 1
+	assert_int(copies).override_failure_message(
+		"expected all 3 EBP03-064 copies fielded, got %d" % copies).is_equal(3)
+	assert_int(result["unders"].size()).is_equal(3)
+	assert_int(result["monster_zone"]).is_greater_equal(6)
+
+
+func test_evolves_under_requires_matching_trait_and_rank() -> void:
+	# Evolution as an under source: EBP03-044 (Evolution7 MOTHRA) may sit
+	# under the rank-7 MOTHRA 064; the Evolution5 egg may not (rank), nor may
+	# a LITTLE_GODZILLA evolution card sit under GODZILLA_JR-trait 051
+	# (trait), nor a card without evolution fields at all.
+	var optimizer := MaxCounterOptimizer.new()
+	var top := Real.instance("EBP03-064")
+	assert_bool(optimizer._evolves_under(top, Real.instance("EBP03-044"))).is_true()
+	assert_bool(optimizer._evolves_under(top, Real.instance("EBP01-044"))).is_false()
+	assert_bool(optimizer._evolves_under(top, Real.instance("EBP03-054"))).is_false()
+	assert_bool(optimizer._evolves_under(
+		Real.instance("EBP03-051"), Real.instance("EBP02-030"))).is_false()
+	optimizer.teardown()
+
+
+func test_evolution_under_skips_strategy_slot_accounting() -> void:
+	# An evolution-qualified under never came from a strategy zone, so it
+	# must not consume one of the 2 strategy slots (unlike EBP04-043's own
+	# strategy-sourced tucks). No current evolution card matches a
+	# stack-source top's traits while its filter rejects it, so the under is
+	# synthetic — this exercises the validity split, not an engine total.
+	var optimizer := MaxCounterOptimizer.new()
+	var evo_under := {
+		"id": "TEST-EVO_0_0", "card_type": CardEnums.CardType.BATTLE,
+		"rank": 1, "traits": [], "counter_power": 0,
+		"evolution_rank": 8,
+		"evolution_trait": CardEnums.CardTrait.MECHAGODZILLA,
+	}
+	var zones: Array = [{}, Real.instance("EBP04-043"), {}, {}, {}, {}, {}, {}]
+	var assignment := {
+		"monster": {}, "monster_zone": 1, "zones": zones,
+		"strategies": [Real.instance("EBP02-017", 0), Real.instance("EBP02-017", 1)],
+		"rage": 0, "opp_monster_zone": 1,
+		"unders": {1: evo_under},
+	}
+	assert_bool(optimizer._board_valid(assignment)).is_true()
+	# The same full-slot board with a strategy-sourced under is over budget.
+	assignment["unders"] = {1: Real.instance("EBP04-077")}
+	assert_bool(optimizer._board_valid(assignment)).is_false()
+	optimizer.teardown()
+
+
 func test_fixed_rage_zero_disables_rage_bonus() -> void:
 	var result := _run([], [_entry("EBP02-011", 1)], {"rage": 0})
 	assert_int(result["total_cp"]).is_equal(2000)

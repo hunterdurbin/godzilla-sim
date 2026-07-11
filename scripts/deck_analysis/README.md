@@ -59,11 +59,15 @@ zone_cp[8], zone_mods[8], monster_cp_mod, strategy_cp_mods, rage,
 opp_monster_zone, unders}` — all numbers read back from
 `compute_counter_numbers` / `get_zone_cp_breakdown`.
 
-Shape: (monster × monster_zone) config loop → two greedy seeds per config
-(solo-score order, and effectful-cards-first order so adjacency-conditional
-cards win contested monster-adjacent slots against placement-free bodies) →
-top-3 finalists get opp-zone sweep / replace / relocate / under-attach /
-strategy improvement passes. The strategy pool keeps up to two copies per
+Shape: (monster × monster_zone) config loop → up to three greedy seeds per
+config (solo-score order; effectful-cards-first order so adjacency-
+conditional cards win contested monster-adjacent slots against
+placement-free bodies; tokens-first order so 0-CP enabler tokens like
+EBP02-T03 Crystals can feed threshold strategies like EBP02-072 — the
+replace pass trims any excess tokens back down but can't build the pile up
+one losing swap at a time), each scored as a full board (unders attached,
+strategies picked) with the best kept → top-3 finalists get opp-zone sweep
+/ replace / relocate / under-attach / strategy improvement passes. The strategy pool keeps up to two copies per
 id (two identical strategies are legal — one per slot — and stacking
 field-CP strategies like EBP04-082 want both). `_board_valid` rejects any
 board fielding the same card instance twice (zones + strategy slots +
@@ -115,10 +119,21 @@ triggers + `get_cards_under_top`/`get_zone_stack` reads in effect sources):
 - EBP04-043 (tucks an invasion-icon-2 strategy *from a strategy zone* at
   counter start — so strategy-unders + filled strategy slots ≤ 2)
 
+Independent of a top's listed source, an under also qualifies via
+**evolution** (`_evolves_under`): a card whose `evolution_rank` /
+`evolution_trait` cover the top's rank/traits could legally have had the
+top played onto it by `perform_evolution`, so it may sit underneath —
+without consuming a strategy slot. (As of EBP04 no stack-source top has a
+matching evolution card that its own filter rejects, so this is
+future-proofing for narrower filters.)
+
 The attach pass tucks the cheapest eligible card (buried cards contribute
 no CP): spares directly; fielded candidates are detached and their zone
 backfilled with the best plain spare — the engine arbitrates the whole
-trade, kept only on strict improvement.
+trade, kept only on strict improvement. Stack-source tops are also scored
+WITH their best under in the solo ranking, and seeds are compared only
+after under-attachment — scored bare, a 6000-printed EBP03-064 loses its
+slot to a plain 10000 body it beats once the under arrives.
 
 ## Tests
 

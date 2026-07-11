@@ -112,3 +112,14 @@ func test_strategy_zone_helpers() -> void:
 func test_is_token_static() -> void:
 	assert_bool(PlayerState.is_token(Cards.battle(1, 0, "T", [CardEnums.CardTrait.TOKEN]))).is_true()
 	assert_bool(PlayerState.is_token(Cards.battle(1))).is_false()
+
+
+func test_count_zone_tokens_by_id_matches_base_id() -> void:
+	# Engine-created tokens carry the plain template id; deck-analysis boards
+	# stamp per-copy instance ids ("EBP02-T03_0_1") — both must count.
+	var player := PlayerState.new(0)
+	player.push_zone_card(0, Cards.battle(1, 0, "EBP02-T03", [CardEnums.CardTrait.TOKEN]))
+	player.push_zone_card(1, Cards.battle(1, 0, "EBP02-T03_0_1", [CardEnums.CardTrait.TOKEN]))
+	# A matching base id without the TOKEN trait must not count.
+	player.push_zone_card(2, Cards.battle(1, 0, "EBP02-T03_0_2"))
+	assert_int(player.count_zone_tokens_by_id("EBP02-T03")).is_equal(2)

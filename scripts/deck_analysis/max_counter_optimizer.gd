@@ -7,10 +7,11 @@ extends RefCounted
 ## valid GameState, never hand-summed (a lower bound on the true maximum,
 ## never an overstatement).
 ##
-## Search shape: for each (monster, monster_zone) config a greedy seed fills
-## the 7 non-monster zones best-solo-score-first (adjacent slots first), then
-## the top seeds get local improvement passes (replace from bench, relocate
-## swaps, strategy swaps). Placement-conditional effects (adjacency, zone 8,
+## Search shape: for each (monster, monster_zone) config up to three greedy
+## orders fill the 7 non-monster zones (best-solo-score-first, effectful-
+## first, tokens-first; adjacent slots first), each scored as a full board
+## (unders + strategies) with the best kept; then the top seeds get local
+## improvement passes (replace from bench, relocate swaps, strategy swaps). Placement-conditional effects (adjacency, zone 8,
 ## columns) are caught by the relocate pass; the search runs at rage
 ## SEARCH_RAGE (rage assumed reachable) and the winner is re-checked at 0.
 ##
@@ -53,6 +54,9 @@ const TOKEN_SOURCES := {
 ##              it (stacks_on_play)
 ##   strategy — tucked from a strategy zone at counter-phase start, so it
 ##              occupied a slot then: strategy-unders + filled slots <= 2
+## Independent of the listed source, an under also qualifies via EVOLUTION
+## (_evolves_under): the under carries evolution_rank/evolution_trait
+## covering the top's rank/traits, so the top was legally played onto it.
 const STACK_SOURCES := {
 	"EBP03-064": {"source": "discard", "filter": "battle"},
 	"EBP01-026": {"source": "discard", "filter": "traits_all",
@@ -325,7 +329,7 @@ func _seed_config(config: Dictionary) -> void:
 	# adjacent-to-monster first — before placement-free bodies. Catches the
 	# compound trade single-move improvement can't (a big vanilla/token
 	# squatting on an adjacent slot an adjacency-conditional card needed):
-	# the two seeds bracket both allocations and the better one survives.
+	# the seeds bracket both allocations and the better one survives.
 	var registry := EffectRegistry.new()
 	var sensitive_first: Array[Dictionary] = []
 	var insensitive: Array[Dictionary] = []
@@ -336,14 +340,42 @@ func _seed_config(config: Dictionary) -> void:
 			insensitive.append(card)
 	sensitive_first.append_array(insensitive)
 
-	var assignment := _greedy_fill(config, order)
+	var orders: Array = [order]
 	if sensitive_first != order:
-		var alt := _greedy_fill(config, sensitive_first)
-		if _score(alt) > _score(assignment):
-			assignment = alt
+		orders.append(sensitive_first)
 
-	_pick_strategies(assignment)
-	_attach_unders(assignment)
+	# Third seed order: tokens claim slots first. 0-CP enabler tokens (e.g.
+	# EBP02-T03 Crystals feeding EBP02-072's flat +20000) never earn a slot
+	# on solo score, and the replace pass can't cross that valley one swap at
+	# a time — though it CAN trim an over-fielded token seed back down, so
+	# fielding every token here is fine.
+	var tokens_first: Array[Dictionary] = []
+	var non_tokens: Array[Dictionary] = []
+	for card in order:
+		if CardUtils.has_trait(card, CardEnums.CardTrait.TOKEN):
+			tokens_first.append(card)
+		else:
+			non_tokens.append(card)
+	if not tokens_first.is_empty():
+		tokens_first.append_array(non_tokens)
+		orders.append(tokens_first)
+
+	# Seeds are compared on their FULL board score — unders attached and
+	# strategy slots picked — or a seed whose value lives in a tuck
+	# (EBP03-064) or a token-fed strategy (EBP02-072) loses a tie or even
+	# the comparison itself to a plain-bodies board it actually beats.
+	var assignment: Dictionary = {}
+	var best_score := -1
+	for candidate_order in orders:
+		var filled := _greedy_fill(config, candidate_order)
+		_attach_unders(filled)
+		_pick_strategies(filled)
+		_attach_unders(filled)
+		var score := _score(filled)
+		if score > best_score:
+			best_score = score
+			assignment = filled
+
 	_seeded.append({
 		"assignment": assignment,
 		"score": _score(assignment),
@@ -381,16 +413,25 @@ func _solo_scores(config: Dictionary) -> Dictionary:
 	var slots := _slot_order(mz)
 	for card in _battle_pool:
 		var assignment := _empty_assignment(config)
-		var placed := false
+		var placed_slot := -1
 		for slot in slots:
 			assignment["zones"][slot] = card
 			if _board_valid(assignment):
-				placed = true
+				placed_slot = slot
 				break
 			assignment["zones"][slot] = {}
-		# Unplaceable alone (e.g. a linked token without its generator):
-		# rank by printed CP so it still sorts sensibly for pass two.
-		scores[card["id"]] = _score(assignment) if placed else card.get("counter_power", 0)
+		if placed_slot < 0:
+			# Unplaceable alone (e.g. a linked token without its generator):
+			# rank by printed CP so it still sorts sensibly for pass two.
+			scores[card["id"]] = card.get("counter_power", 0)
+			continue
+		# A stack-source top is worth its tucked ceiling, not its printed CP —
+		# scored bare, the greedy order benches it behind plain bodies it
+		# beats once the under arrives.
+		var source: Dictionary = STACK_SOURCES.get(CardUtils.base_id(card), {})
+		if not source.is_empty():
+			_try_attach(assignment, placed_slot, source)
+		scores[card["id"]] = _score(assignment)
 	_solo_cache[mz] = scores
 	return scores
 
@@ -560,9 +601,10 @@ func _attach_unders(assignment: Dictionary) -> bool:
 func _try_attach(assignment: Dictionary, zone_idx: int, source: Dictionary) -> bool:
 	var unders: Dictionary = assignment["unders"]
 	var base := _score(assignment)
+	var top: Dictionary = assignment["zones"][zone_idx]
 	var candidates: Array[Dictionary] = []
 	for card in _main_cards:
-		if _under_eligible(source, card):
+		if _under_eligible(source, card) or _evolves_under(top, card):
 			candidates.append(card)
 	candidates.sort_custom(_by_cp_asc)
 	for card in candidates:
@@ -807,12 +849,17 @@ func _unders_valid(assignment: Dictionary, fielded_ids: Dictionary) -> bool:
 		if top.is_empty():
 			return false
 		var source: Dictionary = STACK_SOURCES.get(CardUtils.base_id(top), {})
-		if source.is_empty() or not _under_eligible(source, under):
+		if source.is_empty():
+			return false
+		# An evolution-qualified under never came from a strategy zone, so it
+		# skips the strategy-slot accounting below.
+		var via_evolution := _evolves_under(top, under)
+		if not via_evolution and not _under_eligible(source, under):
 			return false
 		if fielded_ids.has(under["id"]):
 			return false
 		fielded_ids[under["id"]] = true
-		if source["source"] == "strategy":
+		if not via_evolution and source["source"] == "strategy":
 			strategy_unders += 1
 	if strategy_unders > 0:
 		var filled := 0
@@ -822,6 +869,18 @@ func _unders_valid(assignment: Dictionary, fielded_ids: Dictionary) -> bool:
 		if strategy_unders + filled > 2:
 			return false
 	return true
+
+
+func _evolves_under(top: Dictionary, under: Dictionary) -> bool:
+	## Evolution as an under source: the under was fielded first, then the top
+	## was played from the deck onto it by perform_evolution — legal when the
+	## under's evolution_rank/evolution_trait cover the top's rank/traits.
+	if not CardUtils.is_battle(top) or not CardUtils.is_battle(under):
+		return false
+	if not under.has("evolution_rank") or not under.has("evolution_trait"):
+		return false
+	return top.get("rank", 0) <= int(under["evolution_rank"]) \
+			and CardUtils.has_trait(top, int(under["evolution_trait"]))
 
 
 func _under_eligible(source: Dictionary, card: Dictionary) -> bool:

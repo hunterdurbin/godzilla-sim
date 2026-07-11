@@ -116,6 +116,23 @@ func test_strategy_flat_modifier_needs_four_battle_cards() -> void:
 	mcs.teardown()
 
 
+func test_strategy_counts_instance_stamped_tokens() -> void:
+	# EBP02-072: +20000 total CP with 3+ Crystals in zones. The board's
+	# tokens carry per-copy instance ids exactly as the optimizer stamps
+	# them — count_zone_tokens_by_id must match on base id, or the bonus
+	# silently reads 0 on every synthetic board.
+	var tokens: Array[Dictionary] = []
+	for i in range(3):
+		tokens.append(Real.instance("EBP02-T03", i))
+	var strategy := Real.instance("EBP02-072")
+	var pool: Array[Dictionary] = [strategy]
+	var mcs := MaxCounterState.new(pool, [])
+	mcs.apply({"monster": {}, "monster_zone": 1,
+		"zones": _zones_with(tokens, 1), "strategies": [strategy, {}], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(20000)
+	mcs.teardown()
+
+
 func test_monster_stack_built_from_lower_ranks() -> void:
 	var monsters := Cards.monster_line()
 	var mcs := MaxCounterState.new([] as Array[Dictionary], monsters)

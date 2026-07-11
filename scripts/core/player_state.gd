@@ -275,11 +275,13 @@ static func is_token(card: Dictionary) -> bool:
 
 
 func count_zone_tokens_by_id(token_id: String) -> int:
-	## Count how many zones have a token with the given ID as top card.
+	## Count how many zones have a token with the given base ID as top card.
+	## Compared via base_id: engine-created tokens carry the plain template id,
+	## but deck-analysis boards stamp per-copy instance ids ("EBP02-T03_0_1").
 	var count: int = 0
 	for i in range(8):
 		var top := get_zone_top_card(i)
-		if not top.is_empty() and is_token(top) and top.get("id", "") == token_id:
+		if not top.is_empty() and is_token(top) and CardUtils.base_id(top) == token_id:
 			count += 1
 	return count
 
