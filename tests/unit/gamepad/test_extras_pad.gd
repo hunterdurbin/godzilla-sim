@@ -161,3 +161,42 @@ func test_game_log_list_is_meshed_and_pad_close_frees_it() -> void:
 	# B matches Cancel exactly: the log list frees itself on close.
 	assert_bool(popup.is_queued_for_deletion()) \
 		.override_failure_message("B must free the log list like Cancel does").is_true()
+
+
+func test_open_folder_prompts_nested_confirm_without_closing_list() -> void:
+	var opened: Array = []
+	ExternalConfirm._shell_open = func(target: String) -> void: opened.append(target)
+	_extras._show_replay_list(_fake_replays(1))
+	var popup := _last_popup()
+	var open_folder_btn: Button = null
+	for control: Button in popup.find_children("*", "Button", true, false):
+		if control.text == tr("STR_EXTRAS_OPEN_FOLDER"):
+			open_folder_btn = control
+	assert_object(open_folder_btn).is_not_null()
+	open_folder_btn.pressed.emit()
+	# Nothing opens yet; the confirm nests as a CHILD window of the list popup
+	# (a sibling exclusive window would be rejected).
+	assert_array(opened) \
+		.override_failure_message("folder opened without confirmation").is_empty()
+	var dialog: ConfirmationDialog = null
+	for child in popup.get_children():
+		if child is ConfirmationDialog:
+			dialog = child
+	assert_object(dialog) \
+		.override_failure_message("confirm dialog is not a child of the list popup").is_not_null()
+	# B closes the confirm only — its swallowed twins must not leak into the
+	# list popup underneath.
+	var lead := InputEventAction.new()
+	lead.action = &"pad_cancel"
+	lead.pressed = true
+	dialog.window_input.emit(lead)
+	var twin := InputEventAction.new()
+	twin.action = &"ui_cancel"
+	twin.pressed = true
+	popup.window_input.emit(twin)
+	assert_bool(dialog.visible) \
+		.override_failure_message("B did not close the confirm dialog").is_false()
+	assert_bool(popup.visible) \
+		.override_failure_message("closing the confirm must not close the list popup").is_true()
+	assert_array(opened).is_empty()
+	ExternalConfirm._shell_open = Callable(OS, "shell_open")

@@ -1029,3 +1029,8 @@ STR_GLYPH_STYLE_SWITCH,Switch,Switch
 STR_GLYPH_STYLE_GENERIC,Generic,汎用
 STR_PAD_PLAY_CARD_INVASION,Play for Invasion,侵略に使う
 STR_PAD_PLAY_CARD_RAGE,Discard for Rage,レイジに使う
+STR_EXT_OPEN_URL_TITLE,Open Link,リンクを開く
+STR_EXT_OPEN_FOLDER_TITLE,Open Folder,フォルダを開く
+STR_EXT_OPEN_URL_PROMPT_FMT,Leave the game and open %s in your browser?,ゲームを離れてブラウザで %s を開きますか？
+STR_EXT_OPEN_FOLDER_PROMPT_FMT,Leave the game and open %s in your file manager?,ゲームを離れてファイルマネージャーで %s を開きますか？
+STR_EXT_OPEN_OK,Open,開く

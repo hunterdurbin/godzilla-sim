@@ -122,7 +122,7 @@ func _update_music_button_text() -> void:
 func _on_bug_report_pressed() -> void:
 	var body := _board._build_bug_report_body()
 	var url := "https://github.com/hunterdurbin/godzilla-sim/issues/new?labels=bug&title=Bug+Report&body=" + body.uri_encode()
-	OS.shell_open(url)
+	ExternalConfirm.open_url(_board, url)
 
 
 func _build_bug_report_body() -> String:

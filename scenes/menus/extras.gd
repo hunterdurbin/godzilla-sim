@@ -576,7 +576,7 @@ func _show_replay_list(replays: Array[Dictionary]) -> void:
 	open_folder_btn.add_theme_font_size_override("font_size", 14)
 	open_folder_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		OS.shell_open(ReplayData.get_replay_base_dir())
+		ExternalConfirm.open_folder(popup, ReplayData.get_replay_base_dir())
 	)
 	toolbar.add_child(open_folder_btn)
 
@@ -987,7 +987,7 @@ func _show_save_list(saves: Array[Dictionary]) -> void:
 	open_folder_btn.add_theme_font_size_override("font_size", 14)
 	open_folder_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		OS.shell_open(GameSerializer.get_save_base_dir())
+		ExternalConfirm.open_folder(popup, GameSerializer.get_save_base_dir())
 	)
 	toolbar.add_child(open_folder_btn)
 
@@ -1426,7 +1426,7 @@ func _show_game_log_list(logs: Array[Dictionary]) -> void:
 	open_folder_btn.add_theme_font_size_override("font_size", 14)
 	open_folder_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		OS.shell_open(GameLogExport.get_log_base_dir())
+		ExternalConfirm.open_folder(popup, GameLogExport.get_log_base_dir())
 	)
 	toolbar.add_child(open_folder_btn)
 

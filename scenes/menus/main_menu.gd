@@ -1,6 +1,9 @@
 extends Control
 
 
+const PATREON_URL := "https://www.patreon.com/cw/sodabomber/membership"
+const DISCORD_URL := "https://discord.gg/fwCaYzWbPw"
+
 @onready var start_button: Button = $CenterContainer/VBoxContainer/StartButton
 @onready var solo_bot_button: Button = $CenterContainer/VBoxContainer/SoloBotRow/SoloBotButton
 @onready var bot_config_button: Button = $CenterContainer/VBoxContainer/SoloBotRow/BotConfigButton
@@ -67,7 +70,27 @@ func _ready() -> void:
 	if GameSettings.has_valid_reconnect_session() and not GameSettings.reconnect_is_host:
 		_show_reconnect_dialog()
 
+	_wire_social_pad_mesh()
 	GamepadHelper.push_focus_context(self, _default_focus_control)
+
+
+## Deliberate pad mesh for the bottom-left social buttons — without this they
+## are only reachable via default spatial nav. Discord sits above Patreon;
+## entry is down from Deck Builder (bottom of the center stack); Patreon exits
+## right to Extras. Outer edges self-loop so the dpad can't fall off the mesh.
+## update_button stays unwired: it is hidden by default and a neighbor
+## pointing at a hidden control dead-ends navigation.
+func _wire_social_pad_mesh() -> void:
+	deck_builder_button.focus_neighbor_bottom = deck_builder_button.get_path_to(discord_button)
+	discord_button.focus_neighbor_top = discord_button.get_path_to(deck_builder_button)
+	discord_button.focus_neighbor_bottom = discord_button.get_path_to(patreon_button)
+	discord_button.focus_neighbor_right = discord_button.get_path_to(deck_builder_button)
+	discord_button.focus_neighbor_left = discord_button.get_path_to(discord_button)
+	patreon_button.focus_neighbor_top = patreon_button.get_path_to(discord_button)
+	patreon_button.focus_neighbor_right = patreon_button.get_path_to(extras_button)
+	patreon_button.focus_neighbor_bottom = patreon_button.get_path_to(patreon_button)
+	patreon_button.focus_neighbor_left = patreon_button.get_path_to(patreon_button)
+	extras_button.focus_neighbor_left = extras_button.get_path_to(patreon_button)
 
 
 func _exit_tree() -> void:
@@ -600,12 +623,12 @@ func _on_extras_pressed() -> void:
 
 func _on_patreon_pressed() -> void:
 	SfxManager.play("ui_click")
-	OS.shell_open("https://www.patreon.com/cw/sodabomber/membership")
+	ExternalConfirm.open_url(self, PATREON_URL)
 
 
 func _on_discord_pressed() -> void:
 	SfxManager.play("ui_click")
-	OS.shell_open("https://discord.gg/fwCaYzWbPw")
+	ExternalConfirm.open_url(self, DISCORD_URL)
 
 
 const _VOLUME_LABELS := ["STR_VOL_OFF", "25%", "50%", "75%", "100%"]

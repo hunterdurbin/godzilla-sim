@@ -421,6 +421,7 @@ const CARD_ART_SETS := ["EBP01", "EBP02", "EBP03", "EBP04", "EPR", "ESD01", "ESD
 const _CardScript := preload("res://scenes/cards/card.gd")
 var _image_filters := PackedStringArray(["*.png,*.jpg,*.jpeg,*.webp ; Image Files"])
 var _pending_card_art_src: String = ""  # Holds picked file path while waiting for card number input
+var _customize_popup: PopupPanel = null  # Host for the open-folder leave-game confirm
 
 
 func _on_customize_pressed() -> void:
@@ -428,6 +429,7 @@ func _on_customize_pressed() -> void:
 	# Wider modal so the sections fit two columns side-by-side.
 	var parts := _create_modal(tr("STR_OPTIONS_CUSTOMIZE_TITLE"), 920.0)
 	var popup: PopupPanel = parts[0]
+	_customize_popup = popup
 	var vbox: VBoxContainer = parts[1]
 	var is_ios := OS.get_name() == "iOS"
 	var is_mobile := OS.get_name() in ["Android", "iOS"]
@@ -673,7 +675,10 @@ func _on_open_folder(subfolder: String) -> void:
 	if subfolder == "cardArt":
 		for set_id in CARD_ART_SETS:
 			DirAccess.make_dir_recursive_absolute(path.path_join(set_id))
-	OS.shell_open(path)
+	var host: Node = self
+	if is_instance_valid(_customize_popup) and _customize_popup.visible:
+		host = _customize_popup
+	ExternalConfirm.open_folder(host, path)
 
 
 func _ensure_custom_dirs(subfolder: String) -> void:
