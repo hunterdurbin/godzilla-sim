@@ -109,6 +109,21 @@ func test_strategy_zone_helpers() -> void:
 	assert_int(player.get_first_empty_strategy_zone_index()).is_equal(-1)
 
 
+func test_strategy_zone_helpers_follow_expanded_zones() -> void:
+	# EBP03-013 grows strategy_zones to 3: the first-empty lookup must reach
+	# the added slot (it used to hardcode 2 zones and never returned index 2).
+	var player := PlayerState.new(0)
+	player.strategy_zones.append({})
+	player.strategy_zones[0] = Cards.strategy(1)
+	player.strategy_zones[1] = Cards.strategy(1)
+	assert_bool(player.has_empty_strategy_zone()).is_true()
+	assert_int(player.get_first_empty_strategy_zone_index()).is_equal(2)
+	player.strategy_zones[2] = Cards.strategy(1)
+	assert_bool(player.has_empty_strategy_zone()).is_false()
+	assert_int(player.get_first_empty_strategy_zone_index()).is_equal(-1)
+	assert_int(player.count_strategies_in_play()).is_equal(3)
+
+
 func test_is_token_static() -> void:
 	assert_bool(PlayerState.is_token(Cards.battle(1, 0, "T", [CardEnums.CardTrait.TOKEN]))).is_true()
 	assert_bool(PlayerState.is_token(Cards.battle(1))).is_false()

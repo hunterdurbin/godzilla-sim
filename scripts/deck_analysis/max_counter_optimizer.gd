@@ -95,20 +95,23 @@ var _result: Dictionary = {}
 var _fixed_monster_zone: int = 0  # 0 = Any (loop 1-8)
 var _fixed_opp_zone: int = 0      # 0 = Any (best-case sweep in _improve)
 var _fixed_rage: int = -1         # -1 = Auto (search at SEARCH_RAGE, recheck 0)
+var _strategy_zone_count: int = 2 # 3 = assume EBP03-013's expansion resolved
 
 
 ## params (all optional): monster_zone 0|1-8, opp_monster_zone 0|1-8,
-## rage -1|0-10. Zero/-1 = unconstrained (v1 behavior).
+## rage -1|0-10, strategy_zone_count 2|3 (3 assumes EBP03-013's expansion).
+## Zero/-1 = unconstrained (v1 behavior).
 func setup(monster_entries: Array, main_entries: Array, params: Dictionary = {}) -> void:
 	_fixed_monster_zone = clampi(params.get("monster_zone", 0), 0, 8)
 	_fixed_opp_zone = clampi(params.get("opp_monster_zone", 0), 0, 8)
 	_fixed_rage = clampi(params.get("rage", -1), -1, SEARCH_RAGE)
+	_strategy_zone_count = clampi(params.get("strategy_zone_count", 2), 2, 3)
 	var main_cards := _expand_entries(main_entries)
 	var monster_cards := _expand_entries(monster_entries)
 	_main_cards = main_cards
 	# The state must exist before pool construction: candidate stamping
 	# queries the engine (play-zone restrictions) through it.
-	_mcs = MaxCounterState.new(main_cards, monster_cards)
+	_mcs = MaxCounterState.new(main_cards, monster_cards, _strategy_zone_count)
 	_build_pools(main_cards, monster_cards)
 	_configs = []
 	var monsters: Array = _monster_pool if not _monster_pool.is_empty() else [{}]
@@ -202,12 +205,12 @@ func _build_pools(main_cards: Array[Dictionary], monster_cards: Array[Dictionary
 				else:
 					vanillas.append(card)
 			CardEnums.CardType.STRATEGY:
-				# Up to TWO copies per id: the strategy zones have no
-				# per-name limit, and stacking field-CP strategies
-				# (EBP04-082) legitimately field one copy per slot.
+				# Up to one copy per strategy slot per id: the strategy
+				# zones have no per-name limit, and stacking field-CP
+				# strategies (EBP04-082) legitimately field one per slot.
 				var base := CardUtils.base_id(card)
 				var copies: int = seen_strategies.get(base, 0)
-				if copies < 2:
+				if copies < _strategy_zone_count:
 					seen_strategies[base] = copies + 1
 					_strategy_pool.append(card)
 	vanillas.sort_custom(_by_cp_desc)
@@ -437,7 +440,7 @@ func _solo_scores(config: Dictionary) -> Dictionary:
 
 
 func _pick_strategies(assignment: Dictionary) -> void:
-	## Fill the 2 strategy slots with the best measured deltas (ties broken
+	## Fill the strategy slots with the best measured deltas (ties broken
 	## by id for determinism). Zero-delta strategies are still eligible —
 	## they can satisfy "strategy in play" conditions elsewhere.
 	var base := _score(assignment)
@@ -452,7 +455,7 @@ func _pick_strategies(assignment: Dictionary) -> void:
 		return a["card"]["id"] < b["card"]["id"])
 	var slot := 0
 	for entry in deltas:
-		if slot >= 2 or entry["delta"] < 0:
+		if slot >= _strategy_zone_count or entry["delta"] < 0:
 			break
 		assignment["strategies"][slot] = entry["card"]
 		if _board_valid(assignment):
@@ -539,12 +542,12 @@ func _improve(finalist: Dictionary) -> bool:
 		best = _score(assignment)
 		improved = true
 
-	# Strategy replace: benched strategies into both slots (break on a kept
-	# improvement — same dict must not fill both slots).
+	# Strategy replace: benched strategies into every slot (break on a kept
+	# improvement — same dict must not fill two slots).
 	for card in _strategy_pool:
 		if _on_board(assignment, card["id"]):
 			continue
-		for i in range(2):
+		for i in range(_strategy_zone_count):
 			var evicted: Dictionary = assignment["strategies"][i]
 			assignment["strategies"][i] = card
 			var score := _score(assignment) if _board_valid(assignment) else -1
@@ -617,7 +620,7 @@ func _try_attach(assignment: Dictionary, zone_idx: int, source: Dictionary) -> b
 			if assignment["zones"][z].get("id", "") == card["id"]:
 				from_zone = z
 				break
-		for s in range(2):
+		for s in range(assignment["strategies"].size()):
 			if assignment["strategies"][s].get("id", "") == card["id"]:
 				from_strategy = s
 				break
@@ -704,11 +707,14 @@ func _empty_assignment(config: Dictionary) -> Dictionary:
 	var zones: Array = []
 	zones.resize(8)
 	zones.fill({})
+	var strategies: Array = []
+	strategies.resize(_strategy_zone_count)
+	strategies.fill({})
 	return {
 		"monster": config["monster"],
 		"monster_zone": config["monster_zone"],
 		"zones": zones,
-		"strategies": [{}, {}] as Array,
+		"strategies": strategies,
 		"rage": _fixed_rage if _fixed_rage >= 0 else SEARCH_RAGE,
 		"opp_monster_zone": _fixed_opp_zone if _fixed_opp_zone > 0 else 1,
 		"unders": {},
@@ -836,7 +842,7 @@ func _board_valid(assignment: Dictionary) -> bool:
 func _unders_valid(assignment: Dictionary, fielded_ids: Dictionary) -> bool:
 	## Under-cards must sit beneath a STACK_SOURCES top, pass its filter, be
 	## unique instances, and strategy-sourced tucks must leave room in the
-	## 2 strategy slots they came from. Mutates fielded_ids (shared
+	## strategy slots they came from. Mutates fielded_ids (shared
 	## uniqueness set — also makes unders count as fielded for the caller's
 	## mill-witness accounting).
 	var unders: Dictionary = assignment.get("unders", {})
@@ -866,7 +872,7 @@ func _unders_valid(assignment: Dictionary, fielded_ids: Dictionary) -> bool:
 		for sz in assignment["strategies"]:
 			if not sz.is_empty():
 				filled += 1
-		if strategy_unders + filled > 2:
+		if strategy_unders + filled > _strategy_zone_count:
 			return false
 	return true
 

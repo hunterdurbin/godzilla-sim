@@ -28,13 +28,22 @@ var _main_pool: Array[Dictionary] = []
 var _monster_pool: Array[Dictionary] = []
 
 
-func _init(main_cards: Array[Dictionary], monster_cards: Array[Dictionary]) -> void:
+func _init(main_cards: Array[Dictionary], monster_cards: Array[Dictionary],
+		strategy_zone_count: int = 2) -> void:
 	_main_pool = main_cards
 	_monster_pool = monster_cards
 	state = GameState.new()
 	state.current_player_id = 0
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	state.turn_number = 10
+	# "Assume 3rd strategy zone" (EBP03-013): grow the arrays exactly like
+	# ebp03_013.gd on_enter does — the array size IS the zone count. No
+	# signal emit; this state is synthetic and never rendered live.
+	var player: PlayerState = state.players[0]
+	while player.strategy_zones.size() < strategy_zone_count:
+		player.strategy_zones.append({})
+		player.strategy_zone_turn_placed.append(0)
+		player.strategy_zone_stacks.append([])
 	# Same wiring as tests/fixtures/states.gd make_session, minus GameEvents —
 	# compute_counter_numbers and the CP queries never touch the event bus.
 	effect_handler = EffectHandler.new()
@@ -48,7 +57,8 @@ func _init(main_cards: Array[Dictionary], monster_cards: Array[Dictionary]) -> v
 ##   monster: Dictionary ({} = keep zone block at monster_zone but no effect)
 ##   monster_zone: int 1-8
 ##   zones: Array of 8 entries, each {} or a card dict (placed as zone top)
-##   strategies: Array of 2 entries, each {} or a strategy card dict
+##   strategies: Array with one entry per strategy zone (2, or 3 when
+##     constructed with strategy_zone_count 3), each {} or a strategy card
 ##   rage: int
 ##   opp_monster_zone: int 1-8 (optional; opponent stays monster-less — CP
 ##     effects like EBP02-016 only read the zone int)
@@ -96,7 +106,7 @@ func apply(assignment: Dictionary) -> void:
 				placed_ids[under["id"]] = true
 
 	var strategies: Array = assignment.get("strategies", [])
-	for i in range(2):
+	for i in range(player.strategy_zones.size()):
 		var card: Dictionary = strategies[i] if i < strategies.size() else {}
 		player.strategy_zones[i] = card
 		if not card.is_empty():

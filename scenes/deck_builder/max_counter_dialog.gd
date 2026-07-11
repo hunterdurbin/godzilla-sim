@@ -3,9 +3,10 @@ extends AcceptDialog
 
 ## Deck builder "Maximum Counter Power" preview: runs MaxCounterOptimizer
 ## over the edited deck (chunked across frames so the UI never hitches) and
-## renders the winning board as a mini playmat — top row Strategy 1/2 +
-## zones 8/7/6, bottom row zones 1-5, matching the real board's own-side
-## orientation. Every number shown is the engine's, via MaxCounterState.
+## renders the winning board as a mini playmat — top row Strategy 1/2 (and 3
+## when the deck assumes EBP03-013's expansion) + zones 8/7/6, bottom row
+## zones 1-5, matching the real board's own-side orientation. Every number
+## shown is the engine's, via MaxCounterState.
 
 const CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 const CARD_SIZE := Vector2(150, 210)
@@ -14,8 +15,9 @@ const SLOT_WIDTH := 116.0
 const STEP_BUDGET_MSEC := 8
 
 ## Top row: strategy slots then front-row zones (indices into result arrays;
-## -1/-2 mark strategy slots 0/1). Bottom row: zones 1-5.
-const TOP_CELLS: Array = [-1, -2, 7, 6, 5]
+## -1/-2/-3 mark strategy slots 0/1/2 — the third cell is always built and
+## shown only at 3 strategy zones). Bottom row: zones 1-5.
+const TOP_CELLS: Array = [-1, -2, -3, 7, 6, 5]
 const BOTTOM_CELLS: Array = [0, 1, 2, 3, 4]
 
 var _total_label: Label
@@ -24,6 +26,14 @@ var _assumptions_label: Label
 var _zone_option: OptionButton
 var _opp_zone_option: OptionButton
 var _rage_option: OptionButton
+var _strategy_count_option: OptionButton
+## The strategy-zone label+dropdown pair: only shown for decks running
+## EBP03-013 — the option is meaningless for everyone else.
+var _strategy_count_row: HBoxContainer
+## Invisible cell-width spacer opening the bottom row: shown with the third
+## strategy cell so both rows keep equal cell counts and zone 8 stays
+## column-aligned over zone 3.
+var _bottom_spacer: Control
 var _cells: Dictionary = {}  # cell key (int) -> {panel, body, name_label, cp_label}
 var _optimizer: MaxCounterOptimizer
 var _run_id: int = 0
@@ -60,12 +70,22 @@ func _init() -> void:
 	for r in range(11):
 		rage_items.append(str(r))
 	_rage_option = _add_param_option(param_row, tr("STR_DB_MAXCP_PARAM_RAGE"), rage_items)
+	_strategy_count_row = HBoxContainer.new()
+	_strategy_count_row.add_theme_constant_override("separation", 12)
+	param_row.add_child(_strategy_count_row)
+	_strategy_count_option = _add_param_option(_strategy_count_row, tr("STR_DB_MAXCP_PARAM_STRATS"),
+			["2", "3"] as Array[String])
 
 	for row_cells in [TOP_CELLS, BOTTOM_CELLS]:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
 		root.add_child(row)
+		if row_cells == BOTTOM_CELLS:
+			_bottom_spacer = Control.new()
+			_bottom_spacer.custom_minimum_size = Vector2(SLOT_WIDTH, 0)
+			_bottom_spacer.visible = false
+			row.add_child(_bottom_spacer)
 		for cell in row_cells:
 			_cells[cell] = _build_cell(row)
 
@@ -81,9 +101,24 @@ func _init() -> void:
 func open(monster_entries: Array, main_entries: Array) -> void:
 	_monster_entries = monster_entries
 	_main_entries = main_entries
+	# Re-evaluated on every open: the deck may have gained/lost EBP03-013.
+	# Decks without it never see the option — it stays hidden, pinned to 2.
+	# Programmatic `selected =` doesn't emit item_selected — no double compute.
+	var expands := deck_expands_strategy_zones(monster_entries)
+	_strategy_count_row.visible = expands
+	_strategy_count_option.selected = 1 if expands else 0
 	popup_centered()
 	_run_id += 1
 	_calculate(monster_entries, main_entries, _run_id)
+
+
+## EBP03-013 permanently grows the owner's strategy zones to 3 once it enters
+## play, so decks running it default the preview to the 3-zone assumption.
+static func deck_expands_strategy_zones(monster_entries: Array) -> bool:
+	for entry in monster_entries:
+		if entry.get("card_number", "") == "EBP03-013":
+			return true
+	return false
 
 
 func _add_param_option(row: HBoxContainer, label_text: String, items: Array[String]) -> OptionButton:
@@ -115,6 +150,7 @@ func _params() -> Dictionary:
 		"monster_zone": _zone_option.selected,
 		"opp_monster_zone": _opp_zone_option.selected,
 		"rage": _rage_option.selected - 1,
+		"strategy_zone_count": _strategy_count_option.selected + 2,
 	}
 
 
@@ -127,6 +163,8 @@ func _on_param_changed(_index: int) -> void:
 
 func _calculate(monster_entries: Array, main_entries: Array, run: int) -> void:
 	_clear_board()
+	_cells[-3]["panel"].visible = _strategy_count_option.selected == 1
+	_bottom_spacer.visible = _cells[-3]["panel"].visible
 	_total_label.text = tr("STR_DB_MAXCP_CALC")
 	_status_label.text = ""
 	_assumptions_label.text = ""
@@ -179,9 +217,12 @@ func _render(result: Dictionary) -> void:
 		else:
 			_empty_cell(cell, zone_label)
 
-	for s in range(2):
+	var strategies: Array = result["strategies"]
+	_cells[-3]["panel"].visible = strategies.size() >= 3
+	_bottom_spacer.visible = _cells[-3]["panel"].visible
+	for s in range(strategies.size()):
 		var cell: Dictionary = _cells[-1 - s]
-		var strategy: Dictionary = result["strategies"][s]
+		var strategy: Dictionary = strategies[s]
 		var label := "%s %d" % [tr("STR_TYPE_STRATEGY"), s + 1]
 		if strategy.is_empty():
 			_empty_cell(cell, label)
@@ -200,6 +241,8 @@ func _render(result: Dictionary) -> void:
 		parts.append(tr("STR_DB_MAXCP_PIN_OPP").format({"N": result["opp_monster_zone"]}))
 	else:
 		parts.append(tr("STR_DB_MAXCP_BEST_OPP").format({"N": result["opp_monster_zone"]}))
+	if _strategy_count_option.selected == 1:
+		parts.append(tr("STR_DB_MAXCP_THIRD_ZONE"))
 	if result["monster_cp_mod"] != 0:
 		parts.append("%s: +%s" % [tr("STR_TYPE_MONSTER"), _format_number(result["monster_cp_mod"])])
 	_assumptions_label.text = "  ·  ".join(parts)

@@ -248,6 +248,21 @@ func test_two_identical_base_strategies_stack() -> void:
 		assert_str(CardUtils.base_id(sz)).is_equal("EBP04-082")
 
 
+func test_third_strategy_zone_param_fields_three_strategies() -> void:
+	# "Assume 3rd strategy zone" (EBP03-013): with strategy_zone_count 3 all
+	# three EBP02-017 copies field (one per slot) — 4x1000 + 3x5000. The
+	# default 2 slots cap the same deck at 4000 + 2x5000.
+	var main := [_entry("EBP02-017", 3), _entry(VANILLA_1K, 4)]
+	var expanded := _run([], main, {"strategy_zone_count": 3})
+	assert_int(expanded["total_cp"]).is_equal(4000 + 15000)
+	assert_int(expanded["strategies"].size()).is_equal(3)
+	for sz in expanded["strategies"]:
+		assert_str(CardUtils.base_id(sz)).is_equal("EBP02-017")
+	var default_run := _run([], main)
+	assert_int(default_run["total_cp"]).is_equal(4000 + 10000)
+	assert_int(default_run["strategies"].size()).is_equal(2)
+
+
 func test_ebp03_064_gets_under_card_with_awakening() -> void:
 	# Mothra(imago): 6000 base, +3000@Awakening4 +3000@Awakening6 only with
 	# a card under it (its Enter tucks any battle card from the discard).

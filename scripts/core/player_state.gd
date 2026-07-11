@@ -243,7 +243,7 @@ func has_empty_strategy_zone() -> bool:
 
 
 func get_first_empty_strategy_zone_index() -> int:
-	for i in range(2):
+	for i in range(strategy_zones.size()):
 		if strategy_zones[i].is_empty():
 			return i
 	return -1

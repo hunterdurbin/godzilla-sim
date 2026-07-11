@@ -133,6 +133,30 @@ func test_strategy_counts_instance_stamped_tokens() -> void:
 	mcs.teardown()
 
 
+func test_third_strategy_zone_counts_when_constructed_with_three() -> void:
+	# EBP03-013's expansion: constructed with strategy_zone_count 3 the state
+	# grows the zone arrays and apply() fills all three slots — each fielded
+	# EBP02-017 copy adds its +5000 (4+ battle cards fielded).
+	var strategies: Array[Dictionary] = []
+	for i in range(3):
+		strategies.append(Real.instance("EBP02-017", i))
+	var battles := _vanilla_pool([1000, 1000, 1000, 1000])
+	var pool: Array[Dictionary] = battles.duplicate()
+	pool.append_array(strategies)
+	var mcs := MaxCounterState.new(pool, [Cards.monster(1)], 3)
+	assert_int(mcs.state.players[0].strategy_zones.size()).is_equal(3)
+	mcs.apply({"monster": Cards.monster(1), "monster_zone": 1,
+		"zones": _zones_with(battles, 1),
+		"strategies": [strategies[0], strategies[1], strategies[2]], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(4000 + 3 * 5000)
+	assert_int(mcs.breakdown()["strategy_cp_mods"].size()).is_equal(3)
+	mcs.teardown()
+	# Default construction keeps the printed 2 zones.
+	var default_mcs := MaxCounterState.new([] as Array[Dictionary], [])
+	assert_int(default_mcs.state.players[0].strategy_zones.size()).is_equal(2)
+	default_mcs.teardown()
+
+
 func test_monster_stack_built_from_lower_ranks() -> void:
 	var monsters := Cards.monster_line()
 	var mcs := MaxCounterState.new([] as Array[Dictionary], monsters)

@@ -38,8 +38,13 @@ queried at counter time must be genuinely true on the constructed board):
 - **discard pile** — every unplaced main-deck copy (late-game best case);
   hand and deck are empty, so deck-count effects read 0
 
-Assignment keys: `monster`, `monster_zone`, `zones[8]`, `strategies[2]`,
-`rage`, plus optional `opp_monster_zone` (default 1) and `unders`
+- **strategy zones** — 2 by default; constructed with `strategy_zone_count`
+  3 the state grows the zone arrays exactly like EBP03-013's `on_enter`
+  (the array size is the engine's source of truth for the zone count).
+
+Assignment keys: `monster`, `monster_zone`, `zones[8]` (one entry per
+strategy zone in `strategies`), `rage`, plus optional `opp_monster_zone`
+(default 1) and `unders`
 ({zone_idx → card} tucked beneath that zone's top; one under max; buried
 cards are data only — their own effects are inactive, and they are consumed
 from the pool like any fielded card).
@@ -53,8 +58,11 @@ Drive with `setup(monster_entries, main_entries, params)` (deck-builder-
 shaped `{card_number, quantity}` entries) then `step()` until false — each
 step is one bounded unit so UI callers can yield between frames — or call
 `run(...)` synchronously. `params` (all optional): `monster_zone` 0|1-8,
-`opp_monster_zone` 0|1-8, `rage` -1|0-10 (0/-1 = unconstrained). `result()`
-returns `{total_cp, monster, monster_zone, zones[8], strategies[2],
+`opp_monster_zone` 0|1-8, `rage` -1|0-10 (0/-1 = unconstrained),
+`strategy_zone_count` 2|3 (3 = assume EBP03-013's permanent expansion; the
+dialog only shows the option — defaulted to 3 — when the monster deck runs
+that card, and pins 2 otherwise). `result()`
+returns `{total_cp, monster, monster_zone, zones[8], strategies[2..3],
 zone_cp[8], zone_mods[8], monster_cp_mod, strategy_cp_mods, rage,
 opp_monster_zone, unders}` — all numbers read back from
 `compute_counter_numbers` / `get_zone_cp_breakdown`.
@@ -67,9 +75,9 @@ EBP02-T03 Crystals can feed threshold strategies like EBP02-072 — the
 replace pass trims any excess tokens back down but can't build the pile up
 one losing swap at a time), each scored as a full board (unders attached,
 strategies picked) with the best kept → top-3 finalists get opp-zone sweep
-/ replace / relocate / under-attach / strategy improvement passes. The strategy pool keeps up to two copies per
-id (two identical strategies are legal — one per slot — and stacking
-field-CP strategies like EBP04-082 want both). `_board_valid` rejects any
+/ replace / relocate / under-attach / strategy improvement passes. The strategy pool keeps up to one copy per
+strategy slot per id (identical strategies are legal — one per slot — and
+stacking field-CP strategies like EBP04-082 want one each). `_board_valid` rejects any
 board fielding the same card instance twice (zones + strategy slots +
 unders combined).
 
