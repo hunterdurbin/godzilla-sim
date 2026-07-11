@@ -47,6 +47,34 @@ func test_pad_focus_arrival_unedits_meshed_field() -> void:
 		.override_failure_message("pad focus arrival left a meshed field editing").is_false()
 
 
+func test_pad_focus_arrival_unedits_meshed_field_inside_registered_window() -> void:
+	# An embedded dialog Window is its own viewport — the root-viewport fence
+	# can't see its focus changes. register_modal hooks the window's
+	# gui_focus_changed so meshed fields inside dialogs land idle too.
+	var popup := auto_free(PopupPanel.new()) as PopupPanel
+	popup.popup_window = false
+	var vbox := VBoxContainer.new()
+	var field := LineEdit.new()
+	field.custom_minimum_size = Vector2(120, 30)
+	var cancel := Button.new()
+	vbox.add_child(field)
+	vbox.add_child(cancel)
+	popup.add_child(vbox)
+	add_child(popup)
+	field.focus_neighbor_bottom = field.get_path_to(cancel)  # meshed
+	cancel.focus_neighbor_top = cancel.get_path_to(field)
+	GamepadHelper.register_modal(popup, func() -> Control: return cancel)
+	popup.popup_centered()
+	await await_idle_frame()
+	assert_bool(cancel.has_focus()) \
+		.override_failure_message("modal provider did not land on the button").is_true()
+	field.grab_focus()  # dpad arrival: Godot enters edit mode with the grab
+	await await_idle_frame()
+	assert_bool(field.has_focus()).is_true()
+	assert_bool(field.is_editing()) \
+		.override_failure_message("meshed field inside a registered dialog stayed editing").is_false()
+
+
 func test_pad_focus_arrival_keeps_unmeshed_field_editing() -> void:
 	var field := _add_line_edit(false)
 	field.grab_focus()  # e.g. the board chat toggle: focus means typing

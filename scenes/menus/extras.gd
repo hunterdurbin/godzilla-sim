@@ -9,6 +9,9 @@ extends Control
 var _replay_popup: PopupPanel = null
 var _replay_list_vbox: VBoxContainer = null
 var _replay_count_label: Label = null
+var _replay_toolbar: Array[Control] = []
+var _replay_cancel: Button = null
+var _replay_scroll: ScrollContainer = null
 var _filter_favorites_only: bool = false
 var _filter_current_version: bool = false
 var _all_replays: Array[Dictionary] = []
@@ -16,6 +19,9 @@ var _all_replays: Array[Dictionary] = []
 var _save_popup: PopupPanel = null
 var _save_list_vbox: VBoxContainer = null
 var _save_count_label: Label = null
+var _save_toolbar: Array[Control] = []
+var _save_cancel: Button = null
+var _save_scroll: ScrollContainer = null
 var _save_filter_favorites_only: bool = false
 var _save_filter_current_version: bool = false
 
@@ -25,6 +31,7 @@ var _online_load_status: Label = null
 var _online_load_code_label: Label = null
 var _online_load_copy_btn: Button = null
 var _online_load_start_btn: Button = null
+var _online_load_cancel_btn: Button = null
 var _load_chosen_seat: int = 0
 
 
@@ -34,6 +41,24 @@ func _ready() -> void:
 	load_game_online_button.pressed.connect(_on_load_game_online_pressed)
 	game_logs_button.pressed.connect(_on_game_logs_pressed)
 	back_button.pressed.connect(_on_back_pressed)
+	GamepadHelper.push_focus_context(self, func() -> Control: return watch_replay_button)
+
+
+func _exit_tree() -> void:
+	GamepadHelper.pop_focus_context(self)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Pad B (leading pad_cancel) / keyboard ESC goes back to the main menu.
+	if event.is_action_pressed("pad_cancel") or event.is_action_pressed("ui_cancel"):
+		if GamepadHelper.is_swallowed_cancel(event):
+			get_viewport().set_input_as_handled()
+			return
+		if not GamepadHelper.is_top_context(self):
+			return
+		get_viewport().set_input_as_handled()
+		GamepadHelper.swallow_cancel_twins()
+		_on_back_pressed()
 
 
 func _on_back_pressed() -> void:
@@ -181,8 +206,12 @@ func _show_save_list_for_online(saves: Array[Dictionary]) -> void:
 	popup.add_child(panel)
 	add_child(popup)
 
+	_save_toolbar = [fav_filter_btn, ver_filter_btn] as Array[Control]
+	_save_cancel = cancel_btn
+	_save_scroll = scroll
 	_populate_save_list_for_online(saves)
-	GamepadHelper.register_modal(popup)
+	GamepadHelper.register_modal(popup, _list_provider(_save_list_vbox, cancel_btn, 0))
+	_wire_pad_close(popup)
 	popup.popup_centered()
 
 
@@ -203,6 +232,7 @@ func _populate_save_list_for_online(saves: Array[Dictionary]) -> void:
 			fav_count += 1
 	_save_count_label.text = tr("STR_EXTRAS_LIST_COUNT_FMT") % [filtered.size(), saves.size(), fav_count]
 
+	var cell := _focused_cell(_save_list_vbox)
 	for child in _save_list_vbox.get_children():
 		child.queue_free()
 
@@ -247,6 +277,10 @@ func _populate_save_list_for_online(saves: Array[Dictionary]) -> void:
 		)
 		row.add_child(info_btn)
 		_save_list_vbox.add_child(row)
+		_follow_focus(_save_scroll, row)
+
+	_wire_list_pad(_save_toolbar, _save_list_vbox, _save_cancel)
+	_focus_cell(_save_list_vbox, cell, _save_cancel)
 
 
 func _refresh_save_list_for_online(saves: Array[Dictionary]) -> void:
@@ -351,22 +385,49 @@ func _show_online_load_lobby() -> void:
 	cancel_btn.add_theme_font_size_override("font_size", 16)
 	cancel_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
-		_cleanup_online_load_signals()
-		NetworkManager.disconnect_game()
-		GameSerializer.pending_load = {}
-		popup.hide()
+		_close_online_load_lobby()
 	)
 	vb.add_child(cancel_btn)
+	_online_load_cancel_btn = cancel_btn
 
 	mg.add_child(vb)
 	panel.add_child(mg)
 	popup.add_child(panel)
 	add_child(popup)
-	GamepadHelper.register_modal(popup)
+	_wire_online_lobby_pad()
+	GamepadHelper.register_modal(popup, func() -> Control: return _online_load_cancel_btn)
+	# Cancel semantics, not just hide: an abandoned lobby must tear down the
+	# hosting session (B-close mirrors the Cancel button exactly).
+	_wire_pad_close(popup, _close_online_load_lobby)
 	popup.popup_centered()
 
 	# Start hosting
 	_do_host_online_for_load()
+
+
+## Abandon the hosting lobby: disconnect and drop the staged save.
+func _close_online_load_lobby() -> void:
+	_cleanup_online_load_signals()
+	NetworkManager.disconnect_game()
+	GameSerializer.pending_load = {}
+	_online_load_popup.hide()
+
+
+## Copy/Start flip visibility as the lobby progresses; hidden controls are
+## skipped by wire_band_stack, so re-mesh on every flip.
+func _wire_online_lobby_pad() -> void:
+	if _online_load_popup == null or not is_instance_valid(_online_load_popup):
+		return
+	OverlayGridUtil.wire_band_stack([
+		{"row": [_online_load_copy_btn] as Array[Control]},
+		{"row": [_online_load_start_btn] as Array[Control]},
+		{"row": [_online_load_cancel_btn] as Array[Control]},
+	])
+	# Hiding Start/Copy can kill the pad focus it held — fall back to Cancel.
+	var focus_owner := GamepadHelper.gui_focus_owner()
+	if GamepadHelper.is_using_gamepad() \
+			and (focus_owner == null or not focus_owner.is_visible_in_tree()):
+		GamepadHelper.refocus()
 
 
 func _do_host_online_for_load() -> void:
@@ -383,6 +444,7 @@ func _do_host_online_for_load() -> void:
 	_online_load_code_label.text = NetworkManager.get_game_code()
 	_online_load_copy_btn.visible = true
 	_online_load_status.text = tr("STR_EXTRAS_SHARE_CODE")
+	_wire_online_lobby_pad()
 
 	# Wait for opponent
 	NetworkManager.player_connected.connect(_on_online_load_player_connected)
@@ -398,16 +460,19 @@ func _on_online_load_player_connected(_peer_id: int) -> void:
 func _on_online_load_player_disconnected(_peer_id: int) -> void:
 	_online_load_status.text = tr("STR_EXTRAS_OPPONENT_DISCONNECTED_WAITING")
 	_online_load_start_btn.visible = false
+	_wire_online_lobby_pad()
 
 
 func _on_online_load_version_mismatch(local_ver: String, remote_ver: String) -> void:
 	_online_load_status.text = tr("STR_LAN_VERSION_MISMATCH_FMT") % [local_ver, remote_ver]
 	_online_load_start_btn.visible = false
+	_wire_online_lobby_pad()
 
 
 func _on_online_load_version_ok() -> void:
 	_online_load_status.text = tr("STR_EXTRAS_OPPONENT_VERIFIED")
 	_online_load_start_btn.visible = true
+	_wire_online_lobby_pad()
 
 
 func _cleanup_online_load_signals() -> void:
@@ -462,6 +527,7 @@ func _show_message(text: String) -> void:
 	popup.add_child(panel)
 	add_child(popup)
 	GamepadHelper.register_modal(popup)
+	_wire_pad_close(popup)
 	popup.popup_centered()
 
 
@@ -586,8 +652,12 @@ func _show_replay_list(replays: Array[Dictionary]) -> void:
 	popup.add_child(panel)
 	add_child(popup)
 
+	_replay_toolbar = [open_folder_btn, delete_all_btn, fav_filter_btn, ver_filter_btn] as Array[Control]
+	_replay_cancel = cancel_btn
+	_replay_scroll = scroll
 	_populate_replay_list(replays)
-	GamepadHelper.register_modal(popup)
+	GamepadHelper.register_modal(popup, _list_provider(_replay_list_vbox, cancel_btn, 1))
+	_wire_pad_close(popup)
 	popup.popup_centered()
 
 
@@ -612,12 +682,18 @@ func _populate_replay_list(replays: Array[Dictionary]) -> void:
 			fav_count += 1
 	_replay_count_label.text = tr("STR_EXTRAS_LIST_COUNT_FMT") % [filtered.size(), replays.size(), fav_count]
 
-	# Clear existing rows
+	# Clear existing rows (pad cursor is a position, not a node — capture first)
+	var cell := _focused_cell(_replay_list_vbox)
 	for child in _replay_list_vbox.get_children():
 		child.queue_free()
 
 	for entry in filtered:
-		_replay_list_vbox.add_child(_build_replay_row(entry, current_ver))
+		var row := _build_replay_row(entry, current_ver)
+		_replay_list_vbox.add_child(row)
+		_follow_focus(_replay_scroll, row)
+
+	_wire_list_pad(_replay_toolbar, _replay_list_vbox, _replay_cancel)
+	_focus_cell(_replay_list_vbox, cell, _replay_cancel)
 
 
 func _build_replay_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
@@ -780,8 +856,16 @@ func _show_label_dialog(path: String, current_label: String) -> void:
 	panel.add_child(mg)
 	popup.add_child(panel)
 	add_child(popup)
-	GamepadHelper.register_modal(popup)
+	# Meshed LineEdit: pad lands on it idle, A starts editing (round 12).
+	OverlayGridUtil.wire_band_stack([
+		{"row": [line_edit] as Array[Control]},
+		{"row": [cancel_btn, save_btn] as Array[Control]},
+	])
+	GamepadHelper.register_modal(popup, func() -> Control: return cancel_btn)
+	_wire_pad_close(popup)
 	popup.popup_centered()
+	# Pointer/keyboard users type immediately; in pad mode the deferred
+	# refocus overrides this with the provider (Cancel).
 	line_edit.grab_focus()
 
 
@@ -842,7 +926,10 @@ func _show_confirm(text: String, on_confirm: Callable) -> void:
 	panel.add_child(mg)
 	popup.add_child(panel)
 	add_child(popup)
-	GamepadHelper.register_modal(popup)
+	OverlayGridUtil.wire_band_stack([{"row": [cancel_btn, confirm_btn] as Array[Control]}])
+	# Destructive confirm: A must never auto-land on Confirm.
+	GamepadHelper.register_modal(popup, func() -> Control: return cancel_btn)
+	_wire_pad_close(popup)
 	popup.popup_centered()
 
 
@@ -976,8 +1063,12 @@ func _show_save_list(saves: Array[Dictionary]) -> void:
 	popup.add_child(panel)
 	add_child(popup)
 
+	_save_toolbar = [open_folder_btn, delete_all_btn, fav_filter_btn, ver_filter_btn] as Array[Control]
+	_save_cancel = cancel_btn
+	_save_scroll = scroll
 	_populate_save_list(saves)
-	GamepadHelper.register_modal(popup)
+	GamepadHelper.register_modal(popup, _list_provider(_save_list_vbox, cancel_btn, 1))
+	_wire_pad_close(popup)
 	popup.popup_centered()
 
 
@@ -1000,12 +1091,18 @@ func _populate_save_list(saves: Array[Dictionary]) -> void:
 			fav_count += 1
 	_save_count_label.text = tr("STR_EXTRAS_LIST_COUNT_FMT") % [filtered.size(), saves.size(), fav_count]
 
-	# Clear existing rows
+	# Clear existing rows (pad cursor is a position, not a node — capture first)
+	var cell := _focused_cell(_save_list_vbox)
 	for child in _save_list_vbox.get_children():
 		child.queue_free()
 
 	for entry in filtered:
-		_save_list_vbox.add_child(_build_save_row(entry, current_ver))
+		var row := _build_save_row(entry, current_ver)
+		_save_list_vbox.add_child(row)
+		_follow_focus(_save_scroll, row)
+
+	_wire_list_pad(_save_toolbar, _save_list_vbox, _save_cancel)
+	_focus_cell(_save_list_vbox, cell, _save_cancel)
 
 
 func _build_save_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
@@ -1169,8 +1266,16 @@ func _show_save_label_dialog(path: String, current_label: String) -> void:
 	panel.add_child(mg)
 	popup.add_child(panel)
 	add_child(popup)
-	GamepadHelper.register_modal(popup)
+	# Meshed LineEdit: pad lands on it idle, A starts editing (round 12).
+	OverlayGridUtil.wire_band_stack([
+		{"row": [line_edit] as Array[Control]},
+		{"row": [cancel_btn, save_btn] as Array[Control]},
+	])
+	GamepadHelper.register_modal(popup, func() -> Control: return cancel_btn)
+	_wire_pad_close(popup)
 	popup.popup_centered()
+	# Pointer/keyboard users type immediately; in pad mode the deferred
+	# refocus overrides this with the provider (Cancel).
 	line_edit.grab_focus()
 
 
@@ -1242,7 +1347,13 @@ func _show_player_choice_dialog(names: Array, on_chosen: Callable) -> void:
 	panel.add_child(margin)
 	popup.add_child(panel)
 	add_child(popup)
+	OverlayGridUtil.wire_band_stack([
+		{"row": [p1_btn] as Array[Control]},
+		{"row": [p2_btn] as Array[Control]},
+		{"row": [cancel_btn] as Array[Control]},
+	])
 	GamepadHelper.register_modal(popup)
+	_wire_pad_close(popup)
 	popup.popup_centered()
 
 
@@ -1338,7 +1449,9 @@ func _show_game_log_list(logs: Array[Dictionary]) -> void:
 	list_vbox.add_theme_constant_override("separation", 6)
 	list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for entry in logs:
-		list_vbox.add_child(_build_game_log_row(entry, popup))
+		var row := _build_game_log_row(entry, popup)
+		list_vbox.add_child(row)
+		_follow_focus(scroll, row)
 	scroll.add_child(list_vbox)
 	vbox.add_child(scroll)
 
@@ -1347,18 +1460,23 @@ func _show_game_log_list(logs: Array[Dictionary]) -> void:
 	cancel_btn.custom_minimum_size = Vector2(200, 40)
 	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	cancel_btn.add_theme_font_size_override("font_size", 18)
-	cancel_btn.pressed.connect(func():
+	var close_list := func():
 		SfxManager.play("ui_click")
 		popup.hide()
 		popup.queue_free()
-	)
+	cancel_btn.pressed.connect(close_list)
 	vbox.add_child(cancel_btn)
 
 	margin.add_child(vbox)
 	panel.add_child(margin)
 	popup.add_child(panel)
 	add_child(popup)
-	GamepadHelper.register_modal(popup)
+	# Rows are built once — a single mesh pass suffices.
+	_wire_list_pad([open_folder_btn] as Array[Control], list_vbox, cancel_btn)
+	GamepadHelper.register_modal(popup, _list_provider(list_vbox, cancel_btn, 0))
+	# B is a real close (frees the popup), matching Cancel — unlike the View
+	# flow, which only hides so the list can be re-shown.
+	_wire_pad_close(popup, close_list)
 	popup.popup_centered()
 
 
@@ -1453,4 +1571,109 @@ func _show_game_log_content(path: String, list_popup: PopupPanel) -> void:
 	popup.add_child(panel)
 	add_child(popup)
 	GamepadHelper.register_modal(popup)
+	_wire_pad_close(popup)
+	# The log text isn't focusable — scroll it with the dpad directly.
+	popup.window_input.connect(func(event: InputEvent) -> void:
+		if event.is_action_pressed("ui_up"):
+			popup.set_input_as_handled()
+			scroll.scroll_vertical -= 60
+		elif event.is_action_pressed("ui_down"):
+			popup.set_input_as_handled()
+			scroll.scroll_vertical += 60
+	)
 	popup.popup_centered()
+
+
+## ---- Controller support ------------------------------------------------
+
+
+## Pad B / ESC closes an embedded popup Window — acts on the LEADING
+## pad_cancel and swallows the mirrored twins (GamepadHelper.wire_pad_close).
+## `on_close` replaces the default hide() when Cancel carries extra teardown.
+func _wire_pad_close(popup: Window, on_close := Callable()) -> void:
+	GamepadHelper.wire_pad_close(popup, on_close)
+
+
+## Live (not queued-for-deletion) row containers of a list vbox.
+func _live_rows(list_vbox: VBoxContainer) -> Array[Control]:
+	var rows: Array[Control] = []
+	for child in list_vbox.get_children():
+		if child is Control and not child.is_queued_for_deletion():
+			rows.append(child)
+	return rows
+
+
+## Focusable buttons of a list row (Labels and spacers don't join the mesh).
+func _row_buttons(row: Control) -> Array[Control]:
+	var buttons: Array[Control] = []
+	for child in row.get_children():
+		if child is Button and not child.is_queued_for_deletion():
+			buttons.append(child)
+	return buttons
+
+
+## D-pad mesh of a list popup: toolbar row, one band per list row (←/→ wraps
+## within a row, ↑/↓ moves across rows at the clamped column), Cancel row.
+## Re-run after every row rebuild — the mesh links live nodes.
+func _wire_list_pad(toolbar: Array[Control], list_vbox: VBoxContainer,
+		cancel_btn: Button) -> void:
+	var bands: Array[Dictionary] = [{"row": toolbar}]
+	for row in _live_rows(list_vbox):
+		bands.append({"row": _row_buttons(row)})
+	bands.append({"row": [cancel_btn] as Array[Control]})
+	OverlayGridUtil.wire_band_stack(bands)
+
+
+## Modal focus provider for a list popup: `col` of the first row (the primary
+## info/view button), falling back to Cancel on an empty list.
+func _list_provider(list_vbox: VBoxContainer, cancel_btn: Button, col: int) -> Callable:
+	return func() -> Control:
+		var rows := _live_rows(list_vbox)
+		if not rows.is_empty():
+			var buttons := _row_buttons(rows[0])
+			if not buttons.is_empty():
+				return buttons[clampi(col, 0, buttons.size() - 1)]
+		return cancel_btn
+
+
+## (row, col) of the pad focus among the list rows, (-1, -1) if elsewhere.
+## Capture BEFORE queue_free'ing the rows — it names a position, not a node.
+func _focused_cell(list_vbox: VBoxContainer) -> Vector2i:
+	var focus_owner := GamepadHelper.gui_focus_owner()
+	if focus_owner == null:
+		return Vector2i(-1, -1)
+	var rows := _live_rows(list_vbox)
+	for r in range(rows.size()):
+		var col := _row_buttons(rows[r]).find(focus_owner)
+		if col >= 0:
+			return Vector2i(r, col)
+	return Vector2i(-1, -1)
+
+
+## Deferred, clamped re-grab of a cell captured by _focused_cell (gamepad mode
+## only; runs after a rebuild while the old rows are still queued for deletion).
+func _focus_cell(list_vbox: VBoxContainer, cell: Vector2i, fallback: Control) -> void:
+	if cell.x < 0 or not GamepadHelper.is_using_gamepad():
+		return
+	(func() -> void:
+		if not is_instance_valid(list_vbox) or not list_vbox.is_inside_tree():
+			return
+		var rows := _live_rows(list_vbox)
+		if rows.is_empty():
+			if fallback != null and is_instance_valid(fallback) \
+					and fallback.is_visible_in_tree():
+				fallback.grab_focus()
+			return
+		var buttons := _row_buttons(rows[clampi(cell.x, 0, rows.size() - 1)])
+		if not buttons.is_empty():
+			buttons[clampi(cell.y, 0, buttons.size() - 1)].grab_focus()
+	).call_deferred()
+
+
+## Keep the focused row visible while the dpad walks the list.
+func _follow_focus(scroll: ScrollContainer, row: Control) -> void:
+	for btn in _row_buttons(row):
+		btn.focus_entered.connect(func() -> void:
+			if is_instance_valid(scroll) and is_instance_valid(row):
+				scroll.ensure_control_visible(row)
+		)

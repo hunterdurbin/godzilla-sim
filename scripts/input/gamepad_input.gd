@@ -271,6 +271,10 @@ func _is_text_escape_event(event: InputEvent) -> bool:
 
 
 func _escape_text_field() -> void:
+	# The escape consumes the whole press: the raw event also reaches any
+	# window close handler connected after this translator, and no twins
+	# should fire — stamp the swallow so all of them treat it as spent.
+	GamepadHelper.swallow_cancel_twins()
 	var field := GamepadHelper.gui_focus_owner()
 	if field is LineEdit and GamepadHelper.has_focus_neighbors(field):
 		# Meshed field (deck builder bands): drop out of editing but keep the

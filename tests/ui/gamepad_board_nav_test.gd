@@ -90,6 +90,10 @@ func _assert_no_focus(board: Node, context: String) -> void:
 
 
 func _ready() -> void:
+	# Hermetic bindings: a connected controller loads the USER'S persisted
+	# rebinds (user://settings.cfg) — the walk assumes the default map.
+	# In-memory only; never touches the saved config.
+	GamepadInput._map = GlyphDB.default_map()
 	await get_tree().process_frame
 	var board: Node = load("res://scenes/board/GameBoard.tscn").instantiate()
 	get_tree().root.add_child(board)

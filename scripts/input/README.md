@@ -30,9 +30,23 @@ Related pieces elsewhere:
   through the device tracker and `GamepadInput.translate_event` — a focused
   embedded Window swallows input BEFORE the root viewport's
   `_input`/`_unhandled_input` stages, so without the forwarding the pad is
-  dead inside every dialog. A on the focused button is the pad path out of
-  a dialog (`close_on_escape` only reacts to real key events, not the
-  mirrored `ui_cancel` action).
+  dead inside every dialog — and hooks the window's own `gui_focus_changed`
+  into the LineEdit unedit fence (an embedded Window is its own viewport,
+  invisible to the root-viewport hook, so meshed fields inside dialogs
+  would otherwise start editing when the dpad lands on them).
+  **`wire_pad_close(popup, on_close)`** is the one-liner B-close: it acts on
+  the LEADING cancel press (`is_cancel_press` — the raw physical button
+  pad_cancel is bound to, the injected `pad_cancel`, or a keyboard-ESC
+  `ui_cancel`) and calls `swallow_cancel_twins()` so the mirrored twins that
+  follow die everywhere (`is_swallowed_cancel` checks in handlers plus a
+  root `_input` eater) instead of leaking into the surface underneath. It
+  refuses to close while a text field is editing — B escapes the field
+  instead, and `GamepadInput._escape_text_field` stamps the same swallow so
+  the escape press can't also close. Screen-level back handlers follow the
+  same pattern in `_unhandled_input` (act on `pad_cancel`/`ui_cancel`,
+  check `is_swallowed_cancel` first, stamp on action). A on the focused
+  button remains a valid pad path out of any dialog (`close_on_escape`
+  only reacts to real key events, not the mirrored `ui_cancel` action).
 - `scenes/deck_builder/` — the deck builder meshes both card grids and all
   chrome with `OverlayGridUtil.wire_band_stack` (wrappers opt in via
   `GRID_CARD_META`), LB/RB cycle left panel / deck / pool,
@@ -40,6 +54,32 @@ Related pieces elsewhere:
   To Monster / remove-from-pool), and `DeckBuilderPadHints` feeds the
   bottom hint row. Regression test:
   `tests/ui/DeckBuilderPadNavTest.tscn` (headless).
+- `scenes/menus/extras.gd` — the Extras screen and all of its runtime-built
+  PopupPanel sub-views (replay/save/log lists, hosting lobby, confirm/label/
+  player-choice dialogs) are pad-navigable: each popup passes a provider to
+  `register_modal` (lists land on the first row's info button, confirms on
+  Cancel), `_wire_list_pad` re-meshes the dynamic rows after every rebuild
+  (with (row, col) pad-cursor restore and scroll follow-focus), and
+  `GamepadHelper.wire_pad_close` gives every popup the leading-pad_cancel
+  B-close — with real teardown where Cancel has one (hosting lobby
+  disconnects, log list frees). Regression test:
+  `tests/ui/ExtrasPadNavTest.tscn`.
+- `scenes/replay/replay_viewer.gd` — screen focus context landing on
+  Play/Pause; one `wire_band_stack` mesh over Exit / both hand rows /
+  transport buttons / the two sliders (sliders sit in their OWN bands —
+  they consume ←/→ for their value, so ↑/↓ is the only way on and off).
+  Hand rows rebuild every snapshot: `_render_snapshot` re-meshes and
+  restores the pad cursor by (grid, index). Bumpers step one snapshot
+  (LB back / RB forward) and triggers jump a whole turn (LT / RT) from
+  anywhere on the screen, gated on being the top context. Hand cards are
+  `make_pad_focusable`d — focus mirrors hover (preview + scroll-into-view),
+  Y zooms via the card's focused `pad_inspect` path. The zoom overlay is a
+  null-provider modal whose `_input` branch swallows the pad twins (focus
+  stays on the card behind the dim); the gallery mirrors
+  `card_grid_viewer.gd` (`wire_overlay_focus`, stacked-toggle rebuild keeps
+  the grid index, B restores the opener). `ReplayViewerPadHints` feeds a
+  ctx-driven hint row floating above both overlays. Regression test:
+  `tests/ui/ReplayViewerPadNavTest.tscn`.
 - `scripts/input/cursor_map.gd` — **CursorMap**: generic directional
   navigation graph (element id → up/right/down/left candidate lists).
   Multi-candidate directions tie-break by the **last-10-visited history**

@@ -3,9 +3,9 @@ extends GdUnitTestSuite
 ## Controller support for the main menu's Bot Config popup: every control is
 ## meshed for the dpad, the format dropdown's popup is a registered focus
 ## context of its own (a focused popup window otherwise swallows joypad
-## input entirely), and pad B closes each popup via the TRAILING ui_cancel
-## twin — the leading pad_cancel must die inside the window so the second
-## twin can't leak into the screen underneath.
+## input entirely), and pad B closes each popup on the LEADING pad_cancel —
+## the mirrored ui_cancel twin is swallowed so it can't leak into the
+## screen underneath.
 
 const MODAL_META := &"_gamepad_modal"
 
@@ -13,6 +13,7 @@ var _menu: Control
 
 
 func before_test() -> void:
+	GamepadHelper._cancel_swallow_frame = -100  # no stale twin swallow
 	_menu = auto_free(load("res://scenes/menus/MainMenu.tscn").instantiate())
 	add_child(_menu)
 
@@ -44,7 +45,7 @@ func test_every_control_is_meshed() -> void:
 				.override_failure_message("unmeshed %s: %s" % [type, str(control)]).is_true()
 
 
-func test_pad_back_closes_via_trailing_ui_cancel_twin() -> void:
+func test_pad_back_closes_on_leading_pad_cancel() -> void:
 	var popup := _open_config_popup()
 	assert_bool(popup.visible).is_true()
 	var lead := InputEventAction.new()
@@ -52,13 +53,14 @@ func test_pad_back_closes_via_trailing_ui_cancel_twin() -> void:
 	lead.pressed = true
 	popup.window_input.emit(lead)
 	assert_bool(popup.visible) \
-		.override_failure_message("leading pad_cancel must not close the popup").is_true()
+		.override_failure_message("leading pad_cancel did not close the popup").is_false()
+	# The mirrored ui_cancel twin that follows is stamped as spent — it must
+	# be swallowed wherever it lands instead of hitting the screen beneath.
 	var twin := InputEventAction.new()
 	twin.action = &"ui_cancel"
 	twin.pressed = true
-	popup.window_input.emit(twin)
-	assert_bool(popup.visible) \
-		.override_failure_message("trailing ui_cancel twin did not close the popup").is_false()
+	assert_bool(GamepadHelper.is_swallowed_cancel(twin)) \
+		.override_failure_message("the close did not stamp the twin swallow").is_true()
 
 
 func test_deck_pool_popup_is_meshed_and_closable() -> void:

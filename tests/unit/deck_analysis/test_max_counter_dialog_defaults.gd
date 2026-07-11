@@ -52,22 +52,23 @@ func test_pad_focus_mesh_links_params_and_ok() -> void:
 	assert_object(zone.get_node(zone.focus_neighbor_left)).is_same(dialog._strategy_count_option)
 
 
-func test_pad_back_closes_via_trailing_ui_cancel_twin() -> void:
+func test_pad_back_closes_on_leading_pad_cancel() -> void:
+	GamepadHelper._cancel_swallow_frame = -100  # no stale twin swallow
 	var dialog: MaxCounterDialog = auto_free(MaxCounterDialog.new())
 	add_child(dialog)
 	dialog.show()
 
-	# The leading pad_cancel must NOT close: it has to die inside the window
-	# so the trailing ui_cancel twin can't leak to the builder's back handler.
+	# The LEADING pad_cancel closes (GamepadHelper.wire_pad_close)...
 	var lead := InputEventAction.new()
 	lead.action = &"pad_cancel"
 	lead.pressed = true
-	dialog._on_window_input(lead)
-	assert_bool(dialog.visible).is_true()
+	dialog.window_input.emit(lead)
+	assert_bool(dialog.visible).is_false()
 
-	# The trailing ui_cancel twin is what closes the dialog.
+	# ...and the mirrored ui_cancel twin is stamped as spent, so it can't
+	# leak to the deck builder's back handler underneath.
 	var twin := InputEventAction.new()
 	twin.action = &"ui_cancel"
 	twin.pressed = true
-	dialog._on_window_input(twin)
-	assert_bool(dialog.visible).is_false()
+	assert_bool(GamepadHelper.is_swallowed_cancel(twin)) \
+		.override_failure_message("the close did not stamp the twin swallow").is_true()

@@ -558,6 +558,9 @@ STR_RV_SPEED,Speed:,速度:
 STR_RV_PAUSE,Pause,一時停止
 STR_RV_CLOSE,Close,閉じる
 STR_RV_STACKED,Stacked,重ねる
+STR_RV_HINT_ADJUST,Adjust,調整
+STR_RV_HINT_STEP,Step,ステップ
+STR_RV_HINT_TURN,Turn,ターン
 STR_RV_NO_REPLAY_DATA,No replay data,リプレイデータなし
 STR_RV_NO_CARDS,No cards.,カードなし。
 STR_RV_PHASE_START,Start,スタート

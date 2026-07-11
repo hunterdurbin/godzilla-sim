@@ -52,6 +52,10 @@ func _is_wrapper(node: Control, grid: GridContainer) -> bool:
 
 
 func _ready() -> void:
+	# Hermetic bindings: a connected controller loads the USER'S persisted
+	# rebinds (user://settings.cfg) — the walk assumes the default map.
+	# In-memory only; never touches the saved config.
+	GamepadInput._map = GlyphDB.default_map()
 	await get_tree().process_frame
 	var builder: Node = load("res://scenes/deck_builder/DeckBuilder.tscn").instantiate()
 	get_tree().root.add_child(builder)
@@ -240,9 +244,9 @@ func _ready() -> void:
 	assert(GamepadHelper.gui_focus_owner() == max_cp_ok,
 		"dpad down did not return to OK: %s" % str(GamepadHelper.gui_focus_owner()))
 
-	# B closes the dialog from anywhere inside it. The handler reacts to the
-	# TRAILING ui_cancel twin, so the press must not leak into the builder's
-	# back handler (which would raise the unsaved gate on top of the close).
+	# B closes the dialog from anywhere inside it (leading pad_cancel); the
+	# mirrored twins are swallowed, so the press must not leak into the
+	# builder's back handler (which would raise the unsaved gate on top).
 	await _press_button(JOY_BUTTON_B)
 	await _tick(3)
 	assert(not builder.max_counter_dialog.visible, "B did not close the Max CP dialog")

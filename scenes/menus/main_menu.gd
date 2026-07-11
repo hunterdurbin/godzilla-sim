@@ -460,14 +460,10 @@ func _show_bot_config_popup() -> void:
 	var last_diff: Control = diff_buttons[-1]
 	last_diff.focus_neighbor_right = last_diff.get_path_to(random_deck_check)
 	random_deck_check.focus_neighbor_left = random_deck_check.get_path_to(last_diff)
-	# Pad B closes (cancel semantics — nothing is committed). React to the
-	# TRAILING ui_cancel twin, never the leading pad_cancel: hiding on the
-	# leading twin would pop the focus context before the second one lands,
-	# leaking it into the screen underneath (see MaxCounterDialog).
-	popup.window_input.connect(func(event: InputEvent) -> void:
-		if event.is_action_pressed("ui_cancel"):
-			popup.set_input_as_handled()
-			popup.hide())
+	# Pad B closes (cancel semantics — nothing is committed): acts on the
+	# leading pad_cancel; the mirrored twins are swallowed so they can't
+	# leak into the screen underneath.
+	GamepadHelper.wire_pad_close(popup)
 
 	add_child(popup)
 	GamepadHelper.register_modal(popup)
@@ -565,12 +561,9 @@ func _show_deck_pool_popup(parent_popup: Window, pending: Dictionary, random_ena
 		bands.append({"row": [save_btn, cancel_btn] as Array[Control]})
 		OverlayGridUtil.wire_band_stack(bands)
 	pool_view.rows_rebuilt.connect(wire_pool_pad)
-	# Pad B closes the inner popup only — trailing ui_cancel twin, same
-	# reasoning as the Bot Config popup above.
-	popup.window_input.connect(func(event: InputEvent) -> void:
-		if event.is_action_pressed("ui_cancel"):
-			popup.set_input_as_handled()
-			popup.hide())
+	# Pad B closes the inner popup only (leading pad_cancel, twins swallowed —
+	# the parent Bot Config popup never sees the press).
+	GamepadHelper.wire_pad_close(popup)
 
 	# Parent to the bot config popup so Godot treats it as a child Window
 	# (proper z-order, won't accidentally close the parent).

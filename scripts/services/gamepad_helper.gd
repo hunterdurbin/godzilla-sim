@@ -81,6 +81,11 @@ func _process(_delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Twins of a cancel press that already closed something die here before
+	# they can reach the surface the close uncovered (see swallow_cancel_twins).
+	if is_swallowed_cancel(event):
+		get_viewport().set_input_as_handled()
+		return
 	if _using_gamepad:
 		_check_for_pointer(event)
 	else:
@@ -142,6 +147,57 @@ func _check_for_pointer(event: InputEvent) -> void:
 
 const _MODAL_META := &"_gamepad_modal"
 
+## One physical B press produces up to three events: the raw joypad event
+## plus the pad_cancel and mirrored ui_cancel twins GamepadInput injects. A
+## handler that acts on the LEADING press stamps this frame; the remaining
+## twins are then swallowed — in _input for root-stage events, and via
+## is_swallowed_cancel checks inside cancel handlers — so they can't leak
+## into whatever the close uncovered (e.g. a screen's B-back handler right
+## under a closed dialog).
+var _cancel_swallow_frame: int = -100
+
+
+func swallow_cancel_twins() -> void:
+	_cancel_swallow_frame = Engine.get_process_frames()
+
+
+func is_swallowed_cancel(event: InputEvent) -> bool:
+	if Engine.get_process_frames() - _cancel_swallow_frame > 2:
+		return false
+	return is_cancel_press(event)
+
+
+## Any face of one B press: the injected pad_cancel, its mirrored ui_cancel
+## (also matches keyboard ESC), or the raw physical button pad_cancel is
+## currently bound to.
+func is_cancel_press(event: InputEvent) -> bool:
+	if event.is_action_pressed("pad_cancel") or event.is_action_pressed("ui_cancel"):
+		return true
+	var physical: StringName = GamepadInput.get_physical(&"pad_cancel")
+	return physical != &"" and event.is_action_pressed(physical)
+
+
+## Pad B / keyboard ESC closes an embedded popup Window. Reacts to the
+## LEADING cancel press — the raw physical button works even where injected
+## twins misroute, which is why this must not wait for the trailing ui_cancel
+## mirror — and swallows the twins that follow. `on_close` replaces the
+## default hide() when the popup's Cancel carries extra teardown.
+func wire_pad_close(popup: Window, on_close := Callable()) -> void:
+	popup.window_input.connect(func(event: InputEvent) -> void:
+		if not is_cancel_press(event):
+			return
+		popup.set_input_as_handled()
+		if is_swallowed_cancel(event) or not popup.visible:
+			return  # a twin of the press that already closed it
+		if GamepadInput._is_text_editing():
+			return  # B escapes the editing text field, not the dialog
+		swallow_cancel_twins()
+		if on_close.is_valid():
+			on_close.call()
+		else:
+			popup.hide()
+	)
+
 
 ## One-liner modal registration: pushes a focus context while `surface` is
 ## visible and pops it on hide and on free. `surface` may be a Window
@@ -163,6 +219,11 @@ func register_modal(surface: Node, provider := Callable()) -> void:
 		# translator — buttons would be dead inside every dialog. Re-run both
 		# on events surfacing inside the window.
 		(surface as Window).window_input.connect(_on_modal_window_input)
+		# The LineEdit unedit fence (_ready) only watches the ROOT viewport's
+		# gui_focus_changed; an embedded Window is its own viewport, so pad
+		# navigation landing on a meshed LineEdit inside a dialog would start
+		# editing. Watch the dialog's focus changes too.
+		(surface as Window).gui_focus_changed.connect(_on_root_gui_focus_changed)
 	if _modal_visible(surface):
 		push_focus_context(surface, resolved)
 

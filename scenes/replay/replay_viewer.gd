@@ -20,8 +20,10 @@ var _player_states: Array = []  # Array of PlayerState
 # Hand display
 @onready var p1_hand_title: Label = $VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox/P1HandTitle
 @onready var p1_hand_grid: HBoxContainer = $VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox/P1HandScroll/P1HandGrid
+@onready var p1_hand_scroll: ScrollContainer = $VBoxContainer/Content/RightPanel/P1HandPanel/P1HandVBox/P1HandScroll
 @onready var p2_hand_title: Label = $VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox/P2HandTitle
 @onready var p2_hand_grid: HBoxContainer = $VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox/P2HandScroll/P2HandGrid
+@onready var p2_hand_scroll: ScrollContainer = $VBoxContainer/Content/RightPanel/P2HandPanel/P2HandVBox/P2HandScroll
 
 @onready var turn_label: Label = $VBoxContainer/TopBar/TurnLabel
 @onready var exit_button: Button = $VBoxContainer/TopBar/ExitButton
@@ -54,15 +56,27 @@ var _gallery_overlay: ColorRect
 var _gallery_title: Label
 var _gallery_grid: GridContainer
 var _gallery_stacked_toggle: CheckButton
+var _gallery_scroll: ScrollContainer
+var _gallery_close_btn: Button
 var _gallery_cards: Array[Dictionary] = []
+
+# Controller support
+var _pad_hint_row: OverlayHintRow
 
 
 func _ready() -> void:
 	_replay = ReplayData.pending_replay
 	ReplayData.pending_replay = null
 
+	GamepadHelper.push_focus_context(self, _default_pad_focus)
+	GamepadHelper.gamepad_detected.connect(_wire_pad_mesh)
+	GamepadHelper.context_stack_changed.connect(_on_context_stack_changed)
+	get_viewport().gui_focus_changed.connect(_on_gui_focus_changed)
+
 	if not _replay or _replay.snapshots.is_empty():
 		turn_label.text = tr("STR_RV_NO_REPLAY_DATA")
+		_build_pad_hint_row()
+		_wire_pad_mesh()
 		return
 
 	# Reset local_player_id so PlayerBoard layouts are correct
@@ -127,8 +141,27 @@ func _ready() -> void:
 	# Set player names for log display
 	GameLog.player_names = _replay.player_names.duplicate()
 
-	# Render first snapshot
+	# Controller hint row — above both overlays (zoom z=200), ctx-driven.
+	_build_pad_hint_row()
+
+	# Render first snapshot (meshes the pad focus graph at its end)
 	_render_snapshot(0)
+
+
+func _exit_tree() -> void:
+	GamepadHelper.pop_focus_context(self)
+	if GamepadHelper.gamepad_detected.is_connected(_wire_pad_mesh):
+		GamepadHelper.gamepad_detected.disconnect(_wire_pad_mesh)
+	if GamepadHelper.context_stack_changed.is_connected(_on_context_stack_changed):
+		GamepadHelper.context_stack_changed.disconnect(_on_context_stack_changed)
+	if get_viewport().gui_focus_changed.is_connected(_on_gui_focus_changed):
+		get_viewport().gui_focus_changed.disconnect(_on_gui_focus_changed)
+
+
+func _default_pad_focus() -> Control:
+	if not _replay or _replay.snapshots.is_empty():
+		return exit_button
+	return play_pause_button
 
 
 func _connect_board_signals(board: Control) -> void:
@@ -179,6 +212,7 @@ func _render_snapshot(index: int) -> void:
 	# Deserialize player states and sync boards
 	var players_data: Array = snap.get("players", [])
 	_player_states.clear()
+	var pad_focus := _captured_hand_focus()
 	if players_data.size() >= 2:
 		var ps0 := GameSerializer.deserialize_to_player_state(players_data[0])
 		var ps1 := GameSerializer.deserialize_to_player_state(players_data[1])
@@ -217,6 +251,10 @@ func _render_snapshot(index: int) -> void:
 	next_turn_button.disabled = index >= total_steps - 1
 	play_from_here_button.disabled = not snap.get("is_boundary", false)
 
+	# The hand rows were rebuilt — re-mesh and put the pad cursor back.
+	_wire_pad_mesh()
+	_restore_hand_focus(pad_focus)
+
 
 # --- Hand display ---
 
@@ -239,6 +277,17 @@ func _sync_hand_display(grid: HBoxContainer, title: Label, hand_cards: Array, pl
 		card.card_hover_started.connect(_on_hand_card_hover_started)
 		card.card_hover_ended.connect(_on_hand_card_hover_ended)
 		grid.add_child(card)
+		# Pad focus mirrors hover: preview + keep the card in view. Y zooms
+		# via card.gd's focused pad_inspect → card_right_clicked path.
+		GamepadHelper.make_pad_focusable(card)
+		card.focus_entered.connect(_on_hand_card_focus_entered.bind(card, grid))
+		card.focus_exited.connect(_on_hand_card_hover_ended.bind(card))
+
+
+func _on_hand_card_focus_entered(card: Control, grid: HBoxContainer) -> void:
+	var scroll := p1_hand_scroll if grid == p1_hand_grid else p2_hand_scroll
+	scroll.ensure_control_visible(card)
+	_on_hand_card_hover_started(card)
 
 
 func _on_hand_card_right_clicked(card: Control) -> void:
@@ -371,6 +420,10 @@ func _build_zoom_overlay() -> void:
 	_zoom_container.mouse_filter = Control.MOUSE_FILTER_PASS
 	_zoom_overlay.add_child(_zoom_container)
 
+	# Focus context only — nothing focusable inside; focus stays on the
+	# control behind the dim, so _input swallows the pad twins while visible.
+	GamepadHelper.register_modal(_zoom_overlay, func() -> Control: return null)
+
 
 func _show_card_zoom(card_data: Dictionary) -> void:
 	for child in _zoom_container.get_children():
@@ -465,25 +518,30 @@ func _build_gallery_overlay() -> void:
 	title_row.add_child(_gallery_stacked_toggle)
 
 	# Scrollable grid
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.custom_minimum_size = Vector2(0, 400)
-	vbox.add_child(scroll)
+	_gallery_scroll = ScrollContainer.new()
+	_gallery_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_gallery_scroll.custom_minimum_size = Vector2(0, 400)
+	vbox.add_child(_gallery_scroll)
 
 	_gallery_grid = GridContainer.new()
 	_gallery_grid.columns = 4
 	_gallery_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_gallery_grid.add_theme_constant_override("h_separation", 8)
 	_gallery_grid.add_theme_constant_override("v_separation", 8)
-	scroll.add_child(_gallery_grid)
+	_gallery_scroll.add_child(_gallery_grid)
 
 	# Close button
-	var close_btn := Button.new()
-	close_btn.text = tr("STR_RV_CLOSE")
-	close_btn.custom_minimum_size = Vector2(100, 36)
-	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	close_btn.pressed.connect(_hide_gallery)
-	vbox.add_child(close_btn)
+	_gallery_close_btn = Button.new()
+	_gallery_close_btn.text = tr("STR_RV_CLOSE")
+	_gallery_close_btn.custom_minimum_size = Vector2(100, 36)
+	_gallery_close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_gallery_close_btn.pressed.connect(_hide_gallery)
+	vbox.add_child(_gallery_close_btn)
+
+	# Chrome joins the pad mesh but must not show mouse focus rings.
+	GamepadHelper.make_pad_focusable(_gallery_stacked_toggle)
+	GamepadHelper.make_pad_focusable(_gallery_close_btn)
+	GamepadHelper.register_modal(_gallery_overlay, _gallery_pad_provider)
 
 
 func _show_gallery(title: String, cards: Array, show_stacked: bool = true) -> void:
@@ -505,6 +563,8 @@ func _hide_gallery() -> void:
 
 
 func _refresh_gallery_grid() -> void:
+	# The cards are freed on every refresh — capture the pad spot first.
+	var pad_idx := OverlayGridUtil.focused_index(_gallery_grid)
 	for child in _gallery_grid.get_children():
 		child.queue_free()
 
@@ -513,6 +573,7 @@ func _refresh_gallery_grid() -> void:
 		empty_label.text = tr("STR_RV_NO_CARDS")
 		empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		_gallery_grid.add_child(empty_label)
+		_wire_gallery_pad()
 		return
 
 	var stacked := _gallery_stacked_toggle.button_pressed
@@ -536,6 +597,10 @@ func _refresh_gallery_grid() -> void:
 			_set_gallery_hover(card)
 			card.card_right_clicked.connect(_on_gallery_card_right_clicked)
 			_gallery_grid.add_child(card)
+
+	_wire_gallery_pad()
+	if pad_idx >= 0:
+		OverlayGridUtil.focus_index(_gallery_grid, pad_idx, _gallery_close_btn)
 
 
 func _on_gallery_overlay_input(event: InputEvent) -> void:
@@ -688,11 +753,24 @@ func _on_log_meta_hover_ended(_meta: Variant) -> void:
 # --- Input handling (Escape dismissal) ---
 
 func _input(event: InputEvent) -> void:
-	# Zoom overlay: any click or Escape dismisses (gui_input can't reach overlay
-	# because card's internal children consume mouse events)
+	# Zoom overlay: any click, pad B, or Escape dismisses (gui_input can't
+	# reach the overlay because card's internal children consume mouse events)
 	if _zoom_overlay and _zoom_overlay.visible:
-		if event.is_action_pressed("ui_cancel"):
-			_hide_card_zoom()
+		if GamepadHelper.is_cancel_press(event):
+			# Act on the LEADING pad_cancel; the mirrored twins are swallowed
+			# so they can't fall through to the gallery/back handlers below.
+			if not GamepadHelper.is_swallowed_cancel(event):
+				GamepadHelper.swallow_cancel_twins()
+				_hide_card_zoom()
+			get_viewport().set_input_as_handled()
+			return
+		# The control behind the dim (hand/gallery card) still holds real
+		# focus: swallow the injected pad twins so the mirrored ui_* can't
+		# crawl its mesh under the zoom (card_zoom_overlay does the same).
+		if event is InputEventAction and event.pressed and event.action in [
+				&"pad_nav_up", &"pad_nav_down", &"pad_nav_left", &"pad_nav_right",
+				&"ui_up", &"ui_down", &"ui_left", &"ui_right",
+				&"ui_accept", &"pad_confirm", &"pad_inspect", &"pad_end_main"]:
 			get_viewport().set_input_as_handled()
 			return
 		if event is InputEventMouseButton and event.pressed:
@@ -701,10 +779,12 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 			return
 
-	# Gallery overlay: Escape dismisses
+	# Gallery overlay: pad B / Escape dismisses
 	if _gallery_overlay and _gallery_overlay.visible:
-		if event.is_action_pressed("ui_cancel"):
-			_hide_gallery()
+		if GamepadHelper.is_cancel_press(event):
+			if not GamepadHelper.is_swallowed_cancel(event):
+				GamepadHelper.swallow_cancel_twins()
+				_hide_gallery()
 			get_viewport().set_input_as_handled()
 			return
 
@@ -735,6 +815,175 @@ func _input(event: InputEvent) -> void:
 			KEY_DOWN:
 				speed_slider.value = maxf(speed_slider.min_value, speed_slider.value - speed_slider.step)
 				get_viewport().set_input_as_handled()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Pad B (leading pad_cancel) / Escape at screen level exits to Extras.
+	# The overlay dismissals in _input mark their press handled and swallow
+	# the twins, so this only fires bare.
+	if event.is_action_pressed("pad_cancel") or event.is_action_pressed("ui_cancel"):
+		if GamepadHelper.is_swallowed_cancel(event):
+			get_viewport().set_input_as_handled()
+			return
+		if not GamepadHelper.is_top_context(self):
+			return
+		get_viewport().set_input_as_handled()
+		GamepadHelper.swallow_cancel_twins()
+		_on_exit_pressed()
+		return
+	if not _replay or _replay.snapshots.is_empty() \
+			or not GamepadHelper.is_top_context(self):
+		return
+	# Bumpers step one snapshot (LB back, RB forward); triggers jump a whole
+	# turn (LT back, RT forward) — the pad twin of the transport buttons.
+	if event.is_action_pressed("pad_focus_log"):
+		get_viewport().set_input_as_handled()
+		_on_prev_pressed()
+	elif event.is_action_pressed("pad_focus_tracker"):
+		get_viewport().set_input_as_handled()
+		_on_next_pressed()
+	elif event.is_action_pressed("pad_play_card_rage"):
+		get_viewport().set_input_as_handled()
+		_on_prev_turn_pressed()
+	elif event.is_action_pressed("pad_play_card_invasion"):
+		get_viewport().set_input_as_handled()
+		_on_next_turn_pressed()
+
+
+# --- Controller support ---
+
+## Focus mesh over the static chrome and the (rebuilt-per-snapshot) hand
+## rows. Sliders consume ←/→ for their value, so each gets its OWN band —
+## sharing the transport row would make everything right of a slider
+## unreachable (↑/↓ is the only way off one).
+func _wire_pad_mesh() -> void:
+	if not GamepadHelper.is_using_gamepad():
+		return
+	OverlayGridUtil.wire_band_stack([
+		{"row": [exit_button] as Array[Control]},
+		{"row": _hand_cards(p2_hand_grid)},
+		{"row": _hand_cards(p1_hand_grid)},
+		{"row": [prev_turn_button, prev_button, play_pause_button, next_button,
+				next_turn_button, play_from_here_button] as Array[Control]},
+		{"row": [speed_slider] as Array[Control]},
+		{"row": [turn_slider] as Array[Control]},
+	])
+	# A gallery opened with the mouse must become walkable after a mid-session
+	# flip to pad (gamepad_detected routes here).
+	if _gallery_overlay != null and _gallery_overlay.visible:
+		_wire_gallery_pad()
+
+
+func _hand_cards(grid: HBoxContainer) -> Array[Control]:
+	var cards: Array[Control] = []
+	for child in grid.get_children():
+		if child is Control and not child.is_queued_for_deletion():
+			cards.append(child)
+	return cards
+
+
+## (grid, index) of the pad focus if it sits in a hand row — the card nodes
+## are freed on every snapshot render, so remember the position, not the node.
+func _captured_hand_focus() -> Dictionary:
+	var focus_owner := get_viewport().gui_get_focus_owner()
+	if focus_owner == null:
+		return {}
+	for grid in [p1_hand_grid, p2_hand_grid]:
+		var idx := _hand_cards(grid).find(focus_owner)
+		if idx >= 0:
+			return {"grid": grid, "index": idx}
+	return {}
+
+
+func _restore_hand_focus(captured: Dictionary) -> void:
+	if captured.is_empty() or not GamepadHelper.is_using_gamepad():
+		return
+	(func() -> void:
+		var cards := _hand_cards(captured["grid"])
+		if cards.is_empty():
+			# Hand emptied — fall back to the transport row.
+			if play_pause_button.is_visible_in_tree():
+				play_pause_button.grab_focus()
+			return
+		cards[clampi(int(captured["index"]), 0, cards.size() - 1)].grab_focus()
+	).call_deferred()
+
+
+func _gallery_pad_provider() -> Control:
+	var cards := OverlayGridUtil.grid_cards(_gallery_grid)
+	if not cards.is_empty():
+		return cards[0]
+	return _gallery_close_btn
+
+
+func _wire_gallery_pad() -> void:
+	if not GamepadHelper.is_using_gamepad():
+		return
+	OverlayGridUtil.wire_overlay_focus(_gallery_grid,
+			[_gallery_stacked_toggle] as Array[Control],
+			[_gallery_close_btn] as Array[Control])
+	for card in OverlayGridUtil.grid_cards(_gallery_grid):
+		if not card.focus_entered.is_connected(_on_gallery_card_focus_entered):
+			card.focus_entered.connect(_on_gallery_card_focus_entered.bind(card))
+
+
+func _on_gallery_card_focus_entered(card: Control) -> void:
+	_gallery_scroll.ensure_control_visible(card)
+
+
+func _build_pad_hint_row() -> void:
+	_pad_hint_row = OverlayHintRow.new()
+	_pad_hint_row.z_index = 250
+	add_child(_pad_hint_row)
+	# Margin 56 clears the transport row that spans the bottom edge.
+	_pad_hint_row.set_anchors_and_offsets_preset(
+			Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 56)
+	_pad_hint_row.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_pad_hint_row.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_refresh_pad_hints()
+
+
+func _on_gui_focus_changed(_control: Control) -> void:
+	_refresh_pad_hints()
+
+
+func _on_context_stack_changed() -> void:
+	# The zoom/gallery contexts are ours (the row floats above them and
+	# describes them); any other modal on top hides the row until it closes.
+	if _pad_hint_row == null:
+		return
+	if not GamepadHelper.is_top_context(self) and _overlay_ctx().is_empty():
+		_pad_hint_row.visible = false
+	else:
+		_refresh_pad_hints()
+
+
+func _overlay_ctx() -> String:
+	if _zoom_overlay != null and _zoom_overlay.visible:
+		return "zoom"
+	if _gallery_overlay != null and _gallery_overlay.visible:
+		return "gallery"
+	return ""
+
+
+func _refresh_pad_hints() -> void:
+	if _pad_hint_row == null:
+		return
+	var ctx := {"overlay": _overlay_ctx(), "area": "chrome"}
+	var focus_owner := get_viewport().gui_get_focus_owner()
+	if focus_owner != null:
+		if focus_owner.get_parent() == p1_hand_grid \
+				or focus_owner.get_parent() == p2_hand_grid:
+			ctx["area"] = "card"
+		elif focus_owner is HSlider:
+			ctx["area"] = "slider"
+	var hints: Array[Dictionary] = []
+	for h in ReplayViewerPadHints.compute(ctx):
+		var hint := {"action": h["action"], "text": tr(h["text_key"])}
+		if h.has("action2"):
+			hint["action2"] = h["action2"]
+		hints.append(hint)
+	_pad_hint_row.set_hints(hints)
 
 
 # --- Helpers ---

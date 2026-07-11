@@ -100,7 +100,10 @@ func _init() -> void:
 	root.add_child(_assumptions_label)
 
 	visibility_changed.connect(_on_visibility_changed)
-	window_input.connect(_on_window_input)
+	# Pad B closes the preview (leading pad_cancel; the mirrored twin is
+	# swallowed so it can't hit the deck builder's back handler underneath).
+	# An open dropdown popup is its own focus context and eats B first.
+	GamepadHelper.wire_pad_close(self)
 
 
 func open(monster_entries: Array, main_entries: Array) -> void:
@@ -356,20 +359,6 @@ func _drop_optimizer() -> void:
 	if _optimizer:
 		_optimizer.teardown()
 	_optimizer = null
-
-
-## Pad B closes the preview. It arrives here as the injected ui_cancel twin
-## (close_on_escape only reacts to real key events, so a Window dialog never
-## closes on the mirrored action by itself). Reacting to the TRAILING twin —
-## not the leading pad_cancel — matters: hiding on pad_cancel would drop
-## window focus before the ui_cancel twin lands, and the leaked twin would
-## hit the deck builder's back handler and raise the unsaved-changes gate.
-## An open dropdown popup is its own focus context and swallows B before
-## this window ever sees it.
-func _on_window_input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
-		set_input_as_handled()
-		hide()
 
 
 func _on_visibility_changed() -> void:
