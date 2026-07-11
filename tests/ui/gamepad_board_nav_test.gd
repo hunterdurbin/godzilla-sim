@@ -18,10 +18,11 @@ extends Node
 ##   - registered modal dialogs suspend the module; text fields release on
 ##     any dpad press;
 ##   - effects area: pending-stack rows are cursor stops, the choice jail
-##     spans choice+stack, Select cycles effects <-> board (inspect-only
-##     roam during a mandatory choice, B returns), the ring sits on the
-##     choice button's REAL rect from the first settled frame, and the
-##     Select hint rows name their destination.
+##     spans choice+stack, Select cycles effects <-> board (read-only roam
+##     during a mandatory choice: A opens the pile/stack viewers, plays and
+##     End Main stay dead, B returns), the ring sits on the choice button's
+##     REAL rect from the first settled frame, and the Select hint rows
+##     name their destination.
 ##
 ## Set VERIFY_SHOT_DIR to capture screenshots at the effects-area steps
 ## (headful runs only).
@@ -641,8 +642,9 @@ func _ready() -> void:
 	assert(_hint_text(sel._choice_hint_row) == tr("STR_GB_HINT_BOARD"),
 		"choice hint row shows '%s'" % _hint_text(sel._choice_hint_row))
 
-	# Select from the choice = inspect-only board roam: dpad + Y live,
-	# A / X / B-skip dead, and the choice stays pending throughout.
+	# Select from the choice = read-only board roam: dpad + Y live, A opens
+	# the pile/stack viewers (mouse parity), plays / X / B-skip dead, and
+	# the choice stays pending throughout.
 	await _tap(&"pad_chat")
 	assert(nav._choice_roaming, "Select from the choice did not start a roam")
 	assert(not nav._in_effects_region(nav._element), "roam left the cursor on the effects area")
@@ -656,10 +658,45 @@ func _ready() -> void:
 	var roam_origin: String = nav._element
 	await _tap(&"pad_nav_right")
 	assert(nav._element != roam_origin, "dpad frozen during the roam")
+
+	# A on the discard opens its viewer (mouse parity), the choice stays
+	# pending, and the suspend/resume round-trip keeps the roam + cursor.
+	nav._enter_element("bot_discard")
+	await _tick(1)
 	await _tap(&"pad_confirm")
-	assert(sel._choice_selecting and nav._mode == "choice", "A during the roam activated something")
+	await _tick(2)
+	assert(board.discard_view_overlay.visible, "A on the discard did not open the viewer during the roam")
+	assert(sel._choice_selecting and nav._mode == "choice", "discard viewer disturbed the pending choice")
+	await _shot("03b_roam_discard_view")
+	board.discard_view_overlay.try_close()
+	await _tick(2)
+	assert(not board.discard_view_overlay.visible, "discard viewer did not close")
+	assert(nav._choice_roaming, "roam flag lost across the viewer round-trip")
+	assert(nav._element == "bot_discard",
+		"cursor did not restore to the discard after the viewer: %s" % nav._element)
+
+	# A on a zone with cards opens the zone stack viewer, same round-trip.
+	var roam_player: Variant = board._get_player_state(local_pid)
+	if not roam_player.current_monster.is_empty():
+		nav._enter_element("bot_z%d" % roam_player.monster_zone)
+		await _tick(1)
+		await _tap(&"pad_confirm")
+		await _tick(2)
+		assert(board.zone_stack_view_overlay.visible, "A on the monster zone did not open the stack viewer")
+		assert(sel._choice_selecting and nav._mode == "choice", "zone viewer disturbed the pending choice")
+		board.zone_stack_view_overlay.try_close()
+		await _tick(2)
+		assert(nav._choice_roaming, "roam flag lost across the zone-viewer round-trip")
+
+	# Hand cards and End Main stay dead during the roam.
+	nav._enter_element("hand_0")
+	await _tick(1)
+	await _tap(&"pad_confirm")
+	assert(sel._choice_selecting and nav._mode == "choice", "A on a hand card during the roam activated something")
 	await _tap(&"pad_end_main")
 	assert(sel._choice_selecting and nav._mode == "choice", "X during the roam pressed End Main")
+	nav._enter_element("bot_discard")
+	await _tick(1)
 
 	# B while roaming returns to the choice element left behind...
 	await _press_b()

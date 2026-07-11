@@ -127,7 +127,8 @@ Related pieces elsewhere:
   **Select toggle**: while the effects area is up (choice prompt, or
   pending-effect rows in free browse), Select cycles the cursor between it
   and the board, remembering both sides; during a mandatory choice the
-  board side is an INSPECT-ONLY roam (dpad + Y; A/X/LT/RT dead, B or Select
+  board side is a READ-ONLY roam (dpad + Y; A opens the pile/stack viewers
+  like the mouse; X/LT/RT dead, B or Select
   returns) — `OverlayHintRow`s inside both panels show the Select glyph
   naming the destination. Free browse covers every stop with live top-card
   preview; hovering a hand card raises it via the card's own mouse-hover

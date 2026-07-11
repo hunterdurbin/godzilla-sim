@@ -25,9 +25,10 @@ extends Node
 ##
 ## Select cycles the cursor between the effects area (choice buttons +
 ## pending-effect stack rows) and the board. During a mandatory choice the
-## board side of the cycle is INSPECT-ONLY roaming (dpad + Y; confirm, card
-## plays and End Main are gated) — Select or B returns to the choice. When
-## no effects area is up, Select keeps its chat binding.
+## board side of the cycle is a READ-ONLY roam (dpad + Y; A opens the
+## pile/stack viewers like the mouse, but card plays, buttons and End Main
+## are gated) — Select or B returns to the choice. When no effects area is
+## up, Select keeps its chat binding.
 ##
 ## Overlays suspend the module (same visibility set as game_board's
 ## ui_cancel ladder); registered modal dialogs suspend it via the focus
@@ -94,7 +95,8 @@ var _hovered_stack: Control = null
 ## none). Swapped on every toggle so Select bounces between the same two spots.
 var _select_return: String = ""
 ## True while the cursor roams the board away from a mandatory choice — the
-## jail is suspended and confirm/play/end-main are gated (inspect-only).
+## jail is suspended; confirm only opens the read-only viewers and
+## play/end-main are gated.
 var _choice_roaming := false
 ## Armed by a hand-initiated play: when the selection context clears, the
 ## cursor returns to the hand (left neighbor -> right neighbor -> Sort)
@@ -935,7 +937,23 @@ func _try_play_hovered(action: CardEnums.ActionType) -> void:
 
 func _confirm() -> void:
 	if _choice_roaming:
-		return # Inspect-only: A does nothing until the cursor returns
+		# Inspect-only roam: A opens the read-only pile/stack viewers — the
+		# same left-click paths the mouse keeps during a mandatory choice.
+		# Everything else (plays, buttons, prompt actions) stays dead.
+		if _element.begins_with("hand_"):
+			return
+		_rebuild_map()
+		var roam_entry := _resolve(_element)
+		match roam_entry.get("kind", ""):
+			"zone":
+				_board._on_zone_slot_clicked(int(roam_entry["idx"]) + 1, int(roam_entry["pid"]))
+			"strategy":
+				_board._on_strategy_slot_clicked(int(roam_entry["idx"]), int(roam_entry["pid"]))
+			"discard":
+				_board._on_discard_clicked(int(roam_entry["pid"]))
+			"monster_deck":
+				_board._on_monster_deck_clicked(int(roam_entry["pid"]))
+		return
 	_rebuild_map()
 	if _element.begins_with("hand_"):
 		var hand := _hand_mgr()
