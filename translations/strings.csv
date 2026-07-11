@@ -59,6 +59,7 @@ Room may no longer exist.","接続に失敗しました (%s)。
 ルームが存在しない可能性があります。"
 STR_MENU_ERR_TIMEOUT,timeout,タイムアウト
 STR_MENU_ERR_CODE_FMT,error %d,エラー %d
+STR_MENU_HINT_CONFIRM,Confirm,決定
 STR_COMMON_CANCEL,Cancel,キャンセル
 STR_COMMON_OK,OK,OK
 STR_COMMON_SAVE,Save,保存

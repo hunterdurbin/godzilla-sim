@@ -1,9 +1,9 @@
 extends GdUnitTestSuite
 
 ## Menu/lobby scenes must instantiate cleanly with the gamepad wiring in
-## place (ControllerGlyph ext_resource in MainMenu.tscn, focus-context calls
-## in the scripts). Instantiation compiles every attached script — a broken
-## reference fails here instead of at first launch.
+## place (focus-context calls in the scripts, the main menu's hint row).
+## Instantiation compiles every attached script — a broken reference fails
+## here instead of at first launch.
 
 const SCENES: Array[String] = [
 	"res://scenes/menus/MainMenu.tscn",
@@ -23,10 +23,18 @@ func test_scenes_instantiate() -> void:
 		assert_object(inst).override_failure_message("Failed to instantiate " + path).is_not_null()
 
 
-func test_main_menu_has_confirm_glyph() -> void:
+func test_main_menu_has_confirm_hint_row() -> void:
 	var packed: PackedScene = load("res://scenes/menus/MainMenu.tscn")
-	var menu: Node = auto_free(packed.instantiate())
-	var glyph := menu.get_node("CenterContainer/VBoxContainer/StartButton/ConfirmGlyph")
-	assert_object(glyph).is_not_null()
-	assert_bool(glyph is ControllerGlyph).is_true()
-	assert_that((glyph as ControllerGlyph).action).is_equal(&"pad_confirm")
+	var menu: Control = auto_free(packed.instantiate())
+	add_child(menu)  # hint row is built in _ready
+	var row: OverlayHintRow = menu._pad_hint_row
+	assert_object(row).is_not_null()
+	var glyph: ControllerGlyph = null
+	for child in row.get_children():
+		if child is ControllerGlyph:
+			glyph = child
+			break
+	assert_object(glyph).override_failure_message("no glyph in the hint row").is_not_null()
+	assert_that(glyph.action).is_equal(&"pad_confirm")
+	# The old on-button glyph is gone.
+	assert_object(menu.start_button.get_node_or_null("ConfirmGlyph")).is_null()

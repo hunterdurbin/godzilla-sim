@@ -23,6 +23,7 @@ const DISCORD_URL := "https://discord.gg/fwCaYzWbPw"
 
 var _p1_ready: bool = false
 var _p2_ready: bool = false
+var _pad_hint_row: OverlayHintRow
 
 
 func _ready() -> void:
@@ -70,27 +71,61 @@ func _ready() -> void:
 	if GameSettings.has_valid_reconnect_session() and not GameSettings.reconnect_is_host:
 		_show_reconnect_dialog()
 
-	_wire_social_pad_mesh()
+	_wire_pad_mesh()
+	_build_pad_hint_row()
 	GamepadHelper.push_focus_context(self, _default_focus_control)
 
 
-## Deliberate pad mesh for the bottom-left social buttons — without this they
-## are only reachable via default spatial nav. Discord sits above Patreon;
-## entry is down from Deck Builder (bottom of the center stack); Patreon exits
-## right to Extras. Outer edges self-loop so the dpad can't fall off the mesh.
-## update_button stays unwired: it is hidden by default and a neighbor
+## Deliberate pad mesh for the whole menu — default spatial nav is replaced by
+## an explicit graph so every dpad press is deterministic. Shape: deck pickers
+## row on top (P2 exits right to the Options/Sound/Music rail, which returns
+## left to P2), the center stack runs top-to-bottom, its left edge lands on
+## Discord and its right edge on Extras (except Solo v Bot, whose right is the
+## gear), and all three corner buttons (Discord, Patreon, Extras) route back
+## into Deck Builder. Outer edges self-loop so the dpad can't fall off the
+## mesh. update_button stays unwired: it is hidden by default and a neighbor
 ## pointing at a hidden control dead-ends navigation.
-func _wire_social_pad_mesh() -> void:
-	deck_builder_button.focus_neighbor_bottom = deck_builder_button.get_path_to(discord_button)
-	discord_button.focus_neighbor_top = discord_button.get_path_to(deck_builder_button)
-	discord_button.focus_neighbor_bottom = discord_button.get_path_to(patreon_button)
-	discord_button.focus_neighbor_right = discord_button.get_path_to(deck_builder_button)
-	discord_button.focus_neighbor_left = discord_button.get_path_to(discord_button)
-	patreon_button.focus_neighbor_top = patreon_button.get_path_to(discord_button)
-	patreon_button.focus_neighbor_right = patreon_button.get_path_to(extras_button)
-	patreon_button.focus_neighbor_bottom = patreon_button.get_path_to(patreon_button)
-	patreon_button.focus_neighbor_left = patreon_button.get_path_to(patreon_button)
-	extras_button.focus_neighbor_left = extras_button.get_path_to(patreon_button)
+func _wire_pad_mesh() -> void:
+	var p1_picker: Control = deck_select_p1.pad_focus_targets()[0]
+	var p2_picker: Control = deck_select_p2.pad_focus_targets()[0]
+
+	_wire_neighbors(p1_picker, p1_picker, p2_picker, p1_picker, start_button)
+	_wire_neighbors(p2_picker, p1_picker, options_button, p2_picker, start_button)
+
+	_wire_neighbors(options_button, p2_picker, options_button, options_button, sound_button)
+	_wire_neighbors(sound_button, p2_picker, sound_button, options_button, music_button)
+	_wire_neighbors(music_button, p2_picker, music_button, sound_button, extras_button)
+
+	_wire_neighbors(start_button, discord_button, extras_button, p1_picker, solo_bot_button)
+	_wire_neighbors(solo_bot_button, discord_button, bot_config_button, start_button, lan_button)
+	_wire_neighbors(bot_config_button, solo_bot_button, bot_config_button, start_button, lan_button)
+	_wire_neighbors(lan_button, discord_button, extras_button, solo_bot_button, online_button)
+	_wire_neighbors(online_button, discord_button, extras_button, lan_button, deck_builder_button)
+	_wire_neighbors(deck_builder_button, discord_button, extras_button, online_button, discord_button)
+
+	_wire_neighbors(discord_button, discord_button, deck_builder_button, deck_builder_button, patreon_button)
+	_wire_neighbors(patreon_button, patreon_button, deck_builder_button, discord_button, patreon_button)
+	_wire_neighbors(extras_button, deck_builder_button, extras_button, music_button, extras_button)
+
+
+func _wire_neighbors(from: Control, left: Control, right: Control, top: Control, bottom: Control) -> void:
+	from.focus_neighbor_left = from.get_path_to(left)
+	from.focus_neighbor_right = from.get_path_to(right)
+	from.focus_neighbor_top = from.get_path_to(top)
+	from.focus_neighbor_bottom = from.get_path_to(bottom)
+
+
+## Bottom-center "A Confirm" hint — replaces the old on-button glyph.
+## OverlayHintRow hides itself in pointer mode and on mobile.
+func _build_pad_hint_row() -> void:
+	_pad_hint_row = OverlayHintRow.new()
+	add_child(_pad_hint_row)
+	_pad_hint_row.set_anchors_and_offsets_preset(
+			Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 10)
+	_pad_hint_row.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_pad_hint_row.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	var hints: Array[Dictionary] = [{"action": &"pad_confirm", "text": tr("STR_MENU_HINT_CONFIRM")}]
+	_pad_hint_row.set_hints(hints)
 
 
 func _exit_tree() -> void:

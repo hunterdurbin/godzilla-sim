@@ -20,3 +20,13 @@ LoadingScreen ─→ MainMenu ─┬─ solo/bot ────────→ sce
 ```
 
 Deck pickers embed `scenes/deck_builder/DeckSelect.tscn`.
+
+## Gamepad
+
+MainMenu wires an explicit full-screen focus mesh (`_wire_pad_mesh()` in
+`main_menu.gd`) instead of default spatial nav — every node declares all four
+`focus_neighbor_*` (self-loop at outer edges). Priority routes: P2 deck picker
+→ right → Options rail (rail returns left to P2), Solo v Bot → right → gear,
+and all three corner buttons (Discord, Patreon, Extras) → Deck Builder. The
+graph is asserted edge-for-edge by
+`tests/unit/gamepad/test_main_menu_pad.gd::test_full_menu_mesh`.
