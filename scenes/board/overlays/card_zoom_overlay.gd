@@ -10,6 +10,15 @@ const CARD_SCENE: PackedScene = preload("res://scenes/cards/Card.tscn")
 const PINCH_MAX_SCALE: float = 3.0
 const ZOOM_DRAG_DEADZONE: float = 20.0
 
+# Analog stick pan/zoom (left stick pans, right stick up/down zooms, R3
+# rotates 90°). Polled from raw controller_* actions in _process —
+# GamepadInput suppresses the left-stick pad_nav_* injection while the
+# overlay is visible (dpad still browses the modifier rows).
+const STICK_PAN_SPEED: float = 900.0 # screen px/s at full deflection
+const STICK_ZOOM_RATE: float = 1.8 # scale multiplier per second at full deflection
+const STICK_DEADZONE: float = 0.25 # analog deadzone (finer than the action's 0.5)
+const ROTATE_TWEEN_SEC: float = 0.15
+
 @onready var _container: CenterContainer = $CardContainer
 @onready var _sources_panel: PanelContainer = $ModifierSourcesPanel
 @onready var _sources_header: Label = $ModifierSourcesPanel/Margin/Layout/Header
@@ -85,6 +94,10 @@ var _shown_frame: int = -1 # Frame when overlay was shown (ignore dismiss for 2 
 var _dragging: bool = false # Single-finger drag active
 var _drag_start: Vector2 = Vector2.ZERO # Touch start position for deadzone check
 
+# R3 rotation state: quarter turns accumulate; the tween chases the target.
+var _rotation_deg: float = 0.0
+var _rotation_tween: Tween
+
 
 var _hints: OverlayHintRow
 
@@ -92,6 +105,11 @@ var _hints: OverlayHintRow
 func _ready() -> void:
 	visible = false
 	z_index = 200
+	set_process(false)
+	# Visibility (not show_card/hide_zoom) drives the stick polling and the
+	# nav suppression: the board also hides the overlay by setting visible
+	# directly, which would leak a claim keyed to hide_zoom().
+	visibility_changed.connect(_on_visibility_changed)
 	gui_input.connect(_on_gui_input)
 	_hints = OverlayHintRow.new()
 	_hints.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -104,6 +122,53 @@ func _ready() -> void:
 	_sources_header.add_theme_font_size_override("font_size", 15)
 	_sources_header.add_theme_color_override("font_color", HEADER_COLOR)
 	_build_badge_toggle()
+
+
+func _on_visibility_changed() -> void:
+	var vis := is_visible_in_tree()
+	set_process(vis)
+	GamepadInput.set_stick_nav_suppressed(vis)
+
+
+func _notification(what: int) -> void:
+	# Safety net: never leave the left stick claimed if the overlay is freed
+	# while visible (scene teardown mid-zoom).
+	if what == NOTIFICATION_EXIT_TREE:
+		GamepadInput.set_stick_nav_suppressed(false)
+
+
+## Analog stick pan/zoom while the overlay is visible (set_process tracks
+## visibility). Raw-axis polling: works with no pad connected (axes read 0)
+## and doesn't ride the board's handle_input delegation.
+func _process(delta: float) -> void:
+	var pan := Input.get_vector(&"controller_lstick_left", &"controller_lstick_right",
+			&"controller_lstick_up", &"controller_lstick_down", STICK_DEADZONE)
+	if pan != Vector2.ZERO:
+		# Grab-style, matching touch drag: the stick drags the card itself,
+		# so stick right slides the card right.
+		_container.position += pan * STICK_PAN_SPEED * delta
+	var zoom := Input.get_vector(&"controller_rstick_left", &"controller_rstick_right",
+			&"controller_rstick_up", &"controller_rstick_down", STICK_DEADZONE).y
+	if zoom != 0.0:
+		# Stick up (negative y) zooms in; exponential so the rate stays
+		# proportional to the current scale.
+		_apply_zoom(pow(STICK_ZOOM_RATE, -zoom * delta))
+	if Input.is_action_just_pressed(&"controller_stick_press_r"):
+		_rotate_card()
+
+
+## R3: quarter-turn the whole zoomed view clockwise. Rotation lives on the
+## container (like scale/pan), so it composes with a strategy card's baked
+## -90° wrapper and pan stays screen-aligned. The target angle accumulates
+## unnormalized (rapid presses keep spinning the same way; hide resets it).
+func _rotate_card() -> void:
+	_rotation_deg += 90.0
+	_container.pivot_offset = _container.size / 2.0
+	if _rotation_tween != null and _rotation_tween.is_valid():
+		_rotation_tween.kill()
+	_rotation_tween = create_tween()
+	_rotation_tween.tween_property(_container, "rotation_degrees", _rotation_deg, ROTATE_TWEEN_SEC) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 ## Eyeball pill that toggles the zoomed card's badges. MOUSE_FILTER_IGNORE
@@ -206,6 +271,9 @@ func show_card(card_data: Dictionary, play_cost_modifier: int = 0, modifier_entr
 ## Contextual pad hints, pinned bottom-center over the dim layer.
 func _refresh_hints() -> void:
 	var hints: Array[Dictionary] = []
+	hints.append({"action": &"pad_stick_pan", "text": tr("STR_GB_HINT_PAN")})
+	hints.append({"action": &"pad_stick_zoom", "text": tr("STR_GB_HINT_ZOOM")})
+	hints.append({"action": &"pad_stick_rotate", "text": tr("STR_GB_HINT_ROTATE")})
 	if _sources_panel.visible:
 		hints.append({"action": &"pad_confirm", "text": tr("STR_GB_HINT_SOURCE")})
 	if _badge_toggle.visible:
@@ -223,6 +291,10 @@ func hide_zoom() -> void:
 	visible = false
 	_container.scale = Vector2.ONE
 	_container.position = Vector2.ZERO
+	if _rotation_tween != null and _rotation_tween.is_valid():
+		_rotation_tween.kill()
+	_rotation_deg = 0.0
+	_container.rotation_degrees = 0.0
 	_pinch_touches.clear()
 	_pinch_active = false
 	_pinch_used = false

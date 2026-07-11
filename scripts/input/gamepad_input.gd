@@ -45,6 +45,15 @@ const STICK_PHYSICAL := {
 	&"controller_lstick_right": &"pad_nav_right",
 }
 
+## Display-only pseudo-actions: they never inject and can't be rebound, but
+## get_physical resolves them so ControllerGlyph can show stick glyphs in
+## hint rows (card zoom "LS Pan · RS Zoom").
+const GLYPH_ONLY := {
+	&"pad_stick_pan": &"controller_lstick",
+	&"pad_stick_zoom": &"controller_rstick",
+	&"pad_stick_rotate": &"controller_stick_press_r",
+}
+
 ## Joypad events never echo, so held-direction repeat is explicit.
 const REPEAT_DELAY_SEC := 0.4
 const REPEAT_INTERVAL_SEC := 0.12
@@ -58,6 +67,9 @@ var _nav_held: Dictionary = {}
 ## Rebind capture: while valid, the next capturable physical press calls this
 ## with the captured physical action instead of being translated.
 var _capture_cb: Callable = Callable()
+## While true (card zoom stick-pan), the left stick stops injecting
+## pad_nav_*/ui_* so the claimant can read raw axes; dpad nav is unaffected.
+var _stick_nav_suppressed := false
 
 
 func _ready() -> void:
@@ -78,6 +90,8 @@ func get_rebindable_actions() -> Array[StringName]:
 func get_physical(logical: StringName) -> StringName:
 	if _map.has(logical):
 		return _map[logical]
+	if GLYPH_ONLY.has(logical):
+		return GLYPH_ONLY[logical]
 	# Fixed nav actions map to the dpad for glyph purposes.
 	for physical: StringName in NAV_PHYSICAL:
 		if NAV_PHYSICAL[physical] == logical:
@@ -141,6 +155,25 @@ func reset_to_defaults() -> void:
 	GameSettings.controller_mapping_type = controller_type
 	GameSettings.save()
 	input_rebound.emit()
+
+
+## While suppressed (card zoom overlay visible), the left stick stops
+## injecting pad_nav_*/ui_* so the overlay can poll raw axes for panning;
+## the dpad keeps navigating. Held stick directions are flushed with release
+## twins — a pressed-only synthetic action stays held and hold-repeat would
+## fire phantom pad_nav_* every REPEAT_INTERVAL_SEC. When suppression lifts
+## mid-deflection, nav resumes only after the stick recenters
+## (is_action_just_pressed won't re-fire) — no surprise step on close.
+func set_stick_nav_suppressed(suppressed: bool) -> void:
+	if _stick_nav_suppressed == suppressed:
+		return
+	_stick_nav_suppressed = suppressed
+	if not suppressed:
+		return
+	for physical: StringName in STICK_PHYSICAL:
+		if _nav_held.has(physical):
+			_inject(STICK_PHYSICAL[physical], false)
+			_nav_held.erase(physical)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -211,17 +244,18 @@ func _process(delta: float) -> void:
 		return
 	var text_editing := _is_text_editing()
 	# Left stick -> nav actions (spire's GodotControllerInputStrategy).
-	for physical: StringName in STICK_PHYSICAL:
-		if Input.is_action_just_pressed(physical):
-			if text_editing:
-				# Stick nav exits a focused text field like the dpad does.
-				_escape_text_field()
-				return
-			_inject(STICK_PHYSICAL[physical], true)
-			_nav_held[physical] = 0.0
-		elif Input.is_action_just_released(physical):
-			_inject(STICK_PHYSICAL[physical], false)
-			_nav_held.erase(physical)
+	if not _stick_nav_suppressed:
+		for physical: StringName in STICK_PHYSICAL:
+			if Input.is_action_just_pressed(physical):
+				if text_editing:
+					# Stick nav exits a focused text field like the dpad does.
+					_escape_text_field()
+					return
+				_inject(STICK_PHYSICAL[physical], true)
+				_nav_held[physical] = 0.0
+			elif Input.is_action_just_released(physical):
+				_inject(STICK_PHYSICAL[physical], false)
+				_nav_held.erase(physical)
 	# Hold-repeat for held nav directions.
 	if text_editing:
 		return

@@ -82,8 +82,8 @@ func test_default_map_actions_exist_in_input_map() -> void:
 			.override_failure_message("Logical action missing from project.godot: %s" % logical) \
 			.is_true()
 	for physical: StringName in GlyphDB.FILE_FOR_PHYSICAL:
-		if physical == &"controller_lstick":
-			continue  # glyph-only alias, not an action
+		if physical in [&"controller_lstick", &"controller_rstick"]:
+			continue  # glyph-only aliases (GamepadInput.GLYPH_ONLY), not actions
 		assert_bool(InputMap.has_action(physical)) \
 			.override_failure_message("Physical action missing from project.godot: %s" % physical) \
 			.is_true()

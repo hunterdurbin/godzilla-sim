@@ -91,11 +91,15 @@ func _on_type_changed(_type: String) -> void:
 	_refresh()
 
 
-## Editor preview for the fixed (non-rebindable) nav actions.
+## Editor preview for the fixed (non-rebindable) nav actions and the
+## display-only stick pseudo-actions (card zoom pan/zoom hints).
 func _editor_nav_physical() -> StringName:
 	match action:
 		&"pad_nav_up": return &"controller_dpad_up"
 		&"pad_nav_down": return &"controller_dpad_down"
 		&"pad_nav_left": return &"controller_dpad_left"
 		&"pad_nav_right": return &"controller_dpad_right"
+		&"pad_stick_pan": return &"controller_lstick"
+		&"pad_stick_zoom": return &"controller_rstick"
+		&"pad_stick_rotate": return &"controller_stick_press_r"
 	return &""

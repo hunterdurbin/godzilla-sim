@@ -52,6 +52,13 @@ Controller navigation (see `scripts/input/README.md` for the architecture):
   `handle_input` (dpad browses modifier rows, A retargets, Y toggles
   badges) and swallows the mirrored ui_* directions so the grid focus mesh
   behind it can't move; B falls through to the board's cancel ladder.
+  While visible it also polls the raw stick actions in `_process` (left
+  stick pans grab-style like touch drag, right stick zooms, R3 quarter-turns
+  the view) — `visibility_changed` drives both
+  the polling and `GamepadInput.set_stick_nav_suppressed`, so the left
+  stick stops injecting `pad_nav_*` for the duration (dpad keeps browsing
+  the rows) and the claim can't leak when the board hides the overlay by
+  setting `visible` directly.
 - Cards show the pad cursor via `focus_entered` (attention border + hover
   raise, gamepad mode only — `card.gd`); overlay ScrollContainers bake
   `follow_focus = true` in the .tscn.

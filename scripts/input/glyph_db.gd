@@ -30,7 +30,9 @@ const FILE_FOR_PHYSICAL := {
 	&"controller_start": "start.png",
 	&"controller_select": "select.png",
 	&"controller_stick_press_l": "stick_press_l.png",
+	&"controller_stick_press_r": "stick_press_r.png",
 	&"controller_lstick": "lstick.png",
+	&"controller_rstick": "rstick.png",
 }
 
 ## Physical actions the rebind capture accepts (glyph-able buttons only;
