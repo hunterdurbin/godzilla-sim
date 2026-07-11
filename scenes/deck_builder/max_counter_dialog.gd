@@ -44,6 +44,10 @@ var _main_entries: Array = []
 func _init() -> void:
 	title = tr("STR_DB_MAXCP_TITLE")
 	min_size = Vector2i(960, 640)
+	# Fixed-position modal: no title bar means no drag handle (and no X —
+	# OK / Esc / pad A close it). _total_label already shows the title text.
+	borderless = true
+	unresizable = true
 
 	var root := VBoxContainer.new()
 	root.add_theme_constant_override("separation", 10)
@@ -96,6 +100,7 @@ func _init() -> void:
 	root.add_child(_assumptions_label)
 
 	visibility_changed.connect(_on_visibility_changed)
+	window_input.connect(_on_window_input)
 
 
 func open(monster_entries: Array, main_entries: Array) -> void:
@@ -108,6 +113,7 @@ func open(monster_entries: Array, main_entries: Array) -> void:
 	_strategy_count_row.visible = expands
 	_strategy_count_option.selected = 1 if expands else 0
 	popup_centered()
+	_wire_pad_focus()
 	_run_id += 1
 	_calculate(monster_entries, main_entries, _run_id)
 
@@ -119,6 +125,21 @@ static func deck_expands_strategy_zones(monster_entries: Array) -> bool:
 		if entry.get("card_number", "") == "EBP03-013":
 			return true
 	return false
+
+
+## D-pad mesh: the param OptionButtons and OK cycle vertically; the mini card
+## previews stay FOCUS_NONE (Card.tscn default) and are never wired in.
+## Re-run on every open — _strategy_count_row visibility is per-deck, and
+## hiding the row does NOT flip the option's own `visible` flag, so
+## wire_band_stack's visibility filter would not drop it on its own.
+func _wire_pad_focus() -> void:
+	var params: Array[Control] = [_zone_option, _opp_zone_option, _rage_option]
+	if _strategy_count_row.visible:
+		params.append(_strategy_count_option)
+	OverlayGridUtil.wire_band_stack([
+		{"row": params},
+		{"row": [get_ok_button()] as Array[Control]},
+	])
 
 
 func _add_param_option(row: HBoxContainer, label_text: String, items: Array[String]) -> OptionButton:
@@ -335,6 +356,20 @@ func _drop_optimizer() -> void:
 	if _optimizer:
 		_optimizer.teardown()
 	_optimizer = null
+
+
+## Pad B closes the preview. It arrives here as the injected ui_cancel twin
+## (close_on_escape only reacts to real key events, so a Window dialog never
+## closes on the mirrored action by itself). Reacting to the TRAILING twin —
+## not the leading pad_cancel — matters: hiding on pad_cancel would drop
+## window focus before the ui_cancel twin lands, and the leaked twin would
+## hit the deck builder's back handler and raise the unsaved-changes gate.
+## An open dropdown popup is its own focus context and swallows B before
+## this window ever sees it.
+func _on_window_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		set_input_as_handled()
+		hide()
 
 
 func _on_visibility_changed() -> void:

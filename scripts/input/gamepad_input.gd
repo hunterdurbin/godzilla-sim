@@ -167,6 +167,17 @@ func translate_event(event: InputEvent) -> void:
 		if _is_text_escape_event(event):
 			_escape_text_field()
 		return
+	# A on a focused-but-idle text field starts editing deliberately — this
+	# is where platforms with a virtual keyboard pop it. Focus alone never
+	# starts editing under the pad (GamepadHelper unedits meshed fields on
+	# arrival), so passing through a field costs nothing. Swallowed: the
+	# ui_accept mirror must not fire anything else while the field edits.
+	var focus_owner := GamepadHelper.gui_focus_owner()
+	if focus_owner is LineEdit and (focus_owner as LineEdit).editable \
+			and event.is_action_pressed(_map.get(&"pad_confirm", &"controller_face_south")):
+		(focus_owner as LineEdit).edit()
+		get_viewport().set_input_as_handled()
+		return
 	# Rebindable actions.
 	for logical: StringName in _map:
 		var physical: StringName = _map[logical]
@@ -261,20 +272,29 @@ func _is_text_escape_event(event: InputEvent) -> bool:
 
 func _escape_text_field() -> void:
 	var field := GamepadHelper.gui_focus_owner()
-	if field != null:
+	if field is LineEdit and GamepadHelper.has_focus_neighbors(field):
+		# Meshed field (deck builder bands): drop out of editing but keep the
+		# cursor on the field, so the next dpad press navigates off it.
+		(field as LineEdit).unedit()
+	elif field != null:
 		field.release_focus()
+		GamepadHelper.refocus()
 	get_viewport().set_input_as_handled()
-	GamepadHelper.refocus()
 
 
 ## While a text field is being edited, pad actions must not fire (port of
 ## spire's NHotkeyManager LineEdit guard) so face buttons type, not act.
-## Embedded-window aware: dialogs (decklog URL, folder rename) hold focus in
-## their own viewport, invisible to the root viewport's focus owner.
+## LineEdits fence on is_editing(), not editable: a meshed field can hold
+## pad focus while idle (GamepadHelper unedits it on arrival) and the dpad
+## keeps navigating; TextEdits have no editing/focus split, so a focused
+## editable one still fences. Embedded-window aware: dialogs (decklog URL,
+## folder rename) hold focus in their own viewport, invisible to the root
+## viewport's focus owner.
 func _is_text_editing() -> bool:
 	var owner_control := GamepadHelper.gui_focus_owner()
 	if owner_control is LineEdit:
-		return (owner_control as LineEdit).editable
+		var line_edit := owner_control as LineEdit
+		return line_edit.editable and line_edit.is_editing()
 	if owner_control is TextEdit:
 		return (owner_control as TextEdit).editable
 	return false

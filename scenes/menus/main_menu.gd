@@ -290,7 +290,7 @@ func _show_bot_config_popup() -> void:
 		[tr("STR_MENU_DIFFICULTY_HARD"), BotConfig.Difficulty.HARD, Color(0.9, 0.3, 0.1)],
 		[tr("STR_MENU_DIFFICULTY_KAIJU"), BotConfig.Difficulty.KAIJU, Color(0.7, 0.3, 0.9)],
 	]
-	var diff_buttons: Array[Button] = []
+	var diff_buttons: Array[Control] = []
 	for entry in difficulties:
 		var btn := Button.new()
 		btn.text = entry[0]
@@ -435,6 +435,40 @@ func _show_bot_config_popup() -> void:
 	panel.add_child(margin)
 	popup.add_child(panel)
 
+	# --- Controller support ---
+	# The format dropdown's popup is a focus context of its own — without the
+	# registration the focused popup window swallows joypad input entirely
+	# (pad B closes the dropdown, not this modal).
+	GamepadHelper.register_modal(format_option.get_popup())
+	# D-pad mesh: left column top-to-bottom into the shared Save/Cancel row,
+	# right column likewise; the difficulty row also exits right into the
+	# deck column. Sliders consume ←/→ for their value — ↑/↓ moves off them.
+	OverlayGridUtil.wire_band_stack([
+		{"row": diff_buttons},
+		{"row": [format_option] as Array[Control]},
+		{"row": [speed_slider] as Array[Control]},
+		{"row": [playstyle_slider] as Array[Control]},
+		{"row": [seed_input, seed_clear_btn] as Array[Control]},
+		{"row": [save_btn, cancel_btn] as Array[Control]},
+	])
+	OverlayGridUtil.wire_band_stack([
+		{"row": [random_deck_check] as Array[Control]},
+		{"row": [rematch_check] as Array[Control]},
+		{"row": [edit_pool_btn] as Array[Control]},
+		{"row": [save_btn, cancel_btn] as Array[Control]},
+	])
+	var last_diff: Control = diff_buttons[-1]
+	last_diff.focus_neighbor_right = last_diff.get_path_to(random_deck_check)
+	random_deck_check.focus_neighbor_left = random_deck_check.get_path_to(last_diff)
+	# Pad B closes (cancel semantics — nothing is committed). React to the
+	# TRAILING ui_cancel twin, never the leading pad_cancel: hiding on the
+	# leading twin would pop the focus context before the second one lands,
+	# leaking it into the screen underneath (see MaxCounterDialog).
+	popup.window_input.connect(func(event: InputEvent) -> void:
+		if event.is_action_pressed("ui_cancel"):
+			popup.set_input_as_handled()
+			popup.hide())
+
 	add_child(popup)
 	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
@@ -521,6 +555,22 @@ func _show_deck_pool_popup(parent_popup: Window, pending: Dictionary, random_ena
 
 	vbox.add_child(btn_box)
 	popup.add_child(panel)
+
+	# --- Controller support ---
+	# One vertical stack: pool chrome, every visible row, Save/Cancel. The
+	# rows are torn down on search/collapse, so re-wire on each rebuild.
+	var wire_pool_pad := func() -> void:
+		var bands: Array[Dictionary] = [{"row": pool_view.pad_header_controls()}]
+		bands.append_array(pool_view.pad_row_bands())
+		bands.append({"row": [save_btn, cancel_btn] as Array[Control]})
+		OverlayGridUtil.wire_band_stack(bands)
+	pool_view.rows_rebuilt.connect(wire_pool_pad)
+	# Pad B closes the inner popup only — trailing ui_cancel twin, same
+	# reasoning as the Bot Config popup above.
+	popup.window_input.connect(func(event: InputEvent) -> void:
+		if event.is_action_pressed("ui_cancel"):
+			popup.set_input_as_handled()
+			popup.hide())
 
 	# Parent to the bot config popup so Godot treats it as a child Window
 	# (proper z-order, won't accidentally close the parent).

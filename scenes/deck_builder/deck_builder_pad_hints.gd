@@ -9,9 +9,10 @@ extends RefCounted
 const SECTIONS: Array[String] = ["left", "deck", "pool"]
 
 
-## ctx: {"area": "deck"|"pool"|"chrome", "monster_tab": bool,
+## ctx: {"area": "deck"|"pool"|"text"|"chrome", "monster_tab": bool,
 ## "is_monster_type": bool, "in_monster": bool} — area is "deck"/"pool" only
-## while a card wrapper holds focus; everything else is "chrome".
+## while a card wrapper holds focus, "text" while a text box holds it;
+## everything else is "chrome".
 ## Returns [{action, text_key, action2?}]; the caller tr()s text_key into the
 ## pre-translated "text" OverlayHintRow.set_hints expects.
 static func compute(ctx: Dictionary) -> Array[Dictionary]:
@@ -23,6 +24,8 @@ static func compute(ctx: Dictionary) -> Array[Dictionary]:
 		"deck":
 			hints.append({"action": &"pad_confirm", "text_key": "STR_DB_HINT_REMOVE"})
 			hints.append({"action": &"pad_end_main", "text_key": _deck_secondary_key(ctx)})
+		"text":
+			hints.append({"action": &"pad_confirm", "text_key": "STR_DB_HINT_TYPE"})
 		_:
 			hints.append({"action": &"pad_confirm", "text_key": "STR_GB_HINT_SELECT"})
 	hints.append({"action": &"pad_focus_log", "action2": &"pad_focus_tracker",

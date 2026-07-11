@@ -33,14 +33,42 @@ const WARP_POS := Vector2(-1000.0, -1000.0)
 var _using_gamepad := false
 var _last_mouse_pos := Vector2.ZERO
 var _skip_mouse_frames := 0
-## LIFO of {"owner": Node, "provider": Callable} — provider returns the
-## Control to focus (or null).
+## LIFO of {"owner": Node, "provider": Callable, "return_focus": WeakRef|null}
+## — provider returns the Control to focus (or null); return_focus remembers
+## what held focus when the context was pushed, restored on pop.
 var _focus_stack: Array[Dictionary] = []
+## One-shot pop-restore target for the next _do_refocus (WeakRef or null).
+var _return_focus: Variant = null
 ## Controls registered via make_pad_focusable: FOCUS_ALL only in gamepad
 ## mode, FOCUS_NONE otherwise (so mouse clicks never leave a focus ring).
 var _pad_focusables: Array[WeakRef] = []
 @onready var _warp_allowed: bool = OS.get_name() in ["Windows", "macOS", "Linux"] \
 		and not DisplayServer.is_touchscreen_available()
+
+
+func _ready() -> void:
+	get_viewport().gui_focus_changed.connect(_on_root_gui_focus_changed)
+
+
+## Pad navigation LANDING on a text field must not start editing (Godot 4
+## enters edit mode with the focus grab): passing through a field would pop
+## the platform's virtual keyboard and turn the next dpad press into an
+## editing escape instead of a move. Only meshed fields (focus_neighbor
+## wired — i.e. deliberately pad-navigable, like the deck builder's) are
+## kept idle; unmeshed fields (board chat, dialog inputs) keep the
+## focus-means-typing behavior. A starts editing deliberately (GamepadInput).
+func _on_root_gui_focus_changed(control: Control) -> void:
+	if _using_gamepad and control is LineEdit and has_focus_neighbors(control):
+		(control as LineEdit).unedit.call_deferred()
+
+
+## Whether any focus_neighbor is wired — the mark of a control that belongs
+## to a wire_band_stack / focus mesh.
+func has_focus_neighbors(control: Control) -> bool:
+	return control.focus_neighbor_left != NodePath("") \
+			or control.focus_neighbor_right != NodePath("") \
+			or control.focus_neighbor_top != NodePath("") \
+			or control.focus_neighbor_bottom != NodePath("")
 
 
 func is_using_gamepad() -> bool:
@@ -225,21 +253,40 @@ func _apply_pad_focusables() -> void:
 
 
 ## Registers/raises a focus context. provider is called (deferred) whenever
-## this context should take focus and must return a Control or null.
+## this context should take focus and must return a Control or null. The
+## control focused at push time is remembered: popping the context restores
+## it (modal closed → cursor back on the button that opened it) and only
+## falls back to the uncovered top's provider when the remembered control is
+## gone, hidden, or no longer focusable (e.g. a rebuilt grid wrapper).
 func push_focus_context(context_owner: Node, provider: Callable) -> void:
 	_remove_context(context_owner)
-	_focus_stack.append({"owner": context_owner, "provider": provider})
+	var below := gui_focus_owner()
+	_focus_stack.append({
+		"owner": context_owner,
+		"provider": provider,
+		"return_focus": weakref(below) if below != null else null,
+	})
+	_return_focus = null  # the new context owns focus; any pending restore is stale
 	refocus()
 	context_stack_changed.emit()
 
 
 func pop_focus_context(context_owner: Node) -> void:
 	var was_top := is_top_context(context_owner)
+	var return_focus: Variant = _return_focus_of(context_owner)
 	if not _remove_context(context_owner):
 		return # Idempotent pop (e.g. tree_exiting after hide): no change, no emit.
 	if was_top:
+		_return_focus = return_focus
 		refocus()
 	context_stack_changed.emit()
+
+
+func _return_focus_of(context_owner: Node) -> Variant:
+	for i in range(_focus_stack.size() - 1, -1, -1):
+		if _focus_stack[i]["owner"] == context_owner:
+			return _focus_stack[i].get("return_focus")
+	return null
 
 
 func _remove_context(context_owner: Node) -> bool:
@@ -259,26 +306,36 @@ func is_top_context(context_owner: Node) -> bool:
 
 
 ## Focuses the top context's default control — only in gamepad mode, so mouse
-## and touch users never see a focus ring appear on its own.
+## and touch users never see a focus ring appear on its own. A pop-restore
+## target set by pop_focus_context wins over the provider for one refocus.
 func refocus() -> void:
 	_do_refocus.call_deferred()
 
 
 func _do_refocus() -> void:
+	var pending: Variant = _return_focus
+	_return_focus = null  # one shot — consumed (or discarded) right here
 	if not _using_gamepad:
 		return
 	_prune_focus_stack()
 	if _focus_stack.is_empty():
 		return
+	if pending is WeakRef:
+		var remembered: Variant = (pending as WeakRef).get_ref()
+		if remembered is Control and _can_grab_focus(remembered):
+			(remembered as Control).grab_focus()
+			return
 	var provider: Callable = _focus_stack[-1]["provider"]
 	if not provider.is_valid():
 		return
 	var target: Variant = provider.call()
-	if target is Control:
-		var control := target as Control
-		if control.is_inside_tree() and control.is_visible_in_tree() \
-				and control.focus_mode != Control.FOCUS_NONE:
-			control.grab_focus()
+	if target is Control and _can_grab_focus(target):
+		(target as Control).grab_focus()
+
+
+func _can_grab_focus(control: Control) -> bool:
+	return control.is_inside_tree() and control.is_visible_in_tree() \
+			and control.focus_mode != Control.FOCUS_NONE
 
 
 func _prune_focus_stack() -> void:

@@ -37,7 +37,8 @@ var deck_grid: GridContainer
 var deck_scroll: ScrollContainer
 
 # --- Controller navigation (band arrays feed OverlayGridUtil.wire_band_stack;
-# LineEdits stay out of the mesh — pad input is fenced while one is editable) ---
+# meshed LineEdits land idle — GamepadHelper unedits them on arrival so the
+# dpad keeps moving; A starts editing, incl. the platform virtual keyboard) ---
 var _deck_header_band: Array[Control] = []
 var _filter_band: Array[Control] = []
 var _pool_header_band: Array[Control] = []
@@ -145,7 +146,8 @@ func _first_focusable() -> Control:
 	# Resolve lazily at refocus time: card wrappers only become FOCUS_ALL in
 	# gamepad mode and the grids rebuild constantly. Land in the deck grid if
 	# it has cards, else the pool, else the deck-section chrome — never a
-	# LineEdit (pad input is fenced while one is editable).
+	# LineEdit (text boxes are dpad-reachable, but the default landing
+	# shouldn't sit the cursor in one).
 	var deck_cards := OverlayGridUtil.grid_cards(deck_grid)
 	if not deck_cards.is_empty():
 		return deck_cards[0]
@@ -163,12 +165,14 @@ func _init_pad_bands() -> void:
 	_deck_header_band = [monster_tab_button, main_tab_button,
 			deck_zoom_out_button, deck_zoom_in_button, max_cp_button, clear_button]
 	_filter_band = []
+	_filter_band.append(search_edit)
 	_filter_band.append_array(type_buttons)
 	_filter_band.append_array(color_buttons)
 	_filter_band.append_array(invasion_buttons)
 	_filter_band.append(sort_option)
 	_pool_header_band = [pool_zoom_out_button, pool_zoom_in_button]
 	_left_bands = [
+		{"row": [deck_name_edit] as Array[Control]},
 		{"row": deck_list_view.pad_focus_targets()},
 		{"row": [save_button, load_button, delete_button] as Array[Control]},
 		{"row": [import_button] as Array[Control]},
@@ -274,6 +278,8 @@ func _refresh_pad_hints(focus_owner: Control) -> void:
 		ctx["in_monster"] = _is_in_monster_deck(card_data.get("id", ""))
 	elif focus_owner != null and focus_owner.get_parent() == pool_grid:
 		ctx["area"] = "pool"
+	elif focus_owner is LineEdit:
+		ctx["area"] = "text"
 	var hints: Array[Dictionary] = []
 	for h in DeckBuilderPadHints.compute(ctx):
 		var hint := {"action": h["action"], "text": tr(h["text_key"])}

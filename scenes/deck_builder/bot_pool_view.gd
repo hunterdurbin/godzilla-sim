@@ -9,6 +9,10 @@ extends VBoxContainer
 ## include the whole folder. When a folder is enabled, the deck rows inside
 ## it visually disable (folder takes over per shipped semantics).
 
+## Fired after _rebuild replaces the rows — the owner re-wires its pad focus
+## mesh over pad_row_bands() (the old rows, and their neighbors, are freed).
+signal rows_rebuilt
+
 const STATE_PATH := "user://deck_list_state.cfg"
 const ROW_INDENT := 18
 const WEIGHT_MIN := 1
@@ -37,6 +41,7 @@ var _list_vbox: VBoxContainer
 var _search_timer: Timer
 var _deck_rows: Dictionary = {}  # deck_name → {check, dec, inp, inc, thumb_holder, container}
 var _folder_rows: Dictionary = {}  # folder_path → {check, dec, inp, inc, arrow_btn, container}
+var _pad_row_bands: Array[Dictionary] = []  # ordered {"row": Array[Control]} per visible row
 
 
 func _ready() -> void:
@@ -87,6 +92,7 @@ func _build_ui() -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.scroll_deadzone = 20
 	scroll.custom_minimum_size.y = 260
+	scroll.follow_focus = true  # dpad walks the rows; the list must scroll along
 	add_child(scroll)
 
 	var panel := PanelContainer.new()
@@ -181,6 +187,7 @@ func _rebuild() -> void:
 		child.queue_free()
 	_deck_rows.clear()
 	_folder_rows.clear()
+	_pad_row_bands.clear()
 
 	var has_subfolders := _folder_order.size() > 1
 	for folder in _folder_order:
@@ -200,6 +207,19 @@ func _rebuild() -> void:
 
 	_apply_folder_takeover_to_all()
 	_apply_random_enabled_to_all()
+	rows_rebuilt.emit()
+
+
+## The top strip's pad-focusable controls, left to right.
+func pad_header_controls() -> Array[Control]:
+	var out: Array[Control] = [_search_edit, _reset_weights_btn, _select_all_btn]
+	return out
+
+
+## Ordered {"row": Array[Control]} bands for the currently visible rows —
+## feed them to OverlayGridUtil.wire_band_stack (re-wire on rows_rebuilt).
+func pad_row_bands() -> Array[Dictionary]:
+	return _pad_row_bands.duplicate()
 
 
 func _entries_in_folder(folder: String) -> Array[Dictionary]:
@@ -298,6 +318,8 @@ func _add_folder_header(folder: String, collapsed: bool) -> void:
 		"pct_label": pct_label,
 		"collapsed": collapsed,
 	}
+	_pad_row_bands.append({"row": [arrow_btn, check, stepper_widgets["dec"],
+			stepper_widgets["inp"], stepper_widgets["inc"]] as Array[Control]})
 	_refresh_folder_count(folder)
 
 
@@ -372,6 +394,8 @@ func _add_deck_row(entry: Dictionary) -> void:
 		"folder": folder,
 		"pct_label": pct_label,
 	}
+	_pad_row_bands.append({"row": [check, stepper_widgets["dec"],
+			stepper_widgets["inp"], stepper_widgets["inc"]] as Array[Control]})
 
 
 func _build_stepper(initial: int) -> Dictionary:
@@ -442,6 +466,11 @@ func _on_folder_arrow_pressed(folder: String) -> void:
 	_collapsed_folders[folder] = not _collapsed_folders.get(folder, false)
 	_save_state()
 	_rebuild()
+	# The rebuild freed every row, including the arrow that was just pressed;
+	# put the pad cursor back on this folder's fresh arrow so navigation
+	# continues in place instead of dying with the freed control.
+	if GamepadHelper.is_using_gamepad() and _folder_rows.has(folder):
+		(_folder_rows[folder]["arrow_btn"] as Button).grab_focus()
 
 
 func _commit_all_pending_edits() -> void:

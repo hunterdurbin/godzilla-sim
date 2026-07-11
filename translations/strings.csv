@@ -616,6 +616,7 @@ STR_DB_HINT_TO_MAIN,To main,メインへ
 STR_DB_HINT_TO_MONSTER,To monster,怪獣へ
 STR_DB_HINT_SECTION,Section,セクション
 STR_DB_HINT_BACK,Back,戻る
+STR_DB_HINT_TYPE,Type,入力
 STR_DB_EMPTY_SAVE_TITLE,Save Empty Deck?,空のデッキを保存しますか?
 STR_DB_EMPTY_SAVE_TEXT,"This deck has no cards. Saving will overwrite any existing deck with this name. Continue?","このデッキにはカードがありません。保存すると、同じ名前の既存のデッキが上書きされます。続行しますか?"
 STR_DB_EMPTY_SAVE_OK,Save Anyway,それでも保存

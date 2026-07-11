@@ -6,14 +6,18 @@ extends Node
 ##   - the pointer->gamepad flip wires the mesh and lands on the first pool
 ##     card without the flipping press activating anything;
 ##   - the dpad walks the pool grid and exits into the pool header and the
-##     filter row;
+##     filter row; text boxes (search, deck name) are meshed and land idle —
+##     A starts editing, the editing escape keeps the cursor on the field;
 ##   - A adds a pool card (badge-only refresh keeps focus), X removes a copy
 ##     from the pool side;
 ##   - LB/RB cycle pool / deck / left panel, remembering the grid spot;
 ##   - A on the last deck card empties the grid and falls back onto the
 ##     active tab; X on a stacked deck card removes all copies;
 ##   - the header band reaches the Max Counter Power button; A opens its
-##     dialog as a focus context and A on OK closes it back to the header;
+##     dialog as a focus context, the dpad tours the param row and OK, B
+##     backs out without leaking into the builder's back handler, and every
+##     modal exit (B, dropdown pick, A on OK) restores the cursor to the
+##     control that opened it;
 ##   - B raises the unsaved-changes dialog focused on Cancel, and B again
 ##     backs out of it.
 ##
@@ -94,12 +98,25 @@ func _ready() -> void:
 	assert(builder.pool_zoom_out_button.has_focus(),
 		"dpad up did not reach the pool header: %s" % str(_focus_owner()))
 	await _press_button(JOY_BUTTON_DPAD_UP)
-	assert(builder.type_buttons[0].has_focus(),
-		"second dpad up did not reach the filter row: %s" % str(_focus_owner()))
-	# Filter to Battle cards from the pad (right x2, A) — keeps the rest of
+	# The filter row now opens with the search box. Landing must leave it
+	# idle (focused, NOT editing) so the dpad keeps navigating.
+	assert(builder.search_edit.has_focus(),
+		"second dpad up did not reach the search box: %s" % str(_focus_owner()))
+	assert(not builder.search_edit.is_editing(),
+		"pad focus arrival left the search box editing")
+	# A starts editing (where a platform virtual keyboard would pop); the
+	# next dpad press escapes IN PLACE — cursor stays on the field — and the
+	# one after that moves off it.
+	await _press_button(JOY_BUTTON_A)
+	assert(builder.search_edit.is_editing(), "A did not start editing the search box")
+	await _press_button(JOY_BUTTON_DPAD_RIGHT)
+	assert(builder.search_edit.has_focus() and not builder.search_edit.is_editing(),
+		"editing escape did not keep the cursor on the search box: %s" % str(_focus_owner()))
+	# Filter to Battle cards from the pad (right x3, A) — keeps the rest of
 	# the walk deterministic: X on a monster-type deck card means "move to
 	# monster deck", not "remove all". The refresh rebuilds the pool while
 	# chrome holds focus; the toggle must keep it.
+	await _press_button(JOY_BUTTON_DPAD_RIGHT)
 	await _press_button(JOY_BUTTON_DPAD_RIGHT)
 	await _press_button(JOY_BUTTON_DPAD_RIGHT)
 	assert(builder.type_buttons[2].has_focus(),
@@ -154,6 +171,16 @@ func _ready() -> void:
 	await _tick(2)
 	var picker: Control = builder.deck_list_view.pad_focus_targets()[0]
 	assert(picker.has_focus(), "LB from the deck did not reach the left panel: %s" % str(_focus_owner()))
+	# The deck-name box sits above the picker in the left stack and lands
+	# idle like every meshed text field.
+	await _press_button(JOY_BUTTON_DPAD_UP)
+	assert(builder.deck_name_edit.has_focus(),
+		"dpad up did not reach the deck-name box: %s" % str(_focus_owner()))
+	assert(not builder.deck_name_edit.is_editing(),
+		"pad focus arrival left the deck-name box editing")
+	await _press_button(JOY_BUTTON_DPAD_DOWN)
+	assert(picker.has_focus(),
+		"dpad down did not return to the picker: %s" % str(_focus_owner()))
 	await _press_button(JOY_BUTTON_DPAD_RIGHT)
 	await _press_button(JOY_BUTTON_DPAD_RIGHT)
 	assert(builder.monster_tab_button.has_focus(),
@@ -190,12 +217,81 @@ func _ready() -> void:
 	assert(builder.max_counter_dialog.visible, "A did not open the Max CP dialog")
 	assert(GamepadHelper.is_top_context(builder.max_counter_dialog),
 		"Max CP dialog did not take the focus context")
+	assert(builder.max_counter_dialog.borderless,
+		"Max CP dialog is not a fixed borderless window")
+
+	# Inside the dialog (its own viewport — root _focus_owner() can't see it):
+	# the provider lands on OK; up enters the param row, right walks it, down
+	# returns to OK. The card previews are FOCUS_NONE and every wired control
+	# pins all four directions, so the walk can never touch them.
+	var max_cp_ok: Button = builder.max_counter_dialog.get_ok_button()
+	assert(GamepadHelper.gui_focus_owner() == max_cp_ok,
+		"Max CP dialog focus not on OK: %s" % str(GamepadHelper.gui_focus_owner()))
+	await _press_button(JOY_BUTTON_DPAD_UP)
+	assert(GamepadHelper.gui_focus_owner() == builder.max_counter_dialog._zone_option,
+		"dpad up did not enter the param row: %s" % str(GamepadHelper.gui_focus_owner()))
+	await _press_button(JOY_BUTTON_DPAD_RIGHT)
+	assert(GamepadHelper.gui_focus_owner() == builder.max_counter_dialog._opp_zone_option,
+		"dpad right did not walk the param row: %s" % str(GamepadHelper.gui_focus_owner()))
+	await _press_button(JOY_BUTTON_DPAD_RIGHT)
+	assert(GamepadHelper.gui_focus_owner() == builder.max_counter_dialog._rage_option,
+		"dpad right did not reach the rage option: %s" % str(GamepadHelper.gui_focus_owner()))
+	await _press_button(JOY_BUTTON_DPAD_DOWN)
+	assert(GamepadHelper.gui_focus_owner() == max_cp_ok,
+		"dpad down did not return to OK: %s" % str(GamepadHelper.gui_focus_owner()))
+
+	# B closes the dialog from anywhere inside it. The handler reacts to the
+	# TRAILING ui_cancel twin, so the press must not leak into the builder's
+	# back handler (which would raise the unsaved gate on top of the close).
+	await _press_button(JOY_BUTTON_B)
+	await _tick(3)
+	assert(not builder.max_counter_dialog.visible, "B did not close the Max CP dialog")
+	assert(not builder.unsaved_dialog.visible,
+		"the B that closed the Max CP dialog leaked into the back handler")
+	assert(GamepadHelper.is_top_context(builder),
+		"B close did not return the focus context to the builder")
+	# The pop restores the control that opened the modal — the cursor stays
+	# where the user left it instead of jumping to the builder's default.
+	assert(builder.max_cp_button.has_focus(),
+		"B close did not restore the cursor to the Max CP button: %s" % str(_focus_owner()))
+
+	# Reopen to exercise the dropdown and A-on-OK close paths as well.
+	await _press_button(JOY_BUTTON_A)
+	await _tick(3)
+	assert(builder.max_counter_dialog.visible, "A did not reopen the Max CP dialog")
+	assert(GamepadHelper.gui_focus_owner() == max_cp_ok,
+		"reopened dialog focus not on OK: %s" % str(GamepadHelper.gui_focus_owner()))
+
+	# Dropdown popups are focus contexts too: picking an item must return the
+	# cursor to the OptionButton, not yank it to the dialog's OK default.
+	await _press_button(JOY_BUTTON_DPAD_UP)
+	assert(GamepadHelper.gui_focus_owner() == builder.max_counter_dialog._zone_option,
+		"dpad up did not re-enter the param row: %s" % str(GamepadHelper.gui_focus_owner()))
+	var zone_popup: PopupMenu = builder.max_counter_dialog._zone_option.get_popup()
+	await _press_button(JOY_BUTTON_A)
+	await _tick(3)
+	assert(zone_popup.visible, "A did not open the zone dropdown")
+	assert(GamepadHelper.is_top_context(zone_popup),
+		"the zone dropdown did not take the focus context")
+	await _press_button(JOY_BUTTON_DPAD_DOWN)
+	await _press_button(JOY_BUTTON_A)
+	await _tick(3)
+	assert(not zone_popup.visible, "A did not pick a dropdown item")
+	assert(GamepadHelper.gui_focus_owner() == builder.max_counter_dialog._zone_option,
+		"the dropdown close did not restore the zone OptionButton: %s"
+			% str(GamepadHelper.gui_focus_owner()))
+
+	await _press_button(JOY_BUTTON_DPAD_DOWN)
+	assert(GamepadHelper.gui_focus_owner() == max_cp_ok,
+		"dpad down from the zone option did not reach OK: %s"
+			% str(GamepadHelper.gui_focus_owner()))
 	await _press_button(JOY_BUTTON_A)
 	await _tick(3)
 	assert(not builder.max_counter_dialog.visible, "A on OK did not close the Max CP dialog")
 	assert(GamepadHelper.is_top_context(builder),
 		"closing the Max CP dialog did not return the focus context to the builder")
-	assert(_focus_owner() != null, "closing the Max CP dialog dropped pad focus entirely")
+	assert(builder.max_cp_button.has_focus(),
+		"the OK close did not restore the cursor to the Max CP button: %s" % str(_focus_owner()))
 
 	# B raises the unsaved-changes gate; the modal lands on Cancel (never the
 	# destructive Discard). A on the focused Cancel closes it — exercising
