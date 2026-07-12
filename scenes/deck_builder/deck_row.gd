@@ -99,6 +99,15 @@ func _init() -> void:
 	pressed.connect(_on_pressed)
 
 
+func pad_focus_targets() -> Array[Control]:
+	## Controls a pad mesh should include for this row: the row itself plus
+	## the ⋯ actions button to its right when shown.
+	var targets: Array[Control] = [self]
+	if _actions_button != null and _actions_button.visible:
+		targets.append(_actions_button)
+	return targets
+
+
 func set_data(p_deck_name: String, p_folder: String, texture: Texture2D) -> void:
 	deck_name = p_deck_name
 	folder_path = p_folder

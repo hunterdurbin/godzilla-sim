@@ -317,5 +317,138 @@ func _ready() -> void:
 	assert(is_instance_valid(builder) and builder.is_inside_tree(),
 		"canceling the dialog still left the deck builder")
 
+	# --- Deck-picker expanded gallery: the mesh joins the ✕ close, the
+	# search/filter row, and the deck rows; B closes on the leading pad_cancel;
+	# the ⋯ menu and the folder picker are focus contexts of their own. ---
+	await _press_button(JOY_BUTTON_LEFT_SHOULDER)
+	await _tick(2)
+	assert(picker.has_focus(), "LB did not return to the deck picker: %s" % str(_focus_owner()))
+	await _press_button(JOY_BUTTON_A)
+	await _tick(5)
+	var overlay: Control = builder.deck_list_view._active_overlay
+	assert(overlay != null, "A on the picker did not open the expanded gallery")
+	assert(GamepadHelper.is_top_context(overlay), "gallery did not take the focus context")
+	var inner := _find_inner_list(overlay)
+	assert(inner != null, "gallery has no inner DeckListView")
+	var close_btn := _find_button_with_text(overlay, "✕")
+	assert(close_btn != null, "gallery has no ✕ close button")
+	assert(_focus_owner() is DeckRow, "gallery focus did not land on a deck row: %s" % str(_focus_owner()))
+
+	# Walk up through the list into the search box (idle, not editing), then
+	# the host band with the ✕ — the buttons the geometric guesser used to miss.
+	var guard := 30
+	while not inner._search_edit.has_focus() and guard > 0:
+		await _press_button(JOY_BUTTON_DPAD_UP)
+		guard -= 1
+	assert(inner._search_edit.has_focus(), "dpad up never reached the gallery search box")
+	assert(not inner._search_edit.is_editing(), "pad arrival left the gallery search box editing")
+
+	# A starts editing; B escapes the field IN PLACE instead of closing the
+	# gallery (the overlay's cancel handler defers to the text-editing fence).
+	await _press_button(JOY_BUTTON_A)
+	assert(inner._search_edit.is_editing(), "A did not start editing the gallery search box")
+	await _press_button(JOY_BUTTON_B)
+	await _tick(2)
+	assert(is_instance_valid(overlay) and builder.deck_list_view._active_overlay == overlay,
+		"the B that escaped the search box closed the gallery")
+	assert(inner._search_edit.has_focus() and not inner._search_edit.is_editing(),
+		"B did not escape the search box in place: %s" % str(_focus_owner()))
+
+	await _press_button(JOY_BUTTON_DPAD_UP)
+	assert(close_btn.has_focus(), "dpad up from the search row did not reach ✕: %s" % str(_focus_owner()))
+	await _press_button(JOY_BUTTON_A)
+	await _tick(3)
+	assert(builder.deck_list_view._active_overlay == null, "A on ✕ did not close the gallery")
+	assert(GamepadHelper.is_top_context(builder), "✕ close did not return the context to the builder")
+	assert(picker.has_focus(), "✕ close did not restore the cursor to the picker: %s" % str(_focus_owner()))
+
+	# Reopen: a row's ⋯ opens the actions menu, Move to folder… opens the
+	# folder picker; its checkboxes and OK/Cancel are meshed; B backs out of
+	# the dialog, and one more B closes the gallery without leaking into the
+	# builder's back handler.
+	await _press_button(JOY_BUTTON_A)
+	await _tick(5)
+	overlay = builder.deck_list_view._active_overlay
+	assert(overlay != null, "A on the picker did not reopen the gallery")
+	inner = _find_inner_list(overlay)
+	var row := _focus_owner() as DeckRow
+	assert(row != null, "reopened gallery focus is not a deck row: %s" % str(_focus_owner()))
+	var row_targets := row.pad_focus_targets()
+	assert(row_targets.size() == 2, "gallery row does not expose its ⋯ button")
+	await _press_button(JOY_BUTTON_DPAD_RIGHT)
+	assert(row_targets[1].has_focus(), "dpad right did not reach the row ⋯: %s" % str(_focus_owner()))
+	await _press_button(JOY_BUTTON_A)
+	await _tick(3)
+	var menu := _find_direct_child_popup_menu(inner)
+	assert(menu != null and menu.visible, "A on ⋯ did not open the actions menu")
+	assert(GamepadHelper.is_top_context(menu), "the actions menu did not take the focus context")
+	await _press_button(JOY_BUTTON_DPAD_DOWN)
+	await _press_button(JOY_BUTTON_A)
+	await _tick(3)
+	var folder_dialog := _find_folder_dialog(inner)
+	assert(folder_dialog != null and folder_dialog.visible,
+		"Move to folder… did not open the folder picker")
+	assert(GamepadHelper.is_top_context(folder_dialog),
+		"the folder picker did not take the focus context")
+	assert(GamepadHelper.gui_focus_owner() == folder_dialog.get_cancel_button(),
+		"folder picker focus not on Cancel: %s" % str(GamepadHelper.gui_focus_owner()))
+	await _press_button(JOY_BUTTON_DPAD_UP)
+	assert(GamepadHelper.gui_focus_owner() is CheckBox,
+		"dpad up did not enter the folder choices: %s" % str(GamepadHelper.gui_focus_owner()))
+	await _press_button(JOY_BUTTON_DPAD_DOWN)
+	assert(GamepadHelper.gui_focus_owner() == folder_dialog.get_ok_button(),
+		"dpad down did not return to OK: %s" % str(GamepadHelper.gui_focus_owner()))
+	await _press_button(JOY_BUTTON_B)
+	await _tick(3)
+	assert(not is_instance_valid(folder_dialog) or not folder_dialog.visible,
+		"B did not close the folder picker")
+	assert(builder.deck_list_view._active_overlay == overlay,
+		"the B that closed the folder picker also closed the gallery")
+	assert(GamepadHelper.is_top_context(overlay),
+		"closing the folder picker did not return the context to the gallery")
+
+	await _press_button(JOY_BUTTON_B)
+	await _tick(3)
+	assert(builder.deck_list_view._active_overlay == null, "B did not close the gallery")
+	assert(not builder.unsaved_dialog.visible,
+		"the B that closed the gallery leaked into the builder's back handler")
+	assert(GamepadHelper.is_top_context(builder),
+		"B close did not return the focus context to the builder")
+	assert(picker.has_focus(), "B close did not restore the cursor to the picker: %s" % str(_focus_owner()))
+
 	print("DECK_BUILDER_PAD_NAV_TEST_PASS")
 	get_tree().quit(0)
+
+
+func _find_inner_list(root: Node) -> DeckListView:
+	if root is DeckListView:
+		return root
+	for child in root.get_children():
+		var found := _find_inner_list(child)
+		if found != null:
+			return found
+	return null
+
+
+func _find_button_with_text(root: Node, text: String) -> Button:
+	if root is Button and (root as Button).text == text:
+		return root
+	for child in root.get_children():
+		var found := _find_button_with_text(child, text)
+		if found != null:
+			return found
+	return null
+
+
+func _find_direct_child_popup_menu(parent: Node) -> PopupMenu:
+	for child in parent.get_children():
+		if child is PopupMenu and not child.is_queued_for_deletion():
+			return child
+	return null
+
+
+func _find_folder_dialog(parent: Node) -> FolderPickerDialog:
+	for child in parent.get_children():
+		if child is FolderPickerDialog and not child.is_queued_for_deletion():
+			return child
+	return null

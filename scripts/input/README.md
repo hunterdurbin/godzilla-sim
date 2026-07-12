@@ -54,6 +54,17 @@ Related pieces elsewhere:
   To Monster / remove-from-pool), and `DeckBuilderPadHints` feeds the
   bottom hint row. Regression test:
   `tests/ui/DeckBuilderPadNavTest.tscn` (headless).
+- `scenes/deck_builder/deck_list_view.gd` — the deck-picker expanded gallery
+  (opened from the pickers on the main menu, lobbies, and deck builder)
+  self-meshes on every rebuild (`_wire_pad_mesh`): the host `✕` band
+  (injected via `extra_top_band`), the search/format/density row, then one
+  band per folder header / deck row (rows carry their `⋯` button, exposed by
+  `DeckRow.pad_focus_targets()`). The outer view's `_unhandled_input` closes
+  the overlay on the LEADING `pad_cancel` (swallowing twins; text editing
+  defers to the escape fence). `FolderPickerDialog` meshes its folder
+  choices / new-folder edit / OK-Cancel and gets `wire_pad_close`
+  (`queue_free` — the dialog is transient). Covered by the gallery tour in
+  `tests/ui/DeckBuilderPadNavTest.tscn`.
 - `scenes/menus/extras.gd` — the Extras screen and all of its runtime-built
   PopupPanel sub-views (replay/save/log lists, hosting lobby, confirm/label/
   player-choice dialogs) are pad-navigable: each popup passes a provider to

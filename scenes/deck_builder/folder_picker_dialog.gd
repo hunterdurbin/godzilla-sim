@@ -28,6 +28,9 @@ func _ready() -> void:
 	ok_button_text = tr("STR_COMMON_OK")
 	size = Vector2i(360, 280)
 	GamepadHelper.register_modal(self)
+	# B closes like Cancel. The dialog is created fresh per open, so a plain
+	# hide() would leave a hidden zombie child behind — free it instead.
+	GamepadHelper.wire_pad_close(self, queue_free)
 
 	var margin := MarginContainer.new()
 	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -109,10 +112,27 @@ func _populate() -> void:
 		btn.button_group = group
 		btn.text = c["label"]
 		btn.set_meta("folder_id", c["id"])
+		GamepadHelper.make_pad_focusable(btn)
 		if c["id"] == _current_folder and not _creating_new:
 			btn.button_pressed = true
 		btn.pressed.connect(_on_choice_pressed.bind(c["id"]))
 		_list.add_child(btn)
+	_wire_pad_mesh()
+
+
+## Explicit focus mesh: one band per folder choice, the new-folder edit while
+## shown, then OK/Cancel — dpad from the checkboxes reaches the dialog buttons
+## without relying on geometric neighbor guessing. Rewired when the new-folder
+## row toggles.
+func _wire_pad_mesh() -> void:
+	var bands: Array[Dictionary] = []
+	for c in _list.get_children():
+		if c is Control and not c.is_queued_for_deletion():
+			bands.append({"row": [c] as Array[Control]})
+	if _new_folder_row.visible:
+		bands.append({"row": [_new_folder_edit] as Array[Control]})
+	bands.append({"row": [get_ok_button(), get_cancel_button()] as Array[Control]})
+	OverlayGridUtil.wire_band_stack(bands)
 
 
 func _on_choice_pressed(folder_id: String) -> void:
@@ -125,6 +145,7 @@ func _on_choice_pressed(folder_id: String) -> void:
 		_creating_new = false
 		_new_folder_row.visible = false
 		_selected_folder = folder_id
+	_wire_pad_mesh()
 
 
 func _on_confirmed() -> void:

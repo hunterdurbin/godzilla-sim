@@ -40,6 +40,9 @@ var _texture_cache: Dictionary = {}
 var _entries: Array[Dictionary] = []
 var _folder_order: Array[String] = []
 var _entry_filter: Callable = Callable()  # Optional programmatic filter — (deck_name) -> bool
+## Host-owned controls meshed as a band above the search row (the expanded
+## overlay's ✕). Set before add_child so the first rebuild wires them.
+var extra_top_band: Array[Control] = []
 var _compact_rows: bool = false
 var _active_overlay: Control = null
 var _format_id: String = ""              # GameModeValidator mode id; "" = Any
@@ -89,13 +92,25 @@ func _ready() -> void:
 			select_deck(last)
 
 
+# Pad B / keyboard ESC closes the expanded overlay. Reacts to the LEADING
+# cancel press and swallows the injected twins so the close can't leak into
+# the screen's own B-back handler (same contract as GamepadHelper.wire_pad_close,
+# which only serves Windows — the overlay is an in-canvas ColorRect).
 func _unhandled_input(event: InputEvent) -> void:
 	if _active_overlay == null:
 		return
-	if event.is_action_pressed("ui_cancel"):
-		_active_overlay.queue_free()
-		_active_overlay = null
-		get_viewport().set_input_as_handled()
+	if not GamepadHelper.is_cancel_press(event):
+		return
+	if GamepadInput._is_text_editing():
+		# Leave the event alone: GamepadInput's own unhandled_input (autoloads
+		# run last) turns this B into "escape the search field".
+		return
+	get_viewport().set_input_as_handled()
+	if GamepadHelper.is_swallowed_cancel(event):
+		return  # a twin of the press that already closed something above
+	GamepadHelper.swallow_cancel_twins()
+	_active_overlay.queue_free()
+	_active_overlay = null
 
 
 func _build_ui() -> void:
@@ -418,6 +433,11 @@ func _rebuild() -> void:
 		return  # Picker mode has no inline list to rebuild.
 	if _list_vbox == null:
 		return  # Not built yet — refresh() will be called again from _ready.
+	# The rebuild frees every row — if the pad cursor was on one (search typing,
+	# filter change), plan a regrab so focus doesn't strand. Checked BEFORE the
+	# clear; focus elsewhere (e.g. editing the search box) is left alone.
+	var focus_owner: Control = get_viewport().gui_get_focus_owner() if is_inside_tree() else null
+	var refocus := focus_owner != null and _list_vbox.is_ancestor_of(focus_owner)
 	for child in _list_vbox.get_children():
 		_list_vbox.remove_child(child)
 		child.queue_free()
@@ -448,6 +468,41 @@ func _rebuild() -> void:
 	_empty_label.visible = not any_visible
 	if not _selected_deck.is_empty() and _row_buttons.has(_selected_deck):
 		(_row_buttons[_selected_deck] as DeckRow).set_selected(true)
+	_wire_pad_mesh()
+	if refocus and GamepadHelper.is_using_gamepad():
+		var target: Control = _row_buttons.get(_selected_deck, null)
+		if target == null:
+			target = first_row()
+		if target != null:
+			target.grab_focus.call_deferred()
+
+
+## Explicit focus mesh for the full list: the host band (expanded overlay ✕)
+## above the search/filter row, then one band per list entry (deck rows carry
+## their ⋯ button on the right). Rewired on every rebuild — without it the
+## controls are only geometry-guessed and pad focus can leak to the screen
+## beneath the overlay.
+func _wire_pad_mesh() -> void:
+	var bands: Array[Dictionary] = []
+	var host_row: Array[Control] = []
+	for c in extra_top_band:
+		if c != null and is_instance_valid(c):
+			host_row.append(c)
+	if not host_row.is_empty():
+		bands.append({"row": host_row})
+	var top_row: Array[Control] = []
+	for c: Control in [_search_edit, _format_option, _density_button, _expand_button, _move_button]:
+		if c != null:
+			top_row.append(c)
+	bands.append({"row": top_row})
+	for child in _list_vbox.get_children():
+		if child.is_queued_for_deletion():
+			continue
+		if child is DeckRow:
+			bands.append({"row": (child as DeckRow).pad_focus_targets()})
+		elif child is Button:
+			bands.append({"row": [child] as Array[Control]})
+	OverlayGridUtil.wire_band_stack(bands)
 
 
 func _entries_in_folder(folder: String) -> Array[Dictionary]:
@@ -681,9 +736,19 @@ func _open_expanded_overlay() -> void:
 	inner.persist_key = persist_key
 	inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inner.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	# The ✕ joins the inner list's focus mesh as its top band — set before
+	# add_child so the first rebuild already wires it.
+	inner.extra_top_band = [close_btn]
 	if _entry_filter.is_valid():
 		inner.set_filter(_entry_filter)
 	col.add_child(inner)
+
+	var hints := OverlayHintRow.new()
+	col.add_child(hints)
+	hints.set_hints([
+		{"action": &"pad_confirm", "text": tr("STR_GB_HINT_SELECT")},
+		{"action": &"pad_cancel", "text": tr("STR_GB_HINT_CLOSE")},
+	])
 	if not _selected_deck.is_empty():
 		inner.select_deck(_selected_deck)
 
@@ -705,9 +770,12 @@ func _open_expanded_overlay() -> void:
 	# Controller: the overlay takes a focus context while it lives (suspends
 	# the screen beneath, restores its focus on close — every close path goes
 	# through queue_free, which pops via tree_exiting). Lazy provider: rows
-	# are rebuilt by the inner list's refresh/search.
+	# are rebuilt by the inner list's refresh/search. Land on the selected
+	# deck's row when it survives the filter, else the first entry.
 	GamepadHelper.register_modal(overlay, func() -> Control:
-		var row := inner.first_row()
+		var row: Control = inner._row_buttons.get(inner._selected_deck, null)
+		if row == null:
+			row = inner.first_row()
 		return row if row != null else close_btn)
 
 
