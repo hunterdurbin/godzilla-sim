@@ -206,6 +206,23 @@ func test_desktop_log_panel_is_stitched_both_ways() -> void:
 	assert_that(map["top_discard"]["left"]).contains(["log_panel"])
 
 
+func test_desktop_save_button_is_stitched_above_log_panel() -> void:
+	var map := _build(3, false, 2)
+	assert_that(map["sys_save"]["right"]).is_equal(["top_discard"])
+	assert_that(map["sys_save"]["down"]).is_equal(["log_panel"])
+	assert_that(map["log_panel"]["up"]).is_equal(["sys_save"])
+	# Live entries: on the log itself the dpad scrolls, so top_discard is
+	# the route the cursor actually walks.
+	assert_that(map["top_discard"]["up"]).is_equal(["sys_save"])
+	assert_that(map["top_discard"]["left"]).contains(["sys_save"])
+
+
+func test_mobile_build_has_no_save_button_node() -> void:
+	var map := _build(3, true)
+	assert_bool(map.has("sys_save")).is_false()
+	assert_that(map["top_discard"]["left"]).not_contains(["sys_save"])
+
+
 func test_no_zone_jail_keeps_free_browse_zone_edges() -> void:
 	var map := _build(3)
 	assert_that(map["bot_z1"]["up"]).is_equal(["bot_rage"])

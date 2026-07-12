@@ -22,7 +22,7 @@ func _setup_save_button() -> void:
 	_save_game_button.add_theme_font_size_override("font_size", 14)
 	_save_game_button.pressed.connect(_board._on_save_game_pressed)
 	_board.add_child(_save_game_button)
-	# Position below concede button
+	# Top-left corner, above the log panel (mapped as sys_save in BoardNavGraph).
 	_save_game_button.position = Vector2(10, 90)
 
 

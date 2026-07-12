@@ -58,7 +58,7 @@ const HAND_EXITS: Array[String] = [
 ## border table to cross-reference.
 const PLAYMAT := {
 	# --- Top board, row 1 (screen top) ---
-	"top_discard": {"up": [], "right": ["top_z5"], "down": ["top_deck"], "left": ["log_panel"]},
+	"top_discard": {"up": ["sys_save"], "right": ["top_z5"], "down": ["top_deck"], "left": ["sys_save", "log_panel"]},
 	"top_z5": {"up": [], "right": ["top_z4"], "down": ["top_z6"], "left": ["top_discard"]},
 	"top_z4": {"up": [], "right": ["top_z3"], "down": ["top_z7"], "left": ["top_z5"]},
 	"top_z3": {"up": [], "right": ["top_z2"], "down": ["top_z8"], "left": ["top_z4"]},
@@ -155,8 +155,14 @@ const DESKTOP_UI := {
 	"sys_music": {"up": ["sys_sound"], "right": [], "down": ["sys_export_log"], "left": ["top_strategy_1"]},
 	"sys_export_log": {"up": ["sys_music"], "right": [], "down": ["tracker"], "left": ["top_strategy_1"]},
 
+	# Save-game button (solo/bot only; created at runtime top-LEFT, above the
+	# log panel — absent in multiplayer, so it is traversed through). Live
+	# routes in are up/left from top_discard: on the log itself the dpad
+	# scrolls the text, so log_panel.up is spatial truth but never walked.
+	"sys_save": {"up": [], "right": ["top_discard"], "down": ["log_panel"], "left": []},
+
 	# Game log / chat panel (left edge, vertically centered).
-	"log_panel": {"up": [], "right": ["top_deck", "bot_strategy_0", "bot_strategy_1", "top_discard"], "down": [], "left": []},
+	"log_panel": {"up": ["sys_save"], "right": ["top_deck", "bot_strategy_0", "bot_strategy_1", "top_discard"], "down": [], "left": []},
 }
 
 ## Mobile UI: FAB grid (row 0 Battle|Monster|Strategy, row 1 Rage|Invade,
@@ -217,6 +223,7 @@ static func build(ctx: Dictionary) -> Dictionary:
 		_add_empty_hand_return(map)
 	if mobile:
 		_strip_target(map, "log_panel")
+		_strip_target(map, "sys_save")
 	return map
 
 

@@ -930,6 +930,7 @@ func _ui_button(id: String) -> Control:
 		"sys_sound": return _board.btn_sound_toggle
 		"sys_music": return _board.btn_music_toggle
 		"sys_export_log": return _board.btn_export_log
+		"sys_save": return _board._sys_menu._save_game_button
 	return null
 
 

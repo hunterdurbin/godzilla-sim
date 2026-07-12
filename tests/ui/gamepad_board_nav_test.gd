@@ -276,6 +276,33 @@ func _ready() -> void:
 	await _tap(&"pad_nav_right")
 	assert(nav._element == "bot_strategy_0",
 		"right off the log should return (history): %s" % nav._element)
+
+	# --- Save button (solo/bot only): a cursor stop in the top-left corner;
+	# A presses it through the same pressed path the pointer uses. Entry is
+	# up from top_discard — on the log itself the dpad scrolls the text. ---
+	var save_btn: Button = board._sys_menu._save_game_button
+	assert(save_btn != null, "solo board did not create the save button")
+	nav._enter_element("top_discard")
+	await _tick(1)
+	await _tap(&"pad_nav_up")
+	assert(nav._element == "sys_save", "up off top_discard should reach Save Game: %s" % nav._element)
+	_assert_no_focus(board, "cursor on save button")
+	var save_pressed := [false]
+	save_btn.pressed.connect(func() -> void: save_pressed[0] = true)
+	await _tap(&"pad_confirm")
+	assert(save_pressed[0], "A did not press the save button")
+	await _tap(&"pad_nav_down")
+	assert(nav._element == "log_panel", "save button down should reach the log: %s" % nav._element)
+	# Absent button (multiplayer) is transparent, not a wall: null the ref so
+	# _ui_button resolves nothing, then walk the lane it sits on.
+	board._sys_menu._save_game_button = null
+	nav._map.clear_history()
+	nav._enter_element("top_discard")
+	await _tick(1)
+	await _tap(&"pad_nav_left")
+	assert(nav._element == "log_panel", "missing save button should be skipped: %s" % nav._element)
+	board._sys_menu._save_game_button = save_btn
+
 	nav._enter_element("bot_deck")
 	await _tick(1)
 	await _tap(&"pad_nav_right")
