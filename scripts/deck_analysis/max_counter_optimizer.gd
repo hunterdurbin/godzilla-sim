@@ -94,6 +94,8 @@ var _result: Dictionary = {}
 # User constraints (see setup params). 0 / -1 = unconstrained.
 var _fixed_monster_zone: int = 0  # 0 = Any (loop 1-8)
 var _fixed_opp_zone: int = 0      # 0 = Any (best-case sweep in _improve)
+var _fixed_monster_rank: int = 0  # 0 = Any (every monster eligible)
+var _fixed_opp_rank: int = 0      # 0 = Any (best-case sweep with the zone)
 var _fixed_rage: int = -1         # -1 = Auto (search at SEARCH_RAGE, recheck 0)
 var _strategy_zone_count: int = 2 # 3 = assume EBP03-013's expansion resolved
 
@@ -112,8 +114,12 @@ var _improve_passes: int = IMPROVE_PASSES
 
 
 ## params (all optional): monster_zone 0|1-8, opp_monster_zone 0|1-8,
+## monster_rank 0|1-4 (restricts the fielded monster to that rank; ignored
+## when locked_monster pins one), opp_monster_rank 0|1-4 (rank of the
+## synthetic opponent monster — rank conditionals like ESD02-012 read it),
 ## rage -1|0-10, strategy_zone_count 2|3 (3 assumes EBP03-013's expansion).
-## Zero/-1 = unconstrained (v1 behavior).
+## Zero/-1 = unconstrained; an unconstrained opp zone/rank is swept for the
+## best case (_sweep_opp_state).
 ##
 ## Live-board locks (bot callers — see KaijuCounterOracle). Locked cards are
 ## fixed occupants: never moved, evicted, swapped, or tucked over. main/
@@ -137,6 +143,8 @@ var _improve_passes: int = IMPROVE_PASSES
 func setup(monster_entries: Array, main_entries: Array, params: Dictionary = {}) -> void:
 	_fixed_monster_zone = clampi(params.get("monster_zone", 0), 0, 8)
 	_fixed_opp_zone = clampi(params.get("opp_monster_zone", 0), 0, 8)
+	_fixed_monster_rank = clampi(params.get("monster_rank", 0), 0, 4)
+	_fixed_opp_rank = clampi(params.get("opp_monster_rank", 0), 0, 4)
 	_fixed_rage = clampi(params.get("rage", -1), -1, SEARCH_RAGE)
 	_strategy_zone_count = clampi(params.get("strategy_zone_count", 2), 2, 3)
 	_finalists_count = maxi(int(params.get("finalists", FINALISTS)), 1)
@@ -171,6 +179,12 @@ func setup(monster_entries: Array, main_entries: Array, params: Dictionary = {})
 	var monsters: Array = _monster_pool if not _monster_pool.is_empty() else [{}]
 	if not _locked_monster.is_empty():
 		monsters = [_locked_monster]
+	elif _fixed_monster_rank > 0:
+		# No monster of the pinned rank in the deck -> field none at all
+		# (the empty config still searches the 8 battle zones).
+		var of_rank: Array = monsters.filter(func(m: Dictionary) -> bool:
+			return m.get("rank", 0) == _fixed_monster_rank)
+		monsters = of_rank if not of_rank.is_empty() else [{}]
 	var mzs: Array = [_fixed_monster_zone] if _fixed_monster_zone > 0 else range(1, 9)
 	for monster in monsters:
 		for mz in mzs:
@@ -562,9 +576,9 @@ func _improve(finalist: Dictionary) -> bool:
 	var best: int = finalist["score"]
 	var improved := false
 
-	# Opponent-zone sweep first, so the placement passes below optimize
-	# under the adopted zone (only when the user left it unconstrained).
-	if _sweep_opp_zone(assignment):
+	# Opponent-state sweep first, so the placement passes below optimize
+	# under the adopted zone/rank (only the unconstrained dimensions move).
+	if _sweep_opp_state(assignment):
 		var swept := _score(assignment)
 		if swept > best:
 			best = swept
@@ -649,24 +663,33 @@ func _improve(finalist: Dictionary) -> bool:
 	return improved
 
 
-func _sweep_opp_zone(assignment: Dictionary) -> bool:
-	## Best-case opponent monster position: evaluate the board under every
-	## opponent zone and adopt the argmax (ties -> lowest zone, for
-	## determinism). No-op when the user pinned the opponent zone. Returns
-	## true if the zone changed.
-	if _fixed_opp_zone > 0:
+func _sweep_opp_state(assignment: Dictionary) -> bool:
+	## Best-case opponent monster: evaluate the board under every unpinned
+	## (zone, rank) pair and adopt the argmax (ties -> lowest zone, then
+	## lowest rank, for determinism). A pinned dimension collapses to its
+	## fixed value; no-op when the user pinned both. Returns true if either
+	## dimension changed.
+	if _fixed_opp_zone > 0 and _fixed_opp_rank > 0:
 		return false
-	var original: int = assignment["opp_monster_zone"]
-	var best_zone: int = original
+	var zones: Array = [_fixed_opp_zone] if _fixed_opp_zone > 0 else range(1, 9)
+	var ranks: Array = [_fixed_opp_rank] if _fixed_opp_rank > 0 else range(1, 5)
+	var original_zone: int = assignment["opp_monster_zone"]
+	var original_rank: int = assignment["opp_monster_rank"]
+	var best_zone: int = original_zone
+	var best_rank: int = original_rank
 	var best_score := -1
-	for opp_zone in range(1, 9):
-		assignment["opp_monster_zone"] = opp_zone
-		var score := _score(assignment)
-		if score > best_score:
-			best_score = score
-			best_zone = opp_zone
+	for opp_zone in zones:
+		for opp_rank in ranks:
+			assignment["opp_monster_zone"] = opp_zone
+			assignment["opp_monster_rank"] = opp_rank
+			var score := _score(assignment)
+			if score > best_score:
+				best_score = score
+				best_zone = opp_zone
+				best_rank = opp_rank
 	assignment["opp_monster_zone"] = best_zone
-	return best_zone != original
+	assignment["opp_monster_rank"] = best_rank
+	return best_zone != original_zone or best_rank != original_rank
 
 
 func _attach_unders(assignment: Dictionary) -> bool:
@@ -781,7 +804,7 @@ func _finalize() -> void:
 		return a["score"] > b["score"])
 	var winner: Dictionary = _seeded[0]
 	var assignment: Dictionary = winner["assignment"]
-	_sweep_opp_zone(assignment)
+	_sweep_opp_state(assignment)
 	if _fixed_rage < 0:
 		# Rage was assumed reachable during the search; keep whichever final
 		# rage actually scores higher (guards effects that punish own rage).
@@ -797,6 +820,7 @@ func _finalize() -> void:
 	_result["strategies"] = assignment["strategies"]
 	_result["rage"] = assignment["rage"]
 	_result["opp_monster_zone"] = assignment["opp_monster_zone"]
+	_result["opp_monster_rank"] = assignment["opp_monster_rank"]
 	_result["unders"] = assignment["unders"]
 
 
@@ -821,6 +845,7 @@ func _empty_assignment(config: Dictionary) -> Dictionary:
 		"strategies": strategies,
 		"rage": _fixed_rage if _fixed_rage >= 0 else SEARCH_RAGE,
 		"opp_monster_zone": _fixed_opp_zone if _fixed_opp_zone > 0 else 1,
+		"opp_monster_rank": _fixed_opp_rank if _fixed_opp_rank > 0 else 1,
 		"unders": _locked_unders.duplicate(),
 	}
 	if not _monster_stack.is_empty():

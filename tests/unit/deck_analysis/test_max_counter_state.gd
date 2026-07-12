@@ -226,6 +226,30 @@ func test_apply_places_under_card_and_opp_zone() -> void:
 	mcs.teardown()
 
 
+func test_opp_monster_rank_gates_rank_conditional() -> void:
+	# ESD02-012: +5000 while the opponent's monster is rank IV or higher.
+	# opp_monster_rank > 0 gives the opponent a synthetic {rank} monster;
+	# absent keeps it monster-less (rank reads as 1 — the v1 board).
+	var card := Real.instance("ESD02-012")
+	var pool: Array[Dictionary] = [card]
+	var mcs := MaxCounterState.new(pool, [])
+	var assignment := {"monster": {}, "monster_zone": 1,
+		"zones": _zones_with([card], 1), "strategies": [{}, {}], "rage": 0,
+		"opp_monster_zone": 1, "opp_monster_rank": 3}
+	mcs.apply(assignment)
+	var below_threshold: int = mcs.evaluate()
+	assignment["opp_monster_rank"] = 4
+	mcs.apply(assignment)
+	assert_int(mcs.evaluate()).is_equal(below_threshold + 5000)
+	assert_int(mcs.state.players[1].current_monster.get("rank", 0)).is_equal(4)
+	# Param absent: the opponent loses the synthetic monster again.
+	assignment.erase("opp_monster_rank")
+	mcs.apply(assignment)
+	assert_int(mcs.evaluate()).is_equal(below_threshold)
+	assert_bool(mcs.state.players[1].current_monster.is_empty()).is_true()
+	mcs.teardown()
+
+
 func test_teardown_is_idempotent() -> void:
 	var mcs := MaxCounterState.new([] as Array[Dictionary], [])
 	mcs.teardown()

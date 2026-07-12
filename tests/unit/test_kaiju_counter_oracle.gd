@@ -64,6 +64,20 @@ func test_max_remaining_deterministic_and_cached() -> void:
 	assert_int(oracle.max_remaining(gs, 0)).is_equal(first)
 
 
+func test_max_remaining_reads_live_opp_monster_rank() -> void:
+	# ESD02-012 in the deck: +5000 only while the opponent's monster is rank
+	# IV+. The oracle passes the LIVE rank, and a same-turn opponent rank-up
+	# must not return the stale cached total (the rank is in the cache key).
+	var gs := _make_state()
+	var deck: Array[Dictionary] = [Real.instance("ESD02-012")]
+	gs.players[0].main_deck = deck
+	gs.players[1].current_monster = Real.instance("ESD02-001")  # rank 1
+	var oracle := KaijuCounterOracle.new()
+	var low := oracle.max_remaining(gs, 0)
+	gs.players[1].current_monster = Real.instance("ESD02-004")  # rank 4
+	assert_int(oracle.max_remaining(gs, 0)).is_equal(low + 5000)
+
+
 func test_rng_fence_restores_deterministic_stream() -> void:
 	# The post-call global RNG stream must depend only on the composition,
 	# never on the pre-call stream — twice from different seeds, identical

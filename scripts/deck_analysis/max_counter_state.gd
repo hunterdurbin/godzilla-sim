@@ -60,8 +60,11 @@ func _init(main_cards: Array[Dictionary], monster_cards: Array[Dictionary],
 ##   strategies: Array with one entry per strategy zone (2, or 3 when
 ##     constructed with strategy_zone_count 3), each {} or a strategy card
 ##   rage: int
-##   opp_monster_zone: int 1-8 (optional; opponent stays monster-less — CP
-##     effects like EBP02-016 only read the zone int)
+##   opp_monster_zone: int 1-8 (optional; CP effects like EBP02-016 only
+##     read the zone int)
+##   opp_monster_rank: int 1-4 (optional; > 0 gives the opponent a synthetic
+##     monster of that rank so rank conditionals like ESD02-012 can read it —
+##     absent/0 keeps the opponent monster-less, i.e. rank reads as 1)
 ##   unders: Dictionary zone_idx -> card (optional; one card tucked under
 ##     that zone's top — buried cards are data only, their effects inactive)
 ##   monster_stack: Array (optional; a live caller's REAL stack, used verbatim
@@ -74,6 +77,8 @@ func apply(assignment: Dictionary) -> void:
 	player.monster_zone = assignment.get("monster_zone", 1)
 	player.rage = assignment.get("rage", 0)
 	state.players[1].monster_zone = assignment.get("opp_monster_zone", 1)
+	var opp_rank: int = assignment.get("opp_monster_rank", 0)
+	state.players[1].current_monster = {"rank": opp_rank} if opp_rank > 0 else {}
 
 	if assignment.has("monster_stack"):
 		# Live-board passthrough: the caller's actual stack, so stack

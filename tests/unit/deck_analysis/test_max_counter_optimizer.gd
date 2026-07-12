@@ -433,6 +433,32 @@ func test_fixed_monster_zone_restricts_configs() -> void:
 	assert_int(free["total_cp"]).is_equal(6000)
 
 
+func test_fixed_opp_rank_drives_rank_bonus() -> void:
+	# ESD02-012 Mechagodzilla(1993): 5000, +5000 while the opponent's monster
+	# is rank IV+ (the zone sweep lands the +3000 same-column bonus either way).
+	var low := _run([], [_entry("ESD02-012", 1)], {"opp_monster_rank": 1})
+	assert_int(low["total_cp"]).is_equal(8000)
+	assert_int(low["opp_monster_rank"]).is_equal(1)
+	var high := _run([], [_entry("ESD02-012", 1)], {"opp_monster_rank": 4})
+	assert_int(high["total_cp"]).is_equal(13000)
+	# Any: the joint opp-state sweep adopts the rank-IV best case by itself.
+	var any_rank := _run([], [_entry("ESD02-012", 1)])
+	assert_int(any_rank["total_cp"]).is_equal(13000)
+	assert_int(any_rank["opp_monster_rank"]).is_equal(4)
+
+
+func test_fixed_monster_rank_filters_configs() -> void:
+	var monsters := [_entry("ESD02-001", 1), _entry("ESD02-002", 1),
+			_entry("ESD02-003", 1), _entry("ESD02-004", 1)]
+	var pinned := _run(monsters, [_entry(VANILLA_5K, 1)], {"monster_rank": 2})
+	assert_int(pinned["monster"].get("rank", 0)).is_equal(2)
+	# No monster of the pinned rank in the deck: none is fielded at all.
+	var none := _run([_entry("ESD02-001", 1)], [_entry(VANILLA_5K, 1)],
+			{"monster_rank": 3})
+	assert_bool(none["monster"].is_empty()).is_true()
+	assert_int(none["total_cp"]).is_equal(5000)
+
+
 func test_all_under_dependent_cp_cards_have_stack_sources() -> void:
 	## Guard: every effect whose CP virtuals read the zone stack under it
 	## must be modeled in STACK_SOURCES, or the preview under-reports.

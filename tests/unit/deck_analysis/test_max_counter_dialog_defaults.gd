@@ -27,6 +27,12 @@ func test_dialog_is_borderless_fixed_window() -> void:
 	assert_bool(dialog.unresizable).is_true()
 
 
+func test_rank_params_default_to_any() -> void:
+	var dialog: MaxCounterDialog = auto_free(MaxCounterDialog.new())
+	assert_int(dialog._params()["monster_rank"]).is_equal(0)
+	assert_int(dialog._params()["opp_monster_rank"]).is_equal(0)
+
+
 func test_pad_focus_mesh_links_params_and_ok() -> void:
 	var dialog: MaxCounterDialog = auto_free(MaxCounterDialog.new())
 	add_child(dialog)
@@ -39,6 +45,12 @@ func test_pad_focus_mesh_links_params_and_ok() -> void:
 	var zone: OptionButton = dialog._zone_option
 	assert_object(zone.get_node(zone.focus_neighbor_bottom)).is_same(ok)
 	assert_object(zone.get_node(zone.focus_neighbor_left)).is_same(dialog._rage_option)
+	# The rank dropdowns sit in the band: zone → own rank → opp zone → opp rank.
+	assert_object(zone.get_node(zone.focus_neighbor_right)).is_same(dialog._monster_rank_option)
+	var opp_rank: OptionButton = dialog._opp_rank_option
+	assert_object(opp_rank.get_node(opp_rank.focus_neighbor_left)).is_same(dialog._opp_zone_option)
+	assert_object(opp_rank.get_node(opp_rank.focus_neighbor_right)).is_same(dialog._rage_option)
+	assert_object(opp_rank.get_node(opp_rank.focus_neighbor_bottom)).is_same(ok)
 	assert_object(ok.get_node(ok.focus_neighbor_top)).is_same(zone)
 	assert_object(ok.get_node(ok.focus_neighbor_bottom)).is_same(zone)
 	# OK is a one-button band: it self-loops horizontally, pinning every

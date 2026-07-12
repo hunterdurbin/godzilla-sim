@@ -31,9 +31,12 @@ queried at counter time must be genuinely true on the constructed board):
 - **monster placement** — any zone 1–8; the monster stack holds the deck's
   lower ranks (normal rank-up), so stack/Awakening conditionals are honest.
   Pinnable via params.
-- **opponent monster zone** — the opponent stays monster-less, but
-  `players[1].monster_zone` is set (column-conditional cards like EBP02-016
-  read only the int). Default: best-case sweep; pinnable via params.
+- **opponent monster zone & rank** — `players[1].monster_zone` is set
+  (column-conditional cards like EBP02-016 read only the int), and when an
+  `opp_monster_rank` is given the opponent gets a synthetic `{rank}` monster
+  (rank-conditional cards like ESD02-012 read it; absent = monster-less,
+  rank reads as 1). Default: joint best-case sweep over zone × rank; each
+  dimension is independently pinnable via params.
 - **play-rank legality** — rank requirements are checked at play time
   against positions that reach 8 over a game; always best-case satisfiable.
   Play-ZONE restrictions (`get_required_play_zones`, e.g. EBP04-067 "only
@@ -47,7 +50,7 @@ queried at counter time must be genuinely true on the constructed board):
 
 Assignment keys: `monster`, `monster_zone`, `zones[8]` (one entry per
 strategy zone in `strategies`), `rage`, plus optional `opp_monster_zone`
-(default 1), `unders`
+(default 1), `opp_monster_rank` (default 0 = monster-less), `unders`
 ({zone_idx → card} tucked beneath that zone's top; one under max; buried
 cards are data only — their own effects are inactive, and they are consumed
 from the pool like any fielded card), and `monster_stack` (a live caller's
@@ -62,7 +65,10 @@ Drive with `setup(monster_entries, main_entries, params)` (deck-builder-
 shaped `{card_number, quantity}` entries) then `step()` until false — each
 step is one bounded unit so UI callers can yield between frames — or call
 `run(...)` synchronously. `params` (all optional): `monster_zone` 0|1-8,
-`opp_monster_zone` 0|1-8, `rage` -1|0-10 (0/-1 = unconstrained),
+`opp_monster_zone` 0|1-8, `monster_rank` 0|1-4 (restricts the fielded
+monster to that rank; a deck with no monster of the rank fields none),
+`opp_monster_rank` 0|1-4 (the synthetic opponent monster's rank),
+`rage` -1|0-10 (0/-1 = unconstrained),
 `strategy_zone_count` 2|3 (3 = assume EBP03-013's permanent expansion; the
 dialog only shows the option — defaulted to 3 — when the monster deck runs
 that card, and pins 2 otherwise).
@@ -84,7 +90,7 @@ the pool is a multiset (own-deck contents are inferable, draw order is
 not); a future version may weight candidates by draw distance. `result()`
 returns `{total_cp, monster, monster_zone, zones[8], strategies[2..3],
 zone_cp[8], zone_mods[8], monster_cp_mod, strategy_cp_mods, rage,
-opp_monster_zone, unders}` — all numbers read back from
+opp_monster_zone, opp_monster_rank, unders}` — all numbers read back from
 `compute_counter_numbers` / `get_zone_cp_breakdown`.
 
 Shape: (monster × monster_zone) config loop → up to three greedy seeds per
@@ -94,18 +100,19 @@ placement-free bodies; tokens-first order so 0-CP enabler tokens like
 EBP02-T03 Crystals can feed threshold strategies like EBP02-072 — the
 replace pass trims any excess tokens back down but can't build the pile up
 one losing swap at a time), each scored as a full board (unders attached,
-strategies picked) with the best kept → top-3 finalists get opp-zone sweep
+strategies picked) with the best kept → top-3 finalists get opp-state sweep
 / replace / relocate / under-attach / strategy improvement passes. The strategy pool keeps up to one copy per
 strategy slot per id (identical strategies are legal — one per slot — and
 stacking field-CP strategies like EBP04-082 want one each). `_board_valid` rejects any
 board fielding the same card instance twice (zones + strategy slots +
 unders combined).
 
-**Opponent-zone "Any"** is a sweep, not a config multiplier: seeds run at
-opp zone 1; each improvement pass first evaluates the finalist under all 8
-opponent zones and adopts the best, then the placement passes optimize
-under it (≈80 extra engine evals total). A finalist that only shines under
-a non-default opp zone could in principle miss the top-3 cut — same class
+**Opponent zone/rank "Any"** is a sweep, not a config multiplier: seeds run
+at opp zone 1 / rank 1; each improvement pass first evaluates the finalist
+under every unpinned (zone, rank) pair — 8 × 4 with both left Any, either
+dimension collapsing to its pinned value — and adopts the best, then the
+placement passes optimize under it. A finalist that only shines under a
+non-default opp state could in principle miss the top-3 cut — same class
 of looseness as the greedy seeds; the lower-bound guarantee holds.
 
 Greedy + swaps is a **lower bound**: any reported board is valid and

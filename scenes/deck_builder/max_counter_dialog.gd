@@ -20,11 +20,16 @@ const STEP_BUDGET_MSEC := 8
 const TOP_CELLS: Array = [-1, -2, -3, 7, 6, 5]
 const BOTTOM_CELLS: Array = [0, 1, 2, 3, 4]
 
+## Monster rank 1-4 -> the card frames' roman notation (index 0 unused).
+const RANK_NUMERALS: Array[String] = ["", "I", "II", "III", "IV"]
+
 var _total_label: Label
 var _status_label: Label
 var _assumptions_label: Label
 var _zone_option: OptionButton
+var _monster_rank_option: OptionButton
 var _opp_zone_option: OptionButton
+var _opp_rank_option: OptionButton
 var _rage_option: OptionButton
 var _strategy_count_option: OptionButton
 ## The strategy-zone label+dropdown pair: only shown for decks running
@@ -69,7 +74,9 @@ func _init() -> void:
 	param_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	root.add_child(param_row)
 	_zone_option = _add_param_option(param_row, tr("STR_DB_MAXCP_PARAM_ZONE"), _zone_items())
+	_monster_rank_option = _add_param_option(param_row, tr("STR_DB_MAXCP_PARAM_RANK"), _rank_items())
 	_opp_zone_option = _add_param_option(param_row, tr("STR_DB_MAXCP_PARAM_OPP"), _zone_items())
+	_opp_rank_option = _add_param_option(param_row, tr("STR_DB_MAXCP_PARAM_OPP_RANK"), _rank_items())
 	var rage_items: Array[String] = [tr("STR_DB_MAXCP_AUTO")]
 	for r in range(11):
 		rage_items.append(str(r))
@@ -136,7 +143,8 @@ static func deck_expands_strategy_zones(monster_entries: Array) -> bool:
 ## hiding the row does NOT flip the option's own `visible` flag, so
 ## wire_band_stack's visibility filter would not drop it on its own.
 func _wire_pad_focus() -> void:
-	var params: Array[Control] = [_zone_option, _opp_zone_option, _rage_option]
+	var params: Array[Control] = [_zone_option, _monster_rank_option,
+			_opp_zone_option, _opp_rank_option, _rage_option]
 	if _strategy_count_row.visible:
 		params.append(_strategy_count_option)
 	OverlayGridUtil.wire_band_stack([
@@ -169,10 +177,18 @@ func _zone_items() -> Array[String]:
 	return items
 
 
+## Monster ranks I-IV; the roman numerals are the card frames' own notation
+## and need no translation.
+func _rank_items() -> Array[String]:
+	return [tr("STR_DB_MAXCP_ANY"), "I", "II", "III", "IV"]
+
+
 func _params() -> Dictionary:
 	return {
 		"monster_zone": _zone_option.selected,
+		"monster_rank": _monster_rank_option.selected,
 		"opp_monster_zone": _opp_zone_option.selected,
+		"opp_monster_rank": _opp_rank_option.selected,
 		"rage": _rage_option.selected - 1,
 		"strategy_zone_count": _strategy_count_option.selected + 2,
 	}
@@ -261,10 +277,19 @@ func _render(result: Dictionary) -> void:
 		parts.append(tr("STR_DB_MAXCP_ASSUMPTIONS").format({"RAGE": result["rage"]}))
 	if _zone_option.selected > 0:
 		parts.append(tr("STR_DB_MAXCP_PIN_ZONE").format({"N": result["monster_zone"]}))
+	if _monster_rank_option.selected > 0:
+		parts.append(tr("STR_DB_MAXCP_PIN_RANK").format(
+				{"R": RANK_NUMERALS[_monster_rank_option.selected]}))
 	if _opp_zone_option.selected > 0:
 		parts.append(tr("STR_DB_MAXCP_PIN_OPP").format({"N": result["opp_monster_zone"]}))
 	else:
 		parts.append(tr("STR_DB_MAXCP_BEST_OPP").format({"N": result["opp_monster_zone"]}))
+	if _opp_rank_option.selected > 0:
+		parts.append(tr("STR_DB_MAXCP_PIN_OPP_RANK").format(
+				{"R": RANK_NUMERALS[_opp_rank_option.selected]}))
+	else:
+		parts.append(tr("STR_DB_MAXCP_BEST_OPP_RANK").format(
+				{"R": RANK_NUMERALS[result["opp_monster_rank"]]}))
 	if _strategy_count_option.selected == 1:
 		parts.append(tr("STR_DB_MAXCP_THIRD_ZONE"))
 	if result["monster_cp_mod"] != 0:

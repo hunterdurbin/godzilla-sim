@@ -111,8 +111,8 @@ func max_remaining(gs: GameState, pid: int, include_hand: bool = true) -> int:
 		main_entries,
 		_lock_key(locked_zones), _lock_key(locked_unders), _lock_key(locked_strategies),
 		player.current_monster.get("id", ""), player.monster_zone, player.rage,
-		gs.players[1 - pid].monster_zone, player.strategy_zones.size(),
-		include_hand,
+		gs.players[1 - pid].monster_zone, gs.players[1 - pid].get_monster_rank(),
+		player.strategy_zones.size(), include_hand,
 	])
 	if _cache.has(key):
 		return _cache[key]
@@ -121,6 +121,7 @@ func max_remaining(gs: GameState, pid: int, include_hand: bool = true) -> int:
 		"locked_monster": player.current_monster,
 		"monster_zone": player.monster_zone,
 		"opp_monster_zone": gs.players[1 - pid].monster_zone,
+		"opp_monster_rank": gs.players[1 - pid].get_monster_rank(),
 		"rage": player.rage,
 		"strategy_zone_count": player.strategy_zones.size(),
 		"locked_zones": locked_zones,

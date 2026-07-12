@@ -658,6 +658,11 @@ STR_DB_MAXCP_BEST_OPP,Best vs. opponent monster in zone {N},相手怪獣がエ�
 STR_DB_MAXCP_UNDER,1 under,下に1枚
 STR_DB_MAXCP_PARAM_STRATS,Strategy zones:,戦略エリア:
 STR_DB_MAXCP_THIRD_ZONE,Assumes 3rd strategy zone,戦略エリア3枠の想定
+STR_DB_MAXCP_PARAM_RANK,Monster rank:,怪獣ランク:
+STR_DB_MAXCP_PARAM_OPP_RANK,Opp. monster rank:,相手怪獣ランク:
+STR_DB_MAXCP_PIN_RANK,Monster rank {R},怪獣ランク {R}
+STR_DB_MAXCP_PIN_OPP_RANK,Opponent monster rank {R},相手怪獣ランク {R}
+STR_DB_MAXCP_BEST_OPP_RANK,Best vs. opponent monster rank {R},相手怪獣がランク {R} の場合が最大
 STR_VALIDATE_UNKNOWN_CARD_FMT,Unknown card: %s,不明なカード: %s
 STR_VALIDATE_NOT_MONSTER_FMT,%s is not a monster card,%s は怪獣カードではありません
 STR_VALIDATE_TOKEN_IN_DECK_FMT,%s has Token trait (not allowed in decks),%s はトークン特徴を持っています (デッキに入れられません)
