@@ -263,8 +263,9 @@ static func _mesh_cards(cards: Array[Control], cols: int,
 			card.focus_neighbor_top = card.get_path_to(up_row[mini(col, up_row.size() - 1)])
 		else:
 			card.focus_neighbor_top = card.get_path_to(cards[mini((rows - 1) * cols + col, count - 1)])
-		if i + cols < count:
-			card.focus_neighbor_bottom = card.get_path_to(cards[i + cols])
+		if row < rows - 1:
+			# A ragged last row clamps overhanging columns onto its final card.
+			card.focus_neighbor_bottom = card.get_path_to(cards[mini(i + cols, count - 1)])
 		elif not down_row.is_empty():
 			card.focus_neighbor_bottom = card.get_path_to(down_row[mini(col, down_row.size() - 1)])
 		else:

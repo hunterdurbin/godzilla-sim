@@ -80,7 +80,7 @@ func test_bottom_chrome_joins_vertical_cycle() -> void:
 	# Bottom row exits down into the chrome, top row exits up into it (a lone
 	# chrome row serves both directions), chrome re-enters the grid.
 	assert_object(_neighbor(cards[3], "down")).is_same(close)
-	assert_object(_neighbor(cards[2], "down")).is_same(close) # short last row
+	assert_object(_neighbor(cards[2], "down")).is_same(cards[4]) # short last row clamps
 	assert_object(_neighbor(cards[0], "up")).is_same(close)
 	assert_object(_neighbor(close, "up")).is_same(cards[3]) # bottom row
 	assert_object(_neighbor(close, "down")).is_same(cards[0]) # top row
@@ -108,6 +108,20 @@ func test_top_and_bottom_chrome_cycle() -> void:
 	assert_object(_neighbor(toggle, "right")).is_same(view_board)
 	assert_object(_neighbor(view_board, "right")).is_same(toggle)
 	assert_object(_neighbor(toggle, "left")).is_same(view_board)
+
+
+func test_ragged_last_row_down_clamps_to_last_card() -> void:
+	# 6 cards, 4 cols: [0 1 2 3] / [4 5] — down from an overhanging column
+	# lands on the last card of the next row, not the chrome.
+	var grid := _make_grid(6, 4)
+	var skip := _make_button()
+	OverlayGridUtil.wire_overlay_focus(grid, [], [skip])
+	var cards := OverlayGridUtil.grid_cards(grid)
+	assert_object(_neighbor(cards[1], "down")).is_same(cards[5])
+	assert_object(_neighbor(cards[2], "down")).is_same(cards[5]) # clamped
+	assert_object(_neighbor(cards[3], "down")).is_same(cards[5]) # clamped
+	assert_object(_neighbor(cards[4], "down")).is_same(skip) # real last row
+	assert_object(_neighbor(cards[5], "down")).is_same(skip)
 
 
 func test_hidden_chrome_is_filtered() -> void:
@@ -196,7 +210,7 @@ func test_band_stack_row_grid_row_cycle() -> void:
 	assert_object(_neighbor(cards[0], "up")).is_same(header[0])
 	assert_object(_neighbor(cards[2], "up")).is_same(header[1]) # col clamped
 	assert_object(_neighbor(cards[3], "down")).is_same(footer[0])
-	assert_object(_neighbor(cards[2], "down")).is_same(footer[0]) # short last row
+	assert_object(_neighbor(cards[2], "down")).is_same(cards[4]) # short last row clamps
 	# Footer: ↑ grid bottom row, ↓ wraps to header.
 	assert_object(_neighbor(footer[0], "up")).is_same(cards[3])
 	assert_object(_neighbor(footer[0], "down")).is_same(header[0])
@@ -224,7 +238,7 @@ func test_band_stack_two_grids_share_middle_row() -> void:
 	assert_object(_neighbor(p[2], "up")).is_same(filter[1]) # col clamped
 	# Pool bottom row wraps onto the header.
 	assert_object(_neighbor(p[3], "down")).is_same(header[0])
-	assert_object(_neighbor(p[1], "down")).is_same(header[0]) # short last row
+	assert_object(_neighbor(p[1], "down")).is_same(p[3]) # short last row clamps
 	assert_object(_neighbor(header[0], "up")).is_same(p[3])
 
 
