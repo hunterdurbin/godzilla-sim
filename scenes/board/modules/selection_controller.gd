@@ -114,6 +114,7 @@ var btn_invade: Button
 var btn_end_main: Button
 var btn_cancel: Button
 var btn_confirm: Button
+var confirm_glyph: ControllerGlyph
 var player1_board: Control
 var player2_board: Control
 var player1_hand: Node2D
@@ -149,6 +150,7 @@ func setup() -> void:
 	btn_end_main = _board.btn_end_main
 	btn_cancel = _board.btn_cancel
 	btn_confirm = _board.btn_confirm
+	confirm_glyph = _board.confirm_glyph
 	player1_board = _board.player1_board
 	player2_board = _board.player2_board
 	player1_hand = _board.player1_hand
@@ -187,6 +189,12 @@ func _connect_once(sig: Signal, callback: Callable) -> void:
 
 
 func _emit_ctx(mode: String, valid: Array[int] = [], board_pid: int = -1, hand_pid: int = -1) -> void:
+	# Confirm's glyph must advertise the pad button that actually presses it:
+	# only the pass-confirmation jail parks the cursor ON the button (A works
+	# there); every other prompt consumes A for selection, so the working
+	# path is pad_end_main via press_primary_button().
+	if confirm_glyph:
+		confirm_glyph.action = &"pad_confirm" if mode == "confirm" else &"pad_end_main"
 	selection_context_changed.emit({
 		"mode": mode, "valid": valid, "board_pid": board_pid, "hand_pid": hand_pid,
 	})

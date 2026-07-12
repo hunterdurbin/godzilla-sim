@@ -67,20 +67,23 @@ func _hint_text(row: Control) -> String:
 	return ""
 
 
-## Physical B press — unlike an injected pad_cancel action, this runs the
-## full GamepadInput chain (pad_cancel + the mirrored ui_cancel the board's
-## cancel ladder listens for).
-func _press_b() -> void:
-	var b_down := InputEventJoypadButton.new()
-	b_down.button_index = JOY_BUTTON_B
-	b_down.pressed = true
-	Input.parse_input_event(b_down)
+## Physical button press — unlike an injected pad_* action, this runs the
+## full GamepadInput chain (logical action + any mirrored ui_* twins).
+func _press_physical(button_index: JoyButton) -> void:
+	var down := InputEventJoypadButton.new()
+	down.button_index = button_index
+	down.pressed = true
+	Input.parse_input_event(down)
 	await _tick(3)
-	var b_release := InputEventJoypadButton.new()
-	b_release.button_index = JOY_BUTTON_B
-	b_release.pressed = false
-	Input.parse_input_event(b_release)
+	var release := InputEventJoypadButton.new()
+	release.button_index = button_index
+	release.pressed = false
+	Input.parse_input_event(release)
 	await _tick(2)
+
+
+func _press_b() -> void:
+	await _press_physical(JOY_BUTTON_B)
 
 
 ## THE FOCUS INVARIANT: while the board owns input, nothing holds real focus.
@@ -126,6 +129,10 @@ func _ready() -> void:
 	assert(nav._cursor != null and nav._cursor.visible, "no visible cursor")
 	var hint_cluster: Control = board.get_node("HandHintCluster")
 	assert(not hint_cluster.visible, "hand-hint cluster visible during a prompt")
+	# A is consumed by the zone toggle here — the Confirm button's glyph must
+	# advertise the button that actually presses it (pad_end_main / X).
+	assert(board.confirm_glyph.action == &"pad_end_main",
+		"Confirm glyph not context-flipped to pad_end_main: %s" % board.confirm_glyph.action)
 
 	await _tap(&"pad_confirm")
 	assert(sel._zones_target_selected == [1], "confirm did not select zone 2: %s" % str(sel._zones_target_selected))
@@ -181,10 +188,34 @@ func _ready() -> void:
 	await _tap(&"pad_focus_log")
 	assert(nav._element == "bot_z2", "same-bumper press did not return the cursor")
 
-	# End the prompt so browse mode resumes.
-	sel._finish_zones_target()
-	await _tick(2)
+	# --- X (pad_end_main) finalizes the selection from inside the jail ---
+	# Exact-N prompt: Confirm stays disabled at 2/3, and X falls through to
+	# nothing (End Main is disabled during prompts) — the selection survives.
+	assert(board.btn_confirm.disabled, "Confirm enabled below the exact count")
+	await _press_physical(JOY_BUTTON_X)
+	assert(sel._zones_target_selecting, "X below the exact count ended the prompt")
+	assert(sel._zones_target_selected == [1, 3], "X below the exact count changed the selection")
+	# Third pick: z2 up -> z8, left wraps -> z6 (valid).
+	await _tap(&"pad_nav_up")
+	await _tap(&"pad_nav_left")
+	assert(nav._element == "bot_z6", "walk did not reach bot_z6: %s" % nav._element)
+	await _tap(&"pad_confirm")
+	assert(sel._zones_target_selected == [1, 3, 5], "third confirm failed: %s" % str(sel._zones_target_selected))
+	assert(not board.btn_confirm.disabled, "Confirm still disabled at 3/3")
+	await _press_physical(JOY_BUTTON_X)
+	assert(not sel._zones_target_selecting, "X at full count did not finalize the prompt")
 	assert(nav._mode == "none", "context did not clear after prompt")
+
+	# --- Pass confirmation is the one jail whose cursor sits ON the Confirm
+	# button — there the glyph advertises A (pad_confirm) again ---
+	sel._enter_pass_confirmation()
+	await _tick(2)
+	assert(board.confirm_glyph.action == &"pad_confirm",
+		"Confirm glyph not restored to pad_confirm in confirm mode: %s" % board.confirm_glyph.action)
+	sel._cancel_pass_confirmation()
+	await _tick(2)
+	assert(board.confirm_glyph.action == &"pad_end_main",
+		"Confirm glyph did not flip back after leaving confirm mode: %s" % board.confirm_glyph.action)
 
 	# --- Mixed input leaves no stray focus: a mouse click on a board button
 	# grabs REAL focus (the pointer flip releases before the click lands);

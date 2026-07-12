@@ -26,7 +26,6 @@
 [ext_resource type="Texture2D" uid="uid://dk22cytgh5173" path="res://assets/ui/input_glyphs/xbox/face_east.png" id="24_dbwji"]
 [ext_resource type="Script" uid="uid://bgjjvk1cc3mhd" path="res://scenes/board/modules/effect_stack_panel.gd" id="24_es"]
 [ext_resource type="Script" uid="uid://6d08ac1ajb4" path="res://scenes/board/overlays/turn_toast.gd" id="25_tt"]
-[ext_resource type="Texture2D" uid="uid://c5vldcvisuf41" path="res://assets/ui/input_glyphs/xbox/face_south.png" id="26_c0jqv"]
 [ext_resource type="Texture2D" uid="uid://dqq2v00702ymr" path="res://assets/ui/input_glyphs/xbox/face_west.png" id="27_5l0fj"]
 [ext_resource type="Script" path="res://scenes/board/modules/board_layout_controller.gd" id="m_boardlayoutcontroller"]
 [ext_resource type="Script" path="res://scenes/board/modules/card_zoom_controller.gd" id="m_cardzoomcontroller"]
@@ -480,10 +479,11 @@ offset_right = 10.0
 offset_bottom = 9.0
 grow_vertical = 2
 mouse_filter = 2
-texture = ExtResource("26_c0jqv")
+texture = ExtResource("27_5l0fj")
 expand_mode = 1
 stretch_mode = 5
 script = ExtResource("m_controllerglyph")
+action = &"pad_end_main"
 
 [node name="Row1" type="HBoxContainer" parent="ActionPanel" unique_id=446663055]
 layout_mode = 2

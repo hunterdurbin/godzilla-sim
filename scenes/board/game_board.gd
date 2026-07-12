@@ -161,6 +161,7 @@ var _pending_sound_events: PackedStringArray:
 @onready var btn_end_main: Button = $ActionPanel/Row2/EndMain
 @onready var btn_cancel: Button = $ActionPanel/Row0/Cancel
 @onready var btn_confirm: Button = $ActionPanel/Row0/Confirm
+@onready var confirm_glyph: ControllerGlyph = $ActionPanel/Row0/Confirm/ConfirmGlyph
 
 # Deck search UI references
 @onready var deck_search_overlay: DeckSearchOverlayUI = $DeckSearchOverlay

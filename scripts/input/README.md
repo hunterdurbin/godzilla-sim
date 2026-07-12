@@ -135,6 +135,13 @@ Related pieces elsewhere:
   `strategy_target` to the valid strategy slots, choice/confirm onto the
   `choice_<i>` / Confirm button nodes (the choice jail also spans the
   `stack_<i>` rows).
+  **Finalizing multi-selects**: the jails above never include the Confirm
+  button, so X (`pad_end_main` → `SelectionController.press_primary_button()`)
+  presses Confirm/Skip from anywhere inside the jail (`zones_target`,
+  hand multi-discard, skip-able prompts). The Confirm button's
+  ControllerGlyph is context-aware (`_emit_ctx` flips its `action`):
+  it shows `pad_end_main` during those prompts and `pad_confirm` only in
+  the pass-confirmation jail, where the cursor sits on the button itself.
   **Select toggle**: while the effects area is up (choice prompt, or
   pending-effect rows in free browse), Select cycles the cursor between it
   and the board, remembering both sides; during a mandatory choice the
