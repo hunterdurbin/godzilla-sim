@@ -225,13 +225,18 @@ func _refresh() -> void:
 		OverlayGridUtil.focus_index(_grid, focus_idx, _close)
 
 
-## Grid + chrome mesh: stacked toggle above, View Board / Close below (each
-## filtered by visibility — rank-up mode hides Close and the toggle).
+## Vertical band stack matching the VBox layout: stacked toggle, grid, then
+## View Board ABOVE Close (each band filtered by visibility — only the
+## cards-revealed mode shows both buttons, so dpad-down must walk
+## grid -> View Board -> Close, not treat them as a horizontal row).
 func _wire_focus() -> void:
-	var top_chrome: Array[Control] = []
+	var bands: Array[Dictionary] = []
 	if _stacked:
-		top_chrome.append(_stacked)
-	OverlayGridUtil.wire_overlay_focus(_grid, top_chrome, [_view_board, _close])
+		bands.append({"row": [_stacked] as Array[Control]})
+	bands.append({"grid": _grid})
+	bands.append({"row": [_view_board] as Array[Control]})
+	bands.append({"row": [_close] as Array[Control]})
+	OverlayGridUtil.wire_band_stack(bands)
 
 
 func _make_card(card_data: Dictionary, zoom: Callable) -> Control:

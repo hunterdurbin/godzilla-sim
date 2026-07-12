@@ -8,6 +8,9 @@ extends Node
 ##   - card-grid viewer: register_modal focuses the first card, the grid
 ##     meshes into the chrome (dpad reaches Close), A closes, the board
 ##     cursor resumes with no residual focus;
+##   - cards revealed (zone stack viewer): View Board AND Close visible,
+##     stacked vertically — dpad-down walks grid -> View Board -> Close,
+##     A on Close resolves the effect;
 ##   - deck search: grid -> toggle row, toggling Stacked keeps focus, B
 ##     skips; View Board minimizes (context pops, board cursor resumes,
 ##     chip shows) and B restores with focus back in the grid;
@@ -98,6 +101,28 @@ func _ready() -> void:
 	assert(not viewer.visible, "A on Close did not close the viewer")
 	assert(nav._is_active(), "board cursor did not resume after the viewer closed")
 	_assert_no_focus(board, "after viewer close")
+
+	# --- Cards revealed (zone stack viewer): the only mode showing BOTH View
+	# Board and Close, stacked vertically in the VBox — dpad-down must walk
+	# grid -> View Board -> Close; A on Close resolves the effect ---------------
+	var reveal: Node = board.zone_stack_view_overlay
+	var reveal_done: Array = [false]
+	var reveal_cb := func() -> void: reveal_done[0] = true
+	reveal.show_revealed([dicts[0], dicts[1]], "test reveal", reveal_cb)
+	await _tick(2)
+	assert(GamepadHelper.is_top_context(reveal), "revealed viewer did not take the focus context")
+	assert(_is_grid_card(_focus_owner(board)), "revealed first card not focused: %s" % str(_focus_owner(board)))
+
+	await _press_button(JOY_BUTTON_DPAD_DOWN)
+	assert(reveal._view_board.has_focus(), "dpad down did not reach View Board: %s" % str(_focus_owner(board)))
+	await _press_button(JOY_BUTTON_DPAD_DOWN)
+	assert(reveal._close.has_focus(), "dpad down did not reach Close below View Board: %s" % str(_focus_owner(board)))
+	await _press_button(JOY_BUTTON_A)
+	await _tick(2)
+	assert(not reveal.visible, "A on Close did not close the reveal")
+	assert(reveal_done[0], "closing the reveal did not resolve the effect")
+	assert(nav._is_active(), "board cursor did not resume after the reveal closed")
+	_assert_no_focus(board, "after reveal close")
 
 	# --- Deck search: chrome toggle keeps focus, zoom swallows dpad, B skips,
 	# View Board minimize + B restore round-trip --------------------------------

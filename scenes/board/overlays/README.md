@@ -41,6 +41,10 @@ Controller navigation (see `scripts/input/README.md` for the architecture):
   focus_neighbor cycle (toggles above, Skip/Confirm/Close below; hidden
   chrome is filtered per refresh). Chrome buttons are
   `make_pad_focusable`'d so pointer users never see focus rings.
+  Those helpers mesh each chrome list as a HORIZONTAL row — chrome stacked
+  vertically (e.g. `card_grid_viewer.gd`'s View Board above Close) must use
+  `wire_band_stack` with one row band per button, or dpad-down skips the
+  lower button.
 - Rebuilds preserve the pad cursor: capture
   `OverlayGridUtil.focused_index(grid)` BEFORE clearing, restore with
   `focus_index(grid, idx, fallback)` (deferred + revalidated) after.
