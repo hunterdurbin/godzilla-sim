@@ -427,6 +427,12 @@ func _first_ctx_element() -> String:
 	# Keep the cursor where it is when it's already inside the jail.
 	if _ctx_elements.has(_element):
 		return _element
+	# Battle-card play parks the cursor on the player's own monster zone —
+	# a stray confirm there can't misplay into an unintended zone.
+	if _mode == "card_to_zone":
+		var monster_id := _monster_zone_id()
+		if monster_id != "" and _ctx_elements.has(monster_id) and _element_valid(monster_id):
+			return monster_id
 	# Wake up on a prompt-actionable element first — the zone jail spans all
 	# eight zones, but landing on one the prompt rejects would read as broken.
 	var preferred: Array = _ctx_valid_ids()
@@ -437,6 +443,21 @@ func _first_ctx_element() -> String:
 	for id: String in preferred + rest:
 		if _element_valid(id):
 			return id
+	return ""
+
+
+## Element id of the ctx board's monster-zone slot, "" if none. Reads the
+## synced Slot.has_monster_marker rather than game state so it also works on
+## the multiplayer client (no turn_manager there).
+func _monster_zone_id() -> String:
+	var side := _side_for_pid(_ctx_board_pid)
+	var board := _board_for_side(side)
+	if board == null:
+		return ""
+	for i in range(board.zone_slots.size()):
+		var slot: Slot = board.zone_slots[i]
+		if slot and slot.has_monster_marker:
+			return "%s_z%d" % [side, i + 1]
 	return ""
 
 

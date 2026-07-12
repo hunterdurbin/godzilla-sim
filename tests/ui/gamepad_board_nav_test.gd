@@ -524,6 +524,9 @@ func _ready() -> void:
 		await _tick(3)
 		assert(not sel.waiting_for_card_select, "direct play left card selection dangling")
 		if sel.waiting_for_zone_select:
+			var expected := "bot_z%d" % sel.turn_manager.game_state.get_current_player().monster_zone
+			assert(nav._element == expected,
+				"battle-card zone selection should park on the monster zone: %s" % nav._element)
 			await _press_b()
 			assert(not sel.waiting_for_zone_select, "cancel did not exit zone selection")
 		assert(nav._is_active(), "module wedged after direct play")
