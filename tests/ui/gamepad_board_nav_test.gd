@@ -285,6 +285,27 @@ func _ready() -> void:
 	await _tap(&"pad_nav_left")
 	assert(nav._element == "bot_deck", "left off the tracker should return: %s" % nav._element)
 
+	# --- Pile stops synthesize mouse hover: count badges track the cursor ---
+	var bot_pb: Control = nav._board_for_side("bot")
+	assert(bot_pb._deck_count_badge.visible,
+		"deck count badge hidden while the cursor sits on bot_deck")
+	nav._enter_element("bot_discard")
+	await _tick(1)
+	assert(not bot_pb._deck_count_badge.visible,
+		"deck count badge stayed visible after the cursor left the deck")
+	assert(bot_pb._discard_count_badge.visible,
+		"discard count badge hidden while the cursor sits on bot_discard")
+	nav._enter_element("bot_monster_deck")
+	await _tick(1)
+	assert(not bot_pb._discard_count_badge.visible,
+		"discard count badge stayed visible after the cursor left the discard")
+	assert(bot_pb._monster_deck_count_badge.visible,
+		"monster deck count badge hidden while the cursor sits on bot_monster_deck")
+	nav._enter_element("bot_z4")
+	await _tick(1)
+	assert(not bot_pb._monster_deck_count_badge.visible,
+		"monster deck count badge stayed visible after the cursor left the pile")
+
 	# --- RB focuses the tracker; A toggles the setting under the cursor ---
 	await _tap(&"pad_focus_tracker")
 	assert(nav._element.begins_with("trk_"), "RB did not focus the tracker: %s" % nav._element)

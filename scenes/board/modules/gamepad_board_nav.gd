@@ -91,6 +91,9 @@ var _hovered_choice: Button = null
 ## Pending-effect row hbox under the cursor (synthesized mouse signals drive
 ## the same attention pulse + sticky preview the pointer path uses).
 var _hovered_stack: Control = null
+## Pile display (deck/discard/monster deck) under the cursor (synthesized
+## mouse signals drive the count badge + discard top-card preview).
+var _hovered_pile: Control = null
 ## Select-toggle memory: the element on the far side of the last jump ("" =
 ## none). Swapped on every toggle so Select bounces between the same two spots.
 var _select_return: String = ""
@@ -1155,6 +1158,10 @@ func _update_cursor() -> void:
 		var stack := _effect_stack()
 		stack_hover = stack.nav_row_hover(_id_index(_element)) if stack else null
 	_set_hovered_stack(stack_hover)
+	var pile_hover: Control = null
+	if _element.ends_with("_deck") or _element.ends_with("_discard") or _element.ends_with("_monster_deck"):
+		pile_hover = target
+	_set_hovered_pile(pile_hover)
 	var rect := target.get_global_rect()
 	_cursor.visible = true
 	_cursor.global_position = rect.position - Vector2(CURSOR_PAD, CURSOR_PAD)
@@ -1198,6 +1205,19 @@ func _set_hovered_stack(row: Control) -> void:
 		row.mouse_entered.emit()
 
 
+## Pile zones (deck/discard/monster deck) keep their pointer hover handlers
+## (count badge + discard top-card preview) — the cursor synthesizes the same
+## enter/exit signals.
+func _set_hovered_pile(pile: Control) -> void:
+	if pile == _hovered_pile:
+		return
+	if is_instance_valid(_hovered_pile):
+		_hovered_pile.mouse_exited.emit()
+	_hovered_pile = pile
+	if is_instance_valid(pile):
+		pile.mouse_entered.emit()
+
+
 ## Elements move under the cursor — hand cards tween on hover/sort, the
 ## choice panel shrink-wraps itself a frame after it appears and its column
 ## scrolls, stack rows rebuild — so track the ring to the live rect every
@@ -1222,6 +1242,7 @@ func _hide_cursor() -> void:
 	_set_hovered_card(null)
 	_set_hovered_choice(null)
 	_set_hovered_stack(null)
+	_set_hovered_pile(null)
 	if _cursor:
 		_cursor.visible = false
 
