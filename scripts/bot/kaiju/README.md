@@ -26,6 +26,18 @@ their global-RNG call order (and seed-matched sim diffs) are untouched.
   by game phase. Counter/End phases are folded in analytically (mirrors
   `CounterResolver.compute_counter_numbers`); fragile CP from strategy-zone
   sources is discounted via the `modifier_breakdown` data.
+- `kaiju_counter_oracle.gd` — **KaijuCounterOracle**: bridge to
+  `scripts/deck_analysis/` (MaxCounterOptimizer) — "max CP still fieldable
+  ON TOP of the current board": live monster/zones/unders/strategies passed
+  as lock params, the remaining main deck (+hand) as the pool. Own-deck
+  CONTENTS are fair knowledge (the bot built the deck); draw ORDER is not
+  and is never consulted (multiset entries; the optimizer's
+  `deck_order_known` placeholder is where order-awareness would land). This
+  is unrelated to `InfoVisibility`, which governs the OPPONENT's hidden
+  info. Every run is RNG-fenced like planner deliberation (own salt
+  `0x51F0C0DE`), results cached per board/deck composition (cleared per
+  turn), and each optimizer gets `teardown()` before the call returns.
+  Gated behind `config.kaiju_use_counter_oracle` (kaiju() preset only).
 - `kaiju_planner.gd` — **KaijuPlanner**: beam search + per-turn plan cache,
   hooked from `BotPlayer._on_awaiting_action` when `config.use_planner`.
   When `config.kaiju_opponent_ply` is on, the top `kaiju_finalists` end-of-
@@ -91,6 +103,27 @@ derived value after. Consequences:
   7.5.4) converts the play into a fresh draw. Paired with the refill-aware
   `hand_diff` (the evaluator projects our imminent refill to 5, so a dumped
   hand no longer reads as card loss).
+- **Opponent next-turn zone projection** (v1.4, `_projected_opp_zone`):
+  where their monster will be by the end of THEIR next turn — main-phase
+  invade (+`_expected_opp_invade_steps`, gated on both invasion-block
+  queries) then the end-phase advance (+1, capped at zone 8); crossing past
+  8 (projection 9 = lethal) only while our zone-8 slot is empty. The
+  `opp_lethal_penalty` weight fires when projection ≥ 9 and our counter
+  doesn't land this leaf — which prices all three outs at once (counter
+  them, block zone 8, win first). Projection ≥ 8 ("at the gates") bypasses
+  the dead-counter gate, and true lethality (≥ 9) exempts the race-counter
+  restraint: survival counters are never suppressed. `zone8_defense` gates
+  on the union of the old zone-6 rule and projection ≥ 8 (widening only).
+- **Counter ceiling / dead-counter gate** (v1.4, `KaijuCounterOracle`):
+  once per match `analyze_deck` stores the deck's unconstrained max-CP
+  ceiling on `config.kaiju_deck_counter_ceiling`; each deliberation the planner
+  sets `KaijuEvaluator.turn_counter_ceiling` from
+  `BotPlayer.max_counter_power_remaining()` (current board locked, deck+hand
+  pool). When even that best case can't reach the opponent's threat, the
+  evaluator multiplies the counter-pursuit terms (`cp_pressure`,
+  `counter_them_bonus`) by the `dead_counter_scale` weight — CP toward an
+  unreachable wall stops outbidding the race/board terms. Defensive terms
+  (fear of BEING countered) are untouched.
 - **Opponent profile** (`KaijuOpponentProfile`, LIVE ONLY — wired by
   game_session, never by the sim runner, keeping headless sims
   seed-deterministic): scans the current version's replays for games against

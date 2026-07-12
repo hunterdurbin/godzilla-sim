@@ -3,7 +3,10 @@
 Deck-builder analysis that answers questions about a decklist by
 **constructing a valid `GameState` and asking the real engine**, never by
 hand-summing card fields. Depends on `core/` + `effects/` + `cards/`
-(logic layer only, `RefCounted`, UI-free); `scenes/deck_builder/` calls in.
+(logic layer only, `RefCounted`, UI-free). Two callers: the deck builder
+(`scenes/deck_builder/max_counter_dialog.gd`, unconstrained decklist
+preview) and the KAIJU bot (`scripts/bot/kaiju/kaiju_counter_oracle.gd`,
+live-board-locked "max CP still fieldable" runs).
 
 ## Files
 
@@ -44,10 +47,11 @@ queried at counter time must be genuinely true on the constructed board):
 
 Assignment keys: `monster`, `monster_zone`, `zones[8]` (one entry per
 strategy zone in `strategies`), `rage`, plus optional `opp_monster_zone`
-(default 1) and `unders`
+(default 1), `unders`
 ({zone_idx → card} tucked beneath that zone's top; one under max; buried
 cards are data only — their own effects are inactive, and they are consumed
-from the pool like any fielded card).
+from the pool like any fielded card), and `monster_stack` (a live caller's
+REAL stack used verbatim instead of the synthesized best-case one).
 
 `teardown()` is mandatory (breaks the ActionHandler/EffectHandler cycles —
 same contract as every engine-stack owner).
@@ -61,7 +65,23 @@ step is one bounded unit so UI callers can yield between frames — or call
 `opp_monster_zone` 0|1-8, `rage` -1|0-10 (0/-1 = unconstrained),
 `strategy_zone_count` 2|3 (3 = assume EBP03-013's permanent expansion; the
 dialog only shows the option — defaulted to 3 — when the monster deck runs
-that card, and pins 2 otherwise). `result()`
+that card, and pins 2 otherwise).
+
+Live-board lock params (the bot's constrained runs; empty = unchanged v1
+search): `locked_zones` / `locked_unders` ({zone_idx → card}),
+`locked_strategies` ({slot_idx → card}), `locked_monster` (pins the config —
+`monster_entries` may then be empty), `monster_stack` (passthrough to
+`apply`). Locked cards are fixed occupants: pre-placed by
+`_empty_assignment`, skipped by every fill/replace/relocate/tuck/strategy
+pass, re-stamped into a `_lk_` id namespace so live instance ids can't
+collide with `_expand_entries` ids in `_board_valid`'s uniqueness set.
+`locked_zones` must not include `monster_zone - 1` (the crush rule keeps
+live boards out of that state). Entries hold only the still-AVAILABLE pool —
+locked cards are not also entries. Work bounds: `finalists` (default 3),
+`improve_passes` (default 3; 0 = seed only) — the bot passes 1/1 (or /0
+when nothing is free). `deck_order_known` is a reserved no-op placeholder:
+the pool is a multiset (own-deck contents are inferable, draw order is
+not); a future version may weight candidates by draw distance. `result()`
 returns `{total_cp, monster, monster_zone, zones[8], strategies[2..3],
 zone_cp[8], zone_mods[8], monster_cp_mod, strategy_cp_mods, rage,
 opp_monster_zone, unders}` — all numbers read back from

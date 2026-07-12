@@ -172,6 +172,14 @@ var kaiju_block_clear_scale: float = 0.5 # opp_zone8_block ×(1 + scale×(1−cl
 # game_session). Empty = disabled. NEVER set in headless sims — KAIJU seed
 # determinism depends on it staying empty there.
 var kaiju_opponent_profile: Dictionary = {}
+# Counter oracle (KaijuCounterOracle -> MaxCounterOptimizer bridge): per-turn
+# "max CP still fieldable on top of the current board from the remaining
+# deck (+hand)". Only the kaiju() preset enables it; every oracle run is
+# RNG-fenced, so per-seed determinism holds.
+var kaiju_use_counter_oracle: bool = false
+# Unconstrained deck counter ceiling, set once by BotPlayer.analyze_deck()
+# when the oracle is enabled. -1 = unset.
+var kaiju_deck_counter_ceiling: int = -1
 
 # Phase-aware evaluation weights. Phases latch on the game's high-water mark
 # (max monster zone either player has reached, or turn count) — see
@@ -196,11 +204,13 @@ var kaiju_eval_weights: Dictionary = {
 		"counter_retreat_penalty": 60.0,
 		"counter_them_bonus": 120.0,
 		"race_counter_restraint": 0.0,
+		"dead_counter_scale": 1.0,
 		"draw_tempo": 4.0,
 		"hand_bricks": 6.0,
 		"opp_cp_growth": 1500.0,
 		"opp_invade_threat": 15.0,
 		"opp_rankup_threat": 10.0,
+		"opp_lethal_penalty": 150.0,
 		"zone8_defense": 40.0,
 		"opp_zone8_block": 30.0,
 		"fragile_cp_discount": 0.15,
@@ -224,11 +234,13 @@ var kaiju_eval_weights: Dictionary = {
 		"counter_retreat_penalty": 90.0,
 		"counter_them_bonus": 180.0,
 		"race_counter_restraint": 300.0,
+		"dead_counter_scale": 0.5,
 		"draw_tempo": 3.0,
 		"hand_bricks": 8.0,
 		"opp_cp_growth": 1800.0,
 		"opp_invade_threat": 25.0,
 		"opp_rankup_threat": 20.0,
+		"opp_lethal_penalty": 400.0,
 		"zone8_defense": 80.0,
 		"opp_zone8_block": 60.0,
 		"fragile_cp_discount": 0.15,
@@ -252,11 +264,13 @@ var kaiju_eval_weights: Dictionary = {
 		"counter_retreat_penalty": 140.0,
 		"counter_them_bonus": 240.0,
 		"race_counter_restraint": 420.0,
+		"dead_counter_scale": 0.4,
 		"draw_tempo": 1.5,
 		"hand_bricks": 10.0,
 		"opp_cp_growth": 2000.0,
 		"opp_invade_threat": 45.0,
 		"opp_rankup_threat": 30.0,
+		"opp_lethal_penalty": 700.0,
 		"zone8_defense": 160.0,
 		"opp_zone8_block": 120.0,
 		"fragile_cp_discount": 0.15,
@@ -353,6 +367,7 @@ static func kaiju() -> BotConfig:
 	var c := hard()
 	c.action_delay = 0.2
 	c.use_planner = true
+	c.kaiju_use_counter_oracle = true
 	return c
 
 

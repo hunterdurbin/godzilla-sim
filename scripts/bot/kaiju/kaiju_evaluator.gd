@@ -18,6 +18,13 @@ const COUNTER_DEATH_PENALTY: float = 1e6
 
 var config: BotConfig
 
+## Root-state "max CP still fieldable on the current board" for the current
+## deliberation, set by KaijuPlanner from BotPlayer.max_counter_power_remaining()
+## (KaijuCounterOracle). -1 = oracle off. A per-deliberation constant, so it
+## can't rank leaves by itself — it gates the counter-pursuit terms via the
+## dead_counter_scale weight (see evaluate()).
+var turn_counter_ceiling: int = -1
+
 
 func _init(cfg: BotConfig) -> void:
 	config = cfg
@@ -102,10 +109,28 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	# it wins the game outright.
 	var our_cp: int = _effective_counter_cp(q, p)
 	var their_threat: int = q.get_effective_threat_level(1 - pid)
+	var counter_lands: bool = not q.is_counter_prevented(1 - pid, our_cp) \
+			and our_cp >= their_threat
+	# Where the opponent's monster will be by the end of THEIR next turn:
+	# main-phase invade (+1..2) then end-phase advance (+1, capped at 8).
+	# 9 = they can cross past zone 8 and win next turn.
+	var opp_invade_steps: float = _expected_opp_invade_steps(o)
+	var opp_next_zone: int = _projected_opp_zone(q, p, o, pid, opp_invade_steps)
+	# Dead-counter gate: when even the BEST-CASE remaining deck (oracle
+	# ceiling, computed at the deliberation root) cannot reach their threat,
+	# stop paying full price for CP accumulation toward an unreachable wall —
+	# the race/board terms should win those lines instead. Ceiling >= threat
+	# (or oracle off) leaves the counter terms untouched. NEVER gated once
+	# the opponent projects to zone 8+ next turn (at the gates): from there
+	# counter pursuit is defense, and the ceiling is a lower bound that can
+	# undercount effect-driven CP — survival counters stay fully priced.
+	if turn_counter_ceiling >= 0 and turn_counter_ceiling < their_threat \
+			and opp_next_zone < 8:
+		counter_scale *= w.get("dead_counter_scale", 1.0)
 	# Continuous pressure gradient so the search values every CP step toward
 	# a counter, not just the moment it lands.
 	score += w["cp_pressure"] * counter_scale * clampf(our_cp - their_threat, -15000.0, 15000.0)
-	if not q.is_counter_prevented(1 - pid, our_cp) and our_cp >= their_threat:
+	if counter_lands:
 		if not re.can_opponent_rank_up(o):
 			return WIN_SCORE * 0.5 # counter victory resolves this counter phase
 		score += w["counter_them_bonus"] * counter_scale
@@ -118,8 +143,12 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 		# invasion viability: a deck that can't finish the race should still
 		# take counter progress.
 		var race_w: float = w.get("race_counter_restraint", 0.0) * viability
-		if race_w != 0.0 and p.monster_zone >= 6 and o.monster_zone >= 6 \
-				and p.monster_zone > o.monster_zone and _holds_invade_card(p):
+		# Never restrain when the opponent is lethal next turn — the counter
+		# retreats them (8->3/7->4/6->5) and removes lethality; there is no
+		# "next turn" to protect the race for.
+		if race_w != 0.0 and opp_next_zone < 9 and p.monster_zone >= 6 \
+				and o.monster_zone >= 6 and p.monster_zone > o.monster_zone \
+				and _holds_invade_card(p):
 			score -= race_w
 	elif refill_ok:
 		# Not countering this turn (CP short of their threat): each card below
@@ -178,13 +207,24 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 		var invade_factor: float = lerpf(1.0,
 				clampf(float(op.get("invade_tempo", 0.8)) / 0.8
 						+ 0.2 * float(op.get("early_invader", 0.0)), 0.6, 1.7), trust)
-		score -= w["opp_invade_threat"] * invade_factor * _expected_opp_invade_steps(o)
+		score -= w["opp_invade_threat"] * invade_factor * opp_invade_steps
 	if not re.can_opponent_rank_up(o):
 		# They lose to a single successful counter — strong incentive to press.
 		score += w["opp_rankup_threat"]
+	# Lethal-next-turn: they can cross past zone 8 on their next turn (win,
+	# rule 5.14 crossing + the win check). The outs from this leaf are
+	# countering them THIS turn (counter_lands), occupying our own zone 8
+	# (the projection then caps at 8 and the penalty vanishes), or winning
+	# first (WIN_SCORE already returned). Tunable, NOT terminal — the
+	# projection rides the COUNTS invade estimate and can be wrong.
+	if opp_next_zone >= 9 and not counter_lands:
+		score -= w.get("opp_lethal_penalty", 0.0)
 
 	# --- Zone 8 endgame control ---
-	if p.zone_has_battle_card(7) and o.monster_zone >= 6:
+	# Widening union: the old crude "+2" gate (zone 6+) keeps every position
+	# it defended (COUNTS projects short for empty-handed opponents who will
+	# refill); the projection additionally fires early for known 2-icon hands.
+	if p.zone_has_battle_card(7) and (o.monster_zone >= 6 or opp_next_zone >= 8):
 		score += w["zone8_defense"]
 	if o.zone_has_battle_card(7) and p.monster_zone >= 6:
 		# Being blocked at zone 8 costs more when the deck has no destruction
@@ -314,6 +354,34 @@ func _defensive_board_cp(q: EffectQueries, pid: int, discount: float) -> float:
 				fragile += entry.get("amount", 0)
 		total += cp - discount * maxf(0.0, fragile)
 	return total
+
+
+## Zone the opponent's monster is projected to reach by the end of THEIR
+## next turn: main-phase invasion steps (rule 5.14, once per turn) followed
+## by the end-phase advance (rule 7.5.2). Advance is capped at zone 8 and
+## never crosses (phase_actions breaks past zone 7); only invasion crosses
+## past 8, and only while OUR zone-8 slot is empty (invasion_resolver checks
+## opponent.zone_has_battle_card(7)). Returns 9 = "they can win next turn".
+## Known underestimates (acceptable): their start-phase draw isn't added to
+## the COUNTS hand-size heuristic, and get_invasion_advance_bonus is skipped
+## (it needs the concrete invade icon).
+func _projected_opp_zone(q: EffectQueries, p: PlayerState, o: PlayerState,
+		pid: int, invade_steps: float) -> int:
+	if o.monster_zone > 8:
+		return 9
+	var steps: int = 0
+	# Their invasion: stopped by our defensive effects (defender-side query)
+	# or their own invasion lock. has_invaded_this_turn resets at their start.
+	if not q.is_invasion_blocked(pid) and not q.is_own_invasion_blocked(1 - pid):
+		steps = int(roundf(invade_steps)) # DECKLIST fractions: >= 0.5 counts
+	var projected: int = o.monster_zone + steps
+	if projected > 8:
+		# Crossing past 8 wins only while our zone 8 has no battle card.
+		return 9 if not p.zone_has_battle_card(7) else 8
+	# End-phase advance happens AFTER the invade, capped at zone 8.
+	if not q.is_monster_advance_blocked(1 - pid):
+		projected = mini(projected + 1 + q.get_extra_end_phase_advance(1 - pid), 8)
+	return projected
 
 
 ## Expected invasion steps available to the opponent next turn, by how much

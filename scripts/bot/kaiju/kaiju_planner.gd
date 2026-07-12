@@ -56,6 +56,13 @@ func decide_action(_valid_actions: Array) -> Array:
 		print("[Kaiju] t%d plan DIVERGED (hash/card mismatch), replanning" % gs.turn_number)
 	_plan.clear()
 
+	# Root-state counter ceiling for this deliberation. Computed BEFORE the
+	# planner fence: the oracle self-fences (seeds from its composition key,
+	# restores a derived stream), so _search's stream below stays fully
+	# determined by the planner fence either way.
+	_evaluator.turn_counter_ceiling = bot.max_counter_power_remaining() \
+			if bot.config.kaiju_use_counter_oracle else -1
+
 	var fence: int = hash([live_hash, gs.turn_number, "kaiju"])
 	seed(fence)
 	_plan = await _search(bot, gs)

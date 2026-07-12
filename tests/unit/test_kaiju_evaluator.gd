@@ -255,6 +255,123 @@ func test_hand_diff_projects_end_phase_refill() -> void:
 	assert_bool(_score_with(starved, config) < _score_with(dumped, config)).is_true()
 
 
+# --- Opponent next-turn zone projection + lethal-next-turn pricing ---
+
+
+## Direct helper checks: invade_steps is passed explicitly, so each case pins
+## one branch (COUNTS estimation itself is covered by the integration tests).
+func _projection(state: GameState, invade_steps: float) -> int:
+	var config := BotConfig.kaiju()
+	var rollout := KaijuRollout.new(KaijuRollout.snapshot(state), 1, config)
+	var rs: GameState = rollout.state()
+	var projected: int = KaijuEvaluator.new(config)._projected_opp_zone(
+			rollout.queries(), rs.players[1], rs.players[0], 1, invade_steps)
+	rollout.release()
+	return projected
+
+
+func test_projected_opp_zone_invade_plus_advance() -> void:
+	var state := _build_state(3, 0, 0)
+	state.players[0].monster_zone = 5
+	assert_int(_projection(state, 1.0)).is_equal(7) # invade 1 + advance 1
+	assert_int(_projection(state, 0.0)).is_equal(6) # advance only
+	assert_int(_projection(state, 2.0)).is_equal(8) # 5+2=7, advance caps at 8
+
+
+func test_projected_opp_zone_advance_never_crosses() -> void:
+	# At zone 8 with no invade the end-phase advance never crosses (the
+	# advance loop breaks past zone 7) — only invasion can win.
+	var state := _build_state(3, 0, 0)
+	state.players[0].monster_zone = 8
+	assert_int(_projection(state, 0.0)).is_equal(8)
+
+
+func test_projected_opp_zone_lethal_and_zone8_block() -> void:
+	var state := _build_state(3, 0, 0)
+	state.players[0].monster_zone = 8
+	assert_int(_projection(state, 1.0)).is_equal(9) # crossing wins
+	# Our zone-8 battle card blocks the crossing: caps at 8.
+	var blocked := _build_state(3, 0, 0)
+	blocked.players[0].monster_zone = 8
+	blocked.players[1].push_zone_card(7, CardData.get_card_by_id(VANILLA_BATTLE).duplicate(true))
+	assert_int(_projection(blocked, 1.0)).is_equal(8)
+
+
+func test_expected_invade_steps_full_visibility_reads_icons() -> void:
+	# FULL visibility reads the opponent's actual hand: a 2-icon card projects
+	# a 2-zone invade (7 + 2 crosses past 8 -> lethal). Must be a REAL card —
+	# the rollout snapshot round-trips cards through the serializer.
+	var state := _build_state(3, 0, 0)
+	state.players[0].monster_zone = 7
+	state.players[0].hand.append(CardData.get_card_by_id("ESD01-012").duplicate(true)) # invasion_icon 2
+	var config := BotConfig.kaiju()
+	config.kaiju_info_visibility = BotConfig.InfoVisibility.FULL
+	var rollout := KaijuRollout.new(KaijuRollout.snapshot(state), 1, config)
+	var rs: GameState = rollout.state()
+	var evaluator := KaijuEvaluator.new(config)
+	var steps: float = evaluator._expected_opp_invade_steps(rs.players[0])
+	var projected: int = evaluator._projected_opp_zone(
+			rollout.queries(), rs.players[1], rs.players[0], 1, steps)
+	rollout.release()
+	assert_float(steps).is_equal(2.0)
+	assert_int(projected).is_equal(9)
+
+
+func test_opp_lethal_penalty_prices_the_three_outs() -> void:
+	# Opponent at zone 8 with a card in hand = lethal next turn (COUNTS).
+	# The penalty must vanish when our zone 8 blocks the crossing, and when
+	# our board CP counters them this turn.
+	var config := _isolated_config("opp_lethal_penalty", 400.0)
+
+	var lethal := _build_state(3, 0, 0)
+	lethal.players[0].monster_zone = 8
+
+	var blocked := _build_state(3, 0, 0)
+	blocked.players[0].monster_zone = 8
+	blocked.players[1].push_zone_card(7, CardData.get_card_by_id(VANILLA_BATTLE).duplicate(true))
+
+	# 4 x 2000 CP >= their 6000 threat: our counter fires this turn. Their
+	# monster_deck stays populated (fixture default), so the counter-victory
+	# WIN_SCORE shortcut doesn't preempt the comparison.
+	var countering := _build_state(3, 0, 0)
+	countering.players[0].monster_zone = 8
+	for i in range(4):
+		countering.players[1].push_zone_card(i, CardData.get_card_by_id(VANILLA_BATTLE).duplicate(true))
+
+	var lethal_score := _score_with(lethal, config)
+	assert_bool(lethal_score < _score_with(blocked, config)).is_true()
+	assert_bool(lethal_score < _score_with(countering, config)).is_true()
+
+
+func test_dead_counter_gate_bypassed_when_opponent_at_the_gates() -> void:
+	# With the oracle ceiling below their threat and dead_counter_scale 0, the
+	# cp_pressure gradient is fully suppressed — EXCEPT once the opponent
+	# projects to zone 8+ next turn: from there counter pursuit is defense.
+	# COUNTS projection: zone 6 + invade 1 + advance 1 = 8 (bypass boundary).
+	var config := _isolated_config("cp_pressure", 0.010)
+	config.kaiju_eval_weights["mid"]["dead_counter_scale"] = 0.0
+
+	var scores: Dictionary = {}
+	for opp_zone in [3, 6, 8]:
+		for board_cards in [0, 2]:
+			var state := _build_state(3, 0, 0)
+			state.players[0].monster_zone = opp_zone
+			for i in range(board_cards):
+				state.players[1].push_zone_card(i, CardData.get_card_by_id(VANILLA_BATTLE).duplicate(true))
+			var rollout := KaijuRollout.new(KaijuRollout.snapshot(state), 1, config)
+			var evaluator := KaijuEvaluator.new(config)
+			evaluator.turn_counter_ceiling = 0 # < their threat: gate active
+			scores["%d_%d" % [opp_zone, board_cards]] = evaluator.evaluate(rollout, 1, "mid")
+			rollout.release()
+
+	# Far away (opp at 3, projects to 5): gate zeroes the gradient.
+	assert_float(scores["3_2"]).is_equal_approx(scores["3_0"], 0.01)
+	# At the gates (opp at 6, projects to 8): bypass keeps the gradient.
+	assert_bool(scores["6_2"] > scores["6_0"]).is_true()
+	# Lethal (opp at 8, projects to 9): bypass keeps the gradient.
+	assert_bool(scores["8_2"] > scores["8_0"]).is_true()
+
+
 func test_opponent_profile_raises_projected_counter_risk() -> void:
 	# 2 opponent board cards + hand; neutral prior thinks we're safe at
 	# threat 6000. A measured heavy deployer (cp_per_card 20k) is not safe.

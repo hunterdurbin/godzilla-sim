@@ -59,6 +59,10 @@ var _scoring: RefCounted = null
 # config.use_planner. Holds a weakref back to this bot.
 var _planner: RefCounted = null
 
+# Deck-analysis bridge (max CP still fieldable on the current board). Inert
+# unless config.kaiju_use_counter_oracle — see max_counter_power_remaining().
+var counter_oracle: KaijuCounterOracle = KaijuCounterOracle.new()
+
 # Sub-decisions the winning KAIJU rollout recorded for the current plan step
 # ({"m": kind, "v": value} entries, primed by KaijuPlanner.decide_action).
 # The _on_* handlers consume them in order so live play follows the planned
@@ -113,6 +117,9 @@ func analyze_deck() -> void:
 		print("[Kaiju] Deck profile — viability %.2f (clear %.1f, destroys %d, adv %d, steps %d)" % [
 				dp["invasion_viability"], dp["clear_capability"], dp["destroy_count"],
 				dp["advance_opp_count"], dp["invade_steps"]])
+		if config.kaiju_use_counter_oracle:
+			config.kaiju_deck_counter_ceiling = KaijuCounterOracle.deck_ceiling(player)
+			print("[Kaiju] Deck counter ceiling: %d" % config.kaiju_deck_counter_ceiling)
 
 	if config.forced_playstyle >= 0:
 		playstyle = config.forced_playstyle as Playstyle
@@ -692,6 +699,18 @@ func get_cp_gap() -> int:
 func can_counter_opponent() -> bool:
 	## Returns true if the bot's current counter power meets or exceeds the opponent's threat.
 	return get_cp_gap() <= 0
+
+
+func max_counter_power_remaining(include_hand: bool = true) -> int:
+	## Best-case total CP the bot could still field ON TOP of its current
+	## board (monster/zones/strategies locked in place) from the remaining
+	## main deck (+ hand by default) — engine-evaluated lower bound via the
+	## deck-analysis optimizer, cached per composition (KaijuCounterOracle).
+	## Own-deck CONTENTS are fair knowledge; draw order is never consulted.
+	## -1 when the oracle is disabled (non-KAIJU tiers).
+	if not config.kaiju_use_counter_oracle:
+		return -1
+	return counter_oracle.max_remaining(game_state, bot_player_id, include_hand)
 
 
 func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: PlayerState, card: Dictionary = {}) -> int:

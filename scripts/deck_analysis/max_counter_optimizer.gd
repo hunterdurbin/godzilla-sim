@@ -97,15 +97,69 @@ var _fixed_opp_zone: int = 0      # 0 = Any (best-case sweep in _improve)
 var _fixed_rage: int = -1         # -1 = Auto (search at SEARCH_RAGE, recheck 0)
 var _strategy_zone_count: int = 2 # 3 = assume EBP03-013's expansion resolved
 
+# Live-board locks (see setup params). Empty = unconstrained (v1 behavior).
+# Locked cards are re-stamped copies (see _stamp_locked) pre-placed by
+# _empty_assignment and never moved/evicted by any search pass.
+var _locked_zones: Dictionary = {}       # zone_idx -> card kept fixed there
+var _locked_unders: Dictionary = {}      # zone_idx -> card under a locked top
+var _locked_strategies: Dictionary = {}  # slot_idx -> strategy kept fixed
+var _locked_monster: Dictionary = {}
+var _monster_stack: Array = []
+
+# Work bounds (see setup params). Defaults reproduce the full search.
+var _finalists_count: int = FINALISTS
+var _improve_passes: int = IMPROVE_PASSES
+
 
 ## params (all optional): monster_zone 0|1-8, opp_monster_zone 0|1-8,
 ## rage -1|0-10, strategy_zone_count 2|3 (3 assumes EBP03-013's expansion).
 ## Zero/-1 = unconstrained (v1 behavior).
+##
+## Live-board locks (bot callers — see KaijuCounterOracle). Locked cards are
+## fixed occupants: never moved, evicted, swapped, or tucked over. main/
+## monster entries hold only the still-available pool (locked cards are NOT
+## also entries):
+##   locked_zones: Dictionary zone_idx (0-7) -> card dict kept fixed there.
+##     Must not include monster_zone - 1 (live states can't produce that).
+##   locked_unders: Dictionary zone_idx -> card tucked under a locked top
+##   locked_strategies: Dictionary slot_idx -> strategy card kept fixed
+##   locked_monster: Dictionary — pins the monster config (monster_entries
+##     may then be [])
+##   monster_stack: Array — passed through to MaxCounterState.apply verbatim
+##     instead of the synthesized best-case stack
+## Work bounds (defaults reproduce the unconstrained search):
+##   finalists: int — improvement-pass finalists (default 3)
+##   improve_passes: int — passes per finalist (default 3; 0 = seed only)
+## deck_order_known: bool — reserved, currently ignored. The pool is a
+##   multiset (order-blind by design: own-deck CONTENTS are inferable, draw
+##   ORDER is not); a future version may weight candidates by draw distance
+##   when true.
 func setup(monster_entries: Array, main_entries: Array, params: Dictionary = {}) -> void:
 	_fixed_monster_zone = clampi(params.get("monster_zone", 0), 0, 8)
 	_fixed_opp_zone = clampi(params.get("opp_monster_zone", 0), 0, 8)
 	_fixed_rage = clampi(params.get("rage", -1), -1, SEARCH_RAGE)
 	_strategy_zone_count = clampi(params.get("strategy_zone_count", 2), 2, 3)
+	_finalists_count = maxi(int(params.get("finalists", FINALISTS)), 1)
+	_improve_passes = maxi(int(params.get("improve_passes", IMPROVE_PASSES)), 0)
+	var stamp := 0
+	_locked_zones = {}
+	var locked_zones: Dictionary = params.get("locked_zones", {})
+	for idx in locked_zones:
+		_locked_zones[int(idx)] = _stamp_locked(locked_zones[idx], stamp)
+		stamp += 1
+	_locked_unders = {}
+	var locked_unders: Dictionary = params.get("locked_unders", {})
+	for idx in locked_unders:
+		_locked_unders[int(idx)] = _stamp_locked(locked_unders[idx], stamp)
+		stamp += 1
+	_locked_strategies = {}
+	var locked_strategies: Dictionary = params.get("locked_strategies", {})
+	for idx in locked_strategies:
+		_locked_strategies[int(idx)] = _stamp_locked(locked_strategies[idx], stamp)
+		stamp += 1
+	var locked_monster: Dictionary = params.get("locked_monster", {})
+	_locked_monster = _stamp_locked(locked_monster, stamp) if not locked_monster.is_empty() else {}
+	_monster_stack = (params.get("monster_stack", []) as Array).duplicate()
 	var main_cards := _expand_entries(main_entries)
 	var monster_cards := _expand_entries(monster_entries)
 	_main_cards = main_cards
@@ -115,11 +169,23 @@ func setup(monster_entries: Array, main_entries: Array, params: Dictionary = {})
 	_build_pools(main_cards, monster_cards)
 	_configs = []
 	var monsters: Array = _monster_pool if not _monster_pool.is_empty() else [{}]
+	if not _locked_monster.is_empty():
+		monsters = [_locked_monster]
 	var mzs: Array = [_fixed_monster_zone] if _fixed_monster_zone > 0 else range(1, 9)
 	for monster in monsters:
 		for mz in mzs:
 			_configs.append({"monster": monster, "monster_zone": mz})
 	_phase = 0
+
+
+## Locked cards enter the search as fixed occupants. Re-stamp their ids into
+## a dedicated namespace: live instance ids and _expand_entries ids share the
+## BASE_..._N shape and could collide in _board_valid's uniqueness set.
+## CardUtils.base_id still resolves (splits at the first "_").
+func _stamp_locked(card: Dictionary, n: int) -> Dictionary:
+	var copy: Dictionary = card.duplicate(true)
+	copy["id"] = "%s_lk_%d" % [CardUtils.base_id(card), n]
+	return copy
 
 
 ## One bounded unit of work: seeds one config, or runs one improvement pass
@@ -140,9 +206,12 @@ func step() -> bool:
 				_phase = 2
 				return false
 			var finalist: Dictionary = _finalists[0]
+			if _improve_passes <= 0:
+				_seeded.append(_finalists.pop_front())
+				return true
 			finalist["passes"] += 1
 			var improved := _improve(finalist)
-			if not improved or finalist["passes"] >= IMPROVE_PASSES:
+			if not improved or finalist["passes"] >= _improve_passes:
 				_seeded.append(_finalists.pop_front())
 			return true
 	return false
@@ -418,6 +487,8 @@ func _solo_scores(config: Dictionary) -> Dictionary:
 		var assignment := _empty_assignment(config)
 		var placed_slot := -1
 		for slot in slots:
+			if not assignment["zones"][slot].is_empty():
+				continue  # locked slot
 			assignment["zones"][slot] = card
 			if _board_valid(assignment):
 				placed_slot = slot
@@ -440,26 +511,35 @@ func _solo_scores(config: Dictionary) -> Dictionary:
 
 
 func _pick_strategies(assignment: Dictionary) -> void:
-	## Fill the strategy slots with the best measured deltas (ties broken
-	## by id for determinism). Zero-delta strategies are still eligible —
-	## they can satisfy "strategy in play" conditions elsewhere.
+	## Fill the FREE strategy slots (locked slots keep their occupants) with
+	## the best measured deltas (ties broken by id for determinism).
+	## Zero-delta strategies are still eligible — they can satisfy "strategy
+	## in play" conditions elsewhere.
+	var free_slots: Array[int] = []
+	for i in range(_strategy_zone_count):
+		if not _locked_strategies.has(i):
+			free_slots.append(i)
+	if free_slots.is_empty():
+		return
+	var probe: int = free_slots[0]
 	var base := _score(assignment)
 	var deltas: Array = []
 	for card in _strategy_pool:
-		assignment["strategies"][0] = card
+		assignment["strategies"][probe] = card
 		deltas.append({"card": card, "delta": _score(assignment) - base})
-		assignment["strategies"][0] = {}
+		assignment["strategies"][probe] = {}
 	deltas.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		if a["delta"] != b["delta"]:
 			return a["delta"] > b["delta"]
 		return a["card"]["id"] < b["card"]["id"])
-	var slot := 0
+	var slot_i := 0
 	for entry in deltas:
-		if slot >= _strategy_zone_count or entry["delta"] < 0:
+		if slot_i >= free_slots.size() or entry["delta"] < 0:
 			break
+		var slot: int = free_slots[slot_i]
 		assignment["strategies"][slot] = entry["card"]
 		if _board_valid(assignment):
-			slot += 1
+			slot_i += 1
 		else:
 			# e.g. fielding this strategy would consume a mill witness a
 			# placed token needs.
@@ -471,8 +551,8 @@ func _pick_strategies(assignment: Dictionary) -> void:
 func _pick_finalists() -> void:
 	_seeded.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return a["score"] > b["score"])
-	_finalists = _seeded.slice(0, FINALISTS)
-	_seeded = _seeded.slice(FINALISTS)
+	_finalists = _seeded.slice(0, _finalists_count)
+	_seeded = _seeded.slice(_finalists_count)
 
 
 func _improve(finalist: Dictionary) -> bool:
@@ -500,6 +580,8 @@ func _improve(finalist: Dictionary) -> bool:
 		if _on_board(assignment, card["id"]):
 			continue
 		for slot in _slot_order(assignment["monster_zone"]):
+			if _locked_zones.has(slot):
+				continue
 			var evicted: Dictionary = assignment["zones"][slot]
 			var evicted_under: Dictionary = unders.get(slot, {})
 			unders.erase(slot)
@@ -517,7 +599,11 @@ func _improve(finalist: Dictionary) -> bool:
 	# stack moves as a unit (its under travels with the top).
 	var slots := _slot_order(assignment["monster_zone"])
 	for i in range(slots.size()):
+		if _locked_zones.has(slots[i]):
+			continue
 		for j in range(i + 1, slots.size()):
+			if _locked_zones.has(slots[j]):
+				continue
 			var a: Dictionary = assignment["zones"][slots[i]]
 			var b: Dictionary = assignment["zones"][slots[j]]
 			if a.is_empty() and b.is_empty():
@@ -548,6 +634,8 @@ func _improve(finalist: Dictionary) -> bool:
 		if _on_board(assignment, card["id"]):
 			continue
 		for i in range(_strategy_zone_count):
+			if _locked_strategies.has(i):
+				continue
 			var evicted: Dictionary = assignment["strategies"][i]
 			assignment["strategies"][i] = card
 			var score := _score(assignment) if _board_valid(assignment) else -1
@@ -590,6 +678,10 @@ func _attach_unders(assignment: Dictionary) -> bool:
 	## improvement.
 	var improved := false
 	for i in range(8):
+		# A locked top keeps only its passed-in locked under: the live board
+		# can't retroactively tuck under an already-fielded card.
+		if _locked_zones.has(i):
+			continue
 		var top: Dictionary = assignment["zones"][i]
 		if top.is_empty() or assignment["unders"].has(i):
 			continue
@@ -626,6 +718,13 @@ func _try_attach(assignment: Dictionary, zone_idx: int, source: Dictionary) -> b
 				break
 		if from_zone >= 0 and unders.has(from_zone):
 			continue  # never orphan another stack's under
+		# Belt-and-braces: locked occupants can never be detached (their ids
+		# live in the _lk_ namespace, so a pool candidate can't match them —
+		# but guard the slots anyway).
+		if from_zone >= 0 and _locked_zones.has(from_zone):
+			continue
+		if from_strategy >= 0 and _locked_strategies.has(from_strategy):
+			continue
 		# Tuck first so the backfill lookup can't pick the tucked card.
 		unders[zone_idx] = card
 		var backfill: Dictionary = {}
@@ -707,18 +806,26 @@ func _empty_assignment(config: Dictionary) -> Dictionary:
 	var zones: Array = []
 	zones.resize(8)
 	zones.fill({})
+	for idx in _locked_zones:
+		zones[idx] = _locked_zones[idx]
 	var strategies: Array = []
 	strategies.resize(_strategy_zone_count)
 	strategies.fill({})
-	return {
+	for idx in _locked_strategies:
+		if idx < _strategy_zone_count:
+			strategies[idx] = _locked_strategies[idx]
+	var assignment := {
 		"monster": config["monster"],
 		"monster_zone": config["monster_zone"],
 		"zones": zones,
 		"strategies": strategies,
 		"rage": _fixed_rage if _fixed_rage >= 0 else SEARCH_RAGE,
 		"opp_monster_zone": _fixed_opp_zone if _fixed_opp_zone > 0 else 1,
-		"unders": {},
+		"unders": _locked_unders.duplicate(),
 	}
+	if not _monster_stack.is_empty():
+		assignment["monster_stack"] = _monster_stack
+	return assignment
 
 
 func _score(assignment: Dictionary) -> int:

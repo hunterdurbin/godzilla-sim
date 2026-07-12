@@ -171,6 +171,22 @@ func test_monster_stack_built_from_lower_ranks() -> void:
 	mcs.teardown()
 
 
+func test_monster_stack_passthrough_used_verbatim() -> void:
+	# A live caller (KaijuCounterOracle) hands over its REAL stack: apply()
+	# must use it verbatim instead of synthesizing from the monster pool.
+	var monsters := Cards.monster_line()
+	var mcs := MaxCounterState.new([] as Array[Dictionary], [])
+	mcs.apply({"monster": monsters[3], "monster_zone": 5,
+		"zones": _zones_with([], 5), "strategies": [{}, {}], "rage": 0,
+		"monster_stack": [monsters[2], monsters[1]]})
+	var player: PlayerState = mcs.state.players[0]
+	assert_int(player.monster_stack.size()).is_equal(2)
+	assert_str(player.monster_stack[0].get("id", "")).is_equal(monsters[2].get("id", ""))
+	assert_str(player.monster_stack[1].get("id", "")).is_equal(monsters[1].get("id", ""))
+	assert_int(player.monster_deck.size()).is_equal(0)
+	mcs.teardown()
+
+
 func test_breakdown_reports_per_zone_cp() -> void:
 	var card := Real.instance("EBP01-018")  # +3000 at Awakening4
 	var vanilla := Cards.battle(2, 4000, "T-VAN")

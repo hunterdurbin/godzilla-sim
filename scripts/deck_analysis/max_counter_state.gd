@@ -64,6 +64,8 @@ func _init(main_cards: Array[Dictionary], monster_cards: Array[Dictionary],
 ##     effects like EBP02-016 only read the zone int)
 ##   unders: Dictionary zone_idx -> card (optional; one card tucked under
 ##     that zone's top — buried cards are data only, their effects inactive)
+##   monster_stack: Array (optional; a live caller's REAL stack, used verbatim
+##     instead of the synthesized best-case one — see KaijuCounterOracle)
 ## Unplaced main-pool copies land in the discard pile (late-game best case);
 ## tokens are not in the pool, so they never pollute the discard.
 func apply(assignment: Dictionary) -> void:
@@ -73,22 +75,30 @@ func apply(assignment: Dictionary) -> void:
 	player.rage = assignment.get("rage", 0)
 	state.players[1].monster_zone = assignment.get("opp_monster_zone", 1)
 
-	# Monster stack: the deck's lower-rank monsters, descending — genuinely
-	# reachable via normal rank-up, so stack conditionals are honestly true.
-	var chosen_rank: int = player.current_monster.get("rank", 0)
-	var stack: Array[Dictionary] = []
-	var remaining: Array[Dictionary] = []
-	for m in _monster_pool:
-		if not player.current_monster.is_empty() and m["id"] == player.current_monster["id"]:
-			continue
-		if m.get("rank", 0) < chosen_rank:
-			stack.append(m)
-		else:
-			remaining.append(m)
-	stack.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
-		return a.get("rank", 0) > b.get("rank", 0))
-	player.monster_stack = stack
-	player.monster_deck = remaining
+	if assignment.has("monster_stack"):
+		# Live-board passthrough: the caller's actual stack, so stack
+		# conditionals read the real match state.
+		var stack_in: Array[Dictionary] = []
+		stack_in.assign(assignment["monster_stack"])
+		player.monster_stack = stack_in
+		player.monster_deck = [] as Array[Dictionary]
+	else:
+		# Monster stack: the deck's lower-rank monsters, descending — genuinely
+		# reachable via normal rank-up, so stack conditionals are honestly true.
+		var chosen_rank: int = player.current_monster.get("rank", 0)
+		var stack: Array[Dictionary] = []
+		var remaining: Array[Dictionary] = []
+		for m in _monster_pool:
+			if not player.current_monster.is_empty() and m["id"] == player.current_monster["id"]:
+				continue
+			if m.get("rank", 0) < chosen_rank:
+				stack.append(m)
+			else:
+				remaining.append(m)
+		stack.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return a.get("rank", 0) > b.get("rank", 0))
+		player.monster_stack = stack
+		player.monster_deck = remaining
 
 	var placed_ids := {}
 	var zones: Array = assignment.get("zones", [])
