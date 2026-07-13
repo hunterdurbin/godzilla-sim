@@ -568,10 +568,15 @@ func _on_server_control(msg: Dictionary) -> void:
 			opponent_connected = bool(msg.get("opponent_connected", false))
 			server_lobby_update.emit(msg)
 		"PEER_PRESENT":
+			var present_pid := int(msg.get("player_id", -1))
+			var present := bool(msg.get("connected", false))
+			# The server only sends PEER_PRESENT about the OTHER seat — keep
+			# opponent_connected truthful in dedicated mode (it otherwise stays
+			# stuck at the START value, e.g. for the post-claim-win end panel).
+			if present_pid != local_player_id:
+				opponent_connected = present
 			server_peer_present.emit(
-				int(msg.get("player_id", -1)),
-				bool(msg.get("connected", false)),
-				float(msg.get("grace_remaining_s", 0.0)))
+				present_pid, present, float(msg.get("grace_remaining_s", 0.0)))
 		_:
 			pass # WELCOME is consumed by GameServerPeer itself
 
