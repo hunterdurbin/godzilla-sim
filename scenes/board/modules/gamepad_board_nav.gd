@@ -17,11 +17,15 @@ extends Node
 ## focus exists only inside registered modals/menus and, deliberately, the
 ## chat LineEdit while typing (fenced by GamepadInput's text-editing guard).
 ##
-## SelectionController.selection_context_changed jails the cursor to the
-## active prompt's elements; the map's skip-through rule keeps movement
-## spatial between valid stops. The bumpers jump to the peripheral modules
-## (LB = game log/chat, RB = turn tracker) and work DURING prompts — the
-## jail is suspended while bumper focus is active and restored on return.
+## SelectionController.selection_context_changed picks where the cursor
+## lands and which elements confirm acts on; hand/choice/confirm prompts
+## still jail movement to their own elements, but zone/strategy targeting
+## leaves the WHOLE board walkable so the player can inspect any state
+## mid-decision (validity gates confirm, not movement). The map's
+## skip-through rule keeps movement spatial between valid stops. The
+## bumpers jump to the peripheral modules (LB = game log/chat, RB = turn
+## tracker) and work DURING prompts — any active jail is suspended while
+## bumper focus is active and restored on return.
 ##
 ## Select cycles the cursor between the effects area (choice buttons +
 ## pending-effect stack rows) and the board. During a mandatory choice the
@@ -46,10 +50,8 @@ const CURSOR_PAD := 4.0
 const DEFAULT_ELEMENT := "bot_z2"
 ## Where the cursor first lands when the gamepad takes over in free browse.
 const BROWSE_DEFAULT := "ap_end_main"
-const ZONE_MODES: Array[String] = ["card_to_zone", "zone_target", "zones_target", "strategy_target"]
-## The subset of ZONE_MODES whose jail spans the target board's FULL z1-z8
-## (with BoardNavGraph.ZONE_JAIL_EDGES wired in) — validity gates confirm,
-## not movement.
+## Zone-index prompts: _ctx_valid carries zone indices that _ctx_valid_ids
+## maps to <side>_z<n> element ids (strategy_target maps its own ids).
 const ZONE_SLOT_MODES: Array[String] = ["card_to_zone", "zone_target", "zones_target"]
 const LOG_SCROLL_LINES := 3
 ## Frames after the device flips to gamepad mode during which pad_* actions
@@ -75,7 +77,9 @@ var _mode: String = "none"
 var _ctx_valid: Array[int] = []
 var _ctx_board_pid: int = -1
 var _ctx_hand_pid: int = -1
-## Prompt jail for zone/strategy modes: element ids the cursor may rest on.
+## Landing/validity set for zone/strategy modes: element ids the prompt
+## belongs to (initial landing + confirm gating). Movement is NOT restricted
+## to it — the cursor roams the whole board during these prompts.
 var _ctx_elements: Dictionary = {}
 var _cursor: Panel = null
 var _previewing_card: bool = false
@@ -233,9 +237,10 @@ func _rebuild_map() -> void:
 	}))
 
 
-## Playmat side whose z1-z8 get the zone-jail edges ("" outside zone prompts).
+## Free roam: zone prompts no longer seal the graph — always "". The
+## ZONE_JAIL_EDGES machinery in BoardNavGraph stays dormant behind this.
 func _zone_jail_side() -> String:
-	return _side_for_pid(_ctx_board_pid) if _mode in ZONE_SLOT_MODES else ""
+	return ""
 
 
 func _rect_of(id: String) -> Rect2:
@@ -369,16 +374,17 @@ func _on_fab_toggled(expanded: bool) -> void:
 		_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
 
 
-## Translate the prompt context into the set of map elements the cursor may
-## rest on (zone/strategy modes only — the other modes jail by id prefix in
-## _jail_allows). Empty = free browse.
+## Translate the prompt context into the set of map elements the prompt
+## belongs to (zone/strategy modes only). Feeds initial landing,
+## _ctx_valid_ids and the card_to_zone confirm gate — movement itself is
+## unrestricted during these prompts.
 func _rebuild_ctx_elements() -> void:
 	_ctx_elements.clear()
 	match _mode:
 		"card_to_zone", "zone_target", "zones_target":
-			# The whole target board stays walkable — all eight zones join
-			# the jail; _ctx_valid only decides where the cursor first lands
-			# and (via the selection layer) which zones confirm acts on.
+			# All eight target-board zones count as prompt elements;
+			# _ctx_valid only decides where the cursor first lands and (via
+			# the selection layer) which zones confirm acts on.
 			var side := _side_for_pid(_ctx_board_pid)
 			for zone_num in range(1, 9):
 				_ctx_elements["%s_z%d" % [side, zone_num]] = true
@@ -390,8 +396,8 @@ func _rebuild_ctx_elements() -> void:
 
 func _apply_context() -> void:
 	# A context change while bumper focus is active force-returns first — the
-	# new prompt's jail decides where the cursor may sit. The Select-toggle
-	# memory resets for the same reason.
+	# new prompt decides where the cursor lands (and, for jailed modes, where
+	# it may sit). The Select-toggle memory resets for the same reason.
 	if not _bumper_return.is_empty():
 		_bumper_exit(false)
 	_select_return = ""
@@ -427,7 +433,7 @@ func _apply_context() -> void:
 
 
 func _first_ctx_element() -> String:
-	# Keep the cursor where it is when it's already inside the jail.
+	# Keep the cursor where it is when it's already on a prompt element.
 	if _ctx_elements.has(_element):
 		return _element
 	# Battle-card play parks the cursor on the player's own monster zone —
@@ -436,7 +442,7 @@ func _first_ctx_element() -> String:
 		var monster_id := _monster_zone_id()
 		if monster_id != "" and _ctx_elements.has(monster_id) and _element_valid(monster_id):
 			return monster_id
-	# Wake up on a prompt-actionable element first — the zone jail spans all
+	# Wake up on a prompt-actionable element first — the prompt set spans all
 	# eight zones, but landing on one the prompt rejects would read as broken.
 	var preferred: Array = _ctx_valid_ids()
 	preferred.sort()
@@ -464,8 +470,8 @@ func _monster_zone_id() -> String:
 	return ""
 
 
-## Element ids the prompt actually accepts — in zone modes a subset of the
-## jail (which spans the whole board); elsewhere the jail itself.
+## Element ids the prompt actually accepts — in zone modes a subset of
+## _ctx_elements (which spans all eight zones); elsewhere the set itself.
 func _ctx_valid_ids() -> Array:
 	if _mode not in ZONE_SLOT_MODES:
 		return _ctx_elements.keys()
@@ -509,29 +515,14 @@ func _move(dir: String) -> void:
 		_board._log_chat.scroll_log(-LOG_SCROLL_LINES if dir == "up" else LOG_SCROLL_LINES)
 		return
 	var target := _map.next(_element, dir, _element_valid)
-	if target == "" and (dir == "left" or dir == "right") and _mode in ZONE_MODES:
-		# Prompt jail: a sparse valid set can dead-end the spatial graph
-		# (e.g. Z2/Z4/Z6 span both rows). Left/right then cycle the valid
-		# elements so every legal target stays reachable.
-		target = _ctx_cycle(1 if dir == "right" else -1)
 	if target == "":
 		return
 	# Walking out of the bumper region resumes normal browsing: B goes back
-	# to meaning "cancel". (Jailed prompts can't walk out — _jail_allows.)
+	# to meaning "cancel". (During prompts bumper focus can't walk out —
+	# _jail_allows.)
 	if not _bumper_return.is_empty() and not _in_bumper_region(target):
 		_bumper_exit_cleanup()
 	_enter_element(target)
-
-
-func _ctx_cycle(dir: int) -> String:
-	var ids: Array = _ctx_elements.keys().filter(_element_valid)
-	ids.sort()
-	if ids.is_empty():
-		return ""
-	var at := ids.find(_element)
-	if at < 0:
-		return ids[0]
-	return ids[(at + dir + ids.size()) % ids.size()]
 
 
 func _enter_element(id: String) -> void:
@@ -590,14 +581,14 @@ func _jail_allows(id: String) -> bool:
 	match _mode:
 		"hand_select", "hand_discard":
 			return id.begins_with("hand_")
-		"card_to_zone", "zone_target", "zones_target", "strategy_target":
-			return _ctx_elements.has(id)
 		"choice":
 			# The pending-effect rows are part of the effects area — the dpad
 			# may travel choice <-> stack while the prompt is up.
 			return id.begins_with("choice_") or id.begins_with("stack_")
 		"confirm":
 			return id == "ap_confirm" or id == "ap_cancel"
+	# Zone/strategy targeting included: the cursor roams the whole board so
+	# any state can be inspected mid-decision — validity gates confirm.
 	return true
 
 
@@ -743,8 +734,8 @@ func _in_effects_region(id: String) -> bool:
 
 
 ## The toggle exists while a choice prompt is up or (in free browse) while
-## the pending-effects panel has rows. Other prompt modes keep their jail
-## sovereign — Select falls through to chat there.
+## the pending-effects panel has rows. Other prompt modes don't offer it —
+## Select falls through to chat there.
 func _effects_toggle_available() -> bool:
 	if _mode == "choice":
 		return not _choice_buttons().is_empty()
@@ -1012,7 +1003,11 @@ func _confirm() -> void:
 	# Prompt modes: synthesize the pointer selection path.
 	if entry["kind"] == "zone":
 		if _mode == "card_to_zone":
-			_board._selection.play_selected_card_to_zone(int(entry["idx"]))
+			# Free roam: only the target board's zones act — an off-board
+			# zone at the same index must not misplay (the play call is
+			# pid-blind, it takes a bare zone index).
+			if _ctx_elements.has(_element):
+				_board._selection.play_selected_card_to_zone(int(entry["idx"]))
 			return
 		if _mode == "zone_target" or _mode == "zones_target":
 			(entry["control"] as Slot).simulate_click()
@@ -1349,9 +1344,10 @@ func _stack_row_count() -> int:
 	return stack.nav_row_count() if stack else 0
 
 
-## The hand card hovered in free browse; null while the cursor is jailed to
-## a prompt, parked off the hand, or the module is suspended. Consumed by
-## HandHintBar.
+## The hand card hovered in free browse; null while any prompt is up (the
+## cursor may rest on hand cards mid-prompt, but plays are gated so the
+## hint bar stays hidden), parked off the hand, or the module is suspended.
+## Consumed by HandHintBar.
 func browse_hovered_hand_card() -> Control:
 	if _mode != "none" or not _element.begins_with("hand_") or not _is_active():
 		return null

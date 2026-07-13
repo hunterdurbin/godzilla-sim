@@ -23,7 +23,7 @@ reads the board's forwarded `_board._x` state.
 | `board_layout_controller.gd` | Desktop layout: local-player mirroring, hand positioning, button stacks, hand collapse |
 | `system_menu_controller.gd` | Sound/music toggles, bug report, log export, save button, concede/main-menu |
 | `board_nav_graph.gd` | Builds the ONE controller-navigation graph (playmat + hand + buttons + log + tracker + choice + stack nodes); edit its tables to change cursor travel — see `scripts/input/README.md` |
-| `gamepad_board_nav.gd` | Controller cursor over that graph: prompt jails, bumper focus (LB log / RB tracker), Select toggle (effects area ↔ board, read-only roam during a choice: viewers open, plays gated), post-play return, the null-focus invariant |
+| `gamepad_board_nav.gd` | Controller cursor over that graph: prompt landing/validity gating (hand/choice/confirm prompts jail movement; zone & strategy targeting free-roam the whole board), bumper focus (LB log / RB tracker), Select toggle (effects area ↔ board, read-only roam during a choice: viewers open, plays gated), post-play return, the null-focus invariant |
 | `nav_debug_overlay.gd` | F3 (debug builds) live nav-graph visualization; `editor_preview` renders the static tables over GameBoard.tscn in the editor |
 | `hand_hint_bar.gd` | Bottom-left glyph hints (A play / LT rage / RT invade) while the pad cursor free-browses a hand card on the local player's action; rows filtered per card via `SelectionController.hand_card_hint_actions()` |
 

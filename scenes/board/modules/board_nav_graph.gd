@@ -19,9 +19,11 @@ extends RefCounted
 ##                or ap_sort_hand when the hand is empty
 ##   "tracker" -> every trk_<i> label (history picks where you left off)
 ##
-## While a zone prompt jails the cursor (ctx key `zone_jail_side`), the
-## target playmat's z1-z8 swap to the ZONE_JAIL_EDGES table — wrap-around
-## rows so all eight zones stay reachable without the rage/hand/deck exits.
+## DORMANT: the ctx key `zone_jail_side` can seal a playmat's z1-z8 into
+## the ZONE_JAIL_EDGES table (wrap-around rows without the rage/hand/deck
+## exits). The live board always passes "" — zone prompts free-roam now
+## (GamepadBoardNav._zone_jail_side); kept for the graph tests and possible
+## reuse.
 ##
 ## Element ids are VISUAL (seat-independent): `bot_*` = the bottom playmat,
 ## `top_*` = the opponent playmat at the top. Dynamic ids: hand_<i> (fanned
@@ -101,8 +103,10 @@ const PLAYMAT := {
 	"bot_discard": {"up": ["bot_deck"], "right": ["tracker"], "down": ["hand"], "left": ["bot_z5"]},
 }
 
-## Zone-only edges swapped in while a zone prompt jails the cursor (ctx key
-## `zone_jail_side`): both zone rows chain with wrap-around at the ends
+## DORMANT (live board always passes zone_jail_side "" — see
+## GamepadBoardNav._zone_jail_side; kept for graph tests / possible reuse).
+## Zone-only edges swapped in while `zone_jail_side` seals a playmat:
+## both zone rows chain with wrap-around at the ends
 ## (z5<->z1, z6<->z8), and up/down always reach the paired zone in the other
 ## row (z3<->z8, z4<->z7, z5<->z6) — z1/z2 route up/down to z8 one-way, z8
 ## only ever returns to z3. The cursor never dead-ends in any direction, so
@@ -192,10 +196,11 @@ const MOBILE_UI := {
 ##   tracker_count: int (0)       — interactive turn-tracker labels
 ##   choice_count: int (0)        — visible choice-prompt buttons
 ##   stack_count: int (0)         — visible pending-effect rows
-##   zone_jail_side: String ("")  — "bot"/"top" while a zone prompt is up:
-##                                  that playmat's z1-z8 get the
-##                                  ZONE_JAIL_EDGES wrap-around edges instead
-##                                  of their free-browse rows
+##   zone_jail_side: String ("")  — "bot"/"top" seals that playmat's z1-z8
+##                                  with the ZONE_JAIL_EDGES wrap-around
+##                                  edges instead of their free-browse rows
+##                                  (dormant — the live board always passes
+##                                  ""; graph tests still exercise it)
 ##   rect_of: Callable (invalid)  — id -> Rect2 (global), used to pick the
 ##                                  hand card nearest a "hand" edge's source;
 ##                                  invalid/missing rects fall back to list

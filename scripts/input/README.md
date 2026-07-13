@@ -105,9 +105,8 @@ Related pieces elsewhere:
   log/chat panel (`log_panel`), tracker labels (`trk_<i>`), choice
   buttons (`choice_<i>`) and pending-effect stack rows (`stack_<i>`, chained
   into `choice_0` while a choice is open). To change where the cursor goes,
-  edit its tables (`PLAYMAT`, `DESKTOP_UI`, `MOBILE_UI`, and
-  `ZONE_JAIL_EDGES` for the wrap-around zone rows used during zone
-  prompts); the
+  edit its tables (`PLAYMAT`, `DESKTOP_UI`, `MOBILE_UI`; `ZONE_JAIL_EDGES`
+  is dormant — zone prompts free-roam now, see below); the
   `"hand"`/`"tracker"` sentinels expand at build time (nearest-card-by-X
   hand entry). @tool-safe and pure — unit tests and the editor overlay feed
   it fake rects.
@@ -124,21 +123,24 @@ Related pieces elsewhere:
   click lands on its button) — otherwise the `ui_*` mirrors walk a second
   focus ring around the panel next to the cursor. Provider-backed contexts
   re-grab via the deferred `refocus()`.
-  Prompts (`SelectionController.selection_context_changed`) jail the cursor.
-  Zone prompts (`card_to_zone`/`zone_target`/`zones_target`) jail to the
-  target board's FULL z1-z8 — the graph swaps that playmat's zone rows for
-  `BoardNavGraph.ZONE_JAIL_EDGES` (rows wrap at the ends, up/down always
-  reach the paired zone in the other row, z1/z2 route to z8 one-way), so
-  every zone is a cursor stop; the *valid* set only picks the landing zone
-  and gates confirm (A on a non-highlighted zone is a no-op). Other prompts
-  jail to their valid elements — hand modes to the valid cards,
-  `strategy_target` to the valid strategy slots, choice/confirm onto the
-  `choice_<i>` / Confirm button nodes (the choice jail also spans the
-  `stack_<i>` rows).
-  **Finalizing multi-selects**: the jails above never include the Confirm
-  button, so X (`pad_end_main` → `SelectionController.press_primary_button()`)
-  presses Confirm/Skip from anywhere inside the jail (`zones_target`,
-  hand multi-discard, skip-able prompts). The Confirm button's
+  Prompts (`SelectionController.selection_context_changed`) pick where the
+  cursor lands and which elements confirm acts on. Zone and strategy
+  targeting (`card_to_zone`/`zone_target`/`zones_target`/`strategy_target`)
+  leave the WHOLE board walkable — the player can inspect any state
+  mid-decision; the prompt's element set only picks the landing element and
+  gates confirm (A off the valid set is a no-op — slot clicks self-gate on
+  selection mode, and `card_to_zone` additionally checks the cursor is on
+  the target board so an opponent zone at the same index can't misplay).
+  The old sealed-graph jail (`BoardNavGraph.ZONE_JAIL_EDGES` via the
+  `zone_jail_side` ctx key) is dormant: the live board always passes `""`.
+  The remaining prompts still jail movement — hand modes to the valid
+  cards, choice/confirm onto the `choice_<i>` / Confirm button nodes (the
+  choice jail also spans the `stack_<i>` rows).
+  **Finalizing multi-selects**: X (`pad_end_main` →
+  `SelectionController.press_primary_button()`) presses Confirm/Skip from
+  anywhere (`zones_target`, hand multi-discard, skip-able prompts) — no
+  need to walk to the button, though during free-roam prompts the cursor
+  can also reach Confirm and press it with A. The Confirm button's
   ControllerGlyph is context-aware (`_emit_ctx` flips its `action`):
   it shows `pad_end_main` during those prompts and `pad_confirm` only in
   the pass-confirmation jail, where the cursor sits on the button itself.
@@ -188,8 +190,8 @@ monster/battle/strategy) · B/east = cancel · Y/north = inspect/zoom ·
 X/west = primary phase button · **LB = focus game log/chat** (dpad scrolls,
 A enters the chat field, LB/B returns the cursor where it was) · **RB =
 focus turn tracker** (dpad walks the labels, A toggles that auto setting,
-RB/B returns) — both bumpers work DURING prompts (the jail is suspended
-inside the module and restored on return) and slide the matching tray open
+RB/B returns) — both bumpers work DURING prompts (movement stays inside the
+bumper region until return; any prompt jail is restored after) and slide the matching tray open
 on mobile · LT = pad_play_card_rage (discard hovered monster for rage) ·
 RT = pad_play_card_invasion (discard hovered card to invade) · start =
 system menu · select = chat, or — while the effects area (choice prompt /

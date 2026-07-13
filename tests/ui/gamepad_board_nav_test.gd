@@ -3,15 +3,15 @@ extends Node
 ## Controller board-navigation regression test — ONE graph, ONE cursor.
 ## Boots a solo GameBoard, flips to gamepad mode with a synthetic joypad
 ## press, then drives the GamepadBoardNav cursor with injected pad_* actions:
-##   - zones_target prompt jails the cursor to the target board's FULL z1-z8
-##     (wrap-around ZONE_JAIL_EDGES rows; invalid zones are cursor stops,
-##     confirm on them is a no-op), pad_confirm toggles valid zones through
-##     Slot.slot_clicked;
+##   - zones_target prompt leaves the WHOLE board walkable (free roam:
+##     invalid zones, the hand, piles and the opponent board are all cursor
+##     stops; confirm anywhere off the valid set is a no-op), pad_confirm
+##     toggles valid zones through Slot.slot_clicked;
 ##   - free browse walks the map (board rows, hand, action-panel buttons,
 ##     log panel, tracker labels) with NO control ever holding real focus;
 ##   - bumpers: LB focuses the log (dpad scrolls), RB the tracker (A toggles
 ##     a setting), same bumper / B returns the cursor — including during
-##     prompts, where the jail is suspended and restored;
+##     prompts, where movement stays inside the bumper region until return;
 ##   - sorted hand keeps the same card under the cursor; post-play return
 ##     lands left neighbor -> right neighbor -> Sort button (as a cursor
 ##     stop, not focus);
@@ -118,13 +118,14 @@ func _ready() -> void:
 	assert(nav._cursor != null and nav._cursor.visible, "gamepad mode did not place the cursor")
 	_assert_no_focus(board, "gamepad takeover")
 
-	# --- zones_target prompt rides the zone-jail graph: ALL of z1-z8 are
-	# cursor stops, only valid zones act on confirm ---
+	# --- zones_target prompt: the whole board stays walkable (free roam),
+	# only valid zones act on confirm ---
 	# Valid zones Z2/Z4/Z6 on player 0's (bottom) board.
 	var valid: Array[int] = [1, 3, 5]
 	sel._show_zones_target_selection(0, 0, valid, 3, false, "pick zones")
 	await _tick(2)
 	assert(nav._mode == "zones_target", "module missed selection context: %s" % nav._mode)
+	assert(nav._zone_jail_side() == "", "zone prompt sealed the graph")
 	assert(nav._element == "bot_z2", "cursor not on first valid zone: %s" % nav._element)
 	assert(nav._cursor != null and nav._cursor.visible, "no visible cursor")
 	var hint_cluster: Control = board.get_node("HandHintCluster")
@@ -148,25 +149,40 @@ func _ready() -> void:
 	await _tap(&"pad_confirm")
 	assert(sel._zones_target_selected == [1, 3], "second confirm failed: %s" % str(sel._zones_target_selected))
 
-	# The jail rows wrap: z5 -> z1 horizontally, z1 jumps up to z8 (one-way),
-	# z8 wraps left to z6, and the vertical wrap lifts z6 back to z5.
+	# Free roam: the cursor leaves the zone grid mid-prompt to inspect any
+	# board state — the discard, the hand, even the opponent's playmat.
+	# Confirm off the valid set stays dead everywhere.
 	await _tap(&"pad_nav_right")
 	assert(nav._element == "bot_z5", "right did not reach bot_z5: %s" % nav._element)
 	await _tap(&"pad_nav_right")
-	assert(nav._element == "bot_z1", "lower row did not wrap z5 -> z1: %s" % nav._element)
+	assert(nav._element == "bot_discard", "cursor could not leave the zone grid: %s" % nav._element)
+	await _tap(&"pad_nav_down")
+	assert(nav._element.begins_with("hand_"), "down from the discard did not reach the hand: %s" % nav._element)
+	# A on a hand card mid-prompt is dead — plays are gated while a prompt is up.
+	await _tap(&"pad_confirm")
+	assert(sel._zones_target_selecting, "confirm on a hand card ended the prompt")
+	assert(sel._zones_target_selected == [1, 3], "confirm on a hand card changed the selection: %s" % str(sel._zones_target_selected))
 	await _tap(&"pad_nav_up")
-	assert(nav._element == "bot_z8", "z1 up did not jump to z8: %s" % nav._element)
-	await _tap(&"pad_nav_left")
-	assert(nav._element == "bot_z6", "upper row did not wrap z8 -> z6: %s" % nav._element)
+	assert(nav._element == "bot_discard", "history did not return the cursor to the discard: %s" % nav._element)
+	# Cross the divider onto the opponent board; A on their zone is a silent
+	# no-op (the slot is not in selection mode).
+	await _tap(&"pad_nav_left") # bot_z5
+	await _tap(&"pad_nav_up") # bot_z6
+	await _tap(&"pad_nav_left") # bot_z7
+	await _tap(&"pad_nav_left") # bot_z8
 	await _tap(&"pad_nav_up")
-	assert(nav._element == "bot_z5", "z6 up did not wrap to z5: %s" % nav._element)
+	assert(nav._element == "top_z8", "up from bot_z8 did not cross to the opponent board: %s" % nav._element)
+	await _tap(&"pad_confirm")
+	assert(sel._zones_target_selecting, "confirm on an opponent zone ended the prompt")
+	assert(sel._zones_target_selected == [1, 3], "confirm on an opponent zone selected something: %s" % str(sel._zones_target_selected))
 	# Walk back to Z2 for the bumper leg below.
-	for i in range(3):
-		await _tap(&"pad_nav_left")
-	assert(nav._element == "bot_z2", "left walk did not return to bot_z2: %s" % nav._element)
+	await _tap(&"pad_nav_down") # bot_z8
+	await _tap(&"pad_nav_down") # bot_z3
+	await _tap(&"pad_nav_left")
+	assert(nav._element == "bot_z2", "walk did not return to bot_z2: %s" % nav._element)
 
 	# --- Bumpers work DURING the prompt: LB jumps to the log, movement is
-	# restricted to the bumper region, B returns and restores the jail ---
+	# restricted to the bumper region, B returns to the prompt element ---
 	await _tap(&"pad_focus_log")
 	assert(nav._element == "log_panel", "LB did not focus the log panel: %s" % nav._element)
 	var log_out: RichTextLabel = board.log_output
@@ -176,10 +192,10 @@ func _ready() -> void:
 	assert(log_out.get_v_scroll_bar().value <= scroll_before,
 		"dpad up did not scroll the log upward")
 	await _tap(&"pad_nav_right")
-	assert(nav._element == "log_panel", "jail suspension let the cursor onto the board")
+	assert(nav._element == "log_panel", "bumper focus let the cursor onto the board")
 	await _press_b()
 	assert(nav._element == "bot_z2", "B did not return the cursor from the log: %s" % nav._element)
-	assert(nav._mode == "zones_target", "bumper return broke the prompt jail")
+	assert(nav._mode == "zones_target", "bumper return broke the prompt context")
 	assert(sel._zones_target_selecting, "B during bumper focus leaked into the prompt-skip ladder")
 
 	# Same bumper toggles back out too.
@@ -188,16 +204,18 @@ func _ready() -> void:
 	await _tap(&"pad_focus_log")
 	assert(nav._element == "bot_z2", "same-bumper press did not return the cursor")
 
-	# --- X (pad_end_main) finalizes the selection from inside the jail ---
+	# --- X (pad_end_main) finalizes the selection from anywhere ---
 	# Exact-N prompt: Confirm stays disabled at 2/3, and X falls through to
 	# nothing (End Main is disabled during prompts) — the selection survives.
 	assert(board.btn_confirm.disabled, "Confirm enabled below the exact count")
 	await _press_physical(JOY_BUTTON_X)
 	assert(sel._zones_target_selecting, "X below the exact count ended the prompt")
 	assert(sel._zones_target_selected == [1, 3], "X below the exact count changed the selection")
-	# Third pick: z2 up -> z8, left wraps -> z6 (valid).
+	# Third pick: free-browse route z2 -> z3 -> z8 -> z7 -> z6 (valid).
+	await _tap(&"pad_nav_right")
 	await _tap(&"pad_nav_up")
-	await _tap(&"pad_nav_left")
+	await _tap(&"pad_nav_right")
+	await _tap(&"pad_nav_right")
 	assert(nav._element == "bot_z6", "walk did not reach bot_z6: %s" % nav._element)
 	await _tap(&"pad_confirm")
 	assert(sel._zones_target_selected == [1, 3, 5], "third confirm failed: %s" % str(sel._zones_target_selected))
@@ -583,6 +601,38 @@ func _ready() -> void:
 				nav.browse_hovered_hand_card()).is_empty():
 			assert(hint_cluster.visible,
 				"hint cluster did not re-show after cancel returned the cursor to the hand")
+
+	# --- card_to_zone misplay gate: free roam lets the cursor reach the
+	# OPPONENT's zones during zone selection, and the play call takes a
+	# pid-blind zone index — A there must not misplay onto the player's own
+	# zone. Synthesized prompt (the direct-play leg above skips whenever the
+	# random hand has no playable battle card) with the zone index FORCED
+	# valid, so a broken gate would act and clear the prompt. ---
+	assert(not hand.managed_cards.is_empty(), "hand empty before the misplay-gate leg")
+	var gate_card: Control = hand.managed_cards[0]
+	sel._selected_card_data = gate_card.card_data
+	sel.selected_card_id = gate_card.card_data.get("id", "")
+	sel._enter_zone_selection()
+	await _tick(2)
+	assert(nav._mode == "card_to_zone", "synthesized zone select missed the nav module: %s" % nav._mode)
+	# Fixed zone 5, NOT the monster zone: the valid index is forced anyway,
+	# and top_z5 sits in no multi-target edge list, so visiting it can't
+	# steer a later leg's history tie-break (top_z1 would hijack the
+	# stack_0-left walk below).
+	var gate_zone := 5
+	sel._zone_select_valid.assign([gate_zone - 1])
+	assert(nav._ctx_elements.has("bot_z%d" % gate_zone),
+		"the player's own zone fell out of the prompt set")
+	var opp_zone := "top_z%d" % gate_zone
+	assert(nav._element_valid(opp_zone), "card_to_zone still jails the cursor off %s" % opp_zone)
+	nav._enter_element(opp_zone)
+	await _tick(1)
+	await _tap(&"pad_confirm")
+	assert(sel.waiting_for_zone_select,
+		"A on the opponent's zone during card_to_zone acted (misplay gate broken)")
+	await _press_b()
+	assert(not sel.waiting_for_zone_select, "cancel did not exit the synthesized zone selection")
+	await _tick(2)
 
 	# --- Post-play cursor rule: left neighbor -> right neighbor -> Sort ---
 	# Case A: context clears while the card is still in the hand (visual
