@@ -758,24 +758,44 @@ layout_mode = 3
 card_spacing = 120.0
 
 [node name="DeckSearchOverlay" parent="." unique_id=1842811382 instance=ExtResource("13_dso")]
-layout_mode = 0
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="DiscardViewOverlay" parent="." unique_id=1503566472 instance=ExtResource("16_dvo")]
-layout_mode = 0
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="MonsterDeckViewOverlay" parent="." unique_id=1577516336 instance=ExtResource("17_mdo")]
-layout_mode = 0
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="ZoneStackViewOverlay" parent="." unique_id=1739839184 instance=ExtResource("18_zso")]
-layout_mode = 0
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="CardZoomOverlay" parent="." unique_id=1372477364 instance=ExtResource("19_czo")]
-layout_mode = 0
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="EndGamePanel" type="PanelContainer" parent="." unique_id=926981509]
 visible = false
@@ -818,12 +838,20 @@ layout_mode = 2
 text = "STR_GB_MAIN_MENU"
 
 [node name="DeckArrangeOverlay" parent="." unique_id=818481713 instance=ExtResource("14_dao")]
-layout_mode = 0
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="CardSelectOverlay" parent="." unique_id=533931578 instance=ExtResource("15_cso")]
-layout_mode = 0
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="OpponentHandButtonStack" type="HBoxContainer" parent="." unique_id=1096714480]
 layout_mode = 1

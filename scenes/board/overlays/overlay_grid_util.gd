@@ -331,6 +331,7 @@ static func _mesh_cards(cards: Array[Control], cols: int,
 	for i in range(count):
 		var card := cards[i]
 		card.focus_mode = Control.FOCUS_ALL
+		@warning_ignore("integer_division")
 		var row: int = i / cols
 		var col: int = i % cols
 		var row_start: int = row * cols

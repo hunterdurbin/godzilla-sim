@@ -276,7 +276,6 @@ func setup_replay_recorder(is_bot_game: bool) -> ReplayRecorder:
 	# Counter tokens: game_board synthesizes these for the chat log only, so
 	# mirror the sim runner and record them here (the only place effect-inclusive
 	# CP/threat breakdowns are available without re-running the engine).
-	var events: GameEvents = turn_manager.events
 	events.counter_succeeded.connect(func(pid: int, cp: int, threat: int, rage_t: int, eff_t: int) -> void:
 		if replay_recorder:
 			replay_recorder.on_log_message(GameLog.counter_succeeded(pid, cp, threat, rage_t, eff_t)))
