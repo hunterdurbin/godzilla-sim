@@ -46,12 +46,14 @@ var conceded := false
 # out the grace period and claims; pass --grace=N to the server).
 # --malicious: interleave invalid/forged RPCs with normal play; the server
 # must reject them all and the game must still complete cleanly.
-# --rematch: after the first match ends, request a rematch and play a second
-# full game (both clients must pass the flag).
+# --rematch[=N]: after each match ends, request a rematch until N rematches
+# have been played (bare --rematch = 1, i.e. two full games; both clients must
+# pass the same flag).
 var drop_after := 0
 var drop_forever := false
 var malicious := false
 var do_rematch := false
+var rematch_target := 1
 var matches_completed := 0
 # --codefile=PATH: room-code handoff file (override for concurrent pairs)
 var code_file := DEFAULT_CODE_FILE
@@ -79,6 +81,9 @@ func _ready() -> void:
 			malicious = true
 		elif arg == "--rematch":
 			do_rematch = true
+		elif arg.begins_with("--rematch="):
+			do_rematch = true
+			rematch_target = maxi(1, int(arg.get_slice("=", 1)))
 		elif arg.begins_with("--codefile="):
 			code_file = arg.get_slice("=", 1)
 		elif arg.begins_with("--port="):
@@ -346,8 +351,8 @@ func _on_match_ended(winner_id: int, reason_key: String) -> void:
 	matches_completed += 1
 	print("[TestClient %s] Match %d ended: winner=%d reason=%s (after %d actions)" % [
 		_tag(), matches_completed, winner_id, reason_key, actions_submitted])
-	if do_rematch and matches_completed == 1:
-		print("[TestClient %s] Requesting rematch" % _tag())
+	if do_rematch and matches_completed <= rematch_target:
+		print("[TestClient %s] Requesting rematch %d/%d" % [_tag(), matches_completed, rematch_target])
 		await get_tree().create_timer(1.0).timeout
 		sync_node._rpc_rematch_requested.rpc()
 		return
@@ -415,7 +420,8 @@ func _drop_and_reconnect() -> void:
 # --- Exit conditions ---
 
 func _run_watchdog() -> void:
-	var timeout := PLAY_TIMEOUT_S if play_mode else HANDSHAKE_TIMEOUT_S
+	var games := (rematch_target + 1) if do_rematch else 1
+	var timeout := PLAY_TIMEOUT_S * games if play_mode else HANDSHAKE_TIMEOUT_S
 	var elapsed := 0.0
 	while elapsed < timeout:
 		await get_tree().create_timer(0.25).timeout

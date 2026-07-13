@@ -29,7 +29,8 @@ server — normal.)
 
 | File | Role |
 |---|---|
-| `HeadlessTestClient.tscn` / `headless_test_client.gd` | Headless client; flags: `--port=N --create\|--join [--play] [--seed=N] [--codefile=F]` |
+| `HeadlessTestClient.tscn` / `headless_test_client.gd` | Headless client; flags: `--port=N --create\|--join [--play] [--seed=N] [--codefile=F] [--rematch[=N]]` (`--rematch=N` plays N rematches — N+1 full games; both clients must pass it) |
+| `OnlinePilot.tscn` / `online_pilot_boot.gd` + `online_pilot.gd` | HEADFUL smoke pilot: real client + real GameBoard driven through the actual UI (buttons/overlay cards/slots), screenshots every modal kind, plays full games + rematches (one with a deck change), leave-dialog and claim-win drills. Flags: `--create\|--join --port=N [--seed=N] [--rematches=N] [--codefile=F] [--drill=claimwin] [--shots=DIR]` (or `SMOKE_SHOT_DIR`). Greps: `[Pilot] PASS` / `[Pilot] FAIL` |
 | `stub_client_board.gd` | Headless stand-in for GameBoard — one of the THREE implementations of the `_board` duck-typed contract (with `scenes/board/game_board.gd` and `scripts/server/headless_board.gd`). **RPC-surface changes must be mirrored here.** |
 | `RealClientSmoke.tscn` / `real_client_smoke.gd` | Smoke test driving the real client scene flow |
 | `BranchRpcSpike.tscn` / `branch_rpc_spike.gd` + `spike_sync.gd` | RPC branching spike (historical repro scene) |
