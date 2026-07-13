@@ -1,9 +1,14 @@
+@tool
 extends Control
 class_name Slot
 
 ## A slot that can hold a single Card, with zone metadata for the TCG board.
 ## The visual area (Background) maintains the card aspect ratio (5:7) within
 ## whatever space the parent container allocates.
+##
+## @tool: in the editor the slot draws a labeled outline of its content rect via
+## _draw() only — it must never mutate Background/Label there, or the editor
+## would save those changes as instance overrides in the owning scene.
 
 const CARD_RATIO := 5.0 / 7.0  # width / height
 
@@ -49,6 +54,10 @@ const LONG_PRESS_COOLDOWN := 0.6
 
 
 func _ready() -> void:
+	if Engine.is_editor_hint():
+		_update_content_rect()
+		queue_redraw()
+		return
 	_update_content_rect()
 	_update_visual_state()
 	mouse_entered.connect(_on_mouse_entered)
@@ -64,8 +73,34 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_update_content_rect()
+		if Engine.is_editor_hint():
+			queue_redraw()
+			return
 		_update_visual_state()
 		_refit_held_card()
+
+
+## Editor-only preview: outline the card-aspect content rect and label it with
+## the node name ("Zone3", "Strategy1") — zone metadata is assigned at runtime,
+## so the name is the only identity available at edit time.
+func _draw() -> void:
+	if not Engine.is_editor_hint():
+		return
+	if _content_rect.size.x <= 0.0 or _content_rect.size.y <= 0.0:
+		return
+	draw_rect(_content_rect, Color(0.3, 0.5, 0.8, 0.15), true)
+	draw_rect(_content_rect, Color(1, 1, 1, 0.6), false, 2.0)
+	var font := get_theme_default_font()
+	if font == null:
+		return
+	var font_size := 20
+	var text := String(name)
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	var pos := _content_rect.position + Vector2(
+		(_content_rect.size.x - text_size.x) / 2.0,
+		(_content_rect.size.y + font.get_ascent(font_size)) / 2.0 - font.get_descent(font_size) / 2.0
+	)
+	draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1, 1, 1, 0.9))
 
 
 func _update_content_rect() -> void:

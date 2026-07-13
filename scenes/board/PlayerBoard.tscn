@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/board/player_board.gd" id="1_pb"]
 [ext_resource type="PackedScene" path="res://scenes/slots/Slot.tscn" id="2_slot"]
 [ext_resource type="Texture2D" uid="uid://bi5c4b4txk6wa" path="res://assets/board/zones.svg" id="3_bg"]
 [ext_resource type="Texture2D" path="res://assets/board/default_board.png" id="4_board_bg"]
+[ext_resource type="Script" path="res://scenes/board/editor_zone_outline.gd" id="5_zone_outline"]
 
 [node name="PlayerBoard" type="Control"]
 layout_mode = 3
@@ -65,6 +66,7 @@ offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
+landscape = true
 
 [node name="Strategy2" parent="LayoutContainer" instance=ExtResource("2_slot")]
 layout_mode = 1
@@ -78,6 +80,7 @@ offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
+landscape = true
 
 [node name="Strategy3" parent="LayoutContainer" instance=ExtResource("2_slot")]
 visible = false
@@ -92,6 +95,7 @@ offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
 custom_minimum_size = Vector2(0, 0)
+landscape = true
 
 [node name="RageBg" type="Panel" parent="LayoutContainer"]
 layout_mode = 1
@@ -264,6 +268,7 @@ offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
 mouse_filter = 1
+script = ExtResource("5_zone_outline")
 
 [node name="MonsterInfo" type="Control" parent="LayoutContainer"]
 layout_mode = 1
@@ -277,6 +282,7 @@ offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
 mouse_filter = 1
+script = ExtResource("5_zone_outline")
 
 [node name="Zone1" parent="LayoutContainer" instance=ExtResource("2_slot")]
 layout_mode = 1
@@ -356,3 +362,4 @@ offset_right = 0.0
 offset_bottom = 0.0
 clip_contents = true
 mouse_filter = 1
+script = ExtResource("5_zone_outline")

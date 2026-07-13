@@ -1,9 +1,15 @@
+@tool
 extends Control
 
 ## Visual representation of one player's side of the board.
 ## Uses zones.svg as the background with anchor-based positioning matching the SVG layout.
 ## The LayoutContainer maintains the SVG's 1728:1008 aspect ratio within the available space.
 ## Mirroring for Player 2 flips all child anchors and the background texture.
+##
+## @tool: in the editor only _update_layout() runs (sizing LayoutContainer so the
+## anchored zones resolve to visible rects — WYSIWYG). All runtime setup is skipped,
+## and _apply_mirror() must NEVER run in the editor: saved flipped anchors would be
+## flipped again at runtime. The editor preview always shows P1 orientation.
 
 signal deck_clicked(player_id: int)
 signal discard_clicked(player_id: int)
@@ -17,6 +23,18 @@ signal card_preview_cleared()
 
 @export var player_id: int = 0
 @export var is_mirrored: bool = false # True for player 2 (top of screen)
+## Editor-only master switch for the WYSIWYG zone preview: runs the runtime
+## layout in the editor so all anchored zones resolve to visible rects.
+## Off restores the dormant .tscn state (zones collapse, outlines vanish).
+## Ignored at runtime.
+@export var editor_preview: bool = true:
+	set(value):
+		editor_preview = value
+		if Engine.is_editor_hint() and is_node_ready():
+			if editor_preview:
+				_update_layout()
+			else:
+				_reset_editor_preview()
 
 var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 
@@ -105,6 +123,13 @@ func deck_display() -> Control:
 
 
 func _ready() -> void:
+	if Engine.is_editor_hint():
+		# Editor preview: only the layout math — no autoloads, signals, or
+		# node mutation beyond the offsets _update_layout computes.
+		resized.connect(_update_layout)
+		if editor_preview:
+			_update_layout()
+		return
 	clip_contents = true
 	_setup_references()
 	_apply_custom_playmat()
@@ -113,12 +138,16 @@ func _ready() -> void:
 
 
 func _update_layout() -> void:
+	if Engine.is_editor_hint() and not editor_preview:
+		return
 	# Crop into the zone content area of the SVG, removing empty top/bottom space.
 	# Non-mirrored: content at ~0.20-0.95 in SVG space (top is empty).
 	# Mirrored: content at ~0.05-0.80 in SVG space (bottom is empty after flip).
 	var content_top: float
 	var content_bottom: float
-	if is_mirrored:
+	# In the editor anchors are never flipped (_apply_mirror is runtime-only),
+	# so the non-mirrored band is the one that matches what's on screen.
+	if is_mirrored and not Engine.is_editor_hint():
 		content_top = 0.03
 		content_bottom = 0.82
 	else:
@@ -177,8 +206,29 @@ func _update_layout() -> void:
 	# On mobile, bump label font sizes so they're readable on smaller boards.
 	# The LayoutContainer scales via anchors but font sizes are fixed pixels,
 	# so we set explicit sizes that work at phone scale.
-	if GameSettings.use_mobile_layout:
+	if not Engine.is_editor_hint() and GameSettings.use_mobile_layout:
 		_apply_mobile_labels()
+
+
+## Editor-only: undo what _update_layout() set, back to the .tscn's dormant
+## state — zero-size LayoutContainer (zones collapse, slot outlines vanish)
+## and full-rect backgrounds.
+func _reset_editor_preview() -> void:
+	var lc := $LayoutContainer
+	lc.offset_left = 0.0
+	lc.offset_top = 0.0
+	lc.offset_right = 0.0
+	lc.offset_bottom = 0.0
+	for node in [$BoardBg, $GradientOverlay]:
+		var ctrl := node as Control
+		ctrl.anchor_left = 0.0
+		ctrl.anchor_top = 0.0
+		ctrl.anchor_right = 1.0
+		ctrl.anchor_bottom = 1.0
+		ctrl.offset_left = 0.0
+		ctrl.offset_top = 0.0
+		ctrl.offset_right = 0.0
+		ctrl.offset_bottom = 0.0
 
 
 ## Pulsing gold border marking this playmat as the active player's. The panel
