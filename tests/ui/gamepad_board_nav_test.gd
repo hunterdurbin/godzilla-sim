@@ -7,6 +7,9 @@ extends Node
 ##     invalid zones, the hand, piles and the opponent board are all cursor
 ##     stops; confirm anywhere off the valid set is a no-op), pad_confirm
 ##     toggles valid zones through Slot.slot_clicked;
+##   - the prompt's "Effect source" preview cards are cursor stops (hint_<i>):
+##     landing mirrors the card to the big preview, A and Y open the zoom
+##     (never a selection), and prompt teardown re-homes the cursor;
 ##   - free browse walks the map (board rows, hand, action-panel buttons,
 ##     log panel, tracker labels) with NO control ever holding real focus;
 ##   - bumpers: LB focuses the log (dpad scrolls), RB the tracker (A toggles
@@ -122,7 +125,7 @@ func _ready() -> void:
 	# only valid zones act on confirm ---
 	# Valid zones Z2/Z4/Z6 on player 0's (bottom) board.
 	var valid: Array[int] = [1, 3, 5]
-	sel._show_zones_target_selection(0, 0, valid, 3, false, "pick zones")
+	sel._show_zones_target_selection(0, 0, valid, 3, false, "pick zones", "ESD01-016")
 	await _tick(2)
 	assert(nav._mode == "zones_target", "module missed selection context: %s" % nav._mode)
 	assert(nav._zone_jail_side() == "", "zone prompt sealed the graph")
@@ -134,6 +137,40 @@ func _ready() -> void:
 	# advertise the button that actually presses it (pad_end_main / X).
 	assert(board.confirm_glyph.action == &"pad_end_main",
 		"Confirm glyph not context-flipped to pad_end_main: %s" % board.confirm_glyph.action)
+
+	# --- The prompt's "Effect source" preview card is a cursor stop
+	# (hint_0): landing mirrors it to the big preview; A and Y open the
+	# read-only zoom and never touch the selection ---
+	await _tick(3) # the deferred positioner pins the row one frame late
+	assert(sel.prompt_preview_count() == 1,
+		"prompt did not build the source preview: %d" % sel.prompt_preview_count())
+	await _tap(&"pad_nav_left") # bot_z1
+	await _tap(&"pad_nav_left")
+	assert(nav._element == "bot_monster_deck", "walk did not reach bot_monster_deck: %s" % nav._element)
+	await _tap(&"pad_nav_left")
+	assert(nav._element == "hint_0", "left off the board did not land on the hint card: %s" % nav._element)
+	assert(nav._cursor.visible, "no cursor ring on the hint card")
+	_assert_no_focus(board, "cursor on hint card")
+	assert(board._preview_card.card_data.get("id", "") == "ESD01-016",
+		"hint hover did not mirror the source card to the big preview")
+	await _shot("hint_card_stop")
+	await _tap(&"pad_confirm")
+	assert(board.card_zoom_overlay.visible, "A on the hint card did not open the zoom")
+	assert(sel._zones_target_selecting, "A on the hint card ended the prompt")
+	assert(sel._zones_target_selected == [], "A on the hint card touched the selection: %s" % str(sel._zones_target_selected))
+	board.card_zoom_overlay.hide_zoom()
+	await _tick(3)
+	assert(nav._element == "hint_0", "zoom close did not restore the cursor to the hint card: %s" % nav._element)
+	await _tap(&"pad_inspect")
+	assert(board.card_zoom_overlay.visible, "Y on the hint card did not open the zoom")
+	board.card_zoom_overlay.hide_zoom()
+	await _tick(3)
+	# Climb back out (right walks onto the board's left edge).
+	await _tap(&"pad_nav_right")
+	assert(nav._element == "bot_monster_deck", "right off the hint card did not return: %s" % nav._element)
+	await _tap(&"pad_nav_right") # bot_z1
+	await _tap(&"pad_nav_right")
+	assert(nav._element == "bot_z2", "walk did not return to bot_z2: %s" % nav._element)
 
 	await _tap(&"pad_confirm")
 	assert(sel._zones_target_selected == [1], "confirm did not select zone 2: %s" % str(sel._zones_target_selected))
@@ -223,6 +260,21 @@ func _ready() -> void:
 	await _press_physical(JOY_BUTTON_X)
 	assert(not sel._zones_target_selecting, "X at full count did not finalize the prompt")
 	assert(nav._mode == "none", "context did not clear after prompt")
+
+	# --- Prompt teardown never strands the cursor on a freed hint card ---
+	var valid_one: Array[int] = [1]
+	sel._show_zones_target_selection(0, 0, valid_one, 1, true, "pick", "ESD01-016")
+	await _tick(3)
+	nav._enter_element("bot_monster_deck")
+	await _tick(1)
+	await _tap(&"pad_nav_left")
+	assert(nav._element == "hint_0", "second prompt's hint card unreachable: %s" % nav._element)
+	await _press_physical(JOY_BUTTON_X) # up_to prompt: X finalizes with zero picks
+	assert(not sel._zones_target_selecting, "X did not finalize the up_to prompt")
+	assert(nav._mode == "none", "context did not clear after the up_to prompt")
+	assert(not nav._element.begins_with("hint_"),
+		"cursor stranded on a freed hint card: %s" % nav._element)
+	assert(nav._cursor != null and nav._cursor.visible, "cursor hidden after hint-row teardown")
 
 	# --- Pass confirmation is the one jail whose cursor sits ON the Confirm
 	# button — there the glyph advertises A (pad_confirm) again ---

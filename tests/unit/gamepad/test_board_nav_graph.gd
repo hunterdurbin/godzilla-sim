@@ -1,9 +1,10 @@
 extends GdUnitTestSuite
 
 ## BoardNavGraph — the unified controller-navigation graph builder: static
-## table closure, dynamic hand/tracker/choice rows, the "hand"/"tracker"
-## sentinel expansion (nearest-by-X hand entry, full tracker column), and the
-## zone-jail edge override (wrap-around z1-z8 rows during zone prompts).
+## table closure, dynamic hand/tracker/choice/stack/hint rows, the
+## "hand"/"tracker" sentinel expansion (nearest-by-X hand entry, full tracker
+## column), and the zone-jail edge override (wrap-around z1-z8 rows during
+## zone prompts).
 
 const DIRS := ["up", "right", "down", "left"]
 
@@ -29,7 +30,7 @@ func _rects(hand_count: int) -> Callable:
 		return Rect2(Vector2(500.0, 300.0), Vector2(100.0, 100.0))
 
 
-func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choice_count: int = 0, stack_count: int = 0, zone_jail_side: String = "") -> Dictionary:
+func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choice_count: int = 0, stack_count: int = 0, zone_jail_side: String = "", hint_count: int = 0) -> Dictionary:
 	return BoardNavGraph.build({
 		"mobile": mobile,
 		"hand_count": hand_count,
@@ -37,6 +38,7 @@ func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choic
 		"choice_count": choice_count,
 		"stack_count": stack_count,
 		"zone_jail_side": zone_jail_side,
+		"hint_count": hint_count,
 		"rect_of": _rects(hand_count),
 	})
 
@@ -44,7 +46,7 @@ func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choic
 func test_desktop_build_is_closed() -> void:
 	# Every id referenced by any direction must be a mapped element itself —
 	# typos in the hand-edited tables become test failures, not dead ends.
-	var map := _build(5, false, 3, 2, 2)
+	var map := _build(5, false, 3, 2, 2, "", 2)
 	for id: String in map:
 		for dir: String in DIRS:
 			for target: String in map[id].get(dir, []):
@@ -189,6 +191,40 @@ func test_no_stack_rows_leaves_right_edge_untouched() -> void:
 	for id: String in map:
 		for dir: String in DIRS:
 			assert_that(map[id].get(dir, [])).not_contains(["stack_0"])
+
+
+func test_hint_row_chains_and_stitches() -> void:
+	var map := _build(3, false, 0, 0, 0, "", 2)
+	# The row chains left-to-right between the screen edge and the board's
+	# left end; up reaches the log panel (one-way — on the log the dpad
+	# scrolls), down expands the "hand" sentinel (nearest card by X — the
+	# hint fallback rect centers at x=550, nearest hand_2 at x≈495).
+	assert_that(map["hint_0"]["left"]).is_equal([])
+	assert_that(map["hint_0"]["right"]).is_equal(["hint_1"])
+	assert_that(map["hint_1"]["left"]).is_equal(["hint_0"])
+	assert_that(map["hint_1"]["right"]).is_equal(["bot_monster_deck", "bot_z1"])
+	assert_that(map["hint_0"]["down"]).is_equal(["hand_2"])
+	assert_that(map["hint_0"]["up"]).is_equal(["log_panel"])
+	# Ways in: left off the board's left end and off the hand's first card.
+	assert_that(map["bot_monster_deck"]["left"]).is_equal(["hint_1"])
+	assert_that(map["hand_0"]["left"]).is_equal(["hint_1"])
+
+
+func test_no_hint_row_leaves_lanes_untouched() -> void:
+	var map := _build(3)
+	assert_bool(map.has("hint_0")).is_false()
+	assert_that(map["bot_monster_deck"]["left"]).is_equal([])
+	for id: String in map:
+		for dir: String in DIRS:
+			assert_that(map[id].get(dir, [])).not_contains(["hint_0"])
+
+
+func test_mobile_hint_row_is_not_stitched_to_log_panel() -> void:
+	# Mobile's log panel lives in a bumper-only tray: build() strips the
+	# hint row's up edge; the board-side stitches stand.
+	var map := _build(3, true, 0, 0, 0, "", 2)
+	assert_that(map["hint_0"]["up"]).is_equal([])
+	assert_that(map["bot_monster_deck"]["left"]).is_equal(["hint_1"])
 
 
 func test_mobile_fab_grid_edges() -> void:

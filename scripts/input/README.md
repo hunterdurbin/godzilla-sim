@@ -103,8 +103,10 @@ Related pieces elsewhere:
   (`bot_*`/`top_*` visual ids), hand cards (`hand_<i>`), action-panel
   buttons + hand stacks (`ap_*`), the corner utility column (`sys_*`), the
   log/chat panel (`log_panel`), tracker labels (`trk_<i>`), choice
-  buttons (`choice_<i>`) and pending-effect stack rows (`stack_<i>`, chained
-  into `choice_0` while a choice is open). To change where the cursor goes,
+  buttons (`choice_<i>`), pending-effect stack rows (`stack_<i>`, chained
+  into `choice_0` while a choice is open) and the prompt-preview mini cards
+  (`hint_<i>`, the "Effect source" row above the action prompt — only
+  mapped while a prompt shows them). To change where the cursor goes,
   edit its tables (`PLAYMAT`, `DESKTOP_UI`, `MOBILE_UI`; `ZONE_JAIL_EDGES`
   is dormant — zone prompts free-roam now, see below); the
   `"hand"`/`"tracker"` sentinels expand at build time (nearest-card-by-X
@@ -131,6 +133,10 @@ Related pieces elsewhere:
   gates confirm (A off the valid set is a no-op — slot clicks self-gate on
   selection mode, and `card_to_zone` additionally checks the cursor is on
   the target board so an opponent zone at the same index can't misplay).
+  The cursor can also rest on the prompt's own `hint_<i>` preview cards
+  (effect source / card being placed): landing mirrors the card to the big
+  right-side preview, and A and Y both open the read-only zoom — never a
+  selection.
   The old sealed-graph jail (`BoardNavGraph.ZONE_JAIL_EDGES` via the
   `zone_jail_side` ctx key) is dormant: the live board always passes `""`.
   The remaining prompts still jail movement — hand modes to the valid

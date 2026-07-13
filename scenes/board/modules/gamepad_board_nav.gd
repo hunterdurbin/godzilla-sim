@@ -4,7 +4,8 @@ extends Node
 ##
 ## ONE directional graph, ONE cursor: playmat slots, hand cards, action-panel
 ## buttons, hand-button stacks, system buttons, the log/chat panel, tracker
-## labels and choice buttons are all nodes of the BoardNavGraph adjacency map
+## labels, choice buttons and the prompt-preview mini cards (hint_<i>, the
+## "Effect source" row) are all nodes of the BoardNavGraph adjacency map
 ## (CursorMap resolves it, tie-breaking multi-target directions by the
 ## last-10-visited history). Cards, slots AND buttons keep their pointer
 ## picking and never receive Godot focus — on pad_confirm this module
@@ -95,6 +96,9 @@ var _hovered_choice: Button = null
 ## Pending-effect row hbox under the cursor (synthesized mouse signals drive
 ## the same attention pulse + sticky preview the pointer path uses).
 var _hovered_stack: Control = null
+## Prompt-preview mini card under the cursor (synthesized mouse signals drive
+## the same big right-side preview the pointer path uses).
+var _hovered_hint: Control = null
 ## Pile display (deck/discard/monster deck) under the cursor (synthesized
 ## mouse signals drive the count badge + discard top-card preview).
 var _hovered_pile: Control = null
@@ -136,6 +140,7 @@ func _ready() -> void:
 	if selection:
 		selection.selection_context_changed.connect(_on_selection_context_changed)
 		selection.action_buttons_changed.connect(_on_action_buttons_changed)
+		selection.prompt_previews_changed.connect(_on_prompt_previews_changed)
 	var mobile: Node = _board.get_node_or_null("MobileLayout")
 	if mobile and mobile.has_signal("fab_toggled"):
 		mobile.fab_toggled.connect(_on_fab_toggled)
@@ -232,6 +237,7 @@ func _rebuild_map() -> void:
 		"tracker_count": _tracker_labels().size(),
 		"choice_count": _choice_buttons().size(),
 		"stack_count": _stack_row_count(),
+		"hint_count": _hint_count(),
 		"zone_jail_side": _zone_jail_side(),
 		"rect_of": _rect_of,
 	}))
@@ -583,7 +589,9 @@ func _jail_allows(id: String) -> bool:
 			return id.begins_with("hand_")
 		"choice":
 			# The pending-effect rows are part of the effects area — the dpad
-			# may travel choice <-> stack while the prompt is up.
+			# may travel choice <-> stack while the prompt is up. The hint_<i>
+			# preview cards are deliberately NOT admitted: the choice buttons
+			# already retarget the preview, and roam (Select) reaches them.
 			return id.begins_with("choice_") or id.begins_with("stack_")
 		"confirm":
 			return id == "ap_confirm" or id == "ap_cancel"
@@ -609,6 +617,12 @@ func _element_usable(id: String) -> bool:
 			return false
 		var row: Control = stack.nav_row_control(_id_index(id))
 		return row != null and row.is_visible_in_tree()
+	if id.begins_with("hint_"):
+		# Covers the row's one-frame hidden window (deferred positioner) and
+		# freed/rebuilt preview cards.
+		var selection := _selection_ctrl()
+		var card: Control = selection.prompt_preview_control(_id_index(id)) if selection else null
+		return card != null and card.is_visible_in_tree()
 	if id == "log_panel":
 		# Mobile: always reachable — the bumper slides the tray in.
 		if _board._is_mobile_layout:
@@ -823,6 +837,24 @@ func _on_stack_rows_changed() -> void:
 		_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
 
 
+## The prompt-preview row was (re)built/freed or the sticky slot joined/left
+## it: re-resolve so the ring and synthesized hover bind to the NEW card
+## instances, clamping to the last surviving hint when the focused one left.
+func _on_prompt_previews_changed() -> void:
+	if not GamepadHelper.is_using_gamepad() or not _element.begins_with("hint_"):
+		return
+	_rebuild_map()
+	if _element_valid(_element):
+		_update_cursor()
+		nav_state_changed.emit()
+		return
+	var count := _hint_count()
+	if count > 0:
+		_enter_element("hint_%d" % (count - 1))
+	else:
+		_relocate_cursor([BROWSE_DEFAULT, DEFAULT_ELEMENT])
+
+
 # --- Element resolution ---
 
 ## The physically-bottom playmat is `bot_*`; seat-independent so a future
@@ -863,6 +895,11 @@ func _resolve(id: String) -> Dictionary:
 		var i := _id_index(id)
 		var row: Control = stack.nav_row_control(i) if stack else null
 		return {"kind": "stack", "control": row, "idx": i, "pid": -1} if row else {}
+	if id.begins_with("hint_"):
+		var selection := _selection_ctrl()
+		var i := _id_index(id)
+		var card: Control = selection.prompt_preview_control(i) if selection else null
+		return {"kind": "hint", "control": card, "idx": i, "pid": -1} if card else {}
 	if id == "log_panel":
 		var panel: Control = _board.get_node_or_null("LogPanel")
 		return {"kind": "log", "control": panel, "idx": 0, "pid": -1} if panel else {}
@@ -969,6 +1006,8 @@ func _confirm() -> void:
 				_board._on_discard_clicked(int(roam_entry["pid"]))
 			"monster_deck":
 				_board._on_monster_deck_clicked(int(roam_entry["pid"]))
+			"hint":
+				_zoom_hint(int(roam_entry["idx"]))
 		return
 	_rebuild_map()
 	if _element.begins_with("hand_"):
@@ -999,6 +1038,12 @@ func _confirm() -> void:
 			return
 		"tracker":
 			_board._tracker.toggle_label(entry["control"] as Label)
+			return
+		"hint":
+			# Read-only zoom, same as clicking the preview — resolved BEFORE
+			# the prompt-mode section below so A on a hint card can never
+			# select (hints are also never in _ctx_elements).
+			_zoom_hint(int(entry["idx"]))
 			return
 	# Prompt modes: synthesize the pointer selection path.
 	if entry["kind"] == "zone":
@@ -1061,6 +1106,17 @@ func _inspect() -> void:
 				var dict: Dictionary = CardData.get_card_by_id(base_id)
 				if not dict.is_empty():
 					_board._show_card_zoom(dict.duplicate(true), 0)
+		"hint":
+			_zoom_hint(int(entry["idx"]))
+
+
+## Open the card zoom for the prompt-preview card at `index` — the exact
+## call the preview's pointer click makes (A and Y are both read-only here).
+func _zoom_hint(index: int) -> void:
+	var selection := _selection_ctrl()
+	var data: Dictionary = selection.prompt_preview_card_data(index) if selection else {}
+	if not data.is_empty():
+		_board._show_card_zoom(data, 0)
 
 
 func _open_chat() -> void:
@@ -1154,6 +1210,7 @@ func _update_cursor() -> void:
 		var stack := _effect_stack()
 		stack_hover = stack.nav_row_hover(_id_index(_element)) if stack else null
 	_set_hovered_stack(stack_hover)
+	_set_hovered_hint(target if _element.begins_with("hint_") else null)
 	var pile_hover: Control = null
 	if _element.ends_with("_deck") or _element.ends_with("_discard") or _element.ends_with("_monster_deck"):
 		pile_hover = target
@@ -1201,6 +1258,20 @@ func _set_hovered_stack(row: Control) -> void:
 		row.mouse_entered.emit()
 
 
+## Prompt-preview mini cards keep their pointer hover handlers (big
+## right-side preview) — synthesize the same enter/exit signals. The exit
+## guard matters: a card freed mid-hover never fires mouse_exited (the
+## cleanup path force-hides the preview itself).
+func _set_hovered_hint(card: Control) -> void:
+	if card == _hovered_hint:
+		return
+	if is_instance_valid(_hovered_hint):
+		_hovered_hint.mouse_exited.emit()
+	_hovered_hint = card
+	if is_instance_valid(card):
+		card.mouse_entered.emit()
+
+
 ## Pile zones (deck/discard/monster deck) keep their pointer hover handlers
 ## (count badge + discard top-card preview) — the cursor synthesizes the same
 ## enter/exit signals.
@@ -1224,7 +1295,8 @@ func _process(_delta: float) -> void:
 	var target: Control = null
 	if _element.begins_with("hand_"):
 		target = _cursor_card if is_instance_valid(_cursor_card) else null
-	elif _element.begins_with("choice_") or _element.begins_with("stack_"):
+	elif _element.begins_with("choice_") or _element.begins_with("stack_") \
+			or _element.begins_with("hint_"):
 		target = _resolve_control(_element)
 	if target == null or not target.is_inside_tree():
 		return
@@ -1238,6 +1310,7 @@ func _hide_cursor() -> void:
 	_set_hovered_card(null)
 	_set_hovered_choice(null)
 	_set_hovered_stack(null)
+	_set_hovered_hint(null)
 	_set_hovered_pile(null)
 	if _cursor:
 		_cursor.visible = false
@@ -1328,11 +1401,20 @@ func _tracker_labels() -> Array[Label]:
 	return tracker.interactive_labels()
 
 
+func _selection_ctrl() -> SelectionController:
+	return _board.get_node_or_null("SelectionController") as SelectionController
+
+
 func _choice_buttons() -> Array[Button]:
-	var selection: Node = _board.get_node_or_null("SelectionController")
+	var selection := _selection_ctrl()
 	if selection == null:
 		return [] as Array[Button]
 	return selection._choice_buttons
+
+
+func _hint_count() -> int:
+	var selection := _selection_ctrl()
+	return selection.prompt_preview_count() if selection else 0
 
 
 func _effect_stack() -> EffectStackPanel:
@@ -1379,6 +1461,7 @@ func debug_graph() -> Dictionary:
 		"tracker_count": _tracker_labels().size(),
 		"choice_count": _choice_buttons().size(),
 		"stack_count": _stack_row_count(),
+		"hint_count": _hint_count(),
 		"zone_jail_side": _zone_jail_side(),
 		"rect_of": _rect_of,
 	})

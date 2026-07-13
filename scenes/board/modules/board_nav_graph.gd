@@ -30,7 +30,9 @@ extends RefCounted
 ## cards, left to right), trk_<i> (turn-tracker labels, top to bottom),
 ## choice_<i> (choice-prompt buttons, top to bottom), stack_<i>
 ## (pending-effect rows, top to bottom — chained to choice_0 when a choice
-## is open, otherwise entered via the Select toggle or from the top board).
+## is open, otherwise entered via the Select toggle or from the top board),
+## hint_<i> (prompt-preview mini cards above the action prompt, left to
+## right — only mapped while a prompt shows them).
 ## Button ids: ap_* = action panel + hand stacks + mobile FAB, sys_* = the
 ## corner utility column, log_panel = the game log/chat panel.
 ##
@@ -196,6 +198,8 @@ const MOBILE_UI := {
 ##   tracker_count: int (0)       — interactive turn-tracker labels
 ##   choice_count: int (0)        — visible choice-prompt buttons
 ##   stack_count: int (0)         — visible pending-effect rows
+##   hint_count: int (0)          — prompt-preview mini cards (effect source /
+##                                  placed card / sticky pending-effect slot)
 ##   zone_jail_side: String ("")  — "bot"/"top" seals that playmat's z1-z8
 ##                                  with the ZONE_JAIL_EDGES wrap-around
 ##                                  edges instead of their free-browse rows
@@ -211,6 +215,7 @@ static func build(ctx: Dictionary) -> Dictionary:
 	var tracker_count: int = ctx.get("tracker_count", 0)
 	var choice_count: int = ctx.get("choice_count", 0)
 	var stack_count: int = ctx.get("stack_count", 0)
+	var hint_count: int = ctx.get("hint_count", 0)
 	var zone_jail_side: String = ctx.get("zone_jail_side", "")
 	var rect_of: Callable = ctx.get("rect_of", Callable())
 
@@ -221,6 +226,7 @@ static func build(ctx: Dictionary) -> Dictionary:
 	_add_tracker_column(map, tracker_count, mobile)
 	_add_choice_column(map, choice_count, stack_count)
 	_add_stack_column(map, stack_count, choice_count)
+	_add_hint_row(map, hint_count, hand_count)
 	# Mobile: the log panel and tracker live in slide-out trays — reachable
 	# via the bumpers only, never by walking off the board.
 	_expand_sentinels(map, hand_count, 0 if mobile else tracker_count, rect_of)
@@ -258,6 +264,13 @@ static func stack_ids(count: int) -> Array[String]:
 	var out: Array[String] = []
 	for i in range(count):
 		out.append("stack_%d" % i)
+	return out
+
+
+static func hint_ids(count: int) -> Array[String]:
+	var out: Array[String] = []
+	for i in range(count):
+		out.append("hint_%d" % i)
 	return out
 
 
@@ -372,6 +385,32 @@ static func _add_stack_column(map: Dictionary, count: int, choice_count: int) ->
 			"down": down,
 			"left": ["top_monster_deck", "top_z1"],
 		}
+
+
+## Prompt-preview mini cards (effect source / placed card / sticky
+## pending-effect slot): a horizontal row pinned above the action prompt at
+## the bottom-left — LEFT of bot row 2 (level with the monster zone), below
+## the log panel, above-left of the hand fan. Right walks onto the board's
+## left edge, down enters the hand; up reaches the log (one-way — on the log
+## the dpad scrolls, same as sys_save's edge; mobile's build() strips it,
+## the tray is bumper-only). Runs BEFORE _expand_sentinels so the "hand"
+## edges expand to the nearest card; no ids exist when the row is down, so
+## every lane it touches is unchanged then.
+static func _add_hint_row(map: Dictionary, count: int, hand_count: int) -> void:
+	for i in range(count):
+		map["hint_%d" % i] = {
+			"up": ["log_panel"],
+			"right": ["hint_%d" % (i + 1)] if i < count - 1 else ["bot_monster_deck", "bot_z1"],
+			"down": [HAND_SENTINEL],
+			"left": ["hint_%d" % (i - 1)] if i > 0 else [],
+		}
+	if count <= 0:
+		return
+	# Ways in: left off the board's left end and off the hand's first card
+	# (appended — history returns the cursor where it came from).
+	(map["bot_monster_deck"]["left"] as Array).append("hint_%d" % (count - 1))
+	if hand_count > 0:
+		(map["hand_0"]["left"] as Array).append("hint_%d" % (count - 1))
 
 
 ## Replace the "hand" and "tracker" sentinels in every edge list. "hand"

@@ -28,6 +28,11 @@ signal selection_context_changed(ctx: Dictionary)
 ## focus yanked around (the old refocus() path).
 signal action_buttons_changed
 
+## Emitted whenever the prompt-preview row is (re)built or freed, or the
+## sticky pending-effect slot joins/leaves it — GamepadBoardNav re-resolves
+## the hint_<i> element under its cursor (indices shift with the row).
+signal prompt_previews_changed
+
 var _board: Node
 var _session: GameSession
 
@@ -1567,6 +1572,7 @@ func _show_prompt_previews(source_id: String, placed_id: String) -> void:
 	# A sticky pending-effect slot joins the new row as its last slot
 	_mount_stack_hover_slot()
 	_position_prompt_previews.call_deferred()
+	prompt_previews_changed.emit()
 
 
 func _make_preview_caption(text_key: String) -> Label:
@@ -1600,7 +1606,8 @@ func _position_prompt_previews() -> void:
 
 
 func _cleanup_prompt_previews() -> void:
-	if _prompt_preview_root and is_instance_valid(_prompt_preview_root):
+	var had_row := _prompt_preview_root != null and is_instance_valid(_prompt_preview_root)
+	if had_row:
 		# A sticky pending-effect slot riding in the row dies with it; remount
 		# it afterwards (deferred no-ops if a new prompt row re-adopted it).
 		if _stack_hover_preview and is_instance_valid(_stack_hover_preview) \
@@ -1612,6 +1619,44 @@ func _cleanup_prompt_previews() -> void:
 		_board._hide_card_preview()
 	_prompt_preview_root = null
 	_prompt_preview_card = null
+	if had_row:
+		prompt_previews_changed.emit()
+
+
+## --- Prompt-preview nav registry (controller-cursor stops: hint_<i>) ---
+
+## Live preview cards, left to right — the sticky pending-effect slot rides
+## as the last entry while mounted in the row. Counted regardless of the
+## row's one-frame hidden window (the deferred positioner), so the nav graph
+## gains the nodes immediately; GamepadBoardNav gates usability on
+## is_visible_in_tree.
+func _prompt_preview_cards() -> Array[Control]:
+	var out: Array[Control] = []
+	if _prompt_preview_root == null or not is_instance_valid(_prompt_preview_root) \
+			or _prompt_preview_root.is_queued_for_deletion():
+		return out
+	for child in _prompt_preview_root.get_children():
+		if child is Control and not child.is_queued_for_deletion() and "card_data" in child:
+			out.append(child)
+	return out
+
+
+func prompt_preview_count() -> int:
+	return _prompt_preview_cards().size()
+
+
+func prompt_preview_control(index: int) -> Control:
+	var cards := _prompt_preview_cards()
+	if index < 0 or index >= cards.size():
+		return null
+	return cards[index]
+
+
+func prompt_preview_card_data(index: int) -> Dictionary:
+	var card := prompt_preview_control(index)
+	if card == null:
+		return {}
+	return card.card_data
 
 
 ## Sticky mini preview for the last hovered effect-stack row. While a
@@ -1675,6 +1720,8 @@ func _mount_stack_hover_slot() -> void:
 		add_child(box)
 		_position_stack_hover_preview.call_deferred()
 	_stack_hover_preview = card
+	if card.get_parent() == _prompt_preview_root:
+		prompt_previews_changed.emit() # New last hint_<i> slot in the row
 
 
 ## The node to position/free for the hover slot: the standalone wrapper box
@@ -1691,9 +1738,14 @@ func _stack_hover_root() -> Control:
 func _free_stack_hover_node() -> void:
 	var node := _stack_hover_root()
 	if node:
+		var was_in_row := _prompt_preview_root != null \
+				and is_instance_valid(_prompt_preview_root) \
+				and node.get_parent() == _prompt_preview_root
 		node.queue_free()
 		# A preview freed mid-hover never fires mouse_exited
 		_board._hide_card_preview()
+		if was_in_row:
+			prompt_previews_changed.emit() # The row lost its last hint_<i> slot
 	_stack_hover_preview = null
 
 
