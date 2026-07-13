@@ -15,7 +15,12 @@ static func get_card_template_id(card_data: Dictionary) -> String:
 
 
 ## Group cards by template ID. Returns Array of {card_data, count, has_match}.
-static func group_cards(cards: Array, matching_ids: Dictionary = {}) -> Array[Dictionary]:
+## `order_by`: optional reference array — groups are emitted in first-seen
+## template order of THIS array instead of `cards`, so a pool filtered down
+## from a fixed source keeps stable stack positions across rebuilds. Templates
+## in `cards` but absent from `order_by` append in their own first-seen order.
+static func group_cards(cards: Array, matching_ids: Dictionary = {},
+		order_by: Array = []) -> Array[Dictionary]:
 	var groups: Dictionary = {} # template_id -> {card_data, count, has_match}
 	var order: Array[String] = [] # Preserve first-seen order
 	for card_data in cards:
@@ -31,6 +36,19 @@ static func group_cards(cards: Array, matching_ids: Dictionary = {}) -> Array[Di
 				"has_match": matching_ids.has(card_data.get("id", "")),
 			}
 			order.append(tid)
+
+	if not order_by.is_empty():
+		var stable: Array[String] = []
+		var seen: Dictionary = {}
+		for card_data in order_by:
+			var tid := get_card_template_id(card_data)
+			if groups.has(tid) and not seen.has(tid):
+				seen[tid] = true
+				stable.append(tid)
+		for tid in order:
+			if not seen.has(tid):
+				stable.append(tid)
+		order = stable
 
 	var result: Array[Dictionary] = []
 	for tid in order:
@@ -204,6 +222,28 @@ static func focused_index(grid: GridContainer) -> int:
 	return grid_cards(grid).find(focus_owner)
 
 
+## Template id of the focused card in `grid`, "" when focus is elsewhere
+## (or the focused child has no card_data, e.g. deck-builder meta wrappers).
+static func focused_template_id(grid: GridContainer) -> String:
+	var idx := focused_index(grid)
+	if idx < 0:
+		return ""
+	var card := grid_cards(grid)[idx]
+	return get_card_template_id(card.card_data) if "card_data" in card else ""
+
+
+## Index of the first grid card matching `template_id`, -1 when absent.
+static func template_index(grid: GridContainer, template_id: String) -> int:
+	if template_id.is_empty():
+		return -1
+	var cards := grid_cards(grid)
+	for i in range(cards.size()):
+		if "card_data" in cards[i] \
+				and get_card_template_id(cards[i].card_data) == template_id:
+			return i
+	return -1
+
+
 ## Deferred, clamped focus grab of the card at `index` (gamepad mode only);
 ## falls back to `fallback` (e.g. the first chrome control) on an empty grid.
 ## Deferred + revalidated because callers invoke this right after rebuilding
@@ -211,6 +251,10 @@ static func focused_index(grid: GridContainer) -> int:
 static func focus_index(grid: GridContainer, index: int, fallback: Control = null) -> void:
 	if not GamepadHelper.is_using_gamepad():
 		return
+	# Capture the user's scroll NOW, before follow_focus reacts to the grab.
+	var scroll := scroll_ancestor(grid)
+	var scroll_v: int = scroll.scroll_vertical if scroll else 0
+	var scroll_h: int = scroll.scroll_horizontal if scroll else 0
 	(func() -> void:
 		if not is_instance_valid(grid) or not grid.is_inside_tree():
 			return
@@ -219,11 +263,49 @@ static func focus_index(grid: GridContainer, index: int, fallback: Control = nul
 			var card := cards[clampi(index, 0, cards.size() - 1)]
 			if card.is_visible_in_tree():
 				card.grab_focus()
+				if scroll != null:
+					_settle_scroll(scroll, card, scroll_v, scroll_h)
 				return
 		if fallback != null and is_instance_valid(fallback) \
 				and fallback.is_visible_in_tree():
 			fallback.grab_focus()
 	).call_deferred()
+
+
+## Nearest ScrollContainer ancestor of `node`, null when there is none.
+static func scroll_ancestor(node: Control) -> ScrollContainer:
+	var parent := node.get_parent()
+	while parent != null:
+		if parent is ScrollContainer:
+			return parent
+		parent = parent.get_parent()
+	return null
+
+
+## follow_focus reacts to the grab while dying (queue_free'd) cards still
+## occupy grid cells — the transiently ~2x-tall layout scrolls the view to a
+## phantom position that the next re-sort invalidates, leaving the cursor
+## off-view. Re-assert the pre-rebuild scroll once the layout has settled;
+## ensure_control_visible then only moves if the card is genuinely out of view.
+static func _settle_scroll(scroll: ScrollContainer, target: Control, v: int, h: int) -> void:
+	await scroll.get_tree().process_frame
+	await scroll.get_tree().process_frame
+	if not is_instance_valid(scroll) or not is_instance_valid(target):
+		return
+	if not target.has_focus():
+		return # cursor already moved on (hold-repeat drain)
+	scroll.scroll_vertical = v
+	scroll.scroll_horizontal = h
+	# The restore re-lays-out the content next frame; calling
+	# ensure_control_visible in the same frame would compute against the
+	# stale (jumped) offset and overshoot. Re-check with settled geometry
+	# and only force-visible if the cursor really is out of view.
+	await scroll.get_tree().process_frame
+	if not is_instance_valid(scroll) or not is_instance_valid(target) \
+			or not target.has_focus():
+		return
+	if not scroll.get_global_rect().intersects(target.get_global_rect()):
+		scroll.ensure_control_visible(target)
 
 
 static func _visible_controls(controls: Array[Control]) -> Array[Control]:

@@ -19,6 +19,10 @@ extends Node
 ##   - card select: A moves pool -> selection, cross-links reach the
 ##     selection grid, removing the last pick returns to the pool, Confirm
 ##     resolves;
+##   - card select, stacked: picking a copy whose duplicates straddle other
+##     cards keeps the stack at the same grid index with the cursor on it
+##     (regression: first-seen regrouping moved the stack and the cursor
+##     landed elsewhere), B skips;
 ##   - deck arrange: A toggles a card between Keep and Discard, RB/LB
 ##     reorder within Keep, Confirm resolves keep+discard.
 ##
@@ -226,6 +230,51 @@ func _ready() -> void:
 	assert(select_result[0] != null and (select_result[0] as Array).size() == 1,
 		"confirm did not resolve with the picked card")
 	_assert_no_focus(board, "after card select confirm")
+
+	# --- Card select, stacked: a stack whose copies straddle another card must
+	# keep its grid position (and the cursor) across a pick ---------------------
+	var stack_tid: String = OverlayGridUtil.get_card_template_id(dicts[0])
+	var other: Dictionary = {}
+	for d: Dictionary in dicts:
+		if OverlayGridUtil.get_card_template_id(d) != stack_tid:
+			other = d
+			break
+	assert(not other.is_empty(), "hand has no second template for the stack scenario")
+	var dup1: Dictionary = dicts[0].duplicate(true)
+	dup1["id"] = stack_tid + "_9_1"
+	var dup2: Dictionary = dicts[0].duplicate(true)
+	dup2["id"] = stack_tid + "_9_2"
+	# Source order [T, other, T, T] — the T copies are non-contiguous.
+	var stack_pool: Array = [dicts[0], other, dup1, dup2]
+	var stack_result: Array = [null]
+	var stack_cb := func(picked: Array) -> void: stack_result[0] = picked
+	if select._router: # stacked view defaults on without a router
+		select._router.match_stacked_view = true
+	select.show_prompt(stack_pool, stack_pool, "test stack", 1, 3, stack_cb)
+	await _tick(2)
+	var stack_card: Control = _focus_owner(board)
+	assert(_is_grid_card(stack_card), "stacked select first pool card not focused")
+	assert(OverlayGridUtil.focused_index(select._pool_grid) == 0
+		and OverlayGridUtil.get_card_template_id(stack_card.card_data) == stack_tid,
+		"x3 stack is not the first focused pool card")
+
+	await _press_button(JOY_BUTTON_A)
+	await _tick(2)
+	assert(select._selected.size() == 1, "A did not pick from the stack")
+	var after_pick: Control = _focus_owner(board)
+	assert(_is_grid_card(after_pick)
+		and OverlayGridUtil.get_card_template_id(after_pick.card_data) == stack_tid,
+		"cursor left the stack after a pick: %s" % str(after_pick))
+	assert(OverlayGridUtil.focused_index(select._pool_grid) == 0,
+		"stack moved from grid index 0 after a pick")
+
+	# B skips (pool selects are always skippable) and resolves with [].
+	await _press_button(JOY_BUTTON_B)
+	await _tick(2)
+	assert(not select.visible, "B did not skip the stacked card select")
+	assert(stack_result[0] != null and (stack_result[0] as Array).is_empty(),
+		"skip did not resolve with an empty pick")
+	_assert_no_focus(board, "after stacked card select skip")
 
 	# --- Deck arrange: A toggles piles, RB/LB reorder Keep, Confirm resolves ---
 	var arrange: Node = board.deck_arrange_overlay

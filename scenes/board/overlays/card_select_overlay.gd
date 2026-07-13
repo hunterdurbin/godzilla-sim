@@ -100,10 +100,13 @@ func _pool_filter() -> Callable:
 
 
 func _refresh() -> void:
-	# Preserve the pad cursor across rebuilds: focus stays in the grid it was
-	# in, at the same clamped index (repeated A drains/refills a pile). A
-	# now-empty selection sends the cursor back to the pool.
+	# Preserve the pad cursor across rebuilds: in stacked mode the cursor
+	# follows the focused TEMPLATE (a stack keeps focus while it drains);
+	# when the stack is gone (or non-stacked) it falls back to the same
+	# clamped index (repeated A drains/refills a pile). A now-empty
+	# selection sends the cursor back to the pool.
 	var pool_idx := OverlayGridUtil.focused_index(_pool_grid)
+	var pool_tid := OverlayGridUtil.focused_template_id(_pool_grid)
 	var sel_idx := OverlayGridUtil.focused_index(_selection_grid)
 	_refresh_pool()
 	_refresh_selection()
@@ -116,7 +119,10 @@ func _refresh() -> void:
 		else:
 			OverlayGridUtil.focus_index(_selection_grid, sel_idx, _confirm)
 	elif pool_idx >= 0:
-		OverlayGridUtil.focus_index(_pool_grid, pool_idx, _confirm)
+		var tid_idx := OverlayGridUtil.template_index(_pool_grid, pool_tid) \
+				if _stacked.button_pressed else -1
+		OverlayGridUtil.focus_index(_pool_grid,
+				tid_idx if tid_idx >= 0 else pool_idx, _confirm)
 
 
 func _get_pool() -> Array:
@@ -148,7 +154,10 @@ func _refresh_pool() -> void:
 	OverlayGridUtil.clear_grid(_pool_grid, _on_pool_clicked)
 
 	if stacked:
-		var groups := OverlayGridUtil.group_cards(pool, _matching_ids)
+		# Anchor stack order to the fixed source so groups keep their grid
+		# position while copies are picked out of (or returned to) the pool.
+		var source: Array = _all if show_all else _matching
+		var groups := OverlayGridUtil.group_cards(pool, _matching_ids, source)
 		for group in groups:
 			var card_data: Dictionary = group["card_data"]
 			var count: int = group["count"]

@@ -3,13 +3,15 @@ extends GdUnitTestSuite
 ## OverlayGridUtil focus meshes — the controller navigation of the board
 ## overlays: grid-internal row-major wrap, chrome rows joining the vertical
 ## cycle, hidden-chrome filtering, two-grid cross links, focus index capture
-## and restore, and the deck-arrange pile math statics.
+## and restore (ordinal and template-id), template grouping order, and the
+## deck-arrange pile math statics.
 
 class StubCard:
 	extends Control
 	@warning_ignore("unused_signal")
 	signal card_clicked(card: Control)
 	var is_selectable: bool = true
+	var card_data: Dictionary = {}
 
 
 var _root: Control
@@ -307,6 +309,65 @@ func test_focus_index_noop_in_pointer_mode() -> void:
 	await await_idle_frame()
 	assert_object(grid.get_viewport().gui_get_focus_owner()).is_null()
 	GamepadHelper._using_gamepad = was_gamepad
+
+
+func _dicts(ids: Array) -> Array:
+	var out: Array = []
+	for id: String in ids:
+		out.append({"id": id})
+	return out
+
+
+func _group_tids(groups: Array[Dictionary]) -> Array:
+	return groups.map(func(g: Dictionary) -> String:
+		return OverlayGridUtil.get_card_template_id(g["card_data"]))
+
+
+func test_group_cards_keeps_first_seen_order_without_order_by() -> void:
+	var groups := OverlayGridUtil.group_cards(_dicts(["A_1_0", "B_1_0", "A_1_1"]))
+	assert_array(_group_tids(groups)).is_equal(["A", "B"])
+	assert_int(groups[0]["count"]).is_equal(2)
+	assert_int(groups[1]["count"]).is_equal(1)
+
+
+func test_group_cards_order_by_pins_source_positions() -> void:
+	# The card-select regression: template T's first copy was picked out of the
+	# pool, so first-seen regrouping moved the whole stack behind X. Anchoring
+	# on the fixed source keeps T first.
+	var pool := _dicts(["X_1_0", "X_1_1", "T_1_1", "T_1_2"])
+	var source := _dicts(["T_1_0", "X_1_0", "X_1_1", "T_1_1", "T_1_2"])
+	var groups := OverlayGridUtil.group_cards(pool, {}, source)
+	assert_array(_group_tids(groups)).is_equal(["T", "X"])
+	assert_int(groups[0]["count"]).is_equal(2) # remaining copies, not source's 3
+	assert_int(groups[1]["count"]).is_equal(2)
+
+
+func test_group_cards_order_by_skips_absent_and_appends_orphans() -> void:
+	# Z exists only in order_by (fully drained -> no group); Y is missing from
+	# order_by (defensive orphan -> appended last); has_match still reflects
+	# the POOL instances, not the reference array.
+	var pool := _dicts(["Y_1_0", "T_1_1"])
+	var source := _dicts(["Z_1_0", "T_1_0", "T_1_1"])
+	var groups := OverlayGridUtil.group_cards(pool, {"T_1_1": true}, source)
+	assert_array(_group_tids(groups)).is_equal(["T", "Y"])
+	assert_bool(groups[0]["has_match"]).is_true()
+	assert_bool(groups[1]["has_match"]).is_false()
+
+
+func test_focused_template_id_and_template_index() -> void:
+	var grid := _make_grid(3, 3)
+	OverlayGridUtil.wire_overlay_focus(grid, [], []) # makes the cards focusable
+	var cards := OverlayGridUtil.grid_cards(grid)
+	cards[0].card_data = {"id": "A_1_0"}
+	cards[1].card_data = {"id": "B_1_0"}
+	cards[2].card_data = {"id": "B_1_1"}
+	assert_str(OverlayGridUtil.focused_template_id(grid)).is_equal("")
+	cards[1].grab_focus()
+	assert_str(OverlayGridUtil.focused_template_id(grid)).is_equal("B")
+	assert_int(OverlayGridUtil.template_index(grid, "B")).is_equal(1) # first match
+	assert_int(OverlayGridUtil.template_index(grid, "A")).is_equal(0)
+	assert_int(OverlayGridUtil.template_index(grid, "C")).is_equal(-1)
+	assert_int(OverlayGridUtil.template_index(grid, "")).is_equal(-1)
 
 
 # --- Deck-arrange pad pile math ---------------------------------------------

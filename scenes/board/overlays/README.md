@@ -48,6 +48,20 @@ Controller navigation (see `scripts/input/README.md` for the architecture):
 - Rebuilds preserve the pad cursor: capture
   `OverlayGridUtil.focused_index(grid)` BEFORE clearing, restore with
   `focus_index(grid, idx, fallback)` (deferred + revalidated) after.
+  Card select's stacked pool goes further: it restores by TEMPLATE id
+  (`focused_template_id` before, `template_index` after) so the cursor stays
+  on a stack while it drains, falling back to the clamped index once the
+  stack is gone. Stacked pools filtered from a fixed source must also pass
+  that source as `group_cards(pool, matching_ids, order_by)` — otherwise
+  picking a copy whose duplicates are non-contiguous re-anchors the group's
+  first-seen position and the stack visibly jumps grid cells.
+  `focus_index` also settle-corrects the ScrollContainer: the deferred grab
+  fires while the dying (queue_free'd) cards still occupy cells, so
+  `follow_focus` scrolls to a phantom position in the transiently ~2x-tall
+  grid (mid-list stacks end up off-view — bottom-of-list ones self-correct
+  via the scroll clamp, which hides the bug). It re-asserts the pre-rebuild
+  scroll after layout settles and only force-scrolls if the cursor is
+  genuinely out of view.
 - Deck arrange pad model: A moves the focused card to the other pile, LB/RB
   (`pad_focus_log`/`pad_focus_tracker` — free while the board cursor is
   suspended) reorder within Keep; pure pile math in the `pad_toggle`/

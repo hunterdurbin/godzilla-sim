@@ -350,15 +350,20 @@ func _animate_hover(entering: bool) -> void:
 	tween.set_trans(Tween.TRANS_CUBIC)
 	tween.set_parallel(true)
 	var in_slot := _is_in_slot()
+	# hover_lift == 0 (overlay/gallery grids): leave position entirely to the
+	# container. A pad grab_focus lands during grid rebuilds, while dying
+	# queue_free'd cards still occupy cells — a position tween would capture
+	# that transient layout and pin the card in the wrong cell after re-sort.
+	var animate_position := not in_slot and hover_lift != 0.0
 	if entering:
 		var target_hover_scale := hover_scale_in_slot if in_slot else hover_scale
 		tween.tween_property(self , "scale", original_scale * target_hover_scale, scale_duration)
-		if not in_slot:
+		if animate_position:
 			var lift_dir := 1.0 if invert_hover else -1.0
 			tween.tween_property(self , "position", _pre_hover_position + Vector2(0, lift_dir * hover_lift), scale_duration)
 	else:
 		tween.tween_property(self , "scale", original_scale, scale_duration)
-		if not in_slot:
+		if animate_position:
 			tween.tween_property(self , "position", _pre_hover_position, scale_duration)
 		tween.chain().tween_callback(func(): _hover_active = false)
 
