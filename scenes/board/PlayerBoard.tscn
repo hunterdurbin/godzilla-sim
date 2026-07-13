@@ -1,12 +1,12 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://llyat54y8ef0"]
 
-[ext_resource type="Script" path="res://scenes/board/player_board.gd" id="1_pb"]
-[ext_resource type="PackedScene" path="res://scenes/slots/Slot.tscn" id="2_slot"]
+[ext_resource type="Script" uid="uid://mfaxpo5ulbo0" path="res://scenes/board/player_board.gd" id="1_pb"]
+[ext_resource type="PackedScene" uid="uid://bwx8c7j2mvh1d" path="res://scenes/slots/Slot.tscn" id="2_slot"]
 [ext_resource type="Texture2D" uid="uid://bi5c4b4txk6wa" path="res://assets/board/zones.svg" id="3_bg"]
-[ext_resource type="Texture2D" path="res://assets/board/default_board.png" id="4_board_bg"]
-[ext_resource type="Script" path="res://scenes/board/editor_zone_outline.gd" id="5_zone_outline"]
+[ext_resource type="Texture2D" uid="uid://flshwg1fa47o" path="res://assets/board/default_board.png" id="4_board_bg"]
+[ext_resource type="Script" uid="uid://n23wu7bbql1k" path="res://scenes/board/editor_zone_outline.gd" id="5_zone_outline"]
 
-[node name="PlayerBoard" type="Control"]
+[node name="PlayerBoard" type="Control" unique_id=2080230575]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,11 +15,11 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_pb")
 
-[node name="BoardBg" type="TextureRect" parent="."]
+[node name="BoardBg" type="TextureRect" parent="." unique_id=1917953229]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
+anchors_preset = 9
 anchor_bottom = 1.0
+offset_right = 1280.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
@@ -27,21 +27,25 @@ texture = ExtResource("4_board_bg")
 expand_mode = 1
 stretch_mode = 6
 
-[node name="GradientOverlay" type="ColorRect" parent="."]
+[node name="GradientOverlay" type="ColorRect" parent="." unique_id=1829321277]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
+anchors_preset = 9
 anchor_bottom = 1.0
+offset_right = 1280.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0)
 
-[node name="LayoutContainer" type="Control" parent="."]
+[node name="LayoutContainer" type="Control" parent="." unique_id=35182673]
 layout_mode = 1
 anchors_preset = 0
+offset_top = -69.333336
+offset_right = 1280.0
+offset_bottom = 677.3333
 
-[node name="Background" type="TextureRect" parent="LayoutContainer"]
+[node name="Background" type="TextureRect" parent="LayoutContainer" unique_id=1250278133]
+self_modulate = Color(1, 1, 1, 0.3)
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -51,315 +55,263 @@ grow_vertical = 2
 mouse_filter = 2
 texture = ExtResource("3_bg")
 expand_mode = 1
-stretch_mode = 0
-self_modulate = Color(1, 1, 1, 0.3)
 
-[node name="Strategy1" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Strategy1" parent="LayoutContainer" unique_id=1255929790 instance=ExtResource("2_slot")]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.065
 anchor_top = 0.204
 anchor_right = 0.2153
 anchor_bottom = 0.3908
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 landscape = true
 
-[node name="Strategy2" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Strategy2" parent="LayoutContainer" unique_id=883095429 instance=ExtResource("2_slot")]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.065
 anchor_top = 0.4103
 anchor_right = 0.2153
 anchor_bottom = 0.5969
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 landscape = true
 
-[node name="Strategy3" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Strategy3" parent="LayoutContainer" unique_id=18128827 instance=ExtResource("2_slot")]
 visible = false
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.065
 anchor_top = 0.204
 anchor_right = 0.2153
 anchor_bottom = 0.3908
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 landscape = true
 
-[node name="RageBg" type="Panel" parent="LayoutContainer"]
+[node name="RageBg" type="Panel" parent="LayoutContainer" unique_id=635776254]
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.2336
 anchor_top = 0.2048
 anchor_right = 0.4246
 anchor_bottom = 0.5963
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 mouse_filter = 2
 
-[node name="RageDisplay" type="VBoxContainer" parent="LayoutContainer"]
+[node name="RageDisplay" type="VBoxContainer" parent="LayoutContainer" unique_id=408872290]
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.2336
 anchor_top = 0.2048
 anchor_right = 0.4246
 anchor_bottom = 0.5963
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 
-[node name="ThreatRow" type="HBoxContainer" parent="LayoutContainer/RageDisplay"]
+[node name="ThreatRow" type="HBoxContainer" parent="LayoutContainer/RageDisplay" unique_id=1706463477]
 layout_mode = 2
 
-[node name="ThreatTitle" type="Label" parent="LayoutContainer/RageDisplay/ThreatRow"]
+[node name="ThreatTitle" type="Label" parent="LayoutContainer/RageDisplay/ThreatRow" unique_id=923839496]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.5, 0.2, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 12
 text = "STR_PB_THREAT"
 horizontal_alignment = 2
 vertical_alignment = 1
-theme_override_font_sizes/font_size = 12
-theme_override_colors/font_color = Color(1.0, 0.5, 0.2, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
 
-[node name="ThreatLabel" type="Label" parent="LayoutContainer/RageDisplay/ThreatRow"]
+[node name="ThreatLabel" type="Label" parent="LayoutContainer/RageDisplay/ThreatRow" unique_id=2117204843]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "0"
-vertical_alignment = 1
-theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(1.0, 0.6, 0.3, 1)
+theme_override_colors/font_color = Color(1, 0.6, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 14
+text = "0"
+vertical_alignment = 1
 
-[node name="RageTitle" type="Label" parent="LayoutContainer/RageDisplay"]
+[node name="RageTitle" type="Label" parent="LayoutContainer/RageDisplay" unique_id=945062924]
 layout_mode = 2
-text = "STR_PB_RAGE_ZONE"
-horizontal_alignment = 1
-theme_override_font_sizes/font_size = 12
 theme_override_colors/font_color = Color(1, 0.3, 0.2, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 12
+text = "STR_PB_RAGE_ZONE"
+horizontal_alignment = 1
 
-[node name="RageRow" type="HBoxContainer" parent="LayoutContainer/RageDisplay"]
+[node name="RageRow" type="HBoxContainer" parent="LayoutContainer/RageDisplay" unique_id=1600934252]
 layout_mode = 2
 size_flags_vertical = 3
 alignment = 1
 
-[node name="RageLabel" type="Label" parent="LayoutContainer/RageDisplay/RageRow"]
+[node name="RageLabel" type="Label" parent="LayoutContainer/RageDisplay/RageRow" unique_id=2021044164]
 layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 28
 text = "0"
 horizontal_alignment = 1
 vertical_alignment = 1
-theme_override_font_sizes/font_size = 28
+
+[node name="RageThreatLabel" type="Label" parent="LayoutContainer/RageDisplay/RageRow" unique_id=2146129618]
+layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 5
-
-[node name="RageThreatLabel" type="Label" parent="LayoutContainer/RageDisplay/RageRow"]
-layout_mode = 2
+theme_override_font_sizes/font_size = 18
 text = "(+0)"
 vertical_alignment = 1
-theme_override_font_sizes/font_size = 18
-theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 5
 
-
-[node name="CPDisplay" type="VBoxContainer" parent="LayoutContainer"]
+[node name="CPDisplay" type="VBoxContainer" parent="LayoutContainer" unique_id=1968566239]
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.5754
 anchor_top = 0.2048
 anchor_right = 0.7664
 anchor_bottom = 0.5963
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 mouse_filter = 2
 
-[node name="CPRow" type="HBoxContainer" parent="LayoutContainer/CPDisplay"]
+[node name="CPRow" type="HBoxContainer" parent="LayoutContainer/CPDisplay" unique_id=2035921080]
 layout_mode = 2
 
-[node name="CPTitle" type="Label" parent="LayoutContainer/CPDisplay/CPRow"]
+[node name="CPTitle" type="Label" parent="LayoutContainer/CPDisplay/CPRow" unique_id=1370236471]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.3, 0.7, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 12
 text = "STR_PB_CP"
 horizontal_alignment = 2
 vertical_alignment = 1
-theme_override_font_sizes/font_size = 12
-theme_override_colors/font_color = Color(0.3, 0.7, 1.0, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 3
 
-[node name="CPLabel" type="Label" parent="LayoutContainer/CPDisplay/CPRow"]
+[node name="CPLabel" type="Label" parent="LayoutContainer/CPDisplay/CPRow" unique_id=825272766]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "0"
-vertical_alignment = 1
-theme_override_font_sizes/font_size = 14
-theme_override_colors/font_color = Color(0.4, 0.8, 1.0, 1)
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 14
+text = "0"
+vertical_alignment = 1
 
-[node name="Zone8" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Zone8" parent="LayoutContainer" unique_id=1699733014 instance=ExtResource("2_slot")]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.443
 anchor_top = 0.2041
 anchor_right = 0.5519
 anchor_bottom = 0.4618
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone7" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Zone7" parent="LayoutContainer" unique_id=580661884 instance=ExtResource("2_slot")]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.5834
 anchor_top = 0.3029
 anchor_right = 0.6924
 anchor_bottom = 0.5606
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone6" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Zone6" parent="LayoutContainer" unique_id=77101363 instance=ExtResource("2_slot")]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.7213
 anchor_top = 0.3029
 anchor_right = 0.8301
 anchor_bottom = 0.5606
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 
-[node name="DeckInfo" type="Control" parent="LayoutContainer"]
+[node name="DeckInfo" type="Control" parent="LayoutContainer" unique_id=2092912559]
 layout_mode = 1
-anchors_preset = 0
 anchor_left = 0.8668
 anchor_top = 0.3031
 anchor_right = 0.9756
 anchor_bottom = 0.5607
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 mouse_filter = 1
 script = ExtResource("5_zone_outline")
 
-[node name="MonsterInfo" type="Control" parent="LayoutContainer"]
+[node name="MonsterInfo" type="Control" parent="LayoutContainer" unique_id=1804445456]
 layout_mode = 1
-anchors_preset = 0
 anchor_left = 0.0237
 anchor_top = 0.6889
 anchor_right = 0.1325
 anchor_bottom = 0.9466
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 mouse_filter = 1
 script = ExtResource("5_zone_outline")
 
-[node name="Zone1" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Zone1" parent="LayoutContainer" unique_id=1242770313 instance=ExtResource("2_slot")]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.153
 anchor_top = 0.6889
 anchor_right = 0.2618
 anchor_bottom = 0.9466
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone2" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Zone2" parent="LayoutContainer" unique_id=18892199 instance=ExtResource("2_slot")]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.3038
 anchor_top = 0.6911
 anchor_right = 0.4127
 anchor_bottom = 0.9487
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone3" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Zone3" parent="LayoutContainer" unique_id=1225582074 instance=ExtResource("2_slot")]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.443
 anchor_top = 0.6911
 anchor_right = 0.5519
 anchor_bottom = 0.9487
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone4" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Zone4" parent="LayoutContainer" unique_id=433591039 instance=ExtResource("2_slot")]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.5821
 anchor_top = 0.6903
 anchor_right = 0.691
 anchor_bottom = 0.948
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 
-[node name="Zone5" parent="LayoutContainer" instance=ExtResource("2_slot")]
+[node name="Zone5" parent="LayoutContainer" unique_id=1076192093 instance=ExtResource("2_slot")]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 1
-anchors_preset = 0
+anchors_preset = -1
 anchor_left = 0.7213
 anchor_top = 0.6903
 anchor_right = 0.8301
 anchor_bottom = 0.948
-offset_left = 0.0
-offset_top = 0.0
 offset_right = 0.0
 offset_bottom = 0.0
-custom_minimum_size = Vector2(0, 0)
 
-[node name="DiscardInfo" type="Control" parent="LayoutContainer"]
+[node name="DiscardInfo" type="Control" parent="LayoutContainer" unique_id=1946379568]
+clip_contents = true
 layout_mode = 1
-anchors_preset = 0
 anchor_left = 0.8668
 anchor_top = 0.6863
 anchor_right = 0.9756
 anchor_bottom = 0.944
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
-clip_contents = true
 mouse_filter = 1
 script = ExtResource("5_zone_outline")

@@ -27,15 +27,18 @@
 [ext_resource type="Script" uid="uid://bgjjvk1cc3mhd" path="res://scenes/board/modules/effect_stack_panel.gd" id="24_es"]
 [ext_resource type="Script" uid="uid://6d08ac1ajb4" path="res://scenes/board/overlays/turn_toast.gd" id="25_tt"]
 [ext_resource type="Texture2D" uid="uid://dqq2v00702ymr" path="res://assets/ui/input_glyphs/xbox/face_west.png" id="27_5l0fj"]
+[ext_resource type="Texture2D" uid="uid://c5vldcvisuf41" path="res://assets/ui/input_glyphs/xbox/face_south.png" id="28_kkerk"]
+[ext_resource type="Texture2D" uid="uid://c6tmttl8dqbg0" path="res://assets/ui/input_glyphs/xbox/trigger_l.png" id="29_qihcc"]
+[ext_resource type="Texture2D" uid="uid://dao18mskvocan" path="res://assets/ui/input_glyphs/xbox/trigger_r.png" id="30_tjmvo"]
 [ext_resource type="Script" path="res://scenes/board/modules/board_layout_controller.gd" id="m_boardlayoutcontroller"]
 [ext_resource type="Script" path="res://scenes/board/modules/card_zoom_controller.gd" id="m_cardzoomcontroller"]
 [ext_resource type="Script" uid="uid://evjjrjsbhbdr" path="res://scripts/input/controller_glyph.gd" id="m_controllerglyph"]
 [ext_resource type="Script" uid="uid://gmyqvccux85k" path="res://scenes/board/modules/effect_highlight_controller.gd" id="m_effecthighlightcontroller"]
 [ext_resource type="Script" uid="uid://66aen2iglstg" path="res://scenes/board/modules/gamepad_board_nav.gd" id="m_gamepadboardnav"]
-[ext_resource type="Script" path="res://scenes/board/modules/hand_hint_bar.gd" id="m_handhintbar"]
+[ext_resource type="Script" uid="uid://gfffvc5pgi62" path="res://scenes/board/modules/hand_hint_bar.gd" id="m_handhintbar"]
 [ext_resource type="Script" uid="uid://m46qb8jpvrth" path="res://scenes/board/modules/lobby_bot_controller.gd" id="m_lobbybotcontroller"]
 [ext_resource type="Script" path="res://scenes/board/modules/nav_debug_overlay.gd" id="m_navdebugoverlay"]
-[ext_resource type="Script" path="res://scenes/board/modules/system_menu_controller.gd" id="m_systemmenucontroller"]
+[ext_resource type="Script" uid="uid://cj13yxiiuclr8" path="res://scenes/board/modules/system_menu_controller.gd" id="m_systemmenucontroller"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_prompt"]
 content_margin_left = 12.0
@@ -178,6 +181,7 @@ layout_mode = 2
 size_flags_vertical = 3
 player_id = 1
 is_mirrored = true
+editor_preview = null
 
 [node name="Divider" type="ColorRect" parent="VBoxContainer/BoardArea/BoardColumn" unique_id=1000769823]
 custom_minimum_size = Vector2(0, 2)
@@ -187,6 +191,7 @@ color = Color(0.5, 0.5, 0.6, 0.8)
 [node name="Player1Board" parent="VBoxContainer/BoardArea/BoardColumn" unique_id=426822273 instance=ExtResource("2_pb")]
 layout_mode = 2
 size_flags_vertical = 3
+editor_preview = null
 
 [node name="Player1HandSpace" type="Control" parent="VBoxContainer/BoardArea/BoardColumn" unique_id=1286720020]
 custom_minimum_size = Vector2(0, 10)
@@ -664,10 +669,10 @@ layout_mode = 2
 custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 mouse_filter = 2
+texture = ExtResource("28_kkerk")
 expand_mode = 1
 stretch_mode = 5
 script = ExtResource("m_controllerglyph")
-action = &"pad_confirm"
 
 [node name="Label" type="Label" parent="HandHintCluster/VBox/RowPlay" unique_id=733481924]
 layout_mode = 2
@@ -682,6 +687,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 mouse_filter = 2
+texture = ExtResource("29_qihcc")
 expand_mode = 1
 stretch_mode = 5
 script = ExtResource("m_controllerglyph")
@@ -700,6 +706,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 mouse_filter = 2
+texture = ExtResource("30_tjmvo")
 expand_mode = 1
 stretch_mode = 5
 script = ExtResource("m_controllerglyph")
@@ -759,43 +766,18 @@ card_spacing = 120.0
 
 [node name="DeckSearchOverlay" parent="." unique_id=1842811382 instance=ExtResource("13_dso")]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="DiscardViewOverlay" parent="." unique_id=1503566472 instance=ExtResource("16_dvo")]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="MonsterDeckViewOverlay" parent="." unique_id=1577516336 instance=ExtResource("17_mdo")]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="ZoneStackViewOverlay" parent="." unique_id=1739839184 instance=ExtResource("18_zso")]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="CardZoomOverlay" parent="." unique_id=1372477364 instance=ExtResource("19_czo")]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="EndGamePanel" type="PanelContainer" parent="." unique_id=926981509]
 visible = false
@@ -839,19 +821,9 @@ text = "STR_GB_MAIN_MENU"
 
 [node name="DeckArrangeOverlay" parent="." unique_id=818481713 instance=ExtResource("14_dao")]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="CardSelectOverlay" parent="." unique_id=533931578 instance=ExtResource("15_cso")]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="OpponentHandButtonStack" type="HBoxContainer" parent="." unique_id=1096714480]
 layout_mode = 1
