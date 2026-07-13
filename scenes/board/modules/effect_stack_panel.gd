@@ -168,15 +168,17 @@ func _ensure_panel() -> void:
 	style.content_margin_top = 8
 	style.content_margin_bottom = 8
 	_panel.add_theme_stylebox_override("panel", style)
-	# Right edge, below the top bar / mobile phase label; a min-size overflow
+	# Right edge, below the top bar / mobile phase label, nudged left so the
+	# top-right button column stays reachable past the panel's edge without
+	# fully hiding the opponent deck/discard piles; a min-size overflow
 	# expands DOWNWARD from the anchor point, which is what we want here.
 	var top: float = 100.0 if _board._is_mobile_layout else 52.0
 	_panel.anchor_left = 1.0
 	_panel.anchor_right = 1.0
 	_panel.anchor_top = 0.0
 	_panel.anchor_bottom = 0.0
-	_panel.offset_left = -6.0 - PANEL_WIDTH
-	_panel.offset_right = -6.0
+	_panel.offset_left = -56.0 - PANEL_WIDTH
+	_panel.offset_right = -56.0
 	_panel.offset_top = top
 	_panel.offset_bottom = top
 	_panel.grow_vertical = Control.GROW_DIRECTION_END
