@@ -153,7 +153,7 @@ func _draw_editor_graph() -> void:
 		_draw_label(id, local.position + Vector2(2, -3), COLOR_VALID)
 	_draw_hud([
 		"BoardNavGraph static preview (%s)" % preview_layout,
-		"hand_<i> / trk_<i> / choice_<i> rows are runtime-only (F3 in a debug build)",
+		"hand_<i> / opp_hand_<i> / trk_<i> / choice_<i> rows are runtime-only (F3 in a debug build)",
 		"edit tables in board_nav_graph.gd",
 	])
 

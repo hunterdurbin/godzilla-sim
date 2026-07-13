@@ -18,6 +18,11 @@ extends Node
 ##   - sorted hand keeps the same card under the cursor; post-play return
 ##     lands left neighbor -> right neighbor -> Sort button (as a cursor
 ##     stop, not focus);
+##   - the opponent fan (opp_hand_<i>) is reachable off the top row in every
+##     mode and behaves like the local hand (no auto-expand, hover raise);
+##     A/Y are read-only zoom, plays stay gated to hand_<i>; the rows are
+##     placed GEOMETRICALLY — in a hotseat P2 turn the acting hand (top fan)
+##     wires to the top board and the opponent row to the bottom board;
 ##   - registered modal dialogs suspend the module; text fields release on
 ##     any dpad press;
 ##   - effects area: pending-stack rows are cursor stops, the choice jail
@@ -474,6 +479,75 @@ func _ready() -> void:
 		assert(hand.selectable_indices == expected_valid,
 			"selectable_indices not remapped: %s" % str(hand.selectable_indices))
 		hand.exit_selection_mode()
+
+	# --- Opponent hand: wired in every mode — up off the top row enters the
+	# fan exactly like the local hand (no auto-expand; the hover raise is
+	# the indicator); A is a read-only zoom (solo hands are face-up), never
+	# a play/selection ---
+	assert(not hand_ctl.opponent_hand_expanded, "setup: opponent fan already expanded")
+	nav._map.clear_history()
+	nav._enter_element("top_z3")
+	await _tick(1)
+	await _tap(&"pad_nav_up")
+	assert(nav._element.begins_with("opp_hand_"),
+		"up off top_z3 should enter the opponent fan: %s" % nav._element)
+	assert(not hand_ctl.opponent_hand_expanded,
+		"fan browsing must not auto-expand the opponent hand")
+	assert(nav._cursor_card == board.player2_hand.managed_cards[nav._id_index(nav._element)],
+		"cursor card is not the opponent card under the cursor")
+	_assert_no_focus(board, "opponent hand browsing")
+	await _tap(&"pad_confirm")
+	await _tick(2)
+	assert(board.card_zoom_overlay.visible, "A on an opponent hand card did not open the zoom")
+	board.card_zoom_overlay.hide_zoom()
+	await _tick(2)
+	assert(nav._element.begins_with("opp_hand_"),
+		"cursor did not return to the fan after the zoom: %s" % nav._element)
+	await _tap(&"pad_nav_down")
+	assert(nav._element == "top_z3", "fan down should return to top_z3 (history): %s" % nav._element)
+	assert(not hand_ctl.opponent_hand_expanded,
+		"fan round trip must leave the expand state untouched")
+
+	# --- Hotseat P2 turn: the fan rows swap geometric slots — the acting
+	# hand (P2, physically the TOP fan) is wired to the top board and the
+	# opponent row (P1, bottom fan) to the bottom board. Flip the pid
+	# directly: the real End-Main flow is effect/prompt-dependent (flaky in
+	# a random solo game) and the nav only reads _get_current_pid(). Runs
+	# BEFORE the post-play legs drain player1's hand. ---
+	board.turn_manager.game_state.current_player_id = 1
+	nav._map.clear_history()
+	nav._enter_element("top_z3")
+	await _tick(1)
+	await _tap(&"pad_nav_up")
+	assert(nav._element.begins_with("hand_"),
+		"P2 turn: up off top_z3 should enter P2's acting hand: %s" % nav._element)
+	assert(nav._resolve(nav._element).get("pid", -1) == 1,
+		"P2 turn: the top fan must resolve to pid 1")
+	assert(nav._cursor_card in board.player2_hand.managed_cards,
+		"P2 turn: cursor card is not one of P2's cards")
+	nav._enter_element("bot_z4")
+	await _tick(1)
+	await _tap(&"pad_nav_down")
+	assert(nav._element.begins_with("opp_hand_"),
+		"P2 turn: down off bot_z4 should enter P1's fan: %s" % nav._element)
+	assert(nav._resolve(nav._element).get("pid", -1) == 0,
+		"P2 turn: the bottom fan must resolve to pid 0")
+	assert(nav._cursor_card in board.player1_hand.managed_cards,
+		"P2 turn: cursor card is not one of P1's cards")
+	# The F3 overlay's graph copy must match the live geometry (debug_graph
+	# once built its own ctx and drifted — regression guard).
+	var dbg: Dictionary = nav.debug_graph()
+	assert(dbg.has("opp_hand_0"), "P2 turn: debug graph is missing the opp fan row")
+	assert((dbg["hand_0"]["edges"]["up"] as Array).is_empty(),
+		"P2 turn: debug graph left the hand row in the bottom slot")
+	assert(dbg["hand_0"]["edges"]["down"] == BoardNavGraph.OPP_HAND_EXITS,
+		"P2 turn: debug hand row not wired to the top board")
+	assert(dbg["opp_hand_0"]["edges"]["up"] == BoardNavGraph.HAND_EXITS,
+		"P2 turn: debug opp row not wired to the bottom board")
+	board.turn_manager.game_state.current_player_id = 0
+	nav._map.clear_history()
+	nav._enter_element("bot_z2")
+	await _tick(1)
 
 	# --- Overlays and registered modals suspend the module ---
 	board.discard_view_overlay.show_cards([], "test")

@@ -14,10 +14,16 @@ extends RefCounted
 ## from"), then list order. Invalid/hidden elements are traversed THROUGH
 ## transparently, so a hidden button never blocks a lane.
 ##
-## Two sentinels may appear in edge lists and are expanded by build():
-##   "hand"    -> the hand card nearest (center X) to the source element,
-##                or ap_sort_hand when the hand is empty
-##   "tracker" -> every trk_<i> label (history picks where you left off)
+## Three sentinels may appear in edge lists and are expanded by build().
+## The fan sentinels mark GEOMETRIC slots, not id families:
+##   "hand"     -> the fan BELOW the bottom row: the card nearest (center X)
+##                 to the source element, or ap_sort_hand when empty
+##   "opp_hand" -> the fan ABOVE the top row: the nearest card; dropped with
+##                 no fallback when that fan is empty
+##   "tracker"  -> every trk_<i> label (history picks where you left off)
+## Which id family (hand_<i> / opp_hand_<i>) fills each slot follows the
+## `hand_at_top` ctx flag — hand_<i> is always the ACTING hand, and in a
+## hotseat P2 turn that fan physically sits at the top.
 ##
 ## DORMANT: the ctx key `zone_jail_side` can seal a playmat's z1-z8 into
 ## the ZONE_JAIL_EDGES table (wrap-around rows without the rage/hand/deck
@@ -26,8 +32,11 @@ extends RefCounted
 ## reuse.
 ##
 ## Element ids are VISUAL (seat-independent): `bot_*` = the bottom playmat,
-## `top_*` = the opponent playmat at the top. Dynamic ids: hand_<i> (fanned
-## cards, left to right), trk_<i> (turn-tracker labels, top to bottom),
+## `top_*` = the opponent playmat at the top. Dynamic ids: hand_<i> (the
+## ACTING hand's fanned cards, left to right), opp_hand_<i> (the other
+## seat's fan — roam/zoom only, plays stay gated to hand_<i>; each row is
+## wired to whichever board edge its fan PHYSICALLY sits on, see
+## hand_at_top), trk_<i> (turn-tracker labels, top to bottom),
 ## choice_<i> (choice-prompt buttons, top to bottom), stack_<i>
 ## (pending-effect rows, top to bottom — chained to choice_0 when a choice
 ## is open, otherwise entered via the Select toggle or from the top board),
@@ -40,6 +49,7 @@ extends RefCounted
 ## Dictionary, so unit tests and the editor overlay feed it fake data.
 
 const HAND_SENTINEL := "hand"
+const OPP_HAND_SENTINEL := "opp_hand"
 const TRACKER_SENTINEL := "tracker"
 
 ## Exits used for `up` from every hand card (history returns the cursor to
@@ -47,6 +57,13 @@ const TRACKER_SENTINEL := "tracker"
 const HAND_EXITS: Array[String] = [
 	"bot_z2", "bot_z3", "bot_z1", "bot_z4", "bot_z5",
 	"bot_monster_deck", "bot_discard",
+]
+
+## Exits used for `down` from every opponent hand card — mirror of
+## HAND_EXITS on the top playmat.
+const OPP_HAND_EXITS: Array[String] = [
+	"top_z2", "top_z3", "top_z1", "top_z4", "top_z5",
+	"top_monster_deck", "top_discard",
 ]
 
 ## The playmat table — a direct transcription of the annotated layout:
@@ -62,13 +79,13 @@ const HAND_EXITS: Array[String] = [
 ## border table to cross-reference.
 const PLAYMAT := {
 	# --- Top board, row 1 (screen top) ---
-	"top_discard": {"up": ["sys_save"], "right": ["top_z5"], "down": ["top_deck"], "left": ["sys_save", "log_panel"]},
-	"top_z5": {"up": [], "right": ["top_z4"], "down": ["top_z6"], "left": ["top_discard"]},
-	"top_z4": {"up": [], "right": ["top_z3"], "down": ["top_z7"], "left": ["top_z5"]},
-	"top_z3": {"up": [], "right": ["top_z2"], "down": ["top_z8"], "left": ["top_z4"]},
-	"top_z2": {"up": [], "right": ["top_z1"], "down": ["top_rage"], "left": ["top_z3"]},
-	"top_z1": {"up": [], "right": ["top_monster_deck"], "down": ["top_strategy_1"], "left": ["top_z2"]},
-	"top_monster_deck": {"up": [], "right": ["ap_opp_hand_toggle", "sys_bug_report"], "down": ["top_strategy_0", "top_strategy_1"], "left": ["top_z1"]},
+	"top_discard": {"up": ["sys_save", "opp_hand"], "right": ["top_z5"], "down": ["top_deck"], "left": ["sys_save", "log_panel"]},
+	"top_z5": {"up": ["opp_hand"], "right": ["top_z4"], "down": ["top_z6"], "left": ["top_discard"]},
+	"top_z4": {"up": ["opp_hand"], "right": ["top_z3"], "down": ["top_z7"], "left": ["top_z5"]},
+	"top_z3": {"up": ["opp_hand"], "right": ["top_z2"], "down": ["top_z8"], "left": ["top_z4"]},
+	"top_z2": {"up": ["opp_hand"], "right": ["top_z1"], "down": ["top_rage"], "left": ["top_z3"]},
+	"top_z1": {"up": ["opp_hand"], "right": ["top_monster_deck"], "down": ["top_strategy_1"], "left": ["top_z2"]},
+	"top_monster_deck": {"up": ["opp_hand"], "right": ["ap_opp_hand_toggle", "sys_bug_report"], "down": ["top_strategy_0", "top_strategy_1"], "left": ["top_z1"]},
 
 	# --- Top board, row 2 (nearer the divider) ---
 	# Divider seams pair TRUE screen columns: the top playmat is offset one
@@ -148,9 +165,9 @@ const DESKTOP_UI := {
 	"ap_hand_toggle": {"up": ["ap_cancel"], "right": ["ap_play_battle"], "down": ["ap_sort_hand"], "left": ["hand"]},
 	"ap_sort_hand": {"up": ["ap_hand_toggle"], "right": ["ap_play_monster"], "down": [], "left": ["hand"]},
 
-	# Opponent hand stack (hotseat only; hidden -> traversed through). Also a
-	# vertical column, top-right: toggle above sort.
-	"ap_opp_hand_toggle": {"up": [], "right": ["sys_bug_report"], "down": ["ap_opp_sort_hand"], "left": ["top_monster_deck"]},
+	# Opponent hand stack (hotseat/bot only; hidden -> traversed through).
+	# Also a vertical column, top-right: toggle above sort.
+	"ap_opp_hand_toggle": {"up": ["opp_hand"], "right": ["sys_bug_report"], "down": ["ap_opp_sort_hand"], "left": ["top_monster_deck"]},
 	"ap_opp_sort_hand": {"up": ["ap_opp_hand_toggle"], "right": ["sys_bug_report"], "down": ["top_strategy_1"], "left": ["top_monster_deck"]},
 
 	# Corner utility column (top-right edge, top to bottom).
@@ -194,7 +211,13 @@ const MOBILE_UI := {
 ##
 ## ctx keys (all optional, defaults in parentheses):
 ##   mobile: bool (false)         — UI edge set to merge
-##   hand_count: int (0)          — fanned cards in the local hand
+##   hand_count: int (0)          — fanned cards in the acting hand
+##   opp_hand_count: int (0)      — fanned cards in the other seat's hand
+##   hand_at_top: bool (false)    — the acting hand's fan physically sits
+##                                  above the TOP playmat (hotseat P2 turn,
+##                                  or a prompt repointing hand_pid at the
+##                                  top seat): the hand_<i> row takes the
+##                                  top slot and opp_hand_<i> the bottom one
 ##   tracker_count: int (0)       — interactive turn-tracker labels
 ##   choice_count: int (0)        — visible choice-prompt buttons
 ##   stack_count: int (0)         — visible pending-effect rows
@@ -212,6 +235,8 @@ const MOBILE_UI := {
 static func build(ctx: Dictionary) -> Dictionary:
 	var mobile: bool = ctx.get("mobile", false)
 	var hand_count: int = ctx.get("hand_count", 0)
+	var opp_hand_count: int = ctx.get("opp_hand_count", 0)
+	var hand_at_top: bool = ctx.get("hand_at_top", false)
 	var tracker_count: int = ctx.get("tracker_count", 0)
 	var choice_count: int = ctx.get("choice_count", 0)
 	var stack_count: int = ctx.get("stack_count", 0)
@@ -219,18 +244,27 @@ static func build(ctx: Dictionary) -> Dictionary:
 	var zone_jail_side: String = ctx.get("zone_jail_side", "")
 	var rect_of: Callable = ctx.get("rect_of", Callable())
 
+	# Geometric slot assignment: hand_<i> keeps the acting-hand semantics,
+	# but each row is wired to the board edge its fan physically sits on.
+	var bottom_prefix := "opp_hand" if hand_at_top else "hand"
+	var top_prefix := "hand" if hand_at_top else "opp_hand"
+	var bottom_count := opp_hand_count if hand_at_top else hand_count
+	var top_count := hand_count if hand_at_top else opp_hand_count
+
 	var map := _merge(_copy_table(PLAYMAT), MOBILE_UI if mobile else DESKTOP_UI)
 	if zone_jail_side != "":
 		_apply_zone_jail(map, zone_jail_side)
-	_add_hand_row(map, hand_count, mobile)
+	_add_fan_row(map, bottom_prefix, bottom_count, true, mobile)
+	_add_fan_row(map, top_prefix, top_count, false, mobile)
 	_add_tracker_column(map, tracker_count, mobile)
 	_add_choice_column(map, choice_count, stack_count)
 	_add_stack_column(map, stack_count, choice_count)
-	_add_hint_row(map, hint_count, hand_count)
+	_add_hint_row(map, hint_count, bottom_prefix, bottom_count)
 	# Mobile: the log panel and tracker live in slide-out trays — reachable
 	# via the bumpers only, never by walking off the board.
-	_expand_sentinels(map, hand_count, 0 if mobile else tracker_count, rect_of)
-	if hand_count <= 0:
+	_expand_sentinels(map, bottom_prefix, bottom_count, top_prefix, top_count,
+			0 if mobile else tracker_count, rect_of)
+	if bottom_count <= 0:
 		_add_empty_hand_return(map)
 	if mobile:
 		_strip_target(map, "log_panel")
@@ -243,6 +277,14 @@ static func hand_ids(count: int) -> Array[String]:
 	var out: Array[String] = []
 	for i in range(count):
 		out.append("hand_%d" % i)
+	return out
+
+
+## Ids of the opponent hand row for `count` cards (left to right).
+static func opp_hand_ids(count: int) -> Array[String]:
+	var out: Array[String] = []
+	for i in range(count):
+		out.append("opp_hand_%d" % i)
 	return out
 
 
@@ -319,14 +361,24 @@ static func _apply_zone_jail(map: Dictionary, side: String) -> void:
 		map["%s_z%d" % [side, zone]] = entry
 
 
-static func _add_hand_row(map: Dictionary, count: int, mobile: bool) -> void:
-	var right_exit: Array = ["ap_sort_hand"] if not mobile else ["ap_sort_hand", "ap_cancel"]
+## One fanned-card row in a geometric slot. Bottom slot: cards climb up
+## into the bottom board (HAND_EXITS), rightmost exits onto the sort/toggle
+## pocket. Top slot: the vertical directions flip — `up` dead-ends at the
+## screen edge, `down` enters the top board (OPP_HAND_EXITS), rightmost
+## exits onto the opponent hand-button stack (desktop only — MOBILE_UI has
+## no opponent stack). The `prefix` decides which id family fills the slot.
+static func _add_fan_row(map: Dictionary, prefix: String, count: int, bottom: bool, mobile: bool) -> void:
+	var right_exit: Array
+	if bottom:
+		right_exit = ["ap_sort_hand"] if not mobile else ["ap_sort_hand", "ap_cancel"]
+	else:
+		right_exit = [] if mobile else ["ap_opp_hand_toggle"]
 	for i in range(count):
-		map["hand_%d" % i] = {
-			"up": HAND_EXITS.duplicate(),
-			"right": ["hand_%d" % (i + 1)] if i < count - 1 else right_exit.duplicate(),
-			"down": [],
-			"left": ["hand_%d" % (i - 1)] if i > 0 else [],
+		map["%s_%d" % [prefix, i]] = {
+			"up": HAND_EXITS.duplicate() if bottom else [],
+			"right": ["%s_%d" % [prefix, i + 1]] if i < count - 1 else right_exit.duplicate(),
+			"down": [] if bottom else OPP_HAND_EXITS.duplicate(),
+			"left": ["%s_%d" % [prefix, i - 1]] if i > 0 else [],
 		}
 
 
@@ -396,7 +448,7 @@ static func _add_stack_column(map: Dictionary, count: int, choice_count: int) ->
 ## the tray is bumper-only). Runs BEFORE _expand_sentinels so the "hand"
 ## edges expand to the nearest card; no ids exist when the row is down, so
 ## every lane it touches is unchanged then.
-static func _add_hint_row(map: Dictionary, count: int, hand_count: int) -> void:
+static func _add_hint_row(map: Dictionary, count: int, bottom_prefix: String, bottom_count: int) -> void:
 	for i in range(count):
 		map["hint_%d" % i] = {
 			"up": ["log_panel"],
@@ -406,17 +458,23 @@ static func _add_hint_row(map: Dictionary, count: int, hand_count: int) -> void:
 		}
 	if count <= 0:
 		return
-	# Ways in: left off the board's left end and off the hand's first card
-	# (appended — history returns the cursor where it came from).
+	# Ways in: left off the board's left end and off the bottom fan's first
+	# card (appended — history returns the cursor where it came from).
 	(map["bot_monster_deck"]["left"] as Array).append("hint_%d" % (count - 1))
-	if hand_count > 0:
-		(map["hand_0"]["left"] as Array).append("hint_%d" % (count - 1))
+	if bottom_count > 0:
+		(map["%s_0" % bottom_prefix]["left"] as Array).append("hint_%d" % (count - 1))
 
 
-## Replace the "hand" and "tracker" sentinels in every edge list. "hand"
-## becomes the single card nearest (center X) the source element — entering
-## the hand from Z5 lands on a right-side card, from Z1 on a left-side one.
-static func _expand_sentinels(map: Dictionary, hand_count: int, tracker_count: int, rect_of: Callable) -> void:
+## Replace the "hand", "opp_hand" and "tracker" sentinels in every edge
+## list. The fan sentinels are GEOMETRIC slots ("hand" = the fan below the
+## bottom row, "opp_hand" = the fan above the top row) and become the
+## single card of the slot's id family nearest (center X) the source
+## element — entering a fan from Z5 lands on a right-side card, from Z1 on
+## a left-side one. An empty bottom fan falls back to ap_sort_hand; an
+## empty top fan drops its sentinel with no fallback (nothing above the
+## top row can trap the cursor).
+static func _expand_sentinels(map: Dictionary, bottom_prefix: String, bottom_count: int,
+		top_prefix: String, top_count: int, tracker_count: int, rect_of: Callable) -> void:
 	var trk: Array[String] = tracker_ids(tracker_count)
 	for id: String in map:
 		var entry: Dictionary = map[id]
@@ -425,11 +483,16 @@ static func _expand_sentinels(map: Dictionary, hand_count: int, tracker_count: i
 			var hand_at := targets.find(HAND_SENTINEL)
 			if hand_at >= 0:
 				targets.remove_at(hand_at)
-				if hand_count <= 0:
+				if bottom_count <= 0:
 					if "ap_sort_hand" not in targets and id != "ap_sort_hand":
 						targets.append("ap_sort_hand")
 				else:
-					targets.insert(hand_at, _nearest_hand_id(id, hand_count, rect_of))
+					targets.insert(hand_at, _nearest_fan_id(id, bottom_prefix, bottom_count, rect_of))
+			var opp_at := targets.find(OPP_HAND_SENTINEL)
+			if opp_at >= 0:
+				targets.remove_at(opp_at)
+				if top_count > 0:
+					targets.insert(opp_at, _nearest_fan_id(id, top_prefix, top_count, rect_of))
 			var trk_at := targets.find(TRACKER_SENTINEL)
 			if trk_at >= 0:
 				targets.remove_at(trk_at)
@@ -445,21 +508,21 @@ static func _strip_target(map: Dictionary, target: String) -> void:
 			(entry[dir] as Array).erase(target)
 
 
-static func _nearest_hand_id(source_id: String, hand_count: int, rect_of: Callable) -> String:
+static func _nearest_fan_id(source_id: String, prefix: String, count: int, rect_of: Callable) -> String:
 	if not rect_of.is_valid():
-		return "hand_0"
+		return "%s_0" % prefix
 	var source_rect: Rect2 = rect_of.call(source_id)
 	if source_rect.size == Vector2.ZERO:
-		return "hand_0"
+		return "%s_0" % prefix
 	var source_x := source_rect.get_center().x
 	var best := 0
 	var best_dist := INF
-	for i in range(hand_count):
-		var rect: Rect2 = rect_of.call("hand_%d" % i)
+	for i in range(count):
+		var rect: Rect2 = rect_of.call("%s_%d" % [prefix, i])
 		if rect.size == Vector2.ZERO:
 			continue
 		var dist: float = absf(rect.get_center().x - source_x)
 		if dist < best_dist:
 			best_dist = dist
 			best = i
-	return "hand_%d" % best
+	return "%s_%d" % [prefix, best]

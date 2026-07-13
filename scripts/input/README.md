@@ -100,7 +100,10 @@ Related pieces elsewhere:
   Menu/UI maps plug into the same class later.
 - `scenes/board/modules/board_nav_graph.gd` — **BoardNavGraph**: builds the
   ONE graph covering everything the cursor can rest on — both playmats
-  (`bot_*`/`top_*` visual ids), hand cards (`hand_<i>`), action-panel
+  (`bot_*`/`top_*` visual ids), hand cards (`hand_<i>`), the opponent's
+  fan (`opp_hand_<i>`, above the top playmat — wired in ALL play modes so
+  the graph never splits by mode; roam/zoom only, plays stay prefix-gated
+  to `hand_<i>`), action-panel
   buttons + hand stacks (`ap_*`), the corner utility column (`sys_*`), the
   log/chat panel (`log_panel`), tracker labels (`trk_<i>`), choice
   buttons (`choice_<i>`), pending-effect stack rows (`stack_<i>`, chained
@@ -109,9 +112,9 @@ Related pieces elsewhere:
   mapped while a prompt shows them). To change where the cursor goes,
   edit its tables (`PLAYMAT`, `DESKTOP_UI`, `MOBILE_UI`; `ZONE_JAIL_EDGES`
   is dormant — zone prompts free-roam now, see below); the
-  `"hand"`/`"tracker"` sentinels expand at build time (nearest-card-by-X
-  hand entry). @tool-safe and pure — unit tests and the editor overlay feed
-  it fake rects.
+  `"hand"`/`"opp_hand"`/`"tracker"` sentinels expand at build time
+  (nearest-card-by-X fan entry). @tool-safe and pure — unit tests and the
+  editor overlay feed it fake rects.
 - `scenes/board/modules/gamepad_board_nav.gd` — board cursor driven by the
   graph; consumes `pad_nav_*`/`pad_confirm` and synthesizes the pointer
   path's signals (`CardManager.select_card_at`, `Slot.simulate_click`,
@@ -137,6 +140,18 @@ Related pieces elsewhere:
   (effect source / card being placed): landing mirrors the card to the big
   right-side preview, and A and Y both open the read-only zoom — never a
   selection.
+  **Opponent hand** (`opp_hand_<i>`): the other seat's fan is a nav row in
+  every play mode, and it behaves like the local hand — no auto-expand, the
+  hover raise is the indicator (the toggle button expands the fan
+  manually). A and Y both open the read-only zoom on face-up cards and are
+  no-ops on face-down ones (multiplayer), so the row can never play or
+  select anything. The two fan rows are placed GEOMETRICALLY (`hand_at_top`
+  ctx flag, derived from `_side_for_pid(_hand_pid())`): whichever fan
+  physically sits below the bottom board takes the bottom slot and the one
+  above the top board the top slot — so in a hotseat P2 turn the acting
+  `hand_<i>` row (P2's top fan) wires to the top board and `opp_hand_<i>`
+  (P1's bottom fan) to the bottom board, while every play/prompt gate keeps
+  keying off the `hand_` prefix.
   The old sealed-graph jail (`BoardNavGraph.ZONE_JAIL_EDGES` via the
   `zone_jail_side` ctx key) is dormant: the live board always passes `""`.
   The remaining prompts still jail movement — hand modes to the valid
@@ -210,7 +225,8 @@ suppressed, dpad still browses the modifier rows), the right stick zooms
 fixed, not rebindable (R3 is deliberately absent from REBIND_CAPTURABLE).
 There is NO region/group cycling — the screen layout IS the navigation:
 walking off any edge crosses into the neighboring area (board rows ↕ hand ↔
-hand buttons ↔ action panel; log panel left, tracker/system column right).
+hand buttons ↔ action panel; opponent fan above the top row; log panel
+left, tracker/system column right).
 Everything except nav is rebindable in Options → Controller. Discard piles
 are cursor stops on the board map — confirm on one opens its viewer.
 

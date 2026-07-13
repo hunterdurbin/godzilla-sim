@@ -1,25 +1,35 @@
 extends GdUnitTestSuite
 
 ## BoardNavGraph — the unified controller-navigation graph builder: static
-## table closure, dynamic hand/tracker/choice/stack/hint rows, the
-## "hand"/"tracker" sentinel expansion (nearest-by-X hand entry, full tracker
-## column), and the zone-jail edge override (wrap-around z1-z8 rows during
-## zone prompts).
+## table closure, dynamic hand/opp-hand/tracker/choice/stack/hint rows, the
+## "hand"/"opp_hand"/"tracker" sentinel expansion (nearest-by-X fan entry,
+## full tracker column), and the zone-jail edge override (wrap-around z1-z8
+## rows during zone prompts).
 
 const DIRS := ["up", "right", "down", "left"]
 
 
-func _rects(hand_count: int) -> Callable:
+func _rects(hand_count: int, opp_hand_count: int = 0) -> Callable:
 	# Fake geometry: board elements sit on a coarse grid, hand cards fan
 	# left-to-right at the bottom (80px apart, matching nothing in
-	# particular — only relative X order matters).
+	# particular — only relative X order matters). The top row runs
+	# discard | z5 | z4 | z3 | z2 | z1 | monster_deck left to right, with the
+	# opponent fan above it on the same 80px pitch as the hand.
 	var element_x := {
 		"bot_monster_deck": 100.0, "bot_z1": 250.0, "bot_z2": 400.0,
 		"bot_z3": 550.0, "bot_z4": 700.0, "bot_z5": 850.0,
 		"bot_discard": 1000.0, "ap_hand_toggle": 1100.0,
 		"ap_sort_hand": 1180.0, "ap_cancel": 900.0,
+		"top_discard": 100.0, "top_z5": 250.0, "top_z4": 400.0,
+		"top_z3": 550.0, "top_z2": 700.0, "top_z1": 850.0,
+		"top_monster_deck": 1000.0, "ap_opp_hand_toggle": 1100.0,
 	}
 	return func(id: String) -> Rect2:
+		if id.begins_with("opp_hand_"):
+			var oi := id.substr(9).to_int()
+			if oi >= opp_hand_count:
+				return Rect2()
+			return Rect2(Vector2(300.0 + oi * 80.0, 50.0), Vector2(70.0, 100.0))
 		if id.begins_with("hand_"):
 			var i := id.substr(5).to_int()
 			if i >= hand_count:
@@ -30,23 +40,25 @@ func _rects(hand_count: int) -> Callable:
 		return Rect2(Vector2(500.0, 300.0), Vector2(100.0, 100.0))
 
 
-func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choice_count: int = 0, stack_count: int = 0, zone_jail_side: String = "", hint_count: int = 0) -> Dictionary:
+func _build(hand_count: int, mobile: bool = false, tracker_count: int = 0, choice_count: int = 0, stack_count: int = 0, zone_jail_side: String = "", hint_count: int = 0, opp_hand_count: int = 0, hand_at_top: bool = false) -> Dictionary:
 	return BoardNavGraph.build({
 		"mobile": mobile,
 		"hand_count": hand_count,
+		"opp_hand_count": opp_hand_count,
+		"hand_at_top": hand_at_top,
 		"tracker_count": tracker_count,
 		"choice_count": choice_count,
 		"stack_count": stack_count,
 		"zone_jail_side": zone_jail_side,
 		"hint_count": hint_count,
-		"rect_of": _rects(hand_count),
+		"rect_of": _rects(hand_count, opp_hand_count),
 	})
 
 
 func test_desktop_build_is_closed() -> void:
 	# Every id referenced by any direction must be a mapped element itself —
 	# typos in the hand-edited tables become test failures, not dead ends.
-	var map := _build(5, false, 3, 2, 2, "", 2)
+	var map := _build(5, false, 3, 2, 2, "", 2, 4)
 	for id: String in map:
 		for dir: String in DIRS:
 			for target: String in map[id].get(dir, []):
@@ -57,11 +69,13 @@ func test_desktop_build_is_closed() -> void:
 
 func test_sentinels_are_fully_expanded() -> void:
 	for mobile in [false, true]:
-		var map := _build(3, mobile, 2, 2)
+		var map := _build(3, mobile, 2, 2, 0, "", 0, 2)
 		for id: String in map:
 			for dir: String in DIRS:
 				var targets: Array = map[id].get(dir, [])
-				assert_bool(BoardNavGraph.HAND_SENTINEL in targets or BoardNavGraph.TRACKER_SENTINEL in targets) \
+				assert_bool(BoardNavGraph.HAND_SENTINEL in targets \
+						or BoardNavGraph.OPP_HAND_SENTINEL in targets \
+						or BoardNavGraph.TRACKER_SENTINEL in targets) \
 					.override_failure_message("unexpanded sentinel in %s.%s" % [id, dir]) \
 					.is_false()
 
@@ -124,6 +138,83 @@ func test_empty_hand_redirects_to_sort_button() -> void:
 	assert_bool(map.has("hand_0")).is_false()
 	# The sort button itself must not gain a self-edge.
 	assert_that(map["ap_sort_hand"].get("left", [])).not_contains(["ap_sort_hand"])
+
+
+func test_opp_hand_row_chains_left_to_right() -> void:
+	var map := _build(3, false, 0, 0, 0, "", 0, 3)
+	assert_that(map["opp_hand_0"]["left"]).is_equal([])
+	assert_that(map["opp_hand_0"]["right"]).is_equal(["opp_hand_1"])
+	assert_that(map["opp_hand_1"]["left"]).is_equal(["opp_hand_0"])
+	assert_that(map["opp_hand_2"]["right"]).is_equal(["ap_opp_hand_toggle"])
+	assert_that(map["opp_hand_1"]["down"]).is_equal(BoardNavGraph.OPP_HAND_EXITS)
+	# Screen edge above the fan — no wrap.
+	assert_that(map["opp_hand_1"]["up"]).is_equal([])
+
+
+func test_top_row_enters_opp_hand_nearest_by_x() -> void:
+	var map := _build(3, false, 0, 0, 0, "", 0, 5)
+	# The top row runs discard|z5|...|z1|monster_deck left to right, so
+	# top_z5 (x≈250) is nearest opp_hand_0 (x≈300) and top_z1 (x≈850) the
+	# right end of the fan; the opp hand stack enters at the rightmost card.
+	assert_that(map["top_z5"]["up"][0]).is_equal("opp_hand_0")
+	assert_that(map["top_z1"]["up"][0]).is_equal("opp_hand_4")
+	assert_that(map["ap_opp_hand_toggle"]["up"][0]).is_equal("opp_hand_4")
+	# top_discard keeps sys_save first (it stands when visible).
+	assert_that(map["top_discard"]["up"][0]).is_equal("sys_save")
+	assert_that(map["top_discard"]["up"][1]).is_equal("opp_hand_0")
+
+
+func test_empty_opp_hand_drops_sentinel() -> void:
+	# Unlike the local hand there is no button fallback: the top row's up
+	# edges simply dead-end at the screen edge.
+	var map := _build(3)
+	assert_bool(map.has("opp_hand_0")).is_false()
+	assert_that(map["top_z3"]["up"]).is_equal([])
+	assert_that(map["ap_opp_hand_toggle"]["up"]).is_equal([])
+	for id: String in map:
+		for dir: String in DIRS:
+			assert_that(map[id].get(dir, [])).not_contains([BoardNavGraph.OPP_HAND_SENTINEL])
+
+
+func test_mobile_opp_hand_row() -> void:
+	# Mobile has no opponent button stack: the rightmost card dead-ends
+	# right; the shared PLAYMAT entry edges still stitch the fan in.
+	var map := _build(3, true, 0, 0, 0, "", 0, 3)
+	assert_that(map["opp_hand_2"]["right"]).is_equal([])
+	assert_that(map["opp_hand_0"]["down"]).is_equal(BoardNavGraph.OPP_HAND_EXITS)
+	# top_z4 (x≈400, center 460) is nearest opp_hand_2 (center 495).
+	assert_that(map["top_z4"]["up"][0]).is_equal("opp_hand_2")
+
+
+func test_hand_at_top_swaps_the_geometric_slots() -> void:
+	# Hotseat P2 turn: the acting hand's fan physically sits at the top, so
+	# the hand_<i> row takes the TOP slot edges and opp_hand_<i> the BOTTOM
+	# ones — id semantics unchanged, only the wiring moves.
+	var map := _build(3, false, 0, 0, 0, "", 0, 3, true)
+	assert_that(map["hand_1"]["down"]).is_equal(BoardNavGraph.OPP_HAND_EXITS)
+	assert_that(map["hand_1"]["up"]).is_equal([])
+	assert_that(map["hand_2"]["right"]).is_equal(["ap_opp_hand_toggle"])
+	assert_that(map["opp_hand_1"]["up"]).is_equal(BoardNavGraph.HAND_EXITS)
+	assert_that(map["opp_hand_1"]["down"]).is_equal([])
+	assert_that(map["opp_hand_2"]["right"]).is_equal(["ap_sort_hand"])
+	# Sentinels expand per SLOT: bottom board enters the opp fan, top board
+	# the hand fan (same x pitch, so the nearest indices match the un-swapped
+	# expectations).
+	assert_that(map["bot_z1"]["down"][0]).is_equal("opp_hand_0")
+	assert_that(map["top_z5"]["up"][0]).is_equal("hand_0")
+	assert_that(map["ap_opp_hand_toggle"]["up"][0]).is_equal("hand_2")
+
+
+func test_hand_at_top_empty_bottom_fan_keeps_sort_fallback() -> void:
+	# The empty-fan fallbacks are geometric too: an empty BOTTOM fan (the
+	# opp hand here) redirects to ap_sort_hand + gives the sort/toggle
+	# pocket the return exits; the populated top fan keeps its row.
+	var map := _build(3, false, 0, 0, 0, "", 0, 0, true)
+	assert_bool(map.has("opp_hand_0")).is_false()
+	assert_that(map["bot_z2"]["down"]).is_equal(["ap_sort_hand"])
+	for board_exit: String in BoardNavGraph.HAND_EXITS:
+		assert_array(map["ap_sort_hand"]["up"]).contains([board_exit])
+	assert_that(map["top_z5"]["up"][0]).is_equal("hand_0")
 
 
 func test_tracker_column_chains_and_stitches_on_desktop() -> void:
@@ -331,7 +422,7 @@ func test_zone_jail_top_side_flips_both_axes() -> void:
 
 func test_zone_jail_build_stays_closed() -> void:
 	for side in ["bot", "top"]:
-		var map := _build(5, false, 3, 2, 2, side)
+		var map := _build(5, false, 3, 2, 2, side, 0, 4)
 		for id: String in map:
 			for dir: String in DIRS:
 				for target: String in map[id].get(dir, []):

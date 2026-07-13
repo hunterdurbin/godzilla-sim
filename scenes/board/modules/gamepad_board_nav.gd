@@ -231,16 +231,25 @@ func _any_overlay_open() -> bool:
 ## layout). Cheap (~70 small dict entries), runs at the top of every input
 ## action; CursorMap keeps its visited history across swaps.
 func _rebuild_map() -> void:
-	_map.set_map(BoardNavGraph.build({
+	_map.set_map(BoardNavGraph.build(_graph_ctx()))
+
+
+## The ONE BoardNavGraph.build ctx — shared by the live map and
+## debug_graph() so the F3 overlay can never drift from what the cursor
+## actually walks.
+func _graph_ctx() -> Dictionary:
+	return {
 		"mobile": _board._is_mobile_layout,
 		"hand_count": _hand_mgr().managed_cards.size() if _hand_mgr() else 0,
+		"opp_hand_count": _opp_hand_mgr().managed_cards.size() if _opp_hand_mgr() else 0,
+		"hand_at_top": _hand_at_top(),
 		"tracker_count": _tracker_labels().size(),
 		"choice_count": _choice_buttons().size(),
 		"stack_count": _stack_row_count(),
 		"hint_count": _hint_count(),
 		"zone_jail_side": _zone_jail_side(),
 		"rect_of": _rect_of,
-	}))
+	}
 
 
 ## Free roam: zone prompts no longer seal the graph — always "". The
@@ -325,13 +334,15 @@ func _resume_cursor() -> void:
 	if saved_mode != _mode or (saved_element == "" and _mode != "none"):
 		_apply_context()
 		return
-	# Same trick as _on_hand_reordered: the hand may have been sorted or
+	# Same trick as _on_hand_reordered: the fan may have been sorted or
 	# shrunk while suspended — rebind the index to the remembered card ref.
-	if saved_element.begins_with("hand_") and is_instance_valid(saved_card):
-		var hand := _hand_mgr()
+	if _is_fan_element(saved_element) and is_instance_valid(saved_card):
+		var on_opp := saved_element.begins_with("opp_hand_")
+		var hand := _opp_hand_mgr() if on_opp else _hand_mgr()
+		var prefix := "opp_hand" if on_opp else "hand"
 		var idx := hand.managed_cards.find(saved_card) if hand else -1
-		if idx >= 0 and _element_valid("hand_%d" % idx):
-			_enter_element("hand_%d" % idx)
+		if idx >= 0 and _element_valid("%s_%d" % [prefix, idx]):
+			_enter_element("%s_%d" % [prefix, idx])
 			return
 	if saved_element != "" and _element_valid(saved_element):
 		_enter_element(saved_element)
@@ -601,6 +612,11 @@ func _jail_allows(id: String) -> bool:
 
 
 func _element_usable(id: String) -> bool:
+	if id.begins_with("opp_hand_"):
+		# No selection-mode gating — a hand in selection mode is by
+		# construction the hand_<i> row.
+		var opp := _opp_hand_mgr()
+		return opp != null and _id_index(id) < opp.managed_cards.size()
 	if id.begins_with("hand_"):
 		return _id_index(id) in _hand_valid_indices()
 	if id.begins_with("trk_"):
@@ -643,6 +659,14 @@ func _hand_valid_indices() -> Array[int]:
 	if hand.selection_mode and not hand.selectable_indices.is_empty():
 		return hand.selectable_indices.duplicate()
 	for i in range(hand.managed_cards.size()):
+		out.append(i)
+	return out
+
+
+func _opp_hand_valid_indices() -> Array[int]:
+	var out: Array[int] = []
+	var opp := _opp_hand_mgr()
+	for i in range(opp.managed_cards.size() if opp else 0):
 		out.append(i)
 	return out
 
@@ -879,6 +903,9 @@ func _side_for_pid(pid: int) -> String:
 ## through the seat boards; UI ids through the board's button refs and the
 ## module-owned dynamic lists (hand cards, tracker labels, choice buttons).
 func _resolve(id: String) -> Dictionary:
+	if id.begins_with("opp_hand_"):
+		var opp_card := _opp_hand_card(_id_index(id))
+		return {"kind": "opp_hand", "control": opp_card, "idx": _id_index(id), "pid": _opp_hand_pid()} if opp_card else {}
 	if id.begins_with("hand_"):
 		var card := _hand_card(_id_index(id))
 		return {"kind": "hand", "control": card, "idx": _id_index(id), "pid": _hand_pid()} if card else {}
@@ -989,6 +1016,12 @@ func _try_play_hovered(action: CardEnums.ActionType) -> void:
 
 
 func _confirm() -> void:
+	# Opponent hand is read-only in every state (roam/zoom only — plays and
+	# prompt selections are gated to the hand_<i> row), so resolve it before
+	# any mode handling.
+	if _element.begins_with("opp_hand_"):
+		_zoom_opp_hand(_id_index(_element))
+		return
 	if _choice_roaming:
 		# Inspect-only roam: A opens the read-only pile/stack viewers — the
 		# same left-click paths the mouse keeps during a mandatory choice.
@@ -1083,6 +1116,9 @@ func _activate_button(btn: BaseButton) -> void:
 
 
 func _inspect() -> void:
+	if _element.begins_with("opp_hand_"):
+		_zoom_opp_hand(_id_index(_element))
+		return
 	if _element.begins_with("hand_"):
 		var card := _hand_card(_hand_index())
 		if card and "card_data" in card:
@@ -1110,6 +1146,15 @@ func _inspect() -> void:
 			_zoom_hint(int(entry["idx"]))
 
 
+## Open the card zoom for the opponent hand card at `index` (A and Y are
+## both read-only here). Face-down fans (multiplayer, bot with hidden hand)
+## stay roamable but zoom nothing.
+func _zoom_opp_hand(index: int) -> void:
+	var card := _opp_hand_card(index)
+	if card and "card_data" in card and not card.is_face_down:
+		_board._show_card_zoom(card.card_data)
+
+
 ## Open the card zoom for the prompt-preview card at `index` — the exact
 ## call the preview's pointer click makes (A and Y are both read-only here).
 func _zoom_hint(index: int) -> void:
@@ -1126,10 +1171,15 @@ func _open_chat() -> void:
 # --- Cursor visual ---
 
 ## Sorting/reordering rewrites managed_cards; keep the cursor on the SAME
-## card by rebinding the numeric index to the remembered card ref.
+## card by rebinding the numeric index to the remembered card ref. Works for
+## whichever fan row the cursor is on (both managers are connected).
 func _on_hand_reordered(hand: CardManager) -> void:
-	if not _element.begins_with("hand_") or hand != _hand_mgr():
+	if not _is_fan_element(_element):
 		return
+	var on_opp := _element.begins_with("opp_hand_")
+	if hand != (_opp_hand_mgr() if on_opp else _hand_mgr()):
+		return
+	var prefix := "opp_hand" if on_opp else "hand"
 	# arrange_cards re-stamps fan z-indexes over the raised card — drop the
 	# hover so _update_cursor re-applies it cleanly on the rebound card.
 	_set_hovered_card(null)
@@ -1137,29 +1187,33 @@ func _on_hand_reordered(hand: CardManager) -> void:
 	if is_instance_valid(_cursor_card):
 		var idx := hand.managed_cards.find(_cursor_card)
 		if idx >= 0:
-			_element = "hand_%d" % idx
+			_element = "%s_%d" % [prefix, idx]
 			_map.push_visited(_element)
 			_update_cursor()
 			nav_state_changed.emit()
 			return
-	# The cursor's card left the hand (played/discarded): move to the card on
-	# its LEFT, else the one that slid into its slot from the right, else the
-	# Sort button.
-	var valid := _hand_valid_indices()
+	# The cursor's card left the fan (played/discarded): move to the card on
+	# its LEFT, else the one that slid into its slot from the right, else a
+	# stop on the fan's PHYSICAL side (opp sort is hidden in multiplayer —
+	# relocate skips invalid fallbacks).
+	var valid := _opp_hand_valid_indices() if on_opp else _hand_valid_indices()
 	if valid.is_empty():
-		_enter_element("ap_sort_hand")
+		if on_opp != _hand_at_top(): # the emptied row's fan sits at the top
+			_relocate_cursor(["ap_opp_sort_hand", "top_z3", DEFAULT_ELEMENT])
+		else:
+			_enter_element("ap_sort_hand")
 		return
-	var origin := _hand_index()
+	var origin := _id_index(_element)
 	var left := origin - 1
 	while left >= 0 and left not in valid:
 		left -= 1
 	if left >= 0:
-		_enter_element("hand_%d" % left)
+		_enter_element("%s_%d" % [prefix, left])
 		return
 	var right := origin
 	while right < hand.managed_cards.size() and right not in valid:
 		right += 1
-	_enter_element("hand_%d" % (right if right in valid else valid[0]))
+	_enter_element("%s_%d" % [prefix, right if right in valid else valid[0]])
 
 
 ## After a hand-initiated play resolves: back into the hand on the played
@@ -1176,7 +1230,10 @@ func _return_cursor_to_hand_after_play() -> void:
 	var idx := hand.managed_cards.find(_play_origin_card) if is_instance_valid(_play_origin_card) else -1
 	if idx < 0:
 		if hand.managed_cards.is_empty():
-			_enter_element("ap_sort_hand")
+			if _hand_at_top(): # hotseat P2 turn: the hand fan is the top one
+				_relocate_cursor(["ap_opp_sort_hand", "top_z3", DEFAULT_ELEMENT])
+			else:
+				_enter_element("ap_sort_hand")
 			return
 		if _play_origin_index > 0:
 			idx = mini(_play_origin_index - 1, hand.managed_cards.size() - 1)
@@ -1202,7 +1259,7 @@ func _update_cursor() -> void:
 		_cursor.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_cursor.z_index = 100
 		_board.add_child(_cursor)
-	_cursor_card = target if _element.begins_with("hand_") else null
+	_cursor_card = target if _is_fan_element(_element) else null
 	_set_hovered_card(_cursor_card)
 	_set_hovered_choice(target as Button if _element.begins_with("choice_") else null)
 	var stack_hover: Control = null
@@ -1293,7 +1350,7 @@ func _process(_delta: float) -> void:
 	if _cursor == null or not _cursor.visible:
 		return
 	var target: Control = null
-	if _element.begins_with("hand_"):
+	if _is_fan_element(_element):
 		target = _cursor_card if is_instance_valid(_cursor_card) else null
 	elif _element.begins_with("choice_") or _element.begins_with("stack_") \
 			or _element.begins_with("hint_"):
@@ -1358,6 +1415,12 @@ func _id_index(id: String) -> int:
 	return id.get_slice("_", id.get_slice_count("_") - 1).to_int()
 
 
+## Either fanned-card row (the cursor raises fan cards via the hover tween
+## and ring-follows them per frame).
+func _is_fan_element(id: String) -> bool:
+	return id.begins_with("hand_") or id.begins_with("opp_hand_")
+
+
 ## The hand index under the cursor (0 when the cursor is not on the hand).
 func _hand_index() -> int:
 	return _id_index(_element) if _element.begins_with("hand_") else 0
@@ -1381,6 +1444,31 @@ func _hand_mgr() -> CardManager:
 
 func _hand_card(index: int) -> Control:
 	var hand := _hand_mgr()
+	if hand == null or index < 0 or index >= hand.managed_cards.size():
+		return null
+	return hand.managed_cards[index]
+
+
+## The opp_hand_<i> row is always the seat-relative complement of hand_<i>
+## — the two rows can never alias one CardManager, including while a prompt
+## repoints _ctx_hand_pid.
+func _opp_hand_pid() -> int:
+	return 1 - _hand_pid()
+
+
+## Whether the acting hand's fan physically sits above the TOP playmat
+## (hotseat P2 turn, or a prompt repointing hand_pid at the top seat) —
+## drives the graph's geometric slot assignment (BoardNavGraph hand_at_top).
+func _hand_at_top() -> bool:
+	return _side_for_pid(_hand_pid()) == "top"
+
+
+func _opp_hand_mgr() -> CardManager:
+	return _board.player1_hand if _opp_hand_pid() == 0 else _board.player2_hand
+
+
+func _opp_hand_card(index: int) -> Control:
+	var hand := _opp_hand_mgr()
 	if hand == null or index < 0 or index >= hand.managed_cards.size():
 		return null
 	return hand.managed_cards[index]
@@ -1455,16 +1543,7 @@ func debug_state() -> Dictionary:
 ## the overlay needs to paint without re-deriving nav rules.
 func debug_graph() -> Dictionary:
 	_rebuild_map()
-	var graph := BoardNavGraph.build({
-		"mobile": _board._is_mobile_layout,
-		"hand_count": _hand_mgr().managed_cards.size() if _hand_mgr() else 0,
-		"tracker_count": _tracker_labels().size(),
-		"choice_count": _choice_buttons().size(),
-		"stack_count": _stack_row_count(),
-		"hint_count": _hint_count(),
-		"zone_jail_side": _zone_jail_side(),
-		"rect_of": _rect_of,
-	})
+	var graph := BoardNavGraph.build(_graph_ctx())
 	var out := {}
 	for id: String in graph:
 		out[id] = {

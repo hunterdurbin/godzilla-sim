@@ -15,14 +15,18 @@ const OPPOSITE := {"up": "down", "down": "up", "left": "right", "right": "left"}
 
 func _run() -> void:
 	for layout in ["desktop", "mobile"]:
-		var graph := BoardNavGraph.build({
-			"mobile": layout == "mobile",
-			"hand_count": 3,
-			"tracker_count": 2,
-			"choice_count": 0,
-		})
-		print("\n=== BoardNavGraph audit: %s (%d nodes) ===" % [layout, graph.size()])
-		_audit(graph)
+		for hand_at_top in [false, true]:
+			var graph := BoardNavGraph.build({
+				"mobile": layout == "mobile",
+				"hand_count": 3,
+				"opp_hand_count": 3,
+				"hand_at_top": hand_at_top,
+				"tracker_count": 2,
+				"choice_count": 0,
+			})
+			print("\n=== BoardNavGraph audit: %s%s (%d nodes) ===" % [layout,
+					" (hand at top)" if hand_at_top else "", graph.size()])
+			_audit(graph)
 
 
 func _audit(graph: Dictionary) -> void:
