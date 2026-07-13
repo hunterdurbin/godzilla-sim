@@ -986,6 +986,12 @@ func _ui_button(id: String) -> Control:
 		"sys_music": return _board.btn_music_toggle
 		"sys_export_log": return _board.btn_export_log
 		"sys_save": return _board._sys_menu._save_game_button
+		# Runtime-built mobile chrome (MobileLayout owns the buttons).
+		"sys_menu": return _mobile().menu_button() if _board._is_mobile_layout else null
+		"sys_cp": return _mobile().cp_toggle_button() if _board._is_mobile_layout else null
+		"sys_log": return _mobile().log_toggle_button() if _board._is_mobile_layout else null
+		"sys_turns": return _mobile().tracker_toggle_button() if _board._is_mobile_layout else null
+		"sys_view": return _mobile().view_toggle_button() if _board._is_mobile_layout else null
 	return null
 
 
@@ -1058,6 +1064,15 @@ func _confirm() -> void:
 						_try_play_hovered(CardEnums.ActionType.PLAY_BATTLE)
 					CardEnums.CardType.STRATEGY:
 						_try_play_hovered(CardEnums.ActionType.PLAY_STRATEGY)
+		return
+	# A on a mobile tray toggle = the bumper path (slide the tray in, enter
+	# it, B returns to the toggle), not a bare pressed.emit() that would open
+	# the tray while the cursor stays stranded outside it.
+	if _element == "sys_log":
+		_bumper("log")
+		return
+	if _element == "sys_turns":
+		_bumper("tracker")
 		return
 	var entry := _resolve(_element)
 	if entry.is_empty():
@@ -1354,6 +1369,10 @@ func _process(_delta: float) -> void:
 		target = _cursor_card if is_instance_valid(_cursor_card) else null
 	elif _element.begins_with("choice_") or _element.begins_with("stack_") \
 			or _element.begins_with("hint_"):
+		target = _resolve_control(_element)
+	elif _element.begins_with("ap_") or _element.begins_with("sys_"):
+		# Mobile chrome tweens under the cursor (CP tray slide, FAB collapse
+		# repositioning) — keep the ring glued to the button.
 		target = _resolve_control(_element)
 	if target == null or not target.is_inside_tree():
 		return

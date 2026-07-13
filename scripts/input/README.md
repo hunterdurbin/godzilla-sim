@@ -104,7 +104,10 @@ Related pieces elsewhere:
   fan (`opp_hand_<i>`, above the top playmat — wired in ALL play modes so
   the graph never splits by mode; roam/zoom only, plays stay prefix-gated
   to `hand_<i>`), action-panel
-  buttons + hand stacks (`ap_*`), the corner utility column (`sys_*`), the
+  buttons + hand stacks (`ap_*`), the corner utility column (`sys_*` — on
+  mobile the runtime-built chrome instead: `sys_menu` "..." menu, `sys_cp` /
+  `sys_log` / `sys_turns` tray toggles, `sys_view` board-view cycle, resolved
+  to MobileLayout's buttons), the
   log/chat panel (`log_panel`), tracker labels (`trk_<i>`), choice
   buttons (`choice_<i>`), pending-effect stack rows (`stack_<i>`, chained
   into `choice_0` while a choice is open) and the prompt-preview mini cards
@@ -213,7 +216,13 @@ A enters the chat field, LB/B returns the cursor where it was) · **RB =
 focus turn tracker** (dpad walks the labels, A toggles that auto setting,
 RB/B returns) — both bumpers work DURING prompts (movement stays inside the
 bumper region until return; any prompt jail is restored after) and slide the matching tray open
-on mobile · LT = pad_play_card_rage (discard hovered monster for rage) ·
+on mobile. On mobile the tray toggle buttons are also spatial cursor stops
+(`sys_log`/`sys_turns`, left/right edge chrome columns) and A on one takes
+the SAME bumper path (tray slides in, B returns to the toggle); `sys_cp` /
+`sys_view` press like ordinary buttons, and A on `sys_menu` opens the "..."
+menu as a registered modal (vertical wrap focus mesh over its six options,
+B closes on the leading cancel and the cursor returns to `sys_menu`) ·
+LT = pad_play_card_rage (discard hovered monster for rage) ·
 RT = pad_play_card_invasion (discard hovered card to invade) · start =
 system menu · select = chat, or — while the effects area (choice prompt /
 pending-effects panel) is up — cycles the cursor between it and the board

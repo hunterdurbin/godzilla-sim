@@ -23,6 +23,8 @@ func _rects(hand_count: int, opp_hand_count: int = 0) -> Callable:
 		"top_discard": 100.0, "top_z5": 250.0, "top_z4": 400.0,
 		"top_z3": 550.0, "top_z2": 700.0, "top_z1": 850.0,
 		"top_monster_deck": 1000.0, "ap_opp_hand_toggle": 1100.0,
+		# Mobile chrome: opp sort pill top-left, menu/FAB on the right edge.
+		"ap_opp_sort_hand": 120.0, "sys_menu": 1150.0, "ap_fab_main": 1180.0,
 	}
 	return func(id: String) -> Rect2:
 		if id.begins_with("opp_hand_"):
@@ -117,10 +119,17 @@ func test_populated_hand_sort_button_up_is_unchanged() -> void:
 
 
 func test_mobile_hand_buttons_stay_side_by_side() -> void:
-	# Mobile keeps the pair in an HBox split pill — horizontal wiring stands.
+	# Mobile keeps the pair in an HBox split pill — horizontal wiring stands;
+	# both pills climb up onto the board-view toggle.
 	var map := _build(3, true)
 	assert_that(map["ap_hand_toggle"]["right"]).is_equal(["ap_sort_hand"])
 	assert_that(map["ap_sort_hand"]["left"]).is_equal(["ap_hand_toggle"])
+	assert_that(map["ap_hand_toggle"]["up"]).is_equal(["sys_view"])
+	assert_that(map["ap_sort_hand"]["up"]).is_equal(["sys_view"])
+	# The stack sits LEFT of the fan on mobile: right enters the hand (the
+	# shared fake grid keeps ap_sort_hand at its desktop X, so nearest-by-X
+	# picks the fan's right end — only the id family matters here).
+	assert_bool((map["ap_sort_hand"]["right"][0] as String).begins_with("hand_")).is_true()
 
 
 func test_hand_entry_picks_nearest_card_by_x() -> void:
@@ -177,13 +186,19 @@ func test_empty_opp_hand_drops_sentinel() -> void:
 
 
 func test_mobile_opp_hand_row() -> void:
-	# Mobile has no opponent button stack: the rightmost card dead-ends
-	# right; the shared PLAYMAT entry edges still stitch the fan in.
+	# Mobile: the opponent stack sits TOP-LEFT — the leftmost card exits onto
+	# its sort pill and the rightmost onto the "..." menu; the shared PLAYMAT
+	# entry edges still stitch the fan in.
 	var map := _build(3, true, 0, 0, 0, "", 0, 3)
-	assert_that(map["opp_hand_2"]["right"]).is_equal([])
+	assert_that(map["opp_hand_2"]["right"]).is_equal(["sys_menu"])
+	assert_that(map["opp_hand_0"]["left"]).is_equal(["ap_opp_sort_hand"])
 	assert_that(map["opp_hand_0"]["down"]).is_equal(BoardNavGraph.OPP_HAND_EXITS)
 	# top_z4 (x≈400, center 460) is nearest opp_hand_2 (center 495).
 	assert_that(map["top_z4"]["up"][0]).is_equal("opp_hand_2")
+	# The opp stack enters its fan at the LEFT end (x≈120 → opp_hand_0), the
+	# menu at the right end (x≈1150 → opp_hand_2).
+	assert_that(map["ap_opp_sort_hand"]["right"][0]).is_equal("opp_hand_0")
+	assert_that(map["sys_menu"]["left"][0]).is_equal("opp_hand_2")
 
 
 func test_hand_at_top_swaps_the_geometric_slots() -> void:
@@ -312,18 +327,82 @@ func test_no_hint_row_leaves_lanes_untouched() -> void:
 
 func test_mobile_hint_row_is_not_stitched_to_log_panel() -> void:
 	# Mobile's log panel lives in a bumper-only tray: build() strips the
-	# hint row's up edge; the board-side stitches stand.
+	# hint row's up edge; the board-side stitches stand (after the sys_view
+	# chrome seam the board's left end always carries).
 	var map := _build(3, true, 0, 0, 0, "", 2)
 	assert_that(map["hint_0"]["up"]).is_equal([])
-	assert_that(map["bot_monster_deck"]["left"]).is_equal(["hint_1"])
+	assert_that(map["bot_monster_deck"]["left"]).is_equal(["sys_view", "hint_1"])
 
 
 func test_mobile_fab_grid_edges() -> void:
 	var map := _build(1, true)
 	assert_that(map["ap_play_battle"]["right"]).is_equal(["ap_play_monster"])
 	assert_that(map["ap_gain_rage"]["down"]).is_equal(["ap_fab_main"])
-	assert_that(map["ap_fab_main"]["left"]).is_equal(["ap_end_main"])
-	assert_that(map["hand_0"]["right"]).is_equal(["ap_sort_hand", "ap_cancel"])
+	# The FAB exits left into the hand fan; the fan's right end returns to it.
+	assert_that(map["ap_fab_main"]["left"]).is_equal(["hand_0"])
+	assert_that(map["hand_0"]["right"]).is_equal(["ap_fab_main", "ap_cancel"])
+	assert_that(map["hand_0"]["left"]).is_equal(["ap_sort_hand"])
+
+
+func test_mobile_build_is_closed() -> void:
+	# Mobile twin of the desktop closure test: the merge + strip block must
+	# leave no dangling references (regression net for the desktop-only
+	# corner-column and opp-stack seams baked into PLAYMAT).
+	var map := _build(5, true, 3, 2, 2, "", 2, 4)
+	for id: String in map:
+		for dir: String in DIRS:
+			for target: String in map[id].get(dir, []):
+				assert_bool(map.has(target)) \
+					.override_failure_message("%s.%s -> unmapped '%s'" % [id, dir, target]) \
+					.is_true()
+
+
+func test_mobile_left_chrome_column_chains_vertically() -> void:
+	# Opp stack -> CP -> Log -> view toggle -> hand stack, and back up.
+	var map := _build(3, true, 0, 0, 0, "", 0, 3)
+	assert_that(map["ap_opp_hand_toggle"]["down"]).is_equal(["sys_cp"])
+	assert_that(map["ap_opp_sort_hand"]["down"]).is_equal(["sys_cp"])
+	assert_that(map["sys_cp"]["down"]).is_equal(["sys_log"])
+	assert_that(map["sys_log"]["down"]).is_equal(["sys_view"])
+	assert_that(map["sys_view"]["down"]).is_equal(["ap_hand_toggle", "ap_sort_hand"])
+	assert_that(map["sys_view"]["up"]).is_equal(["sys_log"])
+	assert_that(map["sys_log"]["up"]).is_equal(["sys_cp"])
+	assert_that(map["sys_cp"]["up"]).is_equal(["ap_opp_hand_toggle"])
+
+
+func test_mobile_right_chrome_column_chains_vertically() -> void:
+	# Menu -> Turns -> the pill stack (cancel over confirm over end main,
+	# matching the physical standalone-button stack) -> FAB, and back up.
+	var map := _build(1, true)
+	assert_that(map["sys_menu"]["down"]).is_equal(["sys_turns"])
+	assert_that(map["sys_turns"]["down"]).is_equal(["ap_cancel"])
+	assert_that(map["ap_cancel"]["down"]).is_equal(["ap_confirm"])
+	assert_that(map["ap_confirm"]["down"]).is_equal(["ap_end_main"])
+	assert_that(map["ap_end_main"]["down"]).is_equal(["ap_fab_main"])
+	assert_that(map["ap_fab_main"]["up"][0]).is_equal("ap_end_main")
+	assert_that(map["ap_end_main"]["up"]).is_equal(["ap_confirm"])
+	assert_that(map["ap_confirm"]["up"]).is_equal(["ap_cancel"])
+	assert_that(map["ap_cancel"]["up"]).is_equal(["sys_turns"])
+	assert_that(map["sys_turns"]["up"]).is_equal(["sys_menu"])
+
+
+func test_mobile_playmat_seams_reach_the_chrome() -> void:
+	var map := _build(1, true)
+	# Left edge: the opp stack off the top corner, CP level with the divider,
+	# Log with the strategy column, view toggle with the monster deck.
+	assert_that(map["top_discard"]["left"]).contains(["ap_opp_sort_hand"])
+	assert_that(map["top_deck"]["left"]).contains(["sys_cp"])
+	assert_that(map["bot_strategy_0"]["left"]).contains(["sys_cp", "sys_log"])
+	assert_that(map["bot_strategy_1"]["left"]).contains(["sys_log"])
+	assert_that(map["bot_monster_deck"]["left"]).contains(["sys_view"])
+	# Right edge: Turns level with the boards' right ends, the pills below.
+	assert_that(map["top_strategy_1"]["right"]).is_equal(["sys_turns"])
+	assert_that(map["bot_deck"]["right"]).is_equal(["sys_turns"])
+	assert_that(map["bot_discard"]["right"]).is_equal(["ap_cancel"])
+	# The "..." menu replaces the desktop corner column and its seams.
+	assert_that(map["top_monster_deck"]["right"]).is_equal(["sys_menu"])
+	assert_bool(map.has("sys_bug_report")).is_false()
+	assert_bool(map.has("sys_export_log")).is_false()
 
 
 func test_desktop_log_panel_is_stitched_both_ways() -> void:

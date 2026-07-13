@@ -43,7 +43,9 @@ extends RefCounted
 ## hint_<i> (prompt-preview mini cards above the action prompt, left to
 ## right — only mapped while a prompt shows them).
 ## Button ids: ap_* = action panel + hand stacks + mobile FAB, sys_* = the
-## corner utility column, log_panel = the game log/chat panel.
+## corner utility column (desktop) or the runtime-built mobile chrome
+## (sys_menu / sys_cp / sys_log / sys_turns / sys_view), log_panel = the game
+## log/chat panel.
 ##
 ## @tool-safe and scene-free: build() is a pure function of the ctx
 ## Dictionary, so unit tests and the editor overlay feed it fake data.
@@ -189,21 +191,53 @@ const DESKTOP_UI := {
 }
 
 ## Mobile UI: FAB grid (row 0 Battle|Monster|Strategy, row 1 Rage|Invade,
-## main FAB below) plus the standalone pills next to it, and the hand-button
-## stacks. The log tray and tracker tray are NOT stitched into the spatial
-## graph on mobile — only the bumpers reach them (the trays slide in).
+## main FAB below), the standalone pill column stacked above the FAB on the
+## right edge (cancel over confirm over end main), the hand-button stacks and
+## the runtime-built chrome buttons (sys_*). The tray CONTENTS stay out of
+## the spatial graph on mobile — their toggle buttons are ordinary stops now,
+## and A on sys_log / sys_turns enters the tray exactly like the bumpers.
 const MOBILE_UI := {
 	"ap_play_battle": {"up": [], "right": ["ap_play_monster"], "down": ["ap_gain_rage"], "left": []},
 	"ap_play_monster": {"up": [], "right": ["ap_play_strategy"], "down": ["ap_gain_rage", "ap_invade"], "left": ["ap_play_battle"]},
 	"ap_play_strategy": {"up": [], "right": [], "down": ["ap_invade"], "left": ["ap_play_monster"]},
 	"ap_gain_rage": {"up": ["ap_play_battle", "ap_play_monster"], "right": ["ap_invade"], "down": ["ap_fab_main"], "left": []},
 	"ap_invade": {"up": ["ap_play_monster", "ap_play_strategy"], "right": [], "down": ["ap_fab_main"], "left": ["ap_gain_rage"]},
-	"ap_fab_main": {"up": ["ap_invade", "ap_gain_rage"], "right": [], "down": [], "left": ["ap_end_main"]},
-	"ap_end_main": {"up": ["hand"], "right": ["ap_fab_main"], "down": [], "left": ["ap_confirm"]},
-	"ap_confirm": {"up": ["hand"], "right": ["ap_end_main"], "down": [], "left": ["ap_cancel"]},
-	"ap_cancel": {"up": ["hand"], "right": ["ap_confirm"], "down": [], "left": ["ap_sort_hand"]},
-	"ap_hand_toggle": {"up": ["hand"], "right": ["ap_sort_hand"], "down": [], "left": []},
-	"ap_sort_hand": {"up": ["hand"], "right": ["ap_cancel"], "down": [], "left": ["ap_hand_toggle"]},
+
+	# RIGHT edge column, top to bottom: menu, Turns tray toggle, the
+	# standalone pill stack (cancel over confirm over end main), main FAB.
+	"sys_menu": {"up": [], "right": [], "down": ["sys_turns"], "left": ["opp_hand", "top_monster_deck"]},
+	"sys_turns": {"up": ["sys_menu"], "right": [], "down": ["ap_cancel"], "left": ["top_strategy_1", "bot_deck"]},
+	"ap_cancel": {"up": ["sys_turns"], "right": [], "down": ["ap_confirm"], "left": ["bot_discard", "hand"]},
+	"ap_confirm": {"up": ["ap_cancel"], "right": [], "down": ["ap_end_main"], "left": ["hand", "bot_discard"]},
+	"ap_end_main": {"up": ["ap_confirm"], "right": [], "down": ["ap_fab_main"], "left": ["hand"]},
+	"ap_fab_main": {"up": ["ap_end_main", "ap_invade", "ap_gain_rage"], "right": [], "down": [], "left": ["hand"]},
+
+	# LEFT edge column, top to bottom: opponent hand stack (split pill,
+	# hotseat/bot only — hidden -> traversed through), CP tray, Log tray,
+	# board-view toggle, local hand stack (split pill).
+	"ap_opp_hand_toggle": {"up": [], "right": ["ap_opp_sort_hand"], "down": ["sys_cp"], "left": []},
+	"ap_opp_sort_hand": {"up": [], "right": ["opp_hand", "top_discard"], "down": ["sys_cp"], "left": ["ap_opp_hand_toggle"]},
+	"sys_cp": {"up": ["ap_opp_hand_toggle"], "right": ["top_deck", "bot_strategy_0"], "down": ["sys_log"], "left": []},
+	"sys_log": {"up": ["sys_cp"], "right": ["bot_strategy_0", "bot_strategy_1"], "down": ["sys_view"], "left": []},
+	"sys_view": {"up": ["sys_log"], "right": ["bot_monster_deck"], "down": ["ap_hand_toggle", "ap_sort_hand"], "left": []},
+	"ap_hand_toggle": {"up": ["sys_view"], "right": ["ap_sort_hand"], "down": [], "left": []},
+	"ap_sort_hand": {"up": ["sys_view"], "right": ["hand"], "down": [], "left": ["ap_hand_toggle"]},
+
+	# Mobile-only seams FROM the playmat onto the chrome columns (appended
+	# into the shared PLAYMAT rows by _merge; desktop never sees them).
+	"top_discard": {"left": ["ap_opp_sort_hand"]},
+	"top_deck": {"left": ["sys_cp"]},
+	"bot_strategy_0": {"left": ["sys_cp", "sys_log"]},
+	"bot_strategy_1": {"left": ["sys_log"]},
+	"bot_strategy_2": {"left": ["sys_log"]},
+	"bot_monster_deck": {"left": ["sys_view"]},
+	"top_monster_deck": {"right": ["sys_menu"]},
+	"top_strategy_0": {"right": ["sys_turns"]},
+	"top_strategy_1": {"right": ["sys_turns"]},
+	"top_strategy_2": {"right": ["sys_turns"]},
+	"bot_deck": {"right": ["sys_turns"]},
+	"bot_discard": {"right": ["ap_cancel"]},
+
 	"log_panel": {"up": [], "right": [], "down": [], "left": []},
 }
 
@@ -269,6 +303,12 @@ static func build(ctx: Dictionary) -> Dictionary:
 	if mobile:
 		_strip_target(map, "log_panel")
 		_strip_target(map, "sys_save")
+		# Desktop-only corner column — the "..." menu replaces it on mobile.
+		_strip_target(map, "sys_bug_report")
+		_strip_target(map, "sys_export_log")
+		# The opponent stack sits TOP-LEFT on mobile — kill the desktop
+		# right-edge seam so "right" from the top corner goes to sys_menu.
+		(map["top_monster_deck"]["right"] as Array).erase("ap_opp_hand_toggle")
 	return map
 
 
@@ -362,23 +402,29 @@ static func _apply_zone_jail(map: Dictionary, side: String) -> void:
 
 
 ## One fanned-card row in a geometric slot. Bottom slot: cards climb up
-## into the bottom board (HAND_EXITS), rightmost exits onto the sort/toggle
-## pocket. Top slot: the vertical directions flip — `up` dead-ends at the
-## screen edge, `down` enters the top board (OPP_HAND_EXITS), rightmost
-## exits onto the opponent hand-button stack (desktop only — MOBILE_UI has
-## no opponent stack). The `prefix` decides which id family fills the slot.
+## into the bottom board (HAND_EXITS); rightmost exits onto the sort/toggle
+## pocket (desktop) or the FAB/pill column (mobile), and on mobile the
+## leftmost exits onto the hand-button stack. Top slot: the vertical
+## directions flip — `up` dead-ends at the screen edge, `down` enters the
+## top board (OPP_HAND_EXITS); rightmost exits onto the opponent hand-button
+## stack (desktop, top-right) or sys_menu (mobile), leftmost onto the
+## opponent stack on mobile (top-left there). The `prefix` decides which id
+## family fills the slot.
 static func _add_fan_row(map: Dictionary, prefix: String, count: int, bottom: bool, mobile: bool) -> void:
 	var right_exit: Array
+	var left_exit: Array
 	if bottom:
-		right_exit = ["ap_sort_hand"] if not mobile else ["ap_sort_hand", "ap_cancel"]
+		right_exit = ["ap_fab_main", "ap_cancel"] if mobile else ["ap_sort_hand"]
+		left_exit = ["ap_sort_hand"] if mobile else []
 	else:
-		right_exit = [] if mobile else ["ap_opp_hand_toggle"]
+		right_exit = ["sys_menu"] if mobile else ["ap_opp_hand_toggle"]
+		left_exit = ["ap_opp_sort_hand"] if mobile else []
 	for i in range(count):
 		map["%s_%d" % [prefix, i]] = {
 			"up": HAND_EXITS.duplicate() if bottom else [],
 			"right": ["%s_%d" % [prefix, i + 1]] if i < count - 1 else right_exit.duplicate(),
 			"down": [] if bottom else OPP_HAND_EXITS.duplicate(),
-			"left": ["%s_%d" % [prefix, i - 1]] if i > 0 else [],
+			"left": ["%s_%d" % [prefix, i - 1]] if i > 0 else left_exit.duplicate(),
 		}
 
 
