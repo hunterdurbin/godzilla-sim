@@ -77,6 +77,22 @@ func _ready() -> void:
 	_map = GlyphDB.default_map()
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
 	_detect_controller_type()
+	_log_joypads()
+
+
+## One line in the file log per state change: "0 connected" on a Deck means
+## the device never reached Godot (e.g. Flatpak missing --device=all), which
+## no amount of in-game handling can fix — check the sandbox/permissions.
+func _log_joypads() -> void:
+	var pads := Input.get_connected_joypads()
+	if pads.is_empty():
+		print("[GamepadInput] joypads: 0 connected")
+		return
+	var names := PackedStringArray()
+	for device: int in pads:
+		names.append("%d:%s (guid %s)" % [device,
+				Input.get_joy_name(device), Input.get_joy_guid(device)])
+	print("[GamepadInput] joypads: %d connected — %s" % [pads.size(), ", ".join(names)])
 
 
 ## Logical actions the rebind UI offers, in display order (navigation is
@@ -340,6 +356,7 @@ func _is_text_editing() -> bool:
 
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 	_detect_controller_type()
+	_log_joypads()
 
 
 func _detect_controller_type() -> void:
