@@ -85,6 +85,8 @@ func _show_choice() -> void:
 	btn_second.pressed.connect(_on_chosen.bind(false))
 	container.add_child(btn_second)
 
+	GamepadHelper.register_modal(container, func() -> Control: return btn_first)
+
 
 ## Render only the local player's rank 1 monster into its starting zone so the
 ## player has visual context during the first/second choice. Does NOT sync hands,

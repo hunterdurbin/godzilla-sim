@@ -67,6 +67,17 @@ func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int],
 	return int(queued) if queued != null else super(player_id, target_player_id, valid_zones, prompt, allow_skip)
 
 
+func select_zones(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String) -> Array[int]:
+	calls.append({"kind": "select_zones", "player_id": player_id, "target": target_player_id, "valid": valid_zones.duplicate(), "count": count, "up_to": up_to, "prompt": prompt})
+	var queued: Variant = _next("select_zones")
+	if queued == null:
+		return super(player_id, target_player_id, valid_zones, count, up_to, prompt)
+	var typed: Array[int] = []
+	for v in queued:
+		typed.append(int(v))
+	return typed
+
+
 func select_strategy(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> int:
 	calls.append({"kind": "select_strategy", "player_id": player_id, "target": target_player_id, "valid": valid_indices.duplicate(), "prompt": prompt})
 	var queued: Variant = _next("select_strategy")

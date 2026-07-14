@@ -22,6 +22,7 @@ signal card_select_requested(player_id: int, matching_cards: Array[Dictionary], 
 signal hand_discard_requested(player_id: int, discard_count: int)
 signal hand_card_selection_requested(player_id: int, valid_indices: Array[int], prompt: String, allow_skip: bool)
 signal zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool)
+signal zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String)
 signal strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String)
 signal deck_arrange_requested(player_id: int, cards: Array[Dictionary], prompt: String)
 signal cards_revealed_requested(player_id: int, cards: Array[Dictionary], title: String)
@@ -96,6 +97,14 @@ func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int],
 	return await _take("zone_target")
 
 
+func select_zones(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String) -> Array[int]:
+	if zones_target_requested.get_connections().is_empty():
+		return super(player_id, target_player_id, valid_zones, count, up_to, prompt)
+	_open("zones_target")
+	zones_target_requested.emit(player_id, target_player_id, valid_zones, count, up_to, prompt)
+	return await _take("zones_target")
+
+
 func select_strategy(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> int:
 	if strategy_target_requested.get_connections().is_empty():
 		return super(player_id, target_player_id, valid_indices, prompt)
@@ -163,6 +172,10 @@ func resolve_hand_card_selection(hand_index: int) -> void:
 
 func resolve_zone_target(zone_index: int) -> void:
 	_deliver("zone_target", zone_index)
+
+
+func resolve_zones_target(zone_indices: Array[int]) -> void:
+	_deliver("zones_target", zone_indices)
 
 
 func resolve_strategy_target(strategy_index: int) -> void:

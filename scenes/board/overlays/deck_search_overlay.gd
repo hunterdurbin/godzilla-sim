@@ -17,6 +17,7 @@ const CARD_SCENE: PackedScene = preload("res://scenes/cards/Card.tscn")
 @onready var _view_board: Button = $DeckSearchPanel/VBox/ToggleRow/ViewBoardButton
 
 var _router: EffectUIRouter
+var _hints: OverlayHintRow
 
 var _matching: Array = []
 var _all: Array = []
@@ -32,6 +33,25 @@ func _ready() -> void:
 	_show_all.toggled.connect(_on_toggled)
 	_stacked.toggled.connect(_on_toggled)
 	_view_board.pressed.connect(_on_view_board)
+	# Controller: take a focus context while visible (suspends the board
+	# cursor, restores it on close/minimize) and keep the chrome free of
+	# pointer-mode focus rings.
+	GamepadHelper.register_modal(self, _pad_focus_provider)
+	for chrome: Control in [_show_all, _stacked, _view_board, _skip]:
+		GamepadHelper.make_pad_focusable(chrome)
+	_hints = OverlayHintRow.new()
+	$DeckSearchPanel/VBox.add_child(_hints)
+
+
+## Initial pad focus: first selectable card, else any card, else the chrome.
+func _pad_focus_provider() -> Control:
+	var cards := OverlayGridUtil.grid_cards(_grid)
+	for card in cards:
+		if card.is_selectable:
+			return card
+	if not cards.is_empty():
+		return cards[0]
+	return GamepadHelper.find_first_focusable(self)
 
 
 ## Router handler entry point — `prompt` arrives already translated.
@@ -46,6 +66,13 @@ func show_prompt(matching: Array, all_cards: Array, prompt: String, allow_skip: 
 
 	_prompt.text = prompt
 	_skip.visible = allow_skip
+	var hints: Array[Dictionary] = [
+		{"action": &"pad_confirm", "text": tr("STR_GB_HINT_SELECT")},
+		{"action": &"pad_inspect", "text": tr("STR_GB_HINT_INSPECT")},
+	]
+	if allow_skip:
+		hints.append({"action": &"pad_cancel", "text": tr("STR_GB_SKIP")})
+	_hints.set_hints(hints)
 	_show_all.set_pressed_no_signal(matching.is_empty())
 	_stacked.set_pressed_no_signal(_router.match_stacked_view if _router else true)
 	visible = true
@@ -60,6 +87,9 @@ func try_skip() -> void:
 
 
 func _refresh_grid() -> void:
+	# Preserve the pad cursor across rebuilds (toggle flips): same clamped
+	# index if focus was in the grid; chrome keeps its own focus otherwise.
+	var focus_idx := OverlayGridUtil.focused_index(_grid)
 	var show_all := _show_all.button_pressed
 	var stacked := _stacked.button_pressed
 	var cards: Array = _all if show_all else _matching
@@ -102,6 +132,9 @@ func _refresh_grid() -> void:
 				card.modulate = Color(0.5, 0.5, 0.5, 0.7)
 			card.card_right_clicked.connect(_on_card_zoom)
 			_grid.add_child(card)
+	OverlayGridUtil.wire_overlay_focus(_grid, [_show_all, _stacked, _view_board], [_skip])
+	if focus_idx >= 0:
+		OverlayGridUtil.focus_index(_grid, focus_idx, _skip if _skip.visible else _view_board)
 
 
 func _on_toggled(_value: bool) -> void:

@@ -8,6 +8,9 @@ extends Button
 ## right-click zoom and the discard/monster-deck viewers all work.
 
 
+var _glyph: ControllerGlyph
+
+
 func _ready() -> void:
 	visible = false
 	z_index = 105 # above the passive viewers (z 100) so it stays clickable
@@ -16,6 +19,15 @@ func _ready() -> void:
 	anchor_top = 1.0
 	anchor_bottom = 1.0
 	add_theme_font_size_override("font_size", 16)
+	# Controller: B restores the minimized overlay (game_board's cancel
+	# ladder) — show its glyph on the chip so the path is discoverable.
+	_glyph = ControllerGlyph.new()
+	_glyph.action = &"pad_cancel"
+	_glyph.set_anchors_and_offsets_preset(Control.PRESET_CENTER_LEFT)
+	_glyph.grow_horizontal = Control.GROW_DIRECTION_END
+	_glyph.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_glyph.offset_left = 6.0
+	add_child(_glyph)
 
 
 func show_chip(title: String, count: int, is_mobile: bool) -> void:
@@ -27,6 +39,10 @@ func show_chip(title: String, count: int, is_mobile: bool) -> void:
 	# explicitly from the text (44px min height on mobile for a touch target,
 	# 140px bottom clearance for the mobile action bar — same as the choice panel).
 	var chip_size := get_combined_minimum_size() + Vector2(24.0, 8.0)
+	if GamepadHelper.is_using_gamepad():
+		# Room for the B glyph on the left so it doesn't overlap the text
+		# (minimum size, not size — the glyph may not be laid out yet).
+		chip_size.x += _glyph.custom_minimum_size.x + 8.0
 	if is_mobile:
 		chip_size.y = maxf(chip_size.y, 44.0)
 	offset_left = 10.0

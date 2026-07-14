@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/harness/real_client_smoke.gd" id="1"]
+
+[node name="RealClientSmoke" type="Control"]
+script = ExtResource("1")

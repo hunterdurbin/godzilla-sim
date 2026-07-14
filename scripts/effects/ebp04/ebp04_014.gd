@@ -28,6 +28,16 @@ func get_bot_tags() -> Array[String]:
 	return ["destroys_zone"]
 
 
+func serialize_state() -> Dictionary:
+	if _counter_prevention_threshold == 0:
+		return {}
+	return {"counter_prevention_threshold": _counter_prevention_threshold}
+
+
+func restore_state(data: Dictionary) -> void:
+	_counter_prevention_threshold = int(data.get("counter_prevention_threshold", 0))
+
+
 func prevents_counter(_ctx: EffectContext, total_cp: int) -> bool:
 	# "cannot be countered by 30,000 or less counter power" — Japanese clarifies
 	# "(does not retreat either)" so this is full prevention, not the

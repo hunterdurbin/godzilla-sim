@@ -22,6 +22,16 @@ func test_base_defaults_auto_pick_first() -> void:
 	assert_int(await input.choose_rankup(0, [], [1, 2], "p")).is_equal(1)
 
 
+func test_base_select_zones_picks_first_n() -> void:
+	var input := PlayerInput.new()
+	assert_array(await input.select_zones(0, 1, [3, 5, 7], 2, false, "p")).contains_exactly([3, 5])
+	# Count capped by available zones.
+	assert_array(await input.select_zones(0, 1, [4], 3, false, "p")).contains_exactly([4])
+	assert_array(await input.select_zones(0, 1, [], 2, false, "p")).is_empty()
+	# Up-to mode: the aggressive fallback still takes the max.
+	assert_array(await input.select_zones(0, 1, [2, 6], 2, true, "p")).contains_exactly([2, 6])
+
+
 func test_base_hand_discard_defaults_to_back_of_hand() -> void:
 	var input := PlayerInput.new()
 	assert_array(await input.choose_hand_discards(0, 2, 5)).contains_exactly([4, 3])
@@ -60,6 +70,19 @@ func test_scripted_records_call_details() -> void:
 	assert_array(input.calls[0]["valid"]).contains_exactly([3, 5, 7])
 
 
+func test_scripted_select_zones_coerces_json_floats() -> void:
+	var input := ScriptedPlayerInput.new()
+	# JSON round trips turn ints into floats — the scripted answer must re-int-ify.
+	input.answers = {"select_zones": [[5.0, 3.0]]}
+	var zones: Array[int] = await input.select_zones(0, 1, [3, 5, 7], 2, false, "destroy zones")
+	assert_array(zones).contains_exactly([5, 3])
+	assert_int(input.count_calls("select_zones")).is_equal(1)
+	assert_int(int(input.calls[0]["count"])).is_equal(2)
+	assert_bool(input.calls[0]["up_to"]).is_false()
+	# Queue empty -> base default (first N).
+	assert_array(await input.select_zones(0, 1, [3, 5, 7], 2, false, "p")).contains_exactly([3, 5])
+
+
 # --- SignalPlayerInput ---
 
 func test_signal_input_falls_back_when_unconnected() -> void:
@@ -84,6 +107,24 @@ func test_signal_input_deferred_resolve() -> void:
 	input.zone_target_requested.connect(func(_pid: int, _tpid: int, _zones: Array[int], _prompt: String, _skip: bool) -> void:
 		input.resolve_zone_target.call_deferred(7))
 	assert_int(await input.select_zone(0, 1, [3, 7], "p", false)).is_equal(7)
+
+
+func test_signal_input_zones_target_round_trip() -> void:
+	var input := SignalPlayerInput.new()
+	var seen: Array = []
+	input.zones_target_requested.connect(func(_pid: int, _tpid: int, zones: Array[int], count: int, up_to: bool, _prompt: String) -> void:
+		seen.append([zones, count, up_to])
+		var picks: Array[int] = [7, 3]
+		input.resolve_zones_target.call_deferred(picks))
+	assert_array(await input.select_zones(0, 1, [3, 5, 7], 2, false, "p")).contains_exactly([7, 3])
+	assert_int(seen.size()).is_equal(1)
+	assert_int(int(seen[0][1])).is_equal(2)
+	assert_bool(seen[0][2]).is_false()
+
+
+func test_signal_input_zones_target_falls_back_when_unconnected() -> void:
+	var input := SignalPlayerInput.new()
+	assert_array(await input.select_zones(0, 1, [4, 6], 2, false, "p")).contains_exactly([4, 6])
 
 
 func test_signal_input_confirmation_round_trip() -> void:

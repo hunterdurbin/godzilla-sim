@@ -38,6 +38,30 @@ func _ready() -> void:
 	_show_all.toggled.connect(_on_toggled)
 	_stacked.toggled.connect(_on_toggled)
 	_view_board.pressed.connect(_on_view_board)
+	# Controller: take a focus context while visible (suspends the board
+	# cursor, restores it on close/minimize) and keep the chrome free of
+	# pointer-mode focus rings.
+	GamepadHelper.register_modal(self, _pad_focus_provider)
+	for chrome: Control in [_show_all, _stacked, _view_board, _skip, _confirm]:
+		GamepadHelper.make_pad_focusable(chrome)
+	var hints := OverlayHintRow.new()
+	hints.set_hints([
+		{"action": &"pad_confirm", "text": tr("STR_GB_HINT_ADD_REMOVE")},
+		{"action": &"pad_inspect", "text": tr("STR_GB_HINT_INSPECT")},
+		{"action": &"pad_cancel", "text": tr("STR_GB_SKIP")},
+	])
+	$CardSelectPanel/VBox.add_child(hints)
+
+
+## Initial pad focus: first selectable pool card, else any card, else chrome.
+func _pad_focus_provider() -> Control:
+	var cards := OverlayGridUtil.grid_cards(_pool_grid)
+	for card in cards:
+		if card.is_selectable:
+			return card
+	if not cards.is_empty():
+		return cards[0]
+	return GamepadHelper.find_first_focusable(self)
 
 
 ## Router handler entry point — `prompt` arrives already translated.
@@ -76,9 +100,29 @@ func _pool_filter() -> Callable:
 
 
 func _refresh() -> void:
+	# Preserve the pad cursor across rebuilds: in stacked mode the cursor
+	# follows the focused TEMPLATE (a stack keeps focus while it drains);
+	# when the stack is gone (or non-stacked) it falls back to the same
+	# clamped index (repeated A drains/refills a pile). A now-empty
+	# selection sends the cursor back to the pool.
+	var pool_idx := OverlayGridUtil.focused_index(_pool_grid)
+	var pool_tid := OverlayGridUtil.focused_template_id(_pool_grid)
+	var sel_idx := OverlayGridUtil.focused_index(_selection_grid)
 	_refresh_pool()
 	_refresh_selection()
 	_update_buttons()
+	OverlayGridUtil.wire_two_grid_focus(_pool_grid, _selection_grid,
+			[_show_all, _stacked, _view_board], [_skip, _confirm])
+	if sel_idx >= 0:
+		if _selected.is_empty():
+			OverlayGridUtil.focus_index(_pool_grid, 0, _confirm)
+		else:
+			OverlayGridUtil.focus_index(_selection_grid, sel_idx, _confirm)
+	elif pool_idx >= 0:
+		var tid_idx := OverlayGridUtil.template_index(_pool_grid, pool_tid) \
+				if _stacked.button_pressed else -1
+		OverlayGridUtil.focus_index(_pool_grid,
+				tid_idx if tid_idx >= 0 else pool_idx, _confirm)
 
 
 func _get_pool() -> Array:
@@ -110,7 +154,10 @@ func _refresh_pool() -> void:
 	OverlayGridUtil.clear_grid(_pool_grid, _on_pool_clicked)
 
 	if stacked:
-		var groups := OverlayGridUtil.group_cards(pool, _matching_ids)
+		# Anchor stack order to the fixed source so groups keep their grid
+		# position while copies are picked out of (or returned to) the pool.
+		var source: Array = _all if show_all else _matching
+		var groups := OverlayGridUtil.group_cards(pool, _matching_ids, source)
 		for group in groups:
 			var card_data: Dictionary = group["card_data"]
 			var count: int = group["count"]

@@ -35,13 +35,15 @@ extends Node
 ##                        resolve_cb takes int (hand index, -1 = skip)
 ##   "zone_target":      (target_player_id, valid_zones, prompt, allow_skip, resolve_cb)
 ##                        resolve_cb takes int (zone index, -1 = skip)
+##   "zones_target":     (target_player_id, valid_zones, count, up_to, prompt, resolve_cb)
+##                        resolve_cb takes Array[int] (selected zones, [] = decline in up-to mode)
 ##   "strategy_target":  (target_player_id, valid_indices, prompt, resolve_cb)
 ##                        resolve_cb takes int (strategy index)
 
 const _OVERLAY_KEYS := [
 	"deck_search", "deck_arrange", "card_select", "choice", "cards_revealed",
 	"monster_rankup", "hand_discard", "hand_card_select", "zone_target",
-	"strategy_target",
+	"zones_target", "strategy_target",
 ]
 
 var session: GameSession
@@ -141,6 +143,7 @@ func _bind() -> void:
 		"hand_discard": [pin.hand_discard_requested, _on_hand_discard_requested],
 		"hand_card_select": [pin.hand_card_selection_requested, _on_hand_card_selection_requested],
 		"zone_target": [pin.zone_target_requested, _on_zone_target_requested],
+		"zones_target": [pin.zones_target_requested, _on_zones_target_requested],
 		"strategy_target": [pin.strategy_target_requested, _on_strategy_target_requested],
 	}
 	var keys := signal_map.keys() if bind_all_prompts else _handlers.keys()
@@ -373,6 +376,18 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 	show_zone_target(target_player_id, valid_zones, prompt, allow_skip)
 
 
+func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array, count: int, up_to: bool, prompt: String) -> void:
+	if _is_bot_target(player_id):
+		return
+	if is_multiplayer and player_id != local_player_id:
+		var zones_json := JSON.stringify(valid_zones)
+		_send_to_remote(player_id, "zones_target", [target_player_id, zones_json, count, up_to, prompt], func(peer):
+			RpcLogger.log_send("zones_target_requested", 4 + zones_json.length() + prompt.length() + 2)
+			multiplayer_sync._rpc_zones_target_requested.rpc_id(peer, target_player_id, zones_json, count, up_to, prompt))
+		return
+	show_zones_target(target_player_id, valid_zones, count, up_to, prompt)
+
+
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array, prompt: String) -> void:
 	if _is_bot_target(player_id):
 		return
@@ -450,6 +465,13 @@ func show_zone_target(target_player_id: int, valid_zones: Array, prompt: String,
 	for v in valid_zones:
 		typed.append(int(v))
 	_show("zone_target", [target_player_id, typed, _translate(prompt), allow_skip, resolve_zone_target])
+
+
+func show_zones_target(target_player_id: int, valid_zones: Array, count: int, up_to: bool, prompt: String) -> void:
+	var typed: Array[int] = []
+	for v in valid_zones:
+		typed.append(int(v))
+	_show("zones_target", [target_player_id, typed, count, up_to, _translate(prompt), resolve_zones_target])
 
 
 func show_strategy_target(target_player_id: int, valid_indices: Array, prompt: String) -> void:
@@ -551,6 +573,19 @@ func resolve_zone_target(zone_index: int) -> void:
 		multiplayer_sync._rpc_zone_target_resolved.rpc_id(net.host_peer_id, zone_index)
 	elif session.player_input:
 		session.player_input.resolve_zone_target(zone_index)
+
+
+func resolve_zones_target(zone_indices) -> void:
+	# `zone_indices` may arrive as Array or typed Array[int] — coerce.
+	var typed: Array[int] = []
+	for v in zone_indices:
+		typed.append(int(v))
+	if is_multiplayer and not net.is_host():
+		var zones_json := JSON.stringify(typed)
+		RpcLogger.log_send("zones_target_resolved", zones_json.length())
+		multiplayer_sync._rpc_zones_target_resolved.rpc_id(net.host_peer_id, zones_json)
+	elif session.player_input:
+		session.player_input.resolve_zones_target(typed)
 
 
 func resolve_strategy_target(strategy_index: int) -> void:

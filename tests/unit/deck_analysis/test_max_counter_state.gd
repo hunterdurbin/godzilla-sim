@@ -1,0 +1,258 @@
+extends GdUnitTestSuite
+
+## MaxCounterState: the synthetic counter-phase board the deck builder's
+## "Maximum Counter Power" preview evaluates. Every total is read back
+## through CounterResolver.compute_counter_numbers on a real GameState —
+## these tests pin the harness contract the optimizer relies on.
+
+const Cards := preload("res://tests/fixtures/cards.gd")
+const Real := preload("res://tests/fixtures/real_cards.gd")
+
+
+func _vanilla_pool(cps: Array) -> Array[Dictionary]:
+	var pool: Array[Dictionary] = []
+	for i in range(cps.size()):
+		pool.append(Cards.battle(2, cps[i], "T-BTL-%d" % i))
+	return pool
+
+
+func _zones_with(cards: Array, monster_zone: int) -> Array:
+	## Lay cards into zone slots left to right, skipping the monster's index.
+	var zones: Array = []
+	zones.resize(8)
+	zones.fill({})
+	var monster_idx := monster_zone - 1
+	var next := 0
+	for card in cards:
+		while next == monster_idx:
+			next += 1
+		zones[next] = card
+		next += 1
+	return zones
+
+
+func test_seven_vanillas_sum_printed_cp() -> void:
+	var pool := _vanilla_pool([6000, 5000, 5000, 4000, 3000, 2000, 1000])
+	var mcs := MaxCounterState.new(pool, [Cards.monster(1)])
+	mcs.apply({
+		"monster": Cards.monster(1), "monster_zone": 1,
+		"zones": _zones_with(pool, 1), "strategies": [{}, {}], "rage": 0,
+	})
+	assert_int(mcs.evaluate()).is_equal(26000)
+	mcs.teardown()
+
+
+func test_unplaced_copies_land_in_discard() -> void:
+	var pool := _vanilla_pool([6000, 5000, 4000])
+	var mcs := MaxCounterState.new(pool, [])
+	mcs.apply({
+		"monster": {}, "monster_zone": 1,
+		"zones": _zones_with([pool[0]], 1), "strategies": [{}, {}], "rage": 0,
+	})
+	assert_int(mcs.evaluate()).is_equal(6000)
+	assert_int(mcs.state.players[0].discard_pile.size()).is_equal(2)
+	assert_int(mcs.state.players[0].hand.size()).is_equal(0)
+	assert_int(mcs.state.players[0].main_deck.size()).is_equal(0)
+	mcs.teardown()
+
+
+func test_reapply_rewrites_board() -> void:
+	var pool := _vanilla_pool([6000, 5000])
+	var mcs := MaxCounterState.new(pool, [])
+	mcs.apply({"monster": {}, "monster_zone": 1,
+		"zones": _zones_with([pool[0]], 1), "strategies": [{}, {}], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(6000)
+	mcs.apply({"monster": {}, "monster_zone": 1,
+		"zones": _zones_with([pool[1]], 1), "strategies": [{}, {}], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(5000)
+	assert_int(mcs.state.players[0].discard_pile.size()).is_equal(1)
+	mcs.teardown()
+
+
+func test_rage_conditional_counts_with_rage() -> void:
+	# EBP02-011 Gabara: +3000 while your monster has 2 or more Rage.
+	var card := Real.instance("EBP02-011")
+	var pool: Array[Dictionary] = [card]
+	var mcs := MaxCounterState.new(pool, [Cards.monster(1)])
+	var base: int = card.get("counter_power", 0)
+	mcs.apply({"monster": Cards.monster(1), "monster_zone": 1,
+		"zones": _zones_with([card], 1), "strategies": [{}, {}], "rage": 2})
+	assert_int(mcs.evaluate()).is_equal(base + 3000)
+	mcs.apply({"monster": Cards.monster(1), "monster_zone": 1,
+		"zones": _zones_with([card], 1), "strategies": [{}, {}], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(base)
+	mcs.teardown()
+
+
+func test_awakening_conditional_follows_monster_zone() -> void:
+	# EBP01-018: +3000 at Awakening4 (monster_zone >= 4).
+	var card := Real.instance("EBP01-018")
+	var pool: Array[Dictionary] = [card]
+	var mcs := MaxCounterState.new(pool, [Cards.monster(1)])
+	var base: int = card.get("counter_power", 0)
+	mcs.apply({"monster": Cards.monster(1), "monster_zone": 4,
+		"zones": _zones_with([card], 4), "strategies": [{}, {}], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(base + 3000)
+	mcs.apply({"monster": Cards.monster(1), "monster_zone": 1,
+		"zones": _zones_with([card], 1), "strategies": [{}, {}], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(base)
+	mcs.teardown()
+
+
+func test_strategy_flat_modifier_needs_four_battle_cards() -> void:
+	# EBP02-017 Operation Taba: <Your Turn> +5000 total CP with 4+ battle
+	# cards — the COUNTER-phase perspective is the counterer's own turn.
+	var strategy := Real.instance("EBP02-017")
+	var battles := _vanilla_pool([1000, 1000, 1000, 1000])
+	var pool: Array[Dictionary] = battles.duplicate()
+	pool.append(strategy)
+	var mcs := MaxCounterState.new(pool, [Cards.monster(1)])
+	mcs.apply({"monster": Cards.monster(1), "monster_zone": 1,
+		"zones": _zones_with(battles, 1), "strategies": [strategy, {}], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(4000 + 5000)
+	mcs.apply({"monster": Cards.monster(1), "monster_zone": 1,
+		"zones": _zones_with(battles.slice(0, 3), 1), "strategies": [strategy, {}], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(3000)
+	mcs.teardown()
+
+
+func test_strategy_counts_instance_stamped_tokens() -> void:
+	# EBP02-072: +20000 total CP with 3+ Crystals in zones. The board's
+	# tokens carry per-copy instance ids exactly as the optimizer stamps
+	# them — count_zone_tokens_by_id must match on base id, or the bonus
+	# silently reads 0 on every synthetic board.
+	var tokens: Array[Dictionary] = []
+	for i in range(3):
+		tokens.append(Real.instance("EBP02-T03", i))
+	var strategy := Real.instance("EBP02-072")
+	var pool: Array[Dictionary] = [strategy]
+	var mcs := MaxCounterState.new(pool, [])
+	mcs.apply({"monster": {}, "monster_zone": 1,
+		"zones": _zones_with(tokens, 1), "strategies": [strategy, {}], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(20000)
+	mcs.teardown()
+
+
+func test_third_strategy_zone_counts_when_constructed_with_three() -> void:
+	# EBP03-013's expansion: constructed with strategy_zone_count 3 the state
+	# grows the zone arrays and apply() fills all three slots — each fielded
+	# EBP02-017 copy adds its +5000 (4+ battle cards fielded).
+	var strategies: Array[Dictionary] = []
+	for i in range(3):
+		strategies.append(Real.instance("EBP02-017", i))
+	var battles := _vanilla_pool([1000, 1000, 1000, 1000])
+	var pool: Array[Dictionary] = battles.duplicate()
+	pool.append_array(strategies)
+	var mcs := MaxCounterState.new(pool, [Cards.monster(1)], 3)
+	assert_int(mcs.state.players[0].strategy_zones.size()).is_equal(3)
+	mcs.apply({"monster": Cards.monster(1), "monster_zone": 1,
+		"zones": _zones_with(battles, 1),
+		"strategies": [strategies[0], strategies[1], strategies[2]], "rage": 0})
+	assert_int(mcs.evaluate()).is_equal(4000 + 3 * 5000)
+	assert_int(mcs.breakdown()["strategy_cp_mods"].size()).is_equal(3)
+	mcs.teardown()
+	# Default construction keeps the printed 2 zones.
+	var default_mcs := MaxCounterState.new([] as Array[Dictionary], [])
+	assert_int(default_mcs.state.players[0].strategy_zones.size()).is_equal(2)
+	default_mcs.teardown()
+
+
+func test_monster_stack_built_from_lower_ranks() -> void:
+	var monsters := Cards.monster_line()
+	var mcs := MaxCounterState.new([] as Array[Dictionary], monsters)
+	mcs.apply({"monster": monsters[3], "monster_zone": 5,
+		"zones": _zones_with([], 5), "strategies": [{}, {}], "rage": 0})
+	var player: PlayerState = mcs.state.players[0]
+	assert_int(player.monster_stack.size()).is_equal(3)
+	# Descending rank: directly-below first (rank 3, 2, 1).
+	assert_int(player.monster_stack[0].get("rank", 0)).is_equal(3)
+	assert_int(player.monster_stack[2].get("rank", 0)).is_equal(1)
+	assert_int(player.monster_deck.size()).is_equal(0)
+	mcs.teardown()
+
+
+func test_monster_stack_passthrough_used_verbatim() -> void:
+	# A live caller (KaijuCounterOracle) hands over its REAL stack: apply()
+	# must use it verbatim instead of synthesizing from the monster pool.
+	var monsters := Cards.monster_line()
+	var mcs := MaxCounterState.new([] as Array[Dictionary], [])
+	mcs.apply({"monster": monsters[3], "monster_zone": 5,
+		"zones": _zones_with([], 5), "strategies": [{}, {}], "rage": 0,
+		"monster_stack": [monsters[2], monsters[1]]})
+	var player: PlayerState = mcs.state.players[0]
+	assert_int(player.monster_stack.size()).is_equal(2)
+	assert_str(player.monster_stack[0].get("id", "")).is_equal(monsters[2].get("id", ""))
+	assert_str(player.monster_stack[1].get("id", "")).is_equal(monsters[1].get("id", ""))
+	assert_int(player.monster_deck.size()).is_equal(0)
+	mcs.teardown()
+
+
+func test_breakdown_reports_per_zone_cp() -> void:
+	var card := Real.instance("EBP01-018")  # +3000 at Awakening4
+	var vanilla := Cards.battle(2, 4000, "T-VAN")
+	var pool: Array[Dictionary] = [card, vanilla]
+	var mcs := MaxCounterState.new(pool, [Cards.monster(1)])
+	mcs.apply({"monster": Cards.monster(1), "monster_zone": 8,
+		"zones": _zones_with([card, vanilla], 8), "strategies": [{}, {}], "rage": 0})
+	var data := mcs.breakdown()
+	var base: int = card.get("counter_power", 0)
+	assert_int(data["total_cp"]).is_equal(mcs.evaluate())
+	assert_int(data["zone_mods"][0]).is_equal(3000)
+	assert_int(data["zone_cp"][0]).is_equal(base + 3000)
+	assert_int(data["zone_cp"][1]).is_equal(4000)
+	assert_int(data["zone_cp"][2]).is_equal(0)
+	mcs.teardown()
+
+
+func test_apply_places_under_card_and_opp_zone() -> void:
+	var top := Cards.battle(2, 5000, "T-TOP")
+	var under := Cards.battle(1, 1000, "T-UNDER")
+	var spare := Cards.battle(1, 2000, "T-SPARE")
+	var pool: Array[Dictionary] = [top, under, spare]
+	var mcs := MaxCounterState.new(pool, [])
+	mcs.apply({"monster": {}, "monster_zone": 1,
+		"zones": _zones_with([top], 1), "strategies": [{}, {}], "rage": 0,
+		"opp_monster_zone": 5, "unders": {1: under}})
+	var player: PlayerState = mcs.state.players[0]
+	assert_int(player.zones[1].size()).is_equal(2)
+	assert_str(player.get_zone_top_card(1).get("id", "")).is_equal("T-TOP")
+	assert_str(player.zones[1][1].get("id", "")).is_equal("T-UNDER")
+	# Under is consumed from the pool: only the spare lands in the discard.
+	assert_int(player.discard_pile.size()).is_equal(1)
+	assert_str(player.discard_pile[0].get("id", "")).is_equal("T-SPARE")
+	assert_int(mcs.state.players[1].monster_zone).is_equal(5)
+	# Only the TOP card's counter power counts.
+	assert_int(mcs.evaluate()).is_equal(5000)
+	mcs.teardown()
+
+
+func test_opp_monster_rank_gates_rank_conditional() -> void:
+	# ESD02-012: +5000 while the opponent's monster is rank IV or higher.
+	# opp_monster_rank > 0 gives the opponent a synthetic {rank} monster;
+	# absent keeps it monster-less (rank reads as 1 — the v1 board).
+	var card := Real.instance("ESD02-012")
+	var pool: Array[Dictionary] = [card]
+	var mcs := MaxCounterState.new(pool, [])
+	var assignment := {"monster": {}, "monster_zone": 1,
+		"zones": _zones_with([card], 1), "strategies": [{}, {}], "rage": 0,
+		"opp_monster_zone": 1, "opp_monster_rank": 3}
+	mcs.apply(assignment)
+	var below_threshold: int = mcs.evaluate()
+	assignment["opp_monster_rank"] = 4
+	mcs.apply(assignment)
+	assert_int(mcs.evaluate()).is_equal(below_threshold + 5000)
+	assert_int(mcs.state.players[1].current_monster.get("rank", 0)).is_equal(4)
+	# Param absent: the opponent loses the synthetic monster again.
+	assignment.erase("opp_monster_rank")
+	mcs.apply(assignment)
+	assert_int(mcs.evaluate()).is_equal(below_threshold)
+	assert_bool(mcs.state.players[1].current_monster.is_empty()).is_true()
+	mcs.teardown()
+
+
+func test_teardown_is_idempotent() -> void:
+	var mcs := MaxCounterState.new([] as Array[Dictionary], [])
+	mcs.teardown()
+	mcs.teardown()
+	assert_object(mcs.effect_handler).is_null()
+	assert_object(mcs.action_handler).is_null()

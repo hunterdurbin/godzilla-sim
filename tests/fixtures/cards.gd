@@ -1,7 +1,7 @@
 extends RefCounted
 
 ## Static builders for hand-built card dictionaries used by unit tests.
-## Shapes mirror the templates in data/card_data.gd, limited to the fields the
+## Shapes mirror the templates in scripts/cards/sets/card_set_*.gd, limited to the fields the
 ## engine actually reads. No CardData autoload dependency — the gdUnit CLI
 ## replaces the main loop, so autoload singletons are unavailable in unit runs.
 

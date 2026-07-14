@@ -58,6 +58,7 @@ text = "STR_GB_VIEW_BOARD"
 [node name="ScrollContainer" type="ScrollContainer" parent="DeckSearchPanel/VBox"]
 layout_mode = 2
 size_flags_vertical = 3
+follow_focus = true
 horizontal_scroll_mode = 0
 scroll_deadzone = 20
 

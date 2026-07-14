@@ -1,0 +1,108 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/lobby/online_lobby.gd" id="1_ol"]
+[ext_resource type="PackedScene" path="res://scenes/deck_builder/DeckSelect.tscn" id="2_ds"]
+
+[node name="OnlineLobby" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_ol")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.08, 0.03, 0.02, 1)
+
+[node name="CenterContainer" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CenterContainer"]
+layout_mode = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = "STR_MENU_ONLINE"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 36
+theme_override_colors/font_color = Color(0.9, 0.3, 0.1, 1)
+
+[node name="HostPanel" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="HostButton" type="Button" parent="CenterContainer/VBoxContainer/HostPanel"]
+custom_minimum_size = Vector2(150, 40)
+layout_mode = 2
+text = "STR_LOBBY_HOST"
+theme_override_font_sizes/font_size = 18
+
+[node name="CodeLabel" type="Label" parent="CenterContainer/VBoxContainer/HostPanel"]
+custom_minimum_size = Vector2(160, 0)
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 24
+theme_override_colors/font_color = Color(0.3, 0.9, 0.3, 1)
+
+[node name="CopyButton" type="Button" parent="CenterContainer/VBoxContainer/HostPanel"]
+custom_minimum_size = Vector2(80, 40)
+layout_mode = 2
+text = "STR_LOBBY_COPY"
+theme_override_font_sizes/font_size = 16
+
+[node name="JoinPanel" type="HBoxContainer" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="JoinButton" type="Button" parent="CenterContainer/VBoxContainer/JoinPanel"]
+custom_minimum_size = Vector2(150, 40)
+layout_mode = 2
+text = "STR_LOBBY_JOIN"
+theme_override_font_sizes/font_size = 18
+
+[node name="CodeEdit" type="LineEdit" parent="CenterContainer/VBoxContainer/JoinPanel"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+placeholder_text = "STR_LOBBY_ENTER_CODE"
+alignment = 1
+theme_override_font_sizes/font_size = 18
+
+[node name="StatusLabel" type="Label" parent="CenterContainer/VBoxContainer"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 16
+theme_override_colors/font_color = Color(0.8, 0.7, 0.5, 1)
+
+[node name="DeckSelect" parent="CenterContainer/VBoxContainer" instance=ExtResource("2_ds")]
+layout_mode = 2
+
+[node name="StartButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "STR_LOBBY_START"
+theme_override_font_sizes/font_size = 22
+
+[node name="BackButton" type="Button" parent="CenterContainer/VBoxContainer"]
+custom_minimum_size = Vector2(200, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "STR_GENERIC_BACK"
+theme_override_font_sizes/font_size = 18

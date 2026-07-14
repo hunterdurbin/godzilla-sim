@@ -53,7 +53,7 @@ Run **headfully** (viewport capture needs rendering):
 - Press real buttons via `btn.pressed.emit()` — this exercises the same
   handlers as a click (including `await btn.pressed` confirmation flows).
 - Use the board's **@onready refs** (`board.btn_end_main`, `board.btn_confirm`,
-  `board._save_game_button`), NOT node paths — the mobile layout reparents
+  `board._sys_menu._save_game_button`), NOT node paths — the mobile layout reparents
   the action panel, so `ActionPanel/Row2/EndMain` paths break there.
 - Read state via `board._get_current_pid()`, `board.turn_manager.game_state`
   (turn_number/current_phase/current_sub_phase), and the game log tail:
@@ -67,7 +67,7 @@ Run **headfully** (viewport capture needs rendering):
 
 ## Save/load probe
 
-`board._save_game_button.pressed.emit()` writes to
+`board._sys_menu._save_game_button.pressed.emit()` writes to
 `user://saves/<version>/recent/` (macOS:
 `~/Library/Application Support/Godot/app_userdata/Unofficial Godzilla Sim/saves/`).
 To reload in-process: `GameSerializer.pending_load =
@@ -77,14 +77,14 @@ GameSerializer.load_save_file(path)` then instantiate a fresh GameBoard.
 ## Other scenes
 
 Menu scenes are directly launchable the same way — e.g. instantiate
-`res://scenes/ui/Options.tscn` in the driver and emit its buttons
+`res://scenes/menus/Options.tscn` in the driver and emit its buttons
 (`options.automation_button.pressed.emit()`). If a driver mutates
 GameSettings for a test, snapshot the original values and restore + `save()`
 before quitting — `user://settings.cfg` is the user's real config.
 
 ## Multiplayer harness
 
-`./scenes/server/tests/run_harness.sh 3 <godot>` defaults to port 12091,
+`./tests/harness/run_harness.sh 3 <godot>` defaults to port 12091,
 which collides with the user's editor-launched dev server if one is running
 (`lsof -nP -iTCP:12091 -sTCP:LISTEN` to check). Run `PORT=12191 ./scenes/...`
 instead of killing anything — the user's processes are not yours to stop.

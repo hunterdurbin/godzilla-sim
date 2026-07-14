@@ -6,7 +6,7 @@ extends CardEffect
 ## Look at the top 4 cards of your deck, put any number of them on top of your deck in
 ## any order, send the rest to your discard pile, then draw 2 cards.
 ##
-## Note: "counts_as_monster_in_discard" flag is set in card_data.gd.
+## Note: "counts_as_monster_in_discard" flag is set in the card data (scripts/cards/sets/).
 ##
 ## Tested: Yes
 ## Known issues: None

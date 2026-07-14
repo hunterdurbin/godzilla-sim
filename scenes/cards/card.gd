@@ -3,7 +3,7 @@ extends Control
 ## Card node with hover scaling, drag functionality, and TCG card image display
 
 const ARTWORK_BASE_PATH := "user://CardContent/Artwork"
-const CARD_BACK_PATH := "res://assets/cardBacks/default.jpeg"
+const CARD_BACK_PATH := "res://assets/cards/backs/default.jpeg"
 const RAGE_MARKER_DEFAULT_PATH := "res://assets/rage/default.png"
 const RAGE_MARKER_CUSTOM_DIR := "rage"
 const _TriggerMap = preload("res://scripts/effects/trigger_map.gd")
@@ -90,8 +90,12 @@ var drag_enabled: bool = true
 # Tween reference
 var tween: Tween
 var _pre_hover_z_index: int = 0
+# Home slot position. Invariant: every code path that tweens `position` on a
+# hand card (return_to_position, _animate_hover) keeps this pointing at the
+# card's base slot — set_home_position relies on it to detect no-op re-homes.
 var _pre_hover_position: Vector2 = Vector2.ZERO
 var _hover_active: bool = false
+var _hover_lifting: bool = false # direction of the current/most recent hover tween
 
 # Desktop click-on-release state
 var _mouse_press_start_pos: Vector2 = Vector2.ZERO
@@ -124,6 +128,10 @@ func _ready() -> void:
 	# Connect mouse signals
 	mouse_entered.connect(_on_mouse_entered)
 	mouse_exited.connect(_on_mouse_exited)
+	# Controller cursor visual (overlay grids are the only place cards get
+	# focus — see OverlayGridUtil)
+	focus_entered.connect(_on_focus_entered)
+	focus_exited.connect(_on_focus_exited)
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -159,6 +167,18 @@ func _gui_input(event: InputEvent) -> void:
 			_on_touch_motion()
 		elif is_dragging:
 			_apply_drag_motion()
+
+	# Controller: overlay-grid cards receive focus (focus_mode set by
+	# OverlayGridUtil.wire_grid_focus) and non-mouse events route to the focus
+	# owner — confirm activates like a click, inspect like a right-click.
+	# Board/hand cards never get focus (GamepadBoardNav cursors them instead).
+	elif has_focus():
+		if event.is_action_pressed("ui_accept") and is_selectable:
+			accept_event()
+			card_clicked.emit(self)
+		elif event.is_action_pressed("pad_inspect") and not is_face_down:
+			accept_event()
+			card_right_clicked.emit(self)
 
 
 ## Desktop: left-click press — immediate select or drag start
@@ -300,11 +320,29 @@ func _on_mouse_exited() -> void:
 		_animate_hover(false)
 
 
+## Controller cursor visual: mirror the mouse hover raise and add the pulsing
+## attention border so the pad position is visible even where hover_scale is
+## ~1.0 (overlay galleries). Gated on gamepad mode because pointer clicks also
+## grab focus on FOCUS_ALL cards — mouse users must never see the border.
+func _on_focus_entered() -> void:
+	if not GamepadHelper.is_using_gamepad():
+		return
+	set_attention_highlight(true)
+	_on_mouse_entered()
+
+
+func _on_focus_exited() -> void:
+	set_attention_highlight(false)
+	if _hover_active:
+		_on_mouse_exited()
+
+
 func _is_in_slot() -> bool:
 	return get_parent() is Slot
 
 
 func _animate_hover(entering: bool) -> void:
+	_hover_lifting = entering
 	if tween:
 		tween.kill()
 	tween = create_tween()
@@ -312,15 +350,20 @@ func _animate_hover(entering: bool) -> void:
 	tween.set_trans(Tween.TRANS_CUBIC)
 	tween.set_parallel(true)
 	var in_slot := _is_in_slot()
+	# hover_lift == 0 (overlay/gallery grids): leave position entirely to the
+	# container. A pad grab_focus lands during grid rebuilds, while dying
+	# queue_free'd cards still occupy cells — a position tween would capture
+	# that transient layout and pin the card in the wrong cell after re-sort.
+	var animate_position := not in_slot and hover_lift != 0.0
 	if entering:
 		var target_hover_scale := hover_scale_in_slot if in_slot else hover_scale
 		tween.tween_property(self , "scale", original_scale * target_hover_scale, scale_duration)
-		if not in_slot:
+		if animate_position:
 			var lift_dir := 1.0 if invert_hover else -1.0
 			tween.tween_property(self , "position", _pre_hover_position + Vector2(0, lift_dir * hover_lift), scale_duration)
 	else:
 		tween.tween_property(self , "scale", original_scale, scale_duration)
-		if not in_slot:
+		if animate_position:
 			tween.tween_property(self , "position", _pre_hover_position, scale_duration)
 		tween.chain().tween_callback(func(): _hover_active = false)
 
@@ -376,6 +419,38 @@ func set_face_down(face_down: bool) -> void:
 	is_face_down = face_down
 	if is_node_ready():
 		_update_display()
+
+
+## Non-animated re-home from CardManager layout passes (multiplayer resyncs,
+## resizes). Reconciles with interactive state instead of clobbering it:
+## drag/snap-preview own the position; an active hover adopts the new slot as
+## its base and re-glides; an animated return already heading to this exact
+## slot is left to finish; otherwise snap directly.
+func set_home_position(target_pos: Vector2, home_z: int = -1) -> void:
+	# Drag check must precede the hover check — dragging does not clear
+	# _hover_active until release.
+	if is_dragging or is_snap_previewing:
+		return
+	if _hover_active:
+		if home_z >= 0:
+			_pre_hover_z_index = home_z # exit hover to the fresh stacking order
+		if not _pre_hover_position.is_equal_approx(target_pos):
+			_pre_hover_position = target_pos
+			# Re-glide toward the new slot in whichever direction the hover is
+			# going — re-lifting during an un-hover return would strand the
+			# card raised (_hover_active clears via the return tween callback).
+			_animate_hover(_hover_lifting)
+		return
+	if home_z >= 0:
+		z_index = home_z
+	# A return_to_position already in flight to this exact slot: let it finish.
+	if tween and tween.is_running() and _pre_hover_position.is_equal_approx(target_pos):
+		return
+	if tween:
+		tween.kill()
+		scale = original_scale # killed return may have left scale mid-tween
+	_pre_hover_position = target_pos
+	position = target_pos
 
 
 func return_to_position(target_pos: Vector2, duration: float = 0.3) -> void:

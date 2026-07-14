@@ -91,8 +91,9 @@ func resume_game() -> void:
 	## runs — resume executes the saved sub-phase's step and everything after,
 	## then flows naturally into later phases/turns.
 	## Saves taken mid-sub-phase re-run that sub-phase from its entry, so
-	## partially resolved effects may re-apply; turn-scoped effect-handler
-	## state (e.g. "until end of turn" modifiers) is not serialized.
+	## partially resolved effects may re-apply. Turn-scoped CardEffect member
+	## state (e.g. "until end of turn" modifiers) rides in the save's
+	## effect_state dicts (CardEffect.serialize_state/restore_state).
 	var from_sub: int = game_state.current_sub_phase
 	flow_state = FlowState.ADVANCING_PHASES
 

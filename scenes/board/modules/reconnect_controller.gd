@@ -138,6 +138,8 @@ func _build_overlay() -> void:
 
 	overlay.add_child(vbox)
 	_board.add_child(overlay)
+	GamepadHelper.register_modal(overlay, func() -> Control:
+		return _claim_btn if _claim_btn.visible else _menu_btn)
 
 
 func _on_opponent_disconnected(_peer_id: int) -> void:

@@ -37,6 +37,49 @@ func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, 
 
 
 
+func destroy_zone_targets(player_id: int, target: PlayerState, filter: Callable, count: int, prompt: String, up_to: bool = false) -> Array[Dictionary]:
+	## Let a player choose multiple battle cards matching filter to destroy in
+	## one batch (revenge deferred per 10.4.3 via destroy_zones).
+	## Exact mode (up_to = false): the player must pick count zones, clamped to
+	## the number of valid targets. Up-to mode: 0..count, [] declines.
+	## Returns the destroyed cards ([] when nothing was destroyed).
+	var valid_zones: Array[int] = []
+	for i in range(8):
+		var zone_card := target.get_zone_top_card(i)
+		if not zone_card.is_empty() and filter.call(zone_card):
+			if not _can_destroy_card(target, zone_card):
+				continue
+			valid_zones.append(i)
+
+	if valid_zones.is_empty() or count <= 0:
+		return []
+
+	var ask_count: int = count if up_to else mini(count, valid_zones.size())
+	if ask_count == 1 or valid_zones.size() == 1:
+		# Nothing to multi-select — the single-zone click prompt is better UX
+		# than click + confirm (up-to declines via its allow_skip button).
+		var zone: int = await h.select_zone_target(player_id, target.player_id, valid_zones, prompt, up_to)
+		if zone < 0:
+			return []
+		return await destroy_zones(target, [zone])
+
+	var chosen: Array[int] = await h.select_zones_target(player_id, target.player_id, valid_zones, ask_count, prompt, up_to)
+
+	# Defensive re-validation (the UI/RPC layer validates too): membership,
+	# dedupe, cap at the requested count.
+	var cleaned: Array[int] = []
+	for zi in chosen:
+		if zi in valid_zones and zi not in cleaned:
+			cleaned.append(zi)
+	if cleaned.size() > ask_count:
+		cleaned = cleaned.slice(0, ask_count)
+	if cleaned.is_empty():
+		return []
+	return await destroy_zones(target, cleaned)
+
+
+
+
 func destroy_chosen_zone(player_id: int, target: PlayerState, valid_zones: Array[int], prompt: String) -> Dictionary:
 	## Let a player choose one zone from a pre-computed list to destroy.
 	## Like destroy_zone_target but with pre-computed valid zones instead of a filter.

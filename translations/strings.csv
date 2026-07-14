@@ -16,6 +16,7 @@ STR_MENU_BOT_DIFFICULTY,Bot Difficulty,ボットの難易度
 STR_MENU_DIFFICULTY_EASY,Easy,かんたん
 STR_MENU_DIFFICULTY_NORMAL,Normal,ふつう
 STR_MENU_DIFFICULTY_HARD,Hard,むずかしい
+STR_MENU_DIFFICULTY_KAIJU,Kaiju,カイジュウ
 STR_MENU_SEED,Seed:,シード:
 STR_MENU_SEED_PLACEHOLDER,random,ランダム
 STR_MENU_BOT_SPEED_AUTO,Bot Speed: Automatic,ボット速度: 自動
@@ -58,6 +59,7 @@ Room may no longer exist.","接続に失敗しました (%s)。
 ルームが存在しない可能性があります。"
 STR_MENU_ERR_TIMEOUT,timeout,タイムアウト
 STR_MENU_ERR_CODE_FMT,error %d,エラー %d
+STR_MENU_HINT_CONFIRM,Confirm,決定
 STR_COMMON_CANCEL,Cancel,キャンセル
 STR_COMMON_OK,OK,OK
 STR_COMMON_SAVE,Save,保存
@@ -322,6 +324,22 @@ STR_GB_PLAY_STRATEGY,Strategy,戦略
 STR_GB_GAIN_RAGE,Gain Rage,怒り獲得
 STR_GB_PLAY_MONSTER,Play Monster,怪獣出現
 STR_GB_INVADE,Invade,進攻
+STR_GB_HINT_PLAY,Play,プレイ
+STR_GB_HINT_RAGE,Rage,怒り
+STR_GB_HINT_INVADE,Invade,進攻
+STR_GB_HINT_SELECT,Select,選択
+STR_GB_HINT_INSPECT,Inspect,拡大
+STR_GB_HINT_CLOSE,Close,閉じる
+STR_GB_HINT_PAN,Pan,パン
+STR_GB_HINT_ZOOM,Zoom,ズーム
+STR_GB_HINT_ROTATE,Rotate,回転
+STR_GB_HINT_ADD_REMOVE,Add / Remove,追加/解除
+STR_GB_HINT_MOVE,Move,移動
+STR_GB_HINT_REORDER,Reorder,並べ替え
+STR_GB_HINT_BADGES,Badges,バッジ切替
+STR_GB_HINT_SOURCE,View source,発生源を表示
+STR_GB_HINT_BOARD,Board,盤面
+STR_GB_HINT_EFFECTS,Effects,効果
 STR_GB_END_MAIN,End Main,メイン終了
 STR_GB_END_MAIN_QUESTION,End Main Phase?,メインフェイズを終了？
 STR_GB_SKIP,Skip,スキップ
@@ -544,6 +562,9 @@ STR_RV_SPEED,Speed:,速度:
 STR_RV_PAUSE,Pause,一時停止
 STR_RV_CLOSE,Close,閉じる
 STR_RV_STACKED,Stacked,重ねる
+STR_RV_HINT_ADJUST,Adjust,調整
+STR_RV_HINT_STEP,Step,ステップ
+STR_RV_HINT_TURN,Turn,ターン
 STR_RV_NO_REPLAY_DATA,No replay data,リプレイデータなし
 STR_RV_NO_CARDS,No cards.,カードなし。
 STR_RV_PHASE_START,Start,スタート
@@ -595,6 +616,14 @@ STR_DB_SORT_TYPE,Sort: Type,並び替え: タイプ
 STR_DB_POOL_COUNT_FMT,({N} cards),({N}枚)
 STR_DB_TO_MAIN,→Main,→メイン
 STR_DB_TO_MONSTER,→Mon,→怪獣
+STR_DB_HINT_ADD,Add,追加
+STR_DB_HINT_REMOVE,Remove,削除
+STR_DB_HINT_REMOVE_ALL,Remove all,全て削除
+STR_DB_HINT_TO_MAIN,To main,メインへ
+STR_DB_HINT_TO_MONSTER,To monster,怪獣へ
+STR_DB_HINT_SECTION,Section,セクション
+STR_DB_HINT_BACK,Back,戻る
+STR_DB_HINT_TYPE,Type,入力
 STR_DB_EMPTY_SAVE_TITLE,Save Empty Deck?,空のデッキを保存しますか?
 STR_DB_EMPTY_SAVE_TEXT,"This deck has no cards. Saving will overwrite any existing deck with this name. Continue?","このデッキにはカードがありません。保存すると、同じ名前の既存のデッキが上書きされます。続行しますか?"
 STR_DB_EMPTY_SAVE_OK,Save Anyway,それでも保存
@@ -611,6 +640,29 @@ STR_DB_MAIN_DECK,Main Deck:,メインデッキ:
 STR_DB_STEP2_CARDS,Step-2 Cards:,足2カード:
 STR_DB_ERRORS,Errors,エラー
 STR_DB_WARNINGS,Warnings,警告
+STR_DB_MAXCP,Max Counter Power,最大カウンターパワー
+STR_DB_MAXCP_TITLE,Maximum Counter Power,最大カウンターパワー
+STR_DB_MAXCP_CALC,Calculating…,計算中…
+STR_DB_MAXCP_EMPTY,Add cards to the main deck to preview counter power.,メインデッキにカードを追加するとカウンターパワーを確認できます。
+STR_DB_MAXCP_ZONE_FMT,Zone {N},エリア {N}
+STR_DB_MAXCP_ASSUMPTIONS,"Assumes {RAGE} Rage, best-case setup, empty opponent board","{RAGE} 激昂、最良の展開、相手の場が空の想定"
+STR_DB_MAXCP_PARAM_ZONE,Monster zone:,怪獣エリア:
+STR_DB_MAXCP_PARAM_OPP,Opp. monster zone:,相手怪獣エリア:
+STR_DB_MAXCP_PARAM_RAGE,Rage:,激昂:
+STR_DB_MAXCP_ANY,Any,任意
+STR_DB_MAXCP_AUTO,Auto,自動
+STR_DB_MAXCP_PIN_RAGE,Rage pinned to {RAGE},激昂を {RAGE} に固定
+STR_DB_MAXCP_PIN_ZONE,Monster in zone {N},怪獣はエリア {N}
+STR_DB_MAXCP_PIN_OPP,Opponent monster in zone {N},相手怪獣はエリア {N}
+STR_DB_MAXCP_BEST_OPP,Best vs. opponent monster in zone {N},相手怪獣がエリア {N} の場合が最大
+STR_DB_MAXCP_UNDER,1 under,下に1枚
+STR_DB_MAXCP_PARAM_STRATS,Strategy zones:,戦略エリア:
+STR_DB_MAXCP_THIRD_ZONE,Assumes 3rd strategy zone,戦略エリア3枠の想定
+STR_DB_MAXCP_PARAM_RANK,Monster rank:,怪獣ランク:
+STR_DB_MAXCP_PARAM_OPP_RANK,Opp. monster rank:,相手怪獣ランク:
+STR_DB_MAXCP_PIN_RANK,Monster rank {R},怪獣ランク {R}
+STR_DB_MAXCP_PIN_OPP_RANK,Opponent monster rank {R},相手怪獣ランク {R}
+STR_DB_MAXCP_BEST_OPP_RANK,Best vs. opponent monster rank {R},相手怪獣がランク {R} の場合が最大
 STR_VALIDATE_UNKNOWN_CARD_FMT,Unknown card: %s,不明なカード: %s
 STR_VALIDATE_NOT_MONSTER_FMT,%s is not a monster card,%s は怪獣カードではありません
 STR_VALIDATE_TOKEN_IN_DECK_FMT,%s has Token trait (not allowed in decks),%s はトークン特徴を持っています (デッキに入れられません)
@@ -964,3 +1016,30 @@ STR_LOG_EXPORT_FAILED,Failed to export the game log.,ゲームログの出力に
 STR_EXTRAS_GAME_LOGS,Game Logs,ゲームログ
 STR_EXTRAS_NO_GAME_LOGS,No exported game logs found.,出力されたゲームログが見つかりません。
 STR_EXTRAS_VIEW,View,表示
+STR_OPTIONS_CONTROLLER,Controller...,コントローラー...
+STR_CONTROLLER_REBIND,Rebind,変更
+STR_CONTROLLER_PRESS_BUTTON,Press a button...,ボタンを押してください…
+STR_CONTROLLER_RESET,Reset to Defaults,デフォルトに戻す
+STR_CONTROLLER_NONE_DETECTED,No controller detected,コントローラーが検出されていません
+STR_PAD_CONFIRM,Confirm / Select,決定／選択
+STR_PAD_CANCEL,Cancel / Back,キャンセル／戻る
+STR_PAD_INSPECT,Inspect Card,カードを拡大
+STR_PAD_END_MAIN,Phase Button,フェーズボタン
+STR_PAD_FOCUS_LOG,Game Log / Chat,ゲームログ／チャット
+STR_PAD_FOCUS_TRACKER,Turn Tracker,ターントラッカー
+STR_PAD_MENU,System Menu,システムメニュー
+STR_PAD_CHAT,Chat,チャット
+STR_OPTIONS_CONTROLLER_TITLE,Controller,コントローラー
+STR_CONTROLLER_GLYPH_STYLE,Button Icons,ボタンアイコン
+STR_GLYPH_STYLE_AUTO,Auto,自動
+STR_GLYPH_STYLE_XBOX,Xbox,Xbox
+STR_GLYPH_STYLE_PLAYSTATION,PlayStation,PlayStation
+STR_GLYPH_STYLE_SWITCH,Switch,Switch
+STR_GLYPH_STYLE_GENERIC,Generic,汎用
+STR_PAD_PLAY_CARD_INVASION,Play for Invasion,侵略に使う
+STR_PAD_PLAY_CARD_RAGE,Discard for Rage,レイジに使う
+STR_EXT_OPEN_URL_TITLE,Open Link,リンクを開く
+STR_EXT_OPEN_FOLDER_TITLE,Open Folder,フォルダを開く
+STR_EXT_OPEN_URL_PROMPT_FMT,Leave the game and open %s in your browser?,ゲームを離れてブラウザで %s を開きますか？
+STR_EXT_OPEN_FOLDER_PROMPT_FMT,Leave the game and open %s in your file manager?,ゲームを離れてファイルマネージャーで %s を開きますか？
+STR_EXT_OPEN_OK,Open,開く

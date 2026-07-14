@@ -1,0 +1,1679 @@
+extends Control
+
+@onready var watch_replay_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/WatchReplayButton
+@onready var load_game_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LoadGameButton
+@onready var load_game_online_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/LoadGameOnlineButton
+@onready var game_logs_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/GameLogsButton
+@onready var back_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/BackButton
+
+var _replay_popup: PopupPanel = null
+var _replay_list_vbox: VBoxContainer = null
+var _replay_count_label: Label = null
+var _replay_toolbar: Array[Control] = []
+var _replay_cancel: Button = null
+var _replay_scroll: ScrollContainer = null
+var _filter_favorites_only: bool = false
+var _filter_current_version: bool = false
+var _all_replays: Array[Dictionary] = []
+
+var _save_popup: PopupPanel = null
+var _save_list_vbox: VBoxContainer = null
+var _save_count_label: Label = null
+var _save_toolbar: Array[Control] = []
+var _save_cancel: Button = null
+var _save_scroll: ScrollContainer = null
+var _save_filter_favorites_only: bool = false
+var _save_filter_current_version: bool = false
+
+
+var _online_load_popup: PopupPanel = null
+var _online_load_status: Label = null
+var _online_load_code_label: Label = null
+var _online_load_copy_btn: Button = null
+var _online_load_start_btn: Button = null
+var _online_load_cancel_btn: Button = null
+var _load_chosen_seat: int = 0
+
+
+func _ready() -> void:
+	watch_replay_button.pressed.connect(_on_watch_replay_pressed)
+	load_game_button.pressed.connect(_on_load_game_pressed)
+	load_game_online_button.pressed.connect(_on_load_game_online_pressed)
+	game_logs_button.pressed.connect(_on_game_logs_pressed)
+	back_button.pressed.connect(_on_back_pressed)
+	GamepadHelper.push_focus_context(self, func() -> Control: return watch_replay_button)
+
+
+func _exit_tree() -> void:
+	GamepadHelper.pop_focus_context(self)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	# Pad B (leading pad_cancel) / keyboard ESC goes back to the main menu.
+	if event.is_action_pressed("pad_cancel") or event.is_action_pressed("ui_cancel"):
+		if GamepadHelper.is_swallowed_cancel(event):
+			get_viewport().set_input_as_handled()
+			return
+		if not GamepadHelper.is_top_context(self):
+			return
+		get_viewport().set_input_as_handled()
+		GamepadHelper.swallow_cancel_twins()
+		_on_back_pressed()
+
+
+func _on_back_pressed() -> void:
+	SfxManager.play("ui_click")
+	NetworkManager.change_scene("res://scenes/menus/MainMenu.tscn")
+
+
+func _on_watch_replay_pressed() -> void:
+	SfxManager.play("ui_click")
+	var replays := ReplayData.list_replays()
+	if replays.is_empty():
+		_show_message(tr("STR_EXTRAS_NO_REPLAYS"))
+		return
+	_show_replay_list(replays)
+
+
+func _on_load_game_pressed() -> void:
+	SfxManager.play("ui_click")
+	var saves := GameSerializer.list_saves()
+	if saves.is_empty():
+		_show_message(tr("STR_EXTRAS_NO_SAVES"))
+		return
+	_show_save_list(saves)
+
+
+func _on_game_logs_pressed() -> void:
+	SfxManager.play("ui_click")
+	var logs := GameLogExport.list_logs()
+	if logs.is_empty():
+		_show_message(tr("STR_EXTRAS_NO_GAME_LOGS"))
+		return
+	_show_game_log_list(logs)
+
+
+func _on_load_game_online_pressed() -> void:
+	SfxManager.play("ui_click")
+	var saves := GameSerializer.list_saves()
+	if saves.is_empty():
+		_show_message(tr("STR_EXTRAS_NO_SAVES"))
+		return
+	_show_save_list_for_online(saves)
+
+
+func _show_save_list_for_online(saves: Array[Dictionary]) -> void:
+	## Shows the save list but selecting a save hosts a private online lobby instead.
+	_save_filter_favorites_only = false
+	_save_filter_current_version = false
+
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+	_save_popup = popup
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(700, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+
+	var title := Label.new()
+	title.text = tr("STR_EXTRAS_LOAD_GAME_ONLINE")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vbox.add_child(title)
+
+	var subtitle := Label.new()
+	subtitle.text = tr("STR_EXTRAS_SELECT_SAVE_HOST")
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 14)
+	subtitle.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	vbox.add_child(subtitle)
+	vbox.add_child(HSeparator.new())
+
+	# Filters
+	var toolbar := HBoxContainer.new()
+	toolbar.add_theme_constant_override("separation", 8)
+
+	var fav_filter_btn := Button.new()
+	fav_filter_btn.text = tr("STR_EXTRAS_FAVORITES_ONLY")
+	fav_filter_btn.toggle_mode = true
+	fav_filter_btn.custom_minimum_size = Vector2(120, 32)
+	fav_filter_btn.add_theme_font_size_override("font_size", 14)
+	fav_filter_btn.toggled.connect(func(on: bool):
+		SfxManager.play("ui_click")
+		_save_filter_favorites_only = on
+		_refresh_save_list_for_online(saves)
+	)
+	toolbar.add_child(fav_filter_btn)
+
+	var ver_filter_btn := Button.new()
+	ver_filter_btn.text = tr("STR_EXTRAS_CURRENT_VERSION")
+	ver_filter_btn.toggle_mode = true
+	ver_filter_btn.custom_minimum_size = Vector2(130, 32)
+	ver_filter_btn.add_theme_font_size_override("font_size", 14)
+	ver_filter_btn.toggled.connect(func(on: bool):
+		SfxManager.play("ui_click")
+		_save_filter_current_version = on
+		_refresh_save_list_for_online(saves)
+	)
+	toolbar.add_child(ver_filter_btn)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toolbar.add_child(spacer)
+
+	_save_count_label = Label.new()
+	_save_count_label.add_theme_font_size_override("font_size", 14)
+	_save_count_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	toolbar.add_child(_save_count_label)
+
+	vbox.add_child(toolbar)
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 350)
+	_save_list_vbox = VBoxContainer.new()
+	_save_list_vbox.add_theme_constant_override("separation", 6)
+	_save_list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	scroll.add_child(_save_list_vbox)
+	vbox.add_child(scroll)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(200, 40)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	vbox.add_child(cancel_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+
+	_save_toolbar = [fav_filter_btn, ver_filter_btn] as Array[Control]
+	_save_cancel = cancel_btn
+	_save_scroll = scroll
+	_populate_save_list_for_online(saves)
+	GamepadHelper.register_modal(popup, _list_provider(_save_list_vbox, cancel_btn, 0))
+	_wire_pad_close(popup)
+	popup.popup_centered()
+
+
+func _populate_save_list_for_online(saves: Array[Dictionary]) -> void:
+	var current_ver := GameSerializer._get_game_version()
+
+	var filtered: Array[Dictionary] = []
+	for e in saves:
+		if _save_filter_favorites_only and not e.get("is_favorite", false):
+			continue
+		if _save_filter_current_version and e.get("game_version", "") != current_ver:
+			continue
+		filtered.append(e)
+
+	var fav_count := 0
+	for e in saves:
+		if e.get("is_favorite", false):
+			fav_count += 1
+	_save_count_label.text = tr("STR_EXTRAS_LIST_COUNT_FMT") % [filtered.size(), saves.size(), fav_count]
+
+	var cell := _focused_cell(_save_list_vbox)
+	for child in _save_list_vbox.get_children():
+		child.queue_free()
+
+	for entry in filtered:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 4)
+
+		var info_btn := Button.new()
+		info_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info_btn.custom_minimum_size = Vector2(0, 44)
+		info_btn.add_theme_font_size_override("font_size", 13)
+		info_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+
+		var names: Array = entry.get("player_names", ["?", "?"])
+		var turn: int = entry.get("turn_number", 0)
+		var ts: String = entry.get("timestamp", "")
+		var mode: String = entry.get("mode", "")
+		var lbl: String = entry.get("label", "")
+		var ver: String = entry.get("game_version", "")
+		var decks: Array = entry.get("deck_names", ["", ""])
+
+		var line1 := ""
+		if not lbl.is_empty():
+			line1 = "[%s] " % lbl
+		line1 += tr("STR_EXTRAS_SAVE_LINE_FMT") % [ts, names[0], names[1], turn, mode]
+		if not ver.is_empty() and ver != current_ver:
+			line1 += "  (v%s)" % ver
+
+		var line2 := ""
+		if not str(decks[0]).is_empty() or not str(decks[1]).is_empty():
+			line2 = "%s vs %s" % [str(decks[0]), str(decks[1])]
+
+		info_btn.text = line1 if line2.is_empty() else line1 + "\n" + line2
+		var path: String = entry["path"]
+		info_btn.pressed.connect(func():
+			SfxManager.play("ui_click")
+			_save_popup.hide()
+			_show_player_choice_dialog(names, func(chosen_id: int):
+				_load_chosen_seat = chosen_id
+				_host_online_with_save(path)
+			)
+		)
+		row.add_child(info_btn)
+		_save_list_vbox.add_child(row)
+		_follow_focus(_save_scroll, row)
+
+	_wire_list_pad(_save_toolbar, _save_list_vbox, _save_cancel)
+	_focus_cell(_save_list_vbox, cell, _save_cancel)
+
+
+func _refresh_save_list_for_online(saves: Array[Dictionary]) -> void:
+	_populate_save_list_for_online(saves)
+
+
+func _host_online_with_save(save_path: String) -> void:
+	var data := GameSerializer.load_save_file(save_path)
+	if data.is_empty():
+		_show_message(tr("STR_EXTRAS_LOAD_SAVE_FAILED"))
+		return
+
+	# Stage save data for the host GameBoard to pick up
+	GameSerializer.pending_load = data
+
+	_show_online_load_lobby()
+
+
+func _show_online_load_lobby() -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+	_online_load_popup = popup
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(460, 0)
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	ps.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	ps.set_border_width_all(2)
+	ps.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", ps)
+
+	var mg := MarginContainer.new()
+	mg.add_theme_constant_override("margin_left", 24)
+	mg.add_theme_constant_override("margin_top", 24)
+	mg.add_theme_constant_override("margin_right", 24)
+	mg.add_theme_constant_override("margin_bottom", 24)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 16)
+
+	var title := Label.new()
+	title.text = tr("STR_EXTRAS_HOST_ONLINE_GAME")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vb.add_child(title)
+
+	_online_load_status = Label.new()
+	_online_load_status.text = tr("STR_ONLINE_CONNECTING_RELAY")
+	_online_load_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_online_load_status.add_theme_font_size_override("font_size", 16)
+	vb.add_child(_online_load_status)
+
+	# Code display row
+	var code_row := HBoxContainer.new()
+	code_row.add_theme_constant_override("separation", 8)
+	code_row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	_online_load_code_label = Label.new()
+	_online_load_code_label.text = ""
+	_online_load_code_label.add_theme_font_size_override("font_size", 28)
+	_online_load_code_label.add_theme_color_override("font_color", Color(0.3, 0.9, 0.3))
+	code_row.add_child(_online_load_code_label)
+
+	_online_load_copy_btn = Button.new()
+	_online_load_copy_btn.text = tr("STR_COMMON_COPY")
+	_online_load_copy_btn.custom_minimum_size = Vector2(70, 32)
+	_online_load_copy_btn.add_theme_font_size_override("font_size", 14)
+	_online_load_copy_btn.visible = false
+	_online_load_copy_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		DisplayServer.clipboard_set(NetworkManager.get_game_code())
+		_online_load_copy_btn.text = tr("STR_COMMON_COPIED")
+		get_tree().create_timer(1.5).timeout.connect(func():
+			if is_instance_valid(_online_load_copy_btn):
+				_online_load_copy_btn.text = tr("STR_COMMON_COPY")
+		)
+	)
+	code_row.add_child(_online_load_copy_btn)
+	vb.add_child(code_row)
+
+	_online_load_start_btn = Button.new()
+	_online_load_start_btn.text = tr("STR_LOBBY_START")
+	_online_load_start_btn.custom_minimum_size = Vector2(160, 40)
+	_online_load_start_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_online_load_start_btn.add_theme_font_size_override("font_size", 18)
+	_online_load_start_btn.visible = false
+	_online_load_start_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_cleanup_online_load_signals()
+		popup.hide()
+		NetworkManager.start_lan_game()
+	)
+	vb.add_child(_online_load_start_btn)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(120, 36)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 16)
+	cancel_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_close_online_load_lobby()
+	)
+	vb.add_child(cancel_btn)
+	_online_load_cancel_btn = cancel_btn
+
+	mg.add_child(vb)
+	panel.add_child(mg)
+	popup.add_child(panel)
+	add_child(popup)
+	_wire_online_lobby_pad()
+	GamepadHelper.register_modal(popup, func() -> Control: return _online_load_cancel_btn)
+	# Cancel semantics, not just hide: an abandoned lobby must tear down the
+	# hosting session (B-close mirrors the Cancel button exactly).
+	_wire_pad_close(popup, _close_online_load_lobby)
+	popup.popup_centered()
+
+	# Start hosting
+	_do_host_online_for_load()
+
+
+## Abandon the hosting lobby: disconnect and drop the staged save.
+func _close_online_load_lobby() -> void:
+	_cleanup_online_load_signals()
+	NetworkManager.disconnect_game()
+	GameSerializer.pending_load = {}
+	_online_load_popup.hide()
+
+
+## Copy/Start flip visibility as the lobby progresses; hidden controls are
+## skipped by wire_band_stack, so re-mesh on every flip.
+func _wire_online_lobby_pad() -> void:
+	if _online_load_popup == null or not is_instance_valid(_online_load_popup):
+		return
+	OverlayGridUtil.wire_band_stack([
+		{"row": [_online_load_copy_btn] as Array[Control]},
+		{"row": [_online_load_start_btn] as Array[Control]},
+		{"row": [_online_load_cancel_btn] as Array[Control]},
+	])
+	# Hiding Start/Copy can kill the pad focus it held — fall back to Cancel.
+	var focus_owner := GamepadHelper.gui_focus_owner()
+	if GamepadHelper.is_using_gamepad() \
+			and (focus_owner == null or not focus_owner.is_visible_in_tree()):
+		GamepadHelper.refocus()
+
+
+func _do_host_online_for_load() -> void:
+	var err := await NetworkManager.host_online()
+	if err != OK:
+		_online_load_status.text = tr("STR_ONLINE_RELAY_FAILED_FMT") % err
+		GameSerializer.pending_load = {}
+		return
+
+	# Override host seat to the player's chosen seat
+	NetworkManager.local_player_id = _load_chosen_seat
+	NetworkManager.peer_player_map[1] = _load_chosen_seat
+
+	_online_load_code_label.text = NetworkManager.get_game_code()
+	_online_load_copy_btn.visible = true
+	_online_load_status.text = tr("STR_EXTRAS_SHARE_CODE")
+	_wire_online_lobby_pad()
+
+	# Wait for opponent
+	NetworkManager.player_connected.connect(_on_online_load_player_connected)
+	NetworkManager.player_disconnected.connect(_on_online_load_player_disconnected)
+	NetworkManager.version_mismatch.connect(_on_online_load_version_mismatch)
+	NetworkManager.version_verified_ok.connect(_on_online_load_version_ok)
+
+
+func _on_online_load_player_connected(_peer_id: int) -> void:
+	_online_load_status.text = tr("STR_EXTRAS_OPPONENT_CONNECTED_VERIFYING")
+
+
+func _on_online_load_player_disconnected(_peer_id: int) -> void:
+	_online_load_status.text = tr("STR_EXTRAS_OPPONENT_DISCONNECTED_WAITING")
+	_online_load_start_btn.visible = false
+	_wire_online_lobby_pad()
+
+
+func _on_online_load_version_mismatch(local_ver: String, remote_ver: String) -> void:
+	_online_load_status.text = tr("STR_LAN_VERSION_MISMATCH_FMT") % [local_ver, remote_ver]
+	_online_load_start_btn.visible = false
+	_wire_online_lobby_pad()
+
+
+func _on_online_load_version_ok() -> void:
+	_online_load_status.text = tr("STR_EXTRAS_OPPONENT_VERIFIED")
+	_online_load_start_btn.visible = true
+	_wire_online_lobby_pad()
+
+
+func _cleanup_online_load_signals() -> void:
+	if NetworkManager.player_connected.is_connected(_on_online_load_player_connected):
+		NetworkManager.player_connected.disconnect(_on_online_load_player_connected)
+	if NetworkManager.player_disconnected.is_connected(_on_online_load_player_disconnected):
+		NetworkManager.player_disconnected.disconnect(_on_online_load_player_disconnected)
+	if NetworkManager.version_mismatch.is_connected(_on_online_load_version_mismatch):
+		NetworkManager.version_mismatch.disconnect(_on_online_load_version_mismatch)
+	if NetworkManager.version_verified_ok.is_connected(_on_online_load_version_ok):
+		NetworkManager.version_verified_ok.disconnect(_on_online_load_version_ok)
+
+
+func _show_message(text: String) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(360, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+
+	var label := Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 20)
+	vbox.add_child(label)
+
+	var ok_btn := Button.new()
+	ok_btn.text = tr("STR_COMMON_OK")
+	ok_btn.custom_minimum_size = Vector2(120, 40)
+	ok_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	ok_btn.add_theme_font_size_override("font_size", 18)
+	ok_btn.pressed.connect(func(): popup.hide())
+	vbox.add_child(ok_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+	GamepadHelper.register_modal(popup)
+	_wire_pad_close(popup)
+	popup.popup_centered()
+
+
+func _show_replay_list(replays: Array[Dictionary]) -> void:
+	_filter_favorites_only = false
+	_filter_current_version = false
+
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+	_replay_popup = popup
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(700, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+
+	var title := Label.new()
+	title.text = tr("STR_EXTRAS_SELECT_REPLAY")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vbox.add_child(title)
+	vbox.add_child(HSeparator.new())
+
+	# Toolbar row
+	var toolbar := HBoxContainer.new()
+	toolbar.add_theme_constant_override("separation", 8)
+
+	var open_folder_btn := Button.new()
+	open_folder_btn.text = tr("STR_EXTRAS_OPEN_FOLDER")
+	open_folder_btn.custom_minimum_size = Vector2(110, 32)
+	open_folder_btn.add_theme_font_size_override("font_size", 14)
+	open_folder_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		ExternalConfirm.open_folder(popup, ReplayData.get_replay_base_dir())
+	)
+	toolbar.add_child(open_folder_btn)
+
+	var delete_all_btn := Button.new()
+	delete_all_btn.text = tr("STR_EXTRAS_DELETE_ALL_RECENT")
+	delete_all_btn.custom_minimum_size = Vector2(140, 32)
+	delete_all_btn.add_theme_font_size_override("font_size", 14)
+	delete_all_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	delete_all_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_show_confirm(tr("STR_EXTRAS_CONFIRM_DELETE_ALL_REPLAYS"), func():
+			ReplayData.delete_all_recent()
+			_refresh_replay_list()
+		)
+	)
+	toolbar.add_child(delete_all_btn)
+
+	var fav_filter_btn := Button.new()
+	fav_filter_btn.text = tr("STR_EXTRAS_FAVORITES_ONLY")
+	fav_filter_btn.toggle_mode = true
+	fav_filter_btn.custom_minimum_size = Vector2(120, 32)
+	fav_filter_btn.add_theme_font_size_override("font_size", 14)
+	fav_filter_btn.toggled.connect(func(on: bool):
+		SfxManager.play("ui_click")
+		_filter_favorites_only = on
+		_refresh_replay_list()
+	)
+	toolbar.add_child(fav_filter_btn)
+
+	var ver_filter_btn := Button.new()
+	ver_filter_btn.text = tr("STR_EXTRAS_CURRENT_VERSION")
+	ver_filter_btn.toggle_mode = true
+	ver_filter_btn.custom_minimum_size = Vector2(130, 32)
+	ver_filter_btn.add_theme_font_size_override("font_size", 14)
+	ver_filter_btn.toggled.connect(func(on: bool):
+		SfxManager.play("ui_click")
+		_filter_current_version = on
+		_refresh_replay_list()
+	)
+	toolbar.add_child(ver_filter_btn)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toolbar.add_child(spacer)
+
+	_replay_count_label = Label.new()
+	_replay_count_label.add_theme_font_size_override("font_size", 14)
+	_replay_count_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	toolbar.add_child(_replay_count_label)
+
+	vbox.add_child(toolbar)
+
+	# Scroll area
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 350)
+	_replay_list_vbox = VBoxContainer.new()
+	_replay_list_vbox.add_theme_constant_override("separation", 6)
+	_replay_list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	scroll.add_child(_replay_list_vbox)
+	vbox.add_child(scroll)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(200, 40)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	vbox.add_child(cancel_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+
+	_replay_toolbar = [open_folder_btn, delete_all_btn, fav_filter_btn, ver_filter_btn] as Array[Control]
+	_replay_cancel = cancel_btn
+	_replay_scroll = scroll
+	_populate_replay_list(replays)
+	GamepadHelper.register_modal(popup, _list_provider(_replay_list_vbox, cancel_btn, 1))
+	_wire_pad_close(popup)
+	popup.popup_centered()
+
+
+func _populate_replay_list(replays: Array[Dictionary]) -> void:
+	_all_replays = replays
+
+	var current_ver := ReplayData._get_game_version()
+
+	# Apply filters
+	var filtered: Array[Dictionary] = []
+	for e in replays:
+		if _filter_favorites_only and not e.get("is_favorite", false):
+			continue
+		if _filter_current_version and e.get("game_version", "") != current_ver:
+			continue
+		filtered.append(e)
+
+	# Update count label
+	var fav_count := 0
+	for e in replays:
+		if e.get("is_favorite", false):
+			fav_count += 1
+	_replay_count_label.text = tr("STR_EXTRAS_LIST_COUNT_FMT") % [filtered.size(), replays.size(), fav_count]
+
+	# Clear existing rows (pad cursor is a position, not a node — capture first)
+	var cell := _focused_cell(_replay_list_vbox)
+	for child in _replay_list_vbox.get_children():
+		child.queue_free()
+
+	for entry in filtered:
+		var row := _build_replay_row(entry, current_ver)
+		_replay_list_vbox.add_child(row)
+		_follow_focus(_replay_scroll, row)
+
+	_wire_list_pad(_replay_toolbar, _replay_list_vbox, _replay_cancel)
+	_focus_cell(_replay_list_vbox, cell, _replay_cancel)
+
+
+func _build_replay_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+
+	# Star button (favorite toggle)
+	var is_fav: bool = entry.get("is_favorite", false)
+	var star_btn := Button.new()
+	star_btn.custom_minimum_size = Vector2(30, 30)
+	star_btn.text = "*" if is_fav else "."
+	star_btn.add_theme_font_size_override("font_size", 18)
+	if is_fav:
+		star_btn.add_theme_color_override("font_color", Color(1.0, 0.85, 0.1))
+	else:
+		star_btn.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	var path: String = entry["path"]
+	star_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		ReplayData.toggle_favorite(path)
+		_refresh_replay_list()
+	)
+	row.add_child(star_btn)
+
+	# Info button — click to launch replay
+	var info_btn := Button.new()
+	info_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_btn.custom_minimum_size = Vector2(0, 44)
+	info_btn.add_theme_font_size_override("font_size", 13)
+	info_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+
+	var names: Array = entry.get("player_names", ["?", "?"])
+	var winner: int = entry.get("winner_id", -1)
+	var winner_name: String = str(names[winner]) if winner >= 0 and winner < names.size() else "?"
+	var turns: int = entry.get("turns", 0)
+	var ts: String = entry.get("timestamp", "")
+	var decks: Array = entry.get("deck_names", ["", ""])
+	var lbl: String = entry.get("label", "")
+	var ver: String = entry.get("game_version", "")
+
+	var line1 := ""
+	if not lbl.is_empty():
+		line1 = "[%s] " % lbl
+	line1 += tr("STR_EXTRAS_REPLAY_LINE_FMT") % [ts, names[0], names[1], turns, winner_name]
+	if not ver.is_empty() and ver != current_ver:
+		line1 += "  (v%s)" % ver
+
+	var line2 := ""
+	if not str(decks[0]).is_empty() or not str(decks[1]).is_empty():
+		line2 = "%s vs %s" % [str(decks[0]), str(decks[1])]
+
+	info_btn.text = line1 if line2.is_empty() else line1 + "\n" + line2
+	info_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_replay_popup.hide()
+		_launch_replay(path)
+	)
+	row.add_child(info_btn)
+
+	# Label button
+	var label_btn := Button.new()
+	label_btn.text = tr("STR_EXTRAS_LABEL")
+	label_btn.custom_minimum_size = Vector2(50, 30)
+	label_btn.add_theme_font_size_override("font_size", 12)
+	label_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_show_label_dialog(path, lbl)
+	)
+	row.add_child(label_btn)
+
+	# Delete button
+	var del_btn := Button.new()
+	del_btn.text = "X"
+	del_btn.custom_minimum_size = Vector2(30, 30)
+	del_btn.add_theme_font_size_override("font_size", 14)
+	del_btn.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	del_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_show_confirm(tr("STR_EXTRAS_CONFIRM_DELETE_REPLAY"), func():
+			ReplayData.delete_replay(path)
+			_refresh_replay_list()
+		)
+	)
+	row.add_child(del_btn)
+
+	return row
+
+
+func _refresh_replay_list() -> void:
+	# Re-query when data changed (delete/favorite/label), reuse cache for filter-only changes
+	var replays := ReplayData.list_replays()
+	if replays.is_empty() and _replay_popup:
+		_replay_popup.hide()
+		_show_message(tr("STR_EXTRAS_NO_REPLAYS"))
+		return
+	_populate_replay_list(replays)
+
+
+func _show_label_dialog(path: String, current_label: String) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(360, 0)
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	ps.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	ps.set_border_width_all(2)
+	ps.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", ps)
+
+	var mg := MarginContainer.new()
+	mg.add_theme_constant_override("margin_left", 20)
+	mg.add_theme_constant_override("margin_top", 20)
+	mg.add_theme_constant_override("margin_right", 20)
+	mg.add_theme_constant_override("margin_bottom", 20)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 12)
+
+	var lbl := Label.new()
+	lbl.text = tr("STR_EXTRAS_SET_LABEL")
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 20)
+	vb.add_child(lbl)
+
+	var line_edit := LineEdit.new()
+	line_edit.text = current_label
+	line_edit.placeholder_text = tr("STR_EXTRAS_LABEL_PLACEHOLDER")
+	line_edit.custom_minimum_size = Vector2(300, 36)
+	line_edit.add_theme_font_size_override("font_size", 16)
+	vb.add_child(line_edit)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 12)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(100, 36)
+	cancel_btn.add_theme_font_size_override("font_size", 16)
+	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	btn_row.add_child(cancel_btn)
+
+	var save_btn := Button.new()
+	save_btn.text = tr("STR_DB_SAVE")
+	save_btn.custom_minimum_size = Vector2(100, 36)
+	save_btn.add_theme_font_size_override("font_size", 16)
+	save_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		ReplayData.update_label(path, line_edit.text.strip_edges())
+		popup.hide()
+		_refresh_replay_list()
+	)
+	btn_row.add_child(save_btn)
+
+	vb.add_child(btn_row)
+	mg.add_child(vb)
+	panel.add_child(mg)
+	popup.add_child(panel)
+	add_child(popup)
+	# Meshed LineEdit: pad lands on it idle, A starts editing (round 12).
+	OverlayGridUtil.wire_band_stack([
+		{"row": [line_edit] as Array[Control]},
+		{"row": [cancel_btn, save_btn] as Array[Control]},
+	])
+	GamepadHelper.register_modal(popup, func() -> Control: return cancel_btn)
+	_wire_pad_close(popup)
+	popup.popup_centered()
+	# Pointer/keyboard users type immediately; in pad mode the deferred
+	# refocus overrides this with the provider (Cancel).
+	line_edit.grab_focus()
+
+
+func _show_confirm(text: String, on_confirm: Callable) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(360, 0)
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	ps.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	ps.set_border_width_all(2)
+	ps.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", ps)
+
+	var mg := MarginContainer.new()
+	mg.add_theme_constant_override("margin_left", 24)
+	mg.add_theme_constant_override("margin_top", 24)
+	mg.add_theme_constant_override("margin_right", 24)
+	mg.add_theme_constant_override("margin_bottom", 24)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 16)
+
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 18)
+	vb.add_child(lbl)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 12)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(100, 36)
+	cancel_btn.add_theme_font_size_override("font_size", 16)
+	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	btn_row.add_child(cancel_btn)
+
+	var confirm_btn := Button.new()
+	confirm_btn.text = tr("STR_EXTRAS_CONFIRM")
+	confirm_btn.custom_minimum_size = Vector2(100, 36)
+	confirm_btn.add_theme_font_size_override("font_size", 16)
+	confirm_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	confirm_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+		on_confirm.call()
+	)
+	btn_row.add_child(confirm_btn)
+
+	vb.add_child(btn_row)
+	mg.add_child(vb)
+	panel.add_child(mg)
+	popup.add_child(panel)
+	add_child(popup)
+	OverlayGridUtil.wire_band_stack([{"row": [cancel_btn, confirm_btn] as Array[Control]}])
+	# Destructive confirm: A must never auto-land on Confirm.
+	GamepadHelper.register_modal(popup, func() -> Control: return cancel_btn)
+	_wire_pad_close(popup)
+	popup.popup_centered()
+
+
+func _launch_replay(path: String) -> void:
+	var replay := ReplayData.load_from_file(path)
+	if not replay:
+		_show_message(tr("STR_EXTRAS_LOAD_REPLAY_FAILED"))
+		return
+	ReplayData.pending_replay = replay
+	NetworkManager.change_scene("res://scenes/replay/ReplayViewer.tscn")
+
+
+func _show_save_list(saves: Array[Dictionary]) -> void:
+	_save_filter_favorites_only = false
+	_save_filter_current_version = false
+
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+	_save_popup = popup
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(700, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+
+	var title := Label.new()
+	title.text = tr("STR_EXTRAS_LOAD_GAME")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vbox.add_child(title)
+	vbox.add_child(HSeparator.new())
+
+	# Toolbar row
+	var toolbar := HBoxContainer.new()
+	toolbar.add_theme_constant_override("separation", 8)
+
+	var open_folder_btn := Button.new()
+	open_folder_btn.text = tr("STR_EXTRAS_OPEN_FOLDER")
+	open_folder_btn.custom_minimum_size = Vector2(110, 32)
+	open_folder_btn.add_theme_font_size_override("font_size", 14)
+	open_folder_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		ExternalConfirm.open_folder(popup, GameSerializer.get_save_base_dir())
+	)
+	toolbar.add_child(open_folder_btn)
+
+	var delete_all_btn := Button.new()
+	delete_all_btn.text = tr("STR_EXTRAS_DELETE_ALL_RECENT")
+	delete_all_btn.custom_minimum_size = Vector2(140, 32)
+	delete_all_btn.add_theme_font_size_override("font_size", 14)
+	delete_all_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	delete_all_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_show_confirm(tr("STR_EXTRAS_CONFIRM_DELETE_ALL_SAVES"), func():
+			GameSerializer.delete_all_recent_saves()
+			_refresh_save_list()
+		)
+	)
+	toolbar.add_child(delete_all_btn)
+
+	var fav_filter_btn := Button.new()
+	fav_filter_btn.text = tr("STR_EXTRAS_FAVORITES_ONLY")
+	fav_filter_btn.toggle_mode = true
+	fav_filter_btn.custom_minimum_size = Vector2(120, 32)
+	fav_filter_btn.add_theme_font_size_override("font_size", 14)
+	fav_filter_btn.toggled.connect(func(on: bool):
+		SfxManager.play("ui_click")
+		_save_filter_favorites_only = on
+		_refresh_save_list()
+	)
+	toolbar.add_child(fav_filter_btn)
+
+	var ver_filter_btn := Button.new()
+	ver_filter_btn.text = tr("STR_EXTRAS_CURRENT_VERSION")
+	ver_filter_btn.toggle_mode = true
+	ver_filter_btn.custom_minimum_size = Vector2(130, 32)
+	ver_filter_btn.add_theme_font_size_override("font_size", 14)
+	ver_filter_btn.toggled.connect(func(on: bool):
+		SfxManager.play("ui_click")
+		_save_filter_current_version = on
+		_refresh_save_list()
+	)
+	toolbar.add_child(ver_filter_btn)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toolbar.add_child(spacer)
+
+	_save_count_label = Label.new()
+	_save_count_label.add_theme_font_size_override("font_size", 14)
+	_save_count_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	toolbar.add_child(_save_count_label)
+
+	vbox.add_child(toolbar)
+
+	# Scroll area
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 350)
+	_save_list_vbox = VBoxContainer.new()
+	_save_list_vbox.add_theme_constant_override("separation", 6)
+	_save_list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	scroll.add_child(_save_list_vbox)
+	vbox.add_child(scroll)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(200, 40)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	vbox.add_child(cancel_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+
+	_save_toolbar = [open_folder_btn, delete_all_btn, fav_filter_btn, ver_filter_btn] as Array[Control]
+	_save_cancel = cancel_btn
+	_save_scroll = scroll
+	_populate_save_list(saves)
+	GamepadHelper.register_modal(popup, _list_provider(_save_list_vbox, cancel_btn, 1))
+	_wire_pad_close(popup)
+	popup.popup_centered()
+
+
+func _populate_save_list(saves: Array[Dictionary]) -> void:
+	var current_ver := GameSerializer._get_game_version()
+
+	# Apply filters
+	var filtered: Array[Dictionary] = []
+	for e in saves:
+		if _save_filter_favorites_only and not e.get("is_favorite", false):
+			continue
+		if _save_filter_current_version and e.get("game_version", "") != current_ver:
+			continue
+		filtered.append(e)
+
+	# Update count label
+	var fav_count := 0
+	for e in saves:
+		if e.get("is_favorite", false):
+			fav_count += 1
+	_save_count_label.text = tr("STR_EXTRAS_LIST_COUNT_FMT") % [filtered.size(), saves.size(), fav_count]
+
+	# Clear existing rows (pad cursor is a position, not a node — capture first)
+	var cell := _focused_cell(_save_list_vbox)
+	for child in _save_list_vbox.get_children():
+		child.queue_free()
+
+	for entry in filtered:
+		var row := _build_save_row(entry, current_ver)
+		_save_list_vbox.add_child(row)
+		_follow_focus(_save_scroll, row)
+
+	_wire_list_pad(_save_toolbar, _save_list_vbox, _save_cancel)
+	_focus_cell(_save_list_vbox, cell, _save_cancel)
+
+
+func _build_save_row(entry: Dictionary, current_ver: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+
+	# Star button (favorite toggle)
+	var is_fav: bool = entry.get("is_favorite", false)
+	var star_btn := Button.new()
+	star_btn.custom_minimum_size = Vector2(30, 30)
+	star_btn.text = "*" if is_fav else "."
+	star_btn.add_theme_font_size_override("font_size", 18)
+	if is_fav:
+		star_btn.add_theme_color_override("font_color", Color(1.0, 0.85, 0.1))
+	else:
+		star_btn.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
+	var path: String = entry["path"]
+	star_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		GameSerializer.toggle_save_favorite(path)
+		_refresh_save_list()
+	)
+	row.add_child(star_btn)
+
+	# Info button — click to load game
+	var info_btn := Button.new()
+	info_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_btn.custom_minimum_size = Vector2(0, 44)
+	info_btn.add_theme_font_size_override("font_size", 13)
+	info_btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+
+	var names: Array = entry.get("player_names", ["?", "?"])
+	var turn: int = entry.get("turn_number", 0)
+	var ts: String = entry.get("timestamp", "")
+	var mode: String = entry.get("mode", "")
+	var lbl: String = entry.get("label", "")
+	var ver: String = entry.get("game_version", "")
+	var decks: Array = entry.get("deck_names", ["", ""])
+
+	var line1 := ""
+	if not lbl.is_empty():
+		line1 = "[%s] " % lbl
+	line1 += tr("STR_EXTRAS_SAVE_LINE_FMT") % [ts, names[0], names[1], turn, mode]
+	if not ver.is_empty() and ver != current_ver:
+		line1 += "  (v%s)" % ver
+
+	var line2 := ""
+	if not str(decks[0]).is_empty() or not str(decks[1]).is_empty():
+		line2 = "%s vs %s" % [str(decks[0]), str(decks[1])]
+
+	info_btn.text = line1 if line2.is_empty() else line1 + "\n" + line2
+	info_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_save_popup.hide()
+		_show_player_choice_dialog(names, func(chosen_id: int):
+			NetworkManager.local_player_id = chosen_id
+			_launch_load_game(path)
+		)
+	)
+	row.add_child(info_btn)
+
+	# Label button
+	var label_btn := Button.new()
+	label_btn.text = tr("STR_EXTRAS_LABEL")
+	label_btn.custom_minimum_size = Vector2(50, 30)
+	label_btn.add_theme_font_size_override("font_size", 12)
+	label_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_show_save_label_dialog(path, lbl)
+	)
+	row.add_child(label_btn)
+
+	# Delete button
+	var del_btn := Button.new()
+	del_btn.text = "X"
+	del_btn.custom_minimum_size = Vector2(30, 30)
+	del_btn.add_theme_font_size_override("font_size", 14)
+	del_btn.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	del_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		_show_confirm(tr("STR_EXTRAS_CONFIRM_DELETE_SAVE"), func():
+			GameSerializer.delete_save(path)
+			_refresh_save_list()
+		)
+	)
+	row.add_child(del_btn)
+
+	return row
+
+
+func _refresh_save_list() -> void:
+	var saves := GameSerializer.list_saves()
+	if saves.is_empty() and _save_popup:
+		_save_popup.hide()
+		_show_message(tr("STR_EXTRAS_NO_SAVES"))
+		return
+	_populate_save_list(saves)
+
+
+func _show_save_label_dialog(path: String, current_label: String) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(360, 0)
+	var ps := StyleBoxFlat.new()
+	ps.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	ps.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	ps.set_border_width_all(2)
+	ps.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", ps)
+
+	var mg := MarginContainer.new()
+	mg.add_theme_constant_override("margin_left", 20)
+	mg.add_theme_constant_override("margin_top", 20)
+	mg.add_theme_constant_override("margin_right", 20)
+	mg.add_theme_constant_override("margin_bottom", 20)
+
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 12)
+
+	var lbl := Label.new()
+	lbl.text = tr("STR_EXTRAS_SET_LABEL")
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.add_theme_font_size_override("font_size", 20)
+	vb.add_child(lbl)
+
+	var line_edit := LineEdit.new()
+	line_edit.text = current_label
+	line_edit.placeholder_text = tr("STR_EXTRAS_LABEL_PLACEHOLDER")
+	line_edit.custom_minimum_size = Vector2(300, 36)
+	line_edit.add_theme_font_size_override("font_size", 16)
+	vb.add_child(line_edit)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 12)
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(100, 36)
+	cancel_btn.add_theme_font_size_override("font_size", 16)
+	cancel_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	btn_row.add_child(cancel_btn)
+
+	var save_btn := Button.new()
+	save_btn.text = tr("STR_DB_SAVE")
+	save_btn.custom_minimum_size = Vector2(100, 36)
+	save_btn.add_theme_font_size_override("font_size", 16)
+	save_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		GameSerializer.update_save_label(path, line_edit.text.strip_edges())
+		popup.hide()
+		_refresh_save_list()
+	)
+	btn_row.add_child(save_btn)
+
+	vb.add_child(btn_row)
+	mg.add_child(vb)
+	panel.add_child(mg)
+	popup.add_child(panel)
+	add_child(popup)
+	# Meshed LineEdit: pad lands on it idle, A starts editing (round 12).
+	OverlayGridUtil.wire_band_stack([
+		{"row": [line_edit] as Array[Control]},
+		{"row": [cancel_btn, save_btn] as Array[Control]},
+	])
+	GamepadHelper.register_modal(popup, func() -> Control: return cancel_btn)
+	_wire_pad_close(popup)
+	popup.popup_centered()
+	# Pointer/keyboard users type immediately; in pad mode the deferred
+	# refocus overrides this with the provider (Cancel).
+	line_edit.grab_focus()
+
+
+func _show_player_choice_dialog(names: Array, on_chosen: Callable) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(360, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+
+	var label := Label.new()
+	label.text = tr("STR_EXTRAS_PLAY_AS_WHICH")
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 20)
+	vbox.add_child(label)
+
+	var p1_name: String = str(names[0]) if names.size() > 0 else tr("STR_EXTRAS_PLAYER_1")
+	var p2_name: String = str(names[1]) if names.size() > 1 else tr("STR_EXTRAS_PLAYER_2")
+
+	var p1_btn := Button.new()
+	p1_btn.text = tr("STR_EXTRAS_PLAY_AS_P1_FMT") % p1_name
+	p1_btn.custom_minimum_size = Vector2(0, 44)
+	p1_btn.add_theme_font_size_override("font_size", 18)
+	p1_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+		on_chosen.call(0)
+	)
+	vbox.add_child(p1_btn)
+
+	var p2_btn := Button.new()
+	p2_btn.text = tr("STR_EXTRAS_PLAY_AS_P2_FMT") % p2_name
+	p2_btn.custom_minimum_size = Vector2(0, 44)
+	p2_btn.add_theme_font_size_override("font_size", 18)
+	p2_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+		on_chosen.call(1)
+	)
+	vbox.add_child(p2_btn)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(120, 36)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 16)
+	cancel_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		popup.hide()
+	)
+	vbox.add_child(cancel_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+	OverlayGridUtil.wire_band_stack([
+		{"row": [p1_btn] as Array[Control]},
+		{"row": [p2_btn] as Array[Control]},
+		{"row": [cancel_btn] as Array[Control]},
+	])
+	GamepadHelper.register_modal(popup)
+	_wire_pad_close(popup)
+	popup.popup_centered()
+
+
+func _launch_load_game(path: String) -> void:
+	var data := GameSerializer.load_save_file(path)
+	if data.is_empty():
+		_show_message(tr("STR_EXTRAS_LOAD_SAVE_FAILED"))
+		return
+	print("[Load] Loading save: mode=%s, game_seed=%s" % [data.get("mode", "?"), data.get("game_seed", "MISSING")])
+	GameSerializer.pending_load = data
+	# Restore seed for deterministic RNG on load
+	var saved_seed: int = int(data.get("game_seed", -1))
+	if saved_seed > 0:
+		NetworkManager.bot_seed = saved_seed
+		print("[Load] Restored NetworkManager.bot_seed=%d" % saved_seed)
+	# Set network mode based on saved game mode
+	var mode: String = data.get("mode", "solo")
+	match mode:
+		"solo": NetworkManager.mode = NetworkManager.Mode.SOLO
+		"solo_bot":
+			NetworkManager.mode = NetworkManager.Mode.SOLO_BOT
+			var diff_str: String = data.get("bot_difficulty", "NORMAL")
+			var diff := BotConfig.Difficulty.NORMAL
+			match diff_str:
+				"EASY": diff = BotConfig.Difficulty.EASY
+				"HARD": diff = BotConfig.Difficulty.HARD
+			NetworkManager.set_bot_difficulty(diff)
+		_: NetworkManager.mode = NetworkManager.Mode.SOLO
+	NetworkManager.change_scene("res://scenes/board/GameBoard.tscn")
+
+
+func _show_game_log_list(logs: Array[Dictionary]) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(700, 0)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+
+	var title := Label.new()
+	title.text = tr("STR_EXTRAS_GAME_LOGS")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vbox.add_child(title)
+	vbox.add_child(HSeparator.new())
+
+	# Toolbar row
+	var toolbar := HBoxContainer.new()
+	toolbar.add_theme_constant_override("separation", 8)
+
+	var open_folder_btn := Button.new()
+	open_folder_btn.text = tr("STR_EXTRAS_OPEN_FOLDER")
+	open_folder_btn.custom_minimum_size = Vector2(110, 32)
+	open_folder_btn.add_theme_font_size_override("font_size", 14)
+	open_folder_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		ExternalConfirm.open_folder(popup, GameLogExport.get_log_base_dir())
+	)
+	toolbar.add_child(open_folder_btn)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	toolbar.add_child(spacer)
+
+	var count_label := Label.new()
+	count_label.text = str(logs.size())
+	count_label.add_theme_font_size_override("font_size", 14)
+	count_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	toolbar.add_child(count_label)
+
+	vbox.add_child(toolbar)
+
+	# Scroll area
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(0, 350)
+	var list_vbox := VBoxContainer.new()
+	list_vbox.add_theme_constant_override("separation", 6)
+	list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for entry in logs:
+		var row := _build_game_log_row(entry, popup)
+		list_vbox.add_child(row)
+		_follow_focus(scroll, row)
+	scroll.add_child(list_vbox)
+	vbox.add_child(scroll)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = tr("STR_COMMON_CANCEL")
+	cancel_btn.custom_minimum_size = Vector2(200, 40)
+	cancel_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	cancel_btn.add_theme_font_size_override("font_size", 18)
+	var close_list := func():
+		SfxManager.play("ui_click")
+		popup.hide()
+		popup.queue_free()
+	cancel_btn.pressed.connect(close_list)
+	vbox.add_child(cancel_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+	# Rows are built once — a single mesh pass suffices.
+	_wire_list_pad([open_folder_btn] as Array[Control], list_vbox, cancel_btn)
+	GamepadHelper.register_modal(popup, _list_provider(list_vbox, cancel_btn, 0))
+	# B is a real close (frees the popup), matching Cancel — unlike the View
+	# flow, which only hides so the list can be re-shown.
+	_wire_pad_close(popup, close_list)
+	popup.popup_centered()
+
+
+func _build_game_log_row(entry: Dictionary, list_popup: PopupPanel) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+
+	var name_label := Label.new()
+	name_label.text = str(entry.get("filename", ""))
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.add_theme_font_size_override("font_size", 15)
+	name_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	row.add_child(name_label)
+
+	var date_label := Label.new()
+	date_label.text = ReplayData.local_datetime_string_from_unix(float(entry.get("modified_unix", 0)))
+	date_label.add_theme_font_size_override("font_size", 14)
+	date_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	row.add_child(date_label)
+
+	var view_btn := Button.new()
+	view_btn.text = tr("STR_EXTRAS_VIEW")
+	view_btn.custom_minimum_size = Vector2(80, 32)
+	view_btn.add_theme_font_size_override("font_size", 14)
+	view_btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		# Only one exclusive child window is allowed per parent — hide the
+		# list before opening the content popup; it is re-shown on close.
+		list_popup.hide()
+		_show_game_log_content(str(entry.get("path", "")), list_popup)
+	)
+	row.add_child(view_btn)
+
+	return row
+
+
+func _show_game_log_content(path: String, list_popup: PopupPanel) -> void:
+	var popup := PopupPanel.new()
+	popup.exclusive = true
+	popup.popup_window = false
+	popup.popup_hide.connect(func():
+		popup.queue_free()
+		GamepadHelper.register_modal(list_popup)
+		list_popup.popup_centered()
+	)
+
+	var panel := PanelContainer.new()
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(0.12, 0.12, 0.15, 1.0)
+	panel_style.border_color = Color(0.3, 0.3, 0.35, 1.0)
+	panel_style.set_border_width_all(2)
+	panel_style.set_corner_radius_all(8)
+	panel.add_theme_stylebox_override("panel", panel_style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+
+	var title := Label.new()
+	title.text = path.get_file()
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.1, 1))
+	vbox.add_child(title)
+	vbox.add_child(HSeparator.new())
+
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(720, 420)
+	var text_label := Label.new()
+	text_label.text = GameLogExport.load_log_text(path)
+	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_label.add_theme_font_size_override("font_size", 14)
+	scroll.add_child(text_label)
+	vbox.add_child(scroll)
+
+	var close_btn := Button.new()
+	close_btn.text = tr("STR_COMMON_CANCEL")
+	close_btn.custom_minimum_size = Vector2(200, 40)
+	close_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	close_btn.add_theme_font_size_override("font_size", 18)
+	close_btn.pressed.connect(func(): SfxManager.play("ui_click"); popup.hide())
+	vbox.add_child(close_btn)
+
+	margin.add_child(vbox)
+	panel.add_child(margin)
+	popup.add_child(panel)
+	add_child(popup)
+	GamepadHelper.register_modal(popup)
+	_wire_pad_close(popup)
+	# The log text isn't focusable — scroll it with the dpad directly.
+	popup.window_input.connect(func(event: InputEvent) -> void:
+		if event.is_action_pressed("ui_up"):
+			popup.set_input_as_handled()
+			scroll.scroll_vertical -= 60
+		elif event.is_action_pressed("ui_down"):
+			popup.set_input_as_handled()
+			scroll.scroll_vertical += 60
+	)
+	popup.popup_centered()
+
+
+## ---- Controller support ------------------------------------------------
+
+
+## Pad B / ESC closes an embedded popup Window — acts on the LEADING
+## pad_cancel and swallows the mirrored twins (GamepadHelper.wire_pad_close).
+## `on_close` replaces the default hide() when Cancel carries extra teardown.
+func _wire_pad_close(popup: Window, on_close := Callable()) -> void:
+	GamepadHelper.wire_pad_close(popup, on_close)
+
+
+## Live (not queued-for-deletion) row containers of a list vbox.
+func _live_rows(list_vbox: VBoxContainer) -> Array[Control]:
+	var rows: Array[Control] = []
+	for child in list_vbox.get_children():
+		if child is Control and not child.is_queued_for_deletion():
+			rows.append(child)
+	return rows
+
+
+## Focusable buttons of a list row (Labels and spacers don't join the mesh).
+func _row_buttons(row: Control) -> Array[Control]:
+	var buttons: Array[Control] = []
+	for child in row.get_children():
+		if child is Button and not child.is_queued_for_deletion():
+			buttons.append(child)
+	return buttons
+
+
+## D-pad mesh of a list popup: toolbar row, one band per list row (←/→ wraps
+## within a row, ↑/↓ moves across rows at the clamped column), Cancel row.
+## Re-run after every row rebuild — the mesh links live nodes.
+func _wire_list_pad(toolbar: Array[Control], list_vbox: VBoxContainer,
+		cancel_btn: Button) -> void:
+	var bands: Array[Dictionary] = [{"row": toolbar}]
+	for row in _live_rows(list_vbox):
+		bands.append({"row": _row_buttons(row)})
+	bands.append({"row": [cancel_btn] as Array[Control]})
+	OverlayGridUtil.wire_band_stack(bands)
+
+
+## Modal focus provider for a list popup: `col` of the first row (the primary
+## info/view button), falling back to Cancel on an empty list.
+func _list_provider(list_vbox: VBoxContainer, cancel_btn: Button, col: int) -> Callable:
+	return func() -> Control:
+		var rows := _live_rows(list_vbox)
+		if not rows.is_empty():
+			var buttons := _row_buttons(rows[0])
+			if not buttons.is_empty():
+				return buttons[clampi(col, 0, buttons.size() - 1)]
+		return cancel_btn
+
+
+## (row, col) of the pad focus among the list rows, (-1, -1) if elsewhere.
+## Capture BEFORE queue_free'ing the rows — it names a position, not a node.
+func _focused_cell(list_vbox: VBoxContainer) -> Vector2i:
+	var focus_owner := GamepadHelper.gui_focus_owner()
+	if focus_owner == null:
+		return Vector2i(-1, -1)
+	var rows := _live_rows(list_vbox)
+	for r in range(rows.size()):
+		var col := _row_buttons(rows[r]).find(focus_owner)
+		if col >= 0:
+			return Vector2i(r, col)
+	return Vector2i(-1, -1)
+
+
+## Deferred, clamped re-grab of a cell captured by _focused_cell (gamepad mode
+## only; runs after a rebuild while the old rows are still queued for deletion).
+func _focus_cell(list_vbox: VBoxContainer, cell: Vector2i, fallback: Control) -> void:
+	if cell.x < 0 or not GamepadHelper.is_using_gamepad():
+		return
+	(func() -> void:
+		if not is_instance_valid(list_vbox) or not list_vbox.is_inside_tree():
+			return
+		var rows := _live_rows(list_vbox)
+		if rows.is_empty():
+			if fallback != null and is_instance_valid(fallback) \
+					and fallback.is_visible_in_tree():
+				fallback.grab_focus()
+			return
+		var buttons := _row_buttons(rows[clampi(cell.x, 0, rows.size() - 1)])
+		if not buttons.is_empty():
+			buttons[clampi(cell.y, 0, buttons.size() - 1)].grab_focus()
+	).call_deferred()
+
+
+## Keep the focused row visible while the dpad walks the list.
+func _follow_focus(scroll: ScrollContainer, row: Control) -> void:
+	for btn in _row_buttons(row):
+		btn.focus_entered.connect(func() -> void:
+			if is_instance_valid(scroll) and is_instance_valid(row):
+				scroll.ensure_control_visible(row)
+		)

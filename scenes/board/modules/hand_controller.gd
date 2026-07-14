@@ -58,7 +58,12 @@ func _opponent_space() -> Control:
 
 
 func _on_hand_toggle_pressed() -> void:
-	hand_expanded = not hand_expanded
+	set_hand_expanded(not hand_expanded)
+
+
+## Programmatic expand/collapse (controller hand browsing uses this too).
+func set_hand_expanded(expanded: bool) -> void:
+	hand_expanded = expanded
 	_board.hand_toggle_button.text = "▼" if hand_expanded else "▲"
 
 	var local_hand := _local_hand()

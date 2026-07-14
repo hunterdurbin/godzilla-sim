@@ -71,18 +71,30 @@ static func setup_from_save(tm: TurnManager, data: Dictionary) -> void:
 		if i < players_data.size():
 			tm.game_state.players[i] = GameSerializer.deserialize_to_player_state(players_data[i])
 
-	# Register effects for all cards currently on the field
-	for player in tm.game_state.players:
+	# Register effects for all cards currently on the field, restoring any
+	# serialized turn-scoped effect member state (see CardEffect.serialize_state).
+	for i in range(2):
+		var player := tm.game_state.players[i]
+		var effect_state: Dictionary = players_data[i].get("effect_state", {}) if i < players_data.size() else {}
 		for zone_stack in player.zones:
 			for card in zone_stack:
-				tm.effect_handler.get_effect(card)
+				_register_field_effect(tm, card, effect_state)
 		for strat in player.strategy_zones:
 			if strat is Dictionary and not strat.is_empty():
-				tm.effect_handler.get_effect(strat)
+				_register_field_effect(tm, strat, effect_state)
 		if not player.current_monster.is_empty():
-			tm.effect_handler.get_effect(player.current_monster)
+			_register_field_effect(tm, player.current_monster, effect_state)
 
 	_connect_turn_manager(tm)
+
+
+static func _register_field_effect(tm: TurnManager, card: Dictionary, effect_state: Dictionary) -> void:
+	var effect: CardEffect = tm.effect_handler.get_effect(card)
+	if effect == null:
+		return
+	var saved: Variant = effect_state.get(card.get("id", ""), {})
+	if saved is Dictionary and not (saved as Dictionary).is_empty():
+		effect.restore_state(saved)
 
 
 static func _build_components(tm: TurnManager) -> void:

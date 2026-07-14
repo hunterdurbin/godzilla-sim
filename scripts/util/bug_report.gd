@@ -37,7 +37,7 @@ static func build_body(board: Node) -> String:
 	lines.append("- **Version:** %s" % NetworkManager.GAME_VERSION)
 	lines.append("- **Mode:** %s" % mode_names.get(NetworkManager.mode, "Unknown"))
 	if NetworkManager.mode == NetworkManager.Mode.SOLO_BOT:
-		var diff_names := {BotConfig.Difficulty.EASY: "Easy", BotConfig.Difficulty.NORMAL: "Normal", BotConfig.Difficulty.HARD: "Hard"}
+		var diff_names := {BotConfig.Difficulty.EASY: "Easy", BotConfig.Difficulty.NORMAL: "Normal", BotConfig.Difficulty.HARD: "Hard", BotConfig.Difficulty.KAIJU: "Kaiju"}
 		lines.append("- **Bot Difficulty:** %s" % diff_names.get(NetworkManager.bot_difficulty, "Unknown"))
 		lines.append("- **Bot Seed:** %d" % NetworkManager.bot_seed)
 	var gs: GameState = board.turn_manager.game_state if board.turn_manager else null

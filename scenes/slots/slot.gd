@@ -1,9 +1,14 @@
+@tool
 extends Control
 class_name Slot
 
 ## A slot that can hold a single Card, with zone metadata for the TCG board.
 ## The visual area (Background) maintains the card aspect ratio (5:7) within
 ## whatever space the parent container allocates.
+##
+## @tool: in the editor the slot draws a labeled outline of its content rect via
+## _draw() only — it must never mutate Background/Label there, or the editor
+## would save those changes as instance overrides in the owning scene.
 
 const CARD_RATIO := 5.0 / 7.0  # width / height
 
@@ -20,6 +25,7 @@ signal slot_hover_preview_cleared()
 # Export variables
 @export var slot_color: Color = Color(0.2, 0.2, 0.3, 0.0)
 @export var highlight_color: Color = Color(0.3, 0.5, 0.8, 0.4)
+@export var selected_color: Color = Color(0.85, 0.2, 0.2, 0.4)
 @export var occupied_color: Color = Color(0.2, 0.4, 0.3, 0.0)
 @export var snap_duration: float = 0.3
 @export var accept_cards: bool = true
@@ -33,6 +39,7 @@ signal slot_hover_preview_cleared()
 # Internal state
 var held_card: Control = null
 var is_highlighted: bool = false
+var is_selected: bool = false  # Multi-select prompts: chosen zones outline red
 var is_occupied: bool = false
 var has_monster_marker: bool = false
 var in_selection_mode: bool = false  # When true, allows highlighting even if occupied
@@ -47,6 +54,10 @@ const LONG_PRESS_COOLDOWN := 0.6
 
 
 func _ready() -> void:
+	if Engine.is_editor_hint():
+		_update_content_rect()
+		queue_redraw()
+		return
 	_update_content_rect()
 	_update_visual_state()
 	mouse_entered.connect(_on_mouse_entered)
@@ -62,8 +73,34 @@ func _ready() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_update_content_rect()
+		if Engine.is_editor_hint():
+			queue_redraw()
+			return
 		_update_visual_state()
 		_refit_held_card()
+
+
+## Editor-only preview: outline the card-aspect content rect and label it with
+## the node name ("Zone3", "Strategy1") — zone metadata is assigned at runtime,
+## so the name is the only identity available at edit time.
+func _draw() -> void:
+	if not Engine.is_editor_hint():
+		return
+	if _content_rect.size.x <= 0.0 or _content_rect.size.y <= 0.0:
+		return
+	draw_rect(_content_rect, Color(0.3, 0.5, 0.8, 0.15), true)
+	draw_rect(_content_rect, Color(1, 1, 1, 0.6), false, 2.0)
+	var font := get_theme_default_font()
+	if font == null:
+		return
+	var font_size := 20
+	var text := String(name)
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+	var pos := _content_rect.position + Vector2(
+		(_content_rect.size.x - text_size.x) / 2.0,
+		(_content_rect.size.y + font.get_ascent(font_size)) / 2.0 - font.get_descent(font_size) / 2.0
+	)
+	draw_string(font, pos, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(1, 1, 1, 0.9))
 
 
 func _update_content_rect() -> void:
@@ -209,6 +246,19 @@ func set_highlighted(highlighted: bool) -> void:
 		hover_ended.emit()
 
 
+func set_selected(selected: bool) -> void:
+	is_selected = selected
+	_update_visual_state()
+
+
+## Programmatic activation (controller navigation): emits the same signal a
+## pointer click produces while the slot is selectable.
+func simulate_click() -> void:
+	if not in_selection_mode:
+		return
+	slot_clicked.emit(zone_number, player_id)
+
+
 func set_monster_marker(is_marked: bool) -> void:
 	has_monster_marker = is_marked
 	_update_visual_state()
@@ -229,6 +279,10 @@ func _update_visual_state() -> void:
 	var target_color: Color
 	if has_monster_marker:
 		target_color = Color(0.8, 0.5, 0.1, 0.4)  # Orange for monster position
+	elif is_selected and _is_hovered:
+		target_color = selected_color  # Full red on hover
+	elif is_selected:
+		target_color = Color(selected_color.r, selected_color.g, selected_color.b, selected_color.a * 0.75)
 	elif is_highlighted and _is_hovered:
 		target_color = highlight_color  # Full blue on hover
 	elif is_highlighted:
@@ -276,7 +330,7 @@ func _update_highlight_overlay() -> void:
 	# drawn on top of it), so highlighted zones also get a border-only outline
 	# drawn ABOVE the held card. This keeps valid zones visible for effect
 	# placements that may overload occupied zones.
-	if not is_highlighted:
+	if not is_highlighted and not is_selected:
 		if _highlight_overlay:
 			_highlight_overlay.visible = false
 		return
@@ -296,10 +350,8 @@ func _update_highlight_overlay() -> void:
 	_highlight_overlay.position = _content_rect.position
 	_highlight_overlay.size = _content_rect.size
 	var overlay_style: StyleBoxFlat = _highlight_overlay.get_theme_stylebox("panel")
-	if _is_hovered:
-		overlay_style.border_color = Color(highlight_color.r, highlight_color.g, highlight_color.b, 1.0)
-	else:
-		overlay_style.border_color = Color(highlight_color.r, highlight_color.g, highlight_color.b, 0.85)
+	var border_base: Color = selected_color if is_selected else highlight_color
+	overlay_style.border_color = Color(border_base.r, border_base.g, border_base.b, 1.0 if _is_hovered else 0.85)
 	_highlight_overlay.visible = true
 
 

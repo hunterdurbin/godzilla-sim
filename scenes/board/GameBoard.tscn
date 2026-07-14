@@ -2,22 +2,16 @@
 
 [ext_resource type="Script" uid="uid://dml6j5e7cos4r" path="res://scenes/board/game_board.gd" id="1_gb"]
 [ext_resource type="PackedScene" path="res://scenes/board/PlayerBoard.tscn" id="2_pb"]
-[ext_resource type="Script" uid="uid://b04w0nnwbu55m" path="res://scenes/managers/card_manager.gd" id="3_cm"]
-[ext_resource type="Script" path="res://scripts/session/game_session.gd" id="4_gs"]
-[ext_resource type="Script" path="res://scripts/session/multiplayer_sync.gd" id="5_ms"]
-[ext_resource type="Script" path="res://scenes/board/modules/board_sfx.gd" id="6_sfx"]
-[ext_resource type="Script" path="res://scenes/board/modules/log_chat.gd" id="7_log"]
-[ext_resource type="Script" path="res://scenes/board/modules/turn_tracker.gd" id="8_tt"]
-[ext_resource type="Script" path="res://scenes/board/modules/first_player_ui.gd" id="9_fp"]
-[ext_resource type="Script" path="res://scenes/board/modules/end_game_controller.gd" id="10_eg"]
-[ext_resource type="Script" path="res://scenes/board/modules/reconnect_controller.gd" id="11_rc"]
-[ext_resource type="Script" path="res://scripts/session/effect_ui_router.gd" id="12_er"]
-[ext_resource type="Script" path="res://scenes/board/modules/hand_controller.gd" id="20_hc"]
-[ext_resource type="Script" path="res://scenes/board/modules/selection_controller.gd" id="21_sc"]
-[ext_resource type="Script" path="res://scenes/board/modules/mobile_layout.gd" id="22_ml"]
-[ext_resource type="Script" path="res://scenes/board/modules/effect_stack_panel.gd" id="24_es"]
-[ext_resource type="Script" path="res://scenes/board/overlays/active_ability_banner.gd" id="23_ab"]
-[ext_resource type="Script" path="res://scenes/board/overlays/turn_toast.gd" id="25_tt"]
+[ext_resource type="Script" uid="uid://b04w0nnwbu55m" path="res://scenes/cards/card_manager.gd" id="3_cm"]
+[ext_resource type="Script" uid="uid://b77udc1ab3jbh" path="res://scripts/session/game_session.gd" id="4_gs"]
+[ext_resource type="Script" uid="uid://cxsd68ro7uohp" path="res://scripts/session/multiplayer_sync.gd" id="5_ms"]
+[ext_resource type="Script" uid="uid://txurxtpatm3s" path="res://scenes/board/modules/board_sfx.gd" id="6_sfx"]
+[ext_resource type="Script" uid="uid://c27aovamgyj52" path="res://scenes/board/modules/log_chat.gd" id="7_log"]
+[ext_resource type="Script" uid="uid://b8jyh6rva5gru" path="res://scenes/board/modules/turn_tracker.gd" id="8_tt"]
+[ext_resource type="Script" uid="uid://b78hhv8bduifw" path="res://scenes/board/modules/first_player_ui.gd" id="9_fp"]
+[ext_resource type="Script" uid="uid://c8tr7bdk6kgwy" path="res://scenes/board/modules/end_game_controller.gd" id="10_eg"]
+[ext_resource type="Script" uid="uid://b7setcgexe2nv" path="res://scenes/board/modules/reconnect_controller.gd" id="11_rc"]
+[ext_resource type="Script" uid="uid://b822ojheymu0b" path="res://scripts/session/effect_ui_router.gd" id="12_er"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckSearchOverlay.tscn" id="13_dso"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/DeckArrangeOverlay.tscn" id="14_dao"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/CardSelectOverlay.tscn" id="15_cso"]
@@ -25,6 +19,26 @@
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/MonsterDeckViewOverlay.tscn" id="17_mdo"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/ZoneStackViewOverlay.tscn" id="18_zso"]
 [ext_resource type="PackedScene" path="res://scenes/board/overlays/CardZoomOverlay.tscn" id="19_czo"]
+[ext_resource type="Script" uid="uid://lbmxyv1flokw" path="res://scenes/board/modules/hand_controller.gd" id="20_hc"]
+[ext_resource type="Script" uid="uid://r7kjd0dv8qgh" path="res://scenes/board/modules/selection_controller.gd" id="21_sc"]
+[ext_resource type="Script" uid="uid://bmy1ysedr4lmp" path="res://scenes/board/modules/mobile_layout.gd" id="22_ml"]
+[ext_resource type="Script" uid="uid://dpnbf7fl7c5uu" path="res://scenes/board/overlays/active_ability_banner.gd" id="23_ab"]
+[ext_resource type="Texture2D" uid="uid://dk22cytgh5173" path="res://assets/ui/input_glyphs/xbox/face_east.png" id="24_dbwji"]
+[ext_resource type="Script" uid="uid://bgjjvk1cc3mhd" path="res://scenes/board/modules/effect_stack_panel.gd" id="24_es"]
+[ext_resource type="Script" uid="uid://6d08ac1ajb4" path="res://scenes/board/overlays/turn_toast.gd" id="25_tt"]
+[ext_resource type="Texture2D" uid="uid://dqq2v00702ymr" path="res://assets/ui/input_glyphs/xbox/face_west.png" id="27_5l0fj"]
+[ext_resource type="Texture2D" uid="uid://c5vldcvisuf41" path="res://assets/ui/input_glyphs/xbox/face_south.png" id="28_kkerk"]
+[ext_resource type="Texture2D" uid="uid://c6tmttl8dqbg0" path="res://assets/ui/input_glyphs/xbox/trigger_l.png" id="29_qihcc"]
+[ext_resource type="Texture2D" uid="uid://dao18mskvocan" path="res://assets/ui/input_glyphs/xbox/trigger_r.png" id="30_tjmvo"]
+[ext_resource type="Script" path="res://scenes/board/modules/board_layout_controller.gd" id="m_boardlayoutcontroller"]
+[ext_resource type="Script" path="res://scenes/board/modules/card_zoom_controller.gd" id="m_cardzoomcontroller"]
+[ext_resource type="Script" uid="uid://evjjrjsbhbdr" path="res://scripts/input/controller_glyph.gd" id="m_controllerglyph"]
+[ext_resource type="Script" uid="uid://gmyqvccux85k" path="res://scenes/board/modules/effect_highlight_controller.gd" id="m_effecthighlightcontroller"]
+[ext_resource type="Script" uid="uid://66aen2iglstg" path="res://scenes/board/modules/gamepad_board_nav.gd" id="m_gamepadboardnav"]
+[ext_resource type="Script" uid="uid://gfffvc5pgi62" path="res://scenes/board/modules/hand_hint_bar.gd" id="m_handhintbar"]
+[ext_resource type="Script" uid="uid://m46qb8jpvrth" path="res://scenes/board/modules/lobby_bot_controller.gd" id="m_lobbybotcontroller"]
+[ext_resource type="Script" path="res://scenes/board/modules/nav_debug_overlay.gd" id="m_navdebugoverlay"]
+[ext_resource type="Script" uid="uid://cj13yxiiuclr8" path="res://scenes/board/modules/system_menu_controller.gd" id="m_systemmenucontroller"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_prompt"]
 content_margin_left = 12.0
@@ -46,51 +60,71 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_gb")
 
-[node name="GameSession" type="Node" parent="."]
+[node name="GameSession" type="Node" parent="." unique_id=1932088205]
 script = ExtResource("4_gs")
 
-[node name="MultiplayerSync" type="Node" parent="GameSession"]
+[node name="MultiplayerSync" type="Node" parent="GameSession" unique_id=794386674]
 script = ExtResource("5_ms")
 
-[node name="EffectUIRouter" type="Node" parent="GameSession"]
+[node name="EffectUIRouter" type="Node" parent="GameSession" unique_id=382665130]
 script = ExtResource("12_er")
 
-[node name="BoardSfx" type="Node" parent="."]
+[node name="BoardSfx" type="Node" parent="." unique_id=1237515235]
 script = ExtResource("6_sfx")
 
-[node name="LogChat" type="Node" parent="."]
+[node name="LogChat" type="Node" parent="." unique_id=1427768101]
 script = ExtResource("7_log")
 
-[node name="TurnTrackerModule" type="Node" parent="."]
+[node name="TurnTrackerModule" type="Node" parent="." unique_id=1701726328]
 script = ExtResource("8_tt")
 
-[node name="FirstPlayerUI" type="Node" parent="."]
+[node name="FirstPlayerUI" type="Node" parent="." unique_id=557791308]
 script = ExtResource("9_fp")
 
-[node name="EndGameController" type="Node" parent="."]
+[node name="EndGameController" type="Node" parent="." unique_id=1698288327]
 script = ExtResource("10_eg")
 
-[node name="ReconnectController" type="Node" parent="."]
+[node name="ReconnectController" type="Node" parent="." unique_id=565021018]
 script = ExtResource("11_rc")
 
-[node name="HandController" type="Node" parent="."]
+[node name="HandController" type="Node" parent="." unique_id=863254466]
 script = ExtResource("20_hc")
 
-[node name="SelectionController" type="Node" parent="."]
+[node name="SelectionController" type="Node" parent="." unique_id=1459441535]
 script = ExtResource("21_sc")
 
-[node name="MobileLayout" type="Node" parent="."]
+[node name="MobileLayout" type="Node" parent="." unique_id=2027279412]
 script = ExtResource("22_ml")
 
-[node name="EffectStackPanel" type="Node" parent="."]
+[node name="EffectStackPanel" type="Node" parent="." unique_id=1405441881]
 script = ExtResource("24_es")
 
-[node name="ActiveAbilityBanner" type="Control" parent="."]
-layout_mode = 3
+[node name="SystemMenuController" type="Node" parent="." unique_id=1379880290]
+script = ExtResource("m_systemmenucontroller")
+
+[node name="GamepadBoardNav" type="Node" parent="." unique_id=421617144]
+script = ExtResource("m_gamepadboardnav")
+
+[node name="HandHintBar" type="Node" parent="." unique_id=733481919]
+script = ExtResource("m_handhintbar")
+
+[node name="BoardLayoutController" type="Node" parent="." unique_id=1805338226]
+script = ExtResource("m_boardlayoutcontroller")
+
+[node name="EffectHighlightController" type="Node" parent="." unique_id=2068527808]
+script = ExtResource("m_effecthighlightcontroller")
+
+[node name="CardZoomController" type="Node" parent="." unique_id=985552896]
+script = ExtResource("m_cardzoomcontroller")
+
+[node name="LobbyBotController" type="Node" parent="." unique_id=1836073744]
+script = ExtResource("m_lobbybotcontroller")
+
+[node name="ActiveAbilityBanner" type="Control" parent="." unique_id=1714801074]
 anchors_preset = 0
 script = ExtResource("23_ab")
 
-[node name="TurnToast" type="Control" parent="."]
+[node name="TurnToast" type="Control" parent="." unique_id=1769528191]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -117,7 +151,7 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
-[node name="TopSpacer" type="Control" parent="VBoxContainer"]
+[node name="TopSpacer" type="Control" parent="VBoxContainer" unique_id=1676135727]
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 
@@ -147,6 +181,7 @@ layout_mode = 2
 size_flags_vertical = 3
 player_id = 1
 is_mirrored = true
+editor_preview = null
 
 [node name="Divider" type="ColorRect" parent="VBoxContainer/BoardArea/BoardColumn" unique_id=1000769823]
 custom_minimum_size = Vector2(0, 2)
@@ -156,6 +191,7 @@ color = Color(0.5, 0.5, 0.6, 0.8)
 [node name="Player1Board" parent="VBoxContainer/BoardArea/BoardColumn" unique_id=426822273 instance=ExtResource("2_pb")]
 layout_mode = 2
 size_flags_vertical = 3
+editor_preview = null
 
 [node name="Player1HandSpace" type="Control" parent="VBoxContainer/BoardArea/BoardColumn" unique_id=1286720020]
 custom_minimum_size = Vector2(0, 10)
@@ -166,11 +202,11 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 0.25
 
-[node name="TurnLabelMargin" type="MarginContainer" parent="VBoxContainer/BoardArea/RightSpacer"]
+[node name="TurnLabelMargin" type="MarginContainer" parent="VBoxContainer/BoardArea/RightSpacer" unique_id=1864903780]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 
-[node name="TurnLabel" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnLabelMargin"]
+[node name="TurnLabel" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnLabelMargin" unique_id=1052479003]
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.5, 0.5, 0.6, 1)
@@ -178,205 +214,205 @@ theme_override_font_sizes/font_size = 11
 text = "Turn: 0"
 vertical_alignment = 1
 
-[node name="TurnTracker" type="VBoxContainer" parent="VBoxContainer/BoardArea/RightSpacer"]
+[node name="TurnTracker" type="VBoxContainer" parent="VBoxContainer/BoardArea/RightSpacer" unique_id=618427902]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 theme_override_constants/separation = 2
 
-[node name="P2Header" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2Header" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=372233037]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
 theme_override_font_sizes/font_size = 12
 text = "Player 2"
 horizontal_alignment = 1
 
-[node name="P2Start" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2Start" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=521848926]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
 theme_override_font_sizes/font_size = 11
 text = "  Start Phase"
 
-[node name="P2StartEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2StartEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=909283809]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_RESOLVE_EFFECTS"
 
-[node name="P2StartDraw" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2StartDraw" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1572129009]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_DRAW_CARDS"
 
-[node name="P2StartDiscard" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2StartDiscard" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=363753270]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_DISCARD_STRATEGIES"
 
-[node name="P2StartReset" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2StartReset" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=895728940]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_RESET_RAGE"
 
-[node name="P2Main" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2Main" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=465376672]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
 theme_override_font_sizes/font_size = 11
 text = "  Main Phase"
 
-[node name="P2MainEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2MainEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=722497726]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_RESOLVE_EFFECTS"
 
-[node name="P2MainActions" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2MainActions" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1854053868]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_PLAYER_ACTIONS"
 
-[node name="P2Counter" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2Counter" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1783570742]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
 theme_override_font_sizes/font_size = 11
 text = "  Counter Phase"
 
-[node name="P2CounterEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2CounterEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1991501120]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_RESOLVE_EFFECTS"
 
-[node name="P2CounterCheck" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2CounterCheck" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1724201405]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_COUNTER_CHECK"
 
-[node name="P2End" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2End" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=686073602]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
 theme_override_font_sizes/font_size = 11
 text = "  End Phase"
 
-[node name="P2EndEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2EndEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=679690549]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_RESOLVE_EFFECTS"
 
-[node name="P2EndAdvance" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2EndAdvance" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=243561393]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_ADVANCE"
 
-[node name="P2EndRefill" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P2EndRefill" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=2064749871]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_REFILL_HAND"
 
-[node name="Separator" type="HSeparator" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="Separator" type="HSeparator" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=699413216]
 layout_mode = 2
 
-[node name="P1Header" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1Header" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1449068681]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.7, 1)
 theme_override_font_sizes/font_size = 12
 text = "Player 1"
 horizontal_alignment = 1
 
-[node name="P1Start" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1Start" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1742600376]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
 theme_override_font_sizes/font_size = 11
 text = "  Start Phase"
 
-[node name="P1StartEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1StartEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=289725519]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_RESOLVE_EFFECTS"
 
-[node name="P1StartDraw" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1StartDraw" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1203628258]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_DRAW_CARDS"
 
-[node name="P1StartDiscard" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1StartDiscard" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1183866443]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_DISCARD_STRATEGIES"
 
-[node name="P1StartReset" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1StartReset" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=895237313]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_RESET_RAGE"
 
-[node name="P1Main" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1Main" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1979993075]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
 theme_override_font_sizes/font_size = 11
 text = "  Main Phase"
 
-[node name="P1MainEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1MainEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=521655062]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_RESOLVE_EFFECTS"
 
-[node name="P1MainActions" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1MainActions" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=854624163]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_PLAYER_ACTIONS"
 
-[node name="P1Counter" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1Counter" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1956142148]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
 theme_override_font_sizes/font_size = 11
 text = "  Counter Phase"
 
-[node name="P1CounterEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1CounterEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1472831532]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_RESOLVE_EFFECTS"
 
-[node name="P1CounterCheck" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1CounterCheck" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=378117254]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_COUNTER_CHECK"
 
-[node name="P1End" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1End" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=1348986083]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.4, 0.5, 1)
 theme_override_font_sizes/font_size = 11
 text = "  End Phase"
 
-[node name="P1EndEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1EndEffects" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=908784190]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_RESOLVE_EFFECTS"
 
-[node name="P1EndAdvance" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1EndAdvance" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=167508392]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
 text = "STR_GB_PHASE_SUB_ADVANCE"
 
-[node name="P1EndRefill" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker"]
+[node name="P1EndRefill" type="Label" parent="VBoxContainer/BoardArea/RightSpacer/TurnTracker" unique_id=904111059]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.35, 0.4, 1)
 theme_override_font_sizes/font_size = 9
@@ -401,22 +437,58 @@ grow_horizontal = 0
 grow_vertical = 0
 theme_override_constants/separation = 4
 
-[node name="Row0" type="HBoxContainer" parent="ActionPanel"]
+[node name="Row0" type="HBoxContainer" parent="ActionPanel" unique_id=580935916]
 layout_mode = 2
 theme_override_constants/separation = 4
 alignment = 2
 
-[node name="Cancel" type="Button" parent="ActionPanel/Row0"]
+[node name="Cancel" type="Button" parent="ActionPanel/Row0" unique_id=31271703]
 custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 disabled = true
 text = "STR_GB_CANCEL"
 
-[node name="Confirm" type="Button" parent="ActionPanel/Row0"]
+[node name="CancelGlyph" type="TextureRect" parent="ActionPanel/Row0/Cancel" unique_id=1428569949]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -9.0
+offset_right = 10.0
+offset_bottom = 9.0
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("24_dbwji")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("m_controllerglyph")
+action = &"pad_cancel"
+
+[node name="Confirm" type="Button" parent="ActionPanel/Row0" unique_id=1784268967]
 custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 disabled = true
 text = "STR_GB_CONFIRM"
+
+[node name="ConfirmGlyph" type="TextureRect" parent="ActionPanel/Row0/Confirm" unique_id=425677186]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -9.0
+offset_right = 10.0
+offset_bottom = 9.0
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("27_5l0fj")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("m_controllerglyph")
+action = &"pad_end_main"
 
 [node name="Row1" type="HBoxContainer" parent="ActionPanel" unique_id=446663055]
 layout_mode = 2
@@ -458,6 +530,24 @@ custom_minimum_size = Vector2(80, 32)
 layout_mode = 2
 text = "STR_GB_END_MAIN"
 
+[node name="EndMainGlyph" type="TextureRect" parent="ActionPanel/Row2/EndMain" unique_id=558191015]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = -8.0
+offset_top = -9.0
+offset_right = 10.0
+offset_bottom = 9.0
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("27_5l0fj")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("m_controllerglyph")
+action = &"pad_end_main"
+
 [node name="BugReportButton" type="Button" parent="." unique_id=1953231602]
 layout_mode = 1
 anchors_preset = 1
@@ -497,7 +587,7 @@ grow_horizontal = 0
 theme_override_font_sizes/font_size = 11
 text = "STR_GB_MAIN_MENU"
 
-[node name="SoundToggleButton" type="Button" parent="."]
+[node name="SoundToggleButton" type="Button" parent="." unique_id=1531528291]
 auto_translate_mode = 2
 layout_mode = 1
 anchors_preset = 1
@@ -510,7 +600,7 @@ offset_bottom = 122.0
 grow_horizontal = 0
 theme_override_font_sizes/font_size = 11
 
-[node name="MusicToggleButton" type="Button" parent="."]
+[node name="MusicToggleButton" type="Button" parent="." unique_id=575681780]
 auto_translate_mode = 2
 layout_mode = 1
 anchors_preset = 1
@@ -523,7 +613,7 @@ offset_bottom = 147.0
 grow_horizontal = 0
 theme_override_font_sizes/font_size = 11
 
-[node name="ExportLogButton" type="Button" parent="."]
+[node name="ExportLogButton" type="Button" parent="." unique_id=289583739]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -549,11 +639,84 @@ offset_bottom = -10.0
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_prompt")
 
-[node name="PromptLabel" type="Label" parent="ActionPrompt"]
+[node name="PromptLabel" type="Label" parent="ActionPrompt" unique_id=1442837082]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 0.5, 1)
 theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
+
+[node name="HandHintCluster" type="PanelContainer" parent="." unique_id=733481920]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -40.0
+offset_right = 120.0
+offset_bottom = -10.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_prompt")
+
+[node name="VBox" type="VBoxContainer" parent="HandHintCluster" unique_id=733481921]
+layout_mode = 2
+
+[node name="RowPlay" type="HBoxContainer" parent="HandHintCluster/VBox" unique_id=733481922]
+layout_mode = 2
+
+[node name="Glyph" type="TextureRect" parent="HandHintCluster/VBox/RowPlay" unique_id=733481923]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("28_kkerk")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("m_controllerglyph")
+
+[node name="Label" type="Label" parent="HandHintCluster/VBox/RowPlay" unique_id=733481924]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "STR_GB_HINT_PLAY"
+vertical_alignment = 1
+
+[node name="RowRage" type="HBoxContainer" parent="HandHintCluster/VBox" unique_id=733481925]
+layout_mode = 2
+
+[node name="Glyph" type="TextureRect" parent="HandHintCluster/VBox/RowRage" unique_id=733481926]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("29_qihcc")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("m_controllerglyph")
+action = &"pad_play_card_rage"
+
+[node name="Label" type="Label" parent="HandHintCluster/VBox/RowRage" unique_id=733481927]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "STR_GB_HINT_RAGE"
+vertical_alignment = 1
+
+[node name="RowInvade" type="HBoxContainer" parent="HandHintCluster/VBox" unique_id=733481928]
+layout_mode = 2
+
+[node name="Glyph" type="TextureRect" parent="HandHintCluster/VBox/RowInvade" unique_id=733481929]
+custom_minimum_size = Vector2(22, 22)
+layout_mode = 2
+mouse_filter = 2
+texture = ExtResource("30_tjmvo")
+expand_mode = 1
+stretch_mode = 5
+script = ExtResource("m_controllerglyph")
+action = &"pad_play_card_invasion"
+
+[node name="Label" type="Label" parent="HandHintCluster/VBox/RowInvade" unique_id=733481930]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "STR_GB_HINT_INVADE"
+vertical_alignment = 1
 
 [node name="LogPanel" type="PanelContainer" parent="." unique_id=1472588009]
 layout_mode = 1
@@ -564,7 +727,7 @@ anchor_bottom = 0.75
 offset_left = 10.0
 offset_right = 50.0
 
-[node name="LogVBox" type="VBoxContainer" parent="LogPanel"]
+[node name="LogVBox" type="VBoxContainer" parent="LogPanel" unique_id=503237084]
 layout_mode = 2
 
 [node name="LogOutput" type="RichTextLabel" parent="LogPanel/LogVBox" unique_id=1596132669]
@@ -575,17 +738,17 @@ theme_override_font_sizes/bold_font_size = 11
 text = "STR_GB_GAME_LOG"
 scroll_following = true
 
-[node name="ChatRow" type="HBoxContainer" parent="LogPanel/LogVBox"]
+[node name="ChatRow" type="HBoxContainer" parent="LogPanel/LogVBox" unique_id=1715491337]
 layout_mode = 2
 
-[node name="ChatInput" type="LineEdit" parent="LogPanel/LogVBox/ChatRow"]
+[node name="ChatInput" type="LineEdit" parent="LogPanel/LogVBox/ChatRow" unique_id=507281675]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 11
 placeholder_text = "STR_GB_CHAT_PLACEHOLDER"
 max_length = 200
 
-[node name="CharCount" type="Label" parent="LogPanel/LogVBox/ChatRow"]
+[node name="CharCount" type="Label" parent="LogPanel/LogVBox/ChatRow" unique_id=15493704]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.6, 0.6, 0.6, 1)
 theme_override_font_sizes/font_size = 10
@@ -601,15 +764,20 @@ script = ExtResource("3_cm")
 layout_mode = 3
 card_spacing = 120.0
 
-[node name="DeckSearchOverlay" parent="." instance=ExtResource("13_dso")]
+[node name="DeckSearchOverlay" parent="." unique_id=1842811382 instance=ExtResource("13_dso")]
+layout_mode = 1
 
-[node name="DiscardViewOverlay" parent="." instance=ExtResource("16_dvo")]
+[node name="DiscardViewOverlay" parent="." unique_id=1503566472 instance=ExtResource("16_dvo")]
+layout_mode = 1
 
-[node name="MonsterDeckViewOverlay" parent="." instance=ExtResource("17_mdo")]
+[node name="MonsterDeckViewOverlay" parent="." unique_id=1577516336 instance=ExtResource("17_mdo")]
+layout_mode = 1
 
-[node name="ZoneStackViewOverlay" parent="." instance=ExtResource("18_zso")]
+[node name="ZoneStackViewOverlay" parent="." unique_id=1739839184 instance=ExtResource("18_zso")]
+layout_mode = 1
 
-[node name="CardZoomOverlay" parent="." instance=ExtResource("19_czo")]
+[node name="CardZoomOverlay" parent="." unique_id=1372477364 instance=ExtResource("19_czo")]
+layout_mode = 1
 
 [node name="EndGamePanel" type="PanelContainer" parent="." unique_id=926981509]
 visible = false
@@ -626,36 +794,38 @@ offset_bottom = 80.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="VBox" type="VBoxContainer" parent="EndGamePanel"]
+[node name="VBox" type="VBoxContainer" parent="EndGamePanel" unique_id=762957051]
 layout_mode = 2
 
-[node name="WinLabel" type="Label" parent="EndGamePanel/VBox"]
+[node name="WinLabel" type="Label" parent="EndGamePanel/VBox" unique_id=1627618085]
 layout_mode = 2
+size_flags_vertical = 3
 theme_override_font_sizes/font_size = 22
 text = "STR_GB_GAME_OVER"
 horizontal_alignment = 1
 vertical_alignment = 1
-size_flags_vertical = 3
 
-[node name="ButtonRow" type="HBoxContainer" parent="EndGamePanel/VBox"]
+[node name="ButtonRow" type="HBoxContainer" parent="EndGamePanel/VBox" unique_id=2106199622]
 layout_mode = 2
 alignment = 1
 
-[node name="RematchButton" type="Button" parent="EndGamePanel/VBox/ButtonRow"]
-layout_mode = 2
+[node name="RematchButton" type="Button" parent="EndGamePanel/VBox/ButtonRow" unique_id=255756606]
 custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
 text = "STR_GB_REMATCH"
 
-[node name="MenuButton" type="Button" parent="EndGamePanel/VBox/ButtonRow"]
-layout_mode = 2
+[node name="MenuButton" type="Button" parent="EndGamePanel/VBox/ButtonRow" unique_id=944988030]
 custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
 text = "STR_GB_MAIN_MENU"
 
-[node name="DeckArrangeOverlay" parent="." instance=ExtResource("14_dao")]
+[node name="DeckArrangeOverlay" parent="." unique_id=818481713 instance=ExtResource("14_dao")]
+layout_mode = 1
 
-[node name="CardSelectOverlay" parent="." instance=ExtResource("15_cso")]
+[node name="CardSelectOverlay" parent="." unique_id=533931578 instance=ExtResource("15_cso")]
+layout_mode = 1
 
-[node name="OpponentHandButtonStack" type="HBoxContainer" parent="."]
+[node name="OpponentHandButtonStack" type="HBoxContainer" parent="." unique_id=1096714480]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
@@ -665,22 +835,21 @@ offset_top = 10.0
 offset_right = -320.0
 offset_bottom = 76.0
 grow_horizontal = 0
-grow_vertical = 1
 theme_override_constants/separation = 0
 
-[node name="OpponentHandToggleButton" type="Button" parent="OpponentHandButtonStack"]
-layout_mode = 2
+[node name="OpponentHandToggleButton" type="Button" parent="OpponentHandButtonStack" unique_id=1980303815]
 custom_minimum_size = Vector2(55, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "▼"
 
-[node name="OpponentSortHandButton" type="Button" parent="OpponentHandButtonStack"]
-layout_mode = 2
+[node name="OpponentSortHandButton" type="Button" parent="OpponentHandButtonStack" unique_id=1582632780]
 custom_minimum_size = Vector2(82, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "STR_GB_SORT"
 
-[node name="HandButtonStack" type="HBoxContainer" parent="."]
+[node name="HandButtonStack" type="HBoxContainer" parent="." unique_id=91054965]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -696,13 +865,24 @@ grow_vertical = 0
 theme_override_constants/separation = 0
 
 [node name="HandToggleButton" type="Button" parent="HandButtonStack" unique_id=1847291033]
-layout_mode = 2
 custom_minimum_size = Vector2(55, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 16
 text = "▲"
 
-[node name="SortHandButton" type="Button" parent="HandButtonStack"]
-layout_mode = 2
+[node name="SortHandButton" type="Button" parent="HandButtonStack" unique_id=1209190875]
 custom_minimum_size = Vector2(82, 32)
+layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "STR_GB_SORT"
+
+[node name="NavDebugOverlay" type="Control" parent="." unique_id=250710181]
+z_index = 150
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("m_navdebugoverlay")

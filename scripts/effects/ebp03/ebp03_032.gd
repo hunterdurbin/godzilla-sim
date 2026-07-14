@@ -23,6 +23,16 @@ func get_bot_tags() -> Array[String]:
 	return ["boosts_cp"]
 
 
+func serialize_state() -> Dictionary:
+	if _bonus_cp == 0:
+		return {}
+	return {"bonus_cp": _bonus_cp}
+
+
+func restore_state(data: Dictionary) -> void:
+	_bonus_cp = int(data.get("bonus_cp", 0))
+
+
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	_bonus_cp = 0
 	var zone_idx := find_zone_of_card(ctx)

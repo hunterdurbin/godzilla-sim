@@ -20,6 +20,31 @@ var rematch_deck_changed: bool = false
 var rematch_deck_name: String = ""
 var stats_uploaded: bool = false
 
+const REASON_DISCONNECT := "STR_LOG_REASON_OPPONENT_DISCONNECTED"
+
+
+## A disconnect-reason game end with the opponent still absent means nobody is
+## on the other side to accept a rematch — the button would hang at "Waiting".
+## When the opponent later reconnects, ReconnectController re-sends game-ended
+## with opponent_connected true and the rematch button comes back (its own
+## re-show path also runs).
+func _rematch_possible(reason_key: String) -> bool:
+	return reason_key != REASON_DISCONNECT or NetworkManager.opponent_connected
+
+
+## Rematch-button + deck-select state shared by the host and client
+## game-ended paths.
+func _show_rematch_controls(reason_key: String) -> void:
+	if _rematch_possible(reason_key):
+		_board.btn_rematch.visible = true
+		_board.btn_rematch.disabled = false
+		_board.btn_rematch.text = tr("STR_GB_REMATCH")
+		populate_rematch_deck_select()
+	else:
+		_board._game_ended_by_disconnect = true
+		_board.btn_rematch.visible = false
+		rematch_deck_select.visible = false
+
 
 func _ready() -> void:
 	_board = get_parent()
@@ -56,10 +81,7 @@ func on_game_ended(winner_id: int, reason_key: String) -> void:
 	if win_label:
 		var reason_text := GameLog.render_reason(reason_key)
 		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", _session.turn_manager.game_state.player_names[winner_id]) + "\n" + reason_text
-	_board.btn_rematch.visible = true
-	_board.btn_rematch.disabled = false
-	_board.btn_rematch.text = tr("STR_GB_REMATCH")
-	populate_rematch_deck_select()
+	_show_rematch_controls(reason_key)
 	_board._disable_all_buttons()
 	if _board.is_multiplayer_game and NetworkManager.is_host():
 		# Flush any buffered logs before game end
@@ -107,14 +129,14 @@ func rpc_concede() -> void:
 # --- Rematch deck select ---
 
 func setup_rematch_deck_select() -> void:
-	var scene := preload("res://scenes/ui/DeckSelect.tscn")
+	var scene := preload("res://scenes/deck_builder/DeckSelect.tscn")
 	rematch_deck_select = scene.instantiate()
 	rematch_deck_select.persist_key = "rematch_deck"
 	# Add as direct child of game board, positioned below Save Game button
 	_board.add_child(rematch_deck_select)
 	var y_pos := 130.0
-	if _board._save_game_button:
-		y_pos = _board._save_game_button.position.y + _board._save_game_button.custom_minimum_size.y + 4
+	if _board._sys_menu._save_game_button:
+		y_pos = _board._sys_menu._save_game_button.position.y + _board._sys_menu._save_game_button.custom_minimum_size.y + 4
 	rematch_deck_select.position = Vector2(10, y_pos)
 	rematch_deck_select.set_header_visible(false)
 	rematch_deck_select.visible = false
@@ -287,10 +309,7 @@ func rpc_receive_game_ended(winner_id: int, reason_key: String) -> void:
 	if win_label:
 		var reason_text := GameLog.render_reason(reason_key)
 		win_label.text = tr("STR_GB_WINS_FMT").replace("{NAME}", GameLog.player_name(winner_id)) + "\n" + reason_text
-	_board.btn_rematch.visible = true
-	_board.btn_rematch.disabled = false
-	_board.btn_rematch.text = tr("STR_GB_REMATCH")
-	populate_rematch_deck_select()
+	_show_rematch_controls(reason_key)
 	_board._disable_all_buttons()
 	RpcLogger.print_summary()
 

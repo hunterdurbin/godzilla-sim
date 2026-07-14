@@ -25,7 +25,12 @@ const REGENERATE_HINT := "Run: bash scripts/effects/generate_trigger_map.sh (nev
 ## bot heuristics and helpers that are queried directly via get_effect(),
 ## never gated through has_trigger().
 const METHODS_EXEMPT_PREFIXES := ["get_bot_", "bot_can_fulfill_"]
-const METHODS_EXEMPT_NAMES := ["is_discard_play_optional", "find_zone_of_card"]
+const METHODS_EXEMPT_NAMES := [
+	"is_discard_play_optional", "find_zone_of_card",
+	# Turn-scoped state round-trip hooks — called directly by GameSerializer /
+	# MatchFactory, never dispatched through the trigger map.
+	"serialize_state", "restore_state",
+]
 
 
 # --- Consistency checks ---

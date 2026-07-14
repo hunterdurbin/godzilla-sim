@@ -12,6 +12,10 @@ extends Node
 ## unchanged. The eventual end state (phase 2) is a dedicated
 ## MobileGameBoard.tscn variant scene replacing this runtime restyling.
 
+## The FAB grid opened/closed — GamepadBoardNav jails its cursor onto the
+## expanded grid (the buttons never take real focus).
+signal fab_toggled(expanded: bool)
+
 var _board: Node
 
 # --- Mobile state ---
@@ -362,11 +366,11 @@ func _apply_mobile_action_panel() -> void:
 		tr("STR_TYPE_RAGE"), tr("STR_GB_INVADE")
 	]
 	var btn_textures: Array[Texture2D] = [
-		load("res://assets/buttons/battle.png"),
-		load("res://assets/buttons/monster.png"),
-		load("res://assets/buttons/strategy.png"),
-		load("res://assets/buttons/rage.png"),
-		load("res://assets/buttons/invasion.png"),
+		load("res://assets/ui/buttons/battle.png"),
+		load("res://assets/ui/buttons/monster.png"),
+		load("res://assets/ui/buttons/strategy.png"),
+		load("res://assets/ui/buttons/rage.png"),
+		load("res://assets/ui/buttons/invasion.png"),
 	]
 
 	var grid_left := (container_w - grid_w) / 2.0
@@ -638,6 +642,27 @@ func _apply_mobile_utility_buttons() -> void:
 	# Expand panel height for the extra buttons
 	_mobile_menu_panel.offset_bottom += (btn_h + gap) * 2
 
+	# Controller: the open panel is a modal focus context (the board cursor
+	# parks while it is up and returns to sys_menu on close) with a fully
+	# pinned vertical wrap mesh — left/right self-loop so the geometric
+	# auto-neighbor can't escape onto board chrome.
+	GamepadHelper.register_modal(_mobile_menu_panel)
+	var menu_opts: Array[Button] = []
+	for child in _mobile_menu_panel.get_children():
+		if child is Button:
+			menu_opts.append(child)
+	for i in menu_opts.size():
+		var opt := menu_opts[i]
+		GamepadHelper.make_pad_focusable(opt)
+		var prev := menu_opts[(i - 1 + menu_opts.size()) % menu_opts.size()]
+		var next := menu_opts[(i + 1) % menu_opts.size()]
+		opt.focus_neighbor_top = opt.get_path_to(prev)
+		opt.focus_neighbor_bottom = opt.get_path_to(next)
+		opt.focus_previous = opt.get_path_to(prev)
+		opt.focus_next = opt.get_path_to(next)
+		opt.focus_neighbor_left = opt.get_path_to(opt)
+		opt.focus_neighbor_right = opt.get_path_to(opt)
+
 	# Hand toggle/sort buttons — fire on touch-down
 	for btn: Button in [hand_toggle_button, sort_hand_button,
 			opponent_hand_toggle_button, opponent_sort_hand_button]:
@@ -676,6 +701,29 @@ func _toggle_mobile_menu() -> void:
 		_close_mobile_menu()
 	else:
 		_open_mobile_menu()
+
+
+## B/ESC closes the "..." menu. Acts on the LEADING face of the cancel press
+## (raw button / pad_cancel / ui_cancel — whichever lands first) and swallows
+## the twins so the board's ui_cancel ladder can't also fire; the swallow
+## check runs before the open gate so a twin arriving after the close still
+## dies here instead of leaking to the ladder.
+func _input(event: InputEvent) -> void:
+	if not is_mobile_layout:
+		return
+	# Unconditional: the twin of the press that closed the menu arrives after
+	# _mobile_menu_open is already false (scene _input runs BEFORE the
+	# GamepadHelper autoload's root-stage kill, so it must die here).
+	if GamepadHelper.is_swallowed_cancel(event):
+		get_viewport().set_input_as_handled()
+		return
+	if not _mobile_menu_open:
+		return
+	if not GamepadHelper.is_cancel_press(event):
+		return
+	GamepadHelper.swallow_cancel_twins()
+	_close_mobile_menu()
+	get_viewport().set_input_as_handled()
 
 
 func _open_mobile_menu() -> void:
@@ -1511,6 +1559,11 @@ func _expand_fab() -> void:
 
 	_fab_main_btn.queue_redraw()
 
+	# Controller: GamepadBoardNav jails its cursor onto the expanded grid
+	# (row 0: Battle|Monster|Strategy, row 1: Rage|Invade — BoardNavGraph's
+	# mobile edges); the buttons never take real focus.
+	fab_toggled.emit(true)
+
 
 func _collapse_fab() -> void:
 	if not _fab_expanded:
@@ -1553,6 +1606,7 @@ func _collapse_fab() -> void:
 		btn_end_main.visible = true
 		btn_confirm.visible = true
 		btn_cancel.visible = true
+		fab_toggled.emit(false)
 	)
 
 	_fab_main_btn.queue_redraw()
@@ -1581,6 +1635,62 @@ func _collapse_fab_instant() -> void:
 	btn_end_main.visible = true
 	btn_confirm.visible = true
 	btn_cancel.visible = true
+	fab_toggled.emit(false)
+
+
+func fab_expanded() -> bool:
+	return _fab_expanded
+
+
+## Idempotent tray control for the controller bumpers (LB = log, RB =
+## tracker): open/close only when the state actually changes, reusing the
+## exact toggle tweens the tab buttons drive.
+func set_log_tray_open(open: bool) -> void:
+	if _mobile_log_tray_open != open:
+		_toggle_mobile_log_tray()
+
+
+func is_log_tray_open() -> bool:
+	return _mobile_log_tray_open
+
+
+func set_tracker_tray_open(open: bool) -> void:
+	if _mobile_tracker_tray_open != open:
+		_toggle_mobile_tracker_tray()
+
+
+func is_tracker_tray_open() -> bool:
+	return _mobile_tracker_tray_open
+
+
+func fab_main_button() -> Button:
+	return _fab_main_btn
+
+
+func fab_container() -> Control:
+	return _fab_container
+
+
+# Runtime-built chrome buttons, resolved by GamepadBoardNav._ui_button for
+# the sys_* nav ids (mobile layout only).
+func menu_button() -> Button:
+	return _mobile_menu_btn
+
+
+func cp_toggle_button() -> Button:
+	return _mobile_cp_toggle_btn
+
+
+func log_toggle_button() -> Button:
+	return _mobile_log_toggle_btn
+
+
+func tracker_toggle_button() -> Button:
+	return _mobile_tracker_toggle_btn
+
+
+func view_toggle_button() -> Button:
+	return _mobile_view_toggle_btn
 
 
 func _on_fab_backdrop_input(event: InputEvent) -> void:

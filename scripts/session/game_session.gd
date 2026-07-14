@@ -219,6 +219,7 @@ func setup_bot(local_player_id: int) -> BotPlayer:
 	pin.card_select_requested.connect(bot_player._on_card_select_requested)
 	pin.hand_card_selection_requested.connect(bot_player._on_hand_card_selection_requested)
 	pin.zone_target_requested.connect(bot_player._on_zone_target_requested)
+	pin.zones_target_requested.connect(bot_player._on_zones_target_requested)
 	pin.strategy_target_requested.connect(bot_player._on_strategy_target_requested)
 	pin.cards_revealed_requested.connect(bot_player._on_cards_revealed_requested)
 
@@ -226,7 +227,27 @@ func setup_bot(local_player_id: int) -> BotPlayer:
 
 	turn_manager.game_state.player_names[1] = "Bot"
 	GameLog.player_names = GameLog.disambiguate(turn_manager.game_state.player_names, local_player_id)
+
+	# KAIJU only: adapt evaluation to this opponent's replay history.
+	# Fire-and-forget — the profile lands within a few frames and applies at
+	# the bot's next replan; never wired in headless sims (determinism).
+	if bot_player.config.use_planner:
+		_load_opponent_profile(bot_player)
 	return bot_player
+
+
+func _load_opponent_profile(bot: BotPlayer) -> void:
+	var opponent_id: int = 1 - bot.bot_player_id
+	var opponent_name: String = turn_manager.game_state.player_names[opponent_id]
+	var deck: String = DecklistManager.get_player_deck_name(opponent_id)
+	var profile: Dictionary = await KaijuOpponentProfile.build_for_opponent_async(
+			opponent_name, GameSerializer.id_to_card, get_tree(), deck)
+	if bot_player != bot or profile.is_empty():
+		return # session torn down / rematch rebuilt the bot, or nothing usable
+	bot.config.kaiju_opponent_profile = profile
+	print("[Kaiju] Opponent profile loaded — %d games, cp/card %.0f, invade %.2f, hoard %.1f" % [
+			profile["games"], profile.get("cp_per_card", 0.0),
+			profile.get("invade_tempo", 0.0), profile.get("hand_hoard", 0.0)])
 
 
 ## Construct + start ReplayRecorder. Caller must have already run
@@ -248,5 +269,18 @@ func setup_replay_recorder(is_bot_game: bool) -> ReplayRecorder:
 	]
 	replay_recorder.start(turn_manager.game_state, seed_val, mode_str, diff_str, d_names, get_tree())
 	turn_manager.log_message.connect(replay_recorder.on_log_message)
+	# Effect-layer tokens (played_*, rage_gained, invaded, evolution, effect_*)
+	# are emitted on the effect handler, not the TurnManager — without this the
+	# replay carries only turn boundaries and replay-stats metrics read zero.
+	turn_manager.effect_handler.log_message.connect(replay_recorder.on_log_message)
+	# Counter tokens: game_board synthesizes these for the chat log only, so
+	# mirror the sim runner and record them here (the only place effect-inclusive
+	# CP/threat breakdowns are available without re-running the engine).
+	events.counter_succeeded.connect(func(pid: int, cp: int, threat: int, rage_t: int, eff_t: int) -> void:
+		if replay_recorder:
+			replay_recorder.on_log_message(GameLog.counter_succeeded(pid, cp, threat, rage_t, eff_t)))
+	events.counter_failed.connect(func(pid: int, cp: int, threat: int, rage_t: int, eff_t: int) -> void:
+		if replay_recorder:
+			replay_recorder.on_log_message(GameLog.counter_failed(pid, cp, threat, rage_t, eff_t)))
 	turn_manager.sub_phase_changed.connect(replay_recorder.on_phase_boundary)
 	return replay_recorder

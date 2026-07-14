@@ -201,7 +201,7 @@ func test_ebp02_048_invading_destroys_three_rank4_and_lower() -> void:
 		}},
 	})
 	var input := ScriptedPlayerInput.new()
-	input.answers = {"select_zone": [0, 2, 4]}
+	input.answers = {"select_zones": [[0, 2, 4]]}
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
@@ -212,6 +212,32 @@ func test_ebp02_048_invading_destroys_three_rank4_and_lower() -> void:
 	assert_bool(p1.zone_has_cards(2)).is_false()
 	assert_bool(p1.zone_has_cards(4)).is_false()
 	assert_str(str(p1.get_zone_top_card(6).get("id"))).is_equal("R5")
+	# One batch prompt replaces the old three sequential prompts.
+	assert_int(input.count_calls("select_zones")).is_equal(1)
+
+
+func test_ebp02_048_invading_clamps_to_available_targets() -> void:
+	# "Destroy 3" with only two legal targets: the prompt asks for exactly 2.
+	var card := Real.instance("EBP02-048")
+	var state := States.make_state({
+		"p0": {"current_monster": card, "monster_zone": 2},
+		"p1": {"zone_cards": {
+			1: Cards.battle(4, 3000, "A"), 3: Cards.battle(2, 2000, "B"),
+			6: Cards.battle(5, 4000, "R5"),
+		}},
+	})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.trigger_when_invading(0, 2, 3)
+
+	var p1 := state.players[1]
+	assert_bool(p1.zone_has_cards(1)).is_false()
+	assert_bool(p1.zone_has_cards(3)).is_false()
+	assert_bool(p1.zone_has_cards(6)).is_true()
+	assert_int(input.count_calls("select_zones")).is_equal(1)
+	assert_int(int(input.calls[0]["count"])).is_equal(2)
 
 
 func test_ebp02_048_invading_silent_without_rank4_targets() -> void:
@@ -227,7 +253,7 @@ func test_ebp02_048_invading_silent_without_rank4_targets() -> void:
 	await handler.trigger_when_invading(0, 2, 3)
 
 	assert_bool(state.players[1].zone_has_cards(6)).is_true()
-	assert_int(input.count_calls("select_zone")).is_equal(0)
+	assert_int(input.count_calls("select_zones")).is_equal(0)
 
 
 # --- EBP02-049: enter w/ 3+ under → choose: destroy 3 r5- / opp discards to 3 / mill 3 ---
@@ -306,6 +332,7 @@ func test_ebp02_050_destroy_option_kills_rank6_target() -> void:
 	for i in range(5):
 		state.players[0].monster_stack.append(Cards.monster(1, 4000, [], "U%d" % i))
 	var input := ScriptedPlayerInput.new()
+	# Only one legal target: the batch primitive falls back to the single-zone prompt.
 	input.answers = {"choose_option": [0], "select_zone": [1]}
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
@@ -427,7 +454,7 @@ func test_ebp02_054_rage_increase_destroys_one_target_per_crystal() -> void:
 		}},
 	})
 	var input := ScriptedPlayerInput.new()
-	input.answers = {"select_zone": [1, 3]}
+	input.answers = {"select_zones": [[1, 3]]}
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
@@ -451,7 +478,7 @@ func test_ebp02_054_no_destroy_on_rage_decrease_or_without_crystals() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 	await handler.reduce_rage(0, 1)
 	assert_bool(state.players[1].zone_has_cards(1)).is_true()
-	assert_int(input.count_calls("select_zone")).is_equal(0)
+	assert_int(input.count_calls("select_zones")).is_equal(0)
 
 	# Increase without any Crystals: silent.
 	var card2 := Real.instance("EBP02-054", 1)
@@ -464,7 +491,7 @@ func test_ebp02_054_no_destroy_on_rage_decrease_or_without_crystals() -> void:
 	var handler2: EffectHandler = s2["effect_handler"]
 	await handler2.gain_rage(0, 1)
 	assert_bool(state2.players[1].zone_has_cards(1)).is_true()
-	assert_int(input2.count_calls("select_zone")).is_equal(0)
+	assert_int(input2.count_calls("select_zones")).is_equal(0)
 
 
 # --- EBP02-056: +20,000 TL w/ 3+ Crystals; extra end-phase advance per Crystals (own turn) ---
@@ -850,8 +877,9 @@ func test_ebp02_071_without_awakening_only_rank4_option_auto_resolves() -> void:
 	assert_int(input.count_calls("choose_option")).is_equal(0)
 	assert_bool(state.players[1].zone_has_cards(0)).is_false()
 	assert_bool(state.players[1].zone_has_cards(1)).is_true()
-	# Destroy 3 with only one legal target: only one zone prompt fires.
+	# Destroy 3 with only one legal target: falls back to one single-zone prompt.
 	assert_int(input.count_calls("select_zone")).is_equal(1)
+	assert_int(input.count_calls("select_zones")).is_equal(0)
 
 
 func test_ebp02_071_silent_with_no_targets() -> void:
@@ -869,6 +897,7 @@ func test_ebp02_071_silent_with_no_targets() -> void:
 	assert_bool(state.players[1].zone_has_cards(1)).is_true()
 	assert_int(input.count_calls("choose_option")).is_equal(0)
 	assert_int(input.count_calls("select_zone")).is_equal(0)
+	assert_int(input.count_calls("select_zones")).is_equal(0)
 
 
 # --- EBP02-074: gain 1 rage per opponent monster rank ---

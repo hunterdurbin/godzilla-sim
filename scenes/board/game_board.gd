@@ -1,3 +1,4 @@
+class_name GameBoard
 extends Control
 
 ## Main game controller. Orchestrates the UI, TurnManager, and both PlayerBoards.
@@ -17,7 +18,6 @@ var card_scene: PackedScene = preload("res://scenes/cards/Card.tscn")
 var replay_recorder: ReplayRecorder:
 	get: return _session.replay_recorder
 	set(v): _session.replay_recorder = v
-var _save_game_button: Button
 var _loaded_from_save: bool = false
 
 # Bot state (bot_player owned by GameSession; forwarding property)
@@ -31,19 +31,12 @@ var _bot_visibility_button: Button
 
 # Lobby-bot state (Play vs Bot While You Wait)
 var _is_lobby_bot: bool = false
-var _lobby_banner: Control = null
-var _lobby_banner_label: Label = null
-var _lobby_banner_start_msec: int = 0
 
 # In-flight action feedback (multiplayer client only)
 var _pending_indicator: Panel = null
 var _pending_indicator_label: Label = null
 var _action_submitted_ms: int = 0
 const PENDING_INDICATOR_STALL_MS: int = 3000  ## silence after a submit before we call the server unresponsive
-var _opponent_found_dialog: AcceptDialog = null
-var _opponent_found_timer: Timer = null
-var _opponent_found_remaining: int = 0
-var _opponent_found_handled: bool = false
 
 # Multiplayer state
 var is_multiplayer_game: bool = false
@@ -113,6 +106,12 @@ var _client_gradients_applied: bool:
 @onready var _selection: SelectionController = $SelectionController
 @onready var _mobile: MobileLayout = $MobileLayout
 @onready var _effect_stack: EffectStackPanel = $EffectStackPanel
+@onready var _sys_menu: SystemMenuController = $SystemMenuController
+@onready var _layout: BoardLayoutController = $BoardLayoutController
+@onready var _fx_highlight: EffectHighlightController = $EffectHighlightController
+@onready var _zoom_ctl: CardZoomController = $CardZoomController
+@onready var _lobby_bot: LobbyBotController = $LobbyBotController
+@onready var _nav: GamepadBoardNav = $GamepadBoardNav
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -162,6 +161,7 @@ var _pending_sound_events: PackedStringArray:
 @onready var btn_end_main: Button = $ActionPanel/Row2/EndMain
 @onready var btn_cancel: Button = $ActionPanel/Row0/Cancel
 @onready var btn_confirm: Button = $ActionPanel/Row0/Confirm
+@onready var confirm_glyph: ControllerGlyph = $ActionPanel/Row0/Confirm/ConfirmGlyph
 
 # Deck search UI references
 @onready var deck_search_overlay: DeckSearchOverlayUI = $DeckSearchOverlay
@@ -228,17 +228,6 @@ var _preview_bg: Panel
 var _preview_card: Control
 
 
-# Tracks the Card node that received the most recent effect-card highlight so
-# unhighlight can clear it by reference even if its card_data later mutates
-# (e.g. evolution stacks a new card via set_card_data_dict on the same node).
-var _highlighted_effect_card_node: Control = null
-
-# Tracks the pulsing attention highlight (hovered effect-prompt / stack row).
-# Separate from _highlighted_effect_card_node so the two visuals never stomp
-# each other's reset.
-var _attention_card_node: Control = null
-var _attention_discard_pid: int = -1
-
 # State tracking
 # Selection state — owned by SelectionController (forwarding properties for
 # the board _input path, mobile cluster, sync, and rematch reset)
@@ -271,6 +260,8 @@ var _zone_target_selecting: bool:
 	get: return _selection._zone_target_selecting
 var _zone_target_allow_skip: bool:
 	get: return _selection._zone_target_allow_skip
+var _zones_target_selecting: bool:
+	get: return _selection._zones_target_selecting
 var _strategy_target_selecting: bool:
 	get: return _selection._strategy_target_selecting
 var _choice_selecting: bool:
@@ -627,6 +618,8 @@ func _ready() -> void:
 	_leave_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	_leave_dialog.confirmed.connect(_on_main_menu_pressed)
 	add_child(_leave_dialog)
+	GamepadHelper.register_modal(_leave_dialog)
+	GamepadHelper.register_modal(end_game_panel, func() -> Control: return btn_rematch)
 
 	# Card hover preview panel (right side of screen)
 	_preview_container = Control.new()
@@ -798,45 +791,11 @@ func _on_bot_visibility_toggled(toggled_on: bool) -> void:
 
 
 func _setup_save_button() -> void:
-	_save_game_button = Button.new()
-	_save_game_button.text = tr("STR_GB_SAVE_GAME")
-	_save_game_button.custom_minimum_size = Vector2(120, 36)
-	_save_game_button.add_theme_font_size_override("font_size", 14)
-	_save_game_button.pressed.connect(_on_save_game_pressed)
-	add_child(_save_game_button)
-	# Position below concede button
-	_save_game_button.position = Vector2(10, 90)
+	_sys_menu._setup_save_button()
 
 
 func _on_save_game_pressed() -> void:
-	if not turn_manager or not turn_manager.game_state:
-		return
-	SfxManager.play("ui_click")
-	var mode_str: String
-	match NetworkManager.mode:
-		NetworkManager.Mode.SOLO: mode_str = "solo"
-		NetworkManager.Mode.SOLO_BOT: mode_str = "solo_bot"
-		_: mode_str = "solo"
-	var diff_str: String = BotConfig.Difficulty.keys()[NetworkManager.bot_difficulty] if is_bot_game else ""
-	var d_names: Array[String] = [
-		DecklistManager.get_player_deck_name(0),
-		DecklistManager.get_player_deck_name(1),
-	]
-	# Capture a seed from the current RNG state so loading this save produces
-	# deterministic bot behavior (the original seed is stale — RNG has advanced).
-	var save_seed: int = randi()
-	print("[Save] Capturing game_seed=%d for save file" % save_seed)
-	var data := GameSerializer.serialize_game_state(turn_manager.game_state, _first_player_id, mode_str, diff_str, d_names, save_seed)
-	var path := GameSerializer.save_game_to_file(data)
-	if not path.is_empty():
-		_save_game_button.text = tr("STR_GB_SAVED")
-		_save_game_button.disabled = true
-		# Re-enable after 2 seconds
-		get_tree().create_timer(2.0).timeout.connect(func():
-			if is_instance_valid(_save_game_button):
-				_save_game_button.text = tr("STR_GB_SAVE_GAME")
-				_save_game_button.disabled = false
-		)
+	_sys_menu._on_save_game_pressed()
 
 
 func _apply_gradients_and_sync() -> void:
@@ -866,164 +825,11 @@ func _rpc_cleanup_first_player() -> void:
 
 
 func _arrange_for_local_player() -> void:
-	if local_player_id != 1:
-		return
-
-	var board_column := $VBoxContainer/BoardArea/BoardColumn
-
-	# Swap hand spaces and boards: local (P2) to bottom, opponent (P1) to top
-	# Default order: P2HandSpace(0), P2Board(1), Divider(2), P1Board(3), P1HandSpace(4)
-	# Target order:  P1HandSpace(0), P1Board(1), Divider(2), P2Board(3), P2HandSpace(4)
-	var divider := board_column.get_node("Divider")
-	board_column.move_child(player1_hand_space, 0)
-	board_column.move_child(player1_board, 1)
-	board_column.move_child(divider, 2)
-	board_column.move_child(player2_board, 3)
-	board_column.move_child(player2_hand_space, 4)
-
-	# Toggle mirroring (P1 now at top needs mirroring, P2 at bottom doesn't)
-	player1_board.toggle_mirrored()
-	player2_board.toggle_mirrored()
-
-	# Swap turn tracker: local player (P2) to bottom, opponent (P1) to top
-	var tracker := $VBoxContainer/BoardArea/RightSpacer/TurnTracker
-	var children: Array[Node] = []
-	for child in tracker.get_children():
-		children.append(child)
-	var sep_idx := -1
-	for i in range(children.size()):
-		if children[i].name == "Separator":
-			sep_idx = i
-			break
-	# Reorder: P1 section, separator, P2 section
-	var new_order: Array[Node] = []
-	new_order.append_array(children.slice(sep_idx + 1))
-	new_order.append(children[sep_idx])
-	new_order.append_array(children.slice(0, sep_idx))
-	for i in range(new_order.size()):
-		tracker.move_child(new_order[i], i)
+	_layout._arrange_for_local_player()
 
 
 func _position_hands() -> void:
-	var local_hand: Node2D
-	var local_space: Control
-	var opponent_hand: Node2D
-	var opponent_space: Control
-
-	if local_player_id == 0:
-		local_hand = player1_hand
-		local_space = player1_hand_space
-		opponent_hand = player2_hand
-		opponent_space = player2_hand_space
-	else:
-		local_hand = player2_hand
-		local_space = player2_hand_space
-		opponent_hand = player1_hand
-		opponent_space = player1_hand_space
-
-	# On mobile the action panel is full-width at the bottom, so hand can be centered.
-	# On desktop, shift hand left to avoid the right-side action panel.
-	var hand_center_x: float = 0.5 if _is_mobile_layout else 0.35
-	var hand_width_pct: float = 0.92 if _is_mobile_layout else 0.95
-	# Cap mobile hand width so cards don't cover action buttons
-	const MOBILE_MAX_HAND_WIDTH := 700.0
-	var mobile_hand_expand := 120.0 # Smaller expand offset on mobile to avoid obscuring board
-
-	# On mobile, center hands on the viewport (scene) center.
-	var viewport_center_x := get_viewport().get_visible_rect().size.x / 2.0
-
-	# Local player hand: visible, centered in hand space
-	if local_space and local_hand:
-		var rect := local_space.get_global_rect()
-		var expand_offset := mobile_hand_expand if _is_mobile_layout else HAND_EXPAND_OFFSET
-		var y_offset := -expand_offset if _hand_expanded else 0.0
-		var center_x := viewport_center_x if _is_mobile_layout else rect.position.x + rect.size.x * hand_center_x
-		# Cards are positioned by top-left corner, so the visual center of the
-		# arc is shifted right by half a card width. Compensate on mobile.
-		if _is_mobile_layout and not local_hand.managed_cards.is_empty():
-			var c: Control = local_hand.managed_cards[0]
-			center_x -= c.size.x * c.scale.x / 2.0
-		local_hand.global_position = Vector2(center_x, rect.position.y + rect.size.y / 2.0 + y_offset)
-		var width := rect.size.x * hand_width_pct
-		if _is_mobile_layout:
-			width = minf(width, MOBILE_MAX_HAND_WIDTH)
-		local_hand.max_width = width
-		local_hand.arrange_cards(false)
-
-		# Position local hand button stack at the bottom, left of the max-width hand edge
-		if _is_mobile_layout and not local_hand.managed_cards.is_empty():
-			var hand_stack := $HandButtonStack as HBoxContainer
-			var stack_w := 150.0
-			var stack_h := 60.0
-			var cards_left: float = center_x - width / 2.0
-			hand_stack.anchor_left = 0.0
-			hand_stack.anchor_right = 0.0
-			hand_stack.anchor_top = 1.0
-			hand_stack.anchor_bottom = 1.0
-			var min_left := maxf(20.0, _mobile._safe_left + 4.0)
-			hand_stack.offset_left = maxf(min_left, cards_left - stack_w)
-			hand_stack.offset_right = hand_stack.offset_left + stack_w
-			var bot_pad := maxf(20.0, _mobile._safe_bottom + 4.0)
-			hand_stack.offset_top = - (stack_h + bot_pad - 4.0)
-			hand_stack.offset_bottom = - bot_pad
-
-			# Position board view toggle directly above the hand stack
-			if _mobile._mobile_view_toggle_btn:
-				var view_gap := 16.0
-				var view_w := 55.0
-				var view_h := 60.0
-				_mobile._mobile_view_toggle_btn.offset_left = hand_stack.offset_left
-				_mobile._mobile_view_toggle_btn.offset_right = hand_stack.offset_left + view_w
-				_mobile._mobile_view_toggle_btn.offset_bottom = hand_stack.offset_top - view_gap
-				_mobile._mobile_view_toggle_btn.offset_top = _mobile._mobile_view_toggle_btn.offset_bottom - view_h
-
-	# Opponent hand: mostly off-screen at top edge
-	if opponent_space and opponent_hand:
-		var rect := opponent_space.get_global_rect()
-		var center_x := viewport_center_x if _is_mobile_layout else rect.position.x + rect.size.x * hand_center_x
-		if _is_mobile_layout and not opponent_hand.managed_cards.is_empty():
-			var c: Control = opponent_hand.managed_cards[0]
-			center_x -= c.size.x * c.scale.x / 2.0
-		var opp_base_y := rect.position.y - OPPONENT_HAND_EXPAND_OFFSET
-		var opp_y_offset := OPPONENT_HAND_EXPAND_OFFSET if _opponent_hand_expanded else 0.0
-		opponent_hand.global_position = Vector2(center_x, opp_base_y + opp_y_offset)
-		var width := rect.size.x * hand_width_pct
-		if _is_mobile_layout:
-			width = minf(width, MOBILE_MAX_HAND_WIDTH)
-		opponent_hand.max_width = width
-		opponent_hand.arrange_cards(false)
-
-	# Position opponent hand button stack at top of screen, left of the max-width hand edge
-	if _is_mobile_layout and opponent_hand and not opponent_hand.managed_cards.is_empty():
-		var opp_stack := $OpponentHandButtonStack as HBoxContainer
-		var stack_w := 150.0
-		var stack_h := 60.0
-		var opp_width: float = opponent_hand.max_width
-		var opp_center_x := opponent_hand.global_position.x
-		var cards_left: float = opp_center_x - opp_width / 2.0
-		opp_stack.anchor_left = 0.0
-		opp_stack.anchor_right = 0.0
-		opp_stack.anchor_top = 0.0
-		opp_stack.anchor_bottom = 0.0
-		var opp_min_left := maxf(20.0, _mobile._safe_left + 4.0)
-		opp_stack.offset_left = maxf(opp_min_left, cards_left - stack_w)
-		opp_stack.offset_right = opp_stack.offset_left + stack_w
-		# Use generous minimum top padding to avoid iOS screen-edge gesture zone
-		# and to sit below the phase label
-		var top_pad := maxf(40.0, _mobile._safe_top + 24.0)
-		opp_stack.offset_top = top_pad
-		opp_stack.offset_bottom = top_pad + stack_h
-
-		# Bot visibility button below opponent hand stack
-		if _bot_visibility_button:
-			_bot_visibility_button.anchor_left = 0.0
-			_bot_visibility_button.anchor_right = 0.0
-			_bot_visibility_button.anchor_top = 0.0
-			_bot_visibility_button.anchor_bottom = 0.0
-			_bot_visibility_button.offset_left = opp_stack.offset_left
-			_bot_visibility_button.offset_right = opp_stack.offset_right
-			_bot_visibility_button.offset_top = top_pad + stack_h + 4.0
-			_bot_visibility_button.offset_bottom = top_pad + stack_h + 4.0 + 36.0
+	_layout._position_hands()
 
 
 func _notification(what: int) -> void:
@@ -1034,23 +840,7 @@ func _notification(what: int) -> void:
 
 
 func _fit_button_text(btn: Button, base_size: int = 18, min_size: int = 10) -> void:
-	if not _is_mobile_layout:
-		return
-	btn.clip_text = true
-	var font := btn.get_theme_font("font")
-	# Account for Godot's internal button padding (~16px) plus corner radius inset
-	var available_w := btn.size.x - 32.0
-	var font_size := base_size
-	while font_size > min_size:
-		var text_w := font.get_string_size(btn.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-		if text_w <= available_w:
-			break
-		font_size -= 1
-	btn.add_theme_font_size_override("font_size", font_size)
-
-
-## Apply a tab/handle style to a button on a screen edge.
-## edge_side: "left" = flush left edge, rounded right; "right" = flush right edge, rounded left.
+	_layout._fit_button_text(btn, base_size, min_size)
 
 
 static func _fmt_num(value: int) -> String:
@@ -1067,73 +857,8 @@ static func _fmt_num(value: int) -> String:
 
 
 func _apply_desktop_hand_button_stacks() -> void:
-	# Stack buttons vertically on desktop between the hand and action panel.
-	# Hide the HBoxContainers and reparent buttons to GameBoard for free positioning.
-	$HandButtonStack.visible = false
-	$OpponentHandButtonStack.visible = false
+	_layout._apply_desktop_hand_button_stacks()
 
-	var btn_w := 55.0
-	var btn_h := 32.0
-	var gap := 2.0
-	var right_margin := 300.0 # Action panel left edge is at -270
-
-	# Reparent to GameBoard so HBoxContainer can't override layout
-	hand_toggle_button.reparent(self )
-	sort_hand_button.reparent(self )
-	opponent_hand_toggle_button.reparent(self )
-	opponent_sort_hand_button.reparent(self )
-
-	# Reset minimum sizes from .tscn so offset-based sizing works
-	for btn: Button in [hand_toggle_button, sort_hand_button,
-			opponent_hand_toggle_button, opponent_sort_hand_button]:
-		btn.custom_minimum_size = Vector2.ZERO
-
-	# Local player — bottom-right, stacked vertically
-	for btn: Button in [hand_toggle_button, sort_hand_button]:
-		btn.anchor_left = 1.0
-		btn.anchor_right = 1.0
-		btn.anchor_top = 1.0
-		btn.anchor_bottom = 1.0
-	hand_toggle_button.offset_left = - (right_margin + btn_w)
-	hand_toggle_button.offset_right = - right_margin
-	hand_toggle_button.offset_bottom = - (btn_h + gap + 10.0)
-	hand_toggle_button.offset_top = hand_toggle_button.offset_bottom - btn_h
-	sort_hand_button.offset_left = - (right_margin + btn_w)
-	sort_hand_button.offset_right = - right_margin
-	sort_hand_button.offset_bottom = -10.0
-	sort_hand_button.offset_top = sort_hand_button.offset_bottom - btn_h
-
-	# Opponent — top-right, stacked vertically (hidden in multiplayer)
-	for btn: Button in [opponent_hand_toggle_button, opponent_sort_hand_button]:
-		btn.visible = not is_multiplayer_game
-		btn.anchor_left = 1.0
-		btn.anchor_right = 1.0
-		btn.anchor_top = 0.0
-		btn.anchor_bottom = 0.0
-	opponent_hand_toggle_button.offset_left = - (right_margin + btn_w)
-	opponent_hand_toggle_button.offset_right = - right_margin
-	opponent_hand_toggle_button.offset_top = 10.0
-	opponent_hand_toggle_button.offset_bottom = 10.0 + btn_h
-	opponent_sort_hand_button.offset_left = - (right_margin + btn_w)
-	opponent_sort_hand_button.offset_right = - right_margin
-	opponent_sort_hand_button.offset_top = 10.0 + btn_h + gap
-	opponent_sort_hand_button.offset_bottom = 10.0 + btn_h * 2 + gap
-
-	# Bot visibility button below sort button
-	if _bot_visibility_button:
-		_bot_visibility_button.anchor_left = 1.0
-		_bot_visibility_button.anchor_right = 1.0
-		_bot_visibility_button.anchor_top = 0.0
-		_bot_visibility_button.anchor_bottom = 0.0
-		var bot_top := 10.0 + btn_h * 2 + gap * 2
-		_bot_visibility_button.offset_left = - (right_margin + btn_w)
-		_bot_visibility_button.offset_right = - right_margin
-		_bot_visibility_button.offset_top = bot_top
-		_bot_visibility_button.offset_bottom = bot_top + btn_h
-		_bot_visibility_button.custom_minimum_size = Vector2.ZERO
-
-
-# --- State access helpers (work for both host and client) ---
 
 func _get_current_pid() -> int:
 	if turn_manager:
@@ -1420,93 +1145,43 @@ func _on_monster_countered(_player_id: int, _old_monster: Dictionary, _new_monst
 const _VOLUME_VALUE_KEYS := ["STR_VOL_OFF", "25%", "50%", "75%", "100%"]
 
 func _on_sound_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			GameSettings.sound_volume = (GameSettings.sound_volume + 1) % 5
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			GameSettings.sound_volume = (GameSettings.sound_volume + 4) % 5
-		else:
-			return
-		GameSettings.save()
-		_update_sound_button_text()
-		SfxManager.play("ui_click")
+	_sys_menu._on_sound_gui_input(event)
 
 
 func _on_sound_toggle_pressed() -> void:
-	GameSettings.sound_volume = (GameSettings.sound_volume + 1) % 5
-	GameSettings.save()
-	_update_sound_button_text()
+	_sys_menu._on_sound_toggle_pressed()
 
 
 func _update_sound_button_text() -> void:
-	var label: String = tr("STR_GB_SOUND_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.sound_volume]))
-	if btn_sound_toggle:
-		btn_sound_toggle.text = label
-	if _mobile._mobile_sound_button:
-		_mobile._mobile_sound_button.text = label
-
-
-# --- Music toggle ---
+	_sys_menu._update_sound_button_text()
 
 
 func _on_music_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			GameSettings.music_volume = (GameSettings.music_volume + 1) % 5
-		elif event.button_index == MOUSE_BUTTON_RIGHT:
-			GameSettings.music_volume = (GameSettings.music_volume + 4) % 5
-		else:
-			return
-		SfxManager.play("ui_click")
-		GameSettings.save()
-		MusicManager.set_volume(GameSettings.music_volume)
-		_update_music_button_text()
+	_sys_menu._on_music_gui_input(event)
 
 
 func _on_music_toggle_pressed() -> void:
-	GameSettings.music_volume = (GameSettings.music_volume + 1) % 5
-	GameSettings.save()
-	MusicManager.set_volume(GameSettings.music_volume)
-	_update_music_button_text()
+	_sys_menu._on_music_toggle_pressed()
 
 
 func _update_music_button_text() -> void:
-	var label: String = tr("STR_GB_MUSIC_FMT").replace("{VAL}", tr(_VOLUME_VALUE_KEYS[GameSettings.music_volume]))
-	if btn_music_toggle:
-		btn_music_toggle.text = label
-	if _mobile._mobile_music_button:
-		_mobile._mobile_music_button.text = label
+	_sys_menu._update_music_button_text()
 
-
-# --- Bug report ---
 
 func _on_bug_report_pressed() -> void:
-	var body := _build_bug_report_body()
-	var url := "https://github.com/hunterdurbin/godzilla-sim/issues/new?labels=bug&title=Bug+Report&body=" + body.uri_encode()
-	OS.shell_open(url)
+	_sys_menu._on_bug_report_pressed()
 
 
 func _build_bug_report_body() -> String:
-	return BugReport.build_body(self)
+	return _sys_menu._build_bug_report_body()
 
-
-# --- Export game log ---
 
 func _on_export_log_pressed() -> void:
-	SfxManager.play("ui_click")
-	var path := GameLogExport.export_log(_log_tokens)
-	if path.is_empty():
-		_log_chat.append_remote_entry("STR_LOG_EXPORT_FAILED")
-		return
-	# Local-only notification: append_remote_entry never enters the MP
-	# broadcast buffer, so the opponent's log is unaffected.
-	_log_chat.append_remote_entry(GameLog.log_exported(local_player_id, path.get_file()))
+	_sys_menu._on_export_log_pressed()
 
-
-# --- Concede / Main Menu ---
 
 func _on_concede_pressed() -> void:
-	_end_game.on_concede_pressed()
+	_sys_menu._on_concede_pressed()
 
 
 func _rpc_concede() -> void:
@@ -1514,32 +1189,7 @@ func _rpc_concede() -> void:
 
 
 func _on_main_menu_pressed() -> void:
-	_reconnect.hide_overlay()
-	# Lobby-bot mode: keep the relay alive and return to PublicLobby instead of MainMenu.
-	if _is_lobby_bot:
-		NetworkManager.exit_lobby_bot_game()
-		NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
-		return
-	if is_multiplayer_game:
-		var connected := multiplayer.multiplayer_peer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
-		if end_game_panel.visible:
-			# Game already over — notify rematch declined
-			if connected:
-				RpcLogger.log_send("rematch_declined", 0)
-				_sync._rpc_rematch_declined.rpc()
-		elif connected and turn_manager and not turn_manager.is_game_over:
-			# Mid-game exit counts as concession
-			if NetworkManager.is_host():
-				var loser_id := local_player_id
-				var winner_id := 1 - loser_id
-				turn_manager._on_game_over(winner_id, GameLog.concede_reason_key(loser_id))
-			else:
-				RpcLogger.log_send("concede", 0)
-				_sync._rpc_concede.rpc_id(NetworkManager.host_peer_id)
-		GameSettings.clear_reconnect_session()
-		NetworkManager.is_in_game = false
-		NetworkManager.disconnect_game()
-	NetworkManager.change_scene("res://scenes/ui/MainMenu.tscn")
+	_sys_menu._on_main_menu_pressed()
 
 
 func _on_rematch_pressed() -> void:
@@ -1777,6 +1427,17 @@ func _input(event: InputEvent) -> void:
 	# Dismiss overlays and skip optional prompts (priority order, topmost first)
 	# Uses ui_cancel (ESC on keyboard, B/Circle on controller)
 	if event.is_action_pressed("ui_cancel"):
+		# Bumper focus (LB log / RB tracker) returns the cursor first — the
+		# nav consumes B before the ladder can skip prompts or open dialogs.
+		if _nav and _nav.consume_cancel_for_bumper_return():
+			get_viewport().set_input_as_handled()
+			return
+		# Likewise a Select-toggle roam away from a mandatory choice: B
+		# returns the cursor to the choice instead of falling through (B ON
+		# the choice still hits the mandatory refusal below).
+		if _nav and _nav.consume_cancel_for_effects_return():
+			get_viewport().set_input_as_handled()
+			return
 		if card_zoom_overlay.visible:
 			card_zoom_overlay.hide_zoom()
 		elif deck_arrange_overlay.visible:
@@ -1794,12 +1455,16 @@ func _input(event: InputEvent) -> void:
 			zone_stack_view_overlay.try_close()
 		elif _minimize_chip.visible:
 			_restore_minimized_overlay()
+		elif _is_mobile_layout and _mobile.fab_expanded():
+			_collapse_fab_instant()
 		elif _choice_selecting:
 			pass # Mandatory — must pick an option
 		elif _hand_card_selecting and _hand_card_allow_skip:
 			_skip_hand_card_selection()
 		elif _zone_target_selecting and _zone_target_allow_skip:
 			_skip_zone_target()
+		elif _zones_target_selecting:
+			pass # Mandatory — up-to prompts decline via Confirm, not ESC
 		elif waiting_for_card_select or waiting_for_zone_select:
 			_clear_card_highlight()
 			_cancel_selection()
@@ -1809,7 +1474,9 @@ func _input(event: InputEvent) -> void:
 				_update_action_buttons(_client_playable.get("valid_actions", []))
 		elif _confirming_pass:
 			_cancel_pass_confirmation()
-		else:
+		elif not GamepadHelper.is_using_gamepad():
+			# Controller has no path to the leave dialog (it can't be pad-navigated);
+			# pad users leave via the on-screen Main Menu button instead.
 			_leave_dialog.popup_centered()
 		get_viewport().set_input_as_handled()
 		return
@@ -1992,60 +1659,25 @@ func _client_variable_bases(pid: int) -> Dictionary:
 
 
 func _update_hand_visibility(_active_player_id: int) -> void:
-	if is_multiplayer_game:
-		# Multiplayer: local player always face-up, opponent always face-down
-		if player1_board:
-			player1_board.set_hand_face_down(local_player_id != 0)
-		if player2_board:
-			player2_board.set_hand_face_down(local_player_id != 1)
-	elif is_bot_game:
-		# Bot mode: P1 (human) face-up, P2 (bot) respects visibility toggle
-		if player1_board:
-			player1_board.set_hand_face_down(false)
-		if player2_board:
-			player2_board.set_hand_face_down(not _bot_cards_visible)
-	else:
-		# Solo: both hands always face-up
-		if player1_board:
-			player1_board.set_hand_face_down(false)
-		if player2_board:
-			player2_board.set_hand_face_down(false)
-
-
-## Translate player.hand indices to managed_cards indices by matching card IDs
-
-
-## Find a card's index in player.hand by its unique ID
-
-
-# --- Drag-to-zone ---
-
-
-# --- Deck search UI ---
-
-# --- FAB (Floating Action Button) ---
-
-
-# --- FAB Icon Drawing ---
+	_layout._update_hand_visibility(_active_player_id)
 
 
 func _temporarily_collapse_hand() -> void:
-	_hand.temporarily_collapse_hand()
+	_layout._temporarily_collapse_hand()
 
 
 func _restore_expanded_hand() -> void:
-	_hand.restore_expanded_hand()
+	_layout._restore_expanded_hand()
 
 
 func _temporarily_collapse_opponent_hand() -> void:
-	_hand.temporarily_collapse_opponent_hand()
+	_layout._temporarily_collapse_opponent_hand()
 
 
 func _restore_expanded_opponent_hand() -> void:
-	_hand.restore_expanded_opponent_hand()
+	_layout._restore_expanded_opponent_hand()
 
 
-## Router view-board hook: stash the overlay so ShowCards can re-show it.
 func _on_overlay_view_board(overlay: Control) -> void:
 	# One minimized overlay at a time: re-show any previously stashed one.
 	if _view_board_source_overlay and _view_board_source_overlay != overlay:
@@ -2107,82 +1739,29 @@ func _clear_minimize_chip() -> void:
 
 
 func _on_effect_zone_highlighted(pid: int, zone_index: int) -> void:
-	if is_multiplayer_game and pid != local_player_id:
-		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == pid:
-				RpcLogger.log_send("effect_zone_highlighted", 8)
-				_sync._rpc_effect_zone_highlighted.rpc_id(peer_id, pid, zone_index)
-		return
-	_apply_zone_highlight(pid, zone_index, true)
+	_fx_highlight._on_effect_zone_highlighted(pid, zone_index)
 
 
 func _on_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
-	if is_multiplayer_game and pid != local_player_id:
-		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == pid:
-				RpcLogger.log_send("effect_zone_unhighlighted", 8)
-				_sync._rpc_effect_zone_unhighlighted.rpc_id(peer_id, pid, zone_index)
-		return
-	_apply_zone_highlight(pid, zone_index, false)
+	_fx_highlight._on_effect_zone_unhighlighted(pid, zone_index)
 
 
 func _apply_zone_highlight(pid: int, zone_index: int, highlighted: bool) -> void:
-	var board: Control = player1_board if pid == 0 else player2_board
-	if zone_index >= 0 and zone_index < board.zone_slots.size():
-		var slot: Slot = board.zone_slots[zone_index]
-		if slot and slot.held_card:
-			slot.held_card.modulate = Color(1.2, 1.2, 0.6, 1.0) if highlighted else Color.WHITE
+	_fx_highlight._apply_zone_highlight(pid, zone_index, highlighted)
 
-
-# --- Effect source card highlighting ---
 
 func _on_effect_card_highlighted(pid: int, card_id: String) -> void:
-	if is_multiplayer_game:
-		for peer_id in NetworkManager.peer_player_map:
-			if peer_id != multiplayer.get_unique_id():
-				RpcLogger.log_send("effect_card_highlighted", 4 + card_id.length())
-				_sync._rpc_effect_card_highlighted.rpc_id(peer_id, pid, card_id)
-	_apply_card_highlight(pid, card_id, true)
+	_fx_highlight._on_effect_card_highlighted(pid, card_id)
 
 
 func _on_effect_card_unhighlighted(pid: int, card_id: String) -> void:
-	if is_multiplayer_game:
-		for peer_id in NetworkManager.peer_player_map:
-			if peer_id != multiplayer.get_unique_id():
-				RpcLogger.log_send("effect_card_unhighlighted", 4 + card_id.length())
-				_sync._rpc_effect_card_unhighlighted.rpc_id(peer_id, pid, card_id)
-	_apply_card_highlight(pid, card_id, false)
+	_fx_highlight._on_effect_card_unhighlighted(pid, card_id)
 
 
 func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void:
-	if not highlighted:
-		# Reset by node reference rather than card_id — the held_card's card_data
-		# may have changed since highlight (e.g. evolution mutates the held node
-		# in place), so an id-based lookup can miss the original target.
-		if _highlighted_effect_card_node and is_instance_valid(_highlighted_effect_card_node):
-			_highlighted_effect_card_node.modulate = Color.WHITE
-		_highlighted_effect_card_node = null
-		return
-	var board: Control = player1_board if pid == 0 else player2_board
-	var color := Color(1.2, 1.2, 0.6, 1.0)
-	# Check zone slots (battle cards)
-	for slot in board.zone_slots:
-		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == card_id:
-			slot.held_card.modulate = color
-			_highlighted_effect_card_node = slot.held_card
-			return
-	# Check strategy slots
-	for slot in board.strategy_slots:
-		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == card_id:
-			slot.held_card.modulate = color
-			_highlighted_effect_card_node = slot.held_card
-			return
+	_fx_highlight._apply_card_highlight(pid, card_id, highlighted)
 
 
-# --- Prompt-driven chrome: tracker collapse + log dim ---
-
-## Collapse the turn tracker to its one-line chip while the choice prompt or
-## the effect-stack panel occupies the right edge.
 func _update_tracker_collapse() -> void:
 	_tracker.set_collapsed(_selection._choice_selecting or _effect_stack.has_rows())
 
@@ -2194,88 +1773,16 @@ func set_log_prompt_dim(active: bool) -> void:
 # --- Attention highlight (hovered effect-prompt / stack row) ---
 
 func set_card_attention(loc: Dictionary, on: bool) -> void:
-	## Pulse the attention border on the board card described by `loc`
-	## (StandbyResolver.card_location_ref shape). Turning it off with a
-	## non-empty loc only clears when that loc still matches the tracked
-	## target, so a stale mouse_exited from one row can't kill the highlight
-	## a newer row just turned on.
-	if not on:
-		if not loc.is_empty():
-			if str(loc.get("kind", "")) == "discard":
-				if _attention_discard_pid >= 0 and _attention_discard_pid != int(loc.get("player_id", -1)):
-					return
-			elif _attention_card_node and is_instance_valid(_attention_card_node):
-				var node := _resolve_attention_card(loc)
-				if node != null and node != _attention_card_node:
-					return
-		_clear_card_attention()
-		return
-
-	_clear_card_attention()
-	if loc.is_empty():
-		return
-	var pid: int = int(loc.get("player_id", -1))
-	if pid < 0 or pid > 1:
-		return
-	if str(loc.get("kind", "")) == "discard":
-		var board: Control = player1_board if pid == 0 else player2_board
-		board.highlight_discard_zone(true)
-		_attention_discard_pid = pid
-		return
-	var target := _resolve_attention_card(loc)
-	if target and target.has_method("set_attention_highlight"):
-		# Ownership color language: cyan for the viewer's own effects, purple
-		# for the opponent's (matches the stack panel's purple rows).
-		var border := Color(0.7, 0.4, 1.0) if pid != local_player_id else Color(0.25, 0.85, 1.0)
-		target.set_attention_highlight(true, border)
-		_attention_card_node = target
+	_fx_highlight.set_card_attention(loc, on)
 
 
 func _clear_card_attention() -> void:
-	if _attention_card_node and is_instance_valid(_attention_card_node):
-		_attention_card_node.set_attention_highlight(false)
-	_attention_card_node = null
-	if _attention_discard_pid >= 0:
-		var board: Control = player1_board if _attention_discard_pid == 0 else player2_board
-		board.highlight_discard_zone(false)
-		_attention_discard_pid = -1
+	_fx_highlight._clear_card_attention()
 
 
 func _resolve_attention_card(loc: Dictionary) -> Control:
-	## Resolve a card_location_ref to its on-board Card node, verifying the
-	## per-copy instance id and falling back to an id scan when the recorded
-	## index went stale (the card moved since the ref was built).
-	var pid: int = int(loc.get("player_id", -1))
-	if pid < 0 or pid > 1:
-		return null
-	var board: Control = player1_board if pid == 0 else player2_board
-	var index: int = int(loc.get("index", -1))
-	var instance_id: String = str(loc.get("instance_id", ""))
-	match str(loc.get("kind", "")):
-		"monster":
-			return board.monster_card
-		"zone":
-			if index >= 0 and index < board.zone_slots.size():
-				var slot: Slot = board.zone_slots[index]
-				if slot and slot.held_card and (instance_id.is_empty() or slot.held_card.card_data.get("id", "") == instance_id):
-					return slot.held_card
-		"strategy":
-			if index >= 0 and index < board.strategy_slots.size():
-				var strat_slot: Slot = board.strategy_slots[index]
-				if strat_slot and strat_slot.held_card and (instance_id.is_empty() or strat_slot.held_card.card_data.get("id", "") == instance_id):
-					return strat_slot.held_card
-	if instance_id.is_empty():
-		return null
-	for slot in board.zone_slots:
-		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == instance_id:
-			return slot.held_card
-	for slot in board.strategy_slots:
-		if slot and slot.held_card and slot.held_card.card_data.get("id", "") == instance_id:
-			return slot.held_card
-	return null
+	return _fx_highlight._resolve_attention_card(loc)
 
-
-# --- Discard view UI ---
 
 func _on_discard_clicked(pid: int) -> void:
 	var player := _get_player_state(pid)
@@ -2334,7 +1841,7 @@ func _stack_view_header(single_key: String, under_key: String, n: int, total: in
 
 
 func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
-	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting:
+	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _zones_target_selecting:
 		return
 	var player := _get_player_state(pid)
 	var zone_idx: int = zone_num - 1
@@ -2388,7 +1895,7 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 
 
 func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
-	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _strategy_target_selecting:
+	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _zones_target_selecting or _strategy_target_selecting:
 		return
 	var player := _get_player_state(pid)
 	if strategy_idx < 0 or strategy_idx >= player.strategy_zones.size():
@@ -2407,272 +1914,63 @@ func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
 
 
 func _on_card_long_press_zoom(card: Control) -> void:
-	if "card_data" in card and not card.card_data.is_empty():
-		var mod: int = card.get_play_cost_modifier() if card.has_method("get_play_cost_modifier") else 0
-		var power: int = card.get_power_preview() if card.has_method("get_power_preview") else 0
-		_show_card_zoom(card.card_data, mod, {}, power)
+	_zoom_ctl._on_card_long_press_zoom(card)
 
 
 func _on_hand_card_right_clicked(card: Control, hand_player_id: int) -> void:
-	if "card_data" in card and not card.card_data.is_empty():
-		var mod: int = card.get_play_cost_modifier() if card.has_method("get_play_cost_modifier") else 0
-		var power: int = card.get_power_preview() if card.has_method("get_power_preview") else 0
-		_show_card_zoom(card.card_data, mod, _hand_zoom_ctx(card.card_data, hand_player_id), power)
+	_zoom_ctl._on_hand_card_right_clicked(card, hand_player_id)
 
 
-## Zoom shim — display lives on CardZoomOverlayUI (router hook + several
-## long-press/right-click callers). Callers with board context pass zoom_ctx
-## ({player_id, location: "zone"|"monster"|"strategy"|"hand", index}); the
-## rest fall back to locating the exact copy by its per-copy instance id.
 func _show_card_zoom(card_data: Dictionary, play_cost_modifier: int = 0, zoom_ctx: Dictionary = {}, power_preview: int = 0) -> void:
-	if zoom_ctx.is_empty():
-		zoom_ctx = _infer_zoom_ctx(card_data)
-	var entries := _zoom_entries_for(zoom_ctx)
-	# Variable printed bases ("counter power / threat level X"): surface the
-	# resolved value as a badge on the zoomed card itself, not just as a
-	# panel row. CP rides the power-preview badge (0 = hidden sentinel).
-	var cp_base: int = ModifierBreakdown.variable_base(entries, "cp_var_base")
-	if power_preview == 0 and cp_base > 0:
-		power_preview = cp_base
-	card_zoom_overlay.show_card(card_data, play_cost_modifier, entries, power_preview,
-		ModifierBreakdown.variable_base(entries, "threat_var_base"))
+	_zoom_ctl._show_card_zoom(card_data, play_cost_modifier, zoom_ctx, power_preview)
 
 
-## PlayerState for zoom lookups that must not assume either mode is ready
-## (returns null instead of indexing an unpopulated client cache).
 func _zoom_player_state(pid: int) -> PlayerState:
-	if pid < 0 or pid > 1:
-		return null
-	if turn_manager and turn_manager.game_state:
-		return turn_manager.game_state.players[pid]
-	if pid < _client_players.size():
-		return _client_players[pid]
-	return null
+	return _zoom_ctl._zoom_player_state(pid)
 
 
 func _hand_zoom_ctx(card_data: Dictionary, hand_player_id: int) -> Dictionary:
-	var player := _zoom_player_state(hand_player_id)
-	if player == null:
-		return {}
-	var card_id: String = card_data.get("id", "")
-	for hi in range(player.hand.size()):
-		if player.hand[hi].get("id", "") == card_id:
-			return {"player_id": hand_player_id, "location": "hand", "index": hi}
-	return {}
+	return _zoom_ctl._hand_zoom_ctx(card_data, hand_player_id)
 
 
-## Locate the zoomed copy for context-free callers (overlay grids, gallery,
-## long-press). In-play locations are searched before hands: monster ids are
-## bare template ids, so an in-play hit must win over a same-template hand
-## copy. A miss means no modifiers apply to this exact copy (deck/discard/
-## gallery duplicates) and the sources panel stays hidden.
 func _infer_zoom_ctx(card_data: Dictionary) -> Dictionary:
-	var card_id: String = card_data.get("id", "")
-	if card_id.is_empty():
-		return {}
-	for pid in range(2):
-		var player := _zoom_player_state(pid)
-		if player == null:
-			continue
-		if player.current_monster.get("id", "") == card_id:
-			return {"player_id": pid, "location": "monster"}
-		for i in range(8):
-			if player.get_zone_top_card(i).get("id", "") == card_id:
-				return {"player_id": pid, "location": "zone", "index": i}
-		for si in range(player.strategy_zones.size()):
-			if player.strategy_zones[si].get("id", "") == card_id:
-				return {"player_id": pid, "location": "strategy", "index": si}
-	for pid in range(2):
-		var player := _zoom_player_state(pid)
-		if player == null:
-			continue
-		for hi in range(player.hand.size()):
-			if player.hand[hi].get("id", "") == card_id:
-				return {"player_id": pid, "location": "hand", "index": hi}
-	return {}
+	return _zoom_ctl._infer_zoom_ctx(card_data)
 
 
-## Modifier-panel row click: re-target the zoom onto the source card.
-## Prefer the actual in-play copy (its own modifiers then show via the
-## instance-id inference); fall back to the bare template for display.
 func _zoom_to_source(template_id: String) -> void:
-	for pid in range(2):
-		var player := _zoom_player_state(pid)
-		if player == null:
-			continue
-		var candidates: Array = [player.current_monster]
-		for i in range(8):
-			candidates.append(player.get_zone_top_card(i))
-		for sz_card in player.strategy_zones:
-			candidates.append(sz_card)
-		for card in candidates:
-			if not card.is_empty() and CardUtils.base_id(card) == template_id:
-				_show_card_zoom(card)
-				return
-	var template: Dictionary = CardData.get_card_by_id(template_id)
-	if not template.is_empty():
-		_show_card_zoom(template.duplicate(true))
+	_zoom_ctl._zoom_to_source(template_id)
 
 
-## Resolve a zoom context to modifier-source entries. Host/solo builds them
-## on demand from the effect handler; clients read the breakdowns packed
-## into the state broadcast (mirrors the threat_display host/client split).
 func _zoom_entries_for(zoom_ctx: Dictionary) -> Array:
-	if zoom_ctx.is_empty():
-		return []
-	var pid: int = zoom_ctx.get("player_id", -1)
-	var location: String = zoom_ctx.get("location", "")
-	var index: int = zoom_ctx.get("index", -1)
-	var raw: Array
-	if turn_manager and turn_manager.effect_handler:
-		raw = _host_zoom_entries(pid, location, index)
-	else:
-		raw = ModifierBreakdown.collect(_session.client_modifier_breakdowns, pid, location, index)
-	# Tag opponent-controlled sources for display (duplicate — the client
-	# entries live in the synced cache and must not be mutated).
-	var out: Array = []
-	for e in raw:
-		var tagged: Dictionary = e.duplicate()
-		var owner_pid: int = int(e.get("owner", -1))
-		tagged["opp"] = owner_pid >= 0 and owner_pid != pid
-		out.append(tagged)
-	_front_load_variable_base(out)
-	return out
+	return _zoom_ctl._zoom_entries_for(zoom_ctx)
 
 
-## Move a variable-base entry (resolved printed "X") to the front so it reads
-## as the base line above the modifiers. Cards without a variable base get no
-## base row — their printed stat is already on the card art.
 func _front_load_variable_base(out: Array) -> void:
-	for i in range(out.size()):
-		var stat: String = str(out[i].get("stat", ""))
-		if stat == "cp_var_base" or stat == "threat_var_base":
-			if i > 0:
-				out.insert(0, out.pop_at(i))
-			return
+	_zoom_ctl._front_load_variable_base(out)
 
 
 func _host_zoom_entries(pid: int, location: String, index: int) -> Array:
-	var eh: EffectHandler = turn_manager.effect_handler
-	var player: PlayerState = turn_manager.game_state.players[pid]
-	var out: Array = []
-	match location:
-		"zone":
-			if index >= 0 and index < 8:
-				out.append_array(eh.get_zone_cp_breakdown(pid)[index])
-				out.append_array(eh.get_field_rank_breakdown(pid)[index])
-		"monster":
-			ModifierBreakdown.append(out, "cp", eh.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
-			out.append_array(eh.get_threat_level_breakdown(pid))
-		"strategy":
-			var mods: Array = eh.get_strategy_cp_modifiers(pid)
-			if index >= 0 and index < mods.size() and index < player.strategy_zones.size():
-				ModifierBreakdown.append(out, "cp", int(mods[index]), player.strategy_zones[index], -1, pid, "strategy")
-		"hand":
-			if index >= 0 and index < player.hand.size():
-				out = ModifierBreakdown.hand_entries(eh, pid, player.hand[index])
-	return out
+	return _zoom_ctl._host_zoom_entries(pid, location, index)
 
 
-## Overlay on_hidden hook: reset all slot input state so no timers or
-## pending clicks carry over.
 func _on_card_zoom_hidden() -> void:
-	for board in [player1_board, player2_board]:
-		for slot in board.zone_slots:
-			slot.reset_input_state()
+	_zoom_ctl._on_card_zoom_hidden()
 
-# --- Card hover preview ---
 
 func _show_card_preview(data: Dictionary, play_cost_modifier: int = 0, power_preview: int = 0) -> void:
-	if _is_mobile_layout:
-		return # Mobile uses tap-to-zoom instead of hover preview
-	if data.is_empty():
-		return
-	_preview_card.set_card_data_dict(data)
-	if _preview_card.has_method("set_play_cost_modifier"):
-		_preview_card.set_play_cost_modifier(play_cost_modifier)
-	# Variable printed bases: slot hovers emit no power value, so locate the
-	# hovered copy and pull the resolved X from its breakdown entries. -1
-	# threat clears the persistent preview card's badge between hovers.
-	var entries := _zoom_entries_for(_infer_zoom_ctx(data))
-	var cp_base: int = ModifierBreakdown.variable_base(entries, "cp_var_base")
-	if power_preview == 0 and cp_base > 0:
-		power_preview = cp_base
-	if _preview_card.has_method("set_power_preview"):
-		_preview_card.set_power_preview(power_preview)
-	if _preview_card.has_method("set_threat_preview"):
-		_preview_card.set_threat_preview(ModifierBreakdown.variable_base(entries, "threat_var_base"))
-	var is_strategy: bool = data.get("card_type", -1) == CardEnums.CardType.STRATEGY
-	if is_strategy:
-		_show_strategy_preview()
-	else:
-		_show_normal_preview()
-	# Re-orient the badge after preview rotation/size was applied above.
-	if _preview_card.has_method("update_play_cost_badge_layout"):
-		_preview_card.update_play_cost_badge_layout()
+	_zoom_ctl._show_card_preview(data, play_cost_modifier, power_preview)
 
 
 func _show_normal_preview() -> void:
-	# Position container at top-right for normal cards
-	_preview_container.anchor_left = 0.75
-	_preview_container.anchor_right = 0.995
-	_preview_container.anchor_top = 0.05
-	_preview_container.anchor_bottom = 0.75
-	# Fit card (5:7 aspect) inside container while preserving ratio
-	var container_size := _preview_container.size
-	var card_ratio := 5.0 / 7.0
-	var card_w := container_size.x
-	var card_h := card_w / card_ratio
-	if card_h > container_size.y:
-		card_h = container_size.y
-		card_w = card_h * card_ratio
-	var card_pos := Vector2((container_size.x - card_w) / 2.0, (container_size.y - card_h) / 2.0)
-	var padding := 6.0
-	_preview_bg.position = card_pos - Vector2(padding, padding)
-	_preview_bg.size = Vector2(card_w, card_h) + Vector2(padding * 2, padding * 2)
-	_preview_card.size = Vector2(card_w, card_h)
-	_preview_card.position = card_pos
-	_preview_card.pivot_offset = Vector2(card_w, card_h) / 2.0
-	_preview_card.scale = Vector2.ONE
-	_preview_card.rotation = 0.0
-	_preview_container.visible = true
+	_zoom_ctl._show_normal_preview()
 
 
 func _show_strategy_preview() -> void:
-	# Position container at right edge, between opponent board and player hand
-	_preview_container.anchor_left = 0.6
-	_preview_container.anchor_right = 1.0
-	_preview_container.anchor_top = 0.47
-	_preview_container.anchor_bottom = 0.88
-	var container_size := _preview_container.size
-	var card_ratio := 5.0 / 7.0
-	# When rotated 90 CCW, visual width = card_h and visual height = card_w
-	# Fit so the rotated card fills the container
-	var visual_h := container_size.y
-	var card_w := visual_h # un-rotated height becomes visual height
-	var card_h := card_w / card_ratio # un-rotated width becomes visual width
-	if card_h > container_size.x:
-		card_h = container_size.x
-		card_w = card_h * card_ratio
-		visual_h = card_w
-	var visual_w := card_h
-	var card_pos := Vector2(
-		container_size.x - visual_w,
-		(container_size.y - visual_h) / 2.0
-	)
-	_preview_card.size = Vector2(card_w, card_h)
-	_preview_card.pivot_offset = Vector2(card_w, card_h) / 2.0
-	_preview_card.rotation = - PI / 2.0
-	_preview_card.scale = Vector2.ONE
-	_preview_card.position = card_pos + Vector2((visual_w - card_w) / 2.0, (visual_h - card_h) / 2.0)
-	var padding := 6.0
-	_preview_bg.position = card_pos - Vector2(padding, padding)
-	_preview_bg.size = Vector2(visual_w, visual_h) + Vector2(padding * 2, padding * 2)
-	_preview_container.visible = true
+	_zoom_ctl._show_strategy_preview()
 
 
 func _hide_card_preview() -> void:
-	_preview_container.visible = false
+	_zoom_ctl._hide_card_preview()
 
 
 func _on_log_meta_hover_started(meta: Variant) -> void:
@@ -2950,6 +2248,20 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 	_selection._show_zone_target_selection(local_player_id, target_player_id, valid_zones, prompt, allow_skip, card_id, source_id)
 
 
+## Host -> Client: multi-zone target request (player must choose zones + confirm)
+func _rpc_zones_target_requested(target_player_id: int, zones_json: String, count: int, up_to: bool, prompt: String, source_id: String = "") -> void:
+	RpcLogger.log_receive("zones_target_requested", 4 + zones_json.length() + prompt.length() + 2)
+	if NetworkManager.is_host():
+		return
+	if _client_current_player_id != local_player_id:
+		SfxManager.play("action_required")
+	var parsed: Array = JSON.parse_string(zones_json)
+	var valid_zones: Array[int] = []
+	for v in parsed:
+		valid_zones.append(int(v))
+	_selection._show_zones_target_selection(local_player_id, target_player_id, valid_zones, count, up_to, prompt, source_id)
+
+
 ## Host -> Client: strategy target request (player must choose a strategy zone)
 func _rpc_strategy_target_requested(target_player_id: int, indices_json: String, prompt: String, source_id: String = "") -> void:
 	RpcLogger.log_receive("strategy_target_requested", 4 + indices_json.length() + prompt.length())
@@ -3099,137 +2411,56 @@ func _upload_stats(winner_id: int, reason: String, is_disconnect: bool) -> void:
 # --- Play vs Bot While Waiting (lobby-bot mode) ---
 
 func _setup_lobby_bot_ui() -> void:
-	_lobby_banner_start_msec = Time.get_ticks_msec()
-	# Park the banner under the chat row inside the log panel so cards/board
-	# elements never cover it.
-	var log_vbox: VBoxContainer = $LogPanel/LogVBox
-	var hbox := HBoxContainer.new()
-	hbox.name = "LobbyWaitingBanner"
-	hbox.add_theme_constant_override("separation", 8)
-
-	_lobby_banner_label = Label.new()
-	_lobby_banner_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_lobby_banner_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_lobby_banner_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_lobby_banner_label.add_theme_font_size_override("font_size", 11)
-	_lobby_banner_label.add_theme_color_override("font_color", Color(0.9, 0.6, 0.3, 1))
-	hbox.add_child(_lobby_banner_label)
-
-	var return_btn := Button.new()
-	return_btn.text = tr("STR_GB_RETURN_TO_LOBBY")
-	return_btn.add_theme_font_size_override("font_size", 10)
-	return_btn.pressed.connect(_on_lobby_banner_return_pressed)
-	hbox.add_child(return_btn)
-
-	log_vbox.add_child(hbox)
-	_lobby_banner = hbox
-	_update_lobby_banner_label()
-
-	NetworkManager.player_connected.connect(_on_lobby_opponent_connected)
-	NetworkManager.player_disconnected.connect(_on_lobby_opponent_disconnected)
-	tree_exiting.connect(_disconnect_lobby_bot_signals)
+	_lobby_bot._setup_lobby_bot_ui()
 
 
 func _disconnect_lobby_bot_signals() -> void:
-	if NetworkManager.player_connected.is_connected(_on_lobby_opponent_connected):
-		NetworkManager.player_connected.disconnect(_on_lobby_opponent_connected)
-	if NetworkManager.player_disconnected.is_connected(_on_lobby_opponent_disconnected):
-		NetworkManager.player_disconnected.disconnect(_on_lobby_opponent_disconnected)
+	_lobby_bot._disconnect_lobby_bot_signals()
 
 
 func _on_lobby_opponent_disconnected(_peer_id: int) -> void:
-	# Opponent gave up while we kept playing bot. Reset so a future joiner re-triggers the dialog.
-	_opponent_found_handled = false
-	_cleanup_opponent_found_dialog()
+	_lobby_bot._on_lobby_opponent_disconnected(_peer_id)
 
 
 func _process_lobby_banner_tick() -> void:
-	if _is_lobby_bot and is_instance_valid(_lobby_banner_label):
-		_update_lobby_banner_label()
+	_lobby_bot._process_lobby_banner_tick()
 
 
 func _update_lobby_banner_label() -> void:
-	var elapsed: int = int((Time.get_ticks_msec() - _lobby_banner_start_msec) / 1000.0)
-	_lobby_banner_label.text = tr("STR_GB_LOBBY_WAITING_BANNER_FMT") % [int(elapsed / 60.0), elapsed % 60]
+	_lobby_bot._update_lobby_banner_label()
 
 
 func _on_lobby_banner_return_pressed() -> void:
-	SfxManager.play("ui_click")
-	NetworkManager.exit_lobby_bot_game()
-	NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
+	_lobby_bot._on_lobby_banner_return_pressed()
 
 
 func _on_lobby_opponent_connected(_peer_id: int) -> void:
-	if not _is_lobby_bot or _opponent_found_handled:
-		return
-	_opponent_found_handled = true
-	_show_opponent_found_dialog()
+	_lobby_bot._on_lobby_opponent_connected(_peer_id)
 
 
 func _show_opponent_found_dialog() -> void:
-	SfxManager.play("action_required")
-	_opponent_found_dialog = AcceptDialog.new()
-	_opponent_found_dialog.title = tr("STR_GB_OPPONENT_FOUND_TITLE")
-	_opponent_found_dialog.dialog_text = tr("STR_GB_OPPONENT_FOUND_BODY")
-	_opponent_found_dialog.get_ok_button().text = tr("STR_GB_OPPONENT_FOUND_START")
-	_opponent_found_dialog.add_button(tr("STR_GB_OPPONENT_FOUND_KEEP_BOT"), false, "keep_bot")
-	_opponent_found_dialog.confirmed.connect(_on_opponent_found_start)
-	_opponent_found_dialog.custom_action.connect(_on_opponent_found_custom_action)
-	add_child(_opponent_found_dialog)
-	_opponent_found_dialog.popup_centered()
-
-	_opponent_found_remaining = 20
-	_opponent_found_timer = Timer.new()
-	_opponent_found_timer.wait_time = 1.0
-	_opponent_found_timer.one_shot = false
-	_opponent_found_timer.timeout.connect(_on_opponent_found_timer_tick)
-	add_child(_opponent_found_timer)
-	_opponent_found_timer.start()
-	_update_opponent_found_countdown()
+	_lobby_bot._show_opponent_found_dialog()
 
 
 func _on_opponent_found_timer_tick() -> void:
-	_opponent_found_remaining -= 1
-	if _opponent_found_remaining <= 0:
-		_on_opponent_found_start()
-		return
-	_update_opponent_found_countdown()
+	_lobby_bot._on_opponent_found_timer_tick()
 
 
 func _update_opponent_found_countdown() -> void:
-	if not is_instance_valid(_opponent_found_dialog):
-		return
-	_opponent_found_dialog.dialog_text = "%s\n\n%s" % [
-		tr("STR_GB_OPPONENT_FOUND_BODY"),
-		tr("STR_GB_OPPONENT_FOUND_AUTO_FMT") % _opponent_found_remaining,
-	]
+	_lobby_bot._update_opponent_found_countdown()
 
 
 func _on_opponent_found_start() -> void:
-	_cleanup_opponent_found_dialog()
-	NetworkManager.exit_lobby_bot_game()
-	NetworkManager.change_scene("res://scenes/ui/PublicLobby.tscn")
+	_lobby_bot._on_opponent_found_start()
 
 
 func _on_opponent_found_custom_action(action: StringName) -> void:
-	if action == "keep_bot":
-		_cleanup_opponent_found_dialog()
-		# Tell the joined client we're declining so they can drop and find another lobby
-		# rather than sitting indefinitely on a "Waiting for game to start" screen.
-		NetworkManager.notify_match_declined()
+	_lobby_bot._on_opponent_found_custom_action(action)
 
 
 func _cleanup_opponent_found_dialog() -> void:
-	if is_instance_valid(_opponent_found_timer):
-		_opponent_found_timer.stop()
-		_opponent_found_timer.queue_free()
-		_opponent_found_timer = null
-	if is_instance_valid(_opponent_found_dialog):
-		_opponent_found_dialog.queue_free()
-		_opponent_found_dialog = null
+	_lobby_bot._cleanup_opponent_found_dialog()
 
-
-# --- In-flight action indicator (multiplayer client) ---
 
 func _setup_pending_indicator() -> void:
 	_pending_indicator = Panel.new()
