@@ -10,6 +10,9 @@ finish-args:
   - --socket=wayland
   - --socket=fallback-x11
   - --device=dri
+  # Gamepads: without this the sandbox hides /dev/input and Godot's joypad
+  # backend sees no controllers at all (incl. Steam Input's virtual gamepad).
+  - --device=all
   - --socket=pulseaudio
   - --share=network
 

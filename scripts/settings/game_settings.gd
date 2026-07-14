@@ -98,6 +98,13 @@ const RECONNECT_TIMEOUT_SEC: int = 90 * 60  # 90 minutes
 func _ready() -> void:
 	use_mobile_layout = OS.get_name() in ["Android", "iOS"] or OS.has_feature("mobile")
 	_load()
+	# SteamOS (Steam Deck etc.) sets SteamOS=1; go fullscreen and fill the 16:10 panel.
+	# Godot's built-in display flags (--windowed/--fullscreen/--maximized/--resolution/
+	# --position) take precedence when the player passes one explicitly.
+	if OS.get_environment("SteamOS") == "1" and DisplayServer.get_name() != "headless":
+		get_tree().root.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
+		if not _has_explicit_display_args():
+			DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 	# Apply persisted locale immediately if chosen; otherwise LoadingScreen
 	# prompts the user, then calls set_locale().
 	if not locale.is_empty():
@@ -105,6 +112,46 @@ func _ready() -> void:
 	if player_name.is_empty():
 		player_name = "Player%06d" % (randi() % 1000000)
 		_save()
+
+
+func _has_explicit_display_args() -> bool:
+	# Engine display flags are consumed before OS.get_cmdline_args() sees them,
+	# so read the raw argv too. /proc only exists on Linux — which is the only
+	# platform this guard runs on (SteamOS).
+	var argv := PackedStringArray(OS.get_cmdline_args())
+	argv.append_array(_raw_process_argv())
+	return contains_display_flag(argv)
+
+
+static func contains_display_flag(argv: PackedStringArray) -> bool:
+	var display_flags: Array[String] = [
+		"-f", "--fullscreen", "-w", "--windowed", "-m", "--maximized",
+		"--resolution", "--position",
+	]
+	for arg in argv:
+		if arg in display_flags:
+			return true
+	return false
+
+
+func _raw_process_argv() -> PackedStringArray:
+	var file := FileAccess.open("/proc/self/cmdline", FileAccess.READ)
+	if file == null:
+		return PackedStringArray()
+	return parse_null_separated_argv(file.get_buffer(file.get_length()))
+
+
+static func parse_null_separated_argv(raw: PackedByteArray) -> PackedStringArray:
+	var argv := PackedStringArray()
+	var start := 0
+	for i in raw.size():
+		if raw[i] == 0:
+			if i > start:
+				argv.append(raw.slice(start, i).get_string_from_utf8())
+			start = i + 1
+	if start < raw.size():
+		argv.append(raw.slice(start).get_string_from_utf8())
+	return argv
 
 
 func has_chosen_locale() -> bool:
