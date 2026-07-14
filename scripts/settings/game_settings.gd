@@ -248,6 +248,9 @@ func _load() -> void:
 	else:
 		music_volume = config.get_value("audio", "music_volume", 2)
 	bot_difficulty = config.get_value("bot", "difficulty", BotConfig.Difficulty.NORMAL)
+	if bot_difficulty == BotConfig.Difficulty.KAIJU:
+		# KAIJU is disabled in the UI (dormant); demote stale saved values.
+		bot_difficulty = BotConfig.Difficulty.HARD
 	bot_seed_text = config.get_value("bot", "seed_text", "")
 	bot_speed_value = config.get_value("bot", "speed_value", 0)
 	bot_playstyle_value = config.get_value("bot", "playstyle_value", 0)

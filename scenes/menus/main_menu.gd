@@ -346,7 +346,6 @@ func _show_bot_config_popup() -> void:
 		[tr("STR_MENU_DIFFICULTY_EASY"), BotConfig.Difficulty.EASY, Color(0.3, 0.8, 0.3)],
 		[tr("STR_MENU_DIFFICULTY_NORMAL"), BotConfig.Difficulty.NORMAL, Color(0.9, 0.7, 0.1)],
 		[tr("STR_MENU_DIFFICULTY_HARD"), BotConfig.Difficulty.HARD, Color(0.9, 0.3, 0.1)],
-		[tr("STR_MENU_DIFFICULTY_KAIJU"), BotConfig.Difficulty.KAIJU, Color(0.7, 0.3, 0.9)],
 	]
 	var diff_buttons: Array[Control] = []
 	for entry in difficulties:
