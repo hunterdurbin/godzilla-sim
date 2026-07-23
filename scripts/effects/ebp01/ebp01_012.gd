@@ -25,8 +25,16 @@ func bot_can_fulfill_on_phase_start(_owner: PlayerState, opponent: PlayerState, 
 	return opponent.monster_zone < 8
 
 
+func phase_start_applies(ctx: EffectContext, _phase: CardEnums.GamePhase) -> bool:
+	# Armed delayed trigger — only exists if this card invaded this turn.
+	# Safe to gate at collection: has_invaded_this_turn is set only by the
+	# main-phase invade action (invasion_resolver), so it cannot become true
+	# during the end-phase standby batch.
+	return ctx.owner.has_invaded_this_turn
+
+
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
-	if not ctx.owner.has_invaded_this_turn:
+	if not phase_start_applies(ctx, _phase):
 		return
 	if ctx.opponent.monster_zone < 8:
 		await ctx.effect_handler.advance_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone + 1)

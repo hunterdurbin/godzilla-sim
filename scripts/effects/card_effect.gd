@@ -133,12 +133,16 @@ func on_phase_start(_ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 
 
 func phase_start_applies(_ctx: EffectContext, _phase: CardEnums.GamePhase) -> bool:
-	## Collection-time gate for on_phase_start: return false when the trigger
-	## does not exist under current board state (e.g. EPR-016's "If you do,
-	## <Destroy> at the beginning of the end phase" only exists for a loaded
-	## copy), so the card never enters the standby batch or the pending
-	## effects / order-choice UI. Board-state reads only — event-shaped
-	## conditions belong in TRIGGER_FILTERS, effect logic in on_phase_start.
+	## Collection-time gate for on_phase_start — for ARMED DELAYED TRIGGERS
+	## ONLY ("If you do, … at the beginning of <phase>": e.g. EPR-016,
+	## EBP01-012). An unarmed copy's trigger does not exist, so it must not
+	## enter the standby batch / pending-effects UI. Do NOT gate ordinary
+	## conditions (awakening, board state, targets): those are deliberately
+	## checked in the body at resolution time, because an earlier pending
+	## effect in the same batch can make them true — a collection gate would
+	## wrongly drop the ability entirely. Only override when the arming event
+	## is completed and cannot occur during the current batch; see
+	## scripts/effects/README.md "Conditional phase-start triggers".
 	## Direct-called by the dispatcher on already-collected effects, so it is
 	## intentionally absent from generate_trigger_map.sh METHODS (like
 	## serialize_state).
