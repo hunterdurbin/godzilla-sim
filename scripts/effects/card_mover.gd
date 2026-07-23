@@ -187,6 +187,35 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 	return card
 
 
+func take_hand_card(player_id: int, filter: Callable, prompt: String, allow_skip: bool = false) -> Dictionary:
+	## Ask a player to choose a card from their hand matching filter.
+	## Unlike select_hand_card, the card is only removed from hand — it does NOT
+	## go to the discard pile and no discard triggers fire; the caller decides
+	## where it ends up (e.g. EPR-016 places it under itself).
+	## Returns the selected card, or empty dict if no valid cards or player skips.
+	var player := game_state.players[player_id]
+	var valid_indices: Array[int] = []
+	for i in range(player.hand.size()):
+		if filter.call(player.hand[i]):
+			valid_indices.append(i)
+
+	if valid_indices.is_empty():
+		return {}
+
+	_highlight_active_effect()
+	# Not redundant: SignalPlayerInput's override is a coroutine.
+	@warning_ignore("redundant_await")
+	var chosen_index: int = await input.select_hand_card(player_id, valid_indices, prompt, allow_skip)
+	_unhighlight_active_effect()
+
+	if chosen_index < 0 or chosen_index >= player.hand.size():
+		return {}
+
+	var card: Dictionary = player.hand.pop_at(chosen_index)
+	player.hand_changed.emit()
+	return card
+
+
 
 
 func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: Array[Dictionary], prompt: String, allow_skip: bool = true) -> Dictionary:

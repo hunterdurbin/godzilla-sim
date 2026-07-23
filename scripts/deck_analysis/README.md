@@ -153,6 +153,9 @@ triggers + `get_cards_under_top`/`get_zone_stack` reads in effect sources):
   under — modeled capped at **one under**, a documented undercount)
 - EBP04-043 (tucks an invasion-icon-2 strategy *from a strategy zone* at
   counter start — so strategy-unders + filled strategy slots ≤ 2)
+- EPR-016 (tucks a MECH/WEAPON/GODZILLA_THE_RIDE battle card *from hand* at
+  counter start; +5000 — modeled like discard: pool card, no slot cost. Its
+  end-phase self-destroy is irrelevant here: the counter happens first)
 
 Independent of a top's listed source, an under also qualifies via
 **evolution** (`_evolves_under`): a card whose `evolution_rank` /

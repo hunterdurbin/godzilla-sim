@@ -270,6 +270,7 @@ func test_destroys_all_in_monster_column(card_id: String,
 			["ESD01-016"],
 			["EPR-004"],
 			["EPR-005"],
+			["EPR-014"],
 		]) -> void:
 	# Own monster in zone 8 (idx 7) → opponent column is zones 3 and 8.
 	var inside: Array[int] = CardEffect.get_opponent_column_zones(7)

@@ -111,7 +111,8 @@ echo "$MISSING" | sort | while IFS='|' read -r card_number name ctype rank color
     if [ "$SET_ID" != "$CURRENT_SET" ]; then
         CURRENT_SET="$SET_ID"
         # Check if this is a new set not in the card set files
-        if grep -q "${SET_ID}_CARDS" "$CARD_DATA"; then
+        SET_FILE="$CARD_SETS_DIR/card_set_$(echo "$SET_ID" | tr '[:upper:]' '[:lower:]').gd"
+        if [ -f "$SET_FILE" ]; then
             echo ""
             echo "--- $SET_ID (existing set) ---"
         else
@@ -134,7 +135,7 @@ echo "Missing cards:         $MISSING_COUNT"
 
 # List new sets that need to be created
 NEW_SETS=$(echo "$MISSING" | cut -d'|' -f1 | cut -d'-' -f1 | sort -u | while read -r set_id; do
-    if ! grep -q "${set_id}_CARDS" "$CARD_DATA"; then
+    if [ ! -f "$CARD_SETS_DIR/card_set_$(echo "$set_id" | tr '[:upper:]' '[:lower:]').gd" ]; then
         echo "$set_id"
     fi
 done)
@@ -144,6 +145,6 @@ if [ -n "$NEW_SETS" ]; then
     echo "New sets to create in the card set files:"
     echo "$NEW_SETS" | while read -r set_id; do
         COUNT=$(echo "$MISSING" | grep "^${set_id}-" | wc -l | tr -d ' ')
-        echo "  - ${set_id}_CARDS ($COUNT cards)"
+        echo "  - card_set_$(echo "$set_id" | tr '[:upper:]' '[:lower:]').gd ($COUNT cards)"
     done
 fi
