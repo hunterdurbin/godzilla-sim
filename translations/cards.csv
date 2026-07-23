@@ -1009,6 +1009,13 @@ CARD_EPR-009_NAME,Chibi Godzilla,
 CARD_EPR-009_DESC,,
 CARD_EPR-010_NAME,Chibi Godzilla,
 CARD_EPR-010_DESC,,
+CARD_EPR-014_NAME,Anti-Gravity Beam,
+CARD_EPR-014_DESC,<Destroy> all of your opponent's battle cards in the same column as your monster card.,
+CARD_EPR-015_NAME,Godzilla(GODZILLA THE RIDE: GREAT CLASH),
+CARD_EPR-015_DESC,"If you have a card with <《GODZILLA THE RIDE》> in your discard pile, this card gains +5000 counter power.",
+CARD_EPR-016_NAME,KIJU Type 0 -G BREAKER-,
+CARD_EPR-016_DESC,"At the beginning of your counter phase, you may place 1 <《Mech》>, <《Weapon》>, or <《GODZILLA THE RIDE》> battle card from your hand under this card. If you do, <Destroy> this card at the beginning of the end phase.
+If there is a card under this card, this card gains +5000 counter power.",
 CARD_ESD01-001_NAME,Godzilla(2023),ゴジラ(2023)
 CARD_ESD01-001_DESC,,
 CARD_ESD01-002_NAME,Godzilla(2023),ゴジラ(2023)

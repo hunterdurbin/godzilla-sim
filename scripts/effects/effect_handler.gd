@@ -632,6 +632,10 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 	return await mover.select_hand_card(player_id, filter, prompt, allow_skip)
 
 
+func take_hand_card(player_id: int, filter: Callable, prompt: String, allow_skip: bool = false) -> Dictionary:
+	return await mover.take_hand_card(player_id, filter, prompt, allow_skip)
+
+
 func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: Array[Dictionary], prompt: String, allow_skip: bool = true) -> Dictionary:
 	return await mover.select_from_cards(player_id, options, all_visible, prompt, allow_skip)
 

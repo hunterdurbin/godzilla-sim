@@ -50,6 +50,8 @@ const TOKEN_SOURCES := {
 ## EBP03-051's per-under scaling is modeled capped at 1 (documented
 ## undercount). Sources:
 ##   discard  — the top's own trigger tucks a matching discard-pile card
+##   hand     — tucked from the owner's hand (modeled like discard: pool
+##              card, no slot cost)
 ##   play     — the under was played to the zone first, the top stacked on
 ##              it (stacks_on_play)
 ##   strategy — tucked from a strategy zone at counter-phase start, so it
@@ -64,6 +66,9 @@ const STACK_SOURCES := {
 	"EBP03-051": {"source": "play", "filter": "trait",
 			"trait": CardEnums.CardTrait.LITTLE_GODZILLA},
 	"EBP04-043": {"source": "strategy", "filter": "invasion_icon", "value": 2},
+	"EPR-016": {"source": "hand", "filter": "battle_traits_any",
+			"traits": [CardEnums.CardTrait.MECH, CardEnums.CardTrait.WEAPON,
+					CardEnums.CardTrait.GODZILLA_THE_RIDE]},
 }
 
 ## CardEffect virtuals that make a card's CP contribution effect-dependent;
@@ -1032,6 +1037,8 @@ func _under_eligible(source: Dictionary, card: Dictionary) -> bool:
 			return true
 		"trait":
 			return CardUtils.is_battle(card) and CardUtils.has_trait(card, source["trait"])
+		"battle_traits_any":
+			return CardUtils.is_battle(card) and CardUtils.has_any_trait(card, source["traits"])
 		"invasion_icon":
 			return card.get("card_type") == CardEnums.CardType.STRATEGY \
 					and card.get("invasion_icon", 0) == source["value"]

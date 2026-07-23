@@ -281,6 +281,19 @@ func test_cp_named_card_in_play(card_id: String, base_cp: int, required_name: St
 		.is_equal(base_cp)
 
 
+func test_cp_ride_card_in_discard_epr_015() -> void:
+	var card := Real.instance("EPR-015")
+	var state := States.make_state({"p0": {"zone_cards": {0: card}}})
+	state.players[0].discard_pile.append(
+		Cards.battle(2, 2000, "RIDE-1", [CardEnums.CardTrait.GODZILLA_THE_RIDE]))
+	var handler := _wire(state)
+
+	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(4000 + 5000)
+
+	state.players[0].discard_pile.pop_back()
+	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(4000)
+
+
 func test_cp_monsters_in_discard_ebp01_051() -> void:
 	var card := Real.instance("EBP01-051")
 	var state := States.make_state({"p0": {"zone_cards": {0: card}}})

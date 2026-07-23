@@ -23,7 +23,7 @@ const MODES: Array[Dictionary] = [
 		"card_pool": {
 			"include_sets": ["EBP01", "EBP02", "EBP03", "EBP04", "EFC01", "ESD01", "ESD02", "EPR", "ESC01"],
 			"include_cards": [],
-			"exclude_cards": ["EPR-004"],
+			"exclude_cards": ["EPR-004", "EPR-014"],
 			"restricted": ["EBP01-077"],
 			"choice_restricted": [["EBP02-003", "EBP03-035"]],
 		},

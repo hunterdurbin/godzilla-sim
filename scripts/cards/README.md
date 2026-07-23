@@ -17,10 +17,11 @@
 ## Card Dictionary schema (the important keys)
 
 Cards are plain Dictionaries, never Resources. Template keys include `id`
-(base id, e.g. `EBP04-067`), `name`, `description`, `type`, `color`, `rank`,
-`cp`, `traits`, `effect_script` (**`res://scripts/effects/…` — path-frozen**),
-`*_by_printing` variants, and mode/printing metadata. In-game copies get
-per-copy instance ids (`EBP04-067_0_3`) — compare with
+(base id, e.g. `EBP04-067`), `name`, `description`, `card_type`, `colors`,
+`rank`, `traits`, `counter_power` (battle), `threat_level` (monster),
+`invasion_icon`, `effect_script` (**`res://scripts/effects/…` —
+path-frozen**), `*_by_printing` variants, and mode/printing metadata.
+In-game copies get per-copy instance ids (`EBP04-067_0_3`) — compare with
 `CardUtils.base_id(card)`.
 
 Multiplayer JSON caveat: int enums arrive as floats on clients (deck-search
@@ -31,15 +32,22 @@ picks etc.) — re-map to the canonical dict by id, don't trust field types.
 1. Add the template dict to the right `sets/card_set_<set>.gd` (new set →
    new file + add it to `_SET_SCRIPTS` in `card_database.gd` and
    `CARD_SET_FILES` in `translations/generate_card_csv.py`).
-2. Write its effect script under `scripts/effects/<set>/` (see
+2. New trait? Append it to `CardTrait` in `card_enums.gd` (at the END — keeps
+   existing enum ints stable), add its `trait_to_key()` case, and add the
+   `STR_TRAIT_*` row to `translations/strings.csv`.
+3. Write its effect script under `scripts/effects/<set>/` (see
    `scripts/effects/README.md`) and set `effect_script` in the template.
-3. Regenerate trigger_map (pre-commit hook does it; never while a headless
+4. Check format legality in `game_mode_validator.gd` `MODES` pools: a new
+   set prefix must be added to each format's `include_sets`; a card missing
+   from one region's pool goes in that format's `exclude_cards` (e.g.
+   East-only promos are excluded in `rumble_west`).
+5. Regenerate trigger_map (pre-commit hook does it; never while a headless
    run is live).
-4. Cover it in `tests/unit/effects/cards/` (smoke picks it up automatically;
+6. Cover it in `tests/unit/effects/cards/` (smoke picks it up automatically;
    add cluster/bespoke coverage per `classification.md`).
-5. If translated, add `CARD_<id>_NAME`/`_DESC` rows —
-   `translations/generate_card_csv.py` regenerates `cards.csv` from
-   card_data + JP source files.
+7. Regenerate `cards.csv` via `translations/generate_card_csv.py` (pulls
+   EN name/description from card_data; JP comes from
+   `translations/ja_sources/` when a source file exists).
 
 ## External parsers (update if the set-file layout changes)
 
