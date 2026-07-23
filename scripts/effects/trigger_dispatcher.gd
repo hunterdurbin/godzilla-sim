@@ -449,8 +449,9 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 		var me := get_effect(player.current_monster)
 		if _passes_phase_filter(player.current_monster, method_name, player_id, phase):
 			var ctx := _build_context(player_id, player.current_monster)
-			var method: Callable = me.on_phase_start if is_start else me.on_phase_end
-			entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": method.bind(ctx, phase)})
+			if not is_start or me.phase_start_applies(ctx, phase):
+				var method: Callable = me.on_phase_start if is_start else me.on_phase_end
+				entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": method.bind(ctx, phase)})
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
@@ -459,8 +460,9 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 			var ze := get_effect(zone_card)
 			if _passes_phase_filter(zone_card, method_name, player_id, phase):
 				var ctx := _build_context(player_id, zone_card)
-				var method: Callable = ze.on_phase_start if is_start else ze.on_phase_end
-				entries.append({"player_id": player_id, "card_data": zone_card, "callback": method.bind(ctx, phase)})
+				if not is_start or ze.phase_start_applies(ctx, phase):
+					var method: Callable = ze.on_phase_start if is_start else ze.on_phase_end
+					entries.append({"player_id": player_id, "card_data": zone_card, "callback": method.bind(ctx, phase)})
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
@@ -468,8 +470,9 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 			var se := get_effect(sz_card)
 			if _passes_phase_filter(sz_card, method_name, player_id, phase):
 				var ctx := _build_context(player_id, sz_card)
-				var method: Callable = se.on_phase_start if is_start else se.on_phase_end
-				entries.append({"player_id": player_id, "card_data": sz_card, "callback": method.bind(ctx, phase)})
+				if not is_start or se.phase_start_applies(ctx, phase):
+					var method: Callable = se.on_phase_start if is_start else se.on_phase_end
+					entries.append({"player_id": player_id, "card_data": sz_card, "callback": method.bind(ctx, phase)})
 
 	return entries
 

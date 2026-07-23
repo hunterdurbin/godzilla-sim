@@ -132,6 +132,19 @@ func on_phase_start(_ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	pass
 
 
+func phase_start_applies(_ctx: EffectContext, _phase: CardEnums.GamePhase) -> bool:
+	## Collection-time gate for on_phase_start: return false when the trigger
+	## does not exist under current board state (e.g. EPR-016's "If you do,
+	## <Destroy> at the beginning of the end phase" only exists for a loaded
+	## copy), so the card never enters the standby batch or the pending
+	## effects / order-choice UI. Board-state reads only — event-shaped
+	## conditions belong in TRIGGER_FILTERS, effect logic in on_phase_start.
+	## Direct-called by the dispatcher on already-collected effects, so it is
+	## intentionally absent from generate_trigger_map.sh METHODS (like
+	## serialize_state).
+	return true
+
+
 func on_phase_end(_ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	## Called at the end of each phase on all active cards.
 	pass

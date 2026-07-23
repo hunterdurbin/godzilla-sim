@@ -11,12 +11,14 @@ extends CardEffect
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
-## Implementation notes: The end-phase self-destroy keys off "has a card under
-## this card" (stack size > 1) instead of a placed-this-turn member flag:
-## CardEffect instances are cached per script path and shared across copies
-## and players, so per-copy flags would leak between copies. The only way a
-## card ends up under this one is its own counter-phase placement earlier the
-## same turn, so the two readings coincide.
+## Implementation notes: "If you do, <Destroy>…" is per-copy state, but
+## CardEffect instances are cached per script path (shared across copies and
+## players), so the used-my-ability flag lives on the card dict itself
+## (per-copy, serialized/synced with the zone — same pattern as
+## played_from_effect), stamped with the turn number so a stale flag on a
+## copy destroyed before its end phase and later replayed is inert. Keying
+## off stack size instead would misfire if a future effect tucks cards under
+## other cards.
 
 
 const TRIGGER_FILTERS = {
@@ -25,9 +27,22 @@ const TRIGGER_FILTERS = {
 	"on_phase_start": {"own_turn": true},
 }
 
+## Card-dict key: turn number in which this copy tucked a card via its own
+## ability — the end-phase destroy trigger only exists while it matches.
+const _DESTROY_TURN_KEY := "pending_end_phase_destroy_turn"
+
 
 func get_bot_tags() -> Array[String]:
 	return ["boosts_cp"]
+
+
+func phase_start_applies(ctx: EffectContext, phase: CardEnums.GamePhase) -> bool:
+	## "If you do, <Destroy>…" — the end-phase trigger only exists for a copy
+	## whose ability tucked a card this turn; any other copy must not show up
+	## in the standby batch (pending-effects list / order-choice prompt).
+	if phase != CardEnums.GamePhase.END:
+		return true
+	return _used_ability_this_turn(ctx)
 
 
 func on_phase_start(ctx: EffectContext, phase: CardEnums.GamePhase) -> void:
@@ -56,13 +71,20 @@ func _offer_place_under(ctx: EffectContext) -> void:
 
 	if not selected.is_empty():
 		ctx.effect_handler.place_card_under_zone(ctx.owner, selected, zone_idx)
+		ctx.card_data[_DESTROY_TURN_KEY] = ctx.game_state.turn_number
+
+
+func _used_ability_this_turn(ctx: EffectContext) -> bool:
+	# int() coercion: card dicts may round-trip through JSON (multiplayer).
+	return int(ctx.card_data.get(_DESTROY_TURN_KEY, -1)) == ctx.game_state.turn_number
 
 
 func _destroy_if_loaded(ctx: EffectContext) -> void:
+	if not _used_ability_this_turn(ctx):
+		return
+	ctx.card_data.erase(_DESTROY_TURN_KEY)
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
-		return
-	if ctx.owner.get_zone_stack(zone_idx).size() <= 1:
 		return
 	await ctx.effect_handler.destroy_zones(ctx.owner, [zone_idx] as Array[int])
 
