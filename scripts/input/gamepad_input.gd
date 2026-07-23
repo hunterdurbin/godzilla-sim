@@ -64,6 +64,14 @@ var controller_type: String = "generic"
 var _map: Dictionary = {}
 ## Held nav directions: physical StringName -> seconds held (for repeat).
 var _nav_held: Dictionary = {}
+## Held rebindable actions: physical StringName -> logical StringName,
+## recorded at press time. Motion-bound actions (the triggers) have no edge
+## memory — a held axis restreams events (Steam Input: every frame) and each
+## one past the deadzone reports is_action_pressed() == true — so without
+## this a held trigger injects its pad_* action once per event. Recording
+## the logical at press time means a rebind mid-hold still releases the
+## action that was actually pressed.
+var _action_held: Dictionary = {}
 ## Rebind capture: while valid, the next capturable physical press calls this
 ## with the captured physical action instead of being translated.
 var _capture_cb: Callable = Callable()
@@ -156,6 +164,7 @@ func cancel_capture() -> void:
 func rebind(logical: StringName, physical: StringName) -> void:
 	if not _map.has(logical) or not GlyphDB.FILE_FOR_PHYSICAL.has(physical):
 		return
+	_flush_action_held()
 	var previous: StringName = _map[logical]
 	for other: StringName in _map:
 		if other != logical and _map[other] == physical:
@@ -166,6 +175,7 @@ func rebind(logical: StringName, physical: StringName) -> void:
 
 
 func reset_to_defaults() -> void:
+	_flush_action_held()
 	_map = GlyphDB.default_map()
 	GameSettings.controller_bindings = {}
 	GameSettings.controller_mapping_type = controller_type
@@ -204,6 +214,10 @@ func translate_event(event: InputEvent) -> void:
 	if not (event is InputEventJoypadButton or event is InputEventJoypadMotion):
 		return
 	_detect_controller_type()
+	# Releases run before every guard below — a release swallowed by the
+	# capture or text-editing early-returns would leave the injected pad_*
+	# action pressed in Input forever.
+	_release_held(event)
 	if _capture_cb.is_valid():
 		_handle_capture(event)
 		return
@@ -227,13 +241,13 @@ func translate_event(event: InputEvent) -> void:
 		(focus_owner as LineEdit).edit()
 		get_viewport().set_input_as_handled()
 		return
-	# Rebindable actions.
+	# Rebindable actions: edge-filtered — a motion-event stream past the
+	# deadzone injects exactly one press (releases handled in _release_held).
 	for logical: StringName in _map:
 		var physical: StringName = _map[logical]
-		if event.is_action_pressed(physical):
+		if event.is_action_pressed(physical) and not _action_held.has(physical):
+			_action_held[physical] = logical
 			_inject(logical, true)
-		elif event.is_action_released(physical):
-			_inject(logical, false)
 	# Fixed dpad navigation (stick handled in _process).
 	for physical: StringName in NAV_PHYSICAL:
 		if event.is_action_pressed(physical):
@@ -297,6 +311,32 @@ func _handle_capture(event: InputEvent) -> void:
 			return
 
 
+func _release_held(event: InputEvent) -> void:
+	for physical: StringName in _action_held.keys(): # keys() copy: safe erase
+		if event.is_action_released(physical):
+			_inject(_action_held[physical], false)
+			_action_held.erase(physical)
+
+
+## Release twins for every held rebindable action; mirrors the
+## set_stick_nav_suppressed flush pattern (a pressed-only synthetic action
+## stays held forever otherwise). Called wherever the matching release event
+## can no longer arrive (disconnect, focus loss) or the map changes under a
+## held button (rebind, reset, controller-type switch).
+func _flush_action_held() -> void:
+	for physical: StringName in _action_held:
+		_inject(_action_held[physical], false)
+	_action_held.clear()
+
+
+func _notification(what: int) -> void:
+	# Godot fires Input.release_pressed_events() on focus loss; flush so
+	# _action_held doesn't desync from Input and swallow the next press.
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT \
+			or what == NOTIFICATION_WM_WINDOW_FOCUS_OUT:
+		_flush_action_held()
+
+
 func _inject(logical: StringName, pressed: bool) -> void:
 	var ev := InputEventAction.new()
 	ev.action = logical
@@ -355,6 +395,8 @@ func _is_text_editing() -> bool:
 
 
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
+	# A pad unplugged mid-hold never sends its release event.
+	_flush_action_held()
 	_detect_controller_type()
 	_log_joypads()
 
@@ -375,6 +417,7 @@ func _detect_controller_type() -> void:
 ## Saved bindings are per controller type (spire behavior): apply them only
 ## when they were saved for the currently detected type.
 func _load_bindings() -> void:
+	_flush_action_held()
 	_map = GlyphDB.default_map()
 	if GameSettings.controller_mapping_type != controller_type:
 		return

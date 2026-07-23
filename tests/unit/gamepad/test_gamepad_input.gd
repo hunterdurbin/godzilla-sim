@@ -107,3 +107,136 @@ func test_ui_mirror_covers_nav_and_confirm_cancel() -> void:
 	for direction in ["up", "down", "left", "right"]:
 		assert_that(mirror[StringName("pad_nav_" + direction)]) \
 			.is_equal(StringName("ui_" + direction))
+
+
+# --- Rebindable-action edge tracking -----------------------------------------
+# The triggers are bound to analog axes (project.godot axes 4/5): a held
+# trigger restreams InputEventJoypadMotion (Steam Input: every frame) and each
+# event past the deadzone reports is_action_pressed() == true. Without edge
+# tracking, GamepadInput injected pad_play_card_rage once per event — on Steam
+# Deck one rage discard per frame until the hand was empty.
+
+
+## Records _inject calls instead of touching the real Input singleton.
+class RecordingPad extends "res://scripts/input/gamepad_input.gd":
+	var injections: Array = []
+
+	func _inject(logical: StringName, pressed: bool) -> void:
+		injections.append([logical, pressed])
+
+
+func _recording_pad() -> RecordingPad:
+	var pad: RecordingPad = auto_free(RecordingPad.new())
+	add_child(pad)
+	return pad
+
+
+func _motion(axis: JoyAxis, value: float) -> InputEventJoypadMotion:
+	var ev := InputEventJoypadMotion.new()
+	ev.axis = axis
+	ev.axis_value = value
+	return ev
+
+
+func _button(index: JoyButton, pressed: bool) -> InputEventJoypadButton:
+	var ev := InputEventJoypadButton.new()
+	ev.button_index = index
+	ev.pressed = pressed
+	return ev
+
+
+func test_held_trigger_stream_injects_single_press() -> void:
+	var pad := _recording_pad()
+	for i in 5:
+		pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 1.0))
+	assert_that(pad.injections).is_equal([[&"pad_play_card_rage", true]])
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 0.0))
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 0.0))
+	assert_that(pad.injections).is_equal([
+		[&"pad_play_card_rage", true], [&"pad_play_card_rage", false]])
+
+
+func test_trigger_wobble_above_deadzone_injects_single_press() -> void:
+	var pad := _recording_pad()
+	for value in [1.0, 0.9, 1.0]:
+		pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, value))
+	assert_that(pad.injections).is_equal([[&"pad_play_card_rage", true]])
+
+
+func test_deadzone_crossings_are_genuine_edges() -> void:
+	var pad := _recording_pad()
+	for value in [1.0, 0.0, 1.0]:
+		pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, value))
+	assert_that(pad.injections).is_equal([
+		[&"pad_play_card_rage", true],
+		[&"pad_play_card_rage", false],
+		[&"pad_play_card_rage", true]])
+
+
+func test_below_deadzone_stream_injects_nothing() -> void:
+	var pad := _recording_pad()
+	for i in 3:
+		pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 0.15))
+	assert_that(pad.injections).is_equal([])
+
+
+func test_both_triggers_track_independently() -> void:
+	var pad := _recording_pad()
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 1.0))
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_RIGHT, 1.0))
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 0.0))
+	assert_that(pad.injections).is_equal([
+		[&"pad_play_card_rage", true],
+		[&"pad_play_card_invasion", true],
+		[&"pad_play_card_rage", false]])
+	assert_that(pad._action_held).is_equal(
+		{&"controller_trigger_r": &"pad_play_card_invasion"})
+
+
+func test_duplicate_button_presses_dedupe() -> void:
+	var pad := _recording_pad()
+	pad.translate_event(_button(JOY_BUTTON_A, true))
+	pad.translate_event(_button(JOY_BUTTON_A, true))
+	assert_that(pad.injections).is_equal([[&"pad_confirm", true]])
+	pad.translate_event(_button(JOY_BUTTON_A, false))
+	assert_that(pad.injections).is_equal([
+		[&"pad_confirm", true], [&"pad_confirm", false]])
+
+
+func test_disconnect_flushes_held_actions() -> void:
+	var pad := _recording_pad()
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 1.0))
+	pad._on_joy_connection_changed(0, false)
+	assert_that(pad.injections).is_equal([
+		[&"pad_play_card_rage", true], [&"pad_play_card_rage", false]])
+	assert_that(pad._action_held).is_equal({})
+
+
+func test_rebind_mid_hold_releases_old_logical() -> void:
+	var pad := _recording_pad()
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 1.0))
+	pad.rebind(&"pad_play_card_rage", &"controller_stick_press_l")
+	assert_that(pad.injections).is_equal([
+		[&"pad_play_card_rage", true], [&"pad_play_card_rage", false]])
+	# Nothing maps to the left trigger any more: further axis events no-op.
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 1.0))
+	assert_that(pad.injections.size()).is_equal(2)
+
+
+func test_focus_out_flushes_held_actions() -> void:
+	var pad := _recording_pad()
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 1.0))
+	pad.notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+	assert_that(pad.injections).is_equal([
+		[&"pad_play_card_rage", true], [&"pad_play_card_rage", false]])
+	assert_that(pad._action_held).is_equal({})
+
+
+func test_release_survives_capture_guard() -> void:
+	var pad := _recording_pad()
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 1.0))
+	pad.begin_capture(func(_physical: StringName) -> void: pass)
+	pad.translate_event(_motion(JOY_AXIS_TRIGGER_LEFT, 0.0))
+	pad.cancel_capture()
+	assert_that(pad.injections).is_equal([
+		[&"pad_play_card_rage", true], [&"pad_play_card_rage", false]])
