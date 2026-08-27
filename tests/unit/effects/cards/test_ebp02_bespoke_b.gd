@@ -379,7 +379,7 @@ func test_ebp02_052_discards_a_card_to_play_a_crystal() -> void:
 	assert_int(p0.hand.size()).is_equal(1)
 	assert_int(p0.discard_pile.size()).is_equal(1)
 	assert_int(p0.count_zone_tokens_by_id("EBP02-T03")).is_equal(1)
-	assert_str(str(p0.get_zone_top_card(3).get("id"))).is_equal("EBP02-T03")
+	assert_str(CardUtils.base_id(p0.get_zone_top_card(3))).is_equal("EBP02-T03")
 
 
 func test_ebp02_052_skipping_or_empty_hand_plays_nothing() -> void:
@@ -954,7 +954,7 @@ func test_ebp02_077_transforms_when_a_godzilla_is_milled() -> void:
 
 	var p0 := state.players[0]
 	assert_bool(p0.zone_has_cards(2)).is_false()
-	assert_str(str(p0.get_zone_top_card(5).get("id"))).is_equal("EBP02-T04")
+	assert_str(CardUtils.base_id(p0.get_zone_top_card(5))).is_equal("EBP02-T04")
 	# Discard: 2 milled cards + the destroyed Chibi Godzilla itself.
 	assert_int(p0.discard_pile.size()).is_equal(3)
 	assert_int(p0.main_deck.size()).is_equal(0)

@@ -435,7 +435,7 @@ func test_ebp04_012_enter_plays_tentacles_in_adjacent_zones() -> void:
 
 	var p0 := state.players[0]
 	assert_int(p0.count_zone_tokens_by_id("EBP02-T02")).is_equal(3)
-	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal("EBP02-T02")
+	assert_str(CardUtils.base_id(p0.get_zone_top_card(2))).is_equal("EBP02-T02")
 	# Rule 5.11.1.3: each token must go to a different zone.
 	assert_bool(2 in input.calls[1]["valid"]).is_false()
 

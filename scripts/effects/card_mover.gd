@@ -6,6 +6,12 @@ extends EffectModule
 ## zone-stack manipulation, and the add-to-hand logging helpers.
 
 
+# Monotonic serial for per-copy token instance ids ("EBP02-T03_tok_1").
+# Deterministic across a match: tokens are only created by the authoritative
+# engine, in resolution order.
+var _token_serial: int = 0
+
+
 
 # --- Player choice helpers ---
 
@@ -405,8 +411,15 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 		push_warning("EffectHandler: Token not found: %s" % token_id)
 		return false
 
-	# Make a copy so each token instance is independent
+	# Make a copy so each token instance is independent, and stamp a per-copy
+	# instance id: same-id tokens in play break every id-keyed zone lookup
+	# (e.g. destruction protection resolved the wrong zone for the third
+	# "Crystals" copy). Deck cards get their suffix at deck build; tokens get
+	# theirs here. Comparisons must go through CardUtils.base_id, as with any
+	# other in-play card.
 	token_data = token_data.duplicate()
+	_token_serial += 1
+	token_data["id"] = "%s_tok_%d" % [token_id, _token_serial]
 
 	var overloaded_top: Dictionary = h.overload_zone(player, zone_index)
 	player.push_zone_card(zone_index, token_data)
