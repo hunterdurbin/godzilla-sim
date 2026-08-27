@@ -1552,10 +1552,9 @@ func _add_to_main_deck(card_id: String) -> void:
 		var max_copies := _get_max_copies(template)
 		if count >= max_copies:
 			return
-		if _get_main_deck_total() >= 50:
-			return
-		if template.get("invasion_icon", 0) >= 2 and _get_step2_count() >= 10:
-			return
+		# Deck-size and Step-2 limits are deliberately NOT enforced here:
+		# over-filling then shaving down is a supported workflow. Illegal
+		# decks save fine and are flagged at deck-select time instead.
 
 	for entry in _main_entries:
 		if entry["card_number"] == card_id:
@@ -1713,7 +1712,11 @@ func _update_deck_stats() -> void:
 	var step2_count := _get_step2_count()
 
 	var mc := "[color=green]" if monster_count == 4 else "[color=yellow]"
-	var mnc := "[color=green]" if main_count == 50 else "[color=yellow]"
+	var mnc := "[color=yellow]"
+	if main_count == 50:
+		mnc = "[color=green]"
+	elif main_count > 50:
+		mnc = "[color=red]"
 	var sc := "[color=green]" if step2_count <= 10 else "[color=red]"
 
 	var text := ""
