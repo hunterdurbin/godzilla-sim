@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/board/overlays/board_editor_overlay.gd" id="1_beo"]
+
+[node name="BoardEditorOverlay" type="Control"]
+z_index = 100
+anchors_preset = 9
+anchor_bottom = 1.0
+anchor_right = 0.24
+grow_vertical = 2
+script = ExtResource("1_beo")

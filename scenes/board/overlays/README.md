@@ -15,6 +15,7 @@ the board underneath; shows a B glyph in gamepad mode — B restores).
 | `DeckSearchOverlay` | Search-your-deck effects |
 | `DeckArrangeOverlay` | Reorder-top-of-deck effects |
 | `DiscardViewOverlay` / `MonsterDeckViewOverlay` / `ZoneStackViewOverlay` | Read-only pile viewers — all three attach the shared `card_grid_viewer.gd` |
+| `BoardEditorOverlay` | F4 debug board editor (debug builds, SOLO/SOLO_BOT only) — left side panel, NOT full-rect: searchable card pool with click-to-place (GameBoard click handlers call `intercept_board_click` first), stack inspector, rage/zone/flag widgets, snapshot save/load via GameSerializer. Mutations go through `scripts/tools/board_editor.gd` |
 | `active_ability_banner.gd` / `turn_toast.gd` | Transient banners |
 
 Conventions:
