@@ -138,4 +138,50 @@ var CARDS: Array[Dictionary] = [
 		"description": "At the beginning of your counter phase, you may place 1 <《Mech》>, <《Weapon》>, or <《GODZILLA THE RIDE》> battle card from your hand under this card. If you do, <Destroy> this card at the beginning of the end phase.\nIf there is a card under this card, this card gains +5000 counter power.",
 		"effect_script": "res://scripts/effects/epr/epr_016.gd"
 	},
+	{
+		"id": "EPR-017",
+		"name": "Godzilla(GODZILLA THE RIDE: GREAT CLASH)",
+		"card_type": CardEnums.CardType.BATTLE,
+		"rank": 5,
+		"colors": [CardEnums.CardColor.GREEN],
+		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.GODZILLA_THE_RIDE],
+		"counter_power": 4000,
+		"invasion_icon": 1,
+		"description": "<Enter> Place 1 card with <《GODZILLA THE RIDE》> from your discard pile under your monster card.",
+		"effect_script": "res://scripts/effects/epr/epr_017.gd"
+	},
+	{
+		"id": "EPR-018",
+		"name": "GODZILLA THE RIDE: GREAT CLASH",
+		"card_type": CardEnums.CardType.STRATEGY,
+		"rank": 5,
+		"colors": [CardEnums.CardColor.BLUE],
+		"traits": [CardEnums.CardTrait.GODZILLA_THE_RIDE],
+		"invasion_icon": 1,
+		"description": "Discard 1 card from your hand. If you do, search your deck for up to 1 <《Mech》>, <《Weapon》>, or <《GODZILLA THE RIDE》> battle card, reveal it, add it to your hand, then shuffle your deck.",
+		"effect_script": "res://scripts/effects/epr/epr_018.gd"
+	},
+	{
+		"id": "EPR-019",
+		"name": "Gravity Beam",
+		"card_type": CardEnums.CardType.STRATEGY,
+		"rank": 7,
+		"colors": [CardEnums.CardColor.WHITE],
+		"traits": [CardEnums.CardTrait.FEST],
+		"invasion_icon": 2,
+		"description": "If you have a battle card with both <《Fest》> and <《King Ghidorah》> in your zones, you can play this card from your hand with its rank reduced by 3.\nYour opponent discards cards until they have 3 cards remaining in their hand.",
+		"effect_script": "res://scripts/effects/epr/epr_019.gd"
+	},
+	{
+		"id": "EPR-020",
+		"name": "Godzilla(2003)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 3,
+		"colors": [CardEnums.CardColor.BLUE],
+		"traits": [CardEnums.CardTrait.GODZILLA],
+		"threat_level": 17000,
+		"invasion_icon": 2,
+		"description": "Whenever you discard a battle card from your hand, reduce your opponent's <Rage> by 1.\n<Your Turn> When your opponent's <Rage> becomes 0, increase this card's <Rage> by 2. (Does not activate if their <Rage> was already 0.)",
+		"effect_script": "res://scripts/effects/epr/epr_020.gd"
+	},
 ]

@@ -1301,6 +1301,28 @@ func test_ebp03_036_silent_outside_zone_8_or_when_played_from_effect() -> void:
 	assert_int(input2.count_calls("search_cards")).is_equal(0)
 
 
+func test_ebp03_036_stale_from_effect_flag_does_not_suppress_normal_replay() -> void:
+	# Regression: a copy played via an effect earlier in the match keeps its
+	# played_from_effect dict flag through discard/deck; replaying it normally
+	# in zone 8 must still offer the search.
+	var card := Real.instance("EBP03-036")
+	card["played_from_effect"] = true
+	var target := Real.instance("EBP03-036", 1)
+	var state := States.make_state({"p0": {
+		"zone_cards": {7: card},
+		"main_deck": [target],
+	}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"search_cards": [{"id": target.get("id")}], "select_zone": [3]}
+	var s := States.make_session(state, input)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.trigger_enter(0, card)
+
+	assert_int(input.count_calls("search_cards")).is_equal(1)
+	assert_str(str(state.players[0].get_zone_top_card(3).get("id"))).is_equal(str(target.get("id")))
+
+
 # --- EBP03-037: Godzilla(2001) battle R6 — Awk8 enter +1 rage; Awk8 +5000 CP ---
 
 

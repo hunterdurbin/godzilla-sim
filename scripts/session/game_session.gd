@@ -119,6 +119,18 @@ func is_running() -> bool:
 	return turn_manager != null
 
 
+## Re-run the bot's deck analysis and drop any in-flight combo/planner state.
+## Called by the F4 board editor after mid-game state edits — injected or
+## removed cards invalidate the one-time deck scan and can leave the combo
+## plan pointing at cards that no longer exist.
+func refresh_bot_analysis() -> void:
+	if bot_player == null:
+		return
+	bot_player._active_combo_plan = {}
+	bot_player._planner = null
+	bot_player.analyze_deck()
+
+
 ## Compute the net play-cost modifier for each card in the given player's hand.
 ## Returned array is parallel to player.hand. Returns [] if no effect handler.
 ## Used by the board's hand display (host side) and the state broadcast.

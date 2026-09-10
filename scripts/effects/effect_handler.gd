@@ -420,8 +420,8 @@ func force_counter(target_player_id: int) -> void:
 
 # --- Delegates to the split-out modules (the effect-script-facing API) ---
 
-func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = false) -> void:
-	await dispatcher.trigger_enter(player_id, card_data, from_effect)
+func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = false, through_evolution: bool = false) -> void:
+	await dispatcher.trigger_enter(player_id, card_data, from_effect, through_evolution)
 
 
 func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void:

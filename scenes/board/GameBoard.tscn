@@ -38,6 +38,7 @@
 [ext_resource type="Script" uid="uid://gfffvc5pgi62" path="res://scenes/board/modules/hand_hint_bar.gd" id="m_handhintbar"]
 [ext_resource type="Script" uid="uid://m46qb8jpvrth" path="res://scenes/board/modules/lobby_bot_controller.gd" id="m_lobbybotcontroller"]
 [ext_resource type="Script" path="res://scenes/board/modules/nav_debug_overlay.gd" id="m_navdebugoverlay"]
+[ext_resource type="PackedScene" path="res://scenes/board/overlays/BoardEditorOverlay.tscn" id="beo_scene"]
 [ext_resource type="Script" uid="uid://cj13yxiiuclr8" path="res://scenes/board/modules/system_menu_controller.gd" id="m_systemmenucontroller"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_prompt"]
@@ -886,3 +887,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("m_navdebugoverlay")
+
+[node name="BoardEditorOverlay" parent="." instance=ExtResource("beo_scene")]
+layout_mode = 1

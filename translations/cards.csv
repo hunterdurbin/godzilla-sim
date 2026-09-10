@@ -1016,6 +1016,16 @@ CARD_EPR-015_DESC,"If you have a card with <《GODZILLA THE RIDE》> in your dis
 CARD_EPR-016_NAME,KIJU Type 0 -G BREAKER-,
 CARD_EPR-016_DESC,"At the beginning of your counter phase, you may place 1 <《Mech》>, <《Weapon》>, or <《GODZILLA THE RIDE》> battle card from your hand under this card. If you do, <Destroy> this card at the beginning of the end phase.
 If there is a card under this card, this card gains +5000 counter power.",
+CARD_EPR-017_NAME,Godzilla(GODZILLA THE RIDE: GREAT CLASH),
+CARD_EPR-017_DESC,<Enter> Place 1 card with <《GODZILLA THE RIDE》> from your discard pile under your monster card.,
+CARD_EPR-018_NAME,GODZILLA THE RIDE: GREAT CLASH,
+CARD_EPR-018_DESC,"Discard 1 card from your hand. If you do, search your deck for up to 1 <《Mech》>, <《Weapon》>, or <《GODZILLA THE RIDE》> battle card, reveal it, add it to your hand, then shuffle your deck.",
+CARD_EPR-019_NAME,Gravity Beam,
+CARD_EPR-019_DESC,"If you have a battle card with both <《Fest》> and <《King Ghidorah》> in your zones, you can play this card from your hand with its rank reduced by 3.
+Your opponent discards cards until they have 3 cards remaining in their hand.",
+CARD_EPR-020_NAME,Godzilla(2003),
+CARD_EPR-020_DESC,"Whenever you discard a battle card from your hand, reduce your opponent's <Rage> by 1.
+<Your Turn> When your opponent's <Rage> becomes 0, increase this card's <Rage> by 2. (Does not activate if their <Rage> was already 0.)",
 CARD_ESD01-001_NAME,Godzilla(2023),ゴジラ(2023)
 CARD_ESD01-001_DESC,,
 CARD_ESD01-002_NAME,Godzilla(2023),ゴジラ(2023)

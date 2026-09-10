@@ -6,6 +6,12 @@ extends EffectModule
 ## zone-stack manipulation, and the add-to-hand logging helpers.
 
 
+# Monotonic serial for per-copy token instance ids ("EBP02-T03_tok_1").
+# Deterministic across a match: tokens are only created by the authoritative
+# engine, in resolution order.
+var _token_serial: int = 0
+
+
 
 # --- Player choice helpers ---
 
@@ -116,7 +122,21 @@ func select_cards_from_pool(player_id: int, matching: Array[Dictionary], all_car
 	var result: Array[Dictionary] = await input.select_cards(player_id, matching, all_cards, prompt, min_count, max_count)
 	_unhighlight_active_effect()
 	h._card_select_pool_filter = Callable()
-	return result
+	# Map picks back to the canonical offered dicts by per-copy id: remote
+	# players answer with minimal {"id": ...} dicts (JSON over RPC), and
+	# callers move the returned dicts between zones — a non-canonical dict
+	# would leave the original card in place and insert a stub copy.
+	# Multiset semantics: duplicate ids consume distinct pool entries.
+	var canonical: Array[Dictionary] = []
+	var pool: Array[Dictionary] = matching.duplicate()
+	for pick in result:
+		var pick_id: String = str(pick.get("id", ""))
+		for i in range(pool.size()):
+			if str(pool[i].get("id", "")) == pick_id:
+				canonical.append(pool[i])
+				pool.remove_at(i)
+				break
+	return canonical
 
 
 
@@ -360,11 +380,13 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 	h.log_message.emit(GameLog.evolution(player_id, zone_idx, evo_rank, zone_card.get("id", ""), selected.get("id", ""), has_enter))
 
 	h.card_evolved.emit(player_id, selected, zone_idx)
-	# Mark as played through evolution for enter effects (e.g. ESD02-010)
+	# Mark as played through evolution for enter effects (e.g. ESD02-010).
+	# trigger_enter re-stamps this; the early stamp keeps the flag on the dict
+	# for the zones_changed sync below.
 	selected["played_through_evolution"] = true
 	player.push_zone_card(zone_idx, selected)
 	player.zones_changed.emit()
-	await h.trigger_enter(player_id, selected, true)
+	await h.trigger_enter(player_id, selected, true, true)
 	# Evolution pulls the card from the deck, so on_battle_card_played fires
 	# with played_from_deck=true (e.g. EBP04-028 Gigan, EBP04-072 Sanda).
 	await h.trigger_battle_card_played(player_id, selected, zone_idx, true)
@@ -405,8 +427,15 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 		push_warning("EffectHandler: Token not found: %s" % token_id)
 		return false
 
-	# Make a copy so each token instance is independent
+	# Make a copy so each token instance is independent, and stamp a per-copy
+	# instance id: same-id tokens in play break every id-keyed zone lookup
+	# (e.g. destruction protection resolved the wrong zone for the third
+	# "Crystals" copy). Deck cards get their suffix at deck build; tokens get
+	# theirs here. Comparisons must go through CardUtils.base_id, as with any
+	# other in-play card.
 	token_data = token_data.duplicate()
+	_token_serial += 1
+	token_data["id"] = "%s_tok_%d" % [token_id, _token_serial]
 
 	var overloaded_top: Dictionary = h.overload_zone(player, zone_index)
 	player.push_zone_card(zone_index, token_data)

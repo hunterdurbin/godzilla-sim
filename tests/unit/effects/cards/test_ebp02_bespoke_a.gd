@@ -431,7 +431,7 @@ func test_ebp02_020_fills_empty_zones_with_tokens_and_token_enter_fires() -> voi
 
 	await handler.trigger_enter(0, card)
 
-	assert_str(str(state.players[0].get_zone_top_card(7).get("id"))).is_equal("EBP02-T01")
+	assert_str(CardUtils.base_id(state.players[0].get_zone_top_card(7))).is_equal("EBP02-T01")
 	# The token's own <Enter> (reduce opp rage 1) resolves via the drained queue.
 	assert_int(state.players[1].rage).is_equal(1)
 
@@ -558,7 +558,7 @@ func test_ebp02_025_plays_tentacles_token_adjacent_and_blocks_movement() -> void
 
 	await handler.trigger_enter(0, card)
 
-	assert_str(str(state.players[0].get_zone_top_card(4).get("id"))).is_equal("EBP02-T02")
+	assert_str(CardUtils.base_id(state.players[0].get_zone_top_card(4))).is_equal("EBP02-T02")
 	assert_array(input.calls[0]["valid"]).contains_exactly([2, 4, 6])
 
 	# can_monster_advance / can_monster_invade gate the movement queries...
@@ -784,8 +784,8 @@ func test_ebp02_035_recycles_opponent_discard_and_plays_two_tentacles() -> void:
 	assert_int(state.players[1].discard_pile.size()).is_equal(0)
 	assert_int(state.players[1].main_deck.size()).is_equal(4)
 	var p0 := state.players[0]
-	assert_str(str(p0.get_zone_top_card(1).get("id"))).is_equal("EBP02-T02")
-	assert_str(str(p0.get_zone_top_card(3).get("id"))).is_equal("EBP02-T02")
+	assert_str(CardUtils.base_id(p0.get_zone_top_card(1))).is_equal("EBP02-T02")
+	assert_str(CardUtils.base_id(p0.get_zone_top_card(3))).is_equal("EBP02-T02")
 	# Rule 5.11.1.3: the second token must go to a different adjacent zone.
 	assert_array(input.calls[1]["valid"]).contains_exactly([3, 7])
 

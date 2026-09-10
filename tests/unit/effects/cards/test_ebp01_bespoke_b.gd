@@ -190,6 +190,27 @@ func test_ebp01_054_enter_without_evolution_does_not_draw() -> void:
 	assert_int(input.count_calls("choose_hand_discards")).is_equal(0)
 
 
+func test_ebp01_054_stale_evolution_flag_does_not_retrigger_on_normal_replay() -> void:
+	# Regression: a copy that evolved earlier in the match keeps its dict flag
+	# through discard/deck; replaying it normally must not fire the
+	# through-evolution enter (draw 2 / discard 2).
+	var card := Real.instance("EBP01-054")
+	card["played_through_evolution"] = true
+	var state := States.make_state({"p0": {
+		"zone_cards": {2: card},
+		"main_deck": [Cards.battle(1, 2000, "D1"), Cards.battle(1, 2000, "D2")],
+	}})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(state.players[0].hand.size()).is_equal(0)
+	assert_int(state.players[0].main_deck.size()).is_equal(2)
+	assert_int(input.count_calls("choose_hand_discards")).is_equal(0)
+	assert_bool(card.get("played_through_evolution", false)).is_false()
+
+
 # --- EBP01-057: Mothra(imago)(1992) — enter: may swap 2 battle cards;
 # --- adjacent rank<=5 cards gain +3000 CP ---
 
@@ -337,7 +358,6 @@ func test_ebp01_059_gains_3000_cp_in_zone_8() -> void:
 
 func test_ebp01_060_evolution_enter_replays_godzilla_vs_destoroyah_from_discard() -> void:
 	var card := Real.instance("EBP01-060")
-	card["played_through_evolution"] = true
 	var gvd := Real.instance("EBP01-065")  # strategy named "Godzilla vs. Destoroyah"
 	var state := States.make_state({
 		"p0": {"zone_cards": {4: card}},
@@ -349,7 +369,7 @@ func test_ebp01_060_evolution_enter_replays_godzilla_vs_destoroyah_from_discard(
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	await handler.trigger_enter(0, card)
+	await handler.trigger_enter(0, card, true, true)
 
 	assert_str(str(state.players[0].strategy_zones[0].get("id"))).is_equal(str(gvd.get("id")))
 	# The replayed strategy's own enter fired: opponent zones 1-5 destroyed.
@@ -371,7 +391,6 @@ func test_ebp01_060_requires_evolution_play_and_free_strategy_room() -> void:
 
 	# Through evolution but with 2 strategies already in play: no search.
 	var card2 := Real.instance("EBP01-060", 1)
-	card2["played_through_evolution"] = true
 	var state2 := States.make_state({"p0": {
 		"zone_cards": {4: card2},
 		"strategy_zones": [Cards.strategy(2, "SA"), Cards.strategy(3, "SB")],
@@ -379,7 +398,7 @@ func test_ebp01_060_requires_evolution_play_and_free_strategy_room() -> void:
 	state2.players[0].discard_pile.append(Real.instance("EBP01-065", 1))
 	var input2 := ScriptedPlayerInput.new()
 	var s2 := States.make_session(state2, input2)
-	await s2["effect_handler"].trigger_enter(0, card2)
+	await s2["effect_handler"].trigger_enter(0, card2, true, true)
 	assert_int(input2.count_calls("search_cards")).is_equal(0)
 
 

@@ -1552,10 +1552,9 @@ func _add_to_main_deck(card_id: String) -> void:
 		var max_copies := _get_max_copies(template)
 		if count >= max_copies:
 			return
-		if _get_main_deck_total() >= 50:
-			return
-		if template.get("invasion_icon", 0) >= 2 and _get_step2_count() >= 10:
-			return
+		# Deck-size and Step-2 limits are deliberately NOT enforced here:
+		# over-filling then shaving down is a supported workflow. Illegal
+		# decks save fine and are flagged at deck-select time instead.
 
 	for entry in _main_entries:
 		if entry["card_number"] == card_id:
@@ -1713,7 +1712,11 @@ func _update_deck_stats() -> void:
 	var step2_count := _get_step2_count()
 
 	var mc := "[color=green]" if monster_count == 4 else "[color=yellow]"
-	var mnc := "[color=green]" if main_count == 50 else "[color=yellow]"
+	var mnc := "[color=yellow]"
+	if main_count == 50:
+		mnc = "[color=green]"
+	elif main_count > 50:
+		mnc = "[color=red]"
 	var sc := "[color=green]" if step2_count <= 10 else "[color=red]"
 
 	var text := ""
@@ -1971,11 +1974,17 @@ func _populate_format_info(mode_id: String) -> void:
 		_add_info_heading(tr("STR_DB_FORMAT_INFO_EXCLUDED_CARDS"))
 		_add_info_paragraph(_format_card_list(excludes))
 
-	var restricted: Array = pool.get("restricted", [])
-	if not restricted.is_empty():
+	var restricted_0: Array = pool.get("restricted_0", [])
+	if not restricted_0.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_RESTRICTED_0"))
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_RESTRICTED_0_RULE"))
+		_add_info_paragraph(_format_card_list(restricted_0))
+
+	var restricted_1: Array = pool.get("restricted_1", [])
+	if not restricted_1.is_empty():
 		_add_info_heading(tr("STR_DB_FORMAT_INFO_RESTRICTED"))
 		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_RESTRICTED_RULE"))
-		_add_info_paragraph(_format_card_list(restricted))
+		_add_info_paragraph(_format_card_list(restricted_1))
 
 	var pairs: Array = pool.get("choice_restricted", [])
 	if not pairs.is_empty():

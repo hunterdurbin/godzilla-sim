@@ -112,6 +112,7 @@ var _client_gradients_applied: bool:
 @onready var _zoom_ctl: CardZoomController = $CardZoomController
 @onready var _lobby_bot: LobbyBotController = $LobbyBotController
 @onready var _nav: GamepadBoardNav = $GamepadBoardNav
+@onready var board_editor_overlay: BoardEditorOverlayUI = $BoardEditorOverlay
 
 # UI references
 @onready var player1_board: Control = $VBoxContainer/BoardArea/BoardColumn/Player1Board
@@ -1440,6 +1441,8 @@ func _input(event: InputEvent) -> void:
 			return
 		if card_zoom_overlay.visible:
 			card_zoom_overlay.hide_zoom()
+		elif board_editor_overlay.handle_cancel():
+			pass # Consumed: cancelled placing / closed inspector / hid the editor
 		elif deck_arrange_overlay.visible:
 			pass # Mandatory — must confirm
 		elif card_pool_select_overlay.visible:
@@ -1785,6 +1788,8 @@ func _resolve_attention_card(loc: Dictionary) -> Control:
 
 
 func _on_discard_clicked(pid: int) -> void:
+	if board_editor_overlay.intercept_board_click("discard", pid, -1):
+		return
 	var player := _get_player_state(pid)
 	var cards: Array[Dictionary] = player.discard_pile.duplicate(true)
 	cards.reverse()
@@ -1795,6 +1800,8 @@ func _on_discard_clicked(pid: int) -> void:
 # --- Monster deck view UI ---
 
 func _on_monster_deck_clicked(pid: int) -> void:
+	if board_editor_overlay.intercept_board_click("monster_deck", pid, -1):
+		return
 	# Only allow viewing your own monster deck
 	if is_multiplayer_game and pid != local_player_id:
 		return
@@ -1841,6 +1848,8 @@ func _stack_view_header(single_key: String, under_key: String, n: int, total: in
 
 
 func _on_zone_slot_clicked(zone_num: int, pid: int) -> void:
+	if board_editor_overlay.intercept_board_click("zone", pid, zone_num - 1):
+		return
 	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _zones_target_selecting:
 		return
 	var player := _get_player_state(pid)
@@ -1895,6 +1904,8 @@ func _on_strategy_slot_right_clicked(strategy_idx: int, pid: int) -> void:
 
 
 func _on_strategy_slot_clicked(strategy_idx: int, pid: int) -> void:
+	if board_editor_overlay.intercept_board_click("strategy", pid, strategy_idx):
+		return
 	if waiting_for_card_select or waiting_for_zone_select or _zone_target_selecting or _zones_target_selecting or _strategy_target_selecting:
 		return
 	var player := _get_player_state(pid)
