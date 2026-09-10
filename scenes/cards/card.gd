@@ -911,7 +911,9 @@ static func _find_artwork_path(set_number: String, card_number: String) -> Strin
 	# Legacy flat layout from before per-locale subfolders (pre-migration).
 	candidates.append(ARTWORK_BASE_PATH.path_join(set_number).path_join("%s.png" % card_number))
 	for p in candidates:
-		if FileAccess.file_exists(p):
+		# 0-byte files are failed saves (see the ArtworkDownloader autoload's is_valid_artwork_file)
+		# — skip them instead of erroring on every render.
+		if ArtworkDownloader.is_valid_artwork_file(p):
 			return p
 	return ""
 

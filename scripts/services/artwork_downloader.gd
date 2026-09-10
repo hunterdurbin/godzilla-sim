@@ -36,6 +36,40 @@ func base_path_for_locale(locale: String) -> String:
 	return ARTWORK_BASE_PATH.path_join(locale)
 
 
+## True if `data` looks like an image the renderer can decode: non-empty and
+## starting with a PNG / JPEG / WebP signature. A batch zip can carry a
+## zero-length or HTML-error entry (server still rendering, upstream 404);
+## saving that verbatim leaves a corrupt cache file that never re-fetches.
+func is_valid_image_payload(data: PackedByteArray) -> bool:
+	if data.size() < 12:
+		return false
+	# PNG: 89 50 4E 47
+	if data[0] == 0x89 and data[1] == 0x50 and data[2] == 0x4E and data[3] == 0x47:
+		return true
+	# JPEG: FF D8 FF
+	if data[0] == 0xFF and data[1] == 0xD8 and data[2] == 0xFF:
+		return true
+	# WebP: "RIFF" .... "WEBP"
+	if data.slice(0, 4).get_string_from_ascii() == "RIFF" \
+			and data.slice(8, 12).get_string_from_ascii() == "WEBP":
+		return true
+	return false
+
+
+## True if a cached artwork file exists AND is non-empty. A 0-byte file is a
+## failed save, not cached artwork — treating it as present blocks re-download
+## and makes card.gd error on every render.
+func is_valid_artwork_file(path: String) -> bool:
+	if not FileAccess.file_exists(path):
+		return false
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return false
+	var size := f.get_length()
+	f.close()
+	return size > 0
+
+
 func _resolve_locale(locale: String) -> String:
 	## Coerce an arbitrary locale string into one of VALID_LOCALES, falling
 	## back to "en" with a warning when the input is unknown. Apply at every
@@ -123,7 +157,7 @@ func artwork_exists(card_number: String, locale: String) -> bool:
 	locale = _resolve_locale(locale)
 	var base_dir := base_path_for_locale(locale).path_join(_get_set_number(card_number))
 	for ext in IMAGE_EXTENSIONS:
-		if FileAccess.file_exists(base_dir.path_join("%s.%s" % [card_number, ext])):
+		if is_valid_artwork_file(base_dir.path_join("%s.%s" % [card_number, ext])):
 			return true
 	# Legacy flat layout (pre-locale) is implicitly the EN pack. Falling back
 	# to it for "en" stops a partially-failed migration from triggering a full
@@ -131,7 +165,7 @@ func artwork_exists(card_number: String, locale: String) -> bool:
 	if locale == "en":
 		var legacy_dir := LEGACY_BASE_PATH.path_join(_get_set_number(card_number))
 		for ext in IMAGE_EXTENSIONS:
-			if FileAccess.file_exists(legacy_dir.path_join("%s.%s" % [card_number, ext])):
+			if is_valid_artwork_file(legacy_dir.path_join("%s.%s" % [card_number, ext])):
 				return true
 	return false
 
@@ -430,6 +464,13 @@ func _get_set_number(card_number: String) -> String:
 
 
 func _save_artwork(card_number: String, data: PackedByteArray, extension: String, locale: String) -> bool:
+	if not is_valid_image_payload(data):
+		# Don't clobber a good cached copy with an empty/garbage body; the card
+		# stays "pending" so the next download pass retries it.
+		print("[ArtworkDownloader]   Skipped %s (%s): invalid image payload (%d bytes)" % [
+			card_number, locale, data.size()
+		])
+		return false
 	var set_dir := base_path_for_locale(locale).path_join(_get_set_number(card_number))
 	DirAccess.make_dir_recursive_absolute(set_dir)
 
@@ -520,7 +561,32 @@ func _download_batch(card_numbers: Array[String], locale: String) -> Dictionary:
 		DirAccess.remove_absolute(temp_path)
 		return {"downloaded": 0, "failed": card_numbers.size()}
 
-	return _extract_zip(temp_path, card_numbers, locale)
+	var stats := _extract_zip(temp_path, card_numbers, locale)
+	await _retry_unsaved_singly(stats, card_numbers, locale)
+	return stats
+
+
+## Batch zips have arrived with entries that fail ZIPReader's CRC check or
+## carry an empty body (server still rendering a freshly added card). Those
+## cards used to be dropped until the next launch; re-fetch each one through
+## the single-card endpoint instead. Capped so a wholesale bad zip doesn't
+## turn into hundreds of requests.
+const MAX_SINGLE_RETRIES := 20
+
+func _retry_unsaved_singly(stats: Dictionary, card_numbers: Array[String], locale: String) -> void:
+	var saved: Dictionary = stats.get("saved", {})
+	var retry: Array[String] = []
+	for card_number in card_numbers:
+		if not saved.has(card_number):
+			retry.append(card_number)
+	if retry.is_empty() or retry.size() > MAX_SINGLE_RETRIES:
+		return
+	print("[ArtworkDownloader] Retrying %d card(s) from the batch individually" % retry.size())
+	for i in retry.size():
+		progress_updated.emit(i + 1, retry.size(), retry[i])
+		if await _download_single(retry[i], locale):
+			stats["downloaded"] += 1
+			stats["failed"] -= 1
 
 
 func _extract_zip(temp_path: String, card_numbers: Array[String], locale: String) -> Dictionary:
@@ -533,6 +599,7 @@ func _extract_zip(temp_path: String, card_numbers: Array[String], locale: String
 
 	var downloaded := 0
 	var failed := 0
+	var saved := {}  # card_number -> true, for the per-card retry pass
 	var files := reader.get_files()
 	var total := files.size()
 
@@ -550,6 +617,7 @@ func _extract_zip(temp_path: String, card_numbers: Array[String], locale: String
 		var data := reader.read_file(entry_name)
 		if _save_artwork(card_number, data, ext, locale):
 			downloaded += 1
+			saved[card_number] = true
 		else:
 			failed += 1
 
@@ -562,7 +630,7 @@ func _extract_zip(temp_path: String, card_numbers: Array[String], locale: String
 
 	reader.close()
 	DirAccess.remove_absolute(temp_path)
-	return {"downloaded": downloaded, "failed": failed}
+	return {"downloaded": downloaded, "failed": failed, "saved": saved}
 
 
 func _get_extension_from_headers(headers: PackedStringArray, fallback: String) -> String:
