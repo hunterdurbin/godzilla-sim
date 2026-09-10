@@ -360,6 +360,30 @@ func test_ebp04_088_enter_returns_up_to_two_nongreen_battles() -> void:
 	assert_int(int(call["max"])).is_equal(2)
 
 
+## Regression: multiplayer clients answer card selects with minimal
+## {"id": ...} dicts (JSON over RPC). The pool selection must map picks back
+## to the canonical offered dicts, or the "returned" cards stay in discard
+## while data-less stubs land in hand (unplayable).
+func test_ebp04_088_id_only_picks_map_to_canonical_discard_cards() -> void:
+	var card := Real.instance("EBP04-088")
+	var b1 := Cards.battle(2, 3000, "DIS-RED-1")
+	var b2 := Cards.battle(3, 4000, "DIS-RED-2")
+	var state := States.make_state({"p0": {"strategy_zones": [card]}})
+	state.players[0].discard_pile.append_array([b1, b2, _green_battle("DIS-GREEN")])
+	var s := States.make_session(state)
+	var input: ScriptedPlayerInput = s["input"]
+	input.answers = {"select_cards": [[{"id": "DIS-RED-1"}, {"id": "DIS-RED-2"}]]}
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_array(_ids(state.players[0].hand)).contains_exactly_in_any_order(["DIS-RED-1", "DIS-RED-2"])
+	assert_array(_ids(state.players[0].discard_pile)).contains_exactly(["DIS-GREEN"])
+	# The hand holds the canonical dicts, not the id-only stubs.
+	var hand: Array = state.players[0].hand
+	var h0: Dictionary = hand[0] if hand.size() > 0 else {}
+	assert_int(int(h0.get("counter_power", -1))).is_equal(3000)
+
+
 ## ESD01-002 <When Invading> (monster): search the deck for up to 1 rank-III
 ## card named "Godzilla(2023)" with <Burst> and add it to hand.
 func test_esd01_002_invading_searches_burst_godzilla_to_hand() -> void:

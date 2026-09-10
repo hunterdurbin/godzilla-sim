@@ -201,10 +201,8 @@ func test_esd02_010_enter_draws_only_when_evolved(evolved: bool, expected_hand: 
 	})
 	var state: GameState = s["state"]
 	var card: Dictionary = s["card"]
-	if evolved:
-		card["played_through_evolution"] = true
 
-	await s["effect_handler"].trigger_enter(0, card)
+	await s["effect_handler"].trigger_enter(0, card, evolved, evolved)
 
 	assert_int(state.players[0].hand.size()).is_equal(expected_hand)
 

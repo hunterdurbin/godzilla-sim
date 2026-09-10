@@ -27,12 +27,23 @@ func _passes_enter_filter(card_data: Dictionary) -> bool:
 
 
 
-func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = false) -> void:
+func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = false, through_evolution: bool = false) -> void:
 	## Trigger <Enter> effect on the card that just entered play.
 	## If from_effect is true, marks the card so enter effects know it wasn't played from hand.
+	## If through_evolution is true, marks the card for through-evolution enter effects
+	## (e.g. EBP01-054); only perform_evolution passes it.
+	## Both marks describe THIS entry only: per-copy card dicts survive
+	## discard/deck round-trips, so a mark left over from an earlier entry must
+	## be cleared or a later normal replay would re-fire the gated effect.
 	## If inside standby resolution, defers the enter to the pending queue (10.4.3).
 	if from_effect:
 		card_data["played_from_effect"] = true
+	else:
+		card_data.erase("played_from_effect")
+	if through_evolution:
+		card_data["played_through_evolution"] = true
+	else:
+		card_data.erase("played_through_evolution")
 	if not has_trigger(card_data, "on_enter"):
 		return
 	if not _passes_enter_filter(card_data):
@@ -887,7 +898,11 @@ func trigger_all_monster_enter_abilities(player_id: int) -> void:
 	var player := game_state.players[player_id]
 	if player.current_monster.is_empty():
 		return
-	await trigger_enter(player_id, player.current_monster)
+	# Pass the card's own marks back so the re-trigger keeps the original
+	# entry's play mode instead of stamping a fresh "played from hand" entry.
+	await trigger_enter(player_id, player.current_monster,
+		player.current_monster.get("played_from_effect", false),
+		player.current_monster.get("played_through_evolution", false))
 
 
 
