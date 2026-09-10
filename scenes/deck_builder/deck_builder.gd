@@ -1974,11 +1974,17 @@ func _populate_format_info(mode_id: String) -> void:
 		_add_info_heading(tr("STR_DB_FORMAT_INFO_EXCLUDED_CARDS"))
 		_add_info_paragraph(_format_card_list(excludes))
 
-	var restricted: Array = pool.get("restricted", [])
-	if not restricted.is_empty():
+	var restricted_0: Array = pool.get("restricted_0", [])
+	if not restricted_0.is_empty():
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_RESTRICTED_0"))
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_RESTRICTED_0_RULE"))
+		_add_info_paragraph(_format_card_list(restricted_0))
+
+	var restricted_1: Array = pool.get("restricted_1", [])
+	if not restricted_1.is_empty():
 		_add_info_heading(tr("STR_DB_FORMAT_INFO_RESTRICTED"))
 		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_RESTRICTED_RULE"))
-		_add_info_paragraph(_format_card_list(restricted))
+		_add_info_paragraph(_format_card_list(restricted_1))
 
 	var pairs: Array = pool.get("choice_restricted", [])
 	if not pairs.is_empty():

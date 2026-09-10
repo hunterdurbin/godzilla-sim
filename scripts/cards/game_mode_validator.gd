@@ -6,7 +6,8 @@ class_name GameModeValidator
 ##   include_sets       : Array[String] — whole sets added to the pool
 ##   include_cards      : Array[String] — specific card IDs added beyond `include_sets`
 ##   exclude_cards      : Array[String] — ban list; wins over every include above
-##   restricted         : Array[String] — max 1 copy across monster + main
+##   restricted_0       : Array[String] — 0 copies allowed across monster + main
+##   restricted_1       : Array[String] — max 1 copy across monster + main
 ##   choice_restricted  : Array[Array[String]] — pair lists; only one per pair allowed
 ## Modes without a `card_pool` (e.g. no_rules) accept every card and run no
 ## per-pool checks.
@@ -24,7 +25,8 @@ const MODES: Array[Dictionary] = [
 			"include_sets": ["EBP01", "EBP02", "EBP03", "EBP04", "EFC01", "ESD01", "ESD02", "EPR", "ESC01"],
 			"include_cards": [],
 			"exclude_cards": ["EPR-004", "EPR-014"],
-			"restricted": ["EBP01-077"],
+			"restricted_0": ["EBP01-079", "EBP03-016"],
+			"restricted_1": ["EBP01-077"],
 			"choice_restricted": [["EBP02-003", "EBP03-035"]],
 		},
 	},
@@ -38,7 +40,8 @@ const MODES: Array[Dictionary] = [
 			"include_sets": ["EBP01", "EBP02", "EBP03", "EBP04", "EFC01", "ESD01", "ESD02", "EPR", "ESC01"],
 			"include_cards": [],
 			"exclude_cards": ["ESD01-016"],
-			"restricted": ["EBP01-077"],
+			"restricted_0": ["EBP01-079", "EBP03-016"],
+			"restricted_1": ["EBP01-077"],
 			"choice_restricted": [["EBP02-003", "EBP03-035"]],
 		},
 	},
@@ -60,13 +63,16 @@ const MODES: Array[Dictionary] = [
 			"include_sets": ["ESD01", "ESD02"],
 			"include_cards": [],
 			"exclude_cards": [],
-			"restricted": [],
+			"restricted_0": ["EBP01-079", "EBP03-016"],
+			"restricted_1": [],
 			"choice_restricted": [],
 		},
 	},
 ]
 
 const ERR_RESTRICTED := "STR_VALIDATE_RESTRICTED_FMT"
+## Restricted-list pool keys → max copies allowed across monster + main.
+const RESTRICTED_LIMITS: Dictionary = {"restricted_0": 0, "restricted_1": 1}
 const ERR_CHOICE_RESTRICTED := "STR_VALIDATE_CHOICE_RESTRICTED_FMT"
 const ERR_NOT_IN_FORMAT := "STR_VALIDATE_NOT_IN_FORMAT_FMT"
 
@@ -175,12 +181,14 @@ static func _flag_pool_invalid(pool: Dictionary, game_mode: String, monster_entr
 		if not is_card_valid_for_mode(cn, game_mode):
 			invalid[cn] = true
 
-	# Restricted: flag every copy if the base id is over limit.
-	for cn in pool.get("restricted", []):
-		if card_counts.get(cn, 0) > 1:
-			for entry in all_entries:
-				if entry["card_number"].trim_suffix("+") == cn:
-					invalid[entry["card_number"]] = true
+	# Restricted lists: flag every copy if the base id is over its limit.
+	for key in RESTRICTED_LIMITS:
+		var limit: int = RESTRICTED_LIMITS[key]
+		for cn in pool.get(key, []):
+			if card_counts.get(cn, 0) > limit:
+				for entry in all_entries:
+					if entry["card_number"].trim_suffix("+") == cn:
+						invalid[entry["card_number"]] = true
 
 	# Choice restricted: flag every copy of both cards when both appear.
 	for pair in pool.get("choice_restricted", []):
@@ -211,10 +219,12 @@ static func _validate_pool_restrictions(mode: Dictionary, monster_entries: Array
 			var card_name: String = tmpl.get("name", base)
 			errors.append(Loc.t(ERR_NOT_IN_FORMAT) % [card_name, base, format_label])
 
-	# Restricted list: max 1 copy across monster + main decks.
-	for cn in pool.get("restricted", []):
-		if card_counts.get(cn, 0) > 1:
-			errors.append(Loc.t(ERR_RESTRICTED) % [cn, card_counts[cn]])
+	# Restricted lists: max N copies across monster + main decks.
+	for key in RESTRICTED_LIMITS:
+		var limit: int = RESTRICTED_LIMITS[key]
+		for cn in pool.get(key, []):
+			if card_counts.get(cn, 0) > limit:
+				errors.append(Loc.t(ERR_RESTRICTED) % [cn, limit, card_counts[cn]])
 
 	# Choice restricted: mutually exclusive pairs.
 	for pair in pool.get("choice_restricted", []):
