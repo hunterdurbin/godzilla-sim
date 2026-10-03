@@ -164,3 +164,41 @@ func test_destroy_zone_targets_rejects_invalid_and_duplicate_picks() -> void:
 	assert_int(destroyed.size()).is_equal(1)
 	assert_bool(state.players[1].zone_has_cards(1)).is_false()
 	assert_bool(state.players[1].zone_has_cards(4)).is_true()
+
+
+func test_destroy_zones_within_rank_budget_gates_picks_by_remaining_budget() -> void:
+	var state := States.make_state({"p1": {"zone_cards": {
+		0: Cards.battle(3, 3000, "R3"), 1: Cards.battle(2, 2000, "R2"), 2: Cards.battle(4, 4000, "R4"),
+	}}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [0, 1]}
+	var handler := _make_handler(state, input)
+
+	var destroyed: Array[Dictionary] = await handler.destroy_zones_within_rank_budget(
+		0, state.players[1], 5, "budget %d")
+
+	assert_int(destroyed.size()).is_equal(2)
+	assert_str(str(state.players[1].get_zone_top_card(2).get("id"))).is_equal("R4")
+	# Budget 5 offers everything; after spending 3 only the rank 2 fits;
+	# after spending 5 nothing fits, so there's no third prompt.
+	assert_int(input.calls.size()).is_equal(2)
+	assert_array(input.calls[0]["valid"]).contains_exactly([0, 1, 2])
+	assert_array(input.calls[1]["valid"]).contains_exactly([1])
+	assert_str(str(input.calls[1]["prompt"])).is_equal("budget 2")
+
+
+func test_destroy_zones_within_rank_budget_skip_and_filter() -> void:
+	var state := States.make_state({"p1": {"zone_cards": {
+		0: Cards.battle(1, 1000, "KEEP"), 1: Cards.battle(1, 1000, "OUT"),
+	}}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [-1]}
+	var handler := _make_handler(state, input)
+	var only_keep := func(card: Dictionary) -> bool: return card.get("id") == "KEEP"
+
+	var destroyed: Array[Dictionary] = await handler.destroy_zones_within_rank_budget(
+		0, state.players[1], 7, "p %d", only_keep)
+
+	assert_array(destroyed).is_empty()
+	assert_array(input.calls[0]["valid"]).contains_exactly([0])
+	assert_bool(state.players[1].zone_has_cards(0)).is_true()

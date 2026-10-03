@@ -5,7 +5,7 @@
 | File | Role |
 |---|---|
 | `card_database.gd` | **Autoload `CardData`** — the card template database (388 templates). Indexes the set files into `CARD_TEMPLATES`; public surface: `get_card_by_id()`, `get_main_deck()`, `get_monster_deck()`, `get_esd01_main_deck()`, printing helpers (`printing_for_mode`, `get_printed_field`, `apply_printing`) |
-| `sets/card_set_<set>.gd` | Per-set card data, one file per set (ebp01–04, epr, esd01–02, esc01, efc01, system) — **data only**, each exposing `CARDS: Array[Dictionary]` |
+| `sets/card_set_<set>.gd` | Per-set card data, one file per set (ebp01–04, epr, esd01–05, esc01, efc01, system) — **data only**, each exposing `CARDS: Array[Dictionary]` |
 | `card_enums.gd` | `CardEnums` — all card-related enums (colors, types, traits, …) |
 | `deck_validator.gd` | `DeckValidator` — static deck-legality checks (50-card main, 4-monster rank 1–4, copy limits, ≤10 invade-2 cards, resonance); returns translation-key errors |
 | `decklist_manager.gd` | **Autoload `DecklistManager`** — `.deck` files under `user://decklists/` (subfolders = folders), per-player deck selection, build/preview/validate |

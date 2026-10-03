@@ -560,6 +560,10 @@ func destroy_zone_targets(player_id: int, target: PlayerState, filter: Callable,
 	return await destruction.destroy_zone_targets(player_id, target, filter, count, prompt, up_to)
 
 
+func destroy_zones_within_rank_budget(player_id: int, target: PlayerState, budget: int, prompt_fmt: String = "", filter: Callable = Callable()) -> Array[Dictionary]:
+	return await destruction.destroy_zones_within_rank_budget(player_id, target, budget, prompt_fmt, filter)
+
+
 func destroy_chosen_zone(player_id: int, target: PlayerState, valid_zones: Array[int], prompt: String) -> Dictionary:
 	return await destruction.destroy_chosen_zone(player_id, target, valid_zones, prompt)
 

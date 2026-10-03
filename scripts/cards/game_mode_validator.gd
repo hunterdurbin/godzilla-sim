@@ -22,7 +22,7 @@ const MODES: Array[Dictionary] = [
 		# West format tracks the Western release. Update `include_sets`
 		# below as new sets reach the Western release.
 		"card_pool": {
-			"include_sets": ["EBP01", "EBP02", "EBP03", "EBP04", "EFC01", "ESD01", "ESD02", "EPR", "ESC01"],
+			"include_sets": ["EBP01", "EBP02", "EBP03", "EBP04", "EFC01", "ESD01", "ESD02", "ESD03", "ESD04", "ESD05", "EPR", "ESC01"],
 			"include_cards": [],
 			"exclude_cards": ["EPR-004", "EPR-014"],
 			"restricted_0": ["EBP01-079", "EBP03-016"],
@@ -37,7 +37,7 @@ const MODES: Array[Dictionary] = [
 		# East format tracks the latest Japanese release. Contains every
 		# currently-implemented set.
 		"card_pool": {
-			"include_sets": ["EBP01", "EBP02", "EBP03", "EBP04", "EFC01", "ESD01", "ESD02", "EPR", "ESC01"],
+			"include_sets": ["EBP01", "EBP02", "EBP03", "EBP04", "EFC01", "ESD01", "ESD02", "ESD03", "ESD04", "ESD05", "EPR", "ESC01"],
 			"include_cards": [],
 			"exclude_cards": ["ESD01-016"],
 			"restricted_0": ["EBP01-079", "EBP03-016"],
@@ -60,7 +60,7 @@ const MODES: Array[Dictionary] = [
 		# (rarity-annotated for readability) and is spliced in at runtime
 		# via `_get_resolved_modes`. Keep this `include_cards` slot empty.
 		"card_pool": {
-			"include_sets": ["ESD01", "ESD02"],
+			"include_sets": ["ESD01", "ESD02", "ESD03", "ESD04", "ESD05"],
 			"include_cards": [],
 			"exclude_cards": [],
 			"restricted_0": ["EBP01-079", "EBP03-016"],

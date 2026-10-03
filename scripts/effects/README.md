@@ -31,7 +31,7 @@ typed-array params + dynamic calls can silently abort coroutines.
 
 ## Per-card scripts
 
-One script per card in per-set dirs (`ebp01/`–`ebp04/`, `esd01/`, `esd02/`,
+One script per card in per-set dirs (`ebp01/`–`ebp04/`, `esd01/`–`esd05/`,
 `esc01/`, `efc01/`, `epr/`), named by card id (`ebp04_090.gd`). Each extends
 the CardEffect base and overrides trigger virtuals; awakening effects key off
 **monster_zone** (`AwakeningN` = `monster_zone >= N`), not rage.

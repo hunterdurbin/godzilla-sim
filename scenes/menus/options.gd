@@ -417,7 +417,7 @@ func _add_option_row(vbox: VBoxContainer, label_text: String, option_keys: Array
 
 # --- Customize modal ---
 
-const CARD_ART_SETS := ["EBP01", "EBP02", "EBP03", "EBP04", "EPR", "ESD01", "ESD02", "ESC01", "EFC01"]
+const CARD_ART_SETS := ["EBP01", "EBP02", "EBP03", "EBP04", "EPR", "ESD01", "ESD02", "ESD03", "ESD04", "ESD05", "ESC01", "EFC01"]
 const _CardScript := preload("res://scenes/cards/card.gd")
 var _image_filters := PackedStringArray(["*.png,*.jpg,*.jpeg,*.webp ; Image Files"])
 var _pending_card_art_src: String = ""  # Holds picked file path while waiting for card number input

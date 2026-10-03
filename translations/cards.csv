@@ -1108,6 +1108,15 @@ CARD_ESD02-014_DESC,Evolve 1 of your battle cards with <Evolution> .,あなた�
 CARD_ESD02-015_NAME,Burning Godzilla's Rampage,バーニングゴジラ暴走
 CARD_ESD02-015_DESC,"Choose 1 of your opponent’s zones. <Destroy> all of your opponent’s battle cards in that zone and zones adjacent to it.
 (For example, if a card is in zone 7, the adjacent zones are 4, 6, and 8.)",相手のエリア１つを指定し、そのエリアおよび隣接エリアにいる相手の交戦カードをすべて<破壊>する。（例えばエリア７を指定したら４、６、７、８にいる交戦カードを破壊）
+CARD_ESD03-005_NAME,Godzilla(2026),
+CARD_ESD03-005_DESC,"If there is a rank IV monster card underneath this, add +15,000 threat.
+At the beginning of your end phase, if this has 3 or more <Rage>, you may advance 1 zone.
+<Awakening 8> This card gains +15,000 threat.",
+CARD_ESD04-004_NAME,Destoroyah Perfect Form,
+CARD_ESD04-004_DESC,"<Enter> You may discard a strategy card from your hand to decrease your opponent's <Rage> by 1.
+<Overwhelm> If you have a 「Godzilla vs. Destoroyah」 card in play, add +10,000 counter power to your total.",
+CARD_ESD05-002_NAME,King Ghidorah(1991),
+CARD_ESD05-002_DESC,"<Enter> Send the top card of your main deck to your discard pile. When you do so, <Destroy> any number of your opponent's battle cards that add up to the discarded card's rank or less.",
 CARD_ESC01-001_NAME,Godzilla(1954),ゴジラ(1954)
 CARD_ESC01-001_DESC,"When playing this from your hand, if you discard a <Godzilla> card from your hand you can play this card at a -4 rank. (Afterwards it's a Rank 8). 
 If this is in the same column as your opponent's Monster card this gains +3000 counter power.

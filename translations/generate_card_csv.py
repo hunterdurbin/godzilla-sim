@@ -19,7 +19,7 @@ CARD_SETS_DIR = REPO / "scripts" / "cards" / "sets"
 CARD_SET_FILES = [
     CARD_SETS_DIR / f"card_set_{s}.gd"
     for s in ["ebp01", "ebp02", "ebp03", "ebp04", "epr",
-              "esd01", "esd02", "esc01", "efc01", "system"]
+              "esd01", "esd02", "esd03", "esd04", "esd05", "esc01", "efc01", "system"]
 ]
 JA_SOURCES = HERE / "ja_sources"
 OUT_CSV = HERE / "cards.csv"

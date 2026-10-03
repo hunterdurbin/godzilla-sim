@@ -80,6 +80,49 @@ func destroy_zone_targets(player_id: int, target: PlayerState, filter: Callable,
 
 
 
+func destroy_zones_within_rank_budget(player_id: int, target: PlayerState, budget: int, prompt_fmt: String = "", filter: Callable = Callable()) -> Array[Dictionary]:
+	## "<Destroy> any number of battle cards whose total ranks add up to
+	## `budget` or less" (EBP04-024, ESD05-002). The player picks one zone at a
+	## time; each pick spends the card's effective field rank, and only cards
+	## that still fit the remaining budget are offered, so the total can't
+	## overflow. Skipping ends the effect. `prompt_fmt` takes the remaining
+	## budget as its single %d (defaults to the shared rank-budget prompt);
+	## `filter` (card_data) -> bool narrows the eligible cards further.
+	## Returns the destroyed cards in pick order ([] when none).
+	if prompt_fmt.is_empty():
+		prompt_fmt = tr("STR_EFF_DESTROY_RANK_BUDGET_FMT")
+	var destroyed: Array[Dictionary] = []
+	var remaining: int = budget
+	while true:
+		var eligible: Array[int] = []
+		for i in range(8):
+			var zone_card := target.get_zone_top_card(i)
+			if zone_card.is_empty():
+				continue
+			if filter.is_valid() and not filter.call(zone_card):
+				continue
+			if h.get_effective_field_rank(zone_card, target.player_id) > remaining:
+				continue
+			if not _can_destroy_card(target, zone_card):
+				continue
+			eligible.append(i)
+		if eligible.is_empty():
+			break
+
+		var chosen: int = await h.select_zone_target(
+			player_id, target.player_id, eligible, prompt_fmt % remaining, true)
+		if chosen < 0 or chosen not in eligible:
+			break
+
+		# Capture rank before destruction — destroy_zones mutates the zone.
+		var rank: int = h.get_effective_field_rank(target.get_zone_top_card(chosen), target.player_id)
+		destroyed.append_array(await destroy_zones(target, [chosen]))
+		remaining -= rank
+	return destroyed
+
+
+
+
 func destroy_chosen_zone(player_id: int, target: PlayerState, valid_zones: Array[int], prompt: String) -> Dictionary:
 	## Let a player choose one zone from a pre-computed list to destroy.
 	## Like destroy_zone_target but with pre-computed valid zones instead of a filter.
