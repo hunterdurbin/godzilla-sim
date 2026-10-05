@@ -7,12 +7,12 @@ extends CardEffect
 ## +10,000 counter power to your total.
 ##
 ## Tested: Yes
-## Known issues: <Overwhelm> is not defined in comprehensive rules v1.1 —
-##   modeled as an always-on monster CP modifier (EFC01-001 style).
+## Known issues: None
 ## Edge cases: None
 ## Rules: None
 ## Interactions: EBP01-062 / EBP01-065 / EBP04-083 (Godzilla vs. Destoroyah)
 ## Implementation notes: "In play" for a strategy card = a strategy zone.
+##   <Overwhelm> = ctx.is_overwhelm() (own monster zone >= opponent's).
 
 
 const GVD_NAME := "Godzilla vs. Destoroyah"
@@ -41,6 +41,8 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
+	if not ctx.is_overwhelm():
+		return 0
 	for sz_card in ctx.owner.strategy_zones:
 		if not sz_card.is_empty() and sz_card.get("name", "") == GVD_NAME:
 			return 10000

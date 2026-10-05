@@ -935,6 +935,40 @@ func test_esd03_005_end_phase_declined_or_low_rage_does_not_advance() -> void:
 	assert_int(state2.players[0].monster_zone).is_equal(4)
 
 
+# --- ESD03-007: Godzilla(2026) battle — Awk6 +3000 CP; Overwhelm + invaded
+# --- this turn: play from hand at rank -1 ---
+
+
+func test_esd03_007_awakening6_adds_3000_cp() -> void:
+	var card := Real.instance("ESD03-007")
+	var state := States.make_state({"p0": {"zone_cards": {2: card}, "monster_zone": 5}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000)
+	state.players[0].monster_zone = 6
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(8000)
+
+
+func test_esd03_007_rank_reduced_only_when_invaded_and_overwhelming() -> void:
+	var card := Real.instance("ESD03-007")
+	var state := States.make_state({
+		"p0": {"hand": [card], "monster_zone": 4, "has_invaded_this_turn": true},
+		"p1": {"monster_zone": 4},
+	})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(-1)
+
+	# Behind the opponent's monster: <Overwhelm> is off.
+	state.players[1].monster_zone = 5
+	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(0)
+
+	# Ahead, but no invasion this turn.
+	state.players[1].monster_zone = 3
+	state.players[0].has_invaded_this_turn = false
+	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(0)
+
+
 # --- ESD04-004: Destoroyah Perfect Form — enter: discard strategy → opp rage -1;
 # --- +10000 CP w/ "Godzilla vs. Destoroyah" in play ---
 
@@ -981,6 +1015,13 @@ func test_esd04_004_overwhelm_cp_needs_godzilla_vs_destoroyah_in_play() -> void:
 	assert_int(handler.get_monster_cp_modifier(0)).is_equal(0)
 
 	state.players[0].strategy_zones[1] = Real.instance("EBP04-083")
+	assert_int(handler.get_monster_cp_modifier(0)).is_equal(10000)
+
+	# <Overwhelm> is off while our monster is behind the opponent's.
+	state.players[1].monster_zone = 3
+	state.players[0].monster_zone = 2
+	assert_int(handler.get_monster_cp_modifier(0)).is_equal(0)
+	state.players[0].monster_zone = 3
 	assert_int(handler.get_monster_cp_modifier(0)).is_equal(10000)
 
 

@@ -35,6 +35,8 @@ One script per card in per-set dirs (`ebp01/`–`ebp04/`, `esd01/`–`esd05/`,
 `esc01/`, `efc01/`, `epr/`), named by card id (`ebp04_090.gd`). Each extends
 the CardEffect base and overrides trigger virtuals; awakening effects key off
 **monster_zone** (`AwakeningN` = `monster_zone >= N`), not rage.
+`<Overwhelm>` effects gate on `ctx.is_overwhelm()` — active while your
+monster is in the same zone as, or ahead of, the opponent's monster.
 
 ## Conditional phase-start triggers — `phase_start_applies`
 

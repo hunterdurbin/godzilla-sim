@@ -379,6 +379,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/esd02/esd02_014.gd": ["on_enter"],
 	"res://scripts/effects/esd02/esd02_015.gd": ["on_enter"],
 	"res://scripts/effects/esd03/esd03_005.gd": ["on_phase_start","get_threat_level_modifier","get_effect_categories"],
+	"res://scripts/effects/esd03/esd03_007.gd": ["get_counter_power_modifier","get_play_rank_modifier_for_card"],
 	"res://scripts/effects/esd04/esd04_004.gd": ["on_enter","get_counter_power_modifier","get_effect_categories"],
 	"res://scripts/effects/esd05/esd05_002.gd": ["on_enter"],
 }
