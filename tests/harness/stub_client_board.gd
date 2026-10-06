@@ -80,8 +80,8 @@ func _rpc_zone_target_requested(target_pid: int, zones_json: String, prompt: Str
 	prompt_received.emit("zone_target", [target_pid, zones_json, prompt, allow_skip])
 
 
-func _rpc_zones_target_requested(target_pid: int, zones_json: String, count: int, up_to: bool, prompt: String, _source_id: String = "") -> void:
-	prompt_received.emit("zones_target", [target_pid, zones_json, count, up_to, prompt])
+func _rpc_zones_target_requested(target_pid: int, zones_json: String, count: int, up_to: bool, prompt: String, _source_id: String = "", constraints_json: String = "") -> void:
+	prompt_received.emit("zones_target", [target_pid, zones_json, count, up_to, prompt, constraints_json])
 
 
 func _rpc_strategy_target_requested(target_pid: int, indices_json: String, prompt: String, _source_id: String = "") -> void:

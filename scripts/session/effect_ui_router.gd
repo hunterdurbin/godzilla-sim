@@ -35,7 +35,7 @@ extends Node
 ##                        resolve_cb takes int (hand index, -1 = skip)
 ##   "zone_target":      (target_player_id, valid_zones, prompt, allow_skip, resolve_cb)
 ##                        resolve_cb takes int (zone index, -1 = skip)
-##   "zones_target":     (target_player_id, valid_zones, count, up_to, prompt, resolve_cb)
+##   "zones_target":     (target_player_id, valid_zones, count, up_to, prompt, constraints, resolve_cb)
 ##                        resolve_cb takes Array[int] (selected zones, [] = decline in up-to mode)
 ##   "strategy_target":  (target_player_id, valid_indices, prompt, resolve_cb)
 ##                        resolve_cb takes int (strategy index)
@@ -376,16 +376,17 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 	show_zone_target(target_player_id, valid_zones, prompt, allow_skip)
 
 
-func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array, count: int, up_to: bool, prompt: String) -> void:
+func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array, count: int, up_to: bool, prompt: String, constraints: Dictionary = {}) -> void:
 	if _is_bot_target(player_id):
 		return
 	if is_multiplayer and player_id != local_player_id:
 		var zones_json := JSON.stringify(valid_zones)
-		_send_to_remote(player_id, "zones_target", [target_player_id, zones_json, count, up_to, prompt], func(peer):
-			RpcLogger.log_send("zones_target_requested", 4 + zones_json.length() + prompt.length() + 2)
-			multiplayer_sync._rpc_zones_target_requested.rpc_id(peer, target_player_id, zones_json, count, up_to, prompt))
+		var constraints_json := ZoneSelectConstraints.to_json(constraints)
+		_send_to_remote(player_id, "zones_target", [target_player_id, zones_json, count, up_to, prompt, "", constraints_json], func(peer):
+			RpcLogger.log_send("zones_target_requested", 4 + zones_json.length() + prompt.length() + constraints_json.length() + 2)
+			multiplayer_sync._rpc_zones_target_requested.rpc_id(peer, target_player_id, zones_json, count, up_to, prompt, "", constraints_json))
 		return
-	show_zones_target(target_player_id, valid_zones, count, up_to, prompt)
+	show_zones_target(target_player_id, valid_zones, count, up_to, prompt, constraints)
 
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array, prompt: String) -> void:
@@ -467,11 +468,11 @@ func show_zone_target(target_player_id: int, valid_zones: Array, prompt: String,
 	_show("zone_target", [target_player_id, typed, _translate(prompt), allow_skip, resolve_zone_target])
 
 
-func show_zones_target(target_player_id: int, valid_zones: Array, count: int, up_to: bool, prompt: String) -> void:
+func show_zones_target(target_player_id: int, valid_zones: Array, count: int, up_to: bool, prompt: String, constraints: Dictionary = {}) -> void:
 	var typed: Array[int] = []
 	for v in valid_zones:
 		typed.append(int(v))
-	_show("zones_target", [target_player_id, typed, count, up_to, _translate(prompt), resolve_zones_target])
+	_show("zones_target", [target_player_id, typed, count, up_to, _translate(prompt), constraints, resolve_zones_target])
 
 
 func show_strategy_target(target_player_id: int, valid_indices: Array, prompt: String) -> void:

@@ -558,7 +558,8 @@ func _drive_zones_target() -> void:
 		guard += 1
 		var remaining: Array = []
 		for z in sel._zones_target_valid_zones:
-			if z not in sel._zones_target_selected:
+			if z not in sel._zones_target_selected \
+					and ZoneSelectConstraints.can_add(sel._zones_target_constraints, sel._zones_target_selected, z):
 				remaining.append(z)
 		if remaining.is_empty():
 			break

@@ -320,7 +320,7 @@ func _resend_pending_interaction(peer_id: int) -> void:
 			_rpc_zone_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4] if args.size() > 4 else "", args[5] if args.size() > 5 else "")
 		"zones_target":
 			RpcLogger.log_send("zones_target_requested", 4 + args[1].length() + args[4].length() + 2)
-			_rpc_zones_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4], args[5] if args.size() > 5 else "")
+			_rpc_zones_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3], args[4], args[5] if args.size() > 5 else "", args[6] if args.size() > 6 else "")
 		"strategy_target":
 			RpcLogger.log_send("strategy_target_requested", 4 + args[1].length() + args[2].length())
 			_rpc_strategy_target_requested.rpc_id(peer_id, args[0], args[1], args[2], args[3] if args.size() > 3 else "")
@@ -897,9 +897,9 @@ func _rpc_zone_target_resolved(zone_index: int) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _rpc_zones_target_requested(target_player_id: int, zones_json: String, count: int, up_to: bool, prompt: String, source_id: String = "") -> void:
+func _rpc_zones_target_requested(target_player_id: int, zones_json: String, count: int, up_to: bool, prompt: String, source_id: String = "", constraints_json: String = "") -> void:
 	if _board:
-		_board._rpc_zones_target_requested(target_player_id, zones_json, count, up_to, prompt, source_id)
+		_board._rpc_zones_target_requested(target_player_id, zones_json, count, up_to, prompt, source_id, constraints_json)
 
 
 ## Client -> Host: multi-zone target resolved (player chose zones + confirmed)
@@ -932,6 +932,11 @@ func _rpc_zones_target_resolved(zones_json: String) -> void:
 		else zone_indices.size() == mini(count, offered.size())
 	if not valid_size:
 		push_warning("[Sync] Rejected zones_target: wrong count %d (requested %d, offered %d)" % [zone_indices.size(), count, offered.size()])
+		return
+	var constraints := ZoneSelectConstraints.from_json(str(pargs[6]) if pargs.size() > 6 else "")
+	if not ZoneSelectConstraints.is_valid(constraints, zone_indices):
+		push_warning("[Sync] Rejected zones_target: over budget (%d > %d)" % [
+			ZoneSelectConstraints.total(constraints, zone_indices), ZoneSelectConstraints.budget(constraints)])
 		return
 	_pending_interaction = {}
 	_session.player_input.resolve_zones_target(zone_indices)

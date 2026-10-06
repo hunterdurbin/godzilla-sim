@@ -166,33 +166,53 @@ func test_destroy_zone_targets_rejects_invalid_and_duplicate_picks() -> void:
 	assert_bool(state.players[1].zone_has_cards(4)).is_true()
 
 
-func test_destroy_zones_within_rank_budget_gates_picks_by_remaining_budget() -> void:
+func test_destroy_zones_within_rank_budget_is_one_multi_select_with_budget() -> void:
+	# One select/deselect + confirm prompt: every card that fits the budget on
+	# its own is offered, each weighted by its rank, up-to mode (confirming
+	# nothing declines). The confirmed cards are destroyed together.
 	var state := States.make_state({"p1": {"zone_cards": {
-		0: Cards.battle(3, 3000, "R3"), 1: Cards.battle(2, 2000, "R2"), 2: Cards.battle(4, 4000, "R4"),
+		0: Cards.battle(3, 3000, "R3"), 1: Cards.battle(2, 2000, "R2"),
+		2: Cards.battle(4, 4000, "R4"), 3: Cards.battle(6, 6000, "R6"),
 	}}})
 	var input := ScriptedPlayerInput.new()
-	input.answers = {"select_zone": [0, 1]}
+	input.answers = {"select_zones": [[0, 1]]}
 	var handler := _make_handler(state, input)
 
 	var destroyed: Array[Dictionary] = await handler.destroy_zones_within_rank_budget(
 		0, state.players[1], 5, "budget %d")
 
+	assert_int(input.calls.size()).is_equal(1)
+	var prompt_call: Dictionary = input.calls[0]
+	assert_str(prompt_call["kind"]).is_equal("select_zones")
+	assert_array(prompt_call["valid"]).contains_exactly([0, 1, 2])  # rank 6 never fits
+	assert_bool(prompt_call["up_to"]).is_true()
+	assert_str(str(prompt_call["prompt"])).is_equal("budget 5")
+	assert_dict(prompt_call["constraints"]).is_equal({"weights": {0: 3, 1: 2, 2: 4}, "budget": 5})
 	assert_int(destroyed.size()).is_equal(2)
-	assert_str(str(state.players[1].get_zone_top_card(2).get("id"))).is_equal("R4")
-	# Budget 5 offers everything; after spending 3 only the rank 2 fits;
-	# after spending 5 nothing fits, so there's no third prompt.
-	assert_int(input.calls.size()).is_equal(2)
-	assert_array(input.calls[0]["valid"]).contains_exactly([0, 1, 2])
-	assert_array(input.calls[1]["valid"]).contains_exactly([1])
-	assert_str(str(input.calls[1]["prompt"])).is_equal("budget 2")
+	assert_array(state.players[1].get_battle_card_zone_indices()).contains_exactly([2, 3])
 
 
-func test_destroy_zones_within_rank_budget_skip_and_filter() -> void:
+func test_destroy_zones_within_rank_budget_rejects_over_budget_answer() -> void:
+	var state := States.make_state({"p1": {"zone_cards": {
+		0: Cards.battle(3, 3000, "R3"), 2: Cards.battle(4, 4000, "R4"),
+	}}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zones": [[0, 2]]}  # 7 > 5
+	var handler := _make_handler(state, input)
+
+	var destroyed: Array[Dictionary] = await handler.destroy_zones_within_rank_budget(
+		0, state.players[1], 5, "p %d")
+
+	assert_array(destroyed).is_empty()
+	assert_array(state.players[1].get_battle_card_zone_indices()).contains_exactly([0, 2])
+
+
+func test_destroy_zones_within_rank_budget_decline_and_filter() -> void:
 	var state := States.make_state({"p1": {"zone_cards": {
 		0: Cards.battle(1, 1000, "KEEP"), 1: Cards.battle(1, 1000, "OUT"),
 	}}})
 	var input := ScriptedPlayerInput.new()
-	input.answers = {"select_zone": [-1]}
+	input.answers = {"select_zones": [[]]}
 	var handler := _make_handler(state, input)
 	var only_keep := func(card: Dictionary) -> bool: return card.get("id") == "KEEP"
 
@@ -202,3 +222,26 @@ func test_destroy_zones_within_rank_budget_skip_and_filter() -> void:
 	assert_array(destroyed).is_empty()
 	assert_array(input.calls[0]["valid"]).contains_exactly([0])
 	assert_bool(state.players[1].zone_has_cards(0)).is_true()
+
+
+func test_default_select_zones_respects_rank_budget() -> void:
+	# Unanswered prompts fall back to PlayerInput's default: first zones that
+	# still fit the budget.
+	var input := PlayerInput.new()
+	var constraints := ZoneSelectConstraints.rank_budget({0: 3, 1: 4, 2: 2}, 5)
+	var zones: Array[int] = input.select_zones(0, 1, [0, 1, 2] as Array[int], 3, true, "p", constraints)
+	assert_array(zones).contains_exactly([0, 2])
+
+
+func test_zone_select_constraints_budget_math_and_json_round_trip() -> void:
+	var c := ZoneSelectConstraints.rank_budget({1: 2, 4: 3, 6: 4}, 5)
+	assert_bool(ZoneSelectConstraints.can_add(c, [1], 4)).is_true()   # 2 + 3 = 5
+	assert_bool(ZoneSelectConstraints.can_add(c, [1, 4], 6)).is_false()
+	assert_bool(ZoneSelectConstraints.is_valid(c, [4, 6])).is_false()  # 7
+	assert_int(ZoneSelectConstraints.total(c, [1, 6])).is_equal(6)
+	# JSON turns int keys into strings and ints into floats — from_json undoes it.
+	assert_dict(ZoneSelectConstraints.from_json(ZoneSelectConstraints.to_json(c))).is_equal(c)
+	# No constraints: everything allowed, empty JSON.
+	assert_bool(ZoneSelectConstraints.can_add({}, [0, 1, 2], 3)).is_true()
+	assert_str(ZoneSelectConstraints.to_json({})).is_empty()
+	assert_dict(ZoneSelectConstraints.from_json("")).is_empty()

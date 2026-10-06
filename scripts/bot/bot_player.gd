@@ -1251,12 +1251,13 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 		player_input.resolve_zone_target(-1)
 
 
-func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, _prompt: String) -> void:
+func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, _prompt: String, constraints: Dictionary = {}) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
 	var scripted: Variant = _pop_scripted("zones")
-	if scripted is Array and _valid_scripted_zones(scripted, valid_zones, count, up_to):
+	if scripted is Array and _valid_scripted_zones(scripted, valid_zones, count, up_to) \
+			and ZoneSelectConstraints.is_valid(constraints, scripted):
 		var scripted_zones: Array[int] = []
 		scripted_zones.assign(scripted)
 		player_input.resolve_zones_target(scripted_zones)
@@ -1269,9 +1270,16 @@ func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zon
 	var pool := valid_zones.duplicate()
 	var picks: Array[int] = []
 	while picks.size() < count and not pool.is_empty():
-		var zone: int = _pick_opponent_zone_target(pool, player, opponent) \
+		# Constraints (rank budget): only offer zones that still fit.
+		var fits: Array[int] = []
+		for z in pool:
+			if ZoneSelectConstraints.can_add(constraints, picks, z):
+				fits.append(z)
+		if fits.is_empty():
+			break
+		var zone: int = _pick_opponent_zone_target(fits, player, opponent) \
 			if target_player_id != bot_player_id \
-			else _pick_own_zone_target(pool, player)
+			else _pick_own_zone_target(fits, player)
 		if zone < 0:
 			break
 		picks.append(zone)

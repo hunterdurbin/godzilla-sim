@@ -112,7 +112,7 @@ func test_signal_input_deferred_resolve() -> void:
 func test_signal_input_zones_target_round_trip() -> void:
 	var input := SignalPlayerInput.new()
 	var seen: Array = []
-	input.zones_target_requested.connect(func(_pid: int, _tpid: int, zones: Array[int], count: int, up_to: bool, _prompt: String) -> void:
+	input.zones_target_requested.connect(func(_pid: int, _tpid: int, zones: Array[int], count: int, up_to: bool, _prompt: String, _constraints: Dictionary) -> void:
 		seen.append([zones, count, up_to])
 		var picks: Array[int] = [7, 3]
 		input.resolve_zones_target.call_deferred(picks))

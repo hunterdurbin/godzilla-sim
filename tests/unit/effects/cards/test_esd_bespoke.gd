@@ -1068,7 +1068,7 @@ func test_esd05_002_enter_destroys_within_milled_rank_budget() -> void:
 		}},
 	})
 	var input := ScriptedPlayerInput.new()
-	input.answers = {"select_zone": [0, 1]}
+	input.answers = {"select_zones": [[0, 1]]}
 	var s := States.make_session(state, input)
 
 	await s["effect_handler"].trigger_enter(0, monster)
@@ -1078,9 +1078,11 @@ func test_esd05_002_enter_destroys_within_milled_rank_budget() -> void:
 	assert_bool(p1.zone_has_cards(1)).is_false()
 	assert_str(str(p1.get_zone_top_card(2).get("id"))).is_equal("OPP-R4")
 	assert_str(str(state.players[0].discard_pile[0].get("id"))).is_equal("TOP-R5")
-	# After spending 3 of 5, the rank 4 is out; only the rank 2 remains.
-	# (calls[0] is the mill reveal, so read the last zone prompt.)
-	assert_array(input.calls.back()["valid"]).contains_exactly([1])
+	# One select/deselect + confirm prompt, budget = the milled card's rank.
+	var zones_calls := input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zones")
+	assert_int(zones_calls.size()).is_equal(1)
+	assert_array(zones_calls[0]["valid"]).contains_exactly([0, 1, 2])
+	assert_dict(zones_calls[0]["constraints"]).is_equal({"weights": {0: 3, 1: 2, 2: 4}, "budget": 5})
 
 
 func test_esd05_002_empty_deck_destroys_nothing() -> void:
@@ -1095,7 +1097,7 @@ func test_esd05_002_empty_deck_destroys_nothing() -> void:
 
 	await s["effect_handler"].trigger_enter(0, monster)
 
-	assert_int(input.count_calls("select_zone")).is_equal(0)
+	assert_int(input.count_calls("select_zones")).is_equal(0)
 	assert_bool(state.players[1].zone_has_cards(0)).is_true()
 
 

@@ -318,19 +318,21 @@ func select_zone_target(player_id: int, target_player_id: int, valid_zones: Arra
 
 
 
-func select_zones_target(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, prompt: String, up_to: bool = false) -> Array[int]:
+func select_zones_target(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, prompt: String, up_to: bool = false, constraints: Dictionary = {}) -> Array[int]:
 	## Ask a player to choose multiple zones on the target player's board.
 	## Exact mode (up_to = false): the player must pick exactly `count` zones —
 	## callers pass count already clamped to valid_zones.size().
 	## Up-to mode (up_to = true): the player may pick any 0..count zones and an
 	## empty result declines the effect.
+	## `constraints` (ZoneSelectConstraints) adds extra rules, e.g. a rank
+	## budget — the UI, bot, and MP host all enforce it.
 	if valid_zones.is_empty() or count <= 0:
 		return []
 
 	_highlight_active_effect()
 	# Not redundant: SignalPlayerInput's override is a coroutine.
 	@warning_ignore("redundant_await")
-	var zones: Array[int] = await input.select_zones(player_id, target_player_id, valid_zones, count, up_to, prompt)
+	var zones: Array[int] = await input.select_zones(player_id, target_player_id, valid_zones, count, up_to, prompt, constraints)
 	_unhighlight_active_effect()
 	return zones
 

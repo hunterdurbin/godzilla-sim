@@ -82,6 +82,7 @@ var _zones_target_count: int = 0 # Required picks (exact) or max picks (up_to)
 var _zones_target_up_to: bool = false
 var _zones_target_selected: Array[int] = []
 var _zones_target_prompt: String = ""
+var _zones_target_constraints: Dictionary = {} # ZoneSelectConstraints (e.g. rank budget)
 var _prompt_preview_root: Control = null # Mini previews above the helper text (effect source / card being placed)
 var _prompt_preview_card: Control = null # The placed-card preview node (choice hover retargets it)
 var _stack_hover_preview: Control = null # Sticky preview for the last hovered effect-stack row (joins the prompt row when one is up, else bottom-left); stays until its row leaves the stack
@@ -229,6 +230,7 @@ func reset_for_rematch() -> void:
 	_zones_target_up_to = false
 	_zones_target_selected.clear()
 	_zones_target_prompt = ""
+	_zones_target_constraints = {}
 	_strategy_target_selecting = false
 	_strategy_target_player_id = -1
 	_strategy_target_board_pid = -1
@@ -1435,23 +1437,24 @@ func _finish_zone_target(zone_idx: int) -> void:
 		_session.player_input.resolve_zone_target(zone_idx)
 
 
-func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String) -> void:
+func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String, constraints: Dictionary = {}) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
 	var source_id := _get_effect_source_id()
 	if is_multiplayer_game and player_id != local_player_id:
 		_flush_broadcast()
 		var zones_json := JSON.stringify(valid_zones)
-		_pending_interaction = {"method": "zones_target", "args": [target_player_id, zones_json, count, up_to, prompt, source_id], "player": player_id}
+		var constraints_json := ZoneSelectConstraints.to_json(constraints)
+		_pending_interaction = {"method": "zones_target", "args": [target_player_id, zones_json, count, up_to, prompt, source_id, constraints_json], "player": player_id}
 		for peer_id in NetworkManager.peer_player_map:
 			if NetworkManager.peer_player_map[peer_id] == player_id:
-				RpcLogger.log_send("zones_target_requested", 4 + zones_json.length() + prompt.length() + 2)
-				_sync._rpc_zones_target_requested.rpc_id(peer_id, target_player_id, zones_json, count, up_to, prompt, source_id)
+				RpcLogger.log_send("zones_target_requested", 4 + zones_json.length() + prompt.length() + constraints_json.length() + 2)
+				_sync._rpc_zones_target_requested.rpc_id(peer_id, target_player_id, zones_json, count, up_to, prompt, source_id, constraints_json)
 		return
-	_show_zones_target_selection(player_id, target_player_id, valid_zones, count, up_to, prompt, source_id)
+	_show_zones_target_selection(player_id, target_player_id, valid_zones, count, up_to, prompt, source_id, constraints)
 
 
-func _show_zones_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String, source_id: String = "") -> void:
+func _show_zones_target_selection(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String, source_id: String = "", constraints: Dictionary = {}) -> void:
 	_zones_target_selecting = true
 	_zones_target_player_id = player_id
 	_zones_target_board_pid = target_player_id
@@ -1460,6 +1463,7 @@ func _show_zones_target_selection(player_id: int, target_player_id: int, valid_z
 	_zones_target_up_to = up_to
 	_zones_target_selected = []
 	_zones_target_prompt = _resolve_translated_text(prompt)
+	_zones_target_constraints = constraints
 
 	_disable_all_buttons()
 	action_prompt_panel.visible = true
@@ -1490,17 +1494,25 @@ func _on_zones_target_slot_clicked(zone_num: int, _pid: int) -> void:
 	if zone_idx in _zones_target_selected:
 		_zones_target_selected.erase(zone_idx)
 		slot.set_selected(false)
-	elif _zones_target_selected.size() < _zones_target_count:
+	elif _zones_target_selected.size() < _zones_target_count \
+			and ZoneSelectConstraints.can_add(_zones_target_constraints, _zones_target_selected, zone_idx):
 		_zones_target_selected.append(zone_idx)
 		slot.set_selected(true)
-	# At-cap clicks on unselected zones are ignored — unselect one first.
+	# At-cap (count or rank budget) clicks on unselected zones are ignored —
+	# unselect one first.
 	_update_zones_target_confirm()
 
 
 func _update_zones_target_confirm() -> void:
-	var status := tr("STR_GB_SELECTED_FMT") \
-		.replace("{N}", str(_zones_target_selected.size())) \
-		.replace("{MAX}", str(_zones_target_count))
+	var status: String
+	if ZoneSelectConstraints.has_budget(_zones_target_constraints):
+		status = tr("STR_GB_RANK_TOTAL_FMT") \
+			.replace("{N}", str(ZoneSelectConstraints.total(_zones_target_constraints, _zones_target_selected))) \
+			.replace("{MAX}", str(ZoneSelectConstraints.budget(_zones_target_constraints)))
+	else:
+		status = tr("STR_GB_SELECTED_FMT") \
+			.replace("{N}", str(_zones_target_selected.size())) \
+			.replace("{MAX}", str(_zones_target_count))
 	card_select_prompt.text = _zones_target_prompt + "\n" + status
 	btn_confirm.text = tr("STR_GB_CONFIRM")
 	btn_confirm.disabled = not _zones_target_up_to \
@@ -1525,6 +1537,7 @@ func _finish_zones_target() -> void:
 	_zones_target_up_to = false
 	_zones_target_selected = []
 	_zones_target_prompt = ""
+	_zones_target_constraints = {}
 	action_prompt_panel.visible = false
 	btn_confirm.disabled = true
 	_cleanup_prompt_previews()

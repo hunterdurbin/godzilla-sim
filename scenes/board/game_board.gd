@@ -2260,7 +2260,7 @@ func _rpc_zone_target_requested(target_player_id: int, zones_json: String, promp
 
 
 ## Host -> Client: multi-zone target request (player must choose zones + confirm)
-func _rpc_zones_target_requested(target_player_id: int, zones_json: String, count: int, up_to: bool, prompt: String, source_id: String = "") -> void:
+func _rpc_zones_target_requested(target_player_id: int, zones_json: String, count: int, up_to: bool, prompt: String, source_id: String = "", constraints_json: String = "") -> void:
 	RpcLogger.log_receive("zones_target_requested", 4 + zones_json.length() + prompt.length() + 2)
 	if NetworkManager.is_host():
 		return
@@ -2270,7 +2270,8 @@ func _rpc_zones_target_requested(target_player_id: int, zones_json: String, coun
 	var valid_zones: Array[int] = []
 	for v in parsed:
 		valid_zones.append(int(v))
-	_selection._show_zones_target_selection(local_player_id, target_player_id, valid_zones, count, up_to, prompt, source_id)
+	_selection._show_zones_target_selection(local_player_id, target_player_id, valid_zones, count, up_to, prompt, source_id,
+		ZoneSelectConstraints.from_json(constraints_json))
 
 
 ## Host -> Client: strategy target request (player must choose a strategy zone)
