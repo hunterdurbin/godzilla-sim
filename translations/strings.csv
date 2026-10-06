@@ -716,6 +716,7 @@ STR_LOG_EFFECT_DESTROYED_FMT,{DESTROY_ICON} [b]{SOURCE_PLAYER}[/b] {SOURCE_CARD}
 STR_LOG_EFFECT_RETURNED_TO_HAND_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: returned {RETURNED_CARD} to hand,[b]{PLAYER}[/b] {SOURCE_CARD}: {RETURNED_CARD}を手札に戻す
 STR_LOG_EFFECT_ADDED_TO_HAND_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: added {CARD} to hand,[b]{PLAYER}[/b] {SOURCE_CARD}: {CARD}を手札に加える
 STR_LOG_EFFECT_PLAYED_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: played {CARD} to Zone {ZONE},[b]{PLAYER}[/b] {SOURCE_CARD}: {CARD}をエリア{ZONE}に出現
+STR_LOG_EFFECT_CHOSE_ZONE_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: chose {CARD} in Zone {ZONE},[b]{PLAYER}[/b] {SOURCE_CARD}: エリア{ZONE}の{CARD}を選択
 STR_LOG_EFFECT_TOP_OF_DECK_FMT,[b]{PLAYER}[/b] {SOURCE_CARD}: put {CARD} on top of deck,[b]{PLAYER}[/b] {SOURCE_CARD}: {CARD}をデッキの上に置く
 STR_LOG_EFFECT_SHUFFLE_DISCARD_FMT,[b]{PLAYER}[/b] shuffled discard pile into deck ([url={IDS}]{N} cards[/url]),[b]{PLAYER}[/b] 捨て札をデッキに戻してシャッフル ([url={IDS}]{N}枚[/url])
 STR_LOG_CARD_CRUSHED_FMT,{DESTROY_ICON} [b]{PLAYER}[/b] Zone {ZONE}: {CARD} crushed!,{DESTROY_ICON} [b]{PLAYER}[/b] エリア{ZONE}: {CARD} 撃破!
@@ -960,6 +961,8 @@ STR_EFF_EPR_017_PROMPT,Choose a GODZILLA THE RIDE card from your discard pile to
 STR_EFF_EPR_018_DISCARD,Discard 1 card from your hand:,手札から1枚捨てる:
 STR_EFF_EPR_018_SEARCH,"Search for a Mech, Weapon, or GODZILLA THE RIDE battle card:",<メカ>・<ウェポン>・<ゴジラ・ザ・ライド>の交戦カードを探す:
 STR_EFF_ESD03_005_PROMPT,Advance your monster card 1 zone?,怪獣カードを1エリア前進させますか?
+STR_EFF_ESD03_008_KEEP_PROMPT,Choose 1 of your battle cards to keep (all others are destroyed):,残す自分の交戦カードを1枚選ぶ (それ以外はすべて<破壊>):
+STR_EFF_ESD03_008_KEPT_FMT,%s keeps their battle card in Zone %d,%sはエリア%dの交戦カードを残す
 STR_EFF_ESD04_004_PROMPT,Discard a strategy card to reduce opponent's rage by 1 (or skip):,作戦カードを捨てて相手の<怒り>を1減らす (またはスキップ):
 STR_EFF_EBP04_089_MILESTONE_15,Inherited Life: 15 rage cards — destroying all opponent battle cards!,「受け継がれる命」: <怒り>カード15枚 — 相手の交戦カードをすべて<破壊>!
 STR_EFF_EBP04_089_MILESTONE_22,Inherited Life: 22 rage cards — opponent discards entire hand!,「受け継がれる命」: <怒り>カード22枚 — 相手は手札をすべて捨てる!

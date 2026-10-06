@@ -1112,9 +1112,15 @@ CARD_ESD03-005_NAME,Godzilla(2026),
 CARD_ESD03-005_DESC,"If there is a rank IV monster card underneath this, add +15,000 threat.
 At the beginning of your end phase, if this has 3 or more <Rage>, you may advance 1 zone.
 <Awakening 8> This card gains +15,000 threat.",
+CARD_ESD03-006_NAME,Godzilla(2023),
+CARD_ESD03-006_DESC,"<Enter> Reduce your opponent's rank I monster card's <Rage> by 1.
+<Overwhelm> This card gains +3000 counter power. (Active if your monster card is in the same zone as or ahead of your opponent's monster card.)",
 CARD_ESD03-007_NAME,Godzilla(2026),
 CARD_ESD03-007_DESC,"<Awakening 6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)
 <Overwhelm> If your monster card invaded this turn, you may play this card from your hand with its rank reduced by 1. (Active if your monster card is in the same zone as or ahead of your opponent's monster card. After being played, this card is rank 6.)",
+CARD_ESD03-008_NAME,Humanity's Crime and Punishment,
+CARD_ESD03-008_DESC,"If your monster card is rank III or higher, each player chooses 1 battle card in their zones, then <Destroy> all other battle cards. (You declare which of your battle cards remains first.)
+If your monster card has 3 or more <Rage>, your opponent discards cards until they have 2 cards remaining in their hand.",
 CARD_ESD04-004_NAME,Destoroyah Perfect Form,
 CARD_ESD04-004_DESC,"<Enter> You may discard a strategy card from your hand to decrease your opponent's <Rage> by 1.
 <Overwhelm> If you have a 「Godzilla vs. Destoroyah」 card in play, add +10,000 counter power to your total.",

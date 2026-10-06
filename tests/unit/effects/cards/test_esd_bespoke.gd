@@ -935,6 +935,34 @@ func test_esd03_005_end_phase_declined_or_low_rage_does_not_advance() -> void:
 	assert_int(state2.players[0].monster_zone).is_equal(4)
 
 
+# --- ESD03-006: Godzilla(2023) battle — enter: opp rank I monster rage -1;
+# --- Overwhelm +3000 CP ---
+
+
+func test_esd03_006_enter_reduces_rage_only_of_rank1_monster() -> void:
+	var card := Real.instance("ESD03-006")
+	var state := States.make_state({"p1": {"current_monster": Cards.monster(1), "rage": 2}})
+	var s := _session(state)
+	await s["effect_handler"].trigger_enter(0, card)
+	assert_int(state.players[1].rage).is_equal(1)
+
+	var card2 := Real.instance("ESD03-006", 1)
+	var state2 := States.make_state({"p1": {"current_monster": Cards.monster(2), "rage": 2}})
+	var s2 := _session(state2)
+	await s2["effect_handler"].trigger_enter(0, card2)
+	assert_int(state2.players[1].rage).is_equal(2)
+
+
+func test_esd03_006_overwhelm_adds_3000_cp() -> void:
+	var card := Real.instance("ESD03-006")
+	var state := States.make_state({"p0": {"zone_cards": {2: card}, "monster_zone": 4}, "p1": {"monster_zone": 4}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000)
+	state.players[1].monster_zone = 5
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(2000)
+
+
 # --- ESD03-007: Godzilla(2026) battle — Awk6 +3000 CP; Overwhelm + invaded
 # --- this turn: play from hand at rank -1 ---
 
@@ -1069,3 +1097,109 @@ func test_esd05_002_empty_deck_destroys_nothing() -> void:
 
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 	assert_bool(state.players[1].zone_has_cards(0)).is_true()
+
+
+# --- ESD03-008: Humanity's Crime and Punishment — monster rank III+: each
+# --- player keeps 1 battle card (owner first), rest destroyed; rage 3+:
+# --- opponent discards to 2 ---
+
+
+func test_esd03_008_each_player_keeps_one_owner_first_then_opponent_discards_to_2() -> void:
+	var card := Real.instance("ESD03-008")
+	var state := States.make_state({
+		"p0": {"current_monster": Cards.monster(3), "rage": 3, "zone_cards": {
+			1: Cards.battle(2, 2000, "OWN-A"), 4: Cards.battle(2, 2000, "OWN-B"),
+		}},
+		"p1": {"hand": [Cards.battle(), Cards.battle(), Cards.battle(), Cards.battle()], "zone_cards": {
+			0: Cards.battle(2, 2000, "OPP-A"), 3: Cards.battle(2, 2000, "OPP-B"), 6: Cards.battle(2, 2000, "OPP-C"),
+		}},
+	})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [4, 3]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	# Owner is asked first (own board), then the opponent (their board).
+	var zone_calls := input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zone")
+	assert_int(zone_calls[0]["player_id"]).is_equal(0)
+	assert_int(zone_calls[0]["target"]).is_equal(0)
+	assert_int(zone_calls[1]["player_id"]).is_equal(1)
+	assert_int(zone_calls[1]["target"]).is_equal(1)
+	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([4])
+	assert_array(state.players[1].get_battle_card_zone_indices()).contains_exactly([3])
+	assert_int(state.players[1].hand.size()).is_equal(2)
+
+	# Each pick is revealed to the OTHER player before the next pick:
+	# own pick → reveal to p1 → opponent pick → reveal to p0.
+	var kinds: Array = input.calls.map(func(c: Dictionary) -> String: return c["kind"])
+	var first_reveal: int = kinds.find("acknowledge_reveal")
+	assert_int(first_reveal).is_greater(kinds.find("select_zone"))
+	assert_int(first_reveal).is_less(kinds.rfind("select_zone"))
+	var reveals := input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "acknowledge_reveal")
+	assert_int(reveals.size()).is_equal(2)
+	assert_int(reveals[0]["player_id"]).is_equal(1)
+	assert_str(str(reveals[0]["cards"][0].get("id"))).is_equal("OWN-B")
+	assert_int(reveals[1]["player_id"]).is_equal(0)
+	assert_str(str(reveals[1]["cards"][0].get("id"))).is_equal("OPP-B")
+
+
+func test_esd03_008_low_rank_monster_and_low_rage_do_nothing() -> void:
+	var card := Real.instance("ESD03-008")
+	var state := States.make_state({
+		"p0": {"current_monster": Cards.monster(2), "rage": 2},
+		"p1": {"hand": [Cards.battle(), Cards.battle(), Cards.battle()], "zone_cards": {
+			0: Cards.battle(2, 2000, "OPP-A"), 3: Cards.battle(2, 2000, "OPP-B"),
+		}},
+	})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(input.count_calls("select_zone")).is_equal(0)
+	assert_int(state.players[1].get_battle_card_zone_indices().size()).is_equal(2)
+	assert_int(state.players[1].hand.size()).is_equal(3)
+
+
+func test_esd03_008_single_battle_card_is_kept_without_prompt() -> void:
+	var card := Real.instance("ESD03-008")
+	var state := States.make_state({
+		"p0": {"current_monster": Cards.monster(4)},
+		"p1": {"zone_cards": {5: Cards.battle(2, 2000, "OPP-ONLY")}},
+	})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(input.count_calls("select_zone")).is_equal(0)
+	assert_bool(state.players[1].zone_has_cards(5)).is_true()
+	# The lone kept card is still announced to the card's player.
+	var reveals := input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "acknowledge_reveal")
+	assert_int(reveals.size()).is_equal(1)
+	assert_int(reveals[0]["player_id"]).is_equal(0)
+	assert_str(str(reveals[0]["cards"][0].get("id"))).is_equal("OPP-ONLY")
+
+
+func test_esd03_008_logs_each_kept_zone() -> void:
+	var card := Real.instance("ESD03-008")
+	var state := States.make_state({
+		"p0": {"current_monster": Cards.monster(3), "zone_cards": {2: Cards.battle(2, 2000, "OWN")}},
+		"p1": {"zone_cards": {6: Cards.battle(2, 2000, "OPP")}},
+	})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	var tokens: Array = []
+	handler.log_message.connect(func(t: Dictionary) -> void: tokens.append(t))
+
+	await handler.trigger_enter(0, card)
+
+	var chose := tokens.filter(func(t: Dictionary) -> bool: return t.get("type") == "effect_chose_zone")
+	assert_int(chose.size()).is_equal(2)
+	assert_int(chose[0]["player_id"]).is_equal(0)
+	assert_int(chose[0]["zone"]).is_equal(2)
+	assert_str(str(chose[0]["card_id"])).is_equal("OWN")
+	assert_int(chose[1]["player_id"]).is_equal(1)
+	assert_int(chose[1]["zone"]).is_equal(6)
+	assert_str(str(GameLog.render(chose[1]))).contains("OPP")

@@ -86,6 +86,24 @@ func opponent_has_rage() -> bool:
 
 # --- Column queries ---
 
+# --- Public choices ---
+
+func announce_zone_choice(player: PlayerState, zone_idx: int, title: String) -> void:
+	## Make `player`'s zone choice public (card text like "each player
+	## chooses…" / "declare" — ESD03-008): log it for both players, highlight
+	## the zone, and reveal the chosen card to the OTHER player, blocking until
+	## the reveal is dismissed (reveals are shown on both boards; skipped when
+	## the other player is a bot). `title` is the already-formatted reveal title.
+	var card := player.get_zone_top_card(zone_idx)
+	if card.is_empty():
+		return
+	effect_handler.log_message.emit(GameLog.effect_chose_zone(
+		player.player_id, card_data.get("id", ""), zone_idx, card.get("id", "")))
+	effect_handler.highlight_zone_card(player.player_id, zone_idx)
+	await effect_handler.reveal_cards(1 - player.player_id, [card], title)
+	effect_handler.unhighlight_zone_card(player.player_id, zone_idx)
+
+
 # --- Mill ---
 
 func mill(count: int = 1, show_reveal: bool = true) -> Array[Dictionary]:

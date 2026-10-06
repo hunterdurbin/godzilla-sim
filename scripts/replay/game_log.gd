@@ -181,6 +181,10 @@ static func effect_played_card(player_id: int, effect_source_id: String, card_id
 	return {"type": "effect_played_card", "player_id": player_id, "source_id": effect_source_id, "card_id": card_id, "zone": zone}
 
 
+static func effect_chose_zone(player_id: int, effect_source_id: String, zone: int, card_id: String) -> Dictionary:
+	return {"type": "effect_chose_zone", "player_id": player_id, "source_id": effect_source_id, "zone": zone, "card_id": card_id}
+
+
 static func effect_put_card_on_top_of_deck(player_id: int, effect_source_id: String, card_id: String) -> Dictionary:
 	return {"type": "effect_put_card_on_top_of_deck", "player_id": player_id, "source_id": effect_source_id, "card_id": card_id}
 
@@ -454,6 +458,12 @@ static func render(token: Dictionary) -> String:
 				.replace("{CARD}", ", ".join(added_links))
 		"effect_played_card":
 			return TranslationServer.translate("STR_LOG_EFFECT_PLAYED_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{CARD}", card_link(token.get("card_id", ""))) \
+				.replace("{ZONE}", str(int(token.get("zone", 0)) + 1))
+		"effect_chose_zone":
+			return TranslationServer.translate("STR_LOG_EFFECT_CHOSE_ZONE_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
 				.replace("{CARD}", card_link(token.get("card_id", ""))) \
