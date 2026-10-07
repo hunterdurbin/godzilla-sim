@@ -714,7 +714,7 @@ func test_ebp04_024_enter_destroys_within_total_rank_budget_7() -> void:
 	for i in range(10):
 		state.players[0].discard_pile.append(_green_battle(2, 2000, "G%d" % i))
 	var input := ScriptedPlayerInput.new()
-	input.answers = {"select_zone": [0, 1]}
+	input.answers = {"select_zones": [[0, 1]]}
 	var s := States.make_session(state, input)
 
 	await s["effect_handler"].trigger_enter(0, monster)
@@ -723,8 +723,9 @@ func test_ebp04_024_enter_destroys_within_total_rank_budget_7() -> void:
 	assert_bool(p1.zone_has_cards(0)).is_false()
 	assert_bool(p1.zone_has_cards(1)).is_false()
 	assert_str(str(p1.get_zone_top_card(2).get("id"))).is_equal("OPP-R5")
-	# After spending 4, only ranks <= 3 remain eligible (the rank 5 is out).
-	assert_array(input.calls[1]["valid"]).contains_exactly([1])
+	# One multi-select over everything that fits 7 alone, budgeted by rank.
+	assert_int(input.count_calls("select_zones")).is_equal(1)
+	assert_dict(input.calls[0]["constraints"]).is_equal({"weights": {0: 4, 1: 3, 2: 5}, "budget": 7})
 
 
 func test_ebp04_024_enter_silent_below_10_green_discards() -> void:
@@ -738,7 +739,7 @@ func test_ebp04_024_enter_silent_below_10_green_discards() -> void:
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
 	await s["effect_handler"].trigger_enter(0, monster)
-	assert_int(input.count_calls("select_zone")).is_equal(0)
+	assert_int(input.count_calls("select_zones")).is_equal(0)
 
 
 # --- EBP04-025: enter destroys 1 opp strategy; invading w/ 10 green → opp to 3 ---

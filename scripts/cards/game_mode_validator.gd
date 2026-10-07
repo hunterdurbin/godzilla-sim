@@ -9,8 +9,8 @@ class_name GameModeValidator
 ##   restricted_0       : Array[String] — 0 copies allowed across monster + main
 ##   restricted_1       : Array[String] — max 1 copy across monster + main
 ##   choice_restricted  : Array[Array[String]] — pair lists; only one per pair allowed
-## Modes without a `card_pool` (e.g. no_rules) accept every card and run no
-## per-pool checks.
+## Modes without a `card_pool` (e.g. unrestricted) accept every card and run
+## no per-pool checks — standard deck-building rules (DeckValidator) still apply.
 
 const _BULKZILLA_POOL = preload("res://scripts/cards/pools/bulkzilla_card_pool.gd")
 
@@ -46,10 +46,13 @@ const MODES: Array[Dictionary] = [
 		},
 	},
 	{
-		"id": "no_rules",
-		"label": "STR_MODE_NO_RULES",
-		"desc": "STR_MODE_NO_RULES_DESC",
-		# No `card_pool` → every card is valid and no per-pool checks run.
+		"id": "unrestricted",
+		"label": "STR_MODE_UNRESTRICTED",
+		"desc": "STR_MODE_UNRESTRICTED_DESC",
+		# No `card_pool` → every implemented card is legal (newly spoiled sets
+		# land here first, before joining a Rumble pool) and no ban/restricted
+		# lists apply. Standard deck-building rules (copy limits, deck size,
+		# monster lineup, invade-2 cap) are still enforced.
 	},
 	{
 		"id": "bulkzilla",
@@ -60,7 +63,7 @@ const MODES: Array[Dictionary] = [
 		# (rarity-annotated for readability) and is spliced in at runtime
 		# via `_get_resolved_modes`. Keep this `include_cards` slot empty.
 		"card_pool": {
-			"include_sets": ["ESD01", "ESD02"],
+			"include_sets": ["ESD01", "ESD02", "ESD03", "ESD04", "ESD05"],
 			"include_cards": [],
 			"exclude_cards": [],
 			"restricted_0": ["EBP01-079", "EBP03-016"],
@@ -78,10 +81,13 @@ const ERR_NOT_IN_FORMAT := "STR_VALIDATE_NOT_IN_FORMAT_FMT"
 
 
 static func normalize_mode_id(game_mode: String) -> String:
-	## Legacy saved decks and server rooms may use the old "rumble" id before
-	## the East/West split. Map it to rumble_west (the new default).
+	## Legacy ids from saved settings/decks and server rooms:
+	##   "rumble"   (pre East/West split) -> rumble_west (the new default)
+	##   "no_rules" (renamed, now enforces deck rules) -> unrestricted
 	if game_mode == "rumble":
 		return "rumble_west"
+	if game_mode == "no_rules":
+		return "unrestricted"
 	return game_mode
 
 
@@ -109,6 +115,25 @@ static func get_mode(game_mode: String) -> Dictionary:
 	return {}
 
 
+static func get_spoiled_sets(card_ids: Array) -> Array[String]:
+	## Set prefixes from `card_ids` that no Rumble format includes yet —
+	## newly spoiled sets, playable only in `unrestricted` until released.
+	## Non-deck sets (the "RAGE" system cards) are ignored.
+	var released: Dictionary = {}
+	for m in _get_resolved_modes():
+		if str(m.get("id", "")).begins_with("rumble"):
+			for s in m.card_pool.get("include_sets", []):
+				released[s] = true
+	var spoiled: Array[String] = []
+	for cid in card_ids:
+		var prefix: String = str(cid).split("-")[0]
+		if prefix == "RAGE" or released.has(prefix) or prefix in spoiled:
+			continue
+		spoiled.append(prefix)
+	spoiled.sort()
+	return spoiled
+
+
 static func get_mode_label(mode_id: String) -> String:
 	var m := get_mode(mode_id)
 	if m.is_empty():
@@ -123,7 +148,7 @@ static func is_card_valid_for_mode(card_number: String, game_mode: String) -> bo
 	##   2. `include_cards` allow list — adds specific cards even when their
 	##      set isn't in `include_sets`.
 	##   3. `include_sets` allow list — the card's set prefix must appear.
-	## Modes without a `card_pool` entry (e.g. no_rules) accept every card.
+	## Modes without a `card_pool` entry (e.g. unrestricted) accept every card.
 	## `card_number` may include a "+" reprint suffix; we match on the base.
 	var m := get_mode(game_mode)
 	if m.is_empty() or not m.has("card_pool"):
@@ -140,10 +165,6 @@ static func is_card_valid_for_mode(card_number: String, game_mode: String) -> bo
 
 static func validate(game_mode: String, monster_entries: Array, main_entries: Array) -> Array[String]:
 	## Returns an array of error strings for the given mode. Empty = valid.
-	var normalized := normalize_mode_id(game_mode)
-	if normalized == "no_rules":
-		var empty: Array[String] = []
-		return empty
 	var errors := DeckValidator.validate(monster_entries, main_entries, CardData.printing_for_mode(game_mode))
 	var m := get_mode(game_mode)
 	if not m.is_empty() and m.has("card_pool"):
@@ -153,9 +174,6 @@ static func validate(game_mode: String, monster_entries: Array, main_entries: Ar
 
 static func get_invalid_cards(game_mode: String, monster_entries: Array, main_entries: Array) -> Dictionary:
 	## Returns card_number -> true for cards with per-card errors in the given mode.
-	var normalized := normalize_mode_id(game_mode)
-	if normalized == "no_rules":
-		return {}
 	var invalid := DeckValidator.get_invalid_cards(monster_entries, main_entries, CardData.printing_for_mode(game_mode))
 	var m := get_mode(game_mode)
 	if not m.is_empty() and m.has("card_pool"):

@@ -1,6 +1,6 @@
 class_name BulkzillaCardPool
 ## Individual commons (C) and uncommons (UC) allowed in the BULKZILLA format,
-## in addition to the full ESD01 and ESD02 sets declared in the mode's
+## in addition to the full ESD01–ESD05 starter sets declared in the mode's
 ## `include_sets`. Rarity is noted as a trailing comment for reference.
 ##
 ## Edit this list (add/remove lines) to update the BULKZILLA pool — the

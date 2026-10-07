@@ -145,23 +145,30 @@ func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int],
 	return pick
 
 
-func select_zones(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String) -> Array[int]:
+func select_zones(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String, constraints: Dictionary = {}) -> Array[int]:
 	var bot := _bot_for(player_id)
 	if bot == null:
-		return super(player_id, target_player_id, valid_zones, count, up_to, prompt)
-	# Mirror the live handler: greedy repeated best-pick up to count.
+		return super(player_id, target_player_id, valid_zones, count, up_to, prompt, constraints)
+	# Mirror the live handler: greedy repeated best-pick up to count, only
+	# among zones that still fit the constraints (rank budget).
 	var player: PlayerState = bot.game_state.players[bot.bot_player_id]
 	var opponent: PlayerState = bot.game_state.players[1 - bot.bot_player_id]
 	var remaining: Array[int] = valid_zones.duplicate()
 	var picked: Array[int] = []
 	while picked.size() < count and not remaining.is_empty():
+		var fits: Array[int] = []
+		for z in remaining:
+			if ZoneSelectConstraints.can_add(constraints, picked, z):
+				fits.append(z)
+		if fits.is_empty():
+			break
 		var pick: int
 		if target_player_id == bot.bot_player_id:
-			pick = bot._pick_own_zone_target(remaining, player)
+			pick = bot._pick_own_zone_target(fits, player)
 		else:
-			pick = bot._pick_opponent_zone_target(remaining, player, opponent)
-		if pick not in remaining:
-			pick = remaining[0]
+			pick = bot._pick_opponent_zone_target(fits, player, opponent)
+		if pick not in fits:
+			pick = fits[0]
 		picked.append(pick)
 		remaining.erase(pick)
 	_record(player_id, "zones", picked)

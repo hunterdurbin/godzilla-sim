@@ -1,6 +1,6 @@
 extends GdUnitTestSuite
 
-## Tier C bespoke tests for the small sets (ESD01, ESD02, EFC01, ESC01) —
+## Tier C bespoke tests for the small sets (ESD01–ESD05, EFC01, ESC01) —
 ## one-of-a-kind effects driven through the real trigger-dispatch seam.
 ## See classification.md for the bespoke lists.
 
@@ -878,3 +878,352 @@ func test_esc01_006_silent_with_empty_hand() -> void:
 
 	assert_int(input.count_calls("choose_option")).is_equal(0)
 	assert_int(state.players[0].rage).is_equal(0)
+
+
+# --- ESD03-005: Godzilla(2026) — +15000 TL w/ rank IV underneath; +15000 TL
+# --- Awk8; end phase w/ rage>=3: optional advance 1 ---
+
+
+func test_esd03_005_threat_bonus_from_rank4_underneath_and_awakening8() -> void:
+	var monster := Real.instance("ESD03-005")
+	var state := States.make_state({"p0": {"current_monster": monster, "monster_zone": 3}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_threat_level_modifier(0)).is_equal(0)
+
+	# A rank III under it doesn't count; a rank IV anywhere in the stack does.
+	state.players[0].monster_stack.append(Cards.monster(3, 18000, [], "UNDER-R3"))
+	assert_int(handler.get_threat_level_modifier(0)).is_equal(0)
+	state.players[0].monster_stack.append(Cards.monster(4, 30000, [], "UNDER-R4"))
+	assert_int(handler.get_threat_level_modifier(0)).is_equal(15000)
+
+	state.players[0].monster_zone = 8
+	assert_int(handler.get_threat_level_modifier(0)).is_equal(30000)
+
+
+func test_esd03_005_end_phase_with_3_rage_may_advance() -> void:
+	var monster := Real.instance("ESD03-005")
+	var state := States.make_state({"p0": {"current_monster": monster, "monster_zone": 4, "rage": 3}})
+	state.current_phase = CardEnums.GamePhase.END
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"choose_option": [0]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.END)
+
+	assert_int(state.players[0].monster_zone).is_equal(5)
+
+
+func test_esd03_005_end_phase_declined_or_low_rage_does_not_advance() -> void:
+	var monster := Real.instance("ESD03-005")
+	var state := States.make_state({"p0": {"current_monster": monster, "monster_zone": 4, "rage": 3}})
+	state.current_phase = CardEnums.GamePhase.END
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"choose_option": [1]}
+	var s := States.make_session(state, input)
+	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.END)
+	assert_int(state.players[0].monster_zone).is_equal(4)
+
+	# Only 2 rage: no prompt at all.
+	var monster2 := Real.instance("ESD03-005", 1)
+	var state2 := States.make_state({"p0": {"current_monster": monster2, "monster_zone": 4, "rage": 2}})
+	state2.current_phase = CardEnums.GamePhase.END
+	var input2 := ScriptedPlayerInput.new()
+	var s2 := States.make_session(state2, input2)
+	await s2["effect_handler"].trigger_phase_start(CardEnums.GamePhase.END)
+	assert_int(input2.count_calls("choose_option")).is_equal(0)
+	assert_int(state2.players[0].monster_zone).is_equal(4)
+
+
+# --- ESD03-006: Godzilla(2023) battle — enter: opp rank I monster rage -1;
+# --- Overwhelm +3000 CP ---
+
+
+func test_esd03_006_enter_reduces_rage_only_of_rank1_monster() -> void:
+	var card := Real.instance("ESD03-006")
+	var state := States.make_state({"p1": {"current_monster": Cards.monster(1), "rage": 2}})
+	var s := _session(state)
+	await s["effect_handler"].trigger_enter(0, card)
+	assert_int(state.players[1].rage).is_equal(1)
+
+	var card2 := Real.instance("ESD03-006", 1)
+	var state2 := States.make_state({"p1": {"current_monster": Cards.monster(2), "rage": 2}})
+	var s2 := _session(state2)
+	await s2["effect_handler"].trigger_enter(0, card2)
+	assert_int(state2.players[1].rage).is_equal(2)
+
+
+func test_esd03_006_overwhelm_adds_3000_cp() -> void:
+	var card := Real.instance("ESD03-006")
+	var state := States.make_state({"p0": {"zone_cards": {2: card}, "monster_zone": 4}, "p1": {"monster_zone": 4}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000)
+	state.players[1].monster_zone = 5
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(2000)
+
+
+# --- ESD03-007: Godzilla(2026) battle — Awk6 +3000 CP; Overwhelm + invaded
+# --- this turn: play from hand at rank -1 ---
+
+
+func test_esd03_007_awakening6_adds_3000_cp() -> void:
+	var card := Real.instance("ESD03-007")
+	var state := States.make_state({"p0": {"zone_cards": {2: card}, "monster_zone": 5}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000)
+	state.players[0].monster_zone = 6
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(8000)
+
+
+func test_esd03_007_rank_reduced_only_when_invaded_and_overwhelming() -> void:
+	var card := Real.instance("ESD03-007")
+	var state := States.make_state({
+		"p0": {"hand": [card], "monster_zone": 4, "has_invaded_this_turn": true},
+		"p1": {"monster_zone": 4},
+	})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(-1)
+
+	# Behind the opponent's monster: <Overwhelm> is off.
+	state.players[1].monster_zone = 5
+	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(0)
+
+	# Ahead, but no invasion this turn.
+	state.players[1].monster_zone = 3
+	state.players[0].has_invaded_this_turn = false
+	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(0)
+
+
+# --- ESD04-004: Destoroyah Perfect Form — enter: discard strategy → opp rage -1;
+# --- +10000 CP w/ "Godzilla vs. Destoroyah" in play ---
+
+
+func test_esd04_004_enter_discards_strategy_to_reduce_opponent_rage() -> void:
+	var monster := Real.instance("ESD04-004")
+	var state := States.make_state({
+		"p0": {"current_monster": monster, "hand": [Cards.battle(2, 3000, "BTL"), Cards.strategy(2, "STR")]},
+		"p1": {"rage": 2},
+	})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_hand_card": [1]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, monster)
+
+	assert_array(input.calls[0]["valid"]).contains_exactly([1])
+	assert_int(state.players[1].rage).is_equal(1)
+	assert_int(state.players[0].hand.size()).is_equal(1)
+	assert_int(state.players[0].discard_pile.size()).is_equal(1)
+
+
+func test_esd04_004_enter_skip_keeps_opponent_rage() -> void:
+	var monster := Real.instance("ESD04-004")
+	var state := States.make_state({
+		"p0": {"current_monster": monster, "hand": [Cards.strategy(2, "STR")]},
+		"p1": {"rage": 2},
+	})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_hand_card": [-1]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, monster)
+
+	assert_int(state.players[1].rage).is_equal(2)
+	assert_int(state.players[0].hand.size()).is_equal(1)
+
+
+func test_esd04_004_overwhelm_cp_needs_godzilla_vs_destoroyah_in_play() -> void:
+	var monster := Real.instance("ESD04-004")
+	var state := States.make_state({"p0": {"current_monster": monster, "strategy_zones": [Cards.strategy(3, "OTHER")]}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_monster_cp_modifier(0)).is_equal(0)
+
+	state.players[0].strategy_zones[1] = Real.instance("EBP04-083")
+	assert_int(handler.get_monster_cp_modifier(0)).is_equal(10000)
+
+	# <Overwhelm> is off while our monster is behind the opponent's.
+	state.players[1].monster_zone = 3
+	state.players[0].monster_zone = 2
+	assert_int(handler.get_monster_cp_modifier(0)).is_equal(0)
+	state.players[0].monster_zone = 3
+	assert_int(handler.get_monster_cp_modifier(0)).is_equal(10000)
+
+
+# --- ESD05-002: King Ghidorah(1991) — enter: mill 1, destroy opp battle cards
+# --- totalling <= the milled card's rank ---
+
+
+func test_esd05_002_enter_destroys_within_milled_rank_budget() -> void:
+	var monster := Real.instance("ESD05-002")
+	var state := States.make_state({
+		"p0": {"current_monster": monster, "main_deck": [Cards.battle(5, 3000, "TOP-R5")]},
+		"p1": {"zone_cards": {
+			0: Cards.battle(3, 3000, "OPP-R3"),
+			1: Cards.battle(2, 3000, "OPP-R2"),
+			2: Cards.battle(4, 3000, "OPP-R4"),
+		}},
+	})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zones": [[0, 1]]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, monster)
+
+	var p1 := state.players[1]
+	assert_bool(p1.zone_has_cards(0)).is_false()
+	assert_bool(p1.zone_has_cards(1)).is_false()
+	assert_str(str(p1.get_zone_top_card(2).get("id"))).is_equal("OPP-R4")
+	assert_str(str(state.players[0].discard_pile[0].get("id"))).is_equal("TOP-R5")
+	# One select/deselect + confirm prompt, budget = the milled card's rank.
+	var zones_calls := input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zones")
+	assert_int(zones_calls.size()).is_equal(1)
+	assert_array(zones_calls[0]["valid"]).contains_exactly([0, 1, 2])
+	assert_dict(zones_calls[0]["constraints"]).is_equal({"weights": {0: 3, 1: 2, 2: 4}, "budget": 5})
+
+
+func test_esd05_002_empty_deck_destroys_nothing() -> void:
+	var monster := Real.instance("ESD05-002")
+	var state := States.make_state({
+		"p0": {"current_monster": monster},
+		"p1": {"zone_cards": {0: Cards.battle(1, 3000, "OPP-R1")}},
+	})
+	state.players[0].main_deck.clear()
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, monster)
+
+	assert_int(input.count_calls("select_zones")).is_equal(0)
+	assert_bool(state.players[1].zone_has_cards(0)).is_true()
+
+
+# --- ESD03-008: Humanity's Crime and Punishment — monster rank III+: each
+# --- player keeps 1 battle card (owner first), rest destroyed; rage 3+:
+# --- opponent discards to 2 ---
+
+
+func test_esd03_008_each_player_keeps_one_owner_first_then_opponent_discards_to_2() -> void:
+	var card := Real.instance("ESD03-008")
+	var state := States.make_state({
+		"p0": {"current_monster": Cards.monster(3), "rage": 3, "zone_cards": {
+			1: Cards.battle(2, 2000, "OWN-A"), 4: Cards.battle(2, 2000, "OWN-B"),
+		}},
+		"p1": {"hand": [Cards.battle(), Cards.battle(), Cards.battle(), Cards.battle()], "zone_cards": {
+			0: Cards.battle(2, 2000, "OPP-A"), 3: Cards.battle(2, 2000, "OPP-B"), 6: Cards.battle(2, 2000, "OPP-C"),
+		}},
+	})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [4, 3]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	# Owner is asked first (own board), then the opponent (their board).
+	var zone_calls := input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zone")
+	assert_int(zone_calls[0]["player_id"]).is_equal(0)
+	assert_int(zone_calls[0]["target"]).is_equal(0)
+	assert_int(zone_calls[1]["player_id"]).is_equal(1)
+	assert_int(zone_calls[1]["target"]).is_equal(1)
+	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([4])
+	assert_array(state.players[1].get_battle_card_zone_indices()).contains_exactly([3])
+	assert_int(state.players[1].hand.size()).is_equal(2)
+
+	# No modal: the picks are made public by highlight + log only.
+	assert_int(input.count_calls("acknowledge_reveal")).is_equal(0)
+
+
+func test_esd03_008_kept_zones_stay_highlighted_until_destruction() -> void:
+	var card := Real.instance("ESD03-008")
+	var state := States.make_state({
+		"p0": {"current_monster": Cards.monster(3), "zone_cards": {
+			1: Cards.battle(2, 2000, "OWN-A"), 4: Cards.battle(2, 2000, "OWN-B"),
+		}},
+		"p1": {"zone_cards": {
+			0: Cards.battle(2, 2000, "OPP-A"), 3: Cards.battle(2, 2000, "OPP-B"),
+		}},
+	})
+	var input := _HighlightAwareInput.new()
+	input.answers = {"select_zone": [4, 3]}
+	var s := States.make_session(state, input)
+	var handler: EffectHandler = s["effect_handler"]
+	var lit: Dictionary = {}  # "pid:zone" -> true while highlighted
+	handler.effect_zone_highlighted.connect(func(pid: int, z: int) -> void: lit["%d:%d" % [pid, z]] = true)
+	handler.effect_zone_unhighlighted.connect(func(pid: int, z: int) -> void: lit.erase("%d:%d" % [pid, z]))
+	input.lit = lit
+
+	await handler.trigger_enter(0, card)
+
+	# While the opponent chose, the owner's kept zone was already highlighted.
+	assert_array(input.lit_at_prompt[1]).contains_exactly(["0:4"])
+	# After the effect resolves every highlight is cleared.
+	assert_dict(lit).is_empty()
+
+
+func test_esd03_008_low_rank_monster_and_low_rage_do_nothing() -> void:
+	var card := Real.instance("ESD03-008")
+	var state := States.make_state({
+		"p0": {"current_monster": Cards.monster(2), "rage": 2},
+		"p1": {"hand": [Cards.battle(), Cards.battle(), Cards.battle()], "zone_cards": {
+			0: Cards.battle(2, 2000, "OPP-A"), 3: Cards.battle(2, 2000, "OPP-B"),
+		}},
+	})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(input.count_calls("select_zone")).is_equal(0)
+	assert_int(state.players[1].get_battle_card_zone_indices().size()).is_equal(2)
+	assert_int(state.players[1].hand.size()).is_equal(3)
+
+
+func test_esd03_008_single_battle_card_is_kept_without_prompt() -> void:
+	var card := Real.instance("ESD03-008")
+	var state := States.make_state({
+		"p0": {"current_monster": Cards.monster(4)},
+		"p1": {"zone_cards": {5: Cards.battle(2, 2000, "OPP-ONLY")}},
+	})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(input.count_calls("select_zone")).is_equal(0)
+	assert_bool(state.players[1].zone_has_cards(5)).is_true()
+
+
+func test_esd03_008_logs_each_kept_zone() -> void:
+	var card := Real.instance("ESD03-008")
+	var state := States.make_state({
+		"p0": {"current_monster": Cards.monster(3), "zone_cards": {2: Cards.battle(2, 2000, "OWN")}},
+		"p1": {"zone_cards": {6: Cards.battle(2, 2000, "OPP")}},
+	})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	var tokens: Array = []
+	handler.log_message.connect(func(t: Dictionary) -> void: tokens.append(t))
+
+	await handler.trigger_enter(0, card)
+
+	var chose := tokens.filter(func(t: Dictionary) -> bool: return t.get("type") == "effect_chose_zone")
+	assert_int(chose.size()).is_equal(2)
+	assert_int(chose[0]["player_id"]).is_equal(0)
+	assert_int(chose[0]["zone"]).is_equal(2)
+	assert_str(str(chose[0]["card_id"])).is_equal("OWN")
+	assert_int(chose[1]["player_id"]).is_equal(1)
+	assert_int(chose[1]["zone"]).is_equal(6)
+	assert_str(str(GameLog.render(chose[1]))).contains("OPP")
+
+
+## Snapshots which zones are highlighted each time a zone is asked for.
+class _HighlightAwareInput extends ScriptedPlayerInput:
+	var lit: Dictionary = {}
+	var lit_at_prompt: Array = []
+
+	func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> int:
+		lit_at_prompt.append(lit.keys())
+		return super(player_id, target_player_id, valid_zones, prompt, allow_skip)

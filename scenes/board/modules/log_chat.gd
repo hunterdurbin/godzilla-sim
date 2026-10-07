@@ -150,6 +150,11 @@ func append_message(message) -> void:
 	_render_to_output(render_entry(message))
 	if _board.is_multiplayer_game and NetworkManager.is_host():
 		pending_log_tokens.append(message)
+		# Log tokens ride the state broadcast; request one so a log-only
+		# event (no state change, e.g. ESD03-008's announced pick) still
+		# reaches the client — and the pre-prompt flush sends it before the
+		# next remote prompt. Mirrors headless_board._on_log_message.
+		_board._broadcast_state()
 
 
 ## Append an entry received from the host (state-broadcast envelope) — same

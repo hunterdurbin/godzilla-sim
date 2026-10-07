@@ -66,10 +66,14 @@ func select_zone(_player_id: int, _target_player_id: int, valid_zones: Array[int
 ## (up_to = false) the caller passes count already clamped to the number of
 ## valid zones and expects exactly that many; in up-to mode (up_to = true) any
 ## 0..count zones are acceptable and [] declines the effect entirely.
-func select_zones(_player_id: int, _target_player_id: int, valid_zones: Array[int], count: int, _up_to: bool, _prompt: String) -> Array[int]:
+## `constraints` (ZoneSelectConstraints) adds extra rules, e.g. a rank budget.
+func select_zones(_player_id: int, _target_player_id: int, valid_zones: Array[int], count: int, _up_to: bool, _prompt: String, constraints: Dictionary = {}) -> Array[int]:
 	var result: Array[int] = []
-	for i in range(mini(count, valid_zones.size())):
-		result.append(valid_zones[i])
+	for z in valid_zones:
+		if result.size() >= count:
+			break
+		if ZoneSelectConstraints.can_add(constraints, result, z):
+			result.append(z)
 	return result
 
 

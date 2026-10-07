@@ -80,6 +80,54 @@ func destroy_zone_targets(player_id: int, target: PlayerState, filter: Callable,
 
 
 
+func destroy_zones_within_rank_budget(player_id: int, target: PlayerState, budget: int, prompt_fmt: String = "", filter: Callable = Callable()) -> Array[Dictionary]:
+	## "<Destroy> any number of battle cards whose total ranks add up to
+	## `budget` or less" (EBP04-024, ESD05-002). One multi-select prompt: the
+	## player toggles cards on/off (each costs its effective field rank) and
+	## confirms; the UI/bot/MP host keep the selected total within `budget`
+	## (ZoneSelectConstraints). Confirming nothing declines. The confirmed
+	## cards are destroyed together in one destroy_zones batch — a single
+	## <Destroy> action (revenge etc. deferred per 10.4.3). `prompt_fmt` takes
+	## the budget as its single %d (defaults to the shared rank-budget prompt);
+	## `filter` (card_data) -> bool narrows the eligible cards further.
+	## Returns the destroyed cards ([] when none).
+	if prompt_fmt.is_empty():
+		prompt_fmt = tr("STR_EFF_DESTROY_RANK_BUDGET_FMT")
+	var eligible: Array[int] = []
+	var weights: Dictionary = {}
+	for i in range(8):
+		var zone_card := target.get_zone_top_card(i)
+		if zone_card.is_empty():
+			continue
+		if filter.is_valid() and not filter.call(zone_card):
+			continue
+		var rank: int = h.get_effective_field_rank(zone_card, target.player_id)
+		if rank > budget:
+			continue
+		if not _can_destroy_card(target, zone_card):
+			continue
+		eligible.append(i)
+		weights[i] = rank
+	if eligible.is_empty():
+		return []
+
+	var constraints := ZoneSelectConstraints.rank_budget(weights, budget)
+	var chosen: Array[int] = await h.select_zones_target(
+		player_id, target.player_id, eligible, eligible.size(), prompt_fmt % budget, true, constraints)
+
+	# Defensive re-validation (the UI/RPC layer validates too): membership,
+	# dedupe, and the budget — an over-budget answer destroys nothing.
+	var picked: Array[int] = []
+	for zi in chosen:
+		if zi in eligible and zi not in picked:
+			picked.append(zi)
+	if picked.is_empty() or not ZoneSelectConstraints.is_valid(constraints, picked):
+		return []
+	return await destroy_zones(target, picked)
+
+
+
+
 func destroy_chosen_zone(player_id: int, target: PlayerState, valid_zones: Array[int], prompt: String) -> Dictionary:
 	## Let a player choose one zone from a pre-computed list to destroy.
 	## Like destroy_zone_target but with pre-computed valid zones instead of a filter.

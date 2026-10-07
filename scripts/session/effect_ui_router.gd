@@ -35,7 +35,7 @@ extends Node
 ##                        resolve_cb takes int (hand index, -1 = skip)
 ##   "zone_target":      (target_player_id, valid_zones, prompt, allow_skip, resolve_cb)
 ##                        resolve_cb takes int (zone index, -1 = skip)
-##   "zones_target":     (target_player_id, valid_zones, count, up_to, prompt, resolve_cb)
+##   "zones_target":     (target_player_id, valid_zones, count, up_to, prompt, constraints, resolve_cb)
 ##                        resolve_cb takes Array[int] (selected zones, [] = decline in up-to mode)
 ##   "strategy_target":  (target_player_id, valid_indices, prompt, resolve_cb)
 ##                        resolve_cb takes int (strategy index)
@@ -161,6 +161,26 @@ func _bind() -> void:
 	if bind_all_prompts and session.events:
 		if not session.events.effect_stack_changed.is_connected(_on_effect_stack_changed):
 			session.events.effect_stack_changed.connect(_on_effect_stack_changed)
+	# Same for effect zone highlights (EffectHighlightController broadcasts
+	# them on local boards).
+	if bind_all_prompts and session.effect_handler:
+		var eh: EffectHandler = session.effect_handler
+		if not eh.effect_zone_highlighted.is_connected(_on_effect_zone_highlighted):
+			eh.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
+		if not eh.effect_zone_unhighlighted.is_connected(_on_effect_zone_unhighlighted):
+			eh.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
+
+
+func _on_effect_zone_highlighted(pid: int, zone_index: int) -> void:
+	for peer_id in net.peer_player_map:
+		RpcLogger.log_send("effect_zone_highlighted", 8)
+		multiplayer_sync._rpc_effect_zone_highlighted.rpc_id(peer_id, pid, zone_index)
+
+
+func _on_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
+	for peer_id in net.peer_player_map:
+		RpcLogger.log_send("effect_zone_unhighlighted", 8)
+		multiplayer_sync._rpc_effect_zone_unhighlighted.rpc_id(peer_id, pid, zone_index)
 
 
 func _on_effect_stack_changed(stack: Array) -> void:
@@ -376,16 +396,17 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 	show_zone_target(target_player_id, valid_zones, prompt, allow_skip)
 
 
-func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array, count: int, up_to: bool, prompt: String) -> void:
+func _on_zones_target_requested(player_id: int, target_player_id: int, valid_zones: Array, count: int, up_to: bool, prompt: String, constraints: Dictionary = {}) -> void:
 	if _is_bot_target(player_id):
 		return
 	if is_multiplayer and player_id != local_player_id:
 		var zones_json := JSON.stringify(valid_zones)
-		_send_to_remote(player_id, "zones_target", [target_player_id, zones_json, count, up_to, prompt], func(peer):
-			RpcLogger.log_send("zones_target_requested", 4 + zones_json.length() + prompt.length() + 2)
-			multiplayer_sync._rpc_zones_target_requested.rpc_id(peer, target_player_id, zones_json, count, up_to, prompt))
+		var constraints_json := ZoneSelectConstraints.to_json(constraints)
+		_send_to_remote(player_id, "zones_target", [target_player_id, zones_json, count, up_to, prompt, "", constraints_json], func(peer):
+			RpcLogger.log_send("zones_target_requested", 4 + zones_json.length() + prompt.length() + constraints_json.length() + 2)
+			multiplayer_sync._rpc_zones_target_requested.rpc_id(peer, target_player_id, zones_json, count, up_to, prompt, "", constraints_json))
 		return
-	show_zones_target(target_player_id, valid_zones, count, up_to, prompt)
+	show_zones_target(target_player_id, valid_zones, count, up_to, prompt, constraints)
 
 
 func _on_strategy_target_requested(player_id: int, target_player_id: int, valid_indices: Array, prompt: String) -> void:
@@ -467,11 +488,11 @@ func show_zone_target(target_player_id: int, valid_zones: Array, prompt: String,
 	_show("zone_target", [target_player_id, typed, _translate(prompt), allow_skip, resolve_zone_target])
 
 
-func show_zones_target(target_player_id: int, valid_zones: Array, count: int, up_to: bool, prompt: String) -> void:
+func show_zones_target(target_player_id: int, valid_zones: Array, count: int, up_to: bool, prompt: String, constraints: Dictionary = {}) -> void:
 	var typed: Array[int] = []
 	for v in valid_zones:
 		typed.append(int(v))
-	_show("zones_target", [target_player_id, typed, count, up_to, _translate(prompt), resolve_zones_target])
+	_show("zones_target", [target_player_id, typed, count, up_to, _translate(prompt), constraints, resolve_zones_target])
 
 
 func show_strategy_target(target_player_id: int, valid_indices: Array, prompt: String) -> void:

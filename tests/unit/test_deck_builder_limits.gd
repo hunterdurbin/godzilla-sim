@@ -41,6 +41,13 @@ func test_copy_cap_still_enforced() -> void:
 	assert_int(_builder._get_main_deck_total()).is_equal(4)
 
 
+func test_copy_cap_enforced_in_unrestricted() -> void:
+	_builder._game_mode = "unrestricted"
+	_builder._main_entries = [{"card_number": "ESD01-010", "quantity": 4}]
+	_builder._add_to_main_deck("ESD01-010")
+	assert_int(_builder._get_main_deck_total()).is_equal(4)
+
+
 func test_over_limit_deck_saves_normally() -> void:
 	_builder._main_entries = [
 		{"card_number": "ESD01-008", "quantity": 46},

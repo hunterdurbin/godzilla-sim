@@ -271,7 +271,8 @@ func _load() -> void:
 	hand_sort_type_order = config.get_value("gameplay", "hand_sort_type_order", 0)
 	hand_sort_rank_ascending = config.get_value("gameplay", "hand_sort_rank_ascending", true)
 	stacked_view = config.get_value("gameplay", "stacked_view", true)
-	default_game_mode = config.get_value("gameplay", "default_game_mode", "rumble_west")
+	default_game_mode = GameModeValidator.normalize_mode_id(
+		config.get_value("gameplay", "default_game_mode", "rumble_west"))
 	deck_list_format = config.get_value("gameplay", "deck_list_format", "")
 	custom_playmat_enabled = config.get_value("visual", "custom_playmat_enabled", false)
 	custom_playmat_opponent = config.get_value("visual", "custom_playmat_opponent", false)

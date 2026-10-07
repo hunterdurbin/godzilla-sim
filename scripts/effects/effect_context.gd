@@ -62,6 +62,12 @@ func is_awakening(threshold: int) -> bool:
 	return owner.is_awakening(threshold)
 
 
+func is_overwhelm() -> bool:
+	## <Overwhelm>: active while owner's monster is in the same zone as, or
+	## ahead of, the opponent's monster card.
+	return owner.monster_zone >= opponent.monster_zone
+
+
 # --- Monster stack ---
 
 func has_monster_stack(min_count: int) -> bool:
@@ -79,6 +85,21 @@ func opponent_has_rage() -> bool:
 
 
 # --- Column queries ---
+
+# --- Public choices ---
+
+func announce_zone_choice(player: PlayerState, zone_idx: int) -> void:
+	## Make `player`'s zone choice public (card text like "each player
+	## chooses…" / "declare" — ESD03-008): log it and highlight the zone on
+	## both players' boards. The highlight stays on — the caller clears it
+	## with effect_handler.unhighlight_zone_card when the effect finishes.
+	var card := player.get_zone_top_card(zone_idx)
+	if card.is_empty():
+		return
+	effect_handler.log_message.emit(GameLog.effect_chose_zone(
+		player.player_id, card_data.get("id", ""), zone_idx, card.get("id", "")))
+	effect_handler.highlight_zone_card(player.player_id, zone_idx)
+
 
 # --- Mill ---
 

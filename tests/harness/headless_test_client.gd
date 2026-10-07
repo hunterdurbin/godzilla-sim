@@ -249,12 +249,16 @@ func _on_prompt(kind: String, args: Array) -> void:
 			var zones: Array = JSON.parse_string(args[1])
 			var count := int(args[2])
 			var up_to: bool = args[3]
+			var constraints := ZoneSelectConstraints.from_json(str(args[5]) if args.size() > 5 else "")
 			zones.shuffle()
 			var take := rng.randi_range(0, mini(count, zones.size())) if up_to \
 				else mini(count, zones.size())
 			var picks: Array = []
-			for i in range(take):
-				picks.append(int(zones[i]))
+			for z in zones:
+				if picks.size() >= take:
+					break
+				if ZoneSelectConstraints.can_add(constraints, picks, int(z)):
+					picks.append(int(z))
 			sync_node._rpc_zones_target_resolved.rpc_id(1, JSON.stringify(picks))
 		"strategy_target":
 			var indices: Array = JSON.parse_string(args[1])
