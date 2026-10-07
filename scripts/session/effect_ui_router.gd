@@ -161,6 +161,26 @@ func _bind() -> void:
 	if bind_all_prompts and session.events:
 		if not session.events.effect_stack_changed.is_connected(_on_effect_stack_changed):
 			session.events.effect_stack_changed.connect(_on_effect_stack_changed)
+	# Same for effect zone highlights (EffectHighlightController broadcasts
+	# them on local boards).
+	if bind_all_prompts and session.effect_handler:
+		var eh: EffectHandler = session.effect_handler
+		if not eh.effect_zone_highlighted.is_connected(_on_effect_zone_highlighted):
+			eh.effect_zone_highlighted.connect(_on_effect_zone_highlighted)
+		if not eh.effect_zone_unhighlighted.is_connected(_on_effect_zone_unhighlighted):
+			eh.effect_zone_unhighlighted.connect(_on_effect_zone_unhighlighted)
+
+
+func _on_effect_zone_highlighted(pid: int, zone_index: int) -> void:
+	for peer_id in net.peer_player_map:
+		RpcLogger.log_send("effect_zone_highlighted", 8)
+		multiplayer_sync._rpc_effect_zone_highlighted.rpc_id(peer_id, pid, zone_index)
+
+
+func _on_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
+	for peer_id in net.peer_player_map:
+		RpcLogger.log_send("effect_zone_unhighlighted", 8)
+		multiplayer_sync._rpc_effect_zone_unhighlighted.rpc_id(peer_id, pid, zone_index)
 
 
 func _on_effect_stack_changed(stack: Array) -> void:

@@ -24,23 +24,23 @@ func _ready() -> void:
 	_board = get_parent() as GameBoard
 
 
+## Zone highlights are public (like effect-card highlights): every board shows
+## them, e.g. ESD03-008's kept zones must be visible to both players.
 func _on_effect_zone_highlighted(pid: int, zone_index: int) -> void:
-	if _board.is_multiplayer_game and pid != _board.local_player_id:
+	if _board.is_multiplayer_game:
 		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == pid:
+			if peer_id != multiplayer.get_unique_id():
 				RpcLogger.log_send("effect_zone_highlighted", 8)
 				_board._sync._rpc_effect_zone_highlighted.rpc_id(peer_id, pid, zone_index)
-		return
 	_board._apply_zone_highlight(pid, zone_index, true)
 
 
 func _on_effect_zone_unhighlighted(pid: int, zone_index: int) -> void:
-	if _board.is_multiplayer_game and pid != _board.local_player_id:
+	if _board.is_multiplayer_game:
 		for peer_id in NetworkManager.peer_player_map:
-			if NetworkManager.peer_player_map[peer_id] == pid:
+			if peer_id != multiplayer.get_unique_id():
 				RpcLogger.log_send("effect_zone_unhighlighted", 8)
 				_board._sync._rpc_effect_zone_unhighlighted.rpc_id(peer_id, pid, zone_index)
-		return
 	_board._apply_zone_highlight(pid, zone_index, false)
 
 

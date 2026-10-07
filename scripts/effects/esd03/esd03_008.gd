@@ -15,8 +15,9 @@ extends CardEffect
 ## Interactions: None
 ## Implementation notes: Owner picks first, then the opponent (routed to the
 ##   opponent's input — UI/RPC/bot). Each pick is made public via
-##   ctx.announce_zone_choice (log + zone highlight + reveal to the other
-##   player) before the next pick. Both picks happen before any destruction.
+##   ctx.announce_zone_choice (game log + zone highlight on both boards) and
+##   stays highlighted until the destruction resolves. Both picks happen
+##   before any destruction.
 
 
 func get_bot_tags() -> Array[String]:
@@ -34,6 +35,11 @@ func on_enter(ctx: EffectContext) -> void:
 		var opp_kept: int = await _choose_kept_zone(ctx, ctx.opponent)
 		await ctx.effect_handler.destroy_zones(ctx.owner, _zones_except(ctx.owner, own_kept))
 		await ctx.effect_handler.destroy_zones(ctx.opponent, _zones_except(ctx.opponent, opp_kept))
+		# Kept cards stay highlighted until the destruction resolves.
+		if own_kept >= 0:
+			ctx.effect_handler.unhighlight_zone_card(ctx.owner.player_id, own_kept)
+		if opp_kept >= 0:
+			ctx.effect_handler.unhighlight_zone_card(ctx.opponent.player_id, opp_kept)
 
 	if ctx.owner.rage >= 3:
 		await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 2)
@@ -41,7 +47,8 @@ func on_enter(ctx: EffectContext) -> void:
 
 func _choose_kept_zone(ctx: EffectContext, player: PlayerState) -> int:
 	## The zone `player` keeps (-1 when they have no battle cards).
-	## The choice is announced to the other player before the next pick.
+	## The choice is logged and its zone highlighted (on both boards) before
+	## the next pick; on_enter clears the highlight after the destruction.
 	var occupied := player.get_battle_card_zone_indices()
 	if occupied.is_empty():
 		return -1
@@ -52,8 +59,7 @@ func _choose_kept_zone(ctx: EffectContext, player: PlayerState) -> int:
 		# Defensive: an invalid answer still keeps exactly one card.
 		if chosen in occupied:
 			kept = chosen
-	await ctx.announce_zone_choice(player, kept,
-		tr("STR_EFF_ESD03_008_KEPT_FMT") % [GameLog.player_name(player.player_id), kept + 1])
+	ctx.announce_zone_choice(player, kept)
 	return kept
 
 

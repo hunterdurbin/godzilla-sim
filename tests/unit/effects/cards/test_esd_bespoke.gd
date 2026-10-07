@@ -1132,18 +1132,35 @@ func test_esd03_008_each_player_keeps_one_owner_first_then_opponent_discards_to_
 	assert_array(state.players[1].get_battle_card_zone_indices()).contains_exactly([3])
 	assert_int(state.players[1].hand.size()).is_equal(2)
 
-	# Each pick is revealed to the OTHER player before the next pick:
-	# own pick → reveal to p1 → opponent pick → reveal to p0.
-	var kinds: Array = input.calls.map(func(c: Dictionary) -> String: return c["kind"])
-	var first_reveal: int = kinds.find("acknowledge_reveal")
-	assert_int(first_reveal).is_greater(kinds.find("select_zone"))
-	assert_int(first_reveal).is_less(kinds.rfind("select_zone"))
-	var reveals := input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "acknowledge_reveal")
-	assert_int(reveals.size()).is_equal(2)
-	assert_int(reveals[0]["player_id"]).is_equal(1)
-	assert_str(str(reveals[0]["cards"][0].get("id"))).is_equal("OWN-B")
-	assert_int(reveals[1]["player_id"]).is_equal(0)
-	assert_str(str(reveals[1]["cards"][0].get("id"))).is_equal("OPP-B")
+	# No modal: the picks are made public by highlight + log only.
+	assert_int(input.count_calls("acknowledge_reveal")).is_equal(0)
+
+
+func test_esd03_008_kept_zones_stay_highlighted_until_destruction() -> void:
+	var card := Real.instance("ESD03-008")
+	var state := States.make_state({
+		"p0": {"current_monster": Cards.monster(3), "zone_cards": {
+			1: Cards.battle(2, 2000, "OWN-A"), 4: Cards.battle(2, 2000, "OWN-B"),
+		}},
+		"p1": {"zone_cards": {
+			0: Cards.battle(2, 2000, "OPP-A"), 3: Cards.battle(2, 2000, "OPP-B"),
+		}},
+	})
+	var input := _HighlightAwareInput.new()
+	input.answers = {"select_zone": [4, 3]}
+	var s := States.make_session(state, input)
+	var handler: EffectHandler = s["effect_handler"]
+	var lit: Dictionary = {}  # "pid:zone" -> true while highlighted
+	handler.effect_zone_highlighted.connect(func(pid: int, z: int) -> void: lit["%d:%d" % [pid, z]] = true)
+	handler.effect_zone_unhighlighted.connect(func(pid: int, z: int) -> void: lit.erase("%d:%d" % [pid, z]))
+	input.lit = lit
+
+	await handler.trigger_enter(0, card)
+
+	# While the opponent chose, the owner's kept zone was already highlighted.
+	assert_array(input.lit_at_prompt[1]).contains_exactly(["0:4"])
+	# After the effect resolves every highlight is cleared.
+	assert_dict(lit).is_empty()
 
 
 func test_esd03_008_low_rank_monster_and_low_rage_do_nothing() -> void:
@@ -1177,11 +1194,6 @@ func test_esd03_008_single_battle_card_is_kept_without_prompt() -> void:
 
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 	assert_bool(state.players[1].zone_has_cards(5)).is_true()
-	# The lone kept card is still announced to the card's player.
-	var reveals := input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "acknowledge_reveal")
-	assert_int(reveals.size()).is_equal(1)
-	assert_int(reveals[0]["player_id"]).is_equal(0)
-	assert_str(str(reveals[0]["cards"][0].get("id"))).is_equal("OPP-ONLY")
 
 
 func test_esd03_008_logs_each_kept_zone() -> void:
@@ -1205,3 +1217,13 @@ func test_esd03_008_logs_each_kept_zone() -> void:
 	assert_int(chose[1]["player_id"]).is_equal(1)
 	assert_int(chose[1]["zone"]).is_equal(6)
 	assert_str(str(GameLog.render(chose[1]))).contains("OPP")
+
+
+## Snapshots which zones are highlighted each time a zone is asked for.
+class _HighlightAwareInput extends ScriptedPlayerInput:
+	var lit: Dictionary = {}
+	var lit_at_prompt: Array = []
+
+	func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> int:
+		lit_at_prompt.append(lit.keys())
+		return super(player_id, target_player_id, valid_zones, prompt, allow_skip)
