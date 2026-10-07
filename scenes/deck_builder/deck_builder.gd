@@ -1140,7 +1140,7 @@ func _update_pool_badge(card_id: String) -> void:
 		# Update modulate and add new badge
 		var count := _get_card_count_in_deck(card_id)
 		var max_copies := _get_max_copies(card_node.card_data)
-		var at_max: bool = count >= max_copies and _game_mode != "no_rules"
+		var at_max: bool = count >= max_copies
 		card_node.modulate = Color(0.5, 0.5, 0.5, 0.7) if at_max else Color.WHITE
 		if count > 0:
 			var badge := _create_badge("%d/%d" % [count, max_copies])
@@ -1253,7 +1253,7 @@ func _create_card_wrapper(card_data: Dictionary, is_pool: bool, deck_qty: int = 
 			if count > 0:
 				var badge := _create_badge("%d/%d" % [count, max_copies])
 				wrapper.add_child(badge)
-				if count >= max_copies and _game_mode != "no_rules":
+				if count >= max_copies:
 					card_node.modulate = Color(0.5, 0.5, 0.5, 0.7)
 	else:
 		var is_monster_type: bool = card_data.get("card_type", -1) == CardEnums.CardType.MONSTER
@@ -1546,15 +1546,14 @@ func _add_to_monster_deck(card_id: String) -> String:
 
 
 func _add_to_main_deck(card_id: String) -> void:
-	if _game_mode != "no_rules":
-		var count := _get_card_count_in_deck(card_id)
-		var template: Dictionary = CardData.CARD_TEMPLATES.get(card_id, {})
-		var max_copies := _get_max_copies(template)
-		if count >= max_copies:
-			return
-		# Deck-size and Step-2 limits are deliberately NOT enforced here:
-		# over-filling then shaving down is a supported workflow. Illegal
-		# decks save fine and are flagged at deck-select time instead.
+	var count := _get_card_count_in_deck(card_id)
+	var template: Dictionary = CardData.CARD_TEMPLATES.get(card_id, {})
+	var max_copies := _get_max_copies(template)
+	if count >= max_copies:
+		return
+	# Deck-size and Step-2 limits are deliberately NOT enforced here:
+	# over-filling then shaving down is a supported workflow. Illegal
+	# decks save fine and are flagged at deck-select time instead.
 
 	for entry in _main_entries:
 		if entry["card_number"] == card_id:
@@ -1732,9 +1731,7 @@ func _update_deck_stats() -> void:
 func _update_validation() -> void:
 	validation_label.clear()
 	var errors := GameModeValidator.validate(_game_mode, _monster_entries, _main_entries)
-	var warnings: Array[String] = []
-	if _game_mode != "no_rules":
-		warnings = DeckValidator.warnings(_monster_entries, _main_entries)
+	var warnings := DeckValidator.warnings(_monster_entries, _main_entries)
 
 	if not errors.is_empty():
 		validation_label.append_text("[color=red][b]%s[/b][/color]\n" % tr("STR_DB_ERRORS"))
@@ -1952,6 +1949,11 @@ func _populate_format_info(mode_id: String) -> void:
 
 	if not mode.has("card_pool"):
 		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_ALL_ALLOWED"))
+		var spoiled := GameModeValidator.get_spoiled_sets(CardData.CARD_TEMPLATES.keys())
+		_add_info_heading(tr("STR_DB_FORMAT_INFO_SPOILED_SETS"))
+		_add_info_paragraph(tr("STR_DB_FORMAT_INFO_SPOILED_SETS_RULE"))
+		_add_info_paragraph(", ".join(PackedStringArray(spoiled)) if not spoiled.is_empty() \
+			else tr("STR_DB_FORMAT_INFO_SPOILED_SETS_NONE"))
 		return
 
 	var pool: Dictionary = mode["card_pool"]

@@ -10,7 +10,7 @@
 | `deck_validator.gd` | `DeckValidator` — static deck-legality checks (50-card main, 4-monster rank 1–4, copy limits, ≤10 invade-2 cards, resonance); returns translation-key errors |
 | `decklist_manager.gd` | **Autoload `DecklistManager`** — `.deck` files under `user://decklists/` (subfolders = folders), per-player deck selection, build/preview/validate |
 | `decklog_importer.gd` | `DecklogImporter` — imports decks from Bushiroad Deck Log (EN/JP endpoints); strips `+`/`++` alt-art suffixes, prepends `E` |
-| `game_mode_validator.gd` | `GameModeValidator` — game modes (rumble_west, rumble_east, no_rules, bulkzilla) and per-mode pool/restriction validation |
+| `game_mode_validator.gd` | `GameModeValidator` — game modes (rumble_west, rumble_east, unrestricted, bulkzilla) and per-mode pool/restriction validation |
 | `pools/bulkzilla_card_pool.gd` | `BulkzillaCardPool` — static allow-list spliced into the BULKZILLA format |
 | `pools/card_artwork_fix_pool.gd` | `CardArtworkFixPool` — per-release artwork cache-invalidation entries consumed by `ArtworkDownloader.apply_fix_pool()` |
 
@@ -37,10 +37,12 @@ picks etc.) — re-map to the canonical dict by id, don't trust field types.
    `STR_TRAIT_*` row to `translations/strings.csv`.
 3. Write its effect script under `scripts/effects/<set>/` (see
    `scripts/effects/README.md`) and set `effect_script` in the template.
-4. Check format legality in `game_mode_validator.gd` `MODES` pools: a new
-   set prefix must be added to each format's `include_sets`; a card missing
-   from one region's pool goes in that format's `exclude_cards` (e.g.
-   East-only promos are excluded in `rumble_west`).
+4. Check format legality in `game_mode_validator.gd` `MODES` pools. A newly
+   spoiled set is playable in `unrestricted` automatically (no `card_pool` =
+   every card); add its prefix to a Rumble format's `include_sets` only once
+   it's released for that region. A card missing from one region's pool goes
+   in that format's `exclude_cards` (e.g. East-only promos are excluded in
+   `rumble_west`).
 5. Regenerate trigger_map (pre-commit hook does it; never while a headless
    run is live).
 6. Cover it in `tests/unit/effects/cards/` (smoke picks it up automatically;
