@@ -15,6 +15,7 @@ func test_spoiled_sets_are_unrestricted_only() -> void:
 		assert_bool(GameModeValidator.is_card_valid_for_mode(card, "unrestricted")).is_true()
 		assert_bool(GameModeValidator.is_card_valid_for_mode(card, "rumble_west")).is_false()
 		assert_bool(GameModeValidator.is_card_valid_for_mode(card, "rumble_east")).is_false()
+		assert_bool(GameModeValidator.is_card_valid_for_mode(card, "bulkzilla")).is_false()
 
 
 func test_banned_cards_are_legal_in_unrestricted() -> void:

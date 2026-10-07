@@ -39,8 +39,8 @@ picks etc.) — re-map to the canonical dict by id, don't trust field types.
    `scripts/effects/README.md`) and set `effect_script` in the template.
 4. Check format legality in `game_mode_validator.gd` `MODES` pools. A newly
    spoiled set is playable in `unrestricted` automatically (no `card_pool` =
-   every card); add its prefix to a Rumble format's `include_sets` only once
-   it's released for that region. A card missing from one region's pool goes
+   every card); add its prefix to a Rumble format's `include_sets` (and
+   BULKZILLA's, for starter decks) only once it's released for that region. A card missing from one region's pool goes
    in that format's `exclude_cards` (e.g. East-only promos are excluded in
    `rumble_west`).
 5. Regenerate trigger_map (pre-commit hook does it; never while a headless

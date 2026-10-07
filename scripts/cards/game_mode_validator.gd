@@ -63,7 +63,7 @@ const MODES: Array[Dictionary] = [
 		# (rarity-annotated for readability) and is spliced in at runtime
 		# via `_get_resolved_modes`. Keep this `include_cards` slot empty.
 		"card_pool": {
-			"include_sets": ["ESD01", "ESD02", "ESD03", "ESD04", "ESD05"],
+			"include_sets": ["ESD01", "ESD02"],
 			"include_cards": [],
 			"exclude_cards": [],
 			"restricted_0": ["EBP01-079", "EBP03-016"],
