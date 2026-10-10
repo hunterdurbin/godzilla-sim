@@ -1101,6 +1101,148 @@ func test_esd05_002_empty_deck_destroys_nothing() -> void:
 	assert_bool(state.players[1].zone_has_cards(0)).is_true()
 
 
+# --- ESD04-001: Destoroyah Juvenile Form — Overwhelm, end start: battle card
+# --- from hand → deck bottom, draw 1 ---
+
+
+func test_esd04_001_end_phase_puts_battle_card_on_deck_bottom_and_draws() -> void:
+	var monster := Real.instance("ESD04-001")
+	var state := States.make_state({
+		"p0": {
+			"current_monster": monster, "monster_zone": 3,
+			"hand": [Cards.strategy(2, "STR"), Cards.battle(2, 3000, "BTL")],
+			"main_deck": [Cards.battle(1, 1000, "TOP"), Cards.battle(1, 1000, "NEXT")],
+		},
+		"p1": {"monster_zone": 3},
+	})
+	state.current_phase = CardEnums.GamePhase.END
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_hand_card": [1]}
+	var s := States.make_session(state, input)
+	var logs: Array = []
+	s["effect_handler"].log_message.connect(func(entry: Dictionary) -> void: logs.append(entry))
+
+	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.END)
+
+	var p0 := state.players[0]
+	assert_array(input.calls[0]["valid"]).contains_exactly([1])
+	assert_str(str(p0.main_deck.back().get("id"))).is_equal("BTL")
+	assert_array(p0.hand.map(func(c: Dictionary) -> String: return str(c.get("id")))) \
+		.contains_exactly(["STR", "TOP"])
+	assert_int(p0.discard_pile.size()).is_equal(0)
+	# The reveal is public via the log line naming the card.
+	var bottom_logs := logs.filter(func(e: Dictionary) -> bool: return e.get("type") == "effect_put_card_on_bottom_of_deck")
+	assert_int(bottom_logs.size()).is_equal(1)
+	assert_str(str(bottom_logs[0].get("card_id"))).is_equal("BTL")
+
+
+func test_esd04_001_skip_or_no_overwhelm_does_nothing() -> void:
+	var monster := Real.instance("ESD04-001")
+	var state := States.make_state({
+		"p0": {"current_monster": monster, "monster_zone": 3, "hand": [Cards.battle(2, 3000, "BTL")],
+			"main_deck": [Cards.battle(1, 1000, "TOP")]},
+		"p1": {"monster_zone": 2},
+	})
+	state.current_phase = CardEnums.GamePhase.END
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_hand_card": [-1]}
+	var s := States.make_session(state, input)
+	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.END)
+	assert_int(state.players[0].hand.size()).is_equal(1)
+	assert_int(state.players[0].main_deck.size()).is_equal(1)
+
+	# Behind the opponent's monster: <Overwhelm> is off — no prompt.
+	var monster2 := Real.instance("ESD04-001", 1)
+	var state2 := States.make_state({
+		"p0": {"current_monster": monster2, "monster_zone": 2, "hand": [Cards.battle(2, 3000, "BTL")]},
+		"p1": {"monster_zone": 3},
+	})
+	state2.current_phase = CardEnums.GamePhase.END
+	var input2 := ScriptedPlayerInput.new()
+	var s2 := States.make_session(state2, input2)
+	await s2["effect_handler"].trigger_phase_start(CardEnums.GamePhase.END)
+	assert_int(input2.count_calls("select_hand_card")).is_equal(0)
+	assert_int(state2.players[0].hand.size()).is_equal(1)
+
+
+# --- ESD04-006: Godzilla vs. Destoroyah — opp turn: +5000 TL per Destoroyah
+# --- battle card in your zones (stacks count once) ---
+
+
+func test_esd04_006_opponent_turn_threat_per_destoroyah_battle_card() -> void:
+	var gvd := Real.instance("ESD04-006")
+	var destoroyah := [CardEnums.CardTrait.DESTOROYAH]
+	var state := States.make_state({
+		"current_player_id": 1,
+		"p0": {"strategy_zones": [gvd], "zone_cards": {
+			0: Cards.battle(2, 3000, "DES-A", destoroyah),
+			3: Cards.battle(3, 3000, "DES-B", destoroyah),
+			5: Cards.battle(2, 3000, "OTHER"),
+		}},
+	})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_threat_level_modifier(0)).is_equal(10000)
+
+	# An evolution stack counts as 1 card.
+	state.players[0].get_zone_stack(3).append(Cards.battle(2, 3000, "DES-UNDER", destoroyah))
+	assert_int(handler.get_threat_level_modifier(0)).is_equal(10000)
+
+	# Your own turn: no bonus.
+	state.current_player_id = 0
+	assert_int(handler.get_threat_level_modifier(0)).is_equal(0)
+
+
+func test_esd04_006_enables_esd04_004_overwhelm_cp() -> void:
+	var monster := Real.instance("ESD04-004")
+	var state := States.make_state({"p0": {"current_monster": monster, "strategy_zones": [Real.instance("ESD04-006")]}})
+	var s := _session(state)
+	assert_int(s["effect_handler"].get_monster_cp_modifier(0)).is_equal(10000)
+
+
+# --- ESD05-003: Dorat — Overwhelm enter: mill 3 ---
+
+
+func test_esd05_003_overwhelm_enter_mills_3() -> void:
+	var card := Real.instance("ESD05-003")
+	var deck: Array = []
+	for i in range(4):
+		deck.append(Cards.battle(1, 1000, "D%d" % i))
+	var state := States.make_state({
+		"p0": {"zone_cards": {2: card}, "monster_zone": 3, "main_deck": deck},
+		"p1": {"monster_zone": 3},
+	})
+	var s := _session(state)
+	await s["effect_handler"].trigger_enter(0, card)
+	assert_int(state.players[0].discard_pile.size()).is_equal(3)
+	assert_int(state.players[0].main_deck.size()).is_equal(1)
+
+
+func test_esd05_003_no_overwhelm_does_not_mill() -> void:
+	var card := Real.instance("ESD05-003")
+	var state := States.make_state({
+		"p0": {"zone_cards": {2: card}, "monster_zone": 2, "main_deck": [Cards.battle(), Cards.battle(), Cards.battle()]},
+		"p1": {"monster_zone": 3},
+	})
+	var s := _session(state)
+	await s["effect_handler"].trigger_enter(0, card)
+	assert_int(state.players[0].discard_pile.size()).is_equal(0)
+	assert_int(state.players[0].main_deck.size()).is_equal(3)
+
+
+# --- ESD05-004: Godzillasaurus — card under your monster: +3000 CP ---
+
+
+func test_esd05_004_gains_3000_cp_with_card_under_monster() -> void:
+	var card := Real.instance("ESD05-004")
+	var state := States.make_state({"p0": {"zone_cards": {2: card}}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(3000)
+	state.players[0].monster_stack.append(Cards.monster(1, 5000, [], "UNDER"))
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(6000)
+
+
 # --- ESD03-008: Humanity's Crime and Punishment — monster rank III+: each
 # --- player keeps 1 battle card (owner first), rest destroyed; rage 3+:
 # --- opponent discards to 2 ---
