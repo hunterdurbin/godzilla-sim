@@ -72,6 +72,11 @@ var _nav_held: Dictionary = {}
 ## the logical at press time means a rebind mid-hold still releases the
 ## action that was actually pressed.
 var _action_held: Dictionary = {}
+## Android pad GUIDs already run through _fix_android_axis_order this session.
+## add_joy_mapping doesn't flip Input.is_joy_known (only a reconnect re-reads
+## the DB), so without this every connection event would re-query Java and
+## append another mapping.
+var _axis_checked_guids: Dictionary = {}
 ## Rebind capture: while valid, the next capturable physical press calls this
 ## with the captured physical action instead of being translated.
 var _capture_cb: Callable = Callable()
@@ -84,6 +89,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_map = GlyphDB.default_map()
 	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+	_fix_android_axis_order()
 	_detect_controller_type()
 	_log_joypads()
 
@@ -98,8 +104,9 @@ func _log_joypads() -> void:
 		return
 	var names := PackedStringArray()
 	for device: int in pads:
-		names.append("%d:%s (guid %s)" % [device,
-				Input.get_joy_name(device), Input.get_joy_guid(device)])
+		names.append("%d:%s (guid %s, %s)" % [device,
+				Input.get_joy_name(device), Input.get_joy_guid(device),
+				"known" if Input.is_joy_known(device) else "fallback mapping"])
 	print("[GamepadInput] joypads: %d connected — %s" % [pads.size(), ", ".join(names)])
 
 
@@ -394,11 +401,48 @@ func _is_text_editing() -> bool:
 	return false
 
 
-func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
+func _on_joy_connection_changed(_device: int, connected: bool) -> void:
 	# A pad unplugged mid-hold never sends its release event.
 	_flush_action_held()
+	if connected:
+		_fix_android_axis_order()
 	_detect_controller_type()
 	_log_joypads()
+
+
+## Android pads on Godot's fallback mapping can arrive with swapped triggers
+## (or misread right stick) — see AndroidJoyAxes. Asks Android which axes each
+## such pad really reports and registers a corrected per-GUID mapping
+## (update_existing re-maps the connected pad). Pads with a real DB entry
+## (is_joy_known) are never touched. Logs the axes either way: it's the one
+## piece of evidence a bad mapping report needs.
+func _fix_android_axis_order() -> void:
+	if OS.get_name() != "Android":
+		return
+	var pending: Array[int] = []
+	for device: int in Input.get_connected_joypads():
+		if not Input.is_joy_known(device) \
+				and not _axis_checked_guids.has(Input.get_joy_guid(device)):
+			pending.append(device)
+	if pending.is_empty():
+		return
+	var device_axes := AndroidJoyAxes.query_device_axes()
+	for device: int in pending:
+		var joy_name := Input.get_joy_name(device)
+		var guid := Input.get_joy_guid(device)
+		_axis_checked_guids[guid] = true
+		if not device_axes.has(joy_name):
+			print("[GamepadInput] %s: no Android axis info, keeping fallback mapping" % joy_name)
+			continue
+		var axes: Array[int] = []
+		axes.assign(device_axes[joy_name])
+		var mapping := AndroidJoyAxes.mapping_for(guid, joy_name, axes)
+		if mapping.is_empty():
+			print("[GamepadInput] %s: android axes %s match the fallback mapping" % [joy_name, axes])
+			continue
+		Input.add_joy_mapping(mapping, true)
+		print("[GamepadInput] %s: android axes %s -> corrected axes %s" % [joy_name, axes,
+				AndroidJoyAxes.godot_axis_indices(axes)])
 
 
 func _detect_controller_type() -> void:
