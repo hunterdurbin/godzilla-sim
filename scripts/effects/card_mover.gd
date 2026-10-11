@@ -859,6 +859,21 @@ func put_card_on_top_of_deck(player_id: int, card: Dictionary) -> void:
 
 
 
+func put_card_on_bottom_of_deck(player_id: int, card: Dictionary) -> void:
+	## Place a card (already removed from wherever it was, e.g. via
+	## take_hand_card) on the bottom of (the back of) a player's main deck and
+	## log it, attributed to the active effect. The log line names the card,
+	## which doubles as the public reveal for "reveal … and place it on the
+	## bottom of your deck" text (ESD04-001).
+	var player := game_state.players[player_id]
+	player.main_deck.append(card)
+	player.deck_changed.emit()
+	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	h.log_message.emit(GameLog.effect_put_card_on_bottom_of_deck(player_id, source_id, card.get("id", "")))
+
+
+
+
 func shuffle_discard_into_deck(player_id: int) -> int:
 	## Return every card from a player's discard pile to their main deck and shuffle.
 	## Discard is public and the deck is private, so the move must be logged for both

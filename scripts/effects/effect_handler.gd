@@ -746,6 +746,10 @@ func put_card_on_top_of_deck(player_id: int, card: Dictionary) -> void:
 	mover.put_card_on_top_of_deck(player_id, card)
 
 
+func put_card_on_bottom_of_deck(player_id: int, card: Dictionary) -> void:
+	mover.put_card_on_bottom_of_deck(player_id, card)
+
+
 func shuffle_discard_into_deck(player_id: int) -> int:
 	return mover.shuffle_discard_into_deck(player_id)
 

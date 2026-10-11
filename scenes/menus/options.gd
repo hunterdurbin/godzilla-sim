@@ -1,5 +1,9 @@
 extends Control
 
+## Static helpers are called through the script, not the UpdateChecker
+## autoload instance (STATIC_CALLED_ON_INSTANCE).
+const UpdateCheckerScript := preload("res://scripts/services/update_checker.gd")
+
 @onready var player_name_edit: LineEdit = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PlayerNameRow/PlayerNameEdit
 @onready var automation_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutomationButton
 @onready var customize_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CustomizeButton
@@ -233,7 +237,7 @@ func _create_modal(title_text: String, min_width: float = 460.0) -> Array:
 	return [popup, vbox]
 
 
-func _add_toggle_row(vbox: VBoxContainer, label_text: String, setting: String) -> void:
+func _add_toggle_row(vbox: VBoxContainer, label_text: String, setting: String) -> CheckButton:
 	var row := HBoxContainer.new()
 	var label := Label.new()
 	label.text = label_text
@@ -245,6 +249,7 @@ func _add_toggle_row(vbox: VBoxContainer, label_text: String, setting: String) -
 	row.add_child(label)
 	row.add_child(check)
 	vbox.add_child(row)
+	return check
 
 
 func _add_close_button(vbox: VBoxContainer, popup: PopupPanel) -> void:
@@ -1146,6 +1151,11 @@ func _on_advanced_pressed() -> void:
 	var vbox: VBoxContainer = parts[1]
 
 	_add_toggle_row(vbox, tr("STR_OPTIONS_USE_MOBILE_LAYOUT"), "use_mobile_layout")
+	# Release builds only: unstable builds already follow unstable, and are
+	# offered stable on their own.
+	if UpdateChecker.is_release_build() and UpdateCheckerScript.prompts_supported():
+		var unstable_check := _add_toggle_row(vbox, tr("STR_OPTIONS_RECEIVE_UNSTABLE_UPDATES"), "receive_unstable_updates")
+		unstable_check.toggled.connect(func(_on: bool): UpdateChecker.recheck())
 
 	vbox.add_child(HSeparator.new())
 

@@ -1,6 +1,9 @@
 extends Control
 
 
+## Static helpers are called through the script, not the UpdateChecker
+## autoload instance (STATIC_CALLED_ON_INSTANCE).
+const UpdateCheckerScript := preload("res://scripts/services/update_checker.gd")
 const PATREON_URL := "https://www.patreon.com/cw/sodabomber/membership"
 const DISCORD_URL := "https://discord.gg/fwCaYzWbPw"
 
@@ -50,8 +53,7 @@ func _ready() -> void:
 	update_button.visible = false
 	UpdateChecker.update_available.connect(_on_update_available)
 	if not UpdateChecker.pending_update.is_empty():
-		var u := UpdateChecker.pending_update
-		_on_update_available(u["current"], u["new_version"], u["download_url"], u["release_url"])
+		_on_update_available(UpdateChecker.pending_update)
 
 	DecklistManager.clear_selections()
 
@@ -715,29 +717,35 @@ func _unhandled_input(event: InputEvent) -> void:
 
 # -- Update dialog ------------------------------------------------------------
 
-func _on_update_available(_current: String, new_version: String, download_url: String, release_url: String) -> void:
-	var is_skipped := new_version == GameSettings.skipped_version
+func _on_update_available(update: Dictionary) -> void:
+	var is_skipped := UpdateCheckerScript.skip_key(update) == GameSettings.skipped_version
 	if is_skipped or UpdateChecker.later_dismissed:
-		_show_update_button(new_version, download_url, release_url)
+		_show_update_button()
 		return
-	_show_update_dialog(new_version, download_url, release_url)
+	_show_update_dialog(update)
 
 
-func _show_update_button(new_version: String, download_url: String, release_url: String) -> void:
+func _show_update_button() -> void:
 	update_button.visible = true
 	# Reconnect in case this is called multiple times
 	if update_button.pressed.is_connected(_on_update_button_pressed):
 		update_button.pressed.disconnect(_on_update_button_pressed)
-	update_button.pressed.connect(_on_update_button_pressed.bind(new_version, download_url, release_url))
+	update_button.pressed.connect(_on_update_button_pressed)
 
 
-func _on_update_button_pressed(new_version: String, download_url: String, release_url: String) -> void:
+func _on_update_button_pressed() -> void:
 	SfxManager.play("ui_click")
-	_show_update_dialog(new_version, download_url, release_url)
+	_show_update_dialog(UpdateChecker.pending_update)
 
 
-func _show_update_dialog(new_version: String, download_url: String, release_url: String) -> void:
+## One dialog for both offers: the same-channel update ("Update Now") and a
+## channel switch ("Switch to Stable" for unstable builds, "Switch to
+## Unstable" for release builds that opted in) with a note on whether
+## decks/settings carry over on this platform.
+func _show_update_dialog(update: Dictionary) -> void:
 	var current: String = ProjectSettings.get_setting("application/config/version", "")
+	var same: Dictionary = update.get("same_channel", {})
+	var cross: Dictionary = update.get("channel_switch", {})
 	var popup := PopupPanel.new()
 	popup.exclusive = true
 
@@ -767,55 +775,70 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	vbox.add_child(title)
 
 	var info := Label.new()
-	info.text = tr("STR_MENU_UPDATE_VERSIONS_FMT") % [current, new_version]
+	if same.is_empty():
+		info.text = tr("STR_MENU_UPDATE_CURRENT_FMT") % current
+	else:
+		info.text = tr("STR_MENU_UPDATE_VERSIONS_FMT") % [current, same["tag"]]
 	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	info.add_theme_font_size_override("font_size", 18)
 	vbox.add_child(info)
 
 	vbox.add_child(HSeparator.new())
 
-	var btn_box := VBoxContainer.new()
-	btn_box.add_theme_constant_override("separation", 8)
+	# Everything below the separator; swapped for progress UI once an
+	# in-app install starts.
+	var choices := VBoxContainer.new()
+	choices.add_theme_constant_override("separation", 8)
 
-	var update_btn := Button.new()
-	update_btn.text = tr("STR_MENU_UPDATE_NOW")
-	update_btn.custom_minimum_size = Vector2(200, 45)
-	update_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	update_btn.add_theme_font_size_override("font_size", 20)
-	update_btn.pressed.connect(func():
-		SfxManager.play("ui_click")
-		OS.shell_open(download_url if not download_url.is_empty() else release_url)
+	var start_offer := func(offer: Dictionary) -> void:
+		var url: String = offer["download_url"]
+		if UpdateInstaller.can_self_update() and not url.is_empty():
+			_start_in_app_update(popup, vbox, choices, offer)
+			return
+		OS.shell_open(url if not url.is_empty() else String(offer["release_url"]))
 		popup.hide()
-	)
-	btn_box.add_child(update_btn)
 
-	var skip_btn := Button.new()
-	skip_btn.text = tr("STR_MENU_UPDATE_SKIP")
-	skip_btn.custom_minimum_size = Vector2(200, 40)
-	skip_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	skip_btn.add_theme_font_size_override("font_size", 18)
-	skip_btn.pressed.connect(func():
-		SfxManager.play("ui_click")
-		GameSettings.skipped_version = new_version
+	if not same.is_empty():
+		var update_btn := _make_update_dialog_button(tr("STR_MENU_UPDATE_NOW"), start_offer.bind(same))
+		update_btn.custom_minimum_size = Vector2(200, 45)
+		update_btn.add_theme_font_size_override("font_size", 20)
+		choices.add_child(update_btn)
+
+	if not cross.is_empty():
+		var to_unstable: bool = cross.get("channel", "") == "unstable"
+		var cross_label := Label.new()
+		cross_label.text = tr("STR_MENU_UPDATE_UNSTABLE_AVAILABLE_FMT" if to_unstable else "STR_MENU_UPDATE_STABLE_AVAILABLE_FMT") % cross["tag"]
+		cross_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cross_label.add_theme_font_size_override("font_size", 18)
+		choices.add_child(cross_label)
+
+		var keeps_data := UpdateCheckerScript.channel_switch_keeps_data()
+		var data_note := Label.new()
+		var prefix := "STR_MENU_UPDATE_UNSTABLE_" if to_unstable else "STR_MENU_UPDATE_STABLE_"
+		data_note.text = tr(prefix + ("KEEPS_DATA" if keeps_data else "SEPARATE_DATA"))
+		data_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		data_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		data_note.custom_minimum_size = Vector2(412, 0)
+		data_note.add_theme_font_size_override("font_size", 15)
+		data_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8) if keeps_data else Color(0.95, 0.7, 0.3))
+		choices.add_child(data_note)
+
+		var switch_text := tr("STR_MENU_UPDATE_SWITCH_UNSTABLE" if to_unstable else "STR_MENU_UPDATE_SWITCH_STABLE")
+		choices.add_child(_make_update_dialog_button(switch_text, start_offer.bind(cross)))
+
+	var on_skip := func():
+		GameSettings.skipped_version = UpdateCheckerScript.skip_key(update)
 		GameSettings.save()
-		_show_update_button(new_version, download_url, release_url)
+		_show_update_button()
 		popup.hide()
-	)
-	btn_box.add_child(skip_btn)
+	choices.add_child(_make_update_dialog_button(tr("STR_MENU_UPDATE_SKIP"), on_skip))
 
-	var later_btn := Button.new()
-	later_btn.text = tr("STR_MENU_UPDATE_LATER")
-	later_btn.custom_minimum_size = Vector2(200, 40)
-	later_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	later_btn.add_theme_font_size_override("font_size", 18)
-	later_btn.pressed.connect(func():
-		SfxManager.play("ui_click")
+	var on_later := func():
 		UpdateChecker.later_dismissed = true
 		popup.hide()
-	)
-	btn_box.add_child(later_btn)
+	choices.add_child(_make_update_dialog_button(tr("STR_MENU_UPDATE_LATER"), on_later))
 
-	vbox.add_child(btn_box)
+	vbox.add_child(choices)
 	margin.add_child(vbox)
 	panel.add_child(margin)
 	popup.add_child(panel)
@@ -823,6 +846,110 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	add_child(popup)
 	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
+
+
+## Replaces the dialog's choices with download progress, then a "Restart
+## now" once the new version is staged. The popup re-opens itself if
+## dismissed while an update is in flight; Cancel is the way out.
+func _start_in_app_update(popup: PopupPanel, vbox: VBoxContainer, choices: Control, offer: Dictionary) -> void:
+	vbox.remove_child(choices)
+	choices.queue_free()
+	var download_url: String = offer["download_url"]
+	var release_url: String = offer["release_url"]
+
+	var status := Label.new()
+	status.text = tr("STR_MENU_UPDATE_DOWNLOADING")
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status.custom_minimum_size = Vector2(412, 0)
+	status.add_theme_font_size_override("font_size", 18)
+	vbox.add_child(status)
+
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = Vector2(412, 24)
+	bar.show_percentage = false
+	vbox.add_child(bar)
+
+	var actions := VBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	vbox.add_child(actions)
+
+	var installer := UpdateInstaller.new()
+	popup.add_child(installer)
+	popup.popup_hide.connect(func():
+		if installer.busy:
+			popup.popup_centered.call_deferred()
+	)
+
+	var set_actions := func(buttons: Array) -> void:
+		for child in actions.get_children():
+			actions.remove_child(child)
+			child.queue_free()
+		for b: Button in buttons:
+			actions.add_child(b)
+		popup.reset_size.call_deferred()
+		GamepadHelper.refocus()
+
+	var on_cancel := func():
+		installer.cancel()
+		UpdateChecker.later_dismissed = true
+		_show_update_button()
+		popup.hide()
+	set_actions.call([_make_update_dialog_button(tr("STR_MENU_UPDATE_CANCEL"), on_cancel)])
+
+	installer.progress.connect(func(downloaded: int, total: int):
+		if total > 0:
+			bar.max_value = total
+			bar.value = downloaded
+			status.text = tr("STR_MENU_UPDATE_DOWNLOADING_FMT") % [downloaded / 1048576.0, total / 1048576.0]
+		else:
+			status.text = tr("STR_MENU_UPDATE_DOWNLOADING")
+	)
+	installer.status_changed.connect(func(stage: String):
+		if stage == UpdateInstaller.STAGE_INSTALLING:
+			status.text = tr("STR_MENU_UPDATE_INSTALLING")
+			bar.indeterminate = true
+	)
+	installer.ready_to_restart.connect(func():
+		status.text = tr("STR_MENU_UPDATE_READY")
+		bar.indeterminate = false
+		bar.value = bar.max_value
+		set_actions.call([
+			_make_update_dialog_button(tr("STR_MENU_UPDATE_RESTART"), installer.restart),
+			_make_update_dialog_button(tr("STR_MENU_UPDATE_CANCEL"), on_cancel),
+		])
+	)
+	installer.failed.connect(func(reason: String):
+		status.text = tr("STR_MENU_UPDATE_FAILED_FMT") % reason
+		bar.indeterminate = false
+		bar.hide()
+		var on_manual := func():
+			OS.shell_open(download_url if not download_url.is_empty() else release_url)
+			popup.hide()
+		var on_later := func():
+			UpdateChecker.later_dismissed = true
+			_show_update_button()
+			popup.hide()
+		set_actions.call([
+			_make_update_dialog_button(tr("STR_MENU_UPDATE_MANUAL"), on_manual),
+			_make_update_dialog_button(tr("STR_MENU_UPDATE_LATER"), on_later),
+		])
+	)
+
+	installer.start(offer)
+
+
+func _make_update_dialog_button(text: String, on_pressed: Callable) -> Button:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = Vector2(200, 40)
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	btn.add_theme_font_size_override("font_size", 18)
+	btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		on_pressed.call()
+	)
+	return btn
 
 
 # -- Reconnect dialog ----------------------------------------------------------

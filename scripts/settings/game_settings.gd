@@ -79,6 +79,7 @@ var bot_folder_weights: Dictionary = {}    # {folder_path: int weight, 0/missing
 
 # Update settings
 var skipped_version: String = ""
+var receive_unstable_updates: bool = false  # release builds: also offer newer unstable builds
 
 # Cache invalidation — keys from CardArtworkFixPool.ENTRIES that have already
 # been applied on this install. New keys trigger a one-shot re-download on
@@ -238,6 +239,7 @@ func _save() -> void:
 	config.set_value("controller", "mapping_type", controller_mapping_type)
 	config.set_value("controller", "glyph_style", controller_glyph_style)
 	config.set_value("updates", "skipped_version", skipped_version)
+	config.set_value("updates", "receive_unstable_updates", receive_unstable_updates)
 	config.set_value("cache", "applied_artwork_fixes", applied_artwork_fixes)
 	config.set_value("reconnect", "room_code", reconnect_room_code)
 	config.set_value("reconnect", "timestamp_sec", reconnect_timestamp_sec)
@@ -313,6 +315,7 @@ func _load() -> void:
 	controller_mapping_type = config.get_value("controller", "mapping_type", "")
 	controller_glyph_style = config.get_value("controller", "glyph_style", "auto")
 	skipped_version = config.get_value("updates", "skipped_version", "")
+	receive_unstable_updates = config.get_value("updates", "receive_unstable_updates", false)
 	# ConfigFile returns a generic Array; defensively rebuild as Array[String].
 	var raw_fixes: Array = config.get_value("cache", "applied_artwork_fixes", [])
 	applied_artwork_fixes.clear()

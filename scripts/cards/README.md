@@ -8,7 +8,7 @@
 | `sets/card_set_<set>.gd` | Per-set card data, one file per set (ebp01–04, epr, esd01–05, esc01, efc01, system) — **data only**, each exposing `CARDS: Array[Dictionary]` |
 | `card_enums.gd` | `CardEnums` — all card-related enums (colors, types, traits, …) |
 | `deck_validator.gd` | `DeckValidator` — static deck-legality checks (50-card main, 4-monster rank 1–4, copy limits, ≤10 invade-2 cards, resonance); returns translation-key errors |
-| `decklist_manager.gd` | **Autoload `DecklistManager`** — `.deck` files under `user://decklists/` (subfolders = folders), per-player deck selection, build/preview/validate |
+| `decklist_manager.gd` | **Autoload `DecklistManager`** — `.deck` files under `user://decklists/` (subfolders = folders), per-player deck selection, build/preview/validate; all-decks clipboard bundle (`export_all_decks_text` / `plan_import` → `apply_import`, previewed in a confirm dialog: `[deck] <folder>/<name>` blocks in the single-deck format, never overwrites a saved deck: identical = skipped, different = saved as `<name> (imported)`) — how decks move between stable/unstable apps on Android/iOS/Flatpak |
 | `decklog_importer.gd` | `DecklogImporter` — imports decks from Bushiroad Deck Log (EN/JP endpoints); strips `+`/`++` alt-art suffixes, prepends `E` |
 | `game_mode_validator.gd` | `GameModeValidator` — game modes (rumble_west, rumble_east, unrestricted, bulkzilla) and per-mode pool/restriction validation |
 | `pools/bulkzilla_card_pool.gd` | `BulkzillaCardPool` — static allow-list spliced into the BULKZILLA format |

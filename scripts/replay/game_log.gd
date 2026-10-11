@@ -189,6 +189,10 @@ static func effect_put_card_on_top_of_deck(player_id: int, effect_source_id: Str
 	return {"type": "effect_put_card_on_top_of_deck", "player_id": player_id, "source_id": effect_source_id, "card_id": card_id}
 
 
+static func effect_put_card_on_bottom_of_deck(player_id: int, effect_source_id: String, card_id: String) -> Dictionary:
+	return {"type": "effect_put_card_on_bottom_of_deck", "player_id": player_id, "source_id": effect_source_id, "card_id": card_id}
+
+
 static func effect_shuffled_discard_into_deck(player_id: int, card_ids: Array) -> Dictionary:
 	return {"type": "effect_shuffled_discard_into_deck", "player_id": player_id, "cards": card_ids}
 
@@ -470,6 +474,11 @@ static func render(token: Dictionary) -> String:
 				.replace("{ZONE}", str(int(token.get("zone", 0)) + 1))
 		"effect_put_card_on_top_of_deck":
 			return TranslationServer.translate("STR_LOG_EFFECT_TOP_OF_DECK_FMT") \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{CARD}", card_link(token.get("card_id", "")))
+		"effect_put_card_on_bottom_of_deck":
+			return TranslationServer.translate("STR_LOG_EFFECT_BOTTOM_OF_DECK_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
 				.replace("{CARD}", card_link(token.get("card_id", "")))
