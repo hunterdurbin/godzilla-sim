@@ -15,6 +15,7 @@ var _has_checked: bool = false
 
 func _ready() -> void:
 	_current_version = ProjectSettings.get_setting("application/config/version", "unknown")
+	UpdateInstaller.cleanup_leftovers()
 	_http = HTTPRequest.new()
 	_http.request_completed.connect(_on_request_completed)
 	add_child(_http)
@@ -53,6 +54,8 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 		"new_version": new_tag,
 		"download_url": best["download_url"],
 		"release_url": best["release_url"],
+		"size": best["size"],
+		"sha256": best["sha256"],
 	}
 	update_available.emit(_current_version, new_tag, best["download_url"], best["release_url"])
 
@@ -115,7 +118,7 @@ func _find_best_update(releases: Array) -> Dictionary:
 		return {}
 
 	var best_version: Dictionary = {}
-	var best_download_url := ""
+	var best_asset: Dictionary = {}
 	var best_release_url := ""
 
 	for release in releases:
@@ -147,23 +150,27 @@ func _find_best_update(releases: Array) -> Dictionary:
 		# Track the best (highest) version found
 		if best_version.is_empty() or _is_newer(candidate, best_version):
 			best_version = candidate
-			best_download_url = _get_platform_asset_url(release)
+			best_asset = _get_platform_asset(release)
 			best_release_url = release.get("html_url", "")
 
-	if best_version.is_empty() or best_download_url.is_empty():
+	if best_version.is_empty() or best_asset.is_empty():
 		return {}
 
 	return {
 		"tag": "v" + best_version["raw"],
-		"download_url": best_download_url,
+		"download_url": best_asset["url"],
 		"release_url": best_release_url,
+		"size": best_asset["size"],
+		"sha256": best_asset["sha256"],
 	}
 
 
 # -- Platform detection -------------------------------------------------------
 
-static func _get_platform_asset_url(release: Dictionary) -> String:
-	var os_name := OS.get_name()
+## The release asset for this platform as {url, size, sha256}; {} if absent.
+## `sha256` comes from GitHub's `digest` field ("sha256:<hex>") and is ""
+## when the API doesn't provide one.
+static func _get_platform_asset(release: Dictionary, os_name: String = OS.get_name(), is_flatpak: bool = FileAccess.file_exists("/.flatpak-info")) -> Dictionary:
 	var target_asset := ""
 
 	match os_name:
@@ -172,16 +179,25 @@ static func _get_platform_asset_url(release: Dictionary) -> String:
 		"macOS":
 			target_asset = "godzilla_tcg_sim-macos.zip"
 		"Linux":
-			if FileAccess.file_exists("/.flatpak-info"):
+			if is_flatpak:
 				target_asset = "godzilla_tcg_sim.flatpak"
 			else:
 				target_asset = "godzilla_tcg_sim-linux.zip"
 		_:
-			return ""
+			return {}
 
 	var assets: Array = release.get("assets", [])
 	for asset in assets:
-		if asset.get("name", "") == target_asset:
-			return asset.get("browser_download_url", "")
+		if asset.get("name", "") != target_asset:
+			continue
+		var url: String = asset.get("browser_download_url", "")
+		if url.is_empty():
+			return {}
+		var digest: String = asset.get("digest", "") if asset.get("digest") is String else ""
+		return {
+			"url": url,
+			"size": int(asset.get("size", 0)),
+			"sha256": digest.trim_prefix("sha256:") if digest.begins_with("sha256:") else "",
+		}
 
-	return ""
+	return {}

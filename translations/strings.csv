@@ -43,6 +43,14 @@ New version: %s","現在のバージョン: v%s
 STR_MENU_UPDATE_NOW,Update Now,今すぐアップデート
 STR_MENU_UPDATE_SKIP,Skip This Version,このバージョンをスキップ
 STR_MENU_UPDATE_LATER,Later,あとで
+STR_MENU_UPDATE_DOWNLOADING,Downloading update…,アップデートをダウンロード中…
+STR_MENU_UPDATE_DOWNLOADING_FMT,Downloading update… %.1f / %.1f MB,アップデートをダウンロード中… %.1f / %.1f MB
+STR_MENU_UPDATE_INSTALLING,Installing…,インストール中…
+STR_MENU_UPDATE_READY,Update downloaded. Restart to finish installing.,アップデートをダウンロードしました。再起動してインストールを完了します。
+STR_MENU_UPDATE_RESTART,Restart Now,今すぐ再起動
+STR_MENU_UPDATE_CANCEL,Cancel,キャンセル
+STR_MENU_UPDATE_FAILED_FMT,Update failed: %s,アップデートに失敗しました: %s
+STR_MENU_UPDATE_MANUAL,Download Manually,手動でダウンロード
 STR_MENU_RECONNECT_TITLE,Game In Progress,進行中のゲーム
 STR_MENU_RECONNECT_PROMPT,"You were disconnected from a game.
 Would you like to reconnect?","ゲームから切断されました。

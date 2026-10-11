@@ -784,6 +784,9 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	update_btn.add_theme_font_size_override("font_size", 20)
 	update_btn.pressed.connect(func():
 		SfxManager.play("ui_click")
+		if UpdateInstaller.can_self_update() and not download_url.is_empty():
+			_start_in_app_update(popup, vbox, btn_box, new_version, download_url, release_url)
+			return
 		OS.shell_open(download_url if not download_url.is_empty() else release_url)
 		popup.hide()
 	)
@@ -823,6 +826,108 @@ func _show_update_dialog(new_version: String, download_url: String, release_url:
 	add_child(popup)
 	GamepadHelper.register_modal(popup)
 	popup.popup_centered()
+
+
+## Replaces the dialog's choice buttons with download progress, then a
+## "Restart now" once the new version is staged. The popup re-opens itself
+## if dismissed while an update is in flight; Cancel is the way out.
+func _start_in_app_update(popup: PopupPanel, vbox: VBoxContainer, btn_box: Control, new_version: String, download_url: String, release_url: String) -> void:
+	vbox.remove_child(btn_box)
+	btn_box.queue_free()
+
+	var status := Label.new()
+	status.text = tr("STR_MENU_UPDATE_DOWNLOADING")
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status.custom_minimum_size = Vector2(412, 0)
+	status.add_theme_font_size_override("font_size", 18)
+	vbox.add_child(status)
+
+	var bar := ProgressBar.new()
+	bar.custom_minimum_size = Vector2(412, 24)
+	bar.show_percentage = false
+	vbox.add_child(bar)
+
+	var actions := VBoxContainer.new()
+	actions.add_theme_constant_override("separation", 8)
+	vbox.add_child(actions)
+
+	var installer := UpdateInstaller.new()
+	popup.add_child(installer)
+	popup.popup_hide.connect(func():
+		if installer.busy:
+			popup.popup_centered.call_deferred()
+	)
+
+	var set_actions := func(buttons: Array) -> void:
+		for child in actions.get_children():
+			actions.remove_child(child)
+			child.queue_free()
+		for b: Button in buttons:
+			actions.add_child(b)
+		popup.reset_size.call_deferred()
+		GamepadHelper.refocus()
+
+	var on_cancel := func():
+		installer.cancel()
+		UpdateChecker.later_dismissed = true
+		_show_update_button(new_version, download_url, release_url)
+		popup.hide()
+	set_actions.call([_make_update_dialog_button(tr("STR_MENU_UPDATE_CANCEL"), on_cancel)])
+
+	installer.progress.connect(func(downloaded: int, total: int):
+		if total > 0:
+			bar.max_value = total
+			bar.value = downloaded
+			status.text = tr("STR_MENU_UPDATE_DOWNLOADING_FMT") % [downloaded / 1048576.0, total / 1048576.0]
+		else:
+			status.text = tr("STR_MENU_UPDATE_DOWNLOADING")
+	)
+	installer.status_changed.connect(func(stage: String):
+		if stage == UpdateInstaller.STAGE_INSTALLING:
+			status.text = tr("STR_MENU_UPDATE_INSTALLING")
+			bar.indeterminate = true
+	)
+	installer.ready_to_restart.connect(func():
+		status.text = tr("STR_MENU_UPDATE_READY")
+		bar.indeterminate = false
+		bar.value = bar.max_value
+		set_actions.call([
+			_make_update_dialog_button(tr("STR_MENU_UPDATE_RESTART"), installer.restart),
+			_make_update_dialog_button(tr("STR_MENU_UPDATE_CANCEL"), on_cancel),
+		])
+	)
+	installer.failed.connect(func(reason: String):
+		status.text = tr("STR_MENU_UPDATE_FAILED_FMT") % reason
+		bar.indeterminate = false
+		bar.hide()
+		var on_manual := func():
+			OS.shell_open(download_url if not download_url.is_empty() else release_url)
+			popup.hide()
+		var on_later := func():
+			UpdateChecker.later_dismissed = true
+			_show_update_button(new_version, download_url, release_url)
+			popup.hide()
+		set_actions.call([
+			_make_update_dialog_button(tr("STR_MENU_UPDATE_MANUAL"), on_manual),
+			_make_update_dialog_button(tr("STR_MENU_UPDATE_LATER"), on_later),
+		])
+	)
+
+	installer.start(UpdateChecker.pending_update)
+
+
+func _make_update_dialog_button(text: String, on_pressed: Callable) -> Button:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = Vector2(200, 40)
+	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	btn.add_theme_font_size_override("font_size", 18)
+	btn.pressed.connect(func():
+		SfxManager.play("ui_click")
+		on_pressed.call()
+	)
+	return btn
 
 
 # -- Reconnect dialog ----------------------------------------------------------
