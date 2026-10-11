@@ -880,6 +880,38 @@ func test_esc01_006_silent_with_empty_hand() -> void:
 	assert_int(state.players[0].rage).is_equal(0)
 
 
+# --- ESD03-001: Godzilla(2026) — invading by discarding a monster card:
+# --- rage +1 per zone invaded ---
+
+
+func _esd03_001_invade(cost: Dictionary) -> GameState:
+	var state := States.make_state({"p0": {
+		"current_monster": Real.instance("ESD03-001"),
+		"hand": [cost],
+		"monster_zone": 1,
+	}})
+	var s := _session(state)
+	await s["action_handler"].execute(CardEnums.ActionType.INVADE, {"hand_index": 0}, state)
+	return state
+
+
+func test_esd03_001_monster_discard_gains_rage_per_zone() -> void:
+	var state := await _esd03_001_invade(Cards.monster(2, 8000, [], "COST-M1", 1))
+	assert_int(state.players[0].monster_zone).is_equal(2)
+	assert_int(state.players[0].rage).is_equal(1)
+
+	# Invade 2 → activates twice.
+	var state2 := await _esd03_001_invade(Cards.monster(2, 8000, [], "COST-M2", 2))
+	assert_int(state2.players[0].monster_zone).is_equal(3)
+	assert_int(state2.players[0].rage).is_equal(2)
+
+
+func test_esd03_001_battle_discard_gains_no_rage() -> void:
+	var state := await _esd03_001_invade(Cards.battle(1, 5000, "COST-B", [], 2))
+	assert_int(state.players[0].monster_zone).is_equal(3)
+	assert_int(state.players[0].rage).is_equal(0)
+
+
 # --- ESD03-005: Godzilla(2026) — +15000 TL w/ rank IV underneath; +15000 TL
 # --- Awk8; end phase w/ rage>=3: optional advance 1 ---
 
