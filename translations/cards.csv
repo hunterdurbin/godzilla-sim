@@ -1155,16 +1155,16 @@ CARD_ESC01-005_DESC,"<When Invading> If there are 3 or more cards under this car
 CARD_ESC01-006_NAME,Mothra(imago)(1992),モスラ成虫(1992)
 CARD_ESC01-006_DESC,"<Enter> You may discard your entire hand; for each strategy card discarded by this effect, increase your monster card's <Rage> by 1.",<出現時>あなたの手札をすべて捨てることで、この効果で捨てた戦略カード１枚につき、あなたの怪獣カードの<怒り>を１増やす。
 CARD_EFC01-001_NAME,Godzilla(Gojika Festival),ゴジラ(ゴジカ・フェス)
-CARD_EFC01-001_DESC,"<Burst3> If every area adjacent to this has a Battle Card with <Festival Godzilla>, add +10,000 counter power.","<強襲Ⅲ>
+CARD_EFC01-001_DESC,"<Burst3> If every area adjacent to this has a Battle Card with <《Fest》>, add +10,000 counter power.","<強襲Ⅲ>
 これに隣接するあなたのエリアすべてに<《フェス・ゴジラ》>を持つ交戦カードがいるなら、あなたの撃退力の合計を＋10000。"
 CARD_EFC01-002_NAME,Gigan(Gojika Festival),ガイガン(ゴジカ・フェス)
 CARD_EFC01-002_DESC,"<Enter> If this is in the adjacent area of your monster card, discard a card from the top of your deck. If it is a battle card, return up to one of your monster cards from your discard pile.",<出現時>これがあなたの怪獣カードの隣接エリアにいるなら、あなたの山札を上から１枚捨て札にする。それが交戦カードなら、あなたの捨て札の怪獣カードを１枚まで手札に戻す。
 CARD_EFC01-003_NAME,Jet Jaguar(Gojika Festival),ジェットジャガー(ゴジカ・フェス)
-CARD_EFC01-003_DESC,"<Enter> You may discard 1 card with both <Gigan> and <Festival Godzilla> from your hand. If you do, search your deck for 1 <Weapon> or <Mech> battle card with <Invade 2>. Reveal it, add it to your hand and shuffle the deck.",<出現時>あなたの手札の<《ガイガン》>と<《フェス・ゴジラ》>を両方持つカードを１枚捨てることで、あなたの山札から、<《兵器》>か<《機械》>を持つ<足２>の交戦カードを１枚まで探して公開し、手札に加え、山札をシャッフルする。
+CARD_EFC01-003_DESC,"<Enter> You may discard 1 card with both <Gigan> and <《Fest》> from your hand. If you do, search your deck for 1 <Weapon> or <Mech> battle card with <Invade 2>. Reveal it, add it to your hand and shuffle the deck.",<出現時>あなたの手札の<《ガイガン》>と<《フェス・ゴジラ》>を両方持つカードを１枚捨てることで、あなたの山札から、<《兵器》>か<《機械》>を持つ<足２>の交戦カードを１枚まで探して公開し、手札に加え、山札をシャッフルする。
 CARD_EFC01-004_NAME,Hedorah(2021),ヘドラ(2021)
 CARD_EFC01-004_DESC,"When playing this card from your hand, you can reduce its rank by 1 for each battle card in your opponent's zones. (After being played this card is rank 8)",相手のエリアにいる交戦カード１枚につき、等級を－１して手札から出現できる。
 CARD_EFC01-005_NAME,Godzilla Appears in Godzilla Festival,ゴジラ ゴジラ・フェスに現わる
-CARD_EFC01-005_DESC,"《Your Turn》 When your monster card enters, reveal the top 5 cards of your deck. Add all 《Festival Godzilla》 cards to your hand and discard the rest. At the beginning of your counter phase, discard your hand.","<あなたのターン中>あなたの怪獣カードが出現した時、あなたの山札を上から５枚公開し、その中の<《フェス・ゴジラ》>を持つカードをすべて手札に加え、残りを捨て札にする。
+CARD_EFC01-005_DESC,"《Your Turn》 When your monster card enters, reveal the top 5 cards of your deck. Add all <《Fest》> cards to your hand and discard the rest. At the beginning of your counter phase, discard your hand.","<あなたのターン中>あなたの怪獣カードが出現した時、あなたの山札を上から５枚公開し、その中の<《フェス・ゴジラ》>を持つカードをすべて手札に加え、残りを捨て札にする。
 あなたの撃退フェイズ開始時、あなたの手札をすべて捨てる。"
 CARD_EFC01-006_NAME,King Ghidorah's Defense,キングギドラの防御
 CARD_EFC01-006_DESC,"<Opponent's Turn> If the opponent has 2 or less battle cards in their zones, none of the battle cards in your zones can be destroyed by your opponent's effects.",<相手のターン中>相手のエリアにいる交戦カードが２枚以下なら、あなたのエリアにいる交戦カードすべては相手の効果で<破壊>されない。

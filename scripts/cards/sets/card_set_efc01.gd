@@ -11,7 +11,7 @@ var CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.FEST],
 		"threat_level": 28000,
 		"invasion_icon": 1,
-		"description": "<Burst3> If every area adjacent to this has a Battle Card with <Festival Godzilla>, add +10,000 counter power.",
+		"description": "<Burst3> If every area adjacent to this has a Battle Card with <《Fest》>, add +10,000 counter power.",
 		"effect_script": "res://scripts/effects/efc01/efc01_001.gd"
 	},
 	{
@@ -35,7 +35,7 @@ var CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.JET_JAGUAR, CardEnums.CardTrait.MECH, CardEnums.CardTrait.FEST],
 		"counter_power": 5000,
 		"invasion_icon": 1,
-		"description": "<Enter> You may discard 1 card with both <Gigan> and <Festival Godzilla> from your hand. If you do, search your deck for 1 <Weapon> or <Mech> battle card with <Invade 2>. Reveal it, add it to your hand and shuffle the deck.",
+		"description": "<Enter> You may discard 1 card with both <Gigan> and <《Fest》> from your hand. If you do, search your deck for 1 <Weapon> or <Mech> battle card with <Invade 2>. Reveal it, add it to your hand and shuffle the deck.",
 		"effect_script": "res://scripts/effects/efc01/efc01_003.gd"
 	},
 	{
@@ -58,7 +58,7 @@ var CARDS: Array[Dictionary] = [
 		"colors": [CardEnums.CardColor.RED],
 		"traits": [],
 		"invasion_icon": 2,
-		"description": "《Your Turn》 When your monster card enters, reveal the top 5 cards of your deck. Add all 《Festival Godzilla》 cards to your hand and discard the rest. At the beginning of your counter phase, discard your hand.",
+		"description": "《Your Turn》 When your monster card enters, reveal the top 5 cards of your deck. Add all <《Fest》> cards to your hand and discard the rest. At the beginning of your counter phase, discard your hand.",
 		"effect_script": "res://scripts/effects/efc01/efc01_005.gd"
 	},
 	{

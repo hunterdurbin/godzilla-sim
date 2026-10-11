@@ -1,7 +1,7 @@
 extends CardEffect
 
 ## EFC01-003: Jet Jaguar(Gojika Festival) - Battle Rank 6 (Red)
-## <Enter> You may discard 1 card with both <Gigan> and <Festival Godzilla> from your
+## <Enter> You may discard 1 card with both <Gigan> and <Fest> from your
 ## hand. If you do, search your deck for 1 <Weapon> or <Mech> battle card with <Invade
 ## 2>. Reveal it, add it to your hand and shuffle the deck.
 ##
