@@ -1,5 +1,9 @@
 extends Control
 
+## Static helpers are called through the script, not the UpdateChecker
+## autoload instance (STATIC_CALLED_ON_INSTANCE).
+const UpdateCheckerScript := preload("res://scripts/services/update_checker.gd")
+
 @onready var player_name_edit: LineEdit = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/PlayerNameRow/PlayerNameEdit
 @onready var automation_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/AutomationButton
 @onready var customize_button: Button = $CenterContainer/PanelContainer/MarginContainer/VBoxContainer/CustomizeButton
@@ -1149,7 +1153,7 @@ func _on_advanced_pressed() -> void:
 	_add_toggle_row(vbox, tr("STR_OPTIONS_USE_MOBILE_LAYOUT"), "use_mobile_layout")
 	# Release builds only: unstable builds already follow unstable, and are
 	# offered stable on their own.
-	if UpdateChecker.is_release_build() and UpdateChecker.prompts_supported():
+	if UpdateChecker.is_release_build() and UpdateCheckerScript.prompts_supported():
 		var unstable_check := _add_toggle_row(vbox, tr("STR_OPTIONS_RECEIVE_UNSTABLE_UPDATES"), "receive_unstable_updates")
 		unstable_check.toggled.connect(func(_on: bool): UpdateChecker.recheck())
 

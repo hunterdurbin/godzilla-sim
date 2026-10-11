@@ -5,6 +5,7 @@ extends GdUnitTestSuite
 ## Everything runs against fake install trees under user://.
 
 const TEST_DIR := "user://_test_update_installer"
+const UpdateCheckerScript := preload("res://scripts/services/update_checker.gd")
 
 
 func before_test() -> void:
@@ -198,24 +199,24 @@ func test_platform_asset_carries_size_and_digest() -> void:
 		{"name": "godzilla_tcg_sim-linux.zip", "browser_download_url": "https://x/linux.zip", "size": 1234, "digest": "sha256:abc123"},
 		{"name": "godzilla_tcg_sim.flatpak", "browser_download_url": "https://x/app.flatpak", "size": 99},
 	]}
-	var asset: Dictionary = UpdateChecker._get_platform_asset(release, "Linux", false)
+	var asset: Dictionary = UpdateCheckerScript._get_platform_asset(release, "Linux", false)
 	assert_str(asset.get("url", "")).is_equal("https://x/linux.zip")
 	assert_int(asset.get("size", 0)).is_equal(1234)
 	assert_str(asset.get("sha256", "")).is_equal("abc123")
 
-	var flatpak: Dictionary = UpdateChecker._get_platform_asset(release, "Linux", true)
+	var flatpak: Dictionary = UpdateCheckerScript._get_platform_asset(release, "Linux", true)
 	assert_str(flatpak.get("url", "")).is_equal("https://x/app.flatpak")
 	assert_str(flatpak.get("sha256", "x")).is_empty()
 
 
 func test_platform_asset_missing_is_empty() -> void:
-	assert_dict(UpdateChecker._get_platform_asset({"assets": []}, "Windows", false)).is_empty()
-	assert_dict(UpdateChecker._get_platform_asset({"assets": []}, "Android", false)).is_empty()
+	assert_dict(UpdateCheckerScript._get_platform_asset({"assets": []}, "Windows", false)).is_empty()
+	assert_dict(UpdateCheckerScript._get_platform_asset({"assets": []}, "Android", false)).is_empty()
 
 
 func test_platform_asset_android_matches_either_channel_apk() -> void:
 	var release := {"assets": [{"name": "godzilla_tcg_sim_unstable.apk", "browser_download_url": "https://x/u.apk", "size": 5}]}
-	assert_str(UpdateChecker._get_platform_asset(release, "Android", false).get("url", "")).is_equal("https://x/u.apk")
+	assert_str(UpdateCheckerScript._get_platform_asset(release, "Android", false).get("url", "")).is_equal("https://x/u.apk")
 
 
 # -- UpdateChecker.find_offers ------------------------------------------------
@@ -227,7 +228,7 @@ func _release(tag: String, draft := false) -> Dictionary:
 
 
 func test_unstable_follows_newer_unstable_across_series() -> void:
-	var offers := UpdateChecker.find_offers([
+	var offers := UpdateCheckerScript.find_offers([
 		_release("v0.1.12-unstable.14"), _release("v0.1.13-unstable.1"), _release("v0.1.12-unstable.9"),
 	], "0.1.12-unstable.13", "Windows", false)
 	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.13-unstable.1")
@@ -235,7 +236,7 @@ func test_unstable_follows_newer_unstable_across_series() -> void:
 
 
 func test_unstable_offered_stable_of_own_series_or_later() -> void:
-	var offers := UpdateChecker.find_offers([
+	var offers := UpdateCheckerScript.find_offers([
 		_release("v0.1.11-release-hotfix.1"), _release("v0.1.12-release"), _release("v0.1.12-release-hotfix.2"),
 	], "0.1.12-unstable.13", "Windows", false)
 	assert_dict(offers["same_channel"]).is_empty()
@@ -244,34 +245,34 @@ func test_unstable_offered_stable_of_own_series_or_later() -> void:
 
 
 func test_unstable_never_offered_older_series_stable() -> void:
-	var offers := UpdateChecker.find_offers([_release("v0.1.11-release-hotfix.1")], "0.1.12-unstable.13", "Windows", false)
+	var offers := UpdateCheckerScript.find_offers([_release("v0.1.11-release-hotfix.1")], "0.1.12-unstable.13", "Windows", false)
 	assert_dict(offers).is_empty()
 
 
 func test_unstable_gets_both_offers() -> void:
-	var offers := UpdateChecker.find_offers([
+	var offers := UpdateCheckerScript.find_offers([
 		_release("v0.1.13-unstable.1"), _release("v0.1.12-release"),
 	], "0.1.12-unstable.13", "Windows", false)
 	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.13-unstable.1")
 	assert_bool(offers["same_channel"].get("switch_channel", true)).is_false()
 	assert_str(offers["channel_switch"].get("tag", "")).is_equal("v0.1.12-release")
-	assert_str(UpdateChecker.skip_key(offers)).is_equal("v0.1.13-unstable.1,v0.1.12-release")
+	assert_str(UpdateCheckerScript.skip_key(offers)).is_equal("v0.1.13-unstable.1,v0.1.12-release")
 
 
 func test_stable_ignores_unstable_and_gets_no_switch() -> void:
-	var offers := UpdateChecker.find_offers([
+	var offers := UpdateCheckerScript.find_offers([
 		_release("v0.1.13-unstable.1"), _release("v0.1.12-release-hotfix.1"),
 	], "0.1.12-release", "Windows", false)
 	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.12-release-hotfix.1")
 	assert_dict(offers["channel_switch"]).is_empty()
-	assert_str(UpdateChecker.skip_key(offers)).is_equal("v0.1.12-release-hotfix.1")
+	assert_str(UpdateCheckerScript.skip_key(offers)).is_equal("v0.1.12-release-hotfix.1")
 
 
 func test_release_gets_later_series_unstable_only_when_opted_in() -> void:
 	var releases := [_release("v0.1.13-unstable.2"), _release("v0.1.12-unstable.20")]
-	assert_dict(UpdateChecker.find_offers(releases, "0.1.12-release", "Windows", false, false)).is_empty()
+	assert_dict(UpdateCheckerScript.find_offers(releases, "0.1.12-release", "Windows", false, false)).is_empty()
 
-	var offers := UpdateChecker.find_offers(releases, "0.1.12-release", "Windows", false, true)
+	var offers := UpdateCheckerScript.find_offers(releases, "0.1.12-release", "Windows", false, true)
 	assert_dict(offers["same_channel"]).is_empty()
 	assert_str(offers["channel_switch"].get("tag", "")).is_equal("v0.1.13-unstable.2")
 	assert_str(offers["channel_switch"].get("channel", "")).is_equal("unstable")
@@ -280,27 +281,27 @@ func test_release_gets_later_series_unstable_only_when_opted_in() -> void:
 
 func test_release_never_offered_own_series_unstable() -> void:
 	# 0.1.12-unstable.N predates 0.1.12-release, whatever N is.
-	var offers := UpdateChecker.find_offers([_release("v0.1.12-unstable.20")], "0.1.12-release-hotfix.1", "Windows", false, true)
+	var offers := UpdateCheckerScript.find_offers([_release("v0.1.12-unstable.20")], "0.1.12-release-hotfix.1", "Windows", false, true)
 	assert_dict(offers).is_empty()
 
 
 func test_opt_in_does_not_change_unstable_builds() -> void:
 	var releases := [_release("v0.1.13-unstable.1"), _release("v0.1.12-release")]
-	assert_dict(UpdateChecker.find_offers(releases, "0.1.12-unstable.13", "Windows", false, true)) \
-		.is_equal(UpdateChecker.find_offers(releases, "0.1.12-unstable.13", "Windows", false, false))
+	assert_dict(UpdateCheckerScript.find_offers(releases, "0.1.12-unstable.13", "Windows", false, true)) \
+		.is_equal(UpdateCheckerScript.find_offers(releases, "0.1.12-unstable.13", "Windows", false, false))
 
 
 func test_drafts_and_assetless_releases_are_ignored() -> void:
 	var no_asset := _release("v0.1.12-unstable.20")
 	no_asset["assets"] = []
-	var offers := UpdateChecker.find_offers([
+	var offers := UpdateCheckerScript.find_offers([
 		_release("v0.1.12-unstable.19", true), no_asset, _release("v0.1.12-unstable.14"),
 	], "0.1.12-unstable.13", "Windows", false)
 	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.12-unstable.14")
 
 
 func test_channel_switch_keeps_data_only_on_desktop_zip_builds() -> void:
-	assert_bool(UpdateChecker.channel_switch_keeps_data("Windows", false)).is_true()
-	assert_bool(UpdateChecker.channel_switch_keeps_data("macOS", false)).is_true()
-	assert_bool(UpdateChecker.channel_switch_keeps_data("Linux", true)).is_false()
-	assert_bool(UpdateChecker.channel_switch_keeps_data("Android", false)).is_false()
+	assert_bool(UpdateCheckerScript.channel_switch_keeps_data("Windows", false)).is_true()
+	assert_bool(UpdateCheckerScript.channel_switch_keeps_data("macOS", false)).is_true()
+	assert_bool(UpdateCheckerScript.channel_switch_keeps_data("Linux", true)).is_false()
+	assert_bool(UpdateCheckerScript.channel_switch_keeps_data("Android", false)).is_false()

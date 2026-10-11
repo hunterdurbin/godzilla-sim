@@ -1,6 +1,9 @@
 extends Control
 
 
+## Static helpers are called through the script, not the UpdateChecker
+## autoload instance (STATIC_CALLED_ON_INSTANCE).
+const UpdateCheckerScript := preload("res://scripts/services/update_checker.gd")
 const PATREON_URL := "https://www.patreon.com/cw/sodabomber/membership"
 const DISCORD_URL := "https://discord.gg/fwCaYzWbPw"
 
@@ -715,7 +718,7 @@ func _unhandled_input(event: InputEvent) -> void:
 # -- Update dialog ------------------------------------------------------------
 
 func _on_update_available(update: Dictionary) -> void:
-	var is_skipped := UpdateChecker.skip_key(update) == GameSettings.skipped_version
+	var is_skipped := UpdateCheckerScript.skip_key(update) == GameSettings.skipped_version
 	if is_skipped or UpdateChecker.later_dismissed:
 		_show_update_button()
 		return
@@ -809,7 +812,7 @@ func _show_update_dialog(update: Dictionary) -> void:
 		cross_label.add_theme_font_size_override("font_size", 18)
 		choices.add_child(cross_label)
 
-		var keeps_data := UpdateChecker.channel_switch_keeps_data()
+		var keeps_data := UpdateCheckerScript.channel_switch_keeps_data()
 		var data_note := Label.new()
 		var prefix := "STR_MENU_UPDATE_UNSTABLE_" if to_unstable else "STR_MENU_UPDATE_STABLE_"
 		data_note.text = tr(prefix + ("KEEPS_DATA" if keeps_data else "SEPARATE_DATA"))
@@ -824,7 +827,7 @@ func _show_update_dialog(update: Dictionary) -> void:
 		choices.add_child(_make_update_dialog_button(switch_text, start_offer.bind(cross)))
 
 	var on_skip := func():
-		GameSettings.skipped_version = UpdateChecker.skip_key(update)
+		GameSettings.skipped_version = UpdateCheckerScript.skip_key(update)
 		GameSettings.save()
 		_show_update_button()
 		popup.hide()
