@@ -1,5 +1,8 @@
 extends Control
 
+## Static helpers are called through the script, not the DecklistManager
+## autoload instance (STATIC_CALLED_ON_INSTANCE).
+const DecklistManagerScript := preload("res://scripts/cards/decklist_manager.gd")
 const CARD_SCENE := preload("res://scenes/cards/Card.tscn")
 const CARD_SCALE := 0.42
 const CARD_SIZE := Vector2(150, 210)
@@ -17,6 +20,8 @@ var delete_button: Button
 var import_button: Button
 var import_decklog_button: Button
 var export_button: Button
+var export_all_button: Button
+var import_all_button: Button
 var deck_stats_label: RichTextLabel
 var validation_label: RichTextLabel
 var back_button: Button
@@ -63,6 +68,10 @@ var unsaved_dialog: ConfirmationDialog
 var delete_dialog: ConfirmationDialog
 var empty_save_dialog: ConfirmationDialog
 var clear_dialog: ConfirmationDialog
+var import_all_dialog: ConfirmationDialog
+## Plan shown in import_all_dialog; applied as-is on confirm, so a
+## clipboard change while the prompt is open can't alter what gets saved.
+var _pending_import_plan: Array[Dictionary] = []
 var format_info_dialog: AcceptDialog
 var format_info_body: VBoxContainer
 var decklog_dialog: AcceptDialog
@@ -178,6 +187,7 @@ func _init_pad_bands() -> void:
 		{"row": [import_button] as Array[Control]},
 		{"row": [import_decklog_button] as Array[Control]},
 		{"row": [export_button] as Array[Control]},
+		{"row": [export_all_button, import_all_button] as Array[Control]},
 		{"row": [format_info_button, format_option] as Array[Control]},
 		{"row": [default_mode_check] as Array[Control]},
 		{"row": [back_button] as Array[Control]},
@@ -408,6 +418,22 @@ func _build_left_panel(parent: HBoxContainer) -> void:
 	export_button = Button.new()
 	export_button.text = tr("STR_DB_EXPORT")
 	vbox.add_child(export_button)
+
+	# All decks at once — moves a collection between apps that don't share
+	# storage (stable vs unstable on mobile/Flatpak).
+	var all_decks_row := HBoxContainer.new()
+	all_decks_row.add_theme_constant_override("separation", 4)
+	vbox.add_child(all_decks_row)
+
+	export_all_button = Button.new()
+	export_all_button.text = tr("STR_DB_EXPORT_ALL")
+	export_all_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	all_decks_row.add_child(export_all_button)
+
+	import_all_button = Button.new()
+	import_all_button.text = tr("STR_DB_IMPORT_ALL")
+	import_all_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	all_decks_row.add_child(import_all_button)
 
 	vbox.add_child(HSeparator.new())
 
@@ -720,6 +746,12 @@ func _build_dialogs() -> void:
 	clear_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
 	add_child(clear_dialog)
 
+	import_all_dialog = ConfirmationDialog.new()
+	import_all_dialog.title = tr("STR_DB_IMPORT_ALL")
+	import_all_dialog.ok_button_text = tr("STR_DB_IMPORT_ALL_CONFIRM")
+	import_all_dialog.cancel_button_text = tr("STR_COMMON_CANCEL")
+	add_child(import_all_dialog)
+
 	format_info_dialog = AcceptDialog.new()
 	format_info_dialog.min_size = Vector2(560, 540)
 	var info_scroll := ScrollContainer.new()
@@ -784,7 +816,7 @@ func _build_dialogs() -> void:
 	add_child(max_counter_dialog)
 
 	for dialog: Window in [unsaved_dialog, delete_dialog, empty_save_dialog,
-			clear_dialog, format_info_dialog, decklog_dialog, max_counter_dialog]:
+			clear_dialog, import_all_dialog, format_info_dialog, decklog_dialog, max_counter_dialog]:
 		GamepadHelper.register_modal(dialog)
 
 	# OptionButton dropdowns are PopupMenus — focus contexts of their own, so
@@ -815,6 +847,8 @@ func _connect_signals() -> void:
 	import_button.pressed.connect(_on_import_pressed)
 	import_decklog_button.pressed.connect(_on_import_decklog_pressed)
 	export_button.pressed.connect(_on_export_pressed)
+	export_all_button.pressed.connect(_on_export_all_pressed)
+	import_all_button.pressed.connect(_on_import_all_pressed)
 	decklog_import_btn.pressed.connect(_on_decklog_fetch_pressed)
 	decklog_url_edit.text_submitted.connect(func(_t): _on_decklog_fetch_pressed())
 	decklog_dialog.about_to_popup.connect(_prefill_decklog_input)
@@ -850,6 +884,7 @@ func _connect_signals() -> void:
 	delete_dialog.confirmed.connect(_on_delete_confirmed)
 	empty_save_dialog.confirmed.connect(_on_empty_save_confirmed)
 	clear_dialog.confirmed.connect(_on_clear_confirmed)
+	import_all_dialog.confirmed.connect(_on_import_all_confirmed)
 
 
 # ============================================================
@@ -2176,7 +2211,7 @@ func _on_import_pressed() -> void:
 
 func _import_from_clipboard() -> void:
 	var clipboard := DisplayServer.clipboard_get()
-	var data := DecklistManager._parse_decklist(clipboard)
+	var data := DecklistManagerScript.parse_decklist_text(clipboard)
 	if data["monster"].is_empty() and data["main"].is_empty():
 		validation_label.clear()
 		validation_label.append_text("[color=red]Could not parse decklist from clipboard.[/color]")
@@ -2288,6 +2323,48 @@ func _on_export_pressed() -> void:
 	# Brief feedback
 	export_button.text = tr("STR_DB_COPIED")
 	get_tree().create_timer(1.5).timeout.connect(func(): export_button.text = tr("STR_DB_EXPORT"))
+
+
+func _on_export_all_pressed() -> void:
+	SfxManager.play("ui_click")
+	var count := DecklistManager.get_all_decklists().size()
+	DisplayServer.clipboard_set(DecklistManager.export_all_decks_text())
+	export_all_button.text = tr("STR_DB_COPIED_ALL_FMT") % count
+	get_tree().create_timer(1.5).timeout.connect(func(): export_all_button.text = tr("STR_DB_EXPORT_ALL"))
+
+
+## Previews a pasted all-decks bundle and asks before saving anything.
+## Never touches the deck being edited, and never overwrites a saved deck
+## (see DecklistManager.plan_import), so no unsaved-changes prompt.
+func _on_import_all_pressed() -> void:
+	SfxManager.play("ui_click")
+	validation_label.clear()
+	var clipboard := DisplayServer.clipboard_get()
+	if clipboard.strip_edges().is_empty():
+		validation_label.append_text("[color=red]%s[/color]" % tr("STR_DB_IMPORT_ALL_EMPTY"))
+		return
+	var plan := DecklistManager.plan_import(clipboard)
+	if plan.is_empty():
+		validation_label.append_text("[color=red]%s[/color]" % tr("STR_DB_IMPORT_ALL_NONE"))
+		return
+	var counts := DecklistManagerScript.summarize_import_plan(plan)
+	if counts["skipped"] == plan.size():
+		validation_label.append_text("[color=green]%s[/color]" % (tr("STR_DB_IMPORT_ALL_NOTHING_NEW_FMT") % plan.size()))
+		return
+	_pending_import_plan = plan
+	import_all_dialog.dialog_text = tr("STR_DB_IMPORT_ALL_PROMPT_FMT") % [
+		plan.size(), counts["new"], counts["renamed"], counts["skipped"]]
+	import_all_dialog.popup_centered()
+
+
+func _on_import_all_confirmed() -> void:
+	var result := DecklistManager.apply_import(_pending_import_plan)
+	_pending_import_plan = []
+	validation_label.clear()
+	var color := "red" if result["failed"] > 0 else "green"
+	validation_label.append_text("[color=%s]%s[/color]" % [color, tr("STR_DB_IMPORT_ALL_RESULT_FMT") % [
+		result["imported"], result["renamed"], result["skipped"], result["failed"]]])
+	_refresh_deck_list()
 
 
 # ============================================================

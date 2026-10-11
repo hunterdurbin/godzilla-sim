@@ -75,7 +75,7 @@ func load_decklist(deck_name: String) -> Dictionary:
 		return {}
 	var content := file.get_as_text()
 	file.close()
-	return _parse_decklist(content)
+	return parse_decklist_text(content)
 
 
 func select_deck_for_player(player_id: int, deck_name: String) -> bool:
@@ -379,6 +379,153 @@ func get_decklist_thumbnail_card_id(deck_name: String) -> String:
 	return best_id
 
 
+# --- All-decks clipboard bundle ---
+#
+# Every deck as one paste-able text block — the way to move decks between
+# apps that don't share user:// (stable vs unstable on Android/iOS/Flatpak):
+#
+#   [deck] Iterations/Foo        <- folder path + deck name ("" folder = root)
+#   [monster deck]
+#   1 EBP01-001
+#   [main deck]
+#   4 EBP01-010
+#
+# Each deck body is the single-deck clipboard format, so one block also
+# pastes into the deck builder's single-deck import.
+
+const LINE_DELIMITER_DECK := "[deck]"
+
+
+## Every saved deck as one bundle text (see above).
+func export_all_decks_text() -> String:
+	var decks: Array[Dictionary] = []
+	for entry in get_all_deck_entries():
+		var data := load_decklist(entry["name"])
+		if data.is_empty():
+			continue
+		decks.append({"name": entry["name"], "folder": entry["folder"],
+				"monster": data["monster"], "main": data["main"]})
+	return build_deck_bundle(decks)
+
+
+## What importing a bundle would do, without writing anything — one step
+## per deck: {deck, save_as, action}. A deck whose name is free is "new"
+## (saved as-is, in its folder); one identical to a saved deck is "skipped";
+## one that differs from a saved deck is "renamed" to "<name> (imported)".
+## Saved decks are never overwritten. Empty when `text` holds no bundle.
+func plan_import(text: String) -> Array[Dictionary]:
+	var taken := {}
+	for deck_name in get_all_decklists():
+		taken[deck_name] = true
+	var plan: Array[Dictionary] = []
+	for deck in parse_deck_bundle(text):
+		var deck_name: String = deck["name"]
+		var action := "new"
+		if taken.has(deck_name):
+			if same_deck_contents(load_decklist(deck_name), deck):
+				action = "skipped"
+			else:
+				deck_name = unique_import_name(deck_name, taken)
+				action = "renamed"
+		taken[deck_name] = true
+		plan.append({"deck": deck, "save_as": deck_name, "action": action})
+	return plan
+
+
+## Saves a plan from plan_import. Returns {imported, renamed, skipped, failed}
+## (imported includes renamed).
+func apply_import(plan: Array[Dictionary]) -> Dictionary:
+	var result := {"imported": 0, "renamed": 0, "skipped": 0, "failed": 0}
+	for step in plan:
+		if step["action"] == "skipped":
+			result["skipped"] += 1
+			continue
+		var deck: Dictionary = step["deck"]
+		if save_decklist(step["save_as"], deck["monster"], deck["main"], deck["folder"]):
+			result["imported"] += 1
+			if step["action"] == "renamed":
+				result["renamed"] += 1
+		else:
+			result["failed"] += 1
+	return result
+
+
+## {new, renamed, skipped} counts of a plan — for the confirm prompt.
+static func summarize_import_plan(plan: Array[Dictionary]) -> Dictionary:
+	var counts := {"new": 0, "renamed": 0, "skipped": 0}
+	for step in plan:
+		counts[step["action"]] += 1
+	return counts
+
+
+## decks: [{name, folder, monster: [{quantity, card_number}], main: [...]}].
+static func build_deck_bundle(decks: Array) -> String:
+	var lines: PackedStringArray = ["# Unofficial Godzilla Sim decks (%d)" % decks.size()]
+	for deck in decks:
+		var folder: String = deck.get("folder", "")
+		lines.append("")
+		lines.append("%s %s" % [LINE_DELIMITER_DECK, deck["name"] if folder.is_empty() else folder + "/" + deck["name"]])
+		lines.append(LINE_DELIMITER_MONSTER_DECK)
+		for entry in deck["monster"]:
+			lines.append("%d %s" % [entry["quantity"], entry["card_number"]])
+		lines.append(LINE_DELIMITER_MAIN_DECK)
+		for entry in deck["main"]:
+			lines.append("%d %s" % [entry["quantity"], entry["card_number"]])
+	return "\n".join(lines) + "\n"
+
+
+## Inverse of build_deck_bundle. Blocks with no cards, or text with no
+## `[deck]` lines at all (e.g. a single-deck paste), yield nothing.
+static func parse_deck_bundle(text: String) -> Array[Dictionary]:
+	var decks: Array[Dictionary] = []
+	var header := ""
+	var body: PackedStringArray = []
+	for raw_line in (text + "\n" + LINE_DELIMITER_DECK).split("\n"):
+		var line := raw_line.strip_edges()
+		if not line.to_lower().begins_with(LINE_DELIMITER_DECK):
+			body.append(line)
+			continue
+		if not header.is_empty():
+			var data := parse_decklist_text("\n".join(body))
+			if not (data["monster"].is_empty() and data["main"].is_empty()):
+				var path := _sanitize_folder_path(header)
+				var slash := path.rfind("/")
+				decks.append({
+					"name": path.substr(slash + 1),
+					"folder": path.substr(0, slash) if slash >= 0 else "",
+					"monster": data["monster"], "main": data["main"],
+				})
+		header = line.substr(LINE_DELIMITER_DECK.length()).strip_edges()
+		body = []
+	return decks
+
+
+## Order-insensitive comparison of two parsed decks' card lists.
+static func same_deck_contents(a: Dictionary, b: Dictionary) -> bool:
+	for section in ["monster", "main"]:
+		if _entry_counts(a.get(section, [])) != _entry_counts(b.get(section, [])):
+			return false
+	return true
+
+
+static func _entry_counts(entries: Array) -> Dictionary:
+	var counts := {}
+	for entry in entries:
+		var card: String = String(entry["card_number"]).to_upper()
+		counts[card] = int(counts.get(card, 0)) + int(entry["quantity"])
+	return counts
+
+
+## "<name> (imported)", then "(imported 2)", ... — the first not in `taken`.
+static func unique_import_name(deck_name: String, taken: Dictionary) -> String:
+	var candidate := "%s (imported)" % deck_name
+	var n := 2
+	while taken.has(candidate):
+		candidate = "%s (imported %d)" % [deck_name, n]
+		n += 1
+	return candidate
+
+
 static func sanitize_filename(file_name: String) -> String:
 	## Remove characters illegal in Windows filenames: \ / : * ? " < > |
 	return file_name.replace("\\", "_").replace("/", "_").replace(":", "-") \
@@ -503,7 +650,7 @@ func _remove_dir_recursive(dir_path: String) -> void:
 	DirAccess.remove_absolute(dir_path)
 
 
-func _parse_decklist(content: String) -> Dictionary:
+static func parse_decklist_text(content: String) -> Dictionary:
 	var result := {"monster": [], "main": []}
 	var current_section := ""
 

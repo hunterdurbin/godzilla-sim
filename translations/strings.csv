@@ -54,11 +54,11 @@ STR_MENU_UPDATE_MANUAL,Download Manually,手動でダウンロード
 STR_MENU_UPDATE_CURRENT_FMT,Current version: v%s,現在のバージョン: v%s
 STR_MENU_UPDATE_STABLE_AVAILABLE_FMT,Stable release available: %s,安定版が利用可能です: %s
 STR_MENU_UPDATE_STABLE_KEEPS_DATA,"Your decks, settings and saves carry over to the stable build.","デッキ、設定、セーブデータは安定版に引き継がれます。"
-STR_MENU_UPDATE_STABLE_SEPARATE_DATA,"The stable build is a separate app. Your decks, settings and saves will not carry over.","安定版は別のアプリです。デッキ、設定、セーブデータは引き継がれません。"
+STR_MENU_UPDATE_STABLE_SEPARATE_DATA,"The stable build is a separate app. Your settings and saves will not carry over. To bring your decks, use Deck Builder → Export All Decks here, then Import All Decks in the new app.","安定版は別のアプリです。設定とセーブデータは引き継がれません。デッキはここでデッキビルダーの「全デッキを書き出し」を使い、新しいアプリで「全デッキを読み込み」してください。"
 STR_MENU_UPDATE_SWITCH_STABLE,Switch to Stable,安定版に切り替え
 STR_MENU_UPDATE_UNSTABLE_AVAILABLE_FMT,Unstable build available: %s,開発版が利用可能です: %s
 STR_MENU_UPDATE_UNSTABLE_KEEPS_DATA,"Unstable builds may have bugs. Your decks, settings and saves carry over.","開発版には不具合がある場合があります。デッキ、設定、セーブデータは引き継がれます。"
-STR_MENU_UPDATE_UNSTABLE_SEPARATE_DATA,"Unstable builds may have bugs, and the unstable build is a separate app. Your decks, settings and saves will not carry over.","開発版には不具合がある場合があり、別のアプリです。デッキ、設定、セーブデータは引き継がれません。"
+STR_MENU_UPDATE_UNSTABLE_SEPARATE_DATA,"Unstable builds may have bugs, and the unstable build is a separate app. Your settings and saves will not carry over. To bring your decks, use Deck Builder → Export All Decks here, then Import All Decks in the new app.","開発版には不具合がある場合があり、別のアプリです。設定とセーブデータは引き継がれません。デッキはここでデッキビルダーの「全デッキを書き出し」を使い、新しいアプリで「全デッキを読み込み」してください。"
 STR_MENU_UPDATE_SWITCH_UNSTABLE,Switch to Unstable,開発版に切り替え
 STR_MENU_RECONNECT_TITLE,Game In Progress,進行中のゲーム
 STR_MENU_RECONNECT_PROMPT,"You were disconnected from a game.
@@ -615,6 +615,27 @@ STR_DB_IMPORT,Import from Clipboard,クリップボードから読み込み
 STR_DB_IMPORT_DECKLOG,Import from Decklog,Decklogから読み込み
 STR_DB_EXPORT,Export to Clipboard,クリップボードに書き出し
 STR_DB_COPIED,Copied!,コピーしました!
+STR_DB_EXPORT_ALL,Export All Decks,全デッキを書き出し
+STR_DB_IMPORT_ALL,Import All Decks,全デッキを読み込み
+STR_DB_COPIED_ALL_FMT,Copied %d decks!,%d個のデッキをコピーしました!
+STR_DB_IMPORT_ALL_EMPTY,Clipboard is empty. Use Export All Decks in the other app first.,クリップボードが空です。先にもう一方のアプリで「全デッキを書き出し」を使ってください。
+STR_DB_IMPORT_ALL_NONE,"No decks found in the clipboard. Import All expects text from Export All Decks; for a single deck, use Import from Clipboard.","クリップボードにデッキが見つかりません。「全デッキを読み込み」には「全デッキを書き出し」のテキストが必要です。1つのデッキは「クリップボードから読み込み」を使ってください。"
+STR_DB_IMPORT_ALL_RESULT_FMT,"Imported %d decks (%d renamed to keep your existing decks). Skipped %d already saved. Failed: %d.","%d個のデッキを読み込みました(既存のデッキを残すため%d個を改名)。保存済みの%d個をスキップ。失敗: %d。"
+STR_DB_IMPORT_ALL_CONFIRM,Import,読み込む
+STR_DB_IMPORT_ALL_PROMPT_FMT,"Import %d decks from the clipboard?
+
+New: %d
+Saved as ""(imported)"" because a deck with that name differs: %d
+Already saved, skipped: %d
+
+Your existing decks will not be changed.","クリップボードから%d個のデッキを読み込みますか?
+
+新規: %d
+同名で内容が異なるため「(imported)」として保存: %d
+保存済みのためスキップ: %d
+
+既存のデッキは変更されません。"
+STR_DB_IMPORT_ALL_NOTHING_NEW_FMT,All %d decks in the clipboard are already saved.,クリップボードの%d個のデッキはすべて保存済みです。
 STR_DB_DECKLOG_TITLE,Import from Decklog,Decklogから読み込み
 STR_DB_DECKLOG_HELPER,Paste a Decklog URL or deck code.,DecklogのURLまたはデッキコードを貼り付けてください。
 STR_DB_DECKLOG_PLACEHOLDER,https://decklog-en.bushiroad.com/view/XXXXX,https://decklog-en.bushiroad.com/view/XXXXX
