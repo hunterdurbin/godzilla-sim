@@ -164,6 +164,11 @@ func _connect_hand_signals() -> void:
 		if overlay:
 			overlay.visibility_changed.connect(_on_context_stack_changed)
 	_modal_suspended = _modal_blocked()
+	# Entering a match with the pad already active (menus navigated by pad)
+	# never fires gamepad_detected — that's a transition signal — so without
+	# this the board shows no cursor until some press happens to wake it.
+	if GamepadHelper.is_using_gamepad():
+		_on_gamepad_detected()
 
 
 func _exit_tree() -> void:
