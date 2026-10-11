@@ -63,7 +63,15 @@ const ENTRIES := {
 		"description": "Fix orientation for EBP04-067",
 		"card_ids": ["EBP04-067"],
 		"locales": ["ja"]
-	}
+	},
+	"v0.1.12-unstable.15_efc01_overlay_refresh": {
+		"description": "EFC01 artwork regenerated with updated overlay",
+		"card_ids": [
+			"EFC01-001", "EFC01-002", "EFC01-003", "EFC01-004", "EFC01-005",
+			"EFC01-006",
+		],
+		"locales": ["en"],
+	},
 }
 
 
