@@ -1,7 +1,7 @@
 extends CardEffect
 
 ## EFC01-001: Godzilla(Gojika Festival) - Monster Rank 4 (Red)
-## <Burst3> If every area adjacent to this has a Battle Card with <Festival Godzilla>,
+## <Burst3> If every area adjacent to this has a Battle Card with <Fest>,
 ## add +10,000 counter power.
 ##
 ## Tested: Yes
