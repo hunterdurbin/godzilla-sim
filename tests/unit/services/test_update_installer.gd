@@ -108,16 +108,20 @@ func test_extract_zip_rejects_parent_escape() -> void:
 	assert_bool(FileAccess.file_exists(_abs(TEST_DIR).path_join("escape.txt"))).is_false()
 
 
-# -- swap_in / cleanup_leftovers ---------------------------------------------
+# -- swap_in / final_path_for / cleanup_leftovers ----------------------------
 
-func test_swap_in_file_keeps_old_copy() -> void:
+func _replaced_dir() -> String:
+	return _abs(TEST_DIR).path_join(UpdateInstaller.STAGING_DIR_NAME).path_join(UpdateInstaller.REPLACED_DIR_NAME)
+
+
+func test_swap_in_file_parks_old_copy_in_staging() -> void:
 	var target := _abs(TEST_DIR).path_join("sim.exe")
 	var staged := _abs(TEST_DIR).path_join(".update_staging/extract/sim.exe")
 	_write(target, "old")
 	_write(staged, "new")
-	assert_str(UpdateInstaller.swap_in(target, staged)).is_empty()
+	assert_str(UpdateInstaller.swap_in(target, staged, target, _replaced_dir())).is_empty()
 	assert_str(_read(target)).is_equal("new")
-	assert_str(_read(target + UpdateInstaller.OLD_SUFFIX)).is_equal("old")
+	assert_str(_read(_replaced_dir().path_join("sim.exe"))).is_equal("old")
 
 
 func test_swap_in_bundle_dir() -> void:
@@ -125,18 +129,44 @@ func test_swap_in_bundle_dir() -> void:
 	var staged := _abs(TEST_DIR).path_join(".update_staging/extract/sim.app")
 	_write(target.path_join("Contents/MacOS/sim"), "old")
 	_write(staged.path_join("Contents/MacOS/sim"), "new")
-	assert_str(UpdateInstaller.swap_in(target, staged)).is_empty()
+	assert_str(UpdateInstaller.swap_in(target, staged, target, _replaced_dir())).is_empty()
 	assert_str(_read(target.path_join("Contents/MacOS/sim"))).is_equal("new")
-	assert_str(_read(target + ".old/Contents/MacOS/sim")).is_equal("old")
+	assert_str(_read(_replaced_dir().path_join("sim.app/Contents/MacOS/sim"))).is_equal("old")
+
+
+func test_swap_in_channel_switch_renames_and_replaces_existing_stable() -> void:
+	# Unstable running; a stale stable copy already sits beside it.
+	var unstable := _abs(TEST_DIR).path_join("sim_unstable.exe")
+	var stale_stable := _abs(TEST_DIR).path_join("sim.exe")
+	var staged := _abs(TEST_DIR).path_join(".update_staging/extract/sim.exe")
+	_write(unstable, "unstable")
+	_write(stale_stable, "stale stable")
+	_write(staged, "new stable")
+	var target := {"kind": "file", "path": unstable, "dir": _abs(TEST_DIR)}
+	var final_path := UpdateInstaller.final_path_for(target, staged, true)
+	assert_str(final_path).is_equal(stale_stable)
+
+	assert_str(UpdateInstaller.swap_in(unstable, staged, final_path, _replaced_dir())).is_empty()
+	assert_str(_read(stale_stable)).is_equal("new stable")
+	assert_bool(FileAccess.file_exists(unstable)).is_false()
+	assert_str(_read(_replaced_dir().path_join("sim_unstable.exe"))).is_equal("unstable")
+	assert_str(_read(_replaced_dir().path_join("sim.exe"))).is_equal("stale stable")
+
+
+func test_final_path_keeps_renamed_target_on_same_channel() -> void:
+	var target := {"kind": "file", "path": "/games/my_sim.exe", "dir": "/games"}
+	assert_str(UpdateInstaller.final_path_for(target, "/games/.update_staging/extract/sim.exe", false)).is_equal("/games/my_sim.exe")
 
 
 func test_swap_in_rolls_back_when_payload_missing() -> void:
-	var target := _abs(TEST_DIR).path_join("sim.exe")
-	_write(target, "old")
-	var reason := UpdateInstaller.swap_in(target, _abs(TEST_DIR).path_join("missing.exe"))
+	var unstable := _abs(TEST_DIR).path_join("sim_unstable.exe")
+	var stable := _abs(TEST_DIR).path_join("sim.exe")
+	_write(unstable, "unstable")
+	_write(stable, "stable")
+	var reason := UpdateInstaller.swap_in(unstable, _abs(TEST_DIR).path_join("missing.exe"), stable, _replaced_dir())
 	assert_str(reason).is_not_empty()
-	assert_str(_read(target)).is_equal("old")
-	assert_bool(FileAccess.file_exists(target + UpdateInstaller.OLD_SUFFIX)).is_false()
+	assert_str(_read(unstable)).is_equal("unstable")
+	assert_str(_read(stable)).is_equal("stable")
 
 
 func test_cleanup_leftovers_removes_old_and_staging() -> void:
@@ -181,3 +211,73 @@ func test_platform_asset_carries_size_and_digest() -> void:
 func test_platform_asset_missing_is_empty() -> void:
 	assert_dict(UpdateChecker._get_platform_asset({"assets": []}, "Windows", false)).is_empty()
 	assert_dict(UpdateChecker._get_platform_asset({"assets": []}, "Android", false)).is_empty()
+
+
+func test_platform_asset_android_matches_either_channel_apk() -> void:
+	var release := {"assets": [{"name": "godzilla_tcg_sim_unstable.apk", "browser_download_url": "https://x/u.apk", "size": 5}]}
+	assert_str(UpdateChecker._get_platform_asset(release, "Android", false).get("url", "")).is_equal("https://x/u.apk")
+
+
+# -- UpdateChecker.find_offers ------------------------------------------------
+
+func _release(tag: String, draft := false) -> Dictionary:
+	return {"tag_name": tag, "draft": draft, "html_url": "https://x/" + tag, "assets": [
+		{"name": "godzilla_tcg_sim-windows.zip", "browser_download_url": "https://x/%s.zip" % tag, "size": 10},
+	]}
+
+
+func test_unstable_follows_newer_unstable_across_series() -> void:
+	var offers := UpdateChecker.find_offers([
+		_release("v0.1.12-unstable.14"), _release("v0.1.13-unstable.1"), _release("v0.1.12-unstable.9"),
+	], "0.1.12-unstable.13", "Windows", false)
+	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.13-unstable.1")
+	assert_dict(offers["stable_switch"]).is_empty()
+
+
+func test_unstable_offered_stable_of_own_series_or_later() -> void:
+	var offers := UpdateChecker.find_offers([
+		_release("v0.1.11-release-hotfix.1"), _release("v0.1.12-release"), _release("v0.1.12-release-hotfix.2"),
+	], "0.1.12-unstable.13", "Windows", false)
+	assert_dict(offers["same_channel"]).is_empty()
+	assert_str(offers["stable_switch"].get("tag", "")).is_equal("v0.1.12-release-hotfix.2")
+	assert_bool(offers["stable_switch"].get("switch_channel", false)).is_true()
+
+
+func test_unstable_never_offered_older_series_stable() -> void:
+	var offers := UpdateChecker.find_offers([_release("v0.1.11-release-hotfix.1")], "0.1.12-unstable.13", "Windows", false)
+	assert_dict(offers).is_empty()
+
+
+func test_unstable_gets_both_offers() -> void:
+	var offers := UpdateChecker.find_offers([
+		_release("v0.1.13-unstable.1"), _release("v0.1.12-release"),
+	], "0.1.12-unstable.13", "Windows", false)
+	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.13-unstable.1")
+	assert_bool(offers["same_channel"].get("switch_channel", true)).is_false()
+	assert_str(offers["stable_switch"].get("tag", "")).is_equal("v0.1.12-release")
+	assert_str(UpdateChecker.skip_key(offers)).is_equal("v0.1.13-unstable.1,v0.1.12-release")
+
+
+func test_stable_ignores_unstable_and_gets_no_switch() -> void:
+	var offers := UpdateChecker.find_offers([
+		_release("v0.1.13-unstable.1"), _release("v0.1.12-release-hotfix.1"),
+	], "0.1.12-release", "Windows", false)
+	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.12-release-hotfix.1")
+	assert_dict(offers["stable_switch"]).is_empty()
+	assert_str(UpdateChecker.skip_key(offers)).is_equal("v0.1.12-release-hotfix.1")
+
+
+func test_drafts_and_assetless_releases_are_ignored() -> void:
+	var no_asset := _release("v0.1.12-unstable.20")
+	no_asset["assets"] = []
+	var offers := UpdateChecker.find_offers([
+		_release("v0.1.12-unstable.19", true), no_asset, _release("v0.1.12-unstable.14"),
+	], "0.1.12-unstable.13", "Windows", false)
+	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.12-unstable.14")
+
+
+func test_channel_switch_keeps_data_only_on_desktop_zip_builds() -> void:
+	assert_bool(UpdateChecker.channel_switch_keeps_data("Windows", false)).is_true()
+	assert_bool(UpdateChecker.channel_switch_keeps_data("macOS", false)).is_true()
+	assert_bool(UpdateChecker.channel_switch_keeps_data("Linux", true)).is_false()
+	assert_bool(UpdateChecker.channel_switch_keeps_data("Android", false)).is_false()

@@ -1,10 +1,14 @@
 extends Node
 ## Autoload singleton: checks GitHub Releases for available updates on startup.
 
-signal update_available(current_version: String, new_version: String, download_url: String, release_url: String)
+## `update` = pending_update (see below).
+signal update_available(update: Dictionary)
 
 const GITHUB_API_URL := "https://api.github.com/repos/hunterdurbin/godzilla-sim/releases"
 
+## {current, same_channel: offer, stable_switch: offer} — each offer is
+## {tag, download_url, release_url, size, sha256, switch_channel} or {}.
+## stable_switch is only ever set for unstable builds.
 var pending_update: Dictionary = {}
 var later_dismissed: bool = false
 
@@ -42,22 +46,35 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 		return
 
 	var releases: Array = json.data if json.data is Array else []
-	var best := _find_best_update(releases)
-	if best.is_empty():
+	var offers := find_offers(releases, _current_version)
+	if offers.is_empty():
 		print("[UpdateChecker] No update available")
 		return
 
-	var new_tag: String = best["tag"]
-	print("[UpdateChecker] Update available: %s -> %s" % [_current_version, new_tag])
-	pending_update = {
-		"current": _current_version,
-		"new_version": new_tag,
-		"download_url": best["download_url"],
-		"release_url": best["release_url"],
-		"size": best["size"],
-		"sha256": best["sha256"],
-	}
-	update_available.emit(_current_version, new_tag, best["download_url"], best["release_url"])
+	print("[UpdateChecker] Update available from %s: same_channel=%s stable_switch=%s" % [
+		_current_version, offers["same_channel"].get("tag", "-"), offers["stable_switch"].get("tag", "-")])
+	pending_update = offers
+	pending_update["current"] = _current_version
+	update_available.emit(pending_update)
+
+
+## Tags of every offer in `update`, comma-joined — the "Skip This Version"
+## key. A lone same-channel offer yields just its tag, so skips recorded
+## before stable-switch offers existed still match.
+static func skip_key(update: Dictionary) -> String:
+	var tags: PackedStringArray = []
+	for key in ["same_channel", "stable_switch"]:
+		var offer: Dictionary = update.get(key, {})
+		if not offer.is_empty():
+			tags.append(offer["tag"])
+	return ",".join(tags)
+
+
+## Desktop zip builds of both channels share one user:// dir (same
+## config/name, no custom user dir), so switching keeps decks/settings/saves.
+## Flatpak and mobile channels are separate app ids with separate sandboxes.
+static func channel_switch_keeps_data(os_name: String = OS.get_name(), is_flatpak: bool = FileAccess.file_exists("/.flatpak-info")) -> bool:
+	return os_name in ["Windows", "macOS", "Linux"] and not is_flatpak
 
 
 # -- Version parsing ----------------------------------------------------------
@@ -112,56 +129,64 @@ static func _is_newer(candidate: Dictionary, current: Dictionary) -> bool:
 
 # -- Update detection ---------------------------------------------------------
 
-func _find_best_update(releases: Array) -> Dictionary:
-	var current := parse_version(_current_version)
+## Offers for a build at `current_version`, or {} when there are none.
+## - same_channel: the newest newer release on the build's own channel
+##   (unstable follows unstable across series; release follows release and
+##   release-hotfix).
+## - stable_switch (unstable builds only): the newest stable release whose
+##   major.minor.patch is at least the build's own — the series it was
+##   working toward, or later. Never an older series (a downgrade).
+## Releases without an asset for this platform are ignored.
+static func find_offers(releases: Array, current_version: String, os_name: String = OS.get_name(), is_flatpak: bool = FileAccess.file_exists("/.flatpak-info")) -> Dictionary:
+	var current := parse_version(current_version)
 	if current.is_empty():
 		return {}
 
-	var best_version: Dictionary = {}
-	var best_asset: Dictionary = {}
-	var best_release_url := ""
-
+	var same: Dictionary = {}
+	var stable: Dictionary = {}
 	for release in releases:
-		var tag: String = release.get("tag_name", "")
-		var candidate := parse_version(tag)
-		if candidate.is_empty():
-			continue
 		if release.get("draft", false):
 			continue
+		var candidate := parse_version(release.get("tag_name", ""))
+		if candidate.is_empty():
+			continue
+		var asset := _get_platform_asset(release, os_name, is_flatpak)
+		if asset.is_empty():
+			continue
+		var entry := {"version": candidate, "release": release, "asset": asset}
+		if candidate["channel"] == current["channel"]:
+			if _is_newer(candidate, current) and (same.is_empty() or _is_newer(candidate, same["version"])):
+				same = entry
+		elif current["channel"] == "unstable" and candidate["channel"] == "release":
+			if _semver_at_least(candidate, current) and (stable.is_empty() or _is_newer(candidate, stable["version"])):
+				stable = entry
 
-		# Channel filtering
-		if current["channel"] == "unstable":
-			# Unstable: only update within the SAME semver series
-			if candidate["channel"] != "unstable":
-				continue
-			if candidate["major"] != current["major"] or \
-				candidate["minor"] != current["minor"] or \
-				candidate["patch"] != current["patch"]:
-				continue
-			if candidate["number"] <= current["number"]:
-				continue
-		elif current["channel"] == "release":
-			# Release: update to any newer release or release-hotfix
-			if candidate["channel"] != "release":
-				continue
-			if not _is_newer(candidate, current):
-				continue
-
-		# Track the best (highest) version found
-		if best_version.is_empty() or _is_newer(candidate, best_version):
-			best_version = candidate
-			best_asset = _get_platform_asset(release)
-			best_release_url = release.get("html_url", "")
-
-	if best_version.is_empty() or best_asset.is_empty():
+	if same.is_empty() and stable.is_empty():
 		return {}
-
 	return {
-		"tag": "v" + best_version["raw"],
-		"download_url": best_asset["url"],
-		"release_url": best_release_url,
-		"size": best_asset["size"],
-		"sha256": best_asset["sha256"],
+		"same_channel": _offer(same, false),
+		"stable_switch": _offer(stable, true),
+	}
+
+
+static func _semver_at_least(candidate: Dictionary, current: Dictionary) -> bool:
+	for part in ["major", "minor", "patch"]:
+		if candidate[part] != current[part]:
+			return candidate[part] > current[part]
+	return true
+
+
+static func _offer(entry: Dictionary, switch_channel: bool) -> Dictionary:
+	if entry.is_empty():
+		return {}
+	var asset: Dictionary = entry["asset"]
+	return {
+		"tag": "v" + entry["version"]["raw"],
+		"download_url": asset["url"],
+		"release_url": entry["release"].get("html_url", ""),
+		"size": asset["size"],
+		"sha256": asset["sha256"],
+		"switch_channel": switch_channel,
 	}
 
 
@@ -183,12 +208,16 @@ static func _get_platform_asset(release: Dictionary, os_name: String = OS.get_na
 				target_asset = "godzilla_tcg_sim.flatpak"
 			else:
 				target_asset = "godzilla_tcg_sim-linux.zip"
+		"Android":
+			# The APK name carries the channel (godzilla_tcg_sim[_unstable].apk);
+			# each release ships exactly one.
+			target_asset = "*.apk"
 		_:
 			return {}
 
 	var assets: Array = release.get("assets", [])
 	for asset in assets:
-		if asset.get("name", "") != target_asset:
+		if not String(asset.get("name", "")).match(target_asset):
 			continue
 		var url: String = asset.get("browser_download_url", "")
 		if url.is_empty():

@@ -11,9 +11,12 @@ extends Node
 ## not-yet-cached resource load would read the wrong file. Swapping right
 ## before create_process + quit leaves no window for that.
 ##
-## Swap contract: rename the running target to `<target>.old`, move the new
-## payload into its place, roll back on failure. The next boot deletes the
-## `.old` leftover and the staging dir via cleanup_leftovers().
+## Swap contract: move the running target (and, on a channel switch, any
+## install already at the new name) into `.update_staging/replaced/`, move
+## the new payload to its final path, roll back on failure. Same-channel
+## updates keep the running file's name (players rename exes); a channel
+## switch installs under the payload's own name (godzilla_tcg_sim.exe/.app).
+## The next boot deletes the staging dir via cleanup_leftovers().
 
 signal progress(downloaded: int, total: int)
 signal status_changed(stage: String)
@@ -21,6 +24,9 @@ signal failed(reason: String)
 signal ready_to_restart()
 
 const STAGING_DIR_NAME := ".update_staging"
+const REPLACED_DIR_NAME := "replaced"
+## Pre-channel-switch builds parked the old target at `<target>.old`; still
+## swept by cleanup_leftovers().
 const OLD_SUFFIX := ".old"
 const STAGE_DOWNLOADING := "downloading"
 const STAGE_INSTALLING := "installing"
@@ -36,6 +42,7 @@ var _info: Dictionary = {}
 var _target: Dictionary = {}
 var _staging: String = ""
 var _payload: String = ""
+var _final_path: String = ""
 
 
 # -- Static helpers -----------------------------------------------------------
@@ -137,22 +144,46 @@ static func restore_exec_bits(payload: String, kind: String) -> void:
 		FileAccess.set_unix_permissions(payload, EXEC_PERMISSIONS)
 
 
-## Moves `new_path` over `target_path`, keeping the original at
-## `<target>.old`. Rolls back if the second rename fails. Returns "" on
-## success, else a reason.
-static func swap_in(target_path: String, new_path: String) -> String:
-	var old := target_path + OLD_SUFFIX
-	remove_recursive(old)
-	if DirAccess.rename_absolute(target_path, old) != OK:
-		return "could not move the current install aside"
-	if DirAccess.rename_absolute(new_path, target_path) != OK:
-		DirAccess.rename_absolute(old, target_path)
+## Where the payload lands: the running target's own path for a
+## same-channel update, the payload's name beside it for a channel switch.
+static func final_path_for(target: Dictionary, payload: String, switch_channel: bool) -> String:
+	if switch_channel:
+		return String(target["dir"]).path_join(payload.get_file())
+	return target["path"]
+
+
+## Moves `target_path` (and `final_path`, if something else already lives
+## there) into `replaced_dir`, then `new_path` to `final_path`. Rolls every
+## move back on failure. Returns "" on success, else a reason.
+static func swap_in(target_path: String, new_path: String, final_path: String, replaced_dir: String) -> String:
+	remove_recursive(replaced_dir)
+	DirAccess.make_dir_recursive_absolute(replaced_dir)
+	var moved: Array[PackedStringArray] = []
+	for path in ([target_path] if final_path == target_path else [target_path, final_path]):
+		if not _path_exists(path):
+			continue
+		var aside := replaced_dir.path_join(path.get_file())
+		if DirAccess.rename_absolute(path, aside) != OK:
+			_roll_back(moved)
+			return "could not move the current install aside"
+		moved.append(PackedStringArray([path, aside]))
+	if DirAccess.rename_absolute(new_path, final_path) != OK:
+		_roll_back(moved)
 		return "could not move the new version into place"
 	return ""
 
 
-## Deletes what a previous update left behind: the `.old` target and the
-## staging dir. Safe to call every boot; failures (e.g. the old Windows exe
+static func _roll_back(moved: Array[PackedStringArray]) -> void:
+	for i in range(moved.size() - 1, -1, -1):
+		DirAccess.rename_absolute(moved[i][1], moved[i][0])
+
+
+static func _path_exists(path: String) -> bool:
+	return FileAccess.file_exists(path) or DirAccess.dir_exists_absolute(path)
+
+
+## Deletes what a previous update left behind: the staging dir (holding
+## the replaced install) and any legacy `<target>.old`. Safe to call every boot; failures (e.g. the old Windows exe
 ## still exiting) are retried next boot.
 static func cleanup_leftovers(target: Dictionary = {}) -> void:
 	if target.is_empty():
@@ -184,7 +215,7 @@ static func remove_recursive(path: String) -> void:
 
 # -- Pipeline -----------------------------------------------------------------
 
-## `info` = UpdateChecker.pending_update ({download_url, size, sha256, ...}).
+## `info` = one UpdateChecker offer ({download_url, size, sha256, switch_channel, ...}).
 func start(info: Dictionary) -> void:
 	if busy:
 		return
@@ -221,11 +252,11 @@ func cancel() -> void:
 ## ready_to_restart. On success this quits the app; on failure it emits
 ## `failed` with the install rolled back.
 func restart() -> void:
-	var reason := swap_in(_target["path"], _payload)
+	var reason := swap_in(_target["path"], _payload, _final_path, _staging.path_join(REPLACED_DIR_NAME))
 	if not reason.is_empty():
 		_fail(reason)
 		return
-	var path: String = _target["path"]
+	var path := _final_path
 	if _target["kind"] == "bundle":
 		OS.create_process("/usr/bin/open", ["-n", path])
 	else:
@@ -281,6 +312,7 @@ func _on_download_completed(result: int, response_code: int, _headers: PackedStr
 		_fail("the downloaded archive has no game for this platform")
 		return
 	restore_exec_bits(_payload, _target["kind"])
+	_final_path = final_path_for(_target, _payload, bool(_info.get("switch_channel", false)))
 	ready_to_restart.emit()
 
 

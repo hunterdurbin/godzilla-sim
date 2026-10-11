@@ -51,6 +51,11 @@ STR_MENU_UPDATE_RESTART,Restart Now,今すぐ再起動
 STR_MENU_UPDATE_CANCEL,Cancel,キャンセル
 STR_MENU_UPDATE_FAILED_FMT,Update failed: %s,アップデートに失敗しました: %s
 STR_MENU_UPDATE_MANUAL,Download Manually,手動でダウンロード
+STR_MENU_UPDATE_CURRENT_FMT,Current version: v%s,現在のバージョン: v%s
+STR_MENU_UPDATE_STABLE_AVAILABLE_FMT,Stable release available: %s,安定版が利用可能です: %s
+STR_MENU_UPDATE_STABLE_KEEPS_DATA,"Your decks, settings and saves carry over to the stable build.","デッキ、設定、セーブデータは安定版に引き継がれます。"
+STR_MENU_UPDATE_STABLE_SEPARATE_DATA,"The stable build is a separate app. Your decks, settings and saves will not carry over.","安定版は別のアプリです。デッキ、設定、セーブデータは引き継がれません。"
+STR_MENU_UPDATE_SWITCH_STABLE,Switch to Stable,安定版に切り替え
 STR_MENU_RECONNECT_TITLE,Game In Progress,進行中のゲーム
 STR_MENU_RECONNECT_PROMPT,"You were disconnected from a game.
 Would you like to reconnect?","ゲームから切断されました。
