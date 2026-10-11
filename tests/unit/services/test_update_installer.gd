@@ -152,6 +152,15 @@ func test_cleanup_leftovers_removes_old_and_staging() -> void:
 	assert_str(_read(target.path_join("Contents/MacOS/sim"))).is_equal("current")
 
 
+func test_remove_recursive_deletes_hidden_files() -> void:
+	var old_bundle := _abs(TEST_DIR).path_join("sim.app.old")
+	_write(old_bundle.path_join("Contents/MacOS/sim"), "previous")
+	_write(old_bundle.path_join(".DS_Store"), "finder")
+	_write(old_bundle.path_join("Contents/.hidden_dir/file"), "x")
+	UpdateInstaller.remove_recursive(old_bundle)
+	assert_bool(DirAccess.dir_exists_absolute(old_bundle)).is_false()
+
+
 # -- UpdateChecker asset metadata --------------------------------------------
 
 func test_platform_asset_carries_size_and_digest() -> void:

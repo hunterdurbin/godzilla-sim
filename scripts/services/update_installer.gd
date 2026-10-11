@@ -172,6 +172,9 @@ static func remove_recursive(path: String) -> void:
 	var dir := DirAccess.open(path)
 	if dir == null:
 		return
+	# Finder drops .DS_Store into browsed bundles; a skipped hidden file
+	# leaves the dir non-empty and the final remove fails.
+	dir.include_hidden = true
 	for f in dir.get_files():
 		DirAccess.remove_absolute(path.path_join(f))
 	for d in dir.get_directories():
