@@ -231,7 +231,7 @@ func test_unstable_follows_newer_unstable_across_series() -> void:
 		_release("v0.1.12-unstable.14"), _release("v0.1.13-unstable.1"), _release("v0.1.12-unstable.9"),
 	], "0.1.12-unstable.13", "Windows", false)
 	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.13-unstable.1")
-	assert_dict(offers["stable_switch"]).is_empty()
+	assert_dict(offers["channel_switch"]).is_empty()
 
 
 func test_unstable_offered_stable_of_own_series_or_later() -> void:
@@ -239,8 +239,8 @@ func test_unstable_offered_stable_of_own_series_or_later() -> void:
 		_release("v0.1.11-release-hotfix.1"), _release("v0.1.12-release"), _release("v0.1.12-release-hotfix.2"),
 	], "0.1.12-unstable.13", "Windows", false)
 	assert_dict(offers["same_channel"]).is_empty()
-	assert_str(offers["stable_switch"].get("tag", "")).is_equal("v0.1.12-release-hotfix.2")
-	assert_bool(offers["stable_switch"].get("switch_channel", false)).is_true()
+	assert_str(offers["channel_switch"].get("tag", "")).is_equal("v0.1.12-release-hotfix.2")
+	assert_bool(offers["channel_switch"].get("switch_channel", false)).is_true()
 
 
 func test_unstable_never_offered_older_series_stable() -> void:
@@ -254,7 +254,7 @@ func test_unstable_gets_both_offers() -> void:
 	], "0.1.12-unstable.13", "Windows", false)
 	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.13-unstable.1")
 	assert_bool(offers["same_channel"].get("switch_channel", true)).is_false()
-	assert_str(offers["stable_switch"].get("tag", "")).is_equal("v0.1.12-release")
+	assert_str(offers["channel_switch"].get("tag", "")).is_equal("v0.1.12-release")
 	assert_str(UpdateChecker.skip_key(offers)).is_equal("v0.1.13-unstable.1,v0.1.12-release")
 
 
@@ -263,8 +263,31 @@ func test_stable_ignores_unstable_and_gets_no_switch() -> void:
 		_release("v0.1.13-unstable.1"), _release("v0.1.12-release-hotfix.1"),
 	], "0.1.12-release", "Windows", false)
 	assert_str(offers["same_channel"].get("tag", "")).is_equal("v0.1.12-release-hotfix.1")
-	assert_dict(offers["stable_switch"]).is_empty()
+	assert_dict(offers["channel_switch"]).is_empty()
 	assert_str(UpdateChecker.skip_key(offers)).is_equal("v0.1.12-release-hotfix.1")
+
+
+func test_release_gets_later_series_unstable_only_when_opted_in() -> void:
+	var releases := [_release("v0.1.13-unstable.2"), _release("v0.1.12-unstable.20")]
+	assert_dict(UpdateChecker.find_offers(releases, "0.1.12-release", "Windows", false, false)).is_empty()
+
+	var offers := UpdateChecker.find_offers(releases, "0.1.12-release", "Windows", false, true)
+	assert_dict(offers["same_channel"]).is_empty()
+	assert_str(offers["channel_switch"].get("tag", "")).is_equal("v0.1.13-unstable.2")
+	assert_str(offers["channel_switch"].get("channel", "")).is_equal("unstable")
+	assert_bool(offers["channel_switch"].get("switch_channel", false)).is_true()
+
+
+func test_release_never_offered_own_series_unstable() -> void:
+	# 0.1.12-unstable.N predates 0.1.12-release, whatever N is.
+	var offers := UpdateChecker.find_offers([_release("v0.1.12-unstable.20")], "0.1.12-release-hotfix.1", "Windows", false, true)
+	assert_dict(offers).is_empty()
+
+
+func test_opt_in_does_not_change_unstable_builds() -> void:
+	var releases := [_release("v0.1.13-unstable.1"), _release("v0.1.12-release")]
+	assert_dict(UpdateChecker.find_offers(releases, "0.1.12-unstable.13", "Windows", false, true)) \
+		.is_equal(UpdateChecker.find_offers(releases, "0.1.12-unstable.13", "Windows", false, false))
 
 
 func test_drafts_and_assetless_releases_are_ignored() -> void:

@@ -735,13 +735,14 @@ func _on_update_button_pressed() -> void:
 	_show_update_dialog(UpdateChecker.pending_update)
 
 
-## One dialog for both offers: the same-channel update ("Update Now") and,
-## for unstable builds, the stable release ("Switch to Stable") with a note
-## on whether decks/settings carry over on this platform.
+## One dialog for both offers: the same-channel update ("Update Now") and a
+## channel switch ("Switch to Stable" for unstable builds, "Switch to
+## Unstable" for release builds that opted in) with a note on whether
+## decks/settings carry over on this platform.
 func _show_update_dialog(update: Dictionary) -> void:
 	var current: String = ProjectSettings.get_setting("application/config/version", "")
 	var same: Dictionary = update.get("same_channel", {})
-	var stable: Dictionary = update.get("stable_switch", {})
+	var cross: Dictionary = update.get("channel_switch", {})
 	var popup := PopupPanel.new()
 	popup.exclusive = true
 
@@ -800,16 +801,18 @@ func _show_update_dialog(update: Dictionary) -> void:
 		update_btn.add_theme_font_size_override("font_size", 20)
 		choices.add_child(update_btn)
 
-	if not stable.is_empty():
-		var stable_label := Label.new()
-		stable_label.text = tr("STR_MENU_UPDATE_STABLE_AVAILABLE_FMT") % stable["tag"]
-		stable_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		stable_label.add_theme_font_size_override("font_size", 18)
-		choices.add_child(stable_label)
+	if not cross.is_empty():
+		var to_unstable: bool = cross.get("channel", "") == "unstable"
+		var cross_label := Label.new()
+		cross_label.text = tr("STR_MENU_UPDATE_UNSTABLE_AVAILABLE_FMT" if to_unstable else "STR_MENU_UPDATE_STABLE_AVAILABLE_FMT") % cross["tag"]
+		cross_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		cross_label.add_theme_font_size_override("font_size", 18)
+		choices.add_child(cross_label)
 
 		var keeps_data := UpdateChecker.channel_switch_keeps_data()
 		var data_note := Label.new()
-		data_note.text = tr("STR_MENU_UPDATE_STABLE_KEEPS_DATA") if keeps_data else tr("STR_MENU_UPDATE_STABLE_SEPARATE_DATA")
+		var prefix := "STR_MENU_UPDATE_UNSTABLE_" if to_unstable else "STR_MENU_UPDATE_STABLE_"
+		data_note.text = tr(prefix + ("KEEPS_DATA" if keeps_data else "SEPARATE_DATA"))
 		data_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		data_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		data_note.custom_minimum_size = Vector2(412, 0)
@@ -817,7 +820,8 @@ func _show_update_dialog(update: Dictionary) -> void:
 		data_note.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8) if keeps_data else Color(0.95, 0.7, 0.3))
 		choices.add_child(data_note)
 
-		choices.add_child(_make_update_dialog_button(tr("STR_MENU_UPDATE_SWITCH_STABLE"), start_offer.bind(stable)))
+		var switch_text := tr("STR_MENU_UPDATE_SWITCH_UNSTABLE" if to_unstable else "STR_MENU_UPDATE_SWITCH_STABLE")
+		choices.add_child(_make_update_dialog_button(switch_text, start_offer.bind(cross)))
 
 	var on_skip := func():
 		GameSettings.skipped_version = UpdateChecker.skip_key(update)

@@ -6,9 +6,9 @@ signal update_available(update: Dictionary)
 
 const GITHUB_API_URL := "https://api.github.com/repos/hunterdurbin/godzilla-sim/releases"
 
-## {current, same_channel: offer, stable_switch: offer} — each offer is
-## {tag, download_url, release_url, size, sha256, switch_channel} or {}.
-## stable_switch is only ever set for unstable builds.
+## {current, same_channel: offer, channel_switch: offer} — each offer is
+## {tag, channel, download_url, release_url, size, sha256, switch_channel}
+## or {}. `channel` is the offer's target channel ("release"/"unstable").
 var pending_update: Dictionary = {}
 var later_dismissed: bool = false
 
@@ -24,6 +24,24 @@ func _ready() -> void:
 	_http.request_completed.connect(_on_request_completed)
 	add_child(_http)
 	check_for_updates.call_deferred()
+
+
+## Re-runs the check, e.g. after the "Receive Unstable Updates" toggle
+## changes which offers apply.
+func recheck() -> void:
+	_has_checked = false
+	check_for_updates()
+
+
+## True for -release / -release-hotfix builds — the only builds the
+## "Receive Unstable Updates" option applies to.
+func is_release_build() -> bool:
+	return parse_version(_current_version).get("channel", "") == "release"
+
+
+## Platforms that get update prompts at all (iOS updates via SideStore).
+static func prompts_supported(os_name: String = OS.get_name()) -> bool:
+	return os_name in ["Windows", "macOS", "Linux", "Android"]
 
 
 func check_for_updates() -> void:
@@ -46,13 +64,15 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 		return
 
 	var releases: Array = json.data if json.data is Array else []
-	var offers := find_offers(releases, _current_version)
+	pending_update = {}
+	var offers := find_offers(releases, _current_version, OS.get_name(),
+			FileAccess.file_exists("/.flatpak-info"), GameSettings.receive_unstable_updates)
 	if offers.is_empty():
 		print("[UpdateChecker] No update available")
 		return
 
-	print("[UpdateChecker] Update available from %s: same_channel=%s stable_switch=%s" % [
-		_current_version, offers["same_channel"].get("tag", "-"), offers["stable_switch"].get("tag", "-")])
+	print("[UpdateChecker] Update available from %s: same_channel=%s channel_switch=%s" % [
+		_current_version, offers["same_channel"].get("tag", "-"), offers["channel_switch"].get("tag", "-")])
 	pending_update = offers
 	pending_update["current"] = _current_version
 	update_available.emit(pending_update)
@@ -63,7 +83,7 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 ## before stable-switch offers existed still match.
 static func skip_key(update: Dictionary) -> String:
 	var tags: PackedStringArray = []
-	for key in ["same_channel", "stable_switch"]:
+	for key in ["same_channel", "channel_switch"]:
 		var offer: Dictionary = update.get(key, {})
 		if not offer.is_empty():
 			tags.append(offer["tag"])
@@ -133,17 +153,21 @@ static func _is_newer(candidate: Dictionary, current: Dictionary) -> bool:
 ## - same_channel: the newest newer release on the build's own channel
 ##   (unstable follows unstable across series; release follows release and
 ##   release-hotfix).
-## - stable_switch (unstable builds only): the newest stable release whose
-##   major.minor.patch is at least the build's own — the series it was
-##   working toward, or later. Never an older series (a downgrade).
+## - channel_switch:
+##   - unstable builds: the newest stable release whose major.minor.patch is
+##     at least the build's own — the series it was working toward, or
+##     later. Never an older series (a downgrade).
+##   - release builds, only with `allow_unstable` (the "Receive Unstable
+##     Updates" option): the newest unstable build of a LATER series. An
+##     unstable build of the build's own series predates its release.
 ## Releases without an asset for this platform are ignored.
-static func find_offers(releases: Array, current_version: String, os_name: String = OS.get_name(), is_flatpak: bool = FileAccess.file_exists("/.flatpak-info")) -> Dictionary:
+static func find_offers(releases: Array, current_version: String, os_name: String = OS.get_name(), is_flatpak: bool = FileAccess.file_exists("/.flatpak-info"), allow_unstable: bool = false) -> Dictionary:
 	var current := parse_version(current_version)
 	if current.is_empty():
 		return {}
 
 	var same: Dictionary = {}
-	var stable: Dictionary = {}
+	var cross: Dictionary = {}
 	for release in releases:
 		if release.get("draft", false):
 			continue
@@ -157,15 +181,20 @@ static func find_offers(releases: Array, current_version: String, os_name: Strin
 		if candidate["channel"] == current["channel"]:
 			if _is_newer(candidate, current) and (same.is_empty() or _is_newer(candidate, same["version"])):
 				same = entry
-		elif current["channel"] == "unstable" and candidate["channel"] == "release":
-			if _semver_at_least(candidate, current) and (stable.is_empty() or _is_newer(candidate, stable["version"])):
-				stable = entry
+			continue
+		var eligible := false
+		if current["channel"] == "unstable":
+			eligible = _semver_at_least(candidate, current)
+		elif allow_unstable:
+			eligible = _semver_at_least(candidate, current) and not _same_semver(candidate, current)
+		if eligible and (cross.is_empty() or _is_newer(candidate, cross["version"])):
+			cross = entry
 
-	if same.is_empty() and stable.is_empty():
+	if same.is_empty() and cross.is_empty():
 		return {}
 	return {
 		"same_channel": _offer(same, false),
-		"stable_switch": _offer(stable, true),
+		"channel_switch": _offer(cross, true),
 	}
 
 
@@ -176,12 +205,17 @@ static func _semver_at_least(candidate: Dictionary, current: Dictionary) -> bool
 	return true
 
 
+static func _same_semver(a: Dictionary, b: Dictionary) -> bool:
+	return a["major"] == b["major"] and a["minor"] == b["minor"] and a["patch"] == b["patch"]
+
+
 static func _offer(entry: Dictionary, switch_channel: bool) -> Dictionary:
 	if entry.is_empty():
 		return {}
 	var asset: Dictionary = entry["asset"]
 	return {
 		"tag": "v" + entry["version"]["raw"],
+		"channel": entry["version"]["channel"],
 		"download_url": asset["url"],
 		"release_url": entry["release"].get("html_url", ""),
 		"size": asset["size"],

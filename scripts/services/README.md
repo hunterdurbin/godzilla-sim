@@ -7,7 +7,7 @@ telemetry, updates, input mode.
 |---|---|
 | `artwork_downloader.gd` | **Autoload `ArtworkDownloader`** — downloads per-locale card art from `https://api.godzillatcg.com` (single `GET /media/by-number/<n>?locale=` or batch-zip `POST /media/by-number/batch`) into `user://CardContent/Artwork/<locale>/<set>/`; cache counting/clearing; `apply_fix_pool()` invalidates stale art via `CardArtworkFixPool` (`scripts/cards/pools/`); signals `progress_updated`, `download_complete` |
 | `stats_uploader.gd` | **Autoload `StatsUploader`** — POSTs the full game-result payload (players, decks, final board) to `https://api.godzillatcg.com/game-results` after online matches, one retry; respects mode/visibility from NetworkManager |
-| `update_checker.gd` | **Autoload `UpdateChecker`** — GitHub Releases check on startup; `find_offers()` builds `pending_update` = `{current, same_channel, stable_switch}` (see Channels below), each offer carrying `url`/`size`/`sha256` (from the asset `digest`); `skip_key()` for "Skip This Version"; signal `update_available(update)`; boots `UpdateInstaller.cleanup_leftovers()` |
+| `update_checker.gd` | **Autoload `UpdateChecker`** — GitHub Releases check on startup; `find_offers()` builds `pending_update` = `{current, same_channel, channel_switch}` (see Channels below), each offer carrying `url`/`size`/`sha256` (from the asset `digest`); `skip_key()` for "Skip This Version"; `recheck()` after the opt-in toggle changes; signal `update_available(update)`; boots `UpdateInstaller.cleanup_leftovers()` |
 | `update_installer.gd` | **`UpdateInstaller`** (not an autoload; the main-menu update dialog creates it) — in-app updater for desktop zip builds. See below |
 | `touch_helper.gd` | **Autoload `TouchHelper`** — `is_touch_device()` (runtime touch-vs-mouse tracking, forced on mobile, `--mobile` CLI override); bridges Android back button to `ui_cancel` |
 
@@ -27,6 +27,13 @@ Tags look like `v<major>.<minor>.<patch>-unstable.N`, `-release`, or
   release whose `major.minor.patch` is at least their own: the series they
   were heading toward, or a later one (never an older one, which would be a
   downgrade). The dialog shows "Switch to Stable" alongside "Update Now".
+- **Opt-in unstable.** Release builds with Options → Advanced → "Receive
+  Unstable Updates" (`GameSettings.receive_unstable_updates`, shown only on
+  release builds) are also offered the newest unstable build of a *later*
+  series, as "Switch to Unstable". An unstable build of their own series
+  predates its release, so it is never offered. After switching, the build
+  is unstable and the unstable rules apply, including being offered stable
+  again.
 - **Data on a switch.** Desktop zip builds of both channels share one
   `user://` dir (same `config/name`, no custom user dir), so a switch keeps
   decks, settings and saves. Flatpak and Android channels have separate app

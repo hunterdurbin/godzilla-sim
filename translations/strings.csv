@@ -56,6 +56,10 @@ STR_MENU_UPDATE_STABLE_AVAILABLE_FMT,Stable release available: %s,安定版が�
 STR_MENU_UPDATE_STABLE_KEEPS_DATA,"Your decks, settings and saves carry over to the stable build.","デッキ、設定、セーブデータは安定版に引き継がれます。"
 STR_MENU_UPDATE_STABLE_SEPARATE_DATA,"The stable build is a separate app. Your decks, settings and saves will not carry over.","安定版は別のアプリです。デッキ、設定、セーブデータは引き継がれません。"
 STR_MENU_UPDATE_SWITCH_STABLE,Switch to Stable,安定版に切り替え
+STR_MENU_UPDATE_UNSTABLE_AVAILABLE_FMT,Unstable build available: %s,開発版が利用可能です: %s
+STR_MENU_UPDATE_UNSTABLE_KEEPS_DATA,"Unstable builds may have bugs. Your decks, settings and saves carry over.","開発版には不具合がある場合があります。デッキ、設定、セーブデータは引き継がれます。"
+STR_MENU_UPDATE_UNSTABLE_SEPARATE_DATA,"Unstable builds may have bugs, and the unstable build is a separate app. Your decks, settings and saves will not carry over.","開発版には不具合がある場合があり、別のアプリです。デッキ、設定、セーブデータは引き継がれません。"
+STR_MENU_UPDATE_SWITCH_UNSTABLE,Switch to Unstable,開発版に切り替え
 STR_MENU_RECONNECT_TITLE,Game In Progress,進行中のゲーム
 STR_MENU_RECONNECT_PROMPT,"You were disconnected from a game.
 Would you like to reconnect?","ゲームから切断されました。
@@ -169,6 +173,7 @@ STR_OPTIONS_TURN_OPPONENT,Opponent's Turn,相手のターン
 STR_OPTIONS_TURN_BOTH,Both,両方
 STR_OPTIONS_TURN_NONE,None,なし
 STR_OPTIONS_USE_MOBILE_LAYOUT,Use Mobile Layout,モバイルレイアウトを使用
+STR_OPTIONS_RECEIVE_UNSTABLE_UPDATES,Receive Unstable Updates,開発版のアップデートを受け取る
 STR_OPTIONS_REDOWNLOAD_ASSETS,Re-download Card Assets,カードアセットを再ダウンロード
 STR_OPTIONS_SOUND_EFFECTS,Sound Effects,効果音
 STR_OPTIONS_MUSIC,Music,音楽
