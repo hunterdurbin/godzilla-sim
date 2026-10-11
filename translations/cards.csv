@@ -1108,6 +1108,8 @@ CARD_ESD02-014_DESC,Evolve 1 of your battle cards with <Evolution> .,あなた�
 CARD_ESD02-015_NAME,Burning Godzilla's Rampage,バーニングゴジラ暴走
 CARD_ESD02-015_DESC,"Choose 1 of your opponent’s zones. <Destroy> all of your opponent’s battle cards in that zone and zones adjacent to it.
 (For example, if a card is in zone 7, the adjacent zones are 4, 6, and 8.)",相手のエリア１つを指定し、そのエリアおよび隣接エリアにいる相手の交戦カードをすべて<破壊>する。（例えばエリア７を指定したら４、６、７、８にいる交戦カードを破壊）
+CARD_ESD03-001_NAME,Godzilla(2026),
+CARD_ESD03-001_DESC,"<When Invading> If this card invades by discarding a monster card from your hand, increase this card's <Rage> by 1. (If this card invades 2 zones, this activates twice.)",
 CARD_ESD03-005_NAME,Godzilla(2026),
 CARD_ESD03-005_DESC,"If there is a rank IV monster card underneath this, add +15,000 threat.
 At the beginning of your end phase, if this has 3 or more <Rage>, you may advance 1 zone.

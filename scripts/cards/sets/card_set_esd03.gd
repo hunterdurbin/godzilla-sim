@@ -3,6 +3,18 @@ extends RefCounted
 
 var CARDS: Array[Dictionary] = [
 	{
+		"id": "ESD03-001",
+		"name": "Godzilla(2026)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 1,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.MINUS_ZERO],
+		"threat_level": 5000,
+		"invasion_icon": 1,
+		"description": "<When Invading> If this card invades by discarding a monster card from your hand, increase this card's <Rage> by 1. (If this card invades 2 zones, this activates twice.)",
+		"effect_script": "res://scripts/effects/esd03/esd03_001.gd"
+	},
+	{
 		"id": "ESD03-005",
 		"name": "Godzilla(2026)",
 		"card_type": CardEnums.CardType.MONSTER,
