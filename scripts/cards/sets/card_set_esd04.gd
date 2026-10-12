@@ -15,6 +15,18 @@ var CARDS: Array[Dictionary] = [
 		"effect_script": "res://scripts/effects/esd04/esd04_001.gd"
 	},
 	{
+		"id": "ESD04-002",
+		"name": "Destoroyah Aggregate Form",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 2,
+		"colors": [CardEnums.CardColor.BLUE],
+		"traits": [CardEnums.CardTrait.DESTOROYAH],
+		"threat_level": 10000,
+		"invasion_icon": 1,
+		"description": "<When Invading> Evolve 1 of your rank 6 or lower battle cards with <Evolution>. (If this card invades 2 zones, this activates twice.)",
+		"effect_script": "res://scripts/effects/esd04/esd04_002.gd"
+	},
+	{
 		"id": "ESD04-004",
 		"name": "Destoroyah Perfect Form",
 		"card_type": CardEnums.CardType.MONSTER,

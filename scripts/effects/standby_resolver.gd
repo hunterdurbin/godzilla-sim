@@ -109,8 +109,10 @@ static func card_location_label(state: GameState, player_id: int, card_data: Dic
 static func card_location_ref(state: GameState, player_id: int, card_data: Dictionary) -> Dictionary:
 	## Locate a card's current position as a structured ref for the UI:
 	## { player_id, kind: "monster"|"zone"|"strategy"|"discard"|"", index,
-	##   instance_id, base_id, label }. index is 0-based (-1 when kind has no
-	## index). Uses a temporary marker key to find the exact dictionary
+	##   instance_id, base_id, label, covered }. index is 0-based (-1 when kind
+	## has no index). covered = the card sits under its zone's top card (an
+	## ability already in standby still resolves after its card is evolved
+	## over, 10.6.7). Uses a temporary marker key to find the exact dictionary
 	## reference, since multiple cards can share the same ID (e.g. tokens).
 	var player := state.players[player_id]
 	var card_name: String = card_data.get("name", "Unknown")
@@ -121,6 +123,7 @@ static func card_location_ref(state: GameState, player_id: int, card_data: Dicti
 		"instance_id": card_data.get("id", ""),
 		"base_id": CardUtils.base_id(card_data),
 		"label": card_name,
+		"covered": false,
 	}
 	if not player.current_monster.is_empty() and player.current_monster.get("id", "") == card_data.get("id", ""):
 		ref["kind"] = "monster"
@@ -136,6 +139,15 @@ static func card_location_ref(state: GameState, player_id: int, card_data: Dicti
 			ref["index"] = i
 			ref["label"] = card_name + " (Zone %d)" % (i + 1)
 			return ref
+	for i in range(8):
+		for under in player.get_zone_stack(i).slice(1):
+			if under.has(_marker):
+				card_data.erase(_marker)
+				ref["kind"] = "zone"
+				ref["index"] = i
+				ref["covered"] = true
+				ref["label"] = card_name + " (Zone %d, covered)" % (i + 1)
+				return ref
 	for i in range(player.strategy_zones.size()):
 		if not player.strategy_zones[i].is_empty() and player.strategy_zones[i].has(_marker):
 			card_data.erase(_marker)

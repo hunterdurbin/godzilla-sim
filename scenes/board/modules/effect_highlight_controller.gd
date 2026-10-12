@@ -168,7 +168,8 @@ func _resolve_attention_card(loc: Dictionary) -> Control:
 		"zone":
 			if index >= 0 and index < board.zone_slots.size():
 				var slot: Slot = board.zone_slots[index]
-				if slot and slot.held_card and (instance_id.is_empty() or slot.held_card.card_data.get("id", "") == instance_id):
+				if slot and slot.held_card and (instance_id.is_empty() or loc.get("covered", false) \
+						or slot.held_card.card_data.get("id", "") == instance_id):
 					return slot.held_card
 		"strategy":
 			if index >= 0 and index < board.strategy_slots.size():

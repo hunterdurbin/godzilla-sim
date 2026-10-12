@@ -1007,6 +1007,7 @@ STR_EFF_EPR_018_SEARCH,"Search for a Mech, Weapon, or GODZILLA THE RIDE battle c
 STR_EFF_ESD03_005_PROMPT,Advance your monster card 1 zone?,怪獣カードを1エリア前進させますか?
 STR_EFF_ESD03_008_KEEP_PROMPT,Choose 1 of your battle cards to keep (all others are destroyed):,残す自分の交戦カードを1枚選ぶ (それ以外はすべて<破壊>):
 STR_EFF_ESD04_001_PROMPT,Reveal a battle card and put it on the bottom of your deck to draw 1 (or skip):,交戦カードを1枚公開してデッキの下に置き、1枚引く (またはスキップ):
+STR_EFF_ESD04_002_PROMPT,Choose a rank 6 or lower battle card with Evolution to evolve:,<進化>を持つ等級6以下の交戦カードを進化させる:
 STR_EFF_ESD04_004_PROMPT,Discard a strategy card to reduce opponent's rage by 1 (or skip):,作戦カードを捨てて相手の<怒り>を1減らす (またはスキップ):
 STR_EFF_EBP04_089_MILESTONE_15,Inherited Life: 15 rage cards — destroying all opponent battle cards!,「受け継がれる命」: <怒り>カード15枚 — 相手の交戦カードをすべて<破壊>!
 STR_EFF_EBP04_089_MILESTONE_22,Inherited Life: 22 rage cards — opponent discards entire hand!,「受け継がれる命」: <怒り>カード22枚 — 相手は手札をすべて捨てる!
