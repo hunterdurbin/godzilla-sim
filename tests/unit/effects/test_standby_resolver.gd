@@ -149,6 +149,25 @@ func test_card_location_ref_kinds() -> void:
 	assert_bool(zone_card.has("__ref_marker")).is_false()
 
 
+func test_card_location_ref_finds_covered_zone_card() -> void:
+	# A standby ability whose card was evolved over still resolves (10.6.7);
+	# the stack UI must still locate the card underneath.
+	var state := States.make_state()
+	var under := Cards.battle(6, 5000, "UNDER")
+	under["name"] = "Flying"
+	var top := Cards.battle(8, 5000, "TOP")
+	state.players[0].push_zone_card(2, under)
+	state.players[0].push_zone_card(2, top)
+
+	var ref := StandbyResolver.card_location_ref(state, 0, under)
+	assert_str(ref["kind"]).is_equal("zone")
+	assert_int(ref["index"]).is_equal(2)
+	assert_bool(ref.get("covered", false)).is_true()
+	assert_str(ref["label"]).is_equal("Flying (Zone 3, covered)")
+	assert_bool(StandbyResolver.card_location_ref(state, 0, top).get("covered", false)).is_false()
+	assert_bool(under.has("__ref_marker")).is_false()
+
+
 func test_card_location_ref_disambiguates_duplicate_ids() -> void:
 	var state := States.make_state()
 	var a := Cards.battle(1, 5000, "DUP")

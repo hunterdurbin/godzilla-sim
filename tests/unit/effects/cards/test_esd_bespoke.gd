@@ -1094,6 +1094,44 @@ func test_esd04_002_invade_2_evolves_twice() -> void:
 		p0.get_zone_stack(4).size(), p0.get_zone_stack(6).size()]).is_equal(["TOP-1", "TOP-2", 2, 2])
 
 
+func test_esd04_002_covered_evolution_enter_still_resolves() -> void:
+	# Match repro: invade 2 → evolve EBP01-049 into EBP01-054 (054's Enter goes
+	# to standby) → second activation evolves 054 itself. 054 is now covered,
+	# but its Enter already triggered and still resolves (10.5.2.3.3 / 10.6.7).
+	var aggregate := Real.instance("EBP01-049")
+	var flying := Real.instance("EBP01-054")
+	var r8 := Cards.battle(8, 9000, "DEST-R8", [CardEnums.CardTrait.DESTOROYAH])
+	var state := States.make_state({"p0": {
+		"current_monster": Real.instance("ESD04-002"),
+		"hand": [Cards.battle(1, 2000, "COST", [], 2)],
+		"monster_zone": 1,
+		"zone_cards": {4: aggregate},
+		"main_deck": [Cards.battle(1, 1000, "D1"), Cards.battle(1, 1000, "D2"), flying, r8],
+	}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {
+		"select_zone": [4, 4],
+		"search_cards": [{"id": flying.get("id")}, {"id": "DEST-R8"}],
+	}
+	var s := States.make_session(state, input)
+	var stack_labels: Array = []
+	s["effect_handler"].events = s["events"]
+	s["events"].effect_stack_changed.connect(func(rows: Array) -> void:
+		for r in rows:
+			stack_labels.append(str(r.get("label", ""))))
+
+	await s["action_handler"].execute(CardEnums.ActionType.INVADE, {"hand_index": 0}, state)
+
+	var p0 := state.players[0]
+	assert_str(str(p0.get_zone_top_card(4).get("id"))).is_equal("DEST-R8")
+	assert_int(p0.get_zone_stack(4).size()).is_equal(3)
+	# 054's Enter resolved: drew D1+D2, then discarded 2.
+	assert_int(p0.hand.size()).is_equal(0)
+	assert_int(p0.discard_pile.size()).is_equal(3)  # COST + 2 discards
+	# While covered, the pending row still names its zone.
+	assert_bool(stack_labels.has(str(flying.get("name")) + " (Zone 5, covered)")).is_true()
+
+
 func test_esd04_002_silent_without_eligible_card() -> void:
 	var state := States.make_state({"p0": {
 		"current_monster": Real.instance("ESD04-002"),
