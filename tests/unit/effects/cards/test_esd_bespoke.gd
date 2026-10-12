@@ -1029,6 +1029,86 @@ func test_esd03_007_rank_reduced_only_when_invaded_and_overwhelming() -> void:
 	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(0)
 
 
+# --- ESD04-002: Destoroyah Aggregate Form — when invading: evolve a rank ≤6
+# --- Evolution battle card (per zone invaded) ---
+
+
+func _esd04_002_evo(rank: int, id: String) -> Dictionary:
+	var c := Cards.battle(rank, 3000, id, [CardEnums.CardTrait.DESTOROYAH])
+	c["evolution_rank"] = 7
+	c["evolution_trait"] = CardEnums.CardTrait.DESTOROYAH
+	return c
+
+
+func _esd04_002_invade(state: GameState, input: ScriptedPlayerInput) -> void:
+	var s := States.make_session(state, input)
+	await s["action_handler"].execute(CardEnums.ActionType.INVADE, {"hand_index": 0}, state)
+
+
+func test_esd04_002_invading_evolves_rank6_or_lower_card() -> void:
+	var low := _esd04_002_evo(6, "EVO-R6")
+	var high := _esd04_002_evo(7, "EVO-R7")
+	var target := Cards.battle(7, 9000, "DEST-R7", [CardEnums.CardTrait.DESTOROYAH])
+	var state := States.make_state({"p0": {
+		"current_monster": Real.instance("ESD04-002"),
+		"hand": [Cards.battle(1, 2000, "COST", [], 1)],
+		"monster_zone": 1,
+		"zone_cards": {2: low, 4: high},
+		"main_deck": [Cards.battle(1, 2000, "FILLER"), target],
+	}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [2], "search_cards": [{"id": "DEST-R7"}]}
+
+	await _esd04_002_invade(state, input)
+
+	var p0 := state.players[0]
+	assert_int(p0.monster_zone).is_equal(2)
+	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal("DEST-R7")
+	assert_int(p0.get_zone_stack(2).size()).is_equal(2)
+	# Only the rank ≤6 Evolution card was offered.
+	assert_that(input.calls[0]["valid"]).is_equal([2])
+
+
+func test_esd04_002_invade_2_evolves_twice() -> void:
+	var a := _esd04_002_evo(2, "EVO-A")
+	var b := _esd04_002_evo(3, "EVO-B")
+	var state := States.make_state({"p0": {
+		"current_monster": Real.instance("ESD04-002"),
+		"hand": [Cards.battle(1, 2000, "COST", [], 2)],
+		"monster_zone": 1,
+		"zone_cards": {4: a, 6: b},
+		"main_deck": [
+			Cards.battle(6, 9000, "TOP-1", [CardEnums.CardTrait.DESTOROYAH]),
+			Cards.battle(6, 9000, "TOP-2", [CardEnums.CardTrait.DESTOROYAH]),
+		],
+	}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [4, 6], "search_cards": [{"id": "TOP-1"}, {"id": "TOP-2"}]}
+
+	await _esd04_002_invade(state, input)
+
+	var p0 := state.players[0]
+	assert_int(p0.monster_zone).is_equal(3)
+	assert_int(input.count_calls("select_zone")).is_equal(2)
+	assert_array([str(p0.get_zone_top_card(4).get("id")), str(p0.get_zone_top_card(6).get("id")),
+		p0.get_zone_stack(4).size(), p0.get_zone_stack(6).size()]).is_equal(["TOP-1", "TOP-2", 2, 2])
+
+
+func test_esd04_002_silent_without_eligible_card() -> void:
+	var state := States.make_state({"p0": {
+		"current_monster": Real.instance("ESD04-002"),
+		"hand": [Cards.battle(1, 2000, "COST", [], 1)],
+		"monster_zone": 1,
+		"zone_cards": {2: _esd04_002_evo(7, "EVO-R7"), 4: Cards.battle(3, 3000, "NO-EVO")},
+	}})
+	var input := ScriptedPlayerInput.new()
+
+	await _esd04_002_invade(state, input)
+
+	assert_int(state.players[0].monster_zone).is_equal(2)
+	assert_int(input.count_calls("select_zone")).is_equal(0)
+
+
 # --- ESD04-004: Destoroyah Perfect Form — enter: discard strategy → opp rage -1;
 # --- +10000 CP w/ "Godzilla vs. Destoroyah" in play ---
 
