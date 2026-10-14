@@ -3,6 +3,18 @@ extends RefCounted
 
 var CARDS: Array[Dictionary] = [
 	{
+		"id": "ESD05-001",
+		"name": "King Ghidorah(1991)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 3,
+		"colors": [CardEnums.CardColor.GREEN],
+		"traits": [CardEnums.CardTrait.KING_GHIDORAH],
+		"threat_level": 19000,
+		"invasion_icon": 1,
+		"description": "<Enter> Send cards from the top of your deck to your discard pile equal to the number of the zone this card is in.",
+		"effect_script": "res://scripts/effects/esd05/esd05_001.gd"
+	},
+	{
 		"id": "ESD05-002",
 		"name": "King Ghidorah(1991)",
 		"card_type": CardEnums.CardType.MONSTER,
