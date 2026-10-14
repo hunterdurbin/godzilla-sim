@@ -1350,6 +1350,37 @@ func test_esd04_006_enables_esd04_004_overwhelm_cp() -> void:
 	assert_int(s["effect_handler"].get_monster_cp_modifier(0)).is_equal(10000)
 
 
+# --- ESD05-001: King Ghidorah(1991) — enter: mill = monster's zone number ---
+
+
+func _esd05_001_enter(monster_zone: int, deck_size: int) -> GameState:
+	var card := Real.instance("ESD05-001")
+	var deck: Array = []
+	for i in range(deck_size):
+		deck.append(Cards.battle(1, 1000, "D%d" % i))
+	var state := States.make_state({"p0": {
+		"current_monster": card, "monster_zone": monster_zone, "main_deck": deck,
+	}})
+	var s := _session(state)
+	await s["effect_handler"].trigger_enter(0, card)
+	return state
+
+
+func test_esd05_001_enter_mills_zone_number() -> void:
+	var state := await _esd05_001_enter(3, 6)
+	assert_int(state.players[0].discard_pile.size()).is_equal(3)
+	assert_int(state.players[0].main_deck.size()).is_equal(3)
+
+	var state2 := await _esd05_001_enter(6, 8)
+	assert_int(state2.players[0].discard_pile.size()).is_equal(6)
+
+
+func test_esd05_001_enter_mills_only_what_the_deck_has() -> void:
+	var state := await _esd05_001_enter(5, 2)
+	assert_int(state.players[0].discard_pile.size()).is_equal(2)
+	assert_int(state.players[0].main_deck.size()).is_equal(0)
+
+
 # --- ESD05-003: Dorat — Overwhelm enter: mill 3 ---
 
 
