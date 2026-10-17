@@ -72,6 +72,11 @@ const ENTRIES := {
 		],
 		"locales": ["en"],
 	},
+	"v0.1.12-unstable.16_esd03_minus_zero_overlay": {
+		"description": "ESD03 -0.0 trait overlay relabeled MINUS ZERO (visual only)",
+		"card_ids": ["ESD03-001", "ESD03-005", "ESD03-007", "ESD03-008"],
+		"locales": ["en"],
+	},
 }
 
 
