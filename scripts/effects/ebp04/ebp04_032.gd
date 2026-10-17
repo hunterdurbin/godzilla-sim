@@ -25,14 +25,14 @@ func get_variable_threat_level(ctx: EffectContext) -> int:
 func prevents_counter(ctx: EffectContext, _total_cp: int) -> bool:
 	# "If your opponent's zones have 1 or fewer battle cards, this card cannot
 	# be countered." Full prevention — no retreat, no rank up.
-	var battle_count: int = ctx.opponent.get_zone_top_cards_matching(
+	var battle_count: int = ctx.opponent.get_battle_cards_matching(
 		func(c: Dictionary) -> bool: return CardUtils.is_battle(c)).size()
 	return battle_count <= 1
 
 
 func _count_zone_colors(ctx: EffectContext) -> int:
 	var colors: Array[int] = []
-	var battle_tops: Array[Dictionary] = ctx.owner.get_zone_top_cards_matching(
+	var battle_tops: Array[Dictionary] = ctx.owner.get_battle_cards_matching(
 		func(c: Dictionary) -> bool: return CardUtils.is_battle(c))
 	for zone_card in battle_tops:
 		for c: int in zone_card.get("colors", []):

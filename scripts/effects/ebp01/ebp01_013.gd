@@ -21,7 +21,7 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool:
 	if not opponent.has_rage():
 		return false
-	return owner.count_zones_matching(CardUtils.is_battle) >= 4
+	return owner.count_battle_cards_matching(CardUtils.is_battle) >= 4
 
 
 func get_burst_rank() -> int:

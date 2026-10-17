@@ -25,6 +25,6 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 func get_threat_level_modifier(ctx: EffectContext) -> int:
 	if ctx.is_own_turn():
 		return 0
-	return 5000 * ctx.owner.count_zones_matching(
+	return 5000 * ctx.owner.count_battle_cards_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.is_battle(c) and CardUtils.has_trait(c, CardEnums.CardTrait.DESTOROYAH))

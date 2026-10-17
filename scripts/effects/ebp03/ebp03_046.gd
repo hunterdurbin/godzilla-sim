@@ -19,7 +19,7 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
 	if not owner.is_awakening(4):
 		return false
-	return owner.has_zone_matching(func(c: Dictionary) -> bool:
+	return owner.has_card_in_zones_matching(func(c: Dictionary) -> bool:
 		return c.get("name", "") == "Star Falcon")
 
 
@@ -28,7 +28,7 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	# Check for Star Falcon in zones
-	var has_star_falcon := ctx.owner.has_zone_matching(func(c: Dictionary) -> bool:
+	var has_star_falcon := ctx.owner.has_card_in_zones_matching(func(c: Dictionary) -> bool:
 		return c.get("name", "") == "Star Falcon")
 
 	if not has_star_falcon:

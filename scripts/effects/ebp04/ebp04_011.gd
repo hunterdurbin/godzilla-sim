@@ -16,10 +16,10 @@ func get_bot_tags() -> Array[String]:
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:
-	var has_blue: bool = ctx.owner.has_zone_matching(
+	var has_blue: bool = ctx.owner.has_battle_card_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.is_battle(c) and CardUtils.has_color(c, CardEnums.CardColor.BLUE))
-	var has_red: bool = ctx.owner.has_zone_matching(
+	var has_red: bool = ctx.owner.has_battle_card_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.is_battle(c) and CardUtils.has_color(c, CardEnums.CardColor.RED))
 	if has_blue and has_red:

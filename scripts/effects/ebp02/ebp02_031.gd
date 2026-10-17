@@ -20,7 +20,7 @@ func get_bot_tags() -> Array[String]:
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
 	var card_id: String = ctx.card_data.get("id", "")
-	var count: int = ctx.owner.count_zones_matching(
+	var count: int = ctx.owner.count_battle_cards_matching(
 		func(c: Dictionary) -> bool:
 			return c.get("id", "") != card_id and ctx.field_rank(c, ctx.owner.player_id) <= 5)
 	if count >= 2:

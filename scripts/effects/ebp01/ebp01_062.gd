@@ -25,7 +25,7 @@ func get_total_cp_modifier(ctx: EffectContext) -> int:
 	if ctx.is_opponent_turn():
 		return 0
 	# Check for Destoroyah battle card in zones
-	var has_destoroyah: bool = ctx.owner.has_zone_matching(
+	var has_destoroyah: bool = ctx.owner.has_battle_card_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.is_battle(c) and CardUtils.has_trait(c, CardEnums.CardTrait.DESTOROYAH))
 	return 10000 if has_destoroyah else 0

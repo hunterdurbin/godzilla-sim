@@ -13,7 +13,7 @@ extends CardEffect
 
 func on_enter(ctx: EffectContext) -> void:
 	var card_id: String = ctx.card_data.get("id", "")
-	var occupied: Array[int] = ctx.owner.get_zone_top_indices_matching(
+	var occupied: Array[int] = ctx.owner.get_battle_card_zone_indices_matching(
 		func(c: Dictionary) -> bool: return c.get("id", "") != card_id)
 
 	if occupied.is_empty():

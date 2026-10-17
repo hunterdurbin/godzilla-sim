@@ -23,7 +23,7 @@ func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool
 
 func on_enter(ctx: EffectContext) -> void:
 	var my_id: String = ctx.card_data.get("id", "")
-	var other_battle_count: int = ctx.owner.count_zones_matching(func(c: Dictionary) -> bool:
+	var other_battle_count: int = ctx.owner.count_battle_cards_matching(func(c: Dictionary) -> bool:
 		return c.get("id", "") != my_id)
 
 	if other_battle_count < 2:

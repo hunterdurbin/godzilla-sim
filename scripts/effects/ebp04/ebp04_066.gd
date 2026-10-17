@@ -27,7 +27,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 func get_strategy_hand_rank_modifier(ctx: EffectContext, _card: Dictionary, _target_player_id: int) -> int:
 	# Turn ownership and target-hand-owner guards live in TRIGGER_FILTERS.
-	var has_non_green_battle: bool = ctx.owner.has_zone_matching(
+	var has_non_green_battle: bool = ctx.owner.has_battle_card_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.is_battle(c) and not CardUtils.has_color(c, CardEnums.CardColor.GREEN))
 	return 2 if has_non_green_battle else 0

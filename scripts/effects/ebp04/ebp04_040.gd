@@ -20,9 +20,9 @@ func on_enter(ctx: EffectContext) -> void:
 	if not ctx.is_awakening(6):
 		return
 
-	var has_rodan: bool = ctx.owner.has_zone_matching(
+	var has_rodan: bool = ctx.owner.has_battle_card_matching(
 		func(c: Dictionary) -> bool: return CardUtils.has_trait(c, CardEnums.CardTrait.RODAN))
-	var has_king_caesar: bool = ctx.owner.has_zone_matching(
+	var has_king_caesar: bool = ctx.owner.has_battle_card_matching(
 		func(c: Dictionary) -> bool: return CardUtils.has_trait(c, CardEnums.CardTrait.KING_CAESAR))
 
 	if not (has_rodan and has_king_caesar):

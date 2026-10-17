@@ -19,12 +19,12 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_when_invading(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.has_zone_matching(func(c: Dictionary) -> bool:
+	return owner.has_battle_card_matching(func(c: Dictionary) -> bool:
 		return CardUtils.rank_at_most(c, 6) and c.get("evolution_rank", -1) >= 0)
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	var valid_zones: Array[int] = ctx.owner.get_zone_top_indices_matching(func(c: Dictionary) -> bool:
+	var valid_zones: Array[int] = ctx.owner.get_battle_card_zone_indices_matching(func(c: Dictionary) -> bool:
 		return ctx.field_rank(c, ctx.owner.player_id) <= 6 and c.get("evolution_rank", -1) >= 0)
 	if valid_zones.is_empty():
 		return

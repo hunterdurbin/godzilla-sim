@@ -29,7 +29,7 @@ func get_field_cp_modifiers(ctx: EffectContext) -> Dictionary:
 
 func on_enter(ctx: EffectContext) -> void:
 	var my_id: String = ctx.card_data.get("id", "")
-	var occupied: Array[int] = ctx.owner.get_zone_top_indices_matching(func(c: Dictionary) -> bool:
+	var occupied: Array[int] = ctx.owner.get_battle_card_zone_indices_matching(func(c: Dictionary) -> bool:
 		return c.get("id", "") != my_id)
 	if occupied.is_empty():
 		return

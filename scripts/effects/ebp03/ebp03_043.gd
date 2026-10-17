@@ -27,7 +27,7 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, _effect_handler = null) -> bool:
 	if not owner.is_awakening(4):
 		return false
-	return owner.has_zone_matching(func(c: Dictionary) -> bool:
+	return owner.has_battle_card_matching(func(c: Dictionary) -> bool:
 		return c.get("name", "") == "Land Moguera")
 
 
@@ -41,7 +41,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		return
 
 	# Find zones with "Land Moguera" as top card
-	var land_moguera_zones: Array[int] = ctx.owner.get_zone_top_indices_matching(func(c: Dictionary) -> bool:
+	var land_moguera_zones: Array[int] = ctx.owner.get_battle_card_zone_indices_matching(func(c: Dictionary) -> bool:
 		return c.get("name", "") == "Land Moguera")
 	land_moguera_zones.erase(my_zone)
 

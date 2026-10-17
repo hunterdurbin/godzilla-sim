@@ -681,6 +681,34 @@ func test_ebp02_064_gains_3000_cp_with_king_ghidorah_in_zones() -> void:
 	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(base + 3000)
 
 
+func test_ebp02_064_gains_3000_cp_with_king_ghidorah_monster_card() -> void:
+	# Issue #235: "a card ... in your zones" includes the monster card, which
+	# the engine keeps outside the 8 battle zones.
+	var card := Real.instance("EBP02-064")
+	var base: int = card.get("counter_power", 0)
+	var state := States.make_state({"p0": {
+		"zone_cards": {2: card},
+		"current_monster": Real.instance("EBP02-046"),  # King Ghidorah monster
+	}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(base + 3000)
+
+
+func test_ebp02_064_gains_3000_cp_with_megalon_strategy_card() -> void:
+	var card := Real.instance("EBP02-064")
+	var base: int = card.get("counter_power", 0)
+	var megalon_strategy := Cards.strategy(2, "MEG-STR")
+	megalon_strategy["traits"] = [CardEnums.CardTrait.MEGALON]
+	var state := States.make_state({"p0": {
+		"zone_cards": {2: card},
+		"strategy_zones": [megalon_strategy],
+	}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(base + 3000)
+
+
 func test_ebp02_064_revenge_recovers_king_ghidorah_monster_from_discard() -> void:
 	var card := Real.instance("EBP02-064")
 	var kg_monster := Real.instance("EBP02-046")  # King Ghidorah monster

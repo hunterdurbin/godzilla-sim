@@ -21,16 +21,9 @@ func get_bot_tags() -> Array[String]:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	# Check opponent's monster card
-	var monster: Dictionary = ctx.opponent.current_monster
-	if not monster.is_empty():
-		if CardUtils.has_trait(monster, CardEnums.CardTrait.GODZILLA):
-			return 5000
-
-	# Check opponent's battle card zones
-	var has: bool = ctx.opponent.has_zone_matching(
+	# "a card" — the opponent's monster card and strategy cards count too.
+	var has: bool = ctx.opponent.has_card_in_zones_matching(
 		func(c: Dictionary) -> bool: return CardUtils.has_trait(c, CardEnums.CardTrait.GODZILLA))
 	if has:
 		return 5000
-
 	return 0

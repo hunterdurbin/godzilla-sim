@@ -24,7 +24,7 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 func protects_card_from_destruction(ctx: EffectContext, card_data: Dictionary, _zone_idx: int) -> bool:
 	# Turn / cause-by-opponent gating handled by TRIGGER_FILTERS.
 	# Count opponent's battle cards in zones — only protect when ≤2.
-	var count: int = ctx.opponent.count_zones_matching(CardUtils.is_battle)
+	var count: int = ctx.opponent.count_battle_cards_matching(CardUtils.is_battle)
 	if count > 2:
 		return false
 	return CardUtils.is_battle(card_data)

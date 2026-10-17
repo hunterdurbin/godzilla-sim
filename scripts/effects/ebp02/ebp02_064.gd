@@ -11,7 +11,8 @@ extends CardEffect
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
-## Implementation notes: None
+## Implementation notes: "a card" (not "a battle card") — the monster card and
+##   strategy-zone cards count too, so this uses has_card_in_zones_matching.
 
 
 func get_bot_tags() -> Array[String]:
@@ -19,7 +20,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	var has: bool = ctx.owner.has_zone_matching(
+	var has: bool = ctx.owner.has_card_in_zones_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.has_any_trait(c, [CardEnums.CardTrait.KING_GHIDORAH, CardEnums.CardTrait.MEGALON]))
 	if has:

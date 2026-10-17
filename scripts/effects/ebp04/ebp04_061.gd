@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 
 func on_enter(ctx: EffectContext) -> void:
 	var my_zone: int = find_zone_of_card(ctx)
-	var green_tops: Array[int] = ctx.owner.get_zone_top_indices_matching(
+	var green_tops: Array[int] = ctx.owner.get_battle_card_zone_indices_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.is_battle(c) and CardUtils.has_color(c, CardEnums.CardColor.GREEN))
 	var green_count: int = green_tops.size()

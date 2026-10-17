@@ -28,7 +28,7 @@ func get_bot_destroy_max_rank(_owner: PlayerState, _opponent: PlayerState) -> in
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	return owner.has_zone_matching(func(c: Dictionary) -> bool:
+	return owner.has_battle_card_matching(func(c: Dictionary) -> bool:
 		return CardUtils.is_battle(c) and CardUtils.has_color(c, CardEnums.CardColor.BLUE))
 
 
@@ -62,5 +62,5 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 
 
 func _has_color_battle_in_zones(ctx: EffectContext, color: CardEnums.CardColor) -> bool:
-	return ctx.owner.has_zone_matching(func(c: Dictionary) -> bool:
+	return ctx.owner.has_battle_card_matching(func(c: Dictionary) -> bool:
 		return CardUtils.is_battle(c) and CardUtils.has_color(c, color))
