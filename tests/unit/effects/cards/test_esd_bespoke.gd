@@ -1147,6 +1147,106 @@ func test_esd04_002_silent_without_eligible_card() -> void:
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 
 
+# --- ESD04-003: Destoroyah Flying Form — enter: return "Godzilla vs. Destoroyah"
+# --- from discard; when invading: Destoroyah battle card discard → deck bottom ---
+
+
+func test_esd04_003_enter_returns_godzilla_vs_destoroyah_from_discard() -> void:
+	var monster := Real.instance("ESD04-003")
+	var gvd := Real.instance("EBP04-083")
+	var state := States.make_state({"p0": {"current_monster": monster}})
+	var p0 := state.players[0]
+	p0.discard_pile = [Cards.strategy(3, "OTHER"), gvd]
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"search_cards": [{"id": gvd.get("id")}]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, monster)
+
+	assert_int(input.calls[0]["matching"].size()).is_equal(1)
+	assert_array(p0.hand.map(func(c: Dictionary) -> String: return str(c.get("id")))).contains_exactly([gvd.get("id")])
+	assert_int(p0.discard_pile.size()).is_equal(1)
+
+
+func test_esd04_003_enter_may_skip_and_is_silent_without_target() -> void:
+	var monster := Real.instance("ESD04-003")
+	var state := States.make_state({"p0": {"current_monster": monster}})
+	var p0 := state.players[0]
+	p0.discard_pile = [Real.instance("EBP04-083")]
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"search_cards": [{}]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, monster)
+	assert_int(p0.hand.size()).is_equal(0)
+	assert_int(p0.discard_pile.size()).is_equal(1)
+
+	p0.discard_pile = [Cards.strategy(3, "OTHER")]
+	await s["effect_handler"].trigger_enter(0, monster)
+	assert_int(input.count_calls("search_cards")).is_equal(1)
+
+
+func test_esd04_003_invading_places_destoroyah_battle_card_on_deck_bottom() -> void:
+	var state := States.make_state({"p0": {
+		"current_monster": Real.instance("ESD04-003"),
+		"hand": [Cards.battle(1, 2000, "COST", [], 1)],
+		"monster_zone": 1,
+		"main_deck": [Cards.battle(1, 1000, "DECK-TOP")],
+	}})
+	var p0 := state.players[0]
+	p0.discard_pile = [
+		Cards.battle(4, 4000, "DEST-A", [CardEnums.CardTrait.DESTOROYAH]),
+		Cards.battle(4, 4000, "PLAIN"),
+		Cards.monster(2, 10000, [CardEnums.CardTrait.DESTOROYAH], "DEST-MON"),
+	]
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"search_cards": [{"id": "DEST-A"}]}
+
+	await _esd04_002_invade(state, input)
+
+	assert_int(p0.monster_zone).is_equal(2)
+	# Only the Destoroyah battle card is offered (not the monster card).
+	assert_int(input.calls[0]["matching"].size()).is_equal(1)
+	assert_str(str(p0.main_deck.back().get("id"))).is_equal("DEST-A")
+	assert_bool(p0.discard_pile.any(func(c: Dictionary) -> bool: return c.get("id") == "DEST-A")).is_false()
+
+
+func test_esd04_003_invade_2_places_twice() -> void:
+	var state := States.make_state({"p0": {
+		"current_monster": Real.instance("ESD04-003"),
+		"hand": [Cards.battle(1, 2000, "COST", [], 2)],
+		"monster_zone": 1,
+	}})
+	var p0 := state.players[0]
+	p0.discard_pile = [
+		Cards.battle(4, 4000, "DEST-A", [CardEnums.CardTrait.DESTOROYAH]),
+		Cards.battle(5, 5000, "DEST-B", [CardEnums.CardTrait.DESTOROYAH]),
+	]
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"search_cards": [{"id": "DEST-B"}, {"id": "DEST-A"}]}
+
+	await _esd04_002_invade(state, input)
+
+	assert_int(p0.monster_zone).is_equal(3)
+	assert_int(input.count_calls("search_cards")).is_equal(2)
+	assert_array(p0.main_deck.map(func(c: Dictionary) -> String: return str(c.get("id")))).is_equal(["DEST-B", "DEST-A"])
+
+
+func test_esd04_003_invading_silent_without_destoroyah_battle_card() -> void:
+	var state := States.make_state({"p0": {
+		"current_monster": Real.instance("ESD04-003"),
+		"hand": [Cards.battle(1, 2000, "COST", [], 1)],
+		"monster_zone": 1,
+	}})
+	state.players[0].discard_pile = [Cards.battle(4, 4000, "PLAIN")]
+	var input := ScriptedPlayerInput.new()
+
+	await _esd04_002_invade(state, input)
+
+	assert_int(state.players[0].monster_zone).is_equal(2)
+	assert_int(input.count_calls("search_cards")).is_equal(0)
+
+
 # --- ESD04-004: Destoroyah Perfect Form — enter: discard strategy → opp rage -1;
 # --- +10000 CP w/ "Godzilla vs. Destoroyah" in play ---
 
