@@ -1127,6 +1127,9 @@ CARD_ESD04-001_NAME,Destoroyah Juvenile Form,
 CARD_ESD04-001_DESC,"<Overwhelm> At the beginning of your end phase, you may reveal 1 battle card from your hand and place it on the bottom of your deck. If you do, draw 1 card. (Active if your monster card is in the same zone as or ahead of your opponent's monster card.)",
 CARD_ESD04-002_NAME,Destoroyah Aggregate Form,
 CARD_ESD04-002_DESC,"<When Invading> Evolve 1 of your rank 6 or lower battle cards with <Evolution>. (If this card invades 2 zones, this activates twice.)",
+CARD_ESD04-003_NAME,Destoroyah Flying Form,
+CARD_ESD04-003_DESC,"<Enter> Return up to 1 card named 「Godzilla vs. Destoroyah」 from your discard pile to your hand.
+<When Invading> Place 1 battle card with <《Destoroyah》> from your discard pile on the bottom of your deck. (If this card invades 2 zones, this activates twice.)",
 CARD_ESD04-004_NAME,Destoroyah Perfect Form,
 CARD_ESD04-004_DESC,"<Enter> You may discard a strategy card from your hand to decrease your opponent's <Rage> by 1.
 <Overwhelm> If you have a 「Godzilla vs. Destoroyah」 card in play, add +10,000 counter power to your total.",

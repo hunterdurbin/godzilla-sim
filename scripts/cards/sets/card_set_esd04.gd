@@ -27,6 +27,18 @@ var CARDS: Array[Dictionary] = [
 		"effect_script": "res://scripts/effects/esd04/esd04_002.gd"
 	},
 	{
+		"id": "ESD04-003",
+		"name": "Destoroyah Flying Form",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 3,
+		"colors": [CardEnums.CardColor.BLUE],
+		"traits": [CardEnums.CardTrait.DESTOROYAH],
+		"threat_level": 21000,
+		"invasion_icon": 1,
+		"description": "<Enter> Return up to 1 card named 「Godzilla vs. Destoroyah」 from your discard pile to your hand.\n<When Invading> Place 1 battle card with <《Destoroyah》> from your discard pile on the bottom of your deck. (If this card invades 2 zones, this activates twice.)",
+		"effect_script": "res://scripts/effects/esd04/esd04_003.gd"
+	},
+	{
 		"id": "ESD04-004",
 		"name": "Destoroyah Perfect Form",
 		"card_type": CardEnums.CardType.MONSTER,

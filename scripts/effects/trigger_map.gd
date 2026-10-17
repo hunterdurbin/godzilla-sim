@@ -385,6 +385,7 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/esd03/esd03_008.gd": ["on_enter"],
 	"res://scripts/effects/esd04/esd04_001.gd": ["on_phase_start"],
 	"res://scripts/effects/esd04/esd04_002.gd": ["on_when_invading"],
+	"res://scripts/effects/esd04/esd04_003.gd": ["on_enter","on_when_invading"],
 	"res://scripts/effects/esd04/esd04_004.gd": ["on_enter","get_counter_power_modifier","get_effect_categories"],
 	"res://scripts/effects/esd04/esd04_006.gd": ["get_threat_level_modifier","get_effect_categories"],
 	"res://scripts/effects/esd05/esd05_001.gd": ["on_enter"],
