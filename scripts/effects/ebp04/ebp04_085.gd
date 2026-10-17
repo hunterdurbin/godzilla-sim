@@ -31,7 +31,7 @@ func on_strategy_discarded(ctx: EffectContext, strategy_card: Dictionary) -> voi
 	if strategy_card.get("id", "") != ctx.card_data.get("id", ""):
 		return
 
-	var green_count: int = ctx.owner.count_zones_matching(
+	var green_count: int = ctx.owner.count_battle_cards_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.is_battle(c) and CardUtils.has_color(c, CardEnums.CardColor.GREEN))
 

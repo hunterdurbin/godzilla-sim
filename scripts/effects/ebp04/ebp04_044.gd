@@ -21,7 +21,7 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 		return 0
 	if not ctx.is_awakening(4):
 		return 0
-	var non_red_count: int = ctx.owner.count_zones_matching(
+	var non_red_count: int = ctx.owner.count_battle_cards_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.is_battle(c) and not CardUtils.has_color(c, CardEnums.CardColor.RED))
 	return -2 * non_red_count

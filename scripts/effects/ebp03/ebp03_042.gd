@@ -33,7 +33,7 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 		return
 
 	# Find Mothra battle cards with Evolution in owner's zones
-	var valid_zones: Array[int] = ctx.owner.get_zone_top_indices_matching(func(c: Dictionary) -> bool:
+	var valid_zones: Array[int] = ctx.owner.get_battle_card_zone_indices_matching(func(c: Dictionary) -> bool:
 		return c.get("evolution_rank", -1) >= 0 and CardUtils.has_trait(c, CardEnums.CardTrait.MOTHRA))
 	valid_zones.erase(my_zone)
 

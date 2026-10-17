@@ -437,6 +437,22 @@ func test_cp_opp_has_godzilla_ebp02_067() -> void:
 	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
 
 
+func test_cp_opp_has_godzilla_strategy_ebp02_067() -> void:
+	# "a <《Godzilla》> card in their zones" includes strategy cards (none exist yet).
+	var card := Real.instance("EBP02-067")
+	var state := States.make_state({
+		"p0": {"zone_cards": {0: card}},
+		"p1": {"current_monster": Cards.monster(1, 5000, [CardEnums.CardTrait.RODAN], "OPP-MON")},
+	})
+	var handler := _wire(state)
+	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000)
+
+	var gz_strategy := Cards.strategy(1, "OPP-GZ-STR")
+	gz_strategy["traits"] = [CardEnums.CardTrait.GODZILLA]
+	state.players[1].strategy_zones[0] = gz_strategy
+	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
+
+
 # --- Monster-card CP modifiers (get_monster_cp_modifier) ---
 
 

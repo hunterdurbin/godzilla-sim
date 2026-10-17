@@ -21,4 +21,4 @@ func get_play_rank_modifier_for_card(ctx: EffectContext, target_card: Dictionary
 	if target_card.get("id") != ctx.card_data.get("id"):
 		return 0
 	# Count battle cards in owner's zones
-	return -ctx.owner.count_zones_matching(CardUtils.is_battle)
+	return -ctx.owner.count_battle_cards_matching(CardUtils.is_battle)

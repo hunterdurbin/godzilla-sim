@@ -17,7 +17,7 @@ func get_bot_tags() -> Array[String]:
 
 func on_enter(ctx: EffectContext) -> void:
 	# Collect eligible zones: rank 4 or lower with Evolution
-	var eligible: Array[int] = ctx.owner.get_zone_top_indices_matching(
+	var eligible: Array[int] = ctx.owner.get_battle_card_zone_indices_matching(
 		func(c: Dictionary) -> bool:
 			return c.has("evolution_rank") \
 				and ctx.field_rank(c, ctx.owner.player_id) <= 4)

@@ -16,7 +16,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	var has_non_green_battle: bool = ctx.owner.has_zone_matching(
+	var has_non_green_battle: bool = ctx.owner.has_battle_card_matching(
 		func(c: Dictionary) -> bool:
 			return CardUtils.is_battle(c) and not CardUtils.has_color(c, CardEnums.CardColor.GREEN))
 	return 3000 if has_non_green_battle else 0

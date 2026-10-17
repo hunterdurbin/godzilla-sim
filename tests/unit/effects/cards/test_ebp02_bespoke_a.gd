@@ -447,7 +447,7 @@ func test_ebp02_020_silent_with_only_four_strategies_in_discard() -> void:
 
 	await handler.trigger_enter(0, card)
 
-	assert_bool(state.players[0].has_zone_matching(
+	assert_bool(state.players[0].has_battle_card_matching(
 		func(c: Dictionary) -> bool: return c.get("id", "") == "EBP02-T01")).is_false()
 	assert_int(state.players[1].rage).is_equal(2)
 

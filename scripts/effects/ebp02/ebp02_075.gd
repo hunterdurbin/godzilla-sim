@@ -19,12 +19,12 @@ func get_bot_tags() -> Array[String]:
 func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool:
 	if not opponent.has_rage():
 		return false
-	return owner.has_zone_matching(
+	return owner.has_card_in_zones_matching(
 		func(c: Dictionary) -> bool: return c.get("name", "") == "Chibi Mechagodzilla")
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var has_mechagodzilla: bool = ctx.owner.has_zone_matching(
+	var has_mechagodzilla: bool = ctx.owner.has_card_in_zones_matching(
 		func(c: Dictionary) -> bool: return c.get("name", "") == "Chibi Mechagodzilla")
 
 	if has_mechagodzilla:

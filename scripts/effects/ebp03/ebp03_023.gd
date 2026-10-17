@@ -19,7 +19,7 @@ func get_bot_tags() -> Array[String]:
 
 func on_enter(ctx: EffectContext) -> void:
 	# Collect eligible Mothra zones with Evolution
-	var eligible: Array[int] = ctx.owner.get_zone_top_indices_matching(func(c: Dictionary) -> bool:
+	var eligible: Array[int] = ctx.owner.get_battle_card_zone_indices_matching(func(c: Dictionary) -> bool:
 		return c.get("evolution_rank", -1) >= 0 and CardUtils.has_trait(c, CardEnums.CardTrait.MOTHRA))
 
 	await ctx.effect_handler.evolve_zones_in_order(ctx.owner.player_id, eligible)

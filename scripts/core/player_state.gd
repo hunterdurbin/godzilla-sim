@@ -180,9 +180,16 @@ func get_battle_card_zone_indices() -> Array[int]:
 	return indices
 
 
-func get_zone_top_indices_matching(filter: Callable) -> Array[int]:
-	## Return occupied zone indices whose top card matches the filter predicate.
-	## Filter signature: func(card: Dictionary) -> bool.
+# --- Card-scan helpers ---
+# Rules "zones" = the 8 battle zones (incl. the monster card standing in one)
+# plus the 2 strategy zones. The *_battle_card* helpers scan ONLY the top
+# battle card of each of the 8 battle zones — use them for "battle card(s) in
+# your zones" text. Use has_card_in_zones_matching for bare "a card ... in
+# your zones" text, which also covers the monster and strategy cards.
+# Filter signature: func(card: Dictionary) -> bool.
+
+func get_battle_card_zone_indices_matching(filter: Callable) -> Array[int]:
+	## Indices (0-7) of battle zones whose top battle card matches the filter.
 	var indices: Array[int] = []
 	for i in range(8):
 		var top: Dictionary = get_zone_top_card(i)
@@ -191,8 +198,8 @@ func get_zone_top_indices_matching(filter: Callable) -> Array[int]:
 	return indices
 
 
-func get_zone_top_cards_matching(filter: Callable) -> Array[Dictionary]:
-	## Return the top cards of occupied zones that match the filter predicate.
+func get_battle_cards_matching(filter: Callable) -> Array[Dictionary]:
+	## Top battle cards of the 8 battle zones that match the filter.
 	var cards: Array[Dictionary] = []
 	for i in range(8):
 		var top: Dictionary = get_zone_top_card(i)
@@ -201,8 +208,8 @@ func get_zone_top_cards_matching(filter: Callable) -> Array[Dictionary]:
 	return cards
 
 
-func count_zones_matching(filter: Callable) -> int:
-	## Count occupied zones whose top card matches the filter predicate.
+func count_battle_cards_matching(filter: Callable) -> int:
+	## Count battle zones whose top battle card matches the filter.
 	var n: int = 0
 	for i in range(8):
 		var top: Dictionary = get_zone_top_card(i)
@@ -211,11 +218,25 @@ func count_zones_matching(filter: Callable) -> int:
 	return n
 
 
-func has_zone_matching(filter: Callable) -> bool:
-	## True if any occupied zone's top card matches the filter predicate.
+func has_battle_card_matching(filter: Callable) -> bool:
+	## True if any battle zone's top battle card matches the filter.
 	for i in range(8):
 		var top: Dictionary = get_zone_top_card(i)
 		if not top.is_empty() and filter.call(top):
+			return true
+	return false
+
+
+func has_card_in_zones_matching(filter: Callable) -> bool:
+	## True if any card in your zones matches the filter: a top battle card,
+	## the monster card, or a strategy card. Cards stacked underneath (monster
+	## stack, evolution stacks, strategy_zone_stacks) are not scanned.
+	if has_battle_card_matching(filter):
+		return true
+	if not current_monster.is_empty() and filter.call(current_monster):
+		return true
+	for sz in strategy_zones:
+		if not sz.is_empty() and filter.call(sz):
 			return true
 	return false
 

@@ -35,7 +35,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 static func _has_fest_ghidorah(owner: PlayerState) -> bool:
-	return owner.count_zones_matching(
+	return owner.count_battle_cards_matching(
 		func(card: Dictionary) -> bool:
 			return CardUtils.is_battle(card) \
 				and CardUtils.has_trait(card, CardEnums.CardTrait.FEST) \
