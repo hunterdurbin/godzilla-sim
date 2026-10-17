@@ -40,6 +40,18 @@ static func trait_to_string(t: CardTrait) -> String:
 	return TranslationServer.translate(trait_to_key(t))
 
 
+## Extra lowercase search terms per trait, beyond its translated name.
+## For traits whose printed glyph differs from the spoken English name
+## (the -0.0 cards' art reads MINUS ZERO).
+const TRAIT_SEARCH_ALIASES := {
+	CardTrait.MINUS_ZERO: ["minus zero"],
+}
+
+
+static func trait_search_aliases(t: CardTrait) -> Array:
+	return TRAIT_SEARCH_ALIASES.get(t, [])
+
+
 static func trait_to_key(t: CardTrait) -> StringName:
 	match t:
 		CardTrait.KAIJU: return &"STR_TRAIT_KAIJU"
