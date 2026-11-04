@@ -51,6 +51,18 @@ var CARDS: Array[Dictionary] = [
 		"effect_script": "res://scripts/effects/esd04/esd04_004.gd"
 	},
 	{
+		"id": "ESD04-005",
+		"name": "Godzilla(1995)",
+		"card_type": CardEnums.CardType.BATTLE,
+		"rank": 7,
+		"colors": [CardEnums.CardColor.BLUE],
+		"traits": [CardEnums.CardTrait.GODZILLA],
+		"counter_power": 12000,
+		"invasion_icon": 2,
+		"description": "<Opponent’s Turn> At the beginning of the counter phase, if you have no strategy cards in play, <Destroy> all battle cards in your zones. (This card is also destroyed.)",
+		"effect_script": "res://scripts/effects/esd04/esd04_005.gd"
+	},
+	{
 		"id": "ESD04-006",
 		"name": "Godzilla vs. Destoroyah",
 		"card_type": CardEnums.CardType.STRATEGY,
