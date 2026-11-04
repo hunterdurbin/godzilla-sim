@@ -379,6 +379,8 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/esd02/esd02_014.gd": ["on_enter"],
 	"res://scripts/effects/esd02/esd02_015.gd": ["on_enter"],
 	"res://scripts/effects/esd03/esd03_001.gd": ["on_when_invading"],
+	"res://scripts/effects/esd03/esd03_002.gd": ["on_enter"],
+	"res://scripts/effects/esd03/esd03_003.gd": ["on_enter","on_phase_start"],
 	"res://scripts/effects/esd03/esd03_005.gd": ["on_phase_start","get_threat_level_modifier","get_effect_categories"],
 	"res://scripts/effects/esd03/esd03_006.gd": ["on_enter","get_counter_power_modifier"],
 	"res://scripts/effects/esd03/esd03_007.gd": ["get_counter_power_modifier","get_play_rank_modifier_for_card"],
@@ -392,4 +394,5 @@ const TRIGGERS: Dictionary = {
 	"res://scripts/effects/esd05/esd05_002.gd": ["on_enter"],
 	"res://scripts/effects/esd05/esd05_003.gd": ["on_enter"],
 	"res://scripts/effects/esd05/esd05_004.gd": ["get_counter_power_modifier"],
+	"res://scripts/effects/esd05/esd05_005.gd": ["on_enter"],
 }

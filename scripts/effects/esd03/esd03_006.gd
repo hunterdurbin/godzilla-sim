@@ -2,14 +2,14 @@ extends CardEffect
 
 ## ESD03-006: Godzilla(2023) - Battle Rank 3 (Red)
 ## <Enter> Reduce your opponent's rank I monster card's <Rage> by 1.
-## <Overwhelm> This card gains +3000 counter power.
+## <Dominate> This card gains +3000 counter power.
 ##
 ## Tested: Yes
 ## Known issues: None
 ## Edge cases: Opponent's monster rank II+ → the enter effect does nothing.
 ## Rules: None
 ## Interactions: None
-## Implementation notes: <Overwhelm> = ctx.is_overwhelm().
+## Implementation notes: <Dominate> = ctx.is_dominate().
 
 ## CP modifier is placement-independent — safe to preview while in hand.
 const HAND_CP_PREVIEW := true
@@ -33,4 +33,4 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	return 3000 if ctx.is_overwhelm() else 0
+	return 3000 if ctx.is_dominate() else 0

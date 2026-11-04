@@ -35,7 +35,7 @@ var CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.DORAT],
 		"counter_power": 2000,
 		"invasion_icon": 1,
-		"description": "<Overwhelm> <Enter> Send the top 3 cards of your deck to your discard pile. (Active if your monster card is in the same zone as or ahead of your opponent's monster card.)",
+		"description": "<Dominate> <Enter> Send the top 3 cards of your deck to your discard pile. (Active if your monster card is in the same zone as or ahead of your opponent's monster card.)",
 		"effect_script": "res://scripts/effects/esd05/esd05_003.gd"
 	},
 	{
@@ -49,5 +49,16 @@ var CARDS: Array[Dictionary] = [
 		"invasion_icon": 1,
 		"description": "If there is a card under your monster card, this card gains +3000 counter power.",
 		"effect_script": "res://scripts/effects/esd05/esd05_004.gd"
+	},
+	{
+		"id": "ESD05-005",
+		"name": "Constructed Future",
+		"card_type": CardEnums.CardType.STRATEGY,
+		"rank": 6,
+		"colors": [CardEnums.CardColor.GREEN],
+		"traits": [],
+		"invasion_icon": 2,
+		"description": "In order from lowest rank, <Destroy> 3 battle cards in your zones. If you <Destroy> 3, play 1 of the highest rank battle cards from your discard pile.",
+		"effect_script": "res://scripts/effects/esd05/esd05_005.gd"
 	},
 ]

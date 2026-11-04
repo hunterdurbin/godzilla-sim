@@ -77,6 +77,11 @@ const ENTRIES := {
 		"card_ids": ["ESD03-001", "ESD03-005", "ESD03-007", "ESD03-008"],
 		"locales": ["en"],
 	},
+	"v0.1.12-unstable.17_dominate_keyword": {
+		"description": "Official EN keyword <Overwhelm> renamed <Dominate>",
+		"card_ids": ["ESD03-006", "ESD03-007", "ESD04-001", "ESD04-004", "ESD05-003"],
+		"locales": ["en"],
+	},
 }
 
 
