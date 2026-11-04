@@ -62,8 +62,8 @@ func is_awakening(threshold: int) -> bool:
 	return owner.is_awakening(threshold)
 
 
-func is_overwhelm() -> bool:
-	## <Overwhelm>: active while owner's monster is in the same zone as, or
+func is_dominate() -> bool:
+	## <Dominate> (early fan translations: "Overwhelm"): active while owner's monster is in the same zone as, or
 	## ahead of, the opponent's monster card.
 	return owner.monster_zone >= opponent.monster_zone
 

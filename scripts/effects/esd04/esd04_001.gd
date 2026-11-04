@@ -1,17 +1,17 @@
 extends CardEffect
 
 ## ESD04-001: Destoroyah Juvenile Form - Monster Rank 1 (Blue)
-## <Overwhelm> At the beginning of your end phase, you may reveal 1 battle card
+## <Dominate> At the beginning of your end phase, you may reveal 1 battle card
 ## from your hand and place it on the bottom of your deck. If you do, draw 1
 ## card.
 ##
 ## Tested: Yes
 ## Known issues: None
-## Edge cases: Overwhelm is checked when the end phase begins (no prompt
+## Edge cases: Dominate is checked when the end phase begins (no prompt
 ##   otherwise).
 ## Rules: None
 ## Interactions: None
-## Implementation notes: <Overwhelm> = ctx.is_overwhelm(). The reveal is the
+## Implementation notes: <Dominate> = ctx.is_dominate(). The reveal is the
 ##   put_card_on_bottom_of_deck log line (names the card for both players).
 
 
@@ -29,7 +29,7 @@ func bot_can_fulfill_on_phase_start(owner: PlayerState, opponent: PlayerState, _
 
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
-	if not ctx.is_overwhelm():
+	if not ctx.is_dominate():
 		return
 	var card := await ctx.effect_handler.take_hand_card(
 		ctx.owner.player_id,

@@ -15,6 +15,30 @@ var CARDS: Array[Dictionary] = [
 		"effect_script": "res://scripts/effects/esd03/esd03_001.gd"
 	},
 	{
+		"id": "ESD03-002",
+		"name": "Godzilla(2026)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 2,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.MINUS_ZERO],
+		"threat_level": 13000,
+		"invasion_icon": 1,
+		"description": "<Enter> <Destroy> all rank 3 or lower battle cards of each player.",
+		"effect_script": "res://scripts/effects/esd03/esd03_002.gd"
+	},
+	{
+		"id": "ESD03-003",
+		"name": "Godzilla(2026)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 3,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.MINUS_ZERO],
+		"threat_level": 21000,
+		"invasion_icon": 1,
+		"description": "<Enter> Reveal the top card of your deck. If it's a monster card, add it to your hand. Otherwise, discard it.\n<Opponent’s Turn> <Dominate> At the beginning of the counter phase, <Destroy> all of your opponent's rank 6 or lower battle cards in the same column as this card. (Active if your monster card is in the same zone as or ahead of your opponent's monster card.)",
+		"effect_script": "res://scripts/effects/esd03/esd03_003.gd"
+	},
+	{
 		"id": "ESD03-005",
 		"name": "Godzilla(2026)",
 		"card_type": CardEnums.CardType.MONSTER,
@@ -35,7 +59,7 @@ var CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA],
 		"counter_power": 2000,
 		"invasion_icon": 2,
-		"description": "<Enter> Reduce your opponent's rank I monster card's <Rage> by 1.\n<Overwhelm> This card gains +3000 counter power. (Active if your monster card is in the same zone as or ahead of your opponent's monster card.)",
+		"description": "<Enter> Reduce your opponent's rank I monster card's <Rage> by 1.\n<Dominate> This card gains +3000 counter power. (Active if your monster card is in the same zone as or ahead of your opponent's monster card.)",
 		"effect_script": "res://scripts/effects/esd03/esd03_006.gd"
 	},
 	{
@@ -47,7 +71,7 @@ var CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.MINUS_ZERO],
 		"counter_power": 5000,
 		"invasion_icon": 1,
-		"description": "<Awakening 6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)\n<Overwhelm> If your monster card invaded this turn, you may play this card from your hand with its rank reduced by 1. (Active if your monster card is in the same zone as or ahead of your opponent's monster card. After being played, this card is rank 6.)",
+		"description": "<Awakening 6> This card gains +3000 counter power. (Active if your monster card is in zone 6 or beyond.)\n<Dominate> If your monster card invaded this turn, you may play this card from your hand with its rank reduced by 1. (Active if your monster card is in the same zone as or ahead of your opponent's monster card. After being played, this card is rank 6.)",
 		"effect_script": "res://scripts/effects/esd03/esd03_007.gd"
 	},
 	{

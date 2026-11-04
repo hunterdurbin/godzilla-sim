@@ -1,14 +1,14 @@
 extends CardEffect
 
 ## ESD05-003: Dorat - Battle Rank 3 (Green)
-## <Overwhelm> <Enter> Send the top 3 cards of your deck to your discard pile.
+## <Dominate> <Enter> Send the top 3 cards of your deck to your discard pile.
 ##
 ## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
 ## Rules: None
 ## Interactions: None
-## Implementation notes: <Overwhelm> = ctx.is_overwhelm(), checked on entry.
+## Implementation notes: <Dominate> = ctx.is_dominate(), checked on entry.
 
 
 func get_bot_tags() -> Array[String]:
@@ -20,5 +20,5 @@ func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool
 
 
 func on_enter(ctx: EffectContext) -> void:
-	if ctx.is_overwhelm():
+	if ctx.is_dominate():
 		await ctx.mill(3)

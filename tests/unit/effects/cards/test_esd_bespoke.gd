@@ -968,7 +968,7 @@ func test_esd03_005_end_phase_declined_or_low_rage_does_not_advance() -> void:
 
 
 # --- ESD03-006: Godzilla(2023) battle — enter: opp rank I monster rage -1;
-# --- Overwhelm +3000 CP ---
+# --- Dominate +3000 CP ---
 
 
 func test_esd03_006_enter_reduces_rage_only_of_rank1_monster() -> void:
@@ -985,7 +985,7 @@ func test_esd03_006_enter_reduces_rage_only_of_rank1_monster() -> void:
 	assert_int(state2.players[1].rage).is_equal(2)
 
 
-func test_esd03_006_overwhelm_adds_3000_cp() -> void:
+func test_esd03_006_dominate_adds_3000_cp() -> void:
 	var card := Real.instance("ESD03-006")
 	var state := States.make_state({"p0": {"zone_cards": {2: card}, "monster_zone": 4}, "p1": {"monster_zone": 4}})
 	var s := _session(state)
@@ -995,7 +995,7 @@ func test_esd03_006_overwhelm_adds_3000_cp() -> void:
 	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(2000)
 
 
-# --- ESD03-007: Godzilla(2026) battle — Awk6 +3000 CP; Overwhelm + invaded
+# --- ESD03-007: Godzilla(2026) battle — Awk6 +3000 CP; Dominate + invaded
 # --- this turn: play from hand at rank -1 ---
 
 
@@ -1009,7 +1009,7 @@ func test_esd03_007_awakening6_adds_3000_cp() -> void:
 	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(8000)
 
 
-func test_esd03_007_rank_reduced_only_when_invaded_and_overwhelming() -> void:
+func test_esd03_007_rank_reduced_only_when_invaded_and_dominating() -> void:
 	var card := Real.instance("ESD03-007")
 	var state := States.make_state({
 		"p0": {"hand": [card], "monster_zone": 4, "has_invaded_this_turn": true},
@@ -1019,7 +1019,7 @@ func test_esd03_007_rank_reduced_only_when_invaded_and_overwhelming() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(-1)
 
-	# Behind the opponent's monster: <Overwhelm> is off.
+	# Behind the opponent's monster: <Dominate> is off.
 	state.players[1].monster_zone = 5
 	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(0)
 
@@ -1285,7 +1285,7 @@ func test_esd04_004_enter_skip_keeps_opponent_rage() -> void:
 	assert_int(state.players[0].hand.size()).is_equal(1)
 
 
-func test_esd04_004_overwhelm_cp_needs_godzilla_vs_destoroyah_in_play() -> void:
+func test_esd04_004_dominate_cp_needs_godzilla_vs_destoroyah_in_play() -> void:
 	var monster := Real.instance("ESD04-004")
 	var state := States.make_state({"p0": {"current_monster": monster, "strategy_zones": [Cards.strategy(3, "OTHER")]}})
 	var s := _session(state)
@@ -1295,7 +1295,7 @@ func test_esd04_004_overwhelm_cp_needs_godzilla_vs_destoroyah_in_play() -> void:
 	state.players[0].strategy_zones[1] = Real.instance("EBP04-083")
 	assert_int(handler.get_monster_cp_modifier(0)).is_equal(10000)
 
-	# <Overwhelm> is off while our monster is behind the opponent's.
+	# <Dominate> is off while our monster is behind the opponent's.
 	state.players[1].monster_zone = 3
 	state.players[0].monster_zone = 2
 	assert_int(handler.get_monster_cp_modifier(0)).is_equal(0)
@@ -1351,7 +1351,7 @@ func test_esd05_002_empty_deck_destroys_nothing() -> void:
 	assert_bool(state.players[1].zone_has_cards(0)).is_true()
 
 
-# --- ESD04-001: Destoroyah Juvenile Form — Overwhelm, end start: battle card
+# --- ESD04-001: Destoroyah Juvenile Form — Dominate, end start: battle card
 # --- from hand → deck bottom, draw 1 ---
 
 
@@ -1386,7 +1386,7 @@ func test_esd04_001_end_phase_puts_battle_card_on_deck_bottom_and_draws() -> voi
 	assert_str(str(bottom_logs[0].get("card_id"))).is_equal("BTL")
 
 
-func test_esd04_001_skip_or_no_overwhelm_does_nothing() -> void:
+func test_esd04_001_skip_or_no_dominate_does_nothing() -> void:
 	var monster := Real.instance("ESD04-001")
 	var state := States.make_state({
 		"p0": {"current_monster": monster, "monster_zone": 3, "hand": [Cards.battle(2, 3000, "BTL")],
@@ -1401,7 +1401,7 @@ func test_esd04_001_skip_or_no_overwhelm_does_nothing() -> void:
 	assert_int(state.players[0].hand.size()).is_equal(1)
 	assert_int(state.players[0].main_deck.size()).is_equal(1)
 
-	# Behind the opponent's monster: <Overwhelm> is off — no prompt.
+	# Behind the opponent's monster: <Dominate> is off — no prompt.
 	var monster2 := Real.instance("ESD04-001", 1)
 	var state2 := States.make_state({
 		"p0": {"current_monster": monster2, "monster_zone": 2, "hand": [Cards.battle(2, 3000, "BTL")]},
@@ -1443,7 +1443,7 @@ func test_esd04_006_opponent_turn_threat_per_destoroyah_battle_card() -> void:
 	assert_int(handler.get_threat_level_modifier(0)).is_equal(0)
 
 
-func test_esd04_006_enables_esd04_004_overwhelm_cp() -> void:
+func test_esd04_006_enables_esd04_004_dominate_cp() -> void:
 	var monster := Real.instance("ESD04-004")
 	var state := States.make_state({"p0": {"current_monster": monster, "strategy_zones": [Real.instance("ESD04-006")]}})
 	var s := _session(state)
@@ -1481,10 +1481,10 @@ func test_esd05_001_enter_mills_only_what_the_deck_has() -> void:
 	assert_int(state.players[0].main_deck.size()).is_equal(0)
 
 
-# --- ESD05-003: Dorat — Overwhelm enter: mill 3 ---
+# --- ESD05-003: Dorat — Dominate enter: mill 3 ---
 
 
-func test_esd05_003_overwhelm_enter_mills_3() -> void:
+func test_esd05_003_dominate_enter_mills_3() -> void:
 	var card := Real.instance("ESD05-003")
 	var deck: Array = []
 	for i in range(4):
@@ -1499,7 +1499,7 @@ func test_esd05_003_overwhelm_enter_mills_3() -> void:
 	assert_int(state.players[0].main_deck.size()).is_equal(1)
 
 
-func test_esd05_003_no_overwhelm_does_not_mill() -> void:
+func test_esd05_003_no_dominate_does_not_mill() -> void:
 	var card := Real.instance("ESD05-003")
 	var state := States.make_state({
 		"p0": {"zone_cards": {2: card}, "monster_zone": 2, "main_deck": [Cards.battle(), Cards.battle(), Cards.battle()]},
@@ -1640,6 +1640,172 @@ func test_esd03_008_logs_each_kept_zone() -> void:
 	assert_int(chose[1]["player_id"]).is_equal(1)
 	assert_int(chose[1]["zone"]).is_equal(6)
 	assert_str(str(GameLog.render(chose[1]))).contains("OPP")
+
+
+# --- ESD03-002: Godzilla(2026) rank II — enter: destroy every rank ≤3 battle
+# --- card on both boards ---
+
+
+func test_esd03_002_enter_destroys_rank_3_or_lower_on_both_boards() -> void:
+	var card := Real.instance("ESD03-002")
+	var state := States.make_state({
+		"p0": {"current_monster": card, "zone_cards": {
+			1: Cards.battle(3, 2000, "OWN-R3"), 4: Cards.battle(4, 3000, "OWN-R4"),
+		}},
+		"p1": {"zone_cards": {
+			0: Cards.battle(1, 2000, "OPP-R1"), 3: Cards.battle(6, 5000, "OPP-R6"),
+		}},
+	})
+	var s := _session(state)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([4])
+	assert_array(state.players[1].get_battle_card_zone_indices()).contains_exactly([3])
+	assert_int(state.players[0].discard_pile.size()).is_equal(1)
+	assert_int(state.players[1].discard_pile.size()).is_equal(1)
+
+
+# --- ESD03-003: Godzilla(2026) rank III — enter: reveal top, monster → hand
+# --- else discard; opp turn Dominate counter start: destroy opp rank ≤6 in
+# --- column ---
+
+
+func test_esd03_003_enter_reveals_top_card(top_is_monster: bool, hand_size: int, discard_size: int,
+		_test_parameters := [
+			[true, 1, 0],
+			[false, 0, 1],
+		]) -> void:
+	var card := Real.instance("ESD03-003")
+	var top := Cards.monster(2, 9000, [], "TOP-MON") if top_is_monster else Cards.battle(2, 3000, "TOP-BTL")
+	var state := States.make_state({
+		"p0": {"current_monster": card, "main_deck": [top, Cards.battle(1, 2000, "DECK-2")]},
+	})
+	var s := _session(state)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(state.players[0].main_deck.size()).is_equal(1)
+	assert_int(state.players[0].hand.size()).is_equal(hand_size)
+	assert_int(state.players[0].discard_pile.size()).is_equal(discard_size)
+
+
+func test_esd03_003_enter_with_empty_deck_does_nothing() -> void:
+	var card := Real.instance("ESD03-003")
+	var state := States.make_state({"p0": {"current_monster": card}})
+	var s := _session(state)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(state.players[0].hand.size()).is_equal(0)
+	assert_int(state.players[0].discard_pile.size()).is_equal(0)
+
+
+func test_esd03_003_dominate_counter_start_destroys_rank_6_or_lower_in_column(opp_monster_zone: int, destroyed: bool,
+		_test_parameters := [
+			[3, true],   # same zone → Dominate on
+			[1, true],   # ahead → Dominate on
+			[5, false],  # behind → Dominate off
+		]) -> void:
+	var card := Real.instance("ESD03-003")
+	var state := States.make_state({
+		"current_player_id": 1,
+		"p0": {"current_monster": card, "monster_zone": 3},  # anchor idx 2 → opp column zones [2, 7]
+		"p1": {"monster_zone": opp_monster_zone, "zone_cards": {
+			2: Cards.battle(6, 5000, "OPP-R6"), 7: Cards.battle(7, 6000, "OPP-R7"),
+		}},
+	})
+	state.current_phase = CardEnums.GamePhase.COUNTER
+	var s := _session(state)
+
+	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+
+	assert_bool(state.players[1].zone_has_cards(2)) \
+		.override_failure_message("ESD03-003: rank 6 in column destroyed iff Dominate").is_equal(not destroyed)
+	assert_bool(state.players[1].zone_has_cards(7)) \
+		.override_failure_message("ESD03-003: rank 7 must survive the rank<=6 cap").is_true()
+
+
+func test_esd03_003_does_not_fire_on_own_counter_phase() -> void:
+	var card := Real.instance("ESD03-003")
+	var state := States.make_state({
+		"p0": {"current_monster": card, "monster_zone": 3},
+		"p1": {"zone_cards": {2: Cards.battle(6, 5000, "OPP-R6")}},
+	})
+	state.current_phase = CardEnums.GamePhase.COUNTER
+	var s := _session(state)
+
+	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+
+	assert_bool(state.players[1].zone_has_cards(2)).is_true()
+
+
+# --- ESD05-005: Constructed Future — destroy 3 own battle cards lowest rank
+# --- first; if 3 destroyed, play a highest-rank battle card from discard ---
+
+
+func test_esd05_005_destroys_lowest_three_then_plays_highest_from_discard() -> void:
+	var card := Real.instance("ESD05-005")
+	var state := States.make_state({
+		"p0": {"zone_cards": {
+			0: Cards.battle(1, 2000, "OWN-R1A"), 1: Cards.battle(1, 2000, "OWN-R1B"),
+			3: Cards.battle(2, 2000, "OWN-R2A"), 4: Cards.battle(2, 2000, "OWN-R2B"),
+			5: Cards.battle(5, 3000, "OWN-R5"),
+		}},
+	})
+	state.players[0].discard_pile.append(Cards.battle(7, 6000, "DISCARD-R7"))
+	state.players[0].discard_pile.append(Cards.strategy(9, "DISCARD-STR9"))
+	# select_zone #1: rank-2 tie breaker (zone 4); #2: zone to play the R7 into.
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [4, 6]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	var tie_call: Dictionary = input.calls.filter(
+		func(c: Dictionary) -> bool: return c["kind"] == "select_zone")[0]
+	assert_array(tie_call["valid"]).contains_exactly([3, 4])
+	# Only the strategy card was a non-battle candidate — the R7 battle is offered.
+	var search: Dictionary = input.calls.filter(
+		func(c: Dictionary) -> bool: return c["kind"] == "search_cards")[0]
+	assert_int(search["matching"].size()).is_equal(1)
+	assert_str(str(search["matching"][0]["id"])).is_equal("DISCARD-R7")
+	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([3, 5, 6])
+	assert_str(str(state.players[0].get_zone_top_card(6).get("id"))).is_equal("DISCARD-R7")
+
+
+func test_esd05_005_highest_rank_can_be_a_card_it_just_destroyed() -> void:
+	var card := Real.instance("ESD05-005")
+	var state := States.make_state({
+		"p0": {"zone_cards": {
+			0: Cards.battle(4, 2000, "OWN-R4"), 1: Cards.battle(5, 2000, "OWN-R5"),
+			2: Cards.battle(6, 2000, "OWN-R6"),
+		}},
+	})
+	state.players[0].discard_pile.append(Cards.battle(3, 2000, "DISCARD-R3"))
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [7]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_str(str(state.players[0].get_zone_top_card(7).get("id"))).is_equal("OWN-R6")
+
+
+func test_esd05_005_fewer_than_three_destroys_all_and_plays_nothing() -> void:
+	var card := Real.instance("ESD05-005")
+	var state := States.make_state({
+		"p0": {"zone_cards": {0: Cards.battle(1, 2000, "OWN-A"), 1: Cards.battle(2, 2000, "OWN-B")}},
+	})
+	state.players[0].discard_pile.append(Cards.battle(7, 6000, "DISCARD-R7"))
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(state.players[0].get_battle_card_zone_indices().size()).is_equal(0)
+	assert_int(state.players[0].discard_pile.size()).is_equal(3)
+	assert_int(input.count_calls("search_cards")).is_equal(0)
 
 
 ## Snapshots which zones are highlighted each time a zone is asked for.

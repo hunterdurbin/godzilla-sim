@@ -11,7 +11,7 @@ var CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.DESTOROYAH],
 		"threat_level": 5000,
 		"invasion_icon": 1,
-		"description": "<Overwhelm> At the beginning of your end phase, you may reveal 1 battle card from your hand and place it on the bottom of your deck. If you do, draw 1 card. (Active if your monster card is in the same zone as or ahead of your opponent's monster card.)",
+		"description": "<Dominate> At the beginning of your end phase, you may reveal 1 battle card from your hand and place it on the bottom of your deck. If you do, draw 1 card. (Active if your monster card is in the same zone as or ahead of your opponent's monster card.)",
 		"effect_script": "res://scripts/effects/esd04/esd04_001.gd"
 	},
 	{
@@ -47,7 +47,7 @@ var CARDS: Array[Dictionary] = [
 		"traits": [CardEnums.CardTrait.DESTOROYAH],
 		"threat_level": 35000,
 		"invasion_icon": 2,
-		"description": "<Enter> You may discard a strategy card from your hand to decrease your opponent's <Rage> by 1.\n<Overwhelm> If you have a 「Godzilla vs. Destoroyah」 card in play, add +10,000 counter power to your total.",
+		"description": "<Enter> You may discard a strategy card from your hand to decrease your opponent's <Rage> by 1.\n<Dominate> If you have a 「Godzilla vs. Destoroyah」 card in play, add +10,000 counter power to your total.",
 		"effect_script": "res://scripts/effects/esd04/esd04_004.gd"
 	},
 	{

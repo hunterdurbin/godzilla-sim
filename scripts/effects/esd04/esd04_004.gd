@@ -3,7 +3,7 @@ extends CardEffect
 ## ESD04-004: Destoroyah Perfect Form - Monster Rank 4 (Blue)
 ## <Enter> You may discard a strategy card from your hand to decrease your
 ## opponent's <Rage> by 1.
-## <Overwhelm> If you have a 「Godzilla vs. Destoroyah」 card in play, add
+## <Dominate> If you have a 「Godzilla vs. Destoroyah」 card in play, add
 ## +10,000 counter power to your total.
 ##
 ## Tested: Yes
@@ -12,7 +12,7 @@ extends CardEffect
 ## Rules: None
 ## Interactions: EBP01-062 / EBP01-065 / EBP04-083 (Godzilla vs. Destoroyah)
 ## Implementation notes: "In play" for a strategy card = a strategy zone.
-##   <Overwhelm> = ctx.is_overwhelm() (own monster zone >= opponent's).
+##   <Dominate> = ctx.is_dominate() (own monster zone >= opponent's).
 
 
 const GVD_NAME := "Godzilla vs. Destoroyah"
@@ -41,7 +41,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:
-	if not ctx.is_overwhelm():
+	if not ctx.is_dominate():
 		return 0
 	for sz_card in ctx.owner.strategy_zones:
 		if not sz_card.is_empty() and sz_card.get("name", "") == GVD_NAME:
