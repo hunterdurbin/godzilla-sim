@@ -71,6 +71,25 @@ func test_single_destroy_revenge_waits_for_rest_of_effect() -> void:
 	assert_int(kinds.find("choose_option")).is_less(kinds.find("search_cards"))
 
 
+func test_effect_resolving_fires_once_per_ability_start() -> void:
+	# GameEvents.effect_resolving (bot sim's [SimEffects] counts): the <Enter>
+	# and the standby <Revenge> each announce once; resuming nothing re-emits.
+	var revenge_card := Real.instance("EBP02-058")
+	var state := States.make_state({"p0": {"zone_cards": {1: revenge_card}}})
+	state.players[0].discard_pile.append(
+		Cards.monster(3, 19000, [CardEnums.CardTrait.KING_GHIDORAH], "KG-MON"))
+	var s := _session(state, {"select_zone": [1], "choose_option": [0]})
+	var handler: EffectHandler = s["effect_handler"]
+	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, DestroyOneThenChoose.new(), ["on_enter"])
+	var seen: Array[String] = []
+	(s["events"] as GameEvents).effect_resolving.connect(
+		func(_pid: int, card: Dictionary) -> void: seen.append(CardUtils.base_id(card)))
+
+	await handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+
+	assert_array(seen).is_equal(["SOURCE", "EBP02-058"])
+
+
 func test_single_destroy_revenge_resolves_at_once_outside_an_effect() -> void:
 	var revenge_card := Real.instance("EBP02-058")
 	var state := States.make_state({"p0": {"zone_cards": {1: revenge_card}}})

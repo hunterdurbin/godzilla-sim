@@ -52,6 +52,7 @@ static func make_session(state: GameState, input: PlayerInput = null) -> Diction
 	action_handler.effect_handler = effect_handler
 	action_handler.input = the_input
 	action_handler.events = events
+	effect_handler.events = events
 	effect_handler.action_handler = action_handler
 	var rules := RulesEngine.new()
 	rules.queries = effect_handler.queries

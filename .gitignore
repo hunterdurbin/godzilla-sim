@@ -12,3 +12,6 @@
 /reports/
 .vscode/settings.json
 .claude/scheduled_tasks.lock
+
+# Python bytecode (scripts/tools/ checks import gd_ratchet.py)
+__pycache__/

@@ -611,6 +611,7 @@ func apply_play_cost(player_id: int, card_data: Dictionary, zone_index: int) -> 
 	if not has_trigger(card_data, "apply_play_cost"):
 		return true
 	var ctx := _build_context(player_id, card_data)
+	h.note_effect_resolving(player_id, card_data)
 	@warning_ignore("redundant_await")
 	return await effect.apply_play_cost(ctx, zone_index)
 

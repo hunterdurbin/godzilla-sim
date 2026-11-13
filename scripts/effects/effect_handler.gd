@@ -159,6 +159,16 @@ func _set_active_effect(player_id: int, card_data: Dictionary) -> void:
 
 
 
+## Announce that card_data's ability starts resolving (GameEvents.effect_resolving).
+## Call at every site that STARTS a card-script resolution — not where an
+## outer effect is restored after a nested one.
+func note_effect_resolving(player_id: int, card_data: Dictionary) -> void:
+	if events != null and not card_data.is_empty():
+		events.effect_resolving.emit(player_id, card_data)
+
+
+
+
 ## {card_id, label} for the ability currently resolving ({} if none) — the
 ## UI shows this above effect prompt overlays. card_id is the base id; label
 ## matches the resolution-order choice option text.
@@ -235,6 +245,7 @@ func apply_rage_reset(player_id: int) -> int:
 				candidates.append({"card": sz_card, "effect": se})
 	for entry in candidates:
 		var ctx := _build_context(player_id, entry.card)
+		note_effect_resolving(player_id, entry.card)
 		var result: int = await entry.effect.on_rage_reset(ctx)
 		if result != 0:
 			return result

@@ -12,7 +12,15 @@
 #   - per side: games completed, P1 wins, SCRIPT ERROR count, and
 #     `[Kaiju] … plan DIVERGED` count (the KAIJU replay-parity metric:
 #     the planner's cached plan stopped matching the live game)
-# Exit status: 0 = identical results and no script errors on this tree.
+#   - per changed card script (scripts/effects/<set>/*.gd differing from
+#     base_ref, incl. untracked): how many times its abilities started
+#     resolving on each side ([SimEffects] line). A card at 0 on this tree
+#     is UNEXERCISED: the [SimResult] diff says nothing about it — pick decks
+#     that run it (decks_with_cards.sh). Passive-only cards (modifiers,
+#     replacement queries) never "resolve" and always show 0.
+# Exit status: 0 = identical results and no script errors on this tree;
+#   1 = results differ / script errors / missing games;
+#   2 = otherwise clean, but some changed card was UNEXERCISED.
 set -u
 
 GODOT="${1:?usage: run_sim_diff.sh <godot> [base_ref] [games] [p1] [p2] [deck1] [deck2] [seed]}"
@@ -56,6 +64,7 @@ run_sim() { # <dir> <out>
 	local pid=$! elapsed=0
 	while kill -0 "$pid" 2>/dev/null; do
 		sleep 5; elapsed=$((elapsed + 5))
+		grep -q '^\[SimEffects\]' "$2" && { sleep 1; break; }
 		[ "$(grep -c '\[SimResult\]' "$2")" -ge "$GAMES" ] && { sleep 3; break; }
 		[ "$elapsed" -ge "$TIMEOUT" ] && { echo "TIMEOUT: $2" >> "$2"; break; }
 	done
@@ -90,5 +99,51 @@ else
 fi
 [ "$(grep -c 'SCRIPT ERROR' "$WORK/head.log")" -eq 0 ] || STATUS=1
 [ "$(grep -c '\[SimResult\]' "$WORK/head.log")" -ge "$GAMES" ] || STATUS=1
+
+# Changed card scripts -> card ids (via the effect_script paths in the set
+# files) -> resolution counts per side.
+CHANGED=$( { git -C "$REPO" diff --name-only "$BASE_REF" -- 'scripts/effects/*/*.gd';
+	git -C "$REPO" ls-files --others --exclude-standard -- 'scripts/effects/*/*.gd'; } | sort -u)
+if [ -n "$CHANGED" ]; then
+	UNEXERCISED=$(python3 - "$REPO" "$WORK/base.log" "$WORK/head.log" $CHANGED <<'PY'
+import glob, os, re, sys
+repo, base_log, head_log, changed = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:]
+ids_for = {}
+for set_file in sorted(glob.glob(os.path.join(repo, "scripts/cards/sets/card_set_*.gd"))):
+    last_id = None
+    for line in open(set_file, encoding="utf-8"):
+        m = re.search(r'"id":\s*"([^"]+)"', line)
+        if m:
+            last_id = m.group(1)
+        m = re.search(r'"effect_script":\s*"res://([^"]+)"', line)
+        if m and last_id:
+            ids_for.setdefault(m.group(1), []).append(last_id)
+def counts(log):
+    for line in open(log, encoding="utf-8", errors="replace"):
+        if line.startswith("[SimEffects]"):
+            parts = line.split()[1:]
+            if parts == ["unavailable"]:
+                return None
+            return dict(p.split("=") for p in parts)
+    return None
+base, head = counts(base_log), counts(head_log)
+unexercised = []
+print("Changed card scripts (abilities resolved, base -> head):", file=sys.stderr)
+for path in changed:
+    for cid in ids_for.get(path, [os.path.basename(path)]):
+        b = "?" if base is None else base.get(cid, "0")
+        h = "?" if head is None else head.get(cid, "0")
+        flag = "  UNEXERCISED" if h in ("0", "?") else ""
+        print("  %-12s %4s -> %-4s%s" % (cid, b, h, flag), file=sys.stderr)
+        if flag:
+            unexercised.append(cid)
+print(" ".join(unexercised))
+PY
+)
+	if [ -n "$UNEXERCISED" ]; then
+		echo "UNEXERCISED on this tree: $UNEXERCISED (identical results are no evidence for these)"
+		[ "$STATUS" -eq 0 ] && STATUS=2
+	fi
+fi
 echo "Logs: $WORK/{base,head}.log"
 exit $STATUS

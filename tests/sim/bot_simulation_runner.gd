@@ -24,6 +24,10 @@ var _current_turn_manager: TurnManager
 var _current_bots: Array = [] # [BotPlayer, BotPlayer]
 var _game_running: bool = false
 var _recorder: ReplayRecorder = null
+## base card id -> number of times one of its abilities started resolving,
+## summed over every game. Printed as the [SimEffects] line.
+var _effect_counts: Dictionary[String, int] = {}
+var _effect_counts_available: bool = false
 
 
 func _ready() -> void:
@@ -116,6 +120,13 @@ func _start_next_game() -> void:
 	bot2.scene_tree = get_tree()
 
 	_current_bots = [bot1, bot2]
+
+	# Per-card resolution counts for run_sim_diff's [SimEffects] line. A base
+	# tree older than GameEvents.effect_resolving reports no counts.
+	var bus: GameEvents = _current_turn_manager.events
+	if bus.has_signal("effect_resolving"):
+		_effect_counts_available = true
+		bus.connect("effect_resolving", _on_effect_resolving)
 
 	# Instant confirmation — resolve synchronously (no await, no frame wait).
 	# Must be connected BEFORE bot handlers so it fires first. Uses a named
@@ -230,7 +241,20 @@ func _record_result(winner_id: int, reason: String) -> void:
 		print("[Sim] %d/%d games complete" % [_games_completed, num_games])
 
 
+func _on_effect_resolving(_player_id: int, card: Dictionary) -> void:
+	var id: String = CardUtils.base_id(card)
+	_effect_counts[id] = _effect_counts.get(id, 0) + 1
+
+
 func _print_summary() -> void:
+	# First line of the summary: run_sim_diff.sh waits for it, then reads the
+	# counts for the cards the diff touches.
+	var parts: PackedStringArray = []
+	var ids: Array[String] = _effect_counts.keys()
+	ids.sort()
+	for id in ids:
+		parts.append("%s=%d" % [id, _effect_counts[id]])
+	print("[SimEffects] %s" % (" ".join(parts) if _effect_counts_available else "unavailable"))
 	var p1_wins: int = 0
 	var p2_wins: int = 0
 	var draws: int = 0

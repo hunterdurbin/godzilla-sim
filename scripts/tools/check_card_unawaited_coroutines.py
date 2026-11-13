@@ -20,25 +20,10 @@ import os
 import re
 import sys
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-EFFECTS_DIR = os.path.join(ROOT, "scripts", "effects")
+from gd_ratchet import EFFECTS_DIR, ROOT, card_scripts, strip_comment
 FUNC_RE = re.compile(r"^(?:static\s+)?func\s+([A-Za-z_]\w*)\s*\(")
 # Optional `await`, then a receiver chain ending in effect_handler/handler/ctx, then .name(
 CALL_RE = re.compile(r"(\bawait\s+)?\b((?:[A-Za-z_]\w*\.)*?)(effect_handler|handler|ctx)\.([A-Za-z_]\w*)\s*\(")
-
-
-def strip_comment(line):
-    # Drop a trailing `# ...` that is outside a string literal.
-    quote = None
-    for i, ch in enumerate(line):
-        if quote:
-            if ch == quote and line[i - 1] != "\\":
-                quote = None
-        elif ch in "\"'":
-            quote = ch
-        elif ch == "#":
-            return line[:i]
-    return line
 
 
 def coroutines(path):
@@ -52,16 +37,6 @@ def coroutines(path):
             elif current and re.search(r"\bawait\b", strip_comment(raw)):
                 names.add(current)
     return names
-
-
-def card_scripts():
-    for entry in sorted(os.listdir(EFFECTS_DIR)):
-        set_dir = os.path.join(EFFECTS_DIR, entry)
-        if not os.path.isdir(set_dir):
-            continue
-        for f in sorted(os.listdir(set_dir)):
-            if f.endswith(".gd"):
-                yield os.path.relpath(os.path.join(set_dir, f), ROOT)
 
 
 def main():
