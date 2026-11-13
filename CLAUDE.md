@@ -78,7 +78,8 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
   (wedge-safe headless import; a stale class-name cache breaks headless runs).
 - Before merging a PR: `/code-review` — judgement rules live in
   `CODING_STANDARDS.md`; mechanical ones are checks in `scripts/tools/`.
-  Merge with `gh pr merge --squash --auto --delete-branch` (main requires CI).
+  Merge after CI passes (main requires it; auto-merge is disabled):
+  `gh pr checks <n> --watch && gh pr merge <n> --squash --delete-branch`.
 
 ## Codegen & data invariants
 
