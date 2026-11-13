@@ -64,6 +64,7 @@ func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = fa
 		return
 
 	_set_active_effect(player_id, card_data)
+	h.note_effect_resolving(player_id, card_data)
 	# CardEffect.on_enter is non-coroutine in the base, but per-card overrides may be — await is required.
 	@warning_ignore("redundant_await")
 	await effect.on_enter(_build_context(player_id, card_data))
@@ -85,6 +86,7 @@ func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void
 	var effect := get_effect(player.current_monster)
 	if effect:
 		_set_active_effect(player_id, player.current_monster)
+		h.note_effect_resolving(player_id, player.current_monster)
 		@warning_ignore("redundant_await")
 		await effect.on_when_invading(_build_context(player_id, player.current_monster), from_zone, to_zone)
 		_clear_active_effect()
@@ -117,6 +119,7 @@ func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 		var saved_player_id: int = _active_effect_player_id
 		var saved_card: Dictionary = _active_effect_card
 		_set_active_effect(player_id, card_data)
+		h.note_effect_resolving(player_id, card_data)
 		@warning_ignore("redundant_await")
 		await effect.on_revenge(_build_context(player_id, card_data))
 		if saved_card.is_empty():
@@ -254,6 +257,7 @@ func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
 	var effect := get_effect(card_data)
 	if effect:
 		_set_active_effect(player_id, card_data)
+		h.note_effect_resolving(player_id, card_data)
 		@warning_ignore("redundant_await")
 		await effect.on_burst_discard(_build_context(player_id, card_data))
 		_clear_active_effect()

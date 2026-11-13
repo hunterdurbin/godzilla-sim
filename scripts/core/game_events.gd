@@ -27,6 +27,11 @@ signal counter_succeeded(player_id: int, total_cp: int, threat: int, rage_threat
 signal counter_immunity_triggered(player_id: int, total_cp: int, threshold: int)
 signal counter_prevented(player_id: int)
 signal play_cancelled(player_id: int)
+## A card's ability starts resolving (trigger, standby entry, <Revenge>,
+## <When Invading>, alternate play cost, ...). Restoring an outer effect
+## after a nested one does not re-emit. Consumers: the bot sim's per-card
+## [SimEffects] counts.
+signal effect_resolving(player_id: int, card: Dictionary)
 ## Pending standby-effect stack snapshot (see StandbyResolver._publish_stack).
 ## Rows: { player_id, base_id, label, status: "resolving"|"pending", location }.
 ## Emitted with [] when the stack drains.

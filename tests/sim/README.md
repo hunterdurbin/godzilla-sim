@@ -32,7 +32,14 @@ deck that exercises them (e.g. "King Ghidorah" carries 3 <Revenge> cards).
 For card-script changes, `./tests/sim/decks_with_cards.sh <card_id>...` ranks
 the decklists by how many of those cards they run — pass the top names as
 deck1/deck2. An identical diff on decks that never draw the changed cards
-proves only "no regression", not the new behaviour.
+proves only "no regression", not the new behaviour — so the diff measures it:
+the runner ends with a `[SimEffects] <card_id>=<n> …` line (abilities that
+started resolving, live games only, via `GameEvents.effect_resolving`), and
+`run_sim_diff.sh` prints base → head counts for every card script that
+differs from `base_ref`. A changed card at 0 on this tree is **UNEXERCISED**
+and the script exits 2 (when otherwise clean): re-run on decks that play it.
+Passive-only cards (modifiers, replacement queries) never resolve and always
+read 0; a base older than the event shows `?`.
 
 **KAIJU replay parity**: run with a KAIJU side and compare `kaiju_diverged`
 — the planner's cached plan stopped matching the live game. It must not rise

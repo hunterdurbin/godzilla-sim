@@ -30,8 +30,8 @@ jobs:
       - name: No new play-zone legality checks in card scripts
         run: python3 scripts/tools/check_card_monster_zone_checks.py
 
-      - name: No new hand/discard/deck/strategy writes in card scripts
-        run: python3 scripts/tools/check_card_collection_writes.py
+      - name: Card scripts mutate state only through engine primitives
+        run: python3 scripts/tools/check_card_mutations.py
 
       - name: Card scripts await engine coroutines
         run: python3 scripts/tools/check_card_unawaited_coroutines.py

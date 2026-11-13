@@ -74,6 +74,7 @@ func resolve_entries(entries: Array) -> void:
 		var saved_player_id: int = exec.active_player_id
 		var saved_card: Dictionary = exec.active_card
 		handler._set_active_effect(entry.player_id, entry.card_data)
+		handler.note_effect_resolving(entry.player_id, entry.card_data)
 		await entry.callback.call()
 		if saved_card.is_empty():
 			handler._clear_active_effect()

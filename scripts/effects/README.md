@@ -49,11 +49,12 @@ monster's position directly (`clear_zone`, `push_zone_card`,
 by hand. If no primitive fits, add one to the engine instead of hand-coding
 the rule in the card, so every card gets the rule the same way. Hand-coded
 rule logic in a card script is where rules bugs come from.
-`tests/unit/effects/test_card_script_mutation_guard.gd` holds the line for
-zone/monster mutation: it fails on any per-set script that calls
-`clear_zone(` / `push_zone_card(` / `banish_or_discard(`, assigns
-`monster_zone`, or writes `zones[...]` (assignment or mutating method). It
-has no allow-list — add the missing primitive instead.
+`scripts/tools/check_card_mutations.py` (pre-commit + CI) holds the line:
+zone / monster-position mutation (`clear_zone(` / `push_zone_card(` /
+`banish_or_discard(`, assigning `monster_zone`, writing `zones[...]`) fails
+outright with no allow-list; writes to `hand` / `discard_pile` / `main_deck`
+/ `monster_deck` / `strategy_zones` are a ratchet whose allow-list only
+shrinks. Either way: add the missing primitive instead.
 
 Primitives for the common intents (all on EffectHandler):
 
@@ -74,9 +75,6 @@ Primitives for the common intents (all on EffectHandler):
 `scripts/tools/check_card_monster_zone_checks.py` (pre-commit + CI) holds
 the line for play-zone legality: card scripts get legal zones from the
 engine instead of comparing against the monster's zone index.
-`scripts/tools/check_card_collection_writes.py` (pre-commit + CI) is the
-same kind of ratchet for writes to `hand` / `discard_pile` / `main_deck` /
-`monster_deck` / `strategy_zones`; its allow-list only shrinks.
 
 ## Check timing — automatic abilities never interrupt an effect
 
