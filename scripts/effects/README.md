@@ -49,6 +49,25 @@ monster's position directly (`clear_zone`, `push_zone_card`,
 by hand. If no primitive fits, add one to the engine instead of hand-coding
 the rule in the card, so every card gets the rule the same way. Hand-coded
 rule logic in a card script is where rules bugs come from.
+`tests/unit/effects/test_card_script_mutation_guard.gd` holds the line for
+zone/monster mutation: it fails on any per-set script that calls
+`clear_zone(` / `push_zone_card(` / `banish_or_discard(`, assigns
+`monster_zone`, or writes `zones[...]` (assignment or mutating method). It
+has no allow-list — add the missing primitive instead.
+
+Primitives for the common intents (all on EffectHandler):
+
+| Card text | Primitive |
+|---|---|
+| "<Destroy> this card / that card" | `destroy_zones` (+ the `destroy_zone_target(s)` prompt variants) |
+| "play ... from your discard pile / hand / deck" (overloads, fires <Enter>) | `play_from_discard`, `play_battle_card_from_hand`, `play_battle_card_from_deck` (`stack_on_top` for "play it on top of") |
+| "choose a card in your hand" (card stays put) / take it / discard it | `choose_hand_card` / `take_hand_card` / `select_hand_card` |
+| "move this card / a battle card to a zone" | `move_zone_stack` (overloads), `swap_zones` |
+| "place <card> under this card" | `place_card_under_zone` |
+| "put this card under <card> in your zones" | `move_zone_card_under_zone` |
+| "add all cards under this card to your hand" | `return_cards_under_top_to_hand` (sync — safe in replacement hooks) |
+| "move your monster" | `advance_monster_to_zone`, `retreat_monster_to_zone`, `teleport_monster` |
+
 `scripts/tools/check_card_monster_zone_checks.py` (pre-commit + CI) holds
 the line for play-zone legality: card scripts get legal zones from the
 engine instead of comparing against the monster's zone index.

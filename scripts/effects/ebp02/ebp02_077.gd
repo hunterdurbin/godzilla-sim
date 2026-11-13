@@ -39,11 +39,8 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if not found_godzilla:
 		return
 
-	# Destroy self (this card is a normal battle card, goes to discard)
-	var stack: Array = ctx.owner.clear_zone(zone_idx)
-	EffectHandler.banish_or_discard(ctx.owner, stack)
-	ctx.owner.zones_changed.emit()
-	ctx.owner.discard_changed.emit()
+	# <Destroy> this card.
+	await ctx.effect_handler.destroy_zones(ctx.owner, [zone_idx])
 
 	# Player picks any non-monster zone for the token (defaults to the now-
 	# empty zone if no UI is wired up).

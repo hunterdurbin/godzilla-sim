@@ -50,8 +50,7 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 		return
 
 	# Place under this card
-	ctx.owner.zones[zone_idx].append(selected)
-	ctx.owner.zones_changed.emit()
+	ctx.effect_handler.place_card_under_zone(ctx.owner, selected, zone_idx)
 
 	# Set opponent's rage to 0
 	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, ctx.opponent.rage)

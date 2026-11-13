@@ -1149,6 +1149,29 @@ func test_ebp02_t04_end_phase_swaps_back_to_chibi_godzilla_from_discard() -> voi
 	assert_int(p0.discard_pile.size()).is_equal(0)
 
 
+func test_ebp02_t04_overload_applies_destroy_replacement() -> void:
+	# Playing Chibi Godzilla over an occupied zone is a real overload (11.5):
+	# Godzilla(2023)'s <Destroy> replacement sends it to the deck bottom.
+	var token := _token("EBP02-T04")
+	var chibi := Real.instance("EBP02-077")
+	var g2023 := Real.instance("ESD01-012")
+	var state := States.make_state({"p0": {"zone_cards": {4: token, 6: g2023}}})
+	state.players[0].discard_pile.append(chibi)
+	state.current_phase = CardEnums.GamePhase.END
+	state.current_player_id = 0
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"search_cards": [{"id": chibi.get("id")}], "select_zone": [6]}
+	var s := States.make_session(state, input)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.trigger_phase_start(CardEnums.GamePhase.END)
+
+	var p0 := state.players[0]
+	assert_str(str(p0.get_zone_top_card(6).get("id"))).is_equal(str(chibi.get("id")))
+	assert_bool(p0.main_deck.has(g2023)).is_true()
+	assert_bool(p0.discard_pile.has(g2023)).is_false()
+
+
 func test_ebp02_t04_banishes_itself_even_without_a_chibi_godzilla() -> void:
 	var token := _token("EBP02-T04")
 	var state := States.make_state({"p0": {"zone_cards": {4: token}}})

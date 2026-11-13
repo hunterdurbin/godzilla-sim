@@ -37,9 +37,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	)
 
 	if not selected.is_empty():
-		# Place under this card (append to end of zone stack)
-		ctx.owner.zones[zone_idx].append(selected)
-		ctx.owner.zones_changed.emit()
+		ctx.effect_handler.place_card_under_zone(ctx.owner, selected, zone_idx)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

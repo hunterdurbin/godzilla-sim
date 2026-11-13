@@ -44,10 +44,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if dest < 0:
 		return
 
-	var stack: Array = ctx.opponent.zones[source]
-	ctx.opponent.zones[source] = []
-	ctx.opponent.zones[dest] = stack
-	ctx.opponent.zones_changed.emit()
+	await ctx.effect_handler.move_zone_stack(ctx.opponent, source, dest)
 
 
 func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void:

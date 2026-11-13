@@ -56,13 +56,9 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if chosen < 0:
 		return
 
-	# Remove self from current zone and place under the chosen Land Moguera
-	var self_stack: Array = ctx.owner.clear_zone(my_zone)
-	if not self_stack.is_empty():
-		ctx.effect_handler.place_card_under_zone(ctx.owner, self_stack[0], chosen)
-		if self_stack.size() > 1:
-			EffectHandler.banish_or_discard(ctx.owner, self_stack.slice(1))
-	ctx.owner.zones_changed.emit()
+	# Put this card under the chosen Land Moguera. If you do, search.
+	if not ctx.effect_handler.move_zone_card_under_zone(ctx.owner, my_zone, chosen):
+		return
 
 	# Search deck for a Moguera battle card and play it on top of Land Moguera
 	var selected: Dictionary = await ctx.effect_handler.search_deck(

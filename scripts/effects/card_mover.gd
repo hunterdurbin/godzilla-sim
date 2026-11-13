@@ -181,21 +181,8 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 	## The selected card is removed from hand and added to discard pile.
 	## Returns the selected card, or empty dict if no valid cards or player skips.
 	var player := game_state.players[player_id]
-	var valid_indices: Array[int] = []
-	for i in range(player.hand.size()):
-		if filter.call(player.hand[i]):
-			valid_indices.append(i)
-
-	if valid_indices.is_empty():
-		return {}
-
-	_highlight_active_effect()
-	# Not redundant: SignalPlayerInput's override is a coroutine.
-	@warning_ignore("redundant_await")
-	var chosen_index: int = await input.select_hand_card(player_id, valid_indices, prompt, allow_skip)
-	_unhighlight_active_effect()
-
-	if chosen_index < 0 or chosen_index >= player.hand.size():
+	var chosen_index: int = await _pick_hand_index(player_id, filter, prompt, allow_skip)
+	if chosen_index < 0:
 		return {}
 
 	var card: Dictionary = player.hand.pop_at(chosen_index)
@@ -214,13 +201,40 @@ func take_hand_card(player_id: int, filter: Callable, prompt: String, allow_skip
 	## where it ends up (e.g. EPR-016 places it under itself).
 	## Returns the selected card, or empty dict if no valid cards or player skips.
 	var player := game_state.players[player_id]
+	var chosen_index: int = await _pick_hand_index(player_id, filter, prompt, allow_skip)
+	if chosen_index < 0:
+		return {}
+
+	var card: Dictionary = player.hand.pop_at(chosen_index)
+	player.hand_changed.emit()
+	return card
+
+
+
+
+func choose_hand_card(player_id: int, filter: Callable, prompt: String, allow_skip: bool = false) -> Dictionary:
+	## Ask a player to choose a card from their hand matching filter, WITHOUT
+	## moving it: the card stays in hand and the caller hands it to a primitive
+	## that moves it (e.g. play_battle_card_from_hand for "play 1 ... from your
+	## hand"). Returns the chosen card, or empty dict if no valid cards or skip.
+	var chosen_index: int = await _pick_hand_index(player_id, filter, prompt, allow_skip)
+	if chosen_index < 0:
+		return {}
+	return game_state.players[player_id].hand[chosen_index]
+
+
+func _pick_hand_index(player_id: int, filter: Callable, prompt: String, allow_skip: bool) -> int:
+	## Shared hand prompt for select/take/choose_hand_card: the chosen hand
+	## index, or -1 when nothing matches, the player skips, or the answer is
+	## out of range.
+	var player := game_state.players[player_id]
 	var valid_indices: Array[int] = []
 	for i in range(player.hand.size()):
 		if filter.call(player.hand[i]):
 			valid_indices.append(i)
 
 	if valid_indices.is_empty():
-		return {}
+		return -1
 
 	_highlight_active_effect()
 	# Not redundant: SignalPlayerInput's override is a coroutine.
@@ -229,13 +243,8 @@ func take_hand_card(player_id: int, filter: Callable, prompt: String, allow_skip
 	_unhighlight_active_effect()
 
 	if chosen_index < 0 or chosen_index >= player.hand.size():
-		return {}
-
-	var card: Dictionary = player.hand.pop_at(chosen_index)
-	player.hand_changed.emit()
-	return card
-
-
+		return -1
+	return chosen_index
 
 
 func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: Array[Dictionary], prompt: String, allow_skip: bool = true) -> Dictionary:
@@ -778,6 +787,43 @@ func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int)
 		return
 	player.zones[zone_idx].append(card)
 	player.zones_changed.emit()
+
+
+
+
+func move_zone_card_under_zone(player: PlayerState, from_zone: int, to_zone: int) -> bool:
+	## "Put this card under <card> in your zones": move from_zone's top card to
+	## the bottom of to_zone's stack. Cards that were under the moved card go to
+	## the discard (tokens are banished) — not destroyed (5.12.1.1). Returns
+	## false (nothing moves) for the same zone or when either zone is empty.
+	if from_zone == to_zone:
+		return false
+	if not player.zone_has_cards(from_zone) or not player.zone_has_cards(to_zone):
+		return false
+	var stack: Array = player.clear_zone(from_zone)
+	if stack.size() > 1:
+		EffectHandler.banish_or_discard(player, stack.slice(1))
+		player.discard_changed.emit()
+	place_card_under_zone(player, stack[0], to_zone)
+	return true
+
+
+
+
+func return_cards_under_top_to_hand(player: PlayerState, zone_idx: int) -> Array[Dictionary]:
+	## "Add all cards under this card to your hand": strip the cards under a
+	## zone's top card into the owner's hand (logged as one add). The top card
+	## stays. Synchronous, so replacement hooks (on_would_be_destroyed) can call
+	## it. Returns the cards added, top-of-stack first ([] when none).
+	var under: Array[Dictionary] = []
+	for card in get_cards_under_top(player, zone_idx):
+		under.append(card)
+	if under.is_empty():
+		return under
+	player.zones[zone_idx] = [player.get_zone_top_card(zone_idx)]
+	player.zones_changed.emit()
+	add_cards_to_hand(player.player_id, under)
+	return under
 
 
 
