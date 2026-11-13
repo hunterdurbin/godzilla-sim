@@ -49,6 +49,9 @@ monster's position directly (`clear_zone`, `push_zone_card`,
 by hand. If no primitive fits, add one to the engine instead of hand-coding
 the rule in the card, so every card gets the rule the same way. Hand-coded
 rule logic in a card script is where rules bugs come from.
+`scripts/tools/check_card_monster_zone_checks.py` (pre-commit + CI) holds
+the line for play-zone legality: card scripts get legal zones from the
+engine instead of comparing against the monster's zone index.
 
 ## Check timing — automatic abilities never interrupt an effect
 

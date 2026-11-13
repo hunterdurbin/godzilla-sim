@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://.claude/skills/verify/smoke_driver.gd" id="1"]
+
+[node name="SmokeDriver" type="Node"]
+script = ExtResource("1")

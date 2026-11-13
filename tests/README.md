@@ -37,6 +37,10 @@ tests/
 - **Per-card effect tests** use `fixtures/real_cards.gd`
   (`Real.instance(id)`) — real card dicts, never raw CardData templates.
   Cluster/bespoke membership ledger: `unit/effects/cards/classification.md`.
+- `fixtures/states.gd` `States.make_state` puts both monsters in zone 1
+  unless `"monster_zone"` says otherwise, so zone index 0 is the monster's
+  zone: plays there are refused (5.11.1.1) and battle cards there get
+  crushed. Place test cards from index 1 up, or set `"monster_zone"`.
 - Synthetic effects (no script file on disk):
   `handler.registry.register_for_test("test://name", effect, ["on_enter", …])`
   — see `unit/effects/test_check_timing.gd`.

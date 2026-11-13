@@ -20,6 +20,16 @@ jobs:
       - name: No new calls into engine private methods
         run: python3 scripts/tools/check_engine_private_calls.py
 
+  card-monster-zone-checks:
+    name: Card Monster-Zone Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No new play-zone legality checks in card scripts
+        run: python3 scripts/tools/check_card_monster_zone_checks.py
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
