@@ -6,28 +6,21 @@ extends CardEffect
 ## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
-## Rules: None
-## Interactions: None
+## Rules: The "<Destroy> both" link printed on EBP04-067 applies when the
+##   token leaves its zone or moves — same standby timing (10.6.4, 10.4.3).
+## Interactions: EBP04-067 — link logic lives there.
 ## Implementation notes: None
+
+const _Earth = preload("res://scripts/effects/ebp04/ebp04_067.gd")
 
 
 func on_leave_play(ctx: EffectContext, _zone_idx: int) -> void:
-	# Continuous link: any way the token leaves a zone takes the linked
-	# Godzilla Earth with it.
-	var partner_zone: int = _find_partner_zone(ctx)
-	if partner_zone >= 0:
-		await ctx.effect_handler.destroy_zones(ctx.owner, [partner_zone])
+	await _Earth.destroy_linked_pair(ctx, _Earth.MAIN_ID)
 
 
 func on_zone_changed(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	# Movement triggers "destroy both" — destroy self; on_leave_play chains the partner.
-	var my_zone: int = find_zone_of_card(ctx)
-	if my_zone >= 0:
-		await ctx.effect_handler.destroy_zones(ctx.owner, [my_zone])
+	await _Earth.destroy_linked_pair(ctx, _Earth.MAIN_ID)
 
 
-func _find_partner_zone(ctx: EffectContext) -> int:
-	for i in range(8):
-		if CardUtils.base_id(ctx.owner.get_zone_top_card(i)) == "EBP04-067":
-			return i
-	return -1
+func area_change_still_applies(ctx: EffectContext) -> bool:
+	return not _Earth.linked_pair_zones(ctx, _Earth.MAIN_ID).is_empty()

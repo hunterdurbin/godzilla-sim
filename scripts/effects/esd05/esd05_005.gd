@@ -23,7 +23,7 @@ extends CardEffect
 ##     that card wasn't destroyed, so it doesn't count. Tokens (Crystals)
 ##     destroyed this way DO count.
 ## Rules: Automatic abilities triggered by the batch (revenge, ally /
-##   opponent zone-card-destroyed) enter standby and
+##   opponent zone-card-destroyed, EBP04-067's leave link) enter standby and
 ##   resolve at the check timing after the whole effect — i.e. after the
 ##   play-back (10.4.3). Replacement effects resolve mid-destruction.
 ## Interactions: Cards this destroys are already in the discard pile when the

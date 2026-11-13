@@ -302,6 +302,9 @@ func test_ebp01_059_plays_self_when_discarded_by_opponent_effect() -> void:
 	handler.exec.set_active(1, {"id": "OPP-FX", "name": "Opponent Effect"})
 
 	await handler.trigger_discard_from_hand(0, card)
+	# An automatic ability: it waits in standby until the opponent's effect ends.
+	assert_bool(handler.exec.pending_standby_entries.is_empty()).is_false()
+	await States.finish_active_effect(handler)
 
 	assert_str(str(state.players[0].get_zone_top_card(2).get("id"))).is_equal(str(card.get("id")))
 	assert_int(state.players[0].discard_pile.size()).is_equal(0)
@@ -558,6 +561,9 @@ func test_ebp01_066_gains_2_rage_when_discarded_by_opponent_effect() -> void:
 	handler.exec.set_active(1, {"id": "OPP-FX", "name": "Opponent Effect"})
 
 	await handler.trigger_discard_from_hand(0, card)
+	# An automatic ability: it waits in standby until the opponent's effect ends.
+	assert_bool(handler.exec.pending_standby_entries.is_empty()).is_false()
+	await States.finish_active_effect(handler)
 
 	assert_int(state.players[0].rage).is_equal(2)
 	# NOTE: the script declares no caused_by_opponent TRIGGER_FILTERS gate, so

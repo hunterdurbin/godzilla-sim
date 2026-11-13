@@ -38,6 +38,22 @@ the CardEffect base and overrides trigger virtuals; awakening effects key off
 `<Dominate>` effects gate on `ctx.is_dominate()` — active while your
 monster is in the same zone as, or ahead of, the opponent's monster.
 
+## Check timing — automatic abilities never interrupt an effect
+
+Terms per `GLOSSARY.md`. While an effect resolves (`exec.has_active_effect()`),
+every automatic ability it triggers enters standby and resolves at the check
+timing AFTER that effect (rule 10.4.3) — via `_resolve_standby_entries` /
+`resolve_deferred_entries`, which queue to `exec.pending_standby_entries`
+when `should_defer()`. Never call a trigger body directly from engine code.
+This covers revenge and zone-card-destroyed watchers (single AND batch
+destroys), on_discard_from_hand, and the area-changing hooks on_leave_play /
+on_zone_changed (EBP04-067 link). **Replacement effects**
+(`on_would_be_destroyed`, `can_be_destroyed`) are the exception: they resolve
+at the moment of the action. An area-changing entry that has nothing left to
+do when it comes up is dropped before the order prompt via
+`area_change_still_applies` (10.6.3). Rule-action paths (crush) are tracked
+separately — see issue #1 in the issue tracker.
+
 ## Conditional phase-start triggers — `phase_start_applies`
 
 Every card whose `TRIGGER_FILTERS` pass at a phase start enters the standby

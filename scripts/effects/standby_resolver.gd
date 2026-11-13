@@ -173,6 +173,12 @@ func _resolve_player_standby(player_id: int, entries: Array) -> void:
 		if handler.action_handler:
 			await handler.action_handler.resolve_check_timing(game_state)
 
+		# 10.6.3: an ability in standby that can no longer be played ceases to
+		# exist — drop it before the order prompt so it never shows as a no-op.
+		_drop_inapplicable(entries)
+		if entries.is_empty():
+			break
+
 		# Publish the full batch as pending so the stack UI shows it during
 		# the order-choice prompt.
 		_stack_active = {}
@@ -255,3 +261,12 @@ func _stack_row(entry: Dictionary, status: String) -> Dictionary:
 		"status": status,
 		"location": loc,
 	}
+
+
+static func _drop_inapplicable(entries: Array) -> void:
+	## Remove (in place) entries whose optional "still_applies" Callable
+	## reports false at resolution time (10.6.3).
+	for i in range(entries.size() - 1, -1, -1):
+		var gate: Variant = entries[i].get("still_applies")
+		if gate is Callable and (gate as Callable).is_valid() and not bool((gate as Callable).call()):
+			entries.remove_at(i)
