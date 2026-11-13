@@ -1115,6 +1115,8 @@ CARD_ESD03-002_DESC,<Enter> <Destroy> all rank 3 or lower battle cards of each p
 CARD_ESD03-003_NAME,Godzilla(2026),
 CARD_ESD03-003_DESC,"<Enter> Reveal the top card of your deck. If it's a monster card, add it to your hand. Otherwise, discard it.
 <Opponent’s Turn> <Dominate> At the beginning of the counter phase, <Destroy> all of your opponent's rank 6 or lower battle cards in the same column as this card. (Active if your monster card is in the same zone as or ahead of your opponent's monster card.)",
+CARD_ESD03-004_NAME,Godzilla(2026),
+CARD_ESD03-004_DESC,"<Enter> Reveal cards from the top of your deck equal to the number of the zone this card is in. Add 1 red monster card with <《Godzilla》> from among them to your hand, then return the rest to your deck and shuffle it.",
 CARD_ESD03-005_NAME,Godzilla(2026),
 CARD_ESD03-005_DESC,"If there is a rank IV monster card underneath this, add +15,000 threat.
 At the beginning of your end phase, if this has 3 or more <Rage>, you may advance 1 zone.
@@ -1138,6 +1140,8 @@ CARD_ESD04-003_DESC,"<Enter> Return up to 1 card named 「Godzilla vs. Destoroya
 CARD_ESD04-004_NAME,Destoroyah Perfect Form,
 CARD_ESD04-004_DESC,"<Enter> You may discard a strategy card from your hand to decrease your opponent's <Rage> by 1.
 <Dominate> If you have a 「Godzilla vs. Destoroyah」 card in play, add +10,000 counter power to your total.",
+CARD_ESD04-005_NAME,Godzilla(1995),
+CARD_ESD04-005_DESC,"<Opponent’s Turn> At the beginning of the counter phase, if you have no strategy cards in play, <Destroy> all battle cards in your zones. (This card is also destroyed.)",
 CARD_ESD04-006_NAME,Godzilla vs. Destoroyah,
 CARD_ESD04-006_DESC,"<Opponent’s Turn> For each battle card with <《Destoroyah》> in your zones, your monster card gains +5000 threat. (Cards stacked through evolution count as 1 card.)",
 CARD_ESD05-001_NAME,King Ghidorah(1991),

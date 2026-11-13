@@ -1808,6 +1808,92 @@ func test_esd05_005_fewer_than_three_destroys_all_and_plays_nothing() -> void:
 	assert_int(input.count_calls("search_cards")).is_equal(0)
 
 
+# --- ESD03-004: Godzilla(2026) rank IV — enter: reveal zone-number cards,
+# --- add 1 red Godzilla monster, shuffle the rest back ---
+
+
+func test_esd03_004_reveals_zone_number_and_adds_red_godzilla_monster() -> void:
+	var card := Real.instance("ESD03-004")
+	var blue_godzilla := Cards.monster(2, 9000, [CardEnums.CardTrait.GODZILLA], "BLUE-GOD")
+	blue_godzilla["colors"] = [CardEnums.CardColor.BLUE]
+	var state := States.make_state({
+		"p0": {"current_monster": card, "monster_zone": 4, "main_deck": [
+			Cards.battle(2, 3000, "D-BTL"),
+			Cards.monster(3, 9000, [CardEnums.CardTrait.MOTHRA], "RED-MOTHRA"),
+			blue_godzilla,
+			Cards.monster(2, 9000, [CardEnums.CardTrait.GODZILLA], "RED-GOD"),
+			Cards.battle(1, 2000, "D-UNREVEALED"),
+		]},
+	})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	# Zone 4 → 4 cards revealed; only the red Godzilla monster is selectable.
+	var pick: Dictionary = input.calls.filter(
+		func(c: Dictionary) -> bool: return c["kind"] == "search_cards")[0]
+	assert_int(pick["matching"].size()).is_equal(1)
+	assert_str(str(pick["matching"][0]["id"])).is_equal("RED-GOD")
+	assert_int(state.players[0].hand.size()).is_equal(1)
+	assert_str(str(state.players[0].hand[0]["id"])).is_equal("RED-GOD")
+	assert_int(state.players[0].main_deck.size()).is_equal(4)
+	assert_int(state.players[0].discard_pile.size()).is_equal(0)
+
+
+func test_esd03_004_no_valid_card_returns_all_to_deck() -> void:
+	var card := Real.instance("ESD03-004")
+	var state := States.make_state({
+		"p0": {"current_monster": card, "monster_zone": 2, "main_deck": [
+			Cards.battle(2, 3000, "D-1"), Cards.battle(2, 3000, "D-2"), Cards.battle(2, 3000, "D-3"),
+		]},
+	})
+	var s := _session(state)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(state.players[0].hand.size()).is_equal(0)
+	assert_int(state.players[0].main_deck.size()).is_equal(3)
+
+
+# --- ESD04-005: Godzilla(1995) — opp counter start, no strategy in play:
+# --- destroy all own battle cards (itself included) ---
+
+
+func test_esd04_005_without_strategy_destroys_all_own_battle_cards(has_strategy: bool, swept: bool,
+		_test_parameters := [
+			[false, true],
+			[true, false],
+		]) -> void:
+	var card := Real.instance("ESD04-005")
+	var state := States.make_state({
+		"current_player_id": 1,
+		"p0": {"zone_cards": {2: card, 5: Cards.battle(3, 2000, "OWN-OTHER")}},
+		"p1": {"zone_cards": {4: Cards.battle(3, 2000, "OPP")}},
+	})
+	if has_strategy:
+		state.players[0].strategy_zones[0] = Cards.strategy(1, "OWN-STR")
+	state.current_phase = CardEnums.GamePhase.COUNTER
+	var s := _session(state)
+
+	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+
+	assert_int(state.players[0].get_battle_card_zone_indices().size()).is_equal(0 if swept else 2)
+	assert_bool(state.players[1].zone_has_cards(4)) \
+		.override_failure_message("ESD04-005 never touches the opponent's board").is_true()
+
+
+func test_esd04_005_does_not_fire_on_own_counter_phase() -> void:
+	var card := Real.instance("ESD04-005")
+	var state := States.make_state({"p0": {"zone_cards": {2: card}}})
+	state.current_phase = CardEnums.GamePhase.COUNTER
+	var s := _session(state)
+
+	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+
+	assert_bool(state.players[0].zone_has_cards(2)).is_true()
+
+
 ## Snapshots which zones are highlighted each time a zone is asked for.
 class _HighlightAwareInput extends ScriptedPlayerInput:
 	var lit: Dictionary = {}

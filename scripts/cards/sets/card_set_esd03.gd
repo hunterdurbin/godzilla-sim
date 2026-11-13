@@ -39,6 +39,18 @@ var CARDS: Array[Dictionary] = [
 		"effect_script": "res://scripts/effects/esd03/esd03_003.gd"
 	},
 	{
+		"id": "ESD03-004",
+		"name": "Godzilla(2026)",
+		"card_type": CardEnums.CardType.MONSTER,
+		"rank": 4,
+		"colors": [CardEnums.CardColor.RED],
+		"traits": [CardEnums.CardTrait.GODZILLA, CardEnums.CardTrait.MINUS_ZERO],
+		"threat_level": 35000,
+		"invasion_icon": 1,
+		"description": "<Enter> Reveal cards from the top of your deck equal to the number of the zone this card is in. Add 1 red monster card with <《Godzilla》> from among them to your hand, then return the rest to your deck and shuffle it.",
+		"effect_script": "res://scripts/effects/esd03/esd03_004.gd"
+	},
+	{
 		"id": "ESD03-005",
 		"name": "Godzilla(2026)",
 		"card_type": CardEnums.CardType.MONSTER,
