@@ -21,12 +21,7 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	if n <= 0:
 		return
 
-	var revealed: Array[Dictionary] = []
-	for _i in range(n):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-	ctx.owner.deck_changed.emit()
+	var revealed: Array[Dictionary] = ctx.effect_handler.take_deck_top(ctx.owner.player_id, n)
 
 	if revealed.is_empty():
 		return
@@ -43,10 +38,10 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		tr("STR_EFF_EBP03_007_SELECT"))
 
 	# Add chosen to hand, discard rest
+	var rest: Array[Dictionary] = []
 	for card in revealed:
 		if not chosen.is_empty() and card.get("id") == chosen.get("id"):
 			ctx.effect_handler.add_card_to_hand(ctx.owner.player_id, card)
 		else:
-			ctx.owner.discard_pile.append(card)
-
-	ctx.owner.discard_changed.emit()
+			rest.append(card)
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, rest)

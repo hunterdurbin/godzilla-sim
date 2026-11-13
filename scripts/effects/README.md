@@ -68,6 +68,9 @@ Primitives for the common intents (all on EffectHandler):
 | "place <cards> from your discard pile / monster deck under your monster card" | `place_cards_under_monster` |
 | "add <card> to your hand" / "return it from your discard pile to your hand" | `add_card_to_hand(s)` / `return_discard_to_hand` (fires on_card_returned_from_discard) |
 | "send it to your discard pile" (already removed from deck/hand) / "discard your (entire) hand" | `discard_cards` / `discard_hand_to(pid, 0)` (fires discard-from-hand triggers) |
+| "look at the top N cards, put any number on top in any order, send the rest to your discard pile" | `arrange_deck_top` |
+| "reveal the top N cards of your deck" (the card's own select prompt shows them) / with a reveal overlay | `take_deck_top` / `reveal_deck_top` |
+| "return the rest to your deck and shuffle it" / "then shuffle your deck" | `shuffle_cards_into_deck` |
 | "put this card under <card> in your zones" | `move_zone_card_under_zone` |
 | "add all cards under this card to your hand" | `return_cards_under_top_to_hand` (sync — safe in replacement hooks) |
 | "move your monster" | `advance_monster_to_zone`, `retreat_monster_to_zone`, `teleport_monster` |
