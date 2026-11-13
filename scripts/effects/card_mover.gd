@@ -859,6 +859,63 @@ func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int)
 
 
 
+func play_strategy_from_effect(player_id: int, card: Dictionary, zone_idx: int = -1) -> int:
+	## An effect plays ("activates", 5.9.1: the master plays it) a strategy
+	## card, regardless of rank (8.3.1 restricts only the Activate action).
+	## Same bookkeeping as playing from hand: occupies the strategy zone
+	## (zone_idx, or the first empty one when -1), stamps the turn placed (so
+	## the 7.2.3 start-phase discard treats it as placed this turn), emits
+	## GameEvents.strategy_card_played + strategy_zones_changed, logs
+	## played_strategy, then fires its <Enter> as an effect play.
+	## The card is first taken out of the player's hand or discard pile if it
+	## is still there (safe after search_deck / search_discard / take_hand_card).
+	## Returns the strategy zone index, or -1 (nothing moves) when there is no
+	## empty strategy zone — callers check has_empty_strategy_zone() before
+	## removing the card from a hidden zone such as the deck.
+	var player := game_state.players[player_id]
+	var idx: int = zone_idx if zone_idx >= 0 else player.get_first_empty_strategy_zone_index()
+	if idx < 0 or idx >= player.strategy_zones.size() or not player.strategy_zones[idx].is_empty():
+		return -1
+	if card in player.hand:
+		player.hand.erase(card)
+		player.hand_changed.emit()
+	elif card in player.discard_pile:
+		player.discard_pile.erase(card)
+		player.discard_changed.emit()
+	player.strategy_zones[idx] = card
+	player.strategy_zone_turn_placed[idx] = game_state.turn_number
+	if h.events != null:
+		h.events.strategy_card_played.emit(player_id, card, idx)
+	player.strategy_zones_changed.emit()
+	h.log_message.emit(GameLog.played_strategy(player_id, card.get("id", ""), card.get("is_base", false)))
+	await h.trigger_enter(player_id, card, true)
+	return idx
+
+
+
+
+func move_strategy_card_under_zone(player: PlayerState, strat_idx: int, zone_idx: int) -> bool:
+	## "Place a card from your strategy zone under <battle card>": move the
+	## strategy card to the bottom of zone_idx's stack. This is a move, not a
+	## discard, so strategy-discarded triggers and the discard interceptor do
+	## not apply. Cards that were stacked under the strategy (RAGE markers)
+	## are dropped, as discard_strategy_from_zone does. Returns false (nothing
+	## moves) when the strategy zone or the target zone is empty.
+	if strat_idx < 0 or strat_idx >= player.strategy_zones.size():
+		return false
+	var card: Dictionary = player.strategy_zones[strat_idx]
+	if card.is_empty() or zone_idx < 0 or zone_idx >= 8 or not player.zone_has_cards(zone_idx):
+		return false
+	player.strategy_zones[strat_idx] = {}
+	if strat_idx < player.strategy_zone_stacks.size():
+		player.strategy_zone_stacks[strat_idx] = []
+	player.strategy_zones_changed.emit()
+	place_card_under_zone(player, card, zone_idx)
+	return true
+
+
+
+
 func place_cards_under_monster(player_id: int, cards: Array[Dictionary]) -> void:
 	## "Place <cards> under your monster card": append them to the player's
 	## monster_stack. Each card is first removed from the player's discard pile

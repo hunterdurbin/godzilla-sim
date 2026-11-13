@@ -761,6 +761,18 @@ func place_cards_under_monster(player_id: int, cards: Array[Dictionary]) -> void
 	mover.place_cards_under_monster(player_id, cards)
 
 
+func play_strategy_from_effect(player_id: int, card: Dictionary, zone_idx: int = -1) -> int:
+	return await mover.play_strategy_from_effect(player_id, card, zone_idx)
+
+
+func move_strategy_card_under_zone(player: PlayerState, strat_idx: int, zone_idx: int) -> bool:
+	return mover.move_strategy_card_under_zone(player, strat_idx, zone_idx)
+
+
+func ensure_strategy_zone_count(player: PlayerState, count: int) -> bool:
+	return player.ensure_strategy_zone_count(count)
+
+
 func move_zone_card_under_zone(player: PlayerState, from_zone: int, to_zone: int) -> bool:
 	return mover.move_zone_card_under_zone(player, from_zone, to_zone)
 

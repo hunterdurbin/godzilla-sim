@@ -19,8 +19,8 @@ if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$|card_monst
 	python3 scripts/tools/check_card_monster_zone_checks.py || exit 1
 fi
 
-# Guard + ratchet: per-card scripts mutate state only through engine primitives.
-if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$|card_mutations_allowlist\.txt$'; then
+# Guard: per-card scripts mutate state only through engine primitives.
+if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$'; then
 	python3 scripts/tools/check_card_mutations.py || exit 1
 fi
 

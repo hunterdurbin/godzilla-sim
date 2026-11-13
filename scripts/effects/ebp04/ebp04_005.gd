@@ -29,8 +29,8 @@ func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> boo
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var strat_count: int = ctx.owner.count_strategies_in_play()
-	if strat_count > 1:
+	# 1 or fewer in play (also guarantees an empty zone for the play)
+	if ctx.owner.count_strategies_in_play() > 1 or not ctx.owner.has_empty_strategy_zone():
 		return
 
 	var found := await ctx.effect_handler.search_deck(
@@ -42,18 +42,9 @@ func on_enter(ctx: EffectContext) -> void:
 	if found.is_empty():
 		return
 
-	var target_idx: int = -1
-	for i in range(ctx.owner.strategy_zones.size()):
-		if ctx.owner.strategy_zones[i].is_empty():
-			target_idx = i
-			break
-	if target_idx < 0:
-		return
-
-	ctx.owner.strategy_zones[target_idx] = found
-	ctx.owner.strategy_zones_changed.emit()
-
-	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, found)
+	# "Put it into play ... then activate it" = play it (5.9.1). search_deck
+	# already shuffled the deck.
+	await ctx.effect_handler.play_strategy_from_effect(ctx.owner.player_id, found)
 
 
 func on_opponent_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary, _zone_idx: int) -> void:
