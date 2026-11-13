@@ -254,11 +254,15 @@ func _on_prompt(kind: String, args: Array) -> void:
 			var take := rng.randi_range(0, mini(count, zones.size())) if up_to \
 				else mini(count, zones.size())
 			var picks: Array = []
-			for z in zones:
-				if picks.size() >= take:
-					break
-				if ZoneSelectConstraints.can_add(constraints, picks, int(z)):
-					picks.append(int(z))
+			var added := true
+			while added and picks.size() < take:  # lowest_first unlocks later passes
+				added = false
+				for z in zones:
+					if picks.size() >= take:
+						break
+					if int(z) not in picks and ZoneSelectConstraints.can_add(constraints, picks, int(z)):
+						picks.append(int(z))
+						added = true
 			sync_node._rpc_zones_target_resolved.rpc_id(1, JSON.stringify(picks))
 		"strategy_target":
 			var indices: Array = JSON.parse_string(args[1])

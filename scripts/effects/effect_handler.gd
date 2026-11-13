@@ -574,6 +574,10 @@ func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dicti
 	return await destruction.destroy_zones(target, zone_indices)
 
 
+func destroy_zones_reporting_destroyed(target: PlayerState, zone_indices: Array[int]) -> Array[Dictionary]:
+	return await destruction.destroy_zones_reporting_destroyed(target, zone_indices)
+
+
 func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones: Array[int], prompt: String, max_rank: int = -1) -> Array[Dictionary]:
 	return await destruction.destroy_zone_and_adjacent(player_id, target, valid_zones, prompt, max_rank)
 

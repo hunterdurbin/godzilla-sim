@@ -68,12 +68,18 @@ func select_zone(_player_id: int, _target_player_id: int, valid_zones: Array[int
 ## 0..count zones are acceptable and [] declines the effect entirely.
 ## `constraints` (ZoneSelectConstraints) adds extra rules, e.g. a rank budget.
 func select_zones(_player_id: int, _target_player_id: int, valid_zones: Array[int], count: int, _up_to: bool, _prompt: String, constraints: Dictionary = {}) -> Array[int]:
+	# Repeat passes: an ordering rule (lowest_first) can unlock zones that an
+	# earlier pass skipped.
 	var result: Array[int] = []
-	for z in valid_zones:
-		if result.size() >= count:
-			break
-		if ZoneSelectConstraints.can_add(constraints, result, z):
-			result.append(z)
+	var added: bool = true
+	while added and result.size() < count:
+		added = false
+		for z in valid_zones:
+			if result.size() >= count:
+				break
+			if z not in result and ZoneSelectConstraints.can_add(constraints, result, z):
+				result.append(z)
+				added = true
 	return result
 
 

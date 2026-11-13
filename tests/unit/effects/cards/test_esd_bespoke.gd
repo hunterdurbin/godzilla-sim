@@ -1740,72 +1740,345 @@ func test_esd03_003_does_not_fire_on_own_counter_phase() -> void:
 	assert_bool(state.players[1].zone_has_cards(2)).is_true()
 
 
-# --- ESD05-005: Constructed Future — destroy 3 own battle cards lowest rank
-# --- first; if 3 destroyed, play a highest-rank battle card from discard ---
+# --- ESD05-005: Constructed Future — owner marks own battle cards lowest rank
+# --- first (multi-zone prompt); if 3 are truly destroyed, play a highest-rank
+# --- battle card from discard; "when destroyed" triggers resolve last ---
+
+const _INDESTRUCTIBLE := "res://tests/fixtures/effects/indestructible_effect.gd"
 
 
-func test_esd05_005_destroys_lowest_three_then_plays_highest_from_discard() -> void:
-	var card := Real.instance("ESD05-005")
+func _cf_session(zone_cards: Dictionary, discard: Array = [], answers: Dictionary = {}, opts: Dictionary = {}) -> Dictionary:
+	var p0: Dictionary = {"zone_cards": zone_cards}
+	p0.merge(opts.get("p0", {}))
 	var state := States.make_state({
-		"p0": {"zone_cards": {
-			0: Cards.battle(1, 2000, "OWN-R1A"), 1: Cards.battle(1, 2000, "OWN-R1B"),
-			3: Cards.battle(2, 2000, "OWN-R2A"), 4: Cards.battle(2, 2000, "OWN-R2B"),
-			5: Cards.battle(5, 3000, "OWN-R5"),
-		}},
+		"current_player_id": opts.get("current_player_id", 0),
+		"p0": p0,
+		"p1": opts.get("p1", {}),
 	})
-	state.players[0].discard_pile.append(Cards.battle(7, 6000, "DISCARD-R7"))
-	state.players[0].discard_pile.append(Cards.strategy(9, "DISCARD-STR9"))
-	# select_zone #1: rank-2 tie breaker (zone 4); #2: zone to play the R7 into.
+	for c in discard:
+		state.players[0].discard_pile.append(c)
 	var input := ScriptedPlayerInput.new()
-	input.answers = {"select_zone": [4, 6]}
+	input.answers = answers
 	var s := States.make_session(state, input)
+	s["state"] = state
+	s["input"] = input
+	return s
 
-	await s["effect_handler"].trigger_enter(0, card)
 
-	var tie_call: Dictionary = input.calls.filter(
-		func(c: Dictionary) -> bool: return c["kind"] == "select_zone")[0]
-	assert_array(tie_call["valid"]).contains_exactly([3, 4])
-	# Only the strategy card was a non-battle candidate — the R7 battle is offered.
-	var search: Dictionary = input.calls.filter(
-		func(c: Dictionary) -> bool: return c["kind"] == "search_cards")[0]
+func _calls(input: ScriptedPlayerInput, kind: String) -> Array:
+	return input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == kind)
+
+
+func _indestructible(rank: int, id: String) -> Dictionary:
+	var c := Cards.battle(rank, 2000, id)
+	c["effect_script"] = _INDESTRUCTIBLE
+	return c
+
+
+func _crystal() -> Dictionary:
+	var token := Real.instance("EBP02-T03")
+	token["id"] = "EBP02-T03"  # bare template id, as the engine creates tokens
+	return token
+
+
+# 1. Normal: ranks 1,1,2,2,5 — one multi-zone prompt, lowest-first rule,
+#    owner breaks the rank-2 tie, highest-rank discard card is played.
+func test_esd05_005_marks_three_lowest_first_then_plays_highest() -> void:
+	var s := _cf_session({
+		0: Cards.battle(1, 2000, "R1A"), 1: Cards.battle(1, 2000, "R1B"),
+		3: Cards.battle(2, 2000, "R2A"), 4: Cards.battle(2, 2000, "R2B"),
+		5: Cards.battle(5, 3000, "R5"),
+	}, [Cards.battle(7, 6000, "DISCARD-R7"), Cards.strategy(9, "DISCARD-STR9")],
+		{"select_zones": [[0, 1, 4]], "select_zone": [6]})
+	var state: GameState = s["state"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	var prompt: Dictionary = _calls(s["input"], "select_zones")[0]
+	assert_int(prompt["player_id"]).is_equal(0)
+	assert_int(prompt["target"]).is_equal(0)
+	assert_array(prompt["valid"]).contains_exactly_in_any_order([0, 1, 3, 4, 5])
+	assert_int(prompt["count"]).is_equal(3)
+	assert_bool(prompt["up_to"]).is_false()
+	assert_dict(prompt["constraints"]).is_equal(
+		{"weights": {0: 1, 1: 1, 3: 2, 4: 2, 5: 5}, "lowest_first": true})
+	# Only the battle card is offered for the play-back (strategy ignored).
+	var search: Dictionary = _calls(s["input"], "search_cards")[0]
 	assert_int(search["matching"].size()).is_equal(1)
-	assert_str(str(search["matching"][0]["id"])).is_equal("DISCARD-R7")
 	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([3, 5, 6])
 	assert_str(str(state.players[0].get_zone_top_card(6).get("id"))).is_equal("DISCARD-R7")
 
 
-func test_esd05_005_highest_rank_can_be_a_card_it_just_destroyed() -> void:
-	var card := Real.instance("ESD05-005")
-	var state := States.make_state({
-		"p0": {"zone_cards": {
-			0: Cards.battle(4, 2000, "OWN-R4"), 1: Cards.battle(5, 2000, "OWN-R5"),
-			2: Cards.battle(6, 2000, "OWN-R6"),
-		}},
-	})
-	state.players[0].discard_pile.append(Cards.battle(3, 2000, "DISCARD-R3"))
-	var input := ScriptedPlayerInput.new()
-	input.answers = {"select_zone": [7]}
-	var s := States.make_session(state, input)
-
-	await s["effect_handler"].trigger_enter(0, card)
-
-	assert_str(str(state.players[0].get_zone_top_card(7).get("id"))).is_equal("OWN-R6")
+# 2. Lowest-first rule + undo cascade (UI deselect uses prune).
+func test_esd05_005_lowest_first_rule_unlocks_tiers_and_undo_relocks() -> void:
+	var c := ZoneSelectConstraints.lowest_first({0: 1, 1: 1, 3: 2, 4: 2, 5: 5})
+	# Rank 2s locked until both rank 1s are marked.
+	assert_bool(ZoneSelectConstraints.can_add(c, [], 3)).is_false()
+	assert_bool(ZoneSelectConstraints.can_add(c, [0], 3)).is_false()
+	assert_bool(ZoneSelectConstraints.can_add(c, [0, 1], 3)).is_true()
+	assert_bool(ZoneSelectConstraints.can_add(c, [0, 1], 4)).is_true()
+	assert_bool(ZoneSelectConstraints.can_add(c, [0, 1], 5)).is_false()
+	# Unmarking a rank 1 while a rank 2 is marked drops the rank 2 too.
+	assert_array(ZoneSelectConstraints.prune(c, [1, 3])).contains_exactly([1])
+	assert_array(ZoneSelectConstraints.prune(c, [0, 1, 3])).contains_exactly([0, 1, 3])
+	assert_array(ZoneSelectConstraints.prune(c, [3, 4])).is_empty()
 
 
-func test_esd05_005_fewer_than_three_destroys_all_and_plays_nothing() -> void:
-	var card := Real.instance("ESD05-005")
-	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 2000, "OWN-A"), 1: Cards.battle(2, 2000, "OWN-B")}},
-	})
-	state.players[0].discard_pile.append(Cards.battle(7, 6000, "DISCARD-R7"))
-	var input := ScriptedPlayerInput.new()
-	var s := States.make_session(state, input)
+# 3. Exactly 3, no ties: still prompts, all 3 must be marked.
+func test_esd05_005_forced_three_still_prompts() -> void:
+	var s := _cf_session({0: Cards.battle(1, 2000, "A"), 2: Cards.battle(3, 2000, "B"), 4: Cards.battle(6, 2000, "C")},
+		[], {"select_zone": [7]})
+	var state: GameState = s["state"]
 
-	await s["effect_handler"].trigger_enter(0, card)
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
 
+	var prompts := _calls(s["input"], "select_zones")
+	assert_int(prompts.size()).is_equal(1)
+	assert_int(prompts[0]["count"]).is_equal(3)
+	# All destroyed; the R6 it just destroyed is the highest → played back.
+	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([7])
+	assert_str(str(state.players[0].get_zone_top_card(7).get("id"))).is_equal("C")
+
+
+# 4. Fewer than 3: mark all, all destroyed, nothing played.
+func test_esd05_005_fewer_than_three_marks_all_and_plays_nothing(n: int,
+		_test_parameters := [[1], [2]]) -> void:
+	var zones := {}
+	for i in range(n):
+		zones[i] = Cards.battle(i + 1, 2000, "OWN-%d" % i)
+	var s := _cf_session(zones, [Cards.battle(7, 6000, "DISCARD-R7")])
+	var state: GameState = s["state"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	assert_int(_calls(s["input"], "select_zones")[0]["count"]).is_equal(n)
 	assert_int(state.players[0].get_battle_card_zone_indices().size()).is_equal(0)
-	assert_int(state.players[0].discard_pile.size()).is_equal(3)
-	assert_int(input.count_calls("search_cards")).is_equal(0)
+	assert_int(state.players[0].discard_pile.size()).is_equal(n + 1)
+	assert_int(s["input"].count_calls("search_cards")).is_equal(0)
+
+
+func test_esd05_005_no_battle_cards_does_nothing() -> void:
+	var s := _cf_session({}, [Cards.battle(7, 6000, "DISCARD-R7")])
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	assert_int(s["input"].count_calls("select_zones")).is_equal(0)
+	assert_int(s["input"].count_calls("search_cards")).is_equal(0)
+
+
+# 5. Protected card is the lowest: it must be marked, survives, no play-back.
+func test_esd05_005_protected_lowest_card_spends_a_slot_and_blocks_play() -> void:
+	var s := _cf_session({
+		0: _indestructible(1, "PROT-R1"), 1: Cards.battle(2, 2000, "R2"),
+		2: Cards.battle(3, 2000, "R3"), 3: Cards.battle(4, 2000, "R4"),
+	}, [Cards.battle(7, 6000, "DISCARD-R7")])
+	var state: GameState = s["state"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	# Protected card is in the prompt and in the ordering.
+	var prompt: Dictionary = _calls(s["input"], "select_zones")[0]
+	assert_array(prompt["valid"]).contains(0)
+	assert_bool(ZoneSelectConstraints.can_add(prompt["constraints"], [], 1)).is_false()
+	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([0, 3])
+	assert_int(s["input"].count_calls("search_cards")).is_equal(0)
+
+
+# 6. Protected card above the cutoff: never markable; 3 destroyed, play-back.
+func test_esd05_005_protected_card_above_cutoff_is_never_markable() -> void:
+	var s := _cf_session({
+		0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"),
+		2: Cards.battle(3, 2000, "R3"), 3: _indestructible(5, "PROT-R5"),
+	}, [Cards.battle(7, 6000, "DISCARD-R7")], {"select_zone": [6]})
+	var state: GameState = s["state"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	var c: Dictionary = _calls(s["input"], "select_zones")[0]["constraints"]
+	for picked: Array in [[], [0], [0, 1]]:
+		assert_bool(ZoneSelectConstraints.can_add(c, picked, 3)).is_false()
+	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([3, 6])
+	assert_str(str(state.players[0].get_zone_top_card(6).get("id"))).is_equal("DISCARD-R7")
+
+
+# 7. Replacement (ESD01-011 → deck bottom) among the 3: not destroyed, no play.
+func test_esd05_005_replaced_destruction_does_not_count() -> void:
+	var replacer := Real.instance("ESD01-011")  # rank 5, "place on bottom instead"
+	var s := _cf_session({
+		0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"),
+		2: replacer, 3: Cards.battle(7, 6000, "R7"),
+	}, [Cards.battle(8, 8000, "DISCARD-R8")])
+	var state: GameState = s["state"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([3])
+	assert_str(str(state.players[0].main_deck.back().get("id"))).is_equal(str(replacer["id"]))
+	assert_int(s["input"].count_calls("search_cards")).is_equal(0)
+
+
+# 8. Crystal tokens count as destroyed (banished, not discarded).
+func test_esd05_005_crystal_tokens_count_toward_three() -> void:
+	var s := _cf_session({
+		0: _crystal(), 1: _crystal(), 2: Cards.battle(3, 2000, "R3"), 3: Cards.battle(7, 6000, "R7"),
+	}, [Cards.battle(5, 4000, "DISCARD-R5")], {"select_zone": [6]})
+	var state: GameState = s["state"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([3, 6])
+	assert_str(str(state.players[0].get_zone_top_card(6).get("id"))).is_equal("DISCARD-R5")
+	# Tokens never reach the discard pile; R3 does.
+	var ids: Array = state.players[0].discard_pile.map(func(c: Dictionary) -> String: return str(c["id"]))
+	assert_array(ids).contains_exactly(["R3"])
+
+
+# 12. Three tokens destroyed → 3 destroyed but no battle card in discard.
+func test_esd05_005_three_tokens_with_empty_discard_plays_nothing() -> void:
+	var s := _cf_session({0: _crystal(), 1: _crystal(), 2: _crystal(), 3: Cards.battle(7, 6000, "R7")})
+	var state: GameState = s["state"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	assert_array(state.players[0].get_battle_card_zone_indices()).contains_exactly([3])
+	assert_int(s["input"].count_calls("search_cards")).is_equal(0)
+
+
+# 9. Ordering uses effective field rank (opponent's EBP03-025: −1 on its turn).
+func test_esd05_005_ordering_uses_effective_field_rank() -> void:
+	var s := _cf_session({0: Cards.battle(3, 2000, "R3"), 1: Cards.battle(1, 2000, "R1")}, [],
+		{}, {"current_player_id": 1, "p1": {"current_monster": Real.instance("EBP03-025")}})
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	assert_dict(_calls(s["input"], "select_zones")[0]["constraints"]["weights"]).is_equal({0: 2, 1: 0})
+
+
+# 10. Just-destroyed card is the highest and is played back; its batch-mate's
+#     Revenge (EBP02-058) resolves AFTER the play-back.
+func test_esd05_005_revenge_resolves_after_play_back() -> void:
+	var dorat := Real.instance("EBP02-058")  # rank 2, Revenge: return a KG monster
+	var s := _cf_session({
+		0: Cards.battle(1, 2000, "R1"), 1: dorat, 2: Cards.battle(6, 5000, "R6"),
+	}, [Cards.monster(3, 19000, [CardEnums.CardTrait.KING_GHIDORAH], "KG-MON")],
+		{"select_zone": [7]})
+	var state: GameState = s["state"]
+	var handler: EffectHandler = s["effect_handler"]
+	var order: Array[String] = []
+	handler.log_message.connect(func(t: Dictionary) -> void:
+		if t.get("type") == "revenge_triggered":
+			order.append("revenge"))
+	state.players[0].zones_changed.connect(func() -> void:
+		if state.players[0].get_zone_top_card(7).get("id", "") == "R6" and not order.has("play"):
+			order.append("play"))
+
+	await handler.trigger_enter(0, Real.instance("ESD05-005"))
+
+	assert_str(str(state.players[0].get_zone_top_card(7).get("id"))).is_equal("R6")
+	assert_array(order).contains_exactly(["play", "revenge"])
+	var searches := _calls(s["input"], "search_cards")
+	assert_int(searches.size()).is_equal(2)
+	assert_str(str(searches[0]["prompt"])).is_equal(tr("STR_EFF_ESD05_005_PLAY_PROMPT"))
+
+
+# 10b. Opponent's "whenever destroyed" watcher (EBP04-002: column destroy →
+#      we discard to 2) is a trigger, not a replacement: it waits until the
+#      whole effect — play-back included — has resolved.
+func test_esd05_005_opponent_destroy_watcher_resolves_after_play_back() -> void:
+	var hand: Array = []
+	for i in range(4):
+		hand.append(Cards.battle(1, 1000, "HAND-%d" % i))
+	var s := _cf_session({
+		0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"), 2: Cards.battle(3, 2000, "R3-COL"),
+	}, [Cards.battle(7, 6000, "DISCARD-R7")], {"select_zone": [6]}, {
+		"p0": {"hand": hand},
+		# Opp monster zone 3 → anchor idx 2 → our column zones [2, 7].
+		"p1": {"current_monster": Real.instance("EBP04-002"), "monster_zone": 3,
+			"strategy_zones": [Cards.strategy(1, "OPP-STR1")]},
+	})
+	var state: GameState = s["state"]
+	var input: ScriptedPlayerInput = s["input"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	var kinds: Array = input.calls.map(func(c: Dictionary) -> String: return c["kind"])
+	assert_int(kinds.find("search_cards")).is_less(kinds.find("choose_hand_discards"))
+	assert_int(kinds.find("select_zone")).is_less(kinds.find("choose_hand_discards"))
+	assert_str(str(state.players[0].get_zone_top_card(6).get("id"))).is_equal("DISCARD-R7")
+	assert_int(state.players[0].hand.size()).is_equal(2)
+
+
+# 11. Tie for highest in discard: player chooses which.
+func test_esd05_005_tied_highest_in_discard_lets_player_choose() -> void:
+	var second := Cards.battle(7, 6000, "DISCARD-R7B")
+	var s := _cf_session({0: Cards.battle(1, 2000, "A"), 1: Cards.battle(1, 2000, "B"), 2: Cards.battle(1, 2000, "C")},
+		[Cards.battle(7, 6000, "DISCARD-R7A"), second], {"search_cards": [second], "select_zone": [5]})
+	var state: GameState = s["state"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	assert_int(_calls(s["input"], "search_cards")[0]["matching"].size()).is_equal(2)
+	assert_str(str(state.players[0].get_zone_top_card(5).get("id"))).is_equal("DISCARD-R7B")
+
+
+# 13. An out-of-order answer (e.g. a tampered client) is rejected by the rule
+#     and the engine falls back to the forced lowest-first pick.
+func test_esd05_005_out_of_order_answer_is_rejected() -> void:
+	var c := ZoneSelectConstraints.lowest_first({0: 1, 1: 2, 2: 3, 3: 9})
+	assert_bool(ZoneSelectConstraints.is_valid(c, [0, 1, 3])).is_false()
+	assert_bool(ZoneSelectConstraints.is_valid(c, [0, 1, 2])).is_true()
+	assert_dict(ZoneSelectConstraints.from_json(ZoneSelectConstraints.to_json(c))).is_equal(c)
+
+	var s := _cf_session({
+		0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"),
+		2: Cards.battle(3, 2000, "R3"), 3: Cards.battle(9, 9000, "R9"),
+	}, [], {"select_zones": [[0, 1, 3]], "select_zone": [6]})
+	var state: GameState = s["state"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	assert_bool(state.players[0].zone_has_cards(3)).is_true()
+	assert_str(str(state.players[0].get_zone_top_card(3).get("id"))).is_equal("R9")
+
+
+# 14. Bot / default greedy input honors lowest-first; bot cast gate.
+func test_esd05_005_default_input_picks_lowest_first() -> void:
+	var c := ZoneSelectConstraints.lowest_first({0: 5, 1: 1, 2: 3, 3: 2})
+	var picks: Array[int] = PlayerInput.new().select_zones(0, 0, [0, 1, 2, 3] as Array[int], 3, false, "p", c)
+	assert_array(picks).contains_exactly_in_any_order([1, 3, 2])
+
+
+func test_esd05_005_bot_casts_only_when_three_die_and_play_back_is_better() -> void:
+	var effect: CardEffect = load("res://scripts/effects/esd05/esd05_005.gd").new()
+	var opp := PlayerState.new()
+	var base_zones := {0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"), 2: Cards.battle(3, 2000, "R3")}
+
+	var good := States.make_state({"p0": {"zone_cards": base_zones}}).players[0]
+	good.discard_pile.append(Cards.battle(7, 6000, "D-R7"))
+	assert_bool(effect.bot_can_fulfill_on_enter(good, opp)).is_true()
+
+	var no_upgrade := States.make_state({"p0": {"zone_cards": base_zones}}).players[0]
+	no_upgrade.discard_pile.append(Cards.battle(2, 2000, "D-R2"))
+	assert_bool(effect.bot_can_fulfill_on_enter(no_upgrade, opp)) \
+		.override_failure_message("play-back must beat the best card given up").is_false()
+
+	var too_few := States.make_state({"p0": {"zone_cards": {0: Cards.battle(1, 2000, "R1")}}}).players[0]
+	too_few.discard_pile.append(Cards.battle(7, 6000, "D-R7"))
+	assert_bool(effect.bot_can_fulfill_on_enter(too_few, opp)).is_false()
+
+	var replacer := States.make_state({"p0": {"zone_cards": {
+		0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"), 2: Real.instance("ESD01-011"),
+	}}}).players[0]
+	replacer.discard_pile.append(Cards.battle(7, 6000, "D-R7"))
+	assert_bool(effect.bot_can_fulfill_on_enter(replacer, opp)) \
+		.override_failure_message("replace-on-destroy in the forced 3 stalls the effect").is_false()
+
+	# Opponent-only protection (EBP03-053) doesn't stop our own effect.
+	var opp_only := States.make_state({"p0": {"zone_cards": {
+		0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"), 2: Real.instance("EBP03-053"),
+	}}}).players[0]
+	opp_only.discard_pile.append(Cards.battle(9, 9000, "D-R9"))
+	assert_bool(effect.bot_can_fulfill_on_enter(opp_only, opp)).is_true()
 
 
 # --- ESD03-004: Godzilla(2026) rank IV — enter: reveal zone-number cards,

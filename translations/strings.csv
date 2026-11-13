@@ -1012,7 +1012,7 @@ STR_EFF_ESD04_002_PROMPT,Choose a rank 6 or lower battle card with Evolution to 
 STR_EFF_ESD04_003_ENTER_PROMPT,Return a Godzilla vs. Destoroyah card to your hand (or skip):,「ゴジラvsデストロイア」を1枚手札に戻す (またはスキップ):
 STR_EFF_ESD04_003_INVADE_PROMPT,Place a Destoroyah battle card from your discard pile on the bottom of your deck:,<デストロイア>を持つ交戦カードを1枚捨て札からデッキの下に置く:
 STR_EFF_ESD04_004_PROMPT,Discard a strategy card to reduce opponent's rage by 1 (or skip):,作戦カードを捨てて相手の<怒り>を1減らす (またはスキップ):
-STR_EFF_ESD05_005_DESTROY_PROMPT,Choose a battle card to destroy (lowest rank first):,<破壊>する自分の交戦カードを1枚選ぶ (等級の低い順):
+STR_EFF_ESD05_005_DESTROY_PROMPT,Choose your battle cards to destroy (lowest rank first):,<破壊>する自分の交戦カードを選ぶ (等級の低い順):
 STR_EFF_ESD05_005_PLAY_PROMPT,Play 1 of the highest rank battle cards from your discard pile:,捨て札から等級が最も高い交戦カードを1枚出す:
 STR_EFF_EBP04_089_MILESTONE_15,Inherited Life: 15 rage cards — destroying all opponent battle cards!,「受け継がれる命」: <怒り>カード15枚 — 相手の交戦カードをすべて<破壊>!
 STR_EFF_EBP04_089_MILESTONE_22,Inherited Life: 22 rage cards — opponent discards entire hand!,「受け継がれる命」: <怒り>カード22枚 — 相手は手札をすべて捨てる!
