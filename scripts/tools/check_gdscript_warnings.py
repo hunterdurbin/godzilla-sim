@@ -99,9 +99,13 @@ def new_only(lines):
 
 def main(argv):
     if "--log" in argv:
-        lines = read_log(argv[argv.index("--log") + 1])
-        if "--new-only" in argv:
-            return new_only(lines)
+        i = argv.index("--log")
+        # A partial log can't prove an allowlist entry stale, so --log only
+        # reports NEW warnings (never the full ratchet or --update).
+        if i + 1 >= len(argv) or "--new-only" not in argv or "--update" in argv:
+            print("usage: check_gdscript_warnings.py --log <file> --new-only")
+            return 2
+        return new_only(read_log(argv[i + 1]))
     else:
         positional = [a for a in argv[1:] if not a.startswith("--")]
         godot = positional[0] if positional else os.environ.get("GODOT_BIN", "")
