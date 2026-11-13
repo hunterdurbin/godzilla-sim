@@ -7,33 +7,26 @@ logging, change signals, and triggers such as on_card_returned_from_discard or
 discard-from-hand watchers. Use a primitive (scripts/effects/README.md
 § Per-card scripts has the table) or add one to the engine.
 
-Two rule sets, both over per-card scripts only (scripts/effects/<set>/*.gd):
+Flagged in per-card scripts only (scripts/effects/<set>/*.gd), with no
+allowlist -- the tree is clean; add the missing primitive instead:
 
-  zone / monster position  -- hard guard, NO allowlist:
+  zone / monster position:
       clear_zone( / push_zone_card( / banish_or_discard( calls,
       `monster_zone` assignment, `zones[...]` writes
-  player collections       -- ratchet, shrink-only allowlist:
+  player collections:
       writes to hand / discard_pile / main_deck / monster_deck /
       strategy_zones (reassignment, index assignment, mutating Array
       method), also through a local alias (`var d := ctx.owner.discard_pile`)
 
 Reads (`.size()`, iteration, indexing, `.duplicate()`, comparisons) are fine.
-Collection hits are grandfathered in card_mutations_allowlist.txt as
-`<file>: <code line>` keys, one line per occurrence.
 
-Usage: python3 scripts/tools/check_card_mutations.py [--update]
-  --update  rewrite the allowlist from the current tree (review the diff:
-            additions need a reason in the PR). Refuses while a zone /
-            monster-position hit exists.
+Usage: python3 scripts/tools/check_card_mutations.py
 """
-import os
 import re
 import sys
 
 import gd_ratchet
 
-NAME = "check_card_mutations.py"
-ALLOWLIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "card_mutations_allowlist.txt")
 
 MUTATORS = (
     "append", "append_array", "push_front", "push_back", "insert",
@@ -43,7 +36,7 @@ MUTATORS = (
 MUTATOR_CALL = r"\.\s*(?:%s)\s*\(" % "|".join(MUTATORS)
 ASSIGN = r"[-+*/]?=(?!=)"
 
-# --- zone / monster position (no allowlist) ---
+# --- zone / monster position ---
 ZONE_RULES = {
     "clear_zone(": re.compile(r"\bclear_zone\s*\("),
     "push_zone_card(": re.compile(r"\bpush_zone_card\s*\("),
@@ -52,7 +45,7 @@ ZONE_RULES = {
     "zones[...] write": re.compile(r"\bzones\s*\[[^\]]*\]\s*(?:%s|%s)" % (ASSIGN, MUTATOR_CALL)),
 }
 
-# --- player collections (ratchet) ---
+# --- player collections ---
 COLLECTIONS = ("hand", "discard_pile", "main_deck", "monster_deck", "strategy_zones")
 COLL = "(?:%s)" % "|".join(COLLECTIONS)
 WRITE_TAIL = r"\s*(?:%s|\[[^\]]*\]\s*%s|%s)" % (ASSIGN, ASSIGN, MUTATOR_CALL)
@@ -134,31 +127,22 @@ def self_test():
 def main():
     if not self_test():
         return 1
-    zone_hits = []
-    hits = gd_ratchet.Hits()
+    violations = []
     for path in gd_ratchet.card_scripts():
         lines = gd_ratchet.read_lines(path)
         for lineno, label, code in zone_violations(lines):
-            zone_hits.append("%s:%d  %s  ->  %s" % (path, lineno, label, code))
+            violations.append("%s:%d  %s  ->  %s" % (path, lineno, label, code))
         for lineno, code in collection_writes(lines):
-            hits.add("%s: %s" % (path, code), "%s:%d" % (path, lineno))
-
-    if zone_hits:
-        for h in zone_hits:
-            print("ZONE/MONSTER mutation  %s" % h)
-        print("\nCard scripts never mutate zones / monster position (no allowlist): call an"
-              " EffectHandler primitive, or add one to the engine. See scripts/effects/README.md"
-              " § Per-card scripts.")
+            violations.append("%s:%d  collection write  ->  %s" % (path, lineno, code))
+    for v in violations:
+        print("CARD MUTATION  " + v)
+    if violations:
+        print("\nCard scripts mutate state only through EffectHandler primitives (table:"
+              " scripts/effects/README.md § Per-card scripts). Add the missing primitive to"
+              " the engine instead.")
         return 1
-
-    return gd_ratchet.run(
-        sys.argv, hits, ALLOWLIST,
-        header="Grandfathered player-collection writes in per-card scripts (one line per occurrence).",
-        name=NAME,
-        new_label="NEW collection write",
-        hint="Route hand/discard/deck/strategy-zone changes through an EffectHandler primitive"
-             " (table: scripts/effects/README.md § Per-card scripts) or add one to the engine.")
-
+    print("card mutations: OK")
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())

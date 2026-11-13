@@ -22,8 +22,8 @@ func on_enter(ctx: EffectContext) -> void:
 	if not ctx.card_data.get("played_through_evolution", false):
 		return
 
-	# Count active strategy cards
-	if ctx.owner.count_strategies_in_play() > 1:
+	# Count active strategy cards (also guarantees an empty zone for the play)
+	if ctx.owner.count_strategies_in_play() > 1 or not ctx.owner.has_empty_strategy_zone():
 		return
 
 	# Search discard for "Godzilla vs. Destoroyah" strategy
@@ -37,12 +37,5 @@ func on_enter(ctx: EffectContext) -> void:
 	if selected.is_empty():
 		return
 
-	# Play the strategy card (regardless of rank)
-	var sz_index: int = ctx.owner.get_first_empty_strategy_zone_index()
-	if sz_index < 0:
-		return
-
-	ctx.owner.strategy_zones[sz_index] = selected
-	ctx.owner.strategy_zone_turn_placed[sz_index] = ctx.game_state.turn_number
-	ctx.owner.strategy_zones_changed.emit()
-	await ctx.effect_handler.trigger_enter(ctx.owner.player_id, selected, true)
+	# Play and activate it, regardless of rank (5.9.1)
+	await ctx.effect_handler.play_strategy_from_effect(ctx.owner.player_id, selected)

@@ -49,12 +49,12 @@ monster's position directly (`clear_zone`, `push_zone_card`,
 by hand. If no primitive fits, add one to the engine instead of hand-coding
 the rule in the card, so every card gets the rule the same way. Hand-coded
 rule logic in a card script is where rules bugs come from.
-`scripts/tools/check_card_mutations.py` (pre-commit + CI) holds the line:
-zone / monster-position mutation (`clear_zone(` / `push_zone_card(` /
-`banish_or_discard(`, assigning `monster_zone`, writing `zones[...]`) fails
-outright with no allow-list; writes to `hand` / `discard_pile` / `main_deck`
-/ `monster_deck` / `strategy_zones` are a ratchet whose allow-list only
-shrinks. Either way: add the missing primitive instead.
+`scripts/tools/check_card_mutations.py` (pre-commit + CI) holds the line,
+with no allow-list: it fails on zone / monster-position mutation
+(`clear_zone(` / `push_zone_card(` / `banish_or_discard(`, assigning
+`monster_zone`, writing `zones[...]`) and on writes to `hand` /
+`discard_pile` / `main_deck` / `monster_deck` / `strategy_zones`. Add the
+missing primitive instead.
 
 Primitives for the common intents (all on EffectHandler):
 
@@ -73,6 +73,9 @@ Primitives for the common intents (all on EffectHandler):
 | "return the rest to your deck and shuffle it" / "then shuffle your deck" | `shuffle_cards_into_deck` |
 | "put this card under <card> in your zones" | `move_zone_card_under_zone` |
 | "add all cards under this card to your hand" | `return_cards_under_top_to_hand` (sync — safe in replacement hooks) |
+| "play / put into play / place … and activate a strategy card" (from deck, discard or hand; 5.9.1 activate = play) | `play_strategy_from_effect` |
+| "place a card from your strategy zone under <card>" | `move_strategy_card_under_zone` |
+| "you have N strategy zones" | `ensure_strategy_zone_count` |
 | "move your monster" | `advance_monster_to_zone`, `retreat_monster_to_zone`, `teleport_monster` |
 
 `scripts/tools/check_card_monster_zone_checks.py` (pre-commit + CI) holds

@@ -46,14 +46,8 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if chosen < 0:
 		return
 
-	var strat_card: Dictionary = ctx.owner.strategy_zones[chosen]
-	ctx.owner.strategy_zones[chosen] = {}
-	ctx.owner.strategy_zones_changed.emit()
-
-	# Place under this card
-	var my_zone: int = find_zone_of_card(ctx)
-	if my_zone >= 0:
-		ctx.effect_handler.place_card_under_zone(ctx.owner, strat_card, my_zone)
+	# A move, not a discard: no strategy-discarded triggers.
+	ctx.effect_handler.move_strategy_card_under_zone(ctx.owner, chosen, find_zone_of_card(ctx))
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

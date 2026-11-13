@@ -7,6 +7,15 @@ const Cards := preload("res://tests/fixtures/cards.gd")
 const States := preload("res://tests/fixtures/states.gd")
 
 
+## Counts <Enter> resolutions and whether each came from an effect play.
+class EnterProbe:
+	extends CardEffect
+	var entered: Array[bool] = []
+
+	func on_enter(ctx: EffectContext) -> void:
+		entered.append(bool(ctx.card_data.get("played_from_effect", false)))
+
+
 func _ids(cards: Array) -> Array[String]:
 	var out: Array[String] = []
 	for c in cards:
@@ -131,6 +140,89 @@ func test_shuffle_cards_into_deck_is_deterministic_under_a_seed() -> void:
 		runs.append(_ids(p0.main_deck))
 	assert_array(runs[0]).is_equal(runs[1])
 	assert_array(runs[0]).contains(["X", "Y"])
+
+
+# --- strategy-zone primitives ---
+
+
+func test_play_strategy_from_effect_plays_into_first_empty_zone() -> void:
+	var probe := EnterProbe.new()
+	var strat := Cards.strategy(9, "FROM-DISCARD")  # rank irrelevant for effect plays
+	strat["effect_script"] = "test://enter_probe"
+	var state := States.make_state({"turn_number": 5, "p0": {"strategy_zones": [Cards.strategy(1, "OCCUPIED")]}})
+	var p0 := state.players[0]
+	p0.discard_pile.append(strat)
+	var s := States.make_session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	handler.registry.register_for_test("test://enter_probe", probe, ["on_enter"])
+	var played: Array = []
+	(s["events"] as GameEvents).strategy_card_played.connect(
+		func(pid: int, card: Dictionary, idx: int) -> void: played.append([pid, card.get("id"), idx]))
+
+	var idx: int = await handler.play_strategy_from_effect(0, strat)
+
+	assert_int(idx).is_equal(1)
+	assert_str(str(p0.strategy_zones[1].get("id"))).is_equal("FROM-DISCARD")
+	assert_int(p0.strategy_zone_turn_placed[1]).is_equal(5)
+	assert_array(p0.discard_pile).is_empty()
+	assert_array(played).is_equal([[0, "FROM-DISCARD", 1]])
+	assert_array(probe.entered).is_equal([true])
+
+
+func test_play_strategy_from_effect_noop_without_an_empty_zone() -> void:
+	var strat := Cards.strategy(1, "NO-ROOM")
+	var state := States.make_state({"p0": {"strategy_zones": [Cards.strategy(1, "A"), Cards.strategy(1, "B")]}})
+	var p0 := state.players[0]
+	p0.discard_pile.append(strat)
+	var handler: EffectHandler = States.make_session(state)["effect_handler"]
+
+	assert_int(await handler.play_strategy_from_effect(0, strat)).is_equal(-1)
+	assert_array(_ids(p0.discard_pile)).is_equal(["NO-ROOM"])
+
+
+func test_move_strategy_card_under_zone_moves_without_discarding() -> void:
+	var strat := Cards.strategy(1, "STRAT")
+	var top := Cards.battle(7, 7000, "TOP")
+	var state := States.make_state({"p0": {"strategy_zones": [strat], "zone_cards": {3: top}}})
+	var p0 := state.players[0]
+	p0.strategy_zone_stacks[0] = [Cards.battle(1, 1000, "MARKER")]
+	var handler: EffectHandler = States.make_session(state)["effect_handler"]
+
+	assert_bool(handler.move_strategy_card_under_zone(p0, 0, 3)).is_true()
+
+	assert_bool(p0.strategy_zones[0].is_empty()).is_true()
+	assert_array(p0.strategy_zone_stacks[0]).is_empty()
+	assert_array(_ids(p0.get_zone_stack(3))).is_equal(["TOP", "STRAT"])
+	assert_array(p0.discard_pile).is_empty()
+
+
+func test_move_strategy_card_under_zone_noop_for_empty_source_or_target() -> void:
+	var strat := Cards.strategy(1, "STRAT")
+	var state := States.make_state({"p0": {"strategy_zones": [strat], "zone_cards": {3: Cards.battle(2)}}})
+	var p0 := state.players[0]
+	var handler: EffectHandler = States.make_session(state)["effect_handler"]
+
+	assert_bool(handler.move_strategy_card_under_zone(p0, 0, 5)).is_false()  # empty target: card stays
+	assert_str(str(p0.strategy_zones[0].get("id"))).is_equal("STRAT")
+	assert_bool(handler.move_strategy_card_under_zone(p0, 1, 3)).is_false()  # empty strategy zone
+	assert_bool(handler.move_strategy_card_under_zone(p0, 0, -1)).is_false()
+
+
+func test_ensure_strategy_zone_count_grows_parallel_arrays_once() -> void:
+	var state := States.make_state()
+	var p0 := state.players[0]
+	var handler: EffectHandler = States.make_session(state)["effect_handler"]
+	var fired: Array[int] = [0]
+	p0.strategy_zones_changed.connect(func() -> void: fired[0] += 1)
+
+	assert_bool(handler.ensure_strategy_zone_count(p0, 3)).is_true()
+	assert_int(p0.strategy_zones.size()).is_equal(3)
+	assert_int(p0.strategy_zone_stacks.size()).is_equal(3)
+	assert_int(p0.strategy_zone_turn_placed.size()).is_equal(3)
+	assert_bool(p0.strategy_zones[2].is_empty()).is_true()
+	assert_bool(handler.ensure_strategy_zone_count(p0, 3)).is_false()
+	assert_bool(handler.ensure_strategy_zone_count(p0, 2)).is_false()  # never shrinks
+	assert_int(fired[0]).is_equal(1)
 
 
 # --- place_cards_under_monster ---

@@ -484,6 +484,39 @@ func test_ebp03_012_enter_places_blue_strategy_from_hand_into_strategy_zone() ->
 	assert_that(input.calls[0]["valid"]).is_equal([1])
 
 
+## Records <Discard From Hand> on the picked strategy (must NOT fire: EBP03-012
+## places it from hand, it is never discarded).
+class DiscardProbe:
+	extends CardEffect
+	var discarded: int = 0
+
+	func on_discard_from_hand(_ctx: EffectContext) -> void:
+		discarded += 1
+
+
+func test_ebp03_012_places_without_discarding_and_counts_as_played_this_turn() -> void:
+	var card := Real.instance("EBP03-012")
+	var strategy := Cards.strategy(2, "BLUE-STRAT")
+	strategy["effect_script"] = "test://discard_probe"
+	var state := States.make_state({"turn_number": 7, "p0": {
+		"current_monster": card,
+		"hand": [strategy],
+	}})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_hand_card": [0]}
+	var s := States.make_session(state, input)
+	var handler: EffectHandler = s["effect_handler"]
+	var probe := DiscardProbe.new()
+	handler.registry.register_for_test("test://discard_probe", probe, ["on_discard_from_hand"])
+
+	await handler.trigger_enter(0, card)
+
+	var p0 := state.players[0]
+	assert_str(str(p0.strategy_zones[0].get("id"))).is_equal("BLUE-STRAT")
+	assert_int(p0.strategy_zone_turn_placed[0]).is_equal(7)
+	assert_int(probe.discarded).is_equal(0)
+
+
 func test_ebp03_012_silent_with_2_strategies_in_play_and_skippable() -> void:
 	# Two strategies already in play: no prompt.
 	var card := Real.instance("EBP03-012")

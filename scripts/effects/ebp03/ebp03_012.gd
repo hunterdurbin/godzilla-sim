@@ -47,7 +47,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if valid_indices.is_empty():
 		return
 
-	var selected := await ctx.effect_handler.select_hand_card(
+	var selected := await ctx.effect_handler.take_hand_card(
 		ctx.owner.player_id,
 		func(card): return CardUtils.is_strategy(card) \
 			and CardUtils.has_color(card, CardEnums.CardColor.BLUE) \
@@ -58,15 +58,6 @@ func on_enter(ctx: EffectContext) -> void:
 	if selected.is_empty():
 		return
 
-	# select_hand_card already moved it to discard — move it from discard to strategy zone
-	for i in range(ctx.owner.discard_pile.size() - 1, -1, -1):
-		if ctx.owner.discard_pile[i].get("id") == selected.get("id"):
-			var card: Dictionary = ctx.owner.discard_pile.pop_at(i)
-			var sz_idx := ctx.owner.get_first_empty_strategy_zone_index()
-			if sz_idx >= 0:
-				ctx.owner.strategy_zones[sz_idx] = card
-				ctx.owner.strategy_zones_changed.emit()
-			ctx.owner.discard_changed.emit()
-			# Trigger enter for the strategy card
-			await ctx.effect_handler.trigger_enter(ctx.owner.player_id, card, true)
-			break
+	# Place it into the strategy zone and activate it (5.9.1: activate = play).
+	# take_hand_card removes it from hand without discarding it.
+	await ctx.effect_handler.play_strategy_from_effect(ctx.owner.player_id, selected)

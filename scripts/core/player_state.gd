@@ -270,6 +270,23 @@ func get_first_empty_strategy_zone_index() -> int:
 	return -1
 
 
+func ensure_strategy_zone_count(count: int) -> bool:
+	## Grow the strategy zones to `count` (never shrinks), keeping the parallel
+	## strategy_zone_stacks / strategy_zone_turn_placed arrays in step. New
+	## zones start empty. Emits strategy_zones_changed and returns true when
+	## zones were added.
+	if strategy_zones.size() >= count:
+		return false
+	while strategy_zones.size() < count:
+		strategy_zones.append({})
+	while strategy_zone_stacks.size() < count:
+		strategy_zone_stacks.append([])
+	while strategy_zone_turn_placed.size() < count:
+		strategy_zone_turn_placed.append(0)
+	strategy_zones_changed.emit()
+	return true
+
+
 func count_strategies_in_play() -> int:
 	var n: int = 0
 	for sz in strategy_zones:

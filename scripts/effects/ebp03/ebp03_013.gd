@@ -24,15 +24,8 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	# Expand strategy zones to 3 (permanent for rest of game)
-	if ctx.owner.strategy_zones.size() < 3:
-		ctx.owner.strategy_zones.resize(3)
-		ctx.owner.strategy_zones[2] = {}
-		ctx.owner.strategy_zone_turn_placed.resize(3)
-		ctx.owner.strategy_zone_turn_placed[2] = 0
-		ctx.owner.strategy_zone_stacks.resize(3)
-		ctx.owner.strategy_zone_stacks[2] = []
-		ctx.owner.strategy_zones_changed.emit()
+	# 3 strategy zones for the rest of the game (never shrinks back)
+	ctx.effect_handler.ensure_strategy_zone_count(ctx.owner, 3)
 
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
