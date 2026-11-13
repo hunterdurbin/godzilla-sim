@@ -41,7 +41,9 @@ tests/
   `handler.registry.register_for_test("test://name", effect, ["on_enter", …])`
   — see `unit/effects/test_check_timing.gd`.
 - Player decisions in tests are scripted with `ScriptedPlayerInput`
-  (`scripts/core/input/`) — queue answers, resolve synchronously.
+  (`scripts/core/input/`) — queue answers, resolve synchronously. Assert on
+  decisions via `input.calls_of(kind)` (size first, then contents): indexing
+  `input.calls[i]` out of range aborts the whole gdUnit run.
 - New/changed card effects require updated tests; the smoke suite fails if
   `scripts/effects/trigger_map.gd` is stale.
 

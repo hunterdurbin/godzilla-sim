@@ -224,7 +224,7 @@ func test_ebp02_004_destroys_one_per_strategy_in_play() -> void:
 	assert_str(state.players[1].get_zone_top_card(5).get("id", "")).is_equal(above["id"])
 	# One batch prompt for both destroys, count = strategies in play.
 	assert_int(input.count_calls("select_zones")).is_equal(1)
-	var zone_calls: Array = input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zones")
+	var zone_calls: Array = input.calls_of("select_zones")
 	assert_array(zone_calls[0]["valid"]).contains_exactly_in_any_order([0, 3])
 	assert_int(int(zone_calls[0]["count"])).is_equal(2)
 

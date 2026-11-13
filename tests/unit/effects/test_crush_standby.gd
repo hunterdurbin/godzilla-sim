@@ -57,7 +57,7 @@ func _card(id: String, script_path: String) -> Dictionary:
 
 ## Option count of each standby order prompt, in order.
 func _prompt_sizes(input: ScriptedPlayerInput) -> Array:
-	return input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "choose_option") \
+	return input.calls_of("choose_option") \
 		.map(func(c: Dictionary) -> int: return c["options"].size())
 
 
