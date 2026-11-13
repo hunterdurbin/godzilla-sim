@@ -105,6 +105,22 @@ The 2026-07 structural overhaul (domain re-slice, god-file splits, this doc
 set) is recorded in `docs/restructure/` — read its `STATE.md` before
 resuming any unfinished phase.
 
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues in the separate repo `hunterdurbin/godzilla-sim-issue-tracker`
+(always pass `--repo`). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default five-role vocabulary (needs-triage, needs-info, ready-for-agent,
+ready-for-human, wontfix). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
 ---
 
 **Last Updated:** 2026-07-05
