@@ -34,13 +34,8 @@ func on_enter(ctx: EffectContext) -> void:
 	if selected.is_empty():
 		return
 
-	# Reveal top 5
-	var revealed: Array[Dictionary] = []
-	for _i in range(5):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-	ctx.owner.deck_changed.emit()
+	# Reveal top 5 (shown by the select prompt below)
+	var revealed: Array[Dictionary] = ctx.effect_handler.take_deck_top(ctx.owner.player_id, 5)
 
 	var monsters: Array[Dictionary] = []
 	var rest: Array[Dictionary] = []
@@ -63,6 +58,4 @@ func on_enter(ctx: EffectContext) -> void:
 				break
 
 	rest.append_array(monsters)
-	ctx.owner.discard_pile.append_array(rest)
-	if not rest.is_empty():
-		ctx.owner.discard_changed.emit()
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, rest)

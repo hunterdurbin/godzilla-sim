@@ -108,6 +108,67 @@ func arrange_deck_cards(player_id: int, cards: Array[Dictionary], prompt: String
 
 
 
+func arrange_deck_top(player_id: int, count: int, prompt: String) -> Dictionary:
+	## "Look at the top <count> cards of your deck, put any number of them on
+	## top of your deck in any order, and send the rest to your discard pile."
+	## Takes up to `count` cards off the top (fewer if the deck is short; no
+	## prompt when it is empty), lets the player order / discard them via
+	## arrange_deck_cards, puts the kept cards back on top (keep[0] ends up on
+	## top) and discards the rest through discard_cards. The look is private:
+	## kept cards are not logged. Emits deck_changed (and discard_changed when
+	## something is discarded). Returns {"keep": [...], "discard": [...]}.
+	var cards := take_deck_top(player_id, count)
+	if cards.is_empty():
+		return {"keep": [], "discard": []}
+	var result: Dictionary = await arrange_deck_cards(player_id, cards, prompt)
+	var player := game_state.players[player_id]
+	var keep: Array = result.get("keep", [])
+	for i in range(keep.size() - 1, -1, -1):
+		player.main_deck.push_front(keep[i])
+	if not keep.is_empty():
+		player.deck_changed.emit()
+	var discard: Array[Dictionary] = []
+	discard.assign(result.get("discard", []))
+	discard_cards(player_id, discard)
+	return {"keep": keep, "discard": discard}
+
+
+
+
+func take_deck_top(player_id: int, count: int) -> Array[Dictionary]:
+	## Take up to `count` cards off the top of a player's main deck (fewer if
+	## the deck is short) and return them, top card first. Nothing is shown or
+	## logged: the caller's own prompt reveals them (e.g. select_from_cards with
+	## all_visible), and the caller decides where each card goes (hand via
+	## add_card(s)_to_hand, discard via discard_cards, back via
+	## shuffle_cards_into_deck). Emits deck_changed when any card was taken.
+	## For a reveal overlay use reveal_deck_top instead.
+	var player := game_state.players[player_id]
+	var taken: Array[Dictionary] = []
+	while taken.size() < count and not player.main_deck.is_empty():
+		taken.append(player.main_deck.pop_front())
+	if not taken.is_empty():
+		player.deck_changed.emit()
+	return taken
+
+
+
+
+func shuffle_cards_into_deck(player_id: int, cards: Array[Dictionary]) -> void:
+	## "Return <cards> to your deck and shuffle it": append the cards (already
+	## removed from wherever they were, e.g. by take_deck_top or search_deck)
+	## to the player's main deck, then shuffle the whole deck with the global
+	## RNG (the same stream search_deck's shuffle uses, so seeded sims and
+	## replays stay deterministic). Emits deck_changed. With no cards it still
+	## shuffles: "then shuffle your deck" happens either way.
+	var player := game_state.players[player_id]
+	player.main_deck.append_array(cards)
+	player.main_deck.shuffle()
+	player.deck_changed.emit()
+
+
+
+
 func select_cards_from_pool(player_id: int, matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int = -1, pool_filter: Callable = Callable()) -> Array[Dictionary]:
 	## Ask a player to select between min_count and max_count cards from the matching pool.
 	## If max_count == -1, it defaults to min_count (exact count required).

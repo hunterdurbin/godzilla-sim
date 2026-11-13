@@ -21,35 +21,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	var player := ctx.owner
-	if player.main_deck.size() == 0:
-		# Skip arrange, but still draw (triggers discard reshuffle)
-		player.draw_cards(2)
-		return
-
-	# Look at top 4 cards
-	var look_count: int = mini(4, player.main_deck.size())
-	var top_cards: Array[Dictionary] = []
-	for _i in range(look_count):
-		top_cards.append(player.main_deck.pop_front())
-
-	var result: Dictionary = await ctx.effect_handler.arrange_deck_cards(
-		ctx.owner.player_id, top_cards,
-		tr("STR_EFF_DECK_ARRANGE_TOP"))
-
-	# Put kept cards back on top (first in array = top of deck)
-	var keep: Array = result.get("keep", [])
-	for i in range(keep.size() - 1, -1, -1):
-		player.main_deck.push_front(keep[i])
-
-	# Discard the rest
-	var discard: Array = result.get("discard", [])
-	for card in discard:
-		player.discard_pile.append(card)
-
-	player.deck_changed.emit()
-	if not discard.is_empty():
-		player.discard_changed.emit()
-
-	# Draw 2 cards
-	player.draw_cards(2)
+	# Empty deck: no look, but still draw (the draw reshuffles the discard).
+	await ctx.effect_handler.arrange_deck_top(
+		ctx.owner.player_id, 4, tr("STR_EFF_DECK_ARRANGE_TOP"))
+	ctx.owner.draw_cards(2)

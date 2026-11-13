@@ -51,6 +51,88 @@ func test_move_zone_card_under_zone_noop_for_empty_or_same_zone() -> void:
 	assert_array(_ids(p0.get_zone_stack(3))).is_equal(["A"])
 
 
+# --- deck-top primitives ---
+
+
+func _deck(ids: Array[String]) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for id in ids:
+		out.append(Cards.battle(1, 1000, id))
+	return out
+
+
+func test_arrange_deck_top_puts_kept_back_in_order_and_discards_rest() -> void:
+	var state := States.make_state({"p0": {"main_deck": _deck(["A", "B", "C", "D"])}})
+	var p0 := state.players[0]
+	var input := ScriptedPlayerInput.new()
+	# Keep C then A (C on top); discard B. D was never looked at.
+	input.answers = {"arrange_deck": [{"keep": [p0.main_deck[2], p0.main_deck[0]], "discard": [p0.main_deck[1]]}]}
+	var handler: EffectHandler = States.make_session(state, input)["effect_handler"]
+	var signals: Array[String] = []
+	p0.deck_changed.connect(func() -> void: signals.append("deck"))
+	p0.discard_changed.connect(func() -> void: signals.append("discard"))
+
+	var result: Dictionary = await handler.arrange_deck_top(0, 3, "arrange")
+
+	assert_array(_ids(p0.main_deck)).is_equal(["C", "A", "D"])
+	assert_array(_ids(p0.discard_pile)).is_equal(["B"])
+	assert_array(_ids(result["keep"])).is_equal(["C", "A"])
+	# Only the 3 looked-at cards were offered.
+	assert_int(input.calls_of("arrange_deck").size()).is_equal(1)
+	assert_array(_ids(input.calls_of("arrange_deck")[0]["cards"])).is_equal(["A", "B", "C"])
+	assert_bool(signals.has("deck")).is_true()
+	assert_bool(signals.has("discard")).is_true()
+
+
+func test_arrange_deck_top_short_and_empty_deck() -> void:
+	var state := States.make_state({"p0": {"main_deck": _deck(["ONLY"])}})
+	var p0 := state.players[0]
+	var input := ScriptedPlayerInput.new()
+	var handler: EffectHandler = States.make_session(state, input)["effect_handler"]
+
+	await handler.arrange_deck_top(0, 4, "arrange")  # default input keeps everything
+	assert_array(_ids(p0.main_deck)).is_equal(["ONLY"])
+	assert_array(_ids(input.calls_of("arrange_deck")[0]["cards"])).is_equal(["ONLY"])
+
+	p0.main_deck.clear()
+	var result: Dictionary = await handler.arrange_deck_top(0, 4, "arrange")
+	assert_array(result["keep"]).is_empty()
+	assert_int(input.calls_of("arrange_deck").size()).is_equal(1)  # no prompt on an empty deck
+
+
+func test_take_deck_top_takes_from_top_without_prompting() -> void:
+	var state := States.make_state({"p0": {"main_deck": _deck(["A", "B", "C"])}})
+	var p0 := state.players[0]
+	var input := ScriptedPlayerInput.new()
+	var handler: EffectHandler = States.make_session(state, input)["effect_handler"]
+	var fired: Array[int] = [0]
+	p0.deck_changed.connect(func() -> void: fired[0] += 1)
+
+	assert_array(_ids(handler.take_deck_top(0, 2))).is_equal(["A", "B"])
+	assert_array(_ids(p0.main_deck)).is_equal(["C"])
+	assert_array(_ids(handler.take_deck_top(0, 5))).is_equal(["C"])
+	assert_array(handler.take_deck_top(0, 1)).is_empty()
+	assert_int(fired[0]).is_equal(2)  # no signal when nothing was taken
+	assert_array(input.calls).is_empty()
+
+
+func test_shuffle_cards_into_deck_is_deterministic_under_a_seed() -> void:
+	var runs: Array = []
+	for _run in range(2):
+		var state := States.make_state({"p0": {"main_deck": _deck(["A", "B", "C", "D", "E"])}})
+		var p0 := state.players[0]
+		var handler: EffectHandler = States.make_session(state)["effect_handler"]
+		var fired: Array[int] = [0]
+		p0.deck_changed.connect(func() -> void: fired[0] += 1)
+		seed(1234)
+		handler.shuffle_cards_into_deck(0, _deck(["X", "Y"]))
+		assert_int(p0.main_deck.size()).is_equal(7)
+		assert_int(fired[0]).is_equal(1)
+		runs.append(_ids(p0.main_deck))
+	assert_array(runs[0]).is_equal(runs[1])
+	assert_array(runs[0]).contains(["X", "Y"])
+
+
 # --- place_cards_under_monster ---
 
 

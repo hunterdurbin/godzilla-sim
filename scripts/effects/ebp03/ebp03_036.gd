@@ -43,9 +43,7 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
 		tr("STR_EFF_EBP03_036_ZONE"), false, CardUtils.base_id(found))
 	if dest < 0:
-		ctx.owner.main_deck.append(found)
-		ctx.owner.main_deck.shuffle()
-		ctx.owner.deck_changed.emit()
+		ctx.effect_handler.shuffle_cards_into_deck(ctx.owner.player_id, [found])
 		return
 
 	await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, found, dest)

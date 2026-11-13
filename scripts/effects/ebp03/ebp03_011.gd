@@ -27,12 +27,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if n <= 0:
 		return
 
-	var revealed: Array[Dictionary] = []
-	for _i in range(n):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-	ctx.owner.deck_changed.emit()
+	var revealed: Array[Dictionary] = ctx.effect_handler.take_deck_top(ctx.owner.player_id, n)
 
 	if revealed.is_empty():
 		return
@@ -75,11 +70,12 @@ func on_enter(ctx: EffectContext) -> void:
 
 	# Add chosen to hand, discard rest
 	var to_hand: Array[Dictionary] = []
+	var rest: Array[Dictionary] = []
 	for card in revealed:
 		if card.get("id", "") in chosen_ids:
 			to_hand.append(card)
 		else:
-			ctx.owner.discard_pile.append(card)
+			rest.append(card)
 
 	ctx.effect_handler.add_cards_to_hand(ctx.owner.player_id, to_hand)
-	ctx.owner.discard_changed.emit()
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, rest)

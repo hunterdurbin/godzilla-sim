@@ -25,12 +25,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if count <= 0 or ctx.owner.main_deck.is_empty():
 		return
 
-	var revealed: Array[Dictionary] = []
-	for _i in range(count):
-		if ctx.owner.main_deck.is_empty():
-			break
-		revealed.append(ctx.owner.main_deck.pop_front())
-	ctx.owner.deck_changed.emit()
+	var revealed: Array[Dictionary] = ctx.effect_handler.take_deck_top(ctx.owner.player_id, count)
 
 	var valid: Array[Dictionary] = []
 	for card in revealed:
@@ -44,10 +39,10 @@ func on_enter(ctx: EffectContext) -> void:
 	if not valid.is_empty() and chosen.is_empty():
 		chosen = valid[0]  # Defensive: "Add 1" is mandatory.
 
+	var rest: Array[Dictionary] = []
 	for card in revealed:
 		if not chosen.is_empty() and card.get("id") == chosen.get("id"):
 			ctx.effect_handler.add_card_to_hand(ctx.owner.player_id, card)
 		else:
-			ctx.owner.main_deck.append(card)
-	ctx.owner.main_deck.shuffle()
-	ctx.owner.deck_changed.emit()
+			rest.append(card)
+	ctx.effect_handler.shuffle_cards_into_deck(ctx.owner.player_id, rest)

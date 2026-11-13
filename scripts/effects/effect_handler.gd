@@ -645,6 +645,18 @@ func arrange_deck_cards(player_id: int, cards: Array[Dictionary], prompt: String
 	return await mover.arrange_deck_cards(player_id, cards, prompt)
 
 
+func arrange_deck_top(player_id: int, count: int, prompt: String) -> Dictionary:
+	return await mover.arrange_deck_top(player_id, count, prompt)
+
+
+func take_deck_top(player_id: int, count: int) -> Array[Dictionary]:
+	return mover.take_deck_top(player_id, count)
+
+
+func shuffle_cards_into_deck(player_id: int, cards: Array[Dictionary]) -> void:
+	mover.shuffle_cards_into_deck(player_id, cards)
+
+
 func select_cards_from_pool(player_id: int, matching: Array[Dictionary], all_cards: Array[Dictionary], prompt: String, min_count: int, max_count: int = -1, pool_filter: Callable = Callable()) -> Array[Dictionary]:
 	return await mover.select_cards_from_pool(player_id, matching, all_cards, prompt, min_count, max_count, pool_filter)
 
