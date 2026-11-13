@@ -39,6 +39,9 @@ jobs:
       - name: Card scripts await engine coroutines
         run: python3 scripts/tools/check_card_unawaited_coroutines.py
 
+      - name: No array literals into typed-array params via dynamic calls
+        run: python3 scripts/tools/check_typed_array_dynamic_calls.py
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -57,3 +60,10 @@ jobs:
 
       - name: Run gdUnit4 suite
         run: ./tests/run_unit_tests.sh godot
+
+      # The godot-ci image ships without Python.
+      - name: Install python3
+        run: apt-get update -qq && apt-get install -y -qq python3 > /dev/null
+
+      - name: No new GDScript warnings
+        run: python3 scripts/tools/check_gdscript_warnings.py godot

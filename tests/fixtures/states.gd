@@ -10,7 +10,8 @@ const Cards := preload("res://tests/fixtures/cards.gd")
 ##   turn_number: int (default 1)
 ##   p0/p1: Dictionary of per-player options:
 ##     hand: Array[Dictionary]
-##     monster_zone: int (default 1)
+##     monster_zone: int (default 1) — zone index monster_zone-1 holds the
+##       monster; a card placed there is crushed at the next check timing
 ##     current_monster: Dictionary (default rank-1 GODZILLA test monster)
 ##     monster_deck: Array[Dictionary] (default empty)
 ##     main_deck: Array[Dictionary] (default empty)
