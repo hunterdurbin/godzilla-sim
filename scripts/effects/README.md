@@ -38,6 +38,18 @@ the CardEffect base and overrides trigger virtuals; awakening effects key off
 `<Dominate>` effects gate on `ctx.is_dominate()` — active while your
 monster is in the same zone as, or ahead of, the opponent's monster.
 
+**Card scripts express intent; the engine enforces the rules.** A card script
+should read like its card text: "move my monster to zone 8", "play this card
+into zone 8", "destroy that card". It calls an EffectHandler primitive for
+that intent, and the primitive applies every rule that follows from it:
+crush, overload, play-zone legality, replacement effects, Revenge and other
+automatic abilities entering standby. Card scripts never mutate zones or the
+monster's position directly (`clear_zone`, `push_zone_card`,
+`banish_or_discard`, assigning `monster_zone`), and never fire trigger bodies
+by hand. If no primitive fits, add one to the engine instead of hand-coding
+the rule in the card, so every card gets the rule the same way. Hand-coded
+rule logic in a card script is where rules bugs come from.
+
 ## Check timing — automatic abilities never interrupt an effect
 
 Terms per `GLOSSARY.md`. While an effect resolves (`exec.has_active_effect()`),

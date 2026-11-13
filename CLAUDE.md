@@ -52,6 +52,10 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
   `scenes/board/modules/README.md`.
 - Every TurnManager owner must call `teardown()` or the cyclic engine graph
   leaks.
+- **Card scripts express intent; the engine enforces rules.** Per-card effect
+  scripts call EffectHandler primitives and never mutate zones/monster
+  position or fire triggers by hand; missing primitive → add it to the engine
+  (`scripts/effects/README.md` § Per-card scripts).
 
 ## Testing & verification
 

@@ -42,3 +42,28 @@ The point after the current effect finishes when rule actions resolve first,
 then abilities in standby resolve: the turn player's first, then the
 non-turn player's, each player choosing their own order (10.4.3).
 _Avoid_: After the effect, resolution window
+
+## Rule actions
+
+**Rule action**:
+A process the game rules perform on their own, with no player choosing it,
+when its condition is met. Rule actions resolve at a check timing, before any
+ability in standby (11.1, 10.4.3.1).
+_Avoid_: State-based action, cleanup
+
+**Interrupt rule action**:
+A rule action performed the moment its condition is met, even in the middle
+of an effect; the effect then continues. The turn player's are performed first
+(11.1.2.1). Abilities it triggers still enter standby.
+_Avoid_: Immediate rule, instant rule action
+
+**Crush**:
+The interrupt rule action that destroys a battle card in the same zone as its
+master's monster (11.3).
+_Avoid_: Trample, squash
+
+**Overload**:
+The non-interrupt rule action that, when a zone holds more than one card not
+in a stack, keeps the card placed last and destroys the rest. It is performed
+only at a check timing and never triggers <Revenge> (11.5, 12.7.2).
+_Avoid_: Replace, overwrite
