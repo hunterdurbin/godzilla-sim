@@ -34,6 +34,22 @@ if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$'; then
 	python3 scripts/tools/check_card_unawaited_coroutines.py || exit 1
 fi
 
+# Guard: no array literal reaches an Array[T] param through bind/Variant call.
+if git diff --cached --name-only | grep -qE '\.gd$'; then
+	python3 scripts/tools/check_typed_array_dynamic_calls.py || exit 1
+fi
+
+# Ratchet: no new GDScript compile warnings (needs a Godot binary: set
+# GODOT_BIN, or have `godot` on PATH; skipped otherwise — CI still runs it).
+if git diff --cached --name-only | grep -qE '\.gd$|gdscript_warnings_allowlist\.txt$'; then
+	GD_BIN="${GODOT_BIN:-$(command -v godot)}"
+	if [ -n "$GD_BIN" ]; then
+		python3 scripts/tools/check_gdscript_warnings.py "$GD_BIN" || exit 1
+	else
+		echo "pre-commit: GODOT_BIN unset, skipping check_gdscript_warnings.py (CI runs it)"
+	fi
+fi
+
 # Sync version from project.godot into export_presets.cfg
 if git diff --cached --name-only | grep -qE '^project\.godot$'; then
 	if git diff --cached project.godot | grep -qE '^\+config/version='; then

@@ -73,6 +73,9 @@ else
 	# gdUnit's "N failures" counts failed ASSERTIONS; this counts failed tests.
 	FAILED_TESTS=$(grep -c ' FAILED ' "$PLAIN")
 	[ "$FAILED_TESTS" -gt 0 ] && echo "Failed test cases: $FAILED_TESTS (Overall Summary 'failures' counts assertions)"
+	# GDScript warnings not in the ratchet allowlist (scripts this run compiled;
+	# the full check is scripts/tools/check_gdscript_warnings.py).
+	python3 scripts/tools/check_gdscript_warnings.py --log "$PLAIN" --new-only
 fi
 echo "Full log: $PLAIN"
 rm -f "$LOG"
