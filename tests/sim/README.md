@@ -27,7 +27,8 @@ byte-identical across runs — so any diff is a real behavior change.
 It runs the working tree and a detached, imported worktree of `base_ref`
 in parallel (the base gets this tree's `bot_simulation_runner.gd`, so both
 run the same harness) and reports differing `[SimResult]` lines, P1 wins,
-SCRIPT ERROR counts and `[Kaiju] … plan DIVERGED` counts. Exit 0 = identical.
+SCRIPT ERROR counts and `[Kaiju] … plan DIVERGED` counts. Exit 0 = identical;
+the last line, `STATUS: <n> (…)`, repeats the verdict so it survives a `| grep`.
 `--pair` (repeatable) runs several deck pairs against one base import —
 use it instead of separate invocations; deck1/deck2 are then ignored.
 
