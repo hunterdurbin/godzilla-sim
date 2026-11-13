@@ -730,7 +730,9 @@ func test_ebp03_060_revenge_reduces_opponent_rage() -> void:
 
 func test_ebp03_061_plays_itself_from_discard_after_invasion_discard() -> void:
 	var card := Real.instance("EBP03-061")
-	var state := States.make_state({"p0": {"monster_zone": 4}})
+	# Monster away from the chosen zone: a card in the monster's zone is
+	# crushed at the check timing after the ability (11.3).
+	var state := States.make_state({"p0": {"monster_zone": 1}})
 	state.players[0].discard_pile.append(card)
 	var input := ScriptedPlayerInput.new()
 	input.answers = {"select_zone": [3]}

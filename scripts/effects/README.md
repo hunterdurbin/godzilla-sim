@@ -63,8 +63,21 @@ on_zone_changed (EBP04-067 link). **Replacement effects**
 (`on_would_be_destroyed`, `can_be_destroyed`) are the exception: they resolve
 at the moment of the action. An area-changing entry that has nothing left to
 do when it comes up is dropped before the order prompt via
-`area_change_still_applies` (10.6.3). Rule-action paths (crush) are tracked
-separately — see issue #1 in the issue tracker.
+`area_change_still_applies` (10.6.3).
+
+**Crush has one path.** `RuleActions.check_crush_rule(state, triggered)`
+performs the crush (replacement effects apply at that moment) and only
+*collects* the crushed card's leave-play, crush and <Revenge> entries; the
+caller submits them to standby once its move / check timing is done
+(`resolve_check_timing`, monster movement, invasion, `teleport_monster` —
+which crushes only its destination, e.g. EBP03-068 Godzilla Flies).
+
+**Standby is one pool** (`StandbyResolver.resolve_entries`). After every
+ability: rule actions (`resolve_check_timing`), then merge everything that
+entered standby meanwhile, then the turn player picks one of ALL their
+entries — or, if they have none, the non-turn player picks one of theirs
+(10.4.3.1–10.4.3.4). A turn-player ability triggered mid-way through the
+non-turn player's abilities therefore resolves next.
 
 ## Conditional phase-start triggers — `phase_start_applies`
 

@@ -39,8 +39,9 @@ _Avoid_: Pending trigger, deferred effect, queue
 
 **Check timing**:
 The point after the current effect finishes when rule actions resolve first,
-then abilities in standby resolve: the turn player's first, then the
-non-turn player's, each player choosing their own order (10.4.3).
+then abilities in standby resolve one at a time: the turn player picks one of
+theirs while they have any, otherwise the non-turn player picks one of theirs;
+rule actions are performed again after each ability (10.4.3).
 _Avoid_: After the effect, resolution window
 
 ## Rule actions

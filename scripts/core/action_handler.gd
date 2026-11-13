@@ -103,8 +103,14 @@ func resolve_check_timing(state: GameState) -> void:
 	await rule_actions.resolve_check_timing(state)
 
 
-func check_crush_rule(state: GameState, deferred_entries: Variant = null) -> void:
-	await rule_actions.check_crush_rule(state, deferred_entries)
+func check_crush_rule(state: GameState, triggered: Array) -> void:
+	## The single crush path (11.3) — see RuleActions.check_crush_rule.
+	rule_actions.check_crush_rule(state, triggered)
+
+
+func crush_now(state: GameState, player_id: int = -1) -> void:
+	## Crush now and submit the triggered abilities to standby.
+	await rule_actions.crush_now(state, player_id)
 
 
 # --- Pure zone math ---
