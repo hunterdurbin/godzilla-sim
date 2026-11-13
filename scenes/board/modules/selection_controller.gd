@@ -1479,6 +1479,7 @@ func _show_zones_target_selection(player_id: int, target_player_id: int, valid_z
 			slot.in_selection_mode = true
 			if not slot.slot_clicked.is_connected(_on_zones_target_slot_clicked):
 				slot.slot_clicked.connect(_on_zones_target_slot_clicked)
+	_refresh_zones_target_highlights()
 	_update_zones_target_confirm()
 	_emit_ctx("zones_target", valid_zones, target_player_id)
 
@@ -1494,13 +1495,37 @@ func _on_zones_target_slot_clicked(zone_num: int, _pid: int) -> void:
 	if zone_idx in _zones_target_selected:
 		_zones_target_selected.erase(zone_idx)
 		slot.set_selected(false)
+		# Lowest-first: unmarking a low pick also unmarks the higher picks
+		# that depended on it.
+		var kept: Array = ZoneSelectConstraints.prune(_zones_target_constraints, _zones_target_selected)
+		for z in _zones_target_selected.duplicate():
+			if z not in kept:
+				_zones_target_selected.erase(z)
+				board.zone_slots[z].set_selected(false)
 	elif _zones_target_selected.size() < _zones_target_count \
 			and ZoneSelectConstraints.can_add(_zones_target_constraints, _zones_target_selected, zone_idx):
 		_zones_target_selected.append(zone_idx)
 		slot.set_selected(true)
-	# At-cap (count or rank budget) clicks on unselected zones are ignored —
-	# unselect one first.
+	# At-cap (count, rank budget, or not-yet-lowest rank) clicks on unselected
+	# zones are ignored — unselect one first.
+	_refresh_zones_target_highlights()
 	_update_zones_target_confirm()
+
+
+func _refresh_zones_target_highlights() -> void:
+	## Lowest-first prompts glow only the zones pickable right now (blue);
+	## picks show red via set_selected. Other prompts keep the static
+	## all-valid highlight set when the prompt opened.
+	if not ZoneSelectConstraints.has_lowest_first(_zones_target_constraints):
+		return
+	var board: Control = player1_board if _zones_target_board_pid == 0 else player2_board
+	var pickable: Array[int] = []
+	if _zones_target_selected.size() < _zones_target_count:
+		for z in _zones_target_valid_zones:
+			if z not in _zones_target_selected \
+					and ZoneSelectConstraints.can_add(_zones_target_constraints, _zones_target_selected, z):
+				pickable.append(z)
+	board.highlight_valid_zones(pickable)
 
 
 func _update_zones_target_confirm() -> void:

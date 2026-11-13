@@ -159,10 +159,38 @@ func destroy_chosen_zone(player_id: int, target: PlayerState, valid_zones: Array
 
 func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dictionary]:
 	## Destroy all occupied zones in the given list on the target player's board.
-	## Respects can_be_destroyed and on_would_be_destroyed replacement effects.
-	## Returns an array of the destroyed top cards.
-	## Revenge triggers are collected as standby entries and resolved after all
-	## zones are destroyed, per rules 10.4.3.
+	## Respects can_be_destroyed and on_would_be_destroyed replacement effects
+	## (those resolve immediately, mid-destruction).
+	## Returns an array of the destroyed top cards (replaced cards included).
+	## "When destroyed" automatic abilities (revenge, ally / opponent
+	## zone-card-destroyed) enter standby together after the whole batch
+	## (10.4.3); while an effect is resolving they wait for the check timing
+	## after that effect.
+	var batch := await _destroy_zones_batch(target, zone_indices)
+	await resolve_deferred_entries(batch["deferred"])
+	return batch["results"]
+
+
+
+
+func destroy_zones_reporting_destroyed(target: PlayerState, zone_indices: Array[int]) -> Array[Dictionary]:
+	## destroy_zones, but returns only the cards that were TRULY destroyed: a
+	## card a replacement effect moved elsewhere is not included (tokens are).
+	## For effects that count destructions ("If you <Destroy> 3", ESD05-005).
+	## Triggers enter standby exactly as in destroy_zones.
+	var batch := await _destroy_zones_batch(target, zone_indices)
+	await resolve_deferred_entries(batch["deferred"])
+	return batch["destroyed"]
+
+
+
+
+func _destroy_zones_batch(target: PlayerState, zone_indices: Array[int]) -> Dictionary:
+	## Destroy the zones, collecting standby entries instead of resolving them.
+	## Returns {"results": every destroyed-or-replaced top card,
+	##          "destroyed": truly destroyed only, "deferred": standby entries}.
+	## Zones whose card can't be destroyed are skipped (and not reported).
+	var results: Array[Dictionary] = []
 	var destroyed: Array[Dictionary] = []
 	var deferred: Array = []
 	for zi in zone_indices:
@@ -171,16 +199,19 @@ func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dicti
 		var top_card := target.get_zone_top_card(zi)
 		if not _can_destroy_card(target, top_card):
 			continue
+		# Only the true-destroy path records into cards_destroyed_this_turn —
+		# a replacement returns the card too, so the log is the reliable tell.
+		var before: int = target.cards_destroyed_this_turn.size()
 		var result: Dictionary = await _execute_destroy_zone(target, zi, top_card, deferred)
-		if not result.is_empty():
+		if result.is_empty():
+			continue
+		results.append(result)
+		if target.cards_destroyed_this_turn.size() > before:
 			destroyed.append(result)
-
-	if not destroyed.is_empty():
+	if not results.is_empty():
 		target.zones_changed.emit()
 		target.discard_changed.emit()
-	if not deferred.is_empty():
-		await resolve_deferred_entries(deferred)
-	return destroyed
+	return {"results": results, "destroyed": destroyed, "deferred": deferred}
 
 
 

@@ -935,8 +935,8 @@ func _rpc_zones_target_resolved(zones_json: String) -> void:
 		return
 	var constraints := ZoneSelectConstraints.from_json(str(pargs[6]) if pargs.size() > 6 else "")
 	if not ZoneSelectConstraints.is_valid(constraints, zone_indices):
-		push_warning("[Sync] Rejected zones_target: over budget (%d > %d)" % [
-			ZoneSelectConstraints.total(constraints, zone_indices), ZoneSelectConstraints.budget(constraints)])
+		push_warning("[Sync] Rejected zones_target: breaks selection rules %s (picked %s)" % [
+			ZoneSelectConstraints.to_json(constraints), str(zone_indices)])
 		return
 	_pending_interaction = {}
 	_session.player_input.resolve_zones_target(zone_indices)
