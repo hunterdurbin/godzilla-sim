@@ -25,6 +25,11 @@ inside an issue refers to the issue tracker repo, so reference code with
 fully-qualified links: `hunterdurbin/godzilla-sim#240` for a PR, or a full
 commit URL.
 
+The same holds in the other direction: in a PR body or commit message in the
+code repo, a bare `#7` means code-repo PR #7, so write
+`hunterdurbin/godzilla-sim-issue-tracker#7`. A merged code PR whose body says
+`closes hunterdurbin/godzilla-sim-issue-tracker#N` closes that tracker issue.
+
 ## Pull requests as a triage surface
 
 **PRs as a request surface: no.** _(PRs live in the code repo
