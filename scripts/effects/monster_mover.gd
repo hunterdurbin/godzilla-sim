@@ -27,7 +27,7 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 		player.monster_changed.emit()
 		deferred_entries.append_array(h.collect_monster_advance_entries(player_id, from_zone, player.monster_zone))
 		if action_handler:
-			await action_handler.check_crush_rule(game_state, deferred_entries)
+			action_handler.check_crush_rule(game_state, deferred_entries)
 	if not deferred_entries.is_empty():
 		await resolve_deferred_entries(deferred_entries)
 
@@ -49,7 +49,7 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 		player.monster_zone -= 1
 		player.monster_changed.emit()
 		if action_handler:
-			await action_handler.check_crush_rule(game_state, deferred_entries)
+			action_handler.check_crush_rule(game_state, deferred_entries)
 	if not deferred_entries.is_empty():
 		await resolve_deferred_entries(deferred_entries)
 
@@ -59,7 +59,10 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 func teleport_monster(player_id: int, target_zone: int) -> bool:
 	## Move a player's monster directly to target_zone without crushing
 	## intermediate-zone battle cards. Used for "move vertically" effects
-	## (e.g. EBP04-078 The Slithering Disaster) and the counter-retreat helper.
+	## (e.g. EBP03-068 Godzilla Flies, EBP04-078 The Slithering Disaster) and
+	## the counter-retreat helper. The destination IS crushed (11.3) through
+	## the single crush path: crush is an interrupt rule action (11.1.2.1), so
+	## it happens now; the abilities it triggers enter standby (10.6.2).
 	## Effect-driven move — blocked by `prevents_opponent_monster_move`
 	## (e.g. EBP04-076 Godzilla's Dormancy). Returns true if the move happened.
 	if not action_handler:
@@ -73,6 +76,7 @@ func teleport_monster(player_id: int, target_zone: int) -> bool:
 	player.monster_zone = target_zone
 	action_handler.events.monster_advanced.emit(player_id, old_zone, player.monster_zone)
 	player.monster_changed.emit()
+	await action_handler.crush_now(game_state)
 	return true
 
 
@@ -92,4 +96,4 @@ func move_monster_as_countered(player_id: int) -> void:
 	var retreat_zone: int = ActionHandler.get_counter_retreat_zone(player.monster_zone)
 	if retreat_zone == player.monster_zone:
 		return
-	teleport_monster(player_id, retreat_zone)
+	await teleport_monster(player_id, retreat_zone)

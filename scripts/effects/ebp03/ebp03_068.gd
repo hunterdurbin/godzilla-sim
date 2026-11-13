@@ -8,9 +8,10 @@ extends CardEffect
 ## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
-## Rules: None
+## Rules: 11.3 (crush) — zone 8 is crushed by the engine, not this script
 ## Interactions: None
-## Implementation notes: None
+## Implementation notes: teleport_monster (no crush on 4–7; destination crushed
+## by the engine).
 
 
 const TRIGGER_FILTERS = {
@@ -39,21 +40,11 @@ func can_monster_invade(_ctx: EffectContext) -> bool:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	# Move monster from zone 3 to zone 8 if rank 3+
+	# Move a rank III+ monster in zone 3 straight to zone 8. teleport_monster
+	# skips zones 4–7; the engine crushes zone 8 itself (11.3), with Revenge,
+	# replacement effects and leave-play handled by the single crush path.
 	if ctx.owner.monster_zone != 3:
 		return
-	if ctx.owner.current_monster.get("rank", 0) < 3:
+	if not CardUtils.rank_at_least(ctx.owner.current_monster, 3):
 		return
-
-	# Move directly to zone 8 (no crush on zones 4-7)
-	var old_zone: int = ctx.owner.monster_zone
-	ctx.owner.monster_zone = 8
-	ctx.owner.monster_changed.emit()
-	# Only trigger crush on zone 8 (skip 4-7)
-	# Check if zone 8 (index 7) has a battle card to crush
-	if ctx.owner.zone_has_cards(7):
-		var crushed_stack: Array = ctx.owner.clear_zone(7)
-		EffectHandler.banish_or_discard(ctx.owner, crushed_stack)
-		ctx.owner.zones_changed.emit()
-		ctx.owner.discard_changed.emit()
-		await ctx.effect_handler.trigger_crush(ctx.owner.player_id, crushed_stack[0])
+	await ctx.effect_handler.teleport_monster(ctx.owner.player_id, 8)

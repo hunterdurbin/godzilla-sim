@@ -6,16 +6,21 @@ extends ActionResolver
 
 
 func resolve_check_timing(state: GameState) -> void:
-	## Resolve all rule actions at a check timing (10.4.3, 11.1.2).
+	## Resolve all rule actions at a check timing (10.4.3.1, 11.1.2), then
+	## submit the automatic abilities they triggered to standby.
 	## Per 11.1.2.1: interrupt rule actions (crush) resolve first.
 	## Per 10.4.3.1: repeat until no more rule actions remain.
+	## Standby abilities resolve afterwards as one pool (10.4.3.2–10.4.3.4);
+	## when a standby pass is already running (this check timing sits between
+	## two of its abilities), the entries join that live pool instead.
+	var triggered: Array = []
 	var changed := true
 	while changed:
 		changed = false
 		# Interrupt rule actions first (11.1.2.1): crush rule (11.3)
-		if await _check_crush_for_player(state, state.current_player_id):
+		if _check_crush_for_player(state, state.current_player_id, triggered):
 			changed = true
-		if await _check_crush_for_player(state, 1 - state.current_player_id):
+		if _check_crush_for_player(state, 1 - state.current_player_id, triggered):
 			changed = true
 		# Non-interrupt rule actions
 		for pid in range(2):
@@ -23,55 +28,65 @@ func resolve_check_timing(state: GameState) -> void:
 				changed = true
 			if _resolve_overloaded_cards(state.players[pid]):
 				changed = true
+	if effect_handler and not triggered.is_empty():
+		await effect_handler.resolve_deferred_entries(triggered)
 
 
-func check_crush_rule(state: GameState, deferred_entries: Variant = null) -> void:
-	## Interrupt type rule action (11.3): destroy battle cards sharing a zone with a monster.
-	## Per 11.1.2.1.1: turn player's interrupt rule actions resolve first.
-	## When deferred_entries is provided, crush/revenge effects are collected for later
-	## standby resolution instead of triggering immediately (used during movement).
-	await _check_crush_for_player(state, state.current_player_id, deferred_entries)
-	await _check_crush_for_player(state, 1 - state.current_player_id, deferred_entries)
+func check_crush_rule(state: GameState, triggered: Array) -> void:
+	## Interrupt type rule action (11.3): destroy battle cards sharing a zone
+	## with a monster. Per 11.1.2.1.1: turn player's interrupt rule actions
+	## resolve first. The single crush path: the crushed cards' leave-play,
+	## crush and <Revenge> abilities are appended to `triggered` — never
+	## resolved here. The caller submits them to standby (10.6.2) once its
+	## movement / check timing is done.
+	_check_crush_for_player(state, state.current_player_id, triggered)
+	_check_crush_for_player(state, 1 - state.current_player_id, triggered)
 
 
-func _check_crush_for_player(state: GameState, player_id: int, deferred_entries: Variant = null) -> bool:
-	## Check if this player's monster shares a zone with a battle card. Returns true if crushed.
-	## When deferred_entries is provided, crush/revenge effects are collected instead of
-	## triggering immediately, so movement can fully resolve first.
+func crush_now(state: GameState, player_id: int = -1) -> void:
+	## Perform the crush rule immediately (interrupt rule action, 11.1.2.1)
+	## for one player (or both, turn player first, when player_id < 0) and
+	## submit the triggered abilities to standby — for callers that move a
+	## monster outside movement/check-timing loops (teleport, board editor).
+	var triggered: Array = []
+	if player_id < 0:
+		check_crush_rule(state, triggered)
+	else:
+		_check_crush_for_player(state, player_id, triggered)
+	if effect_handler and not triggered.is_empty():
+		await effect_handler.resolve_deferred_entries(triggered)
+
+
+func _check_crush_for_player(state: GameState, player_id: int, triggered: Array) -> bool:
+	## Crush this player's battle card sharing a zone with their monster.
+	## Returns true if a card left the field. Triggered abilities are
+	## collected into `triggered` (see check_crush_rule).
 	var player := state.players[player_id]
 
 	# Monsters and battle cards occupy the SAME player's zones.
 	# The crush rule (11.3): if a battle card is in the same zone as the monster, destroy it.
 	var monster_zone_idx: int = player.monster_zone - 1  # 0-indexed
-	if monster_zone_idx >= 0 and monster_zone_idx < 8:
-		if player.zone_has_cards(monster_zone_idx):
-			# Crush is <Destroy> (11.3.3), so on_would_be_destroyed replacements
-			# apply; a replaced card never counts as destroyed and skips
-			# crush/revenge, but still fires on_leave_play below.
-			var top_card := player.get_zone_top_card(monster_zone_idx)
-			var replaced := false
-			if effect_handler:
-				replaced = effect_handler.try_destroy_replacement(player, monster_zone_idx)
-			if not replaced:
-				var crushed_stack: Array = player.clear_zone(monster_zone_idx)
-				EffectHandler.banish_or_discard(player, crushed_stack)
-				player.cards_destroyed_this_turn.append(crushed_stack[0])
-				events.battle_card_crushed.emit(player_id, monster_zone_idx, crushed_stack[0])
-				player.zones_changed.emit()
-				player.discard_changed.emit()
-			if effect_handler:
-				# Linked-card cleanup (rule-agnostic) fires immediately so partner
-				# cards see the removal regardless of deferred standby resolution.
-				await effect_handler.trigger_leave_play(player_id, top_card, monster_zone_idx)
-				if replaced:
-					return true
-				if deferred_entries != null:
-					deferred_entries.append_array(effect_handler.collect_crush_and_revenge_entries(player_id, top_card))
-				else:
-					await effect_handler.trigger_crush(player_id, top_card)
-					await effect_handler.trigger_revenge(player_id, top_card)
-			return true
-	return false
+	if monster_zone_idx < 0 or monster_zone_idx >= 8 or not player.zone_has_cards(monster_zone_idx):
+		return false
+	# Crush is <Destroy> (11.3.3), so on_would_be_destroyed replacements apply
+	# at the moment of the crush (10.2.1.3); a replaced card never counts as
+	# destroyed and fires no crush/<Revenge>, but its leave-play still triggers.
+	var top_card := player.get_zone_top_card(monster_zone_idx)
+	var replaced := false
+	if effect_handler:
+		replaced = effect_handler.try_destroy_replacement(player, monster_zone_idx)
+	if not replaced:
+		var crushed_stack: Array = player.clear_zone(monster_zone_idx)
+		EffectHandler.banish_or_discard(player, crushed_stack)
+		player.cards_destroyed_this_turn.append(crushed_stack[0])
+		events.battle_card_crushed.emit(player_id, monster_zone_idx, crushed_stack[0])
+		player.zones_changed.emit()
+		player.discard_changed.emit()
+	if effect_handler:
+		triggered.append_array(effect_handler.collect_leave_play_entries(player_id, top_card, monster_zone_idx))
+		if not replaced:
+			triggered.append_array(effect_handler.collect_crush_and_revenge_entries(player_id, top_card))
+	return true
 
 
 func _resolve_illegal_cards(player: PlayerState) -> bool:

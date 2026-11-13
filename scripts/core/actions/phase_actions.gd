@@ -109,7 +109,7 @@ func execute_end_phase_advance(state: GameState) -> void:
 		events.monster_advanced.emit(player.player_id, old_zone, player.monster_zone)
 		player.monster_changed.emit()
 		deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
-		await ah.check_crush_rule(state, deferred_entries)
+		ah.check_crush_rule(state, deferred_entries)
 
 	# Resolve deferred effects after all movement completes
 	if not deferred_entries.is_empty():

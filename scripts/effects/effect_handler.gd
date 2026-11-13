@@ -434,10 +434,6 @@ func collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int)
 	return dispatcher.collect_when_invading_entries(player_id, from_zone, to_zone)
 
 
-func trigger_crush(player_id: int, card_data: Dictionary) -> void:
-	await dispatcher.trigger_crush(player_id, card_data)
-
-
 func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 	await dispatcher.trigger_revenge(player_id, card_data)
 
@@ -775,11 +771,11 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 
 
 func teleport_monster(player_id: int, target_zone: int) -> bool:
-	return monster_mover.teleport_monster(player_id, target_zone)
+	return await monster_mover.teleport_monster(player_id, target_zone)
 
 
 func move_monster_as_countered(player_id: int) -> void:
-	monster_mover.move_monster_as_countered(player_id)
+	await monster_mover.move_monster_as_countered(player_id)
 
 
 func is_rage_reduction_prevented(player_id: int) -> bool:

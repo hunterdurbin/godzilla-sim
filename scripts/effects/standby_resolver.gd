@@ -1,10 +1,12 @@
 class_name StandbyResolver
 extends RefCounted
 
-## Resolves standby automatic abilities per rules 10.4.3 / 10.6.3.1:
-## turn player's abilities first, player chooses the order within their own
-## batch, rule actions checked before each ability, and entries spawned
-## mid-resolution drain into follow-up batches.
+## Resolves standby automatic abilities per rules 10.4.3 / 10.6.3.1 as ONE
+## pool: after every ability, rule actions are performed (10.4.3.1); then the
+## turn player, if they have any abilities in standby, picks one of ALL of
+## theirs (10.4.3.2), otherwise the non-turn player picks one of theirs
+## (10.4.3.3); repeat until none remain (10.4.3.4). Entries spawned while an
+## ability resolves join the pool immediately.
 ##
 ## Dependencies (wired by EffectHandler.setup):
 ##  - game_state: turn ownership + card location labels
@@ -19,60 +21,72 @@ var exec: EffectExecutionState
 var handler: EffectHandler
 
 ## Snapshot state for the effect_stack_changed notification: the entry whose
-## callback is executing, the current player's remaining orderable batch, and
-## the other player's batch waiting behind it (aliases of the live arrays —
-## rows are composed fresh at each publish).
+## callback is executing and the rest of the live pool (alias of the live
+## array — rows are composed fresh at each publish).
 var _stack_active: Dictionary = {}
-var _stack_remaining: Array = []
-var _other_player_batch: Array = []
+var _stack_pool: Array = []
 
 
 func resolve_entries(entries: Array) -> void:
-	## Resolve collected standby automatic abilities per rules 10.4.3 ordering.
+	## Resolve collected standby automatic abilities per rules 10.4.3.
 	## entries: Array of { "player_id": int, "card_data": Dictionary, "callback": Callable }
-	## Turn player's abilities resolve first (10.4.3.2), then non-turn player's (10.4.3.3).
+	## Optional keys: "still_applies" (Callable gate, 10.6.3), "skip_active_check".
 	if entries.is_empty():
 		return
 
 	# Re-entrancy guard: defer if already in standby resolution OR if an effect
-	# callback is actively executing. The second case covers e.g. trigger_enter's
-	# direct path, where in_standby_resolution is false but an active card is
-	# set — without this guard, a trigger called from within that callback
-	# would run immediately instead of deferring behind the active effect's enter.
+	# callback is actively executing. Deferred entries land in
+	# pending_standby_entries, which the running pass merges into its live
+	# pool after the current ability (or trigger_enter drains after the
+	# active <Enter>).
 	if exec.should_defer():
 		exec.pending_standby_entries.append_array(entries)
 		_publish_stack()
 		return
 
 	exec.in_standby_resolution = true
-	var current_entries: Array = entries
+	var pool: Array = entries.duplicate()
+	_stack_pool = pool
 
-	while not current_entries.is_empty():
+	while true:
+		# 10.4.3.1: perform rule actions. Abilities they trigger (crush) defer
+		# into pending and join the pool below.
+		if handler.action_handler:
+			await handler.action_handler.resolve_check_timing(game_state)
+		_merge_pending(pool)
+
+		# 10.6.3: an ability in standby that can no longer be played ceases to
+		# exist — drop it before the order prompt so it never shows as a no-op.
+		_drop_inapplicable(pool)
+		if pool.is_empty():
+			break
+
+		# 10.4.3.2 / 10.4.3.3: turn player first, else non-turn player.
 		var turn_pid: int = game_state.current_player_id
+		var chooser: int = turn_pid if _has_entries_for(pool, turn_pid) else 1 - turn_pid
+		var entry: Dictionary = await _choose_entry(chooser, pool)
 
-		# Separate by player: turn player first, non-turn player second (10.4.3.2-10.4.3.3)
-		var turn_entries: Array = []
-		var non_turn_entries: Array = []
-		for entry in current_entries:
-			if entry.player_id == turn_pid:
-				turn_entries.append(entry)
-			else:
-				non_turn_entries.append(entry)
+		# Keep the chosen entry visible as "resolving" through any nested
+		# prompts its callback opens.
+		_stack_active = entry
+		_publish_stack()
 
-		# Resolve turn player's abilities first (10.4.3.2), then non-turn player's (10.4.3.3)
-		_other_player_batch = non_turn_entries
-		await _resolve_player_standby(turn_pid, turn_entries)
-		_other_player_batch = []
-		await _resolve_player_standby(1 - turn_pid, non_turn_entries)
+		var saved_player_id: int = exec.active_player_id
+		var saved_card: Dictionary = exec.active_card
+		handler._set_active_effect(entry.player_id, entry.card_data)
+		await entry.callback.call()
+		if saved_card.is_empty():
+			handler._clear_active_effect()
+		else:
+			handler._set_active_effect(saved_player_id, saved_card)
 
-		# Drain any entries that accumulated during this batch
-		current_entries = exec.pending_standby_entries
-		exec.pending_standby_entries = []
+		_stack_active = {}
+		_merge_pending(pool)
+		_publish_stack()
 
 	exec.in_standby_resolution = false
 	_stack_active = {}
-	_stack_remaining = []
-	_other_player_batch = []
+	_stack_pool = []
 	_publish_stack()
 
 
@@ -165,73 +179,49 @@ static func card_location_ref(state: GameState, player_id: int, card_data: Dicti
 	return ref
 
 
-func _resolve_player_standby(player_id: int, entries: Array) -> void:
-	## Resolve one player's standby abilities, letting them choose order if multiple (10.6.3.1).
-	## Playing is compulsory — cannot choose to skip (10.6.3.1).
-	while not entries.is_empty():
-		# Check rule actions before each ability (10.4.3.1)
-		if handler.action_handler:
-			await handler.action_handler.resolve_check_timing(game_state)
+func _choose_entry(player_id: int, pool: Array) -> Dictionary:
+	## Remove and return the ability `player_id` resolves next. Playing is
+	## compulsory (10.6.3.1); with several, the player chooses which.
+	var indices: Array[int] = []
+	for i in range(pool.size()):
+		if pool[i].player_id == player_id:
+			indices.append(i)
+	if indices.size() == 1:
+		return pool.pop_at(indices[0])
 
-		# 10.6.3: an ability in standby that can no longer be played ceases to
-		# exist — drop it before the order prompt so it never shows as a no-op.
-		_drop_inapplicable(entries)
-		if entries.is_empty():
-			break
+	# Publish the pool as pending so the stack UI shows it during the prompt.
+	_stack_active = {}
+	_publish_stack()
 
-		# Publish the full batch as pending so the stack UI shows it during
-		# the order-choice prompt.
-		_stack_active = {}
-		_stack_remaining = entries
-		_publish_stack()
+	var options: Array[String] = []
+	var option_card_ids: Array[String] = []
+	var source_refs: Array[Dictionary] = []
+	for i in indices:
+		var e: Dictionary = pool[i]
+		var ref := card_location_ref(game_state, e.player_id, e.card_data)
+		options.append(ref["label"])
+		option_card_ids.append(CardUtils.base_id(e.card_data))
+		source_refs.append(ref)
+	handler.choice_source_refs = source_refs
+	var chosen: int = await handler.select_choice(player_id, options, tr("STR_EFF_CHOOSE_ABILITY"), option_card_ids)
+	if chosen < 0 or chosen >= indices.size():
+		chosen = 0
+	return pool.pop_at(indices[chosen])
 
-		var entry: Dictionary
-		if entries.size() == 1:
-			entry = entries.pop_back()
-		else:
-			# Multiple abilities in standby — player chooses order (10.6.3.1)
-			var options: Array[String] = []
-			var option_card_ids: Array[String] = []
-			var source_refs: Array[Dictionary] = []
-			for e in entries:
-				var ref := card_location_ref(game_state, e.player_id, e.card_data)
-				options.append(ref["label"])
-				option_card_ids.append(CardUtils.base_id(e.card_data))
-				source_refs.append(ref)
-			handler.choice_source_refs = source_refs
-			var chosen: int = await handler.select_choice(player_id, options, tr("STR_EFF_CHOOSE_ABILITY"), option_card_ids)
-			if chosen < 0 or chosen >= entries.size():
-				chosen = 0
-			entry = entries.pop_at(chosen)
 
-		# Keep the chosen entry visible as "resolving" through any nested
-		# prompts its callback opens.
-		_stack_active = entry
-		_publish_stack()
+func _merge_pending(pool: Array) -> void:
+	## Move abilities that entered standby while the pool was busy into it.
+	if exec.pending_standby_entries.is_empty():
+		return
+	pool.append_array(exec.pending_standby_entries)
+	exec.pending_standby_entries = []
 
-		var saved_player_id: int = exec.active_player_id
-		var saved_card: Dictionary = exec.active_card
-		handler._set_active_effect(entry.player_id, entry.card_data)
-		await entry.callback.call()
-		if saved_card.is_empty():
-			handler._clear_active_effect()
-		else:
-			handler._set_active_effect(saved_player_id, saved_card)
 
-		# Drain pending entries for this player into the current queue so the
-		# player can choose resolution order among them (10.6.3.1).
-		# Entries for the other player stay in pending_standby_entries for the
-		# outer resolve_entries loop to handle.
-		var remaining: Array = []
-		for p in exec.pending_standby_entries:
-			if p.player_id == player_id:
-				entries.append(p)
-			else:
-				remaining.append(p)
-		exec.pending_standby_entries = remaining
-
-		_stack_active = {}
-		_publish_stack()
+static func _has_entries_for(pool: Array, player_id: int) -> bool:
+	for e in pool:
+		if e.player_id == player_id:
+			return true
+	return false
 
 
 func _publish_stack() -> void:
@@ -243,9 +233,7 @@ func _publish_stack() -> void:
 	var rows: Array = []
 	if not _stack_active.is_empty():
 		rows.append(_stack_row(_stack_active, "resolving"))
-	for e in _stack_remaining:
-		rows.append(_stack_row(e, "pending"))
-	for e in _other_player_batch:
+	for e in _stack_pool:
 		rows.append(_stack_row(e, "pending"))
 	for e in exec.pending_standby_entries:
 		rows.append(_stack_row(e, "pending"))
