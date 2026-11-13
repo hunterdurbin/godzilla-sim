@@ -61,10 +61,10 @@ func resolve_counter(state: GameState) -> void:
 	if immunity_threshold > 0 and total_cp >= threat and total_cp <= immunity_threshold:
 		# Counter is immune — monster retreats but does NOT rank up
 		events.counter_immunity_triggered.emit(player.player_id, total_cp, immunity_threshold)
-		_apply_counter_retreat(opponent)
+		await _apply_counter_retreat(state, opponent)
 	elif total_cp >= threat:
 		events.counter_succeeded.emit(player.player_id, total_cp, threat, numbers["rage_threat"], numbers["effect_threat"])
-		_apply_counter_retreat(opponent)
+		await _apply_counter_retreat(state, opponent)
 
 		# Trigger counter success effects after retreat but before rank-up.
 		# Counterer (player, current player) handles on_counter_success;
@@ -85,19 +85,24 @@ func force_counter(state: GameState, target_player_id: int) -> void:
 	## Used by EBP02-012 (counter opponent's monster) and EBP04-027 (counter Gigan itself).
 	var winner_id: int = 1 - target_player_id
 	var target := state.players[target_player_id]
-	_apply_counter_retreat(target)
+	await _apply_counter_retreat(state, target)
 	# Target must rank up their monster
 	await _rank_up_monster(state, target, winner_id)
 
 
-func _apply_counter_retreat(target: PlayerState) -> void:
-	## Counter retreat: only zones 6-8 move back (5.15.1.1).
+func _apply_counter_retreat(state: GameState, target: PlayerState) -> void:
+	## Counter retreat: only zones 6-8 move back (5.15.1.1). A battle card in
+	## the retreat zone is crushed right away — crush is an interrupt rule
+	## action (11.1.2.1, 11.3) — through the single crush path, so the crushed
+	## card's abilities go to standby before the counter-success triggers and
+	## the new monster's <Enter>.
 	var retreat_zone: int = ActionHandler.get_counter_retreat_zone(target.monster_zone)
 	if retreat_zone != target.monster_zone:
 		var old_zone: int = target.monster_zone
 		target.monster_zone = retreat_zone
 		events.monster_advanced.emit(target.player_id, old_zone, target.monster_zone)
 		target.monster_changed.emit()
+		await ah.crush_now(state, target.player_id)
 
 
 func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id: int) -> void:

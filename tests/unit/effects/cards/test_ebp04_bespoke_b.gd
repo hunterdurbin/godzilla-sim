@@ -703,6 +703,28 @@ func test_ebp04_077_named_mech_may_stay_in_hand() -> void:
 	assert_bool(state.players[0].zone_has_cards(7)).is_false()
 
 
+func test_ebp04_077_no_zone8_offer_while_monster_is_in_zone_8() -> void:
+	# 5.11.1.1: the named card can't be played into the monster's zone, so the
+	# zone-8 option isn't offered and the card stays in hand.
+	var card := Real.instance("EBP04-077")
+	var mech := Real.instance("EBP04-043")  # "Multi-purpose Fighting System-3"
+	var state := States.make_state({"p0": {
+		"monster_zone": 8,
+		"main_deck": [mech, Cards.battle(2, 2000, "F1"), Cards.battle(2, 2000, "F2")],
+	}})
+	state.players[0].strategy_zones[0] = card
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"search_cards": [{"id": mech.get("id")}], "choose_option": [0]}
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	assert_int(input.count_calls("choose_option")).is_equal(0)
+	assert_bool(state.players[0].zone_has_cards(7)).is_false()
+	assert_array(state.players[0].hand.map(func(c: Dictionary) -> String: return c.get("id"))) \
+		.contains_exactly([str(mech.get("id"))])
+
+
 func test_ebp04_077_other_mechs_go_to_hand_without_zone8_offer() -> void:
 	var card := Real.instance("EBP04-077")
 	var mech := Real.instance("EBP04-051")  # Super Mechagodzilla — not a named card

@@ -16,10 +16,11 @@ func test_created_tokens_get_unique_instance_ids() -> void:
 	var s := States.make_session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	await handler.create_token_in_zone(state.players[1], "EBP02-T03", 0)
+	# Zone 1 holds P1's monster (5.11.1.1), so use zones 2 and 3.
+	await handler.create_token_in_zone(state.players[1], "EBP02-T03", 1)
 	await handler.create_token_in_zone(state.players[1], "EBP02-T03", 2)
 
-	var a := state.players[1].get_zone_top_card(0)
+	var a := state.players[1].get_zone_top_card(1)
 	var b := state.players[1].get_zone_top_card(2)
 	assert_str(CardUtils.base_id(a)).is_equal("EBP02-T03")
 	assert_str(CardUtils.base_id(b)).is_equal("EBP02-T03")
