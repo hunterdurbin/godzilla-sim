@@ -36,10 +36,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if dest < 0:
 		return
 
-	var stack: Array = ctx.owner.zones[zone_idx]
-	ctx.owner.zones[zone_idx] = []
-	ctx.owner.zones[dest] = stack
-	ctx.owner.zones_changed.emit()
+	await ctx.effect_handler.move_zone_stack(ctx.owner, zone_idx, dest)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

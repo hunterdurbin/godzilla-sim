@@ -35,7 +35,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if dest < 0:
 		return
 
-	var stack: Array = ctx.owner.zones[source]
-	ctx.owner.zones[source] = []
-	ctx.owner.zones[dest] = stack
-	ctx.owner.zones_changed.emit()
+	await ctx.effect_handler.move_zone_stack(ctx.owner, source, dest)

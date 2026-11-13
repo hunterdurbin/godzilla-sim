@@ -42,7 +42,7 @@ func is_base_strategy() -> bool:
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	# Find Godzilla battle cards in hand (respecting play restrictions)
-	var selected := await ctx.effect_handler.select_hand_card(
+	var selected := await ctx.effect_handler.choose_hand_card(
 		ctx.owner.player_id,
 		func(card):
 			if not CardUtils.is_battle(card):
@@ -56,29 +56,13 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if selected.is_empty():
 		return
 
-	# select_hand_card moved it to discard — move it from discard to a zone
-	for i in range(ctx.owner.discard_pile.size() - 1, -1, -1):
-		if ctx.owner.discard_pile[i].get("id") == selected.get("id"):
-			var card: Dictionary = ctx.owner.discard_pile.pop_at(i)
-			ctx.owner.discard_changed.emit()
+	var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
+	var dest := await ctx.effect_handler.select_zone_target(
+		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
+		tr("STR_EFF_PLAY_BATTLE_ZONE"), false, CardUtils.base_id(selected))
+	if dest < 0:
+		return
 
-			var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
-
-			var dest := await ctx.effect_handler.select_zone_target(
-				ctx.owner.player_id, ctx.owner.player_id, valid_zones,
-				tr("STR_EFF_PLAY_BATTLE_ZONE"), false, CardUtils.base_id(card))
-			if dest < 0:
-				ctx.owner.discard_pile.append(card)
-				ctx.owner.discard_changed.emit()
-				return
-
-			# Handle overload if zone occupied
-			if ctx.owner.zone_has_cards(dest):
-				var destroyed_stack: Array = ctx.owner.clear_zone(dest)
-				EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
-				ctx.owner.discard_changed.emit()
-
-			ctx.owner.push_zone_card(dest, card)
-			ctx.owner.zones_changed.emit()
-			await ctx.effect_handler.trigger_enter(ctx.owner.player_id, card, true)
-			break
+	# The engine moves it hand -> zone, overloads an occupied zone (11.5) and
+	# fires <Enter> + on_battle_card_played.
+	await ctx.effect_handler.play_battle_card_from_hand(ctx.owner.player_id, selected, dest)

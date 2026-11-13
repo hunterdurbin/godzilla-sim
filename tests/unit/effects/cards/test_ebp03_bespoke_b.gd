@@ -1528,6 +1528,32 @@ func test_ebp03_080_counter_start_plays_godzilla_battle_from_hand() -> void:
 	assert_that(input.calls[0]["valid"]).is_equal([0])
 
 
+func test_ebp03_080_overload_applies_destroy_replacement() -> void:
+	# Playing over an occupied zone is a real overload (11.5): Godzilla(2023)'s
+	# <Destroy> replacement sends it to the deck bottom.
+	var card := Real.instance("EBP03-080")
+	var goji := Cards.battle(6, 5000, "GOJI", [CardEnums.CardTrait.GODZILLA])
+	var g2023 := Real.instance("ESD01-012")
+	var state := States.make_state({"p0": {
+		"strategy_zones": [card],
+		"hand": [goji],
+		"zone_cards": {2: g2023},
+	}})
+	state.current_phase = CardEnums.GamePhase.COUNTER
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_hand_card": [0], "select_zone": [2]}
+	var s := States.make_session(state, input)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+
+	var p0 := state.players[0]
+	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal("GOJI")
+	assert_bool(p0.main_deck.has(g2023)).is_true()
+	assert_bool(p0.discard_pile.has(g2023)).is_false()
+	assert_int(p0.hand.size()).is_equal(0)
+
+
 func test_ebp03_080_silent_on_opponent_turn_and_skippable() -> void:
 	# Opponent's turn: no prompt.
 	var card := Real.instance("EBP03-080")

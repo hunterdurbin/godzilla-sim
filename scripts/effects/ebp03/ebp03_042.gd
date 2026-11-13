@@ -48,14 +48,9 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 	if chosen < 0:
 		return
 
-	# Remove self from zone 8 and place under the chosen card
-	var self_stack: Array = ctx.owner.clear_zone(my_zone)
-	if not self_stack.is_empty():
-		ctx.effect_handler.place_card_under_zone(ctx.owner, self_stack[0], chosen)
-		# Banish/discard any cards that were stacked under self
-		if self_stack.size() > 1:
-			EffectHandler.banish_or_discard(ctx.owner, self_stack.slice(1))
-	ctx.owner.zones_changed.emit()
+	# Put this card under the chosen card. If you do, evolve it.
+	if not ctx.effect_handler.move_zone_card_under_zone(ctx.owner, my_zone, chosen):
+		return
 
 	# Evolve the chosen card
 	await ctx.effect_handler.perform_evolution(ctx.owner.player_id, chosen)

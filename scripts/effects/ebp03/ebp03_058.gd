@@ -54,12 +54,10 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if dest < 0:
 		return
 
-	ctx.effect_handler.move_zone_stack(ctx.owner, zone_idx, dest)
+	await ctx.effect_handler.move_zone_stack(ctx.owner, zone_idx, dest)
 
 	# Check if now adjacent to own monster
 	if monster_idx in get_adjacent_zones(dest):
-		var destroyed_stack: Array = ctx.owner.clear_zone(dest)
-		EffectHandler.banish_or_discard(ctx.owner, destroyed_stack)
-		ctx.owner.zones_changed.emit()
-		ctx.owner.discard_changed.emit()
-		await ctx.effect_handler.trigger_revenge(ctx.owner.player_id, ctx.card_data)
+		# <Destroy> this card — the engine fires <Revenge> and the other
+		# "when destroyed" abilities.
+		await ctx.effect_handler.destroy_zones(ctx.owner, [dest])

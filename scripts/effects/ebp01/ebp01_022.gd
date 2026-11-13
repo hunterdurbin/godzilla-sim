@@ -55,6 +55,4 @@ func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void
 	if dest < 0:
 		return
 
-	var stack: Array = ctx.owner.clear_zone(source)
-	ctx.owner.zones[dest] = stack
-	ctx.owner.zones_changed.emit()
+	await ctx.effect_handler.move_zone_stack(ctx.owner, source, dest)

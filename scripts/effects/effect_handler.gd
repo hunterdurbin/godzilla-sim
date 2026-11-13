@@ -650,6 +650,10 @@ func take_hand_card(player_id: int, filter: Callable, prompt: String, allow_skip
 	return await mover.take_hand_card(player_id, filter, prompt, allow_skip)
 
 
+func choose_hand_card(player_id: int, filter: Callable, prompt: String, allow_skip: bool = false) -> Dictionary:
+	return await mover.choose_hand_card(player_id, filter, prompt, allow_skip)
+
+
 func select_from_cards(player_id: int, options: Array[Dictionary], all_visible: Array[Dictionary], prompt: String, allow_skip: bool = true) -> Dictionary:
 	return await mover.select_from_cards(player_id, options, all_visible, prompt, allow_skip)
 
@@ -728,6 +732,14 @@ func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx:
 
 func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int) -> void:
 	mover.place_card_under_zone(player, card, zone_idx)
+
+
+func move_zone_card_under_zone(player: PlayerState, from_zone: int, to_zone: int) -> bool:
+	return mover.move_zone_card_under_zone(player, from_zone, to_zone)
+
+
+func return_cards_under_top_to_hand(player: PlayerState, zone_idx: int) -> Array[Dictionary]:
+	return mover.return_cards_under_top_to_hand(player, zone_idx)
 
 
 func get_cards_under_top(player: PlayerState, zone_idx: int) -> Array:

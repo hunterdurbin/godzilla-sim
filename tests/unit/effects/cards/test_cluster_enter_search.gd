@@ -108,6 +108,27 @@ func test_ebp01_034_enter_plays_evolution_battle_from_discard() -> void:
 	assert_array(_calls_of(input, "select_zone")[0]["valid"]).contains_exactly([1])
 
 
+## EBP01-034 overloading an occupied adjacent zone is a real overload (11.5):
+## Godzilla(2023)'s <Destroy> replacement sends it to the deck bottom.
+func test_ebp01_034_overload_applies_destroy_replacement() -> void:
+	var card := Real.instance("EBP01-034")
+	var wanted := Real.instance("EBP01-044")
+	var g2023 := Real.instance("ESD01-012")
+	var state := States.make_state({"p0": {
+		"current_monster": card, "monster_zone": 1, "zone_cards": {1: g2023}}})
+	state.players[0].discard_pile.append(wanted)
+	var s := States.make_session(state)
+	var input: ScriptedPlayerInput = s["input"]
+	input.answers = {"search_cards": [{"id": wanted["id"]}], "select_zone": [1]}
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	var p0 := state.players[0]
+	assert_str(str(p0.get_zone_top_card(1).get("id"))).is_equal(str(wanted["id"]))
+	assert_array(_ids(p0.main_deck)).contains([str(g2023["id"])])
+	assert_array(_ids(p0.discard_pile)).not_contains([str(g2023["id"])])
+
+
 ## EBP02-058 / EBP02-062 <Revenge>: return up to 1 trait-matching monster card
 ## from the discard pile to hand.
 func test_revenge_returns_trait_monster_from_discard(card_id: String, wanted_id: String,

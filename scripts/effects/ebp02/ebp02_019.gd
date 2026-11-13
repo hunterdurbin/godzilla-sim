@@ -31,10 +31,7 @@ func on_enter(ctx: EffectContext) -> void:
 					ctx.owner.player_id, ctx.owner.player_id, empty,
 					tr("STR_EFF_MOVE_UNOCCUPIED"))
 				if dest >= 0:
-					var stack: Array = ctx.owner.zones[source]
-					ctx.owner.zones[source] = []
-					ctx.owner.zones[dest] = stack
-					ctx.owner.zones_changed.emit()
+					await ctx.effect_handler.move_zone_stack(ctx.owner, source, dest)
 
 	# If invaded this turn, advance monster by 1
 	if ctx.owner.has_invaded_this_turn and ctx.owner.monster_zone < 8:

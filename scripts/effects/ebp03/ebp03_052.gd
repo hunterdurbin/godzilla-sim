@@ -36,15 +36,7 @@ func on_would_be_destroyed(ctx: EffectContext) -> bool:
 	if my_zone < 0:
 		return false
 
-	var under_cards: Array = ctx.effect_handler.get_cards_under_top(ctx.owner, my_zone)
-	if not under_cards.is_empty():
-		for card in under_cards:
-			ctx.owner.hand.append(card)
-		# Clear zone stack to just the top card (self)
-		var top_card: Dictionary = ctx.owner.get_zone_top_card(my_zone)
-		ctx.owner.zones[my_zone] = [top_card]
-		ctx.owner.hand_changed.emit()
-		ctx.owner.zones_changed.emit()
+	ctx.effect_handler.return_cards_under_top_to_hand(ctx.owner, my_zone)
 
 	# Don't replace destruction — let it proceed normally
 	return false
