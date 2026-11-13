@@ -6,8 +6,10 @@
 #   test_path     suite file or directory (default: tests/unit)
 #   --verbose     print the full gdUnit log instead of the digest
 #
-# Default output is a digest: each failure report, SCRIPT/Parse errors and the
-# summary (ANSI stripped). The full log path is printed at the end.
+# Default output is a digest: each failure report, SCRIPT/Parse errors, the
+# summary (ANSI stripped) and — on failure — a "Failed test cases: N" line
+# (gdUnit's own "failures" counts assertions, not tests). The full log path
+# is printed at the end.
 # Exit status: gdUnit's own exit code; 1 on parse error / crash / timeout.
 #
 # Wedge guard: headless Godot can hang at exit after gdUnit finishes, and a
@@ -68,6 +70,9 @@ else
 		/SCRIPT ERROR|Parse Error|Debugger Break/ { print; getline; print; next }
 		/^Overall Summary:|^Executed test (suites|cases)|^Exit code:/ { print }
 	' "$PLAIN"
+	# gdUnit's "N failures" counts failed ASSERTIONS; this counts failed tests.
+	FAILED_TESTS=$(grep -c ' FAILED ' "$PLAIN")
+	[ "$FAILED_TESTS" -gt 0 ] && echo "Failed test cases: $FAILED_TESTS (Overall Summary 'failures' counts assertions)"
 fi
 echo "Full log: $PLAIN"
 rm -f "$LOG"

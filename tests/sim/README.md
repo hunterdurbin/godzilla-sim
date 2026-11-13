@@ -29,6 +29,10 @@ run the same harness) and reports differing `[SimResult]` lines, P1 wins,
 SCRIPT ERROR counts and `[Kaiju] … plan DIVERGED` counts. Exit 0 = identical.
 Decks resolve from the user decklists dir; for rules-engine changes pick a
 deck that exercises them (e.g. "King Ghidorah" carries 3 <Revenge> cards).
+For card-script changes, `./tests/sim/decks_with_cards.sh <card_id>...` ranks
+the decklists by how many of those cards they run — pass the top names as
+deck1/deck2. An identical diff on decks that never draw the changed cards
+proves only "no regression", not the new behaviour.
 
 **KAIJU replay parity**: run with a KAIJU side and compare `kaiju_diverged`
 — the planner's cached plan stopped matching the live game. It must not rise
