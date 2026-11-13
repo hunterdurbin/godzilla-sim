@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Drive the real game (GameBoard) headfully and capture screenshots to verify presentation changes end-to-end. Use when a change touches scenes/board/, overlays, or other UI and you need runtime evidence, not just tests.
+description: Drive the real game (GameBoard) headfully and capture screenshots to verify presentation changes end-to-end. Use when a change touches scenes/board/, overlays, or other UI and you need runtime evidence, not just tests; or for a one-command smoke run (smoke.sh) after an engine/logic change.
 ---
 
 # Verifying UI changes by driving the real game
@@ -8,6 +8,16 @@ description: Drive the real game (GameBoard) headfully and capture screenshots t
 Godot binary: use `godot` if it's on PATH; otherwise discover the local
 install (e.g. `which godot`, shell aliases, or the platform's app location
 such as `<Godot.app>/Contents/MacOS/Godot` on macOS).
+
+## Smoke run: engine/logic changes
+
+When the change is engine or logic only and you just need proof the real
+board still runs, run `.claude/skills/verify/smoke.sh <godot> [turns]
+[shots_dir]`: a solo game that ends the main phase for N turns (default 4)
+with effect overlays auto-closed. Done = `SMOKE PASS` (exit 0); `SMOKE FAIL`
+means a SCRIPT/Parse error, a stalled turn (`smoke_stall.png`), or a timeout.
+Look at `smoke_end.png` before reporting. For specific UI behaviour, write a
+driver with the recipe below.
 
 ## Recipe: temporary driver scene
 
@@ -96,5 +106,5 @@ instead of killing anything — the user's processes are not yours to stop.
   runs (`--path . res://X.tscn`) load autoloads normally.
 - Screenshots land at viewport resolution (1280x720). Zoom into details with
   `sips -c <h> <w> --cropOffset <y> <x> f.png` + `sips --resampleWidth 300`.
-- Run `godot --headless --path . --import` after adding scripts/scenes/csv
-  rows (generates .uid files, recompiles .translation).
+- Run `./tests/import.sh <godot>` after adding scripts/scenes/csv rows
+  (generates .uid files, recompiles .translation).

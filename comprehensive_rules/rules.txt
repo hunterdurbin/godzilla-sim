@@ -1,0 +1,1645 @@
+Godzilla Card Game Comprehensive Rules ver. 1.00
+Last Updated: MMM DD, 2025
+Table of Contents 
+
+
+Pg
+1. Overview of the Game
+2. Card Information
+3. Player Information
+4. Areas
+5. Specific Terms
+6. Setting up the Game
+7. Progression of the Game
+8. Main Phase Performable Actions
+9. Playing and Resolving Cards and Abilities
+10. Rule Actions
+11. Keywords and Keyword Abilities
+12. Miscellaneous
+
+1
+3
+3
+5
+7
+7
+8
+8
+11
+12
+12
+
+Rules
+1. Overview of the Game
+1.1.Number of Players
+1.1.1. This game is played by two players. These
+comprehensive rules do not apply to games
+played by any other number of players.
+1.2.Winning and Losing
+1.2.1. If any player wins or loses, the game ends
+immediately. When your opponent loses, if you
+have not lost the game, you win the game.
+1.2.1.1.A player whose monster card invades their
+opponent’s zones wins the game.
+1.2.1.2.A player who is unable to play a new
+monster card when their monster card is
+countered (5.15.1.2.1) loses the game.
+1.2.2. If all players lose at the same time, then the
+game ends in a draw.
+1.2.3. Any player may concede the game at any
+time. The player who declared their concession
+immediately loses without proceeding to the
+check timing (9.4.1), and the game ends.
+1.2.3.1.No effects can interfere with conceding. No
+effects can force a player to concede, and no
+effects can replace losing the game with a
+concession.
+1.2.4. There are cards with effects that have a
+player win or lose the game. In these cases, that
+player wins or loses while resolving the effect
+without proceeding to the check timing (9.4.1),
+and the game ends.
+1.3.Golden Rules of the Game
+1.3.1. 1.3.1. If the comprehensive rules and the text
+of a card contradict each other, the card text
+takes precedence.
+1.3.2. 1.3.2. If anything attempts to make a player
+do something they cannot perform, nothing
+happens. If anything attempts to make a player
+do something they can only partially perform,
+then the player only performs the part they can.
+1.3.2.1.1.3.2.1. If anything attempts to change a
+game state to the state it is already in, it does
+
+not change to that state again, and that action
+never happens.
+1.3.2.2.If the number of times a certain action is to
+be performed is 0 or lower, or if the basis for
+an action to be performed is a value of 0 or
+lower that is not an addition, subtraction, or
+comparison, nothing happens. No reverse
+action will take place even if the value is
+negative.
+1.3.2.3.If there are multiple effects that require a
+certain action, and it is not possible to fulfill all
+of those requirements, you are required to
+choose and perform actions that would fulfill as
+many of those requirements as possible.
+1.3.2.4.Unless there is an upper or lower limit
+specified, the numerical information players
+and cards have can be 0 or negative.
+1.3.3. If a player is instructed by a card’s effect to
+perform an action, and at the same time there is
+an effect being applied that restricts that action
+from being performed, the restriction takes
+precedence and that action is not performed.
+1.3.4. If multiple players are to make a choice at
+the same time, the active player makes their
+choice first. The non-active player will make their
+choice after knowing the choice made by the
+active player.
+1.3.4.1.If an effect applies to multiple players, and
+that effect has a series of processes to be
+performed, all processes that do not involve
+choosing are performed simultaneously, while
+the active player performs the processes that
+involve choosing first.
+1.3.4.2.When cards in hidden areas are to be
+chosen at the same time, the active player
+chooses the required number of cards without
+revealing their information, then the non-active
+player chooses the required number of cards.
+If the chosen cards are to be revealed, they
+are revealed after all players have made their
+choices.
+1.3.5. If you are to choose a number, then you
+must choose an integer that is 0 or greater. You
+cannot choose a fraction or a negative number.
+1.3.6. If a number is specified for the upper limit in
+a form such as “up to X”, unless a number is
+specified for the lower limit, you can choose 0.
+
+2.3.2.3.The ranks of strategy cards are called
+“strategy ranks”, and are written with Arabic
+numerals.
+2.4 Color
+2.4.1. The color of this card.
+2.4.2. Color is represented by the background of
+the rank (2.3) and the border of the card.
+2.4.3. Color is one of either red, blue, white, or
+green.
+
+Monster
+Red
+
+Blue
+
+Green
+
+White
+
+2.4.4. Some cards are more than one color at the
+same time.
+
+Red・Blue
+
+Battle
+1
+2
+3
+4
+5
+6
+
+Name
+Type
+Rank
+Color
+Trait
+Threat Level
+
+Strategy
+7
+8
+9
+10
+11
+
+Counter Power
+Invasion Icon
+Text
+Art
+Collection Data
+
+1. me
+2. Card Information
+2.1 Card Name
+2.1.1. The proper name of this card.
+2.1.2. Names may be referenced by other abilities
+and effects.
+2.1.3. When enclosed as “(name)” in text, it means
+a card with (name) as its name.
+2.2 Type
+2.2.1. The information about the card’s type.
+2.2.2. Cards with the “Monster” type are cards that
+move to invade in the game.
+2.2.3. Cards with the “Battle” type are cards that
+battle the opponent’s monsters.
+2.2.4. Cards with the “Strategy” type are cards that
+change the state of the game.
+2.3 Rank
+2.3.1. The number that indicates this card’s
+strength.
+2.3.2. The ranks of each type of card are
+categorized as below.
+2.3.2.1.The ranks of monster cards are called
+“monster ranks”, and are written as Roman
+numerals (I/II/III/IV).
+2.3.2.2.The ranks of battle cards are called “battle
+ranks”, and are written with Arabic numerals.
+
+Blue・Green
+
+Green・Red
+
+2.5 Trait
+2.5.1. The phrase that is this card’s trait.
+2.5.1.1.If there are multiple phrases for the trait, it
+has each of those as traits.
+2.5.2. Traits may be referenced by other abilities,
+effects, and cards in the strategy zone.
+2.5.3. When enclosed as 《(name)》 in text, it means
+the trait named (name).
+2.5.3.1.The “《(name)》” text may be indicated by
+an icon with the name such as
+
+.
+
+2.6 Threat Level
+2.6.1. The number that indicates this monster’s
+defense power.
+2.7 Counter Power
+2.7.1. The number that indicates its strength at
+countering monsters.
+2.8 Invasion Icon
+2.8.1. The number that is referenced when a
+monster invades (5.14).
+2.8.2. The number of an invasion icon is indicated
+by the Arabic numeral on the icon.
+2.9 Text
+2.9.1. The information about this card’s inherent
+abilities.
+2.9.2. There are explanations of abilities enclosed
+in ( ) brackets in text that are called reminder
+text. While reminder text is part of the text, its
+meaning only serves as an explanation of the
+ability, and does not affect the game.
+2.10Art
+2.10.1. The descriptive art of the card.
+2.10.2. The art has no meaning in terms of rules.
+
+2.11Collection Data
+2.11.1. The card number, artist’s name, copyright
+information, and other contents of the card with
+no direct relation to the game that have not been
+mentioned so far are collectively called the
+“collection data”.
+2.11.2. The card number is referenced when
+constructing a deck (6.1.1.4).
+2.11.3. Other than the card number, collection data
+has no meaning in terms of rules and gameplay.
+
+3. Player Information
+3.1 Owner and Master
+3.1.1. The owner is the player who owns the card.
+The owner of a card is the player who had that
+card in their deck at the beginning of the game.
+At the end of the game, each player retrieves the
+cards that they own.
+3.1.2. The master is the player who is currently
+using a card, ability, or effect. The master of a
+card in an area is the player that area belongs
+to.
+3.1.2.1.The master of a continuous ability is the
+master of the card that has that ability, or the
+master of the effect that created that ability.
+3.1.2.2.The master of an automatic ability is the
+master of the card that has that ability, or the
+master of the effect that created that ability.
+3.1.2.3.The master of an effect is the master of the
+ability that created that effect.
+3.1.2.3.1. If an effect instructs for actions to
+be performed without specifying a player, the
+master of that effect performs those actions.
+3.2 Stacking of Cards
+3.2.1. Cards may be stacked on top of, or under
+cards that are in zones (4.4), strategy zones
+(4.5), and invading monster zones (4.7).
+3.2.2. The order that stacked cards are stacked in
+is controlled.
+3.2.3. A stack of cards is considered a single card
+on the field.
+3.2.3.1.When the information of stacked cards is
+referenced, the information of the topmost card
+is used. Unless it is explicitly stated that the
+information of the stacked cards underneath is
+to be referenced, the information of the cards
+that are underneath the topmost card are not
+referenced.
+3.2.4. When stacked cards move to an area, all of
+the stacked cards move to that area at the same
+time.
+3.2.5. When a new card is stacked on top of a card,
+that new card is considered to be a different card
+from the cards previously stacked underneath.
+3.3 Invading Monster
+3.3.1. During a game, each player has an
+arrangement of monster cards that is regarded
+as the invading monster by the rules.
+3.3.2. The invading monster is a card or a stack of
+cards (3.2) in the invading monster zone.
+3.3.3. A player’s invading monster occupies one of
+the zones as its position.
+
+3.3.3.1.An invading monster’s position is indicated
+by the zone the invading monster directly
+occupies.
+3.3.3.2.An invading monster is always considered
+to be in the area represented by its position,
+and unless otherwise stated, it is not
+considered to be in the invading monster zone.
+3.3.3.3.When the position of an invading monster
+is changed, the invading monster itself is
+moved to indicate the new position, in
+accordance with the above.
+3.3.4. During a game, when a player’s “monster
+card” is referenced without specifying an area, it
+refers to that player’s invading monster.
+3.4 Rage
+3.4.1. Each player’s invading monster has
+numerical information called "rage"
+3.4.2. The value of each invading
+monster’s rage is indicated by
+placing the same number of a game
+aid called rage cards in an area
+visible to the opponent.
+3.4.2.1.Rage cards are only a game
+aid used to assist in making rage
+information readily known, and are
+not considered cards with any
+meaning in terms of the rules.
+3.4.3. When a player’s “monster card’s 【rage】”
+value is referenced, it refers to value of their
+invading monster’s rage.
+3.4.4. If rage would become less than 0, it
+becomes 0.
+3.4.5. A player’s invading monster gains +5000
+threat level for every 1 of that invading monster’s
+rage.
+3.4.6. The term ‘rage’ may be represented by a
+icon.
+
+4. Areas
+4.1 Basics of Areas
+4.1.1. Unless otherwise specified, each player has
+their own of each area.
+4.1.2. There are areas where all players may see
+the information of the cards in that area, and
+areas where specified players are unable to see
+that information. Areas in which all players may
+see the information are “public areas”, and areas
+in which specific players are unable to see that
+information are called “hidden areas”.
+4.1.2.1.When a card is placed in a public area, it is
+placed in the public state (4.2.2). When a card
+is placed in a hidden area, it is placed in the
+hidden state (4.2.3).
+4.1.2.2.All players may check the number of cards
+in any area at any time, regardless of whether
+the area is public or hidden.
+4.1.2.3.In hidden areas, unless all cards in that
+area are to be revealed to all players by an
+effect, the presence of cards that meet specific
+conditions cannot be guaranteed. Even if a
+player can see the contents of that zone, they
+may treat it as though no cards that meets
+those specific conditions exist.
+
+4.1.3. There are areas where the order the cards
+are placed in the area is controlled. Unless
+otherwise specified, the order of cards in an area
+where the order is controlled cannot be changed.
+4.1.3.1.When the order of cards in an area is
+controlled, it means that the order those cards
+are stacked in is controlled.
+4.1.4. When a card performs a move between
+areas that is not a movement from zone to zone,
+unless otherwise specified, it is considered as a
+new card in the new area. Effects that were
+applied in the previous area do not continue to
+apply.
+4.1.4.1.When an effect explicitly refers to the
+moved card itself in the area it had moved to,
+within that effect, the card in the area moved to
+can be referenced as if it is that card itself.
+4.1.5. When multiple cards are placed in an area at
+the same time, unless otherwise specified, the
+order they are placed in the new area is decided
+by the player that area belongs to.
+4.1.5.1.When multiple cards are to be placed from
+a public area to a hidden area at the same
+time, and the master of those cards can decide
+the order the cards are placed in, no player
+other than the master may know the order
+those cards are placed.
+4.1.6. When a card’s text or ability or effect refers
+to any area, and the player whose area is being
+referenced is not specified, it refers to that area
+that belongs to that card’s master.
+4.1.7. When a card moves to an area other than a
+zone, it moves to the area belonging to that
+card’s owner.
+4.2 Area Visibility State
+4.2.1. Cards in areas have either the public state or
+hidden state.
+4.2.2. All players are able to see the information of
+cards in the public state.
+4.2.3. Some or all players are unable to see the
+information of cards in the hidden state.
+4.3 Field
+4.3.1. The field is the combination of a player’s
+zones.
+4.3.2. Players have multiple zones (4.4) on their
+field.
+4.4 Zones
+4.4.1. The areas where monster cards and battle
+cards are placed.
+4.4.2. A player has 8 zones on their field.
+4.4.3. Each zone has a zone number ranging from
+1 to 8.
+4.4.4. The zones of each player are arranged in the
+layout below (numbers denote each zone’s
+number).
+
+4.4.4.1.When a player’s “zone (number)” is
+referenced, it refers to the area amongst that
+player’s zones that has the zone number
+(number).
+
+4.4.5. Zones have positional relationships with one
+another.
+4.4.5.1.A player’s zones 8 and 3, zones 7 and 4,
+and zones 6 and 5, each have the former zone
+being “in front of” the latter zone, and the latter
+zone being “behind” the prior zone.
+4.4.5.2.Zones that are “adjacent” means that they
+are either a player’s pair of zones that have
+zone numbers that differ by 1, a player’s pair of
+zones that are in front of or behind each other
+(4.4.5.1), or a player’s zone 8 and their
+opponent’s zone 8.
+4.4.5.3.Zones that are ‘before’ a player’s zone are
+that player’s zones with zone numbers that are
+less than that zone’s number. Similarly, zones
+that are ‘beyond’ are that player’s zones with
+zone numbers that are greater than that zone’s
+number.
+4.4.5.3.1. Zones fulfill the conditions of
+being “before” or “beyond” themselves.
+4.4.5.4.Zones that are considered to be in the
+same column are a player’s zone 1 and their
+opponent’s zones 5 and 6, a player’s zone 2
+and their opponent’s zones 4 and 7, and a
+player’s zones 3 and 8 and their opponent’s
+zones 3 and 8.
+4.4.5.5.Each player’s Zones have left–right
+relationships.
+4.4.5.5.1. A player’s Zones are arranged,
+from that player’s perspective, from left to
+right, towards their opponent’s side, in the
+following order: Zone 1, Zone 2, Zones 3 and
+8, Zones 4 and 7, and Zones 5 and 6.
+4.4.5.5.1.1. Zones 3 and 8, Zones 4 and 7,
+and Zones 5 and 6 do not have a left–right
+relationship with each other.
+4.4.5.5.2. When referring to an opponent’s
+Zone that is further to the right from a player’s
+perspective, refer instead to the Zone that is
+further to the left from the opponent’s
+perspective, and vice versa.
+4.4.5.5.3. When referring to the left–right
+relationship between cards, refer to the
+left–right relationship of the Zones those
+cards are in.
+4.4.5.5.4. A card being the “rightmost”
+among a group of cards means that there is
+no card in that group that is further to the
+right than that card. The same applies
+inversely for “leftmost.”
+4.4.6. The reverse order represents zones that are
+further to the right.
+4.4.7. Zones are public to all players, the order of
+its cards is not controlled.
+4.4.8. When referring to an “empty” zone, it means
+a zone that does not contain any cards.
+4.5 Strategy Zone
+4.5.1. The area where strategy cards a player plays
+are placed.
+4.5.2. Each player has 2 strategy zones.
+4.5.3. The strategy zone is a public area, and the
+order of its cards is not controlled.
+4.6 Monster Deck Zone
+
+4.6.1. The area where the monster deck players
+use for the game are placed.]
+4.6.2. A monster deck zone is a hidden area for the
+opponent, and the order of its cards is not
+controlled.
+4.7 Invading Monster Zone
+4.7.1. The area where the player’s invading
+monster is placed.
+4.7.2. When instructed by the rules to make a
+monster card the new invading monster, put that
+card in the invading monster zone as the
+invading monster if the invading monster zone
+does not have an invading monster, and place
+that card on top of if it does.
+4.7.3. The invading monster zone is a public area,
+and the order of its cards is not controlled.
+4.8 Deck
+4.8.1. The area where your main deck is placed at
+the start of a game.
+4.8.2. The deck is a hidden area for all players, and
+the order of its cards is controlled.
+4.8.3. When multiple cards are to be moved from
+the deck to another area, they are moved one at
+a time.
+4.9 Hand
+4.9.1. The area where each player places their
+unused cards without being visible to the
+opponent.
+4.9.2. The hand is a hidden area, but a player can
+freely see the information of the cards in their
+own hand. You cannot see the information of
+cards in other players’ hands. The order of cards
+in the hand is not controlled.
+4.9.3. In card text, “(number) cards in your hand” is
+expressed simply as “(number) cards in your
+hand.”
+4.10 Discard Pile
+4.10.1. The area where each player places the cards
+that have been used or destroyed.
+4.10.2. The discard pile is a public area, and the
+order of its cards is not controlled.
+4.11Resolution Area
+4.11.1. The area where abilities and cards are
+temporarily placed as part of the game. There is
+only 1 resolution area shared by both players to
+use.
+4.11.2. The resolution area is a public area, and the
+order of its cards is not controlled.
+5. Specific Terms
+5.1 Overview
+5.1.1. Specific terms are states or instructions of
+actions that have a special meaning when
+playing this game.
+5.2 Place/Move
+5.2.1. When instructed to “place” or “move” a card
+to a specified area, move that card to that area.
+5.3 Shuffle
+5.3.1. When instructed to “shuffle” a specified
+group of cards, the player that zone those cards
+
+are in belongs to randomizes the order of that
+group of cards.
+5.3.1.1.When the name of an area is specified for
+the group of cards, all of the cards in that area
+make up the group of cards.
+5.3.1.2.When instructed to shuffle a group of cards
+that has 0 or 1 cards, the order of those cards
+is not changed, but the shuffle is considered to
+have been performed.
+5.4 Draw
+5.4.1. When instructed to “draw 1 card”, move the
+card at the top of the specified player’s deck to
+the specified player’s hand.
+5.4.2. When instructed to “draw (number) cards”,
+the specified player repeats the action of
+drawing 1 card (number) times.
+5.4.3. When instructed to “draw up to (number)
+cards”, the specified player performs the
+following steps.
+5.4.3.1.If (number) is 0 or less, the performing of
+this instruction ends.
+5.4.3.2.The specified player can end the
+performing of this instruction.
+5.4.3.3.The specified player draws 1 card.
+5.4.3.4.If the number of times 5.4.3.3 has been
+performed for this instruction has reached
+(number) times, the performing of this
+instruction ends. If it has not, return to 5.4.3.2. 
+5.5 Look at/from the Top
+5.5.1. When instructed to “look at the top (number)
+cards of the deck”, the specified player can
+check the information of the top (number) cards
+of that deck.
+5.5.2. When instructed to “look at up to (number)
+cards from the top of the deck”, perform the
+following steps.
+5.5.2.1.If (number) is 0 or less, the performing of
+this instruction ends.
+5.5.2.2.Specify X as having a value of 1.
+5.5.2.3.The specified player can end the
+performing of this instruction.
+5.5.2.4.The specified player can check the
+information of the top X cards of the deck.
+5.5.2.5.If the number of times 5.5.2.4 has been
+performed for this instruction has reached
+(number) times, the performing of this
+instruction ends. If it has not, add 1 to X and
+return to 5.5.2.3.
+5.6 Swap
+5.6.1. When instructed to “swap” a card and
+another card, move the former card to the latter
+card’s area and the latter card to the former
+card’s area simultaneously.
+5.6.2. If either of the cards is unable to move to the
+other’s area at the point of performing the
+instruction to swap for any reason, that Draw
+instruction is not performed.
+5.7 Discard/Send into the Discard Pile
+5.7.1. When instructed to “discard (number)” cards
+from hand, that player chooses (number) cards
+from their hand, and places them in the discard
+pile.
+
+5.7.2. When instructed to “discard cards until you
+have (number) cards remaining”, that player
+chooses (number) cards from their hand, and
+discards the rest of the cards.
+5.7.2.1.If the number of cards in the hand is less
+than (number) at the point of performing the
+instruction, this instruction does nothing.
+5.7.3. When there is an instruction to “send into the
+discard pile” in reference to cards in an area, put
+those cards into the discard pile.
+5.7.3.1.To “send into the discard pile” specific
+cards of an invading monster means to place
+only the specified cards from the cards stacked
+on the invading monster into the discard pile.
+5.8 Search
+5.8.1. When a player is instructed to “search” their
+deck for specific cards, they look at all the cards
+in the deck, and choose the specified cards from
+among them.
+5.8.1.1.If only the number of cards to search is
+specified, you must choose that number of
+cards.
+5.8.1.1.1. If the number of cards in the
+deck at this point is less than the specified
+number, choose all the cards in the deck.
+5.8.1.2.If information other than the number of
+cards is specified, there is no guarantee that
+there are cards with that information in the
+deck.
+5.9 Activate
+5.9.1. When instructed to “activate” a strategy card,
+the master of that strategy card plays that
+strategy card.
+5.10Reveal
+5.10.1. When instructed to “reveal” a card, put that
+card into the public state (4.2.2).
+5.10.1.1. When a card moves to another
+area, or stops being revealed at the end of the
+performing of the effect that revealed that card,
+it returns to its original visibility state.
+
+5.11. Play
+5.11.1. To “play” a battle card means to place that
+battle card on any zone from outside of the field.
+5.11.1.1. If a battle card is to be played to a
+specific zone due to an effect, if that zone is
+occupied by your invading monster, that battle
+card is not played.
+5.11.1.2. If a battle card is played to a zone
+by an effect, you must choose a zone without
+your invading monster if possible.
+5.11.1.3. If multiple battle cards are to be
+played at the same time, if the zone(s) they are
+played to can be chosen, they must be played
+to different zones if possible.
+5.11.2. To “play” or “play by placing on top” a
+monster card means to have that monster card
+be a new invading monster (3.3).
+5.11.3. To “play from (area)” means to play and
+resolve from that area, or to directly play from
+that area from a rule or effect.
+
+5.11.4. To “play a token” means to put that token into
+existence in the specified zone (9.1.2).
+5.12. Destroy
+5.12.1. When instructed to “destroy” a card, put that
+card into its owner’s discard pile.
+5.12.1.1. When a card in a zone or strategy
+zone, other than a card below the topmost
+card of a stack of cards, is put into the discard
+pile, it is considered to have been destroyed.
+5.12.2. The term “destroy” may be represented by a
+icon.
+5.13. Advance/Retreat
+5.13.1. When instructed to “advance” an invading
+monster, that invading monster’s position
+changes to the zone with a zone number greater
+than the zone number of the currently occupied
+zone by 1.
+5.13.1.1. When an invading monster in a
+zone with the zone number 8 advances, it
+follows the rules below.
+5.13.1.1.1. If that advance is not from an
+invasion (5.14), or your opponent’s zone with
+the zone number 8 is occupied by a battle
+card, you monster does not advance.
+5.13.1.1.2. If that advance is from an
+invasion (5.14), and your opponent’s zone
+with the zone number 8 is not occupied by a
+battle card, the invading monster’s master
+wins the game.
+5.13.1.1.2.1. Winning the game in this
+manner is called “victory through invasion”.
+5.13.1.2. When instructed to “advance" an
+invading monster "to (specific zone)”, it follows
+the rules below.
+5.13.1.2.1. If the zone that invading monster
+is currently occupies is beyond (4.4.5.3) that
+specified zone, nothing is done for that
+instruction.
+5.13.1.2.2. If the zone number of the zone
+that invading monster currently occupies is
+lower than the zone number of (specific
+zone), repeatedly advance that invading
+monster until that invading monster is in that
+(specific zone).
+5.13.2. When instructed to “retreat” an invading
+monster, that invading monster’s position
+changes to the zone with a zone number lesser
+than the zone number of the zone it is currently
+in by 1.
+5.13.2.1. When instructed to retreat an
+invading monster in a zone with zone number
+1, nothing is done, and that invading monster
+is not considered to have retreated.
+5.13.2.2. When instructed to “retreat" an
+invading monster "to (specific zone)”, it follows
+the rules below.
+5.13.2.2.1. If the zone that invading monster
+currently occupies is before (4.4.5.3) that
+specified zone, nothing is done for that
+instruction.
+5.13.2.2.2. If the zone that invading monster
+currently occupies is beyond the zone
+number of (specific zone), repeatedly retreat
+
+that invading monster until that invading
+monster is in that (specific zone).
+5.13.3. If the invading monster did not move from its
+original zone as a result of an advance or
+retreat, that invading monster is not considered
+to have advanced or retreated.
+5.14. Invade
+5.14.1. To have an invading monster “invade” means
+that the master of that invading monster
+performs an invasion (8.6) as a main phase
+action.
+5.15. Counter
+5.15.1. When instructed to “counter” an invading
+monster, perform the following.
+5.15.1.1. If that invading monster occupies a
+zone with zone number 6, 7, or 8, move that
+monster to the zone behind (4.4.5.1) that zone.
+5.15.1.2. That invading monster’s master
+chooses a monster card from their monster
+deck with the same trait (2.5) as any of their
+invading monster’s traits and rank equal to the
+rank of their current invading monster plus 1
+and makes it the new invading monster
+(3.3).monster (3.3).
+5.15.1.2.1. If your opponent is unable to
+choose any monster cards that fulfill the
+above requirements at this point in time, that
+player loses the game, and the game ends.
+5.15.1.2.2. Winning the game through your
+opponent losing the game in this manner is
+called “victory through countering”.
+5.16. Engage
+5.16.1. If a battle card has the “cannot engage”
+status, that battle card’s counter power is not
+added to the player’s total counter power for the
+counter phase of that battle card’s master’s turn.
+5.17. Evolve
+5.17.1. If an instruction causes a battle card on the
+field to “evolve” into a specified new battle card,
+cause that new card to appear by placing it on
+top of the card on the field.
+5.17.1.1. When this process is complete, an
+event in which the battle card on the field has
+“evolved” into the new card is considered to
+have occurred.
+6. Setting up the Game
+6.1 Preparing the Decks
+6.1.1. Each player prepares a monster deck and
+main deck with their own cards before the game.
+6.1.1.1.The monster deck must have 1 monster
+card of each rank from I to IV for a total of 4
+cards.
+6.1.1.2.The main deck must have exactly 50
+cards.
+6.1.1.2.1. The main deck may contain
+monster cards.
+6.1.1.2.2. The main deck must contain a
+total of 10 or less cards with 2 for their
+invasion icon.
+6.1.1.3.The color of each of the cards in the
+monster deck and main deck must either be
+
+white or include the color of the rank 1 card in
+the monster deck.
+6.1.1.4.The monster deck and main deck can have
+up to 4 cards with the same card number
+between them.
+6.1.1.4.1. When referencing whether or not
+cards have the same card number, the “+” at
+the end of the card number is ignored.
+6.1.1.5.Cards with the “Token” trait cannot be
+included in either a monster deck or a main
+deck.
+6.1.2. Continuous abilities regarding deck
+construction requirements are applied as
+replacement effects that change the above deck
+construction requirements. Those abilities are
+inactive after the game starts.
+6.2 Preparing Rage Cards
+6.2.1. Before the game begins, each player
+prepares their own Rage cards to track their
+Rage count.
+6.3 Preparing for the Game
+6.3.1. Before the start of a game, players perform
+the following steps.
+6.3.1.1.Present the monster deck and main deck
+you will use for this game to your opponent.
+6.3.1.2.Each player places their monster deck face
+down into the monster deck zone.
+6.3.1.3.Each player shuffles their main deck and
+places it in the deck area face down.
+6.3.1.4.In a random manner, the players decide
+which player goes first.
+6.3.1.5.Each player moves 5 cards from the top of
+their deck to their hand.
+6.3.1.6.Each player makes the rank 1 monster
+card in their monster deck zone their invading
+monster (3.3), and sets its position (3.3.3).
+6.3.1.6.1. Unless otherwise specified, the
+starting position of a player’s attacking
+monster at the beginning of the game is
+Zone 1.
+6.3.1.7.The rage of each player’s invading monster
+is set to 0.
+7. Progression of the Game
+7.1 Overview
+7.1.1. The game progresses by repeating steps
+that are called “turns”. During a turn, the player
+performing that turn is the turn player, while the
+other player is the non-turn player.
+7.1.2. Each of the phases from 7.2 to 7.5 below are
+performed in this order for each turn.
+7.2 Start Phase
+7.2.1. The “at the beginning of the start phase”
+trigger condition occurs, and resolve a check
+timing.
+7.2.2. The turn player draws a number of cards
+equal to the rank of their opponent’s invading
+monster.
+7.2.3. If there are any cards in the turn player’s
+strategy zone that were placed prior to this turn,
+all of those cards are placed into the discard
+pile..
+
+7.2.4. The rage of the turn player’s invading
+monster is set to 0.
+7.2.5. Resolve a check timing. After all the
+processes for that check timing have been
+completed, the start phase ends.
+
+8. Main Phase Performable Actions
+8.1 Overview
+8.1.1. The following is a list of actions that the turn
+player may perform during the play timing in the
+main phase of their turn.
+
+7.3 Main Phase
+7.3.1. The “at the beginning of the main phase”
+trigger condition occurs, and resolve a check
+timing.
+7.3.2. The turn player resolves a play timing.
+Please refer to 8. Main Phase Performable
+Actions for information about what can be
+performed in the play timing. After this play
+timing ends, the main phase ends.
+
+8.2 Play a Battle Card
+8.2.1. The turn player can choose a battle card
+from their hand with rank equal to or lower than
+the zone number of the zone the opponent’s
+invading monster occupies, and play it.|
+
+7.4 Counter Phase
+7.4.1. The “at the beginning of the counter phase”
+trigger condition occurs, and resolve a check
+timing.
+7.4.2. The turn player adds up the counter power of
+all of the battle cards that are in their zones.
+7.4.2.1.The threat level of monster cards in their
+zones is not added to this.
+7.4.3. If the total counter power is equal to or
+greater than the threat level of the opponent’s
+invading monster, counter (5.15) that invading
+monster.
+7.4.4. Resolve a check timing. After all the
+processes for that check timing have been
+completed, the counter phase ends.
+7.5 End Phase
+7.5.1. The “at the beginning of the end phase”
+trigger condition occurs, and resolve a check
+timing.
+7.5.2. If the zone number of the zone the turn
+player’s invading monster is occupying is 7 or
+less, advance (5.13.1) that invading monster.
+7.5.3. Resolve a check timing.
+7.5.4. If the turn player has less than 5 cards in
+their hand, they draw cards equal to the number
+of cards needed to make it equal to 5.
+7.5.5. Resolve a check timing.
+7.5.6. All effects with “until end of turn” and “during
+that turn” durations disappear.
+7.5.7. At this point, if there are no automatic
+abilities or rule actions that the check timing in
+7.5.5 did not resolve, and if there are no
+automatic abilities with the “at the end of the
+turn” trigger condition whose trigger condition
+has not been fulfilled in this turn and has no
+other trigger conditions, this turn ends, and the
+next turn begins with the opponent of the current
+turn player as the turn player. Otherwise, go
+back to 7.5.4.
+
+
+
+
+
+
+
+
+
+
+8.3 Activate a Strategy Card
+8.3.1. The turn player can choose a strategy card
+from their hand with rank equal to or lower than
+the zone number of the zone their invading
+monster occupies, and play it.
+8.3.2. If there are already strategy cards placed on
+all of that player’s strategy zones, this action
+cannot be performed.
+8.4 Gain Rage
+8.4.1. The turn player can choose and discard a
+monster card from their hand, and increase the
+rage of their invading monster by 1.
+8.5 Play a Monster Card
+8.5.1. The turn player can choose a monster card
+from their hand with rank equal to the rank of
+their invading monster and the same trait (2.5)
+as any of their invading monster’s traits, and
+play it.
+8.5.1.1.When the monster cardbeing played
+becomes the invading monster in this manner,
+increase the rage (3.4) of that invading
+monster by 1. 
+8.6 Invasion
+8.6.1. The turn player can discard a card from their
+hand to have their invading monster invade, by
+performing the following steps.
+8.6.1.1.Check the number on the discarded card’s
+invasion icon.
+8.6.1.2.Advance (5.13.1) your invading monster a
+number of times equal to that number.
+8.6.2. This action can only be performed once per
+turn.
+9. Special Card Procedures
+9.1 Tokens
+9.1.1. During the game, a “token” that is treated as
+though it were a card may be created in a zone.
+9.1.1.1.Tokens are not cards; however, they are
+treated in the same manner as cards, are
+counted toward the number of cards in the
+zone they exist in, and are affected by effects
+that apply to cards.
+9.1.2. To “cause a token to appear” in a zone
+means to put the specified token into existence
+in that zone.
+9.1.2.1.The owner and master of a token that
+appears are the owner and master of the effect
+that caused that token to appear.
+9.1.2.2.The information that a token has is
+determined by that token’s card name.For
+
+details of that information, refer to the
+appendix.
+9.1.3. To “cause a token to disappear” means to
+remove that token from the zone it is currently in,
+so that it no longer exists there.
+9.1.3.1.If a token disappears in a zone, it is
+considered to have left that zone.
+9.1.4. The zones in which tokens may exist are
+restricted.
+9.1.4.1.Tokens whose card type is battle may exist
+only in zones.
+9.1.4.2.If a token is moved to a zone in which it
+cannot exist, it disappears in that zone
+immediately after the move is performed. This
+process does not wait for a check timing, and if
+the move occurs during the resolution of an
+effect, it is performed before continuing the
+resolution of that move.
+9.1.5. Tokens have the “Token” trait.
+9.1.5.1.If an ability or effect specifically refers to
+“tokens,” it refers to cards that have the
+“Token” trait.
+9.1.5.2.Processes that would grant the “Token”
+trait to a non-token card, or remove the
+“Token” trait from a card that has it, are not
+performed.
+10. Playing and Resolving Cards and Abilities
+10.1Categories of Abilities
+10.1.1. Abilities are divided into automatic abilities
+and continuous abilities.
+10.1.1.1. Automatic abilities are abilities that
+are automatically played when the event
+indicated by the ability occurs during the game.
+10.1.1.1.1. Automatic abilities are written on
+cards as “When (condition), (effect)“ or
+“Whenever (condition), (effect)”. The event
+indicated by (condition) is called the “trigger
+condition”, and the fulfilling of an automatic
+ability’s trigger condition is known as “(that
+automatic ability) has been triggered” or “to
+activate (that automatic ability)”.
+10.1.1.1.2. The text of a strategy card is an
+automatic ability with the meaning of “When
+this card is placed in the strategy zone,
+(text)”.
+10.1.1.2. Continuous abilities are abilities
+that have an effect on the game while that
+ability is active.
+10.1.1.2.1. If an ability is not an automatic
+ability, it is a continuous ability.
+10.2Categories of Effects
+10.2.1. Effects are divided into “one shot effects”,
+“continuous effects”, and “replacement effects”.
+10.2.1.1. “One shot effects” are effects
+where the resolving ends after the instructions
+are performed. If an ability has text such as
+“you draw a card” or “send this to the discard
+pile”, the effects from those abilities are one
+shot effects.
+10.2.1.2. “Continuous effects” are effects
+that are active for a certain duration (including
+those without any specified duration, as those
+are “during this game”).
+
+10.2.1.3. “Replacement effects” are effects
+that perform a different event instead when
+certain events would occur during a game.
+10.2.1.3.1. If an ability has text with “when
+(action A), (action B) instead” or “cannot be
+(action A), instead, (action B)”, the effects
+from those abilities are replacement effects.
+10.2.1.3.2. If an ability has text with “when
+(action A), you may (action B) instead”, the
+effect from that ability is an optional
+replacement effect.
+10.3. Active Effects and Inactive Effects
+10.3.1. There are effects that make specific effects
+“active” or “inactive“. If this happens, follow the
+process below:
+10.3.2. If part of or the entirety of an effect is inactive
+under specific conditions, that part still exists as
+an ability under that condition, but nothing is
+done for its effect. If that effect asks for a choice
+to be made, no choice is made.
+10.3.3. If part of or the entirety of an effect is active
+under specific conditions, that part is inactive
+while the conditions are not fulfilled.
+10.3.4. Abilities are generally active under the
+following conditions.
+10.3.4.1. Abilities that are played in or make
+explicit references to specific areas or
+situations, are active in those areas or
+situations.
+10.3.4.1.1. Abilities that make explicit
+references to a card being played or that
+card being placed in a specific area, are
+active in those situations.
+10.3.4.2. Abilities of cards with the monster
+or battle card type are active while that card is
+in a zone.
+10.3.4.3. Abilities of cards with the strategy
+card type are active while that card is in a
+strategy zone.
+10.4Check Timing and Play Timing
+10.4.1. The check timing is the point when rule
+actions and automatic abilities are played and
+resolved in a game.
+10.4.1.1. For a check timing, resolve all rule
+actions first, then if there are no more rule
+actions that need to be resolved, play and
+resolve automatic abilities whose trigger
+condition has been fulfilled. Please refer to 10.
+Rule Action for further details.
+10.4.2. The play timing is the point when the
+specified player can actively perform actions.
+When any player is given a play timing, a check
+timing must be resolved before they actually
+make a choice of action to perform. Only when
+there are no more rule actions or automatic
+abilities that need to be resolved for that check
+timing, is that player is actually given a play
+timing.
+10.4.3. When a check timing is resolved, the game
+proceeds in the following order.
+10.4.3.1. Resolve all rule actions that
+currently need to be resolved simultaneously. If
+there are new rule actions that need to be
+resolved as a result of that resolution, repeat
+
+this step until there are no more rule actions
+that need to be resolved.
+10.4.3.2. If there are any automatic abilities
+in standby whose master is the turn player
+(7.1.1), the turn player chooses one of them,
+plays and resolves it, and returns to 9.4.3.1.
+10.4.3.3. If there are any automatic abilities
+in standby whose master is the non-turn
+player, the non-turn player chooses one of
+them, plays and resolves it, and returns to
+9.4.3.1. 10.4.3.4. The check timing ends.
+10.4.4. When any player resolves a play timing, the
+game proceeds in the following order.
+10.4.4.1. Resolve a check timing.
+10.4.4.2. The play timing is given to that
+player. That player can choose to perform any
+of the actions they are able to at this point, or
+choose to not do anything. After performing an
+action, unless otherwise specified, that player
+is given a play timing again.
+10.4.4.3. If the player who was given a play
+timing chooses to do nothing, the play timing
+ends.
+10.5Play and Resolve
+10.5.1. Automatic abilities and cards in the hand
+need to be played and resolved to get their
+effect. Continuous abilities are not played, and
+their effects are always in effect.
+10.5.2. When you play a card or ability, process it in
+the following steps.
+10.5.2.1. Indicate which ability or card in
+hand is being played.
+10.5.2.1.1. If you are playing a card, reveal it
+if it is in a hidden area, and move it to the
+resolution area.
+10.5.2.1.2. If you are playing a battle card,
+indicate 1 of your zones that your invading
+monster does not occupy.
+10.5.2.1.3. If you are playing a strategy
+card, indicate 1 of your strategy zones.
+10.5.2.1.4. If you are playing an ability, move
+that ability as a pseudo-card to the resolution
+area.
+10.5.2.2. If the card or ability requires you to
+choose something, make those choices.
+10.5.2.2.1. If the ability has “do (number)
+from the below” before a list of options,
+choose (number) of those options.
+10.5.2.2.1.1. The options that were not
+chosen are considered nonexsistent for the
+resolution.
+10.5.2.2.1.2. If multiple options were
+chosen, they are resolved in the order they
+are written in the text, from top to bottom.
+10.5.2.3. Resolve the card or ability.
+10.5.2.3.1. If you played a monster card,
+stack it on top of your invading monster.
+10.5.2.3.2. If you played a battle card or
+strategy card, place that card in the specified
+zone.
+10.5.2.3.3. If you played an automatic ability,
+perform the effect indicated by the ability.
+Even if the card that had that automatic
+
+ability is no longer in its original area for any
+reason, that ability resolves.
+10.5.3. If the card or ability gives effects to a
+specified number of cards or players, choose
+that number of cards or players (written as
+“targets” below).
+10.5.3.1. If the number to choose is
+specified, you must choose as many targets as
+possible to reach that number. If you are able
+to choose them, you cannot choose not to do
+so.
+10.5.3.1.1. If the number is specified as “up
+to (number)”, you can choose any number of
+targets between 0 and (number).
+10.5.3.1.2. If the number to choose is
+specified and it is not possible to choose any
+target, no targets are chosen. All effects
+related to those targets are ignored.
+10.5.4. If a part of the effect has “you may (action) to
+(process)” written, you choose whether to
+perform that (action) at the point of resolving the
+effect. The (process) is only performed if that
+(action) was performed.
+10.5.4.1. When performing this (action), you
+must perform it in its entirety. If any part of that
+action cannot be performed, you cannot
+choose to perform that (action).
+10.5.4.2. If this (action) is replaced with
+some other action by a replacement effect, that
+action is still considered to have been
+performed.
+10.6Resolving Automatic Abilities
+10.6.1. Automatic abilities are abilities that are
+played in the check timing after a specific trigger
+condition occurs.
+10.6.2. When any automatic ability’s trigger
+condition is fulfilled, that automatic ability enters
+standby.
+10.6.2.1. If an automatic ability’s trigger
+condition is fulfilled multiple times, that
+automatic ability enters standby that many
+times.
+10.6.3. When a check timing resolves, the player
+that needs to play and resolve automatic abilities
+chooses any automatic abilities in standby that
+they are the master of and plays it. After the
+played ability resolves, one of that automatic
+ability in standby ceases to exist.
+10.6.3.1. The playing of automatic abilities in
+standby is compulsory, and you cannot choose
+not to play them. However, if there are multiple
+automatic abilities in standby that you are the
+master of, you can choose the order in which
+to play them.
+10.6.3.2. If the chosen automatic ability in
+standby cannot be played, one of that
+automatic ability in standby ceases to exist.
+10.6.3.2.1. When an automatic ability has an
+option to pay a cost to play it, and you
+choose to not pay the cost, one of that
+automatic ability in standby ceases to exist.
+10.6.4. There are automatic abilities where the
+trigger condition is the moving of a card to an
+area. This is called an “area changing trigger”.
+
+10.6.4.1.
+Some automatic abilities with area
+changing triggers refer to the information of the
+card that triggered that ability. In such cases,
+that information is referred to in the following
+manner.
+10.6.4.1.1. If the automatic ability was
+triggered by a card moving from a public
+area to a hidden area or vice versa, it refers
+to the information of that card when it was in
+a public area.
+10.6.4.1.2. If the automatic ability was
+triggered by a card moving to another area
+that is not a movement between zones, or if
+the movement between areas involves a
+change in master, it refers to the information
+of that card when it was on the field.
+10.6.4.1.3. With the exception of the above
+cases, if the automatic ability was triggered
+by a card moving from a public area to
+another public area, it refers to the
+information of that card in the new area.
+10.6.4.2. If a card has an ability with an area
+changing trigger, and that card enters an area
+where that ability is active at the same time as
+some card moves to an area that fulfills the
+trigger condition of that ability, that trigger
+condition is considered to be fulfilled.
+10.6.5. There are effects that create automatic
+abilities where the trigger condition is a later
+point in the game. This called a “timed trigger”.
+10.6.5.1. Unless a period is otherwise
+indicated, the trigger conditions of timed
+triggers can only be fulfilled once.
+10.6.6. There are abilities with trigger conditions that
+are fulfilled by specific situations or statuses
+rather than specific events (e.g. “when your hand
+has no cards, ~”). This is called a “situation
+trigger”.
+10.6.6.1. Situation triggers are put into
+standby 1 time when that situation occurs.
+After that automatic ability is resolved, if that
+automatic ability’s trigger condition is fulfilled
+once more, that ability becomes in standby.
+10.6.7. When you play an automatic ability in
+standby, even if the card with that ability
+changes areas, you still need to play that
+automatic ability.
+10.6.7.1. If the master of a card whose
+automatic ability is in standby has changed
+when that automatic ability is played, that
+automatic ability is played as the automatic
+ability of its master when it became standby.
+10.7Applying One Shot Effects
+10.7.1. When one shot effects are performed, the
+indicated actions are performed only once.
+10.8Applying Continuous Effects
+10.8.1. When the information of cards is referenced
+while any effects or rules that modify information
+are in effect, continuous effects are applied to
+that information in the following order.
+10.8.1.1. The information printed on the card
+itself is the base value.
+10.8.1.2. Next, apply all effects that grant
+abilities, remove abilities, make abilities active,
+or nullify abilities.
+
+10.8.1.3. Next, apply all continuous effects
+that do not modify values of information.
+10.8.1.4. Next, apply any modifications from
+rage (3.4.5) if there applicable.
+10.8.1.5. Next, apply all continuous effects
+that modify values of information.
+10.8.1.6. If there are continuous effects A
+and B whose order of application is not
+determined by 9.8.1.2 to 9.8.1.5, and whether
+effect A is applied first would affect what effect
+B applies to or how effect B is applied, effect B
+depends on effect A. If either of the effects
+depends on the other, the effect that the other
+is dependent upon is always applied first.
+10.8.1.7. If there are multiple continuous
+effects whose order of application is not
+determined by 9.8.1.2 to 9.8.1.5, those
+continuous effects are applied in the order of
+their time stamp.
+10.8.1.7.1. If the source of a continuous
+effect is a continuous ability, its time stamp is
+when the card with that ability was placed in
+the area it currently is in.
+10.8.1.7.2. If it is from another ability, its time
+stamp is when that ability was played.
+10.8.2. Continuous effects from abilities that are not
+continuous abilities are not applied to cards that
+move to another area that is not movement
+between zones after that ability was played.
+10.8.3. Continuous effects that modify the
+information of cards in a specific area are
+applied to that information of an applicable card
+at the same time that card enters that area.
+10.8.3.1. Automatic abilities with the trigger
+condition of a card with specific information
+entering an area reference information after
+continuous effects that apply to that area have
+been applied.
+10.9. Applying Replacement Effects
+10.9.1. When a replacement effect is applied, and
+the event that replacement effect is applied to
+would occur, it does not occur, and is replaced
+by another event as indicated by the
+replacement effect.
+10.9.1.1. In this case, the original event that
+was replaced did not occur at all.
+10.9.2. When multiple replacement effects are
+applied to the same event, the order in which the
+replacement effects are applied is determined by
+the player that would be affected.
+10.9.2.1. If the event being affected is a card
+or an ability, that card or ability's master
+determines the order.
+10.9.2.2. If the event being affected is an
+action, the player performing the action or the
+master of the card that action is applied to
+determines the order.
+10.9.2.3. Each replacement effect can only
+be applied to the same event 1 time at most.
+10.9.3. If a replacement effect is an optional
+replacement effect (“when ~, you may ~ instead.
+If you do, ~”), if that choice cannot be performed,
+that replacement effect is not applied.
+10.10
+
+Final Information
+
+10.10.1.
+When an effect refers to the
+information or state of a specific card, and that
+card moves from that area that is not a
+movement between zones while the effect is
+resolving, that effect refers to the following
+information.
+10.10.1.1. When an effect refers to the zone a
+card is currently in, and that card is not in the
+field at that point, that zone is not referenced,
+and any process that requires the information
+of that zone is not performed.
+10.10.1.2. With the exception of the above
+case, refer to the information or state of that
+card the last time it was in that area.
+10.10.1.2.1. When a card refers to a zone it
+had previously occupied without any point in
+time specified, refer to the information from
+the last time that card occupied that zone.
+10.11 . Source
+10.11.1.Some abilities and effects consider the
+source of an effect.
+10.11.2.The source of an ability is the card with that
+ability, or if it is a timed trigger ability, the card
+with the ability that created that timed trigger
+ability.
+11. Rule Actions
+11.1. Basics of Rule Actions
+11.1.1. “Rule action” is a general term for processes
+that are automatically performed by the rules
+when a specific event has occurred or is
+occurring in a game.
+11.1.2. Some rule actions are interrupt type rule
+actions.
+11.1.2.1. Interrupt type rule actions are
+performed regardless of the check timing when
+any player fulfills the conditions at any point of
+the game. If that point is in the middle of
+performing another process, supend that
+process, perform the rule action, and then
+continue with performing that process.
+11.1.2.1.1. When there are multiple interrupt
+type rule actions to be resolved at the same
+time, the turn player first performs all of the
+interrupt type rule actions they need to
+resolve in any order they wish, then the
+non-turn player performs all of the interrupt
+type rule actions they need to resolve in any
+order they wish.
+11.1.2.2. The conditions for rule actions that
+are not interrupt type rule actions are only
+checked and performed if they are fulfilled in
+check timings. Even if the condition was
+fulfilled while performing another action, if that
+condition is not fulfilled in the check timing, the
+rule action is not performed.
+11.1.3. When there are multiple rule actions that not
+interrupt type rule actions to be performed at the
+same time, they are all performed
+simultaneously.
+11.2. Reshuffle
+11.2.1. Reshuffling is an interrupt type rule action
+(10.1.2).
+
+11.2.2. Reshuffling occurs when a player would
+draw (5.4) a card when their deck has no
+remaining cards.
+11.2.3. The player performing the reshuffle moves
+all of the cards in their discard pile to their deck,
+and then shuffles their deck.
+11.2.4. If there are no cards in the discard pile when
+a reshuffle would be performed, that reshuffle is
+not performed, and no cards are moved.
+11.3. Crush and Destroy Process
+11.3.1. The crush and destroy process is an
+interrupt type rule action.
+11.3.2. The crush and destroy process is performed
+when there is a battle card in the same zone as
+any invading monster.
+11.3.3. When performing the crush and destroy
+process, if a battle card you are the master of
+occupies the same zone as any invading
+monster, destroy (5.12) that battle card.
+11.4. Illegal Cards
+11.4.1. If any zone has strategy cards that are not
+stacked under another card or monster cards
+that are not a part of an invading monster, or if
+any strategy zone has a card that is not a
+strategy card, place that card in its owner’s
+discard pile.
+11.4.1.1. If there is a card that is not waiting
+to be resolved after being played in the
+resolution area, place that card in its owner’s
+discard pile.
+11.5. Overloaded Cards
+11.5.1. If any zone has multiple battle cards, or if
+any strategy zone has multiple strategy cards,
+choose 1 of the cards that was placed last in that
+area, and destroy all of the other cards.
+
+12. Keywords and Keyword Abilities
+12.1. Overview
+12.1.1. Keywords are terms used to abbreviate
+abilities that perform specific processes. Abilities
+indicated by specific keywords are called
+keyword abilities.
+12.2. Enter
+12.2.1. “Enter is an automatic ability with the trigger
+condition of playing the card.
+12.2.2. “【Enter】 (effect)” means “when this card is
+played, (effect)” (5.11).
+12.2.3. “【Enter】” may be indicated by a
+icon.
+12.3. When Invading
+12.3.1. “When invading” is an automatic ability with
+the trigger condition of an invading monster
+advancing from an invasion.
+12.3.2. “【When invading】 (effect)” means “when this
+invading monster advances from an invasion,
+(effect)” (5.14).
+12.3.2.1. If an invasion was declared but, for
+any reason, the invading monster could not
+
+advance from its current zone, the conditions
+for 【When invading】triggers are not fulfilled.
+12.3.3. “【When invading】” may be indicated by a
+icon.
+
+12.7.3. The Revenge ability of a card that is stacked
+underneath another card is invalid and does not
+trigger.
+12.7.4. “【Revenge】” may be represented by a
+icon.
+
+12.4. Awakening
+12.4.1. Awakening is a continuous ability that is
+based on the zone the invading monster
+currently occupies.
+12.4.2. “【Awakening (number)】 (effect)” means
+“(effect) This ability is only active if the zone
+number of the zone your invading monster
+occupies is (number) or greater”.
+12.4.3. “【Awakening】” may be indicated by a
+icon, and “【Awakening (number)】”
+may be indicated by icons similar to
+.
+12.5. Burst
+12.5.1. Burst is a continuous ability that allows a
+monster card to be played at a lower rank than
+its original rank.
+12.5.2. “【Burst (rank)】” means “you may play this
+card as though its rank is (rank). If you do, at the
+beginning of your next end phase, send this card
+from the invading monster to the discard pile”.
+12.5.2.1. Even if this card is not the topmost
+card at the beginning of the end phase for any
+reason, the card is still sent to the discard pile.
+12.5.3. When the monster card is sent into the
+discard pile during the end phase as a result of
+burst, and the topmost card of invading monster
+changes, that invading monster is not
+considered to have entered (5.11).
+12.5.4. “【Burst】” may be indicated by a
+icon, and “【Burst (number)】” may be indicated
+by icons similar to
+
+12.8. Resonance
+12.8.1. Resonance is a continuous ability possessed
+by certain Rank I monster cards with multiple
+colors which modifies the deck construction
+requirements for monster decks and main decks
+(6.1.1).
+12.8.2. “【Resonance】 (Color Specification)
+(Condition List)” means the following: “You may
+include cards that have any of the colors
+specified by (Color Specification) in your
+monster deck and main deck,” and “When
+constructing decks, you must follow all rules
+specified in the (Condition List).”
+12.8.2.1. “【Resonance】” may be
+represented by a
+icon.
+12.8.2.2. A Condition List is written as a
+sequence of bullet-pointed text.
+12.9. Base
+12.9.1. Base refers to a continuous ability that allows
+a card to remain in the strategy zone across
+turns, and an automatic ability that destroys that
+card.
+12.9.2. “【Base】 (Automatic Ability)” means both of
+the following:“This card is not destroyed by the
+rule action during the Start Phase that applies to
+cards that were in play in the strategy zone
+before the current turn (7.2.3),” and “(Automatic
+Ability).”
+12.9.2.1. “【Base】” may be represented by a
+icon.
+
+.
+13. Miscellaneous
+
+12.6. Evolution
+12.6.1. Evolution is an automatic ability that allows
+for a new battle card to be stacked on top of a
+battle card.
+12.6.2. “【Evolution (rank)】【(trait)】” means “at the
+beginning of your main phase, you may search
+the deck for 1 battle card with the (trait) trait and
+rank equal to (rank) or less and reveal it. If you
+revealed a card, play that card by stacking it
+onto this card, and shuffle the deck”.
+12.6.3. “【Evolution】” may be indicated by a
+icon, and “【Evolution (rank)】” may be
+indicated by icons similar to
+
+.
+
+12.7. Revenge
+12.7.1. Revenge is an automatic ability that triggers
+when a card is placed into the discard pile from
+the field.
+12.7.2. “【Revenge】 (Effect)” means When this card
+is placed into the discard pile from the field for a
+reason other than duplicate card processing,
+(effect).
+
+13.1. Infinite Loop
+13.1.1. It is possible that in performing some
+processes, certain actions can continue to be
+performed without end, or must continue to be
+performed without end. This is called an infinite
+loop, and is processed as follows.
+13.1.1.1. The turn player indicates a series
+of actions that were actually performed for that
+infinite loop, and then indicates the number of
+times those actions are performed. Then, the
+non-turn player can either recognize that as
+the number of times those actions are
+performed, or in addition to recognizing a
+smaller number as the number of times those
+actions are performed, choose to perform an
+action that is not part of those actions. Then,
+the actions that were chosen are performed.
+13.1.1.2. If the turn player performs any
+action, and the game state is completely
+identical after that in that turn, the turn player
+cannot perform the actions they had performed
+once again.
+
+13.1.1.3.
+If neither player is able to stop the
+infinite loop for any reason, the game ends in a
+draw.
+
+Changelog
+Mmm dd, 2025 – ver. 1.01 update
+-
+
+Initial version
+
+

@@ -71,9 +71,8 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
 - Headful verification of board UI: the `verify` skill
   (`.claude/skills/verify/`) — unit+harness do NOT exercise the real
   GameBoard `_ready`.
-- After moving files outside the editor: run
-  `<godot> --headless --path . --import` (stale class-name cache otherwise
-  breaks headless runs).
+- After moving files outside the editor: `./tests/import.sh <godot>`
+  (wedge-safe headless import; a stale class-name cache breaks headless runs).
 
 ## Codegen & data invariants
 
@@ -97,8 +96,9 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
 
 ## Game rules quick reference
 
-`comprehensive_rules/` holds the official PDF (engine comments cite rule
-numbers, e.g. 10.4.3 standby ordering). 2 players, 8 zones + 2 strategy
+`comprehensive_rules/` holds the official PDF; engine comments cite rule
+numbers (e.g. 10.4.3 standby ordering) — look them up in the greppable
+`comprehensive_rules/rules.txt` (`grep -A4 '^10\.4\.3\.'`). 2 players, 8 zones + 2 strategy
 zones; win by invading past zone 8 or when the opponent can't rank up while
 countered. Turn: Start → Main → Counter → End. Threat = base + rage × 5000.
 Deck: 50 main (≤10 invade-2), 4 monsters rank 1–4.

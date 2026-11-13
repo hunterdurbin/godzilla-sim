@@ -14,6 +14,11 @@ if git diff --cached --name-only | grep -qE '\.gd$|engine_private_calls_allowlis
 	python3 scripts/tools/check_engine_private_calls.py || exit 1
 fi
 
+# Ratchet: per-card scripts don't re-check play-zone legality (5.11.1.1).
+if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$|card_monster_zone_checks_allowlist\.txt$'; then
+	python3 scripts/tools/check_card_monster_zone_checks.py || exit 1
+fi
+
 # Sync version from project.godot into export_presets.cfg
 if git diff --cached --name-only | grep -qE '^project\.godot$'; then
 	if git diff --cached project.godot | grep -qE '^\+config/version='; then
