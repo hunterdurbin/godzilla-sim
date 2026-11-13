@@ -64,6 +64,9 @@ Primitives for the common intents (all on EffectHandler):
 | "choose a card in your hand" (card stays put) / take it / discard it | `choose_hand_card` / `take_hand_card` / `select_hand_card` |
 | "move this card / a battle card to a zone" | `move_zone_stack` (overloads), `swap_zones` |
 | "place <card> under this card" | `place_card_under_zone` |
+| "place <cards> from your discard pile / monster deck under your monster card" | `place_cards_under_monster` |
+| "add <card> to your hand" / "return it from your discard pile to your hand" | `add_card_to_hand(s)` / `return_discard_to_hand` (fires on_card_returned_from_discard) |
+| "send it to your discard pile" (already removed from deck/hand) / "discard your (entire) hand" | `discard_cards` / `discard_hand_to(pid, 0)` (fires discard-from-hand triggers) |
 | "put this card under <card> in your zones" | `move_zone_card_under_zone` |
 | "add all cards under this card to your hand" | `return_cards_under_top_to_hand` (sync — safe in replacement hooks) |
 | "move your monster" | `advance_monster_to_zone`, `retreat_monster_to_zone`, `teleport_monster` |
@@ -71,6 +74,9 @@ Primitives for the common intents (all on EffectHandler):
 `scripts/tools/check_card_monster_zone_checks.py` (pre-commit + CI) holds
 the line for play-zone legality: card scripts get legal zones from the
 engine instead of comparing against the monster's zone index.
+`scripts/tools/check_card_collection_writes.py` (pre-commit + CI) is the
+same kind of ratchet for writes to `hand` / `discard_pile` / `main_deck` /
+`monster_deck` / `strategy_zones`; its allow-list only shrinks.
 
 ## Check timing — automatic abilities never interrupt an effect
 

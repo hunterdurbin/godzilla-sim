@@ -57,20 +57,8 @@ func on_enter(ctx: EffectContext) -> void:
 	if selected.is_empty():
 		return
 
-	# Remove selected cards from discard pile
-	for card in selected:
-		var card_id: String = card.get("id", "")
-		for i in range(ctx.owner.discard_pile.size()):
-			if ctx.owner.discard_pile[i].get("id") == card_id:
-				ctx.owner.discard_pile.remove_at(i)
-				break
-
-	# Place under monster
-	for card in selected:
-		ctx.owner.monster_stack.append(card)
-
-	ctx.owner.discard_changed.emit()
-	ctx.owner.monster_changed.emit()
+	# select_cards_from_pool maps picks to the canonical discard dicts.
+	ctx.effect_handler.place_cards_under_monster(ctx.owner.player_id, selected)
 
 	# Reduce opponent rage by 1
 	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
