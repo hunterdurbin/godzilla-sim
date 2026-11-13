@@ -1,0 +1,23 @@
+# Coverage deck: EBP04-072 (Sanda) + EFC01-005 (Godzilla Festival), which no
+# shipped/starter deck plays. SpaceZilla green base. EBP04-072 only fires when
+# the opponent plays a battle card from their deck -- pair it with a deck that
+# does (decks_with_cards.sh on EBP03-036 / evolution cards).
+[monster deck]
+1 EBP02-052
+1 EBP02-053
+1 EBP02-054
+1 EBP04-026
+
+[main deck]
+4 EBP04-055
+6 EBP04-059
+4 EBP04-072
+4 EFC01-005
+4 EBP04-060
+4 EBP02-062
+4 EBP04-061
+4 EBP04-062
+4 EBP04-064
+4 EBP04-074
+4 EBP04-067
+4 EBP03-078

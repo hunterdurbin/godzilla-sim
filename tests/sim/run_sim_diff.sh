@@ -2,28 +2,47 @@
 # Seed-matched bot-sim behavioral diff: the working tree vs a base ref.
 #
 # Usage: ./tests/sim/run_sim_diff.sh <godot> [base_ref] [games] [p1] [p2] [deck1] [deck2] [seed]
+#                                    [--pair "deckA|deckB"]...
 #   defaults: main 50 HARD HARD "ESD01 Starter" "ESD02 Starter" 424242
 #   p1/p2 are BotConfig.Difficulty names (EASY NORMAL HARD KAIJU).
+#   A deck is a decklist name or @<path> to a .deck file (e.g. a committed
+#   @tests/sim/decks/cov_*.deck; relative paths resolve against this repo).
+#   --pair (repeatable, anywhere in the args) runs several deck pairs against
+#   ONE imported base worktree; when given, deck1/deck2 are ignored.
 #
-# Builds a detached worktree of base_ref (imported headless), copies THIS
-# tree's bot_simulation_runner.gd into it (so both sides run the same harness
-# and accept the same args), runs both sims in parallel, then reports:
+# Builds a detached worktree of base_ref (imported headless once), copies
+# THIS tree's bot_simulation_runner.gd into it (so both sides run the same
+# harness and accept the same args), then per pair runs both sims in
+# parallel and reports:
 #   - [SimResult] lines that differ (empty = no bot-visible behavior change)
 #   - per side: games completed, P1 wins, SCRIPT ERROR count, and
 #     `[Kaiju] … plan DIVERGED` count (the KAIJU replay-parity metric:
 #     the planner's cached plan stopped matching the live game)
-#   - per changed card script (scripts/effects/<set>/*.gd differing from
-#     base_ref, incl. untracked): how many times its abilities started
-#     resolving on each side ([SimEffects] line). A card at 0 on this tree
-#     is UNEXERCISED: the [SimResult] diff says nothing about it — pick decks
-#     that run it (decks_with_cards.sh). Passive-only cards (modifiers,
-#     replacement queries) never "resolve" and always show 0.
+# and finally, per changed card script (scripts/effects/<set>/*.gd differing
+# from base_ref, incl. untracked): how many times its abilities started
+# resolving, base -> head, per pair and in total ([SimEffects] line). A card
+# whose head total is 0 is UNEXERCISED: the [SimResult] diff says nothing
+# about it — pick decks that run it (decks_with_cards.sh). Passive-only
+# cards (modifiers, replacement queries) never "resolve" and always show 0.
 # Exit status: 0 = identical results and no script errors on this tree;
-#   1 = results differ / script errors / missing games;
+#   1 = results differ / script errors / missing games (any pair);
 #   2 = otherwise clean, but some changed card was UNEXERCISED.
 set -u
 
-GODOT="${1:?usage: run_sim_diff.sh <godot> [base_ref] [games] [p1] [p2] [deck1] [deck2] [seed]}"
+REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+
+POS=()
+PAIRS=()
+while [ "$#" -gt 0 ]; do
+	case "$1" in
+		--pair) PAIRS+=("${2:?--pair needs \"deckA|deckB\"}"); shift 2 ;;
+		--pair=*) PAIRS+=("${1#--pair=}"); shift ;;
+		*) POS+=("$1"); shift ;;
+	esac
+done
+set -- "${POS[@]+"${POS[@]}"}"
+
+GODOT="${1:?usage: run_sim_diff.sh <godot> [base_ref] [games] [p1] [p2] [deck1] [deck2] [seed] [--pair \"A|B\"]...}"
 BASE_REF="${2:-main}"
 GAMES="${3:-50}"
 P1="${4:-HARD}"
@@ -32,8 +51,18 @@ DECK1="${6:-ESD01 Starter}"
 DECK2="${7:-ESD02 Starter}"
 SEED="${8:-424242}"
 TIMEOUT="${SIM_TIMEOUT:-3600}"
+[ "${#PAIRS[@]}" -gt 0 ] || PAIRS=("$DECK1|$DECK2")
 
-REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+# @relative -> @/abs/path in THIS repo, so the base worktree (which may not
+# have the deck file) reads the same deck.
+resolve_deck() {
+	case "$1" in
+		@/*|@res://*) printf '%s' "$1" ;;
+		@*) printf '@%s/%s' "$REPO" "${1#@}" ;;
+		*) printf '%s' "$1" ;;
+	esac
+}
+
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/simdiff.XXXXXX")"
 BASE_WT="$WORK/base"
 
@@ -47,8 +76,8 @@ git -C "$REPO" worktree add --detach "$BASE_WT" "$BASE_REF" >/dev/null 2>&1 \
 	|| { echo "FAIL: cannot create worktree for $BASE_REF"; exit 1; }
 cp "$REPO/tests/sim/bot_simulation_runner.gd" "$BASE_WT/tests/sim/bot_simulation_runner.gd"
 
-# Import the base tree (class-name cache). Headless Godot may wedge at exit,
-# so bound it instead of waiting.
+# Import the base tree once (class-name cache). Headless Godot may wedge at
+# exit, so bound it instead of waiting.
 "$GODOT" --headless --path "$BASE_WT" --import > "$WORK/import.log" 2>&1 &
 IPID=$!
 for _ in $(seq 1 180); do
@@ -57,10 +86,10 @@ for _ in $(seq 1 180); do
 done
 kill -9 "$IPID" 2>/dev/null
 
-run_sim() { # <dir> <out>
+run_sim() { # <dir> <out> <deck1> <deck2>
 	"$GODOT" --headless --path "$1" res://tests/sim/BotSimulationRunner.tscn -- \
 		--games="$GAMES" --seed="$SEED" --p1="$P1" --p2="$P2" \
-		--deck1="$DECK1" --deck2="$DECK2" > "$2" 2>&1 &
+		--deck1="$3" --deck2="$4" > "$2" 2>&1 &
 	local pid=$! elapsed=0
 	while kill -0 "$pid" 2>/dev/null; do
 		sleep 5; elapsed=$((elapsed + 5))
@@ -71,43 +100,52 @@ run_sim() { # <dir> <out>
 	kill -9 "$pid" 2>/dev/null
 }
 
-echo "Sim diff: $BASE_REF vs working tree | $GAMES games, seed $SEED, $P1 ($DECK1) vs $P2 ($DECK2)"
-run_sim "$BASE_WT" "$WORK/base.log" &
-run_sim "$REPO" "$WORK/head.log" &
-wait
-
 summary() { # <label> <log>
 	local res wins
 	res=$(grep -c '\[SimResult\]' "$2")
 	wins=$(grep '\[SimResult\]' "$2" | grep -c 'winner=0')
-	printf '%-5s games=%s/%s p1_wins=%s script_errors=%s kaiju_diverged=%s%s\n' "$1" \
+	printf '  %-5s games=%s/%s p1_wins=%s script_errors=%s kaiju_diverged=%s%s\n' "$1" \
 		"$res" "$GAMES" "$wins" "$(grep -c 'SCRIPT ERROR' "$2")" \
 		"$(grep -c 'plan DIVERGED' "$2")" "$(grep -q '^TIMEOUT' "$2" && echo ' TIMEOUT')"
 }
-summary base "$WORK/base.log"
-summary head "$WORK/head.log"
 
-grep '\[SimResult\]' "$WORK/base.log" > "$WORK/base.res"
-grep '\[SimResult\]' "$WORK/head.log" > "$WORK/head.res"
-if diff "$WORK/base.res" "$WORK/head.res" > "$WORK/diff.txt"; then
-	echo "RESULT: identical [SimResult] lines"
-	STATUS=0
-else
-	echo "RESULT: $(grep -c '^>' "$WORK/diff.txt") differing games:"
-	cat "$WORK/diff.txt"
-	STATUS=1
-fi
-[ "$(grep -c 'SCRIPT ERROR' "$WORK/head.log")" -eq 0 ] || STATUS=1
-[ "$(grep -c '\[SimResult\]' "$WORK/head.log")" -ge "$GAMES" ] || STATUS=1
+STATUS=0
+LOGS=()
+i=0
+for pair in "${PAIRS[@]}"; do
+	i=$((i + 1))
+	d1="${pair%%|*}"; d2="${pair#*|}"
+	echo "[$i] Sim diff: $BASE_REF vs working tree | $GAMES games, seed $SEED, $P1 ($d1) vs $P2 ($d2)"
+	run_sim "$BASE_WT" "$WORK/base$i.log" "$(resolve_deck "$d1")" "$(resolve_deck "$d2")" &
+	run_sim "$REPO" "$WORK/head$i.log" "$(resolve_deck "$d1")" "$(resolve_deck "$d2")" &
+	wait
+	summary base "$WORK/base$i.log"
+	summary head "$WORK/head$i.log"
+	grep '\[SimResult\]' "$WORK/base$i.log" > "$WORK/base$i.res"
+	grep '\[SimResult\]' "$WORK/head$i.log" > "$WORK/head$i.res"
+	if diff "$WORK/base$i.res" "$WORK/head$i.res" > "$WORK/diff$i.txt"; then
+		echo "  RESULT: identical [SimResult] lines"
+	else
+		echo "  RESULT: $(grep -c '^>' "$WORK/diff$i.txt") differing games:"
+		sed 's/^/    /' "$WORK/diff$i.txt"
+		STATUS=1
+	fi
+	[ "$(grep -c 'SCRIPT ERROR' "$WORK/head$i.log")" -eq 0 ] || STATUS=1
+	[ "$(grep -c '\[SimResult\]' "$WORK/head$i.log")" -ge "$GAMES" ] || STATUS=1
+	LOGS+=("$WORK/base$i.log" "$WORK/head$i.log")
+done
 
 # Changed card scripts -> card ids (via the effect_script paths in the set
-# files) -> resolution counts per side.
+# files) -> resolution counts per side, per pair.
 CHANGED=$( { git -C "$REPO" diff --name-only "$BASE_REF" -- 'scripts/effects/*/*.gd';
 	git -C "$REPO" ls-files --others --exclude-standard -- 'scripts/effects/*/*.gd'; } | sort -u)
 if [ -n "$CHANGED" ]; then
-	UNEXERCISED=$(python3 - "$REPO" "$WORK/base.log" "$WORK/head.log" $CHANGED <<'PY'
+	UNEXERCISED=$(python3 - "$REPO" "${#PAIRS[@]}" "${LOGS[@]}" -- $CHANGED <<'PY'
 import glob, os, re, sys
-repo, base_log, head_log, changed = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4:]
+args = sys.argv[1:]
+repo, npairs = args[0], int(args[1])
+logs = args[2:2 + 2 * npairs]
+changed = args[2 + 2 * npairs + 1:]
 ids_for = {}
 for set_file in sorted(glob.glob(os.path.join(repo, "scripts/cards/sets/card_set_*.gd"))):
     last_id = None
@@ -124,17 +162,26 @@ def counts(log):
             parts = line.split()[1:]
             if parts == ["unavailable"]:
                 return None
-            return dict(p.split("=") for p in parts)
+            return {k: int(v) for k, v in (p.split("=") for p in parts)}
     return None
-base, head = counts(base_log), counts(head_log)
+pairs = [(counts(logs[2 * i]), counts(logs[2 * i + 1])) for i in range(npairs)]
+def fmt(c, cid):
+    return "?" if c is None else str(c.get(cid, 0))
 unexercised = []
-print("Changed card scripts (abilities resolved, base -> head):", file=sys.stderr)
+head_cols = "  ".join("[%d] base->head" % (i + 1) for i in range(npairs))
+print("Changed card scripts (abilities resolved): %s%s" % (head_cols, "  total" if npairs > 1 else ""), file=sys.stderr)
 for path in changed:
     for cid in ids_for.get(path, [os.path.basename(path)]):
-        b = "?" if base is None else base.get(cid, "0")
-        h = "?" if head is None else head.get(cid, "0")
-        flag = "  UNEXERCISED" if h in ("0", "?") else ""
-        print("  %-12s %4s -> %-4s%s" % (cid, b, h, flag), file=sys.stderr)
+        cols, head_total, base_total = [], 0, 0
+        for b, h in pairs:
+            cols.append("%5s -> %-5s" % (fmt(b, cid), fmt(h, cid)))
+            head_total += h.get(cid, 0) if h is not None else 0
+            base_total += b.get(cid, 0) if b is not None else 0
+        def tot(side_total, idx):
+            return "?" if all(p[idx] is None for p in pairs) else str(side_total)
+        total = ("  %5s -> %-5s" % (tot(base_total, 0), tot(head_total, 1))) if npairs > 1 else ""
+        flag = "  UNEXERCISED" if head_total == 0 else ""
+        print("  %-12s %s%s%s" % (cid, "  ".join(cols), total, flag), file=sys.stderr)
         if flag:
             unexercised.append(cid)
 print(" ".join(unexercised))
@@ -145,5 +192,5 @@ PY
 		[ "$STATUS" -eq 0 ] && STATUS=2
 	fi
 fi
-echo "Logs: $WORK/{base,head}.log"
+echo "Logs: $WORK/{base,head}<n>.log"
 exit $STATUS

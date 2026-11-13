@@ -33,6 +33,9 @@ jobs:
       - name: Card scripts mutate state only through engine primitives
         run: python3 scripts/tools/check_card_mutations.py
 
+      - name: Engine announces every card-ability resolution
+        run: python3 scripts/tools/check_effect_resolution_notes.py
+
       - name: Card scripts await engine coroutines
         run: python3 scripts/tools/check_card_unawaited_coroutines.py
 
