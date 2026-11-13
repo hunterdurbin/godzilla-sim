@@ -70,7 +70,16 @@ performs the crush (replacement effects apply at that moment) and only
 *collects* the crushed card's leave-play, crush and <Revenge> entries; the
 caller submits them to standby once its move / check timing is done
 (`resolve_check_timing`, monster movement, invasion, `teleport_monster` —
-which crushes only its destination, e.g. EBP03-068 Godzilla Flies).
+which crushes only its destination, e.g. EBP03-068 Godzilla Flies — and the
+counter retreat, which crushes before the new monster's <Enter>).
+
+**Play-zone legality is enforced by the play primitives** (5.11.1.1).
+`play_battle_card_from_hand` / `_from_deck`, `play_from_discard` and
+`create_token_in_zone` refuse the master's monster zone and report "not
+played" (`false` / `-1`) and the card stays in its area — hand, discard,
+or (for a deck card the caller already took out) back on the deck bottom. Card scripts that offer a fixed
+zone gate the offer on `can_play_in_zone(player_id, zone_idx)` (EBP04-077)
+and never compare against `monster_zone` themselves.
 
 **Standby is one pool** (`StandbyResolver.resolve_entries`). After every
 ability: rule actions (`resolve_check_timing`), then merge everything that

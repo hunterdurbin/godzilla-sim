@@ -146,3 +146,81 @@ func test_force_counter_targets_specific_player() -> void:
 	await session["action_handler"].force_counter(state, 0)
 	assert_int(state.players[0].monster_zone).is_equal(3)  # 8 -> 3
 	assert_int(state.players[0].current_monster.get("rank", 0)).is_equal(2)
+
+
+# --- Counter retreat crush (11.3 interrupt, 11.1.2.1) before the new <Enter> ---
+
+const REVENGE := "test://counter_retreat_revenge"
+const ENTER := "test://counter_retreat_enter"
+
+
+## Shared log for the crushed card's <Revenge> and the new monster's <Enter>.
+## The <Enter> records whether the retreat zone (zone 4 → index 3) still
+## holds a battle card when it resolves.
+class RecordRetreat:
+	extends CardEffect
+	var seen: Array[String] = []
+	var state: GameState
+
+	func on_revenge(ctx: EffectContext) -> void:
+		seen.append("revenge:%s" % ctx.card_data.get("id"))
+
+	func on_enter(_ctx: EffectContext) -> void:
+		seen.append("enter:zone4_occupied=%s" % state.players[1].zone_has_cards(3))
+
+
+func _retreat_onto_revenge_state() -> GameState:
+	var revenge := Cards.battle(1, 3000, "P1-REV")
+	revenge["effect_script"] = REVENGE
+	var line := Cards.monster_line()
+	line[1]["effect_script"] = ENTER
+	return States.make_state({
+		"p0": {"zone_cards": {0: Cards.battle(1, 30000)}},
+		"p1": {
+			"current_monster": line[0],
+			"monster_zone": 7,
+			"monster_deck": line.slice(1),
+			"zone_cards": {3: revenge},
+		},
+	})
+
+
+func _register_retreat_recorder(session: Dictionary, state: GameState) -> RecordRetreat:
+	var effect := RecordRetreat.new()
+	effect.state = state
+	var handler: EffectHandler = session["effect_handler"]
+	handler.registry.register_for_test(REVENGE, effect, ["on_revenge"])
+	handler.registry.register_for_test(ENTER, effect, ["on_enter"])
+	return effect
+
+
+func test_counter_retreat_crushes_before_new_monster_enter() -> void:
+	var state := _retreat_onto_revenge_state()
+	var session := States.make_session(state)
+	var effect := _register_retreat_recorder(session, state)
+
+	await session["action_handler"].resolve_counter(state)
+
+	var p1 := state.players[1]
+	assert_int(p1.monster_zone).is_equal(4)  # 7 -> 4
+	assert_bool(p1.zone_has_cards(3)).is_false()
+	assert_array(p1.discard_pile.map(func(c: Dictionary) -> String: return c.get("id"))) \
+		.contains_exactly(["P1-REV"])
+	assert_array(effect.seen).contains_exactly([
+		"revenge:P1-REV",
+		"enter:zone4_occupied=false",
+	])
+
+
+func test_force_counter_retreat_crushes_before_new_monster_enter() -> void:
+	var state := _retreat_onto_revenge_state()
+	var session := States.make_session(state)
+	var effect := _register_retreat_recorder(session, state)
+
+	await session["action_handler"].force_counter(state, 1)
+
+	assert_bool(state.players[1].zone_has_cards(3)).is_false()
+	assert_array(effect.seen).contains_exactly([
+		"revenge:P1-REV",
+		"enter:zone4_occupied=false",
+	])

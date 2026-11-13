@@ -37,8 +37,9 @@ func on_enter(ctx: EffectContext) -> void:
 		or card_name == "Godzilla Against Mechagodzilla"
 	)
 	# Honor the chosen card's own play restrictions: can_be_played (e.g. EBP01-073
-	# needs 8+ monsters in discard) and any required-zone restriction. Playing
-	# over an existing battle card in zone 8 is allowed — play_battle_card_from_hand
+	# needs 8+ monsters in discard), any required-zone restriction, and zone
+	# legality (5.11.1.1: not while the monster is in zone 8). Playing over an
+	# existing battle card in zone 8 is allowed — play_battle_card_from_hand
 	# handles overload by destroying the previous stack.
 	var required_zones: Array[int] = ctx.effect_handler.get_card_required_play_zones(
 		ctx.owner.player_id, chosen_mech)
@@ -47,6 +48,7 @@ func on_enter(ctx: EffectContext) -> void:
 		is_eligible_card
 		and ctx.effect_handler.can_card_be_played(ctx.owner.player_id, chosen_mech)
 		and zone8_allowed
+		and ctx.effect_handler.can_play_in_zone(ctx.owner.player_id, 7)
 	)
 
 	if can_place_in_zone8:

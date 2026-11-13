@@ -714,12 +714,16 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 	return await mover.play_from_discard_or_skip(player_id, card_data, prompt, zone_filter)
 
 
-func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx: int) -> void:
-	await mover.play_battle_card_from_hand(player_id, card_data, zone_idx)
+func can_play_in_zone(player_id: int, zone_idx: int) -> bool:
+	return mover.can_play_in_zone(player_id, zone_idx)
 
 
-func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int, stack_on_top: bool = false) -> void:
-	await mover.play_battle_card_from_deck(player_id, card_data, zone_idx, stack_on_top)
+func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx: int) -> bool:
+	return await mover.play_battle_card_from_hand(player_id, card_data, zone_idx)
+
+
+func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int, stack_on_top: bool = false) -> bool:
+	return await mover.play_battle_card_from_deck(player_id, card_data, zone_idx, stack_on_top)
 
 
 func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int) -> void:

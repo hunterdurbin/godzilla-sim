@@ -419,9 +419,24 @@ func evolve_zones_in_order(player_id: int, eligible_zones: Array[int]) -> void:
 
 
 
+func can_play_in_zone(player_id: int, zone_idx: int) -> bool:
+	## Play-zone legality (5.11.1.1): an effect can't play a battle card or
+	## token into the zone holding its master's invading monster — the card
+	## is not played. Every play primitive below enforces this; card scripts
+	## use it to offer only legal zones instead of checking monster_zone.
+	if zone_idx < 0 or zone_idx >= 8:
+		return false
+	return zone_idx != game_state.players[player_id].monster_zone - 1
+
+
+
+
 func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int) -> bool:
 	## Create a token from CardData template and place it in the given zone.
-	## Handles overload if zone is occupied. Returns true if token was placed.
+	## Handles overload if zone is occupied. Returns true if token was placed;
+	## false (not played, 5.11.1.1) for the monster's zone.
+	if not can_play_in_zone(player.player_id, zone_index):
+		return false
 	var token_data: Dictionary = CardData.get_card_by_id(token_id)
 	if token_data.is_empty():
 		push_warning("EffectHandler: Token not found: %s" % token_id)
@@ -463,7 +478,7 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int, c
 	for _i in range(count):
 		var valid: Array[int] = []
 		for z in base_zones:
-			if z == player.monster_zone - 1:
+			if not can_play_in_zone(player.player_id, z):
 				continue
 			if z in used_zones:
 				continue
@@ -501,7 +516,7 @@ func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], p
 	while not remaining.is_empty() and (max_count < 0 or played < max_count):
 		var valid: Array[int] = []
 		for z in base_zones:
-			if z == player.monster_zone - 1:
+			if not can_play_in_zone(player.player_id, z):
 				continue
 			if z in used_zones:
 				continue
@@ -630,7 +645,11 @@ func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
 func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1) -> int:
 	## Remove a card from the discard pile and play it into a zone.
 	## If zone_idx is -1, the player selects an available zone.
-	## Returns the zone index where the card was placed, or -1 if cancelled.
+	## Returns the zone index where the card was placed, or -1 if cancelled
+	## or zone_idx is the monster's zone (not played, 5.11.1.1 — the card
+	## stays in the discard pile).
+	if zone_idx >= 0 and not can_play_in_zone(player_id, zone_idx):
+		return -1
 	var player := game_state.players[player_id]
 
 	# Remove from discard
@@ -645,7 +664,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 	if zone_idx < 0:
 		var valid_zones: Array[int] = []
 		for i in range(8):
-			if i != player.monster_zone - 1:  # Can't play in own monster zone
+			if can_play_in_zone(player_id, i):
 				valid_zones.append(i)
 		var card_name: String = card_data.get("name", "card")
 		zone_idx = await h.select_zone_target(player_id, player_id, valid_zones, tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_name, false, CardUtils.base_id(card_data))
@@ -673,10 +692,9 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 	## zone_filter is an optional Callable(zone_idx: int) -> bool to restrict
 	## valid placement zones; if omitted, any non-monster zone is valid.
 	var player := game_state.players[player_id]
-	var monster_idx: int = player.monster_zone - 1
 	var valid_zones: Array[int] = []
 	for i in range(8):
-		if i == monster_idx:
+		if not can_play_in_zone(player_id, i):
 			continue
 		if zone_filter.is_valid() and not zone_filter.call(i):
 			continue
@@ -692,13 +710,17 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 
 
 
-func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx: int) -> void:
+func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx: int) -> bool:
 	## Play a battle card from the player's hand into a zone via an effect, then
 	## fire enter and on_battle_card_played in the correct order. Handles zone
 	## overload and logs the play attributed to the active effect. Use for
 	## "add it to your hand... you may play it" effects (e.g. EBP04-077) so the
 	## card's hand stop stays observable to sequencing-sensitive triggers —
 	## don't stage the card in the discard pile to reuse play_from_discard.
+	## Returns false (not played, 5.11.1.1 — the card stays in hand) for the
+	## monster's zone.
+	if not can_play_in_zone(player_id, zone_idx):
+		return false
 	var player := game_state.players[player_id]
 	var card_id: String = card_data.get("id", "")
 	for i in range(player.hand.size() - 1, -1, -1):
@@ -715,11 +737,12 @@ func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx:
 	await h.trigger_leave_play(player_id, overloaded_top, zone_idx)
 	await h.trigger_enter(player_id, card_data, true)
 	await h.trigger_battle_card_played(player_id, card_data, zone_idx)
+	return true
 
 
 
 
-func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int, stack_on_top: bool = false) -> void:
+func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int, stack_on_top: bool = false) -> bool:
 	## Place a battle card directly from the deck into a zone, then fire enter and
 	## on_battle_card_played (with played_from_deck=true) in the correct order.
 	## Handles zone overload. Use this instead of manual push+trigger_enter+trigger_battle_card_played
@@ -727,7 +750,15 @@ func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx:
 	## Pass stack_on_top=true for "play on top of" effects (e.g. Star Falcon placing a
 	## Moguera card on top of Land Moguera) so the existing stack is preserved instead of
 	## overloaded/discarded.
+	## Returns false for the monster's zone: not played (5.11.1.1), so the card
+	## stays in the deck. Callers have usually taken it out already, so it goes
+	## back on the bottom (the effect's own shuffle, if any, still follows).
 	var player := game_state.players[player_id]
+	if not can_play_in_zone(player_id, zone_idx):
+		if not player.main_deck.has(card_data):
+			player.main_deck.append(card_data)
+			player.deck_changed.emit()
+		return false
 	var overloaded_top: Dictionary = {}
 	if not stack_on_top:
 		overloaded_top = h.overload_zone(player, zone_idx)
@@ -736,6 +767,7 @@ func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx:
 	await h.trigger_leave_play(player_id, overloaded_top, zone_idx)
 	await h.trigger_enter(player_id, card_data, true)
 	await h.trigger_battle_card_played(player_id, card_data, zone_idx, true)
+	return true
 
 
 

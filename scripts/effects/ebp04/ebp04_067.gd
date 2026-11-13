@@ -36,12 +36,10 @@ func get_required_play_zones(_ctx: EffectContext) -> Array[int]:
 
 func on_enter(ctx: EffectContext) -> void:
 	# Continuous link: if the token can't be placed in zone 3, destroy self
-	# per the second clause. The owner's monster occupying zone 3 blocks
-	# placement (monster_zone is tracked separately from zones[]).
+	# per the second clause. The engine refuses the play when the owner's
+	# monster occupies zone 3 (5.11.1.1).
 	ctx.card_data.erase(LINK_KEY)
-	var placed := false
-	if ctx.owner.monster_zone != 3:
-		placed = await ctx.effect_handler.create_token_in_zone(ctx.owner, TOKEN_ID, 2)
+	var placed: bool = await ctx.effect_handler.create_token_in_zone(ctx.owner, TOKEN_ID, 2)
 	if placed:
 		var token := ctx.owner.get_zone_top_card(2)
 		token[LINK_KEY] = str(ctx.card_data.get("id", ""))

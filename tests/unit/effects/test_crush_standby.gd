@@ -203,3 +203,30 @@ func test_godzilla_flies_crushed_godzilla_2023_goes_to_deck_bottom() -> void:
 	assert_array(p0.main_deck).is_not_empty()
 	assert_str(str(p0.main_deck.back().get("id"))).is_equal(str(replacer["id"]))
 	assert_int(p0.cards_destroyed_this_turn.size()).is_equal(0)
+
+
+# --- EBP04-078 The Slithering Disaster: teleport_monster crushes the destination ---
+
+func test_teleport_onto_revenge_card_crushes_it_and_revenge_enters_standby() -> void:
+	# P0's effect moves P1's monster from zone 3 straight to zone 8, where a
+	# P1 Revenge card sits: the crush happens as part of the move (interrupt
+	# rule action, 11.1.2.1) — no check timing runs in this test — and the
+	# Revenge resolves from standby.
+	var state := States.make_state({"p1": {
+		"monster_zone": 3,
+		"zone_cards": {7: _card("P1-REV", REVENGE)},
+	}})
+	var s := _session(state)
+	var effect := RecordRevenge.new()
+	effect.state = state
+	s["effect_handler"].registry.register_for_test(REVENGE, effect, ["on_revenge"])
+	var card := Real.instance("EBP04-078")
+	state.players[0].strategy_zones[0] = card
+
+	await s["effect_handler"].trigger_enter(0, card)
+
+	var p1 := state.players[1]
+	assert_int(p1.monster_zone).is_equal(8)
+	assert_bool(p1.zone_has_cards(7)).is_false()
+	assert_int(p1.cards_destroyed_this_turn.size()).is_equal(1)
+	assert_array(effect.seen).contains_exactly(["revenge:P1-REV:uncrushed=0"])
