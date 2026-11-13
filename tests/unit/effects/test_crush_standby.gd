@@ -146,7 +146,7 @@ func test_ability_added_mid_resolution_joins_same_players_next_order_prompt() ->
 	var spawner := func() -> void:
 		order.append("a")
 		# Triggered while A resolves → enters standby behind it.
-		await handler._resolve_standby_entries([spawned])
+		await handler.standby.resolve_entries([spawned])
 
 	await handler.standby.resolve_entries([
 		_entry(0, Cards.battle(1, 5000, "A"), spawner),
