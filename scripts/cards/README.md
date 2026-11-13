@@ -35,19 +35,22 @@ picks etc.) — re-map to the canonical dict by id, don't trust field types.
 2. New trait? Append it to `CardTrait` in `card_enums.gd` (at the END — keeps
    existing enum ints stable), add its `trait_to_key()` case, and add the
    `STR_TRAIT_*` row to `translations/strings.csv`.
-3. Write its effect script under `scripts/effects/<set>/` (see
+3. Read its rulings: `grep -A2 '<card id>' comprehensive_rules/qa.txt`. A
+   card from a set newer than the file's `fetched` date → refresh it first
+   (`comprehensive_rules/README.md`).
+4. Write its effect script under `scripts/effects/<set>/` (see
    `scripts/effects/README.md`) and set `effect_script` in the template.
-4. Check format legality in `game_mode_validator.gd` `MODES` pools. A newly
+5. Check format legality in `game_mode_validator.gd` `MODES` pools. A newly
    spoiled set is playable in `unrestricted` automatically (no `card_pool` =
    every card); add its prefix to a Rumble format's `include_sets` (and
    BULKZILLA's, for starter decks) only once it's released for that region. A card missing from one region's pool goes
    in that format's `exclude_cards` (e.g. East-only promos are excluded in
    `rumble_west`).
-5. Regenerate trigger_map (pre-commit hook does it; never while a headless
+6. Regenerate trigger_map (pre-commit hook does it; never while a headless
    run is live).
-6. Cover it in `tests/unit/effects/cards/` (smoke picks it up automatically;
+7. Cover it in `tests/unit/effects/cards/` (smoke picks it up automatically;
    add cluster/bespoke coverage per `classification.md`).
-7. Regenerate `cards.csv` via `translations/generate_card_csv.py` (pulls
+8. Regenerate `cards.csv` via `translations/generate_card_csv.py` (pulls
    EN name/description from card_data; JP comes from
    `translations/ja_sources/` when a source file exists).
 
