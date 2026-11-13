@@ -103,7 +103,10 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
 
 `comprehensive_rules/` holds the official PDF; engine comments cite rule
 numbers (e.g. 10.4.3 standby ordering) — look them up in the greppable
-`comprehensive_rules/rules.txt` (`grep -A4 '^10\.4\.3\.'`). 2 players, 8 zones + 2 strategy
+`comprehensive_rules/rules.txt` (`grep -A4 '^10\.4\.3\.'`). Official Q&A rulings
+override the rules text: `comprehensive_rules/qa.txt` (`grep -A2 '^Q480 '`, or
+grep a card id). Quote a ruling verbatim, with its Q number, wherever a design
+or comment depends on it. 2 players, 8 zones + 2 strategy
 zones; win by invading past zone 8 or when the opponent can't rank up while
 countered. Turn: Start → Main → Counter → End. Threat = base + rage × 5000.
 Deck: 50 main (≤10 invade-2), 4 monsters rank 1–4.

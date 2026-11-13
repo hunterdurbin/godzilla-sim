@@ -20,6 +20,51 @@ Start → Main → Counter → End. Threat = base + rage × 5000. Deck rules liv
 `scripts/cards/deck_validator.gd` (50-card main deck, 4 monsters rank 1–4,
 ≤10 invade-2 cards, …).
 
+## Official Q&A — `qa.txt`
+
+`qa.txt` holds every official English Q&A ruling, one block per ruling.
+Rulings override the rules text where they disagree. Look one up by number
+or card id:
+
+```
+grep -A2 '^Q480 ' comprehensive_rules/qa.txt
+grep -A2 'EBP03-058' comprehensive_rules/qa.txt
+```
+
+Each block is `Q<n> (<date>) [<card id> : <name>] <category>`, then `Q:` and
+`A:` lines. Card ids in the header use the same `EBP03-058` form as the card
+set files.
+
+**Refreshing it.** The source is
+`https://en.godzilla-cardgame.com/manage/rule-qa/list?per_page=1000` (JSON:
+`items[]` with `id` = Q number, `question`, `answer`, `update_time`,
+`card_names`, `category_label`). It answers browsers only; curl and WebFetch
+get a 404 or an empty JavaScript shell. Refresh through Claude in Chrome:
+
+1. Open `https://en.godzilla-cardgame.com/question/` in a Chrome tab.
+2. Run this in the page (DevTools console, or the extension's JavaScript tool);
+   it downloads `godzilla-qa.txt`:
+
+   ```js
+   const j = await fetch('/manage/rule-qa/list?per_page=1000').then(r => r.json());
+   const it = [...j.items].sort((a, b) => a.id - b.id);
+   const clean = s => String(s || '').replace(/\r/g, '').replace(/\s*\n\s*/g, ' ').trim();
+   const body = it.map(x => `Q${x.id} (${x.update_time}) ${x.card_names ? x.card_names + ' ' : ''}${x.category_label}\nQ: ${clean(x.question)}\nA: ${clean(x.answer)}\n`).join('\n');
+   const header = `# Official Godzilla Card Game Q&A (EN), ${it.length} rulings, fetched ${new Date().toISOString().slice(0, 10)}\n# Source: https://en.godzilla-cardgame.com/manage/rule-qa/list?per_page=1000 — refresh recipe in comprehensive_rules/README.md\n\n`;
+   const a = Object.assign(document.createElement('a'), {
+     href: URL.createObjectURL(new Blob([header + body], {type: 'text/plain'})),
+     download: 'godzilla-qa.txt',
+   });
+   document.body.appendChild(a); a.click(); a.remove();
+   ```
+3. `mv ~/Downloads/godzilla-qa.txt comprehensive_rules/qa.txt`. Check that
+   `grep -c '^Q[0-9]' comprehensive_rules/qa.txt` matches the count in the header.
+
+A single card's rulings are also at
+`/manage/card-list-user/detail/?card_number=<id>` (`faqs[]`, with `qa_id`).
+
+## New rules versions
+
 When a new rules version releases, drop the new PDF here (keep the dated
 filename scheme), run `extract_text.sh` to regenerate `rules.txt`, and
 update this README.
