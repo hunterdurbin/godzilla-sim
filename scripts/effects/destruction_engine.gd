@@ -431,6 +431,7 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 	h.card_destroyed.emit(target.player_id, zone_idx)
 	if has_trigger(top_card, "on_destroy"):
 		var d_effect := get_effect(top_card)
+		h.note_effect_resolving(target.player_id, top_card)
 		@warning_ignore("redundant_await")
 		await d_effect.on_destroy(_build_context(target.player_id, top_card), zone_idx)
 	# Automatic abilities triggered by this destruction enter standby (10.6.2):

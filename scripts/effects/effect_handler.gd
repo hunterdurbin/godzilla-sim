@@ -162,6 +162,7 @@ func _set_active_effect(player_id: int, card_data: Dictionary) -> void:
 ## Announce that card_data's ability starts resolving (GameEvents.effect_resolving).
 ## Call at every site that STARTS a card-script resolution — not where an
 ## outer effect is restored after a nested one.
+## scripts/tools/check_effect_resolution_notes.py enforces this.
 func note_effect_resolving(player_id: int, card_data: Dictionary) -> void:
 	if events != null and not card_data.is_empty():
 		events.effect_resolving.emit(player_id, card_data)

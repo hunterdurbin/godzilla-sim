@@ -59,6 +59,16 @@ func _apply_cmdline_overrides() -> void:
 			_: push_warning("BotSimulationRunner: unknown arg %s" % arg)
 
 
+func _select_deck_file(player_id: int, path: String) -> void:
+	var full: String = path if path.begins_with("res://") or path.is_absolute_path() else "res://" + path
+	var text := FileAccess.get_file_as_string(full)
+	if text.is_empty():
+		push_error("BotSimulationRunner: cannot read deck file %s" % full)
+		return
+	var data: Dictionary = DecklistManager.parse_decklist_text(text)
+	DecklistManager.set_player_deck_from_entries(player_id, full.get_file().get_basename(), data["monster"], data["main"])
+
+
 func _difficulty(value: String, fallback: BotConfig.Difficulty) -> BotConfig.Difficulty:
 	var idx: int = BotConfig.Difficulty.keys().find(value.to_upper())
 	if idx < 0:
@@ -83,14 +93,15 @@ func _start_next_game() -> void:
 
 	seed(base_seed + _games_completed)
 
-	# Set up decks via DecklistManager
+	# Set up decks via DecklistManager. "@<path>" loads a .deck file directly
+	# (res:// or absolute, e.g. a committed tests/sim/decks/ coverage deck);
+	# anything else is a decklist name from the user's decklists dir.
 	for i in range(2):
 		var deck_name: String = p1_deck_name if i == 0 else p2_deck_name
-		if not deck_name.is_empty():
+		if deck_name.begins_with("@"):
+			_select_deck_file(i, deck_name.substr(1))
+		elif not deck_name.is_empty():
 			DecklistManager.select_deck_for_player(i, deck_name)
-		elif not DecklistManager.has_player_deck(i):
-			# No deck selected — clear so setup() uses fallback
-			pass
 
 	# Create TurnManager and set up the game
 	_current_turn_manager = TurnManager.new()

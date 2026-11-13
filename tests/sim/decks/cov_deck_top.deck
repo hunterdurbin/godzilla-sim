@@ -1,0 +1,19 @@
+# Coverage deck: EBP01-070 (Baragon), EBP03-071 (Godzilla's Skeleton) and
+# ESD03-004 as the rank IV monster. ESD03 Godzilla(2026) base.
+[monster deck]
+1 ESD03-001
+1 ESD03-002
+1 ESD03-003
+1 ESD03-004
+
+[main deck]
+3 ESD03-001
+3 ESD03-002
+3 ESD03-003
+4 EBP01-070
+2 ESD01-007
+4 ESD03-004
+3 ESD03-005
+4 ESD03-006
+4 ESD03-007
+4 EBP03-071

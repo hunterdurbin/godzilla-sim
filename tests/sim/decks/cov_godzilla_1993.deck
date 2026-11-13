@@ -1,0 +1,22 @@
+# Coverage deck: EBP03-012 Godzilla(1993) as the rank II monster (places a
+# blue strategy from hand) + EBP03-013 Godzilla(1995) (3 strategy zones).
+# ESD02 blue Godzilla base.
+[monster deck]
+1 EBP03-013
+1 ESD02-001
+1 EBP03-012
+1 ESD02-003
+
+[main deck]
+9 EBP03-013
+3 ESD02-001
+3 EBP03-012
+3 ESD02-003
+4 ESD02-007
+4 ESD02-008
+4 ESD02-009
+4 ESD02-010
+4 ESD02-011
+4 ESD02-012
+4 ESD02-014
+4 ESD02-015

@@ -24,6 +24,11 @@ if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$'; then
 	python3 scripts/tools/check_card_mutations.py || exit 1
 fi
 
+# Guard: engine sites that start a card ability call note_effect_resolving.
+if git diff --cached --name-only | grep -qE '^scripts/effects/[^/]+\.gd$'; then
+	python3 scripts/tools/check_effect_resolution_notes.py || exit 1
+fi
+
 # Guard: per-card scripts await every engine coroutine they call.
 if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$'; then
 	python3 scripts/tools/check_card_unawaited_coroutines.py || exit 1
