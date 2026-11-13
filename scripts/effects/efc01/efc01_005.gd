@@ -27,41 +27,23 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 	if ctx.is_opponent_turn():
 		return
 
-	# Reveal top 5 cards
-	var count: int = mini(5, ctx.owner.main_deck.size())
-	if count == 0:
+	# Reveal top 5 cards (taken off the deck, shown to both players)
+	var revealed: Array[Dictionary] = await ctx.effect_handler.reveal_deck_top(
+		ctx.owner.player_id, 5, "STR_EFF_REVEALED_CARDS")
+	if revealed.is_empty():
 		return
-	var revealed: Array[Dictionary] = []
-	for i in range(count):
-		revealed.append(ctx.owner.main_deck[i])
-
-	# Show all revealed cards
-	await ctx.effect_handler.select_from_cards(
-		ctx.owner.player_id, revealed, revealed,
-		tr("STR_EFF_REVEALED_CARDS"))
 
 	# Separate Fest cards from the rest
 	var fest_cards: Array[Dictionary] = []
-	var discard_cards: Array[Dictionary] = []
+	var rest: Array[Dictionary] = []
 	for card in revealed:
 		if CardUtils.has_trait(card, CardEnums.CardTrait.FEST):
 			fest_cards.append(card)
 		else:
-			discard_cards.append(card)
+			rest.append(card)
 
-	# Remove revealed cards from deck (reverse order to preserve indices)
-	for i in range(count - 1, -1, -1):
-		ctx.owner.main_deck.remove_at(i)
-	ctx.owner.deck_changed.emit()
-
-	# Add Fest cards to hand
 	ctx.effect_handler.add_cards_to_hand(ctx.owner.player_id, fest_cards)
-
-	# Discard the rest
-	for card in discard_cards:
-		ctx.owner.discard_pile.append(card)
-	if not discard_cards.is_empty():
-		ctx.owner.discard_changed.emit()
+	ctx.effect_handler.discard_cards(ctx.owner.player_id, rest)
 
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:

@@ -34,6 +34,4 @@ func on_enter(ctx: EffectContext) -> void:
 			return CardUtils.has_color(card, CardEnums.CardColor.GREEN),
 		tr("STR_EFF_EBP04_061_PROMPT"))
 	if not found.is_empty():
-		ctx.owner.discard_pile.append(found)
-		ctx.owner.discard_changed.emit()
-		ctx.owner.deck_changed.emit()
+		ctx.effect_handler.discard_cards(ctx.owner.player_id, [found])

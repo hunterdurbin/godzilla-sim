@@ -48,6 +48,22 @@ func test_discard_hand_to_noop_when_at_or_below_target() -> void:
 	assert_int(state.players[0].hand.size()).is_equal(1)
 
 
+func test_discard_hand_to_zero_discards_whole_hand_without_prompting() -> void:
+	# Nothing to choose when the whole hand goes, so no hand-discard prompt.
+	var state := States.make_state({"p0": {"hand": [
+		Cards.battle(1, 5000, "A"), Cards.battle(1, 5000, "B"), Cards.battle(1, 5000, "C"),
+	]}})
+	var input := ScriptedPlayerInput.new()
+	var handler := _make_handler(state, input)
+
+	var discarded: Array[Dictionary] = await handler.discard_hand_to(0, 0)
+
+	assert_int(discarded.size()).is_equal(3)
+	assert_array(state.players[0].hand).is_empty()
+	assert_int(state.players[0].discard_pile.size()).is_equal(3)
+	assert_array(input.calls_of("choose_hand_discards")).is_empty()
+
+
 func test_search_deck_removes_selected_and_shuffles() -> void:
 	var state := States.make_state({"p0": {"main_deck": [
 		Cards.battle(1, 5000, "A"), Cards.strategy(1, "S"), Cards.battle(2, 6000, "B"),

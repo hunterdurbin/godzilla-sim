@@ -27,11 +27,17 @@ func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 	if to_discard <= 0:
 		return []
 
-	_highlight_active_effect()
-	# Not redundant: SignalPlayerInput's override is a coroutine.
-	@warning_ignore("redundant_await")
-	var hand_indices: Array[int] = await input.choose_hand_discards(player_id, to_discard, player.hand.size())
-	_unhighlight_active_effect()
+	var hand_indices: Array[int] = []
+	if to_discard >= player.hand.size():
+		# Whole hand goes: there is nothing to choose, so don't prompt.
+		for i in range(player.hand.size()):
+			hand_indices.append(i)
+	else:
+		_highlight_active_effect()
+		# Not redundant: SignalPlayerInput's override is a coroutine.
+		@warning_ignore("redundant_await")
+		hand_indices = await input.choose_hand_discards(player_id, to_discard, player.hand.size())
+		_unhighlight_active_effect()
 
 	var discarded_cards: Array[Dictionary] = []
 	# Sort descending so removing doesn't shift indices
@@ -787,6 +793,30 @@ func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int)
 		return
 	player.zones[zone_idx].append(card)
 	player.zones_changed.emit()
+
+
+
+
+func place_cards_under_monster(player_id: int, cards: Array[Dictionary]) -> void:
+	## "Place <cards> under your monster card": append them to the player's
+	## monster_stack. Each card is first removed from the player's discard pile
+	## or monster deck if it is still there (safe to call with cards already
+	## taken out, e.g. by search_discard). Emits discard_changed /
+	## monster_changed as applicable. No-op when empty.
+	if cards.is_empty():
+		return
+	var player := game_state.players[player_id]
+	var discard_touched := false
+	for card in cards:
+		if card in player.discard_pile:
+			player.discard_pile.erase(card)
+			discard_touched = true
+		elif card in player.monster_deck:
+			player.monster_deck.erase(card)
+		player.monster_stack.append(card)
+	if discard_touched:
+		player.discard_changed.emit()
+	player.monster_changed.emit()
 
 
 

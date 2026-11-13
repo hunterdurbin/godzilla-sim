@@ -1147,6 +1147,7 @@ func test_ebp04_089_milestones_15_22_and_30() -> void:
 	await handler.reduce_rage(0, 7)
 	assert_int(handler.get_cards_under_strategy_top(p0, 0).size()).is_equal(22)
 	assert_int(p1.hand.size()).is_equal(0)
+	assert_int(p1.discard_pile.size()).is_equal(5)  # 2 destroyed at the 15th + 3 from hand
 	assert_int(winner[0]).is_equal(-1)
 
 	# 30th marker: the game is won.

@@ -46,9 +46,7 @@ func apply_play_cost(ctx: EffectContext, zone_index: int) -> bool:
 		tr("STR_EFF_EBP04_012_PROMPT"), 1)
 	if chosen.is_empty():
 		return false
-	var placed: Dictionary = chosen[0]
-	ctx.owner.monster_deck.erase(placed)
-	ctx.owner.monster_stack.push_back(placed)
+	ctx.effect_handler.place_cards_under_monster(ctx.owner.player_id, [chosen[0]])
 	return true
 
 

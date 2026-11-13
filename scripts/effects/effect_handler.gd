@@ -734,6 +734,10 @@ func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int)
 	mover.place_card_under_zone(player, card, zone_idx)
 
 
+func place_cards_under_monster(player_id: int, cards: Array[Dictionary]) -> void:
+	mover.place_cards_under_monster(player_id, cards)
+
+
 func move_zone_card_under_zone(player: PlayerState, from_zone: int, to_zone: int) -> bool:
 	return mover.move_zone_card_under_zone(player, from_zone, to_zone)
 

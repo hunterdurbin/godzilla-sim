@@ -21,16 +21,13 @@ func on_enter(ctx: EffectContext) -> void:
 	var my_name: String = ctx.card_data.get("name", "")
 	var to_stack: Array[Dictionary] = []
 
-	# Find matching cards in discard pile (iterate backwards for safe removal)
+	# Newest-first, matching the old back-to-front discard walk.
 	for i in range(ctx.owner.discard_pile.size() - 1, -1, -1):
 		if ctx.owner.discard_pile[i].get("name", "") == my_name:
-			to_stack.append(ctx.owner.discard_pile.pop_at(i))
+			to_stack.append(ctx.owner.discard_pile[i])
 
 	if not to_stack.is_empty():
-		# Add to monster_stack (cards under the monster)
-		ctx.owner.monster_stack.append_array(to_stack)
-		ctx.owner.discard_changed.emit()
-		ctx.owner.monster_changed.emit()
+		ctx.effect_handler.place_cards_under_monster(ctx.owner.player_id, to_stack)
 		await ctx.effect_handler.reveal_cards(ctx.owner.player_id, to_stack, tr("STR_EFF_EBP02_046_TITLE_FMT") % my_name)
 
 

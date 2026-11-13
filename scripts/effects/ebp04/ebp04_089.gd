@@ -80,11 +80,7 @@ func _trigger_milestone(ctx: EffectContext, milestone: int) -> void:
 				await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
 		22:
 			ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_089_MILESTONE_22"))
-			while not ctx.opponent.hand.is_empty():
-				var card := ctx.opponent.hand.pop_back() as Dictionary
-				ctx.opponent.discard_pile.append(card)
-			ctx.opponent.hand_changed.emit()
-			ctx.opponent.discard_changed.emit()
+			await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 0)
 		30:
 			ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_089_MILESTONE_30"))
 			ctx.game_state.game_over.emit(ctx.owner.player_id, "STR_LOG_REASON_INHERITED_LIFE")

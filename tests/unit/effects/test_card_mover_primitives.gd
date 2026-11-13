@@ -51,6 +51,44 @@ func test_move_zone_card_under_zone_noop_for_empty_or_same_zone() -> void:
 	assert_array(_ids(p0.get_zone_stack(3))).is_equal(["A"])
 
 
+# --- place_cards_under_monster ---
+
+
+func test_place_cards_under_monster_takes_cards_out_of_discard_and_monster_deck() -> void:
+	var from_discard := Cards.battle(2, 2000, "FROM-DISCARD")
+	var stays := Cards.battle(2, 2000, "STAYS")
+	var from_mdeck := Cards.monster(3, 3000, [CardEnums.CardTrait.GODZILLA], "FROM-MDECK")
+	var state := States.make_state()
+	var p0 := state.players[0]
+	p0.discard_pile.append(stays)
+	p0.discard_pile.append(from_discard)
+	p0.monster_deck.append(from_mdeck)
+	var handler: EffectHandler = States.make_session(state)["effect_handler"]
+	var signals: Array[String] = []
+	p0.discard_changed.connect(func() -> void: signals.append("discard"))
+	p0.monster_changed.connect(func() -> void: signals.append("monster"))
+
+	handler.place_cards_under_monster(0, [from_discard, from_mdeck])
+
+	assert_array(_ids(p0.monster_stack)).is_equal(["FROM-DISCARD", "FROM-MDECK"])
+	assert_array(_ids(p0.discard_pile)).is_equal(["STAYS"])
+	assert_bool(p0.monster_deck.has(from_mdeck)).is_false()
+	assert_array(signals).is_equal(["discard", "monster"])
+
+
+func test_place_cards_under_monster_noop_when_empty() -> void:
+	var state := States.make_state()
+	var p0 := state.players[0]
+	var handler: EffectHandler = States.make_session(state)["effect_handler"]
+	var fired: Array[int] = [0]
+	p0.monster_changed.connect(func() -> void: fired[0] += 1)
+
+	handler.place_cards_under_monster(0, [])
+
+	assert_array(p0.monster_stack).is_empty()
+	assert_int(fired[0]).is_equal(0)
+
+
 # --- return_cards_under_top_to_hand ---
 
 
