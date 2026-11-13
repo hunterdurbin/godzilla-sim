@@ -8,7 +8,7 @@ behavioral diffing** — proving a refactor changed no bot-visible behavior.
 <godot> --headless --path . res://tests/sim/BotSimulationRunner.tscn
 ```
 
-Scene exports (edit the root node in `BotSimulationRunner.tscn`):
+Scene exports (overridable per run with `-- --games= --seed= --p1= --p2= --deck1= --deck2=`):
 `num_games` (default 200), `p1_difficulty`/`p2_difficulty` (default HARD),
 `p1_deck_name`/`p2_deck_name` (default ESD01/ESD02 Starter), `base_seed`
 (0 = random; game *i* seeds the global RNG with `base_seed + i`).
@@ -18,17 +18,24 @@ Scene exports (edit the root node in `BotSimulationRunner.tscn`):
 Determinism is verified: with a pinned seed, `[SimResult]` lines are
 byte-identical across runs — so any diff is a real behavior change.
 
-1. Locally edit the .tscn root node: `num_games = 50`, `base_seed = 424242`
-   (**never commit this edit** — `git checkout -- tests/sim/BotSimulationRunner.tscn` after).
-2. Run, capture: `... > /tmp/sim_now.txt 2>&1`
-3. Diff against the committed baseline:
-   ```bash
-   grep '\[SimResult\]' docs/restructure/baselines/sim_baseline.txt > /tmp/a.txt
-   grep '\[SimResult\]' /tmp/sim_now.txt > /tmp/b.txt
-   diff /tmp/a.txt /tmp/b.txt   # empty = no behavior change
-   ```
-   (For branch-vs-branch comparisons, capture your own baseline on the base
-   branch with the same seed instead.)
+```bash
+./tests/sim/run_sim_diff.sh <godot> [base_ref=main] [games=50] [p1=HARD] [p2=HARD] \
+    [deck1="ESD01 Starter"] [deck2="ESD02 Starter"] [seed=424242]
+```
+
+It runs the working tree and a detached, imported worktree of `base_ref`
+in parallel (the base gets this tree's `bot_simulation_runner.gd`, so both
+run the same harness) and reports differing `[SimResult]` lines, P1 wins,
+SCRIPT ERROR counts and `[Kaiju] … plan DIVERGED` counts. Exit 0 = identical.
+Decks resolve from the user decklists dir; for rules-engine changes pick a
+deck that exercises them (e.g. "King Ghidorah" carries 3 <Revenge> cards).
+
+**KAIJU replay parity**: run with a KAIJU side and compare `kaiju_diverged`
+— the planner's cached plan stopped matching the live game. It must not rise
+above the base.
+
+Ad hoc runs take the same args after `--` (they override the scene exports):
+`<godot> --headless --path . res://tests/sim/BotSimulationRunner.tscn -- --games=20 --seed=7 --p2=KAIJU --deck2="King Ghidorah"`
 
 Caveats: bot code must consume the global RNG in identical order for diffs
 to be meaningful (see `docs/restructure/conventions.md` → RNG rule). The

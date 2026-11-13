@@ -1,7 +1,9 @@
 extends Node
 
 ## Runs N bot-vs-bot games headlessly and prints summary statistics.
-## Usage: godot --headless --path . tests/sim/BotSimulationRunner.tscn
+## Usage: godot --headless --path . tests/sim/BotSimulationRunner.tscn \
+##          [-- --games=N --seed=S --p1=HARD --p2=KAIJU --deck1="Name" --deck2="Name"]
+## Command-line args override the exports below (difficulty by enum name).
 
 @export var num_games: int = 200
 @export var p1_difficulty: BotConfig.Difficulty = BotConfig.Difficulty.HARD
@@ -28,6 +30,7 @@ func _ready() -> void:
 	# Uncap frame rate for maximum simulation speed
 	Engine.max_fps = 0
 	Engine.physics_ticks_per_second = 10000
+	_apply_cmdline_overrides()
 	if base_seed == 0:
 		base_seed = randi()
 	print("=== Bot Simulation Starting (%d games, seed=%d) ===" % [num_games, base_seed])
@@ -35,6 +38,29 @@ func _ready() -> void:
 		BotConfig.Difficulty.keys()[p1_difficulty],
 		BotConfig.Difficulty.keys()[p2_difficulty]])
 	_start_next_game()
+
+
+func _apply_cmdline_overrides() -> void:
+	for arg in OS.get_cmdline_user_args():
+		var key: String = arg.get_slice("=", 0)
+		var value: String = arg.substr(key.length() + 1)
+		match key:
+			"--games": num_games = int(value)
+			"--seed": base_seed = int(value)
+			"--p1": p1_difficulty = _difficulty(value, p1_difficulty)
+			"--p2": p2_difficulty = _difficulty(value, p2_difficulty)
+			"--deck1": p1_deck_name = value
+			"--deck2": p2_deck_name = value
+			"--record-replays": record_replays = true
+			_: push_warning("BotSimulationRunner: unknown arg %s" % arg)
+
+
+func _difficulty(value: String, fallback: BotConfig.Difficulty) -> BotConfig.Difficulty:
+	var idx: int = BotConfig.Difficulty.keys().find(value.to_upper())
+	if idx < 0:
+		push_warning("BotSimulationRunner: unknown difficulty %s" % value)
+		return fallback
+	return idx as BotConfig.Difficulty
 
 
 func _start_next_game() -> void:

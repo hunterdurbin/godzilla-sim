@@ -59,15 +59,15 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
 
 ## Testing & verification
 
-- Unit (gdUnit4): `./tests/run_unit_tests.sh <godot>` — 901 cases; suites in
+- Unit (gdUnit4): `./tests/run_unit_tests.sh <godot> [path]` (digest output); suites in
   `tests/unit/`, fixtures in `tests/fixtures/` (hand-built dicts for core;
   `real_cards.gd` `Real.instance(id)` for effect tests — never raw CardData
   templates). Smoke suite fails if `trigger_map.gd` is stale.
 - Multiplayer harness: `./tests/harness/run_harness.sh 3 <godot>` — greps
   DESYNC / SCRIPT ERROR. Run after touching session/server/board RPC surface.
-- Bot sim: `<godot> --headless --path . res://tests/sim/BotSimulationRunner.tscn`
-  — pin `base_seed` for seed-matched `[SimResult]` behavioral diffs between
-  branches (`tests/sim/README.md`).
+- Bot sim diff vs a base ref: `./tests/sim/run_sim_diff.sh <godot> [base_ref] [games] [p1] [p2] [deck1] [deck2]`
+  — seed-matched `[SimResult]` diff + KAIJU `plan DIVERGED` counts
+  (`tests/sim/README.md`).
 - Headful verification of board UI: the `verify` skill
   (`.claude/skills/verify/`) — unit+harness do NOT exercise the real
   GameBoard `_ready`.

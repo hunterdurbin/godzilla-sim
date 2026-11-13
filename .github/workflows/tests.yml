@@ -1,0 +1,26 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: barichello/godot-ci:4.6
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Import project
+        run: godot --headless --path . --import || true
+
+      - name: Run gdUnit4 suite
+        run: ./tests/run_unit_tests.sh godot
