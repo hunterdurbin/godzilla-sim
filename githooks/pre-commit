@@ -19,6 +19,11 @@ if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$|card_monst
 	python3 scripts/tools/check_card_monster_zone_checks.py || exit 1
 fi
 
+# Guard: per-card scripts await every engine coroutine they call.
+if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$'; then
+	python3 scripts/tools/check_card_unawaited_coroutines.py || exit 1
+fi
+
 # Sync version from project.godot into export_presets.cfg
 if git diff --cached --name-only | grep -qE '^project\.godot$'; then
 	if git diff --cached project.godot | grep -qE '^\+config/version='; then

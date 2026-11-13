@@ -68,6 +68,9 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
 - Bot sim diff vs a base ref: `./tests/sim/run_sim_diff.sh <godot> [base_ref] [games] [p1] [p2] [deck1] [deck2]`
   — seed-matched `[SimResult]` diff + KAIJU `plan DIVERGED` counts
   (`tests/sim/README.md`).
+- Mechanical rules (a pattern grep can catch) get a check in `scripts/tools/`
+  wired into `githooks/pre-commit` + `tests.yml`, not prose — see
+  `scripts/tools/README.md` for the existing ones.
 - Headful verification of board UI: the `verify` skill
   (`.claude/skills/verify/`) — unit+harness do NOT exercise the real
   GameBoard `_ready`.

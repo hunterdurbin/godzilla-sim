@@ -30,6 +30,9 @@ jobs:
       - name: No new play-zone legality checks in card scripts
         run: python3 scripts/tools/check_card_monster_zone_checks.py
 
+      - name: Card scripts await engine coroutines
+        run: python3 scripts/tools/check_card_unawaited_coroutines.py
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
