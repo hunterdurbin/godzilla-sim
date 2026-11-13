@@ -1345,6 +1345,9 @@ func test_ebp04_046_plays_itself_when_discarded_by_opponent_effect() -> void:
 	handler.exec.active_card = Cards.strategy(2, "OPP-FX")
 
 	await handler.trigger_discard_from_hand(0, card)
+	# An automatic ability: it waits in standby until the opponent's effect ends.
+	assert_bool(handler.exec.pending_standby_entries.is_empty()).is_false()
+	await States.finish_active_effect(handler)
 
 	assert_str(str(state.players[0].get_zone_top_card(4).get("id"))).is_equal(str(card.get("id")))
 	assert_int(state.players[0].discard_pile.size()).is_equal(0)

@@ -30,6 +30,9 @@ const METHODS_EXEMPT_NAMES := [
 	# Turn-scoped state round-trip hooks — called directly by GameSerializer /
 	# MatchFactory, never dispatched through the trigger map.
 	"serialize_state", "restore_state",
+	# Resolution-time gate on on_leave_play / on_zone_changed standby entries —
+	# bound by the dispatcher only after has_trigger() passed.
+	"area_change_still_applies",
 	# Collection-time gate — direct-called by the dispatcher on effects that
 	# already passed has_trigger(on_phase_start), never has_trigger()-gated.
 	"phase_start_applies",

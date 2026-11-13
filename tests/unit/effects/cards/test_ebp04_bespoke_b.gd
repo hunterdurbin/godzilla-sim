@@ -142,6 +142,9 @@ func test_ebp04_052_plays_itself_when_opp_discards_it_and_opp_in_zones_4_8() -> 
 	handler.exec.active_card = Cards.strategy(2, "OPP-FX")
 
 	await handler.trigger_discard_from_hand(0, card)
+	# An automatic ability: it waits in standby until the opponent's effect ends.
+	assert_bool(handler.exec.pending_standby_entries.is_empty()).is_false()
+	await States.finish_active_effect(handler)
 
 	assert_str(str(state.players[0].get_zone_top_card(3).get("id"))).is_equal(str(card.get("id")))
 
@@ -510,6 +513,55 @@ func test_ebp04_t01_moving_the_token_destroys_both() -> void:
 	# Token banished, main card discarded.
 	assert_int(p0.discard_pile.size()).is_equal(1)
 	assert_str(str(p0.discard_pile[0].get("id"))).is_equal(str(card.get("id")))
+
+
+func test_ebp04_067_both_leaving_together_triggers_no_order_prompt() -> void:
+	# Both links enter standby, find nothing left, and cease to exist (10.6.3)
+	# — the player is never asked to order two no-op abilities.
+	var card := Real.instance("EBP04-067")
+	var token := Real.instance("EBP04-T01")
+	var state := States.make_state({"p0": {"zone_cards": {7: card, 2: token}}})
+	var input := ScriptedPlayerInput.new()
+	var s := States.make_session(state, input)
+
+	await s["effect_handler"].destroy_zones(state.players[0], [2, 7] as Array[int])
+
+	assert_bool(state.players[0].zone_has_cards(2)).is_false()
+	assert_bool(state.players[0].zone_has_cards(7)).is_false()
+	assert_int(input.count_calls("choose_option")).is_equal(0)
+
+
+func test_ebp04_067_link_only_takes_its_own_token() -> void:
+	# The pair is linked by per-copy id: another Godzilla Earth token on the
+	# board is not "that token".
+	var card := Real.instance("EBP04-067")
+	var other_token := Real.instance("EBP04-T01")
+	var state := States.make_state({"p0": {"zone_cards": {7: card, 4: other_token}}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	await handler.trigger_enter(0, card)
+	var p0 := state.players[0]
+	assert_str(str(CardUtils.base_id(p0.get_zone_top_card(2)))).is_equal("EBP04-T01")
+
+	await handler.destroy_zones(p0, [7] as Array[int])
+
+	assert_bool(p0.zone_has_cards(2)).is_false()
+	assert_str(str(p0.get_zone_top_card(4).get("id"))).is_equal(str(other_token["id"]))
+
+
+func test_ebp04_067_being_played_over_destroys_the_token() -> void:
+	var card := Real.instance("EBP04-067")
+	var token := Real.instance("EBP04-T01")
+	var replacement := Cards.battle(3, 3000, "OVERLOADER")
+	var state := States.make_state({"p0": {"zone_cards": {7: card, 2: token}}})
+	state.players[0].discard_pile.append(replacement)
+	var s := _session(state)
+
+	await s["effect_handler"].play_from_discard(0, replacement, 7)
+
+	var p0 := state.players[0]
+	assert_str(str(p0.get_zone_top_card(7).get("id"))).is_equal("OVERLOADER")
+	assert_bool(p0.zone_has_cards(2)).is_false()
 
 
 # --- EBP04-072: opp deck-play while in zone 5 → search your deck ---

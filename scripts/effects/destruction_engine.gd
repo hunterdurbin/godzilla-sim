@@ -396,9 +396,12 @@ func _passes_protects_filter(card_data: Dictionary, watcher_player_id: int) -> b
 
 func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Dictionary, deferred_entries: Variant = null) -> Dictionary:
 	## Execute destruction of a single zone, handling replacement effects.
-	## When deferred_entries is provided, revenge triggers are collected there
-	## instead of resolving immediately (used when destroying multiple zones).
+	## When deferred_entries is provided, the automatic abilities this triggers
+	## (leave-play links, revenge, zone-card-destroyed watchers) are collected
+	## there instead of resolving here (used when destroying multiple zones).
+	## Replacement effects always resolve immediately.
 	## Returns the destroyed/replaced card, or empty dict on failure.
+	var entries: Array = deferred_entries if deferred_entries != null else []
 	var effect := get_effect(top_card)
 	if effect \
 			and _passes_would_be_destroyed_filter(top_card, target.player_id) \
@@ -413,6 +416,10 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 		target.discard_changed.emit()
 		_log_destroy(target.player_id, zone_idx, top_card)
 		h.card_destroyed.emit(target.player_id, zone_idx)
+		# Not destroyed, but it still left its zone (area-changing trigger).
+		entries.append_array(h.collect_leave_play_entries(target.player_id, top_card, zone_idx))
+		if deferred_entries == null and not entries.is_empty():
+			await resolve_deferred_entries(entries)
 		return top_card
 
 	var stack: Array = target.clear_zone(zone_idx)
@@ -426,24 +433,24 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 		var d_effect := get_effect(top_card)
 		@warning_ignore("redundant_await")
 		await d_effect.on_destroy(_build_context(target.player_id, top_card), zone_idx)
-	# Destroy is one way to leave play — fire the generic hook for linked-card
-	# effects that don't care whether removal was via <Destroy> or overload.
-	await h.trigger_leave_play(target.player_id, top_card, zone_idx)
-	if deferred_entries != null:
-		if has_trigger(top_card, "on_revenge"):
-			var rev_effect := get_effect(top_card)
-			var ctx := _build_context(target.player_id, top_card)
-			var revenge_cb := func():
-				h.log_message.emit(GameLog.revenge_triggered(target.player_id, top_card.get("id", "")))
-				@warning_ignore("redundant_await")
-				await rev_effect.on_revenge(ctx)
-			deferred_entries.append({"player_id": target.player_id, "card_data": top_card, "callback": revenge_cb, "skip_active_check": true})
-		deferred_entries.append_array(h.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
-		deferred_entries.append_array(h.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
-	else:
-		await h.trigger_revenge(target.player_id, top_card)
-		await h.trigger_ally_zone_card_destroyed(target.player_id, top_card, zone_idx)
-		await h.trigger_opponent_zone_card_destroyed(target.player_id, top_card, zone_idx)
+	# Automatic abilities triggered by this destruction enter standby (10.6.2):
+	# the leave-play link (destroy is one way to leave a zone) and the "when
+	# destroyed" abilities. A batch caller resolves them after the whole batch;
+	# a single destroy resolves them now — which, mid-effect, queues them for
+	# the check timing after that effect (10.4.3).
+	entries.append_array(h.collect_leave_play_entries(target.player_id, top_card, zone_idx))
+	if has_trigger(top_card, "on_revenge"):
+		var rev_effect := get_effect(top_card)
+		var ctx := _build_context(target.player_id, top_card)
+		var revenge_cb := func():
+			h.log_message.emit(GameLog.revenge_triggered(target.player_id, top_card.get("id", "")))
+			@warning_ignore("redundant_await")
+			await rev_effect.on_revenge(ctx)
+		entries.append({"player_id": target.player_id, "card_data": top_card, "callback": revenge_cb, "skip_active_check": true})
+	entries.append_array(h.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
+	entries.append_array(h.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
+	if deferred_entries == null and not entries.is_empty():
+		await resolve_deferred_entries(entries)
 	return top_card
 
 

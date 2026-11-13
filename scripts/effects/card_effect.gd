@@ -254,6 +254,15 @@ func on_zone_changed(_ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	pass
 
 
+func area_change_still_applies(_ctx: EffectContext) -> bool:
+	## Resolution-time gate for on_leave_play / on_zone_changed standby
+	## entries. Return false when the ability has nothing left to do (rule
+	## 10.6.3: an ability in standby that can't be played ceases to exist) —
+	## it's dropped before the order prompt instead of showing as a no-op.
+	## MUST stay synchronous.
+	return true
+
+
 func can_be_played(_ctx: EffectContext) -> bool:
 	## Return false if this card has a play restriction that prevents it from being played.
 	## Checked before rank/zone validation in the rules engine.

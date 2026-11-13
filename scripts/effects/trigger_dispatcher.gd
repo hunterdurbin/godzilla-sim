@@ -204,23 +204,12 @@ func _passes_discard_condition(effect: CardEffect, card_data: Dictionary, ctx: E
 
 
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
-	## Trigger discard-from-hand effect on the card being discarded.
-	if not _passes_discard_from_hand_filter(card_data, player_id):
-		return
-	var effect := get_effect(card_data)
-	if effect:
-		var ctx := _build_context(player_id, card_data)
-		if not _passes_discard_condition(effect, card_data, ctx):
-			return
-		var saved_player_id: int = _active_effect_player_id
-		var saved_card: Dictionary = _active_effect_card
-		_set_active_effect(player_id, card_data)
-		@warning_ignore("redundant_await")
-		await effect.on_discard_from_hand(ctx)
-		if saved_card.is_empty():
-			_clear_active_effect()
-		else:
-			_set_active_effect(saved_player_id, saved_card)
+	## Discard-from-hand ability of the card being discarded. It's an automatic
+	## ability: it enters standby (10.6.2), so mid-effect discards resolve at
+	## the check timing after the effect; otherwise it resolves now.
+	var entries := collect_discard_from_hand_entries(player_id, card_data)
+	if not entries.is_empty():
+		await _resolve_standby_entries(entries)
 
 
 
@@ -877,18 +866,55 @@ func collect_invasion_observed_entries(invading_player_id: int, from_zone: int, 
 
 
 func trigger_leave_play(player_id: int, leaving_card: Dictionary, zone_index: int) -> void:
-	## Fire on_leave_play for a card that just left a zone for any reason
-	## (destroyed, overloaded, banished, returned to hand/deck). Distinct from
-	## on_destroy/on_revenge, which only fire for <Destroy> actions per the
-	## rules. Used by linked-card effects (e.g. EBP04-067 ↔ token).
-	if leaving_card.is_empty():
-		return
-	if not has_trigger(leaving_card, "on_leave_play"):
-		return
+	## A card just left a zone for any reason (destroyed, overloaded, banished,
+	## returned to hand/deck) — an area-changing trigger (10.6.4). The
+	## on_leave_play ability enters standby (10.6.2): while an effect is
+	## resolving it waits for the check timing after that effect; otherwise it
+	## resolves now. Distinct from on_destroy/on_revenge, which only fire for
+	## <Destroy>. Used by linked-card effects (e.g. EBP04-067 ↔ token).
+	var entries := collect_leave_play_entries(player_id, leaving_card, zone_index)
+	if not entries.is_empty():
+		await _resolve_standby_entries(entries)
+
+
+
+
+func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_index: int) -> Array:
+	## Standby entry for on_leave_play, for callers that batch triggers
+	## (e.g. destroy_zones collects it alongside revenge).
+	if leaving_card.is_empty() or not has_trigger(leaving_card, "on_leave_play"):
+		return []
 	var effect := get_effect(leaving_card)
-	if effect:
-		@warning_ignore("redundant_await")
-		await effect.on_leave_play(_build_context(player_id, leaving_card), zone_index)
+	if effect == null:
+		return []
+	var ctx := _build_context(player_id, leaving_card)
+	return [{
+		"player_id": player_id,
+		"card_data": leaving_card,
+		"callback": effect.on_leave_play.bind(ctx, zone_index),
+		"still_applies": effect.area_change_still_applies.bind(ctx),
+		"skip_active_check": true,
+	}]
+
+
+
+
+func trigger_zone_changed(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> void:
+	## A card moved between zones while staying in play — an area-changing
+	## trigger (10.6.4). Enters standby like trigger_leave_play.
+	if moved_card.is_empty() or not has_trigger(moved_card, "on_zone_changed"):
+		return
+	var effect := get_effect(moved_card)
+	if effect == null:
+		return
+	var ctx := _build_context(player_id, moved_card)
+	await _resolve_standby_entries([{
+		"player_id": player_id,
+		"card_data": moved_card,
+		"callback": effect.on_zone_changed.bind(ctx, from_zone, to_zone),
+		"still_applies": effect.area_change_still_applies.bind(ctx),
+		"skip_active_check": true,
+	}])
 
 
 

@@ -202,8 +202,8 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 	player.discard_pile.append(card)
 	player.hand_changed.emit()
 	player.discard_changed.emit()
-	await h.trigger_discard_from_hand(player_id, card)
-	await h.trigger_hand_card_discarded(player_id, card)
+	# One standby batch (10.4.3) — mid-effect, both wait for the check timing.
+	await h.trigger_hand_cards_discarded_batch(player_id, [card])
 	return card
 
 
@@ -605,10 +605,7 @@ func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
 	# moved card — mirrors the linked-card semantics used by swap_zones and
 	# play_from_discard so cards like EBP04-067 can react to forced movement.
 	await h.trigger_leave_play(player.player_id, overloaded_top, to_zone)
-	if not moved_top.is_empty() and has_trigger(moved_top, "on_zone_changed"):
-		var me := get_effect(moved_top)
-		@warning_ignore("redundant_await")
-		await me.on_zone_changed(_build_context(player.player_id, moved_top), from_zone, to_zone)
+	await h.trigger_zone_changed(player.player_id, moved_top, from_zone, to_zone)
 
 
 
@@ -622,14 +619,8 @@ func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
 	player.zones[zone_a] = stack_b
 	player.zones[zone_b] = stack_a
 	player.zones_changed.emit()
-	if not top_a.is_empty() and has_trigger(top_a, "on_zone_changed"):
-		var eff := get_effect(top_a)
-		@warning_ignore("redundant_await")
-		await eff.on_zone_changed(_build_context(player.player_id, top_a), zone_a, zone_b)
-	if not top_b.is_empty() and has_trigger(top_b, "on_zone_changed"):
-		var eff := get_effect(top_b)
-		@warning_ignore("redundant_await")
-		await eff.on_zone_changed(_build_context(player.player_id, top_b), zone_b, zone_a)
+	await h.trigger_zone_changed(player.player_id, top_a, zone_a, zone_b)
+	await h.trigger_zone_changed(player.player_id, top_b, zone_b, zone_a)
 
 
 

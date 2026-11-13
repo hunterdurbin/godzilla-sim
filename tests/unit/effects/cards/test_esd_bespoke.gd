@@ -2008,6 +2008,29 @@ func test_esd05_005_opponent_destroy_watcher_resolves_after_play_back() -> void:
 	assert_int(state.players[0].hand.size()).is_equal(2)
 
 
+# 10c. Godzilla Earth's link (EBP04-067) is an automatic ability: destroying
+#      its token doesn't pull Godzilla Earth into the discard pile before the
+#      play-back — it's destroyed at the check timing after the effect.
+func test_esd05_005_godzilla_earth_link_resolves_after_play_back() -> void:
+	var earth := Real.instance("EBP04-067")  # rank 7
+	var token := Real.instance("EBP04-T01")  # rank 7
+	var s := _cf_session({
+		0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"), 2: token, 7: earth,
+	}, [Cards.battle(6, 5000, "DISCARD-R6")], {"select_zones": [[0, 1, 2]], "select_zone": [3]})
+	var state: GameState = s["state"]
+
+	await s["effect_handler"].trigger_enter(0, Real.instance("ESD05-005"))
+
+	var p0 := state.players[0]
+	# Godzilla Earth was not in the discard pile yet, so the R6 was played…
+	var search: Dictionary = _calls(s["input"], "search_cards")[0]
+	assert_int(search["matching"].size()).is_equal(1)
+	assert_str(str(p0.get_zone_top_card(3).get("id"))).is_equal("DISCARD-R6")
+	# …then the link destroyed Godzilla Earth.
+	assert_bool(p0.zone_has_cards(7)).is_false()
+	assert_str(str(p0.discard_pile.back().get("id"))).is_equal(str(earth["id"]))
+
+
 # 11. Tie for highest in discard: player chooses which.
 func test_esd05_005_tied_highest_in_discard_lets_player_choose() -> void:
 	var second := Cards.battle(7, 6000, "DISCARD-R7B")

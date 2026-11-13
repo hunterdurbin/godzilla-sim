@@ -526,6 +526,14 @@ func trigger_leave_play(player_id: int, leaving_card: Dictionary, zone_index: in
 	await dispatcher.trigger_leave_play(player_id, leaving_card, zone_index)
 
 
+func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_index: int) -> Array:
+	return dispatcher.collect_leave_play_entries(player_id, leaving_card, zone_index)
+
+
+func trigger_zone_changed(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> void:
+	await dispatcher.trigger_zone_changed(player_id, moved_card, from_zone, to_zone)
+
+
 func trigger_all_monster_enter_abilities(player_id: int) -> void:
 	await dispatcher.trigger_all_monster_enter_abilities(player_id)
 
