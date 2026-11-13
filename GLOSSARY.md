@@ -68,3 +68,29 @@ The non-interrupt rule action that, when a zone holds more than one card not
 in a stack, keeps the card placed last and destroys the rest. It is performed
 only at a check timing and never triggers <Revenge> (11.5, 12.7.2).
 _Avoid_: Replace, overwrite
+
+**Destroy**:
+Putting a card from a zone or strategy zone into its owner's discard pile. Effect destroys, Crush and Overload are all destroys (5.12.1.1); only an effect destroy is something "your opponent's effects" protection can stop.
+_Avoid_: Kill, remove
+
+## Zones and movement
+
+**Play**:
+Placing a battle card on a zone from outside the field, or putting a token into existence in a zone (5.11.1, 5.11.4). "Whenever … plays a battle card" abilities watch this.
+_Avoid_: Summon, deploy, enter (for the act itself)
+
+**Appear**:
+Putting a card or token into existence in a zone without it being played, as an Evolve does (5.17.1, 9.1.2).
+_Avoid_: Spawn
+
+**Evolve**:
+Making a new battle card appear on top of a battle card on the field, forming a stack (5.17).
+_Avoid_: Upgrade, transform
+
+**Advance**:
+Moving an invading monster one zone forward; an advance "to" a zone repeats single advances (5.13). An advance is either from an invasion or not, and only an advance from an invasion can trigger <When invading> or win the game.
+_Avoid_: Step, push
+
+**Victory through invasion**:
+Winning because your invading monster advanced from an invasion out of zone 8 while your opponent's zone 8 held no battle card (5.13.1.1.2).
+_Avoid_: Invasion win, breakthrough
