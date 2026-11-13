@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Drive the real game (GameBoard) headfully and capture screenshots to verify presentation changes end-to-end. Use when a change touches scenes/board/, overlays, or other UI and you need runtime evidence, not just tests; or for a one-command smoke run (smoke.sh) after an engine/logic change.
+description: Drive the real game (GameBoard) headfully and capture screenshots to verify presentation changes end-to-end. Use when a change touches scenes/board/, overlays, or other UI and you need runtime evidence, not just tests; for a one-command smoke run (smoke.sh) after an engine/logic change; or to check a specific card/effect on the real board (scenario.sh).
 ---
 
 # Verifying UI changes by driving the real game
@@ -16,11 +16,33 @@ board still runs, run `.claude/skills/verify/smoke.sh <godot> [turns]
 [shots_dir]`: a solo game that ends the main phase for N turns (default 4)
 with effect overlays auto-closed. Done = `SMOKE PASS` (exit 0); `SMOKE FAIL`
 means a SCRIPT/Parse error, a stalled turn (`smoke_stall.png`), or a timeout.
-Look at `smoke_end.png` before reporting. For specific UI behaviour, write a
-driver with the recipe below.
+Look at `smoke_end.png` before reporting. For specific behaviour on the
+board, write a scenario (next section).
 
-## Recipe: temporary driver scene
+## Scenarios: specific behaviour on the real board
 
+`.claude/skills/verify/scenario.sh <godot> <scenario.gd> [shots_dir]` starts
+a real solo game and calls the scenario's `run(v)`. A scenario is a
+`extends RefCounted` script compiled at runtime, so a throwaway in the
+scratchpad works; copy `scenarios/effect_strategy_and_reveal.gd` to start,
+and commit one under `scenarios/` when it is worth re-running.
+Done = `SCENARIO PASS`; read the `[Scenario]` lines and look at the shots.
+
+- **Stage state with `v.ed` (BoardEditor)**: `mint_card`, `set_strategy`,
+  `add_to_hand` / `add_to_deck` / `add_to_discard`, `add_to_zone`,
+  `set_rage`, … They mint unique instance ids, register effects for field
+  cards and emit the change signals — never assign `strategy_zones[i]` /
+  push onto piles by hand in a scenario.
+- **Fire the thing under test on `v.h` (EffectHandler) or the board's
+  buttons**. An entry point that opens an overlay awaits it: call it without
+  `await`, `await v.wait(…)`, `v.shot(…)`, then `v.close_overlays()`.
+- Helpers: `v.board v.tm v.gs v.h v.ed`, `await v.wait(sec)`, `v.shot(label)`,
+  `v.close_overlays()`, `v.log_tail(n)`, `v.note(msg)` (full list:
+  `scenario_driver.gd` header).
+
+## Recipe: temporary driver scene (other scenes)
+
+For scenes other than a running board (menus, deck builder) write a driver.
 `GameBoard.tscn` is directly launchable: with default autoload state
 (`NetworkManager.mode == Mode.SOLO`, `local_player_id -1 → 0`) it starts a
 real solo hotseat game immediately (P1 goes first, decks load from

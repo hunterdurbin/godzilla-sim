@@ -24,7 +24,8 @@
 # whose head total is 0 is UNEXERCISED: the [SimResult] diff says nothing
 # about it — pick decks that run it (decks_with_cards.sh). Passive-only
 # cards (modifiers, replacement queries) never "resolve" and always show 0.
-# Exit status: 0 = identical results and no script errors on this tree;
+# Exit status (also printed as the final "STATUS: <n> (...)" line):
+#   0 = identical results and no script errors on this tree;
 #   1 = results differ / script errors / missing games (any pair);
 #   2 = otherwise clean, but some changed card was UNEXERCISED.
 set -u
@@ -193,4 +194,10 @@ PY
 	fi
 fi
 echo "Logs: $WORK/{base,head}<n>.log"
+# Last line carries the verdict, so it survives `| grep` / `| tail` filters.
+case "$STATUS" in
+	0) echo "STATUS: 0 (identical)" ;;
+	2) echo "STATUS: 2 (unexercised)" ;;
+	*) echo "STATUS: $STATUS (differs, script errors or missing games)" ;;
+esac
 exit $STATUS
