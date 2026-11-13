@@ -825,7 +825,7 @@ func test_ebp04_079_plays_cards_into_different_zones_per_rule_5_11_1_3() -> void
 	assert_str(str(p0.get_zone_top_card(5).get("id"))).is_equal(str(anguirus.get("id")))
 
 	# The second placement must not be offered the zone the first card took (rule 5.11.1.3).
-	var zone_calls: Array = input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zone")
+	var zone_calls: Array = input.calls_of("select_zone")
 	assert_int(zone_calls.size()).is_equal(2)
 	assert_bool(zone_calls[1]["valid"].has(3)).is_false()
 

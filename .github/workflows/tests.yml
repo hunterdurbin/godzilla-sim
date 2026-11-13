@@ -29,6 +29,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # On a fresh checkout the startup theme (theme/custom) loads before the
+      # scan imports its font, so this step logs NotoSans/default_theme
+      # "non-existent resource" errors; the font is reimported moments later
+      # and later launches load it fine. Expected noise.
       - name: Import project
         run: godot --headless --path . --import || true
 

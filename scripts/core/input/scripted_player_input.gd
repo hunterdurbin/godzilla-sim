@@ -105,6 +105,17 @@ func confirm_step(player_id: int, prompt: String, setting: String) -> void:
 
 
 ## Count of recorded decisions of a given kind.
+func calls_of(kind: String) -> Array[Dictionary]:
+	## The logged decisions of one kind, in order. Filter with this instead of
+	## indexing `calls` directly: an out-of-range index aborts the whole gdUnit
+	## run, while a size assertion on this result fails one test cleanly.
+	var out: Array[Dictionary] = []
+	for c in calls:
+		if c["kind"] == kind:
+			out.append(c)
+	return out
+
+
 func count_calls(kind: String) -> int:
 	var n: int = 0
 	for c in calls:

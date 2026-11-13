@@ -70,6 +70,17 @@ func test_scripted_records_call_details() -> void:
 	assert_array(input.calls[0]["valid"]).contains_exactly([3, 5, 7])
 
 
+func test_scripted_calls_of_filters_by_kind_in_order() -> void:
+	var input := ScriptedPlayerInput.new()
+	await input.select_zone(0, 0, [1], "first", true)
+	await input.choose_option(0, ["A", "B"] as Array[String], "between")
+	await input.select_zone(1, 0, [2], "second", true)
+	var zones := input.calls_of("select_zone")
+	assert_array(zones.map(func(c: Dictionary) -> String: return c["prompt"])) \
+		.contains_exactly(["first", "second"])
+	assert_array(input.calls_of("search_cards")).is_empty()
+
+
 func test_scripted_select_zones_coerces_json_floats() -> void:
 	var input := ScriptedPlayerInput.new()
 	# JSON round trips turn ints into floats — the scripted answer must re-int-ify.

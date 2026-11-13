@@ -1329,7 +1329,7 @@ func test_esd05_002_enter_destroys_within_milled_rank_budget() -> void:
 	assert_str(str(p1.get_zone_top_card(2).get("id"))).is_equal("OPP-R4")
 	assert_str(str(state.players[0].discard_pile[0].get("id"))).is_equal("TOP-R5")
 	# One select/deselect + confirm prompt, budget = the milled card's rank.
-	var zones_calls := input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zones")
+	var zones_calls := input.calls_of("select_zones")
 	assert_int(zones_calls.size()).is_equal(1)
 	assert_array(zones_calls[0]["valid"]).contains_exactly([0, 1, 2])
 	assert_dict(zones_calls[0]["constraints"]).is_equal({"weights": {0: 3, 1: 2, 2: 4}, "budget": 5})
@@ -1546,7 +1546,7 @@ func test_esd03_008_each_player_keeps_one_owner_first_then_opponent_discards_to_
 	await s["effect_handler"].trigger_enter(0, card)
 
 	# Owner is asked first (own board), then the opponent (their board).
-	var zone_calls := input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == "select_zone")
+	var zone_calls := input.calls_of("select_zone")
 	assert_int(zone_calls[0]["player_id"]).is_equal(0)
 	assert_int(zone_calls[0]["target"]).is_equal(0)
 	assert_int(zone_calls[1]["player_id"]).is_equal(1)
@@ -1766,7 +1766,7 @@ func _cf_session(zone_cards: Dictionary, discard: Array = [], answers: Dictionar
 
 
 func _calls(input: ScriptedPlayerInput, kind: String) -> Array:
-	return input.calls.filter(func(c: Dictionary) -> bool: return c["kind"] == kind)
+	return input.calls_of(kind)
 
 
 func _indestructible(rank: int, id: String) -> Dictionary:
@@ -2127,8 +2127,7 @@ func test_esd03_004_reveals_zone_number_and_adds_red_godzilla_monster() -> void:
 	await s["effect_handler"].trigger_enter(0, card)
 
 	# Zone 4 → 4 cards revealed; only the red Godzilla monster is selectable.
-	var pick: Dictionary = input.calls.filter(
-		func(c: Dictionary) -> bool: return c["kind"] == "search_cards")[0]
+	var pick: Dictionary = input.calls_of("search_cards")[0]
 	assert_int(pick["matching"].size()).is_equal(1)
 	assert_str(str(pick["matching"][0]["id"])).is_equal("RED-GOD")
 	assert_int(state.players[0].hand.size()).is_equal(1)
