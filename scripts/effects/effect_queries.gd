@@ -878,11 +878,11 @@ func _passes_prevents_monster_move_filter(card_data: Dictionary, watcher_player_
 	## ability), authors can gate it by turn ownership or by who's causing
 	## the move:
 	## "own_turn": bool — gate by watcher's turn ownership.
-	## "caused_by_opponent": bool — gate by `_active_effect_player_id`. true =
+	## "caused_by_opponent": bool — gate by `check_timing.active_player_id`. true =
 	##   only block when the opponent's active effect is moving the monster.
 	return TriggerFilters.passes_prevents_monster_move(
 		get_trigger_filter(card_data, "prevents_opponent_monster_move"),
-		game_state.current_player_id == watcher_player_id, _active_effect_player_id, watcher_player_id)
+		game_state.current_player_id == watcher_player_id, check_timing.active_player_id, watcher_player_id)
 
 
 

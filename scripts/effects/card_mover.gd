@@ -809,7 +809,7 @@ func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx:
 	var overloaded_top: Dictionary = h.overload_zone(player, zone_idx)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
-	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_played_card(player_id, source_id, card_id, zone_idx))
 	await h.trigger_leave_play(player_id, overloaded_top, zone_idx)
 	await h.trigger_enter(player_id, card_data, true)
@@ -1021,7 +1021,7 @@ func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
 		player.discard_changed.emit()
 	player.hand.append(card)
 	player.hand_changed.emit()
-	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_returned_card_to_hand(player_id, source_id, card.get("id", "")))
 	await h.trigger_card_returned_from_discard(player_id, card)
 
@@ -1037,7 +1037,7 @@ func add_card_to_hand(player_id: int, card: Dictionary) -> void:
 	var player := game_state.players[player_id]
 	player.hand.append(card)
 	player.hand_changed.emit()
-	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_added_card_to_hand(player_id, source_id, card.get("id", "")))
 
 
@@ -1052,7 +1052,7 @@ func add_cards_to_hand(player_id: int, cards: Array[Dictionary]) -> void:
 	for card in cards:
 		player.hand.append(card)
 	player.hand_changed.emit()
-	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_added_cards_to_hand(player_id, source_id, cards))
 
 
@@ -1071,7 +1071,7 @@ func put_card_on_top_of_deck(player_id: int, card: Dictionary) -> void:
 		player.discard_changed.emit()
 	player.main_deck.push_front(card)
 	player.deck_changed.emit()
-	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_put_card_on_top_of_deck(player_id, source_id, card.get("id", "")))
 
 
@@ -1086,7 +1086,7 @@ func put_card_on_bottom_of_deck(player_id: int, card: Dictionary) -> void:
 	var player := game_state.players[player_id]
 	player.main_deck.append(card)
 	player.deck_changed.emit()
-	var source_id: String = _active_effect_card.get("id", "") if not _active_effect_card.is_empty() else ""
+	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_put_card_on_bottom_of_deck(player_id, source_id, card.get("id", "")))
 
 

@@ -121,7 +121,7 @@ func _advance(advance_amount: int, state: GameState, deferred_entries: Array) ->
 				deferred_entries.append_array(effect_handler.collect_when_invading_entries(player.player_id, old_zone, player.monster_zone))
 				deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
 			# Check crush rule at each step (effects deferred until after movement)
-			ah.check_crush_rule(state, deferred_entries)
+			effect_handler.check_timing.check_crush_rule(deferred_entries)
 	return false
 
 

@@ -264,7 +264,7 @@ func _passes_can_be_destroyed_filter(card_data: Dictionary, watcher_player_id: i
 	## "own_turn": bool — gate by the card owner's turn ownership.
 	return TriggerFilters.passes_destruction_gate(
 		get_trigger_filter(card_data, "can_be_destroyed"),
-		game_state.current_player_id == watcher_player_id, _active_effect_player_id, watcher_player_id)
+		game_state.current_player_id == watcher_player_id, check_timing.active_player_id, watcher_player_id)
 
 
 
@@ -277,7 +277,7 @@ func _passes_would_be_destroyed_filter(card_data: Dictionary, watcher_player_id:
 	## active effect, so such hooks stay silent there), "own_turn" gates by turn.
 	return TriggerFilters.passes_destruction_gate(
 		get_trigger_filter(card_data, "on_would_be_destroyed"),
-		game_state.current_player_id == watcher_player_id, _active_effect_player_id, watcher_player_id)
+		game_state.current_player_id == watcher_player_id, check_timing.active_player_id, watcher_player_id)
 
 
 
@@ -389,7 +389,7 @@ func _passes_protects_filter(card_data: Dictionary, watcher_player_id: int) -> b
 	## "own_turn": bool — gate by the protector's turn ownership.
 	return TriggerFilters.passes_destruction_gate(
 		get_trigger_filter(card_data, "protects_card_from_destruction"),
-		game_state.current_player_id == watcher_player_id, _active_effect_player_id, watcher_player_id)
+		game_state.current_player_id == watcher_player_id, check_timing.active_player_id, watcher_player_id)
 
 
 
@@ -440,14 +440,7 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 	# a single destroy resolves them now — which, mid-effect, queues them for
 	# the check timing after that effect (10.4.3).
 	entries.append_array(h.collect_leave_play_entries(target.player_id, top_card, zone_idx))
-	if has_trigger(top_card, "on_revenge"):
-		var rev_effect := get_effect(top_card)
-		var ctx := _build_context(target.player_id, top_card)
-		var revenge_cb := func():
-			h.log_message.emit(GameLog.revenge_triggered(target.player_id, top_card.get("id", "")))
-			@warning_ignore("redundant_await")
-			await rev_effect.on_revenge(ctx)
-		entries.append({"player_id": target.player_id, "card_data": top_card, "callback": revenge_cb, "skip_active_check": true})
+	entries.append_array(h.collect_revenge_entries(target.player_id, top_card))
 	entries.append_array(h.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
 	entries.append_array(h.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
 	if deferred_entries == null and not entries.is_empty():
@@ -458,9 +451,9 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 
 
 func _log_destroy(target_player_id: int, zone_idx: int, destroyed_card: Dictionary) -> void:
-	if not _active_effect_card.is_empty():
+	if not check_timing.active_card.is_empty():
 		h.log_message.emit(GameLog.effect_destroyed_card(
-			_active_effect_player_id, _active_effect_card.get("id", ""),
+			check_timing.active_player_id, check_timing.active_card.get("id", ""),
 			target_player_id, zone_idx, destroyed_card.get("id", "")
 		))
 

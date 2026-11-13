@@ -16,8 +16,9 @@ facade hub `h` via `EffectModule`:
 |---|---|
 | `effect_registry.gd` | Effect/filter loading + caching (test injection point) |
 | `trigger_filters.gd` | Pure static `TRIGGER_FILTERS` DSL evaluation |
-| `effect_execution_state.gd` | Active-effect + standby queue (shared state) |
-| `standby_resolver.gd` | Rule 10.4.3 standby resolution ordering |
+| `effect_execution_state.gd` | Shared facade/module state (bot destroy-rank cap) |
+| `check_timing.gd` | `CheckTiming`: single owner of check timing (10.4.3) — rule actions (crush, illegal cards), the standby pool, the active ability, `run_effect` |
+| `standby_entry.gd` | `StandbyEntry`: one ability in standby (player, card, callback, `still_applies`, `skip_active_check`) |
 | `trigger_dispatcher.gd` | `trigger_*` / `collect_*` dispatch over active cards |
 | `destruction_engine.gd` | Destroy flows + protection/replacement |
 | `card_mover.gd` | Hand/deck/discard traffic, tokens, evolution |
@@ -86,11 +87,16 @@ engine instead of comparing against the monster's zone index.
 
 ## Check timing — automatic abilities never interrupt an effect
 
-Terms per `GLOSSARY.md`. While an effect resolves (`exec.has_active_effect()`),
-every automatic ability it triggers enters standby and resolves at the check
-timing AFTER that effect (rule 10.4.3) — via `_resolve_standby_entries` /
-`resolve_deferred_entries`, which queue to `exec.pending_standby_entries`
-when `should_defer()`. Never call a trigger body directly from engine code.
+Terms per `GLOSSARY.md`. `CheckTiming` (`h.check_timing`) owns all of it.
+Engine code runs an ability through `check_timing.run_effect(owner, card,
+callback)`: it marks the ability active (read-only `active_player_id` /
+`active_card`), announces it (`note_effect_resolving`) and restores the
+outer ability afterwards. While one is active, every automatic ability it
+triggers enters standby and resolves at the check timing AFTER that effect
+(rule 10.4.3) — `submit` / `submit_deferred` (module forwarders
+`_resolve_standby_entries` / `resolve_deferred_entries`) queue it instead of
+resolving inline. Only the dispatcher's `collect_*` functions build
+`StandbyEntry` objects. Never call a trigger body directly from engine code.
 This covers revenge and zone-card-destroyed watchers (single AND batch
 destroys), on_discard_from_hand, and the area-changing hooks on_leave_play /
 on_zone_changed (EBP04-067 link). **Replacement effects**
@@ -99,11 +105,11 @@ at the moment of the action. An area-changing entry that has nothing left to
 do when it comes up is dropped before the order prompt via
 `area_change_still_applies` (10.6.3).
 
-**Crush has one path.** `RuleActions.check_crush_rule(state, triggered)`
+**Crush has one path.** `CheckTiming.check_crush_rule(triggered)`
 performs the crush (replacement effects apply at that moment) and only
 *collects* the crushed card's leave-play, crush and <Revenge> entries; the
 caller submits them to standby once its move / check timing is done
-(`resolve_check_timing`, monster movement, invasion, `teleport_monster` —
+(`check_timing.resolve()`, monster movement, invasion, `teleport_monster` —
 which crushes only its destination, e.g. EBP03-068 Godzilla Flies — and the
 counter retreat, which crushes before the new monster's <Enter>).
 
@@ -115,8 +121,8 @@ or (for a deck card the caller already took out) back on the deck bottom. Card s
 zone gate the offer on `can_play_in_zone(player_id, zone_idx)` (EBP04-077)
 and never compare against `monster_zone` themselves.
 
-**Standby is one pool** (`StandbyResolver.resolve_entries`). After every
-ability: rule actions (`resolve_check_timing`), then merge everything that
+**Standby is one pool** (`CheckTiming.submit`). After every
+ability: rule actions (`CheckTiming.resolve`), then merge everything that
 entered standby meanwhile, then the turn player picks one of ALL their
 entries — or, if they have none, the non-turn player picks one of theirs
 (10.4.3.1–10.4.3.4). A turn-player ability triggered mid-way through the

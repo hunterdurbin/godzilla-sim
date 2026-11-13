@@ -106,7 +106,7 @@ func _apply_card_highlight(pid: int, card_id: String, highlighted: bool) -> void
 
 func set_card_attention(loc: Dictionary, on: bool) -> void:
 	## Pulse the attention border on the board card described by `loc`
-	## (StandbyResolver.card_location_ref shape). Turning it off with a
+	## (CheckTiming.card_location_ref shape). Turning it off with a
 	## non-empty loc only clears when that loc still matches the tracked
 	## target, so a stale mouse_exited from one row can't kill the highlight
 	## a newer row just turned on.

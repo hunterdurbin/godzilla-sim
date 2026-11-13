@@ -134,7 +134,7 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 	# (after the action's state mutations but before triggered effects fire), so the
 	# log reads in causal order: action first, then effects fired by the action.
 	await action_handler.execute(action, params, game_state)
-	await action_handler.resolve_check_timing(game_state) # 10.4.4.1
+	await effect_handler.check_timing.resolve() # 10.4.4.1
 
 	# Check for win condition after each action
 	if is_game_over:
@@ -182,7 +182,7 @@ func _execute_start_phase(from_sub: int = 0) -> void:
 		game_state.current_sub_phase = 0
 		sub_phase_changed.emit(0) # Resolve Effects
 		await effect_handler.trigger_phase_start(CardEnums.GamePhase.START)
-		await action_handler.resolve_check_timing(game_state) # 7.2.1
+		await effect_handler.check_timing.resolve() # 7.2.1
 
 	var opponent := game_state.get_opponent_of_current()
 
@@ -205,7 +205,7 @@ func _execute_start_phase(from_sub: int = 0) -> void:
 		await _await_confirmation("Reset Rage", "auto_reset_rage")
 		await action_handler.execute_start_phase_reset(game_state)
 
-	await action_handler.resolve_check_timing(game_state) # 7.2.5
+	await effect_handler.check_timing.resolve() # 7.2.5
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.START)
 	phase_ended.emit(CardEnums.GamePhase.START)
 	await _await_confirmation("Main Phase", "auto_phase_advance")
@@ -223,7 +223,7 @@ func _begin_main_phase(from_sub: int = 0) -> void:
 		game_state.current_sub_phase = 0
 		sub_phase_changed.emit(0) # Resolve Effects
 		await effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
-		await action_handler.resolve_check_timing(game_state) # 7.3.1
+		await effect_handler.check_timing.resolve() # 7.3.1
 
 	game_state.current_sub_phase = 1
 	sub_phase_changed.emit(1) # Player Actions
@@ -250,7 +250,7 @@ func _begin_counter_phase(from_sub: int = 0) -> void:
 		game_state.current_sub_phase = 0
 		sub_phase_changed.emit(0) # Resolve Effects
 		await effect_handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
-		await action_handler.resolve_check_timing(game_state) # 7.4.1
+		await effect_handler.check_timing.resolve() # 7.4.1
 
 	if from_sub <= 1:
 		game_state.current_sub_phase = 1
@@ -261,7 +261,7 @@ func _begin_counter_phase(from_sub: int = 0) -> void:
 	if is_game_over:
 		return
 
-	await action_handler.resolve_check_timing(game_state) # 7.4.4
+	await effect_handler.check_timing.resolve() # 7.4.4
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.COUNTER)
 	phase_ended.emit(CardEnums.GamePhase.COUNTER)
 	await _await_confirmation("End Phase", "auto_phase_advance")
@@ -279,7 +279,7 @@ func _begin_end_phase(from_sub: int = 0) -> void:
 		game_state.current_sub_phase = 0
 		sub_phase_changed.emit(0) # Resolve Effects
 		await effect_handler.trigger_phase_start(CardEnums.GamePhase.END)
-		await action_handler.resolve_check_timing(game_state) # 7.5.1
+		await effect_handler.check_timing.resolve() # 7.5.1
 
 	var player := game_state.get_current_player()
 
@@ -300,7 +300,7 @@ func _begin_end_phase(from_sub: int = 0) -> void:
 			_on_game_over(winner, "STR_LOG_REASON_INVASION_VICTORY")
 			return
 
-		await action_handler.resolve_check_timing(game_state) # 7.5.3
+		await effect_handler.check_timing.resolve() # 7.5.3
 
 	if from_sub <= 2:
 		# Draw up to 5 cards (7.5.4)
@@ -311,7 +311,7 @@ func _begin_end_phase(from_sub: int = 0) -> void:
 			await _await_confirmation("Draw %d card(s)" % draw_count, "auto_draw")
 		action_handler.execute_end_phase_draw(game_state)
 
-	await action_handler.resolve_check_timing(game_state) # 7.5.5
+	await effect_handler.check_timing.resolve() # 7.5.5
 
 	await effect_handler.trigger_phase_end(CardEnums.GamePhase.END)
 	phase_ended.emit(CardEnums.GamePhase.END)

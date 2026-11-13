@@ -27,7 +27,7 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 		player.monster_changed.emit()
 		deferred_entries.append_array(h.collect_monster_advance_entries(player_id, from_zone, player.monster_zone))
 		if action_handler:
-			action_handler.check_crush_rule(game_state, deferred_entries)
+			check_timing.check_crush_rule(deferred_entries)
 	if not deferred_entries.is_empty():
 		await resolve_deferred_entries(deferred_entries)
 
@@ -49,7 +49,7 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 		player.monster_zone -= 1
 		player.monster_changed.emit()
 		if action_handler:
-			action_handler.check_crush_rule(game_state, deferred_entries)
+			check_timing.check_crush_rule(deferred_entries)
 	if not deferred_entries.is_empty():
 		await resolve_deferred_entries(deferred_entries)
 
@@ -76,7 +76,7 @@ func teleport_monster(player_id: int, target_zone: int) -> bool:
 	player.monster_zone = target_zone
 	action_handler.events.monster_advanced.emit(player_id, old_zone, player.monster_zone)
 	player.monster_changed.emit()
-	await action_handler.crush_now(game_state)
+	await check_timing.crush_now()
 	return true
 
 

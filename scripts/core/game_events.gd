@@ -32,7 +32,7 @@ signal play_cancelled(player_id: int)
 ## after a nested one does not re-emit. Consumers: the bot sim's per-card
 ## [SimEffects] counts.
 signal effect_resolving(player_id: int, card: Dictionary)
-## Pending standby-effect stack snapshot (see StandbyResolver._publish_stack).
+## Pending standby-effect stack snapshot (see CheckTiming._publish_stack).
 ## Rows: { player_id, base_id, label, status: "resolving"|"pending", location }.
 ## Emitted with [] when the stack drains.
 signal effect_stack_changed(stack: Array)

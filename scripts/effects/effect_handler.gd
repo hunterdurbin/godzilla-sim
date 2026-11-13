@@ -31,7 +31,7 @@ var input: PlayerInput
 var events: GameEvents = null  # Notification bus (wired by MatchFactory; null in bare tests)
 var registry := EffectRegistry.new()
 var exec := EffectExecutionState.new()
-var standby: StandbyResolver
+var check_timing: CheckTiming
 var dispatcher: TriggerDispatcher
 var destruction: DestructionEngine
 var mover: CardMover
@@ -46,7 +46,7 @@ var _card_select_pool_filter: Callable = Callable()  # Optional: func(card, sele
 var choice_card_ids: Array[String] = []
 
 ## Structured source locations parallel to the most recent select_choice
-## options (see StandbyResolver.card_location_ref). The choice UI reads this
+## options (see CheckTiming.card_location_ref). The choice UI reads this
 ## to highlight the source card on the board while an option is hovered.
 ## Empty for generic effect choices; cleared when the choice resolves.
 var choice_source_refs: Array[Dictionary] = []
@@ -61,32 +61,15 @@ var zone_target_card_id: String = ""
 var pending_destroy_max_rank: int:  # Set before the zone-target prompt for bot rank filtering
 	get: return exec.pending_destroy_max_rank
 	set(v): exec.pending_destroy_max_rank = v
-@warning_ignore("unused_private_class_variable") # read via handler._x by modules/effects
-var _active_effect_player_id: int:
-	get: return exec.active_player_id
-	set(v): exec.active_player_id = v
-@warning_ignore("unused_private_class_variable")
-var _active_effect_card: Dictionary:
-	get: return exec.active_card
-	set(v): exec.active_card = v
-@warning_ignore("unused_private_class_variable")
-var _in_standby_resolution: bool:
-	get: return exec.in_standby_resolution
-	set(v): exec.in_standby_resolution = v
-@warning_ignore("unused_private_class_variable")
-var _pending_standby_entries: Array:
-	get: return exec.pending_standby_entries
-	set(v): exec.pending_standby_entries = v
 
 
 
 func setup(p_game_state: GameState, p_input: PlayerInput = null) -> void:
 	game_state = p_game_state
 	input = p_input if p_input else PlayerInput.new()
-	standby = StandbyResolver.new()
-	standby.game_state = game_state
-	standby.exec = exec
-	standby.handler = self
+	check_timing = CheckTiming.new()
+	check_timing.game_state = game_state
+	check_timing.h = self
 	dispatcher = TriggerDispatcher.new()
 	dispatcher.h = self
 	destruction = DestructionEngine.new()
@@ -106,9 +89,9 @@ func teardown() -> void:
 	for m in [dispatcher, destruction, mover, monster_mover, queries]:
 		if m:
 			m.h = null
-	if standby:
-		standby.handler = null
-	standby = null
+	if check_timing:
+		check_timing.teardown()
+	check_timing = null
 	dispatcher = null
 	destruction = null
 	mover = null
@@ -118,8 +101,6 @@ func teardown() -> void:
 	events = null
 	input = null
 	game_state = null
-	# Pending standby entries hold Callables that capture effects/contexts.
-	exec.pending_standby_entries.clear()
 
 
 
@@ -151,13 +132,7 @@ func _build_context(owner_id: int, card_data: Dictionary) -> EffectContext:
 
 
 # --- Active effect tracking (for decision highlighting) ---
-
-func _set_active_effect(player_id: int, card_data: Dictionary) -> void:
-	_active_effect_player_id = player_id
-	_active_effect_card = card_data
-
-
-
+# CheckTiming owns which ability is resolving (check_timing.active_*).
 
 ## Announce that card_data's ability starts resolving (GameEvents.effect_resolving).
 ## Call at every site that STARTS a card-script resolution — not where an
@@ -174,53 +149,39 @@ func note_effect_resolving(player_id: int, card_data: Dictionary) -> void:
 ## UI shows this above effect prompt overlays. card_id is the base id; label
 ## matches the resolution-order choice option text.
 func get_active_effect_summary() -> Dictionary:
-	if _active_effect_card.is_empty():
+	var card: Dictionary = check_timing.active_card
+	if card.is_empty():
 		return {}
 	return {
-		"card_id": CardUtils.base_id(_active_effect_card),
-		"label": _get_card_location_label(_active_effect_player_id, _active_effect_card),
+		"card_id": CardUtils.base_id(card),
+		"label": _get_card_location_label(check_timing.active_player_id, card),
 	}
 
 
 
 
-func _clear_active_effect() -> void:
-	# Defensive: emit unhighlight when clearing, in case the leaf function that
-	# emitted the matching highlight didn't reach its own _unhighlight call.
-	# UI side is idempotent — clearing an already-clear highlight is a no-op.
-	_unhighlight_active_effect()
-	_active_effect_player_id = -1
-	_active_effect_card = {}
-
-
-
-
 func _highlight_active_effect() -> void:
-	if _active_effect_player_id >= 0:
-		var card_id: String = _active_effect_card.get("id", "")
+	var pid: int = check_timing.active_player_id
+	if pid >= 0:
+		var card_id: String = check_timing.active_card.get("id", "")
 		if not card_id.is_empty():
-			effect_card_highlighted.emit(_active_effect_player_id, card_id)
+			effect_card_highlighted.emit(pid, card_id)
 
 
 
 
 func _unhighlight_active_effect() -> void:
-	if _active_effect_player_id >= 0:
-		var card_id: String = _active_effect_card.get("id", "")
+	var pid: int = check_timing.active_player_id
+	if pid >= 0:
+		var card_id: String = check_timing.active_card.get("id", "")
 		if not card_id.is_empty():
-			effect_card_unhighlighted.emit(_active_effect_player_id, card_id)
+			effect_card_unhighlighted.emit(pid, card_id)
 
 
 
 
 func _get_card_location_label(player_id: int, card_data: Dictionary) -> String:
-	return StandbyResolver.card_location_label(game_state, player_id, card_data)
-
-
-
-
-func _resolve_standby_entries(entries: Array) -> void:
-	await standby.resolve_entries(entries)
+	return CheckTiming.card_location_label(game_state, player_id, card_data)
 
 
 
@@ -298,13 +259,13 @@ func gain_rage(player_id: int, amount: int, source_card_id: String = "") -> int:
 # --- Deferred movement resolution ---
 
 func is_card_still_active(player_id: int, card_data: Dictionary) -> bool:
-	return standby.is_card_still_active(player_id, card_data)
+	return check_timing.is_card_still_active(player_id, card_data)
 
 
 
 
 func resolve_deferred_entries(entries: Array) -> void:
-	await standby.resolve_deferred_entries(entries)
+	await check_timing.submit_deferred(entries)
 
 
 
@@ -452,6 +413,12 @@ func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 
 func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) -> Array:
 	return dispatcher.collect_crush_and_revenge_entries(player_id, card_data)
+
+
+
+
+func collect_revenge_entries(player_id: int, card_data: Dictionary) -> Array:
+	return dispatcher.collect_revenge_entries(player_id, card_data)
 
 
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:

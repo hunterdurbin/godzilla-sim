@@ -3,7 +3,8 @@ extends EffectModule
 
 ## Dispatches CardEffect trigger methods across active cards:
 ## iterates monster / zone tops / strategies, consults the registry and
-## TRIGGER_FILTERS gates, builds contexts, and feeds the StandbyResolver.
+## TRIGGER_FILTERS gates, builds contexts, and feeds CheckTiming. The
+## collect_* functions are the only builders of StandbyEntry.
 
 
 
@@ -35,7 +36,8 @@ func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = fa
 	## Both marks describe THIS entry only: per-copy card dicts survive
 	## discard/deck round-trips, so a mark left over from an earlier entry must
 	## be cleared or a later normal replay would re-fire the gated effect.
-	## If inside standby resolution, defers the enter to the pending queue (10.4.3).
+	## While another ability resolves or a standby pass runs, the enter queues
+	## for the check timing instead (CheckTiming.enter_or_queue, 10.4.3).
 	if from_effect:
 		card_data["played_from_effect"] = true
 	else:
@@ -52,30 +54,8 @@ func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = fa
 	if not effect:
 		return
 
-	# Defer if inside standby resolution or nested inside another effect's execution.
-	# This ensures e.g. multiple evolutions from one effect all complete before any
-	# of the evolved cards' enters resolve.
-	if _in_standby_resolution or not _active_effect_card.is_empty():
-		_pending_standby_entries.append({
-			"player_id": player_id,
-			"card_data": card_data,
-			"callback": effect.on_enter.bind(_build_context(player_id, card_data))
-		})
-		return
-
-	_set_active_effect(player_id, card_data)
-	h.note_effect_resolving(player_id, card_data)
-	# CardEffect.on_enter is non-coroutine in the base, but per-card overrides may be — await is required.
-	@warning_ignore("redundant_await")
-	await effect.on_enter(_build_context(player_id, card_data))
-	_clear_active_effect()
-
-	# Drain any entries that accumulated during this enter effect (e.g. from
-	# perform_evolution or play_from_discard called within on_enter).
-	while not _pending_standby_entries.is_empty():
-		var batch: Array = _pending_standby_entries
-		_pending_standby_entries = []
-		await _resolve_standby_entries(batch)
+	await check_timing.enter_or_queue(StandbyEntry.new(
+			player_id, card_data, effect.on_enter.bind(_build_context(player_id, card_data))))
 
 
 
@@ -85,11 +65,8 @@ func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void
 	var player := game_state.players[player_id]
 	var effect := get_effect(player.current_monster)
 	if effect:
-		_set_active_effect(player_id, player.current_monster)
-		h.note_effect_resolving(player_id, player.current_monster)
-		@warning_ignore("redundant_await")
-		await effect.on_when_invading(_build_context(player_id, player.current_monster), from_zone, to_zone)
-		_clear_active_effect()
+		await check_timing.run_effect(player_id, player.current_monster,
+				effect.on_when_invading.bind(_build_context(player_id, player.current_monster), from_zone, to_zone))
 
 
 
@@ -105,7 +82,7 @@ func collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int)
 		var zone_idx := to_zone - 1
 		if zone_idx >= 0 and zone_idx < 8:
 			ctx.metadata["zone_had_card"] = player.zone_has_cards(zone_idx)
-		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": effect.on_when_invading.bind(ctx, from_zone, to_zone)})
+		entries.append(StandbyEntry.new(player_id, player.current_monster, effect.on_when_invading.bind(ctx, from_zone, to_zone)))
 	return entries
 
 
@@ -116,16 +93,7 @@ func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 	var effect := get_effect(card_data)
 	if effect and has_trigger(card_data, "on_revenge"):
 		h.log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
-		var saved_player_id: int = _active_effect_player_id
-		var saved_card: Dictionary = _active_effect_card
-		_set_active_effect(player_id, card_data)
-		h.note_effect_resolving(player_id, card_data)
-		@warning_ignore("redundant_await")
-		await effect.on_revenge(_build_context(player_id, card_data))
-		if saved_card.is_empty():
-			_clear_active_effect()
-		else:
-			_set_active_effect(saved_player_id, saved_card)
+		await check_timing.run_effect(player_id, card_data, effect.on_revenge.bind(_build_context(player_id, card_data)))
 
 
 
@@ -147,11 +115,11 @@ func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) ->
 			h.log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
 			@warning_ignore("redundant_await")
 			await effect.on_revenge(ctx)
-		entries.append({"player_id": player_id, "card_data": card_data, "callback": combined_cb, "skip_active_check": true})
+		entries.append(StandbyEntry.off_field(player_id, card_data, combined_cb))
 	elif has_crush:
 		var effect := get_effect(card_data)
 		var ctx := _build_context(player_id, card_data)
-		entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_crush.bind(ctx), "skip_active_check": true})
+		entries.append(StandbyEntry.off_field(player_id, card_data, effect.on_crush.bind(ctx)))
 	elif has_revenge:
 		var effect := get_effect(card_data)
 		var ctx := _build_context(player_id, card_data)
@@ -159,8 +127,24 @@ func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) ->
 			h.log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
 			@warning_ignore("redundant_await")
 			await effect.on_revenge(ctx)
-		entries.append({"player_id": player_id, "card_data": card_data, "callback": revenge_cb, "skip_active_check": true})
+		entries.append(StandbyEntry.off_field(player_id, card_data, revenge_cb))
 	return entries
+
+
+
+
+func collect_revenge_entries(player_id: int, card_data: Dictionary) -> Array:
+	## <Revenge> entry for a card destroyed by an effect (12.7); the card is
+	## already in the discard pile, so it skips the still-in-play filter.
+	if not has_trigger(card_data, "on_revenge"):
+		return []
+	var effect := get_effect(card_data)
+	var ctx := _build_context(player_id, card_data)
+	var revenge_cb := func():
+		h.log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
+		@warning_ignore("redundant_await")
+		await effect.on_revenge(ctx)
+	return [StandbyEntry.off_field(player_id, card_data, revenge_cb)]
 
 
 
@@ -176,7 +160,7 @@ func _passes_discard_from_hand_filter(card_data: Dictionary, player_id: int) -> 
 	## "own_turn": bool — secondary gate by the card owner's turn ownership.
 	return TriggerFilters.passes_discard_from_hand(
 		get_trigger_filter(card_data, "on_discard_from_hand"),
-		game_state.current_player_id == player_id, _active_effect_player_id, player_id)
+		game_state.current_player_id == player_id, check_timing.active_player_id, player_id)
 
 
 func _passes_discard_condition(effect: CardEffect, card_data: Dictionary, ctx: EffectContext) -> bool:
@@ -207,7 +191,7 @@ func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) ->
 		var effect := get_effect(card_data)
 		var ctx := _build_context(player_id, card_data)
 		if _passes_discard_condition(effect, card_data, ctx):
-			entries.append({"player_id": player_id, "card_data": card_data, "callback": effect.on_discard_from_hand.bind(ctx), "skip_active_check": true})
+			entries.append(StandbyEntry.off_field(player_id, card_data, effect.on_discard_from_hand.bind(ctx)))
 	return entries
 
 
@@ -236,7 +220,7 @@ func collect_discarded_for_invasion_entries(player_id: int, card_data: Dictionar
 	## The callback checks on_discarded_for_invasion and plays from discard if true.
 	var entries: Array = []
 	if has_trigger(card_data, "on_discarded_for_invasion"):
-		entries.append({"player_id": player_id, "card_data": card_data, "callback": _resolve_discarded_for_invasion.bind(player_id, card_data), "skip_active_check": true})
+		entries.append(StandbyEntry.off_field(player_id, card_data, _resolve_discarded_for_invasion.bind(player_id, card_data)))
 	return entries
 
 
@@ -256,11 +240,7 @@ func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
 	## Trigger on_burst_discard on the Burst monster being discarded at end of turn.
 	var effect := get_effect(card_data)
 	if effect:
-		_set_active_effect(player_id, card_data)
-		h.note_effect_resolving(player_id, card_data)
-		@warning_ignore("redundant_await")
-		await effect.on_burst_discard(_build_context(player_id, card_data))
-		_clear_active_effect()
+		await check_timing.run_effect(player_id, card_data, effect.on_burst_discard.bind(_build_context(player_id, card_data)))
 
 
 
@@ -278,7 +258,7 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 		if _passes_trigger_filter(filter, player_id, old_rage, new_rage):
 			var me := get_effect(player.current_monster)
 			var ctx := _build_context(player_id, player.current_monster)
-			entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_rage_changed.bind(ctx, old_rage, new_rage)})
+			entries.append(StandbyEntry.new(player_id, player.current_monster, me.on_rage_changed.bind(ctx, old_rage, new_rage)))
 
 	# Battle cards in zones (top card only — stacked cards are inactive per 12.7.3)
 	for i in range(8):
@@ -288,7 +268,7 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 			if _passes_trigger_filter(filter, player_id, old_rage, new_rage):
 				var ze := get_effect(zone_card)
 				var ctx := _build_context(player_id, zone_card)
-				entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_rage_changed.bind(ctx, old_rage, new_rage)})
+				entries.append(StandbyEntry.new(player_id, zone_card, ze.on_rage_changed.bind(ctx, old_rage, new_rage)))
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
@@ -297,7 +277,7 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 			if _passes_trigger_filter(filter, player_id, old_rage, new_rage):
 				var se := get_effect(sz_card)
 				var ctx := _build_context(player_id, sz_card)
-				entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_rage_changed.bind(ctx, old_rage, new_rage)})
+				entries.append(StandbyEntry.new(player_id, sz_card, se.on_rage_changed.bind(ctx, old_rage, new_rage)))
 
 	# Also trigger on_opponent_rage_changed on the OTHER player's cards
 	var opp_id: int = 1 - player_id
@@ -309,7 +289,7 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 		if _passes_trigger_filter(filter, opp_id, old_rage, new_rage):
 			var me := get_effect(opp.current_monster)
 			var ctx := _build_context(opp_id, opp.current_monster)
-			opp_entries.append({"player_id": opp_id, "card_data": opp.current_monster, "callback": me.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
+			opp_entries.append(StandbyEntry.new(opp_id, opp.current_monster, me.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)))
 
 	for i in range(8):
 		var zone_card := opp.get_zone_top_card(i)
@@ -318,7 +298,7 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 			if _passes_trigger_filter(filter, opp_id, old_rage, new_rage):
 				var ze := get_effect(zone_card)
 				var ctx := _build_context(opp_id, zone_card)
-				opp_entries.append({"player_id": opp_id, "card_data": zone_card, "callback": ze.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
+				opp_entries.append(StandbyEntry.new(opp_id, zone_card, ze.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)))
 
 	for sz_card in opp.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, "on_opponent_rage_changed"):
@@ -326,7 +306,7 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 			if _passes_trigger_filter(filter, opp_id, old_rage, new_rage):
 				var se := get_effect(sz_card)
 				var ctx := _build_context(opp_id, sz_card)
-				opp_entries.append({"player_id": opp_id, "card_data": sz_card, "callback": se.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)})
+				opp_entries.append(StandbyEntry.new(opp_id, sz_card, se.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)))
 
 	entries.append_array(opp_entries)
 	await _resolve_standby_entries(entries)
@@ -344,7 +324,7 @@ func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> vo
 	if has_trigger(player.current_monster, "on_monster_advance"):
 		var me := get_effect(player.current_monster)
 		var ctx := _build_context(player_id, player.current_monster)
-		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_monster_advance.bind(ctx, from_zone, to_zone)})
+		entries.append(StandbyEntry.new(player_id, player.current_monster, me.on_monster_advance.bind(ctx, from_zone, to_zone)))
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
@@ -352,14 +332,14 @@ func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> vo
 		if not zone_card.is_empty() and has_trigger(zone_card, "on_monster_advance"):
 			var ze := get_effect(zone_card)
 			var ctx := _build_context(player_id, zone_card)
-			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_monster_advance.bind(ctx, from_zone, to_zone)})
+			entries.append(StandbyEntry.new(player_id, zone_card, ze.on_monster_advance.bind(ctx, from_zone, to_zone)))
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, "on_monster_advance"):
 			var se := get_effect(sz_card)
 			var ctx := _build_context(player_id, sz_card)
-			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_monster_advance.bind(ctx, from_zone, to_zone)})
+			entries.append(StandbyEntry.new(player_id, sz_card, se.on_monster_advance.bind(ctx, from_zone, to_zone)))
 
 	await _resolve_standby_entries(entries)
 
@@ -374,20 +354,20 @@ func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: in
 	if has_trigger(player.current_monster, "on_monster_advance"):
 		var me := get_effect(player.current_monster)
 		var ctx := _build_context(player_id, player.current_monster)
-		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_monster_advance.bind(ctx, from_zone, to_zone)})
+		entries.append(StandbyEntry.new(player_id, player.current_monster, me.on_monster_advance.bind(ctx, from_zone, to_zone)))
 
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty() and has_trigger(zone_card, "on_monster_advance"):
 			var ze := get_effect(zone_card)
 			var ctx := _build_context(player_id, zone_card)
-			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_monster_advance.bind(ctx, from_zone, to_zone)})
+			entries.append(StandbyEntry.new(player_id, zone_card, ze.on_monster_advance.bind(ctx, from_zone, to_zone)))
 
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, "on_monster_advance"):
 			var se := get_effect(sz_card)
 			var ctx := _build_context(player_id, sz_card)
-			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_monster_advance.bind(ctx, from_zone, to_zone)})
+			entries.append(StandbyEntry.new(player_id, sz_card, se.on_monster_advance.bind(ctx, from_zone, to_zone)))
 
 	return entries
 
@@ -438,7 +418,7 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 			var ctx := _build_context(player_id, player.current_monster)
 			if not is_start or me.phase_start_applies(ctx, phase):
 				var method: Callable = me.on_phase_start if is_start else me.on_phase_end
-				entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": method.bind(ctx, phase)})
+				entries.append(StandbyEntry.new(player_id, player.current_monster, method.bind(ctx, phase)))
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
@@ -449,7 +429,7 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 				var ctx := _build_context(player_id, zone_card)
 				if not is_start or ze.phase_start_applies(ctx, phase):
 					var method: Callable = ze.on_phase_start if is_start else ze.on_phase_end
-					entries.append({"player_id": player_id, "card_data": zone_card, "callback": method.bind(ctx, phase)})
+					entries.append(StandbyEntry.new(player_id, zone_card, method.bind(ctx, phase)))
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
@@ -459,7 +439,7 @@ func _collect_phase_entries(player_id: int, phase: CardEnums.GamePhase, is_start
 				var ctx := _build_context(player_id, sz_card)
 				if not is_start or se.phase_start_applies(ctx, phase):
 					var method: Callable = se.on_phase_start if is_start else se.on_phase_end
-					entries.append({"player_id": player_id, "card_data": sz_card, "callback": method.bind(ctx, phase)})
+					entries.append(StandbyEntry.new(player_id, sz_card, method.bind(ctx, phase)))
 
 	return entries
 
@@ -508,14 +488,14 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 			triggered_ids.append(card_id)
 			var ze := get_effect(zone_card)
 			var ctx := _build_context(player_id, zone_card)
-			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_monster_played.bind(ctx, old_monster, new_monster)})
+			entries.append(StandbyEntry.new(player_id, zone_card, ze.on_monster_played.bind(ctx, old_monster, new_monster)))
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, "on_monster_played"):
 			var se := get_effect(sz_card)
 			var ctx := _build_context(player_id, sz_card)
-			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_monster_played.bind(ctx, old_monster, new_monster)})
+			entries.append(StandbyEntry.new(player_id, sz_card, se.on_monster_played.bind(ctx, old_monster, new_monster)))
 
 	await _resolve_standby_entries(entries)
 
@@ -533,7 +513,7 @@ func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster
 			var ctx := _build_context(player_id, discard_card)
 			if de.can_play_from_discard_on_monster_played(ctx):
 				var optional: bool = de.is_discard_play_optional()
-				discard_entries.append({"player_id": player_id, "card_data": discard_card, "callback": _resolve_discard_play.bind(player_id, discard_card, optional)})
+				discard_entries.append(StandbyEntry.new(player_id, discard_card, _resolve_discard_play.bind(player_id, discard_card, optional)))
 
 	await _resolve_standby_entries(discard_entries)
 
@@ -573,7 +553,7 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 		if _passes_battle_card_played_filter(player.current_monster, player_id, player_id, played_from_deck):
 			var me := get_effect(player.current_monster)
 			var ctx := _build_context(player_id, player.current_monster)
-			entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_battle_card_played.bind(ctx, zone_index, played_from_deck)})
+			entries.append(StandbyEntry.new(player_id, player.current_monster, me.on_battle_card_played.bind(ctx, zone_index, played_from_deck)))
 
 	# Own strategy cards (e.g. EBP02-073 Bloody Chainsaw — <Your Turn> effect)
 	for sz_card in player.strategy_zones:
@@ -581,7 +561,7 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 			if _passes_battle_card_played_filter(sz_card, player_id, player_id, played_from_deck):
 				var se := get_effect(sz_card)
 				var ctx := _build_context(player_id, sz_card)
-				entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_battle_card_played.bind(ctx, zone_index, played_from_deck)})
+				entries.append(StandbyEntry.new(player_id, sz_card, se.on_battle_card_played.bind(ctx, zone_index, played_from_deck)))
 
 	# Own battle cards in zones (top card only, skip the card that was just played)
 	for i in range(8):
@@ -590,14 +570,14 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 			if _passes_battle_card_played_filter(zone_card, player_id, player_id, played_from_deck):
 				var ze := get_effect(zone_card)
 				var ctx := _build_context(player_id, zone_card)
-				entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_battle_card_played.bind(ctx, zone_index, played_from_deck)})
+				entries.append(StandbyEntry.new(player_id, zone_card, ze.on_battle_card_played.bind(ctx, zone_index, played_from_deck)))
 
 	# Opponent monster card (e.g. EBP04-028 Gigan — <Opponent's Turn> effect)
 	if has_trigger(opponent.current_monster, "on_battle_card_played"):
 		if _passes_battle_card_played_filter(opponent.current_monster, opponent_id, player_id, played_from_deck):
 			var ome := get_effect(opponent.current_monster)
 			var octx := _build_context(opponent_id, opponent.current_monster)
-			entries.append({"player_id": opponent_id, "card_data": opponent.current_monster, "callback": ome.on_battle_card_played.bind(octx, zone_index, played_from_deck)})
+			entries.append(StandbyEntry.new(opponent_id, opponent.current_monster, ome.on_battle_card_played.bind(octx, zone_index, played_from_deck)))
 
 	# Opponent strategy cards
 	for sz_card in opponent.strategy_zones:
@@ -605,7 +585,7 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 			if _passes_battle_card_played_filter(sz_card, opponent_id, player_id, played_from_deck):
 				var se := get_effect(sz_card)
 				var ctx := _build_context(opponent_id, sz_card)
-				entries.append({"player_id": opponent_id, "card_data": sz_card, "callback": se.on_battle_card_played.bind(ctx, zone_index, played_from_deck)})
+				entries.append(StandbyEntry.new(opponent_id, sz_card, se.on_battle_card_played.bind(ctx, zone_index, played_from_deck)))
 
 	# Opponent battle cards in zones (top card only)
 	for i in range(8):
@@ -614,7 +594,7 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 			if _passes_battle_card_played_filter(zone_card, opponent_id, player_id, played_from_deck):
 				var ze := get_effect(zone_card)
 				var ctx := _build_context(opponent_id, zone_card)
-				entries.append({"player_id": opponent_id, "card_data": zone_card, "callback": ze.on_battle_card_played.bind(ctx, zone_index, played_from_deck)})
+				entries.append(StandbyEntry.new(opponent_id, zone_card, ze.on_battle_card_played.bind(ctx, zone_index, played_from_deck)))
 
 	await _resolve_standby_entries(entries)
 
@@ -650,7 +630,7 @@ func collect_hand_card_discarded_entries(player_id: int, card_data: Dictionary) 
 		if _passes_hand_discarded_filter(player.current_monster, player_id, card_data):
 			var me := get_effect(player.current_monster)
 			var ctx := _build_context(player_id, player.current_monster)
-			entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_hand_card_discarded.bind(ctx, card_data)})
+			entries.append(StandbyEntry.new(player_id, player.current_monster, me.on_hand_card_discarded.bind(ctx, card_data)))
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
@@ -659,7 +639,7 @@ func collect_hand_card_discarded_entries(player_id: int, card_data: Dictionary) 
 			if _passes_hand_discarded_filter(zone_card, player_id, card_data):
 				var ze := get_effect(zone_card)
 				var ctx := _build_context(player_id, zone_card)
-				entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_hand_card_discarded.bind(ctx, card_data)})
+				entries.append(StandbyEntry.new(player_id, zone_card, ze.on_hand_card_discarded.bind(ctx, card_data)))
 
 	# Strategy cards
 	for sz_card in player.strategy_zones:
@@ -667,7 +647,7 @@ func collect_hand_card_discarded_entries(player_id: int, card_data: Dictionary) 
 			if _passes_hand_discarded_filter(sz_card, player_id, card_data):
 				var se := get_effect(sz_card)
 				var ctx := _build_context(player_id, sz_card)
-				entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_hand_card_discarded.bind(ctx, card_data)})
+				entries.append(StandbyEntry.new(player_id, sz_card, se.on_hand_card_discarded.bind(ctx, card_data)))
 
 	return entries
 
@@ -688,27 +668,27 @@ func trigger_counter_success(counterer_player_id: int, countered_player_id: int)
 	if has_trigger(counterer.current_monster, "on_counter_success"):
 		var me := get_effect(counterer.current_monster)
 		var ctx := _build_context(counterer_player_id, counterer.current_monster)
-		entries.append({"player_id": counterer_player_id, "card_data": counterer.current_monster, "callback": me.on_counter_success.bind(ctx)})
+		entries.append(StandbyEntry.new(counterer_player_id, counterer.current_monster, me.on_counter_success.bind(ctx)))
 
 	for i in range(8):
 		var zone_card := counterer.get_zone_top_card(i)
 		if not zone_card.is_empty() and has_trigger(zone_card, "on_counter_success"):
 			var ze := get_effect(zone_card)
 			var ctx := _build_context(counterer_player_id, zone_card)
-			entries.append({"player_id": counterer_player_id, "card_data": zone_card, "callback": ze.on_counter_success.bind(ctx)})
+			entries.append(StandbyEntry.new(counterer_player_id, zone_card, ze.on_counter_success.bind(ctx)))
 
 	for sz_card in counterer.strategy_zones:
 		if not sz_card.is_empty() and has_trigger(sz_card, "on_counter_success"):
 			var se := get_effect(sz_card)
 			var ctx := _build_context(counterer_player_id, sz_card)
-			entries.append({"player_id": counterer_player_id, "card_data": sz_card, "callback": se.on_counter_success.bind(ctx)})
+			entries.append(StandbyEntry.new(counterer_player_id, sz_card, se.on_counter_success.bind(ctx)))
 
 	# Countered side — only the monster card itself gets "countered" (battle cards aren't)
 	var countered := game_state.players[countered_player_id]
 	if has_trigger(countered.current_monster, "on_self_countered"):
 		var cme := get_effect(countered.current_monster)
 		var cctx := _build_context(countered_player_id, countered.current_monster)
-		entries.append({"player_id": countered_player_id, "card_data": countered.current_monster, "callback": cme.on_self_countered.bind(cctx)})
+		entries.append(StandbyEntry.new(countered_player_id, countered.current_monster, cme.on_self_countered.bind(cctx)))
 
 	await _resolve_standby_entries(entries)
 
@@ -726,18 +706,14 @@ func _collect_strategy_discarded_entries_inner(player_id: int, strategy_card: Di
 	if has_trigger(strategy_card, "on_strategy_discarded"):
 		var ds := get_effect(strategy_card)
 		var dctx := _build_context(player_id, strategy_card)
-		entries.append({
-			"player_id": player_id,
-			"card_data": strategy_card,
-			"callback": ds.on_strategy_discarded.bind(dctx, strategy_card),
-			"skip_active_check": true,
-		})
+		entries.append(StandbyEntry.off_field(player_id, strategy_card,
+				ds.on_strategy_discarded.bind(dctx, strategy_card)))
 
 	# Monster card
 	if has_trigger(player.current_monster, "on_strategy_discarded"):
 		var me := get_effect(player.current_monster)
 		var ctx := _build_context(player_id, player.current_monster)
-		entries.append({"player_id": player_id, "card_data": player.current_monster, "callback": me.on_strategy_discarded.bind(ctx, strategy_card)})
+		entries.append(StandbyEntry.new(player_id, player.current_monster, me.on_strategy_discarded.bind(ctx, strategy_card)))
 
 	# Battle cards in zones (top card only)
 	for i in range(8):
@@ -745,14 +721,14 @@ func _collect_strategy_discarded_entries_inner(player_id: int, strategy_card: Di
 		if not zone_card.is_empty() and has_trigger(zone_card, "on_strategy_discarded"):
 			var ze := get_effect(zone_card)
 			var ctx := _build_context(player_id, zone_card)
-			entries.append({"player_id": player_id, "card_data": zone_card, "callback": ze.on_strategy_discarded.bind(ctx, strategy_card)})
+			entries.append(StandbyEntry.new(player_id, zone_card, ze.on_strategy_discarded.bind(ctx, strategy_card)))
 
 	# Strategy cards (skip the just-discarded card; it's already handled by self-trigger)
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty() and sz_card.get("id", "") != discarded_id and has_trigger(sz_card, "on_strategy_discarded"):
 			var se := get_effect(sz_card)
 			var ctx := _build_context(player_id, sz_card)
-			entries.append({"player_id": player_id, "card_data": sz_card, "callback": se.on_strategy_discarded.bind(ctx, strategy_card)})
+			entries.append(StandbyEntry.new(player_id, sz_card, se.on_strategy_discarded.bind(ctx, strategy_card)))
 
 	return entries
 
@@ -796,7 +772,7 @@ func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone:
 				and _passes_invasion_observed_filter(player.current_monster, pid):
 			var me := get_effect(player.current_monster)
 			var ctx := _build_context(pid, player.current_monster)
-			entries.append({"player_id": pid, "card_data": player.current_monster, "callback": me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+			entries.append(StandbyEntry.new(pid, player.current_monster, me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)))
 
 		# Battle cards in zones (top card only)
 		for i in range(8):
@@ -805,7 +781,7 @@ func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone:
 					and _passes_invasion_observed_filter(zone_card, pid):
 				var ze := get_effect(zone_card)
 				var ctx := _build_context(pid, zone_card)
-				entries.append({"player_id": pid, "card_data": zone_card, "callback": ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+				entries.append(StandbyEntry.new(pid, zone_card, ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)))
 
 		# Strategy cards
 		for sz_card in player.strategy_zones:
@@ -813,7 +789,7 @@ func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone:
 					and _passes_invasion_observed_filter(sz_card, pid):
 				var se := get_effect(sz_card)
 				var ctx := _build_context(pid, sz_card)
-				entries.append({"player_id": pid, "card_data": sz_card, "callback": se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+				entries.append(StandbyEntry.new(pid, sz_card, se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)))
 
 	await _resolve_standby_entries(entries)
 
@@ -830,7 +806,7 @@ func collect_invasion_observed_entries(invading_player_id: int, from_zone: int, 
 				and _passes_invasion_observed_filter(player.current_monster, pid):
 			var me := get_effect(player.current_monster)
 			var ctx := _build_context(pid, player.current_monster)
-			entries.append({"player_id": pid, "card_data": player.current_monster, "callback": me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+			entries.append(StandbyEntry.new(pid, player.current_monster, me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)))
 
 		for i in range(8):
 			var zone_card := player.get_zone_top_card(i)
@@ -838,14 +814,14 @@ func collect_invasion_observed_entries(invading_player_id: int, from_zone: int, 
 					and _passes_invasion_observed_filter(zone_card, pid):
 				var ze := get_effect(zone_card)
 				var ctx := _build_context(pid, zone_card)
-				entries.append({"player_id": pid, "card_data": zone_card, "callback": ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+				entries.append(StandbyEntry.new(pid, zone_card, ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)))
 
 		for sz_card in player.strategy_zones:
 			if not sz_card.is_empty() and has_trigger(sz_card, "on_invasion_observed") \
 					and _passes_invasion_observed_filter(sz_card, pid):
 				var se := get_effect(sz_card)
 				var ctx := _build_context(pid, sz_card)
-				entries.append({"player_id": pid, "card_data": sz_card, "callback": se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)})
+				entries.append(StandbyEntry.new(pid, sz_card, se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)))
 
 	return entries
 
@@ -875,13 +851,8 @@ func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_i
 	if effect == null:
 		return []
 	var ctx := _build_context(player_id, leaving_card)
-	return [{
-		"player_id": player_id,
-		"card_data": leaving_card,
-		"callback": effect.on_leave_play.bind(ctx, zone_index),
-		"still_applies": effect.area_change_still_applies.bind(ctx),
-		"skip_active_check": true,
-	}]
+	return [StandbyEntry.off_field(player_id, leaving_card, effect.on_leave_play.bind(ctx, zone_index),
+			effect.area_change_still_applies.bind(ctx))]
 
 
 
@@ -889,19 +860,20 @@ func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_i
 func trigger_zone_changed(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> void:
 	## A card moved between zones while staying in play — an area-changing
 	## trigger (10.6.4). Enters standby like trigger_leave_play.
+	var entries := _collect_zone_changed_entries(player_id, moved_card, from_zone, to_zone)
+	if not entries.is_empty():
+		await _resolve_standby_entries(entries)
+
+
+func _collect_zone_changed_entries(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> Array:
 	if moved_card.is_empty() or not has_trigger(moved_card, "on_zone_changed"):
-		return
+		return []
 	var effect := get_effect(moved_card)
 	if effect == null:
-		return
+		return []
 	var ctx := _build_context(player_id, moved_card)
-	await _resolve_standby_entries([{
-		"player_id": player_id,
-		"card_data": moved_card,
-		"callback": effect.on_zone_changed.bind(ctx, from_zone, to_zone),
-		"still_applies": effect.area_change_still_applies.bind(ctx),
-		"skip_active_check": true,
-	}])
+	return [StandbyEntry.off_field(player_id, moved_card, effect.on_zone_changed.bind(ctx, from_zone, to_zone),
+			effect.area_change_still_applies.bind(ctx))]
 
 
 
@@ -938,7 +910,7 @@ func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Di
 		var effect := get_effect(zone_card)
 		if effect:
 			var ctx := _build_context(player_id, zone_card)
-			entries.append({"player_id": player_id, "card_data": zone_card, "callback": effect.on_ally_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)})
+			entries.append(StandbyEntry.new(player_id, zone_card, effect.on_ally_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)))
 	return entries
 
 
@@ -965,7 +937,7 @@ func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, dest
 			var effect := get_effect(monster)
 			if effect:
 				var ctx := _build_context(watcher_id, monster)
-				entries.append({"player_id": watcher_id, "card_data": monster, "callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)})
+				entries.append(StandbyEntry.new(watcher_id, monster, effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)))
 	for i in range(8):
 		var zone_card := watcher.get_zone_top_card(i)
 		if zone_card.is_empty():
@@ -977,7 +949,7 @@ func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, dest
 		var effect := get_effect(zone_card)
 		if effect:
 			var ctx := _build_context(watcher_id, zone_card)
-			entries.append({"player_id": watcher_id, "card_data": zone_card, "callback": effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)})
+			entries.append(StandbyEntry.new(watcher_id, zone_card, effect.on_opponent_zone_card_destroyed.bind(ctx, destroyed_card, zone_idx)))
 	return entries
 
 
@@ -1030,7 +1002,7 @@ func collect_card_returned_from_discard_entries(returning_player_id: int, card: 
 			var effect := get_effect(zone_card)
 			if effect:
 				var ctx := _build_context(pid, zone_card)
-				entries.append({"callback": effect.on_card_returned_from_discard.bind(ctx, card), "player_id": pid, "card_data": zone_card})
+				entries.append(StandbyEntry.new(pid, zone_card, effect.on_card_returned_from_discard.bind(ctx, card)))
 	return entries
 
 

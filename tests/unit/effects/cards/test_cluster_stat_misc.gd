@@ -473,25 +473,24 @@ func test_can_be_destroyed_protection_ebp01_052() -> void:
 	var p0: PlayerState = state.players[0]
 
 	# Opponent's effect is the destruction cause → protected.
-	handler.exec.set_active(1, Cards.battle(1, 1000, "OPP-EFF"))
-	assert_bool(handler.can_destroy_card(p0, card)) \
-		.override_failure_message("EBP01-052: protected from opponent effects when condition holds") \
-		.is_false()
+	await handler.check_timing.run_effect(1, Cards.battle(1, 1000, "OPP-EFF"), func() -> void:
+		assert_bool(handler.can_destroy_card(p0, card)) \
+			.override_failure_message("EBP01-052: protected from opponent effects when condition holds") \
+			.is_false())
 
 	# Own effect → caused_by_opponent gate fails, card is destroyable.
-	handler.exec.set_active(0, Cards.battle(1, 1000, "OWN-EFF"))
-	assert_bool(handler.can_destroy_card(p0, card)).is_true()
+	await handler.check_timing.run_effect(0, Cards.battle(1, 1000, "OWN-EFF"), func() -> void:
+		assert_bool(handler.can_destroy_card(p0, card)).is_true())
 
-	# Opponent effect but only 4 monsters in discard → destroyable.
-	handler.exec.set_active(1, Cards.battle(1, 1000, "OPP-EFF"))
-	p0.discard_pile.pop_back()
-	assert_bool(handler.can_destroy_card(p0, card)).is_true()
+	await handler.check_timing.run_effect(1, Cards.battle(1, 1000, "OPP-EFF"), func() -> void:
+		# Opponent effect but only 4 monsters in discard → destroyable.
+		p0.discard_pile.pop_back()
+		assert_bool(handler.can_destroy_card(p0, card)).is_true()
 
-	# Restore discard; below Awakening4 → destroyable.
-	p0.discard_pile.append(Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA], "DIS-M9"))
-	p0.monster_zone = 3
-	assert_bool(handler.can_destroy_card(p0, card)).is_true()
-	handler.exec.clear_active()
+		# Restore discard; below Awakening4 → destroyable.
+		p0.discard_pile.append(Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA], "DIS-M9"))
+		p0.monster_zone = 3
+		assert_bool(handler.can_destroy_card(p0, card)).is_true())
 
 
 func test_protects_own_strategies_ebp04_048() -> void:
@@ -505,17 +504,16 @@ func test_protects_own_strategies_ebp04_048() -> void:
 	var p0: PlayerState = state.players[0]
 
 	# Opponent's effect destroying the strategy → protected.
-	handler.exec.set_active(1, Cards.battle(1, 1000, "OPP-EFF"))
-	assert_bool(handler.can_destroy_card(p0, strat)) \
-		.override_failure_message("EBP04-048: own strategies protected from opponent effects") \
-		.is_false()
-	# Battle cards are not covered by the protection.
-	assert_bool(handler.can_destroy_card(p0, plain_battle)).is_true()
+	await handler.check_timing.run_effect(1, Cards.battle(1, 1000, "OPP-EFF"), func() -> void:
+		assert_bool(handler.can_destroy_card(p0, strat)) \
+			.override_failure_message("EBP04-048: own strategies protected from opponent effects") \
+			.is_false()
+		# Battle cards are not covered by the protection.
+		assert_bool(handler.can_destroy_card(p0, plain_battle)).is_true())
 
 	# Own effect → not protected.
-	handler.exec.set_active(0, Cards.battle(1, 1000, "OWN-EFF"))
-	assert_bool(handler.can_destroy_card(p0, strat)).is_true()
-	handler.exec.clear_active()
+	await handler.check_timing.run_effect(0, Cards.battle(1, 1000, "OWN-EFF"), func() -> void:
+		assert_bool(handler.can_destroy_card(p0, strat)).is_true())
 
 
 func test_protects_battle_cards_opp_turn_efc01_006() -> void:
@@ -530,28 +528,27 @@ func test_protects_battle_cards_opp_turn_efc01_006() -> void:
 	var handler := _wire(state)
 	var p0: PlayerState = state.players[0]
 
-	# Opponent effect, opp turn, opponent has <= 2 battle cards → protected.
-	handler.exec.set_active(1, Cards.battle(1, 1000, "OPP-EFF"))
-	assert_bool(handler.can_destroy_card(p0, battle)) \
-		.override_failure_message("EFC01-006: own battle cards protected on opp turn with <=2 opp battle cards") \
-		.is_false()
+	await handler.check_timing.run_effect(1, Cards.battle(1, 1000, "OPP-EFF"), func() -> void:
+		# Opponent effect, opp turn, opponent has <= 2 battle cards → protected.
+		assert_bool(handler.can_destroy_card(p0, battle)) \
+			.override_failure_message("EFC01-006: own battle cards protected on opp turn with <=2 opp battle cards") \
+			.is_false()
 
-	# Opponent has 3 battle cards → no protection.
-	for i in range(3):
-		state.players[1].push_zone_card(i, Cards.battle(2, 3000, "O-%d" % i))
-	assert_bool(handler.can_destroy_card(p0, battle)).is_true()
-	for i in range(3):
-		state.players[1].clear_zone(i)
+		# Opponent has 3 battle cards → no protection.
+		for i in range(3):
+			state.players[1].push_zone_card(i, Cards.battle(2, 3000, "O-%d" % i))
+		assert_bool(handler.can_destroy_card(p0, battle)).is_true()
+		for i in range(3):
+			state.players[1].clear_zone(i)
 
-	# <Opponent's Turn> only — on the owner's turn the protection is off.
-	state.current_player_id = 0
-	assert_bool(handler.can_destroy_card(p0, battle)).is_true()
-	state.current_player_id = 1
+		# <Opponent's Turn> only — on the owner's turn the protection is off.
+		state.current_player_id = 0
+		assert_bool(handler.can_destroy_card(p0, battle)).is_true()
+		state.current_player_id = 1)
 
 	# Own effect as the cause → not protected.
-	handler.exec.set_active(0, Cards.battle(1, 1000, "OWN-EFF"))
-	assert_bool(handler.can_destroy_card(p0, battle)).is_true()
-	handler.exec.clear_active()
+	await handler.check_timing.run_effect(0, Cards.battle(1, 1000, "OWN-EFF"), func() -> void:
+		assert_bool(handler.can_destroy_card(p0, battle)).is_true())
 
 
 # --- Strategy-hand rank modifiers (get_strategy_hand_rank_modifier) ---

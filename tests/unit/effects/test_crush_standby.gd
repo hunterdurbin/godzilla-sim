@@ -61,8 +61,8 @@ func _prompt_sizes(input: ScriptedPlayerInput) -> Array:
 		.map(func(c: Dictionary) -> int: return c["options"].size())
 
 
-func _entry(player_id: int, card: Dictionary, callback: Callable) -> Dictionary:
-	return {"player_id": player_id, "card_data": card, "callback": callback}
+func _entry(player_id: int, card: Dictionary, callback: Callable) -> StandbyEntry:
+	return StandbyEntry.new(player_id, card, callback)
 
 
 # --- Crush rule action → standby ---
@@ -78,7 +78,7 @@ func test_both_players_crushed_revenge_resolves_in_standby_turn_player_first() -
 	effect.state = state
 	s["effect_handler"].registry.register_for_test(REVENGE, effect, ["on_revenge"])
 
-	await s["action_handler"].resolve_check_timing(state)
+	await (s["effect_handler"] as EffectHandler).check_timing.resolve()
 
 	# Both crushes happen first (rule actions, 10.4.3.1); only then do the
 	# Revenge abilities resolve from standby, turn player (1) first.
@@ -97,7 +97,7 @@ func test_crushed_card_leave_play_and_revenge_share_one_order_prompt() -> void:
 	var effect := RecordLeaveAndRevenge.new()
 	s["effect_handler"].registry.register_for_test(LEAVE_AND_REVENGE, effect, ["on_leave_play", "on_revenge"])
 
-	await s["action_handler"].resolve_check_timing(state)
+	await (s["effect_handler"] as EffectHandler).check_timing.resolve()
 
 	assert_array(_prompt_sizes(s["input"])).contains_exactly([2])
 	# The player picked the second listed ability (Revenge) first.
@@ -125,7 +125,7 @@ func test_turn_player_crush_preempts_non_turn_players_remaining_abilities() -> v
 		state.players[0].monster_zone = 4
 	var other := func() -> void: effect.seen.append("p1:other")
 
-	await handler.standby.resolve_entries([
+	await handler.check_timing.submit([
 		_entry(1, Cards.battle(1, 5000, "P1-A"), crusher),
 		_entry(1, Cards.battle(1, 5000, "P1-B"), other),
 	])
@@ -146,9 +146,9 @@ func test_ability_added_mid_resolution_joins_same_players_next_order_prompt() ->
 	var spawner := func() -> void:
 		order.append("a")
 		# Triggered while A resolves → enters standby behind it.
-		await handler.standby.resolve_entries([spawned])
+		await handler.check_timing.submit([spawned])
 
-	await handler.standby.resolve_entries([
+	await handler.check_timing.submit([
 		_entry(0, Cards.battle(1, 5000, "A"), spawner),
 		_entry(0, Cards.battle(1, 5000, "B"), func() -> void: order.append("b")),
 	])

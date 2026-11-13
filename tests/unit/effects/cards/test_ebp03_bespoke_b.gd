@@ -389,9 +389,8 @@ func test_ebp03_052_destroyed_by_opponent_effect_returns_under_cards_to_hand() -
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
 	# The rescue is gated on "by an opponent's effect" — simulate one active.
-	handler.exec.active_player_id = 1
-
-	await handler.destroy_zones(p0, [3])
+	await handler.check_timing.run_effect(1, {"id": "FAKE-OPP-EFFECT"}, func() -> void:
+		await handler.destroy_zones(p0, [3]))
 
 	assert_bool(p0.zone_has_cards(3)).is_false()
 	assert_int(p0.hand.size()).is_equal(2)
@@ -486,10 +485,8 @@ func test_ebp03_053_opponent_effect_cannot_destroy_it_while_opponent_rage_0() ->
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
 	# Simulate an active opponent effect causing the destruction.
-	handler.exec.active_player_id = 1
-	handler.exec.active_card = {"id": "FAKE-OPP-EFFECT"}
-
-	await handler.destroy_zones(state.players[0], [2])
+	await handler.check_timing.run_effect(1, {"id": "FAKE-OPP-EFFECT"}, func() -> void:
+		await handler.destroy_zones(state.players[0], [2]))
 
 	assert_bool(state.players[0].zone_has_cards(2)).is_true()
 	assert_int(state.players[0].discard_pile.size()).is_equal(0)
@@ -500,10 +497,8 @@ func test_ebp03_053_destroyed_by_opponent_effect_once_opponent_has_rage() -> voi
 	var state := States.make_state({"p0": {"zone_cards": {2: card}}, "p1": {"rage": 1}})
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.exec.active_player_id = 1
-	handler.exec.active_card = {"id": "FAKE-OPP-EFFECT"}
-
-	await handler.destroy_zones(state.players[0], [2])
+	await handler.check_timing.run_effect(1, {"id": "FAKE-OPP-EFFECT"}, func() -> void:
+		await handler.destroy_zones(state.players[0], [2]))
 
 	assert_bool(state.players[0].zone_has_cards(2)).is_false()
 	assert_int(state.players[0].discard_pile.size()).is_equal(1)

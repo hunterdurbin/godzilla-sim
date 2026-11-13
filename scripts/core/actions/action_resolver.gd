@@ -2,7 +2,7 @@ class_name ActionResolver
 extends RefCounted
 
 ## Base for the resolvers split out of ActionHandler (PlayActions,
-## InvasionResolver, CounterResolver, RuleActions, PhaseActions). Each holds
+## InvasionResolver, CounterResolver, PhaseActions). Each holds
 ## the ActionHandler hub `ah` and reaches the shared collaborators through
 ## the lazy forwarders below, so wiring order doesn't matter.
 

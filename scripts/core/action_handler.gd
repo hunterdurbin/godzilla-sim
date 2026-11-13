@@ -2,8 +2,9 @@ class_name ActionHandler
 extends RefCounted
 
 ## Dispatches game actions to the resolver classes that mutate GameState
-## (PlayActions, InvasionResolver, CounterResolver, RuleActions,
-## PhaseActions). Assumes validation has already passed.
+## (PlayActions, InvasionResolver, CounterResolver, PhaseActions).
+## Check timing (rule actions + standby) is CheckTiming's, reached through
+## effect_handler.check_timing. Assumes validation has already passed.
 ## Gameplay notifications are emitted on the shared GameEvents bus.
 
 var effect_handler: EffectHandler
@@ -13,7 +14,6 @@ var events: GameEvents
 var plays := PlayActions.new()
 var invasion := InvasionResolver.new()
 var counter := CounterResolver.new()
-var rule_actions := RuleActions.new()
 var phases := PhaseActions.new()
 
 
@@ -21,20 +21,18 @@ func _init() -> void:
 	plays.ah = self
 	invasion.ah = self
 	counter.ah = self
-	rule_actions.ah = self
 	phases.ah = self
 
 
 func teardown() -> void:
 	## Break the resolver back-refs (resolver.ah -> self) and cross-refs so
 	## the match component graph can be freed. Idempotent.
-	for r in [plays, invasion, counter, rule_actions, phases]:
+	for r in [plays, invasion, counter, phases]:
 		if r:
 			r.ah = null
 	plays = null
 	invasion = null
 	counter = null
-	rule_actions = null
 	phases = null
 	effect_handler = null
 	events = null
@@ -95,22 +93,6 @@ func force_counter(state: GameState, target_player_id: int) -> void:
 
 func play_monster_from_effect(state: GameState, player_id: int, monster_card: Dictionary) -> void:
 	await plays.play_monster_from_effect(state, player_id, monster_card)
-
-
-# --- Rule actions (check timing) ---
-
-func resolve_check_timing(state: GameState) -> void:
-	await rule_actions.resolve_check_timing(state)
-
-
-func check_crush_rule(state: GameState, triggered: Array) -> void:
-	## The single crush path (11.3) — see RuleActions.check_crush_rule.
-	rule_actions.check_crush_rule(state, triggered)
-
-
-func crush_now(state: GameState, player_id: int = -1) -> void:
-	## Crush now and submit the triggered abilities to standby.
-	await rule_actions.crush_now(state, player_id)
 
 
 # --- Pure zone math ---

@@ -99,7 +99,7 @@ func apply(action: CardEnums.ActionType, params: Dictionary) -> bool:
 	if input:
 		input.decision_log.clear()
 	await tm.action_handler.execute(action, params, tm.game_state)
-	await tm.action_handler.resolve_check_timing(tm.game_state)
+	await tm.effect_handler.check_timing.resolve()
 	if tm.is_game_over:
 		return false
 	return tm.rules_engine.check_win_condition(tm.game_state) < 0

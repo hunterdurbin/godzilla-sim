@@ -299,12 +299,10 @@ func test_ebp01_059_plays_self_when_discarded_by_opponent_effect() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 	# Simulate an opponent effect causing the discard (caused_by_opponent gate).
-	handler.exec.set_active(1, {"id": "OPP-FX", "name": "Opponent Effect"})
-
-	await handler.trigger_discard_from_hand(0, card)
-	# An automatic ability: it waits in standby until the opponent's effect ends.
-	assert_bool(handler.exec.pending_standby_entries.is_empty()).is_false()
-	await States.finish_active_effect(handler)
+	await handler.check_timing.run_effect(1, {"id": "OPP-FX", "name": "Opponent Effect"}, handler.trigger_discard_from_hand.bind(0, card))
+	# An automatic ability: it waited in standby until the opponent's effect ended.
+	assert_bool(handler.check_timing.has_pending()).is_true()
+	await handler.check_timing.resolve_pending()
 
 	assert_str(str(state.players[0].get_zone_top_card(2).get("id"))).is_equal(str(card.get("id")))
 	assert_int(state.players[0].discard_pile.size()).is_equal(0)
@@ -318,8 +316,7 @@ func test_ebp01_059_silent_when_monster_back_or_not_caused_by_opponent() -> void
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.exec.set_active(1, {"id": "OPP-FX"})
-	await handler.trigger_discard_from_hand(0, card)
+	await handler.check_timing.run_effect(1, {"id": "OPP-FX"}, handler.trigger_discard_from_hand.bind(0, card))
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 
 	# Own effect caused the discard: the trigger filter gates it off.
@@ -329,8 +326,7 @@ func test_ebp01_059_silent_when_monster_back_or_not_caused_by_opponent() -> void
 	var input2 := ScriptedPlayerInput.new()
 	var s2 := States.make_session(state2, input2)
 	var handler2: EffectHandler = s2["effect_handler"]
-	handler2.exec.set_active(0, {"id": "MY-FX"})
-	await handler2.trigger_discard_from_hand(0, card2)
+	await handler2.check_timing.run_effect(0, {"id": "MY-FX"}, handler2.trigger_discard_from_hand.bind(0, card2))
 	assert_int(input2.count_calls("select_zone")).is_equal(0)
 
 	# Rules-based discard (no active effect): matches neither gate value.
@@ -558,12 +554,10 @@ func test_ebp01_066_gains_2_rage_when_discarded_by_opponent_effect() -> void:
 	state.players[0].discard_pile.append(card)
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.exec.set_active(1, {"id": "OPP-FX", "name": "Opponent Effect"})
-
-	await handler.trigger_discard_from_hand(0, card)
-	# An automatic ability: it waits in standby until the opponent's effect ends.
-	assert_bool(handler.exec.pending_standby_entries.is_empty()).is_false()
-	await States.finish_active_effect(handler)
+	await handler.check_timing.run_effect(1, {"id": "OPP-FX", "name": "Opponent Effect"}, handler.trigger_discard_from_hand.bind(0, card))
+	# An automatic ability: it waited in standby until the opponent's effect ended.
+	assert_bool(handler.check_timing.has_pending()).is_true()
+	await handler.check_timing.resolve_pending()
 
 	assert_int(state.players[0].rage).is_equal(2)
 	# NOTE: the script declares no caused_by_opponent TRIGGER_FILTERS gate, so
@@ -771,24 +765,23 @@ func test_ebp01_075_indestructible_by_opponent_effects_in_zones_1_5_with_3_rage(
 	var state := States.make_state({"p0": {"zone_cards": {2: card}, "rage": 3}})
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.exec.set_active(1, {"id": "OPP-FX"})
+	await handler.check_timing.run_effect(1, {"id": "OPP-FX"}, func() -> void:
+		assert_bool(handler.can_destroy_card(state.players[0], card)).is_false()
+		await handler.destroy_zones(state.players[0], [2])
+		assert_bool(state.players[0].zone_has_cards(2)).is_true()
 
-	assert_bool(handler.can_destroy_card(state.players[0], card)).is_false()
-	await handler.destroy_zones(state.players[0], [2])
-	assert_bool(state.players[0].zone_has_cards(2)).is_true()
-
-	# Below 3 rage: destroyable.
-	state.players[0].rage = 2
-	await handler.destroy_zones(state.players[0], [2])
-	assert_bool(state.players[0].zone_has_cards(2)).is_false()
+		# Below 3 rage: destroyable.
+		state.players[0].rage = 2
+		await handler.destroy_zones(state.players[0], [2])
+		assert_bool(state.players[0].zone_has_cards(2)).is_false())
 
 	# Own effect as the cause: protection does not apply.
 	var card2 := Real.instance("EBP01-075", 1)
 	var state2 := States.make_state({"p0": {"zone_cards": {2: card2}, "rage": 3}})
 	var s2 := _session(state2)
 	var handler2: EffectHandler = s2["effect_handler"]
-	handler2.exec.set_active(0, {"id": "MY-FX"})
-	await handler2.destroy_zones(state2.players[0], [2])
+	await handler2.check_timing.run_effect(0, {"id": "MY-FX"}, func() -> void:
+		await handler2.destroy_zones(state2.players[0], [2]))
 	assert_bool(state2.players[0].zone_has_cards(2)).is_false()
 
 	# Zones 6-8: not protected even with 3 rage.
@@ -796,8 +789,8 @@ func test_ebp01_075_indestructible_by_opponent_effects_in_zones_1_5_with_3_rage(
 	var state3 := States.make_state({"p0": {"zone_cards": {6: card3}, "rage": 3}})
 	var s3 := _session(state3)
 	var handler3: EffectHandler = s3["effect_handler"]
-	handler3.exec.set_active(1, {"id": "OPP-FX"})
-	await handler3.destroy_zones(state3.players[0], [6])
+	await handler3.check_timing.run_effect(1, {"id": "OPP-FX"}, func() -> void:
+		await handler3.destroy_zones(state3.players[0], [6]))
 	assert_bool(state3.players[0].zone_has_cards(6)).is_false()
 
 
@@ -916,18 +909,17 @@ func test_ebp01_080_protects_rank_5_cards_in_zones_1_5_from_opponent_effects() -
 	state.players[0].strategy_zones[0] = strat
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.exec.set_active(1, {"id": "OPP-FX"})
-
-	assert_bool(handler.can_destroy_card(state.players[0], protected_card)).is_false()
-	await handler.destroy_zones(state.players[0], [2, 3, 6])
+	await handler.check_timing.run_effect(1, {"id": "OPP-FX"}, func() -> void:
+		assert_bool(handler.can_destroy_card(state.players[0], protected_card)).is_false()
+		await handler.destroy_zones(state.players[0], [2, 3, 6]))
 
 	assert_bool(state.players[0].zone_has_cards(2)).is_true()    # rank 5, zone 3: protected
 	assert_bool(state.players[0].zone_has_cards(3)).is_false()   # rank 6: not protected
 	assert_bool(state.players[0].zone_has_cards(6)).is_false()   # zone 7: outside 1-5
 
 	# Own effect as the cause: no protection.
-	handler.exec.set_active(0, {"id": "MY-FX"})
-	await handler.destroy_zones(state.players[0], [2])
+	await handler.check_timing.run_effect(0, {"id": "MY-FX"}, func() -> void:
+		await handler.destroy_zones(state.players[0], [2]))
 	assert_bool(state.players[0].zone_has_cards(2)).is_false()
 
 	# Not a <Base> strategy (explicit override).

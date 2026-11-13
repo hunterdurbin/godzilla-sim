@@ -138,13 +138,10 @@ func test_ebp04_052_plays_itself_when_opp_discards_it_and_opp_in_zones_4_8() -> 
 	input.answers = {"select_zone": [3]}
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.exec.active_player_id = 1
-	handler.exec.active_card = Cards.strategy(2, "OPP-FX")
-
-	await handler.trigger_discard_from_hand(0, card)
-	# An automatic ability: it waits in standby until the opponent's effect ends.
-	assert_bool(handler.exec.pending_standby_entries.is_empty()).is_false()
-	await States.finish_active_effect(handler)
+	await handler.check_timing.run_effect(1, Cards.strategy(2, "OPP-FX"), handler.trigger_discard_from_hand.bind(0, card))
+	# An automatic ability: it waited in standby until the opponent's effect ended.
+	assert_bool(handler.check_timing.has_pending()).is_true()
+	await handler.check_timing.resolve_pending()
 
 	assert_str(str(state.players[0].get_zone_top_card(3).get("id"))).is_equal(str(card.get("id")))
 
@@ -156,10 +153,7 @@ func test_ebp04_052_no_play_when_opp_monster_in_zones_1_3() -> void:
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.exec.active_player_id = 1
-	handler.exec.active_card = Cards.strategy(2, "OPP-FX")
-
-	await handler.trigger_discard_from_hand(0, card)
+	await handler.check_timing.run_effect(1, Cards.strategy(2, "OPP-FX"), handler.trigger_discard_from_hand.bind(0, card))
 
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 	assert_int(state.players[0].discard_pile.size()).is_equal(1)
@@ -958,19 +952,19 @@ func test_ebp04_085_protects_void_ghidorah_in_zones_1_5_from_opp_effects() -> vo
 	})
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
+	var opp_fx := Cards.strategy(2, "OPP-FX")
 	# Opponent's effect on the opponent's turn: protected.
-	handler.exec.active_player_id = 1
-	handler.exec.active_card = Cards.strategy(2, "OPP-FX")
-	assert_bool(handler.can_destroy_card(state.players[0], void_g)).is_false()
+	await handler.check_timing.run_effect(1, opp_fx, func() -> void:
+		assert_bool(handler.can_destroy_card(state.players[0], void_g)).is_false())
 
 	# The owner's own effect is not blocked.
-	handler.exec.active_player_id = 0
-	assert_bool(handler.can_destroy_card(state.players[0], void_g)).is_true()
+	await handler.check_timing.run_effect(0, opp_fx, func() -> void:
+		assert_bool(handler.can_destroy_card(state.players[0], void_g)).is_true())
 
 	# Owner's turn: the <Opponent's Turn> gate turns protection off.
-	handler.exec.active_player_id = 1
 	state.current_player_id = 0
-	assert_bool(handler.can_destroy_card(state.players[0], void_g)).is_true()
+	await handler.check_timing.run_effect(1, opp_fx, func() -> void:
+		assert_bool(handler.can_destroy_card(state.players[0], void_g)).is_true())
 
 
 func test_ebp04_085_does_not_protect_void_ghidorah_in_zones_6_8() -> void:
@@ -982,9 +976,8 @@ func test_ebp04_085_does_not_protect_void_ghidorah_in_zones_6_8() -> void:
 	})
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.exec.active_player_id = 1
-	handler.exec.active_card = Cards.strategy(2, "OPP-FX")
-	assert_bool(handler.can_destroy_card(state.players[0], void_g)).is_true()
+	await handler.check_timing.run_effect(1, Cards.strategy(2, "OPP-FX"), func() -> void:
+		assert_bool(handler.can_destroy_card(state.players[0], void_g)).is_true())
 
 
 # --- EBP04-086: Base; own counter start plays 1 Vulture per 5 green discards ---
