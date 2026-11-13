@@ -5,7 +5,7 @@ TCG comprehensive rules (v1.1, 2025-12-23). The `.gdignore` keeps Godot from
 importing this directory.
 
 Engine code cites rules by section number — e.g.
-`scripts/effects/standby_resolver.gd` implements "rule 10.4.3" (standby
+`scripts/effects/check_timing.gd` implements "rule 10.4.3" (standby
 resolution ordering). When a comment says "per rule N.N.N", this PDF is the
 source of truth.
 

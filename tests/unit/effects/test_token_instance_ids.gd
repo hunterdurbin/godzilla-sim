@@ -45,10 +45,9 @@ func test_zone_protection_resolves_correct_zone_for_token_copies() -> void:
 	await handler.create_token_in_zone(state.players[1], "EBP02-T03", 2)
 	await handler.create_token_in_zone(state.players[1], "EBP02-T03", 7)
 
-	handler.exec.set_active(0, {"id": "P0-FX"})
-	assert_bool(handler.can_destroy_card(state.players[1], state.players[1].get_zone_top_card(0))).is_false()
-	assert_bool(handler.can_destroy_card(state.players[1], state.players[1].get_zone_top_card(7))).is_true()
-	handler.exec.clear_active()
+	await handler.check_timing.run_effect(0, {"id": "P0-FX"}, func() -> void:
+		assert_bool(handler.can_destroy_card(state.players[1], state.players[1].get_zone_top_card(0))).is_false()
+		assert_bool(handler.can_destroy_card(state.players[1], state.players[1].get_zone_top_card(7))).is_true())
 
 	var bite := Real.instance("EPR-005")
 	await handler.trigger_enter(0, bite)

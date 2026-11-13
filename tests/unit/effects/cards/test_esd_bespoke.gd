@@ -125,7 +125,7 @@ func test_esd01_011_crushed_goes_to_deck_bottom_without_crush_event() -> void:
 	s["events"].battle_card_crushed.connect(func(_pid: int, _z: int, c: Dictionary) -> void:
 		crushed.append(c))
 
-	await s["action_handler"].resolve_check_timing(state)
+	await (s["effect_handler"] as EffectHandler).check_timing.resolve()
 
 	var p0 := state.players[0]
 	assert_bool(p0.zone_has_cards(2)).is_false()

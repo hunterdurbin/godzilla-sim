@@ -229,7 +229,7 @@ func set_monster_zone(pid: int, zone_number: int) -> void:
 	player.monster_zone = target
 	player.monster_changed.emit()
 	if _tm.action_handler:
-		await _tm.action_handler.crush_now(_tm.game_state, player.player_id)
+		await _tm.effect_handler.check_timing.crush_now(player.player_id)
 
 
 # --- Hand / deck / discard (deck index 0 = top; -1 = bottom) ---

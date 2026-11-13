@@ -1341,13 +1341,10 @@ func test_ebp04_046_plays_itself_when_discarded_by_opponent_effect() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 	# Simulate an opponent effect causing the discard.
-	handler.exec.active_player_id = 1
-	handler.exec.active_card = Cards.strategy(2, "OPP-FX")
-
-	await handler.trigger_discard_from_hand(0, card)
-	# An automatic ability: it waits in standby until the opponent's effect ends.
-	assert_bool(handler.exec.pending_standby_entries.is_empty()).is_false()
-	await States.finish_active_effect(handler)
+	await handler.check_timing.run_effect(1, Cards.strategy(2, "OPP-FX"), handler.trigger_discard_from_hand.bind(0, card))
+	# An automatic ability: it waited in standby until the opponent's effect ended.
+	assert_bool(handler.check_timing.has_pending()).is_true()
+	await handler.check_timing.resolve_pending()
 
 	assert_str(str(state.players[0].get_zone_top_card(4).get("id"))).is_equal(str(card.get("id")))
 	assert_int(state.players[0].discard_pile.size()).is_equal(0)
@@ -1360,10 +1357,7 @@ func test_ebp04_046_silent_when_discarded_by_own_effect_and_awk6_cp() -> void:
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.exec.active_player_id = 0
-	handler.exec.active_card = Cards.strategy(2, "OWN-FX")
-
-	await handler.trigger_discard_from_hand(0, card)
+	await handler.check_timing.run_effect(0, Cards.strategy(2, "OWN-FX"), handler.trigger_discard_from_hand.bind(0, card))
 
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 	assert_int(state.players[0].discard_pile.size()).is_equal(1)

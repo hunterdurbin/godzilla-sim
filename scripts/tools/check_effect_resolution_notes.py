@@ -11,7 +11,7 @@ sim diff, with no hint why.
 Scans the engine modules (scripts/effects/*.gd). A direct site must have
 `note_effect_resolving(` within the LOOKBACK lines above it, in the same
 function. Calls inside a lambda (`:= func(...)`) are exempt: those bodies run
-as standby callbacks, which standby_resolver.gd announces when it resolves
+as standby callbacks, which check_timing.gd (run_effect) announces when it resolves
 the entry. Sync hooks (no `await`: replacement queries such as
 on_would_be_destroyed) are not ability resolutions and are not flagged.
 No allowlist.

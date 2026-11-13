@@ -65,15 +65,6 @@ static func make_session(state: GameState, input: PlayerInput = null) -> Diction
 	}
 
 
-## End the effect a test faked with `exec.set_active(...)` and resolve what
-## entered standby behind it — the check timing after that effect (10.4.3).
-static func finish_active_effect(handler: EffectHandler) -> void:
-	handler.exec.clear_active()
-	var pending: Array = handler.exec.pending_standby_entries
-	handler.exec.pending_standby_entries = []
-	await handler.resolve_deferred_entries(pending)
-
-
 ## Build a TurnManager over the given state with the full logic stack wired
 ## (mirrors MatchFactory minus deck construction / printing / opening draw),
 ## so flow tests can drive whole turns with a ScriptedPlayerInput.

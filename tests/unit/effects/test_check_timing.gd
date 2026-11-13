@@ -1,154 +1,416 @@
 extends GdUnitTestSuite
 
-## Check timing (rule 10.4.3): automatic abilities triggered while an effect
-## is resolving enter standby (10.6.2) and resolve only after that effect
-## finishes. Replacement effects (10.2.1.3) still interrupt immediately.
-## Synthetic "rest of the effect" = a choose_option prompt after the trigger.
+## CheckTiming (10.4.3): rule actions — crush (11.3) and illegal cards (11.4) —
+## the standby pool (turn player first, order choice, abilities spawned
+## mid-resolution), queueing behind a running ability, and the active-ability
+## bookkeeping of run_effect.
+##
+## Built from a GameState + ScriptedPlayerInput + hand-made StandbyEntry
+## objects; CheckTiming reaches the trigger collectors and the order prompt
+## through a bare EffectHandler (no ActionHandler / session wiring).
 
 const Cards := preload("res://tests/fixtures/cards.gd")
 const States := preload("res://tests/fixtures/states.gd")
-const Real := preload("res://tests/fixtures/real_cards.gd")
-
-const DESTROY_THEN_CHOOSE := "test://destroy_one_then_choose"
-const DISCARD_THEN_CHOOSE := "test://discard_one_then_choose"
 
 
-## <Enter> <Destroy> 1 of your battle cards (single-target path), then
-## continue the effect with a choice. Records whether zone 8 was occupied
-## when the rest of the effect ran.
-class DestroyOneThenChoose:
-	extends CardEffect
-	var zone8_occupied_at_rest: bool = false
-
-	func on_enter(ctx: EffectContext) -> void:
-		var zones: Array[int] = ctx.owner.get_battle_card_zone_indices()
-		await ctx.effect_handler.destroy_chosen_zone(ctx.owner.player_id, ctx.owner, zones, "destroy")
-		zone8_occupied_at_rest = ctx.owner.zone_has_cards(7)
-		await ctx.effect_handler.select_choice(ctx.owner.player_id, ["A", "B"] as Array[String], "rest")
+func _handler(state: GameState, input: PlayerInput = null) -> EffectHandler:
+	var handler := EffectHandler.new()
+	handler.setup(state, input if input else ScriptedPlayerInput.new())
+	return handler
 
 
-## <Enter> Discard 1 card from your hand, then continue with a choice.
-class DiscardOneThenChoose:
-	extends CardEffect
-
-	func on_enter(ctx: EffectContext) -> void:
-		await ctx.effect_handler.select_hand_card(ctx.owner.player_id,
-			func(_c: Dictionary) -> bool: return true, "discard")
-		await ctx.effect_handler.select_choice(ctx.owner.player_id, ["A", "B"] as Array[String], "rest")
+func _entry(player_id: int, card: Dictionary, callback: Callable) -> StandbyEntry:
+	return StandbyEntry.new(player_id, card, callback)
 
 
-func _session(state: GameState, answers: Dictionary) -> Dictionary:
-	var input := ScriptedPlayerInput.new()
-	input.answers = answers
-	var s := States.make_session(state, input)
-	s["input"] = input
-	return s
+# --- Rule actions ---
 
-
-func _source(script_path: String) -> Dictionary:
-	var card := Cards.strategy(1, "SOURCE")
-	card["effect_script"] = script_path
-	return card
-
-
-func _kinds(input: ScriptedPlayerInput) -> Array:
-	return input.calls.map(func(c: Dictionary) -> String: return c["kind"])
-
-
-func test_single_destroy_revenge_waits_for_rest_of_effect() -> void:
-	var revenge_card := Real.instance("EBP02-058")  # Revenge: search discard for a KG monster
-	var state := States.make_state({"p0": {"zone_cards": {1: revenge_card}}})
-	state.players[0].discard_pile.append(
-		Cards.monster(3, 19000, [CardEnums.CardTrait.KING_GHIDORAH], "KG-MON"))
-	var s := _session(state, {"select_zone": [1], "choose_option": [0]})
-	var handler: EffectHandler = s["effect_handler"]
-	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, DestroyOneThenChoose.new(), ["on_enter"])
-
-	await handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
-
-	var kinds := _kinds(s["input"])
-	assert_bool(kinds.has("search_cards")).is_true()
-	assert_int(kinds.find("choose_option")).is_less(kinds.find("search_cards"))
-
-
-func test_effect_resolving_fires_once_per_ability_start() -> void:
-	# GameEvents.effect_resolving (bot sim's [SimEffects] counts): the <Enter>
-	# and the standby <Revenge> each announce once; resuming nothing re-emits.
-	var revenge_card := Real.instance("EBP02-058")
-	var state := States.make_state({"p0": {"zone_cards": {1: revenge_card}}})
-	state.players[0].discard_pile.append(
-		Cards.monster(3, 19000, [CardEnums.CardTrait.KING_GHIDORAH], "KG-MON"))
-	var s := _session(state, {"select_zone": [1], "choose_option": [0]})
-	var handler: EffectHandler = s["effect_handler"]
-	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, DestroyOneThenChoose.new(), ["on_enter"])
-	var seen: Array[String] = []
-	(s["events"] as GameEvents).effect_resolving.connect(
-		func(_pid: int, card: Dictionary) -> void: seen.append(CardUtils.base_id(card)))
-
-	await handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
-
-	assert_array(seen).is_equal(["SOURCE", "EBP02-058"])
-
-
-func test_single_destroy_revenge_resolves_at_once_outside_an_effect() -> void:
-	var revenge_card := Real.instance("EBP02-058")
-	var state := States.make_state({"p0": {"zone_cards": {1: revenge_card}}})
-	state.players[0].discard_pile.append(
-		Cards.monster(3, 19000, [CardEnums.CardTrait.KING_GHIDORAH], "KG-MON"))
-	var s := _session(state, {"select_zone": [1]})
-	var handler: EffectHandler = s["effect_handler"]
-
-	await handler.destroy_chosen_zone(0, state.players[0], [1] as Array[int], "destroy")
-
-	assert_int(s["input"].count_calls("search_cards")).is_equal(1)
-
-
-func test_discard_from_hand_ability_waits_for_rest_of_effect() -> void:
-	var monster_x := Real.instance("EBP03-067")  # own turn + 2 colors → play this card
-	var green := Cards.battle(2, 2000, "GREEN")
-	green["colors"] = [CardEnums.CardColor.GREEN]
-	var state := States.make_state({"current_player_id": 0, "p0": {
-		"hand": [monster_x],
-		"zone_cards": {0: Cards.battle(1, 1000, "RED"), 1: green},
+func test_crush_destroys_battle_card_under_monster() -> void:
+	var state := States.make_state({"p0": {
+		"monster_zone": 3,
+		"zone_cards": {2: Cards.battle(1, 5000, "UNDER")},
 	}})
-	var s := _session(state, {"select_hand_card": [0], "choose_option": [0], "select_zone": [4]})
-	var handler: EffectHandler = s["effect_handler"]
-	handler.registry.register_for_test(DISCARD_THEN_CHOOSE, DiscardOneThenChoose.new(), ["on_enter"])
+	var ct := _handler(state).check_timing
 
-	await handler.trigger_enter(0, _source(DISCARD_THEN_CHOOSE))
+	await ct.resolve()
 
-	var kinds := _kinds(s["input"])
-	assert_int(kinds.find("choose_option")).is_less(kinds.find("select_zone"))
-	assert_str(str(state.players[0].get_zone_top_card(4).get("id"))).is_equal(str(monster_x["id"]))
+	assert_bool(state.players[0].zone_has_cards(2)).is_false()
+	assert_int(state.players[0].discard_pile.size()).is_equal(1)
+	assert_int(state.players[0].cards_destroyed_this_turn.size()).is_equal(1)
 
 
-func test_godzilla_earth_link_waits_for_rest_of_effect() -> void:
-	var earth := Real.instance("EBP04-067")
-	var token := Real.instance("EBP04-T01")
-	var state := States.make_state({"p0": {"zone_cards": {7: earth, 2: token}}})
-	var s := _session(state, {"select_zone": [2], "choose_option": [0]})
-	var handler: EffectHandler = s["effect_handler"]
-	var effect := DestroyOneThenChoose.new()
-	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, effect, ["on_enter"])
+func test_crush_checks_both_players_turn_player_first() -> void:
+	var state := States.make_state({
+		"current_player_id": 1,
+		"p0": {"monster_zone": 2, "zone_cards": {1: Cards.battle(1, 5000, "P0")}},
+		"p1": {"monster_zone": 5, "zone_cards": {4: Cards.battle(1, 5000, "P1")}},
+	})
+	var handler := _handler(state)
+	handler.events = GameEvents.new()
+	var crush_order: Array = []
+	handler.events.battle_card_crushed.connect(func(pid: int, _z: int, _c: Dictionary) -> void:
+		crush_order.append(pid))
 
-	await handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	await handler.check_timing.resolve()
 
-	# Godzilla Earth was still on the field while the effect continued…
-	assert_bool(effect.zone8_occupied_at_rest).is_true()
-	# …and the link destroyed it at the check timing afterwards.
-	assert_bool(state.players[0].zone_has_cards(7)).is_false()
-	assert_str(str(state.players[0].discard_pile.back().get("id"))).is_equal(str(earth["id"]))
+	# Turn player (1) crushes first (11.1.2.1.1).
+	assert_array(crush_order).contains_exactly([1, 0])
 
 
-func test_replacement_effect_still_interrupts_mid_effect() -> void:
-	var replacer := Real.instance("ESD01-011")  # "place on the bottom of your deck instead"
-	var state := States.make_state({"p0": {"zone_cards": {3: replacer}}})
-	var s := _session(state, {"select_zone": [3], "choose_option": [0]})
-	var handler: EffectHandler = s["effect_handler"]
-	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, DestroyOneThenChoose.new(), ["on_enter"])
-
-	await handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
-
-	assert_bool(state.players[0].zone_has_cards(3)).is_false()
-	assert_str(str(state.players[0].main_deck.back().get("id"))).is_equal(str(replacer["id"]))
+func test_no_crush_when_zone_clear() -> void:
+	var state := States.make_state({"p0": {
+		"monster_zone": 3,
+		"zone_cards": {4: Cards.battle(1, 5000, "ELSEWHERE")},
+	}})
+	await _handler(state).check_timing.resolve()
+	assert_bool(state.players[0].zone_has_cards(4)).is_true()
 	assert_int(state.players[0].discard_pile.size()).is_equal(0)
+
+
+func test_crush_now_crushes_only_the_named_player() -> void:
+	var state := States.make_state({
+		"p0": {"monster_zone": 2, "zone_cards": {1: Cards.battle(1, 5000, "P0")}},
+		"p1": {"monster_zone": 5, "zone_cards": {4: Cards.battle(1, 5000, "P1")}},
+	})
+	await _handler(state).check_timing.crush_now(1)
+	assert_bool(state.players[0].zone_has_cards(1)).is_true()
+	assert_bool(state.players[1].zone_has_cards(4)).is_false()
+
+
+func test_illegal_strategy_in_zone_discarded() -> void:
+	var state := States.make_state({"p0": {
+		"zone_cards": {4: Cards.strategy(1, "ILLEGAL")},
+	}})
+	await _handler(state).check_timing.resolve()
+	assert_bool(state.players[0].zone_has_cards(4)).is_false()
+	assert_int(state.players[0].discard_pile.size()).is_equal(1)
+
+
+func test_illegal_battle_card_in_strategy_zone_discarded() -> void:
+	var state := States.make_state({"p0": {
+		"strategy_zones": [Cards.battle(1, 5000, "WRONG-SLOT")],
+	}})
+	await _handler(state).check_timing.resolve()
+	assert_bool(state.players[0].strategy_zones[0].is_empty()).is_true()
+	assert_int(state.players[0].discard_pile.size()).is_equal(1)
+
+
+# --- Standby pool ---
+
+func test_turn_player_resolves_first() -> void:
+	var state := States.make_state({"current_player_id": 1})
+	var ct := _handler(state).check_timing
+	var order: Array = []
+	await ct.submit([
+		_entry(0, Cards.battle(1, 5000, "P0-CARD"), func() -> void: order.append("p0")),
+		_entry(1, Cards.battle(1, 5000, "P1-CARD"), func() -> void: order.append("p1")),
+	])
+	# Player 1 is the turn player -> their ability resolves first.
+	assert_array(order).contains_exactly(["p1", "p0"])
+
+
+func test_multiple_abilities_prompt_order_choice() -> void:
+	var state := States.make_state()
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"choose_option": [1]}  # pick the second listed ability first
+	var ct := _handler(state, input).check_timing
+	var order: Array = []
+	await ct.submit([
+		_entry(0, Cards.battle(1, 5000, "A"), func() -> void: order.append("a")),
+		_entry(0, Cards.battle(1, 5000, "B"), func() -> void: order.append("b")),
+	])
+	assert_array(order).contains_exactly(["b", "a"])
+	# The order prompt fired exactly once (second round has a single entry left).
+	assert_int(input.count_calls("choose_option")).is_equal(1)
+
+
+func test_single_ability_no_prompt() -> void:
+	var state := States.make_state()
+	var input := ScriptedPlayerInput.new()
+	var ct := _handler(state, input).check_timing
+	var ran: Array = []
+	await ct.submit([_entry(0, Cards.battle(1), func() -> void: ran.append(1))])
+	assert_int(ran.size()).is_equal(1)
+	assert_int(input.count_calls("choose_option")).is_equal(0)
+
+
+func test_entries_submitted_mid_resolution_join_the_pool() -> void:
+	var state := States.make_state()
+	var ct := _handler(state).check_timing
+	var order: Array = []
+	var spawner := func() -> void:
+		order.append("first")
+		# Abilities triggered while another resolves queue behind it.
+		await ct.submit([_entry(0, Cards.battle(1, 5000, "SPAWNED"), func() -> void: order.append("spawned"))])
+		order.append("first-done")
+	await ct.submit([_entry(0, Cards.battle(1, 5000, "FIRST"), spawner)])
+	assert_array(order).contains_exactly(["first", "first-done", "spawned"])
+
+
+func test_still_applies_false_drops_entry() -> void:
+	var state := States.make_state()
+	var ct := _handler(state).check_timing
+	var ran: Array = []
+	await ct.submit([
+		StandbyEntry.new(0, Cards.battle(1, 5000, "GONE"), func() -> void: ran.append("gone"),
+				func() -> bool: return false),
+		StandbyEntry.new(0, Cards.battle(1, 5000, "KEPT"), func() -> void: ran.append("kept"),
+				func() -> bool: return true),
+	])
+	assert_array(ran).contains_exactly(["kept"])
+
+
+func test_submit_deferred_filters_cards_no_longer_in_play() -> void:
+	var state := States.make_state()
+	var ct := _handler(state).check_timing
+	var on_field := Cards.battle(1, 5000, "ON-FIELD")
+	state.players[0].push_zone_card(2, on_field)
+	var gone := Cards.battle(1, 5000, "GONE")
+	var ran: Array = []
+	await ct.submit_deferred([
+		_entry(0, on_field, func() -> void: ran.append("on_field")),
+		_entry(0, gone, func() -> void: ran.append("gone")),
+		StandbyEntry.off_field(0, gone, func() -> void: ran.append("skip_check")),
+	])
+	assert_array(ran).contains_exactly(["on_field", "skip_check"])
+
+
+# --- Running an ability ---
+
+func test_run_effect_marks_active_and_queues_submissions() -> void:
+	var state := States.make_state()
+	var ct := _handler(state).check_timing
+	var ran: Array = []
+	var seen_active: Array = []
+	await ct.run_effect(0, Cards.battle(1, 5000, "ACTIVE"), func() -> void:
+		seen_active.append(ct.active_card.get("id", ""))
+		await ct.submit([_entry(0, Cards.battle(1), func() -> void: ran.append(1))])
+		# Queued, not run, while the ability resolves.
+		seen_active.append(ran.size()))
+	assert_array(seen_active).contains_exactly(["ACTIVE", 0])
+	assert_bool(ct.has_active_effect()).is_false()
+	assert_bool(ct.has_pending()).is_true()
+
+	await ct.resolve_pending()
+	assert_int(ran.size()).is_equal(1)
+	assert_bool(ct.has_pending()).is_false()
+
+
+func test_run_effect_restores_the_outer_ability() -> void:
+	var state := States.make_state()
+	var ct := _handler(state).check_timing
+	var seen: Array = []
+	await ct.run_effect(1, Cards.battle(1, 5000, "OUTER"), func() -> void:
+		await ct.run_effect(0, Cards.battle(1, 5000, "INNER"), func() -> void:
+			seen.append("%d:%s" % [ct.active_player_id, ct.active_card.get("id", "")]))
+		seen.append("%d:%s" % [ct.active_player_id, ct.active_card.get("id", "")]))
+	assert_array(seen).contains_exactly(["0:INNER", "1:OUTER"])
+	assert_int(ct.active_player_id).is_equal(-1)
+
+
+func test_standby_callback_runs_as_the_active_ability() -> void:
+	var state := States.make_state()
+	var ct := _handler(state).check_timing
+	var seen: Array = []
+	await ct.submit([_entry(0, Cards.battle(1, 5000, "ABILITY"), func() -> void:
+		seen.append(ct.active_card.get("id", "")))])
+	# During the callback the entry's card was active; afterwards cleared.
+	assert_array(seen).contains_exactly(["ABILITY"])
+	assert_bool(ct.has_active_effect()).is_false()
+
+
+func test_enter_or_queue_drains_what_the_enter_queued() -> void:
+	var state := States.make_state()
+	var ct := _handler(state).check_timing
+	var order: Array = []
+	await ct.enter_or_queue(_entry(0, Cards.battle(1, 5000, "ENTER"), func() -> void:
+		order.append("enter")
+		await ct.submit([_entry(0, Cards.battle(1, 5000, "Q"), func() -> void: order.append("queued"))])))
+	assert_array(order).contains_exactly(["enter", "queued"])
+	assert_bool(ct.has_pending()).is_false()
+
+
+func test_enter_or_queue_queues_behind_a_running_ability() -> void:
+	var state := States.make_state()
+	var ct := _handler(state).check_timing
+	var order: Array = []
+	await ct.run_effect(0, Cards.battle(1, 5000, "OUTER"), func() -> void:
+		await ct.enter_or_queue(_entry(0, Cards.battle(1, 5000, "ENTER"), func() -> void: order.append("enter")))
+		order.append("outer-done"))
+	assert_array(order).contains_exactly(["outer-done"])
+	await ct.resolve_pending()
+	assert_array(order).contains_exactly(["outer-done", "enter"])
+
+
+# --- Card location refs ---
+
+func test_card_location_label() -> void:
+	var state := States.make_state({"p0": {"monster_zone": 1}})
+	var zone_card := Cards.battle(1, 5000, "Z")
+	zone_card["name"] = "Zone Dweller"
+	state.players[0].push_zone_card(4, zone_card)
+	assert_str(CheckTiming.card_location_label(state, 0, zone_card)).is_equal("Zone Dweller (Zone 5)")
+	var monster: Dictionary = state.players[0].current_monster
+	assert_str(CheckTiming.card_location_label(state, 0, monster)).contains("(Monster)")
+
+
+func test_card_location_ref_kinds() -> void:
+	var strat := Cards.strategy(1, "S")
+	var state := States.make_state({"p0": {"monster_zone": 1, "strategy_zones": [strat]}})
+	var zone_card := Cards.battle(1, 5000, "Z")
+	state.players[0].push_zone_card(4, zone_card)
+	var discarded := Cards.battle(1, 5000, "D")
+	state.players[0].discard_pile.append(discarded)
+
+	var zref := CheckTiming.card_location_ref(state, 0, zone_card)
+	assert_str(zref["kind"]).is_equal("zone")
+	assert_int(zref["index"]).is_equal(4)
+	assert_str(zref["instance_id"]).is_equal("Z")
+	assert_int(zref["player_id"]).is_equal(0)
+	assert_str(zref["label"]).is_equal(zone_card["name"] + " (Zone 5)")
+
+	var mref := CheckTiming.card_location_ref(state, 0, state.players[0].current_monster)
+	assert_str(mref["kind"]).is_equal("monster")
+	assert_str(mref["label"]).contains("(Monster)")
+
+	var sref := CheckTiming.card_location_ref(state, 0, strat)
+	assert_str(sref["kind"]).is_equal("strategy")
+	assert_int(sref["index"]).is_equal(0)
+
+	var dref := CheckTiming.card_location_ref(state, 0, discarded)
+	assert_str(dref["kind"]).is_equal("discard")
+
+	# The marker scan must not leave residue on the card dicts.
+	assert_bool(zone_card.has("__ref_marker")).is_false()
+
+
+func test_card_location_ref_finds_covered_zone_card() -> void:
+	# A standby ability whose card was evolved over still resolves (10.6.7);
+	# the stack UI must still locate the card underneath.
+	var state := States.make_state()
+	var under := Cards.battle(6, 5000, "UNDER")
+	under["name"] = "Flying"
+	var top := Cards.battle(8, 5000, "TOP")
+	state.players[0].push_zone_card(2, under)
+	state.players[0].push_zone_card(2, top)
+
+	var ref := CheckTiming.card_location_ref(state, 0, under)
+	assert_str(ref["kind"]).is_equal("zone")
+	assert_int(ref["index"]).is_equal(2)
+	assert_bool(ref.get("covered", false)).is_true()
+	assert_str(ref["label"]).is_equal("Flying (Zone 3, covered)")
+	assert_bool(CheckTiming.card_location_ref(state, 0, top).get("covered", false)).is_false()
+	assert_bool(under.has("__ref_marker")).is_false()
+
+
+func test_card_location_ref_disambiguates_duplicate_ids() -> void:
+	var state := States.make_state()
+	var a := Cards.battle(1, 5000, "DUP")
+	var b := Cards.battle(1, 5000, "DUP")
+	state.players[0].push_zone_card(1, a)
+	state.players[0].push_zone_card(6, b)
+	assert_int(CheckTiming.card_location_ref(state, 0, a)["index"]).is_equal(1)
+	assert_int(CheckTiming.card_location_ref(state, 0, b)["index"]).is_equal(6)
+
+
+# --- Order prompt side channels + stack notifications ---
+
+class RefSnapshotInput extends ScriptedPlayerInput:
+	## Snapshots the handler's choice_source_refs side-channel at prompt time,
+	## the way the live choice UI reads it.
+	var handler: EffectHandler
+	var snapshot: Array = []
+
+	func choose_option(player_id: int, options: Array[String], prompt: String) -> int:
+		if handler:
+			snapshot = handler.choice_source_refs.duplicate(true)
+		return super(player_id, options, prompt)
+
+
+func test_choice_source_refs_populated_and_cleared() -> void:
+	var state := States.make_state()
+	var input := RefSnapshotInput.new()
+	input.answers = {"choose_option": [0]}
+	var handler := _handler(state, input)
+	input.handler = handler
+	var a := Cards.battle(1, 5000, "A")
+	var b := Cards.battle(1, 5000, "B")
+	# Zone 1 holds the monster (a check timing would crush a card there).
+	state.players[0].push_zone_card(1, a)
+	state.players[0].push_zone_card(3, b)
+	await handler.check_timing.submit([
+		_entry(0, a, func() -> void: pass),
+		_entry(0, b, func() -> void: pass),
+	])
+	# During the order prompt the refs paralleled the options...
+	assert_int(input.snapshot.size()).is_equal(2)
+	assert_str(input.snapshot[0]["kind"]).is_equal("zone")
+	assert_int(input.snapshot[0]["index"]).is_equal(1)
+	assert_int(input.snapshot[1]["index"]).is_equal(3)
+	# ...and were cleared once the choice resolved.
+	assert_int(handler.choice_source_refs.size()).is_equal(0)
+
+
+func test_effect_stack_changed_emission_sequence() -> void:
+	var state := States.make_state()
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"choose_option": [0]}
+	var handler := _handler(state, input)
+	handler.events = GameEvents.new()
+	var snapshots: Array = []
+	handler.events.effect_stack_changed.connect(func(stack: Array) -> void:
+		snapshots.append(stack.duplicate(true)))
+	var a := Cards.battle(1, 5000, "A")
+	var b := Cards.battle(1, 5000, "B")
+	state.players[0].push_zone_card(1, a)
+	state.players[0].push_zone_card(3, b)
+	await handler.check_timing.submit([
+		_entry(0, a, func() -> void: pass),
+		_entry(0, b, func() -> void: pass),
+	])
+	assert_bool(snapshots.size() >= 3).is_true()
+	# Some publish showed the whole batch pending (during the order prompt),
+	# some publish marked exactly one entry as resolving, and the final
+	# publish is the drained (empty) stack.
+	var had_two_pending := false
+	var had_one_resolving := false
+	for snap in snapshots:
+		var pending := 0
+		var resolving := 0
+		for row in snap:
+			if row["status"] == "pending":
+				pending += 1
+			elif row["status"] == "resolving":
+				resolving += 1
+		if pending == 2 and resolving == 0:
+			had_two_pending = true
+		if resolving == 1:
+			had_one_resolving = true
+	assert_bool(had_two_pending).is_true()
+	assert_bool(had_one_resolving).is_true()
+	assert_int((snapshots.back() as Array).size()).is_equal(0)
+
+
+func test_effect_stack_publishes_when_queued() -> void:
+	var state := States.make_state()
+	var handler := _handler(state)
+	handler.events = GameEvents.new()
+	var snapshots: Array = []
+	handler.events.effect_stack_changed.connect(func(stack: Array) -> void:
+		snapshots.append(stack.duplicate(true)))
+	var ct := handler.check_timing
+	await ct.run_effect(0, Cards.battle(1, 5000, "ACTIVE"), func() -> void:
+		await ct.submit([_entry(0, Cards.battle(1, 5000, "Q"), func() -> void: pass)]))
+	# Queued entries publish immediately so the stack UI shows them.
+	assert_int(snapshots.size()).is_equal(1)
+	assert_int((snapshots[0] as Array).size()).is_equal(1)
+	assert_str(snapshots[0][0]["status"]).is_equal("pending")
+
+
+func test_no_stack_emission_without_events_bus() -> void:
+	var state := States.make_state()
+	var ct := _handler(state).check_timing
+	# events stays null (bare test wiring) — resolving must not crash.
+	var ran: Array = []
+	await ct.submit([_entry(0, Cards.battle(1), func() -> void: ran.append(1))])
+	assert_int(ran.size()).is_equal(1)

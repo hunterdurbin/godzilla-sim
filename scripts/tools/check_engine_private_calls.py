@@ -5,7 +5,7 @@ A "private" method is a `func _name(` defined in scripts/core/ or
 scripts/effects/. Calling one through another object (`x._name(`) couples the
 caller to engine internals: when the engine changes that signature, the
 caller breaks with a parse error that only a full-suite run reveals (e.g. the
-board editor calling RuleActions._check_crush_for_player). Call or add a
+board editor calling the old RuleActions._check_crush_for_player). Call or add a
 public engine method instead.
 
 Existing calls are grandfathered in engine_private_calls_allowlist.txt as
