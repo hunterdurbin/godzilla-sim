@@ -71,7 +71,6 @@ func _play(s: Dictionary, pid: int, from: Source, zone: int, card: Dictionary = 
 
 # --- EBP02-073 Bloody Chainsaw: "あなたの交戦カードが出現するたび" ---
 
-@warning_ignore("unused_parameter")
 func test_ebp02_073_fires_for_every_play(from: int,
 		test_parameters := [
 			[Source.HAND],
@@ -97,7 +96,6 @@ func test_ebp02_073_fires_for_every_play(from: int,
 
 # --- EBP04-028 Gigan(2004): "相手が山札から交戦カードを出現させるたび" (Q530) ---
 
-@warning_ignore("unused_parameter")
 func test_ebp04_028_fires_only_for_a_deck_play(from: int, expect_fire: bool,
 		test_parameters := [
 			[Source.HAND, false],
@@ -123,7 +121,6 @@ func test_ebp04_028_fires_only_for_a_deck_play(from: int, expect_fire: bool,
 
 # --- EBP04-072 Sanda: "相手が山札から交戦カードを出現させるたび" (Q530) ---
 
-@warning_ignore("unused_parameter")
 func test_ebp04_072_fires_only_for_a_deck_play(from: int, expect_fire: bool,
 		test_parameters := [
 			[Source.HAND, false],
@@ -164,7 +161,6 @@ func _spacegodzilla_state() -> GameState:
 	}})
 
 
-@warning_ignore("unused_parameter")
 func test_ebp02_055_blocks_an_effect_play(from: int,
 		test_parameters := [
 			[Source.HAND],
@@ -195,7 +191,6 @@ func test_ebp02_055_blocks_an_effect_play(from: int,
 
 # --- EBP03-051 Godzilla Jr.: stacks on Little Godzilla when played by an effect ---
 
-@warning_ignore("unused_parameter")
 func test_ebp03_051_stacks_on_little_godzilla_through_an_effect_play(from: int,
 		test_parameters := [
 			[Source.HAND],
