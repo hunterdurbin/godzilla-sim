@@ -29,6 +29,9 @@ in parallel (the base gets this tree's `bot_simulation_runner.gd`, so both
 run the same harness) and reports differing `[SimResult]` lines, P1 wins,
 SCRIPT ERROR counts and `[Kaiju] … plan DIVERGED` counts. Exit 0 = identical;
 the last line, `STATUS: <n> (…)`, repeats the verdict so it survives a `| grep`.
+Head runs straight from the working tree, so leave it untouched until the
+run ends: an edit mid-run prints `WARNING: the working tree changed` and
+voids the verdict as `STATUS: 3`.
 `--pair` (repeatable) runs several deck pairs against one base import —
 use it instead of separate invocations; deck1/deck2 are then ignored.
 

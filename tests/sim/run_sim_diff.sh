@@ -24,10 +24,15 @@
 # whose head total is 0 is UNEXERCISED: the [SimResult] diff says nothing
 # about it — pick decks that run it (decks_with_cards.sh). Passive-only
 # cards (modifiers, replacement queries) never "resolve" and always show 0.
+# Head runs straight from the working tree, so the tree is fingerprinted
+# (HEAD + tracked diff + untracked files) at the start and re-checked after
+# every pair: an edit mid-run means the verdict covers mixed code.
 # Exit status (also printed as the final "STATUS: <n> (...)" line):
 #   0 = identical results and no script errors on this tree;
 #   1 = results differ / script errors / missing games (any pair);
-#   2 = otherwise clean, but some changed card was UNEXERCISED.
+#   2 = otherwise clean, but some changed card was UNEXERCISED;
+#   3 = the working tree changed during the run — the verdict is void, rerun
+#       without editing (overrides 0-2).
 set -u
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -63,6 +68,26 @@ resolve_deck() {
 		*) printf '%s' "$1" ;;
 	esac
 }
+
+# Fingerprint of everything head runs: HEAD, the tracked diff, and the
+# untracked files' contents (.godot and other ignored paths excluded).
+tree_fingerprint() {
+	{
+		git -C "$REPO" rev-parse HEAD
+		git -C "$REPO" diff HEAD --binary
+		git -C "$REPO" ls-files --others --exclude-standard -z \
+			| (cd "$REPO" && xargs -0 shasum 2>/dev/null)
+	} | shasum | cut -d' ' -f1
+}
+
+# Head runs on this tree's class-name cache: refresh it if a script was
+# added, moved or renamed outside the editor (the base worktree imports below).
+if ! python3 "$REPO/scripts/tools/check_class_cache.py" --quiet; then
+	echo "run_sim_diff.sh: importing to refresh the class-name cache"
+	"$REPO/tests/import.sh" "$GODOT" > /dev/null || { echo "FAIL: tests/import.sh failed"; exit 1; }
+fi
+TREE_FP="$(tree_fingerprint)"
+TREE_CHANGED=0
 
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/simdiff.XXXXXX")"
 BASE_WT="$WORK/base"
@@ -134,6 +159,10 @@ for pair in "${PAIRS[@]}"; do
 	[ "$(grep -c 'SCRIPT ERROR' "$WORK/head$i.log")" -eq 0 ] || STATUS=1
 	[ "$(grep -c '\[SimResult\]' "$WORK/head$i.log")" -ge "$GAMES" ] || STATUS=1
 	LOGS+=("$WORK/base$i.log" "$WORK/head$i.log")
+	if [ "$TREE_CHANGED" -eq 0 ] && [ "$(tree_fingerprint)" != "$TREE_FP" ]; then
+		echo "  WARNING: the working tree changed during this pair — head ran mixed code"
+		TREE_CHANGED=1
+	fi
 done
 
 # Changed card scripts -> card ids (via the effect_script paths in the set
@@ -194,10 +223,12 @@ PY
 	fi
 fi
 echo "Logs: $WORK/{base,head}<n>.log"
+[ "$TREE_CHANGED" -eq 1 ] && STATUS=3
 # Last line carries the verdict, so it survives `| grep` / `| tail` filters.
 case "$STATUS" in
 	0) echo "STATUS: 0 (identical)" ;;
 	2) echo "STATUS: 2 (unexercised)" ;;
+	3) echo "STATUS: 3 (working tree changed during the run: verdict void, rerun without editing)" ;;
 	*) echo "STATUS: $STATUS (differs, script errors or missing games)" ;;
 esac
 exit $STATUS
