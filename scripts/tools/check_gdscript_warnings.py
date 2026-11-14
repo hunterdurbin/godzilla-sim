@@ -7,6 +7,10 @@ dump_gdscript_warnings.gd (headless, `-d`: compiles every .gd under scripts/,
 scenes/ and tests/) and collects each `WARNING: <message>` whose location is
 `GDScript::reload (res://<file>:<line>)`.
 
+Exempt: UNUSED_PARAMETER on `test_parameters` in tests/ — gdUnit4 reads
+parameterized-test cases from a parameter with exactly that name, so it can
+never be prefixed with _ (GDUNIT_TEST_PARAMETERS_RE).
+
 Keys are `<file>: <message>` (no line numbers), grandfathered in
 gdscript_warnings_allowlist.txt, one line per occurrence. The check fails on
 a NEW warning AND on a STALE allowlist line, so the list only shrinks
@@ -38,6 +42,12 @@ TIMEOUT = int(os.environ.get("GDSCRIPT_WARNINGS_TIMEOUT", "300"))
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 WARNING_RE = re.compile(r"^WARNING: (.*)$")
 LOCATION_RE = re.compile(r"^\s*at: GDScript::reload \(res://(.+):(\d+)\)")
+GDUNIT_TEST_PARAMETERS_RE = re.compile(r'^The parameter "test_parameters" is never used in the function "test_\w+\(\)"')
+
+
+def exempt(path, message):
+    """gdUnit4's parameterized-test convention: see the module docstring."""
+    return path.startswith("tests/") and GDUNIT_TEST_PARAMETERS_RE.match(message) is not None
 
 
 def parse(lines):
@@ -51,7 +61,8 @@ def parse(lines):
         if not m or i + 1 >= len(lines):
             continue
         loc = LOCATION_RE.match(lines[i + 1])
-        if loc:  # runtime push_warning()s have other locations: not ours
+        if loc and not exempt(loc.group(1), m.group(1).strip()):
+            # (runtime push_warning()s have other locations: not ours)
             hits.add("%s: %s" % (loc.group(1), m.group(1).strip()), "%s:%s" % loc.groups())
     return hits, errors
 

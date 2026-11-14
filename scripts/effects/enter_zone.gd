@@ -4,7 +4,10 @@ extends EffectModule
 ## The one "card enters a zone" operation (GLOSSARY: Play, Appear, Evolve).
 ## Every engine path that puts a battle card or token into a zone runs
 ## `enter(...)`: the main-phase Play action, the effect plays from hand /
-## deck / discard, tokens and Evolution. (A stack moving between zones
+## deck / discard, tokens and Evolution. All of them are one act in the
+## Japanese rules, 出現 (5.11 "play", 5.11.4 "play a token", 5.17.1 Evolve
+## "重ねて出現させます"); the English text's play / appear split is a
+## translation artifact (comprehensive_rules/rules-ja.txt). (A stack moving between zones
 ## stays in play, so it is `move_stack`, not an entry.) `enter` owns, in
 ## this order:
 ##   1. rule legality (`is_rule_legal`) — refuse the zone and report "not
@@ -17,10 +20,10 @@ extends EffectModule
 ##      <Enter> entry and the "when played" watchers' entries, then
 ##      submitting them to CheckTiming together, so they share one pool.
 ##
-## Legality is split (rules-review Q15): RULE legality lives here; COST
-## legality (rank vs the opponent's monster zone + modifiers) stays in
-## RulesEngine, which asks this class for rule legality. Each source keeps
-## the checks it had before the operation existed — see `_rules_for`.
+## Legality is split: RULE legality lives here; COST legality (rank vs the
+## opponent's monster zone + modifiers) stays in RulesEngine, which asks
+## this class for rule legality. See "Rule legality" below for the checks,
+## and `_fires_played` for which plays fire the "when played" watchers.
 
 ## Where the entering card comes from.
 enum Source {
@@ -28,41 +31,32 @@ enum Source {
 	DECK,        ## an effect playing it from the deck (the caller took it out)
 	DISCARD,     ## an effect playing it from the discard pile
 	TOKEN,       ## an effect putting a token into existence
-	EVOLUTION,   ## Evolve: appears on top of the zone's battle card (5.17)
+	EVOLUTION,   ## Evolve: played from the deck on top of the zone's battle card (5.17)
 }
 
-# Rule-legality checks, as a bit set.
-# Every checked source also requires a zone index 0-7 (rule_legal_zones).
-const _RULE_MONSTER_ZONE := 1    # not the master's monster zone (5.11.1.1)
-const _RULE_OPPONENT_BLOCK := 2  # not a zone the opponent blocks (EBP02-055)
-const _RULE_REQUIRED := 4        # within the card's required zones
-
-
-static func _rules_for(source: Source, by_effect: bool) -> int:
-	## The checks each source applies today. The Play action applies all of
-	## them; effect plays only refuse the monster zone; Evolve places onto
-	## the field without a legality check.
-	if source == Source.EVOLUTION:
-		return 0
-	if not by_effect:
-		return _RULE_MONSTER_ZONE | _RULE_OPPONENT_BLOCK | _RULE_REQUIRED
-	return _RULE_MONSTER_ZONE
+# --- Rule legality ---
+#
+# Every entry, Evolve included, is a play (出現), so every source shares one
+# rule set. A zone (0-7) is rule-legal unless it is:
+#   - the master's monster zone (5.11.1.1);
+#   - a zone the opponent blocks — EBP02-055 "相手は…交戦カードを出現させる
+#     ことができない"; Q270: "この効果は【進化】などのカードの効果による出現も
+#     「できない」のですか？ A: はい、そうです。";
+#   - for the Play action only (by_effect = false), outside the card's
+#     required zones (an effect names its own zone).
 
 
 static func rule_legal_zones(queries: EffectQueries, player: PlayerState, opponent: PlayerState,
-		card: Dictionary, source: Source, by_effect: bool = true) -> Array[int]:
-	## The zones (0-7) `card` may enter by rule from `source`. An empty
-	## `card` asks for "any card": the card's required zones are not applied.
-	var rules := _rules_for(source, by_effect)
-	var blocked: Array[int] = []
-	if rules & _RULE_OPPONENT_BLOCK:
-		blocked = queries.get_opponent_blocked_zones(opponent.player_id)
+		card: Dictionary, by_effect: bool = true) -> Array[int]:
+	## The zones (0-7) `card` may enter by rule. An empty `card` asks for
+	## "any card": the card's required zones are not applied.
+	var blocked: Array[int] = queries.get_opponent_blocked_zones(opponent.player_id)
 	var required: Array[int] = []
-	if rules & _RULE_REQUIRED and not card.is_empty():
+	if not by_effect and not card.is_empty():
 		required = queries.get_card_required_play_zones(player.player_id, card)
 	var legal: Array[int] = []
 	for zone_idx in range(8):
-		if rules & _RULE_MONSTER_ZONE and zone_idx == player.monster_zone - 1:
+		if zone_idx == player.monster_zone - 1:
 			continue
 		if zone_idx in blocked:
 			continue
@@ -73,24 +67,22 @@ static func rule_legal_zones(queries: EffectQueries, player: PlayerState, oppone
 
 
 static func is_rule_legal(queries: EffectQueries, player: PlayerState, opponent: PlayerState,
-		card: Dictionary, zone_idx: int, source: Source, by_effect: bool = true) -> bool:
-	## Whether `card` may enter `zone_idx` by rule from `source` (cost
-	## legality is RulesEngine's). Pure: reads state through `queries`.
-	if _rules_for(source, by_effect) == 0:
-		return true
-	return zone_idx in rule_legal_zones(queries, player, opponent, card, source, by_effect)
+		card: Dictionary, zone_idx: int, by_effect: bool = true) -> bool:
+	## Whether `card` may enter `zone_idx` by rule (cost legality is
+	## RulesEngine's). Pure: reads state through `queries`.
+	return zone_idx in rule_legal_zones(queries, player, opponent, card, by_effect)
 
 
-func can_enter(player_id: int, card: Dictionary, zone_idx: int, source: Source, by_effect: bool = true) -> bool:
+func can_enter(player_id: int, card: Dictionary, zone_idx: int, by_effect: bool = true) -> bool:
 	## `is_rule_legal` for `player_id` on the live state.
 	return is_rule_legal(h.queries, game_state.players[player_id], game_state.players[1 - player_id],
-			card, zone_idx, source, by_effect)
+			card, zone_idx, by_effect)
 
 
-func legal_zones(player_id: int, card: Dictionary, source: Source, by_effect: bool = true) -> Array[int]:
+func legal_zones(player_id: int, card: Dictionary, by_effect: bool = true) -> Array[int]:
 	## `rule_legal_zones` for `player_id` on the live state.
 	return rule_legal_zones(h.queries, game_state.players[player_id], game_state.players[1 - player_id],
-			card, source, by_effect)
+			card, by_effect)
 
 
 func enter(player_id: int, card: Dictionary, zone_idx: int, source: Source,
@@ -112,11 +104,11 @@ func enter(player_id: int, card: Dictionary, zone_idx: int, source: Source,
 	## GameEvents.battle_card_played + hand_changed (the Play action);
 	## zones_changed; one log_message (Play action, effect hand play, Evolve).
 	## Returns false when the zone is rule-illegal for the source: nothing
-	## enters, the card stays in its area (a deck card goes back on the deck
-	## bottom).
+	## enters, the card stays in its area (a deck or Evolve card goes back
+	## on the deck bottom).
 	var player := game_state.players[player_id]
-	if by_effect and not can_enter(player_id, card, zone_idx, source):
-		if source == Source.DECK and not player.main_deck.has(card):
+	if by_effect and not can_enter(player_id, card, zone_idx):
+		if (source == Source.DECK or source == Source.EVOLUTION) and not player.main_deck.has(card):
 			player.main_deck.append(card)
 			player.deck_changed.emit()
 		return false
@@ -124,7 +116,7 @@ func enter(player_id: int, card: Dictionary, zone_idx: int, source: Source,
 	_take_from_area(player, card, source)
 
 	var entries: Array = []
-	if not _stacks_on_entry(player, card, zone_idx, source, by_effect, stack_on_top):
+	if not _stacks_on_entry(player, card, zone_idx, source, stack_on_top):
 		entries.append_array(h.destroy(player, zone_idx, DestructionEngine.Cause.OVERLOAD).entries)
 
 	if source == Source.EVOLUTION:
@@ -173,22 +165,25 @@ func _take_from_area(player: PlayerState, card: Dictionary, source: Source) -> v
 
 
 func _stacks_on_entry(player: PlayerState, card: Dictionary, zone_idx: int, source: Source,
-		by_effect: bool, stack_on_top: bool) -> bool:
+		stack_on_top: bool) -> bool:
 	## Whether the card goes on top of the zone's stack instead of
-	## overloading it: Evolve always, "play it on top of" effects, and — for
-	## the Play action — a stack-on-play card (Godzilla Jr. on Little Godzilla).
+	## overloading it: Evolve always, "play it on top of" effects, and a
+	## stack-on-play card (Godzilla Jr. on Little Godzilla), whether the Play
+	## action or an effect plays it.
 	if source == Source.EVOLUTION or stack_on_top:
 		return true
-	if not by_effect and player.zone_has_cards(zone_idx):
+	if player.zone_has_cards(zone_idx):
 		return h.should_stack_on_play(player.player_id, card, zone_idx)
 	return false
 
 
 func _fires_played(card: Dictionary, source: Source) -> bool:
-	## "Whenever … plays a battle card" watchers: hand, deck, Evolve, and
-	## battle tokens. A play from the discard pile does not fire them yet.
+	## "Whenever … plays a battle card" (…が出現するたび) watchers: every
+	## play — hand, deck, discard pile, Evolve, and battle tokens. Evolve
+	## plays from the deck (Q176: "山札から…重ねて出現させる"), so it counts
+	## as played from the deck for EBP04-028 / EBP04-072.
 	match source:
-		Source.HAND, Source.DECK, Source.EVOLUTION:
+		Source.HAND, Source.DECK, Source.DISCARD, Source.EVOLUTION:
 			return true
 		Source.TOKEN:
 			return card.get("card_type") == CardEnums.CardType.BATTLE

@@ -19,10 +19,12 @@ a check in `scripts/tools/` instead (see its README) and does not belong here.
   README primitives table gains a row for it.
 - **Rule-number citations.** Engine code implementing a comprehensive-rules
   clause cites the number (`10.4.3`) so the next reader can look it up.
-- **Rulings match.** A diff touching a card's script is checked against that
-  card's rulings (`grep -A2 '<card id>' comprehensive_rules/qa.txt`): the
-  behaviour agrees with each one, and a test pinning an edge case cites its
-  Q number.
+- **Rulings match.** A diff that changes a card's behaviour — its script, or
+  an engine change whose tests or ticket name the card — is checked against
+  that card's rulings (`grep -A2 '<card id>' comprehensive_rules/qa.txt`):
+  the behaviour agrees with each one, and a test pinning an edge case cites
+  its Q number. Where the English wording decides the outcome, the Japanese
+  originals rule (`qa-ja.txt`, `rules-ja.txt`; ids drop the `E`).
 
 ## Evidence
 

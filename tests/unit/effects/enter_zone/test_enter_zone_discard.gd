@@ -2,8 +2,8 @@ extends GdUnitTestSuite
 
 ## EnterZone, discard source: an effect plays a battle card from the discard
 ## pile. It leaves the pile, overloads the zone and fires <Enter> as an
-## effect play. Current behaviour, pinned: the "when played" watchers do not
-## fire for it yet (the next ticket adds them).
+## effect play, and — being a play — the "when played" watchers
+## (played_from_deck = false).
 
 const States := preload("res://tests/fixtures/states.gd")
 const Probe := preload("res://tests/fixtures/effects/enter_zone_probe.gd")
@@ -51,7 +51,7 @@ func _resolve(s: Dictionary) -> Array:
 	return s["probe"].seen
 
 
-func test_a_discard_play_leaves_the_pile_overloads_and_fires_enter() -> void:
+func test_a_discard_play_leaves_the_pile_overloads_and_fires_enter_and_played() -> void:
 	var card := Probe.card("NEW")
 	var s := _setup({"zone_cards": {ZONE: Probe.card("OLD")}})
 	var p0: PlayerState = s["state"].players[0]
@@ -62,7 +62,8 @@ func test_a_discard_play_leaves_the_pile_overloads_and_fires_enter() -> void:
 	assert_bool(p0.discard_pile.has(card)).is_false()
 	assert_dict(p0.get_zone_top_card(ZONE)).is_equal(card)
 	assert_array(await _resolve(s)).contains_exactly_in_any_order([
-			"leave:OLD:%d" % ZONE, "enter:NEW:effect=true:evo=false"])
+			"leave:OLD:%d" % ZONE, "enter:NEW:effect=true:evo=false",
+			"played@WATCH:%d:deck=false" % ZONE])
 	_teardown(s)
 
 

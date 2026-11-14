@@ -425,7 +425,10 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 	## Perform Evolution on the battle card in the given zone.
 	## Reads evolution_rank and evolution_trait from the zone's top card,
 	## searches deck for a matching battle card, and stacks it on top.
-	## Returns true if evolution occurred.
+	## Evolve is a play from the deck: it fires <Enter> and the "when played"
+	## watchers (played_from_deck=true). Returns true if evolution occurred;
+	## false, without searching, for a zone it can't be played into (the
+	## monster's zone, a zone the opponent blocks — EnterZone).
 	var player := game_state.players[player_id]
 	var zone_card := player.get_zone_top_card(zone_idx)
 	if zone_card.is_empty():
@@ -434,6 +437,10 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 	var evo_rank: int = zone_card.get("evolution_rank", -1)
 	var evo_trait: int = zone_card.get("evolution_trait", -1)
 	if evo_rank < 0 or evo_trait < 0:
+		return false
+	# Evolve is a play (出現): a zone it can't be played into (the monster's
+	# zone, an EBP02-055 block — Q270) evolves nothing, so skip the search.
+	if not h.enter_zone.can_enter(player_id, {}, zone_idx):
 		return false
 
 	var selected := await search_deck(
@@ -451,9 +458,9 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 	if selected.is_empty():
 		return false
 
-	# The evolved card appears on top (5.17); it marks itself as played
-	# through evolution (e.g. ESD02-010) and, pulled from the deck, fires
-	# on_battle_card_played with played_from_deck=true (EBP04-028, EBP04-072).
+	# The evolved card is played on top from the deck (5.17.1, Q176); it
+	# marks itself as played through evolution (e.g. ESD02-010) and fires
+	# the "when played" watchers as a deck play (EBP04-028, EBP04-072).
 	return h.enter_zone.enter(player_id, selected, zone_idx, EnterZone.Source.EVOLUTION)
 
 
@@ -484,23 +491,25 @@ func evolve_zones_in_order(player_id: int, eligible_zones: Array[int]) -> void:
 
 
 func can_play_in_zone(player_id: int, zone_idx: int) -> bool:
-	## Play-zone legality (5.11.1.1): an effect can't play a battle card or
-	## token into the zone holding its master's invading monster — the card
-	## is not played. Every play primitive below enforces this; card scripts
-	## use it to offer only legal zones instead of checking monster_zone.
-	## Every effect-play source shares one rule set today (EnterZone).
-	return h.enter_zone.can_enter(player_id, {}, zone_idx, EnterZone.Source.HAND)
+	## Play-zone legality for an effect play: not the zone holding its
+	## master's invading monster (5.11.1.1), nor a zone the opponent blocks
+	## (EBP02-055) — the card is not played. Every play primitive below
+	## enforces this; card scripts use it to offer only legal zones instead
+	## of checking monster_zone. Every source shares one rule set (EnterZone).
+	return h.enter_zone.can_enter(player_id, {}, zone_idx)
 
 
 
 
 func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int) -> bool:
 	## Create a token from CardData template and place it in the given zone.
-	## Handles overload if zone is occupied. Returns true if token was placed;
-	## false (not played, 5.11.1.1) for the monster's zone.
+	## Handles overload if zone is occupied; a battle token fires <Enter> and
+	## the "when played" watchers (5.11.4). Returns true if token was placed;
+	## false (not played) for the monster's zone (5.11.1.1) or a zone the
+	## opponent blocks (EBP02-055).
 	# Checked before the template is copied, so a refused token never takes
 	# an instance serial.
-	if not h.enter_zone.can_enter(player.player_id, {}, zone_index, EnterZone.Source.TOKEN):
+	if not h.enter_zone.can_enter(player.player_id, {}, zone_index):
 		return false
 	var token_data: Dictionary = CardData.get_card_by_id(token_id)
 	if token_data.is_empty():
@@ -689,11 +698,12 @@ func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
 # --- Helpers for card placement and movement ---
 
 func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1) -> int:
-	## Remove a card from the discard pile and play it into a zone.
+	## Remove a card from the discard pile and play it into a zone: overload
+	## or stack-on-play, then <Enter> and the "when played" watchers.
 	## If zone_idx is -1, the player selects an available zone.
 	## Returns the zone index where the card was placed, or -1 if cancelled
-	## or zone_idx is the monster's zone (not played, 5.11.1.1 — the card
-	## stays in the discard pile).
+	## or zone_idx can't be played into — the monster's zone (5.11.1.1) or a
+	## zone the opponent blocks (EBP02-055); the card stays in the discard pile.
 	if zone_idx >= 0:
 		var played := h.enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DISCARD)
 		return zone_idx if played else -1
@@ -707,7 +717,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 			break
 	player.discard_changed.emit()
 
-	var valid_zones := h.enter_zone.legal_zones(player_id, card_data, EnterZone.Source.DISCARD)
+	var valid_zones := h.enter_zone.legal_zones(player_id, card_data)
 	var card_name: String = card_data.get("name", "card")
 	zone_idx = await h.select_zone_target(player_id, player_id, valid_zones, tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_name, false, CardUtils.base_id(card_data))
 	if zone_idx < 0:
@@ -726,7 +736,7 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 	## the card from discard there. If the player skips or no zones are valid,
 	## the card stays in discard and -1 is returned.
 	## zone_filter is an optional Callable(zone_idx: int) -> bool to restrict
-	## valid placement zones; if omitted, any non-monster zone is valid.
+	## valid placement zones; if omitted, any zone can_play_in_zone allows.
 	var player := game_state.players[player_id]
 	var valid_zones: Array[int] = []
 	for i in range(8):
@@ -753,8 +763,8 @@ func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx:
 	## "add it to your hand... you may play it" effects (e.g. EBP04-077) so the
 	## card's hand stop stays observable to sequencing-sensitive triggers —
 	## don't stage the card in the discard pile to reuse play_from_discard.
-	## Returns false (not played, 5.11.1.1 — the card stays in hand) for the
-	## monster's zone.
+	## Returns false (not played — the card stays in hand) for the monster's
+	## zone (5.11.1.1) or a zone the opponent blocks (EBP02-055).
 	return h.enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.HAND)
 
 
@@ -768,8 +778,8 @@ func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx:
 	## Pass stack_on_top=true for "play on top of" effects (e.g. Star Falcon placing a
 	## Moguera card on top of Land Moguera) so the existing stack is preserved instead of
 	## overloaded/discarded.
-	## Returns false for the monster's zone: not played (5.11.1.1), so the card
-	## stays in the deck. Callers have usually taken it out already, so it goes
+	## Returns false for the monster's zone (5.11.1.1) or a zone the opponent
+	## blocks (EBP02-055): not played, so the card stays in the deck. Callers have usually taken it out already, so it goes
 	## back on the bottom (the effect's own shuffle, if any, still follows).
 	return h.enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DECK, true, stack_on_top)
 
