@@ -95,14 +95,13 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 		var m: Dictionary = opponent.monster_deck[chosen_index]
 		var old_monster: Dictionary = opponent.current_monster
 		if not old_monster.is_empty():
-			opponent.monster_stack.push_front(old_monster)
-		opponent.current_monster = m
-		opponent.monster_deck.erase(m)
+			opponent.push_under_monster(old_monster)
+		opponent.remove_from_monster_deck(m)
+		opponent.set_current_monster(m)
 		# Rage carries over on counter rank-up — the start-phase reset on the
 		# countered player's next turn handles the decrease (and lets watchers
 		# like EBP04-089, which gate to "<Your Turn>", claim the markers).
 		events.monster_countered.emit(opponent.player_id, old_monster, m)
-		opponent.monster_changed.emit()
 		if effect_handler:
 			dispatcher.trigger_enter(opponent.player_id, m, true)
 	else:

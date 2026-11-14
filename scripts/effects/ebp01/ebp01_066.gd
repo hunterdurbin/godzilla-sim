@@ -20,8 +20,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_discard_from_hand(ctx: EffectContext) -> void:
-	ctx.owner.rage += 2
-	ctx.owner.rage_changed.emit(ctx.owner.rage)
+	ctx.owner.set_rage(ctx.owner.rage + 2)
 	ctx.effect_handler.log_message.emit(
 		GameLog.effect_gained_rage(ctx.owner.player_id, ctx.card_data.get("id", ""), ctx.owner.rage, 2)
 	)

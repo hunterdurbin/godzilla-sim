@@ -49,9 +49,10 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	## cause: Crush and Overload are <Destroy> (11.3.3, 11.5.1).
 	## Otherwise the stack goes to the discard and the top card counts as
 	## destroyed this turn. Leave-play enters the entries for every cause.
-	## Signals: replaced → zones_changed, deck_changed, discard_changed;
-	## destroyed → zones_changed (not for OVERLOAD: the caller emits it once
-	## the incoming card is placed) and discard_changed, plus
+	## Signals (PlayerState mutators, as each change happens): replaced →
+	## zones_changed, discard_changed (when cards were under it),
+	## deck_changed; destroyed → zones_changed (every cause, OVERLOAD
+	## included) and discard_changed (unless only tokens left), then
 	## GameEvents.battle_card_crushed for CRUSH. EFFECT also logs the destroy
 	## and emits EffectHandler.card_destroyed, replaced or not.
 	## Synchronous and never prompts: nothing resolves here — the triggered
@@ -70,11 +71,6 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 		target.cards_destroyed_this_turn.append(top_card)
 		if cause == Cause.CRUSH and events:
 			events.battle_card_crushed.emit(target.player_id, zone_idx, top_card)
-		# Overload: the caller emits zones_changed once the incoming card is
-		# in the zone.
-		if cause != Cause.OVERLOAD:
-			target.zones_changed.emit()
-		target.discard_changed.emit()
 	# Crush has its own notification (battle_card_crushed, above); an overload
 	# is logged as the play that caused it.
 	if cause == Cause.EFFECT:
@@ -114,12 +110,8 @@ func _apply_destroy_replacement(target: PlayerState, zone_idx: int, top_card: Di
 	if not effect.on_would_be_destroyed(_build_context(target.player_id, top_card)):
 		return false
 	var replaced_stack: Array = target.clear_zone(zone_idx)
-	if replaced_stack.size() > 1:
-		CardMover.banish_or_discard(target, replaced_stack.slice(1))
-	target.main_deck.append(top_card)
-	target.zones_changed.emit()
-	target.deck_changed.emit()
-	target.discard_changed.emit()
+	CardMover.banish_or_discard(target, replaced_stack.slice(1))
+	target.put_on_deck_bottom(top_card)
 	return true
 
 
@@ -312,9 +304,6 @@ func _destroy_zones_batch(target: PlayerState, zone_indices: Array[int]) -> Dict
 		results.append(outcome.card)
 		if not outcome.replaced:
 			destroyed.append(outcome.card)
-	if not results.is_empty():
-		target.zones_changed.emit()
-		target.discard_changed.emit()
 	return {"results": results, "destroyed": destroyed, "deferred": deferred}
 
 
@@ -527,12 +516,10 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 		return {}
 	if not bypass_protection and not _can_destroy_card(player, card):
 		return {}
-	player.strategy_zones[zone_index] = {}
-	# Clear any cards stacked under this strategy (e.g. EBP04-089's RAGE markers).
-	# RAGE markers never enter the discard pile, so they are dropped, not discarded;
-	# the only other under-stack user (EBP03-013) never places real cards there.
-	if zone_index < player.strategy_zone_stacks.size():
-		player.strategy_zone_stacks[zone_index] = []
+	# Also drops any cards stacked under this strategy (e.g. EBP04-089's RAGE
+	# markers): they never enter the discard pile; the only other under-stack
+	# user (EBP03-013) never places real cards there.
+	player.clear_strategy_zone(zone_index)
 
 	var intercept_zone := get_strategy_discard_interceptor(player_id)
 	var intercepted: bool = intercept_zone >= 0
@@ -548,12 +535,9 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 				_build_context(player_id, interceptor_card), card)
 
 	if intercepted:
-		player.zones[intercept_zone].append(card)
-		player.zones_changed.emit()
+		player.add_card_under_zone(intercept_zone, card)
 	else:
 		CardMover.banish_or_discard(player, [card])
-		player.discard_changed.emit()
-	player.strategy_zones_changed.emit()
 
 	# Replacement means it wasn't truly discarded — skip discard triggers
 	if not intercepted:

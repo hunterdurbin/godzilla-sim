@@ -8,9 +8,11 @@ entries and decides victory through invasion (5.13.1.1.2). A hand-written
 `x.monster_zone = ...` skips all of that. Call a MonsterMover operation
 instead (or add one).
 
-Flags a `.monster_zone` assignment (`=`, `+=`, `-=`, ...) anywhere under
-scripts/ or scenes/ outside MonsterMover and the ALLOWED files below, which
-write it outside play. Tests (tests/) may set it directly to build fixtures.
+Flags a `.monster_zone` assignment (`=`, `+=`, `-=`, ...) or a
+`.set_monster_zone(` call (the PlayerState mutator MonsterMover moves through)
+anywhere under scripts/ or scenes/ outside MonsterMover and the ALLOWED files
+below, which write it outside play. Tests (tests/) may set it directly to
+build fixtures.
 
 Usage: python3 scripts/tools/check_monster_zone_writers.py
 """
@@ -30,8 +32,9 @@ ALLOWED = {
     "scripts/bot/bot_combo_shin.gd": "bot planning: temporary write, restored",
     "scenes/board/modules/first_player_ui.gd": "preview state, not the match",
     "scripts/tools/board_editor.gd": "F4 board editor dev tool",
+    "scenes/board/overlays/board_editor_overlay.gd": "F4 board editor UI (BoardEditor.set_monster_zone)",
 }
-WRITE_RE = re.compile(r"\.monster_zone\s*[-+*/]?=(?!=)")
+WRITE_RE = re.compile(r"\.monster_zone\s*[-+*/]?=(?!=)|\.\s*set_monster_zone\s*\(")
 
 
 def gd_files():
@@ -57,6 +60,9 @@ def self_test():
         ("scripts/core/actions/counter_resolver.gd", "\ttarget.monster_zone -= 1"): True,
         ("scripts/core/match_factory.gd", "\tstate.players[0].monster_zone = 1"): True,
         (MOVER, "\tplayer.monster_zone += 1"): False,
+        ("scripts/core/actions/phase_actions.gd", "\tplayer.set_monster_zone(4)"): True,
+        (MOVER, "\tplayer.set_monster_zone(old_zone + 1)"): False,
+        ("scripts/core/player_state.gd", "func set_monster_zone(zone: int) -> void:"): False,
         ("scripts/session/state_codec.gd", "\tps.monster_zone = 3"): False,
         ("scripts/core/rules_engine.gd", "\tif player.monster_zone == 8:"): False,
         ("scripts/core/rules_engine.gd", "\tif player.monster_zone >= 6:"): False,

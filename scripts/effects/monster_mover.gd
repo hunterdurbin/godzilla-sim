@@ -39,7 +39,7 @@ extends EffectModule
 func place_at_start(player_id: int, zone: int) -> void:
 	## Put the monster in its starting zone at match setup. Not a move: no
 	## events, no Crush.
-	game_state.players[player_id].monster_zone = zone
+	game_state.players[player_id].set_monster_zone(zone)
 
 
 func advance(player_id: int, steps: int, from_invasion: bool, entries: Array) -> bool:
@@ -50,9 +50,8 @@ func advance(player_id: int, steps: int, from_invasion: bool, entries: Array) ->
 	## at zone 8 moves past it when the opponent's zone 8 holds no battle
 	## card — victory through invasion (5.13.1.1.2), returned as true — and
 	## otherwise stops.
-	## Every step emits GameEvents.monster_advanced. An invasion emits the
-	## monster's `monster_changed` only on the victory step — the invasion
-	## resolver emits it once after movement.
+	## Every step emits `monster_changed` (PlayerState.set_monster_zone),
+	## then GameEvents.monster_advanced.
 	var player := game_state.players[player_id]
 	for _step in range(steps):
 		if player.monster_zone >= 8:
@@ -62,18 +61,15 @@ func advance(player_id: int, steps: int, from_invasion: bool, entries: Array) ->
 			if opponent.zone_has_battle_card(7):  # Zone 8 = index 7
 				return false
 			var last_zone: int = player.monster_zone
-			player.monster_zone = 9  # Past zone 8
+			player.set_monster_zone(9)  # Past zone 8
 			_emit_advanced(player_id, last_zone, player.monster_zone)
-			player.monster_changed.emit()
 			entries.append_array(dispatcher.collect_when_invading_entries(player_id, last_zone, player.monster_zone))
 			return true
 		var old_zone: int = player.monster_zone
-		player.monster_zone += 1
+		player.set_monster_zone(old_zone + 1)
 		_emit_advanced(player_id, old_zone, player.monster_zone)
 		if from_invasion:
 			entries.append_array(dispatcher.collect_when_invading_entries(player_id, old_zone, player.monster_zone))
-		else:
-			player.monster_changed.emit()
 		entries.append_array(dispatcher.collect_monster_advance_entries(player_id, old_zone, player.monster_zone))
 		if action_handler:
 			check_timing.check_crush_rule(entries)
@@ -91,14 +87,13 @@ func advance_to_zone(player_id: int, target_zone: int, entries: Array) -> void:
 func retreat_to_zone(player_id: int, target_zone: int, entries: Array) -> void:
 	## Retreat one zone at a time down to `target_zone`, running Crush per
 	## step (its entries join `entries`). Retreating is not advancing: no
-	## advance triggers. Emits GameEvents.monster_advanced (a downward
-	## move) and `monster_changed` per step.
+	## advance triggers. Emits `monster_changed` and
+	## GameEvents.monster_advanced (a downward move) per step.
 	var player := game_state.players[player_id]
 	while player.monster_zone > target_zone:
 		var old_zone: int = player.monster_zone
-		player.monster_zone -= 1
+		player.set_monster_zone(old_zone - 1)
 		_emit_advanced(player_id, old_zone, player.monster_zone)
-		player.monster_changed.emit()
 		if action_handler:
 			check_timing.check_crush_rule(entries)
 
@@ -109,12 +104,11 @@ func teleport(player_id: int, target_zone: int) -> void:
 	## rule action (11.1.2.1) — and the abilities it triggers enter standby
 	## (10.6.2). Crush checks the moved player only: no other monster moved,
 	## and no entry can put a card in a monster's zone. Emits
-	## GameEvents.monster_advanced, then `monster_changed`.
+	## `monster_changed`, then GameEvents.monster_advanced.
 	var player := game_state.players[player_id]
 	var old_zone: int = player.monster_zone
-	player.monster_zone = target_zone
+	player.set_monster_zone(target_zone)
 	_emit_advanced(player_id, old_zone, player.monster_zone)
-	player.monster_changed.emit()
 	check_timing.crush_now(player_id)
 
 

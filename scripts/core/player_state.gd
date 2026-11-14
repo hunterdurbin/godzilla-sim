@@ -1,18 +1,14 @@
 class_name PlayerState
 extends RefCounted
 
+# Change signals: emitted only by this class, by the mutator that made the
+# change, immediately (no batching). Subscribed by GameBoard / HeadlessBoard
+# (state sync) and TurnManager (hand_changed).
 signal hand_changed()
-## Emitted by action_handler when battle zones change; subscribed by game_board.
-@warning_ignore("unused_signal")
 signal zones_changed()
-## Emitted by action_handler / effect_handler when current_monster changes; subscribed by game_board.
-@warning_ignore("unused_signal")
+## The monster card, the cards under it, or the monster deck changed.
 signal monster_changed()
-## Emitted by action_handler when rage changes; subscribed by game_board.
-@warning_ignore("unused_signal")
 signal rage_changed(new_rage: int)
-## Emitted by action_handler when strategy zones change; subscribed by game_board.
-@warning_ignore("unused_signal")
 signal strategy_zones_changed()
 signal deck_changed()
 signal discard_changed()
@@ -82,14 +78,260 @@ func get_zone_stack(i: int) -> Array:
 	return zones[i]
 
 
+# --- Mutators ---
+# Engine code (scripts/core/, scripts/effects/) changes the player's areas only
+# through these methods (and draw_cards / mill_cards / _reshuffle_discard).
+# Each call emits its *_changed signal before returning; a bulk mutator
+# (add_cards_to_*, put_cards_on_deck_*) emits once for its batch. Callers never
+# emit by hand and never hold a signal back across calls
+# (scripts/tools/check_card_mutations.py).
+
 func push_zone_card(i: int, card: Dictionary) -> void:
+	## Put a card on top of zone i's stack.
 	zones[i].push_front(card)
+	zones_changed.emit()
+
+
+func add_card_under_zone(i: int, card: Dictionary) -> void:
+	## Put a card at the bottom of zone i's stack.
+	zones[i].append(card)
+	zones_changed.emit()
 
 
 func clear_zone(i: int) -> Array:
+	## Empty zone i and return its stack (top first).
 	var stack: Array = zones[i].duplicate()
 	zones[i] = []
+	zones_changed.emit()
 	return stack
+
+
+func remove_cards_under_top(i: int) -> Array:
+	## Strip the cards under zone i's top card and return them (top first);
+	## the top card stays. Emits nothing when there are none.
+	if zones[i].size() <= 1:
+		return []
+	var under: Array = zones[i].slice(1)
+	zones[i] = [zones[i][0]]
+	zones_changed.emit()
+	return under
+
+
+func swap_zone_stacks(a: int, b: int) -> void:
+	## Exchange the whole stacks of zones a and b.
+	var stack_a: Array = zones[a]
+	zones[a] = zones[b]
+	zones[b] = stack_a
+	zones_changed.emit()
+
+
+func move_zone_stack(from_zone: int, to_zone: int) -> void:
+	## Move zone from_zone's whole stack onto to_zone, replacing what is there
+	## (the caller overloads the destination first).
+	var stack: Array = zones[from_zone]
+	zones[from_zone] = []
+	zones[to_zone] = stack
+	zones_changed.emit()
+
+
+func add_to_hand(card: Dictionary) -> void:
+	## Append a card to the end of the hand.
+	hand.append(card)
+	hand_changed.emit()
+
+
+func add_cards_to_hand(cards: Array) -> void:
+	if cards.is_empty():
+		return
+	hand.append_array(cards)
+	hand_changed.emit()
+
+
+func insert_into_hand(index: int, card: Dictionary) -> void:
+	## Put a card back at a hand position (a cancelled play / cost).
+	hand.insert(index, card)
+	hand_changed.emit()
+
+
+func remove_hand_card_at(index: int) -> Dictionary:
+	## Take the card at a hand index out of the hand and return it.
+	var card: Dictionary = hand.pop_at(index)
+	hand_changed.emit()
+	return card
+
+
+func remove_from_hand(card: Dictionary) -> bool:
+	## Remove the first hand card equal to `card`; false (no signal) if absent.
+	var i: int = hand.find(card)
+	if i < 0:
+		return false
+	hand.remove_at(i)
+	hand_changed.emit()
+	return true
+
+
+func add_to_discard(card: Dictionary) -> void:
+	discard_pile.append(card)
+	discard_changed.emit()
+
+
+func add_cards_to_discard(cards: Array) -> void:
+	if cards.is_empty():
+		return
+	discard_pile.append_array(cards)
+	discard_changed.emit()
+
+
+func remove_discard_card_at(index: int) -> Dictionary:
+	var card: Dictionary = discard_pile.pop_at(index)
+	discard_changed.emit()
+	return card
+
+
+func remove_from_discard(card: Dictionary) -> bool:
+	## Remove the first discard card equal to `card`; false (no signal) if absent.
+	var i: int = discard_pile.find(card)
+	if i < 0:
+		return false
+	discard_pile.remove_at(i)
+	discard_changed.emit()
+	return true
+
+
+func set_main_deck(cards: Array) -> void:
+	## Replace the main deck (match setup).
+	main_deck.assign(cards)
+	deck_changed.emit()
+
+
+func take_deck_top_cards(count: int) -> Array[Dictionary]:
+	## Take up to `count` cards off the top of the deck, top first (fewer if
+	## it runs out; no reshuffle). Emits nothing when nothing was taken.
+	var taken: Array[Dictionary] = []
+	while taken.size() < count and not main_deck.is_empty():
+		taken.append(main_deck.pop_front())
+	if not taken.is_empty():
+		deck_changed.emit()
+	return taken
+
+
+func remove_deck_card_at(index: int) -> Dictionary:
+	var card: Dictionary = main_deck.pop_at(index)
+	deck_changed.emit()
+	return card
+
+
+func put_on_deck_top(card: Dictionary) -> void:
+	main_deck.push_front(card)
+	deck_changed.emit()
+
+
+func put_cards_on_deck_top(cards: Array) -> void:
+	## Put cards on top of the deck so cards[0] ends up on top.
+	if cards.is_empty():
+		return
+	for i in range(cards.size() - 1, -1, -1):
+		main_deck.push_front(cards[i])
+	deck_changed.emit()
+
+
+func put_on_deck_bottom(card: Dictionary) -> void:
+	main_deck.append(card)
+	deck_changed.emit()
+
+
+func put_cards_on_deck_bottom(cards: Array) -> void:
+	if cards.is_empty():
+		return
+	main_deck.append_array(cards)
+	deck_changed.emit()
+
+
+func shuffle_deck() -> void:
+	## Shuffle with the global RNG (seeded sims and replays rely on it).
+	main_deck.shuffle()
+	deck_changed.emit()
+
+
+func set_monster_deck(cards: Array) -> void:
+	## Replace the monster deck (match setup).
+	monster_deck.assign(cards)
+	monster_changed.emit()
+
+
+func remove_from_monster_deck(card: Dictionary) -> bool:
+	var i: int = monster_deck.find(card)
+	if i < 0:
+		return false
+	monster_deck.remove_at(i)
+	monster_changed.emit()
+	return true
+
+
+func set_current_monster(card: Dictionary) -> void:
+	current_monster = card
+	monster_changed.emit()
+
+
+func push_under_monster(card: Dictionary) -> void:
+	## Put a card directly under the monster card (monster_stack front).
+	monster_stack.push_front(card)
+	monster_changed.emit()
+
+
+func add_cards_under_monster(cards: Array) -> void:
+	## Put cards at the bottom of the monster stack.
+	if cards.is_empty():
+		return
+	monster_stack.append_array(cards)
+	monster_changed.emit()
+
+
+func pop_under_monster() -> Dictionary:
+	## Take the card directly under the monster card ({} when none).
+	if monster_stack.is_empty():
+		return {}
+	var card: Dictionary = monster_stack.pop_front()
+	monster_changed.emit()
+	return card
+
+
+func set_monster_zone(zone: int) -> void:
+	## Move the monster card to a zone number (1-8, 9 = past zone 8). Only
+	## MonsterMover calls this: it runs Crush and the advance / invasion
+	## entries per step (scripts/tools/check_monster_zone_writers.py).
+	monster_zone = zone
+	monster_changed.emit()
+
+
+func set_rage(value: int) -> void:
+	## Set rage; emits rage_changed(value). Rage triggers are the caller's
+	## (EffectHandler.gain_rage / reduce_rage dispatch them).
+	rage = value
+	rage_changed.emit(rage)
+
+
+func place_strategy(i: int, card: Dictionary, turn_number: int) -> void:
+	## Occupy strategy zone i, stamping the turn it was placed (7.2.3).
+	strategy_zones[i] = card
+	strategy_zone_turn_placed[i] = turn_number
+	strategy_zones_changed.emit()
+
+
+func add_card_under_strategy(i: int, card: Dictionary) -> void:
+	strategy_zone_stacks[i].append(card)
+	strategy_zones_changed.emit()
+
+
+func clear_strategy_zone(i: int) -> Dictionary:
+	## Empty strategy zone i and drop the cards stacked under it (RAGE
+	## markers never enter the discard pile). Returns the strategy card.
+	var card: Dictionary = strategy_zones[i]
+	strategy_zones[i] = {}
+	if i < strategy_zone_stacks.size():
+		strategy_zone_stacks[i] = []
+	strategy_zones_changed.emit()
+	return card
 
 
 func get_threat_level() -> int:

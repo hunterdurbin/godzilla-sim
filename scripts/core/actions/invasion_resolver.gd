@@ -40,7 +40,7 @@ func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 	## "deferred_entries": Array}; on an invade1 block the card returns to
 	## hand and paid is false.
 	var player := state.get_current_player()
-	var card: Dictionary = player.hand.pop_at(hand_index)
+	var card: Dictionary = player.remove_hand_card_at(hand_index)
 	var advance_amount: int = card.get("invasion_icon", 0)
 	player.has_invaded_this_turn = true
 	player.last_invasion_card = card
@@ -50,7 +50,7 @@ func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 		# Card stays in hand — return it and abort invasion. Emit play_cancelled
 		# so the UI restores the dragged card's hand position (matches the
 		# monster-cost-cancelled flow in play_monster).
-		player.hand.insert(hand_index, card)
+		player.insert_into_hand(hand_index, card)
 		player.has_invaded_this_turn = false
 		effect_handler.log_message.emit(tr("STR_AH_INVADE1_BLOCKED"))
 		events.play_cancelled.emit(player.player_id)
@@ -66,15 +66,13 @@ func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 		)
 		if choice == 0 and not player.main_deck.is_empty():
 			# Mill from deck; return invasion card to hand
-			player.hand.insert(hand_index, card)
+			player.insert_into_hand(hand_index, card)
 			player.mill_cards(1)
 			replaced_cost = true
 
 	if not replaced_cost:
-		player.discard_pile.append(card)
+		player.add_to_discard(card)
 		events.card_discarded.emit(player.player_id, card)
-		player.hand_changed.emit()
-		player.discard_changed.emit()
 
 	# Log the invade action right after the cost is paid, before movement and triggered
 	# effects fire, so the log reads in causal order (action announced first, then effects).
@@ -118,7 +116,3 @@ func _post_movement(state: GameState, start_zone: int, deferred_entries: Array) 
 	# complete; they resolve at the check timing after the action (10.4.4.1).
 	if effect_handler:
 		check_timing.submit(deferred_entries)
-
-	player.hand_changed.emit()
-	player.monster_changed.emit()
-	player.discard_changed.emit()

@@ -47,8 +47,7 @@ func execute_start_phase_reset(state: GameState) -> void:
 	# Reset rage to 0, allowing effects to intercept (e.g. EBP04-010)
 	var old_rage: int = player.rage
 	var new_rage: int = await dispatcher.apply_rage_reset(player.player_id)
-	player.rage = new_rage
-	player.rage_changed.emit(new_rage)
+	player.set_rage(new_rage)
 	# Fire rage_changed trigger so cards that watch for rage decrease (EBP04-089)
 	# pick up the start phase reset. Populate the claim bucket on decrease so
 	# they can pop markers as a true resource; the check timing clears leftovers.
@@ -73,15 +72,12 @@ func execute_end_phase_burst_discard(state: GameState) -> void:
 	var player := state.get_current_player()
 	if not player.burst_monster.is_empty():
 		var burst_card: Dictionary = player.burst_monster
-		player.discard_pile.append(burst_card)
-		player.current_monster = player.pre_burst_monster
+		player.add_to_discard(burst_card)
 		# Pop the pre-burst monster off the stack (it was pushed when burst was played)
-		if not player.monster_stack.is_empty():
-			player.monster_stack.pop_front()
+		player.pop_under_monster()
+		player.set_current_monster(player.pre_burst_monster)
 		player.burst_monster = {}
 		player.pre_burst_monster = {}
-		player.monster_changed.emit()
-		player.discard_changed.emit()
 		await dispatcher.trigger_burst_discard(player.player_id, burst_card)
 
 

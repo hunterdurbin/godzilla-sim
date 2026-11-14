@@ -35,5 +35,5 @@ func on_enter(ctx: EffectContext) -> void:
 	if selected.is_empty():
 		return
 
-	ctx.owner.monster_stack.append(selected)
-	ctx.owner.monster_changed.emit()
+	var placed: Array[Dictionary] = [selected]
+	ctx.effect_handler.place_cards_under_monster(ctx.owner.player_id, placed)
