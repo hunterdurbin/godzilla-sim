@@ -35,6 +35,7 @@ var dispatcher: TriggerDispatcher
 var destruction: DestructionEngine
 var mover: CardMover
 var monster_mover: MonsterMover
+var enter_zone: EnterZone
 var queries: EffectQueries
 @warning_ignore("unused_private_class_variable") # written by effects, read by the card-select UI
 var _card_select_pool_filter: Callable = Callable()  # Optional: func(card, selection) -> bool
@@ -71,6 +72,8 @@ func setup(p_game_state: GameState, p_input: PlayerInput = null) -> void:
 	mover.h = self
 	monster_mover = MonsterMover.new()
 	monster_mover.h = self
+	enter_zone = EnterZone.new()
+	enter_zone.h = self
 	queries = EffectQueries.new()
 	queries.h = self
 
@@ -79,7 +82,7 @@ func teardown() -> void:
 	## Break the internal RefCounted reference cycles (module.h -> self,
 	## action_handler <-> self) so the match component graph can be freed
 	## once the owner drops its reference. Idempotent.
-	for m in [dispatcher, destruction, mover, monster_mover, queries]:
+	for m in [dispatcher, destruction, mover, monster_mover, enter_zone, queries]:
 		if m:
 			m.h = null
 	if check_timing:
@@ -89,6 +92,7 @@ func teardown() -> void:
 	destruction = null
 	mover = null
 	monster_mover = null
+	enter_zone = null
 	queries = null
 	action_handler = null
 	events = null
@@ -382,6 +386,10 @@ func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = fa
 	dispatcher.trigger_enter(player_id, card_data, from_effect, through_evolution)
 
 
+func collect_enter_entries(player_id: int, card_data: Dictionary, from_effect: bool = false, through_evolution: bool = false) -> Array:
+	return dispatcher.collect_enter_entries(player_id, card_data, from_effect, through_evolution)
+
+
 func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void:
 	await dispatcher.trigger_when_invading(player_id, from_zone, to_zone)
 
@@ -452,6 +460,10 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 	dispatcher.trigger_battle_card_played(player_id, card_data, zone_index, played_from_deck)
 
 
+func collect_battle_card_played_entries(player_id: int, card_data: Dictionary, zone_index: int, played_from_deck: bool = false) -> Array:
+	return dispatcher.collect_battle_card_played_entries(player_id, card_data, zone_index, played_from_deck)
+
+
 func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
 	dispatcher.trigger_hand_card_discarded(player_id, card_data)
 
@@ -490,6 +502,10 @@ func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_i
 
 func trigger_zone_changed(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> void:
 	dispatcher.trigger_zone_changed(player_id, moved_card, from_zone, to_zone)
+
+
+func collect_zone_changed_entries(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> Array:
+	return dispatcher.collect_zone_changed_entries(player_id, moved_card, from_zone, to_zone)
 
 
 func trigger_all_monster_enter_abilities(player_id: int) -> void:

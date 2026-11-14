@@ -38,6 +38,12 @@ func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = fa
 	## be cleared or a later normal replay would re-fire the gated effect.
 	## The <Enter> ability enters standby and resolves at the next check
 	## timing (10.6.2, 10.4.3), alongside whatever else the play triggered.
+	check_timing.submit(collect_enter_entries(player_id, card_data, from_effect, through_evolution))
+
+
+func collect_enter_entries(player_id: int, card_data: Dictionary, from_effect: bool = false, through_evolution: bool = false) -> Array:
+	## Stamp this entry's play marks on the card (see trigger_enter) and
+	## collect its <Enter> ability, without submitting it.
 	if from_effect:
 		card_data["played_from_effect"] = true
 	else:
@@ -47,15 +53,14 @@ func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = fa
 	else:
 		card_data.erase("played_through_evolution")
 	if not has_trigger(card_data, "on_enter"):
-		return
+		return []
 	if not _passes_enter_filter(card_data):
-		return
+		return []
 	var effect := get_effect(card_data)
 	if not effect:
-		return
-
-	check_timing.submit([StandbyEntry.new(
-			player_id, card_data, effect.on_enter.bind(_build_context(player_id, card_data)))])
+		return []
+	return [StandbyEntry.new(
+			player_id, card_data, effect.on_enter.bind(_build_context(player_id, card_data)))]
 
 
 
@@ -544,6 +549,12 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 	## Trigger on_battle_card_played on all active cards from both players.
 	## played_from_deck: true when the card was played directly from the deck (e.g. via a deck-dig effect).
 	## Both sides are checked so opponent-watching effects (e.g. EBP04-028 Gigan) fire correctly.
+	check_timing.submit(collect_battle_card_played_entries(player_id, card_data, zone_index, played_from_deck))
+
+
+func collect_battle_card_played_entries(player_id: int, card_data: Dictionary, zone_index: int, played_from_deck: bool = false) -> Array:
+	## The "when a battle card is played" watchers' entries (see
+	## trigger_battle_card_played), without submitting them.
 	var entries: Array = []
 	var player := game_state.players[player_id]
 	var opponent_id: int = 1 - player_id
@@ -598,7 +609,7 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 				var ctx := _build_context(opponent_id, zone_card)
 				entries.append(StandbyEntry.new(opponent_id, zone_card, ze.on_battle_card_played.bind(ctx, zone_index, played_from_deck)))
 
-	check_timing.submit(entries)
+	return entries
 
 
 
@@ -861,11 +872,10 @@ func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_i
 func trigger_zone_changed(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> void:
 	## A card moved between zones while staying in play — an area-changing
 	## trigger (10.6.4). Enters standby like trigger_leave_play.
-	var entries := _collect_zone_changed_entries(player_id, moved_card, from_zone, to_zone)
-	check_timing.submit(entries)
+	check_timing.submit(collect_zone_changed_entries(player_id, moved_card, from_zone, to_zone))
 
 
-func _collect_zone_changed_entries(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> Array:
+func collect_zone_changed_entries(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> Array:
 	if moved_card.is_empty() or not has_trigger(moved_card, "on_zone_changed"):
 		return []
 	var effect := get_effect(moved_card)

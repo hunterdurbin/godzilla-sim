@@ -11,7 +11,7 @@ per-copy instance ids like `EBP04-067_0_3` — compare with
 |---|---|
 | `game_state.gd` | Match-level state container (holds 2 PlayerStates) |
 | `player_state.gd` | Per-player state + zone/deck helpers. Zone-occupancy semantics are split: `is_zone_empty`/`get_empty_zone_indices` for placement (the monster zone is never "empty"); `zone_has_battle_card`/`get_battle_card_zone_indices` for "has a battle card" |
-| `rules_engine.gd` | Pure validation (`valid_actions`, `validate_action`); depends only on injected `EffectQueries` (`rules_engine.queries`); gates server-side action validation |
+| `rules_engine.gd` | Pure validation (`valid_actions`, `validate_action`); depends only on injected `EffectQueries` (`rules_engine.queries`); gates server-side action validation. Owns COST legality of a battle-card play; asks `EnterZone.is_rule_legal` for RULE legality |
 | `turn_manager.gd` | Phase state machine; exposes `flow_state` (IDLE / AWAITING_ACTION / PROCESSING_ACTION / ADVANCING_PHASES / GAME_OVER) |
 | `match_factory.gd` | Builds + wires a match (`setup` / `setup_from_save`); TurnManager delegates to it |
 | `game_events.gd` | Gameplay notification bus — UI/sync/sfx subscribe |

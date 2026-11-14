@@ -99,15 +99,11 @@ func get_playable_battle_cards(player: PlayerState, opponent: PlayerState) -> Ar
 
 
 func get_valid_zones_for_battle_card(player: PlayerState, opponent: PlayerState) -> Array[int]:
-	## Returns zone indices (0-7) where a battle card can be placed
-	## Zone must not be occupied by own invading monster (can overload occupied zones per rule 11.5)
-	## Also excludes zones blocked by opponent's card effects (e.g. EBP02-055)
-	var valid: Array[int] = []
-	var blocked: Array[int] = queries.get_opponent_blocked_zones(opponent.player_id)
-	for i in range(8):
-		if (player.monster_zone - 1) != i and i not in blocked:
-			valid.append(i)
-	return valid
+	## Returns zone indices (0-7) any battle card may be played into by the
+	## Play action, by rule (EnterZone owns rule legality: not the monster's
+	## zone, not a zone the opponent blocks). Occupied zones are legal: the
+	## play overloads them (11.5).
+	return EnterZone.rule_legal_zones(queries, player, opponent, {}, EnterZone.Source.HAND, false)
 
 
 func get_valid_zones_for_card(card: Dictionary, player: PlayerState, opponent: PlayerState) -> Array[int]:
@@ -120,6 +116,8 @@ func get_valid_zones_for_card(card: Dictionary, player: PlayerState, opponent: P
 
 
 func can_play_battle_card_at_zone(card: Dictionary, zone_index: int, player: PlayerState, opponent: PlayerState) -> bool:
+	## Cost legality (rank vs the opponent's monster zone, with modifiers) is
+	## checked here; rule legality is asked of EnterZone.
 	if card.get("card_type") != CardEnums.CardType.BATTLE:
 		return false
 	var effective_rank: int = card.get("rank", 99)
@@ -127,17 +125,7 @@ func can_play_battle_card_at_zone(card: Dictionary, zone_index: int, player: Pla
 	effective_rank += queries.get_zone_play_rank_modifier(player.player_id, card, zone_index)
 	if effective_rank > opponent.monster_zone:
 		return false
-	if zone_index < 0 or zone_index >= 8:
-		return false
-	if (player.monster_zone - 1) == zone_index:
-		return false
-	var blocked: Array[int] = queries.get_opponent_blocked_zones(opponent.player_id)
-	if zone_index in blocked:
-		return false
-	var required: Array[int] = queries.get_card_required_play_zones(player.player_id, card)
-	if not required.is_empty() and zone_index not in required:
-		return false
-	return true
+	return EnterZone.is_rule_legal(queries, player, opponent, card, zone_index, EnterZone.Source.HAND, false)
 
 
 func get_playable_strategy_cards(player: PlayerState) -> Array[int]:
