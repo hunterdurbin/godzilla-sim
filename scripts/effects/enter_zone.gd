@@ -99,11 +99,9 @@ func enter(player_id: int, card: Dictionary, zone_idx: int, source: Source,
 	## Never prompts. Overload runs the destroy module, so replacement
 	## effects (on_would_be_destroyed) apply at once; everything else it
 	## triggers only enters standby (CheckTiming.submit).
-	## Signals: hand_changed (HAND) / discard_changed (DISCARD) when it
-	## takes the card out, deck_changed when a refused deck card goes back;
-	## the destroy module's own signals on Overload; card_evolved (Evolve);
-	## GameEvents.battle_card_played (the Play action); zones_changed; one
-	## log_message (Play action, effect hand play, Evolve).
+	## Signals: the destroy module's own on Overload; card_evolved (Evolve);
+	## GameEvents.battle_card_played (the Play action); one log_message
+	## (Play action, effect hand play, Evolve).
 	## Returns false when the zone is rule-illegal for the source: nothing
 	## enters, the card stays in its area (a deck or Evolve card goes back
 	## on the deck bottom).
@@ -180,7 +178,7 @@ func _fires_played(card: Dictionary, source: Source) -> bool:
 func _announce_evolution(player: PlayerState, card: Dictionary, zone_idx: int) -> void:
 	## Evolve's log line and card_evolved signal, before the new card lands
 	## on top. The early through-evolution mark (re-stamped with the <Enter>
-	## entry) keeps the flag on the dict for the zones_changed sync.
+	## entry) keeps the flag on the dict for the board's zone sync.
 	var under := player.get_zone_top_card(zone_idx)
 	h.log_message.emit(GameLog.evolution(player.player_id, zone_idx, under.get("evolution_rank", -1),
 			under.get("id", ""), card.get("id", ""), has_trigger(card, "on_enter")))
@@ -204,7 +202,7 @@ func move_stack(player_id: int, from_zone: int, to_zone: int) -> bool:
 	## overloading the stack there (11.5). The moved card stays in play, so
 	## it fires the area-changing on_zone_changed (EBP04-067 link), not
 	## <Enter> or "when played", and no legality applies. Never prompts.
-	## Signals: the destroy module's on Overload, then zones_changed.
+	## Signals: the destroy module's on Overload.
 	## Returns false (nothing moves) for an empty source or to_zone == from_zone.
 	var player := game_state.players[player_id]
 	if from_zone == to_zone or not player.zone_has_cards(from_zone):

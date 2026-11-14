@@ -20,7 +20,7 @@ allowlist -- the tree is clean; add the missing primitive instead:
 
   change signals:
       `hand_changed.emit(` and the other PlayerState signals -- the
-      PlayerState mutators emit them (tracker #23)
+      PlayerState mutators emit them (hunterdurbin/godzilla-sim-issue-tracker#23)
 
 Engine scope (scripts/core/**, scripts/effects/*.gd) -- a ratchet with
 engine_player_state_writes_allowlist.txt. The engine changes a player's

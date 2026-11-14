@@ -179,8 +179,7 @@ func crush_now(player_id: int = -1) -> void:
 	## for monster moves (MonsterMover per step, teleport) and the board
 	## editor. The crushed cards' leave-play, crush and <Revenge> abilities
 	## enter standby and wait for the next check timing.
-	## Emits battle_card_crushed (GameEvents) and the crushed player's
-	## zones_changed / discard_changed.
+	## Emits battle_card_crushed (GameEvents).
 	if player_id < 0:
 		_crush_both()
 	else:

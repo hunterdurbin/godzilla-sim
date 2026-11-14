@@ -10,7 +10,7 @@ entries to CheckTiming; a missing trigger is added to the dispatcher.
 
 Flags `StandbyEntry.new(` and `check_timing.submit(` anywhere under scripts/
 outside the dispatcher: operations report through `trigger_*` and never
-handle StandbyEntry arrays (tracker #35 row 2).
+handle StandbyEntry arrays (hunterdurbin/godzilla-sim-issue-tracker#35 row 2).
 Tests (tests/) may build entries directly. No allow-list -- the tree is clean.
 
 Usage: python3 scripts/tools/check_standby_entry_builders.py

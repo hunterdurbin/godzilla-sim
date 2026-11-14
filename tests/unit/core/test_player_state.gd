@@ -140,7 +140,7 @@ func test_count_zone_tokens_by_id_matches_base_id() -> void:
 	assert_int(player.count_zone_tokens_by_id("EBP02-T03")).is_equal(2)
 
 
-# --- Mutators emit their change signal immediately (tracker #23) ---
+# --- Mutators emit their change signal immediately (hunterdurbin/godzilla-sim-issue-tracker#23) ---
 
 func _count(sig: Signal) -> Array[int]:
 	## A one-cell counter bumped on every emission of `sig` (any arity).
