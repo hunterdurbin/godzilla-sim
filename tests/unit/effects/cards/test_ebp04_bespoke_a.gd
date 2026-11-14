@@ -142,6 +142,61 @@ func test_ebp04_002_silent_without_rank1_strategy_or_off_column() -> void:
 	assert_int(state2.players[1].hand.size()).is_equal(3)
 
 
+func test_ebp04_002_fires_when_column_card_is_crushed() -> void:
+	# Crush is <Destroy> (11.3.3): opponent's monster in zone 2 crushes their
+	# column card (idx 1).
+	# Q505: "Does “destroy” include cases where a battle card is replaced or sent
+	# to the discard pile due to a monster advancing? A: Yes, it is included."
+	var monster := Real.instance("EBP04-002")
+	var state := States.make_state({
+		"allow_illegal": true,
+		"p0": {
+			"current_monster": monster, "monster_zone": 4,
+			"strategy_zones": [Cards.strategy(1, "S-R1")],
+		},
+		"p1": {
+			"zone_cards": {1: Cards.battle(3, 3000, "OPP-COL")},
+			"hand": [Cards.battle(1), Cards.battle(1), Cards.battle(1), Cards.battle(1)],
+			"monster_zone": 2,
+		},
+	})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.check_timing.resolve()
+
+	assert_bool(state.players[1].zone_has_cards(1)).is_false()
+	assert_int(state.players[1].hand.size()).is_equal(2)
+
+
+func test_ebp04_002_fires_when_column_card_is_overloaded() -> void:
+	# Overload is <Destroy> (11.5.1): the opponent plays onto their own column card.
+	# Q505: "Does “destroy” include cases where a battle card is replaced or sent
+	# to the discard pile due to a monster advancing? A: Yes, it is included."
+	var monster := Real.instance("EBP04-002")
+	var incoming := Cards.battle(2, 2000, "OPP-NEW")
+	var state := States.make_state({
+		"current_player_id": 1,
+		"p0": {
+			"current_monster": monster, "monster_zone": 4,
+			"strategy_zones": [Cards.strategy(1, "S-R1")],
+		},
+		"p1": {
+			"zone_cards": {1: Cards.battle(3, 3000, "OPP-COL")},
+			"hand": [incoming, Cards.battle(1), Cards.battle(1), Cards.battle(1), Cards.battle(1)],
+			"monster_zone": 8,
+		},
+	})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	assert_bool(handler.play_battle_card_from_hand(1, incoming, 1)).is_true()
+	await handler.check_timing.resolve()
+
+	assert_str(str(state.players[1].get_zone_top_card(1).get("id"))).is_equal("OPP-NEW")
+	assert_int(state.players[1].hand.size()).is_equal(2)
+
+
 # --- EBP04-004: enter with rank1 strategy in play → +2 rage ---
 
 
@@ -254,6 +309,71 @@ func test_ebp04_005_no_cascade_below_3_rank1_strategies_in_discard() -> void:
 	await handler.check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(0)).is_true()
+
+
+func test_ebp04_005_cascades_when_column_card_is_crushed() -> void:
+	# Crush is <Destroy> (11.3.3): the opponent's monster in zone 2 crushes
+	# their rank 4 column card; the cascade takes rank <= 4, sparing rank 6.
+	# Q505: "Does “destroy” include cases where a battle card is replaced or sent
+	# to the discard pile due to a monster advancing? A: Yes, it is included."
+	var monster := Real.instance("EBP04-005")
+	var state := States.make_state({
+		"allow_illegal": true,
+		"p0": {"current_monster": monster, "monster_zone": 4},
+		"p1": {
+			"zone_cards": {
+				1: Cards.battle(4, 3000, "OPP-COL-R4"),
+				0: Cards.battle(3, 3000, "OPP-R3"),
+				5: Cards.battle(6, 3000, "OPP-R6"),
+			},
+			"monster_zone": 2,
+		},
+	})
+	for i in range(3):
+		state.players[0].discard_pile.append(Cards.strategy(1, "DS%d" % i))
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.check_timing.resolve()
+
+	var p1 := state.players[1]
+	assert_bool(p1.zone_has_cards(1)).is_false()
+	assert_bool(p1.zone_has_cards(0)).is_false()
+	assert_str(str(p1.get_zone_top_card(5).get("id"))).is_equal("OPP-R6")
+
+
+func test_ebp04_005_cascades_when_column_card_is_overloaded() -> void:
+	# Overload is <Destroy> (11.5.1): the opponent overloads their rank 4
+	# column card with a rank 6 card; the cascade takes rank <= 4.
+	# Q505: "Does “destroy” include cases where a battle card is replaced or sent
+	# to the discard pile due to a monster advancing? A: Yes, it is included."
+	var monster := Real.instance("EBP04-005")
+	var incoming := Cards.battle(6, 3000, "OPP-NEW-R6")
+	var state := States.make_state({
+		"current_player_id": 1,
+		"p0": {"current_monster": monster, "monster_zone": 4},
+		"p1": {
+			"zone_cards": {
+				1: Cards.battle(4, 3000, "OPP-COL-R4"),
+				0: Cards.battle(3, 3000, "OPP-R3"),
+				5: Cards.battle(6, 3000, "OPP-R6"),
+			},
+			"hand": [incoming],
+			"monster_zone": 8,
+		},
+	})
+	for i in range(3):
+		state.players[0].discard_pile.append(Cards.strategy(1, "DS%d" % i))
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	assert_bool(handler.play_battle_card_from_hand(1, incoming, 1)).is_true()
+	await handler.check_timing.resolve()
+
+	var p1 := state.players[1]
+	assert_bool(p1.zone_has_cards(0)).is_false()
+	assert_str(str(p1.get_zone_top_card(1).get("id"))).is_equal("OPP-NEW-R6")
+	assert_str(str(p1.get_zone_top_card(5).get("id"))).is_equal("OPP-R6")
 
 
 # --- EBP04-007: Burst 3; Step-1 invasion advances 2 zones ---
@@ -1133,6 +1253,53 @@ func test_ebp04_039_moves_adjacent_to_monster_when_non_red_ally_destroyed() -> v
 	assert_array(input.calls[0]["valid"]).contains_exactly([2, 4, 6])
 
 
+func test_ebp04_039_moves_when_non_red_ally_is_crushed() -> void:
+	# Crush is <Destroy> (11.3.3): on the opponent's turn the owner's monster
+	# (zone 4, idx 3) crushes the blue ally sharing its zone.
+	var card := Real.instance("EBP04-039")
+	var blue := _colored_battle(3, 3000, "ALLY-BLUE", CardEnums.CardColor.BLUE)
+	var state := States.make_state({
+		"allow_illegal": true,
+		"current_player_id": 1,
+		"p0": {"zone_cards": {1: card, 3: blue}, "monster_zone": 4},
+	})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [2]}
+	var s := States.make_session(state, input)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.check_timing.resolve()
+
+	var p0 := state.players[0]
+	assert_bool(p0.zone_has_cards(3)).is_false()
+	assert_bool(p0.zone_has_cards(1)).is_false()
+	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal(str(card.get("id")))
+
+
+func test_ebp04_039_moves_when_non_red_ally_is_overloaded() -> void:
+	# Overload is <Destroy> (11.5.1): on the opponent's turn the owner plays a
+	# card onto the blue ally.
+	var card := Real.instance("EBP04-039")
+	var blue := _colored_battle(3, 3000, "ALLY-BLUE", CardEnums.CardColor.BLUE)
+	var incoming := _colored_battle(2, 2000, "ALLY-NEW", CardEnums.CardColor.BLUE)
+	var state := States.make_state({
+		"current_player_id": 1,
+		"p0": {"zone_cards": {1: card, 4: blue}, "monster_zone": 4, "hand": [incoming]},
+	})
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"select_zone": [2]}
+	var s := States.make_session(state, input)
+	var handler: EffectHandler = s["effect_handler"]
+
+	assert_bool(handler.play_battle_card_from_hand(0, incoming, 4)).is_true()
+	await handler.check_timing.resolve()
+
+	var p0 := state.players[0]
+	assert_str(str(p0.get_zone_top_card(4).get("id"))).is_equal("ALLY-NEW")
+	assert_bool(p0.zone_has_cards(1)).is_false()
+	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal(str(card.get("id")))
+
+
 func test_ebp04_039_stays_on_own_turn_or_for_red_destruction() -> void:
 	# Own turn: silent.
 	var card := Real.instance("EBP04-039")
@@ -1157,6 +1324,21 @@ func test_ebp04_039_stays_on_own_turn_or_for_red_destruction() -> void:
 	await handler2.destroy_zones(state2.players[0], [4])
 	await handler2.check_timing.resolve()
 	assert_int(input2.count_calls("select_zone")).is_equal(0)
+
+
+func test_ebp04_039_does_not_trigger_on_own_turn() -> void:
+	# <Opponent's Turn>: on its owner's turn an overloaded non-red ally puts no
+	# EBP04-039 ability into standby at all (not one that resolves to nothing).
+	var card := Real.instance("EBP04-039")
+	var blue := _colored_battle(3, 3000, "ALLY-BLUE", CardEnums.CardColor.BLUE)
+	var state := States.make_state({"p0": {"zone_cards": {1: card, 4: blue}, "monster_zone": 4}})
+	var s := States.make_session(state, ScriptedPlayerInput.new())
+	var handler: EffectHandler = s["effect_handler"]
+
+	var outcome := handler.destroy(state.players[0], 4, DestructionEngine.Cause.OVERLOAD)
+
+	var sources: Array = outcome.entries.map(func(e: StandbyEntry) -> String: return str(e.card.get("id")))
+	assert_array(sources).not_contains([str(card.get("id"))])
 
 
 # --- EBP04-040: Awk6 enter w/ Rodan + King Caesar battle cards → +3 rage ---

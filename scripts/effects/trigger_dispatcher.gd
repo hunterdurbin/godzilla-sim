@@ -134,6 +134,21 @@ func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary, cr
 
 
 
+func collect_on_destroy_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
+	## Standby entry for the destroyed card's own on_destroy ability. The card
+	## is already in the discard pile; the entry still resolves (10.6.7).
+	## Built only by DestructionEngine.destroy, for Crush and Overload (an
+	## effect destroy resolves on_destroy on the spot, _destroy_by_effect).
+	if not has_trigger(destroyed_card, "on_destroy"):
+		return []
+	var effect := get_effect(destroyed_card)
+	if effect == null:
+		return []
+	return [StandbyEntry.new(player_id, destroyed_card,
+			effect.on_destroy.bind(_build_context(player_id, destroyed_card), zone_idx))]
+
+
+
 
 func _passes_discard_from_hand_filter(card_data: Dictionary, player_id: int) -> bool:
 	## Evaluate TRIGGER_FILTERS["on_discard_from_hand"] for the discarded card's
@@ -943,7 +958,8 @@ func _passes_zone_destroyed_filter(card_data: Dictionary, method_name: String, w
 	## Evaluate TRIGGER_FILTERS[method_name] for zone-card-destroyed triggers.
 	## `column: "monster"` — destroyed zone must be in the watcher's monster column.
 	## `is_cross_board` distinguishes ally (false, same side) vs opponent (true, cross-board).
-	return TriggerFilters.passes_zone_destroyed(get_trigger_filter(card_data, method_name), watcher.monster_zone, zone_idx, is_cross_board)
+	return TriggerFilters.passes_zone_destroyed(get_trigger_filter(card_data, method_name), watcher.monster_zone, zone_idx, is_cross_board,
+			game_state.current_player_id == watcher.player_id)
 
 
 

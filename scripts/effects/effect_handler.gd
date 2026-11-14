@@ -398,6 +398,10 @@ func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary, cr
 	return dispatcher.collect_crush_and_revenge_entries(player_id, card_data, crushed)
 
 
+func collect_on_destroy_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
+	return dispatcher.collect_on_destroy_entries(player_id, destroyed_card, zone_idx)
+
+
 
 
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:

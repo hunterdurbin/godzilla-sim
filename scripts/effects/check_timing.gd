@@ -179,7 +179,8 @@ func _check_crush_for_player(player_id: int, triggered: Array) -> bool:
 	if monster_zone_idx < 0 or monster_zone_idx >= 8 or not player.zone_has_cards(monster_zone_idx):
 		return false
 	# Crush is <Destroy> (11.3.3): the destroy module applies replacements
-	# and returns the triggered abilities (leave-play, crush, <Revenge>).
+	# and returns the triggered abilities (leave-play, on_destroy, crush,
+	# <Revenge>, destroyed watchers).
 	var outcome := h.destroy(player, monster_zone_idx, DestructionEngine.Cause.CRUSH)
 	triggered.append_array(outcome.entries)
 	return true

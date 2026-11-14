@@ -5,7 +5,9 @@ extends GdUnitTestSuite
 ##   - replacement effects (on_would_be_destroyed) apply for all three;
 ##   - destruction protection applies to effect destroys only (every
 ##     protecting card is worded "by your opponent's effects");
-##   - <Revenge> fires for effect and Crush, never for Overload (12.7.2).
+##   - <Revenge> fires for effect and Crush, never for Overload (12.7.2);
+##   - on_destroy and the ally / opponent destroyed watchers fire for all
+##     three, unless a replacement effect moved the card instead.
 ## The module moves the cards and returns the StandbyEntry objects the
 ## destruction triggered; the caller submits them.
 
@@ -19,6 +21,8 @@ const REPLACE := "test://destroy_replace"
 const PROTECTED := "test://destroy_cannot_be_destroyed"
 const LEAVE := "test://destroy_leave"
 const WATCHER := "test://destroy_ally_watcher"
+const OPP_WATCHER := "test://destroy_opponent_watcher"
+const SELF_DESTROY := "test://destroy_own_on_destroy"
 
 ## Target zone for every test: away from the default monster zone (1), so no
 ## crush rule action interferes.
@@ -64,6 +68,24 @@ class RecordAllyDestroyed:
 
 	func on_ally_zone_card_destroyed(_ctx: EffectContext, destroyed_card: Dictionary, zone_idx: int) -> void:
 		seen.append("ally_destroyed:%s:%d" % [destroyed_card.get("id"), zone_idx])
+
+
+## Watches the opponent's battle cards being destroyed.
+class RecordOpponentDestroyed:
+	extends CardEffect
+	var seen: Array = []
+
+	func on_opponent_zone_card_destroyed(_ctx: EffectContext, destroyed_card: Dictionary, zone_idx: int) -> void:
+		seen.append("opp_destroyed:%s:%d" % [destroyed_card.get("id"), zone_idx])
+
+
+## Its own "when this card is <Destroy>" ability.
+class RecordOwnDestroy:
+	extends CardEffect
+	var seen: Array = []
+
+	func on_destroy(ctx: EffectContext, zone_idx: int) -> void:
+		seen.append("destroy:%s:%d" % [ctx.card_data.get("id"), zone_idx])
 
 
 func _handler(state: GameState, input: PlayerInput = null) -> EffectHandler:
@@ -244,15 +266,10 @@ func test_leave_play_entry_returned_for_every_cause() -> void:
 		handler.teardown()
 
 
-# --- Zone-card-destroyed watchers: effect only (per-cause behaviour kept) ---
+# --- Destroyed triggers: every cause (Crush 11.3.3 and Overload 11.5.1 are <Destroy>) ---
 
-func test_ally_destroyed_watcher_fires_for_effect_only() -> void:
-	var expected := {
-		Cause.EFFECT: ["ally_destroyed:VICTIM:%d" % ZONE],
-		Cause.CRUSH: [],
-		Cause.OVERLOAD: [],
-	}
-	for cause: DestructionEngine.Cause in expected:
+func test_ally_destroyed_watcher_fires_for_every_cause() -> void:
+	for cause: DestructionEngine.Cause in [Cause.EFFECT, Cause.CRUSH, Cause.OVERLOAD]:
 		var watcher := _card("WATCHER", WATCHER)
 		var state := States.make_state({"p0": {"zone_cards": {
 			ZONE: Cards.battle(1, 5000, "VICTIM"), ZONE + 1: watcher}}})
@@ -263,7 +280,71 @@ func test_ally_destroyed_watcher_fires_for_effect_only() -> void:
 		await _resolve(handler, handler.destruction.destroy(state.players[0], ZONE, cause))
 
 		assert_array(effect.seen).override_failure_message("cause %d" % cause) \
-			.contains_exactly(expected[cause])
+			.contains_exactly(["ally_destroyed:VICTIM:%d" % ZONE])
+		handler.teardown()
+
+
+func test_opponent_destroyed_watcher_fires_for_every_cause() -> void:
+	for cause: DestructionEngine.Cause in [Cause.EFFECT, Cause.CRUSH, Cause.OVERLOAD]:
+		var watcher := _card("OPP-WATCHER", OPP_WATCHER)
+		var state := States.make_state({
+			"p0": {"zone_cards": {ZONE: Cards.battle(1, 5000, "VICTIM")}},
+			"p1": {"zone_cards": {ZONE: watcher}},
+		})
+		var handler := _handler(state)
+		var effect := RecordOpponentDestroyed.new()
+		handler.registry.register_for_test(OPP_WATCHER, effect, ["on_opponent_zone_card_destroyed"])
+
+		await _resolve(handler, handler.destruction.destroy(state.players[0], ZONE, cause))
+
+		assert_array(effect.seen).override_failure_message("cause %d" % cause) \
+			.contains_exactly(["opp_destroyed:VICTIM:%d" % ZONE])
+		handler.teardown()
+
+
+func test_own_on_destroy_enters_standby_for_crush_and_overload() -> void:
+	for cause: DestructionEngine.Cause in [Cause.CRUSH, Cause.OVERLOAD]:
+		var card := _card("SELF", SELF_DESTROY)
+		var state := _state_with(card)
+		var handler := _handler(state)
+		var effect := RecordOwnDestroy.new()
+		handler.registry.register_for_test(SELF_DESTROY, effect, ["on_destroy"])
+
+		await _resolve(handler, handler.destruction.destroy(state.players[0], ZONE, cause))
+
+		assert_array(effect.seen).override_failure_message("cause %d" % cause) \
+			.contains_exactly(["destroy:SELF:%d" % ZONE])
+		handler.teardown()
+
+
+func test_own_on_destroy_fires_for_effect_destroy() -> void:
+	# The effect path resolves it on the spot (destroy_zones et al.).
+	var card := _card("SELF", SELF_DESTROY)
+	var state := _state_with(card)
+	var handler := _handler(state)
+	var effect := RecordOwnDestroy.new()
+	handler.registry.register_for_test(SELF_DESTROY, effect, ["on_destroy"])
+
+	await handler.destroy_zones(state.players[0], [ZONE])
+	await handler.check_timing.resolve()
+
+	assert_array(effect.seen).contains_exactly(["destroy:SELF:%d" % ZONE])
+	handler.teardown()
+
+
+func test_replaced_card_triggers_no_destroyed_watchers() -> void:
+	for cause: DestructionEngine.Cause in [Cause.EFFECT, Cause.CRUSH, Cause.OVERLOAD]:
+		var watcher := _card("WATCHER", WATCHER)
+		var state := States.make_state({"p0": {"zone_cards": {
+			ZONE: _card("REPL", REPLACE), ZONE + 1: watcher}}})
+		var handler := _handler(state)
+		handler.registry.register_for_test(REPLACE, ReplaceDestroy.new(), ["on_would_be_destroyed"])
+		var effect := RecordAllyDestroyed.new()
+		handler.registry.register_for_test(WATCHER, effect, ["on_ally_zone_card_destroyed"])
+
+		await _resolve(handler, handler.destruction.destroy(state.players[0], ZONE, cause))
+
+		assert_array(effect.seen).override_failure_message("cause %d" % cause).is_empty()
 		handler.teardown()
 
 

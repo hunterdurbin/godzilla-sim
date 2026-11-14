@@ -19,7 +19,7 @@ facade hub `h` via `EffectModule`:
 | `check_timing.gd` | `CheckTiming`: single owner of check timing (10.4.3) — rule actions (crush, illegal cards), the standby pool, the active ability, `run_effect` |
 | `standby_entry.gd` | `StandbyEntry`: one ability in standby (player, card, callback, `still_applies`) |
 | `trigger_dispatcher.gd` | `trigger_*` / `collect_*` dispatch over active cards |
-| `destruction_engine.gd` | The one destroy operation, `destroy(target, zone, cause)` — cause EFFECT / CRUSH / OVERLOAD decides protection (effect only), replacement (all) and <Revenge> (not Overload); returns the StandbyEntry list. Also the effect-driven destroy prompts and strategy destruction |
+| `destruction_engine.gd` | The one destroy operation, `destroy(target, zone, cause)` — cause EFFECT / CRUSH / OVERLOAD decides protection (effect only), replacement (all) and <Revenge> (not Overload); on_destroy and the destroyed watchers fire for all three; returns the StandbyEntry list. Also the effect-driven destroy prompts and strategy destruction |
 | `card_mover.gd` | Hand/deck/discard traffic, tokens, evolution |
 | `monster_mover.gd` | Effect-driven monster movement |
 | `effect_queries.gd` | Read-only modifier/blocking aggregation (injected into RulesEngine) |
@@ -105,8 +105,12 @@ dispatcher's `collect_*` functions build `StandbyEntry` objects
 (`scripts/tools/check_standby_entry_builders.py`). Never call a
 trigger body directly from engine code.
 This covers revenge and zone-card-destroyed watchers (single AND batch
-destroys), on_discard_from_hand, and the area-changing hooks on_leave_play /
-on_zone_changed (EBP04-067 link). **Replacement effects**
+destroys, Crush and Overload), on_discard_from_hand, and the area-changing hooks on_leave_play /
+on_zone_changed (EBP04-067 link). One exception: an effect destroy resolves
+the destroyed card's own `on_destroy` on the spot (`_destroy_by_effect`),
+because queueing it would make `destroy_zones` a non-coroutine and trip
+REDUNDANT_AWAIT at its ~100 awaiting call sites; Crush and Overload queue it.
+**Replacement effects**
 (`on_would_be_destroyed`, `can_be_destroyed`) are the exception: they resolve
 at the moment of the action. An area-changing entry that has nothing left to
 do when it comes up is dropped before the order prompt via

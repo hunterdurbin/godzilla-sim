@@ -28,7 +28,7 @@ extends RefCounted
 ##                for phase/turn-only triggers; unknown values pass through
 ##   "column":    "monster" — only meaningful for on_ally_zone_card_destroyed /
 ##                on_opponent_zone_card_destroyed; destroyed zone must be in the watcher's
-##                monster column
+##                monster column (those two triggers also honour "own_turn")
 ##   "card_type": "battle" | "strategy" | "monster" — only meaningful for
 ##                on_hand_card_discarded; the discarded card must match the named type
 ##   "played_from_deck": bool — only meaningful for on_battle_card_played; gates by
@@ -236,8 +236,8 @@ func protects_card_from_destruction(_ctx: EffectContext, _card_data: Dictionary,
 # --- Play restriction methods ---
 
 func on_destroy(_ctx: EffectContext, _zone_idx: int) -> void:
-	## Called when this card is destroyed and removed from a zone (before revenge/banish).
-	## Reserved for <Destroy> rule actions only — does NOT fire for overload (rule 11.5).
+	## Called when this card is <Destroy>: by an effect, crushed (11.3.3) or
+	## overloaded (11.5.1). Not when a replacement effect moved it instead.
 	pass
 
 

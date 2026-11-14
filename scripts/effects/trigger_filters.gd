@@ -176,13 +176,17 @@ static func passes_card_returned(filter: Dictionary, is_own_turn: bool, returned
 
 
 ## "on_ally_zone_card_destroyed" / "on_opponent_zone_card_destroyed" filter.
-## Key: "column" ("monster" — destroyed zone must be in the watcher's monster
-## column). `watcher_monster_zone` is the watcher's monster zone number (1-8;
-## <= 0 means no anchor and the column filter fails). `is_cross_board`
-## distinguishes ally (false, same side) vs opponent (true, cross-board).
-static func passes_zone_destroyed(filter: Dictionary, watcher_monster_zone: int, zone_idx: int, is_cross_board: bool) -> bool:
+## Keys: "column" ("monster" — destroyed zone must be in the watcher's monster
+## column); "own_turn" (bool — gate by the watcher's turn ownership, e.g.
+## EBP04-039 <Opponent's Turn>). `watcher_monster_zone` is the watcher's
+## monster zone number (1-8; <= 0 means no anchor and the column filter
+## fails). `is_cross_board` distinguishes ally (false, same side) vs opponent
+## (true, cross-board).
+static func passes_zone_destroyed(filter: Dictionary, watcher_monster_zone: int, zone_idx: int, is_cross_board: bool, is_own_turn: bool) -> bool:
 	if filter.is_empty():
 		return true
+	if filter.has("own_turn") and filter.own_turn != is_own_turn:
+		return false
 	if filter.has("column"):
 		var anchor: int = watcher_monster_zone - 1
 		if anchor < 0:
