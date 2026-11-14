@@ -14,6 +14,8 @@ extends RefCounted
 @warning_ignore_start("unused_signal")
 signal battle_card_played(player_id: int, card: Dictionary, zone_index: int)
 signal strategy_card_played(player_id: int, card: Dictionary, strategy_index: int)
+## Every monster move (MonsterMover), not only advances: retreats and
+## teleports emit it too, with to_zone < from_zone for a move back.
 signal monster_advanced(player_id: int, from_zone: int, to_zone: int)
 signal rage_gained(player_id: int, new_rage: int)
 signal card_discarded(player_id: int, card: Dictionary)
