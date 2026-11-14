@@ -22,6 +22,13 @@ per-copy instance ids like `EBP04-067_0_3` — compare with
 
 - **Teardown**: every TurnManager owner MUST call `teardown()` when done or
   the cyclic engine graph leaks (verify with headless `--verbose` leak check).
+- **Prompt signatures**: changing a prompt's parameters touches every implementation:
+  `player_input.gd`, `scripted_player_input.gd`, `signal_player_input.gd`
+  (signal + emit), `scripts/bot/kaiju/kaiju_rollout_input.gd`, test doubles
+  (`grep -rn "func <method>(" tests`), and each `*_requested` handler
+  (`scripts/bot/bot_player.gd`, `scenes/board/modules/selection_controller.gd`,
+  `scripts/session/effect_ui_router.gd`).
+  `scripts/tools/check_player_input_contract.py` fails on any one missed.
 - Engine code awaits `input.*` — base PlayerInput methods are sync,
   SignalPlayerInput overrides are coroutines, so `await input.*` sites carry
   `@warning_ignore("redundant_await")`.

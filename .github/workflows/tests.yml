@@ -42,6 +42,9 @@ jobs:
       - name: No array literals into typed-array params via dynamic calls
         run: python3 scripts/tools/check_typed_array_dynamic_calls.py
 
+      - name: PlayerInput implementations and prompt handlers match the port
+        run: python3 scripts/tools/check_player_input_contract.py
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
