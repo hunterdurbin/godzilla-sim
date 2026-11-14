@@ -126,12 +126,14 @@ which crushes only its destination, e.g. EBP03-068 Godzilla Flies — and the
 counter retreat, which crushes before the new monster's <Enter>).
 
 **Play-zone legality is enforced by the play primitives** (5.11.1.1),
-through `EnterZone` — the one owner of rule legality. Each source keeps its
-own rule set (`EnterZone._rules_for`): the Play action refuses the monster
-zone, a zone the opponent blocks (EBP02-055) and zones outside the card's
-required zones; effect plays refuse the monster zone only.
+through `EnterZone` — the one owner of rule legality (`EnterZone.rule_legal_zones`).
+Every play (JA 出現: the Play action, effect plays from hand / deck /
+discard, tokens and Evolve) refuses the monster zone and a zone the
+opponent blocks (EBP02-055, Q270), stacks a stack-on-play card (Godzilla
+Jr.), and fires the "when played" watchers — Evolve as a play from the deck
+(Q176). Only the Play action also applies the card's required zones.
 `play_battle_card_from_hand` / `_from_deck`, `play_from_discard` and
-`create_token_in_zone` refuse the master's monster zone and report "not
+`create_token_in_zone` refuse an illegal zone and report "not
 played" (`false` / `-1`) and the card stays in its area — hand, discard,
 or (for a deck card the caller already took out) back on the deck bottom. Card scripts that offer a fixed
 zone gate the offer on `can_play_in_zone(player_id, zone_idx)` (EBP04-077)

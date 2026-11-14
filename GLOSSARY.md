@@ -76,15 +76,15 @@ _Avoid_: Kill, remove
 ## Zones and movement
 
 **Play**:
-Placing a battle card on a zone from outside the field, or putting a token into existence in a zone (5.11.1, 5.11.4). "Whenever … plays a battle card" abilities watch this.
+Placing a battle card on a zone from outside the field, or putting a token into existence in a zone (5.11.1, 5.11.4). Japanese 出現. Evolve is a play from the deck. "Whenever … plays a battle card" abilities watch every play, and EBP02-055's "cannot play" refuses every play (Q270).
 _Avoid_: Summon, deploy, enter (for the act itself)
 
 **Appear**:
-Putting a card or token into existence in a zone without it being played, as an Evolve does (5.17.1, 9.1.2).
+The English rules' word for a play in 5.17.1 (Evolve) and 9.1.2 (tokens). The Japanese rules use one verb, 出現, for all of these, so an appear is a play, not a separate act. Check `comprehensive_rules/rules-ja.txt` when the English wording seems to split them.
 _Avoid_: Spawn
 
 **Evolve**:
-Making a new battle card appear on top of a battle card on the field, forming a stack (5.17).
+Playing a new battle card from the deck on top of a battle card on the field, forming a stack (5.17; Q176 "山札から…重ねて出現させる").
 _Avoid_: Upgrade, transform
 
 **Advance**:

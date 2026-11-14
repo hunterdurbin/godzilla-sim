@@ -103,7 +103,7 @@ func get_valid_zones_for_battle_card(player: PlayerState, opponent: PlayerState)
 	## Play action, by rule (EnterZone owns rule legality: not the monster's
 	## zone, not a zone the opponent blocks). Occupied zones are legal: the
 	## play overloads them (11.5).
-	return EnterZone.rule_legal_zones(queries, player, opponent, {}, EnterZone.Source.HAND, false)
+	return EnterZone.rule_legal_zones(queries, player, opponent, {}, false)
 
 
 func get_valid_zones_for_card(card: Dictionary, player: PlayerState, opponent: PlayerState) -> Array[int]:
@@ -125,7 +125,7 @@ func can_play_battle_card_at_zone(card: Dictionary, zone_index: int, player: Pla
 	effective_rank += queries.get_zone_play_rank_modifier(player.player_id, card, zone_index)
 	if effective_rank > opponent.monster_zone:
 		return false
-	return EnterZone.is_rule_legal(queries, player, opponent, card, zone_index, EnterZone.Source.HAND, false)
+	return EnterZone.is_rule_legal(queries, player, opponent, card, zone_index, false)
 
 
 func get_playable_strategy_cards(player: PlayerState) -> Array[int]:

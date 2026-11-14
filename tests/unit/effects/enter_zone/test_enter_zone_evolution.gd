@@ -1,9 +1,11 @@
 extends GdUnitTestSuite
 
-## EnterZone, evolution source: Evolve makes a battle card appear on top of
-## the zone's battle card (5.17). It never overloads, has no legality check,
-## marks the <Enter> as through evolution, and fires the "when played"
-## watchers with played_from_deck = true (the card came from the deck).
+## EnterZone, evolution source: Evolve plays a battle card from the deck on
+## top of the zone's battle card (5.17.1 "重ねて出現させます"; Q176
+## "山札から…重ねて出現させる"). It never overloads, marks the <Enter> as
+## through evolution, fires the "when played" watchers with
+## played_from_deck = true, and is refused where any play is (the monster's
+## zone, 5.11.1.1; the opponent's block, Q270).
 
 const States := preload("res://tests/fixtures/states.gd")
 const Probe := preload("res://tests/fixtures/effects/enter_zone_probe.gd")
@@ -51,7 +53,7 @@ func _resolve(s: Dictionary) -> Array:
 	return s["probe"].seen
 
 
-func test_evolve_stacks_on_top_and_fires_enter_through_evolution() -> void:
+func test_evolve_stacks_on_top_and_fires_enter_and_played_from_deck() -> void:
 	var under := Probe.card("BASE")
 	under["evolution_rank"] = 3
 	var s := _setup({"zone_cards": {ZONE: under}})
@@ -67,4 +69,22 @@ func test_evolve_stacks_on_top_and_fires_enter_through_evolution() -> void:
 	assert_array(evolved).contains_exactly([[0, "EVO", ZONE]])
 	assert_array(await _resolve(s)).contains_exactly_in_any_order([
 			"enter:EVO:effect=true:evo=true", "played@WATCH:%d:deck=true" % ZONE])
+	_teardown(s)
+
+
+func test_an_evolve_refused_in_the_monster_zone_goes_back_on_the_deck() -> void:
+	var under := Probe.card("BASE")
+	var s := _setup()
+	var card := Probe.card("EVO", 3)
+	var p0: PlayerState = s["state"].players[0]
+	# Set after setup: make_state refuses a battle card in the monster's
+	# zone (the next check timing would crush it, 11.3).
+	p0.push_zone_card(MONSTER_ZONE_IDX, under)
+
+	assert_bool(_enter(s, card, MONSTER_ZONE_IDX, Source.EVOLUTION)).is_false()
+
+	assert_array(p0.zones[MONSTER_ZONE_IDX]).contains_exactly([under])
+	assert_array(p0.main_deck).contains_exactly([card])
+	# No <Enter> or "when played" — only the crush of the base card (11.3).
+	assert_array(await _resolve(s)).contains_exactly(["leave:BASE:%d" % MONSTER_ZONE_IDX])
 	_teardown(s)

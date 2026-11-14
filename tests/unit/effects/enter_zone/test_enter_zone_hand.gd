@@ -4,8 +4,9 @@ extends GdUnitTestSuite
 ## and an effect playing a battle card from the hand (by_effect = true).
 ## Rule legality (5.11.1.1 monster zone, EBP02-055 opponent block, the
 ## card's required zones) is asked of the operation; cost legality (rank)
-## stays in RulesEngine. This PR keeps each source's current checks: the
-## effect play only refuses the monster's zone.
+## stays in RulesEngine. An effect play refuses the monster's zone and the
+## opponent's block like the Play action, and stacks a stack-on-play card;
+## only the Play action applies the card's required zones.
 
 const Cards := preload("res://tests/fixtures/cards.gd")
 const States := preload("res://tests/fixtures/states.gd")
@@ -98,7 +99,7 @@ func _legal(s: Dictionary, card: Dictionary, zone: int, by_effect: bool) -> bool
 	var handler: EffectHandler = s["effect_handler"]
 	var state: GameState = s["state"]
 	return EnterZone.is_rule_legal(handler.queries, state.players[0], state.players[1],
-			card, zone, Source.HAND, by_effect)
+			card, zone, by_effect)
 
 
 # --- Rule legality ---
@@ -127,13 +128,19 @@ func test_the_play_action_honours_the_cards_required_zones() -> void:
 	_teardown(s)
 
 
-func test_an_effect_play_from_hand_only_refuses_the_monster_zone() -> void:
-	# Current behaviour, pinned: the next ticket widens effect plays to the
-	# opponent's block (EBP02-055).
+func test_an_effect_play_refuses_the_monster_zone_and_the_opponents_block() -> void:
 	var s := _setup({}, {"zone_cards": {2: _card("BLOCK", BLOCKER)}})
 	s["effect_handler"].registry.register_for_test(BLOCKER, BlockZone.new(), ["get_blocked_opponent_zones"])
 	assert_bool(_legal(s, _card("C"), MONSTER_ZONE_IDX, true)).is_false()
-	assert_bool(_legal(s, _card("C"), ZONE, true)).is_true()
+	assert_bool(_legal(s, _card("C"), ZONE, true)).is_false()
+	assert_bool(_legal(s, _card("C"), ZONE + 1, true)).is_true()
+	_teardown(s)
+
+
+func test_an_effect_play_ignores_the_cards_required_zones() -> void:
+	var s := _setup()
+	s["effect_handler"].registry.register_for_test(REQUIRES, RequireZoneOne.new(), ["get_required_play_zones"])
+	assert_bool(_legal(s, _card("REQ", REQUIRES), ZONE, true)).is_true()
 	_teardown(s)
 
 
