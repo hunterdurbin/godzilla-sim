@@ -28,7 +28,7 @@ extends RefCounted
 ##                for phase/turn-only triggers; unknown values pass through
 ##   "column":    "monster" — only meaningful for on_ally_zone_card_destroyed /
 ##                on_opponent_zone_card_destroyed; destroyed zone must be in the watcher's
-##                monster column
+##                monster column (those two triggers also honour "own_turn")
 ##   "card_type": "battle" | "strategy" | "monster" — only meaningful for
 ##                on_hand_card_discarded; the discarded card must match the named type
 ##   "played_from_deck": bool — only meaningful for on_battle_card_played; gates by

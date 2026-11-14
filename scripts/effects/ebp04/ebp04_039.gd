@@ -6,9 +6,15 @@ extends CardEffect
 ## Tested: Yes
 ## Known issues: None
 ## Edge cases: None
-## Rules: None
+## Rules: Q561 (Opponent's Turn = active only on the opponent's turn, TRIGGER_FILTERS own_turn false); Q525 (moving onto a battle card destroys it)
 ## Interactions: None
 ## Implementation notes: None
+
+
+# <Opponent's Turn>: the ability only triggers on the opponent's turn.
+const TRIGGER_FILTERS = {
+	"on_ally_zone_card_destroyed": {"own_turn": false},
+}
 
 
 func get_bot_tags() -> Array[String]:
@@ -20,10 +26,6 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func on_ally_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary, _zone_idx: int) -> void:
-	# Only active on opponent's turn
-	if ctx.is_own_turn():
-		return
-
 	# Destroyed card must be a non-red battle card (not this card itself)
 	if not CardUtils.is_battle(destroyed_card):
 		return

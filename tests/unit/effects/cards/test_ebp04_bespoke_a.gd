@@ -1326,6 +1326,21 @@ func test_ebp04_039_stays_on_own_turn_or_for_red_destruction() -> void:
 	assert_int(input2.count_calls("select_zone")).is_equal(0)
 
 
+func test_ebp04_039_does_not_trigger_on_own_turn() -> void:
+	# <Opponent's Turn>: on its owner's turn an overloaded non-red ally puts no
+	# EBP04-039 ability into standby at all (not one that resolves to nothing).
+	var card := Real.instance("EBP04-039")
+	var blue := _colored_battle(3, 3000, "ALLY-BLUE", CardEnums.CardColor.BLUE)
+	var state := States.make_state({"p0": {"zone_cards": {1: card, 4: blue}, "monster_zone": 4}})
+	var s := States.make_session(state, ScriptedPlayerInput.new())
+	var handler: EffectHandler = s["effect_handler"]
+
+	var outcome := handler.destroy(state.players[0], 4, DestructionEngine.Cause.OVERLOAD)
+
+	var sources: Array = outcome.entries.map(func(e: StandbyEntry) -> String: return str(e.card.get("id")))
+	assert_array(sources).not_contains([str(card.get("id"))])
+
+
 # --- EBP04-040: Awk6 enter w/ Rodan + King Caesar battle cards → +3 rage ---
 
 

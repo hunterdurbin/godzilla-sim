@@ -11,7 +11,7 @@ func test_empty_filter_always_passes() -> void:
 	assert_bool(TriggerFilters.passes_phase({}, CardEnums.GamePhase.END, false)).is_true()
 	assert_bool(TriggerFilters.passes_own_turn({}, false)).is_true()
 	assert_bool(TriggerFilters.passes_destruction_gate({}, false, -1, 0)).is_true()
-	assert_bool(TriggerFilters.passes_zone_destroyed({}, 0, 3, false)).is_true()
+	assert_bool(TriggerFilters.passes_zone_destroyed({}, 0, 3, false, true)).is_true()
 
 
 func test_basic_phase_and_own_turn() -> void:
@@ -95,10 +95,21 @@ func test_zone_destroyed_monster_column() -> void:
 	var cross: Array[int] = CardEffect.get_opponent_column_zones(2)
 	var filter := {"column": "monster"}
 	for zi in range(8):
-		assert_bool(TriggerFilters.passes_zone_destroyed(filter, 3, zi, false)).is_equal(zi in same_side)
-		assert_bool(TriggerFilters.passes_zone_destroyed(filter, 3, zi, true)).is_equal(zi in cross)
+		assert_bool(TriggerFilters.passes_zone_destroyed(filter, 3, zi, false, true)).is_equal(zi in same_side)
+		assert_bool(TriggerFilters.passes_zone_destroyed(filter, 3, zi, true, true)).is_equal(zi in cross)
 	# No anchor (monster_zone <= 0) -> fail.
-	assert_bool(TriggerFilters.passes_zone_destroyed(filter, 0, 2, false)).is_false()
+	assert_bool(TriggerFilters.passes_zone_destroyed(filter, 0, 2, false, true)).is_false()
+
+
+func test_zone_destroyed_own_turn() -> void:
+	# <Opponent's Turn> watchers (EBP04-039): own_turn false fires only on the
+	# opponent's turn; own_turn true only on the watcher's own turn.
+	var opp_turn := {"own_turn": false}
+	assert_bool(TriggerFilters.passes_zone_destroyed(opp_turn, 3, 2, false, false)).is_true()
+	assert_bool(TriggerFilters.passes_zone_destroyed(opp_turn, 3, 2, false, true)).is_false()
+	var own_turn := {"own_turn": true}
+	assert_bool(TriggerFilters.passes_zone_destroyed(own_turn, 3, 2, false, true)).is_true()
+	assert_bool(TriggerFilters.passes_zone_destroyed(own_turn, 3, 2, false, false)).is_false()
 
 
 func test_prevents_monster_move_combines_gates() -> void:

@@ -958,7 +958,8 @@ func _passes_zone_destroyed_filter(card_data: Dictionary, method_name: String, w
 	## Evaluate TRIGGER_FILTERS[method_name] for zone-card-destroyed triggers.
 	## `column: "monster"` — destroyed zone must be in the watcher's monster column.
 	## `is_cross_board` distinguishes ally (false, same side) vs opponent (true, cross-board).
-	return TriggerFilters.passes_zone_destroyed(get_trigger_filter(card_data, method_name), watcher.monster_zone, zone_idx, is_cross_board)
+	return TriggerFilters.passes_zone_destroyed(get_trigger_filter(card_data, method_name), watcher.monster_zone, zone_idx, is_cross_board,
+			game_state.current_player_id == watcher.player_id)
 
 
 
