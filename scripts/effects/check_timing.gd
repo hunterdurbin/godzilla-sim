@@ -369,12 +369,25 @@ static func card_location_ref(state: GameState, player_id: int, card_data: Dicti
 func _choose_entry(player_id: int, pool: Array) -> StandbyEntry:
 	## Remove and return the ability `player_id` resolves next. Playing is
 	## compulsory (10.6.3.1); with several, the player chooses which. The
-	## options list them in submission order (StandbyEntry.seq).
+	## options list them in submission order (StandbyEntry.seq). Copies of
+	## one ability (shared copy_key, Q381) are listed once; picking it
+	## resolves its earliest copy, and the pool is offered again after, so
+	## another ability can still go between copies. Only copies of one
+	## ability pending → no prompt.
 	var indices: Array[int] = []
+	var listed_keys: Dictionary = {}
+	var by_seq: Array[int] = []
 	for i in range(pool.size()):
 		if pool[i].player_id == player_id:
-			indices.append(i)
-	indices.sort_custom(func(a: int, b: int) -> bool: return pool[a].seq < pool[b].seq)
+			by_seq.append(i)
+	by_seq.sort_custom(func(a: int, b: int) -> bool: return pool[a].seq < pool[b].seq)
+	for i in by_seq:
+		var key: String = pool[i].copy_key
+		if not key.is_empty():
+			if listed_keys.has(key):
+				continue
+			listed_keys[key] = true
+		indices.append(i)
 	if indices.size() == 1:
 		return pool.pop_at(indices[0])
 

@@ -20,6 +20,11 @@ var still_applies: Callable
 ## submitted). The order-choice prompt (10.4.3) lists a player's abilities in
 ## this order.
 var seq: int = -1
+## Non-empty on copies of one ability triggered several times by one event
+## (a Rage increase of N triggers an increase watcher N times, Q381). The
+## order prompt lists entries sharing a key once and resolves one copy per
+## pick. Empty = this entry is its own ability.
+var copy_key: String = ""
 
 
 func _init(p_player_id: int, p_card: Dictionary, p_callback: Callable,

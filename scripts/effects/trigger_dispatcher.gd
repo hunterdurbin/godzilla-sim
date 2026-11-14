@@ -292,71 +292,60 @@ func apply_rage_reset(player_id: int) -> int:
 
 
 func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
-	## Trigger rage changed on all active cards for this player (monster + zones + strategies).
-	## Collects all applicable effects and submits them to standby (they
-	## resolve at the next check timing).
-	## Each candidate is gated through TRIGGER_FILTERS (phase / own_turn / direction).
+	## Rage abilities on both players' active cards (monster + zone tops —
+	## stacked cards are inactive, 12.7.3 — + strategies) enter standby:
+	## on_rage_changed on this player's, on_opponent_rage_changed on the
+	## other player's. Each candidate is gated through TRIGGER_FILTERS
+	## (phase / own_turn / direction).
+	## A Rage increase of N is N increases (Q381: "each time 【Rage】
+	## increases … resolve them one at a time"): an "increase" watcher gets
+	## one entry per point, each with its own one-step span, sharing a
+	## copy_key so the order prompt lists the ability once. Other watchers
+	## (EBP04-089 "place that many") get one entry with the whole span.
 	var entries: Array = []
+	for card in _active_cards(player_id):
+		entries.append_array(_collect_rage_entries(player_id, card, "on_rage_changed", old_rage, new_rage))
+	var opp_id: int = 1 - player_id
+	for card in _active_cards(opp_id):
+		entries.append_array(_collect_rage_entries(opp_id, card, "on_opponent_rage_changed", old_rage, new_rage))
+	check_timing.submit(entries)
+
+
+func _active_cards(player_id: int) -> Array[Dictionary]:
+	## The player's current monster, zone top cards and strategy cards, in
+	## that order (empty slots skipped).
 	var player := game_state.players[player_id]
-
-	# Monster card
-	if has_trigger(player.current_monster, "on_rage_changed"):
-		var filter := get_trigger_filter(player.current_monster, "on_rage_changed")
-		if _passes_trigger_filter(filter, player_id, old_rage, new_rage):
-			var me := get_effect(player.current_monster)
-			var ctx := _build_context(player_id, player.current_monster)
-			entries.append(StandbyEntry.new(player_id, player.current_monster, me.on_rage_changed.bind(ctx, old_rage, new_rage)))
-
-	# Battle cards in zones (top card only — stacked cards are inactive per 12.7.3)
+	var cards: Array[Dictionary] = []
+	if not player.current_monster.is_empty():
+		cards.append(player.current_monster)
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty() and has_trigger(zone_card, "on_rage_changed"):
-			var filter := get_trigger_filter(zone_card, "on_rage_changed")
-			if _passes_trigger_filter(filter, player_id, old_rage, new_rage):
-				var ze := get_effect(zone_card)
-				var ctx := _build_context(player_id, zone_card)
-				entries.append(StandbyEntry.new(player_id, zone_card, ze.on_rage_changed.bind(ctx, old_rage, new_rage)))
-
-	# Strategy cards
+		if not zone_card.is_empty():
+			cards.append(zone_card)
 	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty() and has_trigger(sz_card, "on_rage_changed"):
-			var filter := get_trigger_filter(sz_card, "on_rage_changed")
-			if _passes_trigger_filter(filter, player_id, old_rage, new_rage):
-				var se := get_effect(sz_card)
-				var ctx := _build_context(player_id, sz_card)
-				entries.append(StandbyEntry.new(player_id, sz_card, se.on_rage_changed.bind(ctx, old_rage, new_rage)))
+		if not sz_card.is_empty():
+			cards.append(sz_card)
+	return cards
 
-	# Also trigger on_opponent_rage_changed on the OTHER player's cards
-	var opp_id: int = 1 - player_id
-	var opp := game_state.players[opp_id]
-	var opp_entries: Array = []
 
-	if has_trigger(opp.current_monster, "on_opponent_rage_changed"):
-		var filter := get_trigger_filter(opp.current_monster, "on_opponent_rage_changed")
-		if _passes_trigger_filter(filter, opp_id, old_rage, new_rage):
-			var me := get_effect(opp.current_monster)
-			var ctx := _build_context(opp_id, opp.current_monster)
-			opp_entries.append(StandbyEntry.new(opp_id, opp.current_monster, me.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)))
-
-	for i in range(8):
-		var zone_card := opp.get_zone_top_card(i)
-		if not zone_card.is_empty() and has_trigger(zone_card, "on_opponent_rage_changed"):
-			var filter := get_trigger_filter(zone_card, "on_opponent_rage_changed")
-			if _passes_trigger_filter(filter, opp_id, old_rage, new_rage):
-				var ze := get_effect(zone_card)
-				var ctx := _build_context(opp_id, zone_card)
-				opp_entries.append(StandbyEntry.new(opp_id, zone_card, ze.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)))
-
-	for sz_card in opp.strategy_zones:
-		if not sz_card.is_empty() and has_trigger(sz_card, "on_opponent_rage_changed"):
-			var filter := get_trigger_filter(sz_card, "on_opponent_rage_changed")
-			if _passes_trigger_filter(filter, opp_id, old_rage, new_rage):
-				var se := get_effect(sz_card)
-				var ctx := _build_context(opp_id, sz_card)
-				opp_entries.append(StandbyEntry.new(opp_id, sz_card, se.on_opponent_rage_changed.bind(ctx, old_rage, new_rage)))
-
-	entries.append_array(opp_entries)
-	check_timing.submit(entries)
+func _collect_rage_entries(watcher_id: int, card: Dictionary, method: String, old_rage: int, new_rage: int) -> Array:
+	if not has_trigger(card, method):
+		return []
+	var filter := get_trigger_filter(card, method)
+	if not _passes_trigger_filter(filter, watcher_id, old_rage, new_rage):
+		return []
+	var effect := get_effect(card)
+	var ctx := _build_context(watcher_id, card)
+	var hook := Callable(effect, method)
+	if filter.get("direction", "") != "increase":
+		return [StandbyEntry.new(watcher_id, card, hook.bind(ctx, old_rage, new_rage))]
+	var entries: Array = []
+	var copy_key := "%s:%s" % [card.get("id", ""), method]
+	for step in range(old_rage, new_rage):
+		var entry := StandbyEntry.new(watcher_id, card, hook.bind(ctx, step, step + 1))
+		entry.copy_key = copy_key
+		entries.append(entry)
+	return entries
 
 
 

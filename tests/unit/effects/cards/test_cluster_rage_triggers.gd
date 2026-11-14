@@ -428,3 +428,102 @@ func test_ebp01_076_invasion_observed_destroys_only_on_own_turn(current_pid: int
 		.override_failure_message("EBP01-076: current_pid=%d" % current_pid).is_equal(not expect_destroy)
 	assert_int(state.players[1].discard_pile.size()).is_equal(1 if expect_destroy else 0)
 	assert_int(input.count_calls("select_zone")).is_equal(1 if expect_destroy else 0)
+
+
+# --- Q381: a Rage increase of N is N increases. Each "whenever … <Rage> is
+#     increased" ability triggers once per point and resolves separately. ---
+
+func test_q381_gain_of_three_resolves_three_separate_mills() -> void:
+	var s := _setup("EBP01-003", {
+		"p0": {"main_deck": [
+			Cards.battle(1, 2000, "D-1"), Cards.battle(1, 2000, "D-2"),
+			Cards.battle(1, 2000, "D-3"), Cards.battle(1, 2000, "D-4"),
+		]},
+	})
+	var state: GameState = s["state"]
+	var input: ScriptedPlayerInput = s["input"]
+
+	s["effect_handler"].gain_rage(0, 3)
+	await s["effect_handler"].check_timing.resolve()
+
+	assert_int(state.players[0].rage).is_equal(3)
+	assert_int(state.players[0].discard_pile.size()) \
+		.override_failure_message("Q381: +3 Rage must mill three times").is_equal(3)
+	# Only copies of one ability are pending: no order prompt.
+	assert_int(input.count_calls("choose_option")).is_equal(0)
+
+
+## Records each one-step (old, new) span the watcher resolves with.
+class SpanRecorder:
+	extends CardEffect
+	var spans: Array = []
+
+	func on_rage_changed(_ctx: EffectContext, old_rage: int, new_rage: int) -> void:
+		spans.append([old_rage, new_rage])
+
+
+func test_q381_each_copy_carries_its_own_one_point_step() -> void:
+	var state := States.make_state({"p0": {"rage": 1}})
+	var card := Cards.battle(1, 5000, "SPAN")
+	card["effect_script"] = "test://span_recorder"
+	state.players[0].push_zone_card(2, card)
+	var s := States.make_session(state)
+	var effect := SpanRecorder.new()
+	(s["effect_handler"] as EffectHandler).registry.register_for_test("test://span_recorder", effect, ["on_rage_changed"],
+			{"on_rage_changed": {"direction": "increase"}})
+
+	s["effect_handler"].gain_rage(0, 2)
+	await s["effect_handler"].check_timing.resolve()
+
+	assert_array(effect.spans).contains_exactly([[1, 2], [2, 3]])
+
+
+func test_q381_mixed_pool_prompts_with_each_ability_listed_once() -> void:
+	# EBP01-003 (monster) and ESD01-013 (strategy) both watch increases; +2
+	# puts two copies of each in standby. The order prompt lists each
+	# distinct ability once, so it still prompts while both are pending.
+	var s := _setup("EBP01-003", {
+		"p0": {
+			"main_deck": [Cards.battle(1, 2000, "D-1"), Cards.battle(1, 2000, "D-2"), Cards.battle(1, 2000, "D-3")],
+			"strategy_zones": [Real.instance("ESD01-013")],
+		},
+	})
+	var state: GameState = s["state"]
+	var input: ScriptedPlayerInput = s["input"]
+
+	s["effect_handler"].gain_rage(0, 2)
+	await s["effect_handler"].check_timing.resolve()
+
+	assert_int(state.players[0].discard_pile.size()) \
+		.override_failure_message("EBP01-003 resolves once per point").is_equal(2)
+	var prompts := input.calls_of("choose_option")
+	assert_int(prompts.size()).is_greater(0)
+	for prompt_call in prompts:
+		var options: Array = prompt_call["options"]
+		assert_int(options.size()) \
+			.override_failure_message("each distinct ability listed once: %s" % [options]) \
+			.is_equal(2)
+
+
+func test_q381_decrease_watcher_keeps_one_entry_per_decrease() -> void:
+	var state := States.make_state({"p0": {"rage": 3}})
+	var card := Cards.battle(1, 5000, "DEC")
+	card["effect_script"] = "test://dec_recorder"
+	state.players[0].push_zone_card(2, card)
+	var s := States.make_session(state)
+	var effect := DecRecorder.new()
+	(s["effect_handler"] as EffectHandler).registry.register_for_test("test://dec_recorder", effect, ["on_rage_changed"],
+			{"on_rage_changed": {"direction": "decrease"}})
+
+	s["effect_handler"].reduce_rage(0, 2)
+	await s["effect_handler"].check_timing.resolve()
+
+	assert_array(effect.spans).contains_exactly([[3, 1]])
+
+
+class DecRecorder:
+	extends CardEffect
+	var spans: Array = []
+
+	func on_rage_changed(_ctx: EffectContext, old_rage: int, new_rage: int) -> void:
+		spans.append([old_rage, new_rage])

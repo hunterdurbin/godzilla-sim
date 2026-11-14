@@ -106,3 +106,9 @@ _Avoid_: Step, push
 **Victory through invasion**:
 Winning because your invading monster advanced from an invasion out of zone 8 while your opponent's zone 8 held no battle card (5.13.1.1.2).
 _Avoid_: Invasion win, breakthrough
+
+## Rage
+
+**Rage increase**:
+Raising a monster card's <Rage> by one. Raising it by N at once is N increases, so a "whenever … <Rage> is increased" (「【怒り】が増えるたび」) ability triggers N times and each resolves separately (Q381). The Gain Rage action (8.4.1), playing a monster card (8.5.1.1) and an effect's "increase … <Rage> by N" are all increases.
+_Avoid_: Rage gain (for one event of N points)
