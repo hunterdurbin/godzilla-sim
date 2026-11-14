@@ -20,10 +20,11 @@ var still_applies: Callable
 ## submitted). The order-choice prompt (10.4.3) lists a player's abilities in
 ## this order.
 var seq: int = -1
-## Non-empty on copies of one ability triggered several times by one event
-## (a Rage increase of N triggers an increase watcher N times, Q381). The
-## order prompt lists entries sharing a key once and resolves one copy per
-## pick. Empty = this entry is its own ability.
+## Non-empty on an ability that can be pending several times at once (a Rage
+## increase of N triggers an increase watcher N times, Q381): the key names
+## the (card, ability), so every pending copy of it shares the key, whichever
+## increase triggered it. The order prompt lists a key once and resolves one
+## copy per pick. Empty = this entry is its own ability.
 var copy_key: String = ""
 
 

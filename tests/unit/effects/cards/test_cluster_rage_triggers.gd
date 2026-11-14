@@ -453,7 +453,8 @@ func test_q381_gain_of_three_resolves_three_separate_mills() -> void:
 	assert_int(input.count_calls("choose_option")).is_equal(0)
 
 
-## Records each one-step (old, new) span the watcher resolves with.
+## Records each (old, new) span a Rage watcher resolves with; its direction
+## filter is passed at registration.
 class SpanRecorder:
 	extends CardEffect
 	var spans: Array = []
@@ -511,7 +512,7 @@ func test_q381_decrease_watcher_keeps_one_entry_per_decrease() -> void:
 	card["effect_script"] = "test://dec_recorder"
 	state.players[0].push_zone_card(2, card)
 	var s := States.make_session(state)
-	var effect := DecRecorder.new()
+	var effect := SpanRecorder.new()
 	(s["effect_handler"] as EffectHandler).registry.register_for_test("test://dec_recorder", effect, ["on_rage_changed"],
 			{"on_rage_changed": {"direction": "decrease"}})
 
@@ -520,10 +521,3 @@ func test_q381_decrease_watcher_keeps_one_entry_per_decrease() -> void:
 
 	assert_array(effect.spans).contains_exactly([[3, 1]])
 
-
-class DecRecorder:
-	extends CardEffect
-	var spans: Array = []
-
-	func on_rage_changed(_ctx: EffectContext, old_rage: int, new_rage: int) -> void:
-		spans.append([old_rage, new_rage])

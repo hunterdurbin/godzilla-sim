@@ -298,10 +298,12 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 	## other player's. Each candidate is gated through TRIGGER_FILTERS
 	## (phase / own_turn / direction).
 	## A Rage increase of N is N increases (Q381: "each time 【Rage】
-	## increases … resolve them one at a time"): an "increase" watcher gets
-	## one entry per point, each with its own one-step span, sharing a
-	## copy_key so the order prompt lists the ability once. Other watchers
-	## (EBP04-089 "place that many") get one entry with the whole span.
+	## increases … resolve them one at a time"): an on_rage_changed
+	## "increase" watcher gets one entry per point, each with its own
+	## one-step span, sharing a copy_key so the order prompt lists the
+	## ability once. Other watchers (EBP04-089 "place that many", the
+	## on_opponent_rage_changed ones) get one entry with the whole span
+	## (hunterdurbin/godzilla-sim-issue-tracker#29 row 2).
 	var entries: Array = []
 	for card in _active_cards(player_id):
 		entries.append_array(_collect_rage_entries(player_id, card, "on_rage_changed", old_rage, new_rage))
@@ -337,7 +339,7 @@ func _collect_rage_entries(watcher_id: int, card: Dictionary, method: String, ol
 	var effect := get_effect(card)
 	var ctx := _build_context(watcher_id, card)
 	var hook := Callable(effect, method)
-	if filter.get("direction", "") != "increase":
+	if method != "on_rage_changed" or filter.get("direction", "") != "increase":
 		return [StandbyEntry.new(watcher_id, card, hook.bind(ctx, old_rage, new_rage))]
 	var entries: Array = []
 	var copy_key := "%s:%s" % [card.get("id", ""), method]
