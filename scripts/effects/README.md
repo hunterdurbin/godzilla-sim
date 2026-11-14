@@ -26,8 +26,9 @@ board UI, the bot, tests — calls the modules too (`effect_handler.queries`,
 facade method that no card script calls doesn't belong on the facade:
 `scripts/tools/check_effect_handler_card_api.py` (pre-commit + CI) fails on
 a public EffectHandler method with no caller under `scripts/effects/<set>/`,
-and on a card script that reaches past the facade into a module
-(`ctx.effect_handler.queries.…`).
+on a card script that reaches past the facade into a module
+(`ctx.effect_handler.queries.…`), and on any `effect_handler.<name>` that
+names no EffectHandler member (untyped receivers fail only at runtime).
 
 | Module | Role |
 |---|---|

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ratchet + guard: EffectHandler is exactly the card-script interface.
+"""Ratchet + guards: EffectHandler is exactly the card-script interface.
 
 EffectHandler (scripts/effects/effect_handler.gd) is the interface the
 per-card scripts (scripts/effects/<set>/*.gd) call. The engine modules hold
@@ -13,6 +13,11 @@ UI / bot / test code calls those modules (`effect_handler.queries`,
 2. Guard: card scripts never reach past the facade into a module
    (`ctx.effect_handler.queries.x(...)`); they call the facade primitive.
    No allow-list.
+3. Guard: every `effect_handler.<name>` / `["effect_handler"].<name>` under
+   scripts/, scenes/ and tests/ names a real EffectHandler member (method,
+   signal, var, or an Object built-in in OBJECT_MEMBERS). Through an
+   untyped receiver a call to a removed or misspelled method still compiles
+   and only fails when the line runs. No allow-list.
 
 A method counts as called only through a handler receiver (comments
 stripped):
@@ -55,6 +60,14 @@ MODULE_RECEIVERS = {"registry", "check_timing", "dispatcher", "destruction",
                     "mover", "monster_mover", "enter_zone", "queries"}
 
 DEF_RE = re.compile(r"^(?:static\s+)?func\s+([a-z]\w*)\s*\(", re.M)
+MEMBER_RE = re.compile(r"^(?:(?:static\s+)?func|signal|var)\s+(\w+)", re.M)
+# Object / RefCounted members reachable on any EffectHandler.
+OBJECT_MEMBERS = {"new", "connect", "disconnect", "is_connected", "emit_signal", "get", "set",
+                  "call", "callv", "has_method", "has_signal", "get_script", "get_class", "is_class",
+                  "free", "reference", "unreference", "get_reference_count"}
+MEMBER_ACCESS_RE = re.compile(r"(?:\beffect_handler|\[\"effect_handler\"\])\.([A-Za-z_]\w*)")
+SCAN_DIRS = ("scripts", "scenes", "tests")
+SKIP_FILES = {"scripts/effects/trigger_map.gd"}  # generated
 # `name: EffectHandler` (var or parameter) or `name [: T] = / := ctx.effect_handler`
 # (the alias ends there — not `ctx.effect_handler.foo(...)`).
 ALIAS_RE = re.compile(r"\b([A-Za-z_]\w*)\s*:\s*EffectHandler\b"
@@ -109,6 +122,31 @@ def find_module_reach(cards):
     return out
 
 
+def facade_members(facade_src):
+    return set(MEMBER_RE.findall(facade_src)) | OBJECT_MEMBERS
+
+
+def find_unknown_members(members, files):
+    """(path:line, name) for each `effect_handler.<name>` naming no member."""
+    out = []
+    for path, lines in files:
+        for lineno, line in enumerate(lines, 1):
+            for name in MEMBER_ACCESS_RE.findall(line):
+                if name not in members:
+                    out.append(("%s:%d" % (path, lineno), name))
+    return out
+
+
+def gd_files():
+    for d in SCAN_DIRS:
+        for dirpath, _, names in os.walk(os.path.join(ROOT, d)):
+            for f in sorted(names):
+                if f.endswith(".gd"):
+                    path = os.path.relpath(os.path.join(dirpath, f), ROOT)
+                    if path not in SKIP_FILES:
+                        yield path
+
+
 def _strip(text):
     return "\n".join(gd_ratchet.strip_comment(l) for l in text.split("\n"))
 
@@ -132,6 +170,11 @@ def self_test():
     assert got == want, "self-test: got %s, want %s" % (sorted(got), sorted(want))
     reach = find_module_reach([("c.gd", cards[2]), ("d.gd", cards[0])])
     assert reach == [("c.gd:1", "effect_handler.queries")], "self-test: module reach got %s" % reach
+    members = facade_members("signal log_message(t)\nvar queries: EffectQueries\nfunc used() -> void:\n")
+    unknown = find_unknown_members(members, [("u.gd", [
+        "_bot.effect_handler.gone(1)", "s[\"effect_handler\"].used()", "effect_handler.queries.x()",
+        "effect_handler.log_message.emit(t)", "my_effect_handler.gone()", "effect_handler.call(\"used\")"])])
+    assert unknown == [("u.gd:1", "gone")], "self-test: unknown members got %s" % unknown
 
 
 def main():
@@ -147,6 +190,14 @@ def main():
         print("\nCard scripts call the EffectHandler primitive, never a module behind it "
               "(add a facade delegate if the card needs one).\n")
 
+    unknown = find_unknown_members(facade_members(facade_src),
+                                   [(p, gd_ratchet.read_lines(p)) for p in gd_files()])
+    for where, name in unknown:
+        print("%-36s  effect_handler.%s  (%s)" % ("No such EffectHandler member", name, where))
+    if unknown:
+        print("\nCall the engine module that owns it (effect_handler.queries / .dispatcher / "
+              ".check_timing / ...), or fix the name.\n")
+
     status = gd_ratchet.run(
         sys.argv, find_uncalled(facade_src, [t for _, t in cards]), ALLOWLIST,
         header="Public EffectHandler methods with no card-script caller, pending removal.",
@@ -155,7 +206,7 @@ def main():
         hint="EffectHandler is the card-script interface: call the engine module "
              "(effect_handler.queries / .dispatcher / .check_timing / ...) instead of "
              "adding a facade method no card script calls.")
-    return 1 if reach else status
+    return 1 if reach or unknown else status
 
 
 if __name__ == "__main__":

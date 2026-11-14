@@ -14,8 +14,9 @@ if git diff --cached --name-only | grep -qE '\.gd$|engine_private_calls_allowlis
 	python3 scripts/tools/check_engine_private_calls.py || exit 1
 fi
 
-# Ratchet: every public EffectHandler method has a card-script caller.
-if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$|effect_handler_card_api_allowlist\.txt$'; then
+# Ratchet + guards: EffectHandler is exactly the card-script interface
+# (every method card-called, no module reach from cards, no unknown members).
+if git diff --cached --name-only | grep -qE '\.gd$|effect_handler_card_api_allowlist\.txt$'; then
 	python3 scripts/tools/check_effect_handler_card_api.py || exit 1
 fi
 
