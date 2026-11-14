@@ -48,6 +48,9 @@ jobs:
       - name: Only the trigger dispatcher builds StandbyEntry objects
         run: python3 scripts/tools/check_standby_entry_builders.py
 
+      - name: Only MonsterMover writes monster_zone
+        run: python3 scripts/tools/check_monster_zone_writers.py
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest

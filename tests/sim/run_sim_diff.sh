@@ -32,7 +32,11 @@
 #   1 = results differ / script errors / missing games (any pair);
 #   2 = otherwise clean, but some changed card was UNEXERCISED;
 #   3 = the working tree changed during the run — the verdict is void, rerun
-#       without editing (overrides 0-2).
+#       without editing (overrides 0-2);
+#   4 = bad arguments (games / seed not integers, p1/p2 not a difficulty,
+#       a --pair without "|"): nothing ran. A deck name passed as a
+#       positional arg (e.g. `--pair "A" "B"`) lands here instead of
+#       running unmatched seeds.
 set -u
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -57,6 +61,28 @@ DECK1="${6:-ESD01 Starter}"
 DECK2="${7:-ESD02 Starter}"
 SEED="${8:-424242}"
 TIMEOUT="${SIM_TIMEOUT:-3600}"
+
+# Reject misplaced args up front: a deck name that slips into a positional
+# slot would otherwise become the seed or game count, run unmatched games
+# and report a bogus behaviour diff.
+bad_args() {
+	echo "run_sim_diff.sh: $1" >&2
+	echo "usage: run_sim_diff.sh <godot> [base_ref] [games] [p1] [p2] [deck1] [deck2] [seed] [--pair \"A|B\"]..." >&2
+	echo "STATUS: 4 (bad arguments)"
+	exit 4
+}
+[ "${#POS[@]}" -le 8 ] || bad_args "too many positional args (${#POS[@]}): quote deck names; a pair is --pair \"A|B\""
+[[ "$GAMES" =~ ^[0-9]+$ ]] || bad_args "games must be an integer, got '$GAMES'"
+[[ "$SEED" =~ ^-?[0-9]+$ ]] || bad_args "seed must be an integer, got '$SEED'"
+for side in "$P1" "$P2"; do
+	case "$side" in
+		EASY|NORMAL|HARD|KAIJU) ;;
+		*) bad_args "p1/p2 must be EASY, NORMAL, HARD or KAIJU, got '$side'" ;;
+	esac
+done
+for pair in "${PAIRS[@]+"${PAIRS[@]}"}"; do
+	[[ "$pair" == *"|"* ]] || bad_args "--pair needs \"deckA|deckB\", got '$pair'"
+done
 [ "${#PAIRS[@]}" -gt 0 ] || PAIRS=("$DECK1|$DECK2")
 
 # @relative -> @/abs/path in THIS repo, so the base worktree (which may not

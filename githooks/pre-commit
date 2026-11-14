@@ -48,6 +48,11 @@ if git diff --cached --name-only | grep -qE '^scripts/.*\.gd$'; then
 	python3 scripts/tools/check_standby_entry_builders.py || exit 1
 fi
 
+# Guard: only MonsterMover moves a monster (writes monster_zone).
+if git diff --cached --name-only | grep -qE '^(scripts|scenes)/.*\.gd$'; then
+	python3 scripts/tools/check_monster_zone_writers.py || exit 1
+fi
+
 # Ratchet: no new GDScript compile warnings (needs a Godot binary: set
 # GODOT_BIN, or have `godot` on PATH; skipped otherwise — CI still runs it).
 if git diff --cached --name-only | grep -qE '\.gd$|gdscript_warnings_allowlist\.txt$'; then
