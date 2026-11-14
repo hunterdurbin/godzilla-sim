@@ -12,8 +12,11 @@ a check in `scripts/tools/` instead (see its README) and does not belong here.
   is a claim the diff must support.
 - **A primitive's docstring is its contract.** It says where the card must
   already be (removed from its source by the caller, or taken out by the
-  primitive), which `PlayerState` signals it emits, which triggers it fires,
-  and whether it prompts. A new primitive without that is incomplete.
+  primitive), which GameEvents / EffectHandler signals it emits, which
+  triggers it fires, and whether it prompts. `PlayerState` `*_changed`
+  signals come from the mutators it calls (`scripts/core/README.md`
+  § Contracts), so they go unlisted. A new primitive without that is
+  incomplete.
 - **A primitive serves the intent, not one card.** Its name and parameters
   read as card text ("place cards under your monster"), and the effects
   README primitives table gains a row for it.

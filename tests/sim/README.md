@@ -24,9 +24,9 @@ byte-identical across runs — so any diff is a real behavior change.
     [--pair "deckA|deckB"]...
 ```
 
-It runs the working tree and a detached, imported worktree of `base_ref`
-in parallel (the base gets this tree's `bot_simulation_runner.gd`, so both
-run the same harness) and reports differing `[SimResult]` lines, P1 wins,
+It runs a snapshot of the working tree and a detached worktree of
+`base_ref` in parallel, each imported headless once (the base gets the
+snapshot's `bot_simulation_runner.gd`, so both run the same harness) and reports differing `[SimResult]` lines, P1 wins,
 SCRIPT ERROR counts and `[Kaiju] … plan DIVERGED` counts. Under `SPLIT:` it
 prints, per game whose turn trace differs, the last `[SimTurn]` line base
 and head share (`from`: the last turn start where the games still look the
@@ -40,9 +40,9 @@ monster is rank 1) usually comes from the planner's opponent-reply pass,
 which plays the opponent's turn, counter phase included, against the bot:
 `scripts/bot/kaiju/README.md` § `kaiju_planner.gd`. Exit 0 = identical;
 the last line, `STATUS: <n> (…)`, repeats the verdict so it survives a `| grep`.
-Head runs straight from the working tree, so leave it untouched until the
-run ends: an edit mid-run prints `WARNING: the working tree changed` and
-voids the verdict as `STATUS: 3`.
+Head runs from a snapshot taken at start (HEAD + tracked changes via
+`git stash create`, which leaves the stash stack alone, + untracked
+non-ignored files), so editing the tree during a run does not affect it.
 `--pair` (repeatable) runs several deck pairs against one base import —
 use it instead of separate invocations; deck1/deck2 are then ignored.
 

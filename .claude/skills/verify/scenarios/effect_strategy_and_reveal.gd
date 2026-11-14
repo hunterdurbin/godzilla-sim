@@ -14,7 +14,8 @@ func run(v: Node) -> void:
 	v.ed.add_to_deck(0, v.ed.mint_card("EBP01-011"), 0)  # a <Fest> card on top
 	var hand_before := p0.hand.size()
 	var disc_before := p0.discard_pile.size()
-	v.h.trigger_monster_played(0, {}, p0.current_monster)  # not awaited: the overlay waits
+	v.h.dispatcher.trigger_monster_played(0, {}, p0.current_monster)  # queues to standby
+	v.h.check_timing.resolve()  # not awaited: the overlay waits
 	await v.wait(1.5)
 	v.shot("a1_reveal_overlay")
 	v.close_overlays()

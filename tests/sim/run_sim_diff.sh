@@ -10,10 +10,13 @@
 #   --pair (repeatable, anywhere in the args) runs several deck pairs against
 #   ONE imported base worktree; when given, deck1/deck2 are ignored.
 #
-# Builds a detached worktree of base_ref (imported headless once), copies
-# THIS tree's bot_simulation_runner.gd into it (so both sides run the same
-# harness and accept the same args), then per pair runs both sims in
-# parallel and reports:
+# Builds two detached worktrees, each imported headless once: base_ref, and
+# a snapshot of THIS working tree taken at start (HEAD + tracked changes via
+# `git stash create`, which leaves the stash stack alone, + untracked files
+# that are not ignored). Head runs from the snapshot, so editing the tree
+# during a run is harmless. The base gets the snapshot's
+# bot_simulation_runner.gd (so both sides run the same harness and accept
+# the same args). Per pair both sims run in parallel; it reports:
 #   - [SimResult] lines that differ (empty = no bot-visible behavior change)
 #   - SPLIT: per game whose [SimTurn] trace differs, the last shared turn
 #     line and the first differing one, base vs head (first_divergence.py),
@@ -21,21 +24,17 @@
 #   - per side: games completed, P1 wins, SCRIPT ERROR count, and
 #     `[Kaiju] … plan DIVERGED` count (the KAIJU replay-parity metric:
 #     the planner's cached plan stopped matching the live game)
-# and finally, per changed card script (scripts/effects/<set>/*.gd differing
-# from base_ref, incl. untracked): how many times its abilities started
+# and finally, per changed card script (scripts/effects/<set>/*.gd in the
+# snapshot differing from base_ref, incl. untracked): how many times its abilities started
 # resolving, base -> head, per pair and in total ([SimEffects] line). A card
 # whose head total is 0 is UNEXERCISED: the [SimResult] diff says nothing
 # about it — pick decks that run it (decks_with_cards.sh). Passive-only
 # cards (modifiers, replacement queries) never "resolve" and always show 0.
-# Head runs straight from the working tree, so the tree is fingerprinted
-# (HEAD + tracked diff + untracked files) at the start and re-checked after
-# every pair: an edit mid-run means the verdict covers mixed code.
 # Exit status (also printed as the final "STATUS: <n> (...)" line):
 #   0 = identical results and no script errors on this tree;
 #   1 = results differ / script errors / missing games (any pair);
 #   2 = otherwise clean, but some changed card was UNEXERCISED;
-#   3 = the working tree changed during the run — the verdict is void, rerun
-#       without editing (overrides 0-2);
+#   3 = no longer used (was: tree edited mid-run; head now runs a snapshot);
 #   4 = bad arguments (games / seed not integers, p1/p2 not a difficulty,
 #       a --pair without "|"): nothing ran. A deck name passed as a
 #       positional arg (e.g. `--pair "A" "B"`) lands here instead of
@@ -88,58 +87,57 @@ for pair in "${PAIRS[@]+"${PAIRS[@]}"}"; do
 done
 [ "${#PAIRS[@]}" -gt 0 ] || PAIRS=("$DECK1|$DECK2")
 
-# @relative -> @/abs/path in THIS repo, so the base worktree (which may not
-# have the deck file) reads the same deck.
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/simdiff.XXXXXX")"
+BASE_WT="$WORK/base"
+HEAD_WT="$WORK/head"
+
+cleanup() {
+	pkill -9 -f "$BASE_WT" 2>/dev/null
+	pkill -9 -f "$HEAD_WT" 2>/dev/null
+	git -C "$REPO" worktree remove --force "$BASE_WT" 2>/dev/null
+	git -C "$REPO" worktree remove --force "$HEAD_WT" 2>/dev/null
+}
+trap cleanup EXIT
+
+# Snapshot the working tree: a commit object of HEAD + tracked changes
+# (`git stash create` does not touch the stash stack; empty = no changes),
+# then the untracked, non-ignored files copied on top.
+SNAP="$(git -C "$REPO" stash create 2>/dev/null)"
+[ -n "$SNAP" ] || SNAP="$(git -C "$REPO" rev-parse HEAD)"
+git -C "$REPO" worktree add --detach "$HEAD_WT" "$SNAP" >/dev/null 2>&1 \
+	|| { echo "FAIL: cannot create the working-tree snapshot"; exit 1; }
+git -C "$REPO" ls-files --others --exclude-standard -z \
+	| rsync -a --from0 --files-from=- "$REPO/" "$HEAD_WT/" \
+	|| { echo "FAIL: cannot copy untracked files into the snapshot"; exit 1; }
+
+git -C "$REPO" worktree add --detach "$BASE_WT" "$BASE_REF" >/dev/null 2>&1 \
+	|| { echo "FAIL: cannot create worktree for $BASE_REF"; exit 1; }
+cp "$HEAD_WT/tests/sim/bot_simulation_runner.gd" "$BASE_WT/tests/sim/bot_simulation_runner.gd"
+
+# @relative -> @/abs/path in the snapshot, so the base worktree (which may
+# not have the deck file) reads the same deck.
 resolve_deck() {
 	case "$1" in
 		@/*|@res://*) printf '%s' "$1" ;;
-		@*) printf '@%s/%s' "$REPO" "${1#@}" ;;
+		@*) printf '@%s/%s' "$HEAD_WT" "${1#@}" ;;
 		*) printf '%s' "$1" ;;
 	esac
 }
 
-# Fingerprint of everything head runs: HEAD, the tracked diff, and the
-# untracked files' contents (.godot and other ignored paths excluded).
-tree_fingerprint() {
-	{
-		git -C "$REPO" rev-parse HEAD
-		git -C "$REPO" diff HEAD --binary
-		git -C "$REPO" ls-files --others --exclude-standard -z \
-			| (cd "$REPO" && xargs -0 shasum 2>/dev/null)
-	} | shasum | cut -d' ' -f1
+# Import both trees once, in parallel (class-name cache). Headless Godot may
+# wedge at exit, so bound it instead of waiting.
+import_tree() { # <dir> <log>
+	"$GODOT" --headless --path "$1" --import > "$2" 2>&1 &
+	local pid=$!
+	for _ in $(seq 1 180); do
+		sleep 1
+		kill -0 "$pid" 2>/dev/null || break
+	done
+	kill -9 "$pid" 2>/dev/null
 }
-
-# Head runs on this tree's class-name cache: refresh it if a script was
-# added, moved or renamed outside the editor (the base worktree imports below).
-if ! python3 "$REPO/scripts/tools/check_class_cache.py" --quiet; then
-	echo "run_sim_diff.sh: importing to refresh the class-name cache"
-	"$REPO/tests/import.sh" "$GODOT" > /dev/null || { echo "FAIL: tests/import.sh failed"; exit 1; }
-fi
-TREE_FP="$(tree_fingerprint)"
-TREE_CHANGED=0
-
-WORK="$(mktemp -d "${TMPDIR:-/tmp}/simdiff.XXXXXX")"
-BASE_WT="$WORK/base"
-
-cleanup() {
-	pkill -9 -f "$BASE_WT" 2>/dev/null
-	git -C "$REPO" worktree remove --force "$BASE_WT" 2>/dev/null
-}
-trap cleanup EXIT
-
-git -C "$REPO" worktree add --detach "$BASE_WT" "$BASE_REF" >/dev/null 2>&1 \
-	|| { echo "FAIL: cannot create worktree for $BASE_REF"; exit 1; }
-cp "$REPO/tests/sim/bot_simulation_runner.gd" "$BASE_WT/tests/sim/bot_simulation_runner.gd"
-
-# Import the base tree once (class-name cache). Headless Godot may wedge at
-# exit, so bound it instead of waiting.
-"$GODOT" --headless --path "$BASE_WT" --import > "$WORK/import.log" 2>&1 &
-IPID=$!
-for _ in $(seq 1 180); do
-	sleep 1
-	kill -0 "$IPID" 2>/dev/null || break
-done
-kill -9 "$IPID" 2>/dev/null
+import_tree "$BASE_WT" "$WORK/import_base.log" &
+import_tree "$HEAD_WT" "$WORK/import_head.log" &
+wait
 
 run_sim() { # <dir> <out> <deck1> <deck2>
 	"$GODOT" --headless --path "$1" res://tests/sim/BotSimulationRunner.tscn -- \
@@ -170,9 +168,9 @@ i=0
 for pair in "${PAIRS[@]}"; do
 	i=$((i + 1))
 	d1="${pair%%|*}"; d2="${pair#*|}"
-	echo "[$i] Sim diff: $BASE_REF vs working tree | $GAMES games, seed $SEED, $P1 ($d1) vs $P2 ($d2)"
+	echo "[$i] Sim diff: $BASE_REF vs working tree (snapshot) | $GAMES games, seed $SEED, $P1 ($d1) vs $P2 ($d2)"
 	run_sim "$BASE_WT" "$WORK/base$i.log" "$(resolve_deck "$d1")" "$(resolve_deck "$d2")" &
-	run_sim "$REPO" "$WORK/head$i.log" "$(resolve_deck "$d1")" "$(resolve_deck "$d2")" &
+	run_sim "$HEAD_WT" "$WORK/head$i.log" "$(resolve_deck "$d1")" "$(resolve_deck "$d2")" &
 	wait
 	summary base "$WORK/base$i.log"
 	summary head "$WORK/head$i.log"
@@ -187,7 +185,7 @@ for pair in "${PAIRS[@]}"; do
 	fi
 	# Turn traces catch games that split mid-game, even ones that reconverge
 	# on the same [SimResult]; the first differing [SimTurn] is where to look.
-	python3 "$REPO/tests/sim/first_divergence.py" "$WORK/base$i.log" "$WORK/head$i.log" \
+	python3 "$HEAD_WT/tests/sim/first_divergence.py" "$WORK/base$i.log" "$WORK/head$i.log" \
 		> "$WORK/split$i.txt"
 	case $? in
 		0) ;;
@@ -200,18 +198,14 @@ for pair in "${PAIRS[@]}"; do
 	[ "$(grep -c 'SCRIPT ERROR' "$WORK/head$i.log")" -eq 0 ] || STATUS=1
 	[ "$(grep -c '\[SimResult\]' "$WORK/head$i.log")" -ge "$GAMES" ] || STATUS=1
 	LOGS+=("$WORK/base$i.log" "$WORK/head$i.log")
-	if [ "$TREE_CHANGED" -eq 0 ] && [ "$(tree_fingerprint)" != "$TREE_FP" ]; then
-		echo "  WARNING: the working tree changed during this pair — head ran mixed code"
-		TREE_CHANGED=1
-	fi
 done
 
 # Changed card scripts -> card ids (via the effect_script paths in the set
 # files) -> resolution counts per side, per pair.
-CHANGED=$( { git -C "$REPO" diff --name-only "$BASE_REF" -- 'scripts/effects/*/*.gd';
-	git -C "$REPO" ls-files --others --exclude-standard -- 'scripts/effects/*/*.gd'; } | sort -u)
+CHANGED=$( { git -C "$HEAD_WT" diff --name-only "$BASE_REF" -- 'scripts/effects/*/*.gd';
+	git -C "$HEAD_WT" ls-files --others --exclude-standard -- 'scripts/effects/*/*.gd'; } | sort -u)
 if [ -n "$CHANGED" ]; then
-	UNEXERCISED=$(python3 - "$REPO" "${#PAIRS[@]}" "${LOGS[@]}" -- $CHANGED <<'PY'
+	UNEXERCISED=$(python3 - "$HEAD_WT" "${#PAIRS[@]}" "${LOGS[@]}" -- $CHANGED <<'PY'
 import glob, os, re, sys
 args = sys.argv[1:]
 repo, npairs = args[0], int(args[1])
@@ -264,12 +258,10 @@ PY
 	fi
 fi
 echo "Logs: $WORK/{base,head}<n>.log"
-[ "$TREE_CHANGED" -eq 1 ] && STATUS=3
 # Last line carries the verdict, so it survives `| grep` / `| tail` filters.
 case "$STATUS" in
 	0) echo "STATUS: 0 (identical)" ;;
 	2) echo "STATUS: 2 (unexercised)" ;;
-	3) echo "STATUS: 3 (working tree changed during the run: verdict void, rerun without editing)" ;;
 	*) echo "STATUS: $STATUS (differs, splits, script errors or missing games)" ;;
 esac
 exit $STATUS
