@@ -42,4 +42,4 @@ func on_enter(ctx: EffectContext) -> void:
 		if CardUtils.is_strategy(card):
 			strategy_count += 1
 	if strategy_count > 0:
-		await ctx.effect_handler.gain_rage(ctx.owner.player_id, strategy_count, ctx.card_data.get("id", ""))
+		ctx.effect_handler.gain_rage(ctx.owner.player_id, strategy_count, ctx.card_data.get("id", ""))

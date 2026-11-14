@@ -68,7 +68,7 @@ func _entry(player_id: int, card: Dictionary, callback: Callable) -> StandbyEntr
 # --- Crush rule action → standby ---
 
 func test_both_players_crushed_revenge_resolves_in_standby_turn_player_first() -> void:
-	var state := States.make_state({
+	var state := States.make_state({"allow_illegal": true, 
 		"current_player_id": 1,
 		"p0": {"monster_zone": 2, "zone_cards": {1: _card("P0-REV", REVENGE)}},
 		"p1": {"monster_zone": 5, "zone_cards": {4: _card("P1-REV", REVENGE)}},
@@ -89,7 +89,7 @@ func test_both_players_crushed_revenge_resolves_in_standby_turn_player_first() -
 
 
 func test_crushed_card_leave_play_and_revenge_share_one_order_prompt() -> void:
-	var state := States.make_state({"p0": {
+	var state := States.make_state({"allow_illegal": true, "p0": {
 		"monster_zone": 3,
 		"zone_cards": {2: _card("BOTH", LEAVE_AND_REVENGE)},
 	}})
@@ -125,10 +125,11 @@ func test_turn_player_crush_preempts_non_turn_players_remaining_abilities() -> v
 		state.players[0].monster_zone = 4
 	var other := func() -> void: effect.seen.append("p1:other")
 
-	await handler.check_timing.submit([
+	handler.check_timing.submit([
 		_entry(1, Cards.battle(1, 5000, "P1-A"), crusher),
 		_entry(1, Cards.battle(1, 5000, "P1-B"), other),
 	])
+	await handler.check_timing.resolve()
 
 	assert_array(effect.seen).contains_exactly([
 		"p1:crusher",
@@ -146,12 +147,13 @@ func test_ability_added_mid_resolution_joins_same_players_next_order_prompt() ->
 	var spawner := func() -> void:
 		order.append("a")
 		# Triggered while A resolves → enters standby behind it.
-		await handler.check_timing.submit([spawned])
+		handler.check_timing.submit([spawned])
 
-	await handler.check_timing.submit([
+	handler.check_timing.submit([
 		_entry(0, Cards.battle(1, 5000, "A"), spawner),
 		_entry(0, Cards.battle(1, 5000, "B"), func() -> void: order.append("b")),
 	])
+	await handler.check_timing.resolve()
 
 	# Second prompt offers B and the new C together; picking the second (C)
 	# resolves it before B.
@@ -178,7 +180,8 @@ func test_godzilla_flies_crushed_zone8_revenge_enters_standby() -> void:
 	var state := _flies_state(revenge_card)
 	var s := _session(state)
 
-	await s["effect_handler"].trigger_enter(0, Real.instance("EBP03-068"))
+	s["effect_handler"].trigger_enter(0, Real.instance("EBP03-068"))
+	await s["effect_handler"].check_timing.resolve()
 
 	var p0 := state.players[0]
 	assert_int(p0.monster_zone).is_equal(8)
@@ -194,7 +197,8 @@ func test_godzilla_flies_crushed_godzilla_2023_goes_to_deck_bottom() -> void:
 	var state := _flies_state(replacer)
 	var s := _session(state)
 
-	await s["effect_handler"].trigger_enter(0, Real.instance("EBP03-068"))
+	s["effect_handler"].trigger_enter(0, Real.instance("EBP03-068"))
+	await s["effect_handler"].check_timing.resolve()
 
 	var p0 := state.players[0]
 	assert_int(p0.monster_zone).is_equal(8)
@@ -223,7 +227,8 @@ func test_teleport_onto_revenge_card_crushes_it_and_revenge_enters_standby() -> 
 	var card := Real.instance("EBP04-078")
 	state.players[0].strategy_zones[0] = card
 
-	await s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].trigger_enter(0, card)
+	await s["effect_handler"].check_timing.resolve()
 
 	var p1 := state.players[1]
 	assert_int(p1.monster_zone).is_equal(8)

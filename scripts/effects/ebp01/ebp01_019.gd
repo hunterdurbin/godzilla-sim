@@ -50,7 +50,7 @@ func on_enter(ctx: EffectContext) -> void:
 		if target_zone < 0:
 			break
 
-		await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, selected, target_zone)
+		ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, selected, target_zone)
 
 		# Rule 5.11.1.3: must play to different zones if possible
 		valid_zones.erase(target_zone)

@@ -34,7 +34,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	# teleport_monster respects EBP04-076 (Godzilla's Dormancy) via the
 	# prevents_opponent_monster_move filter — returns false if blocked.
-	var moved: bool = await ctx.effect_handler.teleport_monster(ctx.opponent.player_id, target_zone)
+	var moved: bool = ctx.effect_handler.teleport_monster(ctx.opponent.player_id, target_zone)
 	if not moved:
 		ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_078_BLOCKED"))
 		return

@@ -29,4 +29,4 @@ func bot_can_fulfill_on_when_invading(owner: PlayerState, _opponent: PlayerState
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	if not CardUtils.is_monster(ctx.owner.last_invasion_card):
 		return
-	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))
+	ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))

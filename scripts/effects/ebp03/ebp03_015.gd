@@ -26,4 +26,4 @@ func get_effect_categories() -> Array[CardEnums.EffectCategory]:
 
 
 func on_hand_card_discarded(ctx: EffectContext, _discarded_card: Dictionary) -> void:
-	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+	ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

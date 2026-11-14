@@ -34,4 +34,4 @@ func on_revenge(ctx: EffectContext) -> void:
 			return CardUtils.has_trait(card, CardEnums.CardTrait.RODAN),
 		tr("STR_EFF_EBP04_059_PROMPT"))
 	if not found.is_empty():
-		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)
+		ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)

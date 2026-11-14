@@ -100,6 +100,7 @@ func test_arrange_deck_top_short_and_empty_deck() -> void:
 	var handler: EffectHandler = States.make_session(state, input)["effect_handler"]
 
 	await handler.arrange_deck_top(0, 4, "arrange")  # default input keeps everything
+	await handler.check_timing.resolve()
 	assert_array(_ids(p0.main_deck)).is_equal(["ONLY"])
 	assert_array(_ids(input.calls_of("arrange_deck")[0]["cards"])).is_equal(["ONLY"])
 
@@ -159,7 +160,10 @@ func test_play_strategy_from_effect_plays_into_first_empty_zone() -> void:
 	(s["events"] as GameEvents).strategy_card_played.connect(
 		func(pid: int, card: Dictionary, idx: int) -> void: played.append([pid, card.get("id"), idx]))
 
-	var idx: int = await handler.play_strategy_from_effect(0, strat)
+	var idx: int = handler.play_strategy_from_effect(0, strat)
+	# The <Enter> enters standby; it resolves at the next check timing.
+	assert_array(probe.entered).is_empty()
+	await handler.check_timing.resolve()
 
 	assert_int(idx).is_equal(1)
 	assert_str(str(p0.strategy_zones[1].get("id"))).is_equal("FROM-DISCARD")
@@ -176,7 +180,7 @@ func test_play_strategy_from_effect_noop_without_an_empty_zone() -> void:
 	p0.discard_pile.append(strat)
 	var handler: EffectHandler = States.make_session(state)["effect_handler"]
 
-	assert_int(await handler.play_strategy_from_effect(0, strat)).is_equal(-1)
+	assert_int(handler.play_strategy_from_effect(0, strat)).is_equal(-1)
 	assert_array(_ids(p0.discard_pile)).is_equal(["NO-ROOM"])
 
 

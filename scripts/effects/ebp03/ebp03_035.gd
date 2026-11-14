@@ -66,4 +66,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if selected.is_empty():
 		return
 
-	await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 6)
+	ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, 6)

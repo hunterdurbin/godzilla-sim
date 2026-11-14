@@ -61,16 +61,19 @@ func resolve_counter(state: GameState) -> void:
 	if immunity_threshold > 0 and total_cp >= threat and total_cp <= immunity_threshold:
 		# Counter is immune — monster retreats but does NOT rank up
 		events.counter_immunity_triggered.emit(player.player_id, total_cp, immunity_threshold)
-		await _apply_counter_retreat(opponent)
+		_apply_counter_retreat(opponent)
 	elif total_cp >= threat:
 		events.counter_succeeded.emit(player.player_id, total_cp, threat, numbers["rage_threat"], numbers["effect_threat"])
-		await _apply_counter_retreat(opponent)
+		_apply_counter_retreat(opponent)
 
-		# Trigger counter success effects after retreat but before rank-up.
-		# Counterer (player, current player) handles on_counter_success;
-		# countered monster (opponent) handles on_self_countered.
+		# Counter success abilities enter standby after the retreat: counterer
+		# (player, current player) on_counter_success, countered monster
+		# (opponent) on_self_countered. They resolve at the 7.4.4 check timing
+		# in one pool with the new monster's <Enter>. Q513: "The player who
+		# controls that monster card chooses the order of resolution." If the
+		# rank-up is impossible the game ends first (5.15.1.2.1).
 		if effect_handler:
-			await effect_handler.trigger_counter_success(player.player_id, opponent.player_id)
+			effect_handler.trigger_counter_success(player.player_id, opponent.player_id)
 
 		# Opponent must rank up their monster
 		await _rank_up_monster(state, opponent, player.player_id)
@@ -85,7 +88,7 @@ func force_counter(state: GameState, target_player_id: int) -> void:
 	## Used by EBP02-012 (counter opponent's monster) and EBP04-027 (counter Gigan itself).
 	var winner_id: int = 1 - target_player_id
 	var target := state.players[target_player_id]
-	await _apply_counter_retreat(target)
+	_apply_counter_retreat(target)
 	# Target must rank up their monster
 	await _rank_up_monster(state, target, winner_id)
 
@@ -102,7 +105,7 @@ func _apply_counter_retreat(target: PlayerState) -> void:
 		target.monster_zone = retreat_zone
 		events.monster_advanced.emit(target.player_id, old_zone, target.monster_zone)
 		target.monster_changed.emit()
-		await effect_handler.check_timing.crush_now(target.player_id)
+		effect_handler.check_timing.crush_now(target.player_id)
 
 
 func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id: int) -> void:
@@ -156,7 +159,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 		events.monster_countered.emit(opponent.player_id, old_monster, m)
 		opponent.monster_changed.emit()
 		if effect_handler:
-			await effect_handler.trigger_enter(opponent.player_id, m, true)
+			effect_handler.trigger_enter(opponent.player_id, m, true)
 	else:
 		# Opponent loses - can't find valid rank-up monster
 		state.game_over.emit(winner_player_id, "STR_LOG_REASON_COUNTER_VICTORY")

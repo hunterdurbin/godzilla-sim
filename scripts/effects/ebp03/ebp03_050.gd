@@ -42,7 +42,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.monster_zone <= 1:
 		return
 
-	await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
+	ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
 
 
 func _has_base_in_play(ctx: EffectContext) -> bool:

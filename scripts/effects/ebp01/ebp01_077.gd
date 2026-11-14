@@ -26,4 +26,4 @@ func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> boo
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.rage > 2:
 		return
-	await ctx.effect_handler.move_monster_as_countered(ctx.opponent.player_id)
+	ctx.effect_handler.move_monster_as_countered(ctx.opponent.player_id)

@@ -30,4 +30,4 @@ func get_burst_rank() -> int:
 
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.get_battle_card_zone_indices().size() >= 4:
-		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

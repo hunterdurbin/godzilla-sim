@@ -9,7 +9,7 @@ const States := preload("res://tests/fixtures/states.gd")
 
 func test_compute_counter_numbers_without_effects() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 6000), 4: Cards.battle(1, 4000, "B")}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 6000), 4: Cards.battle(1, 4000, "B")}},
 		"p1": {"current_monster": Cards.monster(1, 5000), "rage": 2},
 	})
 	var session := States.make_session(state)
@@ -23,7 +23,7 @@ func test_compute_counter_numbers_without_effects() -> void:
 
 func test_counter_success_retreats_and_ranks_up() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 9000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 9000)}},
 		"p1": {
 			"current_monster": Cards.monster(1, 5000),
 			"monster_zone": 7,
@@ -48,7 +48,7 @@ func test_counter_success_retreats_and_ranks_up() -> void:
 
 func test_counter_failure_no_movement() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 1000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 1000)}},
 		"p1": {"current_monster": Cards.monster(1, 5000), "monster_zone": 7},
 	})
 	var session := States.make_session(state)
@@ -64,7 +64,7 @@ func test_counter_failure_no_movement() -> void:
 
 func test_counter_zones_1_to_5_do_not_retreat() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 9000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 9000)}},
 		"p1": {
 			"current_monster": Cards.monster(1, 5000),
 			"monster_zone": 3,
@@ -79,7 +79,7 @@ func test_counter_zones_1_to_5_do_not_retreat() -> void:
 
 func test_counter_victory_when_monster_deck_empty() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 9000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 9000)}},
 		"p1": {"current_monster": Cards.monster(1, 5000), "monster_deck": []},
 	})
 	var session := States.make_session(state)
@@ -96,7 +96,7 @@ func test_counter_victory_when_monster_deck_empty() -> void:
 func test_counter_victory_when_no_valid_rankup() -> void:
 	# Deck has a rank-2 monster but with no shared trait -> no valid target.
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 9000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 9000)}},
 		"p1": {
 			"current_monster": Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA]),
 			"monster_deck": [Cards.monster(2, 7000, [CardEnums.CardTrait.RODAN])],
@@ -114,7 +114,7 @@ func test_counter_victory_when_no_valid_rankup() -> void:
 func test_rankup_uses_scripted_choice() -> void:
 	# Two valid rank-2 monsters; the script picks deck index 1.
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 9000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 9000)}},
 		"p1": {
 			"current_monster": Cards.monster(1, 5000),
 			"monster_zone": 6,
@@ -149,6 +149,10 @@ func test_force_counter_targets_specific_player() -> void:
 
 
 # --- Counter retreat crush (11.3 interrupt, 11.1.2.1) before the new <Enter> ---
+# The crush happens at the retreat; the crushed card's <Revenge> and the new
+# monster's <Enter> then share the 7.4.4 check timing's pool. Q250: "If both
+# the monster and the battle card with 【Revenge】 belong to the same player,
+# that player chooses the order in which to resolve them."
 
 const REVENGE := "test://counter_retreat_revenge"
 const ENTER := "test://counter_retreat_enter"
@@ -175,7 +179,7 @@ func _retreat_onto_revenge_state() -> GameState:
 	var line := Cards.monster_line()
 	line[1]["effect_script"] = ENTER
 	return States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 30000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 30000)}},
 		"p1": {
 			"current_monster": line[0],
 			"monster_zone": 7,
@@ -200,6 +204,7 @@ func test_counter_retreat_crushes_before_new_monster_enter() -> void:
 	var effect := _register_retreat_recorder(session, state)
 
 	await session["action_handler"].resolve_counter(state)
+	await session["effect_handler"].check_timing.resolve() # 7.4.4
 
 	var p1 := state.players[1]
 	assert_int(p1.monster_zone).is_equal(4)  # 7 -> 4
@@ -212,12 +217,33 @@ func test_counter_retreat_crushes_before_new_monster_enter() -> void:
 	])
 
 
+func test_counter_retreat_owner_orders_revenge_and_enter() -> void:
+	# Q250: the countered player picks; here <Enter> first. The crush has
+	# already happened, so zone 4 is empty either way.
+	var state := _retreat_onto_revenge_state()
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"choose_option": [1]}
+	var session := States.make_session(state, input)
+	var effect := _register_retreat_recorder(session, state)
+
+	await session["action_handler"].resolve_counter(state)
+	assert_array(effect.seen).is_empty()  # both wait in standby
+	await session["effect_handler"].check_timing.resolve() # 7.4.4
+
+	assert_array(effect.seen).contains_exactly([
+		"enter:zone4_occupied=false",
+		"revenge:P1-REV",
+	])
+	assert_int(input.calls_of("choose_option")[0]["player_id"]).is_equal(1)
+
+
 func test_force_counter_retreat_crushes_before_new_monster_enter() -> void:
 	var state := _retreat_onto_revenge_state()
 	var session := States.make_session(state)
 	var effect := _register_retreat_recorder(session, state)
 
 	await session["action_handler"].force_counter(state, 1)
+	await session["effect_handler"].check_timing.resolve() # 7.4.4
 
 	assert_bool(state.players[1].zone_has_cards(3)).is_false()
 	assert_array(effect.seen).contains_exactly([

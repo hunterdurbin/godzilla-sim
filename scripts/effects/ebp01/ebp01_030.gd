@@ -21,4 +21,4 @@ func bot_can_fulfill_on_enter(_owner: PlayerState, opponent: PlayerState) -> boo
 
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.monster_zone < 8:
-		await ctx.effect_handler.advance_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone + 1)
+		ctx.effect_handler.advance_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone + 1)

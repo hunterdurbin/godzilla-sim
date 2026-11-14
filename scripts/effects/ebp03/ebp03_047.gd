@@ -52,4 +52,4 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		return
 
 	# Play on top of this card in the same zone (intentional stack — no overload)
-	await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, found, zone_idx, true)
+	ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, found, zone_idx, true)

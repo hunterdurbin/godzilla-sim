@@ -33,4 +33,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if find_zone_of_card(ctx) != 7:
 		return
 
-	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+	ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

@@ -60,4 +60,4 @@ func on_enter(ctx: EffectContext) -> void:
 			ctx.owner.player_id, options,
 			tr("STR_EFF_EBP04_077_PROMPT_FMT") % card_name)
 		if place_chosen == 0:
-			await ctx.effect_handler.play_battle_card_from_hand(ctx.owner.player_id, chosen_mech, 7)
+			ctx.effect_handler.play_battle_card_from_hand(ctx.owner.player_id, chosen_mech, 7)

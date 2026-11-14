@@ -31,7 +31,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if zone_idx != 7: # Must be zone 8 (index 7)
 		return
 
-	await ctx.effect_handler.trigger_all_monster_enter_abilities(ctx.owner.player_id)
+	ctx.effect_handler.trigger_all_monster_enter_abilities(ctx.owner.player_id)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

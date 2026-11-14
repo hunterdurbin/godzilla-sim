@@ -55,6 +55,7 @@ func _threat_setup(card_id: String) -> Dictionary:
 					Cards.monster(1, 5000, [CardEnums.CardTrait.KING_GHIDORAH], "STK-%d" % i))
 		"EBP02-T03":  # each Crystal grants +1000 TL to a SpaceGodzilla monster
 			state = States.make_state({"p0": {
+				"monster_zone": 3,
 				"current_monster": Cards.monster(1, 5000, [CardEnums.CardTrait.SPACEGODZILLA], "SG-MON"),
 				"zone_cards": {0: _crystal(0), 1: _crystal(1)},
 			}})
@@ -76,6 +77,7 @@ func _threat_setup(card_id: String) -> Dictionary:
 			})
 		"EBP04-011":  # red + blue battle in zones → +10000
 			state = States.make_state({"p0": {
+				"monster_zone": 3,
 				"current_monster": Real.instance(card_id),
 				"zone_cards": {
 					0: _battle_colored(CardEnums.CardColor.RED, "RED-1"),
@@ -102,6 +104,7 @@ func _threat_setup(card_id: String) -> Dictionary:
 			})
 		"EBP04-031", "EBP04-032":  # threat = N per distinct battle color in own zones
 			state = States.make_state({"p0": {
+				"monster_zone": 3,
 				"current_monster": Real.instance(card_id),
 				"zone_cards": {
 					0: _battle_colored(CardEnums.CardColor.RED, "RED-1"),
@@ -260,7 +263,7 @@ func test_engagement_restriction(card_id: String, restricted_rank: int,
 
 func test_play_rank_self_per_own_battle_ebp01_027() -> void:
 	var card := Real.instance("EBP01-027")
-	var state := States.make_state({"p0": {"zone_cards": {
+	var state := States.make_state({"p0": {"monster_zone": 3, "zone_cards": {
 		0: Cards.battle(2, 3000, "B-0"),
 		1: Cards.battle(2, 3000, "B-1"),
 	}}})
@@ -300,7 +303,7 @@ func test_play_rank_self_awakening_nonred_ebp04_044() -> void:
 
 func test_play_rank_self_per_opp_battle_efc01_004() -> void:
 	var card := Real.instance("EFC01-004")
-	var state := States.make_state({"p1": {"zone_cards": {
+	var state := States.make_state({"p1": {"monster_zone": 4, "zone_cards": {
 		0: Cards.battle(2, 3000, "O-0"),
 		1: Cards.battle(2, 3000, "O-1"),
 		2: Cards.battle(2, 3000, "O-2"),
@@ -376,7 +379,7 @@ func test_counter_prevented_low_opp_presence(card_id: String,
 		]) -> void:
 	var state := States.make_state({
 		"p0": {"current_monster": Real.instance(card_id)},
-		"p1": {"zone_cards": {0: Cards.battle(2, 3000, "O-0")}},
+		"p1": {"monster_zone": 2, "zone_cards": {0: Cards.battle(2, 3000, "O-0")}},
 	})
 	var handler := _wire(state)
 
@@ -496,7 +499,7 @@ func test_can_be_destroyed_protection_ebp01_052() -> void:
 func test_protects_own_strategies_ebp04_048() -> void:
 	var strat := Cards.strategy(2, "PROT-S")
 	var plain_battle := Cards.battle(2, 3000, "PLAIN-B")
-	var state := States.make_state({"p0": {
+	var state := States.make_state({"p0": {"monster_zone": 3, 
 		"zone_cards": {0: Real.instance("EBP04-048"), 1: plain_battle},
 		"strategy_zones": [strat],
 	}})
@@ -520,7 +523,7 @@ func test_protects_battle_cards_opp_turn_efc01_006() -> void:
 	var battle := Cards.battle(2, 3000, "MY-B")
 	var state := States.make_state({
 		"current_player_id": 1,
-		"p0": {
+		"p0": {"monster_zone": 2, 
 			"strategy_zones": [Real.instance("EFC01-006")],
 			"zone_cards": {0: battle},
 		},
@@ -557,7 +560,7 @@ func test_protects_battle_cards_opp_turn_efc01_006() -> void:
 func test_strategy_hand_rank_opp_increase_ebp04_066() -> void:
 	var state := States.make_state({
 		"current_player_id": 1,
-		"p0": {"zone_cards": {
+		"p0": {"monster_zone": 3, "zone_cards": {
 			0: Real.instance("EBP04-066"),
 			1: _battle_colored(CardEnums.CardColor.RED, "RED-1"),
 		}},
@@ -584,7 +587,7 @@ func test_strategy_hand_rank_opp_increase_ebp04_066() -> void:
 
 
 func test_strategy_hand_rank_own_decrease_ebp04_068() -> void:
-	var state := States.make_state({"p0": {"zone_cards": {0: Real.instance("EBP04-068")}}})
+	var state := States.make_state({"p0": {"monster_zone": 2, "zone_cards": {0: Real.instance("EBP04-068")}}})
 	state.players[0].discard_pile.append(_battle_colored(CardEnums.CardColor.RED, "D-RED"))
 	state.players[0].discard_pile.append(_battle_colored(CardEnums.CardColor.BLUE, "D-BLUE"))
 	var handler := _wire(state)

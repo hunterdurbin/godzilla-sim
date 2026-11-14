@@ -186,7 +186,7 @@ func test_destroy_zones_within_rank_budget_is_one_multi_select_with_budget() -> 
 	# One select/deselect + confirm prompt: every card that fits the budget on
 	# its own is offered, each weighted by its rank, up-to mode (confirming
 	# nothing declines). The confirmed cards are destroyed together.
-	var state := States.make_state({"p1": {"zone_cards": {
+	var state := States.make_state({"p1": {"monster_zone": 5, "zone_cards": {
 		0: Cards.battle(3, 3000, "R3"), 1: Cards.battle(2, 2000, "R2"),
 		2: Cards.battle(4, 4000, "R4"), 3: Cards.battle(6, 6000, "R6"),
 	}}})
@@ -209,7 +209,7 @@ func test_destroy_zones_within_rank_budget_is_one_multi_select_with_budget() -> 
 
 
 func test_destroy_zones_within_rank_budget_rejects_over_budget_answer() -> void:
-	var state := States.make_state({"p1": {"zone_cards": {
+	var state := States.make_state({"p1": {"monster_zone": 2, "zone_cards": {
 		0: Cards.battle(3, 3000, "R3"), 2: Cards.battle(4, 4000, "R4"),
 	}}})
 	var input := ScriptedPlayerInput.new()
@@ -224,7 +224,7 @@ func test_destroy_zones_within_rank_budget_rejects_over_budget_answer() -> void:
 
 
 func test_destroy_zones_within_rank_budget_decline_and_filter() -> void:
-	var state := States.make_state({"p1": {"zone_cards": {
+	var state := States.make_state({"p1": {"monster_zone": 3, "zone_cards": {
 		0: Cards.battle(1, 1000, "KEEP"), 1: Cards.battle(1, 1000, "OUT"),
 	}}})
 	var input := ScriptedPlayerInput.new()

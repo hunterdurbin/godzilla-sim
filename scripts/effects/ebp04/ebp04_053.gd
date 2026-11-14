@@ -35,4 +35,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if zone_b < 0:
 		return
 
-	await ctx.effect_handler.swap_zones(ctx.owner, zone_a, zone_b)
+	ctx.effect_handler.swap_zones(ctx.owner, zone_a, zone_b)

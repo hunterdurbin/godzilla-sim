@@ -34,4 +34,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if second < 0:
 		return
 
-	await ctx.effect_handler.swap_zones(ctx.opponent, first, second)
+	ctx.effect_handler.swap_zones(ctx.opponent, first, second)

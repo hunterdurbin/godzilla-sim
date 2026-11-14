@@ -49,7 +49,7 @@ func on_enter(ctx: EffectContext) -> void:
 		true # allow_skip
 	)
 	if not discarded.is_empty():
-		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:

@@ -26,4 +26,4 @@ func on_enter(ctx: EffectContext) -> void:
 	# Fill all empty zones with Train Bombers tokens
 	var empty := ctx.owner.get_empty_zone_indices()
 	for zone_idx in empty:
-		await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T01", zone_idx)
+		ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T01", zone_idx)

@@ -69,4 +69,4 @@ func on_enter(ctx: EffectContext) -> void:
 			if idx_to_destroy >= 0:
 				await ctx.effect_handler.discard_strategy_from_zone(ctx.opponent.player_id, idx_to_destroy)
 	elif chosen_id == "rage":
-		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

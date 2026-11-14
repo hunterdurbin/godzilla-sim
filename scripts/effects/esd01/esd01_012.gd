@@ -51,7 +51,7 @@ func on_monster_played(ctx: EffectContext, _old_monster: Dictionary, _new_monste
 		return
 
 	# Move the entire stack to the chosen zone
-	await ctx.effect_handler.move_zone_stack(ctx.owner, current_zone_idx, chosen)
+	ctx.effect_handler.move_zone_stack(ctx.owner, current_zone_idx, chosen)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

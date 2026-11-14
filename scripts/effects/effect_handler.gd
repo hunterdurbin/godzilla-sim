@@ -221,7 +221,8 @@ func reduce_rage(player_id: int, amount: int) -> int:
 	## Respects rage reduction prevention effects (e.g. EBP03-004).
 	## Populates the player's transient pending_rage_markers bucket with one
 	## RAGE-MARKER per point reduced so claiming effects (e.g. EBP04-089) can
-	## pop them; whatever isn't claimed is banished after the trigger resolves.
+	## pop them; whatever isn't claimed is cleared once the check timing that
+	## resolves the trigger ends (CheckTiming.resolve).
 	var player := game_state.players[player_id]
 	if not player.has_rage() or amount <= 0:
 		return 0
@@ -232,8 +233,7 @@ func reduce_rage(player_id: int, amount: int) -> int:
 	player.rage -= actual
 	player.rage_changed.emit(player.rage)
 	player.push_pending_rage_markers(actual)
-	await trigger_rage_changed(player_id, old_rage, player.rage)
-	player.pending_rage_markers.clear()
+	trigger_rage_changed(player_id, old_rage, player.rage)
 	return actual
 
 
@@ -250,22 +250,10 @@ func gain_rage(player_id: int, amount: int, source_card_id: String = "") -> int:
 	player.rage += amount
 	player.rage_changed.emit(player.rage)
 	log_message.emit(GameLog.rage_gained(player_id, amount, player.rage, source_card_id))
-	await trigger_rage_changed(player_id, old_rage, player.rage)
+	trigger_rage_changed(player_id, old_rage, player.rage)
 	return amount
 
 
-
-
-# --- Deferred movement resolution ---
-
-func is_card_still_active(player_id: int, card_data: Dictionary) -> bool:
-	return check_timing.is_card_still_active(player_id, card_data)
-
-
-
-
-func resolve_deferred_entries(entries: Array) -> void:
-	await check_timing.submit_deferred(entries)
 
 
 
@@ -396,7 +384,7 @@ func force_counter(target_player_id: int) -> void:
 # --- Delegates to the split-out modules (the effect-script-facing API) ---
 
 func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = false, through_evolution: bool = false) -> void:
-	await dispatcher.trigger_enter(player_id, card_data, from_effect, through_evolution)
+	dispatcher.trigger_enter(player_id, card_data, from_effect, through_evolution)
 
 
 func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void:
@@ -422,7 +410,7 @@ func collect_revenge_entries(player_id: int, card_data: Dictionary) -> Array:
 
 
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
-	await dispatcher.trigger_discard_from_hand(player_id, card_data)
+	dispatcher.trigger_discard_from_hand(player_id, card_data)
 
 
 func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) -> Array:
@@ -430,7 +418,7 @@ func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) ->
 
 
 func trigger_hand_cards_discarded_batch(player_id: int, cards: Array) -> void:
-	await dispatcher.trigger_hand_cards_discarded_batch(player_id, cards)
+	dispatcher.trigger_hand_cards_discarded_batch(player_id, cards)
 
 
 func collect_discarded_for_invasion_entries(player_id: int, card_data: Dictionary) -> Array:
@@ -442,11 +430,11 @@ func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
 
 
 func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
-	await dispatcher.trigger_rage_changed(player_id, old_rage, new_rage)
+	dispatcher.trigger_rage_changed(player_id, old_rage, new_rage)
 
 
 func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> void:
-	await dispatcher.trigger_monster_advance(player_id, from_zone, to_zone)
+	dispatcher.trigger_monster_advance(player_id, from_zone, to_zone)
 
 
 func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
@@ -454,23 +442,23 @@ func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: in
 
 
 func trigger_phase_start(phase: CardEnums.GamePhase) -> void:
-	await dispatcher.trigger_phase_start(phase)
+	dispatcher.trigger_phase_start(phase)
 
 
 func trigger_phase_end(phase: CardEnums.GamePhase) -> void:
-	await dispatcher.trigger_phase_end(phase)
+	dispatcher.trigger_phase_end(phase)
 
 
 func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster: Dictionary, discard_snapshot: Array = []) -> void:
-	await dispatcher.trigger_monster_played(player_id, old_monster, new_monster, discard_snapshot)
+	dispatcher.trigger_monster_played(player_id, old_monster, new_monster, discard_snapshot)
 
 
 func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_index: int, played_from_deck: bool = false) -> void:
-	await dispatcher.trigger_battle_card_played(player_id, card_data, zone_index, played_from_deck)
+	dispatcher.trigger_battle_card_played(player_id, card_data, zone_index, played_from_deck)
 
 
 func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
-	await dispatcher.trigger_hand_card_discarded(player_id, card_data)
+	dispatcher.trigger_hand_card_discarded(player_id, card_data)
 
 
 func collect_hand_card_discarded_entries(player_id: int, card_data: Dictionary) -> Array:
@@ -478,11 +466,11 @@ func collect_hand_card_discarded_entries(player_id: int, card_data: Dictionary) 
 
 
 func trigger_counter_success(counterer_player_id: int, countered_player_id: int) -> void:
-	await dispatcher.trigger_counter_success(counterer_player_id, countered_player_id)
+	dispatcher.trigger_counter_success(counterer_player_id, countered_player_id)
 
 
 func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> void:
-	await dispatcher.trigger_strategy_discarded(player_id, strategy_card)
+	dispatcher.trigger_strategy_discarded(player_id, strategy_card)
 
 
 func collect_strategy_discarded_entries(player_id: int, strategy_card: Dictionary) -> Array:
@@ -490,7 +478,7 @@ func collect_strategy_discarded_entries(player_id: int, strategy_card: Dictionar
 
 
 func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone: int) -> void:
-	await dispatcher.trigger_invasion_observed(invading_player_id, from_zone, to_zone)
+	dispatcher.trigger_invasion_observed(invading_player_id, from_zone, to_zone)
 
 
 func collect_invasion_observed_entries(invading_player_id: int, from_zone: int, to_zone: int) -> Array:
@@ -498,7 +486,7 @@ func collect_invasion_observed_entries(invading_player_id: int, from_zone: int, 
 
 
 func trigger_leave_play(player_id: int, leaving_card: Dictionary, zone_index: int) -> void:
-	await dispatcher.trigger_leave_play(player_id, leaving_card, zone_index)
+	dispatcher.trigger_leave_play(player_id, leaving_card, zone_index)
 
 
 func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_index: int) -> Array:
@@ -506,11 +494,11 @@ func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_i
 
 
 func trigger_zone_changed(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> void:
-	await dispatcher.trigger_zone_changed(player_id, moved_card, from_zone, to_zone)
+	dispatcher.trigger_zone_changed(player_id, moved_card, from_zone, to_zone)
 
 
 func trigger_all_monster_enter_abilities(player_id: int) -> void:
-	await dispatcher.trigger_all_monster_enter_abilities(player_id)
+	dispatcher.trigger_all_monster_enter_abilities(player_id)
 
 
 func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
@@ -518,7 +506,7 @@ func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Di
 
 
 func trigger_ally_zone_card_destroyed(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
-	await dispatcher.trigger_ally_zone_card_destroyed(player_id, destroyed_card, zone_idx)
+	dispatcher.trigger_ally_zone_card_destroyed(player_id, destroyed_card, zone_idx)
 
 
 func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
@@ -526,7 +514,7 @@ func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, dest
 
 
 func trigger_opponent_zone_card_destroyed(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
-	await dispatcher.trigger_opponent_zone_card_destroyed(destroyed_player_id, destroyed_card, zone_idx)
+	dispatcher.trigger_opponent_zone_card_destroyed(destroyed_player_id, destroyed_card, zone_idx)
 
 
 func collect_card_returned_from_discard_entries(returning_player_id: int, card: Dictionary) -> Array:
@@ -534,7 +522,7 @@ func collect_card_returned_from_discard_entries(returning_player_id: int, card: 
 
 
 func trigger_card_returned_from_discard(returning_player_id: int, card: Dictionary) -> void:
-	await dispatcher.trigger_card_returned_from_discard(returning_player_id, card)
+	dispatcher.trigger_card_returned_from_discard(returning_player_id, card)
 
 
 func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, prompt: String) -> Dictionary:
@@ -670,7 +658,7 @@ func evolve_zones_in_order(player_id: int, eligible_zones: Array[int]) -> void:
 
 
 func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int) -> bool:
-	return await mover.create_token_in_zone(player, token_id, zone_index)
+	return mover.create_token_in_zone(player, token_id, zone_index)
 
 
 func create_tokens_in_zones(player: PlayerState, token_id: String, count: int, candidate_zones: Array[int] = [], prompt_key: String = "STR_EFF_TOKEN_ZONE_FMT") -> int:
@@ -694,11 +682,11 @@ func apply_play_cost(player_id: int, card_data: Dictionary, zone_index: int) -> 
 
 
 func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
-	await mover.move_zone_stack(player, from_zone, to_zone)
+	mover.move_zone_stack(player, from_zone, to_zone)
 
 
 func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
-	await mover.swap_zones(player, zone_a, zone_b)
+	mover.swap_zones(player, zone_a, zone_b)
 
 
 func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1) -> int:
@@ -714,11 +702,11 @@ func can_play_in_zone(player_id: int, zone_idx: int) -> bool:
 
 
 func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx: int) -> bool:
-	return await mover.play_battle_card_from_hand(player_id, card_data, zone_idx)
+	return mover.play_battle_card_from_hand(player_id, card_data, zone_idx)
 
 
 func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx: int, stack_on_top: bool = false) -> bool:
-	return await mover.play_battle_card_from_deck(player_id, card_data, zone_idx, stack_on_top)
+	return mover.play_battle_card_from_deck(player_id, card_data, zone_idx, stack_on_top)
 
 
 func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int) -> void:
@@ -730,7 +718,7 @@ func place_cards_under_monster(player_id: int, cards: Array[Dictionary]) -> void
 
 
 func play_strategy_from_effect(player_id: int, card: Dictionary, zone_idx: int = -1) -> int:
-	return await mover.play_strategy_from_effect(player_id, card, zone_idx)
+	return mover.play_strategy_from_effect(player_id, card, zone_idx)
 
 
 func move_strategy_card_under_zone(player: PlayerState, strat_idx: int, zone_idx: int) -> bool:
@@ -762,7 +750,7 @@ func get_cards_under_strategy_top(player: PlayerState, strat_idx: int) -> Array:
 
 
 func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
-	await mover.return_discard_to_hand(player_id, card)
+	mover.return_discard_to_hand(player_id, card)
 
 
 func add_card_to_hand(player_id: int, card: Dictionary) -> void:
@@ -786,19 +774,19 @@ func shuffle_discard_into_deck(player_id: int) -> int:
 
 
 func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
-	await monster_mover.advance_monster_to_zone(player_id, target_zone)
+	monster_mover.advance_monster_to_zone(player_id, target_zone)
 
 
 func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
-	await monster_mover.retreat_monster_to_zone(player_id, target_zone)
+	monster_mover.retreat_monster_to_zone(player_id, target_zone)
 
 
 func teleport_monster(player_id: int, target_zone: int) -> bool:
-	return await monster_mover.teleport_monster(player_id, target_zone)
+	return monster_mover.teleport_monster(player_id, target_zone)
 
 
 func move_monster_as_countered(player_id: int) -> void:
-	await monster_mover.move_monster_as_countered(player_id)
+	monster_mover.move_monster_as_countered(player_id)
 
 
 func is_rage_reduction_prevented(player_id: int) -> bool:

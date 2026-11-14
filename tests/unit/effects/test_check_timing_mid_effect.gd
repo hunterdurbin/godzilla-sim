@@ -1,8 +1,8 @@
 extends GdUnitTestSuite
 
 ## Check timing (rule 10.4.3): automatic abilities triggered while an effect
-## is resolving enter standby (10.6.2) and resolve only after that effect
-## finishes. Replacement effects (10.2.1.3) still interrupt immediately.
+## is resolving enter standby (10.6.2) and resolve only at the check timing
+## after that effect finishes. Replacement effects (10.2.1.3) still interrupt immediately.
 ## Synthetic "rest of the effect" = a choose_option prompt after the trigger.
 
 const Cards := preload("res://tests/fixtures/cards.gd")
@@ -64,7 +64,8 @@ func test_single_destroy_revenge_waits_for_rest_of_effect() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, DestroyOneThenChoose.new(), ["on_enter"])
 
-	await handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	await handler.check_timing.resolve()
 
 	var kinds := _kinds(s["input"])
 	assert_bool(kinds.has("search_cards")).is_true()
@@ -85,12 +86,13 @@ func test_effect_resolving_fires_once_per_ability_start() -> void:
 	(s["events"] as GameEvents).effect_resolving.connect(
 		func(_pid: int, card: Dictionary) -> void: seen.append(CardUtils.base_id(card)))
 
-	await handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	await handler.check_timing.resolve()
 
 	assert_array(seen).is_equal(["SOURCE", "EBP02-058"])
 
 
-func test_single_destroy_revenge_resolves_at_once_outside_an_effect() -> void:
+func test_single_destroy_revenge_waits_for_the_check_timing_outside_an_effect() -> void:
 	var revenge_card := Real.instance("EBP02-058")
 	var state := States.make_state({"p0": {"zone_cards": {1: revenge_card}}})
 	state.players[0].discard_pile.append(
@@ -99,7 +101,11 @@ func test_single_destroy_revenge_resolves_at_once_outside_an_effect() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 
 	await handler.destroy_chosen_zone(0, state.players[0], [1] as Array[int], "destroy")
+	# <Revenge> entered standby (10.6.2); nothing resolves on the spot…
+	assert_int(s["input"].count_calls("search_cards")).is_equal(0)
 
+	# …it resolves at the next check timing.
+	await handler.check_timing.resolve()
 	assert_int(s["input"].count_calls("search_cards")).is_equal(1)
 
 
@@ -109,13 +115,14 @@ func test_discard_from_hand_ability_waits_for_rest_of_effect() -> void:
 	green["colors"] = [CardEnums.CardColor.GREEN]
 	var state := States.make_state({"current_player_id": 0, "p0": {
 		"hand": [monster_x],
-		"zone_cards": {0: Cards.battle(1, 1000, "RED"), 1: green},
+		"zone_cards": {2: Cards.battle(1, 1000, "RED"), 1: green},
 	}})
 	var s := _session(state, {"select_hand_card": [0], "choose_option": [0], "select_zone": [4]})
 	var handler: EffectHandler = s["effect_handler"]
 	handler.registry.register_for_test(DISCARD_THEN_CHOOSE, DiscardOneThenChoose.new(), ["on_enter"])
 
-	await handler.trigger_enter(0, _source(DISCARD_THEN_CHOOSE))
+	handler.trigger_enter(0, _source(DISCARD_THEN_CHOOSE))
+	await handler.check_timing.resolve()
 
 	var kinds := _kinds(s["input"])
 	assert_int(kinds.find("choose_option")).is_less(kinds.find("select_zone"))
@@ -131,7 +138,8 @@ func test_godzilla_earth_link_waits_for_rest_of_effect() -> void:
 	var effect := DestroyOneThenChoose.new()
 	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, effect, ["on_enter"])
 
-	await handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	await handler.check_timing.resolve()
 
 	# Godzilla Earth was still on the field while the effect continued…
 	assert_bool(effect.zone8_occupied_at_rest).is_true()
@@ -147,7 +155,8 @@ func test_replacement_effect_still_interrupts_mid_effect() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, DestroyOneThenChoose.new(), ["on_enter"])
 
-	await handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	await handler.check_timing.resolve()
 
 	assert_bool(state.players[0].zone_has_cards(3)).is_false()
 	assert_str(str(state.players[0].main_deck.back().get("id"))).is_equal(str(replacer["id"]))

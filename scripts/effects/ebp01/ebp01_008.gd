@@ -28,4 +28,4 @@ func get_burst_rank() -> int:
 
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.monster_zone < 8:
-		await ctx.effect_handler.advance_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone + 1)
+		ctx.effect_handler.advance_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone + 1)

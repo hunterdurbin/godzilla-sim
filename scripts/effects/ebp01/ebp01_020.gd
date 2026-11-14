@@ -42,7 +42,7 @@ func on_invasion_observed(ctx: EffectContext, _invading_player_id: int, _from_zo
 		return
 
 	# Cost: reduce rage by 1
-	await ctx.effect_handler.reduce_rage(ctx.owner.player_id, 1)
+	ctx.effect_handler.reduce_rage(ctx.owner.player_id, 1)
 
 	var selected := await ctx.effect_handler.search_deck(
 		ctx.owner.player_id,

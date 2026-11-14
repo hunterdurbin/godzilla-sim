@@ -27,8 +27,20 @@ commit URL.
 
 The same holds in the other direction: in a PR body or commit message in the
 code repo, a bare `#7` means code-repo PR #7, so write
-`hunterdurbin/godzilla-sim-issue-tracker#7`. A merged code PR whose body says
-`closes hunterdurbin/godzilla-sim-issue-tracker#N` closes that tracker issue.
+`hunterdurbin/godzilla-sim-issue-tracker#7`.
+
+## Closing tickets on merge
+
+A merged code PR closes a tracker issue only when its body carries a closing
+keyword with the fully-qualified reference, one per finished ticket:
+`Closes hunterdurbin/godzilla-sim-issue-tracker#N`. "Implements", "Part of"
+or a bare `#N` leave it open. A PR that finishes no ticket (docs, tooling, a
+partial step) puts `Tracker: none` on its own line. The `PR Tracker Link`
+check (`scripts/tools/check_pr_tracker_link.py`) enforces this and re-runs
+when the body is edited.
+
+After merging, close a parent ticket (`Part of #N`) by hand once its last
+child is closed: `gh issue close <parent> --repo $ISSUES --comment "..."`.
 
 ## Pull requests as a triage surface
 

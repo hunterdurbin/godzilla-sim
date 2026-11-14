@@ -52,4 +52,4 @@ func on_ally_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary,
 	if chosen < 0:
 		return
 
-	await ctx.effect_handler.move_zone_stack(ctx.owner, self_zone, chosen)
+	ctx.effect_handler.move_zone_stack(ctx.owner, self_zone, chosen)

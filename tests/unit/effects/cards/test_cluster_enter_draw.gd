@@ -45,7 +45,8 @@ func test_enter_draws_then_discards(card_id: String, zone_idx: int, draw_count: 
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	await s["effect_handler"].trigger_enter(0, s["card"])
+	s["effect_handler"].trigger_enter(0, s["card"])
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].hand.size()) \
 		.override_failure_message("%s: hand size after draw %d / discard %d" % [card_id, draw_count, discard_count]) \
@@ -63,7 +64,8 @@ func test_enter_does_nothing_outside_required_zone(card_id: String, wrong_zone: 
 	var s := _setup(card_id, wrong_zone)
 	var state: GameState = s["state"]
 
-	await s["effect_handler"].trigger_enter(0, s["card"])
+	s["effect_handler"].trigger_enter(0, s["card"])
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].hand.size()).is_equal(HAND_SIZE)
 	assert_int(state.players[0].main_deck.size()).is_equal(DECK_SIZE)

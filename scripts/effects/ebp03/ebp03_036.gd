@@ -46,4 +46,4 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.effect_handler.shuffle_cards_into_deck(ctx.owner.player_id, [found])
 		return
 
-	await ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, found, dest)
+	ctx.effect_handler.play_battle_card_from_deck(ctx.owner.player_id, found, dest)

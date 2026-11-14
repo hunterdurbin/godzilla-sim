@@ -55,7 +55,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		tr("STR_EFF_ESD03_005_PROMPT"))
 	if choice != 0:
 		return
-	await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, ctx.owner.monster_zone + 1)
+	ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, ctx.owner.monster_zone + 1)
 
 
 func _has_rank4_underneath(owner: PlayerState) -> bool:

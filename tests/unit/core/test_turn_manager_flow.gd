@@ -165,3 +165,34 @@ func test_save_restore_resume_round_trip() -> void:
 	# Resuming mid-main must not re-run the start phase: no draw, no rage reset.
 	assert_int(tm.game_state.players[1].hand.size()).is_equal(1)
 	assert_int(tm.game_state.players[1].rage).is_equal(2)
+
+
+## Records the turn an end-of-turn ability resolves in.
+class EndOfTurnRecorder:
+	extends CardEffect
+	var resolved_in: Array = []
+	var state: GameState
+
+	func on_phase_end(_ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
+		resolved_in.append([state.turn_number, state.current_player_id])
+
+
+func test_end_phase_end_ability_resolves_before_the_turn_ends() -> void:
+	# The END phase-end ability enters standby before the 7.5.5 check timing:
+	# the turn cannot end with it unresolved (7.5.7).
+	var watcher := Cards.battle(1, 0, "EOT")  # no counter power: the counter fails
+	watcher["effect_script"] = "test://end_of_turn_recorder"
+	var state := _flow_state({"p0": {"zone_cards": {4: watcher}}})
+	var input := ScriptedPlayerInput.new()
+	var tm := States.make_turn_manager(state, input)
+	var effect := EndOfTurnRecorder.new()
+	effect.state = state
+	tm.effect_handler.registry.register_for_test("test://end_of_turn_recorder", effect,
+			["on_phase_end"], {"on_phase_end": {"phase": CardEnums.GamePhase.END, "own_turn": true}})
+	tm.start_game(0)
+
+	await tm.submit_action(CardEnums.ActionType.PASS)
+
+	assert_array(effect.resolved_in).is_equal([[1, 0]])
+	assert_bool(tm.effect_handler.check_timing.has_pending()).is_false()
+	assert_int(state.current_player_id).is_equal(1)

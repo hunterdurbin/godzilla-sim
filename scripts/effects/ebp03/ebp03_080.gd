@@ -65,4 +65,4 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 
 	# The engine moves it hand -> zone, overloads an occupied zone (11.5) and
 	# fires <Enter> + on_battle_card_played.
-	await ctx.effect_handler.play_battle_card_from_hand(ctx.owner.player_id, selected, dest)
+	ctx.effect_handler.play_battle_card_from_hand(ctx.owner.player_id, selected, dest)

@@ -37,7 +37,7 @@ func on_enter(ctx: EffectContext) -> void:
 		tr("STR_EFF_ESD04_004_PROMPT"),
 		true)
 	if not selected.is_empty():
-		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

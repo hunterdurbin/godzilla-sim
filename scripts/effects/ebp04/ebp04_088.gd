@@ -27,4 +27,4 @@ func on_enter(ctx: EffectContext) -> void:
 		ctx.owner.player_id, matching, ctx.owner.discard_pile.duplicate(),
 		tr("STR_EFF_EBP04_088_PROMPT"), 0, 2)
 	for card in selected:
-		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, card)
+		ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, card)

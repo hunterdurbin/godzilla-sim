@@ -58,17 +58,20 @@ func _fire(s: Dictionary, trigger: String) -> void:
 	var state: GameState = s["state"]
 	match trigger:
 		"enter":
-			await handler.trigger_enter(0, s["card"])
+			handler.trigger_enter(0, s["card"])
+			await handler.check_timing.resolve()
 		"invading":
 			# Card must already be players[0].current_monster (see _setup).
 			state.players[0].monster_zone = 2
 			await handler.trigger_when_invading(0, 1, 2)
 		"counter":
-			await handler.trigger_counter_success(0, 1)
+			handler.trigger_counter_success(0, 1)
+			await handler.check_timing.resolve()
 		"hand_discard":
 			var discarded := Cards.battle(2, 3000, "DISC-TRIGGER")
 			state.players[0].discard_pile.append(discarded)
-			await handler.trigger_hand_card_discarded(0, discarded)
+			handler.trigger_hand_card_discarded(0, discarded)
+			await handler.check_timing.resolve()
 
 
 ## Board-state options that satisfy (or deliberately fail) a card's condition.
@@ -211,11 +214,11 @@ func test_ebp02_004_destroys_one_per_strategy_in_play() -> void:
 	var s := _setup("EBP02-004", {
 		"p0_monster_stack": [Cards.monster(2, 8000, [CardEnums.CardTrait.SECOND_FORM], "STACK-2F")],
 		"p0_strategies": [Cards.strategy(2, "COND-SA"), Cards.strategy(2, "COND-SB")],
-		"opp_zone_cards": {0: t1, 3: t2, 5: above},
+		"opp_zone_cards": {1: t1, 3: t2, 5: above},
 	})
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
-	input.answers = {"select_zones": [[0, 3]]}
+	input.answers = {"select_zones": [[1, 3]]}
 
 	await _fire(s, "enter")
 
@@ -225,7 +228,7 @@ func test_ebp02_004_destroys_one_per_strategy_in_play() -> void:
 	# One batch prompt for both destroys, count = strategies in play.
 	assert_int(input.count_calls("select_zones")).is_equal(1)
 	var zone_calls: Array = input.calls_of("select_zones")
-	assert_array(zone_calls[0]["valid"]).contains_exactly_in_any_order([0, 3])
+	assert_array(zone_calls[0]["valid"]).contains_exactly_in_any_order([1, 3])
 	assert_int(int(zone_calls[0]["count"])).is_equal(2)
 
 
@@ -234,8 +237,8 @@ func test_ebp02_004_destroys_one_per_strategy_in_play() -> void:
 
 func test_destroys_all_in_fixed_zone_band(card_id: String, inside: Array, outside: Array,
 		test_parameters := [
-			["EBP01-065", [0, 2, 4], [5, 7]],  # zones 1-5
-			["EBP04-083", [5, 6, 7], [0, 4]],  # zones 6-8
+			["EBP01-065", [1, 2, 4], [5, 7]],  # zones 1-5 (idx 0 = opp monster zone)
+			["EBP04-083", [5, 6, 7], [1, 4]],  # zones 6-8 (idx 0 = opp monster zone)
 		]) -> void:
 	var opp_zone_cards := {}
 	for zi: int in inside + outside:
@@ -336,8 +339,8 @@ func test_destroys_chosen_zone_and_adjacent(card_id: String, max_rank: int,
 	var target := Cards.battle(5, 3000, "OPP-TARGET")    # idx 3, in scope
 	var adj_in := Cards.battle(5, 3000, "OPP-ADJ-IN")    # idx 2, in scope
 	var adj_above := Cards.battle(6, 3000, "OPP-ADJ-R6") # idx 6, in scope, above cap 5
-	var far := Cards.battle(3, 3000, "OPP-FAR")          # idx 0, out of scope
-	var s := _setup(card_id, {"opp_zone_cards": {3: target, 2: adj_in, 6: adj_above, 0: far}})
+	var far := Cards.battle(3, 3000, "OPP-FAR")          # idx 1, out of scope
+	var s := _setup(card_id, {"opp_zone_cards": {3: target, 2: adj_in, 6: adj_above, 1: far}})
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"select_zone": [3]}
@@ -352,7 +355,7 @@ func test_destroys_chosen_zone_and_adjacent(card_id: String, max_rank: int,
 	assert_bool(_opp_discard_has(state, adj_above)) \
 		.override_failure_message("%s: adjacent rank-6 card destroyed=%s expected=%s (cap %d)" % [card_id, _opp_discard_has(state, adj_above), above_destroyed, max_rank]) \
 		.is_equal(above_destroyed)
-	assert_str(state.players[1].get_zone_top_card(0).get("id", "")) \
+	assert_str(state.players[1].get_zone_top_card(1).get("id", "")) \
 		.override_failure_message("%s: non-adjacent zone must survive" % card_id).is_equal(far["id"])
 	assert_int(input.count_calls("select_zone")).is_equal(1)
 

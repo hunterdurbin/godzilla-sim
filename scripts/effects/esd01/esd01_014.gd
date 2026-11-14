@@ -42,4 +42,4 @@ func on_enter(ctx: EffectContext) -> void:
 		if target_zone < 0:
 			return
 
-		await ctx.effect_handler.play_battle_card_from_deck(player.player_id, selected, target_zone)
+		ctx.effect_handler.play_battle_card_from_deck(player.player_id, selected, target_zone)

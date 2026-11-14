@@ -77,6 +77,7 @@ func test_ebp01_002_invading_mill_destroys_low_rank_on_monster(top_kind: String,
 	input.answers = {"select_zone": [3]}
 
 	await s["effect_handler"].trigger_when_invading(0, 1, 2)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].main_deck.size()).is_equal(FILLER)
 	assert_array(_ids(state.players[0].discard_pile)) \
@@ -99,7 +100,7 @@ func test_ebp01_072_enter_column_mill_retreats_weak_monster(zone_idx: int, top_k
 		test_parameters := [
 			[2, "battle", 40000, true, 2],   # same column, battle top, TL low → retreat
 			[2, "monster", 40000, true, 3],  # monster top → mill only
-			[0, "battle", 40000, false, 3],  # wrong column → no mill at all
+			[1, "battle", 40000, false, 3],  # wrong column → no mill at all
 			[2, "battle", 60000, true, 3],   # TL above 50k → mill only
 		]) -> void:
 	var card := Real.instance("EBP01-072")
@@ -109,7 +110,8 @@ func test_ebp01_072_enter_column_mill_retreats_weak_monster(zone_idx: int, top_k
 	})
 	var s := States.make_session(state)
 
-	await s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].trigger_enter(0, card)
+	await s["effect_handler"].check_timing.resolve()
 
 	var expected_deck: int = FILLER if expect_mill else FILLER + 1
 	assert_int(state.players[0].main_deck.size()) \
@@ -135,7 +137,8 @@ func test_ebp02_014_enter_mill_advances_monster(top_kind: String, expected_zone:
 	})
 	var s := States.make_session(state)
 
-	await s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].trigger_enter(0, card)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].main_deck.size()).is_equal(FILLER)
 	assert_array(_ids(state.players[0].discard_pile)).contains_exactly([_top_id(top_kind)])
@@ -156,7 +159,8 @@ func test_ebp02_047_advance_mills_one(top_kind: String,
 	})
 	var s := States.make_session(state)
 
-	await s["effect_handler"].trigger_monster_advance(0, 1, 2)
+	s["effect_handler"].trigger_monster_advance(0, 1, 2)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].main_deck.size()).is_equal(FILLER)
 	assert_array(_ids(state.players[0].discard_pile)).contains_exactly([_top_id(top_kind)])
@@ -178,7 +182,8 @@ func test_ebp03_031_enter_optional_mill(take_mill: bool,
 	# card to mill it, or {} to put it back.
 	input.answers = {"search_cards": [{"id": "TOP-BATTLE"} if take_mill else {}]}
 
-	await s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].trigger_enter(0, card)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(input.count_calls("search_cards")).is_equal(1)
 	assert_array(_ids(_calls_of(input, "search_cards")[0]["matching"])).contains_exactly(["TOP-BATTLE"])
@@ -213,7 +218,8 @@ func test_ebp04_021_counter_start_mill_forces_opp_discard_to_4(top_kind: String,
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"choose_hand_discards": [[4, 5]]}
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].main_deck.size()).is_equal(FILLER)
 	assert_array(_ids(state.players[0].discard_pile)).contains_exactly([_top_id(top_kind)])
@@ -235,7 +241,8 @@ func test_ebp04_021_does_not_fire_on_opponent_turn() -> void:
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var s := States.make_session(state)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].main_deck.size()).is_equal(FILLER + 1)
 	assert_int(state.players[0].discard_pile.size()).is_equal(0)
@@ -260,7 +267,8 @@ func test_ebp04_075_opp_counter_start_mill_destroys_column(top_kind: String, exp
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"select_zone": [4]}
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].main_deck.size()).is_equal(FILLER)
 	assert_array(_ids(state.players[0].discard_pile)).contains_exactly([_top_id(top_kind)])

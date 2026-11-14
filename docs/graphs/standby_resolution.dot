@@ -122,7 +122,7 @@ digraph standby_resolution {
 
         movement [label="Movement step:\nmonster_zone += 1\ncheck_crush_rule()" fillcolor="#FFF9C4" color="#F9A825"]
 
-        filter [label="resolve_deferred_entries():\nfilter by is_card_still_active()\n(skip cards crushed/removed\nduring movement)" fillcolor="#FFCC80" color="#E65100"]
+        filter [label="check_timing.submit():\nall collected entries\n(crushed/removed cards\nstill resolve, 10.6.7)" fillcolor="#FFCC80" color="#E65100"]
 
         to_standby [label="_resolve_standby_entries(\n  active_entries\n)" fillcolor="#FFE0B2" color="#E65100"]
 

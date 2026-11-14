@@ -36,7 +36,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var selected := await ctx.effect_handler.search_discard(
 		ctx.owner.player_id, _is_gvd, tr("STR_EFF_ESD04_003_ENTER_PROMPT"))
 	if not selected.is_empty():
-		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, selected)
+		ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, selected)
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
