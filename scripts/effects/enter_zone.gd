@@ -7,8 +7,9 @@ extends EffectModule
 ## deck / discard, tokens and Evolution. All of them are one act in the
 ## Japanese rules, 出現 (5.11 "play", 5.11.4 "play a token", 5.17.1 Evolve
 ## "重ねて出現させます"); the English text's play / appear split is a
-## translation artifact (comprehensive_rules/rules-ja.txt). (A stack moving between zones
-## stays in play, so it is `move_stack`, not an entry.) `enter` owns, in
+## translation artifact (comprehensive_rules/rules-ja.txt). (A card moving between zones
+## stays in play, so it is a Move — `move_stack` / `move_under` — not an
+## entry; a card leaving the zones is LeaveZone's.) `enter` owns, in
 ## this order:
 ##   1. rule legality (`is_rule_legal`) — refuse the zone and report "not
 ##      played"; the card stays in (or, for the deck, returns to) its area;
@@ -212,4 +213,25 @@ func move_stack(player_id: int, from_zone: int, to_zone: int) -> bool:
 	var moved_top: Dictionary = player.get_zone_top_card(from_zone)
 	player.move_zone_stack(from_zone, to_zone)
 	dispatcher.trigger_zone_changed(player.player_id, moved_top, from_zone, to_zone)
+	return true
+
+
+func move_under(player_id: int, from_zone: int, to_zone: int) -> bool:
+	## "Put this card under <card> in your zones" (EBP03-042 / 043): from_zone's
+	## top card goes to the bottom of to_zone's stack. It stays in a zone, so
+	## it is a Move (hunterdurbin/godzilla-sim-issue-tracker#35 row 9): it fires the area-changing
+	## on_zone_changed, not on_leave_play. The cards that were under it go to
+	## the discard pile (tokens banished) — not destroyed (5.12.1.1). Never
+	## prompts.
+	## Returns false (nothing moves) for the same zone, a zone outside 0-7, or
+	## when either zone is empty.
+	var player := game_state.players[player_id]
+	if from_zone == to_zone or from_zone not in range(8) or to_zone not in range(8):
+		return false
+	if not player.zone_has_cards(from_zone) or not player.zone_has_cards(to_zone):
+		return false
+	var stack: Array = player.clear_zone(from_zone)
+	CardMover.banish_or_discard(player, stack.slice(1))
+	player.add_card_under_zone(to_zone, stack[0])
+	dispatcher.trigger_zone_changed(player_id, stack[0], from_zone, to_zone)
 	return true

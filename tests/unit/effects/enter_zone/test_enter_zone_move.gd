@@ -76,3 +76,38 @@ func test_moving_an_empty_zone_or_onto_itself_does_nothing() -> void:
 	assert_array(s["state"].players[0].zones[1]).contains_exactly([top])
 	assert_array(await _resolve(s)).is_empty()
 	_teardown(s)
+
+
+## EnterZone.move_under: "put this card under <card> in your zones" (EBP03-042
+## / 043). The card stays in a zone, so it is a Move (hunterdurbin/godzilla-sim-issue-tracker#35 row 9): it fires
+## on_zone_changed, not on_leave_play. The cards that were under it go to the
+## discard pile, not destroyed (5.12.1.1).
+func test_putting_a_card_under_another_zone_fires_zone_changed_not_leave_play() -> void:
+	var top := Probe.card("TOP")
+	var under := Probe.card("UNDER")
+	var target := Probe.card("TARGET")
+	var s := _setup({"zone_cards": {1: top, ZONE: target}})
+	var p0: PlayerState = s["state"].players[0]
+	p0.zones[1].append(under)
+
+	assert_bool(s["effect_handler"].enter_zone.move_under(0, 1, ZONE)).is_true()
+
+	assert_bool(p0.zone_has_cards(1)).is_false()
+	assert_array(p0.zones[ZONE]).contains_exactly([target, top])
+	assert_array(p0.discard_pile).contains_exactly([under])
+	assert_array(p0.cards_destroyed_this_turn).is_empty()
+	assert_array(await _resolve(s)).contains_exactly(["moved:TOP:1>%d" % ZONE])
+	_teardown(s)
+
+
+func test_putting_a_card_under_an_empty_zone_or_itself_does_nothing() -> void:
+	var top := Probe.card("TOP")
+	var s := _setup({"zone_cards": {1: top}})
+
+	assert_bool(s["effect_handler"].enter_zone.move_under(0, 1, ZONE)).is_false()
+	assert_bool(s["effect_handler"].enter_zone.move_under(0, 1, 1)).is_false()
+	assert_bool(s["effect_handler"].enter_zone.move_under(0, 2, 1)).is_false()
+
+	assert_array(s["state"].players[0].zones[1]).contains_exactly([top])
+	assert_array(await _resolve(s)).is_empty()
+	_teardown(s)

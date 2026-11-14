@@ -597,17 +597,14 @@ func _format_zone_list(zones: Array[int]) -> String:
 
 
 func move_zone_card_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
-	## Move a card from its zone to the bottom of the player's deck.
-	## Finds the zone containing the card, removes it, and appends to deck.
+	## Return a battle card on top of one of the player's zones to the bottom
+	## of their deck — a Leave (LeaveZone): the cards under it go to the
+	## discard pile and its on_leave_play enters standby. No-op when the card
+	## is not on top of a zone.
 	var card_id: String = card_data.get("id", "")
 	for i in range(8):
-		var zone_card := player.get_zone_top_card(i)
-		if zone_card.get("id", "") == card_id:
-			var stack: Array = player.clear_zone(i)
-			if not stack.is_empty():
-				player.put_on_deck_bottom(stack[0])
-				# Place any cards under it into discard
-				banish_or_discard(player, stack.slice(1))
+		if player.get_zone_top_card(i).get("id", "") == card_id:
+			leave_zone.leave(player.player_id, i, LeaveZone.Destination.DECK_BOTTOM)
 			return
 
 
@@ -815,18 +812,9 @@ func place_cards_under_monster(player_id: int, cards: Array[Dictionary]) -> void
 
 
 func move_zone_card_under_zone(player: PlayerState, from_zone: int, to_zone: int) -> bool:
-	## "Put this card under <card> in your zones": move from_zone's top card to
-	## the bottom of to_zone's stack. Cards that were under the moved card go to
-	## the discard (tokens are banished) — not destroyed (5.12.1.1). Returns
-	## false (nothing moves) for the same zone or when either zone is empty.
-	if from_zone == to_zone:
-		return false
-	if not player.zone_has_cards(from_zone) or not player.zone_has_cards(to_zone):
-		return false
-	var stack: Array = player.clear_zone(from_zone)
-	banish_or_discard(player, stack.slice(1))
-	place_card_under_zone(player, stack[0], to_zone)
-	return true
+	## "Put this card under <card> in your zones" — a Move (EnterZone.move_under).
+	## Returns false (nothing moves) for the same zone or when either zone is empty.
+	return enter_zone.move_under(player.player_id, from_zone, to_zone)
 
 
 

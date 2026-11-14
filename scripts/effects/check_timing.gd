@@ -27,11 +27,12 @@ extends RefCounted
 ## (read-only via active_player_id / active_card).
 ##
 ## Dependencies (wired by EffectHandler.setup): game_state, the destroy
-## module (crush), and the facade `h` for what it owns — the order-choice
+## module (crush), the leave module (11.4 illegal cards), and the facade `h` for what it owns — the order-choice
 ## prompt, the highlight signals and the GameEvents bus.
 
 var game_state: GameState
 var destruction: DestructionEngine
+var leave_zone: LeaveZone
 var h: EffectHandler
 
 ## Player whose ability is currently resolving (-1 = none).
@@ -70,6 +71,7 @@ func teardown() -> void:
 	_stack_active = null
 	h = null
 	destruction = null
+	leave_zone = null
 	game_state = null
 
 
@@ -222,8 +224,7 @@ func _resolve_illegal_cards(player: PlayerState) -> bool:
 			continue
 		var top_card := player.get_zone_top_card(i)
 		if top_card.get("card_type") == CardEnums.CardType.STRATEGY:
-			var stack: Array = player.clear_zone(i)
-			CardMover.banish_or_discard(player, stack)
+			leave_zone.leave(player.player_id, i, LeaveZone.Destination.DISCARD)
 			changed = true
 
 	# Check strategy zones: non-strategy cards are illegal

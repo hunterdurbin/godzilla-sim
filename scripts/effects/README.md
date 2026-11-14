@@ -22,7 +22,7 @@ player-prompt primitives with their UI state (`select_zone_target`,
 Everything outside the card scripts — core resolvers and TurnManager, the
 board UI, the bot, tests — calls the modules too (`effect_handler.queries`,
 `.dispatcher`, `.check_timing`, `.destruction`, `.mover`, `.monster_mover`,
-`.enter_zone`, `.registry`; the `ActionResolver` base forwards them). A
+`.enter_zone`, `.leave_zone`, `.registry`; the `ActionResolver` base forwards them). A
 facade method that no card script calls doesn't belong on the facade:
 `scripts/tools/check_effect_handler_card_api.py` (pre-commit + CI) fails on
 a public EffectHandler method with no caller under `scripts/effects/<set>/`,
@@ -37,8 +37,9 @@ names no EffectHandler member (untyped receivers fail only at runtime).
 | `check_timing.gd` | `CheckTiming`: single owner of check timing (10.4.3) — rule actions (crush, illegal cards), the standby pool, the active ability (`get_active_effect_summary`), `run_effect`, `note_effect_resolving` |
 | `standby_entry.gd` | `StandbyEntry`: one ability in standby (player, card, callback, `still_applies`) |
 | `trigger_dispatcher.gd` | `trigger_*`: operations report what happened; each finds the watching abilities (private `_collect_*`, the only `StandbyEntry` builders) and submits them to `check_timing`. Also `apply_rage_reset` |
-| `destruction_engine.gd` | The one destroy operation, `destroy(target, zone, cause)` — cause EFFECT / CRUSH / OVERLOAD decides protection (effect only), replacement (all) and <Revenge> (not Overload); on_destroy and the destroyed watchers fire for all three; submits the abilities it triggers itself and returns an `Outcome` (card, replaced). Also the effect-driven destroy prompts and strategy destruction |
-| `enter_zone.gd` | `EnterZone`: the one "card enters a zone" operation, `enter(player_id, card, zone, source)` — source HAND (the Play action or an effect) / DECK / DISCARD / TOKEN / EVOLUTION; `move_stack` for a stack moving between zones. Owns rule legality (`is_rule_legal`, also asked by RulesEngine, which keeps cost legality), stack-on-play or Overload, placement + signals + log, and submits the leave-play, <Enter> and "when played" entries together |
+| `destruction_engine.gd` | The one destroy operation, `destroy(target, zone, cause)` — cause EFFECT / CRUSH / OVERLOAD decides protection (effect only), replacement (all) and <Revenge> (not Overload); on_destroy and the destroyed watchers fire for all three; the card itself leaves through `LeaveZone` (the discard pile, or the deck bottom when replaced); submits the abilities it triggers itself and returns an `Outcome` (card, replaced). Also the effect-driven destroy prompts and strategy destruction |
+| `enter_zone.gd` | `EnterZone`: the one "card enters a zone" operation, `enter(player_id, card, zone, source)` — source HAND (the Play action or an effect) / DECK / DISCARD / TOKEN / EVOLUTION; the Moves `move_stack` (a stack to another zone) and `move_under` (a card under another zone's card), which fire `on_zone_changed`. Owns rule legality (`is_rule_legal`, also asked by RulesEngine, which keeps cost legality), stack-on-play or Overload, placement + signals + log, and submits the leave-play, <Enter> and "when played" entries together |
+| `leave_zone.gd` | `LeaveZone`: the one "battle card leaves a zone" operation (GLOSSARY: Leave), `leave(player_id, zone, destination)` — destination DISCARD / HAND / DECK_TOP / DECK_BOTTOM. Owns emptying the zone (sole `clear_zone(` caller with EnterZone's Moves, `scripts/tools/check_clear_zone_owner.py`), a token disappearing (9.1.4.2), the cards under it to the discard pile and the `on_leave_play` standby. Destroy, the deck-bottom return and the 11.4 cleanup call it; strategy-zone exits don't |
 | `card_mover.gd` | Hand/deck/discard traffic, zone prompts, token instances; its play primitives call `EnterZone` |
 | `monster_mover.gd` | Monster movement: the sole writer of `monster_zone` during play (advance with `from_invasion`, retreat, teleport, counter retreat) + the effect-facing move entry points |
 | `effect_queries.gd` | Read-only modifier/blocking aggregation (injected into RulesEngine) |
@@ -92,7 +93,7 @@ Primitives for the common intents (all on EffectHandler):
 | "look at the top N cards, put any number on top in any order, send the rest to your discard pile" | `arrange_deck_top` |
 | "reveal the top N cards of your deck" (the card's own select prompt shows them) / with a reveal overlay | `take_deck_top` / `reveal_deck_top` |
 | "return the rest to your deck and shuffle it" / "then shuffle your deck" | `shuffle_cards_into_deck` |
-| "put this card under <card> in your zones" | `move_zone_card_under_zone` |
+| "put this card under <card> in your zones" | `move_zone_card_under_zone` (a Move: fires on_zone_changed) |
 | "add all cards under this card to your hand" | `return_cards_under_top_to_hand` (sync — safe in replacement hooks) |
 | "play / put into play / place … and activate a strategy card" (from deck, discard or hand; 5.9.1 activate = play) | `play_strategy_from_effect` |
 | "place a card from your strategy zone under <card>" | `move_strategy_card_under_zone` |

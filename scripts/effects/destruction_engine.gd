@@ -45,10 +45,11 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	## The zone-card-destroyed watchers (ally / opponent) fire for every
 	## cause: Crush and Overload are <Destroy> (11.3.3, 11.5.1).
 	## Otherwise the stack goes to the discard and the top card counts as
-	## destroyed this turn. Leave-play enters the entries for every cause.
+	## destroyed this turn. Either way the card leaves through LeaveZone, which
+	## submits its leave-play for every cause.
 	## Signals (PlayerState mutators, as each change happens): replaced →
-	## zones_changed, discard_changed (when cards were under it),
-	## deck_changed; destroyed → zones_changed (every cause, OVERLOAD
+	## zones_changed, deck_changed, discard_changed (when cards were under
+	## it); destroyed → zones_changed (every cause, OVERLOAD
 	## included) and discard_changed (unless only tokens left), then
 	## GameEvents.battle_card_crushed for CRUSH. EFFECT also logs the destroy
 	## and emits EffectHandler.card_destroyed, replaced or not.
@@ -61,10 +62,14 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	if cause == Cause.EFFECT and not _can_destroy_card(target, top_card):
 		return out
 	out.card = top_card
-	out.replaced = _apply_destroy_replacement(target, zone_idx, top_card)
+	# The card leaves the zone either way (LeaveZone submits its leave-play,
+	# an area-changing trigger whatever the cause, replaced or not, 10.6.4):
+	# to the deck bottom when a replacement effect applies (hunterdurbin/godzilla-sim-issue-tracker#35 row 13), to
+	# the discard pile otherwise.
+	out.replaced = _applies_destroy_replacement(target, top_card)
+	leave_zone.leave(target.player_id, zone_idx,
+			LeaveZone.Destination.DECK_BOTTOM if out.replaced else LeaveZone.Destination.DISCARD)
 	if not out.replaced:
-		var stack: Array = target.clear_zone(zone_idx)
-		CardMover.banish_or_discard(target, stack)
 		target.cards_destroyed_this_turn.append(top_card)
 		if cause == Cause.CRUSH and events:
 			events.battle_card_crushed.emit(target.player_id, zone_idx, top_card)
@@ -73,13 +78,10 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	if cause == Cause.EFFECT:
 		_log_destroy(target.player_id, zone_idx, top_card)
 		h.card_destroyed.emit(target.player_id, zone_idx)
-
-	# Automatic abilities enter standby (10.6.2) and resolve at the next check
-	# timing (10.4.3). Leaving the zone is an area-changing trigger whatever
-	# the cause, replaced or not.
-	dispatcher.trigger_leave_play(target.player_id, top_card, zone_idx)
 	if out.replaced:
 		return out
+	# Automatic abilities enter standby (10.6.2) and resolve at the next check
+	# timing (10.4.3).
 	# Crush (11.3.3) and Overload (11.5.1, 5.12.1.1) are <Destroy> too: the
 	# card's own on_destroy and every "whenever … is <Destroy>" watcher fire
 	# for all three causes. EFFECT resolves on_destroy on the spot instead
@@ -94,20 +96,16 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 
 
 
-func _apply_destroy_replacement(target: PlayerState, zone_idx: int, top_card: Dictionary) -> bool:
-	## Apply the top card's <Destroy> replacement effect (on_would_be_destroyed,
-	## 10.2.1.3). Returns true when the destruction was replaced: the top card
-	## moved to the deck bottom and the cards under it to the discard. The zone
-	## is left untouched otherwise.
+func _applies_destroy_replacement(target: PlayerState, top_card: Dictionary) -> bool:
+	## Run the top card's <Destroy> replacement effect (on_would_be_destroyed,
+	## 10.2.1.3). Returns true when it replaced the destruction: the caller
+	## then sends the card to the deck bottom instead (LeaveZone). The hook
+	## may change the zone itself first (e.g. return the cards under it to
+	## the hand); it never moves the top card.
 	var effect := get_effect(top_card)
 	if not effect or not _passes_would_be_destroyed_filter(top_card, target.player_id):
 		return false
-	if not effect.on_would_be_destroyed(_build_context(target.player_id, top_card)):
-		return false
-	var replaced_stack: Array = target.clear_zone(zone_idx)
-	CardMover.banish_or_discard(target, replaced_stack.slice(1))
-	target.put_on_deck_bottom(top_card)
-	return true
+	return effect.on_would_be_destroyed(_build_context(target.player_id, top_card))
 
 
 

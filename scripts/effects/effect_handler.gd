@@ -8,7 +8,7 @@ extends RefCounted
 ## below, wired once in `setup` with direct references to each other; core,
 ## UI, bot and test code call those modules (`queries`, `dispatcher`,
 ## `check_timing`, `destruction`, `mover`, `monster_mover`, `enter_zone`,
-## `registry`), never a facade delegate.
+## `leave_zone`, `registry`), never a facade delegate.
 ##
 ## Player decisions (deck search, zone targets, choices, ...) go through the
 ## injected PlayerInput — SignalPlayerInput in live play (request signals +
@@ -42,6 +42,7 @@ var destruction: DestructionEngine
 var mover: CardMover
 var monster_mover: MonsterMover
 var enter_zone: EnterZone
+var leave_zone: LeaveZone
 var queries: EffectQueries
 @warning_ignore("unused_private_class_variable") # written by effects, read by the card-select UI
 var _card_select_pool_filter: Callable = Callable()  # Optional: func(card, selection) -> bool
@@ -73,11 +74,13 @@ func setup(p_game_state: GameState, p_input: PlayerInput = null) -> void:
 	mover = CardMover.new()
 	monster_mover = MonsterMover.new()
 	enter_zone = EnterZone.new()
+	leave_zone = LeaveZone.new()
 	queries = EffectQueries.new()
 	check_timing.game_state = game_state
 	check_timing.destruction = destruction
+	check_timing.leave_zone = leave_zone
 	check_timing.h = self
-	for m: EffectModule in [dispatcher, destruction, mover, monster_mover, enter_zone, queries]:
+	for m: EffectModule in [dispatcher, destruction, mover, monster_mover, enter_zone, leave_zone, queries]:
 		m.wire(self)
 
 
@@ -85,7 +88,7 @@ func teardown() -> void:
 	## Break the internal RefCounted reference cycles (module <-> module,
 	## module.h -> self, action_handler <-> self) so the match component graph
 	## can be freed once the owner drops its reference. Idempotent.
-	for m: EffectModule in [dispatcher, destruction, mover, monster_mover, enter_zone, queries]:
+	for m: EffectModule in [dispatcher, destruction, mover, monster_mover, enter_zone, leave_zone, queries]:
 		if m:
 			m.unwire()
 	if check_timing:
@@ -96,6 +99,7 @@ func teardown() -> void:
 	mover = null
 	monster_mover = null
 	enter_zone = null
+	leave_zone = null
 	queries = null
 	action_handler = null
 	events = null
