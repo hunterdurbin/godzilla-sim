@@ -6,7 +6,8 @@ extends CardEffect
 ## card the hook ran for.
 
 const PATH := "test://enter_zone_probe"
-const HOOKS := ["on_enter", "on_battle_card_played", "on_leave_play", "on_zone_changed"]
+const HOOKS := ["on_enter", "on_battle_card_played", "on_leave_play", "on_zone_changed",
+		"on_monster_played", "on_burst_discard"]
 
 var seen: Array = []
 
@@ -38,3 +39,12 @@ func on_leave_play(ctx: EffectContext, zone_index: int) -> void:
 
 func on_zone_changed(ctx: EffectContext, from_zone: int, to_zone: int) -> void:
 	seen.append("moved:%s:%d>%d" % [ctx.card_data.get("id"), from_zone, to_zone])
+
+
+func on_monster_played(ctx: EffectContext, old_monster: Dictionary, new_monster: Dictionary) -> void:
+	seen.append("monster@%s:%s>%s" % [ctx.card_data.get("id"), old_monster.get("id", ""),
+			new_monster.get("id", "")])
+
+
+func on_burst_discard(ctx: EffectContext) -> void:
+	seen.append("burst-discard:%s" % ctx.card_data.get("id"))

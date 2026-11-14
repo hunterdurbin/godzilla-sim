@@ -21,6 +21,12 @@ extends EffectModule
 ##      <Enter> entry and the "when played" watchers' entries, then
 ##      submitting them to CheckTiming together, so they share one pool.
 ##
+## The invading monster and the strategy zones have their own plays:
+## `play_monster` (the Play action, an effect play from the monster deck,
+## the counter rank-up) and `play_strategy` (the Activate action, effect
+## plays). They own placement, the signal, the log line and the standby
+## entries the same way; their legality is RulesEngine's or the effect's.
+##
 ## Legality is split: RULE legality lives here; COST legality (rank vs the
 ## opponent's monster zone + modifiers) stays in RulesEngine, which asks
 ## this class for rule legality. See "Rule legality" below for the checks,
@@ -33,6 +39,12 @@ enum Source {
 	DISCARD,     ## an effect playing it from the discard pile
 	TOKEN,       ## an effect putting a token into existence
 	EVOLUTION,   ## Evolve: played from the deck on top of the zone's battle card (5.17)
+}
+
+## Where a monster card played as the new invading monster comes from.
+enum MonsterSource {
+	HAND,          ## the Play Monster action (normal, Burst or alternate cost)
+	MONSTER_DECK,  ## an effect play (EBP03-074) or the counter rank-up (5.15.1.2)
 }
 
 # --- Rule legality ---
@@ -129,6 +141,79 @@ func enter(player_id: int, card: Dictionary, zone_idx: int, source: Source,
 		dispatcher.trigger_battle_card_played(
 				player_id, card, zone_idx, source == Source.DECK or source == Source.EVOLUTION)
 	return true
+
+
+func play_monster(player_id: int, card: Dictionary, source: MonsterSource) -> void:
+	## `card` becomes `player_id`'s new invading monster (5.11.2): every
+	## monster play — the Play action, an effect play from the monster deck
+	## and the counter rank-up (Q288: "You can no longer play a monster
+	## card, so your opponent wins by Counter Victory.") — runs this, so each
+	## fires the card's <Enter> and the "when your monster card is played"
+	## watchers (hunterdurbin/godzilla-sim-issue-tracker#35 rows 14, 16).
+	## Owns taking the card out of its area, pushing the old monster under
+	## it, setting the current monster, GameEvents.monster_played, the Play
+	## action's log line and the standby entries. The caller owns the rest
+	## of the Play action — the once-per-turn flag, the +1 Rage (raised
+	## before this call, so the log line shows it), Burst detection (set
+	## before this call, so the log line names the Burst rank) and the
+	## alternate cost. A monster play never clears Burst state: the Burst
+	## card is discarded at the end phase wherever it is (12.5.2.1). Never
+	## prompts.
+	var player := game_state.players[player_id]
+	var old_monster: Dictionary = player.current_monster
+	if source == MonsterSource.MONSTER_DECK:
+		player.remove_from_monster_deck(card)
+	else:
+		_take_from_area(player, card, Source.HAND)
+	if not old_monster.is_empty():
+		player.push_under_monster(old_monster)
+	player.set_current_monster(card)
+	if events != null:
+		events.monster_played.emit(player_id, old_monster, card)
+	if source == MonsterSource.HAND:
+		_log_monster_play(player, card)
+	# Snapshot the discard pile before <Enter> runs, so cards milled during
+	# it don't retroactively qualify for can_play_from_discard_on_monster_played
+	# (e.g. EBP02-048 milling EBP03-063 into the discard pile).
+	var discard_snapshot: Array = player.discard_pile.duplicate()
+	dispatcher.trigger_enter(player_id, card, source == MonsterSource.MONSTER_DECK)
+	dispatcher.trigger_monster_played(player_id, old_monster, card, discard_snapshot)
+
+
+func _log_monster_play(player: PlayerState, card: Dictionary) -> void:
+	## The Play action's log line: a Burst play names its Burst rank.
+	if player.burst_monster == card:
+		var burst_effect := get_effect(card)
+		var burst_rank: int = burst_effect.get_burst_rank() if burst_effect else -1
+		h.log_message.emit(GameLog.burst_played(player.player_id, card.get("id", ""), burst_rank, player.rage))
+	else:
+		h.log_message.emit(GameLog.played_monster(player.player_id, card.get("id", ""), player.rage))
+
+
+func play_strategy(player_id: int, card: Dictionary, source: Source, by_effect: bool = true,
+		zone_idx: int = -1) -> int:
+	## `card` is played into `player_id`'s strategy zone `zone_idx` (the
+	## first empty one when -1), from `source` (HAND / DECK / DISCARD) —
+	## the Activate action (by_effect = false) or an effect playing it,
+	## regardless of rank (8.3.1 restricts only the Activate action)
+	## (hunterdurbin/godzilla-sim-issue-tracker#35 row 17).
+	## Owns taking the card out of the hand / discard pile if it is still
+	## there (deck cards: the caller), placing it with this turn's stamp (so
+	## the 7.2.3 start-phase discard treats it as placed this turn),
+	## GameEvents.strategy_card_played, the log line and its <Enter> entry.
+	## Never prompts. Returns the strategy zone index, or -1 (nothing moves)
+	## when that zone is taken or there is no empty one.
+	var player := game_state.players[player_id]
+	var idx: int = zone_idx if zone_idx >= 0 else player.get_first_empty_strategy_zone_index()
+	if idx < 0 or idx >= player.strategy_zones.size() or not player.strategy_zones[idx].is_empty():
+		return -1
+	_take_from_area(player, card, source)
+	player.place_strategy(idx, card, game_state.turn_number)
+	if events != null:
+		events.strategy_card_played.emit(player_id, card, idx)
+	h.log_message.emit(GameLog.played_strategy(player_id, card.get("id", ""), card.get("is_base", false)))
+	dispatcher.trigger_enter(player_id, card, by_effect)
+	return idx
 
 
 func _take_from_area(player: PlayerState, card: Dictionary, source: Source) -> void:
