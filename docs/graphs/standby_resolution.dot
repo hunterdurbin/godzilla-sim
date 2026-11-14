@@ -112,19 +112,19 @@ digraph standby_resolution {
     //  DEFERRED RESOLUTION (movement)
     // ════════════════════════════════════════
     subgraph cluster_deferred {
-        label="4. Deferred Resolution (during movement)"
+        label="4. Standby during movement"
         style=rounded
         color="#F9A825"
         fontcolor="#F9A825"
         bgcolor="#FFFDE7"
 
-        collect [label="During invasion/advance:\ncollect_*_entries()\nappend to deferred_entries" fillcolor="#FFF9C4" color="#F9A825"]
+        collect [label="During invasion/advance:\ndispatcher.trigger_*()\nsubmits to standby" fillcolor="#FFF9C4" color="#F9A825"]
 
-        movement [label="Movement step:\nmonster_zone += 1\ncheck_crush_rule()" fillcolor="#FFF9C4" color="#F9A825"]
+        movement [label="Movement step:\nmonster_zone += 1\ncrush_now()" fillcolor="#FFF9C4" color="#F9A825"]
 
-        filter [label="check_timing.submit():\nall collected entries\n(crushed/removed cards\nstill resolve, 10.6.7)" fillcolor="#FFCC80" color="#E65100"]
+        filter [label="check_timing.resolve()\nafter the action\n(crushed/removed cards\nstill resolve, 10.6.7)" fillcolor="#FFCC80" color="#E65100"]
 
-        to_standby [label="_resolve_standby_entries(\n  active_entries\n)" fillcolor="#FFE0B2" color="#E65100"]
+        to_standby [label="_run_pass()" fillcolor="#FFE0B2" color="#E65100"]
 
         collect -> movement [label="per step"]
         movement -> collect [label="loop" style=dashed]

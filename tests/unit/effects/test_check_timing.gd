@@ -490,7 +490,9 @@ func test_effect_stack_changed_emission_sequence() -> void:
 	assert_int((snapshots.back() as Array).size()).is_equal(0)
 
 
-func test_effect_stack_publishes_when_queued() -> void:
+func test_submit_marks_the_stack_and_resolve_publishes_it() -> void:
+	# #35 row 3: submit only marks the stack changed; the stack is published
+	# once when resolve() starts (and between abilities of a pass).
 	var state := States.make_state()
 	var handler := _handler(state)
 	handler.events = GameEvents.new()
@@ -499,11 +501,63 @@ func test_effect_stack_publishes_when_queued() -> void:
 		snapshots.append(stack.duplicate(true)))
 	var ct := handler.check_timing
 	await ct.run_effect(0, Cards.battle(1, 5000, "ACTIVE"), func() -> void:
-		ct.submit([_entry(0, Cards.battle(1, 5000, "Q"), func() -> void: pass)]))
-	# Queued entries publish immediately so the stack UI shows them.
-	assert_int(snapshots.size()).is_equal(1)
-	assert_int((snapshots[0] as Array).size()).is_equal(1)
-	assert_str(snapshots[0][0]["status"]).is_equal("pending")
+		ct.submit([_entry(0, Cards.battle(1, 5000, "Q1"), func() -> void: pass)])
+		ct.submit([_entry(0, Cards.battle(1, 5000, "Q2"), func() -> void: pass)]))
+	assert_int(snapshots.size()).is_equal(0)
+
+	await ct.resolve()
+
+	assert_bool(snapshots.size() > 0).is_true()
+	var first: Array = snapshots[0]
+	assert_int(first.size()).is_equal(2)
+	assert_str(first[0]["status"]).is_equal("pending")
+	assert_str(first[1]["status"]).is_equal("pending")
+
+
+func test_submit_stamps_increasing_sequence_numbers() -> void:
+	var state := States.make_state()
+	var ct := _handler(state).check_timing
+	var first := _entry(0, Cards.battle(1), func() -> void: pass)
+	var second := _entry(1, Cards.battle(1), func() -> void: pass)
+	var third := _entry(0, Cards.battle(1), func() -> void: pass)
+	assert_int(first.seq).is_equal(-1)
+
+	ct.submit([first, second])
+	ct.submit([third])
+
+	assert_bool(first.seq < second.seq).is_true()
+	assert_bool(second.seq < third.seq).is_true()
+
+
+func test_order_prompt_lists_abilities_in_submission_order() -> void:
+	# #35 row 4: the 10.4.3 order-choice options follow submission order,
+	# not board position.
+	var state := States.make_state()
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"choose_option": [0, 0]}
+	var handler := _handler(state, input)
+	var late_zone := Cards.battle(1, 5000, "LATE-ZONE")
+	var early_zone := Cards.battle(1, 5000, "EARLY-ZONE")
+	var third := Cards.battle(1, 5000, "THIRD")
+	state.players[0].push_zone_card(6, late_zone)
+	state.players[0].push_zone_card(1, early_zone)
+	state.players[0].push_zone_card(3, third)
+	var ran: Array = []
+	handler.check_timing.submit([_entry(0, late_zone, func() -> void: ran.append("LATE-ZONE"))])
+	handler.check_timing.submit([_entry(0, early_zone, func() -> void: ran.append("EARLY-ZONE"))])
+	handler.check_timing.submit([_entry(0, third, func() -> void: ran.append("THIRD"))])
+
+	await handler.check_timing.resolve()
+
+	var prompts := input.calls_of("choose_option")
+	assert_int(prompts.size()).is_equal(2)
+	var options: Array = prompts[0]["options"] if prompts.size() > 0 else []
+	assert_array(options).is_equal([
+		CheckTiming.card_location_label(state, 0, late_zone),
+		CheckTiming.card_location_label(state, 0, early_zone),
+		CheckTiming.card_location_label(state, 0, third),
+	])
+	assert_array(ran).is_equal(["LATE-ZONE", "EARLY-ZONE", "THIRD"])
 
 
 func test_no_stack_emission_without_events_bus() -> void:

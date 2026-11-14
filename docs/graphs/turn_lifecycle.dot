@@ -24,7 +24,7 @@ digraph turn_lifecycle {
         leg_ah [label="ActionHandler\nmethod" fillcolor="#BBDEFB" color="#1565C0" shape=box]
         leg_trigger [label="EffectHandler\ntrigger" fillcolor="#FFCC80" color="#E65100" shape=box]
         leg_query [label="EffectHandler\nmodifier/query" fillcolor="#CE93D8" color="#6A1B9A" shape=box]
-        leg_deferred [label="Deferred\ncollection" fillcolor="#FFF9C4" color="#F9A825" shape=box]
+        leg_deferred [label="Submits to\nstandby" fillcolor="#FFF9C4" color="#F9A825" shape=box]
 
         leg_phase -> leg_ah -> leg_trigger -> leg_query -> leg_deferred [style=invis]
     }
@@ -139,31 +139,27 @@ digraph turn_lifecycle {
             replace_cost [label="can_replace_invasion_cost()" fillcolor="#CE93D8" color="#6A1B9A"]
             sel_choice [label="select_choice()" fillcolor="#CE93D8" color="#6A1B9A"]
 
-            col_dfi [label="collect_discarded_for_\ninvasion_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-            col_dfh [label="collect_discard_from_\nhand_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-            col_hcd [label="collect_hand_card_\ndiscarded_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+            col_dfi [label="trigger_discarded_\nfor_invasion()" fillcolor="#FFF9C4" color="#F9A825"]
+            col_dfh [label="trigger_hand_cards_\ndiscarded_batch()" fillcolor="#FFF9C4" color="#F9A825"]
 
             inv_loop [label="per-step loop" shape=diamond fillcolor="#FFF9C4" color="#F9A825"]
-            col_wi [label="collect_when_\ninvading_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-            col_ma [label="collect_monster_\nadvance_entries()" fillcolor="#FFF9C4" color="#F9A825"]
+            col_wi [label="trigger_when_\ninvading()" fillcolor="#FFF9C4" color="#F9A825"]
+            col_ma [label="trigger_monster_\nadvance()" fillcolor="#FFF9C4" color="#F9A825"]
             destroy_base [label="destroy_base_strategies_\non_invasion()" fillcolor="#FFCC80" color="#E65100"]
-            crush_inv [label="check_crush_rule()" fillcolor="#BBDEFB" color="#1565C0"]
+            crush_inv [label="crush_now()" fillcolor="#BBDEFB" color="#1565C0"]
 
-            col_io [label="collect_invasion_\nobserved_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-            resolve_def [label="check_timing.submit()" fillcolor="#FFCC80" color="#E65100"]
+            col_io [label="trigger_invasion_\nobserved()" fillcolor="#FFF9C4" color="#F9A825"]
 
             invade -> replace_cost
             replace_cost -> sel_choice [label="if can replace"]
             invade -> col_dfi
             invade -> col_dfh
-            invade -> col_hcd
             invade -> inv_loop
             inv_loop -> col_wi
             inv_loop -> col_ma
             inv_loop -> destroy_base
             inv_loop -> crush_inv
             invade -> col_io [label="after loop"]
-            invade -> resolve_def [label="all deferred\nentries"]
         }
 
         execute -> play_battle [label="PLAY_BATTLE"]
@@ -215,9 +211,8 @@ digraph turn_lifecycle {
         advance [label="execute_end_phase_\nadvance()" fillcolor="#BBDEFB" color="#1565C0"]
         blocked [label="is_monster_advance_blocked()" fillcolor="#CE93D8" color="#6A1B9A"]
         extra [label="get_extra_end_phase_advance()" fillcolor="#CE93D8" color="#6A1B9A"]
-        col_ma_end [label="collect_monster_\nadvance_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-        crush_end [label="check_crush_rule()" fillcolor="#BBDEFB" color="#1565C0"]
-        resolve_end [label="check_timing.submit()" fillcolor="#FFCC80" color="#E65100"]
+        col_ma_end [label="trigger_monster_\nadvance()" fillcolor="#FFF9C4" color="#F9A825"]
+        crush_end [label="crush_now()" fillcolor="#BBDEFB" color="#1565C0"]
 
         end_draw [label="execute_end_phase_draw()" fillcolor="#BBDEFB" color="#1565C0"]
 
@@ -226,7 +221,6 @@ digraph turn_lifecycle {
         advance -> extra
         advance -> col_ma_end [label="per step"]
         advance -> crush_end [label="per step"]
-        advance -> resolve_end [label="after all steps"]
         burst -> advance -> end_draw
     }
 
@@ -237,7 +231,7 @@ digraph turn_lifecycle {
 
     // ── Crush rule detail ──
     subgraph cluster_crush {
-        label="check_crush_rule()"
+        label="crush_now()"
         style=rounded
         color=gray60
         fontcolor=gray50

@@ -2,7 +2,7 @@ extends GdUnitTestSuite
 
 ## Tier B cluster: cards with phase-gated (and related play-event) triggers,
 ## driven through the real dispatch seams (effect_handler.dispatcher.trigger_phase_start /
-## trigger_battle_card_played / collect_when_invading_entries / trigger_enter →
+## trigger_battle_card_played / trigger_when_invading / trigger_enter →
 ## registry → trigger_map → TRIGGER_FILTERS → standby resolution).
 ## Every TRIGGER_FILTERS-gated card here is also covered by the generic
 ## wrong-phase / wrong-turn gating test at the bottom.
@@ -279,7 +279,7 @@ func test_esd01_004_when_invading_discards_opponent_to_two_if_raged(rage: int, e
 	})
 	var state: GameState = s["state"]
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 2, 3))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 2, 3)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()) \

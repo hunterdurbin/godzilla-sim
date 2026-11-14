@@ -76,8 +76,20 @@ _Avoid_: Kill, remove
 ## Zones and movement
 
 **Play**:
-Placing a battle card on a zone from outside the field, or putting a token into existence in a zone (5.11.1, 5.11.4). Japanese 出現. Evolve is a play from the deck. "Whenever … plays a battle card" abilities watch every play, and EBP02-055's "cannot play" refuses every play (Q270).
+Placing a battle card on a zone from outside the field, or putting a token into existence in a zone (5.11.1, 5.11.4). Japanese 出現. Evolve is a play from the deck. "Whenever … plays a battle card" abilities watch every play, and EBP02-055's "cannot play" refuses every play (Q270). Playing a monster card means making it the new invading monster (5.11.2), so the rank-up after a counter is a play too (Q288).
 _Avoid_: Summon, deploy, enter (for the act itself)
+
+**Leave**:
+A card in a zone going to an area that is not a zone: the discard pile, hand, deck, or out of the game. Being destroyed is one way to leave; going to the bottom of the deck instead of being destroyed is another. Abilities that watch a card leaving its zone are area-changing triggers (10.6.4).
+_Avoid_: Exit, remove (for the act itself)
+
+**Move**:
+A card in a zone going to another zone, including being put under the card in another zone. It does not leave. "If this card leaves its zone or moves" names both.
+_Avoid_: Shift, relocate
+
+**Burst**:
+Playing a monster card from the hand as though its rank were lower (12.5). At the start of its master's next end phase that card goes to the discard pile wherever it is in the monster's stack, even if another card now covers it (12.5.2.1). If it was topmost, the card under it becomes topmost again without entering (12.5.3, Q107).
+_Avoid_: Temporary evolution
 
 **Appear**:
 The English rules' word for a play in 5.17.1 (Evolve) and 9.1.2 (tokens). The Japanese rules use one verb, 出現, for all of these, so an appear is a play, not a separate act. Check `comprehensive_rules/rules-ja.txt` when the English wording seems to split them.

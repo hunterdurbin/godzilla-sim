@@ -8,9 +8,9 @@ extends EffectModule
 ## outside play.) Every move goes through one of its operations:
 ##   * `advance` / `advance_to_zone` — step by step; per step the Crush rule
 ##     (11.3) runs through CheckTiming and the "when your monster advances"
-##     entries are collected. Only an advance `from_invasion` (5.13) collects
-##     <When invading> entries (12.3) and can move past zone 8 for victory
-##     through invasion (5.13.1.1.2); any other advance stops at zone 8.
+##     abilities enter standby. Only an advance `from_invasion` (5.13) fires
+##     <When invading> (12.3) and can move past zone 8 for victory through
+##     invasion (5.13.1.1.2); any other advance stops at zone 8.
 ##   * `retreat_to_zone` — step by step with per-step Crush; no advance
 ##     triggers.
 ##   * `teleport` — straight to a zone without crossing the zones between;
@@ -18,8 +18,9 @@ extends EffectModule
 ##     on it.
 ##   * `place_at_start` — the starting zone at match setup (no move, no
 ##     events).
-## Collected entries are appended to the caller's array; the caller submits
-## them to CheckTiming when its movement is done. Blocking checks (advance
+## The abilities a move triggers enter standby as it happens (through
+## TriggerDispatcher and CheckTiming.crush_now); they resolve at the next
+## check timing, after the whole move. Blocking checks (advance
 ## blocked, e.g. Biollante Rose Form; opponent-move blocked, EBP04-076) are
 ## the CALLERS' job — the operations themselves always move.
 ##
@@ -42,11 +43,11 @@ func place_at_start(player_id: int, zone: int) -> void:
 	game_state.players[player_id].set_monster_zone(zone)
 
 
-func advance(player_id: int, steps: int, from_invasion: bool, entries: Array) -> bool:
+func advance(player_id: int, steps: int, from_invasion: bool) -> bool:
 	## Advance up to `steps` zones, one at a time. Per step: emit the events,
-	## collect <When invading> (only `from_invasion`) and the "monster
-	## advances" entries into `entries`, then run Crush (its entries join
-	## `entries` too). A non-invasion advance stops at zone 8. An invasion
+	## submit <When invading> (only `from_invasion`) and the "monster
+	## advances" abilities to standby, then run Crush (its abilities enter
+	## standby too). A non-invasion advance stops at zone 8. An invasion
 	## at zone 8 moves past it when the opponent's zone 8 holds no battle
 	## card — victory through invasion (5.13.1.1.2), returned as true — and
 	## otherwise stops.
@@ -63,30 +64,30 @@ func advance(player_id: int, steps: int, from_invasion: bool, entries: Array) ->
 			var last_zone: int = player.monster_zone
 			player.set_monster_zone(9)  # Past zone 8
 			_emit_advanced(player_id, last_zone, player.monster_zone)
-			entries.append_array(dispatcher.collect_when_invading_entries(player_id, last_zone, player.monster_zone))
+			dispatcher.trigger_when_invading(player_id, last_zone, player.monster_zone)
 			return true
 		var old_zone: int = player.monster_zone
 		player.set_monster_zone(old_zone + 1)
 		_emit_advanced(player_id, old_zone, player.monster_zone)
 		if from_invasion:
-			entries.append_array(dispatcher.collect_when_invading_entries(player_id, old_zone, player.monster_zone))
-		entries.append_array(dispatcher.collect_monster_advance_entries(player_id, old_zone, player.monster_zone))
+			dispatcher.trigger_when_invading(player_id, old_zone, player.monster_zone)
+		dispatcher.trigger_monster_advance(player_id, old_zone, player.monster_zone)
 		if action_handler:
-			check_timing.check_crush_rule(entries)
+			check_timing.crush_now()
 	return false
 
 
-func advance_to_zone(player_id: int, target_zone: int, entries: Array) -> void:
+func advance_to_zone(player_id: int, target_zone: int) -> void:
 	## Advance (not from an invasion) until the monster reaches `target_zone`
 	## or zone 8. See `advance`.
 	var steps: int = target_zone - game_state.players[player_id].monster_zone
 	if steps > 0:
-		advance(player_id, steps, false, entries)
+		advance(player_id, steps, false)
 
 
-func retreat_to_zone(player_id: int, target_zone: int, entries: Array) -> void:
+func retreat_to_zone(player_id: int, target_zone: int) -> void:
 	## Retreat one zone at a time down to `target_zone`, running Crush per
-	## step (its entries join `entries`). Retreating is not advancing: no
+	## step (its abilities enter standby). Retreating is not advancing: no
 	## advance triggers. Emits `monster_changed` and
 	## GameEvents.monster_advanced (a downward move) per step.
 	var player := game_state.players[player_id]
@@ -95,7 +96,7 @@ func retreat_to_zone(player_id: int, target_zone: int, entries: Array) -> void:
 		player.set_monster_zone(old_zone - 1)
 		_emit_advanced(player_id, old_zone, player.monster_zone)
 		if action_handler:
-			check_timing.check_crush_rule(entries)
+			check_timing.crush_now()
 
 
 func teleport(player_id: int, target_zone: int) -> void:
@@ -142,9 +143,7 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 		return
 	if queries.is_opponent_monster_move_blocked(player_id):
 		return
-	var entries: Array = []
-	advance_to_zone(player_id, target_zone, entries)
-	check_timing.submit(entries)
+	advance_to_zone(player_id, target_zone)
 
 
 func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
@@ -154,9 +153,7 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## `retreat_to_zone`).
 	if queries.is_opponent_monster_move_blocked(player_id):
 		return
-	var entries: Array = []
-	retreat_to_zone(player_id, target_zone, entries)
-	check_timing.submit(entries)
+	retreat_to_zone(player_id, target_zone)
 
 
 func teleport_monster(player_id: int, target_zone: int) -> bool:

@@ -5,6 +5,7 @@ extends GdUnitTestSuite
 
 const Cards := preload("res://tests/fixtures/cards.gd")
 const States := preload("res://tests/fixtures/states.gd")
+const Probe := preload("res://tests/fixtures/effects/monster_movement_probe.gd")
 
 
 func _flow_state(opts: Dictionary = {}) -> GameState:
@@ -111,6 +112,25 @@ func test_invasion_victory_ends_game() -> void:
 	assert_int(endings[0][0]).is_equal(0)
 	assert_bool(tm.is_game_over).is_true()
 	assert_int(tm.flow_state).is_equal(TurnManager.FlowState.GAME_OVER)
+
+
+func test_invasion_victory_resolves_none_of_the_invasions_abilities() -> void:
+	# The advance submits <When invading> to standby as it moves; victory
+	# through invasion (5.13.1.1.2) ends the game before that check timing.
+	var state := _flow_state({"p0": {
+		"current_monster": Probe.monster(),
+		"monster_zone": 8,
+		"hand": [Cards.battle(1, 5000, "INV", [], 1)],
+	}})
+	var tm := States.make_turn_manager(state, ScriptedPlayerInput.new())
+	var probe: CardEffect = Probe.register(tm.effect_handler)
+	tm.start_game(0)
+
+	var invade_index: int = state.players[0].hand.size() - 1
+	await tm.submit_action(CardEnums.ActionType.INVADE, {"hand_index": invade_index})
+
+	assert_bool(tm.is_game_over).is_true()
+	assert_array(probe.seen).is_empty()
 
 
 func test_save_restore_resume_round_trip() -> void:

@@ -5,7 +5,7 @@ extends RefCounted
 ## (TriggerDispatcher, DestructionEngine, CardMover, MonsterMover, EnterZone,
 ## EffectQueries). EffectHandler.setup wires each module once with direct
 ## references to the others (`wire`), so cross-module calls go straight to
-## the owning module (`dispatcher.collect_enter_entries`, `queries.…`) —
+## the owning module (`dispatcher.trigger_enter`, `queries.…`) —
 ## never through a facade delegate. The facade `h` is used only for what the
 ## facade itself owns: its signals (log_message, card_evolved, …) and the
 ## player-prompt primitives with their UI state (select_zone_target,

@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Only the trigger dispatcher builds StandbyEntry objects.
+"""Only the trigger dispatcher builds StandbyEntry objects and submits them.
 
-A triggered ability enters standby (10.6.2) through a `collect_*_entries`
-function in scripts/effects/trigger_dispatcher.gd: that one place applies the
-TRIGGER_FILTERS gates, builds the EffectContext and attaches the
-`still_applies` gate (10.6.3). Engine modules call a collector (through
-EffectHandler, `h.collect_*_entries(...)`) and submit what it returns; a
-missing collector is added to the dispatcher.
+A triggered ability enters standby (10.6.2) through a private
+`_collect_*_entries` function in scripts/effects/trigger_dispatcher.gd: that
+one place applies the TRIGGER_FILTERS gates, builds the EffectContext and
+attaches the `still_applies` gate (10.6.3). Engine operations report what
+happened through the dispatcher's `trigger_*` functions, which submit the
+entries to CheckTiming; a missing trigger is added to the dispatcher.
 
-Flags `StandbyEntry.new(` anywhere under scripts/ outside the dispatcher.
+Flags `StandbyEntry.new(` and `check_timing.submit(` anywhere under scripts/
+outside the dispatcher: operations report through `trigger_*` and never
+handle StandbyEntry arrays (tracker #35 row 2).
 Tests (tests/) may build entries directly. No allow-list -- the tree is clean.
 
 Usage: python3 scripts/tools/check_standby_entry_builders.py
@@ -22,6 +24,7 @@ from gd_ratchet import ROOT, strip_comment
 SCAN_DIR = "scripts"
 BUILDER = os.path.join("scripts", "effects", "trigger_dispatcher.gd")
 NEW_RE = re.compile(r"\bStandbyEntry\s*\.\s*new\s*\(")
+SUBMIT_RE = re.compile(r"\bcheck_timing\s*\.\s*submit\s*\(")
 
 
 def gd_files():
@@ -35,7 +38,7 @@ def violations(path, lines):
     if path == BUILDER:
         return
     for i, line in enumerate(lines, 1):
-        if NEW_RE.search(line):
+        if NEW_RE.search(line) or SUBMIT_RE.search(line):
             yield "%s:%d  %s" % (path, i, line.strip())
 
 
@@ -46,6 +49,10 @@ def self_test():
         (BUILDER, "\tentries.append(StandbyEntry.new(pid, card, cb))"): False,
         ("scripts/effects/check_timing.gd", "var e: StandbyEntry = entries[0]"): False,
         ("scripts/effects/check_timing.gd", strip_comment("x()  # never StandbyEntry.new( here")): False,
+        ("scripts/core/actions/invasion_resolver.gd", "\t\tcheck_timing.submit(deferred)"): True,
+        ("scripts/effects/destruction_engine.gd", "\th.check_timing .submit(out.entries)"): True,
+        (BUILDER, "\tcheck_timing.submit(_collect_x_entries(pid))"): False,
+        ("scripts/effects/monster_mover.gd", "\tdispatcher.trigger_monster_advance(pid, a, b)"): False,
     }
     bad = [src for (path, src), expect in cases.items()
            if bool(list(violations(path, [src]))) != expect]
@@ -63,12 +70,12 @@ def main():
             lines = [strip_comment(l.rstrip("\n")) for l in fh]
         found.extend(violations(path, lines))
     for v in found:
-        print("STANDBY ENTRY built outside the dispatcher  " + v)
+        print("STANDBY ENTRY built or submitted outside the dispatcher  " + v)
     if found:
-        print("\nAdd a collect_*_entries function to scripts/effects/trigger_dispatcher.gd"
-              " (and its EffectHandler delegate) and call that instead.")
+        print("\nAdd a trigger_* function (backed by a private _collect_*_entries)"
+              " to scripts/effects/trigger_dispatcher.gd and call that instead.")
         return 1
-    print("standby entry builders: OK (only %s)" % BUILDER)
+    print("standby entry builders/submitters: OK (only %s)" % BUILDER)
     return 0
 
 

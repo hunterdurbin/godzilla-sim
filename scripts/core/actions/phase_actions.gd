@@ -34,7 +34,7 @@ func execute_start_phase_discard(state: GameState) -> void:
 		var cleared: Array = []
 		for i in indices_to_discard:
 			# Start phase discard (7.2.3) is a rule action, not <Destroy> — bypass protection.
-			var card := await destruction.discard_strategy_from_zone(player.player_id, i, null, true)
+			var card := await destruction.discard_strategy_from_zone(player.player_id, i, true)
 			if not card.is_empty():
 				cleared.append(card)
 		if not cleared.is_empty():
@@ -84,8 +84,8 @@ func execute_end_phase_burst_discard(state: GameState) -> void:
 func execute_end_phase_advance(state: GameState) -> void:
 	## Advance monster (7.5.2) and check crush rule.
 	## Extra advance from effects (e.g. EBP02-056 SpaceGodzilla R4) adds additional zones.
-	## Movement fully resolves before triggered abilities activate; cards crushed during
-	## movement are filtered out of the standby queue.
+	## The abilities the movement triggers enter standby and resolve at the
+	## 7.5.3 check timing, after the whole advance.
 	var player := state.get_current_player()
 
 	# Check if monster is blocked from advancing (e.g. Biollante Rose Form)
@@ -94,13 +94,8 @@ func execute_end_phase_advance(state: GameState) -> void:
 
 	var extra: int = queries.get_extra_end_phase_advance(player.player_id)
 	var total_advance: int = 1 + extra
-	var deferred_entries: Array = []
 	var from_invasion := false  # the 7.5.2 advance is not an invasion
-	monster_mover.advance(player.player_id, total_advance, from_invasion, deferred_entries)
-
-	# Submit the collected abilities once all movement completes; they
-	# resolve at the 7.5.3 check timing.
-	check_timing.submit(deferred_entries)
+	monster_mover.advance(player.player_id, total_advance, from_invasion)
 
 
 func execute_end_phase_draw(state: GameState) -> void:

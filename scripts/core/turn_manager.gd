@@ -130,23 +130,34 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 		_begin_counter_phase()
 		return
 
-	# Action handlers emit their own log lines at the right point during execute()
-	# (after the action's state mutations but before triggered effects fire), so the
-	# log reads in causal order: action first, then effects fired by the action.
-	await action_handler.execute(action, params, game_state)
-	await effect_handler.check_timing.resolve() # 10.4.4.1
-
-	# Check for win condition after each action
+	var winner := await execute_action(action, params)
 	if is_game_over:
 		return
-
-	var winner := rules_engine.check_win_condition(game_state)
 	if winner >= 0:
 		_on_game_over(winner, "STR_LOG_REASON_INVASION_VICTORY")
 		return
 
 	# Loop back for more actions
 	_prompt_player_actions()
+
+
+func execute_action(action: CardEnums.ActionType, params: Dictionary) -> int:
+	## Run one non-PASS main-phase action and its check timing (10.4.4.1):
+	## the shared sequence of submit_action and the KAIJU rollout
+	## (KaijuRollout.apply). Returns the winner by the win check after the
+	## action, or -1. When the action itself ended the game (is_game_over),
+	## nothing more runs and -1 is returned: victory through invasion ends
+	## the game before the abilities the invasion put in standby resolve.
+	## Action handlers emit their own log lines during execute() (after the
+	## action's state mutations, before its abilities resolve), so the log
+	## reads in causal order.
+	await action_handler.execute(action, params, game_state)
+	if is_game_over:
+		return -1
+	await effect_handler.check_timing.resolve() # 10.4.4.1
+	if is_game_over:
+		return -1
+	return rules_engine.check_win_condition(game_state)
 
 
 # --- Internal phase machine ---

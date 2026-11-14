@@ -3,8 +3,11 @@ extends EffectModule
 
 ## Dispatches CardEffect trigger methods across active cards:
 ## iterates monster / zone tops / strategies, consults the registry and
-## TRIGGER_FILTERS gates, builds contexts, and feeds CheckTiming. The
-## collect_* functions are the only builders of StandbyEntry.
+## TRIGGER_FILTERS gates, builds contexts, and feeds CheckTiming.
+## Operations report what happened through the trigger_* functions, which
+## find the watching abilities and submit them to CheckTiming; the private
+## _collect_* functions are the only builders of StandbyEntry, and no
+## caller outside this module handles StandbyEntry arrays.
 
 
 
@@ -38,10 +41,10 @@ func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = fa
 	## be cleared or a later normal replay would re-fire the gated effect.
 	## The <Enter> ability enters standby and resolves at the next check
 	## timing (10.6.2, 10.4.3), alongside whatever else the play triggered.
-	check_timing.submit(collect_enter_entries(player_id, card_data, from_effect, through_evolution))
+	check_timing.submit(_collect_enter_entries(player_id, card_data, from_effect, through_evolution))
 
 
-func collect_enter_entries(player_id: int, card_data: Dictionary, from_effect: bool = false, through_evolution: bool = false) -> Array:
+func _collect_enter_entries(player_id: int, card_data: Dictionary, from_effect: bool = false, through_evolution: bool = false) -> Array:
 	## Stamp this entry's play marks on the card (see trigger_enter) and
 	## collect its <Enter> ability, without submitting it.
 	if from_effect:
@@ -65,8 +68,16 @@ func collect_enter_entries(player_id: int, card_data: Dictionary, from_effect: b
 
 
 
-func collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
-	## Collect <When Invading> entry for deferred resolution after movement completes.
+func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void:
+	## The invading monster's <When invading> ability (12.3) enters standby —
+	## one step of an advance from an invasion (MonsterMover.advance).
+	check_timing.submit(_collect_when_invading_entries(player_id, from_zone, to_zone))
+
+
+
+
+func _collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
+	## The <When invading> entry; zone_had_card captures the zone before Crush.
 	var entries: Array = []
 	var player := game_state.players[player_id]
 	if has_trigger(player.current_monster, "on_when_invading"):
@@ -82,13 +93,21 @@ func collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int)
 
 
 
-func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary, crushed: bool) -> Array:
+func trigger_crush_and_revenge(player_id: int, card_data: Dictionary, crushed: bool) -> void:
+	## A destroyed card's <Revenge> (12.7) and, when `crushed`, crush abilities
+	## enter standby.
+	check_timing.submit(_collect_crush_and_revenge_entries(player_id, card_data, crushed))
+
+
+
+
+func _collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary, crushed: bool) -> Array:
 	## The <Revenge> standby entry for a destroyed card (12.7) — and, when it
 	## was `crushed` (11.3), its crush ability. The card is already in the
 	## discard pile; the entries still resolve (10.6.7). When a crushed card
 	## has both on_crush and on_revenge, they are merged into a single entry
-	## so the card only appears once in standby choice prompts. Built only by
-	## DestructionEngine.destroy, which decides which causes fire <Revenge>.
+	## so the card only appears once in standby choice prompts.
+	## DestructionEngine.destroy decides which causes fire <Revenge>.
 	var entries: Array = []
 	var has_crush := crushed and has_trigger(card_data, "on_crush")
 	var has_revenge := has_trigger(card_data, "on_revenge")
@@ -118,11 +137,20 @@ func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary, cr
 
 
 
-func collect_on_destroy_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
+func trigger_on_destroy(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
+	## The destroyed card's own on_destroy ability enters standby (Crush and
+	## Overload; an effect destroy resolves it on the spot).
+	check_timing.submit(_collect_on_destroy_entries(player_id, destroyed_card, zone_idx))
+
+
+
+
+func _collect_on_destroy_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
 	## Standby entry for the destroyed card's own on_destroy ability. The card
 	## is already in the discard pile; the entry still resolves (10.6.7).
-	## Built only by DestructionEngine.destroy, for Crush and Overload (an
-	## effect destroy resolves on_destroy on the spot, _destroy_by_effect).
+	## Submitted (trigger_on_destroy) by DestructionEngine.destroy for Crush
+	## and Overload; an effect destroy resolves on_destroy on the spot
+	## (_destroy_by_effect).
 	if not has_trigger(destroyed_card, "on_destroy"):
 		return []
 	var effect := get_effect(destroyed_card)
@@ -162,14 +190,13 @@ func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 	## Discard-from-hand ability of the card being discarded. It's an automatic
 	## ability: it enters standby (10.6.2) and resolves at the next check
 	## timing.
-	var entries := collect_discard_from_hand_entries(player_id, card_data)
+	var entries := _collect_discard_from_hand_entries(player_id, card_data)
 	check_timing.submit(entries)
 
 
 
 
-func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) -> Array:
-	## Collect discard-from-hand entry for deferred resolution (e.g. during invasion).
+func _collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) -> Array:
 	var entries: Array = []
 	if has_trigger(card_data, "on_discard_from_hand") and _passes_discard_from_hand_filter(card_data, player_id):
 		var effect := get_effect(card_data)
@@ -191,15 +218,21 @@ func trigger_hand_cards_discarded_batch(player_id: int, cards: Array) -> void:
 		return
 	var entries: Array = []
 	for card in cards:
-		entries.append_array(collect_discard_from_hand_entries(player_id, card))
-		entries.append_array(collect_hand_card_discarded_entries(player_id, card))
+		entries.append_array(_collect_discard_from_hand_entries(player_id, card))
+		entries.append_array(_collect_hand_card_discarded_entries(player_id, card))
 	check_timing.submit(entries)
 
 
 
 
-func collect_discarded_for_invasion_entries(player_id: int, card_data: Dictionary) -> Array:
-	## Collect discarded-for-invasion entry for deferred resolution during invasion.
+func trigger_discarded_for_invasion(player_id: int, card_data: Dictionary) -> void:
+	## The invasion-cost card's on_discarded_for_invasion ability enters standby.
+	check_timing.submit(_collect_discarded_for_invasion_entries(player_id, card_data))
+
+
+
+
+func _collect_discarded_for_invasion_entries(player_id: int, card_data: Dictionary) -> Array:
 	## The callback checks on_discarded_for_invasion and plays from discard if true.
 	var entries: Array = []
 	if has_trigger(card_data, "on_discarded_for_invasion"):
@@ -329,40 +362,14 @@ func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
 
 
 func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> void:
-	## Trigger monster advance on all active cards for this player.
-	## Collects all applicable effects and submits them to standby (they
-	## resolve at the next check timing).
-	var entries: Array = []
-	var player := game_state.players[player_id]
-
-	# Monster card itself
-	if has_trigger(player.current_monster, "on_monster_advance"):
-		var me := get_effect(player.current_monster)
-		var ctx := _build_context(player_id, player.current_monster)
-		entries.append(StandbyEntry.new(player_id, player.current_monster, me.on_monster_advance.bind(ctx, from_zone, to_zone)))
-
-	# Battle cards in zones (top card only)
-	for i in range(8):
-		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty() and has_trigger(zone_card, "on_monster_advance"):
-			var ze := get_effect(zone_card)
-			var ctx := _build_context(player_id, zone_card)
-			entries.append(StandbyEntry.new(player_id, zone_card, ze.on_monster_advance.bind(ctx, from_zone, to_zone)))
-
-	# Strategy cards
-	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty() and has_trigger(sz_card, "on_monster_advance"):
-			var se := get_effect(sz_card)
-			var ctx := _build_context(player_id, sz_card)
-			entries.append(StandbyEntry.new(player_id, sz_card, se.on_monster_advance.bind(ctx, from_zone, to_zone)))
-
-	check_timing.submit(entries)
+	## "Whenever your monster advances" abilities on this player's active
+	## cards enter standby (one step of an advance, from_zone → to_zone).
+	check_timing.submit(_collect_monster_advance_entries(player_id, from_zone, to_zone))
 
 
 
 
-func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
-	## Collect monster advance entries for deferred resolution after movement completes.
+func _collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
 	var entries: Array = []
 	var player := game_state.players[player_id]
 
@@ -558,10 +565,10 @@ func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_inde
 	## Trigger on_battle_card_played on all active cards from both players.
 	## played_from_deck: true when the card was played directly from the deck (e.g. via a deck-dig effect).
 	## Both sides are checked so opponent-watching effects (e.g. EBP04-028 Gigan) fire correctly.
-	check_timing.submit(collect_battle_card_played_entries(player_id, card_data, zone_index, played_from_deck))
+	check_timing.submit(_collect_battle_card_played_entries(player_id, card_data, zone_index, played_from_deck))
 
 
-func collect_battle_card_played_entries(player_id: int, card_data: Dictionary, zone_index: int, played_from_deck: bool = false) -> Array:
+func _collect_battle_card_played_entries(player_id: int, card_data: Dictionary, zone_index: int, played_from_deck: bool = false) -> Array:
 	## The "when a battle card is played" watchers' entries (see
 	## trigger_battle_card_played), without submitting them.
 	var entries: Array = []
@@ -638,13 +645,12 @@ func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
 	## Trigger on ALL active cards when a card is discarded from the owner's hand.
 	## Collects all applicable effects and submits them to standby (they
 	## resolve at the next check timing).
-	check_timing.submit(collect_hand_card_discarded_entries(player_id, card_data))
+	check_timing.submit(_collect_hand_card_discarded_entries(player_id, card_data))
 
 
 
 
-func collect_hand_card_discarded_entries(player_id: int, card_data: Dictionary) -> Array:
-	## Collect hand-card-discarded entries for deferred resolution (e.g. during invasion).
+func _collect_hand_card_discarded_entries(player_id: int, card_data: Dictionary) -> Array:
 	var entries: Array = []
 	var player := game_state.players[player_id]
 
@@ -718,7 +724,7 @@ func trigger_counter_success(counterer_player_id: int, countered_player_id: int)
 
 
 
-func _collect_strategy_discarded_entries_inner(player_id: int, strategy_card: Dictionary) -> Array:
+func _collect_strategy_discarded_entries(player_id: int, strategy_card: Dictionary) -> Array:
 	var entries: Array = []
 	var player := game_state.players[player_id]
 	var discarded_id: String = strategy_card.get("id", "")
@@ -761,14 +767,7 @@ func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> vo
 	## Trigger on the discarded card itself + ALL active cards when a strategy
 	## is sent from strategy zone to discard. Collects all applicable effects
 	## and submits them to standby (they resolve at the next check timing).
-	check_timing.submit(_collect_strategy_discarded_entries_inner(player_id, strategy_card))
-
-
-
-
-func collect_strategy_discarded_entries(player_id: int, strategy_card: Dictionary) -> Array:
-	## Collect on_strategy_discarded entries for deferred resolution (e.g. during invasion).
-	return _collect_strategy_discarded_entries_inner(player_id, strategy_card)
+	check_timing.submit(_collect_strategy_discarded_entries(player_id, strategy_card))
 
 
 
@@ -784,43 +783,12 @@ func _passes_invasion_observed_filter(card_data: Dictionary, player_id: int) -> 
 func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone: int) -> void:
 	## Trigger on ALL active cards for BOTH players when a monster invades.
 	## Per 10.4.3.2-10.4.3.3: turn player's abilities resolve first.
-	## Collects all applicable effects and submits them to standby (they
-	## resolve at the next check timing).
-	var entries: Array = []
-	for pid in range(2):
-		var player := game_state.players[pid]
-
-		# Monster card
-		if has_trigger(player.current_monster, "on_invasion_observed") \
-				and _passes_invasion_observed_filter(player.current_monster, pid):
-			var me := get_effect(player.current_monster)
-			var ctx := _build_context(pid, player.current_monster)
-			entries.append(StandbyEntry.new(pid, player.current_monster, me.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)))
-
-		# Battle cards in zones (top card only)
-		for i in range(8):
-			var zone_card := player.get_zone_top_card(i)
-			if not zone_card.is_empty() and has_trigger(zone_card, "on_invasion_observed") \
-					and _passes_invasion_observed_filter(zone_card, pid):
-				var ze := get_effect(zone_card)
-				var ctx := _build_context(pid, zone_card)
-				entries.append(StandbyEntry.new(pid, zone_card, ze.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)))
-
-		# Strategy cards
-		for sz_card in player.strategy_zones:
-			if not sz_card.is_empty() and has_trigger(sz_card, "on_invasion_observed") \
-					and _passes_invasion_observed_filter(sz_card, pid):
-				var se := get_effect(sz_card)
-				var ctx := _build_context(pid, sz_card)
-				entries.append(StandbyEntry.new(pid, sz_card, se.on_invasion_observed.bind(ctx, invading_player_id, from_zone, to_zone)))
-
-	check_timing.submit(entries)
+	check_timing.submit(_collect_invasion_observed_entries(invading_player_id, from_zone, to_zone))
 
 
 
 
-func collect_invasion_observed_entries(invading_player_id: int, from_zone: int, to_zone: int) -> Array:
-	## Collect invasion observed entries for deferred resolution after movement completes.
+func _collect_invasion_observed_entries(invading_player_id: int, from_zone: int, to_zone: int) -> Array:
 	var entries: Array = []
 	for pid in range(2):
 		var player := game_state.players[pid]
@@ -857,15 +825,14 @@ func trigger_leave_play(player_id: int, leaving_card: Dictionary, zone_index: in
 	## on_leave_play ability enters standby (10.6.2) and resolves at the next
 	## check timing. Distinct from on_destroy/on_revenge, which only fire for
 	## <Destroy>. Used by linked-card effects (e.g. EBP04-067 ↔ token).
-	var entries := collect_leave_play_entries(player_id, leaving_card, zone_index)
+	var entries := _collect_leave_play_entries(player_id, leaving_card, zone_index)
 	check_timing.submit(entries)
 
 
 
 
-func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_index: int) -> Array:
-	## Standby entry for on_leave_play, for callers that batch triggers
-	## (e.g. destroy_zones collects it alongside revenge).
+func _collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_index: int) -> Array:
+	## Standby entry for the leaving card's on_leave_play ability.
 	if leaving_card.is_empty() or not has_trigger(leaving_card, "on_leave_play"):
 		return []
 	var effect := get_effect(leaving_card)
@@ -881,10 +848,10 @@ func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_i
 func trigger_zone_changed(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> void:
 	## A card moved between zones while staying in play — an area-changing
 	## trigger (10.6.4). Enters standby like trigger_leave_play.
-	check_timing.submit(collect_zone_changed_entries(player_id, moved_card, from_zone, to_zone))
+	check_timing.submit(_collect_zone_changed_entries(player_id, moved_card, from_zone, to_zone))
 
 
-func collect_zone_changed_entries(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> Array:
+func _collect_zone_changed_entries(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> Array:
 	if moved_card.is_empty() or not has_trigger(moved_card, "on_zone_changed"):
 		return []
 	var effect := get_effect(moved_card)
@@ -911,7 +878,16 @@ func trigger_all_monster_enter_abilities(player_id: int) -> void:
 
 
 
-func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
+func trigger_zone_card_destroyed(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
+	## "Whenever a battle card is <Destroy>ed" watchers on both sides — the
+	## destroyed card's owner (ally) first, then the opponent — enter standby.
+	check_timing.submit(_collect_ally_zone_card_destroyed_entries(player_id, destroyed_card, zone_idx))
+	check_timing.submit(_collect_opponent_zone_card_destroyed_entries(player_id, destroyed_card, zone_idx))
+
+
+
+
+func _collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
 	## Collect standby entries for on_ally_zone_card_destroyed triggers.
 	## Iterates the destroying player's zone cards for cards with this trigger.
 	var entries: Array = []
@@ -935,7 +911,7 @@ func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Di
 
 
 
-func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
+func _collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
 	## Collect standby entries for on_opponent_zone_card_destroyed triggers.
 	## Iterates the opponent of the destroyed card's owner (they react when opponent's card is destroyed).
 	var entries: Array = []
@@ -987,7 +963,7 @@ func _passes_card_returned_filter(card_data: Dictionary, watcher_player_id: int,
 
 
 
-func collect_card_returned_from_discard_entries(returning_player_id: int, card: Dictionary) -> Array:
+func _collect_card_returned_from_discard_entries(returning_player_id: int, card: Dictionary) -> Array:
 	## Collect standby entries for on_card_returned_from_discard triggers from
 	## active cards on BOTH players. TRIGGER_FILTERS gates by turn / who returned.
 	var entries: Array = []
@@ -1012,5 +988,5 @@ func collect_card_returned_from_discard_entries(returning_player_id: int, card: 
 
 func trigger_card_returned_from_discard(returning_player_id: int, card: Dictionary) -> void:
 	## Fire on_card_returned_from_discard triggers when a player returns a card from discard to hand.
-	var entries := collect_card_returned_from_discard_entries(returning_player_id, card)
+	var entries := _collect_card_returned_from_discard_entries(returning_player_id, card)
 	check_timing.submit(entries)

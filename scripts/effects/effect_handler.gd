@@ -314,8 +314,8 @@ func destroy_strategy_zone(player: PlayerState, zone_index: int) -> Dictionary:
 	return await destruction.destroy_strategy_zone(player, zone_index)
 
 
-func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entries: Variant = null, bypass_protection: bool = false) -> Dictionary:
-	return await destruction.discard_strategy_from_zone(player_id, zone_index, deferred_entries, bypass_protection)
+func discard_strategy_from_zone(player_id: int, zone_index: int, bypass_protection: bool = false) -> Dictionary:
+	return await destruction.discard_strategy_from_zone(player_id, zone_index, bypass_protection)
 
 
 func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:

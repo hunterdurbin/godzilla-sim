@@ -114,9 +114,8 @@ func enter(player_id: int, card: Dictionary, zone_idx: int, source: Source,
 
 	_take_from_area(player, card, source)
 
-	var entries: Array = []
 	if not _stacks_on_entry(player, card, zone_idx, source, stack_on_top):
-		entries.append_array(destruction.destroy(player, zone_idx, DestructionEngine.Cause.OVERLOAD).entries)
+		destruction.destroy(player, zone_idx, DestructionEngine.Cause.OVERLOAD)
 
 	if source == Source.EVOLUTION:
 		_announce_evolution(player, card, zone_idx)
@@ -125,13 +124,11 @@ func enter(player_id: int, card: Dictionary, zone_idx: int, source: Source,
 		events.battle_card_played.emit(player_id, card, zone_idx)
 	_log_entry(player_id, card, zone_idx, source, by_effect)
 
-	# One play's leave-play, <Enter> and "when played" entries share a pool.
-	entries.append_array(dispatcher.collect_enter_entries(
-			player_id, card, by_effect, source == Source.EVOLUTION))
+	# One play's leave-play, <Enter> and "when played" abilities share a pool.
+	dispatcher.trigger_enter(player_id, card, by_effect, source == Source.EVOLUTION)
 	if _fires_played(card, source):
-		entries.append_array(dispatcher.collect_battle_card_played_entries(
-				player_id, card, zone_idx, source == Source.DECK or source == Source.EVOLUTION))
-	check_timing.submit(entries)
+		dispatcher.trigger_battle_card_played(
+				player_id, card, zone_idx, source == Source.DECK or source == Source.EVOLUTION)
 	return true
 
 
@@ -211,9 +208,8 @@ func move_stack(player_id: int, from_zone: int, to_zone: int) -> bool:
 	var player := game_state.players[player_id]
 	if from_zone == to_zone or not player.zone_has_cards(from_zone):
 		return false
-	var entries: Array = destruction.destroy(player, to_zone, DestructionEngine.Cause.OVERLOAD).entries
+	destruction.destroy(player, to_zone, DestructionEngine.Cause.OVERLOAD)
 	var moved_top: Dictionary = player.get_zone_top_card(from_zone)
 	player.move_zone_stack(from_zone, to_zone)
-	entries.append_array(dispatcher.collect_zone_changed_entries(player.player_id, moved_top, from_zone, to_zone))
-	check_timing.submit(entries)
+	dispatcher.trigger_zone_changed(player.player_id, moved_top, from_zone, to_zone)
 	return true

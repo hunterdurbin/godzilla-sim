@@ -152,7 +152,7 @@ func test_revenge_returns_trait_monster_from_discard(card_id: String, wanted_id:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": wanted["id"]}]}
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_crush_and_revenge_entries(0, card, false))
+	s["effect_handler"].dispatcher.trigger_crush_and_revenge(0, card, false)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)) \
@@ -203,7 +203,7 @@ func test_ebp03_007_invading_reveals_and_adds_red_or_blue_battle() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": "RV-RED"}]}
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 1, 2))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 1, 2)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)).contains_exactly(["RV-RED"])
@@ -431,7 +431,7 @@ func test_esd01_002_invading_searches_burst_godzilla_to_hand() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": wanted["id"]}]}
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 1, 2))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 1, 2)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)).contains_exactly([wanted["id"]])

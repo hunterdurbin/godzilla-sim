@@ -15,10 +15,12 @@ extends RefCounted
 ## Overload (11.5) has no step here: the engine performs it when a card is
 ## placed (docs/adr/0001-overload-at-placement.md).
 ##
-## Trigger sources only submit StandbyEntry objects; nothing resolves on the
-## spot. Entries resolve at the next check timing — after the current action
-## or phase step (TurnManager calls resolve, 10.4.4.1 / 7.x), or between two
-## abilities of a running pass. Per 10.6.7 an entry resolves even after its
+## Operations report what happened to TriggerDispatcher, which submits the
+## watching abilities here (`submit`); nothing resolves on the spot. Each
+## entry gets a submission sequence number, and the order-choice prompt
+## lists a player's abilities in that order. Entries resolve at the next
+## check timing — after the current action or phase step (TurnManager calls
+## resolve, 10.4.4.1 / 7.x), or between two abilities of a running pass. Per 10.6.7 an entry resolves even after its
 ## card changes areas; only its still_applies gate drops it (10.6.3.2).
 ##
 ## Running an ability goes through run_effect: it marks the ability active
@@ -46,11 +48,18 @@ var _in_resolution: bool = false
 ## Abilities submitted while a pass or an ability was running (10.4.3).
 var _pending: Array = []
 
+## Next submission sequence number (StandbyEntry.seq).
+var _next_seq: int = 0
+
 ## Snapshot state for the effect_stack_changed notification: the entry whose
 ## callback is executing and the rest of the live pool (alias of the live
 ## array — rows are composed fresh at each publish).
 var _stack_active: StandbyEntry = null
 var _stack_pool: Array = []
+## True when submissions changed the stack since the last publish. submit
+## only marks it; resolve() publishes once when it starts and the pass
+## publishes between abilities.
+var _stack_dirty: bool = false
 
 
 func teardown() -> void:
@@ -136,6 +145,8 @@ func resolve() -> void:
 	_perform_rule_actions()
 	if _in_resolution or has_active_effect():
 		return
+	if _stack_dirty:
+		_publish_stack()
 	await _run_pass()
 	# Rage markers a decrease left for its triggers to claim (EBP04-089) last
 	# only until those triggers resolved: drop the unclaimed ones.
@@ -146,54 +157,45 @@ func resolve() -> void:
 func _perform_rule_actions() -> void:
 	## 10.4.3.1: every rule action until none remain; the abilities they
 	## trigger enter standby.
-	var triggered: Array = []
 	var changed := true
 	while changed:
 		changed = false
 		# Interrupt rule actions first (11.1.2.1): crush rule (11.3)
-		if _check_crush_for_player(game_state.current_player_id, triggered):
-			changed = true
-		if _check_crush_for_player(1 - game_state.current_player_id, triggered):
+		if _crush_both():
 			changed = true
 		# Non-interrupt rule actions
 		for pid in range(2):
 			if _resolve_illegal_cards(game_state.players[pid]):
 				changed = true
-	submit(triggered)
-
-
-func check_crush_rule(triggered: Array) -> void:
-	## Interrupt type rule action (11.3): destroy battle cards sharing a zone
-	## with a monster. Per 11.1.2.1.1: turn player's interrupt rule actions
-	## resolve first. The single crush path: the crushed cards' leave-play,
-	## crush and <Revenge> abilities are appended to `triggered` — never
-	## resolved here. The caller submits them to standby (10.6.2) once its
-	## movement / check timing is done.
-	## Emits battle_card_crushed (GameEvents) and the crushed player's
-	## zones_changed / discard_changed.
-	_check_crush_for_player(game_state.current_player_id, triggered)
-	_check_crush_for_player(1 - game_state.current_player_id, triggered)
 
 
 func crush_now(player_id: int = -1) -> void:
-	## Perform the crush rule immediately (interrupt rule action, 11.1.2.1)
-	## for one player (or both, turn player first, when player_id < 0) and
-	## submit the triggered abilities to standby — for callers that move a
-	## monster outside movement/check-timing loops (teleport, board editor).
-	## Same signals as check_crush_rule; the abilities wait in standby for the
-	## next check timing.
-	var triggered: Array = []
+	## Perform the crush rule (11.3, an interrupt rule action, 11.1.2.1) now:
+	## destroy the battle card sharing a zone with the monster, for one
+	## player, or for both with the turn player first (11.1.2.1.1) when
+	## player_id < 0. The single Crush entry point outside a check timing —
+	## for monster moves (MonsterMover per step, teleport) and the board
+	## editor. The crushed cards' leave-play, crush and <Revenge> abilities
+	## enter standby and wait for the next check timing.
+	## Emits battle_card_crushed (GameEvents) and the crushed player's
+	## zones_changed / discard_changed.
 	if player_id < 0:
-		check_crush_rule(triggered)
+		_crush_both()
 	else:
-		_check_crush_for_player(player_id, triggered)
-	submit(triggered)
+		_check_crush_for_player(player_id)
 
 
-func _check_crush_for_player(player_id: int, triggered: Array) -> bool:
+func _crush_both() -> bool:
+	## Crush for the turn player, then the non-turn player (11.1.2.1.1).
+	## Returns true if a card left the field.
+	var crushed_turn := _check_crush_for_player(game_state.current_player_id)
+	var crushed_other := _check_crush_for_player(1 - game_state.current_player_id)
+	return crushed_turn or crushed_other
+
+
+func _check_crush_for_player(player_id: int) -> bool:
 	## Crush this player's battle card sharing a zone with their monster.
-	## Returns true if a card left the field. Triggered abilities are
-	## collected into `triggered` (see check_crush_rule).
+	## Returns true if a card left the field.
 	var player := game_state.players[player_id]
 
 	# Monsters and battle cards occupy the SAME player's zones.
@@ -202,10 +204,9 @@ func _check_crush_for_player(player_id: int, triggered: Array) -> bool:
 	if monster_zone_idx < 0 or monster_zone_idx >= 8 or not player.zone_has_cards(monster_zone_idx):
 		return false
 	# Crush is <Destroy> (11.3.3): the destroy module applies replacements
-	# and returns the triggered abilities (leave-play, on_destroy, crush,
+	# and submits the abilities it triggers (leave-play, on_destroy, crush,
 	# <Revenge>, destroyed watchers).
-	var outcome := destruction.destroy(player, monster_zone_idx, DestructionEngine.Cause.CRUSH)
-	triggered.append_array(outcome.entries)
+	destruction.destroy(player, monster_zone_idx, DestructionEngine.Cause.CRUSH)
 	return true
 
 
@@ -239,16 +240,22 @@ func _resolve_illegal_cards(player: PlayerState) -> bool:
 # --- Standby (10.4.3.2–10.4.3.4, 10.6) ---
 
 func submit(entries: Array) -> void:
-	## Submit StandbyEntry abilities to standby (10.6.2). Nothing resolves on
-	## the spot: they wait for the next check timing — the one after the
+	## Submit StandbyEntry abilities to standby (10.6.2). Callers:
+	## TriggerDispatcher's trigger_* functions (and tests). Nothing resolves
+	## on the spot: they wait for the next check timing — the one after the
 	## current action or phase step (resolve), or, inside a running pass, the
 	## one after the ability now resolving. Per 10.6.7 an entry still resolves
 	## after its card changes areas; only its still_applies gate can drop it
-	## (10.6.3.2). Publishes GameEvents.effect_stack_changed.
+	## (10.6.3.2). Stamps each entry's submission sequence number and marks
+	## the stack changed; GameEvents.effect_stack_changed is published when
+	## resolve() starts and between abilities, not here.
 	if entries.is_empty():
 		return
+	for e: StandbyEntry in entries:
+		e.seq = _next_seq
+		_next_seq += 1
 	_pending.append_array(entries)
-	_publish_stack()
+	_stack_dirty = true
 
 
 func _run_pass() -> void:
@@ -361,11 +368,13 @@ static func card_location_ref(state: GameState, player_id: int, card_data: Dicti
 
 func _choose_entry(player_id: int, pool: Array) -> StandbyEntry:
 	## Remove and return the ability `player_id` resolves next. Playing is
-	## compulsory (10.6.3.1); with several, the player chooses which.
+	## compulsory (10.6.3.1); with several, the player chooses which. The
+	## options list them in submission order (StandbyEntry.seq).
 	var indices: Array[int] = []
 	for i in range(pool.size()):
 		if pool[i].player_id == player_id:
 			indices.append(i)
+	indices.sort_custom(func(a: int, b: int) -> bool: return pool[a].seq < pool[b].seq)
 	if indices.size() == 1:
 		return pool.pop_at(indices[0])
 
@@ -408,6 +417,7 @@ func _publish_stack() -> void:
 	## Emit the current pending-effect stack (resolving entry first) via
 	## GameEvents so the UI can keep the player informed mid-resolution.
 	## Pure notification — nothing awaits it; no-op without a wired bus.
+	_stack_dirty = false
 	if h == null or h.events == null:
 		return
 	var rows: Array = []

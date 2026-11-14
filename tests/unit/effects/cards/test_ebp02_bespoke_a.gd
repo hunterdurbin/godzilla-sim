@@ -1,7 +1,7 @@
 extends GdUnitTestSuite
 
 ## Tier C bespoke tests for EBP02 cards 003-040 — one-of-a-kind effects driven
-## through the real trigger-dispatch seam (trigger_enter / collect_when_invading_entries /
+## through the real trigger-dispatch seam (trigger_enter / trigger_when_invading /
 ## trigger_phase_start / destroy_zones / discard_strategy_from_zone / queries).
 ## See classification.md for the bespoke list. Cards 042-T04 live in
 ## test_ebp02_bespoke_b.gd.
@@ -81,7 +81,7 @@ func test_ebp02_006_invading_with_third_form_under_destroys_rank6_and_lower() ->
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 
 	var p1 := state.players[1]
@@ -99,7 +99,7 @@ func test_ebp02_006_invading_without_third_form_destroys_nothing() -> void:
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(1)).is_true()
@@ -190,7 +190,7 @@ func test_ebp02_009_invading_makes_opponent_discard_to_three() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()).is_equal(3)
@@ -490,7 +490,7 @@ func test_ebp02_022_replays_blue_battle_discarded_for_invasion() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 
 	var p0 := state.players[0]
@@ -508,7 +508,7 @@ func test_ebp02_022_ignores_non_blue_invasion_cost() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[0].discard_pile.size()).is_equal(1)
