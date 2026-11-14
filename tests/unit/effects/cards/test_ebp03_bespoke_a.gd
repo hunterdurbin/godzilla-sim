@@ -186,7 +186,13 @@ func test_ebp03_003_silent_below_awakening8() -> void:
 # --- EBP03-004: Godzilla(2001) R4 — rage-reduction immunity + invasion mill replacement ---
 
 
-func test_ebp03_004_prevents_rage_reduction_on_opponent_turn_awakening4() -> void:
+func test_ebp03_004_stops_only_the_opponents_reductions(reducer_id: int, expected_rage: int,
+		test_parameters := [
+			[1, 2],  # opponent's effect: prevented
+			[0, 1],  # its controller's own effect: reduces (hunterdurbin/godzilla-sim-issue-tracker#35 row 20)
+		]) -> void:
+	# "<Opponent's Turn> <Awakening4> This card's <Rage> cannot be reduced by
+	# your opponent's effects."
 	var card := Real.instance("EBP03-004")
 	var state := States.make_state({
 		"current_player_id": 1,
@@ -194,11 +200,14 @@ func test_ebp03_004_prevents_rage_reduction_on_opponent_turn_awakening4() -> voi
 	})
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
+	var reduced: Array[int] = []
 
-	assert_bool(handler.queries.is_rage_reduction_prevented(0)).is_true()
-	var reduced: int = handler.reduce_rage(0, 1)
-	assert_int(reduced).is_equal(0)
-	assert_int(state.players[0].rage).is_equal(2)
+	await handler.check_timing.run_effect(reducer_id, {"id": "FX-%d" % reducer_id, "name": "Reducing Effect"},
+			func() -> void: reduced.append(handler.reduce_rage(0, 1)))
+
+	assert_int(state.players[0].rage) \
+		.override_failure_message("reducer_id=%d" % reducer_id).is_equal(expected_rage)
+	assert_array(reduced).contains_exactly([2 - expected_rage])
 
 
 func test_ebp03_004_rage_reduction_allowed_on_own_turn_or_below_awakening4() -> void:
@@ -207,7 +216,7 @@ func test_ebp03_004_rage_reduction_allowed_on_own_turn_or_below_awakening4() -> 
 	var state := States.make_state({"p0": {"current_monster": card, "monster_zone": 4, "rage": 2}})
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
-	assert_bool(handler.queries.is_rage_reduction_prevented(0)).is_false()
+	assert_bool(handler.queries.is_rage_reduction_prevented(0, 1)).is_false()
 	var reduced: int = handler.reduce_rage(0, 1)
 	assert_int(reduced).is_equal(1)
 	assert_int(state.players[0].rage).is_equal(1)
@@ -220,7 +229,7 @@ func test_ebp03_004_rage_reduction_allowed_on_own_turn_or_below_awakening4() -> 
 	})
 	var s2 := _session(state2)
 	var handler2: EffectHandler = s2["effect_handler"]
-	assert_bool(handler2.queries.is_rage_reduction_prevented(0)).is_false()
+	assert_bool(handler2.queries.is_rage_reduction_prevented(0, 1)).is_false()
 
 
 func test_ebp03_004_can_replace_invasion_cost() -> void:

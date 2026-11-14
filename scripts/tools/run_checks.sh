@@ -37,6 +37,7 @@ CHECKS=(
 	'^scripts/.*\.gd$|check_standby_entry_builders.py'
 	'^(scripts|scenes)/.*\.gd$|check_monster_zone_writers.py'
 	'^(scripts|scenes)/.*\.gd$|check_clear_zone_owner.py'
+	'^(scripts|scenes)/.*\.gd$|check_rage_writers.py'
 	'^scripts/(core|effects)/.*\.gd$|check_docstring_signals.py'
 	'^(scripts|scenes|tests|githooks)/|check_tracker_refs.py'
 	'^(scripts|scenes)/.*\.gd$|rank_up_rule_allowlist\.txt$|check_rank_up_rule_owner.py'

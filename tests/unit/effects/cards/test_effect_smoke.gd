@@ -187,7 +187,7 @@ func _sweep_card(id: String) -> void:
 ## (EffectQueries / destruction protection), for both players.
 func _query_sweep(handler: EffectHandler, state: GameState, card: Dictionary) -> void:
 	for pid in range(2):
-		handler.queries.is_rage_reduction_prevented(pid)
+		handler.queries.is_rage_reduction_prevented(pid, 1 - pid)
 		handler.queries.can_monster_be_played_from_hand(pid, card)
 		handler.queries.get_counter_power_modifier(pid)
 		handler.queries.get_monster_cp_modifier(pid)

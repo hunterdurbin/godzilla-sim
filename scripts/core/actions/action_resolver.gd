@@ -31,6 +31,8 @@ var monster_mover: MonsterMover:
 	get: return ah.effect_handler.monster_mover
 var enter_zone: EnterZone:
 	get: return ah.effect_handler.enter_zone
+var rage_mover: RageMover:
+	get: return ah.effect_handler.rage_mover
 var queries: EffectQueries:
 	get: return ah.effect_handler.queries
 var rules_engine: RulesEngine:

@@ -13,13 +13,15 @@ func get_burst_rank(card: Dictionary) -> int:
 	return effect.get_burst_rank() if effect else -1
 
 
-func is_rage_reduction_prevented(player_id: int) -> bool:
-	## Check if a player's rage reduction is prevented by any active effect.
+func is_rage_reduction_prevented(player_id: int, reducer_id: int) -> bool:
+	## Check if any active effect prevents reducing this player's Rage.
+	## `reducer_id` is the controller of the reducing effect (-1 = no effect,
+	## a rules cause); prevention effects compare it to their owner.
 	var player := game_state.players[player_id]
 
 	# Check monster card
 	var me := get_effect(player.current_monster)
-	if me and me.prevents_rage_reduction(_build_context(player_id, player.current_monster)):
+	if me and me.prevents_rage_reduction(_build_context(player_id, player.current_monster), reducer_id):
 		return true
 
 	# Check battle cards in zones (top card only)
@@ -27,14 +29,14 @@ func is_rage_reduction_prevented(player_id: int) -> bool:
 		var zone_card := player.get_zone_top_card(i)
 		if not zone_card.is_empty():
 			var ze := get_effect(zone_card)
-			if ze and ze.prevents_rage_reduction(_build_context(player_id, zone_card)):
+			if ze and ze.prevents_rage_reduction(_build_context(player_id, zone_card), reducer_id):
 				return true
 
 	# Check strategy cards
 	for sz_card in player.strategy_zones:
 		if not sz_card.is_empty():
 			var se := get_effect(sz_card)
-			if se and se.prevents_rage_reduction(_build_context(player_id, sz_card)):
+			if se and se.prevents_rage_reduction(_build_context(player_id, sz_card), reducer_id):
 				return true
 
 	return false
