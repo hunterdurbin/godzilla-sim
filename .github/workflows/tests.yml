@@ -10,6 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The name "Engine Private Calls" is a required status check on main
+  # (repo ruleset "Main branch"); this job now runs every mechanical check.
   engine-private-calls:
     name: Engine Private Calls
     runs-on: ubuntu-latest
@@ -17,54 +19,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: No new calls into engine private methods
-        run: python3 scripts/tools/check_engine_private_calls.py
-
-      - name: EffectHandler methods all have a card-script caller
-        run: python3 scripts/tools/check_effect_handler_card_api.py
-
-  card-monster-zone-checks:
-    name: Card Monster-Zone Checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: No new play-zone legality checks in card scripts
-        run: python3 scripts/tools/check_card_monster_zone_checks.py
-
-      - name: Card scripts mutate state only through engine primitives
-        run: python3 scripts/tools/check_card_mutations.py
-
-      - name: Engine announces every card-ability resolution
-        run: python3 scripts/tools/check_effect_resolution_notes.py
-
-      - name: Card scripts await engine coroutines
-        run: python3 scripts/tools/check_card_unawaited_coroutines.py
-
-      - name: No array literals into typed-array params via dynamic calls
-        run: python3 scripts/tools/check_typed_array_dynamic_calls.py
-
-      - name: PlayerInput implementations and prompt handlers match the port
-        run: python3 scripts/tools/check_player_input_contract.py
-
-      - name: Only the trigger dispatcher builds StandbyEntry objects
-        run: python3 scripts/tools/check_standby_entry_builders.py
-
-      - name: Only MonsterMover writes monster_zone
-        run: python3 scripts/tools/check_monster_zone_writers.py
-
-      - name: Only LeaveZone empties a battle zone
-        run: python3 scripts/tools/check_clear_zone_owner.py
-
-      - name: Engine docstrings leave PlayerState signals unlisted
-        run: python3 scripts/tools/check_docstring_signals.py
-
-      - name: Tracker tickets are cited fully qualified
-        run: python3 scripts/tools/check_tracker_refs.py
-
-      - name: Only RulesEngine decides rank-up eligibility
-        run: python3 scripts/tools/check_rank_up_rule_owner.py
+      # The one list of checks (pre-commit runs the same script with
+      # --staged). No Godot here, so check_gdscript_warnings.py runs in
+      # Unit Tests below.
+      - name: Mechanical checks (scripts/tools/run_checks.sh)
+        run: bash scripts/tools/run_checks.sh
 
   unit-tests:
     name: Unit Tests

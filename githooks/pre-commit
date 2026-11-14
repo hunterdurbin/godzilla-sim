@@ -9,86 +9,10 @@ if git diff --cached --name-only | grep -qE '^scripts/effects/'; then
 	git add "$TRIGGER_MAP"
 fi
 
-# Ratchet: no new calls into scripts/core + scripts/effects private methods.
-if git diff --cached --name-only | grep -qE '\.gd$|engine_private_calls_allowlist\.txt$'; then
-	python3 scripts/tools/check_engine_private_calls.py || exit 1
-fi
-
-# Ratchet + guards: EffectHandler is exactly the card-script interface
-# (every method card-called, no module reach from cards, no unknown members).
-if git diff --cached --name-only | grep -qE '\.gd$|effect_handler_card_api_allowlist\.txt$'; then
-	python3 scripts/tools/check_effect_handler_card_api.py || exit 1
-fi
-
-# Ratchet: per-card scripts don't re-check play-zone legality (5.11.1.1).
-if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$|card_monster_zone_checks_allowlist\.txt$'; then
-	python3 scripts/tools/check_card_monster_zone_checks.py || exit 1
-fi
-
-# Guard: per-card scripts mutate state only through engine primitives.
-if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$'; then
-	python3 scripts/tools/check_card_mutations.py || exit 1
-fi
-
-# Guard: engine sites that start a card ability call note_effect_resolving.
-if git diff --cached --name-only | grep -qE '^scripts/effects/[^/]+\.gd$'; then
-	python3 scripts/tools/check_effect_resolution_notes.py || exit 1
-fi
-
-# Guard: per-card scripts await every engine coroutine they call.
-if git diff --cached --name-only | grep -qE '^scripts/effects/.*\.gd$'; then
-	python3 scripts/tools/check_card_unawaited_coroutines.py || exit 1
-fi
-
-# Guard: no array literal reaches an Array[T] param through bind/Variant call.
-if git diff --cached --name-only | grep -qE '\.gd$'; then
-	python3 scripts/tools/check_typed_array_dynamic_calls.py || exit 1
-fi
-
-if git diff --cached --name-only | grep -qE '\.gd$'; then
-	python3 scripts/tools/check_player_input_contract.py || exit 1
-fi
-
-# Guard: only the trigger dispatcher builds StandbyEntry objects.
-if git diff --cached --name-only | grep -qE '^scripts/.*\.gd$'; then
-	python3 scripts/tools/check_standby_entry_builders.py || exit 1
-fi
-
-# Guard: only MonsterMover moves a monster (writes monster_zone).
-if git diff --cached --name-only | grep -qE '^(scripts|scenes)/.*\.gd$'; then
-	python3 scripts/tools/check_monster_zone_writers.py || exit 1
-fi
-
-# Guard: only LeaveZone (and EnterZone's moves) empties a battle zone.
-if git diff --cached --name-only | grep -qE '^(scripts|scenes)/.*\.gd$'; then
-	python3 scripts/tools/check_clear_zone_owner.py || exit 1
-fi
-
-# Guard: engine docstrings leave PlayerState *_changed signals unlisted.
-if git diff --cached --name-only | grep -qE '^scripts/(core|effects)/.*\.gd$'; then
-	python3 scripts/tools/check_docstring_signals.py || exit 1
-fi
-
-# Guard: tracker tickets are cited fully qualified (a bare #N is a code PR).
-if git diff --cached --name-only | grep -qE '^(scripts|scenes|tests|githooks)/'; then
-	python3 scripts/tools/check_tracker_refs.py || exit 1
-fi
-
-# Ratchet: only RulesEngine decides rank-up eligibility.
-if git diff --cached --name-only | grep -qE '^((scripts|scenes)/.*\.gd|scripts/tools/rank_up_rule_allowlist\.txt)$'; then
-	python3 scripts/tools/check_rank_up_rule_owner.py || exit 1
-fi
-
-# Ratchet: no new GDScript compile warnings (needs a Godot binary: set
-# GODOT_BIN, or have `godot` on PATH; skipped otherwise — CI still runs it).
-if git diff --cached --name-only | grep -qE '\.gd$|gdscript_warnings_allowlist\.txt$'; then
-	GD_BIN="${GODOT_BIN:-$(command -v godot)}"
-	if [ -n "$GD_BIN" ]; then
-		python3 scripts/tools/check_gdscript_warnings.py "$GD_BIN" || exit 1
-	else
-		echo "pre-commit: GODOT_BIN unset, skipping check_gdscript_warnings.py (CI runs it)"
-	fi
-fi
+# Every mechanical check whose files are staged (the list lives in
+# run_checks.sh). check_gdscript_warnings.py needs a Godot binary: set
+# GODOT_BIN, or have `godot` on PATH; skipped otherwise — CI still runs it.
+bash scripts/tools/run_checks.sh --staged || exit 1
 
 # Sync version from project.godot into export_presets.cfg
 if git diff --cached --name-only | grep -qE '^project\.godot$'; then

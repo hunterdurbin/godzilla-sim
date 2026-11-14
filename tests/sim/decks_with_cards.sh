@@ -28,7 +28,12 @@ else
 fi
 [ -d "$DIR" ] || { echo "No user decklist dir: $DIR (set SIM_DECKLIST_DIR); scanning tests/sim/decks only" >&2; DIR=""; }
 
-IDS="$*"
+# One space-separated list, whatever whitespace the caller used: ids built
+# with `grep | tr` arrive newline-separated, which awk -v rejects.
+IDS=$(printf '%s ' "$@" | tr -s '[:space:]' ' ')
+IDS="${IDS% }"
+IDS="${IDS# }"
+[ -n "$IDS" ] || { echo "decks_with_cards.sh: no card ids given" >&2; sed -n '2,16p' "$0"; exit 2; }
 RANKED=$(
 	{
 		[ -n "$DIR" ] && find "$DIR" -name '*.deck' -print0 | while IFS= read -r -d '' f; do
