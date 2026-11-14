@@ -91,21 +91,15 @@ func valid_actions() -> Array:
 	return tm.rules_engine.get_valid_actions(tm.game_state)
 
 
-## Execute one main-phase action on the scratch state (mirrors the
-## execute + check-timing + win-check sequence of TurnManager.submit_action).
-## Returns false once the rollout game is over.
+## Execute one main-phase action on the scratch state through the same
+## sequence as live play (TurnManager.execute_action). Returns false once
+## the rollout game is over.
 func apply(action: CardEnums.ActionType, params: Dictionary) -> bool:
 	var input := tm.player_input as KaijuRolloutInput
 	if input:
 		input.decision_log.clear()
-	await tm.action_handler.execute(action, params, tm.game_state)
-	# Victory through invasion ends the game before its abilities resolve.
-	if tm.is_game_over:
-		return false
-	await tm.effect_handler.check_timing.resolve()
-	if tm.is_game_over:
-		return false
-	return tm.rules_engine.check_win_condition(tm.game_state) < 0
+	var winner_id := await tm.execute_action(action, params)
+	return not tm.is_game_over and winner_id < 0
 
 
 ## Sub-decisions the rollout input answered during the last apply() — the
