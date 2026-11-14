@@ -839,15 +839,14 @@ func _get_threat_surplus(player: PlayerState, opponent: PlayerState) -> int:
 # --- Counter-retreat path ---
 
 func _has_counter_retreat_path(player: PlayerState, bot) -> bool:
-	## Check if the monster deck has a rank 3+ monster with "advances_opponent" on_enter.
-	## If so, getting countered will auto-play it, pushing the opponent forward.
-	var cur_rank: int = player.current_monster.get("rank", 0)
+	## Check if a counter would rank up into a monster with "advances_opponent"
+	## on_enter. If so, getting countered auto-plays it, pushing the opponent
+	## forward. Candidates follow the engine's rank-up rule (5.15.1.2), the one
+	## CounterResolver applies: next rank + shared trait or an alternate cost.
 	var effects: EffectHandler = bot.effect_handler
-	for monster in player.monster_deck:
-		var m_rank: int = monster.get("rank", 0)
-		if m_rank != cur_rank + 1:
-			continue
-		var effect := effects.get_effect(monster)
+	var rules_eng: RulesEngine = bot.rules_engine
+	for idx in rules_eng.get_rank_up_candidates(player):
+		var effect := effects.get_effect(player.monster_deck[idx])
 		if not effect:
 			continue
 		if "advances_opponent" in effect.get_bot_tags():
