@@ -178,13 +178,13 @@ func _host_zoom_entries(pid: int, location: String, index: int) -> Array:
 	match location:
 		"zone":
 			if index >= 0 and index < 8:
-				out.append_array(eh.get_zone_cp_breakdown(pid)[index])
-				out.append_array(eh.get_field_rank_breakdown(pid)[index])
+				out.append_array(eh.queries.get_zone_cp_breakdown(pid)[index])
+				out.append_array(eh.queries.get_field_rank_breakdown(pid)[index])
 		"monster":
-			ModifierBreakdown.append(out, "cp", eh.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
-			out.append_array(eh.get_threat_level_breakdown(pid))
+			ModifierBreakdown.append(out, "cp", eh.queries.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
+			out.append_array(eh.queries.get_threat_level_breakdown(pid))
 		"strategy":
-			var mods: Array = eh.get_strategy_cp_modifiers(pid)
+			var mods: Array = eh.queries.get_strategy_cp_modifiers(pid)
 			if index >= 0 and index < mods.size() and index < player.strategy_zones.size():
 				ModifierBreakdown.append(out, "cp", int(mods[index]), player.strategy_zones[index], -1, pid, "strategy")
 		"hand":

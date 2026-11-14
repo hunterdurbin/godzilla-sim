@@ -665,13 +665,13 @@ func _combo_log_state(event: String) -> void:
 	var player := game_state.players[bot_player_id]
 	var opponent := game_state.players[1 - bot_player_id]
 	var cp: int = player.get_total_counter_power()
-	cp += effect_handler.get_counter_power_modifier(player.player_id)
+	cp += effect_handler.queries.get_counter_power_modifier(player.player_id)
 	var threat: int = player.get_threat_level()
 	threat += effect_handler.get_threat_level_modifier(player.player_id)
 	var opp_threat: int = opponent.get_threat_level()
 	opp_threat += effect_handler.get_threat_level_modifier(opponent.player_id)
 	var opp_cp: int = opponent.get_total_counter_power()
-	opp_cp += effect_handler.get_counter_power_modifier(opponent.player_id)
+	opp_cp += effect_handler.queries.get_counter_power_modifier(opponent.player_id)
 	var strats: int = 0
 	for card in player.hand:
 		if card.get("card_type") == CardEnums.CardType.STRATEGY:
@@ -690,7 +690,7 @@ func get_cp_gap() -> int:
 	var player := game_state.players[bot_player_id]
 	var opponent := game_state.players[1 - bot_player_id]
 	var total_cp: int = player.get_total_counter_power()
-	total_cp += effect_handler.get_counter_power_modifier(player.player_id)
+	total_cp += effect_handler.queries.get_counter_power_modifier(player.player_id)
 	var threat: int = opponent.get_threat_level()
 	threat += effect_handler.get_threat_level_modifier(opponent.player_id)
 	return threat - total_cp

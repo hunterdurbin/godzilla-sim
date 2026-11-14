@@ -1171,9 +1171,9 @@ func _sync_mobile_cp_tray() -> void:
 		var eh := turn_manager.effect_handler
 		if eh:
 			for pid in 2:
-				cp_mods[pid] += eh.get_monster_cp_modifier(pid)
-				var zone_cp: Array = eh.get_zone_cp_modifiers(pid)
-				var strat_cp: Array = eh.get_strategy_cp_modifiers(pid)
+				cp_mods[pid] += eh.queries.get_monster_cp_modifier(pid)
+				var zone_cp: Array = eh.queries.get_zone_cp_modifiers(pid)
+				var strat_cp: Array = eh.queries.get_strategy_cp_modifiers(pid)
 				for v in zone_cp: cp_mods[pid] += v
 				for v in strat_cp: cp_mods[pid] += v
 				threat_mods[pid] = eh.get_threat_level_modifier(pid)

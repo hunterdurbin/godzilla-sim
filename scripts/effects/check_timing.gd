@@ -24,11 +24,12 @@ extends RefCounted
 ## Running an ability goes through run_effect: it marks the ability active
 ## (read-only via active_player_id / active_card).
 ##
-## Dependencies (wired by EffectHandler.setup): game_state, and the facade `h`
-## for the trigger collectors, destroy replacement, the order-choice prompt,
-## the GameEvents bus and the highlight signals.
+## Dependencies (wired by EffectHandler.setup): game_state, the destroy
+## module (crush), and the facade `h` for what it owns — the order-choice
+## prompt, the highlight signals and the GameEvents bus.
 
 var game_state: GameState
+var destruction: DestructionEngine
 var h: EffectHandler
 
 ## Player whose ability is currently resolving (-1 = none).
@@ -59,10 +60,32 @@ func teardown() -> void:
 	_stack_pool = []
 	_stack_active = null
 	h = null
+	destruction = null
 	game_state = null
 
 
 # --- Active ability ---
+
+## Announce that card_data's ability starts resolving (GameEvents.effect_resolving).
+## Call at every site that STARTS a card-script resolution — not where an
+## outer effect is restored after a nested one.
+## scripts/tools/check_effect_resolution_notes.py enforces this.
+func note_effect_resolving(player_id: int, card_data: Dictionary) -> void:
+	if h != null and h.events != null and not card_data.is_empty():
+		h.events.effect_resolving.emit(player_id, card_data)
+
+
+## {card_id, label} for the ability currently resolving ({} if none) — the
+## UI shows this above effect prompt overlays. card_id is the base id; label
+## matches the resolution-order choice option text.
+func get_active_effect_summary() -> Dictionary:
+	if _active_card.is_empty():
+		return {}
+	return {
+		"card_id": CardUtils.base_id(_active_card),
+		"label": CheckTiming.card_location_label(game_state, _active_player_id, _active_card),
+	}
+
 
 func has_active_effect() -> bool:
 	return not _active_card.is_empty()
@@ -80,7 +103,7 @@ func run_effect(player_id: int, card: Dictionary, callback: Callable) -> void:
 	var saved_card: Dictionary = _active_card
 	_active_player_id = player_id
 	_active_card = card
-	h.note_effect_resolving(player_id, card)
+	note_effect_resolving(player_id, card)
 	await callback.call()
 	if saved_card.is_empty():
 		_clear_active()
@@ -181,7 +204,7 @@ func _check_crush_for_player(player_id: int, triggered: Array) -> bool:
 	# Crush is <Destroy> (11.3.3): the destroy module applies replacements
 	# and returns the triggered abilities (leave-play, on_destroy, crush,
 	# <Revenge>, destroyed watchers).
-	var outcome := h.destroy(player, monster_zone_idx, DestructionEngine.Cause.CRUSH)
+	var outcome := destruction.destroy(player, monster_zone_idx, DestructionEngine.Cause.CRUSH)
 	triggered.append_array(outcome.entries)
 	return true
 
@@ -199,7 +222,7 @@ func _resolve_illegal_cards(player: PlayerState) -> bool:
 		var top_card := player.get_zone_top_card(i)
 		if top_card.get("card_type") == CardEnums.CardType.STRATEGY:
 			var stack: Array = player.clear_zone(i)
-			EffectHandler.banish_or_discard(player, stack)
+			CardMover.banish_or_discard(player, stack)
 			changed = true
 
 	# Check strategy zones: non-strategy cards are illegal
@@ -207,7 +230,7 @@ func _resolve_illegal_cards(player: PlayerState) -> bool:
 		if player.strategy_zones[i].is_empty():
 			continue
 		if player.strategy_zones[i].get("card_type") != CardEnums.CardType.STRATEGY:
-			EffectHandler.banish_or_discard(player, [player.strategy_zones[i]])
+			CardMover.banish_or_discard(player, [player.strategy_zones[i]])
 			player.strategy_zones[i] = {}
 			changed = true
 

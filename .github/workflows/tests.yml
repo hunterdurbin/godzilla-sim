@@ -20,6 +20,9 @@ jobs:
       - name: No new calls into engine private methods
         run: python3 scripts/tools/check_engine_private_calls.py
 
+      - name: EffectHandler methods all have a card-script caller
+        run: python3 scripts/tools/check_effect_handler_card_api.py
+
   card-monster-zone-checks:
     name: Card Monster-Zone Checks
     runs-on: ubuntu-latest

@@ -2,7 +2,7 @@ extends GdUnitTestSuite
 
 ## Tier B cluster: cards whose <Enter> effect draws N cards (optionally
 ## discarding M afterwards), driven through the real trigger-dispatch seam
-## (effect_handler.trigger_enter → registry → trigger_map → effect script).
+## (effect_handler.dispatcher.trigger_enter → registry → trigger_map → effect script).
 ## See classification.md for cluster membership.
 
 const Cards := preload("res://tests/fixtures/cards.gd")
@@ -45,7 +45,7 @@ func test_enter_draws_then_discards(card_id: String, zone_idx: int, draw_count: 
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	s["effect_handler"].trigger_enter(0, s["card"])
+	s["effect_handler"].dispatcher.trigger_enter(0, s["card"])
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].hand.size()) \
@@ -64,7 +64,7 @@ func test_enter_does_nothing_outside_required_zone(card_id: String, wrong_zone: 
 	var s := _setup(card_id, wrong_zone)
 	var state: GameState = s["state"]
 
-	s["effect_handler"].trigger_enter(0, s["card"])
+	s["effect_handler"].dispatcher.trigger_enter(0, s["card"])
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].hand.size()).is_equal(HAND_SIZE)

@@ -751,7 +751,7 @@ func get_hand_cp_preview(player_id: int, card: Dictionary) -> int:
 	## the card's OWN bonus, not the final on-board total.
 	if not CardUtils.is_battle(card):
 		return 0
-	if not h.registry.has_hand_cp_preview(card):
+	if not registry.has_hand_cp_preview(card):
 		return 0
 	var effect := get_effect(card)
 	if effect == null:

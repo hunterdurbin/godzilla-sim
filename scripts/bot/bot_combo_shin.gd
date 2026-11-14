@@ -915,7 +915,7 @@ func _compute_viability(player: PlayerState, opponent: PlayerState,
 		score -= 15
 
 	# Invasion blocked
-	if bot.effect_handler.is_own_invasion_blocked(player.player_id):
+	if bot.effect_handler.queries.is_own_invasion_blocked(player.player_id):
 		score -= 100
 
 	return maxi(score, 0)

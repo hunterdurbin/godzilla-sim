@@ -53,7 +53,7 @@ func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 	player.discard_changed.emit()
 	# Bundle all simultaneously-discarded triggers into one standby batch so
 	# the player can choose resolution order when 2+ cards trigger (10.4.3).
-	h.trigger_hand_cards_discarded_batch(player_id, discarded_cards)
+	dispatcher.trigger_hand_cards_discarded_batch(player_id, discarded_cards)
 	return discarded_cards
 
 
@@ -257,7 +257,7 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 	player.hand_changed.emit()
 	player.discard_changed.emit()
 	# One standby batch (10.4.3) — mid-effect, both wait for the check timing.
-	h.trigger_hand_cards_discarded_batch(player_id, [card])
+	dispatcher.trigger_hand_cards_discarded_batch(player_id, [card])
 	return card
 
 
@@ -365,6 +365,16 @@ func reveal_deck_top(player_id: int, count: int, title_key: String = "STR_EFF_RE
 
 
 
+static func banish_or_discard(player: PlayerState, stack: Array) -> void:
+	## Route cards to banishment (tokens) or discard pile (non-tokens).
+	## Tokens are removed from the game entirely; non-tokens go to discard pile.
+	for card in stack:
+		if not PlayerState.is_token(card):
+			player.discard_pile.append(card)
+
+
+
+
 func discard_cards(player_id: int, cards: Array[Dictionary]) -> void:
 	## Append a batch of cards to the player's discard pile and emit discard_changed.
 	## For tokens or mixed batches, use banish_or_discard per-card instead.
@@ -440,7 +450,7 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 		return false
 	# Evolve is a play (出現): a zone it can't be played into (the monster's
 	# zone, an EBP02-055 block — Q270) evolves nothing, so skip the search.
-	if not h.enter_zone.can_enter(player_id, {}, zone_idx):
+	if not enter_zone.can_enter(player_id, {}, zone_idx):
 		return false
 
 	var selected := await search_deck(
@@ -461,7 +471,7 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 	# The evolved card is played on top from the deck (5.17.1, Q176); it
 	# marks itself as played through evolution (e.g. ESD02-010) and fires
 	# the "when played" watchers as a deck play (EBP04-028, EBP04-072).
-	return h.enter_zone.enter(player_id, selected, zone_idx, EnterZone.Source.EVOLUTION)
+	return enter_zone.enter(player_id, selected, zone_idx, EnterZone.Source.EVOLUTION)
 
 
 
@@ -496,7 +506,7 @@ func can_play_in_zone(player_id: int, zone_idx: int) -> bool:
 	## (EBP02-055) — the card is not played. Every play primitive below
 	## enforces this; card scripts use it to offer only legal zones instead
 	## of checking monster_zone. Every source shares one rule set (EnterZone).
-	return h.enter_zone.can_enter(player_id, {}, zone_idx)
+	return enter_zone.can_enter(player_id, {}, zone_idx)
 
 
 
@@ -509,7 +519,7 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	## opponent blocks (EBP02-055).
 	# Checked before the template is copied, so a refused token never takes
 	# an instance serial.
-	if not h.enter_zone.can_enter(player.player_id, {}, zone_index):
+	if not enter_zone.can_enter(player.player_id, {}, zone_index):
 		return false
 	var token_data: Dictionary = CardData.get_card_by_id(token_id)
 	if token_data.is_empty():
@@ -527,7 +537,7 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	token_data["id"] = "%s_tok_%d" % [token_id, _token_serial]
 
 	# A battle token is a play: it fires the "when played" watchers.
-	return h.enter_zone.enter(player.player_id, token_data, zone_index, EnterZone.Source.TOKEN)
+	return enter_zone.enter(player.player_id, token_data, zone_index, EnterZone.Source.TOKEN)
 
 
 
@@ -591,7 +601,7 @@ func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], p
 			break
 		# Always present the card picker — even for the final card — so the player
 		# sees which card they are about to place.
-		var card: Dictionary = await h.select_from_cards(player.player_id, remaining, remaining, pick_prompt, false)
+		var card: Dictionary = await select_from_cards(player.player_id, remaining, remaining, pick_prompt, false)
 		if card.is_empty():
 			card = remaining[0]   # mandatory pick — fall back to first
 		remaining.erase(card)
@@ -603,9 +613,9 @@ func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], p
 			chosen = valid[0]         # mandatory placement — fall back to first available
 		used_zones.append(chosen)
 		if from_discard:
-			await h.play_from_discard(player.player_id, card, chosen)
+			await play_from_discard(player.player_id, card, chosen)
 		else:
-			h.play_battle_card_from_deck(player.player_id, card, chosen)
+			play_battle_card_from_deck(player.player_id, card, chosen)
 		played += 1
 	return remaining
 
@@ -615,21 +625,6 @@ func _format_zone_list(zones: Array[int]) -> String:
 	for z in zones:
 		labels.append(str(z + 1))
 	return ", ".join(labels)
-
-
-
-
-func return_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
-	## Move a card from discard pile to the bottom of the player's deck.
-	## Used by cards with "place on bottom of deck instead of discard" effects.
-	var card_id: String = card_data.get("id", "")
-	for i in range(player.discard_pile.size() - 1, -1, -1):
-		if player.discard_pile[i].get("id", "") == card_id:
-			var card: Dictionary = player.discard_pile.pop_at(i)
-			player.main_deck.append(card)
-			player.deck_changed.emit()
-			player.discard_changed.emit()
-			return
 
 
 
@@ -646,7 +641,7 @@ func move_zone_card_to_deck_bottom(player: PlayerState, card_data: Dictionary) -
 				player.main_deck.append(stack[0])
 				# Place any cards under it into discard
 				for j in range(1, stack.size()):
-					EffectHandler.banish_or_discard(player, [stack[j]])
+					banish_or_discard(player, [stack[j]])
 			player.zones_changed.emit()
 			player.deck_changed.emit()
 			return
@@ -662,7 +657,7 @@ func apply_play_cost(player_id: int, card_data: Dictionary, zone_index: int) -> 
 	if not has_trigger(card_data, "apply_play_cost"):
 		return true
 	var ctx := _build_context(player_id, card_data)
-	h.note_effect_resolving(player_id, card_data)
+	check_timing.note_effect_resolving(player_id, card_data)
 	@warning_ignore("redundant_await")
 	return await effect.apply_play_cost(ctx, zone_index)
 
@@ -675,7 +670,7 @@ func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
 	## or from_zone == to_zone.
 	## The overloaded card's leave-play and the moved card's on_zone_changed
 	## enter standby, so cards like EBP04-067 react to forced movement.
-	h.enter_zone.move_stack(player.player_id, from_zone, to_zone)
+	enter_zone.move_stack(player.player_id, from_zone, to_zone)
 
 
 
@@ -689,8 +684,8 @@ func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
 	player.zones[zone_a] = stack_b
 	player.zones[zone_b] = stack_a
 	player.zones_changed.emit()
-	h.trigger_zone_changed(player.player_id, top_a, zone_a, zone_b)
-	h.trigger_zone_changed(player.player_id, top_b, zone_b, zone_a)
+	dispatcher.trigger_zone_changed(player.player_id, top_a, zone_a, zone_b)
+	dispatcher.trigger_zone_changed(player.player_id, top_b, zone_b, zone_a)
 
 
 
@@ -705,7 +700,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 	## or zone_idx can't be played into — the monster's zone (5.11.1.1) or a
 	## zone the opponent blocks (EBP02-055); the card stays in the discard pile.
 	if zone_idx >= 0:
-		var played := h.enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DISCARD)
+		var played := enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DISCARD)
 		return zone_idx if played else -1
 	var player := game_state.players[player_id]
 
@@ -717,7 +712,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 			break
 	player.discard_changed.emit()
 
-	var valid_zones := h.enter_zone.legal_zones(player_id, card_data)
+	var valid_zones := enter_zone.legal_zones(player_id, card_data)
 	var card_name: String = card_data.get("name", "card")
 	zone_idx = await h.select_zone_target(player_id, player_id, valid_zones, tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_name, false, CardUtils.base_id(card_data))
 	if zone_idx < 0:
@@ -725,7 +720,7 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 		player.discard_pile.append(card_data)
 		player.discard_changed.emit()
 		return -1
-	h.enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DISCARD)
+	enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DISCARD)
 	return zone_idx
 
 
@@ -765,7 +760,7 @@ func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx:
 	## don't stage the card in the discard pile to reuse play_from_discard.
 	## Returns false (not played — the card stays in hand) for the monster's
 	## zone (5.11.1.1) or a zone the opponent blocks (EBP02-055).
-	return h.enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.HAND)
+	return enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.HAND)
 
 
 
@@ -781,7 +776,7 @@ func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx:
 	## Returns false for the monster's zone (5.11.1.1) or a zone the opponent
 	## blocks (EBP02-055): not played, so the card stays in the deck. Callers have usually taken it out already, so it goes
 	## back on the bottom (the effect's own shuffle, if any, still follows).
-	return h.enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DECK, true, stack_on_top)
+	return enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DECK, true, stack_on_top)
 
 
 
@@ -821,11 +816,11 @@ func play_strategy_from_effect(player_id: int, card: Dictionary, zone_idx: int =
 		player.discard_changed.emit()
 	player.strategy_zones[idx] = card
 	player.strategy_zone_turn_placed[idx] = game_state.turn_number
-	if h.events != null:
-		h.events.strategy_card_played.emit(player_id, card, idx)
+	if events != null:
+		events.strategy_card_played.emit(player_id, card, idx)
 	player.strategy_zones_changed.emit()
 	h.log_message.emit(GameLog.played_strategy(player_id, card.get("id", ""), card.get("is_base", false)))
-	h.trigger_enter(player_id, card, true)
+	dispatcher.trigger_enter(player_id, card, true)
 	return idx
 
 
@@ -888,7 +883,7 @@ func move_zone_card_under_zone(player: PlayerState, from_zone: int, to_zone: int
 		return false
 	var stack: Array = player.clear_zone(from_zone)
 	if stack.size() > 1:
-		EffectHandler.banish_or_discard(player, stack.slice(1))
+		banish_or_discard(player, stack.slice(1))
 		player.discard_changed.emit()
 	place_card_under_zone(player, stack[0], to_zone)
 	return true
@@ -960,7 +955,7 @@ func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
 	player.hand_changed.emit()
 	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_returned_card_to_hand(player_id, source_id, card.get("id", "")))
-	h.trigger_card_returned_from_discard(player_id, card)
+	dispatcher.trigger_card_returned_from_discard(player_id, card)
 
 
 

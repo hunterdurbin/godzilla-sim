@@ -174,7 +174,7 @@ func test_ebp02_055_blocks_an_effect_play(from: int,
 	var s := _session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 	var blocked: Array[int] = [1]
-	assert_array(handler.get_opponent_blocked_zones(1)).is_equal(blocked)
+	assert_array(handler.queries.get_opponent_blocked_zones(1)).is_equal(blocked)
 
 	assert_bool(await _play(s, 0, from, 1)) \
 		.override_failure_message("EBP02-055 vs %s" % Source.keys()[from]).is_false()

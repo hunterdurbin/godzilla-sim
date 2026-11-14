@@ -120,7 +120,7 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 
 	if action == CardEnums.ActionType.PASS:
 		log_message.emit(GameLog.player_pass(game_state.current_player_id))
-		effect_handler.trigger_phase_end(CardEnums.GamePhase.MAIN)
+		effect_handler.dispatcher.trigger_phase_end(CardEnums.GamePhase.MAIN)
 		phase_ended.emit(CardEnums.GamePhase.MAIN)
 		# Stay out of AWAITING_ACTION through the automated phases
 		# (COUNTER → END → START) so submit_action calls are dropped until
@@ -181,7 +181,7 @@ func _execute_start_phase(from_sub: int = 0) -> void:
 	if from_sub <= 0:
 		game_state.current_sub_phase = 0
 		sub_phase_changed.emit(0) # Resolve Effects
-		effect_handler.trigger_phase_start(CardEnums.GamePhase.START)
+		effect_handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.START)
 		await effect_handler.check_timing.resolve() # 7.2.1
 
 	var opponent := game_state.get_opponent_of_current()
@@ -209,7 +209,7 @@ func _execute_start_phase(from_sub: int = 0) -> void:
 	# Phase-end abilities of START / MAIN / COUNTER enter standby and resolve
 	# at the next phase's opening check timing (7.3.1 / 7.4.1 / 7.5.1), in one
 	# pool with that phase's start abilities. END's resolve before 7.5.5.
-	effect_handler.trigger_phase_end(CardEnums.GamePhase.START)
+	effect_handler.dispatcher.trigger_phase_end(CardEnums.GamePhase.START)
 	phase_ended.emit(CardEnums.GamePhase.START)
 	await _await_confirmation("Main Phase", "auto_phase_advance")
 	_begin_main_phase()
@@ -225,7 +225,7 @@ func _begin_main_phase(from_sub: int = 0) -> void:
 	if from_sub <= 0:
 		game_state.current_sub_phase = 0
 		sub_phase_changed.emit(0) # Resolve Effects
-		effect_handler.trigger_phase_start(CardEnums.GamePhase.MAIN)
+		effect_handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.MAIN)
 		await effect_handler.check_timing.resolve() # 7.3.1
 
 	game_state.current_sub_phase = 1
@@ -252,7 +252,7 @@ func _begin_counter_phase(from_sub: int = 0) -> void:
 	if from_sub <= 0:
 		game_state.current_sub_phase = 0
 		sub_phase_changed.emit(0) # Resolve Effects
-		effect_handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+		effect_handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 		await effect_handler.check_timing.resolve() # 7.4.1
 
 	if from_sub <= 1:
@@ -265,7 +265,7 @@ func _begin_counter_phase(from_sub: int = 0) -> void:
 		return
 
 	await effect_handler.check_timing.resolve() # 7.4.4
-	effect_handler.trigger_phase_end(CardEnums.GamePhase.COUNTER)
+	effect_handler.dispatcher.trigger_phase_end(CardEnums.GamePhase.COUNTER)
 	phase_ended.emit(CardEnums.GamePhase.COUNTER)
 	await _await_confirmation("End Phase", "auto_phase_advance")
 	_begin_end_phase()
@@ -281,7 +281,7 @@ func _begin_end_phase(from_sub: int = 0) -> void:
 	if from_sub <= 0:
 		game_state.current_sub_phase = 0
 		sub_phase_changed.emit(0) # Resolve Effects
-		effect_handler.trigger_phase_start(CardEnums.GamePhase.END)
+		effect_handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.END)
 		await effect_handler.check_timing.resolve() # 7.5.1
 
 	var player := game_state.get_current_player()
@@ -316,7 +316,7 @@ func _begin_end_phase(from_sub: int = 0) -> void:
 
 	# End-of-turn abilities enter standby before the last check timing: the
 	# turn cannot end while abilities it triggered are unresolved (7.5.7).
-	effect_handler.trigger_phase_end(CardEnums.GamePhase.END)
+	effect_handler.dispatcher.trigger_phase_end(CardEnums.GamePhase.END)
 	await effect_handler.check_timing.resolve() # 7.5.5
 
 	phase_ended.emit(CardEnums.GamePhase.END)

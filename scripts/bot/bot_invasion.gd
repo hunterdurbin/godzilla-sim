@@ -164,7 +164,7 @@ func _is_invade1_cost_blocked(player: PlayerState) -> bool:
 	## invasion cost (EBP04-029 Gigan R3). The bot must treat invasion_icon == 1
 	## cards as non-invadable, or it loops forever trying a move ActionHandler
 	## immediately cancels.
-	return _bot.effect_handler != null and _bot.effect_handler.is_invade1_cost_blocked(player.player_id)
+	return _bot.effect_handler != null and _bot.effect_handler.queries.is_invade1_cost_blocked(player.player_id)
 
 
 func _is_last_two_step_card(player: PlayerState, hand_idx: int) -> bool:

@@ -1113,7 +1113,7 @@ func _clear_card_highlight() -> void:
 func _get_effect_source_id() -> String:
 	if turn_manager == null:
 		return ""
-	var summary: Dictionary = turn_manager.action_handler.effect_handler.get_active_effect_summary()
+	var summary: Dictionary = turn_manager.action_handler.effect_handler.check_timing.get_active_effect_summary()
 	return summary.get("card_id", "")
 
 

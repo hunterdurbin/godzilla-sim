@@ -127,12 +127,12 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 	var tm: TurnManager = _session.turn_manager
 	var gs := tm.game_state
 	var eh := tm.effect_handler
-	var zone_cp_0: Array = eh.get_zone_cp_modifiers(0) if eh else []
-	var zone_cp_1: Array = eh.get_zone_cp_modifiers(1) if eh else []
-	var strat_cp_0: Array = eh.get_strategy_cp_modifiers(0) if eh else []
-	var strat_cp_1: Array = eh.get_strategy_cp_modifiers(1) if eh else []
-	var cp_total_0: int = eh.get_monster_cp_modifier(0) if eh else 0
-	var cp_total_1: int = eh.get_monster_cp_modifier(1) if eh else 0
+	var zone_cp_0: Array = eh.queries.get_zone_cp_modifiers(0) if eh else []
+	var zone_cp_1: Array = eh.queries.get_zone_cp_modifiers(1) if eh else []
+	var strat_cp_0: Array = eh.queries.get_strategy_cp_modifiers(0) if eh else []
+	var strat_cp_1: Array = eh.queries.get_strategy_cp_modifiers(1) if eh else []
+	var cp_total_0: int = eh.queries.get_monster_cp_modifier(0) if eh else 0
+	var cp_total_1: int = eh.queries.get_monster_cp_modifier(1) if eh else 0
 	for v in zone_cp_0: cp_total_0 += v
 	for v in zone_cp_1: cp_total_1 += v
 	for v in strat_cp_0: cp_total_0 += v
@@ -149,10 +149,10 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 		"threat_modifiers": [eh.get_threat_level_modifier(0) if eh else 0, eh.get_threat_level_modifier(1) if eh else 0],
 		"zone_cp_modifiers": [zone_cp_0, zone_cp_1],
 		"strategy_cp_modifiers": [strat_cp_0, strat_cp_1],
-		"zone_rank_modifiers": [eh.get_zone_rank_modifiers(0) if eh else [], eh.get_zone_rank_modifiers(1) if eh else []],
+		"zone_rank_modifiers": [eh.queries.get_zone_rank_modifiers(0) if eh else [], eh.queries.get_zone_rank_modifiers(1) if eh else []],
 		"hand_rank_modifiers": [_session.compute_hand_rank_mods(gs.players[0]) if eh else [], _session.compute_hand_rank_mods(gs.players[1]) if eh else []],
 		"hand_power_modifiers": [_session.compute_hand_power_mods(gs.players[0]) if eh else [], _session.compute_hand_power_mods(gs.players[1]) if eh else []],
-		"monster_cp_modifiers": [eh.get_monster_cp_modifier(0) if eh else 0, eh.get_monster_cp_modifier(1) if eh else 0],
+		"monster_cp_modifiers": [eh.queries.get_monster_cp_modifier(0) if eh else 0, eh.queries.get_monster_cp_modifier(1) if eh else 0],
 		"modifier_breakdowns": ModifierBreakdown.build_all(eh, gs, viewer_id) if eh else {},
 		"player_names": Array(gs.player_names),
 		"first_player_id": _board._first_player_id,

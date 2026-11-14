@@ -64,7 +64,7 @@ func test_single_destroy_revenge_waits_for_rest_of_effect() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, DestroyOneThenChoose.new(), ["on_enter"])
 
-	handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	handler.dispatcher.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
 	await handler.check_timing.resolve()
 
 	var kinds := _kinds(s["input"])
@@ -86,7 +86,7 @@ func test_effect_resolving_fires_once_per_ability_start() -> void:
 	(s["events"] as GameEvents).effect_resolving.connect(
 		func(_pid: int, card: Dictionary) -> void: seen.append(CardUtils.base_id(card)))
 
-	handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	handler.dispatcher.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
 	await handler.check_timing.resolve()
 
 	assert_array(seen).is_equal(["SOURCE", "EBP02-058"])
@@ -121,7 +121,7 @@ func test_discard_from_hand_ability_waits_for_rest_of_effect() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 	handler.registry.register_for_test(DISCARD_THEN_CHOOSE, DiscardOneThenChoose.new(), ["on_enter"])
 
-	handler.trigger_enter(0, _source(DISCARD_THEN_CHOOSE))
+	handler.dispatcher.trigger_enter(0, _source(DISCARD_THEN_CHOOSE))
 	await handler.check_timing.resolve()
 
 	var kinds := _kinds(s["input"])
@@ -138,7 +138,7 @@ func test_godzilla_earth_link_waits_for_rest_of_effect() -> void:
 	var effect := DestroyOneThenChoose.new()
 	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, effect, ["on_enter"])
 
-	handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	handler.dispatcher.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
 	await handler.check_timing.resolve()
 
 	# Godzilla Earth was still on the field while the effect continued…
@@ -155,7 +155,7 @@ func test_replacement_effect_still_interrupts_mid_effect() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 	handler.registry.register_for_test(DESTROY_THEN_CHOOSE, DestroyOneThenChoose.new(), ["on_enter"])
 
-	handler.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
+	handler.dispatcher.trigger_enter(0, _source(DESTROY_THEN_CHOOSE))
 	await handler.check_timing.resolve()
 
 	assert_bool(state.players[0].zone_has_cards(3)).is_false()

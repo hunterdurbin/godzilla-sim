@@ -229,18 +229,18 @@ func test_engagement_restriction(card_id: String, restricted_rank: int,
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var handler := _wire(state)
 
-	assert_int(handler.get_engagement_restriction(0)) \
+	assert_int(handler.queries.get_engagement_restriction(0)) \
 		.override_failure_message("%s: restricts rank <= %d during opp counter phase" % [card_id, restricted_rank]) \
 		.is_equal(restricted_rank)
 
 	# Restriction only exists during the counter phase.
 	state.current_phase = CardEnums.GamePhase.MAIN
-	assert_int(handler.get_engagement_restriction(0)).is_equal(-1)
+	assert_int(handler.queries.get_engagement_restriction(0)).is_equal(-1)
 	state.current_phase = CardEnums.GamePhase.COUNTER
 
 	# All three are <Opponent's Turn> effects.
 	state.current_player_id = 0
-	assert_int(handler.get_engagement_restriction(0)) \
+	assert_int(handler.queries.get_engagement_restriction(0)) \
 		.override_failure_message("%s: no restriction on own turn" % card_id) \
 		.is_equal(-1)
 	state.current_player_id = 1
@@ -253,7 +253,7 @@ func test_engagement_restriction(card_id: String, restricted_rank: int,
 			state.players[0].strategy_zones[0] = {}
 		"EBP04-006":
 			state.players[0].discard_pile.pop_back()  # only 2 rank-1 strategies
-	assert_int(handler.get_engagement_restriction(0)) \
+	assert_int(handler.queries.get_engagement_restriction(0)) \
 		.override_failure_message("%s: no restriction once condition is broken" % card_id) \
 		.is_equal(-1)
 
@@ -269,11 +269,11 @@ func test_play_rank_self_per_own_battle_ebp01_027() -> void:
 	}}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(-2)
+	assert_int(handler.queries.get_play_rank_modifier(0, card)).is_equal(-2)
 
 	state.players[0].clear_zone(0)
 	state.players[0].clear_zone(1)
-	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(0)
+	assert_int(handler.queries.get_play_rank_modifier(0, card)).is_equal(0)
 
 
 func test_play_rank_self_awakening_nonred_ebp04_044() -> void:
@@ -287,18 +287,18 @@ func test_play_rank_self_awakening_nonred_ebp04_044() -> void:
 	}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(-4)
+	assert_int(handler.queries.get_play_rank_modifier(0, card)).is_equal(-4)
 
 	# Below Awakening4 the reduction is off even with non-red cards in zones.
 	state.players[0].monster_zone = 3
-	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(0)
+	assert_int(handler.queries.get_play_rank_modifier(0, card)).is_equal(0)
 
 	# Red battle cards do not count.
 	state.players[0].monster_zone = 4
 	state.players[0].clear_zone(0)
 	state.players[0].clear_zone(1)
 	state.players[0].push_zone_card(0, _battle_colored(CardEnums.CardColor.RED, "RED-1"))
-	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(0)
+	assert_int(handler.queries.get_play_rank_modifier(0, card)).is_equal(0)
 
 
 func test_play_rank_self_per_opp_battle_efc01_004() -> void:
@@ -310,11 +310,11 @@ func test_play_rank_self_per_opp_battle_efc01_004() -> void:
 	}}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(-3)
+	assert_int(handler.queries.get_play_rank_modifier(0, card)).is_equal(-3)
 
 	for i in range(3):
 		state.players[1].clear_zone(i)
-	assert_int(handler.get_play_rank_modifier(0, card)).is_equal(0)
+	assert_int(handler.queries.get_play_rank_modifier(0, card)).is_equal(0)
 
 
 func test_play_rank_strategy_biollante_ebp02_039() -> void:
@@ -322,16 +322,16 @@ func test_play_rank_strategy_biollante_ebp02_039() -> void:
 	var handler := _wire(state)
 	var biollante := Cards.battle(6, 4000, "BIO-1", [CardEnums.CardTrait.BIOLLANTE])
 
-	assert_int(handler.get_play_rank_modifier(0, biollante)) \
+	assert_int(handler.queries.get_play_rank_modifier(0, biollante)) \
 		.override_failure_message("EBP02-039: Biollante battle cards cost -3 rank on own turn") \
 		.is_equal(-3)
 
 	# Non-Biollante battle card unaffected.
-	assert_int(handler.get_play_rank_modifier(0, Cards.battle(6, 4000, "PLAIN"))).is_equal(0)
+	assert_int(handler.queries.get_play_rank_modifier(0, Cards.battle(6, 4000, "PLAIN"))).is_equal(0)
 
 	# <Your Turn> only.
 	state.current_player_id = 1
-	assert_int(handler.get_play_rank_modifier(0, biollante)).is_equal(0)
+	assert_int(handler.queries.get_play_rank_modifier(0, biollante)).is_equal(0)
 
 
 # --- Counter immunity (get_counter_immunity_threshold) ---
@@ -349,13 +349,13 @@ func test_counter_immunity(card_id: String, threshold: int,
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_counter_immunity_threshold(0)) \
+	assert_int(handler.queries.get_counter_immunity_threshold(0)) \
 		.override_failure_message("%s: immunity threshold while condition holds" % card_id) \
 		.is_equal(threshold)
 
 	# <Opponent's Turn> only.
 	state.current_player_id = 0
-	assert_int(handler.get_counter_immunity_threshold(0)).is_equal(0)
+	assert_int(handler.queries.get_counter_immunity_threshold(0)).is_equal(0)
 	state.current_player_id = 1
 
 	# Card-specific condition break.
@@ -364,7 +364,7 @@ func test_counter_immunity(card_id: String, threshold: int,
 			state.players[0].monster_zone = 5  # below Awakening6
 		"EBP02-027":
 			state.players[1].strategy_zones[0] = {}
-	assert_int(handler.get_counter_immunity_threshold(0)) \
+	assert_int(handler.queries.get_counter_immunity_threshold(0)) \
 		.override_failure_message("%s: no immunity once condition is broken" % card_id) \
 		.is_equal(0)
 
@@ -384,12 +384,12 @@ func test_counter_prevented_low_opp_presence(card_id: String,
 	var handler := _wire(state)
 
 	# Opponent has 1 battle card (<= 1) → counter fully prevented at any CP.
-	assert_bool(handler.is_counter_prevented(0, 100000)) \
+	assert_bool(handler.queries.is_counter_prevented(0, 100000)) \
 		.override_failure_message("%s: counter prevented with <=1 opp battle card" % card_id) \
 		.is_true()
 
 	state.players[1].push_zone_card(1, Cards.battle(2, 3000, "O-1"))
-	assert_bool(handler.is_counter_prevented(0, 100000)) \
+	assert_bool(handler.queries.is_counter_prevented(0, 100000)) \
 		.override_failure_message("%s: counter allowed with 2 opp battle cards" % card_id) \
 		.is_false()
 
@@ -401,11 +401,11 @@ func test_monster_cannot_advance_or_invade_ebp02_024() -> void:
 	var state := States.make_state({"p0": {"current_monster": Real.instance("EBP02-024")}})
 	var handler := _wire(state)
 
-	assert_bool(handler.is_monster_advance_blocked(0)).is_true()
-	assert_bool(handler.is_own_invasion_blocked(0)).is_true()
+	assert_bool(handler.queries.is_monster_advance_blocked(0)).is_true()
+	assert_bool(handler.queries.is_own_invasion_blocked(0)).is_true()
 	# The other player's plain monster is not affected.
-	assert_bool(handler.is_monster_advance_blocked(1)).is_false()
-	assert_bool(handler.is_own_invasion_blocked(1)).is_false()
+	assert_bool(handler.queries.is_monster_advance_blocked(1)).is_false()
+	assert_bool(handler.queries.is_own_invasion_blocked(1)).is_false()
 
 
 func test_strategy_blocks_advance_invade_own_turn_ebp04_081() -> void:
@@ -413,12 +413,12 @@ func test_strategy_blocks_advance_invade_own_turn_ebp04_081() -> void:
 	var handler := _wire(state)
 
 	# <Your Turn> (current_player_id defaults to 0).
-	assert_bool(handler.is_monster_advance_blocked(0)).is_true()
-	assert_bool(handler.is_own_invasion_blocked(0)).is_true()
+	assert_bool(handler.queries.is_monster_advance_blocked(0)).is_true()
+	assert_bool(handler.queries.is_own_invasion_blocked(0)).is_true()
 
 	state.current_player_id = 1
-	assert_bool(handler.is_monster_advance_blocked(0)).is_false()
-	assert_bool(handler.is_own_invasion_blocked(0)).is_false()
+	assert_bool(handler.queries.is_monster_advance_blocked(0)).is_false()
+	assert_bool(handler.queries.is_own_invasion_blocked(0)).is_false()
 
 
 func test_blocked_opponent_zones_crystals_ebp02_055() -> void:
@@ -430,18 +430,18 @@ func test_blocked_opponent_zones_crystals_ebp02_055() -> void:
 	}})
 	var handler := _wire(state)
 
-	assert_array(handler.get_opponent_blocked_zones(0)) \
+	assert_array(handler.queries.get_opponent_blocked_zones(0)) \
 		.override_failure_message("EBP02-055: blocks opp zones in the monster's column") \
 		.contains_exactly([1])
 
 	# Only 2 Crystals → no blocking.
 	state.players[0].clear_zone(2)
-	assert_array(handler.get_opponent_blocked_zones(0)).is_empty()
+	assert_array(handler.queries.get_opponent_blocked_zones(0)).is_empty()
 
 	# 3 Crystals but below Awakening4 → no blocking.
 	state.players[0].push_zone_card(2, _crystal(3))
 	state.players[0].monster_zone = 3
-	assert_array(handler.get_opponent_blocked_zones(0)).is_empty()
+	assert_array(handler.queries.get_opponent_blocked_zones(0)).is_empty()
 
 
 func test_invasion_blocked_column_rage0_ebp04_056() -> void:
@@ -452,16 +452,16 @@ func test_invasion_blocked_column_rage0_ebp04_056() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_bool(handler.is_invasion_blocked(0)) \
+	assert_bool(handler.queries.is_invasion_blocked(0)) \
 		.override_failure_message("EBP04-056: opp cannot invade while in column and opp rage is 0") \
 		.is_true()
 
 	state.players[1].rage = 1
-	assert_bool(handler.is_invasion_blocked(0)).is_false()
+	assert_bool(handler.queries.is_invasion_blocked(0)).is_false()
 
 	state.players[1].rage = 0
 	state.players[1].monster_zone = 1
-	assert_bool(handler.is_invasion_blocked(0)).is_false()
+	assert_bool(handler.queries.is_invasion_blocked(0)).is_false()
 
 
 # --- Destruction protection (can_destroy_card) ---
@@ -477,23 +477,23 @@ func test_can_be_destroyed_protection_ebp01_052() -> void:
 
 	# Opponent's effect is the destruction cause → protected.
 	await handler.check_timing.run_effect(1, Cards.battle(1, 1000, "OPP-EFF"), func() -> void:
-		assert_bool(handler.can_destroy_card(p0, card)) \
+		assert_bool(handler.destruction.can_destroy_card(p0, card)) \
 			.override_failure_message("EBP01-052: protected from opponent effects when condition holds") \
 			.is_false())
 
 	# Own effect → caused_by_opponent gate fails, card is destroyable.
 	await handler.check_timing.run_effect(0, Cards.battle(1, 1000, "OWN-EFF"), func() -> void:
-		assert_bool(handler.can_destroy_card(p0, card)).is_true())
+		assert_bool(handler.destruction.can_destroy_card(p0, card)).is_true())
 
 	await handler.check_timing.run_effect(1, Cards.battle(1, 1000, "OPP-EFF"), func() -> void:
 		# Opponent effect but only 4 monsters in discard → destroyable.
 		p0.discard_pile.pop_back()
-		assert_bool(handler.can_destroy_card(p0, card)).is_true()
+		assert_bool(handler.destruction.can_destroy_card(p0, card)).is_true()
 
 		# Restore discard; below Awakening4 → destroyable.
 		p0.discard_pile.append(Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA], "DIS-M9"))
 		p0.monster_zone = 3
-		assert_bool(handler.can_destroy_card(p0, card)).is_true())
+		assert_bool(handler.destruction.can_destroy_card(p0, card)).is_true())
 
 
 func test_protects_own_strategies_ebp04_048() -> void:
@@ -508,15 +508,15 @@ func test_protects_own_strategies_ebp04_048() -> void:
 
 	# Opponent's effect destroying the strategy → protected.
 	await handler.check_timing.run_effect(1, Cards.battle(1, 1000, "OPP-EFF"), func() -> void:
-		assert_bool(handler.can_destroy_card(p0, strat)) \
+		assert_bool(handler.destruction.can_destroy_card(p0, strat)) \
 			.override_failure_message("EBP04-048: own strategies protected from opponent effects") \
 			.is_false()
 		# Battle cards are not covered by the protection.
-		assert_bool(handler.can_destroy_card(p0, plain_battle)).is_true())
+		assert_bool(handler.destruction.can_destroy_card(p0, plain_battle)).is_true())
 
 	# Own effect → not protected.
 	await handler.check_timing.run_effect(0, Cards.battle(1, 1000, "OWN-EFF"), func() -> void:
-		assert_bool(handler.can_destroy_card(p0, strat)).is_true())
+		assert_bool(handler.destruction.can_destroy_card(p0, strat)).is_true())
 
 
 func test_protects_battle_cards_opp_turn_efc01_006() -> void:
@@ -533,25 +533,25 @@ func test_protects_battle_cards_opp_turn_efc01_006() -> void:
 
 	await handler.check_timing.run_effect(1, Cards.battle(1, 1000, "OPP-EFF"), func() -> void:
 		# Opponent effect, opp turn, opponent has <= 2 battle cards → protected.
-		assert_bool(handler.can_destroy_card(p0, battle)) \
+		assert_bool(handler.destruction.can_destroy_card(p0, battle)) \
 			.override_failure_message("EFC01-006: own battle cards protected on opp turn with <=2 opp battle cards") \
 			.is_false()
 
 		# Opponent has 3 battle cards → no protection.
 		for i in range(3):
 			state.players[1].push_zone_card(i, Cards.battle(2, 3000, "O-%d" % i))
-		assert_bool(handler.can_destroy_card(p0, battle)).is_true()
+		assert_bool(handler.destruction.can_destroy_card(p0, battle)).is_true()
 		for i in range(3):
 			state.players[1].clear_zone(i)
 
 		# <Opponent's Turn> only — on the owner's turn the protection is off.
 		state.current_player_id = 0
-		assert_bool(handler.can_destroy_card(p0, battle)).is_true()
+		assert_bool(handler.destruction.can_destroy_card(p0, battle)).is_true()
 		state.current_player_id = 1)
 
 	# Own effect as the cause → not protected.
 	await handler.check_timing.run_effect(0, Cards.battle(1, 1000, "OWN-EFF"), func() -> void:
-		assert_bool(handler.can_destroy_card(p0, battle)).is_true())
+		assert_bool(handler.destruction.can_destroy_card(p0, battle)).is_true())
 
 
 # --- Strategy-hand rank modifiers (get_strategy_hand_rank_modifier) ---
@@ -569,21 +569,21 @@ func test_strategy_hand_rank_opp_increase_ebp04_066() -> void:
 	var strat := Cards.strategy(3, "OPP-HAND-S")
 
 	# Opp turn + non-green battle in own zones → opp hand strategies +2 rank.
-	assert_int(handler.get_strategy_hand_rank_modifier(1, strat)) \
+	assert_int(handler.queries.get_strategy_hand_rank_modifier(1, strat)) \
 		.override_failure_message("EBP04-066: opp hand strategies gain +2 rank") \
 		.is_equal(2)
 
 	# Does not touch the owner's own hand.
-	assert_int(handler.get_strategy_hand_rank_modifier(0, strat)).is_equal(0)
+	assert_int(handler.queries.get_strategy_hand_rank_modifier(0, strat)).is_equal(0)
 
 	# <Opponent's Turn> only.
 	state.current_player_id = 0
-	assert_int(handler.get_strategy_hand_rank_modifier(1, strat)).is_equal(0)
+	assert_int(handler.queries.get_strategy_hand_rank_modifier(1, strat)).is_equal(0)
 	state.current_player_id = 1
 
 	# Without a non-green battle card (the card itself is green) → off.
 	state.players[0].clear_zone(1)
-	assert_int(handler.get_strategy_hand_rank_modifier(1, strat)).is_equal(0)
+	assert_int(handler.queries.get_strategy_hand_rank_modifier(1, strat)).is_equal(0)
 
 
 func test_strategy_hand_rank_own_decrease_ebp04_068() -> void:
@@ -594,18 +594,18 @@ func test_strategy_hand_rank_own_decrease_ebp04_068() -> void:
 	var strat := Cards.strategy(4, "OWN-HAND-S")
 
 	# Own turn, no strategies in play, 2 distinct battle colors in discard → -2.
-	assert_int(handler.get_strategy_hand_rank_modifier(0, strat)) \
+	assert_int(handler.queries.get_strategy_hand_rank_modifier(0, strat)) \
 		.override_failure_message("EBP04-068: own hand strategies gain -1 rank per discard color") \
 		.is_equal(-2)
 
 	# Non-strategy cards are unaffected.
-	assert_int(handler.get_strategy_hand_rank_modifier(0, Cards.battle(4, 3000, "HB"))).is_equal(0)
+	assert_int(handler.queries.get_strategy_hand_rank_modifier(0, Cards.battle(4, 3000, "HB"))).is_equal(0)
 
 	# A strategy in play turns it off.
 	state.players[0].strategy_zones[0] = Cards.strategy(2, "IN-PLAY")
-	assert_int(handler.get_strategy_hand_rank_modifier(0, strat)).is_equal(0)
+	assert_int(handler.queries.get_strategy_hand_rank_modifier(0, strat)).is_equal(0)
 	state.players[0].strategy_zones[0] = {}
 
 	# <Your Turn> only.
 	state.current_player_id = 1
-	assert_int(handler.get_strategy_hand_rank_modifier(0, strat)).is_equal(0)
+	assert_int(handler.queries.get_strategy_hand_rank_modifier(0, strat)).is_equal(0)

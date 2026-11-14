@@ -3,7 +3,7 @@
 
 The bot sim's [SimEffects] counts (and run_sim_diff.sh's UNEXERCISED verdict)
 come from GameEvents.effect_resolving, emitted by
-EffectHandler.note_effect_resolving. An engine module that awaits a card hook
+CheckTiming.note_effect_resolving. An engine module that awaits a card hook
 (`await <x>effect.on_*(` / `apply_*(`, or a standby `callback.call()`) without
 calling note_effect_resolving just before it makes that card read 0 in every
 sim diff, with no hint why.
@@ -62,7 +62,7 @@ def violations(path, lines):
 
 def self_test():
     direct_bad = ["func f() -> void:", "\tawait effect.on_enter(ctx)"]
-    direct_ok = ["func f() -> void:", "\th.note_effect_resolving(pid, card)",
+    direct_ok = ["func f() -> void:", "\tcheck_timing.note_effect_resolving(pid, card)",
                  "\t@warning_ignore(\"redundant_await\")", "\tawait effect.on_enter(ctx)"]
     lam = ["func f() -> void:", "\tvar cb := func():", "\t\tawait effect.on_revenge(ctx)"]
     sync = ["func f() -> void:", "\tif effect.on_would_be_destroyed(ctx):"]
@@ -89,7 +89,7 @@ def main():
     for v in found:
         print("UNANNOUNCED effect resolution  " + v)
     if found:
-        print("\nCall h.note_effect_resolving(player_id, card) right before starting the card's"
+        print("\nCall check_timing.note_effect_resolving(player_id, card) right before starting the card's"
               " ability (it feeds GameEvents.effect_resolving / the sim's [SimEffects] counts).")
         return 1
     print("effect resolution notes: OK (%d direct sites)" % sites)
