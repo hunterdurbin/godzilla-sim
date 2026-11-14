@@ -15,6 +15,9 @@
 # harness and accept the same args), then per pair runs both sims in
 # parallel and reports:
 #   - [SimResult] lines that differ (empty = no bot-visible behavior change)
+#   - SPLIT: per game whose [SimTurn] trace differs, the last shared turn
+#     line and the first differing one, base vs head (first_divergence.py),
+#     so every divergence traces to the turn and monsters it started from
 #   - per side: games completed, P1 wins, SCRIPT ERROR count, and
 #     `[Kaiju] … plan DIVERGED` count (the KAIJU replay-parity metric:
 #     the planner's cached plan stopped matching the live game)
@@ -182,6 +185,18 @@ for pair in "${PAIRS[@]}"; do
 		sed 's/^/    /' "$WORK/diff$i.txt"
 		STATUS=1
 	fi
+	# Turn traces catch games that split mid-game, even ones that reconverge
+	# on the same [SimResult]; the first differing [SimTurn] is where to look.
+	python3 "$REPO/tests/sim/first_divergence.py" "$WORK/base$i.log" "$WORK/head$i.log" \
+		> "$WORK/split$i.txt"
+	case $? in
+		0) ;;
+		1)
+			echo "  SPLIT: $(grep -c '^game=' "$WORK/split$i.txt") games' turn traces differ (last shared, then first differing [SimTurn]):"
+			sed 's/^/    /' "$WORK/split$i.txt"
+			STATUS=1 ;;
+		*) echo "  SPLIT: first_divergence.py failed (see its error above)"; STATUS=1 ;;
+	esac
 	[ "$(grep -c 'SCRIPT ERROR' "$WORK/head$i.log")" -eq 0 ] || STATUS=1
 	[ "$(grep -c '\[SimResult\]' "$WORK/head$i.log")" -ge "$GAMES" ] || STATUS=1
 	LOGS+=("$WORK/base$i.log" "$WORK/head$i.log")
@@ -255,6 +270,6 @@ case "$STATUS" in
 	0) echo "STATUS: 0 (identical)" ;;
 	2) echo "STATUS: 2 (unexercised)" ;;
 	3) echo "STATUS: 3 (working tree changed during the run: verdict void, rerun without editing)" ;;
-	*) echo "STATUS: $STATUS (differs, script errors or missing games)" ;;
+	*) echo "STATUS: $STATUS (differs, splits, script errors or missing games)" ;;
 esac
 exit $STATUS

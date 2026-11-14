@@ -33,7 +33,8 @@ a check in `scripts/tools/` instead (see its README) and does not belong here.
   side, or the PR says why it can't (passive-only modifier, no deck plays
   it and a unit test covers it).
 - **Every seed-matched sim difference is explained.** A differing
-  `[SimResult]` line needs a cause in the PR: a rule now applied, a trigger
+  `[SimResult]` line, or a game listed under `SPLIT:`, needs a cause in the
+  PR (start from its `from` turn): a rule now applied, a trigger
   that now fires, or bot RNG drawn in a different order (adding or removing
   a prompt the bot answers with a shuffle or `randi()` shifts every later
   draw in that game).

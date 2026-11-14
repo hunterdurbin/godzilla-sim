@@ -54,6 +54,9 @@ jobs:
       - name: Only MonsterMover writes monster_zone
         run: python3 scripts/tools/check_monster_zone_writers.py
 
+      - name: Only RulesEngine decides rank-up eligibility
+        run: python3 scripts/tools/check_rank_up_rule_owner.py
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest

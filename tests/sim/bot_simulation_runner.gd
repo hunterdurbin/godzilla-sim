@@ -204,13 +204,31 @@ func _on_sim_confirmation(_prompt: String, _setting: String) -> void:
 		_current_turn_manager.player_input.resolve_confirmation()
 
 
-func _on_turn_started(_player_id: int) -> void:
+func _on_turn_started(player_id: int) -> void:
+	if _game_running:
+		_print_turn_trace(player_id)
 	if _current_turn_manager.game_state.turn_number > 50:
 		print("[Sim] Game %d exceeded 50 turns — forcing draw" % (_games_completed + 1))
 		_record_result(-1, "Turn limit exceeded")
 		_current_turn_manager.is_game_over = true
 		_game_running = false
 		_start_next_game.call_deferred()
+
+
+## One [SimTurn] line per turn start: both players' zone, monster (base id
+## and rank), rage and hand size. run_sim_diff.sh copies this runner into the
+## base worktree, so base and head print the same format and the first
+## differing line shows where a seed-matched game split.
+func _print_turn_trace(active_player_id: int) -> void:
+	var gs: GameState = _current_turn_manager.game_state
+	var sides: Array[String] = []
+	for i in range(2):
+		var p: PlayerState = gs.players[i]
+		sides.append("p%d z%d %s r%d rage=%d hand=%d" % [i + 1, p.monster_zone,
+				CardUtils.base_id(p.current_monster), p.current_monster.get("rank", 0),
+				p.rage, p.hand.size()])
+	print("[SimTurn] game=%d t=%d active=p%d | %s" % [_games_completed + 1,
+			gs.turn_number, active_player_id + 1, " | ".join(sides)])
 
 
 func _on_game_ended(winner_id: int, reason: String) -> void:
