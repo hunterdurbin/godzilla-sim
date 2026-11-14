@@ -243,7 +243,7 @@ func _dispatch_sweep(handler: EffectHandler, state: GameState, card: Dictionary,
 		await handler.check_timing.resolve()
 
 	if "on_when_invading" in methods and not p0.current_monster.is_empty():
-		handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, p0.monster_zone, p0.monster_zone + 1))
+		handler.dispatcher.trigger_when_invading(0, p0.monster_zone, p0.monster_zone + 1)
 		await handler.check_timing.resolve()
 
 	if "on_monster_advance" in methods:
@@ -325,15 +325,14 @@ func _dispatch_sweep(handler: EffectHandler, state: GameState, card: Dictionary,
 	if "on_discarded_for_invasion" in methods:
 		var invasion_copy := Real.instance(card.get("id", "").get_slice("_T_", 0), 3)
 		p0.discard_pile.append(invasion_copy)
-		var entries: Array = handler.dispatcher.collect_discarded_for_invasion_entries(0, invasion_copy)
-		handler.check_timing.submit(entries)
+		handler.dispatcher.trigger_discarded_for_invasion(0, invasion_copy)
 		await handler.check_timing.resolve()
 
 	if "on_ally_zone_card_destroyed" in methods or "on_opponent_zone_card_destroyed" in methods:
 		var bystander := Cards.battle(2, 3000, "SMOKE-DESTROYED")
-		handler.check_timing.submit(handler.dispatcher.collect_ally_zone_card_destroyed_entries(0, bystander, 4))
+		handler.dispatcher.trigger_zone_card_destroyed(0, bystander, 4)
 		await handler.check_timing.resolve()
-		handler.check_timing.submit(handler.dispatcher.collect_opponent_zone_card_destroyed_entries(1, bystander, 4))
+		handler.dispatcher.trigger_zone_card_destroyed(1, bystander, 4)
 		await handler.check_timing.resolve()
 
 	if "on_card_returned_from_discard" in methods:

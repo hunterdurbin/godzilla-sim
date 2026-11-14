@@ -25,9 +25,6 @@ class Outcome:
 	## A replacement effect moved the card to the deck bottom instead: it left
 	## the zone but was not destroyed.
 	var replaced: bool = false
-	## StandbyEntry abilities this destruction triggered. The caller submits
-	## them to CheckTiming (now, or after its whole batch / placement).
-	var entries: Array = []
 
 
 
@@ -55,8 +52,8 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	## included) and discard_changed (unless only tokens left), then
 	## GameEvents.battle_card_crushed for CRUSH. EFFECT also logs the destroy
 	## and emits EffectHandler.card_destroyed, replaced or not.
-	## Synchronous and never prompts: nothing resolves here — the triggered
-	## abilities come back in Outcome.entries, which the caller must submit.
+	## Synchronous and never prompts: nothing resolves here — the abilities
+	## it triggers enter standby (CheckTiming) for the next check timing.
 	var out := Outcome.new()
 	var top_card := target.get_zone_top_card(zone_idx)
 	if top_card.is_empty():
@@ -80,7 +77,7 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	# Automatic abilities enter standby (10.6.2) and resolve at the next check
 	# timing (10.4.3). Leaving the zone is an area-changing trigger whatever
 	# the cause, replaced or not.
-	out.entries.append_array(dispatcher.collect_leave_play_entries(target.player_id, top_card, zone_idx))
+	dispatcher.trigger_leave_play(target.player_id, top_card, zone_idx)
 	if out.replaced:
 		return out
 	# Crush (11.3.3) and Overload (11.5.1, 5.12.1.1) are <Destroy> too: the
@@ -88,12 +85,10 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	# for all three causes. EFFECT resolves on_destroy on the spot instead
 	# (_destroy_by_effect).
 	if cause != Cause.EFFECT:
-		out.entries.append_array(dispatcher.collect_on_destroy_entries(target.player_id, top_card, zone_idx))
+		dispatcher.trigger_on_destroy(target.player_id, top_card, zone_idx)
 	if cause != Cause.OVERLOAD:
-		out.entries.append_array(dispatcher.collect_crush_and_revenge_entries(
-				target.player_id, top_card, cause == Cause.CRUSH))
-	out.entries.append_array(dispatcher.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
-	out.entries.append_array(dispatcher.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
+		dispatcher.trigger_crush_and_revenge(target.player_id, top_card, cause == Cause.CRUSH)
+	dispatcher.trigger_zone_card_destroyed(target.player_id, top_card, zone_idx)
 	return out
 
 
@@ -265,10 +260,9 @@ func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dicti
 	## (those resolve immediately, mid-destruction).
 	## Returns an array of the destroyed top cards (replaced cards included).
 	## "When destroyed" automatic abilities (revenge, ally / opponent
-	## zone-card-destroyed) enter standby together after the whole batch and
-	## resolve at the next check timing (10.4.3).
+	## zone-card-destroyed) enter standby as each card is destroyed and
+	## resolve together at the next check timing (10.4.3).
 	var batch := await _destroy_zones_batch(target, zone_indices)
-	check_timing.submit(batch["deferred"])
 	return batch["results"]
 
 
@@ -280,31 +274,28 @@ func destroy_zones_reporting_destroyed(target: PlayerState, zone_indices: Array[
 	## For effects that count destructions ("If you <Destroy> 3", ESD05-005).
 	## Triggers enter standby exactly as in destroy_zones.
 	var batch := await _destroy_zones_batch(target, zone_indices)
-	check_timing.submit(batch["deferred"])
 	return batch["destroyed"]
 
 
 
 
 func _destroy_zones_batch(target: PlayerState, zone_indices: Array[int]) -> Dictionary:
-	## Destroy the zones, collecting standby entries instead of resolving them.
+	## Destroy the zones; their abilities enter standby (nothing resolves).
 	## Returns {"results": every destroyed-or-replaced top card,
-	##          "destroyed": truly destroyed only, "deferred": standby entries}.
+	##          "destroyed": truly destroyed only}.
 	## Zones whose card can't be destroyed are skipped (and not reported).
 	var results: Array[Dictionary] = []
 	var destroyed: Array[Dictionary] = []
-	var deferred: Array = []
 	for zi in zone_indices:
 		if zi < 0 or zi >= 8:
 			continue
 		var outcome: Outcome = await _destroy_by_effect(target, zi)
 		if outcome.card.is_empty():
 			continue
-		deferred.append_array(outcome.entries)
 		results.append(outcome.card)
 		if not outcome.replaced:
 			destroyed.append(outcome.card)
-	return {"results": results, "destroyed": destroyed, "deferred": deferred}
+	return {"results": results, "destroyed": destroyed}
 
 
 
@@ -440,7 +431,7 @@ func _passes_protects_filter(card_data: Dictionary, watcher_player_id: int) -> b
 
 func _destroy_by_effect(target: PlayerState, zone_idx: int) -> Outcome:
 	## destroy() with cause EFFECT, plus the destroyed card's own on_destroy
-	## hook (resolved on the spot). The caller submits Outcome.entries.
+	## hook (resolved on the spot).
 	var outcome := destroy(target, zone_idx, Cause.EFFECT)
 	if outcome.card.is_empty() or outcome.replaced or not has_trigger(outcome.card, "on_destroy"):
 		return outcome
@@ -454,10 +445,9 @@ func _destroy_by_effect(target: PlayerState, zone_idx: int) -> Outcome:
 
 
 func _destroy_one_by_effect(target: PlayerState, zone_idx: int) -> Dictionary:
-	## A single effect destroy whose abilities enter standby now. Returns the
+	## A single effect destroy (its abilities enter standby). Returns the
 	## destroyed/replaced card, or {} when nothing was destroyed.
 	var outcome: Outcome = await _destroy_by_effect(target, zone_idx)
-	check_timing.submit(outcome.entries)
 	return outcome.card
 
 
@@ -500,11 +490,10 @@ func destroy_strategy_zone(player: PlayerState, zone_index: int) -> Dictionary:
 
 
 
-func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entries: Variant = null, bypass_protection: bool = false) -> Dictionary:
+func discard_strategy_from_zone(player_id: int, zone_index: int, bypass_protection: bool = false) -> Dictionary:
 	## Remove a strategy card from a strategy zone, applying replacement effects (10.2.1.3).
 	## If an interceptor is active, stacks the card under it instead of discarding.
-	## When deferred_entries is provided, strategy_discarded triggers are collected there
-	## instead of resolving immediately (used during invasion movement).
+	## The strategy_discarded abilities enter standby.
 	## When bypass_protection is true, skips the destruction-protection check —
 	## set this for rule-driven moves (start phase discard, invasion-base destruction)
 	## that aren't <Destroy> by an effect. Effect-driven destroys leave it false so
@@ -541,20 +530,15 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 
 	# Replacement means it wasn't truly discarded — skip discard triggers
 	if not intercepted:
-		if deferred_entries != null:
-			deferred_entries.append_array(dispatcher.collect_strategy_discarded_entries(player_id, card))
-		else:
-			dispatcher.trigger_strategy_discarded(player_id, card)
+		dispatcher.trigger_strategy_discarded(player_id, card)
 	return card
 
 
 
 
-func destroy_base_strategies_on_invasion(to_zone: int, deferred_entries: Variant = null) -> void:
+func destroy_base_strategies_on_invasion(to_zone: int) -> void:
 	## Destroy all <Base> strategy cards when any monster invades into zones 6-8 (12.9.2).
 	## Checks both players' strategy zones. Uses discard_strategy_from_zone for replacement effects.
-	## When deferred_entries is provided, strategy_discarded triggers are collected there
-	## instead of resolving immediately.
 	if to_zone < 6:
 		return
 	for pid in range(2):
@@ -562,4 +546,4 @@ func destroy_base_strategies_on_invasion(to_zone: int, deferred_entries: Variant
 		for i in range(player.strategy_zones.size() - 1, -1, -1):
 			if not player.strategy_zones[i].is_empty() and queries.is_base_strategy(player.strategy_zones[i]):
 				# Rule-driven invasion destruction (12.9.2) — bypass protection.
-				await discard_strategy_from_zone(pid, i, deferred_entries, true)
+				await discard_strategy_from_zone(pid, i, true)

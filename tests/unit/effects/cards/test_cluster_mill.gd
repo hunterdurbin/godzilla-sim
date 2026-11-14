@@ -76,7 +76,7 @@ func test_ebp01_002_invading_mill_destroys_low_rank_on_monster(top_kind: String,
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"select_zone": [3]}
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 1, 2))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 1, 2)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].main_deck.size()).is_equal(FILLER)

@@ -99,6 +99,9 @@ func apply(action: CardEnums.ActionType, params: Dictionary) -> bool:
 	if input:
 		input.decision_log.clear()
 	await tm.action_handler.execute(action, params, tm.game_state)
+	# Victory through invasion ends the game before its abilities resolve.
+	if tm.is_game_over:
+		return false
 	await tm.effect_handler.check_timing.resolve()
 	if tm.is_game_over:
 		return false

@@ -134,6 +134,10 @@ func submit_action(action: CardEnums.ActionType, params: Dictionary = {}) -> voi
 	# (after the action's state mutations but before triggered effects fire), so the
 	# log reads in causal order: action first, then effects fired by the action.
 	await action_handler.execute(action, params, game_state)
+	# Victory through invasion ends the game before the abilities the
+	# invasion put in standby resolve.
+	if is_game_over:
+		return
 	await effect_handler.check_timing.resolve() # 10.4.4.1
 
 	# Check for win condition after each action

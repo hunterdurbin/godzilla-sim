@@ -104,8 +104,9 @@ func _state_with(card: Dictionary) -> GameState:
 	return States.make_state({"p0": {"zone_cards": {ZONE: card}}})
 
 
-func _resolve(handler: EffectHandler, outcome: DestructionEngine.Outcome) -> void:
-	handler.check_timing.submit(outcome.entries)
+func _resolve(handler: EffectHandler, _outcome: DestructionEngine.Outcome) -> void:
+	## Takes the destroy's outcome only to sequence the destroy first: the
+	## destroy submitted its abilities to standby itself.
 	await handler.check_timing.resolve()
 
 
@@ -133,7 +134,7 @@ func test_destroy_empty_zone_is_a_no_op() -> void:
 	var handler := _handler(state)
 	var outcome := handler.destruction.destroy(state.players[0], ZONE, Cause.EFFECT)
 	assert_dict(outcome.card).is_empty()
-	assert_array(outcome.entries).is_empty()
+	assert_bool(handler.check_timing.has_pending()).is_false()
 	handler.teardown()
 
 
@@ -199,7 +200,7 @@ func test_protection_stops_an_effect_destroy() -> void:
 	var outcome := handler.destruction.destroy(p0, ZONE, Cause.EFFECT)
 
 	assert_dict(outcome.card).is_empty()
-	assert_array(outcome.entries).is_empty()
+	assert_bool(handler.check_timing.has_pending()).is_false()
 	assert_dict(p0.get_zone_top_card(ZONE)).is_equal(card)
 	handler.teardown()
 
@@ -244,9 +245,9 @@ func test_revenge_never_fires_for_overload() -> void:
 	handler.registry.register_for_test(REVENGE, effect, ["on_revenge"])
 
 	var outcome := handler.destruction.destroy(state.players[0], ZONE, Cause.OVERLOAD)
+	assert_bool(handler.check_timing.has_pending()).is_false()
 	await _resolve(handler, outcome)
 
-	assert_array(outcome.entries).is_empty()
 	assert_array(effect.seen).is_empty()
 	handler.teardown()
 

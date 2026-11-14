@@ -275,7 +275,7 @@ func test_ebp01_009_when_invading_destroys_if_two_rage(rage: int, expect_destroy
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 2, 3))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 2, 3)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(3)) \
@@ -294,7 +294,7 @@ func test_esd02_005_when_invading_reduces_opponent_rage() -> void:
 	})
 	var state: GameState = s["state"]
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 1, 2))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 1, 2)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].rage).is_equal(1)
@@ -319,9 +319,8 @@ func test_ebp01_007_when_invading_reduces_rage_when_invaded_zone_had_card(zone_o
 	var state: GameState = s["state"]
 	var handler: EffectHandler = s["effect_handler"]
 
-	var entries: Array = handler.dispatcher.collect_when_invading_entries(0, 2, 3)
-	assert_int(entries.size()).is_equal(1)
-	handler.check_timing.submit(entries)
+	handler.dispatcher.trigger_when_invading(0, 2, 3)
+	assert_bool(handler.check_timing.has_pending()).is_true()
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].rage) \

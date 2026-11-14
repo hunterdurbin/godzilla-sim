@@ -769,9 +769,8 @@ func test_ebp03_061_plays_itself_from_discard_after_invasion_discard() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	var entries: Array = handler.dispatcher.collect_discarded_for_invasion_entries(0, card)
-	assert_int(entries.size()).is_equal(1)
-	handler.check_timing.submit(entries)
+	handler.dispatcher.trigger_discarded_for_invasion(0, card)
+	assert_bool(handler.check_timing.has_pending()).is_true()
 	await handler.check_timing.resolve()
 
 	var p0 := state.players[0]
@@ -783,8 +782,8 @@ func test_ebp03_061_fixture_cards_collect_no_invasion_discard_entries() -> void:
 	var state := States.make_state({})
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
-	var entries: Array = handler.dispatcher.collect_discarded_for_invasion_entries(0, Cards.battle(3, 2000, "PLAIN"))
-	assert_int(entries.size()).is_equal(0)
+	handler.dispatcher.trigger_discarded_for_invasion(0, Cards.battle(3, 2000, "PLAIN"))
+	assert_bool(handler.check_timing.has_pending()).is_false()
 
 
 func test_ebp03_061_gains_3000_cp_at_awakening6() -> void:

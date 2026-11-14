@@ -107,7 +107,7 @@ func test_ebp02_044_invading_drains_rage_only_when_opponent_in_zones_6_to_8() ->
 	})
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 	assert_int(state.players[1].rage).is_equal(1)
 
@@ -118,7 +118,7 @@ func test_ebp02_044_invading_drains_rage_only_when_opponent_in_zones_6_to_8() ->
 	})
 	var s2 := _session(state2)
 	var handler2: EffectHandler = s2["effect_handler"]
-	handler2.check_timing.submit(handler2.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler2.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler2.check_timing.resolve()
 	assert_int(state2.players[1].rage).is_equal(3)
 
@@ -217,7 +217,7 @@ func test_ebp02_048_invading_destroys_three_rank4_and_lower() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 2, 3))
+	handler.dispatcher.trigger_when_invading(0, 2, 3)
 	await handler.check_timing.resolve()
 
 	var p1 := state.players[1]
@@ -243,7 +243,7 @@ func test_ebp02_048_invading_clamps_to_available_targets() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 2, 3))
+	handler.dispatcher.trigger_when_invading(0, 2, 3)
 	await handler.check_timing.resolve()
 
 	var p1 := state.players[1]
@@ -264,7 +264,7 @@ func test_ebp02_048_invading_silent_without_rank4_targets() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 2, 3))
+	handler.dispatcher.trigger_when_invading(0, 2, 3)
 	await handler.check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(6)).is_true()
@@ -393,7 +393,7 @@ func test_ebp02_052_discards_a_card_to_play_a_crystal() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 2, 3))
+	handler.dispatcher.trigger_when_invading(0, 2, 3)
 	await handler.check_timing.resolve()
 
 	var p0 := state.players[0]
@@ -411,7 +411,7 @@ func test_ebp02_052_skipping_or_empty_hand_plays_nothing() -> void:
 	input.answers = {"select_hand_card": [-1]}
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 2, 3))
+	handler.dispatcher.trigger_when_invading(0, 2, 3)
 	await handler.check_timing.resolve()
 	assert_int(state.players[0].count_zone_tokens_by_id("EBP02-T03")).is_equal(0)
 	assert_int(input.count_calls("select_zone")).is_equal(0)
@@ -422,7 +422,7 @@ func test_ebp02_052_skipping_or_empty_hand_plays_nothing() -> void:
 	var input2 := ScriptedPlayerInput.new()
 	var s2 := States.make_session(state2, input2)
 	var handler2: EffectHandler = s2["effect_handler"]
-	handler2.check_timing.submit(handler2.dispatcher.collect_when_invading_entries(0, 2, 3))
+	handler2.dispatcher.trigger_when_invading(0, 2, 3)
 	await handler2.check_timing.resolve()
 	assert_int(input2.count_calls("select_hand_card")).is_equal(0)
 
@@ -441,7 +441,7 @@ func test_ebp02_053_invading_plays_crystal_and_unlocks_threat_bonus() -> void:
 	# No crystal yet: no bonus.
 	assert_int(handler.get_threat_level_modifier(0)).is_equal(0)
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 2, 3))
+	handler.dispatcher.trigger_when_invading(0, 2, 3)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[0].count_zone_tokens_by_id("EBP02-T03")).is_equal(1)

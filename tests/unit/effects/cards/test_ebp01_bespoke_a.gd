@@ -718,7 +718,7 @@ func test_ebp01_039_invading_discard_monster_destroys_opp_rank_5_in_zones_1_5() 
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 2, 3))
+	handler.dispatcher.trigger_when_invading(0, 2, 3)
 	await handler.check_timing.resolve()
 
 	var p1 := state.players[1]
@@ -740,7 +740,7 @@ func test_ebp01_039_skipping_the_cost_destroys_nothing() -> void:
 	input.answers = {"select_hand_card": [-1]}
 	var s := States.make_session(state, input)
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 2, 3))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 2, 3)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(1)).is_true()

@@ -966,7 +966,7 @@ func test_ebp03_027_invading_with_5_under_forces_discard_to_4() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()).is_equal(4)
@@ -986,7 +986,7 @@ func test_ebp03_027_invading_with_4_under_is_silent() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()).is_equal(6)
@@ -1095,7 +1095,7 @@ func test_ebp03_029_invading_choice_destroys_all_battle_cards_of_both_players() 
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 
 	assert_bool(state.players[0].zone_has_cards(1)).is_false()
@@ -1115,7 +1115,7 @@ func test_ebp03_029_invading_choice_reduces_both_rages_by_2() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[0].rage).is_equal(1)
@@ -1133,7 +1133,7 @@ func test_ebp03_029_invading_with_6_under_offers_no_choice() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 4, 5))
+	handler.dispatcher.trigger_when_invading(0, 4, 5)
 	await handler.check_timing.resolve()
 
 	assert_int(input.count_calls("choose_option")).is_equal(0)

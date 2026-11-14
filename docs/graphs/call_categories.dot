@@ -27,7 +27,7 @@ digraph call_categories {
 
         ah_counter [label="{Counter|resolve_counter()\lforce_counter()\l}" fillcolor="#BBDEFB" color="#1565C0"]
 
-        ah_rules [label="{Rule Actions|check_crush_rule()\l_check_crush_for_player()\lresolve_check_timing()\l_resolve_illegal_cards()\l}" fillcolor="#BBDEFB" color="#1565C0"]
+        ah_rules [label="{Rule Actions|crush_now()\l_check_crush_for_player()\lresolve_check_timing()\l_resolve_illegal_cards()\l}" fillcolor="#BBDEFB" color="#1565C0"]
 
         ah_special [label="{Effect-Initiated|play_monster_from_effect()\l}" fillcolor="#90CAF9" color="#0D47A1"]
     }
@@ -59,19 +59,19 @@ digraph call_categories {
     //  DEFERRED COLLECTORS (AH → EH)
     // ══════════════════════════════════════
     subgraph cluster_deferred {
-        label="Deferred Collectors\n(AH → EH, during movement)"
+        label="Standby Triggers\n(AH → dispatcher, during movement)"
         style=rounded
         color="#F9A825"
         fontcolor="#F9A825"
         bgcolor="#FFFDE7"
 
-        col_wi [label="collect_when_invading_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-        col_ma [label="collect_monster_advance_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-        col_io [label="collect_invasion_observed_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-        col_dfi [label="collect_discarded_for_invasion_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-        col_dfh [label="collect_discard_from_hand_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-        col_hcd [label="collect_hand_card_discarded_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-        resolve_def [label="check_timing.submit()" fillcolor="#FFE082" color="#F57F17"]
+        col_wi [label="trigger_when_invading()" fillcolor="#FFF9C4" color="#F9A825"]
+        col_ma [label="trigger_monster_advance()" fillcolor="#FFF9C4" color="#F9A825"]
+        col_io [label="trigger_invasion_observed()" fillcolor="#FFF9C4" color="#F9A825"]
+        col_dfi [label="trigger_discarded_for_invasion()" fillcolor="#FFF9C4" color="#F9A825"]
+        col_dfh [label="trigger_discard_from_hand()" fillcolor="#FFF9C4" color="#F9A825"]
+        col_hcd [label="trigger_hand_card_discarded()" fillcolor="#FFF9C4" color="#F9A825"]
+        resolve_def [label="check_timing.resolve()" fillcolor="#FFE082" color="#F57F17"]
     }
 
     // ══════════════════════════════════════

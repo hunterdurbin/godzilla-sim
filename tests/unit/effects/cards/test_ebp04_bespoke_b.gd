@@ -312,7 +312,7 @@ func test_ebp04_059_revenge_recovers_rodan_with_5_green_discards() -> void:
 	input.answers = {"search_cards": [{"id": "RD"}]}
 	var s := States.make_session(state, input)
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_crush_and_revenge_entries(0, card, false))
+	s["effect_handler"].dispatcher.trigger_crush_and_revenge(0, card, false)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_str(str(state.players[0].hand[0].get("id"))).is_equal("RD")
@@ -328,7 +328,7 @@ func test_ebp04_059_revenge_silent_below_5_green_discards() -> void:
 		state.players[0].discard_pile.append(_green_battle(2, 2000, "G%d" % i))
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_crush_and_revenge_entries(0, card, false))
+	s["effect_handler"].dispatcher.trigger_crush_and_revenge(0, card, false)
 	await s["effect_handler"].check_timing.resolve()
 	assert_int(input.count_calls("search_cards")).is_equal(0)
 
@@ -351,7 +351,7 @@ func test_ebp04_062_revenge_gains_rage_per_opponent_column_card() -> void:
 		state.players[0].discard_pile.append(_green_battle(2, 2000, "G%d" % i))
 	var s := _session(state)
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_crush_and_revenge_entries(0, card, false))
+	s["effect_handler"].dispatcher.trigger_crush_and_revenge(0, card, false)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].rage).is_equal(2)
@@ -368,7 +368,7 @@ func test_ebp04_062_revenge_silent_below_10_green_or_empty_column() -> void:
 	for i in range(8):
 		state.players[0].discard_pile.append(_green_battle(2, 2000, "G%d" % i))
 	var s := _session(state)
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_crush_and_revenge_entries(0, card, false))
+	s["effect_handler"].dispatcher.trigger_crush_and_revenge(0, card, false)
 	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[0].rage).is_equal(0)
 
@@ -379,7 +379,7 @@ func test_ebp04_062_revenge_silent_below_10_green_or_empty_column() -> void:
 	for i in range(9):
 		state2.players[0].discard_pile.append(_green_battle(2, 2000, "G%d" % i))
 	var s2 := _session(state2)
-	s2["effect_handler"].check_timing.submit(s2["effect_handler"].dispatcher.collect_crush_and_revenge_entries(0, card2, false))
+	s2["effect_handler"].dispatcher.trigger_crush_and_revenge(0, card2, false)
 	await s2["effect_handler"].check_timing.resolve()
 	assert_int(state2.players[0].rage).is_equal(0)
 
@@ -396,7 +396,7 @@ func test_ebp04_063_revenge_recovers_godzilla_earth() -> void:
 	input.answers = {"search_cards": [{"id": earth.get("id")}]}
 	var s := States.make_session(state, input)
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_crush_and_revenge_entries(0, card, false))
+	s["effect_handler"].dispatcher.trigger_crush_and_revenge(0, card, false)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_str(str(state.players[0].hand[0].get("id"))).is_equal(str(earth.get("id")))

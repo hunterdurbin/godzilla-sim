@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Only the trigger dispatcher builds StandbyEntry objects.
 
-A triggered ability enters standby (10.6.2) through a `collect_*_entries`
-function in scripts/effects/trigger_dispatcher.gd: that one place applies the
-TRIGGER_FILTERS gates, builds the EffectContext and attaches the
-`still_applies` gate (10.6.3). Engine modules call a collector (through
-EffectHandler, `h.collect_*_entries(...)`) and submit what it returns; a
-missing collector is added to the dispatcher.
+A triggered ability enters standby (10.6.2) through a private
+`_collect_*_entries` function in scripts/effects/trigger_dispatcher.gd: that
+one place applies the TRIGGER_FILTERS gates, builds the EffectContext and
+attaches the `still_applies` gate (10.6.3). Engine operations report what
+happened through the dispatcher's `trigger_*` functions, which submit the
+entries to CheckTiming; a missing trigger is added to the dispatcher.
 
 Flags `StandbyEntry.new(` anywhere under scripts/ outside the dispatcher.
 Tests (tests/) may build entries directly. No allow-list -- the tree is clean.
@@ -65,8 +65,8 @@ def main():
     for v in found:
         print("STANDBY ENTRY built outside the dispatcher  " + v)
     if found:
-        print("\nAdd a collect_*_entries function to scripts/effects/trigger_dispatcher.gd"
-              " (and its EffectHandler delegate) and call that instead.")
+        print("\nAdd a trigger_* function (backed by a private _collect_*_entries)"
+              " to scripts/effects/trigger_dispatcher.gd and call that instead.")
         return 1
     print("standby entry builders: OK (only %s)" % BUILDER)
     return 0

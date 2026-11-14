@@ -13,7 +13,7 @@ public methods are exactly the primitives the per-card scripts
 (`scripts/effects/<set>/`) call through `ctx.effect_handler`. The
 implementation lives in the modules below. `EffectHandler.setup` wires each
 one once (`EffectModule.wire`) with direct references to the others, so a
-module calls another module directly (`dispatcher.collect_enter_entries`,
+module calls another module directly (`dispatcher.trigger_enter`,
 `queries.should_stack_on_play`); it uses the facade `h` only for what the
 facade itself owns — its signals (`log_message`, `card_evolved`, …) and the
 player-prompt primitives with their UI state (`select_zone_target`,
@@ -36,8 +36,8 @@ names no EffectHandler member (untyped receivers fail only at runtime).
 | `trigger_filters.gd` | Pure static `TRIGGER_FILTERS` DSL evaluation |
 | `check_timing.gd` | `CheckTiming`: single owner of check timing (10.4.3) — rule actions (crush, illegal cards), the standby pool, the active ability (`get_active_effect_summary`), `run_effect`, `note_effect_resolving` |
 | `standby_entry.gd` | `StandbyEntry`: one ability in standby (player, card, callback, `still_applies`) |
-| `trigger_dispatcher.gd` | `trigger_*` / `collect_*` dispatch over active cards (`trigger_*` = collect + `check_timing.submit`), `apply_rage_reset` |
-| `destruction_engine.gd` | The one destroy operation, `destroy(target, zone, cause)` — cause EFFECT / CRUSH / OVERLOAD decides protection (effect only), replacement (all) and <Revenge> (not Overload); on_destroy and the destroyed watchers fire for all three; returns the StandbyEntry list. Also the effect-driven destroy prompts and strategy destruction |
+| `trigger_dispatcher.gd` | `trigger_*`: operations report what happened; each finds the watching abilities (private `_collect_*`, the only `StandbyEntry` builders) and submits them to `check_timing`. Also `apply_rage_reset` |
+| `destruction_engine.gd` | The one destroy operation, `destroy(target, zone, cause)` — cause EFFECT / CRUSH / OVERLOAD decides protection (effect only), replacement (all) and <Revenge> (not Overload); on_destroy and the destroyed watchers fire for all three; submits the abilities it triggers itself and returns an `Outcome` (card, replaced). Also the effect-driven destroy prompts and strategy destruction |
 | `enter_zone.gd` | `EnterZone`: the one "card enters a zone" operation, `enter(player_id, card, zone, source)` — source HAND (the Play action or an effect) / DECK / DISCARD / TOKEN / EVOLUTION; `move_stack` for a stack moving between zones. Owns rule legality (`is_rule_legal`, also asked by RulesEngine, which keeps cost legality), stack-on-play or Overload, placement + signals + log, and submits the leave-play, <Enter> and "when played" entries together |
 | `card_mover.gd` | Hand/deck/discard traffic, zone prompts, token instances; its play primitives call `EnterZone` |
 | `monster_mover.gd` | Monster movement: the sole writer of `monster_zone` during play (advance with `from_invasion`, retreat, teleport, counter retreat) + the effect-facing move entry points |
@@ -109,8 +109,12 @@ Terms per `GLOSSARY.md`. `CheckTiming` (`effect_handler.check_timing`; `check_ti
 Engine code runs an ability through `check_timing.run_effect(owner, card,
 callback)`: it marks the ability active (read-only `active_player_id` /
 `active_card`), announces it (`note_effect_resolving`) and restores the
-outer ability afterwards. Trigger sources only **submit**
-(`check_timing.submit(entries)`, synchronous): nothing resolves on the spot.
+outer ability afterwards. **Operations report; the dispatcher submits.** An
+operation (destroy, enter, move, invade, discard) calls
+`dispatcher.trigger_X(...)` for what happened; the dispatcher finds the
+watching abilities and submits them (`check_timing.submit(entries)`,
+synchronous). Operations never handle `StandbyEntry` arrays and nothing
+resolves on the spot.
 Entries resolve at the next check timing (rule 10.4.3) — `check_timing.resolve()`
 after the current action or phase step (the TurnManager sites, 10.4.4.1 /
 7.x), or between two abilities of a running pass. So one play's leave-play,
@@ -120,9 +124,13 @@ resolves even after its card changed areas (crushed, evolved over,
 discarded); the only way one is dropped is its `still_applies` gate
 (10.6.3.2). Code that drives the engine outside TurnManager (tests, bot
 rollouts) calls `check_timing.resolve()` itself after the action. Only the
-dispatcher's `collect_*` functions build `StandbyEntry` objects
+dispatcher's private `_collect_*` functions build `StandbyEntry` objects
 (`scripts/tools/check_standby_entry_builders.py`). Never call a
-trigger body directly from engine code.
+trigger body directly from engine code. `submit` stamps each entry with a
+submission sequence number (`StandbyEntry.seq`); the order-choice prompt
+lists a player's abilities in that order. `submit` only marks the stack
+changed: `GameEvents.effect_stack_changed` is published when `resolve()`
+starts and between abilities of a pass.
 This covers revenge and zone-card-destroyed watchers (single AND batch
 destroys, Crush and Overload), on_discard_from_hand, and the area-changing hooks on_leave_play /
 on_zone_changed (EBP04-067 link). One exception: an effect destroy resolves
@@ -135,13 +143,15 @@ at the moment of the action. An area-changing entry that has nothing left to
 do when it comes up is dropped before the order prompt via
 `area_change_still_applies` (10.6.3).
 
-**Crush has one path.** `CheckTiming.check_crush_rule(triggered)`
-performs the crush (replacement effects apply at that moment) and only
-*collects* the crushed card's leave-play, crush and <Revenge> entries; the
-caller submits them to standby once its move / check timing is done
-(`check_timing.resolve()`, monster movement, invasion, `teleport_monster` —
-which crushes only its destination, e.g. EBP03-068 Godzilla Flies — and the
-counter retreat, which crushes before the new monster's <Enter>).
+**Crush has one path.** Outside a check timing, `CheckTiming.crush_now(player_id)`
+(both players, turn player first, when `player_id < 0`) is the only Crush
+entry point: it performs the crush (replacement effects apply at that
+moment) and the destroy submits the crushed card's leave-play, crush and
+<Revenge> abilities to standby. Callers: monster movement (per step of an
+advance or retreat), `teleport` — which crushes only its destination, e.g.
+EBP03-068 Godzilla Flies, and the counter retreat, which crushes before the
+new monster's <Enter> — and the board editor. `check_timing.resolve()` runs
+the same crush as a rule action.
 
 **Play-zone legality is enforced by the play primitives** (5.11.1.1),
 through `EnterZone` — the one owner of rule legality (`EnterZone.rule_legal_zones`).

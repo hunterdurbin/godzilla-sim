@@ -932,7 +932,7 @@ func test_ebp04_025_invading_discards_opponent_to_3_with_10_green() -> void:
 		state.players[0].discard_pile.append(_green_battle(2, 2000, "G%d" % i))
 	var s := _session(state)
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 4, 5))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 4, 5)
 	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[1].hand.size()).is_equal(3)
 
@@ -945,7 +945,7 @@ func test_ebp04_025_invading_discards_opponent_to_3_with_10_green() -> void:
 	for i in range(9):
 		state2.players[0].discard_pile.append(_green_battle(2, 2000, "G%d" % i))
 	var s2 := _session(state2)
-	s2["effect_handler"].check_timing.submit(s2["effect_handler"].dispatcher.collect_when_invading_entries(0, 4, 5))
+	s2["effect_handler"].dispatcher.trigger_when_invading(0, 4, 5)
 	await s2["effect_handler"].check_timing.resolve()
 	assert_int(state2.players[1].hand.size()).is_equal(5)
 
@@ -964,7 +964,7 @@ func test_ebp04_026_invading_plays_3_crystals_and_boosts_cp_at_awakening_6() -> 
 	# No crystals yet: no CP bonus even at Awakening 6.
 	assert_int(handler.queries.get_counter_power_modifier(0)).is_equal(0)
 
-	handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 5, 6))
+	handler.dispatcher.trigger_when_invading(0, 5, 6)
 	await handler.check_timing.resolve()
 
 	var p0 := state.players[0]
@@ -1335,10 +1335,9 @@ func test_ebp04_039_does_not_trigger_on_own_turn() -> void:
 	var s := States.make_session(state, ScriptedPlayerInput.new())
 	var handler: EffectHandler = s["effect_handler"]
 
-	var outcome := handler.destruction.destroy(state.players[0], 4, DestructionEngine.Cause.OVERLOAD)
+	handler.destruction.destroy(state.players[0], 4, DestructionEngine.Cause.OVERLOAD)
 
-	var sources: Array = outcome.entries.map(func(e: StandbyEntry) -> String: return str(e.card.get("id")))
-	assert_array(sources).not_contains([str(card.get("id"))])
+	assert_bool(handler.check_timing.has_pending()).is_false()
 
 
 # --- EBP04-040: Awk6 enter w/ Rodan + King Caesar battle cards → +3 rage ---

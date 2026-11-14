@@ -63,7 +63,7 @@ func _fire(s: Dictionary, trigger: String) -> void:
 		"invading":
 			# Card must already be players[0].current_monster (see _setup).
 			state.players[0].monster_zone = 2
-			handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 1, 2))
+			handler.dispatcher.trigger_when_invading(0, 1, 2)
 			await handler.check_timing.resolve()
 		"counter":
 			handler.dispatcher.trigger_counter_success(0, 1)

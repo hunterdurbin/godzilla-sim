@@ -300,7 +300,7 @@ func test_esd02_004_destroys_all_opponent_cards_up_to_discarded_rank() -> void:
 	input.answers = {"select_hand_card": [0]}
 	var s := States.make_session(state, input)
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 4, 5))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 4, 5)
 	await s["effect_handler"].check_timing.resolve()
 
 	var p1 := state.players[1]
@@ -321,7 +321,7 @@ func test_esd02_004_skipping_the_cost_destroys_nothing() -> void:
 	input.answers = {"select_hand_card": [-1]}
 	var s := States.make_session(state, input)
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 4, 5))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 4, 5)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(1)).is_true()
@@ -823,7 +823,7 @@ func test_esc01_005_reveals_top_card_and_destroys_lower_rank_battle_card() -> vo
 	input.answers = {"select_zone": [1]}
 	var s := States.make_session(state, input)
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 1, 2))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 1, 2)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_str(str(state.players[0].discard_pile.back().get("id"))).is_equal("REV")
@@ -845,7 +845,7 @@ func test_esc01_005_requires_3_cards_under_the_monster() -> void:
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 1, 2))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 1, 2)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].main_deck.size()).is_equal(1)
@@ -864,7 +864,7 @@ func test_esc01_005_still_mills_when_no_target_qualifies() -> void:
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
 
-	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 1, 2))
+	s["effect_handler"].dispatcher.trigger_when_invading(0, 1, 2)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_str(str(state.players[0].discard_pile.back().get("id"))).is_equal("REV1")

@@ -2,7 +2,7 @@ class_name StandbyEntry
 extends RefCounted
 
 ## One automatic ability waiting in standby (10.6.2) for CheckTiming to
-## resolve it. Built only by TriggerDispatcher's collect_* functions (and by
+## resolve it. Built only by TriggerDispatcher's _collect_* functions (and by
 ## tests); CheckTiming is the only reader.
 
 ## Owner of the ability (the player who plays it, 10.4.3.2 / 10.4.3.3).
@@ -16,6 +16,10 @@ var callback: Callable
 ## false means the ability cannot be played and ceases to exist. Empty
 ## Callable = always applies. The only way an entry is dropped.
 var still_applies: Callable
+## Submission sequence number, stamped by CheckTiming.submit (-1 = not yet
+## submitted). The order-choice prompt (10.4.3) lists a player's abilities in
+## this order.
+var seq: int = -1
 
 
 func _init(p_player_id: int, p_card: Dictionary, p_callback: Callable,
