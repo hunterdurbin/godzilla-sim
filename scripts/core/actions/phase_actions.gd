@@ -99,15 +99,8 @@ func execute_end_phase_advance(state: GameState) -> void:
 	var extra: int = effect_handler.get_extra_end_phase_advance(player.player_id)
 	var total_advance: int = 1 + extra
 	var deferred_entries: Array = []
-	for _step in range(total_advance):
-		if player.monster_zone > 7:
-			break
-		var old_zone: int = player.monster_zone
-		player.monster_zone += 1
-		events.monster_advanced.emit(player.player_id, old_zone, player.monster_zone)
-		player.monster_changed.emit()
-		deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
-		effect_handler.check_timing.check_crush_rule(deferred_entries)
+	var from_invasion := false  # the 7.5.2 advance is not an invasion
+	effect_handler.monster_mover.advance(player.player_id, total_advance, from_invasion, deferred_entries)
 
 	# Submit the collected abilities once all movement completes; they
 	# resolve at the 7.5.3 check timing.

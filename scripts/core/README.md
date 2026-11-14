@@ -15,7 +15,7 @@ per-copy instance ids like `EBP04-067_0_3` — compare with
 | `turn_manager.gd` | Phase state machine; exposes `flow_state` (IDLE / AWAITING_ACTION / PROCESSING_ACTION / ADVANCING_PHASES / GAME_OVER) |
 | `match_factory.gd` | Builds + wires a match (`setup` / `setup_from_save`); TurnManager delegates to it |
 | `game_events.gd` | Gameplay notification bus — UI/sync/sfx subscribe |
-| `actions/` | `ActionHandler` (dispatcher) + resolvers: `play_actions`, `invasion_resolver`, `counter_resolver`, `phase_actions` (check-timing rule actions live in `scripts/effects/check_timing.gd`) |
+| `actions/` | `ActionHandler` (dispatcher) + resolvers: `play_actions`, `invasion_resolver`, `counter_resolver`, `phase_actions` (check-timing rule actions live in `scripts/effects/check_timing.gd`; every monster move goes through `scripts/effects/monster_mover.gd`) |
 | `input/` | PlayerInput decision port: `player_input.gd` (sync defaults), `signal_player_input.gd` (live UI/RPC/bot — re-exposes `choice_requested`, `zone_target_requested`, … + `resolve_*()` callbacks; resolving during the request emit is safe), `scripted_player_input.gd` (queued answers for tests) |
 
 ## Contracts
