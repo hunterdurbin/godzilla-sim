@@ -11,7 +11,7 @@ func play_battle_card(hand_index: int, zone_index: int, state: GameState) -> voi
 	var card: Dictionary = player.hand.pop_at(hand_index)
 
 	# Apply optional play costs (e.g., ESC01-001 discard a Godzilla card for rank reduction)
-	var proceed: bool = await effect_handler.apply_play_cost(player.player_id, card, zone_index)
+	var proceed: bool = await mover.apply_play_cost(player.player_id, card, zone_index)
 	if not proceed:
 		# Cost declined — restore card to hand and force visual rebuild
 		player.hand.insert(mini(hand_index, player.hand.size()), card)
@@ -23,7 +23,7 @@ func play_battle_card(hand_index: int, zone_index: int, state: GameState) -> voi
 	# enter-zone operation does the rest: stack-on-play or Overload (11.5),
 	# placement, the log line, and the leave-play / <Enter> / "when played"
 	# entries.
-	effect_handler.enter_zone.enter(player.player_id, card, zone_index, EnterZone.Source.HAND, false)
+	enter_zone.enter(player.player_id, card, zone_index, EnterZone.Source.HAND, false)
 
 
 func play_strategy_card(hand_index: int, state: GameState) -> void:
@@ -38,7 +38,7 @@ func play_strategy_card(hand_index: int, state: GameState) -> void:
 	if effect_handler:
 		effect_handler.log_message.emit(
 			GameLog.played_strategy(player.player_id, card.get("id", ""), card.get("is_base", false)))
-		effect_handler.trigger_enter(player.player_id, card)
+		dispatcher.trigger_enter(player.player_id, card)
 
 
 func gain_rage(hand_index: int, state: GameState) -> void:
@@ -55,9 +55,9 @@ func gain_rage(hand_index: int, state: GameState) -> void:
 	if effect_handler:
 		effect_handler.log_message.emit(
 			GameLog.gained_rage(player.player_id, player.rage, card.get("id", "")))
-		effect_handler.trigger_discard_from_hand(player.player_id, card)
-		effect_handler.trigger_hand_card_discarded(player.player_id, card)
-		effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
+		dispatcher.trigger_discard_from_hand(player.player_id, card)
+		dispatcher.trigger_hand_card_discarded(player.player_id, card)
+		dispatcher.trigger_rage_changed(player.player_id, old_rage, player.rage)
 
 
 func play_monster(hand_index: int, state: GameState) -> void:
@@ -68,8 +68,8 @@ func play_monster(hand_index: int, state: GameState) -> void:
 
 	# Alternate play cost (e.g. EBP04-012): execute cost before committing, allow cancel
 	var rank_mismatch: bool = card.get("rank", 0) != old_monster.get("rank", 0)
-	if rank_mismatch and effect_handler and effect_handler.has_trigger(card, "apply_play_cost"):
-		var cost_ok: bool = await effect_handler.apply_play_cost(player.player_id, card, -1)
+	if rank_mismatch and effect_handler and registry.has_trigger(card, "apply_play_cost"):
+		var cost_ok: bool = await mover.apply_play_cost(player.player_id, card, -1)
 		if not cost_ok:
 			# Cost declined — restore card to hand and force visual rebuild
 			player.hand.insert(hand_index, card)
@@ -99,7 +99,7 @@ func play_monster(hand_index: int, state: GameState) -> void:
 	player.rage_changed.emit(player.rage)
 	if effect_handler:
 		if is_burst_play:
-			var burst_effect := effect_handler.get_effect(card)
+			var burst_effect := registry.get_effect(card)
 			var burst_rank: int = burst_effect.get_burst_rank() if burst_effect else -1
 			effect_handler.log_message.emit(
 				GameLog.burst_played(player.player_id, card.get("id", ""), burst_rank, player.rage))
@@ -110,9 +110,9 @@ func play_monster(hand_index: int, state: GameState) -> void:
 		# retroactively qualify for can_play_from_discard_on_monster_played
 		# (e.g. EBP02-048 milling EBP03-063 into discard).
 		var discard_snapshot: Array = player.discard_pile.duplicate()
-		effect_handler.trigger_enter(player.player_id, card)
-		effect_handler.trigger_monster_played(player.player_id, old_monster, card, discard_snapshot)
-		effect_handler.trigger_rage_changed(player.player_id, old_rage, player.rage)
+		dispatcher.trigger_enter(player.player_id, card)
+		dispatcher.trigger_monster_played(player.player_id, old_monster, card, discard_snapshot)
+		dispatcher.trigger_rage_changed(player.player_id, old_rage, player.rage)
 
 
 func play_monster_from_effect(state: GameState, player_id: int, monster_card: Dictionary) -> void:
@@ -139,5 +139,5 @@ func play_monster_from_effect(state: GameState, player_id: int, monster_card: Di
 	player.monster_changed.emit()
 	if effect_handler:
 		var discard_snapshot: Array = player.discard_pile.duplicate()
-		effect_handler.trigger_enter(player_id, monster_card, true)
-		effect_handler.trigger_monster_played(player_id, old_monster, monster_card, discard_snapshot)
+		dispatcher.trigger_enter(player_id, monster_card, true)
+		dispatcher.trigger_monster_played(player_id, old_monster, monster_card, discard_snapshot)

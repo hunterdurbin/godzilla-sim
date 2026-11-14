@@ -29,8 +29,8 @@ func _assert_entry(e: Dictionary, stat: String, amount: int, source: String, zon
 
 
 func _assert_zone_cp_sums_match(handler: EffectHandler, player_id: int) -> void:
-	var breakdown: Array = handler.get_zone_cp_breakdown(player_id)
-	var sums: Array = handler.get_zone_cp_modifiers(player_id)
+	var breakdown: Array = handler.queries.get_zone_cp_breakdown(player_id)
+	var sums: Array = handler.queries.get_zone_cp_modifiers(player_id)
 	for i in range(8):
 		assert_int(ModifierBreakdown.sum(breakdown[i])) \
 			.override_failure_message("zone %d: sum(breakdown) != get_zone_cp_modifiers" % i) \
@@ -46,7 +46,7 @@ func test_zone_cp_own_effect_source() -> void:
 	var state := States.make_state({"p0": {"zone_cards": {7: card}}})
 	var handler := _wire(state)
 
-	var breakdown: Array = handler.get_zone_cp_breakdown(0)
+	var breakdown: Array = handler.queries.get_zone_cp_breakdown(0)
 	assert_int(breakdown[7].size()).is_equal(1)
 	_assert_entry(breakdown[7][0], "cp", 3000, "EBP01-017", 7, 0, "z7")
 	for i in range(7):
@@ -65,14 +65,14 @@ func test_zone_cp_field_source_from_strategy() -> void:
 	}})
 	var handler := _wire(state)
 
-	var breakdown: Array = handler.get_zone_cp_breakdown(0)
+	var breakdown: Array = handler.queries.get_zone_cp_breakdown(0)
 	assert_int(breakdown[1].size()).is_equal(1)
 	_assert_entry(breakdown[1][0], "cp", 3000, "EBP04-082", 1, 0, "strategy")
 	_assert_zone_cp_sums_match(handler, 0)
 
 	# Not active on the opponent's turn — entry disappears.
 	state.current_player_id = 1
-	assert_int(handler.get_zone_cp_breakdown(0)[1].size()).is_equal(0)
+	assert_int(handler.queries.get_zone_cp_breakdown(0)[1].size()).is_equal(0)
 
 
 func test_zone_cp_doubling_after_additive() -> void:
@@ -89,13 +89,13 @@ func test_zone_cp_doubling_after_additive() -> void:
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var handler := _wire(state)
 
-	var breakdown: Array = handler.get_zone_cp_breakdown(0)
+	var breakdown: Array = handler.queries.get_zone_cp_breakdown(0)
 	assert_int(breakdown[2].size()).is_equal(2)
 	_assert_entry(breakdown[2][0], "cp", 3000, "EBP02-068", 2, 0)
 	_assert_entry(breakdown[2][1], "cp_double", base_cp + 3000, "EBP02-029", 2, 1)
 	_assert_zone_cp_sums_match(handler, 0)
 	# Doubling total = 2 * (base + mod).
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(2 * (base_cp + 3000))
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(2 * (base_cp + 3000))
 
 
 func test_zone_cp_engagement_gating_drops_own_entry() -> void:
@@ -114,11 +114,11 @@ func test_zone_cp_engagement_gating_drops_own_entry() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_zone_cp_breakdown(0)[0].size()).is_equal(1)
-	_assert_entry(handler.get_zone_cp_breakdown(0)[0][0], "cp", 3000, "EBP02-033", 0)
+	assert_int(handler.queries.get_zone_cp_breakdown(0)[0].size()).is_equal(1)
+	_assert_entry(handler.queries.get_zone_cp_breakdown(0)[0][0], "cp", 3000, "EBP02-033", 0)
 
 	state.current_phase = CardEnums.GamePhase.COUNTER
-	assert_int(handler.get_zone_cp_breakdown(0)[0].size()).is_equal(0)
+	assert_int(handler.queries.get_zone_cp_breakdown(0)[0].size()).is_equal(0)
 	_assert_zone_cp_sums_match(handler, 0)
 
 
@@ -133,13 +133,13 @@ func test_threat_breakdown_monster_source() -> void:
 	}})
 	var handler := _wire(state)
 
-	var entries: Array = handler.get_threat_level_breakdown(0)
+	var entries: Array = handler.queries.get_threat_level_breakdown(0)
 	assert_int(entries.size()).is_equal(1)
 	_assert_entry(entries[0], "threat", 5000, "EBP02-002", -1, 0)
 	assert_int(ModifierBreakdown.sum(entries)).is_equal(handler.get_threat_level_modifier(0))
 
 	state.players[0].strategy_zones[0] = {}
-	assert_int(handler.get_threat_level_breakdown(0).size()).is_equal(0)
+	assert_int(handler.queries.get_threat_level_breakdown(0).size()).is_equal(0)
 
 
 # --- Play rank breakdown ---
@@ -155,10 +155,10 @@ func test_play_rank_self_source() -> void:
 		Cards.battle(4, 1000, "KG-2", [CardEnums.CardTrait.KING_GHIDORAH]))
 	var handler := _wire(state)
 
-	var entries: Array = handler.get_play_rank_breakdown(0, mkg)
+	var entries: Array = handler.queries.get_play_rank_breakdown(0, mkg)
 	assert_int(entries.size()).is_equal(1)
 	_assert_entry(entries[0], "play_rank", -4, "EBP02-068")
-	assert_int(ModifierBreakdown.sum(entries)).is_equal(handler.get_play_rank_modifier(0, mkg))
+	assert_int(ModifierBreakdown.sum(entries)).is_equal(handler.queries.get_play_rank_modifier(0, mkg))
 
 
 func test_play_rank_strategy_source() -> void:
@@ -170,10 +170,10 @@ func test_play_rank_strategy_source() -> void:
 	}})
 	var handler := _wire(state)
 
-	var entries: Array = handler.get_play_rank_breakdown(0, biollante)
+	var entries: Array = handler.queries.get_play_rank_breakdown(0, biollante)
 	assert_int(entries.size()).is_equal(1)
 	_assert_entry(entries[0], "play_rank", -3, "EBP02-039")
-	assert_int(ModifierBreakdown.sum(entries)).is_equal(handler.get_play_rank_modifier(0, biollante))
+	assert_int(ModifierBreakdown.sum(entries)).is_equal(handler.queries.get_play_rank_modifier(0, biollante))
 
 
 func test_play_rank_stacking_self_skip() -> void:
@@ -186,10 +186,10 @@ func test_play_rank_stacking_self_skip() -> void:
 	}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_play_rank_breakdown(0, junior).size()).is_equal(0)
-	assert_int(handler.get_play_rank_modifier(0, junior)).is_equal(0)
+	assert_int(handler.queries.get_play_rank_breakdown(0, junior).size()).is_equal(0)
+	assert_int(handler.queries.get_play_rank_modifier(0, junior)).is_equal(0)
 
-	var zone_entries: Array = handler.get_zone_play_rank_breakdown(0, junior)
+	var zone_entries: Array = handler.queries.get_zone_play_rank_breakdown(0, junior)
 	assert_int(zone_entries.size()).is_equal(1)
 	_assert_entry(zone_entries[0], "zone_play_rank", -2, "EBP03-051", 3)
 
@@ -207,15 +207,15 @@ func test_strategy_hand_rank_source_and_filter() -> void:
 	})
 	var handler := _wire(state)
 
-	var entries: Array = handler.get_strategy_hand_rank_breakdown(0, held)
+	var entries: Array = handler.queries.get_strategy_hand_rank_breakdown(0, held)
 	assert_int(entries.size()).is_equal(1)
 	_assert_entry(entries[0], "play_rank", 3, "EBP04-028", -1, 1, "monster")
 	assert_int(ModifierBreakdown.sum(entries)) \
-		.is_equal(handler.get_strategy_hand_rank_modifier(0, held))
+		.is_equal(handler.queries.get_strategy_hand_rank_modifier(0, held))
 
 	# On P1's own turn the own_turn=false filter drops the source.
 	state.current_player_id = 1
-	assert_int(handler.get_strategy_hand_rank_breakdown(0, held).size()).is_equal(0)
+	assert_int(handler.queries.get_strategy_hand_rank_breakdown(0, held).size()).is_equal(0)
 
 
 func test_strategy_hand_rank_one_entry_per_copy() -> void:
@@ -238,13 +238,13 @@ func test_strategy_hand_rank_one_entry_per_copy() -> void:
 	state.players[0].discard_pile.append(green)
 	var handler := _wire(state)
 
-	var entries: Array = handler.get_strategy_hand_rank_breakdown(0, held)
+	var entries: Array = handler.queries.get_strategy_hand_rank_breakdown(0, held)
 	assert_int(entries.size()).is_equal(3)
 	_assert_entry(entries[0], "play_rank", -2, "EBP04-068", -1, 0, "z1")
 	_assert_entry(entries[1], "play_rank", -2, "EBP04-068", -1, 0, "z3")
 	_assert_entry(entries[2], "play_rank", -2, "EBP04-068", -1, 0, "z5")
 	assert_int(ModifierBreakdown.sum(entries)).is_equal(-6)
-	assert_int(handler.get_strategy_hand_rank_modifier(0, held)).is_equal(-6)
+	assert_int(handler.queries.get_strategy_hand_rank_modifier(0, held)).is_equal(-6)
 
 
 # --- Field rank breakdown ---
@@ -260,11 +260,11 @@ func test_field_rank_opponent_monster_source_with_clamp() -> void:
 	})
 	var handler := _wire(state)
 
-	var breakdown: Array = handler.get_field_rank_breakdown(0)
+	var breakdown: Array = handler.queries.get_field_rank_breakdown(0)
 	assert_int(breakdown[0].size()).is_equal(1)
 	_assert_entry(breakdown[0][0], "field_rank", -1, "EBP03-025", 0, 1)
 	assert_int(breakdown[4].size()).is_equal(0)
-	var sums: Array = handler.get_zone_rank_modifiers(0)
+	var sums: Array = handler.queries.get_zone_rank_modifiers(0)
 	for i in range(8):
 		assert_int(ModifierBreakdown.sum(breakdown[i])).is_equal(sums[i])
 
@@ -278,10 +278,10 @@ func test_hand_cp_preview_rage_scaling() -> void:
 	var state := States.make_state({"p0": {"hand": [kotm], "rage": 2}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_hand_cp_preview(0, kotm)).is_equal(6000)
+	assert_int(handler.queries.get_hand_cp_preview(0, kotm)).is_equal(6000)
 
 	state.players[0].rage = 0
-	assert_int(handler.get_hand_cp_preview(0, kotm)).is_equal(0)
+	assert_int(handler.queries.get_hand_cp_preview(0, kotm)).is_equal(0)
 
 
 func test_hand_cp_preview_awakening() -> void:
@@ -290,10 +290,10 @@ func test_hand_cp_preview_awakening() -> void:
 	var state := States.make_state({"p0": {"hand": [card], "monster_zone": 6}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_hand_cp_preview(0, card)).is_equal(3000)
+	assert_int(handler.queries.get_hand_cp_preview(0, card)).is_equal(3000)
 
 	state.players[0].monster_zone = 5
-	assert_int(handler.get_hand_cp_preview(0, card)).is_equal(0)
+	assert_int(handler.queries.get_hand_cp_preview(0, card)).is_equal(0)
 
 
 func test_hand_cp_preview_excludes_untagged_and_non_battle() -> void:
@@ -305,8 +305,8 @@ func test_hand_cp_preview_excludes_untagged_and_non_battle() -> void:
 	var state := States.make_state({"p0": {"hand": [zone_card, strategy], "rage": 3}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_hand_cp_preview(0, zone_card)).is_equal(0)
-	assert_int(handler.get_hand_cp_preview(0, strategy)).is_equal(0)
+	assert_int(handler.queries.get_hand_cp_preview(0, zone_card)).is_equal(0)
+	assert_int(handler.queries.get_hand_cp_preview(0, strategy)).is_equal(0)
 
 
 func test_hand_entries_include_cp_preview() -> void:
@@ -341,11 +341,11 @@ func test_zone_cp_variable_base_entry() -> void:
 	}}})
 	var handler := _wire(state)
 
-	var breakdown: Array = handler.get_zone_cp_breakdown(0)
+	var breakdown: Array = handler.queries.get_zone_cp_breakdown(0)
 	assert_int(breakdown[2].size()).is_equal(1)
 	_assert_entry(breakdown[2][0], "cp_var_base", 9000, "EBP04-047", 2, 0, "z2")
 	_assert_zone_cp_sums_match(handler, 0)
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(9000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(9000)
 	assert_int(ModifierBreakdown.variable_zone_bases(breakdown)[2]).is_equal(9000)
 	assert_int(ModifierBreakdown.variable_zone_bases(breakdown)[1]).is_equal(-1)
 
@@ -357,10 +357,10 @@ func test_zone_cp_variable_base_zero_still_reported() -> void:
 	var state := States.make_state({"p0": {"zone_cards": {2: card}}})
 	var handler := _wire(state)
 
-	var breakdown: Array = handler.get_zone_cp_breakdown(0)
+	var breakdown: Array = handler.queries.get_zone_cp_breakdown(0)
 	assert_int(breakdown[2].size()).is_equal(1)
 	_assert_entry(breakdown[2][0], "cp_var_base", 0, "EBP04-047", 2, 0, "z2")
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(0)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(0)
 	assert_int(ModifierBreakdown.variable_zone_bases(breakdown)[2]).is_equal(0)
 
 
@@ -386,14 +386,14 @@ func test_variable_base_survives_engagement_gating_and_is_restricted() -> void:
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var handler := _wire(state)
 
-	var breakdown: Array = handler.get_zone_cp_breakdown(0)
+	var breakdown: Array = handler.queries.get_zone_cp_breakdown(0)
 	assert_int(breakdown[2].size()).is_equal(1)
 	_assert_entry(breakdown[2][0], "cp_var_base", 9000, "EBP04-047", 2, 0, "z2")
 	# Restricted subtraction: 3 x 2000 printed + 9000 resolved X.
-	assert_int(handler.get_engagement_restricted_cp(0)).is_equal(15000)
+	assert_int(handler.queries.get_engagement_restricted_cp(0)).is_equal(15000)
 	# Counter math (base total + modifiers - restricted) nets to zero.
 	var net: int = state.players[0].get_total_counter_power() \
-		+ handler.get_counter_power_modifier(0) - handler.get_engagement_restricted_cp(0)
+		+ handler.queries.get_counter_power_modifier(0) - handler.queries.get_engagement_restricted_cp(0)
 	assert_int(net).is_equal(0)
 
 
@@ -409,7 +409,7 @@ func test_threat_variable_base_entry() -> void:
 	}})
 	var handler := _wire(state)
 
-	var entries: Array = handler.get_threat_level_breakdown(0)
+	var entries: Array = handler.queries.get_threat_level_breakdown(0)
 	assert_int(entries.size()).is_equal(1)
 	_assert_entry(entries[0], "threat_var_base", 6000, "EBP04-031", -1, 0, "monster")
 	assert_int(handler.get_threat_level_modifier(0)).is_equal(6000)
@@ -420,7 +420,7 @@ func test_threat_variable_base_entry() -> void:
 	# No battle cards -> X = 0, entry stays.
 	state.players[0].clear_zone(0)
 	state.players[0].clear_zone(1)
-	var zeroed: Array = handler.get_threat_level_breakdown(0)
+	var zeroed: Array = handler.queries.get_threat_level_breakdown(0)
 	assert_int(zeroed.size()).is_equal(1)
 	_assert_entry(zeroed[0], "threat_var_base", 0, "EBP04-031", -1, 0, "monster")
 
@@ -437,7 +437,7 @@ func test_hand_entries_include_variable_base_preview() -> void:
 	}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_hand_variable_base_cp(0, card)).is_equal(6000)
+	assert_int(handler.queries.get_hand_variable_base_cp(0, card)).is_equal(6000)
 	var entries: Array = ModifierBreakdown.hand_entries(handler, 0, card)
 	var vb: Array = entries.filter(func(e: Dictionary) -> bool: return e.get("stat") == "cp_var_base")
 	assert_int(vb.size()).is_equal(1)

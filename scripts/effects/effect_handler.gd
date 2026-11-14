@@ -1,8 +1,14 @@
 class_name EffectHandler
 extends RefCounted
 
-## Loads, caches, and dispatches card effect triggers across the game.
-## Called by ActionHandler and TurnManager at appropriate trigger points.
+## The card-script interface: the primitives per-card effect scripts
+## (scripts/effects/<set>/) call through `ctx.effect_handler` — every public
+## method here has a card-script caller (scripts/tools/
+## check_effect_handler_card_api.py). The engine itself lives in the modules
+## below, wired once in `setup` with direct references to each other; core,
+## UI, bot and test code call those modules (`queries`, `dispatcher`,
+## `check_timing`, `destruction`, `mover`, `monster_mover`, `enter_zone`,
+## `registry`), never a facade delegate.
 ##
 ## Player decisions (deck search, zone targets, choices, ...) go through the
 ## injected PlayerInput — SignalPlayerInput in live play (request signals +
@@ -62,29 +68,26 @@ func setup(p_game_state: GameState, p_input: PlayerInput = null) -> void:
 	game_state = p_game_state
 	input = p_input if p_input else PlayerInput.new()
 	check_timing = CheckTiming.new()
-	check_timing.game_state = game_state
-	check_timing.h = self
 	dispatcher = TriggerDispatcher.new()
-	dispatcher.h = self
 	destruction = DestructionEngine.new()
-	destruction.h = self
 	mover = CardMover.new()
-	mover.h = self
 	monster_mover = MonsterMover.new()
-	monster_mover.h = self
 	enter_zone = EnterZone.new()
-	enter_zone.h = self
 	queries = EffectQueries.new()
-	queries.h = self
+	check_timing.game_state = game_state
+	check_timing.destruction = destruction
+	check_timing.h = self
+	for m: EffectModule in [dispatcher, destruction, mover, monster_mover, enter_zone, queries]:
+		m.wire(self)
 
 
 func teardown() -> void:
-	## Break the internal RefCounted reference cycles (module.h -> self,
-	## action_handler <-> self) so the match component graph can be freed
-	## once the owner drops its reference. Idempotent.
-	for m in [dispatcher, destruction, mover, monster_mover, enter_zone, queries]:
+	## Break the internal RefCounted reference cycles (module <-> module,
+	## module.h -> self, action_handler <-> self) so the match component graph
+	## can be freed once the owner drops its reference. Idempotent.
+	for m: EffectModule in [dispatcher, destruction, mover, monster_mover, enter_zone, queries]:
 		if m:
-			m.h = null
+			m.unwire()
 	if check_timing:
 		check_timing.teardown()
 	check_timing = null
@@ -101,7 +104,6 @@ func teardown() -> void:
 
 
 
-
 # --- Effect loading (delegates to EffectRegistry) ---
 
 func get_effect(card_data: Dictionary) -> CardEffect:
@@ -109,53 +111,8 @@ func get_effect(card_data: Dictionary) -> CardEffect:
 
 
 
-
-func has_trigger(card_data: Dictionary, method_name: String) -> bool:
-	return registry.has_trigger(card_data, method_name)
-
-
-
-
-func get_trigger_filter(card_data: Dictionary, method_name: String) -> Dictionary:
-	return registry.get_trigger_filter(card_data, method_name)
-
-
-
-
-func _build_context(owner_id: int, card_data: Dictionary) -> EffectContext:
-	return EffectContext.create(game_state, owner_id, card_data, self)
-
-
-
-
-# --- Active effect tracking (for decision highlighting) ---
+# --- Active effect highlighting while a prompt waits on a decision ---
 # CheckTiming owns which ability is resolving (check_timing.active_*).
-
-## Announce that card_data's ability starts resolving (GameEvents.effect_resolving).
-## Call at every site that STARTS a card-script resolution — not where an
-## outer effect is restored after a nested one.
-## scripts/tools/check_effect_resolution_notes.py enforces this.
-func note_effect_resolving(player_id: int, card_data: Dictionary) -> void:
-	if events != null and not card_data.is_empty():
-		events.effect_resolving.emit(player_id, card_data)
-
-
-
-
-## {card_id, label} for the ability currently resolving ({} if none) — the
-## UI shows this above effect prompt overlays. card_id is the base id; label
-## matches the resolution-order choice option text.
-func get_active_effect_summary() -> Dictionary:
-	var card: Dictionary = check_timing.active_card
-	if card.is_empty():
-		return {}
-	return {
-		"card_id": CardUtils.base_id(card),
-		"label": _get_card_location_label(check_timing.active_player_id, card),
-	}
-
-
-
 
 func _highlight_active_effect() -> void:
 	var pid: int = check_timing.active_player_id
@@ -166,50 +123,12 @@ func _highlight_active_effect() -> void:
 
 
 
-
 func _unhighlight_active_effect() -> void:
 	var pid: int = check_timing.active_player_id
 	if pid >= 0:
 		var card_id: String = check_timing.active_card.get("id", "")
 		if not card_id.is_empty():
 			effect_card_unhighlighted.emit(pid, card_id)
-
-
-
-
-func _get_card_location_label(player_id: int, card_data: Dictionary) -> String:
-	return CheckTiming.card_location_label(game_state, player_id, card_data)
-
-
-
-
-func apply_rage_reset(player_id: int) -> int:
-	## Called at start phase rage reset. Returns new rage value (0 by default).
-	## Effects can intercept by returning a non-zero value from on_rage_reset.
-	var player := game_state.players[player_id]
-	var candidates: Array = []
-	var me := get_effect(player.current_monster)
-	if me and has_trigger(player.current_monster, "on_rage_reset"):
-		candidates.append({"card": player.current_monster, "effect": me})
-	for i in range(8):
-		var zone_card := player.get_zone_top_card(i)
-		if not zone_card.is_empty():
-			var ze := get_effect(zone_card)
-			if ze and has_trigger(zone_card, "on_rage_reset"):
-				candidates.append({"card": zone_card, "effect": ze})
-	for sz_card in player.strategy_zones:
-		if not sz_card.is_empty():
-			var se := get_effect(sz_card)
-			if se and has_trigger(sz_card, "on_rage_reset"):
-				candidates.append({"card": sz_card, "effect": se})
-	for entry in candidates:
-		var ctx := _build_context(player_id, entry.card)
-		note_effect_resolving(player_id, entry.card)
-		var result: int = await entry.effect.on_rage_reset(ctx)
-		if result != 0:
-			return result
-	return 0
-
 
 
 
@@ -223,16 +142,15 @@ func reduce_rage(player_id: int, amount: int) -> int:
 	var player := game_state.players[player_id]
 	if not player.has_rage() or amount <= 0:
 		return 0
-	if is_rage_reduction_prevented(player_id):
+	if queries.is_rage_reduction_prevented(player_id):
 		return 0
 	var old_rage: int = player.rage
 	var actual: int = mini(amount, player.rage)
 	player.rage -= actual
 	player.rage_changed.emit(player.rage)
 	player.push_pending_rage_markers(actual)
-	trigger_rage_changed(player_id, old_rage, player.rage)
+	dispatcher.trigger_rage_changed(player_id, old_rage, player.rage)
 	return actual
-
 
 
 
@@ -247,11 +165,8 @@ func gain_rage(player_id: int, amount: int, source_card_id: String = "") -> int:
 	player.rage += amount
 	player.rage_changed.emit(player.rage)
 	log_message.emit(GameLog.rage_gained(player_id, amount, player.rage, source_card_id))
-	trigger_rage_changed(player_id, old_rage, player.rage)
+	dispatcher.trigger_rage_changed(player_id, old_rage, player.rage)
 	return amount
-
-
-
 
 
 
@@ -277,7 +192,6 @@ func select_zone_target(player_id: int, target_player_id: int, valid_zones: Arra
 
 
 
-
 func select_zones_target(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, prompt: String, up_to: bool = false, constraints: Dictionary = {}) -> Array[int]:
 	## Ask a player to choose multiple zones on the target player's board.
 	## Exact mode (up_to = false): the player must pick exactly `count` zones —
@@ -298,7 +212,6 @@ func select_zones_target(player_id: int, target_player_id: int, valid_zones: Arr
 
 
 
-
 func select_strategy_target(player_id: int, target_player_id: int, valid_indices: Array[int], prompt: String) -> int:
 	## Ask a player to choose one of the valid strategy zones on the target player's board.
 	## Always prompts when at least one valid index exists so the player can see
@@ -313,7 +226,6 @@ func select_strategy_target(player_id: int, target_player_id: int, valid_indices
 	var strategy_index: int = await input.select_strategy(player_id, target_player_id, valid_indices, prompt)
 	_unhighlight_active_effect()
 	return strategy_index
-
 
 
 
@@ -337,7 +249,6 @@ func select_choice(player_id: int, options: Array[String], prompt: String, card_
 
 
 
-
 func reveal_cards(player_id: int, cards: Array[Dictionary], title: String) -> void:
 	## Show a set of cards to the player and wait for them to dismiss the overlay.
 	if cards.is_empty():
@@ -348,28 +259,15 @@ func reveal_cards(player_id: int, cards: Array[Dictionary], title: String) -> vo
 
 
 
-
 func highlight_zone_card(player_id: int, zone_index: int) -> void:
 	## Highlight a zone's card to show its effect is being resolved.
 	effect_zone_highlighted.emit(player_id, zone_index)
 
 
 
-
 func unhighlight_zone_card(player_id: int, zone_index: int) -> void:
 	## Remove highlight from a zone's card after effect resolution.
 	effect_zone_unhighlighted.emit(player_id, zone_index)
-
-
-
-
-static func banish_or_discard(player: PlayerState, stack: Array) -> void:
-	## Route cards to banishment (tokens) or discard pile (non-tokens).
-	## Tokens are removed from the game entirely; non-tokens go to discard pile.
-	for card in stack:
-		if not PlayerState.is_token(card):
-			player.discard_pile.append(card)
-
 
 
 
@@ -380,160 +278,10 @@ func force_counter(target_player_id: int) -> void:
 		await action_handler.force_counter(game_state, target_player_id)
 
 
-# --- Delegates to the split-out modules (the effect-script-facing API) ---
-
-func trigger_enter(player_id: int, card_data: Dictionary, from_effect: bool = false, through_evolution: bool = false) -> void:
-	dispatcher.trigger_enter(player_id, card_data, from_effect, through_evolution)
-
-
-func collect_enter_entries(player_id: int, card_data: Dictionary, from_effect: bool = false, through_evolution: bool = false) -> Array:
-	return dispatcher.collect_enter_entries(player_id, card_data, from_effect, through_evolution)
-
-
-func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void:
-	await dispatcher.trigger_when_invading(player_id, from_zone, to_zone)
-
-
-func collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
-	return dispatcher.collect_when_invading_entries(player_id, from_zone, to_zone)
-
-
-func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
-	await dispatcher.trigger_revenge(player_id, card_data)
-
-
-func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary, crushed: bool) -> Array:
-	return dispatcher.collect_crush_and_revenge_entries(player_id, card_data, crushed)
-
-
-func collect_on_destroy_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
-	return dispatcher.collect_on_destroy_entries(player_id, destroyed_card, zone_idx)
-
-
-
-
-func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
-	dispatcher.trigger_discard_from_hand(player_id, card_data)
-
-
-func collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) -> Array:
-	return dispatcher.collect_discard_from_hand_entries(player_id, card_data)
-
-
-func trigger_hand_cards_discarded_batch(player_id: int, cards: Array) -> void:
-	dispatcher.trigger_hand_cards_discarded_batch(player_id, cards)
-
-
-func collect_discarded_for_invasion_entries(player_id: int, card_data: Dictionary) -> Array:
-	return dispatcher.collect_discarded_for_invasion_entries(player_id, card_data)
-
-
-func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
-	await dispatcher.trigger_burst_discard(player_id, card_data)
-
-
-func trigger_rage_changed(player_id: int, old_rage: int, new_rage: int) -> void:
-	dispatcher.trigger_rage_changed(player_id, old_rage, new_rage)
-
-
-func trigger_monster_advance(player_id: int, from_zone: int, to_zone: int) -> void:
-	dispatcher.trigger_monster_advance(player_id, from_zone, to_zone)
-
-
-func collect_monster_advance_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
-	return dispatcher.collect_monster_advance_entries(player_id, from_zone, to_zone)
-
-
-func trigger_phase_start(phase: CardEnums.GamePhase) -> void:
-	dispatcher.trigger_phase_start(phase)
-
-
-func trigger_phase_end(phase: CardEnums.GamePhase) -> void:
-	dispatcher.trigger_phase_end(phase)
-
-
-func trigger_monster_played(player_id: int, old_monster: Dictionary, new_monster: Dictionary, discard_snapshot: Array = []) -> void:
-	dispatcher.trigger_monster_played(player_id, old_monster, new_monster, discard_snapshot)
-
-
-func trigger_battle_card_played(player_id: int, card_data: Dictionary, zone_index: int, played_from_deck: bool = false) -> void:
-	dispatcher.trigger_battle_card_played(player_id, card_data, zone_index, played_from_deck)
-
-
-func collect_battle_card_played_entries(player_id: int, card_data: Dictionary, zone_index: int, played_from_deck: bool = false) -> Array:
-	return dispatcher.collect_battle_card_played_entries(player_id, card_data, zone_index, played_from_deck)
-
-
-func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
-	dispatcher.trigger_hand_card_discarded(player_id, card_data)
-
-
-func collect_hand_card_discarded_entries(player_id: int, card_data: Dictionary) -> Array:
-	return dispatcher.collect_hand_card_discarded_entries(player_id, card_data)
-
-
-func trigger_counter_success(counterer_player_id: int, countered_player_id: int) -> void:
-	dispatcher.trigger_counter_success(counterer_player_id, countered_player_id)
-
-
-func trigger_strategy_discarded(player_id: int, strategy_card: Dictionary) -> void:
-	dispatcher.trigger_strategy_discarded(player_id, strategy_card)
-
-
-func collect_strategy_discarded_entries(player_id: int, strategy_card: Dictionary) -> Array:
-	return dispatcher.collect_strategy_discarded_entries(player_id, strategy_card)
-
-
-func trigger_invasion_observed(invading_player_id: int, from_zone: int, to_zone: int) -> void:
-	dispatcher.trigger_invasion_observed(invading_player_id, from_zone, to_zone)
-
-
-func collect_invasion_observed_entries(invading_player_id: int, from_zone: int, to_zone: int) -> Array:
-	return dispatcher.collect_invasion_observed_entries(invading_player_id, from_zone, to_zone)
-
-
-func trigger_leave_play(player_id: int, leaving_card: Dictionary, zone_index: int) -> void:
-	dispatcher.trigger_leave_play(player_id, leaving_card, zone_index)
-
-
-func collect_leave_play_entries(player_id: int, leaving_card: Dictionary, zone_index: int) -> Array:
-	return dispatcher.collect_leave_play_entries(player_id, leaving_card, zone_index)
-
-
-func trigger_zone_changed(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> void:
-	dispatcher.trigger_zone_changed(player_id, moved_card, from_zone, to_zone)
-
-
-func collect_zone_changed_entries(player_id: int, moved_card: Dictionary, from_zone: int, to_zone: int) -> Array:
-	return dispatcher.collect_zone_changed_entries(player_id, moved_card, from_zone, to_zone)
-
+# --- Delegates to the engine modules (card-script primitives) ---
 
 func trigger_all_monster_enter_abilities(player_id: int) -> void:
 	dispatcher.trigger_all_monster_enter_abilities(player_id)
-
-
-func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
-	return dispatcher.collect_ally_zone_card_destroyed_entries(player_id, destroyed_card, zone_idx)
-
-
-func trigger_ally_zone_card_destroyed(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
-	dispatcher.trigger_ally_zone_card_destroyed(player_id, destroyed_card, zone_idx)
-
-
-func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
-	return dispatcher.collect_opponent_zone_card_destroyed_entries(destroyed_player_id, destroyed_card, zone_idx)
-
-
-func trigger_opponent_zone_card_destroyed(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
-	dispatcher.trigger_opponent_zone_card_destroyed(destroyed_player_id, destroyed_card, zone_idx)
-
-
-func collect_card_returned_from_discard_entries(returning_player_id: int, card: Dictionary) -> Array:
-	return dispatcher.collect_card_returned_from_discard_entries(returning_player_id, card)
-
-
-func trigger_card_returned_from_discard(returning_player_id: int, card: Dictionary) -> void:
-	dispatcher.trigger_card_returned_from_discard(returning_player_id, card)
 
 
 func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, prompt: String) -> Dictionary:
@@ -564,24 +312,6 @@ func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones:
 	return await destruction.destroy_zone_and_adjacent(player_id, target, valid_zones, prompt, max_rank)
 
 
-## Engine-internal (crush, overload placement) — card scripts use the
-## destroy_* prompts above. The caller must submit the returned entries.
-func destroy(target: PlayerState, zone_idx: int, cause: DestructionEngine.Cause) -> DestructionEngine.Outcome:
-	return destruction.destroy(target, zone_idx, cause)
-
-
-func can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
-	return destruction.can_destroy_card(target, card_data)
-
-
-func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
-	return destruction._can_destroy_card(target, card_data)
-
-
-func get_strategy_discard_interceptor(player_id: int) -> int:
-	return destruction.get_strategy_discard_interceptor(player_id)
-
-
 func destroy_strategy_zone(player: PlayerState, zone_index: int) -> Dictionary:
 	return await destruction.destroy_strategy_zone(player, zone_index)
 
@@ -590,20 +320,12 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 	return await destruction.discard_strategy_from_zone(player_id, zone_index, deferred_entries, bypass_protection)
 
 
-func destroy_base_strategies_on_invasion(to_zone: int, deferred_entries: Variant = null) -> void:
-	await destruction.destroy_base_strategies_on_invasion(to_zone, deferred_entries)
-
-
 func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 	return await mover.discard_hand_to(player_id, target_count)
 
 
 func search_deck(player_id: int, filter: Callable, prompt: String, allow_skip: bool = true) -> Dictionary:
 	return await mover.search_deck(player_id, filter, prompt, allow_skip)
-
-
-func arrange_deck_cards(player_id: int, cards: Array[Dictionary], prompt: String) -> Dictionary:
-	return await mover.arrange_deck_cards(player_id, cards, prompt)
 
 
 func arrange_deck_top(player_id: int, count: int, prompt: String) -> Dictionary:
@@ -674,16 +396,8 @@ func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], p
 	return await mover.play_battle_cards_in_zones(player, cards, pick_prompt, candidate_zones, from_discard, max_count)
 
 
-func return_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
-	mover.return_to_deck_bottom(player, card_data)
-
-
 func move_zone_card_to_deck_bottom(player: PlayerState, card_data: Dictionary) -> void:
 	mover.move_zone_card_to_deck_bottom(player, card_data)
-
-
-func apply_play_cost(player_id: int, card_data: Dictionary, zone_index: int) -> bool:
-	return await mover.apply_play_cost(player_id, card_data, zone_index)
 
 
 func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
@@ -794,148 +508,12 @@ func move_monster_as_countered(player_id: int) -> void:
 	monster_mover.move_monster_as_countered(player_id)
 
 
-func is_rage_reduction_prevented(player_id: int) -> bool:
-	return queries.is_rage_reduction_prevented(player_id)
-
-
-func can_monster_be_played_from_hand(player_id: int, card_data: Dictionary) -> bool:
-	return queries.can_monster_be_played_from_hand(player_id, card_data)
-
-
-func get_counter_power_modifier(player_id: int) -> int:
-	return queries.get_counter_power_modifier(player_id)
-
-
-func get_monster_cp_modifier(player_id: int) -> int:
-	return queries.get_monster_cp_modifier(player_id)
-
-
-func get_strategy_cp_modifiers(player_id: int) -> Array[int]:
-	return queries.get_strategy_cp_modifiers(player_id)
-
-
-func get_zone_cp_modifiers(player_id: int) -> Array[int]:
-	return queries.get_zone_cp_modifiers(player_id)
-
-
-func get_zone_cp_breakdown(player_id: int) -> Array:
-	return queries.get_zone_cp_breakdown(player_id)
-
-
-func get_threat_level_breakdown(player_id: int) -> Array:
-	return queries.get_threat_level_breakdown(player_id)
-
-
-func get_play_rank_breakdown(player_id: int, card: Dictionary) -> Array:
-	return queries.get_play_rank_breakdown(player_id, card)
-
-
-func get_strategy_hand_rank_breakdown(player_id: int, card: Dictionary) -> Array:
-	return queries.get_strategy_hand_rank_breakdown(player_id, card)
-
-
-func get_field_rank_breakdown(player_id: int) -> Array:
-	return queries.get_field_rank_breakdown(player_id)
-
-
-func get_zone_play_rank_breakdown(player_id: int, card: Dictionary) -> Array:
-	return queries.get_zone_play_rank_breakdown(player_id, card)
-
-
-func get_hand_cp_preview(player_id: int, card: Dictionary) -> int:
-	return queries.get_hand_cp_preview(player_id, card)
-
-
-func get_hand_variable_base_cp(player_id: int, card: Dictionary) -> int:
-	return queries.get_hand_variable_base_cp(player_id, card)
-
-
 func get_threat_level_modifier(player_id: int) -> int:
 	return queries.get_threat_level_modifier(player_id)
 
 
 func get_effective_threat_level(player_id: int) -> int:
 	return queries.get_effective_threat_level(player_id)
-
-
-func get_play_rank_modifier(player_id: int, card: Dictionary) -> int:
-	return queries.get_play_rank_modifier(player_id, card)
-
-
-func should_stack_on_play(player_id: int, card: Dictionary, zone_index: int) -> bool:
-	return queries.should_stack_on_play(player_id, card, zone_index)
-
-
-func get_zone_play_rank_modifier(player_id: int, card: Dictionary, zone_index: int) -> int:
-	return queries.get_zone_play_rank_modifier(player_id, card, zone_index)
-
-
-func is_invasion_blocked(defender_player_id: int) -> bool:
-	return queries.is_invasion_blocked(defender_player_id)
-
-
-func get_engagement_restriction(attacker_player_id: int) -> int:
-	return queries.get_engagement_restriction(attacker_player_id)
-
-
-func get_engagement_restricted_cp(defender_player_id: int) -> int:
-	return queries.get_engagement_restricted_cp(defender_player_id)
-
-
-func get_cards_that_can_engage(player_id: int) -> Array[int]:
-	return queries.get_cards_that_can_engage(player_id)
-
-
-func get_opponent_blocked_zones(blocker_player_id: int) -> Array[int]:
-	return queries.get_opponent_blocked_zones(blocker_player_id)
-
-
-func get_extra_end_phase_advance(player_id: int) -> int:
-	return queries.get_extra_end_phase_advance(player_id)
-
-
-func get_invasion_advance_bonus(player_id: int, invasion_icon: int) -> int:
-	return queries.get_invasion_advance_bonus(player_id, invasion_icon)
-
-
-func can_play_as_monster(player_id: int, card: Dictionary) -> bool:
-	return queries.can_play_as_monster(player_id, card)
-
-
-func is_monster_advance_blocked(player_id: int) -> bool:
-	return queries.is_monster_advance_blocked(player_id)
-
-
-func is_own_invasion_blocked(player_id: int) -> bool:
-	return queries.is_own_invasion_blocked(player_id)
-
-
-func can_replace_invasion_cost(player_id: int) -> bool:
-	return queries.can_replace_invasion_cost(player_id)
-
-
-func get_counter_immunity_threshold(player_id: int) -> int:
-	return queries.get_counter_immunity_threshold(player_id)
-
-
-func is_counter_prevented(player_id: int, total_cp: int) -> bool:
-	return queries.is_counter_prevented(player_id, total_cp)
-
-
-func are_opponent_strategy_plays_blocked(player_id: int) -> bool:
-	return queries.are_opponent_strategy_plays_blocked(player_id)
-
-
-func get_opponent_field_rank_modifier(player_id: int) -> int:
-	return queries.get_opponent_field_rank_modifier(player_id)
-
-
-func is_base_strategy(card_data: Dictionary) -> bool:
-	return queries.is_base_strategy(card_data)
-
-
-func prevents_self_start_phase_discard(player_id: int, card_data: Dictionary) -> bool:
-	return queries.prevents_self_start_phase_discard(player_id, card_data)
 
 
 func can_card_be_played(player_id: int, card_data: Dictionary) -> bool:
@@ -946,37 +524,11 @@ func get_card_required_play_zones(player_id: int, card_data: Dictionary) -> Arra
 	return queries.get_card_required_play_zones(player_id, card_data)
 
 
-func get_effective_field_rank(card_data: Dictionary, owner_player_id: int) -> int:
-	return queries.get_effective_field_rank(card_data, owner_player_id)
-
-
 func get_zones_in_rank_range(player_id: int, min_rank: int = -1, max_rank: int = -1) -> Array[int]:
 	return queries.get_zones_in_rank_range(player_id, min_rank, max_rank)
-
-
-func get_effective_zone_cp(player_id: int, zone_idx: int) -> int:
-	return queries.get_effective_zone_cp(player_id, zone_idx)
 
 
 func get_zones_in_cp_range(player_id: int, min_cp: int = -1, max_cp: int = -1) -> Array[int]:
 	return queries.get_zones_in_cp_range(player_id, min_cp, max_cp)
 
 
-func get_zone_rank_modifiers(player_id: int) -> Array:
-	return queries.get_zone_rank_modifiers(player_id)
-
-
-func is_opponent_end_phase_draw_blocked(drawing_player_id: int) -> bool:
-	return queries.is_opponent_end_phase_draw_blocked(drawing_player_id)
-
-
-func is_opponent_monster_move_blocked(target_player_id: int) -> bool:
-	return queries.is_opponent_monster_move_blocked(target_player_id)
-
-
-func is_invade1_cost_blocked(invading_player_id: int) -> bool:
-	return queries.is_invade1_cost_blocked(invading_player_id)
-
-
-func get_strategy_hand_rank_modifier(player_id: int, card: Dictionary) -> int:
-	return queries.get_strategy_hand_rank_modifier(player_id, card)

@@ -66,7 +66,7 @@ func test_ebp01_019_enter_plays_kamacuras_from_deck_when_awakened(monster_zone: 
 		"select_zone": [0, 1],
 	}
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	if expect_search:
@@ -100,7 +100,7 @@ func test_ebp01_034_enter_plays_evolution_battle_from_discard() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": wanted["id"]}], "select_zone": [1]}
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_str(str(state.players[0].get_zone_top_card(1).get("id"))).is_equal(str(wanted["id"]))
@@ -123,7 +123,7 @@ func test_ebp01_034_overload_applies_destroy_replacement() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": wanted["id"]}], "select_zone": [1]}
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	var p0 := state.players[0]
@@ -152,7 +152,7 @@ func test_revenge_returns_trait_monster_from_discard(card_id: String, wanted_id:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": wanted["id"]}]}
 
-	await s["effect_handler"].trigger_revenge(0, card)
+	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_crush_and_revenge_entries(0, card, false))
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)) \
@@ -177,7 +177,7 @@ func test_ebp03_021_enter_returns_base_strategy_from_discard() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": wanted["id"]}]}
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)).contains_exactly([wanted["id"]])
@@ -203,7 +203,7 @@ func test_ebp03_007_invading_reveals_and_adds_red_or_blue_battle() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": "RV-RED"}]}
 
-	await s["effect_handler"].trigger_when_invading(0, 1, 2)
+	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 1, 2))
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)).contains_exactly(["RV-RED"])
@@ -231,7 +231,7 @@ func test_ebp03_011_enter_reveals_and_adds_red_and_blue_battle() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"select_cards": [[red, blue]]}
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)).contains_exactly_in_any_order(["RV-RED", "RV-BLUE"])
@@ -262,7 +262,7 @@ func test_ebp03_033_enter_discard_cost_then_search_space_beam(pay_cost: bool,
 		"search_cards": [{"id": beam["id"]}],
 	}
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	if pay_cost:
@@ -298,7 +298,7 @@ func test_ebp03_055_enter_puts_mothra_battle_on_deck_top(take: bool,
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": wanted["id"]} if take else {}]}
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(_calls_of(input, "search_cards")[0]["matching"])).contains_exactly([wanted["id"]])
@@ -328,7 +328,7 @@ func test_ebp03_070_counter_start_searches_weapon_or_mech_battle() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": wanted["id"]}]}
 
-	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)).contains_exactly([wanted["id"]])
@@ -353,7 +353,7 @@ func test_ebp04_061_enter_green_gated_deck_search_to_discard(other_greens: int, 
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": "DECK-GREEN"}]}
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	if expect_search:
@@ -382,7 +382,7 @@ func test_ebp04_088_enter_returns_up_to_two_nongreen_battles() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"select_cards": [[b1, b2]]}
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)).contains_exactly_in_any_order(["DIS-RED-1", "DIS-RED-2"])
@@ -407,7 +407,7 @@ func test_ebp04_088_id_only_picks_map_to_canonical_discard_cards() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"select_cards": [[{"id": "DIS-RED-1"}, {"id": "DIS-RED-2"}]]}
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)).contains_exactly_in_any_order(["DIS-RED-1", "DIS-RED-2"])
@@ -431,7 +431,7 @@ func test_esd01_002_invading_searches_burst_godzilla_to_hand() -> void:
 	var input: ScriptedPlayerInput = s["input"]
 	input.answers = {"search_cards": [{"id": wanted["id"]}]}
 
-	await s["effect_handler"].trigger_when_invading(0, 1, 2)
+	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 1, 2))
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(_ids(state.players[0].hand)).contains_exactly([wanted["id"]])

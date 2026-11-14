@@ -29,7 +29,7 @@ static func create(
 
 func field_rank(p_card_data: Dictionary, owner_player_id: int) -> int:
 	## Get the effective rank of an in-play battle card, accounting for field rank modifiers.
-	return effect_handler.get_effective_field_rank(p_card_data, owner_player_id)
+	return effect_handler.queries.get_effective_field_rank(p_card_data, owner_player_id)
 
 
 # --- Player identity ---

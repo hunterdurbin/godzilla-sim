@@ -46,14 +46,14 @@ enum Source {
 #     required zones (an effect names its own zone).
 
 
-static func rule_legal_zones(queries: EffectQueries, player: PlayerState, opponent: PlayerState,
+static func rule_legal_zones(q: EffectQueries, player: PlayerState, opponent: PlayerState,
 		card: Dictionary, by_effect: bool = true) -> Array[int]:
 	## The zones (0-7) `card` may enter by rule. An empty `card` asks for
 	## "any card": the card's required zones are not applied.
-	var blocked: Array[int] = queries.get_opponent_blocked_zones(opponent.player_id)
+	var blocked: Array[int] = q.get_opponent_blocked_zones(opponent.player_id)
 	var required: Array[int] = []
 	if not by_effect and not card.is_empty():
-		required = queries.get_card_required_play_zones(player.player_id, card)
+		required = q.get_card_required_play_zones(player.player_id, card)
 	var legal: Array[int] = []
 	for zone_idx in range(8):
 		if zone_idx == player.monster_zone - 1:
@@ -66,22 +66,22 @@ static func rule_legal_zones(queries: EffectQueries, player: PlayerState, oppone
 	return legal
 
 
-static func is_rule_legal(queries: EffectQueries, player: PlayerState, opponent: PlayerState,
+static func is_rule_legal(q: EffectQueries, player: PlayerState, opponent: PlayerState,
 		card: Dictionary, zone_idx: int, by_effect: bool = true) -> bool:
 	## Whether `card` may enter `zone_idx` by rule (cost legality is
-	## RulesEngine's). Pure: reads state through `queries`.
-	return zone_idx in rule_legal_zones(queries, player, opponent, card, by_effect)
+	## RulesEngine's). Pure: reads state through `q`.
+	return zone_idx in rule_legal_zones(q, player, opponent, card, by_effect)
 
 
 func can_enter(player_id: int, card: Dictionary, zone_idx: int, by_effect: bool = true) -> bool:
 	## `is_rule_legal` for `player_id` on the live state.
-	return is_rule_legal(h.queries, game_state.players[player_id], game_state.players[1 - player_id],
+	return is_rule_legal(queries, game_state.players[player_id], game_state.players[1 - player_id],
 			card, zone_idx, by_effect)
 
 
 func legal_zones(player_id: int, card: Dictionary, by_effect: bool = true) -> Array[int]:
 	## `rule_legal_zones` for `player_id` on the live state.
-	return rule_legal_zones(h.queries, game_state.players[player_id], game_state.players[1 - player_id],
+	return rule_legal_zones(queries, game_state.players[player_id], game_state.players[1 - player_id],
 			card, by_effect)
 
 
@@ -117,24 +117,24 @@ func enter(player_id: int, card: Dictionary, zone_idx: int, source: Source,
 
 	var entries: Array = []
 	if not _stacks_on_entry(player, card, zone_idx, source, stack_on_top):
-		entries.append_array(h.destroy(player, zone_idx, DestructionEngine.Cause.OVERLOAD).entries)
+		entries.append_array(destruction.destroy(player, zone_idx, DestructionEngine.Cause.OVERLOAD).entries)
 
 	if source == Source.EVOLUTION:
 		_announce_evolution(player, card, zone_idx)
 	player.push_zone_card(zone_idx, card)
 	if not by_effect:
-		if h.events != null:
-			h.events.battle_card_played.emit(player_id, card, zone_idx)
+		if events != null:
+			events.battle_card_played.emit(player_id, card, zone_idx)
 		# The Play action's caller took the card out to pay its cost.
 		player.hand_changed.emit()
 	player.zones_changed.emit()
 	_log_entry(player_id, card, zone_idx, source, by_effect)
 
 	# One play's leave-play, <Enter> and "when played" entries share a pool.
-	entries.append_array(h.collect_enter_entries(
+	entries.append_array(dispatcher.collect_enter_entries(
 			player_id, card, by_effect, source == Source.EVOLUTION))
 	if _fires_played(card, source):
-		entries.append_array(h.collect_battle_card_played_entries(
+		entries.append_array(dispatcher.collect_battle_card_played_entries(
 				player_id, card, zone_idx, source == Source.DECK or source == Source.EVOLUTION))
 	check_timing.submit(entries)
 	return true
@@ -173,7 +173,7 @@ func _stacks_on_entry(player: PlayerState, card: Dictionary, zone_idx: int, sour
 	if source == Source.EVOLUTION or stack_on_top:
 		return true
 	if player.zone_has_cards(zone_idx):
-		return h.should_stack_on_play(player.player_id, card, zone_idx)
+		return queries.should_stack_on_play(player.player_id, card, zone_idx)
 	return false
 
 
@@ -196,7 +196,7 @@ func _announce_evolution(player: PlayerState, card: Dictionary, zone_idx: int) -
 	## entry) keeps the flag on the dict for the zones_changed sync.
 	var under := player.get_zone_top_card(zone_idx)
 	h.log_message.emit(GameLog.evolution(player.player_id, zone_idx, under.get("evolution_rank", -1),
-			under.get("id", ""), card.get("id", ""), h.has_trigger(card, "on_enter")))
+			under.get("id", ""), card.get("id", ""), has_trigger(card, "on_enter")))
 	h.card_evolved.emit(player.player_id, card, zone_idx)
 	card["played_through_evolution"] = true
 
@@ -205,7 +205,7 @@ func _log_entry(player_id: int, card: Dictionary, zone_idx: int, source: Source,
 	## The play's log line, before its triggered abilities (causal order).
 	if not by_effect:
 		h.log_message.emit(GameLog.played_battle(player_id, card.get("id", ""), zone_idx,
-				h.has_trigger(card, "on_enter")))
+				has_trigger(card, "on_enter")))
 	elif source == Source.HAND:
 		var active := check_timing.active_card
 		var source_id: String = active.get("id", "") if not active.is_empty() else ""
@@ -222,12 +222,12 @@ func move_stack(player_id: int, from_zone: int, to_zone: int) -> bool:
 	var player := game_state.players[player_id]
 	if from_zone == to_zone or not player.zone_has_cards(from_zone):
 		return false
-	var entries: Array = h.destroy(player, to_zone, DestructionEngine.Cause.OVERLOAD).entries
+	var entries: Array = destruction.destroy(player, to_zone, DestructionEngine.Cause.OVERLOAD).entries
 	var moved_top: Dictionary = player.get_zone_top_card(from_zone)
 	var stack: Array = player.zones[from_zone]
 	player.zones[from_zone] = []
 	player.zones[to_zone] = stack
 	player.zones_changed.emit()
-	entries.append_array(h.collect_zone_changed_entries(player.player_id, moved_top, from_zone, to_zone))
+	entries.append_array(dispatcher.collect_zone_changed_entries(player.player_id, moved_top, from_zone, to_zone))
 	check_timing.submit(entries)
 	return true

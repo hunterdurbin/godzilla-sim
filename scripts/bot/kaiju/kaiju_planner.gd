@@ -378,7 +378,7 @@ func _enumerate_candidates(rollout: KaijuRollout, pid: int, config: BotConfig) -
 			for z in re.get_valid_zones_for_card(dump_card, player, opponent):
 				if not player.zone_has_cards(z):
 					continue
-				if rollout.tm.effect_handler.should_stack_on_play(pid, dump_card, z):
+				if rollout.tm.effect_handler.queries.should_stack_on_play(pid, dump_card, z):
 					continue # stacking keeps the old card — not a cycle
 				var cp: int = queries.get_effective_zone_cp(pid, z)
 				if dump_zone < 0 or cp < dump_zone_cp:

@@ -217,7 +217,7 @@ func _send_to_remote(player_id: int, method: String, args: Array, dispatcher: Ca
 
 func _active_summary() -> Dictionary:
 	if session.effect_handler:
-		return session.effect_handler.get_active_effect_summary()
+		return session.effect_handler.check_timing.get_active_effect_summary()
 	return _remote_banner
 
 

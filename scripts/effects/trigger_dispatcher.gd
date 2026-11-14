@@ -65,17 +65,6 @@ func collect_enter_entries(player_id: int, card_data: Dictionary, from_effect: b
 
 
 
-func trigger_when_invading(player_id: int, from_zone: int, to_zone: int) -> void:
-	## Trigger <When Invading> on the current monster card.
-	var player := game_state.players[player_id]
-	var effect := get_effect(player.current_monster)
-	if effect:
-		await check_timing.run_effect(player_id, player.current_monster,
-				effect.on_when_invading.bind(_build_context(player_id, player.current_monster), from_zone, to_zone))
-
-
-
-
 func collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int) -> Array:
 	## Collect <When Invading> entry for deferred resolution after movement completes.
 	var entries: Array = []
@@ -89,16 +78,6 @@ func collect_when_invading_entries(player_id: int, from_zone: int, to_zone: int)
 			ctx.metadata["zone_had_card"] = player.zone_has_cards(zone_idx)
 		entries.append(StandbyEntry.new(player_id, player.current_monster, effect.on_when_invading.bind(ctx, from_zone, to_zone)))
 	return entries
-
-
-
-
-func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
-	## Trigger <Revenge> on a card being destroyed by an effect.
-	var effect := get_effect(card_data)
-	if effect and has_trigger(card_data, "on_revenge"):
-		h.log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
-		await check_timing.run_effect(player_id, card_data, effect.on_revenge.bind(_build_context(player_id, card_data)))
 
 
 
@@ -235,7 +214,7 @@ func _resolve_discarded_for_invasion(player_id: int, card_data: Dictionary) -> v
 	if effect:
 		var ctx := _build_context(player_id, card_data)
 		if effect.on_discarded_for_invasion(ctx):
-			await h.play_from_discard(player_id, card_data)
+			await mover.play_from_discard(player_id, card_data)
 
 
 
@@ -245,6 +224,36 @@ func trigger_burst_discard(player_id: int, card_data: Dictionary) -> void:
 	var effect := get_effect(card_data)
 	if effect:
 		await check_timing.run_effect(player_id, card_data, effect.on_burst_discard.bind(_build_context(player_id, card_data)))
+
+
+
+
+func apply_rage_reset(player_id: int) -> int:
+	## Called at start phase rage reset. Returns new rage value (0 by default).
+	## Effects can intercept by returning a non-zero value from on_rage_reset.
+	var player := game_state.players[player_id]
+	var candidates: Array = []
+	var me := get_effect(player.current_monster)
+	if me and has_trigger(player.current_monster, "on_rage_reset"):
+		candidates.append({"card": player.current_monster, "effect": me})
+	for i in range(8):
+		var zone_card := player.get_zone_top_card(i)
+		if not zone_card.is_empty():
+			var ze := get_effect(zone_card)
+			if ze and has_trigger(zone_card, "on_rage_reset"):
+				candidates.append({"card": zone_card, "effect": ze})
+	for sz_card in player.strategy_zones:
+		if not sz_card.is_empty():
+			var se := get_effect(sz_card)
+			if se and has_trigger(sz_card, "on_rage_reset"):
+				candidates.append({"card": sz_card, "effect": se})
+	for entry in candidates:
+		var ctx := _build_context(player_id, entry.card)
+		check_timing.note_effect_resolving(player_id, entry.card)
+		var result: int = await entry.effect.on_rage_reset(ctx)
+		if result != 0:
+			return result
+	return 0
 
 
 
@@ -461,10 +470,10 @@ func _resolve_discard_play(player_id: int, card_data: Dictionary, is_optional: b
 	var placed_zone: int
 	if is_optional:
 		var card_name: String = card_data.get("name", "Unknown")
-		placed_zone = await h.play_from_discard_or_skip(
+		placed_zone = await mover.play_from_discard_or_skip(
 			player_id, card_data, tr("STR_EFF_PLACE_DISCARD_FMT") % card_name)
 	else:
-		placed_zone = await h.play_from_discard(player_id, card_data)
+		placed_zone = await mover.play_from_discard(player_id, card_data)
 	if placed_zone >= 0:
 		trigger_battle_card_played(player_id, card_data, placed_zone)
 
@@ -926,14 +935,6 @@ func collect_ally_zone_card_destroyed_entries(player_id: int, destroyed_card: Di
 
 
 
-func trigger_ally_zone_card_destroyed(player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
-	## Fire on_ally_zone_card_destroyed triggers for the player whose card was destroyed.
-	var entries := collect_ally_zone_card_destroyed_entries(player_id, destroyed_card, zone_idx)
-	check_timing.submit(entries)
-
-
-
-
 func collect_opponent_zone_card_destroyed_entries(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> Array:
 	## Collect standby entries for on_opponent_zone_card_destroyed triggers.
 	## Iterates the opponent of the destroyed card's owner (they react when opponent's card is destroyed).
@@ -970,14 +971,6 @@ func _passes_zone_destroyed_filter(card_data: Dictionary, method_name: String, w
 	## `is_cross_board` distinguishes ally (false, same side) vs opponent (true, cross-board).
 	return TriggerFilters.passes_zone_destroyed(get_trigger_filter(card_data, method_name), watcher.monster_zone, zone_idx, is_cross_board,
 			game_state.current_player_id == watcher.player_id)
-
-
-
-
-func trigger_opponent_zone_card_destroyed(destroyed_player_id: int, destroyed_card: Dictionary, zone_idx: int) -> void:
-	## Fire on_opponent_zone_card_destroyed triggers on the opponent of the destroyed card's owner.
-	var entries := collect_opponent_zone_card_destroyed_entries(destroyed_player_id, destroyed_card, zone_idx)
-	check_timing.submit(entries)
 
 
 

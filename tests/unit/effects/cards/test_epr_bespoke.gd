@@ -25,7 +25,7 @@ func test_epr_016_counter_phase_stacks_hand_card_for_5000_cp_then_end_phase_dest
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await handler.check_timing.resolve()
 
 	# Only the Weapon card was offered; it moved hand -> under this card,
@@ -34,12 +34,12 @@ func test_epr_016_counter_phase_stacks_hand_card_for_5000_cp_then_end_phase_dest
 	assert_int(state.players[0].get_zone_stack(2).size()).is_equal(2)
 	assert_int(state.players[0].hand.size()).is_equal(1)
 	assert_int(state.players[0].discard_pile.size()).is_equal(0)
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(8000 + 5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(8000 + 5000)
 
 	# Start of the same turn's end phase: the loaded card destroys itself,
 	# whole stack to the discard pile.
 	state.current_phase = CardEnums.GamePhase.END
-	handler.trigger_phase_start(CardEnums.GamePhase.END)
+	handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.END)
 	await handler.check_timing.resolve()
 
 	assert_bool(state.players[0].zone_has_cards(2)).is_false()
@@ -56,16 +56,16 @@ func test_epr_016_skip_keeps_card_and_no_bonus_and_survives_end_phase() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[0].get_zone_stack(2).size()).is_equal(1)
 	assert_int(state.players[0].hand.size()).is_equal(1)
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(8000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(8000)
 
 	# Nothing under it: survives the end phase.
 	state.current_phase = CardEnums.GamePhase.END
-	handler.trigger_phase_start(CardEnums.GamePhase.END)
+	handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.END)
 	await handler.check_timing.resolve()
 	assert_bool(state.players[0].zone_has_cards(2)).is_true()
 	assert_int(state.players[0].discard_pile.size()).is_equal(0)
@@ -86,12 +86,12 @@ func test_epr_016_unused_copy_stays_out_of_end_phase_standby() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await handler.check_timing.resolve()
 	var counter_order_prompts := input.count_calls("choose_option")
 
 	state.current_phase = CardEnums.GamePhase.END
-	handler.trigger_phase_start(CardEnums.GamePhase.END)
+	handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.END)
 	await handler.check_timing.resolve()
 
 	assert_int(input.count_calls("choose_option")) \
@@ -113,10 +113,10 @@ func test_epr_016_card_tucked_by_external_effect_does_not_arm_destroy() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(8000 + 5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(8000 + 5000)
 
 	state.current_phase = CardEnums.GamePhase.END
-	handler.trigger_phase_start(CardEnums.GamePhase.END)
+	handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.END)
 	await handler.check_timing.resolve()
 
 	assert_bool(state.players[0].zone_has_cards(2)).is_true()
@@ -134,7 +134,7 @@ func test_epr_016_gated_to_own_counter_phase_and_needs_eligible_hand_card() -> v
 	# Opponent's counter phase: filter blocks it.
 	state.current_player_id = 1
 	state.current_phase = CardEnums.GamePhase.COUNTER
-	handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await handler.check_timing.resolve()
 	assert_int(input.count_calls("select_hand_card")).is_equal(0)
 
@@ -142,7 +142,7 @@ func test_epr_016_gated_to_own_counter_phase_and_needs_eligible_hand_card() -> v
 	state.current_player_id = 0
 	state.players[0].hand.clear()
 	state.players[0].hand.append(Cards.battle(2, 2000, "HAND-PLAIN2"))
-	handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	handler.dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await handler.check_timing.resolve()
 	assert_int(input.count_calls("select_hand_card")).is_equal(0)
 
@@ -163,7 +163,7 @@ func test_epr_017_enter_places_ride_card_from_discard_under_monster() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_enter(0, card)
+	handler.dispatcher.trigger_enter(0, card)
 	await handler.check_timing.resolve()
 
 	# Only the RIDE card was offered, and the pick is mandatory (no skip).
@@ -185,7 +185,7 @@ func test_epr_017_enter_with_no_ride_card_in_discard_does_nothing() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_enter(0, card)
+	handler.dispatcher.trigger_enter(0, card)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[0].monster_stack.size()).is_equal(0)
@@ -212,7 +212,7 @@ func test_epr_018_discards_then_searches_deck_for_mech_weapon_ride_battle() -> v
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_enter(0, card)
+	handler.dispatcher.trigger_enter(0, card)
 	await handler.check_timing.resolve()
 
 	# Any hand card is a valid discard.
@@ -236,7 +236,7 @@ func test_epr_018_with_empty_hand_does_not_search() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_enter(0, card)
+	handler.dispatcher.trigger_enter(0, card)
 	await handler.check_timing.resolve()
 
 	assert_int(input.count_calls("select_hand_card")).is_equal(0)
@@ -261,7 +261,7 @@ func test_epr_019_rank_reduced_by_3_only_with_fest_king_ghidorah_battle_card(tra
 	var s := States.make_session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	assert_int(handler.get_play_rank_modifier(0, card)) \
+	assert_int(handler.queries.get_play_rank_modifier(0, card)) \
 		.override_failure_message("EPR-019: traits=%s" % [traits]).is_equal(expected_mod)
 
 
@@ -274,7 +274,7 @@ func test_epr_019_enter_opponent_discards_down_to_3() -> void:
 	var s := States.make_session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_enter(0, card)
+	handler.dispatcher.trigger_enter(0, card)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()).is_equal(3)
@@ -290,7 +290,7 @@ func test_epr_019_enter_with_3_or_fewer_opponent_cards_discards_nothing() -> voi
 	var s := States.make_session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_enter(0, card)
+	handler.dispatcher.trigger_enter(0, card)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()).is_equal(2)
@@ -314,7 +314,7 @@ func test_epr_020_hand_battle_discard_reduces_opponent_rage_and_gains_2_when_it_
 	var s := States.make_session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_hand_card_discarded(0, Cards.battle(2, 3000, "DISCARDED-BTL"))
+	handler.dispatcher.trigger_hand_card_discarded(0, Cards.battle(2, 3000, "DISCARDED-BTL"))
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].rage).is_equal(0)
@@ -326,7 +326,7 @@ func test_epr_020_hand_battle_discard_with_opponent_rage_above_1_gains_nothing()
 	var s := States.make_session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_hand_card_discarded(0, Cards.battle(2, 3000, "DISCARDED-BTL2"))
+	handler.dispatcher.trigger_hand_card_discarded(0, Cards.battle(2, 3000, "DISCARDED-BTL2"))
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].rage).is_equal(1)
@@ -338,7 +338,7 @@ func test_epr_020_ignores_non_battle_hand_discards() -> void:
 	var s := States.make_session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.trigger_hand_card_discarded(0, Cards.strategy(2, "DISCARDED-STR"))
+	handler.dispatcher.trigger_hand_card_discarded(0, Cards.strategy(2, "DISCARDED-STR"))
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].rage).is_equal(1)

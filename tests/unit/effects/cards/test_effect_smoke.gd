@@ -187,48 +187,48 @@ func _sweep_card(id: String) -> void:
 ## (EffectQueries / destruction protection), for both players.
 func _query_sweep(handler: EffectHandler, state: GameState, card: Dictionary) -> void:
 	for pid in range(2):
-		handler.is_rage_reduction_prevented(pid)
-		handler.can_monster_be_played_from_hand(pid, card)
-		handler.get_counter_power_modifier(pid)
-		handler.get_monster_cp_modifier(pid)
-		handler.get_strategy_cp_modifiers(pid)
-		handler.get_zone_cp_modifiers(pid)
+		handler.queries.is_rage_reduction_prevented(pid)
+		handler.queries.can_monster_be_played_from_hand(pid, card)
+		handler.queries.get_counter_power_modifier(pid)
+		handler.queries.get_monster_cp_modifier(pid)
+		handler.queries.get_strategy_cp_modifiers(pid)
+		handler.queries.get_zone_cp_modifiers(pid)
 		handler.get_threat_level_modifier(pid)
 		handler.get_effective_threat_level(pid)
-		handler.get_play_rank_modifier(pid, card)
-		handler.should_stack_on_play(pid, card, 2)
-		handler.get_zone_play_rank_modifier(pid, card, 2)
-		handler.is_invasion_blocked(pid)
-		handler.get_engagement_restriction(pid)
-		handler.get_engagement_restricted_cp(pid)
-		handler.get_cards_that_can_engage(pid)
-		handler.get_opponent_blocked_zones(pid)
-		handler.get_extra_end_phase_advance(pid)
-		handler.get_invasion_advance_bonus(pid, 1)
-		handler.can_play_as_monster(pid, card)
-		handler.is_monster_advance_blocked(pid)
-		handler.is_own_invasion_blocked(pid)
-		handler.can_replace_invasion_cost(pid)
-		handler.get_counter_immunity_threshold(pid)
-		handler.is_counter_prevented(pid, 10000)
-		handler.are_opponent_strategy_plays_blocked(pid)
-		handler.get_opponent_field_rank_modifier(pid)
-		handler.prevents_self_start_phase_discard(pid, card)
+		handler.queries.get_play_rank_modifier(pid, card)
+		handler.queries.should_stack_on_play(pid, card, 2)
+		handler.queries.get_zone_play_rank_modifier(pid, card, 2)
+		handler.queries.is_invasion_blocked(pid)
+		handler.queries.get_engagement_restriction(pid)
+		handler.queries.get_engagement_restricted_cp(pid)
+		handler.queries.get_cards_that_can_engage(pid)
+		handler.queries.get_opponent_blocked_zones(pid)
+		handler.queries.get_extra_end_phase_advance(pid)
+		handler.queries.get_invasion_advance_bonus(pid, 1)
+		handler.queries.can_play_as_monster(pid, card)
+		handler.queries.is_monster_advance_blocked(pid)
+		handler.queries.is_own_invasion_blocked(pid)
+		handler.queries.can_replace_invasion_cost(pid)
+		handler.queries.get_counter_immunity_threshold(pid)
+		handler.queries.is_counter_prevented(pid, 10000)
+		handler.queries.are_opponent_strategy_plays_blocked(pid)
+		handler.queries.get_opponent_field_rank_modifier(pid)
+		handler.queries.prevents_self_start_phase_discard(pid, card)
 		handler.can_card_be_played(pid, card)
 		handler.get_card_required_play_zones(pid, card)
-		handler.get_effective_field_rank(card, pid)
+		handler.queries.get_effective_field_rank(card, pid)
 		handler.get_zones_in_rank_range(pid, 1, 8)
-		handler.get_effective_zone_cp(pid, 2)
+		handler.queries.get_effective_zone_cp(pid, 2)
 		handler.get_zones_in_cp_range(pid, 0, 99999)
-		handler.get_zone_rank_modifiers(pid)
-		handler.is_opponent_end_phase_draw_blocked(pid)
-		handler.is_opponent_monster_move_blocked(pid)
-		handler.is_invade1_cost_blocked(pid)
-		handler.get_strategy_hand_rank_modifier(pid, card)
-		handler.get_strategy_discard_interceptor(pid)
-		handler.can_destroy_card(state.players[pid], card)
-	handler.is_base_strategy(card)
-	await handler.apply_rage_reset(0)
+		handler.queries.get_zone_rank_modifiers(pid)
+		handler.queries.is_opponent_end_phase_draw_blocked(pid)
+		handler.queries.is_opponent_monster_move_blocked(pid)
+		handler.queries.is_invade1_cost_blocked(pid)
+		handler.queries.get_strategy_hand_rank_modifier(pid, card)
+		handler.destruction.get_strategy_discard_interceptor(pid)
+		handler.destruction.can_destroy_card(state.players[pid], card)
+	handler.queries.is_base_strategy(card)
+	await handler.dispatcher.apply_rage_reset(0)
 	await handler.check_timing.resolve()
 
 
@@ -239,14 +239,15 @@ func _dispatch_sweep(handler: EffectHandler, state: GameState, card: Dictionary,
 	var p1 := state.players[1]
 
 	if "on_enter" in methods:
-		handler.trigger_enter(0, card)
+		handler.dispatcher.trigger_enter(0, card)
 		await handler.check_timing.resolve()
 
 	if "on_when_invading" in methods and not p0.current_monster.is_empty():
-		await handler.trigger_when_invading(0, p0.monster_zone, p0.monster_zone + 1)
+		handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, p0.monster_zone, p0.monster_zone + 1))
+		await handler.check_timing.resolve()
 
 	if "on_monster_advance" in methods:
-		handler.trigger_monster_advance(0, p0.monster_zone, p0.monster_zone + 1)
+		handler.dispatcher.trigger_monster_advance(0, p0.monster_zone, p0.monster_zone + 1)
 		await handler.check_timing.resolve()
 
 	if "on_rage_changed" in methods or "on_opponent_rage_changed" in methods or "on_rage_reset" in methods:
@@ -263,92 +264,92 @@ func _dispatch_sweep(handler: EffectHandler, state: GameState, card: Dictionary,
 		for phase in [CardEnums.GamePhase.START, CardEnums.GamePhase.MAIN, CardEnums.GamePhase.COUNTER, CardEnums.GamePhase.END]:
 			state.current_phase = phase
 			if "on_phase_start" in methods:
-				handler.trigger_phase_start(phase)
+				handler.dispatcher.trigger_phase_start(phase)
 				await handler.check_timing.resolve()
 			if "on_phase_end" in methods:
-				handler.trigger_phase_end(phase)
+				handler.dispatcher.trigger_phase_end(phase)
 				await handler.check_timing.resolve()
 		state.current_phase = CardEnums.GamePhase.MAIN
 
 	if "on_monster_played" in methods or "can_play_from_discard_on_monster_played" in methods:
-		handler.trigger_monster_played(0, {}, p0.current_monster)
+		handler.dispatcher.trigger_monster_played(0, {}, p0.current_monster)
 		await handler.check_timing.resolve()
 
 	if "on_battle_card_played" in methods:
 		var played := Cards.battle(3, 4000, "SMOKE-PLAYED")
 		p0.push_zone_card(5, played)
-		handler.trigger_battle_card_played(0, played, 5, false)
+		handler.dispatcher.trigger_battle_card_played(0, played, 5, false)
 		await handler.check_timing.resolve()
-		handler.trigger_battle_card_played(0, played, 5, true)
+		handler.dispatcher.trigger_battle_card_played(0, played, 5, true)
 		await handler.check_timing.resolve()
 		var opp_played := Cards.battle(3, 4000, "SMOKE-OPP-PLAYED")
 		p1.push_zone_card(5, opp_played)
-		handler.trigger_battle_card_played(1, opp_played, 5, false)
+		handler.dispatcher.trigger_battle_card_played(1, opp_played, 5, false)
 		await handler.check_timing.resolve()
 
 	if "on_hand_card_discarded" in methods:
 		for discarded in [Cards.battle(2, 3000, "SMOKE-DISC-B"), Cards.strategy(2, "SMOKE-DISC-S"), Cards.monster(2, 9000, [], "SMOKE-DISC-M")]:
 			p0.discard_pile.append(discarded)
-			handler.trigger_hand_card_discarded(0, discarded)
+			handler.dispatcher.trigger_hand_card_discarded(0, discarded)
 			await handler.check_timing.resolve()
 
 	if "on_discard_from_hand" in methods:
 		var self_discarded := Real.instance(card.get("id", "").get_slice("_T_", 0), 1)
 		p0.discard_pile.append(self_discarded)
-		handler.trigger_discard_from_hand(0, self_discarded)
+		handler.dispatcher.trigger_discard_from_hand(0, self_discarded)
 		await handler.check_timing.resolve()
 
 	if "on_burst_discard" in methods:
 		var burst_copy := Real.instance(card.get("id", "").get_slice("_T_", 0), 2)
 		p0.discard_pile.append(burst_copy)
-		await handler.trigger_burst_discard(0, burst_copy)
+		await handler.dispatcher.trigger_burst_discard(0, burst_copy)
 
 	if "on_counter_success" in methods or "on_self_countered" in methods:
-		handler.trigger_counter_success(0, 1)
+		handler.dispatcher.trigger_counter_success(0, 1)
 		await handler.check_timing.resolve()
-		handler.trigger_counter_success(1, 0)
+		handler.dispatcher.trigger_counter_success(1, 0)
 		await handler.check_timing.resolve()
 
 	if "on_strategy_discarded" in methods:
 		var discarded_strategy := Cards.strategy(2, "SMOKE-STRAT-DISC")
 		p0.discard_pile.append(discarded_strategy)
-		handler.trigger_strategy_discarded(0, discarded_strategy)
+		handler.dispatcher.trigger_strategy_discarded(0, discarded_strategy)
 		await handler.check_timing.resolve()
 
 	if "on_invasion_observed" in methods:
-		handler.trigger_invasion_observed(0, 4, 5)
+		handler.dispatcher.trigger_invasion_observed(0, 4, 5)
 		await handler.check_timing.resolve()
-		handler.trigger_invasion_observed(1, 4, 5)
+		handler.dispatcher.trigger_invasion_observed(1, 4, 5)
 		await handler.check_timing.resolve()
 
 	if "on_discarded_for_invasion" in methods:
 		var invasion_copy := Real.instance(card.get("id", "").get_slice("_T_", 0), 3)
 		p0.discard_pile.append(invasion_copy)
-		var entries: Array = handler.collect_discarded_for_invasion_entries(0, invasion_copy)
+		var entries: Array = handler.dispatcher.collect_discarded_for_invasion_entries(0, invasion_copy)
 		handler.check_timing.submit(entries)
 		await handler.check_timing.resolve()
 
 	if "on_ally_zone_card_destroyed" in methods or "on_opponent_zone_card_destroyed" in methods:
 		var bystander := Cards.battle(2, 3000, "SMOKE-DESTROYED")
-		handler.trigger_ally_zone_card_destroyed(0, bystander, 4)
+		handler.check_timing.submit(handler.dispatcher.collect_ally_zone_card_destroyed_entries(0, bystander, 4))
 		await handler.check_timing.resolve()
-		handler.trigger_opponent_zone_card_destroyed(1, bystander, 4)
+		handler.check_timing.submit(handler.dispatcher.collect_opponent_zone_card_destroyed_entries(1, bystander, 4))
 		await handler.check_timing.resolve()
 
 	if "on_card_returned_from_discard" in methods:
 		var returned := Cards.battle(2, 3000, "SMOKE-RETURNED")
-		handler.trigger_card_returned_from_discard(0, returned)
+		handler.dispatcher.trigger_card_returned_from_discard(0, returned)
 		await handler.check_timing.resolve()
-		handler.trigger_card_returned_from_discard(1, returned)
+		handler.dispatcher.trigger_card_returned_from_discard(1, returned)
 		await handler.check_timing.resolve()
 
 	if "apply_play_cost" in methods:
 		var zone_for_cost: int = -1 if int(card.get("card_type", -1)) == CardEnums.CardType.MONSTER else 2
-		await handler.apply_play_cost(0, card, zone_for_cost)
+		await handler.mover.apply_play_cost(0, card, zone_for_cost)
 
 	if "on_leave_play" in methods:
 		# Direct leave-play (returns to hand/deck paths); destruction path runs below.
-		handler.trigger_leave_play(0, card, 2)
+		handler.dispatcher.trigger_leave_play(0, card, 2)
 		await handler.check_timing.resolve()
 
 	if "on_zone_changed" in methods and int(card.get("card_type", -1)) == CardEnums.CardType.BATTLE:

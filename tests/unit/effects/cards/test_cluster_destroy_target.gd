@@ -58,19 +58,20 @@ func _fire(s: Dictionary, trigger: String) -> void:
 	var state: GameState = s["state"]
 	match trigger:
 		"enter":
-			handler.trigger_enter(0, s["card"])
+			handler.dispatcher.trigger_enter(0, s["card"])
 			await handler.check_timing.resolve()
 		"invading":
 			# Card must already be players[0].current_monster (see _setup).
 			state.players[0].monster_zone = 2
-			await handler.trigger_when_invading(0, 1, 2)
+			handler.check_timing.submit(handler.dispatcher.collect_when_invading_entries(0, 1, 2))
+			await handler.check_timing.resolve()
 		"counter":
-			handler.trigger_counter_success(0, 1)
+			handler.dispatcher.trigger_counter_success(0, 1)
 			await handler.check_timing.resolve()
 		"hand_discard":
 			var discarded := Cards.battle(2, 3000, "DISC-TRIGGER")
 			state.players[0].discard_pile.append(discarded)
-			handler.trigger_hand_card_discarded(0, discarded)
+			handler.dispatcher.trigger_hand_card_discarded(0, discarded)
 			await handler.check_timing.resolve()
 
 

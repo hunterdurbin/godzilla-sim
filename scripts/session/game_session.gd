@@ -142,9 +142,9 @@ func compute_hand_rank_mods(player: PlayerState) -> Array:
 	if not eh:
 		return out
 	for card in player.hand:
-		var mod: int = eh.get_play_rank_modifier(player.player_id, card)
+		var mod: int = eh.queries.get_play_rank_modifier(player.player_id, card)
 		if card.get("card_type") == CardEnums.CardType.STRATEGY:
-			mod += eh.get_strategy_hand_rank_modifier(player.player_id, card)
+			mod += eh.queries.get_strategy_hand_rank_modifier(player.player_id, card)
 		out.append(mod)
 	return out
 
@@ -164,8 +164,8 @@ func compute_hand_power_mods(player: PlayerState) -> Array:
 	if not eh:
 		return out
 	for card in player.hand:
-		var var_base: int = eh.get_hand_variable_base_cp(player.player_id, card)
-		out.append(var_base if var_base >= 0 else eh.get_hand_cp_preview(player.player_id, card))
+		var var_base: int = eh.queries.get_hand_variable_base_cp(player.player_id, card)
+		out.append(var_base if var_base >= 0 else eh.queries.get_hand_cp_preview(player.player_id, card))
 	return out
 
 

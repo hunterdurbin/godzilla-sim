@@ -43,13 +43,13 @@ func test_cp_in_zone8(card_id: String, base_cp: int,
 	var state := States.make_state({"p0": {"zone_cards": {7: card}}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 7)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 7)) \
 		.override_failure_message("%s: +3000 CP while in zone 8" % card_id) \
 		.is_equal(base_cp + 3000)
 
 	state.players[0].clear_zone(7)
 	state.players[0].push_zone_card(2, card)
-	assert_int(handler.get_effective_zone_cp(0, 2)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)) \
 		.override_failure_message("%s: base CP outside zone 8" % card_id) \
 		.is_equal(base_cp)
 
@@ -68,12 +68,12 @@ func test_cp_awakening(card_id: String, base_cp: int, threshold: int,
 	var state := States.make_state({"p0": {"zone_cards": {0: card}, "monster_zone": threshold}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)) \
 		.override_failure_message("%s: +3000 CP at Awakening%d" % [card_id, threshold]) \
 		.is_equal(base_cp + 3000)
 
 	state.players[0].monster_zone = threshold - 1
-	assert_int(handler.get_effective_zone_cp(0, 0)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)) \
 		.override_failure_message("%s: base CP below Awakening%d" % [card_id, threshold]) \
 		.is_equal(base_cp)
 
@@ -87,12 +87,12 @@ func test_cp_rage_at_least_2(card_id: String, base_cp: int,
 	var state := States.make_state({"p0": {"monster_zone": 2, "zone_cards": {0: card}, "rage": 2}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)) \
 		.override_failure_message("%s: +3000 CP with rage 2" % card_id) \
 		.is_equal(base_cp + 3000)
 
 	state.players[0].rage = 1
-	assert_int(handler.get_effective_zone_cp(0, 0)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)) \
 		.override_failure_message("%s: base CP with rage 1" % card_id) \
 		.is_equal(base_cp)
 
@@ -110,13 +110,13 @@ func test_cp_adjacent_to_monster(card_id: String, base_cp: int,
 	var state := States.make_state({"p0": {"zone_cards": {2: card}, "monster_zone": 4}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 2)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)) \
 		.override_failure_message("%s: +3000 CP adjacent to own monster" % card_id) \
 		.is_equal(base_cp + 3000)
 
 	state.players[0].clear_zone(2)
 	state.players[0].push_zone_card(0, card)  # idx 0 adjacency = [1], not adjacent to idx 3
-	assert_int(handler.get_effective_zone_cp(0, 0)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)) \
 		.override_failure_message("%s: base CP away from own monster" % card_id) \
 		.is_equal(base_cp)
 
@@ -127,14 +127,14 @@ func test_cp_adjacent_requires_awakening4_ebp04_058() -> void:
 	var state := States.make_state({"p0": {"zone_cards": {1: card}, "monster_zone": 3}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 1)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 1)) \
 		.override_failure_message("EBP04-058: adjacency alone must not fire below Awakening4") \
 		.is_equal(2000)
 
 	state.players[0].monster_zone = 4  # idx 3, adjacent to idx 1? no — adjacency of 1 is [0, 2]
 	state.players[0].clear_zone(1)
 	state.players[0].push_zone_card(2, card)  # idx 2 adjacent to idx 3
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(5000)
 
 
 func test_cp_opp_monster_same_column(card_id: String, base_cp: int, bonus: int,
@@ -151,12 +151,12 @@ func test_cp_opp_monster_same_column(card_id: String, base_cp: int, bonus: int,
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 2)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)) \
 		.override_failure_message("%s: bonus while opp monster is in same column" % card_id) \
 		.is_equal(base_cp + bonus)
 
 	state.players[1].monster_zone = 1
-	assert_int(handler.get_effective_zone_cp(0, 2)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)) \
 		.override_failure_message("%s: base CP when opp monster leaves the column" % card_id) \
 		.is_equal(base_cp)
 
@@ -181,20 +181,20 @@ func test_cp_same_column_colored_monster_awakening4(card_id: String, base_cp: in
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 2)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)) \
 		.override_failure_message("%s: +5000 CP vs %s monster in column at Awakening4" % [card_id, color_name]) \
 		.is_equal(base_cp + 5000)
 
 	# Wrong monster color → no bonus.
 	opp_monster["colors"] = [CardEnums.CardColor.WHITE]
-	assert_int(handler.get_effective_zone_cp(0, 2)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)) \
 		.override_failure_message("%s: base CP vs wrong-color monster" % card_id) \
 		.is_equal(base_cp)
 
 	# Right color but below Awakening4 → no bonus.
 	opp_monster["colors"] = [color]
 	state.players[0].monster_zone = 3
-	assert_int(handler.get_effective_zone_cp(0, 2)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)) \
 		.override_failure_message("%s: base CP below Awakening4" % card_id) \
 		.is_equal(base_cp)
 
@@ -207,10 +207,10 @@ func test_cp_same_zone_number_as_opp_monster_ebp02_015() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 4)).is_equal(4000 + 3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 4)).is_equal(4000 + 3000)
 
 	state.players[1].monster_zone = 4
-	assert_int(handler.get_effective_zone_cp(0, 4)).is_equal(4000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 4)).is_equal(4000)
 
 
 func test_cp_per_opp_rage_in_column_ebp01_056() -> void:
@@ -221,16 +221,16 @@ func test_cp_per_opp_rage_in_column_ebp01_056() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 2)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)) \
 		.override_failure_message("EBP01-056: +3000 per opp rage while in column") \
 		.is_equal(5000 + 6000)
 
 	state.players[1].rage = 0
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(5000)
 
 	state.players[1].rage = 2
 	state.players[1].monster_zone = 1
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(5000)
 
 
 func test_cp_opp_rank_and_column_esd02_012() -> void:
@@ -242,20 +242,20 @@ func test_cp_opp_rank_and_column_esd02_012() -> void:
 	var handler := _wire(state)
 
 	# Both conditions: +5000 (rank IV) +3000 (column).
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000 + 8000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(5000 + 8000)
 
 	# Column only.
 	state.players[1].current_monster = Cards.monster(1)
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000 + 3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(5000 + 3000)
 
 	# Rank only.
 	state.players[1].current_monster = Cards.monster(4)
 	state.players[1].monster_zone = 1
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000 + 5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(5000 + 5000)
 
 	# Neither.
 	state.players[1].current_monster = Cards.monster(1)
-	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 2)).is_equal(5000)
 
 
 func test_cp_named_card_in_play(card_id: String, base_cp: int, required_name: String, bonus: int,
@@ -271,12 +271,12 @@ func test_cp_named_card_in_play(card_id: String, base_cp: int, required_name: St
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)) \
 		.override_failure_message("%s: bonus while '%s' is in play" % [card_id, required_name]) \
 		.is_equal(base_cp + bonus)
 
 	state.players[0].strategy_zones[0] = {}
-	assert_int(handler.get_effective_zone_cp(0, 0)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)) \
 		.override_failure_message("%s: base CP without '%s'" % [card_id, required_name]) \
 		.is_equal(base_cp)
 
@@ -288,10 +288,10 @@ func test_cp_ride_card_in_discard_epr_015() -> void:
 		Cards.battle(2, 2000, "RIDE-1", [CardEnums.CardTrait.GODZILLA_THE_RIDE]))
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(4000 + 5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(4000 + 5000)
 
 	state.players[0].discard_pile.pop_back()
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(4000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(4000)
 
 
 func test_cp_monsters_in_discard_ebp01_051() -> void:
@@ -301,10 +301,10 @@ func test_cp_monsters_in_discard_ebp01_051() -> void:
 		state.players[0].discard_pile.append(Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA], "DIS-M%d" % i))
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(3000 + 3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(3000 + 3000)
 
 	state.players[0].discard_pile.pop_back()
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(3000)
 
 
 func test_cp_monster_stack_5_ebp03_065() -> void:
@@ -314,10 +314,10 @@ func test_cp_monster_stack_5_ebp03_065() -> void:
 		state.players[0].monster_stack.append(Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA], "STK-%d" % i))
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(7000 + 3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(7000 + 3000)
 
 	state.players[0].monster_stack.resize(4)
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(7000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(7000)
 
 
 func test_cp_awakening6_stack_tiers_ebp02_065() -> void:
@@ -328,21 +328,21 @@ func test_cp_awakening6_stack_tiers_ebp02_065() -> void:
 	var handler := _wire(state)
 
 	# 5+ under → +10000.
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(5000 + 10000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(5000 + 10000)
 
 	# 3-4 under → +5000.
 	state.players[0].monster_stack.resize(3)
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(5000 + 5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(5000 + 5000)
 
 	# 2 under → base.
 	state.players[0].monster_stack.resize(2)
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(5000)
 
 	# 5 under but below Awakening6 → base.
 	for i in range(3):
 		state.players[0].monster_stack.append(Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA], "STK-X%d" % i))
 	state.players[0].monster_zone = 5
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(5000)
 
 
 func test_cp_two_other_battle_cards(card_id: String, base_cp: int,
@@ -358,12 +358,12 @@ func test_cp_two_other_battle_cards(card_id: String, base_cp: int,
 	}}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)) \
 		.override_failure_message("%s: +3000 CP with 2 other battle cards" % card_id) \
 		.is_equal(base_cp + 3000)
 
 	state.players[0].clear_zone(2)
-	assert_int(handler.get_effective_zone_cp(0, 0)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)) \
 		.override_failure_message("%s: base CP with only 1 other battle card" % card_id) \
 		.is_equal(base_cp)
 
@@ -376,11 +376,11 @@ func test_cp_non_green_battle_ebp04_057() -> void:
 	}}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(2000 + 3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(2000 + 3000)
 
 	# Alone (the card itself is green and must not satisfy its own condition).
 	state.players[0].clear_zone(1)
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(2000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(2000)
 
 
 func test_cp_rank1_strategy_in_play_ebp04_037() -> void:
@@ -390,10 +390,10 @@ func test_cp_rank1_strategy_in_play_ebp04_037() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(2000 + 3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(2000 + 3000)
 
 	state.players[0].strategy_zones[0] = Cards.strategy(2, "STR-R2")
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(2000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(2000)
 
 
 func test_cp_strategy_count_difference_ebp04_054() -> void:
@@ -408,16 +408,16 @@ func test_cp_strategy_count_difference_ebp04_054() -> void:
 	var handler := _wire(state)
 
 	# +5000 × 2 own − 5000 × 1 opp.
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
 
 	# 1 own / 1 opp → net zero.
 	state.players[0].strategy_zones[1] = {}
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(10000)
 
 	# 0 own / 2 opp → −10000.
 	state.players[0].strategy_zones[0] = {}
 	state.players[1].strategy_zones[1] = Cards.strategy(2, "OPP-2")
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000 - 10000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(10000 - 10000)
 
 
 func test_cp_opp_has_godzilla_ebp02_067() -> void:
@@ -426,15 +426,15 @@ func test_cp_opp_has_godzilla_ebp02_067() -> void:
 	var state := States.make_state({"p0": {"monster_zone": 2, "zone_cards": {0: card}}})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
 
 	# Opp monster without GODZILLA and no Godzilla battle card → base.
 	state.players[1].current_monster = Cards.monster(1, 5000, [CardEnums.CardTrait.RODAN], "OPP-MON")
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(10000)
 
 	# A Godzilla battle card in the opponent's zones also fires it.
 	state.players[1].push_zone_card(3, Cards.battle(2, 3000, "OPP-GZ", [CardEnums.CardTrait.GODZILLA]))
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
 
 
 func test_cp_opp_has_godzilla_strategy_ebp02_067() -> void:
@@ -445,12 +445,12 @@ func test_cp_opp_has_godzilla_strategy_ebp02_067() -> void:
 		"p1": {"current_monster": Cards.monster(1, 5000, [CardEnums.CardTrait.RODAN], "OPP-MON")},
 	})
 	var handler := _wire(state)
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(10000)
 
 	var gz_strategy := Cards.strategy(1, "OPP-GZ-STR")
 	gz_strategy["traits"] = [CardEnums.CardTrait.GODZILLA]
 	state.players[1].strategy_zones[0] = gz_strategy
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
 
 
 # --- Monster-card CP modifiers (get_monster_cp_modifier) ---
@@ -463,12 +463,12 @@ func test_monster_cp_zone_ge_opponent_ebp04_017() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_monster_cp_modifier(0)) \
+	assert_int(handler.queries.get_monster_cp_modifier(0)) \
 		.override_failure_message("EBP04-017: +5000 total CP when own zone >= opp zone") \
 		.is_equal(5000)
 
 	state.players[1].monster_zone = 4
-	assert_int(handler.get_monster_cp_modifier(0)).is_equal(0)
+	assert_int(handler.queries.get_monster_cp_modifier(0)).is_equal(0)
 
 
 func test_monster_cp_zone_ge_and_discard_ebp04_019() -> void:
@@ -480,10 +480,10 @@ func test_monster_cp_zone_ge_and_discard_ebp04_019() -> void:
 		state.players[0].discard_pile.append(Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA], "DIS-M%d" % i))
 	var handler := _wire(state)
 
-	assert_int(handler.get_monster_cp_modifier(0)).is_equal(10000)
+	assert_int(handler.queries.get_monster_cp_modifier(0)).is_equal(10000)
 
 	state.players[0].discard_pile.pop_back()
-	assert_int(handler.get_monster_cp_modifier(0)).is_equal(0)
+	assert_int(handler.queries.get_monster_cp_modifier(0)).is_equal(0)
 
 
 func test_monster_cp_fest_adjacent_efc01_001() -> void:
@@ -497,13 +497,13 @@ func test_monster_cp_fest_adjacent_efc01_001() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_monster_cp_modifier(0)) \
+	assert_int(handler.queries.get_monster_cp_modifier(0)) \
 		.override_failure_message("EFC01-001: +10000 when every adjacent zone has a FEST battle card") \
 		.is_equal(10000)
 
 	state.players[0].clear_zone(1)
 	state.players[0].push_zone_card(1, Cards.battle(2, 3000, "PLAIN-1"))
-	assert_int(handler.get_monster_cp_modifier(0)).is_equal(0)
+	assert_int(handler.queries.get_monster_cp_modifier(0)).is_equal(0)
 
 
 # --- Field CP modifiers (+X to OTHER zones, via get_effective_zone_cp) ---
@@ -523,17 +523,17 @@ func test_field_cp_adjacent_rank5_ebp02_021() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 1)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 1)) \
 		.override_failure_message("EBP02-021: +3000 to rank<=5 battle adjacent to monster") \
 		.is_equal(3000 + 3000)
-	assert_int(handler.get_effective_zone_cp(0, 4)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 4)) \
 		.override_failure_message("EBP02-021: non-adjacent zone unaffected") \
 		.is_equal(3000)
 
 	# Rank 6 adjacent card is not buffed.
 	state.players[0].clear_zone(1)
 	state.players[0].push_zone_card(1, Cards.battle(6, 3000, "ADJ-R6"))
-	assert_int(handler.get_effective_zone_cp(0, 1)).is_equal(3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 1)).is_equal(3000)
 
 
 func test_field_cp_adjacent_ebp02_041() -> void:
@@ -549,8 +549,8 @@ func test_field_cp_adjacent_ebp02_041() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 1)).is_equal(3000 + 1000)
-	assert_int(handler.get_effective_zone_cp(0, 4)).is_equal(3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 1)).is_equal(3000 + 1000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 4)).is_equal(3000)
 
 
 func test_field_cp_adjacent_per_stack_ebp02_043() -> void:
@@ -565,12 +565,12 @@ func test_field_cp_adjacent_per_stack_ebp02_043() -> void:
 	state.players[0].monster_stack.append(Cards.monster(2, 7000, [CardEnums.CardTrait.GIGAN], "U-2"))
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 1)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 1)) \
 		.override_failure_message("EBP02-043: +1000 per card under the monster, to adjacent zones") \
 		.is_equal(3000 + 2000)
 
 	state.players[0].monster_stack.clear()
-	assert_int(handler.get_effective_zone_cp(0, 1)).is_equal(3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 1)).is_equal(3000)
 
 
 func test_field_cp_strategy_nonblue_adjacent_ebp04_082() -> void:
@@ -587,19 +587,19 @@ func test_field_cp_strategy_nonblue_adjacent_ebp04_082() -> void:
 	var handler := _wire(state)
 
 	# <Your Turn>: current_player_id defaults to 0 (= owner's turn).
-	assert_int(handler.get_effective_zone_cp(0, 1)).is_equal(3000 + 3000)
-	assert_int(handler.get_effective_zone_cp(0, 4)).is_equal(3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 1)).is_equal(3000 + 3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 4)).is_equal(3000)
 
 	# Blue battle cards are excluded.
 	state.players[0].clear_zone(1)
 	state.players[0].push_zone_card(1, _battle_colored(CardEnums.CardColor.BLUE, "ADJ-BLUE"))
-	assert_int(handler.get_effective_zone_cp(0, 1)).is_equal(3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 1)).is_equal(3000)
 
 	# Off-turn the effect is dormant.
 	state.players[0].clear_zone(1)
 	state.players[0].push_zone_card(1, _battle_colored(CardEnums.CardColor.RED, "ADJ-RED2"))
 	state.current_player_id = 1
-	assert_int(handler.get_effective_zone_cp(0, 1)).is_equal(3000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 1)).is_equal(3000)
 
 
 # --- Total CP modifiers (strategy get_total_cp_modifier, via get_counter_power_modifier) ---
@@ -614,14 +614,14 @@ func test_total_cp_destoroyah_own_turn_ebp01_062() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_counter_power_modifier(0)).is_equal(10000)
+	assert_int(handler.queries.get_counter_power_modifier(0)).is_equal(10000)
 
 	state.current_player_id = 1
-	assert_int(handler.get_counter_power_modifier(0)).is_equal(0)
+	assert_int(handler.queries.get_counter_power_modifier(0)).is_equal(0)
 
 	state.current_player_id = 0
 	state.players[0].clear_zone(0)
-	assert_int(handler.get_counter_power_modifier(0)).is_equal(0)
+	assert_int(handler.queries.get_counter_power_modifier(0)).is_equal(0)
 
 
 func test_total_cp_four_battles_own_turn_ebp02_017() -> void:
@@ -638,10 +638,10 @@ func test_total_cp_four_battles_own_turn_ebp02_017() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_counter_power_modifier(0)).is_equal(5000)
+	assert_int(handler.queries.get_counter_power_modifier(0)).is_equal(5000)
 
 	state.players[0].clear_zone(3)
-	assert_int(handler.get_counter_power_modifier(0)).is_equal(0)
+	assert_int(handler.queries.get_counter_power_modifier(0)).is_equal(0)
 
 
 func test_total_cp_crystals_own_turn_ebp02_072() -> void:
@@ -653,10 +653,10 @@ func test_total_cp_crystals_own_turn_ebp02_072() -> void:
 	})
 	var handler := _wire(state)
 
-	assert_int(handler.get_counter_power_modifier(0)).is_equal(20000)
+	assert_int(handler.queries.get_counter_power_modifier(0)).is_equal(20000)
 
 	state.players[0].clear_zone(2)
-	assert_int(handler.get_counter_power_modifier(0)).is_equal(0)
+	assert_int(handler.queries.get_counter_power_modifier(0)).is_equal(0)
 
 
 # --- Opponent column doubling (EBP02-029) ---
@@ -675,18 +675,18 @@ func test_opp_column_cp_doubled_ebp02_029() -> void:
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var handler := _wire(state)
 
-	assert_int(handler.get_effective_zone_cp(0, 0)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)) \
 		.override_failure_message("EBP02-029: column CP doubled during counter phase") \
 		.is_equal(10000)
-	assert_int(handler.get_effective_zone_cp(0, 3)) \
+	assert_int(handler.queries.get_effective_zone_cp(0, 3)) \
 		.override_failure_message("EBP02-029: off-column zone unaffected") \
 		.is_equal(4000)
 
 	# Before the counter phase nothing is doubled.
 	state.current_phase = CardEnums.GamePhase.MAIN
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(5000)
 
 	# On the card owner's own turn nothing is doubled.
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	state.current_player_id = 1
-	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(5000)
+	assert_int(handler.queries.get_effective_zone_cp(0, 0)).is_equal(5000)

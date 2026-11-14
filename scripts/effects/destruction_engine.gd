@@ -66,10 +66,10 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	out.replaced = _apply_destroy_replacement(target, zone_idx, top_card)
 	if not out.replaced:
 		var stack: Array = target.clear_zone(zone_idx)
-		EffectHandler.banish_or_discard(target, stack)
+		CardMover.banish_or_discard(target, stack)
 		target.cards_destroyed_this_turn.append(top_card)
-		if cause == Cause.CRUSH and h.events:
-			h.events.battle_card_crushed.emit(target.player_id, zone_idx, top_card)
+		if cause == Cause.CRUSH and events:
+			events.battle_card_crushed.emit(target.player_id, zone_idx, top_card)
 		# Overload: the caller emits zones_changed once the incoming card is
 		# in the zone.
 		if cause != Cause.OVERLOAD:
@@ -84,7 +84,7 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	# Automatic abilities enter standby (10.6.2) and resolve at the next check
 	# timing (10.4.3). Leaving the zone is an area-changing trigger whatever
 	# the cause, replaced or not.
-	out.entries.append_array(h.collect_leave_play_entries(target.player_id, top_card, zone_idx))
+	out.entries.append_array(dispatcher.collect_leave_play_entries(target.player_id, top_card, zone_idx))
 	if out.replaced:
 		return out
 	# Crush (11.3.3) and Overload (11.5.1, 5.12.1.1) are <Destroy> too: the
@@ -92,12 +92,12 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	# for all three causes. EFFECT resolves on_destroy on the spot instead
 	# (_destroy_by_effect).
 	if cause != Cause.EFFECT:
-		out.entries.append_array(h.collect_on_destroy_entries(target.player_id, top_card, zone_idx))
+		out.entries.append_array(dispatcher.collect_on_destroy_entries(target.player_id, top_card, zone_idx))
 	if cause != Cause.OVERLOAD:
-		out.entries.append_array(h.collect_crush_and_revenge_entries(
+		out.entries.append_array(dispatcher.collect_crush_and_revenge_entries(
 				target.player_id, top_card, cause == Cause.CRUSH))
-	out.entries.append_array(h.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
-	out.entries.append_array(h.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
+	out.entries.append_array(dispatcher.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
+	out.entries.append_array(dispatcher.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
 	return out
 
 
@@ -115,7 +115,7 @@ func _apply_destroy_replacement(target: PlayerState, zone_idx: int, top_card: Di
 		return false
 	var replaced_stack: Array = target.clear_zone(zone_idx)
 	if replaced_stack.size() > 1:
-		EffectHandler.banish_or_discard(target, replaced_stack.slice(1))
+		CardMover.banish_or_discard(target, replaced_stack.slice(1))
 	target.main_deck.append(top_card)
 	target.zones_changed.emit()
 	target.deck_changed.emit()
@@ -215,7 +215,7 @@ func destroy_zones_within_rank_budget(player_id: int, target: PlayerState, budge
 			continue
 		if filter.is_valid() and not filter.call(zone_card):
 			continue
-		var rank: int = h.get_effective_field_rank(zone_card, target.player_id)
+		var rank: int = queries.get_effective_field_rank(zone_card, target.player_id)
 		if rank > budget:
 			continue
 		if not _can_destroy_card(target, zone_card):
@@ -343,7 +343,7 @@ func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones:
 		var filtered: Array[int] = []
 		for zi in affected:
 			var card := target.get_zone_top_card(zi)
-			if not card.is_empty() and h.get_effective_field_rank(card, target.player_id) <= max_rank:
+			if not card.is_empty() and queries.get_effective_field_rank(card, target.player_id) <= max_rank:
 				filtered.append(zi)
 		return await destroy_zones(target, filtered)
 	else:
@@ -456,7 +456,7 @@ func _destroy_by_effect(target: PlayerState, zone_idx: int) -> Outcome:
 	if outcome.card.is_empty() or outcome.replaced or not has_trigger(outcome.card, "on_destroy"):
 		return outcome
 	var d_effect := get_effect(outcome.card)
-	h.note_effect_resolving(target.player_id, outcome.card)
+	check_timing.note_effect_resolving(target.player_id, outcome.card)
 	@warning_ignore("redundant_await")
 	await d_effect.on_destroy(_build_context(target.player_id, outcome.card), zone_idx)
 	return outcome
@@ -551,16 +551,16 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 		player.zones[intercept_zone].append(card)
 		player.zones_changed.emit()
 	else:
-		EffectHandler.banish_or_discard(player, [card])
+		CardMover.banish_or_discard(player, [card])
 		player.discard_changed.emit()
 	player.strategy_zones_changed.emit()
 
 	# Replacement means it wasn't truly discarded — skip discard triggers
 	if not intercepted:
 		if deferred_entries != null:
-			deferred_entries.append_array(h.collect_strategy_discarded_entries(player_id, card))
+			deferred_entries.append_array(dispatcher.collect_strategy_discarded_entries(player_id, card))
 		else:
-			h.trigger_strategy_discarded(player_id, card)
+			dispatcher.trigger_strategy_discarded(player_id, card)
 	return card
 
 
@@ -576,6 +576,6 @@ func destroy_base_strategies_on_invasion(to_zone: int, deferred_entries: Variant
 	for pid in range(2):
 		var player := game_state.players[pid]
 		for i in range(player.strategy_zones.size() - 1, -1, -1):
-			if not player.strategy_zones[i].is_empty() and h.is_base_strategy(player.strategy_zones[i]):
+			if not player.strategy_zones[i].is_empty() and queries.is_base_strategy(player.strategy_zones[i]):
 				# Rule-driven invasion destruction (12.9.2) — bypass protection.
 				await discard_strategy_from_zone(pid, i, deferred_entries, true)

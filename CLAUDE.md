@@ -40,9 +40,10 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
 - **PlayerInput** is the single decision port: engine `await`s
   `input.choose_option(...)`; `SignalPlayerInput` serves UI/RPC/bot,
   `ScriptedPlayerInput` serves tests.
-- **EffectHandler is a facade** over the modules listed in
-  `scripts/effects/README.md`; **GameEvents** carries gameplay notifications;
-  **RulesEngine** stays pure/synchronous (queries injected).
+- **EffectHandler is the card-script interface**; engine, core, UI, bot and
+  tests call its modules (`scripts/effects/README.md`). **GameEvents**
+  carries gameplay notifications; **RulesEngine** stays pure/synchronous
+  (queries injected).
 - All RPCs live in `scripts/session/multiplayer_sync.gd`; the duck-typed
   `_board` contract has THREE implementations (game_board, harness stub,
   headless_board) — **RPC-surface changes must hit all three**

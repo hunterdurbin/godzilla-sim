@@ -1,8 +1,8 @@
 extends GdUnitTestSuite
 
 ## Tier B cluster: cards with phase-gated (and related play-event) triggers,
-## driven through the real dispatch seams (effect_handler.trigger_phase_start /
-## trigger_battle_card_played / trigger_when_invading / trigger_enter →
+## driven through the real dispatch seams (effect_handler.dispatcher.trigger_phase_start /
+## trigger_battle_card_played / collect_when_invading_entries / trigger_enter →
 ## registry → trigger_map → TRIGGER_FILTERS → standby resolution).
 ## Every TRIGGER_FILTERS-gated card here is also covered by the generic
 ## wrong-phase / wrong-turn gating test at the bottom.
@@ -79,7 +79,7 @@ func test_ebp01_001_counter_start_mills_and_gains_rage_on_monster_mill(top_is_mo
 	})
 	var state: GameState = s["state"]
 
-	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].main_deck.size()).is_equal(2)
@@ -100,7 +100,7 @@ func test_ebp01_006_opponent_counter_start_destroys_low_rank_same_column() -> vo
 	})
 	var state: GameState = s["state"]
 
-	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(2)) \
@@ -125,7 +125,7 @@ func test_ebp02_036_end_start_retreats_weak_monster_only_when_adjacent(zone_idx:
 	})
 	var state: GameState = s["state"]
 
-	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.END)
+	s["effect_handler"].dispatcher.trigger_phase_start(CardEnums.GamePhase.END)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].monster_zone) \
@@ -150,7 +150,7 @@ func test_ebp02_073_battle_played_destroys_column_only_on_own_turn(current_pid: 
 	var played := Cards.battle(3, 4000, "PLAYED")
 	state.players[0].push_zone_card(2, played)  # column idx 2 → opponent zones [2, 7]
 
-	s["effect_handler"].trigger_battle_card_played(0, played, 2)
+	s["effect_handler"].dispatcher.trigger_battle_card_played(0, played, 2)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(2)) \
@@ -179,7 +179,7 @@ func test_evolution_main_start_stacks_deck_card(card_id: String, target_id: Stri
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	s["effect_handler"].dispatcher.trigger_phase_start(CardEnums.GamePhase.MAIN)
 	await s["effect_handler"].check_timing.resolve()
 
 	var top := state.players[0].get_zone_top_card(2)
@@ -207,7 +207,7 @@ func test_esd02_010_enter_draws_only_when_evolved(evolved: bool, expected_hand: 
 	var state: GameState = s["state"]
 	var card: Dictionary = s["card"]
 
-	s["effect_handler"].trigger_enter(0, card, evolved, evolved)
+	s["effect_handler"].dispatcher.trigger_enter(0, card, evolved, evolved)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].hand.size()).is_equal(expected_hand)
@@ -228,7 +228,7 @@ func test_ebp04_008_counter_start_awakening8_discards_opponent_to_three(monster_
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()) \
@@ -254,7 +254,7 @@ func test_ebp02_001_opponent_counter_start_discards_strategy_to_gain_rage() -> v
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].dispatcher.trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].rage).is_equal(1)
@@ -279,7 +279,7 @@ func test_esd01_004_when_invading_discards_opponent_to_two_if_raged(rage: int, e
 	})
 	var state: GameState = s["state"]
 
-	await s["effect_handler"].trigger_when_invading(0, 2, 3)
+	s["effect_handler"].check_timing.submit(s["effect_handler"].dispatcher.collect_when_invading_entries(0, 2, 3))
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()) \
@@ -300,7 +300,7 @@ func test_enter_discards_opponent_down_to(card_id: String, target_count: int,
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	s["effect_handler"].trigger_enter(0, s["card"])
+	s["effect_handler"].dispatcher.trigger_enter(0, s["card"])
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()) \
@@ -358,7 +358,7 @@ func test_phase_trigger_gating_blocks_wrong_phase_or_turn(card_id: String, zone_
 	var input: ScriptedPlayerInput = s["input"]
 	var snapshot_before := _snapshot(state)
 
-	s["effect_handler"].trigger_phase_start(state.current_phase)
+	s["effect_handler"].dispatcher.trigger_phase_start(state.current_phase)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_that(_snapshot(state)) \

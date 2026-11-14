@@ -22,7 +22,7 @@ func invade(hand_index: int, state: GameState) -> void:
 	var deferred_entries: Array = cost["deferred_entries"]
 	# Advance from an invasion (5.13) through the monster movement module:
 	# per-step Crush; <When invading> and monster-advance entries collected.
-	var is_victory: bool = effect_handler.monster_mover.advance(
+	var is_victory: bool = monster_mover.advance(
 		player.player_id, cost["advance_amount"], true, deferred_entries)
 
 	player.invasion_zones_crossed = player.monster_zone - start_zone
@@ -46,7 +46,7 @@ func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 	player.last_invasion_card = card
 
 	# Check if invade1 cost is blocked by opponent (e.g. EBP04-029 Gigan R3)
-	if advance_amount == 1 and effect_handler and effect_handler.is_invade1_cost_blocked(player.player_id):
+	if advance_amount == 1 and effect_handler and queries.is_invade1_cost_blocked(player.player_id):
 		# Card stays in hand — return it and abort invasion. Emit play_cancelled
 		# so the UI restores the dragged card's hand position (matches the
 		# monster-cost-cancelled flow in play_monster).
@@ -58,7 +58,7 @@ func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 
 	# Check for invasion cost replacement (e.g. EBP03-004: mill from deck instead)
 	var replaced_cost := false
-	if effect_handler and effect_handler.can_replace_invasion_cost(player.player_id):
+	if effect_handler and queries.can_replace_invasion_cost(player.player_id):
 		var choice: int = await effect_handler.select_choice(
 			player.player_id,
 			[tr("STR_AH_INVADE_COST_MILL"), tr("STR_AH_INVADE_COST_HAND")] as Array[String],
@@ -85,14 +85,14 @@ func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 
 	# Apply per-monster invasion advance bonuses (e.g. EBP04-007 Godzilla 1962: +1 on Invade 1).
 	if effect_handler:
-		advance_amount += effect_handler.get_invasion_advance_bonus(player.player_id, card.get("invasion_icon", 0))
+		advance_amount += queries.get_invasion_advance_bonus(player.player_id, card.get("invasion_icon", 0))
 
 	# Collect discard triggers for deferred resolution alongside movement effects
 	var deferred_entries: Array = []
 	if not replaced_cost and effect_handler:
-		deferred_entries.append_array(effect_handler.collect_discarded_for_invasion_entries(player.player_id, card))
-		deferred_entries.append_array(effect_handler.collect_discard_from_hand_entries(player.player_id, card))
-		deferred_entries.append_array(effect_handler.collect_hand_card_discarded_entries(player.player_id, card))
+		deferred_entries.append_array(dispatcher.collect_discarded_for_invasion_entries(player.player_id, card))
+		deferred_entries.append_array(dispatcher.collect_discard_from_hand_entries(player.player_id, card))
+		deferred_entries.append_array(dispatcher.collect_hand_card_discarded_entries(player.player_id, card))
 
 	return {"paid": true, "advance_amount": advance_amount, "deferred_entries": deferred_entries}
 
@@ -108,16 +108,16 @@ func _post_movement(state: GameState, start_zone: int, deferred_entries: Array) 
 	# invade (no movement) doesn't count as invading to a new zone.
 	# The physical destruction happens now; strategy_discarded triggers join deferred_entries.
 	if effect_handler and player.monster_zone > start_zone and player.monster_zone >= 6:
-		await effect_handler.destroy_base_strategies_on_invasion(player.monster_zone, deferred_entries)
+		await destruction.destroy_base_strategies_on_invasion(player.monster_zone, deferred_entries)
 
 	# Collect invasion observed entries once for the entire invasion
 	if effect_handler and player.monster_zone > start_zone:
-		deferred_entries.append_array(effect_handler.collect_invasion_observed_entries(player.player_id, start_zone, player.monster_zone))
+		deferred_entries.append_array(dispatcher.collect_invasion_observed_entries(player.player_id, start_zone, player.monster_zone))
 
 	# Submit the collected abilities once all movement and rule actions
 	# complete; they resolve at the check timing after the action (10.4.4.1).
 	if effect_handler:
-		effect_handler.check_timing.submit(deferred_entries)
+		check_timing.submit(deferred_entries)
 
 	player.hand_changed.emit()
 	player.monster_changed.emit()

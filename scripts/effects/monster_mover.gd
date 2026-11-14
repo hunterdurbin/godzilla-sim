@@ -65,16 +65,16 @@ func advance(player_id: int, steps: int, from_invasion: bool, entries: Array) ->
 			player.monster_zone = 9  # Past zone 8
 			_emit_advanced(player_id, last_zone, player.monster_zone)
 			player.monster_changed.emit()
-			entries.append_array(h.collect_when_invading_entries(player_id, last_zone, player.monster_zone))
+			entries.append_array(dispatcher.collect_when_invading_entries(player_id, last_zone, player.monster_zone))
 			return true
 		var old_zone: int = player.monster_zone
 		player.monster_zone += 1
 		_emit_advanced(player_id, old_zone, player.monster_zone)
 		if from_invasion:
-			entries.append_array(h.collect_when_invading_entries(player_id, old_zone, player.monster_zone))
+			entries.append_array(dispatcher.collect_when_invading_entries(player_id, old_zone, player.monster_zone))
 		else:
 			player.monster_changed.emit()
-		entries.append_array(h.collect_monster_advance_entries(player_id, old_zone, player.monster_zone))
+		entries.append_array(dispatcher.collect_monster_advance_entries(player_id, old_zone, player.monster_zone))
 		if action_handler:
 			check_timing.check_crush_rule(entries)
 	return false
@@ -131,8 +131,8 @@ func counter_retreat(player_id: int) -> bool:
 
 
 func _emit_advanced(player_id: int, from_zone: int, to_zone: int) -> void:
-	if h.events:
-		h.events.monster_advanced.emit(player_id, from_zone, to_zone)
+	if events:
+		events.monster_advanced.emit(player_id, from_zone, to_zone)
 
 
 # --- Effect-facing entry points (callers: blocking checks, then an operation) ---
@@ -144,9 +144,9 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## (e.g. EBP04-076 Godzilla's Dormancy when the caller is the opponent's
 	## effect). Emits GameEvents.monster_advanced and `monster_changed` per
 	## step (see `advance`).
-	if h.is_monster_advance_blocked(player_id):
+	if queries.is_monster_advance_blocked(player_id):
 		return
-	if h.is_opponent_monster_move_blocked(player_id):
+	if queries.is_opponent_monster_move_blocked(player_id):
 		return
 	var entries: Array = []
 	advance_to_zone(player_id, target_zone, entries)
@@ -158,7 +158,7 @@ func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## `prevents_opponent_monster_move` (e.g. EBP04-076). Emits
 	## GameEvents.monster_advanced and `monster_changed` per step (see
 	## `retreat_to_zone`).
-	if h.is_opponent_monster_move_blocked(player_id):
+	if queries.is_opponent_monster_move_blocked(player_id):
 		return
 	var entries: Array = []
 	retreat_to_zone(player_id, target_zone, entries)
@@ -172,7 +172,7 @@ func teleport_monster(player_id: int, target_zone: int) -> bool:
 	## (e.g. EBP04-076). Returns true if the move happened.
 	if not action_handler:
 		return false
-	if h.is_opponent_monster_move_blocked(player_id):
+	if queries.is_opponent_monster_move_blocked(player_id):
 		return false
 	var player := game_state.players[player_id]
 	if target_zone == player.monster_zone or target_zone < 1 or target_zone > 8:
@@ -191,6 +191,6 @@ func move_monster_as_countered(player_id: int) -> void:
 	## own retreat is a rule action and is not.
 	if not action_handler:
 		return
-	if h.is_opponent_monster_move_blocked(player_id):
+	if queries.is_opponent_monster_move_blocked(player_id):
 		return
 	counter_retreat(player_id)

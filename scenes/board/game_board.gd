@@ -1603,12 +1603,12 @@ func _sync_boards() -> void:
 	if turn_manager and turn_manager.game_state:
 		var state := turn_manager.game_state
 		var eh := turn_manager.effect_handler
-		var zone_cp_0: Array = eh.get_zone_cp_modifiers(0) if eh else []
-		var zone_cp_1: Array = eh.get_zone_cp_modifiers(1) if eh else []
-		var strat_cp_0: Array = eh.get_strategy_cp_modifiers(0) if eh else []
-		var strat_cp_1: Array = eh.get_strategy_cp_modifiers(1) if eh else []
-		var monster_cp_0: int = eh.get_monster_cp_modifier(0) if eh else 0
-		var monster_cp_1: int = eh.get_monster_cp_modifier(1) if eh else 0
+		var zone_cp_0: Array = eh.queries.get_zone_cp_modifiers(0) if eh else []
+		var zone_cp_1: Array = eh.queries.get_zone_cp_modifiers(1) if eh else []
+		var strat_cp_0: Array = eh.queries.get_strategy_cp_modifiers(0) if eh else []
+		var strat_cp_1: Array = eh.queries.get_strategy_cp_modifiers(1) if eh else []
+		var monster_cp_0: int = eh.queries.get_monster_cp_modifier(0) if eh else 0
+		var monster_cp_1: int = eh.queries.get_monster_cp_modifier(1) if eh else 0
 		var cp_mod_0: int = monster_cp_0
 		var cp_mod_1: int = monster_cp_1
 		for v in zone_cp_0: cp_mod_0 += v
@@ -1617,8 +1617,8 @@ func _sync_boards() -> void:
 		for v in strat_cp_1: cp_mod_1 += v
 		var threat_mod_0: int = eh.get_threat_level_modifier(0) if eh else 0
 		var threat_mod_1: int = eh.get_threat_level_modifier(1) if eh else 0
-		var zone_rank_0: Array = eh.get_zone_rank_modifiers(0) if eh else []
-		var zone_rank_1: Array = eh.get_zone_rank_modifiers(1) if eh else []
+		var zone_rank_0: Array = eh.queries.get_zone_rank_modifiers(0) if eh else []
+		var zone_rank_1: Array = eh.queries.get_zone_rank_modifiers(1) if eh else []
 		var hand_rank_0: Array = _session.compute_hand_rank_mods(state.players[0]) if eh else []
 		var hand_rank_1: Array = _session.compute_hand_rank_mods(state.players[1]) if eh else []
 		var hand_power_0: Array = _session.compute_hand_power_mods(state.players[0]) if eh else []
@@ -1646,8 +1646,8 @@ func _host_variable_bases(pid: int) -> Dictionary:
 	if not eh:
 		return {}
 	return {
-		"zone_cp": ModifierBreakdown.variable_zone_bases(eh.get_zone_cp_breakdown(pid)),
-		"threat": ModifierBreakdown.variable_base(eh.get_threat_level_breakdown(pid), "threat_var_base"),
+		"zone_cp": ModifierBreakdown.variable_zone_bases(eh.queries.get_zone_cp_breakdown(pid)),
+		"threat": ModifierBreakdown.variable_base(eh.queries.get_threat_level_breakdown(pid), "threat_var_base"),
 	}
 
 

@@ -8,17 +8,35 @@ files here without regenerating everything and migrating card data.
 
 ## Architecture
 
-`effect_handler.gd` is a **facade** — the stable API that effect scripts and
-`EffectContext` call. The implementation lives in modules, each holding the
-facade hub `h` via `EffectModule`:
+`effect_handler.gd` is the **card-script interface** — a facade whose
+public methods are exactly the primitives the per-card scripts
+(`scripts/effects/<set>/`) call through `ctx.effect_handler`. The
+implementation lives in the modules below. `EffectHandler.setup` wires each
+one once (`EffectModule.wire`) with direct references to the others, so a
+module calls another module directly (`dispatcher.collect_enter_entries`,
+`queries.should_stack_on_play`); it uses the facade `h` only for what the
+facade itself owns — its signals (`log_message`, `card_evolved`, …) and the
+player-prompt primitives with their UI state (`select_zone_target`,
+`select_choice`, `reveal_cards`, …).
+
+Everything outside the card scripts — core resolvers and TurnManager, the
+board UI, the bot, tests — calls the modules too (`effect_handler.queries`,
+`.dispatcher`, `.check_timing`, `.destruction`, `.mover`, `.monster_mover`,
+`.enter_zone`, `.registry`; the `ActionResolver` base forwards them). A
+facade method that no card script calls doesn't belong on the facade:
+`scripts/tools/check_effect_handler_card_api.py` (pre-commit + CI) fails on
+a public EffectHandler method with no caller under `scripts/effects/<set>/`,
+on a card script that reaches past the facade into a module
+(`ctx.effect_handler.queries.…`), and on any `effect_handler.<name>` that
+names no EffectHandler member (untyped receivers fail only at runtime).
 
 | Module | Role |
 |---|---|
 | `effect_registry.gd` | Effect/filter loading + caching (test injection point) |
 | `trigger_filters.gd` | Pure static `TRIGGER_FILTERS` DSL evaluation |
-| `check_timing.gd` | `CheckTiming`: single owner of check timing (10.4.3) — rule actions (crush, illegal cards), the standby pool, the active ability, `run_effect` |
+| `check_timing.gd` | `CheckTiming`: single owner of check timing (10.4.3) — rule actions (crush, illegal cards), the standby pool, the active ability (`get_active_effect_summary`), `run_effect`, `note_effect_resolving` |
 | `standby_entry.gd` | `StandbyEntry`: one ability in standby (player, card, callback, `still_applies`) |
-| `trigger_dispatcher.gd` | `trigger_*` / `collect_*` dispatch over active cards |
+| `trigger_dispatcher.gd` | `trigger_*` / `collect_*` dispatch over active cards (`trigger_*` = collect + `check_timing.submit`), `apply_rage_reset` |
 | `destruction_engine.gd` | The one destroy operation, `destroy(target, zone, cause)` — cause EFFECT / CRUSH / OVERLOAD decides protection (effect only), replacement (all) and <Revenge> (not Overload); on_destroy and the destroyed watchers fire for all three; returns the StandbyEntry list. Also the effect-driven destroy prompts and strategy destruction |
 | `enter_zone.gd` | `EnterZone`: the one "card enters a zone" operation, `enter(player_id, card, zone, source)` — source HAND (the Play action or an effect) / DECK / DISCARD / TOKEN / EVOLUTION; `move_stack` for a stack moving between zones. Owns rule legality (`is_rule_legal`, also asked by RulesEngine, which keeps cost legality), stack-on-play or Overload, placement + signals + log, and submits the leave-play, <Enter> and "when played" entries together |
 | `card_mover.gd` | Hand/deck/discard traffic, zone prompts, token instances; its play primitives call `EnterZone` |
@@ -26,7 +44,7 @@ facade hub `h` via `EffectModule`:
 | `effect_queries.gd` | Read-only modifier/blocking aggregation (injected into RulesEngine) |
 
 Facade delegate rule: a delegate containing `await` becomes a coroutine —
-keep query/collect delegates sync. When calling the facade dynamically, hoist
+keep query delegates sync. When calling the facade dynamically, hoist
 a typed var first (`var handler: EffectHandler = s["effect_handler"]`) —
 typed-array params + dynamic calls can silently abort coroutines.
 
@@ -87,7 +105,7 @@ engine instead of comparing against the monster's zone index.
 
 ## Check timing — automatic abilities never interrupt an effect
 
-Terms per `GLOSSARY.md`. `CheckTiming` (`h.check_timing`) owns all of it.
+Terms per `GLOSSARY.md`. `CheckTiming` (`effect_handler.check_timing`; `check_timing` in the modules) owns all of it.
 Engine code runs an ability through `check_timing.run_effect(owner, card,
 callback)`: it marks the ability active (read-only `active_player_id` /
 `active_card`), announces it (`note_effect_resolving`) and restores the

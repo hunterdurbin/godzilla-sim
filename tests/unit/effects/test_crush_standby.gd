@@ -180,7 +180,7 @@ func test_godzilla_flies_crushed_zone8_revenge_enters_standby() -> void:
 	var state := _flies_state(revenge_card)
 	var s := _session(state)
 
-	s["effect_handler"].trigger_enter(0, Real.instance("EBP03-068"))
+	s["effect_handler"].dispatcher.trigger_enter(0, Real.instance("EBP03-068"))
 	await s["effect_handler"].check_timing.resolve()
 
 	var p0 := state.players[0]
@@ -197,7 +197,7 @@ func test_godzilla_flies_crushed_godzilla_2023_goes_to_deck_bottom() -> void:
 	var state := _flies_state(replacer)
 	var s := _session(state)
 
-	s["effect_handler"].trigger_enter(0, Real.instance("EBP03-068"))
+	s["effect_handler"].dispatcher.trigger_enter(0, Real.instance("EBP03-068"))
 	await s["effect_handler"].check_timing.resolve()
 
 	var p0 := state.players[0]
@@ -227,7 +227,7 @@ func test_teleport_onto_revenge_card_crushes_it_and_revenge_enters_standby() -> 
 	var card := Real.instance("EBP04-078")
 	state.players[0].strategy_zones[0] = card
 
-	s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 
 	var p1 := state.players[1]

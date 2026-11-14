@@ -91,12 +91,12 @@ static func hand_entries(eh: EffectHandler, player_id: int, card: Dictionary) ->
 	## strategy portion matches GameSession.compute_hand_rank_mods and the cp
 	## entry matches compute_hand_power_mods, so the panel agrees with the
 	## hand badges.
-	var out: Array = eh.get_play_rank_breakdown(player_id, card)
+	var out: Array = eh.queries.get_play_rank_breakdown(player_id, card)
 	if card.get("card_type") == CardEnums.CardType.STRATEGY:
-		out.append_array(eh.get_strategy_hand_rank_breakdown(player_id, card))
-	out.append_array(eh.get_zone_play_rank_breakdown(player_id, card))
-	append(out, "cp", eh.get_hand_cp_preview(player_id, card), card, -1, player_id)
-	var var_base_cp: int = eh.get_hand_variable_base_cp(player_id, card)
+		out.append_array(eh.queries.get_strategy_hand_rank_breakdown(player_id, card))
+	out.append_array(eh.queries.get_zone_play_rank_breakdown(player_id, card))
+	append(out, "cp", eh.queries.get_hand_cp_preview(player_id, card), card, -1, player_id)
+	var var_base_cp: int = eh.queries.get_hand_variable_base_cp(player_id, card)
 	if var_base_cp >= 0:
 		append_base(out, "cp_var_base", var_base_cp, card, -1, player_id)
 	return out
@@ -114,16 +114,16 @@ static func build_all(eh: EffectHandler, gs: GameState, viewer_id: int) -> Dicti
 	var hand: Array = []
 	for pid in range(2):
 		var player := gs.players[pid]
-		zone_cp.append(eh.get_zone_cp_breakdown(pid))
-		field_rank.append(eh.get_field_rank_breakdown(pid))
-		threat.append(eh.get_threat_level_breakdown(pid))
+		zone_cp.append(eh.queries.get_zone_cp_breakdown(pid))
+		field_rank.append(eh.queries.get_field_rank_breakdown(pid))
+		threat.append(eh.queries.get_threat_level_breakdown(pid))
 
 		var monster_entries: Array = []
-		append(monster_entries, "cp", eh.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
+		append(monster_entries, "cp", eh.queries.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
 		monster_cp.append(monster_entries)
 
 		var strategy_slots: Array = []
-		var strategy_mods: Array = eh.get_strategy_cp_modifiers(pid)
+		var strategy_mods: Array = eh.queries.get_strategy_cp_modifiers(pid)
 		for si in range(strategy_mods.size()):
 			var slot_entries: Array = []
 			if si < player.strategy_zones.size():

@@ -16,7 +16,7 @@ func _init(bot) -> void:
 
 func _pick_battle_zone(valid_zones: Array[int], player: PlayerState, opponent: PlayerState, card: Dictionary = {}) -> int:
 	# Compute effective value of each zone's existing card (base CP + effect contributions)
-	var cp_modifiers := _bot.effect_handler.get_zone_cp_modifiers(player.player_id)
+	var cp_modifiers := _bot.effect_handler.queries.get_zone_cp_modifiers(player.player_id)
 	var card_cp: int = card.get("counter_power", 0) if not card.is_empty() else 0
 
 	# Never overwrite a zone card with higher effective CP — would reduce net counter power
@@ -291,7 +291,7 @@ func _get_crush_zone_indices(turns: int = 1) -> Array[int]:
 		return []
 	var extra: int = 0
 	if _bot.effect_handler:
-		extra = _bot.effect_handler.get_extra_end_phase_advance(_bot.bot_player_id)
+		extra = _bot.effect_handler.queries.get_extra_end_phase_advance(_bot.bot_player_id)
 	var advance_per_turn: int = 1 + extra
 	var total_advance: int = advance_per_turn * turns
 	var crush_zones: Array[int] = []
@@ -346,7 +346,7 @@ func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, op
 
 	# Priority 2: destroy the zone with highest total CP (card + adjacent cards)
 	# Adjacent CP acts as tiebreaker — maximizes value for effects that also hit neighbors
-	var cp_modifiers := _bot.effect_handler.get_zone_cp_modifiers(opponent.player_id)
+	var cp_modifiers := _bot.effect_handler.queries.get_zone_cp_modifiers(opponent.player_id)
 	var best_zone: int = valid_zones[0]
 	var best_cp: int = -1
 	var best_adj_cp: int = -1

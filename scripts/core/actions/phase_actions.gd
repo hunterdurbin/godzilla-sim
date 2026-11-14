@@ -23,10 +23,10 @@ func execute_start_phase_discard(state: GameState) -> void:
 		if not player.strategy_zones[i].is_empty():
 			if player.strategy_zone_turn_placed[i] < state.turn_number:
 				# Base strategies are exempt from start phase discard (12.9.2 / 7.2.3)
-				if effect_handler.is_base_strategy(player.strategy_zones[i]):
+				if queries.is_base_strategy(player.strategy_zones[i]):
 					continue
 				# Cards with custom anti-discard rule text (e.g. EBP04-089) are also exempt
-				if effect_handler.prevents_self_start_phase_discard(player.player_id, player.strategy_zones[i]):
+				if queries.prevents_self_start_phase_discard(player.player_id, player.strategy_zones[i]):
 					continue
 				indices_to_discard.append(i)
 
@@ -34,7 +34,7 @@ func execute_start_phase_discard(state: GameState) -> void:
 		var cleared: Array = []
 		for i in indices_to_discard:
 			# Start phase discard (7.2.3) is a rule action, not <Destroy> — bypass protection.
-			var card := await effect_handler.discard_strategy_from_zone(player.player_id, i, null, true)
+			var card := await destruction.discard_strategy_from_zone(player.player_id, i, null, true)
 			if not card.is_empty():
 				cleared.append(card)
 		if not cleared.is_empty():
@@ -46,7 +46,7 @@ func execute_start_phase_reset(state: GameState) -> void:
 
 	# Reset rage to 0, allowing effects to intercept (e.g. EBP04-010)
 	var old_rage: int = player.rage
-	var new_rage: int = await effect_handler.apply_rage_reset(player.player_id)
+	var new_rage: int = await dispatcher.apply_rage_reset(player.player_id)
 	player.rage = new_rage
 	player.rage_changed.emit(new_rage)
 	# Fire rage_changed trigger so cards that watch for rage decrease (EBP04-089)
@@ -56,7 +56,7 @@ func execute_start_phase_reset(state: GameState) -> void:
 		var delta: int = old_rage - new_rage
 		if delta > 0:
 			player.push_pending_rage_markers(delta)
-		effect_handler.trigger_rage_changed(player.player_id, old_rage, new_rage)
+		dispatcher.trigger_rage_changed(player.player_id, old_rage, new_rage)
 
 	# Reset per-turn flags
 	player.has_invaded_this_turn = false
@@ -82,7 +82,7 @@ func execute_end_phase_burst_discard(state: GameState) -> void:
 		player.pre_burst_monster = {}
 		player.monster_changed.emit()
 		player.discard_changed.emit()
-		await effect_handler.trigger_burst_discard(player.player_id, burst_card)
+		await dispatcher.trigger_burst_discard(player.player_id, burst_card)
 
 
 func execute_end_phase_advance(state: GameState) -> void:
@@ -93,18 +93,18 @@ func execute_end_phase_advance(state: GameState) -> void:
 	var player := state.get_current_player()
 
 	# Check if monster is blocked from advancing (e.g. Biollante Rose Form)
-	if effect_handler.is_monster_advance_blocked(player.player_id):
+	if queries.is_monster_advance_blocked(player.player_id):
 		return
 
-	var extra: int = effect_handler.get_extra_end_phase_advance(player.player_id)
+	var extra: int = queries.get_extra_end_phase_advance(player.player_id)
 	var total_advance: int = 1 + extra
 	var deferred_entries: Array = []
 	var from_invasion := false  # the 7.5.2 advance is not an invasion
-	effect_handler.monster_mover.advance(player.player_id, total_advance, from_invasion, deferred_entries)
+	monster_mover.advance(player.player_id, total_advance, from_invasion, deferred_entries)
 
 	# Submit the collected abilities once all movement completes; they
 	# resolve at the 7.5.3 check timing.
-	effect_handler.check_timing.submit(deferred_entries)
+	check_timing.submit(deferred_entries)
 
 
 func execute_end_phase_draw(state: GameState) -> void:
@@ -114,7 +114,7 @@ func execute_end_phase_draw(state: GameState) -> void:
 	# so the "draw blocked" log line would just be noise.
 	if player.hand.size() >= 5:
 		return
-	if effect_handler.is_opponent_end_phase_draw_blocked(player.player_id):
+	if queries.is_opponent_end_phase_draw_blocked(player.player_id):
 		effect_handler.log_message.emit(tr("STR_AH_END_PHASE_DRAW_BLOCKED"))
 		return
 	var drawn := player.draw_up_to(5)

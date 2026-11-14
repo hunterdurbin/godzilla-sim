@@ -22,16 +22,16 @@ func compute_counter_numbers(state: GameState) -> Dictionary:
 	var prevented := false
 	# Apply effect modifiers
 	if effect_handler:
-		total_cp += effect_handler.get_counter_power_modifier(player.player_id)
-		effect_threat = effect_handler.get_threat_level_modifier(opponent.player_id)
+		total_cp += queries.get_counter_power_modifier(player.player_id)
+		effect_threat = queries.get_threat_level_modifier(opponent.player_id)
 		threat += effect_threat
 		# Subtract base CP of cards restricted from engaging by opponent's monster
-		total_cp -= effect_handler.get_engagement_restricted_cp(player.player_id)
-		immunity_threshold = effect_handler.get_counter_immunity_threshold(opponent.player_id)
+		total_cp -= queries.get_engagement_restricted_cp(player.player_id)
+		immunity_threshold = queries.get_counter_immunity_threshold(opponent.player_id)
 		# Full counter prevention (e.g. EBP04-014/031/032): no retreat, no rank
 		# up — counter simply doesn't happen. Distinct from counter immunity
 		# which still retreats. May be CP-conditional, hence total_cp.
-		prevented = effect_handler.is_counter_prevented(opponent.player_id, total_cp)
+		prevented = queries.is_counter_prevented(opponent.player_id, total_cp)
 	return {
 		"total_cp": total_cp,
 		"threat": threat,
@@ -73,7 +73,7 @@ func resolve_counter(state: GameState) -> void:
 		# controls that monster card chooses the order of resolution." If the
 		# rank-up is impossible the game ends first (5.15.1.2.1).
 		if effect_handler:
-			effect_handler.trigger_counter_success(player.player_id, opponent.player_id)
+			dispatcher.trigger_counter_success(player.player_id, opponent.player_id)
 
 		# Opponent must rank up their monster
 		await _rank_up_monster(state, opponent, player.player_id)
@@ -99,7 +99,7 @@ func _apply_counter_retreat(target: PlayerState) -> void:
 	## interrupt rule action (11.1.2.1, 11.3) — so the crushed card's
 	## abilities go to standby before the counter-success triggers and the
 	## new monster's <Enter>. A rule action: no move blocking applies.
-	effect_handler.monster_mover.counter_retreat(target.player_id)
+	monster_mover.counter_retreat(target.player_id)
 
 
 func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id: int) -> void:
@@ -123,7 +123,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 			continue
 		var trait_ok := _traits_overlap(m.get("traits", []), cur_traits)
 		if not trait_ok and effect_handler:
-			trait_ok = effect_handler.can_play_as_monster(opponent.player_id, m)
+			trait_ok = queries.can_play_as_monster(opponent.player_id, m)
 		if trait_ok:
 			valid_indices.append(i)
 
@@ -153,7 +153,7 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 		events.monster_countered.emit(opponent.player_id, old_monster, m)
 		opponent.monster_changed.emit()
 		if effect_handler:
-			effect_handler.trigger_enter(opponent.player_id, m, true)
+			dispatcher.trigger_enter(opponent.player_id, m, true)
 	else:
 		# Opponent loses - can't find valid rank-up monster
 		state.game_over.emit(winner_player_id, "STR_LOG_REASON_COUNTER_VICTORY")
