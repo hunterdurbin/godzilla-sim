@@ -20,12 +20,12 @@ static func setup(tm: TurnManager, card_data_node: Node, config: SessionConfig =
 		var player := tm.game_state.players[i]
 		var deck: Dictionary = tm.session_config.decks[i]
 		if not deck.is_empty():
-			player.monster_deck = deck["monster_deck"].duplicate(true)
-			player.main_deck = deck["main_deck"].duplicate(true)
+			player.set_monster_deck(deck["monster_deck"].duplicate(true))
+			player.set_main_deck(deck["main_deck"].duplicate(true))
 		else:
-			player.monster_deck = card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA)
-			player.main_deck = card_data_node.get_main_deck(i)
-		player.main_deck.shuffle()
+			player.set_monster_deck(card_data_node.get_monster_deck(CardEnums.CardTrait.GODZILLA))
+			player.set_main_deck(card_data_node.get_main_deck(i))
+		player.shuffle_deck()
 
 	# Apply per-format card printing (e.g. Rumble East uses the JP traits). Resolved
 	# here, per-match, because the active format isn't known when decks are built.
@@ -40,11 +40,11 @@ static func setup(tm: TurnManager, card_data_node: Node, config: SessionConfig =
 	for player in tm.game_state.players:
 		for m in player.monster_deck:
 			if m.get("rank") == 1:
-				player.current_monster = m
-				player.monster_deck.erase(m)
+				player.remove_from_monster_deck(m)
+				player.set_current_monster(m)
 				break
 		tm.effect_handler.monster_mover.place_at_start(player.player_id, player.current_monster.get("start_zone", 1))
-		player.rage = 0
+		player.set_rage(0)
 
 	# Draw 5 cards each
 	for player in tm.game_state.players:

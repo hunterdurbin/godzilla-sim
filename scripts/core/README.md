@@ -10,7 +10,7 @@ per-copy instance ids like `EBP04-067_0_3` — compare with
 | File | Role |
 |---|---|
 | `game_state.gd` | Match-level state container (holds 2 PlayerStates) |
-| `player_state.gd` | Per-player state + zone/deck helpers. Zone-occupancy semantics are split: `is_zone_empty`/`get_empty_zone_indices` for placement (the monster zone is never "empty"); `zone_has_battle_card`/`get_battle_card_zone_indices` for "has a battle card" |
+| `player_state.gd` | Per-player state + zone/deck helpers + the mutators (§ Mutators) that are the engine's only way to change a player's areas. Zone-occupancy semantics are split: `is_zone_empty`/`get_empty_zone_indices` for placement (the monster zone is never "empty"); `zone_has_battle_card`/`get_battle_card_zone_indices` for "has a battle card" |
 | `rules_engine.gd` | Pure validation (`valid_actions`, `validate_action`); depends only on injected `EffectQueries` (`rules_engine.queries`); gates server-side action validation. Owns COST legality of a battle-card play; asks `EnterZone.is_rule_legal` for RULE legality. Owns the counter rules too: `compute_counter_numbers` and `get_rank_up_candidates` (CounterResolver applies their outcome) |
 | `turn_manager.gd` | Phase state machine; exposes `flow_state` (IDLE / AWAITING_ACTION / PROCESSING_ACTION / ADVANCING_PHASES / GAME_OVER) |
 | `match_factory.gd` | Builds + wires a match (`setup` / `setup_from_save`); TurnManager delegates to it |
@@ -20,6 +20,15 @@ per-copy instance ids like `EBP04-067_0_3` — compare with
 
 ## Contracts
 
+- **PlayerState mutators emit immediately**: engine code (`scripts/core/`,
+  `scripts/effects/`) changes hand / deck / discard / zones / strategy zones /
+  monster / rage only through `PlayerState` mutators (`push_zone_card`,
+  `add_to_discard`, `place_strategy`, `set_current_monster`, `set_rage`, …).
+  Each call emits its `*_changed` signal before it returns (a bulk mutator
+  emits once for its batch), so callers never emit by hand or hold a signal
+  back. A missing mutator gets added to `player_state.gd`.
+  Enforced by `scripts/tools/check_card_mutations.py` (engine scope).
+  `set_monster_zone` is MonsterMover's alone (`check_monster_zone_writers.py`).
 - **Teardown**: every TurnManager owner MUST call `teardown()` when done or
   the cyclic engine graph leaks (verify with headless `--verbose` leak check).
 - **Prompt signatures**: changing a prompt's parameters touches every implementation:

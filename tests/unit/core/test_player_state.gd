@@ -138,3 +138,149 @@ func test_count_zone_tokens_by_id_matches_base_id() -> void:
 	# A matching base id without the TOKEN trait must not count.
 	player.push_zone_card(2, Cards.battle(1, 0, "EBP02-T03_0_2"))
 	assert_int(player.count_zone_tokens_by_id("EBP02-T03")).is_equal(2)
+
+
+# --- Mutators emit their change signal immediately (tracker #23) ---
+
+func _count(sig: Signal) -> Array[int]:
+	## A one-cell counter bumped on every emission of `sig` (any arity).
+	var fired: Array[int] = [0]
+	var bump := func(_a: Variant = null) -> void: fired[0] += 1
+	sig.connect(bump)
+	return fired
+
+
+func test_zone_mutators_emit_zones_changed() -> void:
+	var player := PlayerState.new(0)
+	var fired := _count(player.zones_changed)
+	player.push_zone_card(0, Cards.battle(1, 5000, "TOP"))
+	assert_int(fired[0]).is_equal(1)
+	player.add_card_under_zone(0, Cards.battle(1, 5000, "UNDER"))
+	assert_int(fired[0]).is_equal(2)
+	assert_str(player.get_zone_stack(0)[1].get("id", "")).is_equal("UNDER")
+	var under: Array = player.remove_cards_under_top(0)
+	assert_int(fired[0]).is_equal(3)
+	assert_str(under[0].get("id", "")).is_equal("UNDER")
+	assert_int(player.get_zone_stack(0).size()).is_equal(1)
+	player.swap_zone_stacks(0, 3)
+	assert_int(fired[0]).is_equal(4)
+	assert_str(player.get_zone_top_card(3).get("id", "")).is_equal("TOP")
+	player.move_zone_stack(3, 5)
+	assert_int(fired[0]).is_equal(5)
+	assert_bool(player.zone_has_cards(3)).is_false()
+	assert_str(player.get_zone_top_card(5).get("id", "")).is_equal("TOP")
+	player.clear_zone(5)
+	assert_int(fired[0]).is_equal(6)
+
+
+func test_hand_mutators_emit_hand_changed() -> void:
+	var player := PlayerState.new(0)
+	var fired := _count(player.hand_changed)
+	var a := Cards.battle(1, 5000, "A")
+	var b := Cards.battle(1, 5000, "B")
+	player.add_to_hand(a)
+	player.add_cards_to_hand([b, Cards.battle(1, 5000, "C")])
+	assert_int(fired[0]).is_equal(2)
+	assert_str(player.remove_hand_card_at(1).get("id", "")).is_equal("B")
+	assert_int(fired[0]).is_equal(3)
+	player.insert_into_hand(0, b)
+	assert_str(player.hand[0].get("id", "")).is_equal("B")
+	assert_int(fired[0]).is_equal(4)
+	assert_bool(player.remove_from_hand(a)).is_true()
+	assert_int(fired[0]).is_equal(5)
+	# Removing a card that isn't there changes nothing and emits nothing.
+	assert_bool(player.remove_from_hand(a)).is_false()
+	player.add_cards_to_hand([])
+	assert_int(fired[0]).is_equal(5)
+	assert_int(player.hand.size()).is_equal(2)
+
+
+func test_discard_mutators_emit_discard_changed() -> void:
+	var player := PlayerState.new(0)
+	var fired := _count(player.discard_changed)
+	var a := Cards.battle(1, 5000, "A")
+	player.add_to_discard(a)
+	player.add_cards_to_discard([Cards.battle(1, 5000, "B"), Cards.battle(1, 5000, "C")])
+	assert_int(fired[0]).is_equal(2)
+	assert_str(player.remove_discard_card_at(2).get("id", "")).is_equal("C")
+	assert_bool(player.remove_from_discard(a)).is_true()
+	assert_bool(player.remove_from_discard(a)).is_false()
+	assert_int(fired[0]).is_equal(4)
+	assert_int(player.discard_pile.size()).is_equal(1)
+
+
+func test_deck_mutators_emit_deck_changed() -> void:
+	var player := PlayerState.new(0)
+	var fired := _count(player.deck_changed)
+	player.set_main_deck([Cards.battle(1, 5000, "A"), Cards.battle(1, 5000, "B"), Cards.battle(1, 5000, "C")])
+	assert_int(fired[0]).is_equal(1)
+	var top: Array[Dictionary] = player.take_deck_top_cards(2)
+	assert_str(top[0].get("id", "")).is_equal("A")
+	assert_int(fired[0]).is_equal(2)
+	# keep[0] ends up on top.
+	player.put_cards_on_deck_top(top)
+	assert_str(player.main_deck[0].get("id", "")).is_equal("A")
+	assert_str(player.main_deck[1].get("id", "")).is_equal("B")
+	player.put_on_deck_top(Cards.battle(1, 5000, "T"))
+	player.put_on_deck_bottom(Cards.battle(1, 5000, "Z"))
+	assert_str(player.main_deck[0].get("id", "")).is_equal("T")
+	assert_str(player.main_deck[-1].get("id", "")).is_equal("Z")
+	assert_str(player.remove_deck_card_at(0).get("id", "")).is_equal("T")
+	player.put_cards_on_deck_bottom([Cards.battle(1, 5000, "Y")])
+	player.shuffle_deck()
+	assert_int(fired[0]).is_equal(8)
+	assert_int(player.main_deck.size()).is_equal(5)
+	# Taking from an empty deck emits nothing.
+	player.set_main_deck([])
+	assert_int(player.take_deck_top_cards(1).size()).is_equal(0)
+	assert_int(fired[0]).is_equal(9)
+
+
+func test_monster_mutators_emit_monster_changed() -> void:
+	var player := PlayerState.new(0)
+	var fired := _count(player.monster_changed)
+	var r1 := Cards.monster(1, 6000)
+	var r2 := Cards.monster(2, 8000)
+	player.set_monster_deck([r1, r2])
+	assert_bool(player.remove_from_monster_deck(r1)).is_true()
+	player.set_current_monster(r1)
+	player.push_under_monster(Cards.battle(1, 5000, "UNDER"))
+	player.add_cards_under_monster([Cards.battle(1, 5000, "BOTTOM")])
+	assert_int(fired[0]).is_equal(5)
+	assert_str(player.monster_stack[0].get("id", "")).is_equal("UNDER")
+	assert_str(player.monster_stack[1].get("id", "")).is_equal("BOTTOM")
+	assert_str(player.pop_under_monster().get("id", "")).is_equal("UNDER")
+	assert_int(fired[0]).is_equal(6)
+	assert_int(player.monster_deck.size()).is_equal(1)
+
+
+func test_set_rage_emits_rage_changed_with_value() -> void:
+	var player := PlayerState.new(0)
+	var seen: Array[int] = []
+	player.rage_changed.connect(func(v: int) -> void: seen.append(v))
+	player.set_rage(3)
+	player.set_rage(1)
+	assert_array(seen).contains_exactly([3, 1])
+	assert_int(player.rage).is_equal(1)
+
+
+func test_strategy_mutators_emit_strategy_zones_changed() -> void:
+	var player := PlayerState.new(0)
+	var fired := _count(player.strategy_zones_changed)
+	var strat := Cards.strategy(1, "S")
+	player.place_strategy(1, strat, 4)
+	assert_int(player.strategy_zone_turn_placed[1]).is_equal(4)
+	player.add_card_under_strategy(1, Cards.battle(1, 5000, "MARK"))
+	assert_int(player.strategy_zone_stacks[1].size()).is_equal(1)
+	assert_str(player.clear_strategy_zone(1).get("id", "")).is_equal("S")
+	assert_bool(player.strategy_zones[1].is_empty()).is_true()
+	assert_int(player.strategy_zone_stacks[1].size()).is_equal(0)
+	assert_int(fired[0]).is_equal(3)
+
+
+func test_set_monster_zone_emits_monster_changed() -> void:
+	var player := PlayerState.new(0)
+	var fired := _count(player.monster_changed)
+	player.set_monster_zone(4)
+	assert_int(player.monster_zone).is_equal(4)
+	assert_int(fired[0]).is_equal(1)

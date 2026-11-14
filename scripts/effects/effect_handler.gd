@@ -146,8 +146,7 @@ func reduce_rage(player_id: int, amount: int) -> int:
 		return 0
 	var old_rage: int = player.rage
 	var actual: int = mini(amount, player.rage)
-	player.rage -= actual
-	player.rage_changed.emit(player.rage)
+	player.set_rage(player.rage - actual)
 	player.push_pending_rage_markers(actual)
 	dispatcher.trigger_rage_changed(player_id, old_rage, player.rage)
 	return actual
@@ -162,8 +161,7 @@ func gain_rage(player_id: int, amount: int, source_card_id: String = "") -> int:
 		return 0
 	var player := game_state.players[player_id]
 	var old_rage: int = player.rage
-	player.rage += amount
-	player.rage_changed.emit(player.rage)
+	player.set_rage(player.rage + amount)
 	log_message.emit(GameLog.rage_gained(player_id, amount, player.rage, source_card_id))
 	dispatcher.trigger_rage_changed(player_id, old_rage, player.rage)
 	return amount

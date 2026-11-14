@@ -161,15 +161,17 @@ func test_an_effect_advance_emits_monster_advanced_and_monster_changed_per_step(
 	_teardown(s)
 
 
-func test_an_invasion_emits_monster_changed_only_on_the_victory_step() -> void:
+func test_an_invasion_emits_monster_changed_on_every_step() -> void:
+	# PlayerState.set_monster_zone emits per move (tracker #23): nothing is
+	# held back until the invasion ends.
 	var s := _setup(7)
 	var changes := _count_changed(_p0(s))
 
 	assert_bool(_mover(s).advance(0, 1, true, [])).is_false()
-	assert_int(changes[0]).is_equal(0)
+	assert_int(changes[0]).is_equal(1)
 
 	assert_bool(_mover(s).advance(0, 1, true, [])).is_true()
-	assert_int(changes[0]).is_equal(1)
+	assert_int(changes[0]).is_equal(2)
 	_teardown(s)
 
 

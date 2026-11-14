@@ -137,7 +137,7 @@ func test_shuffle_cards_into_deck_is_deterministic_under_a_seed() -> void:
 		seed(1234)
 		handler.shuffle_cards_into_deck(0, _deck(["X", "Y"]))
 		assert_int(p0.main_deck.size()).is_equal(7)
-		assert_int(fired[0]).is_equal(1)
+		assert_int(fired[0]).is_equal(2)  # each mutator emits: add, then shuffle
 		runs.append(_ids(p0.main_deck))
 	assert_array(runs[0]).is_equal(runs[1])
 	assert_array(runs[0]).contains(["X", "Y"])
@@ -251,7 +251,9 @@ func test_place_cards_under_monster_takes_cards_out_of_discard_and_monster_deck(
 	assert_array(_ids(p0.monster_stack)).is_equal(["FROM-DISCARD", "FROM-MDECK"])
 	assert_array(_ids(p0.discard_pile)).is_equal(["STAYS"])
 	assert_bool(p0.monster_deck.has(from_mdeck)).is_false()
-	assert_array(signals).is_equal(["discard", "monster"])
+	# Each PlayerState mutator emits as it runs: out of the discard pile, out
+	# of the monster deck, then under the monster.
+	assert_array(signals).is_equal(["discard", "monster", "monster"])
 
 
 func test_place_cards_under_monster_noop_when_empty() -> void:

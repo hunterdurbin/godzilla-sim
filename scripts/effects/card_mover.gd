@@ -46,11 +46,9 @@ func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 	sorted_indices.reverse()
 	for idx in sorted_indices:
 		if idx >= 0 and idx < player.hand.size():
-			var card: Dictionary = player.hand.pop_at(idx)
-			player.discard_pile.append(card)
+			var card: Dictionary = player.remove_hand_card_at(idx)
+			player.add_to_discard(card)
 			discarded_cards.append(card)
-	player.hand_changed.emit()
-	player.discard_changed.emit()
 	# Bundle all simultaneously-discarded triggers into one standby batch so
 	# the player can choose resolution order when 2+ cards trigger (10.4.3).
 	dispatcher.trigger_hand_cards_discarded_batch(player_id, discarded_cards)
@@ -81,11 +79,9 @@ func search_deck(player_id: int, filter: Callable, prompt: String, allow_skip: b
 		var card_id: String = selected.get("id", "")
 		for i in range(player.main_deck.size()):
 			if player.main_deck[i].get("id") == card_id:
-				selected = player.main_deck[i]
-				player.main_deck.remove_at(i)
+				selected = player.remove_deck_card_at(i)
 				break
-	player.main_deck.shuffle()
-	player.deck_changed.emit()
+	player.shuffle_deck()
 	return selected
 
 
@@ -123,10 +119,7 @@ func arrange_deck_top(player_id: int, count: int, prompt: String) -> Dictionary:
 	var result: Dictionary = await arrange_deck_cards(player_id, cards, prompt)
 	var player := game_state.players[player_id]
 	var keep: Array = result.get("keep", [])
-	for i in range(keep.size() - 1, -1, -1):
-		player.main_deck.push_front(keep[i])
-	if not keep.is_empty():
-		player.deck_changed.emit()
+	player.put_cards_on_deck_top(keep)
 	var discard: Array[Dictionary] = []
 	discard.assign(result.get("discard", []))
 	discard_cards(player_id, discard)
@@ -143,13 +136,7 @@ func take_deck_top(player_id: int, count: int) -> Array[Dictionary]:
 	## add_card(s)_to_hand, discard via discard_cards, back via
 	## shuffle_cards_into_deck). Emits deck_changed when any card was taken.
 	## For a reveal overlay use reveal_deck_top instead.
-	var player := game_state.players[player_id]
-	var taken: Array[Dictionary] = []
-	while taken.size() < count and not player.main_deck.is_empty():
-		taken.append(player.main_deck.pop_front())
-	if not taken.is_empty():
-		player.deck_changed.emit()
-	return taken
+	return game_state.players[player_id].take_deck_top_cards(count)
 
 
 
@@ -159,12 +146,12 @@ func shuffle_cards_into_deck(player_id: int, cards: Array[Dictionary]) -> void:
 	## removed from wherever they were, e.g. by take_deck_top or search_deck)
 	## to the player's main deck, then shuffle the whole deck with the global
 	## RNG (the same stream search_deck's shuffle uses, so seeded sims and
-	## replays stay deterministic). Emits deck_changed. With no cards it still
+	## replays stay deterministic). Emits deck_changed twice (add, shuffle;
+	## once when `cards` is empty). With no cards it still
 	## shuffles: "then shuffle your deck" happens either way.
 	var player := game_state.players[player_id]
-	player.main_deck.append_array(cards)
-	player.main_deck.shuffle()
-	player.deck_changed.emit()
+	player.put_cards_on_deck_bottom(cards)
+	player.shuffle_deck()
 
 
 
@@ -234,10 +221,8 @@ func search_discard(player_id: int, filter: Callable, prompt: String, allow_skip
 		var card_id: String = selected.get("id", "")
 		for i in range(player.discard_pile.size()):
 			if player.discard_pile[i].get("id") == card_id:
-				selected = player.discard_pile[i]
-				player.discard_pile.remove_at(i)
+				selected = player.remove_discard_card_at(i)
 				break
-	player.discard_changed.emit()
 	return selected
 
 
@@ -252,10 +237,8 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 	if chosen_index < 0:
 		return {}
 
-	var card: Dictionary = player.hand.pop_at(chosen_index)
-	player.discard_pile.append(card)
-	player.hand_changed.emit()
-	player.discard_changed.emit()
+	var card: Dictionary = player.remove_hand_card_at(chosen_index)
+	player.add_to_discard(card)
 	# One standby batch (10.4.3) — mid-effect, both wait for the check timing.
 	dispatcher.trigger_hand_cards_discarded_batch(player_id, [card])
 	return card
@@ -272,9 +255,7 @@ func take_hand_card(player_id: int, filter: Callable, prompt: String, allow_skip
 	if chosen_index < 0:
 		return {}
 
-	var card: Dictionary = player.hand.pop_at(chosen_index)
-	player.hand_changed.emit()
-	return card
+	return player.remove_hand_card_at(chosen_index)
 
 
 
@@ -350,15 +331,9 @@ func reveal_deck_top(player_id: int, count: int, title_key: String = "STR_EFF_RE
 	## Pop up to `count` cards from the top of the player's deck and present them
 	## with a reveal overlay. Returns the popped cards — caller decides disposition
 	## (discard, partition, play, etc.).
-	var player := game_state.players[player_id]
-	var revealed: Array[Dictionary] = []
-	for i in range(count):
-		if player.main_deck.is_empty():
-			break
-		revealed.append(player.main_deck.pop_front())
+	var revealed: Array[Dictionary] = game_state.players[player_id].take_deck_top_cards(count)
 	if revealed.is_empty():
 		return revealed
-	player.deck_changed.emit()
 	await h.reveal_cards(player_id, revealed, tr(title_key))
 	return revealed
 
@@ -368,9 +343,12 @@ func reveal_deck_top(player_id: int, count: int, title_key: String = "STR_EFF_RE
 static func banish_or_discard(player: PlayerState, stack: Array) -> void:
 	## Route cards to banishment (tokens) or discard pile (non-tokens).
 	## Tokens are removed from the game entirely; non-tokens go to discard pile.
+	## Emits discard_changed when anything was discarded.
+	var discarded: Array = []
 	for card in stack:
 		if not PlayerState.is_token(card):
-			player.discard_pile.append(card)
+			discarded.append(card)
+	player.add_cards_to_discard(discarded)
 
 
 
@@ -378,12 +356,7 @@ static func banish_or_discard(player: PlayerState, stack: Array) -> void:
 func discard_cards(player_id: int, cards: Array[Dictionary]) -> void:
 	## Append a batch of cards to the player's discard pile and emit discard_changed.
 	## For tokens or mixed batches, use banish_or_discard per-card instead.
-	if cards.is_empty():
-		return
-	var player := game_state.players[player_id]
-	for card in cards:
-		player.discard_pile.append(card)
-	player.discard_changed.emit()
+	game_state.players[player_id].add_cards_to_discard(cards)
 
 
 
@@ -394,15 +367,9 @@ func search_and_discard_deck_top(player_id: int, count: int, filter: Callable, p
 	## non-matching cards are accessible via the "Show All" toggle in the UI so
 	## the player can see the full reveal. Everything not picked is discarded.
 	## Returns the picked card, or {} if there were no matches or the player skipped.
-	var player := game_state.players[player_id]
-	var popped: Array[Dictionary] = []
-	for _i in range(count):
-		if player.main_deck.is_empty():
-			break
-		popped.append(player.main_deck.pop_front())
+	var popped: Array[Dictionary] = game_state.players[player_id].take_deck_top_cards(count)
 	if popped.is_empty():
 		return {}
-	player.deck_changed.emit()
 
 	var matching: Array[Dictionary] = []
 	for card in popped:
@@ -638,12 +605,9 @@ func move_zone_card_to_deck_bottom(player: PlayerState, card_data: Dictionary) -
 		if zone_card.get("id", "") == card_id:
 			var stack: Array = player.clear_zone(i)
 			if not stack.is_empty():
-				player.main_deck.append(stack[0])
+				player.put_on_deck_bottom(stack[0])
 				# Place any cards under it into discard
-				for j in range(1, stack.size()):
-					banish_or_discard(player, [stack[j]])
-			player.zones_changed.emit()
-			player.deck_changed.emit()
+				banish_or_discard(player, stack.slice(1))
 			return
 
 
@@ -679,11 +643,7 @@ func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
 	## Swap two zone stacks and fire on_zone_changed for each top card that moved.
 	var top_a: Dictionary = player.get_zone_top_card(zone_a)
 	var top_b: Dictionary = player.get_zone_top_card(zone_b)
-	var stack_a: Array = player.zones[zone_a].duplicate()
-	var stack_b: Array = player.zones[zone_b].duplicate()
-	player.zones[zone_a] = stack_b
-	player.zones[zone_b] = stack_a
-	player.zones_changed.emit()
+	player.swap_zone_stacks(zone_a, zone_b)
 	dispatcher.trigger_zone_changed(player.player_id, top_a, zone_a, zone_b)
 	dispatcher.trigger_zone_changed(player.player_id, top_b, zone_b, zone_a)
 
@@ -708,17 +668,15 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 	var card_id: String = card_data.get("id", "")
 	for i in range(player.discard_pile.size() - 1, -1, -1):
 		if player.discard_pile[i].get("id", "") == card_id:
-			player.discard_pile.remove_at(i)
+			player.remove_discard_card_at(i)
 			break
-	player.discard_changed.emit()
 
 	var valid_zones := enter_zone.legal_zones(player_id, card_data)
 	var card_name: String = card_data.get("name", "card")
 	zone_idx = await h.select_zone_target(player_id, player_id, valid_zones, tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_name, false, CardUtils.base_id(card_data))
 	if zone_idx < 0:
 		# Can't skip — put back in discard as fallback
-		player.discard_pile.append(card_data)
-		player.discard_changed.emit()
+		player.add_to_discard(card_data)
 		return -1
 	enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DISCARD)
 	return zone_idx
@@ -785,8 +743,7 @@ func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int)
 	## Place a card under the top card of a zone (into the zone stack below the top).
 	if zone_idx < 0 or zone_idx >= 8:
 		return
-	player.zones[zone_idx].append(card)
-	player.zones_changed.emit()
+	player.add_card_under_zone(zone_idx, card)
 
 
 
@@ -797,7 +754,7 @@ func play_strategy_from_effect(player_id: int, card: Dictionary, zone_idx: int =
 	## Same bookkeeping as playing from hand: occupies the strategy zone
 	## (zone_idx, or the first empty one when -1), stamps the turn placed (so
 	## the 7.2.3 start-phase discard treats it as placed this turn), emits
-	## GameEvents.strategy_card_played + strategy_zones_changed, logs
+	## strategy_zones_changed then GameEvents.strategy_card_played, logs
 	## played_strategy, then fires its <Enter> as an effect play.
 	## The card is first taken out of the player's hand or discard pile if it
 	## is still there (safe after search_deck / search_discard / take_hand_card).
@@ -808,17 +765,11 @@ func play_strategy_from_effect(player_id: int, card: Dictionary, zone_idx: int =
 	var idx: int = zone_idx if zone_idx >= 0 else player.get_first_empty_strategy_zone_index()
 	if idx < 0 or idx >= player.strategy_zones.size() or not player.strategy_zones[idx].is_empty():
 		return -1
-	if card in player.hand:
-		player.hand.erase(card)
-		player.hand_changed.emit()
-	elif card in player.discard_pile:
-		player.discard_pile.erase(card)
-		player.discard_changed.emit()
-	player.strategy_zones[idx] = card
-	player.strategy_zone_turn_placed[idx] = game_state.turn_number
+	if not player.remove_from_hand(card):
+		player.remove_from_discard(card)
+	player.place_strategy(idx, card, game_state.turn_number)
 	if events != null:
 		events.strategy_card_played.emit(player_id, card, idx)
-	player.strategy_zones_changed.emit()
 	h.log_message.emit(GameLog.played_strategy(player_id, card.get("id", ""), card.get("is_base", false)))
 	dispatcher.trigger_enter(player_id, card, true)
 	return idx
@@ -838,10 +789,7 @@ func move_strategy_card_under_zone(player: PlayerState, strat_idx: int, zone_idx
 	var card: Dictionary = player.strategy_zones[strat_idx]
 	if card.is_empty() or zone_idx < 0 or zone_idx >= 8 or not player.zone_has_cards(zone_idx):
 		return false
-	player.strategy_zones[strat_idx] = {}
-	if strat_idx < player.strategy_zone_stacks.size():
-		player.strategy_zone_stacks[strat_idx] = []
-	player.strategy_zones_changed.emit()
+	player.clear_strategy_zone(strat_idx)
 	place_card_under_zone(player, card, zone_idx)
 	return true
 
@@ -852,22 +800,16 @@ func place_cards_under_monster(player_id: int, cards: Array[Dictionary]) -> void
 	## "Place <cards> under your monster card": append them to the player's
 	## monster_stack. Each card is first removed from the player's discard pile
 	## or monster deck if it is still there (safe to call with cards already
-	## taken out, e.g. by search_discard). Emits discard_changed /
-	## monster_changed as applicable. No-op when empty.
+	## taken out, e.g. by search_discard). Emits discard_changed per card
+	## taken from the discard pile, monster_changed per card taken from the
+	## monster deck, then monster_changed once for the add. No-op when empty.
 	if cards.is_empty():
 		return
 	var player := game_state.players[player_id]
-	var discard_touched := false
 	for card in cards:
-		if card in player.discard_pile:
-			player.discard_pile.erase(card)
-			discard_touched = true
-		elif card in player.monster_deck:
-			player.monster_deck.erase(card)
-		player.monster_stack.append(card)
-	if discard_touched:
-		player.discard_changed.emit()
-	player.monster_changed.emit()
+		if not player.remove_from_discard(card):
+			player.remove_from_monster_deck(card)
+	player.add_cards_under_monster(cards)
 
 
 
@@ -882,9 +824,7 @@ func move_zone_card_under_zone(player: PlayerState, from_zone: int, to_zone: int
 	if not player.zone_has_cards(from_zone) or not player.zone_has_cards(to_zone):
 		return false
 	var stack: Array = player.clear_zone(from_zone)
-	if stack.size() > 1:
-		banish_or_discard(player, stack.slice(1))
-		player.discard_changed.emit()
+	banish_or_discard(player, stack.slice(1))
 	place_card_under_zone(player, stack[0], to_zone)
 	return true
 
@@ -897,12 +837,11 @@ func return_cards_under_top_to_hand(player: PlayerState, zone_idx: int) -> Array
 	## stays. Synchronous, so replacement hooks (on_would_be_destroyed) can call
 	## it. Returns the cards added, top-of-stack first ([] when none).
 	var under: Array[Dictionary] = []
-	for card in get_cards_under_top(player, zone_idx):
-		under.append(card)
+	if zone_idx < 0 or zone_idx >= 8:
+		return under
+	under.assign(player.remove_cards_under_top(zone_idx))
 	if under.is_empty():
 		return under
-	player.zones[zone_idx] = [player.get_zone_top_card(zone_idx)]
-	player.zones_changed.emit()
 	add_cards_to_hand(player.player_id, under)
 	return under
 
@@ -926,8 +865,7 @@ func place_card_under_strategy_zone(player: PlayerState, card: Dictionary, strat
 	## Used by EBP04-089 (Inherited Life) to track rage card placements.
 	if strat_idx < 0 or strat_idx >= player.strategy_zone_stacks.size():
 		return
-	player.strategy_zone_stacks[strat_idx].append(card)
-	player.strategy_zones_changed.emit()
+	player.add_card_under_strategy(strat_idx, card)
 
 
 
@@ -947,12 +885,8 @@ func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
 	## been popped from discard (e.g. by search_discard) — the erase becomes a no-op.
 	## Logs the return attributed to whichever effect is currently active.
 	var player := game_state.players[player_id]
-	var was_in_discard: bool = card in player.discard_pile
-	if was_in_discard:
-		player.discard_pile.erase(card)
-		player.discard_changed.emit()
-	player.hand.append(card)
-	player.hand_changed.emit()
+	player.remove_from_discard(card)
+	player.add_to_hand(card)
 	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_returned_card_to_hand(player_id, source_id, card.get("id", "")))
 	dispatcher.trigger_card_returned_from_discard(player_id, card)
@@ -966,9 +900,7 @@ func add_card_to_hand(player_id: int, card: Dictionary) -> void:
 	## (deck top reveal, search result, etc.). Use this instead of a raw hand.append
 	## so the add is visible in the game log. For returns from the discard pile use
 	## return_discard_to_hand instead — it also fires on_card_returned_from_discard.
-	var player := game_state.players[player_id]
-	player.hand.append(card)
-	player.hand_changed.emit()
+	game_state.players[player_id].add_to_hand(card)
 	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_added_card_to_hand(player_id, source_id, card.get("id", "")))
 
@@ -980,10 +912,7 @@ func add_cards_to_hand(player_id: int, cards: Array[Dictionary]) -> void:
 	## to a player's hand and log them as a single combined line. No-op when empty.
 	if cards.is_empty():
 		return
-	var player := game_state.players[player_id]
-	for card in cards:
-		player.hand.append(card)
-	player.hand_changed.emit()
+	game_state.players[player_id].add_cards_to_hand(cards)
 	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_added_cards_to_hand(player_id, source_id, cards))
 
@@ -998,11 +927,8 @@ func put_card_on_top_of_deck(player_id: int, card: Dictionary) -> void:
 	## was still in the discard pile). Use this instead of a raw main_deck.push_front
 	## so the placement is visible in the game log.
 	var player := game_state.players[player_id]
-	if card in player.discard_pile:
-		player.discard_pile.erase(card)
-		player.discard_changed.emit()
-	player.main_deck.push_front(card)
-	player.deck_changed.emit()
+	player.remove_from_discard(card)
+	player.put_on_deck_top(card)
 	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_put_card_on_top_of_deck(player_id, source_id, card.get("id", "")))
 
@@ -1015,9 +941,7 @@ func put_card_on_bottom_of_deck(player_id: int, card: Dictionary) -> void:
 	## log it, attributed to the active effect. The log line names the card,
 	## which doubles as the public reveal for "reveal … and place it on the
 	## bottom of your deck" text (ESD04-001).
-	var player := game_state.players[player_id]
-	player.main_deck.append(card)
-	player.deck_changed.emit()
+	game_state.players[player_id].put_on_deck_bottom(card)
 	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_put_card_on_bottom_of_deck(player_id, source_id, card.get("id", "")))
 

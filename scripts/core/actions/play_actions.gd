@@ -8,14 +8,13 @@ extends ActionResolver
 func play_battle_card(hand_index: int, zone_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
 
-	var card: Dictionary = player.hand.pop_at(hand_index)
+	var card: Dictionary = player.remove_hand_card_at(hand_index)
 
 	# Apply optional play costs (e.g., ESC01-001 discard a Godzilla card for rank reduction)
 	var proceed: bool = await mover.apply_play_cost(player.player_id, card, zone_index)
 	if not proceed:
-		# Cost declined — restore card to hand and force visual rebuild
-		player.hand.insert(mini(hand_index, player.hand.size()), card)
-		player.hand_changed.emit()
+		# Cost declined — restore card to hand
+		player.insert_into_hand(mini(hand_index, player.hand.size()), card)
 		events.play_cancelled.emit(player.player_id)
 		return
 
@@ -28,13 +27,10 @@ func play_battle_card(hand_index: int, zone_index: int, state: GameState) -> voi
 
 func play_strategy_card(hand_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
-	var card: Dictionary = player.hand.pop_at(hand_index)
+	var card: Dictionary = player.remove_hand_card_at(hand_index)
 	var sz_index: int = player.get_first_empty_strategy_zone_index()
-	player.strategy_zones[sz_index] = card
-	player.strategy_zone_turn_placed[sz_index] = state.turn_number
+	player.place_strategy(sz_index, card, state.turn_number)
 	events.strategy_card_played.emit(player.player_id, card, sz_index)
-	player.hand_changed.emit()
-	player.strategy_zones_changed.emit()
 	if effect_handler:
 		effect_handler.log_message.emit(
 			GameLog.played_strategy(player.player_id, card.get("id", ""), card.get("is_base", false)))
@@ -43,15 +39,12 @@ func play_strategy_card(hand_index: int, state: GameState) -> void:
 
 func gain_rage(hand_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
-	var card: Dictionary = player.hand.pop_at(hand_index)
+	var card: Dictionary = player.remove_hand_card_at(hand_index)
 	var old_rage: int = player.rage
-	player.discard_pile.append(card)
-	player.rage += 1
+	player.add_to_discard(card)
+	player.set_rage(player.rage + 1)
 	events.card_discarded.emit(player.player_id, card)
 	events.rage_gained.emit(player.player_id, player.rage)
-	player.hand_changed.emit()
-	player.rage_changed.emit(player.rage)
-	player.discard_changed.emit()
 	if effect_handler:
 		effect_handler.log_message.emit(
 			GameLog.gained_rage(player.player_id, player.rage, card.get("id", "")))
@@ -62,7 +55,7 @@ func gain_rage(hand_index: int, state: GameState) -> void:
 
 func play_monster(hand_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
-	var card: Dictionary = player.hand.pop_at(hand_index)
+	var card: Dictionary = player.remove_hand_card_at(hand_index)
 	var old_monster: Dictionary = player.current_monster
 	var old_rage: int = player.rage
 
@@ -71,9 +64,8 @@ func play_monster(hand_index: int, state: GameState) -> void:
 	if rank_mismatch and effect_handler and registry.has_trigger(card, "apply_play_cost"):
 		var cost_ok: bool = await mover.apply_play_cost(player.player_id, card, -1)
 		if not cost_ok:
-			# Cost declined — restore card to hand and force visual rebuild
-			player.hand.insert(hand_index, card)
-			player.hand_changed.emit()
+			# Cost declined — restore card to hand
+			player.insert_into_hand(hand_index, card)
 			events.play_cancelled.emit(player.player_id)
 			return
 		rank_mismatch = false  # Not a burst play — cost was paid
@@ -86,17 +78,14 @@ func play_monster(hand_index: int, state: GameState) -> void:
 
 	# Push old monster onto the stack (both normal and burst)
 	if not old_monster.is_empty():
-		player.monster_stack.push_front(old_monster)
+		player.push_under_monster(old_monster)
 
 	player.has_played_monster_this_turn = true
 
-	player.current_monster = card
-	player.rage += 1
+	player.set_current_monster(card)
+	player.set_rage(player.rage + 1)
 	events.monster_played.emit(player.player_id, old_monster, card)
 	events.rage_gained.emit(player.player_id, player.rage)
-	player.hand_changed.emit()
-	player.monster_changed.emit()
-	player.rage_changed.emit(player.rage)
 	if effect_handler:
 		if is_burst_play:
 			var burst_effect := registry.get_effect(card)
@@ -125,7 +114,7 @@ func play_monster_from_effect(state: GameState, player_id: int, monster_card: Di
 
 	# Push old monster onto the stack
 	if not old_monster.is_empty():
-		player.monster_stack.push_front(old_monster)
+		player.push_under_monster(old_monster)
 
 	# If a burst monster is active, the new monster buries it in the stack.
 	# Clear burst state so the burst card isn't discarded at end of turn.
@@ -133,10 +122,9 @@ func play_monster_from_effect(state: GameState, player_id: int, monster_card: Di
 		player.burst_monster = {}
 		player.pre_burst_monster = {}
 
-	player.current_monster = monster_card
-	player.monster_deck.erase(monster_card)
+	player.remove_from_monster_deck(monster_card)
+	player.set_current_monster(monster_card)
 	events.monster_played.emit(player_id, old_monster, monster_card)
-	player.monster_changed.emit()
 	if effect_handler:
 		var discard_snapshot: Array = player.discard_pile.duplicate()
 		dispatcher.trigger_enter(player_id, monster_card, true)

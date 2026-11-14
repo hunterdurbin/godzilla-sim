@@ -230,14 +230,9 @@ func _resolve_illegal_cards(player: PlayerState) -> bool:
 		if player.strategy_zones[i].is_empty():
 			continue
 		if player.strategy_zones[i].get("card_type") != CardEnums.CardType.STRATEGY:
-			CardMover.banish_or_discard(player, [player.strategy_zones[i]])
-			player.strategy_zones[i] = {}
+			CardMover.banish_or_discard(player, [player.clear_strategy_zone(i)])
 			changed = true
 
-	if changed:
-		player.zones_changed.emit()
-		player.strategy_zones_changed.emit()
-		player.discard_changed.emit()
 	return changed
 
 

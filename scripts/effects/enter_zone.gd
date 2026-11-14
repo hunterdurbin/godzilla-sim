@@ -101,16 +101,15 @@ func enter(player_id: int, card: Dictionary, zone_idx: int, source: Source,
 	## Signals: hand_changed (HAND) / discard_changed (DISCARD) when it
 	## takes the card out, deck_changed when a refused deck card goes back;
 	## the destroy module's own signals on Overload; card_evolved (Evolve);
-	## GameEvents.battle_card_played + hand_changed (the Play action);
-	## zones_changed; one log_message (Play action, effect hand play, Evolve).
+	## GameEvents.battle_card_played (the Play action); zones_changed; one
+	## log_message (Play action, effect hand play, Evolve).
 	## Returns false when the zone is rule-illegal for the source: nothing
 	## enters, the card stays in its area (a deck or Evolve card goes back
 	## on the deck bottom).
 	var player := game_state.players[player_id]
 	if by_effect and not can_enter(player_id, card, zone_idx):
 		if (source == Source.DECK or source == Source.EVOLUTION) and not player.main_deck.has(card):
-			player.main_deck.append(card)
-			player.deck_changed.emit()
+			player.put_on_deck_bottom(card)
 		return false
 
 	_take_from_area(player, card, source)
@@ -122,12 +121,8 @@ func enter(player_id: int, card: Dictionary, zone_idx: int, source: Source,
 	if source == Source.EVOLUTION:
 		_announce_evolution(player, card, zone_idx)
 	player.push_zone_card(zone_idx, card)
-	if not by_effect:
-		if events != null:
-			events.battle_card_played.emit(player_id, card, zone_idx)
-		# The Play action's caller took the card out to pay its cost.
-		player.hand_changed.emit()
-	player.zones_changed.emit()
+	if not by_effect and events != null:
+		events.battle_card_played.emit(player_id, card, zone_idx)
 	_log_entry(player_id, card, zone_idx, source, by_effect)
 
 	# One play's leave-play, <Enter> and "when played" entries share a pool.
@@ -145,22 +140,16 @@ func _take_from_area(player: PlayerState, card: Dictionary, source: Source) -> v
 	## Play action and a prompted discard play took it out already). Deck
 	## cards are taken out by the caller (search / reveal); tokens and
 	## Evolve's deck card have no area to leave here.
-	var area: Array
-	match source:
-		Source.HAND:
-			area = player.hand
-		Source.DISCARD:
-			area = player.discard_pile
-		_:
-			return
+	if source != Source.HAND and source != Source.DISCARD:
+		return
+	var area: Array = player.hand if source == Source.HAND else player.discard_pile
 	var card_id: String = card.get("id", "")
 	for i in range(area.size() - 1, -1, -1):
 		if area[i].get("id", "") == card_id:
-			area.remove_at(i)
 			if source == Source.HAND:
-				player.hand_changed.emit()
+				player.remove_hand_card_at(i)
 			else:
-				player.discard_changed.emit()
+				player.remove_discard_card_at(i)
 			return
 
 
@@ -224,10 +213,7 @@ func move_stack(player_id: int, from_zone: int, to_zone: int) -> bool:
 		return false
 	var entries: Array = destruction.destroy(player, to_zone, DestructionEngine.Cause.OVERLOAD).entries
 	var moved_top: Dictionary = player.get_zone_top_card(from_zone)
-	var stack: Array = player.zones[from_zone]
-	player.zones[from_zone] = []
-	player.zones[to_zone] = stack
-	player.zones_changed.emit()
+	player.move_zone_stack(from_zone, to_zone)
 	entries.append_array(dispatcher.collect_zone_changed_entries(player.player_id, moved_top, from_zone, to_zone))
 	check_timing.submit(entries)
 	return true
