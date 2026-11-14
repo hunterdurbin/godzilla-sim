@@ -38,7 +38,9 @@ use it instead of separate invocations; deck1/deck2 are then ignored.
 **Decks.** A deck is a decklist name (the user's decklists dir) or
 `@<path>` to a `.deck` file — relative paths resolve against this repo, so
 the base worktree reads the same file. For rules-engine changes pick decks
-that exercise them (e.g. "King Ghidorah" carries 3 <Revenge> cards). For
+that exercise them (e.g. "King Ghidorah" carries 3 <Revenge> cards; for
+counter or rank-up rules add `--pair "@tests/sim/decks/cov_counter_rules.deck|King Ghidorah"`,
+whose header says what it covers). For
 card-script changes, `./tests/sim/decks_with_cards.sh <card_id>...` ranks
 the user's decklists and the committed coverage decks by how many of those
 cards they run, and ends with `NOT IN ANY DECK: …` for cards nothing plays.
