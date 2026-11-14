@@ -345,11 +345,11 @@ func clear_strategy_zone(i: int) -> Dictionary:
 	return card
 
 
+# --- Effect predicate helpers (rule-text shorthands) ---
+
 func get_threat_level() -> int:
 	return current_monster.get("threat_level", 0) + (rage * 5000)
 
-
-# --- Effect predicate helpers (rule-text shorthands) ---
 
 func is_awakening(threshold: int) -> bool:
 	return monster_zone >= threshold
