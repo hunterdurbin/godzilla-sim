@@ -34,7 +34,11 @@ same; the split happened during that turn, or earlier in state the line
 does not carry, such as hand contents) and the first one that differs (`first_divergence.py`). Each line carries both players' zone,
 monster base id + rank, rage and hand size. A game
 can split and reconverge on the same `[SimResult]`, so a split alone fails
-the diff. Explain each divergence from that line. Exit 0 = identical;
+the diff. Explain each divergence from that line. A KAIJU split that starts
+before the changed state exists (e.g. a rank-2 rule diverging while the
+monster is rank 1) usually comes from the planner's opponent-reply pass,
+which plays the opponent's turn, counter phase included, against the bot:
+`scripts/bot/kaiju/README.md` § `kaiju_planner.gd`. Exit 0 = identical;
 the last line, `STATUS: <n> (…)`, repeats the verdict so it survives a `| grep`.
 Head runs straight from the working tree, so leave it untouched until the
 run ends: an edit mid-run prints `WARNING: the working tree changed` and
