@@ -33,10 +33,5 @@ var enter_zone: EnterZone:
 	get: return ah.effect_handler.enter_zone
 var queries: EffectQueries:
 	get: return ah.effect_handler.queries
-
-
-func _traits_overlap(traits_a: Array, traits_b: Array) -> bool:
-	for t in traits_a:
-		if t in traits_b:
-			return true
-	return false
+var rules_engine: RulesEngine:
+	get: return ah.rules_engine

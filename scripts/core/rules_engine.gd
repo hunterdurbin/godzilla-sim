@@ -217,13 +217,69 @@ func check_win_condition(state: GameState) -> int:
 	return -1
 
 
-func check_counter(player: PlayerState, opponent: PlayerState) -> bool:
-	## Returns true if player's counter power >= opponent's threat level
-	return player.get_total_counter_power() >= opponent.get_threat_level()
+# --- Counter rules (5.15) ---
+
+## The current player's counter numbers against the opponent's monster:
+## {total_cp, threat, rage_threat, effect_threat, immunity_threshold,
+## prevented}. CounterResolver decides the outcome branch from these.
+func compute_counter_numbers(state: GameState) -> Dictionary:
+	var player := state.get_current_player()
+	var opponent := state.get_opponent_of_current()
+	var total_cp: int = player.get_total_counter_power()
+	var threat: int = opponent.get_threat_level()
+	# Threat breakdown for the log (base printed threat + rage + effect modifiers).
+	# rage_threat is the universal +5000-per-Rage term every monster carries.
+	var rage_threat: int = opponent.rage * 5000
+	var effect_threat: int = 0
+	var immunity_threshold: int = 0
+	var prevented := false
+	# Apply effect modifiers
+	if queries:
+		total_cp += queries.get_counter_power_modifier(player.player_id)
+		effect_threat = queries.get_threat_level_modifier(opponent.player_id)
+		threat += effect_threat
+		# Subtract base CP of cards restricted from engaging by opponent's monster
+		total_cp -= queries.get_engagement_restricted_cp(player.player_id)
+		immunity_threshold = queries.get_counter_immunity_threshold(opponent.player_id)
+		# Full counter prevention (e.g. EBP04-014/031/032): no retreat, no rank
+		# up — counter simply doesn't happen. Distinct from counter immunity
+		# which still retreats. May be CP-conditional, hence total_cp.
+		prevented = queries.is_counter_prevented(opponent.player_id, total_cp)
+	return {
+		"total_cp": total_cp,
+		"threat": threat,
+		"rage_threat": rage_threat,
+		"effect_threat": effect_threat,
+		"immunity_threshold": immunity_threshold,
+		"prevented": prevented,
+	}
+
+
+## Monster-deck indices the countered player may rank up to (5.15.1.2): the
+## next rank with a shared trait, or a monster whose can_play_as_monster()
+## alternate cost bridges the traits (e.g. EBP04-033/034 "play on top of
+## Monster X" — their [Kaizer Ghidorah] trait does not overlap [Monster X]).
+## Empty means the counter wins the game (5.15.1.2.1).
+func get_rank_up_candidates(player: PlayerState) -> Array[int]:
+	var next_rank: int = player.current_monster.get("rank", 1) + 1
+	var cur_traits: Array = player.current_monster.get("traits", [])
+	var valid_indices: Array[int] = []
+	for i in range(player.monster_deck.size()):
+		var m: Dictionary = player.monster_deck[i]
+		if m.get("rank") != next_rank:
+			continue
+		var trait_ok := _traits_overlap(m.get("traits", []), cur_traits)
+		if not trait_ok and queries:
+			trait_ok = queries.can_play_as_monster(player.player_id, m)
+		if trait_ok:
+			valid_indices.append(i)
+	return valid_indices
 
 
 func can_opponent_rank_up(opponent: PlayerState) -> bool:
-	## Check if the opponent can find a valid rank-up monster from their monster deck
+	## Check if the opponent can find a valid rank-up monster from their monster deck.
+	## Bot-only legacy copy: it ignores the can_play_as_monster bridge that
+	## get_rank_up_candidates (the engine's rule) honours.
 	var next_rank: int = opponent.current_monster.get("rank", 1) + 1
 	var cur_traits: Array = opponent.current_monster.get("traits", [])
 
@@ -233,14 +289,16 @@ func can_opponent_rank_up(opponent: PlayerState) -> bool:
 	return false
 
 
-# --- Private helpers ---
-
-func _traits_overlap(traits_a: Array, traits_b: Array) -> bool:
+## True when the two trait lists share at least one trait (monster play
+## and rank-up both require it, absent an alternate cost).
+static func _traits_overlap(traits_a: Array, traits_b: Array) -> bool:
 	for t in traits_a:
 		if t in traits_b:
 			return true
 	return false
 
+
+# --- Private helpers ---
 
 func _can_invade(player: PlayerState) -> bool:
 	if player.has_invaded_this_turn:

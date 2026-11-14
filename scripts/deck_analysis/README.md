@@ -12,8 +12,8 @@ live-board-locked "max CP still fieldable" runs).
 
 | File | Role |
 |---|---|
-| `max_counter_state.gd` | `MaxCounterState` — synthetic counter-phase board: wires GameState + EffectHandler + ActionHandler (the `tests/fixtures/states.gd make_session` stack, minus GameEvents), `apply(assignment)` / `evaluate()` / `breakdown()` / `teardown()` |
-| `max_counter_optimizer.gd` | `MaxCounterOptimizer` — searches board assignments for the deck's maximum counter power; every candidate board is scored via `MaxCounterState.evaluate()` (CounterResolver.compute_counter_numbers) |
+| `max_counter_state.gd` | `MaxCounterState` — synthetic counter-phase board: wires GameState + EffectHandler + ActionHandler + RulesEngine (the `tests/fixtures/states.gd make_session` stack, minus GameEvents), `apply(assignment)` / `evaluate()` / `breakdown()` / `teardown()` |
+| `max_counter_optimizer.gd` | `MaxCounterOptimizer` — searches board assignments for the deck's maximum counter power; every candidate board is scored via `MaxCounterState.evaluate()` (RulesEngine.compute_counter_numbers) |
 
 ## The synthetic state (MaxCounterState)
 

@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ## Counter/End phases are never rolled out — their expected outcome is folded
 ## in analytically here (counter margins, retreat, end-phase advance), using
-## the same math as CounterResolver.compute_counter_numbers.
+## the same math as RulesEngine.compute_counter_numbers.
 
 const WIN_SCORE: float = 1e9
 ## Soft terminal: being counterable while unable to rank up is a loss next
@@ -331,7 +331,7 @@ func _monster_cards_in_hand(p: PlayerState) -> int:
 
 
 ## Total effective CP a player brings to a counter attempt — mirrors
-## CounterResolver.compute_counter_numbers.
+## RulesEngine.compute_counter_numbers.
 func _effective_counter_cp(q: EffectQueries, counterer: PlayerState) -> int:
 	return counterer.get_total_counter_power() \
 			+ q.get_counter_power_modifier(counterer.player_id) \

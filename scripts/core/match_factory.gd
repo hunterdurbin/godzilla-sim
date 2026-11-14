@@ -112,6 +112,7 @@ static func _build_components(tm: TurnManager) -> void:
 	tm.action_handler.events = tm.events
 	tm.effect_handler.events = tm.events
 	tm.rules_engine.queries = tm.effect_handler.queries
+	tm.action_handler.rules_engine = tm.rules_engine
 
 
 static func _connect_turn_manager(tm: TurnManager) -> void:

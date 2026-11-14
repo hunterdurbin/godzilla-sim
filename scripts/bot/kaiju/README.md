@@ -24,7 +24,7 @@ their global-RNG call order (and seed-matched sim diffs) are untouched.
 - `kaiju_evaluator.gd` — **KaijuEvaluator**: weighted feature sum over an
   end-of-turn state. Weights come from `BotConfig.kaiju_eval_weights`, keyed
   by game phase. Counter/End phases are folded in analytically (mirrors
-  `CounterResolver.compute_counter_numbers`); fragile CP from strategy-zone
+  `RulesEngine.compute_counter_numbers`); fragile CP from strategy-zone
   sources is discounted via the `modifier_breakdown` data.
 - `kaiju_counter_oracle.gd` — **KaijuCounterOracle**: bridge to
   `scripts/deck_analysis/` (MaxCounterOptimizer) — "max CP still fieldable

@@ -10,6 +10,10 @@ extends RefCounted
 var effect_handler: EffectHandler
 var input: PlayerInput
 var events: GameEvents
+## Rules queries (counter numbers, rank-up eligibility) the resolvers ask;
+## the same RulesEngine TurnManager validates actions with. Must be wired by
+## every builder (MatchFactory, States.make_session, MaxCounterState).
+var rules_engine: RulesEngine
 
 var plays := PlayActions.new()
 var invasion := InvasionResolver.new()
@@ -37,6 +41,7 @@ func teardown() -> void:
 	effect_handler = null
 	events = null
 	input = null
+	rules_engine = null
 
 
 func execute(action: CardEnums.ActionType, params: Dictionary, state: GameState) -> void:

@@ -509,7 +509,7 @@ func get_invasion_advance_bonus(player_id: int, invasion_icon: int) -> int:
 
 func can_play_as_monster(player_id: int, card: Dictionary) -> bool:
 	## Query a monster card's alternate play cost (e.g. EBP04-033/034 "play on top of Monster X").
-	## Used by ActionHandler._rank_up_monster to bridge non-overlapping traits when an
+	## Used by RulesEngine.get_rank_up_candidates to bridge non-overlapping traits when an
 	## alternate play condition is satisfied.
 	var effect := get_effect(card)
 	if effect == null:

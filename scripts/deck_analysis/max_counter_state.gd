@@ -2,8 +2,8 @@ class_name MaxCounterState
 extends RefCounted
 
 ## Synthetic counter-phase board for deck analysis: a real GameState wired to
-## a real EffectHandler/ActionHandler so counter power is read back from
-## CounterResolver.compute_counter_numbers — never hand-summed. The optimizer
+## a real EffectHandler/ActionHandler/RulesEngine so counter power is read back from
+## RulesEngine.compute_counter_numbers — never hand-summed. The optimizer
 ## (MaxCounterOptimizer) mutates the board via apply() and asks evaluate()
 ## for the engine's own number.
 ##
@@ -19,6 +19,7 @@ extends RefCounted
 var state: GameState
 var effect_handler: EffectHandler
 var action_handler: ActionHandler
+var rules_engine: RulesEngine
 
 ## Every main-deck card instance (battle + strategy + rage), used to rebuild
 ## the discard pile as "everything not on the board" after each apply().
@@ -51,6 +52,9 @@ func _init(main_cards: Array[Dictionary], monster_cards: Array[Dictionary],
 	action_handler = ActionHandler.new()
 	action_handler.effect_handler = effect_handler
 	effect_handler.action_handler = action_handler
+	rules_engine = RulesEngine.new()
+	rules_engine.queries = effect_handler.queries
+	action_handler.rules_engine = rules_engine
 
 
 ## Rewrite the whole player-0 board from an assignment dict:
@@ -138,7 +142,7 @@ func apply(assignment: Dictionary) -> void:
 
 ## The engine's own counter total for the currently applied board.
 func evaluate() -> int:
-	var numbers: Dictionary = action_handler.counter.compute_counter_numbers(state)
+	var numbers: Dictionary = rules_engine.compute_counter_numbers(state)
 	return numbers["total_cp"]
 
 
@@ -171,4 +175,5 @@ func teardown() -> void:
 		effect_handler.teardown()
 	action_handler = null
 	effect_handler = null
+	rules_engine = null
 	state = null
