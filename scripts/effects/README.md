@@ -101,7 +101,8 @@ resolves even after its card changed areas (crushed, evolved over,
 discarded); the only way one is dropped is its `still_applies` gate
 (10.6.3.2). Code that drives the engine outside TurnManager (tests, bot
 rollouts) calls `check_timing.resolve()` itself after the action. Only the
-dispatcher's `collect_*` functions build `StandbyEntry` objects. Never call a
+dispatcher's `collect_*` functions build `StandbyEntry` objects
+(`scripts/tools/check_standby_entry_builders.py`). Never call a
 trigger body directly from engine code.
 This covers revenge and zone-card-destroyed watchers (single AND batch
 destroys, Crush and Overload), on_discard_from_hand, and the area-changing hooks on_leave_play /

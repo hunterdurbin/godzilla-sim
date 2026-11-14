@@ -43,6 +43,11 @@ if git diff --cached --name-only | grep -qE '\.gd$'; then
 	python3 scripts/tools/check_player_input_contract.py || exit 1
 fi
 
+# Guard: only the trigger dispatcher builds StandbyEntry objects.
+if git diff --cached --name-only | grep -qE '^scripts/.*\.gd$'; then
+	python3 scripts/tools/check_standby_entry_builders.py || exit 1
+fi
+
 # Ratchet: no new GDScript compile warnings (needs a Godot binary: set
 # GODOT_BIN, or have `godot` on PATH; skipped otherwise — CI still runs it).
 if git diff --cached --name-only | grep -qE '\.gd$|gdscript_warnings_allowlist\.txt$'; then
