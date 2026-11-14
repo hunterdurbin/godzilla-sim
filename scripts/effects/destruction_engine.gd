@@ -43,7 +43,10 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	##     to the deck bottom instead and is not destroyed; cards stacked under
 	##     it go to the discard (not "destroyed", 5.12.1.1).
 	##   - <Revenge>: EFFECT and CRUSH, never OVERLOAD (12.7.2).
-	##   - zone-card-destroyed watchers (ally / opponent): EFFECT only.
+	##   - on_destroy: an entry for CRUSH and OVERLOAD; EFFECT resolves it on
+	##     the spot (_destroy_by_effect).
+	## The zone-card-destroyed watchers (ally / opponent) fire for every
+	## cause: Crush and Overload are <Destroy> (11.3.3, 11.5.1).
 	## Otherwise the stack goes to the discard and the top card counts as
 	## destroyed this turn. Leave-play enters the entries for every cause.
 	## Signals: replaced → zones_changed, deck_changed, discard_changed;
@@ -84,14 +87,17 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	out.entries.append_array(h.collect_leave_play_entries(target.player_id, top_card, zone_idx))
 	if out.replaced:
 		return out
-	# Zone-card-destroyed watchers: effect destroys only.
-	match cause:
-		Cause.EFFECT:
-			out.entries.append_array(h.collect_crush_and_revenge_entries(target.player_id, top_card, false))
-			out.entries.append_array(h.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
-			out.entries.append_array(h.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
-		Cause.CRUSH:
-			out.entries.append_array(h.collect_crush_and_revenge_entries(target.player_id, top_card, true))
+	# Crush (11.3.3) and Overload (11.5.1, 5.12.1.1) are <Destroy> too: the
+	# card's own on_destroy and every "whenever … is <Destroy>" watcher fire
+	# for all three causes. EFFECT resolves on_destroy on the spot instead
+	# (_destroy_by_effect).
+	if cause != Cause.EFFECT:
+		out.entries.append_array(h.collect_on_destroy_entries(target.player_id, top_card, zone_idx))
+	if cause != Cause.OVERLOAD:
+		out.entries.append_array(h.collect_crush_and_revenge_entries(
+				target.player_id, top_card, cause == Cause.CRUSH))
+	out.entries.append_array(h.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
+	out.entries.append_array(h.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
 	return out
 
 

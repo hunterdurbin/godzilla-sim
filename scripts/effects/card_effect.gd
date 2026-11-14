@@ -236,8 +236,8 @@ func protects_card_from_destruction(_ctx: EffectContext, _card_data: Dictionary,
 # --- Play restriction methods ---
 
 func on_destroy(_ctx: EffectContext, _zone_idx: int) -> void:
-	## Called when this card is destroyed and removed from a zone (before revenge/banish).
-	## Reserved for <Destroy> rule actions only — does NOT fire for overload (rule 11.5).
+	## Called when this card is <Destroy>: by an effect, crushed (11.3.3) or
+	## overloaded (11.5.1). Not when a replacement effect moved it instead.
 	pass
 
 
