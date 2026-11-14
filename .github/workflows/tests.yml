@@ -45,6 +45,9 @@ jobs:
       - name: PlayerInput implementations and prompt handlers match the port
         run: python3 scripts/tools/check_player_input_contract.py
 
+      - name: Only the trigger dispatcher builds StandbyEntry objects
+        run: python3 scripts/tools/check_standby_entry_builders.py
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
