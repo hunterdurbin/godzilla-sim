@@ -154,7 +154,7 @@ func test_an_effect_advance_emits_monster_advanced_and_monster_changed_per_step(
 
 
 func test_an_invasion_emits_monster_changed_on_every_step() -> void:
-	# PlayerState.set_monster_zone emits per move (tracker #23): nothing is
+	# PlayerState.set_monster_zone emits per move (hunterdurbin/godzilla-sim-issue-tracker#23): nothing is
 	# held back until the invasion ends.
 	var s := _setup(7)
 	var changes := _count_changed(_p0(s))

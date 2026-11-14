@@ -69,7 +69,8 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
   DESYNC / SCRIPT ERROR. Run after touching session/server/board RPC surface.
 - Bot sim diff vs a base ref: `./tests/sim/run_sim_diff.sh <godot> [base_ref] [games] [p1] [p2] [deck1] [deck2]`
   — seed-matched `[SimResult]` diff + KAIJU `plan DIVERGED` counts
-  (`tests/sim/README.md`).
+  (`tests/sim/README.md`). Changed cards or rules → pick decks that run
+  them first: `./tests/sim/decks_with_cards.sh <card_id>...` (README § Decks).
 - Mechanical rules (a pattern grep can catch) get a check in `scripts/tools/`
   wired into `githooks/pre-commit` + `tests.yml`, not prose — see
   `scripts/tools/README.md` for the existing ones.

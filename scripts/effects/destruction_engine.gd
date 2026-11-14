@@ -47,12 +47,9 @@ func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
 	## Otherwise the stack goes to the discard and the top card counts as
 	## destroyed this turn. Either way the card leaves through LeaveZone, which
 	## submits its leave-play for every cause.
-	## Signals (PlayerState mutators, as each change happens): replaced →
-	## zones_changed, deck_changed, discard_changed (when cards were under
-	## it); destroyed → zones_changed (every cause, OVERLOAD
-	## included) and discard_changed (unless only tokens left), then
-	## GameEvents.battle_card_crushed for CRUSH. EFFECT also logs the destroy
-	## and emits EffectHandler.card_destroyed, replaced or not.
+	## Signals: GameEvents.battle_card_crushed for a CRUSH that is not
+	## replaced. EFFECT also logs the destroy and emits
+	## EffectHandler.card_destroyed, replaced or not.
 	## Synchronous and never prompts: nothing resolves here — the abilities
 	## it triggers enter standby (CheckTiming) for the next check timing.
 	var out := Outcome.new()

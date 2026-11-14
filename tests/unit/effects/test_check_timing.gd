@@ -491,7 +491,7 @@ func test_effect_stack_changed_emission_sequence() -> void:
 
 
 func test_submit_marks_the_stack_and_resolve_publishes_it() -> void:
-	# #35 row 3: submit only marks the stack changed; the stack is published
+	# hunterdurbin/godzilla-sim-issue-tracker#35 row 3: submit only marks the stack changed; the stack is published
 	# once when resolve() starts (and between abilities of a pass).
 	var state := States.make_state()
 	var handler := _handler(state)
@@ -530,7 +530,7 @@ func test_submit_stamps_increasing_sequence_numbers() -> void:
 
 
 func test_order_prompt_lists_abilities_in_submission_order() -> void:
-	# #35 row 4: the 10.4.3 order-choice options follow submission order,
+	# hunterdurbin/godzilla-sim-issue-tracker#35 row 4: the 10.4.3 order-choice options follow submission order,
 	# not board position.
 	var state := States.make_state()
 	var input := ScriptedPlayerInput.new()

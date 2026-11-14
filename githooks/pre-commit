@@ -64,6 +64,16 @@ if git diff --cached --name-only | grep -qE '^(scripts|scenes)/.*\.gd$'; then
 	python3 scripts/tools/check_clear_zone_owner.py || exit 1
 fi
 
+# Guard: engine docstrings leave PlayerState *_changed signals unlisted.
+if git diff --cached --name-only | grep -qE '^scripts/(core|effects)/.*\.gd$'; then
+	python3 scripts/tools/check_docstring_signals.py || exit 1
+fi
+
+# Guard: tracker tickets are cited fully qualified (a bare #N is a code PR).
+if git diff --cached --name-only | grep -qE '^(scripts|scenes|tests|githooks)/'; then
+	python3 scripts/tools/check_tracker_refs.py || exit 1
+fi
+
 # Ratchet: only RulesEngine decides rank-up eligibility.
 if git diff --cached --name-only | grep -qE '^((scripts|scenes)/.*\.gd|scripts/tools/rank_up_rule_allowlist\.txt)$'; then
 	python3 scripts/tools/check_rank_up_rule_owner.py || exit 1

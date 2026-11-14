@@ -111,8 +111,7 @@ func arrange_deck_top(player_id: int, count: int, prompt: String) -> Dictionary:
 	## prompt when it is empty), lets the player order / discard them via
 	## arrange_deck_cards, puts the kept cards back on top (keep[0] ends up on
 	## top) and discards the rest through discard_cards. The look is private:
-	## kept cards are not logged. Emits deck_changed (and discard_changed when
-	## something is discarded). Returns {"keep": [...], "discard": [...]}.
+	## kept cards are not logged. Returns {"keep": [...], "discard": [...]}.
 	var cards := take_deck_top(player_id, count)
 	if cards.is_empty():
 		return {"keep": [], "discard": []}
@@ -134,7 +133,7 @@ func take_deck_top(player_id: int, count: int) -> Array[Dictionary]:
 	## logged: the caller's own prompt reveals them (e.g. select_from_cards with
 	## all_visible), and the caller decides where each card goes (hand via
 	## add_card(s)_to_hand, discard via discard_cards, back via
-	## shuffle_cards_into_deck). Emits deck_changed when any card was taken.
+	## shuffle_cards_into_deck).
 	## For a reveal overlay use reveal_deck_top instead.
 	return game_state.players[player_id].take_deck_top_cards(count)
 
@@ -146,9 +145,8 @@ func shuffle_cards_into_deck(player_id: int, cards: Array[Dictionary]) -> void:
 	## removed from wherever they were, e.g. by take_deck_top or search_deck)
 	## to the player's main deck, then shuffle the whole deck with the global
 	## RNG (the same stream search_deck's shuffle uses, so seeded sims and
-	## replays stay deterministic). Emits deck_changed twice (add, shuffle;
-	## once when `cards` is empty). With no cards it still
-	## shuffles: "then shuffle your deck" happens either way.
+	## replays stay deterministic). With no cards it still shuffles: "then
+	## shuffle your deck" happens either way.
 	var player := game_state.players[player_id]
 	player.put_cards_on_deck_bottom(cards)
 	player.shuffle_deck()
@@ -343,7 +341,6 @@ func reveal_deck_top(player_id: int, count: int, title_key: String = "STR_EFF_RE
 static func banish_or_discard(player: PlayerState, stack: Array) -> void:
 	## Route cards to banishment (tokens) or discard pile (non-tokens).
 	## Tokens are removed from the game entirely; non-tokens go to discard pile.
-	## Emits discard_changed when anything was discarded.
 	var discarded: Array = []
 	for card in stack:
 		if not PlayerState.is_token(card):
@@ -354,7 +351,7 @@ static func banish_or_discard(player: PlayerState, stack: Array) -> void:
 
 
 func discard_cards(player_id: int, cards: Array[Dictionary]) -> void:
-	## Append a batch of cards to the player's discard pile and emit discard_changed.
+	## Append a batch of cards to the player's discard pile.
 	## For tokens or mixed batches, use banish_or_discard per-card instead.
 	game_state.players[player_id].add_cards_to_discard(cards)
 
@@ -751,7 +748,7 @@ func play_strategy_from_effect(player_id: int, card: Dictionary, zone_idx: int =
 	## Same bookkeeping as playing from hand: occupies the strategy zone
 	## (zone_idx, or the first empty one when -1), stamps the turn placed (so
 	## the 7.2.3 start-phase discard treats it as placed this turn), emits
-	## strategy_zones_changed then GameEvents.strategy_card_played, logs
+	## GameEvents.strategy_card_played, logs
 	## played_strategy, then fires its <Enter> as an effect play.
 	## The card is first taken out of the player's hand or discard pile if it
 	## is still there (safe after search_deck / search_discard / take_hand_card).
@@ -797,9 +794,7 @@ func place_cards_under_monster(player_id: int, cards: Array[Dictionary]) -> void
 	## "Place <cards> under your monster card": append them to the player's
 	## monster_stack. Each card is first removed from the player's discard pile
 	## or monster deck if it is still there (safe to call with cards already
-	## taken out, e.g. by search_discard). Emits discard_changed per card
-	## taken from the discard pile, monster_changed per card taken from the
-	## monster deck, then monster_changed once for the add. No-op when empty.
+	## taken out, e.g. by search_discard). No-op when empty.
 	if cards.is_empty():
 		return
 	var player := game_state.players[player_id]
@@ -911,8 +906,7 @@ func put_card_on_top_of_deck(player_id: int, card: Dictionary) -> void:
 	## Place a card on top of (the front of) a player's main deck and log it,
 	## attributed to whichever effect is currently active. Safe to call when the
 	## card has already been popped from discard (e.g. by search_discard) — the
-	## erase becomes a no-op. Fires deck_changed (and discard_changed when the card
-	## was still in the discard pile). Use this instead of a raw main_deck.push_front
+	## erase becomes a no-op. Use this instead of a raw main_deck.push_front
 	## so the placement is visible in the game log.
 	var player := game_state.players[player_id]
 	player.remove_from_discard(card)
