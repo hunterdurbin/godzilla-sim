@@ -207,7 +207,7 @@ func test_ebp02_048_invading_destroys_three_rank4_and_lower() -> void:
 	var card := Real.instance("EBP02-048")
 	var state := States.make_state({
 		"p0": {"current_monster": card, "monster_zone": 2},
-		"p1": {"zone_cards": {
+		"p1": {"monster_zone": 2, "zone_cards": {
 			0: Cards.battle(4, 3000, "A"), 2: Cards.battle(3, 3000, "B"),
 			4: Cards.battle(2, 2000, "C"), 6: Cards.battle(5, 4000, "R5"),
 		}},
@@ -1103,7 +1103,7 @@ func test_ebp02_078_silent_outside_opponent_monster_column() -> void:
 
 func test_ebp02_079_two_zones_crossed_destroys_up_to_rank_6() -> void:
 	var card := Real.instance("EBP02-079")
-	var state := States.make_state({"p1": {"zone_cards": {
+	var state := States.make_state({"p1": {"monster_zone": 2, "zone_cards": {
 		0: Cards.battle(2, 2000, "R2"), 2: Cards.battle(6, 5000, "R6"), 4: Cards.battle(7, 6000, "R7"),
 	}}})
 	state.players[0].invasion_zones_crossed = 2
@@ -1121,7 +1121,7 @@ func test_ebp02_079_two_zones_crossed_destroys_up_to_rank_6() -> void:
 
 func test_ebp02_079_zero_zones_crossed_destroys_only_rank_2_and_lower() -> void:
 	var card := Real.instance("EBP02-079")
-	var state := States.make_state({"p1": {"zone_cards": {
+	var state := States.make_state({"p1": {"monster_zone": 2, "zone_cards": {
 		0: Cards.battle(2, 2000, "R2"), 2: Cards.battle(4, 3000, "R4"),
 	}}})
 	var s := _session(state)

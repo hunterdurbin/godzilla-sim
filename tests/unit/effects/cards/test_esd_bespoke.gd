@@ -119,7 +119,7 @@ func test_esd01_011_crushed_goes_to_deck_bottom_without_crush_event() -> void:
 	# Crush IS <Destroy> (11.3.3): replaced instead — no destroy count, no
 	# battle_card_crushed emission.
 	var card := Real.instance("ESD01-011")
-	var state := States.make_state({"p0": {
+	var state := States.make_state({"allow_illegal": true, "p0": {
 		"monster_zone": 3,
 		"zone_cards": {2: card},
 		"main_deck": [Cards.battle(1, 2000, "D1")],
@@ -1485,7 +1485,7 @@ func test_esd04_006_opponent_turn_threat_per_destoroyah_battle_card() -> void:
 	var destoroyah := [CardEnums.CardTrait.DESTOROYAH]
 	var state := States.make_state({
 		"current_player_id": 1,
-		"p0": {"strategy_zones": [gvd], "zone_cards": {
+		"p0": {"monster_zone": 2, "strategy_zones": [gvd], "zone_cards": {
 			0: Cards.battle(2, 3000, "DES-A", destoroyah),
 			3: Cards.battle(3, 3000, "DES-B", destoroyah),
 			5: Cards.battle(2, 3000, "OTHER"),
@@ -1599,7 +1599,7 @@ func test_esd03_008_each_player_keeps_one_owner_first_then_opponent_discards_to_
 		"p0": {"current_monster": Cards.monster(3), "rage": 3, "zone_cards": {
 			1: Cards.battle(2, 2000, "OWN-A"), 4: Cards.battle(2, 2000, "OWN-B"),
 		}},
-		"p1": {"hand": [Cards.battle(), Cards.battle(), Cards.battle(), Cards.battle()], "zone_cards": {
+		"p1": {"monster_zone": 2, "hand": [Cards.battle(), Cards.battle(), Cards.battle(), Cards.battle()], "zone_cards": {
 			0: Cards.battle(2, 2000, "OPP-A"), 3: Cards.battle(2, 2000, "OPP-B"), 6: Cards.battle(2, 2000, "OPP-C"),
 		}},
 	})
@@ -1721,7 +1721,7 @@ func test_esd03_002_enter_destroys_rank_3_or_lower_on_both_boards() -> void:
 		"p0": {"current_monster": card, "zone_cards": {
 			1: Cards.battle(3, 2000, "OWN-R3"), 4: Cards.battle(4, 3000, "OWN-R4"),
 		}},
-		"p1": {"zone_cards": {
+		"p1": {"monster_zone": 2, "zone_cards": {
 			0: Cards.battle(1, 2000, "OPP-R1"), 3: Cards.battle(6, 5000, "OPP-R6"),
 		}},
 	})
@@ -1780,12 +1780,18 @@ func test_esd03_003_dominate_counter_start_destroys_rank_6_or_lower_in_column(op
 			[5, false],  # behind → Dominate off
 		]) -> void:
 	var card := Real.instance("ESD03-003")
+	# Anchor idx 2 → opp column zones [2, 7]. In the same-zone case the opp
+	# monster sits on idx 2, so the rank 6 takes idx 7 and the rank-7 cap is
+	# covered by the other cases.
+	var same_zone := opp_monster_zone == 3
+	var r6_idx := 7 if same_zone else 2
+	var opp_cards := {r6_idx: Cards.battle(6, 5000, "OPP-R6")}
+	if not same_zone:
+		opp_cards[7] = Cards.battle(7, 6000, "OPP-R7")
 	var state := States.make_state({
 		"current_player_id": 1,
-		"p0": {"current_monster": card, "monster_zone": 3},  # anchor idx 2 → opp column zones [2, 7]
-		"p1": {"monster_zone": opp_monster_zone, "zone_cards": {
-			2: Cards.battle(6, 5000, "OPP-R6"), 7: Cards.battle(7, 6000, "OPP-R7"),
-		}},
+		"p0": {"current_monster": card, "monster_zone": 3},
+		"p1": {"monster_zone": opp_monster_zone, "zone_cards": opp_cards},
 	})
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var s := _session(state)
@@ -1793,10 +1799,11 @@ func test_esd03_003_dominate_counter_start_destroys_rank_6_or_lower_in_column(op
 	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
 	await s["effect_handler"].check_timing.resolve()
 
-	assert_bool(state.players[1].zone_has_cards(2)) \
+	assert_bool(state.players[1].zone_has_cards(r6_idx)) \
 		.override_failure_message("ESD03-003: rank 6 in column destroyed iff Dominate").is_equal(not destroyed)
-	assert_bool(state.players[1].zone_has_cards(7)) \
-		.override_failure_message("ESD03-003: rank 7 must survive the rank<=6 cap").is_true()
+	if not same_zone:
+		assert_bool(state.players[1].zone_has_cards(7)) \
+			.override_failure_message("ESD03-003: rank 7 must survive the rank<=6 cap").is_true()
 
 
 func test_esd03_003_does_not_fire_on_own_counter_phase() -> void:
@@ -2171,20 +2178,20 @@ func test_esd05_005_bot_casts_only_when_three_die_and_play_back_is_better() -> v
 	var opp := PlayerState.new()
 	var base_zones := {0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"), 2: Cards.battle(3, 2000, "R3")}
 
-	var good := States.make_state({"p0": {"zone_cards": base_zones}}).players[0]
+	var good := States.make_state({"p0": {"monster_zone": 4, "zone_cards": base_zones}}).players[0]
 	good.discard_pile.append(Cards.battle(7, 6000, "D-R7"))
 	assert_bool(effect.bot_can_fulfill_on_enter(good, opp)).is_true()
 
-	var no_upgrade := States.make_state({"p0": {"zone_cards": base_zones}}).players[0]
+	var no_upgrade := States.make_state({"p0": {"monster_zone": 4, "zone_cards": base_zones}}).players[0]
 	no_upgrade.discard_pile.append(Cards.battle(2, 2000, "D-R2"))
 	assert_bool(effect.bot_can_fulfill_on_enter(no_upgrade, opp)) \
 		.override_failure_message("play-back must beat the best card given up").is_false()
 
-	var too_few := States.make_state({"p0": {"zone_cards": {0: Cards.battle(1, 2000, "R1")}}}).players[0]
+	var too_few := States.make_state({"p0": {"monster_zone": 4, "zone_cards": {0: Cards.battle(1, 2000, "R1")}}}).players[0]
 	too_few.discard_pile.append(Cards.battle(7, 6000, "D-R7"))
 	assert_bool(effect.bot_can_fulfill_on_enter(too_few, opp)).is_false()
 
-	var replacer := States.make_state({"p0": {"zone_cards": {
+	var replacer := States.make_state({"p0": {"monster_zone": 4, "zone_cards": {
 		0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"), 2: Real.instance("ESD01-011"),
 	}}}).players[0]
 	replacer.discard_pile.append(Cards.battle(7, 6000, "D-R7"))
@@ -2192,7 +2199,7 @@ func test_esd05_005_bot_casts_only_when_three_die_and_play_back_is_better() -> v
 		.override_failure_message("replace-on-destroy in the forced 3 stalls the effect").is_false()
 
 	# Opponent-only protection (EBP03-053) doesn't stop our own effect.
-	var opp_only := States.make_state({"p0": {"zone_cards": {
+	var opp_only := States.make_state({"p0": {"monster_zone": 4, "zone_cards": {
 		0: Cards.battle(1, 2000, "R1"), 1: Cards.battle(2, 2000, "R2"), 2: Real.instance("EBP03-053"),
 	}}}).players[0]
 	opp_only.discard_pile.append(Cards.battle(9, 9000, "D-R9"))

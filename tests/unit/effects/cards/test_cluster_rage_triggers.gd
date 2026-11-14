@@ -23,6 +23,7 @@ func _setup(card_id: String, opts: Dictionary = {}) -> Dictionary:
 	if int(card.get("card_type", -1)) == CardEnums.CardType.MONSTER:
 		p0_opts["current_monster"] = card
 	var state := States.make_state({
+		"allow_illegal": opts.get("allow_illegal", false),
 		"current_player_id": opts.get("current_player_id", 0),
 		"p0": p0_opts,
 		"p1": opts.get("p1", {}),
@@ -312,7 +313,9 @@ func test_ebp01_007_when_invading_reduces_rage_when_invaded_zone_had_card(zone_o
 	var p0_opts := {"monster_zone": 3}
 	if zone_occupied:
 		p0_opts["zone_cards"] = {2: Cards.battle(2, 3000, "OWN-CRUSHED")}
-	var s := _setup("EBP01-007", {"p0": p0_opts, "p1": {"rage": 3}})
+	# Mid-invasion state: the monster just entered the occupied zone 3; the
+	# crush is still pending (<When invading> sees zone_had_card).
+	var s := _setup("EBP01-007", {"p0": p0_opts, "p1": {"rage": 3}, "allow_illegal": true})
 	var state: GameState = s["state"]
 	var handler: EffectHandler = s["effect_handler"]
 

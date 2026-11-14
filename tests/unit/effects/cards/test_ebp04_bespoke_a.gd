@@ -468,7 +468,7 @@ func test_ebp04_013_mills_3_then_destroys_matching_zones_and_retreats() -> void:
 		},
 		"p1": {
 			"zone_cards": {1: Cards.battle(3, 3000, "OPP-Z2"), 4: Cards.battle(3, 3000, "OPP-Z5")},
-			"monster_zone": 5,
+			"monster_zone": 4,
 		},
 	})
 	for i in range(5):

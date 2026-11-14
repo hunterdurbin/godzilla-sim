@@ -26,7 +26,7 @@ func _entry(player_id: int, card: Dictionary, callback: Callable) -> StandbyEntr
 # --- Rule actions ---
 
 func test_crush_destroys_battle_card_under_monster() -> void:
-	var state := States.make_state({"p0": {
+	var state := States.make_state({"allow_illegal": true, "p0": {
 		"monster_zone": 3,
 		"zone_cards": {2: Cards.battle(1, 5000, "UNDER")},
 	}})
@@ -40,7 +40,7 @@ func test_crush_destroys_battle_card_under_monster() -> void:
 
 
 func test_crush_checks_both_players_turn_player_first() -> void:
-	var state := States.make_state({
+	var state := States.make_state({"allow_illegal": true, 
 		"current_player_id": 1,
 		"p0": {"monster_zone": 2, "zone_cards": {1: Cards.battle(1, 5000, "P0")}},
 		"p1": {"monster_zone": 5, "zone_cards": {4: Cards.battle(1, 5000, "P1")}},
@@ -68,7 +68,7 @@ func test_no_crush_when_zone_clear() -> void:
 
 
 func test_crush_now_crushes_only_the_named_player() -> void:
-	var state := States.make_state({
+	var state := States.make_state({"allow_illegal": true, 
 		"p0": {"monster_zone": 2, "zone_cards": {1: Cards.battle(1, 5000, "P0")}},
 		"p1": {"monster_zone": 5, "zone_cards": {4: Cards.battle(1, 5000, "P1")}},
 	})
@@ -244,7 +244,7 @@ func test_one_plays_triggers_share_one_pool_turn_player_first() -> void:
 	# <Enter>, and both players' watchers see the play. A battle card sitting
 	# in player 0's monster zone is crushed by the check timing's rule
 	# actions before any ability resolves (10.4.3.1).
-	var state := States.make_state({
+	var state := States.make_state({"allow_illegal": true, 
 		"current_player_id": 0,
 		"p0": {"hand": [_recorded("NEW")], "zone_cards": {
 			0: Cards.battle(1, 5000, "CRUSHED"), 3: _recorded("OLD"), 5: _recorded("OWN-WATCH")}},

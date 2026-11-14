@@ -59,7 +59,8 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
 
 ## Testing & verification
 
-- Unit (gdUnit4): `./tests/run_unit_tests.sh <godot> [path]` (digest output); suites in
+- Unit (gdUnit4): `./tests/run_unit_tests.sh <godot> [path]` (digest output;
+  `--per-suite` when a SCRIPT ERROR aborts the run); suites in
   `tests/unit/`, fixtures in `tests/fixtures/` (hand-built dicts for core;
   `real_cards.gd` `Real.instance(id)` for effect tests — never raw CardData
   templates). Smoke suite fails if `trigger_map.gd` is stale.

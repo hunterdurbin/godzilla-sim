@@ -9,7 +9,7 @@ const States := preload("res://tests/fixtures/states.gd")
 
 func test_compute_counter_numbers_without_effects() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 6000), 4: Cards.battle(1, 4000, "B")}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 6000), 4: Cards.battle(1, 4000, "B")}},
 		"p1": {"current_monster": Cards.monster(1, 5000), "rage": 2},
 	})
 	var session := States.make_session(state)
@@ -23,7 +23,7 @@ func test_compute_counter_numbers_without_effects() -> void:
 
 func test_counter_success_retreats_and_ranks_up() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 9000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 9000)}},
 		"p1": {
 			"current_monster": Cards.monster(1, 5000),
 			"monster_zone": 7,
@@ -48,7 +48,7 @@ func test_counter_success_retreats_and_ranks_up() -> void:
 
 func test_counter_failure_no_movement() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 1000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 1000)}},
 		"p1": {"current_monster": Cards.monster(1, 5000), "monster_zone": 7},
 	})
 	var session := States.make_session(state)
@@ -64,7 +64,7 @@ func test_counter_failure_no_movement() -> void:
 
 func test_counter_zones_1_to_5_do_not_retreat() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 9000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 9000)}},
 		"p1": {
 			"current_monster": Cards.monster(1, 5000),
 			"monster_zone": 3,
@@ -79,7 +79,7 @@ func test_counter_zones_1_to_5_do_not_retreat() -> void:
 
 func test_counter_victory_when_monster_deck_empty() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 9000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 9000)}},
 		"p1": {"current_monster": Cards.monster(1, 5000), "monster_deck": []},
 	})
 	var session := States.make_session(state)
@@ -96,7 +96,7 @@ func test_counter_victory_when_monster_deck_empty() -> void:
 func test_counter_victory_when_no_valid_rankup() -> void:
 	# Deck has a rank-2 monster but with no shared trait -> no valid target.
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 9000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 9000)}},
 		"p1": {
 			"current_monster": Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA]),
 			"monster_deck": [Cards.monster(2, 7000, [CardEnums.CardTrait.RODAN])],
@@ -114,7 +114,7 @@ func test_counter_victory_when_no_valid_rankup() -> void:
 func test_rankup_uses_scripted_choice() -> void:
 	# Two valid rank-2 monsters; the script picks deck index 1.
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 9000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 9000)}},
 		"p1": {
 			"current_monster": Cards.monster(1, 5000),
 			"monster_zone": 6,
@@ -179,7 +179,7 @@ func _retreat_onto_revenge_state() -> GameState:
 	var line := Cards.monster_line()
 	line[1]["effect_script"] = ENTER
 	return States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 30000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 30000)}},
 		"p1": {
 			"current_monster": line[0],
 			"monster_zone": 7,

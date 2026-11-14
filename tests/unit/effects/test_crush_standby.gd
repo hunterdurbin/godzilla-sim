@@ -68,7 +68,7 @@ func _entry(player_id: int, card: Dictionary, callback: Callable) -> StandbyEntr
 # --- Crush rule action → standby ---
 
 func test_both_players_crushed_revenge_resolves_in_standby_turn_player_first() -> void:
-	var state := States.make_state({
+	var state := States.make_state({"allow_illegal": true, 
 		"current_player_id": 1,
 		"p0": {"monster_zone": 2, "zone_cards": {1: _card("P0-REV", REVENGE)}},
 		"p1": {"monster_zone": 5, "zone_cards": {4: _card("P1-REV", REVENGE)}},
@@ -89,7 +89,7 @@ func test_both_players_crushed_revenge_resolves_in_standby_turn_player_first() -
 
 
 func test_crushed_card_leave_play_and_revenge_share_one_order_prompt() -> void:
-	var state := States.make_state({"p0": {
+	var state := States.make_state({"allow_illegal": true, "p0": {
 		"monster_zone": 3,
 		"zone_cards": {2: _card("BOTH", LEAVE_AND_REVENGE)},
 	}})

@@ -151,7 +151,7 @@ func test_check_win_condition() -> void:
 
 func test_check_counter_compares_cp_to_threat() -> void:
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: Cards.battle(1, 5000)}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 5000)}},
 		"p1": {"current_monster": Cards.monster(1, 5000), "rage": 0},
 	})
 	rules = States.make_rules(state)

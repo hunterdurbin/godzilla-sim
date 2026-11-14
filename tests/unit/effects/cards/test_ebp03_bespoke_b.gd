@@ -1281,7 +1281,7 @@ func test_ebp03_073_destroys_matching_zones_and_retreats_opponent_monster() -> v
 	var state := States.make_state({
 		"p0": {"main_deck": [Cards.battle(2, 2000, "M-R2"), Cards.battle(5, 2000, "M-R5A"),
 			Cards.battle(5, 2000, "M-R5B"), Cards.battle(1, 2000, "BELOW")]},
-		"p1": {"monster_zone": 5, "zone_cards": {
+		"p1": {"monster_zone": 4, "zone_cards": {
 			1: Cards.battle(3, 3000, "OPP-Z2"),
 			4: Cards.battle(3, 3000, "OPP-Z5"),
 			6: Cards.battle(3, 3000, "OPP-Z7"),

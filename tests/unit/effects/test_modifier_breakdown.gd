@@ -255,7 +255,7 @@ func test_field_rank_opponent_monster_source_with_clamp() -> void:
 	# Rank-1 cards clamp at effective rank 1 (delta 0 -> no entry).
 	var state := States.make_state({
 		"current_player_id": 1,
-		"p0": {"zone_cards": {0: Cards.battle(3, 1000, "R3"), 4: Cards.battle(1, 1000, "R1")}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(3, 1000, "R3"), 4: Cards.battle(1, 1000, "R1")}},
 		"p1": {"current_monster": Real.instance("EBP03-025")},
 	})
 	var handler := _wire(state)
@@ -400,7 +400,7 @@ func test_variable_base_survives_engagement_gating_and_is_restricted() -> void:
 func test_threat_variable_base_entry() -> void:
 	# EBP04-031: threat level X = 3000 x distinct colors among own battle
 	# cards — a variable BASE (threat_var_base), not a "threat" modifier.
-	var state := States.make_state({"p0": {
+	var state := States.make_state({"p0": {"monster_zone": 3, 
 		"current_monster": Real.instance("EBP04-031"),
 		"zone_cards": {
 			0: _colored_battle(CardEnums.CardColor.RED, "C-R"),
@@ -428,7 +428,7 @@ func test_threat_variable_base_entry() -> void:
 func test_hand_entries_include_variable_base_preview() -> void:
 	# EBP03-067 in hand: X counts every zone (no self-zone to exclude yet).
 	var card := Real.instance("EBP03-067")
-	var state := States.make_state({"p0": {
+	var state := States.make_state({"p0": {"monster_zone": 3, 
 		"hand": [card],
 		"zone_cards": {
 			0: _colored_battle(CardEnums.CardColor.RED, "C-R"),

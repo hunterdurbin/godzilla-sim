@@ -84,7 +84,7 @@ func test_cp_rage_at_least_2(card_id: String, base_cp: int,
 			["EBP02-011", 2000],
 		]) -> void:
 	var card := Real.instance(card_id)
-	var state := States.make_state({"p0": {"zone_cards": {0: card}, "rage": 2}})
+	var state := States.make_state({"p0": {"monster_zone": 2, "zone_cards": {0: card}, "rage": 2}})
 	var handler := _wire(state)
 
 	assert_int(handler.get_effective_zone_cp(0, 0)) \
@@ -267,7 +267,7 @@ func test_cp_named_card_in_play(card_id: String, base_cp: int, required_name: St
 	var named := Cards.strategy(2, "T-NAMED")
 	named["name"] = required_name
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: card}, "strategy_zones": [named]},
+		"p0": {"monster_zone": 2, "zone_cards": {0: card}, "strategy_zones": [named]},
 	})
 	var handler := _wire(state)
 
@@ -283,7 +283,7 @@ func test_cp_named_card_in_play(card_id: String, base_cp: int, required_name: St
 
 func test_cp_ride_card_in_discard_epr_015() -> void:
 	var card := Real.instance("EPR-015")
-	var state := States.make_state({"p0": {"zone_cards": {0: card}}})
+	var state := States.make_state({"p0": {"monster_zone": 2, "zone_cards": {0: card}}})
 	state.players[0].discard_pile.append(
 		Cards.battle(2, 2000, "RIDE-1", [CardEnums.CardTrait.GODZILLA_THE_RIDE]))
 	var handler := _wire(state)
@@ -296,7 +296,7 @@ func test_cp_ride_card_in_discard_epr_015() -> void:
 
 func test_cp_monsters_in_discard_ebp01_051() -> void:
 	var card := Real.instance("EBP01-051")
-	var state := States.make_state({"p0": {"zone_cards": {0: card}}})
+	var state := States.make_state({"p0": {"monster_zone": 2, "zone_cards": {0: card}}})
 	for i in range(5):
 		state.players[0].discard_pile.append(Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA], "DIS-M%d" % i))
 	var handler := _wire(state)
@@ -309,7 +309,7 @@ func test_cp_monsters_in_discard_ebp01_051() -> void:
 
 func test_cp_monster_stack_5_ebp03_065() -> void:
 	var card := Real.instance("EBP03-065")
-	var state := States.make_state({"p0": {"zone_cards": {0: card}}})
+	var state := States.make_state({"p0": {"monster_zone": 2, "zone_cards": {0: card}}})
 	for i in range(5):
 		state.players[0].monster_stack.append(Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA], "STK-%d" % i))
 	var handler := _wire(state)
@@ -351,7 +351,7 @@ func test_cp_two_other_battle_cards(card_id: String, base_cp: int,
 			["EBP02-031", 2000],  # the 2 others must be rank ≤ 5 — fixture rank 2 qualifies
 		]) -> void:
 	var card := Real.instance(card_id)
-	var state := States.make_state({"p0": {"zone_cards": {
+	var state := States.make_state({"p0": {"monster_zone": 4, "zone_cards": {
 		0: card,
 		1: Cards.battle(2, 3000, "OTH-1"),
 		2: Cards.battle(2, 3000, "OTH-2"),
@@ -370,7 +370,7 @@ func test_cp_two_other_battle_cards(card_id: String, base_cp: int,
 
 func test_cp_non_green_battle_ebp04_057() -> void:
 	var card := Real.instance("EBP04-057")
-	var state := States.make_state({"p0": {"zone_cards": {
+	var state := States.make_state({"p0": {"monster_zone": 3, "zone_cards": {
 		0: card,
 		1: _battle_colored(CardEnums.CardColor.RED, "RED-1"),
 	}}})
@@ -386,7 +386,7 @@ func test_cp_non_green_battle_ebp04_057() -> void:
 func test_cp_rank1_strategy_in_play_ebp04_037() -> void:
 	var card := Real.instance("EBP04-037")
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: card}, "strategy_zones": [Cards.strategy(1, "STR-R1")]},
+		"p0": {"monster_zone": 2, "zone_cards": {0: card}, "strategy_zones": [Cards.strategy(1, "STR-R1")]},
 	})
 	var handler := _wire(state)
 
@@ -399,7 +399,7 @@ func test_cp_rank1_strategy_in_play_ebp04_037() -> void:
 func test_cp_strategy_count_difference_ebp04_054() -> void:
 	var card := Real.instance("EBP04-054")
 	var state := States.make_state({
-		"p0": {
+		"p0": {"monster_zone": 2, 
 			"zone_cards": {0: card},
 			"strategy_zones": [Cards.strategy(1, "OWN-1"), Cards.strategy(2, "OWN-2")],
 		},
@@ -423,7 +423,7 @@ func test_cp_strategy_count_difference_ebp04_054() -> void:
 func test_cp_opp_has_godzilla_ebp02_067() -> void:
 	var card := Real.instance("EBP02-067")
 	# Default fixture monster carries the GODZILLA trait → condition fires.
-	var state := States.make_state({"p0": {"zone_cards": {0: card}}})
+	var state := States.make_state({"p0": {"monster_zone": 2, "zone_cards": {0: card}}})
 	var handler := _wire(state)
 
 	assert_int(handler.get_effective_zone_cp(0, 0)).is_equal(10000 + 5000)
@@ -441,7 +441,7 @@ func test_cp_opp_has_godzilla_strategy_ebp02_067() -> void:
 	# "a <《Godzilla》> card in their zones" includes strategy cards (none exist yet).
 	var card := Real.instance("EBP02-067")
 	var state := States.make_state({
-		"p0": {"zone_cards": {0: card}},
+		"p0": {"monster_zone": 2, "zone_cards": {0: card}},
 		"p1": {"current_monster": Cards.monster(1, 5000, [CardEnums.CardTrait.RODAN], "OPP-MON")},
 	})
 	var handler := _wire(state)
@@ -607,7 +607,7 @@ func test_field_cp_strategy_nonblue_adjacent_ebp04_082() -> void:
 
 func test_total_cp_destoroyah_own_turn_ebp01_062() -> void:
 	var state := States.make_state({
-		"p0": {
+		"p0": {"monster_zone": 2, 
 			"strategy_zones": [Real.instance("EBP01-062")],
 			"zone_cards": {0: Cards.battle(2, 3000, "DST", [CardEnums.CardTrait.DESTOROYAH])},
 		},
@@ -626,7 +626,7 @@ func test_total_cp_destoroyah_own_turn_ebp01_062() -> void:
 
 func test_total_cp_four_battles_own_turn_ebp02_017() -> void:
 	var state := States.make_state({
-		"p0": {
+		"p0": {"monster_zone": 5, 
 			"strategy_zones": [Real.instance("EBP02-017")],
 			"zone_cards": {
 				0: Cards.battle(2, 3000, "B-0"),
@@ -646,7 +646,7 @@ func test_total_cp_four_battles_own_turn_ebp02_017() -> void:
 
 func test_total_cp_crystals_own_turn_ebp02_072() -> void:
 	var state := States.make_state({
-		"p0": {
+		"p0": {"monster_zone": 4, 
 			"strategy_zones": [Real.instance("EBP02-072")],
 			"zone_cards": {0: _crystal(0), 1: _crystal(1), 2: _crystal(2)},
 		},
@@ -666,7 +666,7 @@ func test_opp_column_cp_doubled_ebp02_029() -> void:
 	# P1's monster (card owner) at zone 5 (idx 4) → doubles P0's zones in
 	# column 5 (cross-board: P0 idx 0). Active from counter phase on P0's turn.
 	var state := States.make_state({
-		"p0": {"zone_cards": {
+		"p0": {"monster_zone": 2, "zone_cards": {
 			0: Cards.battle(2, 5000, "COL"),
 			3: Cards.battle(2, 4000, "OFF-COL"),
 		}},
