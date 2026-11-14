@@ -68,17 +68,28 @@ func execute_start_phase_reset(state: GameState) -> void:
 
 
 func execute_end_phase_burst_discard(state: GameState) -> void:
-	## Discard Burst monster at beginning of end phase and restore previous monster.
+	## Burst (12.5.2): at the beginning of the end phase the Burst card goes
+	## from the invading monster to the discard pile — 12.5.2.1: "Even if
+	## this card is not the topmost card at the beginning of the end phase
+	## for any reason, the card is still sent to the discard pile." Only when
+	## it is still on top does the monster card under it become the invading
+	## monster again; neither case is a play, so nothing enters (12.5.3,
+	## Q107: "No, it does not.")
+	## (hunterdurbin/godzilla-sim-issue-tracker#35 row 15).
 	var player := state.get_current_player()
-	if not player.burst_monster.is_empty():
-		var burst_card: Dictionary = player.burst_monster
-		player.add_to_discard(burst_card)
-		# Pop the pre-burst monster off the stack (it was pushed when burst was played)
-		player.pop_under_monster()
-		player.set_current_monster(player.pre_burst_monster)
-		player.burst_monster = {}
-		player.pre_burst_monster = {}
-		await dispatcher.trigger_burst_discard(player.player_id, burst_card)
+	if player.burst_monster.is_empty():
+		return
+	var burst_card: Dictionary = player.burst_monster
+	var pre_burst: Dictionary = player.pre_burst_monster
+	player.burst_monster = {}
+	player.pre_burst_monster = {}
+	if player.current_monster == burst_card:
+		player.remove_from_monster_stack(pre_burst)
+		player.set_current_monster(pre_burst)
+	elif not player.remove_from_monster_stack(burst_card):
+		return  # an effect already moved it out of the invading monster
+	player.add_to_discard(burst_card)
+	await dispatcher.trigger_burst_discard(player.player_id, burst_card)
 
 
 func execute_end_phase_advance(state: GameState) -> void:

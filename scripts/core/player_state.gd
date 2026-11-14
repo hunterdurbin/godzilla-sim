@@ -287,6 +287,17 @@ func add_cards_under_monster(cards: Array) -> void:
 	monster_changed.emit()
 
 
+func remove_from_monster_stack(card: Dictionary) -> bool:
+	## Take `card` out of the cards under the monster card (false when it is
+	## not there).
+	var i: int = monster_stack.find(card)
+	if i < 0:
+		return false
+	monster_stack.remove_at(i)
+	monster_changed.emit()
+	return true
+
+
 func pop_under_monster() -> Dictionary:
 	## Take the card directly under the monster card ({} when none).
 	if monster_stack.is_empty():

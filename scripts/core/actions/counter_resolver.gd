@@ -94,16 +94,14 @@ func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id:
 	if chosen_index >= 0 and chosen_index < opponent.monster_deck.size():
 		var m: Dictionary = opponent.monster_deck[chosen_index]
 		var old_monster: Dictionary = opponent.current_monster
-		if not old_monster.is_empty():
-			opponent.push_under_monster(old_monster)
-		opponent.remove_from_monster_deck(m)
-		opponent.set_current_monster(m)
+		# The rank-up is a play (5.11.2, Q288): it fires <Enter> and the
+		# "when your monster card is played" watchers
+		# (hunterdurbin/godzilla-sim-issue-tracker#35 row 14).
 		# Rage carries over on counter rank-up — the start-phase reset on the
 		# countered player's next turn handles the decrease (and lets watchers
 		# like EBP04-089, which gate to "<Your Turn>", claim the markers).
+		enter_zone.play_monster(opponent.player_id, m, EnterZone.MonsterSource.MONSTER_DECK)
 		events.monster_countered.emit(opponent.player_id, old_monster, m)
-		if effect_handler:
-			dispatcher.trigger_enter(opponent.player_id, m, true)
 	else:
 		# Opponent loses - can't find valid rank-up monster
 		state.game_over.emit(winner_player_id, "STR_LOG_REASON_COUNTER_VICTORY")

@@ -744,29 +744,21 @@ func place_card_under_zone(player: PlayerState, card: Dictionary, zone_idx: int)
 
 func play_strategy_from_effect(player_id: int, card: Dictionary, zone_idx: int = -1) -> int:
 	## An effect plays ("activates", 5.9.1: the master plays it) a strategy
-	## card, regardless of rank (8.3.1 restricts only the Activate action).
-	## Same bookkeeping as playing from hand: occupies the strategy zone
-	## (zone_idx, or the first empty one when -1), stamps the turn placed (so
-	## the 7.2.3 start-phase discard treats it as placed this turn), emits
-	## GameEvents.strategy_card_played, logs
-	## played_strategy, then fires its <Enter> as an effect play.
-	## The card is first taken out of the player's hand or discard pile if it
-	## is still there (safe after search_deck / search_discard / take_hand_card).
+	## card, regardless of rank (8.3.1 restricts only the Activate action),
+	## through EnterZone.play_strategy: into zone_idx, or the first empty
+	## strategy zone when -1. The card is first taken out of the player's
+	## hand or discard pile if it is still there (safe after search_deck /
+	## search_discard / take_hand_card).
 	## Returns the strategy zone index, or -1 (nothing moves) when there is no
 	## empty strategy zone — callers check has_empty_strategy_zone() before
 	## removing the card from a hidden zone such as the deck.
 	var player := game_state.players[player_id]
-	var idx: int = zone_idx if zone_idx >= 0 else player.get_first_empty_strategy_zone_index()
-	if idx < 0 or idx >= player.strategy_zones.size() or not player.strategy_zones[idx].is_empty():
-		return -1
-	if not player.remove_from_hand(card):
-		player.remove_from_discard(card)
-	player.place_strategy(idx, card, game_state.turn_number)
-	if events != null:
-		events.strategy_card_played.emit(player_id, card, idx)
-	h.log_message.emit(GameLog.played_strategy(player_id, card.get("id", ""), card.get("is_base", false)))
-	dispatcher.trigger_enter(player_id, card, true)
-	return idx
+	var source := EnterZone.Source.DECK
+	if card in player.hand:
+		source = EnterZone.Source.HAND
+	elif card in player.discard_pile:
+		source = EnterZone.Source.DISCARD
+	return enter_zone.play_strategy(player_id, card, source, true, zone_idx)
 
 
 
