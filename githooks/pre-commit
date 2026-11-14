@@ -59,6 +59,11 @@ if git diff --cached --name-only | grep -qE '^(scripts|scenes)/.*\.gd$'; then
 	python3 scripts/tools/check_monster_zone_writers.py || exit 1
 fi
 
+# Guard: only LeaveZone (and EnterZone's moves) empties a battle zone.
+if git diff --cached --name-only | grep -qE '^(scripts|scenes)/.*\.gd$'; then
+	python3 scripts/tools/check_clear_zone_owner.py || exit 1
+fi
+
 # Ratchet: only RulesEngine decides rank-up eligibility.
 if git diff --cached --name-only | grep -qE '^((scripts|scenes)/.*\.gd|scripts/tools/rank_up_rule_allowlist\.txt)$'; then
 	python3 scripts/tools/check_rank_up_rule_owner.py || exit 1

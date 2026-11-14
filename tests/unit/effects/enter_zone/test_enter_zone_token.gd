@@ -70,7 +70,11 @@ func test_a_non_battle_token_does_not_fire_the_played_watchers() -> void:
 
 	assert_bool(_enter(s, token, ZONE, Source.TOKEN)).is_true()
 
-	assert_array(await _resolve(s)).contains_exactly(["enter:TOKEN:effect=true:evo=false"])
+	# No "played@" entry. A strategy card on top of a zone is illegal, so the
+	# 11.4 cleanup takes it out of the zone through LeaveZone, and its leave-play
+	# fires too (hunterdurbin/godzilla-sim-issue-tracker#31).
+	assert_array(await _resolve(s)).contains_exactly(
+			["enter:TOKEN:effect=true:evo=false", "leave:TOKEN:%d" % ZONE])
 	_teardown(s)
 
 

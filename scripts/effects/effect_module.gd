@@ -3,7 +3,7 @@ extends RefCounted
 
 ## Base for the engine modules behind the EffectHandler facade
 ## (TriggerDispatcher, DestructionEngine, CardMover, MonsterMover, EnterZone,
-## EffectQueries). EffectHandler.setup wires each module once with direct
+## LeaveZone, EffectQueries). EffectHandler.setup wires each module once with direct
 ## references to the others (`wire`), so cross-module calls go straight to
 ## the owning module (`dispatcher.trigger_enter`, `queries.…`) —
 ## never through a facade delegate. The facade `h` is used only for what the
@@ -24,6 +24,7 @@ var destruction: DestructionEngine
 var mover: CardMover
 var monster_mover: MonsterMover
 var enter_zone: EnterZone
+var leave_zone: LeaveZone
 var queries: EffectQueries
 
 ## Wired after EffectHandler.setup (MatchFactory / TurnManager), so read
@@ -45,6 +46,7 @@ func wire(hub: EffectHandler) -> void:
 	mover = hub.mover
 	monster_mover = hub.monster_mover
 	enter_zone = hub.enter_zone
+	leave_zone = hub.leave_zone
 	queries = hub.queries
 
 
@@ -60,6 +62,7 @@ func unwire() -> void:
 	mover = null
 	monster_mover = null
 	enter_zone = null
+	leave_zone = null
 	queries = null
 
 
