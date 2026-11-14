@@ -34,7 +34,13 @@ same; the split happened during that turn, or earlier in state the line
 does not carry, such as hand contents) and the first one that differs (`first_divergence.py`). Each line carries both players' zone,
 monster base id + rank, rage and hand size. A game
 can split and reconverge on the same `[SimResult]`, so a split alone fails
-the diff. Explain each divergence from that line. A KAIJU split that starts
+the diff. Explain each divergence from that line. Under `EVENTS:` it
+prints the rule-event counts that moved base -> head (`[SimEvents]`: each
+GameEvents signal, e.g. `monster_countered`, and each log token type, e.g.
+`log:burst_played`); a moved count fails the diff too. The full table,
+`events<n>.txt` in the logs dir, shows whether a changed rule path ran at
+all: a semantic PR cites its counts (`grep burst events*.txt`) when results
+come back identical, since 0 means the sim never reached it. A KAIJU split that starts
 before the changed state exists (e.g. a rank-2 rule diverging while the
 monster is rank 1) usually comes from the planner's opponent-reply pass,
 which plays the opponent's turn, counter phase included, against the bot:

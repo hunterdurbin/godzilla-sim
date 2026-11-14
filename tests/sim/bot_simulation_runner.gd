@@ -28,6 +28,13 @@ var _recorder: ReplayRecorder = null
 ## summed over every game. Printed as the [SimEffects] line.
 var _effect_counts: Dictionary[String, int] = {}
 var _effect_counts_available: bool = false
+## Rule-event counts summed over every game, printed as the [SimEvents] line:
+## each GameEvents script-signal emission under its signal name
+## (`monster_countered`), and each EffectHandler log token under `log:<type>`
+## (`log:burst_played`). Engine events that start no card ability — a Burst
+## play, a counter rank-up — show up here, not in [SimEffects]. Introspected,
+## so a base tree with other signals still runs this harness.
+var _event_counts: Dictionary[String, int] = {}
 
 
 func _ready() -> void:
@@ -138,6 +145,10 @@ func _start_next_game() -> void:
 	if bus.has_signal("effect_resolving"):
 		_effect_counts_available = true
 		bus.connect("effect_resolving", _on_effect_resolving)
+	for sig: Dictionary in bus.get_script().get_script_signal_list():
+		var sig_name: String = sig["name"]
+		bus.connect(sig_name, _count_event.bind(sig_name).unbind(sig["args"].size()))
+	_current_turn_manager.action_handler.effect_handler.log_message.connect(_on_log_message)
 
 	# Instant confirmation — resolve synchronously (no await, no frame wait).
 	# Must be connected BEFORE bot handlers so it fires first. Uses a named
@@ -275,9 +286,28 @@ func _on_effect_resolving(_player_id: int, card: Dictionary) -> void:
 	_effect_counts[id] = _effect_counts.get(id, 0) + 1
 
 
+func _count_event(event_name: String) -> void:
+	_event_counts[event_name] = _event_counts.get(event_name, 0) + 1
+
+
+func _on_log_message(token: Variant) -> void:
+	# Untyped: a few sites log a translated String instead of a GameLog token.
+	var kind: String = "text"
+	if token is Dictionary:
+		kind = str((token as Dictionary).get("type", "text"))
+	_count_event("log:" + kind)
+
+
 func _print_summary() -> void:
-	# First line of the summary: run_sim_diff.sh waits for it, then reads the
-	# counts for the cards the diff touches.
+	# [SimEvents], then [SimEffects]: run_sim_diff.sh waits for [SimEffects],
+	# so both are printed by then. It reads the event counts per side and the
+	# effect counts for the cards the diff touches.
+	var event_parts: PackedStringArray = []
+	var event_names: Array[String] = _event_counts.keys()
+	event_names.sort()
+	for event_name in event_names:
+		event_parts.append("%s=%d" % [event_name, _event_counts[event_name]])
+	print("[SimEvents] %s" % " ".join(event_parts))
 	var parts: PackedStringArray = []
 	var ids: Array[String] = _effect_counts.keys()
 	ids.sort()

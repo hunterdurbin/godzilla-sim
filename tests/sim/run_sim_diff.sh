@@ -21,6 +21,10 @@
 #   - SPLIT: per game whose [SimTurn] trace differs, the last shared turn
 #     line and the first differing one, base vs head (first_divergence.py),
 #     so every divergence traces to the turn and monsters it started from
+#   - EVENTS: the rule-event counts ([SimEvents]: GameEvents signals and
+#     log token types such as log:burst_played) that differ base -> head;
+#     the full table, which shows whether a path ran at all, is
+#     $WORK/events<n>.txt (event_counts.py)
 #   - per side: games completed, P1 wins, SCRIPT ERROR count, and
 #     `[Kaiju] … plan DIVERGED` count (the KAIJU replay-parity metric:
 #     the planner's cached plan stopped matching the live game)
@@ -32,7 +36,8 @@
 # cards (modifiers, replacement queries) never "resolve" and always show 0.
 # Exit status (also printed as the final "STATUS: <n> (...)" line):
 #   0 = identical results and no script errors on this tree;
-#   1 = results differ / script errors / missing games (any pair);
+#   1 = results differ / splits / event counts differ / script errors /
+#       missing games (any pair);
 #   2 = otherwise clean, but some changed card was UNEXERCISED;
 #   3 = no longer used (was: tree edited mid-run; head now runs a snapshot);
 #   4 = bad arguments (games / seed not integers, p1/p2 not a difficulty,
@@ -195,6 +200,17 @@ for pair in "${PAIRS[@]}"; do
 			STATUS=1 ;;
 		*) echo "  SPLIT: first_divergence.py failed (see its error above)"; STATUS=1 ;;
 	esac
+	# Rule events (GameEvents signals, log token types): a count that moved
+	# is a divergence to explain; the full table shows which paths ran at all.
+	EVENTS_DIFF=$(python3 "$HEAD_WT/tests/sim/event_counts.py" \
+		"$WORK/base$i.log" "$WORK/head$i.log" "$WORK/events$i.txt")
+	if [ -n "$EVENTS_DIFF" ]; then
+		echo "  EVENTS: $(printf '%s\n' "$EVENTS_DIFF" | wc -l | tr -d ' ') counts differ (base -> head; all: $WORK/events$i.txt):"
+		printf '%s\n' "$EVENTS_DIFF" | sed 's/^/    /'
+		STATUS=1
+	else
+		echo "  EVENTS: identical counts ($WORK/events$i.txt)"
+	fi
 	[ "$(grep -c 'SCRIPT ERROR' "$WORK/head$i.log")" -eq 0 ] || STATUS=1
 	[ "$(grep -c '\[SimResult\]' "$WORK/head$i.log")" -ge "$GAMES" ] || STATUS=1
 	LOGS+=("$WORK/base$i.log" "$WORK/head$i.log")
@@ -262,6 +278,6 @@ echo "Logs: $WORK/{base,head}<n>.log"
 case "$STATUS" in
 	0) echo "STATUS: 0 (identical)" ;;
 	2) echo "STATUS: 2 (unexercised)" ;;
-	*) echo "STATUS: $STATUS (differs, splits, script errors or missing games)" ;;
+	*) echo "STATUS: $STATUS (differs, splits, event counts, script errors or missing games)" ;;
 esac
 exit $STATUS

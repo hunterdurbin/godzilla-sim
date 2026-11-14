@@ -72,8 +72,8 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
   (`tests/sim/README.md`). Changed cards or rules → pick decks that run
   them first: `./tests/sim/decks_with_cards.sh <card_id>...` (README § Decks).
 - Mechanical rules (a pattern grep can catch) get a check in `scripts/tools/`
-  wired into `githooks/pre-commit` + `tests.yml`, not prose — see
-  `scripts/tools/README.md` for the existing ones.
+  and a row in `scripts/tools/run_checks.sh` (pre-commit and `tests.yml` run
+  it), not prose. All checks before committing: `scripts/tools/run_checks.sh <godot>`.
 - Headful verification of board UI: the `verify` skill
   (`.claude/skills/verify/`) — unit+harness do NOT exercise the real
   GameBoard `_ready`.
