@@ -154,10 +154,6 @@ static func effect_gained_rage_from_mill(player_id: int, effect_source_id: Strin
 	return {"type": "effect_gained_rage_from_mill", "player_id": player_id, "source_id": effect_source_id, "rage": rage, "milled_id": milled_id}
 
 
-static func effect_gained_rage(player_id: int, effect_source_id: String, rage: int, amount: int) -> Dictionary:
-	return {"type": "effect_gained_rage", "player_id": player_id, "source_id": effect_source_id, "rage": rage, "amount": amount}
-
-
 static func effect_destroyed_card(source_player_id: int, effect_source_id: String, target_player_id: int, zone_index: int, destroyed_id: String) -> Dictionary:
 	return {"type": "effect_destroyed_card", "source_player_id": source_player_id, "source_id": effect_source_id, "target_player_id": target_player_id, "zone_index": zone_index, "destroyed_id": destroyed_id}
 
@@ -455,6 +451,8 @@ static func render(token: Dictionary) -> String:
 				.replace("{N}", str(token.get("rage", 0))) \
 				.replace("{MILLED_CARD}", card_link(token.get("milled_id", "")))
 		"effect_gained_rage":
+			# No longer written (effect gains log rage_gained); kept so older
+			# replays still render.
 			return TranslationServer.translate("STR_LOG_EFFECT_RAGE_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
