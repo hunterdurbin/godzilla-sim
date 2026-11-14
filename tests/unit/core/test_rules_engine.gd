@@ -183,7 +183,7 @@ func test_rank_up_candidates_empty_monster_deck() -> void:
 	assert_array(rules.get_rank_up_candidates(state.players[1])).is_empty()
 
 
-func test_can_opponent_rank_up_needs_next_rank_with_shared_trait() -> void:
+func test_can_opponent_rank_up_needs_next_rank_with_shared_trait_absent_alt_cost() -> void:
 	var state := States.make_state({"p1": {
 		"current_monster": Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA]),
 		"monster_deck": [Cards.monster(2, 7000, [CardEnums.CardTrait.RODAN])],

@@ -276,17 +276,11 @@ func get_rank_up_candidates(player: PlayerState) -> Array[int]:
 	return valid_indices
 
 
-func can_opponent_rank_up(opponent: PlayerState) -> bool:
-	## Check if the opponent can find a valid rank-up monster from their monster deck.
-	## Bot-only legacy copy: it ignores the can_play_as_monster bridge that
-	## get_rank_up_candidates (the engine's rule) honours.
-	var next_rank: int = opponent.current_monster.get("rank", 1) + 1
-	var cur_traits: Array = opponent.current_monster.get("traits", [])
-
-	for m in opponent.monster_deck:
-		if m.get("rank") == next_rank and _traits_overlap(m.get("traits", []), cur_traits):
-			return true
-	return false
+## True when a counter against this player would force a rank-up rather
+## than win the game (5.15.1.2.1): the predicate form of
+## get_rank_up_candidates, the rule CounterResolver applies.
+func can_opponent_rank_up(player: PlayerState) -> bool:
+	return not get_rank_up_candidates(player).is_empty()
 
 
 ## True when the two trait lists share at least one trait (monster play

@@ -91,3 +91,18 @@ func test_alternate_monster_play_bridges_rank_up_traits() -> void:
 	var rules := _rules_with_effect(state, "test://alt_monster_play", AlternateMonsterPlayEffect.new(), ["can_play_as_monster"])
 
 	assert_array(rules.get_rank_up_candidates(state.players[1])).contains_exactly([1])
+
+
+func test_bot_rank_up_judgement_honours_alternate_monster_play() -> void:
+	# The bot's "can't rank up while countered" judgement must match the
+	# engine's rank-up rule: a bridged next-rank monster is a live rank-up,
+	# so countering does not win the game.
+	var bridged := Cards.monster(2, 7000, [CardEnums.CardTrait.RODAN], "BRIDGE")
+	bridged["effect_script"] = "test://alt_monster_play"
+	var state := States.make_state({"p1": {
+		"current_monster": Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA]),
+		"monster_deck": [bridged],
+	}})
+	var rules := _rules_with_effect(state, "test://alt_monster_play", AlternateMonsterPlayEffect.new(), ["can_play_as_monster"])
+
+	assert_bool(rules.can_opponent_rank_up(state.players[1])).is_true()
