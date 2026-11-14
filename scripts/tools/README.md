@@ -7,8 +7,14 @@ The `check_*.py` ratchets share `gd_ratchet.py`: allow-list keys are
 fails on a NEW hit and on a STALE allow-list line, so the lists only shrink.
 `--update` rewrites a list from the tree; additions need a reason in the PR.
 
+`run_checks.sh` runs every mechanical check below in one go; it is the one
+list `githooks/pre-commit` (`--staged`: only checks whose files are staged)
+and `tests.yml` call. Wire a new check by adding a row to its `CHECKS`
+table — "Runs in CI and the pre-commit hook" below means "is in that table".
+
 | File | What it checks | Run |
 |---|---|---|
+| `run_checks.sh` | Runs every `check_*` ratchet/guard in its `CHECKS` table (path filter + script), then exits 1 naming each failure. `check_gdscript_warnings.py` runs only with a Godot binary. | `scripts/tools/run_checks.sh [--staged] [<godot>]` |
 | `check_designer_contract.gd` | A GameBoard scene satisfies the multiplayer scene contract: root named `GameBoard`, `GameSession` child containing `MultiplayerSync` (required) + `EffectUIRouter` (warning if absent). Exit 0 = pass. | `<godot> --headless --quit --script scripts/tools/check_designer_contract.gd -- res://scenes/board/GameBoard.tscn` (or `-- --all` to scan `scenes/board/`) |
 | `check_engine_private_calls.py` | Ratchet: no new `x._method(` calls into private methods defined in `scripts/core/` or `scripts/effects/` from other files (call a public engine method instead). Grandfathered occurrences live in `engine_private_calls_allowlist.txt`. Runs in CI (`tests.yml`) and the pre-commit hook. | `python3 scripts/tools/check_engine_private_calls.py` |
 | `check_effect_handler_card_api.py` | Ratchet + guards: `EffectHandler` is exactly the card-script interface. (1) Every public `EffectHandler` method has a caller in a per-card script (`scripts/effects/<set>/`) through a handler receiver — `effect_handler.` / `EffectHandler.`, or a file-local alias typed `: EffectHandler` or assigned `= ctx.effect_handler`; a same-named method on another object doesn't count. Lifecycle `setup` / `teardown` are exempt; pending removals live in `effect_handler_card_api_allowlist.txt` (empty). (2) Card scripts never reach a module behind the facade (`ctx.effect_handler.queries.…`); no allow-list. (3) Every `effect_handler.<name>` / `["effect_handler"].<name>` under scripts/ scenes/ tests/ names a real EffectHandler member — through an untyped receiver a removed or misspelled method compiles and only fails when the line runs; no allow-list. Engine, core, UI, bot and tests call the modules (`effect_handler.queries` / `.dispatcher` / `.check_timing` / …). Built-in pattern self-test. Runs in CI (`tests.yml`) and the pre-commit hook. | `python3 scripts/tools/check_effect_handler_card_api.py` |
