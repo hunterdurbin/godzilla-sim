@@ -27,8 +27,10 @@ extends EffectModule
 ## …) are such callers: they apply the blocking checks, then use the
 ## operations above.
 ##
-## Event emission is still per caller (the `emit_advanced` flag and the
-## invasion's single `monster_changed`); #19 makes it consistent.
+## Every move emits GameEvents.monster_advanced(player, from, to) — per
+## step for advance and retreat, once for a teleport; `to < from` is a
+## move back. `monster_changed` follows each step, except during an
+## invasion, whose resolver emits it once after movement.
 
 
 # --- Operations ---
@@ -40,8 +42,7 @@ func place_at_start(player_id: int, zone: int) -> void:
 	game_state.players[player_id].monster_zone = zone
 
 
-func advance(player_id: int, steps: int, from_invasion: bool, entries: Array,
-		emit_advanced: bool = true) -> bool:
+func advance(player_id: int, steps: int, from_invasion: bool, entries: Array) -> bool:
 	## Advance up to `steps` zones, one at a time. Per step: emit the events,
 	## collect <When invading> (only `from_invasion`) and the "monster
 	## advances" entries into `entries`, then run Crush (its entries join
@@ -49,10 +50,9 @@ func advance(player_id: int, steps: int, from_invasion: bool, entries: Array,
 	## at zone 8 moves past it when the opponent's zone 8 holds no battle
 	## card — victory through invasion (5.13.1.1.2), returned as true — and
 	## otherwise stops.
-	## `emit_advanced` false skips GameEvents.monster_advanced (today's
-	## effect-driven advance; removed by #19). An invasion emits the monster's
-	## `monster_changed` only on the victory step — the invasion resolver
-	## emits it once after movement.
+	## Every step emits GameEvents.monster_advanced. An invasion emits the
+	## monster's `monster_changed` only on the victory step — the invasion
+	## resolver emits it once after movement.
 	var player := game_state.players[player_id]
 	for _step in range(steps):
 		if player.monster_zone >= 8:
@@ -69,8 +69,7 @@ func advance(player_id: int, steps: int, from_invasion: bool, entries: Array,
 			return true
 		var old_zone: int = player.monster_zone
 		player.monster_zone += 1
-		if emit_advanced:
-			_emit_advanced(player_id, old_zone, player.monster_zone)
+		_emit_advanced(player_id, old_zone, player.monster_zone)
 		if from_invasion:
 			entries.append_array(h.collect_when_invading_entries(player_id, old_zone, player.monster_zone))
 		else:
@@ -81,23 +80,24 @@ func advance(player_id: int, steps: int, from_invasion: bool, entries: Array,
 	return false
 
 
-func advance_to_zone(player_id: int, target_zone: int, entries: Array,
-		emit_advanced: bool = true) -> void:
+func advance_to_zone(player_id: int, target_zone: int, entries: Array) -> void:
 	## Advance (not from an invasion) until the monster reaches `target_zone`
 	## or zone 8. See `advance`.
 	var steps: int = target_zone - game_state.players[player_id].monster_zone
 	if steps > 0:
-		advance(player_id, steps, false, entries, emit_advanced)
+		advance(player_id, steps, false, entries)
 
 
 func retreat_to_zone(player_id: int, target_zone: int, entries: Array) -> void:
 	## Retreat one zone at a time down to `target_zone`, running Crush per
 	## step (its entries join `entries`). Retreating is not advancing: no
-	## advance triggers. Emits `monster_changed` per step and no
-	## GameEvents.monster_advanced (today's emission; #19).
+	## advance triggers. Emits GameEvents.monster_advanced (a downward
+	## move) and `monster_changed` per step.
 	var player := game_state.players[player_id]
 	while player.monster_zone > target_zone:
+		var old_zone: int = player.monster_zone
 		player.monster_zone -= 1
+		_emit_advanced(player_id, old_zone, player.monster_zone)
 		player.monster_changed.emit()
 		if action_handler:
 			check_timing.check_crush_rule(entries)
@@ -142,20 +142,22 @@ func advance_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## Effect-driven advance to `target_zone`. Blocked by advance blocking
 	## (e.g. Biollante Rose Form) and by `prevents_opponent_monster_move`
 	## (e.g. EBP04-076 Godzilla's Dormancy when the caller is the opponent's
-	## effect). Emits `monster_changed` per step but not
-	## GameEvents.monster_advanced (today's emission; #19).
+	## effect). Emits GameEvents.monster_advanced and `monster_changed` per
+	## step (see `advance`).
 	if h.is_monster_advance_blocked(player_id):
 		return
 	if h.is_opponent_monster_move_blocked(player_id):
 		return
 	var entries: Array = []
-	advance_to_zone(player_id, target_zone, entries, false)
+	advance_to_zone(player_id, target_zone, entries)
 	check_timing.submit(entries)
 
 
 func retreat_monster_to_zone(player_id: int, target_zone: int) -> void:
 	## Effect-driven retreat to `target_zone`. Blocked by
-	## `prevents_opponent_monster_move` (e.g. EBP04-076).
+	## `prevents_opponent_monster_move` (e.g. EBP04-076). Emits
+	## GameEvents.monster_advanced and `monster_changed` per step (see
+	## `retreat_to_zone`).
 	if h.is_opponent_monster_move_blocked(player_id):
 		return
 	var entries: Array = []

@@ -147,10 +147,7 @@ func test_an_advance_emits_monster_advanced_per_step() -> void:
 	_teardown(s)
 
 
-# Per-caller emission kept until #19 makes it consistent.
-
-
-func test_an_effect_advance_emits_monster_changed_but_not_monster_advanced() -> void:
+func test_an_effect_advance_emits_monster_advanced_and_monster_changed_per_step() -> void:
 	var s := _setup(2)
 	var handler: EffectHandler = s["effect_handler"]
 	var moves := _record_advanced(s)
@@ -159,7 +156,7 @@ func test_an_effect_advance_emits_monster_changed_but_not_monster_advanced() -> 
 	handler.advance_monster_to_zone(0, 4)
 
 	assert_int(_p0(s).monster_zone).is_equal(4)
-	assert_array(moves).is_empty()
+	assert_array(moves).is_equal([[0, 2, 3], [0, 3, 4]])
 	assert_int(changes[0]).is_equal(2)
 	_teardown(s)
 
@@ -204,6 +201,22 @@ func test_a_retreat_crushes_per_step_without_advance_triggers() -> void:
 	assert_int(_p0(s).monster_zone).is_equal(2)
 	assert_bool(_p0(s).zone_has_cards(3)).is_false()
 	assert_array(await _resolve(s, entries)).contains_exactly(["leave:CROSSED:3"])
+	_teardown(s)
+
+
+func test_an_effect_retreat_emits_monster_advanced_and_monster_changed_per_step() -> void:
+	# monster_advanced reports every move, downward ones included (as the
+	# counter retreat's teleport does).
+	var s := _setup(5)
+	var handler: EffectHandler = s["effect_handler"]
+	var moves := _record_advanced(s)
+	var changes := _count_changed(_p0(s))
+
+	handler.retreat_monster_to_zone(0, 3)
+
+	assert_int(_p0(s).monster_zone).is_equal(3)
+	assert_array(moves).is_equal([[0, 5, 4], [0, 4, 3]])
+	assert_int(changes[0]).is_equal(2)
 	_teardown(s)
 
 
