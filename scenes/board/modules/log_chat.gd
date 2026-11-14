@@ -141,15 +141,14 @@ func _connect_once(sig: Signal, callback: Callable) -> void:
 		sig.connect(callback)
 
 
-## Accepts a GameLog token Dictionary or a raw String (pre-formatted system
-## messages like reconnect status). Tokens render in the local locale via
-## GameLog.render; strings append as-is. On the multiplayer host the entry
-## is also buffered for the next state broadcast.
-func append_message(message) -> void:
-	log_tokens.append(message)
-	_render_to_output(render_entry(message))
+## Appends a GameLog token, rendered in the local locale via GameLog.render.
+## On the multiplayer host the token is also buffered for the next state
+## broadcast.
+func append_message(token: Dictionary) -> void:
+	log_tokens.append(token)
+	_render_to_output(GameLog.render(token))
 	if _board.is_multiplayer_game and NetworkManager.is_host():
-		pending_log_tokens.append(message)
+		pending_log_tokens.append(token)
 		# Log tokens ride the state broadcast; request one so a log-only
 		# event (no state change, e.g. ESD03-008's announced pick) still
 		# reaches the client — and the pre-prompt flush sends it before the

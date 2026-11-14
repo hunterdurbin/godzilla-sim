@@ -40,6 +40,7 @@ CHECKS=(
 	'^scripts/(core|effects)/.*\.gd$|check_docstring_signals.py'
 	'^(scripts|scenes|tests|githooks)/|check_tracker_refs.py'
 	'^(scripts|scenes)/.*\.gd$|rank_up_rule_allowlist\.txt$|check_rank_up_rule_owner.py'
+	'^(scripts|scenes)/.*\.gd$|check_log_message_tokens.py'
 	'\.gd$|gdscript_warnings_allowlist\.txt$|check_gdscript_warnings.py'
 )
 

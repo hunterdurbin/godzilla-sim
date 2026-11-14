@@ -74,13 +74,13 @@ func on_rage_changed(ctx: EffectContext, old_rage: int, new_rage: int) -> void:
 func _trigger_milestone(ctx: EffectContext, milestone: int) -> void:
 	match milestone:
 		15:
-			ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_089_MILESTONE_15"))
+			ctx.effect_handler.log_message.emit(GameLog.inherited_life_milestone(15))
 			var zones_to_destroy: Array[int] = ctx.opponent.get_battle_card_zone_indices()
 			if not zones_to_destroy.is_empty():
 				await ctx.effect_handler.destroy_zones(ctx.opponent, zones_to_destroy)
 		22:
-			ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_089_MILESTONE_22"))
+			ctx.effect_handler.log_message.emit(GameLog.inherited_life_milestone(22))
 			await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 0)
 		30:
-			ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_089_MILESTONE_30"))
+			ctx.effect_handler.log_message.emit(GameLog.inherited_life_milestone(30))
 			ctx.game_state.game_over.emit(ctx.owner.player_id, "STR_LOG_REASON_INHERITED_LIFE")
