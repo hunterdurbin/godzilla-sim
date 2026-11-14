@@ -27,13 +27,13 @@ func play_battle_card(hand_index: int, zone_index: int, state: GameState) -> voi
 		if effect_handler:
 			should_stack = effect_handler.should_stack_on_play(player.player_id, card, zone_index)
 		if not should_stack:
-			# Overload IS <Destroy> (rule 11.5.1): on_would_be_destroyed
-			# replacements apply, but revenge never fires (12.7.2 excludes
+			# Overload IS <Destroy> (rule 11.5.1): the destroy module applies
+			# replacements and never fires revenge (12.7.2 excludes
 			# duplicate-card processing). on_leave_play fires either way so
 			# linked-card effects clean up.
 			if effect_handler:
-				var overloaded_top: Dictionary = effect_handler.overload_zone(player, zone_index)
-				effect_handler.trigger_leave_play(player.player_id, overloaded_top, zone_index)
+				var overload := effect_handler.destroy(player, zone_index, DestructionEngine.Cause.OVERLOAD)
+				effect_handler.check_timing.submit(overload.entries)
 			else:
 				var destroyed_stack: Array = player.clear_zone(zone_index)
 				EffectHandler.banish_or_discard(player, destroyed_stack)

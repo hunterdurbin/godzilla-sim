@@ -61,10 +61,10 @@ func select_hand_card(player_id: int, valid_indices: Array[int], prompt: String,
 	return int(queued) if queued != null else super(player_id, valid_indices, prompt, allow_skip)
 
 
-func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> int:
-	calls.append({"kind": "select_zone", "player_id": player_id, "target": target_player_id, "valid": valid_zones.duplicate(), "prompt": prompt})
+func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool, max_rank: int = -1) -> int:
+	calls.append({"kind": "select_zone", "player_id": player_id, "target": target_player_id, "valid": valid_zones.duplicate(), "prompt": prompt, "max_rank": max_rank})
 	var queued: Variant = _next("select_zone")
-	return int(queued) if queued != null else super(player_id, target_player_id, valid_zones, prompt, allow_skip)
+	return int(queued) if queued != null else super(player_id, target_player_id, valid_zones, prompt, allow_skip, max_rank)
 
 
 func select_zones(player_id: int, target_player_id: int, valid_zones: Array[int], count: int, up_to: bool, prompt: String, constraints: Dictionary = {}) -> Array[int]:

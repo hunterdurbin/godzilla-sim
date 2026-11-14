@@ -178,22 +178,10 @@ func _check_crush_for_player(player_id: int, triggered: Array) -> bool:
 	var monster_zone_idx: int = player.monster_zone - 1  # 0-indexed
 	if monster_zone_idx < 0 or monster_zone_idx >= 8 or not player.zone_has_cards(monster_zone_idx):
 		return false
-	# Crush is <Destroy> (11.3.3), so on_would_be_destroyed replacements apply
-	# at the moment of the crush (10.2.1.3); a replaced card never counts as
-	# destroyed and fires no crush/<Revenge>, but its leave-play still triggers.
-	var top_card := player.get_zone_top_card(monster_zone_idx)
-	var replaced: bool = h.try_destroy_replacement(player, monster_zone_idx)
-	if not replaced:
-		var crushed_stack: Array = player.clear_zone(monster_zone_idx)
-		EffectHandler.banish_or_discard(player, crushed_stack)
-		player.cards_destroyed_this_turn.append(crushed_stack[0])
-		if h.events:
-			h.events.battle_card_crushed.emit(player_id, monster_zone_idx, crushed_stack[0])
-		player.zones_changed.emit()
-		player.discard_changed.emit()
-	triggered.append_array(h.collect_leave_play_entries(player_id, top_card, monster_zone_idx))
-	if not replaced:
-		triggered.append_array(h.collect_crush_and_revenge_entries(player_id, top_card))
+	# Crush is <Destroy> (11.3.3): the destroy module applies replacements
+	# and returns the triggered abilities (leave-play, crush, <Revenge>).
+	var outcome := h.destroy(player, monster_zone_idx, DestructionEngine.Cause.CRUSH)
+	triggered.append_array(outcome.entries)
 	return true
 
 

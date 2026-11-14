@@ -57,8 +57,9 @@ func select_hand_card(_player_id: int, valid_indices: Array[int], _prompt: Strin
 
 
 ## Choose one of `valid_zones` (0-7) on target_player_id's board. Returns the
-## zone index, or -1 to skip.
-func select_zone(_player_id: int, _target_player_id: int, valid_zones: Array[int], _prompt: String, _allow_skip: bool) -> int:
+## zone index, or -1 to skip. `max_rank` (> 0): only cards of that rank or
+## lower will be destroyed by the choice (a hint for the bot's scoring).
+func select_zone(_player_id: int, _target_player_id: int, valid_zones: Array[int], _prompt: String, _allow_skip: bool, _max_rank: int = -1) -> int:
 	return valid_zones[0] if not valid_zones.is_empty() else -1
 
 

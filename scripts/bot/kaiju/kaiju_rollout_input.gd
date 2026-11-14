@@ -128,17 +128,17 @@ func select_hand_card(player_id: int, valid_indices: Array[int], prompt: String,
 	return best_idx
 
 
-func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> int:
+func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool, max_rank: int = -1) -> int:
 	var bot := _bot_for(player_id)
 	if bot == null or valid_zones.is_empty():
-		return super(player_id, target_player_id, valid_zones, prompt, allow_skip)
+		return super(player_id, target_player_id, valid_zones, prompt, allow_skip, max_rank)
 	var player: PlayerState = bot.game_state.players[bot.bot_player_id]
 	var opponent: PlayerState = bot.game_state.players[1 - bot.bot_player_id]
 	var pick: int
 	if target_player_id == bot.bot_player_id:
 		pick = bot._pick_own_zone_target(valid_zones, player)
 	else:
-		pick = bot._pick_opponent_zone_target(valid_zones, player, opponent)
+		pick = bot._pick_opponent_zone_target(valid_zones, player, opponent, max_rank)
 	if pick not in valid_zones:
 		pick = valid_zones[0]
 	_record(player_id, "zone", pick)

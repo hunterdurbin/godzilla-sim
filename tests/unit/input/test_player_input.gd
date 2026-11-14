@@ -115,7 +115,7 @@ func test_signal_input_synchronous_resolve_during_emit() -> void:
 
 func test_signal_input_deferred_resolve() -> void:
 	var input := SignalPlayerInput.new()
-	input.zone_target_requested.connect(func(_pid: int, _tpid: int, _zones: Array[int], _prompt: String, _skip: bool) -> void:
+	input.zone_target_requested.connect(func(_pid: int, _tpid: int, _zones: Array[int], _prompt: String, _skip: bool, _max_rank: int) -> void:
 		input.resolve_zone_target.call_deferred(7))
 	assert_int(await input.select_zone(0, 1, [3, 7], "p", false)).is_equal(7)
 

@@ -328,8 +328,9 @@ func _pick_zone_choice(options: Array[String], opponent: PlayerState) -> int:
 # --- Hand discard ---
 
 
-func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, opponent: PlayerState) -> int:
-	## Pick the best opponent zone to destroy/target.
+func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, opponent: PlayerState, max_rank: int = -1) -> int:
+	## Pick the best opponent zone to destroy/target. `max_rank` (> 0): the
+	## prompt's rank cap — only cards at or below it count toward a zone's CP.
 	var mz := player.monster_zone
 	var can_win := mz == 8 or (mz == 7 and _bot.find_invade_card_with_steps(player, 2) >= 0)
 
@@ -346,7 +347,6 @@ func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, op
 	# Priority 2: destroy the zone with highest total CP (card + adjacent cards)
 	# Adjacent CP acts as tiebreaker — maximizes value for effects that also hit neighbors
 	var cp_modifiers := _bot.effect_handler.get_zone_cp_modifiers(opponent.player_id)
-	var max_rank: int = _bot.effect_handler.pending_destroy_max_rank
 	var best_zone: int = valid_zones[0]
 	var best_cp: int = -1
 	var best_adj_cp: int = -1

@@ -384,7 +384,7 @@ func _on_hand_card_selection_requested(player_id: int, valid_indices: Array, pro
 	show_hand_card_selection(player_id, valid_indices, prompt, allow_skip)
 
 
-func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array, prompt: String, allow_skip: bool) -> void:
+func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array, prompt: String, allow_skip: bool, _max_rank: int = -1) -> void:
 	if _is_bot_target(player_id):
 		return
 	if is_multiplayer and player_id != local_player_id:

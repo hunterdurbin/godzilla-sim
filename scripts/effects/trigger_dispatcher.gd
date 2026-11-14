@@ -98,12 +98,15 @@ func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 
 
 
-func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) -> Array:
-	## Collect crush and revenge entries for deferred resolution after movement.
-	## When a card has both on_crush and on_revenge, they are merged into a single entry
-	## so the card only appears once in standby choice prompts.
+func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary, crushed: bool) -> Array:
+	## The <Revenge> standby entry for a destroyed card (12.7) — and, when it
+	## was `crushed` (11.3), its crush ability. The card is already in the
+	## discard pile; the entries still resolve (10.6.7). When a crushed card
+	## has both on_crush and on_revenge, they are merged into a single entry
+	## so the card only appears once in standby choice prompts. Built only by
+	## DestructionEngine.destroy, which decides which causes fire <Revenge>.
 	var entries: Array = []
-	var has_crush := has_trigger(card_data, "on_crush")
+	var has_crush := crushed and has_trigger(card_data, "on_crush")
 	var has_revenge := has_trigger(card_data, "on_revenge")
 	if has_crush and has_revenge:
 		var effect := get_effect(card_data)
@@ -128,22 +131,6 @@ func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) ->
 			await effect.on_revenge(ctx)
 		entries.append(StandbyEntry.new(player_id, card_data, revenge_cb))
 	return entries
-
-
-
-
-func collect_revenge_entries(player_id: int, card_data: Dictionary) -> Array:
-	## <Revenge> entry for a card destroyed by an effect (12.7); the card is
-	## already in the discard pile (it still resolves, 10.6.7).
-	if not has_trigger(card_data, "on_revenge"):
-		return []
-	var effect := get_effect(card_data)
-	var ctx := _build_context(player_id, card_data)
-	var revenge_cb := func():
-		h.log_message.emit(GameLog.revenge_triggered(player_id, card_data.get("id", "")))
-		@warning_ignore("redundant_await")
-		await effect.on_revenge(ctx)
-	return [StandbyEntry.new(player_id, card_data, revenge_cb)]
 
 
 

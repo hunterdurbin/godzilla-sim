@@ -1227,7 +1227,7 @@ func _is_last_two_step_card(player: PlayerState, hand_idx: int) -> bool:
 	return _invasion._is_last_two_step_card(player, hand_idx)
 
 
-func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], _prompt: String, allow_skip: bool) -> void:
+func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], _prompt: String, allow_skip: bool, max_rank: int = -1) -> void:
 	if player_id != bot_player_id:
 		return
 	await _delay()
@@ -1243,7 +1243,7 @@ func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zone
 
 		if target_player_id != bot_player_id:
 			# Targeting opponent's zones — pick strategically
-			player_input.resolve_zone_target(_pick_opponent_zone_target(valid_zones, player, opponent))
+			player_input.resolve_zone_target(_pick_opponent_zone_target(valid_zones, player, opponent, max_rank))
 		else:
 			# Targeting own zones — use existing priority logic
 			player_input.resolve_zone_target(_pick_own_zone_target(valid_zones, player))
@@ -1300,8 +1300,8 @@ func _valid_scripted_zones(values: Array, valid_zones: Array[int], count: int, u
 	return true
 
 
-func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, opponent: PlayerState) -> int:
-	return _zones._pick_opponent_zone_target(valid_zones, player, opponent)
+func _pick_opponent_zone_target(valid_zones: Array[int], player: PlayerState, opponent: PlayerState, max_rank: int = -1) -> int:
+	return _zones._pick_opponent_zone_target(valid_zones, player, opponent, max_rank)
 
 
 func _pick_own_zone_target(valid_zones: Array[int], player: PlayerState) -> int:
