@@ -32,6 +32,8 @@ fi
 # with `grep | tr` arrive newline-separated, which awk -v rejects.
 IDS=$(printf '%s ' "$@" | tr -s '[:space:]' ' ')
 IDS="${IDS% }"
+IDS="${IDS# }"
+[ -n "$IDS" ] || { echo "decks_with_cards.sh: no card ids given" >&2; sed -n '2,16p' "$0"; exit 2; }
 RANKED=$(
 	{
 		[ -n "$DIR" ] && find "$DIR" -name '*.deck' -print0 | while IFS= read -r -d '' f; do

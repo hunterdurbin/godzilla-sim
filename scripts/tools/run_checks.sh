@@ -50,8 +50,10 @@ FAILED=()
 for row in "${CHECKS[@]}"; do
 	check="${row##*|}"
 	regex="${row%|*}"
-	# A check script edited or added counts as touching its own check.
-	if [ "$STAGED" -eq 1 ] && ! printf '%s\n' "$FILES" | grep -qE "$regex|^scripts/tools/${check//./\\.}$"; then
+	# A check script edited or added counts as touching its own check, and
+	# their shared library (gd_ratchet.py) as touching every check.
+	if [ "$STAGED" -eq 1 ] && ! printf '%s\n' "$FILES" \
+			| grep -qE "$regex|^scripts/tools/${check//./\\.}$|^scripts/tools/gd_ratchet\.py$"; then
 		continue
 	fi
 	args=()

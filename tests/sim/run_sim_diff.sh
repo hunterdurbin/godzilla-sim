@@ -22,7 +22,9 @@
 #     line and the first differing one, base vs head (first_divergence.py),
 #     so every divergence traces to the turn and monsters it started from
 #   - EVENTS: the rule-event counts ([SimEvents]: GameEvents signals and
-#     log token types such as log:burst_played) that differ base -> head;
+#     log token types such as log:burst_played) that moved base -> head
+#     (a moved count fails; a signal / token type only one tree has is
+#     listed as added / removed and does not);
 #     the full table, which shows whether a path ran at all, is
 #     $WORK/events<n>.txt (event_counts.py)
 #   - per side: games completed, P1 wins, SCRIPT ERROR count, and
@@ -204,13 +206,18 @@ for pair in "${PAIRS[@]}"; do
 	# is a divergence to explain; the full table shows which paths ran at all.
 	EVENTS_DIFF=$(python3 "$HEAD_WT/tests/sim/event_counts.py" \
 		"$WORK/base$i.log" "$WORK/head$i.log" "$WORK/events$i.txt")
-	if [ -n "$EVENTS_DIFF" ]; then
-		echo "  EVENTS: $(printf '%s\n' "$EVENTS_DIFF" | wc -l | tr -d ' ') counts differ (base -> head; all: $WORK/events$i.txt):"
-		printf '%s\n' "$EVENTS_DIFF" | sed 's/^/    /'
-		STATUS=1
-	else
-		echo "  EVENTS: identical counts ($WORK/events$i.txt)"
-	fi
+	case $? in
+		0) if [ -n "$EVENTS_DIFF" ]; then
+				echo "  EVENTS: no count moved; names only one tree has (all: $WORK/events$i.txt):"
+				printf '%s\n' "$EVENTS_DIFF" | sed 's/^/    /'
+			else
+				echo "  EVENTS: identical counts ($WORK/events$i.txt)"
+			fi ;;
+		1) echo "  EVENTS: counts moved (base -> head; all: $WORK/events$i.txt):"
+			printf '%s\n' "$EVENTS_DIFF" | sed 's/^/    /'
+			STATUS=1 ;;
+		*) echo "  EVENTS: event_counts.py could not compare (see its error above)"; STATUS=1 ;;
+	esac
 	[ "$(grep -c 'SCRIPT ERROR' "$WORK/head$i.log")" -eq 0 ] || STATUS=1
 	[ "$(grep -c '\[SimResult\]' "$WORK/head$i.log")" -ge "$GAMES" ] || STATUS=1
 	LOGS+=("$WORK/base$i.log" "$WORK/head$i.log")
