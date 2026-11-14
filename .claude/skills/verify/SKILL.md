@@ -27,6 +27,8 @@ a real solo game and calls the scenario's `run(v)`. A scenario is a
 scratchpad works; copy `scenarios/effect_strategy_and_reveal.gd` to start,
 and commit one under `scenarios/` when it is worth re-running.
 Done = `SCENARIO PASS`; read the `[Scenario]` lines and look at the shots.
+`scenario.sh` and `smoke.sh` kill Godot themselves on DONE or timeout: run
+them bare (macOS has no `timeout`) and redirect to a log before grepping.
 
 - **Stage state with `v.ed` (BoardEditor)**: `mint_card`, `set_strategy`,
   `add_to_hand` / `add_to_deck` / `add_to_discard`, `add_to_zone`,
