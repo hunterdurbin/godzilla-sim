@@ -47,4 +47,4 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 	if not CardUtils.rank_at_least(ctx.owner.current_monster, 3):
 		return
-	await ctx.effect_handler.teleport_monster(ctx.owner.player_id, 8)
+	ctx.effect_handler.teleport_monster(ctx.owner.player_id, 8)

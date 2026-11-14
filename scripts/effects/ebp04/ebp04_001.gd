@@ -23,4 +23,4 @@ func get_bot_tags() -> Array[String]:
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if not ctx.get_opponent_column_zones_with_cards(ctx.owner.monster_zone - 1).is_empty():
 		return
-	await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))
+	ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))

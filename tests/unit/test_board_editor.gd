@@ -314,9 +314,9 @@ func test_set_monster_zone_clamps_to_1_8() -> void:
 	var state: GameState = ctx["state"]
 	var hits: Array = []
 	_count_signal(state.players[0].monster_changed, hits)
-	await ed.set_monster_zone(0, 12)
+	ed.set_monster_zone(0, 12)
 	assert_int(state.players[0].monster_zone).is_equal(8)
-	await ed.set_monster_zone(0, -3)
+	ed.set_monster_zone(0, -3)
 	assert_int(state.players[0].monster_zone).is_equal(1)
 	assert_int(hits.size()).is_equal(2)
 
@@ -334,7 +334,7 @@ func test_set_monster_zone_crushes_destination_stack_via_engine() -> void:
 	tm.events.battle_card_crushed.connect(func(pid: int, zone: int, card: Dictionary) -> void:
 		crushed.append([pid, zone, card.get("id", "")]))
 
-	await ed.set_monster_zone(0, 4)
+	ed.set_monster_zone(0, 4)
 
 	assert_int(state.players[0].monster_zone).is_equal(4)
 	assert_int(state.players[0].zones[3].size()).is_equal(0)
@@ -356,7 +356,7 @@ func test_set_monster_zone_leaves_opponent_under_monster_cards_alone() -> void:
 	var p2_zone_idx: int = state.players[1].monster_zone - 1
 	ed.add_to_zone(1, p2_zone_idx, Cards.battle(1, 5000, "P2-UNDER-MON"), true)
 
-	await ed.set_monster_zone(0, 4)
+	ed.set_monster_zone(0, 4)
 
 	assert_int(state.players[0].monster_zone).is_equal(4)
 	assert_str(_id_at(state.players[1].zones[p2_zone_idx], 0)).is_equal("P2-UNDER-MON")
@@ -375,7 +375,7 @@ func test_set_monster_zone_monster_stack_travels_and_zone_cards_stay() -> void:
 	ed.add_to_zone(0, 1, Cards.battle(1, 5000, "LEFT-BEHIND"), true)
 	ed.add_to_zone(0, 4, Cards.battle(1, 5000, "VICTIM"), true)
 
-	await ed.set_monster_zone(0, 5)
+	ed.set_monster_zone(0, 5)
 
 	assert_int(state.players[0].monster_zone).is_equal(5)
 	assert_str(_id_at(state.players[0].monster_stack, 0)).is_equal("IN-STACK")

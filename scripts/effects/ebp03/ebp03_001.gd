@@ -45,7 +45,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	)
 	if not selected.is_empty():
 		if not ctx.is_awakening(8):
-			await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, ctx.owner.monster_zone + 1)
+			ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, ctx.owner.monster_zone + 1)
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:

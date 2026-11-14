@@ -17,8 +17,10 @@ func test_created_tokens_get_unique_instance_ids() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 
 	# Zone 1 holds P1's monster (5.11.1.1), so use zones 2 and 3.
-	await handler.create_token_in_zone(state.players[1], "EBP02-T03", 1)
-	await handler.create_token_in_zone(state.players[1], "EBP02-T03", 2)
+	handler.create_token_in_zone(state.players[1], "EBP02-T03", 1)
+	await handler.check_timing.resolve()
+	handler.create_token_in_zone(state.players[1], "EBP02-T03", 2)
+	await handler.check_timing.resolve()
 
 	var a := state.players[1].get_zone_top_card(1)
 	var b := state.players[1].get_zone_top_card(2)
@@ -41,16 +43,20 @@ func test_zone_protection_resolves_correct_zone_for_token_copies() -> void:
 	var s := States.make_session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	await handler.create_token_in_zone(state.players[1], "EBP02-T03", 0)
-	await handler.create_token_in_zone(state.players[1], "EBP02-T03", 2)
-	await handler.create_token_in_zone(state.players[1], "EBP02-T03", 7)
+	handler.create_token_in_zone(state.players[1], "EBP02-T03", 0)
+	await handler.check_timing.resolve()
+	handler.create_token_in_zone(state.players[1], "EBP02-T03", 2)
+	await handler.check_timing.resolve()
+	handler.create_token_in_zone(state.players[1], "EBP02-T03", 7)
+	await handler.check_timing.resolve()
 
 	await handler.check_timing.run_effect(0, {"id": "P0-FX"}, func() -> void:
 		assert_bool(handler.can_destroy_card(state.players[1], state.players[1].get_zone_top_card(0))).is_false()
 		assert_bool(handler.can_destroy_card(state.players[1], state.players[1].get_zone_top_card(7))).is_true())
 
 	var bite := Real.instance("EPR-005")
-	await handler.trigger_enter(0, bite)
+	handler.trigger_enter(0, bite)
+	await handler.check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(2)).is_true()    # zone 3: protected
 	assert_bool(state.players[1].zone_has_cards(7)).is_false()   # zone 8: destroyed

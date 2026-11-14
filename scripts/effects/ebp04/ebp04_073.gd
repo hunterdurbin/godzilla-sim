@@ -35,4 +35,4 @@ func on_card_returned_from_discard(ctx: EffectContext, _card: Dictionary) -> voi
 		func(_c: Dictionary) -> bool: return true,
 		tr("STR_EFF_EBP04_073_PROMPT"))
 	if not found.is_empty():
-		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)
+		ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)

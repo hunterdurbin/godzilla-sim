@@ -35,4 +35,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if chosen < 0:
 		return
 
-	await ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T02", chosen)
+	ctx.effect_handler.create_token_in_zone(ctx.owner, "EBP02-T02", chosen)

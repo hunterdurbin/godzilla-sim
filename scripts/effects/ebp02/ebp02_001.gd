@@ -30,4 +30,4 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 		true)
 
 	if not selected.is_empty():
-		await ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))
+		ctx.effect_handler.gain_rage(ctx.owner.player_id, 1, ctx.card_data.get("id", ""))

@@ -64,4 +64,4 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 		2:
 			# Reduce each player's rage by 2
 			for pid in range(2):
-				await ctx.effect_handler.reduce_rage(pid, 2)
+				ctx.effect_handler.reduce_rage(pid, 2)

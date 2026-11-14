@@ -84,11 +84,11 @@ func _resolve_destroy_and_retreat(
 		if not destroy_zones.is_empty():
 			await ctx.effect_handler.destroy_zones(ctx.opponent, destroy_zones)
 		if can_retreat and ctx.opponent.monster_zone > 1:
-			await ctx.effect_handler.retreat_monster_to_zone(
+			ctx.effect_handler.retreat_monster_to_zone(
 				ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
 	else:
 		if can_retreat and ctx.opponent.monster_zone > 1:
-			await ctx.effect_handler.retreat_monster_to_zone(
+			ctx.effect_handler.retreat_monster_to_zone(
 				ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
 		if not destroy_zones.is_empty():
 			await ctx.effect_handler.destroy_zones(ctx.opponent, destroy_zones)

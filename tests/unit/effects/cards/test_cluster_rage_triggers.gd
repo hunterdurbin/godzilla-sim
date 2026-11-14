@@ -101,7 +101,8 @@ func test_ebp01_003_rage_increase_mills_then_destroys_on_monster_mill(top_is_mon
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	await s["effect_handler"].gain_rage(0, 1)
+	s["effect_handler"].gain_rage(0, 1)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].rage).is_equal(1)
 	assert_int(state.players[0].main_deck.size()).is_equal(1)
@@ -127,7 +128,8 @@ func test_ebp01_010_rage_increase_destroys_all_in_monster_column() -> void:
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	await s["effect_handler"].gain_rage(0, 1)
+	s["effect_handler"].gain_rage(0, 1)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(2)).is_false()
 	assert_bool(state.players[1].zone_has_cards(7)).is_false()
@@ -150,7 +152,8 @@ func test_ebp02_008_rage_increase_destroys_same_numbered_zone(opp_rank: int, exp
 	})
 	var state: GameState = s["state"]
 
-	await s["effect_handler"].gain_rage(0, 1)
+	s["effect_handler"].gain_rage(0, 1)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(2)) \
 		.override_failure_message("EBP02-008: opp_rank=%d" % opp_rank).is_equal(not expect_destroy)
@@ -172,7 +175,8 @@ func test_ebp02_005_rage_increase_discards_opponent_when_awakened(monster_zone: 
 	var s := _setup("EBP02-005", {"p0": p0_opts, "p1": {"hand": _hand(5)}})
 	var state: GameState = s["state"]
 
-	await s["effect_handler"].gain_rage(0, 1)
+	s["effect_handler"].gain_rage(0, 1)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()) \
 		.override_failure_message("EBP02-005: monster_zone=%d has_strategy=%s" % [monster_zone, has_strategy]) \
@@ -189,7 +193,8 @@ func test_esd01_013_rage_increase_destroys_low_rank_target() -> void:
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	await s["effect_handler"].gain_rage(0, 1)
+	s["effect_handler"].gain_rage(0, 1)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(input.count_calls("select_zone")).is_equal(1)
 	assert_array(input.calls[0]["valid"]) \
@@ -216,7 +221,8 @@ func test_rage_decrease_does_not_fire_increase_watchers(card_id: String,
 	var input: ScriptedPlayerInput = s["input"]
 	var snapshot_before := _snapshot(state)
 
-	await s["effect_handler"].reduce_rage(0, 1)
+	s["effect_handler"].reduce_rage(0, 1)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].rage).is_equal(1)  # the reduction itself happened
 	snapshot_before["p0"]["rage"] = 1  # the only sanctioned change
@@ -241,7 +247,8 @@ func test_own_turn_rage_watchers_skip_opponent_turn(card_id: String,
 	var input: ScriptedPlayerInput = s["input"]
 	var snapshot_before := _snapshot(state)
 
-	await s["effect_handler"].gain_rage(0, 1)
+	s["effect_handler"].gain_rage(0, 1)
+	await s["effect_handler"].check_timing.resolve()
 
 	snapshot_before["p0"]["rage"] = 3  # the gain itself is the only sanctioned change
 	assert_that(_snapshot(state)) \
@@ -268,6 +275,7 @@ func test_ebp01_009_when_invading_destroys_if_two_rage(rage: int, expect_destroy
 	var input: ScriptedPlayerInput = s["input"]
 
 	await s["effect_handler"].trigger_when_invading(0, 2, 3)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(3)) \
 		.override_failure_message("EBP01-009: rage=%d" % rage).is_equal(not expect_destroy)
@@ -286,6 +294,7 @@ func test_esd02_005_when_invading_reduces_opponent_rage() -> void:
 	var state: GameState = s["state"]
 
 	await s["effect_handler"].trigger_when_invading(0, 1, 2)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].rage).is_equal(1)
 
@@ -309,7 +318,8 @@ func test_ebp01_007_when_invading_reduces_rage_when_invaded_zone_had_card(zone_o
 
 	var entries: Array = handler.collect_when_invading_entries(0, 2, 3)
 	assert_int(entries.size()).is_equal(1)
-	await handler.resolve_deferred_entries(entries)
+	handler.check_timing.submit(entries)
+	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].rage) \
 		.override_failure_message("EBP01-007: zone_occupied=%s" % zone_occupied) \
@@ -327,7 +337,8 @@ func test_ebp02_t01_enter_reduces_opponent_rage(opp_rage: int, expected_opp_rage
 	var s := _setup("EBP02-T01", {"zone_idx": 2, "p1": {"rage": opp_rage}})
 	var state: GameState = s["state"]
 
-	await s["effect_handler"].trigger_enter(0, s["card"])
+	s["effect_handler"].trigger_enter(0, s["card"])
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].rage).is_equal(expected_opp_rage)
 
@@ -344,7 +355,8 @@ func test_hand_battle_discarded_adjusts_rage(card_id: String, opp_rage: int, exp
 	var s := _setup(card_id, {"p1": {"rage": opp_rage}})
 	var state: GameState = s["state"]
 
-	await s["effect_handler"].trigger_hand_card_discarded(0, Cards.battle(2, 3000, "DISCARDED-BTL"))
+	s["effect_handler"].trigger_hand_card_discarded(0, Cards.battle(2, 3000, "DISCARDED-BTL"))
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].rage) \
 		.override_failure_message("%s: opponent rage (started at %d)" % [card_id, opp_rage]) \
@@ -360,7 +372,8 @@ func test_hand_discard_card_type_filter_ignores_non_battle(card_id: String,
 	var s := _setup(card_id, {"p1": {"rage": 2}})
 	var state: GameState = s["state"]
 
-	await s["effect_handler"].trigger_hand_card_discarded(0, Cards.strategy(2, "DISCARDED-STR"))
+	s["effect_handler"].trigger_hand_card_discarded(0, Cards.strategy(2, "DISCARDED-STR"))
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].rage) \
 		.override_failure_message("%s: card_type=battle filter must skip strategy discards" % card_id) \
@@ -384,7 +397,8 @@ func test_ebp03_019_counter_success_gains_rage_with_base(has_base: bool, expecte
 	var s := _setup("EBP03-019", {"p0": p0_opts})
 	var state: GameState = s["state"]
 
-	await s["effect_handler"].trigger_counter_success(0, 1)
+	s["effect_handler"].trigger_counter_success(0, 1)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].rage) \
 		.override_failure_message("EBP03-019: has_base=%s" % has_base).is_equal(expected_rage)
@@ -405,7 +419,8 @@ func test_ebp01_076_invasion_observed_destroys_only_on_own_turn(current_pid: int
 	var state: GameState = s["state"]
 	var input: ScriptedPlayerInput = s["input"]
 
-	await s["effect_handler"].trigger_invasion_observed(0, 2, 3)
+	s["effect_handler"].trigger_invasion_observed(0, 2, 3)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(3)) \
 		.override_failure_message("EBP01-076: current_pid=%d" % current_pid).is_equal(not expect_destroy)

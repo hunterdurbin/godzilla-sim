@@ -60,4 +60,4 @@ func on_enter(ctx: EffectContext) -> void:
 
 	# Place it into the strategy zone and activate it (5.9.1: activate = play).
 	# take_hand_card removes it from hand without discarding it.
-	await ctx.effect_handler.play_strategy_from_effect(ctx.owner.player_id, selected)
+	ctx.effect_handler.play_strategy_from_effect(ctx.owner.player_id, selected)

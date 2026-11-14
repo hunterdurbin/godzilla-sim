@@ -55,4 +55,4 @@ func on_rage_changed(ctx: EffectContext, _old_rage: int, _new_rage: int) -> void
 	if dest < 0:
 		return
 
-	await ctx.effect_handler.move_zone_stack(ctx.owner, source, dest)
+	ctx.effect_handler.move_zone_stack(ctx.owner, source, dest)

@@ -44,9 +44,9 @@ func execute(action: CardEnums.ActionType, params: Dictionary, state: GameState)
 		CardEnums.ActionType.PLAY_BATTLE:
 			await plays.play_battle_card(params["hand_index"], params["zone_index"], state)
 		CardEnums.ActionType.PLAY_STRATEGY:
-			await plays.play_strategy_card(params["hand_index"], state)
+			plays.play_strategy_card(params["hand_index"], state)
 		CardEnums.ActionType.GAIN_RAGE:
-			await plays.gain_rage(params["hand_index"], state)
+			plays.gain_rage(params["hand_index"], state)
 		CardEnums.ActionType.PLAY_MONSTER:
 			await plays.play_monster(params["hand_index"], state)
 		CardEnums.ActionType.INVADE:
@@ -72,7 +72,7 @@ func execute_end_phase_burst_discard(state: GameState) -> void:
 
 
 func execute_end_phase_advance(state: GameState) -> void:
-	await phases.execute_end_phase_advance(state)
+	phases.execute_end_phase_advance(state)
 
 
 func execute_end_phase_draw(state: GameState) -> void:
@@ -92,7 +92,7 @@ func force_counter(state: GameState, target_player_id: int) -> void:
 # --- Effect-driven plays ---
 
 func play_monster_from_effect(state: GameState, player_id: int, monster_card: Dictionary) -> void:
-	await plays.play_monster_from_effect(state, player_id, monster_card)
+	plays.play_monster_from_effect(state, player_id, monster_card)
 
 
 # --- Pure zone math ---

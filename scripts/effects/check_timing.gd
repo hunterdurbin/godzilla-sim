@@ -15,10 +15,14 @@ extends RefCounted
 ## Overload (11.5) has no step here: the engine performs it when a card is
 ## placed (docs/adr/0001-overload-at-placement.md).
 ##
+## Trigger sources only submit StandbyEntry objects; nothing resolves on the
+## spot. Entries resolve at the next check timing — after the current action
+## or phase step (TurnManager calls resolve, 10.4.4.1 / 7.x), or between two
+## abilities of a running pass. Per 10.6.7 an entry resolves even after its
+## card changes areas; only its still_applies gate drops it (10.6.3.2).
+##
 ## Running an ability goes through run_effect: it marks the ability active
-## (read-only via active_player_id / active_card), and while one is active
-## every submitted ability queues for the next check timing instead of
-## resolving inline.
+## (read-only via active_player_id / active_card).
 ##
 ## Dependencies (wired by EffectHandler.setup): game_state, and the facade `h`
 ## for the trigger collectors, destroy replacement, the order-choice prompt,
@@ -97,21 +101,28 @@ func _clear_active() -> void:
 	_active_card = {}
 
 
-func _should_queue() -> bool:
-	## New abilities queue instead of resolving inline (10.4.3): a standby
-	## pass is running, or an ability is resolving.
-	return _in_resolution or has_active_effect()
-
-
 # --- Check timing: rule actions (10.4.3.1, 11.x) ---
 
 func resolve() -> void:
-	## Perform a check timing: resolve all rule actions (10.4.3.1, 11.1.2),
-	## then submit the abilities they triggered to standby.
-	## Per 11.1.2.1: interrupt rule actions (crush) resolve first.
-	## Per 10.4.3.1: repeat until no more rule actions remain.
+	## Perform a check timing (10.4.3): resolve all rule actions (10.4.3.1,
+	## 11.1.2 — interrupt crush first, repeated until none remain), then play
+	## every ability in standby as one pool (10.4.3.2–10.4.3.4).
 	## When a standby pass is already running (this check timing sits between
-	## two of its abilities), the entries join that live pool instead.
+	## two of its abilities) or an ability is resolving, only the rule actions
+	## run: their abilities join the standby the running pass drains.
+	_perform_rule_actions()
+	if _in_resolution or has_active_effect():
+		return
+	await _run_pass()
+	# Rage markers a decrease left for its triggers to claim (EBP04-089) last
+	# only until those triggers resolved: drop the unclaimed ones.
+	for player in game_state.players:
+		player.clear_pending_rage_markers()
+
+
+func _perform_rule_actions() -> void:
+	## 10.4.3.1: every rule action until none remain; the abilities they
+	## trigger enter standby.
 	var triggered: Array = []
 	var changed := true
 	while changed:
@@ -125,8 +136,7 @@ func resolve() -> void:
 		for pid in range(2):
 			if _resolve_illegal_cards(game_state.players[pid]):
 				changed = true
-	if not triggered.is_empty():
-		await submit_deferred(triggered)
+	submit(triggered)
 
 
 func check_crush_rule(triggered: Array) -> void:
@@ -147,14 +157,14 @@ func crush_now(player_id: int = -1) -> void:
 	## for one player (or both, turn player first, when player_id < 0) and
 	## submit the triggered abilities to standby — for callers that move a
 	## monster outside movement/check-timing loops (teleport, board editor).
-	## Same signals as check_crush_rule; may prompt via submit_deferred.
+	## Same signals as check_crush_rule; the abilities wait in standby for the
+	## next check timing.
 	var triggered: Array = []
 	if player_id < 0:
 		check_crush_rule(triggered)
 	else:
 		_check_crush_for_player(player_id, triggered)
-	if not triggered.is_empty():
-		await submit_deferred(triggered)
+	submit(triggered)
 
 
 func _check_crush_for_player(player_id: int, triggered: Array) -> bool:
@@ -222,32 +232,37 @@ func _resolve_illegal_cards(player: PlayerState) -> bool:
 # --- Standby (10.4.3.2–10.4.3.4, 10.6) ---
 
 func submit(entries: Array) -> void:
-	## Submit StandbyEntry abilities to standby and resolve them (10.4.3).
-	## While a pass is running or an ability is resolving they queue instead:
-	## the running pass merges them into its live pool after the current
-	## ability (or the active <Enter> drains them, see enter_or_queue).
-	## May prompt (choose_option via select_choice) when a player has 2+
-	## abilities in the pool; publishes GameEvents.effect_stack_changed.
+	## Submit StandbyEntry abilities to standby (10.6.2). Nothing resolves on
+	## the spot: they wait for the next check timing — the one after the
+	## current action or phase step (resolve), or, inside a running pass, the
+	## one after the ability now resolving. Per 10.6.7 an entry still resolves
+	## after its card changes areas; only its still_applies gate can drop it
+	## (10.6.3.2). Publishes GameEvents.effect_stack_changed.
 	if entries.is_empty():
 		return
+	_pending.append_array(entries)
+	_publish_stack()
 
-	if _should_queue():
-		_pending.append_array(entries)
-		_publish_stack()
+
+func _run_pass() -> void:
+	## Play the abilities in standby as one pool until none remain
+	## (10.4.3.2–10.4.3.4), performing rule actions before each one
+	## (10.4.3.1). May prompt (choose_option via select_choice) when a player
+	## has 2+ abilities in the pool.
+	if _pending.is_empty():
 		return
-
 	_in_resolution = true
-	var pool: Array = entries.duplicate()
+	var pool: Array = []
 	_stack_pool = pool
 
 	while true:
-		# 10.4.3.1: perform rule actions. Abilities they trigger (crush) queue
-		# into pending and join the pool below.
-		await resolve()
+		# 10.4.3.1: perform rule actions. Abilities they trigger (crush) join
+		# the pool below, with everything submitted meanwhile.
+		_perform_rule_actions()
 		_merge_pending(pool)
 
-		# 10.6.3: an ability in standby that can no longer be played ceases to
-		# exist — drop it before the order prompt so it never shows as a no-op.
+		# 10.6.3.2: an ability in standby that can no longer be played ceases
+		# to exist — drop it before the order prompt so it never shows as a no-op.
 		_drop_inapplicable(pool)
 		if pool.is_empty():
 			break
@@ -265,60 +280,12 @@ func submit(entries: Array) -> void:
 		await run_effect(entry.player_id, entry.card, entry.callback)
 
 		_stack_active = null
-		_merge_pending(pool)
 		_publish_stack()
 
 	_in_resolution = false
 	_stack_active = null
 	_stack_pool = []
 	_publish_stack()
-
-
-func submit_deferred(entries: Array) -> void:
-	## Filter entries for cards still in play after movement, then submit them.
-	## Entries with skip_active_check (e.g. on_discard_from_hand) bypass the filter since
-	## those cards are in the discard pile, not on the field.
-	var active_entries: Array = []
-	for entry: StandbyEntry in entries:
-		if entry.skip_active_check or is_card_still_active(entry.player_id, entry.card):
-			active_entries.append(entry)
-	await submit(active_entries)
-
-
-func enter_or_queue(entry: StandbyEntry) -> void:
-	## <Enter> path: queue the ability when one is already resolving or a pass
-	## is running (so e.g. every evolution of one effect completes before any
-	## evolved card's <Enter> resolves); otherwise resolve it now, then drain
-	## what it queued (e.g. from perform_evolution or play_from_discard called
-	## within it).
-	if _should_queue():
-		_pending.append(entry)
-		return
-	await run_effect(entry.player_id, entry.card, entry.callback)
-	await resolve_pending()
-
-
-func resolve_pending() -> void:
-	## Resolve the abilities queued behind a finished ability, batch by batch,
-	## until none remain.
-	while not _pending.is_empty():
-		var batch: Array = _pending
-		_pending = []
-		await submit(batch)
-
-
-func is_card_still_active(player_id: int, card_data: Dictionary) -> bool:
-	## Check if a card is still in an active position (monster, zone top, or strategy zone).
-	var player := game_state.players[player_id]
-	if is_same(card_data, player.current_monster):
-		return true
-	for i in range(8):
-		if is_same(player.get_zone_top_card(i), card_data):
-			return true
-	for sz_card in player.strategy_zones:
-		if is_same(sz_card, card_data):
-			return true
-	return false
 
 
 static func card_location_label(state: GameState, player_id: int, card_data: Dictionary) -> String:

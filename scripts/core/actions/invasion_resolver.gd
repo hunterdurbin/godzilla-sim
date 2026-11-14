@@ -142,9 +142,10 @@ func _post_movement(state: GameState, start_zone: int, deferred_entries: Array) 
 	if effect_handler and player.monster_zone > start_zone:
 		deferred_entries.append_array(effect_handler.collect_invasion_observed_entries(player.player_id, start_zone, player.monster_zone))
 
-	# Resolve deferred effects after all movement and rule actions complete
-	if effect_handler and not deferred_entries.is_empty():
-		await effect_handler.resolve_deferred_entries(deferred_entries)
+	# Submit the collected abilities once all movement and rule actions
+	# complete; they resolve at the check timing after the action (10.4.4.1).
+	if effect_handler:
+		effect_handler.check_timing.submit(deferred_entries)
 
 	player.hand_changed.emit()
 	player.monster_changed.emit()

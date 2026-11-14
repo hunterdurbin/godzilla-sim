@@ -48,7 +48,8 @@ func test_ebp04_001_gains_rage_at_opponent_counter_when_column_clear() -> void:
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var s := _session(state)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[0].rage).is_equal(1)
 
 
@@ -62,7 +63,8 @@ func test_ebp04_001_silent_with_column_card_or_on_own_turn() -> void:
 	})
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var s := _session(state)
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[0].rage).is_equal(0)
 
 	# Own turn: TRIGGER_FILTERS gates it off.
@@ -70,7 +72,8 @@ func test_ebp04_001_silent_with_column_card_or_on_own_turn() -> void:
 	var state2 := States.make_state({"p0": {"current_monster": monster2, "monster_zone": 4}})
 	state2.current_phase = CardEnums.GamePhase.COUNTER
 	var s2 := _session(state2)
-	await s2["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s2["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s2["effect_handler"].check_timing.resolve()
 	assert_int(state2.players[0].rage).is_equal(0)
 
 
@@ -94,6 +97,7 @@ func test_ebp04_002_opponent_discards_to_2_when_column_card_destroyed() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 
 	await handler.destroy_zones(state.players[1], [1])
+	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].hand.size()).is_equal(2)
 
@@ -115,6 +119,7 @@ func test_ebp04_002_silent_without_rank1_strategy_or_off_column() -> void:
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
 	await handler.destroy_zones(state.players[1], [1])
+	await handler.check_timing.resolve()
 	assert_int(state.players[1].hand.size()).is_equal(3)
 
 	# Destroyed card outside the monster column: trigger filter blocks it.
@@ -133,6 +138,7 @@ func test_ebp04_002_silent_without_rank1_strategy_or_off_column() -> void:
 	var s2 := _session(state2)
 	var handler2: EffectHandler = s2["effect_handler"]
 	await handler2.destroy_zones(state2.players[1], [4])
+	await handler2.check_timing.resolve()
 	assert_int(state2.players[1].hand.size()).is_equal(3)
 
 
@@ -146,7 +152,8 @@ func test_ebp04_004_enter_gains_2_rage_only_with_rank1_strategy() -> void:
 		"strategy_zones": [Cards.strategy(1, "S-R1")],
 	}})
 	var s := _session(state)
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[0].rage).is_equal(2)
 
 	var monster2 := Real.instance("EBP04-004", 1)
@@ -155,7 +162,8 @@ func test_ebp04_004_enter_gains_2_rage_only_with_rank1_strategy() -> void:
 		"strategy_zones": [Cards.strategy(2, "S-R2")],
 	}})
 	var s2 := _session(state2)
-	await s2["effect_handler"].trigger_enter(0, monster2)
+	s2["effect_handler"].trigger_enter(0, monster2)
+	await s2["effect_handler"].check_timing.resolve()
 	assert_int(state2.players[0].rage).is_equal(0)
 
 
@@ -172,7 +180,8 @@ func test_ebp04_005_enter_searches_rank1_strategy_into_play() -> void:
 	input.answers = {"search_cards": [{"id": "S-R1"}]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_str(str(state.players[0].strategy_zones[0].get("id"))).is_equal("S-R1")
 	assert_int(state.players[0].main_deck.size()).is_equal(2)
@@ -190,7 +199,8 @@ func test_ebp04_005_enter_silent_with_two_strategies_in_play() -> void:
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(input.count_calls("search_cards")).is_equal(0)
 	assert_int(state.players[0].main_deck.size()).is_equal(1)
@@ -218,6 +228,7 @@ func test_ebp04_005_column_destroy_cascades_to_lower_ranks() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 
 	await handler.destroy_zones(state.players[1], [1])
+	await handler.check_timing.resolve()
 
 	var p1 := state.players[1]
 	assert_bool(p1.zone_has_cards(1)).is_false()
@@ -240,6 +251,7 @@ func test_ebp04_005_no_cascade_below_3_rank1_strategies_in_discard() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 
 	await handler.destroy_zones(state.players[1], [1])
+	await handler.check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(0)).is_true()
 
@@ -285,7 +297,8 @@ func test_ebp04_009_discards_strategy_to_destroy_column_rank_6_or_less() -> void
 	input.answers = {"select_hand_card": [0]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 
 	var p1 := state.players[1]
 	assert_bool(p1.zone_has_cards(2)).is_false()
@@ -308,7 +321,8 @@ func test_ebp04_009_skipping_the_cost_destroys_nothing() -> void:
 	input.answers = {"select_hand_card": [-1]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(2)).is_true()
 	assert_int(state.players[0].hand.size()).is_equal(1)
@@ -431,7 +445,8 @@ func test_ebp04_012_enter_plays_tentacles_in_adjacent_zones() -> void:
 	input.answers = {"select_zone": [2, 4, 6]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].trigger_enter(0, card)
+	await s["effect_handler"].check_timing.resolve()
 
 	var p0 := state.players[0]
 	assert_int(p0.count_zone_tokens_by_id("EBP02-T02")).is_equal(3)
@@ -462,7 +477,8 @@ func test_ebp04_013_mills_3_then_destroys_matching_zones_and_retreats() -> void:
 	input.answers = {"choose_option": [0]}  # destroy first, then retreat
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 
 	var p1 := state.players[1]
 	# Revealed ranks {2, 5} → opponent zones 2 and 5 (idx 1, 4) destroyed.
@@ -484,7 +500,8 @@ func test_ebp04_013_silent_below_5_monsters_in_discard() -> void:
 		state.players[0].discard_pile.append(Cards.monster(1, 5000, [], "DM%d" % i))
 	var s := _session(state)
 
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].main_deck.size()).is_equal(1)
 
@@ -506,7 +523,8 @@ func test_ebp04_014_hand_battle_discard_destroys_rank_4_at_opp_rage_0() -> void:
 	input.answers = {"select_zone": [1]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_hand_card_discarded(0, Cards.battle(2, 2000, "DISCARDED"))
+	s["effect_handler"].trigger_hand_card_discarded(0, Cards.battle(2, 2000, "DISCARDED"))
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(1)).is_false()
 	assert_str(str(state.players[1].get_zone_top_card(2).get("id"))).is_equal("OPP-R5")
@@ -523,11 +541,13 @@ func test_ebp04_014_no_destroy_with_opp_rage_or_strategy_discard() -> void:
 	})
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
-	await s["effect_handler"].trigger_hand_card_discarded(0, Cards.battle(2, 2000, "D"))
+	s["effect_handler"].trigger_hand_card_discarded(0, Cards.battle(2, 2000, "D"))
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 
 	# Strategy card discarded: TRIGGER_FILTERS card_type gate blocks it.
-	await s["effect_handler"].trigger_hand_card_discarded(0, Cards.strategy(2, "D-STR"))
+	s["effect_handler"].trigger_hand_card_discarded(0, Cards.strategy(2, "D-STR"))
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 
 
@@ -547,7 +567,8 @@ func test_ebp04_014_counter_prevention_after_discarding_battle_at_awakening_6() 
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	await handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await handler.check_timing.resolve()
 
 	assert_bool(handler.is_counter_prevented(0, 30000)).is_true()
 	assert_bool(handler.is_counter_prevented(0, 30001)).is_false()
@@ -555,7 +576,8 @@ func test_ebp04_014_counter_prevention_after_discarding_battle_at_awakening_6() 
 	assert_array(input.calls[0]["valid"]).contains_exactly([0])
 
 	# End phase (opponent's turn) resets the prevention window.
-	await handler.trigger_phase_end(CardEnums.GamePhase.END)
+	handler.trigger_phase_end(CardEnums.GamePhase.END)
+	await handler.check_timing.resolve()
 	assert_bool(handler.is_counter_prevented(0, 30000)).is_false()
 
 
@@ -573,7 +595,8 @@ func test_ebp04_014_no_prevention_prompt_below_awakening_6() -> void:
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(input.count_calls("select_hand_card")).is_equal(0)
 
@@ -607,7 +630,8 @@ func test_ebp04_018_enter_destroys_rank_6_with_5_monsters_discarded() -> void:
 	input.answers = {"select_zone": [2]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(2)).is_false()
 	assert_bool(state.players[1].zone_has_cards(4)).is_true()
@@ -624,7 +648,8 @@ func test_ebp04_018_enter_silent_below_5_monsters_discarded() -> void:
 		state.players[0].discard_pile.append(Cards.monster(1, 5000, [], "DM%d" % i))
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 
 
@@ -655,7 +680,8 @@ func test_ebp04_022_countered_mills_5_and_destroys_per_green_revealed() -> void:
 	input.answers = {"select_zone": [1]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_counter_success(1, 0)
+	s["effect_handler"].trigger_counter_success(1, 0)
+	await s["effect_handler"].check_timing.resolve()
 
 	var p1 := state.players[1]
 	assert_bool(p1.zone_has_cards(1)).is_false()
@@ -678,7 +704,8 @@ func test_ebp04_022_no_destroy_when_no_green_revealed() -> void:
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_counter_success(1, 0)
+	s["effect_handler"].trigger_counter_success(1, 0)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 	assert_int(state.players[0].main_deck.size()).is_equal(0)  # still milled
@@ -717,7 +744,8 @@ func test_ebp04_024_enter_destroys_within_total_rank_budget_7() -> void:
 	input.answers = {"select_zones": [[0, 1]]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 
 	var p1 := state.players[1]
 	assert_bool(p1.zone_has_cards(0)).is_false()
@@ -738,7 +766,8 @@ func test_ebp04_024_enter_silent_below_10_green_discards() -> void:
 		state.players[0].discard_pile.append(_green_battle(2, 2000, "G%d" % i))
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(input.count_calls("select_zones")).is_equal(0)
 
 
@@ -755,7 +784,8 @@ func test_ebp04_025_enter_destroys_chosen_opponent_strategy() -> void:
 	input.answers = {"select_strategy": [1]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].strategy_zones[1].is_empty()).is_true()
 	assert_str(str(state.players[1].strategy_zones[0].get("id"))).is_equal("OPP-S1")
@@ -767,7 +797,8 @@ func test_ebp04_025_enter_silent_without_opponent_strategies() -> void:
 	var state := States.make_state({"p0": {"current_monster": monster}})
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(input.count_calls("select_strategy")).is_equal(0)
 
 
@@ -782,6 +813,7 @@ func test_ebp04_025_invading_discards_opponent_to_3_with_10_green() -> void:
 	var s := _session(state)
 
 	await s["effect_handler"].trigger_when_invading(0, 4, 5)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[1].hand.size()).is_equal(3)
 
 	# Below 10 green: silent.
@@ -794,6 +826,7 @@ func test_ebp04_025_invading_discards_opponent_to_3_with_10_green() -> void:
 		state2.players[0].discard_pile.append(_green_battle(2, 2000, "G%d" % i))
 	var s2 := _session(state2)
 	await s2["effect_handler"].trigger_when_invading(0, 4, 5)
+	await s2["effect_handler"].check_timing.resolve()
 	assert_int(state2.players[1].hand.size()).is_equal(5)
 
 
@@ -812,6 +845,7 @@ func test_ebp04_026_invading_plays_3_crystals_and_boosts_cp_at_awakening_6() -> 
 	assert_int(handler.get_counter_power_modifier(0)).is_equal(0)
 
 	await handler.trigger_when_invading(0, 5, 6)
+	await handler.check_timing.resolve()
 
 	var p0 := state.players[0]
 	assert_int(p0.count_zone_tokens_by_id("EBP02-T03")).is_equal(3)
@@ -852,7 +886,8 @@ func test_ebp04_027_own_main_start_discard_step2_counters_itself() -> void:
 	input.answers = {"select_hand_card": [0], "choose_rankup": [0]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	await s["effect_handler"].check_timing.resolve()
 
 	var p0 := state.players[0]
 	assert_str(str(p0.current_monster.get("id"))).is_equal("GIGAN-R2")
@@ -873,7 +908,8 @@ func test_ebp04_027_opponent_pays_on_their_turn_and_may_decline() -> void:
 	input.answers = {"select_hand_card": [-1]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	await s["effect_handler"].check_timing.resolve()
 
 	# The opponent (player 1) was the one prompted; declining changes nothing.
 	assert_int(input.calls[0]["player_id"]).is_equal(1)
@@ -889,7 +925,8 @@ func test_ebp04_027_no_prompt_without_step2_card_in_hand() -> void:
 	state.current_phase = CardEnums.GamePhase.MAIN
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(input.count_calls("select_hand_card")).is_equal(0)
 
 
@@ -923,11 +960,13 @@ func test_ebp04_028_opponent_deck_play_costs_them_a_card() -> void:
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	await handler.trigger_battle_card_played(1, Cards.battle(3, 3000, "PLAYED"), 2, true)
+	handler.trigger_battle_card_played(1, Cards.battle(3, 3000, "PLAYED"), 2, true)
+	await handler.check_timing.resolve()
 	assert_int(state.players[1].hand.size()).is_equal(2)
 
 	# Played from hand (not deck): filter blocks it.
-	await handler.trigger_battle_card_played(1, Cards.battle(3, 3000, "PLAYED2"), 3, false)
+	handler.trigger_battle_card_played(1, Cards.battle(3, 3000, "PLAYED2"), 3, false)
+	await handler.check_timing.resolve()
 	assert_int(state.players[1].hand.size()).is_equal(2)
 
 
@@ -956,7 +995,8 @@ func test_ebp04_029_enter_recovers_gigan_monster_when_opp_in_zones_1_5() -> void
 	input.answers = {"search_cards": [{"id": "DISC-GIGAN"}]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_str(str(state.players[0].hand[0].get("id"))).is_equal("DISC-GIGAN")
 	assert_int(state.players[0].discard_pile.size()).is_equal(1)
@@ -972,7 +1012,8 @@ func test_ebp04_029_enter_silent_when_opp_monster_past_zone_5() -> void:
 	state.players[0].discard_pile.append(Cards.monster(2, 13000, [CardEnums.CardTrait.GIGAN], "DISC-GIGAN"))
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(input.count_calls("search_cards")).is_equal(0)
 
 
@@ -1004,7 +1045,8 @@ func test_ebp04_030_enter_destroys_opponent_card_in_zones_1_5() -> void:
 	input.answers = {"select_zone": [1]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[1].zone_has_cards(1)).is_false()
 	assert_bool(state.players[1].zone_has_cards(6)).is_true()
@@ -1019,7 +1061,8 @@ func test_ebp04_030_enter_silent_with_targets_only_in_zones_6_8() -> void:
 	})
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 
 
@@ -1048,7 +1091,8 @@ func test_ebp04_033_enter_reduces_rage_with_3_discard_colors() -> void:
 		_colored_battle(2, 2000, "C-G", CardEnums.CardColor.GREEN),
 	])
 	var s := _session(state)
-	await s["effect_handler"].trigger_enter(0, monster)
+	s["effect_handler"].trigger_enter(0, monster)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[1].rage).is_equal(1)
 
 	# Only 2 colors: silent.
@@ -1059,7 +1103,8 @@ func test_ebp04_033_enter_reduces_rage_with_3_discard_colors() -> void:
 		_colored_battle(2, 2000, "C-B", CardEnums.CardColor.BLUE),
 	])
 	var s2 := _session(state2)
-	await s2["effect_handler"].trigger_enter(0, monster2)
+	s2["effect_handler"].trigger_enter(0, monster2)
+	await s2["effect_handler"].check_timing.resolve()
 	assert_int(state2.players[1].rage).is_equal(2)
 
 
@@ -1079,6 +1124,7 @@ func test_ebp04_039_moves_adjacent_to_monster_when_non_red_ally_destroyed() -> v
 	var handler: EffectHandler = s["effect_handler"]
 
 	await handler.destroy_zones(state.players[0], [4])
+	await handler.check_timing.resolve()
 
 	var p0 := state.players[0]
 	assert_bool(p0.zone_has_cards(1)).is_false()
@@ -1096,6 +1142,7 @@ func test_ebp04_039_stays_on_own_turn_or_for_red_destruction() -> void:
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 	await handler.destroy_zones(state.players[0], [4])
+	await handler.check_timing.resolve()
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 
 	# Red battle card destroyed: silent.
@@ -1108,6 +1155,7 @@ func test_ebp04_039_stays_on_own_turn_or_for_red_destruction() -> void:
 	var s2 := States.make_session(state2, input2)
 	var handler2: EffectHandler = s2["effect_handler"]
 	await handler2.destroy_zones(state2.players[0], [4])
+	await handler2.check_timing.resolve()
 	assert_int(input2.count_calls("select_zone")).is_equal(0)
 
 
@@ -1125,7 +1173,8 @@ func test_ebp04_040_enter_gains_3_rage_with_rodan_and_king_caesar_at_awk6() -> v
 		},
 	}})
 	var s := _session(state)
-	await s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].trigger_enter(0, card)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[0].rage).is_equal(3)
 
 
@@ -1140,7 +1189,8 @@ func test_ebp04_040_enter_silent_below_awk6_or_missing_partner() -> void:
 		},
 	}})
 	var s := _session(state)
-	await s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].trigger_enter(0, card)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[0].rage).is_equal(0)
 
 	var card2 := Real.instance("EBP04-040", 1)
@@ -1149,7 +1199,8 @@ func test_ebp04_040_enter_silent_below_awk6_or_missing_partner() -> void:
 		"zone_cards": {1: Cards.battle(3, 3000, "RDN", [CardEnums.CardTrait.RODAN]), 3: card2},
 	}})
 	var s2 := _session(state2)
-	await s2["effect_handler"].trigger_enter(0, card2)
+	s2["effect_handler"].trigger_enter(0, card2)
+	await s2["effect_handler"].check_timing.resolve()
 	assert_int(state2.players[0].rage).is_equal(0)
 
 
@@ -1168,7 +1219,8 @@ func test_ebp04_041_zone8_counter_start_retriggers_monster_enter() -> void:
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var s := _session(state)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].rage).is_equal(2)
 
@@ -1185,7 +1237,8 @@ func test_ebp04_041_silent_outside_zone_8_and_cp_bonus_at_awk6() -> void:
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	await handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await handler.check_timing.resolve()
 	assert_int(state.players[0].rage).is_equal(0)
 
 	# CP: +3000 only at Awakening 6.
@@ -1203,7 +1256,8 @@ func test_ebp04_042_enter_reduces_rage_with_3_rank1_strategies_discarded() -> vo
 	for i in range(3):
 		state.players[0].discard_pile.append(Cards.strategy(1, "DS%d" % i))
 	var s := _session(state)
-	await s["effect_handler"].trigger_enter(0, card)
+	s["effect_handler"].trigger_enter(0, card)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[1].rage).is_equal(1)
 
 	# Only 2 in discard: silent.
@@ -1211,7 +1265,8 @@ func test_ebp04_042_enter_reduces_rage_with_3_rank1_strategies_discarded() -> vo
 	var state2 := States.make_state({"p0": {"zone_cards": {2: card2}}, "p1": {"rage": 2}})
 	state2.players[0].discard_pile.append_array([Cards.strategy(1, "DS0"), Cards.strategy(1, "DS1")])
 	var s2 := _session(state2)
-	await s2["effect_handler"].trigger_enter(0, card2)
+	s2["effect_handler"].trigger_enter(0, card2)
+	await s2["effect_handler"].check_timing.resolve()
 	assert_int(state2.players[1].rage).is_equal(2)
 
 
@@ -1233,7 +1288,8 @@ func test_ebp04_043_counter_start_places_step2_strategy_under_for_cp() -> void:
 
 	assert_int(handler.get_effective_zone_cp(0, 2)).is_equal(base)
 
-	await handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	handler.trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await handler.check_timing.resolve()
 
 	var p0 := state.players[0]
 	assert_bool(p0.strategy_zones[0].is_empty()).is_true()
@@ -1252,7 +1308,8 @@ func test_ebp04_043_declining_or_no_step2_strategy_does_nothing() -> void:
 	var input := ScriptedPlayerInput.new()
 	input.answers = {"choose_option": [1]}
 	var s := States.make_session(state, input)
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 	assert_bool(state.players[0].strategy_zones[0].is_empty()).is_false()
 	assert_int(input.count_calls("select_strategy")).is_equal(0)
 
@@ -1265,7 +1322,8 @@ func test_ebp04_043_declining_or_no_step2_strategy_does_nothing() -> void:
 	state2.current_phase = CardEnums.GamePhase.COUNTER
 	var input2 := ScriptedPlayerInput.new()
 	var s2 := States.make_session(state2, input2)
-	await s2["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s2["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s2["effect_handler"].check_timing.resolve()
 	assert_int(input2.count_calls("choose_option")).is_equal(0)
 
 
@@ -1344,7 +1402,7 @@ func test_ebp04_046_plays_itself_when_discarded_by_opponent_effect() -> void:
 	await handler.check_timing.run_effect(1, Cards.strategy(2, "OPP-FX"), handler.trigger_discard_from_hand.bind(0, card))
 	# An automatic ability: it waited in standby until the opponent's effect ended.
 	assert_bool(handler.check_timing.has_pending()).is_true()
-	await handler.check_timing.resolve_pending()
+	await handler.check_timing.resolve()
 
 	assert_str(str(state.players[0].get_zone_top_card(4).get("id"))).is_equal(str(card.get("id")))
 	assert_int(state.players[0].discard_pile.size()).is_equal(0)
@@ -1407,7 +1465,8 @@ func test_ebp04_047_evolves_into_kaizer_ghidorah_at_main_start() -> void:
 	input.answers = {"search_cards": [{"id": "KG"}]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	await s["effect_handler"].check_timing.resolve()
 
 	var p0 := state.players[0]
 	assert_str(str(p0.get_zone_top_card(2).get("id"))).is_equal("KG")
@@ -1426,7 +1485,8 @@ func test_ebp04_047_no_evolution_on_opponent_turn() -> void:
 	state.current_phase = CardEnums.GamePhase.MAIN
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.MAIN)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(input.count_calls("search_cards")).is_equal(0)
 
 
@@ -1445,7 +1505,8 @@ func test_ebp04_049_non_blue_reveal_reduces_opponent_rage_2() -> void:
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var s := _session(state)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[1].rage).is_equal(1)
 	assert_int(state.players[0].main_deck.size()).is_equal(0)
@@ -1462,7 +1523,8 @@ func test_ebp04_049_blue_reveal_destroys_own_rank8_card() -> void:
 	input.answers = {"select_zone": [6]}
 	var s := States.make_session(state, input)
 
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 
 	assert_bool(state.players[0].zone_has_cards(6)).is_false()
 	assert_array(_calls(input, "select_zone")[0]["valid"]).contains_exactly([6])
@@ -1476,5 +1538,6 @@ func test_ebp04_049_silent_without_rank8_battle_card() -> void:
 	}})
 	state.current_phase = CardEnums.GamePhase.COUNTER
 	var s := _session(state)
-	await s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	s["effect_handler"].trigger_phase_start(CardEnums.GamePhase.COUNTER)
+	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[0].main_deck.size()).is_equal(1)

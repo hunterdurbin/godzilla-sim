@@ -149,6 +149,10 @@ func test_force_counter_targets_specific_player() -> void:
 
 
 # --- Counter retreat crush (11.3 interrupt, 11.1.2.1) before the new <Enter> ---
+# The crush happens at the retreat; the crushed card's <Revenge> and the new
+# monster's <Enter> then share the 7.4.4 check timing's pool. Q250: "If both
+# the monster and the battle card with 【Revenge】 belong to the same player,
+# that player chooses the order in which to resolve them."
 
 const REVENGE := "test://counter_retreat_revenge"
 const ENTER := "test://counter_retreat_enter"
@@ -200,6 +204,7 @@ func test_counter_retreat_crushes_before_new_monster_enter() -> void:
 	var effect := _register_retreat_recorder(session, state)
 
 	await session["action_handler"].resolve_counter(state)
+	await session["effect_handler"].check_timing.resolve() # 7.4.4
 
 	var p1 := state.players[1]
 	assert_int(p1.monster_zone).is_equal(4)  # 7 -> 4
@@ -212,12 +217,33 @@ func test_counter_retreat_crushes_before_new_monster_enter() -> void:
 	])
 
 
+func test_counter_retreat_owner_orders_revenge_and_enter() -> void:
+	# Q250: the countered player picks; here <Enter> first. The crush has
+	# already happened, so zone 4 is empty either way.
+	var state := _retreat_onto_revenge_state()
+	var input := ScriptedPlayerInput.new()
+	input.answers = {"choose_option": [1]}
+	var session := States.make_session(state, input)
+	var effect := _register_retreat_recorder(session, state)
+
+	await session["action_handler"].resolve_counter(state)
+	assert_array(effect.seen).is_empty()  # both wait in standby
+	await session["effect_handler"].check_timing.resolve() # 7.4.4
+
+	assert_array(effect.seen).contains_exactly([
+		"enter:zone4_occupied=false",
+		"revenge:P1-REV",
+	])
+	assert_int(input.calls_of("choose_option")[0]["player_id"]).is_equal(1)
+
+
 func test_force_counter_retreat_crushes_before_new_monster_enter() -> void:
 	var state := _retreat_onto_revenge_state()
 	var session := States.make_session(state)
 	var effect := _register_retreat_recorder(session, state)
 
 	await session["action_handler"].force_counter(state, 1)
+	await session["effect_handler"].check_timing.resolve() # 7.4.4
 
 	assert_bool(state.players[1].zone_has_cards(3)).is_false()
 	assert_array(effect.seen).contains_exactly([

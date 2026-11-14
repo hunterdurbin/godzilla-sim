@@ -163,11 +163,10 @@ func destroy_zones(target: PlayerState, zone_indices: Array[int]) -> Array[Dicti
 	## (those resolve immediately, mid-destruction).
 	## Returns an array of the destroyed top cards (replaced cards included).
 	## "When destroyed" automatic abilities (revenge, ally / opponent
-	## zone-card-destroyed) enter standby together after the whole batch
-	## (10.4.3); while an effect is resolving they wait for the check timing
-	## after that effect.
+	## zone-card-destroyed) enter standby together after the whole batch and
+	## resolve at the next check timing (10.4.3).
 	var batch := await _destroy_zones_batch(target, zone_indices)
-	await resolve_deferred_entries(batch["deferred"])
+	check_timing.submit(batch["deferred"])
 	return batch["results"]
 
 
@@ -179,7 +178,7 @@ func destroy_zones_reporting_destroyed(target: PlayerState, zone_indices: Array[
 	## For effects that count destructions ("If you <Destroy> 3", ESD05-005).
 	## Triggers enter standby exactly as in destroy_zones.
 	var batch := await _destroy_zones_batch(target, zone_indices)
-	await resolve_deferred_entries(batch["deferred"])
+	check_timing.submit(batch["deferred"])
 	return batch["destroyed"]
 
 
@@ -418,8 +417,8 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 		h.card_destroyed.emit(target.player_id, zone_idx)
 		# Not destroyed, but it still left its zone (area-changing trigger).
 		entries.append_array(h.collect_leave_play_entries(target.player_id, top_card, zone_idx))
-		if deferred_entries == null and not entries.is_empty():
-			await resolve_deferred_entries(entries)
+		if deferred_entries == null:
+			check_timing.submit(entries)
 		return top_card
 
 	var stack: Array = target.clear_zone(zone_idx)
@@ -436,15 +435,15 @@ func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Diction
 		await d_effect.on_destroy(_build_context(target.player_id, top_card), zone_idx)
 	# Automatic abilities triggered by this destruction enter standby (10.6.2):
 	# the leave-play link (destroy is one way to leave a zone) and the "when
-	# destroyed" abilities. A batch caller resolves them after the whole batch;
-	# a single destroy resolves them now — which, mid-effect, queues them for
-	# the check timing after that effect (10.4.3).
+	# destroyed" abilities. A batch caller submits them after the whole batch;
+	# a single destroy submits them now. Either way they resolve at the next
+	# check timing (10.4.3).
 	entries.append_array(h.collect_leave_play_entries(target.player_id, top_card, zone_idx))
 	entries.append_array(h.collect_revenge_entries(target.player_id, top_card))
 	entries.append_array(h.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
 	entries.append_array(h.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
-	if deferred_entries == null and not entries.is_empty():
-		await resolve_deferred_entries(entries)
+	if deferred_entries == null:
+		check_timing.submit(entries)
 	return top_card
 
 
@@ -536,7 +535,7 @@ func discard_strategy_from_zone(player_id: int, zone_index: int, deferred_entrie
 		if deferred_entries != null:
 			deferred_entries.append_array(h.collect_strategy_discarded_entries(player_id, card))
 		else:
-			await h.trigger_strategy_discarded(player_id, card)
+			h.trigger_strategy_discarded(player_id, card)
 	return card
 
 

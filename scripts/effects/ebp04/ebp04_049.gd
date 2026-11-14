@@ -35,7 +35,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var is_blue: bool = CardUtils.has_color(top_card, CardEnums.CardColor.BLUE)
 
 	if not is_blue:
-		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
 	else:
 		var valid_zones: Array[int] = ctx.effect_handler.get_zones_in_rank_range(
 			ctx.owner.player_id, 8, -1)

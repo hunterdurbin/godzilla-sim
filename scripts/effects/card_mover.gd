@@ -53,7 +53,7 @@ func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 	player.discard_changed.emit()
 	# Bundle all simultaneously-discarded triggers into one standby batch so
 	# the player can choose resolution order when 2+ cards trigger (10.4.3).
-	await h.trigger_hand_cards_discarded_batch(player_id, discarded_cards)
+	h.trigger_hand_cards_discarded_batch(player_id, discarded_cards)
 	return discarded_cards
 
 
@@ -257,7 +257,7 @@ func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_sk
 	player.hand_changed.emit()
 	player.discard_changed.emit()
 	# One standby batch (10.4.3) — mid-effect, both wait for the check timing.
-	await h.trigger_hand_cards_discarded_batch(player_id, [card])
+	h.trigger_hand_cards_discarded_batch(player_id, [card])
 	return card
 
 
@@ -462,10 +462,10 @@ func perform_evolution(player_id: int, zone_idx: int) -> bool:
 	selected["played_through_evolution"] = true
 	player.push_zone_card(zone_idx, selected)
 	player.zones_changed.emit()
-	await h.trigger_enter(player_id, selected, true, true)
+	h.trigger_enter(player_id, selected, true, true)
 	# Evolution pulls the card from the deck, so on_battle_card_played fires
 	# with played_from_deck=true (e.g. EBP04-028 Gigan, EBP04-072 Sanda).
-	await h.trigger_battle_card_played(player_id, selected, zone_idx, true)
+	h.trigger_battle_card_played(player_id, selected, zone_idx, true)
 	return true
 
 
@@ -531,12 +531,12 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	var overloaded_top: Dictionary = h.overload_zone(player, zone_index)
 	player.push_zone_card(zone_index, token_data)
 	player.zones_changed.emit()
-	await h.trigger_leave_play(player.player_id, overloaded_top, zone_index)
-	await h.trigger_enter(player.player_id, token_data, true)
+	h.trigger_leave_play(player.player_id, overloaded_top, zone_index)
+	h.trigger_enter(player.player_id, token_data, true)
 	# Tokens are treated as normal plays — trigger battle card played effects
 	# (but not considered played from hand).
 	if token_data.get("card_type") == CardEnums.CardType.BATTLE:
-		await h.trigger_battle_card_played(player.player_id, token_data, zone_index)
+		h.trigger_battle_card_played(player.player_id, token_data, zone_index)
 	return true
 
 
@@ -568,7 +568,7 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int, c
 		if chosen < 0:
 			break
 		used_zones.append(chosen)
-		if await create_token_in_zone(player, token_id, chosen):
+		if create_token_in_zone(player, token_id, chosen):
 			placed += 1
 	return placed
 
@@ -615,7 +615,7 @@ func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], p
 		if from_discard:
 			await h.play_from_discard(player.player_id, card, chosen)
 		else:
-			await h.play_battle_card_from_deck(player.player_id, card, chosen)
+			h.play_battle_card_from_deck(player.player_id, card, chosen)
 		played += 1
 	return remaining
 
@@ -696,8 +696,8 @@ func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
 	# Fire on_leave_play for the overloaded card, then on_zone_changed for the
 	# moved card — mirrors the linked-card semantics used by swap_zones and
 	# play_from_discard so cards like EBP04-067 can react to forced movement.
-	await h.trigger_leave_play(player.player_id, overloaded_top, to_zone)
-	await h.trigger_zone_changed(player.player_id, moved_top, from_zone, to_zone)
+	h.trigger_leave_play(player.player_id, overloaded_top, to_zone)
+	h.trigger_zone_changed(player.player_id, moved_top, from_zone, to_zone)
 
 
 
@@ -711,8 +711,8 @@ func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
 	player.zones[zone_a] = stack_b
 	player.zones[zone_b] = stack_a
 	player.zones_changed.emit()
-	await h.trigger_zone_changed(player.player_id, top_a, zone_a, zone_b)
-	await h.trigger_zone_changed(player.player_id, top_b, zone_b, zone_a)
+	h.trigger_zone_changed(player.player_id, top_a, zone_a, zone_b)
+	h.trigger_zone_changed(player.player_id, top_b, zone_b, zone_a)
 
 
 
@@ -755,8 +755,8 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 	var overloaded_top: Dictionary = h.overload_zone(player, zone_idx)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
-	await h.trigger_leave_play(player_id, overloaded_top, zone_idx)
-	await h.trigger_enter(player_id, card_data, true)
+	h.trigger_leave_play(player_id, overloaded_top, zone_idx)
+	h.trigger_enter(player_id, card_data, true)
 	return zone_idx
 
 
@@ -811,9 +811,9 @@ func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx:
 	player.zones_changed.emit()
 	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_played_card(player_id, source_id, card_id, zone_idx))
-	await h.trigger_leave_play(player_id, overloaded_top, zone_idx)
-	await h.trigger_enter(player_id, card_data, true)
-	await h.trigger_battle_card_played(player_id, card_data, zone_idx)
+	h.trigger_leave_play(player_id, overloaded_top, zone_idx)
+	h.trigger_enter(player_id, card_data, true)
+	h.trigger_battle_card_played(player_id, card_data, zone_idx)
 	return true
 
 
@@ -841,9 +841,9 @@ func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx:
 		overloaded_top = h.overload_zone(player, zone_idx)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
-	await h.trigger_leave_play(player_id, overloaded_top, zone_idx)
-	await h.trigger_enter(player_id, card_data, true)
-	await h.trigger_battle_card_played(player_id, card_data, zone_idx, true)
+	h.trigger_leave_play(player_id, overloaded_top, zone_idx)
+	h.trigger_enter(player_id, card_data, true)
+	h.trigger_battle_card_played(player_id, card_data, zone_idx, true)
 	return true
 
 
@@ -888,7 +888,7 @@ func play_strategy_from_effect(player_id: int, card: Dictionary, zone_idx: int =
 		h.events.strategy_card_played.emit(player_id, card, idx)
 	player.strategy_zones_changed.emit()
 	h.log_message.emit(GameLog.played_strategy(player_id, card.get("id", ""), card.get("is_base", false)))
-	await h.trigger_enter(player_id, card, true)
+	h.trigger_enter(player_id, card, true)
 	return idx
 
 
@@ -1023,7 +1023,7 @@ func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
 	player.hand_changed.emit()
 	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_returned_card_to_hand(player_id, source_id, card.get("id", "")))
-	await h.trigger_card_returned_from_discard(player_id, card)
+	h.trigger_card_returned_from_discard(player_id, card)
 
 
 

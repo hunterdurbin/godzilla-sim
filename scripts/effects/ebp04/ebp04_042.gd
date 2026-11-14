@@ -26,4 +26,4 @@ func on_enter(ctx: EffectContext) -> void:
 			rank1_strat_count += 1
 	if rank1_strat_count < 3:
 		return
-	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+	ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

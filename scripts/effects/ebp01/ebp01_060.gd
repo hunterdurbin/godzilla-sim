@@ -38,4 +38,4 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	# Play and activate it, regardless of rank (5.9.1)
-	await ctx.effect_handler.play_strategy_from_effect(ctx.owner.player_id, selected)
+	ctx.effect_handler.play_strategy_from_effect(ctx.owner.player_id, selected)

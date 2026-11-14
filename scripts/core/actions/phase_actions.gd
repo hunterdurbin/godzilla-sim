@@ -51,14 +51,12 @@ func execute_start_phase_reset(state: GameState) -> void:
 	player.rage_changed.emit(new_rage)
 	# Fire rage_changed trigger so cards that watch for rage decrease (EBP04-089)
 	# pick up the start phase reset. Populate the claim bucket on decrease so
-	# they can pop markers as a true resource; clear leftovers afterwards.
+	# they can pop markers as a true resource; the check timing clears leftovers.
 	if new_rage != old_rage:
 		var delta: int = old_rage - new_rage
 		if delta > 0:
 			player.push_pending_rage_markers(delta)
-		await effect_handler.trigger_rage_changed(player.player_id, old_rage, new_rage)
-		if delta > 0:
-			player.pending_rage_markers.clear()
+		effect_handler.trigger_rage_changed(player.player_id, old_rage, new_rage)
 
 	# Reset per-turn flags
 	player.has_invaded_this_turn = false
@@ -111,9 +109,9 @@ func execute_end_phase_advance(state: GameState) -> void:
 		deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
 		effect_handler.check_timing.check_crush_rule(deferred_entries)
 
-	# Resolve deferred effects after all movement completes
-	if not deferred_entries.is_empty():
-		await effect_handler.resolve_deferred_entries(deferred_entries)
+	# Submit the collected abilities once all movement completes; they
+	# resolve at the 7.5.3 check timing.
+	effect_handler.check_timing.submit(deferred_entries)
 
 
 func execute_end_phase_draw(state: GameState) -> void:

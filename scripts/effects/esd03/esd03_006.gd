@@ -29,7 +29,7 @@ func bot_can_fulfill_counter_power(owner: PlayerState, opponent: PlayerState) ->
 
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.opponent.get_monster_rank() == 1:
-		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
 
 
 func get_counter_power_modifier(ctx: EffectContext) -> int:

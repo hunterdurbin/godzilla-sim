@@ -29,4 +29,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if other_battle_count < 2:
 		return
 
-	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+	ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

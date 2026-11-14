@@ -38,10 +38,10 @@ var pre_burst_monster: Dictionary = {}  # Monster that was active before Burst p
 var last_invasion_card: Dictionary = {}  # Card discarded for the most recent invade action
 var invasion_zones_crossed: int = 0  # Zones actually crossed during invasion this turn
 var cards_destroyed_this_turn: Array[Dictionary] = []  # Cards destroyed on this player's board this turn
-# Transient claim bucket: holds RAGE-MARKER instances during a rage-decrease
-# standby pass so claiming effects (e.g. EBP04-089) can pop them. Populated by
-# the rage-decrease site, drained by listeners, cleared at the end of the
-# trigger window. Never persists across events.
+# Transient claim bucket: holds RAGE-MARKER instances from a rage decrease
+# until the check timing that resolves its triggers, so claiming effects
+# (e.g. EBP04-089) can pop them. Populated by the rage-decrease site, drained
+# by listeners; CheckTiming.resolve clears the leftovers once its pass ends.
 var pending_rage_markers: Array = []
 
 
@@ -121,6 +121,12 @@ func push_pending_rage_markers(count: int) -> void:
 		return
 	for _i in range(count):
 		pending_rage_markers.append(template.duplicate())
+
+
+func clear_pending_rage_markers() -> void:
+	## Drop the markers no claiming effect took (called by the check timing
+	## once the triggers of the decrease have resolved).
+	pending_rage_markers.clear()
 
 
 func get_total_counter_power() -> int:

@@ -297,7 +297,7 @@ func _build_ui() -> void:
 			_after_edit("rage %+d" % delta))
 	_zone_value = _spinner_row(rage_row, "Zone", func(delta: int) -> void:
 		if _commit_ok():
-			await _editor.set_monster_zone(_panel_pid, _panel_player().monster_zone + delta)
+			_editor.set_monster_zone(_panel_pid, _panel_player().monster_zone + delta)
 			_after_edit("monster zone %+d" % delta))
 
 	var flag_row := HBoxContainer.new()
@@ -595,7 +595,7 @@ func _drop_card(op: String, pid: int, index: int) -> void:
 	var card: Dictionary = _editor.mint_card(_placing.get("id", ""))
 	if card.is_empty():
 		return
-	await apply_placement(op, pid, index, card)
+	apply_placement(op, pid, index, card)
 	_placed_count += 1
 	_set_status("Placed %s ×%d — keep clicking targets, ESC to stop."
 			% [_placing.get("name", "?"), _placed_count])
@@ -603,9 +603,9 @@ func _drop_card(op: String, pid: int, index: int) -> void:
 
 
 ## Execute one placement op through the mutation engine. Split from the
-## click flow so tests can drive it with a prepared card. Coroutine: the
-## monster "Set current" ops also move the monster to the clicked zone,
-## which resolves the crush rule through the engine.
+## click flow so tests can drive it with a prepared card. The monster "Set
+## current" ops also move the monster to the clicked zone, which performs
+## the crush rule through the engine (its abilities wait in standby).
 func apply_placement(op: String, pid: int, index: int, card: Dictionary) -> void:
 	match op:
 		"zone_top":
@@ -622,11 +622,11 @@ func apply_placement(op: String, pid: int, index: int, card: Dictionary) -> void
 		"monster_set_stack":
 			_editor.set_current_monster(pid, card, "stack_top")
 			if index >= 0:
-				await _editor.set_monster_zone(pid, index + 1)
+				_editor.set_monster_zone(pid, index + 1)
 		"monster_set_discard":
 			_editor.set_current_monster(pid, card, "discard")
 			if index >= 0:
-				await _editor.set_monster_zone(pid, index + 1)
+				_editor.set_monster_zone(pid, index + 1)
 		"monster_stack_below", "monster_under_top":
 			_editor.stack_under_monster(pid, card, 0)
 		"monster_stack_bottom", "monster_under_bottom":

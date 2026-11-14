@@ -64,4 +64,4 @@ func on_enter(ctx: EffectContext) -> void:
 
 	if not selected.is_empty():
 		if ctx.owner.monster_zone < 8:
-			await ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, ctx.owner.monster_zone + 1)
+			ctx.effect_handler.advance_monster_to_zone(ctx.owner.player_id, ctx.owner.monster_zone + 1)

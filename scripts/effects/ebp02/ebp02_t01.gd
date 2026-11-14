@@ -17,4 +17,4 @@ func get_bot_tags() -> Array[String]:
 
 
 func on_enter(ctx: EffectContext) -> void:
-	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+	ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

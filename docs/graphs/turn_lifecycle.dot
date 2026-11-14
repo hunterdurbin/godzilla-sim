@@ -150,7 +150,7 @@ digraph turn_lifecycle {
             crush_inv [label="check_crush_rule()" fillcolor="#BBDEFB" color="#1565C0"]
 
             col_io [label="collect_invasion_\nobserved_entries()" fillcolor="#FFF9C4" color="#F9A825"]
-            resolve_def [label="resolve_deferred_entries()" fillcolor="#FFCC80" color="#E65100"]
+            resolve_def [label="check_timing.submit()" fillcolor="#FFCC80" color="#E65100"]
 
             invade -> replace_cost
             replace_cost -> sel_choice [label="if can replace"]
@@ -217,7 +217,7 @@ digraph turn_lifecycle {
         extra [label="get_extra_end_phase_advance()" fillcolor="#CE93D8" color="#6A1B9A"]
         col_ma_end [label="collect_monster_\nadvance_entries()" fillcolor="#FFF9C4" color="#F9A825"]
         crush_end [label="check_crush_rule()" fillcolor="#BBDEFB" color="#1565C0"]
-        resolve_end [label="resolve_deferred_entries()" fillcolor="#FFCC80" color="#E65100"]
+        resolve_end [label="check_timing.submit()" fillcolor="#FFCC80" color="#E65100"]
 
         end_draw [label="execute_end_phase_draw()" fillcolor="#BBDEFB" color="#1565C0"]
 

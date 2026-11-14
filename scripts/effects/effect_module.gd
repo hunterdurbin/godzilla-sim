@@ -36,18 +36,6 @@ func _build_context(owner_id: int, card_data: Dictionary) -> EffectContext:
 	return h._build_context(owner_id, card_data)
 
 
-func _resolve_standby_entries(entries: Array) -> void:
-	await h.check_timing.submit(entries)
-
-
-func resolve_deferred_entries(entries: Array) -> void:
-	await h.check_timing.submit_deferred(entries)
-
-
-func is_card_still_active(player_id: int, card_data: Dictionary) -> bool:
-	return h.is_card_still_active(player_id, card_data)
-
-
 func _highlight_active_effect() -> void:
 	h._highlight_active_effect()
 

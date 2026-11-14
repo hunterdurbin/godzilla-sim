@@ -69,4 +69,4 @@ func on_enter(ctx: EffectContext) -> void:
 		1:
 			await ctx.effect_handler.discard_hand_to(ctx.opponent.player_id, 2)
 		2:
-			await ctx.effect_handler.gain_rage(ctx.owner.player_id, 3, ctx.card_data.get("id", ""))
+			ctx.effect_handler.gain_rage(ctx.owner.player_id, 3, ctx.card_data.get("id", ""))

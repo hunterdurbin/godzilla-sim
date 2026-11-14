@@ -38,7 +38,7 @@ func on_strategy_discarded(ctx: EffectContext, strategy_card: Dictionary) -> voi
 	if green_count < 2:
 		return
 
-	await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, strategy_card)
+	ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, strategy_card)
 
 
 func protects_card_from_destruction(_ctx: EffectContext, card_data: Dictionary, zone_idx: int) -> bool:

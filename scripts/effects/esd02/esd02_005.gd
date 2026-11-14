@@ -21,4 +21,4 @@ func bot_can_fulfill_on_when_invading(_owner: PlayerState, opponent: PlayerState
 
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
-	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+	ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

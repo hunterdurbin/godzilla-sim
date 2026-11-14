@@ -35,4 +35,4 @@ func on_enter(ctx: EffectContext) -> void:
 	if dest < 0:
 		return
 
-	await ctx.effect_handler.move_zone_stack(ctx.owner, source, dest)
+	ctx.effect_handler.move_zone_stack(ctx.owner, source, dest)

@@ -44,7 +44,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	# "Put it into play ... then activate it" = play it (5.9.1). search_deck
 	# already shuffled the deck.
-	await ctx.effect_handler.play_strategy_from_effect(ctx.owner.player_id, found)
+	ctx.effect_handler.play_strategy_from_effect(ctx.owner.player_id, found)
 
 
 func on_opponent_zone_card_destroyed(ctx: EffectContext, destroyed_card: Dictionary, _zone_idx: int) -> void:

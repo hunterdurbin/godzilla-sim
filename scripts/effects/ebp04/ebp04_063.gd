@@ -24,4 +24,4 @@ func on_revenge(ctx: EffectContext) -> void:
 			return CardUtils.has_trait(card, CardEnums.CardTrait.GODZILLA_EARTH),
 		tr("STR_EFF_EBP04_063_PROMPT"))
 	if not found.is_empty():
-		await ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)
+		ctx.effect_handler.return_discard_to_hand(ctx.owner.player_id, found)

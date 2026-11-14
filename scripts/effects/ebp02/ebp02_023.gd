@@ -45,7 +45,7 @@ func on_enter(ctx: EffectContext) -> void:
 
 	var opp_tl: int = ctx.effect_handler.get_effective_threat_level(ctx.opponent.player_id)
 	if opp_tl <= 50000 and ctx.opponent.monster_zone > 1:
-		await ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
+		ctx.effect_handler.retreat_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone - 1)
 
 
 func get_threat_level_modifier(ctx: EffectContext) -> int:

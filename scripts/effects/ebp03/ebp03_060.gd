@@ -20,4 +20,4 @@ func bot_can_fulfill_on_revenge(_owner: PlayerState, opponent: PlayerState) -> b
 
 
 func on_revenge(ctx: EffectContext) -> void:
-	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+	ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

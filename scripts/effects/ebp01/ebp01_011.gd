@@ -26,4 +26,4 @@ func on_monster_advance(ctx: EffectContext, _from_zone: int, to_zone: int) -> vo
 	var opponent_columns := get_opponent_column_zones(to_zone - 1)
 	if opp_monster_idx in opponent_columns:
 		if ctx.opponent.monster_zone < 8:
-			await ctx.effect_handler.advance_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone + 1)
+			ctx.effect_handler.advance_monster_to_zone(ctx.opponent.player_id, ctx.opponent.monster_zone + 1)

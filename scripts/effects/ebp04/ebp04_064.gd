@@ -42,4 +42,4 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	var my_zone: int = find_zone_of_card(ctx)
 	if my_zone >= 0:
 		await ctx.effect_handler.destroy_zones(ctx.owner, [my_zone])
-		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 3)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 3)

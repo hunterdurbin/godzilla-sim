@@ -51,4 +51,4 @@ func on_invasion_observed(ctx: EffectContext, invading_player_id: int, _from_zon
 				tr("STR_EFF_EBP04_050_HAND_RAGE"),
 				true)
 			if not selected.is_empty():
-				await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+				ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

@@ -216,11 +216,11 @@ func promote_from_stack(pid: int, index: int, old_to: String) -> void:
 ## Move the monster the way the engine would: cards under the monster live
 ## in monster_stack and travel with it implicitly; battle cards at the
 ## destination are crushed through the engine's rule action (rule 11.3 —
-## destroy replacements, leave-play and crush/revenge triggers all
-## resolve). Only the MOVING player's zone is crush-checked, so cards
-## sharing the opponent's stationary monster's zone are untouched.
+## destroy replacements apply; leave-play and crush/revenge triggers enter
+## standby and resolve at the next check timing). Only the MOVING player's
+## zone is crush-checked, so cards sharing the opponent's stationary
+## monster's zone are untouched.
 ## Residual cards in the departed zone stay behind, engine-style.
-## Coroutine: crush resolution can raise real input prompts.
 func set_monster_zone(pid: int, zone_number: int) -> void:
 	var player := _player(pid)
 	var target: int = clampi(zone_number, 1, 8)
@@ -229,7 +229,7 @@ func set_monster_zone(pid: int, zone_number: int) -> void:
 	player.monster_zone = target
 	player.monster_changed.emit()
 	if _tm.action_handler:
-		await _tm.effect_handler.check_timing.crush_now(player.player_id)
+		_tm.effect_handler.check_timing.crush_now(player.player_id)
 
 
 # --- Hand / deck / discard (deck index 0 = top; -1 = bottom) ---

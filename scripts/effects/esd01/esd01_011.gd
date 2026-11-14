@@ -24,7 +24,7 @@ func bot_can_fulfill_on_enter(owner: PlayerState, opponent: PlayerState) -> bool
 
 func on_enter(ctx: EffectContext) -> void:
 	if ctx.owner.rage >= 2:
-		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
 
 
 func on_would_be_destroyed(_ctx: EffectContext) -> bool:

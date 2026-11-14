@@ -7,34 +7,23 @@ extends RefCounted
 
 ## Owner of the ability (the player who plays it, 10.4.3.2 / 10.4.3.3).
 var player_id: int
-## Source card — drives the order-choice label, highlighting and the
-## still-in-play filter.
+## Source card — drives the order-choice label and highlighting. It may have
+## changed areas since; the ability still resolves (10.6.7).
 var card: Dictionary
 ## The ability itself; awaited when the entry resolves.
 var callback: Callable
-## Optional gate re-checked just before the order prompt (10.6.3): returning
-## false makes the ability cease to exist. Empty Callable = always applies.
+## Optional gate re-checked just before the order prompt (10.6.3.2): returning
+## false means the ability cannot be played and ceases to exist. Empty
+## Callable = always applies. The only way an entry is dropped.
 var still_applies: Callable
-## True for abilities whose card has already left the field (crush,
-## <Revenge>, discard-from-hand, leave-play): bypasses the still-in-play
-## filter of CheckTiming.submit_deferred.
-var skip_active_check: bool
 
 
 func _init(p_player_id: int, p_card: Dictionary, p_callback: Callable,
-		p_still_applies: Callable = Callable(), p_skip_active_check: bool = false) -> void:
+		p_still_applies: Callable = Callable()) -> void:
 	player_id = p_player_id
 	card = p_card
 	callback = p_callback
 	still_applies = p_still_applies
-	skip_active_check = p_skip_active_check
-
-
-static func off_field(p_player_id: int, p_card: Dictionary, p_callback: Callable,
-		p_still_applies: Callable = Callable()) -> StandbyEntry:
-	## Entry for an ability whose card has already left the field (crush,
-	## <Revenge>, discard-from-hand, leave-play): skips the still-in-play filter.
-	return StandbyEntry.new(p_player_id, p_card, p_callback, p_still_applies, true)
 
 
 func applies() -> bool:

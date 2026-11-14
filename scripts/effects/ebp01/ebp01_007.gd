@@ -30,4 +30,4 @@ func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> voi
 	# Check if the zone the monster invaded into had a battle card (crushed during movement)
 	# Zone state is captured at collection time since crush resolves before deferred abilities
 	if ctx.metadata.get("zone_had_card", false):
-		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)

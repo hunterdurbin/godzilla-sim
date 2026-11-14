@@ -28,4 +28,4 @@ func on_enter(ctx: EffectContext) -> void:
 		func(c: Dictionary) -> bool: return c.get("name", "") == "Chibi Mechagodzilla")
 
 	if has_mechagodzilla:
-		await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

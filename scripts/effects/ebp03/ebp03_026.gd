@@ -61,4 +61,4 @@ func on_enter(ctx: EffectContext) -> void:
 	ctx.effect_handler.place_cards_under_monster(ctx.owner.player_id, selected)
 
 	# Reduce opponent rage by 1
-	await ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)
+	ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)

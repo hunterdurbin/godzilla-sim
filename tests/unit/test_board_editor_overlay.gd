@@ -65,8 +65,8 @@ func test_apply_placement_under_monster_ops() -> void:
 	var ctx := _overlay_with_editor()
 	var overlay: BoardEditorOverlayUI = ctx["overlay"]
 	var state: GameState = ctx["state"]
-	await overlay.apply_placement("monster_under_bottom", 0, 0, Cards.battle(1, 5000, "BOTTOM"))
-	await overlay.apply_placement("monster_under_top", 0, 0, Cards.battle(1, 5000, "TOP"))
+	overlay.apply_placement("monster_under_bottom", 0, 0, Cards.battle(1, 5000, "BOTTOM"))
+	overlay.apply_placement("monster_under_top", 0, 0, Cards.battle(1, 5000, "TOP"))
 	assert_str(_id_at(state.players[0].monster_stack, 0)).is_equal("TOP")
 	assert_str(_id_at(state.players[0].monster_stack, 1)).is_equal("BOTTOM")
 	assert_int(state.players[0].zones[state.players[0].monster_zone - 1].size()).is_equal(0)
@@ -169,7 +169,7 @@ func test_apply_placement_zone_top() -> void:
 	var ctx := _overlay_with_editor()
 	var overlay: BoardEditorOverlayUI = ctx["overlay"]
 	var state: GameState = ctx["state"]
-	await overlay.apply_placement("zone_top", 1, 4, Cards.battle(1, 5000, "PLACED"))
+	overlay.apply_placement("zone_top", 1, 4, Cards.battle(1, 5000, "PLACED"))
 	assert_str(_id_at(state.players[1].zones[4], 0)).is_equal("PLACED")
 
 
@@ -178,7 +178,7 @@ func test_apply_placement_monster_set_stack() -> void:
 	var overlay: BoardEditorOverlayUI = ctx["overlay"]
 	var state: GameState = ctx["state"]
 	var old_id: String = state.players[0].current_monster.get("id", "")
-	await overlay.apply_placement("monster_set_stack", 0, 0, Cards.monster(2, 8000, [CardEnums.CardTrait.GODZILLA], "NEWMON"))
+	overlay.apply_placement("monster_set_stack", 0, 0, Cards.monster(2, 8000, [CardEnums.CardTrait.GODZILLA], "NEWMON"))
 	assert_str(str(state.players[0].current_monster.get("id", ""))).is_equal("NEWMON")
 	assert_str(_id_at(state.players[0].monster_stack, 0)).is_equal(old_id)
 
@@ -190,7 +190,7 @@ func test_apply_placement_monster_set_moves_monster_to_clicked_zone() -> void:
 	var overlay: BoardEditorOverlayUI = ctx["overlay"]
 	var state: GameState = ctx["state"]
 	overlay._editor.add_to_zone(0, 5, Cards.battle(1, 5000, "SQUASHED"), true)
-	await overlay.apply_placement("monster_set_discard", 0, 5, Cards.monster(2, 8000, [CardEnums.CardTrait.GODZILLA], "MOVER"))
+	overlay.apply_placement("monster_set_discard", 0, 5, Cards.monster(2, 8000, [CardEnums.CardTrait.GODZILLA], "MOVER"))
 	assert_str(str(state.players[0].current_monster.get("id", ""))).is_equal("MOVER")
 	assert_int(state.players[0].monster_zone).is_equal(6)
 	assert_int(state.players[0].zones[5].size()).is_equal(0)
@@ -202,9 +202,9 @@ func test_apply_placement_deck_bottom_and_hand() -> void:
 	var ctx := _overlay_with_editor()
 	var overlay: BoardEditorOverlayUI = ctx["overlay"]
 	var state: GameState = ctx["state"]
-	await overlay.apply_placement("deck_top", 0, 0, Cards.battle(1, 5000, "D1"))
-	await overlay.apply_placement("deck_bottom", 0, 0, Cards.battle(1, 5000, "D2"))
-	await overlay.apply_placement("hand", 0, 0, Cards.battle(1, 5000, "H"))
+	overlay.apply_placement("deck_top", 0, 0, Cards.battle(1, 5000, "D1"))
+	overlay.apply_placement("deck_bottom", 0, 0, Cards.battle(1, 5000, "D2"))
+	overlay.apply_placement("hand", 0, 0, Cards.battle(1, 5000, "H"))
 	assert_str(_id_at(state.players[0].main_deck, 0)).is_equal("D1")
 	assert_str(_id_at(state.players[0].main_deck, 1)).is_equal("D2")
 	assert_str(_id_at(state.players[0].hand, 0)).is_equal("H")
