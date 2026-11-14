@@ -213,6 +213,34 @@ static func counter_immunity(player_id: int, total_cp: int, threshold: int) -> D
 	return {"type": "counter_immunity", "player_id": player_id, "total_cp": total_cp, "threshold": threshold}
 
 
+# Engine and card notes. Each renders one fixed STR key; a FMT key's
+# arguments are the token's fields.
+
+## An Invade-1 card can't pay the invasion cost (e.g. EBP04-029).
+static func invade1_blocked() -> Dictionary:
+	return {"type": "invade1_blocked"}
+
+
+## The opponent's effect prevents the End Phase draw.
+static func end_phase_draw_blocked() -> Dictionary:
+	return {"type": "end_phase_draw_blocked"}
+
+
+## EBP04-078 (Crawling Calamity): the opponent's monster move was prevented.
+static func crawling_calamity_blocked() -> Dictionary:
+	return {"type": "crawling_calamity_blocked"}
+
+
+## EBP04-078 (Crawling Calamity): the opponent's monster moved from_zone → to_zone.
+static func crawling_calamity_teleported(from_zone: int, to_zone: int) -> Dictionary:
+	return {"type": "crawling_calamity_teleported", "from_zone": from_zone, "to_zone": to_zone}
+
+
+## EBP04-089 (Inherited Life): a rage-card milestone (15, 22 or 30) was reached.
+static func inherited_life_milestone(milestone: int) -> Dictionary:
+	return {"type": "inherited_life_milestone", "milestone": milestone}
+
+
 static func counter_prevented(player_id: int) -> Dictionary:
 	return {"type": "counter_prevented", "player_id": player_id}
 
@@ -518,6 +546,21 @@ static func render(token: Dictionary) -> String:
 		"counter_prevented":
 			return TranslationServer.translate("STR_LOG_COUNTER_PREVENTED_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0)))
+		"invade1_blocked":
+			return TranslationServer.translate("STR_AH_INVADE1_BLOCKED")
+		"end_phase_draw_blocked":
+			return TranslationServer.translate("STR_AH_END_PHASE_DRAW_BLOCKED")
+		"crawling_calamity_blocked":
+			return TranslationServer.translate("STR_EFF_EBP04_078_BLOCKED")
+		"crawling_calamity_teleported":
+			return TranslationServer.translate("STR_EFF_EBP04_078_TELEPORT_FMT") \
+				% [int(token.get("from_zone", 0)), int(token.get("to_zone", 0))]
+		"inherited_life_milestone":
+			match int(token.get("milestone", 0)):
+				15: return TranslationServer.translate("STR_EFF_EBP04_089_MILESTONE_15")
+				22: return TranslationServer.translate("STR_EFF_EBP04_089_MILESTONE_22")
+				30: return TranslationServer.translate("STR_EFF_EBP04_089_MILESTONE_30")
+			return ""
 		"chat":
 			var sender_id: int = int(token.get("sender_id", -1))
 			var pname := player_name(sender_id) if sender_id >= 0 else String(token.get("sender_name", ""))

@@ -51,7 +51,7 @@ func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 		# monster-cost-cancelled flow in play_monster).
 		player.insert_into_hand(hand_index, card)
 		player.has_invaded_this_turn = false
-		effect_handler.log_message.emit(tr("STR_AH_INVADE1_BLOCKED"))
+		effect_handler.log_message.emit(GameLog.invade1_blocked())
 		events.play_cancelled.emit(player.player_id)
 		return {"paid": false, "advance_amount": 0}
 

@@ -117,7 +117,7 @@ func execute_end_phase_draw(state: GameState) -> void:
 	if player.hand.size() >= 5:
 		return
 	if queries.is_opponent_end_phase_draw_blocked(player.player_id):
-		effect_handler.log_message.emit(tr("STR_AH_END_PHASE_DRAW_BLOCKED"))
+		effect_handler.log_message.emit(GameLog.end_phase_draw_blocked())
 		return
 	var drawn := player.draw_up_to(5)
 	if drawn.size() > 0:

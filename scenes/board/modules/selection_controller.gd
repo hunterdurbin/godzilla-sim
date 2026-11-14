@@ -337,8 +337,8 @@ func _restore_expanded_opponent_hand() -> void:
 func _play_action_required_if_not_turn_player(player_id: int) -> void:
 	_board._play_action_required_if_not_turn_player(player_id)
 
-func _on_log_message(message) -> void:
-	_board._on_log_message(message)
+func _on_log_message(token: Dictionary) -> void:
+	_board._on_log_message(token)
 
 func _set_action_buttons_visible(vis: bool) -> void:
 	_board._set_action_buttons_visible(vis)

@@ -180,8 +180,8 @@ func _on_state_changed() -> void:
 	_sync.broadcast_state()
 
 
-func _on_log_message(message) -> void:
-	_pending_log_tokens.append(message)
+func _on_log_message(token: Dictionary) -> void:
+	_pending_log_tokens.append(token)
 	_sync.broadcast_state()
 
 

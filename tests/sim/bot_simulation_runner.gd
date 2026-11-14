@@ -305,15 +305,10 @@ func _seed_log_types() -> void:
 	var re := RegEx.create_from_string("\"type\": \"(\\w+)\"")
 	for m in re.search_all(source):
 		_event_counts.get_or_add("log:" + m.get_string(1), 0)
-	_event_counts.get_or_add("log:text", 0)
 
 
-func _on_log_message(token: Variant) -> void:
-	# Untyped: a few sites log a translated String instead of a GameLog token.
-	var kind: String = "text"
-	if token is Dictionary:
-		kind = str((token as Dictionary).get("type", "text"))
-	_count_event("log:" + kind)
+func _on_log_message(token: Dictionary) -> void:
+	_count_event("log:" + str(token.get("type", "")))
 
 
 func _print_summary() -> void:

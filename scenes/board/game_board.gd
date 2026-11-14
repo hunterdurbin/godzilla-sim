@@ -1023,8 +1023,8 @@ func _on_state_changed() -> void:
 		replay_recorder.on_state_changed()
 
 
-func _on_log_message(message) -> void:
-	_log_chat.append_message(message)
+func _on_log_message(token: Dictionary) -> void:
+	_log_chat.append_message(token)
 
 
 ## Defensive client-side fallback: log lines and prompts ship from the host

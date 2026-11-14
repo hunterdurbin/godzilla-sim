@@ -806,9 +806,12 @@ func test_ebp04_078_teleports_opponent_monster_vertically() -> void:
 	var state := States.make_state({"p1": {"monster_zone": 3}})
 	state.players[0].strategy_zones[0] = card
 	var s := _session(state)
+	var tokens: Array[Dictionary] = []
+	s["effect_handler"].log_message.connect(func(t: Dictionary) -> void: tokens.append(t))
 	s["effect_handler"].dispatcher.trigger_enter(0, card)
 	await s["effect_handler"].check_timing.resolve()
 	assert_int(state.players[1].monster_zone).is_equal(8)
+	assert_array(tokens).contains([GameLog.crawling_calamity_teleported(3, 8)])
 
 	var card2 := Real.instance("EBP04-078", 1)
 	var state2 := States.make_state({"p1": {"monster_zone": 4}})
@@ -817,6 +820,20 @@ func test_ebp04_078_teleports_opponent_monster_vertically() -> void:
 	s2["effect_handler"].dispatcher.trigger_enter(0, card2)
 	await s2["effect_handler"].check_timing.resolve()
 	assert_int(state2.players[1].monster_zone).is_equal(7)
+
+
+func test_ebp04_078_logs_blocked_move_under_ebp04_076() -> void:
+	# EBP04-076 (Godzilla's Dormancy): the opponent's monster can't be moved.
+	var card := Real.instance("EBP04-078")
+	var state := States.make_state({"p1": {"monster_zone": 3, "strategy_zones": [Real.instance("EBP04-076")]}})
+	state.players[0].strategy_zones[0] = card
+	var s := _session(state)
+	var tokens: Array[Dictionary] = []
+	s["effect_handler"].log_message.connect(func(t: Dictionary) -> void: tokens.append(t))
+	s["effect_handler"].dispatcher.trigger_enter(0, card)
+	await s["effect_handler"].check_timing.resolve()
+	assert_int(state.players[1].monster_zone).is_equal(3)
+	assert_array(tokens).contains([GameLog.crawling_calamity_blocked()])
 
 
 func test_ebp04_078_silent_outside_zones_3_5() -> void:
@@ -1187,6 +1204,8 @@ func test_ebp04_089_milestones_15_22_and_30() -> void:
 	state.game_over.connect(func(winner_id: int, _reason: String) -> void: winner[0] = winner_id)
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
+	var tokens: Array[Dictionary] = []
+	handler.log_message.connect(func(t: Dictionary) -> void: tokens.append(t))
 	var p0 := state.players[0]
 	var p1 := state.players[1]
 
@@ -1213,3 +1232,8 @@ func test_ebp04_089_milestones_15_22_and_30() -> void:
 	await handler.check_timing.resolve()
 	assert_int(handler.get_cards_under_strategy_top(p0, 0).size()).is_equal(30)
 	assert_int(winner[0]).is_equal(0)
+	assert_array(tokens).contains([
+		GameLog.inherited_life_milestone(15),
+		GameLog.inherited_life_milestone(22),
+		GameLog.inherited_life_milestone(30),
+	])

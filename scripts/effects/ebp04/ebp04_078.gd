@@ -36,7 +36,6 @@ func on_enter(ctx: EffectContext) -> void:
 	# prevents_opponent_monster_move filter — returns false if blocked.
 	var moved: bool = ctx.effect_handler.teleport_monster(ctx.opponent.player_id, target_zone)
 	if not moved:
-		ctx.effect_handler.log_message.emit(tr("STR_EFF_EBP04_078_BLOCKED"))
+		ctx.effect_handler.log_message.emit(GameLog.crawling_calamity_blocked())
 		return
-	ctx.effect_handler.log_message.emit(
-		tr("STR_EFF_EBP04_078_TELEPORT_FMT") % [opp_zone, target_zone])
+	ctx.effect_handler.log_message.emit(GameLog.crawling_calamity_teleported(opp_zone, target_zone))
