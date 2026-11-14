@@ -1,0 +1,5 @@
+#!/bin/bash
+# Warn (never block) on bare #N references: tracker tickets need the
+# fully-qualified hunterdurbin/godzilla-sim-issue-tracker#N.
+python3 scripts/tools/check_commit_msg_refs.py "$1"
+exit 0
