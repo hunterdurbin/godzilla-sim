@@ -15,6 +15,9 @@
 # harness and accept the same args), then per pair runs both sims in
 # parallel and reports:
 #   - [SimResult] lines that differ (empty = no bot-visible behavior change)
+#   - SPLIT: per game whose [SimTurn] trace differs, the last shared turn
+#     line and the first differing one, base vs head (first_divergence.py),
+#     so every divergence traces to the turn and monsters it started from
 #   - per side: games completed, P1 wins, SCRIPT ERROR count, and
 #     `[Kaiju] … plan DIVERGED` count (the KAIJU replay-parity metric:
 #     the planner's cached plan stopped matching the live game)
@@ -180,6 +183,14 @@ for pair in "${PAIRS[@]}"; do
 	else
 		echo "  RESULT: $(grep -c '^>' "$WORK/diff$i.txt") differing games:"
 		sed 's/^/    /' "$WORK/diff$i.txt"
+		STATUS=1
+	fi
+	# Turn traces catch games that split mid-game, even ones that reconverge
+	# on the same [SimResult]; the first differing [SimTurn] is where to look.
+	if ! python3 "$REPO/tests/sim/first_divergence.py" "$WORK/base$i.log" "$WORK/head$i.log" \
+			> "$WORK/split$i.txt"; then
+		echo "  SPLIT: $(grep -c '^game=' "$WORK/split$i.txt") games' turn traces differ (last shared, then first differing [SimTurn]):"
+		sed 's/^/    /' "$WORK/split$i.txt"
 		STATUS=1
 	fi
 	[ "$(grep -c 'SCRIPT ERROR' "$WORK/head$i.log")" -eq 0 ] || STATUS=1
