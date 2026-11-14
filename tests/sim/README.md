@@ -29,8 +29,9 @@ in parallel (the base gets this tree's `bot_simulation_runner.gd`, so both
 run the same harness) and reports differing `[SimResult]` lines, P1 wins,
 SCRIPT ERROR counts and `[Kaiju] … plan DIVERGED` counts. Under `SPLIT:` it
 prints, per game whose turn trace differs, the last `[SimTurn]` line base
-and head share (`from`, the state the split started from) and the first one
-that differs (`first_divergence.py`). Each line carries both players' zone,
+and head share (`from`: the last turn start where the games still look the
+same; the split happened during that turn, or earlier in state the line
+does not carry, such as hand contents) and the first one that differs (`first_divergence.py`). Each line carries both players' zone,
 monster base id + rank, rage and hand size. A game
 can split and reconverge on the same `[SimResult]`, so a split alone fails
 the diff. Explain each divergence from that line. Exit 0 = identical;

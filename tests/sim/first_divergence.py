@@ -4,7 +4,8 @@ line base and head share (the state the split started from) and the first
 one that differs, between a base and a head BotSimulationRunner log.
 
 Usage: first_divergence.py <base.log> <head.log>
-Exit 0 when every game's turn trace matches, 1 when any game split.
+Exit 0 when every game's turn trace matches, 1 when any game split, 2 on a
+usage or read error.
 run_sim_diff.sh calls this per deck pair (see tests/sim/README.md).
 """
 import re
@@ -37,17 +38,23 @@ def first_split(base, head):
 
 def main():
     if len(sys.argv) != 3:
-        sys.exit(__doc__)
-    base, head = traces(sys.argv[1]), traces(sys.argv[2])
+        print(__doc__, file=sys.stderr)
+        sys.exit(2)
+    try:
+        base, head = traces(sys.argv[1]), traces(sys.argv[2])
+    except OSError as e:
+        print("first_divergence.py: %s" % e, file=sys.stderr)
+        sys.exit(2)
     split = 0
     for game in sorted(set(base) | set(head)):
         found = first_split(base.get(game, []), head.get(game, []))
         if found:
+            last_shared, base_line, head_line = found
             split += 1
             print("game=%d" % game)
-            print("  from %s" % found[0])
-            print("  base %s" % found[1])
-            print("  head %s" % found[2])
+            print("  from %s" % last_shared)
+            print("  base %s" % base_line)
+            print("  head %s" % head_line)
     sys.exit(1 if split else 0)
 
 

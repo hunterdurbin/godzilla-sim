@@ -8,8 +8,10 @@ CounterResolver applies it. A hand-written copy elsewhere drifts from it:
 the bot's copies ignored the bridge and misjudged counter wins
 (hunterdurbin/godzilla-sim-issue-tracker#22). Ask RulesEngine instead.
 
-Flags "next rank" arithmetic (`<rank expr> + 1`, e.g.
-`current_monster.get("rank", 1) + 1`, `cur_rank + 1`) under scripts/ and
+Flags "next rank" arithmetic: `+ 1` on an identifier ending in `rank` or
+on a `get("rank"…)` / `["rank"]` read (e.g. `cur_rank + 1`,
+`current_monster.get("rank", 1) + 1`). A single-line pattern grep, so
+other spellings (`1 + rank`, a nested call inside get) slip through under scripts/ and
 scenes/ outside rules_engine.gd. EXEMPT lists sites that compute the next
 rank for another reason, each with that reason. Copies still waiting on a
 fix are grandfathered in rank_up_rule_allowlist.txt (a ratchet: it only
@@ -35,7 +37,7 @@ EXEMPT = {
         "the card's own text (shares a trait, rank 1 higher), not a rank-up",
 }
 NEXT_RANK_RE = re.compile(
-    r"(\b\w*rank\w*\b|get\(\s*\"rank\"[^)]*\))\s*\+\s*1\b")
+    r"(\b\w*rank\b|get\(\s*\"rank\"[^)]*\)|\[\s*\"rank\"\s*\])\s*\+\s*1\b")
 
 
 def gd_files():
@@ -46,7 +48,7 @@ def gd_files():
                     yield os.path.relpath(os.path.join(dirpath, f), ROOT)
 
 
-def keys(path, lines):
+def next_rank_sites(path, lines):
     """(key, line number) for each next-rank computation outside the owner,
     EXEMPT sites included."""
     if path == OWNER:
@@ -62,14 +64,18 @@ def self_test():
         ("scripts/bot/x.gd", "\tif m_rank != cur_rank + 1:"): True,
         ("scripts/bot/x.gd", "\tvar r := monster.get(\"rank\") + 1"): True,
         (OWNER, "\tvar next_rank: int = player.current_monster.get(\"rank\", 1) + 1"): False,
+        ("scripts/bot/x.gd", "\tvar r: int = m[\"rank\"] + 1"): True,
         ("scripts/bot/x.gd", "\tvar n := rank_ups + 10"): False,
+        ("scripts/bot/x.gd", "\tvar n := rank_ups + 1"): False,
+        ("scripts/bot/x.gd", "\tvar n := rank1_strat_count + 1"): False,
+        ("scripts/bot/x.gd", "\trank_count += 1"): False,
         ("scripts/bot/x.gd", "\tvar n := count + 1"): False,
         ("scripts/bot/x.gd", "\tif m.get(\"rank\") == next_rank:"): False,
         ("scripts/core/actions/counter_resolver.gd",
          "\tvar next_rank: int = opponent.current_monster.get(\"rank\", 1) + 1"): False,
     }
     bad = [src for (path, src), expect in cases.items()
-           if any(k not in EXEMPT for k, _ in keys(path, [src])) != expect]
+           if any(k not in EXEMPT for k, _ in next_rank_sites(path, [src])) != expect]
     for b in bad:
         print("SELF-TEST mismatch: " + b)
     return not bad
@@ -81,7 +87,7 @@ def main(argv):
     hits = Hits()
     seen = set()
     for path in gd_files():
-        for key, line in keys(path, read_lines(path)):
+        for key, line in next_rank_sites(path, read_lines(path)):
             if key in EXEMPT:
                 seen.add(key)
             else:

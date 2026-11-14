@@ -187,12 +187,16 @@ for pair in "${PAIRS[@]}"; do
 	fi
 	# Turn traces catch games that split mid-game, even ones that reconverge
 	# on the same [SimResult]; the first differing [SimTurn] is where to look.
-	if ! python3 "$REPO/tests/sim/first_divergence.py" "$WORK/base$i.log" "$WORK/head$i.log" \
-			> "$WORK/split$i.txt"; then
-		echo "  SPLIT: $(grep -c '^game=' "$WORK/split$i.txt") games' turn traces differ (last shared, then first differing [SimTurn]):"
-		sed 's/^/    /' "$WORK/split$i.txt"
-		STATUS=1
-	fi
+	python3 "$REPO/tests/sim/first_divergence.py" "$WORK/base$i.log" "$WORK/head$i.log" \
+		> "$WORK/split$i.txt"
+	case $? in
+		0) ;;
+		1)
+			echo "  SPLIT: $(grep -c '^game=' "$WORK/split$i.txt") games' turn traces differ (last shared, then first differing [SimTurn]):"
+			sed 's/^/    /' "$WORK/split$i.txt"
+			STATUS=1 ;;
+		*) echo "  SPLIT: first_divergence.py failed (see its error above)"; STATUS=1 ;;
+	esac
 	[ "$(grep -c 'SCRIPT ERROR' "$WORK/head$i.log")" -eq 0 ] || STATUS=1
 	[ "$(grep -c '\[SimResult\]' "$WORK/head$i.log")" -ge "$GAMES" ] || STATUS=1
 	LOGS+=("$WORK/base$i.log" "$WORK/head$i.log")
@@ -266,6 +270,6 @@ case "$STATUS" in
 	0) echo "STATUS: 0 (identical)" ;;
 	2) echo "STATUS: 2 (unexercised)" ;;
 	3) echo "STATUS: 3 (working tree changed during the run: verdict void, rerun without editing)" ;;
-	*) echo "STATUS: $STATUS (differs, script errors or missing games)" ;;
+	*) echo "STATUS: $STATUS (differs, splits, script errors or missing games)" ;;
 esac
 exit $STATUS
