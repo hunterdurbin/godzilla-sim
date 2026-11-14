@@ -20,7 +20,8 @@ facade hub `h` via `EffectModule`:
 | `standby_entry.gd` | `StandbyEntry`: one ability in standby (player, card, callback, `still_applies`) |
 | `trigger_dispatcher.gd` | `trigger_*` / `collect_*` dispatch over active cards |
 | `destruction_engine.gd` | The one destroy operation, `destroy(target, zone, cause)` — cause EFFECT / CRUSH / OVERLOAD decides protection (effect only), replacement (all) and <Revenge> (not Overload); on_destroy and the destroyed watchers fire for all three; returns the StandbyEntry list. Also the effect-driven destroy prompts and strategy destruction |
-| `card_mover.gd` | Hand/deck/discard traffic, tokens, evolution |
+| `enter_zone.gd` | `EnterZone`: the one "card enters a zone" operation, `enter(player_id, card, zone, source)` — source HAND (the Play action or an effect) / DECK / DISCARD / TOKEN / EVOLUTION; `move_stack` for a stack moving between zones. Owns rule legality (`is_rule_legal`, also asked by RulesEngine, which keeps cost legality), stack-on-play or Overload, placement + signals + log, and submits the leave-play, <Enter> and "when played" entries together |
+| `card_mover.gd` | Hand/deck/discard traffic, zone prompts, token instances; its play primitives call `EnterZone` |
 | `monster_mover.gd` | Effect-driven monster movement |
 | `effect_queries.gd` | Read-only modifier/blocking aggregation (injected into RulesEngine) |
 
@@ -124,7 +125,11 @@ caller submits them to standby once its move / check timing is done
 which crushes only its destination, e.g. EBP03-068 Godzilla Flies — and the
 counter retreat, which crushes before the new monster's <Enter>).
 
-**Play-zone legality is enforced by the play primitives** (5.11.1.1).
+**Play-zone legality is enforced by the play primitives** (5.11.1.1),
+through `EnterZone` — the one owner of rule legality. Each source keeps its
+own rule set (`EnterZone._rules_for`): the Play action refuses the monster
+zone, a zone the opponent blocks (EBP02-055) and zones outside the card's
+required zones; effect plays refuse the monster zone only.
 `play_battle_card_from_hand` / `_from_deck`, `play_from_discard` and
 `create_token_in_zone` refuse the master's monster zone and report "not
 played" (`false` / `-1`) and the card stays in its area — hand, discard,

@@ -11,45 +11,19 @@ func play_battle_card(hand_index: int, zone_index: int, state: GameState) -> voi
 	var card: Dictionary = player.hand.pop_at(hand_index)
 
 	# Apply optional play costs (e.g., ESC01-001 discard a Godzilla card for rank reduction)
-	if effect_handler:
-		var proceed: bool = await effect_handler.apply_play_cost(player.player_id, card, zone_index)
-		if not proceed:
-			# Cost declined — restore card to hand and force visual rebuild
-			player.hand.insert(mini(hand_index, player.hand.size()), card)
-			player.hand_changed.emit()
-			events.play_cancelled.emit(player.player_id)
-			return
+	var proceed: bool = await effect_handler.apply_play_cost(player.player_id, card, zone_index)
+	if not proceed:
+		# Cost declined — restore card to hand and force visual rebuild
+		player.hand.insert(mini(hand_index, player.hand.size()), card)
+		player.hand_changed.emit()
+		events.play_cancelled.emit(player.player_id)
+		return
 
-	# Rule 11.5 - Overloaded Cards: if zone is occupied, destroy existing cards
-	# Unless the card's effect says to stack on top (e.g. Godzilla Jr. on Little Godzilla)
-	if player.zone_has_cards(zone_index):
-		var should_stack := false
-		if effect_handler:
-			should_stack = effect_handler.should_stack_on_play(player.player_id, card, zone_index)
-		if not should_stack:
-			# Overload IS <Destroy> (rule 11.5.1): the destroy module applies
-			# replacements and never fires revenge (12.7.2 excludes
-			# duplicate-card processing). on_leave_play fires either way so
-			# linked-card effects clean up.
-			if effect_handler:
-				var overload := effect_handler.destroy(player, zone_index, DestructionEngine.Cause.OVERLOAD)
-				effect_handler.check_timing.submit(overload.entries)
-			else:
-				var destroyed_stack: Array = player.clear_zone(zone_index)
-				EffectHandler.banish_or_discard(player, destroyed_stack)
-				player.discard_changed.emit()
-
-	player.push_zone_card(zone_index, card)
-	events.battle_card_played.emit(player.player_id, card, zone_index)
-	player.hand_changed.emit()
-	player.zones_changed.emit()
-	if effect_handler:
-		# Log the action before triggered effects fire so the log reads in causal order
-		var has_enter := effect_handler.has_trigger(card, "on_enter")
-		effect_handler.log_message.emit(
-			GameLog.played_battle(player.player_id, card.get("id", ""), zone_index, has_enter))
-		effect_handler.trigger_enter(player.player_id, card)
-		effect_handler.trigger_battle_card_played(player.player_id, card, zone_index)
+	# Rule legality was decided when RulesEngine offered the action; the
+	# enter-zone operation does the rest: stack-on-play or Overload (11.5),
+	# placement, the log line, and the leave-play / <Enter> / "when played"
+	# entries.
+	effect_handler.enter_zone.enter(player.player_id, card, zone_index, EnterZone.Source.HAND, false)
 
 
 func play_strategy_card(hand_index: int, state: GameState) -> void:
