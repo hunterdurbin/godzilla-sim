@@ -149,16 +149,38 @@ func test_check_win_condition() -> void:
 	assert_int(rules.check_win_condition(state)).is_equal(-1)
 
 
-func test_check_counter_compares_cp_to_threat() -> void:
+func test_compute_counter_numbers_without_effects() -> void:
 	var state := States.make_state({
-		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 5000)}},
-		"p1": {"current_monster": Cards.monster(1, 5000), "rage": 0},
+		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 6000), 4: Cards.battle(1, 4000, "B")}},
+		"p1": {"current_monster": Cards.monster(1, 5000), "rage": 2},
 	})
 	rules = States.make_rules(state)
-	assert_bool(rules.check_counter(state.players[0], state.players[1])).is_true()
+	var numbers := rules.compute_counter_numbers(state)
+	assert_int(numbers["total_cp"]).is_equal(10000)
+	assert_int(numbers["threat"]).is_equal(15000)  # 5000 base + 2 rage * 5000
+	assert_int(numbers["rage_threat"]).is_equal(10000)
+	assert_int(numbers["effect_threat"]).is_equal(0)
+	assert_int(numbers["immunity_threshold"]).is_equal(0)
+	assert_bool(numbers["prevented"]).is_false()
 
-	state.players[1].rage = 1  # threat 5000 + 5000
-	assert_bool(rules.check_counter(state.players[0], state.players[1])).is_false()
+
+func test_rank_up_candidates_are_next_rank_with_shared_trait() -> void:
+	var state := States.make_state({"p1": {
+		"current_monster": Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA]),
+		"monster_deck": [
+			Cards.monster(2, 7000, [CardEnums.CardTrait.RODAN]),  # no shared trait
+			Cards.monster(3, 9000, [CardEnums.CardTrait.GODZILLA]),  # skips a rank
+			Cards.monster(2, 7000, [CardEnums.CardTrait.GODZILLA]),
+		],
+	}})
+	rules = States.make_rules(state)
+	assert_array(rules.get_rank_up_candidates(state.players[1])).contains_exactly([2])
+
+
+func test_rank_up_candidates_empty_monster_deck() -> void:
+	var state := States.make_state({"p1": {"monster_deck": []}})
+	rules = States.make_rules(state)
+	assert_array(rules.get_rank_up_candidates(state.players[1])).is_empty()
 
 
 func test_can_opponent_rank_up_needs_next_rank_with_shared_trait() -> void:

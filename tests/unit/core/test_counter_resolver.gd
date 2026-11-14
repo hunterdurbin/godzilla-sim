@@ -1,24 +1,11 @@
 extends GdUnitTestSuite
 
-## CounterResolver: number computation, the four outcome branches, retreat
-## zones, rank-up via PlayerInput, and loss when no rank-up exists.
+## CounterResolver: the four outcome branches, retreat zones, rank-up via
+## PlayerInput, and loss when no rank-up exists. The counter numbers and
+## rank-up eligibility themselves are tested on RulesEngine.
 
 const Cards := preload("res://tests/fixtures/cards.gd")
 const States := preload("res://tests/fixtures/states.gd")
-
-
-func test_compute_counter_numbers_without_effects() -> void:
-	var state := States.make_state({
-		"p0": {"monster_zone": 2, "zone_cards": {0: Cards.battle(1, 6000), 4: Cards.battle(1, 4000, "B")}},
-		"p1": {"current_monster": Cards.monster(1, 5000), "rage": 2},
-	})
-	var session := States.make_session(state)
-	var numbers: Dictionary = session["action_handler"].counter.compute_counter_numbers(state)
-	assert_int(numbers["total_cp"]).is_equal(10000)
-	assert_int(numbers["threat"]).is_equal(15000)  # 5000 base + 2 rage * 5000
-	assert_int(numbers["rage_threat"]).is_equal(10000)
-	assert_int(numbers["effect_threat"]).is_equal(0)
-	assert_bool(numbers["prevented"]).is_false()
 
 
 func test_counter_success_retreats_and_ranks_up() -> void:

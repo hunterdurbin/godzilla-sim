@@ -2,7 +2,7 @@ extends GdUnitTestSuite
 
 ## MaxCounterState: the synthetic counter-phase board the deck builder's
 ## "Maximum Counter Power" preview evaluates. Every total is read back
-## through CounterResolver.compute_counter_numbers on a real GameState —
+## through RulesEngine.compute_counter_numbers on a real GameState —
 ## these tests pin the harness contract the optimizer relies on.
 
 const Cards := preload("res://tests/fixtures/cards.gd")

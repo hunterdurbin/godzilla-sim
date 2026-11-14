@@ -77,3 +77,17 @@ func test_burst_rank_enables_play_monster() -> void:
 	var rules := _rules_with_effect(state, "test://burst", burst_effect, [])
 	# Base effect has no burst -> rank mismatch keeps it unplayable.
 	assert_array(rules.get_playable_monsters(state.players[0])).is_empty()
+
+
+func test_alternate_monster_play_bridges_rank_up_traits() -> void:
+	# EBP04-033/034 style: the next-rank monster shares no trait with the
+	# current one, but its alternate play cost permits the rank-up.
+	var bridged := Cards.monster(2, 7000, [CardEnums.CardTrait.RODAN], "BRIDGE")
+	bridged["effect_script"] = "test://alt_monster_play"
+	var state := States.make_state({"p1": {
+		"current_monster": Cards.monster(1, 5000, [CardEnums.CardTrait.GODZILLA]),
+		"monster_deck": [Cards.monster(2, 7000, [CardEnums.CardTrait.RODAN]), bridged],
+	}})
+	var rules := _rules_with_effect(state, "test://alt_monster_play", AlternateMonsterPlayEffect.new(), ["can_play_as_monster"])
+
+	assert_array(rules.get_rank_up_candidates(state.players[1])).contains_exactly([1])
