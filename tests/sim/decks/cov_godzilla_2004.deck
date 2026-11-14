@@ -1,0 +1,28 @@
+# Coverage deck: the "whenever … is <Destroy>" watchers.
+# EBP04-002 / EBP04-005 Godzilla(2004) as the rank 2 / 4 monsters watch the
+# opponent's battle card in their column; rank 1 strategies (EBP04-075,
+# EPR-004, EPR-005) meet their conditions. EBP04-039 Zilla watches this
+# deck's non-red (white) battle cards on the opponent's turn.
+# Opponent: must destroy, crush or overload battle cards — e.g. ESD02 Starter
+# (it overloads its own column cards; see hunterdurbin/godzilla-sim-issue-tracker#15).
+[monster deck]
+1 EBP04-001
+1 EBP04-002
+1 EBP04-003
+1 EBP04-005
+
+[main deck]
+3 EBP04-001
+3 EBP04-002
+3 EBP04-003
+3 EBP04-005
+4 EBP04-039
+2 EBP04-042
+4 EBP01-068
+4 EBP01-069
+4 EBP04-069
+4 EBP04-070
+4 EBP04-071
+4 EBP04-075
+4 EPR-004
+4 EPR-005
