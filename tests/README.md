@@ -37,6 +37,11 @@ tests/
 - **Per-card effect tests** use `fixtures/real_cards.gd`
   (`Real.instance(id)`) — real card dicts, never raw CardData templates.
   Cluster/bespoke membership ledger: `unit/effects/cards/classification.md`.
+- **Bot suites** split the same way: heuristic `test_bot_*` suites use
+  hand-built `fixtures/cards.gd` dicts; KAIJU `test_kaiju_*` suites run
+  real rollouts whose effect scripts key off real card data, so they use
+  `CardData.get_card_by_id(id).duplicate(true)` (or `Real.instance(id)`),
+  duplicated before any mutation.
 - `fixtures/states.gd` `States.make_state` puts both monsters in zone 1
   unless `"monster_zone"` says otherwise, so zone index 0 is the monster's
   zone: plays there are refused (5.11.1.1) and battle cards there get
