@@ -11,6 +11,7 @@ In the commands below, `$ISSUES` means `hunterdurbin/godzilla-sim-issue-tracker`
 ## Conventions
 
 - **Create an issue**: `gh issue create --repo $ISSUES --title "..." --body "..."`. Use a heredoc for multi-line bodies.
+- **Cite grilling decisions by their decision-table row**: write `#11 row 7` (the parent ticket's table, row number). `Q<n>` is reserved for official rulings in `comprehensive_rules/qa.txt`, which agents grep by that number.
 - **Read an issue**: `gh issue view <number> --repo $ISSUES --json number,title,body,labels,comments`.
 - **List issues**: `gh issue list --repo $ISSUES --state open --json number,title,body,labels,comments --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'` with appropriate `--label` and `--state` filters.
 - **Make an issue a sub-issue of a parent**: `gh issue create --repo $ISSUES --parent <parent> ...`, or `gh issue edit <parent> --repo $ISSUES --add-sub-issue <child>` afterwards (`gh` 2.94+). Older `gh`: `gh api --method POST repos/$ISSUES/issues/<parent>/sub_issues -F sub_issue_id=<child-db-id>` (database id, as in **Blocking** below). Without sub-issues, put `Part of #<parent>` at the top of the child body.

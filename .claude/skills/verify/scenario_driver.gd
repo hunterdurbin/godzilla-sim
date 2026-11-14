@@ -14,6 +14,18 @@ extends Node
 ##            add_to_zone, set_rage, ... — emits the change signals itself)
 ##   await v.wait(sec)         v.shot(label)        v.close_overlays()
 ##   v.log_tail(n) -> lines    v.note(msg)          (prints "[Scenario] msg")
+##   await v.act(action, params)   submit a CardEnums.ActionType through
+##            tm.submit_action once the engine awaits an action, close the
+##            overlays it opens, and wait for the next AWAITING_ACTION.
+##            Params: PLAY_BATTLE {hand_index, zone_index}; PLAY_STRATEGY /
+##            GAIN_RAGE / PLAY_MONSTER / INVADE {hand_index}
+##            (scripts/core/action_handler.gd execute()).
+##   await v.check_sync(pid, label) -> bool   rendered hand / zones vs
+##            PlayerState; prints "[Scenario] <label> ... ok|MISMATCH" and
+##            takes shot <label>.
+## Answering a prompt through tm.player_input.resolve_* resolves the engine
+## but leaves its UI overlay open (close_overlays() only presses "close"
+## buttons).
 
 var board: Node
 var tm: TurnManager
@@ -86,3 +98,42 @@ func log_tail(n: int) -> PackedStringArray:
 		return PackedStringArray()
 	var lines: PackedStringArray = log_node.get_parsed_text().strip_edges().split("\n")
 	return lines.slice(maxi(0, lines.size() - n))
+
+
+## Submits `action` once the engine awaits an action, then waits for the
+## next AWAITING_ACTION, closing any overlay the action opened.
+func act(action: int, params: Dictionary) -> void:
+	await _until_awaiting_action()
+	tm.submit_action(action, params)
+	await wait(1.0)
+	close_overlays()
+	await _until_awaiting_action()
+
+
+## True when player `pid`'s rendered hand count and zone occupancy match
+## PlayerState (the monster's zone is skipped). Prints one line, takes a shot.
+func check_sync(pid: int, label: String) -> bool:
+	await wait(0.5)
+	var ps: PlayerState = gs.players[pid]
+	var pboard: Node = board.player1_board if pid == 0 else board.player2_board
+	var shown_hand: int = pboard.hand_manager.get_card_count()
+	var zone_bad: Array[int] = []
+	for i in range(pboard.zone_slots.size()):
+		if i == ps.monster_zone - 1:
+			continue
+		if pboard.zone_slots[i].has_card() != ps.zone_has_cards(i):
+			zone_bad.append(i + 1)
+	var in_sync := shown_hand == ps.hand.size() and zone_bad.is_empty()
+	note("%s hand state=%d shown=%d zone mismatches=%s %s" % [
+		label, ps.hand.size(), shown_hand, zone_bad, "ok" if in_sync else "MISMATCH"])
+	shot(label)
+	return in_sync
+
+
+func _until_awaiting_action() -> void:
+	for _i in range(40):
+		if tm.flow_state == TurnManager.FlowState.AWAITING_ACTION:
+			return
+		close_overlays()
+		await wait(0.25)
+	note("WARN not awaiting action (flow_state=%d)" % tm.flow_state)

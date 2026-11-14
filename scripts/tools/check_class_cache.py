@@ -13,7 +13,7 @@ Compares every `class_name X` declared in a .gd file under the project
 different path, or a cached class whose file no longer declares it.
 
 Exit 0 = current; 1 = stale (or no cache yet) — run tests/import.sh.
-tests/run_unit_tests.sh and tests/sim/run_sim_diff.sh call this and import
+tests/run_unit_tests.sh calls this and imports
 automatically when it fails.
 
 Usage: python3 scripts/tools/check_class_cache.py [--quiet]

@@ -41,6 +41,11 @@ them bare (macOS has no `timeout`) and redirect to a log before grepping.
 - Helpers: `v.board v.tm v.gs v.h v.ed`, `await v.wait(sec)`, `v.shot(label)`,
   `v.close_overlays()`, `v.log_tail(n)`, `v.note(msg)` (full list:
   `scenario_driver.gd` header).
+- **Real actions and board/state sync**: `await v.act(action, params)`
+  submits a player action; `await v.check_sync(pid, label)` compares the
+  rendered hand and zones with PlayerState. `scenarios/board_state_sync.gd`
+  uses both: run it after any change to PlayerState signal emission or
+  board sync timing.
 
 ## Recipe: temporary driver scene (other scenes)
 
