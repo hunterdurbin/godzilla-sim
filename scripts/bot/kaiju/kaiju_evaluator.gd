@@ -162,11 +162,15 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	# (A flat "last_rankup_liability" penalty at 0 rank-ups was tried and
 	# reverted: no effect on ESD02's counter-attrition losses — those are
 	# forced, not voluntary spends — and it cost tempo wins on ESD01.)
-	score += w["rankups_left"] * mini(_rankups_left(p), 2)
+	# Lives follow the engine's rank-up rule (5.15.1.2), alternate costs such
+	# as EBP04-033's can_play_as_monster bridge included.
+	var my_lives: int = mini(re.get_rank_up_candidates(p).size(), 2)
+	var their_lives: int = mini(re.get_rank_up_candidates(o).size(), 2)
+	score += w["rankups_left"] * my_lives
 	# Lives DIFFERENTIAL — win-condition proximity is relative: spending your
 	# last rank-up while the opponent holds two is a catastrophic exchange
 	# even when your own absolute count "only" dropped by one.
-	score += w.get("rankups_diff", 0.0) * (mini(_rankups_left(p), 2) - mini(_rankups_left(o), 2))
+	score += w.get("rankups_diff", 0.0) * (my_lives - their_lives)
 
 	# --- THEIR next turn's counter phase: they counter US. Our rage-boosted
 	# threat persists until our own next start phase, but their board CP will
@@ -256,22 +260,6 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 			score += combo_w * progress
 
 	return score
-
-
-## Immediate rank-up options in the monster deck (rule: next rank + shared
-## trait) — the player's remaining "lives" against counters.
-func _rankups_left(p: PlayerState) -> int:
-	var next_rank: int = p.current_monster.get("rank", 1) + 1
-	var cur_traits: Array = p.current_monster.get("traits", [])
-	var n: int = 0
-	for m in p.monster_deck:
-		if m.get("rank") != next_rank:
-			continue
-		for t in m.get("traits", []):
-			if t in cur_traits:
-				n += 1
-				break
-	return n
 
 
 ## How much to trust the opponent profile: ramps with usable game count,

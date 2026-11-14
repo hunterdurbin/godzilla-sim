@@ -194,6 +194,27 @@ func test_rankups_diff_prices_lives_exchange() -> void:
 	assert_bool(_score_with(spent, config) < _score_with(even, config)).is_true()
 
 
+## P1 on rank-2 Monster X EBP04-032, its monster deck holding only the
+## given cards.
+func _monster_x_state(monster_deck_ids: Array[String]) -> GameState:
+	var state := _build_state(5, 0, 0)
+	state.players[1].current_monster = CardData.get_card_by_id("EBP04-032").duplicate(true)
+	state.players[1].monster_deck.clear()
+	for id in monster_deck_ids:
+		state.players[1].monster_deck.append(CardData.get_card_by_id(id).duplicate(true))
+	return state
+
+
+func test_rankups_left_counts_alternate_cost_rank_up() -> void:
+	# Lives follow the engine's rank-up rule (5.15.1.2): Kaizer Ghidorah
+	# EBP04-033 ranks up from Monster X EBP04-032 by its alternate cost
+	# despite sharing no trait, so it is a life like any other rank-up.
+	var config := _isolated_config("rankups_left", 60.0)
+	var bridged := _monster_x_state(["EBP04-033"])
+	var spent := _monster_x_state([])
+	assert_bool(_score_with(bridged, config) > _score_with(spent, config)).is_true()
+
+
 func test_z8_dead_end_penalizes_pathless_camping() -> void:
 	# Bot at z7 with the opponent's zone 8 occupied: without any destroys_zone
 	# answer the invasion win does not exist — with one in hand it does.
