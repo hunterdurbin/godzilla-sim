@@ -18,6 +18,8 @@
 # (gdUnit's own "failures" counts assertions, not tests). The full log path
 # is printed at the end. --per-suite prints the digest of each suite that
 # failed or aborted, then one "Per-suite summary" line.
+# Stale class-name cache (a script added / moved / renamed outside the
+# editor; scripts/tools/check_class_cache.py) → tests/import.sh runs first.
 # Exit status: gdUnit's own exit code; 1 on parse error / crash / timeout;
 # --per-suite: 0 only when every suite passed.
 #
@@ -42,6 +44,14 @@ TARGET="${POSITIONAL[1]:-tests/unit}"
 TIMEOUT="${GDUNIT_TIMEOUT:-900}"
 JOBS="${GDUNIT_JOBS:-1}"
 cd "$(dirname "$0")/.."
+
+# A script added, moved or renamed outside the editor leaves the class-name
+# cache stale, and every suite touching that class fails to parse
+# ("Identifier X not declared"). Import first when the cache is behind.
+if command -v python3 > /dev/null 2>&1 && ! python3 scripts/tools/check_class_cache.py --quiet; then
+	echo "run_unit_tests.sh: importing to refresh the class-name cache"
+	./tests/import.sh "$GODOT" > /dev/null || { echo "run_unit_tests.sh: tests/import.sh failed"; exit 1; }
+fi
 
 # run_one <target> <plain_log>: run gdUnit on one target, write the
 # ANSI-stripped log to <plain_log>, return gdUnit's exit code (1 on abort).

@@ -76,7 +76,8 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
   (`.claude/skills/verify/`) — unit+harness do NOT exercise the real
   GameBoard `_ready`.
 - After moving files outside the editor: `./tests/import.sh <godot>`
-  (wedge-safe headless import; a stale class-name cache breaks headless runs).
+  (wedge-safe headless import; a stale class-name cache breaks headless runs —
+  the unit and sim-diff runners import on their own when it is stale).
 - Before merging a PR: `/code-review` — judgement rules live in
   `CODING_STANDARDS.md`; mechanical ones are checks in `scripts/tools/`.
   PR body closes its ticket: `Closes hunterdurbin/godzilla-sim-issue-tracker#N`,
