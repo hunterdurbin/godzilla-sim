@@ -20,6 +20,32 @@ Start → Main → Counter → End. Threat = base + rage × 5000. Deck rules liv
 `scripts/cards/deck_validator.gd` (50-card main deck, 4 monsters rank 1–4,
 ≤10 invade-2 cards, …).
 
+## Japanese originals — `rules-ja.txt`, `qa-ja.txt`
+
+The game is Japanese, so the English rules and rulings are translations.
+When the English wording seems to split one act in two, or contradicts a
+ruling, check the Japanese. Japanese card ids drop the `E` (`BP02-055` is
+EBP02-055); the rule numbers are the same.
+
+- `GodzillaTCG_cr_<ver>_<yymmdd>-ja.pdf` is the official Japanese
+  comprehensive rules. `rules-ja.txt` is its greppable copy:
+  `./extract_text.sh GodzillaTCG_cr_1.06_261102-ja.pdf rules-ja.txt`.
+  Lines wrap mid-sentence (Japanese has no spaces), so use `grep -A4`.
+- `qa-ja.txt` holds every Japanese ruling, in the same format as `qa.txt`.
+  It comes from `https://godzilla-cardgame.com/manage/rule-qa/list?per_page=1000`
+  with the recipe below, run on `https://godzilla-cardgame.com/question/`,
+  with `(JA)` in the header and the file saved as `godzilla-qa-ja.txt`.
+  It has more rulings than `qa.txt` because the English site lags.
+- Japanese card text is at `/manage/card-list-user/detail/?card_number=BP02-055`
+  on the same site (`card.text`).
+
+**Play (出現).** The Japanese rules use one verb, 出現, for 5.11 "play",
+5.11.4 "play a token", 9.1.2 "cause a token to appear" and 5.17.1 Evolve
+("重ねて出現させます"). The cards use it too: EBP02-073 "出現するたび",
+EBP04-028 / EBP04-072 "山札から…出現させるたび", EBP02-055
+"出現させることができない". So the English "appear" is a play, and Evolve is a
+play from the deck (Q176, Q270).
+
 ## Official Q&A — `qa.txt`
 
 `qa.txt` holds every official English Q&A ruling, one block per ruling.
