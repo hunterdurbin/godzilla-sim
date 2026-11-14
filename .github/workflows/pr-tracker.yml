@@ -1,0 +1,21 @@
+name: PR Tracker Link
+
+# A merged PR closes its tracker issue only through a closing keyword with the
+# fully-qualified reference (scripts/tools/check_pr_tracker_link.py).
+# Re-runs when the PR body is edited.
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  tracker-link:
+    name: PR Tracker Link
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PR body closes its tracker issue (or says Tracker none)
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python3 scripts/tools/check_pr_tracker_link.py
