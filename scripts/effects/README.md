@@ -24,9 +24,10 @@ board UI, the bot, tests — calls the modules too (`effect_handler.queries`,
 `.dispatcher`, `.check_timing`, `.destruction`, `.mover`, `.monster_mover`,
 `.enter_zone`, `.registry`; the `ActionResolver` base forwards them). A
 facade method that no card script calls doesn't belong on the facade:
-`scripts/tools/check_effect_handler_card_api.py` (pre-commit + CI ratchet)
-fails on a public EffectHandler method with no caller under
-`scripts/effects/<set>/`.
+`scripts/tools/check_effect_handler_card_api.py` (pre-commit + CI) fails on
+a public EffectHandler method with no caller under `scripts/effects/<set>/`,
+and on a card script that reaches past the facade into a module
+(`ctx.effect_handler.queries.…`).
 
 | Module | Role |
 |---|---|
