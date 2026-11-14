@@ -1,0 +1,32 @@
+# Coverage deck: counter and rank-up rules (RulesEngine.compute_counter_numbers,
+# get_rank_up_candidates). EBP04-033 Kaizer Ghidorah ranks up from EBP04-032
+# Monster X through the can_play_as_monster bridge (their traits don't
+# overlap); EBP04-031/032 prevent counters. The opponent must counter this
+# deck's monster for the bridge to fire: pair it with a high-CP deck.
+# Copied from the "Kaizer of War" decklist.
+[monster deck]
+1 EBP04-031
+1 EBP04-032
+1 EBP04-033
+1 EBP04-036
+
+[main deck]
+1 EBP04-033
+2 EBP04-056
+2 EBP04-038
+4 EBP04-045
+4 EBP04-057
+3 EBP04-046
+4 EBP03-067
+1 EBP04-040
+4 EBP04-047
+2 EBP02-016
+2 EBP04-066
+3 EBP04-044
+4 EBP04-068
+3 EBP01-030
+4 EBP04-081
+2 EBP01-064
+2 EBP01-080
+1 EBP03-079
+2 EBP04-079
