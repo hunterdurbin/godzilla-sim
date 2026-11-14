@@ -528,10 +528,10 @@ func create_token_in_zone(player: PlayerState, token_id: String, zone_index: int
 	_token_serial += 1
 	token_data["id"] = "%s_tok_%d" % [token_id, _token_serial]
 
-	var overloaded_top: Dictionary = h.overload_zone(player, zone_index)
+	var overload := h.destroy(player, zone_index, DestructionEngine.Cause.OVERLOAD)
 	player.push_zone_card(zone_index, token_data)
 	player.zones_changed.emit()
-	h.trigger_leave_play(player.player_id, overloaded_top, zone_index)
+	check_timing.submit(overload.entries)
 	h.trigger_enter(player.player_id, token_data, true)
 	# Tokens are treated as normal plays — trigger battle card played effects
 	# (but not considered played from hand).
@@ -687,7 +687,7 @@ func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
 		return
 	if not player.zone_has_cards(from_zone):
 		return
-	var overloaded_top: Dictionary = h.overload_zone(player, to_zone)
+	var overload := h.destroy(player, to_zone, DestructionEngine.Cause.OVERLOAD)
 	var moved_top: Dictionary = player.get_zone_top_card(from_zone)
 	var stack: Array = player.zones[from_zone]
 	player.zones[from_zone] = []
@@ -696,7 +696,7 @@ func move_zone_stack(player: PlayerState, from_zone: int, to_zone: int) -> void:
 	# Fire on_leave_play for the overloaded card, then on_zone_changed for the
 	# moved card — mirrors the linked-card semantics used by swap_zones and
 	# play_from_discard so cards like EBP04-067 can react to forced movement.
-	h.trigger_leave_play(player.player_id, overloaded_top, to_zone)
+	check_timing.submit(overload.entries)
 	h.trigger_zone_changed(player.player_id, moved_top, from_zone, to_zone)
 
 
@@ -752,10 +752,10 @@ func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1
 			return -1
 
 	# Handle overload if zone occupied
-	var overloaded_top: Dictionary = h.overload_zone(player, zone_idx)
+	var overload := h.destroy(player, zone_idx, DestructionEngine.Cause.OVERLOAD)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
-	h.trigger_leave_play(player_id, overloaded_top, zone_idx)
+	check_timing.submit(overload.entries)
 	h.trigger_enter(player_id, card_data, true)
 	return zone_idx
 
@@ -806,12 +806,12 @@ func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx:
 			break
 	player.hand_changed.emit()
 
-	var overloaded_top: Dictionary = h.overload_zone(player, zone_idx)
+	var overload := h.destroy(player, zone_idx, DestructionEngine.Cause.OVERLOAD)
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
 	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
 	h.log_message.emit(GameLog.effect_played_card(player_id, source_id, card_id, zone_idx))
-	h.trigger_leave_play(player_id, overloaded_top, zone_idx)
+	check_timing.submit(overload.entries)
 	h.trigger_enter(player_id, card_data, true)
 	h.trigger_battle_card_played(player_id, card_data, zone_idx)
 	return true
@@ -836,12 +836,12 @@ func play_battle_card_from_deck(player_id: int, card_data: Dictionary, zone_idx:
 			player.main_deck.append(card_data)
 			player.deck_changed.emit()
 		return false
-	var overloaded_top: Dictionary = {}
+	var overload_entries: Array = []
 	if not stack_on_top:
-		overloaded_top = h.overload_zone(player, zone_idx)
+		overload_entries = h.destroy(player, zone_idx, DestructionEngine.Cause.OVERLOAD).entries
 	player.push_zone_card(zone_idx, card_data)
 	player.zones_changed.emit()
-	h.trigger_leave_play(player_id, overloaded_top, zone_idx)
+	check_timing.submit(overload_entries)
 	h.trigger_enter(player_id, card_data, true)
 	h.trigger_battle_card_played(player_id, card_data, zone_idx, true)
 	return true

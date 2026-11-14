@@ -1348,7 +1348,7 @@ func _cleanup_hand_card_selection(hand_mgr: CardManager) -> void:
 	_update_hand_visibility(_get_current_pid())
 
 
-func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> void:
+func _on_zone_target_requested(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool, _max_rank: int = -1) -> void:
 	if is_bot_game and player_id == bot_player.bot_player_id:
 		return
 	# Base id of the card being placed ("" for zone-only prompts like destroy).

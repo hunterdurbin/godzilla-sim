@@ -2300,6 +2300,6 @@ class _HighlightAwareInput extends ScriptedPlayerInput:
 	var lit: Dictionary = {}
 	var lit_at_prompt: Array = []
 
-	func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool) -> int:
+	func select_zone(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool, max_rank: int = -1) -> int:
 		lit_at_prompt.append(lit.keys())
-		return super(player_id, target_player_id, valid_zones, prompt, allow_skip)
+		return super(player_id, target_player_id, valid_zones, prompt, allow_skip, max_rank)

@@ -30,7 +30,6 @@ var action_handler  # ActionHandler reference (set by TurnManager)
 var input: PlayerInput
 var events: GameEvents = null  # Notification bus (wired by MatchFactory; null in bare tests)
 var registry := EffectRegistry.new()
-var exec := EffectExecutionState.new()
 var check_timing: CheckTiming
 var dispatcher: TriggerDispatcher
 var destruction: DestructionEngine
@@ -55,12 +54,6 @@ var choice_source_refs: Array[Dictionary] = []
 ## ("" when the prompt is zone-only, e.g. destroy). The zone-target UI reads
 ## this to show a preview of the card; cleared when the target resolves.
 var zone_target_card_id: String = ""
-
-## Forwarders into the shared EffectExecutionState — internal call sites and
-## external readers (bot, UI) keep the historical names.
-var pending_destroy_max_rank: int:  # Set before the zone-target prompt for bot rank filtering
-	get: return exec.pending_destroy_max_rank
-	set(v): exec.pending_destroy_max_rank = v
 
 
 
@@ -258,11 +251,13 @@ func gain_rage(player_id: int, amount: int, source_card_id: String = "") -> int:
 
 
 
-func select_zone_target(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false, card_id: String = "") -> int:
+func select_zone_target(player_id: int, target_player_id: int, valid_zones: Array[int], prompt: String, allow_skip: bool = false, card_id: String = "", max_rank: int = -1) -> int:
 	## Ask a player to choose one of the valid zones on the target player's board.
 	## If allow_skip is true, the player can decline (returns -1).
 	## `card_id` (optional) gives the base id of the card being placed so the
 	## UI can show a preview of it next to the prompt.
+	## `max_rank` (> 0) tells the chooser only cards of that rank or lower
+	## will be destroyed (destroy_zone_and_adjacent) — the bot scores by it.
 	## Returns the chosen zone index, or -1 if no valid zones or skipped.
 	if valid_zones.is_empty():
 		return -1
@@ -271,7 +266,7 @@ func select_zone_target(player_id: int, target_player_id: int, valid_zones: Arra
 	_highlight_active_effect()
 	# Not redundant: SignalPlayerInput's override is a coroutine.
 	@warning_ignore("redundant_await")
-	var zone_index: int = await input.select_zone(player_id, target_player_id, valid_zones, prompt, allow_skip)
+	var zone_index: int = await input.select_zone(player_id, target_player_id, valid_zones, prompt, allow_skip, max_rank)
 	_unhighlight_active_effect()
 	zone_target_card_id = ""
 	return zone_index
@@ -399,14 +394,10 @@ func trigger_revenge(player_id: int, card_data: Dictionary) -> void:
 	await dispatcher.trigger_revenge(player_id, card_data)
 
 
-func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary) -> Array:
-	return dispatcher.collect_crush_and_revenge_entries(player_id, card_data)
+func collect_crush_and_revenge_entries(player_id: int, card_data: Dictionary, crushed: bool) -> Array:
+	return dispatcher.collect_crush_and_revenge_entries(player_id, card_data, crushed)
 
 
-
-
-func collect_revenge_entries(player_id: int, card_data: Dictionary) -> Array:
-	return dispatcher.collect_revenge_entries(player_id, card_data)
 
 
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
@@ -553,12 +544,10 @@ func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones:
 	return await destruction.destroy_zone_and_adjacent(player_id, target, valid_zones, prompt, max_rank)
 
 
-func try_destroy_replacement(target: PlayerState, zone_idx: int) -> bool:
-	return destruction.try_destroy_replacement(target, zone_idx)
-
-
-func overload_zone(target: PlayerState, zone_idx: int) -> Dictionary:
-	return destruction.overload_zone(target, zone_idx)
+## Engine-internal (crush, overload placement) — card scripts use the
+## destroy_* prompts above. The caller must submit the returned entries.
+func destroy(target: PlayerState, zone_idx: int, cause: DestructionEngine.Cause) -> DestructionEngine.Outcome:
+	return destruction.destroy(target, zone_idx, cause)
 
 
 func can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
@@ -567,10 +556,6 @@ func can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 
 func _can_destroy_card(target: PlayerState, card_data: Dictionary) -> bool:
 	return destruction._can_destroy_card(target, card_data)
-
-
-func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Dictionary, deferred_entries: Variant = null) -> Dictionary:
-	return await destruction._execute_destroy_zone(target, zone_idx, top_card, deferred_entries)
 
 
 func get_strategy_discard_interceptor(player_id: int) -> int:

@@ -16,11 +16,10 @@ facade hub `h` via `EffectModule`:
 |---|---|
 | `effect_registry.gd` | Effect/filter loading + caching (test injection point) |
 | `trigger_filters.gd` | Pure static `TRIGGER_FILTERS` DSL evaluation |
-| `effect_execution_state.gd` | Shared facade/module state (bot destroy-rank cap) |
 | `check_timing.gd` | `CheckTiming`: single owner of check timing (10.4.3) — rule actions (crush, illegal cards), the standby pool, the active ability, `run_effect` |
 | `standby_entry.gd` | `StandbyEntry`: one ability in standby (player, card, callback, `still_applies`) |
 | `trigger_dispatcher.gd` | `trigger_*` / `collect_*` dispatch over active cards |
-| `destruction_engine.gd` | Destroy flows + protection/replacement |
+| `destruction_engine.gd` | The one destroy operation, `destroy(target, zone, cause)` — cause EFFECT / CRUSH / OVERLOAD decides protection (effect only), replacement (all) and <Revenge> (not Overload); returns the StandbyEntry list. Also the effect-driven destroy prompts and strategy destruction |
 | `card_mover.gd` | Hand/deck/discard traffic, tokens, evolution |
 | `monster_mover.gd` | Effect-driven monster movement |
 | `effect_queries.gd` | Read-only modifier/blocking aggregation (injected into RulesEngine) |

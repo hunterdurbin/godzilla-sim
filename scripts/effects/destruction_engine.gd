@@ -1,9 +1,121 @@
 class_name DestructionEngine
 extends EffectModule
 
-## Card destruction: protection/replacement checks (can_be_destroyed,
-## protects_card_from_destruction, on_would_be_destroyed), zone and strategy
-## destruction flows, and the destroy logging.
+## Card destruction: the single destroy operation (destroy), the
+## protection/replacement checks (can_be_destroyed,
+## protects_card_from_destruction, on_would_be_destroyed), the effect-driven
+## zone and strategy destruction flows, and the destroy logging.
+
+
+## Why a battle card is being destroyed. The cause is destroy()'s only
+## behaviour switch:
+##   EFFECT   — a card effect's <Destroy>.
+##   CRUSH    — the crush rule action (11.3; <Destroy> per 11.3.3).
+##   OVERLOAD — a card placed onto an occupied zone (11.5; <Destroy> per
+##              11.5.1). Happens at placement (docs/adr/0001).
+enum Cause { EFFECT, CRUSH, OVERLOAD }
+
+
+## What one destroy() did to one zone.
+class Outcome:
+	extends RefCounted
+	## The top card that left the zone; {} when nothing happened (empty zone,
+	## or an effect destroy stopped by protection).
+	var card: Dictionary = {}
+	## A replacement effect moved the card to the deck bottom instead: it left
+	## the zone but was not destroyed.
+	var replaced: bool = false
+	## StandbyEntry abilities this destruction triggered. The caller submits
+	## them to CheckTiming (now, or after its whole batch / placement).
+	var entries: Array = []
+
+
+
+
+func destroy(target: PlayerState, zone_idx: int, cause: Cause) -> Outcome:
+	## Destroy the battle card on top of target's zone `zone_idx` — the one
+	## destroy operation behind effect <Destroy>, crush (11.3) and overload
+	## (11.5). The cause decides:
+	##   - protection (can_be_destroyed / protects_card_from_destruction):
+	##     EFFECT only — every protecting card is worded "by your opponent's
+	##     effects". A protected card is left in place ({} outcome).
+	##   - replacement (on_would_be_destroyed): every cause. The top card goes
+	##     to the deck bottom instead and is not destroyed; cards stacked under
+	##     it go to the discard (not "destroyed", 5.12.1.1).
+	##   - <Revenge>: EFFECT and CRUSH, never OVERLOAD (12.7.2).
+	##   - zone-card-destroyed watchers (ally / opponent): EFFECT only.
+	## Otherwise the stack goes to the discard and the top card counts as
+	## destroyed this turn. Leave-play enters the entries for every cause.
+	## Signals: replaced → zones_changed, deck_changed, discard_changed;
+	## destroyed → zones_changed (not for OVERLOAD: the caller emits it once
+	## the incoming card is placed) and discard_changed, plus
+	## GameEvents.battle_card_crushed for CRUSH. EFFECT also logs the destroy
+	## and emits EffectHandler.card_destroyed, replaced or not.
+	## Synchronous and never prompts: nothing resolves here — the triggered
+	## abilities come back in Outcome.entries, which the caller must submit.
+	var out := Outcome.new()
+	var top_card := target.get_zone_top_card(zone_idx)
+	if top_card.is_empty():
+		return out
+	if cause == Cause.EFFECT and not _can_destroy_card(target, top_card):
+		return out
+	out.card = top_card
+	out.replaced = _apply_destroy_replacement(target, zone_idx, top_card)
+	if not out.replaced:
+		var stack: Array = target.clear_zone(zone_idx)
+		EffectHandler.banish_or_discard(target, stack)
+		target.cards_destroyed_this_turn.append(top_card)
+		if cause == Cause.CRUSH and h.events:
+			h.events.battle_card_crushed.emit(target.player_id, zone_idx, top_card)
+		# Overload: the caller emits zones_changed once the incoming card is
+		# in the zone.
+		if cause != Cause.OVERLOAD:
+			target.zones_changed.emit()
+		target.discard_changed.emit()
+	# Crush has its own notification (battle_card_crushed, above); an overload
+	# is logged as the play that caused it.
+	if cause == Cause.EFFECT:
+		_log_destroy(target.player_id, zone_idx, top_card)
+		h.card_destroyed.emit(target.player_id, zone_idx)
+
+	# Automatic abilities enter standby (10.6.2) and resolve at the next check
+	# timing (10.4.3). Leaving the zone is an area-changing trigger whatever
+	# the cause, replaced or not.
+	out.entries.append_array(h.collect_leave_play_entries(target.player_id, top_card, zone_idx))
+	if out.replaced:
+		return out
+	# Zone-card-destroyed watchers: effect destroys only.
+	match cause:
+		Cause.EFFECT:
+			out.entries.append_array(h.collect_crush_and_revenge_entries(target.player_id, top_card, false))
+			out.entries.append_array(h.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
+			out.entries.append_array(h.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
+		Cause.CRUSH:
+			out.entries.append_array(h.collect_crush_and_revenge_entries(target.player_id, top_card, true))
+	return out
+
+
+
+
+func _apply_destroy_replacement(target: PlayerState, zone_idx: int, top_card: Dictionary) -> bool:
+	## Apply the top card's <Destroy> replacement effect (on_would_be_destroyed,
+	## 10.2.1.3). Returns true when the destruction was replaced: the top card
+	## moved to the deck bottom and the cards under it to the discard. The zone
+	## is left untouched otherwise.
+	var effect := get_effect(top_card)
+	if not effect or not _passes_would_be_destroyed_filter(top_card, target.player_id):
+		return false
+	if not effect.on_would_be_destroyed(_build_context(target.player_id, top_card)):
+		return false
+	var replaced_stack: Array = target.clear_zone(zone_idx)
+	if replaced_stack.size() > 1:
+		EffectHandler.banish_or_discard(target, replaced_stack.slice(1))
+	target.main_deck.append(top_card)
+	target.zones_changed.emit()
+	target.deck_changed.emit()
+	target.discard_changed.emit()
+	return true
+
 
 
 
@@ -28,11 +140,7 @@ func destroy_zone_target(player_id: int, target: PlayerState, filter: Callable, 
 	if chosen < 0:
 		return {}
 
-	var chosen_card := target.get_zone_top_card(chosen)
-	if chosen_card.is_empty():
-		return {}
-
-	return await _execute_destroy_zone(target, chosen, chosen_card)
+	return await _destroy_one_by_effect(target, chosen)
 
 
 
@@ -148,11 +256,7 @@ func destroy_chosen_zone(player_id: int, target: PlayerState, valid_zones: Array
 	if chosen < 0:
 		return {}
 
-	var zone_card := target.get_zone_top_card(chosen)
-	if zone_card.is_empty():
-		return {}
-
-	return await _execute_destroy_zone(target, chosen, zone_card)
+	return await _destroy_one_by_effect(target, chosen)
 
 
 
@@ -193,20 +297,15 @@ func _destroy_zones_batch(target: PlayerState, zone_indices: Array[int]) -> Dict
 	var destroyed: Array[Dictionary] = []
 	var deferred: Array = []
 	for zi in zone_indices:
-		if zi < 0 or zi >= 8 or not target.zone_has_cards(zi):
+		if zi < 0 or zi >= 8:
 			continue
-		var top_card := target.get_zone_top_card(zi)
-		if not _can_destroy_card(target, top_card):
+		var outcome: Outcome = await _destroy_by_effect(target, zi)
+		if outcome.card.is_empty():
 			continue
-		# Only the true-destroy path records into cards_destroyed_this_turn —
-		# a replacement returns the card too, so the log is the reliable tell.
-		var before: int = target.cards_destroyed_this_turn.size()
-		var result: Dictionary = await _execute_destroy_zone(target, zi, top_card, deferred)
-		if result.is_empty():
-			continue
-		results.append(result)
-		if target.cards_destroyed_this_turn.size() > before:
-			destroyed.append(result)
+		deferred.append_array(outcome.entries)
+		results.append(outcome.card)
+		if not outcome.replaced:
+			destroyed.append(outcome.card)
 	if not results.is_empty():
 		target.zones_changed.emit()
 		target.discard_changed.emit()
@@ -223,9 +322,9 @@ func destroy_zone_and_adjacent(player_id: int, target: PlayerState, valid_zones:
 	if valid_zones.is_empty():
 		return []
 
-	h.pending_destroy_max_rank = max_rank
-	var chosen: int = await h.select_zone_target(player_id, target.player_id, valid_zones, prompt)
-	h.pending_destroy_max_rank = -1
+	# The rank cap rides on the prompt request so the bot can score zones by
+	# what would actually be destroyed.
+	var chosen: int = await h.select_zone_target(player_id, target.player_id, valid_zones, prompt, false, "", max_rank)
 	if chosen < 0:
 		return []
 
@@ -277,55 +376,6 @@ func _passes_would_be_destroyed_filter(card_data: Dictionary, watcher_player_id:
 	return TriggerFilters.passes_destruction_gate(
 		get_trigger_filter(card_data, "on_would_be_destroyed"),
 		game_state.current_player_id == watcher_player_id, check_timing.active_player_id, watcher_player_id)
-
-
-
-
-func try_destroy_replacement(target: PlayerState, zone_idx: int) -> bool:
-	## Apply a <Destroy> replacement effect (on_would_be_destroyed) for the top
-	## card of a zone about to be destroyed by a rule action (overload 11.5,
-	## crush 11.3). If the hook fires and returns true, the top card moves to
-	## the deck bottom instead — it never counts as destroyed — and any cards
-	## stacked under it go to the discard (not "destroyed" per 5.12.1.1).
-	## Returns true when the destruction was replaced; the zone is left
-	## untouched otherwise.
-	var top_card := target.get_zone_top_card(zone_idx)
-	if top_card.is_empty():
-		return false
-	var effect := get_effect(top_card)
-	if not effect or not _passes_would_be_destroyed_filter(top_card, target.player_id):
-		return false
-	if not effect.on_would_be_destroyed(_build_context(target.player_id, top_card)):
-		return false
-	var replaced_stack: Array = target.clear_zone(zone_idx)
-	if replaced_stack.size() > 1:
-		EffectHandler.banish_or_discard(target, replaced_stack.slice(1))
-	target.main_deck.append(top_card)
-	target.zones_changed.emit()
-	target.deck_changed.emit()
-	target.discard_changed.emit()
-	return true
-
-
-
-
-func overload_zone(target: PlayerState, zone_idx: int) -> Dictionary:
-	## Rule 11.5 overload: destroy a zone's stack to make room for an incoming
-	## card. Overload IS <Destroy> (11.5.1), so on_would_be_destroyed replacement
-	## effects apply and non-replaced top cards count as destroyed this turn.
-	## Revenge never fires — 12.7.2 excludes duplicate-card processing.
-	## Returns the overloaded top card ({} if the zone was empty); the caller
-	## pushes the incoming card and then fires trigger_leave_play on the result.
-	var top_card := target.get_zone_top_card(zone_idx)
-	if top_card.is_empty():
-		return {}
-	if try_destroy_replacement(target, zone_idx):
-		return top_card
-	var stack: Array = target.clear_zone(zone_idx)
-	EffectHandler.banish_or_discard(target, stack)
-	target.cards_destroyed_this_turn.append(top_card)
-	target.discard_changed.emit()
-	return top_card
 
 
 
@@ -393,58 +443,27 @@ func _passes_protects_filter(card_data: Dictionary, watcher_player_id: int) -> b
 
 
 
-func _execute_destroy_zone(target: PlayerState, zone_idx: int, top_card: Dictionary, deferred_entries: Variant = null) -> Dictionary:
-	## Execute destruction of a single zone, handling replacement effects.
-	## When deferred_entries is provided, the automatic abilities this triggers
-	## (leave-play links, revenge, zone-card-destroyed watchers) are collected
-	## there instead of resolving here (used when destroying multiple zones).
-	## Replacement effects always resolve immediately.
-	## Returns the destroyed/replaced card, or empty dict on failure.
-	var entries: Array = deferred_entries if deferred_entries != null else []
-	var effect := get_effect(top_card)
-	if effect \
-			and _passes_would_be_destroyed_filter(top_card, target.player_id) \
-			and effect.on_would_be_destroyed(_build_context(target.player_id, top_card)):
-		# Replacement: move to deck bottom instead of discard (skip revenge)
-		var replaced_stack: Array = target.clear_zone(zone_idx)
-		if replaced_stack.size() > 1:
-			EffectHandler.banish_or_discard(target, replaced_stack.slice(1))
-		target.main_deck.append(top_card)
-		target.zones_changed.emit()
-		target.deck_changed.emit()
-		target.discard_changed.emit()
-		_log_destroy(target.player_id, zone_idx, top_card)
-		h.card_destroyed.emit(target.player_id, zone_idx)
-		# Not destroyed, but it still left its zone (area-changing trigger).
-		entries.append_array(h.collect_leave_play_entries(target.player_id, top_card, zone_idx))
-		if deferred_entries == null:
-			check_timing.submit(entries)
-		return top_card
+func _destroy_by_effect(target: PlayerState, zone_idx: int) -> Outcome:
+	## destroy() with cause EFFECT, plus the destroyed card's own on_destroy
+	## hook (resolved on the spot). The caller submits Outcome.entries.
+	var outcome := destroy(target, zone_idx, Cause.EFFECT)
+	if outcome.card.is_empty() or outcome.replaced or not has_trigger(outcome.card, "on_destroy"):
+		return outcome
+	var d_effect := get_effect(outcome.card)
+	h.note_effect_resolving(target.player_id, outcome.card)
+	@warning_ignore("redundant_await")
+	await d_effect.on_destroy(_build_context(target.player_id, outcome.card), zone_idx)
+	return outcome
 
-	var stack: Array = target.clear_zone(zone_idx)
-	EffectHandler.banish_or_discard(target, stack)
-	target.zones_changed.emit()
-	target.discard_changed.emit()
-	target.cards_destroyed_this_turn.append(top_card)
-	_log_destroy(target.player_id, zone_idx, top_card)
-	h.card_destroyed.emit(target.player_id, zone_idx)
-	if has_trigger(top_card, "on_destroy"):
-		var d_effect := get_effect(top_card)
-		h.note_effect_resolving(target.player_id, top_card)
-		@warning_ignore("redundant_await")
-		await d_effect.on_destroy(_build_context(target.player_id, top_card), zone_idx)
-	# Automatic abilities triggered by this destruction enter standby (10.6.2):
-	# the leave-play link (destroy is one way to leave a zone) and the "when
-	# destroyed" abilities. A batch caller submits them after the whole batch;
-	# a single destroy submits them now. Either way they resolve at the next
-	# check timing (10.4.3).
-	entries.append_array(h.collect_leave_play_entries(target.player_id, top_card, zone_idx))
-	entries.append_array(h.collect_revenge_entries(target.player_id, top_card))
-	entries.append_array(h.collect_ally_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
-	entries.append_array(h.collect_opponent_zone_card_destroyed_entries(target.player_id, top_card, zone_idx))
-	if deferred_entries == null:
-		check_timing.submit(entries)
-	return top_card
+
+
+
+func _destroy_one_by_effect(target: PlayerState, zone_idx: int) -> Dictionary:
+	## A single effect destroy whose abilities enter standby now. Returns the
+	## destroyed/replaced card, or {} when nothing was destroyed.
+	var outcome: Outcome = await _destroy_by_effect(target, zone_idx)
+	check_timing.submit(outcome.entries)
+	return outcome.card
 
 
 
