@@ -43,7 +43,7 @@ static func setup(tm: TurnManager, card_data_node: Node, config: SessionConfig =
 				player.current_monster = m
 				player.monster_deck.erase(m)
 				break
-		player.monster_zone = player.current_monster.get("start_zone", 1)
+		tm.effect_handler.monster_mover.place_at_start(player.player_id, player.current_monster.get("start_zone", 1))
 		player.rage = 0
 
 	# Draw 5 cards each

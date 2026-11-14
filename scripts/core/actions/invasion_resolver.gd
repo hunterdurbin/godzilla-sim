@@ -3,7 +3,8 @@ extends ActionResolver
 
 ## The INVADE action (rule 5.14), decomposed into its three phases:
 ##  1. pay the invasion cost (discard / replacement / invade1 block),
-##  2. advance step by step with per-zone crush and victory checks,
+##  2. advance from an invasion through the monster movement module
+##     (MonsterMover: per-zone crush, victory through invasion),
 ##  3. post-movement consequences (<Base> destruction 12.9.2, invasion
 ##     observers, deferred standby resolution).
 ## Movement fully resolves before triggered abilities activate; cards removed
@@ -19,7 +20,10 @@ func invade(hand_index: int, state: GameState) -> void:
 		return
 
 	var deferred_entries: Array = cost["deferred_entries"]
-	var is_victory: bool = await _advance(cost["advance_amount"], state, deferred_entries)
+	# Advance from an invasion (5.13) through the monster movement module:
+	# per-step Crush; <When invading> and monster-advance entries collected.
+	var is_victory: bool = effect_handler.monster_mover.advance(
+		player.player_id, cost["advance_amount"], true, deferred_entries)
 
 	player.invasion_zones_crossed = player.monster_zone - start_zone
 
@@ -91,38 +95,6 @@ func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 		deferred_entries.append_array(effect_handler.collect_hand_card_discarded_entries(player.player_id, card))
 
 	return {"paid": true, "advance_amount": advance_amount, "deferred_entries": deferred_entries}
-
-
-func _advance(advance_amount: int, state: GameState, deferred_entries: Array) -> bool:
-	## The step loop: one zone per step, crush checked per step (deferred),
-	## when-invading / monster-advance entries collected. Returns true on
-	## invasion victory (monster crossed past an undefended zone 8).
-	var player := state.get_current_player()
-	for _step in range(advance_amount):
-		if player.monster_zone >= 8:
-			# Check invasion victory
-			var opponent := state.get_opponent_of_current()
-			if not opponent.zone_has_battle_card(7):  # Zone 8 = index 7
-				var old_zone: int = player.monster_zone
-				player.monster_zone = 9  # Past zone 8
-				events.monster_advanced.emit(player.player_id, old_zone, player.monster_zone)
-				player.monster_changed.emit()
-				if effect_handler:
-					deferred_entries.append_array(effect_handler.collect_when_invading_entries(player.player_id, old_zone, player.monster_zone))
-				return true
-			else:
-				# Opponent's zone 8 has a battle card, can't advance further
-				return false
-		else:
-			var old_zone: int = player.monster_zone
-			player.monster_zone += 1
-			events.monster_advanced.emit(player.player_id, old_zone, player.monster_zone)
-			if effect_handler:
-				deferred_entries.append_array(effect_handler.collect_when_invading_entries(player.player_id, old_zone, player.monster_zone))
-				deferred_entries.append_array(effect_handler.collect_monster_advance_entries(player.player_id, old_zone, player.monster_zone))
-			# Check crush rule at each step (effects deferred until after movement)
-			effect_handler.check_timing.check_crush_rule(deferred_entries)
-	return false
 
 
 func _post_movement(state: GameState, start_zone: int, deferred_entries: Array) -> void:

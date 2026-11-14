@@ -4,7 +4,6 @@ scenes/board/hud/deck_count_label.gd: The local function parameter "_session" is
 scenes/board/hud/discard_count_label.gd: The local function parameter "_session" is shadowing an already-declared variable at line 37 in the base class "BoundLabel".
 scenes/board/hud/rage_display.gd: The local function parameter "_session" is shadowing an already-declared variable at line 37 in the base class "BoundLabel".
 scenes/board/overlays/board_editor_overlay.gd: The parameter "total" is never used in the function "_make_inspector_row()". If this is intended, prefix it with an underscore: "_total".
-scripts/core/actions/invasion_resolver.gd: "await" keyword is unnecessary because the expression isn't a coroutine nor a signal.
 scripts/effects/card_mover.gd: The local variable "player" is declared but never used in the block. If this is intended, prefix it with an underscore: "_player".
 scripts/effects/ebp04/ebp04_086.gd: Integer division. Decimal part will be discarded.
 scripts/effects/efc01/efc01_002.gd: The variable "card" is declared below in the parent block.

@@ -94,18 +94,12 @@ func force_counter(state: GameState, target_player_id: int) -> void:
 
 
 func _apply_counter_retreat(target: PlayerState) -> void:
-	## Counter retreat: only zones 6-8 move back (5.15.1.1). A battle card in
-	## the retreat zone is crushed right away — crush is an interrupt rule
-	## action (11.1.2.1, 11.3) — through the single crush path, so the crushed
-	## card's abilities go to standby before the counter-success triggers and
-	## the new monster's <Enter>.
-	var retreat_zone: int = ActionHandler.get_counter_retreat_zone(target.monster_zone)
-	if retreat_zone != target.monster_zone:
-		var old_zone: int = target.monster_zone
-		target.monster_zone = retreat_zone
-		events.monster_advanced.emit(target.player_id, old_zone, target.monster_zone)
-		target.monster_changed.emit()
-		effect_handler.check_timing.crush_now(target.player_id)
+	## Counter retreat (5.15.1.1) through the monster movement module. A
+	## battle card in the retreat zone is crushed right away — crush is an
+	## interrupt rule action (11.1.2.1, 11.3) — so the crushed card's
+	## abilities go to standby before the counter-success triggers and the
+	## new monster's <Enter>. A rule action: no move blocking applies.
+	effect_handler.monster_mover.counter_retreat(target.player_id)
 
 
 func _rank_up_monster(state: GameState, opponent: PlayerState, winner_player_id: int) -> void:

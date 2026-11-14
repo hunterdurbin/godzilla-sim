@@ -22,7 +22,7 @@ facade hub `h` via `EffectModule`:
 | `destruction_engine.gd` | The one destroy operation, `destroy(target, zone, cause)` — cause EFFECT / CRUSH / OVERLOAD decides protection (effect only), replacement (all) and <Revenge> (not Overload); on_destroy and the destroyed watchers fire for all three; returns the StandbyEntry list. Also the effect-driven destroy prompts and strategy destruction |
 | `enter_zone.gd` | `EnterZone`: the one "card enters a zone" operation, `enter(player_id, card, zone, source)` — source HAND (the Play action or an effect) / DECK / DISCARD / TOKEN / EVOLUTION; `move_stack` for a stack moving between zones. Owns rule legality (`is_rule_legal`, also asked by RulesEngine, which keeps cost legality), stack-on-play or Overload, placement + signals + log, and submits the leave-play, <Enter> and "when played" entries together |
 | `card_mover.gd` | Hand/deck/discard traffic, zone prompts, token instances; its play primitives call `EnterZone` |
-| `monster_mover.gd` | Effect-driven monster movement |
+| `monster_mover.gd` | Monster movement: the sole writer of `monster_zone` during play (advance with `from_invasion`, retreat, teleport, counter retreat) + the effect-facing move entry points |
 | `effect_queries.gd` | Read-only modifier/blocking aggregation (injected into RulesEngine) |
 
 Facade delegate rule: a delegate containing `await` becomes a coroutine —
