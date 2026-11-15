@@ -27,7 +27,7 @@ import os
 import re
 import sys
 
-from gd_ratchet import ROOT, strip_comment
+from gd_ratchet import ROOT, paren_body, split_top_level, strip_comment
 
 SCAN = ("scripts", "scenes", "tests")
 BASE_FILE = "scripts/core/input/player_input.gd"
@@ -57,50 +57,6 @@ def gd_files():
 def read(path):
     with open(os.path.join(ROOT, path), encoding="utf-8") as fh:
         return [strip_comment(l.rstrip("\n")) for l in fh]
-
-
-def split_top_level(args):
-    """Split on commas outside brackets and strings."""
-    parts, depth, quote, cur = [], 0, None, ""
-    for i, ch in enumerate(args):
-        if quote:
-            cur += ch
-            if ch == quote and args[i - 1] != "\\":
-                quote = None
-            continue
-        if ch in "\"'":
-            quote = ch
-        elif ch in "([{":
-            depth += 1
-        elif ch in ")]}":
-            depth -= 1
-        elif ch == "," and depth == 0:
-            parts.append(cur.strip())
-            cur = ""
-            continue
-        cur += ch
-    if cur.strip():
-        parts.append(cur.strip())
-    return parts
-
-
-def paren_body(text, open_idx):
-    """(inside, rest) for the `(` at open_idx; None if unbalanced."""
-    depth, quote = 0, None
-    for i in range(open_idx, len(text)):
-        ch = text[i]
-        if quote:
-            if ch == quote and text[i - 1] != "\\":
-                quote = None
-        elif ch in "\"'":
-            quote = ch
-        elif ch == "(":
-            depth += 1
-        elif ch == ")":
-            depth -= 1
-            if depth == 0:
-                return text[open_idx + 1:i], text[i + 1:]
-    return None
 
 
 def parse_params(inside):

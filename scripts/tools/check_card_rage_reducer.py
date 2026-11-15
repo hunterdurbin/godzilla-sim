@@ -20,30 +20,10 @@ Usage: python3 scripts/tools/check_card_rage_reducer.py
 import re
 import sys
 
-from gd_ratchet import card_scripts, read_lines
+from gd_ratchet import card_scripts, paren_body, read_lines, split_top_level
 
 CALL_RE = re.compile(r"\breduce_rage\s*\(")
 REDUCER = "ctx.owner.player_id"
-
-
-def _args(text, start):
-    """The top-level arguments of the call whose `(` ends at `start`, or None
-    when the parentheses never close."""
-    depth, args, cur = 1, [], ""
-    for ch in text[start:]:
-        if ch in "([{":
-            depth += 1
-        elif ch in ")]}":
-            depth -= 1
-            if depth == 0:
-                args.append(cur.strip())
-                return args
-        if ch == "," and depth == 1:
-            args.append(cur.strip())
-            cur = ""
-        else:
-            cur += ch
-    return None
 
 
 def violations(path, lines):
@@ -51,7 +31,8 @@ def violations(path, lines):
     for m in CALL_RE.finditer(text):
         if text[:m.start()].rstrip().endswith("func"):
             continue
-        args = _args(text, m.end())
+        body = paren_body(text, m.end() - 1)
+        args = None if body is None else split_top_level(body[0])
         if args is None or len(args) != 3 or args[2] != REDUCER:
             line_no = text.count("\n", 0, m.start()) + 1
             yield "%s:%d  %s" % (path, line_no, lines[line_no - 1].strip())
@@ -69,6 +50,8 @@ def self_test():
         "\tctx.effect_handler.reduce_rage(ctx.opponent.player_id, 1)": True,
         "\tctx.effect_handler.reduce_rage(\n\t\tctx.opponent.player_id, 1,\n\t\tpid)": True,
         "\tvar can_reduce_rage := ctx.opponent_has_rage()": False,
+        "\tctx.effect_handler.reduce_rage(pid, int(\"1,)\"), ctx.owner.player_id)": False,
+        "\tctx.effect_handler.reduce_rage(pid, int(\"1,)\"), -1)": True,
     }
     bad = [src for src, expect in cases.items()
            if bool(list(violations(p, src.split("\n")))) != expect]
