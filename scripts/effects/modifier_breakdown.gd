@@ -102,6 +102,60 @@ static func hand_entries(eh: EffectHandler, player_id: int, card: Dictionary) ->
 	return out
 
 
+# --- Board views (every CP / threat number the board shows) ---
+#
+# The board shows each player's numbers as of a counter: their CP as of
+# their own counter phase (the counter they will make), their threat as of
+# the opponent's (the counter it will face) — RulesEngine.counter_numbers'
+# view. Labels, badges and zoom breakdowns all read through these, so they
+# agree in any phase or turn.
+
+
+static func in_cp_view(q: EffectQueries, pid: int, query: Callable) -> Variant:
+	## Run a CP query for `pid` in the board's CP view (pid's counter phase).
+	return q.in_counter_view(pid, query)
+
+
+static func in_threat_view(q: EffectQueries, pid: int, query: Callable) -> Variant:
+	## Run a threat query for `pid` in the board's threat view (the opponent's counter phase).
+	return q.in_counter_view(1 - pid, query)
+
+
+static func counter_labels(q: EffectQueries, players: Array[PlayerState]) -> Dictionary:
+	## The board's counter numbers per player, [p0, p1] each:
+	##   "cp"     — CP label modifier over the printed total (engagement
+	##              restriction subtracted);
+	##   "threat" — threat label modifier;
+	##   "zone_cp", "strategy_cp", "monster_cp" — the CP badges.
+	## The badges sum to the label except for a restricted card's printed CP,
+	## which counter_numbers subtracts on top. Immunity and prevention stay
+	## out. Zeros for a null `q`.
+	var out := {"cp": [0, 0], "threat": [0, 0], "zone_cp": [[], []],
+		"strategy_cp": [[], []], "monster_cp": [0, 0]}
+	if not q:
+		return out
+	for pid in 2:
+		var me := players[pid]
+		var our_counter := RulesEngine.counter_numbers(q, me, players[1 - pid])
+		out["cp"][pid] = int(our_counter["total_cp"]) - me.get_total_counter_power()
+		out["threat"][1 - pid] = int(our_counter["effect_threat"])
+		var badges: Dictionary = in_cp_view(q, pid, func() -> Dictionary: return {
+			"zone_cp": q.get_zone_cp_modifiers(pid),
+			"strategy_cp": q.get_strategy_cp_modifiers(pid),
+			"monster_cp": q.get_monster_cp_modifier(pid),
+		})
+		for key in badges:
+			out[key][pid] = badges[key]
+	return out
+
+
+static func threat_label_mod(q: EffectQueries, players: Array[PlayerState], pid: int) -> int:
+	## `pid`'s threat label modifier alone (counter_labels' "threat").
+	if not q:
+		return 0
+	return RulesEngine.counter_numbers(q, players[1 - pid], players[pid])["effect_threat"]
+
+
 static func build_all(eh: EffectHandler, gs: GameState, viewer_id: int) -> Dictionary:
 	## Pack every breakdown for the multiplayer state broadcast. Hand entries
 	## are viewer-only ([] for the opponent) — hands are stripped from the
@@ -114,22 +168,18 @@ static func build_all(eh: EffectHandler, gs: GameState, viewer_id: int) -> Dicti
 	var hand: Array = []
 	for pid in range(2):
 		var player := gs.players[pid]
-		field_rank.append(eh.queries.get_field_rank_breakdown(pid))
-		# Same views as the board labels (GameSession.compute_counter_label_mods):
-		# threat as the opponent's counter sees it, CP as this player's does.
-		var view := eh.queries.begin_counter_view(1 - pid)
-		threat.append(eh.queries.get_threat_level_breakdown(pid))
-		eh.queries.end_counter_view(view)
-		view = eh.queries.begin_counter_view(pid)
-		zone_cp.append(eh.queries.get_zone_cp_breakdown(pid))
+		var q: EffectQueries = eh.queries
+		field_rank.append(q.get_field_rank_breakdown(pid))
+		threat.append(in_threat_view(q, pid, func() -> Array: return q.get_threat_level_breakdown(pid)))
+		zone_cp.append(in_cp_view(q, pid, func() -> Array: return q.get_zone_cp_breakdown(pid)))
 
 		var monster_entries: Array = []
-		append(monster_entries, "cp", eh.queries.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
+		var monster_mod: int = in_cp_view(q, pid, func() -> int: return q.get_monster_cp_modifier(pid))
+		append(monster_entries, "cp", monster_mod, player.current_monster, -1, pid, "monster")
 		monster_cp.append(monster_entries)
 
 		var strategy_slots: Array = []
-		var strategy_mods: Array = eh.queries.get_strategy_cp_modifiers(pid)
-		eh.queries.end_counter_view(view)
+		var strategy_mods: Array = in_cp_view(q, pid, func() -> Array: return q.get_strategy_cp_modifiers(pid))
 		for si in range(strategy_mods.size()):
 			var slot_entries: Array = []
 			if si < player.strategy_zones.size():

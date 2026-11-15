@@ -11,7 +11,7 @@ var card_data: Dictionary
 var effect_handler: EffectHandler
 var metadata: Dictionary = {}  ## Extra data set at collection time for deferred resolution
 ## The turn and phase this context is evaluated in: the live ones, or a
-## counterer's counter phase under EffectQueries.begin_counter_view. Card
+## counterer's counter phase under EffectQueries.in_counter_view. Card
 ## scripts read turn and phase through these, never game_state directly.
 var turn_player_id: int
 var phase: CardEnums.GamePhase

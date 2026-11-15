@@ -81,6 +81,36 @@ func test_counter_numbers_read_turn_gates_as_of_the_counterers_turn() -> void:
 	assert_int(state.current_phase).is_equal(CardEnums.GamePhase.MAIN)
 
 
+func test_fest_godzilla_restriction_from_its_owners_main_phase() -> void:
+	# EBP01-014 (<Opponent's Turn> + Awakening4 + 2 own battle cards):
+	# battle cards of rank 5 or lower can't engage. P0's main phase; P1's
+	# coming counter already loses its rank-5 card.
+	var state := States.make_state({
+		"p0": {
+			"current_monster": Real.instance("EBP01-014"),
+			"monster_zone": 4,
+			"zone_cards": {0: Cards.battle(2, 3000, "B-0"), 1: Cards.battle(2, 3000, "B-1")},
+		},
+		"p1": {"zone_cards": {2: Cards.battle(5, 6000, "R5"), 3: Cards.battle(7, 4000, "R7")}},
+	})
+	var numbers := RulesEngine.counter_numbers(_queries(state), state.players[1], state.players[0])
+	assert_int(numbers["total_cp"]).is_equal(4000)
+
+
+func test_counter_views_nest_and_restore() -> void:
+	# P0's main phase; P0 holds EBP01-028 (<Opponent's Turn>, rank <= 3).
+	var state := _restricted_state()
+	state.current_player_id = 0
+	var q := _queries(state)
+	var seen: Array = q.in_counter_view(1, func() -> Array:
+		var outer: int = q.get_engagement_restriction(0)
+		var inner: int = q.in_counter_view(0, func() -> int: return q.get_engagement_restriction(0))
+		return [outer, inner, q.get_engagement_restriction(0)])
+	# P1's counter: restricted; P0's own counter: not; back in P1's view: restricted.
+	assert_array(seen).contains_exactly([3, -1, 3])
+	assert_int(q.get_engagement_restriction(0)).is_equal(-1)
+
+
 func test_counter_numbers_report_immunity_threshold() -> void:
 	# EBP01-038: <Opponent's Turn> + Awakening6 → immune at CP <= 50000.
 	# Evaluated on P0's own turn: the gate reads P1's coming counter.
@@ -117,7 +147,7 @@ func test_projected_cp_counts_toward_prevention() -> void:
 	assert_bool(numbers["lands"]).is_false()
 
 
-# --- Board labels and badges (GameSession.counter_label_mods) ---
+# --- Board labels and badges (ModifierBreakdown.counter_labels) ---
 
 
 func test_label_mods_show_each_players_coming_counter() -> void:
@@ -125,7 +155,7 @@ func test_label_mods_show_each_players_coming_counter() -> void:
 	# 6000 already; P0's labels are unaffected.
 	var state := _restricted_state()
 	var q := _queries(state)
-	var mods := GameSession.counter_label_mods(q, state.players)
+	var mods := ModifierBreakdown.counter_labels(q, state.players)
 	assert_int(mods["cp"][1]).is_equal(-6000)
 	assert_int(mods["cp"][0]).is_equal(0)
 	assert_int(mods["threat"][0]).is_equal(0)

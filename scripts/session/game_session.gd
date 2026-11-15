@@ -131,42 +131,21 @@ func refresh_bot_analysis() -> void:
 	bot_player.analyze_deck()
 
 
-## The board's counter numbers per player, [p0, p1] each:
-##   "cp"          — CP label modifier over the printed total: the player's
-##                   counter numbers against the opponent (engagement
-##                   restriction subtracted);
-##   "threat"      — threat label modifier: the opponent's counter numbers
-##                   against the player;
-##   "zone_cp", "strategy_cp", "monster_cp" — the CP badges, from the same view.
-## Every number is RulesEngine.counter_numbers' view: the player's CP as of
-## their own counter phase, their threat as of the opponent's, so badges and
-## labels agree in any phase. Immunity and prevention stay out. Zeros
-## without an effect handler. Host side; clients receive these in the state
-## broadcast.
+## The board's counter numbers per player (ModifierBreakdown.counter_labels)
+## from this session's engine. Zeros without an effect handler. Host side;
+## clients receive these in the state broadcast.
 func compute_counter_label_mods() -> Dictionary:
 	if not turn_manager or not turn_manager.effect_handler:
-		return counter_label_mods(null, [] as Array[PlayerState])
-	return counter_label_mods(turn_manager.effect_handler.queries, turn_manager.game_state.players)
+		return ModifierBreakdown.counter_labels(null, [] as Array[PlayerState])
+	return ModifierBreakdown.counter_labels(turn_manager.effect_handler.queries, turn_manager.game_state.players)
 
 
-## compute_counter_label_mods over explicit queries and players (zeros for a
-## null `q`).
-static func counter_label_mods(q: EffectQueries, players: Array[PlayerState]) -> Dictionary:
-	var out := {"cp": [0, 0], "threat": [0, 0], "zone_cp": [[], []],
-		"strategy_cp": [[], []], "monster_cp": [0, 0]}
-	if not q:
-		return out
-	for pid in 2:
-		var me := players[pid]
-		var numbers := RulesEngine.counter_numbers(q, me, players[1 - pid])
-		out["cp"][pid] = int(numbers["total_cp"]) - me.get_total_counter_power()
-		out["threat"][1 - pid] = int(numbers["effect_threat"])
-		var previous_view := q.begin_counter_view(pid)
-		out["zone_cp"][pid] = q.get_zone_cp_modifiers(pid)
-		out["strategy_cp"][pid] = q.get_strategy_cp_modifiers(pid)
-		out["monster_cp"][pid] = q.get_monster_cp_modifier(pid)
-		q.end_counter_view(previous_view)
-	return out
+## `pid`'s threat label modifier from this session's engine
+## (ModifierBreakdown.threat_label_mod); 0 without an effect handler.
+func threat_label_mod(pid: int) -> int:
+	if not turn_manager or not turn_manager.effect_handler:
+		return 0
+	return ModifierBreakdown.threat_label_mod(turn_manager.effect_handler.queries, turn_manager.game_state.players, pid)
 
 
 ## Compute the net play-cost modifier for each card in the given player's hand.

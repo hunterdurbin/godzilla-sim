@@ -1127,10 +1127,11 @@ func _on_counter_prevented(player_id: int) -> void:
 
 
 func _threat_mod_for(pid: int) -> int:
-	## Effect-driven threat modifier for a player, working on both host (live
-	## effect handler) and client (synced modifiers from the last broadcast).
+	## The threat label's modifier for a player (bug reports), on both host
+	## (ModifierBreakdown.threat_label_mod via the session) and client (the
+	## last broadcast).
 	if turn_manager and turn_manager.effect_handler:
-		return turn_manager.effect_handler.get_threat_level_modifier(pid)
+		return _session.threat_label_mod(pid)
 	if pid >= 0 and pid < _client_threat_modifiers.size():
 		return int(_client_threat_modifiers[pid])
 	return 0
@@ -1603,17 +1604,7 @@ func _sync_boards() -> void:
 	if turn_manager and turn_manager.game_state:
 		var state := turn_manager.game_state
 		var eh := turn_manager.effect_handler
-		var label_mods: Dictionary = _session.compute_counter_label_mods()
-		var zone_cp_0: Array = label_mods["zone_cp"][0]
-		var zone_cp_1: Array = label_mods["zone_cp"][1]
-		var strat_cp_0: Array = label_mods["strategy_cp"][0]
-		var strat_cp_1: Array = label_mods["strategy_cp"][1]
-		var monster_cp_0: int = label_mods["monster_cp"][0]
-		var monster_cp_1: int = label_mods["monster_cp"][1]
-		var cp_mod_0: int = label_mods["cp"][0]
-		var cp_mod_1: int = label_mods["cp"][1]
-		var threat_mod_0: int = label_mods["threat"][0]
-		var threat_mod_1: int = label_mods["threat"][1]
+		var labels: Dictionary = _session.compute_counter_label_mods()
 		var zone_rank_0: Array = eh.queries.get_zone_rank_modifiers(0) if eh else []
 		var zone_rank_1: Array = eh.queries.get_zone_rank_modifiers(1) if eh else []
 		var hand_rank_0: Array = _session.compute_hand_rank_mods(state.players[0]) if eh else []
@@ -1621,9 +1612,9 @@ func _sync_boards() -> void:
 		var hand_power_0: Array = _session.compute_hand_power_mods(state.players[0]) if eh else []
 		var hand_power_1: Array = _session.compute_hand_power_mods(state.players[1]) if eh else []
 		if player1_board and not skip_p1:
-			player1_board.sync_to_state(state.players[0], cp_mod_0, threat_mod_0, zone_cp_0, strat_cp_0, zone_rank_0, monster_cp_0, hand_rank_0, hand_power_0, _host_variable_bases(0))
+			player1_board.sync_to_state(state.players[0], labels["cp"][0], labels["threat"][0], labels["zone_cp"][0], labels["strategy_cp"][0], zone_rank_0, labels["monster_cp"][0], hand_rank_0, hand_power_0, _host_variable_bases(0))
 		if player2_board and not skip_p2:
-			player2_board.sync_to_state(state.players[1], cp_mod_1, threat_mod_1, zone_cp_1, strat_cp_1, zone_rank_1, monster_cp_1, hand_rank_1, hand_power_1, _host_variable_bases(1))
+			player2_board.sync_to_state(state.players[1], labels["cp"][1], labels["threat"][1], labels["zone_cp"][1], labels["strategy_cp"][1], zone_rank_1, labels["monster_cp"][1], hand_rank_1, hand_power_1, _host_variable_bases(1))
 	elif not _client_players.is_empty():
 		if player1_board and not skip_p1:
 			player1_board.sync_to_state(_client_players[0], _client_cp_modifiers[0], _client_threat_modifiers[0], _client_zone_cp_mods[0], _client_strategy_cp_mods[0], _client_zone_rank_mods[0], _client_monster_cp_mods[0], _client_hand_rank_mods[0], _client_hand_power_mods[0], _client_variable_bases(0))

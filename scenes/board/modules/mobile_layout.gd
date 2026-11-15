@@ -208,9 +208,6 @@ func _on_main_menu_pressed() -> void:
 func _resolve_translated_text(text: String) -> String:
 	return _board._resolve_translated_text(text)
 
-func _threat_mod_for(pid: int) -> int:
-	return _board._threat_mod_for(pid)
-
 func _get_player_state(pid: int) -> PlayerState:
 	return _board._get_player_state(pid)
 

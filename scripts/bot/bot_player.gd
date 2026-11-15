@@ -664,12 +664,14 @@ func _combo_log_state(event: String) -> void:
 	## Log a game state snapshot at a key combo moment.
 	var player := game_state.players[bot_player_id]
 	var opponent := game_state.players[1 - bot_player_id]
-	var we_counter := _our_counter_numbers()
-	var they_counter := RulesEngine.counter_numbers(effect_handler.queries, opponent, player)
-	var cp: int = we_counter["total_cp"]
-	var threat: int = they_counter["threat"]
-	var opp_threat: int = we_counter["threat"]
-	var opp_cp: int = they_counter["total_cp"]
+	var our_counter := _our_counter_numbers()
+	var their_counter := RulesEngine.counter_numbers(effect_handler.queries, opponent, player)
+	# A player's CP is what their counter brings; their threat is what the
+	# other side's counter faces.
+	var cp: int = our_counter["total_cp"]
+	var threat: int = their_counter["threat"]
+	var opp_cp: int = their_counter["total_cp"]
+	var opp_threat: int = our_counter["threat"]
 	var strats: int = 0
 	for card in player.hand:
 		if card.get("card_type") == CardEnums.CardType.STRATEGY:

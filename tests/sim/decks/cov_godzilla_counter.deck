@@ -1,0 +1,29 @@
+# Coverage deck: counter numbers (RulesEngine.counter_numbers) for the two
+# named cards no other deck ran — EBP01-014 Godzilla(Fest Godzilla), rank 4,
+# <Awakening4> engagement restriction (rank 5 or lower can't engage) on the
+# opponent's turn; EBP04-014 Godzilla(2002), rank 2, <Awakening6> CP-conditional
+# counter prevention (30,000 CP or less). Monster line: Chibi Godzilla 1 ->
+# Godzilla(2002) 2 -> Chibi Godzilla 3 -> Fest Godzilla 4 (all GODZILLA).
+# Copied from the "0 - ebp04 testing" decklist with EPR-008 swapped for
+# EBP04-014. Pair with a deck that counters often (e.g. "Kaizer of War").
+[monster deck]
+1 EPR-007
+1 EBP04-014
+1 EPR-009
+1 EBP01-014
+
+[main deck]
+4 EBP01-001
+4 EBP01-011
+4 EBP01-002
+4 EBP01-012
+4 ESD01-005
+4 EBP01-003
+2 EBP01-009
+1 EPR-010
+4 EBP01-016
+4 EBP01-017
+3 EBP02-077
+4 EBP01-075
+4 EBP01-076
+4 EBP01-033
