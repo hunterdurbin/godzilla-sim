@@ -10,10 +10,11 @@ hand-written `player.set_rage(...)` skips all of that
 (hunterdurbin/godzilla-sim-issue-tracker#35 row 18). Card scripts call
 EffectHandler.gain_rage / reduce_rage; engine code calls rage_mover.
 
-Flags a `set_rage(` call anywhere under scripts/ or scenes/ outside the
-ALLOWED files below. PlayerState defines it; tests (tests/) may call it to
-build fixtures. State restore (state_codec, game_serializer, max-counter
-analysis) assigns the field directly and is not a Rage change in play.
+Flags, anywhere under scripts/ or scenes/ outside the ALLOWED files below,
+a `set_rage(` call and a direct `.rage` write (`x.rage = …`, `x.rage += …`).
+PlayerState defines the mutator; tests (tests/) may call it to build
+fixtures. State restores (RESTORES) assign the field directly; they rebuild
+a saved state and are not a Rage change in play.
 
 Usage: python3 scripts/tools/check_rage_writers.py
 """
@@ -31,7 +32,14 @@ ALLOWED = {
     "scripts/tools/board_editor.gd": "the F4 board editor dev tool (free-form)",
     "scripts/core/player_state.gd": "defines the mutator",
 }
+# Files that rebuild a saved state (field assignment only, not set_rage).
+RESTORES = {
+    "scripts/session/state_codec.gd": "multiplayer state decode",
+    "scripts/replay/game_serializer.gd": "replay/save restore",
+    "scripts/deck_analysis/max_counter_state.gd": "max-counter analysis setup",
+}
 CALL_RE = re.compile(r"\bset_rage\s*\(")
+FIELD_WRITE_RE = re.compile(r"\.\s*rage\s*[-+*/]?=(?!=)")
 
 
 def gd_files():
@@ -46,7 +54,7 @@ def violations(path, lines):
     if path in ALLOWED:
         return
     for i, line in enumerate(lines, 1):
-        if CALL_RE.search(line):
+        if CALL_RE.search(line) or (path not in RESTORES and FIELD_WRITE_RE.search(line)):
             yield "%s:%d  %s" % (path, i, line.strip())
 
 
@@ -62,6 +70,12 @@ def self_test():
         ("scripts/effects/effect_handler.gd", "\trage_mover.increase(player_id, 1, RageMover.Cause.EFFECT)"): False,
         ("scripts/effects/effect_handler.gd", "\tvar r := player.rage"): False,
         ("scripts/effects/card_mover.gd", strip_comment("x()  # p.set_rage(4)")): False,
+        ("scripts/effects/ebp01/ebp01_066.gd", "\tctx.owner.rage += 2"): True,
+        ("scripts/core/actions/play_actions.gd", "\tplayer.rage = 0"): True,
+        ("scripts/session/state_codec.gd", "\tps.rage = int(data[\"rage\"])"): False,
+        ("scripts/session/state_codec.gd", "\tps.set_rage(3)"): True,
+        ("scripts/effects/card_mover.gd", "\tif player.rage == 0:"): False,
+        ("scripts/effects/card_mover.gd", "\tif player.rage >= 2:"): False,
     }
     bad = [src for (path, src), expect in cases.items()
            if bool(list(violations(path, [src]))) != expect]
@@ -78,7 +92,7 @@ def main():
         with open(os.path.join(ROOT, path), encoding="utf-8") as fh:
             lines = [strip_comment(l.rstrip("\n")) for l in fh]
         found.extend(violations(path, lines))
-    stale = [p for p in ALLOWED if not os.path.exists(os.path.join(ROOT, p))]
+    stale = [p for p in list(ALLOWED) + list(RESTORES) if not os.path.exists(os.path.join(ROOT, p))]
     for v in found:
         print("RAGE set outside RageMover  " + v)
     for p in stale:

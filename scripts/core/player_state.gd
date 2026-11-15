@@ -316,8 +316,9 @@ func set_monster_zone(zone: int) -> void:
 
 
 func set_rage(value: int) -> void:
-	## Set rage; emits rage_changed(value). Rage triggers are the caller's
-	## (EffectHandler.gain_rage / reduce_rage dispatch them).
+	## Set rage; emits rage_changed(value). In play only RageMover calls it
+	## (scripts/tools/check_rage_writers.py); it owns the log line,
+	## rage_gained and the Rage triggers.
 	rage = value
 	rage_changed.emit(rage)
 
@@ -365,8 +366,9 @@ func has_rage() -> bool:
 
 func push_pending_rage_markers(count: int) -> void:
 	## Append `count` RAGE-MARKER instances to the transient claim bucket.
-	## Called by rage-decrease sites before firing trigger_rage_changed so that
-	## claiming effects can pop_back() markers as a true resource.
+	## Called by RageMover on a decrease, before it fires
+	## trigger_rage_changed, so claiming effects (EBP04-089) can pop_back()
+	## markers as a true resource.
 	if count <= 0:
 		return
 	var template: Dictionary = CardData.get_card_by_id("RAGE-MARKER")
