@@ -37,7 +37,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if found.is_empty():
 		return
 
-	var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
+	var valid_zones: Array[int] = ctx.effect_handler.legal_play_zones(ctx.owner.player_id, found)
 
 	var dest := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,

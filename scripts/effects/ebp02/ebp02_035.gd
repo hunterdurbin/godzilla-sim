@@ -34,7 +34,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var zone_idx := find_zone_of_card(ctx)
 	if zone_idx < 0:
 		return
-	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(ctx.owner, zone_idx)
+	var valid_adjacent: Array[int] = ctx.effect_handler.legal_play_zones(ctx.owner.player_id, {}, zone_idx)
 	if valid_adjacent.is_empty():
 		return
 	await ctx.effect_handler.create_tokens_in_zones(

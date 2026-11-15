@@ -165,9 +165,14 @@ Jr.), and fires the "when played" watchers — Evolve as a play from the deck
 `play_battle_card_from_hand` / `_from_deck`, `play_from_discard` and
 `create_token_in_zone` refuse an illegal zone and report "not
 played" (`false` / `-1`) and the card stays in its area — hand, discard,
-or (for a deck card the caller already took out) back on the deck bottom. Card scripts that offer a fixed
-zone gate the offer on `can_play_in_zone(player_id, zone_idx)` (EBP04-077)
-and never compare against `monster_zone` themselves.
+or (for a deck card the caller already took out) back on the deck bottom. Card scripts
+ask `legal_play_zones(player_id, card, near_zone := -1)` which zones to offer
+(`near_zone` keeps only the zones adjacent to it; a fixed-zone offer checks
+`zone_idx in legal_play_zones(...)`, EBP04-077) and never compare against
+`monster_zone` themselves. The engine's own zone-picking plays (tokens,
+`play_battle_cards_in_zones`, `play_from_discard` / `_or_skip`) share one
+`CardMover._prompt_zone_and_enter`: legal zones minus the zones this effect
+already used (5.11.1.3), prompt, enter.
 
 **Standby is one pool** (`CheckTiming.submit` queues; `CheckTiming.resolve`
 runs the pass). Before every ability: rule actions, then merge everything

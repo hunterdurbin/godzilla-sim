@@ -403,8 +403,8 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 	return await mover.play_from_discard_or_skip(player_id, card_data, prompt, zone_filter)
 
 
-func can_play_in_zone(player_id: int, zone_idx: int) -> bool:
-	return mover.can_play_in_zone(player_id, zone_idx)
+func legal_play_zones(player_id: int, card: Dictionary, near_zone: int = -1) -> Array[int]:
+	return mover.legal_play_zones(player_id, card, near_zone)
 
 
 func play_battle_card_from_hand(player_id: int, card_data: Dictionary, zone_idx: int) -> bool:

@@ -3,7 +3,7 @@
 
 Rule 5.11.1.1 (an effect can't play a card into its master's monster zone)
 is enforced by the engine's play primitives, and card scripts ask
-`EffectHandler.can_play_in_zone` / `CardEffect.get_effect_play_zones` for
+`EffectHandler.legal_play_zones` for
 legal zones (scripts/effects/README.md: card scripts express intent; the
 engine enforces the rules). A card script that compares a zone INDEX to its
 monster's zone index (`i != owner.monster_zone - 1`, or via a variable
@@ -58,8 +58,8 @@ def main():
         header="Grandfathered monster-zone index checks in per-card scripts.",
         name="check_card_monster_zone_checks.py",
         new_label="NEW monster-zone check",
-        hint="Ask the engine for legal zones instead: EffectHandler.can_play_in_zone /"
-             " CardEffect.get_effect_play_zones; the play primitives refuse the"
+        hint="Ask the engine for legal zones instead: EffectHandler.legal_play_zones"
+             " (near_zone for adjacency); the play primitives refuse the"
              " monster's zone (5.11.1.1).")
 
 

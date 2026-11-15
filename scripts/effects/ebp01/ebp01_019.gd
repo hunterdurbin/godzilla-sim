@@ -30,7 +30,7 @@ func on_enter(ctx: EffectContext) -> void:
 	if not ctx.is_awakening(6):
 		return
 
-	var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
+	var valid_zones: Array[int] = ctx.effect_handler.legal_play_zones(ctx.owner.player_id, {})
 
 	for _i in range(2):
 		var selected := await ctx.effect_handler.search_deck(

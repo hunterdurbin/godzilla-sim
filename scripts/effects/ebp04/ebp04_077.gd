@@ -48,7 +48,7 @@ func on_enter(ctx: EffectContext) -> void:
 		is_eligible_card
 		and ctx.effect_handler.can_card_be_played(ctx.owner.player_id, chosen_mech)
 		and zone8_allowed
-		and ctx.effect_handler.can_play_in_zone(ctx.owner.player_id, 7)
+		and 7 in ctx.effect_handler.legal_play_zones(ctx.owner.player_id, chosen_mech)
 	)
 
 	if can_place_in_zone8:

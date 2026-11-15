@@ -18,7 +18,7 @@ func get_bot_tags() -> Array[String]:
 
 func on_enter(ctx: EffectContext) -> void:
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
-	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(ctx.owner, monster_zone_idx)
+	var valid_adjacent: Array[int] = ctx.effect_handler.legal_play_zones(ctx.owner.player_id, {}, monster_zone_idx)
 	if valid_adjacent.is_empty():
 		return
 
