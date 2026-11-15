@@ -32,7 +32,9 @@
 #     listed as added / removed and does not);
 #     the full table, which shows whether a path ran at all, is
 #     $WORK/events<n>.txt (event_counts.py)
-#   - per side: games completed, P1 wins, SCRIPT ERROR count, and
+#   - per side: games completed, P1 wins, SCRIPT ERROR count, [SimInvariant]
+#     count (card conservation breaks; the runner is copied into base, so a
+#     break already on base_ref shows on both sides), and
 #     `[Kaiju] … plan DIVERGED` count (the KAIJU replay-parity metric:
 #     the planner's cached plan stopped matching the live game)
 # and finally, per changed card script (scripts/effects/<set>/*.gd in the
@@ -42,9 +44,9 @@
 # about it — pick decks that run it (decks_with_cards.sh). Passive-only
 # cards (modifiers, replacement queries) never "resolve" and always show 0.
 # Exit status (also printed as the final "STATUS: <n> (...)" line):
-#   0 = identical results and no script errors on this tree;
+#   0 = identical results and no script errors or invariant breaks on this tree;
 #   1 = results differ / splits / event counts differ / script errors /
-#       missing games (any pair);
+#       invariant breaks / missing games (any pair);
 #   2 = otherwise clean, but some changed card was UNEXERCISED;
 #   3 = no longer used (was: tree edited mid-run; head now runs a snapshot);
 #   4 = bad arguments (games / seed not integers, p1/p2 not a difficulty,
@@ -175,8 +177,8 @@ summary() { # <label> <log>
 	local res wins
 	res=$(grep -c '\[SimResult\]' "$2")
 	wins=$(grep '\[SimResult\]' "$2" | grep -c 'winner=0')
-	printf '  %-5s games=%s/%s p1_wins=%s script_errors=%s kaiju_diverged=%s%s\n' "$1" \
-		"$res" "$GAMES" "$wins" "$(grep -c 'SCRIPT ERROR' "$2")" \
+	printf '  %-5s games=%s/%s p1_wins=%s script_errors=%s invariants=%s kaiju_diverged=%s%s\n' "$1" \
+		"$res" "$GAMES" "$wins" "$(grep -c 'SCRIPT ERROR' "$2")" "$(grep -c '\[SimInvariant\]' "$2")" \
 		"$(grep -c 'plan DIVERGED' "$2")" "$(grep -q '^TIMEOUT' "$2" && echo ' TIMEOUT')"
 }
 
@@ -242,6 +244,11 @@ for pair in "${PAIRS[@]}"; do
 		*) echo "  EVENTS: event_counts.py could not compare (see its error above)"; STATUS=1 ;;
 	esac
 	[ "$(grep -c 'SCRIPT ERROR' "$WORK/head$i.log")" -eq 0 ] || STATUS=1
+	if grep -q '\[SimInvariant\]' "$WORK/head$i.log"; then
+		echo "  INVARIANT: card conservation broke on this tree (first 5):"
+		grep '\[SimInvariant\]' "$WORK/head$i.log" | head -5 | sed 's/^/    /'
+		STATUS=1
+	fi
 	[ "$(grep -c '\[SimResult\]' "$WORK/head$i.log")" -ge "$GAMES" ] || STATUS=1
 	LOGS+=("$WORK/base$i.log" "$WORK/head$i.log")
 done
@@ -308,6 +315,6 @@ echo "Logs: $WORK/{base,head}<n>.log"
 case "$STATUS" in
 	0) echo "STATUS: 0 (identical)" ;;
 	2) echo "STATUS: 2 (unexercised)" ;;
-	*) echo "STATUS: $STATUS (differs, splits, event counts, script errors or missing games)" ;;
+	*) echo "STATUS: $STATUS (differs, splits, event counts, script errors, invariant breaks or missing games)" ;;
 esac
 exit $STATUS

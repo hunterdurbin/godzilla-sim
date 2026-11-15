@@ -46,6 +46,9 @@ var _effect_counts_available: bool = false
 ## from "not in this tree" (absent): a signal or token type only one side
 ## has is reported as added / removed, not as a moved count.
 var _event_counts: Dictionary[String, int] = {}
+## Card conservation: card id -> how many areas hold it, at the last check
+## this game (reset per game). See _check_card_conservation.
+var _card_census: Dictionary[String, int] = {}
 const _GAME_LOG_PATH := "res://scripts/replay/game_log.gd"
 
 
@@ -112,6 +115,7 @@ func _start_next_game() -> void:
 		_current_turn_manager.teardown()
 		_current_turn_manager = null
 	_current_bots = []
+	_card_census = {}
 
 	if _games_completed >= num_games:
 		_print_summary()
@@ -245,6 +249,7 @@ func _on_sim_confirmation(_prompt: String, _setting: String) -> void:
 func _on_turn_started(player_id: int) -> void:
 	if _game_running:
 		_print_turn_trace(player_id)
+		_check_card_conservation()
 		if trace:
 			_trace_piles()
 	if _current_turn_manager.game_state.turn_number > 50:
@@ -354,6 +359,70 @@ func _trace_piles() -> void:
 		_trace("piles p%d hand=[%s] discard=[%s] zones=[%s]" % [i + 1,
 				",".join(p.hand.map(CardUtils.base_id)),
 				",".join(p.discard_pile.map(CardUtils.base_id)), ",".join(zones)])
+
+
+## Card conservation, checked at each turn start (no effect holds a card
+## mid-move then): the first census of a game is the baseline, and every
+## later one must hold each card id the same number of times — a card is
+## never lost (count drops), gained (an id that wasn't there) or duplicated
+## (an id's count rises). Counts, not uniqueness: monster-deck cards keep
+## their bare ids, so a mirror match legitimately holds two of one id.
+## Prints one [SimInvariant] line per NEW break, so a lost card is reported
+## once, not every turn. run_sim_diff.sh counts these lines like SCRIPT ERRORs.
+func _check_card_conservation() -> void:
+	var now := _take_card_census()
+	if _card_census.is_empty():
+		_card_census = now
+		return
+	var lost: Array[String] = []
+	var gained: Array[String] = []
+	var duplicated: Array[String] = []
+	for id: String in now:
+		var before: int = _card_census.get(id, 0)
+		if now[id] > before:
+			(gained if before == 0 else duplicated).append(id)
+	for id: String in _card_census:
+		if now.get(id, 0) < _card_census[id]:
+			lost.append(id)
+	_card_census = now
+	if lost.is_empty() and gained.is_empty() and duplicated.is_empty():
+		return
+	print("[SimInvariant] game=%d t=%d card conservation: lost=[%s] gained=[%s] duplicated=[%s]" % [
+			_games_completed + 1, _current_turn_manager.game_state.turn_number,
+			",".join(lost), ",".join(gained), ",".join(duplicated)])
+
+
+func _take_card_census() -> Dictionary[String, int]:
+	## Card id -> number of areas holding it, over both players' monster
+	## deck, current monster, monster stack, main deck, hand, discard pile,
+	## zone stacks, strategy zones and the cards under them. Tokens and Rage
+	## markers (RAGE-MARKER, e.g. under EBP04-089) are excluded: effects create
+	## and remove them. burst_monster /
+	## pre_burst_monster / last_invasion_card / cards_destroyed_this_turn are
+	## references to cards already counted, not areas.
+	var census: Dictionary[String, int] = {}
+	for p: PlayerState in _current_turn_manager.game_state.players:
+		var cards: Array = []
+		cards.append_array(p.monster_deck)
+		if not p.current_monster.is_empty():
+			cards.append(p.current_monster)
+		cards.append_array(p.monster_stack)
+		cards.append_array(p.main_deck)
+		cards.append_array(p.hand)
+		cards.append_array(p.discard_pile)
+		for stack: Array in p.zones:
+			cards.append_array(stack)
+		for strategy: Dictionary in p.strategy_zones:
+			if not strategy.is_empty():
+				cards.append(strategy)
+		for stack: Array in p.strategy_zone_stacks:
+			cards.append_array(stack)
+		for card: Dictionary in cards:
+			if PlayerState.is_token(card) or card.get("card_type") == CardEnums.CardType.RAGE:
+				continue
+			var id: String = card.get("id", "")
+			census[id] = census.get(id, 0) + 1
+	return census
 
 
 func _print_summary() -> void:

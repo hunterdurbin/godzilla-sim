@@ -82,6 +82,14 @@ For those, add a coverage deck to `tests/sim/decks/` (`cov_*.deck`, a
 `#` header saying which cards it covers and what the opponent must do) —
 never a throwaway in the user's decklists dir.
 
+**Invariants.** At every turn start the runner takes a census of both
+players' cards (every area; tokens and Rage markers excluded) and prints a
+`[SimInvariant]` line when a card id was lost, gained or duplicated since the
+last census — the first census of a game is the baseline. `run_sim_diff.sh`
+shows the count per side and fails (status 1) on any break on this tree;
+the runner is copied into the base worktree, so a break already on
+`base_ref` shows on both sides.
+
 **Coverage.** An identical diff on decks that never draw the changed cards
 proves only "no regression", not the new behaviour — so the diff measures
 it: the runner ends with a `[SimEffects] <card_id>=<n> …` line (abilities

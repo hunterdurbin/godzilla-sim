@@ -1,0 +1,26 @@
+# Coverage deck: EBP01-019 Kamacuras(1967) — <Awakening6> <Enter> from hand
+# searches the deck for up to 2 《Kamacuras》 battle cards (EBP01-019,
+# EBP04-038 Kamacuras(2004)) and plays them in different zones (5.11.1.3).
+# Red Godzilla(2004) base (cov_godzilla_2004 with Gezora/Ganimes swapped out).
+# Opponent: must let the monster reach zone 6 — e.g. ESD02 Starter.
+[monster deck]
+1 EBP04-001
+1 EBP04-002
+1 EBP04-003
+1 EBP04-005
+
+[main deck]
+3 EBP04-001
+3 EBP04-002
+3 EBP04-003
+3 EBP04-005
+4 EBP04-039
+2 EBP04-042
+4 EBP01-068
+4 EBP01-069
+4 EBP01-019
+4 EBP04-038
+4 EBP04-071
+4 EBP04-075
+4 EPR-004
+4 EPR-005
