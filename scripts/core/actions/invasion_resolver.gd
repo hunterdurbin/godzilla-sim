@@ -36,20 +36,20 @@ func invade(hand_index: int, state: GameState) -> void:
 func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 	## Pay the invasion cost: discard the chosen card, or a replacement cost
 	## (e.g. EBP03-004 mill). Returns {"paid": bool, "advance_amount": int};
-	## on an invade1 block the card returns to hand and paid is false. The
-	## discarded card's abilities enter standby.
+	## on an invade1 block the card stays in hand and paid is false. The card
+	## stays in hand until the cost is paid; the discard goes through
+	## CardMover.discard_from_hand, so its abilities enter standby there.
 	var player := state.get_current_player()
-	var card: Dictionary = player.remove_hand_card_at(hand_index)
+	var card: Dictionary = player.hand[hand_index]
 	var advance_amount: int = card.get("invasion_icon", 0)
 	player.has_invaded_this_turn = true
 	player.last_invasion_card = card
 
 	# Check if invade1 cost is blocked by opponent (e.g. EBP04-029 Gigan R3)
 	if advance_amount == 1 and effect_handler and queries.is_invade1_cost_blocked(player.player_id):
-		# Card stays in hand — return it and abort invasion. Emit play_cancelled
-		# so the UI restores the dragged card's hand position (matches the
+		# Card stays in hand — abort invasion. Emit play_cancelled so the UI
+		# restores the dragged card's hand position (matches the
 		# monster-cost-cancelled flow in play_monster).
-		player.insert_into_hand(hand_index, card)
 		player.has_invaded_this_turn = false
 		effect_handler.log_message.emit(GameLog.invade1_blocked())
 		events.play_cancelled.emit(player.player_id)
@@ -64,14 +64,12 @@ func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 			tr("STR_AH_INVADE_COST_PROMPT")
 		)
 		if choice == 0 and not player.main_deck.is_empty():
-			# Mill from deck; return invasion card to hand
-			player.insert_into_hand(hand_index, card)
+			# Mill from deck; the invasion card stays in hand
 			player.mill_cards(1)
 			replaced_cost = true
 
 	if not replaced_cost:
-		player.add_to_discard(card)
-		events.card_discarded.emit(player.player_id, card)
+		mover.discard_from_hand(player.player_id, [card], CardMover.DiscardCause.INVASION_COST)
 
 	# Log the invade action right after the cost is paid, before movement and triggered
 	# effects fire, so the log reads in causal order (action announced first, then effects).
@@ -83,14 +81,6 @@ func _pay_invasion_cost(hand_index: int, state: GameState) -> Dictionary:
 	# Apply per-monster invasion advance bonuses (e.g. EBP04-007 Godzilla 1962: +1 on Invade 1).
 	if effect_handler:
 		advance_amount += queries.get_invasion_advance_bonus(player.player_id, card.get("invasion_icon", 0))
-
-	# The discard's abilities enter standby; they resolve with the movement's
-	# at the check timing after the action.
-	if not replaced_cost and effect_handler:
-		dispatcher.trigger_discarded_for_invasion(player.player_id, card)
-		# The batch form fires both the card's own on_discard_from_hand and
-		# the on_hand_card_discarded watchers.
-		dispatcher.trigger_hand_cards_discarded_batch(player.player_id, [card])
 
 	return {"paid": true, "advance_amount": advance_amount}
 

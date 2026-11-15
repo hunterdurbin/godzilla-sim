@@ -34,11 +34,8 @@ func play_strategy_card(hand_index: int, state: GameState) -> void:
 
 func gain_rage(hand_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
-	var card: Dictionary = player.remove_hand_card_at(hand_index)
-	player.add_to_discard(card)
-	events.card_discarded.emit(player.player_id, card)
-	dispatcher.trigger_discard_from_hand(player.player_id, card)
-	dispatcher.trigger_hand_card_discarded(player.player_id, card)
+	var card: Dictionary = player.hand[hand_index]
+	mover.discard_from_hand(player.player_id, [card], CardMover.DiscardCause.GAIN_RAGE)
 	rage_mover.increase(player.player_id, 1, RageMover.Cause.GAIN_RAGE_ACTION, card.get("id", ""))
 
 

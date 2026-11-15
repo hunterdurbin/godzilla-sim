@@ -173,6 +173,15 @@ static func effect_added_cards_to_hand(player_id: int, effect_source_id: String,
 	return {"type": "effect_added_cards_to_hand", "player_id": player_id, "source_id": effect_source_id, "card_ids": card_ids}
 
 
+static func effect_discarded_cards(player_id: int, effect_source_id: String, cards: Array[Dictionary], from_hand: bool) -> Dictionary:
+	## One line for an effect's discard: from the hand (CardMover.discard_from_hand)
+	## or of cards already out of their area, e.g. a deck reveal (discard_cards).
+	var card_ids: Array[String] = []
+	for card in cards:
+		card_ids.append(card.get("id", ""))
+	return {"type": "effect_discarded_cards", "player_id": player_id, "source_id": effect_source_id, "card_ids": card_ids, "from_hand": from_hand}
+
+
 static func effect_played_card(player_id: int, effect_source_id: String, card_id: String, zone: int) -> Dictionary:
 	return {"type": "effect_played_card", "player_id": player_id, "source_id": effect_source_id, "card_id": card_id, "zone": zone}
 
@@ -486,6 +495,15 @@ static func render(token: Dictionary) -> String:
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
 				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
 				.replace("{CARD}", ", ".join(added_links))
+		"effect_discarded_cards":
+			var discarded_links: Array[String] = []
+			for did in token.get("card_ids", []):
+				discarded_links.append(card_link(str(did)))
+			var discard_key := "STR_LOG_EFFECT_DISCARDED_FROM_HAND_FMT" if token.get("from_hand", false) else "STR_LOG_EFFECT_DISCARDED_FMT"
+			return TranslationServer.translate(discard_key) \
+				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
+				.replace("{CARDS}", ", ".join(discarded_links))
 		"effect_played_card":
 			return TranslationServer.translate("STR_LOG_EFFECT_PLAYED_FMT") \
 				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \

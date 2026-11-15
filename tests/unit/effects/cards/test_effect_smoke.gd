@@ -324,8 +324,8 @@ func _dispatch_sweep(handler: EffectHandler, state: GameState, card: Dictionary,
 
 	if "on_discarded_for_invasion" in methods:
 		var invasion_copy := Real.instance(card.get("id", "").get_slice("_T_", 0), 3)
-		p0.discard_pile.append(invasion_copy)
-		handler.dispatcher.trigger_discarded_for_invasion(0, invasion_copy)
+		p0.add_to_hand(invasion_copy)
+		handler.mover.discard_from_hand(0, [invasion_copy] as Array[Dictionary], CardMover.DiscardCause.INVASION_COST)
 		await handler.check_timing.resolve()
 
 	if "on_ally_zone_card_destroyed" in methods or "on_opponent_zone_card_destroyed" in methods:
