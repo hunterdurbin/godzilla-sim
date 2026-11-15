@@ -230,7 +230,7 @@ func should_suppress_invasion(plan: Dictionary, player: PlayerState, opponent: P
 	return false
 
 
-func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: PlayerState) -> Dictionary:
+func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: PlayerState, queries: EffectQueries) -> Dictionary:
 	var pref := {"preferred_steps": 0, "max_zone": -1, "target_zone": -1}
 	var mz := player.monster_zone
 	var opp_z := opponent.monster_zone
@@ -245,7 +245,7 @@ func get_invasion_preference(plan: Dictionary, player: PlayerState, opponent: Pl
 	# 3. Pace-match: don't invade past opponent's zone + 1
 	# 4. Counter-bait at z6-7 only when opponent is at z7+
 
-	var threat_surplus: int = _get_threat_surplus(player, opponent)
+	var threat_surplus: int = _get_threat_surplus(player, opponent, queries)
 	if threat_surplus >= 35000:
 		pref["max_zone"] = -1
 	elif opp_z >= 7:
@@ -829,11 +829,10 @@ func _count_strategies_in_hand(player: PlayerState) -> int:
 	return count
 
 
-func _get_threat_surplus(player: PlayerState, opponent: PlayerState) -> int:
-	## Returns bot's threat minus opponent's total CP. Positive = bot overwhelms counter.
-	var bot_threat: int = player.get_threat_level()
-	var opp_cp: int = opponent.get_total_counter_power()
-	return bot_threat - opp_cp
+func _get_threat_surplus(player: PlayerState, opponent: PlayerState, queries: EffectQueries) -> int:
+	## Returns bot's threat minus opponent's total CP (the opponent's counter
+	## numbers against the bot). Positive = bot overwhelms counter.
+	return RulesEngine.counter_numbers(queries, opponent, player)["gap"]
 
 
 # --- Counter-retreat path ---

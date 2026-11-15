@@ -664,14 +664,14 @@ func _combo_log_state(event: String) -> void:
 	## Log a game state snapshot at a key combo moment.
 	var player := game_state.players[bot_player_id]
 	var opponent := game_state.players[1 - bot_player_id]
-	var cp: int = player.get_total_counter_power()
-	cp += effect_handler.queries.get_counter_power_modifier(player.player_id)
-	var threat: int = player.get_threat_level()
-	threat += effect_handler.get_threat_level_modifier(player.player_id)
-	var opp_threat: int = opponent.get_threat_level()
-	opp_threat += effect_handler.get_threat_level_modifier(opponent.player_id)
-	var opp_cp: int = opponent.get_total_counter_power()
-	opp_cp += effect_handler.queries.get_counter_power_modifier(opponent.player_id)
+	var our_counter := _our_counter_numbers()
+	var their_counter := RulesEngine.counter_numbers(effect_handler.queries, opponent, player)
+	# A player's CP is what their counter brings; their threat is what the
+	# other side's counter faces.
+	var cp: int = our_counter["total_cp"]
+	var threat: int = their_counter["threat"]
+	var opp_cp: int = their_counter["total_cp"]
+	var opp_threat: int = our_counter["threat"]
 	var strats: int = 0
 	for card in player.hand:
 		if card.get("card_type") == CardEnums.CardType.STRATEGY:
@@ -685,20 +685,21 @@ func _combo_log_state(event: String) -> void:
 		_active_combo_plan.get("viability", 0)])
 
 
+func _our_counter_numbers() -> Dictionary:
+	## The bot's counter numbers against the opponent (RulesEngine.counter_numbers).
+	return RulesEngine.counter_numbers(effect_handler.queries,
+			game_state.players[bot_player_id], game_state.players[1 - bot_player_id])
+
+
 func get_cp_gap() -> int:
 	## Returns opponent threat minus bot CP. Positive = bot is behind, negative/zero = bot is ahead.
-	var player := game_state.players[bot_player_id]
-	var opponent := game_state.players[1 - bot_player_id]
-	var total_cp: int = player.get_total_counter_power()
-	total_cp += effect_handler.queries.get_counter_power_modifier(player.player_id)
-	var threat: int = opponent.get_threat_level()
-	threat += effect_handler.get_threat_level_modifier(opponent.player_id)
-	return threat - total_cp
+	return _our_counter_numbers()["gap"]
 
 
 func can_counter_opponent() -> bool:
-	## Returns true if the bot's current counter power meets or exceeds the opponent's threat.
-	return get_cp_gap() <= 0
+	## Returns true if the bot's counter power meets the opponent's threat and
+	## no effect prevents the counter.
+	return _our_counter_numbers()["lands"]
 
 
 func max_counter_power_remaining(include_hand: bool = true) -> int:
@@ -850,7 +851,7 @@ func _get_combo_invasion_preference() -> Dictionary:
 	var opponent := game_state.players[1 - bot_player_id]
 	for combo in _combos:
 		if combo.combo_name == combo_name_key:
-			return combo.get_invasion_preference(_active_combo_plan, player, opponent)
+			return combo.get_invasion_preference(_active_combo_plan, player, opponent, effect_handler.queries)
 	return {"preferred_steps": 0, "max_zone": -1, "target_zone": -1}
 
 

@@ -131,6 +131,23 @@ func refresh_bot_analysis() -> void:
 	bot_player.analyze_deck()
 
 
+## The board's counter numbers per player (ModifierBreakdown.counter_labels)
+## from this session's engine. Zeros without an effect handler. Host side;
+## clients receive these in the state broadcast.
+func compute_counter_label_mods() -> Dictionary:
+	if not turn_manager or not turn_manager.effect_handler:
+		return ModifierBreakdown.counter_labels(null, [] as Array[PlayerState])
+	return ModifierBreakdown.counter_labels(turn_manager.effect_handler.queries, turn_manager.game_state.players)
+
+
+## `pid`'s threat label modifier from this session's engine
+## (ModifierBreakdown.threat_label_mod); 0 without an effect handler.
+func threat_label_mod(pid: int) -> int:
+	if not turn_manager or not turn_manager.effect_handler:
+		return 0
+	return ModifierBreakdown.threat_label_mod(turn_manager.effect_handler.queries, turn_manager.game_state.players, pid)
+
+
 ## Compute the net play-cost modifier for each card in the given player's hand.
 ## Returned array is parallel to player.hand. Returns [] if no effect handler.
 ## Used by the board's hand display (host side) and the state broadcast.

@@ -86,6 +86,8 @@ var _client_cp_modifiers: Array:
 	get: return _board._client_cp_modifiers
 var _client_threat_modifiers: Array:
 	get: return _board._client_threat_modifiers
+var _session: GameSession:
+	get: return _board._session
 
 var action_panel: Control:
 	get: return _board.action_panel
@@ -205,9 +207,6 @@ func _on_main_menu_pressed() -> void:
 
 func _resolve_translated_text(text: String) -> String:
 	return _board._resolve_translated_text(text)
-
-func _threat_mod_for(pid: int) -> int:
-	return _board._threat_mod_for(pid)
 
 func _get_player_state(pid: int) -> PlayerState:
 	return _board._get_player_state(pid)
@@ -1168,15 +1167,10 @@ func _sync_mobile_cp_tray() -> void:
 	if turn_manager and turn_manager.game_state:
 		states[0] = turn_manager.game_state.players[0]
 		states[1] = turn_manager.game_state.players[1]
-		var eh := turn_manager.effect_handler
-		if eh:
-			for pid in 2:
-				cp_mods[pid] += eh.queries.get_monster_cp_modifier(pid)
-				var zone_cp: Array = eh.queries.get_zone_cp_modifiers(pid)
-				var strat_cp: Array = eh.queries.get_strategy_cp_modifiers(pid)
-				for v in zone_cp: cp_mods[pid] += v
-				for v in strat_cp: cp_mods[pid] += v
-				threat_mods[pid] = eh.get_threat_level_modifier(pid)
+		var label_mods: Dictionary = _session.compute_counter_label_mods()
+		for pid in 2:
+			cp_mods[pid] = label_mods["cp"][pid]
+			threat_mods[pid] = label_mods["threat"][pid]
 	elif not _client_players.is_empty():
 		states[0] = _client_players[0]
 		states[1] = _client_players[1]

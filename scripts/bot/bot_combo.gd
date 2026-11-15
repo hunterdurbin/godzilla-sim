@@ -47,7 +47,7 @@ func should_prioritize_cycling(_plan: Dictionary, _player: PlayerState,
 	return false
 
 
-func get_invasion_preference(_plan: Dictionary, _player: PlayerState, _opponent: PlayerState) -> Dictionary:
+func get_invasion_preference(_plan: Dictionary, _player: PlayerState, _opponent: PlayerState, _queries: EffectQueries) -> Dictionary:
 	## Override: return invasion guidance for combo-aware invasion targeting.
 	## Keys: preferred_steps (1 or 2, 0=no pref), max_zone (-1=no limit),
 	##        target_zone (-1=no target).

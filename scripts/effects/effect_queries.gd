@@ -6,6 +6,50 @@ extends EffectModule
 ## This is the narrow surface RulesEngine and the multiplayer state
 ## broadcast depend on; it must stay side-effect-free.
 
+## Player whose counter phase the passive queries evaluate in, or -1 for the
+## live turn and phase. Set only by in_counter_view.
+var _counter_view_pid: int = -1
+
+
+# --- Counter view ---
+
+
+func in_counter_view(counterer_id: int, query: Callable) -> Variant:
+	## Run `query` with every passive query evaluating as of `counterer_id`'s
+	## counter phase, and return its result: every turn and phase this module
+	## reads (EffectContexts it builds, its trigger-filter turn checks, the
+	## counter-phase-only engagement restriction) is that player's turn and
+	## COUNTER. The game state is not touched, and views nest.
+	## RulesEngine.counter_numbers and the board's CP/threat numbers
+	## (ModifierBreakdown.in_cp_view / in_threat_view) use it to show the
+	## counter a player will make, from any phase or turn.
+	var previous := _counter_view_pid
+	_counter_view_pid = counterer_id
+	var result: Variant = query.call()
+	_counter_view_pid = previous
+	return result
+
+
+func _view_phase() -> CardEnums.GamePhase:
+	## The phase queries evaluate in: COUNTER under a counter view, else live.
+	if _counter_view_pid >= 0:
+		return CardEnums.GamePhase.COUNTER
+	return game_state.current_phase
+
+
+func _view_turn_player_id() -> int:
+	## The turn queries evaluate in: the counterer under a counter view, else live.
+	if _counter_view_pid >= 0:
+		return _counter_view_pid
+	return game_state.current_player_id
+
+
+func _build_context(owner_id: int, card_data: Dictionary) -> EffectContext:
+	var ctx := super(owner_id, card_data)
+	ctx.turn_player_id = _view_turn_player_id()
+	ctx.phase = _view_phase()
+	return ctx
+
 
 func get_burst_rank(card: Dictionary) -> int:
 	## The rank this card's <Burst> allows it to be played from (-1 = no Burst).
@@ -371,8 +415,8 @@ func get_engagement_restriction(attacker_player_id: int) -> int:
 	## Restriction only applies during the counter phase — the rule text excludes the
 	## restricted cards' CP "during the counter phase" only. Outside it, those cards
 	## report their normal counter power (e.g. EBP01-014), so effects that read power
-	## in other phases aren't affected.
-	if game_state.current_phase != CardEnums.GamePhase.COUNTER:
+	## in other phases aren't affected. Under in_counter_view it is the counter phase.
+	if _view_phase() != CardEnums.GamePhase.COUNTER:
 		return -1
 	var player := game_state.players[attacker_player_id]
 	var max_rank: int = -1
@@ -524,7 +568,7 @@ func can_play_as_monster(player_id: int, card: Dictionary) -> bool:
 func _passes_own_turn_filter(card_data: Dictionary, method_name: String, watcher_player_id: int) -> bool:
 	## Generic own-turn filter check for query-style virtuals
 	## (can_monster_advance / can_monster_invade). Empty/missing filter = pass.
-	return TriggerFilters.passes_own_turn(get_trigger_filter(card_data, method_name), game_state.current_player_id == watcher_player_id)
+	return TriggerFilters.passes_own_turn(get_trigger_filter(card_data, method_name), _view_turn_player_id() == watcher_player_id)
 
 
 
@@ -884,7 +928,7 @@ func _passes_prevents_monster_move_filter(card_data: Dictionary, watcher_player_
 	##   only block when the opponent's active effect is moving the monster.
 	return TriggerFilters.passes_prevents_monster_move(
 		get_trigger_filter(card_data, "prevents_opponent_monster_move"),
-		game_state.current_player_id == watcher_player_id, check_timing.active_player_id, watcher_player_id)
+		_view_turn_player_id() == watcher_player_id, check_timing.active_player_id, watcher_player_id)
 
 
 
@@ -937,7 +981,7 @@ func _passes_strategy_hand_rank_modifier_filter(
 	##   only fire when the watcher itself owns the strategy being modified.
 	return TriggerFilters.passes_strategy_hand_rank_modifier(
 		get_trigger_filter(card_data, "get_strategy_hand_rank_modifier"),
-		game_state.current_player_id == watcher_player_id, target_player_id == watcher_player_id)
+		_view_turn_player_id() == watcher_player_id, target_player_id == watcher_player_id)
 
 
 

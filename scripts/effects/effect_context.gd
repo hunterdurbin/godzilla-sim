@@ -10,6 +10,11 @@ var opponent: PlayerState
 var card_data: Dictionary
 var effect_handler: EffectHandler
 var metadata: Dictionary = {}  ## Extra data set at collection time for deferred resolution
+## The turn and phase this context is evaluated in: the live ones, or a
+## counterer's counter phase under EffectQueries.in_counter_view. Card
+## scripts read turn and phase through these, never game_state directly.
+var turn_player_id: int
+var phase: CardEnums.GamePhase
 
 
 static func create(
@@ -24,6 +29,8 @@ static func create(
 	ctx.opponent = p_game_state.players[1 - owner_id]
 	ctx.card_data = p_card_data
 	ctx.effect_handler = p_effect_handler
+	ctx.turn_player_id = p_game_state.current_player_id
+	ctx.phase = p_game_state.current_phase
 	return ctx
 
 
@@ -45,15 +52,15 @@ func is_opponent(p_player_id: int) -> bool:
 # --- Turn ownership ---
 
 func is_own_turn() -> bool:
-	return game_state.current_player_id == owner.player_id
+	return turn_player_id == owner.player_id
 
 
 func is_opponent_turn() -> bool:
-	return game_state.current_player_id == opponent.player_id
+	return turn_player_id == opponent.player_id
 
 
 func is_turn(p_player_id: int) -> bool:
-	return game_state.current_player_id == p_player_id
+	return turn_player_id == p_player_id
 
 
 # --- Awakening (rule-text shorthand for owner.monster_zone >= threshold) ---

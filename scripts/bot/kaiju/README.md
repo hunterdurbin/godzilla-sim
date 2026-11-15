@@ -23,8 +23,8 @@ their global-RNG call order (and seed-matched sim diffs) are untouched.
   a dynamically awaited call aborts the engine coroutine silently.
 - `kaiju_evaluator.gd` — **KaijuEvaluator**: weighted feature sum over an
   end-of-turn state. Weights come from `BotConfig.kaiju_eval_weights`, keyed
-  by game phase. Counter/End phases are folded in analytically (mirrors
-  `RulesEngine.compute_counter_numbers`); fragile CP from strategy-zone
+  by game phase. Counter/End phases are folded in analytically (reads
+  `RulesEngine.counter_numbers`); fragile CP from strategy-zone
   sources is discounted via the `modifier_breakdown` data. Analytic at the
   leaf only: the opponent-reply pass (`kaiju_planner.gd` below) plays the
   counter phase for real, forced rank-ups included, then evaluates again.
