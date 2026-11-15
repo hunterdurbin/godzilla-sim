@@ -8,7 +8,7 @@ extends RefCounted
 ## below, wired once in `setup` with direct references to each other; core,
 ## UI, bot and test code call those modules (`queries`, `dispatcher`,
 ## `check_timing`, `destruction`, `mover`, `monster_mover`, `enter_zone`,
-## `leave_zone`, `registry`), never a facade delegate.
+## `leave_zone`, `rage_mover`, `registry`), never a facade delegate.
 ##
 ## Player decisions (deck search, zone targets, choices, ...) go through the
 ## injected PlayerInput — SignalPlayerInput in live play (request signals +
@@ -23,7 +23,9 @@ signal effect_zone_unhighlighted(player_id: int, zone_index: int)
 signal effect_card_highlighted(player_id: int, card_id: String)
 signal effect_card_unhighlighted(player_id: int, card_id: String)
 
-## Emitted to send a message to the game log.
+## Emitted to send a message to the game log (by the modules, via
+## `h.log_message.emit(...)`).
+@warning_ignore("unused_signal")
 signal log_message(token: Dictionary)
 # Emitted by the modules via `h.card_evolved.emit(...)`, not from this class.
 @warning_ignore("unused_signal")
@@ -43,6 +45,7 @@ var mover: CardMover
 var monster_mover: MonsterMover
 var enter_zone: EnterZone
 var leave_zone: LeaveZone
+var rage_mover: RageMover
 var queries: EffectQueries
 @warning_ignore("unused_private_class_variable") # written by effects, read by the card-select UI
 var _card_select_pool_filter: Callable = Callable()  # Optional: func(card, selection) -> bool
@@ -75,12 +78,13 @@ func setup(p_game_state: GameState, p_input: PlayerInput = null) -> void:
 	monster_mover = MonsterMover.new()
 	enter_zone = EnterZone.new()
 	leave_zone = LeaveZone.new()
+	rage_mover = RageMover.new()
 	queries = EffectQueries.new()
 	check_timing.game_state = game_state
 	check_timing.destruction = destruction
 	check_timing.leave_zone = leave_zone
 	check_timing.h = self
-	for m: EffectModule in [dispatcher, destruction, mover, monster_mover, enter_zone, leave_zone, queries]:
+	for m: EffectModule in [dispatcher, destruction, mover, monster_mover, enter_zone, leave_zone, rage_mover, queries]:
 		m.wire(self)
 
 
@@ -88,7 +92,7 @@ func teardown() -> void:
 	## Break the internal RefCounted reference cycles (module <-> module,
 	## module.h -> self, action_handler <-> self) so the match component graph
 	## can be freed once the owner drops its reference. Idempotent.
-	for m: EffectModule in [dispatcher, destruction, mover, monster_mover, enter_zone, leave_zone, queries]:
+	for m: EffectModule in [dispatcher, destruction, mover, monster_mover, enter_zone, leave_zone, rage_mover, queries]:
 		if m:
 			m.unwire()
 	if check_timing:
@@ -100,6 +104,7 @@ func teardown() -> void:
 	monster_mover = null
 	enter_zone = null
 	leave_zone = null
+	rage_mover = null
 	queries = null
 	action_handler = null
 	events = null
@@ -137,38 +142,16 @@ func _unhighlight_active_effect() -> void:
 
 
 func reduce_rage(player_id: int, amount: int) -> int:
-	## Reduce a player's rage by amount. Returns actual amount reduced.
-	## Respects rage reduction prevention effects (e.g. EBP03-004).
-	## Populates the player's transient pending_rage_markers bucket with one
-	## RAGE-MARKER per point reduced so claiming effects (e.g. EBP04-089) can
-	## pop them; whatever isn't claimed is cleared once the check timing that
-	## resolves the trigger ends (CheckTiming.resolve).
-	var player := game_state.players[player_id]
-	if not player.has_rage() or amount <= 0:
-		return 0
-	if queries.is_rage_reduction_prevented(player_id):
-		return 0
-	var old_rage: int = player.rage
-	var actual: int = mini(amount, player.rage)
-	player.set_rage(player.rage - actual)
-	player.push_pending_rage_markers(actual)
-	dispatcher.trigger_rage_changed(player_id, old_rage, player.rage)
-	return actual
+	## Reduce a player's Rage by up to `amount` (the resolving effect is the
+	## reducer). Returns the amount reduced. RageMover.decrease.
+	return rage_mover.decrease(player_id, amount)
 
 
 
 func gain_rage(player_id: int, amount: int, source_card_id: String = "") -> int:
-	## Increase a player's rage by amount. Returns actual amount gained.
-	## Mirror of reduce_rage — handles the old/new rage bookkeeping and trigger dispatch.
-	## `source_card_id` (optional) attributes the rage gain to a card in the log.
-	if amount <= 0:
-		return 0
-	var player := game_state.players[player_id]
-	var old_rage: int = player.rage
-	player.set_rage(player.rage + amount)
-	log_message.emit(GameLog.rage_gained(player_id, amount, player.rage, source_card_id))
-	dispatcher.trigger_rage_changed(player_id, old_rage, player.rage)
-	return amount
+	## Increase a player's Rage by `amount`; `source_card_id` attributes it in
+	## the log. Returns the amount gained. RageMover.increase.
+	return rage_mover.increase(player_id, amount, RageMover.Cause.EFFECT, source_card_id)
 
 
 

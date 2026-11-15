@@ -21,7 +21,7 @@ player-prompt primitives with their UI state (`select_zone_target`,
 
 Everything outside the card scripts — core resolvers and TurnManager, the
 board UI, the bot, tests — calls the modules too (`effect_handler.queries`,
-`.dispatcher`, `.check_timing`, `.destruction`, `.mover`, `.monster_mover`,
+`.dispatcher`, `.check_timing`, `.destruction`, `.mover`, `.monster_mover`, `.rage_mover`,
 `.enter_zone`, `.leave_zone`, `.registry`; the `ActionResolver` base forwards them). A
 facade method that no card script calls doesn't belong on the facade:
 `scripts/tools/check_effect_handler_card_api.py` (pre-commit + CI) fails on
@@ -42,6 +42,7 @@ names no EffectHandler member (untyped receivers fail only at runtime).
 | `leave_zone.gd` | `LeaveZone`: the one "battle card leaves a zone" operation (GLOSSARY: Leave), `leave(player_id, zone, destination)` — destination DISCARD / HAND / DECK_TOP / DECK_BOTTOM. Owns emptying the zone (sole `clear_zone(` caller with EnterZone's Moves, `scripts/tools/check_clear_zone_owner.py`), a token disappearing (9.1.4.2), the cards under it to the discard pile and the `on_leave_play` standby. Destroy, the deck-bottom return and the 11.4 cleanup call it; strategy-zone exits don't |
 | `card_mover.gd` | Hand/deck/discard traffic, zone prompts, token instances; its play primitives call `EnterZone` |
 | `monster_mover.gd` | Monster movement: the sole writer of `monster_zone` during play (advance with `from_invasion`, retreat, teleport, counter retreat) + the effect-facing move entry points |
+| `rage_mover.gd` | `RageMover`: the sole writer of Rage during play (`scripts/tools/check_rage_writers.py`). `increase(pid, n, cause)` — cause GAIN_RAGE_ACTION / MONSTER_PLAY / EFFECT picks the log line; every increase emits `rage_gained` and submits the Rage abilities (one per point for increase watchers, Q381). `decrease(pid, n, reducer_id)` — the reducer (default: the resolving ability's player) goes to `prevents_rage_reduction`, so EBP03-004 stops only the opponent's effects; leaves the RAGE markers EBP04-089 claims. `reset(pid)` — start phase, keeping the EBP04-010 intercept. `EffectHandler.gain_rage` / `reduce_rage` forward to it |
 | `effect_queries.gd` | Read-only modifier/blocking aggregation (injected into RulesEngine) |
 
 Facade delegate rule: a delegate containing `await` becomes a coroutine —

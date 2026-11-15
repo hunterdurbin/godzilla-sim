@@ -154,7 +154,8 @@ func play_monster(player_id: int, card: Dictionary, source: MonsterSource) -> vo
 	## it, setting the current monster, GameEvents.monster_played, the Play
 	## action's log line and the standby entries. The caller owns the rest
 	## of the Play action — the once-per-turn flag, the +1 Rage (raised
-	## before this call, so the log line shows it), Burst detection (set
+	## after this call through RageMover, 8.5.1.1, so this log line shows
+	## the Rage before it and RageMover's line follows), Burst detection (set
 	## before this call, so the log line names the Burst rank) and the
 	## alternate cost. A monster play never clears Burst state: the Burst
 	## card is discarded at the end phase wherever it is (12.5.2.1). Never

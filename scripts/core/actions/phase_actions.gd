@@ -44,18 +44,9 @@ func execute_start_phase_discard(state: GameState) -> void:
 func execute_start_phase_reset(state: GameState) -> void:
 	var player := state.get_current_player()
 
-	# Reset rage to 0, allowing effects to intercept (e.g. EBP04-010)
-	var old_rage: int = player.rage
-	var new_rage: int = await dispatcher.apply_rage_reset(player.player_id)
-	player.set_rage(new_rage)
-	# Fire rage_changed trigger so cards that watch for rage decrease (EBP04-089)
-	# pick up the start phase reset. Populate the claim bucket on decrease so
-	# they can pop markers as a true resource; the check timing clears leftovers.
-	if new_rage != old_rage:
-		var delta: int = old_rage - new_rage
-		if delta > 0:
-			player.push_pending_rage_markers(delta)
-		dispatcher.trigger_rage_changed(player.player_id, old_rage, new_rage)
+	# Rage back to 0 unless an effect intercepts (EBP04-010); decrease
+	# watchers (EBP04-089) see the drop.
+	await rage_mover.reset(player.player_id)
 
 	# Reset per-turn flags
 	player.has_invaded_this_turn = false

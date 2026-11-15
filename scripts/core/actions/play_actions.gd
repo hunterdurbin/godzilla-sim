@@ -35,17 +35,11 @@ func play_strategy_card(hand_index: int, state: GameState) -> void:
 func gain_rage(hand_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
 	var card: Dictionary = player.remove_hand_card_at(hand_index)
-	var old_rage: int = player.rage
 	player.add_to_discard(card)
-	player.set_rage(player.rage + 1)
 	events.card_discarded.emit(player.player_id, card)
-	events.rage_gained.emit(player.player_id, player.rage)
-	if effect_handler:
-		effect_handler.log_message.emit(
-			GameLog.gained_rage(player.player_id, player.rage, card.get("id", "")))
-		dispatcher.trigger_discard_from_hand(player.player_id, card)
-		dispatcher.trigger_hand_card_discarded(player.player_id, card)
-		dispatcher.trigger_rage_changed(player.player_id, old_rage, player.rage)
+	dispatcher.trigger_discard_from_hand(player.player_id, card)
+	dispatcher.trigger_hand_card_discarded(player.player_id, card)
+	rage_mover.increase(player.player_id, 1, RageMover.Cause.GAIN_RAGE_ACTION, card.get("id", ""))
 
 
 func play_monster(hand_index: int, state: GameState) -> void:
@@ -55,7 +49,6 @@ func play_monster(hand_index: int, state: GameState) -> void:
 	var player := state.get_current_player()
 	var card: Dictionary = player.remove_hand_card_at(hand_index)
 	var old_monster: Dictionary = player.current_monster
-	var old_rage: int = player.rage
 
 	# Alternate play cost (e.g. EBP04-012): execute cost before committing, allow cancel
 	var rank_mismatch: bool = card.get("rank", 0) != old_monster.get("rank", 0)
@@ -74,10 +67,10 @@ func play_monster(hand_index: int, state: GameState) -> void:
 		player.burst_monster = card
 
 	player.has_played_monster_this_turn = true
-	player.set_rage(player.rage + 1)
 	enter_zone.play_monster(player.player_id, card, EnterZone.MonsterSource.HAND)
-	events.rage_gained.emit(player.player_id, player.rage)
-	dispatcher.trigger_rage_changed(player.player_id, old_rage, player.rage)
+	# 8.5.1.1: the +1 comes once the played card is the invading monster, so
+	# its own "whenever this card's <Rage> is increased" abilities see it.
+	rage_mover.increase(player.player_id, 1, RageMover.Cause.MONSTER_PLAY, card.get("id", ""))
 
 
 func play_monster_from_effect(_state: GameState, player_id: int, monster_card: Dictionary) -> void:

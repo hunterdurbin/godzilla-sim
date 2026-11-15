@@ -216,8 +216,9 @@ func can_be_destroyed(_ctx: EffectContext) -> bool:
 	return true
 
 
-func prevents_rage_reduction(_ctx: EffectContext) -> bool:
-	## Return true if this card prevents the owner's rage from being reduced by effects.
+func prevents_rage_reduction(_ctx: EffectContext, _reducer_id: int) -> bool:
+	## Return true if this card prevents the owner's Rage from being reduced.
+	## `_reducer_id` is the controller of the reducing effect (-1 = no effect).
 	return false
 
 

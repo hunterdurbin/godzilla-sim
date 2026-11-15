@@ -21,10 +21,12 @@ func can_replace_invasion_cost(_ctx: EffectContext) -> bool:
 	return true
 
 
-func prevents_rage_reduction(ctx: EffectContext) -> bool:
+func prevents_rage_reduction(ctx: EffectContext, reducer_id: int) -> bool:
 	# <Opponent's Turn> <Awakening4>: Rage cannot be reduced by opponent's effects
 	if ctx.is_own_turn():
 		return false # Only active on opponent's turn
 	if not ctx.is_awakening(4):
 		return false # Awakening4 not active
-	return true
+	# Only the opponent's effects (hunterdurbin/godzilla-sim-issue-tracker#35 row 20): its owner's own effects, and
+	# reductions with no effect behind them, still reduce.
+	return reducer_id >= 0 and reducer_id != ctx.owner.player_id
