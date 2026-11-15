@@ -64,6 +64,7 @@ func _ready() -> void:
 
 
 func _apply_cmdline_overrides() -> void:
+	var only_game: int = 0
 	for arg in OS.get_cmdline_user_args():
 		var key: String = arg.get_slice("=", 0)
 		var value: String = arg.substr(key.length() + 1)
@@ -76,11 +77,13 @@ func _apply_cmdline_overrides() -> void:
 			"--deck2": p2_deck_name = value
 			"--record-replays": record_replays = true
 			"--trace": trace = true
-			"--only-game":
-				# Games run in order from _games_completed; start at N-1.
-				_games_completed = maxi(int(value), 1) - 1
-				num_games = _games_completed + 1
+			"--only-game": only_game = maxi(int(value), 1)
 			_: push_warning("BotSimulationRunner: unknown arg %s" % arg)
+	# After the loop, so it wins over --games in any argument order. Games
+	# run in order from _games_completed: start at N-1 and stop after N.
+	if only_game > 0:
+		_games_completed = only_game - 1
+		num_games = only_game
 
 
 func _select_deck_file(player_id: int, path: String) -> void:

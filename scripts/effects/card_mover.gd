@@ -45,10 +45,19 @@ func discard_from_hand(player_id: int, cards: Array[Dictionary], cause: DiscardC
 		return
 	player.add_cards_to_discard(discarded)
 	if cause == DiscardCause.EFFECT:
-		h.log_message.emit(GameLog.effect_discarded_cards(player_id, _active_source_id(), discarded, true))
+		_log_effect_discard(player_id, discarded, true)
 	if events:
 		events.cards_discarded_from_hand.emit(player_id, discarded)
 	dispatcher.trigger_hand_cards_discarded_batch(player_id, discarded, cause)
+
+
+func _log_effect_discard(player_id: int, cards: Array[Dictionary], from_hand: bool) -> void:
+	## One discard line attributed to the resolving effect and its controller.
+	## Outside an effect there is no source to name, so nothing is logged.
+	if check_timing.active_card.is_empty():
+		return
+	h.log_message.emit(GameLog.effect_discarded_cards(check_timing.active_player_id,
+			_active_source_id(), player_id, cards, from_hand))
 
 
 func _active_source_id() -> String:
@@ -397,13 +406,15 @@ static func banish_or_discard(player: PlayerState, stack: Array) -> void:
 func discard_cards(player_id: int, cards: Array[Dictionary]) -> void:
 	## Append a batch of cards (already out of wherever they were, e.g. a deck
 	## reveal) to the player's discard pile and log them as one line
-	## attributed to the active effect (#9). No-op when empty. Cards leaving
+	## attributed to the active effect and its controller
+	## (hunterdurbin/godzilla-sim-issue-tracker#9); outside an effect nothing
+	## is logged. No-op when empty. Cards leaving
 	## the hand go through discard_from_hand instead; for tokens or mixed
 	## batches, use banish_or_discard.
 	if cards.is_empty():
 		return
 	game_state.players[player_id].add_cards_to_discard(cards)
-	h.log_message.emit(GameLog.effect_discarded_cards(player_id, _active_source_id(), cards, false))
+	_log_effect_discard(player_id, cards, false)
 
 
 

@@ -173,13 +173,16 @@ static func effect_added_cards_to_hand(player_id: int, effect_source_id: String,
 	return {"type": "effect_added_cards_to_hand", "player_id": player_id, "source_id": effect_source_id, "card_ids": card_ids}
 
 
-static func effect_discarded_cards(player_id: int, effect_source_id: String, cards: Array[Dictionary], from_hand: bool) -> Dictionary:
+static func effect_discarded_cards(source_player_id: int, effect_source_id: String, player_id: int, cards: Array[Dictionary], from_hand: bool) -> Dictionary:
 	## One line for an effect's discard: from the hand (CardMover.discard_from_hand)
 	## or of cards already out of their area, e.g. a deck reveal (discard_cards).
+	## `source_player_id` controls the effect; `player_id` owns the cards. When
+	## they differ (an effect makes the opponent discard) the line names both.
 	var card_ids: Array[String] = []
 	for card in cards:
 		card_ids.append(card.get("id", ""))
-	return {"type": "effect_discarded_cards", "player_id": player_id, "source_id": effect_source_id, "card_ids": card_ids, "from_hand": from_hand}
+	return {"type": "effect_discarded_cards", "source_player_id": source_player_id, "player_id": player_id,
+			"source_id": effect_source_id, "card_ids": card_ids, "from_hand": from_hand}
 
 
 static func effect_played_card(player_id: int, effect_source_id: String, card_id: String, zone: int) -> Dictionary:
@@ -499,9 +502,15 @@ static func render(token: Dictionary) -> String:
 			var discarded_links: Array[String] = []
 			for did in token.get("card_ids", []):
 				discarded_links.append(card_link(str(did)))
+			var owner_id: int = token.get("player_id", 0)
+			var controller_id: int = token.get("source_player_id", owner_id)
 			var discard_key := "STR_LOG_EFFECT_DISCARDED_FROM_HAND_FMT" if token.get("from_hand", false) else "STR_LOG_EFFECT_DISCARDED_FMT"
+			if controller_id >= 0 and controller_id != owner_id:
+				discard_key = discard_key.replace("_FMT", "_OTHER_FMT")
 			return TranslationServer.translate(discard_key) \
-				.replace("{PLAYER}", short_name(token.get("player_id", 0))) \
+				.replace("{SOURCE_PLAYER}", short_name(controller_id)) \
+				.replace("{TARGET_PLAYER}", short_name(owner_id)) \
+				.replace("{PLAYER}", short_name(owner_id)) \
 				.replace("{SOURCE_CARD}", card_link(token.get("source_id", ""))) \
 				.replace("{CARDS}", ", ".join(discarded_links))
 		"effect_played_card":

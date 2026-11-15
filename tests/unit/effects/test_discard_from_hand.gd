@@ -95,7 +95,7 @@ func test_effect_discard_fires_watchers_but_not_invasion_and_logs_once() -> void
 	assert_array(_ids(state.players[0].discard_pile)).is_equal(["A", "B"])
 	assert_array(s["probe"].fired).contains_exactly_in_any_order(
 			["self:A", "watch:WATCHER<-A", "watch:WATCHER<-B"])
-	assert_array(s["logs"]).contains_exactly([GameLog.effect_discarded_cards(0, "SRC", [a, b], true)])
+	assert_array(s["logs"]).contains_exactly([GameLog.effect_discarded_cards(0, "SRC", 0, [a, b], true)])
 
 
 func test_action_discards_write_no_discard_line() -> void:
@@ -140,7 +140,7 @@ func test_select_hand_card_discards_through_the_operation_and_logs() -> void:
 
 	assert_array(_ids(state.players[0].discard_pile)).is_equal(["A"])
 	assert_array(s["probe"].fired).contains_exactly(["watch:WATCHER<-A"])
-	assert_array(s["logs"]).contains_exactly([GameLog.effect_discarded_cards(0, "SRC", [a], true)])
+	assert_array(s["logs"]).contains_exactly([GameLog.effect_discarded_cards(0, "SRC", 0, [a], true)])
 
 
 func test_discard_cards_logs_one_line() -> void:
@@ -155,7 +155,7 @@ func test_discard_cards_logs_one_line() -> void:
 		handler.discard_cards(0, [a, b] as Array[Dictionary]))
 
 	assert_array(_ids(state.players[0].discard_pile)).is_equal(["A", "B"])
-	assert_array(s["logs"]).contains_exactly([GameLog.effect_discarded_cards(0, "SRC", [a, b], false)])
+	assert_array(s["logs"]).contains_exactly([GameLog.effect_discarded_cards(0, "SRC", 0, [a, b], false)])
 
 
 func test_discard_cards_empty_is_silent() -> void:
@@ -168,9 +168,40 @@ func test_discard_cards_empty_is_silent() -> void:
 
 
 func test_discard_line_renders() -> void:
-	var from_hand := GameLog.render_plain(GameLog.effect_discarded_cards(0, "SRC", [Cards.battle(1, 2000, "A")], true))
-	var to_pile := GameLog.render_plain(GameLog.effect_discarded_cards(0, "SRC", [Cards.battle(1, 2000, "A")], false))
+	var from_hand := GameLog.render_plain(GameLog.effect_discarded_cards(0, "SRC", 0, [Cards.battle(1, 2000, "A")], true))
+	var to_pile := GameLog.render_plain(GameLog.effect_discarded_cards(0, "SRC", 0, [Cards.battle(1, 2000, "A")], false))
 	assert_str(from_hand).is_not_empty()
 	assert_str(from_hand).is_not_equal(to_pile)
 	assert_str(from_hand).not_contains("STR_LOG")
 	assert_str(to_pile).not_contains("STR_LOG")
+
+
+func test_opponent_discard_names_both_players() -> void:
+	# P1's effect makes P2 discard (EBP03-010 etc.): the line credits the
+	# source card to P1 and the discard to P2.
+	var a := Cards.battle(1, 2000, "A")
+	var state := States.make_state({"p1": {"hand": [a]}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	await handler.check_timing.run_effect(0, {"id": "SRC"}, func() -> void:
+		await handler.discard_hand_to(1, 0))
+
+	assert_array(_ids(state.players[1].discard_pile)).is_equal(["A"])
+	assert_array(s["logs"]).contains_exactly([GameLog.effect_discarded_cards(0, "SRC", 1, [a], true)])
+	var own := GameLog.render_plain(GameLog.effect_discarded_cards(1, "SRC", 1, [a], true))
+	var other := GameLog.render_plain(s["logs"][0])
+	assert_str(other).is_not_equal(own)
+	assert_str(other).not_contains("{")
+	assert_str(other).not_contains("STR_LOG")
+
+
+func test_discard_cards_outside_an_effect_is_not_logged() -> void:
+	# No resolving effect means no source to name: the cards still move.
+	var state := States.make_state()
+	var s := _session(state)
+
+	(s["effect_handler"] as EffectHandler).discard_cards(0, [Cards.battle(1, 2000, "A")] as Array[Dictionary])
+
+	assert_array(_ids(state.players[0].discard_pile)).is_equal(["A"])
+	assert_array(s["logs"]).is_empty()
