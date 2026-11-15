@@ -17,6 +17,11 @@ a check in `scripts/tools/` instead (see its README) and does not belong here.
   signals come from the mutators it calls (`scripts/core/README.md`
   § Contracts), so they go unlisted. A new primitive without that is
   incomplete.
+- **Moved calls keep their contracts true.** When a diff moves a call to
+  the other side of an operation, or gives a state field a new sole
+  writer, the docstrings that describe that order or name the old callers
+  (the callee's, the mutator's) are updated in the same diff, and the PR's
+  stated reason for the move matches what the code did before it.
 - **A primitive serves the intent, not one card.** Its name and parameters
   read as card text ("place cards under your monster"), and the effects
   README primitives table gains a row for it.
@@ -34,7 +39,9 @@ a check in `scripts/tools/` instead (see its README) and does not belong here.
 - **Sim evidence covers the changed cards.** For card-script changes, the
   `run_sim_diff.sh` output shows each changed card resolving on the head
   side, or the PR says why it can't (passive-only modifier, no deck plays
-  it and a unit test covers it).
+  it and a unit test covers it). For an engine rule change, the PR cites
+  the `EVENTS:` count (`ability:<card>` or a rule event) that shows the
+  rule fired; identical results with that count unmoved are no evidence.
 - **Every seed-matched sim difference is explained.** A differing
   `[SimResult]` line, or a game listed under `SPLIT:`, needs a cause in the
   PR (start from its `from` turn): a rule now applied, a trigger

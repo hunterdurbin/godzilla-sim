@@ -41,6 +41,7 @@ CHECKS=(
 	'^(scripts|scenes|tests|githooks)/|check_tracker_refs.py'
 	'^(scripts|scenes)/.*\.gd$|rank_up_rule_allowlist\.txt$|check_rank_up_rule_owner.py'
 	'^(scripts|scenes)/.*\.gd$|check_log_message_tokens.py'
+	'\.gd$|\.gd\.uid$|check_gd_uid_pairs.py'
 	'\.gd$|gdscript_warnings_allowlist\.txt$|check_gdscript_warnings.py'
 )
 
