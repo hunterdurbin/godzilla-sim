@@ -16,7 +16,8 @@ ticket (docs, tooling, a partial step) says so on its own line:
 Passes when the body has either. A parent ticket ("Part of #11") is closed by
 hand once its last child closes.
 
-Also warns (never fails) on each bare `#N` outside code fences, as the
+Also warns (never fails) on each bare `#N` outside code (fenced blocks and
+inline `code` spans, where it is an example), as the
 commit-msg hook does (check_commit_msg_refs.py): in this repo it links a
 code-repo PR, so a tracker ticket or a grilling decision row needs the
 full `hunterdurbin/godzilla-sim-issue-tracker#N`. In CI the warning is a
@@ -52,14 +53,14 @@ def check(body: str) -> str:
 
 
 def bare_body_refs(body: str) -> list:
-    """Bare `#N` refs in the body, skipping fenced code blocks."""
+    """Bare `#N` refs in the body, skipping fenced blocks and inline code."""
     prose, in_fence = [], False
     for line in body.splitlines():
         if line.lstrip().startswith("```"):
             in_fence = not in_fence
             continue
         if not in_fence:
-            prose.append(line)
+            prose.append(re.sub(r"`[^`]*`", "", line))
     return bare_refs("\n".join(prose))
 
 
@@ -81,6 +82,7 @@ def self_test() -> bool:
         "Follows hunterdurbin/godzilla-sim-issue-tracker#35 row 20.": [],
         "```text\n# Fixes #12\n```\nok": [],
         "## Summary": [],
+        "On `Part of #35 …` it warns; on #7 too.": ["7"],
     }
     for body, expected in ref_cases.items():
         if bare_body_refs(body) != expected:
