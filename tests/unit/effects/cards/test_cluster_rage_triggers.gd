@@ -222,7 +222,7 @@ func test_rage_decrease_does_not_fire_increase_watchers(card_id: String,
 	var input: ScriptedPlayerInput = s["input"]
 	var snapshot_before := _snapshot(state)
 
-	s["effect_handler"].reduce_rage(0, 1)
+	s["effect_handler"].reduce_rage(0, 1, 1)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_int(state.players[0].rage).is_equal(1)  # the reduction itself happened
@@ -516,7 +516,7 @@ func test_q381_decrease_watcher_keeps_one_entry_per_decrease() -> void:
 	(s["effect_handler"] as EffectHandler).registry.register_for_test("test://dec_recorder", effect, ["on_rage_changed"],
 			{"on_rage_changed": {"direction": "decrease"}})
 
-	s["effect_handler"].reduce_rage(0, 2)
+	s["effect_handler"].reduce_rage(0, 2, 1)
 	await s["effect_handler"].check_timing.resolve()
 
 	assert_array(effect.spans).contains_exactly([[3, 1]])

@@ -25,7 +25,7 @@ func get_bot_tags() -> Array[String]:
 
 func on_when_invading(ctx: EffectContext, _from_zone: int, _to_zone: int) -> void:
 	if ctx.opponent.monster_zone >= 6:
-		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2, ctx.owner.player_id)
 
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:

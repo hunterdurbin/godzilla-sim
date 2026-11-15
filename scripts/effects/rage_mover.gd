@@ -20,9 +20,6 @@ extends EffectModule
 ##     like a decrease.
 ## The abilities enter standby; they resolve at the next check timing.
 
-## `decrease`'s default reducer: the player whose ability is resolving.
-const REDUCER_RESOLVING := -2
-
 ## What caused an increase; picks the log line (the Gain Rage action has its
 ## own; the others share rage_gained with the source card).
 enum Cause {
@@ -56,19 +53,19 @@ func increase(player_id: int, amount: int, cause: Cause, source_card_id: String 
 	return amount
 
 
-func decrease(player_id: int, amount: int, reducer_id: int = REDUCER_RESOLVING) -> int:
+func decrease(player_id: int, amount: int, reducer_id: int) -> int:
 	## Reduce the player's Rage by up to `amount`. Returns the amount reduced
 	## (0 when prevented or already 0). `reducer_id` is the controller of the
-	## reducing effect, -1 for none; REDUCER_RESOLVING takes the player whose
-	## ability is resolving (CheckTiming.active_player_id — set only inside
-	## CheckTiming.run_effect). Prevention effects see it (EBP03-004 stops only
-	## the opponent's, hunterdurbin/godzilla-sim-issue-tracker#35 row 20).
+	## reducing effect, -1 for none (a rule). It is named by the caller, never
+	## taken from the resolving ability: a passive or engine path runs outside
+	## CheckTiming.run_effect, and a nested one would lend the innermost
+	## ability's player (hunterdurbin/godzilla-sim-issue-tracker#48).
+	## Prevention effects see it (EBP03-004 stops only the opponent's,
+	## hunterdurbin/godzilla-sim-issue-tracker#35 row 20).
 	## Leaves one RAGE marker per point and submits the Rage abilities.
 	var player := game_state.players[player_id]
 	if not player.has_rage() or amount <= 0:
 		return 0
-	if reducer_id == REDUCER_RESOLVING:
-		reducer_id = check_timing.active_player_id
 	if queries.is_rage_reduction_prevented(player_id, reducer_id):
 		return 0
 	var actual: int = mini(amount, player.rage)

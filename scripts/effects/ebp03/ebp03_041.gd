@@ -33,7 +33,7 @@ func on_enter(ctx: EffectContext) -> void:
 		return
 
 	# Reduce opponent rage by 2
-	ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
+	ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2, ctx.owner.player_id)
 
 
 func on_would_be_destroyed(_ctx: EffectContext) -> bool:

@@ -502,7 +502,7 @@ func test_ebp02_054_no_destroy_on_rage_decrease_or_without_crystals() -> void:
 	var input := ScriptedPlayerInput.new()
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.reduce_rage(0, 1)
+	handler.reduce_rage(0, 1, 1)
 	await handler.check_timing.resolve()
 	assert_bool(state.players[1].zone_has_cards(1)).is_true()
 	assert_int(input.count_calls("select_zones")).is_equal(0)
