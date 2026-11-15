@@ -71,6 +71,7 @@ assets/ translations/ docs/ comprehensive_rules/ deploy/ flatpak/
   — seed-matched `[SimResult]` diff + KAIJU `plan DIVERGED` counts
   (`tests/sim/README.md`). Changed cards or rules → pick decks that run
   them first: `./tests/sim/decks_with_cards.sh <card_id>...` (README § Decks).
+  Done = `STATUS: 0`; `2` (UNEXERCISED) → add a pair or a `cov_*.deck`.
 - Mechanical rules (a pattern grep can catch) get a check in `scripts/tools/`
   and a row in `scripts/tools/run_checks.sh` (pre-commit and `tests.yml` run
   it), not prose. All checks before committing: `scripts/tools/run_checks.sh <godot>`.

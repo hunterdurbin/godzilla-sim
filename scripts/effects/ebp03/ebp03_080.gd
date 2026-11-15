@@ -24,8 +24,7 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_phase_start(owner: PlayerState, _opponent: PlayerState, effect_handler = null) -> bool:
-	var valid_zones := CardEffect.get_effect_play_zones(owner)
-	if valid_zones.is_empty():
+	if effect_handler and effect_handler.legal_play_zones(owner.player_id, {}).is_empty():
 		return false
 	for card in owner.hand:
 		if CardUtils.is_battle(card) \
@@ -56,7 +55,7 @@ func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:
 	if selected.is_empty():
 		return
 
-	var valid_zones := CardEffect.get_effect_play_zones(ctx.owner)
+	var valid_zones: Array[int] = ctx.effect_handler.legal_play_zones(ctx.owner.player_id, selected)
 	var dest := await ctx.effect_handler.select_zone_target(
 		ctx.owner.player_id, ctx.owner.player_id, valid_zones,
 		tr("STR_EFF_PLAY_BATTLE_ZONE"), false, CardUtils.base_id(selected))

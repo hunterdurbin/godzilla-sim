@@ -525,13 +525,21 @@ func evolve_zones_in_order(player_id: int, eligible_zones: Array[int]) -> void:
 
 
 
-func can_play_in_zone(player_id: int, zone_idx: int) -> bool:
-	## Play-zone legality for an effect play: not the zone holding its
-	## master's invading monster (5.11.1.1), nor a zone the opponent blocks
-	## (EBP02-055) — the card is not played. Every play primitive below
-	## enforces this; card scripts use it to offer only legal zones instead
-	## of checking monster_zone. Every source shares one rule set (EnterZone).
-	return enter_zone.can_enter(player_id, {}, zone_idx)
+func legal_play_zones(player_id: int, card: Dictionary, near_zone: int = -1) -> Array[int]:
+	## The zones an effect may play `card` into for `player_id`: not the zone
+	## holding its master's invading monster (5.11.1.1), nor a zone the
+	## opponent blocks (EBP02-055) — EnterZone owns the rule for every source.
+	## An effect names its own zone, so the card's required zones don't apply.
+	## near_zone >= 0 keeps only the zones adjacent to it ("in a zone adjacent
+	## to this card"). An empty `card` asks for any card.
+	var zones := enter_zone.legal_zones(player_id, card)
+	if near_zone < 0:
+		return zones
+	var near: Array[int] = []
+	for z in CardEffect.get_adjacent_zones(near_zone):
+		if z in zones:
+			near.append(z)
+	return near
 
 
 
@@ -571,30 +579,19 @@ func create_tokens_in_zones(player: PlayerState, token_id: String, count: int, c
 	## Let the player select zones to place up to count tokens. Tokens can overload
 	## occupied zones; when placing multiple from one effect each must go to a different
 	## zone (rule 5.11.1.3). candidate_zones restricts the offered zones (e.g. adjacency);
-	## when empty, any non-monster zone is allowed. prompt_key is a tr() key formatted with
+	## when empty, any legal zone is allowed. prompt_key is a tr() key formatted with
 	## the number of tokens still to place. Returns the number of tokens actually placed.
-	var base_zones: Array[int] = candidate_zones if not candidate_zones.is_empty() else CardEffect.get_effect_play_zones(player)
+	var token: Dictionary = {"id": token_id}
+	var place := func(z: int) -> bool: return create_token_in_zone(player, token_id, z)
 	var placed: int = 0
 	var used_zones: Array[int] = []
 	for _i in range(count):
-		var valid: Array[int] = []
-		for z in base_zones:
-			if not can_play_in_zone(player.player_id, z):
-				continue
-			if z in used_zones:
-				continue
-			valid.append(z)
-		if valid.is_empty():
+		var zone_idx: int = await _prompt_zone_and_enter(player.player_id, token, candidate_zones,
+				used_zones, tr(prompt_key) % (count - placed), false, place)
+		if zone_idx < 0:
 			break
-		var prompt: String = tr(prompt_key) % (count - placed)
-		prompt += " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % _format_zone_list(valid)
-		var chosen: int = await h.select_zone_target(
-			player.player_id, player.player_id, valid, prompt, false, token_id)
-		if chosen < 0:
-			break
-		used_zones.append(chosen)
-		if create_token_in_zone(player, token_id, chosen):
-			placed += 1
+		used_zones.append(zone_idx)
+		placed += 1
 	return placed
 
 
@@ -606,43 +603,72 @@ func play_battle_cards_in_zones(player: PlayerState, cards: Array[Dictionary], p
 	## what they are placing) and chooses its zone; the zone prompt lists the still-
 	## available zones. Cards may overload occupied zones, but no
 	## zone is reused within this call. candidate_zones restricts the offered zones (e.g.
-	## adjacency); empty means any non-monster zone. from_discard plays each card out of
-	## the discard pile (play_from_discard) instead of the deck. max_count caps how many
-	## are played (-1 = no cap). Stops when no available zone remains.
+	## adjacency); empty means any legal zone. from_discard plays each card out of
+	## the discard pile instead of the deck. max_count caps how many
+	## are played (-1 = no cap). Stops when no available zone remains or a
+	## zone prompt comes back unanswered.
 	## Returns the cards that were not played (caller decides their fate).
-	var base_zones: Array[int] = candidate_zones if not candidate_zones.is_empty() else CardEffect.get_effect_play_zones(player)
+	var pid := player.player_id
 	var remaining := cards.duplicate()
 	var used_zones: Array[int] = []
 	var played: int = 0
 	while not remaining.is_empty() and (max_count < 0 or played < max_count):
-		var valid: Array[int] = []
-		for z in base_zones:
-			if not can_play_in_zone(player.player_id, z):
-				continue
-			if z in used_zones:
-				continue
-			valid.append(z)
-		if valid.is_empty():
+		if _open_zones(pid, {}, candidate_zones, used_zones).is_empty():
 			break
 		# Always present the card picker — even for the final card — so the player
 		# sees which card they are about to place.
-		var card: Dictionary = await select_from_cards(player.player_id, remaining, remaining, pick_prompt, false)
+		var card: Dictionary = await select_from_cards(pid, remaining, remaining, pick_prompt, false)
 		if card.is_empty():
 			card = remaining[0]   # mandatory pick — fall back to first
 		remaining.erase(card)
-		var prompt: String = tr("STR_EFF_PLAY_ZONES_FMT") % card.get("name", "card")
-		prompt += " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % _format_zone_list(valid)
-		var chosen: int = await h.select_zone_target(
-			player.player_id, player.player_id, valid, prompt, false, CardUtils.base_id(card))
-		if chosen < 0:
-			chosen = valid[0]         # mandatory placement — fall back to first available
-		used_zones.append(chosen)
-		if from_discard:
-			await play_from_discard(player.player_id, card, chosen)
-		else:
-			play_battle_card_from_deck(player.player_id, card, chosen)
+		var source := EnterZone.Source.DISCARD if from_discard else EnterZone.Source.DECK
+		var zone_idx: int = await _prompt_zone_and_enter(pid, card, candidate_zones, used_zones,
+				tr("STR_EFF_PLAY_ZONES_FMT") % card.get("name", "card"), false, _enter_at(pid, card, source))
+		if zone_idx < 0:
+			# Not played; the caller decides its fate — unless a refused deck
+			# entry already put it back on the deck bottom (EnterZone).
+			if from_discard or not player.main_deck.has(card):
+				remaining.append(card)
+			break
+		used_zones.append(zone_idx)
 		played += 1
 	return remaining
+
+
+func _open_zones(player_id: int, card: Dictionary, candidate_zones: Array[int],
+		used_zones: Array[int]) -> Array[int]:
+	## The legal zones for `card` (restricted to candidate_zones when given)
+	## that this effect has not already played into (5.11.1.3).
+	var open: Array[int] = []
+	for z in legal_play_zones(player_id, card):
+		if candidate_zones.is_empty() or z in candidate_zones:
+			if z not in used_zones:
+				open.append(z)
+	return open
+
+
+func _enter_at(player_id: int, card: Dictionary, source: EnterZone.Source) -> Callable:
+	## The `enter_at` step of `_prompt_zone_and_enter` for a card in an area.
+	return func(z: int) -> bool: return enter_zone.enter(player_id, card, z, source)
+
+
+func _prompt_zone_and_enter(player_id: int, card: Dictionary, candidate_zones: Array[int],
+		used_zones: Array[int], prompt: String, can_skip: bool, enter_at: Callable) -> int:
+	## The one prompt-then-enter step of every effect play that lets the
+	## player pick the zone: offer `_open_zones`, ask, then `enter_at(zone)`
+	## (Callable(zone_idx: int) -> bool) plays the card there. Returns the
+	## zone the card entered, or -1 when no zone was open, the player skipped
+	## (can_skip) or the prompt came back unanswered (aborted), or the entry
+	## was refused — the card was not played.
+	var open := _open_zones(player_id, card, candidate_zones, used_zones)
+	if open.is_empty():
+		return -1
+	prompt += " " + tr("STR_EFF_AVAILABLE_ZONES_FMT") % _format_zone_list(open)
+	var zone_idx: int = await h.select_zone_target(
+		player_id, player_id, open, prompt, can_skip, CardUtils.base_id(card))
+	if zone_idx < 0:
+		return -1
+	return zone_idx if enter_at.call(zone_idx) else -1
 
 
 func _format_zone_list(zones: Array[int]) -> String:
@@ -708,33 +734,19 @@ func swap_zones(player: PlayerState, zone_a: int, zone_b: int) -> void:
 # --- Helpers for card placement and movement ---
 
 func play_from_discard(player_id: int, card_data: Dictionary, zone_idx: int = -1) -> int:
-	## Remove a card from the discard pile and play it into a zone: overload
-	## or stack-on-play, then <Enter> and the "when played" watchers.
-	## If zone_idx is -1, the player selects an available zone.
-	## Returns the zone index where the card was placed, or -1 if cancelled
-	## or zone_idx can't be played into — the monster's zone (5.11.1.1) or a
-	## zone the opponent blocks (EBP02-055); the card stays in the discard pile.
+	## Play a card from the discard pile into a zone: overload or
+	## stack-on-play, then <Enter> and the "when played" watchers.
+	## If zone_idx is -1, the player selects a legal zone (the card stays in
+	## the discard pile while they choose).
+	## Returns the zone index where the card was placed, or -1 — the card
+	## stays in the discard pile — if zone_idx can't be played into (the
+	## monster's zone, 5.11.1.1, or a zone the opponent blocks, EBP02-055),
+	## or, when prompting, no zone is legal or the prompt comes back unanswered.
+	var enter_at := _enter_at(player_id, card_data, EnterZone.Source.DISCARD)
 	if zone_idx >= 0:
-		var played := enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DISCARD)
-		return zone_idx if played else -1
-	var player := game_state.players[player_id]
-
-	# Out of the discard pile while the player picks the zone.
-	var card_id: String = card_data.get("id", "")
-	for i in range(player.discard_pile.size() - 1, -1, -1):
-		if player.discard_pile[i].get("id", "") == card_id:
-			player.remove_discard_card_at(i)
-			break
-
-	var valid_zones := enter_zone.legal_zones(player_id, card_data)
-	var card_name: String = card_data.get("name", "card")
-	zone_idx = await h.select_zone_target(player_id, player_id, valid_zones, tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_name, false, CardUtils.base_id(card_data))
-	if zone_idx < 0:
-		# Can't skip — put back in discard as fallback
-		player.add_to_discard(card_data)
-		return -1
-	enter_zone.enter(player_id, card_data, zone_idx, EnterZone.Source.DISCARD)
-	return zone_idx
+		return zone_idx if enter_at.call(zone_idx) else -1
+	return await _prompt_zone_and_enter(player_id, card_data, [], [],
+			tr("STR_EFF_PLAY_FROM_DISCARD_ZONE_FMT") % card_data.get("name", "card"), false, enter_at)
 
 
 
@@ -744,22 +756,16 @@ func play_from_discard_or_skip(player_id: int, card_data: Dictionary, prompt: St
 	## the card from discard there. If the player skips or no zones are valid,
 	## the card stays in discard and -1 is returned.
 	## zone_filter is an optional Callable(zone_idx: int) -> bool to restrict
-	## valid placement zones; if omitted, any zone can_play_in_zone allows.
-	var player := game_state.players[player_id]
-	var valid_zones: Array[int] = []
-	for i in range(8):
-		if not can_play_in_zone(player_id, i):
-			continue
-		if zone_filter.is_valid() and not zone_filter.call(i):
-			continue
-		valid_zones.append(i)
-	if valid_zones.is_empty():
-		return -1
-	var zone_idx: int = await h.select_zone_target(
-		player_id, player_id, valid_zones, prompt, true, CardUtils.base_id(card_data))
-	if zone_idx < 0:
-		return -1
-	return await play_from_discard(player_id, card_data, zone_idx)
+	## the offered zones; if omitted, any legal zone is offered.
+	var candidates: Array[int] = []
+	if zone_filter.is_valid():
+		for i in legal_play_zones(player_id, card_data):
+			if zone_filter.call(i):
+				candidates.append(i)
+		if candidates.is_empty():
+			return -1
+	return await _prompt_zone_and_enter(player_id, card_data, candidates, [], prompt, true,
+			_enter_at(player_id, card_data, EnterZone.Source.DISCARD))
 
 
 

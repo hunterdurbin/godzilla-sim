@@ -184,8 +184,9 @@ func test_ebp02_055_blocks_an_effect_play(from: int,
 	var top: Dictionary = state.players[0].get_zone_top_card(1)
 	assert_bool(top.get("id", "") in ["", "BASE"]).is_true()
 	assert_int(input.count_calls("search_cards")).is_equal(0)
-	assert_bool(handler.can_play_in_zone(0, 1)).is_false()
-	assert_bool(handler.can_play_in_zone(0, 2)).is_true()
+	assert_array(handler.legal_play_zones(0, {})).not_contains([1])
+	assert_array(handler.legal_play_zones(0, {})).contains([2])
+	assert_array(handler.legal_play_zones(0, {}, 2)).contains_exactly([3, 7])
 	_teardown(s)
 
 

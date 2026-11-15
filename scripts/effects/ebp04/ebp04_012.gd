@@ -52,7 +52,7 @@ func apply_play_cost(ctx: EffectContext, zone_index: int) -> bool:
 
 func on_enter(ctx: EffectContext) -> void:
 	var monster_idx: int = ctx.owner.monster_zone - 1
-	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(ctx.owner, monster_idx)
+	var valid_adjacent: Array[int] = ctx.effect_handler.legal_play_zones(ctx.owner.player_id, {}, monster_idx)
 	if valid_adjacent.is_empty():
 		return
 	# Play a Tentacles token into each adjacent zone (max 3, capped by the natural

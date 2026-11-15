@@ -3,10 +3,11 @@ extends GdUnitTestSuite
 ## Play-zone legality (5.11.1.1): a battle card an effect plays into a
 ## specific zone that holds its master's invading monster is not played.
 ## Every engine play primitive enforces this, so card scripts never check
-## monster_zone themselves; can_play_in_zone lets them offer legal zones only.
+## monster_zone themselves; legal_play_zones lets them offer legal zones only.
 
 const Cards := preload("res://tests/fixtures/cards.gd")
 const States := preload("res://tests/fixtures/states.gd")
+const Real := preload("res://tests/fixtures/real_cards.gd")
 
 const MONSTER_ZONE_IDX := 3  # monster in zone 4
 
@@ -20,13 +21,31 @@ func _setup(opts: Dictionary = {}) -> Dictionary:
 	return s
 
 
-func test_can_play_in_zone_excludes_the_monsters_zone() -> void:
+func test_legal_play_zones_excludes_the_monsters_zone() -> void:
 	var s := _setup()
 	var handler: EffectHandler = s["effect_handler"]
-	assert_bool(handler.can_play_in_zone(0, MONSTER_ZONE_IDX)).is_false()
-	assert_bool(handler.can_play_in_zone(0, MONSTER_ZONE_IDX - 1)).is_true()
+	assert_array(handler.legal_play_zones(0, {})).contains_exactly([0, 1, 2, 4, 5, 6, 7])
 	# The opponent's monster doesn't restrict this player's zones.
-	assert_bool(handler.can_play_in_zone(1, MONSTER_ZONE_IDX)).is_true()
+	assert_array(handler.legal_play_zones(1, {})).contains([MONSTER_ZONE_IDX])
+
+
+func test_legal_play_zones_near_a_zone_keeps_only_its_legal_neighbours() -> void:
+	var s := _setup()
+	var handler: EffectHandler = s["effect_handler"]
+	# Zone 3 neighbours zones 2, 4 and 8; zone 4 holds the monster.
+	assert_array(handler.legal_play_zones(0, {}, 2)).contains_exactly([1, 7])
+	# Zone 1 neighbours only zone 2.
+	assert_array(handler.legal_play_zones(0, {}, 0)).contains_exactly([1])
+
+
+func test_legal_play_zones_ignores_the_cards_required_zones() -> void:
+	# EBP04-067 "can only be played in zone 8" restricts the Play action only;
+	# an effect names its own zone (scripts/effects/README.md).
+	var s := _setup()
+	var handler: EffectHandler = s["effect_handler"]
+	var earth := Real.instance("EBP04-067")
+	assert_array(handler.get_card_required_play_zones(0, earth)).contains_exactly([7])
+	assert_array(handler.legal_play_zones(0, earth)).contains_exactly([0, 1, 2, 4, 5, 6, 7])
 
 
 func test_play_from_hand_into_monster_zone_is_not_played() -> void:

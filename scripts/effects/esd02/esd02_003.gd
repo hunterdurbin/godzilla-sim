@@ -18,10 +18,6 @@ func get_bot_tags() -> Array[String]:
 
 
 func bot_can_fulfill_on_enter(owner: PlayerState, _opponent: PlayerState) -> bool:
-	var monster_zone_idx: int = owner.monster_zone - 1
-	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(owner, monster_zone_idx)
-	if valid_adjacent.is_empty():
-		return false
 	for card in owner.discard_pile:
 		if card.get("card_type") == CardEnums.CardType.BATTLE \
 			and CardUtils.rank_at_most(card, 4) \
@@ -34,7 +30,7 @@ func on_enter(ctx: EffectContext) -> void:
 	var player := ctx.owner
 	var monster_zone_idx: int = player.monster_zone - 1
 
-	var valid_adjacent := CardEffect.get_effect_play_adjacent_zones(player, monster_zone_idx)
+	var valid_adjacent: Array[int] = ctx.effect_handler.legal_play_zones(player.player_id, {}, monster_zone_idx)
 
 	if valid_adjacent.is_empty():
 		return
