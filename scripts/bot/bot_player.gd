@@ -664,7 +664,7 @@ func _combo_log_state(event: String) -> void:
 	## Log a game state snapshot at a key combo moment.
 	var player := game_state.players[bot_player_id]
 	var opponent := game_state.players[1 - bot_player_id]
-	var we_counter := _counter_numbers()
+	var we_counter := _our_counter_numbers()
 	var they_counter := RulesEngine.counter_numbers(effect_handler.queries, opponent, player)
 	var cp: int = we_counter["total_cp"]
 	var threat: int = they_counter["threat"]
@@ -683,7 +683,7 @@ func _combo_log_state(event: String) -> void:
 		_active_combo_plan.get("viability", 0)])
 
 
-func _counter_numbers() -> Dictionary:
+func _our_counter_numbers() -> Dictionary:
 	## The bot's counter numbers against the opponent (RulesEngine.counter_numbers).
 	return RulesEngine.counter_numbers(effect_handler.queries,
 			game_state.players[bot_player_id], game_state.players[1 - bot_player_id])
@@ -691,15 +691,13 @@ func _counter_numbers() -> Dictionary:
 
 func get_cp_gap() -> int:
 	## Returns opponent threat minus bot CP. Positive = bot is behind, negative/zero = bot is ahead.
-	var numbers := _counter_numbers()
-	return int(numbers["threat"]) - int(numbers["total_cp"])
+	return _our_counter_numbers()["gap"]
 
 
 func can_counter_opponent() -> bool:
 	## Returns true if the bot's counter power meets the opponent's threat and
 	## no effect prevents the counter.
-	var numbers := _counter_numbers()
-	return not numbers["prevented"] and int(numbers["total_cp"]) >= int(numbers["threat"])
+	return _our_counter_numbers()["lands"]
 
 
 func max_counter_power_remaining(include_hand: bool = true) -> int:

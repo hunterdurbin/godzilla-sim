@@ -1603,13 +1603,13 @@ func _sync_boards() -> void:
 	if turn_manager and turn_manager.game_state:
 		var state := turn_manager.game_state
 		var eh := turn_manager.effect_handler
-		var zone_cp_0: Array = eh.queries.get_zone_cp_modifiers(0) if eh else []
-		var zone_cp_1: Array = eh.queries.get_zone_cp_modifiers(1) if eh else []
-		var strat_cp_0: Array = eh.queries.get_strategy_cp_modifiers(0) if eh else []
-		var strat_cp_1: Array = eh.queries.get_strategy_cp_modifiers(1) if eh else []
-		var monster_cp_0: int = eh.queries.get_monster_cp_modifier(0) if eh else 0
-		var monster_cp_1: int = eh.queries.get_monster_cp_modifier(1) if eh else 0
 		var label_mods: Dictionary = _session.compute_counter_label_mods()
+		var zone_cp_0: Array = label_mods["zone_cp"][0]
+		var zone_cp_1: Array = label_mods["zone_cp"][1]
+		var strat_cp_0: Array = label_mods["strategy_cp"][0]
+		var strat_cp_1: Array = label_mods["strategy_cp"][1]
+		var monster_cp_0: int = label_mods["monster_cp"][0]
+		var monster_cp_1: int = label_mods["monster_cp"][1]
 		var cp_mod_0: int = label_mods["cp"][0]
 		var cp_mod_1: int = label_mods["cp"][1]
 		var threat_mod_0: int = label_mods["threat"][0]

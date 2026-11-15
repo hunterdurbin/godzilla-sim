@@ -6,6 +6,44 @@ extends EffectModule
 ## This is the narrow surface RulesEngine and the multiplayer state
 ## broadcast depend on; it must stay side-effect-free.
 
+## Player whose counter phase the passive queries evaluate in, or -1 for the
+## live turn and phase. Set only through begin_counter_view/end_counter_view.
+var _counter_view_pid: int = -1
+
+
+# --- Counter view ---
+
+
+func begin_counter_view(counterer_id: int) -> int:
+	## Until end_counter_view, passive queries evaluate as of `counterer_id`'s
+	## counter phase: every EffectContext they build reports that player's turn
+	## and the COUNTER phase (<Your Turn> / <Opponent's Turn> gates, the
+	## counter-phase-only engagement restriction). The game state is not
+	## touched. RulesEngine.counter_numbers uses it so the bot and the board
+	## see the counter a player will make, from any phase or turn. Returns the
+	## previous view; pass it to end_counter_view.
+	var previous := _counter_view_pid
+	_counter_view_pid = counterer_id
+	return previous
+
+
+func end_counter_view(previous: int) -> void:
+	_counter_view_pid = previous
+
+
+func _view_phase() -> CardEnums.GamePhase:
+	if _counter_view_pid >= 0:
+		return CardEnums.GamePhase.COUNTER
+	return game_state.current_phase
+
+
+func _build_context(owner_id: int, card_data: Dictionary) -> EffectContext:
+	var ctx := super(owner_id, card_data)
+	if _counter_view_pid >= 0:
+		ctx.turn_player_id = _counter_view_pid
+		ctx.phase = CardEnums.GamePhase.COUNTER
+	return ctx
+
 
 func get_burst_rank(card: Dictionary) -> int:
 	## The rank this card's <Burst> allows it to be played from (-1 = no Burst).
@@ -57,11 +95,10 @@ func can_monster_be_played_from_hand(player_id: int, card_data: Dictionary) -> b
 
 # --- Modifier queries ---
 
-func get_counter_power_modifier(player_id: int, at_counter: bool = false) -> int:
+func get_counter_power_modifier(player_id: int) -> int:
 	## Get total counter power modifier from all active effects (monster, zones + strategies).
-	## `at_counter`: see get_engagement_restriction.
 	var total: int = 0
-	var per_zone := get_zone_cp_modifiers(player_id, at_counter)
+	var per_zone := get_zone_cp_modifiers(player_id)
 	for mod in per_zone:
 		total += mod
 
@@ -109,10 +146,10 @@ func get_strategy_cp_modifiers(player_id: int) -> Array[int]:
 
 
 
-func get_zone_cp_modifiers(player_id: int, at_counter: bool = false) -> Array[int]:
+func get_zone_cp_modifiers(player_id: int) -> Array[int]:
 	## Get per-zone counter power modifiers from battle card effects.
 	## Sum of get_zone_cp_breakdown — the per-source logic lives there.
-	var breakdown := get_zone_cp_breakdown(player_id, at_counter)
+	var breakdown := get_zone_cp_breakdown(player_id)
 	var modifiers: Array[int] = []
 	modifiers.resize(8)
 	for i in range(8):
@@ -122,11 +159,11 @@ func get_zone_cp_modifiers(player_id: int, at_counter: bool = false) -> Array[in
 
 
 
-func get_zone_cp_breakdown(player_id: int, at_counter: bool = false) -> Array:
+func get_zone_cp_breakdown(player_id: int) -> Array:
 	## Per-zone counter power modifiers with source attribution: Array of 8
 	## Arrays of ModifierBreakdown entries. Entry order matters — the doubling
 	## entry's amount is base CP + the running total of everything before it,
-	## so sum(entries) stays exact. `at_counter`: see get_engagement_restriction.
+	## so sum(entries) stays exact.
 	var player := game_state.players[player_id]
 	var breakdown: Array = []
 	breakdown.resize(8)
@@ -135,7 +172,7 @@ func get_zone_cp_breakdown(player_id: int, at_counter: bool = false) -> Array:
 
 	# Get engagement restrictions from opponent's monster
 	var opponent_id: int = 1 - player_id
-	var max_restricted_rank: int = get_engagement_restriction(opponent_id, at_counter)
+	var max_restricted_rank: int = get_engagement_restriction(opponent_id)
 
 	for i in range(8):
 		var zone_card := player.get_zone_top_card(i)
@@ -365,17 +402,15 @@ func is_invasion_blocked(defender_player_id: int) -> bool:
 
 
 
-func get_engagement_restriction(attacker_player_id: int, at_counter: bool = false) -> int:
+func get_engagement_restriction(attacker_player_id: int) -> int:
 	## Get the engagement restriction from the attacker's monster and strategy effects.
 	## Returns the max rank of opponent battle cards that cannot engage (-1 = no restriction).
 	## If multiple sources restrict, the highest restriction wins.
 	## Restriction only applies during the counter phase — the rule text excludes the
 	## restricted cards' CP "during the counter phase" only. Outside it, those cards
 	## report their normal counter power (e.g. EBP01-014), so effects that read power
-	## in other phases aren't affected. `at_counter` asks for this turn's counter
-	## phase from any phase (RulesEngine.counter_numbers: the bot plans and the
-	## board labels show the coming counter); the turn is still the live one.
-	if not at_counter and game_state.current_phase != CardEnums.GamePhase.COUNTER:
+	## in other phases aren't affected. Under begin_counter_view it is the counter phase.
+	if _view_phase() != CardEnums.GamePhase.COUNTER:
 		return -1
 	var player := game_state.players[attacker_player_id]
 	var max_rank: int = -1
@@ -401,12 +436,11 @@ func get_engagement_restriction(attacker_player_id: int, at_counter: bool = fals
 
 
 
-func get_engagement_restricted_cp(defender_player_id: int, at_counter: bool = false) -> int:
+func get_engagement_restricted_cp(defender_player_id: int) -> int:
 	## Get the total base CP of the defender's cards that are restricted from engaging
 	## by the attacker's monster effect. This amount should be subtracted from total CP.
-	## `at_counter`: see get_engagement_restriction.
 	var attacker_id: int = 1 - defender_player_id
-	var max_restricted_rank: int = get_engagement_restriction(attacker_id, at_counter)
+	var max_restricted_rank: int = get_engagement_restriction(attacker_id)
 	if max_restricted_rank < 0:
 		return 0
 	var total_restricted: int = 0

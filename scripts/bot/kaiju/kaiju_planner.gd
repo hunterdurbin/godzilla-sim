@@ -114,8 +114,10 @@ func _search(bot: BotPlayer, gs: GameState) -> Array[Dictionary]:
 		var root_cands: Array = []
 		for c in _enumerate_candidates(root, pid, config):
 			root_cands.append("%s%s" % [CardEnums.ActionType.keys()[c["action"]], c["params"]])
-		var opp_cp_dbg: int = _evaluator._effective_counter_cp(root.queries(), root.state().players[1 - pid])
-		var threat_dbg: int = root.queries().get_effective_threat_level(pid)
+		var players: Array[PlayerState] = root.state().players
+		var their_counter := RulesEngine.counter_numbers(root.queries(), players[1 - pid], players[pid])
+		var opp_cp_dbg: int = their_counter["total_cp"]
+		var threat_dbg: int = their_counter["threat"]
 		print("[Kaiju]   root cands=%s oppCP=%d ourThreat=%d" % [root_cands, opp_cp_dbg, threat_dbg])
 
 	# Beam entries: {"rollout": KaijuRollout, "steps": Array[Dictionary]}.

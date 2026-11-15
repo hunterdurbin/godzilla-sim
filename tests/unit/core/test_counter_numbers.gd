@@ -67,19 +67,25 @@ func test_counter_numbers_subtract_engagement_restricted_cp(phase: CardEnums.Gam
 	assert_int(q.get_engagement_restriction(0)).is_equal(expected_live)
 
 
-func test_turn_gated_restriction_spares_the_non_current_player() -> void:
-	# P0's turn: EBP01-028 is P0's <Opponent's Turn> card, so P1 (not
-	# countering this turn) keeps its full CP on the board label.
+func test_counter_numbers_read_turn_gates_as_of_the_counterers_turn() -> void:
+	# P0's main phase. EBP01-028 is P0's <Opponent's Turn> card: it restricts
+	# P1's counter next turn, so P1's numbers already leave the 6000 out.
 	var state := _restricted_state()
 	state.current_player_id = 0
-	var numbers := RulesEngine.counter_numbers(_queries(state), state.players[1], state.players[0])
-	assert_int(numbers["total_cp"]).is_equal(10000)
+	var q := _queries(state)
+	var numbers := RulesEngine.counter_numbers(q, state.players[1], state.players[0])
+	assert_int(numbers["total_cp"]).is_equal(4000)
+	# The view is scoped: live queries and the state are untouched afterwards.
+	assert_int(q.get_engagement_restriction(0)).is_equal(-1)
+	assert_int(state.current_player_id).is_equal(0)
+	assert_int(state.current_phase).is_equal(CardEnums.GamePhase.MAIN)
 
 
 func test_counter_numbers_report_immunity_threshold() -> void:
 	# EBP01-038: <Opponent's Turn> + Awakening6 → immune at CP <= 50000.
+	# Evaluated on P0's own turn: the gate reads P1's coming counter.
 	var state := States.make_state({
-		"current_player_id": 1,
+		"current_player_id": 0,
 		"p0": {"current_monster": Real.instance("EBP01-038"), "monster_zone": 6},
 	})
 	var numbers := RulesEngine.counter_numbers(_queries(state), state.players[1], state.players[0])
@@ -96,6 +102,56 @@ func test_counter_numbers_report_prevention() -> void:
 	var numbers := RulesEngine.counter_numbers(_queries(state), state.players[1], state.players[0])
 	assert_int(numbers["total_cp"]).is_equal(90000)
 	assert_bool(numbers["prevented"]).is_true()
+	assert_bool(numbers["lands"]).is_false()
+
+
+func test_projected_cp_counts_toward_prevention() -> void:
+	# EBP04-014-style CP-conditional prevention reads total_cp; projected CP
+	# (KAIJU's opponent growth) is part of it.
+	var state := States.make_state({
+		"p1": {"current_monster": Cards.monster(1, 5000), "zone_cards": {2: Cards.battle(1, 3000)}},
+	})
+	var numbers := RulesEngine.counter_numbers(_queries(state), state.players[0], state.players[1], 4000)
+	assert_int(numbers["total_cp"]).is_equal(4000)
+	assert_int(numbers["gap"]).is_equal(1000)
+	assert_bool(numbers["lands"]).is_false()
+
+
+# --- Board labels and badges (GameSession.counter_label_mods) ---
+
+
+func test_label_mods_show_each_players_coming_counter() -> void:
+	# P1's main phase; P0 holds EBP01-028. P1's CP label drops the restricted
+	# 6000 already; P0's labels are unaffected.
+	var state := _restricted_state()
+	var q := _queries(state)
+	var mods := GameSession.counter_label_mods(q, state.players)
+	assert_int(mods["cp"][1]).is_equal(-6000)
+	assert_int(mods["cp"][0]).is_equal(0)
+	assert_int(mods["threat"][0]).is_equal(0)
+	# Badges come from the same view, so they add up to the label (the
+	# restricted card's printed CP is the only term outside them).
+	var badge_sum: int = int(mods["monster_cp"][1])
+	for v in mods["zone_cp"][1]:
+		badge_sum += int(v)
+	for v in mods["strategy_cp"][1]:
+		badge_sum += int(v)
+	assert_int(badge_sum - 6000).is_equal(mods["cp"][1])
+
+
+# --- Shin threat surplus ---
+
+
+func test_shin_threat_surplus_sees_the_restriction_on_the_opponents_counter() -> void:
+	# The bot (P1) plans its own turn; its EBP01-028 (<Opponent's Turn>)
+	# will restrict P0's counter next turn. Surplus = 5000 - 4000.
+	var state := States.make_state({
+		"current_player_id": 1,
+		"p1": {"current_monster": Cards.monster(1, 5000), "strategy_zones": [Real.instance("EBP01-028")]},
+		"p0": {"zone_cards": {2: Cards.battle(2, 6000, "LOW"), 3: Cards.battle(5, 4000, "HIGH")}},
+	})
+	var shin := BotComboShin.new()
+	assert_int(shin._get_threat_surplus(state.players[1], state.players[0], _queries(state))).is_equal(1000)
 
 
 # --- Bot CP gap (#32) ---

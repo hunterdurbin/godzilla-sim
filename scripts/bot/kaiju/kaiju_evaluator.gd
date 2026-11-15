@@ -110,7 +110,7 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	var our_counter := RulesEngine.counter_numbers(q, p, o)
 	var our_cp: int = our_counter["total_cp"]
 	var their_threat: int = our_counter["threat"]
-	var counter_lands: bool = not our_counter["prevented"] and our_cp >= their_threat
+	var counter_lands: bool = our_counter["lands"]
 	# Where the opponent's monster will be by the end of THEIR next turn:
 	# main-phase invade (+1..2) then end-phase advance (+1, capped at 8).
 	# 9 = they can cross past zone 8 and win next turn.
@@ -192,12 +192,13 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	# vs a 0.25/turn neutral baseline.
 	var counter_aggression: float = lerpf(1.0,
 			clampf(float(op.get("counters_per_turn", 0.25)) / 0.25, 0.6, 1.6), trust)
-	var opp_cp: int = _effective_counter_cp(q, o) + int(growth)
-	var our_threat: int = q.get_effective_threat_level(pid)
+	var their_counter := RulesEngine.counter_numbers(q, o, p, int(growth))
+	var opp_cp: int = their_counter["total_cp"]
+	var our_threat: int = their_counter["threat"]
 	# Continuous defense gradient: every rage point moves us away from the
 	# opponent's projected counter wall even before we're fully safe.
 	score += w["threat_margin"] * counter_aggression * clampf(our_threat - opp_cp, -15000.0, 15000.0)
-	if not q.is_counter_prevented(pid, opp_cp) and opp_cp >= our_threat:
+	if their_counter["lands"]:
 		# A successful counter always forces a rank-up, burning the finite
 		# monster line — flat penalty on top of the margin/retreat terms.
 		score -= w["countered_penalty"] * counter_aggression
@@ -316,13 +317,6 @@ func _monster_cards_in_hand(p: PlayerState) -> int:
 		if card.get("card_type") == CardEnums.CardType.MONSTER:
 			n += 1
 	return n
-
-
-## Total effective CP a player brings to a counter attempt
-## (RulesEngine.counter_numbers).
-func _effective_counter_cp(q: EffectQueries, counterer: PlayerState) -> int:
-	var defender: PlayerState = q.game_state.players[1 - counterer.player_id]
-	return RulesEngine.counter_numbers(q, counterer, defender)["total_cp"]
 
 
 ## Sum of effective zone CP, discounting the share contributed by fragile

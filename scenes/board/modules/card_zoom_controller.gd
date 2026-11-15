@@ -175,16 +175,27 @@ func _host_zoom_entries(pid: int, location: String, index: int) -> Array:
 	var eh: EffectHandler = _board.turn_manager.effect_handler
 	var player: PlayerState = _board.turn_manager.game_state.players[pid]
 	var out: Array = []
+	# CP as this player's counter sees it, threat as the opponent's — the
+	# board labels' views (GameSession.compute_counter_label_mods).
+	var q: EffectQueries = eh.queries
 	match location:
 		"zone":
 			if index >= 0 and index < 8:
-				out.append_array(eh.queries.get_zone_cp_breakdown(pid)[index])
-				out.append_array(eh.queries.get_field_rank_breakdown(pid)[index])
+				var view := q.begin_counter_view(pid)
+				out.append_array(q.get_zone_cp_breakdown(pid)[index])
+				q.end_counter_view(view)
+				out.append_array(q.get_field_rank_breakdown(pid)[index])
 		"monster":
-			ModifierBreakdown.append(out, "cp", eh.queries.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
-			out.append_array(eh.queries.get_threat_level_breakdown(pid))
+			var view := q.begin_counter_view(pid)
+			ModifierBreakdown.append(out, "cp", q.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
+			q.end_counter_view(view)
+			view = q.begin_counter_view(1 - pid)
+			out.append_array(q.get_threat_level_breakdown(pid))
+			q.end_counter_view(view)
 		"strategy":
-			var mods: Array = eh.queries.get_strategy_cp_modifiers(pid)
+			var view := q.begin_counter_view(pid)
+			var mods: Array = q.get_strategy_cp_modifiers(pid)
+			q.end_counter_view(view)
 			if index >= 0 and index < mods.size() and index < player.strategy_zones.size():
 				ModifierBreakdown.append(out, "cp", int(mods[index]), player.strategy_zones[index], -1, pid, "strategy")
 		"hand":

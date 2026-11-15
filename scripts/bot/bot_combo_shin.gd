@@ -832,8 +832,7 @@ func _count_strategies_in_hand(player: PlayerState) -> int:
 func _get_threat_surplus(player: PlayerState, opponent: PlayerState, queries: EffectQueries) -> int:
 	## Returns bot's threat minus opponent's total CP (the opponent's counter
 	## numbers against the bot). Positive = bot overwhelms counter.
-	var numbers := RulesEngine.counter_numbers(queries, opponent, player)
-	return int(numbers["threat"]) - int(numbers["total_cp"])
+	return RulesEngine.counter_numbers(queries, opponent, player)["gap"]
 
 
 # --- Counter-retreat path ---

@@ -26,7 +26,7 @@ func get_opponent_doubled_zones(ctx: EffectContext) -> Array[int]:
 	# to this card's controller).
 	if ctx.is_own_turn():
 		return []
-	if ctx.game_state.current_phase < CardEnums.GamePhase.COUNTER:
+	if ctx.phase < CardEnums.GamePhase.COUNTER:
 		return []
 	var monster_zone_idx: int = ctx.owner.monster_zone - 1
 	if monster_zone_idx < 0:

@@ -127,10 +127,6 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 	var tm: TurnManager = _session.turn_manager
 	var gs := tm.game_state
 	var eh := tm.effect_handler
-	var zone_cp_0: Array = eh.queries.get_zone_cp_modifiers(0) if eh else []
-	var zone_cp_1: Array = eh.queries.get_zone_cp_modifiers(1) if eh else []
-	var strat_cp_0: Array = eh.queries.get_strategy_cp_modifiers(0) if eh else []
-	var strat_cp_1: Array = eh.queries.get_strategy_cp_modifiers(1) if eh else []
 	var label_mods: Dictionary = _session.compute_counter_label_mods()
 	var data := {
 		"state_version": _state_version,
@@ -142,12 +138,12 @@ func _serialize_game_state(viewer_id: int) -> Dictionary:
 		"players": [],
 		"cp_modifiers": label_mods["cp"],
 		"threat_modifiers": label_mods["threat"],
-		"zone_cp_modifiers": [zone_cp_0, zone_cp_1],
-		"strategy_cp_modifiers": [strat_cp_0, strat_cp_1],
+		"zone_cp_modifiers": label_mods["zone_cp"],
+		"strategy_cp_modifiers": label_mods["strategy_cp"],
 		"zone_rank_modifiers": [eh.queries.get_zone_rank_modifiers(0) if eh else [], eh.queries.get_zone_rank_modifiers(1) if eh else []],
 		"hand_rank_modifiers": [_session.compute_hand_rank_mods(gs.players[0]) if eh else [], _session.compute_hand_rank_mods(gs.players[1]) if eh else []],
 		"hand_power_modifiers": [_session.compute_hand_power_mods(gs.players[0]) if eh else [], _session.compute_hand_power_mods(gs.players[1]) if eh else []],
-		"monster_cp_modifiers": [eh.queries.get_monster_cp_modifier(0) if eh else 0, eh.queries.get_monster_cp_modifier(1) if eh else 0],
+		"monster_cp_modifiers": label_mods["monster_cp"],
 		"modifier_breakdowns": ModifierBreakdown.build_all(eh, gs, viewer_id) if eh else {},
 		"player_names": Array(gs.player_names),
 		"first_player_id": _board._first_player_id,

@@ -114,9 +114,14 @@ static func build_all(eh: EffectHandler, gs: GameState, viewer_id: int) -> Dicti
 	var hand: Array = []
 	for pid in range(2):
 		var player := gs.players[pid]
-		zone_cp.append(eh.queries.get_zone_cp_breakdown(pid))
 		field_rank.append(eh.queries.get_field_rank_breakdown(pid))
+		# Same views as the board labels (GameSession.compute_counter_label_mods):
+		# threat as the opponent's counter sees it, CP as this player's does.
+		var view := eh.queries.begin_counter_view(1 - pid)
 		threat.append(eh.queries.get_threat_level_breakdown(pid))
+		eh.queries.end_counter_view(view)
+		view = eh.queries.begin_counter_view(pid)
+		zone_cp.append(eh.queries.get_zone_cp_breakdown(pid))
 
 		var monster_entries: Array = []
 		append(monster_entries, "cp", eh.queries.get_monster_cp_modifier(pid), player.current_monster, -1, pid, "monster")
@@ -124,6 +129,7 @@ static func build_all(eh: EffectHandler, gs: GameState, viewer_id: int) -> Dicti
 
 		var strategy_slots: Array = []
 		var strategy_mods: Array = eh.queries.get_strategy_cp_modifiers(pid)
+		eh.queries.end_counter_view(view)
 		for si in range(strategy_mods.size()):
 			var slot_entries: Array = []
 			if si < player.strategy_zones.size():
