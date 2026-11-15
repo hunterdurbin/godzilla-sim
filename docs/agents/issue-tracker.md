@@ -38,7 +38,8 @@ keyword with the fully-qualified reference, one per finished ticket:
 or a bare `#N` leave it open. A PR that finishes no ticket (docs, tooling, a
 partial step) puts `Tracker: none` on its own line. The `PR Tracker Link`
 check (`scripts/tools/check_pr_tracker_link.py`) enforces this and re-runs
-when the body is edited.
+when the body is edited; it also warns on a bare `#N`. Run it on the body
+file before `gh pr create`: `python3 scripts/tools/check_pr_tracker_link.py < body.md`.
 
 After merging, close a parent ticket (`Part of #N`) by hand once its last
 child is closed: `gh issue close <parent> --repo $ISSUES --comment "..."`.

@@ -37,7 +37,8 @@ can split and reconverge on the same `[SimResult]`, so a split alone fails
 the diff. Explain each divergence from that line. Under `EVENTS:` it
 prints the rule-event counts that moved base -> head (`[SimEvents]`: each
 GameEvents signal, e.g. `monster_countered`, and each log token type, e.g.
-`log:burst_played`); a moved count fails the diff too. A signal or token
+`log:burst_played`; plus each card's `[SimEffects]` ability count as
+`ability:<card_id>`); a moved count fails the diff too. A signal or token
 type only one tree has is listed as `(added)` / `(removed)` and does not. The full table,
 `events<n>.txt` in the logs dir, shows whether a changed rule path ran at
 all: a semantic PR cites its counts (`grep burst events*.txt`) when results
@@ -50,13 +51,19 @@ the last line, `STATUS: <n> (…)`, repeats the verdict so it survives a `| grep
 Head runs from a snapshot taken at start (HEAD + tracked changes via
 `git stash create`, which leaves the stash stack alone, + untracked
 non-ignored files), so editing the tree during a run does not affect it.
+Both sides run in their own worktrees, so committing in this tree mid-run
+is safe (the pre-commit hook's `trigger_map.gd` regeneration only touches
+this tree).
 `--pair` (repeatable) runs several deck pairs against one base import —
 use it instead of separate invocations; deck1/deck2 are then ignored.
 
 **Decks.** A deck is a decklist name (the user's decklists dir) or
 `@<path>` to a `.deck` file — relative paths resolve against this repo, so
 the base worktree reads the same file. For rules-engine changes pick decks
-that exercise them (e.g. "King Ghidorah" carries 3 <Revenge> cards; for
+that exercise them, and cite the `ability:` or event count that proves the
+rule fired (an engine-only change has no UNEXERCISED guard; e.g. a Rage
+trigger change must move the watchers' `ability:` counts). Examples:
+"King Ghidorah" carries 3 <Revenge> cards; for
 counter or rank-up rules add `--pair "@tests/sim/decks/cov_counter_rules.deck|King Ghidorah"`,
 whose header says what it covers). For
 card-script changes, `./tests/sim/decks_with_cards.sh <card_id>...` ranks

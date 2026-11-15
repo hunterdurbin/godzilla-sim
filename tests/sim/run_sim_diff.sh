@@ -22,7 +22,8 @@
 #     line and the first differing one, base vs head (first_divergence.py),
 #     so every divergence traces to the turn and monsters it started from
 #   - EVENTS: the rule-event counts ([SimEvents]: GameEvents signals and
-#     log token types such as log:burst_played) that moved base -> head
+#     log token types such as log:burst_played) and per-card ability counts
+#     ([SimEffects], as ability:<card_id>) that moved base -> head
 #     (a moved count fails; a signal / token type only one tree has is
 #     listed as added / removed and does not);
 #     the full table, which shows whether a path ran at all, is
