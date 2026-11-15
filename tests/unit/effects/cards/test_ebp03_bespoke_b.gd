@@ -762,14 +762,13 @@ func test_ebp03_061_plays_itself_from_discard_after_invasion_discard() -> void:
 	var card := Real.instance("EBP03-061")
 	# Monster away from the chosen zone: a card in the monster's zone is
 	# crushed at the check timing after the ability (11.3).
-	var state := States.make_state({"p0": {"monster_zone": 1}})
-	state.players[0].discard_pile.append(card)
+	var state := States.make_state({"p0": {"monster_zone": 1, "hand": [card]}})
 	var input := ScriptedPlayerInput.new()
 	input.answers = {"select_zone": [3]}
 	var s := States.make_session(state, input)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.dispatcher.trigger_discarded_for_invasion(0, card)
+	handler.mover.discard_from_hand(0, [card] as Array[Dictionary], CardMover.DiscardCause.INVASION_COST)
 	assert_bool(handler.check_timing.has_pending()).is_true()
 	await handler.check_timing.resolve()
 
@@ -779,10 +778,11 @@ func test_ebp03_061_plays_itself_from_discard_after_invasion_discard() -> void:
 
 
 func test_ebp03_061_fixture_cards_collect_no_invasion_discard_entries() -> void:
-	var state := States.make_state({})
+	var plain := Cards.battle(3, 2000, "PLAIN")
+	var state := States.make_state({"p0": {"hand": [plain]}})
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
-	handler.dispatcher.trigger_discarded_for_invasion(0, Cards.battle(3, 2000, "PLAIN"))
+	handler.mover.discard_from_hand(0, [plain] as Array[Dictionary], CardMover.DiscardCause.INVASION_COST)
 	assert_bool(handler.check_timing.has_pending()).is_false()
 
 

@@ -48,7 +48,7 @@ func _bind() -> void:
 	var eh: EffectHandler = tm.effect_handler
 	_connect_once(tm.turn_started, _on_turn_started)
 	_connect_once(ev.cards_drawn, _on_cards_drawn)
-	_connect_once(ev.card_discarded, _on_card_discarded)
+	_connect_once(ev.cards_discarded_from_hand, _on_cards_discarded_from_hand)
 	_connect_once(ev.rage_gained, _on_rage_gained)
 	_connect_once(ev.strategy_card_played, _on_strategy_card_played)
 	_connect_once(ev.battle_card_played, _on_battle_card_played)
@@ -75,7 +75,7 @@ func _on_cards_drawn(_player_id: int, _count: int) -> void:
 	play("card_draw")
 
 
-func _on_card_discarded(_player_id: int, _card: Dictionary) -> void:
+func _on_cards_discarded_from_hand(_player_id: int, _cards: Array) -> void:
 	play("card_discard")
 
 

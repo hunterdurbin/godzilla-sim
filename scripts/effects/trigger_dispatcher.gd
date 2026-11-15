@@ -189,7 +189,8 @@ func _passes_discard_condition(effect: CardEffect, card_data: Dictionary, ctx: E
 func trigger_discard_from_hand(player_id: int, card_data: Dictionary) -> void:
 	## Discard-from-hand ability of the card being discarded. It's an automatic
 	## ability: it enters standby (10.6.2) and resolves at the next check
-	## timing.
+	## timing. Test seam for one card's hook: the engine discards through
+	## CardMover.discard_from_hand, which submits every watcher in one batch.
 	var entries := _collect_discard_from_hand_entries(player_id, card_data)
 	check_timing.submit(entries)
 
@@ -208,26 +209,22 @@ func _collect_discard_from_hand_entries(player_id: int, card_data: Dictionary) -
 
 
 
-func trigger_hand_cards_discarded_batch(player_id: int, cards: Array) -> void:
+func trigger_hand_cards_discarded_batch(player_id: int, cards: Array, cause: CardMover.DiscardCause) -> void:
 	## Standby-resolve on_discard_from_hand and on_hand_card_discarded for a
 	## set of cards discarded simultaneously, per rule 10.4.3. Bundling all
 	## entries into one batch lets the player choose resolution order when
 	## multiple cards trigger at once (e.g. discarding two EBP04-046 Rodans
-	## from hand).
+	## from hand). The INVASION_COST cause adds each card's
+	## on_discarded_for_invasion. Called by CardMover.discard_from_hand.
 	if cards.is_empty():
 		return
 	var entries: Array = []
 	for card in cards:
+		if cause == CardMover.DiscardCause.INVASION_COST:
+			entries.append_array(_collect_discarded_for_invasion_entries(player_id, card))
 		entries.append_array(_collect_discard_from_hand_entries(player_id, card))
 		entries.append_array(_collect_hand_card_discarded_entries(player_id, card))
 	check_timing.submit(entries)
-
-
-
-
-func trigger_discarded_for_invasion(player_id: int, card_data: Dictionary) -> void:
-	## The invasion-cost card's on_discarded_for_invasion ability enters standby.
-	check_timing.submit(_collect_discarded_for_invasion_entries(player_id, card_data))
 
 
 
@@ -635,7 +632,8 @@ func _passes_hand_discarded_filter(card_data: Dictionary, watcher_player_id: int
 func trigger_hand_card_discarded(player_id: int, card_data: Dictionary) -> void:
 	## Trigger on ALL active cards when a card is discarded from the owner's hand.
 	## Collects all applicable effects and submits them to standby (they
-	## resolve at the next check timing).
+	## resolve at the next check timing). Test seam for the watchers: the
+	## engine discards through CardMover.discard_from_hand.
 	check_timing.submit(_collect_hand_card_discarded_entries(player_id, card_data))
 
 

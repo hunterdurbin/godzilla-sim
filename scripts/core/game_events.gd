@@ -18,7 +18,8 @@ signal strategy_card_played(player_id: int, card: Dictionary, strategy_index: in
 ## teleports emit it too, with to_zone < from_zone for a move back.
 signal monster_advanced(player_id: int, from_zone: int, to_zone: int)
 signal rage_gained(player_id: int, new_rage: int)
-signal card_discarded(player_id: int, card: Dictionary)
+## Every discard from hand (CardMover.discard_from_hand), once per operation.
+signal cards_discarded_from_hand(player_id: int, cards: Array)
 signal monster_played(player_id: int, old_monster: Dictionary, new_monster: Dictionary)
 signal monster_countered(player_id: int, old_monster: Dictionary, new_monster: Dictionary)
 signal battle_card_crushed(player_id: int, zone_index: int, card: Dictionary)

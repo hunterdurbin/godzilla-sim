@@ -11,6 +11,59 @@ extends EffectModule
 # engine, in resolution order.
 var _token_serial: int = 0
 
+## Why cards leave the hand for the discard pile (discard_from_hand).
+enum DiscardCause {
+	## The Gain Rage action (5.12); the action's log line names the card.
+	GAIN_RAGE,
+	## The invasion cost (5.14); the Invade log line names the card. Only
+	## this cause fires the card's on_discarded_for_invasion.
+	INVASION_COST,
+	## An effect; logged as one line attributed to the active effect.
+	EFFECT,
+}
+
+
+# --- Discard from hand ---
+
+func discard_from_hand(player_id: int, cards: Array[Dictionary], cause: DiscardCause) -> void:
+	## THE discard-from-hand operation (hunterdurbin/godzilla-sim-issue-tracker#35
+	## row 22): take `cards` out of the hand, put them in the discard pile,
+	## write the effect log line (EFFECT only — the action lines already name
+	## the card) and submit every watcher in one standby batch (10.4.3):
+	## on_discarded_for_invasion (INVASION_COST only), the card's own
+	## on_discard_from_hand and the on_hand_card_discarded watchers. Emits
+	## GameEvents.cards_discarded_from_hand once and EffectHandler.log_message
+	## (EFFECT only). Never prompts. Engine-internal: card scripts discard
+	## through select_hand_card / discard_hand_to. Cards not in the hand are
+	## skipped. No-op when nothing is discarded.
+	var player := game_state.players[player_id]
+	var discarded: Array[Dictionary] = []
+	for card in cards:
+		if player.remove_from_hand(card):
+			discarded.append(card)
+	if discarded.is_empty():
+		return
+	player.add_cards_to_discard(discarded)
+	if cause == DiscardCause.EFFECT:
+		_log_effect_discard(player_id, discarded, true)
+	if events:
+		events.cards_discarded_from_hand.emit(player_id, discarded)
+	dispatcher.trigger_hand_cards_discarded_batch(player_id, discarded, cause)
+
+
+func _log_effect_discard(player_id: int, cards: Array[Dictionary], from_hand: bool) -> void:
+	## One discard line attributed to the resolving effect and its controller.
+	## Outside an effect there is no source to name, so nothing is logged.
+	if check_timing.active_card.is_empty():
+		return
+	h.log_message.emit(GameLog.effect_discarded_cards(check_timing.active_player_id,
+			_active_source_id(), player_id, cards, from_hand))
+
+
+func _active_source_id() -> String:
+	## Card id of the effect currently resolving, "" outside an effect.
+	return check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
+
 
 
 # --- Player choice helpers ---
@@ -21,7 +74,9 @@ func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 	## PlayerInput default discards from the back of hand.
 	## Returns the cards that were actually discarded, so callers can react to what
 	## left the hand (e.g. EBP03-010 gains rage if a battle card was discarded) without
-	## a fragile before/after hand diff.
+	## a fragile before/after hand diff. The discard goes through
+	## discard_from_hand (EFFECT): one log line, GameEvents.cards_discarded_from_hand
+	## and one standby batch of discard watchers.
 	var player := game_state.players[player_id]
 	var to_discard: int = player.hand.size() - target_count
 	if to_discard <= 0:
@@ -39,19 +94,17 @@ func discard_hand_to(player_id: int, target_count: int) -> Array[Dictionary]:
 		hand_indices = await input.choose_hand_discards(player_id, to_discard, player.hand.size())
 		_unhighlight_active_effect()
 
-	var discarded_cards: Array[Dictionary] = []
-	# Sort descending so removing doesn't shift indices
-	var sorted_indices := hand_indices.duplicate()
+	# Highest index first: the discard pile gets the cards in that order.
+	var sorted_indices: Array[int] = []
+	for idx in hand_indices:
+		if idx >= 0 and idx < player.hand.size() and not sorted_indices.has(idx):
+			sorted_indices.append(idx)
 	sorted_indices.sort()
 	sorted_indices.reverse()
+	var discarded_cards: Array[Dictionary] = []
 	for idx in sorted_indices:
-		if idx >= 0 and idx < player.hand.size():
-			var card: Dictionary = player.remove_hand_card_at(idx)
-			player.add_to_discard(card)
-			discarded_cards.append(card)
-	# Bundle all simultaneously-discarded triggers into one standby batch so
-	# the player can choose resolution order when 2+ cards trigger (10.4.3).
-	dispatcher.trigger_hand_cards_discarded_batch(player_id, discarded_cards)
+		discarded_cards.append(player.hand[idx])
+	discard_from_hand(player_id, discarded_cards, DiscardCause.EFFECT)
 	return discarded_cards
 
 
@@ -228,17 +281,17 @@ func search_discard(player_id: int, filter: Callable, prompt: String, allow_skip
 
 func select_hand_card(player_id: int, filter: Callable, prompt: String, allow_skip: bool = false) -> Dictionary:
 	## Ask a player to choose a card from their hand matching filter.
-	## The selected card is removed from hand and added to discard pile.
-	## Returns the selected card, or empty dict if no valid cards or player skips.
+	## The selected card is discarded through discard_from_hand (EFFECT): one
+	## log line, GameEvents.cards_discarded_from_hand and its discard watchers
+	## in standby. Returns the selected card, or empty dict if no valid cards
+	## or player skips.
 	var player := game_state.players[player_id]
 	var chosen_index: int = await _pick_hand_index(player_id, filter, prompt, allow_skip)
 	if chosen_index < 0:
 		return {}
 
-	var card: Dictionary = player.remove_hand_card_at(chosen_index)
-	player.add_to_discard(card)
-	# One standby batch (10.4.3) — mid-effect, both wait for the check timing.
-	dispatcher.trigger_hand_cards_discarded_batch(player_id, [card])
+	var card: Dictionary = player.hand[chosen_index]
+	discard_from_hand(player_id, [card], DiscardCause.EFFECT)
 	return card
 
 
@@ -351,9 +404,17 @@ static func banish_or_discard(player: PlayerState, stack: Array) -> void:
 
 
 func discard_cards(player_id: int, cards: Array[Dictionary]) -> void:
-	## Append a batch of cards to the player's discard pile.
-	## For tokens or mixed batches, use banish_or_discard per-card instead.
+	## Append a batch of cards (already out of wherever they were, e.g. a deck
+	## reveal) to the player's discard pile and log them as one line
+	## attributed to the active effect and its controller
+	## (hunterdurbin/godzilla-sim-issue-tracker#9); outside an effect nothing
+	## is logged. No-op when empty. Cards leaving
+	## the hand go through discard_from_hand instead; for tokens or mixed
+	## batches, use banish_or_discard.
+	if cards.is_empty():
+		return
 	game_state.players[player_id].add_cards_to_discard(cards)
+	_log_effect_discard(player_id, cards, false)
 
 
 
@@ -862,7 +923,7 @@ func return_discard_to_hand(player_id: int, card: Dictionary) -> void:
 	var player := game_state.players[player_id]
 	player.remove_from_discard(card)
 	player.add_to_hand(card)
-	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
+	var source_id: String = _active_source_id()
 	h.log_message.emit(GameLog.effect_returned_card_to_hand(player_id, source_id, card.get("id", "")))
 	dispatcher.trigger_card_returned_from_discard(player_id, card)
 
@@ -876,7 +937,7 @@ func add_card_to_hand(player_id: int, card: Dictionary) -> void:
 	## so the add is visible in the game log. For returns from the discard pile use
 	## return_discard_to_hand instead — it also fires on_card_returned_from_discard.
 	game_state.players[player_id].add_to_hand(card)
-	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
+	var source_id: String = _active_source_id()
 	h.log_message.emit(GameLog.effect_added_card_to_hand(player_id, source_id, card.get("id", "")))
 
 
@@ -888,7 +949,7 @@ func add_cards_to_hand(player_id: int, cards: Array[Dictionary]) -> void:
 	if cards.is_empty():
 		return
 	game_state.players[player_id].add_cards_to_hand(cards)
-	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
+	var source_id: String = _active_source_id()
 	h.log_message.emit(GameLog.effect_added_cards_to_hand(player_id, source_id, cards))
 
 
@@ -903,7 +964,7 @@ func put_card_on_top_of_deck(player_id: int, card: Dictionary) -> void:
 	var player := game_state.players[player_id]
 	player.remove_from_discard(card)
 	player.put_on_deck_top(card)
-	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
+	var source_id: String = _active_source_id()
 	h.log_message.emit(GameLog.effect_put_card_on_top_of_deck(player_id, source_id, card.get("id", "")))
 
 
@@ -916,7 +977,7 @@ func put_card_on_bottom_of_deck(player_id: int, card: Dictionary) -> void:
 	## which doubles as the public reveal for "reveal … and place it on the
 	## bottom of your deck" text (ESD04-001).
 	game_state.players[player_id].put_on_deck_bottom(card)
-	var source_id: String = check_timing.active_card.get("id", "") if not check_timing.active_card.is_empty() else ""
+	var source_id: String = _active_source_id()
 	h.log_message.emit(GameLog.effect_put_card_on_bottom_of_deck(player_id, source_id, card.get("id", "")))
 
 
