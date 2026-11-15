@@ -219,32 +219,41 @@ func check_win_condition(state: GameState) -> int:
 
 # --- Counter rules (5.15) ---
 
-## The current player's counter numbers against the opponent's monster:
-## {total_cp, threat, rage_threat, effect_threat, immunity_threshold,
-## prevented}. CounterResolver decides the outcome branch from these.
+## The current player's counter numbers against the opponent's monster
+## (see counter_numbers). CounterResolver decides the outcome branch from these.
 func compute_counter_numbers(state: GameState) -> Dictionary:
-	var player := state.get_current_player()
-	var opponent := state.get_opponent_of_current()
-	var total_cp: int = player.get_total_counter_power()
-	var threat: int = opponent.get_threat_level()
+	return counter_numbers(queries, state.get_current_player(), state.get_opponent_of_current())
+
+
+## `counterer`'s counter numbers against `defender`'s monster:
+## {total_cp, threat, rage_threat, effect_threat, immunity_threshold,
+## prevented}. Pure; the one place the counter terms are summed — the bot
+## and the board's CP/threat labels read it too. The numbers are this turn's
+## counter phase's from any phase: engagement restriction (counter phase
+## only) is applied even when called in the main phase. Turn-gated effects
+## still read the live turn, so `counterer` should be the current player for
+## the counter that will actually happen. A null `q` gives the printed numbers.
+static func counter_numbers(q: EffectQueries, counterer: PlayerState, defender: PlayerState) -> Dictionary:
+	var total_cp: int = counterer.get_total_counter_power()
+	var threat: int = defender.get_threat_level()
 	# Threat breakdown for the log (base printed threat + rage + effect modifiers).
 	# rage_threat is the universal +5000-per-Rage term every monster carries.
-	var rage_threat: int = opponent.rage * 5000
+	var rage_threat: int = defender.rage * 5000
 	var effect_threat: int = 0
 	var immunity_threshold: int = 0
 	var prevented := false
 	# Apply effect modifiers
-	if queries:
-		total_cp += queries.get_counter_power_modifier(player.player_id)
-		effect_threat = queries.get_threat_level_modifier(opponent.player_id)
+	if q:
+		total_cp += q.get_counter_power_modifier(counterer.player_id, true)
+		effect_threat = q.get_threat_level_modifier(defender.player_id)
 		threat += effect_threat
-		# Subtract base CP of cards restricted from engaging by opponent's monster
-		total_cp -= queries.get_engagement_restricted_cp(player.player_id)
-		immunity_threshold = queries.get_counter_immunity_threshold(opponent.player_id)
+		# Subtract base CP of cards restricted from engaging by the defender's monster
+		total_cp -= q.get_engagement_restricted_cp(counterer.player_id, true)
+		immunity_threshold = q.get_counter_immunity_threshold(defender.player_id)
 		# Full counter prevention (e.g. EBP04-014/031/032): no retreat, no rank
 		# up — counter simply doesn't happen. Distinct from counter immunity
 		# which still retreats. May be CP-conditional, hence total_cp.
-		prevented = queries.is_counter_prevented(opponent.player_id, total_cp)
+		prevented = q.is_counter_prevented(defender.player_id, total_cp)
 	return {
 		"total_cp": total_cp,
 		"threat": threat,

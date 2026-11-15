@@ -131,6 +131,27 @@ func refresh_bot_analysis() -> void:
 	bot_player.analyze_deck()
 
 
+## The board's CP and threat labels as modifiers over the printed numbers:
+## {"cp": [p0, p1], "threat": [p0, p1]}. Each player's CP is their counter
+## numbers against the opponent (RulesEngine.counter_numbers, engagement
+## restriction subtracted); their threat is the opponent's counter numbers
+## against them. Immunity and prevention stay out of the label. Zeros
+## without an effect handler. Host side; clients receive these in the state
+## broadcast.
+func compute_counter_label_mods() -> Dictionary:
+	var out := {"cp": [0, 0], "threat": [0, 0]}
+	if not turn_manager or not turn_manager.effect_handler:
+		return out
+	var q: EffectQueries = turn_manager.effect_handler.queries
+	var players: Array[PlayerState] = turn_manager.game_state.players
+	for pid in 2:
+		var me := players[pid]
+		var opp := players[1 - pid]
+		out["cp"][pid] = int(RulesEngine.counter_numbers(q, me, opp)["total_cp"]) - me.get_total_counter_power()
+		out["threat"][pid] = int(RulesEngine.counter_numbers(q, opp, me)["effect_threat"])
+	return out
+
+
 ## Compute the net play-cost modifier for each card in the given player's hand.
 ## Returned array is parallel to player.hand. Returns [] if no effect handler.
 ## Used by the board's hand display (host side) and the state broadcast.

@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ## Counter/End phases are never rolled out — their expected outcome is folded
 ## in analytically here (counter margins, retreat, end-phase advance), using
-## the same math as RulesEngine.compute_counter_numbers.
+## RulesEngine.counter_numbers.
 
 const WIN_SCORE: float = 1e9
 ## Soft terminal: being counterable while unable to rank up is a loss next
@@ -107,10 +107,10 @@ func evaluate(rollout: KaijuRollout, pid: int, phase: String) -> float:
 	# Deterministic — both numbers are public. A success retreats their
 	# monster and burns one of their finite rank-ups; if they can't rank up,
 	# it wins the game outright.
-	var our_cp: int = _effective_counter_cp(q, p)
-	var their_threat: int = q.get_effective_threat_level(1 - pid)
-	var counter_lands: bool = not q.is_counter_prevented(1 - pid, our_cp) \
-			and our_cp >= their_threat
+	var our_counter := RulesEngine.counter_numbers(q, p, o)
+	var our_cp: int = our_counter["total_cp"]
+	var their_threat: int = our_counter["threat"]
+	var counter_lands: bool = not our_counter["prevented"] and our_cp >= their_threat
 	# Where the opponent's monster will be by the end of THEIR next turn:
 	# main-phase invade (+1..2) then end-phase advance (+1, capped at 8).
 	# 9 = they can cross past zone 8 and win next turn.
@@ -318,12 +318,11 @@ func _monster_cards_in_hand(p: PlayerState) -> int:
 	return n
 
 
-## Total effective CP a player brings to a counter attempt — mirrors
-## RulesEngine.compute_counter_numbers.
+## Total effective CP a player brings to a counter attempt
+## (RulesEngine.counter_numbers).
 func _effective_counter_cp(q: EffectQueries, counterer: PlayerState) -> int:
-	return counterer.get_total_counter_power() \
-			+ q.get_counter_power_modifier(counterer.player_id) \
-			- q.get_engagement_restricted_cp(counterer.player_id)
+	var defender: PlayerState = q.game_state.players[1 - counterer.player_id]
+	return RulesEngine.counter_numbers(q, counterer, defender)["total_cp"]
 
 
 ## Sum of effective zone CP, discounting the share contributed by fragile
