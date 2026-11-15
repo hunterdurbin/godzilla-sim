@@ -21,6 +21,15 @@ allowlist -- the tree is clean; add the missing primitive instead:
   change signals:
       `hand_changed.emit(` and the other PlayerState signals -- the
       PlayerState mutators emit them (hunterdurbin/godzilla-sim-issue-tracker#23)
+  PlayerState mutator calls:
+      `ctx.owner.<m>(` / `ctx.opponent.<m>(` for every method in
+      scripts/core/player_state.gd § Mutators (read from that section, so a
+      new mutator is covered automatically). A card calling set_rage skips
+      the log line and the Rage triggers that gain_rage applies
+      (hunterdurbin/godzilla-sim-issue-tracker#30). draw_cards / mill_cards
+      sit outside that section and stay allowed: each is a whole-rule
+      operation with its own reshuffle, and there is no EffectHandler draw
+      primitive.
 
 Engine scope (scripts/core/**, scripts/effects/*.gd) -- a ratchet with
 engine_player_state_writes_allowlist.txt. The engine changes a player's
@@ -75,6 +84,41 @@ SIGNALS = ("hand_changed", "zones_changed", "monster_changed", "rage_changed",
            "strategy_zones_changed", "deck_changed", "discard_changed",
            "discard_reshuffled")
 EMIT_RE = re.compile(r"\b(?:%s)\s*\.\s*emit\s*\(" % "|".join(SIGNALS))
+
+# --- PlayerState mutator calls through ctx.owner / ctx.opponent ---
+PLAYER_STATE = "scripts/core/player_state.gd"
+SECTION_RE = re.compile(r"^# --- (.+?) ---\s*$")
+FUNC_RE = re.compile(r"^func\s+([A-Za-z_]\w*)\s*\(")
+
+
+def player_state_mutators(path=PLAYER_STATE):
+    """Method names declared in player_state.gd § Mutators."""
+    names = []
+    in_section = False
+    # Raw lines: the section headers are comments, which read_lines strips.
+    with open(os.path.join(gd_ratchet.ROOT, path), encoding="utf-8") as fh:
+        lines = fh.read().splitlines()
+    for line in lines:
+        m = SECTION_RE.match(line)
+        if m:
+            in_section = m.group(1).strip() == "Mutators"
+            continue
+        f = FUNC_RE.match(line)
+        if in_section and f:
+            names.append(f.group(1))
+    return names
+
+
+def mutator_call_re(names):
+    return re.compile(r"\bctx\s*\.\s*(?:owner|opponent)\s*\.\s*(%s)\s*\(" % "|".join(names))
+
+
+def mutator_calls(lines, call_re):
+    for lineno, line in enumerate(lines, 1):
+        m = call_re.search(line)
+        if m:
+            yield lineno, m.group(1), line.strip()
+
 
 # --- engine scope ---
 ENGINE_COLLECTIONS = COLLECTIONS + ("monster_stack", "strategy_zone_stacks")
@@ -190,6 +234,24 @@ def self_test():
         "sub_phase_changed.emit(0)",
         "player.hand_changed.connect(_on_state_changed)",
     ]
+    mutators = player_state_mutators()
+    if "set_rage" not in mutators or "draw_cards" in mutators or "mill_cards" in mutators:
+        failures.append("player_state.gd § Mutators parse: %s" % mutators)
+    call_re = mutator_call_re(mutators)
+    call_bad = [
+        "ctx.owner.set_rage(ctx.owner.rage + 2)",
+        "ctx.opponent.add_to_hand(card)",
+        "ctx.owner .put_on_deck_bottom(card)",
+    ]
+    call_ok = [
+        "ctx.owner.draw_cards(1)",
+        "ctx.opponent.mill_cards(2)",
+        "var t := ctx.owner.get_threat_level()",
+        "ctx.effect_handler.gain_rage(ctx.owner.player_id, 2)",
+        gd_ratchet.strip_comment("# ctx.owner.set_rage(0) is forbidden"),
+    ]
+    failures += [s for s in call_bad if not list(mutator_calls([s], call_re))]
+    failures += [s for s in call_ok if list(mutator_calls([s], call_re))]
     failures += [s for s in emit_bad if not list(emits([s]))]
     failures += [s for s in emit_ok if list(emits([s]))]
     engine_bad = [
@@ -223,6 +285,7 @@ def self_test():
 
 def card_main():
     violations = []
+    call_re = mutator_call_re(player_state_mutators())
     for path in gd_ratchet.card_scripts():
         lines = gd_ratchet.read_lines(path)
         for lineno, label, code in zone_violations(lines):
@@ -231,6 +294,8 @@ def card_main():
             violations.append("%s:%d  collection write  ->  %s" % (path, lineno, code))
         for lineno, code in emits(lines):
             violations.append("%s:%d  change-signal emit  ->  %s" % (path, lineno, code))
+        for lineno, name, code in mutator_calls(lines, call_re):
+            violations.append("%s:%d  PlayerState.%s( call  ->  %s" % (path, lineno, name, code))
     for v in violations:
         print("CARD MUTATION  " + v)
     if violations:

@@ -592,6 +592,37 @@ func test_ebp01_066_gains_2_rage_when_discarded_by_opponent_effect() -> void:
 	# negative case is intentionally not asserted here.
 
 
+func test_ebp01_066_opponent_discard_raises_rage_through_gain_rage() -> void:
+	# An opponent's effect discards EBP01-066 from player 0's hand while
+	# EBP01-003 is player 0's monster. The +2 is a Rage increase like any
+	# other: a rage-gain log line, and EBP01-003 mills once per point (Q381).
+	var biollante := Real.instance("EBP01-066")
+	var state := States.make_state({"p0": {
+		"current_monster": Real.instance("EBP01-003"),
+		"hand": [biollante],
+		"main_deck": [Cards.battle(1, 2000, "D-1"), Cards.battle(1, 2000, "D-2"), Cards.battle(1, 2000, "D-3")],
+	}})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	var logged: Array = []
+	handler.log_message.connect(func(entry: Dictionary) -> void: logged.append(entry))
+
+	await handler.check_timing.run_effect(1, {"id": "OPP-FX", "name": "Opponent Effect"},
+			handler.discard_hand_to.bind(0, 0))
+	await handler.check_timing.resolve()
+
+	var p0 := state.players[0]
+	assert_int(p0.rage).is_equal(2)
+	var rage_log_amounts := logged \
+		.filter(func(e: Dictionary) -> bool: return e.get("type", "") == "rage_gained") \
+		.map(func(e: Dictionary) -> int: return int(e["amount"]))
+	assert_array(rage_log_amounts).contains_exactly([2])
+	# EBP01-066 itself plus one milled card per Rage point.
+	assert_int(p0.main_deck.size()) \
+		.override_failure_message("EBP01-003 must mill once per point of the +2").is_equal(1)
+	assert_int(p0.discard_pile.size()).is_equal(3)
+
+
 # --- EBP01-069: Varan — Awakening6 enter: draw 2, discard 2 ---
 
 
