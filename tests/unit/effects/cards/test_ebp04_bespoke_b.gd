@@ -1163,7 +1163,7 @@ func test_ebp04_089_claims_markers_on_own_turn_rage_decrease() -> void:
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.reduce_rage(0, 2)
+	handler.reduce_rage(0, 2, 1)
 	await handler.check_timing.resolve()
 
 	var p0 := state.players[0]
@@ -1181,7 +1181,7 @@ func test_ebp04_089_no_markers_on_opponent_turn_and_blocks_start_discard() -> vo
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.reduce_rage(0, 2)
+	handler.reduce_rage(0, 2, 1)
 	await handler.check_timing.resolve()
 	assert_int(handler.get_cards_under_strategy_top(state.players[0], 0).size()).is_equal(0)
 
@@ -1210,7 +1210,7 @@ func test_ebp04_089_milestones_15_22_and_30() -> void:
 	var p1 := state.players[1]
 
 	# 15th marker: all opponent battle cards destroyed; hand untouched.
-	handler.reduce_rage(0, 15)
+	handler.reduce_rage(0, 15, 1)
 	await handler.check_timing.resolve()
 	assert_int(handler.get_cards_under_strategy_top(p0, 0).size()).is_equal(15)
 	assert_bool(p1.zone_has_cards(1)).is_false()
@@ -1219,7 +1219,7 @@ func test_ebp04_089_milestones_15_22_and_30() -> void:
 
 	# 22nd marker: opponent discards their entire hand.
 	p0.rage = 7
-	handler.reduce_rage(0, 7)
+	handler.reduce_rage(0, 7, 1)
 	await handler.check_timing.resolve()
 	assert_int(handler.get_cards_under_strategy_top(p0, 0).size()).is_equal(22)
 	assert_int(p1.hand.size()).is_equal(0)
@@ -1228,7 +1228,7 @@ func test_ebp04_089_milestones_15_22_and_30() -> void:
 
 	# 30th marker: the game is won.
 	p0.rage = 8
-	handler.reduce_rage(0, 8)
+	handler.reduce_rage(0, 8, 1)
 	await handler.check_timing.resolve()
 	assert_int(handler.get_cards_under_strategy_top(p0, 0).size()).is_equal(30)
 	assert_int(winner[0]).is_equal(0)

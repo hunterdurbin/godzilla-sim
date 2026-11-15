@@ -417,7 +417,7 @@ func test_ebp01_022_silent_on_opponent_turn_decrease_or_skip() -> void:
 
 	# Own turn but a rage DECREASE: direction filter gates it off.
 	state.current_player_id = 0
-	handler.reduce_rage(0, 1)
+	handler.reduce_rage(0, 1, 1)
 	await handler.check_timing.resolve()
 	assert_int(input.count_calls("select_zone")).is_equal(0)
 

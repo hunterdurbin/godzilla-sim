@@ -729,7 +729,7 @@ func test_ebp01_071_destroyed_when_opponent_rage_increases() -> void:
 	var state2 := States.make_state({"p0": {"zone_cards": {2: card2}}, "p1": {"rage": 1}})
 	var s2 := _session(state2)
 	var handler2: EffectHandler = s2["effect_handler"]
-	handler2.reduce_rage(1, 1)
+	handler2.reduce_rage(1, 1, 0)
 	await handler2.check_timing.resolve()
 	assert_bool(state2.players[0].zone_has_cards(2)).is_true()
 

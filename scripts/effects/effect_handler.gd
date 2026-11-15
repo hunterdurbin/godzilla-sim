@@ -141,10 +141,12 @@ func _unhighlight_active_effect() -> void:
 
 
 
-func reduce_rage(player_id: int, amount: int) -> int:
-	## Reduce a player's Rage by up to `amount` (the resolving effect is the
-	## reducer). Returns the amount reduced. RageMover.decrease.
-	return rage_mover.decrease(player_id, amount)
+func reduce_rage(player_id: int, amount: int, reducer_id: int) -> int:
+	## Reduce a player's Rage by up to `amount`. `reducer_id` is the controller
+	## of the reducing effect (a card script passes `ctx.owner.player_id`;
+	## -1 = a rule, no effect) — prevention effects such as EBP03-004 judge it.
+	## Returns the amount reduced. RageMover.decrease.
+	return rage_mover.decrease(player_id, amount, reducer_id)
 
 
 

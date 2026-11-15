@@ -200,10 +200,52 @@ func test_ebp03_004_stops_only_the_opponents_reductions(reducer_id: int, expecte
 	})
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
+
+	# Outside run_effect (a passive or engine path): no ability is resolving.
+	var reduced: int = handler.reduce_rage(0, 1, reducer_id)
+
+	assert_int(state.players[0].rage) \
+		.override_failure_message("reducer_id=%d" % reducer_id).is_equal(expected_rage)
+	assert_int(reduced).is_equal(2 - expected_rage)
+
+
+func test_ebp03_004_stops_an_opponent_card_script_outside_run_effect() -> void:
+	# A card script names its controller as the reducer, so the prevention
+	# holds with no ability resolving (#48). EBP01-024 Minilla: "<Enter>
+	# Reduce your opponent's <Rage> by 1."
+	var card := Real.instance("EBP03-004")
+	var minilla := Real.instance("EBP01-024", 1)
+	var state := States.make_state({
+		"current_player_id": 1,
+		"p0": {"current_monster": card, "monster_zone": 4, "rage": 2},
+	})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+
+	handler.get_effect(minilla).on_enter(EffectContext.create(state, 1, minilla, handler))
+
+	assert_int(state.players[0].rage).is_equal(2)
+
+
+func test_ebp03_004_judges_the_named_reducer_not_the_resolving_ability(reducer_id: int, expected_rage: int,
+		test_parameters := [
+			[1, 2],  # opponent's effect, while p0's ability resolves: prevented
+			[0, 1],  # own effect, while p1's ability resolves: reduces
+		]) -> void:
+	# hunterdurbin/godzilla-sim-issue-tracker#48: a nested resolution must not
+	# lend its player to the reduction.
+	var card := Real.instance("EBP03-004")
+	var state := States.make_state({
+		"current_player_id": 1,
+		"p0": {"current_monster": card, "monster_zone": 4, "rage": 2},
+	})
+	var s := _session(state)
+	var handler: EffectHandler = s["effect_handler"]
+	var resolving_id: int = 1 - reducer_id
 	var reduced: Array[int] = []
 
-	await handler.check_timing.run_effect(reducer_id, {"id": "FX-%d" % reducer_id, "name": "Reducing Effect"},
-			func() -> void: reduced.append(handler.reduce_rage(0, 1)))
+	await handler.check_timing.run_effect(resolving_id, {"id": "FX-%d" % resolving_id, "name": "Resolving Ability"},
+			func() -> void: reduced.append(handler.reduce_rage(0, 1, reducer_id)))
 
 	assert_int(state.players[0].rage) \
 		.override_failure_message("reducer_id=%d" % reducer_id).is_equal(expected_rage)
@@ -217,7 +259,7 @@ func test_ebp03_004_rage_reduction_allowed_on_own_turn_or_below_awakening4() -> 
 	var s := _session(state)
 	var handler: EffectHandler = s["effect_handler"]
 	assert_bool(handler.queries.is_rage_reduction_prevented(0, 1)).is_false()
-	var reduced: int = handler.reduce_rage(0, 1)
+	var reduced: int = handler.reduce_rage(0, 1, 1)
 	assert_int(reduced).is_equal(1)
 	assert_int(state.players[0].rage).is_equal(1)
 

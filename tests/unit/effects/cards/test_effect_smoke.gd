@@ -253,11 +253,11 @@ func _dispatch_sweep(handler: EffectHandler, state: GameState, card: Dictionary,
 	if "on_rage_changed" in methods or "on_opponent_rage_changed" in methods or "on_rage_reset" in methods:
 		handler.gain_rage(0, 1)
 		await handler.check_timing.resolve()
-		handler.reduce_rage(0, 1)
+		handler.reduce_rage(0, 1, 1)
 		await handler.check_timing.resolve()
 		handler.gain_rage(1, 1)
 		await handler.check_timing.resolve()
-		handler.reduce_rage(1, 1)
+		handler.reduce_rage(1, 1, 0)
 		await handler.check_timing.resolve()
 
 	if "on_phase_start" in methods or "on_phase_end" in methods:

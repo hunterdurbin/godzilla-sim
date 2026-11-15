@@ -32,7 +32,7 @@ func on_enter(ctx: EffectContext) -> void:
 		true)
 
 	if not selected.is_empty():
-		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2)
+		ctx.effect_handler.reduce_rage(ctx.opponent.player_id, 2, ctx.owner.player_id)
 
 
 func on_phase_start(ctx: EffectContext, _phase: CardEnums.GamePhase) -> void:

@@ -354,7 +354,7 @@ func test_epr_020_opponent_rage_to_0_gains_2_only_on_own_turn(current_pid: int, 
 	var s := States.make_session(state)
 	var handler: EffectHandler = s["effect_handler"]
 
-	handler.reduce_rage(1, 1)
+	handler.reduce_rage(1, 1, 0)
 	await handler.check_timing.resolve()
 
 	assert_int(state.players[1].rage).is_equal(0)
@@ -368,7 +368,7 @@ func test_epr_020_opponent_rage_already_0_does_not_fire() -> void:
 	var handler: EffectHandler = s["effect_handler"]
 
 	# reduce_rage on a 0-rage player is a no-op (no rage_changed dispatch).
-	handler.reduce_rage(1, 1)
+	handler.reduce_rage(1, 1, 0)
 	await handler.check_timing.resolve()
 	# A rage increase must not fire either (direction filter).
 	handler.gain_rage(1, 1)

@@ -48,6 +48,11 @@ tests/
   crushed. Place test cards from index 1 up, or set `"monster_zone"`.
   `make_state` fails the test when a card shares a zone with its player's
   monster; pass `"allow_illegal": true` only to test the crush itself.
+- **A hook with no ability resolving**: dispatch + `check_timing.resolve()`
+  runs every hook inside `CheckTiming.run_effect`. To test a passive or
+  engine-path call outside it, call the hook directly:
+  `handler.get_effect(card).on_enter(EffectContext.create(state, pid, card, handler))`
+  (e.g. `test_ebp03_004_stops_an_opponent_card_script_outside_run_effect`).
 - Synthetic effects (no script file on disk):
   `handler.registry.register_for_test("test://name", effect, ["on_enter", …])`
   — see `unit/effects/test_check_timing.gd`.
