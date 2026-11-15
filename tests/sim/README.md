@@ -34,7 +34,16 @@ same; the split happened during that turn, or earlier in state the line
 does not carry, such as hand contents) and the first one that differs (`first_divergence.py`). Each line carries both players' zone,
 monster base id + rank, rage and hand size. A game
 can split and reconverge on the same `[SimResult]`, so a split alone fails
-the diff. Explain each divergence from that line. Under `EVENTS:` it
+the diff. Under `TRACE game=N` (the first `SIM_TRACE_MAX`, default 3,
+split games per pair) it replays that game alone on both trees with
+`--only-game=N --trace` and prints the first differing `[SimTrace]` line
+(`trace_divergence.py`): a turn-start pile snapshot (hand, discard pile
+bottom-first, zone tops), a log token or an ability resolving. That line
+names the cause, often many turns before the `[SimTurn]` split (a
+discard-pile order change shows up the turn it happens). Log token types
+only one tree has are ignored there. Explain each divergence from it. To
+trace one game by hand: `godot --headless --path . res://tests/sim/BotSimulationRunner.tscn
+-- --seed=S --deck1=… --deck2=… --only-game=N --trace`. Under `EVENTS:` it
 prints the rule-event counts that moved base -> head (`[SimEvents]`: each
 GameEvents signal, e.g. `monster_countered`, and each log token type, e.g.
 `log:burst_played`; plus each card's `[SimEffects]` ability count as

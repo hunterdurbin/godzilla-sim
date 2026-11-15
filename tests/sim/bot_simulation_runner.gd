@@ -3,7 +3,13 @@ extends Node
 ## Runs N bot-vs-bot games headlessly and prints summary statistics.
 ## Usage: godot --headless --path . tests/sim/BotSimulationRunner.tscn \
 ##          [-- --games=N --seed=S --p1=HARD --p2=KAIJU --deck1="Name" --deck2="Name"]
+##          [--only-game=N] [--trace]
 ## Command-line args override the exports below (difficulty by enum name).
+## --only-game=N plays just game N of the run (its seed and starting player),
+## numbered N. --trace prints [SimTrace] lines: a pile snapshot at each turn
+## start, each log token and each ability that starts resolving. Together
+## they replay one split game of a sim diff with the detail to explain it
+## (run_sim_diff.sh, trace_divergence.py).
 
 @export var num_games: int = 200
 @export var p1_difficulty: BotConfig.Difficulty = BotConfig.Difficulty.HARD
@@ -17,6 +23,8 @@ extends Node
 @export var record_replays: bool = false
 ## Outside user://replays/<version>/recent/ so prune_recent never eats them.
 @export var replay_dir: String = "user://replays/sim/"
+## Print [SimTrace] lines (see the header). Consumes no RNG.
+@export var trace: bool = false
 
 var _games_completed: int = 0
 var _results: Array[Dictionary] = []
@@ -67,6 +75,11 @@ func _apply_cmdline_overrides() -> void:
 			"--deck1": p1_deck_name = value
 			"--deck2": p2_deck_name = value
 			"--record-replays": record_replays = true
+			"--trace": trace = true
+			"--only-game":
+				# Games run in order from _games_completed; start at N-1.
+				_games_completed = maxi(int(value), 1) - 1
+				num_games = _games_completed + 1
 			_: push_warning("BotSimulationRunner: unknown arg %s" % arg)
 
 
@@ -149,6 +162,8 @@ func _start_next_game() -> void:
 	if bus.has_signal("effect_resolving"):
 		_effect_counts_available = true
 		bus.connect("effect_resolving", _on_effect_resolving)
+		if trace:
+			bus.connect("effect_resolving", _trace_resolving)
 	for sig: Dictionary in bus.get_script().get_script_signal_list():
 		var sig_name: String = sig["name"]
 		_event_counts.get_or_add(sig_name, 0)
@@ -227,6 +242,8 @@ func _on_sim_confirmation(_prompt: String, _setting: String) -> void:
 func _on_turn_started(player_id: int) -> void:
 	if _game_running:
 		_print_turn_trace(player_id)
+		if trace:
+			_trace_piles()
 	if _current_turn_manager.game_state.turn_number > 50:
 		print("[Sim] Game %d exceeded 50 turns — forcing draw" % (_games_completed + 1))
 		_record_result(-1, "Turn limit exceeded")
@@ -309,6 +326,31 @@ func _seed_log_types() -> void:
 
 func _on_log_message(token: Dictionary) -> void:
 	_count_event("log:" + str(token.get("type", "")))
+	if trace:
+		_trace("log:%s %s" % [token.get("type", ""), GameLog.render_plain(token)])
+
+
+func _trace(text: String) -> void:
+	var turn: int = _current_turn_manager.game_state.turn_number if _current_turn_manager else 0
+	print("[SimTrace] game=%d t=%d %s" % [_games_completed + 1, turn, text])
+
+
+func _trace_resolving(player_id: int, card: Dictionary) -> void:
+	_trace("resolve p%d %s" % [player_id + 1, CardUtils.base_id(card)])
+
+
+func _trace_piles() -> void:
+	## Hand, discard pile (bottom first) and zone tops by base id, per player:
+	## pile ORDER differences show up here before any result moves.
+	for i in range(2):
+		var p: PlayerState = _current_turn_manager.game_state.players[i]
+		var zones: Array[String] = []
+		for z in range(8):
+			var top: Dictionary = p.get_zone_top_card(z)
+			zones.append("-" if top.is_empty() else CardUtils.base_id(top))
+		_trace("piles p%d hand=[%s] discard=[%s] zones=[%s]" % [i + 1,
+				",".join(p.hand.map(CardUtils.base_id)),
+				",".join(p.discard_pile.map(CardUtils.base_id)), ",".join(zones)])
 
 
 func _print_summary() -> void:

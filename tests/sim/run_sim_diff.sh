@@ -21,6 +21,10 @@
 #   - SPLIT: per game whose [SimTurn] trace differs, the last shared turn
 #     line and the first differing one, base vs head (first_divergence.py),
 #     so every divergence traces to the turn and monsters it started from
+#   - TRACE: the first SIM_TRACE_MAX (default 3) split games replayed alone
+#     on both trees with --only-game=N --trace; trace_divergence.py prints
+#     the first differing [SimTrace] line (a log token, an ability resolving,
+#     or a turn-start pile snapshot), which names the cause
 #   - EVENTS: the rule-event counts ([SimEvents]: GameEvents signals and
 #     log token types such as log:burst_played) and per-card ability counts
 #     ([SimEffects], as ability:<card_id>) that moved base -> head
@@ -71,6 +75,8 @@ DECK1="${6:-ESD01 Starter}"
 DECK2="${7:-ESD02 Starter}"
 SEED="${8:-424242}"
 TIMEOUT="${SIM_TIMEOUT:-3600}"
+# Split games replayed with --trace per pair (env SIM_TRACE_MAX; 0 = off).
+TRACE_MAX="${SIM_TRACE_MAX:-3}"
 
 # Reject misplaced args up front: a deck name that slips into a positional
 # slot would otherwise become the seed or game count, run unmatched games
@@ -147,16 +153,20 @@ import_tree "$BASE_WT" "$WORK/import_base.log" &
 import_tree "$HEAD_WT" "$WORK/import_head.log" &
 wait
 
-run_sim() { # <dir> <out> <deck1> <deck2>
-	"$GODOT" --headless --path "$1" res://tests/sim/BotSimulationRunner.tscn -- \
+run_sim() { # <dir> <out> <deck1> <deck2> [extra runner args...]
+	local dir="$1" out="$2" d1="$3" d2="$4" want="$GAMES"
+	shift 4
+	# --only-game=N plays one game.
+	case " $* " in *" --only-game="*) want=1 ;; esac
+	"$GODOT" --headless --path "$dir" res://tests/sim/BotSimulationRunner.tscn -- \
 		--games="$GAMES" --seed="$SEED" --p1="$P1" --p2="$P2" \
-		--deck1="$3" --deck2="$4" > "$2" 2>&1 &
+		--deck1="$d1" --deck2="$d2" "$@" > "$out" 2>&1 &
 	local pid=$! elapsed=0
 	while kill -0 "$pid" 2>/dev/null; do
 		sleep 5; elapsed=$((elapsed + 5))
-		grep -q '^\[SimEffects\]' "$2" && { sleep 1; break; }
-		[ "$(grep -c '\[SimResult\]' "$2")" -ge "$GAMES" ] && { sleep 3; break; }
-		[ "$elapsed" -ge "$TIMEOUT" ] && { echo "TIMEOUT: $2" >> "$2"; break; }
+		grep -q '^\[SimEffects\]' "$out" && { sleep 1; break; }
+		[ "$(grep -c '\[SimResult\]' "$out")" -ge "$want" ] && { sleep 3; break; }
+		[ "$elapsed" -ge "$TIMEOUT" ] && { echo "TIMEOUT: $out" >> "$out"; break; }
 	done
 	kill -9 "$pid" 2>/dev/null
 }
@@ -200,7 +210,19 @@ for pair in "${PAIRS[@]}"; do
 		1)
 			echo "  SPLIT: $(grep -c '^game=' "$WORK/split$i.txt") games' turn traces differ (last shared, then first differing [SimTurn]):"
 			sed 's/^/    /' "$WORK/split$i.txt"
-			STATUS=1 ;;
+			STATUS=1
+			# Replay the first TRACE_MAX split games traced on both trees: the
+			# first differing [SimTrace] line (log token, ability, pile
+			# snapshot) is the cause, not just the turn it surfaced in.
+			for g in $(sed -n 's/^game=//p' "$WORK/split$i.txt" | head -n "$TRACE_MAX"); do
+				run_sim "$BASE_WT" "$WORK/trace${i}_g${g}_base.log" "$(resolve_deck "$d1")" "$(resolve_deck "$d2")" --only-game="$g" --trace &
+				run_sim "$HEAD_WT" "$WORK/trace${i}_g${g}_head.log" "$(resolve_deck "$d1")" "$(resolve_deck "$d2")" --only-game="$g" --trace &
+				wait
+				echo "  TRACE game=$g (first differing [SimTrace]; logs $WORK/trace${i}_g${g}_{base,head}.log):"
+				python3 "$HEAD_WT/tests/sim/trace_divergence.py" \
+					"$WORK/trace${i}_g${g}_base.log" "$WORK/trace${i}_g${g}_head.log" | sed 's/^/    /'
+				[ "${PIPESTATUS[0]}" -eq 0 ] && echo "    (traces match: the split needs games before $g; rerun them in order)"
+			done ;;
 		*) echo "  SPLIT: first_divergence.py failed (see its error above)"; STATUS=1 ;;
 	esac
 	# Rule events (GameEvents signals, log token types): a count that moved
